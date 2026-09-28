@@ -4,15 +4,29 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.47
+## 1.3.48
 
-Release 1.3.47 renews the pictures on the project page. They are now a
+Release 1.3.48 renews the pictures on the project page. They are now a
 gallery and show, new, the lookout's binoculars on the frigate and the
 submarine's periscope by day and by night, on the uConsole and in the browser,
 with a warship and merchants in the eyepiece and the merchants' navigation
 lights in the dark; every station picture is in the new turquoise look. The
 screenshot tools make these eyepiece pictures on their own
 (`tools/sight_capture.py`). Saves stay v27.
+
+## 1.3.47
+
+Release 1.3.47 puts a phone on watch. `F9` shows a second QR code, Phone
+lookout: scan it, accept the game's own certificate once, type the pairing code,
+and the phone becomes the frigate's bridge lookout or the crewed submarine's
+periscope. Turn the phone like binoculars (gyroscope) or swipe, zoom, and report
+what you see by voice ("Ship bearing 040, range 5 miles") or by tapping it. The
+bridge only hears what the lookout really has there; a report of nothing is
+refused. While a phone holds the watch the automatic lookout stays silent, and
+the crew browsers speak every confirmed report. The phone on the periscope
+trains it and takes stadimeter ranges. The listener serves this page over HTTPS
+on the next port (self-signed, made by the game), because phones only give the
+gyroscope and the microphone to a secure page; saves stay v27.
 
 ## 1.3.46
 

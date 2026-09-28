@@ -311,7 +311,8 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     html = inject_probe(index_html(), "lobby-layout.js")
     stations = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
                 "engine", "helicopter", "eloka", "uboot", "uboot_sonar",
-            "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav", "uboot_radio")
+            "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav", "uboot_radio",
+                "lookout", "uboot_lookout")
     empty_grants = {"command": False, "direct_fire": False, "sonar_audio": False}
     session = {"protocol": 2, "client_id": "layout-client", "name": "Layout Lobby",
                "csrf": "layout-csrf", "ordinal": 0, "presence": 1.0,
@@ -394,7 +395,8 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     root = next(attrs for tag, attrs in Document(result.stdout).elements if tag == "html")
     report = json.loads(root["data-lobby-layout"])
     assert "error" not in report, report
-    assert report["cards"] == 16 and report["order"] == list(stations)
+    # The phone lookout roles pair through /lookout and have no lobby card.
+    assert report["cards"] == 16 and report["order"] == list(stations[:16])
     assert report["viewport"] == [css_width, css_height]
     assert report["pageWidth"] <= css_width + 1 and report["pageHeight"] <= css_height + 1, report
     assert report["controls"]
@@ -412,7 +414,7 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     # stations share the submarine panel.
     assert set(report["workstations"]) == set(stations) - {
         "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav",
-        "uboot_radio"}
+        "uboot_radio", "lookout", "uboot_lookout"}
     for role, dashboard in report["workstations"].items():
         assert not dashboard["intersects"], (role, dashboard)
         assert dashboard["childIntersections"] == 0, (role, dashboard)

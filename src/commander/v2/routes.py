@@ -29,6 +29,7 @@ from src.commander.v2.wire import (
     AUDIO_SOCKET_TIMEOUT_S,
     HOST_ROLE,
     ROLES,
+    LOOKOUT_ROLES,
     SONAR_AUDIO_FRAMES,
     SONAR_AUDIO_RATE,
     SONAR_AUDIO_RESUME_BLOCKS,
@@ -74,9 +75,12 @@ class _HTTPServer(HTTPServer):
     allow_reuse_address = True
     request_queue_size = _CONNECTION_SLOT_LIMIT
 
-    def __init__(self, address, owner, assets):
+    def __init__(self, address, owner, assets, tls=None):
         self.owner = owner
         self.assets = assets
+        # The phone lookouts' HTTPS listener (src/commander/tls.py): the same
+        # routes behind a per-connection TLS handshake in the worker thread.
+        self.tls = tls
         self.slots = threading.BoundedSemaphore(_CONNECTION_SLOT_LIMIT)
         self.work_lock = threading.Lock()
         self.workers = {}
@@ -109,7 +113,7 @@ class _HTTPServer(HTTPServer):
         if owner.public_origin is not None:
             origins.add(owner.public_origin)
         if host in self.direct_hosts:
-            origins.add(f"http://{host}")
+            origins.add(f"{'https' if self.tls is not None else 'http'}://{host}")
         return frozenset(origins)
 
     def process_request(self, request, client_address):
@@ -159,6 +163,14 @@ class _HTTPServer(HTTPServer):
         timer.daemon = True
         try:
             timer.start()
+            if self.tls is not None:
+                # The handshake runs here, bounded by the same deadline; the
+                # wrapped socket keeps the descriptor the timer shuts down.
+                request = self.tls.wrap_socket(request, server_side=True,
+                                               do_handshake_on_connect=False)
+                with self.work_lock:
+                    self.workers[threading.current_thread()] = request
+                request.do_handshake()
             self.finish_request(request, client_address)
         except (OSError, ValueError, RuntimeError):
             pass
@@ -431,8 +443,11 @@ class _Handler(BaseHTTPRequestHandler):
         return session, digest, True
 
     def _via_https_proxy(self) -> bool:
-        """This request came through the HTTPS proxy, not the direct LAN URL."""
+        """This request came through HTTPS (the proxy or the phone listener),
+        not the direct plain-HTTP LAN URL."""
         owner = self.server.owner
+        if self.server.tls is not None:
+            return True
         return owner.public_origin is not None and (
             owner.web_auth is not None
             or self.headers.get("Origin") == owner.public_origin
@@ -862,7 +877,9 @@ class _Handler(BaseHTTPRequestHandler):
                     peer.outgoing.clear()
                 for opcode, payload in pending:
                     self.connection.sendall(_websocket_frame(payload, opcode=opcode))
-                readable, _, _ = select.select([self.connection], [], [], 0.025)
+                # A TLS socket may hold decrypted bytes select() cannot see.
+                buffered = getattr(self.connection, "pending", lambda: 0)()
+                readable = buffered or select.select([self.connection], [], [], 0.025)[0]
                 if not readable:
                     continue
                 chunk = self.connection.recv(4096)
@@ -1151,17 +1168,18 @@ class _Handler(BaseHTTPRequestHandler):
                     status, response = 503, {"error": "unavailable"}
                 elif len(owner._pair_failures) >= 5:
                     status, response = 429, {"error": "pairing_rate_limited"}
-                elif (not isinstance(body, dict) or body.keys() != {"code", "name"}
+                elif (not isinstance(body, dict)
+                      or body.keys() not in ({"code", "name"}, {"code", "name", "role"})
                       or not isinstance(body["code"], str)
-                      or not isinstance(body["name"], str)):
+                      or not isinstance(body["name"], str)
+                      or body.get("role", LOOKOUT_ROLES[0]) not in LOOKOUT_ROLES):
                     status, response = 400, {"error": "invalid_request"}
                 else:
                     name = body["name"].strip()
                     if (not 1 <= len(name) <= 32
                             or any(unicodedata.category(char).startswith("C") for char in name)):
                         status, response = 400, {"error": "invalid_request"}
-                    elif len(owner._sessions_v2) >= (1 if owner._solo
-                                                     else _V2_SESSION_LIMIT):
+                    elif not owner._pair_admitted_locked(body.get("role")):
                         status, response = 429, {"error": "session_limit"}
                     elif not secrets.compare_digest(
                             body["code"].encode("utf-8", errors="surrogatepass"),
@@ -1171,7 +1189,8 @@ class _Handler(BaseHTTPRequestHandler):
                             owner._rotate_code_locked()
                         status, response = 403, {"error": "invalid_code"}
                     else:
-                        token, session = owner._new_session_locked(name)
+                        token, session = owner._new_session_locked(
+                            name, lookout=body.get("role"))
                         self._reply(200, self._session_v2_body(session, owner._sessions_v2),
                                     set_cookie=self._v2_cookie(token))
                         return
@@ -1196,10 +1215,16 @@ class _Handler(BaseHTTPRequestHandler):
                             status, response = 400, {"error": "invalid_request"}
                         elif session["observer"]:
                             status, response = 403, {"error": "observer"}
+                        elif (session["lookout_only"] or owner._solo and not session["solo_host"]
+                              ) and body["station"] not in LOOKOUT_ROLES:
+                            # A phone lookout (or a second browser beside a
+                            # solo session) only ever takes a lookout role.
+                            status, response = 403, {"error": "forbidden"}
                         else:
                             station = body["station"]
-                            if session["solo_host"] and owner._solo and owner._side_conflict(
-                                    session, station):
+                            if (session["solo_host"] and owner._solo
+                                    and station not in LOOKOUT_ROLES
+                                    and owner._side_conflict(session, station)):
                                 # Solo: choosing a station of the other unit moves
                                 # the whole session to that unit.
                                 owner._solo_switch_side_locked(session, station)

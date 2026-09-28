@@ -10,7 +10,7 @@ import pytest
 from commander_web import index_html, inject_probe, WEB_ROUTES
 
 from test_commander_assets import ASSETS, PREFIX, Document, catalogs
-from test_commander_browser_sessions_v2 import (STATIONS, _direct_fire_browser_states,
+from test_commander_browser_sessions_v2 import (SESSION_ROLES, STATIONS, _direct_fire_browser_states,
                                                 _station_record)
 
 
@@ -96,7 +96,7 @@ def test_web_simlog_shows_all_projected_values_and_a_map_in_chromium(tmp_path):
     if not chromium:
         pytest.skip("Optional web SimLog browser contract: no installed Chromium")
     en, de = catalogs()
-    stations = {station: _station_record() for station in STATIONS}
+    stations = {station: _station_record() for station in SESSION_ROLES}
     stations["opz"] = _station_record("mine", station_generation=1, command=True)
     session = dict(protocol=2, client_id="log-client", name="Log Watch",
                    csrf="log-csrf", ordinal=0, presence=1.0, next_command_seq=0, host=None, observer=False,

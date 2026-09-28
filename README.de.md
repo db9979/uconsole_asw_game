@@ -14,16 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.20**
+Aktuelle Version: **1.3.21**
 
-Version 1.3.20 bringt den **Angriffsrechner am Sehrohr** des Boots: Jede
-Stadimeter-Messung ist eine Marke, und zwei oder mehr Marken im Abstand von
-einer Minute ergeben Kurs und Fahrt des Ziels, den Vorhaltewinkel und die
-Laufzeit des Torpedos unter dem Sehrohr (Browser: Spalte Lösung).
-`Strg+Enter` auf der Sehrohrseite (Browser: Schuss nach Lösung) schießt auf
-den Abfangkurs; ein Schuss auf einen markierten Sonarkontakt nutzt die Lösung
-ebenfalls. Spielstände wechseln auf **v24** (die Marken werden gespeichert);
-v23-Spielstände werden nicht mehr geladen.
+Version 1.3.21 gibt allen Menüs und Dialogen das Aussehen des Startbildschirms:
+Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Remote-Crew-Verwaltung
+(`F9`) und das Missionsende zeigen jetzt die nächtliche Jagd hinter einem
+durchscheinenden Konsolen-Panel mit Phosphor-Eckwinkeln und leuchtendem Titel;
+die Mission läuft dahinter weiter. Bei hohem Kontrast bleiben die Panels
+deckend. Die Browser-Dialoge nutzen denselben Nachthimmel und Winkelrahmen.
+Spielstände bleiben v24.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

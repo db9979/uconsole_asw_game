@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.21
+
+Version 1.3.21 gibt allen Menüs und Dialogen das Aussehen des Startbildschirms:
+Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Remote-Crew-Verwaltung
+(`F9`) und das Missionsende zeigen jetzt die nächtliche Jagd hinter einem
+durchscheinenden Konsolen-Panel mit Phosphor-Eckwinkeln und leuchtendem Titel;
+die Mission läuft dahinter weiter. Bei hohem Kontrast bleiben die Panels
+deckend. Die Browser-Dialoge nutzen denselben Nachthimmel und Winkelrahmen.
+Spielstände bleiben v24.
+
 ## 1.3.20
 
 Version 1.3.20 bringt den **Angriffsrechner am Sehrohr** des Boots: Jede

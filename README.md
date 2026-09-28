@@ -12,15 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.20**
+Current release: **1.3.21**
 
-Release 1.3.20 adds the boat's **periscope attack computer**: every stadimeter
-reading is a mark, and two or more marks a minute apart give the target's
-course and speed, the lead angle and the torpedo's running time under the
-periscope (browser: Solution column). `Ctrl+Enter` on the periscope page
-(browser: Fire on solution) fires on the intercept course; a shot at a marked
-sonar contact uses the solution too. Saves move to **v24** (the marks are
-saved); v23 saves are no longer loaded.
+Release 1.3.21 gives every menu and dialog the start screen's look: help,
+options, save/load, quit, nations, Remote Crew administration (`F9`) and the
+mission end now show the night hunt behind a translucent console panel with
+phosphor corner brackets and a glowing title, while the mission keeps running
+behind them. In high contrast the panels stay opaque. Browser dialogs use the
+same night sky and bracket frame. Saves stay v24.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

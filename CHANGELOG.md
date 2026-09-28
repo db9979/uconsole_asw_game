@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.34
+
+Release 1.3.34 writes a crash log: every game start adds a start and an end
+line to `~/.u-jagd/crash.log`, and a game that ends on an error leaves its
+traceback there, or after a hard crash (a segmentation fault in SDL or audio,
+`SIGTERM`) the stacks of all threads. A start line with no end line means the
+game was killed from outside, usually by the kernel when memory ran out. The
+file stays below 256 KiB. Saves stay v26.
+
 ## 1.3.33
 
 Release 1.3.33 lets the crewed submarine's ESM measure each radar's scan

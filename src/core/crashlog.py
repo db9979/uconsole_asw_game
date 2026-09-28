@@ -31,6 +31,14 @@ from src.core.version import APP_VERSION
 
 CRASH_LOG = "crash.log"
 CRASH_LOG_MAX_BYTES = 256 * 1024
+_TAIL_BYTES = 64 * 1024
+_NORMAL_ENDS = ("normal", "interrupted", "exit 0", "exit None")
+
+# Whether the launch before this one crashed; set by ``install()`` so the main
+# menu can offer a bug report.
+previous_launch_crashed = False
+# Log directory of the running launch; ``note()`` writes only while set.
+_active_root: str | None = None
 
 
 class CrashSession:
@@ -63,9 +71,42 @@ def _open_fault_file(root: str):
         return None
 
 
+def last_launch_crashed(root: str | None = None) -> bool:
+    """True if the newest launch in the log crashed or never logged its end.
+
+    A start line without an end line means the process died outright; an
+    ``ended`` line other than a normal quit (or a ``crashed`` line) is a crash.
+    """
+    root = os.path.abspath(os.path.expanduser(root or config.SAVE_DIR))
+    path = os.path.join(root, CRASH_LOG)
+    try:
+        if os.path.islink(root) or os.path.islink(path):
+            return False
+        with open(path, "rb") as handle:
+            handle.seek(0, os.SEEK_END)
+            handle.seek(max(0, handle.tell() - _TAIL_BYTES))
+            text = handle.read().decode("utf-8", "replace")
+    except OSError:
+        return False
+    start = text.rfind(" started (pid ")
+    if start < 0:
+        return False
+    block = text[start:]
+    if " crashed (" in block:
+        return True
+    ended = block.rfind(" ended: ")
+    if ended < 0:
+        return True
+    status = block[ended + len(" ended: "):].splitlines()[0].strip()
+    return status not in _NORMAL_ENDS
+
+
 def install(root: str | None = None) -> CrashSession:
     """Start crash logging for this launch (call once, before the game)."""
+    global previous_launch_crashed, _active_root
     root = os.path.abspath(os.path.expanduser(root or config.SAVE_DIR))
+    previous_launch_crashed = last_launch_crashed(root)
+    _active_root = root
     _append(root, f"=== {_stamp()} U-Jagd {APP_VERSION} started (pid {os.getpid()}, "
                   f"Python {platform.python_version()}, {platform.machine()})\n")
     was_enabled = faulthandler.is_enabled()
@@ -99,9 +140,17 @@ def record_exception(exc_type, exc_value, exc_tb, root: str | None = None,
     _append(root, f"--- {_stamp()} U-Jagd {APP_VERSION} crashed ({where}):\n{text}")
 
 
+def note(text: str) -> None:
+    """Append one context line (mission start) while crash logging runs."""
+    if _active_root is not None:
+        _append(_active_root, f"--- {_stamp()} {' '.join(str(text).split())[:200]}\n")
+
+
 def finish(session: CrashSession, status: str) -> None:
     """Append the end line and undo ``install()``."""
+    global _active_root
     _append(session.root, f"=== {_stamp()} U-Jagd {APP_VERSION} ended: {status}\n")
+    _active_root = None
     threading.excepthook = session.previous_thread_hook
     if session.fault_file is not None:
         if hasattr(signal, "SIGTERM") and hasattr(faulthandler, "unregister"):

@@ -1,0 +1,40 @@
+name: Fehler melden / Bug report
+description: Absturz oder Fehler in U-Jagd melden. Report a crash or bug in U-Jagd.
+title: "U-Jagd: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke! Das Spiel füllt Version, Plattform und Log selbst aus („Fehler melden“ im Hauptmenü, im Windows-Starter oder im Browser-Menü).
+        Thanks! The game fills in version, platform and log itself ("Report a bug" in the main menu, the Windows starter or the browser menu).
+  - type: textarea
+    id: what
+    attributes:
+      label: Was ist passiert? / What happened?
+      description: Was hast du gemacht, was hast du erwartet? / What were you doing, what did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "1.3.40"
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Plattform / Platform
+      placeholder: "uConsole, Windows, browser ..."
+  - type: input
+    id: context
+    attributes:
+      label: Kontext / Context
+      description: Seite, Szenario, Station / side, scenario, station
+  - type: textarea
+    id: log
+    attributes:
+      label: Log (~/.u-jagd/crash.log)
+      description: Die neuesten Zeilen; die ganze Datei ~/.u-jagd/bug-report.txt gern anhängen. / Newest lines; feel free to attach ~/.u-jagd/bug-report.txt.
+      render: text

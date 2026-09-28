@@ -14,18 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.39**
+Aktuelle Version: **1.3.40**
 
-Version 1.3.39 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen
-den Stil des Startbilds. Die Okulare zeigen Tag, Dämmerung und Nacht mit
-Sternen, dem Mond in seiner Phase und seinem Glitzern auf dem Wasser, Wolken,
-Regen, Schnee und Nebel nach dem Wetter, und die Schiffe in Stahl mit heller
-Kante, nachts mit beleuchteten Fenstern, Bugwelle und Kielwasser. Die
-Remote-Crew-Brücke bekommt das Fernglas des Ausgucks als Karte und das
-Browser-Sehrohr dasselbe Bild und dieselben Schiffsformen. Die Stationen auf
-der uConsole und im Browser tragen das Türkis und Nachtblau des Startbilds mit
-Eckwinkeln an den Feldern; die Karte behält ihre NATO-Symbole, der
-Kontrastmodus bleibt unverändert. Spielstände bleiben v27.
+Version 1.3.40 bringt eine Fehlermeldung. „Fehler melden“ im Hauptmenü
+schreibt `~/.u-jagd/bug-report.txt` mit Version, Plattform und den neuesten
+Zeilen des Absturz-Logs (Benutzername aus Pfaden entfernt) und zeigt einen
+QR-Code, der am Handy ein vorausgefülltes GitHub-Issue öffnet; `Enter` öffnet
+es mit Log im Browser, wo das Gerät einen hat. Nach einem abgestürzten Start
+bietet das Hauptmenü den Punkt an. Der Windows-Starter und das
+Einstellungsmenü im Browser verlinken dasselbe Formular, und das Absturz-Log
+hält jetzt auch jeden Missionsstart fest. Gesendet wird erst, wenn Sie das
+Issue mit Ihrem eigenen GitHub-Konto abschicken. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

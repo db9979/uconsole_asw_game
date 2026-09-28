@@ -48,7 +48,14 @@ der Traceback; bei einem harten Absturz (Speicherzugriffsfehler in SDL oder
 Audio, `SIGTERM`) die Stapel aller Threads. Folgt auf eine Startzeile keine
 Endzeile und kein Fehler, wurde das Spiel von außen beendet, meist vom
 Kernel bei Speichermangel (`dmesg | grep -i -e oom -e killed`). Die Datei
-bleibt unter 256 KiB.
+bleibt unter 256 KiB. Missionsstarts stehen dort ebenfalls (Szenario, Welt,
+Seed, Seite).
+
+**Fehler melden:** Der Hauptmenüpunkt „Fehler melden“ schreibt
+`~/.u-jagd/bug-report.txt` (Version, Plattform, neueste Log-Zeilen ohne
+Benutzernamen) und zeigt einen QR-Code, der am Handy ein vorausgefülltes
+GitHub-Issue öffnet; die Datei dort anhängen. Nach einem Absturz bietet das
+Hauptmenü den Punkt beim nächsten Start an.
 
 **Startfenster:** Sofort nach dem Klick erscheint ein kleines Fenster „U-Jagd“
 mit dem aktuellen Schritt (Suche nach Updates, Lade Update, Installiere

@@ -30,16 +30,24 @@ def draw_silhouette(s, cls: str, cx: int, base_y: int, width: int, color) -> Non
 
 
 def scope_outlines(game, boat) -> list:
-    """Detached ``(bearing, span_deg, cls, stale)`` rows of the sightings."""
-    return [(row["bearing"], row["span_deg"], row["cls"], game.sim_t - row["t"] > 1.0)
-            for row in boat.orders.sightings]
+    """Detached ``(bearing, span_deg, cls, stale, lights)`` rows of the
+    sightings (``lights``: the ``nav_lights`` code made out, if any)."""
+    lights = getattr(boat.orders, "_lights", {})
+    rows = []
+    for row in boat.orders.sightings:
+        stale = game.sim_t - row["t"] > 1.0
+        rows.append((row["bearing"], row["span_deg"], row["cls"], stale,
+                     None if stale else lights.get(row["ref"])))
+    return rows
 
 
 def draw_eyepiece(s, game, boat, rect) -> None:
     """The picture in the eyepiece: sky, sea, horizon in motion, bearing scale,
-    crosshair and the outlines of the boat's sightings within the field."""
+    crosshair and the outlines of the boat's sightings within the field,
+    at the eyepiece's tilt, power and stabilizer."""
+    sight = boat.scope_optics
     draw_horizon(s, rect, line_of_sight=opfor.scope_bearing(boat),
-                 fov_deg=config.UBOOT_SCOPE_FOV_DEG, night=game.world.is_night(),
+                 fov_deg=sight.fov_deg, night=game.world.is_night(),
                  visibility_nm=getattr(game.world, "visibility_nm",
                                        config.WEATHER_VISIBILITY_MAX_NM),
                  motion=opfor.horizon_motion(game, boat),
@@ -48,7 +56,10 @@ def draw_eyepiece(s, game, boat, rect) -> None:
                  land=land_view(game.world, boat.sub.x, boat.sub.y,
                                 config.UBOOT_SCOPE_EYE_HEIGHT_M),
                  anim_t=game.sim_t, sky=sight_scene.sky_state(game),
-                 sea_state=getattr(game.world, "effective_sea_state", game.world.sea_state))
+                 sea_state=getattr(game.world, "effective_sea_state", game.world.sea_state),
+                 elevation_deg=sight.elevation_deg, stabilized=sight.stabilized,
+                 optics_label=message("sight.optics", elevation=f"{sight.elevation_deg:+.0f}",
+                                      fov=f"{sight.fov_deg:.0f}"))
 
 
 def sighting_rows(game, boat) -> list:

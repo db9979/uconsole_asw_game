@@ -24,7 +24,8 @@ from commander_fixtures import PLOT, WEATHER_STATION
 
 # The bridge lookout's binoculars (clear night, nothing in sight).
 LOOKOUT = dict(course=90.0, fov_deg=16.0, visibility_nm=30.0, sea_state=2.0,
-               horizon_offset=0.0, horizon_tilt=0.0, outlines=[],
+               horizon_offset=0.0, horizon_tilt=0.0, motion_pitch=0.0, motion_roll=0.0,
+               outlines=[],
                sky=dict(light=0.0, dusk=0.0, cloud=0.25, precipitation="none", intensity=0.0,
                         wind_from_deg=270.0, sun_bearing=300.0, sun_alt_deg=-20.0,
                         moon_bearing=180.0, moon_alt_deg=30.0, moon_illumination=0.8,

@@ -974,6 +974,10 @@ class EventMixin:
                 self._cycle_radar_range(
                     1 if e.key == pygame.K_PAGEUP else -1)
                 return
+            # The raised binoculars take ↑/↓ (tilt), Q/E (zoom) and Space
+            # (stabilizer) from the telegraph and the covered chart.
+            if self.lookout_glasses_shown() and self._lookout_optics_key(e):
+                return
             if e.key in (pygame.K_UP, pygame.K_DOWN):
                 if self.station is Station.DAMAGE:
                     self.dmg_team = (self.dmg_team - 1 +

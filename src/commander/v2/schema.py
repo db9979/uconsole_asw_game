@@ -63,15 +63,18 @@ SKY_FIELDS = ("light", "dusk", "cloud", "precipitation", "intensity", "wind_from
               "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg",
               "moon_illumination", "moon_waxing")
 LOOKOUT_GLASSES_FIELDS = ("course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset",
-                          "horizon_tilt", "sky", "outlines")
-LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale")
+                          "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines")
+# ``lights``: the navigation lights made out (``src/sensors/nav_lights.py``
+# code) or null.
+LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "lights")
 SIGHT_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
 # The phone lookouts (``lookout`` binoculars, ``uboot_lookout`` periscope):
 # the eyepiece, the lookout's own sightings (called or not) and his calls.
 LOOKOUT_PHONE_FIELDS = ("side", "available", "manned", "course", "relative_deg", "fov_deg",
-                        "window_deg", "visibility_nm", "sea_state", "horizon_offset",
-                        "horizon_tilt", "sky", "outlines", "calls")
-LOOKOUT_PHONE_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "called", "range_nm")
+                        "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset",
+                        "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines",
+                        "calls")
+LOOKOUT_PHONE_OUTLINE_FIELDS = LOOKOUT_OUTLINE_FIELDS + ("called", "range_nm")
 LOOKOUT_CALL_FIELDS = ("seq", "age_s", "category", "bearing", "range_nm", "confirmed")
 LOOKOUT_CALL_CATEGORIES = ("contact", "ship", "warship", "merchant", "aircraft", "submarine",
                            "torpedo")

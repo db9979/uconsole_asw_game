@@ -24,7 +24,7 @@ from src.network.connectivity import ConnectivityMonitor
 from src.network.live_traffic import LiveTrafficManager
 from src.core.mission import Mission
 from src.core.station import Station
-from src.core import opfor
+from src.core import opfor, optics
 from src.core.limits import (MAX_AIR_PICTURE_TRACKS, MAX_DECOYS, MAX_ENEMY_TORPEDOES,
                              MAX_OPZ_TRACK_LABELS, MAX_SAVED_ASMS, MAX_SAVED_ENTITIES,
                              MAX_SAVED_ESSMS, MAX_SAVED_PLAYER_TORPEDOES,
@@ -583,6 +583,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.lookout_range_nm = 12.0                 # bridge lookout page scale (UI only)
         self.lookout_glasses = False                 # binoculars over the chart (UI only)
         self.lookout_glasses_rel = 0.0               # their line of sight off the bow
+        self.lookout_optics = optics.lookout_glasses()  # tilt, zoom, stabilizer (UI only)
         self.helo_acoustic_page = 1
         self.sonar_harmonic_hz = None
         # Operator LOFAR/DEMON tools: cursor, marks, integration (UI only).

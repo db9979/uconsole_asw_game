@@ -16,6 +16,7 @@ from src.physics import torpedo_dyn
 from src.air import helicopter as helicopter_physics
 from src.core.station import Station
 from src.core import opfor
+from src.core.optics import optics_key
 from src.core.limits import MAX_DECOYS
 from src.sonar import analysis_tools
 from src.sonar import tma_operator
@@ -881,6 +882,11 @@ class OperatorMixin:
     def _train_lookout_glasses(self, delta_deg: float) -> None:
         """Train the binoculars relative to the bow (presentation only)."""
         self.lookout_glasses_rel = (self.lookout_glasses_rel + delta_deg) % 360.0
+
+    def _lookout_optics_key(self, event) -> bool:
+        """Tilt, zoom or stabilize the raised binoculars; True if the key was
+        theirs (presentation only)."""
+        return optics_key(self, self.lookout_optics, event.key, getattr(event, "mod", 0))
 
     def _train_lookout_glasses_to(self, bearing: float) -> None:
         self.lookout_glasses_rel = (bearing - self.ship.course) % 360.0

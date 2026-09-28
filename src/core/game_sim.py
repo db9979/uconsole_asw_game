@@ -29,6 +29,7 @@ from src.core.limits import (
 from src.sensors import radar as radar_physics
 from src.sensors import visual as visual_physics
 from src.sensors import lookout_id
+from src.sensors import nav_lights
 from src.sensors import threat_cue
 from src.sensors import hfdf as hf_physics
 from src.sonar import equation as sonar_equation
@@ -50,7 +51,7 @@ from src.sensors.esm import (
     analyze_signal,
     filter_and_sort_tracks)
 from src.sensors.platform import exchange_friendly_datalink, snapshot_observation
-from src.sonar.sonar import TowState
+from src.sonar.sonar import TowState, hull_length_m
 from src.ui import layout
 from src.ui.splash_view import SPLASH_PING_PERIOD_S
 from src.air.asm import ASM
@@ -1404,6 +1405,9 @@ class SimMixin:
         self.lookout_reports: list[dict] = []
         self._lookout_land_seen: set[int] = set()
         self._lookout_land_epoch: int | None = None
+        # Navigation lights the lookout made out, per track (never saved; the
+        # next observation restores them).
+        self._lookout_lights: dict[str, tuple] = {}
         phone_lookout.reset(self)
 
     def _lookout_environment(self) -> dict:
@@ -1415,7 +1419,7 @@ class SimMixin:
 
     def _lookout_observe(self, actor, namespace: str, kind: str,
                          seed: int, altitude_m: float | None = None,
-                         classes: tuple | None = None) -> None:
+                         classes: tuple | None = None, lit: bool = False) -> None:
         import random
 
         dx, dy = actor.x - self.ship.x, actor.y - self.ship.y
@@ -1425,10 +1429,22 @@ class SimMixin:
         alert = self.crew_effect()
         margin = alert * LOOKOUT_MODEL.margin(kind, distance, altitude_m=altitude_m,
                                               **environment)
+        bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
+        lights = None
+        if lit and kind == "FLG":
+            lights = nav_lights.aircraft_code(actor.course, bearing, distance,
+                                              environment["visibility_nm"])
+        elif lit:
+            lights = nav_lights.code(actor.course, bearing, distance, hull_length_m(actor),
+                                     environment["visibility_nm"],
+                                     nav_lights.duty(getattr(actor, "profile", None)))
+        # Navigation lights in range are seen even where the dark hull is not
+        # (a bare sighting; the class still needs the silhouette).
+        if lights is not None:
+            margin = max(margin, 1.0)
         if (margin < 1.0 or self.world.land_blocks_line(
                 self.ship.x, self.ship.y, actor.x, actor.y)):
             return
-        bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
         epoch = math.floor((self.sim_t + 1e-9) / config.LOOKOUT_EPOCH_S)
         rng = random.Random(seed * 65537 + epoch * 104729 + 0x4C4F4F4B)
         measured_bearing = (bearing + rng.uniform(
@@ -1470,6 +1486,10 @@ class SimMixin:
         published_kind = (kind if level >= lookout_id.RECOGNIZED
                           or kind in ("SURFACE", "FLG")
                           else "SURFACE" if kind == "SUB" else "UNKNOWN")
+        if lights is None:
+            self._lookout_lights.pop(track_id, None)
+        else:
+            self._lookout_lights[track_id] = (lights, self.sim_t)
         if self.lookout_phone and not called:
             # A phone holds the lookout: the bridge hears only what it calls.
             phone_lookout.see(self, track_id, published_kind, label, level,
@@ -1560,24 +1580,35 @@ class SimMixin:
                     self._lookout_observe(torpedo, "torpedo-wake", "TORP",
                                           torpedo.id, classes=("TORPEDO_WAKE",
                                                                "TORPEDO_WAKE", None))
+        # Neutral traffic runs its navigation lights; warships run darkened.
+        lit = nav_lights.lit(self.world.daylight_stage(),
+                             getattr(self.world, "visibility_nm",
+                                     config.WEATHER_VISIBILITY_MAX_NM))
+        civilians = {id(actor) for actor in self.civilians}
         for actor in sorted(self.civilians + self.warships,
                             key=lambda item: item.id):
             if not actor.sunk:
                 self._lookout_observe(
                     actor, "surface", "SURFACE", actor.sensor_seed,
-                    classes=lookout_id.surface_classes(getattr(actor, "profile", None)))
+                    classes=lookout_id.surface_classes(getattr(actor, "profile", None)),
+                    lit=lit and id(actor) in civilians)
+        self._lookout_lights = {key: value for key, value in self._lookout_lights.items()
+                                if self.sim_t - value[1] <= config.LOOKOUT_EPOCH_S * 2}
         for actor in sorted(self.subs, key=lambda item: item.id):
             if (not actor.sunk and actor.state != "SINKING"
                     and actor.depth <= config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M):
                 self._lookout_observe(actor, "sub", "SUB", actor.sensor_seed,
                                       classes=("SUBMARINE", "SUBMARINE", None))
+        # Civil aircraft show their position and anti-collision lights;
+        # military aircraft fly dark.
         for actor in sorted(self.flights.flights, key=lambda item: item.seq):
             if actor.active:
                 self._lookout_observe(
                     actor, "flight", "FLG", actor.sensor_seed + 200_000,
                     altitude_m=actor.altitude_m,
                     classes=lookout_id.aircraft_classes(
-                        getattr(actor, "kind", "military"), getattr(actor, "akey", None)))
+                        getattr(actor, "kind", "military"), getattr(actor, "akey", None)),
+                    lit=lit and getattr(actor, "kind", "military") == "civil")
         for actor in sorted(self.raiders, key=lambda item: item.seq):
             if not actor.despawned and actor.hp > 0:
                 self._lookout_observe(
@@ -1591,7 +1622,7 @@ class SimMixin:
                     actor, "live_air", "FLG", actor.seq + 800_000,
                     altitude_m=getattr(actor, "altitude_m", 0.0),
                     # Indistinguishable from simulated civil traffic.
-                    classes=lookout_id.aircraft_classes("civil", None))
+                    classes=lookout_id.aircraft_classes("civil", None), lit=lit)
         self._update_lookout_land()
 
     def _update_air_picture(self, full_scan: bool = False) -> None:

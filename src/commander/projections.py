@@ -9,7 +9,7 @@ from copy import deepcopy
 import math
 import weakref
 
-from src.core import boat_esm, boat_threat, config, opfor, plot
+from src.core import boat_esm, boat_missions, boat_threat, config, opfor, plot
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.enemies.damage_control import COMPARTMENTS, capacity_kg
@@ -1264,8 +1264,7 @@ def _opfor_common(game, status, role, boat):
     common["plot"] = (_plot(game, boat.plot, boat.sub) if role in ("uboot", "uboot_nav") else
                       dict(objects=[], max_objects=plot.MAX_OBJECTS,
                            max_label=plot.MAX_LABEL))
-    common["mission"]["objective"] = localize(
-        "uboot.objective" if not boat.sub.sunk else "uboot.objective_lost", game.tr)
+    common["mission"]["objective"] = localize(boat_missions.objective(game, boat), game.tr)
     common["audio"] = dict(events=[], callouts=boat.callouts.detached())
     common["autocrew"] = dict(enabled=False, status="off")
     common["autocrew_overview"] = []

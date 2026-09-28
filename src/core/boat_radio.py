@@ -110,6 +110,8 @@ class BoatRadio:
                 self.ack_due = True
                 self._add(now, "sent", number=self.sitreps)
                 boat.orders.event("radio_sent", number=str(self.sitreps))
+                from src.core import boat_missions
+                boat_missions.report_sent(game, boat)
         if not up:
             self.copy_since = None
             return

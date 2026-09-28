@@ -125,7 +125,7 @@ Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; 
 
 ### Hauptmenü, Speichern und Optionen
 
-- Menü: `1`-`4` Szenario (4 = Zufall mit eigener Schwierigkeit), `W` Weltmodus, `R` neuer Seed, `F` Vollbild, `Enter` Start.
+- Menü: `1`-`6` Szenario (4 = Zufall mit eigener Schwierigkeit, 5 und 6 = Bootsmissionen, siehe Referenzkapitel), `W` Weltmodus, `R` neuer Seed, `F` Vollbild, `Enter` Start.
 - **Ausbildung** (Hauptmenü): sechs geführte Lektionen, jede eine kurze Mission mit einem Hinweisbanner, das auf Sie wartet: 1 hören und peilen, 2 Zielbewegungsanalyse, 3 Torpedoangriff, 4 Hubschrauber und Sonarbojen; auf dem U-Boot (für diese beiden spielt die uConsole das Boot): 5 horchen und unter die Schicht (die Fregatte hören, als Kampfschiff klassifizieren, die Schicht per BT messen und darunter tauchen), 6 eine jagende Fregatte abschütteln (Seite Bedrohung lesen, mit `I` ausweichen, leise und tiefer als 100 m gehen, bis zwei Minuten lang kein Ping mehr kommt; die Fregatte pingt alle 45 s, bis Sie ausweichen, danach nur, solange ihre Pings Sie noch finden, und schießt nie). In den Lektionen 1, 2 und 4 ist das Boot neutral und greift nie an; Lektion 3 ist ein echter Angriff, der mit dem Versenken endet. Die übrigen Lektionen enden nach dem letzten Schritt als Sieg. `R` am Ende startet die Lektion neu. Eine gespeicherte Lektion beginnt ihre Hinweise nach dem Laden wieder bei Schritt 1 und überspringt bereits erledigte Schritte. Nach einer Lektion behält die uConsole die gespielte Seite.
 - **Kampagne** (Hauptmenü): sechs verkettete Einsätze in dem im Menü gewählten Seegebiet (Welt `W` und Seed; jeder Einsatz bleibt im selben Sektor). Übertragen werden die übrigen Torpedos (mindestens 2, höchstens 10), noch beschädigte Abteilungen, ein verlorener Hubschrauber und Ihr Ansehen bei der Führung (0-100, Start 50: +15 für einen Sieg, -20 für eine Niederlage, -10 für einen zivilen Verlust, +/-3 je erledigtem oder gescheitertem Auftrag). Nach jedem Einsatz läuft das Schiff in den Hafen: `1` volle Werftliegezeit (4 bis 8 Torpedos je nach Ansehen, alle Reparaturen, ein neuer Hubschrauber, Ansehen -5) oder `2` schnell wieder auslaufen (halbe Nachlieferung, Schäden bleiben an Bord, Ansehen +3); `Enter` läuft aus. Die Kampagne endet, wenn das Schiff verloren geht, das Ansehen unter 10 fällt oder der sechste Einsatz vorbei ist. Sie liegt in `~/.u-jagd/campaign.json`, getrennt von den Spielständen: ein während eines Kampagneneinsatzes gespeicherter Platz lädt als normale Mission; damit er zählt, wird der Einsatz aus dem Kampagnenbildschirm erneut gefahren. `N` startet eine neue Kampagne (bei laufender Kampagne zweimal).
 - `S` / `L`: Speichern / Laden (Plätze 1-5). Spielstände sind exakt und deterministisch: ein geladenes Spiel läuft identisch weiter.
@@ -1170,6 +1170,14 @@ Die obere Leiste zeigt die sieben Stationen des Boots als Reiter: `1` Führung, 
 | `0` | Wetterseite des Boots (0 oder Esc schließt) |
 | `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
 
+#### Bootsmissionen
+
+Die Szenarien 5 und 6 geben dem U-Boot das Ziel; die Fregatte muss es aufhalten. Sie sind für ein besetztes Boot gedacht (uConsole auf der Bootsseite, ein Solo-Browser als U-Boot oder eine Bootsbesatzung in den Browsern); fährt die KI das Boot, jagt es wie in jedem anderen Szenario und verfolgt das Ziel nicht. Der Auftrag des Boots steht in einer Zeile über seiner Karte und als Missionszeile der Bootsstationen im Browser.
+
+- **Durchbruch (5):** Das Zielgebiet (Radius 3 sm) liegt vom Startpunkt des Boots aus gesehen etwa 10 sm hinter der Patrouillenposition der Fregatte, in mindestens 40 m tiefem Wasser; die Bootskarte markiert es als ZIEL, der Auftrag nennt Peilung und Entfernung vom Boot. Das Boot gewinnt, sobald es das Gebiet erreicht, die Fregatte, wenn sie das Boot versenkt oder es 4 Stunden fernhält. Die Regel, dass ein Boot 150 sm von seinem Start entkommt, gilt hier nicht.
+- **Aufklärung (6):** Das Boot muss die Fregatte durch das Sehrohr sichten und im Funkraum eine Lagemeldung vollständig absetzen, während die Fregatte noch unter seinen Sichtungen ist. Der Auftrag lautet „Fregatte in Sicht“, sobald sie es ist. Eine Meldung ohne die Fregatte in Sicht zählt nicht. Die Fregatte gewinnt, wenn sie das Boot versenkt oder binnen 2 Stunden keine solche Meldung abgeht.
+- Das Abschlussfeld des Boots zeigt bei Sieg DURCHGEBROCHEN oder FREGATTE GEMELDET, bei Zeitablauf MISSION BEENDET.
+
 #### KI-Jäger
 
 Wenn niemand die Fregatte fährt (die uConsole spielt das Boot oder ein Solo-Browser das U-Boot), besetzen KI-Jäger jede Fregattenstation, die kein Browser hält; eine Station, die ein Browser übernimmt, überlassen sie ihm sofort. Sie lesen nur, was die Sensoren der Fregatte melden, nie Position oder Identität des Boots:
@@ -1190,7 +1198,8 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das Boot oder ein Solo-Bro
 - Ein ausgefahrener Mast oder Schnorchelkopf erscheint auf dem Fregattenradar nur als bloßer Punkt (siehe Kapitel OPZ).
 - Das ESM des Boots hört keine Radare anderer U-Boote und keine Flugkörpersucher; es hat keine gewichtete Bibliotheksanalyse, keine Messung der Umlaufzeit und keine Bewegungsanalyse eines Senders (die Kreuzpeilung nimmt einen langsamen Sender an).
 - Die Bibliothek des Boots zeigt nur die ersten Kandidaten in Katalogreihenfolge; bei einem X-Band-Suchradar mit vielen möglichen Treffern (dem des Hubschraubers) kann der richtige Eintrag außerhalb der Liste liegen.
-- Die Kampagne wird nur von der Fregatte aus gespielt; eine Bootskampagne und Bootsmissionen gibt es noch nicht.
+- Die Kampagne wird nur von der Fregatte aus gespielt; eine Bootskampagne gibt es noch nicht, ebenso keinen Geleitzugangriff für das Boot (seine Torpedos suchen nur die Fregatte).
+- Die KI steuert ein Boot nicht auf das Ziel einer Bootsmission zu.
 - Die KI-Jäger ordnen Radarechos, ESM und Meldungen der Führung nicht dem Boot zu und schießen kein ASROC.
 - Das Sehrohr hat eine Vergrößerung und keine Kamera; Sichtungen tragen keine Identifikation über die grobe Klasse hinaus, und das Stadimeter nimmt eine Klassenlänge statt einer Masthöhe an.
 

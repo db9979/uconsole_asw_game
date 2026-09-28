@@ -129,6 +129,14 @@ Die obere Leiste zeigt die sieben Stationen des Boots als Reiter: `1` Führung, 
 
 <!-- keys:uboot -->
 
+### Bootsmissionen {#ref-opfor-missions}
+
+Die Szenarien 5 und 6 geben dem U-Boot das Ziel; die Fregatte muss es aufhalten. Sie sind für ein besetztes Boot gedacht (uConsole auf der Bootsseite, ein Solo-Browser als U-Boot oder eine Bootsbesatzung in den Browsern); fährt die KI das Boot, jagt es wie in jedem anderen Szenario und verfolgt das Ziel nicht. Der Auftrag des Boots steht in einer Zeile über seiner Karte und als Missionszeile der Bootsstationen im Browser.
+
+- **Durchbruch (5):** Das Zielgebiet (Radius 3 sm) liegt vom Startpunkt des Boots aus gesehen etwa 10 sm hinter der Patrouillenposition der Fregatte, in mindestens 40 m tiefem Wasser; die Bootskarte markiert es als ZIEL, der Auftrag nennt Peilung und Entfernung vom Boot. Das Boot gewinnt, sobald es das Gebiet erreicht, die Fregatte, wenn sie das Boot versenkt oder es 4 Stunden fernhält. Die Regel, dass ein Boot 150 sm von seinem Start entkommt, gilt hier nicht.
+- **Aufklärung (6):** Das Boot muss die Fregatte durch das Sehrohr sichten und im Funkraum eine Lagemeldung vollständig absetzen, während die Fregatte noch unter seinen Sichtungen ist. Der Auftrag lautet „Fregatte in Sicht“, sobald sie es ist. Eine Meldung ohne die Fregatte in Sicht zählt nicht. Die Fregatte gewinnt, wenn sie das Boot versenkt oder binnen 2 Stunden keine solche Meldung abgeht.
+- Das Abschlussfeld des Boots zeigt bei Sieg DURCHGEBROCHEN oder FREGATTE GEMELDET, bei Zeitablauf MISSION BEENDET.
+
 ### KI-Jäger {#ref-opfor-hunters}
 
 Wenn niemand die Fregatte fährt (die uConsole spielt das Boot oder ein Solo-Browser das U-Boot), besetzen KI-Jäger jede Fregattenstation, die kein Browser hält; eine Station, die ein Browser übernimmt, überlassen sie ihm sofort. Sie lesen nur, was die Sensoren der Fregatte melden, nie Position oder Identität des Boots:
@@ -149,7 +157,8 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das Boot oder ein Solo-Bro
 - Ein ausgefahrener Mast oder Schnorchelkopf erscheint auf dem Fregattenradar nur als bloßer Punkt (siehe Kapitel OPZ).
 - Das ESM des Boots hört keine Radare anderer U-Boote und keine Flugkörpersucher; es hat keine gewichtete Bibliotheksanalyse, keine Messung der Umlaufzeit und keine Bewegungsanalyse eines Senders (die Kreuzpeilung nimmt einen langsamen Sender an).
 - Die Bibliothek des Boots zeigt nur die ersten Kandidaten in Katalogreihenfolge; bei einem X-Band-Suchradar mit vielen möglichen Treffern (dem des Hubschraubers) kann der richtige Eintrag außerhalb der Liste liegen.
-- Die Kampagne wird nur von der Fregatte aus gespielt; eine Bootskampagne und Bootsmissionen gibt es noch nicht.
+- Die Kampagne wird nur von der Fregatte aus gespielt; eine Bootskampagne gibt es noch nicht, ebenso keinen Geleitzugangriff für das Boot (seine Torpedos suchen nur die Fregatte).
+- Die KI steuert ein Boot nicht auf das Ziel einer Bootsmission zu.
 - Die KI-Jäger ordnen Radarechos, ESM und Meldungen der Führung nicht dem Boot zu und schießen kein ASROC.
 - Das Sehrohr hat eine Vergrößerung und keine Kamera; Sichtungen tragen keine Identifikation über die grobe Klasse hinaus, und das Stadimeter nimmt eine Klassenlänge statt einer Masthöhe an.
 

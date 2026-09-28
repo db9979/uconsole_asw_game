@@ -7,13 +7,15 @@ from src.core import config
 
 ROOT = Path(__file__).resolve().parents[1]
 KEYS = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
-        "s3_abfang": "intercept", "s4_zufall": "random"}
+        "s3_abfang": "intercept", "s4_zufall": "random",
+        "s5_durchbruch": "breakthrough", "s6_aufklaerung": "recon"}
 
 
 def test_menu_goal_and_loss_lines_are_translated():
     catalogs = [json.loads((ROOT / f"data/i18n/{lang}.json").read_text(encoding="utf-8"))
                 for lang in ("en", "de")]
-    assert set(KEYS) == set(config.SCENARIOS)
+    assert set(KEYS) == set(config.SCENARIOS) == set(config.SCENARIO_ORDER)
+    assert config.SCENARIO_NAMES == KEYS
     for scenario, name in KEYS.items():
         spec = config.SCENARIOS[scenario]
         wanted = ["title", "brief"]

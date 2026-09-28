@@ -465,10 +465,10 @@ class DrawMixin:
                          (0, config.TOP_BAR_H - 1),
                          (config.SCREEN_W, config.TOP_BAR_H - 1), 1)
         station = display_value("station", self.station.name, self.tr).upper()
-        scenario = self.top_bar_scenario()
-        txt = self.tr("top.status", station=station, scenario=scenario,
-                      time=self.world.format_time(), speed=f"{self.ship.speed:4.1f}",
-                      course=f"{self.ship.course:4.0f}")
+        # Speed and course live in the telemetry band; the bar names only
+        # the station and the clock.
+        txt = self.tr("top.status", station=station,
+                      time=self.world.format_time())
         layout.blit_line(s, txt, (10, 4, config.SCREEN_W - 20,
                                   config.TOP_BAR_H - 8),
                          config.COLOR_TEXT, size=18)

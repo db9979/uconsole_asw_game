@@ -9,7 +9,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import (display_message, display_value, localized, localize,
-                            message as structured_message, short_candidates)
+                            message as structured_message)
 from src.sonar import analysis_tools, tma_operator
 from src.ui import layout
 from src.ui import observations
@@ -60,8 +60,8 @@ def _panels(game, page):
     # Tightened top/bottom margins (was +73/-124): the larger operational
     # font floor needs a few extra px in `details` so worst-case content
     # (e.g. a fully evidenced TMA solution) never clips.
-    body = pygame.Rect(station.x + 12, station.y + 69,
-                       station.w - 24, station.h - 111)
+    body = pygame.Rect(station.x + 12, station.y + 43,
+                       station.w - 24, station.h - 68)
     rail_w = min(350, max(240, round(body.w * .28)))
     main = pygame.Rect(body.x, body.y, body.w - rail_w - 12, body.h)
     rail = pygame.Rect(main.right + 12, body.y, rail_w, body.h)
@@ -121,6 +121,19 @@ def _list_rows(game, rect, page):
             for index, item in enumerate(rows)], total
 
 
+def _array_readout(game):
+    """Array in use; a towed/variable-depth array adds its state until ready."""
+    sonar = game.sonar
+    mode = getattr(game, "sonar_mode", "BOW")
+    name = display_value("array", mode)
+    status = (_vds_status(sonar) if mode == "VDS" else None) or (
+        _tow_status(sonar, getattr(_sonar_observer(game), "speed", 0.0))
+        if mode != "BOW" else None)
+    if status is None or status["available"]:
+        return name
+    return f"{name} {status['payout_percent']:.0f}%"
+
+
 def sonar_geometry(game, page=None):
     """Return the canonical rectangles used by both sonar draw and hit paths."""
     layout.configure_for(game)
@@ -131,53 +144,50 @@ def sonar_geometry(game, page=None):
     tabs = [pygame.Rect(tab_x + i * tab_w, station.y + 9, tab_w - 5, 27)
             for i in range(len(PAGES))]
     main, details, contacts = _panels(game, page)
-    footer_specs = (
-        (("PAGEUP/DN", "sonar.footer.page", "", display_value("sonar_page", PAGES[page])),
-         ("SHIFT+B", "sonar.footer.array", "", display_value("array", getattr(game, "sonar_mode", "BOW"))),
-         ("I/O", "sonar.footer.gain", "", f"{getattr(game.sonar, 'gain_db', 0):+.0f} dB"),
-         ("F/D", "sonar.footer.band_filter", "", f"{getattr(game.sonar, 'band_low_hz', 0):.0f}-{getattr(game.sonar, 'band_high_hz', 300):.0f} Hz")),
-        (("K", "sonar.footer.harmonic", "", (f"{_selected_harmonic(game):.1f} Hz"
-                                                if _selected_harmonic(game) is not None
-                                                else localize("ui.off"))),
-         ("N", "sonar.footer.notch", "", localize("ui.on" if getattr(game.sonar, "notch_enabled", False) else "ui.off")),
-         ("SPACE", "sonar.footer.peak", "", localize("ui.on" if getattr(game.sonar, "peak_hold", False) else "ui.off")),
-         ("J", "sonar.footer.audio", "", localize("ui.on" if getattr(game, "sonar_audio_enabled", False) else "ui.off"))),
-    )
-    actions = (("page", "array", "gain", "band_filter"),
-               ("harmonic", "notch", "peak", "audio"))
+    sonar = game.sonar
+    on_off = lambda flag: localize("ui.on" if flag else "ui.off")
+    array = ("SHIFT+B", "sonar.footer.array", "", _array_readout(game))
+    gain = ("I/O", "sonar.footer.gain", "", f"{getattr(sonar, 'gain_db', 0):+.0f} dB")
+    band = ("F/D", "sonar.footer.band_filter", "",
+            f"{getattr(sonar, 'band_low_hz', 0):.0f}-{getattr(sonar, 'band_high_hz', 300):.0f} Hz")
+    notch = ("N", "sonar.footer.notch", "", on_off(getattr(sonar, "notch_enabled", False)))
+    audio = ("J", "sonar.footer.audio", "", on_off(getattr(game, "sonar_audio_enabled", False)))
+    # One row of at most four main keys per page; the rest lives in F1.
+    specs = ((array, "array"), (gain, "gain"),
+             (("SPACE", "sonar.footer.peak", "", on_off(getattr(sonar, "peak_hold", False))), "peak"),
+             (audio, "audio"))
     tools = getattr(game, "sonar_tools", None)
     if page in (1, 2) and tools is not None:
         # Analysis pages: the operator's cursor tools replace peak/audio.
         cursor = tools.lofar_cursor_hz if page == 1 else tools.demon_cursor_hz
+        harmonic = _selected_harmonic(game)
         mark = (structured_message("sonar.footer.demon_marks",
                                    shaft="--" if tools.shaft_hz is None else f"{tools.shaft_hz:.1f}",
                                    blade="--" if tools.blade_hz is None else f"{tools.blade_hz:.1f}")
-                if page == 2 else footer_specs[1][0][3])
-        footer_specs = (footer_specs[0], (
-            ("K", "sonar.footer.mark", "", mark),
-            ("Z/X", "sonar.footer.cursor", "", f"{cursor:.1f} Hz"),
-            ("Q", "sonar.footer.integration", "", f"{tools.integration_s} s"),
-            footer_specs[1][1]))
-        actions = (actions[0], ("harmonic", "cursor", "integration", "notch"))
+                if page == 2 else
+                f"{harmonic:.1f} Hz" if harmonic is not None else localize("ui.off"))
+        specs = ((("K", "sonar.footer.mark", "", mark), "harmonic"),
+                 (("Z/X", "sonar.footer.cursor", "", f"{cursor:.1f} Hz"), "cursor"),
+                 (("Q", "sonar.footer.integration", "", f"{tools.integration_s} s"), "integration"),
+                 (band, "band_filter") if page == 1 else (gain, "gain"))
+    elif page in (1, 4):
+        specs = ((array, "array"), (gain, "gain"), (band, "band_filter"), (notch, "notch"))
     contact = getattr(game, "selected_contact", None)
     if page == 3 and contact is not None and hasattr(game, "tma_hypothesis"):
         hypothesis = game.tma_hypothesis(contact)
         evaluation = game.tma_evaluation(contact)
-        footer_specs = (footer_specs[0], (
-            ("K", "sonar.footer.tma_accept", "",
-             "--" if evaluation is None else f"{evaluation['fit']:.0%}"),
-            ("Z/X", "sonar.footer.tma_course", "", f"{hypothesis.course:05.1f}\u00b0"),
-            ("^Z/^X", "sonar.footer.tma_speed", "", f"{hypothesis.speed_kn:.1f} kn"),
-            ("Q", "sonar.footer.tma_range", "", f"{hypothesis.range_nm:.1f} NM")))
-        actions = (actions[0], ("tma_accept", "cursor", "cursor", "cursor"))
+        specs = (
+            (("K", "sonar.footer.tma_accept", "",
+              "--" if evaluation is None else f"{evaluation['fit']:.0%}"), "tma_accept"),
+            (("Z/X", "sonar.footer.tma_course", "", f"{hypothesis.course:05.1f}\u00b0"), "cursor"),
+            (("^Z/^X", "sonar.footer.tma_speed", "", f"{hypothesis.speed_kn:.1f} kn"), "cursor"),
+            (("Q", "sonar.footer.tma_range", "", f"{hypothesis.range_nm:.1f} NM"), "cursor"))
     footer = []
-    for row, specs in enumerate(footer_specs):
-        width = (station.w - 28) // len(specs)
-        for index, (spec, action) in enumerate(zip(specs, actions[row])):
-            rect = pygame.Rect(station.x + 14 + index * width,
-                               station.bottom - 42 + row * 21,
-                               width - 6, 19)
-            footer.append(dict(rect=rect, action=action, text=spec, safe=True))
+    width = (station.w - 28) // len(specs)
+    for index, (spec, action) in enumerate(specs):
+        rect = pygame.Rect(station.x + 14 + index * width,
+                           station.bottom - 22, width - 6, 19)
+        footer.append(dict(rect=rect, action=action, text=spec, safe=True))
     return dict(station=station, tabs=tabs, main=main, details=details,
                 contacts=contacts, footer=footer)
 
@@ -848,7 +858,7 @@ def _draw_active(game, panel, tr=None):
     readiness = translate("ui.ready") if ready else f"{remaining:.0f}s"
     _text(screen, message("sonar.line.ping_history", ping=translate('PING'),
                           readiness=readiness, count=len(echoes),
-                          window=translate('sonar.echo_window'), fade=translate('sonar.echo_fade')),
+                          window=translate('sonar.echo_window')),
           (panel.x + 16, panel.y + 36, panel.w - 32, 20),
           CYAN if ready else AMBER, 13)
 
@@ -955,8 +965,6 @@ def _draw_waterfall(game, panel, page):
                     lx = plot.x + round(value / 360 * (plot.w - 1))
                     pygame.draw.line(screen, (139, 91, 71),
                                      (lx, plot.y), (lx, plot.bottom - 1), 1)
-        _text(screen, "sonar.intensity",
-              (plot.x, plot.bottom + 24, plot.w - 160, 18), DIM, 12)
     else:
         spectrum_rect = pygame.Rect(plot.x, panel.y + 56, plot.w, 42)
         pygame.draw.rect(screen, NAVY, spectrum_rect)
@@ -1265,8 +1273,6 @@ def _draw_tma(game, panel):
     track = getattr(game.sonar, "_tracks", {}).get(getattr(contact, "target_id", None))
     points = getattr(track, "pts", [])
     _text(screen, "sonar.tma_title", (panel.x + 16, panel.y + 10, panel.w - 32, 24), CYAN, 16)
-    _text(screen, "sonar.tma_caption",
-          (panel.x + 16, panel.y + 37, panel.w - 32, 20), DIM, 12)
     plot, times, bearings, xy = _tma_plot(panel, points)
     pygame.draw.rect(screen, NAVY, plot)
     summary = tma_observation_summary(
@@ -1289,7 +1295,7 @@ def _draw_tma(game, panel):
     method = getattr(game, "tma_method", "hypothesis")
     _text(screen, message("sonar.tma_method_line",
                           method=display_message("tma_method", method)),
-          (panel.x + 16, panel.y + 37, panel.w - 32, 20), AMBER, 12, "right")
+          (panel.x + 16, panel.y + 37, panel.w - 32, 20), AMBER, 12)
     if len(points):
         with layout.clip_to(screen, plot):
             if len(xy) > 1:
@@ -1545,6 +1551,10 @@ def _detail_rows(game, page):
             "array", getattr(game, "sonar_mode", "BOW")), state=localize(
             "sonar.track" if getattr(sonar, "focus_locked", False) else "ui.manual")), DIM),
     ))
+    array_state = _array_state_line(game)
+    if array_state is not None:
+        # Replaces the former header chip: shown on every page while it matters.
+        rows.append((array_state, AMBER, 12))
     tools = getattr(game, "sonar_tools", None)
     assist = bool(getattr(game, "operator_assist", lambda: True)())
     if page in (1, 2) and tools is not None:
@@ -1664,8 +1674,7 @@ def _detail_rows(game, page):
         echoes = active_echoes(sonar, getattr(game, "sim_t", 0.0))
         newest = echoes[-1] if echoes else None
         lines = [message("sonar.line.echo_history", count=len(echoes), maximum=getattr(config, 'SONAR_ECHO_HISTORY_MAX', 80)),
-                 message("sonar.line.time_window", seconds=f"{ACTIVE_HISTORY_WINDOW_S:.0f}"),
-                  "sonar.sigma_legend"]
+                 message("sonar.line.time_window", seconds=f"{ACTIVE_HISTORY_WINDOW_S:.0f}")]
         if newest is not None:
             depth = newest.get("depth_m")
             depth_sigma = newest.get("depth_sigma_m")
@@ -1700,7 +1709,7 @@ def _detail_rows(game, page):
                   message("sonar.line.tma_motion",
                           course=f"{course % 360:05.1f}" if course is not None else "--",
                           speed=f"{speed:.1f}" if speed is not None else "--"),
-                  "sonar.depth_not_tma"]
+                  ]
         closing_kn = tma_closing_rate_kn(
             _sonar_observer(game), getattr(contact, "bearing", 0.0), course, speed)
         lines.append(message(
@@ -1749,11 +1758,35 @@ def _detail_rows(game, page):
             lines += ["sonar.harmonic_not_selected"]
         lines += ["sonar.lines_not_identification"]
     else:
-        lines += ["sonar.passive_360", "sonar.noise_visible",
-                  "sonar.listen_legend", "sonar.beam_legend",
-                  "sonar.class_operator_input"]
+        # Legends and interpretation notes live in F1, not on the scope.
+        lines.append(_ping_line(game))
     rows.extend((line, DIM, 13) for line in lines)
     return rows
+
+
+def _array_state_line(game):
+    """Towed or variable-depth array while it is moving or not yet ready."""
+    sonar = game.sonar
+    speed = getattr(_sonar_observer(game), "speed", 0.0)
+    for name, status in (("VDS", _vds_status(sonar)), ("TAS", _tow_status(sonar, speed))):
+        if status is None or status["state"] == "STOWED" or status["available"]:
+            continue
+        pause = (" " + localize(message("ui.pause"))
+                 if not status["handling_ok"] and status["state"] in (
+                     "DEPLOYING", "RETRIEVING") else "")
+        return message("sonar.line.array_state", array=name,
+                       state=display_message("tow", status["state"]),
+                       payout=f"{status['payout_percent']:.0f}",
+                       stability=f"{status['performance']:.0%}", pause=pause)
+    return None
+
+
+def _ping_line(game):
+    sonar = game.sonar
+    return (message("sonar.ping_echo") if getattr(sonar, "ping_active", False) else
+            message("sonar.ping_ready") if getattr(sonar, "ping_ready", True) else
+            message("sonar.ping_cooldown", seconds=
+                    f"{getattr(sonar, 'ping_cooldown_remaining', 0):.0f}"))
 
 
 def _draw_details(game, rect, page):
@@ -1853,7 +1886,6 @@ def draw_sonar_view(game, tr=None) -> None:
     page = int(getattr(game, "sonar_page", 0)) % len(PAGES)
     geometry = sonar_geometry(game, page)
     station = geometry["station"]
-    sonar = game.sonar
     with layout.clip_to(screen, station):
         screen.fill(NAVY, station)
         pygame.draw.line(screen, CYAN, station.topleft, (station.right - 1, station.y), 2)
@@ -1868,67 +1900,6 @@ def draw_sonar_view(game, tr=None) -> None:
             _text(screen, display_value("sonar_page", name, translate),
                   tab.move(6, 3).inflate(-12, 0),
                    CYAN if i == page else DIM, 14)
-        mode = getattr(game, 'sonar_mode', 'BOW')
-        tow = _tow_status(sonar, getattr(_sonar_observer(game), "speed", 0.0))
-        if mode == "VDS" and _vds_status(sonar) is not None:
-            # The chip reports the deployable array in use.
-            tow = _vds_status(sonar)
-        tow_pause = (" " + localize(message("ui.pause"))
-                     if not tow["handling_ok"] and tow["state"] in (
-                         "DEPLOYING", "RETRIEVING") else "")
-        tow_ready = (message("ui.ready") if tow["available"] else
-                     message("sonar.stability", value=f"{tow['performance']:.0%}"))
-        ping = (message("sonar.ping_echo") if getattr(sonar, "ping_active", False) else
-                message("sonar.ping_ready") if getattr(sonar, "ping_ready", True) else
-                message("sonar.ping_cooldown", seconds=
-                        f"{getattr(sonar, 'ping_cooldown_remaining', 0):.0f}"))
-        audio_status = getattr(game, "sonar_audio_status", None)
-        audio = (audio_status() if audio_status is not None else dict(
-            global_enabled=bool(getattr(getattr(game, "audio", None), "enabled", False)),
-            device_available=bool(getattr(getattr(game, "audio", None), "available", False)),
-            local_enabled=bool(getattr(game, "sonar_audio_enabled", False)),
-            mode=getattr(sonar, "audition_mode", "BROADBAND"),
-            volume=float(getattr(game, "sonar_volume", 0.0)),
-            audible=False))
-        on_off = lambda flag: message("ui.on" if flag else "ui.off")
-        statuses = (
-            message("sonar.status.array", array=display_message("array", mode),
-                    state=display_message("tow", tow["state"]),
-                    payout=f"{tow['payout_percent']:.0f}", ready=tow_ready,
-                    pause=tow_pause),
-            message("sonar.status.listen",
-                    bearing=f"{getattr(sonar, 'listen_bearing', 0) % 360:05.1f}",
-                    gain=f"{getattr(sonar, 'gain_db', 0):+.0f}", ping=ping),
-            message("sonar.status.filter",
-                    mode=display_message("audition_mode", audio["mode"]),
-                    low=f"{getattr(sonar, 'band_low_hz', 0):.0f}",
-                    high=f"{getattr(sonar, 'band_high_hz', 300):.0f}",
-                    notch=on_off(getattr(sonar, "notch_enabled", False))),
-            message("sonar.status.audio",
-                    global_state=on_off(audio["global_enabled"]),
-                    device=on_off(audio["device_available"]),
-                    local_state=on_off(audio["local_enabled"]),
-                    volume=f"{audio['volume']:.0%}",
-                    state=message("sonar.audio.stale" if audio.get("stale")
-                                  else "sonar.audio.audible" if audio["audible"]
-                                  else "sonar.audio.silent")),
-        )
-        # Chips share the row by need: full wording when everything fits,
-        # otherwise the catalog abbreviations, never a clipped reading.
-        chip_font = layout.font(13)
-        room = station.w - 28 - 8 * len(statuses) - 14 * len(statuses)
-        forms = [layout.fit_line(item, chip_font, 10_000) for item in statuses]
-        if sum(chip_font.size(text)[0] for text in forms) > room:
-            forms = [localize((short_candidates(item) or [item])[-1]) for item in statuses]
-        natural = [max(1, chip_font.size(text)[0]) for text in forms]
-        spare = max(0, room - sum(natural)) // len(statuses)
-        x = station.x + 14
-        for status, width in zip(forms, natural):
-            status_rect = pygame.Rect(x, station.y + 43, width + spare + 14, 23)
-            x = status_rect.right + 8
-            pygame.draw.rect(screen, PANEL, status_rect)
-            _text(screen, status, status_rect.move(7, 3).inflate(-14, 0),
-                  CYAN if i == 0 else DIM, 13)
         main, details, contacts = (geometry["main"], geometry["details"],
                                    geometry["contacts"])
         for role, rect in (("sonar-main", main), ("sonar-details", details),

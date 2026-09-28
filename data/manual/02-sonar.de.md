@@ -6,7 +6,7 @@ Die Sonarzentrale ist der Hauptsensor der U-Jagd. Sie horcht passiv mit Bugsonar
 
 ## Anzeigen und Instrumente {#sonar-displays}
 
-Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert sie.
+Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert sie. Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpeilung und die Ping-Bereitschaft; ein Schlepp- oder Tiefensonar, das gerade aus- oder einfährt oder noch nicht bereit ist, erscheint auf jeder Seite gelb mit Kabellänge, Stabilität und PAUSE, wenn die Handhabung außerhalb der Grenzen liegt. Die eine Tastenzeile unten zeigt die vier Haupttasten der Seite mit ihren Werten; alle übrigen Tasten stehen in der F1-Hilfe. Auf BREITBAND ist die gelbe Linie die Hörpeilung und die grauen Linien die Grenzen des Hörstrahls; dunkel heißt leise, türkis laut.
 
 | Seite | Zeigt | Wofür |
 |---|---|---|

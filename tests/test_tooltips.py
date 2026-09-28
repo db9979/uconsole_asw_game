@@ -165,7 +165,7 @@ def test_sonar_contact_tooltip_does_not_read_truth_attributes(monkeypatch):
     sonar = NS(active_contacts=lambda: [contact])
     fake = NS(sonar=sonar, sonar_page=0, selected_contact=contact,
               sim_t=100.0, station=Station.SONAR)
-    payload = sonar_view.sonar_hit_target(fake, (950, 380))
+    payload = sonar_view.sonar_hit_target(fake, (950, 400))
     assert payload["id"] == "sonar:contact:7"
 
 

@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.16**
+Current release: **1.3.18**
 
-Release 1.3.16 adds an **A4 poster** in German and English (PNG at 300 dpi
+Release 1.3.18 adds an **A4 poster** in German and English (PNG at 300 dpi
 and PDF) in `docs/poster/`: the start-screen scene, a short description of the
 uConsole and Windows versions, four screenshots and QR codes for the download
 and the support page. `tools/build_poster.py` renders it again from the
@@ -136,7 +136,7 @@ starter shows the browser address, the join code and a QR code; station
 requests are approved in the game window (F9) as on the uConsole. Windows may
 ask once whether U-Jagd may use private networks: allow it, otherwise other
 devices cannot connect. **Stop server** ends the game (unsaved progress is
-lost); the game log is kept in `%USERPROFILE%\.u-jagd\logs\server.log`.
+lost), and the link at the bottom opens the "Buy me a coffee" page; the game log is kept in `%USERPROFILE%\.u-jagd\logs\server.log`.
 
 At every start the program asks GitHub whether a newer release exists and
 offers **Install update**: it downloads the new file, checks its size and

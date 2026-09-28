@@ -5229,7 +5229,7 @@
   "campaign.port_refit": "1 Volle Werftliegezeit: {torpedoes} Torpedos, alle Reparaturen, neuer Hubschrauber (Ansehen -5)",
   "campaign.port_quick": "2 Schnell wieder auslaufen: {torpedoes} Torpedos, Schäden bleiben an Bord (Ansehen +3)",
   "campaign.sail_hint": "Enter: zum nächsten Einsatz auslaufen",
-  "campaign.menu_hint": "Enter auslaufen · 1/2 Hafenwahl · N neue Kampagne · Esc zurück",
+  "campaign.menu_hint": "Enter auslaufen · 1/2 Hafenwahl · N neue Kampagne · Tab Fregatte/Boot · Esc zurück",
   "campaign.confirm_new": "N erneut drücken, um die laufende Kampagne zu ersetzen",
   "campaign.scenario.s1_patrouille": "Patrouille",
   "campaign.scenario.s2_doppeljagd": "Doppeljagd",
@@ -5563,5 +5563,15 @@
   "uboot.objective.convoy_attack": "{target} der {total} Handelsschiffe des Geleitzugs versenken ({sunk} versenkt)",
   "uboot.end.convoy_sunk": "GELEITZUG GETROFFEN - SIEG",
   "runtime.merchant_torpedoed": "Torpedodetonation im Geleitzug: ein Handelsschiff ist getroffen",
-  "commander.web.scenario_s7_geleitzug": "Geleitzug (Boot)"
+  "commander.web.scenario_s7_geleitzug": "Geleitzug (Boot)",
+  "campaign.boat.title": "Bootskampagne",
+  "campaign.boat.none": "Noch keine Bootskampagne. N startet eine in diesem Seegebiet; du führst das U-Boot.",
+  "campaign.boat.standing": "Ansehen bei der U-Boot-Führung {reputation}/100 · Torpedos an Bord {torpedoes}",
+  "campaign.boat.condition": "Rumpfschaden {damage} %",
+  "campaign.boat.full_load": "volle Beladung",
+  "campaign.boat.status_lost": "Kampagne beendet: Boot verloren oder Kommandant abgelöst. N startet eine neue.",
+  "campaign.boat.port_refit": "1 Volle Überholung: volle Torpedobeladung, Rumpf repariert (Ansehen -5)",
+  "campaign.boat.port_quick": "2 Schnelles Auslaufen: {torpedoes} Torpedos, Rumpfschaden {damage} % bleibt (Ansehen +3)",
+  "campaign.boat.sail_hint": "Enter: zur nächsten Bootsmission auslaufen",
+  "launcher.support": "Gefällt dir U-Jagd? Spendier mir einen Kaffee"
 }

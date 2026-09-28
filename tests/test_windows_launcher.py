@@ -248,3 +248,19 @@ def test_launcher_prose_is_in_both_catalogs():
             keys.update(re.findall(r'"(launcher\.[a-z_.]+)"', handle.read()))
     en, de = load_catalog("en"), load_catalog("de")
     assert keys and keys <= set(en) and keys <= set(de)
+
+
+def test_update_restart_drops_the_old_extraction_directory():
+    env = update.clean_environment({
+        "PATH": r"C:\Windows", "_PYI_APPLICATION_HOME_DIR": r"C:\Temp\_MEI123",
+        "_PYI_ARCHIVE_FILE": r"C:\Games\U-Jagd-Windows.exe",
+        "_PYI_PARENT_PROCESS_LEVEL": "1", "_MEIPASS2": r"C:\Temp\_MEI123"})
+    assert env == {"PATH": r"C:\Windows", "PYINSTALLER_RESET_ENVIRONMENT": "1"}
+
+
+def test_starter_links_the_support_page():
+    from src.ui.support import SUPPORT_URL
+
+    source = open(app.__file__, encoding="utf-8").read()
+    assert "launcher.support" in source and "SUPPORT_URL" in source
+    assert SUPPORT_URL.startswith("https://buymeacoffee.com/")

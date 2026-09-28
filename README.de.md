@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.16**
+Aktuelle Version: **1.3.18**
 
-Version 1.3.16 bringt ein **A4-Werbeplakat** auf Deutsch und Englisch (PNG mit
+Version 1.3.18 bringt ein **A4-Werbeplakat** auf Deutsch und Englisch (PNG mit
 300 dpi und PDF) in `docs/poster/`: die Szene des Startbildschirms, eine kurze
 Beschreibung der uConsole- und Windows-Version, vier Screenshots und QR-Codes
 zum Download und zur Unterstützerseite. `tools/build_poster.py` rendert es aus
@@ -139,7 +139,8 @@ zeigt Browser-Adresse, Beitrittscode und QR-Code; Stationsanfragen bestätigst
 du wie auf dem uConsole im Spielfenster (F9). Windows fragt eventuell einmal,
 ob U-Jagd private Netzwerke nutzen darf: zulassen, sonst können sich andere
 Geräte nicht verbinden. **Server stoppen** beendet das Spiel (nicht
-gespeicherter Fortschritt geht verloren); das Protokoll liegt in
+gespeicherter Fortschritt geht verloren), und der Link unten öffnet die
+"Buy me a coffee"-Seite; das Protokoll liegt in
 `%USERPROFILE%\.u-jagd\logs\server.log`.
 
 Bei jedem Start fragt das Programm GitHub, ob es ein neueres Release gibt, und

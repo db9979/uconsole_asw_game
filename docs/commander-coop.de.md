@@ -50,6 +50,16 @@ ab, wenn die Anwesenheitsabfrage aussetzt. Veröffentliche niemals echte
 Kopplungscodes, Cookies oder CSRF-Token in Bildschirmfotos, Protokollen oder
 Fehlerberichten.
 
+**Windows-PC als Server.** `U-Jagd-Windows.exe` (siehe README-Abschnitt
+"Windows-Programm") führt dasselbe Spiel auf einem Windows-PC aus. Das
+Starterfenster startet das Spiel mit `--remote-crew` oder `--solo-crew`, der
+Listener läuft also schon auf der privaten LAN-Adresse des PCs (Schritte 1-5
+entfallen), und es zeigt URL, Kopplungscode und QR-Code. Die Schritte 6-8
+bleiben gleich: Stationsanfragen bestätigt der Host im Spielfenster (F9). Den
+Hotspot-Modus gibt es nur unter Linux. Erlaube U-Jagd private Netzwerke, wenn
+die Windows-Firewall fragt. `python main.py --remote-crew` macht dasselbe
+unter Linux.
+
 ## Rollensteuerung
 
 - Der Host vergibt pro Station genau einen exklusiven Besitzer. Ein Client kann

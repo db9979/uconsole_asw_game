@@ -23,6 +23,13 @@ def main(argv=None) -> int:
                         help="start Remote Crew in solo mode for this launch: one "
                              "paired browser operates every station and the game "
                              "controls (never persisted)")
+    parser.add_argument("--remote-crew", action="store_true",
+                        help="start Remote Crew in crew mode on the first private "
+                             "LAN address for this launch (as F9 would)")
+    parser.add_argument("--status-file", metavar="PATH",
+                        help="write the Remote Crew address and join code as JSON "
+                             "to PATH whenever they change (used by the Windows "
+                             "starter)")
     parser.add_argument("--play-sub", action="store_true",
                         help="the uConsole plays the hostile submarine for this "
                              "launch; the frigate is crewed through Remote Crew "
@@ -43,6 +50,8 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if args.web_host and (args.solo_crew or not args.public_origin):
         parser.error("--web-host requires --public-origin and excludes --solo-crew")
+    if args.remote_crew and (args.web_host or args.solo_crew):
+        parser.error("--remote-crew excludes --web-host and --solo-crew")
     if args.web_bind != "127.0.0.1" and not args.web_host:
         parser.error("--web-bind requires --web-host")
     if args.reset_web_host_password and not args.web_host:
@@ -59,9 +68,9 @@ def main(argv=None) -> int:
             valid_origin = False
         if not valid_origin:
             parser.error("--public-origin must be an exact HTTPS origin")
+    if not 1024 <= args.web_port <= 65535:
+        parser.error("--web-port must be between 1024 and 65535")
     if args.web_host:
-        if not 1024 <= args.web_port <= 65535:
-            parser.error("--web-port must be between 1024 and 65535")
         try:
             bind = ipaddress.IPv4Address(args.web_bind)
         except ipaddress.AddressValueError:
@@ -100,8 +109,14 @@ def main(argv=None) -> int:
     elif args.public_origin is not None:
         # Local game: Remote Crew (F9) also answers behind this HTTPS proxy.
         game.commander.public_origin = args.public_origin
+    if args.status_file:
+        game.commander.status_path = os.path.abspath(args.status_file)
+    if (args.solo_crew or args.remote_crew) and args.web_port != 8765:
+        game.commander.port = args.web_port
     if args.solo_crew:
         game.commander.autostart_solo()
+    elif args.remote_crew:
+        game.commander.autostart()
     if getattr(args, "play_sub", False):
         game.local_side = "uboot"
     game.run()

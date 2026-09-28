@@ -12,14 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.12**
+Current release: **1.3.13**
 
-Release 1.3.12 refreshes the screenshots on this page from the current game
-(the uConsole at 1280 x 720, including the crewed submarine's stations, and the
-Remote Crew browser in Chromium) and moves the release history into
-[CHANGELOG.md](CHANGELOG.md), so this page shows only the latest release.
-`tools/capture_screenshots.py` and `tools/capture_commander.py` regenerate
-every image. Saves stay v23.
+Release 1.3.13 renders the uConsole screenshots after three simulated
+minutes instead of six seconds, so waterfalls, plots and contact lists are
+filled, and shows the Mission Editor with the packaged example mission (library
+and seeded sector preview) instead of an empty library. The README now links
+the menu and editor views too. Saves stay v23.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -62,6 +61,14 @@ Submarine stations: [Command](docs/screenshots/uboot-command.png),
 
 Damage-control example with authored flooding, fire, lost zones and repair teams:
 [F-217 damage schematic](docs/screenshots/damage-control-alert.png).
+
+Menus and editors: [scenario selection](docs/screenshots/mission-scenario-selection.png),
+[briefing](docs/screenshots/mission-briefing.png),
+[options](docs/screenshots/options.png),
+[Mission Editor](docs/screenshots/mission-editor.png) with its
+[seeded preview](docs/screenshots/mission-editor-detail.png),
+[Unit Editor](docs/screenshots/unit-editor.png), and the
+[tactical unit analyzer](docs/screenshots/contact-analyzer.png).
 
 ### Remote Crew browser
 

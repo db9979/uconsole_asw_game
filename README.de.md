@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.48**
+Aktuelle Version: **1.3.49**
 
-Version 1.3.48 repariert die Remote-Crew-Kopplung im LAN. Ein frisch
+Version 1.3.49 repariert die Remote-Crew-Kopplung im LAN. Ein frisch
 gekoppelter Browser begrüßt nicht mehr mit „Deine Station wurde widerrufen oder
 freigegeben“, als wäre die Kopplung gescheitert, sondern mit der Aufforderung,
 eine freie Station zu nehmen. Die Crew-Seite sagt jetzt, wenn sie in einem
@@ -35,55 +35,80 @@ Anspruch, geheime Fähigkeiten, Daten oder Einsatzgrundsätze nachzubilden.
 
 ### uConsole (1280 x 720)
 
-![U-Jagd-Hauptmenü](docs/screenshots/de-main-menu.png)
+Das Fernglas des Ausgucks auf der Fregatte und das Sehrohr des U-Boots, bei Tag und bei Nacht, mit den Schiffen im Okular:
 
-![Brücke, Sonar, Waffen und Schadensabwehr](docs/screenshots/de-stations-overview-1.png)
+<table>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/de-frigate-binoculars-day.png"><img src="docs/screenshots/de-frigate-binoculars-day.png" alt="Fregatte: Fernglas, Tag"></a><br><sub>Fregatte: Fernglas, Tag</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/de-frigate-binoculars-night.png"><img src="docs/screenshots/de-frigate-binoculars-night.png" alt="Fregatte: Fernglas, Nacht"></a><br><sub>Fregatte: Fernglas, Nacht</sub></td>
+</tr>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/de-uboot-periscope-day.png"><img src="docs/screenshots/de-uboot-periscope-day.png" alt="U-Boot: Sehrohr, Tag"></a><br><sub>U-Boot: Sehrohr, Tag</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/de-uboot-periscope-night.png"><img src="docs/screenshots/de-uboot-periscope-night.png" alt="U-Boot: Sehrohr, Nacht"></a><br><sub>U-Boot: Sehrohr, Nacht</sub></td>
+</tr>
+</table>
 
-![OPZ/CIC, Funk, Maschinenraum und Helikopter](docs/screenshots/de-stations-overview-2.png)
+Arbeitsplätze der Fregatte:
 
-![Elektronische Kampfführung / ESM](docs/screenshots/de-stations-overview-3.png)
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-bridge.png"><img src="docs/screenshots/de-station-bridge.png" alt="Brücke"></a><br><sub>Brücke</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-sonar.png"><img src="docs/screenshots/de-station-sonar.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-weapons.png"><img src="docs/screenshots/de-station-weapons.png" alt="Waffen"></a><br><sub>Waffen</sub></td>
+</tr>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-opz-cic.png"><img src="docs/screenshots/de-station-opz-cic.png" alt="OPZ/CIC"></a><br><sub>OPZ/CIC</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-eloka.png"><img src="docs/screenshots/de-station-eloka.png" alt="Elektronische Kampfführung/ESM"></a><br><sub>Elektronische Kampfführung/ESM</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-damage-control.png"><img src="docs/screenshots/de-station-damage-control.png" alt="Schadensabwehr"></a><br><sub>Schadensabwehr</sub></td>
+</tr>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-radio.png"><img src="docs/screenshots/de-station-radio.png" alt="Funk"></a><br><sub>Funk</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-engineering.png"><img src="docs/screenshots/de-station-engineering.png" alt="Maschinenraum"></a><br><sub>Maschinenraum</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-helicopter.png"><img src="docs/screenshots/de-station-helicopter.png" alt="Helikopter"></a><br><sub>Helikopter</sub></td>
+</tr>
+</table>
 
-Als U-Boot spielen (`--play-sub`): Führung, Sonar, Waffen und Maschine.
+Als U-Boot spielen (`--play-sub`):
 
-![U-Boot: Führung, Sonar, Waffen und Maschine](docs/screenshots/de-uboot-overview.png)
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-command.png"><img src="docs/screenshots/de-uboot-command.png" alt="Führung"></a><br><sub>Führung</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-sonar.png"><img src="docs/screenshots/de-uboot-sonar.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-weapons.png"><img src="docs/screenshots/de-uboot-weapons.png" alt="Waffen"></a><br><sub>Waffen</sub></td>
+</tr>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-engine.png"><img src="docs/screenshots/de-uboot-engine.png" alt="Maschine"></a><br><sub>Maschine</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-mast-esm.png"><img src="docs/screenshots/de-uboot-mast-esm.png" alt="Mast & ESM"></a><br><sub>Mast & ESM</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-navigation.png"><img src="docs/screenshots/de-uboot-navigation.png" alt="Navigation"></a><br><sub>Navigation</sub></td>
+</tr>
+</table>
 
-Arbeitsplätze in voller Auflösung: [Brücke](docs/screenshots/de-station-bridge.png),
-[Sonar](docs/screenshots/de-station-sonar.png),
-[Waffen](docs/screenshots/de-station-weapons.png),
-[Schadensabwehr](docs/screenshots/de-station-damage-control.png),
-[OPZ/CIC](docs/screenshots/de-station-opz-cic.png),
-[Funk](docs/screenshots/de-station-radio.png),
-[Maschinenraum](docs/screenshots/de-station-engineering.png),
-[Helikopter](docs/screenshots/de-station-helicopter.png) und
-[Elektronische Kampfführung/ESM](docs/screenshots/de-station-eloka.png).
-U-Boot-Stationen: [Führung](docs/screenshots/de-uboot-command.png),
-[Sonar](docs/screenshots/de-uboot-sonar.png),
-[Waffen](docs/screenshots/de-uboot-weapons.png),
-[Maschine](docs/screenshots/de-uboot-engine.png),
-[Mast & ESM](docs/screenshots/de-uboot-mast-esm.png),
-[Navigation](docs/screenshots/de-uboot-navigation.png) und
-[Funkraum](docs/screenshots/de-uboot-radio.png).
+Menüs und Editoren:
 
-Beispiel der Schadensabwehr mit vorgegebenen Flutungen, Bränden, ausgefallenen
-Zonen und Reparaturtrupps:
-[F-217-Schadensschema](docs/screenshots/de-damage-control-alert.png).
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-main-menu.png"><img src="docs/screenshots/de-main-menu.png" alt="Hauptmenü"></a><br><sub>Hauptmenü</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-mission-briefing.png"><img src="docs/screenshots/de-mission-briefing.png" alt="Einsatzbesprechung"></a><br><sub>Einsatzbesprechung</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-mission-editor-detail.png"><img src="docs/screenshots/de-mission-editor-detail.png" alt="Missionseditor-Vorschau"></a><br><sub>Missionseditor-Vorschau</sub></td>
+</tr>
+</table>
 
-Menüs und Editoren: [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png),
-[Einsatzbesprechung](docs/screenshots/de-mission-briefing.png),
-[Optionen](docs/screenshots/de-options.png),
-[Missionseditor](docs/screenshots/de-mission-editor.png) mit
-[Seed-Vorschau](docs/screenshots/de-mission-editor-detail.png),
-[Einheiteneditor](docs/screenshots/de-unit-editor.png) und der
-[taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
+Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Schadensabwehr](docs/screenshots/de-damage-control-alert.png), [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png), [Optionen](docs/screenshots/de-options.png), [Missionseditor](docs/screenshots/de-mission-editor.png), [Einheiteneditor](docs/screenshots/de-unit-editor.png) und der [taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
 
-### Remote-Crew-Browser
+### Remote-Crew-Browser (1920 x 1080)
 
-![Remote Crew OPZ/CIC mit 1920 x 1080](docs/screenshots/commander-v2-de-opz-desktop.png)
+<table>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-binoculars-day.png"><img src="docs/screenshots/commander-v2-de-binoculars-day.png" alt="Brücke: Fernglas des Ausgucks, Tag"></a><br><sub>Brücke: Fernglas des Ausgucks, Tag</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-periscope-night.png"><img src="docs/screenshots/commander-v2-de-periscope-night.png" alt="U-Boot Mast & ESM: Sehrohr, Nacht"></a><br><sub>U-Boot Mast & ESM: Sehrohr, Nacht</sub></td>
+</tr>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-opz-desktop.png"><img src="docs/screenshots/commander-v2-de-opz-desktop.png" alt="OPZ/CIC"></a><br><sub>OPZ/CIC</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-sonar-desktop.png"><img src="docs/screenshots/commander-v2-de-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+</tr>
+</table>
 
-![Remote Crew Sonar mit 1920 x 1080](docs/screenshots/commander-v2-de-sonar-desktop.png)
-
-Mehr: die [vollständige deutsche/englische Desktop- und Mobilmatrix](docs/screenshots/commander-captures.de.md)
-und die [lokalen Remote-Crew-Optionen](docs/screenshots/de-commander-options.png).
+Mehr: [Fernglas bei Nacht](docs/screenshots/commander-v2-de-binoculars-night.png), [Sehrohr bei Tag](docs/screenshots/commander-v2-de-periscope-day.png), [Sonar mit 2560 x 1440](docs/screenshots/commander-wide.png), die [vollständige deutsche/englische Desktop- und Mobilmatrix](docs/screenshots/commander-captures.de.md) und die [lokalen Remote-Crew-Optionen](docs/screenshots/de-commander-options.png).
 
 Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py`
 (uConsole-Ansichten, ohne Bildschirm) und `python tools/capture_commander.py`
@@ -93,7 +118,7 @@ Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py
 
 - Neun Stationen: Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk,
   Maschinenraum, Helikopterdeck und Elektronische Kampfführung/ESM.
-- Vier integrierte Szenarien, drei Schwierigkeitsgrade und durchgehende Echtzeitsimulation (keine Pause, kein Zeitraffer).
+- Vier integrierte Szenarien, frei einstellbarer eigener Schwierigkeitsgrad und durchgehende Echtzeitsimulation (keine Pause, kein Zeitraffer).
 - Passives HMS und Schleppsonar, aktives Sonar, Breitband- und LOFAR-Anzeigen,
   DEMON-Analyse, Bathythermografmessungen und rein peilungsbasierte TMA.
 - Seeziel- und Luftraumradar, AIS, ESM, HFDF, manuelle Klassifikation und
@@ -119,6 +144,12 @@ Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py
   Browser-Clients können exklusive Stationsrollen innehaben, zwischen ihren
   behaltenen Rollen wechseln, dieselben beobachtungsbasierten Bedienelemente
   nutzen und mit einer getrennten Freigabe direkt Waffen einsetzen.
+  Die Browserkonsole ist ein Gefechtszentrale-Layout auf einer Bildschirmseite
+  für große Desktop-Monitore: Statusleiste, zentrales Instrument und
+  einklappbare Seitenleisten. `python main.py --solo-crew` (oder die F9-Zeile
+  „Crew-Modus“) lässt einen einzigen Browser alle neun Stationen samt
+  Speichern/Laden und neuem Spiel bedienen, während die uConsole der
+  Simulationsserver bleibt; siehe [Einrichtung von Remote Crew](docs/commander-coop.de.md).
 - Konservative stationsbezogene Autocrew mit `F2` und einer Übersicht mit `F3`.
   Remote Crew pausiert Autocrew nur für die jeweils belegte Station.
 - Deterministisches Seewetter mit Wind, Regen, Sicht und weichen
@@ -126,7 +157,6 @@ Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py
   Helikoptergrenzen, erzeugt aber keine verborgene Winddrift.
 - Modellierter Treibstoffverbrauch mit Ausdauer, Reichweite und Reparaturtrends
   im Maschinenraum.
-
 
 ## Windows-Programm
 
@@ -230,7 +260,11 @@ Windows-Starter liest diese Datei.
 
 Das Hauptmenü enthält Einträge für ein neues Spiel, Laden, Missionseditor,
 Einheiteneditor, Optionen und Beenden. Bei einem neuen Spiel folgen die Auswahl
-des Szenarios und, beim Zufallsszenario, die Auswahl des Schwierigkeitsgrads.
+des Szenarios und, beim Zufallsszenario, ein Bildschirm für den eigenen
+Schwierigkeitsgrad (Tarnung der U-Boote, Reparaturgeschwindigkeit, Torpedoanzahl
+und Treffertoleranz, Aggressivität des Gegners, Anfangsseegang, Anzahl von
+U-Booten, Kriegsschiffen und Verkehr, Häufigkeit von Luftangriffen und
+Zeitlimit).
 
 - `W` wechselt zwischen dem durch den Seed gewählten realen Sektor, der
   festen klassischen Referenzkarte und einem fest wählbaren realen Sektor.
@@ -271,7 +305,7 @@ Die wichtigsten globalen Bedienelemente sind:
 | Eingabe | Aktion |
 |---|---|
 | `1` bis `9` | Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk, Maschinenraum, Helikopter, Elektronische Kampfführung/ESM; erneutes Drücken der Nummer der aktiven Station wechselt, sofern vorhanden, zur nächsten Seite |
-| `F` / `Umschalt+F` / `B` bei ESM | Signalstatus-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
+| `F` / `Shift+F` / `B` bei ESM | Signalstatus-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
 | `Tab` / `Shift+Tab` | Nächste / vorherige Station |
 | `F1` / `?` | Kontextsensitive Hilfe; Kategorie 4 ist das vollständige Handbuch |
 | `0` | Wetter- und Sonar-Analysefeld über jeder Station |
@@ -287,15 +321,15 @@ Die wichtigsten globalen Bedienelemente sind:
 | `+` / `-` | Maschinentelegraf |
 | `Alt+Enter` | Vollbildmodus umschalten |
 | `Ctrl+Enter` | Primäre Waffenaktion an den Stationen Waffen, OPZ/CIC oder Helikopter; die normalen Bereitschaftsprüfungen gelten |
-| `Q` / `E` oder Mausrad | Sichtbare Karten an den Stationen Brücke, Waffen und Helikopter zoomen |
-| Ziehen mit der Maus | Eine sichtbare Karte verschieben und die Kameraverfolgung ausschalten |
-| `K` | Kameraverfolgung auf einer sichtbaren Karte umschalten |
+| `Q` / `E` oder Mausrad | Karten an den Stationen Brücke, Waffen und Helikopter zoomen; die OPZ-Karte zoomt mit dem Mausrad |
+| Ziehen mit der Maus | Eine sichtbare Karte einschließlich der OPZ-Karte verschieben und ihre eigene Kameraverfolgung ausschalten |
+| `K` | Kameraverfolgung auf der aktuellen Karte oder der OPZ-Karte umschalten |
 | `Esc` | Einen fixierten Hinweis entfernen, die aktuelle Ansicht/Eingabe abbrechen oder die Beenden-Bestätigung öffnen (zurück zum Spiel, speichern und beenden, Hauptmenü, ohne Speichern beenden) |
 | `R` / `M` nach Missionsende | Neustart mit gleichem Seed / zurück zum Hauptmenü |
 
 Stationstasten sind bewusst kontextabhängig. Beispielsweise sendet `Shift+A` am
-Sonar einen aktiven Ping, während dort `A` den Breitband-Hörmodus wählt und im
-Maschinenraum den Akustikmodus ändert. Verwenden
+Sonar einen aktiven Ping, während dort `A` den Breitband-Hörmodus wählt und
+`A` im Maschinenraum den Akustikmodus ändert. Verwenden
 Sie `F1`, statt davon auszugehen, dass eine Taste an jeder Station dieselbe
 Bedeutung hat.
 
@@ -374,9 +408,15 @@ Einschwingen.
 
 ## Radar-Hinweise
 
-In der OPZ/CIC wählen `Page Up` und `Page Down` ausschließlich Anzeigebereiche
-von **10, 20, 40, 80 oder 120 NM**; sie wechseln weder die Seite noch die
-Sensorleistung. Die modellierten Erfassungsgrenzen bei klarem Wetter betragen
+In der OPZ/CIC wählen `Page Up` und `Page Down` den schiffszentrierten
+Radarbereich von **10, 20, 40, 80 oder 120 NM**; sie verschieben oder zoomen die
+Karte nicht und wechseln weder die Seite noch die Sensorleistung. Die
+bildschirmhohe, genordete OPZ-Karte hat eine eigene Kamera: Das Mausrad zoomt
+um den Mauszeiger bis auf 5 NM Radius, Ziehen auf freier Kartenfläche
+verschiebt sie, und `K` schaltet die Verfolgung des eigenen Schiffs um. Anfangs
+zeigt sie etwa 40 NM Radius. Ereignis-Feed und Telemetrie sammeln weiter,
+während sie an dieser Station ausgeblendet sind, und erscheinen an anderen
+Stationen unverändert wieder. Die modellierten Erfassungsgrenzen bei klarem Wetter betragen
 30 NM für das Seezielradar und 100 NM für das Luftraumradar, mit
 Leistungseinbußen ab Seegang 5 und durch Regenclutter. Seeziel- und
 Luftraumradar können mit `R` und `Shift+R` getrennt gesteuert werden.
@@ -475,15 +515,16 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v27** sind
+Anwendungsversion, API-Protokoll **v2** und Speicherformat **v27** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
 
-**Sicherheit:** HTTP ist unverschlüsselt. Verwenden Sie den Dienst nur in einem
-vertrauenswürdigen LAN. Internet-Hosting, Bindung an Wildcard-Adressen, CDN,
-ferne Steuerung von Einsatzregeln, Zeit oder Speicherständen sowie verborgene
-Entity-Daten werden nicht bereitgestellt. Siehe
+**Sicherheit von Commander LAN:** HTTP ist unverschlüsselt. Verwenden Sie den
+Dienst nur in einem vertrauenswürdigen LAN. Internet-Hosting, Bindung an
+Wildcard-Adressen, CDN, ferne Steuerung von Einsatzregeln, Zeit oder
+Speicherständen sowie verborgene Entity-Daten werden nicht bereitgestellt. Der
+getrennte Webspiel-Modus verlangt einen HTTPS-Proxy und eine Host-Anmeldung. Siehe
 [Einrichtung von Remote Crew](docs/commander-coop.de.md) und
 [Protokoll/Sicherheit](docs/commander-protocol.de.md).
 
@@ -537,8 +578,9 @@ der Fregatte, des Funkraums des besetzten U-Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen
 Schnappschusses des Laufzeitkatalogs, des gesamten Zustands für die
-deterministische Fortsetzung, des Crew-Zustands des besetzten U-Boots mit seinem
-ESM-Bild, von Tauchzellen, Trimm, Pressluft, Abteilungen und Leckwehrtrupps jedes U-Boots, von
+deterministische Fortsetzung, des Crew-Zustands des besetzten U-Boots (Befehle,
+Modi, Mast, Drähte, Plot, Alarmpeilungen, seine Sonarstation und sein ESM-Bild),
+solange eine Crew das U-Boot führt, von Tauchzellen, Trimm, Pressluft, Abteilungen und Leckwehrtrupps jedes U-Boots, von
 Diesel, Laderate und Luftvorräten jedes konventionellen U-Boots und der fremden
 Aktivpings, deren Schall noch zur Fregatte unterwegs ist. Ältere (auch alle v11-Spielstände von 1.0.0),
 neuere, fehlerhafte oder unvollständige Spielstände werden ohne Migration
@@ -575,10 +617,8 @@ sind in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) dokumentiert.
 Die Prüfung der Arbeitsplätze und Modelle, umgesetzte Korrekturen, verbleibende
 Modellgrenzen und die Checkliste für die Hardware-Abnahme sind in
 [`docs/workstation-review.md`](docs/workstation-review.md) dokumentiert.
-Aktuelle Arbeiten werden in [`docs/plan-0.1.8.md`](docs/plan-0.1.8.md) und
-[`docs/resume.md`](docs/resume.md) verfolgt. Der abgeschlossene
-Stabilisierungsplan für 0.1.6 bleibt unter
-[`docs/plan-0.1.6.md`](docs/plan-0.1.6.md) verfügbar.
+Aktuelle Arbeiten werden in [`docs/plan-1.3.md`](docs/plan-1.3.md) und
+[`docs/resume.md`](docs/resume.md) verfolgt.
 
 Installieren Sie das Projekt und die Entwicklungsabhängigkeit und führen Sie
 anschließend die Testsuite aus:

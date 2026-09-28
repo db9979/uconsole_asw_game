@@ -4,15 +4,25 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.48
+## 1.3.49
 
-Release 1.3.48 fixes Remote Crew pairing on the LAN. A freshly paired
+Release 1.3.49 fixes Remote Crew pairing on the LAN. A freshly paired
 browser no longer greets you with "Your station was revoked or released" as if
 pairing had failed; it now says "Authenticated. Take a free station." The crew
 page now tells you when it runs in a browser that is not Chrome or Chromium (also
 Edge): Firefox and Safari show a hint above the pairing code, and a page that
 cannot start there says so instead of loading forever. The bridge's navigation
 proposal accepts the frigate's full 31 kn; saves stay v27.
+
+## 1.3.48
+
+Release 1.3.48 renews the pictures on the project page. They are now a
+gallery and show, new, the lookout's binoculars on the frigate and the
+submarine's periscope by day and by night, on the uConsole and in the browser,
+with a warship and merchants in the eyepiece and the merchants' navigation
+lights in the dark; every station picture is in the new turquoise look. The
+screenshot tools make these eyepiece pictures on their own
+(`tools/sight_capture.py`). Saves stay v27.
 
 ## 1.3.47
 

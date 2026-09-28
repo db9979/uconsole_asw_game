@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.48
+## 1.3.49
 
-Version 1.3.48 repariert die Remote-Crew-Kopplung im LAN. Ein frisch
+Version 1.3.49 repariert die Remote-Crew-Kopplung im LAN. Ein frisch
 gekoppelter Browser begrüßt nicht mehr mit „Deine Station wurde widerrufen oder
 freigegeben“, als wäre die Kopplung gescheitert, sondern mit der Aufforderung,
 eine freie Station zu nehmen. Die Crew-Seite sagt jetzt, wenn sie in einem
@@ -14,6 +14,16 @@ Browser läuft, der nicht Chrome oder Chromium (auch Edge) ist: Firefox und
 Safari zeigen über dem Kopplungscode einen Hinweis, und eine Seite, die dort
 nicht starten kann, sagt das, statt endlos zu laden. Der Navigationsvorschlag
 der Brücke nimmt die vollen 31 kn der Fregatte an; Spielstände bleiben v27.
+
+## 1.3.48
+
+Version 1.3.48 erneuert die Bilder auf der Projektseite. Sie stehen jetzt in
+einer Galerie und zeigen neu das Fernglas des Ausgucks auf der Fregatte und das
+Sehrohr des U-Boots bei Tag und bei Nacht, auf der uConsole und im Browser, mit
+einem Kriegsschiff und Frachtern im Okular und den Positionslichtern der
+Frachter im Dunkeln; alle Stationsbilder zeigen den neuen türkisen Look. Die
+Screenshot-Werkzeuge erzeugen diese Okularbilder selbst
+(`tools/sight_capture.py`). Spielstände bleiben v27.
 
 ## 1.3.47
 

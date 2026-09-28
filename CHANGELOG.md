@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.25
+
+Release 1.3.25 sorts the boat's **ESM library by fit**: the emitters whose
+published ranges hold a measurement are listed best fit first (frequency and
+PRF near the middle of their ranges, the same modulation), each with a grade
+of good, fair or poor on the uConsole and in the browser, so a well-fitting
+radar such as the helicopter's no longer drops off the list. Saves stay v24.
+
 ## 1.3.24
 
 Release 1.3.24 brings **atmosphere to the crewed boat**: the pressure hull creaks

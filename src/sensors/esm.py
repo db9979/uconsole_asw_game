@@ -924,6 +924,35 @@ def library_emitters(track: ESMTrack, emitters: Mapping[str, object],
     return tuple(found)
 
 
+def _band_centre_fit(value: float, band) -> float:
+    """1 at the band's centre, 0 at its edges (the value lies inside)."""
+    low, high = band
+    half = (high - low) / 2.0
+    if half <= 0.0:
+        return 1.0
+    return max(0.0, 1.0 - abs(value - (low + half)) / half)
+
+
+def library_fit(track: ESMTrack, emitter) -> float:
+    """How well a library entry fits the measurement (0..1): frequency and
+    PRF near the middle of the published ranges and the same modulation.
+    The operator's own reading of the reference, not a likelihood."""
+    frequency = _band_centre_fit(track.frequency_hz, emitter.frequency_band_hz)
+    band = emitter.prf_band_hz
+    prf = (_band_centre_fit(track.prf_hz, band)
+           if track.prf_hz is not None and band is not None else 0.5)
+    modulation = (0.5 if track.modulation_code == "unknown"
+                  else 1.0 if track.modulation_code in emitter.modulation_codes else 0.0)
+    return max(0.0, min(1.0, .4 * frequency + .3 * prf + .3 * modulation))
+
+
+FIT_GRADES = ((0.75, "good"), (0.5, "fair"), (0.0, "poor"))
+
+
+def fit_grade(fit: float) -> str:
+    return next(grade for floor, grade in FIT_GRADES if fit >= floor)
+
+
 def analyze_signal(track: ESMTrack, emitters: Mapping[str, object],
                    maximum: int = 5) -> ESMAnalysis:
     candidates = rank_emitters(track, emitters, maximum)

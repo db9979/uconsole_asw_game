@@ -993,8 +993,9 @@ def _esm_class_text(game, boat, emitter):
     profile = boat.esm.classified(game, emitter)
     if profile is None:
         return message("uboot.esm.unclassified")
-    return raw_text(str(game.eloka_emitter_name(emitter.label)
-                        or emitter.label.rsplit(".", 1)[-1])[:32])
+    name = str(game.eloka_emitter_name(emitter.label) or emitter.label.rsplit(".", 1)[-1])[:32]
+    return message("uboot.esm.class_fit", name=raw_text(name),
+                   fit=message(f"uboot.esm.fit.{boat.esm.fit(game, emitter, emitter.label)}"))
 
 
 def _draw_esm_page(s, game, boat, x, y, w, h) -> None:

@@ -12,14 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.24**
+Current release: **1.3.25**
 
-Release 1.3.24 brings **atmosphere to the crewed boat**: the pressure hull creaks
-deep down and cracks when it fails, detonations in the water are heard close
-aboard or far off and logged with a bearing, and **silent running** rigs the
-boat's screens for dimmed red light on the uConsole and in the browser. The
-boat's browsers now play its own sound cues, and a rescue task's alarm cue no
-longer upsets the browser. Saves stay v24.
+Release 1.3.25 sorts the boat's **ESM library by fit**: the emitters whose
+published ranges hold a measurement are listed best fit first (frequency and
+PRF near the middle of their ranges, the same modulation), each with a grade
+of good, fair or poor on the uConsole and in the browser, so a well-fitting
+radar such as the helicopter's no longer drops off the list. Saves stay v24.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

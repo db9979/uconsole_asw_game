@@ -22,8 +22,9 @@ from src.core import plot as plot_geometry
 from src.sensors import radar as radar_physics
 from src.sensors.esm import (ESM_ASSOCIATION_MAX_GAP_S, ESMMeasurement, ESMTrack,
                              POWER_CLASS_RANGE_NM, RadarSuiteController, SignalType,
-                             _validate_track, estimated_range_nm, library_emitters,
-                             scan_for_signals, spectrum_band)
+                             FIT_GRADES, _validate_track, estimated_range_nm, fit_grade,
+                             library_emitters, library_fit, scan_for_signals,
+                             spectrum_band)
 from src.sensors.platform import MAST_DEPTH_M
 
 VERSION = 1
@@ -249,10 +250,24 @@ class BoatESM:
 
     @staticmethod
     def library(game, emitter: BoatEmitter) -> tuple:
-        """Library emitters whose published ranges hold the measurement
-        (unranked, by key), as the frigate's ELOKA without assistance."""
-        return tuple(item.emitter_key for item in library_emitters(
-            emitter.track, game.runtime_catalog.emitters, LIBRARY_MAX))
+        """Library emitters whose published ranges hold the measurement,
+        best fit first: sorted by fit grade (good, fair, poor), then by key,
+        so the order only moves when a grade changes."""
+        emitters = game.runtime_catalog.emitters
+        found = library_emitters(emitter.track, emitters, len(emitters))
+        order = {grade: index for index, (_floor, grade) in enumerate(FIT_GRADES)}
+        ranked = sorted(found, key=lambda item: (
+            order[fit_grade(library_fit(emitter.track, emitters[item.emitter_key]))],
+            item.emitter_key))
+        return tuple(item.emitter_key for item in ranked[:LIBRARY_MAX])
+
+    @staticmethod
+    def fit(game, emitter: BoatEmitter, key: str) -> str | None:
+        """The crew's fit grade of one library entry for this emitter."""
+        profile = game.runtime_catalog.emitters.get(key)
+        if getattr(profile, "domain", None) != "radar":
+            return None
+        return fit_grade(library_fit(emitter.track, profile))
 
     @staticmethod
     def classified(game, emitter: BoatEmitter):

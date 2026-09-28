@@ -92,7 +92,7 @@ UBOOT_ESM_EMITTER_FIELDS = (
     "quality", "classification", "candidates", "range_estimate_nm", "mast_threat",
     "history", "fix")
 UBOOT_ESM_HISTORY_FIELDS = ("age_s", "x", "y", "bearing")
-UBOOT_ESM_CANDIDATE_FIELDS = ("name", "role")
+UBOOT_ESM_CANDIDATE_FIELDS = ("name", "role", "fit")
 # The boat's counter-detection picture (``threat``, src/core/boat_threat.py):
 # its own intercepts, layer, noise and mast, and the evasion order (``plan``).
 UBOOT_THREAT_FIELDS = ("intercepts", "counts", "loudest_db", "echo_likely", "trend",

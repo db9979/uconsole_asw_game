@@ -14,15 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.24**
+Aktuelle Version: **1.3.25**
 
-Version 1.3.24 bringt **Atmosphäre ins besetzte Boot**: der Druckkörper knarzt in
-der Tiefe und kracht, wenn er versagt, Detonationen im Wasser sind dicht beim
-Boot oder in der Ferne zu hören und stehen mit Peilung im Log, und bei
-**Schleichfahrt** schalten die Boot-Bildschirme am uConsole und im Browser auf
-gedimmtes Rotlicht. Die Browser des Boots spielen jetzt dessen eigene Töne, und
-der Alarmton einer Rettungsaufgabe stört den Browser nicht mehr. Spielstände
-bleiben v24.
+Version 1.3.25 sortiert die **ESM-Bibliothek des Boots nach Passung**: die
+Emitter, deren veröffentlichte Bereiche eine Messung enthalten, stehen mit der
+besten Passung zuerst (Frequenz und PRF nahe der Bereichsmitte, dieselbe
+Modulation), jeder mit der Stufe gut, mittel oder schwach am uConsole und im
+Browser, sodass ein gut passendes Radar wie das des Hubschraubers nicht mehr
+aus der Liste fällt. Spielstände bleiben v24.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

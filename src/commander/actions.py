@@ -3,7 +3,7 @@ v2 action, applied on the main thread through the closed tables
 ``_V2_ACTION_HANDLERS``, ``_UBOOT_ACTION_HANDLERS`` and
 ``_HOST_ACTION_HANDLERS`` (never a dynamic method lookup).
 
-Verbatim move from ``bridge.py`` (1.3.56); ``bridge.py`` re-exports every
+Verbatim move from ``bridge.py`` (1.3.58); ``bridge.py`` re-exports every
 name so existing imports keep working."""
 
 import math

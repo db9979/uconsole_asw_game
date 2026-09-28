@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.56**
+Current release: **1.3.58**
 
-Release 1.3.56 is a clean-up with no change in play. The two largest modules
+Release 1.3.58 is a clean-up with no change in play. The two largest modules
 are split along their seams: the radar, air, ECM, ESM and radio pictures with
 missiles and raiders move from the simulation step into their own module, and
 the Remote Crew station action handlers move out of the bridge into their own
@@ -32,55 +32,80 @@ capabilities, data, or doctrine.
 
 ### uConsole (1280 x 720)
 
-![U-Jagd main menu](docs/screenshots/main-menu.png)
+The lookout's binoculars on the frigate and the submarine's periscope, by day and by night, with the ships in the eyepiece:
 
-![Bridge, Sonar, Weapons, and Damage Control](docs/screenshots/stations-overview-1.png)
+<table>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/frigate-binoculars-day.png"><img src="docs/screenshots/frigate-binoculars-day.png" alt="Frigate binoculars, day"></a><br><sub>Frigate binoculars, day</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/frigate-binoculars-night.png"><img src="docs/screenshots/frigate-binoculars-night.png" alt="Frigate binoculars, night"></a><br><sub>Frigate binoculars, night</sub></td>
+</tr>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/uboot-periscope-day.png"><img src="docs/screenshots/uboot-periscope-day.png" alt="Submarine periscope, day"></a><br><sub>Submarine periscope, day</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/uboot-periscope-night.png"><img src="docs/screenshots/uboot-periscope-night.png" alt="Submarine periscope, night"></a><br><sub>Submarine periscope, night</sub></td>
+</tr>
+</table>
 
-![OPZ/CIC, Radio, Engineering, and Helicopter](docs/screenshots/stations-overview-2.png)
+Frigate workstations:
 
-![Electronic Warfare / ESM](docs/screenshots/stations-overview-3.png)
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/station-bridge.png"><img src="docs/screenshots/station-bridge.png" alt="Bridge"></a><br><sub>Bridge</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/station-sonar.png"><img src="docs/screenshots/station-sonar.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/station-weapons.png"><img src="docs/screenshots/station-weapons.png" alt="Weapons"></a><br><sub>Weapons</sub></td>
+</tr>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/station-opz-cic.png"><img src="docs/screenshots/station-opz-cic.png" alt="OPZ/CIC"></a><br><sub>OPZ/CIC</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/station-eloka.png"><img src="docs/screenshots/station-eloka.png" alt="Electronic Warfare/ESM"></a><br><sub>Electronic Warfare/ESM</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/station-damage-control.png"><img src="docs/screenshots/station-damage-control.png" alt="Damage Control"></a><br><sub>Damage Control</sub></td>
+</tr>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/station-radio.png"><img src="docs/screenshots/station-radio.png" alt="Radio"></a><br><sub>Radio</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/station-engineering.png"><img src="docs/screenshots/station-engineering.png" alt="Engineering"></a><br><sub>Engineering</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/station-helicopter.png"><img src="docs/screenshots/station-helicopter.png" alt="Helicopter"></a><br><sub>Helicopter</sub></td>
+</tr>
+</table>
 
-Playing the submarine (`--play-sub`): command, sonar, weapons and engine room.
+Playing the submarine (`--play-sub`):
 
-![Submarine command, sonar, weapons and engine room](docs/screenshots/uboot-overview.png)
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/uboot-command.png"><img src="docs/screenshots/uboot-command.png" alt="Command"></a><br><sub>Command</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/uboot-sonar.png"><img src="docs/screenshots/uboot-sonar.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/uboot-weapons.png"><img src="docs/screenshots/uboot-weapons.png" alt="Weapons"></a><br><sub>Weapons</sub></td>
+</tr>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/uboot-engine.png"><img src="docs/screenshots/uboot-engine.png" alt="Engine room"></a><br><sub>Engine room</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/uboot-mast-esm.png"><img src="docs/screenshots/uboot-mast-esm.png" alt="Mast & ESM"></a><br><sub>Mast & ESM</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/uboot-navigation.png"><img src="docs/screenshots/uboot-navigation.png" alt="Navigation"></a><br><sub>Navigation</sub></td>
+</tr>
+</table>
 
-Full-resolution workstations: [Bridge](docs/screenshots/station-bridge.png),
-[Sonar](docs/screenshots/station-sonar.png),
-[Weapons](docs/screenshots/station-weapons.png),
-[Damage Control](docs/screenshots/station-damage-control.png),
-[OPZ/CIC](docs/screenshots/station-opz-cic.png),
-[Radio](docs/screenshots/station-radio.png),
-[Engineering](docs/screenshots/station-engineering.png),
-[Helicopter](docs/screenshots/station-helicopter.png), and
-[Electronic Warfare/ESM](docs/screenshots/station-eloka.png).
-Submarine stations: [Command](docs/screenshots/uboot-command.png),
-[Sonar](docs/screenshots/uboot-sonar.png),
-[Weapons](docs/screenshots/uboot-weapons.png),
-[Engine room](docs/screenshots/uboot-engine.png),
-[Mast & ESM](docs/screenshots/uboot-mast-esm.png),
-[Navigation](docs/screenshots/uboot-navigation.png), and
-[Radio room](docs/screenshots/uboot-radio.png).
+Menus and editors:
 
-Damage-control example with authored flooding, fire, lost zones and repair teams:
-[F-217 damage schematic](docs/screenshots/damage-control-alert.png).
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/main-menu.png"><img src="docs/screenshots/main-menu.png" alt="Main menu"></a><br><sub>Main menu</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/mission-briefing.png"><img src="docs/screenshots/mission-briefing.png" alt="Briefing"></a><br><sub>Briefing</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/mission-editor-detail.png"><img src="docs/screenshots/mission-editor-detail.png" alt="Mission Editor preview"></a><br><sub>Mission Editor preview</sub></td>
+</tr>
+</table>
 
-Menus and editors: [scenario selection](docs/screenshots/mission-scenario-selection.png),
-[briefing](docs/screenshots/mission-briefing.png),
-[options](docs/screenshots/options.png),
-[Mission Editor](docs/screenshots/mission-editor.png) with its
-[seeded preview](docs/screenshots/mission-editor-detail.png),
-[Unit Editor](docs/screenshots/unit-editor.png), and the
-[tactical unit analyzer](docs/screenshots/contact-analyzer.png).
+More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control example](docs/screenshots/damage-control-alert.png), [scenario selection](docs/screenshots/mission-scenario-selection.png), [options](docs/screenshots/options.png), [Mission Editor](docs/screenshots/mission-editor.png), [Unit Editor](docs/screenshots/unit-editor.png) and the [tactical unit analyzer](docs/screenshots/contact-analyzer.png).
 
-### Remote Crew browser
+### Remote Crew browser (1920 x 1080)
 
-![Remote Crew OPZ/CIC at 1920 x 1080](docs/screenshots/commander-v2-en-opz-desktop.png)
+<table>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-binoculars-day.png"><img src="docs/screenshots/commander-v2-en-binoculars-day.png" alt="Bridge: lookout binoculars, day"></a><br><sub>Bridge: lookout binoculars, day</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-periscope-night.png"><img src="docs/screenshots/commander-v2-en-periscope-night.png" alt="Submarine Mast & ESM: periscope, night"></a><br><sub>Submarine Mast & ESM: periscope, night</sub></td>
+</tr>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-opz-desktop.png"><img src="docs/screenshots/commander-v2-en-opz-desktop.png" alt="OPZ/CIC"></a><br><sub>OPZ/CIC</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-sonar-desktop.png"><img src="docs/screenshots/commander-v2-en-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+</tr>
+</table>
 
-![Remote Crew Sonar at 1920 x 1080](docs/screenshots/commander-v2-en-sonar-desktop.png)
-
-More: [Sonar at 2560 x 1440](docs/screenshots/commander-wide.png), the
-[complete English/German desktop and mobile matrix](docs/screenshots/commander-captures.md),
-and the [local Remote Crew options](docs/screenshots/commander-options.png).
+More: [binoculars at night](docs/screenshots/commander-v2-en-binoculars-night.png), [periscope by day](docs/screenshots/commander-v2-en-periscope-day.png), [Sonar at 2560 x 1440](docs/screenshots/commander-wide.png), the [complete English/German desktop and mobile matrix](docs/screenshots/commander-captures.md) and the [local Remote Crew options](docs/screenshots/commander-options.png).
 
 To regenerate every image after an update: `python tools/capture_screenshots.py`
 (uConsole views, headless) and `python tools/capture_commander.py` (browser
@@ -292,7 +317,7 @@ assuming that a key has the same meaning at every station.
 
 In help, Left/Right switches category; Up/Down or Page Up/Page Down scrolls its
 contents. Existing station weapon shortcuts remain available. Held course and
-torpedo-depth adjustments use real time, not the selected simulation multiplier.
+torpedo-depth adjustments use real time.
 
 The bottom event feed is shared by all stations. It retains operational reports,
 completed orders, and alerts—including mission outcome, weapon and defensive
@@ -429,7 +454,8 @@ read-only. Host administration and switching to another station remain
 available; revoking the lease restores local operation immediately.
 
 The service starts **off on every launch**. Access and grants are not saved.
-World replacement revokes active authority on the next main-thread frame. The
+Credentials, clients, station leases, network queues, drafts, and unaccepted
+commands never enter saves or settings. World replacement revokes active authority on the next main-thread frame. The
 mission always runs in real time: local menus and overlays (help, options, save/load,
 quit confirmation, F8 analyzer, F9 administration) and focus loss never pause it,
 so browser stations stay live behind them. Only the main menu and splash lock
@@ -445,10 +471,14 @@ Hover over an unavailable browser control to see its current localized reason,
 such as a missing grant, damaged station, cooldown, empty inventory, pending
 order, or the TAS handling-speed limit.
 
+The application version, API protocol **v2**, and save format **v27** are
+independent compatibility contracts. Remote Crew uses protocol v2 only; every
+legacy route under `/api/v1/*` is removed and returns 404.
+
 **Commander LAN security:** HTTP is unencrypted. Use only a trusted LAN. This
-mode does not expose Internet hosting, wildcard binding, CDN, or remote crew
-control of ROE/time/save. The separate web-host mode requires an HTTPS proxy
-and a host login. See [Remote Crew setup](docs/commander-coop.md) and
+mode does not expose Internet hosting, wildcard binding, CDN, remote crew
+control of ROE/time/save, or hidden entity data. The separate web-host mode
+requires an HTTPS proxy and a host login. See [Remote Crew setup](docs/commander-coop.md) and
 [protocol/security](docs/commander-protocol.md).
 
 ## Editors and Current Limits
@@ -529,9 +559,8 @@ Exact provenance, versions, hashes, transformation notes, and licenses are in
 The workstation/model review, delivered corrections, remaining modeling limits,
 and hardware acceptance checklist are documented in
 [`docs/workstation-review.md`](docs/workstation-review.md).
-Current work is tracked in [`docs/plan-0.1.8.md`](docs/plan-0.1.8.md) and
-[`docs/resume.md`](docs/resume.md). The completed 0.1.6 stabilization plan remains
-available in [`docs/plan-0.1.6.md`](docs/plan-0.1.6.md).
+Current work is tracked in [`docs/plan-1.3.md`](docs/plan-1.3.md) and
+[`docs/resume.md`](docs/resume.md).
 
 Install the project and development dependency, then run the test suite:
 

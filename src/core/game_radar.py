@@ -2,7 +2,7 @@
 tracks, mast echoes, ECM, ESM and radio pictures, anti-ship missiles and
 raiders (``Game`` mixin).
 
-Verbatim move from ``game_sim.py`` (1.3.56); the stages still run in the
+Verbatim move from ``game_sim.py`` (1.3.58); the stages still run in the
 ``SIM_ORDER`` of ``_update_sim``."""
 
 import math

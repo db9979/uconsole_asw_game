@@ -30,14 +30,17 @@ def draw_silhouette(s, cls: str, cx: int, base_y: int, width: int, color) -> Non
 
 
 def scope_outlines(game, boat) -> list:
-    """Detached ``(bearing, span_deg, cls, stale, lights)`` rows of the
-    sightings (``lights``: the ``nav_lights`` code made out, if any)."""
+    """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg)``
+    rows of the sightings (``lights``: the ``nav_lights`` code made out, if
+    any; ``elevation_deg``: an aircraft's angle above the horizon)."""
     lights = getattr(boat.orders, "_lights", {})
+    elevation = getattr(boat.orders, "_elevation", {})
     rows = []
     for row in boat.orders.sightings:
         stale = game.sim_t - row["t"] > 1.0
-        rows.append((row["bearing"], row["span_deg"], row["cls"], stale,
-                     None if stale else lights.get(row["ref"])))
+        aloft = elevation.get(row["ref"]) if row["kind"] == "FLG" else None
+        rows.append((row["bearing"], row["span_deg"], "aircraft" if aloft is not None else row["cls"],
+                     stale, None if stale else lights.get(row["ref"]), aloft))
     return rows
 
 

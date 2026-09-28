@@ -51,9 +51,14 @@ export function palette(sky, haze) {
 }
 
 // --- silhouettes (the uConsole's profiles, generated) -----------------------
-function frameFor(cls, cx, base, width, t, facing = -1) {
+// Height of the aircraft's body in its profile (src/ui/silhouettes.py).
+const AIRCRAFT_CENTRE_V = .555;
+
+// ``aloft``: an aircraft centred on ``base`` (its elevation) instead of
+// hovering over the horizon.
+function frameFor(cls, cx, base, width, t, facing = -1, aloft = false) {
   const profile = PROFILES[cls] || PROFILES.unknown;
-  const lift = profile.hover ? width * (.25 + .02 * Math.sin(t * 1.3)) : 0;
+  const lift = aloft ? -AIRCRAFT_CENTRE_V * width : profile.hover ? width * (.25 + .02 * Math.sin(t * 1.3)) : 0;
   const pitch = profile.pitch_deg * Math.PI / 180 * Math.sin(2 * Math.PI * profile.pitch_hz * t);
   const cos = Math.cos(pitch), sin = Math.sin(pitch), left = cx - width / 2, baseY = base - lift;
   const point = (u, v) => {
@@ -114,14 +119,14 @@ function drawNavLights(g, cls, frame, width, code, t) {
   }
 }
 
-export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, lights = null, nav = null} = {}) {
+export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, lights = null, nav = null, aloft = false} = {}) {
   width = Math.max(3, width);
   if (cls === "torpedo") {
     line(g, [cx - width / 2, base + 1], [cx + width / 2, base + 1], rgb(FOAM), Math.max(1, Math.min(3, width / 12)));
     return;
   }
   const facing = navFacing(nav);
-  const profile = PROFILES[cls] || PROFILES.unknown, frame = frameFor(cls, cx, base, width, t, facing);
+  const profile = PROFILES[cls] || PROFILES.unknown, frame = frameFor(cls, cx, base, width, t, facing, aloft);
   const detail = width >= DETAIL_MIN_PX, fillColor = rgb(fill), rimColor = rim ? rgb(rim) : fillColor;
   const polys = [frame.poly(profile.hull), ...profile.blocks.map((block) => frame.poly(block))];
   g.fillStyle = fillColor;
@@ -181,7 +186,7 @@ function view(width, height, v) {
 
 const bodyFraction = (alt) => .12 + .7 * clamp(alt / BODY_MAX_ALT_DEG);
 
-function drawSky(g, w, sky, colors, t, haze) {
+function drawSky(g, w, sky, colors, t, haze, aloft = null) {
   const gradient = g.createLinearGradient(0, w.skyY + 40 - w.height, 0, w.skyY + 40);
   gradient.addColorStop(0, rgb(colors.sky[0])); gradient.addColorStop(1, rgb(colors.sky[1]));
   g.fillStyle = gradient; g.fillRect(0, 0, w.width, w.height);
@@ -215,6 +220,7 @@ function drawSky(g, w, sky, colors, t, haze) {
       g.restore();
     }
   }
+  if (aloft) aloft();
   if (sky.cloud > .2 && haze <= .85) {
     const count = Math.floor(FIELD.clouds.length * clamp((sky.cloud - .15) / .85));
     const drift = t * .05 * (Math.sin((sky.wind_from_deg - w.los) * Math.PI / 180) > 0 ? 1 : -1);
@@ -349,22 +355,29 @@ function drawWindRose(g, height, colors, windFromDeg) {
 
 // One eyepiece picture.  ``v``: bearing (line of sight), fov_deg,
 // horizon_offset, horizon_tilt, visibility_nm, sea_state, sky, outlines
-// ([{bearing, span_deg, cls, stale, lights}]) and an optional window_deg crosshair;
+// ([{bearing, span_deg, cls, stale, lights, elevation_deg}]) and an optional window_deg crosshair;
 // no_scale hides the bearing scale, wind_rose_deg draws the weather
 // instrument's wind rose in the top left corner.
 export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monospace, monospace") {
   const w = view(width, height, v), haze = 1 - clamp(v.visibility_nm / VISIBILITY_MAX_NM);
   const sky = v.sky, colors = palette(sky, haze);
-  drawSky(g, w, sky, colors, t, haze);
-  drawSea(g, w, sky, colors, v.sea_state, t, haze);
   const lit = sky.light < .45;
-  for (const row of v.outlines) {
-    if (!w.visible(row.bearing, row.span_deg / 2)) continue;
-    const cx = w.x(row.bearing), fade = row.stale ? .55 : haze * .6;
-    drawProfile(g, row.cls, cx, w.base(cx), Math.min(width, Math.max(3, row.span_deg * w.pxPerDeg)), mix(colors.steel, colors.haze, fade),
-      {t, rim: mix(colors.rim, colors.haze, fade), lights: lit && !row.stale ? WINDOW_LIGHT : null,
-        nav: row.stale ? null : row.lights ?? null});
-  }
+  const aloft = (row) => Number.isFinite(row.elevation_deg);
+  const drawRows = (rows) => {
+    for (const row of rows) {
+      if (!w.visible(row.bearing, row.span_deg / 2)) continue;
+      const cx = w.x(row.bearing), fade = row.stale ? .55 : haze * .6;
+      // Aircraft hang in the still sky at their elevation, behind the clouds.
+      const base = aloft(row) ? w.skyY - row.elevation_deg * w.pxPerDeg : w.base(cx);
+      drawProfile(g, row.cls, cx, base, Math.min(width, Math.max(3, row.span_deg * w.pxPerDeg)), mix(colors.steel, colors.haze, fade),
+        {t, rim: mix(colors.rim, colors.haze, fade), lights: lit && !row.stale ? WINDOW_LIGHT : null,
+          nav: row.stale ? null : row.lights ?? null, aloft: aloft(row)});
+    }
+  };
+  const airborne = v.outlines.filter(aloft);
+  drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null);
+  drawSea(g, w, sky, colors, v.sea_state, t, haze);
+  drawRows(v.outlines.filter((row) => !aloft(row)));
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);
   if (Number.isFinite(v.wind_rose_deg)) drawWindRose(g, height, colors, v.wind_rose_deg);
   const labelStep = [10, 30, 45, 90].find((step) => step * w.pxPerDeg >= SCALE_LABEL_MIN_PX) ?? 90;

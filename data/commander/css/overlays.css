@@ -83,11 +83,35 @@ body.workstation-mode .tab-panel:not(#panel-operations):not([hidden]) > .overlay
 .analysis-component .detail-metrics dd { text-align: right; }
 
 /* Dialogs share one frame. */
-dialog { color: var(--text); background: var(--bg-2); border: 1px solid var(--line-strong); border-radius: calc(var(--radius) * 2); padding: 1rem; box-shadow: 0 1.5rem 3rem -1rem var(--shadow); }
-dialog::backdrop { background: color-mix(in srgb, var(--bg-0) 82%, transparent); }
-dialog h2 { margin-bottom: .5rem; color: var(--live); }
-#fire-confirm-dialog { width: min(92vw, 32rem); border-color: var(--alarm); }
-#fire-confirm-dialog h2 { color: var(--alarm); }
+/* The uConsole start screen's look: a night sky over the sea behind every
+   dialog, a console panel with phosphor corner brackets and a glowing title. */
+dialog {
+  --bracket: var(--live);
+  color: var(--text);
+  background:
+    linear-gradient(var(--bracket), var(--bracket)) top left / 1.4rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top left / 2px 1.4rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top right / 1.4rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top right / 2px 1.4rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom left / 1.4rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom left / 2px 1.4rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom right / 1.4rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom right / 2px 1.4rem no-repeat,
+    color-mix(in srgb, var(--bg-2) 92%, transparent);
+  border: 1px solid var(--line-strong); border-radius: calc(var(--radius) * 2); padding: 1rem; box-shadow: 0 1.5rem 3rem -1rem var(--shadow);
+}
+dialog::backdrop {
+  background:
+    radial-gradient(circle at 86% 12%, color-mix(in srgb, var(--text) 16%, transparent) 0 1.4rem, color-mix(in srgb, var(--text) 5%, transparent) 1.5rem, transparent 9rem),
+    linear-gradient(to bottom,
+      color-mix(in srgb, var(--night-sky) 87%, transparent) 0%,
+      color-mix(in srgb, var(--night-horizon) 87%, transparent) 43%,
+      color-mix(in srgb, var(--night-sea) 90%, transparent) 44%,
+      color-mix(in srgb, var(--night-deep) 95%, transparent) 100%);
+}
+dialog h2 { margin-bottom: .5rem; color: var(--live-strong); text-shadow: 0 0 .7rem color-mix(in srgb, var(--live) 45%, transparent); }
+#fire-confirm-dialog { --bracket: var(--alarm); width: min(92vw, 32rem); border-color: var(--alarm); }
+#fire-confirm-dialog h2 { color: var(--alarm); text-shadow: 0 0 .7rem color-mix(in srgb, var(--alarm) 45%, transparent); }
 #fire-confirm-dialog p { margin-bottom: 1rem; }
 .fire-confirm-actions, .host-dialog-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .8rem; }
 .host-dialog { width: min(92vw, 30rem); }

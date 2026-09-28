@@ -293,6 +293,10 @@ def test_all_runtime_views_draw_at_1280x720_in_both_languages_and_pseudolocale(t
                 game._open_administration(overlay)
                 game.draw()
                 assert game.screen.get_clip() == pygame.Rect(0, 0, 1280, 720)
+            # An open overlay replaces the station with the start-screen scene.
+            game.help_open = game.nations_open = game.options_open = False
+            game.quit_confirm = False
+            game.save_ui = None
             store = UserContentStore(tmp_path / translator.language)
             mission = MissionEditor(store=store, tr=translator.t)
             unit = UnitEditor(store=store, tr=translator.t)
@@ -310,3 +314,23 @@ def test_all_runtime_views_draw_at_1280x720_in_both_languages_and_pseudolocale(t
         game.help_open = game.nations_open = game.options_open = False
         game.quit_confirm = False
         game.save_ui = None
+
+
+def test_modal_overlays_show_the_start_screen_scene_instead_of_the_station():
+    from src.core.game import Game
+
+    game = Game(seed=31, fullscreen=False, window_size=(1280, 720),
+                audio_enabled=False)
+    with layout.capture_geometry() as station:
+        game.draw()
+    assert station
+    for overlay in ("help", "nations", "save", "options", "quit"):
+        game._open_administration(overlay)
+        assert game._splash_backdrop_active()
+        with layout.capture_geometry() as geometry:
+            game.draw()
+        assert geometry == []
+    game.quit_confirm = False
+    game.help_open = game.nations_open = game.options_open = False
+    game.save_ui = None
+    assert not game._splash_backdrop_active()

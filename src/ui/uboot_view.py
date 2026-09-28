@@ -18,7 +18,7 @@ from src.commander.server import OPFOR_ROLES
 from src.core import boat_esm, config, opfor, uboot_local
 from src.core.i18n import display_message, display_value, localize, message, raw_text
 from src.core.station import Station
-from src.ui import layout, lines, nato_symbols
+from src.ui import layout, lines, nato_symbols, overlay_style
 from src.ui.feedback import FeedEntry
 from src.ui.map_view import chart_background, draw_chart_frame, draw_chart_geography
 from src.ui.plot_view import draw_plot
@@ -1150,8 +1150,7 @@ def draw_end_panel(game, boat) -> None:
     campaign = game.campaign_end_line()
     extra = 36 if campaign is not None else 0
     rect = pygame.Rect(340, 250, 600, 150 + extra)
-    pygame.draw.rect(s, config.COLOR_OVERLAY_BG, rect)
-    pygame.draw.rect(s, config.COLOR_WARN, rect, 2)
+    overlay_style.panel(s, rect)
     key = end_text(game, boat)
     layout.blit_line(s, key, (rect.x + 16, rect.y + 20, rect.w - 32, 40),
                      config.COLOR_OK if key in _END_WINS else config.COLOR_WARN,

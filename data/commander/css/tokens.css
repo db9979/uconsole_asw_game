@@ -39,6 +39,12 @@
   --on-alarm: #1a0605;
   --shadow: #000000;
 
+  /* Night scene of the start screen behind dialogs: sky, horizon, sea. */
+  --night-sky: #03070f;
+  --night-horizon: #142c3e;
+  --night-sea: #0a2c3a;
+  --night-deep: #02090f;
+
   /* Names read by the canvas code (core/palette.js). */
   --bg: var(--bg-0);
   --panel: var(--bg-2);

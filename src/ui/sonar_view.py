@@ -1586,8 +1586,6 @@ def _detail_rows(game, page):
                                  deviation=f"{deviation:+.2f}", rpm=f"{rpm:.0f}"))
         elif tools.shaft_hz is not None:
             lines.append(message("sonar.line.shaft_rpm", rpm=f"{tools.shaft_hz * 60:.0f}"))
-        else:
-            lines.append("sonar.demon_manual_hint")
         lines.append("sonar.catalog_manual_hint")
         rows.extend((line, TEXT, 13) for line in lines)
         return rows
@@ -1691,8 +1689,10 @@ def _detail_rows(game, page):
         return rows
     bearing = getattr(sonar, "listen_bearing", 0.0) % 360
     rows.append((message("sonar.line.bearing_value", bearing=f"{bearing:05.1f}"), TEXT, 27))
-    lines = [message("sonar.line.beam", width=f"{getattr(sonar, 'beam_width_deg', 12):.1f}",
-                     mode=localize("sonar.track" if getattr(sonar, "focus_locked", False) else "ui.manual"))]
+    # LOFAR shows the beam width in its own beam/filter line.
+    lines = [] if page == 1 else [message(
+        "sonar.line.beam", width=f"{getattr(sonar, 'beam_width_deg', 12):.1f}",
+        mode=localize("sonar.track" if getattr(sonar, "focus_locked", False) else "ui.manual"))]
     if page == 3:
         quality = getattr(contact, "tma_quality", 0.0)
         course, speed = getattr(contact, "tma_course", None), getattr(contact, "tma_speed", None)
@@ -1748,15 +1748,11 @@ def _detail_rows(game, page):
             lines += [message("sonar.line.received_peaks", peaks=peak_text)]
         elif assist:
             lines += ["sonar.no_stable_lines"]
-        else:
-            lines += ["sonar.lofar_manual_hint"]
+        # Cursor keys are in the key row; notes about identification in F1.
         base = _selected_harmonic(game)
         if base is not None:
             lines += [message("sonar.line.harmonics", fundamental=f"{base:.1f}",
                               second=f"{base * 2:.1f}", third=f"{base * 3:.1f}")]
-        else:
-            lines += ["sonar.harmonic_not_selected"]
-        lines += ["sonar.lines_not_identification"]
     else:
         # Legends and interpretation notes live in F1, not on the scope.
         lines.append(_ping_line(game))

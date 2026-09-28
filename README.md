@@ -12,14 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.34**
+Current release: **1.3.35**
 
-Release 1.3.34 writes a crash log: every game start adds a start and an end
-line to `~/.u-jagd/crash.log`, and a game that ends on an error leaves its
-traceback there, or after a hard crash (a segmentation fault in SDL or audio,
-`SIGTERM`) the stacks of all threads. A start line with no end line means the
-game was killed from outside, usually by the kernel when memory ran out. The
-file stays below 256 KiB. Saves stay v26.
+Release 1.3.35 puts less text on the uConsole screens. The top bar names only
+the station and the clock, the chart header only its scale. The sonar loses its
+header status chips and legend lines and keeps one row of four main keys (the
+rest is in F1); a towed or variable-depth array shows its state only while it
+is moving or not ready. The submarine's threat box appears only while a threat
+is fresh, then an amber triangle next to the clock marks standing warnings.
+Courses read in whole degrees with °, and the turn radius shows only in a turn.
+The TMA header no longer overlaps, and the submarine's Weapons tab, tube line
+and alarm lines are no longer cut off. Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

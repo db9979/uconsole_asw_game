@@ -5525,5 +5525,6 @@
   "launcher.update.install": "Install update",
   "launcher.update.stop_first": "Stop the server before installing the update.",
   "launcher.update.downloading": "Downloading update ... {percent} %",
-  "launcher.update.failed": "The update failed. Download it from the releases page."
+  "launcher.update.failed": "The update failed. Download it from the releases page.",
+  "launcher.support": "Enjoying U-Jagd? Buy me a coffee"
 }

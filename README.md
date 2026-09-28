@@ -12,13 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.13**
+Current release: **1.3.14**
 
-Release 1.3.13 renders the uConsole screenshots after three simulated
-minutes instead of six seconds, so waterfalls, plots and contact lists are
-filled, and shows the Mission Editor with the packaged example mission (library
-and seeded sector preview) instead of an empty library. The README now links
-the menu and editor views too. Saves stay v23.
+Release 1.3.14 fixes the Windows program's self-update: after swapping in the
+new `U-Jagd-Windows.exe` it failed to start ("Failed to load Python DLL")
+because it inherited the old process's already deleted unpack directory. The
+restart now unpacks afresh. The starter window also shows the "Buy me a
+coffee" link. Saves stay v23.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -136,7 +136,7 @@ starter shows the browser address, the join code and a QR code; station
 requests are approved in the game window (F9) as on the uConsole. Windows may
 ask once whether U-Jagd may use private networks: allow it, otherwise other
 devices cannot connect. **Stop server** ends the game (unsaved progress is
-lost); the game log is kept in `%USERPROFILE%\.u-jagd\logs\server.log`.
+lost), and the link at the bottom opens the "Buy me a coffee" page; the game log is kept in `%USERPROFILE%\.u-jagd\logs\server.log`.
 
 At every start the program asks GitHub whether a newer release exists and
 offers **Install update**: it downloads the new file, checks its size and

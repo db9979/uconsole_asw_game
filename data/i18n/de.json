@@ -5525,5 +5525,6 @@
   "launcher.update.install": "Update installieren",
   "launcher.update.stop_first": "Stoppe den Server, bevor du das Update installierst.",
   "launcher.update.downloading": "Update wird geladen ... {percent} %",
-  "launcher.update.failed": "Das Update ist fehlgeschlagen. Lade es von der Release-Seite."
+  "launcher.update.failed": "Das Update ist fehlgeschlagen. Lade es von der Release-Seite.",
+  "launcher.support": "Gefällt dir U-Jagd? Spendier mir einen Kaffee"
 }

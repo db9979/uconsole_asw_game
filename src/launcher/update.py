@@ -155,6 +155,22 @@ def download(release: Release, destination: str, opener=urllib.request.urlopen,
     return destination
 
 
+def clean_environment(environ) -> dict:
+    """The environment for a fresh start of the (new) one-file executable.
+
+    A PyInstaller one-file program passes its extraction directory to child
+    processes (``_PYI_*``) so a child of the same executable reuses it. The
+    swapped-in update has the same path but must not: the old process has
+    already deleted that directory ("Failed to load Python DLL"). Dropping the
+    variables and setting ``PYINSTALLER_RESET_ENVIRONMENT`` makes it unpack
+    itself afresh.
+    """
+    env = {key: value for key, value in environ.items()
+           if not key.upper().startswith(("_PYI_", "_MEIPASS"))}
+    env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    return env
+
+
 def install_script(executable: str, downloaded: str, pid: int) -> str:
     """A ``cmd`` script that swaps the executable once ``pid`` has exited.
 

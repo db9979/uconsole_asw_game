@@ -14,14 +14,13 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.13**
+Aktuelle Version: **1.3.14**
 
-Version 1.3.13 rendert die uConsole-Screenshots nach drei simulierten
-Minuten statt nach sechs Sekunden, damit Wasserfälle, Plots und Kontaktlisten
-gefüllt sind, und zeigt den Missionseditor mit der mitgelieferten
-Beispielmission (Bibliothek und Seed-Vorschau des Sektors) statt einer leeren
-Bibliothek. Die README verlinkt jetzt auch Menü- und Editoransichten.
-Spielstände bleiben v23.
+Version 1.3.14 behebt das Selbst-Update des Windows-Programms: Nach dem
+Austausch startete die neue `U-Jagd-Windows.exe` nicht ("Failed to load
+Python DLL"), weil sie das bereits gelöschte Entpackverzeichnis des alten
+Prozesses erbte. Der Neustart entpackt jetzt frisch. Das Starterfenster zeigt
+außerdem den Link "Spendier mir einen Kaffee". Spielstände bleiben v23.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -139,7 +138,8 @@ zeigt Browser-Adresse, Beitrittscode und QR-Code; Stationsanfragen bestätigst
 du wie auf dem uConsole im Spielfenster (F9). Windows fragt eventuell einmal,
 ob U-Jagd private Netzwerke nutzen darf: zulassen, sonst können sich andere
 Geräte nicht verbinden. **Server stoppen** beendet das Spiel (nicht
-gespeicherter Fortschritt geht verloren); das Protokoll liegt in
+gespeicherter Fortschritt geht verloren), und der Link unten öffnet die
+"Buy me a coffee"-Seite; das Protokoll liegt in
 `%USERPROFILE%\.u-jagd\logs\server.log`.
 
 Bei jedem Start fragt das Programm GitHub, ob es ein neueres Release gibt, und

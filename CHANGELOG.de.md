@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.14
+
+Version 1.3.14 bringt **Bootsmissionen**: Szenario 5 *Durchbruch* (das U-Boot
+muss ein Zielgebiet hinter der Patrouillenposition der Fregatte erreichen)
+und Szenario 6 *Aufklärung* (es muss die Fregatte durch das Sehrohr sichten
+und eine Lagemeldung funken, während sie in Sicht ist). Die Fregatte muss das
+verhindern. Der Auftrag des Boots steht über seiner Karte und in den
+Bootsstationen im Browser; das Ziel ist auf der Bootskarte markiert.
+Spielstände bleiben v23.
+
 ## 1.3.13
 
 Version 1.3.13 rendert die uConsole-Screenshots nach drei simulierten

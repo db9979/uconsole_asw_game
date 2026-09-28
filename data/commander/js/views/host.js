@@ -10,7 +10,8 @@ import { opforRoles } from "../core/base.js";
 
 // ---- Solo host surface --------------------------------------------------
 const scenarioText = {s1_patrouille: "scenario_s1_patrouille", s2_doppeljagd: "scenario_s2_doppeljagd",
-  s3_abfang: "scenario_s3_abfang", s4_zufall: "scenario_s4_zufall"};
+  s3_abfang: "scenario_s3_abfang", s4_zufall: "scenario_s4_zufall",
+  s5_durchbruch: "scenario_s5_durchbruch", s6_aufklaerung: "scenario_s6_aufklaerung"};
 const hostPhaseAllows = (kind) => {
   const phase = S.hostView?.phase;
   return kind === "any" ? phase === "live" :

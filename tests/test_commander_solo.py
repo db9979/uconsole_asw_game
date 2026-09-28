@@ -383,7 +383,8 @@ def test_host_view_is_published_only_to_a_solo_session(solo):
     # Real time only: the host view carries no pause or time-scale state.
     assert "paused" not in view and "time_scale" not in view
     assert [row["key"] for row in view["scenarios"]] == [
-        "s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall"]
+        "s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
+        "s5_durchbruch", "s6_aufklaerung"]
     assert [row["name"] for row in view["difficulty_fields"]] == list(
         config.DIFFICULTY_FIELD_ORDER)
     assert view["difficulty"] == config.DEFAULT_DIFFICULTY

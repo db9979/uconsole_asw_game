@@ -459,6 +459,7 @@ class MissionBridgeMixin:
             return raw_text(self.mission.name)
         keys = {"patrouille": "mission.patrol", "doppeljagd": "mission.double",
                 "konvoi": "mission.convoy", "nuklearer_abfang": "mission.intercept",
+                "durchbruch": "mission.breakthrough", "aufklaerung": "mission.recon",
                 "custom": "mission.custom"}
         return message(keys[self.mission.type_key])
 
@@ -468,8 +469,7 @@ class MissionBridgeMixin:
     def mission_description_display(self):
         if self.custom_mission_definition is not None:
             return raw_text(self.custom_mission_definition.get("description", ""))
-        scenario = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
-                    "s3_abfang": "intercept", "s4_zufall": "random"}[self.scenario_key]
+        scenario = config.SCENARIO_NAMES[self.scenario_key]
         return "scenario." + scenario + ".brief"
 
     def mission_entity(self, unit_id: str):
@@ -497,7 +497,9 @@ class MissionBridgeMixin:
                             "protect": "mission.objective.protect",
                             "reach": "mission.objective.reach"}.get(
                                 objective_type, "mission.objective.sink"))
-        if self.mission.win_mode == "survive":
+        if self.mission.win_mode in ("breakthrough", "recon"):
+            objective = message("mission.objective." + self.mission.win_mode)
+        elif self.mission.win_mode == "survive":
             objective = message("mission.objective.convoy")
         elif self.mission.type_key == "nuklearer_abfang":
             objective = message("mission.objective.intercept")

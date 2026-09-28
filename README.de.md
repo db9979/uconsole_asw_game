@@ -14,13 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.13**
+Aktuelle Version: **1.3.14**
 
-Version 1.3.13 rendert die uConsole-Screenshots nach drei simulierten
-Minuten statt nach sechs Sekunden, damit Wasserfälle, Plots und Kontaktlisten
-gefüllt sind, und zeigt den Missionseditor mit der mitgelieferten
-Beispielmission (Bibliothek und Seed-Vorschau des Sektors) statt einer leeren
-Bibliothek. Die README verlinkt jetzt auch Menü- und Editoransichten.
+Version 1.3.14 bringt **Bootsmissionen**: Szenario 5 *Durchbruch* (das U-Boot
+muss ein Zielgebiet hinter der Patrouillenposition der Fregatte erreichen)
+und Szenario 6 *Aufklärung* (es muss die Fregatte durch das Sehrohr sichten
+und eine Lagemeldung funken, während sie in Sicht ist). Die Fregatte muss das
+verhindern. Der Auftrag des Boots steht über seiner Karte und in den
+Bootsstationen im Browser; das Ziel ist auf der Bootskarte markiert.
 Spielstände bleiben v23.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

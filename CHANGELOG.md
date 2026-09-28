@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.14
+
+Release 1.3.14 adds **boat missions**: scenario 5 *Breakthrough* (the submarine
+must reach a goal area beyond the frigate's patrol position) and scenario 6
+*Reconnaissance* (it must sight the frigate through the periscope and radio a
+situation report while it is in sight). The frigate's task is to stop it. The
+boat's orders stand over its chart and in the browser's boat stations; the
+goal is marked on the boat's chart. Saves stay v23.
+
 ## 1.3.13
 
 Release 1.3.13 renders the uConsole screenshots after three simulated

@@ -12,7 +12,13 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.2**
+Aktuelle Version: **1.3.3**
+
+Version 1.3.3 zeichnet die Wasserfälle (LOFAR, DEMON, Breitband) im
+Remote-Crew-Browser über `OffscreenCanvas` in einem Hintergrund-Worker, wo der
+Browser das anbietet; der Hauptthread der Seite und das Live-Sonaraudio darauf
+laufen die Rasterschleife nicht mehr. Andere Browser behalten den bisherigen
+Weg. Spielstände bleiben v22.
 
 Version 1.3.2 lässt im Missionseditor die Referenzwelt einer Mission aus einer
 Liste der 128 mitgelieferten Sektoren (mit ihren Ländern) wählen, statt

@@ -1554,3 +1554,22 @@ Notizen Phase 1:
   `size_nm = 500`. Die Vorschau zeichnet die Küste des Referenzsektors aus
   einem einmal pro Prozess geladenen Sektor-Cache (`sector_summaries`).
 - Weiter offen aus 1.3: OffscreenCanvas (Phase 11), VDS (Phase 7).
+
+## OffscreenCanvas-Wasserfall (2026-09-28, App 1.3.3)
+
+- A11.3 nachgeholt, nur fuer den Wasserfall: `plot/heatmap.js` packt die
+  Zeilen in Typed Arrays (`heatmapJob`), `plot/heatmap-paint.js` malt sie
+  (rein, auch im Worker), `plot/heatmap-worker.js` malt in ein
+  `OffscreenCanvas` und schickt ein `ImageBitmap` zurueck. Ein Auftrag je
+  Plot unterwegs, ein neuerer ersetzt den wartenden. Bis zur Antwort scrollt
+  das vorige Bitmap mit seinem eigenen Anker weiter.
+- Fallback ohne `Worker`/`OffscreenCanvas` oder nach Worker-Fehler: bisheriger
+  Hauptthread-Weg. `<html data-heatmap-worker>` meldet `on`/`off`/`headless`.
+- Headless Chromium: virtuelle Zeit steht still, solange ein Worker existiert
+  (auch klassische Worker); die `--virtual-time-budget`-Proben wuerden haengen.
+  Headless daher Hauptthread, ausser `globalThis.uJagdHeatmapWorker = true`
+  (`tests/test_commander_heatmap_worker.py`, Echtzeit ueber DevTools,
+  vergleicht Worker-Pixel mit dem Hauptthread-Maler, CSP des Listeners).
+- Karte bleibt auf dem Hauptthread: Culling plus 0,02 ms Mittel je Frame
+  (Messung Phase 11), ein Worker-Umbau des Vektorbilds bringt dort nichts.
+- Weiter offen aus 1.3: VDS (Phase 7).

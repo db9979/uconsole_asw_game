@@ -30,7 +30,9 @@ const plotAxes = (plot) => ({...plot, width: 300, height: 200});
 let rasterBuilds = 0;
 const nativePut = CanvasRenderingContext2D.prototype.putImageData;
 CanvasRenderingContext2D.prototype.putImageData = function (...args) { rasterBuilds++; return nativePut.apply(this, args); };
+const heatmapWorker = () => null;
 __CLOCK__
+__PAINT__
 __HEATMAP__
 __SPECTRUM__
 const check = (ok, label) => { if (!ok) throw new Error(label); };
@@ -132,6 +134,7 @@ def test_waterfalls_and_spectra_move_smoothly_between_publications(tmp_path):
         pytest.skip("Chromium unavailable")
     script = (SCRIPT
               .replace("__CLOCK__", module_source("state/display-clock.js", "const DISPLAY_CLOCK_LAG_S"))
+              .replace("__PAINT__", module_source("plot/heatmap-paint.js", "function paintHeatmap("))
               .replace("__HEATMAP__", module_source("plot/heatmap.js", "function heatmap("))
               .replace("__SPECTRUM__", module_source("plot/spectrum.js", "const SPECTRUM_SMOOTHING_S",
                                                      "function drawSpectrum")))

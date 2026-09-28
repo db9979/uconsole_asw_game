@@ -5,6 +5,8 @@ from commander_web import ASSET_DIR, run_module_probe
 
 JS = ASSET_DIR / "js"
 IMPORT = re.compile(r'^import (?:\{[^}]*\} from )?"([^"]+)";', re.M)
+# A module worker is started from its client module, not imported by it.
+WORKER = re.compile(r'new Worker\(new URL\("([^"]+)", import\.meta\.url\)')
 
 
 def _imports(path):
@@ -39,6 +41,8 @@ def test_every_module_is_reachable_from_the_entry_point():
             continue
         seen.add(name)
         stack.extend(_imports(JS / name))
+        stack.extend((JS / name).parent.joinpath(target).resolve().relative_to(JS.resolve()).as_posix()
+                     for target in WORKER.findall((JS / name).read_text(encoding="utf-8")))
     assert seen == {path.relative_to(JS).as_posix() for path in JS.rglob("*.js")}
 
 
@@ -68,3 +72,14 @@ requestAnimationFrame(() => requestAnimationFrame(() => {
     root = run_module_probe(tmp_path, probe)
     assert json.loads(root["data-result"]) == {
         "calls": ["a1", "b", "c"], "order": [["first", 7], ["second", 7]]}
+
+
+def test_workers_touch_no_page_state():
+    """A worker has no DOM: it imports only other page-free plot painters."""
+    for path in sorted(JS.rglob("*-worker.js")):
+        text = path.read_text(encoding="utf-8")
+        for forbidden in ("document", "window", "$(", "S.v2State"):
+            assert forbidden not in text, (path.name, forbidden)
+        for target in _imports(path):
+            imported = (JS / target).read_text(encoding="utf-8")
+            assert not IMPORT.findall(imported) and "document" not in imported, (path.name, target)

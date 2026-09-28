@@ -4,14 +4,23 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.21
+## 1.3.22
 
-Release 1.3.21 gives every menu and dialog the start screen's look: help,
+Release 1.3.22 gives every menu and dialog the start screen's look: help,
 options, save/load, quit, nations, Remote Crew administration (`F9`) and the
 mission end now show the night hunt behind a translucent console panel with
 phosphor corner brackets and a glowing title, while the mission keeps running
 behind them. In high contrast the panels stay opaque. Browser dialogs use the
 same night sky and bracket frame. Saves stay v24.
+
+## 1.3.21
+
+Release 1.3.21 lets the crewed boat go **below its test depth**, down to crush
+depth (1.5 x test depth), at a growing risk: sheared bolts, failed shaft or
+valve seals and, deeper, a cracked pressure hull flood compartments and add
+damage, far more often the deeper the boat goes; at crush depth the hull
+collapses. The depth columns mark the crush depth and a red alarm shows while
+the boat is below test depth. Saves stay v24.
 
 ## 1.3.20
 

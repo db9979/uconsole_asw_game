@@ -81,6 +81,8 @@ class CrewOrders:
               "boat_light": "navigation", "trim_angle": "navigation",
               "hp_air_low": "navigation", "dc_leak": "schaden", "dc_fire": "schaden",
               "dc_fire_out": "schaden", "dc_leak_sealed": "schaden",
+              "hull_bolts": "schaden", "hull_seal": "schaden",
+              "hull_fracture": "schaden", "hull_collapse": "schaden",
               "dc_flooded": "schaden", "dc_chlorine": "schaden",
               "dc_power_lost": "schaden", "dc_power_restored": "schaden",
               "radio_sending": "funk", "radio_sent": "funk", "radio_aborted": "funk",

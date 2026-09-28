@@ -61,6 +61,17 @@ def crush_depth_m(test_depth_m: float) -> float:
     return test_depth_m * CRUSH_SAFETY_FACTOR
 
 
+# A crewed boat below its test depth: hull failures (bolts, seals, cracks)
+# at a rate growing with the square of the excess, about one every six
+# minutes at 110 %, one a minute at 125 % and one every 20 s at 140 %.
+OVERDEPTH_RATE_K = 0.28
+
+
+def overdepth_rate_per_s(depth_m: float, test_depth_m: float) -> float:
+    excess = depth_m / max(test_depth_m, 1.0) - 1.0
+    return OVERDEPTH_RATE_K * excess * excess if excess > 0.0 else 0.0
+
+
 def fatigue_rate_per_s(depth_m: float, test_depth_m: float) -> float:
     ratio = depth_m / max(test_depth_m, 1.0)
     if ratio <= TEST_DEPTH_FATIGUE_START:

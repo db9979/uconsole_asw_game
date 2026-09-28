@@ -5589,5 +5589,13 @@
   "commander.web.uboot_solution_value": "{course} {speed} · Vorhalt {lead} · Laufzeit {run} ({marks} Marken)",
   "commander.web.uboot_solution_marks": "{marks} Marke(n)",
   "commander.web.uboot_solution_no_intercept": "{course} {speed} · kein Treffpunkt",
-  "help.uboot.scope_fire": "Sehrohrseite: Schuss nach der Lösung des Angriffsrechners für die Sichtung unter dem Fadenkreuz (Führung)"
+  "help.uboot.scope_fire": "Sehrohrseite: Schuss nach der Lösung des Angriffsrechners für die Sichtung unter dem Fadenkreuz (Führung)",
+  "uboot.event.hull_bolts": "Bolzen einer Durchführung gebrochen: {compartment}.",
+  "uboot.event.hull_seal": "Dichtung unter Druck versagt: {compartment}.",
+  "uboot.event.hull_fracture": "Druckkörper gerissen: {compartment}!",
+  "uboot.event.hull_collapse": "Zerstörungstiefe: der Druckkörper bricht zusammen.",
+  "uboot.threat.overdepth": "UNTER TESTTIEFE {depth} m (Test {test} m, Zerstörung {crush} m)",
+  "uboot.ladder.crush": "Zerstörung {depth} m",
+  "commander.web.uboot_depth_mark_crush": "Zerstörung {depth} m",
+  "commander.web.uboot_chip_overdepth": "Unter Testtiefe {test} m (Zerstörung {crush} m)"
 }

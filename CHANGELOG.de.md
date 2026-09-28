@@ -4,15 +4,25 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.21
+## 1.3.22
 
-Version 1.3.21 gibt allen Menüs und Dialogen das Aussehen des Startbildschirms:
+Version 1.3.22 gibt allen Menüs und Dialogen das Aussehen des Startbildschirms:
 Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Remote-Crew-Verwaltung
 (`F9`) und das Missionsende zeigen jetzt die nächtliche Jagd hinter einem
 durchscheinenden Konsolen-Panel mit Phosphor-Eckwinkeln und leuchtendem Titel;
 die Mission läuft dahinter weiter. Bei hohem Kontrast bleiben die Panels
 deckend. Die Browser-Dialoge nutzen denselben Nachthimmel und Winkelrahmen.
 Spielstände bleiben v24.
+
+## 1.3.21
+
+Version 1.3.21 lässt das besetzte Boot **unter seine Testtiefe** tauchen, bis zur
+Zerstörungstiefe (1,5-fache Testtiefe), mit wachsendem Risiko: gebrochene
+Bolzen, versagende Wellen- oder Ventildichtungen und, tiefer, ein Riss im
+Druckkörper fluten Abteilungen und erhöhen den Schaden, je tiefer, desto
+häufiger; in Zerstörungstiefe bricht der Druckkörper zusammen. Die
+Tiefenleitern markieren die Zerstörungstiefe, und ein roter Alarm zeigt die
+Fahrt unter der Testtiefe. Spielstände bleiben v24.
 
 ## 1.3.20
 

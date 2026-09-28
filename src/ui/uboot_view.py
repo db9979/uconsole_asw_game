@@ -399,6 +399,10 @@ def threats(game, boat) -> list:
                              count=len(crew.esm)), "warn"))
     if sub.cavitating:
         rows.append((message("uboot.threat.cavitation"), "warn"))
+    if sub.beyond_test_depth():
+        rows.insert(0, (message("uboot.threat.overdepth", depth=_fmt(sub.depth),
+                                test=_fmt(sub.stype.max_depth_m),
+                                crush=_fmt(sub.crush_depth_m)), "danger"))
     ahead = crew.obstacle_ahead_nm if crew is not None else None
     if ahead is not None and sub.order_speed > 0.0:
         rows.append((message("uboot.threat.obstacle", distance=f"{ahead:.1f}"), "warn"))
@@ -453,7 +457,7 @@ def draw_depth_ladder(s, game, boat, rect) -> None:
     profile = boat.station.sonar.bt_profile
     layer = profile["thermocline_m"] if profile else None
     scale_max = max(100.0, bottom if math.isfinite(bottom) else 0.0,
-                    sub.stype.max_depth_m, sub.depth, sub.order_depth) * 1.08
+                    sub.crush_depth_m, sub.depth, sub.order_depth) * 1.08
     column = pygame.Rect(x + 60, y + 4, max(40, w - 60 - 200), h - 8)
 
     def depth_y(value):
@@ -487,6 +491,10 @@ def draw_depth_ladder(s, game, boat, rect) -> None:
     sy = depth_y(safe)
     _dashed_hline(s, config.COLOR_DANGER, column.x, column.right, sy)
     marks.append((sy, message("uboot.ladder.safe", depth=_fmt(safe)), config.COLOR_DANGER))
+    cy = depth_y(sub.crush_depth_m)
+    lines.line(s, config.COLOR_DANGER, (column.x, cy), (column.right - 1, cy), 2)
+    marks.append((cy, message("uboot.ladder.crush", depth=_fmt(sub.crush_depth_m)),
+                  config.COLOR_DANGER))
     oy = depth_y(sub.order_depth)
     _dashed_hline(s, config.COLOR_TEXT, column.x, column.right, oy, dash=3)
     marks.append((oy, message("uboot.ladder.order", depth=_fmt(sub.order_depth)),

@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.31
+
+Release 1.3.31 gives the crewed submarine real torpedo tubes: the torpedo gang
+loads each empty tube from the racks (`M` at the Weapons station, or Load in
+the browser), and a loaded tube must be flooded before it fires, which takes
+20 s and can be heard (`Shift+M`, or Flood). Every submarine now carries as
+many reloads again as it has tubes, reloaded in 2 to 4 minutes; the AI's
+submarines keep loading and flooding by themselves. Saves are now v26.
+
 ## 1.3.30
 
 Release 1.3.30 lets the **frigate play the submarine missions against the AI**:

@@ -1569,8 +1569,9 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             mast=bool(sub.crew is not None and sub.crew.mast)),
         weapons=dict(
             torpedoes=int(sub.torpedoes_left),
-            tubes_ready=(int(sub.weapon_battery.ready_count)
-                         if sub.weapon_battery is not None else 0),
+            tubes_ready=opfor.tubes_flooded(sub),
+            tubes=[dict(state=state, seconds=_number(seconds))
+                   for state, seconds in opfor.tube_states(sub)[:32]],
             reload_s=(_number(sub.weapon_battery.next_reload_s)
                       if sub.weapon_battery is not None else None),
             ready=reason is None, reason=reason,

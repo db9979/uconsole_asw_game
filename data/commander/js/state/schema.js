@@ -304,10 +304,12 @@ export function validateV2State(state) {
         [status.emergency_ascent, status.blow_available, status.transmitting].some((value) => typeof value !== "boolean") ||
         (status.battery !== null && !finite(status.battery)) ||
         (status.endurance_phase !== null && (typeof status.endurance_phase !== "string" || status.endurance_phase.length > 16)) ||
-        !exactKeys(weapons, ["torpedoes", "tubes_ready", "reload_s", "ready", "reason", "arc_center_deg", "arc_width_deg", "decoys", "decoy_ready"]) ||
+        !exactKeys(weapons, ["torpedoes", "tubes_ready", "tubes", "reload_s", "ready", "reason", "arc_center_deg", "arc_width_deg", "decoys", "decoy_ready"]) ||
+        !boundedArray(weapons.tubes, 32) || weapons.tubes.some((row) => !exactKeys(row, ["state", "seconds"]) ||
+          !["empty", "loading", "dry", "flooding", "flooded"].includes(row.state) || (row.seconds !== null && !finite(row.seconds))) ||
         [weapons.torpedoes, weapons.tubes_ready, weapons.decoys].some((value) => !Number.isInteger(value) || value < 0) ||
         typeof weapons.ready !== "boolean" || typeof weapons.decoy_ready !== "boolean" ||
-        (weapons.reason !== null && !["not_ready", "no_torpedoes", "reloading", "out_of_arc"].includes(weapons.reason)) ||
+        (weapons.reason !== null && !["not_ready", "no_torpedoes", "reloading", "out_of_arc", "uboot_compartment_down", "uboot_tube_dry"].includes(weapons.reason)) ||
         [weapons.reload_s, weapons.arc_center_deg, weapons.arc_width_deg].some((value) => value !== null && !finite(value)) ||
         !exactKeys(alarms, ["ping_age_s", "torpedo_age_s", "ping_bearing", "torpedo_bearing", "esm"]) ||
         [alarms.ping_age_s, alarms.torpedo_age_s, alarms.ping_bearing, alarms.torpedo_bearing].some((value) => value !== null && !finite(value)) ||

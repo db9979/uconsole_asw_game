@@ -199,6 +199,22 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
                     or not bounded(mark[1], -1e5, 1e5) or not bounded(mark[2], -1e5, 1e5)):
                 return False
             last_t = mark[0]
+    # Save v26: the flood state of each tube of the crewed boat's battery.
+    battery = sub_rows[sub_id].get("asw_battery")
+    battery_tubes = battery.get("tubes") if isinstance(battery, dict) else None
+    tubes = orders["tubes"]
+    if (not isinstance(tubes, list)
+            or len(tubes) != (len(battery_tubes) if isinstance(battery_tubes, list) else 0)):
+        return False
+    for index, row in enumerate(tubes):
+        if (not isinstance(row, list) or len(row) != 2
+                or row[0] not in config.UBOOT_TUBE_STATES
+                or not bounded(row[1], 0.0, config.UBOOT_TUBE_FLOOD_S)
+                or (row[0] == "flooding") != (row[1] > 0.0)
+                or (row[0] != "dry" and (not isinstance(battery_tubes[index], dict)
+                                         or battery_tubes[index].get("loaded_weapon_key")
+                                         is None))):
+            return False
     seen = orders["sightings_seen"]
     if (not isinstance(seen, list) or len(seen) > 64
             or any(not isinstance(item, str) or not 1 <= len(item) <= 16 for item in seen)

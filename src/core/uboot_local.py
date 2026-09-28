@@ -39,6 +39,9 @@ _SONAR_BLOCKED = frozenset({
 UBOOT_INPUT_MODES = ("uboot_course", "uboot_speed", "uboot_depth", "uboot_bearing",
                      "uboot_range", "uboot_torpedo_depth", "uboot_wire_bearing",
                      "uboot_wire_range")
+# Rejections of the tube orders (``Sub.command_load_tube``/``command_flood_tube``).
+TUBE_REASONS = ("not_ready", "no_torpedoes", "uboot_compartment_down", "uboot_tubes_full",
+                "uboot_no_dry_tube")
 # Rejections of boat-mode orders that have their own local text.
 UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot_mast_depth",
                        "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
@@ -191,6 +194,7 @@ def _fire_notice(game, result) -> None:
                            reason=message(f"uboot.reason.{result}")
                            if result in ("not_ready", "no_torpedoes", "reloading",
                                          "out_of_arc", "stale_ref", "unknown_ref",
+                                         "uboot_tube_dry",
                                          "uboot_no_wire", "invalid_value",
                                          "uboot_compartment_down", "uboot_no_solution",
                                          "uboot_mast_down", "uboot_no_sighting")
@@ -583,6 +587,17 @@ def _command_key(game, current, key, mods) -> None:
                 team, compartment, current.dc_task), team=team + 1,
                 compartment=message(f"uboot.compartment.{compartment}"),
                 task=message(f"uboot.dc.task.{current.dc_task}"))
+    elif page == "UBOOT_WEAPONS" and key == pygame.K_m:
+        flood = bool(mods & pygame.KMOD_SHIFT)
+        if order_allowed(game, "uboot_tube_flood" if flood else "uboot_tube_load"):
+            result = sub.command_flood_tube() if flood else sub.command_load_tube()
+            if result is True:
+                _announce(game, "waffen", message(
+                    "uboot.local.tube_flooding" if flood else "uboot.local.tube_loading"))
+            else:
+                game.flash(message("uboot.local.tube_rejected", reason=message(
+                    f"uboot.reason.{result}" if result in TUBE_REASONS
+                    else "uboot.reason.not_ready")), 2.0)
     elif page == "UBOOT_DAMAGE" and key == pygame.K_m:
         if order_allowed(game, "uboot_watch_change") and game.boat_change_watch() is not True:
             game.flash(message("crew.watch_blocked"), 2.0)

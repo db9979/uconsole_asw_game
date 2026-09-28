@@ -134,7 +134,15 @@ UBOOT_REASONS = frozenset((
     "uboot_mast_down", "uboot_no_sighting", "uboot_no_stadimeter",
     "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
     "uboot_no_air_stores", "uboot_no_hp_air", "uboot_compartment_down",
-    "uboot_no_antenna", "uboot_transmitting", "uboot_no_solution"))
+    "uboot_no_antenna", "uboot_transmitting", "uboot_no_solution",
+    "uboot_tube_dry", "uboot_tubes_full", "uboot_no_dry_tube"))
+
+
+def _uboot_tube_params(params):
+    """``{"tube": index}`` (0-based) or ``{"tube": None}`` for the next one."""
+    return (type(params) is dict and set(params) == {"tube"}
+            and (params["tube"] is None
+                 or (type(params["tube"]) is int and 0 <= params["tube"] < 32)))
 
 
 def _uboot_ballast_params(params):
@@ -621,6 +629,9 @@ V2_ACTION_REGISTRY = {
     "uboot_fire": V2Action(frozenset({"uboot_weapons"}), _uboot_fire_params,
                            direct_fire=True),
     "uboot_decoy": V2Action(frozenset({"uboot_weapons"}), _no_params),
+    # The torpedo room loads each tube and floods it before the shot.
+    "uboot_tube_load": V2Action(frozenset({"uboot_weapons"}), _uboot_tube_params),
+    "uboot_tube_flood": V2Action(frozenset({"uboot_weapons"}), _uboot_tube_params),
     "uboot_evade": V2Action(frozenset({"uboot", "uboot_nav"}), _no_params),
     "uboot_blow": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
     "uboot_snorkel": V2Action(frozenset({"uboot_engine"}), _bool_params("enabled")),

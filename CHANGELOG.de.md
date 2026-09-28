@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.31
+
+Version 1.3.31 gibt dem besetzten U-Boot echte Torpedorohre: Die Torpedogasten
+laden jedes leere Rohr aus den Reserven (`M` an der Station Waffen oder Laden
+im Browser), und ein geladenes Rohr muss vor dem Schuss geflutet werden, was
+20 s dauert und hörbar ist (`Shift+M` oder Fluten). Jedes U-Boot führt jetzt
+noch einmal so viele Reservetorpedos wie Rohre, nachgeladen in 2 bis 4
+Minuten; die U-Boote der KI laden und fluten weiter selbst. Spielstände sind
+jetzt v26.
+
 ## 1.3.30
 
 Version 1.3.30 lässt die **Fregatte die U-Boot-Missionen gegen die KI

@@ -14,24 +14,21 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.45**
+Aktuelle Version: **1.3.46**
 
-Version 1.3.45 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:
-Wolken, Sterne, Sonne und Mond bleiben stehen, während See und Horizont mit dem
-Seegang schwanken. Von der Dämmerung bis zum Morgen und bei schlechter Sicht
-führen neutrale Schiffe ihre Positionslichter nach den
-Kollisionsverhütungsregeln: weiße Topplichter, das rote oder grüne Seitenlicht
-der Seite, die man sieht, von achtern das weiße Hecklicht, jedes in seiner
-Tragweite, und die Rundumlichter von Fahrzeugen bei der Arbeit (Trawler, Lotse,
-Vermesser und Kabelleger, Minenräumer), zivile Flugzeuge ihre Flügelspitzen-,
-Heck- und blitzenden Kollisionswarnlichter; der Bug zeigt dorthin, wohin die Lichter weisen, und ein
-beleuchtetes Schiff wird im Dunkeln an seinen Lichtern gesichtet.
-Kriegsschiffe und Militärflugzeuge bleiben dunkel. Die See folgt dem Wind:
-gegen die See laufen die Kämme auf einen zu, mit der See davon, quer dazu
-seitlich, und das Schiff stampft in Gegensee und rollt in Dwarssee. Fernglas und
-Sehrohr lassen sich jetzt nach oben und unten neigen, zoomen (Fernglas 16°, 8°,
-4°; Sehrohr kleine und große Vergrößerung) und haben eine
-Horizontstabilisierung. Auf der uConsole und im Browser; Spielstände bleiben v27.
+Version 1.3.46 schickt ein Handy auf Wache. `F9` zeigt einen zweiten QR-Code,
+Handy-Ausguck: scannen, das eigene Zertifikat des Spiels einmal bestätigen, den
+Kopplungscode eintippen, und das Handy wird zum Ausguck auf der Brücke der
+Fregatte oder zum Sehrohr des besetzten U-Boots. Das Handy wie ein Fernglas
+drehen (Gyroskop) oder wischen, zoomen und melden, was zu sehen ist, per
+Sprache („Schiff Peilung 040, Entfernung 5 Meilen“) oder durch Antippen. Die
+Brücke hört nur, was der Ausguck dort wirklich hat; eine Meldung von nichts wird
+abgelehnt. Solange ein Handy Wache hält, schweigt der automatische Ausguck, und
+die Crew-Browser sprechen jede bestätigte Meldung. Am Sehrohr dreht das Handy
+das Sehrohr und nimmt Stadimeter-Entfernungen. Der Listener liefert die Seite
+über HTTPS auf dem nächsten Port (selbst erzeugtes Zertifikat), weil Handys
+Gyroskop und Mikrofon nur einer sicheren Seite freigeben; Spielstände bleiben
+v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

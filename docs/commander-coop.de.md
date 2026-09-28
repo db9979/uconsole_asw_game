@@ -114,6 +114,19 @@ unter Linux.
   Unbekannte oder veraltete Beobachtungen liefern nicht allein deshalb zusätzliche
   Informationen, weil Commander sie auswählt. Menü-, Editor- und Splash-Seiten
   geben keine vorgenerierte taktische Welt preis.
+- Handy-Ausguck: Die Rollen `lookout` (Ausguck der Fregatte) und
+  `uboot_lookout` (Sehrohr des besetzten U-Boots) gehören Handys, die über
+  `/lookout` gekoppelt werden. Ein Handy koppelt direkt auf seine Rolle
+  (Kopplungsfeld `role`), übernimmt nie eine andere Station und darf im
+  Solo-Modus neben der Solo-Sitzung dazukommen (ein Handy je Rolle). Der
+  F9-Listener bedient zusätzlich HTTPS auf dem nächsten Port mit einem selbst
+  erzeugten Zertifikat für seine LAN-Adresse (`~/.u-jagd/tls/`), weil Handys
+  Gyroskop und Mikrofon nur einer sicheren Seite freigeben; F9 zeigt dafür
+  einen zweiten QR-Code. Das Handy meldet Sichtungen (`lookout_call`:
+  Kategorie, Peilung, optional Entfernung); der Host bestätigt eine Meldung
+  nur, wenn sein Ausguck oder Sehrohr dort eine passende Sichtung hat. Solange
+  ein Handy den Ausguck hält, meldet der automatische Ausguck keine Schiffe,
+  Flugzeuge und Torpedos mehr.
 
 ## Anzeige und Alarme
 

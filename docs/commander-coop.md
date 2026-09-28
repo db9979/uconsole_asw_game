@@ -97,6 +97,17 @@ Linux-only. Allow U-Jagd on private networks when the Windows firewall asks.
   Unknown or stale observations never gain information merely because the
   Commander selects them. Menu/editor/splash pages disclose no pregenerated
   tactical world.
+- Phone lookouts: the roles `lookout` (the frigate's bridge lookout) and
+  `uboot_lookout` (the crewed submarine's periscope) belong to phones paired
+  through `/lookout`. A phone pairs straight onto its role (pair body `role`),
+  never takes another station, and in solo mode may join beside the solo
+  session (one phone per role). The F9 listener also serves HTTPS on the next
+  port with a self-signed certificate for its LAN address (`~/.u-jagd/tls/`),
+  because phones only give the gyroscope and the microphone to a secure page;
+  F9 shows a second QR code for it. The phone calls sightings (`lookout_call`:
+  category, bearing, optional range); the host confirms a call only when its
+  lookout or periscope has a matching sighting there. While a phone holds the
+  lookout, the automatic lookout stops reporting ships, aircraft and torpedoes.
 
 ## Display and Alarms
 

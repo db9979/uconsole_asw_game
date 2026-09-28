@@ -171,8 +171,24 @@ def call(game, category: str, bearing: float, range_nm=None):
                 and (best is None or off < best[0])):
             best = (off, eye)
     if best is None:
-        _log(game, "frigate", category, bearing, range_nm, False)
-        return "lookout_not_confirmed"
+        # A sighting already on the bridge (called before, or reported before
+        # the phone took the watch) may be called again: a repeated report.
+        for track in game.lookout_sightings():
+            off = _off(track.bearing, bearing)
+            if (now - track.last_seen <= config.LOOKOUT_EPOCH_S * 2
+                    and off <= config.LOOKOUT_CALL_BEARING_TOL_DEG
+                    and _fits(category, track.kind, track.label)
+                    and _range_fits(range_nm, track.range_nm)
+                    and (best is None or off < best[0])):
+                best = (off, track)
+        if best is None:
+            _log(game, "frigate", category, bearing, range_nm, False)
+            return "lookout_not_confirmed"
+        track = best[1]
+        game._lookout_report(track.kind, track.label, track.bearing, track.range_nm,
+                             called=category)
+        _log(game, "frigate", category, track.bearing, track.range_nm, True)
+        return True
     eye = best[1]
     del game.lookout_eye[eye.track_id]
     game.air_picture.observe(
@@ -188,7 +204,7 @@ def call(game, category: str, bearing: float, range_nm=None):
 def called_text(category: str, bearing: float, range_nm):
     """The feed line (and spoken callout) of a confirmed call."""
     return message(f"lookout.called.{category}", bearing=f"{bearing % 360.0:03.0f}",
-                   range=f"{range_nm:.1f}")
+                   range="?" if range_nm is None else f"{range_nm:.1f}")
 
 
 def boat_manned(game) -> bool:

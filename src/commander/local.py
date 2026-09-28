@@ -84,6 +84,9 @@ class CommanderConsole:
         self._qr_box_px = None
         self._qr_surface = None
         self._url_qr_payload = None
+        self._lookout_qr_payload = None
+        self._lookout_qr_box_px = None
+        self._lookout_qr_surface = None
         self._url_qr_box_px = None
         self._url_qr_surface = None
         # Optional launcher status file (Windows starter): written only when
@@ -949,6 +952,19 @@ class CommanderConsole:
                 matrix, module_px=max(1, box_px // (len(matrix) + 4)))
         return self._qr_surface
 
+    def _lookout_qr(self, box_px=105):
+        """The cached QR surface that opens the phone lookout page (HTTPS)."""
+        host, port = self.tls_address
+        payload = f"https://{host}:{port}/lookout"
+        if (self._lookout_qr_payload != payload or self._lookout_qr_box_px != box_px
+                or self._lookout_qr_surface is None):
+            matrix = qr.encode(payload)
+            self._lookout_qr_payload = payload
+            self._lookout_qr_box_px = box_px
+            self._lookout_qr_surface = qr.to_surface(
+                matrix, module_px=max(1, box_px // (len(matrix) + 4)))
+        return self._lookout_qr_surface
+
     def _url_qr(self, host, port, box_px=132):
         """Return the cached QR surface that opens the crew page directly."""
         payload = f"http://{host}:{port}/"
@@ -1014,14 +1030,24 @@ class CommanderConsole:
                     surface = self._url_qr(self.address[0], self.address[1], box_px=105)
                     screen.blit(surface, (1051 + (105 - surface.get_width()) // 2,
                                           166 + (105 - surface.get_height()) // 2))
+                lookout_at = (1051, 280)
             else:
                 layout.blit_line(screen, "commander.local.url.qr",
-                                 (936, 134, 220, 28), config.COLOR_TEXT_DIM, size=14,
+                                 (936, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
                                  align="center")
                 if self.address is not None:
-                    surface = self._url_qr(self.address[0], self.address[1])
-                    screen.blit(surface, (980 + (132 - surface.get_width()) // 2,
-                                          166 + (132 - surface.get_height()) // 2))
+                    surface = self._url_qr(self.address[0], self.address[1], box_px=105)
+                    screen.blit(surface, (936 + (105 - surface.get_width()) // 2,
+                                          166 + (105 - surface.get_height()) // 2))
+                lookout_at = (1051, 134)
+            # The phone lookout: its own QR code opens the HTTPS page.
+            if self.address is not None and self.tls_address is not None:
+                layout.blit_line(screen, "commander.local.lookout.qr",
+                                 (lookout_at[0], lookout_at[1], 105, 28),
+                                 config.COLOR_TEXT_DIM, size=12, align="center")
+                surface = self._lookout_qr()
+                screen.blit(surface, (lookout_at[0] + (105 - surface.get_width()) // 2,
+                                      lookout_at[1] + 32 + (105 - surface.get_height()) // 2))
             layout.blit_line(screen, "commander.local.join_code",
                               (124, 206 if hotspot else 144, 790,
                                24), config.COLOR_TEXT_DIM, size=20, align="center")
@@ -1055,8 +1081,8 @@ class CommanderConsole:
                        else "commander.local.warning")
             layout.blit_block(screen, warning, 124, 542, 1032, 54,
                                config.COLOR_WARN, size=18)
-            if self.error:
-                layout.blit_line(screen, self.error, (124, 604, 1032, 34),
+            if self.error or (self.address is not None and self.tls_error):
+                layout.blit_line(screen, self.error or self.tls_error, (124, 604, 1032, 34),
                                    config.COLOR_WARN, size=18)
             layout.blit_line(screen, "commander.local.hint", (124, 646, 1032, 30),
                               config.COLOR_TEXT_DIM, size=16)

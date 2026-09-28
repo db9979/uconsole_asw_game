@@ -1614,3 +1614,9 @@ Notizen Phase 1:
 - `src/launcher/`: `app.py` Tk-Starter (startet dieselbe EXE mit `--game`, liest `--status-file`, zeigt URL/Code/QR aus `src/ui/qr.py`), `update.py` (`releases/latest`, Asset `U-Jagd-Windows.exe`, Größe + GitHub-`digest` sha256, `.cmd` tauscht die EXE nach Prozessende), `entry.py` (`--game`, `--self-test REPORT`).
 - Spiel: `--remote-crew` (Besatzungsmodus wie F9, `CommanderConsole.autostart`), `--status-file` (`publish_status`, nur bei Änderung), `prepare()` nimmt ohne `fcntl` die Routing-Adresse (UDP-connect an 192.0.2.1, kein Paket, kein DNS).
 - Build: `packaging/windows/u-jagd-windows.spec` (PyInstaller onefile, windowed), `.github/workflows/windows.yml` (jeder Push/PR: Build + Selbsttest auf windows-latest; main: Release `v<APP_VERSION>` anlegen falls fehlend, eigenes Asset nur hochladen falls fehlend). Nicht signiert (SmartScreen). Tests: `tests/test_windows_launcher.py`.
+
+## README-Screenshots und Changelog (2026-09-28, App 1.3.12)
+
+- READMEs (EN/DE) zeigen nur noch die aktuelle Version; die Historie steht in `CHANGELOG.md`/`CHANGELOG.de.md` (`## x.y.z`, neueste oben). `tools/changelog_notes.py <version>` liefert den Release-Text (vom Windows-Workflow genutzt), `--check`/`tests/test_changelog.py` prüfen die Regel.
+- Screenshots neu: `tools/capture_screenshots.py` (jetzt auch die sieben U-Boot-Stationen `uboot-*.png` und `uboot-overview.png`), `tools/capture_commander.py` (Lobby-Prüfung zählt die neun sichtbaren Fregatten-Karten statt aller Stationen). Chromium: im Container `/opt/pw-browsers/chromium-*/chrome-linux/chrome` als `chromium` in den `PATH` verlinken.
+- DE-README verlinkt jetzt die deutschen Bilder (`de-*.png`).

@@ -62,8 +62,13 @@ jobs:
           # unless it is already there. Never replace a published asset.
           tag="v$VERSION"
           if ! gh release view "$tag" >/dev/null 2>&1; then
+            # Release text: this version's CHANGELOG.md entry plus the Windows hint.
+            { python tools/changelog_notes.py "$VERSION" || echo "U-Jagd $VERSION."
+              echo
+              echo "Windows: download U-Jagd-Windows.exe and run it; it offers later versions itself."
+            } > release-notes.md
             gh release create "$tag" --target "$GITHUB_SHA" --title "U-Jagd $VERSION" \
-              --notes "U-Jagd $VERSION. Windows: download U-Jagd-Windows.exe and run it; it offers later versions itself." \
+              --notes-file release-notes.md \
               || gh release view "$tag" >/dev/null
           fi
           if gh release view "$tag" --json assets --jq '.assets[].name' | grep -qx "U-Jagd-Windows.exe"; then

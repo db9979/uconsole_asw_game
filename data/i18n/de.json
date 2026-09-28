@@ -5635,5 +5635,14 @@
   "commander.web.reason_uboot_tubes_full": "Kein leeres Rohr zum Laden.",
   "commander.web.reason_uboot_no_dry_tube": "Kein geladenes, trockenes Rohr zum Fluten.",
   "help.uboot.tube_load": "Nächstes leeres Torpedorohr laden (Waffen)",
-  "help.uboot.tube_flood": "Nächstes geladenes Rohr fluten und Mündungsklappe öffnen; nur ein geflutetes Rohr schießt (Waffen)"
+  "help.uboot.tube_flood": "Nächstes geladenes Rohr fluten und Mündungsklappe öffnen; nur ein geflutetes Rohr schießt (Waffen)",
+  "uboot.event.esm_steady": "Radar {emitter} auf {bearing}° hält uns: Dauerbeleuchtung, Verfolgung oder Feuerleitung.",
+  "uboot.esm.label.scan": "Umlauf",
+  "uboot.esm.scan.measuring": "misst",
+  "uboot.esm.scan.rotating": "{period} s, dreht",
+  "uboot.esm.scan.steady": "Dauerstrahl",
+  "commander.web.uboot_esm_scan": "Umlaufzeit",
+  "commander.web.uboot_esm_scan_measuring": "wird gemessen",
+  "commander.web.uboot_esm_scan_rotating": "{period} s: Suchradar, dreht",
+  "commander.web.uboot_esm_scan_steady": "dauernd: Verfolgung oder Feuerleitung"
 }

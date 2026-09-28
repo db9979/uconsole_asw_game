@@ -39,6 +39,12 @@ def _number(value):
             else None)
 
 
+def _pan(value):
+    """A sound cue's left/right position (-1..+1, 1/8 steps), or None centred."""
+    value = _number(value)
+    return None if value is None else round(max(-1.0, min(1.0, value)) * 8.0) / 8.0
+
+
 def _age(now, stamp):
     stamp = _number(stamp)
     return now - stamp if stamp is not None and 0 <= stamp <= now else None
@@ -253,7 +259,8 @@ def _common(game, status, role):
                              objective=localize(game.mission_objective_display(), game.tr),
                              remaining_s=_number(game.mission.remaining_s(game.mission_time))),
                 audio=dict(
-                    events=[dict(seq=int(row["seq"]), cue=str(row["kind"]))
+                    events=[dict(seq=int(row["seq"]), cue=str(row["kind"]),
+                                 pan=_pan(row.get("pan")))
                             for row in list(game._sound_events)[-16:]],
                     # Spoken crew reports: the feed lines' key and bearing
                     # only; each browser words them in its own language.
@@ -1266,7 +1273,8 @@ def _opfor_common(game, status, role, boat):
                            max_label=plot.MAX_LABEL))
     common["mission"]["objective"] = localize(boat_missions.objective(game, boat), game.tr)
     # The boat's own atmosphere cues (hull, detonations), never the frigate's.
-    common["audio"] = dict(events=[dict(seq=int(row["seq"]), cue=str(row["kind"]))
+    common["audio"] = dict(events=[dict(seq=int(row["seq"]), cue=str(row["kind"]),
+                                        pan=_pan(row.get("pan")))
                                    for row in list(boat.sound_events)[-16:]],
                            callouts=boat.callouts.detached())
     common["autocrew"] = dict(enabled=False, status="off")
@@ -1462,6 +1470,10 @@ def _uboot_esm(game, boat):
                         for key in esm.library(game, emitter)[:UBOOT_ESM_CANDIDATES]],
             range_estimate_nm=_number(esm.range_estimate_nm(game, emitter)),
             mast_threat=danger,
+            # The measured scan period: rotating search radar or a steady beam.
+            scan=boat_esm.scan_reading(track),
+            scan_period_s=(_number(track.revisit_s)
+                           if boat_esm.scan_reading(track) is not None else None),
             history=[dict(age_s=_age(now, row[0]), x=_number(row[1]), y=_number(row[2]),
                           bearing=_number(row[3])) for row in emitter.history[-16:]],
             fix=None if fix is None else dict(

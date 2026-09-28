@@ -13,6 +13,7 @@ from types import SimpleNamespace
 import pygame
 
 from src.audio.preview import unit_sonar_preview
+from src.audio.synthesis import bearing_pan
 from src.core import config
 from src.core import detrand
 from src.core.i18n import message, raw_text
@@ -78,6 +79,11 @@ TORPEDO_WAKE_VISIBLE_DEPTH_M = 15.0
 # Close-in weapon system: own Ku-band search/track radar that keeps an
 # inbound missile under continuous track inside this range.
 CIWS_TRACK_RANGE_NM = 3.0
+# Directional hearing: a foreign ping's tone, and how close a sound is to be
+# heard from everywhere (centred) rather than from a bearing.
+ENEMY_PING_HZ = 1300.0
+ENEMY_PING_VOLUME = 0.3
+HEARD_CENTRE_NM = 0.05
 
 
 # Koschmieder lookout model anchored to the 1.0.0 day/calm/clear ranges.
@@ -245,23 +251,39 @@ class SimMixin:
                     break
                 self._sonar_audio_sequence = sequence
 
-    def _emit_sound(self, kind: str, at=None) -> None:
+    def _emit_sound(self, kind: str, at=None, pan: float | None = None) -> None:
         """Play locally and publish a bounded, detached browser sound cue.
 
-        ``at``: where a detonation happened, so a crewed boat hears it too."""
+        ``at``: where a detonation happened, so a crewed boat hears it too and
+        the frigate hears it from its (measured) bearing. ``pan``: left/right
+        of the ship's head (-1 port .. +1 starboard); None plays it centred."""
         if at is not None and self._opfor is not None:
             opfor.hear_detonation(self, self._opfor, float(at[0]), float(at[1]))
+        if at is not None and pan is None:
+            pan = self._heard_pan(float(at[0]), float(at[1]), kind)
         if kind == "sonar_ping":
             self.audio.play_ping()
+        elif kind == "enemy_ping":
+            self.audio.play_ping(ENEMY_PING_HZ, ENEMY_PING_VOLUME, pan=pan)
         elif kind == "esm_contact":
             if (self.station is Station.ELOKA
                     and self.eloka_audio_enabled
                     and not self.damage.station_down("opz")):
                 self.audio.play_alert("esm")
         else:
-            self.audio.play_effect(kind)
+            self.audio.play_effect(kind, pan=pan)
         self._sound_event_seq += 1
-        self._sound_events.append(dict(seq=self._sound_event_seq, kind=kind))
+        self._sound_events.append(dict(seq=self._sound_event_seq, kind=kind, pan=pan))
+
+    def _heard_pan(self, x: float, y: float, kind: str) -> float:
+        """Where the crew hears a sound from ``x, y``: its bearing by ear
+        (a few degrees off, deterministic) relative to the ship's head."""
+        if math.hypot(x - self.ship.x, y - self.ship.y) < HEARD_CENTRE_NM:
+            return 0.0
+        bearing = (math.degrees(math.atan2(x - self.ship.x, -(y - self.ship.y)))
+                   + config.UBOOT_DETONATION_BEARING_SD_DEG * detrand.normal(
+                       self.seed, f"heard_{kind}", int(round(self.sim_t * 1000.0))))
+        return bearing_pan(bearing, self.ship.course)
 
     ECHO_LOUD_SNR_DB = 12.0
 
@@ -280,12 +302,15 @@ class SimMixin:
         pulse = pulse if pulse in ("CW", "LFM") else "CW"
         snr_db = float(echo.get("snr_db", 0.0))
         level = config.clamp((snr_db + 5.0) / 35.0, 0.0, 1.0)
-        self.audio.play_echo(pulse, level)
+        # The echo comes back from its measured bearing.
+        pan = (bearing_pan(float(echo["bearing"]), self.ship.course)
+               if isinstance(echo.get("bearing"), (int, float)) else None)
+        self.audio.play_echo(pulse, level, pan=pan)
         cue = f"sonar_echo_{pulse.lower()}"
         if snr_db < self.ECHO_LOUD_SNR_DB:
             cue += "_faint"
         self._sound_event_seq += 1
-        self._sound_events.append(dict(seq=self._sound_event_seq, kind=cue))
+        self._sound_events.append(dict(seq=self._sound_event_seq, kind=cue, pan=pan))
 
     def _play_unit_audio(self, profile_key: str, mode: str, machine) -> None:
         """Kontakt-Katalog-Hörprobe: deterministisches Einheiten-Sample abspielen."""
@@ -459,6 +484,7 @@ class SimMixin:
             self.flash(message("runtime.enemy_ping.detected",
                                bearing=f"{bearing:03.0f}"), 3.0)
             self.audio.play_alert("danger")
+            self._emit_sound("enemy_ping", pan=bearing_pan(bearing, self.ship.course))
             self.feed.add(self.world.format_time(), "sonar",
                           message("runtime.enemy_ping.feed",
                                   bearing=f"{bearing:03.0f}"))

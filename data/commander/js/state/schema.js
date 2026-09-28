@@ -121,8 +121,9 @@ export function validateV2State(state) {
           : row.bearing !== null) ||
         index > 0 && row.seq <= rows[index - 1].seq) ||
       !boundedArray(state.audio.events, 16) ||
-      state.audio.events.some((event, index, events) => !exactKeys(event, ["seq", "cue"]) ||
+      state.audio.events.some((event, index, events) => !exactKeys(event, ["seq", "cue", "pan"]) ||
         !Number.isSafeInteger(event.seq) || event.seq < 1 || !gameEffectKinds.has(event.cue) ||
+        event.pan !== null && (!Number.isFinite(event.pan) || event.pan < -1 || event.pan > 1) ||
         index > 0 && event.seq <= events[index - 1].seq)) throw new Error("protocol");
   if (!validPlot(state.plot)) throw new Error("protocol");
   const payload = state[state.role];
@@ -178,7 +179,7 @@ export function validateV2State(state) {
     compartments: ["bow", "control", "quarters", "battery", "engine", "stern"],
     dcTasks: ["idle", "seal", "pump", "fire"],
     esm: ["mast_up", "mast_s", "mast_time_s", "mast_threat", "mast_radar_nm", "wash", "emitters"],
-    esmEmitter: ["number", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "band", "prf_hz", "modulation", "signal_db", "trend", "trend_db_min", "age_s", "live", "quality", "classification", "candidates", "range_estimate_nm", "mast_threat", "history", "fix"],
+    esmEmitter: ["number", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "band", "prf_hz", "modulation", "signal_db", "trend", "trend_db_min", "age_s", "live", "quality", "classification", "candidates", "range_estimate_nm", "mast_threat", "scan", "scan_period_s", "history", "fix"],
     esmHistory: ["age_s", "x", "y", "bearing"],
     esmFix: ["x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent"],
     esmCandidate: ["name", "role", "fit"],
@@ -384,7 +385,8 @@ export function validateV2State(state) {
         !boundedArray(esm.emitters, 16) || esm.emitters.some((row) => !exactKeys(row, boatFields.esmEmitter) ||
           !Number.isSafeInteger(row.number) || row.number < 1 || typeof row.label !== "string" || row.label.length > 24 ||
           ["bearing", "bearing_uncertainty_deg", "frequency_hz", "signal_db", "quality"].some((key) => !finite(row[key])) ||
-          [row.prf_hz, row.trend_db_min, row.age_s, row.range_estimate_nm].some((value) => !nullableNumber(value)) ||
+          [row.prf_hz, row.trend_db_min, row.age_s, row.range_estimate_nm, row.scan_period_s].some((value) => !nullableNumber(value)) ||
+          ![null, "rotating", "steady"].includes(row.scan) || (row.scan === null) !== (row.scan_period_s === null) ||
           !["a_c", "d", "e_f", "g_h", "i_j", "k"].includes(row.band) ||
           !["continuous_wave", "frequency_agile", "pulse", "pulse_doppler", "unknown"].includes(row.modulation) ||
           ![null, "rising", "steady", "falling"].includes(row.trend) ||

@@ -13,6 +13,7 @@ frigate, its torpedoes and every other radiating target through the ordinary
 from collections import deque
 import math
 
+from src.audio.synthesis import bearing_pan
 from src.core.callouts import CalloutLog
 from src.core import config, detrand
 from src.core.boat_esm import BoatESM
@@ -76,6 +77,7 @@ class CrewOrders:
               "air_caution": "navigation", "air_danger": "navigation",
               "absorber_spent": "navigation", "fuel_low": "navigation",
               "fuel_empty": "navigation", "esm_mast_threat": "navigation",
+              "esm_steady": "navigation",
               "mast_overtime": "navigation", "tanks_venting": "navigation",
               "tanks_flooded": "navigation", "boat_heavy": "navigation",
               "boat_light": "navigation", "trim_angle": "navigation",
@@ -565,17 +567,22 @@ def obstacle_ahead_nm(world, sub):
     return None
 
 
-BOAT_CUES = ("hull_creak", "hull_crack", "detonation_near", "detonation_far")
+BOAT_CUES = ("hull_creak", "hull_crack", "detonation_near", "detonation_far", "ping_heard")
+# Intercepts the crew hears through the hull as a ping.
+_PING_INTERCEPTS = ("hull", "dipping", "buoy")
 _HULL_FAILURES = ("hull_bolts", "hull_seal", "hull_fracture", "hull_collapse")
 
 
-def boat_sound(game, boat, cue: str) -> None:
+def boat_sound(game, boat, cue: str, bearing: float | None = None) -> None:
     """One atmosphere cue in the boat: played on the uConsole when it is the
-    boat and published to the boat's browsers (never to the frigate)."""
+    boat and published to the boat's browsers (never to the frigate).
+    ``bearing``: where the crew hears it from (measured), panned left or
+    right of the submarine's head; None plays it centred."""
+    pan = None if bearing is None else bearing_pan(bearing, boat.sub.course)
     boat.sound_seq += 1
-    boat.sound_events.append(dict(seq=boat.sound_seq, kind=cue))
+    boat.sound_events.append(dict(seq=boat.sound_seq, kind=cue, pan=pan))
     if game.local_side == "uboot" and game.opfor is boat:
-        game.audio.play_boat_cue(cue)
+        game.audio.play_boat_cue(cue, pan=pan)
 
 
 def creak_chance(depth_m: float, test_depth_m: float) -> float:
@@ -614,7 +621,7 @@ def hear_detonation(game, boat, x: float, y: float) -> None:
                + config.UBOOT_DETONATION_BEARING_SD_DEG
                * detrand.normal(sub.sensor_seed, "detonation", int(game.sim_t * 1000.0))) % 360.0
     key = "detonation_near" if near else "detonation_far"
-    boat_sound(game, boat, key)
+    boat_sound(game, boat, key, bearing)
     boat.orders.event(key, bearing=f"{round(bearing) % 360:03d}")
 
 
@@ -641,9 +648,14 @@ def update_crew(game, boat: CrewedBoat) -> None:
     if ahead is not None and sub.order_speed > 0.0 and not orders._obstacle_warned:
         orders.event("obstacle_ahead", distance=f"{ahead:.1f}")
     orders._obstacle_warned = ahead is not None and sub.order_speed > 0.0
+    pinged = None
     for kind, bearing, level in orders._pending_intercepts:
         boat.intercepts.append(dict(t=float(game.sim_t), kind=kind, bearing=bearing,
                                     level_db=level))
+        if kind in _PING_INTERCEPTS:
+            pinged = bearing
+    if pinged is not None:
+        boat_sound(game, boat, "ping_heard", pinged)
     orders._pending_intercepts = []
     # ESM with the mast up: the boat's own intercepts of radar emitters.
     boat.esm.update(game, boat)

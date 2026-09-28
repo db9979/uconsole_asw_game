@@ -12,7 +12,8 @@ import pygame
 
 from src.audio.receiver import smooth_limit
 from src.audio.synthesis import (active_sonar_ping, boat_effect, combat_effect,
-                                 sonar_echo, stereo_bearing, tone)
+                                 sonar_echo, stereo_bearing, stereo_pan,
+                                 tone)
 from src.core import config
 from src.core.debuglog import append_bounded_log
 
@@ -175,8 +176,12 @@ class AudioEngine:
             self.fatal_error = True
             self.available = False
 
-    def _make_sound(self, samples: np.ndarray, bus: str) -> pygame.mixer.Sound:
+    def _make_sound(self, samples: np.ndarray, bus: str,
+                    pan: float | None = None) -> pygame.mixer.Sound:
         ceiling = self.SOURCE_LIMITS[bus]
+        if self.channels == 2 and pan is not None and np.ndim(samples) == 1:
+            # Directional hearing: the sound sits where it was heard.
+            samples = stereo_pan(samples, pan)
         samples = smooth_limit(samples, knee=.75 * ceiling, ceiling=ceiling)
         pcm = (np.clip(samples, -1.0, 1.0) * 32767.0).astype(np.int16)
         if self.channels == 2 and pcm.ndim == 1:
@@ -184,20 +189,24 @@ class AudioEngine:
         return pygame.sndarray.make_sound(np.ascontiguousarray(pcm))
 
     def _sound(self, synthesize: Callable[[], np.ndarray],
-               key: tuple) -> pygame.mixer.Sound | None:
+               key: tuple, pan: float | None = None) -> pygame.mixer.Sound | None:
         if not self.enabled or not self.available:
             return None
+        if pan is not None:
+            pan = float(np.clip(pan, -1.0, 1.0))
+            key = key + (("pan", round(pan, 3)),)
         cached = self._cache.get(key)
         if cached is not None:
             self._cache.move_to_end(key)
             return cached
-        sound = self._make_sound(synthesize(), key[0])
+        sound = self._make_sound(synthesize(), key[0], pan)
         self._cache[key] = sound
         while len(self._cache) > self._cache_size:
             self._cache.popitem(last=False)
         return sound
 
-    def play_ping(self, frequency_hz: float = 900.0, volume: float = 0.35) -> bool:
+    def play_ping(self, frequency_hz: float = 900.0, volume: float = 0.35,
+                  pan: float | None = None) -> bool:
         if (not self.enabled or not self.available or self._ping_channel is None
                 or not self.local_effects):
             return False
@@ -208,7 +217,7 @@ class AudioEngine:
             sound = self._sound(
                 lambda: active_sonar_ping(frequency_hz, self.sample_rate,
                                           volume),
-                ("ping", round(frequency_hz), round(float(volume), 2)))
+                ("ping", round(frequency_hz), round(float(volume), 2)), pan)
             if sound is None:
                 return False
             self._ping_channel.play(sound)
@@ -220,7 +229,7 @@ class AudioEngine:
         return True
 
     def play_echo(self, pulse: str, level: float, frequency_hz: float = 900.0,
-                  volume: float = 0.35) -> bool:
+                  volume: float = 0.35, pan: float | None = None) -> bool:
         """Play one returned echo on the ping bus; a busy bus queues it once.
 
         ``level`` (0..1) is quantized so repeated echoes reuse cached sounds.
@@ -235,7 +244,7 @@ class AudioEngine:
                 lambda: sonar_echo(frequency_hz, pulse, level, self.sample_rate,
                                    volume),
                 ("ping", "echo", str(pulse), level, round(frequency_hz),
-                 round(volume, 2)))
+                 round(volume, 2)), pan)
             if sound is None:
                 return False
             if not self._ping_channel.get_busy():
@@ -251,8 +260,9 @@ class AudioEngine:
             return False
         return True
 
-    def play_effect(self, kind: str) -> bool:
-        """Play one bounded local combat/handling effect on the alert bus."""
+    def play_effect(self, kind: str, pan: float | None = None) -> bool:
+        """Play one bounded local combat/handling effect on the alert bus,
+        placed left or right by ``pan`` (see ``synthesis.bearing_pan``)."""
         if kind not in {"torpedo_launch", "missile_launch", "gunfire",
                         "explosion", "water_entry"}:
             return False
@@ -267,7 +277,7 @@ class AudioEngine:
             sound = self._sound(
                 lambda: combat_effect(kind, self.sample_rate,
                                       self.SOURCE_LIMITS["alert"]),
-                ("alert", "effect", kind, self.sample_rate))
+                ("alert", "effect", kind, self.sample_rate), pan)
             if sound is None:
                 return False
             if self._alert_channel.get_busy():
@@ -282,9 +292,9 @@ class AudioEngine:
             return False
 
     BOAT_CUES = frozenset({"hull_creak", "hull_crack", "detonation_near",
-                           "detonation_far"})
+                           "detonation_far", "ping_heard"})
 
-    def play_boat_cue(self, kind: str) -> bool:
+    def play_boat_cue(self, kind: str, pan: float | None = None) -> bool:
         """One atmosphere cue inside the crewed boat (the uConsole as the boat;
         ``local_effects`` is off there, so this is the boat's only effect)."""
         if kind not in self.BOAT_CUES:
@@ -298,7 +308,7 @@ class AudioEngine:
                 return False
             sound = self._sound(
                 lambda: boat_effect(kind, self.sample_rate, self.SOURCE_LIMITS["alert"]),
-                ("alert", "boat", kind, self.sample_rate))
+                ("alert", "boat", kind, self.sample_rate), pan)
             if sound is None:
                 return False
             if self._alert_channel.get_busy():

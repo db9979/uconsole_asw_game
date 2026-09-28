@@ -27,14 +27,14 @@ from src.sensors.esm import (ESM_ASSOCIATION_MAX_GAP_S, ESMMeasurement, ESMTrack
                              spectrum_band)
 from src.sensors.platform import MAST_DEPTH_M
 
-VERSION = 1
+VERSION = 2
 # Radar roles that look for surface targets: an intercept of one close
 # enough to see the mast raises the mast warning.
 MAST_THREAT_ROLES = frozenset(("navigation", "surface_search", "multi_function",
                                "fire_control"))
 HISTORY_FIELDS = 6          # t, x, y, bearing, sigma, level
 LIBRARY_MAX = 16
-_EMITTER_FIELDS = {"track", "history", "label", "peak_db"}
+_EMITTER_FIELDS = {"track", "history", "label", "peak_db", "last_peak"}
 _STATE_FIELDS = {"version", "track_seq", "last_tick", "mast_since", "threat_warned",
                  "overtime_warned", "emitters"}
 
@@ -180,6 +180,16 @@ def cross_fix(samples, now: float) -> dict | None:
                 lines=len(rows), consistent=chi2 <= config.UBOOT_ESM_FIX_CHI2_MAX)
 
 
+def scan_reading(track: ESMTrack) -> str | None:
+    """The crew's reading of the measured scan period: ``steady`` (the
+    beam stays on the submarine: tracking or fire control), ``rotating`` (a
+    search radar sweeping past) or None while it is still being measured."""
+    if (track.revisit_s <= 0.0
+            or track.last_seen - track.first_seen < config.UBOOT_ESM_SCAN_MEASURE_S):
+        return None
+    return "steady" if track.revisit_s <= config.UBOOT_ESM_STEADY_S else "rotating"
+
+
 def level_trend(history, now: float):
     """Slope (dB/min) of the received level over the trend window, and its
     reading ``rising``/``steady``/``falling``; (None, None) without data."""
@@ -206,6 +216,8 @@ class BoatEmitter:
         self.history: list[list[float]] = []
         self.label: str | None = None
         self.peak_db: float | None = None
+        # Time of the last main-beam hit (the scan period's reference).
+        self.last_peak: float | None = None
 
     def fix(self, now: float) -> dict | None:
         return cross_fix([row[:5] for row in self.history
@@ -213,7 +225,7 @@ class BoatEmitter:
 
     def to_save(self) -> dict:
         return dict(track=asdict(self.track), history=[list(row) for row in self.history],
-                    label=self.label, peak_db=self.peak_db)
+                    label=self.label, peak_db=self.peak_db, last_peak=self.last_peak)
 
 
 class BoatESM:
@@ -226,6 +238,10 @@ class BoatESM:
         self.threat_warned = False
         self.overtime_warned = False
         self.emitters: dict[str, BoatEmitter] = {}
+        # This scan's wash test (seed, submarine, fraction) and the emitters
+        # just measured steady; set each scan, never saved.
+        self._wash = None
+        self._steady = []
 
     # -- queries ---------------------------------------------------------------
 
@@ -296,6 +312,8 @@ class BoatESM:
         which such a radar sees the mast in this sea (crew evaluation)."""
         if not self.live(emitter, now):
             return False
+        if scan_reading(emitter.track) == "steady":
+            return True                       # a beam held on the submarine
         profiles = self.assumed_profiles(game, emitter)
         roles = {getattr(item, "radar_role", None) for item in profiles}
         if profiles and not roles & MAST_THREAT_ROLES:
@@ -348,7 +366,8 @@ class BoatESM:
         if self.mast_since is None:
             self.mast_since = now
         sea, rain = _weather(game.world)
-        washed = detrand.u01(game.seed, "boat-esm-wash", sub.id, tick) < wash_fraction(sea)
+        self._wash = (game.seed, sub.id, wash_fraction(sea))
+        washed = self._washed(tick)
         if not washed:
             self._observe(self._scan(game, sub, now), now, orders)
         mast_range = mast_radar_nm(sea, rain)
@@ -363,6 +382,22 @@ class BoatESM:
         if over and not self.overtime_warned:
             orders.event("mast_overtime", seconds=f"{limit:.0f}")
         self.overtime_warned = over
+
+    def _washed(self, tick: int) -> bool:
+        seed, sub_id, fraction = self._wash
+        return detrand.u01(seed, "boat-esm-wash", sub_id, tick) < fraction
+
+    def _scan_gap(self, last: float, now: float) -> float | None:
+        """The gap between two intercepts when it measures the scan period:
+        short enough, and no scan in between lost to a washed antenna."""
+        gap = now - last
+        if not 0.0 < gap <= config.UBOOT_ESM_SCAN_GAP_MAX_S or self._wash is None:
+            return None
+        first = math.floor(last / config.UBOOT_ESM_SCAN_S + 1e-6) + 1
+        final = math.floor(now / config.UBOOT_ESM_SCAN_S + 1e-6)
+        if any(self._washed(tick) for tick in range(first, final)):
+            return None
+        return gap
 
     def _scan(self, game, sub, now: float):
         heights = {}
@@ -433,6 +468,7 @@ class BoatESM:
                 + elapsed / config.UBOOT_ESM_MEMORY_S)
 
     def _observe(self, measurements, now: float, orders) -> None:
+        self._steady = []
         # Fixed-waveform intercepts associate first (their fingerprint is
         # decisive), then the agile ones by bearing and band.
         used_keys, used = set(), set()
@@ -481,14 +517,31 @@ class BoatESM:
                 first_seen=measurement.observed_at, last_seen=measurement.observed_at,
                 synthetic_assumption=measurement.synthetic_assumption,
                 signal_db=measurement.signal_db))
+            emitter.last_peak = float(measurement.observed_at)
             self.emitters[key] = emitter
             self._sample(emitter, measurement)
             orders.event("esm_intercept", emitter=emitter_label(key),
                          bearing=f"{measurement.bearing % 360.0:03.0f}")
+        for emitter in self._steady:
+            # The beam no longer sweeps past: a radar holds the submarine.
+            orders.event("esm_steady", emitter=emitter_label(emitter.track.track_key),
+                         bearing=f"{emitter.track.bearing % 360.0:03.0f}")
 
     def _update(self, emitter: BoatEmitter, measurement: ESMMeasurement, now: float) -> None:
         track = emitter.track
         gap = measurement.observed_at - track.last_seen
+        before = scan_reading(track)
+        if (measurement.modulation_code == track.modulation_code
+                and measurement.signal_db >= track.signal_db - config.UBOOT_ESM_PEAK_DB):
+            # A main-beam hit of the track's own waveform (an agile hop taken
+            # into the track may be another radar of the platform): the
+            # interval since the last one is the scan.
+            interval = (None if emitter.last_peak is None
+                        else self._scan_gap(emitter.last_peak, measurement.observed_at))
+            if interval is not None:
+                track.revisit_s = (interval if track.revisit_s <= 0.0 else track.revisit_s
+                                   + (interval - track.revisit_s) * config.UBOOT_ESM_SCAN_ALPHA)
+            emitter.last_peak = float(measurement.observed_at)
         # After a silence (a dive, a washed antenna) the fresh bearing wins.
         alpha = 0.35 if gap <= ESM_ASSOCIATION_MAX_GAP_S else 1.0
         track.bearing = (track.bearing + _angle(measurement.bearing, track.bearing)
@@ -512,6 +565,8 @@ class BoatESM:
         last = emitter.history[-1][0] if emitter.history else None
         if last is None or measurement.observed_at - last >= config.UBOOT_ESM_HISTORY_STEP_S:
             self._sample(emitter, measurement)
+        if scan_reading(track) == "steady" and before != "steady":
+            self._steady.append(emitter)
 
     @staticmethod
     def _sample(emitter: BoatEmitter, measurement: ESMMeasurement) -> None:
@@ -564,7 +619,8 @@ class BoatESM:
 
     @staticmethod
     def valid_save(data, sim_t, emitter_keys) -> bool:
-        """Exact ``crew.esm`` block of save v18 (bounded, finite, sorted)."""
+        """Exact ``crew.esm`` block (version 2 since save v27: ``last_peak``;
+        bounded, finite, sorted)."""
         if not isinstance(data, dict) or set(data) != _STATE_FIELDS:
             return False
         if data["version"] != VERSION or type(data["version"]) is not int:
@@ -603,6 +659,9 @@ class BoatESM:
             if not (row["peak_db"] is None or (_finite(row["peak_db"])
                                                and -60.0 <= row["peak_db"] <= 200.0)):
                 return False
+            if not (row["last_peak"] is None or (_finite(row["last_peak"])
+                                                 and 0.0 <= row["last_peak"] <= restored.last_seen)):
+                return False
             history = row["history"]
             if not isinstance(history, list) or len(history) > config.UBOOT_ESM_HISTORY_MAX:
                 return False
@@ -632,6 +691,7 @@ class BoatESM:
             emitter.history = [[float(value) for value in sample] for sample in row["history"]]
             emitter.label = row["label"]
             emitter.peak_db = None if row["peak_db"] is None else float(row["peak_db"])
+            emitter.last_peak = None if row["last_peak"] is None else float(row["last_peak"])
             state.emitters[emitter.track.track_key] = emitter
         return state
 

@@ -31,7 +31,7 @@ export const sonarFilterValues = () => {
   return [Number($(`${prefix}-audio-highpass`).value),
     Number($(`${prefix}-audio-lowpass`).value)];
 };
-function playGameEffect(kind) {
+function playGameEffect(kind, pan = null) {
   if (!S.soundEnabled || !S.audio || S.audio.state !== "running" || document.hidden || !gameEffectKinds.has(kind)) return;
   const volume = Math.max(0, Math.min(1, Number($("volume").value) / 100));
   if (!volume) return;
@@ -48,6 +48,8 @@ function playGameEffect(kind) {
     // crack and detonations close by or far off.
     hull_creak: [88, 70, 1.8, .10, "sawtooth"], hull_crack: [180, 46, .5, .22, "square"],
     detonation_near: [60, 24, 1.6, .22, "sawtooth"], detonation_far: [42, 22, 2.4, .09, "triangle"],
+    // Another platform's active ping: heard by the frigate, or on the hull.
+    enemy_ping: [1300, 1300, .5, .08, "sine"], ping_heard: [1300, 1300, .6, .10, "sine"],
   }[kind];
   const [startHz, endHz, duration, gainLevel, type] = profile;
   const oscillator = S.audio.createOscillator();
@@ -61,10 +63,18 @@ function playGameEffect(kind) {
   gain.gain.linearRampToValueAtTime(volume * gainLevel, now + .012);
   gain.gain.linearRampToValueAtTime(0, now + duration);
   oscillator.connect(gain);
-  gain.connect(S.audio.destination);
+  // Directional hearing: the host places each cue left or right of the
+  // ship's (or submarine's) head from the bearing it was heard on.
+  const panner = Number.isFinite(pan) && typeof S.audio.createStereoPanner === "function"
+    ? S.audio.createStereoPanner() : null;
+  if (panner) {
+    panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), now);
+    gain.connect(panner);
+    panner.connect(S.audio.destination);
+  } else gain.connect(S.audio.destination);
   oscillator.start(now);
   oscillator.stop(now + duration + .02);
-  oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+  oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); if (panner) panner.disconnect(); };
 }
 // Spoken crew reports: SpeechSynthesis in this browser's language, at most
 // three sentences queued; the host sends only the report kind and bearing.
@@ -108,7 +118,7 @@ export function syncGameAudio() {
     S.gameSoundContext = context;
     S.gameSoundHighWater = latest;
   } else {
-    for (const event of events) if (event.seq > S.gameSoundHighWater) playGameEffect(event.cue);
+    for (const event of events) if (event.seq > S.gameSoundHighWater) playGameEffect(event.cue, event.pan);
     S.gameSoundHighWater = Math.max(S.gameSoundHighWater, latest);
   }
 }

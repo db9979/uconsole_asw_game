@@ -142,7 +142,7 @@ def test_boat_esm_is_deterministic_and_round_trips_in_saves(tmp_path, monkeypatc
     assert game.opfor.esm.to_save() == data["crew"]["esm"]
     # A malformed ESM block rejects the whole save without touching the game.
     before = game.save_state()
-    for mutate in (lambda esm: esm.update(version=2),
+    for mutate in (lambda esm: esm.update(version=1),
                    lambda esm: esm["emitters"][0].update(label="emitter.no_such.radar"),
                    lambda esm: esm["emitters"][0]["history"].append([1e12, 0, 0, 0, 1, 0]),
                    lambda esm: esm["emitters"][0]["track"].update(bearing=float("nan")),

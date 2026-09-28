@@ -41,6 +41,7 @@ from src.commander.v2.wire import (
     OPFOR_ROLES,
     UBOOT_COMMAND_ROLES,
     ROLES,
+    LOOKOUT_ROLES,
     SONAR_ROLES,
     DIRECT_FIRE_ROLES,
     SONAR_AUDIO_ROLES,
@@ -669,7 +670,7 @@ class CommanderServer:
             self._web_host_digest = None
         self._grant_waiting_requests_locked()
 
-    def _new_session_locked(self, name: str, *, web_host=False):
+    def _new_session_locked(self, name: str, *, web_host=False, lookout=None):
         token = secrets.token_urlsafe(32)
         session = {
             "client_id": secrets.token_urlsafe(18),
@@ -685,6 +686,9 @@ class CommanderServer:
             "observer": False,
             "solo_host": False,
             "web_host": web_host,
+            # A phone lookout session (paired from /lookout): it only ever
+            # holds a lookout role, also beside a solo session.
+            "lookout_only": lookout is not None,
             "host_generation": 0,
             "presence": time.monotonic(),
             "last_get": time.monotonic(),
@@ -703,9 +707,21 @@ class CommanderServer:
             session["host_generation"] += 1
             session["simlog"] = True
             self._web_grant_available_locked(session)
+        elif lookout is not None:
+            self._auto_grant_locked(session, lookout)
         elif self._solo:
             self._solo_grant_all_locked(session)
         return token, session
+
+    def _pair_admitted_locked(self, lookout) -> bool:
+        """Room for one more session: the crew limit, or in solo mode the solo
+        session plus one phone lookout per lookout role."""
+        if not self._solo:
+            return len(self._sessions_v2) < _V2_SESSION_LIMIT
+        phones = sum(1 for session in self._sessions_v2.values() if session["lookout_only"])
+        if lookout is not None:
+            return phones < len(LOOKOUT_ROLES)
+        return len(self._sessions_v2) - phones < 1
 
     def web_host_session(self):
         with self._lock:
@@ -1335,7 +1351,7 @@ class CommanderServer:
                                "weapons_down", "weapons_degraded", "out_of_range",
                                 "opz_degraded", "active_limit", "no_fuel",
                                 "weather_unsafe", "no_save", "save_failed",
-                                *UBOOT_REASONS}
+                                "lookout_not_confirmed", *UBOOT_REASONS}
                           else "action_rejected")
             return self._finish_v2_locked(
                 session, envelope, "applied" if reason == "ok" else "rejected", reason)

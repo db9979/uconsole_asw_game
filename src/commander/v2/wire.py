@@ -34,7 +34,11 @@ OPFOR_ROLES = ("uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_e
                "uboot_nav", "uboot_radio")
 # Boat stations served by the command projection (everything but its sonar room).
 UBOOT_COMMAND_ROLES = tuple(role for role in OPFOR_ROLES if role != "uboot_sonar")
-ROLES = STATIONS + OPFOR_ROLES
+# Phone lookouts: the frigate's bridge lookout and the boat's periscope,
+# played on a phone paired by QR code (``/lookout``). Neither is a workstation:
+# solo mode never leases them and they claim no crewed boat by themselves.
+LOOKOUT_ROLES = ("lookout", "uboot_lookout")
+ROLES = STATIONS + OPFOR_ROLES + LOOKOUT_ROLES
 # Roles with a sonar room (waterfall stream), and the gated capabilities.
 SONAR_ROLES = ("sonar", "uboot_sonar")
 DIRECT_FIRE_ROLES = ("weapons", "helicopter", "opz", "uboot_weapons")
@@ -49,7 +53,7 @@ OBSERVER_MAX = 2
 
 def role_side(role):
     """``"opfor"`` for the crewed submarine's roles, else ``"frigate"``."""
-    return "opfor" if role in OPFOR_ROLES else "frigate"
+    return "opfor" if role in OPFOR_ROLES or role == "uboot_lookout" else "frigate"
 HOST_MAX_BYTES = 16 * 1024
 STATE_MAX_BYTES = 512 * 1024
 CHART_MAX_BYTES = 2 * 1024 * 1024

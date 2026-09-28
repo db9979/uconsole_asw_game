@@ -66,6 +66,15 @@ LOOKOUT_GLASSES_FIELDS = ("course", "fov_deg", "visibility_nm", "sea_state", "ho
                           "horizon_tilt", "sky", "outlines")
 LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale")
 SIGHT_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
+# The phone lookouts (``lookout`` binoculars, ``uboot_lookout`` periscope):
+# the eyepiece, the lookout's own sightings (called or not) and his calls.
+LOOKOUT_PHONE_FIELDS = ("side", "available", "manned", "course", "relative_deg", "fov_deg",
+                        "window_deg", "visibility_nm", "sea_state", "horizon_offset",
+                        "horizon_tilt", "sky", "outlines", "calls")
+LOOKOUT_PHONE_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "called", "range_nm")
+LOOKOUT_CALL_FIELDS = ("seq", "age_s", "category", "bearing", "range_nm", "confirmed")
+LOOKOUT_CALL_CATEGORIES = ("contact", "ship", "warship", "merchant", "aircraft", "submarine",
+                           "torpedo")
 
 _UBOOT_COMMAND_SHAPE = ("navigation", "status", "weapons", "alarms", "contacts",
                         "own_weapons", "designated_target_ref", "feed", "scope", "plant",
@@ -143,4 +152,6 @@ ROLE_SHAPES = {
     "eloka": ("intercepts", "station_down", "status", "hardware"),
     **{role: _UBOOT_COMMAND_SHAPE for role in OPFOR_ROLES if role != "uboot_sonar"},
     "uboot_sonar": ("observations", "settings", "visualization"),
+    "lookout": LOOKOUT_PHONE_FIELDS,
+    "uboot_lookout": LOOKOUT_PHONE_FIELDS,
 }

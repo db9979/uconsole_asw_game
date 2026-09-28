@@ -29,6 +29,7 @@ from src.commander.v2.wire import (
     AUDIO_SOCKET_TIMEOUT_S,
     HOST_ROLE,
     ROLES,
+    LOOKOUT_ROLES,
     SONAR_AUDIO_FRAMES,
     SONAR_AUDIO_RATE,
     SONAR_AUDIO_RESUME_BLOCKS,
@@ -1151,17 +1152,18 @@ class _Handler(BaseHTTPRequestHandler):
                     status, response = 503, {"error": "unavailable"}
                 elif len(owner._pair_failures) >= 5:
                     status, response = 429, {"error": "pairing_rate_limited"}
-                elif (not isinstance(body, dict) or body.keys() != {"code", "name"}
+                elif (not isinstance(body, dict)
+                      or body.keys() not in ({"code", "name"}, {"code", "name", "role"})
                       or not isinstance(body["code"], str)
-                      or not isinstance(body["name"], str)):
+                      or not isinstance(body["name"], str)
+                      or body.get("role", LOOKOUT_ROLES[0]) not in LOOKOUT_ROLES):
                     status, response = 400, {"error": "invalid_request"}
                 else:
                     name = body["name"].strip()
                     if (not 1 <= len(name) <= 32
                             or any(unicodedata.category(char).startswith("C") for char in name)):
                         status, response = 400, {"error": "invalid_request"}
-                    elif len(owner._sessions_v2) >= (1 if owner._solo
-                                                     else _V2_SESSION_LIMIT):
+                    elif not owner._pair_admitted_locked(body.get("role")):
                         status, response = 429, {"error": "session_limit"}
                     elif not secrets.compare_digest(
                             body["code"].encode("utf-8", errors="surrogatepass"),
@@ -1171,7 +1173,8 @@ class _Handler(BaseHTTPRequestHandler):
                             owner._rotate_code_locked()
                         status, response = 403, {"error": "invalid_code"}
                     else:
-                        token, session = owner._new_session_locked(name)
+                        token, session = owner._new_session_locked(
+                            name, lookout=body.get("role"))
                         self._reply(200, self._session_v2_body(session, owner._sessions_v2),
                                     set_cookie=self._v2_cookie(token))
                         return
@@ -1196,10 +1199,16 @@ class _Handler(BaseHTTPRequestHandler):
                             status, response = 400, {"error": "invalid_request"}
                         elif session["observer"]:
                             status, response = 403, {"error": "observer"}
+                        elif (session["lookout_only"] or owner._solo and not session["solo_host"]
+                              ) and body["station"] not in LOOKOUT_ROLES:
+                            # A phone lookout (or a second browser beside a
+                            # solo session) only ever takes a lookout role.
+                            status, response = 403, {"error": "forbidden"}
                         else:
                             station = body["station"]
-                            if session["solo_host"] and owner._solo and owner._side_conflict(
-                                    session, station):
+                            if (session["solo_host"] and owner._solo
+                                    and station not in LOOKOUT_ROLES
+                                    and owner._side_conflict(session, station)):
                                 # Solo: choosing a station of the other unit moves
                                 # the whole session to that unit.
                                 owner._solo_switch_side_locked(session, station)

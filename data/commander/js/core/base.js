@@ -12,6 +12,10 @@ export const stationNames = ["bridge", "sonar", "weapons", "damage", "opz", "rad
   "uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav", "uboot_radio"];
 export const opforRoles = new Set(["uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav",
   "uboot_radio"]);
+// Phone lookouts (/lookout page): never a workstation tab, but every session
+// record lists them after the workstations.
+export const lookoutRoles = ["lookout", "uboot_lookout"];
+export const sessionRoles = [...stationNames, ...lookoutRoles];
 // The boat's stations besides its sonar room share one projection and panel.
 export const isBoatCommand = (role) => opforRoles.has(role) && role !== "uboot_sonar";
 // Both sonar rooms share one panel; the submarine's has no towed array.

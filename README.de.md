@@ -14,18 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.35**
+Aktuelle Version: **1.3.36**
 
-Version 1.3.35 bringt weniger Text auf die uConsole-Bildschirme. Die obere
-Leiste nennt nur Station und Uhrzeit, der Kartenkopf nur den Maßstab. Das Sonar
-verliert die Statusfelder im Kopf und die Legendenzeilen und behält eine Zeile
-mit vier Haupttasten (der Rest steht in F1); ein Schlepp- oder Tiefensonar
-zeigt seinen Zustand nur, solange es fährt oder nicht bereit ist. Die
-Bedrohungsbox des U-Boots erscheint nur bei frischer Bedrohung, danach markiert
-ein gelbes Dreieck neben der Uhrzeit anstehende Warnungen. Kurse stehen in
-ganzen Grad mit °, der Drehkreis nur während einer Drehung. Der TMA-Kopf
-überlappt nicht mehr, und Waffen-Reiter, Rohrzeile und Alarmzeilen des U-Boots
-werden nicht mehr abgeschnitten. Spielstände bleiben v27.
+Version 1.3.36 behebt Sonar-Ton auf der uConsole, der verstummen konnte, bis
+man den Ton in den Optionen aus- und wieder einschaltete. Ein seltenes
+Wettrennen im pygame-Mixer konnte den Sonarkanal still stehen lassen, während
+sein nächster Block für immer in der Warteschlange hing, und die
+Sonar-Wiedergabe wartete dauerhaft auf diesen Platz. Die Wiedergabe spielt
+einen solchen hängenden Block jetzt selbst ab und macht weiter, und ein
+beendeter Sonar-Audio-Thread startet mit dem nächsten Block neu.
+`audio_debug.log` zählt beides (`queue_stranded`, `worker_restarts`).
+Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

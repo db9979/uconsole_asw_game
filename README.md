@@ -12,17 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.35**
+Current release: **1.3.36**
 
-Release 1.3.35 puts less text on the uConsole screens. The top bar names only
-the station and the clock, the chart header only its scale. The sonar loses its
-header status chips and legend lines and keeps one row of four main keys (the
-rest is in F1); a towed or variable-depth array shows its state only while it
-is moving or not ready. The submarine's threat box appears only while a threat
-is fresh, then an amber triangle next to the clock marks standing warnings.
-Courses read in whole degrees with °, and the turn radius shows only in a turn.
-The TMA header no longer overlaps, and the submarine's Weapons tab, tube line
-and alarm lines are no longer cut off. Saves stay v27.
+Release 1.3.36 fixes sonar audio on the uConsole that could fall silent until
+audio was switched off and on in the options. A rare race in the pygame mixer
+could leave the sonar channel idle with its next block queued forever, and
+the sonar playback waited for that queue slot for good. Playback now replays
+such a stranded block and carries on, and a stopped sonar audio worker is
+restarted with the next block. `audio_debug.log` counts both
+(`queue_stranded`, `worker_restarts`). Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

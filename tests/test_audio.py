@@ -960,3 +960,80 @@ def test_pump_counts_idle_channel_and_late_iterations(mixer, monkeypatch):
     engine._pump_sonar_once()
     assert engine.sonar_channel_idle == 1 and engine.sonar_pump_late == 1
     engine.shutdown()
+
+
+def test_pump_replays_a_queued_sound_stranded_on_an_idle_channel(mixer, monkeypatch):
+    """pygame's end-of-sound callback reads the queue without the GIL, so a
+    queue() in that window leaves the channel idle with a sound queued for
+    good. The pump must replay it instead of waiting for the slot forever."""
+    _, channels, _ = mixer
+    sonar = channels[1]
+    engine = AudioEngine()
+    engine._sonar_worker = Mock()
+    clock = [80.0]
+    monkeypatch.setattr(audio_module.time, "monotonic", lambda: clock[0])
+    block = np.ones(1024, dtype=np.float32)
+    for _ in range(round(AudioEngine.SONAR_BUFFER_S / .25) + 2):
+        assert engine.play_sonar(block, 4096, buffered=True)
+    engine._pump_sonar_once()               # primes and plays the first block
+    sonar.play.assert_called_once()
+    stranded = object()
+    sonar.get_queue.return_value = stranded
+    # Busy with a queued sound is the normal state: nothing to do.
+    sonar.get_busy.return_value = True
+    for _ in range(3):
+        clock[0] += .02
+        engine._pump_sonar_once()
+    sonar.play.assert_called_once()
+    assert engine.sonar_queue_stranded == 0
+    # Idle with the queue still held: one iteration may be the instant
+    # before the callback promotes it, the second one is stranded.
+    sonar.get_busy.return_value = False
+    clock[0] += .02
+    engine._pump_sonar_once()
+    sonar.play.assert_called_once()
+    clock[0] += .02
+    engine._pump_sonar_once()
+    assert sonar.play.call_args.args[0] is stranded
+    assert engine.sonar_queue_stranded == 1
+    assert engine.sonar_channel_idle == 1
+    # play() cleared the queue: the next iteration refills as usual.
+    sonar.get_queue.return_value = None
+    sonar.get_busy.return_value = True
+    clock[0] += .02
+    engine._pump_sonar_once()
+    sonar.queue.assert_called_once()
+    engine.shutdown()
+
+
+def test_stranded_queue_after_a_stream_reset_is_discarded_not_replayed(mixer):
+    _, channels, _ = mixer
+    sonar = channels[1]
+    engine = AudioEngine()
+    engine._sonar_worker = Mock()
+    block = np.ones(1024, dtype=np.float32)
+    stranded = object()
+    sonar.get_queue.return_value = stranded
+    sonar.get_busy.return_value = False
+    engine.stop_sonar(immediate=True)
+    for _ in range(round(AudioEngine.SONAR_BUFFER_S / .25)):
+        assert engine.play_sonar(block, 4096, buffered=True)
+    engine._pump_sonar_once()
+    # The old beam's sound is not replayed; the new stream's play() drops it.
+    sonar.play.assert_called_once()
+    assert sonar.play.call_args.args[0] is not stranded
+    assert engine.sonar_queue_stranded == 0
+    engine.shutdown()
+
+
+def test_play_sonar_restarts_a_dead_sonar_worker(mixer):
+    engine = AudioEngine()
+    dead = Mock()
+    dead.is_alive.return_value = False
+    engine._sonar_worker = dead
+    assert engine.play_sonar(np.ones(1024, dtype=np.float32), 4096,
+                             buffered=True)
+    assert engine._sonar_worker is not dead
+    assert engine._sonar_worker.is_alive()
+    assert engine.sonar_worker_restarts == 1
+    engine.shutdown()

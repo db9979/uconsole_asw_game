@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.36
+
+Version 1.3.36 behebt Sonar-Ton auf der uConsole, der verstummen konnte, bis
+man den Ton in den Optionen aus- und wieder einschaltete. Ein seltenes
+Wettrennen im pygame-Mixer konnte den Sonarkanal still stehen lassen, während
+sein nächster Block für immer in der Warteschlange hing, und die
+Sonar-Wiedergabe wartete dauerhaft auf diesen Platz. Die Wiedergabe spielt
+einen solchen hängenden Block jetzt selbst ab und macht weiter, und ein
+beendeter Sonar-Audio-Thread startet mit dem nächsten Block neu.
+`audio_debug.log` zählt beides (`queue_stranded`, `worker_restarts`).
+Spielstände bleiben v27.
+
 ## 1.3.35
 
 Version 1.3.35 bringt weniger Text auf die uConsole-Bildschirme. Die obere

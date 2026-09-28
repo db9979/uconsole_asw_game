@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.40
+## 1.3.41
 
-Version 1.3.40 behebt Remote-Crew-Browser, die mit „Host sendet Daten, die
+Version 1.3.41 behebt Remote-Crew-Browser, die mit „Host sendet Daten, die
 dieser Browser nicht lesen kann“ einfroren. Vier Listen nannten die Art einer
 Zeile mit einem Feld, das der Browser in jedem Stationszustand ablehnt: das
 Funklog des U-Boots, seine Bedrohungs-Peilungen und sein Ausweichbefehl sowie
@@ -16,6 +16,18 @@ Lagebild still und Aktionen waren gesperrt. Diese Zeilen senden das Feld jetzt
 als `type`; ein neuer Test findet solche Felder auch ohne Chromium. Nach dem
 Update des Hosts die Browserseite einmal neu laden, damit sie den neuen
 Web-Client lädt. Spielstände bleiben v27.
+
+## 1.3.40
+
+Version 1.3.40 bringt eine Fehlermeldung. „Fehler melden“ im Hauptmenü
+schreibt `~/.u-jagd/bug-report.txt` mit Version, Plattform und den neuesten
+Zeilen des Absturz-Logs (Benutzername aus Pfaden entfernt) und zeigt einen
+QR-Code, der am Handy ein vorausgefülltes GitHub-Issue öffnet; `Enter` öffnet
+es mit Log im Browser, wo das Gerät einen hat. Nach einem abgestürzten Start
+bietet das Hauptmenü den Punkt an. Der Windows-Starter und das
+Einstellungsmenü im Browser verlinken dasselbe Formular, und das Absturz-Log
+hält jetzt auch jeden Missionsstart fest. Gesendet wird erst, wenn Sie das
+Issue mit Ihrem eigenen GitHub-Konto abschicken. Spielstände bleiben v27.
 
 ## 1.3.39
 

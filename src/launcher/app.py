@@ -17,6 +17,7 @@ import tempfile
 import threading
 import webbrowser
 
+from src.core import bugreport
 from src.core.i18n import Translator
 from src.core.preferences import load_preferences
 from src.core.version import APP_VERSION
@@ -145,6 +146,10 @@ class Starter:
                             cursor="hand2", font=("Segoe UI", 9, "underline"))
         support.grid(row=0, column=4, padx=(10, 0))
         support.bind("<Button-1>", lambda _event: webbrowser.open(SUPPORT_URL))
+        report = ttk.Label(buttons, text=self.t("launcher.bug_report"), foreground="#1a5fb4",
+                           cursor="hand2", font=("Segoe UI", 9, "underline"))
+        report.grid(row=0, column=5, padx=(10, 0))
+        report.bind("<Button-1>", lambda _event: self.report_bug())
 
         updates = ttk.Frame(frame)
         updates.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(10, 0))
@@ -158,6 +163,24 @@ class Starter:
         else:
             self.update_text.set(self.t("launcher.update.current", version=APP_VERSION))
         root.after(POLL_MS, self.poll)
+
+    def report_bug(self):
+        """Open a prefilled GitHub issue with the crash and server log tails."""
+        if self.log is not None:
+            try:
+                self.log.flush()
+            except (OSError, ValueError):
+                pass
+        log = bugreport.read_log_tail()
+        server = bugreport.read_text_tail(str(log_path()), 60)
+        if server:
+            log = f"{log}\n--- server.log ---\n{server}" if log else server
+        context = "Windows starter" if sys.platform == "win32" else "server starter"
+        path = bugreport.write_report(bugreport.report_text(context, log))
+        webbrowser.open(bugreport.issue_url(context, log))
+        if path:
+            self.state_text.set(self.t("launcher.bug_report.file",
+                                       path=bugreport.display_path(path)))
 
     def t(self, key: str, **values) -> str:
         return self.tr.translate(key, **values)

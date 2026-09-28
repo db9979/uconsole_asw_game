@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.40**
+Aktuelle Version: **1.3.41**
 
-Version 1.3.40 behebt Remote-Crew-Browser, die mit „Host sendet Daten, die
+Version 1.3.41 behebt Remote-Crew-Browser, die mit „Host sendet Daten, die
 dieser Browser nicht lesen kann“ einfroren. Vier Listen nannten die Art einer
 Zeile mit einem Feld, das der Browser in jedem Stationszustand ablehnt: das
 Funklog des U-Boots, seine Bedrohungs-Peilungen und sein Ausweichbefehl sowie

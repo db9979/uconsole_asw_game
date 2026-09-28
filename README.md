@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.40**
+Current release: **1.3.41**
 
-Release 1.3.40 fixes Remote Crew browsers that froze with "Host sends data
+Release 1.3.41 fixes Remote Crew browsers that froze with "Host sends data
 this browser cannot read". Four lists named a row's type with a field the
 browser refuses in every station state: the submarine's radio log, its threat
 intercepts and evasion order, and the frigate radio room's HQ tasks. As soon as

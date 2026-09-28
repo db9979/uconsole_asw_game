@@ -10,7 +10,12 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.4**
+Current release: **1.3.5**
+
+Release 1.3.5 adds AI hunters: when nobody sails the frigate (the uConsole
+plays the boat, or a solo browser plays the submarine), the frigate, its
+helicopter and the patrol aircraft hunt the boat from the frigate's own
+sensors, on every frigate station no browser holds. Saves stay v23.
 
 Release 1.3.4 gives the frigate a variable-depth sonar (VDS) as a third
 array beside the hull sonar and the towed array: `Shift+Y` lowers or

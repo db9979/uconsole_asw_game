@@ -12,7 +12,13 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.4**
+Aktuelle Version: **1.3.5**
+
+Version 1.3.5 bringt KI-Jäger: Wenn niemand die Fregatte fährt (die uConsole
+spielt das Boot oder ein Solo-Browser das U-Boot), jagen Fregatte,
+Hubschrauber und Seefernaufklärer das Boot mit den eigenen Sensoren der
+Fregatte, auf jeder Fregattenstation, die kein Browser hält. Spielstände
+bleiben v23.
 
 Version 1.3.4 gibt der Fregatte ein Tiefensonar mit variabler Tiefe (VDS)
 als dritte Anlage neben Rumpfsonar und Schleppantenne: `Shift+Y` fiert den

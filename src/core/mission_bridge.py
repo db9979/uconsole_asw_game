@@ -367,8 +367,10 @@ class MissionBridgeMixin:
         """Leave the current mission (running or finished) without saving.
 
         The old world stays behind the menu until the next start replaces it;
-        nothing is simulated while the menu owns the screen.
+        nothing is simulated while the menu owns the screen. A mission still
+        running is kept in the autosave, so "Continue" can resume it.
         """
+        self.autosave_on_exit()
         self._open_administration("none")
         self.quit_confirm = False
         self.simlog_view_open = False

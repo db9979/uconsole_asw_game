@@ -140,7 +140,7 @@ class CampaignMixin:
         state = self._menu_campaign()
         if key in (pygame.K_ESCAPE, pygame.K_q):
             self.main_menu = True
-            self.main_menu_sel = 2
+            self.main_menu_sel = self.main_menu_index("campaign")
             return
         if key == pygame.K_TAB:
             self.campaign_side = "frigate" if boat_side else "boat"

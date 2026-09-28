@@ -19,7 +19,7 @@ body:
     id: version
     attributes:
       label: Version
-      placeholder: "1.3.44"
+      placeholder: "1.3.48"
     validations:
       required: true
   - type: input

@@ -130,13 +130,16 @@ class DrawMixin:
         draw_logo(s, cx, 34)
 
         if self.main_menu:
+            entries = self.main_menu_entries()
+            step = 400 // len(entries)
             draw_menu_panel(s, (cx - 260, 148, 520, 412),
-                            (cx - 250, 157 + self.main_menu_sel * 40, 500, 36))
-            for i, key in enumerate(MAIN_MENU_LABELS):
+                            (cx - 250, 157 + self.main_menu_sel * step, 500, step - 4))
+            for i, entry in enumerate(entries):
                 marker = "> " if i == self.main_menu_sel else "  "
                 color = config.COLOR_TEXT if i == self.main_menu_sel else config.COLOR_TEXT_DIM
                 center(message("menu.choice", marker=marker,
-                               label=self.tr(key).upper()), 175 + i * 40, color=color)
+                               label=self.tr(MAIN_MENU_LABELS[entry]).upper()),
+                       157 + step // 2 - 2 + i * step, color=color)
             if self.bug_report_offer:
                 center(self.tr("menu.bug_report.offer"), 584, color=config.COLOR_WARN)
             # Support link: main menu page only, never over a mission.
@@ -1231,6 +1234,7 @@ class DrawMixin:
                 if commander_started is not None:
                     self._perf_traffic_s += time.perf_counter() - commander_started
                 self.update(dt, audio_dt=wall_dt)
+                self.autosave_tick(wall_dt)
                 self._perf_debug_log(wall_dt)
                 if self.web_mode:
                     game_visible()
@@ -1244,6 +1248,8 @@ class DrawMixin:
                 game_visible()
                 if draw_started is not None:
                     self._perf_draw_s += time.perf_counter() - draw_started
+            # A normal quit (never a crash) keeps the running mission.
+            self.autosave_on_exit()
         finally:
             try:
                 self.commander.stop()

@@ -14,21 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.47**
+Aktuelle Version: **1.3.48**
 
-Version 1.3.47 schickt ein Handy auf Wache. `F9` zeigt einen zweiten QR-Code,
-Handy-Ausguck: scannen, das eigene Zertifikat des Spiels einmal bestätigen, den
-Kopplungscode eintippen, und das Handy wird zum Ausguck auf der Brücke der
-Fregatte oder zum Sehrohr des besetzten U-Boots. Das Handy wie ein Fernglas
-drehen (Gyroskop) oder wischen, zoomen und melden, was zu sehen ist, per
-Sprache („Schiff Peilung 040, Entfernung 5 Meilen“) oder durch Antippen. Die
-Brücke hört nur, was der Ausguck dort wirklich hat; eine Meldung von nichts wird
-abgelehnt. Solange ein Handy Wache hält, schweigt der automatische Ausguck, und
-die Crew-Browser sprechen jede bestätigte Meldung. Am Sehrohr dreht das Handy
-das Sehrohr und nimmt Stadimeter-Entfernungen. Der Listener liefert die Seite
-über HTTPS auf dem nächsten Port (selbst erzeugtes Zertifikat), weil Handys
-Gyroskop und Mikrofon nur einer sicheren Seite freigeben; Spielstände bleiben
-v27.
+Version 1.3.48 bringt einen Autosave. Eine laufende Mission wird alle 5
+Minuten und beim Beenden oder Verlassen ins Hauptmenü nach
+`~/.u-jagd/autosave.json` gespeichert, neben den fünf Plätzen. Das Hauptmenü
+beginnt dann mit „Einsatz fortsetzen“, das sie exakt weiterführt; nach einem
+Absturz ist es der letzte 5-Minuten-Stand. Die Datei wird im Hintergrund
+geschrieben, damit die uConsole nicht ruckelt. Eine beendete und jede neue
+Mission löschen den Autosave. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

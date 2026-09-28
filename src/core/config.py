@@ -889,6 +889,9 @@ SECOND_SUB_POOL = ("aip_modern", "ssn", "aip_modern")
 # M6: Missions-System
 SAVE_DIR = os.path.expanduser("~/.u-jagd")
 SAVE_PATH = os.path.join(SAVE_DIR, "save.json")   # Legacy (v1)
+# A running mission is written to SAVE_DIR/autosave.json this often (wall
+# seconds) and on a normal quit; "Continue" in the main menu resumes it.
+AUTOSAVE_INTERVAL_S = 300.0
 SAVE_SLOTS = 5
 MISSION_ESCAPE_RADIUS_NM = 150.0   # Ziel-Boot gilt als entkommen ab dieser Distanz zum Startpunkt
 SCORE_SUNK = 1000                  # pro versenktem Ziel-U-Boot

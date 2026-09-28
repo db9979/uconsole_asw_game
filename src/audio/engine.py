@@ -105,6 +105,11 @@ class AudioEngine:
         # Receiver sequence breaks seen by the producer (retunes and blocks
         # the frame loop never got to play before the receiver replaced them).
         self.sonar_input_gaps = 0
+        # Queued sounds found stranded on an idle channel (see
+        # _release_stranded_queue) and sonar workers restarted after dying.
+        self.sonar_queue_stranded = 0
+        self._sonar_stranded_candidate = None
+        self.sonar_worker_restarts = 0
         self._sonar_hold_streak = 0
         self._sonar_buffer = deque()
         self._sonar_buffer_duration = 0.0
@@ -464,6 +469,12 @@ class AudioEngine:
                                                signal.copy()))
                     self._sonar_tail_value = np.array(signal[-1], copy=True)
                     self._sonar_buffer_duration += count / self.sample_rate
+                    if (self._sonar_worker is not None
+                            and not self._sonar_worker.is_alive()):
+                        # A dead worker never feeds the mixer again: the
+                        # buffer fills and the sonar stays silent for good.
+                        self._sonar_worker = None
+                        self.sonar_worker_restarts += 1
                     if self._sonar_worker is None:
                         self._sonar_worker = threading.Thread(
                             target=AudioEngine._pump_sonar,
@@ -611,8 +622,10 @@ class AudioEngine:
                         self.sonar_pump_late += 1
                     self.sonar_pump_late_max_s = max(self.sonar_pump_late_max_s, gap)
                 self._sonar_pump_last_at = now
-                if self._sonar_channel.get_queue() is not None:
+                if (self._sonar_channel.get_queue() is not None
+                        and not self._release_stranded_queue()):
                     return
+                self._sonar_stranded_candidate = None
                 if (self._sonar_last_fresh_at is not None
                         and not self._sonar_channel.get_busy()):
                     # The mixer ran dry between two iterations: an audible dip
@@ -670,6 +683,37 @@ class AudioEngine:
                     self._sonar_channel.play(sound, fade_ms=self.FADE_MS)
             except pygame.error:
                 self._latch_device_error()
+
+    def _release_stranded_queue(self) -> bool:
+        """Recover a queued sound that an idle sonar channel will never play.
+
+        pygame's end-of-sound callback looks at the channel's queue before it
+        takes the GIL; a queue() landing in that window is stored after the
+        callback found nothing queued. The channel then stays idle with a
+        sound queued forever, and the pump (which waits for a free queue slot)
+        never refills it: the sonar is silent until the engine is rebuilt.
+        The same sound must be seen stranded on two iterations in a row, so
+        the instant between a sound's end and its queue's promotion is not
+        mistaken for it. A stranded sound of the running stream is replayed
+        (play() also clears the queue); after a stream reset it is stale and
+        the next play() of the new stream discards it. True lets the caller
+        refill the channel. Called under the sonar lock.
+        """
+        queued = self._sonar_channel.get_queue()
+        if queued is None or self._sonar_channel.get_busy():
+            self._sonar_stranded_candidate = None
+            return queued is None
+        if self._sonar_last_fresh_at is None:
+            self._sonar_stranded_candidate = None
+            return True
+        if self._sonar_stranded_candidate is not queued:
+            self._sonar_stranded_candidate = queued
+            return False
+        self._sonar_stranded_candidate = None
+        self.sonar_queue_stranded += 1
+        self.sonar_channel_idle += 1
+        self._sonar_channel.play(queued, fade_ms=self.FADE_MS)
+        return False
 
     def stop_sonar(self, *, immediate: bool = False) -> None:
         """Fade a normal stop; discard queued old-beam audio on discontinuity.
@@ -744,6 +788,7 @@ class AudioEngine:
         self.sonar_stale = False
         self._sonar_hold_streak = 0
         self._sonar_pump_last_at = None
+        self._sonar_stranded_candidate = None
 
     def stop(self) -> None:
         self.stop_sonar()
@@ -840,7 +885,9 @@ class AudioEngine:
                 "sonar_underruns={su} sonar_concealed={sc} sonar_neutral={sn} "
                 "sonar_stale={ss} buffer_s={bs:.2f} rate_adj={ra:+.4f} "
                 "channel_idle={ci} pump_late={pl} pump_late_max_ms={pm:.0f} "
+                "queue_stranded={qs} worker_restarts={wr} "
                 "input_gaps={ig} evictions={ev} rate={r} ch={c}\n").format(
+            qs=self.sonar_queue_stranded, wr=self.sonar_worker_restarts,
             sc=self.sonar_concealed_blocks, ra=self.sonar_rate_adjust,
             t=time.monotonic(), sd=self.sonar_dropped_blocks,
             sh=self.sonar_holds, ad=self.alert_dropped_events, ev=evictions,

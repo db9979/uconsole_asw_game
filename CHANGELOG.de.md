@@ -4,15 +4,27 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.36
+## 1.3.37
 
-Version 1.3.36 lässt die Karten auf der uConsole viel weiter hineinzoomen.
+Version 1.3.37 lässt die Karten auf der uConsole viel weiter hineinzoomen.
 `Q`/`E` springen jetzt auf Brücke, Waffen, Helikopter und der U-Boot-Karte in
 festen Stufen durch die Kartenhöhen 500, 250, 100, 50, 25, 10, 5, 2, 1 und
 0,5 sm, das Mausrad zoomt stufenlos bis 0,5 sm; die OPZ-Karte geht bis 0,25 sm
 Radius. Das Gitter wird beim Hineinzoomen feiner (bis 0,1 sm, mit
 Dezimalbeschriftung), der Maßstab zeigt Bruchteile, und Küsten und Radarringe
 werden beschnitten, damit starker Zoom schnell bleibt. Spielstände bleiben v27.
+
+## 1.3.36
+
+Version 1.3.36 behebt Sonar-Ton auf der uConsole, der verstummen konnte, bis
+man den Ton in den Optionen aus- und wieder einschaltete. Ein seltenes
+Wettrennen im pygame-Mixer konnte den Sonarkanal still stehen lassen, während
+sein nächster Block für immer in der Warteschlange hing, und die
+Sonar-Wiedergabe wartete dauerhaft auf diesen Platz. Die Wiedergabe spielt
+einen solchen hängenden Block jetzt selbst ab und macht weiter, und ein
+beendeter Sonar-Audio-Thread startet mit dem nächsten Block neu.
+`audio_debug.log` zählt beides (`queue_stranded`, `worker_restarts`).
+Spielstände bleiben v27.
 
 ## 1.3.35
 

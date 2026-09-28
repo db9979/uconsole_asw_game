@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.36**
+Aktuelle Version: **1.3.37**
 
-Version 1.3.36 lässt die Karten auf der uConsole viel weiter hineinzoomen.
+Version 1.3.37 lässt die Karten auf der uConsole viel weiter hineinzoomen.
 `Q`/`E` springen jetzt auf Brücke, Waffen, Helikopter und der U-Boot-Karte in
 festen Stufen durch die Kartenhöhen 500, 250, 100, 50, 25, 10, 5, 2, 1 und
 0,5 sm, das Mausrad zoomt stufenlos bis 0,5 sm; die OPZ-Karte geht bis 0,25 sm

@@ -4,15 +4,25 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.36
+## 1.3.37
 
-Release 1.3.36 lets the uConsole charts zoom much further in. `Q`/`E` now
+Release 1.3.37 lets the uConsole charts zoom much further in. `Q`/`E` now
 step through fixed chart heights of 500, 250, 100, 50, 25, 10, 5, 2, 1 and
 0.5 NM on the bridge, weapons, helicopter and submarine charts, and the mouse
 wheel zooms smoothly down to 0.5 NM; the operations centre chart goes down to
 a 0.25 NM radius. The grid gets finer as you zoom (down to 0.1 NM, with
 decimal labels), the scale line shows fractions, and coastlines and radar
 rings are clipped so strong zoom stays fast. Saves stay v27.
+
+## 1.3.36
+
+Release 1.3.36 fixes sonar audio on the uConsole that could fall silent until
+audio was switched off and on in the options. A rare race in the pygame mixer
+could leave the sonar channel idle with its next block queued forever, and
+the sonar playback waited for that queue slot for good. Playback now replays
+such a stranded block and carries on, and a stopped sonar audio worker is
+restarted with the next block. `audio_debug.log` counts both
+(`queue_stranded`, `worker_restarts`). Saves stay v27.
 
 ## 1.3.35
 

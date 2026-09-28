@@ -14,14 +14,13 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.18**
+Aktuelle Version: **1.3.19**
 
-Version 1.3.18 bringt ein **A4-Werbeplakat** auf Deutsch und Englisch (PNG mit
-300 dpi und PDF) in `docs/poster/`: die Szene des Startbildschirms, eine kurze
-Beschreibung der uConsole- und Windows-Version, vier Screenshots und QR-Codes
-zum Download und zur Unterstützerseite. `tools/build_poster.py` rendert es aus
-der aktuellen Szene und den Screenshots neu. Das Spiel selbst ist unverändert;
-Spielstände bleiben v23.
+Version 1.3.19 macht den Start auf der uConsole sofort sichtbar: Ein kleines
+Startfenster zeigt, ob der Starter nach einem Update sucht, es lädt oder
+installiert, und schließt sich, sobald das Spiel erscheint. Ein zweiter Start,
+während U-Jagd startet oder läuft, öffnet das Spiel nicht mehr doppelt, sondern
+meldet „U-Jagd läuft bereits.“. Spielstände bleiben v23.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

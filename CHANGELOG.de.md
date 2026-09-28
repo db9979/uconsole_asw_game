@@ -4,6 +4,14 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.19
+
+Version 1.3.19 macht den Start auf der uConsole sofort sichtbar: Ein kleines
+Startfenster zeigt, ob der Starter nach einem Update sucht, es lädt oder
+installiert, und schließt sich, sobald das Spiel erscheint. Ein zweiter Start,
+während U-Jagd startet oder läuft, öffnet das Spiel nicht mehr doppelt, sondern
+meldet „U-Jagd läuft bereits.“. Spielstände bleiben v23.
+
 ## 1.3.18
 
 Version 1.3.18 bringt ein **A4-Werbeplakat** auf Deutsch und Englisch (PNG mit

@@ -40,6 +40,15 @@ anderen Zweig als `main` oder während das Spiel läuft wird nichts verändert.
 Protokoll: `~/.u-jagd/updater.log`. Speicherstände unter `~/.u-jagd/` bleiben
 unberührt.
 
+**Startfenster:** Sofort nach dem Klick erscheint ein kleines Fenster „U-Jagd“
+mit dem aktuellen Schritt (Suche nach Updates, Lade Update, Installiere
+Abhängigkeiten, Prüfe neue Version, Starte U-Jagd). Es schließt sich, sobald
+das Spiel sein erstes Bild zeigt. Ein zweiter Start, während U-Jagd schon
+startet oder läuft, öffnet kein zweites Spiel, sondern zeigt drei Sekunden lang
+„U-Jagd läuft bereits.“ (und holt das Spielfenster nach vorn, wenn `wmctrl`
+installiert ist). Läuft gerade das Hintergrund-Update, wartet der Start darauf
+und zeigt das an. `U_JAGD_NO_SPLASH=1` schaltet das Fenster ab.
+
 Spielparameter werden durchgereicht, etwa `u-jagd --windowed`. Einmal ohne
 Update starten: `U_JAGD_NO_UPDATE=1 u-jagd`. Statt Releases immer den neuesten
 Stand von `main` holen: `U_JAGD_UPDATE_CHANNEL=main u-jagd`. Menüeintrag,

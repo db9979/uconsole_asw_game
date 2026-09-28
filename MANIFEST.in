@@ -7,6 +7,7 @@ include packaging/uconsole/install.sh
 include packaging/uconsole/README.md
 include packaging/uconsole/u-jagd-launch
 include packaging/uconsole/u_jagd_updater.py
+include packaging/uconsole/u_jagd_splash.py
 include packaging/uconsole/u-jagd.svg
 include docs/station-shortcuts.de.md
 include docs/station-shortcuts.de.pdf

@@ -38,6 +38,15 @@ next version is tried again. Local changes in the checkout, a branch other than
 `main`, or a running game leave everything untouched. Log:
 `~/.u-jagd/updater.log`. Saves under `~/.u-jagd/` are not touched.
 
+**Start window:** right after the click a small "U-Jagd" window shows the
+current step (checking for updates, downloading the update, installing
+dependencies, checking the new version, starting U-Jagd). It closes as soon as
+the game shows its first frame. A second start while U-Jagd is already starting
+or running opens no second game; it shows "U-Jagd is already running." for
+three seconds instead (and brings the game window to the front when `wmctrl` is
+installed). If the background update is running, the start waits for it and
+says so. `U_JAGD_NO_SPLASH=1` turns the window off.
+
 Game arguments are passed through, for example `u-jagd --windowed`. Start once
 without updating: `U_JAGD_NO_UPDATE=1 u-jagd`. Always take the newest `main`
 instead of releases: `U_JAGD_UPDATE_CHANNEL=main u-jagd`. To remove the menu

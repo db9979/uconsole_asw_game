@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.19
+
+Release 1.3.19 makes the uConsole start visible at once: a small start window
+shows whether the launcher is checking for, downloading or installing an update
+and closes when the game appears. A second start while U-Jagd is starting or
+running no longer opens the game twice; it shows "U-Jagd is already running."
+instead. Saves stay v23.
+
 ## 1.3.18
 
 Release 1.3.18 adds an **A4 poster** in German and English (PNG at 300 dpi

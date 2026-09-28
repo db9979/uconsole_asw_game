@@ -2,6 +2,8 @@
 
 # U-Jagd
 
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/zquu1xu570)
+
 An optional browser-only LAN room is available with `--web-host` behind a
 separate HTTPS reverse proxy. See the [German web-host guide](docs/web-host.de.md).
 
@@ -10,7 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.7**
+Current release: **1.3.8**
+
+Release 1.3.8 adds a support link: a QR code in the uConsole main menu and a
+small link on the Remote Crew pairing, lobby and settings screens and the
+web-host admin page, never over a running station. It also brings the guides
+up to date: the reference and README list the VDS and 31 kn, the README's
+mission-editor limits match the runtime, and the co-op and protocol guides
+cover the solo side choice, the submarine roles and the admin shutdown.
+Saves stay v23.
 
 Release 1.3.7 gives the frigate F-217 its real 31 kn top speed (FLANK). The
 brake power is scaled so drag, acceleration and turning up to 25 kn stay as
@@ -343,9 +353,10 @@ saved tactical observations are retained.
 Sonar controls include:
 
 - `Shift+A`: transmit an active ping; the transmitter has a 30-second cooldown.
-- `Shift+B`: select HMS or TAS as the receiving/transmitting array.
+- `Shift+B`: select HMS, TAS or VDS as the receiving/transmitting array.
 - `A` / `B` / `H`: select Broadband, Filtered or Heterodyne listening.
 - `Y`: deploy or retrieve TAS.
+- `Shift+Y`: lower or recover the VDS (3-15 kn, sea state up to 5).
 - `U` / `V`: adjust TAS/VDS target depth after deployment.
 - `Page Up` / `Page Down`: move through Broadband, LOFAR, DEMON, TMA,
   Environment, and ACTIVE pages.
@@ -474,23 +485,28 @@ import. JSON templates under `data/editor_templates/` describe the accepted
 schemas; user files are stored under `~/.u-jagd/missions/` and
 `~/.u-jagd/units/`.
 
-Validated does not mean runtime-effective. In release 1.0.0:
+Validated does not mean runtime-effective. In this release:
 
 - A user mission can be started with `F5` from the Mission Editor browser only
   when it uses the supported runtime subset.
-- Effective mission values are the seed and name; 500 NM fixed-world placement
-  sectors; player position, course, and speed; sea state, start time, and
-  thermocline depth; exact built-in submarine and surface profiles with their
-  placement, course, speed, and submarine depth; and `sink` or `survive`
-  objectives with a time limit.
-- A runtime mission must specify a 500 NM `fixed` world and `clear` weather.
-  Alternate world sizes and reference worlds are rejected. The editor's world
-  definition does not replace the game's coast dataset.
-- Submarine placements must be hostile. For a `sink` objective, its target list
-  must exactly match all placed submarines.
-- Random groups, timed events, `protect` and `reach` objectives, aircraft,
-  animals, torpedoes, decoys, and user-created unit profiles are rejected for
-  runtime play rather than silently ignored.
+- A runtime mission needs a 500 NM world: `fixed` (the game's current world
+  mode) or `reference` naming one of the 128 packaged real sectors
+  (`sector:0` to `sector:127`, picked from a list in the editor). Other world
+  sizes are rejected. The editor's world definition does not replace the
+  game's coast dataset.
+- Effective mission values are the seed, name and description; player
+  position, course and speed; sea state, start time, thermocline depth and an
+  authored weather kind; exact units of every built-in kind except torpedoes
+  (submarines, surface ships, aircraft at profile speed from the nearest
+  charted airbase, animals and static decoys) with their placement, course,
+  speed and depth; seeded random groups; timed events (message, spawn,
+  weather, objective); and `sink`, `survive`, `protect` or `reach` objectives
+  with a time limit.
+- For a `sink` objective the target list must exactly match all placed hostile
+  submarines; `protect` targets must be placed friendly or neutral units;
+  `reach` needs a reach area.
+- Torpedoes and user-created unit profiles are rejected for runtime play rather
+  than silently ignored.
 - Unit Editor output is validation/authoring data only. No user unit-profile
   field currently changes the running simulation.
 
@@ -560,6 +576,14 @@ Build a wheel with a PEP 517 frontend:
 python -m pip install build
 python -m build
 ```
+
+## Support
+
+U-Jagd is a free hobby project by Dominik Bornhäußer. If you enjoy it, you can
+support its development at [buymeacoffee.com/zquu1xu570](https://buymeacoffee.com/zquu1xu570).
+The game shows the link only where nobody is playing: as a QR code in the
+uConsole main menu, and on the Remote Crew pairing, lobby and settings screens
+and the web-host admin page. GitHub shows it as the repository's Sponsor button.
 
 ## License and Credits
 

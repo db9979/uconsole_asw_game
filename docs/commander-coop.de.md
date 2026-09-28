@@ -1,4 +1,4 @@
-# Commander-LAN-Koop (1.0.0)
+# Commander-LAN-Koop
 
 Für einen vollständig browserbasierten Raum mit Web-Spielleitung siehe
 [U-Jagd als Webspiel im LAN](web-host.de.md).
@@ -196,14 +196,16 @@ Der **Solo-Modus** lässt eine Person das ganze Spiel aus einem Browser bedienen
 während die uConsole der Simulations-Server bleibt. Start mit
 `python main.py --solo-crew` (nur dieser Start, erste private LAN-Adresse, nie
 gespeichert) oder über die Zeile „Crew-Modus“ im F9-Overlay; die Kopplung läuft weiter
-über den Beitrittscode. Eine Solo-Sitzung hält alle neun Stationen mit Befehlen,
+über den Beitrittscode. Eine Solo-Sitzung hält alle neun Fregattenstationen (als U-Boot die sieben des Boots) mit Befehlen,
 Direktfeuer, Sonar-Audio und SimLog, es kann nur ein Browser koppeln (ein zweiter
 erhält `session_limit`, bis der erste im Roster entfernt wird), und Leases verfallen
 nicht. Ein Moduswechsel widerruft alle Sitzungen und rotiert den Code.
 
 Der Solo-Browser erhält zusätzlich eine **Spielsteuerungsleiste**:
 Speichern und Laden (Slots 1-5) sowie Neues Spiel (Szenario,
-Welt, Schwierigkeit, optionaler Seed). Laden oder ein neues Spiel ersetzt die Welt,
+Welt, Seite, Schwierigkeit, optionaler Seed). Mit der Seite *U-Boot* spielt der
+Browser das feindliche Boot, und die KI-Jäger führen Fregatte, Hubschrauber und
+Seefernaufklärer. Laden oder ein neues Spiel ersetzt die Welt,
 der Browser bleibt aber gekoppelt; alles, was er für die alte Welt vorbereitet hatte,
 scheitert geschlossen. Im Hauptmenü der uConsole zeigt der Browser einen Startbildschirm.
 Editoren, Optionen, Netzwerkverwaltung, Beenden und Zugangsdaten bleiben Host-Sache.

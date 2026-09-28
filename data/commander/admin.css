@@ -104,3 +104,7 @@ body { min-width: 0; min-height: 100dvh; }
   .field-actions button { width: 100%; }
 }
 .shutdown-card button.danger { min-height: 2.75rem; border-color: var(--alarm); color: var(--alarm); }
+
+.support-footer { padding: 0 1rem 1.5rem; text-align: center; }
+.support-link { color: var(--caution); text-decoration: underline; text-underline-offset: 0.2em; }
+.support-link:hover, .support-link:focus-visible { color: var(--text); }

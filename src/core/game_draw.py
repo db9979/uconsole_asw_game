@@ -26,6 +26,7 @@ from src.ui import observations
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
+from src.ui.support import draw_support_corner
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.weather_station import draw_weather_station
 from src.ui import uboot_view
@@ -136,6 +137,9 @@ class DrawMixin:
                 color = config.COLOR_TEXT if i == self.main_menu_sel else config.COLOR_TEXT_DIM
                 center(message("menu.choice", marker=marker,
                                label=self.tr(key).upper()), 175 + i * 42, color=color)
+            # Support link: main menu page only, never over a mission.
+            draw_support_corner(s, config.SCREEN_W - 24, 600,
+                                config.COLOR_TEXT, config.COLOR_TEXT_DIM)
         elif self.menu_screen == "training":
             self._draw_training_menu(center)
         elif self.menu_screen == "campaign":

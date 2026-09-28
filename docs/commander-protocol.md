@@ -2,7 +2,7 @@
 
 [Deutsch](commander-protocol.de.md)
 
-Application 1.0.0, API protocol 2, save format v12-only. These versions are independent.
+Application 1.3.8, API protocol 2, save format v23-only. These versions are independent.
 No credentials, network sessions, leases, command queues or proposals are saved.
 Shared annotations and crew-accepted target/navigation setpoints use normal game
 persistence.
@@ -316,6 +316,31 @@ under fresh generations and does not rotate the join code.
 Crew mode is unchanged: `station: "host"` is rejected with 403 and the game controls
 remain host-only. Solo mode is an explicit local host decision (CLI flag or F9 row),
 never persisted, and changing it revokes all sessions.
+
+## Submarine Roles, Side Choice and Admin Additions (protocol v2, additive)
+
+Besides the nine frigate `STATIONS`, protocol v2 knows the crewed hostile
+submarine's seven roles (`OPFOR_ROLES`): `uboot` (command), `uboot_sonar`,
+`uboot_weapons`, `uboot_engine`, `uboot_esm`, `uboot_nav` and `uboot_radio`. They
+are leased like frigate stations, but a session only ever holds roles of one side.
+`uboot_sonar` shares the sonar-room commands (listen bearing, focus); direct fire
+applies to `uboot_weapons` as well.
+
+In solo mode a `POST /api/v2/stations/request` for a role of the other side switches
+the session's side: every held lease is released (`role_revoked`) and all roles of
+the requested side are granted. The browser's New Game dialog sends that request
+before `host_new_game`, so the new world starts with the chosen side; `solo_rebase`
+keeps the side across the world replacement. Frigate stations nobody holds are
+sailed by the AI hunters.
+
+`sonar_set_array_mode` takes `BOW`, `TOWED` or `VDS`; `sonar_set_vds {deployed}`
+lowers or recovers the variable-depth sonar, and `sonar_set_vds_depth {depth_m}`
+sets its depth (`sonar_set_tow_depth` stays the towed array's).
+
+The web-host admin action set (`POST /api/v2/web/admin`) includes `shutdown`
+(`client_id` and `station` empty, `value` exactly `true`): the main thread ends the
+game process after a short grace period, so a web-hosted game does not keep running
+in the background.
 
 ## Test Scope
 

@@ -2,7 +2,7 @@
 
 [English](commander-protocol.md)
 
-Anwendung 1.0.0, API-Protokoll 2, ausschließlich Spielstandsformat v12. Diese
+Anwendung 1.3.8, API-Protokoll 2, ausschließlich Spielstandsformat v23. Diese
 Versionen sind voneinander unabhängig. Zugangsdaten, Netzwerksitzungen, Leases,
 Befehlswarteschlangen oder Vorschläge werden nicht gespeichert. Gemeinsame
 Anmerkungen und von der Besatzung angenommene Ziel-/Navigations-Sollwerte verwenden
@@ -366,6 +366,31 @@ Der Crew-Modus bleibt unverändert: `station: "host"` wird mit 403 abgewiesen, d
 Spielsteuerung bleibt Host-Sache. Der Solo-Modus ist eine ausdrückliche lokale
 Host-Entscheidung (CLI-Flag oder F9-Zeile), wird nie gespeichert, und ein Wechsel
 widerruft alle Sitzungen.
+
+## U-Boot-Rollen, Seitenwahl und Admin-Ergänzungen (Protokoll v2, additiv)
+
+Neben den neun Fregatten-`STATIONS` kennt Protokoll v2 die sieben Rollen des
+besetzten feindlichen U-Boots (`OPFOR_ROLES`): `uboot` (Führung), `uboot_sonar`,
+`uboot_weapons`, `uboot_engine`, `uboot_esm`, `uboot_nav` und `uboot_radio`. Sie
+werden wie Fregattenstationen verliehen, eine Sitzung hält aber immer nur Rollen
+einer Seite. `uboot_sonar` teilt die Befehle des Sonarraums (Horchpeilung, Fokus);
+Direktfeuer gilt auch für `uboot_weapons`.
+
+Im Solo-Modus wechselt ein `POST /api/v2/stations/request` für eine Rolle der
+anderen Seite die Seite der Sitzung: alle gehaltenen Leases werden freigegeben
+(`role_revoked`) und alle Rollen der angefragten Seite vergeben. Der Dialog
+„Neues Spiel“ des Browsers sendet diese Anfrage vor `host_new_game`, sodass die neue
+Welt mit der gewählten Seite beginnt; `solo_rebase` behält die Seite über den
+Weltwechsel. Fregattenstationen, die niemand hält, fahren die KI-Jäger.
+
+`sonar_set_array_mode` nimmt `BOW`, `TOWED` oder `VDS`; `sonar_set_vds {deployed}`
+fiert oder hievt das Tiefensonar, und `sonar_set_vds_depth {depth_m}` stellt
+seine Tiefe (`sonar_set_tow_depth` bleibt die der Schleppantenne).
+
+Die Admin-Aktionen des Webspiels (`POST /api/v2/web/admin`) enthalten `shutdown`
+(`client_id` und `station` leer, `value` genau `true`): der Hauptthread beendet den
+Spielprozess nach einer kurzen Frist, damit ein Webspiel nicht im Hintergrund
+weiterläuft.
 
 ## Testumfang
 

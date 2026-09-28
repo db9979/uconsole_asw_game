@@ -32,10 +32,11 @@ class MissionBridgeMixin:
     def start_custom_mission(self, definition: dict) -> bool:
         """Start the currently runtime-effective subset of an authored mission.
 
-        Fixed player/environment values, built-in submarine/surface units and
-        sink/survive objectives are effective. Events, random groups, custom
-        world sizes and protect/reach objectives remain editor-only and are
-        rejected rather than silently ignored.
+        A 500 NM fixed or reference world, player/environment values, exact
+        units of every built-in kind except torpedoes, random groups, timed
+        events and sink/survive/protect/reach objectives are effective. Other
+        world sizes, torpedoes and user unit profiles are rejected rather
+        than silently ignored.
         """
         if validate_mission(definition, catalog_builtins(self.runtime_catalog).keys()):
             return False

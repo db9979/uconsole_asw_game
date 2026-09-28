@@ -1,4 +1,4 @@
-# Commander LAN Co-op (1.0.0)
+# Commander LAN Co-op
 
 For a browser-only room with a web host account, see the
 [web-host guide](web-host.de.md).
@@ -182,13 +182,14 @@ column.
 stays the simulation server. Start it with `python main.py --solo-crew` (this launch
 only, first private LAN address, never saved) or switch the "Crew mode" row in the
 F9 overlay; either way pairing still uses the join code. A solo session holds all
-nine stations with command, direct fire, sonar audio and SimLog, only one browser
+nine frigate stations (or, playing the submarine, the boat's seven) with command, direct fire, sonar audio and SimLog, only one browser
 may pair (a second gets `session_limit` until you remove the first in the roster),
 and leases do not lapse. Changing the mode revokes every session and rotates the code.
 
 The solo browser also gets a **game control bar**:
-save and load (slots 1-5) and new game (scenario, world, difficulty,
-optional seed). Loading or starting a game replaces the world but keeps the browser
+save and load (slots 1-5) and new game (scenario, world, side, difficulty,
+optional seed). With side *Submarine* the browser plays the hostile boat and the
+AI hunters sail the frigate, its helicopter and the patrol aircraft. Loading or starting a game replaces the world but keeps the browser
 paired; anything it had prepared for the old world fails closed. At the uConsole main
 menu the browser shows a start screen. Editors, options, network administration,
 quit and credentials stay host-only. With every station leased Autocrew is

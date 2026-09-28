@@ -2,6 +2,8 @@
 
 # U-Jagd
 
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/zquu1xu570)
+
 Optionaler Browserbetrieb für einen vollständigen LAN-Spielraum: siehe
 [Webspiel im LAN](docs/web-host.de.md). Der Modus startet mit `--web-host` und
 benötigt einen eigenen HTTPS-Reverse-Proxy.
@@ -12,7 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.7**
+Aktuelle Version: **1.3.8**
+
+Version 1.3.8 bringt einen Unterstützungslink: einen QR-Code im Hauptmenü des
+uConsole und einen kleinen Link auf den Remote-Crew-Seiten Kopplung, Lobby und
+Einstellungen sowie auf der Admin-Seite des Webspiels, nie über einer
+laufenden Station. Außerdem sind die Anleitungen aktualisiert: Referenz und
+README nennen das VDS und 31 kn, die Grenzen des Missionseditors in der README
+entsprechen der Laufzeit, und die Koop- und Protokollanleitungen beschreiben
+Seitenwahl im Solo-Modus, U-Boot-Rollen und das Beenden über die Admin-Seite.
+Spielstände bleiben v23.
 
 Version 1.3.7 gibt der Fregatte F-217 ihre echte Höchstfahrt von 31 kn
 (AK). Die Antriebsleistung ist so skaliert, dass Widerstand, Beschleunigung
@@ -59,6 +70,13 @@ Version 1.3.2 lässt im Missionseditor die Referenzwelt einer Mission aus einer
 Liste der 128 mitgelieferten Sektoren (mit ihren Ländern) wählen, statt
 `sector:<n>` einzutippen; die Vorschau zeichnet die Küste des gewählten
 Sektors. Spielstände bleiben v22.
+
+Version 1.3.1 gibt dem besetzten U-Boot einen Funkraum (eine siebte
+Bootsstation: der Rundspruch des Hauptquartiers mit einer Kontaktmeldung zur
+Fregatte und Lagemeldungen, die der KW-Peiler der Fregatte peilen kann) und
+lässt die ESM des Boots den Hubschrauber der Fregatte und den
+Seefernaufklärer an ihren eigenen katalogisierten Suchradaren hören.
+Spielstände wechseln auf Format v22 (Zustand des Funkraums).
 
 Version 1.3.0 erweitert Simulation und Werkzeuge der Besatzung, ohne die
 Balance von 1.0.0 zu verschieben (77 Kalibrierungsmetriken unverändert): ein
@@ -358,9 +376,10 @@ Anlaufphase; gespeicherte taktische Beobachtungen bleiben erhalten.
 Die Sonarbedienung umfasst:
 
 - `Shift+A`: Einen aktiven Ping senden; der Sender hat 30 Sekunden Abklingzeit.
-- `Shift+B`: HMS oder TAS als Empfangs-/Sende-Array auswählen.
+- `Shift+B`: HMS, TAS oder VDS als Empfangs-/Sende-Array auswählen.
 - `A` / `B` / `H`: Breitband-, gefilterten oder Heterodyn-Hörmodus wählen.
 - `Y`: TAS ausbringen oder einholen.
+- `Shift+Y`: VDS fieren oder hieven (3-15 kn, Seegang bis 5).
 - `U` / `V`: Nach dem Ausbringen die TAS/VDS-Solltiefe anpassen.
 - `Page Up` / `Page Down`: Zwischen den Seiten Broadband, LOFAR, DEMON, TMA,
   Environment und ACTIVE wechseln.
@@ -485,7 +504,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.0.0**, API-Protokoll **v2** und Speicherformat **v14** sind
+Anwendungsversion **1.3.8**, API-Protokoll **v2** und Speicherformat **v23** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -511,26 +530,30 @@ JSON-Vorlagen unter `data/editor_templates/` beschreiben die akzeptierten
 Schemata; Benutzerdateien werden unter `~/.u-jagd/missions/` und
 `~/.u-jagd/units/` gespeichert.
 
-Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
-1.0.0 gilt:
+Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In dieser
+Version gilt:
 
 - Eine Benutzermission kann nur dann mit `F5` aus der Browseransicht des
   Missionseditors gestartet werden, wenn sie die unterstützte Laufzeitteilmenge
   verwendet.
-- Wirksame Missionswerte sind Seed und Name; Platzierungssektoren einer festen
-  500-NM-Welt; Position, Kurs und Fahrt des Spielerschiffs; Seegang, Startzeit
-  und Thermoklinentiefe; exakte integrierte U-Boot- und Überwasserprofile mit
-  ihrer Platzierung, ihrem Kurs, ihrer Fahrt und der Tiefe der U-Boote; sowie
-  Ziele vom Typ `sink` oder `survive` mit einem Zeitlimit.
-- Eine Laufzeitmission muss eine 500-NM-Welt vom Typ `fixed` und Wetter vom Typ
-  `clear` festlegen. Andere Weltgrößen und Referenzwelten werden abgelehnt. Die
-  Weltdefinition des Editors ersetzt nicht den Küstendatensatz des Spiels.
-- Platzierte U-Boote müssen feindlich sein. Bei einem Ziel vom Typ `sink` muss
-  dessen Zielliste exakt allen platzierten U-Booten entsprechen.
-- Zufallsgruppen, zeitgesteuerte Ereignisse, Ziele vom Typ `protect` und `reach`,
-  Luftfahrzeuge, Tiere, Torpedos, Täuschkörper und selbst erstellte
-  Einheitenprofile werden für das Spielen der Mission abgelehnt und nicht
-  stillschweigend ignoriert.
+- Eine Laufzeitmission braucht eine 500-NM-Welt: `fixed` (der aktuelle
+  Weltmodus des Spiels) oder `reference` mit einem der 128 mitgelieferten
+  realen Sektoren (`sector:0` bis `sector:127`, im Editor aus einer Liste
+  gewählt). Andere Weltgrößen werden abgelehnt. Die Weltdefinition des Editors
+  ersetzt nicht den Küstendatensatz des Spiels.
+- Wirksame Missionswerte sind Seed, Name und Beschreibung; Position, Kurs und
+  Fahrt des Spielerschiffs; Seegang, Startzeit, Thermoklinentiefe und eine
+  vorgegebene Wetterart; exakte Einheiten aller integrierten Arten außer
+  Torpedos (U-Boote, Überwasserschiffe, Luftfahrzeuge mit Profilfahrt vom
+  nächsten Flugplatz der Karte, Tiere und stationäre Täuschkörper) mit
+  Platzierung, Kurs, Fahrt und Tiefe; Seed-basierte Zufallsgruppen;
+  zeitgesteuerte Ereignisse (Meldung, Erscheinen, Wetter, Ziel); sowie Ziele
+  vom Typ `sink`, `survive`, `protect` oder `reach` mit einem Zeitlimit.
+- Bei `sink` muss die Zielliste exakt allen platzierten feindlichen U-Booten
+  entsprechen; `protect`-Ziele müssen platzierte befreundete oder neutrale
+  Einheiten sein; `reach` braucht ein Zielgebiet.
+- Torpedos und selbst erstellte Einheitenprofile werden für das Spielen der
+  Mission abgelehnt und nicht stillschweigend ignoriert.
 - Ausgaben des Einheiteneditors sind ausschließlich Validierungs- und
   Erstellungsdaten. Derzeit beeinflusst kein Feld eines Benutzer-Einheitenprofils
   die laufende Simulation.
@@ -609,6 +632,16 @@ Erzeugen Sie ein Wheel mit einem PEP-517-Frontend:
 python -m pip install build
 python -m build
 ```
+
+## Unterstützen
+
+U-Jagd ist ein kostenloses Hobbyprojekt von Dominik Bornhäußer. Wenn es dir
+gefällt, kannst du die Entwicklung unter
+[buymeacoffee.com/zquu1xu570](https://buymeacoffee.com/zquu1xu570) unterstützen.
+Das Spiel zeigt den Link nur dort, wo gerade niemand spielt: als QR-Code im
+Hauptmenü des uConsole sowie auf den Remote-Crew-Seiten Kopplung, Lobby und
+Einstellungen und auf der Admin-Seite des Webspiels. GitHub zeigt ihn als
+Sponsor-Knopf des Repositorys.
 
 ## Lizenz und Danksagungen
 

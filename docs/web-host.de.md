@@ -63,7 +63,8 @@ nur auf seiner LAN-Adresse; ein Proxy mit eigenem Hostnamen erhält dann
 Ist die Adresse aus dem Internet erreichbar, schützt allein der sechsstellige
 Kopplungscode den Zugang (nach fünf Fehlversuchen je Minute wird er neu
 erzeugt). Im Solo-Modus darf der gekoppelte Browser zusätzlich speichern,
-laden und ein neues Spiel starten. Beschränke den Zugriff deshalb möglichst am
+laden und ein neues Spiel starten; im Dialog „Neues Spiel“ wählt er dabei die
+Seite (Fregatte oder U-Boot, das dann die KI-Jäger jagen). Beschränke den Zugriff deshalb möglichst am
 Proxy (z. B. Zugriffsliste, VPN oder Proxy-Anmeldung).
 
 ## Raum und Spiel
@@ -120,4 +121,4 @@ im Internet. Die Proxy-Einrichtung und sein Zertifikat werden außerhalb des
 Spiels verwaltet.
 
 Die Webverwaltung liegt unter `/api/v2/web/*` und nutzt die vorhandene v2-Sitzung.
-Alle `/api/v1/*`-Routen bleiben abgeschaltet. Spielstände bleiben exakt v14.
+Alle `/api/v1/*`-Routen bleiben abgeschaltet. Spielstände bleiben exakt v23.

@@ -1593,3 +1593,10 @@ Notizen Phase 1:
 
 - `SHIP_SPEED_MAX_KN` = 31, FLANK 31 kn (Dominiks Vorgabe: echte Höchstfahrt der F-217). `ownship_hull.json` `max_brake_power_kw` 57 200 (= 30 000 * (31/25)^3), damit `drag_k` und das Verhalten bis 25 kn gleich bleiben; `SHIP_FUEL_MAX_PROPULSION_KG_H` 14 110, damit FULL/HALF/SLOW wie 1.0.0 verbrauchen. Abweichungen `ship.speed_eq/rpm_eq/fuel_kg_h.FLANK` in `tests/calibration/deviations.json`. `NIXIE_MAX_TOW_KN` bleibt 25.
 - Admin-Aktion `shutdown` (nur `value: true`, ohne Client/Station): `CommanderConsole.shutdown_at` = jetzt + `WEB_SHUTDOWN_GRACE_S` (2 s), danach `game.running = False`. Test in `tests/test_web_host.py`.
+- Eigenlärm und Kielwasser skalieren über `SHIP_SPEED_REFERENCE_KN` (25 kn), damit sich unter 25 kn nichts ändert; darüber wachsen sie bis `NOISE_LEVEL_MAX` (1,17 bei 31 kn).
+
+## Unterstützungslink und Doku-Abgleich (2026-09-28, App 1.3.8)
+
+- `src/ui/support.py`: `SUPPORT_URL` (buymeacoffee.com/zquu1xu570) und QR-Zeilen, erzeugt offline mit `tools/gen_support_qr.py` (braucht `segno`, `--check`). Hauptmenü zeigt QR und drei Zeilen rechts unten (`menu.support.*`), nie in einer Mission.
+- Web: Link `commander.web.support_link` auf Kopplung, Lobby, Einstellungen und `/admin` (Fußzeile), `target=_blank rel="noopener noreferrer"`; `test_commander_assets.py` erlaubt genau diese URL und hält sie aus `#operations` heraus. GitHub: `.github/FUNDING.yml` (custom) und Badge in beiden READMEs.
+- Doku-Abgleich: Referenz (31 kn, VDS ±4°, Glossar, Solo-Seitenwahl), README EN/DE (VDS-Tasten, Laufzeitumfang des Missionseditors, 1.3.1-Absatz DE), Koop/Protokoll/Webhost (U-Boot-Rollen, Seitenwahl, `shutdown`, `sonar_set_vds_depth`), Hilfe-Texte (U-Boot-Crew 1-7, VDS parallel).

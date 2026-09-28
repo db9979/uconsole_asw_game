@@ -1,4 +1,4 @@
-# U-Jagd 1.3.7 - Stations- und Tastenkürzel
+# U-Jagd 1.3.8 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -233,7 +233,7 @@ Berechtigungsprüfungen bleiben wirksam.
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `1-9` | Eine eigene Station öffnen (U-Boot-Crew: 1-2) |
+| `1-9` | Eine eigene Station öffnen (U-Boot-Crew: 1-7) |
 | `[ / ]` | Vorherige / nächste eigene Station |
 | `?` | Leitfaden und Stationshilfe öffnen |
 | `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |

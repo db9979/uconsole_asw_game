@@ -269,3 +269,8 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 #uboot-air[data-level="caution"] dd { color: var(--caution); }
 #uboot-air[data-level="danger"] dd { color: var(--alarm); }
 .uboot-modes { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: .35rem; }
+
+/* Support link: pairing, lobby and settings only, never over a station. */
+.support-line { margin: 0.75rem 0 0; }
+.support-link { color: var(--caution); text-decoration: underline; text-underline-offset: 0.2em; }
+.support-link:hover, .support-link:focus-visible { color: var(--text); }

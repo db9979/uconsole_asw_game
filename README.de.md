@@ -14,21 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.47**
+Aktuelle Version: **1.3.48**
 
-Version 1.3.47 schickt ein Handy auf Wache. `F9` zeigt einen zweiten QR-Code,
-Handy-Ausguck: scannen, das eigene Zertifikat des Spiels einmal bestätigen, den
-Kopplungscode eintippen, und das Handy wird zum Ausguck auf der Brücke der
-Fregatte oder zum Sehrohr des besetzten U-Boots. Das Handy wie ein Fernglas
-drehen (Gyroskop) oder wischen, zoomen und melden, was zu sehen ist, per
-Sprache („Schiff Peilung 040, Entfernung 5 Meilen“) oder durch Antippen. Die
-Brücke hört nur, was der Ausguck dort wirklich hat; eine Meldung von nichts wird
-abgelehnt. Solange ein Handy Wache hält, schweigt der automatische Ausguck, und
-die Crew-Browser sprechen jede bestätigte Meldung. Am Sehrohr dreht das Handy
-das Sehrohr und nimmt Stadimeter-Entfernungen. Der Listener liefert die Seite
-über HTTPS auf dem nächsten Port (selbst erzeugtes Zertifikat), weil Handys
-Gyroskop und Mikrofon nur einer sicheren Seite freigeben; Spielstände bleiben
-v27.
+Version 1.3.48 repariert die Remote-Crew-Kopplung im LAN. Ein frisch
+gekoppelter Browser begrüßt nicht mehr mit „Deine Station wurde widerrufen oder
+freigegeben“, als wäre die Kopplung gescheitert, sondern mit der Aufforderung,
+eine freie Station zu nehmen. Die Crew-Seite sagt jetzt, wenn sie in einem
+Browser läuft, der nicht Chrome oder Chromium (auch Edge) ist: Firefox und
+Safari zeigen über dem Kopplungscode einen Hinweis, und eine Seite, die dort
+nicht starten kann, sagt das, statt endlos zu laden. Der Navigationsvorschlag
+der Brücke nimmt die vollen 31 kn der Fregatte an; Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

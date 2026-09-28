@@ -34,8 +34,9 @@ def test_state_layer_is_page_free():
 
 
 def test_every_module_is_reachable_from_the_entry_point():
-    # Two programs: the crew client and the phone lookout (/lookout).
-    seen, stack = set(), ["main.js", "phone/main.js"]
+    # Two programs: the crew client and the phone lookout (/lookout), plus the
+    # crew page's classic browser check that runs before the client.
+    seen, stack = set(), ["main.js", "phone/main.js", "browser-check.js"]
     while stack:
         name = stack.pop()
         if name in seen:

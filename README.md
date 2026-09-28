@@ -12,19 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.47**
+Current release: **1.3.48**
 
-Release 1.3.47 puts a phone on watch. `F9` shows a second QR code, Phone
-lookout: scan it, accept the game's own certificate once, type the pairing code,
-and the phone becomes the frigate's bridge lookout or the crewed submarine's
-periscope. Turn the phone like binoculars (gyroscope) or swipe, zoom, and report
-what you see by voice ("Ship bearing 040, range 5 miles") or by tapping it. The
-bridge only hears what the lookout really has there; a report of nothing is
-refused. While a phone holds the watch the automatic lookout stays silent, and
-the crew browsers speak every confirmed report. The phone on the periscope
-trains it and takes stadimeter ranges. The listener serves this page over HTTPS
-on the next port (self-signed, made by the game), because phones only give the
-gyroscope and the microphone to a secure page; saves stay v27.
+Release 1.3.48 fixes Remote Crew pairing on the LAN. A freshly paired
+browser no longer greets you with "Your station was revoked or released" as if
+pairing had failed; it now says "Authenticated. Take a free station." The crew
+page now tells you when it runs in a browser that is not Chrome or Chromium (also
+Edge): Firefox and Safari show a hint above the pairing code, and a page that
+cannot start there says so instead of loading forever. The bridge's navigation
+proposal accepts the frigate's full 31 kn; saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

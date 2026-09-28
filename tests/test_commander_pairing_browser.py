@@ -44,6 +44,12 @@ async function run() {
   $("code").value = __CODE__;
   $("pair-form").requestSubmit();
   await until(() => $("pairing").hidden && !$("lobby").hidden, "pairing did not reach the lobby: " + $("pair-error").textContent);
+  // A fresh session never held a station, so nothing was revoked.
+  root.dataset.lobbyStatus = $("lobby-status").textContent;
+  // A free station is leased at once and its console opens.
+  document.querySelector("#station-cards [data-station='bridge'] button").click();
+  await until(() => document.body.dataset.remoteRole === "assigned" && !$("operations").hidden,
+    "bridge console did not open: " + $("lobby-status").textContent);
   root.dataset.pairTest = "passed";
 }
 addEventListener("load", () => {
@@ -115,6 +121,7 @@ def test_lan_pairing_reaches_the_lobby_in_chromium_without_a_browser_hint(
     root, _en = _pair(tmp_path, monkeypatch)
     assert root.get("data-browser") == "chromium"
     assert root.get("data-hint-visible") == "false"
+    assert root.get("data-lobby-status") == _en[PREFIX + "lobby_waiting"]
 
 
 def test_firefox_sees_the_browser_hint_and_can_still_pair(tmp_path, monkeypatch):

@@ -152,7 +152,7 @@ export function acceptSession(next) {
   const changed = previous && (previous.station !== next.station ||
     previous.station_generation !== next.station_generation ||
     previous.active_generation !== next.active_generation);
-  const lostRole = previous?.station !== null && next.station === null;
+  const lostRole = previous != null && previous.station !== null && next.station === null;
   // A plain activation moves between leases this client already held under the
   // same generations; any lease, grant or world change is a full reset.
   const activation = changed && previous.station !== null && next.station !== null &&

@@ -307,6 +307,14 @@ def _sonar_set_tow_depth(game, params, _bindings):
     return game.set_sonar_tow_depth(params["depth_m"])
 
 
+def _sonar_set_vds(game, params, _bindings):
+    return game.set_sonar_vds(params["deployed"])
+
+
+def _sonar_set_vds_depth(game, params, _bindings):
+    return game.set_sonar_vds_depth(params["depth_m"])
+
+
 def _opz_mark_blip(game, params, _bindings):
     # Blip refs are "blip-<sequence>": a display counter, never a target identity.
     ref = params["ref"]
@@ -822,6 +830,8 @@ _V2_ACTION_HANDLERS = {
     "sonar_set_array_mode": _sonar_set_array_mode,
     "sonar_set_tas": _sonar_set_tas,
     "sonar_set_tow_depth": _sonar_set_tow_depth,
+    "sonar_set_vds": _sonar_set_vds,
+    "sonar_set_vds_depth": _sonar_set_vds_depth,
     "sonar_measure_bt": _sonar_measure_bt,
     "sonar_active_ping": _sonar_active_ping,
     "sonar_set_tma_enabled": _sonar_set_tma_enabled,

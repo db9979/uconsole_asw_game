@@ -228,7 +228,7 @@ Gefechtslage:
 
 ### Zweck
 
-Die Sonarzentrale ist der Hauptsensor der U-Jagd. Sie horcht passiv mit Bugsonar (HMS) und Schleppsonar (TAS), analysiert Signaturen in LOFAR und DEMON, schätzt die Zielbewegung per TMA, misst das Schallprofil und sendet auf Befehl einen aktiven Ping. Sie klassifiziert Kontakte und gibt sie an OPZ und Waffenzentrale frei.
+Die Sonarzentrale ist der Hauptsensor der U-Jagd. Sie horcht passiv mit Bugsonar (HMS), Schleppsonar (TAS) und tiefenveränderlichem Sonar (VDS), analysiert Signaturen in LOFAR und DEMON, schätzt die Zielbewegung per TMA, misst das Schallprofil und sendet auf Befehl einen aktiven Ping. Sie klassifiziert Kontakte und gibt sie an OPZ und Waffenzentrale frei.
 
 ### Anzeigen und Instrumente
 
@@ -295,20 +295,21 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 - **ACTIVE** listet die Echos der letzten 120 s: Peilung, Entfernung und Tiefe (+/-12 m). Ein Ping-Fix veraltet nach 120 s. `W` wählt den Puls: **CW** (1-s-Ton) misst die Entfernung grob (etwa 0,1-0,3 sm), trennt aber über den Doppler ein bewegtes Ziel vom Nachhall des Meeresbodens; **LFM** (100-Hz-Sweep) misst die Entfernung auf wenige Meter und gewinnt 20 dB gegen Rauschen, ein langsames oder stehendes Ziel bleibt aber im Nachhall. Die Echostärke hängt vom Aspekt (breitseits etwa 15 dB stärker als von vorn) und der Größe des Ziels ab. Felsgrund hallt viel stärker nach als Schlick; kartierte Wracks liefern echte Echos ohne zugehörigen Kontakt ("nicht zugeordnetes Echo").
 - **Das Echo hören:** Jede Rückkehr ist hörbar, sobald sie eintrifft, nach ihrer echten Laufzeit hin und zurück (etwa 2,5 s je Seemeile Entfernung), für das Schiffssonar ebenso wie für das Tauchsonar des Helikopters. Ein CW-Echo ist ein weicher Ton auf der Trägerfrequenz, ein LFM-Echo ein kurzer Sweep; maßgeblich ist der Puls, mit dem gepingt wurde. Ein starkes Echo hebt sich deutlich ab, ein schwaches steigt kaum aus dem Nachhallrauschen. Im Remote-Crew-Browser klingt das Echo über den allgemeinen Ton (laut oder leise). Das aktive Ping eines U-Boots kommt umgekehrt nach seiner einfachen Laufzeit an (etwa 1,2 s je Seemeile): Erst dann gibt die Fregatte ihren tiefen Warnton und meldet das Ping im Log mit der nach Gehör gemessenen Peilung (ganze Grad, etwa ±2° ungenau); eine Entfernung liefert ein fremdes Ping nie.
 
-### Bugsonar und Schleppsonar
+### Bugsonar, Schleppsonar und VDS
 
-|  | HMS (Bug) | TAS (Schlepp) |
-|---|---|---|
-| Passivreichweite | 1,0 x Basis | 1,4 x Basis, minus 3 % je Knoten |
-| Strahlbreite | 12 Grad | 6 Grad |
-| Peilfehler | +/-6 Grad | +/-2 Grad |
-| Eigenlärm | voll | 35 % des Bugsonars |
-| Pingreichweite | 1,0 x | 0,8 x |
-| Handhabung | immer bereit | ausbringen 360 s, einholen 480 s, nur bei 3-12 kn, 30 s Beruhigung |
+|  | HMS (Bug) | TAS (Schlepp) | VDS (tiefenveränderlich) |
+|---|---|---|---|
+| Passivreichweite | 1,0 x Basis | 1,4 x Basis, minus 3 % je Knoten | 1,15 x Basis |
+| Strahlbreite | 12 Grad | 6 Grad | 8 Grad |
+| Peilfehler | +/-6 Grad | +/-2 Grad, links/rechts mehrdeutig | +/-4 Grad, eindeutig |
+| Eigenlärm | voll | 35 % des Bugsonars | 60 % des Bugsonars |
+| Pingreichweite | 1,0 x | 0,8 x | 1,1 x, aus der Tiefe des Körpers |
+| Handhabung | immer bereit | ausbringen 360 s, einholen 480 s, nur bei 3-12 kn, 30 s Beruhigung | fieren 120 s, hieven 120 s, nur bei 3-15 kn und Seegang bis 5, 20 s Beruhigung |
 
 - TAS-Tiefe 20-260 m (`U`/`V` in 10-m-Schritten), begrenzt auf 260 m minus 4 m je Knoten eigener Fahrt. Ab 30 m Tiefe und in derselben Schicht wie das Ziel gewinnt es weitere 25 %.
 - Über 20 kn mit ausgebrachtem Kabel erleidet das Array einen dauerhaften FAULT.
 - Das Array folgt einer Kursänderung mit etwa 45 s Verzögerung; während es nachschwenkt, sind seine Peilungen weniger verlässlich.
+- VDS (`Umschalt+Y` fiert oder hievt ihn, `Umschalt+B` wählt ihn): ein Körper an kurzem Kabel, 20-300 m tief, begrenzt auf 300 m minus 8 m je Knoten. `U`/`V` verstellen die Tiefe des jeweils gewählten Arrays. Ab 30 m Tiefe in der Schicht des Ziels gewinnt er dieselben 25 % wie das TAS. Er peilt eindeutig, eine VDS-Peilung löst die TAS-Seite also wie das Bugsonar auf. Ein Ping auf dem VDS sendet aus dem Körper: unter der Sprungschicht trifft der Schattenzonenverlust flache statt tiefe Ziele. Fieren und Hieven pausieren außerhalb 3-15 kn oder über Seegang 5; über 24 kn mit ausgebrachtem Körper geht er verloren (FAULT).
 
 ```text
           HMS                          TAS
@@ -324,13 +325,14 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 | Taste | Funktion |
 |---|---|
 | `Shift+A` | Aktiv-Ping abfeuern (Kühlzeit, verrät Position!) |
-| `Umschalt+B` | Empfangsarray zwischen HMS und TAS wechseln |
+| `Umschalt+B` | Empfangsarray wechseln: HMS, TAS, VDS |
 | `Y` | TAS ausbringen / einholen (nur bei 3-12 kn) |
+| `Shift+Y` | VDS fieren / hieven (3-15 kn, Seegang bis 5) |
 | `Bild Auf / Ab` | Broadband / LOFAR / DEMON / TMA / Umwelt / ACTIVE |
 | `2` | 2 erneut drücken, um die Sonarseite weiterzuschalten |
 | `E` | Bathythermograph: lokales Schallprofil messen |
 | `W` | Aktivpuls CW / LFM |
-| `U / V` | TAS/VDS-Solltiefe um 10 m heben / senken |
+| `U / V` | Solltiefe des gewählten Arrays (TAS oder VDS) um 10 m heben / senken |
 | `R` | Hörpeilung direkt: 000 bis 359.9 Grad rechtweisend |
 | `<- / ->` | Peilung +/-0.5 Grad; Shift: 5, Ctrl: 0.1 |
 | `Auf / Ab` | Kontakt für TMA und Klassifikation wählen |
@@ -400,7 +402,6 @@ Gefechtslage:
 - `T` schaltet den Löser hinter der Trainingshilfe um; der automatische Löser schreibt nie selbst einen Fix.
 - Keine wählbare Split-Window-Normalisierung (TPSW); stattdessen Verstärkung, Schwarzwert und Kontrast nutzen.
 - Kein harter blinder Baffle-Sektor; Eigenlärm ist eine weiche Keule.
-- Kein vom TAS getrenntes Tiefensonar (VDS).
 
 ## 3 Waffenzentrale
 

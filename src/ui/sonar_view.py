@@ -770,6 +770,12 @@ def _tow_status(sonar, ship_speed=0.0):
     return status
 
 
+def _vds_status(sonar):
+    """Public VDS status, or None for sonar fixtures without a VDS."""
+    status_fn = getattr(sonar, "vds_status", None)
+    return dict(status_fn()) if status_fn is not None else None
+
+
 def active_echoes(sonar, now, window_s=ACTIVE_HISTORY_WINDOW_S):
     """Return bounded, recent measurement dictionaries without altering history."""
     limit = int(getattr(config, "SONAR_ECHO_HISTORY_MAX", 80))
@@ -1443,6 +1449,15 @@ def _draw_environment(game, panel):
                           payout=f"{tow['payout_percent']:.0f}", actual=f"{actual:.0f}",
                           target=f"{target:.0f}"),
           (plot.right - 248, ay - 19, 240, 18), (120, 210, 170), 12, "right")
+    vds = _vds_status(sonar)
+    if vds is not None and vds["state"] != "STOWED":
+        vds_actual = float(vds["depth_m"])
+        vy = plot.y + round(min(vds_actual, max_depth) / max_depth * (plot.h - 1))
+        pygame.draw.line(screen, (210, 170, 120), (plot.x, vy), (plot.right - 1, vy), 1)
+        _text(screen, message("sonar.line.vds", state=display_message('tow', vds['state']),
+                              payout=f"{vds['payout_percent']:.0f}", actual=f"{vds_actual:.0f}",
+                              target=f"{float(vds['depth_target_m']):.0f}"),
+              (plot.x + 8, vy - 19, 240, 18), (210, 170, 120), 12)
 
     y = plot.bottom + 29
     _text(screen, "sonar.array_comparison", (panel.x + 16, y, panel.w - 32, 20), CYAN, 14)
@@ -1450,18 +1465,18 @@ def _draw_environment(game, panel):
     contacts = sorted(sonar.active_contacts(), key=lambda contact: contact.id)
     for contact in contacts[:4]:
         reports = getattr(contact, "array_observations", {})
-        bow, towed = reports.get("BOW"), reports.get("TOWED")
-        bow_text = (f"{bow['bearing']:05.1f} / {bow['snr']:+.1f}dB"
-                    if bow else "  --.- / --")
-        towed_text = (f"{towed['bearing']:05.1f} / {towed['snr']:+.1f}dB"
-                      if towed else "  --.- / --")
+        bow, towed, vds_report = reports.get("BOW"), reports.get("TOWED"), reports.get("VDS")
+        report_text = lambda report: (f"{report['bearing']:05.1f} / {report['snr']:+.1f}dB"
+                                      if report else "  --.- / --")
+        bow_text, towed_text = report_text(bow), report_text(towed)
         status_raw = getattr(contact, "fusion_status", "KEINE DATEN")
         status = display_value("fusion", status_raw)
         color = (config.COLOR_OK if status_raw == "BESTAETIGT" else
                  config.COLOR_WARN if "DIVERGENT" in status_raw else DIM)
         _text(screen, message("sonar.line.array_contact",
                               contact=observations.contact_display_id(game, contact),
-                              bow=bow_text, towed=towed_text, status=status),
+                              bow=bow_text, towed=towed_text,
+                              vds=report_text(vds_report), status=status),
               (panel.x + 20, y, panel.w - 40, 19), color, 12)
         y += 20
     if not contacts:
@@ -1612,7 +1627,16 @@ def _detail_rows(game, page):
                       message("sonar.line.cz", bands=band_text or '--')]
         else:
             lines += ["sonar.bt_not_measured", "sonar.measure_profile"]
-        lines += ["sonar.tas_depth_control"]
+        vds = _vds_status(sonar)
+        if vds is not None and vds["state"] != "STOWED":
+            # A lowered VDS takes the depth-hint row so the panel keeps its size.
+            lines.append(message("sonar.line.vds_status", state=display_value('tow', vds['state']),
+                                 payout=f"{vds['payout_percent']:.0f}",
+                                 actual=f"{float(vds['depth_m']):.0f}",
+                                 target=f"{float(vds['depth_target_m']):.0f}",
+                                 ready=localize("ui.ready" if vds["available"] else "ui.not_ready")))
+        else:
+            lines += ["sonar.tas_depth_control"]
         if contact is not None:
             lines += [display_value("fusion", getattr(contact, "fusion_status", "KEINE FUSION"))]
             contact_range = getattr(contact, "range_est", None)
@@ -1846,6 +1870,9 @@ def draw_sonar_view(game, tr=None) -> None:
                    CYAN if i == page else DIM, 14)
         mode = getattr(game, 'sonar_mode', 'BOW')
         tow = _tow_status(sonar, getattr(_sonar_observer(game), "speed", 0.0))
+        if mode == "VDS" and _vds_status(sonar) is not None:
+            # The chip reports the deployable array in use.
+            tow = _vds_status(sonar)
         tow_pause = (" " + localize(message("ui.pause"))
                      if not tow["handling_ok"] and tow["state"] in (
                          "DEPLOYING", "RETRIEVING") else "")

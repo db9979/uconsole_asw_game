@@ -1573,3 +1573,11 @@ Notizen Phase 1:
 - Karte bleibt auf dem Hauptthread: Culling plus 0,02 ms Mittel je Frame
   (Messung Phase 11), ein Worker-Umbau des Vektorbilds bringt dort nichts.
 - Weiter offen aus 1.3: VDS (Phase 7).
+
+## Tiefensonar VDS (2026-09-28, App 1.3.4, Save v23)
+
+- Dritte Anlage `VDS` neben `BOW`/`TOWED` (`SONAR_ARRAY_MODES` in `src/sonar/sonar.py`), Konstanten `SONAR_VDS_*` in `config.py`.
+- Bedienung: `Shift+Y` aus-/einfieren (3-15 kn, Seegang ≤ 5, über 24 kn Verlust → `FAULT`), `U`/`V` Tiefe 20-300 m, wenn VDS die gewählte Anlage ist; `Shift+B` schaltet BOW→TOWED→VDS. Web: `sonar_set_vds`, `sonar_set_vds_depth`, Projektion `settings.vds`.
+- Passiv und aktiv aus der Tiefe des Schleppkörpers (Schicht-Bonus/-Malus wie TAS); Fusion nimmt das bessere von BOW/VDS als eindeutige Referenz für die TAS-Seite.
+- Save v23: `vds_state`, `vds_payout`, `vds_depth_m`, `vds_depth_target_m`, `vds_settle_s`, `vds_handling_ok` im Sonar-Block; v22 wird abgewiesen. Kalibrierung unverändert 77/77.
+- Tests: `tests/test_vds.py`; Seite-4-Layout mit ausgefahrenem VDS in `test_sonar_evidence.py`.

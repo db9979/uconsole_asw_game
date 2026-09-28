@@ -41,7 +41,7 @@ from src.sensors.esm import ESM_STATE_VERSION, ECMJammer, ESMPicture
 from src.sensors.platform import PlatformSensorSuite
 from src.ship.damage import DamageModel
 from src.ship.ship import Ship
-from src.sonar.sonar import Contact, SonarSystem, TowState
+from src.sonar.sonar import Contact, SonarSystem, TowState, beam_width_deg
 from src.sonar.tma import BearingPoint, BearingTrack
 from src.ui import layout
 from src.ui.stations_view import opz_ppi_rect
@@ -254,6 +254,12 @@ class SaveMixin:
             "tow_heading_deg": self.sonar.tow_heading_deg,
             "tow_settle_s": self.sonar._tow_settle_s,
             "tow_handling_ok": self.sonar._tow_handling_ok,
+            "vds_state": self.sonar.vds_state.value,
+            "vds_payout": self.sonar.vds_payout,
+            "vds_depth_m": self.sonar.vds_depth_m,
+            "vds_depth_target_m": self.sonar.vds_depth_target_m,
+            "vds_settle_s": self.sonar._vds_settle_s,
+            "vds_handling_ok": self.sonar._vds_handling_ok,
             "ping_cooldown": self.sonar.ping_cooldown,
             "ping_active": self.sonar.ping_active,
             "ping_anim_timer": self.sonar._ping_anim_timer,
@@ -276,7 +282,7 @@ class SaveMixin:
         self.sonar.tma_enabled = sonar_controls["tma_enabled"]
         self.sonar.listen_bearing = sonar_controls["listen_bearing"]
         self.sonar.set_audition_mode(sonar_controls["audition_mode"])
-        self.sonar.beam_width_deg = 6.0 if self.sonar_mode == "TOWED" else 12.0
+        self.sonar.beam_width_deg = beam_width_deg(self.sonar_mode)
         self.sonar._receiver_mode = self.sonar_mode
         self.sonar_page = sonar_controls["sonar_page"]
         self.tma_method = sonar_controls["tma_method"]
@@ -388,6 +394,12 @@ class SaveMixin:
             self.sonar._tow_settle_s = config.clamp(
                 float(sn.get("tow_settle_s", 0.0)), 0.0, config.SONAR_TOWED_SETTLE_S)
             self.sonar._tow_handling_ok = bool(sn.get("tow_handling_ok", True))
+            self.sonar.vds_state = TowState(sn["vds_state"])
+            self.sonar.vds_payout = float(sn["vds_payout"])
+            self.sonar.vds_depth_m = float(sn["vds_depth_m"])
+            self.sonar.vds_depth_target_m = float(sn["vds_depth_target_m"])
+            self.sonar._vds_settle_s = float(sn["vds_settle_s"])
+            self.sonar._vds_handling_ok = sn["vds_handling_ok"]
             self.sonar.ping_cooldown = max(0.0, float(sn.get("ping_cooldown", 0.0)))
             self.sonar.ping_active = bool(sn.get("ping_active", False))
             self.sonar._ping_anim_timer = max(0.0, float(sn.get("ping_anim_timer", 0.0)))

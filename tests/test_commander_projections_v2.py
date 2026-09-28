@@ -151,6 +151,10 @@ def test_control_projection_fields_are_bounded_and_do_not_expose_audio_actions(p
     assert sonar["tow"]["speed_kn"] == game.ship.speed
     assert sonar["tow"]["speed_min_kn"] == config.SONAR_TOWED_HANDLING_MIN_KN
     assert sonar["tow"]["speed_max_kn"] == config.SONAR_TOWED_HANDLING_MAX_KN
+    assert set(sonar["vds"]) == {"state", "payout", "available", "handling_ok",
+                                  "speed_min_kn", "speed_max_kn", "max_sea_state",
+                                  "depth_m", "depth_target_m"}
+    assert sonar["vds"]["state"] == "STOWED" and sonar["vds"]["available"] is False
     assert set(sonar["bt"]) == {"ready", "cooldown_s", "thermocline_m"}
     assert set(sonar["ping"]) == {"ready", "cooldown_s"}
     # Detected peaks are a training aid: off by default, sent only in training.

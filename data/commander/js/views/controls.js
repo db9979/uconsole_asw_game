@@ -295,6 +295,11 @@ function disabledReason(control) {
       if (sonar.tow.speed_kn < sonar.tow.speed_min_kn) return unavailable("reason_tas_too_slow", {speed: number(sonar.tow.speed_kn), limit: number(sonar.tow.speed_min_kn)});
       if (["sonar-depth", "sonar-depth-submit"].includes(control.id) && sonar.tow.state !== "STREAMED") return unavailable("reason_tas_not_streamed");
     }
+    if (["sonar-vds", "sonar-vds-depth", "sonar-vds-depth-submit"].includes(control.id)) {
+      if (sonar.vds.state === "FAULT") return unavailable("reason_vds_fault");
+      if (control.id === "sonar-vds" && !sonar.vds.handling_ok) return unavailable("reason_vds_handling", {min: number(sonar.vds.speed_min_kn, 0), max: number(sonar.vds.speed_max_kn, 0), sea: number(sonar.vds.max_sea_state, 0)});
+      if (control.id !== "sonar-vds" && sonar.vds.state !== "STREAMED") return unavailable("reason_vds_not_streamed");
+    }
     if (control.id === "sonar-ping" && !sonar.ping.ready) return unavailable("reason_cooldown", {seconds: number(sonar.ping.cooldown_s, 0)});
     if (control.id === "sonar-bt" && !sonar.bt.ready) return unavailable("reason_cooldown", {seconds: number(sonar.bt.cooldown_s, 0)});
   }

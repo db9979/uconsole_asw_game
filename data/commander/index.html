@@ -36,6 +36,7 @@
         <label class="volume"><span data-i18n="volume"></span><input id="volume" type="range" min="0" max="100" value="25"></label>
         <label class="check speech"><input id="speech" type="checkbox"><span data-i18n="speech_reports"></span></label>
         <div class="voice-controls" role="group" data-i18n-aria="voice_group"><button id="voice-enable" type="button" disabled data-i18n="voice_start"></button><button id="voice-stop" type="button" disabled data-i18n="voice_stop"></button><button id="voice-ptt" type="button" disabled aria-pressed="false" data-i18n="voice_ptt"></button><span id="voice-status" role="status" aria-live="polite"></span></div>
+        <p class="fine support-line"><a class="support-link" id="support-settings" href="https://buymeacoffee.com/zquu1xu570" target="_blank" rel="noopener noreferrer" data-i18n="support_link"></a></p>
       </div></details>
         <details id="workstation-tools" hidden><summary data-i18n="workstation_tools"></summary><div class="workstation-menu"><button id="workstation-help" type="button" data-i18n="workstation_help"></button><button id="workstation-library" type="button" data-i18n="workstation_library"></button><button id="workstation-lookout" type="button" data-i18n="workstation_lookout"></button><button id="workstation-weather" type="button" data-i18n="weather_open"></button><button id="workstation-release" type="button" data-i18n="role_release"></button></div></details>
         <button id="disconnect" type="button" class="quiet" data-i18n="disconnect" hidden></button>
@@ -44,7 +45,7 @@
     <div id="alert-band" class="alert-band" role="alert" hidden><span class="alert-mark" aria-hidden="true"></span><p id="alert-text"></p><button id="alert-dismiss" type="button" class="quiet" data-i18n="alert_dismiss"></button></div>
     <p id="disabled-control-help" class="disabled-control-help" role="status" aria-live="polite" hidden></p>
     <section id="pairing" class="pairing">
-      <div class="pair-intro"><p class="eyebrow" data-i18n="pair_eyebrow"></p><h1 data-i18n="pair_title"></h1><p data-i18n="pair_intro"></p><div class="scope-note"><span class="scope-line" aria-hidden="true"></span><p data-i18n="authority_note"></p></div></div>
+      <div class="pair-intro"><p class="eyebrow" data-i18n="pair_eyebrow"></p><h1 data-i18n="pair_title"></h1><p data-i18n="pair_intro"></p><div class="scope-note"><span class="scope-line" aria-hidden="true"></span><p data-i18n="authority_note"></p></div><p class="fine support-line"><a class="support-link" id="support-pair" href="https://buymeacoffee.com/zquu1xu570" target="_blank" rel="noopener noreferrer" data-i18n="support_link"></a></p></div>
       <form id="pair-form" class="pair-card">
         <h2 data-i18n="pair_heading"></h2><p id="pair-help" data-i18n="pair_help"></p>
         <label for="name" data-i18n="pair_name"></label><input id="name" name="name" type="text" required minlength="1" maxlength="32" autocomplete="name" data-i18n-placeholder="pair_name_default">
@@ -58,6 +59,7 @@
       <p id="lobby-status" class="lobby-status" role="status" aria-live="polite"></p>
       <div id="side-choice" class="side-choice" role="group" data-i18n-aria="side_choice"><button id="side-frigate" type="button" data-side="frigate" aria-pressed="true" data-i18n="side_frigate"></button><button id="side-opfor" type="button" data-side="opfor" aria-pressed="false" data-i18n="side_opfor"></button></div>
       <div id="station-cards" class="station-cards" data-i18n-aria="lobby_stations"></div>
+      <p class="fine support-line"><a class="support-link" id="support-lobby" href="https://buymeacoffee.com/zquu1xu570" target="_blank" rel="noopener noreferrer" data-i18n="support_link"></a></p>
     </main>
     <aside id="role-rail" class="role-rail" hidden aria-labelledby="role-rail-title">
       <p class="eyebrow" data-i18n="role_assigned"></p><h2 id="role-rail-title"></h2><p id="role-grants" class="fine"></p><button id="add-station" type="button" data-i18n="role_add_station"></button><button id="release-station" type="button" data-i18n="role_release"></button><p id="role-status" role="status" aria-live="polite"></p>

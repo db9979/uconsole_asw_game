@@ -15,6 +15,7 @@ import pytest
 from commander_web import client_css, client_js, function_source, index_html, inject_probe, WEB_ROUTES
 
 from src.core.version import APP_VERSION
+from src.ui.support import SUPPORT_URL
 from src.data.contact_analysis import project_contact_catalog
 
 
@@ -82,7 +83,11 @@ def test_commander_resources_are_self_contained_and_csp_safe():
                         and attrs.get("target") == "_blank"
                         and attrs.get("rel") == "noopener"
                         or key == "href" and attrs.get("id") == "web-admin-link"
-                        and attrs[key] == "/admin" and "hidden" in attrs)
+                        and attrs[key] == "/admin" and "hidden" in attrs
+                        or key == "href" and attrs[key] == SUPPORT_URL
+                        and attrs.get("class") == "support-link"
+                        and attrs.get("target") == "_blank"
+                        and attrs.get("rel") == "noopener noreferrer")
     csp = next(attrs["content"] for _, attrs in document.elements if attrs.get("http-equiv") == "Content-Security-Policy")
     assert "default-src 'none'" in csp
     assert "connect-src 'self'" in csp
@@ -1439,3 +1444,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     assert root.get("data-schema") == "rejected"
     assert requests.count("/api/v2/contacts") == 1
     assert not any(path == "/api/v2/commands" for path in requests)
+
+
+def test_support_link_sits_outside_the_stations():
+    """The coffee link is on pairing, lobby, settings and the admin page only."""
+    page = index_html()
+    for anchor in ("support-pair", "support-lobby", "support-settings"):
+        assert f'id="{anchor}" href="{SUPPORT_URL}"' in page
+    admin = resources.files("data.commander").joinpath("admin.html").read_text(encoding="utf-8")
+    assert f'id="support-admin" href="{SUPPORT_URL}"' in admin
+    stations = page.split('<main id="operations"', 1)[1].split("</main>", 1)[0]
+    assert "support-link" not in stations

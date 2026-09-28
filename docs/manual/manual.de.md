@@ -70,7 +70,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 
 | Taste | Funktion |
 |---|---|
-| `1-9` | Eine eigene Station öffnen (U-Boot-Crew: 1-2) |
+| `1-9` | Eine eigene Station öffnen (U-Boot-Crew: 1-7) |
 | `[ / ]` | Vorherige / nächste eigene Station |
 | `?` | Leitfaden und Stationshilfe öffnen |
 | `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |
@@ -211,7 +211,7 @@ Gefechtslage:
 - TMA braucht eine echte Änderung der eigenen Geschwindigkeit. Eine Wende um 30-60 Grad mit anschließend mehreren Minuten ruhigem Schlag liefert die beste Entfernungsschätzung. Drehen auf der Stelle hilft nicht.
 - Die Drehrate wächst mit der Fahrt (etwa 0,75 Grad/s bei 10 kn, 1,2 bei 16 kn, 1,9 bei 25 kn, 2,3 bei 31 kn), der Drehkreis bleibt deshalb bei etwa 0,4 NM. Ein gestopptes Schiff kann nicht drehen. Fahrtänderungen brauchen Minuten: etwa 90 s bis 90 % von FULL; ein Stopp aus FULL nutzt Umsteuerung der Propellersteigung und dauert etwa 90 s. Ausweichmanöver früh beginnen.
 - In einer harten Wende mit Fahrt krängt das Schiff einige Grad nach außen; bei schwerer See dämpfen die Flossenstabilisatoren das Rollen, aber nur mit Fahrt durchs Wasser.
-- Im Flachwasser sackt der Rumpf ab (Squat): bei 25 kn wächst der Tiefgang um bis zu 3 m, bei 31 kn um bis zu 4,6 m,, wenn das Wasser weniger als etwa fünf Tiefgänge tief ist. Im Flachwasser Fahrt reduzieren.
+- Im Flachwasser sackt der Rumpf ab (Squat): bei 25 kn wächst der Tiefgang um bis zu 3 m, bei 31 kn um bis zu 4,6 m, wenn das Wasser weniger als etwa fünf Tiefgänge tief ist. Im Flachwasser Fahrt reduzieren.
 - Sprint und Drift: mit FULL an eine neue Position, dann auf 4-6 kn gehen und horchen.
 - Starke einseitige Flutung bewirkt Krängung und einen stetigen Drehzug; mit Ruder ausgleichen.
 - Das Schiff kann nicht auf Land fahren (es wird zurückgeschoben), aber Flachwasser begrenzt die Tauchtiefe des Helikoptersonars (10 m Bodenabstand).
@@ -369,7 +369,7 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 
 ### Standardablauf
 
-1. Langsam fahren (4-8 kn), HMS wählen; TAS bei 3-12 kn ausbringen (Y).
+1. Langsam fahren (4-8 kn), HMS wählen; TAS bei 3-12 kn ausbringen (Y), VDS bei 3-15 kn unter die Sprungschicht fieren (Shift+Y).
 2. BREITBAND nach Peilspuren absuchen; Töne im LOFAR bestätigen (N Notch).
 3. Kontakt wählen (Auf/Ab), Fokus halten (Enter), DEMON prüfen.
 4. Klassifizieren (C); nach einer Kursänderung eine TMA-Hypothese anpassen (Seite TMA: Z/X, Strg+Z/X, Q) und übernehmen (K).
@@ -1015,7 +1015,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 
 | Sensor | Reichweite | Genauigkeit / Hinweis |
 |---|---|---|
-| Passivsonar (Basis) | 20 sm | nur Peilung; HMS +/-6 Grad, TAS +/-2 Grad |
+| Passivsonar (Basis) | 20 sm | nur Peilung; HMS +/-6 Grad, TAS +/-2 Grad, VDS +/-4 Grad |
 | Aktiver Ping | 18 sm (Referenzziel, schräger Aspekt) | CW oder LFM (`W`); Entfernungsgenauigkeit aus Puls und SNR, Tiefe +/-12 m; 30 s Abklingzeit; hörbar bis 60 sm |
 | Tauchsonar | 18 sm passiv / 14 sm aktiv | +/-2 Grad |
 | Sonarboje | 8 sm | 60 min Batterie |
@@ -1121,7 +1121,7 @@ Eine zweite Crew kann den Gegner spielen. Das Boot hat sieben Stationen: Führun
 
 #### U-Boot am uConsole spielen
 
-Jedes neue Spiel fragt zuerst **Welche Einheit spielst du?**: *Fregatte F-217* oder *Feindliches U-Boot* (`Auf`/`Ab` oder `1`/`2`, `Enter`; die letzte Wahl ist vorausgewählt, `--play-sub` wählt das U-Boot vor). Außerhalb einer Mission ändert auch Optionen (`F10`) Seite 2 **uConsole spielt** die Wahl, etwa vor dem Laden eines Spielstands. Mit dem U-Boot führt der uConsole das feindliche Boot statt der Fregatte. Die Fregatte wird dann über Remote Crew (`F9`) aus den Browsern besetzt; jede Fregattenstation, die kein Browser hält, besetzen die **KI-Jäger** (unten). Der uConsole zeigt nur das Lagebild des Boots; Banner, Ereignislog, Soundeffekte, Plot und Tooltips der Fregatte erscheinen nie, und Trackball- und Telegraphenbedienung der Fregatte sind gesperrt. Die Seite lässt sich nur außerhalb einer Mission wechseln; die Wahl gilt nur für diesen Programmstart und wird nie gespeichert, jeder Start beginnt also mit der Fregatte.
+Jedes neue Spiel fragt zuerst **Welche Einheit spielst du?**: *Fregatte F-217* oder *Feindliches U-Boot* (`Auf`/`Ab` oder `1`/`2`, `Enter`; die letzte Wahl ist vorausgewählt, `--play-sub` wählt das U-Boot vor). Außerhalb einer Mission ändert auch Optionen (`F10`) Seite 2 **uConsole spielt** die Wahl, etwa vor dem Laden eines Spielstands. Mit dem U-Boot führt der uConsole das feindliche Boot statt der Fregatte. Die Fregatte wird dann über Remote Crew (`F9`) aus den Browsern besetzt; jede Fregattenstation, die kein Browser hält, besetzen die **KI-Jäger** (unten). Der uConsole zeigt nur das Lagebild des Boots; Banner, Ereignislog, Soundeffekte, Plot und Tooltips der Fregatte erscheinen nie, und Trackball- und Telegraphenbedienung der Fregatte sind gesperrt. Die Seite lässt sich nur außerhalb einer Mission wechseln; die Wahl gilt nur für diesen Programmstart und wird nie gespeichert, jeder Start beginnt also mit der Fregatte. Ein Solo-Browser (Remote Crew im Solo-Modus) wählt die Seite genauso: sein Dialog **Neues Spiel** hat ein Feld *Seite*, und mit *U-Boot* übernimmt die Sitzung die sieben Stationen des Boots, während die KI-Jäger die Fregatte besetzen.
 
 Die obere Leiste zeigt die sieben Stationen des Boots als Reiter: `1` Führung, `2` Sonar, `3` Waffen, `4` Maschine, `5` Mast & ESM, `6` Navigation, `7` Funkraum (`Tab` oder ein Klick auf den Reiter wechselt). Jede Befehlstaste wirkt nur an der Station, zu der der Befehl gehört, wie im Browser; sonst nennt ein Banner die richtige Station. Browser können gleichzeitig die übrigen Stationen des Boots besetzen; eine Station, die ein Browser hält, ist in der oberen Leiste markiert und wird nicht vom uConsole bedient. Jede Station außer dem Sonarraum ist aufgebaut wie die Brücke: links die Seekarte (bekannte Geografie, der eigene Plot des Boots, die ESM-Peillinien und Kreuzpeilungen, das eigene Boot mit Sollkurs und Fahrtvektor, die Peilstriche der eigenen Sonarkontakte bzw. ihr Symbol bei aktuellem Ping- oder TMA-Fix, die eigenen Torpedos `T1`…, ein begrenztes Schussfeld der Rohre), rechts die Station mit Bedrohungsleiste (Torpedoalarm und gehörtes Aktivsonar mit gemessener Peilung, Rumpfschaden, Kavitation, schwache Batterie, ESM-Radarerfassung) und die Seite der Station. Die **Führung** hat vier Seiten, die **Maschine** vier, **Mast & ESM** zwei und **Navigation** zwei (die Taste der Station erneut oder `Bild auf`/`Bild ab`). Die zweite Seite der Maschine, **Vorräte**, zeigt Energie, Ausdauer und Luft; `R` wechselt die Laderate, `A` setzt einen Absorbersatz ein und `O` zündet eine O2-Kerze. Ihre dritte Seite **Zellen** zeigt das Schnittbild, Hauptzellen und Pressluft, die Zellen mit ihren Sollwerten, Gewicht, Trimmwinkel, Drift ohne Tiefenruder, Wassereinbruch und Pumpen; `↑`/`↓` lenzen oder fluten die Regelzelle, `←`/`→` pumpen Trimmwasser nach achtern oder vorn und `Z` schaltet die Trimmautomatik. Ihre vierte Seite **Leckwehr** zeigt die Abteilungen (Wasser, Leck, Brand, Gas, geschlossene Schotten, Trupps), die Tabelle der Abteilungen, den Strom und beide Trupps; `↑`/`↓` wählen eine Abteilung, `←`/`→` eine Aufgabe, `Enter` schickt Trupp 1 und `Umschalt+Enter` Trupp 2 mit dieser Aufgabe dorthin, und `I` schließt oder öffnet die Schotten der Abteilung. **Navigation** (Seite und Station) zeigt Kurs und Tiefe, das Wasser unter dem Kiel und ein kartiertes Hindernis voraus, Fahrt, Eigenlärm, Batterie und die aktiven Betriebsarten sowie die Wassersäule unter dem Boot: Bootstiefe, befohlene Tiefe, sichere Tiefe und Grund; die Sprungschicht erscheint dort erst nach einer eigenen BT-Messung (`E` am U-Boot-Sonar). **Waffen & Kontakte** (Seite und Station Waffen) zeigt Feuerbereitschaft, Torpedos, klare Rohre, Nachladen, Täuschkörper, Notanblasen und die eigenen Sonarkontakte (Peilung, Entfernung falls bekannt, und Güte in Prozent: der bessere Wert aus Signalgüte und Spurvertrauen, 100 % ist ein sicherer Kontakt). Die **Maschine** zeigt Fahrt, Eigenlärm, Batterie, die Betriebsarten und die Telegrafenstufen; **Mast & ESM** zeigt die Mastzeit, die Rose, die Emitterliste und den gewählten Emitter (Signal, Pegel und Trend, Kreuzpeilung, Einstufung); ihre zweite Seite und die dritte der Führung ist das **Sehrohr** (Okular, Sichtlinie, Licht und die Sichtungsliste; `←`/`→` schwenken, `Enter` Stadimeter). Der **Funkraum** hat eine Seite: Antenne, Rundspruchplan, Fortschritt von Aufnahme und Sendung, die letzte Feindlage der Führung und das Funktagebuch; `Enter` sendet eine Lagemeldung und `P` fährt den Mast aus oder ein. Unten stehen Bootslog und Telemetrie des Boots, als Leiste oder Statuszeile wie in den Optionen eingestellt; Befehle, Schüsse und Täuschkörper werden dort protokolliert.
 
@@ -1207,6 +1207,7 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das Boot oder ein Solo-Bro
 |---|---|
 | U-Jagd (ASW) | Anti-Submarine Warfare, Bekämpfung von U-Booten |
 | HMS / TAS | Bugsonar / Schleppsonar (Towed Array) |
+| VDS | Variable Depth Sonar: Schleppkörper, unter die Sprungschicht abgesenkt |
 | LOFAR | Low Frequency Analysis and Recording: Frequenz-Zeit-Wasserfall |
 | DEMON | Demodulated Noise: zeigt Blatt- und Wellenfrequenz |
 | TMA | Target Motion Analysis, Zielbewegungsanalyse aus Peilungen |

@@ -4,6 +4,11 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.25
+
+Release 1.3.25 tidies up the documentation. Gameplay is unchanged and saves stay
+v24.
+
 ## 1.3.24
 
 Release 1.3.24 brings **atmosphere to the crewed boat**: the pressure hull creaks

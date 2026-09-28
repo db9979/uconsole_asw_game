@@ -22,7 +22,7 @@ RADIO_FIELDS = ("ref", "label", "bearing", "quality", "age_s",
 HELICOPTER_TACTICAL_FIELDS = TACTICAL_FIELDS + ("classification", "released_to_opz")
 # HQ tasks in the radio room (``src/core/tasking.py``): the reported
 # position and the task's clock, never the raft's or a ship's true position.
-RADIO_TASK_FIELDS = ("id", "kind", "state", "name", "persons", "x", "y", "radius_nm",
+RADIO_TASK_FIELDS = ("id", "type", "state", "name", "persons", "x", "y", "radius_nm",
                      "course", "speed_kn", "bearing", "range_nm", "respond_s",
                      "remaining_s", "progress", "sighted", "verdict", "points",
                      "can_answer")
@@ -108,18 +108,18 @@ UBOOT_ESM_CANDIDATE_FIELDS = ("name", "role", "fit")
 UBOOT_THREAT_FIELDS = ("intercepts", "counts", "loudest_db", "echo_likely", "trend",
                        "layer", "layer_m", "depth_m", "noise", "mast", "esm_count",
                        "advice", "plan")
-UBOOT_INTERCEPT_FIELDS = ("kind", "bearing", "level_db", "age_s")
+UBOOT_INTERCEPT_FIELDS = ("type", "bearing", "level_db", "age_s")
 UBOOT_INTERCEPT_KINDS = ("hull", "dipping", "buoy", "splash", "torpedo")
 UBOOT_THREAT_ADVICE = ("uboot.advice.torpedo", "uboot.advice.mast_down",
                        "uboot.advice.slow_down", "uboot.advice.measure_layer",
                        "uboot.advice.go_below", "uboot.advice.evade")
-UBOOT_EVADE_PLAN_FIELDS = ("kind", "bearing", "course", "speed_kn", "depth_m", "silent",
+UBOOT_EVADE_PLAN_FIELDS = ("type", "bearing", "course", "speed_kn", "depth_m", "silent",
                            "decoy")
 # The boat's radio room (``radio``, src/core/boat_radio.py): schedule,
 # transmissions, HQ's latest contact report and the message log.
 UBOOT_RADIO_FIELDS = ("antenna", "broadcast", "copied", "next_s", "copy", "send",
                       "transmitting", "sitreps", "ack_due", "report", "log")
-UBOOT_RADIO_LOG_FIELDS = ("seq", "kind", "age_s", "number", "ack", "report")
+UBOOT_RADIO_LOG_FIELDS = ("seq", "type", "age_s", "number", "ack", "report")
 UBOOT_RADIO_LOG_KINDS = ("broadcast", "sent", "aborted")
 UBOOT_RADIO_REPORT_FIELDS = ("x", "y", "radius_nm", "course", "speed_kn", "age_s")
 UBOOT_ESM_FIX_FIELDS = ("x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent")

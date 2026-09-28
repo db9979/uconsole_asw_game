@@ -382,11 +382,11 @@ function radioReportText(report, nav) {
 
 function radioLogText(row) {
   const age = duration(row.age_s);
-  if (row.kind === "broadcast") {
+  if (row.type === "broadcast") {
     const text = t(row.report ? "uboot_radio_log_broadcast_report" : "uboot_radio_log_broadcast", {age, number: row.number});
     return row.ack ? t("uboot_radio_log_with_ack", {entry: text}) : text;
   }
-  return row.kind === "sent" ? t("uboot_radio_log_sent", {age, number: row.number}) : t("uboot_radio_log_aborted", {age});
+  return row.type === "sent" ? t("uboot_radio_log_sent", {age, number: row.number}) : t("uboot_radio_log_aborted", {age});
 }
 
 function renderRadio(radio, nav) {
@@ -424,13 +424,13 @@ function renderThreat(threat) {
   $("uboot-evade").dataset.ready = String(plan !== null);
   $("uboot-evade-plan").textContent = plan === null ? t("uboot_evade_no_plan")
     : t("uboot_evade_plan", {course: number(plan.course, 0), speed: number(plan.speed_kn, 0), depth: number(plan.depth_m, 0),
-      source: t(`uboot_threat_kind_${plan.kind}`)});
+      source: t(`uboot_threat_kind_${plan.type}`)});
   $("uboot-threat-intercepts").replaceChildren(...(threat.intercepts.length ? threat.intercepts.map((row) => {
     const line = node("p", undefined, "uboot-log-line");
     line.append(node("span", t("uboot_log_age", {age: number(row.age_s, 0)}), "uboot-log-age"),
       node("span", row.level_db === null
-        ? t("uboot_threat_row_bearing", {kind: t(`uboot_threat_kind_${row.kind}`), bearing: number(row.bearing, 0)})
-        : t("uboot_threat_row", {kind: t(`uboot_threat_kind_${row.kind}`), bearing: number(row.bearing, 0),
+        ? t("uboot_threat_row_bearing", {kind: t(`uboot_threat_kind_${row.type}`), bearing: number(row.bearing, 0)})
+        : t("uboot_threat_row", {kind: t(`uboot_threat_kind_${row.type}`), bearing: number(row.bearing, 0),
           level: number(row.level_db, 0)})));
     return line;
   }) : [node("p", t("station_none"), "uboot-log-line")]));

@@ -150,7 +150,7 @@ export function validateV2State(state) {
   const sonarFields = ["ref", "label", "source", "classification", "profile", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
   const radioFields = ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg"];
   const radioTaskFields = {
-    row: ["id", "kind", "state", "name", "persons", "x", "y", "radius_nm", "course", "speed_kn", "bearing", "range_nm", "respond_s", "remaining_s", "progress", "sighted", "verdict", "points", "can_answer"],
+    row: ["id", "type", "state", "name", "persons", "x", "y", "radius_nm", "course", "speed_kn", "bearing", "range_nm", "respond_s", "remaining_s", "progress", "sighted", "verdict", "points", "can_answer"],
     kinds: ["sar", "identify", "datum", "ras", "emcon"],
     states: ["offered", "active", "done", "failed", "declined"],
   };
@@ -190,12 +190,12 @@ export function validateV2State(state) {
     esmFix: ["x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent"],
     esmCandidate: ["name", "role", "fit"],
     threat: ["intercepts", "counts", "loudest_db", "echo_likely", "trend", "layer", "layer_m", "depth_m", "noise", "mast", "esm_count", "advice", "plan"],
-    intercept: ["kind", "bearing", "level_db", "age_s"],
+    intercept: ["type", "bearing", "level_db", "age_s"],
     interceptKinds: ["hull", "dipping", "buoy", "splash", "torpedo"],
     advice: ["uboot.advice.torpedo", "uboot.advice.mast_down", "uboot.advice.slow_down", "uboot.advice.measure_layer", "uboot.advice.go_below", "uboot.advice.evade"],
-    evadePlan: ["kind", "bearing", "course", "speed_kn", "depth_m", "silent", "decoy"],
+    evadePlan: ["type", "bearing", "course", "speed_kn", "depth_m", "silent", "decoy"],
     radio: ["antenna", "broadcast", "copied", "next_s", "copy", "send", "transmitting", "sitreps", "ack_due", "report", "log"],
-    radioLog: ["seq", "kind", "age_s", "number", "ack", "report"],
+    radioLog: ["seq", "type", "age_s", "number", "ack", "report"],
     radioLogKinds: ["broadcast", "sent", "aborted"],
     radioReport: ["x", "y", "radius_nm", "course", "speed_kn", "age_s"],
   };
@@ -421,7 +421,7 @@ export function validateV2State(state) {
     if (!exactKeys(threat, boatFields.threat) || !exactKeys(threat.counts, boatFields.interceptKinds) ||
         boatFields.interceptKinds.some((kind) => !Number.isInteger(threat.counts[kind]) || threat.counts[kind] < 0) ||
         !boundedArray(threat.intercepts, 12) || threat.intercepts.some((row) => !exactKeys(row, boatFields.intercept) ||
-          !boatFields.interceptKinds.includes(row.kind) || !finite(row.bearing) || !finite(row.age_s) ||
+          !boatFields.interceptKinds.includes(row.type) || !finite(row.bearing) || !finite(row.age_s) ||
           !nullableNumber(row.level_db)) ||
         ![threat.loudest_db, threat.layer_m].every(nullableNumber) || !finite(threat.depth_m) ||
         typeof threat.echo_likely !== "boolean" || typeof threat.mast !== "boolean" ||
@@ -430,7 +430,7 @@ export function validateV2State(state) {
         !["cavitating", "snorkel", "quiet", "loud", "moderate"].includes(threat.noise) ||
         !Number.isInteger(threat.esm_count) || threat.esm_count < 0 ||
         !boundedArray(threat.advice, 4) || !threat.advice.every((key) => boatFields.advice.includes(key)) ||
-        (plan !== null && (!exactKeys(plan, boatFields.evadePlan) || !["torpedo", "ping"].includes(plan.kind) ||
+        (plan !== null && (!exactKeys(plan, boatFields.evadePlan) || !["torpedo", "ping"].includes(plan.type) ||
           ["bearing", "course", "speed_kn", "depth_m"].some((key) => !finite(plan[key])) ||
           typeof plan.silent !== "boolean" || typeof plan.decoy !== "boolean"))) throw new Error("protocol");
     // Radio room: schedule, own transmissions and HQ's (modelled) contact report.
@@ -442,7 +442,7 @@ export function validateV2State(state) {
         !Number.isInteger(radio.broadcast) || radio.broadcast < 0 || !Number.isInteger(radio.sitreps) || radio.sitreps < 0 ||
         !finite(radio.next_s) || !nullableNumber(radio.copy) || !nullableNumber(radio.send) || !radioReport(radio.report) ||
         !boundedArray(radio.log, 12) || radio.log.some((row) => !exactKeys(row, boatFields.radioLog) ||
-          !Number.isInteger(row.seq) || !boatFields.radioLogKinds.includes(row.kind) || !nullableNumber(row.age_s) ||
+          !Number.isInteger(row.seq) || !boatFields.radioLogKinds.includes(row.type) || !nullableNumber(row.age_s) ||
           (row.number !== null && !Number.isInteger(row.number)) || typeof row.ack !== "boolean" || !radioReport(row.report))) throw new Error("protocol");
   } else if (state.role === "weapons") {
     if (!exactKeys(payload.settings, ["torpedo_type", "choices", "pattern", "enable_nm", "salvo"]) ||
@@ -502,7 +502,7 @@ export function validateV2State(state) {
     tacticalRows(payload.tactical, 128);
     const nullableFinite = (value) => value === null || finite(value);
     if (!boundedArray(payload.tasks, 8) || payload.tasks.some((row) => !exactKeys(row, radioTaskFields.row) ||
-        !Number.isSafeInteger(row.id) || row.id < 1 || !radioTaskFields.kinds.includes(row.kind) ||
+        !Number.isSafeInteger(row.id) || row.id < 1 || !radioTaskFields.kinds.includes(row.type) ||
         !radioTaskFields.states.includes(row.state) || (row.name !== null && (typeof row.name !== "string" || row.name.length > 24)) ||
         !Number.isInteger(row.persons) || row.persons < 0 || [row.x, row.y, row.radius_nm, row.bearing, row.range_nm, row.progress].some((value) => !finite(value)) ||
         [row.course, row.speed_kn, row.respond_s, row.remaining_s].some((value) => !nullableFinite(value)) ||

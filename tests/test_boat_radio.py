@@ -192,7 +192,7 @@ def test_the_projection_shows_the_radio_room_without_frigate_truth():
     report = view["report"]
     assert report is not None and report["age_s"] >= config.UBOOT_RADIO_REPORT_AGE_S[0]
     assert (report["x"], report["y"]) != (game.ship.x, game.ship.y)
-    assert [row["kind"] for row in view["log"]] == ["broadcast"]
+    assert [row["type"] for row in view["log"]] == ["broadcast"]
     assert json.loads(json.dumps(view)) == view
 
 

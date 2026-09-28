@@ -2,7 +2,7 @@
 
 ## Authority and scope
 
-- This is U-Jagd 1.3.40 (`src/core/version.py`); current saves are v27-only. Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 1.3.41 (`src/core/version.py`); current saves are v27-only. Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
 - Older phase/milestone labels under `docs/GDD.md`, `docs/implementation-plan.md`, `docs/plan-0.1.6.md`, and `docs/plan-0.1.7.md` are historical. Current resumable work is tracked in `docs/plan-1.3.md` and `docs/resume.md`.
@@ -10,7 +10,7 @@
 ## Architecture
 
 - `main.py`: CLI and saved-preference/CLI override wiring.
-- `src/core/game.py`: composition root only; `Game` is assembled from mixins with one responsibility each: `game_events.py` (event precedence and input ownership), `game_sim.py` (`update`/`_update_sim` and the frozen `SIM_ORDER`), `game_operator.py` (station commands shared by keys and Remote Crew), `game_pictures.py` (OPZ/ELOKA pictures, plot layer, weather, SimLog), `game_draw.py` (frame, overlays, main loop), `mission_bridge.py` (scenario start and the custom-mission runtime bridge), `game_tasking.py` (HQ radio tasks, model in `tasking.py`), `game_crew.py` (watches, fatigue, morale; model in `crew.py`), `game_mpa.py` (the on-call patrol aircraft, flight model in `src/air/mpa.py`), `game_save.py` (save/load, slots) with `save_validate.py` (pure document validator) and `limits.py` (shared bounds); `game_shared.py` holds help/display constants. Move code between them verbatim; `Game` re-exports the names tests import from `src.core.game`.
+- `src/core/game.py`: composition root only; `Game` is assembled from mixins with one responsibility each: `game_events.py` (event precedence and input ownership), `game_sim.py` (`update`/`_update_sim` and the frozen `SIM_ORDER`), `game_operator.py` (station commands shared by keys and Remote Crew), `game_pictures.py` (OPZ/ELOKA pictures, plot layer, weather, SimLog), `game_draw.py` (frame, overlays, main loop), `mission_bridge.py` (scenario start and the custom-mission runtime bridge), `game_tasking.py` (HQ radio tasks, model in `tasking.py`), `game_crew.py` (watches, fatigue, morale; model in `crew.py`), `game_mpa.py` (the on-call patrol aircraft, flight model in `src/air/mpa.py`), `game_bugreport.py` (main-menu bug report page; links and report file in `bugreport.py`), `game_save.py` (save/load, slots) with `save_validate.py` (pure document validator) and `limits.py` (shared bounds); `game_shared.py` holds help/display constants. Move code between them verbatim; `Game` re-exports the names tests import from `src.core.game`.
 - `src/core/config.py`: gameplay constants, units/conversions, scenarios, layout, and timing.
 - `src/core/mission*.py`, `commands.py`, `station.py`, `preferences.py`, `i18n.py`: mission models, shared commands, UI state, settings, and localization.
 - `src/world/`: coastline/bathymetry, real-sector loading, projection, terrain queries, weather/time.

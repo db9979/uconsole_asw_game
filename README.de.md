@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.40**
+Aktuelle Version: **1.3.41**
 
-Version 1.3.40 bringt die volle obere Leiste auf der uConsole zurück: Die
+Version 1.3.41 bringt die volle obere Leiste auf der uConsole zurück: Die
 Fregatte zeigt wieder Station, Mission, Uhrzeit, Fahrt und Kurs, das besetzte
 U-Boot Mission, Uhrzeit, Fahrt, Kurs und Tiefe, jetzt kompakt durch „·“
 getrennt. Spielstände bleiben v27.

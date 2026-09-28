@@ -15,7 +15,10 @@ import pytest
 from commander_web import client_css, client_js, function_source, index_html, inject_probe, WEB_ROUTES
 
 from src.core.version import APP_VERSION
+from src.core.bugreport import ISSUE_TEMPLATE, NEW_ISSUE_URL
 from src.ui.support import SUPPORT_URL
+
+BUG_REPORT_URL = f"{NEW_ISSUE_URL}?template={ISSUE_TEMPLATE}"
 from src.data.contact_analysis import project_contact_catalog
 
 
@@ -86,6 +89,10 @@ def test_commander_resources_are_self_contained_and_csp_safe():
                         and attrs[key] == "/admin" and "hidden" in attrs
                         or key == "href" and attrs[key] == SUPPORT_URL
                         and attrs.get("class") == "support-link"
+                        and attrs.get("target") == "_blank"
+                        and attrs.get("rel") == "noopener noreferrer"
+                        or key == "href" and attrs[key] == BUG_REPORT_URL
+                        and attrs.get("class") == "bug-report-link"
                         and attrs.get("target") == "_blank"
                         and attrs.get("rel") == "noopener noreferrer")
     csp = next(attrs["content"] for _, attrs in document.elements if attrs.get("http-equiv") == "Content-Security-Policy")
@@ -1459,3 +1466,13 @@ def test_support_link_sits_outside_the_stations():
     assert f'id="support-admin" href="{SUPPORT_URL}"' in admin
     stations = page.split('<main id="operations"', 1)[1].split("</main>", 1)[0]
     assert "support-link" not in stations
+
+
+def test_bug_report_link_in_settings_and_admin():
+    """The web bug-report link opens the repository's issue form, outside the stations."""
+    page = index_html()
+    assert f'id="bug-report-settings" href="{BUG_REPORT_URL}"' in page
+    admin = resources.files("data.commander").joinpath("admin.html").read_text(encoding="utf-8")
+    assert f'id="bug-report-admin" href="{BUG_REPORT_URL}"' in admin
+    stations = page.split('<main id="operations"', 1)[1].split("</main>", 1)[0]
+    assert "bug-report-link" not in stations

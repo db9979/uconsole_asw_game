@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.40**
+Current release: **1.3.41**
 
-Release 1.3.40 brings back the full top bar on the uConsole: the frigate shows
+Release 1.3.41 brings back the full top bar on the uConsole: the frigate shows
 the station, the mission, the clock, speed and course again, and the crewed
 submarine shows the mission, the clock, speed, course and depth, now compactly
 separated by "·". Saves stay v27.

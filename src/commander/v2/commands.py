@@ -477,6 +477,11 @@ V2_ACTION_REGISTRY = {
         _HOST_STATIONS, _instructor_environment_params, phases=_HOST_ANY),
     "bridge_set_course": V2Action(frozenset({"bridge"}), _course_params),
     "bridge_set_speed": V2Action(frozenset({"bridge"}), _speed_params),
+    # Autopilot route: waypoints on the chart, search patterns, clear.
+    "bridge_route_add": V2Action(frozenset({"bridge"}), _waypoint_params),
+    "bridge_route_pattern": V2Action(frozenset({"bridge"}),
+                                     _enum_params("pattern", ("zigzag", "square"))),
+    "bridge_route_clear": V2Action(frozenset({"bridge"}), _no_params),
     "propose_navigation": V2Action(frozenset({"bridge"}),
                                     _navigation_proposal_params),
     "sonar_classify": V2Action(frozenset({"sonar", "helicopter", "uboot_sonar"}), _classification_params,

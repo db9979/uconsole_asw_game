@@ -40,6 +40,10 @@ Der Brückenausguck (Augenhöhe 18 m, Fernglas 7x50) meldet seine Sichtungen im 
 
 Klasse und Typ brauchen eine feiner aufgelöste Silhouette als die Sichtung (Johnson-Kriterien): an einem klaren Tag wird ein Tanker auf etwa 7 sm klassifiziert und eine Fregatte auf etwa 4 sm identifiziert, ein Speedboot erst innerhalb von 3 sm klassifiziert, und nachts ist der Typ nur auf wenige Kabellängen erkennbar. Nebel, Regen und Seegang verkürzen jede Stufe. Der Ausguck meldet außerdem „Land in Sicht“ mit der Peilung der nächsten Küste und eine Torpedolaufbahn mit Banner. Die Klasse bleibt erhalten, solange er den Kontakt hält. Sie erscheint in den Tooltips von Karte und OPZ als „Ausguck: …“ und ist nur eine Beobachtung: Sie setzt weder die OPZ-Klassifizierung noch die Zugehörigkeit.
 
+## Autopilot-Route {#bridge-route}
+
+Das Ruder kann einer Route aus bis zu 8 Wegpunkten folgen. Auf der Navigationsseite setzt ein Rechtsklick in die Karte einen Wegpunkt; `W` startet ein Suchmuster ab Position und Kurs des Schiffs (zuerst ein Zickzack mit 3 sm langen Schlägen 45° beiderseits des Kurses, erneut gedrückt ein wachsendes Quadrat mit Schlägen von 1, 1, 2, 2, 3, 3, 4, 4 sm nach rechts drehend, beim dritten Mal wird die Route gelöscht), und `Rücktaste` löscht sie. Die Karte zeichnet die Route als bernsteinfarbene Linie mit nummerierten Wegpunkten, das Kursfeld zeigt den nächsten mit seinem Abstand. Der Autopilot setzt nur den befohlenen Kurs; die Fahrt bleibt beim Maschinentelegrafen. Ein Wegpunkt gilt innerhalb von 0,3 sm als erreicht, dann steuert das Ruder den nächsten an; nach dem letzten hält das Schiff seinen Kurs. Jeder Ruderbefehl (`←`/`→`, `U`, der Trackball oder ein Kurs aus der Remote Crew) übernimmt und schaltet die Route ab; bei ausgefallener Brücke lässt sich keine Route setzen, und eine laufende wird nicht gesteuert. Die Route wird gespeichert. Die Remote-Crew-Brücke hat eine Karte „Autopilot-Route“: „Wegpunkte auf der Karte setzen“ lässt einen Klick in freie Karte einen Wegpunkt setzen, Knöpfe starten Zickzack oder Quadratsuche oder löschen die Route.
+
 ## Tasten {#bridge-keys}
 
 <!-- keys:bridge -->
@@ -70,6 +74,6 @@ Gefechtslage:
 
 ## Nicht modelliert {#bridge-limits}
 
-- Keine Zeitraffung, keine Pause und keine Autopilot-Wegpunkte für die Fregatte.
+- Keine Zeitraffung und keine Pause. Der Autopilot steuert nur den Kurs, nie die Fahrt, und weicht weder Land noch Flachwasser aus.
 - Keine automatische Torpedoerkennung: der Alarm beruht nur auf gehörten Intercepts oder der Klassifizierung des Sonarbedieners; ein außerhalb der Suchkopfreichweite leise laufender Torpedo kann unangekündigt eintreffen. Der Ausguck meldet nur eine sichtbare Laufbahn.
 - Der Ausguck liest weder Schiffsnamen noch Flagge und meldet keine Lichter oder Signalkörper; die Lichter werden nur gezeichnet. Kein Schiff im Spiel ankert, schleppt, fischt mit Schleppfahrt oder ist manövrierunfähig, daher erscheinen Ankerlicht, Schlepplichter und die Lichter eines manövrierunfähigen Fahrzeugs nie.

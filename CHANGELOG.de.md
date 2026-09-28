@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.52
+
+Version 1.3.52 gibt der Fregatte eine Autopilot-Route. Auf der Brücke setzt
+ein Rechtsklick in die Karte einen Wegpunkt (bis zu 8), `W` startet ein
+Suchmuster ab Position und Kurs des Schiffs (Zickzack mit 3 sm langen
+Schlägen, dann wachsendes Quadrat), und `Rücktaste` löscht die Route. Das
+Ruder steuert die Wegpunkte nacheinander an, zählt einen innerhalb von 0,3 sm
+als erreicht und hält nach dem letzten den Kurs; die Fahrt bleibt beim
+Maschinentelegrafen, und jeder Ruderbefehl übernimmt. Die Karte zeigt die
+Route mit nummerierten Wegpunkten, und die Remote-Crew-Brücke hat eine Karte
+„Autopilot-Route“ mit denselben Mustern und einem Kartenmodus zum Setzen von
+Wegpunkten. Spielstände sind jetzt v28 (sie behalten die Route); v27-Stände
+laden nicht mehr.
+
 ## 1.3.51
 
 Version 1.3.51 lässt die KI-Jäger das ESM der Fregatte nutzen. Hat die

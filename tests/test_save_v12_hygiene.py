@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v27_and_older_documents_are_rejected():
+def test_save_is_v28_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (27, "u-jagd-save-v27")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (27, "u-jagd-save-v27")
+    assert (state["version"], state["save_schema"]) == (28, "u-jagd-save-v28")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (28, "u-jagd-save-v28")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -127,6 +127,12 @@ def test_save_is_v27_and_older_documents_are_rejected():
     v26["version"] = 26
     v26["save_schema"] = "u-jagd-save-v26"
     assert not game._load_save_data(v26)
+    # v27 differs only by the Bridge's autopilot route (root ``route``).
+    v27 = copy.deepcopy(state)
+    v27["version"] = 27
+    v27["save_schema"] = "u-jagd-save-v27"
+    del v27["route"]
+    assert not game._load_save_data(v27)
     assert game.save_state() == before
 
 

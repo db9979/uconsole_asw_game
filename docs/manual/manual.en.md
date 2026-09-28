@@ -188,6 +188,10 @@ The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the e
 
 Class and type need a finer resolved silhouette than the sighting (Johnson criteria): by clear day a tanker is classed at about 7 NM and a frigate identified at about 4 NM, a speedboat is classed only inside 3 NM, and at night the type is made out only within a few cables. Fog, rain and sea state shorten every step. The lookout also calls "land in sight" with the bearing of the nearest coast, and a torpedo wake with a banner. The class is held while the lookout keeps the contact. It appears in the chart and OPZ tooltips as "Lookout: ..." and is an observation only: it never sets the OPZ classification or the affiliation.
 
+### Autopilot route
+
+The helm can follow a route of up to 8 waypoints. On the navigation page a right click on the chart adds a waypoint; `W` starts a search pattern from the ship's position and course (first a zigzag of 3 NM legs 45° either side of the course, pressed again an expanding square of 1, 1, 2, 2, 3, 3, 4, 4 NM legs turning right, a third time the route is cleared), and `Backspace` clears it. The chart draws the route as an amber line with numbered waypoints and the Course panel shows the next one with its distance. The autopilot sets only the ordered course; speed stays with the telegraph. A waypoint counts as reached within 0.3 NM, then the helm steers for the next one; after the last one the ship holds its course. Any helm order (`←`/`→`, `U`, the trackball or a course from Remote Crew) takes over and switches the route off; with the Bridge out of action no route can be set and an active one is not steered. The route is saved. The Remote Crew bridge has an "Autopilot route" card: "Set waypoints on chart" makes a click on open chart add a waypoint, and buttons start the zigzag or the expanding square or clear the route.
+
 ### Keys
 
 | Key | Action |
@@ -204,6 +208,9 @@ Class and type need a finer resolved silhouette than the sighting (Johnson crite
 | `B` | Lookout page: binoculars over the chart on/off (, / . train them) |
 | `↑/↓ · Q/E · Space` | Binoculars up: ↑/↓ tilt 2° (Shift: 10°) instead of the telegraph, Q/E zoom (16°, 8°, 4° field), Space stabilizer |
 | `G` | Action stations on/off |
+| `W` | Autopilot: zigzag search, expanding square, off |
+| `Right click` | Add an autopilot waypoint on the chart |
+| `Backspace` | Clear the autopilot route |
 
 The trackball steers the rudder while the Bridge is selected. `U` and `V` open direct numeric entry; the simulation keeps running while you type. `Enter` confirms, `Esc` cancels.
 
@@ -235,7 +242,7 @@ Combat situation:
 
 ### Not modelled
 
-- No time acceleration, no pause and no autopilot waypoints for the frigate.
+- No time acceleration and no pause. The autopilot steers only course, never speed, and does not avoid land or shallow water.
 - No automatic torpedo identification: the alarm rests only on heard intercepts or the sonar operator's classification; a torpedo running silent outside seeker range can arrive unannounced. The lookout calls out only a visible wake.
 - The lookout never reads a ship's name or flag and does not report navigation lights or day shapes; the lights are only drawn. No ship in the game anchors, tows, trawls at trawling speed or is not under command, so anchor lights, towing lights and the not-under-command lights never show.
 

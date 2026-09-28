@@ -98,6 +98,18 @@ def _bridge_set_speed(game, params, _bindings=None):
     return game.order_speed(params["speed_kn"])
 
 
+def _bridge_route_add(game, params, _bindings=None):
+    return game.add_route_waypoint(params["x"], params["y"])
+
+
+def _bridge_route_pattern(game, params, _bindings=None):
+    return game.start_route_pattern(params["pattern"])
+
+
+def _bridge_route_clear(game, params, _bindings=None):
+    return game.clear_route()
+
+
 def _bound(bindings, ref):
     return bindings.get(ref) if type(ref) is str else None
 
@@ -836,6 +848,9 @@ _V2_ACTION_HANDLERS = {
     "plot_clear": _plot_clear,
     "bridge_set_course": _bridge_set_course,
     "bridge_set_speed": _bridge_set_speed,
+    "bridge_route_add": _bridge_route_add,
+    "bridge_route_pattern": _bridge_route_pattern,
+    "bridge_route_clear": _bridge_route_clear,
     "sonar_classify": _sonar_classify,
     "sonar_set_release": _sonar_set_release,
     "helicopter_qualify": _helicopter_qualify,

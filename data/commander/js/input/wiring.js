@@ -583,6 +583,13 @@ export function init() {
   $("simlog-export").addEventListener("click", () => exportSimlog());
   $("uboot-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));
   $("uboot-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
+  $("bridge-route-mode").addEventListener("click", () => {
+    S.bridgeRouteMode = !S.bridgeRouteMode;
+    $("bridge-route-mode").setAttribute("aria-pressed", String(S.bridgeRouteMode));
+  });
+  $("bridge-route-zigzag").addEventListener("click", () => sendStationAction("bridge_route_pattern", {pattern: "zigzag"}));
+  $("bridge-route-square").addEventListener("click", () => sendStationAction("bridge_route_pattern", {pattern: "square"}));
+  $("bridge-route-clear").addEventListener("click", () => sendStationAction("bridge_route_clear", {}));
   $("helicopter-launch").addEventListener("click", () => sendStationAction("helicopter_launch", {}));
   $("helicopter-return").addEventListener("click", () => sendStationAction("helicopter_return", {}));
   $("helicopter-waypoint-form").addEventListener("submit", (event) => {
@@ -861,6 +868,13 @@ export function init() {
         sendStationAction("opz_mark_blip", {ref: contact.ref});
       } else if (contact) {
         selectTrack(contact.ref);
+      } else if (!contact && gesture.role === "bridge" && S.bridgeRouteMode && stationActionAvailable()) {
+        // Route mode on the bridge: a click on open chart adds a waypoint.
+        const geometry = roleMapGeometry(gesture.role), state = roleMapViews[gesture.role];
+        const worldX = state.x + (x - rect.width / 2) / geometry.scale;
+        const worldY = state.y + (y - rect.height / 2) / geometry.scale;
+        if (finite(worldX) && finite(worldY) && worldX >= 0 && worldX <= 1000 && worldY >= 0 && worldY <= 1000)
+          sendStationAction("bridge_route_add", {x: worldX, y: worldY});
       } else if (!hits.length && gesture.role === "helicopter" && stationActionAvailable() &&
                  S.v2State.helicopter.readiness.can_set_waypoint) {
         const geometry = roleMapGeometry(gesture.role);

@@ -49,6 +49,8 @@ export const S = {
   stationDrafts: new Set(),
   // Emitter the mast station has selected in the boat's ESM list (by number).
   ubootEsmSelected: null,
+  // Bridge route mode: a chart click adds an autopilot waypoint.
+  bridgeRouteMode: false,
   requestQueue: Promise.resolve(),
   activeRequest: null,
   languageRequest: 0,

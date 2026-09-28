@@ -129,7 +129,7 @@ export function validateV2State(state) {
   const payload = state[state.role];
   // BEGIN GENERATED (tools/gen_web_schema.py; do not edit by hand)
   const shapes = {
-    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings", "crew", "lookout"],
+    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings", "crew", "lookout", "route"],
     damage: ["compartments", "teams", "total", "sunk", "stability", "crew"],
     eloka: ["intercepts", "station_down", "status", "hardware"],
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
@@ -179,6 +179,11 @@ export function validateV2State(state) {
     phoneOutline: ["bearing", "span_deg", "cls", "stale", "lights", "called", "range_nm"],
     call: ["seq", "age_s", "category", "bearing", "range_nm", "confirmed"],
     callCategories: ["contact", "ship", "warship", "merchant", "aircraft", "submarine", "torpedo"],
+  };
+  const routeFields = {
+    row: ["pattern", "index", "total", "points"],
+    point: ["number", "x", "y"],
+    patterns: ["manual", "zigzag", "square"],
   };
   const boatFields = {
     plant: ["propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh", "aip_capacity_kwh", "aip_kw", "load_kw", "supply_kw", "net_kw", "empty_s", "full_s", "generator_kw", "fuel_l", "fuel_capacity_l", "charge_rate", "snorkel_rate", "endurance", "air"],
@@ -272,6 +277,14 @@ export function validateV2State(state) {
     if (!phoneOk(payload)) throw new Error("protocol");
   } else if (state.role === "bridge") {
     if (!crewOk(payload.crew) || !glassesOk(payload.lookout)) throw new Error("protocol");
+    // The autopilot route: the waypoints still ahead, numbered from 1.
+    const route = payload.route;
+    if (!exactKeys(route, routeFields.row) || !routeFields.patterns.includes(route.pattern) ||
+        !Number.isInteger(route.total) || route.total < 0 || route.total > 8 ||
+        !Number.isInteger(route.index) || route.index < 0 || route.index > route.total ||
+        !boundedArray(route.points, 8) || route.points.length !== route.total - route.index ||
+        route.points.some((row, index) => !exactKeys(row, routeFields.point) ||
+          row.number !== route.index + index + 1 || !finite(row.x) || !finite(row.y))) throw new Error("protocol");
     if (!exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
     if (!exactKeys(payload.orders, ["station_down", "speed_max_kn", "telegraph", "noise", "cavitating"]) ||
         typeof payload.orders.station_down !== "boolean" || !finite(payload.orders.speed_max_kn) ||

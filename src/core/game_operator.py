@@ -10,6 +10,7 @@ import math
 
 from src.core import boat_threat
 from src.core import config
+from src.ship import route as route_model
 from src.core.commands import STATION_PAGES, station_page_step
 from src.core.i18n import display_value, message, raw_text
 from src.physics import torpedo_dyn
@@ -60,7 +61,90 @@ class OperatorMixin:
         self.ship.target_course = course
         self.feed.add(self.world.format_time(), "navigation",
                       message("runtime.numeric.course_feed", course=f"{course:03.0f}"))
+        # A helm order takes over from the autopilot.
+        self.cancel_route()
         return "ok"
+
+    # --- Bridge autopilot route (save v28 ``route``) ---
+
+    def _route_order_check(self):
+        if not self._navigation_order_live():
+            return "phase_blocked"
+        if self.damage.station_down("bridge"):
+            return "bridge_down"
+        return None
+
+    def add_route_waypoint(self, x: float, y: float) -> str:
+        """Append a waypoint to the autopilot route; the helm follows it."""
+        if (type(x) not in (int, float) or type(y) not in (int, float)
+                or not math.isfinite(x) or not math.isfinite(y)):
+            return "invalid_value"
+        blocked = self._route_order_check()
+        if blocked is not None:
+            return blocked
+        size = float(self.world.size_nm)
+        x, y = config.clamp(float(x), 0.0, size), config.clamp(float(y), 0.0, size)
+        if not self.route.add(x, y):
+            return "route_full"
+        self.feed.add(self.world.format_time(), "navigation", message(
+            "runtime.route.waypoint", number=len(self.route.points),
+            bearing=f"{route_model.bearing_to(self.ship.x, self.ship.y, x, y):03.0f}"))
+        return "ok"
+
+    def start_route_pattern(self, kind: str) -> str:
+        """Start a search pattern from the ship's position and course."""
+        if kind not in route_model.PATTERNS:
+            return "invalid_value"
+        blocked = self._route_order_check()
+        if blocked is not None:
+            return blocked
+        self.route.start_pattern(kind, self.ship.x, self.ship.y, self.ship.course)
+        size = float(self.world.size_nm)
+        self.route.points = [(config.clamp(x, 0.0, size), config.clamp(y, 0.0, size))
+                             for x, y in self.route.points]
+        self.feed.add(self.world.format_time(), "navigation",
+                      message(f"runtime.route.pattern_{kind}"))
+        return "ok"
+
+    def cycle_route_pattern(self) -> str:
+        """Bridge key: no route -> zigzag -> expanding square -> off."""
+        if self.route.active and self.route.kind == route_model.PATTERNS[-1]:
+            return self.clear_route()
+        index = (route_model.PATTERNS.index(self.route.kind) + 1
+                 if self.route.active and self.route.kind in route_model.PATTERNS else 0)
+        return self.start_route_pattern(route_model.PATTERNS[index])
+
+    def clear_route(self) -> str:
+        blocked = self._route_order_check()
+        if blocked is not None:
+            return blocked
+        self.cancel_route()
+        return "ok"
+
+    def cancel_route(self) -> None:
+        """Drop an active route (a helm order or the rudder took over)."""
+        if not self.route.active:
+            return
+        self.route.clear()
+        self.feed.add(self.world.format_time(), "navigation",
+                      message("runtime.route.cancelled"))
+
+    def _steer_route(self) -> None:
+        """Autopilot: steer the ordered course to the route's next waypoint."""
+        if not self.route.active or self.damage.station_down("bridge"):
+            return
+        course, reached = self.route.steer(self.ship.x, self.ship.y)
+        if reached:
+            if course is None:
+                self.feed.add(self.world.format_time(), "navigation",
+                              message("runtime.route.complete"))
+                self.route.clear()
+                return
+            self.feed.add(self.world.format_time(), "navigation", message(
+                "runtime.route.reached", number=self.route.index))
+        if course is not None and abs(((course - self.ship.target_course + 180.0)
+                                       % 360.0) - 180.0) > 0.05:
+            self.ship.target_course = course
 
     def order_course(self, course: float) -> str:
         """Apply a Bridge course order and return a stable result code."""

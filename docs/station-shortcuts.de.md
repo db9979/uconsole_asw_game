@@ -1,4 +1,4 @@
-# U-Jagd 1.3.51 - Stations- und Tastenkürzel
+# U-Jagd 1.3.52 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -53,6 +53,9 @@ Berechtigungsprüfungen bleiben wirksam.
 | `B` | Ausguck-Seite: Fernglas über der Karte ein/aus (, / . schwenken) |
 | `↑/↓ · Q/E · Space` | Fernglas oben: ↑/↓ neigen 2° (Umschalt: 10°) statt Maschinentelegraf, Q/E Zoom (16°, 8°, 4° Feld), Leertaste Stabilisierung |
 | `G` | Gefechtsstationen an/aus |
+| `W` | Autopilot: Zickzack-Suche, wachsendes Quadrat, aus |
+| `Rechtsklick` | Autopilot-Wegpunkt auf der Karte setzen |
+| `Backspace` | Autopilot-Route löschen |
 
 ## 2 Sonar
 

@@ -177,6 +177,9 @@ class SimMixin:
             self.claim_opfor_sub()
         # Operator adjustments follow wall time; hull and weapon motion do not.
         turn, _ = (0.0, 0.0) if playing_boat else self.steering_input()
+        if turn:
+            # The rudder takes over from the autopilot.
+            self.cancel_route()
         if not playing_boat and not self.damage.station_down("bridge"):
             self.ship.steer_input(dt, turn, 0)
         if self.station is Station.WEAPONS and not playing_boat:
@@ -338,6 +341,7 @@ class SimMixin:
                                    / ship_dynamics.HULL.flood_kg_per_percent)
         self.ship.update_fuel(dt)
         self.world.update(dt)
+        self._steer_route()
         contact = self.ship.update(dt, self.world, self.damage.list_deg())
         if contact is not None:
             speed_m_s = self.ship.last_impact_speed_kn * 1852.0 / 3600.0

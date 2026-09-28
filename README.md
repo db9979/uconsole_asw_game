@@ -12,15 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.51**
+Current release: **1.3.52**
 
-Release 1.3.51 lets the AI hunters use the frigate's ESM. When the frigate has
-no position on the submarine, an ESM intercept of a mast radar now gives the
-search line: the library must rank a submarine radar among its three best
-matches and no ship the frigate tracks by radar or AIS may lie within 10° of
-the bearing. It competes with the HF/DF bearings by age and stays a datum for
-5 minutes, so a submarine that radiates at periscope depth draws the frigate,
-its helicopter and the patrol aircraft down that bearing. Saves stay v27.
+Release 1.3.52 gives the frigate an autopilot route. On the Bridge a right
+click on the chart adds a waypoint (up to 8), `W` starts a search pattern from
+the ship's position and course (a zigzag of 3 NM legs, then an expanding
+square) and `Backspace` clears the route. The helm steers for each waypoint in
+turn, counts it reached within 0.3 NM and holds its course after the last one;
+speed stays with the telegraph, and any helm order takes over. The chart shows
+the route with numbered waypoints, and the Remote Crew bridge has an
+"Autopilot route" card with the same patterns and a chart mode for setting
+waypoints. Saves are now v28 (they keep the route); v27 saves no longer load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -375,7 +377,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v27 game saves for deterministic restoration of existing sessions.
+in v28 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -490,8 +492,8 @@ Validated does not mean runtime-effective. In this release:
 
 ## Saves and User Data
 
-This build writes and loads save format **v27** only. V27 requires the exact
-`u-jagd-save-v27` schema, including the crewed submarine's ESM scan-period reference, the crewed submarine's tube states, the frigate's radar blips and OPZ marks, the crewed submarine's attack-computer marks, the frigate's variable-depth sonar, the crewed submarine's radio room, the HQ task board, both crews' watch bills,
+This build writes and loads save format **v28** only. V28 requires the exact
+`u-jagd-save-v28` schema, including the frigate's autopilot route, the crewed submarine's ESM scan-period reference, the crewed submarine's tube states, the frigate's radar blips and OPZ marks, the crewed submarine's attack-computer marks, the frigate's variable-depth sonar, the crewed submarine's radio room, the HQ task board, both crews' watch bills,
 the patrol aircraft and each buoy's owner, the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
 modes, mast, wires, plot, alarm bearings, its sonar station and its ESM

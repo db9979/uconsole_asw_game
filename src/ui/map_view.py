@@ -624,6 +624,20 @@ def draw_map_view(game, tr=None) -> None:
                              (int(px) + 8, int(py) - 20, 350, 20),
                              config.COLOR_ESM, size=14)
 
+        # Autopilot route: from the ship through the waypoints still ahead.
+        route = getattr(game, "route", None)
+        if route is not None and route.active:
+            previous = view.world_to_screen(game.ship.x, game.ship.y)
+            for number, (wx, wy) in enumerate(route.remaining(), start=route.index + 1):
+                point = view.world_to_screen(wx, wy)
+                lines.line(s, config.COLOR_WARN, (int(previous[0]), int(previous[1])),
+                           (int(point[0]), int(point[1])), 1)
+                pygame.draw.circle(s, config.COLOR_WARN, (int(point[0]), int(point[1])), 5, 1)
+                layout.blit_line(s, message("map.route_waypoint", number=number),
+                                 (int(point[0]) + 7, int(point[1]) - 18, 60, 16),
+                                 config.COLOR_WARN, size=12)
+                previous = point
+
         # Fregatte: Pfeil in Kursrichtung
         px, py = view.world_to_screen(game.ship.x, game.ship.y)
         ang = math.radians(game.ship.course - 90.0)

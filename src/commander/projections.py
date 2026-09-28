@@ -701,6 +701,15 @@ def _mpa(game):
         datalink=bool(view["datalink"]), relayed=int(view["relayed"]))
 
 
+def _bridge_route(game):
+    """The autopilot route: own commanded waypoints still ahead (own truth)."""
+    route = game.route
+    return dict(pattern=route.kind, index=int(route.index), total=len(route.points),
+                points=[dict(number=number, x=_number(x), y=_number(y))
+                        for number, (x, y) in enumerate(route.points, 1)
+                        if number > route.index])
+
+
 def _crew(game, watch=None):
     """A crew's watch bill, fatigue and morale (own-ship truth)."""
     view = game.crew_view(watch)
@@ -1147,7 +1156,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                           and row["source"] not in ("ESM", "FUSION")
                                           and not row["source"].startswith("SONAR")],
                         sightings=_sightings(game), crew=_crew(game),
-                        lookout=_lookout_glasses(game)),
+                        lookout=_lookout_glasses(game), route=_bridge_route(game)),
         "sonar": _sonar(game, rows, focus_ref, target_ref, sonar_refs),
         "weapons": _weapons(game, rows, target_ref, asset_refs,
                             direct_fire_refs["weapons"]),

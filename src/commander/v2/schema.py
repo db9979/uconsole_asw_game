@@ -78,6 +78,11 @@ LOOKOUT_PHONE_OUTLINE_FIELDS = LOOKOUT_OUTLINE_FIELDS + ("called", "range_nm")
 LOOKOUT_CALL_FIELDS = ("seq", "age_s", "category", "bearing", "range_nm", "confirmed")
 LOOKOUT_CALL_CATEGORIES = ("contact", "ship", "warship", "merchant", "aircraft", "submarine",
                            "torpedo")
+# The frigate's autopilot route on the bridge (``src/ship/route.py``): own
+# commanded waypoints (``index`` is the next one), how the route was made.
+BRIDGE_ROUTE_FIELDS = ("pattern", "index", "total", "points")
+BRIDGE_ROUTE_POINT_FIELDS = ("number", "x", "y")
+BRIDGE_ROUTE_PATTERNS = ("manual", "zigzag", "square")
 
 _UBOOT_COMMAND_SHAPE = ("navigation", "status", "weapons", "alarms", "contacts",
                         "own_weapons", "designated_target_ref", "feed", "scope", "plant",
@@ -138,7 +143,7 @@ UBOOT_ESM_FIX_FIELDS = ("x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "
 # Top-level keys of every role payload (exact sets on both sides).
 ROLE_SHAPES = {
     "bridge": ("navigation", "orders", "threat", "systems", "tactical_summary", "sightings",
-               "crew", "lookout"),
+               "crew", "lookout", "route"),
     "sonar": ("observations", "settings", "visualization"),
     "weapons": ("inventory", "readiness", "designated_target", "navigation", "tactical",
                 "target_choices", "depth_m", "tubes", "settings", "own_weapons",

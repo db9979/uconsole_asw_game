@@ -120,3 +120,20 @@ def test_the_harness_rejects_a_broken_state():
     broken["state"]["bridge"]["kind"] = "oops"
     report = _validate([bridge_row, broken])
     assert report["checked"] == 2 and len(report["failures"]) == 1
+
+
+def test_a_bridge_route_passes_the_browser_validator():
+    rows = []
+    game = Game(seed=5, start_menu=False, audio_enabled=False, language="en")
+    server, bridge = Server(), CommanderBridge()
+    assert game.start_route_pattern("square") == "ok"
+    for _ in range(40):
+        game.update(0.5)
+    bridge.pump(game, server, now=1.0)
+    _collect("route", server, rows)
+    route = server.v2_states["bridge"]["bridge"]["route"]
+    assert route["pattern"] == "square" and route["total"] == 8
+    assert [row["number"] for row in route["points"]] == list(
+        range(route["index"] + 1, 9))
+    report = _validate([row for row in rows if row["role"] == "bridge"])
+    assert report["failures"] == []

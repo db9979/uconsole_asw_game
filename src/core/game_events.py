@@ -1131,6 +1131,10 @@ class EventMixin:
                                    volume=f"{self.sonar_volume:.0%}"))
             elif e.key == pygame.K_BACKSPACE and self.station is Station.OPZ:
                 self.opz_fusion.marked.clear()
+            elif e.key == pygame.K_BACKSPACE and self.station is Station.BRIDGE:
+                self._route_result(self.clear_route(), "runtime.route.cleared")
+            elif e.key == pygame.K_w and self.station is Station.BRIDGE:
+                self._route_result(self.cycle_route_pattern())
             elif e.key == pygame.K_DELETE and self.station is Station.OPZ:
                 self._toggle_opz_suppression()
             elif e.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
@@ -1476,6 +1480,15 @@ class EventMixin:
             self.map_view.set_rect(config.MAP_RECT)
             self.map_view.zoom(factor, pivot=pointer)
         elif e.type == pygame.MOUSEBUTTONDOWN:
+            if (e.button == 3 and self.station is Station.BRIDGE and not self.plot_mode
+                    and not self.in_menu and not self.game_over):
+                # Right click on the Bridge chart: next autopilot waypoint.
+                pointer = self._map_pointer(getattr(e, "pos", None))
+                if pointer is not None:
+                    self.map_view.set_rect(config.MAP_RECT)
+                    x, y = self.map_view.screen_to_world(*pointer)
+                    self._route_result(self.add_route_waypoint(float(x), float(y)))
+                    return
             if (e.button == 1 and self.plot_mode and not self.in_menu
                     and not self.game_over
                     and self._handle_plot_click(getattr(e, "pos", None))):
@@ -1620,6 +1633,14 @@ class EventMixin:
                                compartment=message("compartment." + destination)))
         else:
             self.flash(message("runtime.team.rejected"))
+
+    def _route_result(self, result: str, ok_key: str | None = None) -> None:
+        """Flash the outcome of a local autopilot route order."""
+        if result == "ok":
+            if ok_key is not None:
+                self.flash(message(ok_key), 1.5)
+        elif result in ("route_full", "bridge_down"):
+            self.flash(message(f"runtime.route.{result}"), 2.0)
 
     def steering_input(self) -> tuple:
         """Turn direction from held keys/Trackball (-1/0/+1).

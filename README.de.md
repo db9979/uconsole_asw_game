@@ -14,16 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.51**
+Aktuelle Version: **1.3.52**
 
-Version 1.3.51 lässt die KI-Jäger das ESM der Fregatte nutzen. Hat die
-Fregatte keinen Standort des U-Boots, gibt jetzt ein ESM-Intercept eines
-Mastradars die Suchlinie: Die Bibliothek muss unter ihren drei besten Treffern
-ein U-Boot-Radar führen, und kein Schiff, das die Fregatte per Radar oder AIS
-verfolgt, darf innerhalb 10° der Peilung stehen. Die Peilung konkurriert nach
-Alter mit den HF/DF-Peilungen und bleibt 5 Minuten ein Datum; ein U-Boot, das
-auf Sehrohrtiefe sein Radar benutzt, zieht so Fregatte, Hubschrauber und
-Seefernaufklärer auf diese Peilung. Spielstände bleiben v27.
+Version 1.3.52 gibt der Fregatte eine Autopilot-Route. Auf der Brücke setzt
+ein Rechtsklick in die Karte einen Wegpunkt (bis zu 8), `W` startet ein
+Suchmuster ab Position und Kurs des Schiffs (Zickzack mit 3 sm langen
+Schlägen, dann wachsendes Quadrat), und `Rücktaste` löscht die Route. Das
+Ruder steuert die Wegpunkte nacheinander an, zählt einen innerhalb von 0,3 sm
+als erreicht und hält nach dem letzten den Kurs; die Fahrt bleibt beim
+Maschinentelegrafen, und jeder Ruderbefehl übernimmt. Die Karte zeigt die
+Route mit nummerierten Wegpunkten, und die Remote-Crew-Brücke hat eine Karte
+„Autopilot-Route“ mit denselben Mustern und einem Kartenmodus zum Setzen von
+Wegpunkten. Spielstände sind jetzt v28 (sie behalten die Route); v27-Stände
+laden nicht mehr.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -393,7 +396,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v27 gespeichert.
+v28 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -475,7 +478,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v27** sind
+Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v28** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -531,8 +534,8 @@ Version gilt:
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v27**. V27
-verlangt das exakte Schema `u-jagd-save-v27` einschließlich der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v28**. V28
+verlangt das exakte Schema `u-jagd-save-v28` einschließlich der Autopilot-Route der Fregatte, der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
 der Fregatte, des Funkraums des besetzten U-Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen

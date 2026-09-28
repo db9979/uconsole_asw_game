@@ -23,6 +23,8 @@ from commander_fixtures import PLOT, WEATHER_STATION
 
 
 # The bridge lookout's binoculars (clear night, nothing in sight).
+# The bridge's autopilot route with no waypoints.
+ROUTE = {"pattern": "manual", "index": 0, "total": 0, "points": []}
 LOOKOUT = dict(course=90.0, fov_deg=16.0, visibility_nm=30.0, sea_state=2.0,
                horizon_offset=0.0, horizon_tilt=0.0, motion_pitch=0.0, motion_roll=0.0,
                outlines=[],
@@ -1042,6 +1044,7 @@ def _direct_fire_browser_states():
                        can_counterflood=True), crew=_projected_crew()))
     bridge = dict(common, role="bridge", bridge=dict(crew=_projected_crew(),
         navigation=navigation, tactical_summary=[], sightings=[], lookout=LOOKOUT,
+        route=ROUTE,
         orders=dict(station_down=False, speed_max_kn=25.0, telegraph="FULL",
                     noise=.8, cavitating=False),
         threat=dict(observations=[], count=0, average_flood=0.0, torpedoes=[]),
@@ -1186,6 +1189,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                                       "cavitating": False}
             common[role]["sightings"] = []
             common[role]["lookout"] = LOOKOUT
+            common[role]["route"] = ROUTE
             common[role]["crew"] = _projected_crew()
             common[role]["threat"] = {"observations": [], "count": 0,
                                        "average_flood": 0.0, "torpedoes": []}

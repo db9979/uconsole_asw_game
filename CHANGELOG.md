@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.52
+
+Release 1.3.52 gives the frigate an autopilot route. On the Bridge a right
+click on the chart adds a waypoint (up to 8), `W` starts a search pattern from
+the ship's position and course (a zigzag of 3 NM legs, then an expanding
+square) and `Backspace` clears the route. The helm steers for each waypoint in
+turn, counts it reached within 0.3 NM and holds its course after the last one;
+speed stays with the telegraph, and any helm order takes over. The chart shows
+the route with numbered waypoints, and the Remote Crew bridge has an
+"Autopilot route" card with the same patterns and a chart mode for setting
+waypoints. Saves are now v28 (they keep the route); v27 saves no longer load.
+
 ## 1.3.51
 
 Release 1.3.51 lets the AI hunters use the frigate's ESM. When the frigate has

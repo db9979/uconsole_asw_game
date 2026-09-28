@@ -18,6 +18,7 @@ from src.core import config
 from src.core.plot import PlotLayer
 from src.core.autocrew import AutocrewController
 from src.core.callouts import CalloutLog
+from src.ship.route import Route
 from src.core.i18n import Translator, message
 from src.core.preferences import Preferences
 from src.network.connectivity import ConnectivityMonitor
@@ -603,6 +604,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # Shared operator plot layer (chart marks, rulers, bearing lines...).
         self.plot = PlotLayer()
         self._reset_plot_ui()
+        # The Bridge's autopilot route (save v28 ``route``).
+        self.route = Route()
         # Display-only CRT controls are intentionally transient: they affect no
         # observation, simulation or v10 save contract.
         self.sonar_display_palette = "green"

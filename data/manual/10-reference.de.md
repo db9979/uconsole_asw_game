@@ -158,7 +158,7 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das Boot oder ein Solo-Bro
 - Ein ausgefahrener Mast oder Schnorchelkopf erscheint auf dem Fregattenradar nur als bloßer Punkt (siehe Kapitel OPZ).
 - Das ESM des Boots hört keine Radare anderer U-Boote und keine Flugkörpersucher; es hat keine gewichtete Bibliotheksanalyse, keine Messung der Umlaufzeit und keine Bewegungsanalyse eines Senders (die Kreuzpeilung nimmt einen langsamen Sender an).
 - Die Bibliothek des Boots zeigt nur die ersten Kandidaten in Katalogreihenfolge; bei einem X-Band-Suchradar mit vielen möglichen Treffern (dem des Hubschraubers) kann der richtige Eintrag außerhalb der Liste liegen.
-- Die Kampagne wird nur von der Fregatte aus gespielt; eine Bootskampagne gibt es noch nicht. Außerhalb des Geleitzugangriffs suchen die Torpedos des Boots nur die Fregatte, und die Boote der KI greifen nie Handelsschiffe an.
+- Die Bootskampagne kennt im Stützpunkt nur Überholung und schnelles Auslaufen und übernimmt keinen Zustand der Leckwehr (nur den gesamten Rumpfschaden). Außerhalb des Geleitzugangriffs suchen die Torpedos des Boots nur die Fregatte, und die Boote der KI greifen nie Handelsschiffe an.
 - Die KI steuert ein Boot nicht auf das Ziel einer Bootsmission zu.
 - Die KI-Jäger ordnen Radarechos, ESM und Meldungen der Führung nicht dem Boot zu und schießen kein ASROC.
 - Das Sehrohr hat eine Vergrößerung und keine Kamera; Sichtungen tragen keine Identifikation über die grobe Klasse hinaus, und das Stadimeter nimmt eine Klassenlänge statt einer Masthöhe an.

@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.16
+
+Version 1.3.16 bringt die **Bootskampagne**: fünf verkettete Bootsmissionen in
+einem Seegebiet (Aufklärung, Durchbruch, Geleitzugangriff, Durchbruch,
+Geleitzugangriff), gewählt mit `Tab` im Kampagnenbildschirm. Das Boot nimmt
+Torpedos, Rumpfschaden und Ansehen bei der U-Boot-Führung von Mission zu
+Mission mit; im Stützpunkt gibt es volle Überholung oder schnelles Auslaufen.
+Gespeichert in `~/.u-jagd/boat_campaign.json`; Spielstände bleiben v23.
+
 ## 1.3.15
 
 Version 1.3.15 bringt Bootsmission 7, **Geleitzugangriff**: Die Fregatte

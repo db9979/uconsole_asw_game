@@ -158,7 +158,7 @@ When nobody sails the frigate (the uConsole plays the boat, or a solo browser pl
 - A raised mast or snorkel head is seen by the frigate's radar only as a bare blip (see the OPZ chapter).
 - The boat's ESM hears no other submarine's radar and no missile seeker; it has no scored library analysis, no scan-period measurement and no target motion analysis of an emitter (the cross-fix assumes a slow emitter).
 - The boat's library shows only the first candidates in catalogue order; for an X-band search radar with many possible matches (the helicopter's) the right entry can fall outside the list.
-- The campaign is played from the frigate only; there is no boat campaign yet. Outside the convoy attack the boat's torpedoes home on the frigate only, and the AI's boats never attack merchants.
+- The boat campaign has no port choices beyond refit and quick turnaround, and no damage-control state carried over (only the overall hull damage). Outside the convoy attack the boat's torpedoes home on the frigate only, and the AI's boats never attack merchants.
 - The AI does not steer a boat towards a boat mission's objective.
 - The AI hunters do not correlate radar blips, ESM or HQ reports with the boat, and they fire no ASROC.
 - The periscope has one magnification and no camera; sightings carry no identification beyond the coarse class, and the stadimeter assumes a class length rather than a masthead height.

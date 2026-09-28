@@ -308,6 +308,28 @@ class WeaponBattery:
             tube.loading_weapon_key = weapon_key
             tube.reload_remaining_s = self.reload_s
 
+    def limit_to(self, count: int) -> None:
+        """Keep at most ``count`` weapons aboard (a carried campaign stock):
+        stowed weapons go first, then tubes still loading, then loaded ones."""
+        count = max(0, int(count))
+        for magazine in sorted(self.magazines.values(), key=lambda item: item.key,
+                               reverse=True):
+            excess = self.remaining_total - count
+            if excess <= 0:
+                return
+            taken = min(excess, magazine.stowed)
+            magazine.stowed -= taken
+        for tube in reversed(self.tubes):
+            if self.remaining_total <= count:
+                return
+            if tube.loading_weapon_key is not None:
+                tube.loading_weapon_key = None
+                tube.reload_remaining_s = 0.0
+        for tube in reversed(self.tubes):
+            if self.remaining_total <= count:
+                return
+            tube.loaded_weapon_key = None
+
     def replenish(self) -> None:
         """Replenishment at sea: every magazine back to its mission load
         (weapons in the tubes count against their own type)."""

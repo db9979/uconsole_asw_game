@@ -12,13 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.15**
+Current release: **1.3.16**
 
-Release 1.3.15 adds boat mission 7, **Convoy attack**: the frigate escorts four
-merchants and the submarine must sink two of them. Only the crewed boat's
-torpedoes take a merchant; the AI frigate keeps station ahead of the convoy
-and prosecutes contacts only near it. The boat's orders count the merchants
-sunk. Saves stay v23.
+Release 1.3.16 adds the **boat campaign**: five linked boat missions in one sea
+area (reconnaissance, breakthrough, convoy attack, breakthrough, convoy
+attack), chosen with `Tab` on the campaign screen. The boat carries its
+torpedoes, hull damage and standing with U-boat command from mission to
+mission; at its base it takes a full refit or a quick turnaround. Kept in
+`~/.u-jagd/boat_campaign.json`; saves stay v23.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

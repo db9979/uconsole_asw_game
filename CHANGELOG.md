@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.20
+
+Release 1.3.20 adds the boat's **periscope attack computer**: every stadimeter
+reading is a mark, and two or more marks a minute apart give the target's
+course and speed, the lead angle and the torpedo's running time under the
+periscope (browser: Solution column). `Ctrl+Enter` on the periscope page
+(browser: Fire on solution) fires on the intercept course; a shot at a marked
+sonar contact uses the solution too. Saves move to **v24** (the marks are
+saved); v23 saves are no longer loaded.
+
 ## 1.3.19
 
 Release 1.3.19 makes the uConsole start visible at once: a small start window

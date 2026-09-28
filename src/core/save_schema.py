@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v23`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v24`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,
@@ -45,8 +45,11 @@ CREW_ORDERS_FIELDS = frozenset({
     "last_course", "torpedo_depth", "salvo", "pending_bearing",
     "steer_torpedo", "events", "battery_state", "keel_warned",
     "obstacle_warned", "obstacle_ahead_nm",
-    "scope_rel_deg", "sightings", "sightings_seen",
+    "scope_rel_deg", "sightings", "sightings_seen", "tdc",
 })
+# Save v24: the attack computer's stadimeter marks, ``{ref: {target_id, marks}}``
+# with marks ``[t, x, y]`` in time order.
+CREW_TDC_FIELDS = frozenset({"target_id", "marks"})
 # One periscope sighting of the crewed boat (plan 1.3, phase 9).
 CREW_SIGHTING_FIELDS = frozenset({
     "ref", "target_id", "kind", "cls", "bearing", "span_deg", "aspect",

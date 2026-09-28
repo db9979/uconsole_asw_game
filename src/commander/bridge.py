@@ -73,7 +73,7 @@ import numpy as np
 
 from src.audio.receiver import smooth_limit
 from src.sonar.sonar import SonarSystem
-from src.core import config, opfor
+from src.core import attack_computer, config, opfor
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
 from src.sensors import lookout_id
@@ -636,6 +636,14 @@ def _uboot_fire(game, boat, params, bindings):
             return "unknown_ref"
         if not 0 <= game.sim_t - contact.last_seen < config.SONAR_CONTACT_LOST_S:
             return "stale_ref"
+        solution = attack_computer.solution_for_target(boat, contact.target_id, game.sim_t)
+        if solution is not None:
+            # The periscope's attack computer has a course and speed on it.
+            aim = attack_computer.shot(boat, solution)
+            if aim is not None:
+                return _uboot_result(sub.command_fire(
+                    aim[0], aim[1], now=game.sim_t, depth_m=params["depth_m"],
+                    salvo=params["salvo"]))
         bearing = (contact.passive_bearing if contact.passive_bearing is not None
                    else contact.bearing)
         positioned = (contact.observed_x is not None and contact.observed_y is not None
@@ -742,6 +750,13 @@ def _uboot_scope_mark(game, boat, params, _bindings):
     return _uboot_result(opfor.stadimeter(game, boat))
 
 
+def _uboot_scope_fire(game, boat, params, _bindings):
+    """Fire on the attack computer's solution of the crosshair sighting."""
+    if not boat.sub._crew_ready():
+        return "not_ready"
+    return _uboot_result(attack_computer.fire_on_crosshair(game, boat))
+
+
 def _uboot_esm_classify(game, boat, params, _bindings):
     if not boat.sub._crew_ready():
         return "not_ready"
@@ -779,6 +794,7 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_bottom": _uboot_bottom,
     "uboot_scope_bearing": _uboot_scope_bearing,
     "uboot_scope_mark": _uboot_scope_mark,
+    "uboot_scope_fire": _uboot_scope_fire,
     "uboot_esm_classify": _uboot_esm_classify,
     "uboot_esm_plot": _uboot_esm_plot,
 }

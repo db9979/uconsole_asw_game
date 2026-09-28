@@ -29,6 +29,7 @@ from src.core.save_schema import (
     WEAPON_SETTINGS_FIELDS,
     COMPARTMENT_FIELDS, COMPARTMENT_STATES, CREW_BATTERY_STATES, CREW_FEED_FIELDS,
     CREW_FIELDS, CREW_ORDERS_FIELDS, CREW_SIGHTING_FIELDS, CREW_STATION_FIELDS,
+    CREW_TDC_FIELDS,
     CREW_WIRE_FIELDS,
     CREW_WIRE_STATES, DAMAGE_FIELDS, PING_INTERCEPTS_MAX, RNG_STREAMS, SAVE_ROOT_FIELDS, SHIP_FIELDS,
     SUB_CREW_FIELDS, WORLD_FIELDS)
@@ -179,6 +180,24 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
                     or not bounded(row["range_t"], row["first_t"], sim_t)))):
             return False
         refs.add(row["ref"])
+    tdc = orders["tdc"]
+    if not isinstance(tdc, dict) or len(tdc) > config.UBOOT_TDC_TARGETS_MAX:
+        return False
+    for ref, entry in tdc.items():
+        if (not isinstance(ref, str) or not 1 <= len(ref) <= 16
+                or not isinstance(entry, dict) or set(entry) != CREW_TDC_FIELDS
+                or type(entry["target_id"]) is not int
+                or entry["target_id"] not in sighting_ids
+                or not isinstance(entry["marks"], list)
+                or not 1 <= len(entry["marks"]) <= config.UBOOT_TDC_MARKS_MAX):
+            return False
+        last_t = -1.0
+        for mark in entry["marks"]:
+            if (not isinstance(mark, list) or len(mark) != 3
+                    or not bounded(mark[0], 0.0, sim_t) or mark[0] <= last_t
+                    or not bounded(mark[1], -1e5, 1e5) or not bounded(mark[2], -1e5, 1e5)):
+                return False
+            last_t = mark[0]
     seen = orders["sightings_seen"]
     if (not isinstance(seen, list) or len(seen) > 64
             or any(not isinstance(item, str) or not 1 <= len(item) <= 16 for item in seen)

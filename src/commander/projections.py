@@ -1128,6 +1128,17 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
         if row["classification"] is not None:
             source_classifications.append(dict(ref=row["ref"], source=row["source"],
                                                classification=row["classification"]))
+    raw_refs = {row["ref"] for row in opz_observations}
+    opz_suggestions = []
+    for suggestion in game.opz_suggestions():
+        refs = [ref_by_track.get(key) for key in suggestion.members]
+        if any(ref is None or ref not in raw_refs for ref in refs):
+            continue
+        opz_suggestions.append(dict(
+            key="+".join(refs), refs=refs, bearing=_number(round(suggestion.bearing, 1)),
+            bearing_delta_deg=_number(round(suggestion.bearing_delta_deg, 1)),
+            distance_nm=(None if suggestion.distance_nm is None
+                         else _number(round(suggestion.distance_nm, 2)))))
     operational = {
         "bridge": dict(navigation=_own_navigation(game),
                        orders=dict(station_down=game.damage.station_down("bridge"),
@@ -1162,7 +1173,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                             direct_fire_refs["weapons"]),
         "damage": _damage(game),
         "opz": dict(observations=opz_observations,
-                      fusions=opz_fusions,
+                      fusions=opz_fusions, suggestions=opz_suggestions,
                       radar=dict(surface=bool(game.surface_radar_on),
                                  air=bool(game.air_radar_on),
                                  range_nm=_number(game.radar_range_nm),

@@ -587,6 +587,7 @@ def test_bridge_and_action_callback_never_run_on_transport_thread(server):
     ("opz", "opz_set_track_id", {"ref": "opaque", "label": "SUB-ALFA"}),
     ("opz", "opz_create_fusion", {"refs": ["one", "two"]}),
     ("opz", "opz_dissolve_fusion", {"ref": "fusion"}),
+    ("opz", "opz_dismiss_suggestion", {"refs": ["one", "two"]}),
     ("opz", "opz_set_radar", {"domain": "air", "enabled": False}),
     ("opz", "opz_set_range", {"range_nm": config.RADAR_RANGE_SCALES_NM[-1]}),
 ])

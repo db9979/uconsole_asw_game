@@ -532,6 +532,22 @@ NATO_AFFILIATION_LABELS = {
 OPZ_FUSION_MAX = 32
 OPZ_FUSION_MEMBER_MIN = 2
 OPZ_FUSION_MEMBER_MAX = 8
+# OPZ correlation suggestions (src/sensors/fusion.py ``suggest_correlations``):
+# two published reports from different sensors on the same bearing from the
+# frigate. The bearing gate is the base plus both reports' bearing
+# uncertainties (root-sum-square, missing ones count as the default), capped;
+# reports with positions must also lie within the position gate (plus a share
+# of their range). Only reports seen within the age limit are compared.
+OPZ_SUGGEST_MAX = 4
+OPZ_SUGGEST_CANDIDATES_MAX = 48
+OPZ_SUGGEST_DISMISSED_MAX = 32
+OPZ_SUGGEST_BEARING_BASE_DEG = 1.5
+OPZ_SUGGEST_BEARING_DEFAULT_UNC_DEG = 2.0
+OPZ_SUGGEST_BEARING_MAX_DEG = 8.0
+OPZ_SUGGEST_POSITION_NM = 1.5
+OPZ_SUGGEST_POSITION_RANGE_SHARE = 0.1
+OPZ_SUGGEST_MAX_AGE_S = 30.0
+OPZ_SUGGEST_OBSERVER_NM = 0.5
 
 # M10: Telegraph & Maschinenraum (diskrete Motorenbefehle)
 TELEGRAPH_ORDERS = (

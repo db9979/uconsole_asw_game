@@ -39,6 +39,10 @@ MPA_FIELDS = ("state", "airborne", "x", "y", "course", "bearing", "range_nm",
               "sorties_left", "buoys", "torpedoes", "radar", "buoy_mode", "pattern",
               "pattern_points", "datalink", "relayed")
 MPA_STATES = ("BASE", "TRANSIT", "STATION", "RTB")
+# The OPZ's correlation suggestions (``src/sensors/fusion.py``): two refs of
+# the role's own published reports on the same bearing, never applied until
+# the operator fuses them (``opz_create_fusion``) or dismisses them.
+OPZ_SUGGESTION_FIELDS = ("key", "refs", "bearing", "bearing_delta_deg", "distance_nm")
 RADIO_TASK_STATES = ("offered", "active", "done", "failed", "declined")
 
 # The common ``weather_station`` block: own-ship atmosphere (every role) and
@@ -149,7 +153,7 @@ ROLE_SHAPES = {
                 "target_choices", "depth_m", "tubes", "settings", "own_weapons",
                 "active_assets"),
     "damage": ("compartments", "teams", "total", "sunk", "stability", "crew"),
-    "opz": ("observations", "fusions", "radar", "defense", "asm_observations",
+    "opz": ("observations", "fusions", "suggestions", "radar", "defense", "asm_observations",
             "source_classifications", "radar_blips", "designated_target_ref", "own_assets"),
     "radio": ("observations", "logged_fixes", "logged_bearings", "messages", "station_down",
               "navigation", "tactical", "tasks"),

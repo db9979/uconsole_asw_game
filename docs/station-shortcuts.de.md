@@ -1,4 +1,4 @@
-# U-Jagd 1.3.52 - Stations- und Tastenkürzel
+# U-Jagd 1.3.53 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -148,6 +148,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Shift+F` | OPZ-Kontaktdomainfilter wechseln |
 | `J` | Gemeinsame bedienersichtbare Track-ID eingeben |
 | `Space / L / Shift+L` | Rohmeldungen markieren und manuelle Fusion bilden/auflösen (Shift+L) |
+| `U / Shift+U` | Obersten Zuordnungsvorschlag fusionieren (Shift+U verwirft ihn) |
 | `Delete / H` | Lokal unterdrücken/wiederherstellen; H verwaltet Unterdrückte |
 | `M` | CIC-Track an Sonar/Waffen übergeben |
 | `Bild Auf / Ab` | Radarbereich 10/20/40/80/120 NM |

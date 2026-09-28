@@ -125,6 +125,7 @@ STATION_HELP = {
           ("Shift+F", "help.control.opz_filter"),
           ("J", "help.control.opz_track_id"),
           ("Space / L / Shift+L", "help.control.opz_fusion"),
+          ("U / Shift+U", "help.control.opz_suggestion"),
           ("Delete / H", "help.control.opz_suppress"),
           ("M", "help.control.designate"), ("help.key.page_spaced", "help.control.radar_range"),
          ("<- / ->", "help.control.asm_track"), ("E / Ctrl+Enter", "help.control.essm"),

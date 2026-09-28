@@ -1085,6 +1085,11 @@ class EventMixin:
                     self._dissolve_opz_fusion()
                 else:
                     self._create_opz_fusion()
+            elif e.key == pygame.K_u and self.station is Station.OPZ:
+                if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    self._dismiss_opz_suggestion()
+                else:
+                    self._accept_opz_suggestion()
             elif e.key == pygame.K_j and self.station is Station.OPZ:
                 self._begin_track_id_input()
             elif e.key == pygame.K_j and self.station is Station.HELICOPTER:

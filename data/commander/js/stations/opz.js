@@ -17,6 +17,16 @@ export function renderOpzStation(payload) {
   fillFireTargets("opz-fire-target", payload.asm_observations);
   stationRows($("opz-observations"), payload.observations, tacticalEntries);
   stationRows($("opz-fusions"), payload.fusions, (row) => [...tacticalEntries(row), ["fusion_members", row.members.join(", ")]]);
+  // Correlation suggestions: the operator fuses one through the ordinary
+  // manual fusion action or dismisses it; nothing is fused by itself.
+  const labels = new Map(payload.observations.map((row) => [row.ref, row.label]));
+  stationRows($("opz-suggestions"), payload.suggestions, (row) => [
+    ["reference", row.refs.map((ref) => labels.get(ref) ?? ref).join(" + ")],
+    ["bearing", unit(row.bearing, "\u00b0", 0)],
+    ["suggestion_bearing_delta", unit(row.bearing_delta_deg, "\u00b0", 1)],
+    ["suggestion_distance", unit(row.distance_nm, "NM")]], "station_none", (row) => [
+    actionButton("opz_confirm_suggestion", "opz_create_fusion", {refs: [...row.refs]}),
+    actionButton("opz_dismiss_suggestion", "opz_dismiss_suggestion", {refs: [...row.refs]})]);
   stationRows($("opz-classifications"), payload.source_classifications, (row) => [["reference", row.ref],
     ["source", row.source], ["classification", row.classification]]);
   const ship = payload.own_assets.ship;

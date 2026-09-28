@@ -54,6 +54,8 @@ def render_block() -> str:
     lines.append(f"    row: {_array(schema.MPA_FIELDS)},\n")
     lines.append(f"    states: {_array(schema.MPA_STATES)},\n")
     lines.append("  };\n")
+    lines.append("  const opzSuggestionFields = "
+                 f"{_array(schema.OPZ_SUGGESTION_FIELDS)};\n")
     lines.append("  const helicopterTacticalFields = "
                  f"{_array(schema.HELICOPTER_TACTICAL_FIELDS)};\n")
     lines.append("  const weatherFields = {\n")

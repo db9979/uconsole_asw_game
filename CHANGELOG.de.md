@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.53
+
+Version 1.3.53 gibt der OPZ Zuordnungsvorschläge. Melden zwei eigene Sensoren
+des Schiffs (Sonar, Radar, ESM, Ausguck) einen Kontakt in derselben Peilung
+innerhalb ihrer Unsicherheit (und, wo beide eine Position haben, nah
+beieinander), bietet die OPZ das Paar zur Fusion an: auf der uConsole stehen
+bis zu zwei Vorschläge in der Seitenleiste von Seite 1, `U` fusioniert den
+obersten und `Umschalt+U` verwirft ihn; die Remote-Crew-OPZ listet bis zu vier
+mit Knöpfen zum Fusionieren und Verwerfen. Verglichen werden nur
+veröffentlichte Meldungen, die höchstens 30 s alt sind; ohne den Bediener wird
+nichts fusioniert. Spielstände bleiben v28.
+
 ## 1.3.52
 
 Version 1.3.52 gibt der Fregatte eine Autopilot-Route. Auf der Brücke setzt

@@ -181,6 +181,13 @@ def _opz_dissolve_fusion(game, params, bindings):
     return game.dissolve_opz_fusion(binding[0])
 
 
+def _opz_dismiss_suggestion(game, params, bindings):
+    keys = [_opz_id(bindings, ref) for ref in params["refs"]]
+    if any(key is None for key in keys):
+        return "unknown_ref"
+    return game.dismiss_opz_suggestion(keys)
+
+
 def _opz_set_ciws(game, params, _bindings):
     return game.set_ciws_authorized(params["enabled"])
 
@@ -860,6 +867,7 @@ _V2_ACTION_HANDLERS = {
     "opz_set_track_id": _opz_set_track_id,
     "opz_create_fusion": _opz_create_fusion,
     "opz_dissolve_fusion": _opz_dissolve_fusion,
+    "opz_dismiss_suggestion": _opz_dismiss_suggestion,
     "opz_mark_blip": _opz_mark_blip,
     "opz_set_radar": _opz_set_radar,
     "opz_set_ciws": _opz_set_ciws,

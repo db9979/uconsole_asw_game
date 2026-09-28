@@ -14,19 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.52**
+Aktuelle Version: **1.3.53**
 
-Version 1.3.52 gibt der Fregatte eine Autopilot-Route. Auf der Brücke setzt
-ein Rechtsklick in die Karte einen Wegpunkt (bis zu 8), `W` startet ein
-Suchmuster ab Position und Kurs des Schiffs (Zickzack mit 3 sm langen
-Schlägen, dann wachsendes Quadrat), und `Rücktaste` löscht die Route. Das
-Ruder steuert die Wegpunkte nacheinander an, zählt einen innerhalb von 0,3 sm
-als erreicht und hält nach dem letzten den Kurs; die Fahrt bleibt beim
-Maschinentelegrafen, und jeder Ruderbefehl übernimmt. Die Karte zeigt die
-Route mit nummerierten Wegpunkten, und die Remote-Crew-Brücke hat eine Karte
-„Autopilot-Route“ mit denselben Mustern und einem Kartenmodus zum Setzen von
-Wegpunkten. Spielstände sind jetzt v28 (sie behalten die Route); v27-Stände
-laden nicht mehr.
+Version 1.3.53 gibt der OPZ Zuordnungsvorschläge. Melden zwei eigene Sensoren
+des Schiffs (Sonar, Radar, ESM, Ausguck) einen Kontakt in derselben Peilung
+innerhalb ihrer Unsicherheit (und, wo beide eine Position haben, nah
+beieinander), bietet die OPZ das Paar zur Fusion an: auf der uConsole stehen
+bis zu zwei Vorschläge in der Seitenleiste von Seite 1, `U` fusioniert den
+obersten und `Umschalt+U` verwirft ihn; die Remote-Crew-OPZ listet bis zu vier
+mit Knöpfen zum Fusionieren und Verwerfen. Verglichen werden nur
+veröffentlichte Meldungen, die höchstens 30 s alt sind; ohne den Bediener wird
+nichts fusioniert. Spielstände bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.53
+
+Release 1.3.53 gives the OPZ correlation suggestions. When two of the ship's
+own sensors (sonar, radar, ESM, lookout) report a contact on the same bearing
+within their uncertainty (and, where both have positions, close together), the
+OPZ offers the pair for fusion: on the uConsole up to two suggestions stand in
+the page 1 sidebar, `U` fuses the top one and `Shift+U` dismisses it; the
+Remote Crew OPZ lists up to four with Fuse and Dismiss buttons. Suggestions
+only compare published reports no older than 30 s; nothing is fused without
+the operator. Saves stay v28.
+
 ## 1.3.52
 
 Release 1.3.52 gives the frigate an autopilot route. On the Bridge a right

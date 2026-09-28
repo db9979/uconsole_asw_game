@@ -97,9 +97,10 @@ def test_r10_submarine_components_preserve_draw_order_and_add_finite_decoys():
         assert machine_acoustics(CATALOG, key, submarine.speed) is None
         assert set(submarine.sensor_suite.controllers) == {
             f"sensor.{key}.sonar", f"sensor.{key}.esm"}
-        assert submarine.weapon_battery.remaining_total == profile.torpedoes
+        # The tubes hold the legacy count; as many reloads again lie in the racks.
+        assert submarine.weapon_battery.remaining_total == 2 * profile.torpedoes
         assert submarine.weapon_battery.ready_count == profile.torpedoes
-        assert submarine.weapon_battery.reload_s == 0
+        assert submarine.weapon_battery.reload_s in (120, 180, 240)
         assert submarine.countermeasure_store.remaining_total == 12
 
 

@@ -239,6 +239,8 @@ _UBOOT_HELP = (
         ("help.key.uboot_fire", "help.uboot.fire"),
         ("F", "help.uboot.fire_bearing"),
         ("X", "help.uboot.decoy"),
+        ("M", "help.uboot.tube_load"),
+        ("Shift+M", "help.uboot.tube_flood"),
         ("help.key.uboot_blow", "help.uboot.blow"),
         ("T", "help.uboot.torpedo_depth"),
         ("Y", "help.uboot.salvo"),

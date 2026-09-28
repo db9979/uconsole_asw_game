@@ -87,7 +87,8 @@ class CrewOrders:
               "dc_power_lost": "schaden", "dc_power_restored": "schaden",
               "radio_sending": "funk", "radio_sent": "funk", "radio_aborted": "funk",
               "radio_copied": "funk", "radio_copied_report": "funk",
-              "detonation_near": "sonar", "detonation_far": "sonar"}
+              "detonation_near": "sonar", "detonation_far": "sonar",
+              "tube_loaded": "waffen", "tube_flooded": "waffen"}
 
     def __init__(self):
         self.silent = False
@@ -104,6 +105,9 @@ class CrewOrders:
         self._sightings_seen = set()
         # Attack computer: stadimeter marks by sighting (``attack_computer``).
         self.tdc = {}
+        # Flood state of each torpedo tube, ``[state, seconds left]`` with the
+        # state in ``UBOOT_TUBE_STATES`` (loading itself is the boat's battery).
+        self.tubes = []
         # Wire-guided crew torpedoes: EnemyTorpedo id -> CrewWire.
         self.wires = {}
         self._known_torpedoes = set()
@@ -161,6 +165,7 @@ class CrewOrders:
             tdc={ref: dict(target_id=entry["target_id"],
                            marks=[list(mark) for mark in entry["marks"]])
                  for ref, entry in sorted(self.tdc.items())},
+            tubes=[list(row) for row in self.tubes],
             wires={str(torpedo_id): wire.to_save()
                    for torpedo_id, wire in sorted(self.wires.items())},
             known_torpedoes=sorted(self._known_torpedoes),
@@ -187,6 +192,7 @@ class CrewOrders:
         self.tdc = {ref: dict(target_id=entry["target_id"],
                               marks=[list(mark) for mark in entry["marks"]])
                     for ref, entry in data["tdc"].items()}
+        self.tubes = [list(row) for row in data["tubes"]]
         self.wires = {int(torpedo_id): CrewWire.from_save(int(torpedo_id), wire)
                       for torpedo_id, wire in data["wires"].items()}
         self._known_torpedoes = set(data["known_torpedoes"])
@@ -232,6 +238,32 @@ class CrewWire:
         return wire
 
 
+def tube_states(sub) -> list:
+    """Each tube as ``(state, seconds)``: empty, loading, dry, flooding, flooded
+    (the AI's tubes, which nobody floods, read as loaded and flooded)."""
+    battery = sub.weapon_battery
+    if battery is None:
+        return []
+    crew = sub.crew_tubes
+    rows = []
+    for tube in battery.tubes:
+        if tube.loading_weapon_key is not None:
+            rows.append(("loading", tube.reload_remaining_s))
+        elif tube.loaded_weapon_key is None:
+            rows.append(("empty", None))
+        elif crew is None:
+            rows.append(("flooded", None))
+        else:
+            state, left = crew[tube.index]
+            rows.append((state, left if state == "flooding" else None))
+    return rows
+
+
+def tubes_flooded(sub) -> int:
+    return sum(state == "flooded" for state, _left in tube_states(sub))
+
+
+
 class CrewedBoat:
     """One crewed submarine: the boat, its sonar workstation and its feed."""
 
@@ -240,6 +272,10 @@ class CrewedBoat:
         self.sub_id = sub.id
         self.orders = CrewOrders()
         sub.crew = self.orders
+        # The crew takes over with the loaded tubes flooded, ready to fire.
+        battery = sub.weapon_battery
+        self.orders.tubes = ([["flooded" if tube.loaded_weapon_key is not None else "dry", 0.0]
+                              for tube in battery.tubes] if battery is not None else [])
         # Watches, fatigue and morale of the boat's crew (saved; the game
         # replaces it with one that knows the current sim time on claim).
         self.watch = CrewState()

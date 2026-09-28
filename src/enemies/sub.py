@@ -480,9 +480,16 @@ class Sub:
             profile = self.enemy_torpedo_profile
             fired_key = None
             if self.weapon_battery is not None:
-                fired_key = self.weapon_battery.fire()
+                tubes = self.crew_tubes
+                # A crew fires only flooded tubes and loads each one itself.
+                fired_key = self.weapon_battery.fire(
+                    tubes=None if tubes is None else {
+                        index for index, row in enumerate(tubes) if row[0] == "flooded"},
+                    auto_reload=tubes is None)
                 if fired_key is None:
                     break
+                if tubes is not None:
+                    tubes[self.weapon_battery.last_fired_tube] = ["dry", 0.0]
                 runtime_key = self.runtime_catalog.weapons[
                     fired_key].runtime_profile_key
                 if runtime_key is None:
@@ -718,9 +725,15 @@ class Sub:
         if self.endurance is not None:
             self._update_air(dt)
         if self.weapon_battery is not None:
-            # Foul air slows the torpedo gang's reloading.
-            self.weapon_battery.update(dt * self.crew_efficiency())
+            # Foul air slows the torpedo gang's reloading and flooding.
+            tubes = self.crew_tubes
+            loading = [tube.loading_weapon_key is not None
+                       for tube in self.weapon_battery.tubes]
+            self.weapon_battery.update(dt * self.crew_efficiency(),
+                                       auto_reload=tubes is None)
             self.torpedoes_left = self.weapon_battery.remaining_total
+            if tubes is not None:
+                self._update_tubes(dt * self.crew_efficiency(), tubes, loading)
         if self.countermeasure_store is not None:
             self.countermeasure_store.update(dt)
         if observation is not None and not isinstance(observation, PlatformObservation):
@@ -1407,6 +1420,82 @@ class Sub:
             return "not_ready"
         return self.damage_control.set_bulkhead(compartment, closed)
 
+    @property
+    def crew_tubes(self):
+        """The crew's flood state per tube (``[state, seconds left]``), or None
+        when nobody crews the boat (the AI's tubes fire and reload by themselves)."""
+        crew = self.crew
+        tubes = getattr(crew, "tubes", None) if self.manual else None
+        if (not tubes or self.weapon_battery is None
+                or len(tubes) != len(self.weapon_battery.tubes)):
+            return None
+        return tubes
+
+    def _update_tubes(self, dt: float, tubes, was_loading) -> None:
+        for index, row in enumerate(tubes):
+            tube = self.weapon_battery.tubes[index]
+            if was_loading[index] and tube.loaded_weapon_key is not None:
+                self.crew.event("tube_loaded", tube=f"{index + 1}")
+            if tube.loaded_weapon_key is None and row[0] != "dry":
+                tubes[index] = ["dry", 0.0]
+            elif row[0] == "flooding":
+                left = max(0.0, row[1] - dt)
+                tubes[index] = ["flooded", 0.0] if left <= 1e-9 else ["flooding", left]
+                if left <= 1e-9:
+                    self.crew.event("tube_flooded", tube=f"{index + 1}")
+
+    def _tube_order_ready(self):
+        if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):
+            return "not_ready"
+        if self.crew_tubes is None:
+            return "not_ready"
+        if self.damage_control.down("bow"):
+            return "uboot_compartment_down"     # torpedo room flooded or burning
+        return None
+
+    def command_load_tube(self, tube=None):
+        """Load one empty tube from the racks (the first empty one by default)."""
+        reason = self._tube_order_ready()
+        if reason is not None:
+            return reason
+        battery = self.weapon_battery
+        if tube is None:
+            tube = next((item.index for item in battery.tubes
+                         if item.loaded_weapon_key is None
+                         and item.loading_weapon_key is None), None)
+            if tube is None:
+                return "uboot_tubes_full"
+        if type(tube) is not int or not 0 <= tube < len(battery.tubes):
+            return "invalid_value"
+        row = battery.tubes[tube]
+        if row.loaded_weapon_key is not None or row.loading_weapon_key is not None:
+            return "uboot_tubes_full"
+        if not battery.load_tube(tube):
+            return "no_torpedoes"
+        self.crew_tubes[tube] = ["dry", 0.0]
+        return True
+
+    def command_flood_tube(self, tube=None):
+        """Flood a loaded tube and open its outer door: only a flooded tube fires.
+        Flooding takes ``UBOOT_TUBE_FLOOD_S`` and is a short, audible transient."""
+        reason = self._tube_order_ready()
+        if reason is not None:
+            return reason
+        battery, tubes = self.weapon_battery, self.crew_tubes
+        if tube is None:
+            tube = next((item.index for item in battery.tubes
+                         if item.loaded_weapon_key is not None
+                         and tubes[item.index][0] == "dry"), None)
+            if tube is None:
+                return "uboot_no_dry_tube"
+        if type(tube) is not int or not 0 <= tube < len(battery.tubes):
+            return "invalid_value"
+        if battery.tubes[tube].loaded_weapon_key is None or tubes[tube][0] != "dry":
+            return "uboot_no_dry_tube"
+        tubes[tube] = ["flooding", float(config.UBOOT_TUBE_FLOOD_S)]
+        self.transient_left = max(self.transient_left, config.UBOOT_TUBE_FLOOD_NOISE_S)
+        return True
+
     def fire_readiness(self, bearing=None, salvo: int = 1):
         """Why a crew torpedo shot is impossible now, or None when ready."""
         if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):
@@ -1421,6 +1510,11 @@ class Sub:
             return "reloading"
         if len(self.pending_torpedoes) + salvo > SUB_MAX_PENDING_TORPEDOES:
             return "reloading"
+        tubes = self.crew_tubes
+        if tubes is not None and sum(
+                row[0] == "flooded" and self.weapon_battery.tubes[index].loaded_weapon_key
+                is not None for index, row in enumerate(tubes)) < salvo:
+            return "uboot_tube_dry"
         if bearing is not None and self.weapon_battery is not None:
             launcher = self.runtime_catalog.launchers[self.weapon_battery.launcher_key]
             arc_center = (self.course + launcher.arc_center_deg) % 360.0

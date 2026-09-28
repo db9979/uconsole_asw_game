@@ -167,6 +167,8 @@ class WeaponBattery:
         # The type the tubes load next (the operator's selection; not saved
         # by the battery, the game restores it from its weapon settings).
         self.preferred_weapon_key = None
+        # The tube the last ``fire`` emptied (transient, for the caller).
+        self.last_fired_tube = None
         for tube in self.tubes[:min(int(ready_count), self.mount_count)]:
             weapon_key = self._reserve_weapon()
             if weapon_key is not None:
@@ -286,17 +288,34 @@ class WeaponBattery:
                   if tube.loading_weapon_key is not None]
         return min(values, default=0.0)
 
-    def fire(self, weapon_key: str | None = None) -> str | None:
+    def fire(self, weapon_key: str | None = None, *, tubes=None,
+             auto_reload: bool = True) -> str | None:
+        """Fire the first loaded tube (of ``tubes`` when given, by index);
+        without ``auto_reload`` the tube stays empty until it is loaded."""
         tube = next((item for item in self.tubes
                      if item.loaded_weapon_key is not None
+                     and (tubes is None or item.index in tubes)
                      and (weapon_key is None
                           or item.loaded_weapon_key == weapon_key)), None)
         if tube is None:
             return None
         fired = tube.loaded_weapon_key
         tube.loaded_weapon_key = None
-        self._start_reload(tube, fired)
+        self.last_fired_tube = tube.index
+        if auto_reload:
+            self._start_reload(tube, fired)
         return fired
+
+    def load_tube(self, index: int, preferred: str | None = None) -> bool:
+        """Start loading one empty tube from the magazine (a crew's order)."""
+        if not 0 <= index < len(self.tubes):
+            return False
+        tube = self.tubes[index]
+        if tube.loaded_weapon_key is not None or tube.loading_weapon_key is not None:
+            return False
+        self._start_reload(tube, preferred if preferred is not None
+                           else self.preferred_weapon_key)
+        return tube.loaded_weapon_key is not None or tube.loading_weapon_key is not None
 
     def _start_reload(self, tube: TubeState, preferred: str | None = None) -> None:
         weapon_key = self._reserve_weapon(preferred)
@@ -344,11 +363,14 @@ class WeaponBattery:
             in_tubes[magazine.weapon_key] = held - counted
             magazine.stowed = max(magazine.stowed, magazine.capacity - counted)
 
-    def update(self, dt: float, readiness_scale: float = 1.0) -> None:
+    def update(self, dt: float, readiness_scale: float = 1.0, *,
+               auto_reload: bool = True) -> None:
+        """Advance loading; ``auto_reload`` refills empty tubes on its own (a
+        crewed submarine loads each tube on the crew's order instead)."""
         step = max(0.0, float(dt) * max(0.0, readiness_scale))
         for tube in self.tubes:
             if tube.loading_weapon_key is None:
-                if tube.loaded_weapon_key is None:
+                if tube.loaded_weapon_key is None and auto_reload:
                     self._start_reload(tube, self.preferred_weapon_key)
                 continue
             tube.reload_remaining_s = max(0.0, tube.reload_remaining_s - step)

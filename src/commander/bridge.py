@@ -671,6 +671,14 @@ def _uboot_decoy(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_decoy())
 
 
+def _uboot_tube_load(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_load_tube(params["tube"]))
+
+
+def _uboot_tube_flood(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_flood_tube(params["tube"]))
+
+
 def _uboot_evade(game, boat, params, _bindings):
     from src.core import boat_threat
     return _uboot_result(boat_threat.evade(game, boat))
@@ -776,6 +784,8 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_set_depth": _uboot_set_depth,
     "uboot_fire": _uboot_fire,
     "uboot_decoy": _uboot_decoy,
+    "uboot_tube_load": _uboot_tube_load,
+    "uboot_tube_flood": _uboot_tube_flood,
     "uboot_blow": _uboot_blow,
     "uboot_snorkel": _uboot_snorkel,
     "uboot_charge_rate": _uboot_charge_rate,

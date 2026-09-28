@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { duration, number, stateText, t, unit } from "../core/format.js";
-import { fillFireTargets, metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
+import { actionButton, fillFireTargets, metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 import { renderCrew } from "../views/crew.js";
 import { drawBoatBallast, drawBoatDamage, drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
 
@@ -19,6 +19,17 @@ function showStationCards(role) {
     element.hidden = !element.dataset.ubootStations.split(" ").includes(role);
   $("station-uboot-title").textContent = t(`station_${role}`);
   document.querySelector("#station-uboot .uboot-grid").dataset.role = role;
+}
+
+// The torpedo room: each tube's state, with its load or flood order.
+function renderTubes(tubes) {
+  $("uboot-tubes").replaceChildren(...(tubes.length ? tubes.map((row, index) => {
+    const line = node("p", undefined, "uboot-log-line");
+    line.append(node("span", t(`uboot_tube_${row.state}`, {tube: index + 1, seconds: number(row.seconds, 0)})));
+    if (row.state === "empty") line.append(actionButton("uboot_tube_load", "uboot_tube_load", {tube: index}));
+    if (row.state === "dry") line.append(actionButton("uboot_tube_flood", "uboot_tube_flood", {tube: index}));
+    return line;
+  }) : [node("p", t("station_none"), "uboot-log-line")]));
 }
 
 // The boat log as compact lines, newest first.
@@ -458,6 +469,7 @@ export function renderUbootStation(payload) {
     ["uboot_tubes_ready", number(weapons.tubes_ready, 0)], ["reload", unit(weapons.reload_s, "s", 0)],
     ["uboot_decoys", number(weapons.decoys, 0)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
+  renderTubes(weapons.tubes);
   metrics($("uboot-alarms"), [
     ["uboot_ping_heard", alarmText(alarms.ping_age_s, alarms.ping_bearing)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);

@@ -587,10 +587,20 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
         draw_depth_ladder(s, game, boat, inner)
 
 
+def tube_line(sub):
+    """``1 ready · 2 dry · 3 loading 40 s · 4 empty`` (localized)."""
+    parts = []
+    for index, (state, left) in enumerate(opfor.tube_states(sub), start=1):
+        parts.append(message(f"uboot.tube.{state}", tube=index,
+                             seconds=_fmt(left, "{:.0f}")))
+    return raw_text(" · ".join(str(localize(part)) for part in parts)) if parts \
+        else raw_text("--")
+
+
 def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
     sub = boat.sub
     battery = sub.weapon_battery
-    box_h = min(150, h // 2)
+    box_h = min(172, h // 2)
     fire = layout.box(s, (x, y, w, box_h), "uboot.panel.fire_control",
                       border=config.COLOR_TEXT)
     fx, fy, fw, _ = fire
@@ -602,7 +612,7 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
     layout.status_line(s, fx, fy + 36, half, "uboot.label.torpedoes",
                        raw_text(f"{int(sub.torpedoes_left)}"), size=17, label_w=150)
     layout.status_line(s, fx, fy + 62, half, "uboot.label.tubes_ready",
-                       raw_text(f"{int(battery.ready_count) if battery else 0}"
+                       raw_text(f"{opfor.tubes_flooded(sub)}"
                                 f"/{int(battery.mount_count) if battery else 0}"),
                        size=17, label_w=150)
     reload_s = battery.next_reload_s if battery is not None and battery.loading_count else None
@@ -623,6 +633,8 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
         depth=_fmt(orders.torpedo_depth) if orders.torpedo_depth else message("uboot.value.auto_depth"),
         salvo=orders.salvo, wires=wired),
         (fx + half + 10, fy + 88, half, 20), config.COLOR_TEXT_DIM, size=15)
+    layout.blit_line(s, message("uboot.line.tubes", tubes=tube_line(sub)),
+                     (fx, fy + 112, fw, 20), config.COLOR_TEXT, size=15)
     contacts_y = y + box_h + 10
     listing = layout.box(s, (x, contacts_y, w, y + h - contacts_y), "uboot.local.contacts")
     lx, ly, lw, lh = listing
@@ -680,7 +692,9 @@ _FOOTERS = {
     ("uboot_weapons", "UBOOT_WEAPONS"): (("↑/↓", "uboot.footer.contact"),
                                          ("help.key.uboot_fire", "uboot.footer.fire"),
                                          ("F", "uboot.footer.fire_bearing"),
-                                         ("W", "uboot.footer.wire"), ("X", "uboot.footer.decoy")),
+                                         ("W", "uboot.footer.wire"), ("X", "uboot.footer.decoy"),
+                                         ("M", "uboot.footer.tube_load"),
+                                         ("Shift+M", "uboot.footer.tube_flood")),
     ("uboot_radio", "UBOOT_RADIO"): (("help.key.enter", "uboot.footer.radio_send"),
                                      ("P", "uboot.footer.mast"), ("Q/E", "uboot.footer.chart")),
     ("uboot_engine", "UBOOT_ENGINE"): (("+/-", "uboot.footer.telegraph"),

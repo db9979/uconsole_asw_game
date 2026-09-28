@@ -84,7 +84,7 @@ def test_catalog_submarine_battery_uses_typed_pilot_profile():
     assert battery is not None
     assert battery.capacity_total == 24
     assert battery.ready_count == 4
-    assert battery.reload_s == 60
+    assert battery.reload_s == 120
 
 
 def test_battery_roundtrip_and_strict_rejection():

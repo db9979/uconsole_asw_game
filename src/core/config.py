@@ -409,6 +409,11 @@ UBOOT_DC_HAND_PUMP = 0.25           # pump rate without power
 UBOOT_DC_GAS_FACTOR = 0.5           # work rate in gas masks
 UBOOT_DC_STERN_SPEED_FACTOR = 0.5   # shaft and motor room flooded
 # Periscope of the crewed boat (plan 1.3, phase 9).
+# A crewed submarine's tubes: each is loaded on order (the launcher's reload
+# time) and must be flooded before it fires; flooding is briefly audible.
+UBOOT_TUBE_FLOOD_S = 20.0
+UBOOT_TUBE_FLOOD_NOISE_S = 4.0
+UBOOT_TUBE_STATES = ("dry", "flooding", "flooded")
 UBOOT_SCOPE_EYE_HEIGHT_M = 2.5      # optics just above the surface
 UBOOT_SCOPE_FOV_DEG = 32.0          # field of view of the low-power optics
 UBOOT_SCOPE_STEP_DEG = 2.0          # arrow keys turn the scope by this

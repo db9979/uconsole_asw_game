@@ -4411,7 +4411,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 4,
       "ready_count": 4,
-      "reload_s": 0,
+      "reload_s": 240,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4424,7 +4424,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 5,
       "ready_count": 5,
-      "reload_s": 0,
+      "reload_s": 180,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4437,7 +4437,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 8,
       "ready_count": 8,
-      "reload_s": 0,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4450,7 +4450,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 5,
       "ready_count": 5,
-      "reload_s": 0,
+      "reload_s": 180,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4463,7 +4463,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 5,
       "ready_count": 5,
-      "reload_s": 0,
+      "reload_s": 180,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4476,7 +4476,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 4,
       "ready_count": 4,
-      "reload_s": 60,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 90,
       "vls_cells": null,
@@ -4489,7 +4489,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 8,
       "ready_count": 8,
-      "reload_s": 0,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4502,7 +4502,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 8,
       "ready_count": 8,
-      "reload_s": 0,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4515,7 +4515,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 8,
       "ready_count": 8,
-      "reload_s": 0,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4528,7 +4528,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 4,
       "ready_count": 4,
-      "reload_s": 0,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4541,7 +4541,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 4,
       "ready_count": 4,
-      "reload_s": 0,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4554,7 +4554,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 8,
       "ready_count": 8,
-      "reload_s": 0,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4567,7 +4567,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 5,
       "ready_count": 5,
-      "reload_s": 0,
+      "reload_s": 180,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4580,7 +4580,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 4,
       "ready_count": 4,
-      "reload_s": 0,
+      "reload_s": 240,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4593,7 +4593,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 5,
       "ready_count": 5,
-      "reload_s": 0,
+      "reload_s": 180,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4606,7 +4606,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 5,
       "ready_count": 5,
-      "reload_s": 0,
+      "reload_s": 180,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4619,7 +4619,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 8,
       "ready_count": 8,
-      "reload_s": 60,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 120,
       "vls_cells": null,
@@ -4632,7 +4632,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 12,
       "ready_count": 12,
-      "reload_s": 0,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4645,7 +4645,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 12,
       "ready_count": 12,
-      "reload_s": 0,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4658,7 +4658,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 8,
       "ready_count": 8,
-      "reload_s": 0,
+      "reload_s": 120,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4671,7 +4671,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 8,
       "ready_count": 8,
-      "reload_s": 0,
+      "reload_s": 180,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4684,7 +4684,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 5,
       "ready_count": 5,
-      "reload_s": 0,
+      "reload_s": 180,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4697,7 +4697,7 @@
       "launcher_type": "torpedo_tube",
       "mount_count": 5,
       "ready_count": 5,
-      "reload_s": 0,
+      "reload_s": 180,
       "arc_center_deg": 0,
       "arc_width_deg": 360,
       "vls_cells": null,
@@ -4710,27 +4710,27 @@
     {
       "key": "magazine.diesel_alt.torpedoes",
       "weapon_key": "weapon.diesel_alt.torpedo",
-      "mission_count": 4
+      "mission_count": 8
     },
     {
       "key": "magazine.aip_modern.torpedoes",
       "weapon_key": "weapon.aip_modern.torpedo",
-      "mission_count": 5
+      "mission_count": 10
     },
     {
       "key": "magazine.ssn.torpedoes",
       "weapon_key": "weapon.ssn.torpedo",
-      "mission_count": 8
+      "mission_count": 16
     },
     {
       "key": "magazine.sub_01.torpedoes",
       "weapon_key": "weapon.sub_01.torpedo",
-      "mission_count": 5
+      "mission_count": 10
     },
     {
       "key": "magazine.sub_02.torpedoes",
       "weapon_key": "weapon.sub_02.torpedo",
-      "mission_count": 5
+      "mission_count": 10
     },
     {
       "key": "magazine.sub_03.torpedoes",
@@ -4740,52 +4740,52 @@
     {
       "key": "magazine.sub_04.torpedoes",
       "weapon_key": "weapon.sub_04.torpedo",
-      "mission_count": 8
+      "mission_count": 16
     },
     {
       "key": "magazine.sub_05.torpedoes",
       "weapon_key": "weapon.sub_05.torpedo",
-      "mission_count": 8
+      "mission_count": 16
     },
     {
       "key": "magazine.sub_06.torpedoes",
       "weapon_key": "weapon.sub_06.torpedo",
-      "mission_count": 8
+      "mission_count": 16
     },
     {
       "key": "magazine.sub_07.torpedoes",
       "weapon_key": "weapon.sub_07.torpedo",
-      "mission_count": 4
+      "mission_count": 8
     },
     {
       "key": "magazine.sub_08.torpedoes",
       "weapon_key": "weapon.sub_08.torpedo",
-      "mission_count": 4
+      "mission_count": 8
     },
     {
       "key": "magazine.sub_09.torpedoes",
       "weapon_key": "weapon.sub_09.torpedo",
-      "mission_count": 8
+      "mission_count": 16
     },
     {
       "key": "magazine.sub_10.torpedoes",
       "weapon_key": "weapon.sub_10.torpedo",
-      "mission_count": 5
+      "mission_count": 10
     },
     {
       "key": "magazine.sub_11.torpedoes",
       "weapon_key": "weapon.sub_11.torpedo",
-      "mission_count": 4
+      "mission_count": 8
     },
     {
       "key": "magazine.sub_12.torpedoes",
       "weapon_key": "weapon.sub_12.torpedo",
-      "mission_count": 5
+      "mission_count": 10
     },
     {
       "key": "magazine.sub_13.torpedoes",
       "weapon_key": "weapon.sub_13.torpedo",
-      "mission_count": 5
+      "mission_count": 10
     },
     {
       "key": "magazine.sub_14.torpedoes",
@@ -4795,32 +4795,32 @@
     {
       "key": "magazine.sub_15.torpedoes",
       "weapon_key": "weapon.sub_15.torpedo",
-      "mission_count": 12
+      "mission_count": 24
     },
     {
       "key": "magazine.sub_16.torpedoes",
       "weapon_key": "weapon.sub_16.torpedo",
-      "mission_count": 12
+      "mission_count": 24
     },
     {
       "key": "magazine.sub_17.torpedoes",
       "weapon_key": "weapon.sub_17.torpedo",
-      "mission_count": 8
+      "mission_count": 16
     },
     {
       "key": "magazine.sub_18.torpedoes",
       "weapon_key": "weapon.sub_18.torpedo",
-      "mission_count": 8
+      "mission_count": 16
     },
     {
       "key": "magazine.sub_19.torpedoes",
       "weapon_key": "weapon.sub_19.torpedo",
-      "mission_count": 5
+      "mission_count": 10
     },
     {
       "key": "magazine.sub_20.torpedoes",
       "weapon_key": "weapon.sub_20.torpedo",
-      "mission_count": 5
+      "mission_count": 10
     }
   ],
   "countermeasures": [

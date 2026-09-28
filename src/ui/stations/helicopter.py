@@ -306,12 +306,10 @@ def _draw_helicopter_acoustic_view(game, rect):
     footer = geo["footer"]
     pygame.draw.rect(screen, (13, 35, 43), footer)
     pygame.draw.rect(screen, config.COLOR_GRID, footer, 1)
+    # Four main keys; source, contact, modes and filters are in F1.
     layout.blit_line(screen, "helo.acoustic.keys_view",
-                     (footer.x + 9, footer.y + 2, footer.w - 18, 17),
-                     config.COLOR_TEXT_DIM, size=12)
-    layout.blit_line(screen, "helo.acoustic.keys_audio",
-                     (footer.x + 9, footer.y + 20, footer.w - 18, 17),
-                     config.COLOR_TEXT_DIM, size=12)
+                     (footer.x + 9, footer.y + 10, footer.w - 18, 17),
+                     config.COLOR_TEXT_DIM, size=13)
 
 
 @localized

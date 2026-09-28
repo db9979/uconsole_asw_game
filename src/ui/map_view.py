@@ -628,18 +628,13 @@ def draw_weather_band(game, r) -> None:
 
 
 def draw_chart_frame(game, view, r, following: bool) -> None:
-    """Chart border and the region / zoom / follow line."""
+    """Chart border and the scale / follow line."""
     s = game.screen
-    coast = game.world.coast
     pygame.draw.rect(s, config.COLOR_GEO_GRID, r, 1)
-    # Zoom-Stufenanzeige
+    # Only the scale (and follow while on); the sector name is in the briefing.
     zoom_nm = r[3] / view.scale
-    follow = structured_message("common.on" if following else "common.off")
-    metadata = getattr(coast, "metadata", None) or {}
-    region = metadata.get("name")
-    prefix = region if region else getattr(game, "world_mode", "fixed").upper()
     layout.blit_line(
-        s, structured_message("map.line.footer", region=prefix,
-                              zoom=f"{zoom_nm:3.0f}", follow=follow),
+        s, structured_message("map.line.scale_follow" if following else "map.line.scale",
+                              zoom=f"{zoom_nm:.0f}"),
         (r[0] + 4, r[1] + 4, r[2] - 8, 20), config.COLOR_TEXT_DIM,
         size=13)

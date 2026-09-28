@@ -171,14 +171,16 @@ def draw_bridge_view(game, tr=None) -> None:
         nav = layout.box(s, (x, y2, half, box_h), "panel.course_rudder",
                          border=config.COLOR_TEXT)
         nx, ny, nw, _ = nav
-        layout.blit_line(s, message("bridge.line.course", course=f"{game.ship.course:05.1f}"),
+        layout.blit_line(s, message("bridge.line.course", course=f"{game.ship.course % 360:03.0f}"),
                          (nx, ny, nw, 38), config.COLOR_TEXT, size=32)
         layout.status_line(s, nx, ny + 42, nw, "ui.target_value_short",
-                           message("bridge.line.course", course=f"{game.ship.target_course:05.1f}"), size=20, label_w=80)
+                           message("bridge.line.course", course=f"{game.ship.target_course % 360:03.0f}"), size=20, label_w=80)
         layout.status_line(s, nx, ny + 72, nw, "ui.rudder",
-                           message("bridge.line.course", course=f"{game.ship.rudder_angle:+4.1f}"), size=20, label_w=80)
-        layout.status_line(s, nx, ny + 102, nw, "ui.turn_radius",
-                           message("bridge.line.range", range=f"{game.ship.turn_radius_nm:.2f}"), size=18, label_w=130)
+                           message("bridge.line.course", course=f"{game.ship.rudder_angle:+.0f}"), size=20, label_w=80)
+        if math.isfinite(game.ship.turn_radius_nm):
+            # Straight ahead the radius says nothing; the line appears in a turn.
+            layout.status_line(s, nx, ny + 102, nw, "ui.turn_radius",
+                               message("bridge.line.range", range=f"{game.ship.turn_radius_nm:.2f}"), size=18, label_w=130)
 
         drive = layout.box(s, (x + half + 10, y2, half, box_h), "panel.speed_acoustics",
                            border=config.COLOR_WARN if game.ship.cavitating else config.COLOR_TEXT)

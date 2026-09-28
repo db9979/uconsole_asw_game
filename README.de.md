@@ -14,15 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.34**
+Aktuelle Version: **1.3.35**
 
-Version 1.3.34 schreibt ein Absturzprotokoll: Jeder Spielstart hängt an
-`~/.u-jagd/crash.log` eine Start- und eine Endzeile an, und endet das Spiel
-durch einen Fehler, steht dort der Traceback, nach einem harten Absturz
-(Speicherzugriffsfehler in SDL oder Audio, `SIGTERM`) die Stapel aller Threads.
-Eine Startzeile ohne Endzeile heißt, das Spiel wurde von außen beendet, meist
-vom Kernel bei Speichermangel. Die Datei bleibt unter 256 KiB. Spielstände
-bleiben v26.
+Version 1.3.35 bringt weniger Text auf die uConsole-Bildschirme. Die obere
+Leiste nennt nur Station und Uhrzeit, der Kartenkopf nur den Maßstab. Das Sonar
+verliert die Statusfelder im Kopf und die Legendenzeilen und behält eine Zeile
+mit vier Haupttasten (der Rest steht in F1); ein Schlepp- oder Tiefensonar
+zeigt seinen Zustand nur, solange es fährt oder nicht bereit ist. Die
+Bedrohungsbox des U-Boots erscheint nur bei frischer Bedrohung, danach markiert
+ein gelbes Dreieck neben der Uhrzeit anstehende Warnungen. Kurse stehen in
+ganzen Grad mit °, der Drehkreis nur während einer Drehung. Der TMA-Kopf
+überlappt nicht mehr, und Waffen-Reiter, Rohrzeile und Alarmzeilen des U-Boots
+werden nicht mehr abgeschnitten. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

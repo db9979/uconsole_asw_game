@@ -163,13 +163,14 @@ AUTOMATION = r"""
     report.captureCookieHidden = String(!document.cookie.includes("ujagd_remote_v2"));
 
     if (scene === "lobby") {
-      const cards = [...$("station-cards").children];
+      // Every station has a card; the lobby shows the frigate side's nine.
+      const cards = [...$("station-cards").children].filter((card) => !card.hidden);
       report.captureRole = "lobby";
-      report.capturePainted = String(cards.length === 11 && cards.every((card) => card.querySelector("button")));
+      report.capturePainted = String(cards.length === 9 && cards.every((card) => card.querySelector("button")));
       report.captureSelector = "true";
       report.captureMessage = "true";
       report.captureReady = String(connection === "lobby" && !$("lobby").hidden &&
-        cards.length === 11 && !overflow && !errors && !$("code").value);
+        cards.length === 9 && !overflow && !errors && !$("code").value);
       positionMobileScene();
       return;
     }

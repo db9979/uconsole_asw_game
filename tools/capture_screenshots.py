@@ -23,6 +23,7 @@ from src.core.game import Game
 from src.core.i18n import Translator
 from src.core.preferences import Preferences
 from src.core.station import Station
+from src.core import uboot_local
 from src.data.catalog import CATALOG
 from src.data.user_content import UserContentStore
 from src.ui.mission_editor import MissionEditor
@@ -39,6 +40,17 @@ STATIONS = (
     (Station.ENGINE, "engineering"),
     (Station.HELICOPTER, "helicopter"),
     (Station.ELOKA, "eloka"),
+)
+
+# The crewed submarine's seven stations (the uConsole playing ``--play-sub``).
+UBOOT_STATIONS = (
+    ("uboot", "command"),
+    ("uboot_sonar", "sonar"),
+    ("uboot_weapons", "weapons"),
+    ("uboot_engine", "engine"),
+    ("uboot_esm", "mast-esm"),
+    ("uboot_nav", "navigation"),
+    ("uboot_radio", "radio"),
 )
 
 LANGUAGES = ("en", "de")
@@ -118,6 +130,7 @@ def capture_all(output_dir: Path, seed: int = 1234,
         store = UserContentStore(content_root)
         menu: Game | None = None
         game: Game | None = None
+        boat: Game | None = None
         try:
             initial_language = selected_languages[0]
             menu = Game(seed=seed, start_menu=True, show_splash=False,
@@ -127,9 +140,16 @@ def capture_all(output_dir: Path, seed: int = 1234,
                         fullscreen=False, audio_enabled=False,
                         preferences=_preferences(initial_language))
 
+            boat = Game(seed=seed, start_menu=False, show_splash=False,
+                        fullscreen=False, audio_enabled=False,
+                        preferences=_preferences(initial_language))
+            boat.local_side = "uboot"
+
             # Build one representative observation history for both languages.
             for _ in range(360):
                 game.update(1.0 / config.FPS)
+                boat.update(1.0 / config.FPS)
+            boat.msg_until = 0.0
             game.msg_until = 0.0
             baseline_damage = copy.deepcopy(game.damage)
             baseline_dmg_cursor = game.dmg_cursor
@@ -228,8 +248,21 @@ def capture_all(output_dir: Path, seed: int = 1234,
                 game._open_administration("commander")
                 _capture_to(game, output_dir, language,
                             "commander-options.png", written)
+                game._open_administration("")
+
+                _set_capture_language(boat, language)
+                boat.msg = ""
+                boat_images: list[pygame.Surface] = []
+                for role, filename in UBOOT_STATIONS:
+                    uboot_local.set_local_station(boat, role)
+                    boat_images.append(_capture_to(
+                        boat, output_dir, language, f"uboot-{filename}.png", written))
+                path = output_dir / ("uboot-overview.png" if language == "en"
+                                     else f"{language}-uboot-overview.png")
+                _save(_montage(boat_images[:4]), path)
+                written.append(path)
         finally:
-            for owner in (menu, game):
+            for owner in (menu, game, boat):
                 if owner is not None:
                     owner.commander.stop()
                     owner.audio.shutdown()

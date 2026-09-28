@@ -12,16 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.53**
+Current release: **1.3.54**
 
-Release 1.3.53 gives the OPZ correlation suggestions. When two of the ship's
-own sensors (sonar, radar, ESM, lookout) report a contact on the same bearing
-within their uncertainty (and, where both have positions, close together), the
-OPZ offers the pair for fusion: on the uConsole up to two suggestions stand in
-the page 1 sidebar, `U` fuses the top one and `Shift+U` dismisses it; the
-Remote Crew OPZ lists up to four with Fuse and Dismiss buttons. Suggestions
-only compare published reports no older than 30 s; nothing is fused without
-the operator. Saves stay v28.
+Release 1.3.54 lets the submarine's crew speak more of its reports. Besides
+contacts, pings and torpedo warnings the boat now calls out its own torpedo
+leaving the tube, detonations close aboard or at a distance with their
+bearing, breaking-up noises its sonar can hear, a copied HQ broadcast (and
+whether it carries a contact report on the frigate), each class the periscope
+sights with its bearing, approaching and passing test depth on the way down, a
+hit, hull damage and the mission result, in English or German. Every spoken
+report comes from a line in the boat's own log, so the crew never hears more
+than it has been told. Saves stay v28.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

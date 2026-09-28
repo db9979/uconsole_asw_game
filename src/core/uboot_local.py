@@ -188,7 +188,8 @@ def _latest_wire(game, current):
 
 def _fire_notice(game, result) -> None:
     if result is True:
-        _announce(game, "waffen", message("uboot.local.fired"))
+        # The boat's log gets the torpedo room's own report (tube and all).
+        game.flash(message("uboot.local.fired"), 2.0)
     else:
         game.flash(message("uboot.local.fire_rejected",
                            reason=message(f"uboot.reason.{result}")

@@ -19,7 +19,7 @@ from src.core import detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
-from src.core import boat_ai, boat_missions, hunter, opfor, phone_lookout
+from src.core import boat_ai, boat_debrief, boat_missions, hunter, opfor, phone_lookout
 from src.core.limits import (
     MAX_DECOYS,
     MAX_ENEMY_TORPEDOES,
@@ -960,6 +960,8 @@ class SimMixin:
         Kill assessment stays with the operator; the score is shown only in
         the mission debrief.
         """
+        if self._opfor is not None:
+            opfor.hear_breakup(self, self._opfor, x, y, depth, key)
         if (self.damage.station_down("sonar")
                 or math.hypot(x - self.ship.x, y - self.ship.y)
                 > config.TORP_TRANSIENT_HEAR_NM
@@ -1370,6 +1372,14 @@ class SimMixin:
                 self.score += config.SCORE_CIVIL_BONUS
         self.announce(message("runtime.mission.won" if win
                               else "runtime.mission.lost"), "mission", 10.0)
+        boat = self._opfor
+        if boat is not None:
+            # The crewed boat's own log: the mission from the boat's side.
+            result = boat_debrief.outcome(self, boat)
+            if result != "over":
+                boat.notice(self.sim_t, "mission", message(
+                    "uboot.event.mission_lost" if result == "lost"
+                    else "uboot.event.mission_won"), stamp=self.world.format_time())
         self._campaign_mission_ended()
 
     # --- M6: Speichern / Laden ---

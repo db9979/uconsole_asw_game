@@ -385,6 +385,8 @@ class Sub:
         if amount is None:
             amount = self.rng.uniform(60.0, 100.0)
         self.damage = min(100.0, self.damage + amount)
+        if self.manual and self.crew is not None:
+            self.crew.event("hull_hit")
         self._compartment_hit(amount)
         if self.damage >= 100.0:
             self.state = "SINKING"
@@ -499,6 +501,13 @@ class Sub:
                 (*self._launch_data(observation, profile), profile.key,
                  self.id, fired_key))
             launched += 1
+            if self.manual and self.crew is not None:
+                # The torpedo room reports each shot (with its tube).
+                if self.weapon_battery is not None:
+                    self.crew.event("torpedo_fired",
+                                    tube=f"{self.weapon_battery.last_fired_tube + 1}")
+                else:
+                    self.crew.event("torpedo_fired_tubeless")
         if launched:
             self.torpedoes_left = (self.weapon_battery.remaining_total
                                    if self.weapon_battery is not None
@@ -694,9 +703,12 @@ class Sub:
         self._actual_speed = self.speed
         self._surged = False
         self.speed = self.speed_order
+        old_depth = self.depth
         try:
             self._update_inner(dt, observation, world)
         finally:
+            if self.manual and self.crew is not None:
+                self._report_test_depth(old_depth)
             if not self._surged:
                 self.speed_order = config.clamp(
                     self.speed, 0.0, self.motion.maximum_speed_kn)
@@ -1320,6 +1332,19 @@ class Sub:
 
     def flood_moment_kg(self) -> float:
         return self.damage_control.water_moment_kg()
+
+    def _report_test_depth(self, old_depth: float) -> None:
+        """The crew calls passing close to and below test depth going down
+        (own depth gauge; one call per crossing, no saved state)."""
+        if self.sunk or self.state in ("SINKING", "SUNK"):
+            return
+        test = self.stype.max_depth_m
+        near = test * config.UBOOT_TEST_DEPTH_WARN_FRACTION
+        depth = f"{self.depth:.0f}"
+        if old_depth <= test < self.depth:
+            self.crew.event("test_depth_over", depth=depth, test=f"{test:.0f}")
+        elif old_depth < near <= self.depth:
+            self.crew.event("test_depth_near", depth=depth, test=f"{test:.0f}")
 
     def _hull_failure(self, ratio: float) -> None:
         """One pressure-hull failure of a crewed boat deep below its limits:

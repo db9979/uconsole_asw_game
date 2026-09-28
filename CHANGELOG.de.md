@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.54
+
+Version 1.3.54 lässt die U-Boot-Besatzung mehr Meldungen sprechen. Neben
+Kontakten, Ortungsimpulsen und Torpedowarnungen meldet das Boot jetzt den
+eigenen Torpedo los, Detonationen nah oder fern mit Peilung, Sinkgeräusche,
+die sein Sonar hören kann, einen aufgenommenen Rundspruch der Führung (und ob
+er eine Feindlagemeldung zur Fregatte enthält), jede Klasse, die das Sehrohr
+sichtet, mit Peilung, das Annähern an die und Unterschreiten der Testtiefe
+beim Tauchen, einen Treffer, Schäden am Druckkörper und das Missionsergebnis,
+auf Deutsch oder Englisch. Jede gesprochene Meldung stammt aus einer Zeile im
+eigenen Bordbuch, die Besatzung hört also nie mehr, als ihr gemeldet wurde.
+Spielstände bleiben v28.
+
 ## 1.3.53
 
 Version 1.3.53 gibt der OPZ Zuordnungsvorschläge. Melden zwei eigene Sensoren

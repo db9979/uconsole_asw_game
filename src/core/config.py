@@ -376,6 +376,9 @@ UBOOT_HULL_SEAL_CHANCE = 0.3
 UBOOT_HULL_FRACTURE_DAMAGE = 30.0
 UBOOT_HULL_SEAL_DAMAGE = 12.0
 UBOOT_HULL_BOLTS_DAMAGE = 6.0
+# The crew calls "approaching test depth" when a crewed boat passes this
+# fraction of its test depth going down, and "below test depth" beyond it.
+UBOOT_TEST_DEPTH_WARN_FRACTION = 0.9
 # Boat atmosphere (cues only, never simulation): the hull creaks from
 # UBOOT_CREAK_START of test depth, a check every UBOOT_CREAK_TICK_S with a
 # chance growing to 1 at test depth; detonations are heard out to

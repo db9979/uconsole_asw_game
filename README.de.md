@@ -14,17 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.53**
+Aktuelle Version: **1.3.54**
 
-Version 1.3.53 gibt der OPZ Zuordnungsvorschläge. Melden zwei eigene Sensoren
-des Schiffs (Sonar, Radar, ESM, Ausguck) einen Kontakt in derselben Peilung
-innerhalb ihrer Unsicherheit (und, wo beide eine Position haben, nah
-beieinander), bietet die OPZ das Paar zur Fusion an: auf der uConsole stehen
-bis zu zwei Vorschläge in der Seitenleiste von Seite 1, `U` fusioniert den
-obersten und `Umschalt+U` verwirft ihn; die Remote-Crew-OPZ listet bis zu vier
-mit Knöpfen zum Fusionieren und Verwerfen. Verglichen werden nur
-veröffentlichte Meldungen, die höchstens 30 s alt sind; ohne den Bediener wird
-nichts fusioniert. Spielstände bleiben v28.
+Version 1.3.54 lässt die U-Boot-Besatzung mehr Meldungen sprechen. Neben
+Kontakten, Ortungsimpulsen und Torpedowarnungen meldet das Boot jetzt den
+eigenen Torpedo los, Detonationen nah oder fern mit Peilung, Sinkgeräusche,
+die sein Sonar hören kann, einen aufgenommenen Rundspruch der Führung (und ob
+er eine Feindlagemeldung zur Fregatte enthält), jede Klasse, die das Sehrohr
+sichtet, mit Peilung, das Annähern an die und Unterschreiten der Testtiefe
+beim Tauchen, einen Treffer, Schäden am Druckkörper und das Missionsergebnis,
+auf Deutsch oder Englisch. Jede gesprochene Meldung stammt aus einer Zeile im
+eigenen Bordbuch, die Besatzung hört also nie mehr, als ihr gemeldet wurde.
+Spielstände bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

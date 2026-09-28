@@ -285,3 +285,144 @@ def test_catalogs_carry_the_new_keys():
     keys += [f"uboot.threat_page.kind.{kind}" for kind in boat_threat.KINDS]
     for key in keys:
         assert key in en and key in de, key
+
+
+# --- more spoken reports from the boat's own feed ---------------------------------
+
+_BOAT_REPORTS = (
+    (message("uboot.event.torpedo_fired", tube="2"), ("torpedo_away", None)),
+    (message("uboot.event.torpedo_fired_tubeless"), ("torpedo_away", None)),
+    (message("uboot.event.detonation_near", bearing="045"), ("detonation_near", 45)),
+    (message("uboot.event.detonation_far", bearing="310"), ("detonation", 310)),
+    (message("uboot.event.breakup_heard", bearing="090"), ("breakup", 90)),
+    (message("uboot.event.radio_copied", number="3"), ("broadcast", None)),
+    (message("uboot.event.radio_copied_report", number="4"), ("broadcast_report", None)),
+    (message("uboot.event.sighting_warship", bearing="001"), ("sighting_warship", 1)),
+    (message("uboot.event.sighting_merchant", bearing="120"), ("sighting_merchant", 120)),
+    (message("uboot.event.sighting_aircraft", bearing="200"), ("sighting_aircraft", 200)),
+    (message("uboot.event.sighting_torpedo", bearing="270"), ("sighting_torpedo", 270)),
+    (message("uboot.event.sighting_unknown", bearing="359"), ("sighting_unknown", 359)),
+    (message("uboot.event.test_depth_near", depth="180", test="200"), ("test_depth_near", None)),
+    (message("uboot.event.test_depth_over", depth="201", test="200"), ("test_depth_over", None)),
+    (message("uboot.event.hull_hit"), ("hit", None)),
+    (message("uboot.event.hull_bolts", compartment="x"), ("hull_damage", None)),
+    (message("uboot.event.hull_seal", compartment="x"), ("hull_damage", None)),
+    (message("uboot.event.hull_fracture", compartment="x"), ("hull_damage", None)),
+    (message("uboot.event.hull_collapse"), ("hull_damage", None)),
+    (message("uboot.event.mission_won"), ("won", None)),
+    (message("uboot.event.mission_lost"), ("lost", None)),
+)
+
+
+def test_boat_feed_lines_map_to_their_spoken_reports():
+    from src.core import callouts
+    from src.core.i18n import Translator
+    for text, expected in _BOAT_REPORTS:
+        assert callout_of(text, side="boat") == expected, text
+        # The frigate never speaks the boat's lines.
+        assert callout_of(text) is None, text
+        row = dict(seq=1, key=expected[0], bearing=expected[1])
+        for language in ("en", "de"):
+            spoken = callouts.spoken_text(row, Translator(language).t)
+            assert spoken and "{" not in spoken and "commander.web" not in spoken
+    # A sighting without a readable bearing is never spoken.
+    assert callout_of(message("uboot.event.sighting_warship", bearing="n/a"),
+                      side="boat") is None
+
+
+def test_frigate_callouts_are_unchanged():
+    from src.core import callouts
+    assert callouts._EXACT == {
+        "runtime.contact.new_range": "contact",
+        "runtime.contact.new_bearing": "contact",
+        "runtime.breakup_noise": "breakup",
+        "runtime.torpedo.feed": "torpedo_away",
+        "runtime.hit.damage": "hit",
+        "runtime.hit.asm": "hit",
+        "runtime.mission.won": "won",
+        "runtime.mission.lost": "lost",
+        "crew.action_stations_on": "action_stations",
+        "mpa.on_station": "mpa_on_station",
+    }
+    assert callouts._PREFIX == (("runtime.torpedo_cue.", "torpedo"),)
+
+
+def _boat_keys(boat):
+    return [row["key"] for row in boat.callouts.detached()]
+
+
+def _feed_keys(boat):
+    return [row["text"].get("__u_jagd_i18n__") for row in boat.feed
+            if isinstance(row["text"], dict)]
+
+
+def test_boat_reports_its_own_torpedo_away_with_the_tube():
+    game, _server, _bridge = _crewed(seed=71)
+    boat = game.opfor
+    sub = boat.sub
+    sub.course = 90.0
+    assert sub.command_fire(90.0, 3.0, now=game.sim_t) is True
+    opfor.update_crew(game, boat)
+    row = boat.feed[-1]
+    assert row["text"]["__u_jagd_i18n__"] == "uboot.event.torpedo_fired"
+    assert row["text"]["params"]["tube"] == f"{sub.weapon_battery.last_fired_tube + 1}"
+    assert _boat_keys(boat)[-1] == "torpedo_away"
+
+
+def test_boat_reports_hits_hull_failures_and_test_depth():
+    game, _server, _bridge = _crewed(seed=61)
+    boat = game.opfor
+    sub = boat.sub
+    sub.hit(10.0)
+    opfor.update_crew(game, boat)
+    assert "uboot.event.hull_hit" in _feed_keys(boat) and "hit" in _boat_keys(boat)
+    sub._hull_failure(1.1)
+    opfor.update_crew(game, boat)
+    assert "hull_damage" in _boat_keys(boat)
+    test = sub.stype.max_depth_m
+    near = test * config.UBOOT_TEST_DEPTH_WARN_FRACTION
+    sub.depth = near + 0.5
+    sub._report_test_depth(near - 0.5)
+    sub.depth = test + 0.5
+    sub._report_test_depth(test - 0.5)
+    # Going up again or staying level is no report.
+    sub._report_test_depth(test + 5.0)
+    opfor.update_crew(game, boat)
+    keys = _boat_keys(boat)
+    assert keys.count("test_depth_near") == 1 and keys.count("test_depth_over") == 1
+    assert keys.index("test_depth_near") < keys.index("test_depth_over")
+
+
+def test_boat_hears_breakup_noises_only_when_its_sonar_can():
+    game, _server, _bridge = _crewed(seed=61)
+    boat = game.opfor
+    sub = boat.sub
+    # Its own hull is never "heard" breaking up, nor one far beyond hearing.
+    opfor.hear_breakup(game, boat, sub.x, sub.y, sub.depth, sub.id)
+    opfor.hear_breakup(game, boat, sub.x + 500.0, sub.y, 0.0, 999)
+    opfor.update_crew(game, boat)
+    assert "breakup" not in _boat_keys(boat)
+    x, y = sub.x + 0.5, sub.y
+    assert not game.world.sonar_path_blocked(x, y, 0.0, sub.x, sub.y, sub.depth)
+    opfor.hear_breakup(game, boat, x, y, 0.0, 999)
+    opfor.update_crew(game, boat)
+    row = boat.callouts.detached()[-1]
+    assert row["key"] == "breakup" and abs((row["bearing"] - 90 + 180) % 360 - 180) <= 15
+
+
+def test_boat_reports_the_mission_result():
+    game, _server, _bridge = _crewed(seed=61)
+    boat = game.opfor
+    game.damage.ship_sunk = True
+    game._end_mission(False, message("end.reason.frigate_sunk"))
+    assert _feed_keys(boat)[-1] == "uboot.event.mission_won"
+    assert _boat_keys(boat)[-1] == "won"
+    # The frigate's own report is untouched.
+    assert game.callouts.detached()[-1]["key"] == "lost"
+    game, _server, _bridge = _crewed(seed=61)
+    boat = game.opfor
+    boat.sub.state = "SINKING"
+    game._end_mission(True, message("end.reason.targets_sunk"))
+    assert _feed_keys(boat)[-1] == "uboot.event.mission_lost"
+    assert _boat_keys(boat)[-1] == "lost"
+    assert game.callouts.detached()[-1]["key"] == "won"

@@ -14,11 +14,12 @@
   <link rel="stylesheet" href="./css/stations.css">
   <link rel="stylesheet" href="./css/overlays.css">
   <link rel="stylesheet" href="./css/screens.css">
+  <script src="./js/browser-check.js" defer></script>
   <script type="module" src="./js/main.js"></script>
   <script src="./voice.js" defer></script>
 </head>
 <body>
-  <div id="bootstrap" class="bootstrap"><span class="brand-mark" aria-hidden="true"></span><strong>U-Jagd Commander</strong><span class="loading" role="progressbar" data-i18n-aria="loading"></span></div>
+  <div id="bootstrap" class="bootstrap"><span class="brand-mark" aria-hidden="true"></span><strong>U-Jagd Commander</strong><span class="loading" role="progressbar" data-i18n-aria="loading"></span><p id="bootstrap-hint" class="bootstrap-hint" role="alert" hidden></p></div>
   <div id="shell" hidden>
     <div id="toast-region" aria-hidden="true"></div>
     <header id="statusbar" class="statusbar">
@@ -48,7 +49,7 @@
     <section id="pairing" class="pairing">
       <div class="pair-intro"><p class="eyebrow" data-i18n="pair_eyebrow"></p><h1 data-i18n="pair_title"></h1><p data-i18n="pair_intro"></p><div class="scope-note"><span class="scope-line" aria-hidden="true"></span><p data-i18n="authority_note"></p></div><p class="fine support-line"><a class="support-link" id="support-pair" href="https://buymeacoffee.com/zquu1xu570" target="_blank" rel="noopener noreferrer" data-i18n="support_link"></a></p></div>
       <form id="pair-form" class="pair-card">
-        <h2 data-i18n="pair_heading"></h2><p id="pair-help" data-i18n="pair_help"></p>
+        <h2 data-i18n="pair_heading"></h2><p id="browser-hint" class="browser-hint" role="note" data-i18n="browser_hint" hidden></p><p id="pair-help" data-i18n="pair_help"></p>
         <label for="name" data-i18n="pair_name"></label><input id="name" name="name" type="text" required minlength="1" maxlength="32" autocomplete="name" data-i18n-placeholder="pair_name_default">
         <label for="code" data-i18n="pair_code"></label><input id="code" name="code" type="text" required maxlength="6" pattern="[0-9]{3}[A-Za-z]{3}" placeholder="482KMT" aria-describedby="pair-help" autocomplete="off" autocapitalize="characters" spellcheck="false">
         <button id="pair-submit" class="primary" type="submit" data-i18n="pair_submit"></button><p id="pair-error" class="error" role="alert"></p>
@@ -226,7 +227,7 @@
             <p id="navigation-note" class="fine" data-i18n="navigation_note"></p>
             <form id="navigation-form" class="annotation-form" aria-describedby="navigation-note">
               <label for="navigation-course" data-i18n="navigation_course"></label><input id="navigation-course" name="course" type="number" min="0" max="359.99999999999994" step="any" inputmode="decimal" autocomplete="off">
-              <label for="navigation-speed" data-i18n="navigation_speed"></label><input id="navigation-speed" name="speed_kn" type="number" min="0" max="25" step="any" inputmode="decimal" autocomplete="off">
+              <label for="navigation-speed" data-i18n="navigation_speed"></label><input id="navigation-speed" name="speed_kn" type="number" min="0" max="31" step="any" inputmode="decimal" autocomplete="off">
               <button id="propose-navigation" type="submit" class="primary" data-i18n="navigation_propose"></button>
             </form>
           </div>

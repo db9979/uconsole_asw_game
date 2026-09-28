@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.58**
+Aktuelle Version: **1.3.59**
 
-Version 1.3.58 räumt auf, ohne das Spiel zu ändern. Die beiden größten Module
+Version 1.3.59 räumt auf, ohne das Spiel zu ändern. Die beiden größten Module
 sind entlang ihrer Nähte geteilt: Radar-, Luft-, ECM-, ESM- und Funklage mit
 Flugkörpern und Angreifern ziehen aus dem Simulationsschritt in ein eigenes
 Modul, und die Aktionen der Remote-Crew-Stationen ziehen aus der Brücke in ein

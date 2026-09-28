@@ -677,7 +677,7 @@ export function init() {
     if (course !== null) params.course = course;
     if (speed !== null) params.speed_kn = speed;
     if (!Object.keys(params).length || (course !== null && (!finite(course) || course < 0 || course >= 360)) ||
-        (speed !== null && (!finite(speed) || speed < 0 || speed > 25))) {
+        (speed !== null && (!finite(speed) || speed < 0 || speed > 31))) {
       S.commandMessage = {key: "navigation_invalid", status: "rejected"};
       renderActionState();
       return;

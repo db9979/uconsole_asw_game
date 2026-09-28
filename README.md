@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.58**
+Current release: **1.3.59**
 
-Release 1.3.58 is a clean-up with no change in play. The two largest modules
+Release 1.3.59 is a clean-up with no change in play. The two largest modules
 are split along their seams: the radar, air, ECM, ESM and radio pictures with
 missiles and raiders move from the simulation step into their own module, and
 the Remote Crew station action handlers move out of the bridge into their own

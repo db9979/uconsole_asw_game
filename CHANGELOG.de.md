@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.32
+
+Version 1.3.32 bringt Richtungshören: Mit Stereoton kommen Detonationen,
+zurückkehrende Echos und das aktive Ping einer anderen Plattform aus der
+Peilung, aus der sie gehört wurden, links für Backbord und rechts für
+Steuerbord vom Bug der Fregatte oder des besetzten U-Boots aus, am uConsole
+und im Remote-Crew-Browser. Die Fregatte spielt jetzt auch das Ping eines
+U-Boots selbst, und das besetzte U-Boot hört das Ping eines Jägers am Rumpf.
+
 ## 1.3.31
 
 Version 1.3.31 gibt dem besetzten U-Boot echte Torpedorohre: Die Torpedogasten

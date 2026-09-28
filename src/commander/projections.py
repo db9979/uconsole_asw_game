@@ -39,6 +39,12 @@ def _number(value):
             else None)
 
 
+def _pan(value):
+    """A sound cue's left/right position (-1..+1, 1/8 steps), or None centred."""
+    value = _number(value)
+    return None if value is None else round(max(-1.0, min(1.0, value)) * 8.0) / 8.0
+
+
 def _age(now, stamp):
     stamp = _number(stamp)
     return now - stamp if stamp is not None and 0 <= stamp <= now else None
@@ -253,7 +259,8 @@ def _common(game, status, role):
                              objective=localize(game.mission_objective_display(), game.tr),
                              remaining_s=_number(game.mission.remaining_s(game.mission_time))),
                 audio=dict(
-                    events=[dict(seq=int(row["seq"]), cue=str(row["kind"]))
+                    events=[dict(seq=int(row["seq"]), cue=str(row["kind"]),
+                                 pan=_pan(row.get("pan")))
                             for row in list(game._sound_events)[-16:]],
                     # Spoken crew reports: the feed lines' key and bearing
                     # only; each browser words them in its own language.
@@ -1266,7 +1273,8 @@ def _opfor_common(game, status, role, boat):
                            max_label=plot.MAX_LABEL))
     common["mission"]["objective"] = localize(boat_missions.objective(game, boat), game.tr)
     # The boat's own atmosphere cues (hull, detonations), never the frigate's.
-    common["audio"] = dict(events=[dict(seq=int(row["seq"]), cue=str(row["kind"]))
+    common["audio"] = dict(events=[dict(seq=int(row["seq"]), cue=str(row["kind"]),
+                                        pan=_pan(row.get("pan")))
                                    for row in list(boat.sound_events)[-16:]],
                            callouts=boat.callouts.detached())
     common["autocrew"] = dict(enabled=False, status="off")

@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.31**
+Current release: **1.3.32**
 
-Release 1.3.31 gives the crewed submarine real torpedo tubes: the torpedo gang
-loads each empty tube from the racks (`M` at the Weapons station, or Load in
-the browser), and a loaded tube must be flooded before it fires, which takes
-20 s and can be heard (`Shift+M`, or Flood). Every submarine now carries as
-many reloads again as it has tubes, reloaded in 2 to 4 minutes; the AI's
-submarines keep loading and flooding by themselves. Saves are now v26.
+Release 1.3.32 adds directional hearing: with stereo sound, detonations,
+returning echoes and another platform's active ping come from the bearing they
+were heard on, left for port and right for starboard of the frigate's or the
+crewed submarine's head, on the uConsole and in the Remote Crew browser. The
+frigate now also plays a submarine's ping itself, and the crewed submarine
+hears a hunter's ping ring on its hull.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

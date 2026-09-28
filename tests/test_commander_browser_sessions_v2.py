@@ -1124,7 +1124,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
     en, de = catalogs()
     legacy = browser_state()
     legacy["chart_revision"] = legacy["session"]
-    legacy["sound_events"] = [{"seq": 1, "cue": "explosion"}]
+    legacy["sound_events"] = [{"seq": 1, "cue": "explosion", "pan": None}]
 
     def tactical_row(row):
         result = {key: row[key] for key in (
@@ -1288,7 +1288,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                 type(self).publish_warning = True
                 self.reply(200, {})
             elif self.path == "/test/new-sound":
-                legacy["sound_events"].append({"seq": 2, "cue": "gunfire"})
+                legacy["sound_events"].append({"seq": 2, "cue": "gunfire", "pan": None})
                 type(self).reload_polls = -100
                 self.reply(200, {})
             elif self.path == "/test/allow-role-loss":

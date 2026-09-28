@@ -42,6 +42,14 @@ anderen Zweig als `main` oder während das Spiel läuft wird nichts verändert.
 Protokoll: `~/.u-jagd/updater.log`. Speicherstände unter `~/.u-jagd/` bleiben
 unberührt.
 
+**Absturzprotokoll:** Jeder Spielstart schreibt nach `~/.u-jagd/crash.log`
+eine Start- und eine Endzeile. Endet das Spiel durch einen Fehler, steht dort
+der Traceback; bei einem harten Absturz (Speicherzugriffsfehler in SDL oder
+Audio, `SIGTERM`) die Stapel aller Threads. Folgt auf eine Startzeile keine
+Endzeile und kein Fehler, wurde das Spiel von außen beendet, meist vom
+Kernel bei Speichermangel (`dmesg | grep -i -e oom -e killed`). Die Datei
+bleibt unter 256 KiB.
+
 **Startfenster:** Sofort nach dem Klick erscheint ein kleines Fenster „U-Jagd“
 mit dem aktuellen Schritt (Suche nach Updates, Lade Update, Installiere
 Abhängigkeiten, Prüfe neue Version, Starte U-Jagd). Es schließt sich, sobald

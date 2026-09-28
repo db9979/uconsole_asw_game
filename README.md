@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.19**
+Current release: **1.3.20**
 
-Release 1.3.19 makes the Remote Crew streams steadier. A browser that
+Release 1.3.20 makes the Remote Crew streams steadier. A browser that
 reconnects its sonar audio or sonar display stream now takes over its own
 previous stream at once instead of being refused while the host had not yet
 noticed that the old connection was gone. The web client no longer sends an

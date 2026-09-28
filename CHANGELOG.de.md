@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.19
+## 1.3.20
 
-Version 1.3.19 macht die Remote-Crew-Datenströme stabiler. Ein Browser, der
+Version 1.3.20 macht die Remote-Crew-Datenströme stabiler. Ein Browser, der
 seinen Sonar-Audio- oder Sonar-Anzeigestrom neu verbindet, übernimmt jetzt
 sofort seinen eigenen bisherigen Strom, statt abgewiesen zu werden, solange der
 Host die alte Verbindung noch nicht als beendet erkannt hat. Der Web-Client
@@ -14,6 +14,14 @@ fragt bei eingeschaltetem Push nicht mehr zu jedem gepushten Zustand
 zusätzlich den Zustand ab. Die Browsertests für Live-Audio und den
 Zustands-Push laufen jetzt in Echtzeit neben dem Host. Spielstände bleiben
 v23.
+
+## 1.3.19
+
+Version 1.3.19 macht den Start auf der uConsole sofort sichtbar: Ein kleines
+Startfenster zeigt, ob der Starter nach einem Update sucht, es lädt oder
+installiert, und schließt sich, sobald das Spiel erscheint. Ein zweiter Start,
+während U-Jagd startet oder läuft, öffnet das Spiel nicht mehr doppelt, sondern
+meldet „U-Jagd läuft bereits.“. Spielstände bleiben v23.
 
 ## 1.3.18
 

@@ -13,6 +13,7 @@ import pygame
 from src.audio.engine import AudioEngine
 from src.core import config
 from src.core.debuglog import append_bounded_log
+from src.core.launch_signal import game_visible
 from src.core.i18n import (Translator, display_value, localized, localize,
                            message, raw_text, translation_scope)
 from src.core.preferences import save_preferences
@@ -1205,6 +1206,7 @@ class DrawMixin:
                 self.update(dt, audio_dt=wall_dt)
                 self._perf_debug_log(wall_dt)
                 if self.web_mode:
+                    game_visible()
                     continue
                 self._pump_speech()
                 if self._skip_eco_frame():
@@ -1212,6 +1214,7 @@ class DrawMixin:
                 draw_started = time.perf_counter() if self._perf_debug_enabled else None
                 self.draw()
                 self.compose_frame()
+                game_visible()
                 if draw_started is not None:
                     self._perf_draw_s += time.perf_counter() - draw_started
         finally:

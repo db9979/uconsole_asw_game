@@ -4,14 +4,22 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.19
+## 1.3.20
 
-Release 1.3.19 makes the Remote Crew streams steadier. A browser that
+Release 1.3.20 makes the Remote Crew streams steadier. A browser that
 reconnects its sonar audio or sonar display stream now takes over its own
 previous stream at once instead of being refused while the host had not yet
 noticed that the old connection was gone. The web client no longer sends an
 extra state request for every pushed state. The browser tests for live audio
 and the state push now run in real time next to the host. Saves stay v23.
+
+## 1.3.19
+
+Release 1.3.19 makes the uConsole start visible at once: a small start window
+shows whether the launcher is checking for, downloading or installing an update
+and closes when the game appears. A second start while U-Jagd is starting or
+running no longer opens the game twice; it shows "U-Jagd is already running."
+instead. Saves stay v23.
 
 ## 1.3.18
 

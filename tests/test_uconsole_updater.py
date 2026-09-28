@@ -6,6 +6,8 @@ from pathlib import Path
 import os
 import stat
 import subprocess
+import sys
+import time
 
 import pytest
 
@@ -13,6 +15,7 @@ ROOT = Path(__file__).parents[1]
 UPDATER = ROOT / "packaging/uconsole/u_jagd_updater.py"
 LAUNCH = ROOT / "packaging/uconsole/u-jagd-launch"
 INSTALL = ROOT / "packaging/uconsole/install.sh"
+SPLASH = ROOT / "packaging/uconsole/u_jagd_splash.py"
 
 
 def load_updater():
@@ -230,3 +233,125 @@ def test_installer_updates_checkout_that_predates_it(repos, tmp_path):
                             env={**os.environ, "U_JAGD_DIR": str(app)}, check=True)
     assert "stub update" in result.stdout and "stub setup" in result.stdout
     assert (app / "packaging/uconsole/u_jagd_updater.py").exists()
+
+
+def test_update_reports_each_step(repos, updater, monkeypatch):
+    work, app = repos
+    publish(work, "1.3.9", extra="pygame\nnumpy\n")
+    monkeypatch.setattr(updater, "fetch_latest_release", lambda url=None: "v1.3.9")
+    steps = []
+    assert updater.update(app, progress=lambda key, **v: steps.append((key, v))) is True
+    assert steps == [("check", {}), ("download", {"label": "v1.3.9"}),
+                     ("deps", {}), ("verify", {})]
+
+
+def test_messages_have_same_keys_and_follow_saved_language(tmp_path, monkeypatch):
+    module = load_updater()
+    assert module.MESSAGES["de"].keys() == module.MESSAGES["en"].keys()
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    monkeypatch.delenv("LC_ALL", raising=False)
+    monkeypatch.delenv("LC_MESSAGES", raising=False)
+    assert module.language() == "en"
+    (tmp_path / ".u-jagd").mkdir()
+    (tmp_path / ".u-jagd/settings.json").write_text('{"language": "de"}')
+    assert module.message("download", label="v1.3.9") == "Lade Update v1.3.9 …"
+
+
+class Execed(Exception):
+    pass
+
+
+def launch_env(module, tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("U_JAGD_NO_SPLASH", "1")
+    calls = {"shown": [], "updated": 0}
+    monkeypatch.setattr(module, "show_briefly", lambda app, key: calls["shown"].append(key))
+    monkeypatch.setattr(module, "ensure_venv", lambda app, force_install=False: None)
+
+    def fake_update(app=None, channel=None, progress=None):
+        calls["updated"] += 1
+        return False
+
+    def fake_exec(path, args, env):
+        calls["env"] = env
+        raise Execed
+
+    monkeypatch.setattr(module, "update", fake_update)
+    monkeypatch.setattr(module.os, "execve", fake_exec)
+    monkeypatch.setattr(module.os, "chdir", lambda path: None)
+    return calls
+
+
+@pytest.mark.parametrize("role", ["game", "launch", ""])
+def test_second_start_does_not_open_the_game_twice(tmp_path, monkeypatch, role):
+    module = load_updater()
+    calls = launch_env(module, tmp_path, monkeypatch)
+    first = module.GameLock()
+    assert first.try_acquire()
+    if role:
+        first.set_role(role)
+    assert module.launch([]) == 0
+    assert calls["shown"] == ["running"] and calls["updated"] == 0
+    assert "env" not in calls
+    os.close(first.fd)
+
+
+def test_start_during_background_update_waits_then_starts(tmp_path, monkeypatch):
+    module = load_updater()
+    calls = launch_env(module, tmp_path, monkeypatch)
+    first = module.GameLock()
+    assert first.try_acquire()
+    first.set_role("update")
+    released = []
+
+    def acquire(self, timeout_s):
+        os.close(first.fd)  # the background update finishes
+        released.append(timeout_s)
+        return self.try_acquire()
+
+    monkeypatch.setattr(module.GameLock, "acquire", acquire)
+    with pytest.raises(Execed):
+        module.launch(["--windowed"])
+    assert released and calls["shown"] == [] and calls["updated"] == 1
+    assert (tmp_path / ".u-jagd/updater.lock").read_text().startswith("game ")
+
+
+def test_first_start_updates_and_marks_game(tmp_path, monkeypatch):
+    module = load_updater()
+    calls = launch_env(module, tmp_path, monkeypatch)
+    with pytest.raises(Execed):
+        module.launch([])
+    assert calls["updated"] == 1 and "U_JAGD_SPLASH_FD" not in calls["env"]
+
+
+def test_game_closes_start_window_pipe_once(monkeypatch):
+    import importlib
+    import src.core.launch_signal as launch_signal
+    launch_signal = importlib.reload(launch_signal)
+    read_fd, write_fd = os.pipe()
+    monkeypatch.setenv("U_JAGD_SPLASH_FD", str(write_fd))
+    launch_signal.game_visible()
+    assert os.read(read_fd, 1) == b""  # EOF: the start window closes
+    assert "U_JAGD_SPLASH_FD" not in os.environ
+    launch_signal.game_visible()  # idempotent
+    os.close(read_fd)
+
+
+def test_start_window_follows_status_and_closes_on_eof():
+    env = {**os.environ, "SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"}
+    proc = subprocess.Popen([sys.executable, str(SPLASH)], stdin=subprocess.PIPE, env=env)
+    proc.stdin.write("status\tSuche nach Updates …\nstatus\tStarte U-Jagd …\n".encode())
+    proc.stdin.flush()
+    proc.stdin.close()
+    assert proc.wait(timeout=30) == 0
+
+
+def test_start_window_keeps_a_final_message_after_eof():
+    env = {**os.environ, "SDL_VIDEODRIVER": "dummy", "SDL_AUDIODRIVER": "dummy"}
+    proc = subprocess.Popen([sys.executable, str(SPLASH)], stdin=subprocess.PIPE, env=env)
+    proc.stdin.write("status\tU-Jagd läuft bereits.\nclose\t1\n".encode())
+    proc.stdin.close()
+    started = time.monotonic()
+    assert proc.wait(timeout=30) == 0
+    assert time.monotonic() - started >= 0.8

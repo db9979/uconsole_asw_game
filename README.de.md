@@ -14,14 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.32**
+Aktuelle Version: **1.3.33**
 
-Version 1.3.32 bringt Richtungshören: Mit Stereoton kommen Detonationen,
-zurückkehrende Echos und das aktive Ping einer anderen Plattform aus der
-Peilung, aus der sie gehört wurden, links für Backbord und rechts für
-Steuerbord vom Bug der Fregatte oder des besetzten U-Boots aus, am uConsole
-und im Remote-Crew-Browser. Die Fregatte spielt jetzt auch das Ping eines
-U-Boots selbst, und das besetzte U-Boot hört das Ping eines Jägers am Rumpf.
+Version 1.3.33 lässt das ESM des besetzten U-Boots die Umlaufzeit jedes Radars
+messen, die Zeit zwischen den Treffern seiner Hauptkeule: ein Suchradar zeigt
+„dreht“ mit seiner Umlaufzeit (etwa 2,5 s für Navigations- und Seeraumradar, 5
+s für Luftraumradar), ein Verfolgungs- oder Feuerleitradar „dauernd“. Eine
+Dauerbeleuchtung des Mastes ist immer eine Mastwarnung und steht im Log; die
+Seite Mast & ESM am uConsole und der Browser zeigen die Messung. Spielstände
+sind jetzt v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -390,7 +391,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v26 gespeichert.
+v27 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -472,7 +473,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v26** sind
+Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v27** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -528,8 +529,8 @@ Version gilt:
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v26**. V26
-verlangt das exakte Schema `u-jagd-save-v26` einschließlich der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v27**. V27
+verlangt das exakte Schema `u-jagd-save-v27` einschließlich der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
 der Fregatte, des Funkraums des besetzten U-Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen

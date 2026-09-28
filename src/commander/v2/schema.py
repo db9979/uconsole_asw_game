@@ -90,7 +90,7 @@ UBOOT_ESM_EMITTER_FIELDS = (
     "number", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "band",
     "prf_hz", "modulation", "signal_db", "trend", "trend_db_min", "age_s", "live",
     "quality", "classification", "candidates", "range_estimate_nm", "mast_threat",
-    "history", "fix")
+    "scan", "scan_period_s", "history", "fix")
 UBOOT_ESM_HISTORY_FIELDS = ("age_s", "x", "y", "bearing")
 UBOOT_ESM_CANDIDATE_FIELDS = ("name", "role", "fit")
 # The boat's counter-detection picture (``threat``, src/core/boat_threat.py):

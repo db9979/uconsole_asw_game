@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.32**
+Current release: **1.3.33**
 
-Release 1.3.32 adds directional hearing: with stereo sound, detonations,
-returning echoes and another platform's active ping come from the bearing they
-were heard on, left for port and right for starboard of the frigate's or the
-crewed submarine's head, on the uConsole and in the Remote Crew browser. The
-frigate now also plays a submarine's ping itself, and the crewed submarine
-hears a hunter's ping ring on its hull.
+Release 1.3.33 lets the crewed submarine's ESM measure each radar's scan
+period, the time between its main-beam hits: a search radar reads rotating
+with its period (about 2.5 s for navigation and surface search, 5 s for air
+search), a tracking or fire-control radar reads steady. A steady beam on the
+mast is always a mast warning and is reported in the log; the uConsole's Mast
+& ESM page and the browser show the reading. Saves are now v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -373,7 +373,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v26 game saves for deterministic restoration of existing sessions.
+in v27 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -488,8 +488,8 @@ Validated does not mean runtime-effective. In this release:
 
 ## Saves and User Data
 
-This build writes and loads save format **v26** only. V26 requires the exact
-`u-jagd-save-v26` schema, including the crewed submarine's tube states, the frigate's radar blips and OPZ marks, the crewed submarine's attack-computer marks, the frigate's variable-depth sonar, the crewed submarine's radio room, the HQ task board, both crews' watch bills,
+This build writes and loads save format **v27** only. V27 requires the exact
+`u-jagd-save-v27` schema, including the crewed submarine's ESM scan-period reference, the crewed submarine's tube states, the frigate's radar blips and OPZ marks, the crewed submarine's attack-computer marks, the frigate's variable-depth sonar, the crewed submarine's radio room, the HQ task board, both crews' watch bills,
 the patrol aircraft and each buoy's owner, the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
 modes, mast, wires, plot, alarm bearings, its sonar station and its ESM

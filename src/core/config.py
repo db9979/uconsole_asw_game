@@ -460,6 +460,16 @@ UBOOT_ESM_TREND_DB_PER_MIN = 0.5    # a slope beyond this reads rising/falling
 UBOOT_ESM_WASH_SEA_STATE = 3.0      # from this sea state waves wash over the mast antenna ...
 UBOOT_ESM_WASH_PER_SEA = 0.12       # ... losing this fraction of scans per sea state above it
 UBOOT_ESM_WASH_MAX = 0.6
+# Scan period: the interval between an emitter's main-beam hits (the level
+# peaks; close in the side lobes are heard in between). A rotating search
+# radar reads its rotation period, a tracking/fire-control radar
+# illuminates steadily (every scan). Measured only over gaps up to
+# SCAN_GAP_MAX_S with no washed scan in between, read after SCAN_MEASURE_S.
+UBOOT_ESM_SCAN_GAP_MAX_S = 12.0
+UBOOT_ESM_SCAN_MEASURE_S = 8.0
+UBOOT_ESM_STEADY_S = 1.5
+UBOOT_ESM_SCAN_ALPHA = 0.35
+UBOOT_ESM_PEAK_DB = 10.0          # a main-beam hit reads within this of the held peak (side lobes -25 dB)
 # Recommended mast time: short in a calm sea (the mast stands out of the
 # clutter), longer when sea clutter hides it; short whenever an intercepted
 # search radar is close enough to see the mast.

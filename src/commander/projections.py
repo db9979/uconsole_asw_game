@@ -1470,6 +1470,10 @@ def _uboot_esm(game, boat):
                         for key in esm.library(game, emitter)[:UBOOT_ESM_CANDIDATES]],
             range_estimate_nm=_number(esm.range_estimate_nm(game, emitter)),
             mast_threat=danger,
+            # The measured scan period: rotating search radar or a steady beam.
+            scan=boat_esm.scan_reading(track),
+            scan_period_s=(_number(track.revisit_s)
+                           if boat_esm.scan_reading(track) is not None else None),
             history=[dict(age_s=_age(now, row[0]), x=_number(row[1]), y=_number(row[2]),
                           bearing=_number(row[3])) for row in emitter.history[-16:]],
             fix=None if fix is None else dict(

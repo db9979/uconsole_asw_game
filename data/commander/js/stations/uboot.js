@@ -348,6 +348,8 @@ function renderEsm(esm, status) {
     ["uboot_esm_col_level", unit(row.signal_db, "dB", 0)], ["uboot_esm_col_trend", trendText(row)],
     ["age", unit(row.age_s, "s", 0)],
     ["uboot_esm_range", t("uboot_esm_range_value", {range: number(row.range_estimate_nm, 1)})],
+    ["uboot_esm_scan", row.scan === null ? t("uboot_esm_scan_measuring")
+      : t(`uboot_esm_scan_${row.scan}`, {period: number(row.scan_period_s, 1)})],
     ["uboot_esm_col_fix", row.fix ? fixText(row.fix) : t("uboot_esm_no_fix")],
     ["uboot_esm_fix_state", row.fix === null ? t("unavailable") : t(row.fix.consistent ? "uboot_esm_fix_consistent" : "uboot_esm_fix_inconsistent", {lines: row.fix.lines})],
     ["uboot_esm_col_class", row.classification ? `${row.classification.name} (${stateText("uboot_esm_role", row.classification.role)}, ${t(`uboot_esm_fit_${row.classification.fit}`)})` : t("uboot_esm_unclassified")]]);

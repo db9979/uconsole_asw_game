@@ -1003,6 +1003,13 @@ def _esm_trend_text(emitter, now):
     return "--" if trend is None else f"{localize(message(f'uboot.esm.trend.{trend}'))} {slope:+.1f}"
 
 
+def _esm_scan_text(emitter):
+    reading = boat_esm.scan_reading(emitter.track)
+    if reading is None:
+        return message("uboot.esm.scan.measuring")
+    return message(f"uboot.esm.scan.{reading}", period=f"{emitter.track.revisit_s:.1f}")
+
+
 def _esm_class_text(game, boat, emitter):
     profile = boat.esm.classified(game, emitter)
     if profile is None:
@@ -1043,7 +1050,7 @@ def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
                      else config.COLOR_TEXT_DIM, size=15)
     top = y + 104
     rose_w = min(w * 2 // 5, 220)
-    rose_h = min(rose_w, max(120, h - (top - y) - 150))
+    rose_h = min(rose_w, max(100, h - (top - y) - 170))
     _draw_esm_rose(s, game, boat, pygame.Rect(x, top, rose_w, rose_h), threats)
     memory = boat.sub.memory
     layout.blit_line(s, message("uboot.line.alarm_ping", value=_alarm_value(
@@ -1095,14 +1102,22 @@ def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
             major=f"{fix['major_nm']:.1f}", minor=f"{fix['minor_nm']:.1f}",
             lines=fix["lines"]) if fix is not None else message("uboot.esm.no_fix")),
         (message("uboot.esm.label.class"), _esm_class_text(game, boat, chosen)),
+        (message("uboot.esm.label.scan"), _esm_scan_text(chosen)),
     ]
+    # One column when every row fits, else the measurements on the left
+    # and the crew's reading (class, scan) in a narrower right column.
+    split = len(rows) * 20 > dh
     for index, (label, value) in enumerate(rows):
-        if (index + 1) * 20 > dh:
-            break
-        layout.status_line(s, dx, dy + index * 20, dw, label, value,
+        column, line = (divmod(index, 3) if split else (0, index))
+        if (line + 1) * 20 > dh:
+            continue
+        left_w = dw * 3 // 5 if split else dw
+        column_x = dx if column == 0 else dx + left_w + 12
+        layout.status_line(s, column_x, dy + line * 20,
+                           left_w if column == 0 else dw - left_w - 12, label, value,
                            color=(config.COLOR_WARN if index == 2 and fix is not None
                                   and not fix["consistent"] else None),
-                           size=14, label_w=104)
+                           size=14, label_w=104 if not split else 84 if column == 0 else 72)
 
 
 def draw_esm_chart(game, boat, view, r) -> None:

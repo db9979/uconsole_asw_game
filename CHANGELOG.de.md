@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.44
+
+Version 1.3.44 behebt Remote-Crew-Browser, die mit „Host sendet Daten, die
+dieser Browser nicht lesen kann“ einfroren. Vier Listen nannten die Art einer
+Zeile mit einem Feld, das der Browser in jedem Stationszustand ablehnt: das
+Funklog des U-Boots, seine Bedrohungs-Peilungen und sein Ausweichbefehl sowie
+die HQ-Aufträge im Funkraum der Fregatte. Sobald die erste Sendung mitgeschrieben,
+ein Ping oder Torpedo gehört oder ein Auftrag angeboten war, stand das
+Lagebild still und Aktionen waren gesperrt. Diese Zeilen senden das Feld jetzt
+als `type`; ein neuer Test findet solche Felder auch ohne Chromium. Nach dem
+Update des Hosts die Browserseite einmal neu laden, damit sie den neuen
+Web-Client lädt. Spielstände bleiben v27.
+
 ## 1.3.43
 
 Version 1.3.43 lässt auf GitHub nur noch das neueste Release stehen: Nach dem

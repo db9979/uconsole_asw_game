@@ -780,7 +780,10 @@ def _radio_tasks(game, station_down):
     """HQ tasks as the radio room knows them (reported positions only)."""
     tasks = []
     for row in game.task_view():
-        item = {key: row[key] for key in RADIO_TASK_FIELDS if key != "can_answer"}
+        # The wire calls the task's kind ``type``: the browser rejects any
+        # ``kind`` key in a role state (it never carries entity kinds).
+        item = {key: row["kind" if key == "type" else key]
+                for key in RADIO_TASK_FIELDS if key != "can_answer"}
         for key in ("x", "y", "radius_nm", "bearing", "range_nm", "progress",
                     "course", "speed_kn", "respond_s", "remaining_s"):
             item[key] = _number(item[key])
@@ -1523,14 +1526,15 @@ def _uboot_threat(game, boat):
     intercepts and own state only; see src/core/boat_threat.py)."""
     view = boat_threat.picture(game, boat)
     plan = boat_threat.evasion_plan(game, boat)
-    view["intercepts"] = [dict(kind=row["kind"], bearing=_number(row["bearing"]),
+    view["intercepts"] = [dict(type=row["kind"], bearing=_number(row["bearing"]),
                                level_db=_number(row["level_db"]), age_s=_number(row["age_s"]))
                           for row in view["intercepts"]]
     view["counts"] = {kind: int(view["counts"][kind]) for kind in boat_threat.KINDS}
     for key in ("loudest_db", "layer_m", "depth_m"):
         view[key] = _number(view[key])
     view["plan"] = None if plan is None else dict(
-        plan, bearing=_number(plan["bearing"]), course=_number(plan["course"]),
+        {key: value for key, value in plan.items() if key != "kind"}, type=plan["kind"],
+        bearing=_number(plan["bearing"]), course=_number(plan["course"]),
         speed_kn=_number(plan["speed_kn"]), depth_m=_number(plan["depth_m"]))
     return view
 
@@ -1558,7 +1562,7 @@ def _uboot_radio(game, boat):
         transmitting=bool(radio.transmitting), sitreps=int(progress["sitreps"]),
         ack_due=bool(progress["ack_due"]),
         report=_uboot_radio_report(game, None if latest is None else latest["report"]),
-        log=[dict(seq=int(row["seq"]), kind=row["kind"], age_s=_age(game.sim_t, row["t"]),
+        log=[dict(seq=int(row["seq"]), type=row["kind"], age_s=_age(game.sim_t, row["t"]),
                   number=None if row["number"] is None else int(row["number"]),
                   ack=bool(row["ack"]), report=_uboot_radio_report(game, row["report"]))
              for row in reversed(radio.log)])

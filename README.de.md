@@ -14,12 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.43**
+Aktuelle Version: **1.3.44**
 
-Version 1.3.43 lässt auf GitHub nur noch das neueste Release stehen: Nach dem
-Veröffentlichen einer neuen Version löscht der Windows-Workflow alle älteren
-Releases (ihre Git-Tags bleiben). Windows-Starter und uConsole-Updater lesen
-nur das neueste Release. Spielstände bleiben v27.
+Version 1.3.44 behebt Remote-Crew-Browser, die mit „Host sendet Daten, die
+dieser Browser nicht lesen kann“ einfroren. Vier Listen nannten die Art einer
+Zeile mit einem Feld, das der Browser in jedem Stationszustand ablehnt: das
+Funklog des U-Boots, seine Bedrohungs-Peilungen und sein Ausweichbefehl sowie
+die HQ-Aufträge im Funkraum der Fregatte. Sobald die erste Sendung mitgeschrieben,
+ein Ping oder Torpedo gehört oder ein Auftrag angeboten war, stand das
+Lagebild still und Aktionen waren gesperrt. Diese Zeilen senden das Feld jetzt
+als `type`; ein neuer Test findet solche Felder auch ohne Chromium. Nach dem
+Update des Hosts die Browserseite einmal neu laden, damit sie den neuen
+Web-Client lädt. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -5589,5 +5589,13 @@
   "commander.web.uboot_solution_value": "{course} {speed} · lead {lead} · run {run} ({marks} marks)",
   "commander.web.uboot_solution_marks": "{marks} mark(s)",
   "commander.web.uboot_solution_no_intercept": "{course} {speed} · no intercept",
-  "help.uboot.scope_fire": "Periscope page: fire on the attack computer's solution of the sighting under the crosshair (Command)"
+  "help.uboot.scope_fire": "Periscope page: fire on the attack computer's solution of the sighting under the crosshair (Command)",
+  "uboot.event.hull_bolts": "Hull fitting bolts sheared: {compartment}.",
+  "uboot.event.hull_seal": "Seal failed under pressure: {compartment}.",
+  "uboot.event.hull_fracture": "Pressure hull cracked: {compartment}!",
+  "uboot.event.hull_collapse": "Crush depth: the pressure hull collapses.",
+  "uboot.threat.overdepth": "BELOW TEST DEPTH {depth} m (test {test} m, crush {crush} m)",
+  "uboot.ladder.crush": "Crush {depth} m",
+  "commander.web.uboot_depth_mark_crush": "Crush {depth} m",
+  "commander.web.uboot_chip_overdepth": "Below test depth {test} m (crush {crush} m)"
 }

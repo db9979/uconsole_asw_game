@@ -116,6 +116,25 @@ class BoatDamageControl:
                 c.fire = max(c.fire, config.UBOOT_DC_FIRE_START)
         return notices
 
+    def hull_leak(self, size: float, seed: int, *, where=None, spread: float = 0.0) -> list:
+        """A pressure-hull failure (no fire): hole ``where`` (or a compartment
+        drawn from the seed) by ``size``, its neighbour by ``spread``."""
+        self.hits += 1
+        index = (COMPARTMENTS.index(where) if where is not None else
+                 min(len(COMPARTMENTS) - 1,
+                     int(detrand.u01(seed, "dc-hull", self.hits) * len(COMPARTMENTS))))
+        struck = [(index, size)]
+        if spread > 0.0:
+            side = -1 if detrand.u01(seed, "dc-hull-side", self.hits) < 0.5 else 1
+            other = index + side if 0 <= index + side < len(COMPARTMENTS) else index - side
+            struck.append((other, spread))
+        notices = []
+        for where_index, amount in struck:
+            c = self.compartments[where_index]
+            c.leak = min(1.0, c.leak + amount)
+            notices.append(("dc_leak", dict(compartment=COMPARTMENTS[where_index])))
+        return notices
+
     # --- model -------------------------------------------------------------
 
     def update(self, dt: float, *, depth_m: float) -> list:

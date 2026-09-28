@@ -293,7 +293,7 @@ export function validateV2State(state) {
         !exactKeys(visual.receiver, ["array", "listen_bearing", "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled"]) || !["BROADBAND", "FILTERED", "HETERODYNE"].includes(visual.receiver.listen_mode) || typeof visual.receiver.focus_locked !== "boolean" || typeof visual.receiver.audio_enabled !== "boolean") throw new Error("protocol");
   } else if (isBoatCommand(state.role)) {
     const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
-    const navNumbers = ["x", "y", "course", "target_course", "speed", "target_speed", "depth_m", "target_depth_m", "safe_depth_m", "max_depth_m", "max_speed_kn", "noise"];
+    const navNumbers = ["x", "y", "course", "target_course", "speed", "target_speed", "depth_m", "target_depth_m", "safe_depth_m", "max_depth_m", "crush_depth_m", "max_speed_kn", "noise"];
     if (!exactKeys(nav, [...navNumbers, "water_depth_m", "under_keel_m", "obstacle_ahead_nm", "depth_presets", "cavitating"]) || navNumbers.some((key) => !finite(nav[key])) ||
         !exactKeys(nav.depth_presets, ["periscope", "snorkel", "above_layer", "below_layer", "deep", "layer"]) ||
         Object.values(nav.depth_presets).some((value) => value !== null && (!finite(value) || value < 0 || value > 1000)) ||

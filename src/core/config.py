@@ -365,6 +365,15 @@ UBOOT_DC_SECOND_HIT_PCT = 50.0      # a hit this heavy holes a neighbour too
 UBOOT_DC_FIRE_CHANCE_PCT = 150.0    # fire chance = damage / this
 UBOOT_DC_FIRE_START = 0.2
 UBOOT_DC_FATIGUE_LEAK = 0.3         # hull fatigue crack beyond test depth
+# A crewed boat below its test depth (``Sub._hull_failure``): chance that a
+# failure is a crack (per unit of excess over test depth, capped), else a
+# shaft/valve seal or a bolted fitting; hull damage (%) each adds.
+UBOOT_HULL_FRACTURE_PER_EXCESS = 1.5
+UBOOT_HULL_FRACTURE_MAX = 0.6
+UBOOT_HULL_SEAL_CHANCE = 0.3
+UBOOT_HULL_FRACTURE_DAMAGE = 30.0
+UBOOT_HULL_SEAL_DAMAGE = 12.0
+UBOOT_HULL_BOLTS_DAMAGE = 6.0
 UBOOT_DC_SPILL_FRACTION = 0.5       # water above this spills (and smothers fire)
 UBOOT_DC_SPILL_KG_S = 20.0
 UBOOT_DC_FIRE_GROW_S = 120.0

@@ -404,11 +404,13 @@ def _draw_sea(s, view, sky, colors, sea_state, t, haze):
 
 
 def draw_scene(s, view: View, sky: dict, *, visibility_nm: float, sea_state: float,
-               t: float) -> dict:
+               t: float, aloft=None) -> dict:
     """Sky, stars, moon or sun, clouds and sea of one picture; returns its
-    palette for the land and the silhouettes."""
+    palette for the land and the silhouettes.  ``aloft(colors)`` draws what
+    flies behind the clouds (aircraft)."""
     haze = 1.0 - _clamp(visibility_nm / config.WEATHER_VISIBILITY_MAX_NM)
     colors = palette(sky, haze)
+    colors["haze_level"] = haze
     rect = view.rect
     sky_img = _cached(_SKY_CACHE, (rect.w, rect.h, colors["sky"]),
                       lambda: _gradient((rect.w, rect.h), *colors["sky"]))
@@ -420,6 +422,8 @@ def draw_scene(s, view: View, sky: dict, *, visibility_nm: float, sea_state: flo
     s.blit(sky_img, (rect.x, top))
     _draw_stars(s, view, sky, colors, t, haze)
     _draw_body(s, view, sky, colors, haze)
+    if aloft is not None:
+        aloft(colors)
     _draw_clouds(s, view, sky, colors, t, haze)
     _draw_sea(s, view, sky, colors, sea_state, t, haze)
     colors["haze_level"] = haze

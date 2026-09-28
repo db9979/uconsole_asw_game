@@ -225,11 +225,14 @@ def _lookout_land(game):
 
 
 def lookout_outlines(game, sightings) -> list:
-    """Detached ``(bearing, span_deg, cls, stale, lights)`` rows of the
-    lookout's own tracks: the class from his report, the size from the
-    measured range, the navigation lights he makes out (``nav_lights`` code)."""
+    """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg)``
+    rows of the lookout's own tracks: the class from his report, the size
+    from the measured range, the navigation lights he makes out
+    (``nav_lights`` code) and an aircraft's angle above the horizon
+    (``None`` on the surface)."""
     from src.sensors import lookout_id
     lit = getattr(game, "_lookout_lights", {})
+    elevation = getattr(game, "_lookout_elevation", {})
     rows = []
     for track in sightings:
         if track.bearing is None or track.range_nm is None or track.range_nm <= 0.0:
@@ -245,8 +248,10 @@ def lookout_outlines(game, sightings) -> list:
                             / max(track.range_nm * 1852.0, 1.0))
         stale = game.sim_t - track.last_seen > config.LOOKOUT_EPOCH_S * 2
         lights = lit.get(getattr(track, "track_id", None))
+        aloft = elevation.get(getattr(track, "track_id", None)) if track.kind == "FLG" else None
         rows.append((track.bearing % 360.0, max(1e-3, min(180.0, span)), cls, stale,
-                     lights[0] if lights is not None and not stale else None))
+                     lights[0] if lights is not None and not stale else None,
+                     None if aloft is None else aloft[0]))
     return rows
 
 

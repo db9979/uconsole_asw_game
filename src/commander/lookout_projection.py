@@ -23,10 +23,11 @@ def _calls(game, side):
             for row in phone_lookout.calls(game, side)[:8]]
 
 
-def _outline(bearing, span, cls, stale, lights, called, range_nm=None):
+def _outline(bearing, span, cls, stale, lights, elevation, called, range_nm=None):
     return dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                 stale=bool(stale), lights=projections._nav_lights(lights),
-                called=bool(called), range_nm=_number(range_nm))
+                elevation_deg=_number(elevation), called=bool(called),
+                range_nm=_number(range_nm))
 
 
 def _frigate(game):
@@ -56,8 +57,12 @@ def _frigate(game):
 def _boat(game, boat):
     scope = projections._uboot_scope(game, boat)
     now = game.sim_t
-    outlines = [_outline(row["bearing"], row["span_deg"], row["cls"], row["stale"],
-                         row["lights"], False, row["range_nm"])
+    elevation = boat.orders._elevation
+    outlines = [_outline(row["bearing"], row["span_deg"],
+                         "aircraft" if row["kind"] == "FLG" and row["ref"] in elevation
+                         else row["cls"], row["stale"], row["lights"],
+                         elevation.get(row["ref"]) if row["kind"] == "FLG" else None,
+                         False, row["range_nm"])
                 for row in (dict(sighting, stale=not 0.0 <= now - sighting["t"] <= 1.0,
                                  lights=(None if now - sighting["t"] > 1.0 else
                                          boat.orders._lights.get(sighting["ref"])))

@@ -14,15 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.48**
+Aktuelle Version: **1.3.49**
 
-Version 1.3.48 erneuert die Bilder auf der Projektseite. Sie stehen jetzt in
-einer Galerie und zeigen neu das Fernglas des Ausgucks auf der Fregatte und das
-Sehrohr des U-Boots bei Tag und bei Nacht, auf der uConsole und im Browser, mit
-einem Kriegsschiff und Frachtern im Okular und den Positionslichtern der
-Frachter im Dunkeln; alle Stationsbilder zeigen den neuen türkisen Look. Die
-Screenshot-Werkzeuge erzeugen diese Okularbilder selbst
-(`tools/sight_capture.py`). Spielstände bleiben v27.
+Version 1.3.49 zeigt Flugzeuge im Fernglas des Ausgucks, im Ausguckstreifen, im
+Sehrohr und im Handy-Ausguck in ihrer wahren Höhe: Jedes steht in seinem
+Höhenwinkel über der Kimm, berechnet aus Flughöhe und Entfernung abzüglich der
+Erdkrümmung, sodass man ein hohes, nahes Flugzeug erst mit nach oben geneigter
+Optik sieht. Flugzeuge hängen jetzt hinter den Wolken im ruhigen Himmel, statt
+mit den Schiffen im Seegang zu schwanken. Auf der uConsole und im
+Remote-Crew-Browser; Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

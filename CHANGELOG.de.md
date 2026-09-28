@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.49
+
+Version 1.3.49 zeigt Flugzeuge im Fernglas des Ausgucks, im Ausguckstreifen, im
+Sehrohr und im Handy-Ausguck in ihrer wahren Höhe: Jedes steht in seinem
+Höhenwinkel über der Kimm, berechnet aus Flughöhe und Entfernung abzüglich der
+Erdkrümmung, sodass man ein hohes, nahes Flugzeug erst mit nach oben geneigter
+Optik sieht. Flugzeuge hängen jetzt hinter den Wolken im ruhigen Himmel, statt
+mit den Schiffen im Seegang zu schwanken. Auf der uConsole und im
+Remote-Crew-Browser; Spielstände bleiben v27.
+
 ## 1.3.48
 
 Version 1.3.48 erneuert die Bilder auf der Projektseite. Sie stehen jetzt in

@@ -65,8 +65,9 @@ SKY_FIELDS = ("light", "dusk", "cloud", "precipitation", "intensity", "wind_from
 LOOKOUT_GLASSES_FIELDS = ("course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset",
                           "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines")
 # ``lights``: the navigation lights made out (``src/sensors/nav_lights.py``
-# code) or null.
-LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "lights")
+# code) or null; ``elevation_deg``: an aircraft's angle above the sea
+# horizon (null on the surface).
+LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "lights", "elevation_deg")
 SIGHT_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
 # The phone lookouts (``lookout`` binoculars, ``uboot_lookout`` periscope):
 # the eyepiece, the lookout's own sightings (called or not) and his calls.

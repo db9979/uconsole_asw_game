@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.49
+
+Release 1.3.49 puts aircraft at their true height in the lookout's binoculars,
+the lookout strip, the periscope and the phone lookout: each stands at its
+elevation above the horizon, worked out from its altitude and range less the
+curve of the Earth, so a high aircraft close by needs the optics tilted up.
+Aircraft now hang in the still sky behind the clouds instead of riding the
+swell with the ships. Both on the uConsole and in the Remote Crew browser;
+saves stay v27.
+
 ## 1.3.48
 
 Release 1.3.48 renews the pictures on the project page. They are now a

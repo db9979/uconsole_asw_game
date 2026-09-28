@@ -1069,7 +1069,7 @@ SCENARIOS = {
         ship_start=(250.0, 300.0), ship_course=0.0,
         briefing=("Auftrag: Zwei U-Boote operieren im Einsatzsektor (eines davon "
                   "möglicherweise AIP – nahezu stumm). Belegungen: ESM-Wellen "
-                  "werden erwartet. Ziel: Beide Boote versenken, zivile Schifffahrt "
+                  "werden erwartet. Ziel: Beide U-Boote versenken, zivile Schifffahrt "
                   "schützen, ASM-Wellen abwehren."),
         win_text="Beide Ziel-U-Boote versenkt",
         lose_text="Ziel entkommt / Zeitlimit / Fregatte gesunken / ziviler Verlust",
@@ -1102,9 +1102,9 @@ SCENARIOS = {
         hq_intel="coarse",
         ship_start=(260.0, 300.0), ship_course=90.0,
         boat=True,
-        briefing="Boot: Das Zielgebiet hinter der Fregatte erreichen.",
-        win_text="Boot aufgehalten",
-        lose_text="Boot bricht durch / Fregatte gesunken",
+        briefing="U-Boot: Das Zielgebiet hinter der Fregatte erreichen.",
+        win_text="U-Boot aufgehalten",
+        lose_text="U-Boot bricht durch / Fregatte gesunken",
     ),
     "s6_aufklaerung": dict(
         title="Aufklaerung",
@@ -1117,9 +1117,9 @@ SCENARIOS = {
         hq_intel="coarse",
         ship_start=(280.0, 320.0), ship_course=0.0,
         boat=True,
-        briefing="Boot: Die Fregatte sichten und per Funk melden.",
+        briefing="U-Boot: Die Fregatte sichten und per Funk melden.",
         win_text="Meldung verhindert",
-        lose_text="Boot meldet die Fregatte / Fregatte gesunken",
+        lose_text="U-Boot meldet die Fregatte / Fregatte gesunken",
     ),
     "s7_geleitzug": dict(
         title="Geleitzug",
@@ -1132,7 +1132,7 @@ SCENARIOS = {
         hq_intel="coarse",
         ship_start=(250.0, 300.0), ship_course=90.0,
         boat=True,
-        briefing="Boot: Zwei Handelsschiffe des Geleitzugs versenken.",
+        briefing="U-Boot: Zwei Handelsschiffe des Geleitzugs versenken.",
         win_text="Geleitzug geschuetzt",
         lose_text="Zwei Handelsschiffe verloren / Fregatte gesunken",
     ),

@@ -119,7 +119,7 @@ Combat situation:
 - `Shift+F` selects the DEMON carrier band (200-800, 400-1400 or 1000-2000 Hz): search the band where the cavitation noise is strongest. `Ctrl+F` sets the heterodyne shift (400/700/1000/1200 Hz) for listening to low tonals.
 - In the contact analyser (`F8`) with a contact selected, `Enter` assigns the browsed catalog profile to that contact and `Shift+Enter` clears it. The assignment is your annotation: it is shown in the contact list and saved, and it never changes the contact's classification or weapon interlocks.
 - A contact is lost 120 s after its last detection. Keep tracking weak contacts, or reacquire with a ping.
-- Wrecks return real echoes without Doppler. A submarine lying still beside a charted wreck hides in that echo from a CW ping (750 m range cell); an LFM ping resolves about 8 m and can separate the boat from the wreck. Suspect every wreck the enemy could have reached.
+- Wrecks return real echoes without Doppler. A submarine lying still beside a charted wreck hides in that echo from a CW ping (750 m range cell); an LFM ping resolves about 8 m and can separate the submarine from the wreck. Suspect every wreck the enemy could have reached.
 - The bathythermograph (`E`) measures to the seabed, at most 1500 m. Only after a measurement does the weather & sonar analysis (`0`) show the layer, the shadow zone below it and a SOFAR channel.
 - The sonar never names a torpedo or a submarine. It reports what it hears: a mechanical launch transient (heard out to 35 NM) or high-frequency seeker pulses (about 6 NM) as a bearing, held on the Bridge alarm for 60 s, and breaking-up noises when a hull sinks. The OPZ symbol of a sonar contact follows your classification only; an unclassified contact stays unknown.
 

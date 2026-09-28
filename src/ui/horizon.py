@@ -148,13 +148,43 @@ def blend(a, b, t: float) -> tuple:
     return tuple(int(x + (y - x) * t) for x, y in zip(a, b))
 
 
-def horizon_motion(seed: int, sim_t: float, sea_state: float) -> tuple:
+def hull_motion(seed: int, sim_t: float, sea_state: float,
+                sea_rel_deg: float | None = None) -> tuple:
+    """(pitch, roll) wave slopes in rad of a hull ``sea_rel_deg`` off the sea
+    (the direction the waves come from, relative to the bow): head or
+    following seas make her pitch, beam seas roll (display only,
+    deterministic in sim time)."""
+    pitch = ship_dynamics.wave_slope_rad(int(seed), sim_t, sea_state)
+    if sea_rel_deg is None:
+        return pitch, pitch
+    # The roll answers the same sea more slowly (longer natural period).
+    roll = ship_dynamics.wave_slope_rad(int(seed) + 1, sim_t * 0.7, sea_state)
+    angle = math.radians(sea_rel_deg)
+    return (pitch * (0.35 + 0.65 * abs(math.cos(angle))),
+            roll * (0.3 + 1.2 * abs(math.sin(angle))))
+
+
+def view_motion(pitch: float, roll: float, look_rel_deg: float = 0.0) -> tuple:
+    """(vertical offset px, tilt rad) of the horizon seen ``look_rel_deg``
+    off the bow: ahead the pitch lifts it and the roll tilts it, abeam the
+    other way round."""
+    look = math.radians(look_rel_deg)
+    lift = pitch * math.cos(look) + roll * math.sin(look)
+    lean = roll * math.cos(look) - pitch * math.sin(look)
+    return (config.clamp(lift * MOTION_PX_PER_RAD, -40.0, 40.0),
+            config.clamp(lean * 0.6, -0.25, 0.25))
+
+
+def horizon_motion(seed: int, sim_t: float, sea_state: float,
+                   sea_rel_deg: float | None = None, look_rel_deg: float = 0.0) -> tuple:
     """(vertical offset px, tilt rad) of the horizon from the wave slope at
-    ``seed`` (display only, deterministic in sim time)."""
-    slope = ship_dynamics.wave_slope_rad(int(seed), sim_t, sea_state)
-    offset = config.clamp(slope * MOTION_PX_PER_RAD, -40.0, 40.0)
-    tilt = config.clamp(slope * 0.6, -0.25, 0.25)
-    return offset, tilt
+    ``seed`` (display only, deterministic in sim time); with ``sea_rel_deg``
+    the hull pitches and rolls by her heading to the sea."""
+    if sea_rel_deg is None:
+        slope = ship_dynamics.wave_slope_rad(int(seed), sim_t, sea_state)
+        return (config.clamp(slope * MOTION_PX_PER_RAD, -40.0, 40.0),
+                config.clamp(slope * 0.6, -0.25, 0.25))
+    return view_motion(*hull_motion(seed, sim_t, sea_state, sea_rel_deg), look_rel_deg)
 
 
 def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,

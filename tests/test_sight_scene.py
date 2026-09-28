@@ -130,3 +130,33 @@ def test_the_sky_stays_still_while_the_horizon_rolls():
     band = pygame.Rect(20, 30, 360, 30)
     assert (pygame.image.tobytes(calm.subsurface(band), "RGB")
             == pygame.image.tobytes(rolling.subsurface(band), "RGB"))
+
+
+def test_the_sea_looks_different_into_across_and_down_the_waves():
+    head, cross = sight_scene.sea_aspect(0.0, 0.0)
+    assert head == pytest.approx(1.0) and cross == pytest.approx(0.0, abs=1e-9)
+    head, cross = sight_scene.sea_aspect(0.0, 90.0)      # waves from the left
+    assert head == pytest.approx(0.0, abs=1e-9) and cross == pytest.approx(1.0)
+    assert sight_scene.sea_aspect(0.0, 180.0)[0] == pytest.approx(-1.0)
+    sky = dict(sight_scene.plain_sky(False), wind_from_deg=0.0)
+    band = (0, 110, 360, 70)
+    into = _picture(sky, motion=(0.0, 0.0), outlines=[], crosshair_deg=None, sea_state=5.0,
+                    line_of_sight=0.0)
+    across = _picture(sky, motion=(0.0, 0.0), outlines=[], crosshair_deg=None, sea_state=5.0,
+                      line_of_sight=90.0)
+    assert pygame.image.tobytes(into.subsurface(band), "RGB") != \
+        pygame.image.tobytes(across.subsurface(band), "RGB")
+
+
+def test_heading_to_the_sea_sets_pitch_and_roll():
+    from src.ui import horizon
+    beam = [horizon.hull_motion(3, t / 4.0, 5.0, 90.0) for t in range(400)]
+    head = [horizon.hull_motion(3, t / 4.0, 5.0, 0.0) for t in range(400)]
+    peak = lambda rows, index: max(abs(row[index]) for row in rows)  # noqa: E731
+    assert peak(beam, 1) > 2.0 * peak(head, 1)       # beam seas: she rolls
+    assert peak(head, 0) > 2.0 * peak(beam, 0)       # head seas: she pitches
+    # Looking abeam the roll lifts the horizon instead of tilting it.
+    offset, tilt = horizon.view_motion(0.0, 0.05, 90.0)
+    assert offset > 0 and tilt == pytest.approx(0.0, abs=1e-9)
+    offset, tilt = horizon.view_motion(0.0, 0.05, 0.0)
+    assert offset == pytest.approx(0.0, abs=1e-9) and tilt > 0

@@ -377,7 +377,8 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
             s, (ix, iy, iw, strip_h), line_of_sight=game.ship.course % 360.0,
             fov_deg=LOOKOUT_HORIZON_FOV_DEG, night=night,
             visibility_nm=weather["visibility_nm"],
-            motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
+            motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"],
+                                          weather["wind_from_deg"] - game.ship.course),
             outlines=lookout_outlines(game, sightings), land=_lookout_land(game),
             anim_t=game.sim_t, sky=sight_scene.sky_state(game), sea_state=weather["sea_state"])
         iy += strip_h + 6
@@ -449,7 +450,9 @@ def draw_lookout_glasses(game) -> None:
     horizon.draw_horizon(
         s, eyepiece, line_of_sight=line_of_sight, fov_deg=config.LOOKOUT_GLASSES_FOV_DEG,
         night=night, visibility_nm=weather["visibility_nm"],
-        motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
+        motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"],
+                                      weather["wind_from_deg"] - course,
+                                      game.lookout_glasses_rel),
         outlines=lookout_outlines(game, sightings), land=land, anim_t=game.sim_t,
         sky=sight_scene.sky_state(game), sea_state=weather["sea_state"])
     pygame.draw.rect(s, config.COLOR_SONAR_RING, eyepiece, 1)

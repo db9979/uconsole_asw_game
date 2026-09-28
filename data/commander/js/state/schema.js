@@ -170,7 +170,7 @@ export function validateV2State(state) {
   };
   const sightFields = {
     sky: ["light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg", "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg", "moon_illumination", "moon_waxing"],
-    glasses: ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "sky", "outlines"],
+    glasses: ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines"],
     outline: ["bearing", "span_deg", "cls", "stale", "lights"],
     classes: ["warship", "merchant", "aircraft", "torpedo", "unknown"],
   };
@@ -232,7 +232,7 @@ export function validateV2State(state) {
     [sky.light, sky.dusk, sky.cloud, sky.intensity, sky.moon_illumination].every((value) => value >= 0 && value <= 1);
   const navLightsOk = (code) => code === null || (typeof code === "string" && /^[LR][012][r-][g-][s-](GW|WR|RWR|GGG|AC)?$/.test(code));
   const glassesOk = (glasses) => exactKeys(glasses, sightFields.glasses) && skyOk(glasses.sky) &&
-    ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"].every((key) => finite(glasses[key])) &&
+    ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll"].every((key) => finite(glasses[key])) &&
     glasses.fov_deg > 0 && glasses.fov_deg <= 180 &&
     boundedArray(glasses.outlines, 16) && glasses.outlines.every((row) => exactKeys(row, sightFields.outline) &&
       finite(row.bearing) && finite(row.span_deg) && row.span_deg > 0 && sightFields.classes.includes(row.cls) &&

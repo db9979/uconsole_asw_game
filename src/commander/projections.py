@@ -1329,12 +1329,17 @@ def _lookout_glasses(game):
     from src.ui import horizon
     from src.ui.stations.bridge import lookout_outlines
     weather = game.world.weather_values()
-    offset, tilt = horizon.horizon_motion(0, game.sim_t, weather["sea_state"])
+    # Pitch and roll by the heading to the sea; the browser turns them with
+    # its own line of sight (``horizon_offset``/``horizon_tilt``: the bow).
+    pitch, roll = horizon.hull_motion(0, game.sim_t, weather["sea_state"],
+                                      weather["wind_from_deg"] - game.ship.course)
+    offset, tilt = horizon.view_motion(pitch, roll)
     return dict(course=_number(game.ship.course % 360.0),
                 fov_deg=_number(config.LOOKOUT_GLASSES_FOV_DEG),
                 visibility_nm=_number(weather["visibility_nm"]),
                 sea_state=_number(weather["sea_state"]),
                 horizon_offset=_number(offset), horizon_tilt=_number(tilt),
+                motion_pitch=_number(pitch), motion_roll=_number(roll),
                 sky=_sky(game),
                 outlines=[dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                                stale=bool(stale), lights=_nav_lights(lights))

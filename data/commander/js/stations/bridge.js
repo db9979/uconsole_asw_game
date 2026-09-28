@@ -5,7 +5,7 @@ import { sightingText } from "../state/schema.js";
 import { metrics, node, position, stationRows, tacticalEntries, yesNo } from "../views/dom.js";
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { renderCrew } from "../views/crew.js";
-import { drawSightView } from "../views/sight-scene.js";
+import { drawSightView, viewMotion } from "../views/sight-scene.js";
 import { visualContext } from "../views/visual-common.js";
 
 // The lookout's binoculars: trained relative to the bow in this browser only
@@ -36,8 +36,11 @@ export function drawBridgeGlasses(now) {
   if (!lookout || S.session?.station !== "bridge") return;
   const plot = visualContext("bridge-glasses-canvas");
   if (!plot) return;
+  // The hull's pitch and roll seen along this browser's own line of sight.
+  const [offset, tilt] = viewMotion(lookout.motion_pitch, lookout.motion_roll, glasses.relative);
   drawSightView(plot.context, plot.width, plot.height,
-    {...lookout, bearing: (lookout.course + glasses.relative) % 360}, now / 1000, plot.context.font);
+    {...lookout, bearing: (lookout.course + glasses.relative) % 360, horizon_offset: offset, horizon_tilt: tilt},
+    now / 1000, plot.context.font);
 }
 
 export function renderBridgeStation(payload) {

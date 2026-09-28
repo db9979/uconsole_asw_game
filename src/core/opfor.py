@@ -708,7 +708,9 @@ def horizon_motion(game, boat) -> tuple:
     see (display only, deterministic in sim time)."""
     from src.ui.horizon import horizon_motion as motion
     sea_state = getattr(game.world, "effective_sea_state", game.world.sea_state)
-    return motion(int(boat.sub.id), game.sim_t, sea_state)
+    wind_from = game.world.weather_values()["wind_from_deg"]
+    return motion(int(boat.sub.id), game.sim_t, sea_state,
+                  wind_from - boat.sub.course, boat.orders.scope_rel_deg)
 
 
 def _frigate_length_m(game) -> float:

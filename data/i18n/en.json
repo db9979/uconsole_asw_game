@@ -5371,5 +5371,6 @@
   "training.step.boat_quiet": "Running silent, let the boat sink below 100 m",
   "training.step.boat_shaken": "Stay quiet until no ping has come for two minutes",
   "uboot.end.trained": "LESSON COMPLETE",
-  "help.uboot.evade": "Command, Navigation: evade the freshest ping or torpedo alarm (course, speed, layer, silent running or decoy)"
+  "help.uboot.evade": "Command, Navigation: evade the freshest ping or torpedo alarm (course, speed, layer, silent running or decoy)",
+  "scenario.double.lose": "A target escapes / time limit / frigate sunk / civilian loss"
 }

@@ -5371,5 +5371,6 @@
   "training.step.boat_quiet": "Mit Schleichfahrt tiefer als 100 m sinken lassen",
   "training.step.boat_shaken": "Leise bleiben, bis zwei Minuten lang kein Ping mehr kommt",
   "uboot.end.trained": "LEKTION ABGESCHLOSSEN",
-  "help.uboot.evade": "Führung, Navigation: dem frischesten Ping- oder Torpedoalarm ausweichen (Kurs, Fahrt, Schicht, Schleichfahrt oder Täuschkörper)"
+  "help.uboot.evade": "Führung, Navigation: dem frischesten Ping- oder Torpedoalarm ausweichen (Kurs, Fahrt, Schicht, Schleichfahrt oder Täuschkörper)",
+  "scenario.double.lose": "Ziel entkommt / Zeitlimit / Fregatte gesunken / ziviler Verlust"
 }

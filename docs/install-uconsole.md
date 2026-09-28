@@ -7,6 +7,50 @@ aus dem Repository <https://github.com/db9979/uconsole_asw_game>. Zielsystem ist
 eine uConsole mit Debian-basierter ClockworkPi-Distribution, insbesondere ein
 CM5-System. Befehle ohne `sudo` laufen als normaler Benutzer.
 
+## 0. Schnellinstallation mit automatischem Update (empfohlen)
+
+Ein einziger Befehl im Terminal der uConsole, als normaler Benutzer (nicht mit
+`sudo`):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/db9979/uconsole_asw_game/main/packaging/uconsole/install.sh | sh
+```
+
+Der Installer
+
+- installiert fehlende Systempakete (`git`, `python3-venv`) und fragt dafür
+  einmal nach dem `sudo`-Passwort,
+- lädt das Spiel nach `~/games/u-jagd` (ein vorhandener Checkout dort wird
+  übernommen; anderer Ort mit `U_JAGD_DIR=/pfad` vor `sh`),
+- richtet die virtuelle Umgebung `.venv` ein,
+- legt den Menüeintrag **Spiele > U-Jagd**, eine Verknüpfung auf dem Desktop und
+  den Befehl `~/.local/bin/u-jagd` an,
+- aktiviert einen systemd-Benutzertimer, der drei Minuten nach dem Hochfahren
+  und danach alle sechs Stunden im Hintergrund nach Updates sucht.
+
+**Automatisches Update:** Jeder Start über Menü, Desktop oder `u-jagd` holt
+zuerst das neueste GitHub-Release (Tag `vX.Y.Z`, dieselbe Quelle wie der
+Windows-Starter) und startet dann das Spiel; gibt es noch kein Release, folgt
+die uConsole dem Zweig `main`. Ändern sich die Abhängigkeiten, wird
+`pip install -e .` automatisch ausgeführt. Ohne Netz startet sofort die
+installierte Version. Startet eine neue Version nicht einmal
+(`main.py --version` schlägt fehl), wird sie zurückgerollt und erst die
+nächste Version wieder versucht. Bei eigenen Änderungen im Checkout, auf einem
+anderen Zweig als `main` oder während das Spiel läuft wird nichts verändert.
+Protokoll: `~/.u-jagd/updater.log`. Speicherstände unter `~/.u-jagd/` bleiben
+unberührt.
+
+Spielparameter werden durchgereicht, etwa `u-jagd --windowed`. Einmal ohne
+Update starten: `U_JAGD_NO_UPDATE=1 u-jagd`. Statt Releases immer den neuesten
+Stand von `main` holen: `U_JAGD_UPDATE_CHANNEL=main u-jagd`. Menüeintrag,
+Befehl und Timer entfernen (Spiel und Speicherstände bleiben):
+
+```sh
+sh ~/games/u-jagd/packaging/uconsole/install.sh --uninstall
+```
+
+Die folgenden Abschnitte beschreiben die manuelle Installation.
+
 ## 1. System vorbereiten
 
 Terminal öffnen und Paketlisten sowie vorhandene Pakete aktualisieren:

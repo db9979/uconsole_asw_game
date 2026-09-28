@@ -80,14 +80,15 @@ def js_files() -> list[Path]:
 def client_js_files() -> list[Path]:
     """The crew client proper in source order (entry-point import order).
 
-    Admin, voice and worklet scripts are separate programs and excluded.
+    Admin, voice and worklet scripts and the phone lookout (``js/phone/``)
+    are separate programs and excluded.
     """
     import re
     main = ASSET_DIR / "js" / "main.js"
     order = re.findall(r'^import (?:\{[^}]*\} from )?"\./([\w/.-]+)";', main.read_text(), re.M)
     files = [ASSET_DIR / "js" / name for name in order]
     rest = [path for path in js_files() if path.parent != ASSET_DIR and path not in files
-            and path != main]
+            and path != main and path.parent != ASSET_DIR / "js" / "phone"]
     return files + sorted(rest) + [main]
 
 

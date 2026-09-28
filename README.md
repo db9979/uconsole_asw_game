@@ -12,13 +12,19 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.46**
+Current release: **1.3.47**
 
-Release 1.3.46 redraws the bridge's small weather picture in the start screen's
-look: it now looks into the wind with the sky of the hour (sun, moon and stars),
-the clouds, rain, snow or fog and the sea running at the eye, and a turquoise
-wind rose in its corner, framed by the corner brackets of the other views. Both
-on the uConsole and in the Remote Crew browser; saves stay v27.
+Release 1.3.47 puts a phone on watch. `F9` shows a second QR code, Phone
+lookout: scan it, accept the game's own certificate once, type the pairing code,
+and the phone becomes the frigate's bridge lookout or the crewed submarine's
+periscope. Turn the phone like binoculars (gyroscope) or swipe, zoom, and report
+what you see by voice ("Ship bearing 040, range 5 miles") or by tapping it. The
+bridge only hears what the lookout really has there; a report of nothing is
+refused. While a phone holds the watch the automatic lookout stays silent, and
+the crew browsers speak every confirmed report. The phone on the periscope
+trains it and takes stadimeter ranges. The listener serves this page over HTTPS
+on the next port (self-signed, made by the game), because phones only give the
+gyroscope and the microphone to a secure page; saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

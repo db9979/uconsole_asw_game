@@ -836,10 +836,14 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     rows.sort(key=lambda row: (row["bearing"], row["ref"]))
     orders.sightings = rows[:config.UBOOT_SIGHTINGS_MAX]
     orders._lights = lights
+    # A phone on the periscope calls its own sightings (src/core/phone_lookout.py).
+    from src.core import phone_lookout
+    called_by_phone = phone_lookout.boat_manned(game)
     for row in orders.sightings:
         if row["ref"] not in orders._sightings_seen and row["t"] == now:
             orders._sightings_seen.add(row["ref"])
-            orders.event("sighting_" + row["cls"], bearing=f"{row['bearing']:03.0f}")
+            if not called_by_phone:
+                orders.event("sighting_" + row["cls"], bearing=f"{row['bearing']:03.0f}")
 
 
 def sighting_in_crosshair(boat, now: float):

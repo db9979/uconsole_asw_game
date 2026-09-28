@@ -502,6 +502,12 @@ LOOKOUT_LAND_RANGE_NM = 20.0
 TORPEDO_WAKE_VISIBLE_NM = 1.5
 LOOKOUT_LAND_CHECK_S = 10.0
 LOOKOUT_REPORTS_MAX = 24
+# Phone lookout (Remote Crew ``lookout``/``uboot_lookout``): a called sighting
+# is confirmed within this bearing, and a called range within this fraction
+# (at least the minimum) of the eye's own estimate.
+LOOKOUT_CALL_BEARING_TOL_DEG = 10.0
+LOOKOUT_CALL_RANGE_TOL_FRAC = 0.4
+LOOKOUT_CALL_RANGE_MIN_NM = 1.0
 CONTACT_SIG_CONF = 0.40         # Konfidenz, ab der die Geräusch-Signatur lesbar ist
 PLAYER_CLASSES = ("U_BOOT", "KAMPFSCHIFF", "BIOLOGISCH", "FAHRZEUG",
                   "FLUGZEUG", "TORPEDO")

@@ -60,7 +60,7 @@ function resetContextForms(worldChanged) {
   $("bridge-course-form").reset();
   $("bridge-speed-form").reset();
   $("opz-manage").checked = false;
-  for (const id of ["sonar-bearing-form", "sonar-depth-form", "sonar-gain-form", "sonar-harmonic-form",
+  for (const id of ["sonar-bearing-form", "sonar-depth-form", "sonar-vds-depth-form", "sonar-gain-form", "sonar-harmonic-form",
     "engine-course-form", "engine-speed-form", "helicopter-waypoint-form",
     "uboot-course-form", "uboot-speed-form", "uboot-depth-form"]) $(id).reset();
   $("sonar-control-page").value = "listen";

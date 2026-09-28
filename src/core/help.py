@@ -55,7 +55,8 @@ STATION_HELP = {
     Station.SONAR: _station(
         "help.sonar.intro",
         [("Shift+A", "help.control.active_ping"), ("Shift+B", "help.control.array"),
-         ("Y", "help.control.tas"), ("help.key.page_spaced", "help.control.pages"),
+         ("Y", "help.control.tas"), ("Shift+Y", "help.control.vds"),
+         ("help.key.page_spaced", "help.control.pages"),
          ("2", "help.control.repeat_sonar_page"), ("E", "help.control.bt"),
          ("W", "help.control.pulse"),
          ("U / V", "help.control.tas_depth"), ("R", "help.control.listen_input"),
@@ -89,7 +90,7 @@ STATION_HELP = {
          "help.note.audio_model", "help.note.demon", "help.note.gain",
          "help.note.snr", "help.note.shadow", "help.note.parallel",
          "help.note.ghost", "help.note.tas_handling", "help.note.tas_depth",
-         "help.note.active"], "help.note.sonar_tactic"),
+         "help.note.vds", "help.note.active"], "help.note.sonar_tactic"),
     Station.WEAPONS: _station(
         "help.weapons.intro",
         [("M", "help.control.target_from_sonar"), ("help.key.up_down_hold", "help.control.torp_depth"),

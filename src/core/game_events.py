@@ -13,7 +13,7 @@ import pygame
 
 from src.core import config
 from src.core.autocrew import station_key
-from src.core.commands import MAP_STATIONS, STATION_PAGES, station_page_step, toggle_tas
+from src.core.commands import MAP_STATIONS, STATION_PAGES, station_page_step, toggle_tas, toggle_vds
 from src.core.i18n import display_value, localize, message
 from src.network.adsb_client import test_connection as adsb_test_connection
 from src.network.ais_client import test_connection as ais_test_connection
@@ -874,6 +874,16 @@ class EventMixin:
                         self.flash(message("runtime.bt.cooldown",
                                            seconds=f"{self.sonar.bt_cooldown:.0f}"))
                     return
+                if e.key in (pygame.K_u, pygame.K_v) and self.sonar_mode == "VDS":
+                    requested = config.clamp(
+                        self.sonar.vds_depth_target_m
+                        + (-10.0 if e.key == pygame.K_u else 10.0),
+                        config.SONAR_VDS_DEPTH_MIN_M,
+                        config.SONAR_VDS_DEPTH_MAX_M)
+                    self.set_sonar_vds_depth(requested)
+                    depth = self.sonar.vds_depth_target_m
+                    self.flash(message("runtime.vds.depth", depth=f"{depth:.0f}"))
+                    return
                 if e.key in (pygame.K_u, pygame.K_v):
                     requested = config.clamp(
                         self.sonar.towed_depth_target_m
@@ -1262,6 +1272,8 @@ class EventMixin:
                 if self.station is Station.SONAR:
                     if self.damage.station_down("sonar"):
                         self.flash(message("runtime.sonar.down"), 3.0)
+                    elif getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                        toggle_vds(self, self.tr)
                     else:
                         toggle_tas(self, self.tr)
                 elif self.station is Station.HELICOPTER:

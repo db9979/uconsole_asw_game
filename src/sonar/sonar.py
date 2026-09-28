@@ -35,6 +35,15 @@ def hull_array_depth_m(observer) -> float:
     return float(getattr(observer, "sonar_depth_m", 5.0))
 
 
+# The frigate's listening arrays: hull-mounted, towed line and variable depth.
+SONAR_ARRAY_MODES = ("BOW", "TOWED", "VDS")
+
+
+def beam_width_deg(mode: str) -> float:
+    """Listening beam of the selected array (the long towed line is narrowest)."""
+    return 6.0 if mode == "TOWED" else 8.0 if mode == "VDS" else 12.0
+
+
 def snr_db(passive_range_nm: float, dist_nm: float) -> float:
     """SNR: 20*log10(R_eff/d). 0 dB = am Rande der Detektion."""
     return 20.0 * math.log10(max(passive_range_nm, 1e-6)
@@ -170,6 +179,7 @@ def representative_frequency_hz(tgt) -> float:
 def bearing_error_deg(mode: str, frigate_speed_kn: float, quality: float) -> float:
     """± Peilfehler: Array-Basis * Eigenfahrt-Aufschlag * Qualitätsfaktor."""
     base = (config.BEARING_ERR_TOWED_DEG if mode == "TOWED"
+            else config.BEARING_ERR_VDS_DEG if mode == "VDS"
             else config.BEARING_ERR_BOW_DEG)
     return (base * (1.0 + config.BEARING_ERR_SPEED_FACTOR * frigate_speed_kn)
             * (1.4 - config.BEARING_ERR_QUALITY_SPAN * quality))
@@ -757,6 +767,12 @@ class SonarSystem:
         self.tow_heading_deg = 0.0
         self._tow_settle_s = 0.0
         self._tow_handling_ok = True
+        self.vds_state = TowState.STOWED
+        self.vds_payout = 0.0
+        self.vds_depth_m = config.SONAR_VDS_DEPTH_M
+        self.vds_depth_target_m = config.SONAR_VDS_DEPTH_M
+        self._vds_settle_s = 0.0
+        self._vds_handling_ok = True
         self.bt_profile = None
         self.bt_cooldown = 0.0
         self.echo_events = []
@@ -817,6 +833,97 @@ class SonarSystem:
             self.towed_depth_target_m + delta_m,
             config.SONAR_TOWED_DEPTH_MIN_M, limit)
         return self.towed_depth_target_m
+
+    # --- Variable-depth sonar (VDS) -----------------------------------------
+
+    @staticmethod
+    def _vds_envelope_ok(ship_speed: float, sea_state: float) -> bool:
+        return (config.SONAR_VDS_HANDLING_MIN_KN <= ship_speed
+                <= config.SONAR_VDS_HANDLING_MAX_KN
+                and sea_state <= config.SONAR_VDS_MAX_SEA_STATE)
+
+    def toggle_vds(self, ship_speed: float = 0.0, sea_state: float = 0.0) -> bool:
+        """Start/reverse lowering; progress pauses outside the handling envelope."""
+        if self.vds_state == TowState.FAULT:
+            return False
+        if self.vds_state in (TowState.STOWED, TowState.RETRIEVING):
+            self.vds_state = TowState.DEPLOYING
+        else:
+            self.vds_state = TowState.RETRIEVING
+        self._vds_handling_ok = self._vds_envelope_ok(ship_speed, sea_state)
+        self._vds_settle_s = 0.0
+        return True
+
+    def _vds_available(self) -> bool:
+        return self.vds_state == TowState.STREAMED
+
+    @property
+    def vds_performance(self) -> float:
+        """0..1 VDS benefit; the body settles after reaching its cable length."""
+        if self.vds_state != TowState.STREAMED:
+            return 0.0
+        return config.clamp(self._vds_settle_s / config.SONAR_VDS_SETTLE_S, 0.0, 1.0)
+
+    def vds_depth_limit_m(self, ship_speed: float) -> float:
+        """Cable angle: the faster the ship, the shallower the body can go."""
+        return max(config.SONAR_VDS_DEPTH_MIN_M,
+                   config.SONAR_VDS_DEPTH_MAX_M
+                   - ship_speed * config.SONAR_VDS_SPEED_SHALLOW_M_PER_KN)
+
+    def vds_status(self, ship_speed: float = None, sea_state: float = None) -> dict:
+        handling_ok = (self._vds_handling_ok if ship_speed is None or sea_state is None
+                       else self._vds_envelope_ok(ship_speed, sea_state))
+        return {
+            "state": getattr(self.vds_state, "value", self.vds_state),
+            "payout": self.vds_payout,
+            "payout_percent": round(self.vds_payout * 100.0, 1),
+            "available": self._vds_available(),
+            "handling_ok": handling_ok,
+            "performance": self.vds_performance,
+            "depth_m": self.vds_depth_m,
+            "depth_target_m": self.vds_depth_target_m,
+        }
+
+    def _update_vds(self, dt: float, speed: float, sea_state: float) -> None:
+        if self.vds_payout > 0 and speed > config.SONAR_VDS_MAX_SAFE_KN:
+            self.vds_state = TowState.FAULT
+            self._vds_settle_s = 0.0
+            return
+        self._vds_handling_ok = self._vds_envelope_ok(speed, sea_state)
+        if self.vds_state == TowState.DEPLOYING and self._vds_handling_ok:
+            self.vds_payout = min(1.0, self.vds_payout + dt / config.SONAR_VDS_DEPLOY_S)
+            if self.vds_payout >= 1.0:
+                self.vds_state = TowState.STREAMED
+                self._vds_settle_s = 0.0
+        elif self.vds_state == TowState.RETRIEVING and self._vds_handling_ok:
+            self.vds_payout = max(0.0, self.vds_payout - dt / config.SONAR_VDS_RETRIEVE_S)
+            if self.vds_payout <= 0.0:
+                self.vds_state = TowState.STOWED
+        elif self.vds_state == TowState.STREAMED:
+            self._vds_settle_s = min(config.SONAR_VDS_SETTLE_S, self._vds_settle_s + dt)
+        if self.vds_state == TowState.STREAMED:
+            self.vds_depth_target_m = min(self.vds_depth_target_m,
+                                          self.vds_depth_limit_m(speed))
+            step = config.SONAR_VDS_DEPTH_RATE_M_S * dt
+            self.vds_depth_m += config.clamp(
+                self.vds_depth_target_m - self.vds_depth_m, -step, step)
+
+    def sensor_depth_m(self, mode: str, frigate) -> float:
+        """Depth of the array that listens or transmits in ``mode``."""
+        if mode == "TOWED":
+            return self.towed_depth_m
+        if mode == "VDS":
+            return self.vds_depth_m
+        if mode == "DIPPING":
+            return getattr(frigate, "dip_depth_m", 5.0)
+        return hull_array_depth_m(frigate)
+
+    def array_available(self, mode: str, ship_speed: float) -> bool:
+        if mode == "TOWED":
+            return self.tow_status(ship_speed)["available"]
+        if mode == "VDS":
+            return self._vds_available()
+        return True
 
     def measure_environment(self, world, frigate, t: float) -> bool:
         """Take a noisy expendable-bathythermograph style sound profile."""
@@ -1017,7 +1124,7 @@ class SonarSystem:
         one-way propagation event. Only destruction can cancel a queued return;
         subsequent motion, terrain or array handling cannot change its evidence.
         """
-        if mode == "TOWED" and not self.tow_status(frigate.speed)["available"]:
+        if mode in ("TOWED", "VDS") and not self.array_available(mode, frigate.speed):
             return
         for target in targets:
             if tgt_gone(target):
@@ -1028,9 +1135,7 @@ class SonarSystem:
             if (distance >= active_range
                     and distance > config.SONAR_PING_HEAR_RANGE_NM):
                 continue
-            source_depth = (self.towed_depth_m if mode == "TOWED" else
-                            getattr(frigate, "dip_depth_m", 5.0)
-                            if mode == "DIPPING" else hull_array_depth_m(frigate))
+            source_depth = self.sensor_depth_m(mode, frigate)
             if (hasattr(world, "sonar_path_blocked")
                     and world.sonar_path_blocked(frigate.x, frigate.y, source_depth,
                                                  target.x, target.y,
@@ -1063,8 +1168,8 @@ class SonarSystem:
     def passive_range_nm(self, tgt, dist_nm: float, frigate, world,
                           range_factor: float, mode: str) -> float:
         """Effektive passive Reichweite R_eff (SNR-Grundlage)."""
-        tow_available = (mode != "TOWED"
-                         or self.tow_status(frigate.speed)["available"])
+        tow_available = (mode not in ("TOWED", "VDS")
+                         or self.array_available(mode, frigate.speed))
         return self._passive_range_nm(
             tgt, dist_nm, frigate, world, range_factor, mode,
             tgt.bearing_from_frigate(frigate), tow_available)
@@ -1098,11 +1203,18 @@ class SonarSystem:
             1.0, int(equation.REFERENCE_SEA_STATE)) / config.SONAR_PASSIVE_BASE_NM
         target_bonus = (1.0 + 0.8 * (1.0 - tgt.quiet_factor())) * source_level_factor(tgt)
         thermo = world.thermocline_depth_m(tgt.x, tgt.y)
-        sensor_depth = (self.towed_depth_m if mode == "TOWED"
-                        else hull_array_depth_m(frigate))
+        sensor_depth = self.sensor_depth_m(mode, frigate)
         same_layer = (sensor_depth < thermo) == (tgt.depth < thermo)
         array_factor = 1.0
-        if mode == "TOWED":
+        if mode == "VDS":
+            if not tow_available:
+                return None
+            array_factor = 1.0 + (config.SONAR_ARRAY_VDS_PASSIVE - 1.0) * self.vds_performance
+            # Like the deep towed array, the body gains most in the target's layer.
+            if same_layer and self.vds_depth_m >= 30.0:
+                array_factor *= 1.0 + (config.SONAR_TOWED_DEEP_BONUS - 1.0) \
+                    * self.vds_performance
+        elif mode == "TOWED":
             if not tow_available:
                 return None
             full_arr = max(0.5, config.SONAR_ARRAY_TOWED_PASSIVE
@@ -1257,14 +1369,19 @@ class SonarSystem:
             track.add(t, bearing, helicopter.x, helicopter.y,
                       helicopter.course, uncertainty)
 
-    def advance_mechanics(self, dt: float, t: float, frigate) -> None:
+    def advance_mechanics(self, dt: float, t: float, frigate,
+                          sea_state: float | None = None) -> None:
         """Advance cooldown, tow handling and queued-echo clocks each sim tick."""
         self.ping_cooldown = max(0.0, self.ping_cooldown - dt)
         self.bt_cooldown = max(0.0, self.bt_cooldown - dt)
         self._update_tow(dt, frigate.speed, frigate.course)
+        if sea_state is not None:
+            self._update_vds(dt, frigate.speed, sea_state)
         for contact in self.contacts.values():
             if not self._tow_available():
                 contact.array_observations.pop("TOWED", None)
+            if not self._vds_available():
+                contact.array_observations.pop("VDS", None)
             contact.expire_ping_fix(t)
         if self.tow_state == TowState.STREAMED:
             depth_limit = max(config.SONAR_TOWED_DEPTH_MIN_M,
@@ -1289,7 +1406,8 @@ class SonarSystem:
         targets: Sub/Animal/Decoy/SurfaceShip/EnemyTorpedo (Duck-Types).
         """
         if advance_mechanics:
-            self.advance_mechanics(dt, t, frigate)
+            self.advance_mechanics(dt, t, frigate, float(getattr(
+                world, "effective_sea_state", getattr(world, "sea_state", 0.0))))
         else:
             for contact in self.contacts.values():
                 contact.expire_ping_fix(t)
@@ -1301,10 +1419,11 @@ class SonarSystem:
         self._own_line_hz = 10.0 + 1.9 * frigate.speed
         if mode != self._receiver_mode:
             self._receiver_mode = mode
-            self.beam_width_deg = 6.0 if mode == "TOWED" else 12.0
+            self.beam_width_deg = beam_width_deg(mode)
             self.reset_listening_history()
         tow_available = self.tow_status(frigate.speed)["available"]
-        array_modes = ("BOW", "TOWED") if tow_available else ("BOW",)
+        array_modes = ("BOW",) + (("TOWED",) if tow_available else ()) + (
+            ("VDS",) if self._vds_available() else ())
         for tgt in targets:
             if tgt_gone(tgt):
                 continue
@@ -1313,15 +1432,16 @@ class SonarSystem:
             observations = {}
             spectral_by_mode = {}
             for array_mode in array_modes:
+                array_available = tow_available if array_mode != "VDS" else True
                 preliminary_range = self._passive_range_nm(
                     tgt, dist, frigate, world, range_factor, array_mode,
-                    true_bearing, tow_available, apply_propagation=False)
+                    true_bearing, array_available, apply_propagation=False)
                 if dist >= preliminary_range:
                     continue
                 spectral = []
                 r_eff = self._passive_range_nm(
                     tgt, dist, frigate, world, range_factor, array_mode,
-                    true_bearing, tow_available, spectral_out=spectral)
+                    true_bearing, array_available, spectral_out=spectral)
                 if dist >= r_eff:
                     continue
                 s_db = snr_db(r_eff, dist)
@@ -1355,7 +1475,11 @@ class SonarSystem:
             quality = primary["quality"]
             s_db = primary["snr"]
             uncertainty = primary["uncertainty_deg"]
+            # The unambiguous reference is the better of hull array and VDS.
             bow = c.array_observations.get("BOW")
+            vds = c.array_observations.get("VDS")
+            if vds is not None and (bow is None or vds["quality"] > bow["quality"]):
+                bow = vds
             towed = c.array_observations.get("TOWED")
             if bow is not None and towed is not None:
                 delta = abs(config.angle_diff_deg(bow["bearing"], towed["bearing"]))
@@ -1386,8 +1510,9 @@ class SonarSystem:
                 c.fusion_delta_deg = None
                 c.fused_quality = quality
             ambiguous = False
-            if bow is not None and "BOW" in observations:
-                # The hull array is unambiguous: it resolves the towed side.
+            if bow is not None and ("BOW" in observations or "VDS" in observations):
+                # The hull array and the VDS are unambiguous: they resolve
+                # the towed side.
                 if c.towed_ambiguous or c.towed_resolved:
                     c.towed_side = ("STBD" if config.angle_diff_deg(
                         bearing, self.tow_heading_deg) >= 0.0 else "PORT")
@@ -1697,9 +1822,12 @@ class SonarSystem:
     def _own_noise_bearing(self, mode: str, ship_course: float) -> float:
         # HMS sees machinery aft; from the streamed array the ship is forward
         # along the lagging cable axis.
-        return self.tow_heading_deg if mode == "TOWED" else (ship_course + 180.0) % 360.0
+        return (self.tow_heading_deg if mode == "TOWED"
+                else (ship_course + 180.0) % 360.0)
 
     def _receiver_noise_factor(self, mode: str) -> float:
+        if mode == "VDS":
+            return 1.0 - (1.0 - config.SONAR_VDS_SELF_NOISE_FACTOR) * self.vds_performance
         if mode != "TOWED":
             return 1.0
         return 1.0 - (1.0 - config.SONAR_TOWED_SELF_NOISE_FACTOR) * self.tow_performance
@@ -1730,7 +1858,8 @@ class SonarSystem:
         radial = getattr(tgt, "speed", 0.0) * math.cos(math.radians(
             config.angle_diff_deg((bearing + 180.0) % 360.0, getattr(tgt, "course", 0.0))))
         target_range = math.hypot(tgt.x - frigate.x, tgt.y - frigate.y) * 1852.0
-        beam = 6.0 if mode == "TOWED" else equation.ACTIVE_BEAMWIDTH_DEG
+        beam = (6.0 if mode == "TOWED" else 8.0 if mode == "VDS"
+                else equation.ACTIVE_BEAMWIDTH_DEG)
         for hazard in ocean.hazards:
             if hazard.kind != "wreck":
                 continue
@@ -1751,8 +1880,7 @@ class SonarSystem:
         ocean = getattr(world, "ocean", None)
         if ocean is None:
             return
-        source_depth = (self.towed_depth_m if mode == "TOWED"
-                        else hull_array_depth_m(frigate))
+        source_depth = self.sensor_depth_m(mode, frigate)
         for index, hazard in enumerate(ocean.hazards):
             if (hazard.kind != "wreck"
                     or len(self._pending_clutter) >= self.MAX_PENDING_CLUTTER):
@@ -1778,11 +1906,19 @@ class SonarSystem:
                      mode: str, pulse: str | None = None):
         """Active sonar equation for one echo from ``tgt``."""
         ping_mult = (config.SONAR_ARRAY_TOWED_PING if mode == "TOWED"
+                     else config.SONAR_ARRAY_VDS_PING if mode == "VDS"
                      else config.SONAR_ARRAY_BOW_PING)
         gain = (config.HELO_DIP_ACTIVE_RANGE_NM / config.SONAR_ACTIVE_BASE_NM
                 if mode == "DIPPING" else ping_mult) * range_factor
         layer = 1.0
-        if getattr(tgt, "depth", 0.0) >= world.thermocline_depth_m(tgt.x, tgt.y):
+        thermo = world.thermocline_depth_m(tgt.x, tgt.y)
+        target_below = getattr(tgt, "depth", 0.0) >= thermo
+        if mode == "VDS":
+            # The lowered body pings from its own depth: the shadow-zone
+            # penalty applies across the layer, in either direction.
+            if target_below != (self.vds_depth_m >= thermo):
+                layer = config.SONAR_THERMO_ACTIVE_BELOW
+        elif target_below:
             layer = config.SONAR_THERMO_ACTIVE_BELOW
         distance = max(1e-6, math.hypot(tgt.x - frigate.x, tgt.y - frigate.y))
         to_observer = math.degrees(math.atan2(frigate.x - tgt.x,
@@ -1965,7 +2101,7 @@ class SonarSystem:
         if mode == "TOWED":
             err *= self._endfire_factor(true_bearing)
         seed = getattr(tgt, "sensor_seed", tgt.id)
-        salt = 17 if mode == "TOWED" else 0
+        salt = 17 if mode == "TOWED" else 29 if mode == "VDS" else 0
         return (true_bearing + err * _correlated_uniform(
             seed, t, config.SONAR_BEARING_NOISE_EPOCH_S, salt)) % 360.0
 
@@ -2002,7 +2138,7 @@ class SonarSystem:
                    range_factor: float = 1.0, mode: str = "BOW",
                    notify_ping: bool = True):
         """Ping-Echo berechnen (wird nach fire_ping aufgerufen)."""
-        if mode == "TOWED" and not self.tow_status(frigate.speed)["available"]:
+        if mode in ("TOWED", "VDS") and not self.array_available(mode, frigate.speed):
             return []
         contacts = []
         for tgt in targets:
@@ -2015,8 +2151,7 @@ class SonarSystem:
                         and hasattr(tgt, "hear_ping"))
             if dist >= active_range and not can_hear:
                 continue
-            source_depth = (self.towed_depth_m if mode == "TOWED"
-                            else hull_array_depth_m(frigate))
+            source_depth = self.sensor_depth_m(mode, frigate)
             if (hasattr(world, "sonar_path_blocked")
                     and world.sonar_path_blocked(frigate.x, frigate.y, source_depth,
                                                  tgt.x, tgt.y,

@@ -52,7 +52,7 @@ DISPLAY_KEYS = {
         "AIR": "domain.air", "MISSILE": "domain.missile",
         "UNDERWATER_WEAPON": "domain.underwater_weapon",
     },
-    "array": {"BOW": "enum.array.bow", "TOWED": "enum.array.towed"},
+    "array": {"BOW": "enum.array.bow", "TOWED": "enum.array.towed", "VDS": "enum.array.vds"},
     "tow": {
         "STOWED": "state.stowed", "DEPLOYING": "state.deploying",
         "RETRIEVING": "state.retrieving", "STREAMED": "state.streamed",
@@ -77,6 +77,7 @@ DISPLAY_KEYS = {
         "DIVERGENT / GEISTERKONTAKT?": "enum.fusion.divergent_ghost",
         "UNSICHER": "enum.fusion.uncertain",
         "NUR BOW": "enum.fusion.only_bow", "NUR TOWED": "enum.fusion.only_tas",
+        "NUR VDS": "enum.fusion.only_vds",
     },
     "weapon_mode": {"DRAHT": "enum.weapon.wire", "SUCHER": "enum.weapon.seeker"},
     "compartment": {key: "compartment." + key for key in (

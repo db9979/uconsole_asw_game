@@ -92,6 +92,30 @@ def toggle_tas(game, tr=None) -> bool:
     return changed
 
 
+def toggle_vds(game, tr=None) -> bool:
+    """Lower or recover the variable-depth sonar through the sonar command API."""
+    sonar = game.sonar
+    status = sonar.vds_status()
+    result = game.set_sonar_vds(status["state"] in ("STOWED", "RETRIEVING"))
+    status = sonar.vds_status(getattr(getattr(game, "ship", None), "speed", 0.0),
+                              game._sea_state_now())
+    if result is not True:
+        notice = message("status.vds.fault")
+    else:
+        notice = message("status.vds.deploy" if status["state"] == "DEPLOYING"
+                         else "status.vds.retrieve")
+        if not status["handling_ok"]:
+            notice = message("status.vds.handling", action=notice)
+    flash = getattr(game, "flash", None)
+    if flash is not None:
+        flash(notice, 2.0)
+    feed = getattr(game, "feed", None)
+    world = getattr(game, "world", None)
+    if feed is not None and world is not None:
+        feed.add(world.format_time(), "sonar", notice)
+    return result is True
+
+
 def station_command_hint(station: Station, tr=None) -> str:
     """Translate command metadata, retaining the historical German default."""
     text = STATION_COMMAND_HINTS.get(station, "")

@@ -44,7 +44,7 @@ from src.sensors.esm import valid_esm_state
 from src.sensors.platform import validate_suite_state
 from src.ship.damage import DamageModel
 from src.ship.ship import Ship
-from src.sonar.sonar import FIX_SOURCES, SonarSystem
+from src.sonar.sonar import FIX_SOURCES, SONAR_ARRAY_MODES, SonarSystem, TowState
 from src.ui.stations_view import opz_ppi_rect
 from src.air import chaff as chaff_physics
 from src.air.flights import FlightManager
@@ -243,7 +243,7 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
         last_seq = row["seq"]
     station = crew["station"]
     if (not isinstance(station, dict) or set(station) != CREW_STATION_FIELDS
-            or station["mode"] not in ("BOW", "TOWED")
+            or station["mode"] not in SONAR_ARRAY_MODES
             or not valid_sonar_controls(station["controls"])):
         return False
     allowed_ids = set(entity_ids) | {OWNSHIP_TARGET_ID} | own_torpedo_ids
@@ -1665,6 +1665,16 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
         if not bounded(sonar.get("bt_cooldown"), 0,
                        config.SONAR_BT_COOLDOWN_S):
             return False
+        # Variable-depth sonar (save v23): exact, typed and inside its envelope.
+        if (sonar.get("vds_state") not in {state.value for state in TowState}
+                or not bounded(sonar.get("vds_payout"), 0.0, 1.0)
+                or not bounded(sonar.get("vds_depth_m"), config.SONAR_VDS_DEPTH_MIN_M,
+                               config.SONAR_VDS_DEPTH_MAX_M)
+                or not bounded(sonar.get("vds_depth_target_m"), config.SONAR_VDS_DEPTH_MIN_M,
+                               config.SONAR_VDS_DEPTH_MAX_M)
+                or not bounded(sonar.get("vds_settle_s"), 0.0, config.SONAR_VDS_SETTLE_S)
+                or type(sonar.get("vds_handling_ok")) is not bool):
+            return False
         bt_profile = sonar.get("bt_profile")
         if bt_profile is not None:
             bt_fields = {"t", "x", "y", "thermocline_m", "water_depth_m",
@@ -1756,7 +1766,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                            for key, row in buoy_reports.items())):
                 return False
             reports = contact.get("array_observations", {})
-            if not isinstance(reports, dict) or not set(reports) <= {"BOW", "TOWED"}:
+            if not isinstance(reports, dict) or not set(reports) <= set(SONAR_ARRAY_MODES):
                 return False
             for report in reports.values():
                 if (not isinstance(report, dict)
@@ -1970,7 +1980,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                 or len(clutter) > SonarSystem.MAX_PENDING_CLUTTER
                 or any(not isinstance(item, dict)
                        or set(item) != {"ready_at", "mode", "snapshot"}
-                       or item["mode"] not in ("BOW", "TOWED", "DIPPING")
+                       or item["mode"] not in SONAR_ARRAY_MODES + ("DIPPING",)
                        or not SonarSystem.valid_ping_snapshot(item["snapshot"])
                        or not bounded(item["ready_at"], 0, 1e12)
                        or not item["snapshot"]["t"] <= sim_t
@@ -1986,7 +1996,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                or any(not bounded(item.get(key, 0), 0, 1e12)
                       for key in ("sent_at", "ready_at"))
                or not bounded(item.get("range_factor", 1), 0, 100)
-                or item.get("mode", "BOW") not in ("BOW", "TOWED", "DIPPING")
+                or item.get("mode", "BOW") not in SONAR_ARRAY_MODES + ("DIPPING",)
                or item.get("sent_at", sim_t) > sim_t
                or not 0 <= item.get("ready_at", sim_t) - item.get("sent_at", sim_t) <= 25000
                or not SonarSystem.valid_ping_snapshot(item["snapshot"])
@@ -1995,6 +2005,8 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             return False
         return True
 
+    if data.get("sonar_mode") not in SONAR_ARRAY_MODES:
+        return False
     if not valid_sonar(data.get("sonar"), entity_ids):
         return False
     settings = data.get("weapon_settings")

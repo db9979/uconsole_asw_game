@@ -247,8 +247,8 @@ export function validateV2State(state) {
   } else if (isSonar(state.role)) {
     rowsExact(payload.observations, 256, sonarFields);
     const settings = payload.settings;
-    if (!exactKeys(settings, ["mode", "page", "listen_bearing", "focus_ref", "target_ref", "station_down", "tow", "bt", "ping", "tma_enabled", "gain_db", "band_preset", "band_hz", "notch", "peak_hold", "harmonic_hz", "harmonic_candidates_hz", "audio_enabled", "volume", "quiet_mode", "tools"]) ||
-        !["BOW", "TOWED"].includes(settings.mode) || typeof settings.station_down !== "boolean" ||
+    if (!exactKeys(settings, ["mode", "page", "listen_bearing", "focus_ref", "target_ref", "station_down", "tow", "vds", "bt", "ping", "tma_enabled", "gain_db", "band_preset", "band_hz", "notch", "peak_hold", "harmonic_hz", "harmonic_candidates_hz", "audio_enabled", "volume", "quiet_mode", "tools"]) ||
+        !["BOW", "TOWED", "VDS"].includes(settings.mode) || typeof settings.station_down !== "boolean" ||
         !exactKeys(settings.tools, ["assist", "lofar_cursor_hz", "demon_cursor_hz", "integration_s", "vernier", "shaft_hz", "blade_hz", "operator_notch_hz", "demon_band_hz", "heterodyne_hz"]) ||
         !boundedArray(settings.tools.demon_band_hz, 2) || settings.tools.demon_band_hz.some((value) => !finite(value)) || !finite(settings.tools.heterodyne_hz) ||
         typeof settings.tools.assist !== "boolean" || typeof settings.tools.vernier !== "boolean" ||
@@ -257,13 +257,18 @@ export function validateV2State(state) {
         [settings.tools.shaft_hz, settings.tools.blade_hz, settings.tools.operator_notch_hz].some((value) => value !== null && (!finite(value) || value < 0 || value > 300)) ||
         !exactKeys(settings.tow, ["state", "payout", "available", "handling_ok", "speed_kn", "speed_min_kn", "speed_max_kn", "depth_m", "depth_target_m"]) ||
         !finite(settings.tow.speed_kn) || !finite(settings.tow.speed_min_kn) || !finite(settings.tow.speed_max_kn) ||
+        !exactKeys(settings.vds, ["state", "payout", "available", "handling_ok", "speed_min_kn", "speed_max_kn", "max_sea_state", "depth_m", "depth_target_m"]) ||
+        [settings.vds.payout, settings.vds.speed_min_kn, settings.vds.speed_max_kn, settings.vds.max_sea_state,
+          settings.vds.depth_m, settings.vds.depth_target_m].some((value) => !finite(value)) ||
+        settings.vds.payout < 0 || settings.vds.payout > 1 || settings.vds.depth_m < 0 || settings.vds.depth_m > 1000 ||
+        typeof settings.vds.state !== "string" || settings.vds.state.length > 32 ||
         !exactKeys(settings.bt, ["ready", "cooldown_s", "thermocline_m"]) ||
         !exactKeys(settings.ping, ["ready", "cooldown_s"]) ||
         settings.tow.speed_kn < 0 || settings.tow.speed_kn > 100 || settings.tow.speed_min_kn < 0 ||
         settings.tow.speed_max_kn > 100 || settings.tow.speed_min_kn > settings.tow.speed_max_kn ||
         !boundedArray(settings.band_hz, 2) || settings.band_hz.length !== 2 ||
         !boundedArray(settings.harmonic_candidates_hz, 64) ||
-        [settings.tow.available, settings.tow.handling_ok, settings.bt.ready, settings.ping.ready,
+        [settings.tow.available, settings.tow.handling_ok, settings.vds.available, settings.vds.handling_ok, settings.bt.ready, settings.ping.ready,
           settings.tma_enabled, settings.notch, settings.peak_hold, settings.audio_enabled,
           settings.quiet_mode].some((value) => typeof value !== "boolean")) throw new Error("protocol");
     const visual = payload.visualization;

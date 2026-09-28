@@ -12,7 +12,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.3**
+Aktuelle Version: **1.3.4**
+
+Version 1.3.4 gibt der Fregatte ein Tiefensonar mit variabler Tiefe (VDS)
+als dritte Anlage neben Rumpfsonar und Schleppantenne: `Shift+Y` fiert den
+Schleppkörper aus oder holt ihn ein (3-15 kn, Seegang bis 5, Verlust über
+24 kn), `U`/`V` stellen seine Tiefe (20-300 m), solange er die gewählte
+Anlage ist, und er horcht und pingt aus seiner eigenen Tiefe, also unter der
+Sprungschicht, wenn er dort hängt. Er löst die Links/Rechts-Mehrdeutigkeit
+der Schleppantenne wie das Rumpfsonar auf. Das Remote-Crew-Sonar bekommt
+dieselben Bedienelemente. Spielstände wechseln auf Format v23 (VDS-Zustand).
 
 Version 1.3.3 zeichnet die Wasserfälle (LOFAR, DEMON, Breitband) im
 Remote-Crew-Browser über `OffscreenCanvas` in einem Hintergrund-Worker, wo der
@@ -41,10 +50,10 @@ Sprachfunk ab Start; und eine Missionslaufzeit im Umfang des Editors
 (Referenzsektoren, Schützen- und Erreichen-Ziele, Zufallsgruppen,
 zeitgesteuerte Ereignisse, eingestelltes Wetter, platzierte Luftfahrzeuge,
 Tiere und Täuschkörper). Der Kern ist in Mixins zerlegt, die Testsuite läuft
-parallel. **Spielstände haben das Format v21 (Funkaufträge der Führung, Wachplan, Ermüdung und Moral der Crew, der Seefernaufklärer auf Abruf, Abteilungen und Leckabwehr, Tauchzellen, Trimm und Pressluft sowie ESM-Bild des besetzten Boots,
+parallel. **Spielstände haben das Format v23 (Tiefensonar der Fregatte, Funkraum des besetzten Boots, Funkaufträge der Führung, Wachplan, Ermüdung und Moral der Crew, der Seefernaufklärer auf Abruf, Abteilungen und Leckabwehr, Tauchzellen, Trimm und Pressluft sowie ESM-Bild des besetzten Boots,
 Diesel, Laderate und Luftvorräte der U-Boote, Crew-Zustand des Bootes,
 Sehrohr-Sichtungen, Waffeneinstellungen, Missionsereignisse, fremde Pings auf
-dem Weg zur Fregatte); v20 und ältere Stände werden abgewiesen.**
+dem Weg zur Fregatte); ältere Stände werden abgewiesen.**
 
 Version 1.2.0 verbessert den Spielfluss und die Übergabe zwischen den
 Stationen: Der `Esc`-Dialog und das Missionsende führen zurück ins Hauptmenü
@@ -368,7 +377,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v21 gespeichert.
+v23 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -502,8 +511,9 @@ Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v21**. V21
-verlangt das exakte Schema `u-jagd-save-v21` einschließlich der Auftragstafel
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v23**. V23
+verlangt das exakte Schema `u-jagd-save-v23` einschließlich des Tiefensonars
+der Fregatte, des Funkraums des besetzten Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen
 Schnappschusses des Laufzeitkatalogs, des gesamten Zustands für die

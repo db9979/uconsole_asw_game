@@ -14,18 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.35**
+Aktuelle Version: **1.3.36**
 
-Version 1.3.35 bringt weniger Text auf die uConsole-Bildschirme. Die obere
-Leiste nennt nur Station und Uhrzeit, der Kartenkopf nur den Maßstab. Das Sonar
-verliert die Statusfelder im Kopf und die Legendenzeilen und behält eine Zeile
-mit vier Haupttasten (der Rest steht in F1); ein Schlepp- oder Tiefensonar
-zeigt seinen Zustand nur, solange es fährt oder nicht bereit ist. Die
-Bedrohungsbox des U-Boots erscheint nur bei frischer Bedrohung, danach markiert
-ein gelbes Dreieck neben der Uhrzeit anstehende Warnungen. Kurse stehen in
-ganzen Grad mit °, der Drehkreis nur während einer Drehung. Der TMA-Kopf
-überlappt nicht mehr, und Waffen-Reiter, Rohrzeile und Alarmzeilen des U-Boots
-werden nicht mehr abgeschnitten. Spielstände bleiben v27.
+Version 1.3.36 lässt die Karten auf der uConsole viel weiter hineinzoomen.
+`Q`/`E` springen jetzt auf Brücke, Waffen, Helikopter und der U-Boot-Karte in
+festen Stufen durch die Kartenhöhen 500, 250, 100, 50, 25, 10, 5, 2, 1 und
+0,5 sm, das Mausrad zoomt stufenlos bis 0,5 sm; die OPZ-Karte geht bis 0,25 sm
+Radius. Das Gitter wird beim Hineinzoomen feiner (bis 0,1 sm, mit
+Dezimalbeschriftung), der Maßstab zeigt Bruchteile, und Küsten und Radarringe
+werden beschnitten, damit starker Zoom schnell bleibt. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

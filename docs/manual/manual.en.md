@@ -163,7 +163,7 @@ The top bar names only the station and the clock; course and speed are in the te
 - **Course / rudder:** current course, ordered course (`→`), rudder angle in whole degrees and, only while turning, the turn radius.
 - **Speed / acoustics:** telegraph order, speed, own noise in percent and a CAVITATION warning above 15 kn.
 - **Tactical picture:** observed threats (a heard torpedo launch transient or HF seeker pulses, a contact sonar classified as torpedo, or an air track flagged as a possible missile), sensor state (radar, TAS), assets (helicopter, buoys) and weather/day-night.
-- **Chart:** synthetic chart depth and coastline, own ship, tracks published by the other stations. Wheel or `Q`/`E` zoom, drag pans, `K` follows own ship.
+- **Chart:** synthetic chart depth and coastline, own ship, tracks published by the other stations. `Q`/`E` zoom in fixed steps (chart height 500, 250, 100, 50, 25, 10, 5, 2, 1 and 0.5 NM), the wheel zooms smoothly down to 0.5 NM; the grid gets finer as you zoom in (down to 0.1 NM). Drag pans, `K` follows own ship.
 
 ### Bridge lookout reports
 
@@ -185,7 +185,7 @@ Class and type need a finer resolved silhouette than the sighting (Johnson crite
 | `V` | Enter target speed directly (0-31 kn) |
 | `+ / -` | Telegraph: engine order (ASTERN-STOP-SLOW-HALF-FULL-FLANK) |
 | `Chart` | Mouse wheel: zoom, mouse drag: pan |
-| `Q / E` | Zoom chart out/in |
+| `Q / E` | Zoom chart in steps, 500 to 0.5 NM |
 | `K` | Camera follow on/off |
 | `, / .` | Lookout page: scope radius smaller / larger |
 | `B` | Lookout page: binoculars over the chart on/off (, / . train them) |
@@ -460,7 +460,7 @@ Torpedo run, seen from above:
 | `B` | Deploy sonobuoys (HSP-5 airborne) |
 | `D` | Lightweight torpedo from HSP-5 |
 | `V` | Stream one finite towed acoustic decoy |
-| `Q / E` | Zoom chart out/in |
+| `Q / E` | Zoom chart in steps, 500 to 0.5 NM |
 | `K` | Camera follow on/off |
 | `F` | Toggle AA gun fire release (withheld = never fires on raiders) |
 
@@ -592,7 +592,7 @@ Operations (OPZ / CIC) builds the tactical picture above the water: surface and 
 
 ### Displays and instruments
 
-Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track; page 3 commands the patrol aircraft. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `PgUp`/`PgDn`), independent of the chart zoom (wheel, down to 5 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
+Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track; page 3 commands the patrol aircraft. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `PgUp`/`PgDn`), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
 
 ```text
  NATO frame colours (operator annotation, not truth)
@@ -881,7 +881,7 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 | `U / V` | Raise / lower dipping-sonar target depth |
 | `A` | Transmit active ping from deployed dipping sonar |
 | `D / Ctrl+Enter` | Drop lightweight torpedo |
-| `Q / E` | Zoom chart out/in |
+| `Q / E` | Zoom chart in steps, 500 to 0.5 NM |
 | `K` | Camera follow on/off |
 | `Acoustic: Page Up / Down` | Acoustic page: Broadband / LOFAR / DEMON |
 | `Acoustic: <- / ->` | Helicopter listening bearing -/+ 5 degrees |
@@ -1133,7 +1133,7 @@ The top bar shows the submarine's seven stations as tabs: `1` Command, `2` Sonar
 | `C / V / D` | Order course / speed / depth (Command; course and depth also Navigation, speed also Engine room) |
 | `U / J / H` | Depth steps: periscope / snorkel depth (Shift), below / above the measured layer (Shift), deep (Command, Navigation) |
 | `Page Up/Down` | Command pages: Navigation / Weapons & contacts / Periscope / Threat (or 1 again); Navigation pages: Navigation / Threat (or 6 again); Mast & ESM pages: ESM / Periscope (or 5 again) |
-| `Q / E` | Chart zoom out / in |
+| `Q / E` | Zoom chart in steps, 500 to 0.5 NM |
 | `K` | Chart follows the submarine on/off |
 | `Wheel / drag` | Zoom / pan the chart (mouse on the chart) |
 | `Arrow keys` | Select an own sonar contact |

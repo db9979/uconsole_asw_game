@@ -98,11 +98,13 @@ PHYS_SUBSTEP_S = 0.05             # max. sim-Sekunden pro Physik-Substep (Anti-T
                                   # 45 kn legen in 0.05 s ca. 0.000625 NM zurueck)
 PHYS_SUBSTEP_MAX = 240
 MAP_ZOOM_MIN_PX_PER_NM = 1.0      # ganze Welt sichtbar (500 NM in 510 px)
-MAP_ZOOM_MAX_PX_PER_NM = 14.0     # Detail-Zoom (~36 NM in 510 px)
+MAP_ZOOM_MAX_PX_PER_NM = 1400.0   # Detail-Zoom (0.5 NM in 668 px Kartenhoehe)
 MAP_ZOOM_DEFAULT_PX_PER_NM = 10.0 # Start-Zoom (~51 NM hoch, ~64 NM breit)
 MAP_ZOOM_WHEEL_FACTOR = 1.25      # stufenlos pro Mausrad-Schritt
+# Q/E springen auf feste Kartenhoehen (NM), von der ganzen Welt bis 0.5 NM.
+MAP_ZOOM_STEPS_NM = (500.0, 250.0, 100.0, 50.0, 25.0, 10.0, 5.0, 2.0, 1.0, 0.5)
 OPZ_MAP_DEFAULT_RADIUS_NM = 40.0
-OPZ_MAP_MAX_ZOOM_RADIUS_NM = 5.0
+OPZ_MAP_MAX_ZOOM_RADIUS_NM = 0.25
 
 # Welt
 WORLD_SIZE_NM = 500.0     # quadratische Welt in NM

@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.36
+
+Release 1.3.36 lets the uConsole charts zoom much further in. `Q`/`E` now
+step through fixed chart heights of 500, 250, 100, 50, 25, 10, 5, 2, 1 and
+0.5 NM on the bridge, weapons, helicopter and submarine charts, and the mouse
+wheel zooms smoothly down to 0.5 NM; the operations centre chart goes down to
+a 0.25 NM radius. The grid gets finer as you zoom (down to 0.1 NM, with
+decimal labels), the scale line shows fractions, and coastlines and radar
+rings are clipped so strong zoom stays fast. Saves stay v27.
+
 ## 1.3.35
 
 Release 1.3.35 puts less text on the uConsole screens. The top bar names only

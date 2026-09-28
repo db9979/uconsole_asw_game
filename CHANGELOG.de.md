@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.36
+
+Version 1.3.36 lässt die Karten auf der uConsole viel weiter hineinzoomen.
+`Q`/`E` springen jetzt auf Brücke, Waffen, Helikopter und der U-Boot-Karte in
+festen Stufen durch die Kartenhöhen 500, 250, 100, 50, 25, 10, 5, 2, 1 und
+0,5 sm, das Mausrad zoomt stufenlos bis 0,5 sm; die OPZ-Karte geht bis 0,25 sm
+Radius. Das Gitter wird beim Hineinzoomen feiner (bis 0,1 sm, mit
+Dezimalbeschriftung), der Maßstab zeigt Bruchteile, und Küsten und Radarringe
+werden beschnitten, damit starker Zoom schnell bleibt. Spielstände bleiben v27.
+
 ## 1.3.35
 
 Version 1.3.35 bringt weniger Text auf die uConsole-Bildschirme. Die obere

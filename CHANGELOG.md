@@ -4,15 +4,23 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.46
+## 1.3.47
 
-Release 1.3.46 renews the pictures on the project page. They are now a
+Release 1.3.47 renews the pictures on the project page. They are now a
 gallery and show, new, the lookout's binoculars on the frigate and the
 submarine's periscope by day and by night, on the uConsole and in the browser,
 with a warship and merchants in the eyepiece and the merchants' navigation
 lights in the dark; every station picture is in the new turquoise look. The
 screenshot tools make these eyepiece pictures on their own
 (`tools/sight_capture.py`). Saves stay v27.
+
+## 1.3.46
+
+Release 1.3.46 redraws the bridge's small weather picture in the start screen's
+look: it now looks into the wind with the sky of the hour (sun, moon and stars),
+the clouds, rain, snow or fog and the sea running at the eye, and a turquoise
+wind rose in its corner, framed by the corner brackets of the other views. Both
+on the uConsole and in the Remote Crew browser; saves stay v27.
 
 ## 1.3.45
 

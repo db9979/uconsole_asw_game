@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.46**
+Aktuelle Version: **1.3.47**
 
-Version 1.3.46 erneuert die Bilder auf der Projektseite. Sie stehen jetzt in
+Version 1.3.47 erneuert die Bilder auf der Projektseite. Sie stehen jetzt in
 einer Galerie und zeigen neu das Fernglas des Ausgucks auf der Fregatte und das
 Sehrohr des U-Boots bei Tag und bei Nacht, auf der uConsole und im Browser, mit
 einem Kriegsschiff und Frachtern im Okular und den Positionslichtern der

@@ -12,7 +12,7 @@ const OVERCAST_DAY = [108, 120, 126], OVERCAST_NIGHT = [18, 24, 30];
 const HAZE_DAY = [150, 160, 165], HAZE_NIGHT = [34, 44, 50];
 const MOON = [214, 222, 206], MOON_DARK = [26, 34, 42], SUN_DAY = [255, 244, 210], SUN_DUSK = [255, 178, 96];
 const STEEL_NIGHT = [19, 36, 46], STEEL_DAY = [44, 56, 64], RIM_NIGHT = [84, 150, 158], RIM_DAY = [170, 196, 200];
-const WINDOW_LIGHT = [250, 205, 120], FRAME = [40, 96, 90];
+const WINDOW_LIGHT = [250, 205, 120], FRAME = [40, 96, 90], WIND_ARROW = [120, 214, 180];
 const SCALE = "rgb(170, 232, 208)", CROSSHAIR = "rgb(120, 214, 180)";
 const STABILIZED_RESIDUAL = .12;   // src/ui/horizon.py
 const VISIBILITY_MAX_NM = 30, BODY_MAX_ALT_DEG = 45, SCALE_LABEL_MIN_PX = 36;
@@ -334,9 +334,24 @@ function drawFrame(g, width, height) {
   }
 }
 
+// Wind rose: north up, the arrow blows from where the wind comes.
+function drawWindRose(g, height, colors, windFromDeg) {
+  const radius = Math.max(8, Math.min(20, Math.floor(height / 5))), cx = radius + 7, cy = radius + 7;
+  const angle = windFromDeg * Math.PI / 180, dx = Math.sin(angle), dy = -Math.cos(angle);
+  g.fillStyle = rgb(mix(colors.sky[0], [0, 0, 0], .5)); g.beginPath(); g.arc(cx, cy, radius, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = rgb(FRAME); g.lineWidth = 1; g.stroke();
+  const head = [cx - dx * (radius - 4), cy - dy * (radius - 4)], barb = Math.max(5, radius / 3);
+  line(g, [cx + dx * (radius - 3), cy + dy * (radius - 3)], head, rgb(WIND_ARROW), 2);
+  g.fillStyle = rgb(WIND_ARROW); g.beginPath(); g.moveTo(...head);
+  g.lineTo(head[0] + dx * barb * 1.6 - dy * barb * .6, head[1] + dy * barb * 1.6 + dx * barb * .6);
+  g.lineTo(head[0] + dx * barb * 1.6 + dy * barb * .6, head[1] + dy * barb * 1.6 - dx * barb * .6); g.fill();
+}
+
 // One eyepiece picture.  ``v``: bearing (line of sight), fov_deg,
 // horizon_offset, horizon_tilt, visibility_nm, sea_state, sky, outlines
-// ([{bearing, span_deg, cls, stale, lights}]) and an optional window_deg crosshair.
+// ([{bearing, span_deg, cls, stale, lights}]) and an optional window_deg crosshair;
+// no_scale hides the bearing scale, wind_rose_deg draws the weather
+// instrument's wind rose in the top left corner.
 export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monospace, monospace") {
   const w = view(width, height, v), haze = 1 - clamp(v.visibility_nm / VISIBILITY_MAX_NM);
   const sky = v.sky, colors = palette(sky, haze);
@@ -351,10 +366,11 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
         nav: row.stale ? null : row.lights ?? null});
   }
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);
+  if (Number.isFinite(v.wind_rose_deg)) drawWindRose(g, height, colors, v.wind_rose_deg);
   const labelStep = [10, 30, 45, 90].find((step) => step * w.pxPerDeg >= SCALE_LABEL_MIN_PX) ?? 90;
   const first = Math.floor((v.bearing - v.fov_deg / 2) / 5) * 5;
   g.font = labelFont; g.textAlign = "center"; g.textBaseline = "top";
-  for (let tick = first; tick <= first + v.fov_deg + 10; tick += 5) {
+  for (let tick = first; !v.no_scale && tick <= first + v.fov_deg + 10; tick += 5) {
     const off = wrap(tick - v.bearing);
     if (Math.abs(off) > v.fov_deg / 2) continue;
     const tx = (off + v.fov_deg / 2) * w.pxPerDeg, major = ((tick % labelStep) + labelStep) % labelStep === 0;

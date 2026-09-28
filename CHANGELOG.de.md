@@ -4,15 +4,23 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.46
+## 1.3.47
 
-Version 1.3.46 erneuert die Bilder auf der Projektseite. Sie stehen jetzt in
+Version 1.3.47 erneuert die Bilder auf der Projektseite. Sie stehen jetzt in
 einer Galerie und zeigen neu das Fernglas des Ausgucks auf der Fregatte und das
 Sehrohr des U-Boots bei Tag und bei Nacht, auf der uConsole und im Browser, mit
 einem Kriegsschiff und Frachtern im Okular und den Positionslichtern der
 Frachter im Dunkeln; alle Stationsbilder zeigen den neuen türkisen Look. Die
 Screenshot-Werkzeuge erzeugen diese Okularbilder selbst
 (`tools/sight_capture.py`). Spielstände bleiben v27.
+
+## 1.3.46
+
+Version 1.3.46 zeichnet das kleine Wetterbild der Brücke im Stil des Startbilds:
+Es blickt jetzt in den Wind, mit dem Himmel der Stunde (Sonne, Mond und Sterne),
+den Wolken, Regen, Schnee oder Nebel und der auf das Auge zulaufenden See, dazu
+eine türkise Windrose in der Ecke und die Eckwinkel der anderen Sichten. Auf der
+uConsole und im Remote-Crew-Browser; Spielstände bleiben v27.
 
 ## 1.3.45
 

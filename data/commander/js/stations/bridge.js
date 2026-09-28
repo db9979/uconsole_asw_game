@@ -9,6 +9,8 @@ import { drawSightView, viewMotion } from "../views/sight-scene.js";
 import { createOptics, opticsFov, opticsText, wireOptics } from "../views/optics.js";
 import { visualContext } from "../views/visual-common.js";
 
+const WEATHER_FOV_DEG = 120;  // sight_scene.INSTRUMENT_FOV_DEG
+
 // The lookout's binoculars: trained relative to the bow in this browser only
 // (presentation, like the uConsole's binoculars); the picture shows his own
 // sightings from the published ``lookout`` block.
@@ -94,46 +96,15 @@ function renderSightings(rows) {
     if (item.textContent !== text) item.textContent = text;
   });
 }
+// The weather instrument: a small eyepiece picture into the wind in the
+// start screen's look (sight_scene.draw_instrument on the uConsole).
 function drawBridgeWeather(now) {
-  const weather = S.v2State?.environment;
-  if (!weather || S.session?.station !== "bridge") return;
+  const weather = S.v2State?.environment, sky = S.v2State?.bridge?.lookout?.sky;
+  if (!weather || !sky || S.session?.station !== "bridge") return;
   const canvas = $("bridge-weather-canvas"), context = canvas.getContext("2d");
-  const width = canvas.width, height = canvas.height, horizon = Math.floor(height / 2);
-  const phase = displaySimNow(now) + DISPLAY_CLOCK_LAG_S;
-  const gradient = context.createLinearGradient(0, 0, 0, horizon);
-  gradient.addColorStop(0, weather.is_night ? "#050e1b" : "#19465c");
-  gradient.addColorStop(1, weather.is_night ? "#26353e" : "#789ba0");
-  context.fillStyle = gradient; context.fillRect(0, 0, width, horizon);
-  context.fillStyle = weather.is_night ? "#08232f" : "#0c3641";
-  context.fillRect(0, horizon, width, height - horizon);
-  context.fillStyle = weather.is_night ? "#bed2cd" : "#f4cc5c";
-  const dayStart = 5.5, dayEnd = 19.5;
-  const progress = weather.is_night ? ((S.v2State.clock.world - dayEnd + 24) % 24) / (24 - dayEnd + dayStart) : Math.max(0, Math.min(1, (S.v2State.clock.world - dayStart) / (dayEnd - dayStart)));
-  const lightX = 24 + progress * (width - 48), lightY = horizon - 12 - Math.sin(progress * Math.PI) * 32;
-  context.beginPath(); context.arc(lightX, lightY, 12, 0, Math.PI * 2); context.fill();
-  const sea = weather.effective_sea_state;
-  context.strokeStyle = sea >= 5 ? "#f3cf79" : "#63b5b5";
-  context.lineWidth = 2;
-  for (let band = 0; band < 3; band += 1) {
-    context.beginPath();
-    const amplitude = 3 + sea * (.8 + band * .16), wavelength = Math.max(28, 62 - sea * 4 + band * 10);
-    for (let x = 0; x <= width + 4; x += 4) {
-      const y = horizon + 15 + band * 20 + Math.sin(x / wavelength * Math.PI * 2 + phase * (.7 + weather.wind_speed_kn / 35 + band * .18) + weather.wind_from_deg * Math.PI / 180) * amplitude;
-      if (x === 0) context.moveTo(x, y); else context.lineTo(x, y);
-    }
-    context.stroke();
-  }
-  context.strokeStyle = "#80aeb8"; context.lineWidth = 1;
-  for (let i = 0; i < Math.floor(weather.rain_intensity * 44); i += 1) {
-    const x = (i * 47 + phase * 31) % (width + 20) - 10, y = (i * 23 + phase * 53) % height;
-    context.beginPath(); context.moveTo(x, y); context.lineTo(x - 5, y + 13); context.stroke();
-  }
-  const haze = 1 - Math.max(0, Math.min(1, weather.visibility_nm / 30));
-  context.fillStyle = `rgba(180, 194, 190, ${haze * .55})`; context.fillRect(0, 0, width, height);
-  const windAngle = weather.wind_from_deg * Math.PI / 180, cx = 28, cy = 28;
-  context.fillStyle = "rgba(4, 18, 24, .75)"; context.beginPath(); context.arc(cx, cy, 20, 0, Math.PI * 2); context.fill();
-  context.strokeStyle = "#f3cf79"; context.lineWidth = 3; context.beginPath();
-  context.moveTo(cx + Math.sin(windAngle) * 17, cy - Math.cos(windAngle) * 17); context.lineTo(cx, cy); context.stroke();
+  drawSightView(context, canvas.width, canvas.height, {bearing: weather.wind_from_deg, fov_deg: WEATHER_FOV_DEG,
+    horizon_offset: 0, horizon_tilt: 0, visibility_nm: weather.visibility_nm, sea_state: weather.effective_sea_state,
+    sky, outlines: [], no_scale: true, wind_rose_deg: weather.wind_from_deg}, displaySimNow(now) + DISPLAY_CLOCK_LAG_S);
 }
 function weatherAnimation(now) {
   S.weatherFrame = null;

@@ -49,6 +49,8 @@ def _projected_crew():
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
             "engine", "helicopter", "eloka", "uboot", "uboot_sonar",
             "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav", "uboot_radio")
+# Session records list the phone lookouts after the workstations.
+SESSION_ROLES = STATIONS + ("lookout", "uboot_lookout")
 
 
 def _station_record(status="available", *, requested=False, request_generation=0,
@@ -1054,7 +1056,7 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
     if not chromium:
         pytest.skip("Optional direct-fire browser contract: no installed Chromium")
     en, de = catalogs()
-    stations = {station: _station_record() for station in STATIONS}
+    stations = {station: _station_record() for station in SESSION_ROLES}
     for station, generation in (("weapons", 1), ("opz", 2),
                                 ("helicopter", 3), ("damage", 4),
                                 ("bridge", 5)):
@@ -1384,7 +1386,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                                 "stations": {
                                     station: _station_record(
                                         "occupied" if station == "sonar" else "available")
-                                    for station in STATIONS
+                                    for station in SESSION_ROLES
                                 }}
                 self.reply(200, cls.session_body(), cookie=f"ujagd_remote_v2={cls.cookie}; Path=/api/v2; HttpOnly; SameSite=Strict")
             elif self.path == "/api/v2/stations/request" and self.authenticated() and csrf_ok and body == {"station": "bridge"}:

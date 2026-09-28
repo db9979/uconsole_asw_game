@@ -24,7 +24,11 @@ MAX_CALLOUTS = 16
 PREFIX = "commander.web.callout_"
 KEYS = ("torpedo", "contact", "breakup", "torpedo_away", "hit", "won", "lost",
         "action_stations", "mpa_on_station", "ping", "dipping", "buoy_ping", "splash",
-        "evade", "mast_threat", "leak", "fire")
+        "evade", "mast_threat", "leak", "fire",
+        # The phone lookout's and periscope's own calls (src/core/phone_lookout.py).
+        "lookout_contact", "lookout_ship", "lookout_warship", "lookout_merchant",
+        "lookout_aircraft", "lookout_submarine", "lookout_torpedo")
+_CALLED = {"frigate": "lookout.called.", "boat": "uboot.event.scope_called."}
 
 # Feed message key -> callout key; the torpedo cues match by prefix.
 _EXACT = {
@@ -57,7 +61,7 @@ _BOAT = {
     "crew.action_stations_on": "action_stations",
 }
 _WITH_BEARING = frozenset({"torpedo", "contact", "breakup", "ping", "dipping", "buoy_ping",
-                           "splash"})
+                           "splash"} | {key for key in KEYS if key.startswith("lookout_")})
 SIDES = ("frigate", "boat")
 
 
@@ -68,7 +72,10 @@ def callout_of(text, side: str = "frigate") -> tuple[str, int | None] | None:
     key = text.get(_MESSAGE_KEY)
     if type(key) is not str:
         return None
-    if side == "boat":
+    called = _CALLED.get(side, "")
+    if called and key.startswith(called) and f"lookout_{key[len(called):]}" in KEYS:
+        callout = f"lookout_{key[len(called):]}"
+    elif side == "boat":
         callout = _BOAT.get(key)
     else:
         callout = _EXACT.get(key)

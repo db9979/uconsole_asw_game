@@ -166,7 +166,7 @@ class HotspotTransport:
         self.fail = fail
         self.address = None
 
-    def start(self, host, port):
+    def start(self, host, port, tls_context=None):
         self.order.append(("server-start", host, port))
         if self.fail:
             raise OSError("test bind failure")
@@ -405,7 +405,7 @@ def test_activation_prebuilds_contact_assets_once_on_calling_thread(monkeypatch)
             assert kwargs["contact_analysis_assets"] is payload
             self.address = None
 
-        def start(self, host, port):
+        def start(self, host, port, tls_context=None):
             self.address = (host, port)
 
         def stop(self):

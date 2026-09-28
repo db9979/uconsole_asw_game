@@ -149,6 +149,8 @@ def _validator_page(states) -> str:
     script = "\n".join([
         statement("core/base.js", "const stationNames = "),
         statement("core/base.js", "const opforRoles = "),
+        statement("core/base.js", "const lookoutRoles = "),
+        statement("core/base.js", "const sessionRoles = "),
         statement("core/base.js", "const isBoatCommand = "),
         statement("core/base.js", "const sonarRoles = "),
         statement("core/base.js", "const isSonar = "), statement("core/format.js", "const finite = "),
@@ -179,7 +181,7 @@ def test_published_role_states_pass_the_browser_validator(tmp_path):
     assert roles == {"bridge", "sonar", "weapons", "damage", "opz", "radio",
                      "engine", "helicopter", "eloka", "uboot", "uboot_sonar",
                      "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav",
-                     "uboot_radio"}
+                     "uboot_radio", "lookout", "uboot_lookout"}
     page = tmp_path / "validate.html"
     page.write_text(_validator_page(states), encoding="utf-8")
     result = subprocess.run(

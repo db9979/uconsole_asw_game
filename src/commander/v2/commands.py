@@ -316,6 +316,24 @@ def _uboot_scope_params(params):
             and 0 <= params["relative_deg"] < 360)
 
 
+# What a phone lookout may call (src/core/phone_lookout.py CATEGORIES).
+LOOKOUT_CALL_CATEGORIES = ("contact", "ship", "warship", "merchant", "aircraft",
+                           "submarine", "torpedo")
+
+
+def _lookout_call_params(params):
+    """A phone lookout's call: what, the true bearing and, if said, a range."""
+    if type(params) is not dict or set(params) != {"category", "bearing", "range_nm"}:
+        return False
+    bearing, range_nm = params["bearing"], params["range_nm"]
+    return (type(params["category"]) is str
+            and params["category"] in LOOKOUT_CALL_CATEGORIES
+            and type(bearing) in (int, float) and math.isfinite(bearing)
+            and 0 <= bearing < 360
+            and (range_nm is None or type(range_nm) in (int, float)
+                 and math.isfinite(range_nm) and 0 < range_nm <= 60))
+
+
 def _uboot_esm_emitter_params(params):
     """One emitter of the boat's ESM list, by the crew's running number."""
     return (type(params) is dict and set(params) == {"emitter"}
@@ -659,14 +677,20 @@ V2_ACTION_REGISTRY = {
     "uboot_silent": V2Action(frozenset({"uboot", "uboot_engine"}), _bool_params("enabled")),
     "uboot_bottom": V2Action(frozenset({"uboot", "uboot_nav"}), _bool_params("enabled")),
     # The periscope: Command and the mast station train it and read the stadimeter.
-    "uboot_scope_bearing": V2Action(frozenset({"uboot", "uboot_esm"}), _uboot_scope_params),
-    "uboot_scope_mark": V2Action(frozenset({"uboot", "uboot_esm"}), _no_params),
+    # The phone on the periscope (``uboot_lookout``) trains it and reads the
+    # stadimeter too.
+    "uboot_scope_bearing": V2Action(frozenset({"uboot", "uboot_esm", "uboot_lookout"}),
+                                    _uboot_scope_params),
+    "uboot_scope_mark": V2Action(frozenset({"uboot", "uboot_esm", "uboot_lookout"}),
+                                 _no_params),
     # Command fires on the attack computer's solution of the crosshair sighting.
     "uboot_scope_fire": V2Action(frozenset({"uboot"}), _no_params),
     # The mast station evaluates its ESM picture: classify, transfer to the plot.
     "uboot_esm_classify": V2Action(frozenset({"uboot", "uboot_esm"}),
                                    _uboot_esm_classify_params),
     "uboot_esm_plot": V2Action(frozenset({"uboot", "uboot_esm"}), _uboot_esm_emitter_params),
+    # Phone lookouts call what they see; the bridge or the boat hears only that.
+    "lookout_call": V2Action(frozenset({"lookout", "uboot_lookout"}), _lookout_call_params),
 }
 
 

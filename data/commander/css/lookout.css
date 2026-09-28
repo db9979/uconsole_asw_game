@@ -1,0 +1,70 @@
+/* The phone lookout (lookout.html): a full-screen eyepiece with thumb-sized
+   controls at the bottom; the pairing card in the start screen's night blue. */
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--night-sky);
+  color: var(--text);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+body { overscroll-behavior: none; }
+button, input, select { font: inherit; color: inherit; }
+button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--bg-3);
+  touch-action: manipulation;
+}
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--live); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--live-bg); border-color: var(--live); color: var(--live-strong); }
+button:disabled { opacity: .45; }
+.phone-primary { background: var(--live-bg); border-color: var(--live); color: var(--live-strong); font-weight: 600; }
+[hidden] { display: none !important; }
+
+.phone-pair {
+  box-sizing: border-box;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: max(16px, env(safe-area-inset-top)) 16px 24px;
+  background: linear-gradient(var(--night-sky), var(--night-horizon) 70%, var(--night-sea));
+  min-height: 100%;
+}
+.phone-pair h1 { font-size: 1.5rem; margin: 8px 0; color: var(--live-strong); }
+.phone-pair p { color: var(--text-dim); line-height: 1.4; }
+.phone-card { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--bg-1); }
+.phone-card input[type="text"] { min-height: 44px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--bg-2); }
+.phone-roles { display: grid; gap: 6px; margin: 0 0 8px; padding: 0; border: 0; }
+.phone-roles legend { color: var(--text-dim); margin-bottom: 4px; }
+.phone-roles label { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+.phone-roles input { width: 20px; height: 20px; accent-color: var(--live); }
+.phone-warning { color: var(--caution) !important; border: 1px solid var(--caution); border-radius: 8px; padding: 8px 10px; background: var(--caution-bg); }
+.phone-error { color: var(--alarm); min-height: 1.2em; margin: 4px 0 0; }
+.phone-language { display: flex; gap: 10px; align-items: center; margin-top: 16px; color: var(--text-dim); }
+.phone-language select { min-height: 40px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--bg-2); }
+
+.phone-watch { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--scope); }
+.phone-view { flex: 1 1 auto; width: 100%; min-height: 0; display: block; touch-action: none; }
+.phone-top { position: absolute; top: max(8px, env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
+.phone-bearing { margin: 24px 0 0; font: 700 1.3rem "JetBrains Mono", ui-monospace, monospace; color: var(--live-strong); text-shadow: 0 1px 3px var(--shadow); }
+.phone-status { margin: 24px 0 0; max-width: 60%; text-align: right; color: var(--text); text-shadow: 0 1px 3px var(--shadow); overflow-wrap: anywhere; }
+.phone-status.good { color: var(--live-strong); }
+.phone-status.bad { color: var(--caution); }
+.phone-blocked { position: absolute; inset: 30% 16px auto; padding: 16px; border: 1px solid var(--caution); border-radius: 10px; background: color-mix(in srgb, var(--bg-1) 92%, transparent); text-align: center; }
+.phone-categories { position: absolute; left: 8px; right: 8px; bottom: calc(132px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 8px; border: 1px solid var(--line-strong); border-radius: 10px; background: color-mix(in srgb, var(--bg-1) 94%, transparent); }
+.phone-categories p { grid-column: 1 / -1; margin: 0 0 4px; color: var(--text-dim); }
+.phone-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 8px 8px 4px; background: var(--bg-1); border-top: 1px solid var(--line); }
+.phone-controls button { padding: 0 4px; font-size: .9rem; overflow-wrap: anywhere; }
+.phone-controls .phone-primary { grid-column: 1 / -1; min-height: 52px; font-size: 1.05rem; }
+.phone-heard { margin: 0; padding: 2px 12px; min-height: 1.3em; color: var(--text-dim); background: var(--bg-1); font-size: .9rem; overflow-wrap: anywhere; }
+.phone-calls { margin: 0; padding: 0 12px calc(6px + env(safe-area-inset-bottom)) 30px; max-height: 4.2em; overflow: auto; background: var(--bg-1); font-size: .85rem; color: var(--text-dim); }
+.phone-calls .confirmed { color: var(--live); }
+@media (orientation: landscape) and (max-height: 500px) {
+  .phone-controls { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .phone-controls .phone-primary { grid-column: auto; min-height: 44px; }
+  .phone-calls { display: none; }
+  .phone-categories { bottom: 72px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

@@ -1,4 +1,4 @@
-# U-Jagd 1.3.44 - Stations- und Tastenkürzel
+# U-Jagd 1.3.47 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -51,6 +51,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `K` | Kamera-Follow an/aus |
 | `, / .` | Ausguck-Seite: Radius kleiner / größer |
 | `B` | Ausguck-Seite: Fernglas über der Karte ein/aus (, / . schwenken) |
+| `↑/↓ · Q/E · Space` | Fernglas oben: ↑/↓ neigen 2° (Umschalt: 10°) statt Maschinentelegraf, Q/E Zoom (16°, 8°, 4° Feld), Leertaste Stabilisierung |
 | `G` | Gefechtsstationen an/aus |
 
 ## 2 Sonar

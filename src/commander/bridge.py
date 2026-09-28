@@ -77,6 +77,8 @@ from src.core import attack_computer, config, opfor
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
 from src.sensors import lookout_id
+from src.core import phone_lookout
+from src.commander.lookout_projection import build_lookout_states
 from src.commander.server import (HOST_ROLE, OPFOR_ROLES, ROLES, UBOOT_COMMAND_ROLES, SIMLOG_ENTRIES_MAX,
                                   SIMLOG_MAX_BYTES, V2_ACTION_REGISTRY, _json_bytes)
 from src.commander.projections import (ROLE_NAMES, build_opfor_states,
@@ -765,6 +767,20 @@ def _uboot_scope_fire(game, boat, params, _bindings):
     return _uboot_result(attack_computer.fire_on_crosshair(game, boat))
 
 
+def _uboot_lookout_call(game, boat, params, _bindings):
+    """The phone on the periscope calls a sighting."""
+    if not boat.sub._crew_ready():
+        return "not_ready"
+    return phone_lookout.boat_call(game, boat, params["category"], params["bearing"],
+                                   params["range_nm"])
+
+
+def _lookout_call(game, params, _bindings):
+    """The frigate's phone lookout calls a sighting."""
+    return phone_lookout.call(game, params["category"], params["bearing"],
+                              params["range_nm"])
+
+
 def _uboot_esm_classify(game, boat, params, _bindings):
     if not boat.sub._crew_ready():
         return "not_ready"
@@ -807,11 +823,13 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_scope_fire": _uboot_scope_fire,
     "uboot_esm_classify": _uboot_esm_classify,
     "uboot_esm_plot": _uboot_esm_plot,
+    "lookout_call": _uboot_lookout_call,
 }
 
 
 _V2_ACTION_HANDLERS = {
     "acknowledge": _acknowledge,
+    "lookout_call": _lookout_call,
     "plot_add": _plot_add,
     "plot_remove": _plot_remove,
     "plot_relabel": _plot_relabel,
@@ -1595,7 +1613,7 @@ class CommanderBridge:
         if role == "uboot" and action in ("sonar_active_ping", "sonar_measure_bt"):
             with game.sonar_perspective(boat.station):
                 return _V2_ACTION_HANDLERS[action](game, params, bindings)
-        if role in UBOOT_COMMAND_ROLES:
+        if role in UBOOT_COMMAND_ROLES or role == "uboot_lookout":
             handler = _UBOOT_ACTION_HANDLERS.get(action)
             return False if handler is None else handler(game, boat, params, bindings)
         handler = _V2_ACTION_HANDLERS.get(action)
@@ -1627,7 +1645,7 @@ class CommanderBridge:
                     world_epoch=self._epoch, resource_revision=self._revision,
                     apply=lambda action, params: False)
                 continue
-            if envelope.role in OPFOR_ROLES:
+            if envelope.role in OPFOR_ROLES or envelope.role == "uboot_lookout":
                 server.apply_command_v2(
                     envelope, now=apply_now, phase=phase, world_session=self._session,
                     world_epoch=self._epoch, resource_revision=self._revision,
@@ -1941,6 +1959,7 @@ class CommanderBridge:
                 opfor_sonar_refs, {key: value[1] for key, value in current_assets.items()})
             for role in OPFOR_ROLES:
                 states[role] = opfor_states.get(role, deepcopy(states[None]))
+            states.update(build_lookout_states(game, self._status, boat, states[None]))
             # The known chart is identical for every role and constant for a
             # world/session/language, so build it once and share one object.
             chart_key = (self._chart_world, self._session, self._language)
@@ -1954,7 +1973,9 @@ class CommanderBridge:
             charts.update({role: known_v2_chart for role in ROLE_NAMES})
             # Without a crewed boat its roles stay redacted (state and chart).
             charts.update({role: (known_v2_chart if game.opfor is not None
-                                  else deepcopy(charts[None])) for role in OPFOR_ROLES})
+                                  else deepcopy(charts[None]))
+                           for role in (*OPFOR_ROLES, "uboot_lookout")})
+            charts["lookout"] = known_v2_chart
         server.publish_v2(states, charts)
         if ((getattr(server, "solo_mode", False) is True
              or getattr(server, "web_auth", None) is not None)

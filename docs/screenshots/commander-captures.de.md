@@ -28,6 +28,23 @@ Host und zeigen ausschließlich die dafür freigegebene Projektion.
 englischen OPZ/CIC-Aufnahme. `commander-wide.png` ist eine eigene englische
 Sonaraufnahme mit 2560 x 1440 Pixeln.
 
+## Okulare
+
+Das Fernglas des Brückenausgucks und das Sehrohr des U-Boots (Station Mast &
+ESM) bei Tag (11:00) und bei Nacht (22:30), 1920 x 1080, Seed 1234. Die Szene
+stellt `tools/sight_capture.py`: das U-Boot auf Sehrohrtiefe mit ausgefahrenem
+Mast, die Fregatte gestoppt dicht voraus, ein Kriegsschiff und ein neutraler
+Frachter vor dem Bug der Fregatte und ein zweiter Frachter voraus des U-Boots;
+was die Optiken dann zeigen, kommt aus der laufenden Simulation (nachts die
+Positionslichter der Frachter).
+
+| Okular | Deutsch | Englisch |
+| --- | --- | --- |
+| Fernglas, Tag | [PNG](commander-v2-de-binoculars-day.png) | [PNG](commander-v2-en-binoculars-day.png) |
+| Fernglas, Nacht | [PNG](commander-v2-de-binoculars-night.png) | [PNG](commander-v2-en-binoculars-night.png) |
+| Sehrohr, Tag | [PNG](commander-v2-de-periscope-day.png) | [PNG](commander-v2-en-periscope-day.png) |
+| Sehrohr, Nacht | [PNG](commander-v2-de-periscope-night.png) | [PNG](commander-v2-en-periscope-night.png) |
+
 ## Mobilansichten
 
 Die Aufnahmen mit 500 x 844 Pixeln prüfen das responsive einspaltige Layout.

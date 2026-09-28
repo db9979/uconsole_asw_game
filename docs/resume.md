@@ -1106,6 +1106,10 @@ Analyse lief auf dem Zielgeraet (CM5, 16 GB) mit dem neuen Lasttest.
   `commander_max_ms`, `events_ms`, `traffic_ms`; Server `audio_stream_stats()`
   (uebersprungene Bloecke, Sendetimeouts, Diskontinuitaeten, Verbindungen);
   Browser `droppedBlocks`/`evictedBlocks`.
+- 1.3.35: `queue_stranded` (pygame-Race: `endsound_callback` liest die Queue
+  ohne GIL, ein `queue()` im Fenster bleibt auf dem leeren Kanal haengen; die
+  Pumpe spielt den Block nach zwei Iterationen selbst ab) und `worker_restarts`
+  (toter Sonar-Worker wird von `play_sonar` neu gestartet).
 - `tools/audio_soak.py host` (echter Mixer oder `--dummy-audio`, N Clients,
   Epoch-Sprung/Retune-Takt, `--profile`) und `client` (PC im WLAN). Ergebnis
   auf dem CM5 mit echtem Mixer, 9 Clients, 14 Epoch-Spruengen, 4 Retunes ueber

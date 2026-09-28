@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.35
+
+Release 1.3.35 fixes sonar audio on the uConsole that could fall silent until
+audio was switched off and on in the options. A rare race in the pygame mixer
+could leave the sonar channel idle with its next block queued forever, and
+the sonar playback waited for that queue slot for good. Playback now replays
+such a stranded block and carries on, and a stopped sonar audio worker is
+restarted with the next block. `audio_debug.log` counts both
+(`queue_stranded`, `worker_restarts`). Saves stay v27.
+
 ## 1.3.34
 
 Release 1.3.34 writes a crash log: every game start adds a start and an end

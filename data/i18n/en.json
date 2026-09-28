@@ -419,6 +419,8 @@
   "commander.web.pair_intro": "Observe the mission, annotate contacts and propose a target to the crew. Keep the tactical picture in view without taking the helm.",
   "commander.web.authority_note": "The crew retains ship control and weapon authority. A target proposal is not a weapon order.",
   "commander.web.pair_heading": "Join the crew",
+  "commander.web.browser_hint": "Remote Crew is built and tested for Chrome or Chromium (also Edge) on a desktop PC. This browser is not Chromium-based, so pairing, sound or station pictures may fail. Open this address in Chrome or Chromium.",
+  "commander.web.browser_stalled": "The crew page did not start in this browser. Open this address in Chrome or Chromium (also Edge), or reload the page.",
   "commander.web.pair_help": "Enter the host's code: 3 digits followed by 3 uppercase letters. Lowercase input is converted automatically. The code expires after 5 minutes. Use only a network you trust.",
   "commander.web.pair_name": "Station name",
   "commander.web.pair_name_default": "Watch Officer",

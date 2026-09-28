@@ -14,15 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.49**
+Aktuelle Version: **1.3.50**
 
-Version 1.3.49 zeigt Flugzeuge im Fernglas des Ausgucks, im Ausguckstreifen, im
-Sehrohr und im Handy-Ausguck in ihrer wahren Höhe: Jedes steht in seinem
-Höhenwinkel über der Kimm, berechnet aus Flughöhe und Entfernung abzüglich der
-Erdkrümmung, sodass man ein hohes, nahes Flugzeug erst mit nach oben geneigter
-Optik sieht. Flugzeuge hängen jetzt hinter den Wolken im ruhigen Himmel, statt
-mit den Schiffen im Seegang zu schwanken. Auf der uConsole und im
-Remote-Crew-Browser; Spielstände bleiben v27.
+Version 1.3.50 repariert die Remote-Crew-Kopplung im LAN. Ein frisch
+gekoppelter Browser begrüßt nicht mehr mit „Deine Station wurde widerrufen oder
+freigegeben“, als wäre die Kopplung gescheitert, sondern mit der Aufforderung,
+eine freie Station zu nehmen. Die Crew-Seite sagt jetzt, wenn sie in einem
+Browser läuft, der nicht Chrome oder Chromium (auch Edge) ist: Firefox und
+Safari zeigen über dem Kopplungscode einen Hinweis, und eine Seite, die dort
+nicht starten kann, sagt das, statt endlos zu laden. Der Navigationsvorschlag
+der Brücke nimmt die vollen 31 kn der Fregatte an; Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -108,3 +108,4 @@ body.workstation-mode .role-rail, body.workstation-mode .mobile-role { display: 
   .mobile-role:not([hidden]) { grid-template-columns: minmax(0, 1fr) auto; }
   .mobile-role label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
 }
+.pair-card > .browser-hint { padding: .6rem .8rem; color: var(--text); background: var(--bg-3); border-left: 3px solid var(--alarm); }

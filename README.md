@@ -12,15 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.49**
+Current release: **1.3.50**
 
-Release 1.3.49 puts aircraft at their true height in the lookout's binoculars,
-the lookout strip, the periscope and the phone lookout: each stands at its
-elevation above the horizon, worked out from its altitude and range less the
-curve of the Earth, so a high aircraft close by needs the optics tilted up.
-Aircraft now hang in the still sky behind the clouds instead of riding the
-swell with the ships. Both on the uConsole and in the Remote Crew browser;
-saves stay v27.
+Release 1.3.50 fixes Remote Crew pairing on the LAN. A freshly paired
+browser no longer greets you with "Your station was revoked or released" as if
+pairing had failed; it now says "Authenticated. Take a free station." The crew
+page now tells you when it runs in a browser that is not Chrome or Chromium (also
+Edge): Firefox and Safari show a hint above the pairing code, and a page that
+cannot start there says so instead of loading forever. The bridge's navigation
+proposal accepts the frigate's full 31 kn; saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

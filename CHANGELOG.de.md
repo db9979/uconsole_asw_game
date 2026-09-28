@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.50
+
+Version 1.3.50 repariert die Remote-Crew-Kopplung im LAN. Ein frisch
+gekoppelter Browser begrüßt nicht mehr mit „Deine Station wurde widerrufen oder
+freigegeben“, als wäre die Kopplung gescheitert, sondern mit der Aufforderung,
+eine freie Station zu nehmen. Die Crew-Seite sagt jetzt, wenn sie in einem
+Browser läuft, der nicht Chrome oder Chromium (auch Edge) ist: Firefox und
+Safari zeigen über dem Kopplungscode einen Hinweis, und eine Seite, die dort
+nicht starten kann, sagt das, statt endlos zu laden. Der Navigationsvorschlag
+der Brücke nimmt die vollen 31 kn der Fregatte an; Spielstände bleiben v27.
+
 ## 1.3.49
 
 Version 1.3.49 zeigt Flugzeuge im Fernglas des Ausgucks, im Ausguckstreifen, im

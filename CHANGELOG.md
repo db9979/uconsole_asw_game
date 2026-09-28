@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.50
+
+Release 1.3.50 fixes Remote Crew pairing on the LAN. A freshly paired
+browser no longer greets you with "Your station was revoked or released" as if
+pairing had failed; it now says "Authenticated. Take a free station." The crew
+page now tells you when it runs in a browser that is not Chrome or Chromium (also
+Edge): Firefox and Safari show a hint above the pairing code, and a page that
+cannot start there says so instead of loading forever. The bridge's navigation
+proposal accepts the frigate's full 31 kn; saves stay v27.
+
 ## 1.3.49
 
 Release 1.3.49 puts aircraft at their true height in the lookout's binoculars,

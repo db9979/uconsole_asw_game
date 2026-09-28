@@ -32,7 +32,7 @@ def _reason(game):
 
 
 def test_boat_scenarios_are_listed_with_their_modes():
-    assert config.SCENARIO_ORDER[-2:] == ("s5_durchbruch", "s6_aufklaerung")
+    assert config.SCENARIO_ORDER[-3:] == ("s5_durchbruch", "s6_aufklaerung", "s7_geleitzug")
     game, _boat = _boat_game("s5_durchbruch")
     assert boat_missions.mode(game) == "breakthrough"
     assert game.mission.time_limit_s == 14400
@@ -157,3 +157,86 @@ def test_boat_missions_run_with_the_crew_cadence():
         game._update_sim(0.25)
     opfor.update_crew(game, boat)
     assert game.mission_result is None
+
+
+# --- convoy attack -------------------------------------------------------------
+
+from src.core import hunter  # noqa: E402
+from src.weapons.torpedo import EnemyTorpedo  # noqa: E402
+
+
+def _shot_at(game, ship, platform_id):
+    """A running torpedo 0.5 NM off a ship, guided onto it."""
+    torpedo = EnemyTorpedo(ship.x - 0.5, ship.y, 90.0, 5.0, 1,
+                           profile=game.runtime_catalog.torpedoes[
+                               game.runtime_catalog.runtime_bindings["enemy_torpedo"]],
+                           guidance_x=ship.x, guidance_y=ship.y,
+                           launch_platform_id=platform_id)
+    game.enemy_torpedoes.append(torpedo)
+    for _ in range(1200):
+        if torpedo.state != "RUN":
+            break
+        game._update_enemy_torpedoes(0.1)
+    return torpedo
+
+
+def _quiet_convoy(game):
+    """Stop the convoy so a test shot is geometry only."""
+    for ship in boat_missions.convoy(game):
+        ship.speed = ship.target_speed = 0.0
+    game.ship.x, game.ship.y = game.ship.x + 30.0, game.ship.y + 30.0
+
+
+def test_the_convoy_sails_with_the_frigate_and_is_saved():
+    game, _boat = _boat_game("s7_geleitzug")
+    ships = boat_missions.convoy(game)
+    assert len(ships) == config.BOAT_CONVOY_SIZE
+    assert [f"convoy-{n}" for n in range(1, 5)] == sorted(game.mission_units)
+    course = config.SCENARIOS["s7_geleitzug"]["ship_course"]
+    for ship in ships:
+        assert ship.course == course and ship.turn_left > game.mission.time_limit_s
+        assert math.hypot(ship.x - game.ship.x, ship.y - game.ship.y) < 3.0
+    data = game.save_state()
+    assert game._load_save_data(json.loads(json.dumps(data)))
+    assert [ship.id for ship in boat_missions.convoy(game)] == [ship.id for ship in ships]
+
+
+def test_only_the_crewed_boats_torpedo_takes_a_merchant():
+    game, boat = _boat_game("s7_geleitzug")
+    _quiet_convoy(game)
+    first, second = boat_missions.convoy(game)[:2]
+    stray = _shot_at(game, first, platform_id=-1)          # not the crewed boat
+    assert stray.state != "STRUCK" and not first.sunk
+    torpedo = _shot_at(game, second, platform_id=boat.sub.id)
+    assert torpedo.state == "STRUCK" and second.sunk
+    assert boat_missions.convoy_sunk(game) == 1
+    assert game.mission_result is None and not game.incident
+    assert "1 sunk" in localize(boat_missions.objective(game, boat))
+
+
+def test_two_merchants_sunk_win_the_convoy_attack():
+    game, boat = _boat_game("s7_geleitzug")
+    ships = boat_missions.convoy(game)
+    ships[0].sunk = ships[3].sunk = True
+    game._check_mission_end()
+    assert game.mission_result == "VERLOREN" and _reason(game) == "end.reason.convoy_lost"
+    assert boat_debrief.outcome(game, boat) == "convoy_sunk"
+    game, boat = _boat_game("s7_geleitzug")
+    game.mission_time = game.mission.time_limit_s
+    game._check_mission_end()
+    assert game.mission_result == "SIEG" and _reason(game) == "end.reason.convoy_survived"
+
+
+def test_the_ai_frigate_escorts_the_convoy_without_a_datum():
+    game, _boat = _boat_game("s7_geleitzug")
+    ships = boat_missions.convoy(game)
+    game.ship.x -= 10.0                                   # fell behind
+    course, speed = hunter.escort_course(game)
+    assert speed == hunter.TRANSIT_KN and abs(((course - 90.0 + 180.0) % 360.0) - 180.0) < 30.0
+    game.ship.x = sum(s.x for s in ships) / 4 + 3.0       # on station ahead
+    game.ship.y = sum(s.y for s in ships) / 4
+    course, speed = hunter.escort_course(game)
+    assert speed == ships[0].speed + 2.0
+    for ship in ships:
+        ship.sunk = True
+    assert hunter.escort_course(game) is None

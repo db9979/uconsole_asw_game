@@ -460,6 +460,7 @@ class MissionBridgeMixin:
         keys = {"patrouille": "mission.patrol", "doppeljagd": "mission.double",
                 "konvoi": "mission.convoy", "nuklearer_abfang": "mission.intercept",
                 "durchbruch": "mission.breakthrough", "aufklaerung": "mission.recon",
+                "geleitzug": "mission.convoy_attack",
                 "custom": "mission.custom"}
         return message(keys[self.mission.type_key])
 
@@ -497,7 +498,7 @@ class MissionBridgeMixin:
                             "protect": "mission.objective.protect",
                             "reach": "mission.objective.reach"}.get(
                                 objective_type, "mission.objective.sink"))
-        if self.mission.win_mode in ("breakthrough", "recon"):
+        if self.mission.win_mode in ("breakthrough", "recon", "convoy_attack"):
             objective = message("mission.objective." + self.mission.win_mode)
         elif self.mission.win_mode == "survive":
             objective = message("mission.objective.convoy")

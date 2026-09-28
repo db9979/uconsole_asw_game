@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.15
+
+Release 1.3.15 adds boat mission 7, **Convoy attack**: the frigate escorts four
+merchants and the submarine must sink two of them. Only the crewed boat's
+torpedoes take a merchant; the AI frigate keeps station ahead of the convoy
+and prosecutes contacts only near it. The boat's orders count the merchants
+sunk. Saves stay v23.
+
 ## 1.3.14
 
 Release 1.3.14 adds **boat missions**: scenario 5 *Breakthrough* (the submarine

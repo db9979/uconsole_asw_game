@@ -8,7 +8,8 @@ from src.core import config
 ROOT = Path(__file__).resolve().parents[1]
 KEYS = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
         "s3_abfang": "intercept", "s4_zufall": "random",
-        "s5_durchbruch": "breakthrough", "s6_aufklaerung": "recon"}
+        "s5_durchbruch": "breakthrough", "s6_aufklaerung": "recon",
+        "s7_geleitzug": "convoy_attack"}
 
 
 def test_menu_goal_and_loss_lines_are_translated():

@@ -587,7 +587,11 @@ class EnemyTorpedo:
             viable.append(candidate)
         return choose_seeker_target(self, viable, self._seeker_target)
 
-    def update(self, dt: float, ship, world=None, seeker_candidates=()) -> None:
+    def update(self, dt: float, ship, world=None, seeker_candidates=(),
+               surface_targets=()) -> None:
+        """``surface_targets``: other ships this weapon's seeker may take (a
+        crewed boat's shot at a convoy); a hit on one sets state ``STRUCK``
+        and ``struck`` for the game to book."""
         if self.state != "RUN":
             return
         self.time_since_launch = min(
@@ -604,7 +608,8 @@ class EnemyTorpedo:
                 self.guidance_x - self.x, self.guidance_y - self.y) <= 3.0
         self.terminal_active = self.terminal_active or seeker_active
         if self.terminal_active:
-            candidate = self._candidate([ship, *seeker_candidates], world)
+            candidate = self._candidate([ship, *surface_targets, *seeker_candidates],
+                                        world)
             if candidate is not None:
                 self._seeker_target = candidate
                 self.seeker_acquired = True
@@ -658,6 +663,9 @@ class EnemyTorpedo:
                                                getattr(target, "depth", 5.0))):
             if target is ship:
                 self.state = "HIT"
+            elif any(target is other for other in surface_targets):
+                self.state = "STRUCK"
+                self.struck = target
             else:
                 self.state = "SASE"
                 if hasattr(target, "dead"):

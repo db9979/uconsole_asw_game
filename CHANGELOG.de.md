@@ -4,6 +4,14 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.15
+
+Version 1.3.15 bringt Bootsmission 7, **Geleitzugangriff**: Die Fregatte
+geleitet vier Handelsschiffe, und das U-Boot muss zwei davon versenken. Nur
+die Torpedos des besetzten Boots treffen ein Handelsschiff; die KI-Fregatte
+hält ihre Position vor dem Geleitzug und verfolgt Kontakte nur in seiner Nähe.
+Der Auftrag des Boots zählt die versenkten Handelsschiffe. Spielstände bleiben v23.
+
 ## 1.3.14
 
 Version 1.3.14 bringt **Bootsmissionen**: Szenario 5 *Durchbruch* (das U-Boot

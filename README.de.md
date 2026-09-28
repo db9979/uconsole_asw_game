@@ -31,55 +31,80 @@ Anspruch, geheime Fähigkeiten, Daten oder Einsatzgrundsätze nachzubilden.
 
 ### uConsole (1280 x 720)
 
-![U-Jagd-Hauptmenü](docs/screenshots/de-main-menu.png)
+Das Fernglas des Ausgucks auf der Fregatte und das Sehrohr des U-Boots, bei Tag und bei Nacht, mit den Schiffen im Okular:
 
-![Brücke, Sonar, Waffen und Schadensabwehr](docs/screenshots/de-stations-overview-1.png)
+<table>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/de-frigate-binoculars-day.png"><img src="docs/screenshots/de-frigate-binoculars-day.png" alt="Fregatte: Fernglas, Tag"></a><br><sub>Fregatte: Fernglas, Tag</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/de-frigate-binoculars-night.png"><img src="docs/screenshots/de-frigate-binoculars-night.png" alt="Fregatte: Fernglas, Nacht"></a><br><sub>Fregatte: Fernglas, Nacht</sub></td>
+</tr>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/de-uboot-periscope-day.png"><img src="docs/screenshots/de-uboot-periscope-day.png" alt="U-Boot: Sehrohr, Tag"></a><br><sub>U-Boot: Sehrohr, Tag</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/de-uboot-periscope-night.png"><img src="docs/screenshots/de-uboot-periscope-night.png" alt="U-Boot: Sehrohr, Nacht"></a><br><sub>U-Boot: Sehrohr, Nacht</sub></td>
+</tr>
+</table>
 
-![OPZ/CIC, Funk, Maschinenraum und Helikopter](docs/screenshots/de-stations-overview-2.png)
+Arbeitsplätze der Fregatte:
 
-![Elektronische Kampfführung / ESM](docs/screenshots/de-stations-overview-3.png)
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-bridge.png"><img src="docs/screenshots/de-station-bridge.png" alt="Brücke"></a><br><sub>Brücke</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-sonar.png"><img src="docs/screenshots/de-station-sonar.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-weapons.png"><img src="docs/screenshots/de-station-weapons.png" alt="Waffen"></a><br><sub>Waffen</sub></td>
+</tr>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-opz-cic.png"><img src="docs/screenshots/de-station-opz-cic.png" alt="OPZ/CIC"></a><br><sub>OPZ/CIC</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-eloka.png"><img src="docs/screenshots/de-station-eloka.png" alt="Elektronische Kampfführung/ESM"></a><br><sub>Elektronische Kampfführung/ESM</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-damage-control.png"><img src="docs/screenshots/de-station-damage-control.png" alt="Schadensabwehr"></a><br><sub>Schadensabwehr</sub></td>
+</tr>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-radio.png"><img src="docs/screenshots/de-station-radio.png" alt="Funk"></a><br><sub>Funk</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-engineering.png"><img src="docs/screenshots/de-station-engineering.png" alt="Maschinenraum"></a><br><sub>Maschinenraum</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-station-helicopter.png"><img src="docs/screenshots/de-station-helicopter.png" alt="Helikopter"></a><br><sub>Helikopter</sub></td>
+</tr>
+</table>
 
-Als U-Boot spielen (`--play-sub`): Führung, Sonar, Waffen und Maschine.
+Als U-Boot spielen (`--play-sub`):
 
-![U-Boot: Führung, Sonar, Waffen und Maschine](docs/screenshots/de-uboot-overview.png)
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-command.png"><img src="docs/screenshots/de-uboot-command.png" alt="Führung"></a><br><sub>Führung</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-sonar.png"><img src="docs/screenshots/de-uboot-sonar.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-weapons.png"><img src="docs/screenshots/de-uboot-weapons.png" alt="Waffen"></a><br><sub>Waffen</sub></td>
+</tr>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-engine.png"><img src="docs/screenshots/de-uboot-engine.png" alt="Maschine"></a><br><sub>Maschine</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-mast-esm.png"><img src="docs/screenshots/de-uboot-mast-esm.png" alt="Mast & ESM"></a><br><sub>Mast & ESM</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-uboot-navigation.png"><img src="docs/screenshots/de-uboot-navigation.png" alt="Navigation"></a><br><sub>Navigation</sub></td>
+</tr>
+</table>
 
-Arbeitsplätze in voller Auflösung: [Brücke](docs/screenshots/de-station-bridge.png),
-[Sonar](docs/screenshots/de-station-sonar.png),
-[Waffen](docs/screenshots/de-station-weapons.png),
-[Schadensabwehr](docs/screenshots/de-station-damage-control.png),
-[OPZ/CIC](docs/screenshots/de-station-opz-cic.png),
-[Funk](docs/screenshots/de-station-radio.png),
-[Maschinenraum](docs/screenshots/de-station-engineering.png),
-[Helikopter](docs/screenshots/de-station-helicopter.png) und
-[Elektronische Kampfführung/ESM](docs/screenshots/de-station-eloka.png).
-U-Boot-Stationen: [Führung](docs/screenshots/de-uboot-command.png),
-[Sonar](docs/screenshots/de-uboot-sonar.png),
-[Waffen](docs/screenshots/de-uboot-weapons.png),
-[Maschine](docs/screenshots/de-uboot-engine.png),
-[Mast & ESM](docs/screenshots/de-uboot-mast-esm.png),
-[Navigation](docs/screenshots/de-uboot-navigation.png) und
-[Funkraum](docs/screenshots/de-uboot-radio.png).
+Menüs und Editoren:
 
-Beispiel der Schadensabwehr mit vorgegebenen Flutungen, Bränden, ausgefallenen
-Zonen und Reparaturtrupps:
-[F-217-Schadensschema](docs/screenshots/de-damage-control-alert.png).
+<table>
+<tr>
+<td width="33%" align="center"><a href="docs/screenshots/de-main-menu.png"><img src="docs/screenshots/de-main-menu.png" alt="Hauptmenü"></a><br><sub>Hauptmenü</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-mission-briefing.png"><img src="docs/screenshots/de-mission-briefing.png" alt="Einsatzbesprechung"></a><br><sub>Einsatzbesprechung</sub></td>
+<td width="33%" align="center"><a href="docs/screenshots/de-mission-editor-detail.png"><img src="docs/screenshots/de-mission-editor-detail.png" alt="Missionseditor-Vorschau"></a><br><sub>Missionseditor-Vorschau</sub></td>
+</tr>
+</table>
 
-Menüs und Editoren: [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png),
-[Einsatzbesprechung](docs/screenshots/de-mission-briefing.png),
-[Optionen](docs/screenshots/de-options.png),
-[Missionseditor](docs/screenshots/de-mission-editor.png) mit
-[Seed-Vorschau](docs/screenshots/de-mission-editor-detail.png),
-[Einheiteneditor](docs/screenshots/de-unit-editor.png) und der
-[taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
+Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Schadensabwehr](docs/screenshots/de-damage-control-alert.png), [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png), [Optionen](docs/screenshots/de-options.png), [Missionseditor](docs/screenshots/de-mission-editor.png), [Einheiteneditor](docs/screenshots/de-unit-editor.png) und der [taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
 
-### Remote-Crew-Browser
+### Remote-Crew-Browser (1920 x 1080)
 
-![Remote Crew OPZ/CIC mit 1920 x 1080](docs/screenshots/commander-v2-de-opz-desktop.png)
+<table>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-binoculars-day.png"><img src="docs/screenshots/commander-v2-de-binoculars-day.png" alt="Brücke: Fernglas des Ausgucks, Tag"></a><br><sub>Brücke: Fernglas des Ausgucks, Tag</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-periscope-night.png"><img src="docs/screenshots/commander-v2-de-periscope-night.png" alt="U-Boot Mast & ESM: Sehrohr, Nacht"></a><br><sub>U-Boot Mast & ESM: Sehrohr, Nacht</sub></td>
+</tr>
+<tr>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-opz-desktop.png"><img src="docs/screenshots/commander-v2-de-opz-desktop.png" alt="OPZ/CIC"></a><br><sub>OPZ/CIC</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-sonar-desktop.png"><img src="docs/screenshots/commander-v2-de-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+</tr>
+</table>
 
-![Remote Crew Sonar mit 1920 x 1080](docs/screenshots/commander-v2-de-sonar-desktop.png)
-
-Mehr: die [vollständige deutsche/englische Desktop- und Mobilmatrix](docs/screenshots/commander-captures.de.md)
-und die [lokalen Remote-Crew-Optionen](docs/screenshots/de-commander-options.png).
+Mehr: [Fernglas bei Nacht](docs/screenshots/commander-v2-de-binoculars-night.png), [Sehrohr bei Tag](docs/screenshots/commander-v2-de-periscope-day.png), die [vollständige deutsche/englische Desktop- und Mobilmatrix](docs/screenshots/commander-captures.de.md) und die [lokalen Remote-Crew-Optionen](docs/screenshots/de-commander-options.png).
 
 Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py`
 (uConsole-Ansichten, ohne Bildschirm) und `python tools/capture_commander.py`

@@ -107,7 +107,7 @@ Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Scha
 </tr>
 </table>
 
-Mehr: [Fernglas bei Nacht](docs/screenshots/commander-v2-de-binoculars-night.png), [Sehrohr bei Tag](docs/screenshots/commander-v2-de-periscope-day.png), die [vollständige deutsche/englische Desktop- und Mobilmatrix](docs/screenshots/commander-captures.de.md) und die [lokalen Remote-Crew-Optionen](docs/screenshots/de-commander-options.png).
+Mehr: [Fernglas bei Nacht](docs/screenshots/commander-v2-de-binoculars-night.png), [Sehrohr bei Tag](docs/screenshots/commander-v2-de-periscope-day.png), [Sonar mit 2560 x 1440](docs/screenshots/commander-wide.png), die [vollständige deutsche/englische Desktop- und Mobilmatrix](docs/screenshots/commander-captures.de.md) und die [lokalen Remote-Crew-Optionen](docs/screenshots/de-commander-options.png).
 
 Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py`
 (uConsole-Ansichten, ohne Bildschirm) und `python tools/capture_commander.py`
@@ -117,7 +117,7 @@ Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py
 
 - Neun Stationen: Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk,
   Maschinenraum, Helikopterdeck und Elektronische Kampfführung/ESM.
-- Vier integrierte Szenarien, drei Schwierigkeitsgrade und durchgehende Echtzeitsimulation (keine Pause, kein Zeitraffer).
+- Vier integrierte Szenarien, frei einstellbarer eigener Schwierigkeitsgrad und durchgehende Echtzeitsimulation (keine Pause, kein Zeitraffer).
 - Passives HMS und Schleppsonar, aktives Sonar, Breitband- und LOFAR-Anzeigen,
   DEMON-Analyse, Bathythermografmessungen und rein peilungsbasierte TMA.
 - Seeziel- und Luftraumradar, AIS, ESM, HFDF, manuelle Klassifikation und
@@ -143,6 +143,12 @@ Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py
   Browser-Clients können exklusive Stationsrollen innehaben, zwischen ihren
   behaltenen Rollen wechseln, dieselben beobachtungsbasierten Bedienelemente
   nutzen und mit einer getrennten Freigabe direkt Waffen einsetzen.
+  Die Browserkonsole ist ein Gefechtszentrale-Layout auf einer Bildschirmseite
+  für große Desktop-Monitore: Statusleiste, zentrales Instrument und
+  einklappbare Seitenleisten. `python main.py --solo-crew` (oder die F9-Zeile
+  „Crew-Modus“) lässt einen einzigen Browser alle neun Stationen samt
+  Speichern/Laden und neuem Spiel bedienen, während die uConsole der
+  Simulationsserver bleibt; siehe [Einrichtung von Remote Crew](docs/commander-coop.de.md).
 - Konservative stationsbezogene Autocrew mit `F2` und einer Übersicht mit `F3`.
   Remote Crew pausiert Autocrew nur für die jeweils belegte Station.
 - Deterministisches Seewetter mit Wind, Regen, Sicht und weichen
@@ -150,7 +156,6 @@ Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py
   Helikoptergrenzen, erzeugt aber keine verborgene Winddrift.
 - Modellierter Treibstoffverbrauch mit Ausdauer, Reichweite und Reparaturtrends
   im Maschinenraum.
-
 
 ## Windows-Programm
 
@@ -254,7 +259,11 @@ Windows-Starter liest diese Datei.
 
 Das Hauptmenü enthält Einträge für ein neues Spiel, Laden, Missionseditor,
 Einheiteneditor, Optionen und Beenden. Bei einem neuen Spiel folgen die Auswahl
-des Szenarios und, beim Zufallsszenario, die Auswahl des Schwierigkeitsgrads.
+des Szenarios und, beim Zufallsszenario, ein Bildschirm für den eigenen
+Schwierigkeitsgrad (Tarnung der U-Boote, Reparaturgeschwindigkeit, Torpedoanzahl
+und Treffertoleranz, Aggressivität des Gegners, Anfangsseegang, Anzahl von
+U-Booten, Kriegsschiffen und Verkehr, Häufigkeit von Luftangriffen und
+Zeitlimit).
 
 - `W` wechselt zwischen dem durch den Seed gewählten realen Sektor, der
   festen klassischen Referenzkarte und einem fest wählbaren realen Sektor.
@@ -295,7 +304,7 @@ Die wichtigsten globalen Bedienelemente sind:
 | Eingabe | Aktion |
 |---|---|
 | `1` bis `9` | Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk, Maschinenraum, Helikopter, Elektronische Kampfführung/ESM; erneutes Drücken der Nummer der aktiven Station wechselt, sofern vorhanden, zur nächsten Seite |
-| `F` / `Umschalt+F` / `B` bei ESM | Signalstatus-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
+| `F` / `Shift+F` / `B` bei ESM | Signalstatus-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
 | `Tab` / `Shift+Tab` | Nächste / vorherige Station |
 | `F1` / `?` | Kontextsensitive Hilfe; Kategorie 4 ist das vollständige Handbuch |
 | `0` | Wetter- und Sonar-Analysefeld über jeder Station |
@@ -311,15 +320,15 @@ Die wichtigsten globalen Bedienelemente sind:
 | `+` / `-` | Maschinentelegraf |
 | `Alt+Enter` | Vollbildmodus umschalten |
 | `Ctrl+Enter` | Primäre Waffenaktion an den Stationen Waffen, OPZ/CIC oder Helikopter; die normalen Bereitschaftsprüfungen gelten |
-| `Q` / `E` oder Mausrad | Sichtbare Karten an den Stationen Brücke, Waffen und Helikopter zoomen |
-| Ziehen mit der Maus | Eine sichtbare Karte verschieben und die Kameraverfolgung ausschalten |
-| `K` | Kameraverfolgung auf einer sichtbaren Karte umschalten |
+| `Q` / `E` oder Mausrad | Karten an den Stationen Brücke, Waffen und Helikopter zoomen; die OPZ-Karte zoomt mit dem Mausrad |
+| Ziehen mit der Maus | Eine sichtbare Karte einschließlich der OPZ-Karte verschieben und ihre eigene Kameraverfolgung ausschalten |
+| `K` | Kameraverfolgung auf der aktuellen Karte oder der OPZ-Karte umschalten |
 | `Esc` | Einen fixierten Hinweis entfernen, die aktuelle Ansicht/Eingabe abbrechen oder die Beenden-Bestätigung öffnen (zurück zum Spiel, speichern und beenden, Hauptmenü, ohne Speichern beenden) |
 | `R` / `M` nach Missionsende | Neustart mit gleichem Seed / zurück zum Hauptmenü |
 
 Stationstasten sind bewusst kontextabhängig. Beispielsweise sendet `Shift+A` am
-Sonar einen aktiven Ping, während dort `A` den Breitband-Hörmodus wählt und im
-Maschinenraum den Akustikmodus ändert. Verwenden
+Sonar einen aktiven Ping, während dort `A` den Breitband-Hörmodus wählt und
+`A` im Maschinenraum den Akustikmodus ändert. Verwenden
 Sie `F1`, statt davon auszugehen, dass eine Taste an jeder Station dieselbe
 Bedeutung hat.
 
@@ -398,9 +407,15 @@ Einschwingen.
 
 ## Radar-Hinweise
 
-In der OPZ/CIC wählen `Page Up` und `Page Down` ausschließlich Anzeigebereiche
-von **10, 20, 40, 80 oder 120 NM**; sie wechseln weder die Seite noch die
-Sensorleistung. Die modellierten Erfassungsgrenzen bei klarem Wetter betragen
+In der OPZ/CIC wählen `Page Up` und `Page Down` den schiffszentrierten
+Radarbereich von **10, 20, 40, 80 oder 120 NM**; sie verschieben oder zoomen die
+Karte nicht und wechseln weder die Seite noch die Sensorleistung. Die
+bildschirmhohe, genordete OPZ-Karte hat eine eigene Kamera: Das Mausrad zoomt
+um den Mauszeiger bis auf 5 NM Radius, Ziehen auf freier Kartenfläche
+verschiebt sie, und `K` schaltet die Verfolgung des eigenen Schiffs um. Anfangs
+zeigt sie etwa 40 NM Radius. Ereignis-Feed und Telemetrie sammeln weiter,
+während sie an dieser Station ausgeblendet sind, und erscheinen an anderen
+Stationen unverändert wieder. Die modellierten Erfassungsgrenzen bei klarem Wetter betragen
 30 NM für das Seezielradar und 100 NM für das Luftraumradar, mit
 Leistungseinbußen ab Seegang 5 und durch Regenclutter. Seeziel- und
 Luftraumradar können mit `R` und `Shift+R` getrennt gesteuert werden.
@@ -499,15 +514,16 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v27** sind
+Anwendungsversion, API-Protokoll **v2** und Speicherformat **v27** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
 
-**Sicherheit:** HTTP ist unverschlüsselt. Verwenden Sie den Dienst nur in einem
-vertrauenswürdigen LAN. Internet-Hosting, Bindung an Wildcard-Adressen, CDN,
-ferne Steuerung von Einsatzregeln, Zeit oder Speicherständen sowie verborgene
-Entity-Daten werden nicht bereitgestellt. Siehe
+**Sicherheit von Commander LAN:** HTTP ist unverschlüsselt. Verwenden Sie den
+Dienst nur in einem vertrauenswürdigen LAN. Internet-Hosting, Bindung an
+Wildcard-Adressen, CDN, ferne Steuerung von Einsatzregeln, Zeit oder
+Speicherständen sowie verborgene Entity-Daten werden nicht bereitgestellt. Der
+getrennte Webspiel-Modus verlangt einen HTTPS-Proxy und eine Host-Anmeldung. Siehe
 [Einrichtung von Remote Crew](docs/commander-coop.de.md) und
 [Protokoll/Sicherheit](docs/commander-protocol.de.md).
 
@@ -561,8 +577,9 @@ der Fregatte, des Funkraums des besetzten U-Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen
 Schnappschusses des Laufzeitkatalogs, des gesamten Zustands für die
-deterministische Fortsetzung, des Crew-Zustands des besetzten U-Boots mit seinem
-ESM-Bild, von Tauchzellen, Trimm, Pressluft, Abteilungen und Leckwehrtrupps jedes U-Boots, von
+deterministische Fortsetzung, des Crew-Zustands des besetzten U-Boots (Befehle,
+Modi, Mast, Drähte, Plot, Alarmpeilungen, seine Sonarstation und sein ESM-Bild),
+solange eine Crew das U-Boot führt, von Tauchzellen, Trimm, Pressluft, Abteilungen und Leckwehrtrupps jedes U-Boots, von
 Diesel, Laderate und Luftvorräten jedes konventionellen U-Boots und der fremden
 Aktivpings, deren Schall noch zur Fregatte unterwegs ist. Ältere (auch alle v11-Spielstände von 1.0.0),
 neuere, fehlerhafte oder unvollständige Spielstände werden ohne Migration
@@ -599,10 +616,8 @@ sind in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) dokumentiert.
 Die Prüfung der Arbeitsplätze und Modelle, umgesetzte Korrekturen, verbleibende
 Modellgrenzen und die Checkliste für die Hardware-Abnahme sind in
 [`docs/workstation-review.md`](docs/workstation-review.md) dokumentiert.
-Aktuelle Arbeiten werden in [`docs/plan-0.1.8.md`](docs/plan-0.1.8.md) und
-[`docs/resume.md`](docs/resume.md) verfolgt. Der abgeschlossene
-Stabilisierungsplan für 0.1.6 bleibt unter
-[`docs/plan-0.1.6.md`](docs/plan-0.1.6.md) verfügbar.
+Aktuelle Arbeiten werden in [`docs/plan-1.3.md`](docs/plan-1.3.md) und
+[`docs/resume.md`](docs/resume.md) verfolgt.
 
 Installieren Sie das Projekt und die Entwicklungsabhängigkeit und führen Sie
 anschließend die Testsuite aus:

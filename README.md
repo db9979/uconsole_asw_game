@@ -317,7 +317,7 @@ assuming that a key has the same meaning at every station.
 
 In help, Left/Right switches category; Up/Down or Page Up/Page Down scrolls its
 contents. Existing station weapon shortcuts remain available. Held course and
-torpedo-depth adjustments use real time, not the selected simulation multiplier.
+torpedo-depth adjustments use real time.
 
 The bottom event feed is shared by all stations. It retains operational reports,
 completed orders, and alerts—including mission outcome, weapon and defensive
@@ -454,7 +454,8 @@ read-only. Host administration and switching to another station remain
 available; revoking the lease restores local operation immediately.
 
 The service starts **off on every launch**. Access and grants are not saved.
-World replacement revokes active authority on the next main-thread frame. The
+Credentials, clients, station leases, network queues, drafts, and unaccepted
+commands never enter saves or settings. World replacement revokes active authority on the next main-thread frame. The
 mission always runs in real time: local menus and overlays (help, options, save/load,
 quit confirmation, F8 analyzer, F9 administration) and focus loss never pause it,
 so browser stations stay live behind them. Only the main menu and splash lock
@@ -470,10 +471,14 @@ Hover over an unavailable browser control to see its current localized reason,
 such as a missing grant, damaged station, cooldown, empty inventory, pending
 order, or the TAS handling-speed limit.
 
+The application version, API protocol **v2**, and save format **v27** are
+independent compatibility contracts. Remote Crew uses protocol v2 only; every
+legacy route under `/api/v1/*` is removed and returns 404.
+
 **Commander LAN security:** HTTP is unencrypted. Use only a trusted LAN. This
-mode does not expose Internet hosting, wildcard binding, CDN, or remote crew
-control of ROE/time/save. The separate web-host mode requires an HTTPS proxy
-and a host login. See [Remote Crew setup](docs/commander-coop.md) and
+mode does not expose Internet hosting, wildcard binding, CDN, remote crew
+control of ROE/time/save, or hidden entity data. The separate web-host mode
+requires an HTTPS proxy and a host login. See [Remote Crew setup](docs/commander-coop.md) and
 [protocol/security](docs/commander-protocol.md).
 
 ## Editors and Current Limits
@@ -554,9 +559,8 @@ Exact provenance, versions, hashes, transformation notes, and licenses are in
 The workstation/model review, delivered corrections, remaining modeling limits,
 and hardware acceptance checklist are documented in
 [`docs/workstation-review.md`](docs/workstation-review.md).
-Current work is tracked in [`docs/plan-0.1.8.md`](docs/plan-0.1.8.md) and
-[`docs/resume.md`](docs/resume.md). The completed 0.1.6 stabilization plan remains
-available in [`docs/plan-0.1.6.md`](docs/plan-0.1.6.md).
+Current work is tracked in [`docs/plan-1.3.md`](docs/plan-1.3.md) and
+[`docs/resume.md`](docs/resume.md).
 
 Install the project and development dependency, then run the test suite:
 

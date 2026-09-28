@@ -4,6 +4,13 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.41
+
+Release 1.3.41 brings back the full top bar on the uConsole: the frigate shows
+the station, the mission, the clock, speed and course again, and the crewed
+submarine shows the mission, the clock, speed, course and depth, now compactly
+separated by "·". Saves stay v27.
+
 ## 1.3.40
 
 Release 1.3.40 adds a bug report. "Report a bug" in the main menu writes

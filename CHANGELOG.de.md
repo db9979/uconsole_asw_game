@@ -4,6 +4,13 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.41
+
+Version 1.3.41 bringt die volle obere Leiste auf der uConsole zurück: Die
+Fregatte zeigt wieder Station, Mission, Uhrzeit, Fahrt und Kurs, das besetzte
+U-Boot Mission, Uhrzeit, Fahrt, Kurs und Tiefe, jetzt kompakt durch „·“
+getrennt. Spielstände bleiben v27.
+
 ## 1.3.40
 
 Version 1.3.40 bringt eine Fehlermeldung. „Fehler melden“ im Hauptmenü

@@ -12,13 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.15**
+Current release: **1.3.16**
 
-Release 1.3.15 adds boat mission 7, **Convoy attack**: the frigate escorts four
-merchants and the submarine must sink two of them. Only the crewed boat's
-torpedoes take a merchant; the AI frigate keeps station ahead of the convoy
-and prosecutes contacts only near it. The boat's orders count the merchants
-sunk. Saves stay v23.
+Release 1.3.16 adds an **A4 poster** in German and English (PNG at 300 dpi
+and PDF) in `docs/poster/`: the start-screen scene, a short description of the
+uConsole and Windows versions, four screenshots and QR codes for the download
+and the support page. `tools/build_poster.py` renders it again from the
+current scene and screenshots. The game itself is unchanged; saves stay v23.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

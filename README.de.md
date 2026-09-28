@@ -14,13 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.15**
+Aktuelle Version: **1.3.16**
 
-Version 1.3.15 bringt Bootsmission 7, **Geleitzugangriff**: Die Fregatte
-geleitet vier Handelsschiffe, und das U-Boot muss zwei davon versenken. Nur
-die Torpedos des besetzten Boots treffen ein Handelsschiff; die KI-Fregatte
-hält ihre Position vor dem Geleitzug und verfolgt Kontakte nur in seiner Nähe.
-Der Auftrag des Boots zählt die versenkten Handelsschiffe. Spielstände bleiben v23.
+Version 1.3.16 bringt ein **A4-Werbeplakat** auf Deutsch und Englisch (PNG mit
+300 dpi und PDF) in `docs/poster/`: die Szene des Startbildschirms, eine kurze
+Beschreibung der uConsole- und Windows-Version, vier Screenshots und QR-Codes
+zum Download und zur Unterstützerseite. `tools/build_poster.py` rendert es aus
+der aktuellen Szene und den Screenshots neu. Das Spiel selbst ist unverändert;
+Spielstände bleiben v23.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -78,6 +78,7 @@ def updater(monkeypatch):
                         lambda app, force_install=False: calls["install"].append(force_install))
     monkeypatch.setattr(module, "verify", lambda app: calls["verify"])
     monkeypatch.setattr(module, "notify", lambda message: None)
+    monkeypatch.setattr(module, "online", lambda timeout=None: True)
     module.calls = calls
     return module
 
@@ -355,3 +356,40 @@ def test_start_window_keeps_a_final_message_after_eof():
     started = time.monotonic()
     assert proc.wait(timeout=30) == 0
     assert time.monotonic() - started >= 0.8
+
+
+def test_offline_skips_the_update_check_at_once(repos, updater, monkeypatch):
+    work, app = repos
+    before = head(app)
+    publish(work, "1.3.9")
+    monkeypatch.setattr(updater, "online", lambda timeout=None: False)
+    monkeypatch.setattr(updater, "fetch_latest_release",
+                        lambda url=None: pytest.fail("no GitHub request while offline"))
+    steps = []
+    assert updater.update(app, progress=lambda key, **v: steps.append(key)) is False
+    assert head(app) == before and steps == ["check"]
+    assert "offline" in (Path(os.environ["HOME"]) / ".u-jagd/updater.log").read_text()
+
+
+def test_online_probe_gives_up_on_a_hanging_lookup(monkeypatch):
+    module = load_updater()
+    monkeypatch.delenv("https_proxy", raising=False)
+    monkeypatch.delenv("HTTPS_PROXY", raising=False)
+
+    def hang(address, timeout=None):
+        time.sleep(2)
+        raise OSError("unreachable")
+
+    monkeypatch.setattr(module.socket, "create_connection", hang)
+    started = time.monotonic()
+    assert module.online(timeout=0.3) is False
+    assert time.monotonic() - started < 1.5
+
+
+def test_online_probe_uses_the_https_proxy(monkeypatch):
+    module = load_updater()
+    monkeypatch.delenv("https_proxy", raising=False)
+    monkeypatch.setenv("HTTPS_PROXY", "http://proxy.lan:3128")
+    assert module.probe_address() == ("proxy.lan", 3128)
+    monkeypatch.delenv("HTTPS_PROXY")
+    assert module.probe_address() == ("github.com", 443)

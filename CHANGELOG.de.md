@@ -4,6 +4,14 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.26
+
+Version 1.3.26 überspringt auf der uConsole die Update-Suche, wenn kein
+Internet da ist: Ein Verbindungstest zu GitHub entscheidet in höchstens 2,5
+Sekunden, danach startet das Spiel sofort, statt auf Zeitüberschreitungen zu
+warten. Hängende Git-Abrufe brechen nach spätestens 60 Sekunden ab. Spielstände
+bleiben v23.
+
 ## 1.3.25
 
 Version 1.3.25 räumt die Dokumentation auf. Das Spiel bleibt unverändert, Spielstände

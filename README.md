@@ -12,10 +12,12 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.25**
+Current release: **1.3.26**
 
-Release 1.3.25 tidies up the documentation. Gameplay is unchanged and saves stay
-v24.
+Release 1.3.26 skips the update check on the uConsole when there is no
+internet: a connection test to GitHub decides within 2.5 seconds, and the game
+then starts right away instead of waiting on timeouts. Stalled git downloads
+give up after at most 60 seconds. Saves stay v23.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

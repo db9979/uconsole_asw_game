@@ -84,7 +84,7 @@ def test_browser_audio_projection_is_bounded_detached_and_role_safe(published):
         game._emit_sound(kind)
     bridge.pump(game, server, now=11.0)
 
-    expected = [{"seq": index, "cue": kind} for index, kind in enumerate(
+    expected = [{"seq": index, "cue": kind, "pan": None} for index, kind in enumerate(
         ("sonar_ping", "torpedo_launch", "missile_launch", "gunfire",
          "explosion", "water_entry"), 1)]
     for role in ROLE_NAMES:

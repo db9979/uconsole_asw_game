@@ -77,7 +77,7 @@ def test_torpedo_launch_transient_alerts_subs_well_beyond_its_own_seeker_range(
     assert config.SUB_TORPEDO_ALERT_NM > config.TORP_HOME_RANGE_NM  # the case this guards
 
     effects = []
-    monkeypatch.setattr(game.audio, "play_effect", effects.append)
+    monkeypatch.setattr(game.audio, "play_effect", lambda kind, **_pan: effects.append(kind))
     assert game.launch_torpedo_at(contact, 50.0) is True
 
     assert alarmed(near) is True

@@ -175,7 +175,8 @@ def combat_effect(kind: str, sample_rate: int,
 
 def boat_effect(kind: str, sample_rate: int, amplitude: float = .28) -> np.ndarray:
     """Deterministic atmosphere cues heard inside the crewed boat: the hull
-    creaking deep down, a hull failure's crack and near/distant detonations."""
+    creaking deep down, a hull failure's crack, near/distant detonations and
+    a hunter's ping on the hull."""
     if kind == "hull_creak":
         duration = 1.8
         count = int(duration * sample_rate)
@@ -195,6 +196,13 @@ def boat_effect(kind: str, sample_rate: int, amplitude: float = .28) -> np.ndarr
                                      amplitude, 457).astype(np.float64)
         signal = noise * 2.2 * np.exp(-30.0 * t)
         signal += amplitude * .8 * np.sin(2 * np.pi * 46.0 * t) * np.exp(-6.0 * t)
+    elif kind == "ping_heard":
+        # A hunter's ping through the hull: a hard tone and its ringing tail.
+        duration = 1.2
+        count = int(duration * sample_rate)
+        t = np.arange(count, dtype=np.float64) / sample_rate
+        envelope = np.where(t < .35, 1.0, np.exp(-7.0 * (t - .35)))
+        signal = amplitude * .8 * envelope * np.sin(2 * np.pi * 1300.0 * t)
     else:
         near = kind == "detonation_near"
         duration = 1.6 if near else 2.4
@@ -212,6 +220,27 @@ def boat_effect(kind: str, sample_rate: int, amplitude: float = .28) -> np.ndarr
     signal[:edge] *= np.linspace(0.0, 1.0, edge)
     signal[-edge:] *= np.linspace(1.0, 0.0, edge)
     return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
+PAN_STEPS = 8
+
+
+def bearing_pan(bearing_deg: float, heading_deg: float) -> float:
+    """Left/right position of a sound heard on ``bearing_deg`` by a listener
+    facing ``heading_deg``: -1 port, 0 ahead or astern, +1 starboard, in
+    steps of ``1 / PAN_STEPS`` so the cached one-shot sounds stay few."""
+    relative = math.radians((float(bearing_deg) - float(heading_deg)) % 360.0)
+    return round(math.sin(relative) * PAN_STEPS) / PAN_STEPS + 0.0
+
+
+def stereo_pan(samples: np.ndarray, pan: float) -> np.ndarray:
+    """Place a mono signal at ``pan`` (-1..+1) with constant power."""
+    mono = np.asarray(samples, dtype=np.float32)
+    if mono.ndim != 1:
+        raise ValueError("samples must be mono")
+    angle = (min(1.0, max(-1.0, float(pan))) + 1.0) * math.pi / 4.0
+    return np.column_stack((mono * math.cos(angle), mono * math.sin(angle))).astype(
+        np.float32)
 
 
 def stereo_bearing(samples: np.ndarray, bearing_deg: float,

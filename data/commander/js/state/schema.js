@@ -121,8 +121,9 @@ export function validateV2State(state) {
           : row.bearing !== null) ||
         index > 0 && row.seq <= rows[index - 1].seq) ||
       !boundedArray(state.audio.events, 16) ||
-      state.audio.events.some((event, index, events) => !exactKeys(event, ["seq", "cue"]) ||
+      state.audio.events.some((event, index, events) => !exactKeys(event, ["seq", "cue", "pan"]) ||
         !Number.isSafeInteger(event.seq) || event.seq < 1 || !gameEffectKinds.has(event.cue) ||
+        event.pan !== null && (!Number.isFinite(event.pan) || event.pan < -1 || event.pan > 1) ||
         index > 0 && event.seq <= events[index - 1].seq)) throw new Error("protocol");
   if (!validPlot(state.plot)) throw new Error("protocol");
   const payload = state[state.role];

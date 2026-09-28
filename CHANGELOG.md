@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.32
+
+Release 1.3.32 adds directional hearing: with stereo sound, detonations,
+returning echoes and another platform's active ping come from the bearing they
+were heard on, left for port and right for starboard of the frigate's or the
+crewed submarine's head, on the uConsole and in the Remote Crew browser. The
+frigate now also plays a submarine's ping itself, and the crewed submarine
+hears a hunter's ping ring on its hull.
+
 ## 1.3.31
 
 Release 1.3.31 gives the crewed submarine real torpedo tubes: the torpedo gang

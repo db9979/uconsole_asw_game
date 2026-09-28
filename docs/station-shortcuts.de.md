@@ -1,4 +1,4 @@
-# U-Jagd 1.3.36 - Stations- und Tastenkürzel
+# U-Jagd 1.3.39 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -47,7 +47,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `V` | Direkte Zielgeschwindigkeit eingeben (0-31 kn) |
 | `+ / -` | Telegraph: Motorenbefehl (ASTERN-STOP-SLOW-HALF-FULL-FLANK) |
 | `Karte` | Mausrad: Zoom, Maus-Drag: Pan |
-| `Q / E` | Karte heraus-/hineinzoomen |
+| `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Kamera-Follow an/aus |
 | `, / .` | Ausguck-Seite: Radius kleiner / größer |
 | `B` | Ausguck-Seite: Fernglas über der Karte ein/aus (, / . schwenken) |
@@ -116,7 +116,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
 | `D` | Leichttorpedo vom HSP-5 |
 | `V` | Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen |
-| `Q / E` | Karte heraus-/hineinzoomen |
+| `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Kamera-Follow an/aus |
 | `F` | Flak-Feuerfreigabe umschalten (gesperrt = feuert nie auf Angreifer) |
 
@@ -205,7 +205,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `U / V` | Solltiefe des Tauchsonars heben / senken |
 | `A` | Aktiven Ping vom abgesenkten Tauchsonar senden |
 | `D / Ctrl+Enter` | Leichttorpedo abwerfen |
-| `Q / E` | Karte heraus-/hineinzoomen |
+| `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Kamera-Follow an/aus |
 | `Akustik: Bild Auf / Ab` | Akustikseite: Breitband / LOFAR / DEMON |
 | `Akustik: <- / ->` | Hubschrauber-Horchpeilung -/+ 5 Grad |

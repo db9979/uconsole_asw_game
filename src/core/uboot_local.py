@@ -614,8 +614,8 @@ def _command_key(game, current, key, mods) -> None:
                        sub.command_bulkhead(compartment, closed),
                        compartment=message(f"uboot.compartment.{compartment}"))
     elif key in (pygame.K_q, pygame.K_e):
-        _chart_zoom(game, current, (1.0 / config.MAP_ZOOM_WHEEL_FACTOR
-                                    if key == pygame.K_q else config.MAP_ZOOM_WHEEL_FACTOR))
+        uboot_view.chart_view(game, current).step_zoom(
+            -1 if key == pygame.K_q else 1, config.MAP_ZOOM_STEPS_NM)
     elif key == pygame.K_k:
         current.chart_follow = not current.chart_follow
         game.flash(message("runtime.map_follow.on" if current.chart_follow

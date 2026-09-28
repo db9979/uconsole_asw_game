@@ -487,14 +487,35 @@ def _contour_segments_in_circle(coast, cx: float, cy: float,
     return out
 
 
+# (largest visible radius NM, grid step NM) for the OPZ chart.
+_OPZ_GRID_STEPS = ((0.5, 0.1), (1.0, 0.2), (2.5, 0.5), (5.0, 1.0), (10.0, 2.0),
+                   (20.0, 5.0), (40.0, 10.0), (80.0, 20.0))
+
+
+def _ring_visible(center, radius, rect) -> bool:
+    """True when a circle outline crosses ``rect``: it is neither wholly
+    outside the rect nor so large that the whole rect lies inside it."""
+    cx, cy = center
+    left, top, right, bottom = rect.left, rect.top, rect.right, rect.bottom
+    near_x = min(max(cx, left), right)
+    near_y = min(max(cy, top), bottom)
+    if math.hypot(near_x - cx, near_y - cy) > radius + 2:
+        return False
+    far = max(math.hypot(x - cx, y - cy)
+              for x in (left, right) for y in (top, bottom))
+    return far >= radius - 2
+
+
 def _opz_basemap_surface(game, map_rect: pygame.Rect, view) -> pygame.Surface:
     """Build a bounded cached chart layer beneath the live OPZ radar picture."""
     world = game.world
     coast = getattr(world, "coast", None)
     world_size_nm = float(getattr(world, "size_nm", config.WORLD_SIZE_NM))
-    bucket_x = round(view.cx * 10.0) / 10.0
-    bucket_y = round(view.cy * 10.0) / 10.0
     scale = view.scale
+    # Re-render when the camera moved about a pixel (0.1 NM at normal zoom).
+    quantum = min(0.1, 1.0 / max(scale, 1e-6))
+    bucket_x = round(view.cx / quantum) * quantum
+    bucket_y = round(view.cy / quantum) * quantum
     key = (world, coast, map_rect.size, round(scale, 6), bucket_x, bucket_y,
            config.COLOR_GEO_BG, config.COLOR_GEO_GRID,
            config.COLOR_LAND, config.COLOR_LAND_EDGE,
@@ -528,8 +549,7 @@ def _opz_basemap_surface(game, map_rect: pygame.Rect, view) -> pygame.Surface:
                 pygame.draw.rect(layer, color, (px, py, cell_px + 1, cell_px + 1))
 
     visible_radius = min(map_rect.w, map_rect.h) / (2.0 * scale)
-    step = 5 if visible_radius <= 20 else (10 if visible_radius <= 40 else
-                                          (20 if visible_radius <= 80 else 40))
+    step = next((value for limit, value in _OPZ_GRID_STEPS if visible_radius <= limit), 40)
     half_w_nm = map_rect.w / (2.0 * scale)
     half_h_nm = map_rect.h / (2.0 * scale)
     first_x = math.ceil((bucket_x - half_w_nm) / step) * step
@@ -624,17 +644,26 @@ def draw_opz_view(game, tr=None) -> None:
         # Radar presentation remains ship-centred and independent of the camera.
         for ring_index in range(1, 5):
             rr = radar_radius * ring_index / 4.0
+            if not _ring_visible((own_x, own_y), rr, chart):
+                continue
             pygame.draw.circle(s, config.COLOR_SONAR_RING,
                                (int(own_x), int(own_y)), max(1, int(rr)), 1)
-        pygame.draw.line(s, config.COLOR_SONAR_RING,
-                         (int(own_x - radar_radius), int(own_y)),
-                         (int(own_x + radar_radius), int(own_y)), 1)
-        pygame.draw.line(s, config.COLOR_SONAR_RING,
-                         (int(own_x), int(own_y - radar_radius)),
-                         (int(own_x), int(own_y + radar_radius)), 1)
+        # Axis lines clipped to the chart (strong zoom gives huge radii).
+        x0 = max(chart.left, own_x - radar_radius)
+        x1 = min(chart.right, own_x + radar_radius)
+        if chart.top <= own_y <= chart.bottom and x0 < x1:
+            pygame.draw.line(s, config.COLOR_SONAR_RING,
+                             (int(x0), int(own_y)), (int(x1), int(own_y)), 1)
+        y0 = max(chart.top, own_y - radar_radius)
+        y1 = min(chart.bottom, own_y + radar_radius)
+        if chart.left <= own_x <= chart.right and y0 < y1:
+            pygame.draw.line(s, config.COLOR_SONAR_RING,
+                             (int(own_x), int(y0)), (int(own_x), int(y1)), 1)
         # Range labels at the top of each ring, beside the north axis.
         for ring_index in range(1, 5):
             rr = radar_radius * ring_index / 4.0
+            if not chart.top - 18 <= own_y - rr <= chart.bottom:
+                continue
             layout.blit_line(
                 s, message("map.tooltip.range_value",
                            range=f"{max_nm * ring_index / 4.0:g}"),

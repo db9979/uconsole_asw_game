@@ -126,7 +126,7 @@ def test_opz_pan_follow_and_radar_range_are_independent(game):
         (game.ship.x, game.ship.y))
 
 
-def test_opz_zoom_is_cursor_centred_and_limited_to_five_nm_radius(game):
+def test_opz_zoom_is_cursor_centred_and_limited_to_quarter_mile_radius(game):
     game.station = Station.OPZ
     chart = opz_ppi_rect(config.OPZ_STATION_RECT)
     pivot = (chart.centerx + 100, chart.centery - 70)
@@ -135,7 +135,8 @@ def test_opz_zoom_is_cursor_centred_and_limited_to_five_nm_radius(game):
     for _ in range(30):
         event(game, pygame.MOUSEWHEEL, y=1, pos=pivot)
     assert game.opz_map_view.screen_to_world(*pivot) == pytest.approx(world_before)
-    assert min(chart.size) / game.opz_map_view.scale == pytest.approx(10.0)
+    assert min(chart.size) / game.opz_map_view.scale == pytest.approx(
+        2.0 * config.OPZ_MAP_MAX_ZOOM_RADIUS_NM)
 
 
 def test_letterbox_rejects_damage_and_opz_clicks(game, monkeypatch):

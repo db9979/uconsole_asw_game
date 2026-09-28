@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.38
+## 1.3.39
 
-Version 1.3.38 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen
+Version 1.3.39 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen
 den Stil des Startbilds. Die Okulare zeigen Tag, Dämmerung und Nacht mit
 Sternen, dem Mond in seiner Phase und seinem Glitzern auf dem Wasser, Wolken,
 Regen, Schnee und Nebel nach dem Wetter, und die Schiffe in Stahl mit heller
@@ -16,6 +16,16 @@ Browser-Sehrohr dasselbe Bild und dieselben Schiffsformen. Die Stationen auf
 der uConsole und im Browser tragen das Türkis und Nachtblau des Startbilds mit
 Eckwinkeln an den Feldern; die Karte behält ihre NATO-Symbole, der
 Kontrastmodus bleibt unverändert. Spielstände bleiben v27.
+
+## 1.3.38
+
+Version 1.3.38 lässt die Karten auf der uConsole viel weiter hineinzoomen.
+`Q`/`E` springen jetzt auf Brücke, Waffen, Helikopter und der U-Boot-Karte in
+festen Stufen durch die Kartenhöhen 500, 250, 100, 50, 25, 10, 5, 2, 1 und
+0,5 sm, das Mausrad zoomt stufenlos bis 0,5 sm; die OPZ-Karte geht bis 0,25 sm
+Radius. Das Gitter wird beim Hineinzoomen feiner (bis 0,1 sm, mit
+Dezimalbeschriftung), der Maßstab zeigt Bruchteile, und Küsten und Radarringe
+werden beschnitten, damit starker Zoom schnell bleibt. Spielstände bleiben v27.
 
 ## 1.3.37
 

@@ -1317,7 +1317,7 @@ class EventMixin:
                     self.launch_essm()
                 elif self._map_station_visible():
                     self.map_view.set_rect(config.MAP_RECT)
-                    self.map_view.zoom(config.MAP_ZOOM_WHEEL_FACTOR)
+                    self.map_view.step_zoom(1, config.MAP_ZOOM_STEPS_NM)
             elif e.key == pygame.K_g and self.station in (Station.OPZ,
                                                            Station.RADAR):
                 self.launch_chaff()
@@ -1418,7 +1418,7 @@ class EventMixin:
                                        else "runtime.map_follow.off"), 1.5)
             elif e.key == pygame.K_q and self._map_station_visible():
                 self.map_view.set_rect(config.MAP_RECT)
-                self.map_view.zoom(1.0 / config.MAP_ZOOM_WHEEL_FACTOR)
+                self.map_view.step_zoom(-1, config.MAP_ZOOM_STEPS_NM)
             elif e.key == pygame.K_v and self.station in (Station.BRIDGE,
                                                           Station.ENGINE):
                 self._begin_numeric_input("speed")

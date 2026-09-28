@@ -163,7 +163,7 @@ Die obere Leiste nennt nur die Station und die Uhrzeit; Kurs und Fahrt stehen in
 - **Kurs / Ruder:** aktueller Kurs, befohlener Kurs (`→`), Ruderlage in ganzen Grad und, nur während einer Drehung, der Drehkreis.
 - **Fahrt / Akustik:** Telegraphenstufe, Fahrt, Eigenlärm in Prozent und Warnung KAVITATION über 15 kn.
 - **Taktische Lage:** beobachtete Bedrohungen (gehörter Torpedo-Starttransient oder HF-Ortungsimpulse, ein vom Sonar als Torpedo klassifizierter Kontakt oder ein als möglicher Flugkörper markierter Luftkontakt), Sensorzustand (Radar, TAS), Mittel (Helikopter, Bojen) und Wetter/Tag-Nacht.
-- **Karte:** synthetische Kartentiefe und Küste, eigenes Schiff, von anderen Stationen veröffentlichte Tracks. Mausrad oder `Q`/`E` zoomen, Ziehen verschiebt, `K` folgt dem eigenen Schiff.
+- **Karte:** synthetische Kartentiefe und Küste, eigenes Schiff, von anderen Stationen veröffentlichte Tracks. `Q`/`E` zoomen in festen Stufen (Kartenhöhe 500, 250, 100, 50, 25, 10, 5, 2, 1 und 0,5 sm), das Mausrad stufenlos bis 0,5 sm; das Gitter wird beim Hineinzoomen feiner (bis 0,1 sm). Ziehen verschiebt, `K` folgt dem eigenen Schiff.
 
 ### Ausguck-Meldungen
 
@@ -185,7 +185,7 @@ Klasse und Typ brauchen eine feiner aufgelöste Silhouette als die Sichtung (Joh
 | `V` | Direkte Zielgeschwindigkeit eingeben (0-31 kn) |
 | `+ / -` | Telegraph: Motorenbefehl (ASTERN-STOP-SLOW-HALF-FULL-FLANK) |
 | `Karte` | Mausrad: Zoom, Maus-Drag: Pan |
-| `Q / E` | Karte heraus-/hineinzoomen |
+| `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Kamera-Follow an/aus |
 | `, / .` | Ausguck-Seite: Radius kleiner / größer |
 | `B` | Ausguck-Seite: Fernglas über der Karte ein/aus (, / . schwenken) |
@@ -461,7 +461,7 @@ Torpedolauf von oben:
 | `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
 | `D` | Leichttorpedo vom HSP-5 |
 | `V` | Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen |
-| `Q / E` | Karte heraus-/hineinzoomen |
+| `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Kamera-Follow an/aus |
 | `F` | Flak-Feuerfreigabe umschalten (gesperrt = feuert nie auf Angreifer) |
 
@@ -593,7 +593,7 @@ Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser
 
 ### Anzeigen und Instrumente
 
-Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track; Seite 3 führt den Seefernaufklärer. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Bild Auf`/`Bild Ab`), unabhängig vom Kartenzoom (Mausrad bis 5 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
+Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track; Seite 3 führt den Seefernaufklärer. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Bild Auf`/`Bild Ab`), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
 
 ```text
  NATO-Rahmenfarben (Bedienervermerk, keine Wahrheit)
@@ -882,7 +882,7 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 | `U / V` | Solltiefe des Tauchsonars heben / senken |
 | `A` | Aktiven Ping vom abgesenkten Tauchsonar senden |
 | `D / Ctrl+Enter` | Leichttorpedo abwerfen |
-| `Q / E` | Karte heraus-/hineinzoomen |
+| `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Kamera-Follow an/aus |
 | `Akustik: Bild Auf / Ab` | Akustikseite: Breitband / LOFAR / DEMON |
 | `Akustik: <- / ->` | Hubschrauber-Horchpeilung -/+ 5 Grad |
@@ -1134,7 +1134,7 @@ Die obere Leiste zeigt die sieben Stationen des U-Boots als Reiter: `1` Führung
 | `C / V / D` | Kurs / Fahrt / Tiefe befehlen (Führung; Kurs und Tiefe auch Navigation, Fahrt auch Maschine) |
 | `U / J / H` | Tiefenstufen: Sehrohr- / Schnorcheltiefe (Umschalt), unter / über dem gemessenen Layer (Umschalt), tief (Führung, Navigation) |
 | `Bild auf/ab` | Führungsseiten: Navigation / Waffen & Kontakte / Sehrohr / Bedrohung (oder erneut 1); Seiten Navigation: Navigation / Bedrohung (oder erneut 6); Seiten Mast & ESM: ESM / Sehrohr (oder erneut 5) |
-| `Q / E` | Karte heraus- / hineinzoomen |
+| `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Karte folgt dem U-Boot an/aus |
 | `Mausrad / Ziehen` | Karte zoomen / verschieben (Maus auf der Karte) |
 | `Pfeiltasten` | Eigenen Sonarkontakt wählen |

@@ -70,6 +70,22 @@ class Viewport:
             self.scale = new_scale
         self.clamp_center()
 
+    def step_zoom(self, direction: int, heights_nm, pivot: tuple = None) -> None:
+        """Jump to the next fixed chart height (NM across the rect's height).
+
+        ``direction`` > 0 zooms in (smaller height), < 0 zooms out."""
+        h = self._rect[3]
+        if h <= 0 or direction == 0:
+            return
+        current = h / self.scale
+        if direction > 0:
+            smaller = [v for v in heights_nm if v < current * 0.97]
+            target = max(smaller) if smaller else h / self.max_scale
+        else:
+            larger = [v for v in heights_nm if v > current * 1.03]
+            target = min(larger) if larger else h / self.min_scale
+        self.zoom((h / target) / self.scale, pivot=pivot)
+
     def pan_px(self, dx_px: float, dy_px: float) -> None:
         """Karte um (dx_px, dy_px) verschieben (Kamera folgt dem Drag)."""
         self.cx -= dx_px / self.scale

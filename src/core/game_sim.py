@@ -18,7 +18,7 @@ from src.core import detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
-from src.core import opfor
+from src.core import hunter, opfor
 from src.core.limits import (
     MAX_DECOYS,
     MAX_ENEMY_TORPEDOES,
@@ -1221,6 +1221,8 @@ class SimMixin:
         # Automation consumes observations published in this substep; actuator
         # changes take effect on the following physics substep.
         self.autocrew.update(self)
+        # With nobody on the frigate, the hunters crew its unleased stations.
+        hunter.update(self, dt)
         self._record_simlog_state(dt)
 
     def _mission_time_warning(self) -> None:

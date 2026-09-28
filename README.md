@@ -10,7 +10,12 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.3**
+Current release: **1.3.4**
+
+Release 1.3.4 adds AI hunters: when nobody sails the frigate (the uConsole
+plays the boat, or a solo browser plays the submarine), the frigate, its
+helicopter and the patrol aircraft hunt the boat from the frigate's own
+sensors, on every frigate station no browser holds. Saves stay v22.
 
 Release 1.3.3 paints the Remote Crew browser waterfalls (LOFAR, DEMON,
 broadband) in a background worker through `OffscreenCanvas` where the browser

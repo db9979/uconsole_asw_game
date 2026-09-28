@@ -127,9 +127,11 @@ Erledigt:
 Offen, in dieser Reihenfolge (Dominik, 2026-09-28: "ja nehme das in den
 plan mit auf und setzte das auch um"):
 
-1. **KI-Jäger:** Fregatte, Hubschrauber und MPA jagen das Boot aktiv, wenn
-   niemand die Fregatte spielt (Suchmuster, Bojenfelder, Datum aus
-   HF-DF/ESM, Angriff). Voraussetzung für ein Solo-Spiel auf der Bootsseite.
+1. ~~**KI-Jäger**~~ erledigt in 1.3.4 (`src/core/hunter.py`): Fregatte,
+   Hubschrauber und MPA jagen das Boot, wenn niemand die Fregatte spielt
+   (uConsole auf dem Boot oder Solo-Browser als U-Boot), auf jeder Station,
+   die kein Browser hält. Datum aus Sonar und HF/DF; Radarechos, ESM und
+   Führungsmeldungen werden noch nicht zugeordnet, kein ASROC.
 2. **Bootsmissionen und Bootskampagne:** Durchbruch, Angriff auf einen
    Geleitzug, Aufklärung; baut auf Punkt 1 auf.
 3. **Angriffsrechner am Sehrohr:** Lösung aus Peilung, Stadimeter und Lage,

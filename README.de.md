@@ -12,7 +12,13 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.3**
+Aktuelle Version: **1.3.4**
+
+Version 1.3.4 bringt KI-Jäger: Wenn niemand die Fregatte fährt (die uConsole
+spielt das Boot oder ein Solo-Browser das U-Boot), jagen Fregatte,
+Hubschrauber und Seefernaufklärer das Boot mit den eigenen Sensoren der
+Fregatte, auf jeder Fregattenstation, die kein Browser hält. Spielstände
+bleiben v22.
 
 Version 1.3.3 zeichnet die Wasserfälle (LOFAR, DEMON, Breitband) im
 Remote-Crew-Browser über `OffscreenCanvas` in einem Hintergrund-Worker, wo der

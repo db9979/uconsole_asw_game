@@ -14,13 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.15**
+Aktuelle Version: **1.3.16**
 
-Version 1.3.15 bringt Bootsmission 7, **Geleitzugangriff**: Die Fregatte
-geleitet vier Handelsschiffe, und das U-Boot muss zwei davon versenken. Nur
-die Torpedos des besetzten Boots treffen ein Handelsschiff; die KI-Fregatte
-hält ihre Position vor dem Geleitzug und verfolgt Kontakte nur in seiner Nähe.
-Der Auftrag des Boots zählt die versenkten Handelsschiffe. Spielstände bleiben v23.
+Version 1.3.16 bringt die **Bootskampagne**: fünf verkettete Bootsmissionen in
+einem Seegebiet (Aufklärung, Durchbruch, Geleitzugangriff, Durchbruch,
+Geleitzugangriff), gewählt mit `Tab` im Kampagnenbildschirm. Das Boot nimmt
+Torpedos, Rumpfschaden und Ansehen bei der U-Boot-Führung von Mission zu
+Mission mit; im Stützpunkt gibt es volle Überholung oder schnelles Auslaufen.
+Gespeichert in `~/.u-jagd/boat_campaign.json`; Spielstände bleiben v23.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

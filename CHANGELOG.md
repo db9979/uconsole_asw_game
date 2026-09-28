@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.16
+
+Release 1.3.16 adds the **boat campaign**: five linked boat missions in one sea
+area (reconnaissance, breakthrough, convoy attack, breakthrough, convoy
+attack), chosen with `Tab` on the campaign screen. The boat carries its
+torpedoes, hull damage and standing with U-boat command from mission to
+mission; at its base it takes a full refit or a quick turnaround. Kept in
+`~/.u-jagd/boat_campaign.json`; saves stay v23.
+
 ## 1.3.15
 
 Release 1.3.15 adds boat mission 7, **Convoy attack**: the frigate escorts four

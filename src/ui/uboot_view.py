@@ -1147,15 +1147,21 @@ _END_WINS = ("uboot.end.won", "uboot.end.escaped", "uboot.end.survived",
 
 def draw_end_panel(game, boat) -> None:
     s = game.screen
-    rect = pygame.Rect(340, 250, 600, 150)
+    campaign = game.campaign_end_line()
+    extra = 36 if campaign is not None else 0
+    rect = pygame.Rect(340, 250, 600, 150 + extra)
     pygame.draw.rect(s, config.COLOR_OVERLAY_BG, rect)
     pygame.draw.rect(s, config.COLOR_WARN, rect, 2)
     key = end_text(game, boat)
     layout.blit_line(s, key, (rect.x + 16, rect.y + 20, rect.w - 32, 40),
                      config.COLOR_OK if key in _END_WINS else config.COLOR_WARN,
                      size=28, align="center")
-    layout.blit_block(s, "uboot.end.hint", rect.x + 16, rect.y + 80, rect.w - 32, 56,
-                      config.COLOR_TEXT_DIM, size=16, align="center")
+    if campaign is not None:
+        # A boat campaign leg: the standing and what comes next.
+        layout.blit_line(s, campaign, (rect.x + 16, rect.y + 72, rect.w - 32, 28),
+                         config.COLOR_WARN, size=16, align="center")
+    layout.blit_block(s, "uboot.end.hint", rect.x + 16, rect.y + 80 + extra, rect.w - 32,
+                      56, config.COLOR_TEXT_DIM, size=16, align="center")
 
 
 def draw(game) -> None:

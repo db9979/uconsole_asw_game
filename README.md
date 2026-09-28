@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.15**
+Current release: **1.3.16**
 
-Release 1.3.15 fixes the Windows program's self-update: after swapping in the
+Release 1.3.16 fixes the Windows program's self-update: after swapping in the
 new `U-Jagd-Windows.exe` it failed to start ("Failed to load Python DLL")
 because it inherited the old process's already deleted unpack directory. The
 restart now unpacks afresh. The starter window also shows the "Buy me a

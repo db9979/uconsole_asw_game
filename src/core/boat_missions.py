@@ -2,7 +2,9 @@
 
 ``breakthrough``: reach a goal area beyond the frigate's start, seen from the
 boat's start. ``recon``: sight the frigate through the periscope and get a
-situation report off by radio while it is in sight. The frigate wins by
+situation report off by radio while it is in sight. ``convoy_attack``: sink
+``BOAT_CONVOY_SINK`` merchants of the convoy the frigate escorts (the convoy is
+remembered in ``mission_units`` as ``convoy-<n>``, saved). The frigate wins by
 sinking the boat or by holding out to the time limit.
 
 The goal is a pure function of the scenario's frigate start, the boat's saved
@@ -18,11 +20,11 @@ from src.core import config
 from src.core.i18n import message
 from src.sonar.platforms import OWNSHIP_TARGET_ID
 
-MODES = ("breakthrough", "recon")
+MODES = ("breakthrough", "recon", "convoy_attack")
 
 
 def mode(game):
-    """``breakthrough``, ``recon`` or None for a frigate mission."""
+    """``breakthrough``, ``recon``, ``convoy_attack`` or None for a frigate mission."""
     if getattr(game, "custom_mission_definition", None) is not None:
         return None
     value = getattr(game.mission, "win_mode", None)
@@ -81,6 +83,62 @@ def goal(game):
     return result
 
 
+def spawn_convoy(game) -> None:
+    """The escorted convoy in a box about the frigate, on the frigate's course.
+
+    A local stream keyed by the seed keeps every other draw unchanged."""
+    import random
+
+    from src.enemies.civilian import CivilianShip
+    spec = config.SCENARIOS[game.scenario_key]
+    course = float(spec["ship_course"])
+    rng = random.Random(game.seed * 7907 + 101)
+    spacing = config.BOAT_CONVOY_SPACING_NM
+    offsets = ((spacing, -spacing), (spacing, spacing), (-spacing, -spacing),
+               (-spacing, spacing))[:config.BOAT_CONVOY_SIZE]
+    rad = math.radians(course)
+    for index, (ahead, side) in enumerate(offsets, start=1):
+        x = game.ship.x + ahead * math.sin(rad) + side * math.cos(rad)
+        y = game.ship.y - ahead * math.cos(rad) + side * math.sin(rad)
+        x, y = game.world.nearest_water(x, y)
+        ship = CivilianShip(x, y, rng=rng,
+                            profile=game.runtime_catalog.pick_surface(rng, hostile=False),
+                            side="neutral", doctrine="surface_transit",
+                            runtime_catalog=game.runtime_catalog)
+        ship.course = ship.target_course = course
+        ship.speed = ship.target_speed = min(config.BOAT_CONVOY_SPEED_KN, ship.speed_cap_kn)
+        # Holds its course for the whole mission.
+        ship.turn_left = game.mission.time_limit_s + 3600.0
+        game.civilians.append(ship)
+        game.mission_units[f"convoy-{index}"] = int(ship.id)
+
+
+def convoy(game) -> list:
+    """The convoy's merchants, in convoy order (sunk ones included)."""
+    rows = []
+    for index in range(1, config.BOAT_CONVOY_SIZE + 1):
+        entity = game.mission_entity(f"convoy-{index}")
+        if entity is not None:
+            rows.append(entity)
+    return rows
+
+
+def convoy_sunk(game) -> int:
+    return sum(1 for ship in convoy(game) if ship.sunk)
+
+
+def merchant_struck(game, ship) -> None:
+    """A crewed boat's torpedo hit a merchant: book the warhead, report it."""
+    if ship is None or ship.sunk:
+        return
+    ship.hit(config.BOAT_CONVOY_WARHEAD)
+    game._emit_sound("explosion")
+    game.feed.add(game.world.format_time(), "schaden",
+                  message("runtime.merchant_torpedoed"))
+    if ship.sunk:
+        game._report_breakup_noise(ship.x, ship.y, 0.0, ship.id)
+
+
 def check(game) -> bool:
     """End a boat mission when it is decided; True when this module owns it."""
     kind = mode(game)
@@ -96,9 +154,14 @@ def check(game) -> bool:
                 <= point["radius_nm"]:
             game._end_mission(False, message("end.reason.boat_broke_through"))
             return True
+    if kind == "convoy_attack" and convoy_sunk(game) >= config.BOAT_CONVOY_SINK:
+        game._end_mission(False, message("end.reason.convoy_lost",
+                                         count=convoy_sunk(game)))
+        return True
     if game.mission_time >= game.mission.time_limit_s:
-        game._end_mission(True, message("end.reason.boat_stopped" if kind == "breakthrough"
-                                        else "end.reason.boat_report_denied"))
+        game._end_mission(True, message({"breakthrough": "end.reason.boat_stopped",
+                                         "recon": "end.reason.boat_report_denied",
+                                         "convoy_attack": "end.reason.convoy_survived"}[kind]))
     return True
 
 
@@ -124,6 +187,9 @@ def objective(game, boat):
         return message("uboot.objective.breakthrough",
                        bearing=f"{math.degrees(math.atan2(dx, -dy)) % 360.0:03.0f}",
                        range=f"{math.hypot(dx, dy):.1f}")
+    if kind == "convoy_attack":
+        return message("uboot.objective.convoy_attack", target=config.BOAT_CONVOY_SINK,
+                       total=len(convoy(game)), sunk=convoy_sunk(game))
     if kind == "recon":
         return message("uboot.objective.recon_sighted" if frigate_in_sight(boat)
                        else "uboot.objective.recon")

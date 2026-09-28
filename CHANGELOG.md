@@ -4,13 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.15
+## 1.3.16
 
-Release 1.3.15 fixes the Windows program's self-update: after swapping in the
+Release 1.3.16 fixes the Windows program's self-update: after swapping in the
 new `U-Jagd-Windows.exe` it failed to start ("Failed to load Python DLL")
 because it inherited the old process's already deleted unpack directory. The
 restart now unpacks afresh. The starter window also shows the "Buy me a
 coffee" link. Saves stay v23.
+
+## 1.3.15
+
+Release 1.3.15 adds boat mission 7, **Convoy attack**: the frigate escorts four
+merchants and the submarine must sink two of them. Only the crewed boat's
+torpedoes take a merchant; the AI frigate keeps station ahead of the convoy
+and prosecutes contacts only near it. The boat's orders count the merchants
+sunk. Saves stay v23.
 
 ## 1.3.14
 

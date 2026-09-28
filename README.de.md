@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.15**
+Aktuelle Version: **1.3.16**
 
-Version 1.3.15 behebt das Selbst-Update des Windows-Programms: Nach dem
+Version 1.3.16 behebt das Selbst-Update des Windows-Programms: Nach dem
 Austausch startete die neue `U-Jagd-Windows.exe` nicht ("Failed to load
 Python DLL"), weil sie das bereits gelöschte Entpackverzeichnis des alten
 Prozesses erbte. Der Neustart entpackt jetzt frisch. Das Starterfenster zeigt

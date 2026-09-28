@@ -485,6 +485,10 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                 side="neutral", doctrine="surface_transit",
                 runtime_catalog=self.runtime_catalog))
 
+        if self.mission.win_mode == "convoy_attack":
+            from src.core import boat_missions
+            boat_missions.spawn_convoy(self)
+
         # KAMPFSCHIFF (Kontakt-DB): feindliche Kriegsschiffe loiteren um
         # die feindliche Basis und feuern ASM, wenn die Fregatte naehert.
         self.warships = []

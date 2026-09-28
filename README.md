@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.22**
+Current release: **1.3.23**
 
-Release 1.3.22 gives every menu and dialog the start screen's look: help,
+Release 1.3.23 gives every menu and dialog the start screen's look: help,
 options, save/load, quit, nations, Remote Crew administration (`F9`) and the
 mission end now show the night hunt behind a translucent console panel with
 phosphor corner brackets and a glowing title, while the mission keeps running

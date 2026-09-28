@@ -224,3 +224,101 @@ def test_audio_websocket_resumes_behind_the_browser_cursor(server):
         status, sequence = first_frame(query)
         assert status == b"HTTP/1.1 400 Bad Request" and sequence is None, query
     assert server.audio_stream_stats()["sonar"]["connections"] == 2
+
+
+def _upgrade(address, path, protocol, cookie):
+    host, port = address
+    key = base64.b64encode(os.urandom(16)).decode("ascii")
+    connection = socket.create_connection(address, timeout=3)
+    connection.settimeout(3)
+    connection.sendall((
+        f"GET {path} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+        f"Origin: http://{host}:{port}\r\nUpgrade: websocket\r\n"
+        f"Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\n"
+        f"Sec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: {protocol}\r\n"
+        f"Cookie: {cookie}\r\n\r\n").encode("ascii"))
+    received = bytearray()
+    while b"\r\n\r\n" not in received:
+        chunk = connection.recv(4096)
+        assert chunk, bytes(received)
+        received.extend(chunk)
+    headers, rest = bytes(received).split(b"\r\n\r\n", 1)
+    return connection, headers.split(b"\r\n", 1)[0], bytearray(rest)
+
+
+def _frames(connection, buffered, count):
+    """Read ``count`` server frames as (opcode, payload)."""
+    frames = []
+    while len(frames) < count:
+        while True:
+            if len(buffered) >= 2:
+                length, offset = buffered[1] & 0x7f, 2
+                if length == 126 and len(buffered) >= 4:
+                    length, offset = struct.unpack("!H", buffered[2:4])[0], 4
+                if length != 126 and len(buffered) >= offset + length:
+                    break
+            chunk = connection.recv(65536)
+            assert chunk, "socket closed early"
+            buffered.extend(chunk)
+        frames.append((buffered[0] & 0x0f, bytes(buffered[offset:offset + length])))
+        del buffered[:offset + length]
+    return frames
+
+
+def _closed_by_server(connection):
+    while connection.recv(4096):
+        pass
+    return True
+
+
+def test_audio_reconnect_supersedes_the_clients_idle_stream(server):
+    """A browser reconnecting before the host noticed its old socket died
+    takes the stream over instead of being refused (409) while the old
+    worker idles between blocks."""
+    _, cookie, _, paired = pair_v2(server, "Supersede")
+    client_id = paired["client_id"]
+    assert server.grant_station(client_id, "sonar")
+    assert server.set_client_grant(client_id, "sonar", "sonar_audio", True)
+    generation = server.prepare_sonar_audio(world_session="audio-world", world_epoch=1)
+    for value in range(1, transport.SONAR_AUDIO_RESUME_BLOCKS + 1):
+        assert server.publish_sonar_audio(
+            bytes([value]) * transport.SONAR_AUDIO_BYTES, world_session="audio-world",
+            world_epoch=1, station_generation=generation)
+    old, status, buffered = _upgrade(server.address, "/ws/v2/sonar/audio",
+                                     "u-jagd-audio-v2", cookie)
+    with old:
+        assert status == b"HTTP/1.1 101 Switching Protocols"
+        # Every pending block delivered: the old worker now idles.
+        sequences = [struct.unpack("<Q", payload[4:12])[0] for _, payload in
+                     _frames(old, buffered, transport.SONAR_AUDIO_RESUME_BLOCKS)]
+        assert sequences == list(range(1, transport.SONAR_AUDIO_RESUME_BLOCKS + 1))
+        new, status, buffered = _upgrade(
+            server.address, f"/ws/v2/sonar/audio?after={sequences[-1]}",
+            "u-jagd-audio-v2", cookie)
+        with new:
+            assert status == b"HTTP/1.1 101 Switching Protocols"
+            # The superseded worker closes; the new one carries the stream on.
+            assert _closed_by_server(old)
+            assert server.publish_sonar_audio(
+                bytes([99]) * transport.SONAR_AUDIO_BYTES, world_session="audio-world",
+                world_epoch=1, station_generation=generation)
+            ((opcode, payload),) = _frames(new, buffered, 1)
+            assert opcode == 2 and struct.unpack("<Q", payload[4:12])[0] == sequences[-1] + 1
+    assert server.audio_stream_stats()["sonar"]["connections"] == 2
+
+
+def test_sonar_stream_reconnect_supersedes_the_clients_idle_stream(server):
+    _publish_sonar(server)
+    _, cookie, _, paired = pair_v2(server, "Sonar supersede")
+    assert server.grant_station(paired["client_id"], "sonar")
+    old, status, buffered = _upgrade(server.address, transport.SONAR_STREAM_ROUTE,
+                                     "u-jagd-sonar-v2", cookie)
+    with old:
+        assert status == b"HTTP/1.1 101 Switching Protocols"
+        assert _frames(old, buffered, 1)[0][1][:4] == b"UJS2"
+        new, status, buffered = _upgrade(server.address, transport.SONAR_STREAM_ROUTE,
+                                         "u-jagd-sonar-v2", cookie)
+        with new:
+            assert status == b"HTTP/1.1 101 Switching Protocols"
+            assert _frames(new, buffered, 1)[0][1][:4] == b"UJS2"
+            assert _closed_by_server(old)

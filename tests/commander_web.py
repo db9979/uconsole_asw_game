@@ -7,6 +7,8 @@ source checks scan every client script and stylesheet rather than one file.
 from __future__ import annotations
 
 import shutil
+import threading
+import time
 from importlib import resources
 from pathlib import Path
 
@@ -214,6 +216,46 @@ def page_dataset(profile: Path) -> dict | None:
                     return json.loads(message["result"]["result"]["value"])
     except (OSError, ValueError, KeyError, StopIteration, TimeoutError):
         return None
+
+
+class RealTimeHost:
+    """Drive a test host loop at wall-clock speed, like ``Game.run``.
+
+    Browser probes that listen to live audio play it in real time. A loop of
+    fixed ``game.update(.02)`` steps plus sleeps and DevTools reads runs the
+    simulation (and the audio produced in it) slower than playback, so the
+    worklet underruns whenever the machine is loaded. Each step advances the
+    game by the elapsed wall time through ``Game._frame_dt`` (bounded frames
+    and catch-up debt), and the page's ``<html>`` dataset is read on a
+    background thread so a slow DevTools round trip never stalls the host.
+    """
+
+    def __init__(self, game, profile: Path, *, period_s: float = .5):
+        self.game = game
+        self.profile = profile
+        self.period_s = period_s
+        self.dataset: dict = {}
+        self._last = None
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._read_page, daemon=True)
+        self._thread.start()
+
+    def _read_page(self) -> None:
+        while not self._stop.wait(self.period_s):
+            root = page_dataset(self.profile)
+            if root is not None:
+                self.dataset = root
+
+    def step(self) -> None:
+        """Advance the game by the wall time since the previous step."""
+        now = time.monotonic()
+        wall_dt = 0.0 if self._last is None else now - self._last
+        self._last = now
+        self.game.update(self.game._frame_dt(wall_dt))
+
+    def close(self) -> None:
+        self._stop.set()
+        self._thread.join(timeout=10)
 
 
 def module_source(relative: str, start: str | None = None, end: str | None = None) -> str:

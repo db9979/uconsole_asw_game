@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.22**
+Aktuelle Version: **1.3.23**
 
-Version 1.3.22 gibt allen Menüs und Dialogen das Aussehen des Startbildschirms:
+Version 1.3.23 gibt allen Menüs und Dialogen das Aussehen des Startbildschirms:
 Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Remote-Crew-Verwaltung
 (`F9`) und das Missionsende zeigen jetzt die nächtliche Jagd hinter einem
 durchscheinenden Konsolen-Panel mit Phosphor-Eckwinkeln und leuchtendem Titel;

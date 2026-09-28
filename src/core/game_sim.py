@@ -19,7 +19,7 @@ from src.core import detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
-from src.core import boat_ai, boat_missions, hunter, opfor
+from src.core import boat_ai, boat_missions, hunter, opfor, phone_lookout
 from src.core.limits import (
     MAX_DECOYS,
     MAX_ENEMY_TORPEDOES,
@@ -1410,6 +1410,7 @@ class SimMixin:
         self._lookout_lights: dict[str, tuple] = {}
         # Elevation (deg above the sea horizon) of each aircraft he sees.
         self._lookout_elevation: dict[str, tuple] = {}
+        phone_lookout.reset(self)
 
     def _lookout_environment(self) -> dict:
         return dict(
@@ -1475,8 +1476,11 @@ class SimMixin:
                         **environment) * alert >= 1.0:
                     level = lookout_id.IDENTIFIED
         previous = self.air_picture.current(track_id, self.sim_t)
-        previous_level = (lookout_id.decode(previous.label)[0]
-                          if previous is not None and previous.source == "LOOKOUT" else -1)
+        called = previous is not None and previous.source == "LOOKOUT"
+        previous_level = lookout_id.decode(previous.label)[0] if called else -1
+        eye = self.lookout_eye.get(track_id) if self.lookout_phone else None
+        if eye is not None:
+            previous_level = max(previous_level, eye.level)
         level = max(level, previous_level)
         label = lookout_id.encode(level, recognized, identified, type_key)
         # A bare detection only says what the eye sees: something on the
@@ -1484,6 +1488,18 @@ class SimMixin:
         published_kind = (kind if level >= lookout_id.RECOGNIZED
                           or kind in ("SURFACE", "FLG")
                           else "SURFACE" if kind == "SUB" else "UNKNOWN")
+        if lights is None:
+            self._lookout_lights.pop(track_id, None)
+        else:
+            self._lookout_lights[track_id] = (lights, self.sim_t)
+        if kind == "FLG":
+            self._lookout_elevation[track_id] = (max(-5.0, visual_physics.elevation_deg(
+                altitude_m or 0.0, distance, visual_physics.LOOKOUT_EYE_HEIGHT_M)), self.sim_t)
+        if self.lookout_phone and not called:
+            # A phone holds the lookout: the bridge hears only what it calls.
+            phone_lookout.see(self, track_id, published_kind, label, level,
+                              measured_bearing, measured_range, quality)
+            return
         track = self.air_picture.observe(
             track_id=track_id,
             kind=published_kind, target_id=0, source="LOOKOUT",
@@ -1492,20 +1508,13 @@ class SimMixin:
             quality=quality, now=self.sim_t, label=label,
             bearing_uncertainty_deg=(config.LOOKOUT_BEARING_ERR_DEG
                                      / math.sqrt(3.0)))
-        if lights is None:
-            self._lookout_lights.pop(track_id, None)
-        else:
-            self._lookout_lights[track_id] = (lights, self.sim_t)
-        if kind == "FLG":
-            self._lookout_elevation[track_id] = (max(-5.0, visual_physics.elevation_deg(
-                altitude_m or 0.0, distance, visual_physics.LOOKOUT_EYE_HEIGHT_M)), self.sim_t)
         # One report per new sighting and per step up in recognition; a call
         # inside the same measurement epoch leaves the track unchanged.
         if level > previous_level and track.label == label:
             self._lookout_report(kind, label, measured_bearing, measured_range)
 
     def _lookout_report(self, kind: str, label: str, bearing: float,
-                        range_nm: float) -> None:
+                        range_nm: float, called: str | None = None) -> None:
         level, code, type_key = lookout_id.decode(label)
         report = dict(t=self.sim_t, stamp=self.world.format_time(), kind=kind,
                       level=level, code=code,
@@ -1513,6 +1522,11 @@ class SimMixin:
                       bearing=bearing % 360.0, range_nm=range_nm)
         self.lookout_reports.append(report)
         del self.lookout_reports[:-config.LOOKOUT_REPORTS_MAX]
+        if called is not None:
+            # The phone lookout's own call: always announced and said aloud.
+            self.announce(phone_lookout.called_text(called, bearing, range_nm),
+                          "ausguck", 4.0)
+            return
         text = self.lookout_report_text(report)
         if kind in ("TORP", "SUB") and level > lookout_id.DETECTED:
             self.announce(text, "ausguck", 4.0)
@@ -1559,6 +1573,7 @@ class SimMixin:
 
     def _update_lookout_picture(self) -> None:
         """Publish bounded visual fixes without correlating sensor identities."""
+        phone_lookout.refresh(self)
         # A shallow-running torpedo leaves a visible bubble track by day in a
         # moderate sea.
         if (not self.world.is_night()

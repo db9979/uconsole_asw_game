@@ -10,6 +10,7 @@ from itertools import islice
 import json
 import os
 import socket
+import ssl
 import struct
 import time
 
@@ -47,6 +48,10 @@ class CommanderConsole:
         self.host = self.hosts[0]
         self.port = 8765
         self.address = None
+        # The phone lookouts' HTTPS address and certificate fingerprint.
+        self.tls_address = None
+        self.tls_fingerprint = None
+        self.tls_error = None
         self.error = None
         # Admin page "end game": the process quits once the result is out.
         self.shutdown_at = None
@@ -79,6 +84,9 @@ class CommanderConsole:
         self._qr_box_px = None
         self._qr_surface = None
         self._url_qr_payload = None
+        self._lookout_qr_payload = None
+        self._lookout_qr_box_px = None
+        self._lookout_qr_surface = None
         self._url_qr_box_px = None
         self._url_qr_surface = None
         # Optional launcher status file (Windows starter): written only when
@@ -134,6 +142,8 @@ class CommanderConsole:
         status = {
             "state": "running" if running else ("error" if self.error else "stopped"),
             "url": (f"http://{self.address[0]}:{self.address[1]}/" if running else None),
+            "lookout_url": (f"https://{self.tls_address[0]}:{self.tls_address[1]}/lookout"
+                            if running and self.tls_address is not None else None),
             "code": self.pairing_code if running else None,
             "solo": self.solo,
         }
@@ -157,6 +167,7 @@ class CommanderConsole:
         if self.server is not None:
             self.server.stop()
         self.address = None
+        self.tls_address = None
         self.connected = False
         self.active_crew = False
         self.pairing_code = None
@@ -730,10 +741,30 @@ class CommanderConsole:
         self._prepare_transport()
         self._start_transport(self.host)
 
+    def _lookout_tls(self, host):
+        """TLS context for the phone lookouts' HTTPS listener, or None (the
+        crew then plays on plain HTTP; the phone falls back to swiping)."""
+        self.tls_error = None
+        if self.web_mode:
+            return None
+        try:
+            from src.commander import tls
+            cert, key = tls.ensure_certificate(os.path.join(config.SAVE_DIR, "tls"), host)
+            self.tls_fingerprint = tls.fingerprint(cert)
+            return tls.context(cert, key)
+        except (OSError, ValueError, ssl.SSLError):
+            self.tls_error = "commander.local.tls_unavailable"
+            self.tls_fingerprint = None
+            return None
+
     def _start_transport(self, host):
         self._prepare_transport()
-        self.server.start(host, self.port)
+        context = self._lookout_tls(host)
+        self.server.start(host, self.port, tls_context=context)
         self.address = self.server.address
+        self.tls_address = getattr(self.server, "tls_address", None)
+        if context is not None and self.tls_address is None:
+            self.tls_error = "commander.local.tls_unavailable"
         self.pairing_code = self.server.pairing_code
         self._notice_seq = None
         self.invalidate_commands()
@@ -921,6 +952,19 @@ class CommanderConsole:
                 matrix, module_px=max(1, box_px // (len(matrix) + 4)))
         return self._qr_surface
 
+    def _lookout_qr(self, box_px=105):
+        """The cached QR surface that opens the phone lookout page (HTTPS)."""
+        host, port = self.tls_address
+        payload = f"https://{host}:{port}/lookout"
+        if (self._lookout_qr_payload != payload or self._lookout_qr_box_px != box_px
+                or self._lookout_qr_surface is None):
+            matrix = qr.encode(payload)
+            self._lookout_qr_payload = payload
+            self._lookout_qr_box_px = box_px
+            self._lookout_qr_surface = qr.to_surface(
+                matrix, module_px=max(1, box_px // (len(matrix) + 4)))
+        return self._lookout_qr_surface
+
     def _url_qr(self, host, port, box_px=132):
         """Return the cached QR surface that opens the crew page directly."""
         payload = f"http://{host}:{port}/"
@@ -986,14 +1030,24 @@ class CommanderConsole:
                     surface = self._url_qr(self.address[0], self.address[1], box_px=105)
                     screen.blit(surface, (1051 + (105 - surface.get_width()) // 2,
                                           166 + (105 - surface.get_height()) // 2))
+                lookout_at = (1051, 280)
             else:
                 layout.blit_line(screen, "commander.local.url.qr",
-                                 (936, 134, 220, 28), config.COLOR_TEXT_DIM, size=14,
+                                 (936, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
                                  align="center")
                 if self.address is not None:
-                    surface = self._url_qr(self.address[0], self.address[1])
-                    screen.blit(surface, (980 + (132 - surface.get_width()) // 2,
-                                          166 + (132 - surface.get_height()) // 2))
+                    surface = self._url_qr(self.address[0], self.address[1], box_px=105)
+                    screen.blit(surface, (936 + (105 - surface.get_width()) // 2,
+                                          166 + (105 - surface.get_height()) // 2))
+                lookout_at = (1051, 134)
+            # The phone lookout: its own QR code opens the HTTPS page.
+            if self.address is not None and self.tls_address is not None:
+                layout.blit_line(screen, "commander.local.lookout.qr",
+                                 (lookout_at[0], lookout_at[1], 105, 28),
+                                 config.COLOR_TEXT_DIM, size=12, align="center")
+                surface = self._lookout_qr()
+                screen.blit(surface, (lookout_at[0] + (105 - surface.get_width()) // 2,
+                                      lookout_at[1] + 32 + (105 - surface.get_height()) // 2))
             layout.blit_line(screen, "commander.local.join_code",
                               (124, 206 if hotspot else 144, 790,
                                24), config.COLOR_TEXT_DIM, size=20, align="center")
@@ -1027,8 +1081,8 @@ class CommanderConsole:
                        else "commander.local.warning")
             layout.blit_block(screen, warning, 124, 542, 1032, 54,
                                config.COLOR_WARN, size=18)
-            if self.error:
-                layout.blit_line(screen, self.error, (124, 604, 1032, 34),
+            if self.error or (self.address is not None and self.tls_error):
+                layout.blit_line(screen, self.error or self.tls_error, (124, 604, 1032, 34),
                                    config.COLOR_WARN, size=18)
             layout.blit_line(screen, "commander.local.hint", (124, 646, 1032, 30),
                               config.COLOR_TEXT_DIM, size=16)

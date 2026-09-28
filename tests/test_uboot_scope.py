@@ -208,7 +208,7 @@ def test_projection_carries_sightings_without_truth():
     assert apply("uboot_scope_mark", {}) == "uboot_no_sighting"
     from src.commander.server import V2_ACTION_REGISTRY
     spec = V2_ACTION_REGISTRY["uboot_scope_bearing"]
-    assert spec.stations == frozenset({"uboot", "uboot_esm"})
+    assert spec.stations == frozenset({"uboot", "uboot_esm", "uboot_lookout"})
     assert spec.validate_params({"relative_deg": 12.5}) and not spec.validate_params({"relative_deg": 360})
     assert not spec.validate_params({"bearing": 1.0})
 

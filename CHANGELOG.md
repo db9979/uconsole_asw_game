@@ -4,14 +4,29 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.48
+
+Release 1.3.48 puts aircraft at their true height in the lookout's binoculars,
+the lookout strip, the periscope and the phone lookout: each stands at its
+elevation above the horizon, worked out from its altitude and range less the
+curve of the Earth, so a high aircraft close by needs the optics tilted up.
+Aircraft now hang in the still sky behind the clouds instead of riding the
+swell with the ships. Both on the uConsole and in the Remote Crew browser;
+saves stay v27.
+
 ## 1.3.47
 
-Release 1.3.47 puts aircraft at their true height in the lookout's binoculars,
-the lookout strip and the periscope: each stands at its elevation above the
-horizon, worked out from its altitude and range less the curve of the Earth, so
-a high aircraft close by needs the optics tilted up. Aircraft now hang in the
-still sky behind the clouds instead of riding the swell with the ships. Both on
-the uConsole and in the Remote Crew browser; saves stay v27.
+Release 1.3.47 puts a phone on watch. `F9` shows a second QR code, Phone
+lookout: scan it, accept the game's own certificate once, type the pairing code,
+and the phone becomes the frigate's bridge lookout or the crewed submarine's
+periscope. Turn the phone like binoculars (gyroscope) or swipe, zoom, and report
+what you see by voice ("Ship bearing 040, range 5 miles") or by tapping it. The
+bridge only hears what the lookout really has there; a report of nothing is
+refused. While a phone holds the watch the automatic lookout stays silent, and
+the crew browsers speak every confirmed report. The phone on the periscope
+trains it and takes stadimeter ranges. The listener serves this page over HTTPS
+on the next port (self-signed, made by the game), because phones only give the
+gyroscope and the microphone to a secure page; saves stay v27.
 
 ## 1.3.46
 

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; font-src 'self'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <title>U-Jagd Lookout</title>
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/fonts.css">
+  <link rel="stylesheet" href="./css/lookout.css">
+  <script type="module" src="./js/phone/main.js"></script>
+</head>
+<body>
+  <main id="phone-pair" class="phone-pair" hidden>
+    <h1 data-i18n="phone_title"></h1>
+    <p data-i18n="phone_intro"></p>
+    <p id="phone-insecure" class="phone-warning" role="note" hidden data-i18n="phone_insecure"></p>
+    <form id="phone-pair-form" class="phone-card">
+      <fieldset class="phone-roles">
+        <legend data-i18n="phone_role"></legend>
+        <label><input type="radio" name="role" value="lookout" checked><span data-i18n="station_lookout"></span></label>
+        <label><input type="radio" name="role" value="uboot_lookout"><span data-i18n="station_uboot_lookout"></span></label>
+      </fieldset>
+      <label for="phone-name" data-i18n="pair_name"></label>
+      <input id="phone-name" type="text" required minlength="1" maxlength="32" autocomplete="nickname">
+      <label for="phone-code" data-i18n="pair_code"></label>
+      <input id="phone-code" type="text" required maxlength="6" pattern="[0-9]{3}[A-Za-z]{3}" placeholder="482KMT" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text">
+      <button id="phone-pair-submit" type="submit" class="phone-primary" data-i18n="pair_submit"></button>
+      <p id="phone-pair-error" class="phone-error" role="alert"></p>
+    </form>
+    <label class="phone-language"><span data-i18n="language"></span><select id="phone-language"><option value="en" data-i18n="english"></option><option value="de" data-i18n="german"></option></select></label>
+  </main>
+  <main id="phone-watch" class="phone-watch" hidden>
+    <canvas id="phone-view" class="phone-view" data-i18n-aria="phone_view_label" role="img"></canvas>
+    <div class="phone-top">
+      <p id="phone-bearing" class="phone-bearing" aria-live="off"></p>
+      <p id="phone-status" class="phone-status" role="status" aria-live="polite"></p>
+    </div>
+    <div id="phone-blocked" class="phone-blocked" hidden><p id="phone-blocked-text"></p></div>
+    <div id="phone-categories" class="phone-categories" role="group" data-i18n-aria="phone_categories" hidden></div>
+    <div class="phone-controls" role="group" data-i18n-aria="phone_controls">
+      <button id="phone-gyro" type="button" aria-pressed="false" data-i18n="phone_gyro_on"></button>
+      <button id="phone-center" type="button" data-i18n="phone_center"></button>
+      <button id="phone-zoom" type="button" data-i18n="phone_zoom"></button>
+      <button id="phone-mark" type="button" data-i18n="phone_mark" hidden></button>
+      <button id="phone-speak" type="button" class="phone-primary" aria-pressed="false" data-i18n="phone_speak"></button>
+    </div>
+    <p id="phone-heard" class="phone-heard" aria-live="polite"></p>
+    <ol id="phone-calls" class="phone-calls" data-i18n-aria="phone_calls"></ol>
+  </main>
+</body>
+</html>

@@ -152,7 +152,8 @@ def test_console_publishes_status_only_on_change(tmp_path):
     console.status_path = str(path)
     console.publish_status()
     assert json.loads(path.read_text()) == {"state": "stopped", "url": None,
-                                            "code": None, "solo": False}
+                                            "code": None, "solo": False,
+                                            "lookout_url": None}
     path.unlink()
     console.publish_status()
     assert not path.exists()  # unchanged status is not rewritten
@@ -160,7 +161,10 @@ def test_console_publishes_status_only_on_change(tmp_path):
     console.publish_status()
     assert json.loads(path.read_text()) == {
         "state": "running", "url": "http://192.168.1.20:8765/", "code": "123ABC",
-        "solo": False}
+        "solo": False, "lookout_url": None}
+    console.tls_address = ("192.168.1.20", 8766)
+    console.publish_status()
+    assert json.loads(path.read_text())["lookout_url"] == "https://192.168.1.20:8766/lookout"
     console.address, console.error = None, "commander.local.error.start"
     console.publish_status()
     assert json.loads(path.read_text())["state"] == "error"

@@ -27,6 +27,8 @@ _MAX_FILE_BYTES = 4 * 1024 * 1024
 # Top-level files of the public crew page.
 PUBLIC_FILES = (
     ("/", "index.html", _HTML),
+    # The phone lookout (binoculars or periscope, gyroscope and voice).
+    ("/lookout", "lookout.html", _HTML),
     ("/sonar-audio-worklet.js", "sonar-audio-worklet.js", _JS),
     ("/manual.css", "manual.css", _CSS),
 )

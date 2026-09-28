@@ -14,15 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.47**
+Aktuelle Version: **1.3.48**
 
-Version 1.3.47 zeigt Flugzeuge im Fernglas des Ausgucks, im Ausguckstreifen und
-im Sehrohr in ihrer wahren Höhe: Jedes steht in seinem Höhenwinkel über der
-Kimm, berechnet aus Flughöhe und Entfernung abzüglich der Erdkrümmung, sodass
-man ein hohes, nahes Flugzeug erst mit nach oben geneigter Optik sieht.
-Flugzeuge hängen jetzt hinter den Wolken im ruhigen Himmel, statt mit den
-Schiffen im Seegang zu schwanken. Auf der uConsole und im Remote-Crew-Browser;
-Spielstände bleiben v27.
+Version 1.3.48 zeigt Flugzeuge im Fernglas des Ausgucks, im Ausguckstreifen, im
+Sehrohr und im Handy-Ausguck in ihrer wahren Höhe: Jedes steht in seinem
+Höhenwinkel über der Kimm, berechnet aus Flughöhe und Entfernung abzüglich der
+Erdkrümmung, sodass man ein hohes, nahes Flugzeug erst mit nach oben geneigter
+Optik sieht. Flugzeuge hängen jetzt hinter den Wolken im ruhigen Himmel, statt
+mit den Schiffen im Seegang zu schwanken. Auf der uConsole und im
+Remote-Crew-Browser; Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

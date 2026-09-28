@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { emit } from "../core/events.js";
-import { audioRoles, directFireRoles, stationNames } from "../core/base.js";
+import { audioRoles, directFireRoles, sessionRoles } from "../core/base.js";
 import { finite } from "../core/format.js";
 import { request } from "./request.js";
 import { exactKeys } from "../state/schema.js";
@@ -59,8 +59,8 @@ export function validateSession(value) {
       !Number.isSafeInteger(value.station_generation) || value.station_generation < 0 ||
       !Number.isSafeInteger(value.next_command_seq) || value.next_command_seq < 0 ||
       !finite(value.presence) || value.presence < 0 ||
-      (value.station !== null && !stationNames.includes(value.station)) ||
-      (value.requested_station !== null && !stationNames.includes(value.requested_station)) ||
+      (value.station !== null && !sessionRoles.includes(value.station)) ||
+      (value.requested_station !== null && !sessionRoles.includes(value.requested_station)) ||
       !value.grants || typeof value.grants !== "object" || Array.isArray(value.grants) ||
       Object.keys(value.grants).sort().join(",") !== "command,direct_fire,simlog,sonar_audio" ||
       Object.values(value.grants).some((grant) => typeof grant !== "boolean") ||
@@ -73,8 +73,8 @@ export function validateSession(value) {
         !Number.isSafeInteger(value.host.generation) || value.host.generation < 0)) ||
       value.active_station !== value.station ||
       !value.stations || typeof value.stations !== "object" || Array.isArray(value.stations) ||
-      Object.keys(value.stations).join(",") !== stationNames.join(",")) throw new Error("session");
-  for (const station of stationNames) {
+      Object.keys(value.stations).join(",") !== sessionRoles.join(",")) throw new Error("session");
+  for (const station of sessionRoles) {
     const record = value.stations[station];
     if (!exactKeys(record, ["status", "requested", "request_generation", "station_generation", "grants"]) ||
         !["available", "occupied", "mine"].includes(record.status) ||
@@ -87,7 +87,7 @@ export function validateSession(value) {
         record.grants.direct_fire && (!record.grants.command || !directFireRoles.has(station)) ||
         record.grants.sonar_audio && !audioRoles.has(station)) throw new Error("session");
   }
-  const mine = stationNames.filter((station) => value.stations[station].status === "mine");
+  const mine = sessionRoles.filter((station) => value.stations[station].status === "mine");
   if ((value.station === null) !== (mine.length === 0) ||
       value.station !== null && !mine.includes(value.station) ||
       value.requested_station !== null && !value.stations[value.requested_station].requested ||

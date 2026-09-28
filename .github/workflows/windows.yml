@@ -105,6 +105,7 @@ jobs:
           gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' \
             | python tools/prune_releases.py "$VERSION" \
             | while read -r old; do
+                old=${old%$'\r'}
                 echo "Deleting release $old (tag kept)"
                 gh release delete "$old" --yes
               done

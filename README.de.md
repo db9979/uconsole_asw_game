@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.42**
+Aktuelle Version: **1.3.43**
 
-Version 1.3.42 lässt auf GitHub nur noch das neueste Release stehen: Nach dem
+Version 1.3.43 lässt auf GitHub nur noch das neueste Release stehen: Nach dem
 Veröffentlichen einer neuen Version löscht der Windows-Workflow alle älteren
 Releases (ihre Git-Tags bleiben). Windows-Starter und uConsole-Updater lesen
 nur das neueste Release. Spielstände bleiben v27.

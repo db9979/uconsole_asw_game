@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.22**
+Current release: **1.3.23**
 
-Release 1.3.22 makes the Remote Crew streams steadier. A browser that
-reconnects its sonar audio or sonar display stream now takes over its own
-previous stream at once instead of being refused while the host had not yet
-noticed that the old connection was gone. The web client no longer sends an
-extra state request for every pushed state. The browser tests for live audio
-and the state push now run in real time next to the host. Saves stay v23.
+Release 1.3.23 gives every menu and dialog the start screen's look: help,
+options, save/load, quit, nations, Remote Crew administration (`F9`) and the
+mission end now show the night hunt behind a translucent console panel with
+phosphor corner brackets and a glowing title, while the mission keeps running
+behind them. In high contrast the panels stay opaque. Browser dialogs use the
+same night sky and bracket frame. Saves stay v24.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

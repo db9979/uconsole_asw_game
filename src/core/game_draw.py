@@ -24,6 +24,7 @@ from src.core import uboot_local
 from src.nations.nations import reference_summary
 from src.ui import layout
 from src.ui import observations
+from src.ui import overlay_style
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -297,6 +298,14 @@ class DrawMixin:
                 translation_scope(self.tr):
             self._draw()
 
+    def _splash_backdrop_active(self) -> bool:
+        """A modal overlay or the mission's end panel replaces the station."""
+        admission = getattr(getattr(self.commander, "admission", None), "request", None)
+        if self.commander_open and admission is not None:
+            return False
+        return bool(self.administration_open
+                    or (self.game_over and not self.debrief_open))
+
     def _draw(self) -> None:
         self._apply_text_size()
         s = self.screen
@@ -315,6 +324,15 @@ class DrawMixin:
             draw_simlog_view(self)
         elif self.in_menu:
             self.draw_menu()
+        elif self._splash_backdrop_active():
+            # Modal overlays and the mission end sit on the start screen's
+            # night hunt; the station behind is not drawn (saves uConsole CPU).
+            overlay_style.backdrop(s, self._t)
+            if self.game_over and not self.debrief_open:
+                if self.local_side == "uboot":
+                    uboot_view.draw_end_panel(self, self.opfor)
+                else:
+                    self.draw_end_panel()
         elif self.local_side == "uboot":
             uboot_view.draw(self)
         elif eco:
@@ -675,18 +693,15 @@ class DrawMixin:
     def draw_help_overlay(self) -> None:
         layout.configure_for(self)
         s = self.screen
-        dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
-        dim.fill((0, 0, 0, 170))
-        s.blit(dim, (0, 0))
         bw, bh = 1000, 620
         bx = (config.SCREEN_W - bw) // 2
         by = (config.SCREEN_H - bh) // 2
-        pygame.draw.rect(s, config.COLOR_PANEL_BG, (bx, by, bw, bh))
-        pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
+        overlay_style.panel(s, (bx, by, bw, bh))
         help_title = self.tr("help.title", station=display_value(
             "station", self.station.name, self.tr).upper())
-        layout.blit_line(s, help_title, (bx + 18, by + 10, bw - 36, 40),
-                         config.COLOR_TEXT, size=30)
+        overlay_style.title(s, help_title, (bx + 18, by + 8, bw - 36, 40), size=30,
+                            align="left")
+        overlay_style.rule(s, bx + 18, by + 48, bw - 36)
         x = bx + 20
         w = bw - 40
         y = by + 52
@@ -704,21 +719,18 @@ class DrawMixin:
                            pages=HELP_PAGE_COUNT, first=scroll + 1,
                            last=min(len(lines), scroll + visible), total=len(lines))
         layout.blit_block(s, body, x, y, w, 500, config.COLOR_TEXT, size=18, min_size=18)
-        layout.blit_block(s, hint, x, by + bh - 62, w, 54, config.COLOR_TEXT_DIM, size=16)
+        layout.blit_block(s, hint, x, by + bh - 62, w, 54, overlay_style.accent_color(),
+                          size=16)
 
     @localized
     def draw_nations_overlay(self) -> None:
         s = self.screen
-        dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
-        dim.fill((0, 0, 0, 160))
-        s.blit(dim, (0, 0))
         bw, bh = 1100, 620
         bx = (config.SCREEN_W - bw) // 2
         by = (config.SCREEN_H - bh) // 2
-        pygame.draw.rect(s, config.COLOR_PANEL_BG, (bx, by, bw, bh))
-        pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
-        layout.blit_line(s, "panel.nations", (bx + 18, by + 12, bw - 36, 38),
-                         config.COLOR_TEXT, size=30)
+        overlay_style.panel(s, (bx, by, bw, bh))
+        overlay_style.title(s, "panel.nations", (bx + 18, by + 8, bw - 36, 38), size=30,
+                            align="left")
         summary = getattr(self, "_nations_summary", None)
         if summary is None:
             summary = reference_summary(self.world.coast, self.runtime_catalog)
@@ -747,33 +759,31 @@ class DrawMixin:
         for i, (title, body, color) in enumerate(cards):
             cx = bx + 18 + (i % 2) * (cw + 14)
             cyy = by + 52 + (i // 2) * (ch + 12)
-            pygame.draw.rect(s, config.COLOR_PANEL_BG, (cx, cyy, cw, ch))
-            pygame.draw.rect(s, color, (cx, cyy, cw, ch), 1)
+            overlay_style.panel(s, (cx, cyy, cw, ch), accent=color)
             layout.blit_line(s, title, (cx + 12, cyy + 8, cw - 24, 36), color, size=24)
             layout.blit_block(s, body, cx + 12, cyy + 50, cw - 24, ch - 58,
                               color=config.COLOR_TEXT, size=18)
         layout.blit_line(s, "nations.close", (bx + bw - 160, by + bh - 30, 140, 24),
-                         config.COLOR_TEXT_DIM, size=16, align="right")
+                         overlay_style.accent_color(), size=16, align="right")
 
     @localized
     def draw_save_ui(self) -> None:
         s = self.screen
         mode = self.tr("common.save" if self.save_ui == "save" else "common.load").upper()
-        dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
-        dim.fill((0, 0, 0, 150))
-        s.blit(dim, (0, 0))
         bw, bh = 660, 380
         bx = (config.SCREEN_W - bw) // 2
         by = (config.SCREEN_H - bh) // 2
-        pygame.draw.rect(s, config.COLOR_PANEL_BG, (bx, by, bw, bh))
-        pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
-        layout.blit_line(s, self.tr("save.title", mode=mode),
-                         (bx + 18, by + 14, bw - 36, 34), config.COLOR_TEXT, size=22)
+        overlay_style.panel(s, (bx, by, bw, bh))
+        overlay_style.title(s, self.tr("save.title", mode=mode),
+                            (bx + 18, by + 12, bw - 36, 38), size=26)
+        overlay_style.rule(s, bx + 18, by + 54, bw - 36)
         ly = by + 70
         for slot in range(1, 6):
             info = self.save_info[slot - 1] if len(self.save_info) == 5 else "--"
             selected = slot == self.save_slot
-            col = config.COLOR_WARN if selected else config.COLOR_TEXT_DIM
+            col = overlay_style.text_color(selected)
+            if selected:
+                overlay_style.highlight(s, (bx + 14, ly - 4, bw - 28, 36))
             layout.blit_line(s, message("save.slot", marker=">" if selected else " ",
                                          slot=slot, info=localize(info)),
                              (bx + 24, ly, bw - 48, 32), col, size=19)
@@ -783,20 +793,16 @@ class DrawMixin:
             hint = ("save.overwrite" if self.save_ui == "save"
                     else "save.replace")
         layout.blit_line(s, hint, (bx + 18, by + bh - 54, bw - 36, 34),
-                         config.COLOR_WARN, size=18)
+                         overlay_style.accent_color(), size=18, align="center")
 
     @localized
     def draw_end_panel(self) -> None:
         """M8: Endpanel mit Score-Bruchrechnung und Hinweisen."""
         s = self.screen
-        dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
-        dim.fill((0, 0, 0, 140))
-        s.blit(dim, (0, 0))
-        w, h = 700, 340
+        w, h = 780, 340
         x = (config.SCREEN_W - w) // 2
         y = (config.SCREEN_H - h) // 2
-        pygame.draw.rect(s, (12, 26, 18), (x, y, w, h))
-        pygame.draw.rect(s, config.COLOR_TEXT_DIM, (x, y, w, h), 2)
+        overlay_style.panel(s, (x, y, w, h))
         col = config.COLOR_OK if self.mission_result == "SIEG" else config.COLOR_DANGER
         result = self.tr("end.victory" if self.mission_result == "SIEG"
                          else "end.defeat")
@@ -829,14 +835,25 @@ class DrawMixin:
             ("end.restart", config.COLOR_TEXT_DIM, False),
         ]
         ly = y + 44
-        for text, c, big in lines:
+        for index, (text, c, big) in enumerate(lines):
             if not text:
                 ly += 16
                 continue
             size = 26 if big else 20
             height = 36 if big else 26
-            layout.blit_line(s, text, (x + 16, ly, w - 32, height), c,
-                             size=size, align="center")
+            if text == "end.restart":
+                # The key legend may wrap onto a second line.
+                layout.blit_block(s, text, x + 16, ly, w - 32, 50, c, size=18,
+                                  align="center")
+                ly += 50
+                continue
+            if index == 0:
+                # The result line glows like the start screen's title.
+                overlay_style.title(s, text, (x + 16, ly, w - 32, height), size=size,
+                                    color=c)
+            else:
+                layout.blit_line(s, text, (x + 16, ly, w - 32, height), c,
+                                 size=size, align="center")
             ly += 42 if big else 30
 
     @classmethod
@@ -883,18 +900,19 @@ class DrawMixin:
         # the last row with margin, never overlapping it (was previously a
         # fixed y=612 footer colliding with row 9's box at y=620-662).
         rect = pygame.Rect(260, 40, 760, 660)
-        pygame.draw.rect(self.screen, config.COLOR_OVERLAY_BG, rect)
-        pygame.draw.rect(self.screen, config.COLOR_WARN, rect, 2)
-        layout.blit_line(self.screen, "option.title", (292, 64, 696, 48),
-                         config.COLOR_WARN, size=32, align="center")
+        overlay_style.panel(self.screen, rect)
+        overlay_style.title(self.screen, "option.title", (400, 64, 480, 48), size=32)
         for page, tab in enumerate(self._options_page_rects()):
             active = page == self.options_page
-            pygame.draw.rect(self.screen, config.COLOR_WARN if active
+            if active:
+                overlay_style.highlight(self.screen, tab)
+            pygame.draw.rect(self.screen, overlay_style.PANEL_RIM
+                             if not overlay_style.high_contrast()
                              else config.COLOR_TEXT_DIM, tab, 1)
             layout.blit_line(self.screen, message("option.page", page=page + 1,
                                                   pages=len(self._OPTION_PAGES)),
-                             tab.inflate(-8, -4), config.COLOR_WARN if active
-                             else config.COLOR_TEXT_DIM, size=18, align="center")
+                             tab.inflate(-8, -4), overlay_style.text_color(active),
+                             size=18, align="center")
         if self._option_rows() is self._OPTION_ROWS_SETUP:
             self._draw_options_setup_page()
             return
@@ -921,7 +939,9 @@ class DrawMixin:
             self.tr("commander.local.option"),
         )
         for index, (value, row) in enumerate(zip(values, self._options_row_rects())):
-            color = config.COLOR_TEXT if index == self.options_sel else config.COLOR_TEXT_DIM
+            color = overlay_style.text_color(index == self.options_sel)
+            if index == self.options_sel:
+                overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
             prefix = "> " if index == self.options_sel else "  "
             layout.blit_line(self.screen, raw_text(prefix + value), row, color, size=20)
         layout.blit_block(self.screen,
@@ -935,6 +955,8 @@ class DrawMixin:
         value = (self.tr("option.local_side") + ": "
                  + self.tr("option.local_side." + self.local_side))
         selected = self.options_sel == 0
+        if selected:
+            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
         color = (config.COLOR_TEXT_DIM if locked or not selected else config.COLOR_TEXT)
         layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value),
                          row, color, size=20)
@@ -948,6 +970,8 @@ class DrawMixin:
         # Display: anti-aliased chart lines (row 7 leaves the side's help room).
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[1]]
         selected = self.options_sel == 1
+        if selected:
+            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
         value = (self.tr("option.aa_lines") + ": "
                  + self.tr("common.on" if self.preferences.aa_lines else "common.off"))
         layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
@@ -958,6 +982,8 @@ class DrawMixin:
         # Spoken crew reports; the help says whether espeak-ng was found.
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[2]]
         selected = self.options_sel == 2
+        if selected:
+            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
         value = (self.tr("option.speech") + ": "
                  + self.tr("common.on" if self.preferences.speech else "common.off"))
         layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
@@ -985,10 +1011,8 @@ class DrawMixin:
     @localized
     def draw_live_traffic_overlay(self) -> None:
         rect = pygame.Rect(260, 40, 760, 660)
-        pygame.draw.rect(self.screen, config.COLOR_OVERLAY_BG, rect)
-        pygame.draw.rect(self.screen, config.COLOR_WARN, rect, 2)
-        layout.blit_line(self.screen, "live_traffic.title", (292, 64, 696, 48),
-                         config.COLOR_WARN, size=32, align="center")
+        overlay_style.panel(self.screen, rect)
+        overlay_style.title(self.screen, "live_traffic.title", (292, 64, 696, 48), size=32)
         online = self.connectivity.online
         status_key = ("live_traffic.online" if online
                      else "live_traffic.offline" if online is False
@@ -1010,6 +1034,9 @@ class DrawMixin:
                     and not self._live_traffic_can_enable(names[index]):
                 color = config.COLOR_TEXT_DIM
             prefix = "> " if index == self.live_traffic_sel else "  "
+            if index == self.live_traffic_sel:
+                overlay_style.highlight(self.screen, (rows[index].x - 6, rows[index].y - 5,
+                                                      rows[index].w + 12, 34))
             layout.blit_line(self.screen, raw_text(prefix + toggle_labels[index]),
                              rows[index], color, size=20)
         for index, key in ((2, "aisstream_api_key"), (3, "opensky_credentials")):
@@ -1059,31 +1086,29 @@ class DrawMixin:
     def draw_quit_overlay(self) -> None:
         """Require an explicit confirmation before leaving a live mission."""
         s = self.screen
-        dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
-        dim.fill((0, 0, 0, 155))
-        s.blit(dim, (0, 0))
         choices = (("quit.menu", "common.exit") if self.in_menu else
                    ("quit.game", "quit.save", "quit.main_menu", "quit.no_save"))
         rect = pygame.Rect(260, 185 - 20 * (len(choices) - 3),
                            760, 330 + 40 * (len(choices) - 3))
-        pygame.draw.rect(s, config.COLOR_PANEL_BG, rect)
-        pygame.draw.rect(s, config.COLOR_WARN, rect, 2)
-        layout.blit_line(s, "quit.title", (rect.x + 20, rect.y + 22,
-                         rect.w - 40, 36), config.COLOR_WARN, size=28)
+        overlay_style.panel(s, rect)
+        overlay_style.title(s, "quit.title", (rect.x + 20, rect.y + 20,
+                            rect.w - 40, 38), size=30)
         layout.blit_line(s, "quit.warning",
                          (rect.x + 20, rect.y + 74, rect.w - 40, 26),
-                         config.COLOR_TEXT, size=16)
+                         overlay_style.accent_color(), size=16, align="center")
         for index, label in enumerate(choices):
             selected = index == self.quit_selection
+            if selected:
+                overlay_style.highlight(s, (rect.x + 14, rect.y + 120 + index * 40,
+                                            rect.w - 28, 36))
             layout.blit_line(s, message("menu.choice",
                                         marker="> " if selected else "  ",
                                         label=self.tr(label)),
                              (rect.x + 20, rect.y + 124 + index * 40, rect.w - 40, 32),
-                             config.COLOR_WARN if selected else config.COLOR_TEXT,
-                             size=22)
+                             overlay_style.text_color(selected), size=22)
         layout.blit_line(s, "control.quit_hint",
                          (rect.x + 20, rect.bottom - 44, rect.w - 40, 28),
-                         config.COLOR_TEXT_DIM, size=18)
+                         config.COLOR_TEXT_DIM, size=18, align="center")
 
     # --- Main loop ---
 

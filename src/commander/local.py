@@ -23,7 +23,7 @@ from src.commander.server import (CommanderServer, DIRECT_FIRE_ROLES, ROLES,
 from src.core import config, manual
 from src.core.i18n import load_catalog, message, raw_text, translation_scope
 from src.data.contact_analysis import load_contact_analysis_assets
-from src.ui import layout, qr
+from src.ui import layout, overlay_style, qr
 
 
 # Seconds between an accepted admin "end game" and the process quitting.
@@ -618,10 +618,9 @@ class CommanderConsole:
         with translation_scope(game.tr):
             screen, tr = game.screen, game.tr
             panel = self.confirm_rect()
-            layout.panel(screen, panel)
-            layout.blit_line(screen, "commander.confirm.title",
-                             (panel.x + 24, panel.y + 16, panel.w - 48, 34),
-                             config.COLOR_WARN, size=24, align="center")
+            overlay_style.panel(screen, panel)
+            overlay_style.title(screen, "commander.confirm.title",
+                                (panel.x + 24, panel.y + 16, panel.w - 48, 34), size=24)
             proposal = (self.bridge.proposal if self.confirm_kind == "target"
                         else self.bridge.navigation_proposal)
             if self.confirm_kind == "target":
@@ -944,9 +943,9 @@ class CommanderConsole:
                 return
             screen, tr = game.screen, game.tr
             panel = pygame.Rect(100, 20, 1080, 680)
-            layout.panel(screen, panel)
-            layout.blit_line(screen, "commander.local.title", (124, 32, 1032, 34),
-                             config.COLOR_WARN, size=26)
+            overlay_style.panel(screen, panel)
+            overlay_style.title(screen, "commander.local.title", (124, 30, 1032, 36),
+                                size=28, align="left")
             url = (f"http://{self.address[0]}:{self.address[1]}/"
                    if self.address is not None else tr("commander.local.unavailable"))
             proxy = self.public_origin if not self.web_mode else None
@@ -1037,9 +1036,9 @@ class CommanderConsole:
     def _draw_roster(self, game):
         screen, tr = game.screen, game.tr
         panel = pygame.Rect(100, 20, 1080, 680)
-        layout.panel(screen, panel)
-        layout.blit_line(screen, "commander.roster.title", (124, 32, 1032, 34),
-                         config.COLOR_WARN, size=26)
+        overlay_style.panel(screen, panel)
+        overlay_style.title(screen, "commander.roster.title", (124, 30, 1032, 36), size=28,
+                            align="left")
         layout.blit_line(screen, "commander.roster.subtitle", (124, 70, 1032, 28),
                          config.COLOR_TEXT_DIM, size=16)
         statuses = self._roster()

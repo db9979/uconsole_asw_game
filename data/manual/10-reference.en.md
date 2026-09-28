@@ -129,6 +129,14 @@ The top bar shows the boat's seven stations as tabs: `1` Command, `2` Sonar, `3`
 
 <!-- keys:uboot -->
 
+### Boat missions {#ref-opfor-missions}
+
+Scenarios 5 and 6 give the submarine the objective; the frigate's task is to stop it. They are meant for a crewed boat (the uConsole on the boat side, a solo browser as the submarine, or a boat crew in the browsers); with the AI on the boat it hunts as in any other scenario and does not pursue the objective. The boat's orders stand in one line over its chart and as the mission line of the browser's boat stations.
+
+- **Breakthrough (5):** the goal area (3 NM radius) lies about 10 NM beyond the frigate's patrol position, seen from the boat's start, in water at least 40 m deep; the boat's chart marks it as GOAL and the orders give bearing and range from the boat. The boat wins when it enters the area, the frigate when it sinks the boat or holds it off for 4 hours. The rule that a boat escapes 150 NM from its start does not apply.
+- **Reconnaissance (6):** the boat must get the frigate in sight through the periscope and complete a situation report in the radio room while the frigate is still among its sightings. The orders read "Frigate in sight" as soon as it is. A report without the frigate in sight does not count. The frigate wins when it sinks the boat or no such report goes out within 2 hours.
+- The boat's end panel reads BROKE THROUGH or FRIGATE REPORTED on a win, MISSION OVER when the time runs out.
+
 ### AI hunters {#ref-opfor-hunters}
 
 When nobody sails the frigate (the uConsole plays the boat, or a solo browser plays the submarine), AI hunters crew every frigate station no browser holds; a station a browser takes is left to it at once. They read only what the frigate's own sensors report, never the boat's position or identity:
@@ -149,7 +157,8 @@ When nobody sails the frigate (the uConsole plays the boat, or a solo browser pl
 - A raised mast or snorkel head is seen by the frigate's radar only as a bare blip (see the OPZ chapter).
 - The boat's ESM hears no other submarine's radar and no missile seeker; it has no scored library analysis, no scan-period measurement and no target motion analysis of an emitter (the cross-fix assumes a slow emitter).
 - The boat's library shows only the first candidates in catalogue order; for an X-band search radar with many possible matches (the helicopter's) the right entry can fall outside the list.
-- The campaign is played from the frigate only; there is no boat campaign and there are no boat missions yet.
+- The campaign is played from the frigate only; there is no boat campaign yet, and no convoy attack for the boat (its torpedoes home on the frigate only).
+- The AI does not steer a boat towards a boat mission's objective.
 - The AI hunters do not correlate radar blips, ESM or HQ reports with the boat, and they fire no ASROC.
 - The periscope has one magnification and no camera; sightings carry no identification beyond the coarse class, and the stadimeter assumes a class length rather than a masthead height.
 

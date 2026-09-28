@@ -274,6 +274,7 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
     draw_esm_chart(game, boat, view, r)
     draw_intercept_lines(game, boat, view, bx, by)
     draw_report_chart(game, boat, view)
+    _draw_mission_goal(game, view)
     # Own torpedoes in the water (commanded own weapons).
     for index, torpedo in enumerate(_own_torpedoes(game, sub), start=1):
         px, py = view.world_to_screen(torpedo.x, torpedo.y)
@@ -307,6 +308,31 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
                                     config.COLOR_OK, max_px=120)
 
 
+def _draw_mission_goal(game, view) -> None:
+    """A boat mission's goal area from the boat's orders (own knowledge)."""
+    from src.core import boat_missions
+    point = boat_missions.goal(game)
+    if point is None:
+        return
+    s = game.screen
+    px, py = view.world_to_screen(point["x"], point["y"])
+    radius = max(6, int(point["radius_nm"] * view.scale))
+    pygame.draw.circle(s, config.COLOR_OK, (int(px), int(py)), radius, 2)
+    layout.blit_line(s, "uboot.chart.goal", (int(px) + radius + 4, int(py) - 9, 80, 18),
+                     config.COLOR_OK, size=12)
+
+
+def _draw_mission_line(game, boat, r) -> None:
+    """The boat's orders in one line over the chart's top edge."""
+    from src.core import boat_missions
+    if boat_missions.mode(game) is None:
+        return
+    rect = pygame.Rect(r[0] + 8, r[1] + 6, min(560, r[2] - 16), 22)
+    pygame.draw.rect(game.screen, config.COLOR_OVERLAY_BG, rect)
+    layout.blit_line(game.screen, boat_missions.objective(game, boat), rect.inflate(-8, 0),
+                     config.COLOR_OK, size=15)
+
+
 def draw_chart(game, boat) -> None:
     s = game.screen
     r = config.MAP_RECT
@@ -322,6 +348,7 @@ def draw_chart(game, boat) -> None:
         draw_plot(game.screen, game, view, r, layer=boat.plot, own=boat.sub)
         _draw_chart_overlays(game, boat, view, r)
     draw_chart_frame(game, view, r, boat.chart_follow)
+    _draw_mission_line(game, boat, r)
 
 
 # --- station panel -----------------------------------------------------------
@@ -1114,7 +1141,7 @@ def end_text(game, boat) -> str:
 
 
 _END_WINS = ("uboot.end.won", "uboot.end.escaped", "uboot.end.survived",
-             "uboot.end.trained")
+             "uboot.end.trained", "uboot.end.broke_through", "uboot.end.reported")
 
 
 def draw_end_panel(game, boat) -> None:

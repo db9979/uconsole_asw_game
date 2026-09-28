@@ -12,13 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.13**
+Current release: **1.3.14**
 
-Release 1.3.13 renders the uConsole screenshots after three simulated
-minutes instead of six seconds, so waterfalls, plots and contact lists are
-filled, and shows the Mission Editor with the packaged example mission (library
-and seeded sector preview) instead of an empty library. The README now links
-the menu and editor views too. Saves stay v23.
+Release 1.3.14 adds **boat missions**: scenario 5 *Breakthrough* (the submarine
+must reach a goal area beyond the frigate's patrol position) and scenario 6
+*Reconnaissance* (it must sight the frigate through the periscope and radio a
+situation report while it is in sight). The frigate's task is to stop it. The
+boat's orders stand over its chart and in the browser's boat stations; the
+goal is marked on the boat's chart. Saves stay v23.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

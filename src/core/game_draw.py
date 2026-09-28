@@ -158,8 +158,7 @@ class DrawMixin:
         elif self.menu_screen == "scenario":
             center(self.tr("menu.choose_scenario"),
                    150, color=config.COLOR_TEXT_DIM)
-            scenario_names = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
-                              "s3_abfang": "intercept", "s4_zufall": "random"}
+            scenario_names = config.SCENARIO_NAMES
             for i, key in enumerate(config.SCENARIO_ORDER):
                 sc = config.SCENARIOS[key]
                 marker = "► " if i == self.menu_sel else "  "
@@ -197,8 +196,7 @@ class DrawMixin:
                    color=config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM)
         else:  # briefing
             sc = config.SCENARIOS[self.scenario_key]
-            scenario_key = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
-                            "s3_abfang": "intercept", "s4_zufall": "random"}[self.scenario_key]
+            scenario_key = config.SCENARIO_NAMES[self.scenario_key]
             center(self.tr("scenario." + scenario_key + ".title"), 170,
                    self.menu_font_big, config.COLOR_WARN)
             layout.blit_block(s, self.tr("scenario." + scenario_key + ".brief"),
@@ -437,8 +435,7 @@ class DrawMixin:
         """Mission title shown in the top status bar."""
         if self.custom_mission_definition is not None:
             return localize(self.mission_name_display())
-        return self.tr("scenario." + {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
-                                      "s3_abfang": "intercept", "s4_zufall": "random"}
+        return self.tr("scenario." + config.SCENARIO_NAMES
                        [self.scenario_key] + ".title")
 
     def draw_top_bar(self) -> None:

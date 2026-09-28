@@ -1600,3 +1600,10 @@ Notizen Phase 1:
 - `src/ui/support.py`: `SUPPORT_URL` (buymeacoffee.com/zquu1xu570) und QR-Zeilen, erzeugt offline mit `tools/gen_support_qr.py` (braucht `segno`, `--check`). Hauptmenü zeigt QR und drei Zeilen rechts unten (`menu.support.*`), nie in einer Mission.
 - Web: Link `commander.web.support_link` auf Kopplung, Lobby, Einstellungen und `/admin` (Fußzeile), `target=_blank rel="noopener noreferrer"`; `test_commander_assets.py` erlaubt genau diese URL und hält sie aus `#operations` heraus. GitHub: `.github/FUNDING.yml` (custom) und Badge in beiden READMEs.
 - Doku-Abgleich: Referenz (31 kn, VDS ±4°, Glossar, Solo-Seitenwahl), README EN/DE (VDS-Tasten, Laufzeitumfang des Missionseditors, 1.3.1-Absatz DE), Koop/Protokoll/Webhost (U-Boot-Rollen, Seitenwahl, `shutdown`, `sonar_set_vds_depth`), Hilfe-Texte (U-Boot-Crew 1-7, VDS parallel).
+
+## uConsole-Installer mit Auto-Update (2026-09-28, App 1.3.9)
+
+- `packaging/uconsole/install.sh` (curl … | sh, als Benutzer): Systempakete bei Bedarf, Klon/Übernahme von `~/games/u-jagd` (`U_JAGD_DIR`), dann `u_jagd_updater.py update` und `setup`; `--uninstall` entfernt Menü, Desktop-Verknüpfung, `~/.local/bin/u-jagd` und Timer.
+- `packaging/uconsole/u_jagd_updater.py` (nur Standardbibliothek, System-`python3`): Quelle `releases/latest`, Tag `vX.Y.Z` wie der Windows-Starter (Release legt `.github/workflows/windows.yml` beim Push auf main an); ohne Release `origin/main`, `U_JAGD_UPDATE_CHANNEL=main` erzwingt main. Nur Fast-Forward auf `main` (oder detached), nie bei lokalen Änderungen/anderem Zweig; `pip install -e .` nur wenn `pyproject.toml`/`requirements.txt` sich ändern; Prüfung `main.py --version`, sonst `git reset --keep` zurück und Commit in `~/.u-jagd/updater-failed` gemerkt. Log `~/.u-jagd/updater.log`.
+- Sperre `~/.u-jagd/updater.lock` (flock) erbt das Spiel per `execv`: der systemd-Benutzertimer `u-jagd-update.timer` (3 min nach Boot, alle 6 h) aktualisiert nie unter einem laufenden Spiel.
+- Tests: `tests/test_uconsole_updater.py` (lokale Bare-Repos). Auf dem echten Gerät noch nicht getestet.

@@ -12,7 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.8**
+Current release: **1.3.9**
+
+Release 1.3.9 adds a one-command installer for the uConsole with automatic
+updates: every start fetches the newest GitHub release (a background timer also
+checks every six hours), offline the installed version starts, and a version
+that does not start is rolled back. It creates a menu entry, a desktop shortcut
+and the `u-jagd` command. Saves stay v23.
 
 Release 1.3.8 adds a support link: a QR code in the uConsole main menu and a
 small link on the Remote Crew pairing, lobby and settings screens and the
@@ -205,6 +211,16 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
 
 ## Quick Start
 
+On the ClockworkPi uConsole, one command installs the game with a menu entry
+and automatic updates (every start fetches the newest release; offline the
+installed version starts):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/db9979/uconsole_asw_game/main/packaging/uconsole/install.sh | sh
+```
+
+Manual setup on any Linux system:
+
 ```sh
 git clone https://github.com/db9979/uconsole_asw_game.git
 cd uconsole_asw_game
@@ -215,7 +231,8 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
-For ClockworkPi uConsole system packages, updates, and troubleshooting, see
+For the installer's details, ClockworkPi uConsole system packages, manual
+updates, and troubleshooting, see
 [`docs/install-uconsole.en.md`](docs/install-uconsole.en.md).
 
 ## Command Line

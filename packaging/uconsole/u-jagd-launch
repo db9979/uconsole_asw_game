@@ -1,0 +1,7 @@
+#!/bin/sh
+# U-Jagd starter: update to the newest release (best effort), then start the game.
+# Game arguments are passed through, e.g. `u-jagd --windowed`.
+# U_JAGD_NO_UPDATE=1 skips the update for one start.
+set -eu
+self=$(readlink -f -- "$0")
+exec python3 "$(dirname -- "$self")/u_jagd_updater.py" launch "$@"

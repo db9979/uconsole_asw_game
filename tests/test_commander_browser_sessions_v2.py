@@ -21,6 +21,15 @@ from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_ana
 from commander_fixtures import PLOT, WEATHER_STATION
 
 
+
+# The bridge lookout's binoculars (clear night, nothing in sight).
+LOOKOUT = dict(course=90.0, fov_deg=16.0, visibility_nm=30.0, sea_state=2.0,
+               horizon_offset=0.0, horizon_tilt=0.0, outlines=[],
+               sky=dict(light=0.0, dusk=0.0, cloud=0.25, precipitation="none", intensity=0.0,
+                        wind_from_deg=270.0, sun_bearing=300.0, sun_alt_deg=-20.0,
+                        moon_bearing=180.0, moon_alt_deg=30.0, moon_illumination=0.8,
+                        moon_waxing=True))
+
 def _projected(name):
     """A block exactly as the host projects it for a fresh game."""
     from src.commander import projections
@@ -1029,7 +1038,7 @@ def _direct_fire_browser_states():
         stability=dict(list_deg=0.5, trim_deg=-0.2, counterflood_room=None,
                        can_counterflood=True), crew=_projected_crew()))
     bridge = dict(common, role="bridge", bridge=dict(crew=_projected_crew(),
-        navigation=navigation, tactical_summary=[], sightings=[],
+        navigation=navigation, tactical_summary=[], sightings=[], lookout=LOOKOUT,
         orders=dict(station_down=False, speed_max_kn=25.0, telegraph="FULL",
                     noise=.8, cavitating=False),
         threat=dict(observations=[], count=0, average_flood=0.0, torpedoes=[]),
@@ -1173,6 +1182,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                                       "telegraph": "HALF", "noise": .2,
                                       "cavitating": False}
             common[role]["sightings"] = []
+            common[role]["lookout"] = LOOKOUT
             common[role]["crew"] = _projected_crew()
             common[role]["threat"] = {"observations": [], "count": 0,
                                        "average_flood": 0.0, "torpedoes": []}

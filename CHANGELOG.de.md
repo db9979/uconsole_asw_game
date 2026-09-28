@@ -4,12 +4,25 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.39
+## 1.3.40
 
-Version 1.3.39 bringt die volle obere Leiste auf der uConsole zurück: Die
+Version 1.3.40 bringt die volle obere Leiste auf der uConsole zurück: Die
 Fregatte zeigt wieder Station, Mission, Uhrzeit, Fahrt und Kurs, das besetzte
 U-Boot Mission, Uhrzeit, Fahrt, Kurs und Tiefe, jetzt kompakt durch „·“
 getrennt. Spielstände bleiben v27.
+
+## 1.3.39
+
+Version 1.3.39 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen
+den Stil des Startbilds. Die Okulare zeigen Tag, Dämmerung und Nacht mit
+Sternen, dem Mond in seiner Phase und seinem Glitzern auf dem Wasser, Wolken,
+Regen, Schnee und Nebel nach dem Wetter, und die Schiffe in Stahl mit heller
+Kante, nachts mit beleuchteten Fenstern, Bugwelle und Kielwasser. Die
+Remote-Crew-Brücke bekommt das Fernglas des Ausgucks als Karte und das
+Browser-Sehrohr dasselbe Bild und dieselben Schiffsformen. Die Stationen auf
+der uConsole und im Browser tragen das Türkis und Nachtblau des Startbilds mit
+Eckwinkeln an den Feldern; die Karte behält ihre NATO-Symbole, der
+Kontrastmodus bleibt unverändert. Spielstände bleiben v27.
 
 ## 1.3.38
 

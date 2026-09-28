@@ -6,9 +6,11 @@ from src.core import config, preferences
 from src.ui import editor_widgets, layout, sonar_view, theme
 
 
-def test_standard_theme_matches_previous_hardcoded_colors():
+def test_standard_theme_is_the_start_screens_look():
     theme.configure_for(None)
-    assert config.COLOR_TEXT == (140, 230, 160)
+    # Turquoise phosphor text and the splash frame colour for rings.
+    assert config.COLOR_TEXT == (150, 240, 205)
+    assert config.COLOR_SONAR_RING == (40, 96, 90)
     assert sonar_view.NAVY == (6, 13, 25)
     assert editor_widgets.PALETTE.text == (200, 232, 214)
 

@@ -323,6 +323,28 @@ def blit_block(screen, text: str, x: int, y: int, w: int, h: int,
             screen.blit(image, rendered)
 
 
+# The start screen's corner brackets on every panel (standard theme only; the
+# high-contrast theme keeps plain frames).
+BRACKET_COLOR = (62, 140, 128)
+BRACKET_MAX_PX = 12
+
+
+def corner_brackets(screen, rect, border=None) -> None:
+    """Short phosphor angles in the corners of ``rect`` (display only)."""
+    if config.COLOR_PANEL_BG == (12, 12, 12):
+        return
+    x, y, w, h = rect
+    size = min(BRACKET_MAX_PX, w // 5, h // 4)
+    if size < 4:
+        return
+    color = BRACKET_COLOR if border in (None, config.COLOR_SONAR_RING) else border
+    right, bottom = x + w - 1, y + h - 1
+    for cx, cy, dx, dy in ((x, y, 1, 1), (right, y, -1, 1), (x, bottom, 1, -1),
+                           (right, bottom, -1, -1)):
+        pygame.draw.line(screen, color, (cx, cy), (cx + dx * size, cy), 2)
+        pygame.draw.line(screen, color, (cx, cy), (cx, cy + dy * size), 2)
+
+
 def box(screen, rect, title: str = "", border=None, fill=None,
         title_size: int = 16) -> tuple:
     """Zeichnet eine Box und liefert ihr garantiert inneres Rechteck."""
@@ -331,6 +353,7 @@ def box(screen, rect, title: str = "", border=None, fill=None,
     border = border or config.COLOR_SONAR_RING
     pygame.draw.rect(screen, fill or config.COLOR_PANEL_BG, rect)
     pygame.draw.rect(screen, border, rect, 1)
+    corner_brackets(screen, rect, border)
     top = y + 8
     if title:
         f = font(title_size, bold=True)
@@ -380,6 +403,7 @@ def panel(screen, rect, title: str = "", title_size: int = 20) -> int:
     record_geometry("panel", rect, title)
     pygame.draw.rect(screen, config.COLOR_PANEL_BG, (x, y, w, h))
     pygame.draw.rect(screen, config.COLOR_SONAR_RING, (x, y, w, h), 1)
+    corner_brackets(screen, (x, y, w, h))
     title = localize(title)
     if title:
         f, lines = fit_text(title, title_size, w - 28, 40, min_size=12)

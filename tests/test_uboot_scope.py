@@ -195,7 +195,8 @@ def test_projection_carries_sightings_without_truth():
     assert set(scope["sky"]) == set(web_schema.SKY_FIELDS)
     row = next(row for row in scope["sightings"] if row["cls"] == "warship")
     assert set(row) == {"ref", "category", "cls", "bearing", "span_deg", "quality", "age_s",
-                        "range_nm", "range_sigma_nm", "range_age_s", "solution"}
+                        "range_nm", "range_sigma_nm", "range_age_s", "solution",
+                        "lights"}
     assert "target_id" not in row and "aspect" not in row and "x" not in row
     assert "kind" not in row                       # a key the browser's inspector forbids
     assert row["bearing"] != pytest.approx(100.0, abs=1e-9)   # measured, not the truth

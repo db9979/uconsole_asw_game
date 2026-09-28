@@ -14,12 +14,24 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.41**
+Aktuelle Version: **1.3.45**
 
-Version 1.3.41 bringt die volle obere Leiste auf der uConsole zurück: Die
-Fregatte zeigt wieder Station, Mission, Uhrzeit, Fahrt und Kurs, das besetzte
-U-Boot Mission, Uhrzeit, Fahrt, Kurs und Tiefe, jetzt kompakt durch „·“
-getrennt. Spielstände bleiben v27.
+Version 1.3.45 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:
+Wolken, Sterne, Sonne und Mond bleiben stehen, während See und Horizont mit dem
+Seegang schwanken. Von der Dämmerung bis zum Morgen und bei schlechter Sicht
+führen neutrale Schiffe ihre Positionslichter nach den
+Kollisionsverhütungsregeln: weiße Topplichter, das rote oder grüne Seitenlicht
+der Seite, die man sieht, von achtern das weiße Hecklicht, jedes in seiner
+Tragweite, und die Rundumlichter von Fahrzeugen bei der Arbeit (Trawler, Lotse,
+Vermesser und Kabelleger, Minenräumer), zivile Flugzeuge ihre Flügelspitzen-,
+Heck- und blitzenden Kollisionswarnlichter; der Bug zeigt dorthin, wohin die Lichter weisen, und ein
+beleuchtetes Schiff wird im Dunkeln an seinen Lichtern gesichtet.
+Kriegsschiffe und Militärflugzeuge bleiben dunkel. Die See folgt dem Wind:
+gegen die See laufen die Kämme auf einen zu, mit der See davon, quer dazu
+seitlich, und das Schiff stampft in Gegensee und rollt in Dwarssee. Fernglas und
+Sehrohr lassen sich jetzt nach oben und unten neigen, zoomen (Fernglas 16°, 8°,
+4°; Sehrohr kleine und große Vergrößerung) und haben eine
+Horizontstabilisierung. Auf der uConsole und im Browser; Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -177,7 +189,8 @@ Der Workflow `.github/workflows/windows.yml` baut das Programm mit PyInstaller
 (`packaging/windows/u-jagd-windows.spec`) bei jedem Push und Pull Request,
 führt seinen Selbsttest ohne Bildschirm aus (kurze Mission plus
 Remote-Crew-Seiten) und veröffentlicht auf `main` einmal je Version das
-Release `v<APP_VERSION>`. Selbst bauen unter Windows:
+Release `v<APP_VERSION>`; danach löscht er alle älteren Releases, sodass nur das
+neueste stehen bleibt (Git-Tags bleiben). Selbst bauen unter Windows:
 `python -m pip install -e ".[windows]"` und
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 

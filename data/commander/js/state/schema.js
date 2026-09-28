@@ -150,7 +150,7 @@ export function validateV2State(state) {
   const sonarFields = ["ref", "label", "source", "classification", "profile", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
   const radioFields = ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg"];
   const radioTaskFields = {
-    row: ["id", "kind", "state", "name", "persons", "x", "y", "radius_nm", "course", "speed_kn", "bearing", "range_nm", "respond_s", "remaining_s", "progress", "sighted", "verdict", "points", "can_answer"],
+    row: ["id", "type", "state", "name", "persons", "x", "y", "radius_nm", "course", "speed_kn", "bearing", "range_nm", "respond_s", "remaining_s", "progress", "sighted", "verdict", "points", "can_answer"],
     kinds: ["sar", "identify", "datum", "ras", "emcon"],
     states: ["offered", "active", "done", "failed", "declined"],
   };
@@ -170,8 +170,8 @@ export function validateV2State(state) {
   };
   const sightFields = {
     sky: ["light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg", "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg", "moon_illumination", "moon_waxing"],
-    glasses: ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "sky", "outlines"],
-    outline: ["bearing", "span_deg", "cls", "stale"],
+    glasses: ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines"],
+    outline: ["bearing", "span_deg", "cls", "stale", "lights"],
     classes: ["warship", "merchant", "aircraft", "torpedo", "unknown"],
   };
   const boatFields = {
@@ -190,12 +190,12 @@ export function validateV2State(state) {
     esmFix: ["x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent"],
     esmCandidate: ["name", "role", "fit"],
     threat: ["intercepts", "counts", "loudest_db", "echo_likely", "trend", "layer", "layer_m", "depth_m", "noise", "mast", "esm_count", "advice", "plan"],
-    intercept: ["kind", "bearing", "level_db", "age_s"],
+    intercept: ["type", "bearing", "level_db", "age_s"],
     interceptKinds: ["hull", "dipping", "buoy", "splash", "torpedo"],
     advice: ["uboot.advice.torpedo", "uboot.advice.mast_down", "uboot.advice.slow_down", "uboot.advice.measure_layer", "uboot.advice.go_below", "uboot.advice.evade"],
-    evadePlan: ["kind", "bearing", "course", "speed_kn", "depth_m", "silent", "decoy"],
+    evadePlan: ["type", "bearing", "course", "speed_kn", "depth_m", "silent", "decoy"],
     radio: ["antenna", "broadcast", "copied", "next_s", "copy", "send", "transmitting", "sitreps", "ack_due", "report", "log"],
-    radioLog: ["seq", "kind", "age_s", "number", "ack", "report"],
+    radioLog: ["seq", "type", "age_s", "number", "ack", "report"],
     radioLogKinds: ["broadcast", "sent", "aborted"],
     radioReport: ["x", "y", "radius_nm", "course", "speed_kn", "age_s"],
   };
@@ -230,12 +230,13 @@ export function validateV2State(state) {
     ["none", "rain", "snow"].includes(sky.precipitation) && typeof sky.moon_waxing === "boolean" &&
     sightFields.sky.every((key) => ["precipitation", "moon_waxing"].includes(key) || finite(sky[key])) &&
     [sky.light, sky.dusk, sky.cloud, sky.intensity, sky.moon_illumination].every((value) => value >= 0 && value <= 1);
+  const navLightsOk = (code) => code === null || (typeof code === "string" && /^[LR][012][r-][g-][s-](GW|WR|RWR|GGG|AC)?$/.test(code));
   const glassesOk = (glasses) => exactKeys(glasses, sightFields.glasses) && skyOk(glasses.sky) &&
-    ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"].every((key) => finite(glasses[key])) &&
+    ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll"].every((key) => finite(glasses[key])) &&
     glasses.fov_deg > 0 && glasses.fov_deg <= 180 &&
     boundedArray(glasses.outlines, 16) && glasses.outlines.every((row) => exactKeys(row, sightFields.outline) &&
       finite(row.bearing) && finite(row.span_deg) && row.span_deg > 0 && sightFields.classes.includes(row.cls) &&
-      typeof row.stale === "boolean");
+      typeof row.stale === "boolean" && navLightsOk(row.lights));
   const crewOk = (crew) => exactKeys(crew, crewFields.row) &&
     Number.isInteger(crew.on_watch) && crew.on_watch >= 1 && crew.on_watch <= 3 &&
     Array.isArray(crew.watches) && crew.watches.length === 3 &&
@@ -349,7 +350,7 @@ export function validateV2State(state) {
         typeof scope.available !== "boolean" || typeof scope.night !== "boolean" ||
         scopeNumbers.some((key) => !finite(scope[key])) || scope.relative_deg < 0 || scope.relative_deg >= 360 ||
         !boundedArray(scope.sightings, 16) || scope.sightings.some((row) =>
-          !exactKeys(row, ["ref", "category", "cls", "bearing", "span_deg", "quality", "age_s", "range_nm", "range_sigma_nm", "range_age_s", "solution"]) ||
+          !exactKeys(row, ["ref", "category", "cls", "bearing", "span_deg", "quality", "age_s", "range_nm", "range_sigma_nm", "range_age_s", "solution", "lights"]) || !navLightsOk(row.lights) ||
           (row.solution !== null && (!exactKeys(row.solution, ["marks", "course", "speed_kn", "lead_deg", "run_s", "quality"]) ||
             !Number.isSafeInteger(row.solution.marks) || row.solution.marks < 1 || row.solution.marks > 6 ||
             [row.solution.course, row.solution.speed_kn, row.solution.lead_deg, row.solution.run_s].some((value) => value !== null && !finite(value)) ||
@@ -421,7 +422,7 @@ export function validateV2State(state) {
     if (!exactKeys(threat, boatFields.threat) || !exactKeys(threat.counts, boatFields.interceptKinds) ||
         boatFields.interceptKinds.some((kind) => !Number.isInteger(threat.counts[kind]) || threat.counts[kind] < 0) ||
         !boundedArray(threat.intercepts, 12) || threat.intercepts.some((row) => !exactKeys(row, boatFields.intercept) ||
-          !boatFields.interceptKinds.includes(row.kind) || !finite(row.bearing) || !finite(row.age_s) ||
+          !boatFields.interceptKinds.includes(row.type) || !finite(row.bearing) || !finite(row.age_s) ||
           !nullableNumber(row.level_db)) ||
         ![threat.loudest_db, threat.layer_m].every(nullableNumber) || !finite(threat.depth_m) ||
         typeof threat.echo_likely !== "boolean" || typeof threat.mast !== "boolean" ||
@@ -430,7 +431,7 @@ export function validateV2State(state) {
         !["cavitating", "snorkel", "quiet", "loud", "moderate"].includes(threat.noise) ||
         !Number.isInteger(threat.esm_count) || threat.esm_count < 0 ||
         !boundedArray(threat.advice, 4) || !threat.advice.every((key) => boatFields.advice.includes(key)) ||
-        (plan !== null && (!exactKeys(plan, boatFields.evadePlan) || !["torpedo", "ping"].includes(plan.kind) ||
+        (plan !== null && (!exactKeys(plan, boatFields.evadePlan) || !["torpedo", "ping"].includes(plan.type) ||
           ["bearing", "course", "speed_kn", "depth_m"].some((key) => !finite(plan[key])) ||
           typeof plan.silent !== "boolean" || typeof plan.decoy !== "boolean"))) throw new Error("protocol");
     // Radio room: schedule, own transmissions and HQ's (modelled) contact report.
@@ -442,7 +443,7 @@ export function validateV2State(state) {
         !Number.isInteger(radio.broadcast) || radio.broadcast < 0 || !Number.isInteger(radio.sitreps) || radio.sitreps < 0 ||
         !finite(radio.next_s) || !nullableNumber(radio.copy) || !nullableNumber(radio.send) || !radioReport(radio.report) ||
         !boundedArray(radio.log, 12) || radio.log.some((row) => !exactKeys(row, boatFields.radioLog) ||
-          !Number.isInteger(row.seq) || !boatFields.radioLogKinds.includes(row.kind) || !nullableNumber(row.age_s) ||
+          !Number.isInteger(row.seq) || !boatFields.radioLogKinds.includes(row.type) || !nullableNumber(row.age_s) ||
           (row.number !== null && !Number.isInteger(row.number)) || typeof row.ack !== "boolean" || !radioReport(row.report))) throw new Error("protocol");
   } else if (state.role === "weapons") {
     if (!exactKeys(payload.settings, ["torpedo_type", "choices", "pattern", "enable_nm", "salvo"]) ||
@@ -502,7 +503,7 @@ export function validateV2State(state) {
     tacticalRows(payload.tactical, 128);
     const nullableFinite = (value) => value === null || finite(value);
     if (!boundedArray(payload.tasks, 8) || payload.tasks.some((row) => !exactKeys(row, radioTaskFields.row) ||
-        !Number.isSafeInteger(row.id) || row.id < 1 || !radioTaskFields.kinds.includes(row.kind) ||
+        !Number.isSafeInteger(row.id) || row.id < 1 || !radioTaskFields.kinds.includes(row.type) ||
         !radioTaskFields.states.includes(row.state) || (row.name !== null && (typeof row.name !== "string" || row.name.length > 24)) ||
         !Number.isInteger(row.persons) || row.persons < 0 || [row.x, row.y, row.radius_nm, row.bearing, row.range_nm, row.progress].some((value) => !finite(value)) ||
         [row.course, row.speed_kn, row.respond_s, row.remaining_s].some((value) => !nullableFinite(value)) ||

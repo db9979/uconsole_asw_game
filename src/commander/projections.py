@@ -780,7 +780,10 @@ def _radio_tasks(game, station_down):
     """HQ tasks as the radio room knows them (reported positions only)."""
     tasks = []
     for row in game.task_view():
-        item = {key: row[key] for key in RADIO_TASK_FIELDS if key != "can_answer"}
+        # The wire calls the task's kind ``type``: the browser rejects any
+        # ``kind`` key in a role state (it never carries entity kinds).
+        item = {key: row["kind" if key == "type" else key]
+                for key in RADIO_TASK_FIELDS if key != "can_answer"}
         for key in ("x", "y", "radius_nm", "bearing", "range_nm", "progress",
                     "course", "speed_kn", "respond_s", "remaining_s"):
             item[key] = _number(item[key])
@@ -1313,6 +1316,12 @@ def _sky(game):
             for key in web_schema.SKY_FIELDS}
 
 
+def _nav_lights(code):
+    """A ``nav_lights`` code as published, or None."""
+    from src.sensors import nav_lights
+    return code if code is not None and nav_lights.valid(code) else None
+
+
 def _lookout_glasses(game):
     """The bridge lookout's binoculars: the horizon in motion and the outlines
     of his own sightings (measured bearing, class he made out, apparent
@@ -1320,16 +1329,21 @@ def _lookout_glasses(game):
     from src.ui import horizon
     from src.ui.stations.bridge import lookout_outlines
     weather = game.world.weather_values()
-    offset, tilt = horizon.horizon_motion(0, game.sim_t, weather["sea_state"])
+    # Pitch and roll by the heading to the sea; the browser turns them with
+    # its own line of sight (``horizon_offset``/``horizon_tilt``: the bow).
+    pitch, roll = horizon.hull_motion(0, game.sim_t, weather["sea_state"],
+                                      weather["wind_from_deg"] - game.ship.course)
+    offset, tilt = horizon.view_motion(pitch, roll)
     return dict(course=_number(game.ship.course % 360.0),
                 fov_deg=_number(config.LOOKOUT_GLASSES_FOV_DEG),
                 visibility_nm=_number(weather["visibility_nm"]),
                 sea_state=_number(weather["sea_state"]),
                 horizon_offset=_number(offset), horizon_tilt=_number(tilt),
+                motion_pitch=_number(pitch), motion_roll=_number(roll),
                 sky=_sky(game),
                 outlines=[dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
-                               stale=bool(stale))
-                          for bearing, span, cls, stale in
+                               stale=bool(stale), lights=_nav_lights(lights))
+                          for bearing, span, cls, stale, lights in
                           lookout_outlines(game, game.lookout_sightings())[:16]])
 
 
@@ -1358,7 +1372,9 @@ def _uboot_scope(game, boat):
                         range_sigma_nm=_number(row["range_sigma_nm"]),
                         range_age_s=(_age(now, row["range_t"])
                                      if row["range_t"] is not None else None),
-                        solution=_uboot_solution(boat, row["ref"], now))
+                        solution=_uboot_solution(boat, row["ref"], now),
+                        lights=(None if now - row["t"] > 1.0
+                                else _nav_lights(boat.orders._lights.get(row["ref"]))))
                    for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]])
 
 
@@ -1523,14 +1539,15 @@ def _uboot_threat(game, boat):
     intercepts and own state only; see src/core/boat_threat.py)."""
     view = boat_threat.picture(game, boat)
     plan = boat_threat.evasion_plan(game, boat)
-    view["intercepts"] = [dict(kind=row["kind"], bearing=_number(row["bearing"]),
+    view["intercepts"] = [dict(type=row["kind"], bearing=_number(row["bearing"]),
                                level_db=_number(row["level_db"]), age_s=_number(row["age_s"]))
                           for row in view["intercepts"]]
     view["counts"] = {kind: int(view["counts"][kind]) for kind in boat_threat.KINDS}
     for key in ("loudest_db", "layer_m", "depth_m"):
         view[key] = _number(view[key])
     view["plan"] = None if plan is None else dict(
-        plan, bearing=_number(plan["bearing"]), course=_number(plan["course"]),
+        {key: value for key, value in plan.items() if key != "kind"}, type=plan["kind"],
+        bearing=_number(plan["bearing"]), course=_number(plan["course"]),
         speed_kn=_number(plan["speed_kn"]), depth_m=_number(plan["depth_m"]))
     return view
 
@@ -1558,7 +1575,7 @@ def _uboot_radio(game, boat):
         transmitting=bool(radio.transmitting), sitreps=int(progress["sitreps"]),
         ack_due=bool(progress["ack_due"]),
         report=_uboot_radio_report(game, None if latest is None else latest["report"]),
-        log=[dict(seq=int(row["seq"]), kind=row["kind"], age_s=_age(game.sim_t, row["t"]),
+        log=[dict(seq=int(row["seq"]), type=row["kind"], age_s=_age(game.sim_t, row["t"]),
                   number=None if row["number"] is None else int(row["number"]),
                   ack=bool(row["ack"]), report=_uboot_radio_report(game, row["report"]))
              for row in reversed(radio.log)])

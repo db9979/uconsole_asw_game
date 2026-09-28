@@ -14,8 +14,9 @@ import numpy as np
 import pygame
 
 from src.core import config
-from src.core.i18n import raw_text
+from src.core.i18n import message, raw_text
 from src.physics import ship_dynamics
+from src.sensors import nav_lights
 from src.ui import layout, sight_scene, silhouettes
 
 SCALE_COLOR = (170, 232, 208)
@@ -23,6 +24,8 @@ CROSSHAIR_COLOR = (120, 214, 180)
 SCALE_LABEL_MIN_PX = 36
 # Horizon motion: px per rad of wave slope, bounded.
 MOTION_PX_PER_RAD = 260.0
+# A stabilized binocular or periscope keeps this share of the hull motion.
+STABILIZED_RESIDUAL = 0.12
 # Charted coast on the horizon: rays per full circle, the observer's move that
 # re-casts them, the bounded cache, and the assumed coastal heights (m; the
 # chart has no elevation, so hills vary smoothly along the coast).
@@ -147,17 +150,47 @@ def blend(a, b, t: float) -> tuple:
     return tuple(int(x + (y - x) * t) for x, y in zip(a, b))
 
 
-def horizon_motion(seed: int, sim_t: float, sea_state: float) -> tuple:
+def hull_motion(seed: int, sim_t: float, sea_state: float,
+                sea_rel_deg: float | None = None) -> tuple:
+    """(pitch, roll) wave slopes in rad of a hull ``sea_rel_deg`` off the sea
+    (the direction the waves come from, relative to the bow): head or
+    following seas make her pitch, beam seas roll (display only,
+    deterministic in sim time)."""
+    pitch = ship_dynamics.wave_slope_rad(int(seed), sim_t, sea_state)
+    if sea_rel_deg is None:
+        return pitch, pitch
+    # The roll answers the same sea more slowly (longer natural period).
+    roll = ship_dynamics.wave_slope_rad(int(seed) + 1, sim_t * 0.7, sea_state)
+    angle = math.radians(sea_rel_deg)
+    return (pitch * (0.35 + 0.65 * abs(math.cos(angle))),
+            roll * (0.3 + 1.2 * abs(math.sin(angle))))
+
+
+def view_motion(pitch: float, roll: float, look_rel_deg: float = 0.0) -> tuple:
+    """(vertical offset px, tilt rad) of the horizon seen ``look_rel_deg``
+    off the bow: ahead the pitch lifts it and the roll tilts it, abeam the
+    other way round."""
+    look = math.radians(look_rel_deg)
+    lift = pitch * math.cos(look) + roll * math.sin(look)
+    lean = roll * math.cos(look) - pitch * math.sin(look)
+    return (config.clamp(lift * MOTION_PX_PER_RAD, -40.0, 40.0),
+            config.clamp(lean * 0.6, -0.25, 0.25))
+
+
+def horizon_motion(seed: int, sim_t: float, sea_state: float,
+                   sea_rel_deg: float | None = None, look_rel_deg: float = 0.0) -> tuple:
     """(vertical offset px, tilt rad) of the horizon from the wave slope at
-    ``seed`` (display only, deterministic in sim time)."""
-    slope = ship_dynamics.wave_slope_rad(int(seed), sim_t, sea_state)
-    offset = config.clamp(slope * MOTION_PX_PER_RAD, -40.0, 40.0)
-    tilt = config.clamp(slope * 0.6, -0.25, 0.25)
-    return offset, tilt
+    ``seed`` (display only, deterministic in sim time); with ``sea_rel_deg``
+    the hull pitches and rolls by her heading to the sea."""
+    if sea_rel_deg is None:
+        slope = ship_dynamics.wave_slope_rad(int(seed), sim_t, sea_state)
+        return (config.clamp(slope * MOTION_PX_PER_RAD, -40.0, 40.0),
+                config.clamp(slope * 0.6, -0.25, 0.25))
+    return view_motion(*hull_motion(seed, sim_t, sea_state, sea_rel_deg), look_rel_deg)
 
 
 def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
-                 t: float = 0.0, *, rim=None, lights=None) -> None:
+                 t: float = 0.0, *, rim=None, lights=None, nav=None) -> None:
     """Procedural side view of a coarse class, ``width`` px long, sitting on
     the horizon (aircraft: hovering above it).  ``t`` (display clock)
     animates pitch, radar, rotor and wake."""
@@ -168,23 +201,31 @@ def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
                          max(1, min(3, width // 12)))
         return
     silhouettes.draw_profile(s, cls if cls in silhouettes.PROFILES else "unknown",
-                             cx, base_y, width, color, t=t, rim=rim, lights=lights)
+                             cx, base_y, width, color, t=t, rim=rim, lights=lights,
+                             facing=nav_lights.facing(nav), nav=nav)
 
 
 def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                  visibility_nm: float, motion: tuple, outlines, crosshair_deg=None,
-                 land=None, anim_t: float = 0.0, sky=None, sea_state: float = 2.0) -> None:
+                 land=None, anim_t: float = 0.0, sky=None, sea_state: float = 2.0,
+                 elevation_deg: float = 0.0, stabilized: bool = False,
+                 optics_label=None) -> None:
     """The picture in the eyepiece or binoculars in the start screen's look:
     sky with stars, moon or sun and clouds, the sea in motion, the charted
     coast, the outlines within the field in steel with a lit rim, rain, snow
     or fog, the true-bearing scale, an optional crosshair with its measuring
     window (half width in degrees) and the corner brackets.  ``sky`` is a
-    ``sight_scene.sky_values`` dict; without one a clear noon or midnight."""
+    ``sight_scene.sky_values`` dict; without one a clear noon or midnight.
+    ``elevation_deg`` tilts the optics up (positive) or down; ``stabilized``
+    takes out all but ``STABILIZED_RESIDUAL`` of the hull's motion."""
     rect = pygame.Rect(rect)
     sky = sky if sky is not None else sight_scene.plain_sky(night)
     offset, tilt = motion
-    horizon = rect.y + int(rect.h * 0.5 + offset)
-    view = sight_scene.View(rect, line_of_sight, fov_deg, horizon, tilt)
+    if stabilized:
+        offset, tilt = offset * STABILIZED_RESIDUAL, tilt * STABILIZED_RESIDUAL
+    lift = elevation_deg * rect.w / fov_deg
+    horizon = rect.y + int(rect.h * 0.5 + offset + lift)
+    view = sight_scene.View(rect, line_of_sight, fov_deg, horizon, tilt, lift)
     with layout.clip_to(s, rect):
         colors = sight_scene.draw_scene(s, view, sky, visibility_nm=visibility_nm,
                                         sea_state=sea_state, t=anim_t)
@@ -196,7 +237,9 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                        visibility_nm=visibility_nm, haze_color=haze_color, colors=colors)
         px_per_deg = rect.w / fov_deg
         lit = sky["light"] < 0.45
-        for bearing, span_deg, cls, stale in outlines:
+        for row in outlines:
+            bearing, span_deg, cls, stale = row[:4]
+            nav = row[4] if len(row) > 4 else None
             off = relative_offset(bearing, line_of_sight)
             if abs(off) > fov_deg / 2 + span_deg / 2:
                 continue
@@ -206,7 +249,8 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             fade = 0.55 if stale else haze * 0.6
             draw_outline(s, cls, cx, base, width, blend(colors["steel"], haze_color, fade),
                          anim_t, rim=blend(colors["rim"], haze_color, fade),
-                         lights=(sight_scene.WINDOW_LIGHT if lit and not stale else None))
+                         lights=(sight_scene.WINDOW_LIGHT if lit and not stale else None),
+                         nav=nav)
         sight_scene.draw_weather(s, view, sky, colors, visibility_nm=visibility_nm, t=anim_t)
         # Labels at least ``SCALE_LABEL_MIN_PX`` apart (the narrow lookout
         # strip labels every 30 degrees, the eyepieces every 10).
@@ -234,4 +278,10 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             for mark in (-1, 1):
                 x = rect.centerx + mark * window
                 pygame.draw.line(s, CROSSHAIR_COLOR, (x, rect.centery - 4), (x, rect.centery + 4), 1)
+        if stabilized and rect.h >= 60:
+            layout.blit_line(s, message("sight.stabilized"),
+                             (rect.x + 10, rect.bottom - 22, 80, 16), CROSSHAIR_COLOR, size=13)
+        if optics_label is not None and rect.h >= 60:
+            layout.blit_line(s, optics_label, (rect.right - 250, rect.bottom - 22, 240, 16),
+                             CROSSHAIR_COLOR, size=13, align="right")
         sight_scene.draw_frame(s, rect)

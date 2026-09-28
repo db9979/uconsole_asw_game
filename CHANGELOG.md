@@ -4,13 +4,22 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.16
+## 1.3.17
 
-Release 1.3.16 fixes the Windows program's self-update: after swapping in the
+Release 1.3.17 fixes the Windows program's self-update: after swapping in the
 new `U-Jagd-Windows.exe` it failed to start ("Failed to load Python DLL")
 because it inherited the old process's already deleted unpack directory. The
 restart now unpacks afresh. The starter window also shows the "Buy me a
 coffee" link. Saves stay v23.
+
+## 1.3.16
+
+Release 1.3.16 adds the **boat campaign**: five linked boat missions in one sea
+area (reconnaissance, breakthrough, convoy attack, breakthrough, convoy
+attack), chosen with `Tab` on the campaign screen. The boat carries its
+torpedoes, hull damage and standing with U-boat command from mission to
+mission; at its base it takes a full refit or a quick turnaround. Kept in
+`~/.u-jagd/boat_campaign.json`; saves stay v23.
 
 ## 1.3.15
 

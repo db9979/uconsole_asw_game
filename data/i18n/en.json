@@ -5229,7 +5229,7 @@
   "campaign.port_refit": "1 Full refit: {torpedoes} torpedoes, all repairs, new helicopter (standing -5)",
   "campaign.port_quick": "2 Quick turnaround: {torpedoes} torpedoes, damage stays aboard (standing +3)",
   "campaign.sail_hint": "Enter: sail for the next mission",
-  "campaign.menu_hint": "Enter sail · 1/2 port choice · N new campaign · Esc back",
+  "campaign.menu_hint": "Enter sail · 1/2 port choice · N new campaign · Tab frigate/boat · Esc back",
   "campaign.confirm_new": "Press N again to replace the running campaign",
   "campaign.scenario.s1_patrouille": "Patrol",
   "campaign.scenario.s2_doppeljagd": "Double hunt",
@@ -5564,5 +5564,14 @@
   "uboot.end.convoy_sunk": "CONVOY HIT - VICTORY",
   "runtime.merchant_torpedoed": "Torpedo explosion in the convoy: a merchant is hit",
   "commander.web.scenario_s7_geleitzug": "Convoy attack (boat)",
+  "campaign.boat.title": "Boat campaign",
+  "campaign.boat.none": "No boat campaign yet. N starts one in this sea area; you command the submarine.",
+  "campaign.boat.standing": "Standing with U-boat command {reputation}/100 · torpedoes aboard {torpedoes}",
+  "campaign.boat.condition": "Hull damage {damage} %",
+  "campaign.boat.full_load": "full load",
+  "campaign.boat.status_lost": "Campaign over: boat lost or commander relieved. N starts a new one.",
+  "campaign.boat.port_refit": "1 Full refit: full torpedo load, hull repaired (standing -5)",
+  "campaign.boat.port_quick": "2 Quick turnaround: {torpedoes} torpedoes, hull damage {damage} % stays (standing +3)",
+  "campaign.boat.sail_hint": "Enter: put to sea for the next boat mission",
   "launcher.support": "Enjoying U-Jagd? Buy me a coffee"
 }

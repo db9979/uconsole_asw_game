@@ -4,13 +4,22 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.16
+## 1.3.17
 
-Version 1.3.16 behebt das Selbst-Update des Windows-Programms: Nach dem
+Version 1.3.17 behebt das Selbst-Update des Windows-Programms: Nach dem
 Austausch startete die neue `U-Jagd-Windows.exe` nicht ("Failed to load
 Python DLL"), weil sie das bereits gelöschte Entpackverzeichnis des alten
 Prozesses erbte. Der Neustart entpackt jetzt frisch. Das Starterfenster zeigt
 außerdem den Link "Spendier mir einen Kaffee". Spielstände bleiben v23.
+
+## 1.3.16
+
+Version 1.3.16 bringt die **Bootskampagne**: fünf verkettete Bootsmissionen in
+einem Seegebiet (Aufklärung, Durchbruch, Geleitzugangriff, Durchbruch,
+Geleitzugangriff), gewählt mit `Tab` im Kampagnenbildschirm. Das Boot nimmt
+Torpedos, Rumpfschaden und Ansehen bei der U-Boot-Führung von Mission zu
+Mission mit; im Stützpunkt gibt es volle Überholung oder schnelles Auslaufen.
+Gespeichert in `~/.u-jagd/boat_campaign.json`; Spielstände bleiben v23.
 
 ## 1.3.15
 

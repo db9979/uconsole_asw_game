@@ -132,8 +132,10 @@ plan mit auf und setzte das auch um"):
    (uConsole auf dem Boot oder Solo-Browser als U-Boot), auf jeder Station,
    die kein Browser hält. Datum aus Sonar und HF/DF; Radarechos, ESM und
    Führungsmeldungen werden noch nicht zugeordnet, kein ASROC.
-2. **Bootsmissionen und Bootskampagne:** Durchbruch, Angriff auf einen
-   Geleitzug, Aufklärung; baut auf Punkt 1 auf.
+2. ~~**Bootsmissionen und Bootskampagne**~~ erledigt: Durchbruch und
+   Aufklärung in 1.3.14, Geleitzugangriff in 1.3.15
+   (`src/core/boat_missions.py`), Bootskampagne mit fünf Etappen in 1.3.16
+   (`src/core/boat_campaign.py`, eigene Datei `boat_campaign.json`).
 3. **Angriffsrechner am Sehrohr:** Lösung aus Peilung, Stadimeter und Lage,
    Vorhaltewinkel für den Torpedo.
 4. **Atmosphäre:** Bootsgeräusche, Wasserbomben/Detonationen,

@@ -1,4 +1,4 @@
-# U-Jagd 1.3.6 - Stations- und Tastenkürzel
+# U-Jagd 1.3.7 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -44,7 +44,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `<- / ->` | Ruder: Zielkurs ändern |
 | `Auf / Ab` | Telegraph hoch / runter |
 | `U` | Direkten Zielkurs eingeben (000-359) |
-| `V` | Direkte Zielgeschwindigkeit eingeben (0-25 kn) |
+| `V` | Direkte Zielgeschwindigkeit eingeben (0-31 kn) |
 | `+ / -` | Telegraph: Motorenbefehl (ASTERN-STOP-SLOW-HALF-FULL-FLANK) |
 | `Karte` | Mausrad: Zoom, Maus-Drag: Pan |
 | `Q / E` | Karte heraus-/hineinzoomen |
@@ -184,7 +184,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `A` | Akustikmodus LEISE/NORMAL |
 | `G` | Antriebsanlage: AUTO, DIESEL (18 kn, -4 dB) oder TURBINE (+3 dB, +25 % Brennstoff) |
 | `U` | Direkten Zielkurs eingeben (000-359) |
-| `V` | Direkte Zielgeschwindigkeit eingeben (0-25 kn) |
+| `V` | Direkte Zielgeschwindigkeit eingeben (0-31 kn) |
 
 ## 8 Helikopterdeck
 

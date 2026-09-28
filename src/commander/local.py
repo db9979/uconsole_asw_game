@@ -24,6 +24,9 @@ from src.data.contact_analysis import load_contact_analysis_assets
 from src.ui import layout, qr
 
 
+# Seconds between an accepted admin "end game" and the process quitting.
+WEB_SHUTDOWN_GRACE_S = 2.0
+
 class CommanderConsole:
     def __init__(self, hotspot=None):
         self.admission = StationAdmission()
@@ -43,6 +46,8 @@ class CommanderConsole:
         self.port = 8765
         self.address = None
         self.error = None
+        # Admin page "end game": the process quits once the result is out.
+        self.shutdown_at = None
         self.selection = 0
         self.connected = False
         self.active_crew = False
@@ -374,6 +379,8 @@ class CommanderConsole:
             self.bridge.allowed = True
         self.bridge.pump(game, self.server)
         if self.web_mode:
+            if self.shutdown_at is not None and now >= self.shutdown_at:
+                game.running = False
             if self.bridge._identity != (id(game.world), id(game.sonar)):
                 self.server.reject_web_admin_pending()
             else:
@@ -479,6 +486,11 @@ class CommanderConsole:
                 ok = server.set_client_grant(client_id, "simlog", value)
             elif action == "observer":
                 ok = server.set_client_grant(client_id, "observer", value)
+            elif action == "shutdown":
+                # Leave the result time to reach the admin page, then quit.
+                ok = value is True
+                if ok:
+                    self.shutdown_at = time.monotonic() + WEB_SHUTDOWN_GRACE_S
             elif action == "rotate_code":
                 with server._lock:
                     server._rotate_code_locked()

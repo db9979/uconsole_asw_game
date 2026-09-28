@@ -389,7 +389,7 @@ def test_strict_write_failure_keeps_previous_file_and_removes_stage(game, tmp_pa
     (("civilians", 0, "orbit_direction"), 0),
     (("civilians", 0, "sunk_score_awarded"), True),
     (("subs", 0, "memory", "contact_age"), None),
-    (("subs", 0, "memory", "contact", "noise"), 1.1),
+    (("subs", 0, "memory", "contact", "noise"), 1.2),
     (("subs", 0, "memory", "last_ping_age"), -float("inf")),
 ])
 def test_malformed_runtime_states_and_refs_are_transactional(game, path, value):
@@ -436,7 +436,7 @@ def test_actual_flank_noise_observation_roundtrips(game, monkeypatch, tmp_path):
     # W2: exponential hydrodynamic speed response only asymptotically reaches
     # its target - 300s is >7 time constants, well converged for gameplay.
     assert game.ship.speed == pytest.approx(config.SHIP_SPEED_MAX_KN, abs=0.05)
-    assert game.ship.noise_level() == pytest.approx(1.05, abs=1e-3)
+    assert game.ship.noise_level() == pytest.approx(1.17, abs=1e-3)
     sub = game.subs[0]
     sub.x, sub.y = game.ship.x + 1, game.ship.y
     monkeypatch.setattr(game.world, "on_land", lambda *args: False)

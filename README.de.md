@@ -12,7 +12,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.6**
+Aktuelle Version: **1.3.7**
+
+Version 1.3.7 gibt der Fregatte F-217 ihre echte Höchstfahrt von 31 kn
+(AK). Die Antriebsleistung ist so skaliert, dass Widerstand, Beschleunigung
+und Drehverhalten bis 25 kn unverändert bleiben; der Eigenlärm steigt jetzt
+bis 31 kn, und das Kabel der Nixie reißt weiterhin über 25 kn. Die
+Admin-Seite des Webspiels bekommt **Spiel jetzt beenden**, das den
+Serverprozess nach Rückfrage stoppt, damit er nicht im Hintergrund
+weiterläuft. Spielstände bleiben v23.
 
 Version 1.3.6 zeichnet den Startbildschirm als animierte Nachtjagd: die
 Fregatte F-217 mit drehendem Radar, Schornsteinrauch, Bugwelle und

@@ -1083,7 +1083,8 @@ class _Handler(BaseHTTPRequestHandler):
                           or body["action"] not in {
                               "assign", "revoke", "revoke_client", "command", "direct_fire",
                               "sonar_audio", "simlog", "rotate_code", "accept_target",
-                              "reject_target", "accept_navigation", "reject_navigation"}
+                              "reject_target", "accept_navigation", "reject_navigation",
+                              "shutdown"}
                           or type(body["client_id"]) is not str
                           or len(body["client_id"]) > 64
                           or type(body["station"]) is not str
@@ -1100,7 +1101,10 @@ class _Handler(BaseHTTPRequestHandler):
                                                  "reject_navigation"}
                               and (body["client_id"] or body["station"] or body["value"]))
                           or (body["action"] in {"assign", "revoke", "revoke_client"}
-                              and body["value"])):
+                              and body["value"])
+                          or (body["action"] == "shutdown"
+                              and (body["client_id"] or body["station"]
+                                   or body["value"] is not True))):
                         status, response = 400, {"error": "invalid_request"}
                     else:
                         status, response = owner._enqueue_web_admin_locked(

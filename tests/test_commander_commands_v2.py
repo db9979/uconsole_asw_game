@@ -163,7 +163,7 @@ def test_endpoint_requires_cookie_origin_csrf_and_exact_closed_schema(server):
 
 @pytest.mark.parametrize(("action", "value"), [
     ("bridge_set_course", 0), ("bridge_set_course", 359.999),
-    ("bridge_set_speed", 0), ("bridge_set_speed", 25),
+    ("bridge_set_speed", 0), ("bridge_set_speed", 31),
 ])
 def test_bridge_action_exact_schemas_accept_bounds(server, action, value):
     cookie, session = pair(server, "Bridge bounds", "bridge")
@@ -175,7 +175,7 @@ def test_bridge_action_exact_schemas_accept_bounds(server, action, value):
     ("bridge_set_course", {"course": float("inf")}),
     ("bridge_set_course", {"course": 10**1000}),
     ("bridge_set_course", {"course": 20, "extra": 1}),
-    ("bridge_set_speed", {"speed_kn": -1}), ("bridge_set_speed", {"speed_kn": 25.01}),
+    ("bridge_set_speed", {"speed_kn": -1}), ("bridge_set_speed", {"speed_kn": 31.01}),
     ("bridge_set_speed", {"speed_kn": float("nan")}),
 ])
 def test_bridge_action_schemas_reject_wrong_params_and_nonfinite(server, action, params):

@@ -44,7 +44,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 
 | Merkmal | Wert |
 |---|---|
-| Fahrt | 4-25 kn; Telegraph STOP 0, SLOW 6, HALF 10, FULL 16, FLANK 25 kn |
+| Fahrt | 4-31 kn; Telegraph STOP 0, SLOW 6, HALF 10, FULL 16, FLANK 31 kn |
 | Drehrate | etwa 0,075 Grad/s je Knoten (1,2 Grad/s bei 16 kn); Drehkreis etwa 0,4 NM |
 | Kavitation | ab 15 kn bei ruhiger See, bei schwerer See früher; Passivreichweite x0,35 |
 | Modus LEISE | Lärm x0,65, max. 12 kn |

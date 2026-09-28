@@ -300,7 +300,7 @@ class Ship:
         best = 0.0
         for px, py, t, speed in self.wake:
             if math.hypot(px - x_nm, py - y_nm) <= radius_nm:
-                best = max(best, (speed / config.SHIP_SPEED_MAX_KN)
+                best = max(best, (speed / config.SHIP_SPEED_REFERENCE_KN)
                            * math.exp(-(self._clock - t) / decay))
         return min(1.0, best)
 
@@ -358,7 +358,7 @@ class Ship:
 
     def noise_level(self) -> float:
         """Relativer Rauschpegel der Fregatte (0 = leise, 1 = laut)."""
-        n = config.clamp((self.speed - 4.0) / (config.SHIP_SPEED_MAX_KN - 4.0), 0.0, 1.0)
+        n = max(0.0, (self.speed - 4.0) / (config.SHIP_SPEED_REFERENCE_KN - 4.0))
         if self.cavitating:
             n = max(n, 0.85 + 0.02 * (self.speed - config.CAVITATION_KN))
         if self.quiet_mode:

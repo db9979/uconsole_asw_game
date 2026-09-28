@@ -1,8 +1,13 @@
 {
+ "ship.fuel_kg_h.FLANK": {
+  "phase": "1.3.7",
+  "reason": "1.3.7: the frigate F-217 now makes its real 31 kn flank speed (owner's specification). FLANK is 31 kn, the brake power is scaled by (31/25)^3 to 57.2 MW so the drag, acceleration and turning at every speed up to 25 kn are unchanged, and the propulsion fuel allowance is rescaled so FULL/HALF/SLOW burn the 1.0.0 amounts. Flank burns about 14.5 t/h.",
+  "value": 14510.0
+ },
  "ship.rpm_eq.FLANK": {
-  "phase": 2,
-  "reason": "Phase 2: shaft revolutions now follow a fixed-pitch propeller with a linear K_T(J) curve (steady rpm proportional to speed, 146 rpm at 25 kn). The 1.0.0 values were a cosmetic 20 + 2.4*v display line that is not physically consistent with a 4.2 m propeller.",
-  "value": 145.8176
+  "phase": "1.3.7",
+  "reason": "1.3.7: the frigate F-217 now makes its real 31 kn flank speed (owner's specification). FLANK is 31 kn, the brake power is scaled by (31/25)^3 to 57.2 MW so the drag, acceleration and turning at every speed up to 25 kn are unchanged, and the propulsion fuel allowance is rescaled so FULL/HALF/SLOW burn the 1.0.0 amounts. Shaft revolutions stay proportional to speed (181 rpm at 31 kn).",
+  "value": 180.8138
  },
  "ship.rpm_eq.FULL": {
   "phase": 2,
@@ -13,6 +18,11 @@
   "phase": 2,
   "reason": "Phase 2: shaft revolutions now follow a fixed-pitch propeller with a linear K_T(J) curve (steady rpm proportional to speed, 146 rpm at 25 kn). The 1.0.0 values were a cosmetic 20 + 2.4*v display line that is not physically consistent with a 4.2 m propeller.",
   "value": 58.327
+ },
+ "ship.speed_eq.FLANK": {
+  "phase": "1.3.7",
+  "reason": "1.3.7: the frigate F-217 now makes its real 31 kn flank speed (owner's specification). FLANK is 31 kn, the brake power is scaled by (31/25)^3 to 57.2 MW so the drag, acceleration and turning at every speed up to 25 kn are unchanged, and the propulsion fuel allowance is rescaled so FULL/HALF/SLOW burn the 1.0.0 amounts.",
+  "value": 31.0
  },
  "ship.yaw_steady_deg_s.HALF": {
   "phase": 2,

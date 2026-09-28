@@ -206,6 +206,9 @@ class Sub:
         self.turn_left = rng.uniform(300.0, 900.0)
         self.turn_delta = 0.0
         self.evade_offset = rng.uniform(-30.0, 30.0)
+        # A boat mission's leg (course, speed, depth) set every substep by
+        # src/core/boat_ai.py for the AI's mission boat; never saved.
+        self.mission_orders = None
         self._lofar_phase = 0.0  # M11: LOFAR-Pulsphase
         self.sunk = False
         self.heard_ping = False
@@ -923,6 +926,10 @@ class Sub:
                 patrol_max = min(8.0, self.speed_for_state())
                 self.speed = self.rng.uniform(
                     min(3.0, patrol_max), max(min(3.0, patrol_max), patrol_max))
+            if self.mission_orders is not None:
+                # The mission leg replaces the random patrol leg; the draws
+                # above still run, so the boat's stream stays in step.
+                self.target_course, self.speed, self.target_depth = self.mission_orders
             diff = config.angle_diff_deg(self.target_course, self.course)
             self.course = (self.course + config.clamp(
                 diff, -self.motion.turn_rate_deg_s * dt,

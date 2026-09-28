@@ -38,8 +38,12 @@ export const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_la
 // Spoken crew reports (src/core/callouts.py KEYS); the text is the browser's own.
 export const calloutKinds = new Set(["torpedo", "contact", "breakup", "torpedo_away", "hit", "won", "lost",
   "action_stations", "mpa_on_station", "ping", "dipping", "buoy_ping", "splash", "evade", "mast_threat", "leak", "fire",
+  "detonation_near", "detonation", "broadcast", "broadcast_report", "sighting_warship", "sighting_merchant",
+  "sighting_aircraft", "sighting_torpedo", "sighting_unknown", "test_depth_near", "test_depth_over", "hull_damage",
   "lookout_contact", "lookout_ship", "lookout_warship", "lookout_merchant", "lookout_aircraft", "lookout_submarine", "lookout_torpedo"]);
 export const calloutsWithBearing = new Set(["torpedo", "contact", "breakup", "ping", "dipping", "buoy_ping", "splash",
+  "detonation_near", "detonation", "sighting_warship", "sighting_merchant", "sighting_aircraft", "sighting_torpedo",
+  "sighting_unknown",
   "lookout_contact", "lookout_ship", "lookout_warship", "lookout_merchant", "lookout_aircraft", "lookout_submarine", "lookout_torpedo"]);
 export const view = { x: 0, y: 0, zoom: 1, follow: false, initialized: false };
 export const lookoutRanges = [5, 10, 25, 50, 100, 200];

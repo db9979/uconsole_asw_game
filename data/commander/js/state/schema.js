@@ -129,13 +129,13 @@ export function validateV2State(state) {
   const payload = state[state.role];
   // BEGIN GENERATED (tools/gen_web_schema.py; do not edit by hand)
   const shapes = {
-    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings", "crew", "lookout"],
+    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings", "crew", "lookout", "route"],
     damage: ["compartments", "teams", "total", "sunk", "stability", "crew"],
     eloka: ["intercepts", "station_down", "status", "hardware"],
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"],
     lookout: ["side", "available", "manned", "course", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
-    opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
+    opz: ["observations", "fusions", "suggestions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical", "tasks"],
     sonar: ["observations", "settings", "visualization"],
     uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
@@ -164,6 +164,7 @@ export function validateV2State(state) {
     row: ["state", "airborne", "x", "y", "course", "bearing", "range_nm", "waypoint_x", "waypoint_y", "station_left_s", "ready_in_s", "sorties_left", "buoys", "torpedoes", "radar", "buoy_mode", "pattern", "pattern_points", "datalink", "relayed"],
     states: ["BASE", "TRANSIT", "STATION", "RTB"],
   };
+  const opzSuggestionFields = ["key", "refs", "bearing", "bearing_delta_deg", "distance_nm"];
   const helicopterTacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type", "classification", "released_to_opz"];
   const weatherFields = {
     atmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
@@ -179,6 +180,11 @@ export function validateV2State(state) {
     phoneOutline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "called", "range_nm"],
     call: ["seq", "age_s", "category", "bearing", "range_nm", "confirmed"],
     callCategories: ["contact", "ship", "warship", "merchant", "aircraft", "submarine", "torpedo"],
+  };
+  const routeFields = {
+    row: ["pattern", "index", "total", "points"],
+    point: ["number", "x", "y"],
+    patterns: ["manual", "zigzag", "square"],
   };
   const boatFields = {
     plant: ["propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh", "aip_capacity_kwh", "aip_kw", "load_kw", "supply_kw", "net_kw", "empty_s", "full_s", "generator_kw", "fuel_l", "fuel_capacity_l", "charge_rate", "snorkel_rate", "endurance", "air"],
@@ -274,6 +280,14 @@ export function validateV2State(state) {
     if (!phoneOk(payload)) throw new Error("protocol");
   } else if (state.role === "bridge") {
     if (!crewOk(payload.crew) || !glassesOk(payload.lookout)) throw new Error("protocol");
+    // The autopilot route: the waypoints still ahead, numbered from 1.
+    const route = payload.route;
+    if (!exactKeys(route, routeFields.row) || !routeFields.patterns.includes(route.pattern) ||
+        !Number.isInteger(route.total) || route.total < 0 || route.total > 8 ||
+        !Number.isInteger(route.index) || route.index < 0 || route.index > route.total ||
+        !boundedArray(route.points, 8) || route.points.length !== route.total - route.index ||
+        route.points.some((row, index) => !exactKeys(row, routeFields.point) ||
+          row.number !== route.index + index + 1 || !finite(row.x) || !finite(row.y))) throw new Error("protocol");
     if (!exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
     if (!exactKeys(payload.orders, ["station_down", "speed_max_kn", "telegraph", "noise", "cavitating"]) ||
         typeof payload.orders.station_down !== "boolean" || !finite(payload.orders.speed_max_kn) ||
@@ -496,6 +510,11 @@ export function validateV2State(state) {
     tacticalRows(payload.fusions, 32, ["members"]);
     const rawRefs = new Set(payload.observations.map((row) => row.ref));
     const pictureRefs = new Set([...rawRefs, ...payload.fusions.map((row) => row.ref)]);
+    if (!boundedArray(payload.suggestions, 4) || payload.suggestions.some((row) => !exactKeys(row, opzSuggestionFields) ||
+        !Array.isArray(row.refs) || row.refs.length !== 2 || row.refs[0] === row.refs[1] ||
+        row.refs.some((ref) => typeof ref !== "string" || !rawRefs.has(ref)) || row.key !== row.refs.join("+") ||
+        !finite(row.bearing) || !finite(row.bearing_delta_deg) || row.bearing_delta_deg < 0 ||
+        !(row.distance_nm === null || (finite(row.distance_nm) && row.distance_nm >= 0)))) throw new Error("protocol");
     const radarFields = ["surface", "air", "range_nm", "live", "sweep_bearing", "sweep_rate_deg_s", "weather_severity", "surface_effective_range_nm", "air_effective_range_nm"];
     if (!exactKeys(payload.radar, radarFields) ||
         typeof payload.radar.surface !== "boolean" || typeof payload.radar.air !== "boolean" ||

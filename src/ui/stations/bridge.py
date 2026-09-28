@@ -115,6 +115,13 @@ def draw_bridge_view(game, tr=None) -> None:
             # Straight ahead the radius says nothing; the line appears in a turn.
             layout.status_line(s, nx, ny + 102, nw, "ui.turn_radius",
                                message("bridge.line.range", range=f"{game.ship.turn_radius_nm:.2f}"), size=18, label_w=130)
+        route = game.route
+        if route.active:
+            wx, wy = route.current()
+            layout.status_line(s, nx, ny + 132, nw, "ui.autopilot", message(
+                "bridge.line.route", number=route.index + 1, total=len(route.points),
+                range=f"{math.hypot(wx - game.ship.x, wy - game.ship.y):.1f}"),
+                size=18, label_w=130, color=config.COLOR_WARN)
 
         drive = layout.box(s, (x + half + 10, y2, half, box_h), "panel.speed_acoustics",
                            border=config.COLOR_WARN if game.ship.cavitating else config.COLOR_TEXT)

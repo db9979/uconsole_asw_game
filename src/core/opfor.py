@@ -92,7 +92,10 @@ class CrewOrders:
               "radio_sending": "funk", "radio_sent": "funk", "radio_aborted": "funk",
               "radio_copied": "funk", "radio_copied_report": "funk",
               "detonation_near": "sonar", "detonation_far": "sonar",
-              "tube_loaded": "waffen", "tube_flooded": "waffen"}
+              "tube_loaded": "waffen", "tube_flooded": "waffen",
+              "torpedo_fired": "waffen", "torpedo_fired_tubeless": "waffen",
+              "breakup_heard": "sonar", "hull_hit": "schaden",
+              "test_depth_near": "navigation", "test_depth_over": "navigation"}
 
     def __init__(self):
         self.silent = False
@@ -632,6 +635,21 @@ def hear_detonation(game, boat, x: float, y: float) -> None:
     key = "detonation_near" if near else "detonation_far"
     boat_sound(game, boat, key, bearing)
     boat.orders.event(key, bearing=f"{round(bearing) % 360:03d}")
+
+
+def hear_breakup(game, boat, x: float, y: float, depth: float, key: int) -> None:
+    """A hull breaking up: the boat's sonar room hears it (bearing only, a
+    few degrees off, never the class) when its sonar works and the sound
+    reaches it, as the frigate's does."""
+    sub = boat.sub
+    if (sub.sunk or int(key) == sub.id or boat.sonar_down()
+            or math.hypot(x - sub.x, y - sub.y) > config.TORP_TRANSIENT_HEAR_NM
+            or game.world.sonar_path_blocked(x, y, depth, sub.x, sub.y, sub.depth)):
+        return
+    bearing = (math.degrees(math.atan2(x - sub.x, -(y - sub.y)))
+               + config.UBOOT_DETONATION_BEARING_SD_DEG
+               * detrand.normal(sub.sensor_seed, "breakup", int(key))) % 360.0
+    boat.orders.event("breakup_heard", bearing=f"{round(bearing) % 360:03d}")
 
 
 def update_crew(game, boat: CrewedBoat) -> None:

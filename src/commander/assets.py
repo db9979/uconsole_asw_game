@@ -11,9 +11,12 @@ import re
 from importlib import resources
 from importlib.resources.abc import Traversable
 
+from src.core.version import APP_VERSION
+
 _JS = "text/javascript; charset=utf-8"
 _CSS = "text/css; charset=utf-8"
 _HTML = "text/html; charset=utf-8"
+_COLOR_SCHEME_META = b'<meta name="color-scheme" content="dark">'
 
 # Extension allowlist for the asset trees; anything else is never served.
 MIME_TYPES = {".js": _JS, ".css": _CSS, ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8"}
@@ -83,6 +86,13 @@ def static_assets(web_host: bool, root: Traversable | None = None) -> dict[str, 
     assets = {route: (mime, root.joinpath(name).read_bytes())
               for route, name, mime in PUBLIC_FILES}
     assets.update(tree_assets(root))
+    # The page names the version it belongs to; the client compares it with
+    # the host's X-U-Jagd-Version header and reloads after a host update.
+    mime, page = assets["/"]
+    assets["/"] = (mime, page.replace(
+        _COLOR_SCHEME_META,
+        _COLOR_SCHEME_META + b'\n  <meta name="u-jagd-version" content="'
+        + APP_VERSION.encode("ascii") + b'">', 1))
     if web_host:
         assets.update({route: (mime, root.joinpath(name).read_bytes())
                        for route, name, mime in WEB_HOST_FILES})

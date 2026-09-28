@@ -21,7 +21,8 @@ from src.sensors import lookout_id
 from src.world import atmosphere as atmosphere_physics
 from src.world import ocean as ocean_physics
 from src.sonar import raytrace as sonar_raytrace
-from src.sensors.fusion import OPZObservation, source_classification
+from src.sensors.fusion import (OPZObservation, source_classification,
+                                suggest_correlations, suggestion_key)
 from src.sensors.esm import (
     ESM_MAX_ANNOTATIONS,
     ESMCorrelationEvidence,
@@ -734,6 +735,77 @@ class PicturesMixin:
         if self.opz_selected_track_id == observation_id:
             self.opz_selected_track_id = None
         return True
+
+    def opz_suggestions(self) -> tuple:
+        """Correlation suggestions from the OPZ's own published reports.
+
+        Pure in its inputs (reports, own position, time, fusions, dismissals)
+        and cached on exactly those, so drawing and projecting in the same
+        tick never repeat the pair scan."""
+        if self.damage.station_down("opz"):
+            return ()
+        observations = self.opz_source_observations()
+        self.opz_fusion.prune(observations)
+        fused = tuple(sorted({member for fusion in self.opz_fusion.fusions.values()
+                              for member in fusion.members}))
+        signature = (self.sim_t, self.ship.x, self.ship.y, fused,
+                     tuple(self.opz_fusion.dismissed),
+                     tuple((item.observation_id, item.source, item.kind,
+                            item.bearing, item.x, item.y, item.last_seen,
+                            item.bearing_uncertainty_deg, item.observer_x,
+                            item.observer_y) for item in observations))
+        cached = getattr(self, "_opz_suggestion_cache", None)
+        if cached is not None and cached[0] == signature:
+            return cached[1]
+        suggestions = suggest_correlations(
+            observations, self.ship.x, self.ship.y, self.sim_t,
+            fused=fused, dismissed=self.opz_fusion.dismissed)
+        self._opz_suggestion_cache = (signature, suggestions)
+        return suggestions
+
+    def opz_suggestion_labels(self, suggestion) -> tuple[str, str]:
+        """Operator-visible IDs of a suggestion's two reports."""
+        labels = {item.observation_id: item.label
+                  for item in self.opz_source_observations()}
+        return tuple(self.opz_track_label(key, labels.get(key, key[-6:]))
+                     for key in suggestion.members)
+
+    def dismiss_opz_suggestion(self, observation_ids):
+        """Drop one current suggestion (transient, like the fusions)."""
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if (type(observation_ids) not in (list, tuple) or len(observation_ids) != 2
+                or len(set(observation_ids)) != 2):
+            return "invalid_value"
+        key = suggestion_key(observation_ids)
+        if all(item.key != key for item in self.opz_suggestions()):
+            return "stale_ref"
+        self.opz_fusion.dismiss(key)
+        return True
+
+    def _accept_opz_suggestion(self) -> None:
+        """OPZ 'U': fuse the top suggestion through the manual fusion path."""
+        suggestions = self.opz_suggestions()
+        if not suggestions:
+            self.flash(message("runtime.cic.suggestion_none"))
+            return
+        first, second = self.opz_suggestion_labels(suggestions[0])
+        if self.create_opz_fusion(list(suggestions[0].members)) is not True:
+            self.flash(message("runtime.cic.fusion_rejected"))
+            return
+        self.flash(message("runtime.cic.suggestion_fused",
+                           first=first, second=second), 2.0)
+
+    def _dismiss_opz_suggestion(self) -> None:
+        """OPZ 'Shift+U': dismiss the top suggestion."""
+        suggestions = self.opz_suggestions()
+        if not suggestions:
+            self.flash(message("runtime.cic.suggestion_none"))
+            return
+        first, second = self.opz_suggestion_labels(suggestions[0])
+        if self.dismiss_opz_suggestion(list(suggestions[0].members)) is True:
+            self.flash(message("runtime.cic.suggestion_dismissed",
+                               first=first, second=second), 2.0)
 
     def _cycle_opz_track(self, delta: int) -> None:
         tracks = self.filtered_opz_tracks()

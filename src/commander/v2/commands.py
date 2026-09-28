@@ -79,6 +79,12 @@ def _fusion_refs_params(params):
             and all(_ref(ref) for ref in refs) and len(set(refs)) == len(refs))
 
 
+def _suggestion_refs_params(params):
+    refs = params.get("refs") if type(params) is dict and set(params) == {"refs"} else None
+    return (type(refs) is list and len(refs) == 2
+            and all(_ref(ref) for ref in refs) and refs[0] != refs[1])
+
+
 def _single_ref_params(params):
     return type(params) is dict and set(params) == {"ref"} and _ref(params["ref"])
 
@@ -477,6 +483,11 @@ V2_ACTION_REGISTRY = {
         _HOST_STATIONS, _instructor_environment_params, phases=_HOST_ANY),
     "bridge_set_course": V2Action(frozenset({"bridge"}), _course_params),
     "bridge_set_speed": V2Action(frozenset({"bridge"}), _speed_params),
+    # Autopilot route: waypoints on the chart, search patterns, clear.
+    "bridge_route_add": V2Action(frozenset({"bridge"}), _waypoint_params),
+    "bridge_route_pattern": V2Action(frozenset({"bridge"}),
+                                     _enum_params("pattern", ("zigzag", "square"))),
+    "bridge_route_clear": V2Action(frozenset({"bridge"}), _no_params),
     "propose_navigation": V2Action(frozenset({"bridge"}),
                                     _navigation_proposal_params),
     "sonar_classify": V2Action(frozenset({"sonar", "helicopter", "uboot_sonar"}), _classification_params,
@@ -500,6 +511,7 @@ V2_ACTION_REGISTRY = {
         revision_bound=True),
     "opz_dissolve_fusion": V2Action(frozenset({"opz"}), _single_ref_params,
         revision_bound=True),
+    "opz_dismiss_suggestion": V2Action(frozenset({"opz"}), _suggestion_refs_params),
     "opz_set_radar": V2Action(frozenset({"opz"}), _radar_params),
     "opz_mark_blip": V2Action(frozenset({"opz"}), _single_ref_params),
     "opz_set_ciws": V2Action(frozenset({"opz"}), _bool_params("enabled")),

@@ -12,6 +12,7 @@ import math
 
 from src.core import config
 from src.core.plot import PlotLayer
+from src.ship.route import Route
 from src.core.autocrew import AutocrewController
 from src.core.boat_esm import BoatESM
 from src.core.boat_radio import BoatRadio
@@ -373,6 +374,8 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     if set(data) != SAVE_ROOT_FIELDS:
         return False
     if not PlotLayer.valid_save(data.get("plot")):
+        return False
+    if not Route.valid_state(data.get("route"), config.WORLD_SIZE_NM):
         return False
     if not AISReceiver.valid_state(
             data.get("ais"), data.get("sim_t"),

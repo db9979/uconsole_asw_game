@@ -1,4 +1,5 @@
 import { S } from "../state/store.js";
+import { checkHostVersion } from "./version.js";
 
 // All requests, including commands and language changes, share one lane. The
 // deadline covers JSON consumption as well as headers, including stalled bodies.
@@ -20,6 +21,8 @@ export function request(path, { method = "GET", body, auth = true, expected = 20
         method, headers, body: body === undefined ? undefined : JSON.stringify(body),
         signal: controller.signal, cache: "no-store", credentials: "same-origin", redirect: "error", mode: "same-origin",
       });
+      // A host update since this page loaded: reload to the matching client.
+      if (checkHostVersion(response.headers.get("X-U-Jagd-Version"))) throw new Error("cancelled");
       if (response.status !== expected) {
         const error = new Error("http");
         error.status = response.status;

@@ -43,7 +43,7 @@ from src.ui import simlog_map
 from src.ui.weapons_view import weapons_hit_target
 # Names tests and tools import from ``src.core.game`` (kept as re-exports).
 from src.core.game_save import _read_save_document
-from src.core.game_bugreport import BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES
+from src.core.game_bugreport import BUG_REPORT_ENTRY
 
 
 # Input and window changes redraw an eco frame at once; pointer motion does not.
@@ -634,6 +634,9 @@ class EventMixin:
             self._map_drag_moved = False
             return
         if e.type == pygame.QUIT:
+            if self.welcome_active:
+                # Closing the window on the welcome page also ends onboarding.
+                self._finish_onboarding()
             if not self.quit_confirm:
                 self._open_administration("quit")
             return
@@ -1085,6 +1088,11 @@ class EventMixin:
                     self._dissolve_opz_fusion()
                 else:
                     self._create_opz_fusion()
+            elif e.key == pygame.K_u and self.station is Station.OPZ:
+                if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    self._dismiss_opz_suggestion()
+                else:
+                    self._accept_opz_suggestion()
             elif e.key == pygame.K_j and self.station is Station.OPZ:
                 self._begin_track_id_input()
             elif e.key == pygame.K_j and self.station is Station.HELICOPTER:
@@ -1131,6 +1139,10 @@ class EventMixin:
                                    volume=f"{self.sonar_volume:.0%}"))
             elif e.key == pygame.K_BACKSPACE and self.station is Station.OPZ:
                 self.opz_fusion.marked.clear()
+            elif e.key == pygame.K_BACKSPACE and self.station is Station.BRIDGE:
+                self._route_result(self.clear_route(), "runtime.route.cleared")
+            elif e.key == pygame.K_w and self.station is Station.BRIDGE:
+                self._route_result(self.cycle_route_pattern())
             elif e.key == pygame.K_DELETE and self.station is Station.OPZ:
                 self._toggle_opz_suppression()
             elif e.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
@@ -1476,6 +1488,15 @@ class EventMixin:
             self.map_view.set_rect(config.MAP_RECT)
             self.map_view.zoom(factor, pivot=pointer)
         elif e.type == pygame.MOUSEBUTTONDOWN:
+            if (e.button == 3 and self.station is Station.BRIDGE and not self.plot_mode
+                    and not self.in_menu and not self.game_over):
+                # Right click on the Bridge chart: next autopilot waypoint.
+                pointer = self._map_pointer(getattr(e, "pos", None))
+                if pointer is not None:
+                    self.map_view.set_rect(config.MAP_RECT)
+                    x, y = self.map_view.screen_to_world(*pointer)
+                    self._route_result(self.add_route_waypoint(float(x), float(y)))
+                    return
             if (e.button == 1 and self.plot_mode and not self.in_menu
                     and not self.game_over
                     and self._handle_plot_click(getattr(e, "pos", None))):
@@ -1621,6 +1642,14 @@ class EventMixin:
         else:
             self.flash(message("runtime.team.rejected"))
 
+    def _route_result(self, result: str, ok_key: str | None = None) -> None:
+        """Flash the outcome of a local autopilot route order."""
+        if result == "ok":
+            if ok_key is not None:
+                self.flash(message(ok_key), 1.5)
+        elif result in ("route_full", "bridge_down"):
+            self.flash(message(f"runtime.route.{result}"), 2.0)
+
     def steering_input(self) -> tuple:
         """Turn direction from held keys/Trackball (-1/0/+1).
         M10: Fahrtsatz kommt über den Telegraphen (+/-), nicht per Dauer-Taste."""
@@ -1658,15 +1687,20 @@ class EventMixin:
         if key == pygame.K_r:
             self._reroll_menu_seed()
             return
+        if self.welcome_active:
+            self._handle_welcome_key(key)
+            return
         if self.main_menu:
-            entries = MAIN_MENU_ENTRIES
+            entries = self.main_menu_entries()
             if key == pygame.K_UP:
                 self.main_menu_sel = (self.main_menu_sel - 1) % len(entries)
             elif key == pygame.K_DOWN:
                 self.main_menu_sel = (self.main_menu_sel + 1) % len(entries)
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
-                action = entries[self.main_menu_sel]
-                if action == "new":
+                action = entries[self.main_menu_sel % len(entries)]
+                if action == "continue":
+                    self.continue_from_autosave()
+                elif action == "new":
                     # A new game first asks which unit the uConsole plays.
                     self.main_menu = False
                     self.menu_screen = "side"
@@ -1715,7 +1749,7 @@ class EventMixin:
                     self.flash(message("training.start_failed"), 3.0)
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self.main_menu = True
-                self.main_menu_sel = 1
+                self.main_menu_sel = self.main_menu_index("training")
             return
         if self.menu_screen == "campaign":
             self._handle_campaign_menu_key(key)
@@ -1731,7 +1765,7 @@ class EventMixin:
                 self.menu_sel = 0
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self.main_menu = True
-                self.main_menu_sel = 0
+                self.main_menu_sel = self.main_menu_index("new")
             return
         if self.menu_screen == "scenario":
             n = len(config.SCENARIO_ORDER)
@@ -1750,7 +1784,7 @@ class EventMixin:
                     self.menu_sel = 0
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self.main_menu = True
-                self.main_menu_sel = 0
+                self.main_menu_sel = self.main_menu_index("new")
             return
         if self.menu_screen == "difficulty":
             # The last row (after the saved difficulty fields) is the HQ intel.

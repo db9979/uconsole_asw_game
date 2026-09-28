@@ -701,6 +701,15 @@ def _mpa(game):
         datalink=bool(view["datalink"]), relayed=int(view["relayed"]))
 
 
+def _bridge_route(game):
+    """The autopilot route: own commanded waypoints still ahead (own truth)."""
+    route = game.route
+    return dict(pattern=route.kind, index=int(route.index), total=len(route.points),
+                points=[dict(number=number, x=_number(x), y=_number(y))
+                        for number, (x, y) in enumerate(route.points, 1)
+                        if number > route.index])
+
+
 def _crew(game, watch=None):
     """A crew's watch bill, fatigue and morale (own-ship truth)."""
     view = game.crew_view(watch)
@@ -1119,6 +1128,17 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
         if row["classification"] is not None:
             source_classifications.append(dict(ref=row["ref"], source=row["source"],
                                                classification=row["classification"]))
+    raw_refs = {row["ref"] for row in opz_observations}
+    opz_suggestions = []
+    for suggestion in game.opz_suggestions():
+        refs = [ref_by_track.get(key) for key in suggestion.members]
+        if any(ref is None or ref not in raw_refs for ref in refs):
+            continue
+        opz_suggestions.append(dict(
+            key="+".join(refs), refs=refs, bearing=_number(round(suggestion.bearing, 1)),
+            bearing_delta_deg=_number(round(suggestion.bearing_delta_deg, 1)),
+            distance_nm=(None if suggestion.distance_nm is None
+                         else _number(round(suggestion.distance_nm, 2)))))
     operational = {
         "bridge": dict(navigation=_own_navigation(game),
                        orders=dict(station_down=game.damage.station_down("bridge"),
@@ -1147,13 +1167,13 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                           and row["source"] not in ("ESM", "FUSION")
                                           and not row["source"].startswith("SONAR")],
                         sightings=_sightings(game), crew=_crew(game),
-                        lookout=_lookout_glasses(game)),
+                        lookout=_lookout_glasses(game), route=_bridge_route(game)),
         "sonar": _sonar(game, rows, focus_ref, target_ref, sonar_refs),
         "weapons": _weapons(game, rows, target_ref, asset_refs,
                             direct_fire_refs["weapons"]),
         "damage": _damage(game),
         "opz": dict(observations=opz_observations,
-                      fusions=opz_fusions,
+                      fusions=opz_fusions, suggestions=opz_suggestions,
                       radar=dict(surface=bool(game.surface_radar_on),
                                  air=bool(game.air_radar_on),
                                  range_nm=_number(game.radar_range_nm),

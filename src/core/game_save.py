@@ -65,6 +65,7 @@ from src.weapons.asw import (
 from src.weapons.air_defense import AIR_DEFENSE_STATE_VERSION
 
 from src.core.limits import MAX_AIR_PICTURE_TRACKS
+from src.ship.route import Route
 
 
 MAX_SAVE_DOCUMENT_BYTES = 64 * 1024 * 1024
@@ -470,6 +471,7 @@ class SaveMixin:
             "autocrew": self.autocrew.serialize(),
             "ais": self.ais.serialize(),
             "plot": self.plot.to_save(),
+            "route": self.route.serialize(),
             "seed": self.seed,
             "mission_type": self.mission.type_key,
             "mission_time": self.mission_time,
@@ -1137,6 +1139,7 @@ class SaveMixin:
         self.ais.restore(data["ais"])
         self.plot = PlotLayer.from_save(data["plot"])
         self._reset_plot_ui()
+        self.route = Route.restore(data["route"])
         self._raider_visible_last = any(
             track.track_id.startswith("R-")
             for track in self.air_picture.tracks(self.sim_t, ("FLG", "ASM")))

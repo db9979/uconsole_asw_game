@@ -76,7 +76,7 @@ class BugReportMixin:
             self._bug_report_qr = None
             self.menu_screen = "scenario"
             self.main_menu = True
-            self.main_menu_sel = MAIN_MENU_ENTRIES.index(BUG_REPORT_ENTRY)
+            self.main_menu_sel = self.main_menu_index(BUG_REPORT_ENTRY)
 
     def _draw_bug_report_page(self, center) -> None:
         s = self.screen
@@ -109,6 +109,11 @@ class BugReportMixin:
 # Main-menu entries in display order (labels in ``MAIN_MENU_LABELS``).
 MAIN_MENU_ENTRIES = ("new", "training", "campaign", "load", "mission_editor",
                      "unit_editor", "contact_analyzer", "options", BUG_REPORT_ENTRY, "quit")
-MAIN_MENU_LABELS = ("menu.new_game", "menu.training", "menu.campaign", "menu.load",
-                    "menu.mission_editor", "menu.unit_editor", "menu.contact_analyzer",
-                    "option.title", "menu.bug_report", "menu.quit")
+# Catalog key of each entry's label; "continue" leads while an autosave exists.
+MAIN_MENU_LABELS = {"continue": "menu.continue", "new": "menu.new_game",
+                    "training": "menu.training", "campaign": "menu.campaign",
+                    "load": "menu.load", "mission_editor": "menu.mission_editor",
+                    "unit_editor": "menu.unit_editor",
+                    "contact_analyzer": "menu.contact_analyzer",
+                    "options": "option.title", BUG_REPORT_ENTRY: "menu.bug_report",
+                    "quit": "menu.quit"}

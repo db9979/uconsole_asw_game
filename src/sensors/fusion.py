@@ -71,6 +71,9 @@ class OPZFusionPicture:
         self.fusion_affiliations: dict[str, str] = {}
         self.show_suppressed = False
         self._sequence = 0
+        # Dismissed correlation suggestions (pair keys, oldest first). Transient
+        # like the fusions themselves: never saved, cleared with the picture.
+        self.dismissed: dict[str, None] = {}
 
     def clear(self) -> None:
         self.fusions.clear()
@@ -80,10 +83,20 @@ class OPZFusionPicture:
         self.fusion_affiliations.clear()
         self.show_suppressed = False
         self._sequence = 0
+        self.dismissed.clear()
+
+    def dismiss(self, key: str) -> None:
+        self.dismissed.pop(key, None)
+        self.dismissed[key] = None
+        while len(self.dismissed) > config.OPZ_SUGGEST_DISMISSED_MAX:
+            del self.dismissed[next(iter(self.dismissed))]
 
     def prune(self, observations) -> None:
         current = {item.observation_id for item in observations}
         self.marked.intersection_update(current)
+        for key in [key for key in self.dismissed
+                    if not set(key.split("+")) <= current]:
+            del self.dismissed[key]
         self.suppressed.intersection_update(current | set(self.fusions))
         self.classifications = {key: value for key, value in self.classifications.items()
                                 if key in current or key in self.fusions}
@@ -157,3 +170,129 @@ def source_classification(observation_id: str, observations) -> str | None:
     """Look up an annotation using detached reports only, never producer labels."""
     return next((item.classification for item in observations
                  if item.observation_id == observation_id), None)
+
+
+@dataclass(frozen=True)
+class CorrelationSuggestion:
+    """A candidate pairing of two published reports; never applied by itself."""
+    key: str
+    members: tuple[str, str]
+    bearing: float
+    bearing_delta_deg: float
+    distance_nm: float | None
+    score: float
+
+
+# Sensor families whose reports may be suggested together (different families
+# only). Remote reports (buoys, dipping sonar, helicopter MAD), home-on-jam
+# strobes, datalinked own weapons and fusions are never suggested.
+_REMOTE_PREFIXES = ("SONAR-BUOY", "SONAR-DIP", "HELO")
+_AIR_KINDS = ("FLG", "ASM", "AIR", "HELO")
+
+
+def suggestion_key(members) -> str:
+    return "+".join(sorted(members))
+
+
+def _sensor_family(observation) -> str | None:
+    source = observation.source
+    if source.startswith(_REMOTE_PREFIXES):
+        return None
+    if source.startswith("SONAR"):
+        return "SONAR"
+    if source.startswith("RADAR"):
+        return "RADAR"
+    if source == "ESM":
+        return "ESM"
+    if source == "LOOKOUT":
+        return "VISUAL"
+    return None
+
+
+def _own_bearing(observation, own_x: float, own_y: float, observer_nm: float):
+    """Bearing (and position) of a report as seen from the frigate, or None."""
+    if observation.x is not None and observation.y is not None:
+        dx, dy = observation.x - own_x, observation.y - own_y
+        return (math.degrees(math.atan2(dx, -dy)) % 360.0,
+                (observation.x, observation.y), math.hypot(dx, dy))
+    if (observation.observer_x is not None and observation.observer_y is not None
+            and math.hypot(observation.observer_x - own_x,
+                           observation.observer_y - own_y) > observer_nm):
+        return None
+    return observation.bearing % 360.0, None, None
+
+
+def suggest_correlations(observations, own_x: float, own_y: float, now: float, *,
+                         fused=(), dismissed=(), limit: int | None = None,
+                         ) -> tuple[CorrelationSuggestion, ...]:
+    """Suggest cross-sensor pairings from detached OPZ reports only.
+
+    Pure and bounded: the same reports, own position and time always give the
+    same suggestions in the same order. Each report appears in at most one
+    suggestion; reports already fused and dismissed pairings are skipped.
+    """
+    limit = config.OPZ_SUGGEST_MAX if limit is None else limit
+    fused = set(fused)
+    dismissed = set(dismissed)
+    candidates = []
+    for item in observations:
+        family = _sensor_family(item)
+        if (family is None or item.observation_id in fused
+                or not 0.0 <= now - item.last_seen <= config.OPZ_SUGGEST_MAX_AGE_S):
+            continue
+        geometry = _own_bearing(item, own_x, own_y, config.OPZ_SUGGEST_OBSERVER_NM)
+        if geometry is None:
+            continue
+        candidates.append((item, family, *geometry))
+    candidates.sort(key=lambda row: (-row[0].last_seen, row[0].observation_id))
+    del candidates[config.OPZ_SUGGEST_CANDIDATES_MAX:]
+    candidates.sort(key=lambda row: row[0].observation_id)
+    pairs = []
+    for index, (first, family_a, bearing_a, pos_a, range_a) in enumerate(candidates):
+        for second, family_b, bearing_b, pos_b, range_b in candidates[index + 1:]:
+            if family_a == family_b:
+                continue
+            if "SONAR" in (family_a, family_b) and (
+                    first.kind in _AIR_KINDS or second.kind in _AIR_KINDS):
+                continue
+            key = suggestion_key((first.observation_id, second.observation_id))
+            if key in dismissed:
+                continue
+            unc_a = (first.bearing_uncertainty_deg
+                     if first.bearing_uncertainty_deg is not None
+                     else config.OPZ_SUGGEST_BEARING_DEFAULT_UNC_DEG)
+            unc_b = (second.bearing_uncertainty_deg
+                     if second.bearing_uncertainty_deg is not None
+                     else config.OPZ_SUGGEST_BEARING_DEFAULT_UNC_DEG)
+            gate = min(config.OPZ_SUGGEST_BEARING_MAX_DEG,
+                       config.OPZ_SUGGEST_BEARING_BASE_DEG + math.hypot(unc_a, unc_b))
+            delta = abs(config.angle_diff_deg(bearing_a, bearing_b))
+            if delta > gate:
+                continue
+            score = delta / gate
+            distance = None
+            if pos_a is not None and pos_b is not None:
+                distance = math.hypot(pos_a[0] - pos_b[0], pos_a[1] - pos_b[1])
+                position_gate = (config.OPZ_SUGGEST_POSITION_NM
+                                 + config.OPZ_SUGGEST_POSITION_RANGE_SHARE
+                                 * min(range_a, range_b))
+                if distance > position_gate:
+                    continue
+                score = .5 * (score + distance / position_gate)
+            mean = math.degrees(math.atan2(
+                math.sin(math.radians(bearing_a)) + math.sin(math.radians(bearing_b)),
+                math.cos(math.radians(bearing_a)) + math.cos(math.radians(bearing_b))
+            )) % 360.0
+            pairs.append(CorrelationSuggestion(
+                key, tuple(sorted((first.observation_id, second.observation_id))),
+                mean, delta, distance, round(score, 9)))
+    pairs.sort(key=lambda item: (item.score, item.key))
+    chosen, used = [], set()
+    for pair in pairs:
+        if len(chosen) >= limit:
+            break
+        if used.intersection(pair.members):
+            continue
+        used.update(pair.members)
+        chosen.append(pair)
+    return tuple(chosen)

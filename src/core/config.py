@@ -376,6 +376,9 @@ UBOOT_HULL_SEAL_CHANCE = 0.3
 UBOOT_HULL_FRACTURE_DAMAGE = 30.0
 UBOOT_HULL_SEAL_DAMAGE = 12.0
 UBOOT_HULL_BOLTS_DAMAGE = 6.0
+# The crew calls "approaching test depth" when a crewed boat passes this
+# fraction of its test depth going down, and "below test depth" beyond it.
+UBOOT_TEST_DEPTH_WARN_FRACTION = 0.9
 # Boat atmosphere (cues only, never simulation): the hull creaks from
 # UBOOT_CREAK_START of test depth, a check every UBOOT_CREAK_TICK_S with a
 # chance growing to 1 at test depth; detonations are heard out to
@@ -532,6 +535,22 @@ NATO_AFFILIATION_LABELS = {
 OPZ_FUSION_MAX = 32
 OPZ_FUSION_MEMBER_MIN = 2
 OPZ_FUSION_MEMBER_MAX = 8
+# OPZ correlation suggestions (src/sensors/fusion.py ``suggest_correlations``):
+# two published reports from different sensors on the same bearing from the
+# frigate. The bearing gate is the base plus both reports' bearing
+# uncertainties (root-sum-square, missing ones count as the default), capped;
+# reports with positions must also lie within the position gate (plus a share
+# of their range). Only reports seen within the age limit are compared.
+OPZ_SUGGEST_MAX = 4
+OPZ_SUGGEST_CANDIDATES_MAX = 48
+OPZ_SUGGEST_DISMISSED_MAX = 32
+OPZ_SUGGEST_BEARING_BASE_DEG = 1.5
+OPZ_SUGGEST_BEARING_DEFAULT_UNC_DEG = 2.0
+OPZ_SUGGEST_BEARING_MAX_DEG = 8.0
+OPZ_SUGGEST_POSITION_NM = 1.5
+OPZ_SUGGEST_POSITION_RANGE_SHARE = 0.1
+OPZ_SUGGEST_MAX_AGE_S = 30.0
+OPZ_SUGGEST_OBSERVER_NM = 0.5
 
 # M10: Telegraph & Maschinenraum (diskrete Motorenbefehle)
 TELEGRAPH_ORDERS = (
@@ -889,6 +908,9 @@ SECOND_SUB_POOL = ("aip_modern", "ssn", "aip_modern")
 # M6: Missions-System
 SAVE_DIR = os.path.expanduser("~/.u-jagd")
 SAVE_PATH = os.path.join(SAVE_DIR, "save.json")   # Legacy (v1)
+# A running mission is written to SAVE_DIR/autosave.json this often (wall
+# seconds) and on a normal quit; "Continue" in the main menu resumes it.
+AUTOSAVE_INTERVAL_S = 300.0
 SAVE_SLOTS = 5
 MISSION_ESCAPE_RADIUS_NM = 150.0   # Ziel-Boot gilt als entkommen ab dieser Distanz zum Startpunkt
 SCORE_SUNK = 1000                  # pro versenktem Ziel-U-Boot

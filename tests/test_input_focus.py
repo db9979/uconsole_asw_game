@@ -405,11 +405,15 @@ def test_quit_dialog_returns_to_main_menu_without_saving(game):
     press(game, pygame.K_RETURN)
     assert game.running and game.in_menu and game.main_menu
     assert not game.administration_open
-    assert not list(Path(config.SAVE_DIR).glob("*.json"))
+    # No slot is written; the mission left behind is kept in the autosave only,
+    # and the menu offers to continue it.
+    assert [path.name for path in Path(config.SAVE_DIR).glob("*.json")] == ["autosave.json"]
+    assert game.main_menu_entries()[game.main_menu_sel] == "continue"
     sim_t = game.sim_t
     game.update(1.0)
     assert game.sim_t == sim_t
     # "New game" -> unit (frigate) -> scenario list -> briefing starts a fresh mission.
+    press(game, pygame.K_DOWN)
     press(game, pygame.K_RETURN)
     assert game.menu_screen == "side"
     press(game, pygame.K_RETURN)
@@ -418,6 +422,8 @@ def test_quit_dialog_returns_to_main_menu_without_saving(game):
     press(game, pygame.K_RETURN)
     assert not game.in_menu and game.scenario_key == config.SCENARIO_ORDER[1]
     assert game.sim_t == 0.0 and not game.game_over
+    # The new mission replaced the one the autosave held.
+    assert not list(Path(config.SAVE_DIR).glob("*.json"))
 
 
 def test_quit_dialog_last_entry_still_exits_without_saving(game):

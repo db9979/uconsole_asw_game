@@ -69,6 +69,7 @@ export function renderBridgeStation(payload) {
     ["threat_tracks", payload.threat.observations.map((row) => row.label).join(", ") || t("station_none")],
     ["torpedo_warning", payload.threat.torpedoes.length ? t(`torpedo_warning_${payload.threat.torpedoes[0].source}`, {
       bearing: number(payload.threat.torpedoes[0].bearing, 1), age: number(payload.threat.torpedoes[0].age_s, 0)}) : t("torpedo_warning_none")]]);
+  renderRoute(payload.route);
   stationRows($("bridge-tactical"), payload.tactical_summary, tacticalEntries);
   renderSightings(payload.sightings);
   wireGlasses();
@@ -83,6 +84,20 @@ export function renderBridgeStation(payload) {
     speed: number(weather.wind_speed_kn, 0), rain: number(weather.rain_intensity * 100, 0),
     visibility: number(weather.visibility_nm, 1),
   });
+}
+// The autopilot route: next waypoint with bearing and distance, or none.
+function renderRoute(route) {
+  const next = route.points[0], own = S.v2State.bridge.navigation;
+  let text = t("bridge_route_none");
+  if (next) {
+    const dx = next.x - own.x, dy = next.y - own.y;
+    text = t("bridge_route_next", {pattern: t(`bridge_route_pattern_${route.pattern}`), number: next.number,
+      total: route.total, bearing: number((Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360, 0).padStart(3, "0"),
+      range: number(Math.hypot(dx, dy), 1)});
+  }
+  if ($("bridge-route-status").textContent !== text) $("bridge-route-status").textContent = text;
+  $("bridge-route-clear").disabled = !next;
+  $("bridge-route-mode").setAttribute("aria-pressed", String(S.bridgeRouteMode));
 }
 function renderSightings(rows) {
   const list = $("bridge-sightings");

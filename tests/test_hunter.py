@@ -239,3 +239,50 @@ def test_a_located_boat_is_passed_to_a_friendly_escorts_asroc():
     far = dict(found, x=escort.x + high + 5.0)
     escort.pending_asroc.clear()
     assert hunter.asroc(game, far) == "monitoring"          # out of the weapon's range
+
+
+def _listen_esm(game, seconds=120):
+    for _ in range(seconds):
+        game.sim_t += 1.0
+        game._update_esm_picture()
+    game.sonar.contacts.clear()
+
+
+def test_an_esm_bearing_on_a_mast_radar_becomes_the_search_line():
+    game, boat = _local_boat(seed=61)
+    _place(game, boat, 15.0, bearing=90.0, depth=12.0)
+    _listen_esm(game)
+    lines = hunter.esm_bearings(game)
+    assert len(lines) == 1 and abs(lines[0].bearing - 90.0) < 5.0
+    found = hunter.datum(game)
+    assert found["source"] == "esm" and "x" not in found
+    assert abs(found["bearing"] - lines[0].bearing) < 1e-9
+    point = hunter.datum_point(game, found)
+    assert abs(point[1] - game.ship.y) < 2.0 and point[0] > game.ship.x
+    hunter.bridge(game, found)
+    assert game.ship.target_speed == hunter.SEARCH_KN + 2.0
+
+
+def test_a_ship_on_the_bearing_explains_the_radar(monkeypatch):
+    game, boat = _local_boat(seed=61)
+    _place(game, boat, 15.0, bearing=90.0, depth=12.0)
+    _listen_esm(game)
+    monkeypatch.setattr(hunter, "_surface_bearings", lambda _game: [92.0])
+    assert hunter.esm_bearings(game) == []
+    assert hunter.datum(game) is None
+
+
+def test_a_deep_boat_radiates_nothing_for_the_esm():
+    game, boat = _local_boat(seed=61)
+    _place(game, boat, 15.0, bearing=90.0, depth=60.0)
+    _listen_esm(game)
+    assert hunter.esm_bearings(game) == []
+    assert hunter.datum(game) is None
+
+
+def test_the_submarine_radar_library_holds_only_submarine_emitters():
+    game, _boat = _local_boat(seed=61)
+    keys = hunter.sub_emitters(game)
+    assert "emitter.sub_01.mast_radar" in keys
+    assert not any(key.startswith("emitter.aux_") for key in keys)
+    assert config.HELO_RADAR_EMITTER not in keys

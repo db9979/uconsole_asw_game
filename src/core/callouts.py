@@ -24,7 +24,10 @@ MAX_CALLOUTS = 16
 PREFIX = "commander.web.callout_"
 KEYS = ("torpedo", "contact", "breakup", "torpedo_away", "hit", "won", "lost",
         "action_stations", "mpa_on_station", "ping", "dipping", "buoy_ping", "splash",
-        "evade", "mast_threat", "leak", "fire",
+        "evade", "mast_threat", "leak", "fire", "detonation_near", "detonation",
+        "broadcast", "broadcast_report", "sighting_warship", "sighting_merchant",
+        "sighting_aircraft", "sighting_torpedo", "sighting_unknown", "test_depth_near",
+        "test_depth_over", "hull_damage",
         # The phone lookout's and periscope's own calls (src/core/phone_lookout.py).
         "lookout_contact", "lookout_ship", "lookout_warship", "lookout_merchant",
         "lookout_aircraft", "lookout_submarine", "lookout_torpedo")
@@ -59,9 +62,32 @@ _BOAT = {
     "uboot.event.dc_leak": "leak",
     "uboot.event.dc_fire": "fire",
     "crew.action_stations_on": "action_stations",
+    "uboot.event.torpedo_fired": "torpedo_away",
+    "uboot.event.torpedo_fired_tubeless": "torpedo_away",
+    "uboot.event.detonation_near": "detonation_near",
+    "uboot.event.detonation_far": "detonation",
+    "uboot.event.breakup_heard": "breakup",
+    "uboot.event.radio_copied": "broadcast",
+    "uboot.event.radio_copied_report": "broadcast_report",
+    "uboot.event.sighting_warship": "sighting_warship",
+    "uboot.event.sighting_merchant": "sighting_merchant",
+    "uboot.event.sighting_aircraft": "sighting_aircraft",
+    "uboot.event.sighting_torpedo": "sighting_torpedo",
+    "uboot.event.sighting_unknown": "sighting_unknown",
+    "uboot.event.test_depth_near": "test_depth_near",
+    "uboot.event.test_depth_over": "test_depth_over",
+    "uboot.event.hull_hit": "hit",
+    "uboot.event.hull_bolts": "hull_damage",
+    "uboot.event.hull_seal": "hull_damage",
+    "uboot.event.hull_fracture": "hull_damage",
+    "uboot.event.hull_collapse": "hull_damage",
+    "uboot.event.mission_won": "won",
+    "uboot.event.mission_lost": "lost",
 }
 _WITH_BEARING = frozenset({"torpedo", "contact", "breakup", "ping", "dipping", "buoy_ping",
-                           "splash"} | {key for key in KEYS if key.startswith("lookout_")})
+                           "splash", "detonation_near", "detonation", "sighting_warship",
+                           "sighting_merchant", "sighting_aircraft", "sighting_torpedo",
+                           "sighting_unknown"} | {key for key in KEYS if key.startswith("lookout_")})
 SIDES = ("frigate", "boat")
 
 

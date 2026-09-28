@@ -18,6 +18,7 @@ from src.core import config
 from src.core.plot import PlotLayer
 from src.core.autocrew import AutocrewController
 from src.core.callouts import CalloutLog
+from src.ship.route import Route
 from src.core.i18n import Translator, message
 from src.core.preferences import Preferences
 from src.network.connectivity import ConnectivityMonitor
@@ -75,9 +76,9 @@ from src.core.game_sim import (
     SimMixin,
     SONAR_CLASS_KINDS,
     LOOKOUT_MODEL,
-    CIWS_TRACK_RANGE_NM,
     TORPEDO_WAKE_VISIBLE_NM,
     TORPEDO_WAKE_VISIBLE_DEPTH_M)
+from src.core.game_radar import CIWS_TRACK_RANGE_NM, RadarPictureMixin
 from src.core.game_events import (EventMixin, _ECO_REFRESH_EVENTS)
 from src.core.mission_bridge import (MissionBridgeMixin)
 from src.core.game_draw import (DrawMixin)
@@ -89,13 +90,16 @@ from src.core.game_mpa import MpaMixin
 from src.core.game_debrief import DebriefMixin
 from src.core.game_training import TrainingMixin
 from src.core.game_campaign import CampaignMixin
+from src.core.game_autosave import AutosaveMixin, CONTINUE_ENTRY
 from src.core.game_bugreport import (BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES,
                                      BugReportMixin)
+from src.core.game_welcome import WelcomeMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
+           RadarPictureMixin,
            SaveMixin, TaskingMixin, CrewMixin, MpaMixin, DebriefMixin,
-           TrainingMixin, CampaignMixin, BugReportMixin):
+           TrainingMixin, CampaignMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -209,9 +213,14 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.main_menu = bool(start_menu)
         self.main_menu_sel = 0
         self._init_bug_report()
-        if self.bug_report_offer and self.main_menu:
+        self._init_autosave()
+        self._autosave_armed = False
+        if self.main_menu and self.autosave_available:
+            # A mission was left running (quit or crash): offer "Continue".
+            self.main_menu_sel = self.main_menu_index(CONTINUE_ENTRY)
+        elif self.bug_report_offer and self.main_menu:
             # The last launch crashed: preselect "Report a bug".
-            self.main_menu_sel = MAIN_MENU_ENTRIES.index(BUG_REPORT_ENTRY)
+            self.main_menu_sel = self.main_menu_index(BUG_REPORT_ENTRY)
         self.editor = None
         self.simlog_view_open = False
         self.simlog_view_scroll = 0
@@ -252,6 +261,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._uboot_ui = False
         self._uboot_chart_drag = None
         self.reset(seed)
+        self._autosave_armed = True
+        # First launch (no settings.json): the welcome page replaces the menu.
+        self._init_welcome(start_menu)
         self.splash_active = bool(show_splash)
         self.splash_started_at = self._t
         self._splash_ping_cycle = -1
@@ -346,6 +358,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         Startposition fest. s4_zufall = seed-basiert wie vor dem Refactor.
         """
         import random
+        if getattr(self, "_autosave_armed", False):
+            # A new mission replaces the one the autosave would continue.
+            self.discard_autosave()
         # The frigate's sonar workstation; ``game.sonar`` & co. delegate to it.
         self._frigate_sonar = SonarStation(kind="frigate")
         self._sonar_ctx = self._frigate_sonar
@@ -593,6 +608,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # Shared operator plot layer (chart marks, rulers, bearing lines...).
         self.plot = PlotLayer()
         self._reset_plot_ui()
+        # The Bridge's autopilot route (save v28 ``route``).
+        self.route = Route()
         # Display-only CRT controls are intentionally transient: they affect no
         # observation, simulation or v10 save contract.
         self.sonar_display_palette = "green"

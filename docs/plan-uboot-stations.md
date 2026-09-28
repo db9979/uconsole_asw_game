@@ -152,7 +152,7 @@ plan mit auf und setzte das auch um"):
    zum Datum, befreundete KI-Kriegsschiffe mit ASROC schießen per Datenlink
    (Dominik: kein eigener Geleitzerstörer). Radarpunkte und Markierungen im
    Spielstand v25 (`radar_marks`). ESM-Peilungen der Fregatte auf das
-   Bootsradar werden noch nicht genutzt.
+   Bootsradar nutzen die Jäger seit 1.3.54 als Suchlinie.
 7. ~~**KI-U-Boot mit Auftrag**~~ erledigt in 1.3.30 (`src/core/boat_ai.py`):
    Ein unbesetztes Missionsboot fährt Durchbruch, Aufklärung (Sehrohrtiefe,
    Meldung) und Geleitzugangriff (Torpedos auf Handelsschiffe) statt zu

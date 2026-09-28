@@ -4,6 +4,98 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.59
+
+Release 1.3.59 is a clean-up with no change in play. The two largest modules
+are split along their seams: the radar, air, ECM, ESM and radio pictures with
+missiles and raiders move from the simulation step into their own module, and
+the Remote Crew station action handlers move out of the bridge into their own
+module; the code moves verbatim and the update order stays frozen. The
+changelog entry of 1.3.43 now says what that release actually fixed. Saves
+stay v28.
+
+## 1.3.58
+
+Release 1.3.58 greets a first launch with a choice. When no settings file
+exists yet, the splash is followed by one page asking what you want to play:
+Frigate opens the training with the first frigate lesson selected, Submarine
+opens the first submarine lesson and sets the uConsole to the submarine side,
+Remote Crew opens the F9 page for browser crews, and Main menu (or `Esc`) goes
+straight to the menu. Any choice is remembered, so the page appears only once.
+Saves stay v28.
+
+## 1.3.57
+
+Release 1.3.57 lets the submarine's crew speak more of its reports. Besides
+contacts, pings and torpedo warnings the boat now calls out its own torpedo
+leaving the tube, detonations close aboard or at a distance with their
+bearing, breaking-up noises its sonar can hear, a copied HQ broadcast (and
+whether it carries a contact report on the frigate), each class the periscope
+sights with its bearing, approaching and passing test depth on the way down, a
+hit, hull damage and the mission result, in English or German. Every spoken
+report comes from a line in the boat's own log, so the crew never hears more
+than it has been told. Saves stay v28.
+
+## 1.3.56
+
+Release 1.3.56 gives the OPZ correlation suggestions. When two of the ship's
+own sensors (sonar, radar, ESM, lookout) report a contact on the same bearing
+within their uncertainty (and, where both have positions, close together), the
+OPZ offers the pair for fusion: on the uConsole up to two suggestions stand in
+the page 1 sidebar, `U` fuses the top one and `Shift+U` dismisses it; the
+Remote Crew OPZ lists up to four with Fuse and Dismiss buttons. Suggestions
+only compare published reports no older than 30 s; nothing is fused without
+the operator. Saves stay v28.
+
+## 1.3.55
+
+Release 1.3.55 gives the frigate an autopilot route. On the Bridge a right
+click on the chart adds a waypoint (up to 8), `W` starts a search pattern from
+the ship's position and course (a zigzag of 3 NM legs, then an expanding
+square) and `Backspace` clears the route. The helm steers for each waypoint in
+turn, counts it reached within 0.3 NM and holds its course after the last one;
+speed stays with the telegraph, and any helm order takes over. The chart shows
+the route with numbered waypoints, and the Remote Crew bridge has an
+"Autopilot route" card with the same patterns and a chart mode for setting
+waypoints. Saves are now v28 (they keep the route); v27 saves no longer load.
+
+## 1.3.54
+
+Release 1.3.54 lets the AI hunters use the frigate's ESM. When the frigate has
+no position on the submarine, an ESM intercept of a mast radar now gives the
+search line: the library must rank a submarine radar among its three best
+matches and no ship the frigate tracks by radar or AIS may lie within 10° of
+the bearing. It competes with the HF/DF bearings by age and stays a datum for
+5 minutes, so a submarine that radiates at periscope depth draws the frigate,
+its helicopter and the patrol aircraft down that bearing. Saves stay v27.
+
+## 1.3.53
+
+Release 1.3.53 adds a guard against frozen Remote Crew browsers. A new test
+plays two busy missions (the frigate with the autocrew on every station
+against the AI submarine, and a crewed submarine with its radio, threat
+picture and HQ tasks filled), publishes every station's state and chart for
+both units and runs the browser's own validators over all of them in Node. A
+field the browser would refuse, as in 1.3.44, now fails the tests before a
+release. Nothing changes in play. Saves stay v27.
+
+## 1.3.52
+
+Release 1.3.52 lets Remote Crew browsers follow a host update by themselves.
+The host now names its version on every reply and in the page it serves; a
+browser page that is still open from before an update reloads itself once and
+so always runs the web client that matches the host, instead of freezing on
+data it cannot read. Saves stay v27.
+
+## 1.3.51
+
+Release 1.3.51 adds an autosave. A running mission is saved every 5 minutes
+and when you quit or leave it for the main menu, to `~/.u-jagd/autosave.json`
+beside the five slots. The main menu then starts with "Continue mission",
+which resumes it exactly; after a crash it holds the last 5-minute save. The
+file is written in the background so the uConsole does not stutter. A mission
+that ends and any new mission delete the autosave. Saves stay v27.
+
 ## 1.3.50
 
 Release 1.3.50 fixes Remote Crew pairing on the LAN. A freshly paired

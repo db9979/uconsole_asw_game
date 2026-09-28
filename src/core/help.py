@@ -50,7 +50,9 @@ STATION_HELP = {
          ("Q / E", "help.control.zoom"), ("K", "help.control.follow"),
          (", / .", "help.bridge.lookout_range"), ("B", "help.bridge.lookout_glasses"),
          ("↑/↓ · Q/E · Space", "help.bridge.glasses_optics"),
-         ("G", "help.control.action_stations")],
+         ("G", "help.control.action_stations"), ("W", "help.bridge.route_pattern"),
+         ("help.key.route_click", "help.bridge.route_waypoint"),
+         ("Backspace", "help.bridge.route_clear")],
         ["help.note.bridge_noise", "help.note.bridge_coast", "help.note.crew"],
         "help.note.bridge_tactic"),
     Station.SONAR: _station(
@@ -123,6 +125,7 @@ STATION_HELP = {
           ("Shift+F", "help.control.opz_filter"),
           ("J", "help.control.opz_track_id"),
           ("Space / L / Shift+L", "help.control.opz_fusion"),
+          ("U / Shift+U", "help.control.opz_suggestion"),
           ("Delete / H", "help.control.opz_suppress"),
           ("M", "help.control.designate"), ("help.key.page_spaced", "help.control.radar_range"),
          ("<- / ->", "help.control.asm_track"), ("E / Ctrl+Enter", "help.control.essm"),

@@ -30,6 +30,7 @@ from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
 from src.ui.support import draw_support_corner
 from src.core.game_bugreport import BUG_REPORT_ENTRY, MAIN_MENU_LABELS
+from src.core.game_welcome import WELCOME_SCREEN
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.weather_station import draw_weather_station
 from src.ui import uboot_view
@@ -130,18 +131,23 @@ class DrawMixin:
         draw_logo(s, cx, 34)
 
         if self.main_menu:
+            entries = self.main_menu_entries()
+            step = 400 // len(entries)
             draw_menu_panel(s, (cx - 260, 148, 520, 412),
-                            (cx - 250, 157 + self.main_menu_sel * 40, 500, 36))
-            for i, key in enumerate(MAIN_MENU_LABELS):
+                            (cx - 250, 157 + self.main_menu_sel * step, 500, step - 4))
+            for i, entry in enumerate(entries):
                 marker = "> " if i == self.main_menu_sel else "  "
                 color = config.COLOR_TEXT if i == self.main_menu_sel else config.COLOR_TEXT_DIM
                 center(message("menu.choice", marker=marker,
-                               label=self.tr(key).upper()), 175 + i * 40, color=color)
+                               label=self.tr(MAIN_MENU_LABELS[entry]).upper()),
+                       157 + step // 2 - 2 + i * step, color=color)
             if self.bug_report_offer:
                 center(self.tr("menu.bug_report.offer"), 584, color=config.COLOR_WARN)
             # Support link: main menu page only, never over a mission.
             draw_support_corner(s, config.SCREEN_W - 24, 600,
                                 config.COLOR_TEXT, config.COLOR_TEXT_DIM)
+        elif self.menu_screen == WELCOME_SCREEN:
+            self._draw_welcome_page()
         elif self.menu_screen == BUG_REPORT_ENTRY:
             self._draw_bug_report_page(center)
         elif self.menu_screen == "training":
@@ -1231,6 +1237,7 @@ class DrawMixin:
                 if commander_started is not None:
                     self._perf_traffic_s += time.perf_counter() - commander_started
                 self.update(dt, audio_dt=wall_dt)
+                self.autosave_tick(wall_dt)
                 self._perf_debug_log(wall_dt)
                 if self.web_mode:
                     game_visible()
@@ -1244,6 +1251,8 @@ class DrawMixin:
                 game_visible()
                 if draw_started is not None:
                     self._perf_draw_s += time.perf_counter() - draw_started
+            # A normal quit (never a crash) keeps the running mission.
+            self.autosave_on_exit()
         finally:
             try:
                 self.commander.stop()

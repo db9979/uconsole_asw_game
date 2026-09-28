@@ -1,4 +1,4 @@
-# U-Jagd 1.3.50 - Stations- und Tastenkürzel
+# U-Jagd 1.3.59 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -53,6 +53,9 @@ Berechtigungsprüfungen bleiben wirksam.
 | `B` | Ausguck-Seite: Fernglas über der Karte ein/aus (, / . schwenken) |
 | `↑/↓ · Q/E · Space` | Fernglas oben: ↑/↓ neigen 2° (Umschalt: 10°) statt Maschinentelegraf, Q/E Zoom (16°, 8°, 4° Feld), Leertaste Stabilisierung |
 | `G` | Gefechtsstationen an/aus |
+| `W` | Autopilot: Zickzack-Suche, wachsendes Quadrat, aus |
+| `Rechtsklick` | Autopilot-Wegpunkt auf der Karte setzen |
+| `Backspace` | Autopilot-Route löschen |
 
 ## 2 Sonar
 
@@ -145,6 +148,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Shift+F` | OPZ-Kontaktdomainfilter wechseln |
 | `J` | Gemeinsame bedienersichtbare Track-ID eingeben |
 | `Space / L / Shift+L` | Rohmeldungen markieren und manuelle Fusion bilden/auflösen (Shift+L) |
+| `U / Shift+U` | Obersten Zuordnungsvorschlag fusionieren (Shift+U verwirft ihn) |
 | `Delete / H` | Lokal unterdrücken/wiederherstellen; H verwaltet Unterdrückte |
 | `M` | CIC-Track an Sonar/Waffen übergeben |
 | `Bild Auf / Ab` | Radarbereich 10/20/40/80/120 NM |

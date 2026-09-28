@@ -54,6 +54,8 @@ def render_block() -> str:
     lines.append(f"    row: {_array(schema.MPA_FIELDS)},\n")
     lines.append(f"    states: {_array(schema.MPA_STATES)},\n")
     lines.append("  };\n")
+    lines.append("  const opzSuggestionFields = "
+                 f"{_array(schema.OPZ_SUGGESTION_FIELDS)};\n")
     lines.append("  const helicopterTacticalFields = "
                  f"{_array(schema.HELICOPTER_TACTICAL_FIELDS)};\n")
     lines.append("  const weatherFields = {\n")
@@ -70,6 +72,11 @@ def render_block() -> str:
     lines.append(f"    phoneOutline: {_array(schema.LOOKOUT_PHONE_OUTLINE_FIELDS)},\n")
     lines.append(f"    call: {_array(schema.LOOKOUT_CALL_FIELDS)},\n")
     lines.append(f"    callCategories: {_array(schema.LOOKOUT_CALL_CATEGORIES)},\n")
+    lines.append("  };\n")
+    lines.append("  const routeFields = {\n")
+    lines.append(f"    row: {_array(schema.BRIDGE_ROUTE_FIELDS)},\n")
+    lines.append(f"    point: {_array(schema.BRIDGE_ROUTE_POINT_FIELDS)},\n")
+    lines.append(f"    patterns: {_array(schema.BRIDGE_ROUTE_PATTERNS)},\n")
     lines.append("  };\n")
     lines.append("  const boatFields = {\n")
     lines.append(f"    plant: {_array(schema.UBOOT_PLANT_FIELDS)},\n")

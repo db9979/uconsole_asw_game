@@ -12,7 +12,10 @@ import { roleMapSweepCanvas, roleMapSweepCtx } from "./canvases.js";
 
 export function mapPayload(role) {
   const payload = S.v2State[role];
-  if (role === "bridge") return {own: payload.navigation, observations: payload.tactical_summary, assets: [], bearingLogs: [], fixes: []};
+  // The bridge's autopilot route: the waypoints still ahead, numbered.
+  if (role === "bridge") return {own: payload.navigation, observations: payload.tactical_summary,
+    assets: payload.route.points.map((row) => ({x: row.x, y: row.y, waypoint: true,
+      display: t("bridge_route_point", {number: row.number})})), bearingLogs: [], fixes: []};
   if (role === "weapons") return {own: payload.navigation, observations: payload.tactical, assets: payload.active_assets, bearingLogs: [], fixes: []};
   if (role === "opz") return {own: payload.own_assets.ship, observations: [...payload.observations, ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : []), ...payload.own_assets.weapons], bearingLogs: [], fixes: []};
   if (role === "radio") return {own: payload.navigation, observations: payload.tactical, assets: [], bearingLogs: payload.logged_bearings, fixes: payload.logged_fixes};
@@ -377,6 +380,13 @@ export function drawRoleMap(role) {
     const [x, y] = point(log.observer_x, log.observer_y), angle = log.bearing * Math.PI / 180;
     plot.context.strokeStyle = palette().amber; plot.context.setLineDash([3, 4]); plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(x + Math.sin(angle) * plot.width, y - Math.cos(angle) * plot.width); plot.context.stroke(); plot.context.setLineDash([]);
   }
+  if (role === "bridge" && payload.route.points.length && hasPosition(data.own)) {
+    // The route leg by leg from the ship through each waypoint still ahead.
+    plot.context.strokeStyle = palette().amber; plot.context.setLineDash([6, 4]); plot.context.beginPath();
+    plot.context.moveTo(ox, oy);
+    for (const row of payload.route.points) plot.context.lineTo(...point(row.x, row.y));
+    plot.context.stroke(); plot.context.setLineDash([]);
+  }
   for (const item of [...data.fixes, ...data.assets]) if (hasPosition(item)) {
     const [x, y] = point(item.x, item.y);
     addRoleMapHit(null, x, y);
@@ -390,7 +400,7 @@ export function drawRoleMap(role) {
       plot.context.stroke();
     } else if (finite(item.uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, item.uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
     plot.context.strokeRect(x - 4, y - 4, 8, 8);
-    plot.context.fillStyle = plot.context.strokeStyle; plot.context.fillText(item.waypoint ? t("station_waypoint") : item.display || item.ref || t("helicopter"), x + 6, y + 12);
+    plot.context.fillStyle = plot.context.strokeStyle; plot.context.fillText(item.waypoint ? item.display || t("station_waypoint") : item.display || item.ref || t("helicopter"), x + 6, y + 12);
   }
   if (role === "opz") {
     // Bare mast/snorkel echoes: an afterglow dot, no symbol; a click marks it.

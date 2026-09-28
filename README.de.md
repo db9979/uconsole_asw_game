@@ -14,16 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.50**
+Aktuelle Version: **1.3.59**
 
-Version 1.3.50 repariert die Remote-Crew-Kopplung im LAN. Ein frisch
-gekoppelter Browser begrüßt nicht mehr mit „Deine Station wurde widerrufen oder
-freigegeben“, als wäre die Kopplung gescheitert, sondern mit der Aufforderung,
-eine freie Station zu nehmen. Die Crew-Seite sagt jetzt, wenn sie in einem
-Browser läuft, der nicht Chrome oder Chromium (auch Edge) ist: Firefox und
-Safari zeigen über dem Kopplungscode einen Hinweis, und eine Seite, die dort
-nicht starten kann, sagt das, statt endlos zu laden. Der Navigationsvorschlag
-der Brücke nimmt die vollen 31 kn der Fregatte an; Spielstände bleiben v27.
+Version 1.3.59 räumt auf, ohne das Spiel zu ändern. Die beiden größten Module
+sind entlang ihrer Nähte geteilt: Radar-, Luft-, ECM-, ESM- und Funklage mit
+Flugkörpern und Angreifern ziehen aus dem Simulationsschritt in ein eigenes
+Modul, und die Aktionen der Remote-Crew-Stationen ziehen aus der Brücke in ein
+eigenes Modul; der Code wird unverändert verschoben, und die
+Aktualisierungsreihenfolge bleibt eingefroren. Der Changelog-Eintrag zu 1.3.43
+beschreibt jetzt, was diese Version tatsächlich behoben hat. Spielstände
+bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -433,7 +433,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v27 gespeichert.
+v28 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -515,7 +515,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion, API-Protokoll **v2** und Speicherformat **v27** sind
+Anwendungsversion, API-Protokoll **v2** und Speicherformat **v28** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -572,8 +572,8 @@ Version gilt:
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v27**. V27
-verlangt das exakte Schema `u-jagd-save-v27` einschließlich der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v28**. V28
+verlangt das exakte Schema `u-jagd-save-v28` einschließlich der Autopilot-Route der Fregatte, der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
 der Fregatte, des Funkraums des besetzten U-Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen

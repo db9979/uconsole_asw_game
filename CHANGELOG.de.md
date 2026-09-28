@@ -4,6 +4,107 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.59
+
+Version 1.3.59 räumt auf, ohne das Spiel zu ändern. Die beiden größten Module
+sind entlang ihrer Nähte geteilt: Radar-, Luft-, ECM-, ESM- und Funklage mit
+Flugkörpern und Angreifern ziehen aus dem Simulationsschritt in ein eigenes
+Modul, und die Aktionen der Remote-Crew-Stationen ziehen aus der Brücke in ein
+eigenes Modul; der Code wird unverändert verschoben, und die
+Aktualisierungsreihenfolge bleibt eingefroren. Der Changelog-Eintrag zu 1.3.43
+beschreibt jetzt, was diese Version tatsächlich behoben hat. Spielstände
+bleiben v28.
+
+## 1.3.58
+
+Version 1.3.58 begrüßt den ersten Start mit einer Auswahl. Gibt es noch keine
+Einstellungsdatei, folgt auf das Startbild eine Seite mit der Frage, was du
+spielen möchtest: Fregatte öffnet das Training mit der ersten Fregatten-
+Lektion, U-Boot öffnet die erste U-Boot-Lektion und stellt die uConsole auf
+die U-Boot-Seite, Remote Crew öffnet die F9-Seite für Browser-Crews, und
+Hauptmenü (oder `Esc`) führt direkt ins Menü. Die Wahl wird gemerkt, die Seite
+erscheint also nur einmal. Spielstände bleiben v28.
+
+## 1.3.57
+
+Version 1.3.57 lässt die U-Boot-Besatzung mehr Meldungen sprechen. Neben
+Kontakten, Ortungsimpulsen und Torpedowarnungen meldet das Boot jetzt den
+eigenen Torpedo los, Detonationen nah oder fern mit Peilung, Sinkgeräusche,
+die sein Sonar hören kann, einen aufgenommenen Rundspruch der Führung (und ob
+er eine Feindlagemeldung zur Fregatte enthält), jede Klasse, die das Sehrohr
+sichtet, mit Peilung, das Annähern an die und Unterschreiten der Testtiefe
+beim Tauchen, einen Treffer, Schäden am Druckkörper und das Missionsergebnis,
+auf Deutsch oder Englisch. Jede gesprochene Meldung stammt aus einer Zeile im
+eigenen Bordbuch, die Besatzung hört also nie mehr, als ihr gemeldet wurde.
+Spielstände bleiben v28.
+
+## 1.3.56
+
+Version 1.3.56 gibt der OPZ Zuordnungsvorschläge. Melden zwei eigene Sensoren
+des Schiffs (Sonar, Radar, ESM, Ausguck) einen Kontakt in derselben Peilung
+innerhalb ihrer Unsicherheit (und, wo beide eine Position haben, nah
+beieinander), bietet die OPZ das Paar zur Fusion an: auf der uConsole stehen
+bis zu zwei Vorschläge in der Seitenleiste von Seite 1, `U` fusioniert den
+obersten und `Umschalt+U` verwirft ihn; die Remote-Crew-OPZ listet bis zu vier
+mit Knöpfen zum Fusionieren und Verwerfen. Verglichen werden nur
+veröffentlichte Meldungen, die höchstens 30 s alt sind; ohne den Bediener wird
+nichts fusioniert. Spielstände bleiben v28.
+
+## 1.3.55
+
+Version 1.3.55 gibt der Fregatte eine Autopilot-Route. Auf der Brücke setzt
+ein Rechtsklick in die Karte einen Wegpunkt (bis zu 8), `W` startet ein
+Suchmuster ab Position und Kurs des Schiffs (Zickzack mit 3 sm langen
+Schlägen, dann wachsendes Quadrat), und `Rücktaste` löscht die Route. Das
+Ruder steuert die Wegpunkte nacheinander an, zählt einen innerhalb von 0,3 sm
+als erreicht und hält nach dem letzten den Kurs; die Fahrt bleibt beim
+Maschinentelegrafen, und jeder Ruderbefehl übernimmt. Die Karte zeigt die
+Route mit nummerierten Wegpunkten, und die Remote-Crew-Brücke hat eine Karte
+„Autopilot-Route“ mit denselben Mustern und einem Kartenmodus zum Setzen von
+Wegpunkten. Spielstände sind jetzt v28 (sie behalten die Route); v27-Stände
+laden nicht mehr.
+
+## 1.3.54
+
+Version 1.3.54 lässt die KI-Jäger das ESM der Fregatte nutzen. Hat die
+Fregatte keinen Standort des U-Boots, gibt jetzt ein ESM-Intercept eines
+Mastradars die Suchlinie: Die Bibliothek muss unter ihren drei besten Treffern
+ein U-Boot-Radar führen, und kein Schiff, das die Fregatte per Radar oder AIS
+verfolgt, darf innerhalb 10° der Peilung stehen. Die Peilung konkurriert nach
+Alter mit den HF/DF-Peilungen und bleibt 5 Minuten ein Datum; ein U-Boot, das
+auf Sehrohrtiefe sein Radar benutzt, zieht so Fregatte, Hubschrauber und
+Seefernaufklärer auf diese Peilung. Spielstände bleiben v27.
+
+## 1.3.53
+
+Version 1.3.53 bringt eine Absicherung gegen eingefrorene Remote-Crew-Browser.
+Ein neuer Test spielt zwei belebte Missionen (die Fregatte mit Autocrew auf
+allen Stationen gegen das KI-U-Boot und ein besetztes U-Boot mit gefülltem
+Funkraum, Bedrohungsbild und HQ-Aufträgen), veröffentlicht Zustand und Karte
+jeder Station beider Einheiten und prüft sie alle in Node mit den Prüfroutinen
+des Browsers selbst. Ein Feld, das der Browser ablehnen würde, wie in 1.3.44,
+lässt jetzt die Tests vor einem Release scheitern. Am Spiel ändert sich
+nichts. Spielstände bleiben v27.
+
+## 1.3.52
+
+Version 1.3.52 lässt Remote-Crew-Browser einem Update des Hosts selbst folgen.
+Der Host nennt seine Version jetzt in jeder Antwort und in der Seite, die er
+ausliefert; eine Browserseite, die noch von vor dem Update offen ist, lädt
+sich einmal selbst neu und läuft so immer mit dem Web-Client, der zum Host
+passt, statt an Daten hängen zu bleiben, die sie nicht lesen kann. Spielstände
+bleiben v27.
+
+## 1.3.51
+
+Version 1.3.51 bringt einen Autosave. Eine laufende Mission wird alle 5
+Minuten und beim Beenden oder Verlassen ins Hauptmenü nach
+`~/.u-jagd/autosave.json` gespeichert, neben den fünf Plätzen. Das Hauptmenü
+beginnt dann mit „Einsatz fortsetzen“, das sie exakt weiterführt; nach einem
+Absturz ist es der letzte 5-Minuten-Stand. Die Datei wird im Hintergrund
+geschrieben, damit die uConsole nicht ruckelt. Eine beendete und jede neue
+Mission löschen den Autosave. Spielstände bleiben v27.
+
 ## 1.3.50
 
 Version 1.3.50 repariert die Remote-Crew-Kopplung im LAN. Ein frisch

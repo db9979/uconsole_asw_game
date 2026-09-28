@@ -49,6 +49,8 @@ class Capture:
     scene: str = "role"
     extra_roles: tuple[str, ...] = ()
     aliases: tuple[str, ...] = ()
+    # Eyepiece pictures run in their own arranged world (``sight_capture``).
+    sight: str | None = None
 
 
 def capture_specs() -> tuple[Capture, ...]:
@@ -71,6 +73,16 @@ def capture_specs() -> tuple[Capture, ...]:
         Capture("commander-wide.png", "en", 2560, 1440, "sonar"),
         Capture("commander-4k.png", "en", 3840, 2160, "bridge"),
     ))
+    # The bridge lookout's binoculars and the submarine's periscope by day
+    # and by night (the Mast & ESM station owns the periscope card).
+    for language in ("en", "de"):
+        for sight in ("day", "night"):
+            captures.extend((
+                Capture(f"commander-v2-{language}-binoculars-{sight}.png", language,
+                        *DESKTOP, "bridge", scene="glasses", sight=sight),
+                Capture(f"commander-v2-{language}-periscope-{sight}.png", language,
+                        *DESKTOP, "uboot_esm", scene="periscope", sight=sight),
+            ))
     return tuple(captures)
 
 
@@ -118,6 +130,8 @@ AUTOMATION = r"""
   }
 
   function instrumentFor(role) {
+    if (scene === "glasses") return $("bridge-glasses-canvas");
+    if (scene === "periscope") return $("uboot-scope-canvas");
     if (["bridge", "weapons", "opz", "helicopter"].includes(role)) return $("role-map");
     if (role === "radio") return $("radio-df-scope");
     return $({sonar: "sonar-broadband", damage: "damage-schematic",
@@ -130,7 +144,9 @@ AUTOMATION = r"""
     if (scene === "sonar") target = $("sonar-audition-mode");
     if (scene === "radio") target = $("radio-messages").lastElementChild || $("radio-messages");
     if (scene === "multi") target = $("station-tabs");
-    if (target) target.scrollIntoView({block: scene === "multi" ? "start" : "center"});
+    if (scene === "glasses") target = $("bridge-glasses-canvas").closest("article");
+    if (scene === "periscope") target = $("uboot-scope-canvas").closest("article");
+    if (target) target.scrollIntoView({block: ["multi", "glasses", "periscope"].includes(scene) ? "start" : "center"});
     else scrollTo(0, 0);
     positioned = true;
   }
@@ -175,7 +191,7 @@ AUTOMATION = r"""
       return;
     }
 
-    const section = $(`station-${expectedRole}`);
+    const section = $(`station-${expectedRole}`) || $("station-uboot");
     const selectedRole = document.querySelector(".station-tab[aria-selected='true']")?.dataset.station || "";
     const selectorCount = $("station-tabs").children.length;
     const canvas = instrumentFor(expectedRole);
@@ -329,6 +345,23 @@ def _capture_one(spec: Capture, temporary: Path, chromium: str, server,
         server._http.assets.pop(page_path, None)
 
 
+def _workstation_world(game) -> None:
+    """The seeded patrol the nine workstation captures show."""
+    game.set_sonar_audition_mode("FILTERED")
+    game.set_sonar_band_preset("SHAFT")
+    game.set_sonar_notch(True)
+    for _ in range(360):
+        game.update(1 / 60)
+    # Authored own-ship damage demonstrates the real damage UI;
+    # contacts and mission intelligence still come from Game.
+    for key, flood, fire in (("sonar", 12.0, 0.0),
+                             ("engine", 7.0, 9.0)):
+        compartment = game.damage.compartments[key]
+        compartment.state = "BESCHAEDIGT"
+        compartment.flood, compartment.fire = flood, fire
+    game.damage.teams = {1: "sonar", 2: "engine", 3: "engine"}
+
+
 def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000) -> None:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     os.environ["SDL_AUDIODRIVER"] = "dummy"
@@ -347,32 +380,31 @@ def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000) -
             from src.core.i18n import load_catalog
             from src.core.preferences import Preferences
 
+            from sight_capture import SIGHT_TIMES, sight_world
+
             translations = {lang: load_catalog(lang) for lang in ("en", "de")}
-            for language in ("en", "de"):
+            hours = dict(SIGHT_TIMES)
+            for language, sight in ((language, sight) for language in ("en", "de")
+                                    for sight in (None, *hours)):
+                specs = [item for item in capture_specs()
+                         if item.language == language and item.sight == sight]
+                if not specs:
+                    continue
                 game = Game(seed=seed, start_menu=False, show_splash=False,
                             preferences=Preferences(language=language, fullscreen=False,
                                                     audio=False))
                 server = CommanderServer(translations)
                 bridge = CommanderBridge()
                 try:
-                    game.set_sonar_audition_mode("FILTERED")
-                    game.set_sonar_band_preset("SHAFT")
-                    game.set_sonar_notch(True)
-                    for _ in range(360):
-                        game.update(1 / 60)
+                    if sight is None:
+                        _workstation_world(game)
+                    else:
+                        sight_world(game, hours[sight])
                     # Keep browser rendering independent of performance.now();
                     # the OPZ sweep is otherwise the only continuously animated
                     # workstation instrument after the simulation is frozen.
                     game.surface_radar_on = False
                     game.air_radar_on = False
-                    # Authored own-ship damage demonstrates the real damage UI;
-                    # contacts and mission intelligence still come from Game.
-                    for key, flood, fire in (("sonar", 12.0, 0.0),
-                                             ("engine", 7.0, 9.0)):
-                        compartment = game.damage.compartments[key]
-                        compartment.state = "BESCHAEDIGT"
-                        compartment.flood, compartment.fire = flood, fire
-                    game.damage.teams = {1: "sonar", 2: "engine", 3: "engine"}
                     capture_clock = [time.monotonic()]
                     bridge.pump(game, server, now=capture_clock[0])
                     server.start("127.0.0.1", 0)
@@ -381,8 +413,7 @@ def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000) -
                     server._http.assets["/css/base.css"] = (css_type, css + (
                         b"\n*,*::before,*::after{animation:none!important;"
                         b"transition:none!important;caret-color:transparent!important}\n"))
-                    for spec in (item for item in capture_specs()
-                                 if item.language == language):
+                    for spec in specs:
                         image, report = _capture_one(
                             spec, temporary, chromium, server, game, bridge, pygame,
                             production_index, capture_clock, budget_ms)

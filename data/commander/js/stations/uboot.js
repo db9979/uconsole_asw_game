@@ -73,6 +73,8 @@ function renderChips(nav, status, alarms, scope) {
     ["uboot_chip_transmitting", status.transmitting, "caution"],
   ];
   const rows = modes.map(([key, active, level]) => [t(key), active ? level : "off"]);
+  if (nav.depth_m > nav.max_depth_m)
+    rows.push([t("uboot_chip_overdepth", {test: number(nav.max_depth_m, 0), crush: number(nav.crush_depth_m, 0)}), "alarm"]);
   if (alarms.torpedo_age_s !== null && alarms.torpedo_age_s < 120)
     rows.push([t("uboot_chip_torpedo", {value: alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)}), "alarm"]);
   if (alarms.ping_age_s !== null && alarms.ping_age_s < 120)
@@ -463,7 +465,7 @@ export function renderUbootStation(payload) {
   renderThreat(payload.threat);
   renderRadio(payload.radio, nav);
   document.body.classList.toggle("uboot-torpedo-alarm", alarms.torpedo_age_s !== null && alarms.torpedo_age_s < 60);
-  if (!S.stationDrafts.has("uboot-depth")) $("uboot-depth").max = String(nav.max_depth_m);
+  if (!S.stationDrafts.has("uboot-depth")) $("uboot-depth").max = String(Math.floor(nav.crush_depth_m));
   if (!S.stationDrafts.has("uboot-speed")) $("uboot-speed").max = String(nav.max_speed_kn);
   $("uboot-decoy").dataset.ready = String(weapons.decoy_ready);
   $("uboot-blow").dataset.ready = String(status.blow_available && !status.emergency_ascent && nav.depth_m > 30);

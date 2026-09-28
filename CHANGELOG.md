@@ -4,14 +4,23 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.21
+## 1.3.22
 
-Release 1.3.21 makes the Remote Crew streams steadier. A browser that
+Release 1.3.22 makes the Remote Crew streams steadier. A browser that
 reconnects its sonar audio or sonar display stream now takes over its own
 previous stream at once instead of being refused while the host had not yet
 noticed that the old connection was gone. The web client no longer sends an
 extra state request for every pushed state. The browser tests for live audio
 and the state push now run in real time next to the host. Saves stay v23.
+
+## 1.3.21
+
+Release 1.3.21 lets the crewed boat go **below its test depth**, down to crush
+depth (1.5 x test depth), at a growing risk: sheared bolts, failed shaft or
+valve seals and, deeper, a cracked pressure hull flood compartments and add
+damage, far more often the deeper the boat goes; at crush depth the hull
+collapses. The depth columns mark the crush depth and a red alarm shows while
+the boat is below test depth. Saves stay v24.
 
 ## 1.3.20
 

@@ -113,7 +113,10 @@ NM_PER_PX_MAP = 1.0
 
 # Fregatte
 SHIP_SPEED_MIN_KN = 4.0
-SHIP_SPEED_MAX_KN = 25.0
+SHIP_SPEED_MAX_KN = 31.0
+# 1.0.0 top speed: own noise and wake keep their 1.0.0 scale below it and
+# only grow further between 25 kn and SHIP_SPEED_MAX_KN.
+SHIP_SPEED_REFERENCE_KN = 25.0
 SHIP_SPEED_START_KN = 12.0
 SHIP_TUR_RATE_DEG_PER_S = 0.8         # max. Kurssatz des Schiffes
 SHIP_TURN_INPUT_DEG_PER_S = 75.0      # Zielkurs-Drehung bei gedrückter Taste
@@ -473,7 +476,7 @@ TELEGRAPH_ORDERS = (
     ("SLOW", 6.0),
     ("HALF", 10.0),
     ("FULL", 16.0),
-    ("FLANK", 25.0),
+    ("FLANK", 31.0),
 )
 TELEGRAPH_DEFAULT = 2           # Index (HALF)
 ASTERN_SPEED_KN = 3.0           # Fiktive Bergungsfahrt; separater Zustand
@@ -481,7 +484,7 @@ SHIP_RPM_MIN = 20.0             # Leerlauf-RPM
 SHIP_RPM_PER_KN = 2.4
 SHIP_FUEL_CAPACITY_KG = 500_000.0
 SHIP_FUEL_HOTEL_KG_H = 400.0
-SHIP_FUEL_MAX_PROPULSION_KG_H = 7_400.0
+SHIP_FUEL_MAX_PROPULSION_KG_H = 14_110.0
 SHIP_FUEL_ASTERN_FACTOR = 1.15
 SHIP_MAX_RUDDER_DEG = 30.0
 SHIP_RUDDER_RATE_DEG_PER_S = 4.0

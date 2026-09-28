@@ -1588,3 +1588,8 @@ Notizen Phase 1:
 - `src/ui/silhouettes.py`: Klassenprofile (warship, merchant, unknown, aircraft, submarine) in Rumpfeinheiten; `horizon.draw_outline` zeichnet damit Sehrohr und Fernglas, animiert mit `anim_t` (Sim-Zeit, nur Anzeige).
 - Tests: `tests/test_silhouettes.py`, `tests/test_startup.py` (Puls trifft das U-Boot, Autor und Version auf Splash und Menü).
 - Web-Solo: der Dialog Neues Spiel hat `host-new-side` (Fregatte/U-Boot); weicht die Wahl ab, wechselt der Browser erst per `/stations/request` die Seite (`_solo_switch_side_locked`), dann `host_new_game`; `solo_rebase` behält die Seite. Die Fregatte fährt dann der KI-Jäger (`src/core/hunter.py`).
+
+## 31 kn und Spiel beenden per Admin-Seite (2026-09-28, App 1.3.7)
+
+- `SHIP_SPEED_MAX_KN` = 31, FLANK 31 kn (Dominiks Vorgabe: echte Höchstfahrt der F-217). `ownship_hull.json` `max_brake_power_kw` 57 200 (= 30 000 * (31/25)^3), damit `drag_k` und das Verhalten bis 25 kn gleich bleiben; `SHIP_FUEL_MAX_PROPULSION_KG_H` 14 110, damit FULL/HALF/SLOW wie 1.0.0 verbrauchen. Abweichungen `ship.speed_eq/rpm_eq/fuel_kg_h.FLANK` in `tests/calibration/deviations.json`. `NIXIE_MAX_TOW_KN` bleibt 25.
+- Admin-Aktion `shutdown` (nur `value: true`, ohne Client/Station): `CommanderConsole.shutdown_at` = jetzt + `WEB_SHUTDOWN_GRACE_S` (2 s), danach `game.running = False`. Test in `tests/test_web_host.py`.

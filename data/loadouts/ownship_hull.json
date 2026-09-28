@@ -7,7 +7,7 @@
   "draft_m": 7.5,
   "block_coefficient": 0.48,
   "waterplane_coefficient": 0.75,
-  "max_brake_power_kw": 30000.0,
+  "max_brake_power_kw": 57200.0,
   "propulsive_efficiency": 0.65,
   "propeller_diameter_m": 4.2,
   "propeller_zero_thrust_advance_ratio": 1.4,

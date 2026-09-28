@@ -10,7 +10,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.6**
+Current release: **1.3.7**
+
+Release 1.3.7 gives the frigate F-217 its real 31 kn top speed (FLANK). The
+brake power is scaled so drag, acceleration and turning up to 25 kn stay as
+before; self-noise now rises up to 31 kn and the Nixie's cable still parts
+above 25 kn. The web-host admin page gets **End game now**, which stops the
+server process after a confirmation so it does not keep running in the
+background. Saves stay v23.
 
 Release 1.3.6 redraws the start screen as an animated night hunt: the
 frigate F-217 with turning radar, funnel smoke, bow wave and towed array,

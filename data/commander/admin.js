@@ -188,6 +188,16 @@ $("login-form").addEventListener("submit",async(event)=>{
   catch(error) { say(error.message); }
 });
 $("rotate-code").addEventListener("click",()=>action("rotate_code"));
+$("shutdown").addEventListener("click",async()=>{
+  if (!confirm(t("admin_shutdown_confirm"))) return;
+  $("shutdown").disabled=true;
+  try {
+    const queued=await api("/api/v2/web/admin",{action:"shutdown",client_id:"",station:"",value:true});
+    const result=await waitResult(queued.id);
+    if (result===true || result?.ok===true) say(t("admin_shutdown_done"));
+    else { say(t("admin_failed")); $("shutdown").disabled=false; }
+  } catch(error) { say(error.message); $("shutdown").disabled=false; }
+});
 Promise.all([language($("language").value), refresh()]).then(()=>{
   if (!$("room").hidden) loadOptions().catch((error)=>say(error.message));
 });

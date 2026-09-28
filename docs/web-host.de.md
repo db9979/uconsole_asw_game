@@ -69,7 +69,7 @@ Proxy (z. B. Zugriffsliste, VPN oder Proxy-Anmeldung).
 ## Raum und Spiel
 
 Die Spielleitung meldet sich unter `/admin` an. Dort stehen Raumcode,
-Stationsanfragen, Zuteilung, Widerruf, Freigaben, Vorschläge und Serveroptionen bereit. Der Link „Spiel öffnen“ führt zur vorhandenen
+Stationsanfragen, Zuteilung, Widerruf, Freigaben, Vorschläge und Serveroptionen bereit. **Spiel jetzt beenden** (Karte „Spiel beenden“, mit Rückfrage) stoppt den Spielprozess auf dem Server nach etwa zwei Sekunden, damit er nicht im Hintergrund weiterläuft; alle Verbindungen werden getrennt, nicht gespeicherter Fortschritt geht verloren. Der Link „Spiel öffnen“ führt zur vorhandenen
 Browserkonsole mit allen neun Stationen und Spielsteuerung. Anfangs hält die
 Spielleitung alle Stationen; eine Zuteilung überträgt eine Station exklusiv an
 ein Crew-Mitglied. Ein Mitglied kann mehrere Stationen erhalten und zwischen

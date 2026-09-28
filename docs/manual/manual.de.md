@@ -90,7 +90,7 @@ Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; 
 
 - **Passives Sonar liefert nur Peilung.** Jeder Kontakt beginnt als Peillinie. Entfernung liefern aktiver Ping, TMA, Sonarbojen oder Kreuzpeilung.
 - **Ortung heißt Signal gegen Rauschen.** Es entscheidet die passive Sonargleichung SE = SL - TL - NL + DI - DT: Quellpegel des Ziels (lauter = weiter), Übertragungsverlust (Ausbreitung, Absorption, Schicht- und Pfadverluste), Rauschen (eigenes Rauschen plus Wind, Regen und Schiffsverkehr in der Nähe) und Gewinn der Antenne. Ab SE >= 0 dB gilt ein Kontakt als geortet. Wind und Regen wirken am stärksten, wenn Sie langsam und leise fahren; bei hoher Eigenfahrt dominiert das eigene Rauschen.
-- **Eigene Fahrt ist eigener Lärm.** Der Eigenlärm steigt von 4 kn bis 25 kn. Ab 15 kn kavitieren die Schrauben, die Passivreichweite fällt auf etwa ein Drittel.
+- **Eigene Fahrt ist eigener Lärm.** Der Eigenlärm steigt von 4 kn bis 31 kn, der Höchstfahrt der Fregatte. Ab 15 kn kavitieren die Schrauben, die Passivreichweite fällt auf etwa ein Drittel.
 - **Die Sprungschicht (Thermokline) beugt den Schall.** Die passive Ausbreitung wird als Strahlverfolgung durch das echte Schallgeschwindigkeitsprofil gerechnet: über der Schicht trägt ein Oberflächenkanal den Schall weit, darunter liegt eine einige Meilen breite Schattenzone. In tiefem Wasser ist der Schatten stark; in einigen hundert Metern Wassertiefe füllen Bodenreflexionen und Mehrwege ihn ab etwa 10 sm auf, das Verstecken unter der Schicht wirkt dort vor allem auf kurze Distanz. Ein Ping in die Schattenzone erreicht nur 35 % seiner Reichweite.
 - **Meeresboden und Oberfläche zählen.** Fels und Kies reflektieren gut, Schluff und Schlick schlucken; rauer Seegang streut hohe Frequenzen. **Konvergenzzonen** entstehen nur dort, wo das Wasser tief genug ist, damit die Strahlen wieder nach oben umkehren.
 - **Baffles:** Eigenlärm ist eine weiche 70-Grad-Keule achteraus der Bugsonaranlage (beim Schleppsonar entlang des Kabels). Sie überdeckt, sie blendet nicht vollständig aus.
@@ -181,7 +181,7 @@ Klasse und Typ brauchen eine feiner aufgelöste Silhouette als die Sichtung (Joh
 | `<- / ->` | Ruder: Zielkurs ändern |
 | `Auf / Ab` | Telegraph hoch / runter |
 | `U` | Direkten Zielkurs eingeben (000-359) |
-| `V` | Direkte Zielgeschwindigkeit eingeben (0-25 kn) |
+| `V` | Direkte Zielgeschwindigkeit eingeben (0-31 kn) |
 | `+ / -` | Telegraph: Motorenbefehl (ASTERN-STOP-SLOW-HALF-FULL-FLANK) |
 | `Karte` | Mausrad: Zoom, Maus-Drag: Pan |
 | `Q / E` | Karte heraus-/hineinzoomen |
@@ -209,9 +209,9 @@ Gefechtslage:
 ### Tipps für Profis
 
 - TMA braucht eine echte Änderung der eigenen Geschwindigkeit. Eine Wende um 30-60 Grad mit anschließend mehreren Minuten ruhigem Schlag liefert die beste Entfernungsschätzung. Drehen auf der Stelle hilft nicht.
-- Die Drehrate wächst mit der Fahrt (etwa 0,75 Grad/s bei 10 kn, 1,2 bei 16 kn, 1,9 bei 25 kn), der Drehkreis bleibt deshalb bei etwa 0,4 NM. Ein gestopptes Schiff kann nicht drehen. Fahrtänderungen brauchen Minuten: etwa 90 s bis 90 % von FULL; ein Stopp aus FULL nutzt Umsteuerung der Propellersteigung und dauert etwa 90 s. Ausweichmanöver früh beginnen.
+- Die Drehrate wächst mit der Fahrt (etwa 0,75 Grad/s bei 10 kn, 1,2 bei 16 kn, 1,9 bei 25 kn, 2,3 bei 31 kn), der Drehkreis bleibt deshalb bei etwa 0,4 NM. Ein gestopptes Schiff kann nicht drehen. Fahrtänderungen brauchen Minuten: etwa 90 s bis 90 % von FULL; ein Stopp aus FULL nutzt Umsteuerung der Propellersteigung und dauert etwa 90 s. Ausweichmanöver früh beginnen.
 - In einer harten Wende mit Fahrt krängt das Schiff einige Grad nach außen; bei schwerer See dämpfen die Flossenstabilisatoren das Rollen, aber nur mit Fahrt durchs Wasser.
-- Im Flachwasser sackt der Rumpf ab (Squat): bei 25 kn wächst der Tiefgang um bis zu 3 m, wenn das Wasser weniger als etwa fünf Tiefgänge tief ist. Im Flachwasser Fahrt reduzieren.
+- Im Flachwasser sackt der Rumpf ab (Squat): bei 25 kn wächst der Tiefgang um bis zu 3 m, bei 31 kn um bis zu 4,6 m,, wenn das Wasser weniger als etwa fünf Tiefgänge tief ist. Im Flachwasser Fahrt reduzieren.
 - Sprint und Drift: mit FULL an eine neue Position, dann auf 4-6 kn gehen und horchen.
 - Starke einseitige Flutung bewirkt Krängung und einen stetigen Drehzug; mit Ruder ausgleichen.
 - Das Schiff kann nicht auf Land fahren (es wird zurückgeschoben), aber Flachwasser begrenzt die Tauchtiefe des Helikoptersonars (10 m Bodenabstand).
@@ -774,7 +774,7 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
 
 ```text
  TELEGRAPH      kn     Eigenlärm
-   FLANK        25     |##########|  kavitiert
+   FLANK        31     |##########|  kavitiert
    FULL         16     |#######   |  kavitiert über 15 kn
  > HALF         10     |####      |
    SLOW          6     |##        |
@@ -787,13 +787,13 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
         |      ____/
         |_____/
         +----+------------+--------+---> kn
-             4           15        25
+             4           15        31
 ```
 
-- Der Eigenlärm steigt linear von 4 kn bis 25 kn. Die Schrauben kavitieren, wenn die Flügelspitzengeschwindigkeit für den Wasserdruck an den Schrauben zu hoch ist: bei ruhiger See ab 15 kn, bei schwerer See früher, wenn das Stampfen das Heck anhebt. Kavitation hebt den Lärm auf mindestens 0,85 und senkt die passive Sonarreichweite auf 35 %.
+- Der Eigenlärm steigt linear von 4 kn bis 31 kn. Die Schrauben kavitieren, wenn die Flügelspitzengeschwindigkeit für den Wasserdruck an den Schrauben zu hoch ist: bei ruhiger See ab 15 kn, bei schwerer See früher, wenn das Stampfen das Heck anhebt. Kavitation hebt den Lärm auf mindestens 0,85 und senkt die passive Sonarreichweite auf 35 %.
 - Modus LEISE senkt den Eigenlärm auf 65 % und begrenzt die Fahrt auf 12 kn.
 - Anlagenwahl (`G`): AUTO fährt die Anlage wie bisher. DIESEL ist die leise Anlage (Eigenlärm etwa -4 dB, Brennstoff -10 %), begrenzt aber auf 18 kn; TURBINE gibt volle Fahrt bei etwa +3 dB und +25 % Brennstoff. Die Wahl steht auf Seite 2 und im Maschinenraum des Browsers.
-- Die Wellendrehzahl folgt dem Festpropeller: bei konstanter Fahrt etwa 5,8 U/min je Knoten (146 U/min bei 25 kn). Beim Beschleunigen hält das Fahrprogramm die Welle höchstens etwa 11 U/min vor der aktuellen Fahrt; beim Abbremsen wird die Steigung umgesteuert und die Welle läuft mit 20 U/min im Leerlauf. Die eigene Wellenlinie im LOFAR wandert mit der Fahrt.
+- Die Wellendrehzahl folgt dem Festpropeller: bei konstanter Fahrt etwa 5,8 U/min je Knoten (146 U/min bei 25 kn, 181 U/min bei 31 kn Höchstfahrt). Beim Beschleunigen hält das Fahrprogramm die Welle höchstens etwa 11 U/min vor der aktuellen Fahrt; beim Abbremsen wird die Steigung umgesteuert und die Welle läuft mit 20 U/min im Leerlauf. Die eigene Wellenlinie im LOFAR wandert mit der Fahrt.
 - Maschinenschaden begrenzt die Fahrt auf 15 kn (beschädigt) oder 8 kn (zerstört).
 - Der Kraftstoffverbrauch folgt der abgegebenen Propellerleistung: bei konstanter Fahrt wächst er mit der dritten Potenz der Fahrt, Beschleunigen und Bremsen kosten zusätzlich. Ein leichteres Schiff (verbrauchter Kraftstoff) beschleunigt etwas schneller; Flutwasser macht es langsamer und tiefer. Schwere See erhöht den Widerstand und kostet bei FULL bis etwa 1 kn. Mit leeren Tanks steht die Welle, und kein Maschinenbefehl wird angenommen.
 
@@ -806,7 +806,7 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
 | `A` | Akustikmodus LEISE/NORMAL |
 | `G` | Antriebsanlage: AUTO, DIESEL (18 kn, -4 dB) oder TURBINE (+3 dB, +25 % Brennstoff) |
 | `U` | Direkten Zielkurs eingeben (000-359) |
-| `V` | Direkte Zielgeschwindigkeit eingeben (0-25 kn) |
+| `V` | Direkte Zielgeschwindigkeit eingeben (0-31 kn) |
 
 ### Standardablauf
 
@@ -1042,7 +1042,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 
 | Merkmal | Wert |
 |---|---|
-| Fahrt | 4-25 kn; Telegraph STOP 0, SLOW 6, HALF 10, FULL 16, FLANK 25 kn |
+| Fahrt | 4-31 kn; Telegraph STOP 0, SLOW 6, HALF 10, FULL 16, FLANK 31 kn |
 | Drehrate | etwa 0,075 Grad/s je Knoten (1,2 Grad/s bei 16 kn); Drehkreis etwa 0,4 NM |
 | Kavitation | ab 15 kn bei ruhiger See, bei schwerer See früher; Passivreichweite x0,35 |
 | Modus LEISE | Lärm x0,65, max. 12 kn |

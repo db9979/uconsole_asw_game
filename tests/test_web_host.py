@@ -295,6 +295,45 @@ def test_web_host_publishes_game_without_local_display_work(tmp_path, monkeypatc
         pygame.quit()
 
 
+def test_admin_page_ends_the_game_process(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "SAVE_DIR", str(tmp_path))
+    game = Game(seed=31, start_menu=True, fullscreen=False,
+                audio_enabled=False, language="en", web_mode=True)
+    auth = WebHostAuth(tmp_path / "web-host.json")
+    game.commander.start_web(auth, "https://game.test", 0)
+    server = game.commander.server
+    try:
+        game.commander.pump(game)
+        assert request(server, "/api/v2/web/setup", "POST", {
+            "code": auth.setup_code, "password": "a long private password"})[0] == 200
+        status, headers, session = request(server, "/api/v2/web/login", "POST",
+                                           {"password": "a long private password"})
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        # Ending the game needs an explicit true and no client or station.
+        for body in ({"action": "shutdown", "client_id": "", "station": "", "value": False},
+                     {"action": "shutdown", "client_id": "x", "station": "", "value": True},
+                     {"action": "shutdown", "client_id": "", "station": "sonar",
+                      "value": True}):
+            assert request(server, "/api/v2/web/admin", "POST", body, cookie=cookie,
+                           csrf=session["csrf"])[0] == 400
+        status, _, queued = request(server, "/api/v2/web/admin", "POST", {
+            "action": "shutdown", "client_id": "", "station": "", "value": True},
+            cookie=cookie, csrf=session["csrf"])
+        assert status == 202
+        game.commander.pump(game)
+        # The result reaches the admin page before the process quits.
+        assert request(server, "/api/v2/web/room", cookie=cookie)[2][
+            "results"][queued["id"]] is True
+        assert game.running is True
+        game.commander.shutdown_at = time.monotonic() - 1.0
+        game.commander.pump(game)
+        assert game.running is False
+    finally:
+        game.commander.stop()
+        game.audio.shutdown()
+        pygame.quit()
+
+
 def test_web_host_can_start_from_initial_menu(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "SAVE_DIR", str(tmp_path))
     game = Game(seed=31, start_menu=True, fullscreen=False,

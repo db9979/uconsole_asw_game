@@ -90,7 +90,7 @@ The bottom status ticker shows the newest event and key telemetry; `F11` opens t
 
 - **Passive sonar gives bearing only.** Every contact starts as a line of bearing. Range comes from active ping, TMA, sonobuoys or a cross-fix.
 - **Detection is signal against noise.** The passive sonar equation SE = SL - TL - NL + DI - DT decides: the target's source level (louder = farther), transmission loss (spreading, absorption, layer and path losses), noise (own self noise plus wind, rain and nearby shipping), and the array gain. A contact is detected at SE >= 0 dB. Wind and rain matter most when you run slow and quiet; at high own speed your own noise dominates.
-- **Own speed is own noise.** Self-noise rises from 4 kn to 25 kn. Above 15 kn the propellers cavitate and passive range drops to about a third.
+- **Own speed is own noise.** Self-noise rises from 4 kn to 31 kn, the frigate's top speed. Above 15 kn the propellers cavitate and passive range drops to about a third.
 - **The layer (thermocline) bends sound.** Passive propagation is ray traced through the real sound-speed profile: above the layer a surface duct carries sound far, below it lies a shadow zone a few miles wide. In deep water the shadow is strong; in water of a few hundred metres, bottom bounce and multipath fill it beyond about 10 NM, so hiding below the layer mainly works close in. A ping into the shadow zone reaches only 35 % of its range.
 - **Seabed and surface matter.** Rock and gravel reflect sound well, silt and mud absorb it; a rough sea scatters high frequencies. **Convergence zones** appear only where the water is deep enough for rays to turn back up.
 - **Baffles:** own-ship noise is a soft 70 degree lobe astern of the hull array (and along the cable of the towed array). It masks, it does not blank.
@@ -181,7 +181,7 @@ Class and type need a finer resolved silhouette than the sighting (Johnson crite
 | `<- / ->` | Rudder: change target course |
 | `Up / Down` | Telegraph up / down |
 | `U` | Enter target course directly (000-359) |
-| `V` | Enter target speed directly (0-25 kn) |
+| `V` | Enter target speed directly (0-31 kn) |
 | `+ / -` | Telegraph: engine order (ASTERN-STOP-SLOW-HALF-FULL-FLANK) |
 | `Chart` | Mouse wheel: zoom, mouse drag: pan |
 | `Q / E` | Zoom chart out/in |
@@ -209,9 +209,9 @@ Combat situation:
 ### Pro tips
 
 - TMA needs a real change of own velocity. A 30-60 degree turn followed by a steady leg of several minutes gives the best range estimate. Turning on the spot does not help.
-- The turn rate grows with speed (about 0.75 deg/s at 10 kn, 1.2 at 16 kn, 1.9 at 25 kn), so the turning circle stays near 0.4 NM. A stopped ship cannot turn. Speed changes take minutes: about 90 s to 90 % of FULL, and a stop from FULL uses reverse propeller pitch and takes about 90 s. Start evasive turns early.
+- The turn rate grows with speed (about 0.75 deg/s at 10 kn, 1.2 at 16 kn, 1.9 at 25 kn, 2.3 at 31 kn), so the turning circle stays near 0.4 NM. A stopped ship cannot turn. Speed changes take minutes: about 90 s to 90 % of FULL, and a stop from FULL uses reverse propeller pitch and takes about 90 s. Start evasive turns early.
 - In a hard turn at speed the ship heels outward a few degrees; in heavy seas the fin stabilizers damp the roll, but only with steerage way.
-- In shallow water the hull squats: at 25 kn the draft grows by up to 3 m when the water is less than about five draughts deep. Slow down in shoal water.
+- In shallow water the hull squats: at 25 kn the draft grows by up to 3 m, at 31 kn by up to 4.6 m, when the water is less than about five draughts deep. Slow down in shoal water.
 - Sprint-and-drift: sprint at FULL to a new position, then slow to 4-6 kn and listen.
 - Heavy flooding on one side gives a list and a steady yaw pull; correct with rudder.
 - The ship cannot run aground onto land; it is pushed back, but shallow water limits the helicopter dipping depth (10 m bottom clearance).
@@ -773,7 +773,7 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 
 ```text
  TELEGRAPH      kn     own noise
-   FLANK        25     |##########|  cavitating
+   FLANK        31     |##########|  cavitating
    FULL         16     |#######   |  cavitating above 15 kn
  > HALF         10     |####      |
    SLOW          6     |##        |
@@ -786,13 +786,13 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
         |      ____/
         |_____/
         +----+------------+--------+---> kn
-             4           15        25
+             4           15        31
 ```
 
-- Own noise rises linearly from 4 kn to 25 kn. The propellers cavitate when the blade-tip speed is too high for the water pressure at the screws: in calm water from 15 kn, in heavy seas earlier when pitching lifts the stern. Cavitation raises noise to at least 0.85 and cuts passive sonar range to 35 %.
+- Own noise rises linearly from 4 kn to 31 kn. The propellers cavitate when the blade-tip speed is too high for the water pressure at the screws: in calm water from 15 kn, in heavy seas earlier when pitching lifts the stern. Cavitation raises noise to at least 0.85 and cuts passive sonar range to 35 %.
 - QUIET mode reduces own noise to 65 % and limits speed to 12 kn.
 - Plant selection (`G`): AUTO runs the plant as before. DIESEL is the quiet plant (own noise about -4 dB, fuel -10 %) but caps speed at 18 kn; TURBINE gives full speed at about +3 dB and +25 % fuel. The choice is shown on page 2 and in the browser's engine room.
-- Shaft RPM follows the fixed-pitch propeller: about 5.8 rpm per knot at steady speed (146 rpm at 25 kn). While accelerating the control programme keeps the shaft at most about 11 rpm ahead of the present speed; when slowing down the pitch reverses and the shaft idles at 20 rpm. The own shaft line on LOFAR moves with speed.
+- Shaft RPM follows the fixed-pitch propeller: about 5.8 rpm per knot at steady speed (146 rpm at 25 kn, 181 rpm at the 31 kn flank speed). While accelerating the control programme keeps the shaft at most about 11 rpm ahead of the present speed; when slowing down the pitch reverses and the shaft idles at 20 rpm. The own shaft line on LOFAR moves with speed.
 - Machinery damage caps speed at 15 kn (damaged) or 8 kn (destroyed).
 - Fuel burn follows the power the propellers deliver: at steady speed it grows with the cube of speed, accelerating and braking cost extra. A lighter ship (burnt fuel) accelerates slightly faster; floodwater makes it slower and deeper. Heavy seas add resistance and cost up to about 1 kn at FULL. With empty tanks the shaft stops and no engine order is accepted.
 
@@ -805,7 +805,7 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 | `A` | Quiet mode QUIET/NORMAL |
 | `G` | Propulsion plant: AUTO, DIESEL (18 kn, -4 dB) or TURBINE (+3 dB, +25 % fuel) |
 | `U` | Enter target course directly (000-359) |
-| `V` | Enter target speed directly (0-25 kn) |
+| `V` | Enter target speed directly (0-31 kn) |
 
 ### Standard procedure
 
@@ -1041,7 +1041,7 @@ All values are the defaults of the current game version. Custom difficulty and m
 
 | Item | Value |
 |---|---|
-| Speed | 4-25 kn; telegraph STOP 0, SLOW 6, HALF 10, FULL 16, FLANK 25 kn |
+| Speed | 4-31 kn; telegraph STOP 0, SLOW 6, HALF 10, FULL 16, FLANK 31 kn |
 | Turn rate | about 0.075 deg/s per knot (1.2 deg/s at 16 kn); turning circle about 0.4 NM |
 | Cavitation | from 15 kn in calm water, earlier in heavy seas; passive range x0.35 |
 | QUIET mode | noise x0.65, max 12 kn |

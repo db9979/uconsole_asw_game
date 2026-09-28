@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.36**
+Aktuelle Version: **1.3.38**
 
-Version 1.3.36 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen
+Version 1.3.38 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen
 den Stil des Startbilds. Die Okulare zeigen Tag, Dämmerung und Nacht mit
 Sternen, dem Mond in seiner Phase und seinem Glitzern auf dem Wasser, Wolken,
 Regen, Schnee und Nebel nach dem Wetter, und die Schiffe in Stahl mit heller

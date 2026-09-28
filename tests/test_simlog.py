@@ -120,6 +120,30 @@ def test_state_snapshot_covers_ship_weapons_and_all_map_items(game):
     assert before == again
 
 
+def test_state_snapshot_with_torpedoes_in_the_water(game):
+    """1.3.34 crashed the uConsole: an own torpedo has ``idx``, not ``id``."""
+    from src.weapons.torpedo import EnemyTorpedo, Torpedo
+    target = game.subs[0] if game.subs else None
+    game.torpedoes.append(Torpedo(game.ship.x, game.ship.y, 90.0, 100.0,
+                                  target, 7))
+    game.torpedoes.append(Torpedo(game.ship.x, game.ship.y, 180.0, 50.0,
+                                  None, 8))
+    game.enemy_torpedoes.append(EnemyTorpedo(game.ship.x + 2, game.ship.y,
+                                             270.0, 60.0, 3))
+    game.preferences = replace(game.preferences, simlog=True)
+    game._record_simlog_state(config.SIMLOG_INTERVAL_S)
+    snaps = [row["data"] for row in game.simlog if row["cat"] == "state"]
+    torps = snaps[0]["torpedoes"]
+    assert [t["id"] for t in torps][:2] == [7, 8]
+    assert torps[0]["target"] == (target.id if target is not None else None)
+    assert torps[1]["target"] is None
+    assert len(snaps[0]["enemy_torpedoes"]) == 1
+    json.dumps(snaps, allow_nan=False)
+    # The live path that crashed: recording runs inside the simulation step.
+    game.update(config.SIMLOG_INTERVAL_S)
+    game.draw()
+
+
 def test_state_snapshots_stop_when_disabled_midway(game):
     game.preferences = replace(game.preferences, simlog=True)
     game._record_simlog_state(config.SIMLOG_INTERVAL_S)

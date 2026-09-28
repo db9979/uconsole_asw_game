@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.36**
+Current release: **1.3.38**
 
-Release 1.3.36 gives the periscope, the lookout's binoculars and every station
+Release 1.3.38 gives the periscope, the lookout's binoculars and every station
 the start screen's look. The eyepieces show day, dusk and night with stars, the
 moon in its phase and its glitter on the water, clouds, rain, snow and fog from
 the weather, and the ships in steel with a lit rim, lit windows at night, bow

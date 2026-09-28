@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.36
+## 1.3.38
 
-Version 1.3.36 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen
+Version 1.3.38 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen
 den Stil des Startbilds. Die Okulare zeigen Tag, Dämmerung und Nacht mit
 Sternen, dem Mond in seiner Phase und seinem Glitzern auf dem Wasser, Wolken,
 Regen, Schnee und Nebel nach dem Wetter, und die Schiffe in Stahl mit heller
@@ -16,6 +16,26 @@ Browser-Sehrohr dasselbe Bild und dieselben Schiffsformen. Die Stationen auf
 der uConsole und im Browser tragen das Türkis und Nachtblau des Startbilds mit
 Eckwinkeln an den Feldern; die Karte behält ihre NATO-Symbole, der
 Kontrastmodus bleibt unverändert. Spielstände bleiben v27.
+
+## 1.3.37
+
+Version 1.3.37 behebt einen Absturz, der das Spiel schloss, sobald ein
+Torpedo der Fregatte oder der KI im Wasser war, während das
+Simulationsprotokoll (Optionen, Simulationsprotokoll) aufzeichnete: Der Zustandsschnappschuss
+des Protokolls las eine Torpedonummer, die der Torpedo nicht hat. Das in 1.3.34
+eingebaute Absturzprotokoll zeigte die Ursache. Spielstände bleiben v27.
+
+## 1.3.36
+
+Version 1.3.36 behebt Sonar-Ton auf der uConsole, der verstummen konnte, bis
+man den Ton in den Optionen aus- und wieder einschaltete. Ein seltenes
+Wettrennen im pygame-Mixer konnte den Sonarkanal still stehen lassen, während
+sein nächster Block für immer in der Warteschlange hing, und die
+Sonar-Wiedergabe wartete dauerhaft auf diesen Platz. Die Wiedergabe spielt
+einen solchen hängenden Block jetzt selbst ab und macht weiter, und ein
+beendeter Sonar-Audio-Thread startet mit dem nächsten Block neu.
+`audio_debug.log` zählt beides (`queue_stranded`, `worker_restarts`).
+Spielstände bleiben v27.
 
 ## 1.3.35
 

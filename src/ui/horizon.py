@@ -190,10 +190,12 @@ def horizon_motion(seed: int, sim_t: float, sea_state: float,
 
 
 def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
-                 t: float = 0.0, *, rim=None, lights=None, nav=None) -> None:
+                 t: float = 0.0, *, rim=None, lights=None, nav=None,
+                 aloft: bool = False) -> None:
     """Procedural side view of a coarse class, ``width`` px long, sitting on
-    the horizon (aircraft: hovering above it).  ``t`` (display clock)
-    animates pitch, radar, rotor and wake."""
+    the horizon (aircraft: hovering above it, or with ``aloft`` centred on
+    ``base_y`` at its elevation).  ``t`` (display clock) animates pitch,
+    radar, rotor and wake."""
     width = max(3, int(width))
     if cls == "torpedo":
         left = cx - width // 2
@@ -202,7 +204,7 @@ def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
         return
     silhouettes.draw_profile(s, cls if cls in silhouettes.PROFILES else "unknown",
                              cx, base_y, width, color, t=t, rim=rim, lights=lights,
-                             facing=nav_lights.facing(nav), nav=nav)
+                             facing=nav_lights.facing(nav), nav=nav, aloft=aloft)
 
 
 def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
@@ -226,31 +228,42 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
     lift = elevation_deg * rect.w / fov_deg
     horizon = rect.y + int(rect.h * 0.5 + offset + lift)
     view = sight_scene.View(rect, line_of_sight, fov_deg, horizon, tilt, lift)
-    with layout.clip_to(s, rect):
-        colors = sight_scene.draw_scene(s, view, sky, visibility_nm=visibility_nm,
-                                        sea_state=sea_state, t=anim_t)
-        haze = colors["haze_level"]
-        haze_color = colors["haze"]
-        if land is not None:
-            _draw_land(s, rect, land, line_of_sight=line_of_sight, fov_deg=fov_deg,
-                       horizon=horizon, tilt=tilt, night=sky["light"] < 0.5,
-                       visibility_nm=visibility_nm, haze_color=haze_color, colors=colors)
-        px_per_deg = rect.w / fov_deg
-        lit = sky["light"] < 0.45
-        for row in outlines:
+    px_per_deg = rect.w / fov_deg
+    lit = sky["light"] < 0.45
+
+    def draw_rows(rows, colors, aloft):
+        haze, haze_color = colors["haze_level"], colors["haze"]
+        for row in rows:
             bearing, span_deg, cls, stale = row[:4]
             nav = row[4] if len(row) > 4 else None
             off = relative_offset(bearing, line_of_sight)
             if abs(off) > fov_deg / 2 + span_deg / 2:
                 continue
             cx = rect.centerx + int(off * px_per_deg)
-            base = horizon + int(math.tan(tilt) * (cx - rect.centerx))
+            if aloft:
+                # In the still sky at its elevation, behind the clouds.
+                base = int(view.alt_y(0.0, cx) - row[5] * px_per_deg)
+            else:
+                base = horizon + int(math.tan(tilt) * (cx - rect.centerx))
             width = min(rect.w, max(3, int(span_deg * px_per_deg)))
             fade = 0.55 if stale else haze * 0.6
             draw_outline(s, cls, cx, base, width, blend(colors["steel"], haze_color, fade),
                          anim_t, rim=blend(colors["rim"], haze_color, fade),
                          lights=(sight_scene.WINDOW_LIGHT if lit and not stale else None),
-                         nav=nav)
+                         nav=nav, aloft=aloft)
+
+    airborne = [row for row in outlines if len(row) > 5 and row[5] is not None]
+    afloat = [row for row in outlines if not (len(row) > 5 and row[5] is not None)]
+    with layout.clip_to(s, rect):
+        colors = sight_scene.draw_scene(
+            s, view, sky, visibility_nm=visibility_nm, sea_state=sea_state, t=anim_t,
+            aloft=(lambda colors: draw_rows(airborne, colors, True)) if airborne else None)
+        haze_color = colors["haze"]
+        if land is not None:
+            _draw_land(s, rect, land, line_of_sight=line_of_sight, fov_deg=fov_deg,
+                       horizon=horizon, tilt=tilt, night=sky["light"] < 0.5,
+                       visibility_nm=visibility_nm, haze_color=haze_color, colors=colors)
+        draw_rows(afloat, colors, False)
         sight_scene.draw_weather(s, view, sky, colors, visibility_nm=visibility_nm, t=anim_t)
         # Labels at least ``SCALE_LABEL_MIN_PX`` apart (the narrow lookout
         # strip labels every 30 degrees, the eyepieces every 10).

@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.49**
+Current release: **1.3.50**
 
-Release 1.3.49 fixes Remote Crew pairing on the LAN. A freshly paired
+Release 1.3.50 fixes Remote Crew pairing on the LAN. A freshly paired
 browser no longer greets you with "Your station was revoked or released" as if
 pairing had failed; it now says "Authenticated. Take a free station." The crew
 page now tells you when it runs in a browser that is not Chrome or Chromium (also

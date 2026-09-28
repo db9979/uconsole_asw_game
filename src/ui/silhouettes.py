@@ -153,6 +153,8 @@ _SUBMARINE = {
 
 PROFILES = {"warship": _WARSHIP, "merchant": _MERCHANT, "unknown": _UNKNOWN,
             "aircraft": _AIRCRAFT, "submarine": _SUBMARINE}
+# Height of the aircraft's body in its profile (centred on its elevation).
+AIRCRAFT_CENTRE_V = 0.555
 # Silhouette height over apparent length (highest point), per class.
 HEIGHT_RATIO = {name: max(v for poly in [p["hull"], *p["blocks"]] for _u, v in poly)
                 for name, p in PROFILES.items()}
@@ -186,11 +188,15 @@ def _pitch(profile: dict, t: float) -> float:
 
 
 def frame_for(cls: str, cx: float, base_y: float, width: float, t: float = 0.0,
-              facing: int = -1) -> _Frame:
-    """The pixel frame a profile is drawn in (also for anchoring effects)."""
+              facing: int = -1, aloft: bool = False) -> _Frame:
+    """The pixel frame a profile is drawn in (also for anchoring effects);
+    ``aloft`` centres an aircraft's body on ``base_y`` instead of hovering
+    it over the horizon."""
     profile = PROFILES.get(cls, _UNKNOWN)
     lift = 0.0
-    if profile.get("hover"):
+    if aloft:
+        lift = -AIRCRAFT_CENTRE_V * width
+    elif profile.get("hover"):
         lift = width * (0.25 + 0.02 * math.sin(t * 1.3))
     return _Frame(cx - width / 2.0, base_y, width, facing, _pitch(profile, t), lift)
 
@@ -293,8 +299,9 @@ def draw_nav_lights(s, cls: str, frame: _Frame, width: float, code: str,
 
 def draw_profile(s, cls: str, cx: float, base_y: float, width: float, color, *,
                  t: float = 0.0, facing: int = -1, rim=None, lights=None,
-                 wake: bool = True, nav: str | None = None) -> _Frame:
-    """Draw ``cls`` ``width`` px long on the waterline ``base_y``.
+                 wake: bool = True, nav: str | None = None, aloft: bool = False) -> _Frame:
+    """Draw ``cls`` ``width`` px long on the waterline ``base_y`` (``aloft``:
+    an aircraft centred on ``base_y``).
 
     ``t`` animates pitch, radar, rotors and the wake; ``rim`` outlines the
     polygons (moonlit edges) and ``lights`` colours bridge windows, both only
@@ -303,7 +310,7 @@ def draw_profile(s, cls: str, cx: float, base_y: float, width: float, color, *,
     """
     profile = PROFILES.get(cls, _UNKNOWN)
     width = max(3.0, float(width))
-    frame = frame_for(cls, cx, base_y, width, t, facing)
+    frame = frame_for(cls, cx, base_y, width, t, facing, aloft)
     detail = width >= DETAIL_MIN_PX
     polys = [frame.poly(profile["hull"])]
     polys += [frame.poly(block) for block in profile["blocks"]]

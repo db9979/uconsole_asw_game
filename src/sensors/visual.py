@@ -46,6 +46,21 @@ def optical_horizon_nm(eye_m: float, target_m: float) -> float:
     return 2.08 * (math.sqrt(max(eye_m, 0.0)) + math.sqrt(max(target_m, 0.0)))
 
 
+# Earth radius with standard refraction (k = 0.13, as ``optical_horizon_nm``).
+EARTH_RADIUS_REFRACTED_M = 6_371_000.0 / (1.0 - 0.13)
+
+
+def elevation_deg(altitude_m: float, range_nm: float, eye_m: float) -> float:
+    """Apparent angle of an object ``altitude_m`` high, ``range_nm`` away,
+    above the sea horizon seen from ``eye_m``: the line of sight, less the
+    drop of the curved Earth, plus the dip of the horizon."""
+    distance = max(float(range_nm) * 1852.0, 1.0)
+    angle = (math.atan2(float(altitude_m) - float(eye_m), distance)
+             - distance / (2.0 * EARTH_RADIUS_REFRACTED_M)
+             + math.sqrt(2.0 * max(float(eye_m), 0.0) / EARTH_RADIUS_REFRACTED_M))
+    return math.degrees(angle)
+
+
 def threshold(height_m: float, range_nm: float) -> float:
     alpha = height_m / max(range_nm * 1852.0, 1.0)
     return EPS0 * (1.0 + (ALPHA0_RAD / max(alpha, 1e-12)) ** 2)

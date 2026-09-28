@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.49**
+Aktuelle Version: **1.3.50**
 
-Version 1.3.49 repariert die Remote-Crew-Kopplung im LAN. Ein frisch
+Version 1.3.50 repariert die Remote-Crew-Kopplung im LAN. Ein frisch
 gekoppelter Browser begrüßt nicht mehr mit „Deine Station wurde widerrufen oder
 freigegeben“, als wäre die Kopplung gescheitert, sondern mit der Aufforderung,
 eine freie Station zu nehmen. Die Crew-Seite sagt jetzt, wenn sie in einem

@@ -110,6 +110,7 @@ class CrewOrders:
         # Navigation lights made out per sighting (never saved; the next
         # look restores them).
         self._lights = {}
+        self._elevation = {}
         # Attack computer: stadimeter marks by sighting (``attack_computer``).
         self.tdc = {}
         # Flood state of each torpedo tube, ``[state, seconds left]`` with the
@@ -765,6 +766,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         orders.sightings = []
         orders._sightings_seen.clear()
         orders._lights = {}
+        orders._elevation = {}
         return
     now = game.sim_t
     seed = int(sub.sensor_seed)
@@ -776,7 +778,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     alert = boat.watch.effectiveness(game.sim_t)
     # Neutral traffic runs its navigation lights; warships run darkened.
     lit = nav_lights.lit(game.world.daylight_stage(), environment["visibility_nm"])
-    lights = {}
+    lights, elevation = {}, dict(getattr(orders, "_elevation", {}))
     for target_id, actor, cls, length_m, altitude_m in _scope_candidates(game, boat):
         dx, dy = actor.x - sub.x, actor.y - sub.y
         distance = math.hypot(dx, dy)
@@ -815,6 +817,9 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         ref = "V-%08X" % (detrand.bits(seed, "scope-ref", target_id) & 0xFFFFFFFF)
         if code is not None:
             lights[ref] = code
+        if altitude_m is not None:
+            elevation[ref] = max(-5.0, visual_physics.elevation_deg(
+                altitude_m, distance, config.UBOOT_SCOPE_EYE_HEIGHT_M))
         old = previous.get(ref)
         if old is not None and recognized == "unknown" and old["cls"] != "unknown":
             recognized = old["cls"]      # a class once made out is held
@@ -836,6 +841,8 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     rows.sort(key=lambda row: (row["bearing"], row["ref"]))
     orders.sightings = rows[:config.UBOOT_SIGHTINGS_MAX]
     orders._lights = lights
+    orders._elevation = {ref: value for ref, value in elevation.items()
+                         if any(row["ref"] == ref for row in orders.sightings)}
     # A phone on the periscope calls its own sightings (src/core/phone_lookout.py).
     from src.core import phone_lookout
     called_by_phone = phone_lookout.boat_manned(game)

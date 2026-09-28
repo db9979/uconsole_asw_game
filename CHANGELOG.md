@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.46
+
+Release 1.3.46 redraws the bridge's small weather picture in the start screen's
+look: it now looks into the wind with the sky of the hour (sun, moon and stars),
+the clouds, rain, snow or fog and the sea running at the eye, and a turquoise
+wind rose in its corner, framed by the corner brackets of the other views. Both
+on the uConsole and in the Remote Crew browser; saves stay v27.
+
 ## 1.3.45
 
 Release 1.3.45 keeps the sky still in the periscope and the lookout's

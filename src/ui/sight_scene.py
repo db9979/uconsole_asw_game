@@ -38,6 +38,8 @@ RIM_NIGHT, RIM_DAY = (84, 150, 158), (170, 196, 200)
 WINDOW_LIGHT = (250, 205, 120)
 FRAME = (40, 96, 90)
 BRACKET = 18
+# The weather instrument's wind arrow.
+WIND_ARROW = (120, 214, 180)
 # Sky field in bearing space (cosmetic, fixed seed like the start screen).
 STAR_COUNT = 220
 CLOUD_COUNT = 26
@@ -460,6 +462,39 @@ def _fog(width, height, color) -> pygame.Surface:
         alpha = int(170 * math.sin(math.pi * y / max(1, height - 1)))
         pygame.draw.line(surf, (*color, alpha), (0, y), (width, y))
     return surf
+
+
+# The weather instrument looks into the wind over this field.
+INSTRUMENT_FOV_DEG = 120.0
+
+
+def draw_instrument(s, rect, sky: dict, *, visibility_nm: float, sea_state: float,
+                    t: float) -> None:
+    """The bridge's small weather picture: sky, clouds, sea and weather seen
+    into the wind, the wind rose in the top left corner and the brackets."""
+    rect = pygame.Rect(rect)
+    view = View(rect, sky["wind_from_deg"], INSTRUMENT_FOV_DEG, rect.y + int(rect.h * 0.56), 0.0)
+    previous = s.get_clip()
+    s.set_clip(rect.clip(previous) if previous else rect)
+    try:
+        colors = draw_scene(s, view, sky, visibility_nm=visibility_nm, sea_state=sea_state, t=t)
+        draw_weather(s, view, sky, colors, visibility_nm=visibility_nm, t=t)
+        # Wind rose: north up, the arrow blows from where the wind comes.
+        radius = max(8, min(14, rect.h // 5))
+        cx, cy = rect.x + radius + 6, rect.y + radius + 6
+        angle = math.radians(sky["wind_from_deg"])
+        dx, dy = math.sin(angle), -math.cos(angle)
+        pygame.draw.circle(s, blend(colors["sky"][0], (0, 0, 0), 0.5), (cx, cy), radius)
+        pygame.draw.circle(s, FRAME, (cx, cy), radius, 1)
+        tail = (cx + dx * (radius - 2), cy + dy * (radius - 2))
+        head = (cx - dx * (radius - 3), cy - dy * (radius - 3))
+        pygame.draw.line(s, WIND_ARROW, tail, head, 2)
+        side = (-dy * 3, dx * 3)
+        pygame.draw.polygon(s, WIND_ARROW, [head, (head[0] + dx * 5 + side[0], head[1] + dy * 5 + side[1]),
+                                            (head[0] + dx * 5 - side[0], head[1] + dy * 5 - side[1])])
+    finally:
+        s.set_clip(previous)
+    draw_frame(s, rect)
 
 
 def draw_frame(s, rect) -> None:

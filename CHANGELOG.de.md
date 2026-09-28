@@ -4,6 +4,14 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.46
+
+Version 1.3.46 zeichnet das kleine Wetterbild der Brücke im Stil des Startbilds:
+Es blickt jetzt in den Wind, mit dem Himmel der Stunde (Sonne, Mond und Sterne),
+den Wolken, Regen, Schnee oder Nebel und der auf das Auge zulaufenden See, dazu
+eine türkise Windrose in der Ecke und die Eckwinkel der anderen Sichten. Auf der
+uConsole und im Remote-Crew-Browser; Spielstände bleiben v27.
+
 ## 1.3.45
 
 Version 1.3.45 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:

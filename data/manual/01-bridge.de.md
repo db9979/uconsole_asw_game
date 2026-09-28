@@ -27,7 +27,7 @@ Die obere Leiste zeigt Station, Mission, Uhrzeit, Fahrt und Kurs; der Kartenkopf
 
 - **Kurs / Ruder:** aktueller Kurs, befohlener Kurs (`→`), Ruderlage in ganzen Grad und, nur während einer Drehung, der Drehkreis.
 - **Fahrt / Akustik:** Telegraphenstufe, Fahrt, Eigenlärm in Prozent und Warnung KAVITATION über 15 kn.
-- **Taktische Lage:** beobachtete Bedrohungen (gehörter Torpedo-Starttransient oder HF-Ortungsimpulse, ein vom Sonar als Torpedo klassifizierter Kontakt oder ein als möglicher Flugkörper markierter Luftkontakt), Sensorzustand (Radar, TAS), Mittel (Helikopter, Bojen) und Wetter/Tag-Nacht.
+- **Taktische Lage:** beobachtete Bedrohungen (gehörter Torpedo-Starttransient oder HF-Ortungsimpulse, ein vom Sonar als Torpedo klassifizierter Kontakt oder ein als möglicher Flugkörper markierter Luftkontakt), Sensorzustand (Radar, TAS), Mittel (Helikopter, Bojen) und Wetter/Tag-Nacht. Neben den Wetterzeilen blickt ein kleines Bild im Stil des Startbilds in den Wind: der Himmel der Stunde mit Sonne, Mond oder Sternen, die Wolken, Regen, Schnee oder Nebel und die auf das Auge zulaufende See, mit einer Windrose (Norden oben, der Pfeil weht mit dem Wind) in der Ecke; die Remote-Crew-Brücke zeigt dasselbe Bild.
 - **Karte:** synthetische Kartentiefe und Küste, eigenes Schiff, von anderen Stationen veröffentlichte Tracks. `Q`/`E` zoomen in festen Stufen (Kartenhöhe 500, 250, 100, 50, 25, 10, 5, 2, 1 und 0,5 sm), das Mausrad stufenlos bis 0,5 sm; das Gitter wird beim Hineinzoomen feiner (bis 0,1 sm). Ziehen verschiebt, `K` folgt dem eigenen Schiff.
 
 ## Ausguck-Meldungen {#bridge-lookout}

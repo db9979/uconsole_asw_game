@@ -25,82 +25,16 @@ from src.ui.stations.common import (
 
 
 def _draw_bridge_weather(surface, rect, weather: dict, hour: float,
-                         phase_s: float) -> None:
-    """Draw a bounded marine instrument from authoritative weather values."""
-    area = pygame.Rect(rect)
-    previous_clip = surface.get_clip()
-    surface.set_clip(area)
-    is_night = hour < 5.5 or hour >= 19.5
-    visibility = weather["visibility_nm"]
-    haze = 1.0 - config.clamp(visibility / config.WEATHER_VISIBILITY_MAX_NM,
-                              0.0, 1.0)
-    sky_top = (5, 14, 27) if is_night else (25, 70, 92)
-    sky_bottom = (38, 53, 62) if is_night else (111, 151, 157)
-    horizon = area.y + int(area.h * 0.54)
-    for py in range(area.y, horizon):
-        blend = (py - area.y) / max(1, horizon - area.y - 1)
-        color = tuple(int(a + (b - a) * blend)
-                      for a, b in zip(sky_top, sky_bottom))
-        pygame.draw.line(surface, color, (area.x, py), (area.right, py))
-    pygame.draw.rect(surface, (7, 35, 48) if is_night else (9, 54, 67),
-                     (area.x, horizon, area.w, area.bottom - horizon))
-
-    daylight_start, daylight_end = 5.5, 19.5
-    if not is_night:
-        progress = config.clamp((hour - daylight_start)
-                                / (daylight_end - daylight_start), 0.0, 1.0)
-        light = (247, 209, 92)
-    else:
-        progress = ((hour - daylight_end) % 24.0) / (24.0 - daylight_end
-                                                     + daylight_start)
-        light = (188, 210, 211)
-    light_x = area.x + 12 + int(progress * max(1, area.w - 24))
-    light_y = horizon - 7 - int(math.sin(progress * math.pi)
-                               * max(5, area.h * 0.28))
-    pygame.draw.circle(surface, light, (light_x, light_y), 6)
-
-    sea_state = weather["sea_state"]
-    direction_phase = math.radians(weather["wind_from_deg"])
-    for band in range(3):
-        base = horizon + 8 + band * 10
-        amplitude = 1.5 + sea_state * (0.45 + band * 0.12)
-        wavelength = max(14.0, 31.0 - sea_state * 2.0 + band * 5.0)
-        speed = 0.7 + weather["wind_speed_kn"] / 35.0 + band * 0.18
-        points = []
-        for px in range(area.x - 2, area.right + 3, 3):
-            angle = ((px - area.x) / wavelength * math.tau
-                     + phase_s * speed + direction_phase)
-            points.append((px, base + int(math.sin(angle) * amplitude)))
-        pygame.draw.lines(surface,
-                          config.COLOR_WARN if sea_state >= 5 else
-                          ((71, 145, 151) if is_night else (91, 181, 181)),
-                          False, points, 1)
-        if sea_state >= 4.0:
-            for crest in range(min(8, int(sea_state * 1.2))):
-                px = area.x + int((crest * 43 + phase_s * 7 + band * 17) % area.w)
-                pygame.draw.line(surface, (178, 208, 202),
-                                 (px, base - int(amplitude)), (px + 5, base - 1), 1)
-
-    rain_count = int(weather["rain_intensity"] * 26)
-    for index in range(rain_count):
-        px = area.x + int((index * 47 + phase_s * 31) % (area.w + 16)) - 8
-        py = area.y + int((index * 23 + phase_s * 53) % area.h)
-        pygame.draw.line(surface, (128, 174, 184), (px, py), (px - 3, py + 8), 1)
-    if haze > 0.02:
-        veil = pygame.Surface(area.size, pygame.SRCALPHA)
-        veil.fill((170, 184, 181, int(150 * haze)))
-        surface.blit(veil, area.topleft)
-
-    center = (area.x + 17, area.y + 17)
-    angle = math.radians(weather["wind_from_deg"])
-    source = (center[0] + int(math.sin(angle) * 11),
-              center[1] - int(math.cos(angle) * 11))
-    pygame.draw.circle(surface, (8, 24, 30), center, 13)
-    pygame.draw.circle(surface, config.COLOR_TEXT_DIM, center, 13, 1)
-    pygame.draw.line(surface, config.COLOR_WARN, source, center, 2)
-    pygame.draw.circle(surface, config.COLOR_WARN, source, 2)
-    pygame.draw.rect(surface, config.COLOR_GRID, area, 1)
-    surface.set_clip(previous_clip)
+                         phase_s: float, sky: dict | None = None) -> None:
+    """The weather instrument in the start screen's look: a small eyepiece
+    picture looking into the wind (sky of the hour, clouds, rain, snow, fog,
+    the sea running at the eye) with the wind rose in its corner."""
+    if sky is None:
+        sky = dict(sight_scene.plain_sky(hour < config.DAYLIGHT_START_H
+                                         or hour >= config.DAYLIGHT_END_H),
+                   wind_from_deg=weather["wind_from_deg"])
+    sight_scene.draw_instrument(surface, rect, sky, visibility_nm=weather["visibility_nm"],
+                                sea_state=weather["sea_state"], t=phase_s)
 
 
 @localized
@@ -242,7 +176,8 @@ def draw_bridge_view(game, tr=None) -> None:
             visibility=f"{weather['visibility_nm']:.1f}"),
             (sx, sy + 90, text_w, 22), config.COLOR_TEXT_DIM, size=16)
         weather_rect = pygame.Rect(sx + text_w + 12, sy, weather_w, 90)
-        _draw_bridge_weather(s, weather_rect, weather, game.world.hour, game.sim_t)
+        _draw_bridge_weather(s, weather_rect, weather, game.world.hour, game.sim_t,
+                             sight_scene.sky_state(game))
 
     station_bottom = config.STATION_RECT[1] + config.STATION_RECT[3]
     _shortcut_footer(s, (x, station_bottom - 26, w, 20), (

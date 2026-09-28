@@ -160,3 +160,34 @@ def test_heading_to_the_sea_sets_pitch_and_roll():
     assert offset > 0 and tilt == pytest.approx(0.0, abs=1e-9)
     offset, tilt = horizon.view_motion(0.0, 0.05, 0.0)
     assert offset == pytest.approx(0.0, abs=1e-9) and tilt > 0
+
+
+def test_the_bridge_weather_instrument_is_a_small_eyepiece_into_the_wind():
+    from src.ui.stations import bridge as bridge_view
+    surface = pygame.Surface((200, 100))
+
+    def draw(hour, wind_from, sky=None):
+        surface.fill((0, 0, 0))
+        weather = dict(wind_from_deg=wind_from, visibility_nm=10.0, sea_state=3.0,
+                       rain_intensity=0.0, wind_speed_kn=15.0)
+        bridge_view._draw_bridge_weather(surface, (5, 5, 190, 90), weather, hour, 2.0, sky)
+        return surface.copy()
+
+    day = draw(12.0, 0.0)
+    night = draw(1.0, 0.0)
+    # The start screen's brackets and the turquoise wind arrow.
+    assert day.get_at((186, 8))[:3] == sight_scene.FRAME
+    rose = {day.get_at((x, y))[:3] for x in range(5, 45) for y in range(5, 45)}
+    assert sight_scene.WIND_ARROW in rose
+    assert day.get_at((100, 20))[:3] != night.get_at((100, 20))[:3]
+    # The arrow blows from where the wind comes: its head (the heavier end)
+    # sits low for a north wind and high for a south wind.
+    def arrow_rows(picture):
+        return [y for x in range(5, 45) for y in range(5, 45)
+                if picture.get_at((x, y))[:3] == sight_scene.WIND_ARROW]
+    north, south = arrow_rows(day), arrow_rows(draw(12.0, 180.0))
+    assert sum(north) / len(north) > sum(south) / len(south) + 1.0
+    # The game's own sky (clouds, sun) replaces the plain one.
+    cloudy = sight_scene.sky_values(12.0, 0.0, 0.0, 0.9, "rain", 0.6, 0.0)
+    assert pygame.image.tobytes(draw(12.0, 0.0, cloudy), "RGB") != \
+        pygame.image.tobytes(day, "RGB")

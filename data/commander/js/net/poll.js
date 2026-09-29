@@ -45,8 +45,11 @@ export async function poll() {
     if (S.session.host !== null) await pollHost(context);
     if (context !== S.generation) return;
     const stateRoute = sonarStream.connected && isSonar(S.session.station) ? "/state?sonar=stream" : "/state";
-    // A pushed state stands in for the /state request while the push is healthy.
-    let next = takePushedState() ?? await request(stateRoute);
+    // A pushed state stands in for the /state request while the push is healthy;
+    // a push sent before the last polled state arrives late and is dropped.
+    let next = takePushedState();
+    if (next && sameContext(S.snapshot, next) && next.seq < S.snapshot.seq) next = null;
+    next = next ?? await request(stateRoute);
     if (context !== S.generation) return;
     if (next?.role !== null && next?.role !== S.session.station) {
       const metadata = await request("/session");

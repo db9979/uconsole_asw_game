@@ -14,22 +14,21 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.78**
+Aktuelle Version: **1.3.79**
 
-Version 1.3.78 zeigt die Einheiten als 3D-Modelle. Im Einheitenanalysator
-(`F8`) ist die erste Seite jedes Katalogprofils jetzt ein langsam drehendes
-3D-Modell seiner Klasse, vor den Klang- und Radarbildern; im
-Remote-Crew-Browser lässt es sich zusätzlich durch Ziehen drehen. Der
-Einheiteneditor zeigt dasselbe Modell unter dem gewählten Profil und neben den
-Feldern eines geöffneten. Schiffe, U-Boote und Luftfahrzeuge sind die
-Silhouetten des Ausgucks, räumlich ausgebaut, sodass eine Einheit im
-Analysator so aussieht wie im Fernglas und im Sehrohr (Kriegsschiff,
-Handelsschiff, Kleinfahrzeug, U-Boot, der Hubschrauber des Ausgucks für jedes
-Luftfahrzeug); Torpedos, Täuschkörper und Tiere, die kein Ausguck sieht, haben
-eigene Modelle. Dieselben Modelle stehen jetzt im Fernglas des Ausgucks und
-im Sehrohr auf der uConsole, im Browser und am Handy, gedreht um den
-Lagewinkel, den der Beobachter schätzt, sobald er die Klasse ausgemacht hat.
-Spielstände bleiben v31.
+Version 1.3.79 gibt jedem Schiffs-, U-Boot- und Flugzeugtyp ein eigenes
+3D-Modell. Jeder der 111 Katalogtypen ist aus den öffentlichen
+Hauptabmessungen und der Anordnung der echten Klasse gebaut (Wikipedia;
+allgemeine Typen wie ein VLCC oder ein Hafenschlepper mit typischen Werten):
+Länge, Breite und Tiefgang, wo Brücke, Masten, Schornsteine, Geschütze,
+Flugkörperzellen, Flugdeck, Kräne und Ladung stehen, beim U-Boot Turm,
+Tiefenruder, Heckruder und Raketendeck, beim Flugzeug Flügel, Leitwerk und
+Triebwerke. Derselbe Typ sieht immer gleich aus, eine Type 23 also nicht mehr
+wie eine Arleigh Burke. Analysator, Einheiteneditor und die Okulare
+(Fernglas, Sehrohr, Handy-Ausguck) zeigen den echten Typ, den das Auge sieht,
+sodass er sich auf Sicht bestimmen lässt; die Meldung des Ausgucks nennt
+weiter nur, was er ausgemacht hat, und nur sie geht an die OPZ. Spielstände
+bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

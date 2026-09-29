@@ -4,6 +4,22 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.79
+
+Version 1.3.79 gibt jedem Schiffs-, U-Boot- und Flugzeugtyp ein eigenes
+3D-Modell. Jeder der 111 Katalogtypen ist aus den öffentlichen
+Hauptabmessungen und der Anordnung der echten Klasse gebaut (Wikipedia;
+allgemeine Typen wie ein VLCC oder ein Hafenschlepper mit typischen Werten):
+Länge, Breite und Tiefgang, wo Brücke, Masten, Schornsteine, Geschütze,
+Flugkörperzellen, Flugdeck, Kräne und Ladung stehen, beim U-Boot Turm,
+Tiefenruder, Heckruder und Raketendeck, beim Flugzeug Flügel, Leitwerk und
+Triebwerke. Derselbe Typ sieht immer gleich aus, eine Type 23 also nicht mehr
+wie eine Arleigh Burke. Analysator, Einheiteneditor und die Okulare
+(Fernglas, Sehrohr, Handy-Ausguck) zeigen den echten Typ, den das Auge sieht,
+sodass er sich auf Sicht bestimmen lässt; die Meldung des Ausgucks nennt
+weiter nur, was er ausgemacht hat, und nur sie geht an die OPZ. Spielstände
+bleiben v31.
+
 ## 1.3.78
 
 Version 1.3.78 zeigt die Einheiten als 3D-Modelle. Im Einheitenanalysator

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.86**
+Aktuelle Version: **1.3.87**
 
-Version 1.3.86 lässt die OPZ übereinanderliegende Meldungen von selbst
+Version 1.3.87 lässt die OPZ übereinanderliegende Meldungen von selbst
 zusammenlegen: Ein Schiff, das Radar, Ausguck und AIS sehen, ist jetzt ein
 Kontakt statt drei. Zusammengelegt wird nur bei eindeutiger Übereinstimmung
 (mindestens eine Position, kein zweiter Kandidat derselben Sensorart); dicht

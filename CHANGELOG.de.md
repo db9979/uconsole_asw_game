@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.86
+## 1.3.87
 
-Version 1.3.86 lässt die OPZ übereinanderliegende Meldungen von selbst
+Version 1.3.87 lässt die OPZ übereinanderliegende Meldungen von selbst
 zusammenlegen: Ein Schiff, das Radar, Ausguck und AIS sehen, ist jetzt ein
 Kontakt statt drei. Zusammengelegt wird nur bei eindeutiger Übereinstimmung
 (mindestens eine Position, kein zweiter Kandidat derselben Sensorart); dicht
@@ -15,6 +15,21 @@ und `Shift+L` trennt eine Fusion weiterhin. Die zusammengelegten Meldungen
 verschwinden aus Trackliste und Karte, jede Zeile endet mit Sensorkürzeln
 (`R` Radar, `V` Ausguck, `A` AIS, `E` ESM, `S` Sonar ...), und die Zieldetails
 und die Remote-Crew-OPZ nennen die Quellen einer Fusion mit Namen.
+Spielstände bleiben v32.
+
+## 1.3.86
+
+Version 1.3.86 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach
+ihrem Mittelpunkt sortiert gezeichnet, sodass aus vielen Winkeln eine ferne
+Fläche über eine nahe gemalt wurde: Decks schienen durch Aufbauten, die ferne
+Rumpfseite durch die nahe, und Schiffe wirkten hohl. Jedes Modell wird jetzt
+einmal in eine binäre Raumteilung zerlegt, die von jeder Seite eine exakte
+Reihenfolge von hinten nach vorn ergibt, auf der uConsole wie im Browser; die
+Rumpfbeplankung ist geschlossen und zeigt nach außen, und Rümpfe, U-Boote und
+Flugzeugrümpfe haben ein feineres Raster. Aufbauten sind keine Klötze mehr:
+Sie steigen in Decksstufen an, bei Kriegsschiffen eingezogen und geneigt, bei
+Passagierschiffen in Terrassen zurückgesetzt, bei Handelsschiffen mit kurzem
+Steuerhaus und Brückennocken oben; U-Boot-Türme sind stromlinienförmig.
 Spielstände bleiben v32.
 
 ## 1.3.85

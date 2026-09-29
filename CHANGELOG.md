@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.86
+## 1.3.87
 
-Release 1.3.86 makes the OPZ fuse reports that lie on top of each other by
+Release 1.3.87 makes the OPZ fuse reports that lie on top of each other by
 itself: a ship seen by radar, lookout and AIS is now one contact instead of
 three. Only clear matches are fused (at least one position fix, no second
 candidate from the same kind of sensor); ships close together stay apart and
@@ -15,6 +15,20 @@ reports disappear from the track list and the chart, each row ends with
 sensor tags (`R` radar, `V` lookout, `A` AIS, `E` ESM, `S` sonar ...), and the
 track details and the Remote Crew OPZ list a fusion's sources by name. Saves
 stay v32.
+
+## 1.3.86
+
+Release 1.3.86 makes the 3D models solid. Until now their faces were drawn
+in the order of their centres, so from many angles a far face was painted over
+a near one: decks showed through superstructures, the far side of a hull
+through the near side, and ships looked hollow. Every model is now split once
+into a binary space partition that gives, from any side, an exact order from
+back to front, on the uConsole and in the browser alike; hull plating is
+closed and faces outward, and hulls, submarines and fuselages are drawn with
+a finer grid. Deckhouses are no longer single blocks: they rise in deck tiers,
+warships drawn in and raked, passenger ships stepping back in terraces,
+merchant ships with a short wheelhouse and bridge wings on top; submarine
+sails are streamlined. Saves stay v32.
 
 ## 1.3.85
 

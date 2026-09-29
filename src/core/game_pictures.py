@@ -21,7 +21,7 @@ from src.sensors import lookout_id
 from src.world import atmosphere as atmosphere_physics
 from src.world import ocean as ocean_physics
 from src.sonar import raytrace as sonar_raytrace
-from src.sensors.fusion import (OPZObservation, source_classification,
+from src.sensors.fusion import (OPZObservation, live_members, source_classification,
                                 suggest_correlations, suggestion_key)
 from src.sensors.esm import (
     ESM_MAX_ANNOTATIONS,
@@ -554,6 +554,15 @@ class PicturesMixin:
                                if getattr(source, "track_id", None) == track_id), None)
                 if opaque is not None:
                     track_id = opaque
+        if (track_id not in self.opz_affiliations
+                and track_id not in self.opz_fusion.fusion_affiliations):
+            # A report inside a fusion carries the fusion's affiliation, so
+            # fire control on the underlying track follows the operator's
+            # call on the fused contact (an explicit call on the report wins).
+            track_id = next((key for key, fusion in sorted(self.opz_fusion.fusions.items())
+                             if key in self.opz_fusion.fusion_affiliations
+                             and track_id in (live_members(
+                                 fusion, self._opz_source_bindings) or ())), track_id)
         value = self.opz_fusion.fusion_affiliations.get(
             track_id, self.opz_affiliations.get(track_id, "UNKNOWN"))
         return value if value in config.NATO_AFFILIATIONS else "UNKNOWN"
@@ -673,6 +682,9 @@ class PicturesMixin:
                        if track.source == "FUSION" else self.opz_affiliations)
         destination[observation_id] = affiliation
         self._sync_live_engagement_hold(observation_id, track.track_id, affiliation)
+        for member in track.members if track.source == "FUSION" else ():
+            if member not in self.opz_affiliations:
+                self._sync_live_engagement_hold(member, track.label, affiliation)
         return True
 
     def _live_aircraft_icao_for_track_id(self, track_id) -> str | None:
@@ -761,6 +773,26 @@ class PicturesMixin:
         if self.opz_selected_track_id == observation_id:
             self.opz_selected_track_id = None
         return True
+
+    def _update_opz_picture(self) -> None:
+        """Fuse reports of different sensors lying on top of each other.
+
+        Runs on simulation time (every ``OPZ_AUTO_FUSE_INTERVAL_S``) from the
+        OPZ's published reports only, so the result never depends on drawing
+        or on browser polling. A selected report that joins a fusion hands
+        the selection to the fusion."""
+        step = int(self.sim_t // config.OPZ_AUTO_FUSE_INTERVAL_S)
+        if step == self._opz_auto_fuse_step:
+            return
+        self._opz_auto_fuse_step = step
+        if self.damage.station_down("opz"):
+            return
+        observations = self.opz_source_observations()
+        for fusion_id in self.opz_fusion.auto_fuse(
+                observations, self.ship.x, self.ship.y, self.sim_t,
+                self.air_picture.stale_s):
+            if self.opz_selected_track_id in self.opz_fusion.fusions[fusion_id].members:
+                self.opz_selected_track_id = fusion_id
 
     def opz_suggestions(self) -> tuple:
         """Correlation suggestions from the OPZ's own published reports.

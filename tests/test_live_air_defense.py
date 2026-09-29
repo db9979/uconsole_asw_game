@@ -44,6 +44,10 @@ def _classify_as_hostile(game, aircraft) -> None:
     observation_id = next(
         obs_id for obs_id, track in game._opz_source_bindings.items()
         if getattr(track, "track_id", None) == track_id)
+    # Radar and lookout reports of one aircraft are fused by the OPZ; the
+    # operator then classifies the fused contact.
+    observation_id = next((key for key, fusion in game.opz_fusion.fusions.items()
+                           if observation_id in fusion.members), observation_id)
     game.opz_selected_track_id = observation_id
     for _ in range(3):  # UNKNOWN -> FRIEND -> NEUTRAL -> HOSTILE
         game._cycle_opz_affiliation()

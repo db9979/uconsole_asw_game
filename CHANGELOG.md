@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.86
+
+Release 1.3.86 makes the OPZ fuse reports that lie on top of each other by
+itself: a ship seen by radar, lookout and AIS is now one contact instead of
+three. Only clear matches are fused (at least one position fix, no second
+candidate from the same kind of sensor); ships close together stay apart and
+appear as suggestions, and `Shift+L` still separates a fusion. The fused
+reports disappear from the track list and the chart, each row ends with
+sensor tags (`R` radar, `V` lookout, `A` AIS, `E` ESM, `S` sonar ...), and the
+track details and the Remote Crew OPZ list a fusion's sources by name. Saves
+stay v31.
+
 ## 1.3.84
 
 Release 1.3.84 lets the Bridge autopilot find its way through channels, into

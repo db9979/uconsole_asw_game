@@ -12,16 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.84**
+Current release: **1.3.86**
 
-Release 1.3.84 lets the Bridge autopilot find its way through channels, into
-bays and round long coasts: when a stand-off detour does not clear a leg, a
-path search on the chart plans the turning points (planning is also faster
-than before). GitHub now runs the whole test suite with the browser tests,
-the generated-file checks, the calibration and the smoke test on every change,
-and two flaky browser checks are fixed: the phone lookout no longer falls back to the pairing screen when the host answers slowly right after pairing, and the status bar check measures with the bundled fonts. The manual no
-longer says the frigate has no ASROC, and `tools/hw_report.py` turns a debug
-run on the uConsole into the hardware checklist's table. Saves stay v31.
+Release 1.3.86 makes the OPZ fuse reports that lie on top of each other by
+itself: a ship seen by radar, lookout and AIS is now one contact instead of
+three. Only clear matches are fused (at least one position fix, no second
+candidate from the same kind of sensor); ships close together stay apart and
+appear as suggestions, and `Shift+L` still separates a fusion. The fused
+reports disappear from the track list and the chart, each row ends with
+sensor tags (`R` radar, `V` lookout, `A` AIS, `E` ESM, `S` sonar ...), and the
+track details and the Remote Crew OPZ list a fusion's sources by name. Saves
+stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -14,19 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.84**
+Aktuelle Version: **1.3.86**
 
-Version 1.3.84 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
-Buchten und um lange Küsten finden: Reicht ein Ausweichpunkt für eine Strecke
-nicht, plant eine Wegsuche auf der Karte die Wendepunkte (die Planung ist
-dabei schneller als bisher). GitHub prüft jetzt jede Änderung mit der ganzen
-Testsuite samt Browser-Tests, den Prüfungen der erzeugten Dateien, der
-Kalibrierung und dem Smoke-Test, und zwei wackelige Browser-Prüfungen sind
-repariert: Der Handy-Ausguck fällt nicht mehr auf die Kopplungsseite zurück,
-wenn der Host direkt nach dem Koppeln langsam antwortet, und die Statusleiste
-wird mit den mitgelieferten Schriften vermessen. Das Handbuch behauptet nicht mehr, die
-Fregatte habe kein ASROC, und `tools/hw_report.py` macht aus einem
-Debug-Lauf auf der uConsole die Tabelle der Hardware-Checkliste. Spielstände bleiben v31.
+Version 1.3.86 lässt die OPZ übereinanderliegende Meldungen von selbst
+zusammenlegen: Ein Schiff, das Radar, Ausguck und AIS sehen, ist jetzt ein
+Kontakt statt drei. Zusammengelegt wird nur bei eindeutiger Übereinstimmung
+(mindestens eine Position, kein zweiter Kandidat derselben Sensorart); dicht
+beieinander fahrende Schiffe bleiben getrennt und erscheinen als Vorschlag,
+und `Shift+L` trennt eine Fusion weiterhin. Die zusammengelegten Meldungen
+verschwinden aus Trackliste und Karte, jede Zeile endet mit Sensorkürzeln
+(`R` Radar, `V` Ausguck, `A` AIS, `E` ESM, `S` Sonar ...), und die Zieldetails
+und die Remote-Crew-OPZ nennen die Quellen einer Fusion mit Namen.
+Spielstände bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

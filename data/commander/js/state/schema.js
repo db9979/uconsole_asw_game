@@ -313,7 +313,9 @@ export function validateV2State(state) {
     const settings = payload.settings;
     if (!exactKeys(settings, ["mode", "page", "listen_bearing", "focus_ref", "target_ref", "station_down", "tow", "vds", "bt", "ping", "tma_enabled", "gain_db", "band_preset", "band_hz", "notch", "peak_hold", "harmonic_hz", "harmonic_candidates_hz", "audio_enabled", "volume", "quiet_mode", "tools"]) ||
         !["BOW", "TOWED", "VDS"].includes(settings.mode) || typeof settings.station_down !== "boolean" ||
-        !exactKeys(settings.tools, ["assist", "lofar_cursor_hz", "demon_cursor_hz", "integration_s", "vernier", "shaft_hz", "blade_hz", "operator_notch_hz", "demon_band_hz", "heterodyne_hz"]) ||
+        !exactKeys(settings.tools, ["assist", "lofar_cursor_hz", "demon_cursor_hz", "integration_s", "vernier", "shaft_hz", "blade_hz", "operator_notch_hz", "demon_band_hz", "heterodyne_hz", "library_marks", "library"]) ||
+        !Number.isInteger(settings.tools.library_marks) || settings.tools.library_marks < 0 || settings.tools.library_marks > 3 ||
+        !boundedArray(settings.tools.library, 3) || settings.tools.library.some((row) => !exactKeys(row, ["name", "fit"]) || typeof row.name !== "string" || row.name.length > 48 || !finite(row.fit) || row.fit < 0 || row.fit > 1) ||
         !boundedArray(settings.tools.demon_band_hz, 2) || settings.tools.demon_band_hz.some((value) => !finite(value)) || !finite(settings.tools.heterodyne_hz) ||
         typeof settings.tools.assist !== "boolean" || typeof settings.tools.vernier !== "boolean" ||
         ![2, 8, 16, 64].includes(settings.tools.integration_s) ||

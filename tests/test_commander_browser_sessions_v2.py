@@ -1232,7 +1232,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                                         "vernier": False, "shaft_hz": None,
                                         "blade_hz": None, "operator_notch_hz": None,
                                         "demon_band_hz": [400.0, 1400.0],
-                                        "heterodyne_hz": 700.0}},
+                                        "heterodyne_hz": 700.0, "library_marks": 0,
+                                        "library": []}},
                 "visualization": {
                     "broadband": {"bearing_start_deg": 0.0,
                                   "bearing_step_deg": 4.0, "history": []},

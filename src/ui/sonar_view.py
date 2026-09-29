@@ -10,7 +10,7 @@ import pygame
 from src.core import config
 from src.core.i18n import (display_message, display_value, localized, localize,
                             message as structured_message)
-from src.sonar import analysis_tools, tma_operator
+from src.sonar import analysis_tools, class_library, tma_operator
 from src.ui import layout
 from src.ui import observations
 from src.ui import profile_cursor
@@ -1095,6 +1095,25 @@ def _selected_harmonic(game):
     return float(selected)
 
 
+def _library_rows(game):
+    """Class library: catalog classes sorted by fit to the operator's marks."""
+    library = getattr(game, "sonar_class_library", None)
+    if library is None:
+        return [("sonar.catalog_manual_hint", TEXT, 13)]
+    marks = game.sonar_library_marks()
+    ranked = library(3)
+    if not ranked:
+        return [("sonar.catalog_manual_hint", TEXT, 13)]
+    key = ("sonar.library.header" if marks >= class_library.SURE_MARKS
+           else "sonar.library.header_hint")
+    rows = [(message(key, marks=marks), AMBER, 13)]
+    for index, (signature, fit) in enumerate(ranked, 1):
+        rows.append((message("sonar.library.row", index=index, fit=f"{fit:.0%}",
+                             name=str(getattr(signature, "label", signature.key))),
+                     TEXT, 13))
+    return rows
+
+
 def _demon_evidence(sonar):
     spectrum = np.asarray(getattr(getattr(sonar, "receiver", None), "demon_spectrum", []))
     analysis = getattr(sonar, "demon_analysis", None) or {}
@@ -1599,8 +1618,8 @@ def _detail_rows(game, page):
                                  deviation=f"{deviation:+.2f}", rpm=f"{rpm:.0f}"))
         elif tools.shaft_hz is not None:
             lines.append(message("sonar.line.shaft_rpm", rpm=f"{tools.shaft_hz * 60:.0f}"))
-        lines.append("sonar.catalog_manual_hint")
         rows.extend((line, TEXT, 13) for line in lines)
+        rows.extend(_library_rows(game))
         return rows
     if page == 2:
         _, analysis, evidence = _demon_evidence(sonar)

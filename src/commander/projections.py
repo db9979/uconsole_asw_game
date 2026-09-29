@@ -612,7 +612,12 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                                       getattr(game.sonar, "operator_notch_hz", None)),
                                   demon_band_hz=[_number(value) for value in
                                                  game.sonar.receiver.demon_band_hz],
-                                  heterodyne_hz=_number(game.sonar.heterodyne_hz)),
+                                  heterodyne_hz=_number(game.sonar.heterodyne_hz),
+                                  library_marks=int(game.sonar_library_marks()),
+                                  library=[dict(name=str(getattr(signature, "label",
+                                                                 signature.key))[:48],
+                                                fit=_number(fit))
+                                           for signature, fit in game.sonar_class_library(3)]),
                               audio_enabled=bool(game.sonar_audio_enabled),
                               volume=_number(game.sonar_volume),
                               quiet_mode=bool(getattr(observer, "quiet_mode", False))),

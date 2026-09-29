@@ -14,17 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.62**
+Aktuelle Version: **1.3.63**
 
-Version 1.3.62 bringt dem Autopiloten die Seekarte bei. Führt die Strecke
-eines Wegpunkts oder Suchmusters durch Flachwasser oder Land, fügt er Umweg-
-Punkte ein oder meldet im Verlauf, welche Strecke von Hand zu steuern ist.
-Während der Fahrt schaut er einmal pro Sekunde zwei Minuten voraus;
-Flachwasser dort bekommt einen Umweg zum aktuellen Wegpunkt, sonst schaltet
-sich die Route ab und das Schiff dreht auf den Gegenkurs. Er plant mit
-Kartentiefe, Felsen und Wracks gegen Tiefgang plus Kielreserve und 2 m
-Sicherheit. Spielstände bleiben v28; eine Route kann mit Umwegen jetzt bis zu
-16 Punkte haben.
+Version 1.3.63 räumt die uConsole-Bildschirme auf. Alle Texte nutzen jetzt
+die mitgelieferte Schrift JetBrains Mono, damit auf keinem System mehr Zeilen
+abgeschnitten werden, und der Zeilenabstand folgt der Schrift. Alle
+Zustandsbalken haben einen gemeinsamen Stil mit Viertelmarken und
+Beschriftung, der Maschinentelegraph hebt die nächste Stufe hervor und warnt,
+wenn eine Direktfahrt zwischen zwei Stufen liegt, und die Brücke bekommt Kurs-,
+Ruder- und Fahrtanzeige. U-Boot-Reiter, Kartenskala, Wassersäule, ESM-Rose und
+Laufband überlappen nicht mehr; OPZ, ELOKA und Helikopter bekommen die Rahmen
+des Startbilds und eine Tastenzeile, und die letzten englischen Reste in
+deutschen Menüs sind übersetzt. Spielstände bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

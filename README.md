@@ -12,16 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.62**
+Current release: **1.3.63**
 
-Release 1.3.62 teaches the autopilot the chart. A waypoint or search pattern
-whose leg crosses shoal water or land now gets detour points around it, or a
-warning in the feed which leg to steer by hand. While the route runs, the
-autopilot looks two minutes ahead once a second; shoal water there gets a
-detour to the current waypoint, or the route switches off and the ship turns
-back on the reciprocal course. It plans on charted depth, rocks and wrecks
-against the hull's draft plus keel reserve and a 2 m margin. Saves stay v28; a
-route may now hold up to 16 points with detours.
+Release 1.3.63 tidies the uConsole screens. Every text now uses the bundled
+JetBrains Mono face, so lines no longer clip on any system, and line spacing
+follows the font. All status bars share one style with quarter marks and
+labels, the engine telegraph highlights the nearest step and warns when a
+direct speed lies between steps, and the bridge gains heading, rudder and
+speed dials. The submarine tab bar, map scale numbers, water column labels, ESM
+compass and the bottom ticker no longer overlap; OPZ, ELOKA and helicopter
+pages get the start screen's frames and a key footer, and the last English
+leftovers in German menus are translated. Saves stay v28.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

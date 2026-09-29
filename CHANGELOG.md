@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.63
+
+Release 1.3.63 tidies the uConsole screens. Every text now uses the bundled
+JetBrains Mono face, so lines no longer clip on any system, and line spacing
+follows the font. All status bars share one style with quarter marks and
+labels, the engine telegraph highlights the nearest step and warns when a
+direct speed lies between steps, and the bridge gains heading, rudder and
+speed dials. The submarine tab bar, map scale numbers, water column labels, ESM
+compass and the bottom ticker no longer overlap; OPZ, ELOKA and helicopter
+pages get the start screen's frames and a key footer, and the last English
+leftovers in German menus are translated. Saves stay v28.
+
 ## 1.3.62
 
 Release 1.3.62 teaches the autopilot the chart. A waypoint or search pattern

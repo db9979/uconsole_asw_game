@@ -21,6 +21,7 @@ from src.ui import observations
 from src.ui.stations.common import (
     _observation_bearing,
     _observation_position,
+    _panel,
     _station_content_top,
     draw_station_page_tabs,
     message)
@@ -623,6 +624,7 @@ def draw_opz_view(game, tr=None) -> None:
     pages = STATION_PAGES[Station.OPZ]
     page = int(getattr(game, "station_page", 0)) % len(pages)
     station = pygame.Rect(config.STATION_RECT)
+    _panel(game, title="station.opz.panel_title")
     draw_station_page_tabs(s, station, pages, page, tr)
     regions = opz_regions()
     scope_w = regions["sidebar"].x - station.x
@@ -631,7 +633,8 @@ def draw_opz_view(game, tr=None) -> None:
     view = _opz_view(game, chart)
     max_nm = _opz_radar_range_nm(game)
     s.blit(_opz_basemap_surface(game, map_rect, view), map_rect)
-    pygame.draw.rect(s, config.COLOR_LAND_EDGE, map_rect, 1)
+    pygame.draw.rect(s, config.COLOR_SONAR_RING, map_rect, 1)
+    layout.corner_brackets(s, map_rect)
     previous_clip = s.get_clip()
     s.set_clip(chart)
     station_live = not game.damage.station_down("opz")
@@ -820,7 +823,7 @@ def draw_opz_view(game, tr=None) -> None:
     side_h = regions["sidebar"].h
     sb_box = layout.box(s, (regions["sidebar"].x + 4, side_top,
                             regions["sidebar"].w - 8, side_h - 8),
-                        "station.opz.title")
+                        "panel.opz_status")
     x = sb_box[0]
     py = sb_box[1]
     w = sb_box[2]
@@ -833,37 +836,43 @@ def draw_opz_view(game, tr=None) -> None:
             air=localize("common.on" if game.air_radar_on else "common.off")))
 
     if page == 0:
-        layout.status_line(s, x, py, w, "RADAR", radar_state,
-                           label_w=70, size=16)
-        py += 28
+        # One label column for the five status rows.
+        label_face = layout.font(15)
+        label_w = max(label_face.size(localize(key))[0] for key in
+                      ("opz.label.radar", "opz.label.scope", "opz.label.picture",
+                       "opz.label.vls", "opz.label.ciws")) + 12
+        row = layout.line_pitch(15, 6)
+        layout.status_line(s, x, py, w, "opz.label.radar", radar_state,
+                           label_w=label_w, size=15)
+        py += row
         severity = game.radar_weather_severity()
         weather_key = ("opz.weather.clear" if severity <= 0.0 else
                        ("opz.weather.clutter" if severity < 1.0 else "opz.weather.heavy"))
         weather_color = config.COLOR_TEXT_DIM if severity <= 0.0 else config.COLOR_WARN
-        layout.status_line(s, x, py, w, "ui.scope",
+        layout.status_line(s, x, py, w, "opz.label.scope",
                             message("opz.line.scope", range=f"{max_nm:.0f}", sea=game.world.sea_state,
                                     weather=localize(weather_key)),
-                            label_w=66, size=14, color=weather_color)
-        py += 26
+                            label_w=label_w, size=15, color=weather_color)
+        py += row
         surface_count = sum(1 for t in cic_tracks
                             if t["kind"] in ("SURFACE", "AIS"))
         hoj_count = sum(1 for t in cic_tracks if t["source"] == "HOJ")
-        layout.status_line(s, x, py, w, "ui.picture",
+        layout.status_line(s, x, py, w, "opz.label.picture",
                             message("opz.line.picture", surface=surface_count,
                                     hoj=hoj_count),
-                            label_w=80, size=15)
-        py += 26
-        layout.status_line(s, x, py, w, "VLS:",
+                            label_w=label_w, size=15)
+        py += row
+        layout.status_line(s, x, py, w, "opz.label.vls",
                             message("opz.line.vls_chaff", count=game.vls_cells,
                                     total=getattr(game, "vls_loadout_total",
                                                   game.vls_cells),
                                     chaff=f"{game.chaff_cd:.0f}"),
-                            label_w=80, size=15)
-        py += 26
-        layout.status_line(s, x, py, w, "CIWS:",
+                            label_w=label_w, size=15)
+        py += row
+        layout.status_line(s, x, py, w, "opz.label.ciws",
                             localize("opz.ciws.authorized" if game.ciws_authorized
                                      else "opz.ciws.withheld"),
-                            label_w=80, size=15,
+                            label_w=label_w, size=15,
                             color=(config.COLOR_OK if game.ciws_authorized
                                    else config.COLOR_WARN))
         py += 30
@@ -1014,7 +1023,7 @@ def draw_opz_view(game, tr=None) -> None:
     scales = " ".join(
         f"[{scale:g}]" if scale == max_nm else f"{scale:g}"
         for scale in config.RADAR_RANGE_SCALES_NM)
-    footer_rect = pygame.Rect(station.x + 8, station.bottom - 23, scope_w - 16, 19)
-    pygame.draw.rect(s, (8, 18, 13), footer_rect)
-    layout.command_segment(s, footer_rect, "PGUP/DN", "opz.footer.range", "",
-                           f"{max_nm:g} NM  {scales}", size=14)
+    # The station footer row, like every other station's key legend.
+    footer_rect = pygame.Rect(station.x + 8, station.bottom - 28, scope_w - 16, 20)
+    layout.command_segment(s, footer_rect, "help.key.page_arrows", "opz.footer.range", "",
+                           f"{max_nm:g} NM  {scales}", size=11)

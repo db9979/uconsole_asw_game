@@ -174,8 +174,8 @@ Die obere Leiste zeigt Station, Mission, Uhrzeit, Fahrt und Kurs; der Kartenkopf
  Fußzeile: <- -> Kurs | Auf/Ab Telegraph | U/V direkt
 ```
 
-- **Kurs / Ruder:** aktueller Kurs, befohlener Kurs (`→`), Ruderlage in ganzen Grad und, nur während einer Drehung, der Drehkreis.
-- **Fahrt / Akustik:** Telegraphenstufe, Fahrt, Eigenlärm in Prozent und Warnung KAVITATION über 15 kn.
+- **Kurs / Ruder:** aktueller Kurs, befohlener Kurs (`→`), Ruderlage in ganzen Grad und, nur während einer Drehung, der Drehkreis. Unter den Zahlen zeigt eine Ruderskala die Lage von Backbord (links) nach Steuerbord (rechts), und eine Kompassrose zeigt die Kursnadel mit dem befohlenen Kurs als hohle gelbe Marke.
+- **Fahrt / Akustik:** Telegraphenstufe, Fahrt, Eigenlärm in Prozent und Warnung KAVITATION über 15 kn. Eine Fahrtskala von 0 bis 31 kn zeigt die aktuelle Fahrt als Nadel und die befohlene Fahrt als hohle gelbe Marke.
 - **Taktische Lage:** beobachtete Bedrohungen (gehörter Torpedo-Starttransient oder HF-Ortungsimpulse, ein vom Sonar als Torpedo klassifizierter Kontakt oder ein als möglicher Flugkörper markierter Luftkontakt), Sensorzustand (Radar, TAS), Mittel (Helikopter, Bojen) und Wetter/Tag-Nacht. Neben den Wetterzeilen blickt ein kleines Bild im Stil des Startbilds in den Wind: der Himmel der Stunde mit Sonne, Mond oder Sternen, die Wolken, Regen, Schnee oder Nebel und die auf das Auge zulaufende See, mit einer Windrose (Norden oben, der Pfeil weht mit dem Wind) in der Ecke; die Remote-Crew-Brücke zeigt dasselbe Bild.
 - **Karte:** synthetische Kartentiefe und Küste, eigenes Schiff, von anderen Stationen veröffentlichte Tracks. `Q`/`E` zoomen in festen Stufen (Kartenhöhe 500, 250, 100, 50, 25, 10, 5, 2, 1 und 0,5 sm), das Mausrad stufenlos bis 0,5 sm; das Gitter wird beim Hineinzoomen feiner (bis 0,1 sm). Ziehen verschiebt, `K` folgt dem eigenen Schiff.
 
@@ -816,6 +816,7 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
 ```
 
 - Der Eigenlärm steigt linear von 4 kn bis 31 kn. Die Schrauben kavitieren, wenn die Flügelspitzengeschwindigkeit für den Wasserdruck an den Schrauben zu hoch ist: bei ruhiger See ab 15 kn, bei schwerer See früher, wenn das Stampfen das Heck anhebt. Kavitation hebt den Lärm auf mindestens 0,85 und senkt die passive Sonarreichweite auf 35 %.
+- Die Telegraphenzeile der befohlenen Stufe ist hinterlegt. Liegt eine Direktfahrt (`V` auf der Brücke) zwischen zwei Stufen, nennt eine Warnzeile die befohlene Fahrt, damit HALF 10 kn bei befohlenen 12 kn nicht mit HALF verwechselt wird. Drehzahl und Eigenlärm stehen als beschriftete Balken da.
 - Modus LEISE senkt den Eigenlärm auf 65 % und begrenzt die Fahrt auf 12 kn.
 - Anlagenwahl (`G`): AUTO fährt die Anlage wie bisher. DIESEL ist die leise Anlage (Eigenlärm etwa -4 dB, Brennstoff -10 %), begrenzt aber auf 18 kn; TURBINE gibt volle Fahrt bei etwa +3 dB und +25 % Brennstoff. Die Wahl steht auf Seite 2 und im Maschinenraum des Browsers.
 - Die Wellendrehzahl folgt dem Festpropeller: bei konstanter Fahrt etwa 5,8 U/min je Knoten (146 U/min bei 25 kn, 181 U/min bei 31 kn Höchstfahrt). Beim Beschleunigen hält das Fahrprogramm die Welle höchstens etwa 11 U/min vor der aktuellen Fahrt; beim Abbremsen wird die Steigung umgesteuert und die Welle läuft mit 20 U/min im Leerlauf. Die eigene Wellenlinie im LOFAR wandert mit der Fahrt.
@@ -909,7 +910,7 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Kamera-Follow an/aus |
 | `Akustik: Bild Auf / Ab` | Akustikseite: Breitband / LOFAR / DEMON |
-| `Akustik: <- / ->` | Hubschrauber-Horchpeilung -/+ 5 Grad |
+| `Akustik: ← / →` | Hubschrauber-Horchpeilung -/+ 5 Grad |
 | `Akustik: R` | Horchpeilung auf automatisch zurücksetzen |
 | `Akustik: T` | Horchquelle: Tauchsonar / passive Bojen |
 | `Akustik: J \| , / .` | Empfangston an/aus \| Lautstärke senken/erhöhen |

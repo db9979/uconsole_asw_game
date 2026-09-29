@@ -203,11 +203,11 @@ def test_lofar_demon_language_size_state_matrix(language, large, page, state):
     with layout.capture_geometry() as geometry, layout.capture_text() as text:
         game.draw()
     assert text
-    assert all(entry["bounds"].contains(entry["rect"]) for entry in text)
+    assert all(entry["bounds"].contains(entry["ink"]) for entry in text)
     details = next(entry["rect"] for entry in geometry
                    if entry["title"] == "sonar-details")
     detail_text = [entry for entry in text if entry["bounds"].x == details.x + 13]
-    assert detail_text and all(details.contains(entry["rect"]) for entry in detail_text)
+    assert detail_text and all(details.contains(entry["ink"]) for entry in detail_text)
     rendered = " ".join(entry["text"] for entry in text)
     assert "sonar." not in rendered
     if page == 1 and state == "populated":

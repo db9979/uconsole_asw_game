@@ -1,4 +1,4 @@
-# U-Jagd 1.3.63 - Stations- und Tastenkürzel
+# U-Jagd 1.3.64 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -213,7 +213,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Kamera-Follow an/aus |
 | `Akustik: Bild Auf / Ab` | Akustikseite: Breitband / LOFAR / DEMON |
-| `Akustik: <- / ->` | Hubschrauber-Horchpeilung -/+ 5 Grad |
+| `Akustik: ← / →` | Hubschrauber-Horchpeilung -/+ 5 Grad |
 | `Akustik: R` | Horchpeilung auf automatisch zurücksetzen |
 | `Akustik: T` | Horchquelle: Tauchsonar / passive Bojen |
 | `Akustik: J \| , / .` | Empfangston an/aus \| Lautstärke senken/erhöhen |

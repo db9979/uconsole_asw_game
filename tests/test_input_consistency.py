@@ -330,7 +330,7 @@ def test_long_top_bar_and_flash_are_bounded(game):
         game.draw()
     bounded = [entry for entry in trace if "LONG" in entry["text"]]
     assert bounded
-    assert all(entry["bounds"].contains(entry["rect"]) for entry in bounded)
+    assert all(entry["bounds"].contains(entry["ink"]) for entry in bounded)
 
 
 def test_joystick_open_hotplug_remove_and_device_failure(game, monkeypatch):

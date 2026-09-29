@@ -92,7 +92,7 @@ def test_schematic_readable_markers_detail_and_localized_destination(monkeypatch
     rendered = "\n".join(item["text"] for item in text)
     assert "X ~ ^ T1" in rendered
     assert "..." not in rendered
-    assert all(item["bounds"].contains(item["rect"]) for item in text), text
+    assert all(item["bounds"].contains(item["ink"]) for item in text), text
     assert all(plan_geometry["station"].contains(item["rect"]) for item in text)
 
     # Page 1: selected-compartment detail and localized team destination.
@@ -105,7 +105,7 @@ def test_schematic_readable_markers_detail_and_localized_destination(monkeypatch
     assert translator.t("damage.falling") not in rendered
     assert "Team 1: " + translator.t("compartment.engine") in rendered
     assert "..." not in rendered
-    assert all(item["bounds"].contains(item["rect"]) for item in text), text
+    assert all(item["bounds"].contains(item["ink"]) for item in text), text
     assert all(detail_geometry["station"].contains(item["rect"]) for item in text)
     game.tr = translator.t
     payload = stations_view.station_hit_target(game, detail_geometry["detail"].center)

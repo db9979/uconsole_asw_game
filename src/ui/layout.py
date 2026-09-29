@@ -5,6 +5,8 @@ die Helfer hier (Word-Wrap, dynamische Schriftgröße, Surface-Clipping).
 """
 
 from contextlib import contextmanager
+from importlib import resources
+import math
 
 import pygame
 
@@ -140,11 +142,16 @@ def capture_truncations():
         _TRUNCATION_TRACE = previous
 
 
-def record_text(text: str, rendered_rect, bounds) -> None:
+def record_text(text: str, rendered_rect, bounds, image=None) -> None:
+    """Trace one blitted text; ``ink`` is its visible glyph box when known."""
     if _TEXT_TRACE is not None and text:
+        rect = pygame.Rect(rendered_rect).copy()
+        ink = (image.get_bounding_rect().move(rect.topleft)
+               if image is not None else rect.copy())
         _TEXT_TRACE.append({
             "text": str(text),
-            "rect": pygame.Rect(rendered_rect).copy(),
+            "rect": rect,
+            "ink": ink,
             "bounds": pygame.Rect(bounds).copy(),
         })
 
@@ -158,6 +165,28 @@ def record_geometry(kind: str, rect, title: str = "") -> None:
         })
 
 
+# The uConsole text face: JetBrains Mono (OFL-1.1, the Remote Crew web face),
+# shipped as TTF in ``data/fonts`` so every device renders the same glyphs
+# instead of whichever "monospace" happens to be installed.
+FONT_FILES = {False: "jetbrains-mono-regular.ttf", True: "jetbrains-mono-bold.ttf"}
+FONT_FALLBACK = "dejavusansmono,liberationmono,monospace"
+# Layout sizes were drawn for a face whose line pitch equals its size; this
+# face's line is 1.32 em, so it renders at 0.85 em (pitch about 1.1 x size,
+# glyphs still larger and bolder than the old system mono).
+FONT_EM_SCALE = 0.85
+
+
+def _load_font(rendered_size: int, bold: bool) -> pygame.font.Font:
+    """The packaged face at one pixel size, else the closest system mono."""
+    # Round up so every logical size step (large text included) stays distinct.
+    em = max(1, math.ceil(rendered_size * FONT_EM_SCALE))
+    try:
+        path = resources.files("data.fonts").joinpath(FONT_FILES[bool(bold)])
+        return pygame.font.Font(str(path), em)
+    except (OSError, pygame.error, ModuleNotFoundError):
+        return pygame.font.SysFont(FONT_FALLBACK, em, bold=bold)
+
+
 def font(size: int, bold: bool = False) -> pygame.font.Font:
     global _FONT_CACHE_DISPLAY
     if not pygame.font.get_init():
@@ -167,7 +196,7 @@ def font(size: int, bold: bool = False) -> pygame.font.Font:
     # Tests and standalone tools can quit/reinitialize SDL between surfaces.
     # Cache only while a live display provides a stable SDL lifetime token.
     if display is None:
-        return pygame.font.SysFont("monospace", scaled_size(size), bold=bold)
+        return _load_font(scaled_size(size), bold)
     if display is not _FONT_CACHE_DISPLAY:
         clear_font_cache()
         _FONT_CACHE_DISPLAY = display
@@ -175,13 +204,19 @@ def font(size: int, bold: bool = False) -> pygame.font.Font:
     key = (rendered_size, bold)
     f = _FONT_CACHE.get(key)
     if f is None:
-        f = pygame.font.SysFont("monospace", rendered_size, bold=bold)
+        f = _load_font(rendered_size, bold)
         _FONT_CACHE[key] = f
     return f
 
 
+def line_pitch(size: int, gap: int = 4, bold: bool = False) -> int:
+    """Vertical step of one text row of ``size`` (its face's line plus ``gap``)."""
+    return font(size, bold).get_linesize() + gap
+
+
 def _line_height(f: pygame.font.Font) -> int:
-    return int(f.get_linesize() * 1.15)
+    # The packaged face's line (1.32 em) already carries its own leading.
+    return int(f.get_linesize())
 
 
 def wrap_text(text: str, f: pygame.font.Font, width_px: int) -> list:
@@ -299,6 +334,8 @@ def blit_block(screen, text: str, x: int, y: int, w: int, h: int,
                color, size: int = 16, min_size: int = MIN_OPERATIONAL_FONT,
                align: str = "left", valign: str = "top") -> None:
     """Blendet einen Textblock, der garantiert in (x,y,w,h) bleibt."""
+    # Never fall back to a face larger than the one asked for.
+    min_size = min(min_size, size)
     text = fit_block_text(text, w, h, min_size)
     if not text or w <= 0 or h <= 0:
         return
@@ -319,7 +356,7 @@ def blit_block(screen, text: str, x: int, y: int, w: int, h: int,
                 px = x + w - f.size(line)[0]
             image = f.render(line, True, color)
             rendered = image.get_rect(topleft=(px, y + i * lh))
-            record_text(line, rendered, rect)
+            record_text(line, rendered, rect, image)
             screen.blit(image, rendered)
 
 
@@ -343,6 +380,58 @@ def corner_brackets(screen, rect, border=None) -> None:
                            (right, bottom, -1, -1)):
         pygame.draw.line(screen, color, (cx, cy), (cx + dx * size, cy), 2)
         pygame.draw.line(screen, color, (cx, cy), (cx, cy + dy * size), 2)
+
+
+METER_TRACK = (18, 42, 39)
+METER_MARKS = (0.25, 0.5, 0.75)
+
+
+def meter(screen, rect, fraction, color=None) -> None:
+    """The splash-style bar: dark track, quarter marks, bracket end caps.
+
+    ``fraction`` None (no such value, e.g. no battery) draws nothing at all,
+    so an empty frame never pretends to be an empty store.
+    """
+    if fraction is None:
+        return
+    rect = pygame.Rect(rect)
+    if rect.w < 8 or rect.h < 2:
+        return
+    record_geometry("meter", rect)
+    value = max(0.0, min(1.0, float(fraction)))
+    pygame.draw.rect(screen, METER_TRACK, rect)
+    fill = rect.copy()
+    fill.w = round(rect.w * value)
+    if fill.w:
+        pygame.draw.rect(screen, color or config.COLOR_OK, fill)
+    for mark in METER_MARKS:
+        mx = rect.x + round(rect.w * mark)
+        pygame.draw.line(screen, config.COLOR_PANEL_BG if mx < fill.right else BRACKET_COLOR,
+                         (mx, rect.y), (mx, rect.bottom - 1), 1)
+    cap = min(4, rect.w // 8)
+    for cx, dx in ((rect.x - 2, 1), (rect.right + 1, -1)):
+        pygame.draw.line(screen, BRACKET_COLOR, (cx, rect.y - 2), (cx, rect.bottom + 1), 1)
+        pygame.draw.line(screen, BRACKET_COLOR, (cx, rect.y - 2), (cx + dx * cap, rect.y - 2), 1)
+        pygame.draw.line(screen, BRACKET_COLOR, (cx, rect.bottom + 1),
+                         (cx + dx * cap, rect.bottom + 1), 1)
+
+
+def gauge(screen, rect, fraction, *, label="", value="", color=None,
+          size: int = 16, bar_h: int = 6) -> None:
+    """A labelled meter: ``label`` left and ``value`` right on one text row,
+    the bar below it. ``rect`` should be ``line_pitch(size, 0) + bar_h + 4``
+    high; the bar is left out when ``fraction`` is None."""
+    x, y, w, h = pygame.Rect(rect)
+    row = font(size).get_linesize()
+    value_w = font(size).size(localize(value))[0] if value else 0
+    if label:
+        blit_line(screen, label, (x, y, max(1, w - value_w - 8), row),
+                  config.COLOR_TEXT_DIM, size=size)
+    if value:
+        blit_line(screen, value, (x + w - value_w - 1, y, value_w + 1, row),
+                  color or config.COLOR_TEXT, size=size)
+    meter(screen, (x + 2, y + row + 1, w - 4, max(2, min(bar_h, h - row - 2))),
+          fraction, color)
 
 
 def box(screen, rect, title: str = "", border=None, fill=None,
@@ -386,6 +475,30 @@ def blit_lines(screen, lines, rect, color, size: int = 14,
     return min(len(lines), visible)
 
 
+_FADE_CACHE: dict = {}
+
+
+def fade_edges(screen, rect, color, width: int = 24, left: bool = True,
+               right: bool = True) -> None:
+    """Fade text into ``color`` at the edges of ``rect`` (marquee ends)."""
+    rect = pygame.Rect(rect)
+    width = max(1, min(width, rect.w // 3))
+    key = (tuple(color), width, rect.h)
+    ramps = _FADE_CACHE.get(key)
+    if ramps is None:
+        if len(_FADE_CACHE) > 16:
+            _FADE_CACHE.clear()
+        ramp = pygame.Surface((width, rect.h), pygame.SRCALPHA)
+        for x in range(width):
+            alpha = round(255 * (1 - x / width))
+            pygame.draw.line(ramp, (*color[:3], alpha), (x, 0), (x, rect.h - 1))
+        ramps = _FADE_CACHE[key] = (ramp, pygame.transform.flip(ramp, True, False))
+    if left:
+        screen.blit(ramps[0], rect.topleft)
+    if right:
+        screen.blit(ramps[1], (rect.right - width, rect.y))
+
+
 @contextmanager
 def clip_to(screen, rect):
     """`with layout.clip_to(s, rect):` – Clip auf rect (keine Übermalung)."""
@@ -409,7 +522,7 @@ def panel(screen, rect, title: str = "", title_size: int = 20) -> int:
         f, lines = fit_text(title, title_size, w - 28, 40, min_size=12)
         image = f.render(lines[0], True, config.COLOR_TEXT)
         rendered = image.get_rect(topleft=(x + 14, y + 8))
-        record_text(lines[0], rendered, (x + 14, y + 8, w - 28, 40))
+        record_text(lines[0], rendered, (x + 14, y + 8, w - 28, 40), image)
         screen.blit(image, rendered)
         return y + 8 + _line_height(f) + 8
     return y + 12
@@ -430,8 +543,8 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
         bounds = pygame.Rect(x, y, w, f.get_linesize())
         label_rect = label_image.get_rect(topleft=(x, y))
         value_rect = value_image.get_rect(topleft=(x + label_w + 4, y))
-        record_text(lab, label_rect, bounds)
-        record_text(val, value_rect, bounds)
+        record_text(lab, label_rect, bounds, label_image)
+        record_text(val, value_rect, bounds, value_image)
         screen.blit(label_image, label_rect)
         screen.blit(value_image, value_rect)
 
@@ -458,7 +571,7 @@ def command_segment(screen, rect, key: str, description: str,
             image = face.render(shown, True, color)
             rendered = image.get_rect(topleft=(x, rect.y + max(
                 0, (rect.h - face.get_linesize()) // 2)))
-            record_text(shown, rendered, rect)
+            record_text(shown, rendered, rect, image)
             screen.blit(image, rendered)
             x = rendered.right
 

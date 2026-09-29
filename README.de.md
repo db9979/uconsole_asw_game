@@ -14,18 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.63**
+Aktuelle Version: **1.3.64**
 
-Version 1.3.63 macht den Kopplungscode leichter einzugeben, auf der
-Crew-Seite und am Handy-Ausguck. Der Code darf so getippt werden, wie `F9` ihn
-zeigt, mit Leerzeichen, in Kleinbuchstaben oder mit verwechselbaren Zeichen
-wie O statt 0, l statt 1 oder S statt 5, und wird trotzdem richtig gelesen.
-„Falscher Kopplungscode“ erscheint nur noch, wenn der Code wirklich falsch ist,
-und nennt den Code, den das Spiel bekommen hat; lehnt das Spiel die Adresse selbst ab (ein
-Lesezeichen oder ein anderer Name für den Host), sagt die Seite, dass sie über
-den QR-Code oder die Adresse aus `F9` zu öffnen ist. Die Kopplungshilfe
-behauptet nicht mehr, der Code laufe nach fünf Minuten ab: er bleibt, solange
-das Spiel läuft, und wechselt nach fünf Fehlversuchen. Spielstände bleiben v28.
+Version 1.3.64 räumt die uConsole-Bildschirme auf. Alle Texte nutzen jetzt
+die mitgelieferte Schrift JetBrains Mono, damit auf keinem System mehr Zeilen
+abgeschnitten werden, und der Zeilenabstand folgt der Schrift. Alle
+Zustandsbalken haben einen gemeinsamen Stil mit Viertelmarken und
+Beschriftung, der Maschinentelegraph hebt die nächste Stufe hervor und warnt,
+wenn eine Direktfahrt zwischen zwei Stufen liegt, und die Brücke bekommt Kurs-,
+Ruder- und Fahrtanzeige. U-Boot-Reiter, Kartenskala, Wassersäule, ESM-Rose und
+Laufband überlappen nicht mehr; OPZ, ELOKA und Helikopter bekommen die Rahmen
+des Startbilds und eine Tastenzeile, und die letzten englischen Reste in
+deutschen Menüs sind übersetzt. Spielstände bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

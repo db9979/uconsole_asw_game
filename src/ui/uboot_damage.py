@@ -90,27 +90,29 @@ def draw_damage_page(s, game, boat, x, y, w, h) -> None:
                          border=config.COLOR_DANGER if alarm else config.COLOR_TEXT)
     draw_boat_compartments(s, control, picture, selected)
     table_y = y + 138
-    table_h = 30 + 20 * (len(COMPARTMENTS) + 1)
+    pitch = layout.line_pitch(14, 1)
+    # Box frame and title, then the header row and one row per compartment.
+    table_h = layout.line_pitch(16, 16, bold=True) + pitch * (len(COMPARTMENTS) + 1) + 10
     tx, ty, tw, _th = layout.box(s, (x, table_y, w, table_h), "uboot.panel.dc_status")
     name_w = max(90, int(tw * 0.24))
     columns = ("uboot.dc.col.water", "uboot.dc.col.leak", "uboot.dc.col.fire",
                "uboot.dc.col.gas", "uboot.dc.col.bulkhead")
     cell_w = (tw - name_w) // len(columns)
     for column, key in enumerate(columns):
-        layout.blit_line(s, key, (tx + name_w + column * cell_w, ty, cell_w - 4, 18),
+        layout.blit_line(s, key, (tx + name_w + column * cell_w, ty, cell_w - 4, pitch - 1),
                          config.COLOR_TEXT_DIM, size=13)
     for index, name in enumerate(COMPARTMENTS):
         c = control.compartments[index]
-        row_y = ty + 20 * (index + 1)
+        row_y = ty + pitch * (index + 1)
         color = _alert(control, index) or config.COLOR_TEXT
         if index == selected:
-            pygame.draw.rect(s, config.COLOR_SELECT_BG, (tx - 4, row_y - 1, tw + 8, 19))
-        layout.blit_line(s, f"uboot.compartment.{name}", (tx, row_y, name_w - 4, 18),
+            pygame.draw.rect(s, config.COLOR_SELECT_BG, (tx - 4, row_y - 1, tw + 8, pitch))
+        layout.blit_line(s, f"uboot.compartment.{name}", (tx, row_y, name_w - 4, pitch - 1),
                          color, size=14)
         values = (f"{c.water_kg / 1000.0:.1f}", _pct(c.leak), _pct(c.fire), _pct(c.chlorine),
                   "uboot.dc.closed" if c.closed else "uboot.dc.open")
         for column, value in enumerate(values):
-            layout.blit_line(s, value, (tx + name_w + column * cell_w, row_y, cell_w - 4, 18),
+            layout.blit_line(s, value, (tx + name_w + column * cell_w, row_y, cell_w - 4, pitch - 1),
                              color, size=14)
     teams_y = table_y + table_h + 8
     bx, by, bw, bh = layout.box(s, (x, teams_y, w, max(60, y + h - teams_y)),

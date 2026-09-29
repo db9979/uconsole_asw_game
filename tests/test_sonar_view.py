@@ -334,7 +334,7 @@ def test_environment_page_uses_measured_profile(game, monkeypatch):
     game.sonar_page = 4
     view.draw_sonar_view(game)
     assert any("Thermocline ~80" in text for text in texts)
-    assert any("95m -> 110m" in text for text in texts)
+    assert any("95m → 110m" in text for text in texts)
     assert any("CZ prediction 40-70" in text for text in texts)
 
 

@@ -20,7 +20,8 @@ zu prüfen und beizubehalten.
 
 - Das Repository enthält keine übernommenen Bild- oder Audiodateien Dritter.
   Übernommene Schriftdateien sind ausschließlich die unten unter
-  „Schriften der Web-Oberfläche“ aufgeführten.
+  „Schriften der Web-Oberfläche“ und „Schrift der uConsole-Oberfläche“
+  aufgeführten.
 - Sonar-, Maschinen- und Alarmklänge werden zur Laufzeit algorithmisch aus
   NumPy-Signalen synthetisiert. Anzeigen und Symbole werden durch Projektcode
   gezeichnet; es werden keine vorgerenderten Medien ausgeliefert.
@@ -43,6 +44,20 @@ Schriften werden nicht verkauft, nicht umbenannt und nicht verändert
 |---|---|---|
 | Inter 4.1, © 2016 The Inter Project Authors, OFL-1.1 | `inter-variable.woff2` (= `web/InterVariable.woff2`), `ofl-inter.txt` (= `LICENSE.txt`) | <https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip>, Archiv-SHA-256 `9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e`; Datei-SHA-256 `693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3` |
 | JetBrains Mono 2.304, © 2020 The JetBrains Mono Project Authors, OFL-1.1 | `jetbrains-mono-regular.woff2`, `jetbrains-mono-bold.woff2` (= `fonts/webfonts/JetBrainsMono-{Regular,Bold}.woff2`), `ofl-jetbrains-mono.txt` (= `OFL.txt`) | <https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip>, Archiv-SHA-256 `6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf`; Datei-SHA-256 `a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2` (Regular), `c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2` (Bold) |
+
+## Schrift der uConsole-Oberfläche
+
+Die Pygame-Oberfläche (`data/fonts/`) zeichnet alle Texte mit JetBrains Mono
+2.304, damit jede Plattform dieselben Zeichenbreiten und Zeilenhöhen hat.
+Die TTF-Dateien stammen unverändert aus demselben offiziellen Release-Archiv
+wie die Web-Schrift; Lizenz, Urheber und Bedingungen sind identisch
+(SIL Open Font License 1.1, nicht verkauft, nicht umbenannt, nicht verändert).
+Der Lizenztext liegt neben den Schriftdateien und wird mit Wheel und sdist
+ausgeliefert.
+
+| Komponente | Dateien | Quelle und Fixierung |
+|---|---|---|
+| JetBrains Mono 2.304, © 2020 The JetBrains Mono Project Authors, OFL-1.1 | `jetbrains-mono-regular.ttf`, `jetbrains-mono-bold.ttf` (= `fonts/ttf/JetBrainsMono-{Regular,Bold}.ttf`), `ofl-jetbrains-mono.txt` (= `OFL.txt`) | <https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip>, Archiv-SHA-256 `6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf`; Datei-SHA-256 `a0bf60ef0f83c5ed4d7a75d45838548b1f6873372dfac88f71804491898d138f` (Regular), `5590990c82e097397517f275f430af4546e1c45cff408bde4255dad142479dcb` (Bold) |
 
 ## Geografische Daten
 

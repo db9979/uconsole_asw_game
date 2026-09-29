@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.64
+
+Version 1.3.64 räumt die uConsole-Bildschirme auf. Alle Texte nutzen jetzt
+die mitgelieferte Schrift JetBrains Mono, damit auf keinem System mehr Zeilen
+abgeschnitten werden, und der Zeilenabstand folgt der Schrift. Alle
+Zustandsbalken haben einen gemeinsamen Stil mit Viertelmarken und
+Beschriftung, der Maschinentelegraph hebt die nächste Stufe hervor und warnt,
+wenn eine Direktfahrt zwischen zwei Stufen liegt, und die Brücke bekommt Kurs-,
+Ruder- und Fahrtanzeige. U-Boot-Reiter, Kartenskala, Wassersäule, ESM-Rose und
+Laufband überlappen nicht mehr; OPZ, ELOKA und Helikopter bekommen die Rahmen
+des Startbilds und eine Tastenzeile, und die letzten englischen Reste in
+deutschen Menüs sind übersetzt. Spielstände bleiben v28.
+
 ## 1.3.63
 
 Version 1.3.63 macht den Kopplungscode leichter einzugeben, auf der

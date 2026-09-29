@@ -542,6 +542,9 @@ async function boot() {
     P.session = null;
     S.session = null;
   } catch (_) { /* not paired yet */ }
+  // The pairing form may already have paired while this first /session was
+  // under way (its 401 arrives late on a busy host): keep the eyepiece then.
+  if (P.session) return;
   showPairing();
 }
 

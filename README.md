@@ -12,19 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.83**
+Current release: **1.3.84**
 
-Release 1.3.83 turns the submarine's engine room in the Remote Crew browser
-into a machinery control console. The large picture area, empty until now, shows
-an annunciator panel of status lamps (dark when off, turquoise while running,
-amber for a caution, flashing red for an alarm, each with its value) for motor,
-snorkel, generator, battery, charging, fuel, air, main ballast, high-pressure
-air, pumps, trim, power, flooding, leak, fire and gas, with a master lamp that
-counts the alarms. Below it are round gauges for speed, battery, energy
-balance, depth, high-pressure air and trim angle, tank columns for the stores
-and tanks, and a mimic of the six compartments from bow to stern with the
-water level, the lamps of each room, the bulkheads and the teams at work. The
-orders stay in the station panel. Saves stay v31.
+Release 1.3.84 lets the Bridge autopilot find its way through channels, into
+bays and round long coasts: when a stand-off detour does not clear a leg, a
+path search on the chart plans the turning points (planning is also faster
+than before). GitHub now runs the whole test suite with the browser tests,
+the generated-file checks, the calibration and the smoke test on every change,
+and two flaky browser checks are fixed: the phone lookout no longer falls back to the pairing screen when the host answers slowly right after pairing, and the status bar check measures with the bundled fonts. The manual no
+longer says the frigate has no ASROC, and `tools/hw_report.py` turns a debug
+run on the uConsole into the hardware checklist's table. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

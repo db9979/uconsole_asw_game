@@ -1,6 +1,24 @@
 # Wiederaufnahme
 
-## Stand
+## Aktueller Stand (2026-09-29)
+
+U-Jagd steht bei der Version aus `src/core/version.py` (1.3.x), Spielstände
+sind exakt v31 (`SAVE_VERSION`), Remote Crew spricht Protokoll v2. Jede
+Änderung erhöht die Patch-Version und bekommt einen Eintrag oben in
+`CHANGELOG.md` und `CHANGELOG.de.md`; das README zeigt nur die neueste
+Version. Die Arbeit läuft über Pull Requests auf GitHub; der Verlauf steht in
+den Changelogs und in `git log`, nicht mehr in diesem Dokument.
+
+Prüfungen: `.github/workflows/tests.yml` führt bei jedem Pull Request die
+Testsuite (mit Chromium für die Browser-Tests), die Katalog-, Handbuch-,
+Schema- und Changelog-Prüfungen, die Kalibrierung und den Smoke-Test aus.
+Hardware-Prüfpunkte der uConsole stehen in `docs/hardware-acceptance.md`.
+
+Alles ab dem folgenden Abschnitt ist die historische Wiederaufnahme des
+Durchlaufs 0.1.7 bis 1.3.0 und beschreibt nicht mehr den aktuellen Vertrag
+(etwa Save v10).
+
+## Historischer Stand
 
 Stand 2026-09-11 auf Branch `main`. Der vollstaendig softwareabgenommene
 R9-R19-Kandidat ist Commit `e42a678`. Die vier letzten inhaltlichen

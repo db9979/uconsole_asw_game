@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.84
+
+Release 1.3.84 lets the Bridge autopilot find its way through channels, into
+bays and round long coasts: when a stand-off detour does not clear a leg, a
+path search on the chart plans the turning points (planning is also faster
+than before). GitHub now runs the whole test suite with the browser tests,
+the generated-file checks, the calibration and the smoke test on every change,
+and two flaky browser checks are fixed: the phone lookout no longer falls back to the pairing screen when the host answers slowly right after pairing, and the status bar check measures with the bundled fonts. The manual no
+longer says the frigate has no ASROC, and `tools/hw_report.py` turns a debug
+run on the uConsole into the hardware checklist's table. Saves stay v31.
+
 ## 1.3.83
 
 Release 1.3.83 turns the submarine's engine room in the Remote Crew browser

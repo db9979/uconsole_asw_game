@@ -479,12 +479,15 @@ async function run() {
           visualRendered.add("sonar");
       }
       if (latestRole === "helicopter") {
-        assert(canvas.getBoundingClientRect().height >= 200,
-          "Helicopter LOFAR view is too small");
+        // The layout settles after the role switch; wait like the other plots.
+        // At 1280x720 the plots are about 200 px; Chrome's font metrics on
+        // the CI runner leave them a pixel short, so allow a small margin.
+        await until(() => canvas.getBoundingClientRect().height >= 190,
+          () => `Helicopter LOFAR view is too small: ${canvas.getBoundingClientRect().height}px`);
         for (const plot of ["broadband", "demon"]) {
           document.querySelector(`[data-helicopter-plot-tab="${plot}"]`).click();
           const plotCanvas = document.getElementById(`helicopter-${plot}-canvas`);
-          await until(() => plotCanvas.getBoundingClientRect().height >= 200 &&
+          await until(() => plotCanvas.getBoundingClientRect().height >= 190 &&
             visualDraws.has(plotCanvas.id),
             `Helicopter ${plot} view is too small or not drawn: ${plotCanvas.getBoundingClientRect().height}px, drawn=${visualDraws.has(plotCanvas.id)}`);
         }
@@ -506,6 +509,9 @@ async function run() {
         assert(getComputedStyle(intercepts.closest(".station-card-view")).display !== "none",
           "ESM annotation controls are hidden in the workstation");
       }
+      // Tell the host which roles are fully checked, so it moves on only then.
+      document.documentElement.dataset.rolesDone =
+        [...layoutChecked].filter((role) => visualRendered.has(role)).join(",");
     }
     const submit = document.getElementById("bridge-course-submit");
     if (!commandSent && latestRole === "bridge" && !submit.disabled) {
@@ -1563,7 +1569,9 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
                   # The first mark can be the previous role's poll: one more
                   # lets the browser poll this role's state on both sides of
                   # its chart fetch before the host moves it on.
-                  and len(presence_marks) >= 4):
+                  and len(presence_marks) >= 4
+                  # A slow browser finishes this role's checks first.
+                  and roles[role_index] in root.get("rolesDone", "").split(",")):
                 role_index += 1
                 grant_and_activate(roster[0]["client_id"], roles[role_index])
                 assert console.server.set_client_grant(

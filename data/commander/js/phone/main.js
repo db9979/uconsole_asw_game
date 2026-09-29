@@ -9,7 +9,7 @@ import { $, lookoutRoles, prefix } from "../core/base.js";
 import { finite, t } from "../core/format.js";
 import { validateSession } from "../net/session.js";
 import { boundedArray, exactKeys, validateV2State } from "../state/schema.js";
-import { drawSightView, viewMotion } from "../views/sight-scene.js";
+import { SCOPE_EYE_M, drawSightView, viewMotion } from "../views/sight-scene.js";
 import { normalizePairCode, wirePairCodeInput } from "../core/pairing-code.js";
 import { lineOfSight, wrap180, wrap360 } from "./orientation.js";
 import { createListener, iosWithoutSafari, parseReport, speechAvailable, speechErrorKey } from "./speech.js";
@@ -328,6 +328,8 @@ function draw(now) {
     : [view.horizon_offset, view.horizon_tilt];
   drawSightView(g, width, height, {...view, bearing: line, fov_deg: fovDeg, horizon_offset: offset, horizon_tilt: tilt,
     elevation_deg: P.elevation, stabilized: false,
+    way: view.side === "frigate" ? {speed_kn: view.speed_kn, course_deg: view.course}
+      : {speed_kn: view.speed_kn, course_deg: view.course, eye_m: SCOPE_EYE_M, hull: false},
     optics_label: t("optics_status", {elevation: `${P.elevation >= 0 ? "+" : ""}${Math.round(P.elevation)}`, fov: Math.round(fovDeg)})},
     now / 1000, "13px ui-monospace, monospace");
   // Called sightings carry a small mark above them.

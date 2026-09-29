@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.81
+## 1.3.82
 
-Release 1.3.81 makes the phone lookout's voice reports say why they failed.
+Release 1.3.82 makes the phone lookout's voice reports say why they failed.
 Instead of a bare "Speech recognition failed" the page now names the cause:
 Siri and Dictation switched off on the iPhone (with where to turn them on),
 microphone not allowed, microphone busy, nothing heard, or the phone's speech
@@ -15,6 +15,18 @@ and Edge on an iPhone use Safari's engine without its speech service, so the
 page there advises Safari for voice reports; tapping the target works
 everywhere. A short report that Safari ends without marking it final is now
 still read. Saves stay v31.
+
+## 1.3.81
+
+Release 1.3.81 shows the own ship's way in the lookout's pictures. Underway
+the waves stream toward the eye looking ahead, away looking astern and from
+bow to stern looking abeam, faster with more speed and without a jump when
+speed or course change. Astern the wake runs as a band of smoother, lighter
+water with foam between the two arms of the Kelvin wave out to the horizon,
+and ahead the bow wave throws its spray into the lower edge of the picture.
+This holds on the uConsole and in the browser for the bridge binoculars, the
+lookout strip and the phone lookout; in the submarine's periscope the water
+streams past with the boat's own speed. Saves stay v31.
 
 ## 1.3.80
 

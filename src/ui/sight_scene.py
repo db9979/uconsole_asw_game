@@ -328,9 +328,152 @@ def sea_aspect(wind_from_deg: float, line_of_sight: float) -> tuple:
 
 # Rows of waves between the horizon and the bottom of a picture.
 SEA_ROWS = 18
+# Own way through the water: rows per second and knot coming at the eye when
+# looking ahead, and the sideways stream (per knot) when looking abeam.
+WAY_ROWS_PER_KN = 0.04
+WAY_SIDE_PER_KN = 0.15
+# Where the frigate's bow and stern lie from the bridge lookout (m), her
+# beam, and the half angle of her Kelvin wake.
+OWN_BOW_M = 40.0
+OWN_STERN_M = 100.0
+OWN_BEAM_M = 17.0
+KELVIN_DEG = 19.47
+WAKE_FOAM = 48
+BOW_SPRAY = 28
+_FLOW = OrderedDict()
 
 
-def _draw_sea(s, view, sky, colors, sea_state, t, haze):
+def flow(key, t: float, rates: tuple) -> tuple:
+    """Display-only integral of ``rates`` over the display clock ``t``, so a
+    change of speed or line of sight bends the motion instead of making the
+    pattern jump; after a gap (or at first sight) ``rate * t``."""
+    state = _FLOW.get(key)
+    if state is None or not 0.0 <= t - state[0] <= 2.0:
+        values = tuple(rate * t for rate in rates)
+    else:
+        values = tuple(value + rate * (t - state[0]) for value, rate in zip(state[1], rates))
+    _FLOW[key] = (t, values)
+    _FLOW.move_to_end(key)
+    while len(_FLOW) > _CACHE_MAX:
+        _FLOW.popitem(last=False)
+    return values
+
+
+def _sea_y(view, bearing: float, distance_m: float, eye_m: float) -> float:
+    """Picture row of a point on the sea ``distance_m`` from the eye."""
+    below = math.degrees(math.atan2(eye_m, max(1.0, distance_m))
+                         - math.sqrt(2.0 * eye_m / 7.3e6))
+    return view.base(view.x(bearing)) + max(0.0, below) * view.px_per_deg
+
+
+def _sea_point(view, bearing: float, distance_m: float, eye_m: float) -> tuple:
+    return (view.x(bearing), _sea_y(view, bearing, distance_m, eye_m))
+
+
+def _offset_point(view, course: float, ahead_m: float, side_m: float, eye_m: float) -> tuple:
+    """A point ``ahead_m`` forward and ``side_m`` to starboard of the eye."""
+    bearing = course + math.degrees(math.atan2(side_m, ahead_m))
+    return _sea_point(view, bearing, math.hypot(ahead_m, side_m), eye_m)
+
+
+def _draw_way(s, view, colors, way, t, haze):
+    """Bow wave and wake of the own ship, in true perspective from the eye:
+    the bow wave curls out from the bow (tilt down to see it), the wake runs
+    astern as a band of churned water to the horizon between the two arms of
+    the Kelvin wave."""
+    speed = float(way.get("speed_kn") or 0.0)
+    if speed < 1.0 or not way.get("hull", True):
+        return
+    course = float(way["course_deg"])
+    eye = float(way.get("eye_m", 18.0))
+    strength = _clamp(speed / 20.0) * (1.0 - haze * 0.7)
+    foam = blend(colors["sea"][0], colors["crest"], 0.35 + 0.55 * strength)
+    rect = view.rect
+    stern = (course + 180.0) % 360.0
+    # The wake: a band of smoother, lighter churned water behind the stern,
+    # ragged at its edges, with foam drifting away astern; it fades out
+    # toward the horizon.
+    if view.visible(stern, 40.0):
+        length = 150.0 + speed * 120.0
+        steps = 16
+        previous = None
+        edges = ([], [])
+        for i in range(steps + 1):
+            along = length * (i / steps) ** 1.6
+            d = OWN_STERN_M + along
+            rag = 1.0 + 0.05 * math.sin(along * 0.03 + t * 1.3)
+            half = (OWN_BEAM_M / 2.0 + along * 0.02) * rag
+            edge = math.degrees(math.atan2(half, d))
+            left = _sea_point(view, stern - edge, d, eye)
+            right = _sea_point(view, stern + edge, d, eye)
+            edges[0].append(left)
+            edges[1].append(right)
+            if previous is not None:
+                calm = blend(colors["sea"][0], colors["wave"],
+                             (0.04 + 0.1 * strength) * (1.0 - i / steps))
+                pygame.draw.polygon(s, calm, [previous[0], previous[1], right, left])
+            previous = (left, right)
+        rim = blend(colors["sea"][0], colors["crest"], 0.15 + 0.3 * strength)
+        for line in edges:
+            pygame.draw.lines(s, rim, False, line, 1)
+        for k in range(WAKE_FOAM):
+            phase = (t * (0.05 + speed * 0.006) + k * 0.382) % 1.0
+            along = length * phase ** 1.6
+            d = OWN_STERN_M + along
+            lateral = (((k * k * 0.618 + k * 0.29) % 1.0) - 0.5) * (OWN_BEAM_M + along * 0.04)
+            bearing = stern + math.degrees(math.atan2(lateral, d))
+            x, y = _sea_point(view, bearing, d, eye)
+            half = max(1.0, view.px_per_deg * math.degrees(math.atan2(3.0, d)))
+            pygame.draw.line(s, blend(foam, colors["sea"][0], 0.2 + 0.8 * phase),
+                             (x - half, y), (x + half, y), 1)
+    # The Kelvin arms from the stern out to the horizon.
+    for side in (-1.0, 1.0):
+        points = []
+        for i in range(1, 16):
+            run = 20.0 * 1.45 ** i
+            ahead = -(OWN_STERN_M + run * math.cos(math.radians(KELVIN_DEG)))
+            lateral = side * (OWN_BEAM_M / 2.0 + run * math.sin(math.radians(KELVIN_DEG)))
+            bearing = course + math.degrees(math.atan2(lateral, ahead))
+            if view.visible(bearing, 2.0):
+                points.append(_sea_point(view, bearing, math.hypot(ahead, lateral), eye))
+        if len(points) >= 2:
+            pygame.draw.lines(s, blend(colors["crest"], colors["sea"][0], 0.5 - 0.3 * strength),
+                              False, points, 1)
+    # Below the picture's lower edge the bow wave still throws its spray up
+    # into it: white water running out to both sides from the stem.
+    if _sea_y(view, course, OWN_BOW_M, eye) > rect.bottom and view.visible(course, 30.0):
+        band = rect.h * (0.08 + 0.14 * strength)
+        grow = rect.w / 400.0
+        spread = min(26.0, 0.45 * view.fov)
+        for k in range(BOW_SPRAY):
+            side = -1.0 if k % 2 else 1.0
+            phase = (t * (0.3 + speed * 0.025) + k * 0.382) % 1.0
+            lift = math.sin(math.pi * phase) * (0.4 + 0.6 * ((k * k * 0.618) % 1.0))
+            x = view.x(course + side * (0.5 + spread * phase))
+            y = rect.bottom - band * lift
+            half = (3.0 + 8.0 * strength * (1.0 - phase)) * grow
+            pygame.draw.line(s, blend(colors["crest"], colors["sea"][0], 0.15 + 0.7 * phase),
+                             (x - half, y), (x + half, y), 2 if strength > 0.5 else 1)
+    # The bow wave: white water curling out from both sides of the bow and
+    # running aft along the hull.
+    for side in (-1.0, 1.0):
+        points = []
+        for i in range(12):
+            run = OWN_BOW_M * 1.6 * i / 11
+            ahead = OWN_BOW_M - run * math.cos(math.radians(28.0))
+            lateral = side * (1.0 + run * math.sin(math.radians(28.0)))
+            curl = 0.6 * speed / 10.0 * math.sin(t * 3.1 + i * 0.9 + side)
+            if not view.visible(course + math.degrees(math.atan2(lateral, ahead)), 4.0):
+                continue
+            x, y = _offset_point(view, course, ahead, lateral + curl, eye)
+            if y <= rect.bottom + 40:
+                points.append((x, y))
+        if len(points) >= 2:
+            width = max(1, min(4, int(1 + strength * rect.h / 160.0)))
+            pygame.draw.lines(s, blend(foam, colors["crest"], strength), False, points, width)
+
+
+def _draw_sea(s, view, sky, colors, sea_state, t, haze, way=None):
     """The sea as a field of wave rows in perspective: at the horizon a
     fine, nearly flat line of small crests, toward the eye ever longer and
     higher waves, all moving with the swell (bearing space, so the field
@@ -356,8 +499,14 @@ def _draw_sea(s, view, sky, colors, sea_state, t, haze):
     # Near waves: height and length grow with the sea state and the picture.
     near_amp = (1.2 + 0.9 * sea_state) * rect.h / 280.0
     # Into or down the sea the rows come at the eye or run away from it
-    # (new rows are born at the horizon); across it they run sideways.
-    cycles = t * 0.35 * head
+    # (new rows are born at the horizon); across it they run sideways.  The
+    # own way adds the water streaming past: toward the eye looking ahead,
+    # away looking astern, from bow to stern looking abeam.
+    speed = float(way.get("speed_kn") or 0.0) if way else 0.0
+    rel = math.radians(view.los - float(way["course_deg"])) if way else 0.0
+    cycles, side = flow(("sea", tuple(rect)), t, (
+        0.35 * head + WAY_ROWS_PER_KN * speed * math.cos(rel),
+        cross + WAY_SIDE_PER_KN * speed * math.sin(rel)))
     roll = cycles % 1.0
     born = math.floor(cycles)
     trough = blend(colors["sea"][0], colors["sea"][1], 0.45)
@@ -373,7 +522,7 @@ def _draw_sea(s, view, sky, colors, sea_state, t, haze):
         amp = max(0.35, near_amp * near)
         wavelength = (10.0 + 150.0 * near) * (0.45 + 0.9 * along)
         k = math.tau / wavelength
-        drift = cross * t * (4.0 + 40.0 * near)
+        drift = side * (4.0 + 40.0 * near)
         phase = n * 1.7 + t * 1.4 * (1.0 - along)
         points = []
         for x in range(rect.x - step, rect.right + step, step):
@@ -401,6 +550,8 @@ def _draw_sea(s, view, sky, colors, sea_state, t, haze):
                     half = max(1.0, wavelength * 0.08)
                     pygame.draw.line(s, cap, (x - half, y), (x + half, y), width)
     pygame.draw.lines(s, blend(colors["crest"], colors["haze"], 0.4), False, crest, 1)
+    if way:
+        _draw_way(s, view, colors, way, t, haze)
     # Glitter under the moon or the sun.
     light = sky["light"]
     if light < 0.5 and sky["moon_alt_deg"] > 0:
@@ -427,10 +578,11 @@ def _draw_sea(s, view, sky, colors, sea_state, t, haze):
 
 
 def draw_scene(s, view: View, sky: dict, *, visibility_nm: float, sea_state: float,
-               t: float, aloft=None) -> dict:
+               t: float, aloft=None, way=None) -> dict:
     """Sky, stars, moon or sun, clouds and sea of one picture; returns its
     palette for the land and the silhouettes.  ``aloft(colors)`` draws what
-    flies behind the clouds (aircraft)."""
+    flies behind the clouds (aircraft); ``way`` (``speed_kn``, ``course_deg``,
+    optional ``eye_m`` and ``hull``) is the own way through the water."""
     haze = 1.0 - _clamp(visibility_nm / config.WEATHER_VISIBILITY_MAX_NM)
     colors = palette(sky, haze)
     colors["haze_level"] = haze
@@ -448,7 +600,7 @@ def draw_scene(s, view: View, sky: dict, *, visibility_nm: float, sea_state: flo
     if aloft is not None:
         aloft(colors)
     _draw_clouds(s, view, sky, colors, t, haze)
-    _draw_sea(s, view, sky, colors, sea_state, t, haze)
+    _draw_sea(s, view, sky, colors, sea_state, t, haze, way)
     colors["haze_level"] = haze
     return colors
 

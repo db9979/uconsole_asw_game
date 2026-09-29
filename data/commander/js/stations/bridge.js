@@ -50,7 +50,8 @@ export function drawBridgeGlasses(now) {
     {...lookout, bearing: (lookout.course + glasses.relative) % 360, horizon_offset: offset, horizon_tilt: tilt,
       fov_deg: opticsFov(glasses.optics, lookout.fov_deg), elevation_deg: glasses.optics.elevation,
       stabilized: glasses.optics.stabilized, stab_label: t("sight_stabilized"),
-      optics_label: opticsText(glasses.optics, lookout.fov_deg)},
+      optics_label: opticsText(glasses.optics, lookout.fov_deg),
+      way: {speed_kn: lookout.speed_kn, course_deg: lookout.course}},
     now / 1000, plot.context.font);
 }
 

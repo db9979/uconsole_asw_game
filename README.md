@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.81**
+Current release: **1.3.82**
 
-Release 1.3.81 makes the phone lookout's voice reports say why they failed.
+Release 1.3.82 makes the phone lookout's voice reports say why they failed.
 Instead of a bare "Speech recognition failed" the page now names the cause:
 Siri and Dictation switched off on the iPhone (with where to turn them on),
 microphone not allowed, microphone busy, nothing heard, or the phone's speech

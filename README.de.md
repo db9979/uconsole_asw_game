@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.81**
+Aktuelle Version: **1.3.82**
 
-Version 1.3.81 lässt die Sprachmeldungen des Handy-Ausgucks sagen, woran sie
+Version 1.3.82 lässt die Sprachmeldungen des Handy-Ausgucks sagen, woran sie
 scheitern. Statt nur „Spracherkennung fehlgeschlagen“ nennt die Seite jetzt die
 Ursache: Siri und Diktierfunktion am iPhone ausgeschaltet (mit dem Weg zum
 Einschalten), Mikrofon nicht erlaubt, Mikrofon belegt, nichts gehört oder der

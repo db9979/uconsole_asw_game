@@ -14,22 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.78**
+Aktuelle Version: **1.3.79**
 
-Version 1.3.78 zeigt die Einheiten als 3D-Modelle. Im Einheitenanalysator
-(`F8`) ist die erste Seite jedes Katalogprofils jetzt ein langsam drehendes
-3D-Modell seiner Klasse, vor den Klang- und Radarbildern; im
-Remote-Crew-Browser lässt es sich zusätzlich durch Ziehen drehen. Der
-Einheiteneditor zeigt dasselbe Modell unter dem gewählten Profil und neben den
-Feldern eines geöffneten. Schiffe, U-Boote und Luftfahrzeuge sind die
-Silhouetten des Ausgucks, räumlich ausgebaut, sodass eine Einheit im
-Analysator so aussieht wie im Fernglas und im Sehrohr (Kriegsschiff,
-Handelsschiff, Kleinfahrzeug, U-Boot, der Hubschrauber des Ausgucks für jedes
-Luftfahrzeug); Torpedos, Täuschkörper und Tiere, die kein Ausguck sieht, haben
-eigene Modelle. Dieselben Modelle stehen jetzt im Fernglas des Ausgucks und
-im Sehrohr auf der uConsole, im Browser und am Handy, gedreht um den
-Lagewinkel, den der Beobachter schätzt, sobald er die Klasse ausgemacht hat.
-Spielstände bleiben v31.
+Version 1.3.79 repariert die Kopplung in Safari und Firefox und damit den
+Handy-Ausguck auf dem iPhone. Die Seiten des Spiels verlangten vom Browser,
+gar keinen Referrer zu senden; nach dem Webstandard kennzeichnen Safari und
+Firefox dann die eigenen Anfragen der Seite als herkunftslos („Origin: null“),
+und das Spiel wies sie als fremde Adresse ab, sodass die Kopplung mit „Das
+Spiel hat diese Adresse abgelehnt“ scheiterte. Die Seiten behalten den
+Referrer jetzt für das Spiel selbst und senden weiterhin keinen an andere
+Seiten; Chrome war nie betroffen. Spielstände bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

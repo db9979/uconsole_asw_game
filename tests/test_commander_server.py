@@ -148,7 +148,8 @@ def test_static_resources_cached_and_security_headers(server, assets):
         assert headers["X-U-Jagd-Version"] == APP_VERSION
         assert headers["X-Content-Type-Options"] == "nosniff"
         assert headers["X-Frame-Options"] == "DENY"
-        assert headers["Referrer-Policy"] == "no-referrer"
+        # "no-referrer" makes Safari/Firefox POST with "Origin: null" (refused).
+        assert headers["Referrer-Policy"] == "same-origin"
         assert "default-src 'none'" in headers["Content-Security-Policy"]
         assert "'unsafe-inline'" not in headers["Content-Security-Policy"]
         assert headers["Connection"] == "close"

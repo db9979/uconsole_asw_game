@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.79**
+Current release: **1.3.84**
 
-Release 1.3.79 lets the Bridge autopilot find its way through channels, into
+Release 1.3.84 lets the Bridge autopilot find its way through channels, into
 bays and round long coasts: when a stand-off detour does not clear a leg, a
 path search on the chart plans the turning points (planning is also faster
 than before). GitHub now runs the whole test suite with the browser tests,
@@ -103,6 +103,9 @@ More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control 
 <tr>
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-opz-desktop.png"><img src="docs/screenshots/commander-v2-en-opz-desktop.png" alt="OPZ/CIC"></a><br><sub>OPZ/CIC</sub></td>
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-sonar-desktop.png"><img src="docs/screenshots/commander-v2-en-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+</tr>
+<tr>
+<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-en-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-uboot-engine-desktop.png" alt="Submarine engine room: machinery control console"></a><br><sub>Submarine engine room: machinery control console</sub></td>
 </tr>
 </table>
 

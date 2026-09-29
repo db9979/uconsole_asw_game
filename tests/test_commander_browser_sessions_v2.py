@@ -25,7 +25,7 @@ from commander_fixtures import PLOT, WEATHER_STATION
 # The bridge lookout's binoculars (clear night, nothing in sight).
 # The bridge's autopilot route with no waypoints.
 ROUTE = {"pattern": "manual", "index": 0, "total": 0, "points": []}
-LOOKOUT = dict(course=90.0, fov_deg=16.0, visibility_nm=30.0, sea_state=2.0,
+LOOKOUT = dict(course=90.0, speed_kn=12.0, fov_deg=16.0, visibility_nm=30.0, sea_state=2.0,
                horizon_offset=0.0, horizon_tilt=0.0, motion_pitch=0.0, motion_roll=0.0,
                outlines=[],
                sky=dict(light=0.0, dusk=0.0, cloud=0.25, precipitation="none", intensity=0.0,

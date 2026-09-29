@@ -7,6 +7,8 @@ JS = ASSET_DIR / "js"
 IMPORT = re.compile(r'^import (?:\{[^}]*\} from )?"([^"]+)";', re.M)
 # A module worker is started from its client module, not imported by it.
 WORKER = re.compile(r'new Worker\(new URL\("([^"]+)", import\.meta\.url\)')
+# Modules loaded on first use (the 3D model variants).
+DYNAMIC = re.compile(r'import\("(\./[^"]+)"\)')
 
 
 def _imports(path):
@@ -44,7 +46,8 @@ def test_every_module_is_reachable_from_the_entry_point():
         seen.add(name)
         stack.extend(_imports(JS / name))
         stack.extend((JS / name).parent.joinpath(target).resolve().relative_to(JS.resolve()).as_posix()
-                     for target in WORKER.findall((JS / name).read_text(encoding="utf-8")))
+                     for target in WORKER.findall((JS / name).read_text(encoding="utf-8"))
+                     + DYNAMIC.findall((JS / name).read_text(encoding="utf-8")))
     assert seen == {path.relative_to(JS).as_posix() for path in JS.rglob("*.js")}
 
 

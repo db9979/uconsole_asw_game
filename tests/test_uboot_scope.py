@@ -189,14 +189,17 @@ def test_projection_carries_sightings_without_truth():
     opfor.update_sightings(game, boat)
     scope = projections._uboot_scope(game, boat)
     assert scope["available"] and scope["night"] is False
-    assert set(scope) == {"available", "relative_deg", "bearing", "fov_deg", "window_deg",
-                          "night", "visibility_nm", "sea_state", "horizon_offset",
+    assert set(scope) == {"available", "relative_deg", "bearing", "course", "speed_kn",
+                          "fov_deg", "window_deg", "night", "visibility_nm", "sea_state", "horizon_offset",
                           "horizon_tilt", "sky", "sightings"}
     assert set(scope["sky"]) == set(web_schema.SKY_FIELDS)
+    # The boat's own way for the streaming water in the eyepiece.
+    assert scope["course"] == pytest.approx(boat.sub.course % 360.0)
+    assert scope["speed_kn"] == pytest.approx(boat.sub.speed)
     row = next(row for row in scope["sightings"] if row["cls"] == "warship")
     assert set(row) == {"ref", "category", "cls", "bearing", "span_deg", "quality", "age_s",
                         "range_nm", "range_sigma_nm", "range_age_s", "solution",
-                        "lights", "elevation_deg", "aob_deg"}
+                        "lights", "elevation_deg", "aob_deg", "model"}
     assert "target_id" not in row and "aspect" not in row and "x" not in row
     assert "kind" not in row                       # a key the browser's inspector forbids
     assert row["bearing"] != pytest.approx(100.0, abs=1e-9)   # measured, not the truth

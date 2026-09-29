@@ -1363,7 +1363,7 @@ def _lookout_glasses(game):
     pitch, roll = horizon.hull_motion(0, game.sim_t, weather["sea_state"],
                                       weather["wind_from_deg"] - game.ship.course)
     offset, tilt = horizon.view_motion(pitch, roll)
-    return dict(course=_number(game.ship.course % 360.0),
+    return dict(course=_number(game.ship.course % 360.0), speed_kn=_number(game.ship.speed),
                 fov_deg=_number(config.LOOKOUT_GLASSES_FOV_DEG),
                 visibility_nm=_number(weather["visibility_nm"]),
                 sea_state=_number(weather["sea_state"]),
@@ -1372,8 +1372,9 @@ def _lookout_glasses(game):
                 sky=_sky(game),
                 outlines=[dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                                stale=bool(stale), lights=_nav_lights(lights),
-                               elevation_deg=_number(elevation), aob_deg=_number(aob))
-                          for bearing, span, cls, stale, lights, elevation, aob in
+                               elevation_deg=_number(elevation), aob_deg=_number(aob),
+                               model=None if model is None else str(model))
+                          for bearing, span, cls, stale, lights, elevation, aob, model in
                           lookout_outlines(game, game.lookout_sightings())[:16]])
 
 
@@ -1387,6 +1388,7 @@ def _uboot_scope(game, boat):
         available=bool(opfor.scope_available(boat)),
         relative_deg=_number(boat.orders.scope_rel_deg),
         bearing=_number(opfor.scope_bearing(boat)),
+        course=_number(boat.sub.course % 360.0), speed_kn=_number(boat.sub.speed),
         fov_deg=_number(config.UBOOT_SCOPE_FOV_DEG),
         window_deg=_number(config.UBOOT_STADIMETER_WINDOW_DEG),
         night=bool(game.world.is_night()),
@@ -1408,7 +1410,9 @@ def _uboot_scope(game, boat):
                         elevation_deg=(_number(boat.orders._elevation.get(row["ref"]))
                                        if row["kind"] == "FLG" else None),
                         aob_deg=(None if now - row["t"] > 1.0
-                                 else _number(boat.orders._aspect.get(row["ref"]))))
+                                 else _number(boat.orders._aspect.get(row["ref"]))),
+                        model=(None if now - row["t"] > 1.0
+                               else getattr(boat.orders, "_model", {}).get(row["ref"])))
                    for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]])
 
 

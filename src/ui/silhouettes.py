@@ -251,10 +251,12 @@ def anti_collision(t: float) -> tuple:
 
 
 def draw_nav_lights(s, cls: str, frame: _Frame, width: float, code: str,
-                    t: float = 0.0) -> None:
+                    t: float = 0.0, nav_points: dict | None = None) -> None:
     """The ``nav_lights`` code as points of light with a soft glow; drawn at
-    any size, since at night the lights are what the eye picks up first."""
-    nav = PROFILES.get(cls, _MERCHANT).get("nav") or _MERCHANT["nav"]
+    any size, since at night the lights are what the eye picks up first.
+    ``nav_points``: the light positions of a type's own model instead of the
+    class profile's."""
+    nav = nav_points or PROFILES.get(cls, _MERCHANT).get("nav") or _MERCHANT["nav"]
     masts, red, green, stern = int(code[1]), code[2] == "r", code[3] == "g", code[4] == "s"
     round_lights = code[5:]
     nav = nav if round_lights != "AC" else PROFILES["aircraft"]["nav"]

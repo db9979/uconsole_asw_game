@@ -87,9 +87,9 @@ function antiCollision(t) {
   return [t % 1 < .12, phase < .06 || (phase >= .18 && phase < .24)];
 }
 
-function drawNavLights(g, cls, frame, width, code, t) {
+function drawNavLights(g, cls, frame, width, code, t, navPoints = null) {
   const aircraft = code.slice(5) === "AC";
-  const nav = aircraft ? PROFILES.aircraft.nav : (PROFILES[cls] || PROFILES.merchant).nav || PROFILES.merchant.nav;
+  const nav = aircraft ? PROFILES.aircraft.nav : navPoints || (PROFILES[cls] || PROFILES.merchant).nav || PROFILES.merchant.nav;
   const core = Math.max(1, Math.min(3, Math.floor(width / 150))), points = [], roundLights = code.slice(5);
   // A trawler's single masthead light stands abaft and above her green.
   const mast = roundLights === "GW" ? nav.mast.slice(1) : nav.mast;
@@ -122,11 +122,11 @@ function drawNavLights(g, cls, frame, width, code, t) {
 
 // With the judged angle on the bow ``aob`` a large enough ship, submarine or
 // aircraft is drawn as its 3D model turned to that aspect.
-export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, lights = null, nav = null, aloft = false, aob = null} = {}) {
+export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, lights = null, nav = null, aloft = false, aob = null, model = null} = {}) {
   width = Math.max(3, width);
-  const model = drawInScene(g, cls, cx, base, width, fill, aob, aloft);
-  if (model) {
-    if (typeof nav === "string") drawNavLights(g, cls, model, Math.floor(width), nav, t);
+  const scene = drawInScene(g, cls, cx, base, width, fill, aob, aloft, model);
+  if (scene) {
+    if (typeof nav === "string") drawNavLights(g, cls, scene, Math.floor(width), nav, t, scene.nav);
     return;
   }
   if (cls === "torpedo") {
@@ -265,11 +265,112 @@ export function seaAspect(windFromDeg, lineOfSight) {
 
 // Rows of waves between the horizon and the bottom (src/ui/sight_scene.py).
 const SEA_ROWS = 18;
+// Own way through the water (src/ui/sight_scene.py): rows per second and knot
+// toward the eye looking ahead, sideways stream per knot looking abeam; the
+// frigate's bow and stern from the bridge lookout, her beam and the Kelvin angle.
+const WAY_ROWS_PER_KN = .04, WAY_SIDE_PER_KN = .15;
+const OWN_BOW_M = 40, OWN_STERN_M = 100, OWN_BEAM_M = 17, KELVIN_DEG = 19.47, WAKE_FOAM = 48, BOW_SPRAY = 28;
+const RAD = Math.PI / 180;
+// The periscope's eye just above the surface (config.UBOOT_SCOPE_EYE_HEIGHT_M).
+export const SCOPE_EYE_M = 2.5;
+const FLOW = new WeakMap();
+
+// Display-only integral of ``rates`` over the display clock per canvas, so a
+// change of speed or view bends the motion instead of making the sea jump.
+function flow(key, t, rates) {
+  const state = FLOW.get(key), dt = state ? t - state.t : -1;
+  const values = dt >= 0 && dt <= 2 ? state.values.map((value, i) => value + rates[i] * dt) : rates.map((rate) => rate * t);
+  FLOW.set(key, {t, values});
+  return values;
+}
+
+// The picture row of a point on the sea ``distance`` metres from an eye ``eye`` metres up.
+function seaY(w, bearing, distance, eye) {
+  const below = (Math.atan2(eye, Math.max(1, distance)) - Math.sqrt(2 * eye / 7.3e6)) / RAD;
+  return w.base(w.x(bearing)) + Math.max(0, below) * w.pxPerDeg;
+}
+const seaPoint = (w, bearing, distance, eye) => [w.x(bearing), seaY(w, bearing, distance, eye)];
+
+// Bow wave and wake of the own ship in true perspective from the eye: the
+// wake runs astern between the arms of the Kelvin wave, the bow wave curls
+// out from the stem (tilt down to see it; from further up only its spray).
+function drawWay(g, w, colors, way, t, haze) {
+  const speed = Number(way.speed_kn) || 0;
+  if (speed < 1 || way.hull === false) return;
+  const course = way.course_deg, eye = way.eye_m ?? 18;
+  const strength = clamp(speed / 20) * (1 - haze * .7), foam = mix(colors.sea[0], colors.crest, .35 + .55 * strength);
+  const stern = (course + 180) % 360, fov = w.width / w.pxPerDeg;
+  if (w.visible(stern, 40)) {
+    const length = 150 + speed * 120, steps = 16, edges = [[], []];
+    let previous = null;
+    for (let i = 0; i <= steps; i++) {
+      const along = length * (i / steps) ** 1.6, d = OWN_STERN_M + along;
+      const rag = 1 + .05 * Math.sin(along * .03 + t * 1.3), half = (OWN_BEAM_M / 2 + along * .02) * rag;
+      const edge = Math.atan2(half, d) / RAD;
+      const left = seaPoint(w, stern - edge, d, eye), right = seaPoint(w, stern + edge, d, eye);
+      edges[0].push(left); edges[1].push(right);
+      if (previous) {
+        g.fillStyle = rgb(mix(colors.sea[0], colors.wave, (.04 + .1 * strength) * (1 - i / steps)));
+        path(g, [previous[0], previous[1], right, left]); g.fill();
+      }
+      previous = [left, right];
+    }
+    g.lineWidth = 1; g.strokeStyle = rgb(mix(colors.sea[0], colors.crest, .15 + .3 * strength));
+    for (const edge of edges) { path(g, edge, false); g.stroke(); }
+    for (let k = 0; k < WAKE_FOAM; k++) {
+      const phase = ((t * (.05 + speed * .006) + k * .382) % 1 + 1) % 1;
+      const along = length * phase ** 1.6, d = OWN_STERN_M + along;
+      const lateral = ((k * k * .618 + k * .29) % 1 - .5) * (OWN_BEAM_M + along * .04);
+      const [x, y] = seaPoint(w, stern + Math.atan2(lateral, d) / RAD, d, eye);
+      const half = Math.max(1, w.pxPerDeg * Math.atan2(3, d) / RAD);
+      line(g, [x - half, y], [x + half, y], rgb(mix(foam, colors.sea[0], .2 + .8 * phase)));
+    }
+  }
+  for (const side of [-1, 1]) {
+    const points = [];
+    for (let i = 1; i < 16; i++) {
+      const run = 20 * 1.45 ** i, ahead = -(OWN_STERN_M + run * Math.cos(KELVIN_DEG * RAD));
+      const lateral = side * (OWN_BEAM_M / 2 + run * Math.sin(KELVIN_DEG * RAD));
+      const bearing = course + Math.atan2(lateral, ahead) / RAD;
+      if (w.visible(bearing, 2)) points.push(seaPoint(w, bearing, Math.hypot(ahead, lateral), eye));
+    }
+    if (points.length >= 2) {
+      g.lineWidth = 1; g.strokeStyle = rgb(mix(colors.crest, colors.sea[0], .5 - .3 * strength));
+      path(g, points, false); g.stroke();
+    }
+  }
+  if (seaY(w, course, OWN_BOW_M, eye) > w.height && w.visible(course, 30)) {
+    const band = w.height * (.08 + .14 * strength), grow = w.width / 400, spread = Math.min(26, .45 * fov);
+    for (let k = 0; k < BOW_SPRAY; k++) {
+      const side = k % 2 ? -1 : 1, phase = ((t * (.3 + speed * .025) + k * .382) % 1 + 1) % 1;
+      const lift = Math.sin(Math.PI * phase) * (.4 + .6 * ((k * k * .618) % 1));
+      const x = w.x(course + side * (.5 + spread * phase)), y = w.height - band * lift;
+      const half = (3 + 8 * strength * (1 - phase)) * grow;
+      line(g, [x - half, y], [x + half, y], rgb(mix(colors.crest, colors.sea[0], .15 + .7 * phase)), strength > .5 ? 2 : 1);
+    }
+  }
+  for (const side of [-1, 1]) {
+    const points = [];
+    for (let i = 0; i < 12; i++) {
+      const run = OWN_BOW_M * 1.6 * i / 11, ahead = OWN_BOW_M - run * Math.cos(28 * RAD);
+      const lateral = side * (1 + run * Math.sin(28 * RAD)) + .6 * speed / 10 * Math.sin(t * 3.1 + i * .9 + side);
+      const bearing = course + Math.atan2(lateral, ahead) / RAD;
+      if (!w.visible(bearing, 4)) continue;
+      const point = seaPoint(w, bearing, Math.hypot(ahead, lateral), eye);
+      if (point[1] <= w.height + 40) points.push(point);
+    }
+    if (points.length >= 2) {
+      g.lineWidth = Math.max(1, Math.min(4, Math.floor(1 + strength * w.height / 160)));
+      g.strokeStyle = rgb(mix(foam, colors.crest, strength)); path(g, points, false); g.stroke();
+    }
+  }
+  g.lineWidth = 1;
+}
 
 // The sea as a field of wave rows in perspective: a clean horizon with fine
 // crests below it, toward the eye ever longer and higher waves, all moving
 // with the swell (bearing space, so the field slides past as the view turns).
-function drawSea(g, w, sky, colors, seaState, t, haze) {
+function drawSea(g, w, sky, colors, seaState, t, haze, way = null) {
   const step = Math.max(4, Math.floor(w.width / 90));
   const [head, cross] = seaAspect(sky.wind_from_deg, w.los), along = Math.abs(head);
   const anchor = w.los * w.pxPerDeg;
@@ -279,8 +380,12 @@ function drawSea(g, w, sky, colors, seaState, t, haze) {
   g.fillStyle = gradient; path(g, [[0, w.base(0)], [w.width, w.base(w.width)], [w.width, w.height], [0, w.height]]); g.fill();
   const below = Math.max(1, w.height - w.horizon), nearAmp = (1.2 + .9 * seaState) * w.height / 280;
   // Into or down the sea the rows come at the eye or run away (new rows are
-  // born at the horizon); across it they run sideways.
-  const cycles = t * .35 * head, roll = ((cycles % 1) + 1) % 1, born = Math.floor(cycles);
+  // born at the horizon); across it they run sideways.  The own way adds the
+  // water streaming past: toward the eye ahead, away astern, bow to stern abeam.
+  const speed = way ? Number(way.speed_kn) || 0 : 0, rel = way ? (w.los - way.course_deg) * RAD : 0;
+  const [cycles, side] = flow(g, t, [.35 * head + WAY_ROWS_PER_KN * speed * Math.cos(rel),
+    cross + WAY_SIDE_PER_KN * speed * Math.sin(rel)]);
+  const roll = ((cycles % 1) + 1) % 1, born = Math.floor(cycles);
   const trough = mix(colors.sea[0], colors.sea[1], .45);
   for (let index = 0; index <= SEA_ROWS; index++) {
     const f = (index + roll) / SEA_ROWS;
@@ -289,7 +394,7 @@ function drawSea(g, w, sky, colors, seaState, t, haze) {
     if (depth < 1) continue;
     const near = depth / below, n = index - born;
     const amp = Math.max(.35, nearAmp * near), wavelength = (10 + 150 * near) * (.45 + .9 * along);
-    const k = 2 * Math.PI / wavelength, drift = cross * t * (4 + 40 * near), phase = n * 1.7 + t * 1.4 * (1 - along);
+    const k = 2 * Math.PI / wavelength, drift = side * (4 + 40 * near), phase = n * 1.7 + t * 1.4 * (1 - along);
     const points = [];
     for (let x = -step; x < w.width + step; x += step) {
       const u = (x + anchor - drift) * k + phase;
@@ -316,6 +421,7 @@ function drawSea(g, w, sky, colors, seaState, t, haze) {
   }
   g.lineWidth = 1;
   line(g, [0, w.base(0)], [w.width, w.base(w.width)], rgb(mix(colors.crest, colors.haze, .4)));
+  if (way) drawWay(g, w, colors, way, t, haze);
   let strength = 0, bearing = 0, glint = [150, 170, 170];
   if (sky.light < .5 && sky.moon_alt_deg > 0) { strength = sky.moon_illumination * (1 - sky.light * 2); bearing = sky.moon_bearing; }
   else if (sky.light >= .5 && sky.sun_alt_deg > -1) { strength = .8; bearing = sky.sun_bearing; glint = mix([226, 236, 236], SUN_DUSK, sky.dusk); }
@@ -384,9 +490,10 @@ function drawWindRose(g, height, colors, windFromDeg) {
 
 // One eyepiece picture.  ``v``: bearing (line of sight), fov_deg,
 // horizon_offset, horizon_tilt, visibility_nm, sea_state, sky, outlines
-// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg}]) and an optional window_deg crosshair;
+// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg, model}]) and an optional window_deg crosshair;
 // no_scale hides the bearing scale, wind_rose_deg draws the weather
-// instrument's wind rose in the top left corner.
+// instrument's wind rose in the top left corner; way ({speed_kn, course_deg,
+// eye_m, hull}) is the own way through the water (wave stream, bow wave, wake).
 export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monospace, monospace") {
   const w = view(width, height, v), haze = 1 - clamp(v.visibility_nm / VISIBILITY_MAX_NM);
   const sky = v.sky, colors = palette(sky, haze);
@@ -400,12 +507,12 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
       const base = aloft(row) ? w.skyY - row.elevation_deg * w.pxPerDeg : w.base(cx);
       drawProfile(g, row.cls, cx, base, Math.min(width, Math.max(3, row.span_deg * w.pxPerDeg)), mix(colors.steel, colors.haze, fade),
         {t, rim: mix(colors.rim, colors.haze, fade), lights: lit && !row.stale ? WINDOW_LIGHT : null,
-          nav: row.stale ? null : row.lights ?? null, aloft: aloft(row), aob: row.stale ? null : row.aob_deg ?? null});
+          nav: row.stale ? null : row.lights ?? null, aloft: aloft(row), aob: row.stale ? null : row.aob_deg ?? null, model: row.stale ? null : row.model ?? null});
     }
   };
   const airborne = v.outlines.filter(aloft);
   drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null);
-  drawSea(g, w, sky, colors, v.sea_state, t, haze);
+  drawSea(g, w, sky, colors, v.sea_state, t, haze, v.way ?? null);
   drawRows(v.outlines.filter((row) => !aloft(row)));
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);
   if (Number.isFinite(v.wind_rose_deg)) drawWindRose(g, height, colors, v.wind_rose_deg);

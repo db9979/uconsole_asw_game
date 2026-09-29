@@ -31,13 +31,15 @@ def draw_silhouette(s, cls: str, cx: int, base_y: int, width: int, color) -> Non
 
 def scope_outlines(game, boat) -> list:
     """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg,
-    aob_deg)`` rows of the sightings (``lights``: the ``nav_lights`` code
+    aob_deg, model)`` rows of the sightings (``lights``: the ``nav_lights`` code
     made out, if any; ``elevation_deg``: an aircraft's angle above the
     horizon; ``aob_deg``: the angle on the bow judged of a made-out
-    silhouette, which turns its model; the span is then its full length)."""
+    silhouette, which turns its model; the span is then its full length;
+    ``model``: the type the eye sees, when it has its own model)."""
     lights = getattr(boat.orders, "_lights", {})
     elevation = getattr(boat.orders, "_elevation", {})
     aspects = getattr(boat.orders, "_aspect", {})
+    models = getattr(boat.orders, "_model", {})
     rows = []
     for row in boat.orders.sightings:
         stale = game.sim_t - row["t"] > 1.0
@@ -45,7 +47,8 @@ def scope_outlines(game, boat) -> list:
         aob = None if stale else aspects.get(row["ref"])
         rows.append((row["bearing"], full_span(row["span_deg"], aob),
                      "aircraft" if aloft is not None else row["cls"],
-                     stale, None if stale else lights.get(row["ref"]), aloft, aob))
+                     stale, None if stale else lights.get(row["ref"]), aloft, aob,
+                     None if aob is None else models.get(row["ref"])))
     return rows
 
 
@@ -75,7 +78,9 @@ def draw_eyepiece(s, game, boat, rect) -> None:
                  sea_state=getattr(game.world, "effective_sea_state", game.world.sea_state),
                  elevation_deg=sight.elevation_deg, stabilized=sight.stabilized,
                  optics_label=message("sight.optics", elevation=f"{sight.elevation_deg:+.0f}",
-                                      fov=f"{sight.fov_deg:.0f}"))
+                                      fov=f"{sight.fov_deg:.0f}"),
+                 way=dict(speed_kn=boat.sub.speed, course_deg=boat.sub.course,
+                          eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M, hull=False))
 
 
 def sighting_rows(game, boat) -> list:

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.79**
+Aktuelle Version: **1.3.84**
 
-Version 1.3.79 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
+Version 1.3.84 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
 Buchten und um lange Küsten finden: Reicht ein Ausweichpunkt für eine Strecke
 nicht, plant eine Wegsuche auf der Karte die Wendepunkte (die Planung ist
 dabei schneller als bisher). GitHub prüft jetzt jede Änderung mit der ganzen
@@ -26,8 +26,7 @@ repariert: Der Handy-Ausguck fällt nicht mehr auf die Kopplungsseite zurück,
 wenn der Host direkt nach dem Koppeln langsam antwortet, und die Statusleiste
 wird mit den mitgelieferten Schriften vermessen. Das Handbuch behauptet nicht mehr, die
 Fregatte habe kein ASROC, und `tools/hw_report.py` macht aus einem
-Debug-Lauf auf der uConsole die Tabelle der Hardware-Checkliste. Spielstände
-bleiben v31.
+Debug-Lauf auf der uConsole die Tabelle der Hardware-Checkliste. Spielstände bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -109,6 +108,9 @@ Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Scha
 <tr>
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-opz-desktop.png"><img src="docs/screenshots/commander-v2-de-opz-desktop.png" alt="OPZ/CIC"></a><br><sub>OPZ/CIC</sub></td>
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-sonar-desktop.png"><img src="docs/screenshots/commander-v2-de-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+</tr>
+<tr>
+<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
 </tr>
 </table>
 

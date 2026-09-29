@@ -225,3 +225,77 @@ def test_spoken_reports_and_phone_heading(tmp_path):
         None, ("torpedo", 123, None), ("merchant", 270, None)]
     # Upright facing north, turned left to west, tilted up 10°, flat on its back.
     assert result["sights"] == [[0, 0], [270, 0], [0, 10], None]
+
+
+LISTENER_PROBE = r"""
+import { createListener, iosWithoutSafari, speechErrorKey } from "./js/phone/speech.js";
+// A scripted stand-in for the browser's speech service: each run replays events.
+let script = [];
+class FakeRecognition {
+  start() {
+    queueMicrotask(() => {
+      for (const [kind, value] of script) {
+        if (kind === "result") this.onresult({results: [Object.assign(
+          value.texts.map((transcript) => ({transcript})), {isFinal: value.final})]});
+        if (kind === "error") this.onerror({error: value});
+      }
+      this.onend();
+    });
+  }
+  stop() {}
+}
+window.SpeechRecognition = window.webkitSpeechRecognition = FakeRecognition;
+const run = (events) => new Promise((resolve) => {
+  script = events;
+  const log = [];
+  createListener({language: "de", onHeard: (texts) => log.push(["heard", texts]),
+    onError: (code) => log.push(["error", code]), onEnd: () => resolve(log)});
+});
+const runs = [
+  await run([["result", {texts: ["Schiff Peilung 040"], final: true}]]),
+  // Safari may end without a final result: the last interim one is what was said.
+  await run([["result", {texts: ["Schiff"], final: false}], ["result", {texts: ["Schiff Peilung 090"], final: false}]]),
+  await run([]),
+  await run([["error", "service-not-allowed"]]),
+];
+const keys = ["aborted", "not-allowed", "service-not-allowed", "no-speech", "audio-capture",
+  "network", "language-not-supported"].map(speechErrorKey);
+const agents = [
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/129.0.6668.46 Mobile/15E148 Safari/604.1",
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+  "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36",
+].map((agent) => iosWithoutSafari(agent));
+document.documentElement.dataset.result = JSON.stringify({runs, keys, agents});
+"""
+
+
+def test_speech_failures_say_what_went_wrong(tmp_path):
+    """Each Web Speech error has its own advice; the rest name their code."""
+    from commander_web import run_module_probe
+    root = run_module_probe(tmp_path, LISTENER_PROBE)
+    assert "data-result" in root, root.get("data-failure")
+    result = json.loads(root["data-result"])
+    assert result["runs"] == [
+        [["heard", ["Schiff Peilung 040"]]],
+        [["heard", ["Schiff Peilung 090"]]],
+        [["error", "no-speech"]],
+        [["error", "service-not-allowed"]],
+    ]
+    assert result["keys"] == [
+        None, "phone_mic_denied", "phone_speech_service", "phone_speech_silent",
+        "phone_mic_busy", "phone_speech_network", "phone_speech_failed"]
+    en, de = catalogs()
+    for key in filter(None, result["keys"]):
+        assert PREFIX + key in en and PREFIX + key in de, key
+    assert "{error}" in en[PREFIX + "phone_speech_failed"]
+    assert "{error}" in de[PREFIX + "phone_speech_failed"]
+    assert "Siri" in de[PREFIX + "phone_speech_service"]
+    # Chrome on the iPhone gets the Safari hint; Safari and Android Chrome do not.
+    assert result["agents"] == [True, False, False]
+
+
+def test_iphone_browsers_other_than_safari_are_pointed_to_safari():
+    source = (ASSET_DIR / "js" / "phone" / "speech.js").read_text(encoding="utf-8")
+    assert r"CriOS|FxiOS|EdgiOS" in source
+    main = (ASSET_DIR / "js" / "phone" / "main.js").read_text(encoding="utf-8")
+    assert main.count('t("phone_speech_use_safari")') == 2

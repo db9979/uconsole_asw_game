@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.79
+## 1.3.84
 
-Release 1.3.79 lets the Bridge autopilot find its way through channels, into
+Release 1.3.84 lets the Bridge autopilot find its way through channels, into
 bays and round long coasts: when a stand-off detour does not clear a leg, a
 path search on the chart plans the turning points (planning is also faster
 than before). GitHub now runs the whole test suite with the browser tests,
@@ -14,6 +14,68 @@ the generated-file checks, the calibration and the smoke test on every change,
 and two flaky browser checks are fixed: the phone lookout no longer falls back to the pairing screen when the host answers slowly right after pairing, and the status bar check measures with the bundled fonts. The manual no
 longer says the frigate has no ASROC, and `tools/hw_report.py` turns a debug
 run on the uConsole into the hardware checklist's table. Saves stay v31.
+
+## 1.3.83
+
+Release 1.3.83 turns the submarine's engine room in the Remote Crew browser
+into a machinery control console. The large picture area, empty until now, shows
+an annunciator panel of status lamps (dark when off, turquoise while running,
+amber for a caution, flashing red for an alarm, each with its value) for motor,
+snorkel, generator, battery, charging, fuel, air, main ballast, high-pressure
+air, pumps, trim, power, flooding, leak, fire and gas, with a master lamp that
+counts the alarms. Below it are round gauges for speed, battery, energy
+balance, depth, high-pressure air and trim angle, tank columns for the stores
+and tanks, and a mimic of the six compartments from bow to stern with the
+water level, the lamps of each room, the bulkheads and the teams at work. The
+orders stay in the station panel. Saves stay v31.
+
+## 1.3.82
+
+Release 1.3.82 makes the phone lookout's voice reports say why they failed.
+Instead of a bare "Speech recognition failed" the page now names the cause:
+Siri and Dictation switched off on the iPhone (with where to turn them on),
+microphone not allowed, microphone busy, nothing heard, or the phone's speech
+service unreachable; any other failure shows its error code. Chrome, Firefox
+and Edge on an iPhone use Safari's engine without its speech service, so the
+page there advises Safari for voice reports; tapping the target works
+everywhere. A short report that Safari ends without marking it final is now
+still read. Saves stay v31.
+
+## 1.3.81
+
+Release 1.3.81 shows the own ship's way in the lookout's pictures. Underway
+the waves stream toward the eye looking ahead, away looking astern and from
+bow to stern looking abeam, faster with more speed and without a jump when
+speed or course change. Astern the wake runs as a band of smoother, lighter
+water with foam between the two arms of the Kelvin wave out to the horizon,
+and ahead the bow wave throws its spray into the lower edge of the picture.
+This holds on the uConsole and in the browser for the bridge binoculars, the
+lookout strip and the phone lookout; in the submarine's periscope the water
+streams past with the boat's own speed. Saves stay v31.
+
+## 1.3.80
+
+Release 1.3.80 gives every ship, submarine and aircraft type its own 3D
+model. Each of the 111 catalog types is built from the public main dimensions
+and general arrangement of the real class (Wikipedia; generic types such as a
+VLCC or a harbour tug use typical values): length, beam and draught, where
+bridge, masts, funnels, guns, missile cells, flight deck, cranes and cargo
+stand, a submarine's sail, planes, rudders and missile deck, an aircraft's
+wings, tail and engines. The same type always looks the same, so a Type 23
+no longer looks like an Arleigh Burke. The analyser, the Unit Editor and the
+eyepieces (binoculars, periscope, phone lookout) show the real type the eye
+sees, so it can be told by sight; the lookout report still names only what
+was made out, and only the report reaches the OPZ. Saves stay v31.
+
+## 1.3.79
+
+Release 1.3.79 fixes pairing in Safari and Firefox, and with it the phone
+lookout on an iPhone. The game's pages told the browser to send no referrer at
+all; under the web standard Safari and Firefox then mark the pages' own
+requests as coming from nowhere ("Origin: null"), and the game refused them as
+a foreign address, so pairing failed with "The game refused this address".
+The pages now keep the referrer to the game itself and still send none to any
+other site; Chrome was never affected. Saves stay v28.
 
 ## 1.3.78
 

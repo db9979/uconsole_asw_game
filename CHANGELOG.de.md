@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.79
+## 1.3.84
 
-Version 1.3.79 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
+Version 1.3.84 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
 Buchten und um lange Küsten finden: Reicht ein Ausweichpunkt für eine Strecke
 nicht, plant eine Wegsuche auf der Karte die Wendepunkte (die Planung ist
 dabei schneller als bisher). GitHub prüft jetzt jede Änderung mit der ganzen
@@ -17,6 +17,73 @@ wenn der Host direkt nach dem Koppeln langsam antwortet, und die Statusleiste
 wird mit den mitgelieferten Schriften vermessen. Das Handbuch behauptet nicht mehr, die
 Fregatte habe kein ASROC, und `tools/hw_report.py` macht aus einem
 Debug-Lauf auf der uConsole die Tabelle der Hardware-Checkliste. Spielstände bleiben v31.
+
+## 1.3.83
+
+Version 1.3.83 macht aus dem Maschinenraum des U-Boots im Remote-Crew-Browser
+einen Maschinenleitstand. Die große, bisher leere Bildfläche zeigt eine Warn-
+und Meldetafel aus Statuslampen (dunkel, wenn aus, türkis im Betrieb, gelb bei
+einer Warnung, rot blinkend bei einem Alarm, jede mit ihrem Wert) für
+E-Maschine, Schnorchel, Generator, Batterie, Laden, Kraftstoff, Luft,
+Hauptzellen, Pressluft, Pumpen, Trimm, Strom, Wassereinbruch, Leck, Brand und
+Gas, mit einer Sammellampe, die die Alarme zählt. Darunter stehen runde
+Instrumente für Fahrt, Batterie, Energiebilanz, Tiefe, Pressluft und
+Trimmwinkel, Tanksäulen für Vorräte und Zellen und ein Bild der sechs
+Abteilungen vom Bug zum Heck mit Wasserstand, den Lampen jedes Raums, den
+Schotten und den arbeitenden Trupps. Die Befehle bleiben im Stationsbereich.
+Spielstände bleiben v31.
+
+## 1.3.82
+
+Version 1.3.82 lässt die Sprachmeldungen des Handy-Ausgucks sagen, woran sie
+scheitern. Statt nur „Spracherkennung fehlgeschlagen“ nennt die Seite jetzt die
+Ursache: Siri und Diktierfunktion am iPhone ausgeschaltet (mit dem Weg zum
+Einschalten), Mikrofon nicht erlaubt, Mikrofon belegt, nichts gehört oder der
+Sprachdienst des Handys nicht erreichbar; jeder andere Fehler zeigt seinen
+Fehlercode. Chrome, Firefox und Edge auf dem iPhone nutzen Safaris Technik
+ohne dessen Sprachdienst, deshalb rät die Seite dort für Sprachmeldungen zu
+Safari; das Ziel antippen geht überall. Eine kurze Meldung, die Safari beendet,
+ohne sie als fertig zu markieren, wird jetzt trotzdem gelesen. Spielstände
+bleiben v31.
+
+## 1.3.81
+
+Version 1.3.81 zeigt die eigene Fahrt in den Bildern des Ausgucks. In Fahrt
+strömen die Wellen voraus auf das Auge zu, achteraus von ihm fort und querab
+vom Bug zum Heck, schneller mit mehr Fahrt und ohne Sprung, wenn sich Fahrt
+oder Kurs ändern. Achteraus läuft das Kielwasser als Band aus glatterem,
+hellerem Wasser mit Schaum zwischen den beiden Armen der Kelvin-Welle bis zum
+Horizont, und voraus wirft die Bugwelle ihre Gischt in den unteren Bildrand.
+Das gilt auf der uConsole und im Browser für das Brückenfernglas, den
+Ausguckstreifen und den Handy-Ausguck; im Sehrohr des U-Boots strömt das
+Wasser mit der eigenen Fahrt des U-Boots vorbei. Spielstände bleiben v31.
+
+## 1.3.80
+
+Version 1.3.80 gibt jedem Schiffs-, U-Boot- und Flugzeugtyp ein eigenes
+3D-Modell. Jeder der 111 Katalogtypen ist aus den öffentlichen
+Hauptabmessungen und der Anordnung der echten Klasse gebaut (Wikipedia;
+allgemeine Typen wie ein VLCC oder ein Hafenschlepper mit typischen Werten):
+Länge, Breite und Tiefgang, wo Brücke, Masten, Schornsteine, Geschütze,
+Flugkörperzellen, Flugdeck, Kräne und Ladung stehen, beim U-Boot Turm,
+Tiefenruder, Heckruder und Raketendeck, beim Flugzeug Flügel, Leitwerk und
+Triebwerke. Derselbe Typ sieht immer gleich aus, eine Type 23 also nicht mehr
+wie eine Arleigh Burke. Analysator, Einheiteneditor und die Okulare
+(Fernglas, Sehrohr, Handy-Ausguck) zeigen den echten Typ, den das Auge sieht,
+sodass er sich auf Sicht bestimmen lässt; die Meldung des Ausgucks nennt
+weiter nur, was er ausgemacht hat, und nur sie geht an die OPZ. Spielstände
+bleiben v31.
+
+## 1.3.79
+
+Version 1.3.79 repariert die Kopplung in Safari und Firefox und damit den
+Handy-Ausguck auf dem iPhone. Die Seiten des Spiels verlangten vom Browser,
+gar keinen Referrer zu senden; nach dem Webstandard kennzeichnen Safari und
+Firefox dann die eigenen Anfragen der Seite als herkunftslos („Origin: null“),
+und das Spiel wies sie als fremde Adresse ab, sodass die Kopplung mit „Das
+Spiel hat diese Adresse abgelehnt“ scheiterte. Die Seiten behalten den
+Referrer jetzt für das Spiel selbst und senden weiterhin keinen an andere
+Seiten; Chrome war nie betroffen. Spielstände bleiben v28.
 
 ## 1.3.78
 

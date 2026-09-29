@@ -175,6 +175,87 @@
   .radio-tasks { max-height: 22rem; }
 }
 
+/* Submarine engine room: a machinery control console. An annunciator panel
+   of status lamps (dark when off, turquoise running, amber caution, red
+   alarm), round gauges, tank columns and the compartment mimic, in the radio
+   rack's device fronts. */
+.engine-console:not([hidden]) { display: flex; flex-direction: column; gap: .55rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.console-lamps { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .3rem; }
+.console-lamp {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; gap: 0 .5rem;
+  padding: .3rem .45rem; min-width: 0; background: var(--scope); border: 1px solid var(--line); border-radius: var(--radius);
+  --lamp: var(--line);
+}
+.console-led {
+  grid-row: 1 / 3; width: .85rem; height: .85rem; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--lamp) 55%, #ffffff), var(--lamp) 60%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lamp) 60%, var(--bg-0));
+}
+.console-lamp-label { overflow: hidden; color: var(--text-dim); font-size: var(--font-xs); letter-spacing: .06em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.console-lamp-value { overflow: hidden; color: var(--text-faint); font: var(--font-sm) var(--font-mono); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.console-lamp[data-level="on"] { --lamp: var(--live); border-color: color-mix(in srgb, var(--live) 35%, var(--line)); }
+.console-lamp[data-level="caution"] { --lamp: var(--caution); border-color: var(--caution); background: var(--caution-bg); }
+.console-lamp[data-level="alarm"] { --lamp: var(--alarm); border-color: var(--alarm); background: var(--alarm-bg); }
+.console-lamp:not([data-level="off"]) .console-led { box-shadow: 0 0 .55rem var(--lamp), inset 0 0 0 1px var(--lamp); }
+.console-lamp:not([data-level="off"]) .console-lamp-label { color: var(--text); }
+.console-lamp[data-level="on"] .console-lamp-value { color: var(--live); }
+.console-lamp[data-level="caution"] .console-lamp-value { color: var(--caution); }
+.console-lamp[data-level="alarm"] .console-lamp-value { color: var(--alarm); }
+.console-lamp[data-level="alarm"] .console-led { animation: pulse .9s steps(1) infinite; }
+#uboot-engine-master[data-state="caution"] { color: var(--caution); }
+#uboot-engine-master[data-state="alarm"] { color: var(--alarm); }
+.console-annunciator, .console-dials { flex: none; }
+.console-dials .radio-scope-frame { flex: none; height: clamp(10rem, 22vh, 17rem); }
+.console-lower { display: grid; flex: 1 0 13rem; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: .55rem; min-height: 13rem; }
+.console-tanks-unit, .console-mimic { min-height: 0; }
+.console-tanks { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: .35rem; flex: 1; min-height: 9rem; }
+.console-tank { display: grid; grid-template-rows: auto minmax(4rem, 1fr) auto; justify-items: center; gap: .25rem; min-width: 0; --tank: var(--live); }
+.console-tank[data-level="caution"] { --tank: var(--caution); }
+.console-tank[data-level="alarm"] { --tank: var(--alarm); }
+.console-tank-label, .console-tank-value { max-width: 100%; overflow: hidden; text-align: center; text-overflow: ellipsis; }
+.console-tank-value { white-space: nowrap; }
+.console-tank-label { display: flex; align-items: flex-end; justify-content: center; min-height: 2.3em; color: var(--text-dim); font-size: .66rem; line-height: 1.15; overflow-wrap: break-word; hyphens: auto; }
+.console-tank-value { color: var(--text); font: 600 clamp(.66rem, .5vw + .3rem, var(--font-sm)) var(--font-mono); font-variant-numeric: tabular-nums; }
+.console-tank[data-level="caution"] .console-tank-value { color: var(--caution); }
+.console-tank[data-level="alarm"] .console-tank-value { color: var(--alarm); }
+.console-tank-tube {
+  position: relative; width: min(100%, 2.6rem); height: 100%; overflow: hidden; background: var(--scope);
+  border: 1px solid var(--line-strong); border-radius: 3px;
+  background-image: repeating-linear-gradient(to top, transparent 0 calc(10% - 1px), var(--line-faint) calc(10% - 1px) 10%);
+}
+.console-tank-fill { position: absolute; left: 2px; right: 2px; bottom: 0; height: var(--fill, 0%); background: linear-gradient(to top, color-mix(in srgb, var(--tank) 45%, var(--bg-0)), var(--tank)); box-shadow: 0 0 .5rem color-mix(in srgb, var(--tank) 40%, transparent); }
+.console-tank[data-centred="true"] .console-tank-tube::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid var(--text-dim); }
+.console-tank[data-centred="true"][data-sign="plus"] .console-tank-fill { bottom: 50%; }
+.console-tank[data-centred="true"][data-sign="minus"] .console-tank-fill { top: 50%; bottom: auto; background: linear-gradient(to bottom, color-mix(in srgb, var(--tank) 45%, var(--bg-0)), var(--tank)); }
+.console-rooms { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; flex: 1; min-height: 9rem; padding: .35rem; background: var(--scope); border: 1px solid var(--line); border-radius: 2.2rem 1rem 1rem 2.2rem; }
+.console-room {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: .3rem;
+  min-width: 0; padding: .45rem .15rem; overflow: hidden; background: var(--bg-2); border: 1px solid var(--line-strong); border-radius: 3px;
+}
+.console-room:first-child { border-radius: 2rem 3px 3px 2rem; }
+.console-room:last-child { border-radius: 3px .8rem .8rem 3px; }
+.console-room-water { position: absolute; left: 0; right: 0; bottom: 0; height: var(--water, 0%); background: color-mix(in srgb, var(--info) 35%, transparent); border-top: 1px solid var(--info); }
+.console-room > :not(.console-room-water) { position: relative; }
+.console-room-name { max-width: 100%; overflow: hidden; color: var(--text); font-size: .68rem; font-weight: 650; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.console-room-value, .console-room-team { color: var(--text-dim); font: var(--font-xs) var(--font-mono); text-align: center; }
+.console-room-team { min-height: 1.3em; color: var(--live); }
+.console-room-leds { margin-top: auto; }
+.console-room-leds { display: grid; gap: .25rem; width: 100%; padding: 0 .2rem; }
+.console-room-led { display: flex; align-items: center; gap: .3rem; overflow: hidden; color: var(--text-faint); font-size: .62rem; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; --lamp: var(--line); }
+.console-room-led::before { content: ""; flex: 0 0 auto; width: .55rem; height: .55rem; border-radius: 50%; background: var(--lamp); }
+.console-room-led[data-level="on"] { --lamp: var(--live); color: var(--text-dim); }
+.console-room-led[data-level="alarm"] { --lamp: var(--alarm); color: var(--alarm); }
+.console-room-led:not([data-level="off"])::before { box-shadow: 0 0 .4rem var(--lamp); }
+.console-room[data-down="true"] { border-color: var(--alarm); box-shadow: inset 0 0 0 1px var(--alarm); }
+.console-room[data-down="true"] .console-room-value { color: var(--alarm); }
+@media (max-width: 899px) {
+  .engine-console:not([hidden]) { display: flex; flex-direction: column; }
+  .console-dials .radio-scope-frame { height: min(80vw, 22rem); }
+  .console-lower { display: flex; flex-direction: column; }
+  .console-rooms { grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 1rem; }
+  .console-room:first-child, .console-room:last-child { border-radius: 3px; }
+}
+
 /* Lists duplicated by the contacts dock stay out of the station dock. */
 body.workstation-mode .station-grid > :has(#bridge-tactical),
 body.workstation-mode .station-grid > :has(#sonar-observations),

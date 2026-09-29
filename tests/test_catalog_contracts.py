@@ -242,10 +242,12 @@ def test_rpm_reference_affects_classification_score(monkeypatch):
 
 
 @pytest.mark.parametrize("kind", PROFILE_KINDS)
-def test_unit_schema_rejects_unknown_fields_and_stays_editor_only(kind):
+def test_unit_schema_rejects_unknown_fields_and_marks_runtime_fields(kind):
     unit = default_unit(kind)
     assert not validate_unit(unit)
-    assert all(not field.effective for field in unit_field_metadata(kind).values())
+    metadata = unit_field_metadata(kind)
+    assert metadata["name"].effective and metadata["speed_kn"].effective
+    assert not metadata["version"].effective
     unit["unimplemented_capability"] = True
     assert any(problem.path == "unimplemented_capability" for problem in validate_unit(unit))
 

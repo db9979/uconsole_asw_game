@@ -21,6 +21,11 @@ from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
 from src.ui.unit_editor import catalog_builtins
+from src.core.limits import MAX_ENEMY_TORPEDOES
+from src.data.catalog import CATALOG
+from src.data.user_content import default_store
+from src.data.user_profiles import extend_catalog, referenced_user_keys
+from src.weapons.torpedo import EnemyTorpedo
 # Shared display/help constants and helpers (re-exported for tests/tools).
 # Names tests and tools import from ``src.core.game`` (kept as re-exports).
 from src.core.game_save import _valid_difficulty_dict
@@ -29,16 +34,40 @@ from src.core.game_save import _valid_difficulty_dict
 class MissionBridgeMixin:
     """Mission start half of ``Game``: built-in scenarios and the editor bridge."""
 
-    def start_custom_mission(self, definition: dict) -> bool:
+    def user_unit_profiles(self, keys) -> list[dict] | None:
+        """The validated Unit Editor profiles for ``keys`` from the user
+        store (``~/.u-jagd/units``), or None when one is missing or invalid."""
+        store = default_store(config.SAVE_DIR)
+        units = []
+        for key in keys:
+            try:
+                units.append(store.load("unit", key))
+            except (OSError, ValueError, TypeError, KeyError):
+                return None
+        return units
+
+    def start_custom_mission(self, definition: dict, user_units=None) -> bool:
         """Start the currently runtime-effective subset of an authored mission.
 
         A 500 NM fixed or reference world, player/environment values, exact
-        units of every built-in kind except torpedoes, random groups, timed
-        events and sink/survive/protect/reach objectives are effective. Other
-        world sizes, torpedoes and user unit profiles are rejected rather
-        than silently ignored.
+        units of every kind (built-in or user profiles from the Unit Editor;
+        a placed torpedo is a hostile torpedo already running), random
+        groups, timed events and sink/survive/protect/reach objectives are
+        effective. Other world sizes are rejected rather than silently
+        ignored. ``user_units`` defaults to the referenced profiles in the
+        user store.
         """
-        if validate_mission(definition, catalog_builtins(self.runtime_catalog).keys()):
+        user_keys = referenced_user_keys(definition) if isinstance(definition, dict) else []
+        if user_units is None:
+            user_units = self.user_unit_profiles(user_keys) if user_keys else []
+        if user_units is None:
+            return False
+        user_units = [unit for unit in user_units if unit.get("key") in user_keys]
+        try:
+            catalog = extend_catalog(CATALOG, user_units)
+        except (ValueError, KeyError, TypeError):
+            return False
+        if validate_mission(definition, catalog_builtins(catalog).keys()):
             return False
         world = definition["world"]
         reference_sector = (reference_sector_index(world.get("reference"))
@@ -51,30 +80,33 @@ class MissionBridgeMixin:
         preview = static_preview(definition)
         markers = {item["id"]: item for item in preview["markers"]}
         exact = definition["units"]["exact"]
-        catalog = self.runtime_catalog
         placeable = (catalog.subs | catalog.surfaces | catalog.aircraft
                      | catalog.animals | catalog.decoys)
         group_profiles = [profile for group in definition["units"]["random_groups"]
                           for profile in group["profiles"]]
-        if any(profile not in placeable for profile in
-               [unit["profile"] for unit in exact] + group_profiles):
+        # A placed torpedo is a hostile weapon already running at the frigate.
+        torpedoes = [unit for unit in exact if unit["profile"] in catalog.torpedoes]
+        if (any(profile not in placeable for profile in
+                [unit["profile"] for unit in exact if unit not in torpedoes] + group_profiles)
+                or any(catalog.torpedoes[unit["profile"]].used_by != "enemy"
+                       or unit["side"] != "hostile" for unit in torpedoes)
+                or len(torpedoes) > MAX_ENEMY_TORPEDOES):
             return False
         for unit in exact:
             profile_key = unit["profile"]
-            profile = (self.runtime_catalog.subs.get(profile_key)
-                       or self.runtime_catalog.surfaces.get(profile_key))
+            profile = catalog.subs.get(profile_key) or catalog.surfaces.get(profile_key)
             if profile is None:
                 continue                      # aircraft, animals, decoys: profile speed
-            systems = self.runtime_catalog.profile_systems.get(profile_key)
+            systems = catalog.profile_systems.get(profile_key)
             maximum_speed = (
-                self.runtime_catalog.machines[systems.machine_key].maximum_speed_kn
+                catalog.machines[systems.machine_key].maximum_speed_kn
                 if systems is not None and systems.machine_key is not None else
                 (profile.speed_kn[1] if isinstance(profile.speed_kn, tuple)
                  else profile.speed_kn))
             if float(unit.get("speed_kn", 0.0)) > maximum_speed:
                 return False
         expected_targets = {unit["id"] for unit in exact
-                            if unit["profile"] in self.runtime_catalog.subs
+                            if unit["profile"] in catalog.subs
                             and unit["side"] == "hostile"}
         if objective["type"] == "sink" and set(objective["target_ids"]) != expected_targets:
             return False
@@ -90,6 +122,9 @@ class MissionBridgeMixin:
         # before); a reference world selects its packaged real sector.
         self.reset(int(definition["seed"]), "s4_zufall", publish_intel=False,
                    reference_sector=reference_sector)
+        # Built-in plus the referenced user profiles; the save's catalog
+        # snapshot carries them, so the mission continues after a load.
+        self.runtime_catalog = catalog
         self.subs, self.civilians, self.warships = [], [], []
         self.animals, self.asms = [], []
         player = definition["player"]
@@ -230,6 +265,15 @@ class MissionBridgeMixin:
             if float(unit.get("speed_kn", 0.0)) > 0.0:
                 entity.speed = float(unit["speed_kn"])
             self.animals.append(entity)
+            return entity
+        if profile in self.runtime_catalog.torpedoes:
+            # A torpedo already running at the start: straight on its
+            # course until its seeker acquires (no launching unit).
+            entity = EnemyTorpedo(x, y, float(unit.get("course_deg", 0.0)),
+                                  float(unit.get("depth_m", 30.0)),
+                                  len(self.enemy_torpedoes) + 1,
+                                  profile=self.runtime_catalog.torpedoes[profile])
+            self.enemy_torpedoes.append(entity)
             return entity
         if profile in self.runtime_catalog.decoys:
             # A placed decoy lies still at its spot (no launching unit).
@@ -482,7 +526,8 @@ class MissionBridgeMixin:
         entity_id = self.mission_units.get(unit_id)
         if entity_id is None:
             return None
-        for group in (self.subs, self.civilians, self.warships, self.animals, self.decoys):
+        for group in (self.subs, self.civilians, self.warships, self.animals, self.decoys,
+                      self.enemy_torpedoes):
             for entity in group:
                 if entity.id == entity_id:
                     return entity

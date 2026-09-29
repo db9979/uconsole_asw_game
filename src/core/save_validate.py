@@ -882,8 +882,14 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                     if profile is None or profile.used_by != "enemy":
                         return False
                     gx, gy = entry.get("guidance_x"), entry.get("guidance_y")
+                    # A torpedo a mission placed has no launching boat and
+                    # no guidance datum: it runs on its course.
+                    placed_torpedo = (entry.get("launch_platform_id") is None
+                                      and entry.get("launch_weapon_key") is None
+                                      and data.get("mission_runtime", {}).get(
+                                          "custom_definition") is not None)
                     if ((gx is None) != (gy is None)
-                            or gx is None
+                            or (gx is None and not placed_torpedo)
                             or (gx is not None and (
                                 not bounded(gx, -1_000_000, 1_000_000)
                                 or not bounded(gy, -1_000_000, 1_000_000)))
@@ -904,7 +910,9 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                     acquired = entry.get("seeker_acquired", False)
                     launch_platform_id = entry.get("launch_platform_id")
                     launch_weapon_key = entry.get("launch_weapon_key")
-                    if (not identity(launch_platform_id)
+                    if placed_torpedo:
+                        pass
+                    elif (not identity(launch_platform_id)
                             or launch_platform_id not in group_ids["sub"]
                             or (launch_weapon_key is not None
                                 and (not isinstance(launch_weapon_key, str)
@@ -916,9 +924,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                                          launch_weapon_key].runtime_profile_key
                                          != profile_key))):
                         return False
-                    launch_key = (launch_platform_id, launch_weapon_key)
-                    used_enemy_torpedoes[launch_key] = (
-                        used_enemy_torpedoes.get(launch_key, 0) + 1)
+                    if not placed_torpedo:
+                        launch_key = (launch_platform_id, launch_weapon_key)
+                        used_enemy_torpedoes[launch_key] = (
+                            used_enemy_torpedoes.get(launch_key, 0) + 1)
                     if (not valid_seeker or acquired != (seeker is not None)
                             or (acquired and not entry["terminal_active"])
                             or not bounded(entry.get("course"), 0, 360)

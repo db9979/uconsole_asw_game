@@ -84,6 +84,8 @@ def test_mad_run_needs_the_dome_stowed_and_reports_a_fix_without_hidden_truth():
     sub.depth = 60.0
     found = False
     for _ in range(80):
+        # Each sensor tick is a fresh draw only if simulation time moves on.
+        game.sim_t += 0.25
         game._update_sensors(0.25)
         contact = game.sonar.contacts.get(sub.id)
         if contact is not None and contact.fixes.get("MAD") is not None:

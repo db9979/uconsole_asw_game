@@ -10,6 +10,7 @@ wall clock; the whole state is the saved ``route`` block.
 
 from __future__ import annotations
 
+import heapq
 import math
 
 MAX_WAYPOINTS = 8
@@ -32,6 +33,11 @@ DETOUR_DEPTH = 2               # nested detours per leg at most
 WATCH_PERIOD_S = 1.0           # look-ahead cadence while a route runs
 WATCH_AHEAD_S = 120.0          # look-ahead distance in time at current speed
 WATCH_MIN_NM = 0.5
+# Chart path search when a stand-off detour finds no way (a channel, a bay,
+# a long coast): a bounded grid search on the chart, straightened afterwards.
+PATH_GRID_CELLS = 96           # grid cells along the longer side at most
+PATH_CELL_MIN_NM = 0.2
+PATH_PAD_NM = (4.0, 30.0, 80.0)  # search boxes around the leg, small first
 
 
 def leg_hazard(depth_at, x0: float, y0: float, x1: float, y1: float,
@@ -86,6 +92,133 @@ def plan_detour(depth_at, x0: float, y0: float, x1: float, y1: float,
                 continue
             return first + [(cx, cy)] + second
     return None
+
+
+def plan_leg(depth_at, x0: float, y0: float, x1: float, y1: float,
+             min_depth_m: float, size_nm: float, max_points: int = MAX_ROUTE_POINTS):
+    """Points to insert before the leg's end so the whole leg stays in safe
+    chart water: a stand-off detour when one works, else a chart path search.
+    [] for a clear leg; None when neither finds a way within ``max_points``."""
+    detour = plan_detour(depth_at, x0, y0, x1, y1, min_depth_m, size_nm, depth=1)
+    if detour is not None and len(detour) <= max_points:
+        return detour
+    path = find_path(depth_at, x0, y0, x1, y1, min_depth_m, size_nm)
+    if path is None or len(path) > max_points:
+        return None
+    return path
+
+
+def find_path(depth_at, x0: float, y0: float, x1: float, y1: float,
+              min_depth_m: float, size_nm: float):
+    """Chart path from (x0, y0) to (x1, y1): A* over a grid of chart
+    soundings in a box around the leg, straightened by line of sight. Returns
+    the turning points between start and end (every leg checked clear with
+    ``leg_hazard``), [] for a clear leg, or None when no path is found.
+    Pure and deterministic: fixed grid, integer tie-breaks."""
+    if leg_hazard(depth_at, x0, y0, x1, y1, min_depth_m) is None:
+        return []
+    if depth_at(x1, y1) < min_depth_m:
+        return None
+    for pad in PATH_PAD_NM:
+        pad = max(pad, 0.25 * math.hypot(x1 - x0, y1 - y0))
+        path = _grid_path(depth_at, x0, y0, x1, y1, min_depth_m, size_nm, pad)
+        if path is not None:
+            return path
+    return None
+
+
+def _grid_path(depth_at, x0, y0, x1, y1, min_depth_m, size_nm, pad):
+    left = max(0.0, min(x0, x1) - pad)
+    top = max(0.0, min(y0, y1) - pad)
+    right = min(size_nm, max(x0, x1) + pad)
+    bottom = min(size_nm, max(y0, y1) + pad)
+    cell = max(PATH_CELL_MIN_NM, max(right - left, bottom - top) / PATH_GRID_CELLS)
+    cols = max(1, int(math.ceil((right - left) / cell)))
+    rows = max(1, int(math.ceil((bottom - top) / cell)))
+
+    def centre(c, r):
+        return left + (c + 0.5) * cell, top + (r + 0.5) * cell
+
+    def index_of(x, y):
+        return (min(cols - 1, max(0, int((x - left) / cell))),
+                min(rows - 1, max(0, int((y - top) / cell))))
+
+    safe = {}
+
+    def open_cell(c, r):
+        key = r * cols + c
+        if key not in safe:
+            safe[key] = depth_at(*centre(c, r)) >= min_depth_m
+        return safe[key]
+
+    start, goal = index_of(x0, y0), index_of(x1, y1)
+    moves = ((1, 0, 1.0), (-1, 0, 1.0), (0, 1, 1.0), (0, -1, 1.0),
+             (1, 1, math.sqrt(2.0)), (1, -1, math.sqrt(2.0)),
+             (-1, 1, math.sqrt(2.0)), (-1, -1, math.sqrt(2.0)))
+
+    def estimate(c, r):
+        dc, dr = abs(c - goal[0]), abs(r - goal[1])
+        return max(dc, dr) + (math.sqrt(2.0) - 1.0) * min(dc, dr)
+
+    best = {start: 0.0}
+    came = {}
+    heap = [(estimate(*start), 0, start)]
+    order = 0
+    while heap:
+        _, _, node = heapq.heappop(heap)
+        if node == goal:
+            break
+        c, r = node
+        base = best[node]
+        for dc, dr, cost in moves:
+            nc, nr = c + dc, r + dr
+            if not (0 <= nc < cols and 0 <= nr < rows):
+                continue
+            nxt = (nc, nr)
+            if nxt != goal and not open_cell(nc, nr):
+                continue
+            if dc and dr and not (open_cell(c + dc, r) and open_cell(c, r + dr)):
+                continue            # no corner cutting past a shoal cell
+            value = base + cost
+            if value < best.get(nxt, math.inf):
+                best[nxt] = value
+                came[nxt] = node
+                order += 1
+                heapq.heappush(heap, (value + estimate(nc, nr), order, nxt))
+    else:
+        return None
+    if goal not in best:
+        return None
+    cells = [goal]
+    while cells[-1] != start:
+        cells.append(came[cells[-1]])
+    cells.reverse()
+    nodes = [(x0, y0)] + [centre(c, r) for c, r in cells[1:-1]] + [(x1, y1)]
+    # Line of sight: from each kept point jump as far along the nodes as a
+    # clear leg reaches (galloping, then bisection: few leg checks).
+    def clear(a, b):
+        return leg_hazard(depth_at, *nodes[a], *nodes[b], min_depth_m) is None
+
+    kept, i, last = [], 0, len(nodes) - 1
+    while i < last:
+        if clear(i, last):
+            break
+        good, step = i, 1
+        while good + step < last and clear(i, good + step):
+            good += step
+            step *= 2
+        low, high = good, min(last, good + step)
+        while high - low > 1:
+            middle = (low + high) // 2
+            if clear(i, middle):
+                low = middle
+            else:
+                high = middle
+        if low == i:
+            return None
+        kept.append(nodes[low])
+        i = low
+    return kept
 
 
 def bearing_to(x0: float, y0: float, x1: float, y1: float) -> float:

@@ -193,7 +193,9 @@ document.getElementById("simlog-list").append(entry);
 const dialog = document.getElementById("simlog-map-dialog");
 dialog.hidden = false;
 dialog.showModal();
-requestAnimationFrame(() => {
+// A timer, not requestAnimationFrame: headless Chromium under virtual time
+// does not always run a frame; the reads below force layout themselves.
+setTimeout(() => {
   const rect = (element) => {
     const box = element.getBoundingClientRect();
     return {left: box.left, right: box.right, top: box.top, bottom: box.bottom,
@@ -911,7 +913,21 @@ metrics($("mission-metrics"), [["status_remaining", duration(10794)], ["status_e
 $("utc-clock").textContent = "10:25:18";
 $("connection").dataset.state = "connected"; $("connection").textContent = t("connection_connected", {age: 0});
 $("sound").textContent = t("sound_off");
-requestAnimationFrame(() => {
+// Measure only once the bundled web fonts are in and layout has settled: a
+// fallback face measured mid-load made this check flaky.
+// Load the bundled faces from bytes (fetch holds Chromium's virtual time,
+// a CSS font load does not), so every run measures the same glyphs.
+for (const [family, file, weight] of [["Inter", "inter-variable", "100 900"],
+    ["JetBrains Mono", "jetbrains-mono-regular", "400"], ["JetBrains Mono", "jetbrains-mono-bold", "700"]]) {
+  const bytes = await (await fetch(`./fonts/${file}.woff2`)).arrayBuffer();
+  const face = new FontFace(family, bytes, {weight});
+  await face.load();
+  document.fonts.add(face);
+}
+// A timer, not requestAnimationFrame: headless Chromium under virtual time
+// does not always run a frame; the reads below force layout themselves.
+await new Promise((resolve) => setTimeout(resolve, 50));
+{
   const items = [...$("statusbar").querySelectorAll(":scope > *, .status-actions > *, .status-clocks > *, .status-mission > *")]
     .filter((element) => getComputedStyle(element).display !== "none" && element.getClientRects().length);
   const boxes = items.map((element) => [element, element.getBoundingClientRect()]);
@@ -926,7 +942,7 @@ requestAnimationFrame(() => {
   document.documentElement.dataset.result = JSON.stringify({overlaps, height: bar.height,
     rightmost: Math.max(...boxes.map(([, box]) => box.right)), width: innerWidth,
     remaining: $("mission-metrics").textContent});
-});
+}
 """.replace("__LANG__", language)
     ui = json.dumps({key: value for key, value in source.items() if key.startswith(PREFIX)}).encode()
     root = run_module_probe(tmp_path, probe, window=(width, 400),
@@ -953,7 +969,9 @@ $("bootstrap").hidden = true; $("shell").hidden = false; $("pairing").hidden = t
 document.body.classList.add("workstation-mode");
 $("operations").hidden = false;
 activateTab("__TAB__", false);
-requestAnimationFrame(() => {
+// A timer, not requestAnimationFrame: headless Chromium under virtual time
+// does not always run a frame; the reads below force layout themselves.
+setTimeout(() => {
   const box = (element) => element.getBoundingClientRect();
   const panel = box($("panel-__TAB__"));
   const close = $("panel-__TAB__").querySelector(".overlay-close");

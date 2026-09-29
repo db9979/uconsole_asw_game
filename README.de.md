@@ -14,14 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.73**
+Aktuelle Version: **1.3.74**
 
-Version 1.3.73 repariert das Selbst-Update unter Windows: Nach **Update
-installieren** ersetzt die neue U-Jagd-Windows.exe jetzt die laufende und
-startet. Bisher blieb der Download als `U-Jagd-Windows.exe.new` daneben liegen
-und die alte Version startete wieder. Der Starter löscht eine solche
-liegengebliebene `.new`-Datei, und der Windows-Build prüft den Austausch bei
-jeder Änderung. Spielstände bleiben v31.
+Version 1.3.74 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
+Buchten und um lange Küsten finden: Reicht ein Ausweichpunkt für eine Strecke
+nicht, plant eine Wegsuche auf der Karte die Wendepunkte (die Planung ist
+dabei schneller als bisher). GitHub prüft jetzt jede Änderung mit der ganzen
+Testsuite samt Browser-Tests, den Prüfungen der erzeugten Dateien, der
+Kalibrierung und dem Smoke-Test, und zwei wackelige Browser-Prüfungen sind
+repariert: Der Handy-Ausguck fällt nicht mehr auf die Kopplungsseite zurück,
+wenn der Host direkt nach dem Koppeln langsam antwortet, und die Statusleiste
+wird mit den mitgelieferten Schriften vermessen. Das Handbuch behauptet nicht mehr, die
+Fregatte habe kein ASROC, und `tools/hw_report.py` macht aus einem
+Debug-Lauf auf der uConsole die Tabelle der Hardware-Checkliste. Spielstände
+bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

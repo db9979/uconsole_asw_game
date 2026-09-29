@@ -150,7 +150,7 @@ When nobody sails the frigate (the uConsole plays the submarine, or a solo brows
 - **Sonar and weapons:** the ship pings once a minute on a submarine contact that has no fresh range, and fires one torpedo (or the set salvo) at a located submarine within 6 NM, again only when it has stopped running. Nixies go out against a heard torpedo.
 - **Helicopter:** launched for a datum within 30 NM (weather and deck permitting); it flies to the datum, or 8 NM down a bearing, dips, pings every 30 s and drops a torpedo on a located submarine within 1.5 NM, one at a time. Without a datum it recovers.
 - **Patrol aircraft:** requested once a datum exists; it flies to the datum with its radar on, lays a circle of buoys where none listen within 4 NM, and attacks a located submarine within its drop range over the datalink.
-- **ASROC:** a position datum at most 2 minutes old from the ship's own sensors (not an HQ report) is passed over the datalink to the nearest friendly AI warship that carries ASROC and has it in range, at most every 2 minutes and never while an ASROC is in flight or its torpedo is running. The frigate itself carries no ASROC, and the submarine scenarios add no escort for it.
+- **ASROC:** a position datum at most 2 minutes old from the ship's own sensors (not an HQ report) is passed over the datalink to the nearest friendly AI warship that carries ASROC and has it in range, at most every 2 minutes and never while an ASROC is in flight or its torpedo is running. The AI hunters do not fire the frigate's own ASROC or depth charges (those stay with a player at the Weapons station), and the submarine scenarios add no escort for it.
 - The other stations (damage control, engine room, OPZ air defence, ELOKA) run the autocrew's policies. The hunt keeps no state of its own; the radar blips and the OPZ's marks it acts on are saved (save v25), so a loaded game continues it unchanged.
 
 ### Not modelled {#ref-opfor-limits}
@@ -165,7 +165,7 @@ When nobody sails the frigate (the uConsole plays the submarine, or a solo brows
 - The fit grade is the crew's reading of the published ranges, not a likelihood: a wide-band radar measured near the middle of its range can fit better than the true emitter measured near its edge, and the browser shows the first 8 entries.
 - The submarine campaign has no port choices beyond refit and quick turnaround, and no damage-control state carried over (only the overall hull damage). Outside the convoy attack the submarine's torpedoes home on the frigate only, and an AI submarine attacks merchants only as the convoy attack's mission submarine.
 - The AI submarine's report is not heard by the frigate's HF/DF, and it sights the frigate by range and visibility alone, not through a modelled periscope search.
-- The AI hunters cross no ESM bearings into a fix, and ASROC comes only from friendly warships already in the scenario.
+- The AI hunters cross no ESM bearings into a fix, and their ASROC comes only from friendly warships already in the scenario, never from the frigate's own launcher.
 - The periscope has one magnification and no camera; sightings carry no identification beyond the coarse class, and the stadimeter assumes a class length rather than a masthead height.
 
 ## Mission and scoring {#ref-mission}

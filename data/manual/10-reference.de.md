@@ -150,7 +150,7 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das U-Boot oder ein Solo-B
 - **Sonar und Waffen:** Das Schiff pingt einmal pro Minute auf einen U-Boot-Kontakt ohne frische Entfernung und schießt einen Torpedo (oder die eingestellte Salve) auf ein geortetes U-Boot innerhalb 6 sm, erneut erst, wenn er nicht mehr läuft. Gegen einen gehörten Torpedo gehen Nixies aus.
 - **Hubschrauber:** Er startet für ein Datum innerhalb 30 sm (wenn Wetter und Deck es erlauben), fliegt zum Datum oder 8 sm die Peilung hinab, taucht das Sonar, pingt alle 30 s und wirft auf ein geortetes U-Boot innerhalb 1,5 sm einen Torpedo, einen nach dem anderen. Ohne Datum kehrt er zurück.
 - **Seefernaufklärer:** Er wird angefordert, sobald ein Datum besteht, fliegt mit eingeschaltetem Radar zum Datum, legt einen Bojenkreis, wo im Umkreis von 4 sm keine Boje horcht, und greift ein geortetes U-Boot in seiner Abwurfweite über den Datenlink an.
-- **ASROC:** Ein Positionsdatum der eigenen Sensoren (keine Meldung der Führung), höchstens 2 Minuten alt, geht per Datenlink an das nächste befreundete KI-Kriegsschiff mit ASROC in Reichweite, höchstens alle 2 Minuten und nie, solange ein ASROC fliegt oder sein Torpedo läuft. Die Fregatte selbst hat kein ASROC, und die U-Boot-Szenarien stellen dafür keinen Geleitschutz.
+- **ASROC:** Ein Positionsdatum der eigenen Sensoren (keine Meldung der Führung), höchstens 2 Minuten alt, geht per Datenlink an das nächste befreundete KI-Kriegsschiff mit ASROC in Reichweite, höchstens alle 2 Minuten und nie, solange ein ASROC fliegt oder sein Torpedo läuft. Die KI-Jäger feuern weder das eigene ASROC der Fregatte noch ihre Wasserbomben (beides bleibt einem Spieler an der Waffenstation vorbehalten), und die U-Boot-Szenarien stellen dafür keinen Geleitschutz.
 - Die übrigen Stationen (Schadensbekämpfung, Maschinenraum, OPZ-Luftverteidigung, EloKa) laufen mit den Regeln der Autocrew. Die Jagd hat keinen eigenen Zustand; die Radarpunkte und Markierungen der OPZ, nach denen sie handelt, werden gespeichert (Spielstand v25), ein geladenes Spiel setzt sie also unverändert fort.
 
 ### Nicht modelliert {#ref-opfor-limits}
@@ -165,7 +165,7 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das U-Boot oder ein Solo-B
 - Die Passung ist die Lesart der Crew aus den veröffentlichten Bereichen, keine Wahrscheinlichkeit: ein Breitbandradar, nahe der Mitte seines Bereichs gemessen, kann besser passen als der wahre Sender nahe dem Rand, und der Browser zeigt die ersten 8 Einträge.
 - Die U-Boot-Kampagne kennt im Stützpunkt nur Überholung und schnelles Auslaufen und übernimmt keinen Zustand der Leckwehr (nur den gesamten Rumpfschaden). Außerhalb des Geleitzugangriffs suchen die Torpedos des U-Boots nur die Fregatte, und ein KI-U-Boot greift Handelsschiffe nur als Missions-U-Boot des Geleitzugangriffs an.
 - Die Meldung des KI-U-Boots hört das HF/DF der Fregatte nicht, und es sichtet die Fregatte nur nach Entfernung und Sichtweite, ohne modellierte Sehrohrsuche.
-- Die KI-Jäger kreuzen ESM-Peilungen nicht zu einem Fix, und ASROC kommt nur von befreundeten Kriegsschiffen, die ohnehin im Szenario sind.
+- Die KI-Jäger kreuzen ESM-Peilungen nicht zu einem Fix, und ihr ASROC kommt nur von befreundeten Kriegsschiffen, die ohnehin im Szenario sind, nie vom eigenen Starter der Fregatte.
 - Das Sehrohr hat eine Vergrößerung und keine Kamera; Sichtungen tragen keine Identifikation über die grobe Klasse hinaus, und das Stadimeter nimmt eine Klassenlänge statt einer Masthöhe an.
 
 ## Mission und Wertung {#ref-mission}

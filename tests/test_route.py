@@ -241,3 +241,77 @@ def test_the_watch_adds_a_detour_to_a_route_loaded_across_the_island():
     assert "runtime.route.replanned" in _keys(game, 12)
     assert game.route.active and _legs_clear(game)
     assert math.hypot(game.ship.x - cx, game.ship.y - cy) > 0.6
+
+
+# --- chart path search through channels and around long coasts (1.3.74) -----
+
+def _bay(x, y):
+    """A synthetic chart: a C-shaped coast (walls 1 NM thick) around a bay
+    open to the south; its mouth is a 1.5 NM channel far from the leg."""
+    inside_box = 10.0 <= x <= 30.0 and 10.0 <= y <= 30.0
+    in_bay = 11.0 < x < 29.0 and 11.0 < y < 29.0
+    in_mouth = 19.25 <= x <= 20.75 and y >= 29.0
+    if inside_box and not (in_bay or in_mouth):
+        return 0.0
+    return 50.0
+
+
+def test_the_path_search_finds_the_channel_the_stand_off_detour_misses():
+    start, end = (20.0, 5.0), (20.0, 20.0)          # outside north -> inside the bay
+    assert route_model.plan_detour(_bay, *start, *end, 11.0, 100.0) is None
+    path = route_model.find_path(_bay, *start, *end, 11.0, 100.0)
+    assert path, "the path search should find the way round through the mouth"
+    legs = [start] + path + [end]
+    assert all(route_model.leg_hazard(_bay, *a, *b, 11.0) is None
+               for a, b in zip(legs, legs[1:]))
+    assert any(y > 29.0 for _, y in path)            # it goes out round the south side
+    assert len(path) <= route_model.MAX_ROUTE_POINTS
+    # Deterministic, and plan_leg falls back to it.
+    assert route_model.find_path(_bay, *start, *end, 11.0, 100.0) == path
+    assert route_model.plan_leg(_bay, *start, *end, 11.0, 100.0) == path
+    # A closed bay has no way in.
+    closed = lambda x, y: 0.0 if 19.0 <= x <= 21.0 and y >= 29.0 and y <= 30.0 else _bay(x, y)
+    assert route_model.find_path(closed, *start, *end, 11.0, 100.0) is None
+    assert route_model.plan_leg(closed, *start, *end, 11.0, 100.0) is None
+
+
+def test_the_path_search_takes_a_long_coast_in_a_few_turning_points():
+    def coast(x, y):                                   # a 60 NM wall with one end
+        return 0.0 if 49.0 <= x <= 51.0 and y <= 60.0 else 50.0
+    start, end = (40.0, 30.0), (60.0, 30.0)
+    assert route_model.plan_detour(coast, *start, *end, 11.0, 100.0) is None
+    path = route_model.plan_leg(coast, *start, *end, 11.0, 100.0)
+    assert path and len(path) <= 4
+    legs = [start] + path + [end]
+    assert all(route_model.leg_hazard(coast, *a, *b, 11.0) is None
+               for a, b in zip(legs, legs[1:]))
+
+
+def test_a_waypoint_across_a_real_coast_is_routed_by_the_game():
+    game = _game()
+    size = float(game.world.size_nm)
+    minimum = game._route_min_depth()
+    ship = game.ship
+    # Find a chart point on the far side of land, due some bearing from the ship.
+    target = None
+    for course in range(0, 360, 15):
+        for distance in (15.0, 25.0, 40.0):
+            x = ship.x + distance * math.sin(math.radians(course))
+            y = ship.y - distance * math.cos(math.radians(course))
+            if not (1.0 <= x <= size - 1.0 and 1.0 <= y <= size - 1.0):
+                continue
+            if game._route_depth(x, y) < minimum + 20.0:
+                continue
+            if route_model.leg_hazard(game._route_depth, ship.x, ship.y, x, y, minimum) is None:
+                continue
+            target = (x, y)
+            break
+        if target:
+            break
+    assert target is not None
+    assert game.add_route_waypoint(*target) == "ok"
+    if len(game.route.points) > 1:
+        assert _legs_clear(game)
+        assert "runtime.route.detour" in _keys(game)
+    else:
+        assert "runtime.route.hazard" in _keys(game)

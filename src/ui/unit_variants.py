@@ -172,6 +172,58 @@ def _box(b, u0, u1, z0, z1, half, mat, y=0.0, rake=0.0) -> None:
     um._prism(b, [(u0 + rake, z1), (u1, z1), (u1, z0), (u0, z0)], half, mat, y)
 
 
+# Deckhouse tiers: per tier the front steps aft and the back forward (as
+# parts of the block's length) and the sides draw in (part of the width).
+# Warships have few, raked and drawn-in levels; passenger ships step back
+# aft in terraces; merchant houses stand straight with a wheelhouse on top.
+_TIER_M = 2.8
+_TIERS = {"naval": (0.07, 0.06, 0.07, 3), "passenger": (0.008, 0.028, 0.01, 9),
+          "merchant": (0.02, 0.035, 0.02, 7)}
+
+
+def _house(b, u0, u1, z0, z1, half, mat, style, tier, rake=0.0, wings=0.0,
+           x=um._x) -> list:
+    """A deckhouse built up in deck tiers from ``z0`` to ``z1`` (each about
+    ``tier`` high), stepping in by ``style``; ``wings`` (a half-width) adds
+    bridge wings under the top tier.  Returns each tier's (u0, u1, z0, z1,
+    half) for window rows."""
+    front, back, taper, most = _TIERS[style]
+    count = max(1, min(most, round((z1 - z0) / tier)))
+    span = u1 - u0
+    levels = []
+    for k in range(count):
+        a = u0 + front * span * k
+        c = u1 - back * span * k
+        if c - a < 0.3 * span:
+            break
+        levels.append((a, c, max(0.003, half * (1.0 - taper * k))))
+    count = len(levels)
+    if style == "merchant" and count >= 2:
+        # The wheelhouse on top: short, at the front of the house.
+        a, c, h = levels[-1]
+        levels[-1] = (a, a + 0.45 * (c - a), h)
+    tiers = []
+    for k, (a, c, h) in enumerate(levels):
+        lo = z0 + (z1 - z0) * k / count
+        hi = z0 + (z1 - z0) * (k + 1) / count
+        _box(b, a, c, lo, hi, h, mat, rake=rake * (hi - lo) / max(1e-9, z1 - z0))
+        tiers.append((a, c, lo, hi, h))
+    if style == "merchant" and count >= 2:
+        # The wheelhouse windows all round.
+        a, c, lo, hi, h = tiers[-1]
+        z = lo + 0.6 * (hi - lo)
+        for p, q in (((a, h), (c, h)), ((a, -h), (c, -h)), ((a, -h), (a, h))):
+            b.line((x(p[0]) + (0.0005 if p[0] == a and q[0] == a else 0.0), p[1] * 1.02, z),
+                   (x(q[0]) + (0.0005 if p[0] == a and q[0] == a else 0.0), q[1] * 1.02, z), "dark")
+    if wings > 0.0 and count >= 2:
+        a, _c, lo, _hi, h = tiers[-1]
+        if wings > h:
+            # Bridge wings: a thin deck out to the ship's side.
+            _box(b, a, a + 0.25 * (tiers[-1][1] - a), lo - 0.25 * (lo - tiers[-2][2]), lo,
+                 wings, mat)
+    return tiers
+
+
 def _ship(key: str, spec: dict) -> um.Mesh:
     length = spec["length_m"]
     m = lambda metres: metres / length  # noqa: E731
@@ -190,7 +242,7 @@ def _ship(key: str, spec: dict) -> um.Mesh:
         poly = [(0.0, deck * 1.18), (rake, 0.0), (0.97, 0.0), (1.0, aft), (0.3, deck),
                 (0.08, deck * 1.12)]
     b = um._Builder()
-    um._hull(b, poly, beam, draft, side=side, stations=14, entrance=entrance,
+    um._hull(b, poly, beam, draft, side=side, stations=20, entrance=entrance,
              transom=0.9 if layout in _FULL else 0.72)
     x = um._x
     width = lambda u: beam * um._plan(u, entrance, 0.9 if layout in _FULL else 0.72)  # noqa: E731
@@ -209,20 +261,21 @@ def _ship(key: str, spec: dict) -> um.Mesh:
         y = -(m(spec.get("flight_deck_beam_m") or spec["beam_m"]) / 2 - half * 1.5)
         _box(b, i["from"], i["to"], deck, m(i["top_m"]), half, house, y)
         tops.append((i["from"], i["to"], m(i["top_m"])))
+    style = "naval" if naval else "passenger" if layout in ("cruise", "ferry") else "merchant"
     for s in spec["superstructure"]:
         uc = (s["from"] + s["to"]) / 2
         top = m(s["top_m"])
-        _box(b, s["from"], s["to"], deck, top, max(0.004, s["width"] * width(uc)),
-             house, rake=0.15 * (top - deck) if naval else 0.0)
-        tops.append((s["from"], s["to"], top))
-        if layout in ("cruise", "ferry") and top - deck > 0.02:
-            # Rows of cabin windows and balconies down both sides.
-            half = max(0.004, s["width"] * width(uc)) + 0.0005
-            rows = min(8, int((top - deck) / m(3.0)))
-            for k in range(1, rows):
-                z = deck + (top - deck) * k / rows
-                for y in (half, -half):
-                    b.line((x(s["from"] + 0.01), y, z), (x(s["to"] - 0.01), y, z), "dark")
+        half = max(0.004, s["width"] * width(uc))
+        tiers = _house(b, s["from"], s["to"], deck, top, half, house, style, m(_TIER_M),
+                       rake=0.15 * (top - deck) if naval else 0.0,
+                       wings=0.0 if naval else 0.97 * width(s["from"]))
+        tops.extend((a, c, hi) for a, c, _lo, hi, _h in tiers)
+        if style == "passenger":
+            # A row of cabin windows and balconies along each tier.
+            for a, c, lo, hi, h in tiers[:-1]:
+                z = lo + 0.55 * (hi - lo)
+                for y in (h + 0.0005, -h - 0.0005):
+                    b.line((x(a + 0.008), y, z), (x(c - 0.008), y, z), "dark")
 
     def base(u: float) -> float:
         return max([t for u0, u1, t in tops if u0 - 0.005 <= u <= u1 + 0.005] + [deck])
@@ -354,14 +407,13 @@ def _sub(key: str, spec: dict) -> um.Mesh:
 
     b = um._Builder()
     zscale = 0.85 if shape == "double_hull_wide" else 1.0
-    um._revolve(b, [(i / 16, r(i / 16)) for i in range(17)], "sub", segments=10,
+    um._revolve(b, [(i / 22, r(i / 22)) for i in range(23)], "sub", segments=14,
                 zscale=zscale)
     x = um._x
     s = spec["sail"]
     top = m(s["top_m"])
     half = max(0.004, min(0.35 * radius, 0.012))
-    um._prism(b, [(s["from"] + 0.01, top), (s["to"] - 0.005, top), (s["to"] + 0.012, 0.6 * radius),
-                  (s["from"], 0.6 * radius)], half, "sub")
+    _fin(b, s["from"], s["to"], 0.6 * radius, top, half, "sub")
     if spec["hump"]:
         h = spec["hump"]
         um._prism(b, [(h["from"], m(h["top_m"])), (h["to"], m(h["top_m"])),
@@ -386,6 +438,28 @@ def _sub(key: str, spec: dict) -> um.Mesh:
     return b.mesh(False)
 
 
+def _fin(b, u0, u1, z0, z1, half, mat, x=um._x, points=14) -> None:
+    """A streamlined fin (a submarine's sail): a rounded leading edge and a
+    tapered trailing edge in plan, the top a little shorter than the foot."""
+    def ring(a, c, z, h):
+        out = []
+        for k in range(points):
+            t = 2.0 * math.pi * k / points
+            u = (a + c) / 2 - (c - a) / 2 * math.cos(t)
+            y = h * math.sin(t) * (1.0 + 0.35 * math.cos(t)) / 1.08
+            out.append(b.vertex((x(u), y, z)))
+        return out
+    length = u1 - u0
+    foot = ring(u0, u1 + 0.1 * length, z0, half)
+    head = ring(u0 + 0.06 * length, u1 - 0.04 * length, z1, 0.85 * half)
+    centre = (x((u0 + u1) / 2), 0.0, (z0 + z1) / 2)
+    for k in range(points):
+        j = (k + 1) % points
+        b.face((foot[k], foot[j], head[j], head[k]), mat, center=centre)
+    b.face(head, mat, center=centre)
+    b.face(foot, mat, center=centre)
+
+
 # --- aircraft ----------------------------------------------------------------
 def _aircraft(key: str, spec: dict) -> um.Mesh:
     if spec["kind"] == "helicopter":
@@ -404,7 +478,7 @@ def _aircraft(key: str, spec: dict) -> um.Mesh:
             return radius * max(0.15, 1 - ((u - 0.7) / 0.3) * 0.85)
         return radius
 
-    um._revolve(b, [(i / 20, r(i / 20)) for i in range(21)], mat, segments=10)
+    um._revolve(b, [(i / 22, r(i / 22)) for i in range(23)], mat, segments=12)
     x = um._x
     w = spec["wing_u"]
     span = m(spec["wingspan_m"]) / 2

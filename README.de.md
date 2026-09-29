@@ -14,21 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.85**
+Aktuelle Version: **1.3.86**
 
-Version 1.3.85 lässt den Helikopter sein Suchradar aus- und wieder
-einschalten (`Shift+R`, Knopf im Browser): Ein strahlender Helikopter oder
-Seefernaufklärer drückt ein KI-U-Boot mit ausgefahrenem Mast oder Schnorchel
-jetzt für 15 Minuten auf Tiefe, ein stiller kann es an der Oberfläche
-erwischen. Der Seefernaufklärer fliegt MAD-Anflüge über sein Suchgebiet (`V`
-auf OPZ-Seite 3, Knopf im Browser) und meldet einen getauchten Rumpf, den er
-überfliegt, als MAD-Ortung per Datenlink. In den Fregattenszenarien
-torpediert ein KI-Patrouillen-U-Boot fern der Fregatte, das nicht gejagt
-wird, ab und zu ein nahes Handelsschiff, und jedes verlorene Handelsschiff
-kostet 300 Punkte. KI gegen KI gemessen blieben die Missionsausgänge in allen
-30 Vorher-nachher-Paaren der Szenarien 1 bis 3 und 5 bis 7 gleich; die Doppeljagd verlor in
-2 von 6 Läufen ein Handelsschiff. Spielstände sind jetzt v32; ältere werden
-nicht geladen.
+Version 1.3.86 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach
+ihrem Mittelpunkt sortiert gezeichnet, sodass aus vielen Winkeln eine ferne
+Fläche über eine nahe gemalt wurde: Decks schienen durch Aufbauten, die ferne
+Rumpfseite durch die nahe, und Schiffe wirkten hohl. Jedes Modell wird jetzt
+einmal in eine binäre Raumteilung zerlegt, die von jeder Seite eine exakte
+Reihenfolge von hinten nach vorn ergibt, auf der uConsole wie im Browser; die
+Rumpfbeplankung ist geschlossen und zeigt nach außen, und Rümpfe, U-Boote und
+Flugzeugrümpfe haben ein feineres Raster. Aufbauten sind keine Klötze mehr:
+Sie steigen in Decksstufen an, bei Kriegsschiffen eingezogen und geneigt, bei
+Passagierschiffen in Terrassen zurückgesetzt, bei Handelsschiffen mit kurzem
+Steuerhaus und Brückennocken oben; U-Boot-Türme sind stromlinienförmig.
+Spielstände bleiben v32.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

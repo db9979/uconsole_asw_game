@@ -12,16 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.71**
+Current release: **1.3.72**
 
-Release 1.3.71 lets you switch the Remote Crew server between English and
-German. The Windows starter has a Language box at the top: the choice applies
-to the starter at once and is saved in the settings, so the game window and
-every crew browser start in it too. The browser pages now open in the host's
-saved language instead of the browser's, and the crew page has a visible
-English/Deutsch button next to Sound to switch for that browser alone; the web
-host's admin page switches its own page with the saved server language. Saves
-stay v31.
+Release 1.3.72 makes the computer-driven submarine in the breakthrough,
+reconnaissance and convoy missions cleverer and gives the frigate more
+torpedoes. The submarine now creeps at 3 kn while it hears pings or knows the
+frigate is near, passes wide of a frigate it has located, lies in wait 2 NM
+ahead of the convoy instead of chasing it, dodges pings quietly at 5 kn and
+fires back at a located frigate far more readily. The frigate carries 8
+torpedoes in Double Hunt and 6 in Intercept. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

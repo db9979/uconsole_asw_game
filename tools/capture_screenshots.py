@@ -271,6 +271,12 @@ def capture_all(output_dir: Path, seed: int = 1234,
                 game.station = Station.DAMAGE
                 _capture_to(game, output_dir, language,
                             "damage-control-alert.png", written)
+                # The engine room's systems console with the same damage.
+                game.station = Station.ENGINE
+                game.station_page = 1
+                _capture_to(game, output_dir, language,
+                            "engineering-systems.png", written)
+                game.station_page = 0
 
                 # Listener remains off; no live pairing code is recorded.
                 game._open_administration("commander")

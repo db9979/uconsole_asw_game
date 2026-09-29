@@ -18,7 +18,7 @@ from src.commander.server import OPFOR_ROLES
 from src.core import boat_esm, config, opfor, uboot_local
 from src.core.i18n import display_message, display_value, localize, message, raw_text
 from src.core.station import Station
-from src.ui import layout, lines, nato_symbols, overlay_style
+from src.ui import console, layout, lines, nato_symbols, overlay_style
 from src.ui.feedback import FeedEntry
 from src.ui.map_view import chart_background, draw_chart_frame, draw_chart_geography
 from src.ui.plot_view import draw_plot
@@ -806,42 +806,43 @@ def draw_command_panel(game, boat) -> None:
 
 
 def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
-    """Engine room: speed and telegraph, plant modes, battery and own noise."""
+    """Engine room: plant console (dials and lamps), telegraph and water column."""
     sub = boat.sub
-    box_h = min(150, h // 2)
-    plant = layout.box(s, (x, y, w, box_h), "uboot.panel.plant",
-                       border=config.COLOR_WARN if sub.cavitating else config.COLOR_TEXT)
-    px, py, pw, _ = plant
-    half = (pw - 10) // 2
-    layout.blit_line(s, message("bridge.line.speed", speed=f"{sub.speed:.1f}"),
-                     (px, py, half, 34), config.COLOR_TEXT, size=28)
-    layout.status_line(s, px, py + 36, half, "ui.target_value_short",
-                       message("bridge.line.speed", speed=f"{sub.order_speed:.1f}"),
-                       size=18, label_w=80)
-    noise = "bridge.cavitation" if sub.cavitating else message(
-        "bridge.line.own_noise", noise=f"{sub.noise_level() * 100:.0f}")
-    layout.blit_line(s, noise, (px, py + 64, half, 22),
-                     config.COLOR_DANGER if sub.cavitating else config.COLOR_OK, size=18)
+    box_h = max(150, min(270, h - 80 - 100))
+    px, py, pw, ph = layout.box(s, (x, y, w, box_h), "uboot.panel.plant",
+                                border=config.COLOR_WARN if sub.cavitating else config.COLOR_TEXT)
     battery = _battery_fraction(sub)
     phase = sub.endurance.phase if sub.endurance is not None else None
+    maximum = max(1.0, sub.motion.maximum_speed_kn)
+    noise = sub.noise_level()
+    specs = [dict(value=abs(sub.speed), lo=0.0, hi=maximum, order=abs(sub.order_speed),
+                  text=message("bridge.line.speed", speed=f"{sub.speed:.1f}"),
+                  label="uboot.dial.speed")]
     if battery is not None:
-        layout.gauge(s, (px + half + 10, py, half, layout.line_pitch(16, 0) + 10), battery,
-                     label="uboot.label.battery",
-                     value=message("uboot.line.battery_value", value=_fmt(battery * 100),
-                                   phase=(display_message("endurance_phase", phase)
-                                          if phase else raw_text("--"))),
-                     color=_battery_color(battery))
-    modes = [key for key, on in (("uboot.mode.silent", boat.orders.silent),
-                                 ("uboot.mode.snorkel", sub.snorkeling),
-                                 ("uboot.mode.bottom", boat.orders.bottomed)) if on]
-    layout.blit_line(s, message("uboot.line.modes", modes=raw_text(" · ".join(
-        str(localize(key)) for key in modes)) if modes else localize("uboot.mode.none")),
-                     (px + half + 10, py + 46, half, 20),
-                     config.COLOR_OK if boat.orders.quiet_active(sub) else config.COLOR_TEXT_DIM,
-                     size=16)
-    layout.status_line(s, px + half + 10, py + 70, half, "uboot.label.blow",
-                       message("common.yes" if sub.blow_available else "common.no"),
-                       size=16, label_w=150)
+        specs.append(dict(value=battery * 100, lo=0.0, hi=100.0,
+                          zones=((0.0, 15.0, config.COLOR_DANGER), (15.0, 30.0, config.COLOR_WARN)),
+                          text=raw_text(f"{battery * 100:.0f} %"), label="uboot.label.battery"))
+    else:
+        specs.append(dict(value=sub.depth, lo=0.0, hi=max(1.0, sub.crush_depth_m),
+                          order=sub.order_depth,
+                          zones=((sub.stype.max_depth_m, sub.crush_depth_m, config.COLOR_DANGER),),
+                          text=raw_text(f"{sub.depth:.0f} m"), label="uboot.dial.depth"))
+    specs.append(dict(value=noise, lo=0.0, hi=1.0, zones=((0.85, 1.0, config.COLOR_DANGER),),
+                      text=raw_text(f"{noise * 100:.0f} %"), label="uboot.dial.noise"))
+    snorkel = bool(sub.snorkeling)
+    lamps = [
+        ("uboot.mode.silent", "", "on" if boat.orders.silent else "off"),
+        ("uboot.mode.snorkel", "", "caution" if snorkel else "off"),
+        ("uboot.mode.bottom", "", "caution" if boat.orders.bottomed else "off"),
+        ("engine.lamp.cavitation", "", "alarm" if sub.cavitating else "off"),
+        ("uboot.label.blow", "common.yes" if sub.blow_available else "common.no",
+         "on" if sub.blow_available else "alarm"),
+        (display_message("endurance_phase", phase), "", "on")
+        if phase else ("uboot.lamp.reactor", "common.on", "on"),
+    ]
+    lamp_h = 2 * 32 + 4
+    console.dial_row(s, (px, py, pw, max(60, ph - lamp_h - 8)), specs)
+    console.lamp_grid(s, (px, py + ph - lamp_h, pw, lamp_h), lamps, 3)
     tele_y = y + box_h + 10
     ladder_y = tele_y + 80
     if y + h - ladder_y >= 90:
@@ -895,39 +896,55 @@ def _draw_supply_page(s, game, boat, x, y, w, h) -> None:
     maximum = sub.motion.maximum_speed_kn
     balance = endurance.forecast(sub.speed, maximum)
     litres = config.UBOOT_DIESEL_L_PER_KWH
-    energy_h = min(206, h // 2)
-    ex, ey, ew, _ = layout.box(s, (x, y, w, energy_h), "uboot.panel.energy")
+    energy_h = max(150, min(250, h // 2))
+    ex, ey, ew, eh = layout.box(s, (x, y, w, energy_h), "uboot.panel.energy")
     battery = endurance.battery_kwh / profile.battery_capacity_kwh
-    _supply_bar(s, ex, ey, ew, "uboot.label.battery",
-                message("uboot.value.kwh", value=_fmt(endurance.battery_kwh),
-                        capacity=_fmt(profile.battery_capacity_kwh)), battery, .2, .03)
-    row = ey + 32
-    if profile.aip_power_kw is not None:
-        _supply_bar(s, ex, row, ew, "uboot.label.aip",
-                    message("uboot.value.kwh", value=_fmt(endurance.aip_energy_kwh),
-                            capacity=_fmt(profile.aip_energy_kwh)),
-                    endurance.aip_energy_kwh / max(1e-9, profile.aip_energy_kwh), .1, 0.0)
-        row += 32
     fuel = endurance.fuel_kwh / max(1e-9, endurance.fuel_capacity_kwh)
-    _supply_bar(s, ex, row, ew, "uboot.label.fuel",
-                message("uboot.value.fuel", value=_fmt(endurance.fuel_kwh * litres / 1000.0, "{:.1f}"),
-                        pct=_fmt(fuel * 100)), fuel, config.UBOOT_FUEL_LOW_FRACTION, 0.0)
-    row += 34
+
+    def store_level(fraction, low, empty):
+        return "alarm" if fraction <= empty else "caution" if fraction <= low else "on"
+
+    columns = [("uboot.label.battery", battery, raw_text(f"{battery * 100:.0f} %"),
+                store_level(battery, .2, .03))]
+    if profile.aip_power_kw is not None:
+        aip = endurance.aip_energy_kwh / max(1e-9, profile.aip_energy_kwh)
+        columns.append(("uboot.label.aip", aip, raw_text(f"{aip * 100:.0f} %"),
+                        store_level(aip, .1, 0.0)))
+    columns.append(("uboot.label.fuel", fuel,
+                    message("uboot.value.diesel_m3", value=_fmt(endurance.fuel_kwh * litres / 1000.0, "{:.1f}")),
+                    store_level(fuel, config.UBOOT_FUEL_LOW_FRACTION, 0.0)))
+    absorber = endurance.air.absorber_left
+    columns.append(("uboot.label.absorber", absorber, raw_text(f"{absorber * 100:.0f} %"),
+                    store_level(absorber, .25, 0.0)))
+    tank_w = 84
+    for index, (label, fraction, text, level) in enumerate(columns):
+        console.tank(s, (ex + index * tank_w, ey, tank_w - 6, eh), fraction,
+                     label=label, text=text, level=level)
+    rx = ex + len(columns) * tank_w + 8
+    rw = ex + ew - rx
     net = balance["net_kw"]
-    layout.status_line(s, ex, row, ew, "uboot.label.balance", message(
-        "uboot.value.balance", load=_fmt(balance["load_kw"]), supply=_fmt(balance["supply_kw"]),
-        net=f"{net:+.0f}"), color=config.COLOR_OK if net >= 0 else config.COLOR_TEXT,
-        size=15, label_w=110)
-    row += 20
     full = balance["full_s"] is not None
-    layout.status_line(s, ex, row, ew, "uboot.label.full_in" if full else "uboot.label.empty_in",
-                       _hours_text(balance["full_s"] if full else balance["empty_s"]),
-                       size=15, label_w=110)
-    row += 20
-    layout.status_line(s, ex, row, ew, "uboot.label.charge_rate", message(
-        "uboot.value.charge", rate=message(f"uboot.charge.{endurance.charge_rate}"),
-        kw=_fmt(profile.generator_power_kw * config.UBOOT_CHARGE_POWER[endurance.charge_rate])),
-        size=15, label_w=110)
+    readouts = (
+        ("uboot.label.balance", message("uboot.value.balance", load=_fmt(balance["load_kw"]),
+                                        supply=_fmt(balance["supply_kw"]), net=f"{net:+.0f}"),
+         config.COLOR_OK if net >= 0 else config.COLOR_TEXT),
+        ("uboot.label.full_in" if full else "uboot.label.empty_in",
+         _hours_text(balance["full_s"] if full else balance["empty_s"]), config.COLOR_TEXT),
+        ("uboot.label.charge_rate", message(
+            "uboot.value.charge", rate=message(f"uboot.charge.{endurance.charge_rate}"),
+            kw=_fmt(profile.generator_power_kw * config.UBOOT_CHARGE_POWER[endurance.charge_rate])),
+         config.COLOR_TEXT),
+        ("uboot.label.battery", message("uboot.value.kwh", value=_fmt(endurance.battery_kwh),
+                                        capacity=_fmt(profile.battery_capacity_kwh)), config.COLOR_TEXT),
+    )
+    row = layout.font(16).get_linesize()
+    pitch = max(2 * row + 2, min(eh // len(readouts), 2 * row + 12))
+    for index, (label, value, color) in enumerate(readouts):
+        ry = ey + index * pitch
+        if ry + 2 * row > ey + eh:
+            break
+        layout.blit_line(s, label, (rx, ry, rw, row), config.COLOR_TEXT_DIM, size=16)
+        layout.blit_line(s, value, (rx, ry + row, rw, row), color, size=16)
     air = endurance.air
     air_y = y + energy_h + 8
     half = (w - 8) // 2
@@ -935,16 +952,20 @@ def _draw_supply_page(s, game, boat, x, y, w, h) -> None:
     tx, ty, tw, th = layout.box(s, (x, air_y, half, table_h), "uboot.panel.endurance")
     speeds = sorted({*(step for step in config.UBOOT_SPEED_STEPS_KN if 0.0 < step < maximum),
                      maximum})
-    for index, speed in enumerate(speeds):
-        if (index + 1) * 20 > th:
+    # Hours dived at each speed as bars against the slowest (longest) one.
+    hours_by_speed = [(speed, min(endurance.submerged_hours(speed, maximum), 9999.0))
+                      for speed in speeds]
+    longest = max((hours for _speed, hours in hours_by_speed), default=1.0) or 1.0
+    pitch = layout.line_pitch(16, 0) + 14
+    for index, (speed, hours) in enumerate(hours_by_speed):
+        if (index + 1) * pitch > th:
             break
-        hours = endurance.submerged_hours(speed, maximum)
-        layout.blit_line(s, message("uboot.line.endurance_row", speed=_fmt(speed),
-                                    hours=_fmt(min(hours, 9999.0), "{:.1f}"),
-                                    range=_fmt(min(hours * speed, 99999.0))),
-                         (tx, ty + index * 20, tw, 18),
-                         config.COLOR_WARN if abs(speed - sub.order_speed) < .05 else config.COLOR_TEXT,
-                         size=15)
+        ordered = abs(speed - sub.order_speed) < .05
+        layout.gauge(s, (tx, ty + index * pitch, tw, pitch - 4), hours / longest,
+                     label=message("bridge.line.speed", speed=_fmt(speed)),
+                     value=message("uboot.value.endurance_bar", hours=_fmt(hours, "{:.1f}"),
+                                   range=_fmt(min(hours * speed, 99999.0))),
+                     color=config.COLOR_WARN if ordered else config.COLOR_OK, size=16)
     level = air.level()
     ax, ay, aw, ah = layout.box(s, (x + half + 8, air_y, w - half - 8, table_h), "uboot.panel.air",
                                 border={"ok": None, "caution": config.COLOR_WARN,

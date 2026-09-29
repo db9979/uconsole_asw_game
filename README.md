@@ -12,15 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.87**
+Current release: **1.3.88**
 
-Release 1.3.87 gives the frigate's engine room in the browser the same
-machinery control console as the submarine's: an annunciator panel of status
-lamps for shafts, plant, cavitation, fuel, speed limit, machinery damage,
-fires and flooding aboard, round gauges for speed, shaft RPM, own noise, fuel,
-roll and pitch, the fuel bunker with endurance and range, and a mimic of the
-ship's sections from bow to stern with water level, fire lamps and repair
-teams. The console only shows; the orders stay in the station panel.
+Release 1.3.88 turns the uConsole engine rooms into machinery control
+consoles in the splash style. On the frigate the telegraph becomes a column of
+lit steps beside a large speed gauge, shaft RPM and own-noise gauges and plant
+lamps; the Systems page has an annunciator panel with a master lamp, the fuel
+bunker as a tank column, roll, pitch and list gauges and a mimic of the ship's
+sections from bow to stern with water level, LEDs and numbered repair teams.
+On the submarine the Plant page shows gauges for speed, battery (depth on a
+nuclear boat) and own noise with mode lamps, and Stores shows tank columns
+for battery, AIP, diesel and absorber and a bar per telegraph step.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -90,7 +92,7 @@ Menus and editors:
 </tr>
 </table>
 
-More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control example](docs/screenshots/damage-control-alert.png), [scenario selection](docs/screenshots/mission-scenario-selection.png), [options](docs/screenshots/options.png), [Mission Editor](docs/screenshots/mission-editor.png), [Unit Editor](docs/screenshots/unit-editor.png) and the [tactical unit analyzer](docs/screenshots/contact-analyzer.png).
+More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control example](docs/screenshots/damage-control-alert.png), [engine room systems](docs/screenshots/engineering-systems.png), [scenario selection](docs/screenshots/mission-scenario-selection.png), [options](docs/screenshots/options.png), [Mission Editor](docs/screenshots/mission-editor.png), [Unit Editor](docs/screenshots/unit-editor.png) and the [tactical unit analyzer](docs/screenshots/contact-analyzer.png).
 
 ### Remote Crew browser (1920 x 1080)
 

@@ -296,6 +296,23 @@ def capture_all(output_dir: Path, seed: int = 1234,
                 _save(_montage(boat_images[:4]), path)
                 written.append(path)
 
+                # Authored damage demonstration on the Engine room's Damage page.
+                control = boat.opfor.sub.damage_control
+                baseline_control = copy.deepcopy(control.compartments)
+                baseline_page = boat.opfor.command_page
+                control.compartments[1].water_kg = 18000.0
+                control.compartments[1].leak = .6
+                control.compartments[3].fire = .5
+                control.compartments[3].chlorine = .3
+                control.compartments[3].closed = True
+                control.compartments[4].water_kg = 2000.0
+                control.compartments[4].leak = .2
+                uboot_local.set_local_station(boat, "uboot_engine")
+                boat.opfor.command_page = 3
+                _capture_to(boat, output_dir, language, "uboot-damage-control.png", written)
+                control.compartments = baseline_control
+                boat.opfor.command_page = baseline_page
+
                 sight_images: list[pygame.Surface] = []
                 for tag, hour in SIGHT_TIMES:
                     sight = _sight_game(seed, language, hour)

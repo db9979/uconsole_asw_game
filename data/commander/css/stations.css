@@ -73,6 +73,9 @@
 /* Damage / engine / ESM / weapons instruments. */
 .damage-visual-controls { display: flex; align-items: center; gap: .5rem; flex: 0 0 auto; padding-bottom: .3rem; }
 .damage-visual-controls label { color: var(--text-dim); font-size: var(--font-xs); }
+.damage-console:not([hidden]) { display: flex; flex-direction: column; gap: .45rem; min-height: 0; }
+.damage-console > .console-annunciator { flex: none; }
+.damage-console > #damage-schematic { flex: 1 1 20rem; min-height: 20rem; }
 
 /* Helicopter: dip picture and buoy console on the stage. */
 #helicopter-dip-display:not([hidden]) { flex: 1 1 40%; min-height: 0; overflow-y: auto; }
@@ -202,8 +205,8 @@
 .console-lamp[data-level="caution"] .console-lamp-value { color: var(--caution); }
 .console-lamp[data-level="alarm"] .console-lamp-value { color: var(--alarm); }
 .console-lamp[data-level="alarm"] .console-led { animation: pulse .9s steps(1) infinite; }
-#uboot-engine-master[data-state="caution"], #engine-master[data-state="caution"] { color: var(--caution); }
-#uboot-engine-master[data-state="alarm"], #engine-master[data-state="alarm"] { color: var(--alarm); }
+#uboot-engine-master[data-state="caution"], #engine-master[data-state="caution"], #damage-master[data-state="caution"] { color: var(--caution); }
+#uboot-engine-master[data-state="alarm"], #engine-master[data-state="alarm"], #damage-master[data-state="alarm"] { color: var(--alarm); }
 .console-annunciator, .console-dials { flex: none; }
 .console-dials .radio-scope-frame { flex: none; height: clamp(10rem, 22vh, 17rem); }
 .console-lower { display: grid; flex: 1 0 13rem; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: .55rem; min-height: 13rem; }

@@ -5,10 +5,10 @@
 import pygame
 
 from src.core import config
-from src.core.i18n import localized, localize
+from src.core.i18n import localized, localize, raw_text
 from src.core.station import Station
 from src.ship.damage import COMPARTMENTS
-from src.ui import layout
+from src.ui import console, layout
 
 
 from src.ui.stations.common import (
@@ -143,14 +143,13 @@ def draw_damage_view(game, tr=None) -> None:
                          config.COLOR_TEXT_DIM, size=16)
         pygame.draw.polygon(s, (12, 32, 34), regions["hull"])
         pygame.draw.polygon(s, (115, 161, 163), regions["hull"], 2)
+        line_h = layout.font(16).get_linesize() + 2
         for i, (key, c) in enumerate(items):
             region = regions["compartments"][key]
             polygon, card, anchor = region["polygon"], region["callout"], region["anchor"]
             sc = _state_color(c.state)
             is_sel = i == game.dmg_cursor
-            fill = ((57, 27, 26) if c.state == "ZERSTOERT" else
-                    (34, 66, 83) if c.flood > 0 else (18, 42, 39))
-            pygame.draw.polygon(s, fill, polygon)
+            _draw_compartment(s, polygon, c)
             pygame.draw.polygon(s, config.COLOR_TEXT if is_sel else sc,
                                 polygon, 3 if is_sel else 1)
             left_side = card.centerx < anchor[0]
@@ -159,33 +158,7 @@ def draw_damage_view(game, tr=None) -> None:
                         anchor[1])
             pygame.draw.lines(s, sc, False,
                               (edge, (edge[0] + (10 if left_side else -10), edge[1]), endpoint), 1)
-            pygame.draw.rect(s, (10, 22, 23), card)
-            pygame.draw.rect(s, config.COLOR_TEXT if is_sel else sc, card,
-                             2 if is_sel else 1)
-            label = message("damage.schematic.callout", number=f"{i + 1:02}",
-                            name=localize("damage.short." + key))
-            line_h = layout.font(16).get_linesize() + 2
-            layout.blit_line(s, label, (card.x + 6, card.y + 3, card.w - 12, line_h),
-                             config.COLOR_TEXT, size=16)
-            teams = game.damage.teams_on(key)
-            markers = ("X" if c.state == "ZERSTOERT" else
-                       "!" if c.state != "OK" else "OK")
-            markers += (" ~" if c.flood > 0 else "") + (" ^" if c.fire > 0 else "")
-            if teams:
-                markers += " T" + ",".join(map(str, teams))
-            layout.blit_line(s, markers, (card.x + 6, card.y + line_h + 3,
-                                          card.w - 12, line_h), sc, size=15)
-            ax, ay = anchor
-            if c.state == "ZERSTOERT":
-                pygame.draw.line(s, sc, (ax - 7, ay - 7), (ax + 7, ay + 7), 2)
-                pygame.draw.line(s, sc, (ax - 7, ay + 7), (ax + 7, ay - 7), 2)
-            if c.fire > 0:
-                pygame.draw.polygon(s, (255, 155, 83),
-                                    ((ax - 7, ay + 6), (ax, ay - 8), (ax + 7, ay + 6)), 2)
-            if c.flood > 0:
-                pygame.draw.lines(s, (132, 194, 223), False,
-                                  ((ax - 9, ay + 9), (ax - 3, ay + 6),
-                                   (ax + 3, ay + 9), (ax + 9, ay + 6)), 2)
+            _draw_callout(game, s, card, i, key, c, is_sel, line_h)
         for name, pts in regions["features"].items():
             if name in ("barrel", "mast"):
                 pygame.draw.lines(s, (124, 161, 163), False, pts, 2)
@@ -203,9 +176,7 @@ def draw_damage_view(game, tr=None) -> None:
                 pygame.draw.line(s, config.COLOR_TEXT_DIM, inset.topleft, inset.bottomleft, 1)
                 pygame.draw.line(s, config.COLOR_TEXT_DIM, inset.topright, inset.bottomright, 1)
                 pygame.draw.line(s, config.COLOR_TEXT_DIM, inset.midleft, inset.midright, 1)
-        layout.blit_line(s, "damage.schematic.legend",
-                         (plan.x, plan.bottom - 36, plan.w, 30),
-                         config.COLOR_TEXT_DIM, size=16)
+        _draw_legend(s, pygame.Rect(plan.x, plan.bottom - 30, plan.w, 24))
     else:
         detail = layout.box(s, regions["detail"],
                             "panel.selection_actions", border=_state_color(selected.state))
@@ -269,6 +240,107 @@ def draw_damage_view(game, tr=None) -> None:
         ("Enter", "damage.footer.assign"),
         ("Backspace", "damage.footer.withdraw"),
     ))
+
+
+
+def _state_level(c) -> str:
+    return ("alarm" if c.state in ("ZERSTOERT", "FLUTEND") else
+            "caution" if c.state != "OK" else "on")
+
+
+def _masked(s, polygon, paint) -> None:
+    """Let ``paint`` draw on a scratch layer and keep only the compartment."""
+    bounds = pygame.Rect(min(p[0] for p in polygon), min(p[1] for p in polygon), 1, 1)
+    bounds.width = max(p[0] for p in polygon) - bounds.x + 1
+    bounds.height = max(p[1] for p in polygon) - bounds.y + 1
+    layer = pygame.Surface(bounds.size, pygame.SRCALPHA)
+    paint(layer, bounds)
+    mask = pygame.Surface(bounds.size, pygame.SRCALPHA)
+    pygame.draw.polygon(mask, (255, 255, 255, 255),
+                        [(x - bounds.x, y - bounds.y) for x, y in polygon])
+    layer.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+    s.blit(layer, bounds.topleft)
+
+
+def _draw_compartment(s, polygon, c) -> None:
+    """Deck, water level from the keel up, fire glow and wreck hatching."""
+    pygame.draw.polygon(s, (18, 42, 39), polygon)
+    flood = max(0.0, min(100.0, float(c.flood))) / 100.0
+    fire = max(0.0, min(100.0, float(c.fire))) / 100.0
+    lost = c.state == "ZERSTOERT"
+    if not (flood or fire or lost):
+        return
+
+    def paint(layer, bounds):
+        w, h = bounds.size
+        if flood:
+            level = round(h * (1 - flood))
+            layer.fill((40, 110, 160, 170), (0, level, w, h - level))
+            pygame.draw.line(layer, (132, 194, 223, 255), (0, level), (w, level), 1)
+        if fire:
+            glow = pygame.Surface((w, h), pygame.SRCALPHA)
+            cx, cy = w // 2, h // 2
+            for step in range(4, 0, -1):
+                alpha = round(40 + 150 * fire * (5 - step) / 4)
+                pygame.draw.ellipse(glow, (255, 110 + 20 * step, 50, min(230, alpha)),
+                                    (cx - w * step // 8, cy - h * step // 8,
+                                     w * step // 4, h * step // 4))
+            layer.blit(glow, (0, 0))
+        if lost:
+            for x in range(-h, w, 9):
+                pygame.draw.line(layer, (225, 78, 70, 200), (x, h), (x + h, 0), 1)
+
+    _masked(s, polygon, paint)
+
+
+def _draw_callout(game, s, card, index, key, c, is_sel, line_h) -> None:
+    """A lamp card: name, then state/flood/fire LEDs, values and the teams."""
+    sc = _state_color(c.state)
+    layout.record_geometry("callout", card, "damage.short." + key)
+    pygame.draw.rect(s, (10, 22, 23), card)
+    pygame.draw.rect(s, config.COLOR_TEXT if is_sel else sc, card, 2 if is_sel else 1)
+    label = message("damage.schematic.callout", number=f"{index + 1:02}",
+                    name=localize("damage.short." + key))
+    lx = card.x + 20
+    console.led(s, (card.x + 10, card.y + 3 + line_h // 2), 5, _state_level(c))
+    layout.blit_line(s, label, (lx, card.y + 3, card.w - 26, line_h),
+                     config.COLOR_TEXT, size=16)
+    y = card.y + line_h + 3
+    cy = y + line_h // 2
+    teams = game.damage.teams_on(key)
+    team_w = 3 * 24                          # room for all three teams
+    item_w = (card.right - 6 - team_w - card.x) // 2
+    for index, (level, value) in enumerate(
+            (("caution" if c.flood > 0 else "off", c.flood),
+             ("alarm" if c.fire > 0 else "off", c.fire))):
+        base = card.x + index * item_w
+        console.led(s, (base + 10, cy), 5, level)
+        color = console.level_color(level) if level != "off" else config.COLOR_TEXT_DIM
+        layout.blit_line(s, raw_text(f"{value:.0f}%"), (base + 20, y, 44, line_h), color, size=15)
+        bar = pygame.Rect(base + 68, cy - 4, item_w - 76, 8)
+        if bar.w > 12:
+            pygame.draw.rect(s, console.LED_OFF, bar)
+            fill = round(bar.w * max(0.0, min(100.0, float(value))) / 100.0)
+            if fill:
+                pygame.draw.rect(s, color, (bar.x, bar.y, fill, bar.h))
+            pygame.draw.rect(s, layout.BRACKET_COLOR, bar, 1)
+    if teams:
+        console.badges(s, card.right - 4 - team_w // 2, cy - 10, teams)
+
+
+def _draw_legend(s, rect) -> None:
+    """LED legend under the plan: state, water, fire, repair team."""
+    items = (("on", "damage.legend.state"), ("caution", "damage.legend.flood"),
+             ("alarm", "damage.legend.fire"), (None, "damage.legend.team"))
+    width = rect.w // len(items)
+    for index, (level, key) in enumerate(items):
+        x = rect.x + index * width
+        if level is None:
+            console.badges(s, x + 10, rect.centery - 10, (1,))
+        else:
+            console.led(s, (x + 10, rect.centery), 5, level)
+        layout.blit_line(s, key, (x + 26, rect.y, width - 30, rect.h),
+                         config.COLOR_TEXT_DIM, size=16)
 
 
 def crew_lines(view) -> dict:

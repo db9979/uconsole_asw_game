@@ -86,11 +86,15 @@ def test_schematic_readable_markers_detail_and_localized_destination(monkeypatch
               station_page=0)
     translator = Translator(language)
     # Page 0: full-width plan with readable compartment markers.
-    with layout.capture_text() as text:
+    with layout.capture_text() as text, layout.capture_geometry() as shapes:
         stations_view.draw_damage_view(game, tr=translator.t)
     plan_geometry = stations_view.damage_regions(game, page=0)
     rendered = "\n".join(item["text"] for item in text)
-    assert "X ~ ^ T1" in rendered
+    # Each callout is a lamp card: flood and fire values beside their LEDs.
+    assert "100%" in rendered and "70%" in rendered
+    cards = [shape for shape in shapes if shape["kind"] == "callout"]
+    assert len(cards) == len(model.compartments)
+    assert translator.t("damage.legend.team") in rendered
     assert "..." not in rendered
     assert all(item["bounds"].contains(item["ink"]) for item in text), text
     assert all(plan_geometry["station"].contains(item["rect"]) for item in text)

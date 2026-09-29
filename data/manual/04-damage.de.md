@@ -6,7 +6,7 @@ Die Schadensabwehr hält das Schiff nach einem Treffer schwimmfähig und die Sta
 
 ## Anzeigen und Instrumente {#damage-displays}
 
-Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung); Seite 3 ist der Wachplan der Besatzung.
+Seite 1 ist der Schiffsplan als Leckwehr-Leitstand: in jeder Abteilung steigt das Wasser vom Kiel an, ein Brand glüht rot und eine zerstörte Abteilung ist schraffiert. Die Karte jeder Abteilung trägt eine Zustands-LED, Flutung und Brand mit ihren LEDs und Balken sowie nummerierte Plaketten für die Trupps vor Ort; eine Legende unter dem Plan erklärt die LEDs. Seite 2 zeigt Details je Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung); Seite 3 ist der Wachplan der Besatzung. Im Browser beginnt die Karte Schaden mit einer Warn- und Meldetafel (Brände, Wassereinbruch, ausgefallen, verschlechtert, Gesamtschaden, Krängung, Trimm, Gegenfluten, Trupps aktiv, Schiff gesunken) über einer Seitenansicht des Schiffs, Bug links, und Rundinstrumenten für Krängung, Trimm und Gesamtschaden; ein Klick auf eine Abteilung schickt den gewählten Trupp dorthin.
 
 ```text
   Bug                                                    Heck

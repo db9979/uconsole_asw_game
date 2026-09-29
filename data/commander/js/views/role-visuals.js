@@ -14,27 +14,14 @@ import { schedule } from "../core/scheduler.js";
 import { drawRadioVisual } from "../stations/radio.js";
 import { drawUbootEngineDials, renderUbootEngineConsole } from "../stations/uboot-engine-room.js";
 import { drawEngineDials, renderEngineConsole } from "../stations/engine-room.js";
+import { drawShipPlan, renderDamageLamps } from "../stations/damage-plan.js";
 
 function drawDamageVisual() {
   const plot = visualContext("damage-schematic"), payload = S.v2State.damage;
   S.damageHits = [];
+  renderDamageLamps(payload);
   if (!plot) return;
-  const columns = Math.max(1, Math.min(4, Math.ceil(Math.sqrt(payload.compartments.length * plot.width / Math.max(1, plot.height)))));
-  const rows = Math.max(1, Math.ceil(payload.compartments.length / columns));
-  const roomW = (plot.width - 32) / columns, roomH = (plot.height - 24) / rows;
-  const selectedTeam = Number($("damage-team").value);
-  payload.compartments.forEach((room, index) => {
-    const x = 16 + (index % columns) * roomW, y = 12 + Math.floor(index / columns) * roomH;
-    const width = roomW - 6, height = roomH - 6;
-    S.damageHits.push({key: room.key, x, y, width, height});
-    const assigned = payload.teams.some((team) => team.team === selectedTeam && team.compartment === room.key);
-    plot.context.strokeStyle = assigned ? palette().accent : room.state === "ZERSTOERT" ? palette().red : "#536873";
-    plot.context.lineWidth = assigned ? 3 : 1.5; plot.context.strokeRect(x, y, width, height);
-    plot.context.fillStyle = palette().text; plot.context.textAlign = "left"; plot.context.fillText(room.name, x + 6, y + 20, roomW - 18);
-    plot.context.fillText(enumText(damageStates, room.state), x + 6, y + 38, roomW - 18);
-    plot.context.fillStyle = "#397fa5"; plot.context.fillRect(x + 6, y + height - 29, (roomW - 18) * room.flood / 100, 10);
-    plot.context.fillStyle = "#c95d43"; plot.context.fillRect(x + 6, y + height - 14, (roomW - 18) * room.fire / 100, 10);
-  });
+  S.damageHits = drawShipPlan(plot, payload, Number($("damage-team").value));
   $("damage-schematic-text").replaceChildren(...payload.compartments.map((room) => node("p", t("damage_compartment_equivalent", {name: room.name, flood: number(room.flood, 0), fire: number(room.fire, 0), flood_trend: number(room.trend.flood_rate, 2), fire_trend: number(room.trend.fire_rate, 2), teams: payload.teams.filter((team) => team.compartment === room.key).map((team) => team.team).join(", ") || t("station_none")}))));
   if (!payload.compartments.length) $("damage-schematic-text").textContent = t("visual_empty");
 }

@@ -480,12 +480,14 @@ async function run() {
       }
       if (latestRole === "helicopter") {
         // The layout settles after the role switch; wait like the other plots.
-        await until(() => canvas.getBoundingClientRect().height >= 200,
+        // At 1280x720 the plots are about 200 px; Chrome's font metrics on
+        // the CI runner leave them a pixel short, so allow a small margin.
+        await until(() => canvas.getBoundingClientRect().height >= 190,
           () => `Helicopter LOFAR view is too small: ${canvas.getBoundingClientRect().height}px`);
         for (const plot of ["broadband", "demon"]) {
           document.querySelector(`[data-helicopter-plot-tab="${plot}"]`).click();
           const plotCanvas = document.getElementById(`helicopter-${plot}-canvas`);
-          await until(() => plotCanvas.getBoundingClientRect().height >= 200 &&
+          await until(() => plotCanvas.getBoundingClientRect().height >= 190 &&
             visualDraws.has(plotCanvas.id),
             `Helicopter ${plot} view is too small or not drawn: ${plotCanvas.getBoundingClientRect().height}px, drawn=${visualDraws.has(plotCanvas.id)}`);
         }

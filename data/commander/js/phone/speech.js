@@ -108,21 +108,54 @@ export function parseReport(text, {course, viewBearing}) {
 export const speechAvailable = () => typeof window !== "undefined" &&
   Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
 
+// Chrome, Firefox and Edge on the iPhone embed Safari's engine without its
+// speech service, so voice reports there may be refused whatever they say.
+export const iosWithoutSafari = (agent = navigator.userAgent) => /\b(?:CriOS|FxiOS|EdgiOS)\//.test(agent);
+
+// The status key for a Web Speech error code, or null when nothing went wrong
+// that the player needs to hear about ("aborted" follows their own stop).
+// Safari on the iPhone answers "service-not-allowed" while Siri or Dictation
+// is switched off, and "network" when its speech service cannot be reached.
+export function speechErrorKey(code) {
+  switch (code) {
+    case "aborted": return null;
+    case "not-allowed": return "phone_mic_denied";
+    case "service-not-allowed": return "phone_speech_service";
+    case "no-speech": return "phone_speech_silent";
+    case "audio-capture": return "phone_mic_busy";
+    case "network": return "phone_speech_network";
+    default: return "phone_speech_failed";
+  }
+}
+
 // One push-to-talk listener: ``onHeard(alternatives)`` with the transcripts
-// (best first), ``onEnd()`` when it stops.
+// (best first), ``onError(code)`` for a failure and ``onEnd()`` when it stops.
+// Interim results are kept: Safari may end a short utterance without ever
+// marking it final, and the last interim transcript is then what was said.
+// An end with nothing heard and no error reports "no-speech".
 export function createListener({language, onHeard, onEnd, onError}) {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new Recognition();
+  let pending = null, delivered = false, failed = false;
   recognition.lang = language === "de" ? "de-DE" : "en-US";
-  recognition.interimResults = false;
+  recognition.interimResults = true;
   recognition.continuous = false;
   recognition.maxAlternatives = 3;
   recognition.onresult = (event) => {
     const result = event.results[event.results.length - 1];
-    onHeard(Array.from({length: result.length}, (_, index) => result[index].transcript));
+    if (!result || delivered) return;
+    const alternatives = Array.from({length: result.length}, (_, index) => result[index].transcript)
+      .filter((text) => typeof text === "string" && text.trim());
+    if (!alternatives.length) return;
+    pending = alternatives;
+    if (result.isFinal) { delivered = true; onHeard(alternatives); }
   };
-  recognition.onerror = (event) => onError(event.error);
-  recognition.onend = () => onEnd();
+  recognition.onerror = (event) => { failed = true; onError(event.error || "unknown"); };
+  recognition.onend = () => {
+    if (!delivered && pending) { delivered = true; onHeard(pending); }
+    else if (!delivered && !failed) onError("no-speech");
+    onEnd();
+  };
   recognition.start();
   return recognition;
 }

@@ -12,15 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.79**
+Current release: **1.3.80**
 
-Release 1.3.79 fixes pairing in Safari and Firefox, and with it the phone
-lookout on an iPhone. The game's pages told the browser to send no referrer at
-all; under the web standard Safari and Firefox then mark the pages' own
-requests as coming from nowhere ("Origin: null"), and the game refused them as
-a foreign address, so pairing failed with "The game refused this address".
-The pages now keep the referrer to the game itself and still send none to any
-other site; Chrome was never affected. Saves stay v28.
+Release 1.3.80 makes the phone lookout's voice reports say why they failed.
+Instead of a bare "Speech recognition failed" the page now names the cause:
+Siri and Dictation switched off on the iPhone (with where to turn them on),
+microphone not allowed, microphone busy, nothing heard, or the phone's speech
+service unreachable; any other failure shows its error code. Chrome, Firefox
+and Edge on an iPhone use Safari's engine without its speech service, so the
+page there advises Safari for voice reports; tapping the target works
+everywhere. A short report that Safari ends without marking it final is now
+still read. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

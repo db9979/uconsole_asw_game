@@ -12,7 +12,7 @@ import { boundedArray, exactKeys, validateV2State } from "../state/schema.js";
 import { SCOPE_EYE_M, drawSightView, viewMotion } from "../views/sight-scene.js";
 import { normalizePairCode, wirePairCodeInput } from "../core/pairing-code.js";
 import { lineOfSight, wrap180, wrap360 } from "./orientation.js";
-import { createListener, parseReport, speechAvailable } from "./speech.js";
+import { createListener, iosWithoutSafari, parseReport, speechAvailable, speechErrorKey } from "./speech.js";
 
 const CATEGORIES = ["contact", "ship", "warship", "merchant", "aircraft", "submarine", "torpedo"];
 // Eyepiece tilt limits (config.LOOKOUT_GLASSES_ELEVATION_DEG, UBOOT_SCOPE_ELEVATION_DEG).
@@ -213,6 +213,8 @@ async function startWatch() {
   if (!speechAvailable()) {
     $("phone-speak").disabled = true;
     $("phone-heard").textContent = t("phone_speech_unavailable");
+  } else if (iosWithoutSafari()) {
+    $("phone-heard").textContent = t("phone_speech_use_safari");
   }
   if (!("DeviceOrientationEvent" in window)) $("phone-gyro").disabled = true;
   keepAwake();
@@ -385,17 +387,24 @@ function heard(alternatives) {
   call(report.category, report.bearing, report.range_nm);
 }
 
+// The error code stays visible: "failed" alone cannot be told apart on a phone.
+function speechFailed(code) {
+  const key = speechErrorKey(code);
+  if (key) setStatus(key, {error: String(code).slice(0, 40)}, "bad");
+  if (key && iosWithoutSafari()) $("phone-heard").textContent = t("phone_speech_use_safari");
+}
+
 function toggleListening() {
   if (P.listening) { P.listening.stop(); return; }
   try {
     P.listening = createListener({language: S.language, onHeard: heard,
       onEnd: () => { P.listening = null; $("phone-speak").setAttribute("aria-pressed", "false"); $("phone-speak").textContent = t("phone_speak"); },
-      onError: (error) => setStatus(error === "not-allowed" || error === "service-not-allowed" ? "phone_mic_denied" : "phone_speech_failed", {}, "bad")});
+      onError: speechFailed});
     $("phone-speak").setAttribute("aria-pressed", "true");
     $("phone-speak").textContent = t("phone_listening");
-  } catch (_) {
+  } catch (error) {
     P.listening = null;
-    setStatus("phone_speech_failed", {}, "bad");
+    speechFailed(error?.name || "start");
   }
 }
 

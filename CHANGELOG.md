@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.71
+
+Release 1.3.71 makes the computer-driven submarine in the breakthrough,
+reconnaissance and convoy missions cleverer and gives the frigate more
+torpedoes. The submarine now creeps at 3 kn while it hears pings or knows the
+frigate is near, passes wide of a frigate it has located, lies in wait 2 NM
+ahead of the convoy instead of chasing it, dodges pings quietly at 5 kn and
+fires back at a located frigate far more readily. The frigate carries 8
+torpedoes in Double Hunt and 6 in Intercept. Saves stay v31.
+
 ## 1.3.70
 
 Release 1.3.70 redraws the sea in the lookout's binoculars, the lookout strip,

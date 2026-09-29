@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.71
+
+Version 1.3.71 macht das computergesteuerte U-Boot in den Missionen
+Durchbruch, Aufklärung und Geleitzug klüger und gibt der Fregatte mehr
+Torpedos. Das U-Boot schleicht jetzt mit 3 kn, solange es Pings hört oder die
+Fregatte in der Nähe weiß, umfährt eine geortete Fregatte weiträumig, lauert
+dem Geleitzug 2 sm voraus auf, statt ihm nachzulaufen, weicht Pings leise mit
+5 kn aus und schießt deutlich eher auf eine geortete Fregatte zurück. Die
+Fregatte hat in der Doppeljagd 8 und im Abfang 6 Torpedos. Spielstände bleiben
+v31.
+
 ## 1.3.70
 
 Version 1.3.70 zeichnet die See im Fernglas des Ausgucks, im Ausguckstreifen, im

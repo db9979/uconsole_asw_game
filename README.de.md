@@ -14,14 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.70**
+Aktuelle Version: **1.3.71**
 
-Version 1.3.70 zeichnet die See im Fernglas des Ausgucks, im Ausguckstreifen, im
-Sehrohr und im Handy-Ausguck neu. Statt einer großen Welle an der Kimm füllen die
-Wellen jetzt die ganze See in Perspektive: klein und dicht bis zur klaren Kimm,
-zum Auge hin länger und höher, jede Reihe bewegt sich mit dem Seegang, läuft je
-nach Wind auf einen zu, davon oder seitlich durchs Bild, bei grober See mit
-Schaumkronen. Auf der uConsole und im Remote-Crew-Browser; Spielstände bleiben
+Version 1.3.71 macht das computergesteuerte U-Boot in den Missionen
+Durchbruch, Aufklärung und Geleitzug klüger und gibt der Fregatte mehr
+Torpedos. Das U-Boot schleicht jetzt mit 3 kn, solange es Pings hört oder die
+Fregatte in der Nähe weiß, umfährt eine geortete Fregatte weiträumig, lauert
+dem Geleitzug 2 sm voraus auf, statt ihm nachzulaufen, weicht Pings leise mit
+5 kn aus und schießt deutlich eher auf eine geortete Fregatte zurück. Die
+Fregatte hat in der Doppeljagd 8 und im Abfang 6 Torpedos. Spielstände bleiben
 v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

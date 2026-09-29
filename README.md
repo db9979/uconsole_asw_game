@@ -12,15 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.70**
+Current release: **1.3.71**
 
-Release 1.3.70 redraws the sea in the lookout's binoculars, the lookout strip,
-the periscope and the phone lookout. Instead of one big wave along the horizon
-the waves now fill the whole sea in perspective: small and close together out
-to a clean horizon, longer and higher toward the eye, every row moving with the
-swell and coming at you, running away or sliding sideways with the wind, with
-white caps in a rough sea. Both on the uConsole and in the Remote Crew browser;
-saves stay v31.
+Release 1.3.71 makes the computer-driven submarine in the breakthrough,
+reconnaissance and convoy missions cleverer and gives the frigate more
+torpedoes. The submarine now creeps at 3 kn while it hears pings or knows the
+frigate is near, passes wide of a frigate it has located, lies in wait 2 NM
+ahead of the convoy instead of chasing it, dodges pings quietly at 5 kn and
+fires back at a located frigate far more readily. The frigate carries 8
+torpedoes in Double Hunt and 6 in Intercept. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

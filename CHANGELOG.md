@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.80
+
+Release 1.3.80 shows the own ship's way in the lookout's pictures. Underway
+the waves stream toward the eye looking ahead, away looking astern and from
+bow to stern looking abeam, faster with more speed and without a jump when
+speed or course change. Astern the wake runs as a band of smoother, lighter
+water with foam between the two arms of the Kelvin wave out to the horizon,
+and ahead the bow wave throws its spray into the lower edge of the picture.
+This holds on the uConsole and in the browser for the bridge binoculars, the
+lookout strip and the phone lookout; in the submarine's periscope the water
+streams past with the boat's own speed. Saves stay v31.
+
 ## 1.3.79
 
 Release 1.3.79 fixes pairing in Safari and Firefox, and with it the phone

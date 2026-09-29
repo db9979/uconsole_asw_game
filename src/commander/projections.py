@@ -1363,7 +1363,7 @@ def _lookout_glasses(game):
     pitch, roll = horizon.hull_motion(0, game.sim_t, weather["sea_state"],
                                       weather["wind_from_deg"] - game.ship.course)
     offset, tilt = horizon.view_motion(pitch, roll)
-    return dict(course=_number(game.ship.course % 360.0),
+    return dict(course=_number(game.ship.course % 360.0), speed_kn=_number(game.ship.speed),
                 fov_deg=_number(config.LOOKOUT_GLASSES_FOV_DEG),
                 visibility_nm=_number(weather["visibility_nm"]),
                 sea_state=_number(weather["sea_state"]),
@@ -1387,6 +1387,7 @@ def _uboot_scope(game, boat):
         available=bool(opfor.scope_available(boat)),
         relative_deg=_number(boat.orders.scope_rel_deg),
         bearing=_number(opfor.scope_bearing(boat)),
+        course=_number(boat.sub.course % 360.0), speed_kn=_number(boat.sub.speed),
         fov_deg=_number(config.UBOOT_SCOPE_FOV_DEG),
         window_deg=_number(config.UBOOT_STADIMETER_WINDOW_DEG),
         night=bool(game.world.is_night()),

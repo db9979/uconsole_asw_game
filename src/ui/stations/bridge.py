@@ -251,6 +251,12 @@ def _lookout_land(game):
     return horizon.land_view(game.world, game.ship.x, game.ship.y, LOOKOUT_EYE_HEIGHT_M)
 
 
+def own_way(game) -> dict:
+    """The frigate's way through the water for the lookout's pictures: the
+    sea streams past, the bow wave and the wake (own ship, legitimate truth)."""
+    return {"speed_kn": float(game.ship.speed), "course_deg": float(game.ship.course) % 360.0}
+
+
 def lookout_outlines(game, sightings) -> list:
     """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg,
     aob_deg)`` rows of the lookout's own tracks: the class from his report,
@@ -352,7 +358,8 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
             motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"],
                                           weather["wind_from_deg"] - game.ship.course),
             outlines=lookout_outlines(game, sightings), land=_lookout_land(game),
-            anim_t=game.sim_t, sky=sight_scene.sky_state(game), sea_state=weather["sea_state"])
+            anim_t=game.sim_t, sky=sight_scene.sky_state(game), sea_state=weather["sea_state"],
+            way=own_way(game))
         iy += strip_h + 6
         ih -= strip_h + 6
     layout.blit_line(s, message("bridge.line.lookout_visibility",
@@ -429,7 +436,7 @@ def draw_lookout_glasses(game) -> None:
                                       game.lookout_glasses_rel),
         outlines=lookout_outlines(game, sightings), land=land, anim_t=game.sim_t,
         sky=sight_scene.sky_state(game), sea_state=weather["sea_state"],
-        elevation_deg=sight.elevation_deg, stabilized=sight.stabilized)
+        elevation_deg=sight.elevation_deg, stabilized=sight.stabilized, way=own_way(game))
     pygame.draw.rect(s, config.COLOR_SONAR_RING, eyepiece, 1)
     layout.blit_line(s, structured_message(
         "bridge.line.glasses_bearing", bearing=f"{line_of_sight:03.0f}",

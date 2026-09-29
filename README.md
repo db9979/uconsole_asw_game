@@ -12,15 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.79**
+Current release: **1.3.80**
 
-Release 1.3.79 fixes pairing in Safari and Firefox, and with it the phone
-lookout on an iPhone. The game's pages told the browser to send no referrer at
-all; under the web standard Safari and Firefox then mark the pages' own
-requests as coming from nowhere ("Origin: null"), and the game refused them as
-a foreign address, so pairing failed with "The game refused this address".
-The pages now keep the referrer to the game itself and still send none to any
-other site; Chrome was never affected. Saves stay v28.
+Release 1.3.80 shows the own ship's way in the lookout's pictures. Underway
+the waves stream toward the eye looking ahead, away looking astern and from
+bow to stern looking abeam, faster with more speed and without a jump when
+speed or course change. Astern the wake runs as a band of smoother, lighter
+water with foam between the two arms of the Kelvin wave out to the horizon,
+and ahead the bow wave throws its spray into the lower edge of the picture.
+This holds on the uConsole and in the browser for the bridge binoculars, the
+lookout strip and the phone lookout; in the submarine's periscope the water
+streams past with the boat's own speed. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

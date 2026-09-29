@@ -134,14 +134,14 @@ export function validateV2State(state) {
     eloka: ["intercepts", "station_down", "status", "hardware"],
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"],
-    lookout: ["side", "available", "manned", "course", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
+    lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
     opz: ["observations", "fusions", "suggestions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical", "tasks", "can_request_ras"],
     sonar: ["observations", "settings", "visualization"],
     uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
-    uboot_lookout: ["side", "available", "manned", "course", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
+    uboot_lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
     uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_radio: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_sonar: ["observations", "settings", "visualization"],
@@ -173,10 +173,10 @@ export function validateV2State(state) {
   };
   const sightFields = {
     sky: ["light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg", "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg", "moon_illumination", "moon_waxing"],
-    glasses: ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines"],
+    glasses: ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines"],
     outline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg"],
     classes: ["warship", "merchant", "aircraft", "torpedo", "unknown"],
-    phone: ["side", "available", "manned", "course", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
+    phone: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
     phoneOutline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "called", "range_nm"],
     call: ["seq", "age_s", "category", "bearing", "range_nm", "confirmed"],
     callCategories: ["contact", "ship", "warship", "merchant", "aircraft", "submarine", "torpedo"],
@@ -248,7 +248,7 @@ export function validateV2State(state) {
   const elevationOk = (value) => value === null || (finite(value) && value >= -5 && value <= 90);
   const aobOk = (value) => value === null || (finite(value) && value >= -180 && value <= 180);
   const glassesOk = (glasses) => exactKeys(glasses, sightFields.glasses) && skyOk(glasses.sky) &&
-    ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll"].every((key) => finite(glasses[key])) &&
+    ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll"].every((key) => finite(glasses[key])) &&
     glasses.fov_deg > 0 && glasses.fov_deg <= 180 &&
     boundedArray(glasses.outlines, 16) && glasses.outlines.every((row) => exactKeys(row, sightFields.outline) &&
       finite(row.bearing) && finite(row.span_deg) && row.span_deg > 0 && sightFields.classes.includes(row.cls) &&
@@ -266,7 +266,7 @@ export function validateV2State(state) {
   const phoneOk = (view) => exactKeys(view, sightFields.phone) && skyOk(view.sky) &&
     view.side === (state.role === "lookout" ? "frigate" : "boat") &&
     ["available", "manned"].every((key) => typeof view[key] === "boolean") &&
-    ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"].every((key) => finite(view[key])) &&
+    ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"].every((key) => finite(view[key])) &&
     ["relative_deg", "window_deg", "motion_pitch", "motion_roll"].every((key) => nullableFinite(view[key])) &&
     view.fov_deg > 0 && view.fov_deg <= 180 &&
     boundedArray(view.powers, 4) && view.powers.length >= 1 && view.powers.every((value) => finite(value) && value >= 1 && value <= 16) &&
@@ -388,7 +388,7 @@ export function validateV2State(state) {
       [row.datum_bearing, row.datum_range_nm].some((value) => value !== null && !finite(value)))) throw new Error("protocol");
     // The periscope: line of sight, light and the crew's own sightings (no target truth).
     const scope = payload.scope;
-    const scopeNumbers = ["relative_deg", "bearing", "fov_deg", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"];
+    const scopeNumbers = ["relative_deg", "bearing", "course", "speed_kn", "fov_deg", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"];
     if (!exactKeys(scope, ["available", "night", ...scopeNumbers, "sky", "sightings"]) || !skyOk(scope.sky) ||
         typeof scope.available !== "boolean" || typeof scope.night !== "boolean" ||
         scopeNumbers.some((key) => !finite(scope[key])) || scope.relative_deg < 0 || scope.relative_deg >= 360 ||

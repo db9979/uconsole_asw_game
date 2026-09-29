@@ -1,6 +1,7 @@
 """The eyepieces in the start screen's look (src/ui/sight_scene.py)."""
 
 import json
+from pathlib import Path
 
 import pygame
 import pytest
@@ -10,6 +11,8 @@ from src.commander.v2 import schema as web_schema
 from src.core import config
 from src.core.game import Game
 from src.ui import horizon, layout, sight_scene, theme
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture(autouse=True)
@@ -222,3 +225,74 @@ def test_the_waves_run_on_to_the_horizon_and_grow_toward_the_eye():
     calm, rough = sea(2.0, 1.0), sea(2.0, 7.0)
     assert pygame.image.tobytes(calm.subsurface((0, 160, 400, 40)), "RGB") != \
         pygame.image.tobytes(rough.subsurface((0, 160, 400, 40)), "RGB")
+
+
+def test_the_own_way_streams_the_sea_past_without_a_jump():
+    sight_scene._FLOW.clear()
+    assert sight_scene.flow("k", 1.0, (1.0, 0.0)) == (1.0, 0.0)
+    # A new rate bends the motion from where it stands, it does not jump.
+    assert sight_scene.flow("k", 1.5, (3.0, 2.0)) == pytest.approx((2.5, 1.0))
+    # After a gap (or backwards) it starts over from rate * t.
+    assert sight_scene.flow("k", 9.0, (1.0, 1.0)) == (9.0, 9.0)
+    for index in range(sight_scene._CACHE_MAX + 5):
+        sight_scene.flow(("view", index), 1.0, (1.0,))
+    assert len(sight_scene._FLOW) <= sight_scene._CACHE_MAX
+    sky = dict(sight_scene.plain_sky(False), wind_from_deg=0.0)
+
+    def ahead(way):
+        sight_scene._FLOW.clear()
+        _picture(sky, outlines=[], crosshair_deg=None, line_of_sight=0.0, anim_t=2.0, way=way)
+        return _picture(sky, outlines=[], crosshair_deg=None, line_of_sight=0.0, anim_t=2.5,
+                        way=way)
+
+    still = pygame.image.tobytes(ahead(None), "RGB")
+    # At rest the picture is the one without a way; underway the rows run on.
+    assert pygame.image.tobytes(ahead(dict(speed_kn=0.0, course_deg=0.0)), "RGB") == still
+    assert pygame.image.tobytes(ahead(dict(speed_kn=25.0, course_deg=0.0)), "RGB") != still
+
+
+def test_the_wake_runs_astern_and_the_bow_throws_spray():
+    sky = dict(sight_scene.plain_sky(False), wind_from_deg=0.0)
+
+    def look(los, speed, **way):
+        sight_scene._FLOW.clear()
+        return _picture(sky, outlines=[], crosshair_deg=None, line_of_sight=los, anim_t=1.0,
+                        fov_deg=30.0, elevation_deg=-8.0,
+                        way=dict(speed_kn=speed, course_deg=0.0, **way))
+
+    def light(picture, box):
+        x0, y0, x1, y1 = box
+        return sum(sum(picture.get_at((x, y))[:3]) for x in range(x0, x1, 4)
+                   for y in range(y0, y1, 4))
+
+    # Astern: a band of lighter churned water in the middle, none at rest.
+    wake_box = (170, 40, 230, 120)
+    assert light(look(180.0, 20.0), wake_box) > light(look(180.0, 0.0), wake_box) * 1.05
+    # Ahead: the bow wave's spray in the lower edge of the picture.
+    spray_box = (100, 170, 300, 200)
+    assert light(look(0.0, 20.0), spray_box) > light(look(0.0, 0.0), spray_box)
+    # The periscope has no hull in view: streaming water, no wake.
+    surface = pygame.Surface((400, 200))
+    view = sight_scene.View(pygame.Rect(0, 0, 400, 200), 180.0, 30.0, 100, 0.0)
+    before = pygame.image.tobytes(surface, "RGB")
+    sight_scene._draw_way(surface, view, sight_scene.palette(sky, 0.0),
+                          dict(speed_kn=8.0, course_deg=0.0, eye_m=2.5, hull=False), 1.0, 0.0)
+    assert pygame.image.tobytes(surface, "RGB") == before
+
+
+def test_the_lookout_pictures_carry_the_own_way():
+    game = Game(seed=5, start_menu=False, audio_enabled=False)
+    game.update(0.1)
+    block = projections._lookout_glasses(game)
+    assert block["speed_kn"] == pytest.approx(game.ship.speed)
+    assert block["course"] == pytest.approx(game.ship.course % 360.0)
+    from src.ui.stations import bridge
+    assert bridge.own_way(game) == {"speed_kn": pytest.approx(game.ship.speed),
+                                    "course_deg": pytest.approx(game.ship.course % 360.0)}
+    scene = (ROOT / "data/commander/js/views/sight-scene.js").read_text(encoding="utf-8")
+    assert f"SCOPE_EYE_M = {config.UBOOT_SCOPE_EYE_HEIGHT_M}" in scene
+    for name in ("WAY_ROWS_PER_KN", "WAY_SIDE_PER_KN", "OWN_BOW_M", "OWN_STERN_M",
+                 "OWN_BEAM_M", "KELVIN_DEG", "WAKE_FOAM", "BOW_SPRAY"):
+        value = getattr(sight_scene, name)
+        text = f"{value:g}".lstrip("0") if isinstance(value, float) and value < 1 else f"{value:g}"
+        assert f"{name} = {text}" in scene, name

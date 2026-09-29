@@ -46,6 +46,7 @@ def _frigate(game):
                 + [_outline(*row, False) for row in unseen])[:24]
     return dict(side="frigate", available=not game.damage.station_down("bridge"),
                 manned=bool(game.lookout_phone), course=_number(game.ship.course % 360.0),
+                speed_kn=_number(game.ship.speed),
                 relative_deg=None, fov_deg=_number(config.LOOKOUT_GLASSES_FOV_DEG),
                 powers=[_number(value) for value in config.LOOKOUT_GLASSES_POWERS],
                 window_deg=None, visibility_nm=_number(weather["visibility_nm"]),
@@ -71,7 +72,8 @@ def _boat(game, boat):
                                       boat.orders._aspect.get(sighting["ref"])))
                             for sighting in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX])]
     return dict(side="boat", available=scope["available"], manned=phone_lookout.boat_manned(game),
-                course=_number(boat.sub.course % 360.0), relative_deg=scope["relative_deg"],
+                course=scope["course"], speed_kn=scope["speed_kn"],
+                relative_deg=scope["relative_deg"],
                 fov_deg=scope["fov_deg"],
                 powers=[_number(value) for value in config.UBOOT_SCOPE_POWERS],
                 window_deg=scope["window_deg"],

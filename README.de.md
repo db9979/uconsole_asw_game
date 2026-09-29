@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.84**
+Aktuelle Version: **1.3.85**
 
-Version 1.3.84 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach
+Version 1.3.85 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach
 ihrem Mittelpunkt sortiert gezeichnet, sodass aus vielen Winkeln eine ferne
 Fläche über eine nahe gemalt wurde: Decks schienen durch Aufbauten, die ferne
 Rumpfseite durch die nahe, und Schiffe wirkten hohl. Jedes Modell wird jetzt

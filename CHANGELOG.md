@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.84
+## 1.3.85
 
-Release 1.3.84 makes the 3D models solid. Until now their faces were drawn
+Release 1.3.85 makes the 3D models solid. Until now their faces were drawn
 in the order of their centres, so from many angles a far face was painted over
 a near one: decks showed through superstructures, the far side of a hull
 through the near side, and ships looked hollow. Every model is now split once
@@ -14,6 +14,17 @@ into a binary space partition that gives, from any side, an exact order from
 back to front, on the uConsole and in the browser alike; hull plating is
 closed and faces outward, and hulls, submarines and fuselages are drawn with
 a finer grid. Saves stay v31.
+
+## 1.3.84
+
+Release 1.3.84 lets the Bridge autopilot find its way through channels, into
+bays and round long coasts: when a stand-off detour does not clear a leg, a
+path search on the chart plans the turning points (planning is also faster
+than before). GitHub now runs the whole test suite with the browser tests,
+the generated-file checks, the calibration and the smoke test on every change,
+and two flaky browser checks are fixed: the phone lookout no longer falls back to the pairing screen when the host answers slowly right after pairing, and the status bar check measures with the bundled fonts. The manual no
+longer says the frigate has no ASROC, and `tools/hw_report.py` turns a debug
+run on the uConsole into the hardware checklist's table. Saves stay v31.
 
 ## 1.3.83
 

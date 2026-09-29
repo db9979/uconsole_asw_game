@@ -1,6 +1,24 @@
 # Wiederaufnahme
 
-## Stand
+## Aktueller Stand (2026-09-29)
+
+U-Jagd steht bei der Version aus `src/core/version.py` (1.3.x), Spielstände
+sind exakt v31 (`SAVE_VERSION`), Remote Crew spricht Protokoll v2. Jede
+Änderung erhöht die Patch-Version und bekommt einen Eintrag oben in
+`CHANGELOG.md` und `CHANGELOG.de.md`; das README zeigt nur die neueste
+Version. Die Arbeit läuft über Pull Requests auf GitHub; der Verlauf steht in
+den Changelogs und in `git log`, nicht mehr in diesem Dokument.
+
+Prüfungen: `.github/workflows/tests.yml` führt bei jedem Pull Request die
+Testsuite (mit Chromium für die Browser-Tests), die Katalog-, Handbuch-,
+Schema- und Changelog-Prüfungen, die Kalibrierung und den Smoke-Test aus.
+Hardware-Prüfpunkte der uConsole stehen in `docs/hardware-acceptance.md`.
+
+Alles ab dem folgenden Abschnitt ist die historische Wiederaufnahme des
+Durchlaufs 0.1.7 bis 1.3.0 und beschreibt nicht mehr den aktuellen Vertrag
+(etwa Save v10).
+
+## Historischer Stand
 
 Stand 2026-09-11 auf Branch `main`. Der vollstaendig softwareabgenommene
 R9-R19-Kandidat ist Commit `e42a678`. Die vier letzten inhaltlichen
@@ -1633,4 +1651,4 @@ Notizen Phase 1:
 - 1.3.75: Workflow-Schritt "Remove older releases and tags" löscht nach den älteren Releases auch alle älteren `vX.Y.Z`-Tags (`gh api -X DELETE repos/…/git/refs/tags/<tag>`, Liste über `tools/prune_releases.py`); Tags anderer Form (`pre-v1-rewrite-*`) bleiben. Der uConsole-Updater holt nur den Tag von `releases/latest`.
 - 1.3.78: 3D-Modelle der Einheiten (`src/ui/unit_models.py`): 10 Klassen; Kriegsschiff/Handelsschiff/Kleinfahrzeug/U-Boot/Luftfahrzeug aus den Ausguck-Silhouetten (Klassenzuordnung über `lookout_id.surface_classes` wie `stations/bridge.py`), Torpedo/Täuschkörper/Tiere als Rotationskörper mit Platten; Einheitenanalysator (erste Seite, Reiter `3D`) und Einheiteneditor (Browser und Bearbeiten), uConsole mit 12 Hz gecachtem Drehteller (`ModelView`), Browser über `views/model-view.js` mit den von `tools/gen_web_schema.py` erzeugten Netzen (`views/unit-models.js`). Okulare: Lagewinkel `lookout_id.angle_on_bow` (10°-Schritte, nur nach Erkennen, transient `_lookout_aspect`/`orders._aspect`, nie gespeichert) als `aob_deg` in den Zeilen/Projektionen; `unit_models.draw_in_scene` bzw. `drawInScene` ab 16 px mit Sprite-Cache, an der Wasserlinie abgeschnitten.
 - 1.3.80: Varianten je Typ (`src/ui/unit_variants.py`, Daten `data/unit_models/variants.json` aus Wikipedia/typisch): 111 Katalogtypen parametrisch (Rumpf, Aufbauten, Masten, Schornsteine, Geschütze, VLS, Flugdeck, Kräne, Ladung; U-Boot Turm/Ruder/Buckel; Flugzeug Flügel/Leitwerk). `mesh_for(key)` fällt auf die Klasse zurück; Okulare zeigen den gesehenen echten Typ (`unit_variants.entity_model`, transient in `_lookout_aspect`/`orders._model`, Feld `model` der Umrisse); Browser lädt `views/unit-variants-{naval,civil,subs}.js` bei Bedarf.
-- 1.3.84: 3D-Modelle massiv: `src/ui/model_bsp.py` (Browser `views/model-bsp.js`, gleiche Regeln) baut je Modell einmal eine BSP und liefert die exakte Zeichenreihenfolge statt Sortierung nach Flächenmitte; Rumpfbeplankung einseitig, nach außen gewunden, zu Linien kollabierte Enden entfallen; Rümpfe 20 Spanten, U-Boote 23x14, Flugzeugrümpfe 23x12. `tests/test_model_bsp.py` vergleicht mit einem Tiefenpuffer.
+- 1.3.85: 3D-Modelle massiv: `src/ui/model_bsp.py` (Browser `views/model-bsp.js`, gleiche Regeln) baut je Modell einmal eine BSP und liefert die exakte Zeichenreihenfolge statt Sortierung nach Flächenmitte; Rumpfbeplankung einseitig, nach außen gewunden, zu Linien kollabierte Enden entfallen; Rümpfe 20 Spanten, U-Boote 23x14, Flugzeugrümpfe 23x12. `tests/test_model_bsp.py` vergleicht mit einem Tiefenpuffer.

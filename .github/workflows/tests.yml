@@ -1,0 +1,80 @@
+# Runs the behavioural contract on every push to main and every pull request:
+# the full pytest suite (with headless Chromium for the Remote Crew browser
+# tests), the generated-file checks, the calibration against 1.0.0 and the
+# full smoke test (AGENTS.md "Build and verification"). Headless CI is not
+# hardware acceptance; see docs/hardware-acceptance.md for the uConsole.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Generated files are current
+        run: |
+          python tools/gen_contacts.py --check
+          python tools/build_manual.py --check
+          python tools/gen_web_schema.py --check
+          python tools/changelog_notes.py --check
+
+      - name: Calibration against 1.0.0
+        run: python tools/calibrate.py --check
+
+      - name: Smoke test
+        run: python tools/smoke_full.py
+
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Put Chromium on PATH
+        # The browser tests look for "chromium"; the runner ships Chrome.
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          ln -s "$(command -v google-chrome)" "$RUNNER_TEMP/bin/chromium"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: pytest
+        run: >-
+          python -m pytest -q
+          --ignore=tests/test_bridge_glasses_web.py --ignore=tests/test_commander_assets.py --ignore=tests/test_commander_audio_worklet.py --ignore=tests/test_commander_browser_sessions_v2.py --ignore=tests/test_commander_console_browser.py --ignore=tests/test_commander_heatmap_worker.py --ignore=tests/test_commander_insecure_context.py --ignore=tests/test_commander_layout.py --ignore=tests/test_commander_observer_web.py --ignore=tests/test_commander_pairing_browser.py --ignore=tests/test_commander_plot_smoothing.py --ignore=tests/test_commander_projection_schema.py --ignore=tests/test_commander_radar_sweep.py --ignore=tests/test_commander_spectrum_peaks.py --ignore=tests/test_commander_state_push_web.py --ignore=tests/test_commander_voice.py --ignore=tests/test_lookout_web.py --ignore=tests/test_map_hover_web.py --ignore=tests/test_opfor_web.py --ignore=tests/test_opz_suggestions.py --ignore=tests/test_phone_lookout_web.py --ignore=tests/test_remote_language.py --ignore=tests/test_sonar_hmi_web.py --ignore=tests/test_uboot_scope_web.py --ignore=tests/test_weather_station_web.py --ignore=tests/test_web_host_browser.py --ignore=tests/test_web_simlog_browser.py
+
+      - name: pytest (browser tests)
+        # The Chromium probes race a live host or run under virtual time;
+        # two workers keep the runner from starving either side.
+        run: >-
+          python -m pytest -q -n 2
+          tests/test_bridge_glasses_web.py tests/test_commander_assets.py tests/test_commander_audio_worklet.py tests/test_commander_browser_sessions_v2.py tests/test_commander_console_browser.py tests/test_commander_heatmap_worker.py tests/test_commander_insecure_context.py tests/test_commander_layout.py tests/test_commander_observer_web.py tests/test_commander_pairing_browser.py tests/test_commander_plot_smoothing.py tests/test_commander_projection_schema.py tests/test_commander_radar_sweep.py tests/test_commander_spectrum_peaks.py tests/test_commander_state_push_web.py tests/test_commander_voice.py tests/test_lookout_web.py tests/test_map_hover_web.py tests/test_opfor_web.py tests/test_opz_suggestions.py tests/test_phone_lookout_web.py tests/test_remote_language.py tests/test_sonar_hmi_web.py tests/test_uboot_scope_web.py tests/test_weather_station_web.py tests/test_web_host_browser.py tests/test_web_simlog_browser.py

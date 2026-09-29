@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.84**
+Current release: **1.3.85**
 
-Release 1.3.84 makes the 3D models solid. Until now their faces were drawn
+Release 1.3.85 makes the 3D models solid. Until now their faces were drawn
 in the order of their centres, so from many angles a far face was painted over
 a near one: decks showed through superstructures, the far side of a hull
 through the near side, and ships looked hollow. Every model is now split once

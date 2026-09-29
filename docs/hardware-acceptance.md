@@ -21,11 +21,35 @@ Vorgehen für jeden Lauf:
    1000/`fps`. Mittel und Maxima nach dem Lauf in die Tabelle übernehmen.
 4. Ergebnis je Zeile: `ok`, `abweichung: <Beschreibung>` oder leer.
 
+## Kurzlauf (15 Minuten, nach jedem größeren Update)
+
+Die kleinste Runde, die Bildrate, Ton und Wärme auf dem echten Gerät
+bestätigt. Sie ersetzt keinen der Einzelpunkte unten, zeigt aber, ob ein
+Update die uConsole spürbar belastet.
+
+1. `U_JAGD_PERF_DEBUG=1 U_JAGD_AUDIO_DEBUG=1 .venv/bin/python main.py`
+2. Szenario 2 starten, 5 Minuten Sonarraum (hören), 5 Minuten Brücke mit
+   Karte und einer Autopilot-Route über eine Küste (Rechtsklick hinter Land),
+   5 Minuten U-Boot-Seite (Szenario 5, Sehrohr oben).
+3. Normal beenden, dann `.venv/bin/python tools/hw_report.py` (bei der
+   Option 60 FPS `--fps 60`). Das Werkzeug liest nur die Debug-Logs der
+   letzten Sitzung und gibt die Tabelle mit `ok`/`abweichung` aus; die
+   Zeilen hier eintragen.
+
+| Prüfpunkt | Erwartung | Ergebnis |
+|---|---|---|
+| Frame-Zeit Mittel | höchstens 1 ms über dem Budget (34 ms bei 30 FPS) | |
+| frame_max_ms nach dem Start | unter 100 | |
+| sim_dropped_ms im Lauf | 0 | |
+| channel_idle im Lauf | 0 | |
+| vcgencmd get_throttled | 0x0 | |
+| Routenplanung | Wegpunkt hinter Land: Umweg erscheint ohne spürbares Stocken (unter 1 s) | |
+
 ## Allgemein (jeder Release)
 
 | Prüfpunkt | Vorgehen | Erwartung | Ergebnis |
 |---|---|---|---|
-| Frame-Zeit 30 FPS | 10 Minuten Szenario 2, Sonarstation, Perf-Debug | Frame-Zeit Mittel (1000/`fps`) unter 33, `frame_max_ms` außerhalb des Starts unter 100 | |
+| Frame-Zeit 30 FPS | 10 Minuten Szenario 2, Sonarstation, Perf-Debug | Frame-Zeit Mittel (1000/`fps`) höchstens 34, `frame_max_ms` außerhalb des Starts unter 100 | |
 | Frame-Zeit 60 FPS | wie oben mit Option 60 FPS | Mittel unter 17, kein Dauer-Catch-up (`sim_dropped_ms` 0) | |
 | Mixer | 10 Minuten Sonarraum hören | keine Knackser, keine Stille über 0,75 s (`channel_idle` in `audio_debug.log` 0) | |
 | Lesbarkeit | jede Station in DE mit Großschrift | kein abgeschnittener Text, kein Überlappen | |

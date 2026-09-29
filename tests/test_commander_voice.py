@@ -137,7 +137,7 @@ window.WebSocket = class {
 '''
     probe = r'''
 (async () => {
-  const wait = async (test) => { for (let i=0; i<50; i++) {
+  const wait = async (test) => { for (let i=0; i<250; i++) {
     if (test()) return; await new Promise((resolve) => setTimeout(resolve, 20));
   } throw new Error("timed out"); };
   try {
@@ -275,7 +275,7 @@ Object.defineProperty(navigator, "mediaDevices", {value:{getUserMedia: async () 
 '''
     probe = r'''
 (async () => {
-  const wait = async (test) => { for (let i=0; i<100; i++) {
+  const wait = async (test) => { for (let i=0; i<200; i++) {
     if (await test()) return; await new Promise((resolve) => setTimeout(resolve, 50));
   } throw new Error("timed out"); };
   try {
@@ -309,9 +309,9 @@ Object.defineProperty(navigator, "mediaDevices", {value:{getUserMedia: async () 
             chromium, "--headless", "--no-sandbox", "--disable-gpu",
             "--disable-dev-shm-usage", "--disable-background-networking",
             "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream",
-            "--virtual-time-budget=12000", "--dump-dom",
+            "--virtual-time-budget=20000", "--dump-dom",
             f"http://127.0.0.1:{server.address[1]}/",
-        ], capture_output=True, text=True, timeout=30)
+        ], capture_output=True, text=True, timeout=45)
         assert result.returncode == 0, result.stderr[-1000:]
         assert 'data-voice-test="passed"' in result.stdout, result.stdout[-1800:]
     finally:

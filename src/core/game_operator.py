@@ -87,8 +87,9 @@ class OperatorMixin:
         if not self.route.active or self.route.kind != "manual":
             self.route.clear()
         start = self.route.points[-1] if self.route.points else (self.ship.x, self.ship.y)
-        detour = route_model.plan_detour(self._route_depth, start[0], start[1], x, y,
-                                         self._route_min_depth(), size)
+        detour = route_model.plan_leg(
+            self._route_depth, start[0], start[1], x, y, self._route_min_depth(), size,
+            max(0, route_model.MAX_ROUTE_POINTS - len(self.route.points) - 1))
         if not self.route.add(x, y, detour or ()):
             return "route_full"
         number = len(self.route.points)
@@ -126,8 +127,9 @@ class OperatorMixin:
         planned, unsafe = [], []
         x, y = self.ship.x, self.ship.y
         for px, py in points:
-            detour = route_model.plan_detour(self._route_depth, x, y, px, py,
-                                             self._route_min_depth(), size)
+            detour = route_model.plan_leg(
+                self._route_depth, x, y, px, py, self._route_min_depth(), size,
+                max(0, route_model.MAX_ROUTE_POINTS - len(planned) - 1))
             if detour and len(planned) + len(detour) + 1 <= route_model.MAX_ROUTE_POINTS:
                 planned.extend(detour)
             elif detour is None or detour:
@@ -213,8 +215,9 @@ class OperatorMixin:
         minimum = self._route_min_depth()
         if route_model.leg_hazard(self._route_depth, x, y, ex, ey, minimum) is None:
             return True
-        detour = route_model.plan_detour(self._route_depth, x, y, wx, wy, minimum,
-                                         float(self.world.size_nm))
+        detour = route_model.plan_leg(
+            self._route_depth, x, y, wx, wy, minimum, float(self.world.size_nm),
+            max(0, route_model.MAX_ROUTE_POINTS - len(self.route.points)))
         if detour and self.route.insert_detour(detour):
             text = message("runtime.route.replanned", count=len(detour))
             self.feed.add(self.world.format_time(), "navigation", text)

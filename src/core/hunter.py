@@ -444,7 +444,10 @@ def helicopter(game, found) -> str:
         if near > 2.0 and "x" in found:            # a bearing alone: keep listening
             game.set_helicopter_dipping(False)
             return "moving"
-        if _window(game, DIP_PING_EVERY_S) and game.send_helicopter_dipping_ping() is True:
+        # On a bare bearing the dip only listens: a ping would tell the
+        # boat where the helicopter hunts before anything is located.
+        if ("x" in found and _window(game, DIP_PING_EVERY_S)
+                and game.send_helicopter_dipping_ping() is True):
             return "ping"
         return "dipping"
     if helo.dip_state != "STOWED":

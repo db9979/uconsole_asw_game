@@ -12,19 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.83**
+Current release: **1.3.84**
 
-Release 1.3.83 turns the submarine's engine room in the Remote Crew browser
-into a machinery control console. The large picture area, empty until now, shows
-an annunciator panel of status lamps (dark when off, turquoise while running,
-amber for a caution, flashing red for an alarm, each with its value) for motor,
-snorkel, generator, battery, charging, fuel, air, main ballast, high-pressure
-air, pumps, trim, power, flooding, leak, fire and gas, with a master lamp that
-counts the alarms. Below it are round gauges for speed, battery, energy
-balance, depth, high-pressure air and trim angle, tank columns for the stores
-and tanks, and a mimic of the six compartments from bow to stern with the
-water level, the lamps of each room, the bulkheads and the teams at work. The
-orders stay in the station panel. Saves stay v31.
+Release 1.3.84 makes the 3D models solid. Until now their faces were drawn
+in the order of their centres, so from many angles a far face was painted over
+a near one: decks showed through superstructures, the far side of a hull
+through the near side, and ships looked hollow. Every model is now split once
+into a binary space partition that gives, from any side, an exact order from
+back to front, on the uConsole and in the browser alike; hull plating is
+closed and faces outward, and hulls, submarines and fuselages are drawn with
+a finer grid. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

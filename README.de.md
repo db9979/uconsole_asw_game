@@ -14,20 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.83**
+Aktuelle Version: **1.3.84**
 
-Version 1.3.83 macht aus dem Maschinenraum des U-Boots im Remote-Crew-Browser
-einen Maschinenleitstand. Die große, bisher leere Bildfläche zeigt eine Warn-
-und Meldetafel aus Statuslampen (dunkel, wenn aus, türkis im Betrieb, gelb bei
-einer Warnung, rot blinkend bei einem Alarm, jede mit ihrem Wert) für
-E-Maschine, Schnorchel, Generator, Batterie, Laden, Kraftstoff, Luft,
-Hauptzellen, Pressluft, Pumpen, Trimm, Strom, Wassereinbruch, Leck, Brand und
-Gas, mit einer Sammellampe, die die Alarme zählt. Darunter stehen runde
-Instrumente für Fahrt, Batterie, Energiebilanz, Tiefe, Pressluft und
-Trimmwinkel, Tanksäulen für Vorräte und Zellen und ein Bild der sechs
-Abteilungen vom Bug zum Heck mit Wasserstand, den Lampen jedes Raums, den
-Schotten und den arbeitenden Trupps. Die Befehle bleiben im Stationsbereich.
-Spielstände bleiben v31.
+Version 1.3.84 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach
+ihrem Mittelpunkt sortiert gezeichnet, sodass aus vielen Winkeln eine ferne
+Fläche über eine nahe gemalt wurde: Decks schienen durch Aufbauten, die ferne
+Rumpfseite durch die nahe, und Schiffe wirkten hohl. Jedes Modell wird jetzt
+einmal in eine binäre Raumteilung zerlegt, die von jeder Seite eine exakte
+Reihenfolge von hinten nach vorn ergibt, auf der uConsole wie im Browser; die
+Rumpfbeplankung ist geschlossen und zeigt nach außen, und Rümpfe, U-Boote und
+Flugzeugrümpfe haben ein feineres Raster. Spielstände bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

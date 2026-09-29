@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.84
+
+Version 1.3.84 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach
+ihrem Mittelpunkt sortiert gezeichnet, sodass aus vielen Winkeln eine ferne
+Fläche über eine nahe gemalt wurde: Decks schienen durch Aufbauten, die ferne
+Rumpfseite durch die nahe, und Schiffe wirkten hohl. Jedes Modell wird jetzt
+einmal in eine binäre Raumteilung zerlegt, die von jeder Seite eine exakte
+Reihenfolge von hinten nach vorn ergibt, auf der uConsole wie im Browser; die
+Rumpfbeplankung ist geschlossen und zeigt nach außen, und Rümpfe, U-Boote und
+Flugzeugrümpfe haben ein feineres Raster. Spielstände bleiben v31.
+
 ## 1.3.83
 
 Version 1.3.83 macht aus dem Maschinenraum des U-Boots im Remote-Crew-Browser

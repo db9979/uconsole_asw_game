@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.84
+
+Release 1.3.84 makes the 3D models solid. Until now their faces were drawn
+in the order of their centres, so from many angles a far face was painted over
+a near one: decks showed through superstructures, the far side of a hull
+through the near side, and ships looked hollow. Every model is now split once
+into a binary space partition that gives, from any side, an exact order from
+back to front, on the uConsole and in the browser alike; hull plating is
+closed and faces outward, and hulls, submarines and fuselages are drawn with
+a finer grid. Saves stay v31.
+
 ## 1.3.83
 
 Release 1.3.83 turns the submarine's engine room in the Remote Crew browser

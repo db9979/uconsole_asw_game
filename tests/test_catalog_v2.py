@@ -424,7 +424,8 @@ def test_r10_batch5_migrates_only_applicable_components_in_legacy_order():
 def test_r10_batch5_keeps_entries_and_animal_selection_stable():
     expected_hashes = {
         "animals.json": "cadf35eb577b40c7c8423d34efe1508649af243dace298db692b745fb6b2f013",
-        "torpedoes.json": "787aa90b43215d7d58a78438b096a5ce6ebec61843706b07da25201d733dcfd3",
+        # 1.3.60: the hostile torpedo runs 40 kn for 20 NM.
+        "torpedoes.json": "0288a7ad18dc3439a8486da0c63e63c367235b85624ea2ecfeba05e7328d33e3",
         "decoys.json": "ff0670aca47965e350a64a3b41a9912316e20bb73888888a58b4fe59e8b04c9a",
         "acoustics.json": "7ce16f23502f8ddf140e96d6b105117a1ac83eccd2a5e2a2f5c33fc3f947eb01",
     }

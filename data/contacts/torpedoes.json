@@ -21,8 +21,8 @@
       "key": "enemy_torp",
       "name": "Feindtorpedo",
       "used_by": "enemy",
-      "speed_kn": 28.0,
-      "range_nm": 30.0,
+      "speed_kn": 40.0,
+      "range_nm": 20.0,
       "hit_dist_nm": 0.25,
       "acoustic": {
         "label": "Feindtorpedo",
@@ -157,8 +157,8 @@
     },
     {
       "key": "machine.enemy_torp",
-      "cruise_speed_kn": 28.0,
-      "maximum_speed_kn": 28.0,
+      "cruise_speed_kn": 40.0,
+      "maximum_speed_kn": 40.0,
       "quiet_speed_kn": null,
       "propulsion_codes": [
         "other"

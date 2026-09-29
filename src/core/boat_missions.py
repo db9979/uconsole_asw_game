@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import math
 
-from src.core import config
+from src.core import config, detrand
 from src.core.i18n import message
 from src.sonar.platforms import OWNSHIP_TARGET_ID
 
@@ -111,6 +111,30 @@ def spawn_convoy(game) -> None:
         ship.turn_left = game.mission.time_limit_s + 3600.0
         game.civilians.append(ship)
         game.mission_units[f"convoy-{index}"] = int(ship.id)
+    _station_boat_ahead(game, course)
+
+
+def _station_boat_ahead(game, course: float) -> None:
+    """Put the mission boat on the convoy's bow, where it can wait for it: a
+    convoy running away is faster than a dived boat, and the escort screens
+    dead ahead. The side is a stateless draw keyed by the seed, so no
+    stream shifts."""
+    sub = target_sub(game)
+    if sub is None:
+        return
+    draw = detrand.u01(game.seed, "convoy-boat-side", 0) * 2.0 - 1.0
+    side = math.copysign(config.BOAT_CONVOY_BOAT_SIDE_NM
+                         + abs(draw) * config.BOAT_CONVOY_BOAT_SIDE_SPREAD_NM, draw)
+    rad = math.radians(course)
+    for ahead in (config.BOAT_CONVOY_BOAT_AHEAD_NM, config.BOAT_CONVOY_BOAT_AHEAD_NM * 0.75,
+                  config.BOAT_CONVOY_BOAT_AHEAD_NM * 1.25):
+        for offset in (side, -side, 0.0):
+            x = game.ship.x + ahead * math.sin(rad) + offset * math.cos(rad)
+            y = game.ship.y - ahead * math.cos(rad) + offset * math.sin(rad)
+            if _water(game, x, y):
+                sub.x, sub.y = float(x), float(y)
+                sub.start_pos = (sub.x, sub.y)
+                return
 
 
 def convoy(game) -> list:

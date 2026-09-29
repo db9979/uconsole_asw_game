@@ -14,15 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.59**
+Aktuelle Version: **1.3.60**
 
-Version 1.3.59 räumt auf, ohne das Spiel zu ändern. Die beiden größten Module
-sind entlang ihrer Nähte geteilt: Radar-, Luft-, ECM-, ESM- und Funklage mit
-Flugkörpern und Angreifern ziehen aus dem Simulationsschritt in ein eigenes
-Modul, und die Aktionen der Remote-Crew-Stationen ziehen aus der Brücke in ein
-eigenes Modul; der Code wird unverändert verschoben, und die
-Aktualisierungsreihenfolge bleibt eingefroren. Der Changelog-Eintrag zu 1.3.43
-beschreibt jetzt, was diese Version tatsächlich behoben hat. Spielstände
+Version 1.3.60 macht beide Seiten gewinnbar. Der Annäherungszünder eines
+Torpedos zündet jetzt bei der größten Annäherung, die seine Bahn voraussagt,
+statt schon beim Eintritt in seinen Radius; ein zielsuchender Torpedo trifft
+dadurch schwer. Vorher zündete er 250 bis 370 m zu früh und richtete nur 12 bis
+18 % Schaden an. Feindtorpedos laufen 40 kn über 20 sm und sind schneller als
+die Fregatte, und ein KI-U-Boot greift eine geortete Fregatte innerhalb 10 sm
+auch bei leiser Fahrt an. Die U-Boot-Missionen passen in ihre Zeit: das Ziel des
+Durchbruchs liegt 5 sm hinter der Fregatte, die Aufklärung hat 3 Stunden, und
+der Geleitzug läuft 8 kn, das U-Boot startet an seinem Bug etwa 10 sm voraus. Spielstände
 bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

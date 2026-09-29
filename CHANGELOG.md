@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.60
+
+Release 1.3.60 makes both sides able to win. A torpedo's proximity fuze now
+fires at the closest approach its track predicts instead of on entering its
+radius, so a torpedo that homes in hits hard; before, it went off 250 to 370 m
+short and did only 12 to 18 % damage. Hostile torpedoes run 40 kn for 20 NM
+and outpace the frigate, and an AI submarine attacks a located frigate within
+10 NM even when she runs quiet. The submarine missions fit their clocks: the
+breakthrough goal lies 5 NM beyond the frigate, reconnaissance has 3 hours,
+and the convoy sails at 8 kn with the submarine starting on its bow, about
+10 NM ahead. Saves stay v28.
+
 ## 1.3.59
 
 Release 1.3.59 is a clean-up with no change in play. The two largest modules

@@ -42,16 +42,25 @@ def draw_engine_view(game, tr=None) -> None:
         orders = layout.box(s, (x, cy, col_w, content_h), "panel.engine_order")
         ox, oy, ow, _ = orders
         layout.blit_line(s, display_message("telegraph", ship.telegraph), (ox, oy, ow, 40), config.COLOR_TEXT, size=28)
-        oy += 48
+        oy += 40
         displayed_orders = (("ASTERN", config.ASTERN_SPEED_KN),
                             *config.TELEGRAPH_ORDERS)
+        step_speed = (config.ASTERN_SPEED_KN if getattr(ship, "astern", False)
+                      else config.TELEGRAPH_ORDERS[ship.order_idx][1])
+        if abs(abs(ship.target_speed) - step_speed) > 0.05:
+            # Speed ordered directly (V or the start of a mission): say so,
+            # the step row alone would show the wrong speed.
+            layout.blit_line(s, message("engine.line.direct_speed",
+                                        speed=f"{abs(ship.target_speed):.1f}"),
+                             (ox, oy, ow, layout.line_pitch(16, 0)), config.COLOR_WARN, size=16)
+        oy += layout.line_pitch(16, 4)
         for i, (name, sp) in enumerate(displayed_orders):
             astern = getattr(ship, "astern", False)
             selected = astern if i == 0 else not astern and i - 1 == ship.order_idx
             mark = ">" if selected else " "
             col = config.COLOR_OK if selected else config.COLOR_TEXT_DIM
             if selected:
-                pygame.draw.rect(s, (20, 43, 29), (ox - 4, oy - 2, ow + 8, 28))
+                pygame.draw.rect(s, config.COLOR_SELECT_BG, (ox - 4, oy - 2, ow + 8, 28))
             layout.status_line(s, ox, oy, ow,
                                message("engine.line.order", mark=mark,
                                        order=display_message("telegraph", name)),
@@ -72,22 +81,18 @@ def draw_engine_view(game, tr=None) -> None:
                                    target=f"{ship.target_course:03.0f}"),
                            label_w=140, size=20)
         py += 40
-        bar_w = int(pw * 0.72)
+        gauge_h = layout.line_pitch(18, 0) + 12
         max_rpm = Ship.max_rpm()
-        frac = min(1.0, ship.rpm() / max_rpm)
-        pygame.draw.rect(s, config.COLOR_GRID, (px, py, bar_w, 16))
-        pygame.draw.rect(s, config.COLOR_TEXT, (px, py, int(bar_w * frac), 16))
-        layout.blit_line(s, message("engine.line.rpm", rpm=f"{ship.rpm():3.0f}"),
-                         (px + bar_w + 10, py - 2, pw - bar_w - 10, 24),
-                         config.COLOR_TEXT_DIM, size=18)
-        py += 42
+        layout.gauge(s, (px, py, pw, gauge_h), min(1.0, ship.rpm() / max_rpm),
+                     label="engine.label.rpm",
+                     value=message("engine.line.rpm", rpm=f"{ship.rpm():.0f}"),
+                     color=config.COLOR_OK, size=18, bar_h=10)
+        py += gauge_h + 12
         nf = ship.noise_level()
-        pygame.draw.rect(s, config.COLOR_GRID, (px, py, bar_w, 16))
-        pygame.draw.rect(s, config.COLOR_WARN, (px, py, int(bar_w * nf), 16))
-        layout.blit_line(s, message("engine.line.noise", noise=f"{nf * 100:3.0f}"),
-                         (px + bar_w + 10, py - 2, pw - bar_w - 10, 24),
-                         config.COLOR_TEXT_DIM, size=18)
-        py += 42
+        layout.gauge(s, (px, py, pw, gauge_h), nf, label="engine.label.noise",
+                     value=message("engine.value.noise", noise=f"{nf * 100:.0f}"),
+                     color=config.COLOR_WARN, size=18, bar_h=10)
+        py += gauge_h + 12
         if ship.cavitating:
             layout.blit_block(s, "engine.cavitation_warning", px, py, pw, 28,
                               color=config.COLOR_DANGER, size=20)

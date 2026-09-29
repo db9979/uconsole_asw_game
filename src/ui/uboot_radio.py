@@ -26,16 +26,6 @@ def _clock(seconds) -> str:
     return f"{seconds // 60:d}:{seconds % 60:02d}"
 
 
-def _bar(s, rect, fraction, color) -> None:
-    rect = pygame.Rect(rect)
-    pygame.draw.rect(s, config.COLOR_BG, rect)
-    if fraction is not None:
-        fill = rect.copy()
-        fill.w = max(0, int(rect.w * max(0.0, min(1.0, fraction))))
-        pygame.draw.rect(s, color, fill)
-    pygame.draw.rect(s, config.COLOR_SONAR_RING, rect, 1)
-
-
 def report_lines(game, boat, report) -> list:
     """Text lines of one HQ contact report, seen from the boat's position now."""
     sub = boat.sub
@@ -80,8 +70,8 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
     layout.blit_line(s, message("uboot.radio.schedule", state=state,
                                 next=_clock(progress["next_s"])),
                      (bx, by + 22, bw, 22), config.COLOR_TEXT, size=16)
-    _bar(s, (bx, by + 48, bw, 8), progress["copy"] if not progress["copied"] else 1.0,
-         config.COLOR_OK)
+    layout.meter(s, (bx + 2, by + 48, bw - 4, 6),
+                 progress["copy"] if not progress["copied"] else 1.0, config.COLOR_OK)
     if progress["send"] is not None:
         send = message("uboot.radio.sending", percent=f"{progress['send'] * 100:.0f}")
         color = config.COLOR_WARN
@@ -90,7 +80,7 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
                        else "uboot.radio.sitreps", count=str(progress["sitreps"]))
         color = config.COLOR_TEXT
     layout.blit_line(s, send, (bx, by + 62, bw, 22), color, size=16)
-    _bar(s, (bx, by + 88, bw, 8), progress["send"], config.COLOR_WARN)
+    layout.meter(s, (bx + 2, by + 88, bw - 4, 6), progress["send"], config.COLOR_WARN)
     top = y + 140
     latest = radio.latest_report()
     report = layout.box(s, (x, top, w, 74), "uboot.panel.hq_report")

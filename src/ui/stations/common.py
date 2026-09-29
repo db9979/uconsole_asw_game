@@ -69,7 +69,8 @@ def _shortcut_footer(screen, rect, specs) -> None:
     evenly split across ``rect``, matching sonar_view's always-visible
     footer-legend pattern (layout.command_segment) instead of a plain hint.
     """
-    rect = pygame.Rect(rect)
+    # Two pixels up keep descenders clear of the panel's bottom frame.
+    rect = pygame.Rect(rect).move(0, -2)
     specs = tuple(specs)
     if not specs:
         return

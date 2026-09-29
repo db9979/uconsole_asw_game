@@ -23,7 +23,7 @@ from src.ui.feedback import FeedEntry
 from src.ui.map_view import chart_background, draw_chart_frame, draw_chart_geography
 from src.ui.plot_view import draw_plot
 from src.ui.sonar_view import draw_sonar_view
-from src.ui.stations_view import (_panel, _station_content_top,
+from src.ui.stations_view import (_panel, _shortcut_footer, _station_content_top,
                                   draw_station_page_tabs, station_page_tab_at)
 from src.ui.uboot_ballast import draw_ballast_page
 from src.ui.uboot_damage import draw_damage_page
@@ -146,6 +146,8 @@ def draw_top_bar(game, boat) -> None:
             pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, rect)
             lines.line(s, config.COLOR_SONAR_RING, rect.bottomleft,
                              (rect.right - 1, rect.bottom), 2)
+        if index:
+            lines.line(s, config.COLOR_GRID, (rect.x - 2, rect.y + 4), (rect.x - 2, rect.bottom - 4), 1)
         label = message("uboot.tab", number=index + 1, name=message(f"uboot.tab.{role}"))
         layout.blit_line(s, label, rect, config.COLOR_WARN if remote else
                          config.COLOR_TEXT if active else config.COLOR_TEXT_DIM,
@@ -368,6 +370,11 @@ def draw_chart(game, boat) -> None:
 
 # --- station panel -----------------------------------------------------------
 
+def _battery_color(fraction):
+    return (config.COLOR_DANGER if fraction < .15 else
+            config.COLOR_WARN if fraction < .3 else config.COLOR_OK)
+
+
 def _battery_fraction(sub):
     endurance = sub.endurance
     if endurance is None or not endurance.profile.battery_capacity_kwh:
@@ -454,16 +461,6 @@ def _draw_threat_bar(s, game, boat, x, y, w) -> int:
     return height
 
 
-def _bar(s, rect, fraction, color) -> None:
-    rect = pygame.Rect(rect)
-    pygame.draw.rect(s, config.COLOR_BG, rect)
-    if fraction is not None:
-        fill = rect.copy()
-        fill.w = max(0, int(rect.w * max(0.0, min(1.0, fraction))))
-        pygame.draw.rect(s, color, fill)
-    pygame.draw.rect(s, config.COLOR_SONAR_RING, rect, 1)
-
-
 def _dashed_hline(s, color, x0, x1, y, dash=6) -> None:
     for x in range(int(x0), int(x1), dash * 2):
         lines.line(s, color, (x, y), (min(x + dash, int(x1)), y), 1)
@@ -513,6 +510,7 @@ def draw_depth_ladder(s, game, boat, rect) -> None:
         marks.append((ly, message("uboot.ladder.layer", depth=_fmt(layer)), (110, 200, 220)))
     sy = depth_y(safe)
     _dashed_hline(s, config.COLOR_DANGER, column.x, column.right, sy)
+    _dashed_hline(s, config.COLOR_DANGER, column.x, column.right, sy + 1)
     marks.append((sy, message("uboot.ladder.safe", depth=_fmt(safe)), config.COLOR_DANGER))
     cy = depth_y(sub.crush_depth_m)
     lines.line(s, config.COLOR_DANGER, (column.x, cy), (column.right - 1, cy), 2)
@@ -520,8 +518,11 @@ def draw_depth_ladder(s, game, boat, rect) -> None:
                   config.COLOR_DANGER))
     oy = depth_y(sub.order_depth)
     _dashed_hline(s, config.COLOR_TEXT, column.x, column.right, oy, dash=3)
-    marks.append((oy, message("uboot.ladder.order", depth=_fmt(sub.order_depth)),
-                  config.COLOR_TEXT_DIM))
+    # Holding the ordered depth: one label for boat and order, not two.
+    on_order = abs(sub.order_depth - sub.depth) < 1.0
+    if not on_order:
+        marks.append((oy, message("uboot.ladder.order", depth=_fmt(sub.order_depth)),
+                      config.COLOR_TEXT_DIM))
     if math.isfinite(bottom):
         marks.append((depth_y(min(bottom, scale_max)),
                       message("uboot.ladder.bottom", depth=_fmt(bottom)), config.COLOR_LAND_EDGE))
@@ -532,43 +533,59 @@ def draw_depth_ladder(s, game, boat, rect) -> None:
     pygame.draw.ellipse(s, nato_symbols.AFFILIATION_COLORS["FRIEND"], hull)
     pygame.draw.rect(s, nato_symbols.AFFILIATION_COLORS["FRIEND"],
                      (hull.centerx - 3, hull.y - 5, 7, 6))
-    marks.append((cy, message("uboot.ladder.boat", depth=_fmt(sub.depth)), config.COLOR_TEXT))
-    # Legend labels, spread so they never overlap.
+    marks.append((cy, message("uboot.ladder.boat_on_order" if on_order else "uboot.ladder.boat",
+                              depth=_fmt(sub.depth)), config.COLOR_TEXT))
+    # Legend labels, spread so they never overlap: push down from the top,
+    # then back up from the bottom edge so the deepest ones stay inside too.
+    pitch = layout.line_pitch(13, 1)
+    ordered = sorted(marks, key=lambda item: item[0])
     placed = []
-    for mark_y, text, color in sorted(marks, key=lambda item: item[0]):
-        label_y = max(y, mark_y - 8)
-        if placed and label_y < placed[-1] + 17:
-            label_y = placed[-1] + 17
-        label_y = min(label_y, y + h - 16)
+    for mark_y, _text, _color in ordered:
+        label_y = max(y, mark_y - pitch // 2)
+        if placed and label_y < placed[-1] + pitch:
+            label_y = placed[-1] + pitch
         placed.append(label_y)
-        lines.line(s, color, (column.right, mark_y), (legend_x - 2, label_y + 8), 1)
-        layout.blit_line(s, text, (legend_x, label_y, x + w - legend_x, 16), color, size=13)
+    limit = y + h - pitch
+    for index in range(len(placed) - 1, -1, -1):
+        placed[index] = min(placed[index], limit)
+        limit = placed[index] - pitch
+    for (mark_y, text, color), label_y in zip(ordered, placed):
+        lines.line(s, color, (column.right, mark_y), (legend_x - 2, label_y + pitch // 2), 1)
+        layout.blit_line(s, text, (legend_x, label_y, x + w - legend_x, pitch), color, size=13)
 
 
 def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     sub = boat.sub
     half = (w - 10) // 2
-    box_h = min(176, max(120, h // 2))
+    big, row, small = (layout.line_pitch(28, gap=0), layout.line_pitch(18, gap=0),
+                       layout.line_pitch(16, gap=0))
+    # Tall enough for every row at the current text size (large text too).
+    needed = layout.line_pitch(16, 16, bold=True) + 2 * big + 2 * row + small + 10
+    box_h = max(min(176, max(120, h // 2)), min(needed, h - 80))
     nav = layout.box(s, (x, y, half, box_h), "uboot.panel.course_depth",
                      border=config.COLOR_TEXT)
     nx, ny, nw, _ = nav
     layout.blit_line(s, message("bridge.line.course", course=f"{sub.course % 360:03.0f}"),
-                     (nx, ny, nw, 34), config.COLOR_TEXT, size=28)
-    layout.status_line(s, nx, ny + 36, nw, "ui.target_value_short",
+                     (nx, ny, nw, big), config.COLOR_TEXT, size=28)
+    ny += big
+    layout.status_line(s, nx, ny, nw, "ui.target_value_short",
                        message("bridge.line.course", course=f"{sub.order_course % 360:03.0f}"),
                        size=18, label_w=80)
+    ny += row
     layout.blit_line(s, message("uboot.line.depth", depth=_fmt(sub.depth)),
-                     (nx, ny + 62, nw, 34), config.COLOR_TEXT, size=28)
-    layout.status_line(s, nx, ny + 98, nw, "ui.target_value_short",
+                     (nx, ny, nw, big), config.COLOR_TEXT, size=28)
+    ny += big
+    layout.status_line(s, nx, ny, nw, "ui.target_value_short",
                        message("uboot.line.depth", depth=_fmt(sub.order_depth)),
                        size=18, label_w=80)
+    ny += row
     bottom = game.world.depth_m(sub.x, sub.y)
     keel = message("uboot.line.under_keel", depth=_fmt(bottom - sub.depth))
     ahead = boat.orders.obstacle_ahead_nm
     if ahead is not None:
         keel = message("uboot.line.keel_obstacle", depth=_fmt(bottom - sub.depth),
                        distance=f"{ahead:.1f}")
-    layout.blit_line(s, keel, (nx, ny + 124, nw, 20),
+    layout.blit_line(s, keel, (nx, ny, nw, small),
                      config.COLOR_WARN if ahead is not None
                      or bottom - sub.depth < config.UBOOT_UNDER_KEEL_WARN_M
                      else config.COLOR_TEXT_DIM, size=16)
@@ -576,24 +593,26 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
                        border=config.COLOR_WARN if sub.cavitating else config.COLOR_TEXT)
     dx, dy, dw, _ = drive
     layout.blit_line(s, message("bridge.line.speed", speed=f"{sub.speed:.1f}"),
-                     (dx, dy, dw, 34), config.COLOR_TEXT, size=28)
-    layout.status_line(s, dx, dy + 36, dw, "ui.target_value_short",
+                     (dx, dy, dw, big), config.COLOR_TEXT, size=28)
+    dy += big
+    layout.status_line(s, dx, dy, dw, "ui.target_value_short",
                        message("bridge.line.speed", speed=f"{sub.order_speed:.1f}"),
                        size=18, label_w=80)
+    dy += row
     noise = "bridge.cavitation" if sub.cavitating else message(
         "bridge.line.own_noise", noise=f"{sub.noise_level() * 100:.0f}")
-    layout.blit_line(s, noise, (dx, dy + 62, dw, 22),
+    layout.blit_line(s, noise, (dx, dy, dw, row),
                      config.COLOR_DANGER if sub.cavitating else config.COLOR_OK, size=18)
+    dy += row
     battery = _battery_fraction(sub)
     phase = sub.endurance.phase if sub.endurance is not None else None
-    layout.blit_line(s, message("uboot.line.battery",
-                                value=_fmt(None if battery is None else battery * 100),
-                                phase=(display_message("endurance_phase", phase)
-                                       if phase else raw_text("--"))),
-                     (dx, dy + 88, dw, 20), config.COLOR_TEXT_DIM, size=16)
-    _bar(s, (dx, dy + 110, dw, 10), battery,
-         config.COLOR_DANGER if battery is not None and battery < .15 else
-         config.COLOR_WARN if battery is not None and battery < .3 else config.COLOR_OK)
+    if battery is not None:
+        layout.gauge(s, (dx, dy, dw, small + 8), battery, label="uboot.label.battery",
+                     value=message("uboot.line.battery_value", value=_fmt(battery * 100),
+                                   phase=(display_message("endurance_phase", phase)
+                                          if phase else raw_text("--"))),
+                     color=_battery_color(battery))
+        dy += small + 10
     modes = [key for key, on in (("uboot.mode.silent", boat.orders.silent),
                                  ("uboot.mode.snorkel", sub.snorkeling),
                                  ("uboot.mode.bottom", boat.orders.bottomed),
@@ -601,7 +620,7 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     quiet = boat.orders.quiet_active(sub)
     layout.blit_line(s, message("uboot.line.modes", modes=raw_text(" · ".join(
         str(localize(key)) for key in modes)) if modes else localize("uboot.mode.none")),
-                     (dx, dy + 124, dw, 20),
+                     (dx, dy, dw, small),
                      config.COLOR_OK if quiet else config.COLOR_TEXT_DIM, size=16)
     ladder_y = y + box_h + 10
     ladder_h = y + h - ladder_y
@@ -805,14 +824,13 @@ def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
                      config.COLOR_DANGER if sub.cavitating else config.COLOR_OK, size=18)
     battery = _battery_fraction(sub)
     phase = sub.endurance.phase if sub.endurance is not None else None
-    layout.blit_line(s, message("uboot.line.battery",
-                                value=_fmt(None if battery is None else battery * 100),
-                                phase=(display_message("endurance_phase", phase)
-                                       if phase else raw_text("--"))),
-                     (px + half + 10, py, half, 22), config.COLOR_TEXT, size=17)
-    _bar(s, (px + half + 10, py + 26, half, 12), battery,
-         config.COLOR_DANGER if battery is not None and battery < .15 else
-         config.COLOR_WARN if battery is not None and battery < .3 else config.COLOR_OK)
+    if battery is not None:
+        layout.gauge(s, (px + half + 10, py, half, layout.line_pitch(16, 0) + 10), battery,
+                     label="uboot.label.battery",
+                     value=message("uboot.line.battery_value", value=_fmt(battery * 100),
+                                   phase=(display_message("endurance_phase", phase)
+                                          if phase else raw_text("--"))),
+                     color=_battery_color(battery))
     modes = [key for key, on in (("uboot.mode.silent", boat.orders.silent),
                                  ("uboot.mode.snorkel", sub.snorkeling),
                                  ("uboot.mode.bottom", boat.orders.bottomed)) if on]
@@ -833,12 +851,18 @@ def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
     tx, ty, tw, _ = telegraph
     steps = opfor.speed_steps(sub)
     width = tw // len(steps)
+    # An order between two steps (set directly) outlines the nearest step.
+    nearest = min(range(len(steps)), key=lambda i: abs(sub.order_speed - steps[i]))
+    exact = abs(sub.order_speed - steps[nearest]) < 0.05
     for index, speed in enumerate(steps):
-        current = abs(sub.order_speed - speed) < 0.05
+        current = index == nearest
         rect = pygame.Rect(tx + index * width, ty, width - 4, 26)
-        if current:
+        if current and exact:
             pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, rect)
-        layout.blit_line(s, message("uboot.line.telegraph_step", marker="> " if current else "",
+        elif current:
+            pygame.draw.rect(s, layout.BRACKET_COLOR, rect, 1)
+        layout.blit_line(s, message("uboot.line.telegraph_step",
+                                    marker="> " if current and exact else "",
                                     speed=_fmt(speed, "{:.0f}")), rect,
                          config.COLOR_TEXT if current else config.COLOR_TEXT_DIM,
                          size=16, align="center")
@@ -853,10 +877,9 @@ def _hours_text(seconds):
 
 
 def _supply_bar(s, x, y, w, label, text, fraction, low, empty) -> None:
-    layout.status_line(s, x, y, w, label, text, size=15, label_w=110)
     color = (config.COLOR_DANGER if fraction is not None and fraction <= empty else
              config.COLOR_WARN if fraction is not None and fraction <= low else config.COLOR_OK)
-    _bar(s, (x, y + 20, w, 8), fraction, color)
+    layout.gauge(s, (x, y, w, 30), fraction, label=label, value=text, color=color, size=15)
 
 
 def _draw_supply_page(s, game, boat, x, y, w, h) -> None:
@@ -981,7 +1004,9 @@ def _draw_esm_rose(s, game, boat, rect, threats) -> None:
     sub = boat.sub
     pygame.draw.rect(s, config.COLOR_GEO_BG, rect)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, rect, 1)
-    radius = max(20, min(rect.w, rect.h) // 2 - 18)
+    label_face = layout.font(11)
+    label_w, label_h = label_face.size("000")[0], label_face.get_linesize()
+    radius = max(20, min(rect.w - 2 * label_w, rect.h - 2 * label_h) // 2 - 6)
     cx, cy = rect.center
 
     def at(bearing, r):
@@ -992,9 +1017,13 @@ def _draw_esm_rose(s, game, boat, rect, threats) -> None:
     pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), radius // 2, 1)
     for bearing in range(0, 360, 30):
         lines.line(s, config.COLOR_TEXT_DIM, at(bearing, radius), at(bearing, radius - 7), 1)
-        tx, ty = at(bearing, radius + 10)
+        # Push each label out by its own half extent so none sits on the ring.
+        rad = math.radians(bearing)
+        reach = radius + 4 + abs(math.sin(rad)) * label_w / 2 + abs(math.cos(rad)) * label_h / 2
+        tx, ty = at(bearing, reach)
         layout.blit_line(s, raw_text("N" if bearing == 0 else f"{bearing:03d}"),
-                         (tx - 16, ty - 7, 32, 14), config.COLOR_TEXT_DIM, size=11, align="center")
+                         (tx - label_w // 2 - 2, ty - label_h // 2, label_w + 4, label_h),
+                         config.COLOR_TEXT_DIM, size=11, align="center")
     lines.line(s, nato_symbols.AFFILIATION_COLORS["FRIEND"], (cx, cy),
                at(sub.course, radius * .35), 2)
     _, chosen = esm_selection(boat)
@@ -1062,23 +1091,25 @@ def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
     over = elapsed is not None and elapsed > limit
     border = (config.COLOR_DANGER if threats else config.COLOR_WARN if orders.mast or over
               else config.COLOR_TEXT)
-    mast = layout.box(s, (x, y, w, 96), "uboot.panel.mast", border=border)
+    first, row = layout.line_pitch(17, 1), layout.line_pitch(15, 1)
+    mast_h = layout.line_pitch(16, 16, bold=True) + first + 2 * row + 8
+    mast = layout.box(s, (x, y, w, mast_h), "uboot.panel.mast", border=border)
     mx, my, mw, _ = mast
     layout.blit_line(s, message("uboot.line.mast_up" if orders.mast else "uboot.line.mast_down",
-                                depth=_fmt(MAST_DEPTH_M)), (mx, my, mw, 22),
+                                depth=_fmt(MAST_DEPTH_M)), (mx, my, mw, first),
                      config.COLOR_WARN if orders.mast else config.COLOR_TEXT, size=17)
     layout.blit_line(s, message("uboot.esm.mast_time", elapsed=_fmt(elapsed), limit=_fmt(limit))
                      if elapsed is not None else message("uboot.esm.mast_time_limit",
                                                         limit=_fmt(limit)),
-                     (mx, my + 22, mw, 22),
+                     (mx, my + first, mw, row),
                      config.COLOR_WARN if over else config.COLOR_TEXT, size=15)
     warning = ("uboot.esm.threat" if threats else "uboot.esm.overtime" if over else None)
     layout.blit_line(s, warning or message("uboot.esm.mast_radar", range=_fmt(mast_range, "{:.1f}"),
                                            wash=_fmt(boat_esm.wash_fraction(sea) * 100)),
-                     (mx, my + 44, mw, 22),
+                     (mx, my + first + row, mw, row),
                      config.COLOR_DANGER if threats else config.COLOR_WARN if over
                      else config.COLOR_TEXT_DIM, size=15)
-    top = y + 104
+    top = y + mast_h + 8
     rose_w = min(w * 2 // 5, 220)
     rose_h = min(rose_w, max(100, h - (top - y) - 170))
     _draw_esm_rose(s, game, boat, pygame.Rect(x, top, rose_w, rose_h), threats)
@@ -1191,14 +1222,7 @@ def draw_esm_chart(game, boat, view, r) -> None:
 
 def _footer(s, rect, specs) -> None:
     """Key legend like the frigate's, each segment as wide as its text."""
-    rect = pygame.Rect(rect)
-    weights = [len(localize(key)) + len(localize(text)) + 2 for key, text in specs]
-    x = rect.x
-    for index, ((key, text), weight) in enumerate(zip(specs, weights)):
-        width = (rect.right - x if index == len(specs) - 1
-                 else int(rect.w * weight / sum(weights)))
-        layout.command_segment(s, (x, rect.y, width, rect.h), key, text, size=11)
-        x += width
+    _shortcut_footer(s, rect, specs)
 
 
 # --- end of mission and the whole screen ---------------------------------------

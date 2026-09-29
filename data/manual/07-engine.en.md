@@ -27,6 +27,7 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 ```
 
 - Own noise rises linearly from 4 kn to 31 kn. The propellers cavitate when the blade-tip speed is too high for the water pressure at the screws: in calm water from 15 kn, in heavy seas earlier when pitching lifts the stern. Cavitation raises noise to at least 0.85 and cuts passive sonar range to 35 %.
+- The telegraph row of the ordered step is highlighted. When a direct speed (`V` on the bridge) lies between two steps, a warning line names the ordered speed, so HALF 10 kn with 12 kn ordered is never mistaken for HALF. RPM and own noise are shown as labelled bars.
 - QUIET mode reduces own noise to 65 % and limits speed to 12 kn.
 - Plant selection (`G`): AUTO runs the plant as before. DIESEL is the quiet plant (own noise about -4 dB, fuel -10 %) but caps speed at 18 kn; TURBINE gives full speed at about +3 dB and +25 % fuel. The choice is shown on page 2 and in the browser's engine room.
 - Shaft RPM follows the fixed-pitch propeller: about 5.8 rpm per knot at steady speed (146 rpm at 25 kn, 181 rpm at the 31 kn flank speed). While accelerating the control programme keeps the shaft at most about 11 rpm ahead of the present speed; when slowing down the pitch reverses and the shaft idles at 20 rpm. The own shaft line on LOFAR moves with speed.

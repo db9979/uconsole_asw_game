@@ -174,8 +174,8 @@ The top bar shows the station, the mission, the clock, speed and course; the cha
  footer: <- -> course | Up/Down telegraph | U/V direct
 ```
 
-- **Course / rudder:** current course, ordered course (`→`), rudder angle in whole degrees and, only while turning, the turn radius.
-- **Speed / acoustics:** telegraph order, speed, own noise in percent and a CAVITATION warning above 15 kn.
+- **Course / rudder:** current course, ordered course (`→`), rudder angle in whole degrees and, only while turning, the turn radius. Below the numbers a rudder scale shows the angle from port (left) to starboard (right), and a compass dial shows the heading needle with the ordered course as a hollow amber mark.
+- **Speed / acoustics:** telegraph order, speed, own noise in percent and a CAVITATION warning above 15 kn. A speed dial from 0 to 31 kn shows the present speed as a needle and the ordered speed as a hollow amber mark.
 - **Tactical picture:** observed threats (a heard torpedo launch transient or HF seeker pulses, a contact sonar classified as torpedo, or an air track flagged as a possible missile), sensor state (radar, TAS), assets (helicopter, buoys) and weather/day-night. Beside the weather lines a small picture in the start screen's look looks into the wind: the sky of the hour with sun, moon or stars, the clouds, rain, snow or fog and the sea running at the eye, with a wind rose (north up, the arrow blowing downwind) in its corner; the Remote Crew bridge shows the same picture.
 - **Chart:** synthetic chart depth and coastline, own ship, tracks published by the other stations. `Q`/`E` zoom in fixed steps (chart height 500, 250, 100, 50, 25, 10, 5, 2, 1 and 0.5 NM), the wheel zooms smoothly down to 0.5 NM; the grid gets finer as you zoom in (down to 0.1 NM). Drag pans, `K` follows own ship.
 
@@ -815,6 +815,7 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 ```
 
 - Own noise rises linearly from 4 kn to 31 kn. The propellers cavitate when the blade-tip speed is too high for the water pressure at the screws: in calm water from 15 kn, in heavy seas earlier when pitching lifts the stern. Cavitation raises noise to at least 0.85 and cuts passive sonar range to 35 %.
+- The telegraph row of the ordered step is highlighted. When a direct speed (`V` on the bridge) lies between two steps, a warning line names the ordered speed, so HALF 10 kn with 12 kn ordered is never mistaken for HALF. RPM and own noise are shown as labelled bars.
 - QUIET mode reduces own noise to 65 % and limits speed to 12 kn.
 - Plant selection (`G`): AUTO runs the plant as before. DIESEL is the quiet plant (own noise about -4 dB, fuel -10 %) but caps speed at 18 kn; TURBINE gives full speed at about +3 dB and +25 % fuel. The choice is shown on page 2 and in the browser's engine room.
 - Shaft RPM follows the fixed-pitch propeller: about 5.8 rpm per knot at steady speed (146 rpm at 25 kn, 181 rpm at the 31 kn flank speed). While accelerating the control programme keeps the shaft at most about 11 rpm ahead of the present speed; when slowing down the pitch reverses and the shaft idles at 20 rpm. The own shaft line on LOFAR moves with speed.
@@ -908,7 +909,7 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 | `Q / E` | Zoom chart in steps, 500 to 0.5 NM |
 | `K` | Camera follow on/off |
 | `Acoustic: Page Up / Down` | Acoustic page: Broadband / LOFAR / DEMON |
-| `Acoustic: <- / ->` | Helicopter listening bearing -/+ 5 degrees |
+| `Acoustic: ← / →` | Helicopter listening bearing -/+ 5 degrees |
 | `Acoustic: R` | Reset listening bearing to automatic |
 | `Acoustic: T` | Listening source: dipping sonar / passive buoys |
 | `Acoustic: J \| , / .` | Receiver audio on/off \| lower/raise volume |

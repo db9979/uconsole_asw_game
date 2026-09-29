@@ -382,6 +382,58 @@ def corner_brackets(screen, rect, border=None) -> None:
         pygame.draw.line(screen, color, (cx, cy), (cx, cy + dy * size), 2)
 
 
+METER_TRACK = (18, 42, 39)
+METER_MARKS = (0.25, 0.5, 0.75)
+
+
+def meter(screen, rect, fraction, color=None) -> None:
+    """The splash-style bar: dark track, quarter marks, bracket end caps.
+
+    ``fraction`` None (no such value, e.g. no battery) draws nothing at all,
+    so an empty frame never pretends to be an empty store.
+    """
+    if fraction is None:
+        return
+    rect = pygame.Rect(rect)
+    if rect.w < 8 or rect.h < 2:
+        return
+    record_geometry("meter", rect)
+    value = max(0.0, min(1.0, float(fraction)))
+    pygame.draw.rect(screen, METER_TRACK, rect)
+    fill = rect.copy()
+    fill.w = round(rect.w * value)
+    if fill.w:
+        pygame.draw.rect(screen, color or config.COLOR_OK, fill)
+    for mark in METER_MARKS:
+        mx = rect.x + round(rect.w * mark)
+        pygame.draw.line(screen, config.COLOR_PANEL_BG if mx < fill.right else BRACKET_COLOR,
+                         (mx, rect.y), (mx, rect.bottom - 1), 1)
+    cap = min(4, rect.w // 8)
+    for cx, dx in ((rect.x - 2, 1), (rect.right + 1, -1)):
+        pygame.draw.line(screen, BRACKET_COLOR, (cx, rect.y - 2), (cx, rect.bottom + 1), 1)
+        pygame.draw.line(screen, BRACKET_COLOR, (cx, rect.y - 2), (cx + dx * cap, rect.y - 2), 1)
+        pygame.draw.line(screen, BRACKET_COLOR, (cx, rect.bottom + 1),
+                         (cx + dx * cap, rect.bottom + 1), 1)
+
+
+def gauge(screen, rect, fraction, *, label="", value="", color=None,
+          size: int = 16, bar_h: int = 6) -> None:
+    """A labelled meter: ``label`` left and ``value`` right on one text row,
+    the bar below it. ``rect`` should be ``line_pitch(size, 0) + bar_h + 4``
+    high; the bar is left out when ``fraction`` is None."""
+    x, y, w, h = pygame.Rect(rect)
+    row = font(size).get_linesize()
+    value_w = font(size).size(localize(value))[0] if value else 0
+    if label:
+        blit_line(screen, label, (x, y, max(1, w - value_w - 8), row),
+                  config.COLOR_TEXT_DIM, size=size)
+    if value:
+        blit_line(screen, value, (x + w - value_w - 1, y, value_w + 1, row),
+                  color or config.COLOR_TEXT, size=size)
+    meter(screen, (x + 2, y + row + 1, w - 4, max(2, min(bar_h, h - row - 2))),
+          fraction, color)
+
+
 def box(screen, rect, title: str = "", border=None, fill=None,
         title_size: int = 16) -> tuple:
     """Zeichnet eine Box und liefert ihr garantiert inneres Rechteck."""
@@ -421,6 +473,30 @@ def blit_lines(screen, lines, rect, color, size: int = 14,
             blit_line(screen, text, (x, y + i * line_h, w, line_h),
                       color, size=size)
     return min(len(lines), visible)
+
+
+_FADE_CACHE: dict = {}
+
+
+def fade_edges(screen, rect, color, width: int = 24, left: bool = True,
+               right: bool = True) -> None:
+    """Fade text into ``color`` at the edges of ``rect`` (marquee ends)."""
+    rect = pygame.Rect(rect)
+    width = max(1, min(width, rect.w // 3))
+    key = (tuple(color), width, rect.h)
+    ramps = _FADE_CACHE.get(key)
+    if ramps is None:
+        if len(_FADE_CACHE) > 16:
+            _FADE_CACHE.clear()
+        ramp = pygame.Surface((width, rect.h), pygame.SRCALPHA)
+        for x in range(width):
+            alpha = round(255 * (1 - x / width))
+            pygame.draw.line(ramp, (*color[:3], alpha), (x, 0), (x, rect.h - 1))
+        ramps = _FADE_CACHE[key] = (ramp, pygame.transform.flip(ramp, True, False))
+    if left:
+        screen.blit(ramps[0], rect.topleft)
+    if right:
+        screen.blit(ramps[1], (rect.right - width, rect.y))
 
 
 @contextmanager

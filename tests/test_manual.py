@@ -164,8 +164,8 @@ def test_telegraph_orders_in_reference_match_config():
 # documented in src/core/help.py (and therefore in F1, manual, and web page).
 
 _KEY_TOKENS = {
-    "K_UP": ("Up",), "K_DOWN": ("Down",), "K_LEFT": ("<-", "Left"),
-    "K_RIGHT": ("->", "Right"), "K_PAGEUP": ("Page",), "K_PAGEDOWN": ("Page",),
+    "K_UP": ("Up",), "K_DOWN": ("Down",), "K_LEFT": ("<-", "←", "Left"),
+    "K_RIGHT": ("->", "→", "Right"), "K_PAGEUP": ("Page",), "K_PAGEDOWN": ("Page",),
     "K_RETURN": ("Enter",), "K_KP_ENTER": ("Enter",), "K_BACKSPACE": ("Backspace",),
     "K_DELETE": ("Delete",), "K_SPACE": ("Space",), "K_COMMA": (",",),
     "K_PERIOD": (".",), "K_EQUALS": ("+",), "K_PLUS": ("+",), "K_KP_PLUS": ("+",),

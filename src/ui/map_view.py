@@ -395,20 +395,29 @@ def draw_chart_geography(game, view, r) -> None:
     gx1 = math.floor(min(w.size_nm, max(wl, wr)) / step + 1e-9)
     gy0 = math.ceil(max(0.0, min(wt, wb)) / step - 1e-9)
     gy1 = math.floor(min(w.size_nm, max(wt, wb)) / step + 1e-9)
-    for k in range(gx0, gx1 + 1):
-        g = k * step
-        x, _ = view.world_to_screen(g, 0)
-        if r[0] <= x <= r[0] + r[2]:
-            lines.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
-            s.blit(game.font.render(grid_label(g), True, config.COLOR_TEXT_DIM),
-                   (int(x) + 3, r[1] + r[3] - 18))
-    for k in range(gy0, gy1 + 1):
-        g = k * step
-        _, y = view.world_to_screen(0, g)
-        if r[1] <= y <= r[1] + r[3]:
-            lines.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
-            s.blit(game.font.render(grid_label(g), True, config.COLOR_TEXT_DIM),
-                   (r[0] + 3, int(y) + 3))
+    # Axis numbers: x along the bottom edge, y along the left edge. A number
+    # that would run off the chart or into the other axis' corner is left out.
+    face = game.font
+    label_h = face.get_linesize()
+    left_w = face.size("0000")[0] + 6
+    bottom_band = r[1] + r[3] - label_h - 2
+    with layout.clip_to(s, r):
+        for k in range(gx0, gx1 + 1):
+            g = k * step
+            x, _ = view.world_to_screen(g, 0)
+            if r[0] <= x <= r[0] + r[2]:
+                lines.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
+                image = face.render(grid_label(g), True, config.COLOR_TEXT_DIM)
+                if int(x) + 3 >= r[0] + left_w and int(x) + 3 + image.get_width() <= r[0] + r[2] - 2:
+                    s.blit(image, (int(x) + 3, bottom_band))
+        for k in range(gy0, gy1 + 1):
+            g = k * step
+            _, y = view.world_to_screen(0, g)
+            if r[1] <= y <= r[1] + r[3]:
+                lines.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
+                if int(y) + 3 + label_h <= bottom_band:
+                    s.blit(face.render(grid_label(g), True, config.COLOR_TEXT_DIM),
+                           (r[0] + 3, int(y) + 3))
 
     # Land / Inseln. Legacy/fake coast providers retain their old API.
     landmasses = getattr(coast, "landmasses", None)

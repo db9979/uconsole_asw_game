@@ -293,14 +293,6 @@ def crew_lines(view) -> dict:
         repair=message("crew.effect.repair", value=f"{effect:.0%}"))
 
 
-def _bar(s, rect, value, color) -> None:
-    pygame.draw.rect(s, (18, 42, 39), rect)
-    fill = pygame.Rect(rect)
-    fill.w = max(0, min(rect.w, round(rect.w * value)))
-    pygame.draw.rect(s, color, fill)
-    pygame.draw.rect(s, config.COLOR_GRID, rect, 1)
-
-
 def _draw_crew(game, s, rect) -> None:
     """Page 3: watch bill, fatigue, morale and what they do to the crew."""
     view = game.crew_view()
@@ -320,7 +312,7 @@ def _draw_crew(game, s, rect) -> None:
                                     fatigue=f"{row['fatigue']:.0%}"),
                          (lx, ly, lw, 26), color, size=18)
         tired = row["fatigue"] > config.CREW_FATIGUE_FREE
-        _bar(s, pygame.Rect(lx, ly + 28, lw, 12), row["fatigue"],
+        layout.meter(s, pygame.Rect(lx, ly + 28, lw, 12), row["fatigue"],
              config.COLOR_WARN if tired else config.COLOR_OK)
         ly += 56
     layout.blit_block(s, "crew.explain", lx, ly, lw, max(1, left[1] + left[3] - ly),
@@ -333,11 +325,11 @@ def _draw_crew(game, s, rect) -> None:
         ry += 30
     layout.blit_line(s, lines["effectiveness"], (rx, ry, rw, 26),
                      config.COLOR_OK if effect >= .95 else config.COLOR_WARN, size=18)
-    _bar(s, pygame.Rect(rx, ry + 28, rw, 10), effect / config.CREW_EFFECT_MAX,
+    layout.meter(s, pygame.Rect(rx, ry + 28, rw, 10), effect / config.CREW_EFFECT_MAX,
          config.COLOR_OK if effect >= .95 else config.COLOR_WARN)
     ry += 50
     layout.blit_line(s, lines["morale"], (rx, ry, rw, 26), config.COLOR_TEXT, size=18)
-    _bar(s, pygame.Rect(rx, ry + 28, rw, 10), view["morale"],
+    layout.meter(s, pygame.Rect(rx, ry + 28, rw, 10), view["morale"],
          config.COLOR_OK if view["morale"] >= .5 else config.COLOR_WARN)
     ry += 50
     for key in ("sonar", "repair"):

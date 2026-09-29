@@ -2,7 +2,7 @@
 ``AUTOSAVE_INTERVAL_S`` wall seconds and on a normal quit; "Continue" in the
 main menu loads it. ``Game`` mixin.
 
-The autosave is an ordinary exact-v34 save document beside the five slots and
+The autosave is an ordinary exact-v35 save document beside the five slots and
 goes through the same strict loader. It never touches the simulation: the
 document is built and serialized on the main thread (the save dict shares
 lists with live state), only the compact bytes go to a background thread that

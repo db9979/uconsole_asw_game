@@ -468,6 +468,7 @@ def test_pilot_submarine_can_counterfire_on_fresh_ping_bearing():
     assert report.range_nm is None
     sub.hear_ping()
     sub.attack_left = 0.0
+    sub.ai_tube_left = 0.0                   # tubes flooded beforehand
     sub.rng.random = lambda: 0.0
 
     sub.update(0.1, report, OpenWorld())

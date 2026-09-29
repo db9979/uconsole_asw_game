@@ -251,6 +251,7 @@ def test_pilot_submarine_salvo_is_deterministic_on_dedicated_asw_stream():
                   attack_mult=1000, runtime_catalog=CATALOG,
                   asw_rng=random.Random(7))
         sub.attack_left = 0
+        sub.ai_tube_left = 0.0               # tubes flooded beforehand
         sub.state, sub.heard_ping = "EVADE", True
         sub.update(1, observation, ocean(thermocline_depth_m=lambda x, y: 100))
         results.append((sub.pending_torpedoes,

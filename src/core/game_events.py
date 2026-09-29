@@ -1111,6 +1111,9 @@ class EventMixin:
                 self.flash(message("runtime.sonar_audio.on" if self.helo_audio_enabled
                                    else "runtime.sonar_audio.off"))
             elif e.key == pygame.K_b and self.station is Station.BRIDGE \
+                    and getattr(e, "mod", 0) & pygame.KMOD_CTRL:
+                self._route_result(self.clear_baffles())
+            elif e.key == pygame.K_b and self.station is Station.BRIDGE \
                     and self.station_page == 2:
                 self._toggle_lookout_glasses()
             elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \

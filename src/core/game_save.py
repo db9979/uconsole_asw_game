@@ -480,6 +480,8 @@ class SaveMixin:
             "mission_events": list(self.mission_events_pending),
             "tasking": self.tasking.serialize(),
             "incidents": self.incidents.serialize(),
+            "baffle_clear": (None if self.baffle_clear is None
+                             else [float(value) for value in self.baffle_clear]),
             "watch": self.crew_watch.serialize(),
             "mpa": self.mpa.serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
@@ -1038,6 +1040,8 @@ class SaveMixin:
         self.mission_events_pending = [str(item) for item in data["mission_events"]]
         self.tasking = TaskBoard.restore(data["tasking"])
         self.incidents = IncidentBoard.restore(data["incidents"])
+        self.baffle_clear = (None if data["baffle_clear"] is None
+                             else [float(value) for value in data["baffle_clear"]])
         self.task_sel = 0
         self.crew_watch = CrewState.restore(data["watch"])
         self.mpa = PatrolAircraft.restore(data["mpa"], self.world.size_nm)

@@ -40,6 +40,7 @@ from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
+from src.core import baffles
 from src.core.incidents import IncidentBoard
 from src.core.crew import CrewState
 from src.air.mpa import PatrolAircraft
@@ -143,6 +144,7 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
                     or bounded(orders["torpedo_depth"], 0.0, 1000.0))
             or orders["salvo"] not in (1, 2) or type(orders["salvo"]) is not int
             or orders["battery_state"] not in CREW_BATTERY_STATES
+            or not baffles.valid_state(orders["baffle_clear"])
             or not (orders["obstacle_ahead_nm"] is None
                     or bounded(orders["obstacle_ahead_nm"], 0.0, 10_000.0))):
         return False
@@ -501,6 +503,11 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
            and task["target_id"] not in surface_ids for task in board["tasks"]):
         return False
     if any(task["offered_t"] > save_sim_t for task in board["tasks"]):
+        return False
+    # Save v35: the Bridge's baffle clearing, ending after the save time.
+    if (not baffles.valid_state(data.get("baffle_clear"))
+            or data["baffle_clear"] is not None
+            and data["baffle_clear"][2] > save_sim_t + config.BAFFLE_CLEAR_HOLD_S):
         return False
     # Save v34: incidents at sea; none announced after the save time.
     incidents = data.get("incidents")

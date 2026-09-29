@@ -213,6 +213,7 @@ The helm can follow a route of up to 8 waypoints. On the navigation page a right
 | `W` | Autopilot: zigzag search, expanding square, off |
 | `Right click` | Add an autopilot waypoint on the chart |
 | `Backspace` | Clear the autopilot route |
+| `Ctrl+B` | Clear baffles: 60° to starboard for two minutes, then back (the hull sonar is deaf 30° either side of the stern) |
 
 The trackball steers the rudder while the Bridge is selected. `U` and `V` open direct numeric entry; the simulation keeps running while you type. `Enter` confirms, `Esc` cancels.
 
@@ -332,6 +333,7 @@ The display shows measured modulation, not identity. After changing the bearing 
 - TAS depth 20-260 m (`U`/`V` in 10 m steps), limited to 260 m minus 4 m per knot of own speed. At 30 m or deeper and in the same layer as the target it gains another 25 %.
 - Above 20 kn with any cable out the array suffers a permanent FAULT.
 - The array heading lags the ship by about 45 s after a turn; its bearings are less reliable while it swings.
+- **Baffles:** the hull array (HMS) is deaf 30° either side of the own stern, so a boat right astern is heard only by the towed array or the VDS. The BROADBAND waterfall marks the baffle edges with dotted lines. Clear them from the Bridge with `Ctrl+B` (two minutes 60° to starboard, then back) or with any turn of your own. The same holds for the enemy: a submarine's hull sonar is deaf astern too, and an AI boat that finds itself close in the frigate's baffles after a ping follows the frigate there instead of running.
 - VDS (`Shift+Y` lowers or recovers it, `Shift+B` selects it): a body on a short cable, 20-300 m deep and limited to 300 m minus 8 m per knot. `U`/`V` move the depth of whichever array is selected. At 30 m or deeper in the target's layer it gains the same 25 % as the TAS. It is unambiguous, so a VDS bearing resolves the TAS side just like the hull sonar. Pinging on the VDS transmits from the body: below the layer the shadow-zone loss hits shallow targets instead of deep ones. Lowering and recovery pause outside 3-15 kn or above sea state 5; above 24 kn with the body out it is lost (FAULT).
 
 ```text
@@ -424,7 +426,7 @@ Combat situation:
 
 - `T` switches the solver behind the training aid; the automatic solver never writes a fix by itself.
 - No selectable split-window normalisation (TPSW); use gain, black level and contrast instead.
-- No hard blind baffle sector; own noise is a soft lobe.
+- The baffles blind only passive listening; an active ping of the hull sonar still sweeps all round.
 
 ## 3 Weapons
 
@@ -1220,6 +1222,7 @@ The top bar shows the submarine's seven stations as tabs: `1` Command, `2` Sonar
 | `Enter` | Radio room: send a situation report to HQ (needs the mast up at periscope depth; the frigate can take an HF bearing) |
 | `M` | Engine room, damage page: relieve the duty watch now |
 | `B` | Action stations on/off (all watches on duty, alert but tiring) |
+| `Ctrl+B` | Clear baffles: 60° to starboard for two minutes, then back (the hull sonar is deaf astern) |
 | `0` | Weather panel of the submarine (0 or Esc closes) |
 | `S / L / F9` | Save / load / Remote Crew (the frigate's crew) |
 

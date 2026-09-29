@@ -488,6 +488,8 @@ V2_ACTION_REGISTRY = {
     "bridge_route_pattern": V2Action(frozenset({"bridge"}),
                                      _enum_params("pattern", ("zigzag", "square"))),
     "bridge_route_clear": V2Action(frozenset({"bridge"}), _no_params),
+    # Swing the course to hear into the hull sonar's baffles, then return.
+    "bridge_clear_baffles": V2Action(frozenset({"bridge"}), _no_params),
     "propose_navigation": V2Action(frozenset({"bridge"}),
                                     _navigation_proposal_params),
     "sonar_classify": V2Action(frozenset({"sonar", "helicopter", "uboot_sonar"}), _classification_params,
@@ -661,6 +663,7 @@ V2_ACTION_REGISTRY = {
     # Each boat order belongs to the station that does it aboard; the commander
     # keeps course, speed and depth.
     "uboot_set_course": V2Action(frozenset({"uboot", "uboot_nav"}), _course_params),
+    "uboot_clear_baffles": V2Action(frozenset({"uboot", "uboot_nav"}), _no_params),
     "uboot_set_speed": V2Action(frozenset({"uboot", "uboot_engine"}), _uboot_speed_params),
     "uboot_set_depth": V2Action(frozenset({"uboot", "uboot_nav"}), _uboot_depth_params),
     "uboot_fire": V2Action(frozenset({"uboot_weapons"}), _uboot_fire_params,

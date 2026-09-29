@@ -52,7 +52,7 @@ STATION_HELP = {
          ("↑/↓ · Q/E · Space", "help.bridge.glasses_optics"),
          ("G", "help.control.action_stations"), ("W", "help.bridge.route_pattern"),
          ("help.key.route_click", "help.bridge.route_waypoint"),
-         ("Backspace", "help.bridge.route_clear")],
+         ("Backspace", "help.bridge.route_clear"), ("Ctrl+B", "help.bridge.clear_baffles")],
         ["help.note.bridge_noise", "help.note.bridge_coast", "help.note.crew"],
         "help.note.bridge_tactic"),
     Station.SONAR: _station(
@@ -281,6 +281,7 @@ _UBOOT_HELP = (
         ("help.key.enter", "help.uboot.radio_send"),
         ("M", "help.uboot.watch_change"),
         ("B", "help.uboot.action_stations"),
+        ("Ctrl+B", "help.uboot.clear_baffles"),
         ("0", "help.uboot.weather"),
         ("S / L / F9", "help.uboot.admin"),
     ],

@@ -969,6 +969,15 @@ def _draw_waterfall(game, panel, page):
                     lx = plot.x + round(value / 360 * (plot.w - 1))
                     pygame.draw.line(screen, (139, 91, 71),
                                      (lx, plot.y), (lx, plot.bottom - 1), 1)
+            # The hull array's baffles astern: dotted edges.
+            observer = _sonar_observer(game)
+            course = getattr(observer, "course", None)
+            if course is not None:
+                astern = (float(course) + 180.0) % 360.0
+                for edge in (-config.SONAR_BAFFLE_HALF_DEG, config.SONAR_BAFFLE_HALF_DEG):
+                    bx = plot.x + round(((astern + edge) % 360.0) / 360 * (plot.w - 1))
+                    for y in range(plot.y, plot.bottom, 6):
+                        pygame.draw.line(screen, DIM, (bx, y), (bx, min(plot.bottom - 1, y + 2)))
     else:
         spectrum_rect = pygame.Rect(plot.x, panel.y + 56, plot.w, 42)
         pygame.draw.rect(screen, NAVY, spectrum_rect)

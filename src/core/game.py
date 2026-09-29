@@ -448,6 +448,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._reset_tasking()
         # Incidents at sea (save ``incidents``); none in custom missions.
         self._reset_incidents()
+        # A running baffle clearing of the Bridge (save ``baffle_clear``).
+        self.baffle_clear = None
         # Watches, fatigue and morale of the frigate crew (save ``watch``).
         self._reset_crew()
         # Post-mission debrief recording (transient, never saved).

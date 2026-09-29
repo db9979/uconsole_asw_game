@@ -213,6 +213,7 @@ Das Ruder kann einer Route aus bis zu 8 Wegpunkten folgen. Auf der Navigationsse
 | `W` | Autopilot: Zickzack-Suche, wachsendes Quadrat, aus |
 | `Rechtsklick` | Autopilot-Wegpunkt auf der Karte setzen |
 | `Backspace` | Autopilot-Route löschen |
+| `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist 30° beiderseits des Hecks taub) |
 
 Auf der Brücke steuert der Trackball das Ruder. `U` und `V` öffnen die direkte Zahleneingabe; die Simulation läuft währenddessen weiter. `Enter` bestätigt, `Esc` bricht ab.
 
@@ -333,6 +334,7 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 - TAS-Tiefe 20-260 m (`U`/`V` in 10-m-Schritten), begrenzt auf 260 m minus 4 m je Knoten eigener Fahrt. Ab 30 m Tiefe und in derselben Schicht wie das Ziel gewinnt es weitere 25 %.
 - Über 20 kn mit ausgebrachtem Kabel erleidet das Array einen dauerhaften FAULT.
 - Das Array folgt einer Kursänderung mit etwa 45 s Verzögerung; während es nachschwenkt, sind seine Peilungen weniger verlässlich.
+- **Toter Winkel (Baffles):** Das Bugsonar (HMS) ist 30° beiderseits des eigenen Hecks taub; ein Boot genau achteraus hört nur das Schleppsonar oder das VDS. Der BREITBAND-Wasserfall markiert die Grenzen des toten Winkels gepunktet. Klären Sie ihn von der Brücke mit `Strg+B` (zwei Minuten 60° nach Steuerbord, dann zurück) oder mit einer eigenen Kursänderung. Für den Gegner gilt dasselbe: Auch das Rumpfsonar eines U-Boots ist achtern taub, und ein KI-Boot, das sich nach einem Ping dicht im toten Winkel der Fregatte findet, folgt ihr dort, statt zu fliehen.
 - VDS (`Umschalt+Y` fiert oder hievt ihn, `Umschalt+B` wählt ihn): ein Körper an kurzem Kabel, 20-300 m tief, begrenzt auf 300 m minus 8 m je Knoten. `U`/`V` verstellen die Tiefe des jeweils gewählten Arrays. Ab 30 m Tiefe in der Schicht des Ziels gewinnt er dieselben 25 % wie das TAS. Er peilt eindeutig, eine VDS-Peilung löst die TAS-Seite also wie das Bugsonar auf. Ein Ping auf dem VDS sendet aus dem Körper: unter der Sprungschicht trifft der Schattenzonenverlust flache statt tiefe Ziele. Fieren und Hieven pausieren außerhalb 3-15 kn oder über Seegang 5; über 24 kn mit ausgebrachtem Körper geht er verloren (FAULT).
 
 ```text
@@ -425,7 +427,7 @@ Gefechtslage:
 
 - `T` schaltet den Löser hinter der Trainingshilfe um; der automatische Löser schreibt nie selbst einen Fix.
 - Keine wählbare Split-Window-Normalisierung (TPSW); stattdessen Verstärkung, Schwarzwert und Kontrast nutzen.
-- Kein harter blinder Baffle-Sektor; Eigenlärm ist eine weiche Keule.
+- Der tote Winkel blendet nur das passive Horchen; ein aktiver Ping des Bugsonars erfasst weiter den ganzen Kreis.
 
 ## 3 Waffenzentrale
 
@@ -1221,6 +1223,7 @@ Die obere Leiste zeigt die sieben Stationen des U-Boots als Reiter: `1` Führung
 | `Eingabe` | Funkraum: Lagemeldung an die Führung senden (Mast auf Sehrohrtiefe ausgefahren; die Fregatte kann die KW-Sendung peilen) |
 | `M` | Maschine, Seite Leckwehr: Wache jetzt ablösen |
 | `B` | Gefechtsstationen an/aus (alle Wachen im Dienst, aufmerksam, aber ermüdend) |
+| `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist achtern taub) |
 | `0` | Wetterseite des U-Boots (0 oder Esc schließt) |
 | `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
 

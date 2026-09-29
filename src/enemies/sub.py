@@ -7,6 +7,7 @@ Kavitation/Breitband-Level) – Details in docs/contacts-db.md.
 import math
 import random
 
+from src.core.baffles import in_baffles
 from src.core import config
 from src.physics import submarine as sub_physics
 from src.core import detrand
@@ -344,6 +345,21 @@ class Sub:
             return
         if self.torpedo_alarm_left < 0.0:
             self.torpedo_alarm_left = self.reaction_delay_s()
+
+    def _baffle_trail(self, observation):
+        """The hunter's course when this boat sits in its baffles close
+        astern (and no torpedo is after it), else None: a boat there is
+        deaf to the hull sonar, so it trails instead of running."""
+        if (observation is None or observation.course is None
+                or observation.range_nm is None or observation.x is None
+                or observation.range_nm > config.SUB_BAFFLE_TRAIL_NM
+                or self.memory["last_torpedo_age"] <= config.SUB_EVADE_DURATION_S):
+            return None
+        from_hunter = math.degrees(math.atan2(self.x - observation.x,
+                                              -(self.y - observation.y))) % 360.0
+        if not in_baffles(observation.course, from_hunter):
+            return None
+        return float(observation.course) % 360.0
 
     def _react_to_torpedo(self) -> None:
         """W2: Feindtorpedo gehört -> harte Ausweichreaktion + ggf. Dekoy."""
@@ -973,11 +989,18 @@ class Sub:
             bearing = self.memory["contact_bearing"]
             target_course = (self.course if bearing is None else
                              (bearing + 180.0 + self.evade_offset) % 360.0)
+            trail = self._baffle_trail(tactical_observation)
+            if trail is not None:
+                target_course = trail
             diff = config.angle_diff_deg(target_course, self.course)
             self.course = (self.course + config.clamp(
                 diff, -self.motion.turn_rate_deg_s * 2.5 * dt,
                 self.motion.turn_rate_deg_s * 2.5 * dt)) % 360.0
-            if (self.mission_orders is not None
+            if trail is not None:
+                # Tucked into the hunter's baffles: follow it quietly.
+                self.speed = min(self.speed_for_state(), max(
+                    3.0, float(tactical_observation.speed_kn or 0.0) - 1.0))
+            elif (self.mission_orders is not None
                     and self.memory["last_torpedo_age"] > config.SUB_EVADE_DURATION_S):
                 # A mission boat slips away from a ping quietly below the
                 # layer; only a torpedo in the water makes it run.

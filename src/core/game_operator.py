@@ -9,6 +9,7 @@ import math
 
 
 from src.core import boat_threat
+from src.core import baffles
 from src.core import config
 from src.ship import route as route_model
 from src.core.commands import STATION_PAGES, station_page_step
@@ -170,6 +171,32 @@ class OperatorMixin:
             return blocked
         self.cancel_route()
         return "ok"
+
+    def clear_baffles(self) -> str:
+        """Bridge: swing the ordered course to hear into the own baffles,
+        then come back (``baffles.py``)."""
+        blocked = self._route_order_check()
+        if blocked:
+            return blocked
+        state = baffles.start(self.ship.target_course, self.sim_t)
+        result = self._set_course_order(state[1], "bridge")
+        if result != "ok":
+            return result
+        self.baffle_clear = state
+        text = message("runtime.baffles.clearing", course=f"{state[1]:03.0f}",
+                       back=f"{state[0]:03.0f}")
+        self.feed.add(self.world.format_time(), "navigation", text)
+        self.flash(text, 4.0)
+        return "ok"
+
+    def _steer_baffle_clear(self) -> None:
+        """Return to the previous course once the baffles are cleared."""
+        state, back = baffles.step(self.baffle_clear, self.ship.target_course, self.sim_t)
+        self.baffle_clear = state
+        if back is not None and not self.damage.station_down("bridge"):
+            self.ship.target_course = back
+            self.feed.add(self.world.format_time(), "navigation", message(
+                "runtime.baffles.cleared", course=f"{back:03.0f}"))
 
     def cancel_route(self) -> None:
         """Drop an active route (a helm order or the rudder took over)."""

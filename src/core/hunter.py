@@ -368,6 +368,8 @@ def escort_course(game):
 def bridge(game, found) -> str:
     if _nearest_threat(game) is not None:
         return AutocrewController._bridge(game)
+    if getattr(game, "baffle_clear", None) is not None:
+        return "monitoring"                 # let the baffle clearing finish
     ship = game.ship
     escort = escort_course(game)
     if escort is not None and found is not None:

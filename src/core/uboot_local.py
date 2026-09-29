@@ -612,6 +612,11 @@ def _command_key(game, current, key, mods) -> None:
     elif page == "UBOOT_DAMAGE" and key == pygame.K_m:
         if order_allowed(game, "uboot_watch_change") and game.boat_change_watch() is not True:
             game.flash(message("crew.watch_blocked"), 2.0)
+    elif key == pygame.K_b and mods & pygame.KMOD_CTRL:
+        if order_allowed(game, "uboot_clear_baffles"):
+            result = opfor.clear_baffles(game, current)
+            if result is not True:
+                game.flash(message("uboot.local.baffles_rejected"), 2.0)
     elif key == pygame.K_b and not mods & pygame.KMOD_SHIFT:
         if order_allowed(game, "uboot_action_stations"):
             game.boat_set_action_stations(not current.watch.action_stations)

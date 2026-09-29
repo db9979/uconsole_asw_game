@@ -650,6 +650,17 @@ SONAR_TOWED_AVAILABLE_PAYOUT = 0.95
 SONAR_TOWED_SETTLE_S = 30.0
 SONAR_TOWED_HEADING_LAG_S = 45.0
 SONAR_TOWED_SELF_NOISE_FACTOR = 0.35
+# Baffles: every hull-mounted passive array (the frigate's bow sonar, a
+# submarine's) is deaf in this half-angle around its own stern; towed
+# arrays and the VDS still hear there.  Clearing the baffles turns the
+# ordered course by BAFFLE_CLEAR_TURN_DEG for BAFFLE_CLEAR_HOLD_S and then
+# returns to the previous course.
+SONAR_BAFFLE_HALF_DEG = 30.0
+BAFFLE_CLEAR_TURN_DEG = 60.0
+BAFFLE_CLEAR_HOLD_S = 120.0
+# An AI submarine that finds itself in the frigate's baffles inside this
+# range trails it there instead of running away.
+SUB_BAFFLE_TRAIL_NM = 6.0
 # Variable-depth sonar (VDS): a body lowered astern on a short cable. It is
 # unambiguous like the hull array, sits away from the hull's noise and can be
 # put below the layer. Handling (lowering and recovery) needs 3-15 kn and a

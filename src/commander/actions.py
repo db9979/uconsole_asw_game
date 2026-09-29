@@ -45,6 +45,10 @@ def _bridge_route_clear(game, params, _bindings=None):
     return game.clear_route()
 
 
+def _bridge_clear_baffles(game, params, _bindings=None):
+    return game.clear_baffles()
+
+
 def _bound(bindings, ref):
     return bindings.get(ref) if type(ref) is str else None
 
@@ -609,6 +613,10 @@ def _uboot_set_course(game, boat, params, _bindings):
     return boat.sub.set_orders(course=params["course"])
 
 
+def _uboot_clear_baffles(game, boat, params, _bindings):
+    return opfor.clear_baffles(game, boat)
+
+
 def _uboot_set_speed(game, boat, params, _bindings):
     return boat.sub.set_orders(speed=params["speed_kn"])
 
@@ -792,6 +800,7 @@ def _uboot_esm_plot(game, boat, params, _bindings):
 _UBOOT_ACTION_HANDLERS = {
     "acknowledge": lambda game, boat, params, _bindings: params == {},
     "uboot_set_course": _uboot_set_course,
+    "uboot_clear_baffles": _uboot_clear_baffles,
     "uboot_set_speed": _uboot_set_speed,
     "uboot_set_depth": _uboot_set_depth,
     "uboot_fire": _uboot_fire,
@@ -836,6 +845,7 @@ _V2_ACTION_HANDLERS = {
     "bridge_route_add": _bridge_route_add,
     "bridge_route_pattern": _bridge_route_pattern,
     "bridge_route_clear": _bridge_route_clear,
+    "bridge_clear_baffles": _bridge_clear_baffles,
     "sonar_classify": _sonar_classify,
     "sonar_set_release": _sonar_set_release,
     "helicopter_qualify": _helicopter_qualify,

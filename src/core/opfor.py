@@ -15,7 +15,7 @@ import math
 
 from src.audio.synthesis import bearing_pan
 from src.core.callouts import CalloutLog
-from src.core import config, detrand
+from src.core import baffles, config, detrand
 from src.core.boat_esm import BoatESM
 from src.core.boat_radio import BoatRadio
 from src.core.crew import CrewState
@@ -100,7 +100,8 @@ class CrewOrders:
               "breakup_heard": "sonar", "hull_hit": "schaden",
               "test_depth_near": "navigation", "test_depth_over": "navigation",
               "incident_net": "funk", "incident_front": "funk",
-              "incident_whales": "funk", "net_fouled": "navigation"}
+              "incident_whales": "funk", "net_fouled": "navigation",
+              "baffles_clearing": "navigation", "baffles_cleared": "navigation"}
 
     def __init__(self):
         self.silent = False
@@ -132,6 +133,8 @@ class CrewOrders:
         self.wires = {}
         self._known_torpedoes = set()
         self._last_course = None
+        # A running baffle clearing (``baffles.py``), or None.
+        self.baffle_clear = None
         # Local fire-control presets (the web sends them with each shot).
         self.torpedo_depth = None
         self.salvo = 1
@@ -195,7 +198,9 @@ class CrewOrders:
             events=[[key, dict(values)] for key, values in self._events],
             battery_state=self._battery_state, keel_warned=self._keel_warned,
             obstacle_warned=self._obstacle_warned,
-            obstacle_ahead_nm=self.obstacle_ahead_nm)
+            obstacle_ahead_nm=self.obstacle_ahead_nm,
+            baffle_clear=(None if self.baffle_clear is None
+                          else [float(value) for value in self.baffle_clear]))
 
     def restore(self, data: dict) -> None:
         """Restore a validated ``crew.orders`` block in place."""
@@ -226,6 +231,8 @@ class CrewOrders:
         self._keel_warned = data["keel_warned"]
         self._obstacle_warned = data["obstacle_warned"]
         self.obstacle_ahead_nm = data["obstacle_ahead_nm"]
+        self.baffle_clear = (None if data["baffle_clear"] is None
+                             else [float(value) for value in data["baffle_clear"]])
 
 
 class CrewWire:
@@ -661,11 +668,29 @@ def hear_breakup(game, boat, x: float, y: float, depth: float, key: int) -> None
     boat.orders.event("breakup_heard", bearing=f"{round(bearing) % 360:03d}")
 
 
+def clear_baffles(game, boat: CrewedBoat):
+    """Swing the ordered course to hear into the own baffles, then come
+    back (``baffles.py``); True or a refusal code."""
+    sub = boat.sub
+    state = baffles.start(sub.order_course, game.sim_t)
+    result = sub.set_orders(course=state[1])
+    if result is not True:
+        return result
+    boat.orders.baffle_clear = state
+    boat.orders.event("baffles_clearing", course=f"{state[1]:03.0f}",
+                      back=f"{state[0]:03.0f}")
+    return True
+
+
 def update_crew(game, boat: CrewedBoat) -> None:
     """Crew warnings from the boat's own state (0.25 s cadence)."""
     sub, orders = boat.sub, boat.orders
     if sub.sunk:
         return
+    orders.baffle_clear, back = baffles.step(orders.baffle_clear, sub.order_course,
+                                             game.sim_t)
+    if back is not None and sub.set_orders(course=back) is True:
+        orders.event("baffles_cleared", course=f"{back:03.0f}")
     battery = battery_fraction(sub)
     if battery is not None:
         state = ("empty" if battery <= config.UBOOT_BATTERY_EMPTY_FRACTION

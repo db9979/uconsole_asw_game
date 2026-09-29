@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.95**
+Aktuelle Version: **1.3.97**
 
-Version 1.3.95 schließt neun Verbesserungen ab, jede für beide Seiten: das
+Version 1.3.97 schließt neun Verbesserungen ab, jede für beide Seiten: das
 Fluten der Torpedorohre ist hörbar, Ereignisse auf See (Treibnetze,
 Wetterfronten, Frachter ohne AIS, Wale), Realismusstufen mit Wertungsfaktor,
 ein Logbuch mit Bestwerten und Auszeichnungen, der tote Winkel achteraus und

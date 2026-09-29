@@ -17,7 +17,11 @@ export function mapPayload(role) {
     assets: payload.route.points.map((row) => ({x: row.x, y: row.y, waypoint: true,
       display: t("bridge_route_point", {number: row.number})})), bearingLogs: [], fixes: []};
   if (role === "weapons") return {own: payload.navigation, observations: payload.tactical, assets: payload.active_assets, bearingLogs: [], fixes: []};
-  if (role === "opz") return {own: payload.own_assets.ship, observations: [...payload.observations, ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : []), ...payload.own_assets.weapons], bearingLogs: [], fixes: []};
+  if (role === "opz") {
+    // Reports inside a fusion are drawn only while managing the picture.
+    const fused = new Set(payload.fusions.flatMap((row) => row.members));
+    return {own: payload.own_assets.ship, observations: [...payload.observations.filter((row) => S.opzManage || !fused.has(row.ref)), ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : []), ...payload.own_assets.weapons], bearingLogs: [], fixes: []};
+  }
   if (role === "radio") return {own: payload.navigation, observations: payload.tactical, assets: [], bearingLogs: payload.logged_bearings, fixes: payload.logged_fixes};
   if (isBoatCommand(role)) {
     // The boat's own position (legitimate truth) and its own sonar contacts only.

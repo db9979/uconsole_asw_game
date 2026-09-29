@@ -9,6 +9,8 @@ export function buildDisplayModel(state) {
   const emptyOwn = {x: null, y: null, course: null, speed: null, target_course: null, target_speed: null, damage: [], inventory: {}, helo: {}};
   const ownship = structuredClone(emptyOwn);
   let observations = [];
+  // OPZ reports inside a fusion: on the map only while managing the picture.
+  let fused = new Set();
   const payload = state[state.role];
   if (state.role === "bridge") { Object.assign(ownship, payload.navigation); observations = payload.tactical_summary; }
   if (isSonar(state.role)) observations = payload.observations;
@@ -22,6 +24,7 @@ export function buildDisplayModel(state) {
   if (state.role === "damage") ownship.damage = payload.compartments.map((room) => ({...room, teams: payload.teams.filter((team) => team.compartment === room.key).map((team) => team.team)}));
   if (state.role === "opz") {
     const sourceClasses = new Map(payload.source_classifications.map((row) => [row.ref, row.classification]));
+    fused = new Set(payload.fusions.flatMap((row) => row.members));
     observations = [...payload.observations, ...payload.fusions].map((row) => ({...row,
       classification: sourceClasses.get(row.ref) ?? null}));
     Object.assign(ownship, payload.own_assets.ship);
@@ -50,7 +53,7 @@ export function buildDisplayModel(state) {
     can_classify: isSonar(state.role) || state.role === "helicopter" || (state.role === "opz" &&
       (row.source.startsWith("RADAR") || row.source.startsWith("SONAR") ||
        ["HOJ", "FUSION"].includes(row.source))),
-    can_propose: state.role === "sonar"})).filter((row) => state.role !== "opz" || S.opzManage || !S.opzSuppressed.has(row.ref));
+    can_propose: state.role === "sonar"})).filter((row) => state.role !== "opz" || S.opzManage || (!S.opzSuppressed.has(row.ref) && !fused.has(row.ref)));
   return {version: state.version, session: state.session, epoch: state.epoch,
     revision: state.revision, seq: state.seq, phase: state.phase,
     chart_revision: state.chart_revision, clock: state.clock,

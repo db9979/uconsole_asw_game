@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.95**
+Current release: **1.3.97**
 
-Release 1.3.95 completes nine improvements, each for both sides: submarines
+Release 1.3.97 completes nine improvements, each for both sides: submarines
 flooding their tubes are heard, incidents at sea (drift nets, weather fronts,
 freighters without AIS, whales), realism levels with a score factor, a logbook
 with best scores and awards, baffles and baffle clearing, free radio calls to

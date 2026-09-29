@@ -15,6 +15,7 @@ from src.commander.projections import ROLE_NAMES, STATE_MAX_BYTES
 from src.commander.server import OPFOR_ROLES, ROLES
 from src.core import config
 from src.core.game import Game
+from src.ship.ship import NOISE_LEVEL_MAX
 from src.sonar.sonar import Contact
 from test_commander_bridge import Server, observe
 from src.commander.bridge import CommanderBridge
@@ -119,9 +120,10 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
                  "radar_blips", "designated_target_ref", "own_assets", "defense",
                  "asm_observations"},
         "radio": {"observations", "logged_fixes", "logged_bearings", "messages",
-                   "station_down", "navigation", "tactical", "tasks", "can_request_ras",
-                   "can_contact_report", "can_request_support"},
-        "engine": {"propulsion", "machinery", "controls", "environment_effects"},
+                  "station_down", "navigation", "tactical", "tasks", "can_request_ras",
+                  "can_contact_report", "can_request_support"},
+        "engine": {"propulsion", "machinery", "controls", "environment_effects",
+                   "compartments"},
         "helicopter": {"asset", "waypoint", "buoys", "buoy_observations", "acoustic", "readiness", "navigation",
                        "tactical", "target_choices", "dip_observations",
                        "dip_environment"},
@@ -168,7 +170,12 @@ def test_control_projection_fields_are_bounded_and_do_not_expose_audio_actions(p
     assert server.v2_states["engine"]["engine"]["controls"] == {
         "orders": ["ASTERN", "STOP", "SLOW", "HALF", "FULL", "FLANK"],
         "plants": ["AUTO", "DIESEL", "TURBINE"],
-        "speed_max_kn": config.SHIP_SPEED_MAX_KN}
+        "speed_max_kn": config.SHIP_SPEED_MAX_KN,
+        "rpm_max": pytest.approx(game.ship.max_rpm()),
+        "noise_max": pytest.approx(NOISE_LEVEL_MAX)}
+    rooms = server.v2_states["engine"]["engine"]["compartments"]
+    assert [row["key"] for row in rooms] == list(game.damage.compartments)
+    assert all(set(row) == {"key", "state", "flood", "fire", "teams"} for row in rooms)
     assert "audition_mode" not in sonar
 
 

@@ -171,7 +171,7 @@ ROLE_SHAPES = {
     "radio": ("observations", "logged_fixes", "logged_bearings", "messages", "station_down",
               "navigation", "tactical", "tasks", "can_request_ras",
               "can_contact_report", "can_request_support"),
-    "engine": ("propulsion", "machinery", "controls", "environment_effects"),
+    "engine": ("propulsion", "machinery", "controls", "environment_effects", "compartments"),
     "helicopter": ("asset", "waypoint", "buoys", "buoy_observations", "acoustic",
                    "navigation", "tactical", "target_choices", "readiness",
                    "dip_observations", "dip_environment"),

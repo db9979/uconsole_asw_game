@@ -1,4 +1,5 @@
 import { $, heloStates } from "../core/base.js";
+import { S } from "../state/store.js";
 import { enumText, number, t, unit } from "../core/format.js";
 import { actionButton, fillFireTargets, metrics, position, stationRows, tacticalEntries, yesNo } from "../views/dom.js";
 
@@ -15,11 +16,17 @@ export function renderOpzStation(payload) {
     ["opz_ciws_release", yesNo(payload.defense.ciws_released)]]);
   $("opz-ciws").checked = payload.defense.ciws_released;
   fillFireTargets("opz-fire-target", payload.asm_observations);
-  stationRows($("opz-observations"), payload.observations, tacticalEntries);
-  stationRows($("opz-fusions"), payload.fusions, (row) => [...tacticalEntries(row), ["fusion_members", row.members.join(", ")]]);
-  // Correlation suggestions: the operator fuses one through the ordinary
-  // manual fusion action or dismisses it; nothing is fused by itself.
+  // Reports inside a fusion stand behind it: listed only while managing.
+  const fused = new Set(payload.fusions.flatMap((row) => row.members));
   const labels = new Map(payload.observations.map((row) => [row.ref, row.label]));
+  const sources = new Map(payload.observations.map((row) => [row.ref, row.source]));
+  stationRows($("opz-observations"), payload.observations.filter((row) => S.opzManage || !fused.has(row.ref)), tacticalEntries);
+  stationRows($("opz-fusions"), payload.fusions, (row) => [...tacticalEntries(row),
+    ["fusion_sources", sourceNames(row.members.map((ref) => sources.get(ref)))],
+    ["fusion_members", row.members.map((ref) => labels.get(ref) ?? ref).join(", ")]]);
+  // Correlation suggestions: the OPZ fuses unambiguous matches by itself;
+  // the operator fuses a remaining one through the ordinary manual fusion
+  // action or dismisses it.
   stationRows($("opz-suggestions"), payload.suggestions, (row) => [
     ["reference", row.refs.map((ref) => labels.get(ref) ?? ref).join(" + ")],
     ["bearing", unit(row.bearing, "\u00b0", 0)],
@@ -43,6 +50,24 @@ export function renderOpzStation(payload) {
         ["position", position(asset)], ["course", unit(asset.course, "\u00b0", 0)], ["fuel", unit(asset.fuel_s, "s", 0)],
         ["torpedoes", number(asset.torpedoes, 0)], ["buoys", number(asset.buoys, 0)]]);
   renderMpa(payload.own_assets.mpa);
+}
+
+// Sensor groups of report sources, in display order (``source_group`` in
+// src/sensors/fusion.py).
+const sourceGroups = "radar visual ais esm sonar helo buoy mpa hfdf hoj datalink".split(" ");
+function sourceGroup(source) {
+  if (typeof source !== "string") return "datalink";
+  if (source.startsWith("SONAR-DIP") || source.startsWith("HELO")) return "helo";
+  if (source.startsWith("SONAR-BUOY")) return "buoy";
+  if (source.startsWith("SONAR")) return "sonar";
+  if (source.startsWith("RADAR-MPA")) return "mpa";
+  if (source.startsWith("RADAR")) return "radar";
+  if (source.startsWith("HFDF")) return "hfdf";
+  return {LOOKOUT: "visual", AIS: "ais", ESM: "esm", HOJ: "hoj"}[source] || "datalink";
+}
+export function sourceNames(list) {
+  const groups = new Set(list.map(sourceGroup));
+  return sourceGroups.filter((group) => groups.has(group)).map((group) => t(`source_${group}`)).join(" \u00b7 ");
 }
 
 // The patrol aircraft: state, stores and the orders the OPZ may give it.

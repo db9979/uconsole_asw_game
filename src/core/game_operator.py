@@ -32,6 +32,7 @@ from src.weapons.torpedo import Torpedo
 from src.weapons.asw import MAX_TOWED_DECOYS, TowedAcousticDecoy
 # Shared display/help constants and helpers (re-exported for tests/tools).
 from src.core.game_shared import SONAR_BAND_PRESETS, TMA_ACCEPT_MIN_FIT
+from src.sensors.fusion import live_members
 # Names tests and tools import from ``src.core.game`` (kept as re-exports).
 
 
@@ -1666,18 +1667,21 @@ class OperatorMixin:
     def _contact_fusions(self, contact) -> list:
         """Intact OPZ fusions holding a report bound to this sonar contact.
 
-        Read-only: a fusion counts only while all its member reports are
-        current (the condition ``OPZFusion.prune`` applies), so the result
+        Read-only: a fusion counts only while its member reports are current
+        (``live_members``, the condition ``OPZFusion.prune`` applies), so the result
         never depends on whether a frame pruned the register first.
         """
         if contact is None or not self.opz_fusion.fusions:
             return []
         current = {item.observation_id for item in self.opz_source_observations()}
         bindings = self._opz_source_bindings
-        return [fusion for _, fusion in sorted(self.opz_fusion.fusions.items())
-                if set(fusion.members) <= current
-                and any(bindings.get(member) is contact
-                        for member in fusion.members)]
+        fusions = []
+        for _, fusion in sorted(self.opz_fusion.fusions.items()):
+            members = live_members(fusion, current)
+            if members is not None and any(bindings.get(member) is contact
+                                           for member in members):
+                fusions.append(fusion)
+        return fusions
 
     def weapon_classification(self, contact) -> str | None:
         """Operator class that fire control uses for one sonar contact.

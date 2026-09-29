@@ -89,7 +89,7 @@ SIM_ORDER = (
     "_update_aviation", "_update_raiders", "_update_air_defense",
     "_update_enemy_torpedoes", "_update_player_torpedoes", "_update_asrocs",
     "_update_depth_charges", "_update_sensors", "_update_esm_picture", "_update_radio_picture",
-    "_update_damage_and_mission", "_record_simlog_state",
+    "_update_opz_picture", "_update_damage_and_mission", "_record_simlog_state",
 )
 
 
@@ -1294,6 +1294,7 @@ class SimMixin:
         if self._radio_acc >= .5:
             self._radio_acc = 0.0
             self._update_radio_picture()
+        self._update_opz_picture()
         if self._slow_acc >= .5:
             slow_dt = self._slow_acc
             self._slow_acc = 0.0

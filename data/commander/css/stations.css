@@ -202,8 +202,8 @@
 .console-lamp[data-level="caution"] .console-lamp-value { color: var(--caution); }
 .console-lamp[data-level="alarm"] .console-lamp-value { color: var(--alarm); }
 .console-lamp[data-level="alarm"] .console-led { animation: pulse .9s steps(1) infinite; }
-#uboot-engine-master[data-state="caution"] { color: var(--caution); }
-#uboot-engine-master[data-state="alarm"] { color: var(--alarm); }
+#uboot-engine-master[data-state="caution"], #engine-master[data-state="caution"] { color: var(--caution); }
+#uboot-engine-master[data-state="alarm"], #engine-master[data-state="alarm"] { color: var(--alarm); }
 .console-annunciator, .console-dials { flex: none; }
 .console-dials .radio-scope-frame { flex: none; height: clamp(10rem, 22vh, 17rem); }
 .console-lower { display: grid; flex: 1 0 13rem; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: .55rem; min-height: 13rem; }
@@ -244,15 +244,35 @@
 .console-room-led { display: flex; align-items: center; gap: .3rem; overflow: hidden; color: var(--text-faint); font-size: .62rem; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; --lamp: var(--line); }
 .console-room-led::before { content: ""; flex: 0 0 auto; width: .55rem; height: .55rem; border-radius: 50%; background: var(--lamp); }
 .console-room-led[data-level="on"] { --lamp: var(--live); color: var(--text-dim); }
+.console-room-led[data-level="caution"] { --lamp: var(--caution); color: var(--caution); }
 .console-room-led[data-level="alarm"] { --lamp: var(--alarm); color: var(--alarm); }
 .console-room-led:not([data-level="off"])::before { box-shadow: 0 0 .4rem var(--lamp); }
 .console-room[data-down="true"] { border-color: var(--alarm); box-shadow: inset 0 0 0 1px var(--alarm); }
 .console-room[data-down="true"] .console-room-value { color: var(--alarm); }
+/* Frigate: one fuel bunker with its readouts, and the ship's sections from bow
+   to stern between the two hull sides (starboard above, port below). */
+.console-lower-ship { grid-template-columns: minmax(0, .8fr) minmax(0, 1.6fr); }
+.console-fuel-unit { min-height: 0; }
+.console-fuel { display: grid; grid-template-columns: minmax(3.5rem, auto) minmax(0, 1fr); gap: .55rem; flex: 1; min-height: 9rem; }
+.console-readouts { display: grid; align-content: space-evenly; gap: .3rem; min-width: 0; }
+.console-readout { display: grid; gap: .05rem; min-width: 0; padding: .25rem .45rem; background: var(--scope); border: 1px solid var(--line); border-radius: var(--radius); }
+.console-readout span { overflow: hidden; color: var(--text-dim); font-size: .62rem; letter-spacing: .06em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.console-readout strong { overflow: hidden; color: var(--live); font: 600 var(--font-sm) var(--font-mono); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.console-rooms.console-ship { grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto minmax(8rem, 1fr) auto; border-radius: 3.2rem 1rem 1rem 3.2rem; }
+.console-ship .console-room[data-side] { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; gap: .6rem; padding: .25rem .6rem; border-radius: 3px; }
+.console-ship .console-room[data-side] .console-room-leds { display: flex; width: auto; margin: 0; }
+.console-ship .console-room:not([data-side]) { border-radius: 3px; }
+.console-ship .console-room[data-key="sonar"] { border-radius: 2.6rem 3px 3px 2.6rem; }
+.console-ship .console-room[data-key="flightdeck"] { border-radius: 3px .8rem .8rem 3px; }
+.console-ship .console-room[data-side="starboard"] { border-radius: 2.6rem .8rem 3px 3px; }
+.console-ship .console-room[data-side="port"] { border-radius: 3px 3px .8rem 2.6rem; }
 @media (max-width: 899px) {
   .engine-console:not([hidden]) { display: flex; flex-direction: column; }
   .console-dials .radio-scope-frame { height: min(80vw, 22rem); }
   .console-lower { display: flex; flex-direction: column; }
   .console-rooms { grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: 1rem; }
+  .console-rooms.console-ship { grid-template-columns: repeat(4, minmax(0, 1fr)); border-radius: 1rem; }
+  .console-fuel { grid-template-columns: 1fr; }
   .console-room:first-child, .console-room:last-child { border-radius: 3px; }
 }
 

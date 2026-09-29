@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.87
+
+Version 1.3.87 gibt dem Maschinenraum der Fregatte im Browser denselben
+Maschinenleitstand wie dem U-Boot: eine Warn- und Meldetafel aus Statuslampen
+für Wellen, Anlage, Kavitation, Kraftstoff, Fahrtbegrenzung, Maschinenschaden,
+Brände und Wassereinbruch an Bord, runde Instrumente für Fahrt,
+Wellendrehzahl, Eigenlärm, Kraftstoff, Rollen und Stampfen, den
+Kraftstoffbunker mit Ausdauer und Reichweite und ein Bild der Schiffsabschnitte
+vom Bug zum Heck mit Wasserstand, Brandlampen und Reparaturtrupps. Der
+Leitstand zeigt nur an; die Befehle bleiben im Stationsbereich.
+
 ## 1.3.86
 
 Version 1.3.86 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach

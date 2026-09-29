@@ -14,20 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.86**
+Aktuelle Version: **1.3.87**
 
-Version 1.3.86 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach
-ihrem Mittelpunkt sortiert gezeichnet, sodass aus vielen Winkeln eine ferne
-Fläche über eine nahe gemalt wurde: Decks schienen durch Aufbauten, die ferne
-Rumpfseite durch die nahe, und Schiffe wirkten hohl. Jedes Modell wird jetzt
-einmal in eine binäre Raumteilung zerlegt, die von jeder Seite eine exakte
-Reihenfolge von hinten nach vorn ergibt, auf der uConsole wie im Browser; die
-Rumpfbeplankung ist geschlossen und zeigt nach außen, und Rümpfe, U-Boote und
-Flugzeugrümpfe haben ein feineres Raster. Aufbauten sind keine Klötze mehr:
-Sie steigen in Decksstufen an, bei Kriegsschiffen eingezogen und geneigt, bei
-Passagierschiffen in Terrassen zurückgesetzt, bei Handelsschiffen mit kurzem
-Steuerhaus und Brückennocken oben; U-Boot-Türme sind stromlinienförmig.
-Spielstände bleiben v32.
+Version 1.3.87 gibt dem Maschinenraum der Fregatte im Browser denselben
+Maschinenleitstand wie dem U-Boot: eine Warn- und Meldetafel aus Statuslampen
+für Wellen, Anlage, Kavitation, Kraftstoff, Fahrtbegrenzung, Maschinenschaden,
+Brände und Wassereinbruch an Bord, runde Instrumente für Fahrt,
+Wellendrehzahl, Eigenlärm, Kraftstoff, Rollen und Stampfen, den
+Kraftstoffbunker mit Ausdauer und Reichweite und ein Bild der Schiffsabschnitte
+vom Bug zum Heck mit Wasserstand, Brandlampen und Reparaturtrupps. Der
+Leitstand zeigt nur an; die Befehle bleiben im Stationsbereich.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -111,7 +107,8 @@ Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Scha
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-sonar-desktop.png"><img src="docs/screenshots/commander-v2-de-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
 </tr>
 <tr>
-<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-engine-desktop.png" alt="Fregatten-Maschinenraum: Maschinenleitstand"></a><br><sub>Fregatten-Maschinenraum: Maschinenleitstand</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
 </tr>
 </table>
 

@@ -13,12 +13,8 @@ import { drawEmpty, visualContext } from "./visual-common.js";
 import { schedule } from "../core/scheduler.js";
 import { drawRadioVisual } from "../stations/radio.js";
 import { drawUbootEngineDials, renderUbootEngineConsole } from "../stations/uboot-engine-room.js";
+import { drawEngineDials, renderEngineConsole } from "../stations/engine-room.js";
 
-function gauge(context, x, y, radius, value, maximum, label) {
-  context.strokeStyle = palette().line; context.lineWidth = 6; context.beginPath(); context.arc(x, y, radius, Math.PI, Math.PI * 2); context.stroke();
-  context.strokeStyle = palette().accent; context.beginPath(); context.arc(x, y, radius, Math.PI, Math.PI + Math.PI * Math.max(0, Math.min(1, value / Math.max(1e-6, maximum)))); context.stroke();
-  context.fillStyle = palette().text; context.textAlign = "center"; context.fillText(label, x, y + 18);
-}
 function drawDamageVisual() {
   const plot = visualContext("damage-schematic"), payload = S.v2State.damage;
   S.damageHits = [];
@@ -41,17 +37,6 @@ function drawDamageVisual() {
   });
   $("damage-schematic-text").replaceChildren(...payload.compartments.map((room) => node("p", t("damage_compartment_equivalent", {name: room.name, flood: number(room.flood, 0), fire: number(room.fire, 0), flood_trend: number(room.trend.flood_rate, 2), fire_trend: number(room.trend.fire_rate, 2), teams: payload.teams.filter((team) => team.compartment === room.key).map((team) => team.team).join(", ") || t("station_none")}))));
   if (!payload.compartments.length) $("damage-schematic-text").textContent = t("visual_empty");
-}
-function drawEngineVisual() {
-  const plot = visualContext("engine-instruments"), payload = S.v2State.engine;
-  if (!plot) return;
-  const p = payload.propulsion, m = payload.machinery, e = payload.environment_effects;
-  const radius = Math.min(65, plot.width / 10, plot.height / 3);
-  gauge(plot.context, plot.width * .18, plot.height * .55, radius, p.rpm, 300, `${number(p.rpm, 0)} RPM`);
-  gauge(plot.context, plot.width * .5, plot.height * .55, radius, p.speed, payload.controls.speed_max_kn, `${number(p.speed, 1)} kn`);
-  gauge(plot.context, plot.width * .82, plot.height * .55, radius, m.noise, 1, t("noise"));
-  plot.context.fillStyle = p.cavitating ? palette().red : palette().accent; plot.context.textAlign = "center"; plot.context.fillText(`${t(`telegraph_${p.telegraph.toLowerCase()}`)} / ${t(p.cavitating ? "cavitating" : "not_cavitating")}`, plot.width / 2, 22);
-  $("engine-instruments-text").textContent = t("engine_equivalent", {telegraph: t(`telegraph_${p.telegraph.toLowerCase()}`), rpm: number(p.rpm, 0), speed: number(p.speed, 1), target: number(p.target_speed, 1), cap: number(m.effective_speed_cap, 1), noise: number(m.noise, 2), roll: number(e.roll, 1), pitch: number(e.pitch, 1)});
 }
 function drawElokaVisual() {
   const plot = visualContext("eloka-scope"), payload = S.v2State.eloka;
@@ -142,7 +127,7 @@ function drawRoleVisuals() {
   if (role === "helicopter") drawHelicopterAcoustic();
   if (isSonar(role)) drawSonarVisuals();
   if (role === "damage") drawDamageVisual();
-  if (role === "engine") drawEngineVisual();
+  if (role === "engine") { renderEngineConsole(S.v2State.engine); drawEngineDials(); }
   if (role === "eloka") drawElokaVisual();
   if (role === "weapons") drawWeaponsVisual();
   if (role === "radio") drawRadioVisual();

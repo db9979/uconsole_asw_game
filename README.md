@@ -12,19 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.86**
+Current release: **1.3.87**
 
-Release 1.3.86 makes the 3D models solid. Until now their faces were drawn
-in the order of their centres, so from many angles a far face was painted over
-a near one: decks showed through superstructures, the far side of a hull
-through the near side, and ships looked hollow. Every model is now split once
-into a binary space partition that gives, from any side, an exact order from
-back to front, on the uConsole and in the browser alike; hull plating is
-closed and faces outward, and hulls, submarines and fuselages are drawn with
-a finer grid. Deckhouses are no longer single blocks: they rise in deck tiers,
-warships drawn in and raked, passenger ships stepping back in terraces,
-merchant ships with a short wheelhouse and bridge wings on top; submarine
-sails are streamlined. Saves stay v32.
+Release 1.3.87 gives the frigate's engine room in the browser the same
+machinery control console as the submarine's: an annunciator panel of status
+lamps for shafts, plant, cavitation, fuel, speed limit, machinery damage,
+fires and flooding aboard, round gauges for speed, shaft RPM, own noise, fuel,
+roll and pitch, the fuel bunker with endurance and range, and a mimic of the
+ship's sections from bow to stern with water level, fire lamps and repair
+teams. The console only shows; the orders stay in the station panel.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -108,7 +104,8 @@ More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control 
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-sonar-desktop.png"><img src="docs/screenshots/commander-v2-en-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
 </tr>
 <tr>
-<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-en-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-uboot-engine-desktop.png" alt="Submarine engine room: machinery control console"></a><br><sub>Submarine engine room: machinery control console</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-engine-desktop.png" alt="Frigate engine room: machinery control console"></a><br><sub>Frigate engine room: machinery control console</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-uboot-engine-desktop.png" alt="Submarine engine room: machinery control console"></a><br><sub>Submarine engine room: machinery control console</sub></td>
 </tr>
 </table>
 

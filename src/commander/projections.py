@@ -14,6 +14,7 @@ from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.enemies.damage_control import COMPARTMENTS, capacity_kg
 from src.sonar import analysis_tools
+from src.ship.ship import NOISE_LEVEL_MAX
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
 from src.commander.server import (CHART_MAX_BYTES, OPFOR_ROLES, STATE_MAX_BYTES,
@@ -1255,7 +1256,15 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                     controls=dict(orders=["ASTERN", "STOP", "SLOW", "HALF",
                                           "FULL", "FLANK"],
                                   plants=list(game.ship.PLANT_MODES),
-                                  speed_max_kn=_number(config.SHIP_SPEED_MAX_KN)),
+                                  speed_max_kn=_number(config.SHIP_SPEED_MAX_KN),
+                                  rpm_max=_number(game.ship.max_rpm()),
+                                  noise_max=_number(NOISE_LEVEL_MAX)),
+                    # The engine-room console's section mimic: the frigate's
+                    # own compartments (own-ship truth, as the damage role).
+                    compartments=[dict(key=room.key, state=room.state,
+                                       flood=_number(room.flood), fire=_number(room.fire),
+                                       teams=game.damage.teams_on(room.key))
+                                  for room in game.damage.compartments.values()],
                       environment_effects=dict(sea_state=_number(
                           game.world.effective_sea_state),
                                               roll=_number(game.ship.roll),

@@ -278,6 +278,13 @@ export function drawBoatScope(id, payload) {
   }
 }
 
+// The apparent length the crew measured, turned back to the full length of a
+// model turned by the judged angle on the bow (src/ui/uboot_scope.py full_span).
+function fullSpan(span, aob) {
+  if (!Number.isFinite(aob)) return span;
+  return Math.min(180, span / Math.max(.2, Math.abs(Math.sin(aob * Math.PI / 180))));
+}
+
 function drawScopeFrame(id, scope) {
   const plot = visualContext(id);
   if (!plot) return false;
@@ -290,8 +297,8 @@ function drawScopeFrame(id, scope) {
     fov_deg: opticsFov(scopeOptics, scope.fov_deg), elevation_deg: scopeOptics.elevation,
     stabilized: scopeOptics.stabilized, stab_label: t("sight_stabilized"),
     optics_label: opticsText(scopeOptics, scope.fov_deg),
-    outlines: scope.sightings.map((row) => ({bearing: row.bearing, span_deg: row.span_deg, cls: row.cls,
-      stale: row.age_s === null || row.age_s > 1, lights: row.lights, elevation_deg: row.elevation_deg,
+    outlines: scope.sightings.map((row) => ({bearing: row.bearing, span_deg: fullSpan(row.span_deg, row.aob_deg), cls: row.cls,
+      stale: row.age_s === null || row.age_s > 1, lights: row.lights, elevation_deg: row.elevation_deg, aob_deg: row.aob_deg,
       ...(Number.isFinite(row.elevation_deg) ? {cls: "aircraft"} : {})}))}, performance.now() / 1000, g.font);
   if (!finite(scope.bearing)) drawEmpty(plot);
   return true;

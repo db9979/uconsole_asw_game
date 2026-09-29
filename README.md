@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.76**
+Current release: **1.3.79**
 
-Release 1.3.76 lets the Bridge autopilot find its way through channels, into
+Release 1.3.79 lets the Bridge autopilot find its way through channels, into
 bays and round long coasts: when a stand-off detour does not clear a leg, a
 path search on the chart plans the turning points (planning is also faster
 than before). GitHub now runs the whole test suite with the browser tests,

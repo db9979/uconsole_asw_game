@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.76
+## 1.3.79
 
-Release 1.3.76 lets the Bridge autopilot find its way through channels, into
+Release 1.3.79 lets the Bridge autopilot find its way through channels, into
 bays and round long coasts: when a stand-off detour does not clear a leg, a
 path search on the chart plans the turning points (planning is also faster
 than before). GitHub now runs the whole test suite with the browser tests,
@@ -14,6 +14,22 @@ the generated-file checks, the calibration and the smoke test on every change,
 and two flaky browser checks are fixed: the phone lookout no longer falls back to the pairing screen when the host answers slowly right after pairing, and the status bar check measures with the bundled fonts. The manual no
 longer says the frigate has no ASROC, and `tools/hw_report.py` turns a debug
 run on the uConsole into the hardware checklist's table. Saves stay v31.
+
+## 1.3.78
+
+Release 1.3.78 shows the units as 3D models. In the unit analyser (`F8`) the
+first page of every catalog profile is now a slowly turning 3D model of its
+class, ahead of the sound and radar images; in the Remote Crew browser it can
+also be turned by dragging. The Unit Editor shows the same model under the
+selected profile and beside the fields of an opened one. Ships, submarines
+and aircraft are the lookout's own silhouettes built out in 3D, so a unit
+looks in the analyser as it does in the binoculars and the periscope
+(warship, merchant, small craft, submarine, the lookout's helicopter for
+every aircraft); torpedoes, decoys and animals, which no lookout sees, have
+models of their own. The same models now stand in the lookout's binoculars
+and the periscope on the uConsole, in the browser and on the phone, turned by
+the angle on the bow the observer judges once he has made out the class.
+Saves stay v31.
 
 ## 1.3.75
 

@@ -4,6 +4,7 @@ import { finite, number, selectedTrack, t, unit } from "../core/format.js";
 import { request } from "../net/request.js";
 import { metrics, node, yesNo } from "./dom.js";
 import { stationActionAvailable } from "../state/availability.js";
+import { modelClass, mountModel } from "./model-view.js";
 
 function validateContactAnalysis(data) {
   const scalar = (value) => value === null || typeof value === "string" || typeof value === "boolean" || finite(value);
@@ -152,7 +153,13 @@ export function renderContactAnalysis() {
     radar: "analyzer_radar" };
   const imageKey = `${S.language}:${profile.key}`;
   if (S.analysisImageKey !== imageKey) {
-    $("analysis-images").replaceChildren(...Object.entries(profile.assets).map(([kind, route]) => {
+    const model = node("figure", undefined, "analysis-image analysis-model");
+    const canvas = node("canvas");
+    canvas.setAttribute("role", "img");
+    canvas.setAttribute("aria-label", t("analyzer_model_alt"));
+    model.append(canvas, node("figcaption", t("analyzer_model")));
+    mountModel(canvas, modelClass(profile.key));
+    $("analysis-images").replaceChildren(model, ...Object.entries(profile.assets).map(([kind, route]) => {
       const figure = node("figure", undefined, "analysis-image");
       const image = node("img");
       const descriptions = [];

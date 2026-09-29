@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.76
+## 1.3.79
 
-Version 1.3.76 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
+Version 1.3.79 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
 Buchten und um lange Küsten finden: Reicht ein Ausweichpunkt für eine Strecke
 nicht, plant eine Wegsuche auf der Karte die Wendepunkte (die Planung ist
 dabei schneller als bisher). GitHub prüft jetzt jede Änderung mit der ganzen
@@ -17,6 +17,23 @@ wenn der Host direkt nach dem Koppeln langsam antwortet, und die Statusleiste
 wird mit den mitgelieferten Schriften vermessen. Das Handbuch behauptet nicht mehr, die
 Fregatte habe kein ASROC, und `tools/hw_report.py` macht aus einem
 Debug-Lauf auf der uConsole die Tabelle der Hardware-Checkliste. Spielstände bleiben v31.
+
+## 1.3.78
+
+Version 1.3.78 zeigt die Einheiten als 3D-Modelle. Im Einheitenanalysator
+(`F8`) ist die erste Seite jedes Katalogprofils jetzt ein langsam drehendes
+3D-Modell seiner Klasse, vor den Klang- und Radarbildern; im
+Remote-Crew-Browser lässt es sich zusätzlich durch Ziehen drehen. Der
+Einheiteneditor zeigt dasselbe Modell unter dem gewählten Profil und neben den
+Feldern eines geöffneten. Schiffe, U-Boote und Luftfahrzeuge sind die
+Silhouetten des Ausgucks, räumlich ausgebaut, sodass eine Einheit im
+Analysator so aussieht wie im Fernglas und im Sehrohr (Kriegsschiff,
+Handelsschiff, Kleinfahrzeug, U-Boot, der Hubschrauber des Ausgucks für jedes
+Luftfahrzeug); Torpedos, Täuschkörper und Tiere, die kein Ausguck sieht, haben
+eigene Modelle. Dieselben Modelle stehen jetzt im Fernglas des Ausgucks und
+im Sehrohr auf der uConsole, im Browser und am Handy, gedreht um den
+Lagewinkel, den der Beobachter schätzt, sobald er die Klasse ausgemacht hat.
+Spielstände bleiben v31.
 
 ## 1.3.75
 

@@ -190,7 +190,7 @@ def _ship(key: str, spec: dict) -> um.Mesh:
         poly = [(0.0, deck * 1.18), (rake, 0.0), (0.97, 0.0), (1.0, aft), (0.3, deck),
                 (0.08, deck * 1.12)]
     b = um._Builder()
-    um._hull(b, poly, beam, draft, side=side, stations=14, entrance=entrance,
+    um._hull(b, poly, beam, draft, side=side, stations=20, entrance=entrance,
              transom=0.9 if layout in _FULL else 0.72)
     x = um._x
     width = lambda u: beam * um._plan(u, entrance, 0.9 if layout in _FULL else 0.72)  # noqa: E731
@@ -354,7 +354,7 @@ def _sub(key: str, spec: dict) -> um.Mesh:
 
     b = um._Builder()
     zscale = 0.85 if shape == "double_hull_wide" else 1.0
-    um._revolve(b, [(i / 16, r(i / 16)) for i in range(17)], "sub", segments=10,
+    um._revolve(b, [(i / 22, r(i / 22)) for i in range(23)], "sub", segments=14,
                 zscale=zscale)
     x = um._x
     s = spec["sail"]
@@ -404,7 +404,7 @@ def _aircraft(key: str, spec: dict) -> um.Mesh:
             return radius * max(0.15, 1 - ((u - 0.7) / 0.3) * 0.85)
         return radius
 
-    um._revolve(b, [(i / 20, r(i / 20)) for i in range(21)], mat, segments=10)
+    um._revolve(b, [(i / 22, r(i / 22)) for i in range(23)], mat, segments=12)
     x = um._x
     w = spec["wing_u"]
     span = m(spec["wingspan_m"]) / 2

@@ -33,6 +33,7 @@ import { schedule } from "../core/scheduler.js";
 import { stationActionAvailable } from "../state/availability.js";
 import { renderConnection } from "../views/status.js";
 import { canvas, lookoutCanvas, simlogMapCanvas } from "../views/canvases.js";
+import { normalizePairCode, wirePairCodeInput } from "../core/pairing-code.js";
 
 const sonarFrequencyAt = (canvas, event, maximum) => {
   const bounds = canvas.getBoundingClientRect();
@@ -93,6 +94,7 @@ const changeRoleMapZoom = (factor) => {
 };
 
 export function init() {
+  wirePairCodeInput($("code"));
   $("pair-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if ($("pair-submit").disabled || !$("pair-form").reportValidity()) return;
@@ -102,7 +104,7 @@ export function init() {
     }
     $("pair-submit").disabled = true;
     $("pair-error").textContent = "";
-    const code = $("code").value.toUpperCase();
+    const code = normalizePairCode($("code").value);
     const name = $("name").value.trim();
     $("code").value = "";
     try {
@@ -115,8 +117,11 @@ export function init() {
       setConnection(S.session.station === null ? "lobby" : "syncing");
       clearTimeout(S.pollTimer);
       poll();
-    } catch (_) {
-      $("pair-error").textContent = t("pair_failed");
+    } catch (error) {
+      // Only the pairing route's own answer means a wrong code; a bare 403
+      // is the listener refusing this address (Host/Origin).
+      $("pair-error").textContent = t(error?.status === 403 ?
+        (error.reason === "invalid_code" ? "pair_invalid_code" : "pair_address") : "pair_failed", {code});
       $("code").focus();
     } finally { $("pair-submit").disabled = false; }
   });

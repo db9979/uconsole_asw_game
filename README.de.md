@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.63**
+Aktuelle Version: **1.3.64**
 
-Version 1.3.63 räumt die uConsole-Bildschirme auf. Alle Texte nutzen jetzt
+Version 1.3.64 räumt die uConsole-Bildschirme auf. Alle Texte nutzen jetzt
 die mitgelieferte Schrift JetBrains Mono, damit auf keinem System mehr Zeilen
 abgeschnitten werden, und der Zeilenabstand folgt der Schrift. Alle
 Zustandsbalken haben einen gemeinsamen Stil mit Viertelmarken und

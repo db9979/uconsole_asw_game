@@ -46,7 +46,9 @@ PROBE = r'''
   async function run() {
     await until(() => !$('phone-pair').hidden && $('phone-title') !== null || document.title === 'U-Jagd lookout', 'translations');
     $('phone-name').value = 'Phone';
+    // Typed as F9 shows it: with the space, in lower case, O for 0 and l for 1.
     $('phone-code').value = __CODE__;
+    $('phone-code').dispatchEvent(new Event('input'));
     $('phone-pair-form').requestSubmit();
     await until(() => !$('phone-watch').hidden && $('phone-blocked').hidden, () => `no eyepiece: ${root.dataset.blocked}`);
     await until(() => /^\d\d\d°$/.test($('phone-bearing').textContent), 'no bearing');
@@ -80,6 +82,11 @@ PROBE = r'''
 })();
 '''
 
+
+
+def sloppy_code(code):
+    """The pairing code the way people type what F9 shows ("021 GSX")."""
+    return code[:3].replace("0", "O").replace("1", "l") + " " + code[3:].lower()
 
 def test_phone_lookout_pairs_turns_and_calls(tmp_path, monkeypatch):
     chromium = (shutil.which("chromium") or shutil.which("chromium-browser")
@@ -115,7 +122,7 @@ def test_phone_lookout_pairs_turns_and_calls(tmp_path, monkeypatch):
     console.activate(game)
     console.server._http.assets["/phone-test.js"] = (
         "text/javascript; charset=utf-8",
-        PROBE.replace("__CODE__", json.dumps(console.pairing_code)).encode("utf-8"))
+        PROBE.replace("__CODE__", json.dumps(sloppy_code(console.pairing_code))).encode("utf-8"))
     # Real time (as the submarine sonar test): virtual time would run the
     # page far ahead of the host, which applies the calls.
     profile = tmp_path / "browser"
@@ -169,7 +176,7 @@ def test_phone_page_is_self_contained_and_translated():
     assert set(re.findall(r'\$\("([\w-]+)"\)', scripts)) <= set(ids)
     assert "Content-Security-Policy" in html and "<script>" not in html and "style=" not in html
     code = next(attrs for _, attrs in document.elements if attrs.get("id") == "phone-code")
-    assert code["maxlength"] == "6" and code["autocomplete"] == "off"
+    assert code["maxlength"] == "12" and code["autocomplete"] == "off"
     en, de = catalogs()
     keys = {attrs.get("data-i18n") or attrs.get("data-i18n-aria")
             for _, attrs in document.elements

@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.63
+## 1.3.64
 
-Release 1.3.63 tidies the uConsole screens. Every text now uses the bundled
+Release 1.3.64 tidies the uConsole screens. Every text now uses the bundled
 JetBrains Mono face, so lines no longer clip on any system, and line spacing
 follows the font. All status bars share one style with quarter marks and
 labels, the engine telegraph highlights the nearest step and warns when a
@@ -15,6 +15,18 @@ speed dials. The submarine tab bar, map scale numbers, water column labels, ESM
 compass and the bottom ticker no longer overlap; OPZ, ELOKA and helicopter
 pages get the start screen's frames and a key footer, and the last English
 leftovers in German menus are translated. Saves stay v28.
+
+## 1.3.63
+
+Release 1.3.63 makes the pairing code easier to enter, on the crew page and
+on the phone lookout. The code can be typed the way `F9` shows it, with the
+space, in lower case, or with look-alikes such as O for 0, l for 1 or S for 5,
+and it is still read correctly. "Wrong pairing code" now appears only when the
+code really is wrong, and it names the code the game received;
+when the game refuses the address itself (a bookmark or another name for the
+host), the page says to open it from the QR code or the address in `F9`. The
+pairing help no longer claims the code expires after five minutes: it stays
+while the game runs and changes after five wrong tries. Saves stay v28.
 
 ## 1.3.62
 

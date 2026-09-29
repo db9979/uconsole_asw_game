@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.63**
+Current release: **1.3.64**
 
-Release 1.3.63 tidies the uConsole screens. Every text now uses the bundled
+Release 1.3.64 tidies the uConsole screens. Every text now uses the bundled
 JetBrains Mono face, so lines no longer clip on any system, and line spacing
 follows the font. All status bars share one style with quarter marks and
 labels, the engine telegraph highlights the nearest step and warns when a

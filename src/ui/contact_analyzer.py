@@ -49,8 +49,12 @@ class ContactAnalyzer:
     def __init__(self, tr=widgets.IDENTITY_TR, *, projection=None,
                  packaged_assets: Mapping[str, tuple[str, bytes]] | None = None,
                  on_play_sample=None, on_stop_sample=None, preview_active=None,
-                 on_assign=None, assign_label=None, current_assignment=None):
+                 on_assign=None, assign_label=None, current_assignment=None,
+                 fits: Mapping[str, float] | None = None):
         self.tr = tr
+        # In-game with line marks: fit of each class to the operator's marks
+        # (sonar class library); the list is shown best fit first.
+        self.fits = dict(fits or {})
         # In-game only: assign the selected profile to the operator's sonar
         # contact (an annotation, like a manual classification).
         self.on_assign = on_assign
@@ -63,6 +67,8 @@ class ContactAnalyzer:
         self._playing_sample = None
         detached = project_contact_catalog() if projection is None else projection
         self.profiles = list(detached["profiles"])
+        if self.fits:
+            self.profiles.sort(key=lambda profile: -self.fits.get(profile["key"], -1.0))
         assets = load_contact_analysis_assets() if packaged_assets is None else packaged_assets
         self._asset_bytes = {
             route: payload for route, (mime, payload) in assets.items()
@@ -89,8 +95,15 @@ class ContactAnalyzer:
         return self.profiles[self.filtered[self.listbox.selected]]
 
     def _list_labels(self):
-        return [f"{self.profiles[index]['name']} [{self.profiles[index]['key']}]"
+        return [self._fit_prefix(self.profiles[index]["key"])
+                + f"{self.profiles[index]['name']} [{self.profiles[index]['key']}]"
                 for index in self.filtered]
+
+    def _fit_prefix(self, key: str) -> str:
+        if not self.fits:
+            return ""
+        fit = self.fits.get(key)
+        return "  --  " if fit is None else f"{fit:4.0%}  "
 
     def _set_filter(self, value: str) -> None:
         self.filter.set(value)
@@ -428,7 +441,8 @@ class ContactAnalyzer:
         assign_h = 28 if self.on_assign is not None else 0
         content = pygame.Rect(20, 66, bounds.width - 40, footer.y - 76 - assign_h)
         left = pygame.Rect(content.x, content.y, 390, content.height)
-        left_inner = widgets.panel(surface, left, "analyzer.contacts", tr=self.tr)
+        left_inner = widgets.panel(surface, left, "analyzer.contacts_by_fit" if self.fits
+                                   else "analyzer.contacts", tr=self.tr)
         filter_rect = pygame.Rect(left_inner.x, left_inner.y, left_inner.width, 34)
         self.filter.draw(surface, filter_rect, placeholder="analyzer.filter", tr=self.tr)
         list_rect = pygame.Rect(left_inner.x, filter_rect.bottom + 8, left_inner.width,

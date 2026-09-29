@@ -488,6 +488,8 @@ V2_ACTION_REGISTRY = {
     "bridge_route_pattern": V2Action(frozenset({"bridge"}),
                                      _enum_params("pattern", ("zigzag", "square"))),
     "bridge_route_clear": V2Action(frozenset({"bridge"}), _no_params),
+    # Swing the course to hear into the hull sonar's baffles, then return.
+    "bridge_clear_baffles": V2Action(frozenset({"bridge"}), _no_params),
     "propose_navigation": V2Action(frozenset({"bridge"}),
                                     _navigation_proposal_params),
     "sonar_classify": V2Action(frozenset({"sonar", "helicopter", "uboot_sonar"}), _classification_params,
@@ -531,6 +533,9 @@ V2_ACTION_REGISTRY = {
     "crew_action_stations": V2Action(frozenset({"bridge", "damage"}),
                                      _bool_params("enabled")),
     "crew_watch_change": V2Action(frozenset({"damage"}), _no_params),
+    # The wounded: medical team to the next station, men to the worst one.
+    "crew_casualty_medic": V2Action(frozenset({"damage"}), _no_params),
+    "crew_casualty_reassign": V2Action(frozenset({"damage"}), _no_params),
     "damage_assign_team": V2Action(frozenset({"damage"}),
                                    _team_compartment_params),
     "damage_unassign_team": V2Action(frozenset({"damage"}),
@@ -540,6 +545,9 @@ V2_ACTION_REGISTRY = {
     "radio_task_accept": V2Action(frozenset({"radio"}), _task_params),
     "radio_task_decline": V2Action(frozenset({"radio"}), _task_params),
     "radio_request_ras": V2Action(frozenset({"radio"}), _no_params),
+    # The radio room's own HF calls to HQ (the enemy can DF them).
+    "radio_contact_report": V2Action(frozenset({"radio"}), _no_params),
+    "radio_request_support": V2Action(frozenset({"radio"}), _no_params),
     "eloka_annotate": V2Action(frozenset({"eloka"}), _annotation_params,
         revision_bound=True),
     "eloka_clear_annotation": V2Action(frozenset({"eloka"}), _single_ref_params,
@@ -638,6 +646,10 @@ V2_ACTION_REGISTRY = {
         frozenset({"weapons"}), _torpedo_params, direct_fire=True),
     "weapons_drop_depth_charges": V2Action(
         frozenset({"weapons"}), _torpedo_params, direct_fire=True),
+    "weapons_fire_rbu": V2Action(
+        frozenset({"weapons"}), _torpedo_params, direct_fire=True),
+    "weapons_rbu_defence": V2Action(
+        frozenset({"weapons"}), _no_params, direct_fire=True),
     "weapons_set_torpedo_settings": V2Action(
         frozenset({"weapons"}), _torpedo_settings_params),
     "opz_launch_essm": V2Action(
@@ -661,6 +673,7 @@ V2_ACTION_REGISTRY = {
     # Each boat order belongs to the station that does it aboard; the commander
     # keeps course, speed and depth.
     "uboot_set_course": V2Action(frozenset({"uboot", "uboot_nav"}), _course_params),
+    "uboot_clear_baffles": V2Action(frozenset({"uboot", "uboot_nav"}), _no_params),
     "uboot_set_speed": V2Action(frozenset({"uboot", "uboot_engine"}), _uboot_speed_params),
     "uboot_set_depth": V2Action(frozenset({"uboot", "uboot_nav"}), _uboot_depth_params),
     "uboot_fire": V2Action(frozenset({"uboot_weapons"}), _uboot_fire_params,
@@ -669,6 +682,7 @@ V2_ACTION_REGISTRY = {
     # The torpedo room loads each tube and floods it before the shot.
     "uboot_tube_load": V2Action(frozenset({"uboot_weapons"}), _uboot_tube_params),
     "uboot_tube_flood": V2Action(frozenset({"uboot_weapons"}), _uboot_tube_params),
+    "uboot_tube_flood_quiet": V2Action(frozenset({"uboot_weapons"}), _uboot_tube_params),
     "uboot_evade": V2Action(frozenset({"uboot", "uboot_nav"}), _no_params),
     "uboot_blow": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
     "uboot_snorkel": V2Action(frozenset({"uboot_engine"}), _bool_params("enabled")),
@@ -687,6 +701,8 @@ V2_ACTION_REGISTRY = {
     "uboot_action_stations": V2Action(frozenset({"uboot", "uboot_engine"}),
                                       _bool_params("enabled")),
     "uboot_watch_change": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
+    "uboot_casualty_medic": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
+    "uboot_casualty_reassign": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
     "uboot_mast": V2Action(frozenset({"uboot", "uboot_esm", "uboot_radio"}),
                            _bool_params("enabled")),
     # The radio room sends the boat's situation report to HQ (HF, bearable).

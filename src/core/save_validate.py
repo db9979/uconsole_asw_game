@@ -40,6 +40,10 @@ from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
+from src.core import baffles
+from src.core.incidents import IncidentBoard
+from src.core.hq_reports import HqReports
+from src.weapons import rbu
 from src.core.crew import CrewState
 from src.air.mpa import PatrolAircraft
 from src.air.sonobuoy import OWNERS as BUOY_OWNERS
@@ -142,6 +146,7 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
                     or bounded(orders["torpedo_depth"], 0.0, 1000.0))
             or orders["salvo"] not in (1, 2) or type(orders["salvo"]) is not int
             or orders["battery_state"] not in CREW_BATTERY_STATES
+            or not baffles.valid_state(orders["baffle_clear"])
             or not (orders["obstacle_ahead_nm"] is None
                     or bounded(orders["obstacle_ahead_nm"], 0.0, 10_000.0))):
         return False
@@ -466,9 +471,9 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             or not 0 <= torpedo_inventory["count"] <= torpedo_inventory["total"] <= 100
             or not bounded(torpedo_inventory["depth"], 0, 10000)):
         return False
-    # "level" is a cosmetic label now; the real custom-difficulty values
+    # The mission's realism level; the difficulty values it already scaled
     # live in mission_runtime["difficulty"] (checked just below).
-    if type(data.get("level")) is not str or not 1 <= len(data["level"]) <= 64:
+    if data.get("level") not in config.LEVELS:
         return False
     runtime_mission = data.get("mission_runtime")
     if not isinstance(runtime_mission, dict):
@@ -500,6 +505,30 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
            and task["target_id"] not in surface_ids for task in board["tasks"]):
         return False
     if any(task["offered_t"] > save_sim_t for task in board["tasks"]):
+        return False
+    # Save v38: wounded crew of the frigate and each submarine.
+    from src.core.game_casualties import CasualtiesMixin
+    if not CasualtiesMixin.casualties_valid(
+            data.get("casualties"), {row.get("id") for row in data.get("subs", ())
+                                     if isinstance(row, dict)}):
+        return False
+    # Save v37: the ASW rocket launcher.
+    if not rbu.valid_state(data.get("rbu"), 1_000_000.0):
+        return False
+    # Save v36: the radio room's own calls; none logged after the save time.
+    reports = data.get("hq_reports")
+    if (not HqReports.valid_state(reports)
+            or any(row["t"] > save_sim_t for row in reports["log"])):
+        return False
+    # Save v35: the Bridge's baffle clearing, ending after the save time.
+    if (not baffles.valid_state(data.get("baffle_clear"))
+            or data["baffle_clear"] is not None
+            and data["baffle_clear"][2] > save_sim_t + config.BAFFLE_CLEAR_HOLD_S):
+        return False
+    # Save v34: incidents at sea; none announced after the save time.
+    incidents = data.get("incidents")
+    if (not IncidentBoard.valid_state(incidents)
+            or any(item["announced_t"] > save_sim_t for item in incidents["items"])):
         return False
     intercepts = data.get("ping_intercepts")
     if (not isinstance(intercepts, list) or len(intercepts) > PING_INTERCEPTS_MAX
@@ -1085,6 +1114,15 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                             or (entry["emergency_ascent"]
                                 and entry["blow_available"])
                             or not bounded(entry.get("transient_left"), 0.0, 60.0)
+                            or not bounded(entry.get("flood_noise_left"), 0.0, 60.0)
+                            or type(entry.get("flood_quiet")) is not bool
+                            or type(entry.get("flood_seq")) is not int
+                            or not 0 <= entry["flood_seq"] < config.SUB_FLOOD_SEQ_MAX
+                            or not bounded(entry.get("ai_tube_left"), -1.0,
+                                           config.UBOOT_TUBE_FLOOD_QUIET_S)
+                            or (entry["ai_tube_left"] < 0.0
+                                and entry["ai_tube_left"] != -1.0)
+                            or type(entry.get("ai_fire_pending")) is not bool
                             or not bounded(entry.get("hull_fatigue"), 0.0, 1.0)
                             or not bounded(entry.get("speed_order"), 0.0, 100.0)
                             or not isinstance(entry.get("tma_track"), list)

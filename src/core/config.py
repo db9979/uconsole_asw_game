@@ -439,6 +439,11 @@ UBOOT_DC_STERN_SPEED_FACTOR = 0.5   # shaft and motor room flooded
 # time) and must be flooded before it fires; flooding is briefly audible.
 UBOOT_TUBE_FLOOD_S = 20.0
 UBOOT_TUBE_FLOOD_NOISE_S = 4.0
+UBOOT_TUBE_FLOOD_QUIET_S = 60.0      # slow flooding: quiet, heard only close
+SUB_AI_PREFLOOD_NM = 15.0            # an AI boat floods quietly on a closer fix
+SUB_FLOOD_SEQ_MAX = 1_000_000
+TORP_FLOOD_HEAR_NM = 8.0             # frigate hears loud tube flooding (quiet own ship)
+TORP_FLOOD_QUIET_HEAR_NM = 1.5       # ... and slow, quiet flooding
 UBOOT_TUBE_STATES = ("dry", "flooding", "flooded")
 UBOOT_SCOPE_EYE_HEIGHT_M = 2.5      # optics just above the surface
 UBOOT_SCOPE_FOV_DEG = 32.0          # field of view of the low-power optics
@@ -652,6 +657,17 @@ SONAR_TOWED_AVAILABLE_PAYOUT = 0.95
 SONAR_TOWED_SETTLE_S = 30.0
 SONAR_TOWED_HEADING_LAG_S = 45.0
 SONAR_TOWED_SELF_NOISE_FACTOR = 0.35
+# Baffles: every hull-mounted passive array (the frigate's bow sonar, a
+# submarine's) is deaf in this half-angle around its own stern; towed
+# arrays and the VDS still hear there.  Clearing the baffles turns the
+# ordered course by BAFFLE_CLEAR_TURN_DEG for BAFFLE_CLEAR_HOLD_S and then
+# returns to the previous course.
+SONAR_BAFFLE_HALF_DEG = 30.0
+BAFFLE_CLEAR_TURN_DEG = 60.0
+BAFFLE_CLEAR_HOLD_S = 120.0
+# An AI submarine that finds itself in the frigate's baffles inside this
+# range trails it there instead of running away.
+SUB_BAFFLE_TRAIL_NM = 6.0
 # Variable-depth sonar (VDS): a body lowered astern on a short cable. It is
 # unambiguous like the hull array, sits away from the hull's noise and can be
 # put below the layer. Handling (lowering and recovery) needs 3-15 kn and a
@@ -955,6 +971,33 @@ DIFFICULTY_FIELDS = {
 }
 DIFFICULTY_FIELD_ORDER = tuple(DIFFICULTY_FIELDS)
 DEFAULT_DIFFICULTY = {name: spec[4] for name, spec in DIFFICULTY_FIELDS.items()}
+# Realism levels (preference ``level``, saved per mission as ``level``).
+# The level tunes only the computer opponent and the displays, never a human
+# on the other side: an AI submarine attacks more or less eagerly and waits
+# for a better or worse firing solution, and the AI frigate (when the
+# uConsole commands the submarine) classifies and calls its helicopter
+# slower or faster.  Beginner also turns the operator assistance on,
+# Realistic turns it off.  The mission score is multiplied by the factor.
+LEVELS = ("beginner", "standard", "realistic")
+LEVEL_DEFAULT = "standard"
+LEVEL_SCORE_FACTOR = {"beginner": 0.75, "standard": 1.0, "realistic": 1.25}
+# Multipliers on the mission's difficulty values (clamped to their bounds).
+LEVEL_ENEMY = {
+    "beginner": {"enemy_attack_mult": 0.6, "enemy_solution_threshold": 0.75},
+    "standard": {},
+    "realistic": {"enemy_attack_mult": 1.3, "enemy_solution_threshold": 1.25},
+}
+# Multiplier on the AI frigate's mean classification and helicopter times.
+LEVEL_HUNTER_DELAY = {"beginner": 1.5, "standard": 1.0, "realistic": 0.7}
+
+def apply_level(difficulty: dict, level: str) -> dict:
+    """The difficulty values with a realism level's enemy multipliers."""
+    result = dict(difficulty)
+    for name, factor in LEVEL_ENEMY.get(level, {}).items():
+        kind, low, high = DIFFICULTY_FIELDS[name][:3]
+        result[name] = kind(clamp(result[name] * factor, low, high))
+    return result
+
 # Fester Pool für die Bonus-"zweites U-Boot"-Ziehung (2:1 Richtung AIP,
 # entspricht dem bisherigen "harte"/"hardcore"-Pool).
 SECOND_SUB_POOL = ("aip_modern", "ssn", "aip_modern")
@@ -971,6 +1014,39 @@ SCORE_SUNK = 1000                  # pro versenktem Ziel-U-Boot
 SCORE_AMMO_BONUS = 200             # pro ungenutztem Torpedo (Sieg)
 SCORE_CIVIL_BONUS = 500            # keine zivilen Verluste (Sieg)
 SCORE_TIME_BONUS_MAX = 500         # Zeitbonus, anteilig nach verbleibender Zeit
+
+# Incidents at sea (src/core/incidents.py): schedule and the four kinds.
+INCIDENT_FIRST_S = (1200.0, 2400.0)
+INCIDENT_INTERVAL_S = (1800.0, 3000.0)
+INCIDENT_MAX = 4
+INCIDENT_NET_RANGE_NM = (3.0, 7.0)     # net across the track this far ahead
+INCIDENT_NET_SPREAD_DEG = 25.0
+INCIDENT_NET_LENGTH_NM = 2.0
+INCIDENT_NET_DEPTH_M = 20.0            # hangs from the surface to this depth
+INCIDENT_NET_HIT_NM = 0.03             # within this of the line: over the net
+INCIDENT_NET_S = 3600.0                # the fishing boat hauls it after this
+INCIDENT_NET_TRANSIENT_S = 20.0        # a submarine tearing free
+SCORE_NET_TORN = 100
+# Free radio messages of the frigate to HQ (src/core/hq_reports.py): a
+# contact report or a request for support is an HF call of RADIO_TX_S,
+# one every RADIO_REPORT_INTERVAL_S.  While it goes out, a submarine with
+# its antenna up can take an HF/DF bearing on the frigate.  A contact report
+# counts at the mission's end when a hostile submarine was within
+# CONTACT_REPORT_CONFIRM_NM of the reported fix (at most
+# CONTACT_REPORT_SCORED of them).
+RADIO_TX_S = 20.0
+RADIO_REPORT_INTERVAL_S = 600.0
+CONTACT_REPORT_CONFIRM_NM = 3.0
+CONTACT_REPORT_SCORED = 3
+SCORE_CONTACT_REPORT = 150
+INCIDENT_FRONT_LEAD_S = 600.0          # HQ's warning ahead of the front
+INCIDENT_FRONT_S = (1800.0, 3600.0)
+INCIDENT_DARK_RANGE_NM = (8.0, 15.0)
+INCIDENT_DARK_SPEED_KN = (8.0, 13.0)
+INCIDENT_DARK_S = 7200.0
+INCIDENT_WHALES_RANGE_NM = (3.0, 6.0)
+INCIDENT_WHALES_COUNT = (2, 4)
+INCIDENT_WHALES_S = 3600.0
 
 # Radio tasking (``src/core/tasking.py``): HQ orders and incidents in the
 # built-in scenarios.  The first offer comes after 15-25 minutes, the next
@@ -1154,6 +1230,7 @@ SUB_RAID_QUIET_S = 600.0
 SUB_RAID_FRIGATE_NM = 10.0
 SUB_RAID_KEEP_TORPEDOES = 2
 SCORE_MERCHANT_LOST = 300
+BOAT_AI_PREFLOOD_MARGIN_NM = 3.0   # quiet tube flooding starts this far outside
 # A hunted or closely watched boat creeps: this slow once the frigate is
 # within BOAT_AI_THREAT_NM (its own contact) or for BOAT_AI_HUNTED_S after a
 # ping or a torpedo was heard.

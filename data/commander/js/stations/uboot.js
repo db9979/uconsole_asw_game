@@ -27,7 +27,8 @@ function renderTubes(tubes) {
     const line = node("p", undefined, "uboot-log-line");
     line.append(node("span", t(`uboot_tube_${row.state}`, {tube: index + 1, seconds: number(row.seconds, 0)})));
     if (row.state === "empty") line.append(actionButton("uboot_tube_load", "uboot_tube_load", {tube: index}));
-    if (row.state === "dry") line.append(actionButton("uboot_tube_flood", "uboot_tube_flood", {tube: index}));
+    if (row.state === "dry") line.append(actionButton("uboot_tube_flood", "uboot_tube_flood", {tube: index}),
+      actionButton("uboot_tube_flood_quiet", "uboot_tube_flood_quiet", {tube: index}));
     return line;
   }) : [node("p", t("station_none"), "uboot-log-line")]));
 }
@@ -224,7 +225,8 @@ function renderDamage(dc) {
     return line;
   }));
   renderCrew($("uboot-crew"), $("uboot-crew-actions"), dc.crew,
-    {actionStations: "uboot_action_stations", watchChange: "uboot_watch_change"});
+    {actionStations: "uboot_action_stations", watchChange: "uboot_watch_change",
+      medic: "uboot_casualty_medic", reassign: "uboot_casualty_reassign"});
   metrics($("uboot-dc-teams"), [["uboot_dc_power", t(dc.power ? "uboot_dc_power_on" : "uboot_dc_power_off")],
     ...dc.teams.map((team) => [`uboot_dc_team_${team.team + 1}`, team.transit_s > 0
       ? t("uboot_dc_team_transit", {compartment: t(`uboot_compartment_${team.compartment}`), seconds: number(team.transit_s, 0)})

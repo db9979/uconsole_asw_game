@@ -54,6 +54,7 @@ _BOAT = {
     "uboot.event.ping_dipping_heard": "dipping",
     "uboot.event.ping_buoy_heard": "buoy_ping",
     "uboot.event.buoy_splash": "splash",
+    "uboot.event.rbu_splash": "splash",
     "runtime.contact.new_range": "contact",
     "runtime.contact.new_bearing": "contact",
     "uboot.event.evade": "evade",

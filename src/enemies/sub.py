@@ -7,6 +7,7 @@ Kavitation/Breitband-Level) – Details in docs/contacts-db.md.
 import math
 import random
 
+from src.core.baffles import in_baffles
 from src.core import config
 from src.physics import submarine as sub_physics
 from src.core import detrand
@@ -189,6 +190,8 @@ class Sub:
         # Compartments, leaks, fire, gas and the two damage-control teams;
         # likewise only a crewed boat's (the AI keeps one damage value).
         self.damage_control = BoatDamageControl()
+        # Empty posts in the torpedo room (``game_casualties``; derived).
+        self.weapons_crew_factor = 1.0
         # Own passive TMA on one bearing-only contact and crew reaction.
         self.tma_track = BearingTrack()
         self.tma_track_id = None
@@ -196,6 +199,15 @@ class Sub:
         self.torpedo_alarm_left = -1.0
         self.emergency_ascent = False
         self.transient_left = 0.0
+        # Tube flooding / outer door: a short transient the frigate's sonar
+        # may hear (``flood_seq`` numbers each one, quiet = slow flooding).
+        self.flood_noise_left = 0.0
+        self.flood_quiet = False
+        self.flood_seq = 0
+        # The AI's tubes: -1 dry, > 0 seconds of flooding left, 0 flooded;
+        # a shot ordered on dry tubes waits for the flooding (fire pending).
+        self.ai_tube_left = -1.0
+        self.ai_fire_pending = False
         self.hull_fatigue = 0.0
         self.speed = rng.uniform(self.stype.speed_min_kn,
                                  min(self.stype.speed_kn, 8.0))
@@ -336,6 +348,21 @@ class Sub:
         if self.torpedo_alarm_left < 0.0:
             self.torpedo_alarm_left = self.reaction_delay_s()
 
+    def _baffle_trail(self, observation):
+        """The hunter's course when this boat sits in its baffles close
+        astern (and no torpedo is after it), else None: a boat there is
+        deaf to the hull sonar, so it trails instead of running."""
+        if (observation is None or observation.course is None
+                or observation.range_nm is None or observation.x is None
+                or observation.range_nm > config.SUB_BAFFLE_TRAIL_NM
+                or self.memory["last_torpedo_age"] <= config.SUB_EVADE_DURATION_S):
+            return None
+        from_hunter = math.degrees(math.atan2(self.x - observation.x,
+                                              -(self.y - observation.y))) % 360.0
+        if not in_baffles(observation.course, from_hunter):
+            return None
+        return float(observation.course) % 360.0
+
     def _react_to_torpedo(self) -> None:
         """W2: Feindtorpedo gehört -> harte Ausweichreaktion + ggf. Dekoy."""
         self.torpedo_alarm_left = -1.0
@@ -438,6 +465,14 @@ class Sub:
         if self.side != "hostile" or self.sunk or self.state == "SINKING":
             return
         self.attack_left -= dt
+        if (observation is not None and self.ai_tube_left < 0.0
+                and self.torpedoes_left > 0
+                and observation.range_nm is not None
+                and observation.range_nm <= config.SUB_AI_PREFLOOD_NM
+                and (self.weapon_battery is None
+                     or self.weapon_battery.ready_count > 0)):
+            # A stalking boat floods its tubes early and slowly (quiet).
+            self.ai_flood_tubes(quiet=True)
         if (self.attack_left > 0 or self.torpedoes_left <= 0
                 or (self.weapon_battery is not None
                     and self.weapon_battery.ready_count <= 0)):
@@ -476,13 +511,47 @@ class Sub:
         if self.mission_orders is not None:
             # A mission boat fights its way through: the frigate is its threat.
             rate *= config.BOAT_AI_ATTACK_MULT
-        if rate > 0 and self.asw_rng.random() < rate * dt:
-            n = min(2 if dist is not None and dist < 12.0
-                    and self.stype.aggression > .8 else 1,
-                    self.torpedoes_left,
-                    SUB_MAX_PENDING_TORPEDOES - len(self.pending_torpedoes))
-            if self._fire_salvo(observation, n):
-                self.attack_left = self.attack_cooldown
+        if rate <= 0:
+            self.ai_fire_pending = False
+            return
+        if self.ai_fire_pending:
+            if self.ai_tube_left != 0.0:
+                return
+            # The tubes flooded for the shot ordered earlier: fire now.
+            self.ai_fire_pending = False
+        elif self.asw_rng.random() < rate * dt:
+            if self.ai_tube_left != 0.0:
+                # Dry tubes: a hurried, loud flooding before the shot.
+                if self.ai_tube_left < 0.0:
+                    self.ai_flood_tubes(quiet=False)
+                self.ai_fire_pending = True
+                return
+        else:
+            return
+        n = min(2 if dist is not None and dist < 12.0
+                and self.stype.aggression > .8 else 1,
+                self.torpedoes_left,
+                SUB_MAX_PENDING_TORPEDOES - len(self.pending_torpedoes))
+        if self._fire_salvo(observation, n):
+            self.attack_left = self.attack_cooldown
+
+    def flood_transient(self, quiet: bool) -> None:
+        """Tube flooding and the outer door: a brief transient. Loud flooding
+        also raises the radiated level; quiet (slow) flooding is heard only close."""
+        self.flood_seq = (self.flood_seq + 1) % config.SUB_FLOOD_SEQ_MAX
+        self.flood_quiet = bool(quiet)
+        self.flood_noise_left = config.UBOOT_TUBE_FLOOD_NOISE_S
+        if not quiet:
+            self.transient_left = max(self.transient_left,
+                                      config.UBOOT_TUBE_FLOOD_NOISE_S)
+
+    def ai_flood_tubes(self, quiet: bool) -> None:
+        """Start flooding the AI's dry tubes (slow and quiet, or fast and loud)."""
+        if self.manual or self.ai_tube_left >= 0.0:
+            return
+        self.ai_tube_left = (config.UBOOT_TUBE_FLOOD_QUIET_S if quiet
+                             else config.UBOOT_TUBE_FLOOD_S)
+        self.flood_transient(quiet)
 
     def _fire_salvo(self, observation: PlatformObservation, count: int) -> int:
         """Load up to ``count`` torpedoes on ``observation``; returns fired."""
@@ -518,6 +587,9 @@ class Sub:
                 else:
                     self.crew.event("torpedo_fired_tubeless")
         if launched:
+            if not self.manual:
+                self.ai_tube_left = -1.0      # fired: the tubes are dry again
+                self.ai_fire_pending = False
             self.torpedoes_left = (self.weapon_battery.remaining_total
                                    if self.weapon_battery is not None
                                    else self.torpedoes_left - launched)
@@ -729,6 +801,10 @@ class Sub:
     def _update_inner(self, dt: float, observation, world) -> None:
         start_speed = self._actual_speed
         self.transient_left = max(0.0, self.transient_left - dt)
+        self.flood_noise_left = max(0.0, self.flood_noise_left - dt)
+        if not self.manual and self.ai_tube_left > 0.0:
+            left = self.ai_tube_left - dt * self.crew_efficiency()
+            self.ai_tube_left = 0.0 if left <= 1e-9 else left
         depth_at = getattr(world, "depth_m", lambda x, y: 1000.0)
         bottom = depth_at(self.x, self.y)
         self.last_bottom_m = bottom
@@ -915,11 +991,18 @@ class Sub:
             bearing = self.memory["contact_bearing"]
             target_course = (self.course if bearing is None else
                              (bearing + 180.0 + self.evade_offset) % 360.0)
+            trail = self._baffle_trail(tactical_observation)
+            if trail is not None:
+                target_course = trail
             diff = config.angle_diff_deg(target_course, self.course)
             self.course = (self.course + config.clamp(
                 diff, -self.motion.turn_rate_deg_s * 2.5 * dt,
                 self.motion.turn_rate_deg_s * 2.5 * dt)) % 360.0
-            if (self.mission_orders is not None
+            if trail is not None:
+                # Tucked into the hunter's baffles: follow it quietly.
+                self.speed = min(self.speed_for_state(), max(
+                    3.0, float(tactical_observation.speed_kn or 0.0) - 1.0))
+            elif (self.mission_orders is not None
                     and self.memory["last_torpedo_age"] > config.SUB_EVADE_DURATION_S):
                 # A mission boat slips away from a ping quietly below the
                 # layer; only a torpedo in the water makes it run.
@@ -1517,9 +1600,10 @@ class Sub:
         self.crew_tubes[tube] = ["dry", 0.0]
         return True
 
-    def command_flood_tube(self, tube=None):
+    def command_flood_tube(self, tube=None, quiet: bool = False):
         """Flood a loaded tube and open its outer door: only a flooded tube fires.
-        Flooding takes ``UBOOT_TUBE_FLOOD_S`` and is a short, audible transient."""
+        Flooding takes ``UBOOT_TUBE_FLOOD_S`` and is a short, audible transient;
+        quiet flooding takes ``UBOOT_TUBE_FLOOD_QUIET_S`` and is heard only close."""
         reason = self._tube_order_ready()
         if reason is not None:
             return reason
@@ -1534,8 +1618,9 @@ class Sub:
             return "invalid_value"
         if battery.tubes[tube].loaded_weapon_key is None or tubes[tube][0] != "dry":
             return "uboot_no_dry_tube"
-        tubes[tube] = ["flooding", float(config.UBOOT_TUBE_FLOOD_S)]
-        self.transient_left = max(self.transient_left, config.UBOOT_TUBE_FLOOD_NOISE_S)
+        tubes[tube] = ["flooding", float(config.UBOOT_TUBE_FLOOD_QUIET_S if quiet
+                                         else config.UBOOT_TUBE_FLOOD_S)]
+        self.flood_transient(bool(quiet))
         return True
 
     def fire_readiness(self, bearing=None, salvo: int = 1):
@@ -1688,8 +1773,11 @@ class Sub:
                 if scale > 0.0]
 
     def crew_efficiency(self) -> float:
-        """Crew performance in the boat's air (1.0 without an air model)."""
-        return 1.0 if self.endurance is None else self.endurance.air.efficiency()
+        """The torpedo gang's performance: the boat's air (1.0 without an air
+        model) and its empty posts (``weapons_crew_factor``, set by the game
+        from the wounded, not saved)."""
+        air = 1.0 if self.endurance is None else self.endurance.air.efficiency()
+        return air * self.weapons_crew_factor
 
     def _update_air(self, dt: float) -> None:
         """Breathe, scrub and air the boat; the AI's crew also answers foul air."""

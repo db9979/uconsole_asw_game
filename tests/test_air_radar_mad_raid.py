@@ -201,13 +201,19 @@ def test_a_patrol_boat_torpedoes_a_merchant_far_from_the_frigate(monkeypatch):
     sub.memory["last_ping_age"] = sub.memory["last_torpedo_age"] = float("inf")
     assert sub in boat_ai.patrol_raiders(game)
     before = sub.torpedoes_left
-    fired = False
-    for _ in range(int(130 / 2.0)):
+    fired = flooded = False
+    for _ in range(int(260 / 2.0)):
         game.sim_t += 2.0
+        # The tubes flood with the boat's own clock (quietly, before the shot).
+        if sub.ai_tube_left > 0.0:
+            flooded = True
+            sub.ai_tube_left = max(0.0, sub.ai_tube_left - 2.0)
         if boat_ai.patrol_attack(game, sub):
             fired = True
             break
+    assert flooded and sub.flood_quiet
     assert fired and (sub.torpedoes_left < before or sub.pending_torpedoes)
+    assert sub.ai_tube_left == -1.0 and not sub.ai_fire_pending
 
 
 def test_raids_stay_out_of_boat_missions_and_hunted_boats(monkeypatch):

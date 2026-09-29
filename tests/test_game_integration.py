@@ -353,9 +353,9 @@ def test_custom_objective_and_start_feed_ignore_random_mission_type(
     assert localize(objective, Translator("en").t) == english
     assert localize(objective, Translator("de").t) == german
     assert localize(started, Translator("en").t) == \
-        f"Mission: Saved (Custom) - {english}"
+        f"Mission: Saved (Standard) - {english}"
     assert localize(started, Translator("de").t) == \
-        f"Mission: Saved (Individuell) - {german}"
+        f"Mission: Saved (Standard) - {german}"
     assert game.messages[-1][1]["__u_jagd_i18n__"] == "runtime.hq.threat_unknown"
 
 

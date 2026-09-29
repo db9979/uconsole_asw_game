@@ -33,6 +33,8 @@ from src.enemies.sub import Sub
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
+from src.core.incidents import IncidentBoard
+from src.core.hq_reports import HqReports
 from src.core.crew import CrewState
 from src.air.mpa import PatrolAircraft
 from src.enemies.endurance import SubmarineEndurance
@@ -478,6 +480,12 @@ class SaveMixin:
             "mission_time": self.mission_time,
             "mission_events": list(self.mission_events_pending),
             "tasking": self.tasking.serialize(),
+            "incidents": self.incidents.serialize(),
+            "hq_reports": self.hq_reports.serialize(),
+            "rbu": self.rbu_serialize(),
+            "casualties": self.casualties_serialize(),
+            "baffle_clear": (None if self.baffle_clear is None
+                             else [float(value) for value in self.baffle_clear]),
             "watch": self.crew_watch.serialize(),
             "mpa": self.mpa.serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
@@ -688,6 +696,10 @@ class SaveMixin:
                            blow_available=s.blow_available,
                            emergency_ascent=s.emergency_ascent,
                            transient_left=s.transient_left,
+                           flood_noise_left=s.flood_noise_left,
+                           flood_quiet=s.flood_quiet, flood_seq=s.flood_seq,
+                           ai_tube_left=s.ai_tube_left,
+                           ai_fire_pending=s.ai_fire_pending,
                            hull_fatigue=s.hull_fatigue,
                            turn_left=s.turn_left, turn_delta=s.turn_delta,
                            target_course=s.target_course,
@@ -1031,6 +1043,12 @@ class SaveMixin:
         self.mission_time = data["mission_time"]
         self.mission_events_pending = [str(item) for item in data["mission_events"]]
         self.tasking = TaskBoard.restore(data["tasking"])
+        self.incidents = IncidentBoard.restore(data["incidents"])
+        self.hq_reports = HqReports.restore(data["hq_reports"])
+        self.rbu_restore(data["rbu"])
+        self.casualties_restore(data["casualties"])
+        self.baffle_clear = (None if data["baffle_clear"] is None
+                             else [float(value) for value in data["baffle_clear"]])
         self.task_sel = 0
         self.crew_watch = CrewState.restore(data["watch"])
         self.mpa = PatrolAircraft.restore(data["mpa"], self.world.size_nm)
@@ -1290,6 +1308,11 @@ class SaveMixin:
             s.blow_available = sd["blow_available"]
             s.emergency_ascent = sd["emergency_ascent"]
             s.transient_left = sd["transient_left"]
+            s.flood_noise_left = sd["flood_noise_left"]
+            s.flood_quiet = sd["flood_quiet"]
+            s.flood_seq = sd["flood_seq"]
+            s.ai_tube_left = sd["ai_tube_left"]
+            s.ai_fire_pending = sd["ai_fire_pending"]
             s.hull_fatigue = sd["hull_fatigue"]
             s.turn_left = sd["turn_left"]
             s.turn_delta = sd["turn_delta"]
@@ -1581,8 +1604,7 @@ class SaveMixin:
         self.torpedo_cues = []
         self._torpedo_cues_reported = weakref.WeakKeyDictionary()
         for cue in self.current_torpedo_cues():
-            torpedo = cue.pop("torpedo")
-            self._torpedo_cues_reported.setdefault(torpedo, set()).add(cue["kind"])
+            self._torpedo_cues_reported.setdefault(cue["owner"], set()).add(cue["report"])
             self.torpedo_cues.append(dict(cue, serial=id(torpedo)))
         # Phase 2: RNG-Zustaende (deterministischer Fortgang)
         rg = data["rngs"]

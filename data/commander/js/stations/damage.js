@@ -10,7 +10,8 @@ function compartmentName(payload, key) {
 export function renderDamageStation(payload) {
   metrics($("damage-summary"), [["damage_total", unit(payload.total, "%")], ["sunk", yesNo(payload.sunk)]]);
   renderCrew($("damage-crew"), $("damage-crew-actions"), payload.crew,
-    {actionStations: "crew_action_stations", watchChange: "crew_watch_change"});
+    {actionStations: "crew_action_stations", watchChange: "crew_watch_change",
+      medic: "crew_casualty_medic", reassign: "crew_casualty_reassign"});
   const stability = payload.stability;
   metrics($("damage-stability"), [["damage_list", unit(stability.list_deg, "\u00b0")],
     ["damage_trim", unit(stability.trim_deg, "\u00b0")],

@@ -120,7 +120,8 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
                  "radar_blips", "designated_target_ref", "own_assets", "defense",
                  "asm_observations"},
         "radio": {"observations", "logged_fixes", "logged_bearings", "messages",
-                   "station_down", "navigation", "tactical", "tasks", "can_request_ras"},
+                  "station_down", "navigation", "tactical", "tasks", "can_request_ras",
+                  "can_contact_report", "can_request_support"},
         "engine": {"propulsion", "machinery", "controls", "environment_effects",
                    "compartments"},
         "helicopter": {"asset", "waypoint", "buoys", "buoy_observations", "acoustic", "readiness", "navigation",
@@ -463,7 +464,7 @@ def test_native_status_semantic_sentinels_and_exact_subschemas(published):
     assert weapons["designated_target"] is None
     assert weapons["depth_m"] == game.torpedo_depth
     assert set(weapons["readiness"]) == {"station_down", "roe", "ciws_ready",
-        "aa_ready", "state", "interlock", "reload_s"}
+        "rbu_ready", "torpedo_warning", "aa_ready", "state", "interlock", "reload_s"}
     assert all(set(row) == {"tube", "state", "reload_s"}
                for row in weapons["tubes"])
     assert set(server.v2_states["opz"]["opz"]["radar"]) == {

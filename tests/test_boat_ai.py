@@ -119,6 +119,11 @@ def test_the_ai_boat_attacks_the_convoy():
     sub.x, sub.y = target.x - 3.0, target.y
     sub.course = sub.target_course = 90.0
     sub.state = "PATROLLE"
+    # Dry tubes: the boat floods them quietly first and holds its fire.
+    game.sim_t += 60.0
+    assert not boat_ai.attack(game, sub)
+    assert sub.ai_tube_left == config.UBOOT_TUBE_FLOOD_QUIET_S and sub.flood_quiet
+    sub.ai_tube_left = 0.0
     fired = False
     for _ in range(40):
         game.sim_t += 2.0

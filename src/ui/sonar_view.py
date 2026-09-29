@@ -10,7 +10,7 @@ import pygame
 from src.core import config
 from src.core.i18n import (display_message, display_value, localized, localize,
                             message as structured_message)
-from src.sonar import analysis_tools, tma_operator
+from src.sonar import analysis_tools, class_library, tma_operator
 from src.ui import layout
 from src.ui import observations
 from src.ui import profile_cursor
@@ -969,6 +969,15 @@ def _draw_waterfall(game, panel, page):
                     lx = plot.x + round(value / 360 * (plot.w - 1))
                     pygame.draw.line(screen, (139, 91, 71),
                                      (lx, plot.y), (lx, plot.bottom - 1), 1)
+            # The hull array's baffles astern: dotted edges.
+            observer = _sonar_observer(game)
+            course = getattr(observer, "course", None)
+            if course is not None:
+                astern = (float(course) + 180.0) % 360.0
+                for edge in (-config.SONAR_BAFFLE_HALF_DEG, config.SONAR_BAFFLE_HALF_DEG):
+                    bx = plot.x + round(((astern + edge) % 360.0) / 360 * (plot.w - 1))
+                    for y in range(plot.y, plot.bottom, 6):
+                        pygame.draw.line(screen, DIM, (bx, y), (bx, min(plot.bottom - 1, y + 2)))
     else:
         spectrum_rect = pygame.Rect(plot.x, panel.y + 56, plot.w, 42)
         pygame.draw.rect(screen, NAVY, spectrum_rect)
@@ -1084,6 +1093,25 @@ def _selected_harmonic(game):
     if selected is None or not np.isfinite(selected) or selected <= 0:
         return None
     return float(selected)
+
+
+def _library_rows(game):
+    """Class library: catalog classes sorted by fit to the operator's marks."""
+    library = getattr(game, "sonar_class_library", None)
+    if library is None:
+        return [("sonar.catalog_manual_hint", TEXT, 13)]
+    marks = game.sonar_library_marks()
+    ranked = library(3)
+    if not ranked:
+        return [("sonar.catalog_manual_hint", TEXT, 13)]
+    key = ("sonar.library.header" if marks >= class_library.SURE_MARKS
+           else "sonar.library.header_hint")
+    rows = [(message(key, marks=marks), AMBER, 13)]
+    for index, (signature, fit) in enumerate(ranked, 1):
+        rows.append((message("sonar.library.row", index=index, fit=f"{fit:.0%}",
+                             name=str(getattr(signature, "label", signature.key))),
+                     TEXT, 13))
+    return rows
 
 
 def _demon_evidence(sonar):
@@ -1590,8 +1618,8 @@ def _detail_rows(game, page):
                                  deviation=f"{deviation:+.2f}", rpm=f"{rpm:.0f}"))
         elif tools.shaft_hz is not None:
             lines.append(message("sonar.line.shaft_rpm", rpm=f"{tools.shaft_hz * 60:.0f}"))
-        lines.append("sonar.catalog_manual_hint")
         rows.extend((line, TEXT, 13) for line in lines)
+        rows.extend(_library_rows(game))
         return rows
     if page == 2:
         _, analysis, evidence = _demon_evidence(sonar)

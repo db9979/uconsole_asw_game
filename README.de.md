@@ -14,18 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.89**
+Aktuelle Version: **1.3.98**
 
-Version 1.3.89 macht die Maschinenräume der uConsole zu Maschinenleitständen
-im Splash-Stil. Auf der Fregatte wird der Telegraf eine Säule leuchtender
-Stufen neben einem großen Fahrtinstrument, Instrumenten für Drehzahl und
-Eigenlärm und Anlagenlampen; die Seite Systeme hat eine Warn- und Meldetafel
-mit Sammellampe, den Kraftstoffbunker als Tanksäule, Instrumente für Rollen,
-Stampfen und Schlagseite und ein Bild der Schiffsabschnitte vom Bug zum Heck
-mit Wasserstand, LEDs und nummerierten Reparaturtrupps. Auf dem U-Boot zeigt
-die Seite Anlage Instrumente für Fahrt, Batterie (beim Atom-U-Boot die Tiefe)
-und Eigenlärm mit Betriebsartenlampen, und Vorräte zeigt Tanksäulen für
-Batterie, AIP, Diesel und Absorber und einen Balken je Telegrafenstufe.
+Version 1.3.98 schließt neun Verbesserungen ab, jede für beide Seiten: das
+Fluten der Torpedorohre ist hörbar, Ereignisse auf See (Treibnetze,
+Wetterfronten, Frachter ohne AIS, Wale), Realismusstufen mit Wertungsfaktor,
+ein Logbuch mit Bestwerten und Auszeichnungen, der tote Winkel achteraus und
+sein Räumen, freie Funksprüche an das Hauptquartier, die die Gegenseite peilen
+kann, eine Sonar-Klassenbibliothek nach Passung, ein U-Jagd-Raketenwerfer, der
+auch Torpedos abwehrt, und Verwundete, die ihre Station bremsen, bis
+Sanitätsteam oder Nachbesetzen helfen. Spielstände sind jetzt v38.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -95,7 +93,7 @@ Menüs und Editoren:
 </tr>
 </table>
 
-Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Schadensabwehr](docs/screenshots/de-damage-control-alert.png), [Maschinenraum-Systeme](docs/screenshots/de-engineering-systems.png), [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png), [Optionen](docs/screenshots/de-options.png), [Missionseditor](docs/screenshots/de-mission-editor.png), [Einheiteneditor](docs/screenshots/de-unit-editor.png) und der [taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
+Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Schadensabwehr](docs/screenshots/de-damage-control-alert.png), [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png), [Optionen](docs/screenshots/de-options.png), [Missionseditor](docs/screenshots/de-mission-editor.png), [Einheiteneditor](docs/screenshots/de-unit-editor.png) und der [taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
 
 ### Remote-Crew-Browser (1920 x 1080)
 
@@ -109,8 +107,7 @@ Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Scha
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-sonar-desktop.png"><img src="docs/screenshots/commander-v2-de-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
 </tr>
 <tr>
-<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-engine-desktop.png" alt="Fregatten-Maschinenraum: Maschinenleitstand"></a><br><sub>Fregatten-Maschinenraum: Maschinenleitstand</sub></td>
-<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
+<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
 </tr>
 </table>
 

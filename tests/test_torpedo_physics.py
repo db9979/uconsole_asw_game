@@ -197,6 +197,8 @@ def test_an_ai_boat_attacks_a_quiet_located_frigate_in_range(range_nm, attacks):
     fired = False
     for _ in range(3600):
         sub._maybe_attack(1.0, _frigate_observation(sub, range_nm, signal=0.2))
+        if sub.ai_tube_left > 0.0:           # the flooding runs in update()
+            sub.ai_tube_left = max(0.0, sub.ai_tube_left - 1.0)
         if sub.pending_torpedoes:
             fired = True
             break

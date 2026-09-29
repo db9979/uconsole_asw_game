@@ -177,8 +177,11 @@ class EventMixin:
                     choices = config.FPS_CHOICES
                     step = -1 if key == pygame.K_LEFT else 1
                     value = choices[(choices.index(self.frame_rate()) + step) % len(choices)]
-                elif name == "operator_assist":
-                    value = ("off" if self.operator_assist() else "training")
+                elif name == "level":
+                    levels = config.LEVELS
+                    step = -1 if key == pygame.K_LEFT else 1
+                    value = levels[(levels.index(self._preferred_level()) + step)
+                                   % len(levels)]
                 elif name == "bottom_panel":
                     choices = layout.BOTTOM_PANEL_MODES
                     value = choices[(choices.index(self.bottom_panel_mode()) + 1)
@@ -1022,12 +1025,23 @@ class EventMixin:
                 if self.change_watch() is not True:
                     self.flash(message("crew.watch_blocked"), 2.0)
                 return
+            if e.key in (pygame.K_m, pygame.K_u) and crew_page:
+                if e.key == pygame.K_m:
+                    self.casualty_medic()
+                else:
+                    self.casualty_reassign()
+                return
             if e.key == pygame.K_g and (self.station is Station.BRIDGE or crew_page):
                 self.toggle_action_stations()
                 return
-            if (e.key in (pygame.K_a, pygame.K_d, pygame.K_r)
+            if (e.key in (pygame.K_a, pygame.K_d, pygame.K_r, pygame.K_k, pygame.K_h)
                     and self.station is Station.RADIO and self.station_page == 2):
-                if e.key == pygame.K_a:
+                if e.key in (pygame.K_k, pygame.K_h):
+                    result = (self.send_contact_report() if e.key == pygame.K_k
+                              else self.request_support())
+                    if result is not True:
+                        self.flash(message("runtime.task." + result), 2.5)
+                elif e.key == pygame.K_a:
                     self._task_accept_selected()
                 elif e.key == pygame.K_r:
                     self._ras_request_selected()
@@ -1107,6 +1121,9 @@ class EventMixin:
                 self._stop_sonar_audio()
                 self.flash(message("runtime.sonar_audio.on" if self.helo_audio_enabled
                                    else "runtime.sonar_audio.off"))
+            elif e.key == pygame.K_b and self.station is Station.BRIDGE \
+                    and getattr(e, "mod", 0) & pygame.KMOD_CTRL:
+                self._route_result(self.clear_baffles())
             elif e.key == pygame.K_b and self.station is Station.BRIDGE \
                     and self.station_page == 2:
                 self._toggle_lookout_glasses()
@@ -1198,6 +1215,11 @@ class EventMixin:
                     self.toggle_radar(domain)
                 elif self.station is Station.HELICOPTER and self.station_page == 3:
                     self.set_helicopter_listen_bearing(None)
+                elif self.station is Station.WEAPONS:
+                    if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                        self.fire_rbu_defence()
+                    else:
+                        self.fire_rbu()
             elif e.key == pygame.K_m:
                 if self.station in (Station.SONAR, Station.WEAPONS,
                                     Station.HELICOPTER):
@@ -1740,6 +1762,8 @@ class EventMixin:
                     self._open_administration("options")
                 elif action == BUG_REPORT_ENTRY:
                     self.open_bug_report()
+                elif action == "logbook":
+                    self.open_logbook()
                 else:
                     self._open_administration("quit")
             elif key in (pygame.K_ESCAPE, pygame.K_q):
@@ -1747,6 +1771,9 @@ class EventMixin:
             return
         if self.menu_screen == BUG_REPORT_ENTRY:
             self._handle_bug_report_key(key)
+            return
+        if self.menu_screen == "logbook":
+            self._handle_logbook_key(key)
             return
         if self.menu_screen == "training":
             count = len(training.LESSONS)

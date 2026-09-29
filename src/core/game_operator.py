@@ -9,6 +9,7 @@ import math
 
 
 from src.core import boat_threat
+from src.core import baffles
 from src.core import config
 from src.ship import route as route_model
 from src.core.commands import STATION_PAGES, station_page_step
@@ -20,6 +21,7 @@ from src.core import opfor
 from src.core.optics import optics_key
 from src.core.limits import MAX_DECOYS
 from src.sonar import analysis_tools
+from src.sonar import class_library
 from src.sonar import tma_operator
 from src.enemies.decoy import Decoy
 from src.sonar.sonar import SONAR_ARRAY_MODES, Contact, TowState
@@ -171,6 +173,32 @@ class OperatorMixin:
             return blocked
         self.cancel_route()
         return "ok"
+
+    def clear_baffles(self) -> str:
+        """Bridge: swing the ordered course to hear into the own baffles,
+        then come back (``baffles.py``)."""
+        blocked = self._route_order_check()
+        if blocked:
+            return blocked
+        state = baffles.start(self.ship.target_course, self.sim_t)
+        result = self._set_course_order(state[1], "bridge")
+        if result != "ok":
+            return result
+        self.baffle_clear = state
+        text = message("runtime.baffles.clearing", course=f"{state[1]:03.0f}",
+                       back=f"{state[0]:03.0f}")
+        self.feed.add(self.world.format_time(), "navigation", text)
+        self.flash(text, 4.0)
+        return "ok"
+
+    def _steer_baffle_clear(self) -> None:
+        """Return to the previous course once the baffles are cleared."""
+        state, back = baffles.step(self.baffle_clear, self.ship.target_course, self.sim_t)
+        self.baffle_clear = state
+        if back is not None and not self.damage.station_down("bridge"):
+            self.ship.target_course = back
+            self.feed.add(self.world.format_time(), "navigation", message(
+                "runtime.baffles.cleared", course=f"{back:03.0f}"))
 
     def cancel_route(self) -> None:
         """Drop an active route (a helm order or the rudder took over)."""
@@ -577,6 +605,21 @@ class OperatorMixin:
             if type(hz) in (int, float) and math.isfinite(hz)
             and 0 < float(hz) <= config.LOFAR_FMAX_HZ}))
 
+    def sonar_class_library(self, limit: int = class_library.MAX_ROWS):
+        """Catalog classes sorted by fit to the operator's own line marks
+        (LOFAR fundamental, DEMON shaft and blade lines)."""
+        signatures = self.sonar.acoustic_profiles
+        if signatures is None:
+            signatures = self.runtime_catalog.acoustic_profiles
+        tools = self.sonar_tools
+        return class_library.rank(signatures, tools.shaft_hz, tools.blade_hz,
+                                  self.sonar_harmonic_hz, limit)
+
+    def sonar_library_marks(self) -> int:
+        tools = self.sonar_tools
+        return class_library.marks_count(tools.shaft_hz, tools.blade_hz,
+                                         self.sonar_harmonic_hz)
+
     def set_sonar_harmonic(self, frequency_hz):
         if self._sonar_down():
             return "sonar_down"
@@ -825,8 +868,22 @@ class OperatorMixin:
                                        estimate[0])
 
     def operator_assist(self) -> bool:
-        """Training aids (auto peaks, blade-rate/catalog ranking, ESM IDs) on?"""
+        """Training aids (auto peaks, blade-rate/catalog ranking, ESM IDs) on?
+
+        The mission's realism level decides: Beginner always, Realistic
+        never, Standard as the preference says."""
+        level = getattr(self, "level", config.LEVEL_DEFAULT)
+        if level != config.LEVEL_DEFAULT:
+            return level == "beginner"
         return getattr(self.preferences, "operator_assist", "off") == "training"
+
+    def _preferred_level(self) -> str:
+        """The realism level the next mission starts with (preference)."""
+        level = getattr(self.preferences, "level", config.LEVEL_DEFAULT)
+        return level if level in config.LEVELS else config.LEVEL_DEFAULT
+
+    def level_score_factor(self) -> float:
+        return config.LEVEL_SCORE_FACTOR.get(self.level, 1.0)
 
     def set_sonar_cursor(self, page, frequency_hz):
         if page not in ("lofar", "demon"):
@@ -2010,12 +2067,16 @@ class OperatorMixin:
             self._profile_names = names
         return names.get(key, key)
 
-    def _make_analyzer(self) -> ContactAnalyzer:
+    def _make_analyzer(self, fits=None) -> ContactAnalyzer:
         """Read-only Kontakt-Katalog-Browser (Menue und In-Game, F8)."""
         return ContactAnalyzer(
             tr=self.tr, on_play_sample=self._play_unit_audio,
             on_stop_sample=self.audio.stop_preview,
-            preview_active=self.audio.preview_playing)
+            preview_active=self.audio.preview_playing, fits=fits)
+
+    def _library_fits(self) -> dict:
+        """F8 in a mission: every class's fit to the operator's line marks."""
+        return {signature.key: fit for signature, fit in self.sonar_class_library(limit=1000)}
 
     def _open_analyzer_in_game(self) -> None:
         """TUA im laufenden Spiel: Simulation laeuft weiter, Esc kehrt ins Spiel zurueck.
@@ -2024,10 +2085,11 @@ class OperatorMixin:
         it (the operator's catalog comparison result)."""
         self._clear_controls()
         contact = self.selected_contact
+        fits = self._library_fits()
         if contact is None or contact.target_id not in self.sonar.contacts:
-            self.editor = self._make_analyzer()
+            self.editor = self._make_analyzer(fits)
             return
-        analyzer = self._make_analyzer()
+        analyzer = self._make_analyzer(fits)
         analyzer.on_assign = lambda key: self.assign_contact_profile(contact, key)
         analyzer.assign_label = self.contact_display_id(contact)
         analyzer.current_assignment = lambda: self.profile_name(contact.player_profile)

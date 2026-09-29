@@ -8,7 +8,7 @@ import tempfile
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
-from src.core.config import BOTTOM_PANEL_MODES, FPS_CHOICES, FPS_DEFAULT
+from src.core.config import BOTTOM_PANEL_MODES, FPS_CHOICES, FPS_DEFAULT, LEVELS
 from src.core.i18n import SUPPORTED_LANGUAGES, detect_system_language
 
 _MAX_CREDENTIAL_LEN = 256
@@ -38,6 +38,10 @@ class Preferences:
     # "training" adds automatic peak labels, blade-rate/catalog ranking and
     # ESM emitter candidates. Display only, never simulation state.
     operator_assist: str = "off"
+    # Realism level of the next mission (``config.LEVELS``): Beginner turns
+    # the assistance on and softens the computer opponent, Realistic turns
+    # it off and sharpens the opponent; the score is scaled to match.
+    level: str = "standard"
     live_ais_enabled: bool = False
     live_adsb_enabled: bool = False
     aisstream_api_key: str = ""
@@ -92,6 +96,11 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     assist = payload.get("operator_assist", defaults.operator_assist)
     values["operator_assist"] = (assist if assist in ("off", "training")
                                  else defaults.operator_assist)
+    level = payload.get("level")
+    if level not in LEVELS:
+        # Settings from before the levels: assistance meant the beginner.
+        level = "beginner" if values["operator_assist"] == "training" else defaults.level
+    values["level"] = level
     for name in ("aisstream_api_key", "opensky_credentials"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value.strip()[:_MAX_CREDENTIAL_LEN] \

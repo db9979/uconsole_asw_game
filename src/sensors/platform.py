@@ -8,6 +8,7 @@ import random
 from dataclasses import asdict, dataclass
 
 from src.core import config
+from src.core.baffles import in_baffles
 from src.sensors import radar as radar_physics
 from src.sonar import equation, propagation
 
@@ -16,6 +17,7 @@ SIDES = ("friendly", "neutral", "hostile")
 DOCTRINES = (
     "submarine",
     "surface_transit",
+    "dark_transit",
     "surface_combatant",
     "civil_flight",
     "military_patrol",
@@ -268,6 +270,10 @@ class PlatformSensorSuite:
                            getattr(candidate, "depth", 5.0)):
                     return
             elif "passive" in profile.modes:
+                course = getattr(owner, "course", None)
+                if course is not None and in_baffles(
+                        course, math.degrees(math.atan2(dx, -dy)) % 360.0):
+                    return          # the hull array is deaf astern
                 mx, my = (owner.x + candidate.x) * .5, (owner.y + candidate.y) * .5
                 source_depth = getattr(owner, "depth", 5.0)
                 target_depth = getattr(candidate, "depth", 5.0)

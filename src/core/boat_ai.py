@@ -237,12 +237,21 @@ def _torpedo_running(game, sub) -> bool:
 
 def attack(game, sub, ships=None) -> bool:
     """Fire one torpedo at the nearest merchant within attack range."""
-    ships = [ship for ship in (convoy_ships(game) if ships is None else ships)
+    near = [ship for ship in (convoy_ships(game) if ships is None else ships)
+            if math.hypot(ship.x - sub.x, ship.y - sub.y)
+            <= config.BOAT_AI_ATTACK_NM + config.BOAT_AI_PREFLOOD_MARGIN_NM]
+    if (near and sub.state == "PATROLLE" and sub.torpedoes_left > 0
+            and (sub.weapon_battery is None or sub.weapon_battery.ready_count > 0)):
+        # Flood the tubes quietly while closing; the shot waits for them.
+        sub.ai_flood_tubes(quiet=True)
+    ships = [ship for ship in near
              if math.hypot(ship.x - sub.x, ship.y - sub.y) <= config.BOAT_AI_ATTACK_NM]
     if (not ships or sub.state != "PATROLLE" or sub.torpedoes_left <= 0
             or _torpedo_running(game, sub) or not _window(game, config.BOAT_AI_FIRE_EVERY_S)):
         return False
     if sub.weapon_battery is not None and sub.weapon_battery.ready_count <= 0:
+        return False
+    if sub.ai_tube_left != 0.0:
         return False
     target = min(ships, key=lambda ship: (math.hypot(ship.x - sub.x, ship.y - sub.y), ship.id))
     bearing = _bearing(sub.x, sub.y, target.x, target.y)
@@ -291,10 +300,17 @@ def patrol_attack(game, sub) -> bool:
             or not _window(game, config.BOAT_AI_FIRE_EVERY_S)):
         return False
     window = int(math.floor(game.sim_t / config.BOAT_AI_FIRE_EVERY_S))
-    if detrand.u01(game.seed, "sub-raid", int(sub.id), window) >= config.SUB_RAID_P:
+    # A raid already decided waits for its tubes instead of rolling again.
+    if (not sub.ai_fire_pending and detrand.u01(
+            game.seed, "sub-raid", int(sub.id), window) >= config.SUB_RAID_P):
         return False
     ships = [ship for ship in game.civilians if not ship.sunk]
-    return attack(game, sub, ships)
+    fired = attack(game, sub, ships)
+    # Dry tubes with a merchant in reach: the flooding started, the shot waits.
+    sub.ai_fire_pending = (not fired and sub.ai_tube_left != 0.0 and any(
+        math.hypot(ship.x - sub.x, ship.y - sub.y) <= config.BOAT_AI_ATTACK_NM
+        for ship in ships))
+    return fired
 
 
 def frigate_sighted(game, sub) -> bool:

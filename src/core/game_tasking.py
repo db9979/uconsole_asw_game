@@ -188,19 +188,23 @@ class TaskingMixin:
             board.next_offer_t = self.sim_t + detrand.uniform(
                 *config.TASK_INTERVAL_S, self.seed, "task-interval", board.offers)
 
-    def _offer_task(self, kind: str | None = None, requested: bool = False):
+    def _offer_task(self, kind: str | None = None, requested: bool = False,
+                    target=None):
         """Offer the next task (``kind`` forces one, for tests and drills;
-        ``requested``: own ship asked for it, so HQ's own reasons are moot)."""
+        ``requested``: own ship asked for it, so HQ's own reasons are moot;
+        ``target``: the ship an identify task names, from an incident)."""
         board = self.tasking
         index = board.offers
         builders = [name for name in tasking.KINDS
                     if (kind is None or name == kind)
-                    and (requested or getattr(self, "_task_candidate_" + name)())]
+                    and (requested or target is not None
+                         or getattr(self, "_task_candidate_" + name)())]
         if not builders:
             board.offers += 1
             return None
         kind = builders[int(detrand.u01(self.seed, "task-kind", index) * len(builders))]
-        task = getattr(self, "_build_task_" + kind)(index)
+        task = (self._build_task_identify(index, target) if target is not None
+                else getattr(self, "_build_task_" + kind)(index))
         if task is None:
             board.offers += 1
             return None
@@ -298,9 +302,10 @@ class TaskingMixin:
             true_x=tx, true_y=ty,
             deadline_t=self.sim_t + tasking.survival_s(sst))
 
-    def _build_task_identify(self, index: int):
-        ships = self._identify_candidates()
-        ship = ships[int(detrand.u01(self.seed, "task-id-ship", index) * len(ships))]
+    def _build_task_identify(self, index: int, ship=None):
+        if ship is None:
+            ships = self._identify_candidates()
+            ship = ships[int(detrand.u01(self.seed, "task-id-ship", index) * len(ships))]
         sigma = config.TASK_IDENTIFY_REPORT_SIGMA_NM
         return dict(
             x=ship.x + sigma * detrand.normal(self.seed, "task-id-ex", index),

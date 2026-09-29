@@ -614,7 +614,12 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                                       getattr(game.sonar, "operator_notch_hz", None)),
                                   demon_band_hz=[_number(value) for value in
                                                  game.sonar.receiver.demon_band_hz],
-                                  heterodyne_hz=_number(game.sonar.heterodyne_hz)),
+                                  heterodyne_hz=_number(game.sonar.heterodyne_hz),
+                                  library_marks=int(game.sonar_library_marks()),
+                                  library=[dict(name=str(getattr(signature, "label",
+                                                                 signature.key))[:48],
+                                                fit=_number(fit))
+                                           for signature, fit in game.sonar_class_library(3)]),
                               audio_enabled=bool(game.sonar_audio_enabled),
                               volume=_number(game.sonar_volume),
                               quiet_mode=bool(getattr(observer, "quiet_mode", False))),
@@ -656,9 +661,12 @@ def _weapons(game, rows, target_ref, asset_refs, direct_refs):
                                  chaff_ready=game.softkill_store.ready > 0,
                                 nixies=None if store is None else store.remaining_total,
                                 asroc=int(game.own_asrocs_left),
-                                depth_charges=int(game.depth_charges_left)),
+                                depth_charges=int(game.depth_charges_left),
+                                rbu=int(game.rbu_rockets)),
                  readiness=dict(station_down=game.damage.station_down("weapons"),
                                 roe=game.roe, ciws_ready=game.ciws_cooldown_s <= 0,
+                                rbu_ready=game.rbu_reload_s <= 0.0,
+                                torpedo_warning=game.rbu_defence_bearing() is not None,
                                 aa_ready=game.aa_cooldown_s <= 0,
                                 state="unavailable" if battery is None else "available",
                                 interlock=str(localize(interlock, game.tr))[:256],
@@ -714,9 +722,10 @@ def _bridge_route(game):
                         if number > route.index])
 
 
-def _crew(game, watch=None):
-    """A crew's watch bill, fatigue and morale (own-ship truth)."""
+def _crew(game, watch=None, roster=None):
+    """A crew's watch bill, fatigue, morale and wounded (own-ship truth)."""
     view = game.crew_view(watch)
+    hurt = game.casualty_view(roster)
     left = view["watch_left_s"]
     return dict(on_watch=int(view["on_watch"]),
                 watches=[dict(index=int(row["index"]), fatigue=_number(row["fatigue"]),
@@ -725,7 +734,14 @@ def _crew(game, watch=None):
                 turnover=bool(view["turnover"]),
                 action_stations=bool(view["action_stations"]),
                 morale=_number(view["morale"]),
-                effectiveness=_number(view["effectiveness"]))
+                effectiveness=_number(view["effectiveness"]),
+                casualties=dict(
+                    wounded=int(hurt["wounded"]), serious=int(hurt["serious"]),
+                    returned=int(hurt["returned"]),
+                    stations=[dict(station=row["station"], gaps=int(row["gaps"]),
+                                   posts=int(row["posts"])) for row in hurt["stations"]],
+                    medic=hurt["medic"], spare=int(hurt["spare"]),
+                    reassign_in_s=_number(hurt["reassign_in_s"])))
 
 
 def _damage(game):
@@ -788,7 +804,9 @@ def _radio(game, rows, ref_by_track):
                             if row["source"] == "HFDF"][:_MAP_ROWS_MAX],
                  tasks=_radio_tasks(game, station_down),
                  can_request_ras=bool(not station_down and game.tasking.enabled
-                                      and not game.game_over and game.ras_needed()))
+                                      and not game.game_over and game.ras_needed()),
+                 can_contact_report=bool(game.can_send_report("contact")),
+                 can_request_support=bool(game.can_send_report("support")))
 
 
 def _radio_tasks(game, station_down):
@@ -1509,7 +1527,7 @@ def _uboot_damage(game, boat):
     sub = boat.sub
     control = sub.damage_control
     return dict(
-        crew=_crew(game, boat.watch),
+        crew=_crew(game, boat.watch, game.peek_roster(boat.sub)),
         power=bool(control.power()), pumping=bool(control.pumping),
         compartments=[dict(
             name=name, water_kg=_number(c.water_kg), capacity_kg=_number(capacity_kg(index)),

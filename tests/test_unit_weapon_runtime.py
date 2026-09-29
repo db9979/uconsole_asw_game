@@ -465,6 +465,7 @@ def test_enemy_counterfire_uses_remembered_observation_not_hidden_motion():
     sub.update(0.1, ship, ocean())
     ship.x, ship.y = 90, 95
     sub.attack_left = 0
+    sub.ai_tube_left = 0.0                   # tubes flooded beforehand
     sub.rng.random = lambda: 0.0
     sub.update(1.0, ship, ocean())
     assert sub.pending_torpedoes

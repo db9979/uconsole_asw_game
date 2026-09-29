@@ -257,7 +257,10 @@ def test_ownship_passive_propagation_runs_only_on_quarter_second_scan(monkeypatc
     for target in targets:
         target.x = target.y = 0.0
     target = game.subs[0]
-    target.x, target.y = game.ship.x + 2.0, game.ship.y
+    # Abeam of the ship, clear of the hull sonar's baffles.
+    beam = math.radians(game.ship.course + 90.0)
+    target.x = game.ship.x + 2.0 * math.sin(beam)
+    target.y = game.ship.y - 2.0 * math.cos(beam)
     calls = []
     original = propagation.propagate
     monkeypatch.setattr(propagation, "propagate",

@@ -107,11 +107,12 @@ class BugReportMixin:
 
 
 # Main-menu entries in display order (labels in ``MAIN_MENU_LABELS``).
-MAIN_MENU_ENTRIES = ("new", "training", "campaign", "load", "mission_editor",
+MAIN_MENU_ENTRIES = ("new", "training", "campaign", "logbook", "load", "mission_editor",
                      "unit_editor", "contact_analyzer", "options", BUG_REPORT_ENTRY, "quit")
 # Catalog key of each entry's label; "continue" leads while an autosave exists.
 MAIN_MENU_LABELS = {"continue": "menu.continue", "new": "menu.new_game",
                     "training": "menu.training", "campaign": "menu.campaign",
+                    "logbook": "menu.logbook",
                     "load": "menu.load", "mission_editor": "menu.mission_editor",
                     "unit_editor": "menu.unit_editor",
                     "contact_analyzer": "menu.contact_analyzer",

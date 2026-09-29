@@ -14,20 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.86**
+Aktuelle Version: **1.3.95**
 
-Version 1.3.86 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach
-ihrem Mittelpunkt sortiert gezeichnet, sodass aus vielen Winkeln eine ferne
-Fläche über eine nahe gemalt wurde: Decks schienen durch Aufbauten, die ferne
-Rumpfseite durch die nahe, und Schiffe wirkten hohl. Jedes Modell wird jetzt
-einmal in eine binäre Raumteilung zerlegt, die von jeder Seite eine exakte
-Reihenfolge von hinten nach vorn ergibt, auf der uConsole wie im Browser; die
-Rumpfbeplankung ist geschlossen und zeigt nach außen, und Rümpfe, U-Boote und
-Flugzeugrümpfe haben ein feineres Raster. Aufbauten sind keine Klötze mehr:
-Sie steigen in Decksstufen an, bei Kriegsschiffen eingezogen und geneigt, bei
-Passagierschiffen in Terrassen zurückgesetzt, bei Handelsschiffen mit kurzem
-Steuerhaus und Brückennocken oben; U-Boot-Türme sind stromlinienförmig.
-Spielstände bleiben v32.
+Version 1.3.95 schließt neun Verbesserungen ab, jede für beide Seiten: das
+Fluten der Torpedorohre ist hörbar, Ereignisse auf See (Treibnetze,
+Wetterfronten, Frachter ohne AIS, Wale), Realismusstufen mit Wertungsfaktor,
+ein Logbuch mit Bestwerten und Auszeichnungen, der tote Winkel achteraus und
+sein Räumen, freie Funksprüche an das Hauptquartier, die die Gegenseite peilen
+kann, eine Sonar-Klassenbibliothek nach Passung, ein U-Jagd-Raketenwerfer, der
+auch Torpedos abwehrt, und Verwundete, die ihre Station bremsen, bis
+Sanitätsteam oder Nachbesetzen helfen. Spielstände sind jetzt v38.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

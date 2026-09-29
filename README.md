@@ -12,19 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.86**
+Current release: **1.3.95**
 
-Release 1.3.86 makes the 3D models solid. Until now their faces were drawn
-in the order of their centres, so from many angles a far face was painted over
-a near one: decks showed through superstructures, the far side of a hull
-through the near side, and ships looked hollow. Every model is now split once
-into a binary space partition that gives, from any side, an exact order from
-back to front, on the uConsole and in the browser alike; hull plating is
-closed and faces outward, and hulls, submarines and fuselages are drawn with
-a finer grid. Deckhouses are no longer single blocks: they rise in deck tiers,
-warships drawn in and raked, passenger ships stepping back in terraces,
-merchant ships with a short wheelhouse and bridge wings on top; submarine
-sails are streamlined. Saves stay v32.
+Release 1.3.95 completes nine improvements, each for both sides: submarines
+flooding their tubes are heard, incidents at sea (drift nets, weather fronts,
+freighters without AIS, whales), realism levels with a score factor, a logbook
+with best scores and awards, baffles and baffle clearing, free radio calls to
+HQ that the other side can DF, a sonar class library sorted by fit, an ASW
+rocket launcher that also defends against torpedoes, and wounded crew who
+slow their stations until the medical team or re-manning helps. Saves are now
+v38.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

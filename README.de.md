@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.74**
+Aktuelle Version: **1.3.75**
 
-Version 1.3.74 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
+Version 1.3.75 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
 Buchten und um lange Küsten finden: Reicht ein Ausweichpunkt für eine Strecke
 nicht, plant eine Wegsuche auf der Karte die Wendepunkte (die Planung ist
 dabei schneller als bisher). GitHub prüft jetzt jede Änderung mit der ganzen

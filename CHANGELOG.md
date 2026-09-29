@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.74
+## 1.3.75
 
-Release 1.3.74 lets the Bridge autopilot find its way through channels, into
+Release 1.3.75 lets the Bridge autopilot find its way through channels, into
 bays and round long coasts: when a stand-off detour does not clear a leg, a
 path search on the chart plans the turning points (planning is also faster
 than before). GitHub now runs the whole test suite with the browser tests,
@@ -14,6 +14,16 @@ the generated-file checks, the calibration and the smoke test on every change,
 and two flaky browser checks are fixed: the phone lookout no longer falls back to the pairing screen when the host answers slowly right after pairing, and the status bar check measures with the bundled fonts. The manual no
 longer says the frigate has no ASROC, and `tools/hw_report.py` turns a debug
 run on the uConsole into the hardware checklist's table. Saves stay v31.
+
+## 1.3.74
+
+Release 1.3.74 gives the submarine a fair chance against the computer-run
+frigate. When you play the submarine, the frigate's crew now needs about 3
+minutes to recognise a submarine by its sound and about 10 minutes to ready the
+helicopter. On a bare bearing the helicopter only listens with its dipping
+sonar, the patrol aircraft comes only for a position, and aircraft attack only
+from a fix at most 2 minutes old. Breakthrough now runs 5 hours instead of 4
+and Reconnaissance 2 hours instead of 3. Saves stay v31.
 
 ## 1.3.73
 

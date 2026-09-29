@@ -87,9 +87,9 @@ function antiCollision(t) {
   return [t % 1 < .12, phase < .06 || (phase >= .18 && phase < .24)];
 }
 
-function drawNavLights(g, cls, frame, width, code, t) {
+function drawNavLights(g, cls, frame, width, code, t, navPoints = null) {
   const aircraft = code.slice(5) === "AC";
-  const nav = aircraft ? PROFILES.aircraft.nav : (PROFILES[cls] || PROFILES.merchant).nav || PROFILES.merchant.nav;
+  const nav = aircraft ? PROFILES.aircraft.nav : navPoints || (PROFILES[cls] || PROFILES.merchant).nav || PROFILES.merchant.nav;
   const core = Math.max(1, Math.min(3, Math.floor(width / 150))), points = [], roundLights = code.slice(5);
   // A trawler's single masthead light stands abaft and above her green.
   const mast = roundLights === "GW" ? nav.mast.slice(1) : nav.mast;
@@ -122,11 +122,11 @@ function drawNavLights(g, cls, frame, width, code, t) {
 
 // With the judged angle on the bow ``aob`` a large enough ship, submarine or
 // aircraft is drawn as its 3D model turned to that aspect.
-export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, lights = null, nav = null, aloft = false, aob = null} = {}) {
+export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, lights = null, nav = null, aloft = false, aob = null, model = null} = {}) {
   width = Math.max(3, width);
-  const model = drawInScene(g, cls, cx, base, width, fill, aob, aloft);
-  if (model) {
-    if (typeof nav === "string") drawNavLights(g, cls, model, Math.floor(width), nav, t);
+  const scene = drawInScene(g, cls, cx, base, width, fill, aob, aloft, model);
+  if (scene) {
+    if (typeof nav === "string") drawNavLights(g, cls, scene, Math.floor(width), nav, t, scene.nav);
     return;
   }
   if (cls === "torpedo") {
@@ -490,7 +490,7 @@ function drawWindRose(g, height, colors, windFromDeg) {
 
 // One eyepiece picture.  ``v``: bearing (line of sight), fov_deg,
 // horizon_offset, horizon_tilt, visibility_nm, sea_state, sky, outlines
-// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg}]) and an optional window_deg crosshair;
+// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg, model}]) and an optional window_deg crosshair;
 // no_scale hides the bearing scale, wind_rose_deg draws the weather
 // instrument's wind rose in the top left corner; way ({speed_kn, course_deg,
 // eye_m, hull}) is the own way through the water (wave stream, bow wave, wake).
@@ -507,7 +507,7 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
       const base = aloft(row) ? w.skyY - row.elevation_deg * w.pxPerDeg : w.base(cx);
       drawProfile(g, row.cls, cx, base, Math.min(width, Math.max(3, row.span_deg * w.pxPerDeg)), mix(colors.steel, colors.haze, fade),
         {t, rim: mix(colors.rim, colors.haze, fade), lights: lit && !row.stale ? WINDOW_LIGHT : null,
-          nav: row.stale ? null : row.lights ?? null, aloft: aloft(row), aob: row.stale ? null : row.aob_deg ?? null});
+          nav: row.stale ? null : row.lights ?? null, aloft: aloft(row), aob: row.stale ? null : row.aob_deg ?? null, model: row.stale ? null : row.model ?? null});
     }
   };
   const airborne = v.outlines.filter(aloft);

@@ -37,7 +37,7 @@ MATERIALS = {
     "sub": (80, 88, 96), "air": (196, 202, 208), "mil": (122, 134, 132),
     "canopy": (58, 92, 124), "torpedo": (86, 100, 78), "decoy": (170, 150, 70),
     "whale": (72, 84, 100), "belly": (150, 160, 170), "fish": (150, 172, 184),
-    "jelly": (176, 146, 206),
+    "jelly": (176, 146, 206), "pad": (78, 96, 86), "black": (44, 48, 54),
 }
 MATERIAL_NAMES = tuple(MATERIALS)
 # Sea around a floating hull: an outline ring at the waterline.
@@ -154,14 +154,15 @@ def _plan(u: float, entrance: float = 0.32, transom: float = 0.72) -> float:
 
 
 def _hull(b: _Builder, poly, beam: float, draft: float, *, side="hull",
-          deck="deck", stations: int = 18, transom: float = 0.72) -> None:
+          deck="deck", stations: int = 18, transom: float = 0.72,
+          entrance: float = 0.32) -> None:
     """Loft a hull: the profile's top edge is the deck, its lower edge the
     stem; below the waterline a rounded underbody down to ``draft``."""
     us = [0.0] + [((i + 0.5) / stations) ** 1.0 for i in range(stations)] + [1.0]
     rings = []
     for u in us:
         low, top = _envelope(poly, u)
-        half = beam * _plan(u, transom=transom)
+        half = beam * _plan(u, entrance, transom)
         depth = draft * (0.35 + 0.65 * _plan(u, 0.22, 0.4)) if low <= 1e-6 else 0.0
         zb = low
         x = _x(u)
@@ -460,9 +461,16 @@ _CACHE: dict[str, Mesh] = {}
 
 
 def mesh_for(cls: str) -> Mesh:
-    """The model of ``cls`` (other classes get the small craft), built once;
-    the cache holds at most one mesh per entry of ``MODEL_CLASSES``."""
-    cls = cls if cls in _BUILDERS else "unknown"
+    """The model of ``cls``, a class or a catalog type with its own variant
+    (``src/ui/unit_variants.py``); anything else gets the small craft.
+    Built once; the cache holds at most one mesh per entry of
+    ``MODEL_CLASSES``."""
+    if cls not in _BUILDERS:
+        from src.ui import unit_variants
+        variant = unit_variants.variant_mesh(cls) if isinstance(cls, str) else None
+        if variant is not None:
+            return variant
+        cls = "unknown"
     mesh = _CACHE.get(cls)
     if mesh is None:
         mesh = _CACHE[cls] = _BUILDERS[cls]()
@@ -519,6 +527,13 @@ def catalog_model_classes(cat) -> dict:
     return result
 
 
+def model_key(key, cls: str) -> str:
+    """The model to draw for catalog type ``key`` of class ``cls``: its own
+    variant when it has one, else the class model."""
+    from src.ui import unit_variants
+    return key if unit_variants.has_variant(key) else cls
+
+
 def unit_model_class(data) -> str:
     """Model class of a unit editor record (built-in clone or user profile);
     an animal is told apart by its key or, for a clone, by its name."""
@@ -529,8 +544,8 @@ def unit_model_class(data) -> str:
             key = "fish"
         elif "qualle" in name or "jelly" in name:
             key = "jellyfish"
-    return model_class(kind, key, category=data.get("category"),
-                       name=str(data.get("name", "")))
+    return model_key(key, model_class(kind, key, category=data.get("category"),
+                                      name=str(data.get("name", ""))))
 
 
 def _view(yaw: float, elevation: float) -> np.ndarray:
@@ -722,22 +737,27 @@ class _ScenePoints:
 
 def draw_in_scene(s, cls: str, cx: float, base_y: float, width: float, color, *,
                   aob_deg: float | None, aloft: bool = False, nav: str | None = None,
-                  t: float = 0.0) -> bool:
+                  t: float = 0.0, model: str | None = None) -> bool:
     """Draw ``cls`` in an eyepiece turned by the judged angle on the bow,
     ``width`` px long, afloat on ``base_y`` (``aloft``: an aircraft centred
-    on it); False when it is too small or not turned, so the caller draws
-    the flat silhouette instead."""
+    on it), as the variant of the identified type ``model`` when there is
+    one; False when it is too small or not turned, so the caller draws the
+    flat silhouette instead."""
     if aob_deg is None or cls not in SCENE_CLASSES or width < SCENE_MIN_PX:
         return False
     length_px = int(width)
     if cls == "aircraft" and not aloft:
         base_y -= 0.25 * length_px          # hovering over the horizon
     surface_only = cls != "aircraft"
+    # An identified type is drawn as its own variant (``model``).
+    key = model_key(model, cls) if model is not None else cls
     # Colours in steps of 4 so a slowly changing sky rebuilds rarely.
-    sprite, (ox, oy) = _scene_sprite(cls, length_px, float(aob_deg),
+    sprite, (ox, oy) = _scene_sprite(key, length_px, float(aob_deg),
                                      tuple(int(c) // 4 * 4 for c in color), surface_only)
     s.blit(sprite, (int(cx) - ox, int(base_y) - oy))
     if nav is not None:
+        from src.ui import unit_variants
+        points = unit_variants.ship_nav(key) if key != cls else None
         silhouettes.draw_nav_lights(s, cls, _ScenePoints(cls, cx, base_y, length_px, aob_deg),
-                                    length_px, nav, t)
+                                    length_px, nav, t, nav_points=points)
     return True

@@ -24,10 +24,11 @@ def _calls(game, side):
             for row in phone_lookout.calls(game, side)[:8]]
 
 
-def _outline(bearing, span, cls, stale, lights, elevation, aob, called, range_nm=None):
+def _outline(bearing, span, cls, stale, lights, elevation, aob, model, called, range_nm=None):
     return dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                 stale=bool(stale), lights=projections._nav_lights(lights),
-                elevation_deg=_number(elevation), aob_deg=_number(aob), called=bool(called),
+                elevation_deg=_number(elevation), aob_deg=_number(aob),
+                model=None if model is None else str(model), called=bool(called),
                 range_nm=_number(range_nm))
 
 
@@ -64,12 +65,14 @@ def _boat(game, boat):
                          "aircraft" if row["kind"] == "FLG" and row["ref"] in elevation
                          else row["cls"], row["stale"], row["lights"],
                          elevation.get(row["ref"]) if row["kind"] == "FLG" else None,
-                         row["aob"], False, row["range_nm"])
+                         row["aob"], row["model"], False, row["range_nm"])
                 for row in (dict(sighting, stale=not 0.0 <= now - sighting["t"] <= 1.0,
                                  lights=(None if now - sighting["t"] > 1.0 else
                                          boat.orders._lights.get(sighting["ref"])),
                                  aob=(None if now - sighting["t"] > 1.0 else
-                                      boat.orders._aspect.get(sighting["ref"])))
+                                      boat.orders._aspect.get(sighting["ref"])),
+                                 model=(None if now - sighting["t"] > 1.0 else
+                                        getattr(boat.orders, "_model", {}).get(sighting["ref"])))
                             for sighting in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX])]
     return dict(side="boat", available=scope["available"], manned=phone_lookout.boat_manned(game),
                 course=scope["course"], speed_kn=scope["speed_kn"],

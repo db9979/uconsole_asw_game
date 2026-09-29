@@ -191,15 +191,17 @@ def horizon_motion(seed: int, sim_t: float, sea_state: float,
 
 def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
                  t: float = 0.0, *, rim=None, lights=None, nav=None,
-                 aloft: bool = False, aob_deg: float | None = None) -> None:
+                 aloft: bool = False, aob_deg: float | None = None,
+                 model: str | None = None) -> None:
     """Procedural side view of a coarse class, ``width`` px long, sitting on
     the horizon (aircraft: hovering above it, or with ``aloft`` centred on
     ``base_y`` at its elevation).  ``t`` (display clock) animates pitch,
     radar, rotor and wake.  With the judged angle on the bow ``aob_deg`` a
-    large enough outline is its 3D model (``unit_models``), turned so."""
+    large enough outline is its 3D model (``unit_models``), turned so; an
+    identified type ``model`` is its own variant."""
     width = max(3, int(width))
     if unit_models.draw_in_scene(s, cls, cx, base_y, width, color, aob_deg=aob_deg,
-                                 aloft=aloft, nav=nav, t=t):
+                                 aloft=aloft, nav=nav, t=t, model=model):
         return
     if cls == "torpedo":
         left = cx - width // 2
@@ -255,7 +257,8 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             draw_outline(s, cls, cx, base, width, blend(colors["steel"], haze_color, fade),
                          anim_t, rim=blend(colors["rim"], haze_color, fade),
                          lights=(sight_scene.WINDOW_LIGHT if lit and not stale else None),
-                         nav=nav, aloft=aloft, aob_deg=row[6] if len(row) > 6 else None)
+                         nav=nav, aloft=aloft, aob_deg=row[6] if len(row) > 6 else None,
+                         model=row[7] if len(row) > 7 else None)
 
     airborne = [row for row in outlines if len(row) > 5 and row[5] is not None]
     afloat = [row for row in outlines if not (len(row) > 5 and row[5] is not None)]

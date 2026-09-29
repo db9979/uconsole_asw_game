@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.80**
+Aktuelle Version: **1.3.81**
 
-Version 1.3.80 zeigt die eigene Fahrt in den Bildern des Ausgucks. In Fahrt
+Version 1.3.81 zeigt die eigene Fahrt in den Bildern des Ausgucks. In Fahrt
 strömen die Wellen voraus auf das Auge zu, achteraus von ihm fort und querab
 vom Bug zum Heck, schneller mit mehr Fahrt und ohne Sprung, wenn sich Fahrt
 oder Kurs ändern. Achteraus läuft das Kielwasser als Band aus glatterem,

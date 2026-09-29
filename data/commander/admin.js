@@ -106,6 +106,7 @@ async function refresh() {
 async function language(value) {
   strings=await api(`/api/v2/ui?lang=${value}`);
   document.documentElement.lang=value;
+  $("language").value=value;
   for (const element of document.querySelectorAll("[data-i18n]")) element.textContent=t(element.dataset.i18n);
   for (const element of document.querySelectorAll("[data-i18n-aria]"))
     element.setAttribute("aria-label",t(element.dataset.i18nAria));
@@ -159,6 +160,8 @@ $("options-form").addEventListener("submit",async(event)=>{
       if (!result.ok) throw new Error(result.error||t("admin_options_failed"));
     }
     $("option-ais-key").value=""; $("option-opensky-key").value="";
+    // The saved host language is also the page's from now on.
+    if ($("option-language").value!==$("language").value) await language($("option-language").value);
     $("options-status").textContent=t("admin_options_saved");
     await loadOptions();
   } catch(error) { $("options-status").textContent=error.message; }
@@ -175,7 +178,9 @@ for (const [id,name] of [["clear-ais-key","aisstream_api_key"],
     } catch(error) { $("options-status").textContent=error.message; }
   });
 }
-$("language").value=(navigator.language||"").startsWith("de")?"de":"en";
+// The page opens in the host's saved language (named by the server).
+const hostLanguage=document.querySelector('meta[name="u-jagd-host-language"]')?.content;
+$("language").value=hostLanguage==="en"||hostLanguage==="de"?hostLanguage:(navigator.language||"").startsWith("de")?"de":"en";
 $("language").addEventListener("change",()=>language($("language").value));
 $("setup-form").addEventListener("submit",async(event)=>{
   event.preventDefault();

@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.71**
+Current release: **1.3.72**
 
-Release 1.3.71 makes the computer-driven submarine in the breakthrough,
+Release 1.3.72 makes the computer-driven submarine in the breakthrough,
 reconnaissance and convoy missions cleverer and gives the frigate more
 torpedoes. The submarine now creeps at 3 kn while it hears pings or knows the
 frigate is near, passes wide of a frigate it has located, lies in wait 2 NM
@@ -157,7 +157,9 @@ Download `U-Jagd-Windows.exe` from the
 and run it; no Python installation is needed. The starter window lets you
 choose crew mode (several browsers, one station each) or solo mode (one
 browser runs every station), whether this PC plays the submarine, window or
-full screen, sound and the port, then **Start server** opens the game window
+full screen, sound and the port, and the **Language** box at the top switches
+the starter, the game and the crew browsers between English and Deutsch (saved
+in the settings); then **Start server** opens the game window
 with Remote Crew already listening on the PC's private LAN address. The
 starter shows the browser address, the join code and a QR code; station
 requests are approved in the game window (F9) as on the uConsole. Windows may

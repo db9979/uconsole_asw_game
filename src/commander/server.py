@@ -284,6 +284,14 @@ class CommanderServer:
                                and isinstance(value, str)})
             for lang in ("en", "de")
         }
+        # The host's saved language: the pages open in it until a browser
+        # switches (plain str swap, read by the transport threads).
+        self._host_language = "en"
+
+    def set_host_language(self, language) -> None:
+        """Main thread: the language new browser pages start in."""
+        if language in ("en", "de"):
+            self._host_language = language
 
     def start(self, host: str, port: int = 8765, *, tls_context=None, tls_port=None):
         """Bind only an explicit RFC1918 or loopback IPv4 address (port 0 allowed).

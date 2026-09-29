@@ -126,6 +126,7 @@ export function init() {
     } finally { $("pair-submit").disabled = false; }
   });
   $("language").addEventListener("change", () => loadLanguage($("language").value === "de" ? "de" : "en"));
+  $("language-switch").addEventListener("click", () => loadLanguage($("language-switch").dataset.language === "de" ? "de" : "en"));
   for (const [id, key] of [["eloka-status-filter", "status"], ["eloka-threat-filter", "threat"], ["eloka-band-filter", "band"]]) {
     $(id).addEventListener("change", () => {
       elokaFilters[key] = $(id).value;

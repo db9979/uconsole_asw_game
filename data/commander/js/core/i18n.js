@@ -10,7 +10,7 @@ import { renderConnection } from "../views/status.js";
 
 export async function loadLanguage(nextLanguage) {
   const serial = ++S.languageRequest;
-  $("language").disabled = true;
+  $("language").disabled = $("language-switch").disabled = true;
   try {
     const translations = await request(`/ui?lang=${nextLanguage}`, { auth: false });
     if (serial !== S.languageRequest) return false;
@@ -27,6 +27,11 @@ export async function loadLanguage(nextLanguage) {
     for (const element of document.querySelectorAll("[data-i18n]")) element.textContent = t(element.dataset.i18n);
     for (const element of document.querySelectorAll("[data-i18n-aria]")) element.setAttribute("aria-label", t(element.dataset.i18nAria));
     for (const element of document.querySelectorAll("[data-i18n-placeholder]")) element.placeholder = t(element.dataset.i18nPlaceholder);
+    // The visible switch names the other language, in that language.
+    const other = S.language === "de" ? "en" : "de";
+    $("language-switch").textContent = t(other === "de" ? "german" : "english");
+    $("language-switch").lang = other;
+    $("language-switch").dataset.language = other;
     if (!$("name").value) $("name").value = t("pair_name_default").slice(0, 32);
     $("bootstrap").hidden = true;
     $("shell").hidden = false;
@@ -41,6 +46,6 @@ export async function loadLanguage(nextLanguage) {
     if (Object.keys(S.catalog).length) $("connection").textContent = t("language_failed");
     return false;
   } finally {
-    if (serial === S.languageRequest) $("language").disabled = false;
+    if (serial === S.languageRequest) $("language").disabled = $("language-switch").disabled = false;
   }
 }

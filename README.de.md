@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.71**
+Aktuelle Version: **1.3.72**
 
-Version 1.3.71 macht das computergesteuerte U-Boot in den Missionen
+Version 1.3.72 macht das computergesteuerte U-Boot in den Missionen
 Durchbruch, Aufklärung und Geleitzug klüger und gibt der Fregatte mehr
 Torpedos. Das U-Boot schleicht jetzt mit 3 kn, solange es Pings hört oder die
 Fregatte in der Nähe weiß, umfährt eine geortete Fregatte weiträumig, lauert
@@ -165,7 +165,9 @@ Lade `U-Jagd-Windows.exe` aus dem
 und starte es; Python ist nicht nötig. Im Starterfenster wählst du den
 Besatzungsmodus (mehrere Browser, je eine Station) oder den Solomodus (ein
 Browser bedient alle Stationen), ob dieser PC das U-Boot spielt, Fenster oder
-Vollbild, Ton und Port; **Server starten** öffnet dann das Spielfenster, und
+Vollbild, Ton und Port, und das Feld **Sprache** oben stellt Starter, Spiel
+und Besatzungs-Browser zwischen English und Deutsch um (in den Einstellungen
+gespeichert); **Server starten** öffnet dann das Spielfenster, und
 Remote Crew lauscht bereits auf der privaten LAN-Adresse des PCs. Der Starter
 zeigt Browser-Adresse, Beitrittscode und QR-Code; Stationsanfragen bestätigst
 du wie auf dem uConsole im Spielfenster (F9). Windows fragt eventuell einmal,

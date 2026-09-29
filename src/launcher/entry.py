@@ -85,6 +85,7 @@ def self_test(report: str) -> int:
 def _gui_self_test() -> str:
     """Build the starter window once (Tk bundled, QR drawn), then close it."""
     try:
+        import tempfile
         import tkinter as tk
 
         from src.launcher.app import Starter
@@ -92,12 +93,20 @@ def _gui_self_test() -> str:
         root = tk.Tk()
         try:
             root.withdraw()
-            starter = Starter(root, check_updates=False)
-            starter._show_status({"state": "running", "url": "http://192.168.1.2:8765/",
-                                  "code": "123ABC", "solo": False})
-            root.update()
-            if not starter.qr.find_all():
-                return "qr missing"
+            with tempfile.TemporaryDirectory(prefix="u-jagd-gui-") as folder:
+                settings = os.path.join(folder, "settings.json")
+                starter = Starter(root, check_updates=False, preferences_path=settings)
+                starter._show_status({"state": "running", "url": "http://192.168.1.2:8765/",
+                                      "code": "123ABC", "solo": False})
+                root.update()
+                if not starter.qr.find_all():
+                    return "qr missing"
+                # The language switch rebuilds the window and saves the choice.
+                for language in ("de", "en"):
+                    starter.choose_language(language)
+                    root.update()
+                if starter.tr.language != "en" or not os.path.exists(settings):
+                    return "language switch"
         finally:
             root.destroy()
     except Exception as exc:  # noqa: BLE001 - reported, fatal only on Windows

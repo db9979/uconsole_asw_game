@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.71
+## 1.3.72
 
-Version 1.3.71 macht das computergesteuerte U-Boot in den Missionen
+Version 1.3.72 macht das computergesteuerte U-Boot in den Missionen
 Durchbruch, Aufklärung und Geleitzug klüger und gibt der Fregatte mehr
 Torpedos. Das U-Boot schleicht jetzt mit 3 kn, solange es Pings hört oder die
 Fregatte in der Nähe weiß, umfährt eine geortete Fregatte weiträumig, lauert
@@ -14,6 +14,18 @@ dem Geleitzug 2 sm voraus auf, statt ihm nachzulaufen, weicht Pings leise mit
 5 kn aus und schießt deutlich eher auf eine geortete Fregatte zurück. Die
 Fregatte hat in der Doppeljagd 8 und im Abfang 6 Torpedos. Spielstände bleiben
 v31.
+
+## 1.3.71
+
+Version 1.3.71 macht die Sprache des Remote-Crew-Servers zwischen Englisch und
+Deutsch umschaltbar. Der Windows-Starter hat oben ein Feld Sprache: Die Wahl
+gilt sofort für den Starter und wird in den Einstellungen gespeichert, sodass
+auch das Spielfenster und jeder Besatzungs-Browser darin starten. Die
+Browser-Seiten öffnen jetzt in der gespeicherten Sprache des Hosts statt in der
+des Browsers, und die Besatzungsseite hat neben Ton einen sichtbaren Knopf
+English/Deutsch, der nur diesen Browser umstellt; die Admin-Seite des Web-Hosts
+wechselt mit der gespeicherten Serversprache auch ihre eigene Sprache.
+Spielstände bleiben v31.
 
 ## 1.3.70
 

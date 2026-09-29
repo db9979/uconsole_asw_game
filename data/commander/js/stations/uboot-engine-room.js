@@ -112,30 +112,31 @@ function renderLamps(payload) {
 function tanks(payload) {
   const plant = payload.plant, ballast = payload.ballast, air = plant.air;
   const rows = [];
+  const add = (...row) => rows.push(row);
   if (plant.propulsion !== "nuclear") {
     const battery = pct(plant.battery_kwh, plant.battery_capacity_kwh);
-    rows.push(["battery", t("uboot_battery"), battery, battery !== null && battery <= 3 ? "alarm" : battery !== null && battery <= 20 ? "caution" : "",
-      unit(battery, "%", 0), false]);
+    add("battery", t("uboot_battery"), battery, battery !== null && battery <= 3 ? "alarm" : battery !== null && battery <= 20 ? "caution" : "",
+      unit(battery, "%", 0), false);
     if (plant.fuel_l !== null) {
       const fuel = pct(plant.fuel_l, plant.fuel_capacity_l);
-      rows.push(["fuel", t("uboot_lamp_fuel"), fuel, fuel !== null && fuel <= 10 ? "caution" : "", unit(plant.fuel_l / 1000, "m³", 1), false]);
+      add("fuel", t("uboot_lamp_fuel"), fuel, fuel !== null && fuel <= 10 ? "caution" : "", unit(plant.fuel_l / 1000, "m³", 1), false);
     }
     if (plant.aip_kwh !== null) {
       const aip = pct(plant.aip_kwh, plant.aip_capacity_kwh);
-      rows.push(["aip", t("uboot_aip"), aip, aip !== null && aip <= 10 ? "caution" : "", unit(aip, "%", 0), false]);
+      add("aip", t("uboot_aip"), aip, aip !== null && aip <= 10 ? "caution" : "", unit(aip, "%", 0), false);
     }
   }
-  if (air) rows.push(["absorber", t("uboot_absorber"), air.absorber_pct, air.absorber_pct <= 25 ? "caution" : "",
-    unit(air.absorber_pct, "%", 0), false]);
+  if (air) add("absorber", t("uboot_absorber"), air.absorber_pct, air.absorber_pct <= 25 ? "caution" : "",
+    unit(air.absorber_pct, "%", 0), false);
   const hp = pct(ballast.hp_air_bar, ballast.hp_air_max_bar);
-  rows.push(["hp_air", t("uboot_hp_air"), hp, ballast.blows_left === 0 ? "alarm" : hp !== null && hp < 50 ? "caution" : "",
-    unit(ballast.hp_air_bar, "bar", 0), false]);
-  rows.push(["mbt", t("uboot_mbt"), ballast.mbt_pct, ballast.blowing ? "caution" : "", unit(ballast.mbt_pct, "%", 0), false]);
+  add("hp_air", t("uboot_hp_air"), hp, ballast.blows_left === 0 ? "alarm" : hp !== null && hp < 50 ? "caution" : "",
+    unit(ballast.hp_air_bar, "bar", 0), false);
+  add("mbt", t("uboot_mbt"), ballast.mbt_pct, ballast.blowing ? "caution" : "", unit(ballast.mbt_pct, "%", 0), false);
   const centred = (value, capacity) => capacity ? Math.max(-100, Math.min(100, value / capacity * 100)) : 0;
-  rows.push(["regulating", t("uboot_regulating"), centred(ballast.regulating_kg, ballast.regulating_capacity_kg), "",
-    `${signed(ballast.regulating_kg / 1000, 1)} t`, true]);
-  rows.push(["trim", t("uboot_lamp_trim_tanks"), centred(ballast.trim_kg, ballast.trim_capacity_kg), "",
-    `${signed(ballast.trim_kg / 1000, 1)} t`, true]);
+  add("regulating", t("uboot_regulating"), centred(ballast.regulating_kg, ballast.regulating_capacity_kg), "",
+    `${signed(ballast.regulating_kg / 1000, 1)} t`, true);
+  add("trim", t("uboot_lamp_trim_tanks"), centred(ballast.trim_kg, ballast.trim_capacity_kg), "",
+    `${signed(ballast.trim_kg / 1000, 1)} t`, true);
   return rows;
 }
 

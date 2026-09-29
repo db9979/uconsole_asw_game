@@ -539,6 +539,7 @@ V2_ACTION_REGISTRY = {
     # HQ tasks: the radio room answers an offer (the task's own number).
     "radio_task_accept": V2Action(frozenset({"radio"}), _task_params),
     "radio_task_decline": V2Action(frozenset({"radio"}), _task_params),
+    "radio_request_ras": V2Action(frozenset({"radio"}), _no_params),
     "eloka_annotate": V2Action(frozenset({"eloka"}), _annotation_params,
         revision_bound=True),
     "eloka_clear_annotation": V2Action(frozenset({"eloka"}), _single_ref_params,

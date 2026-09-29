@@ -784,7 +784,9 @@ def _radio(game, rows, ref_by_track):
                  station_down=station_down, navigation=_own_navigation(game),
                   tactical=[_observation(row, _TACTICAL_FIELDS) for row in rows
                             if row["source"] == "HFDF"][:_MAP_ROWS_MAX],
-                 tasks=_radio_tasks(game, station_down))
+                 tasks=_radio_tasks(game, station_down),
+                 can_request_ras=bool(not station_down and game.tasking.enabled
+                                      and not game.game_over and game.ras_needed()))
 
 
 def _radio_tasks(game, station_down):

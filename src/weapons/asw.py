@@ -353,6 +353,13 @@ class WeaponBattery:
     def replenish(self) -> None:
         """Replenishment at sea: every magazine back to its mission load
         (weapons in the tubes count against their own type)."""
+        self.restock(self.capacity_total)
+
+    def restock(self, count: int) -> int:
+        """One load of a replenishment: at most ``count`` weapons into the
+        magazines, never above their mission load (weapons in the tubes count
+        against their own type). Returns how many came aboard."""
+        left = max(0, int(count))
         in_tubes = {}
         for tube in self.tubes:
             for key in (tube.loaded_weapon_key, tube.loading_weapon_key):
@@ -362,7 +369,10 @@ class WeaponBattery:
             held = in_tubes.get(magazine.weapon_key, 0)
             counted = min(held, magazine.capacity)
             in_tubes[magazine.weapon_key] = held - counted
-            magazine.stowed = max(magazine.stowed, magazine.capacity - counted)
+            taken = min(left, max(0, magazine.capacity - counted - magazine.stowed))
+            magazine.stowed += taken
+            left -= taken
+        return max(0, int(count)) - left
 
     def update(self, dt: float, readiness_scale: float = 1.0, *,
                auto_reload: bool = True) -> None:
@@ -547,6 +557,20 @@ class ConsumableStore:
     @property
     def remaining_total(self) -> int:
         return self.ready + self.stowed + len(self.loading)
+
+    def restock(self, count: int) -> int:
+        """Replenishment at sea: at most ``count`` into the stowage, never
+        above the mission load. Returns how many came aboard."""
+        taken = min(max(0, int(count)), max(0, self.capacity - self.remaining_total))
+        self.stowed += taken
+        if self.ready + len(self.loading) == 0 and self.stowed > 0:
+            # An empty launcher starts loading from the new stowage.
+            self.stowed -= 1
+            if self.reload_s <= 0:
+                self.ready += 1
+            else:
+                self.loading.append(self.reload_s)
+        return taken
 
     def fire(self) -> bool:
         if self.ready <= 0:

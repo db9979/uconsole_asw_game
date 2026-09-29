@@ -15,6 +15,7 @@ from src.core.i18n import message, raw_text
 from src.core.tasking import TaskBoard
 from src.enemies.civilian import CivilianShip
 from src.sensors import lookout_id
+from src.weapons import depth_charge
 
 
 class TaskingMixin:
@@ -187,13 +188,14 @@ class TaskingMixin:
             board.next_offer_t = self.sim_t + detrand.uniform(
                 *config.TASK_INTERVAL_S, self.seed, "task-interval", board.offers)
 
-    def _offer_task(self, kind: str | None = None):
-        """Offer the next task (``kind`` forces one, for tests and drills)."""
+    def _offer_task(self, kind: str | None = None, requested: bool = False):
+        """Offer the next task (``kind`` forces one, for tests and drills;
+        ``requested``: own ship asked for it, so HQ's own reasons are moot)."""
         board = self.tasking
         index = board.offers
         builders = [name for name in tasking.KINDS
                     if (kind is None or name == kind)
-                    and getattr(self, "_task_candidate_" + name)()]
+                    and (requested or getattr(self, "_task_candidate_" + name)())]
         if not builders:
             board.offers += 1
             return None
@@ -223,8 +225,9 @@ class TaskingMixin:
         text = message(key, task=self._task_label(task),
                        name=raw_text(task["name"] or "-"), **params)
         self.hq_msg(text)
-        self.announce(message("runtime.task.offered", task=self._task_label(task)),
-                      "funk", 5.0)
+        if not requested:
+            self.announce(message("runtime.task.offered", task=self._task_label(task)),
+                          "funk", 5.0)
         if kind == "sar":
             self._emit_sound("alarm")
         return task
@@ -255,7 +258,9 @@ class TaskingMixin:
         profile = self.runtime_catalog.surfaces.get(config.TASK_RAS_PROFILE)
         low_fuel = (self.ship.fuel_kg
                     < config.TASK_RAS_FUEL_FRACTION * self.ship.fuel_capacity_kg)
-        return profile is not None and (low_fuel or self.torpedo_count < self.torpedo_total)
+        stores = self.ras_shortfall()
+        return profile is not None and (low_fuel or any(
+            stores[key] > 0 for key in ("torpedoes", "asroc", "depth_charges")))
 
     def _task_candidate_emcon(self) -> bool:
         return ((self.surface_radar_on or self.air_radar_on)
@@ -461,6 +466,89 @@ class TaskingMixin:
             if task["progress"] >= 1.0:
                 self._close_task(task, "done")
 
+    # --- replenishment at sea ------------------------------------------------
+
+    def ras_shortfall(self) -> dict:
+        """What the supply ship still has to pass over, per store (VLS cells
+        cannot be reloaded at sea)."""
+        loadout = self._air_defense_loadout
+        return dict(
+            fuel_kg=max(0.0, self.ship.fuel_capacity_kg - self.ship.fuel_kg),
+            torpedoes=max(0, self.player_torpedo_battery.capacity_total
+                          - self.player_torpedo_battery.remaining_total),
+            asroc=max(0, depth_charge.OWN_ASROC_STOCK - self.own_asrocs_left),
+            depth_charges=max(0, depth_charge.DEPTH_CHARGE_STOCK - self.depth_charges_left),
+            decoys=max(0, self.nixie_store.capacity - self.nixie_store.remaining_total),
+            ciws=max(0, loadout["ciws"]["ammo"] - self.ciws_ammo),
+            gun=max(0, loadout["aa_gun"]["ammo"] - self.aa_ammo))
+
+    def ras_needed(self) -> bool:
+        stores = self.ras_shortfall()
+        return (stores["fuel_kg"] > config.TASK_RAS_FULL_FRACTION * self.ship.fuel_capacity_kg
+                or any(value > 0 for key, value in stores.items() if key != "fuel_kg"))
+
+    def ras_stores_line(self):
+        """The stores the transfer fills, as they stand aboard now."""
+        capacity = self.ship.fuel_capacity_kg
+        return message(
+            "radio.task.ras_stores",
+            fuel=f"{self.ship.fuel_kg / capacity:.0%}" if capacity > 0.0 else "-",
+            torpedoes=f"{self.player_torpedo_battery.remaining_total}"
+                      f"/{self.player_torpedo_battery.capacity_total}",
+            asroc=f"{self.own_asrocs_left}/{depth_charge.OWN_ASROC_STOCK}",
+            charges=f"{self.depth_charges_left}/{depth_charge.DEPTH_CHARGE_STOCK}")
+
+    def request_ras(self):
+        """The radio room asks HQ for a supply ship: offered and accepted at
+        once. Returns True or a refusal code."""
+        board = getattr(self, "tasking", None)
+        if board is None or not board.enabled or self.game_over:
+            return "not_ready"
+        if self.damage.station_down("radio"):
+            return "radio_down"
+        rows = [task for task in board.tasks if task["kind"] == "ras"]
+        if any(task["state"] in tasking.OPEN_STATES for task in rows):
+            return "ras_open"
+        ended = [task["ended_t"] for task in rows if task["ended_t"] is not None]
+        if ended and self.sim_t - max(ended) < config.TASK_RAS_REQUEST_COOLDOWN_S:
+            return "ras_cooldown"
+        if not self.ras_needed():
+            return "ras_full"
+        if self.runtime_catalog.surfaces.get(config.TASK_RAS_PROFILE) is None:
+            return "ras_unavailable"
+        task = self._offer_task("ras", requested=True)
+        if task is None:
+            return "ras_unavailable"
+        return self.accept_task(task["id"])
+
+    def _ras_request_selected(self) -> None:
+        result = self.request_ras()
+        if result is not True:
+            self.flash(message("runtime.task." + result), 2.5)
+
+    def _ras_transfer(self, before: float, after: float, dt: float) -> None:
+        """Fuel flows while alongside; the stores come over in loads, each a
+        share of what is still missing, so a breakaway keeps what came over."""
+        ship = self.ship
+        ship.fuel_kg = min(ship.fuel_capacity_kg,
+                           ship.fuel_kg + ship.fuel_capacity_kg * dt / config.TASK_RAS_S)
+        loads = config.TASK_RAS_LOADS
+        done = min(loads, int(after * loads + 1e-9))
+        if done <= min(loads, int(before * loads + 1e-9)):
+            return
+        left = loads - done + 1
+        stores = self.ras_shortfall()
+        share = {key: -(-value // left) for key, value in stores.items() if key != "fuel_kg"}
+        self.player_torpedo_battery.restock(share["torpedoes"])
+        self.torpedo_count = self.player_torpedo_battery.remaining_total
+        self.own_asrocs_left += share["asroc"]
+        self.depth_charges_left += share["depth_charges"]
+        self.nixie_store.restock(share["decoys"])
+        self.ciws_ammo += share["ciws"]
+        self.aa_ammo += share["gun"]
+        if any(share.values()):
+            self.feed.add(self.world.format_time(), "funk", self.ras_stores_line())
+
     def _progress_task_ras(self, task, dt: float) -> None:
         tanker = self._civilian_by_id(task["target_id"])
         if tanker is None or tanker.sunk:
@@ -475,11 +563,11 @@ class TaskingMixin:
             return
         if task["progress"] <= 0.0:
             self._task_notice("task.ras.alongside", task, 4.0)
-        task["progress"] = min(1.0, task["progress"] + dt / config.TASK_RAS_S)
+        before = task["progress"]
+        task["progress"] = min(1.0, before + dt / config.TASK_RAS_S)
+        self._ras_transfer(before, task["progress"], dt)
         if task["progress"] >= 1.0:
             self.ship.fuel_kg = self.ship.fuel_capacity_kg
-            self.player_torpedo_battery.replenish()
-            self.torpedo_count = self.player_torpedo_battery.remaining_total
             self._close_task(task, "done")
 
     def _progress_task_emcon(self, task, dt: float) -> None:

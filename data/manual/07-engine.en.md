@@ -50,4 +50,3 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 ## Not modelled {#engine-limits}
 
 - No individual shaft control; the plant choice applies to both shafts.
-- No refuelling at sea.

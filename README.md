@@ -12,17 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.66**
+Current release: **1.3.67**
 
-Release 1.3.66 makes the OPZ's correlation suggestions smarter. Besides
-bearing and position they now compare course, speed and the operator's
-classification: two reports whose courses or speeds clearly differ, or whose
-classes do not match, are no longer suggested, and agreeing classes rank a
-pair higher. Received AIS reports now appear in the OPZ as reports of their
-own (reported position, course, speed and name) and are suggested with the
-radar and lookout reports of the same ship. A fusion now carries its members'
-course and speed. Saves are now v31 (AIS reports keep their reported
-position); v30 saves no longer load.
+Release 1.3.67 makes replenishment at sea something you can plan. The radio
+room can now ask HQ for a supply ship itself (R on the Tasks page, or Request
+supply ship in the browser) whenever fuel or any store runs short, at most
+once every 20 minutes after the last one. Alongside, fuel now flows the whole
+time and the stores come over in five loads: torpedoes, ASROC, depth charges,
+Nixie decoys and CIWS and gun rounds, each load a share of what is still
+missing, so breaking away early keeps what already came over. The Tasks page
+shows fuel, torpedoes, ASROC and depth charges aboard. HQ also offers a supply
+ship when ASROC or depth charges have been used. VLS cells are not reloaded at
+sea. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

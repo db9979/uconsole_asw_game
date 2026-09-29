@@ -50,4 +50,3 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
 ## Nicht modelliert {#engine-limits}
 
 - Keine Einzelwellensteuerung; die Anlagenwahl gilt für beide Wellen.
-- Keine Versorgung auf See.

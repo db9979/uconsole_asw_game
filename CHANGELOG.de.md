@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.67
+
+Version 1.3.67 macht die Versorgung auf See planbar. Der Funkraum kann jetzt
+selbst bei der HQ einen Versorger anfordern (R auf der Seite Aufträge, im
+Browser Versorger anfordern), sobald Kraftstoff oder ein Vorrat knapp wird,
+höchstens alle 20 Minuten nach der letzten Versorgung. Längsseits fließt der
+Kraftstoff jetzt die ganze Zeit, und die Vorräte kommen in fünf Ladungen:
+Torpedos, ASROC, Wasserbomben, Nixie-Täuschkörper sowie CIWS- und
+Geschützmunition, jede Ladung ein Anteil dessen, was noch fehlt, sodass
+früheres Abdrehen behält, was schon übergeben ist. Die Seite Aufträge zeigt
+Kraftstoff, Torpedos, ASROC und Wasserbomben an Bord. Die HQ bietet einen
+Versorger jetzt auch an, wenn ASROC oder Wasserbomben verbraucht sind. VLS-
+Zellen werden auf See nicht nachgeladen. Spielstände bleiben v31.
+
 ## 1.3.66
 
 Version 1.3.66 macht die Zuordnungsvorschläge der OPZ klüger. Neben Peilung

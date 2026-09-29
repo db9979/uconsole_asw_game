@@ -14,18 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.66**
+Aktuelle Version: **1.3.67**
 
-Version 1.3.66 macht die Zuordnungsvorschläge der OPZ klüger. Neben Peilung
-und Position vergleichen sie jetzt Kurs, Fahrt und die Klassifizierung des
-Bedieners: zwei Meldungen mit deutlich verschiedenem Kurs oder verschiedener
-Fahrt oder unpassender Klasse werden nicht mehr vorgeschlagen, und gleiche
-Klassen setzen ein Paar weiter nach oben. Empfangene AIS-Meldungen erscheinen
-jetzt als eigene Meldungen in der OPZ (gemeldete Position, Kurs, Fahrt und
-Name) und werden mit Radar- und Ausguckmeldungen desselben Schiffs
-vorgeschlagen. Eine Fusion übernimmt jetzt Kurs und Fahrt ihrer Mitglieder.
-Spielstände sind jetzt v31 (AIS-Meldungen behalten ihre gemeldete Position);
-v30-Stände laden nicht mehr.
+Version 1.3.67 macht die Versorgung auf See planbar. Der Funkraum kann jetzt
+selbst bei der HQ einen Versorger anfordern (R auf der Seite Aufträge, im
+Browser Versorger anfordern), sobald Kraftstoff oder ein Vorrat knapp wird,
+höchstens alle 20 Minuten nach der letzten Versorgung. Längsseits fließt der
+Kraftstoff jetzt die ganze Zeit, und die Vorräte kommen in fünf Ladungen:
+Torpedos, ASROC, Wasserbomben, Nixie-Täuschkörper sowie CIWS- und
+Geschützmunition, jede Ladung ein Anteil dessen, was noch fehlt, sodass
+früheres Abdrehen behält, was schon übergeben ist. Die Seite Aufträge zeigt
+Kraftstoff, Torpedos, ASROC und Wasserbomben an Bord. Die HQ bietet einen
+Versorger jetzt auch an, wenn ASROC oder Wasserbomben verbraucht sind. VLS-
+Zellen werden auf See nicht nachgeladen. Spielstände bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

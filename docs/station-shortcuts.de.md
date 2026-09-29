@@ -1,4 +1,4 @@
-# U-Jagd 1.3.66 - Stations- und Tastenkürzel
+# U-Jagd 1.3.67 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -181,6 +181,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Auf / Ab` | HQ-Auftrag wählen (Seite Aufträge) |
 | `A` | Gewählten Auftrag annehmen |
 | `D` | Gewählten Auftrag ablehnen |
+| `R` | Versorger bei der HQ anfordern |
 
 ## 7 Maschinenraum
 

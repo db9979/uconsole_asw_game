@@ -119,6 +119,7 @@ from src.commander.actions import (  # noqa: F401 - re-exported
     _crew_action_stations,
     _crew_watch_change,
     _radio_task_accept,
+    _radio_request_ras,
     _radio_task_decline,
     _eloka_annotate,
     _eloka_clear_annotation,

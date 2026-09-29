@@ -1025,10 +1025,12 @@ class EventMixin:
             if e.key == pygame.K_g and (self.station is Station.BRIDGE or crew_page):
                 self.toggle_action_stations()
                 return
-            if (e.key in (pygame.K_a, pygame.K_d) and self.station is Station.RADIO
-                    and self.station_page == 2):
+            if (e.key in (pygame.K_a, pygame.K_d, pygame.K_r)
+                    and self.station is Station.RADIO and self.station_page == 2):
                 if e.key == pygame.K_a:
                     self._task_accept_selected()
+                elif e.key == pygame.K_r:
+                    self._ras_request_selected()
                 else:
                     self._task_decline_selected()
                 return

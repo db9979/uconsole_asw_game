@@ -996,6 +996,9 @@ TASK_RAS_SPEED_TOL_KN = 3.0
 TASK_RAS_S = 900.0                 # time alongside for the transfer
 TASK_RAS_FUEL_FRACTION = 0.7       # offered below this fuel ...
 TASK_RAS_PROFILE = "tanker_04"     # friendly supply ship (catalog key)
+TASK_RAS_LOADS = 5                 # stores come over in this many loads
+TASK_RAS_FULL_FRACTION = 0.05      # a request needs this much fuel missing ...
+TASK_RAS_REQUEST_COOLDOWN_S = 1200.0  # ... and this long since the last one
 SCORE_TASK = {                     # (done, failed, declined)
     "sar": (600, -400, -200),
     "identify": (250, -100, -100),

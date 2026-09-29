@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.67
+
+Release 1.3.67 makes replenishment at sea something you can plan. The radio
+room can now ask HQ for a supply ship itself (R on the Tasks page, or Request
+supply ship in the browser) whenever fuel or any store runs short, at most
+once every 20 minutes after the last one. Alongside, fuel now flows the whole
+time and the stores come over in five loads: torpedoes, ASROC, depth charges,
+Nixie decoys and CIWS and gun rounds, each load a share of what is still
+missing, so breaking away early keeps what already came over. The Tasks page
+shows fuel, torpedoes, ASROC and depth charges aboard. HQ also offers a supply
+ship when ASROC or depth charges have been used. VLS cells are not reloaded at
+sea. Saves stay v31.
+
 ## 1.3.66
 
 Release 1.3.66 makes the OPZ's correlation suggestions smarter. Besides

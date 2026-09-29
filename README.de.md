@@ -14,16 +14,13 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.74**
+Aktuelle Version: **1.3.75**
 
-Version 1.3.74 gibt dem U-Boot eine faire Chance gegen die vom Computer
-geführte Fregatte. Wenn du das U-Boot spielst, braucht die Besatzung der
-Fregatte jetzt etwa 3 Minuten, um ein U-Boot am Geräusch zu erkennen, und etwa
-10 Minuten, um den Hubschrauber klarzumachen. Auf eine bloße Peilung horcht der
-Hubschrauber mit dem Tauchsonar nur, der Seefernaufklärer kommt nur für eine
-Position, und Flugzeuge greifen nur aus einem höchstens 2 Minuten alten Fix an.
-Der Durchbruch dauert jetzt 5 statt 4 Stunden, die Aufklärung 2 statt 3.
-Spielstände bleiben v31.
+Version 1.3.75 räumt auch die Git-Tags auf GitHub auf: Beim Veröffentlichen
+einer neuen Version löscht der Windows-Build jetzt jeden älteren
+`vX.Y.Z`-Tag zusammen mit seinem Release, sodass nur das neueste Release samt
+Tag bleibt. Der uConsole-Updater braucht nur diesen neuesten Tag. Spielstände
+bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -191,7 +188,8 @@ Der Workflow `.github/workflows/windows.yml` baut das Programm mit PyInstaller
 führt seinen Selbsttest ohne Bildschirm aus (kurze Mission plus
 Remote-Crew-Seiten) und veröffentlicht auf `main` einmal je Version das
 Release `v<APP_VERSION>`; danach löscht er alle älteren Releases, sodass nur das
-neueste stehen bleibt (Git-Tags bleiben). Selbst bauen unter Windows:
+neueste samt seinem Git-Tag stehen bleibt (ältere `vX.Y.Z`-Tags werden mit
+gelöscht). Selbst bauen unter Windows:
 `python -m pip install -e ".[windows]"` und
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 

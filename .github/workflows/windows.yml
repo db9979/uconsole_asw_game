@@ -116,9 +116,10 @@ jobs:
             gh release upload "$tag" dist/U-Jagd-Windows.exe
           fi
 
-      - name: Remove older releases
-        # Only the newest release stays on GitHub (Dominik, 2026-09-28). Both
-        # updaters read releases/latest only; the git tags stay.
+      - name: Remove older releases and tags
+        # Only the newest release and its tag stay on GitHub (Dominik,
+        # 2026-09-28/29). Both updaters read releases/latest only; the uConsole
+        # updater fetches just that tag. Tags not named vX.Y.Z are kept.
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         env:
@@ -130,6 +131,13 @@ jobs:
             | python tools/prune_releases.py "$VERSION" \
             | while read -r old; do
                 old=${old%$'\r'}
-                echo "Deleting release $old (tag kept)"
+                echo "Deleting release $old"
                 gh release delete "$old" --yes
+              done
+          gh api --paginate "repos/$GITHUB_REPOSITORY/tags?per_page=100" --jq '.[].name' \
+            | python tools/prune_releases.py "$VERSION" \
+            | while read -r old; do
+                old=${old%$'\r'}
+                echo "Deleting tag $old"
+                gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/tags/$old"
               done

@@ -4,6 +4,14 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.75
+
+Version 1.3.75 räumt auch die Git-Tags auf GitHub auf: Beim Veröffentlichen
+einer neuen Version löscht der Windows-Build jetzt jeden älteren
+`vX.Y.Z`-Tag zusammen mit seinem Release, sodass nur das neueste Release samt
+Tag bleibt. Der uConsole-Updater braucht nur diesen neuesten Tag. Spielstände
+bleiben v31.
+
 ## 1.3.74
 
 Version 1.3.74 gibt dem U-Boot eine faire Chance gegen die vom Computer

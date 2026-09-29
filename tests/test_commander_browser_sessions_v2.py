@@ -976,7 +976,7 @@ def _direct_fire_browser_states():
                        visual_class=None, visual_type=None)
     weapons = dict(common, role="weapons", weapons=dict(
         inventory=dict(torpedoes=4, vls=8, ciws=200, aa=40,
-                       chaff_ready=True, nixies=2),
+                       chaff_ready=True, nixies=2, asroc=4, depth_charges=20),
         readiness=dict(station_down=False, roe="FREE", ciws_ready=True,
                        aa_ready=True, state="available", interlock="clear",
                        reload_s=0.0), designated_target=None,
@@ -1008,7 +1008,7 @@ def _direct_fire_browser_states():
                  course=90.0, state="RUN")])))
     helicopter = dict(common, role="helicopter", helicopter=dict(
         asset=dict(helicopter_asset, buoy_mode="PASSIVE", pattern="single",
-                   pattern_remaining=0, mad_mode=False), waypoint=None,
+                   pattern_remaining=0, mad_mode=False, radar=True), waypoint=None,
         buoys=[dict(ref="opaque-buoy-reference-one", label="SB01", x=252.0, y=248.0,
                     battery_s=500.0, active=True, mode="PASSIVE"),
                dict(ref="opaque-buoy-reference-two", label="SB02", x=253.0, y=247.0,

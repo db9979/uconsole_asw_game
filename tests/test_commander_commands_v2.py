@@ -729,6 +729,8 @@ def test_v2_registry_exposes_no_host_audio_control():
     ("weapons", "helicopter_launch_torpedo", {"ref": "opaque", "depth_m": 300}),
     ("helicopter", "helicopter_launch_torpedo", {"ref": "opaque", "depth_m": 80}),
     ("weapons", "weapons_deploy_nixie", {}),
+    ("weapons", "weapons_fire_asroc", {"ref": "opaque", "depth_m": 60}),
+    ("weapons", "weapons_drop_depth_charges", {"ref": "opaque", "depth_m": 100}),
     ("opz", "opz_launch_essm", {"ref": "opaque"}),
     ("opz", "opz_launch_chaff", {"ref": "opaque"}),
 ])

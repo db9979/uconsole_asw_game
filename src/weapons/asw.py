@@ -9,6 +9,7 @@ from functools import lru_cache
 from importlib import resources
 
 from src.core import config
+from src.weapons import depth_charge
 
 
 MAX_TUBES = 32
@@ -352,6 +353,13 @@ class WeaponBattery:
     def replenish(self) -> None:
         """Replenishment at sea: every magazine back to its mission load
         (weapons in the tubes count against their own type)."""
+        self.restock(self.capacity_total)
+
+    def restock(self, count: int) -> int:
+        """One load of a replenishment: at most ``count`` weapons into the
+        magazines, never above their mission load (weapons in the tubes count
+        against their own type). Returns how many came aboard."""
+        left = max(0, int(count))
         in_tubes = {}
         for tube in self.tubes:
             for key in (tube.loaded_weapon_key, tube.loading_weapon_key):
@@ -361,7 +369,10 @@ class WeaponBattery:
             held = in_tubes.get(magazine.weapon_key, 0)
             counted = min(held, magazine.capacity)
             in_tubes[magazine.weapon_key] = held - counted
-            magazine.stowed = max(magazine.stowed, magazine.capacity - counted)
+            taken = min(left, max(0, magazine.capacity - counted - magazine.stowed))
+            magazine.stowed += taken
+            left -= taken
+        return max(0, int(count)) - left
 
     def update(self, dt: float, readiness_scale: float = 1.0, *,
                auto_reload: bool = True) -> None:
@@ -546,6 +557,20 @@ class ConsumableStore:
     @property
     def remaining_total(self) -> int:
         return self.ready + self.stowed + len(self.loading)
+
+    def restock(self, count: int) -> int:
+        """Replenishment at sea: at most ``count`` into the stowage, never
+        above the mission load. Returns how many came aboard."""
+        taken = min(max(0, int(count)), max(0, self.capacity - self.remaining_total))
+        self.stowed += taken
+        if self.ready + len(self.loading) == 0 and self.stowed > 0:
+            # An empty launcher starts loading from the new stowage.
+            self.stowed -= 1
+            if self.reload_s <= 0:
+                self.ready += 1
+            else:
+                self.loading.append(self.reload_s)
+        return taken
 
     def fire(self) -> bool:
         if self.ready <= 0:
@@ -781,7 +806,12 @@ def valid_asw_state(value, torpedo_total: int, torpedo_count: int,
     try:
         _object(value, {"version", "loadout", "player_battery",
                         "countermeasure", "nixies", "nixie_seq", "asrocs",
-                        "asroc_seq"}, "asw")
+                        "asroc_seq", "depth_charges", "depth_charge_seq",
+                        "own_stores"}, "asw")
+        if not depth_charge.valid_state(value["depth_charges"],
+                                        value["depth_charge_seq"],
+                                        value["own_stores"], 1_000_000.0):
+            return False
         if value["version"] != ASW_STATE_VERSION:
             return False
         if not valid_battery_state(value["player_battery"]):
@@ -860,14 +890,22 @@ def valid_asw_state(value, torpedo_total: int, torpedo_count: int,
         if not isinstance(asrocs, list) or len(asrocs) > MAX_ASROCS:
             return False
         asroc_ids = set()
+        own_asrocs = 0
         for row in asrocs:
             _object(row, {"x", "y", "datum_x", "datum_y", "seq", "weapon_key",
                           "payload_profile_key", "speed_kn", "range_nm", "side",
                           "launch_platform_id", "target_depth_m", "travel",
                           "state", "course"}, "asroc")
             seq = _integer(row["seq"], 1, asroc_seq, "asroc.seq")
-            _integer(row["launch_platform_id"], 1, 2**63 - 1,
-                     "asroc.launch_platform_id")
+            # The frigate's own ASROC has no platform id and its own key.
+            own = row["weapon_key"] == depth_charge.OWN_ASROC_KEY
+            if own:
+                if row["launch_platform_id"] is not None:
+                    return False
+                own_asrocs += 1
+            else:
+                _integer(row["launch_platform_id"], 1, 2**63 - 1,
+                         "asroc.launch_platform_id")
             if seq in asroc_ids:
                 return False
             asroc_ids.add(seq)
@@ -876,15 +914,20 @@ def valid_asw_state(value, torpedo_total: int, torpedo_count: int,
             _key(row["weapon_key"], "weapon.", "asroc.weapon_key")
             weapon = runtime_catalog.weapons.get(row["weapon_key"])
             profile = runtime_catalog.torpedoes.get(row["payload_profile_key"])
-            if (weapon is None or weapon.weapon_type != "asroc"
+            if own:
+                maximum_speed, maximum_range = (depth_charge.OWN_ASROC_SPEED_KN,
+                                                depth_charge.OWN_ASROC_RANGE_NM[1])
+            elif weapon is not None:
+                maximum_speed, maximum_range = (weapon.maximum_speed_kn,
+                                                weapon.engagement_range_nm[1])
+            if ((not own and (weapon is None or weapon.weapon_type != "asroc"))
                     or profile is None or profile.used_by not in ("frigate", "helo")
                     or row["payload_profile_key"] != runtime_catalog.runtime_bindings[
                         "helicopter_torpedo"]):
                 return False
             speed = _number(row["speed_kn"], .001, 10000, "asroc.speed_kn")
             distance = _number(row["range_nm"], .001, 10000, "asroc.range_nm")
-            if (speed != weapon.maximum_speed_kn
-                    or distance != weapon.engagement_range_nm[1]):
+            if speed != maximum_speed or distance != maximum_range:
                 return False
             _number(row["target_depth_m"], 0, 10000, "asroc.target_depth_m")
             _number(row["travel"], 0, distance, "asroc.travel")
@@ -893,6 +936,9 @@ def valid_asw_state(value, torpedo_total: int, torpedo_count: int,
                 return False
             if row["state"] != "FLIGHT":
                 return False
+        # Own ASROCs in flight came out of the ship's store.
+        if own_asrocs > depth_charge.OWN_ASROC_STOCK - value["own_stores"]["asroc"]:
+            return False
         return True
     except (KeyError, TypeError, ValueError, OverflowError):
         return False

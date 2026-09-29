@@ -652,7 +652,9 @@ def _weapons(game, rows, target_ref, asset_refs, direct_refs):
     return dict(inventory=dict(torpedoes=game.torpedo_count, vls=game.vls_cells,
                                 ciws=game.ciws_ammo, aa=game.aa_ammo,
                                  chaff_ready=game.softkill_store.ready > 0,
-                                nixies=None if store is None else store.remaining_total),
+                                nixies=None if store is None else store.remaining_total,
+                                asroc=int(game.own_asrocs_left),
+                                depth_charges=int(game.depth_charges_left)),
                  readiness=dict(station_down=game.damage.station_down("weapons"),
                                 roe=game.roe, ciws_ready=game.ciws_cooldown_s <= 0,
                                 aa_ready=game.aa_cooldown_s <= 0,
@@ -782,7 +784,9 @@ def _radio(game, rows, ref_by_track):
                  station_down=station_down, navigation=_own_navigation(game),
                   tactical=[_observation(row, _TACTICAL_FIELDS) for row in rows
                             if row["source"] == "HFDF"][:_MAP_ROWS_MAX],
-                 tasks=_radio_tasks(game, station_down))
+                 tasks=_radio_tasks(game, station_down),
+                 can_request_ras=bool(not station_down and game.tasking.enabled
+                                      and not game.game_over and game.ras_needed()))
 
 
 def _radio_tasks(game, station_down):
@@ -820,9 +824,9 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                  dip_ping_cooldown_s=_number(helo.dip_ping_cooldown),
                  buoy_mode=game.helo_buoy_mode,
                  pattern=str(helo.pattern), pattern_remaining=len(helo.pattern_queue),
-                 mad_mode=bool(helo.mad_mode))
+                 mad_mode=bool(helo.mad_mode), radar=bool(game.helo_radar_active()))
     if asset_only:
-        for key in ("buoy_mode", "pattern", "pattern_remaining", "mad_mode"):
+        for key in ("buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar"):
             asset.pop(key)
         return {"asset": asset}
     water_available = airborne and helo.water_entry_clear(game.world)
@@ -1138,7 +1142,12 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
             key="+".join(refs), refs=refs, bearing=_number(round(suggestion.bearing, 1)),
             bearing_delta_deg=_number(round(suggestion.bearing_delta_deg, 1)),
             distance_nm=(None if suggestion.distance_nm is None
-                         else _number(round(suggestion.distance_nm, 2)))))
+                         else _number(round(suggestion.distance_nm, 2))),
+            course_delta_deg=(None if suggestion.course_delta_deg is None
+                              else _number(round(suggestion.course_delta_deg, 1))),
+            speed_delta_kn=(None if suggestion.speed_delta_kn is None
+                            else _number(round(suggestion.speed_delta_kn, 1))),
+            class_match=suggestion.class_match))
     operational = {
         "bridge": dict(navigation=_own_navigation(game),
                        orders=dict(station_down=game.damage.station_down("bridge"),
@@ -1591,6 +1600,7 @@ def _uboot_radio(game, boat):
     radio = boat.radio
     progress = radio.progress(game, boat)
     latest = radio.latest_report()
+    order = radio.active_order()
     return dict(
         antenna=bool(progress["antenna"]), broadcast=int(progress["broadcast"]),
         copied=bool(progress["copied"]), next_s=_number(progress["next_s"]),
@@ -1600,8 +1610,16 @@ def _uboot_radio(game, boat):
         report=_uboot_radio_report(game, None if latest is None else latest["report"]),
         log=[dict(seq=int(row["seq"]), type=row["kind"], age_s=_age(game.sim_t, row["t"]),
                   number=None if row["number"] is None else int(row["number"]),
-                  ack=bool(row["ack"]), report=_uboot_radio_report(game, row["report"]))
-             for row in reversed(radio.log)])
+                  ack=bool(row["ack"]), report=_uboot_radio_report(game, row["report"]),
+                  order=None if row["order"] is None else int(row["order"]))
+             for row in reversed(radio.log)],
+        vlf=progress["reception"] == "vlf",
+        order=None if order is None else dict(
+            id=int(order["id"]), type=order["kind"], x=_number(order["x"]),
+            y=_number(order["y"]), radius_nm=_number(order["radius_nm"]),
+            left_s=_number(max(0.0, order["deadline_t"] - game.sim_t))),
+        orders_done=sum(1 for row in radio.orders if row["state"] == "done"),
+        orders_failed=sum(1 for row in radio.orders if row["state"] == "failed"))
 
 
 def _uboot(game, boat, rows, target_ref, asset_refs):

@@ -384,9 +384,20 @@ function radioLogText(row) {
   const age = duration(row.age_s);
   if (row.type === "broadcast") {
     const text = t(row.report ? "uboot_radio_log_broadcast_report" : "uboot_radio_log_broadcast", {age, number: row.number});
-    return row.ack ? t("uboot_radio_log_with_ack", {entry: text}) : text;
+    const acked = row.ack ? t("uboot_radio_log_with_ack", {entry: text}) : text;
+    return row.order !== null ? t("uboot_radio_log_with_order", {entry: acked, number: row.order}) : acked;
   }
   return row.type === "sent" ? t("uboot_radio_log_sent", {age, number: row.number}) : t("uboot_radio_log_aborted", {age});
+}
+
+function radioOrderText(radio, nav) {
+  const order = radio.order;
+  if (order === null) return t("uboot_radio_order_none");
+  const left = duration(order.left_s);
+  if (order.type !== "area") return t(`uboot_radio_order_${order.type}`, {number: order.id, left});
+  const dx = order.x - nav.x, dy = order.y - nav.y;
+  return t("uboot_radio_order_area", {number: order.id, left, radius: number(order.radius_nm, 0),
+    bearing: number((Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360, 0), range: number(Math.hypot(dx, dy), 1)});
 }
 
 function renderRadio(radio, nav) {
@@ -394,14 +405,16 @@ function renderRadio(radio, nav) {
     : radio.copy !== null ? t("uboot_radio_copying", {number: radio.broadcast, percent: number(radio.copy * 100, 0)})
     : t("uboot_radio_missed", {number: radio.broadcast});
   metrics($("uboot-radio"), [
-    ["uboot_radio_antenna", t(radio.antenna ? "uboot_radio_antenna_up" : "uboot_radio_antenna_down")],
+    ["uboot_radio_antenna", t(radio.antenna ? "uboot_radio_antenna_up" : radio.vlf ? "uboot_radio_vlf" : "uboot_radio_antenna_down")],
     ["uboot_radio_broadcast", broadcast], ["uboot_radio_next", duration(radio.next_s)],
     ["uboot_radio_sitreps", t(radio.ack_due ? "uboot_radio_sitreps_ack" : "uboot_radio_sitreps_value", {count: radio.sitreps})]]);
   $("uboot-radio-warning").hidden = !radio.transmitting;
   $("uboot-radio-warning").textContent = t("uboot_radio_on_air", {percent: number((radio.send ?? 0) * 100, 0)});
   $("uboot-radio-send").dataset.ready = String(radio.antenna && !radio.transmitting);
   $("uboot-radio-status").textContent = radio.antenna ? "" : t("uboot_radio_need_antenna");
-  metrics($("uboot-radio-report"), [["uboot_radio_report", radio.report ? radioReportText(radio.report, nav) : t("uboot_radio_no_report")]]);
+  metrics($("uboot-radio-report"), [["uboot_radio_report", radio.report ? radioReportText(radio.report, nav) : t("uboot_radio_no_report")],
+    ["uboot_radio_order", radioOrderText(radio, nav)],
+    ["uboot_radio_orders", t("uboot_radio_orders_value", {done: radio.orders_done, failed: radio.orders_failed})]]);
   $("uboot-radio-log").replaceChildren(...(radio.log.length ? radio.log.map((row) => node("p", radioLogText(row), "uboot-log-line"))
     : [node("p", t("uboot_radio_log_empty"), "uboot-log-line")]));
 }

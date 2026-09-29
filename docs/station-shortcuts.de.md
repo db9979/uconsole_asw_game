@@ -1,4 +1,4 @@
-# U-Jagd 1.3.64 - Stations- und Tastenkürzel
+# U-Jagd 1.3.69 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -120,6 +120,8 @@ Berechtigungsprüfungen bleiben wirksam.
 | `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
 | `D` | Leichttorpedo vom HSP-5 |
 | `V` | Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen |
+| `A` | ASROC auf den zugewiesenen Kontakt (1-10 sm) |
+| `Z` | Wasserbombenmuster über das Heck |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Kamera-Follow an/aus |
 | `F` | Flak-Feuerfreigabe umschalten (gesperrt = feuert nie auf Angreifer) |
@@ -179,6 +181,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Auf / Ab` | HQ-Auftrag wählen (Seite Aufträge) |
 | `A` | Gewählten Auftrag annehmen |
 | `D` | Gewählten Auftrag ablehnen |
+| `R` | Versorger bei der HQ anfordern |
 
 ## 7 Maschinenraum
 

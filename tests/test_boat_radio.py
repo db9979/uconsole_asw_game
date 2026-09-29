@@ -166,7 +166,7 @@ def test_radio_state_saves_and_rejects_malformed_blocks(tmp_path):
     assert game.opfor.sub.transmitting                 # still on the air after loading
     assert game.opfor.orders.radio is game.opfor.radio
     before = game.save_state()
-    for mutate in (lambda radio: radio.update(version=2),
+    for mutate in (lambda radio: radio.update(version=1),
                    lambda radio: radio.pop("log"),
                    lambda radio: radio.update(tx_since=None),
                    lambda radio: radio.update(sitreps=-1),

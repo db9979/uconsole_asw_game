@@ -170,7 +170,8 @@ def test_remote_opz_projection_confirm_and_dismiss():
         bridge.pump(game, server, now=10.0)
         picture = server.v2_states["opz"]["opz"]
         (row,) = picture["suggestions"]
-        assert set(row) == {"key", "refs", "bearing", "bearing_delta_deg", "distance_nm"}
+        assert set(row) == {"key", "refs", "bearing", "bearing_delta_deg", "distance_nm",
+                            "course_delta_deg", "speed_delta_kn", "class_match"}
         assert set(row["refs"]) <= {item["ref"] for item in picture["observations"]}
         assert row["key"] == "+".join(row["refs"])
         encoded = json.dumps(picture["suggestions"])

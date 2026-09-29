@@ -14,18 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.64**
+Aktuelle Version: **1.3.69**
 
-Version 1.3.64 räumt die uConsole-Bildschirme auf. Alle Texte nutzen jetzt
-die mitgelieferte Schrift JetBrains Mono, damit auf keinem System mehr Zeilen
-abgeschnitten werden, und der Zeilenabstand folgt der Schrift. Alle
-Zustandsbalken haben einen gemeinsamen Stil mit Viertelmarken und
-Beschriftung, der Maschinentelegraph hebt die nächste Stufe hervor und warnt,
-wenn eine Direktfahrt zwischen zwei Stufen liegt, und die Brücke bekommt Kurs-,
-Ruder- und Fahrtanzeige. U-Boot-Reiter, Kartenskala, Wassersäule, ESM-Rose und
-Laufband überlappen nicht mehr; OPZ, ELOKA und Helikopter bekommen die Rahmen
-des Startbilds und eine Tastenzeile, und die letzten englischen Reste in
-deutschen Menüs sind übersetzt. Spielstände bleiben v28.
+Version 1.3.69 macht die Versorgung auf See planbar. Der Funkraum kann jetzt
+selbst bei der HQ einen Versorger anfordern (R auf der Seite Aufträge, im
+Browser Versorger anfordern), sobald Kraftstoff oder ein Vorrat knapp wird,
+höchstens alle 20 Minuten nach der letzten Versorgung. Längsseits fließt der
+Kraftstoff jetzt die ganze Zeit, und die Vorräte kommen in fünf Ladungen:
+Torpedos, ASROC, Wasserbomben, Nixie-Täuschkörper sowie CIWS- und
+Geschützmunition, jede Ladung ein Anteil dessen, was noch fehlt, sodass
+früheres Abdrehen behält, was schon übergeben ist. Die Seite Aufträge zeigt
+Kraftstoff, Torpedos, ASROC und Wasserbomben an Bord. Die HQ bietet einen
+Versorger jetzt auch an, wenn ASROC oder Wasserbomben verbraucht sind. VLS-
+Zellen werden auf See nicht nachgeladen. Spielstände bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -435,7 +436,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v28 gespeichert.
+v31 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -517,7 +518,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion, API-Protokoll **v2** und Speicherformat **v28** sind
+Anwendungsversion, API-Protokoll **v2** und Speicherformat **v31** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -581,8 +582,8 @@ Version gilt:
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v28**. V28
-verlangt das exakte Schema `u-jagd-save-v28` einschließlich der Autopilot-Route der Fregatte, der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v31**. V31
+verlangt das exakte Schema `u-jagd-save-v31` einschließlich der gemeldeten Positionen empfangener AIS-Meldungen, der Befehle der Führung an das besetzte U-Boot, der sinkenden Wasserbomben und der eigenen ASROC- und Wasserbombenbestände der Fregatte, der Autopilot-Route der Fregatte, der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
 der Fregatte, des Funkraums des besetzten U-Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen

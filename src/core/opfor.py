@@ -91,6 +91,8 @@ class CrewOrders:
               "dc_power_lost": "schaden", "dc_power_restored": "schaden",
               "radio_sending": "funk", "radio_sent": "funk", "radio_aborted": "funk",
               "radio_copied": "funk", "radio_copied_report": "funk",
+              "radio_order_area": "funk", "radio_order_report": "funk",
+              "radio_order_silence": "funk", "order_done": "funk", "order_failed": "funk",
               "detonation_near": "sonar", "detonation_far": "sonar",
               "tube_loaded": "waffen", "tube_flooded": "waffen",
               "torpedo_fired": "waffen", "torpedo_fired_tubeless": "waffen",

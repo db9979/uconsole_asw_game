@@ -118,6 +118,9 @@ function renderTasks(payload) {
   $("radio-task-count").textContent = t("radio_task_count", {open});
   list.replaceChildren(...payload.tasks.map(taskCard));
   if (!payload.tasks.length) list.append(node("p", t("radio_task_none"), "empty radio-idle"));
+  const request = node("div", undefined, "radio-task-actions");
+  request.append(actionButton("radio_request_ras", "radio_request_ras", {}, payload.can_request_ras));
+  list.append(request);
 }
 
 function renderTeletype(payload) {

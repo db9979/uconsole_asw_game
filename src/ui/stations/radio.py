@@ -118,6 +118,7 @@ def draw_radio_view(game, tr=None) -> None:
         ("↑/↓", "radio.footer.task_select"),
         ("A", "radio.footer.accept"),
         ("D", "radio.footer.decline"),
+        ("R", "radio.footer.ras"),
     ) if page == 2 else (
         ("↑/↓", "radio.footer.select"),
         ("Enter", "radio.footer.log"),
@@ -153,6 +154,8 @@ def task_detail_lines(game, row) -> list:
                              else "radio.task.not_sighted"))
     if row["state"] in ("active", "done") and row["kind"] != "identify":
         lines.append(message("radio.task.progress", progress=f"{row['progress']:.0%}"))
+    if row["kind"] == "ras" and row["state"] in ("offered", "active"):
+        lines.append(game.ras_stores_line())
     if row["verdict"] is not None:
         lines.append(message("radio.task.verdict." + row["verdict"]))
     if row["state"] == "offered":
@@ -170,6 +173,11 @@ def _draw_tasks(game, s, x, cy, w, box_h) -> None:
         layout.blit_line(s, "radio.task.none" if game.tasking.enabled
                          else "radio.task.disabled",
                          (lx, ly, lw, 26), config.COLOR_TEXT_DIM, size=18)
+        if game.tasking.enabled:
+            layout.blit_line(s, game.ras_stores_line(), (lx, ly + 34, lw, 24),
+                             config.COLOR_TEXT_DIM, size=16)
+            layout.blit_line(s, "radio.task.ras_hint", (lx, ly + 62, lw, 24),
+                             config.COLOR_TEXT_DIM, size=16)
         return
     selected_idx = min(max(0, game.task_sel), len(rows) - 1)
     row_h = 34

@@ -52,6 +52,7 @@ from src.air.helicopter import Helicopter
 from src.air.flights import FlightManager
 from src.world.world import World
 from src.world.coastline import Coastline
+from src.weapons import depth_charge
 from src.weapons.asw import ConsumableStore, WeaponBattery, ownship_loadout
 from src.weapons.air_defense import air_defense_loadout, make_softkill_store
 # Shared display/help constants and helpers (re-exported for tests/tools).
@@ -72,6 +73,7 @@ from src.core.game_save import (
     _same_save_value,
     _same_save_value_strict,
     MAX_SAVE_DOCUMENT_BYTES)
+from src.core.game_asw import AswWeaponsMixin
 from src.core.game_sim import (
     SimMixin,
     SONAR_CLASS_KINDS,
@@ -97,7 +99,7 @@ from src.core.game_welcome import WelcomeMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
-           RadarPictureMixin,
+           RadarPictureMixin, AswWeaponsMixin,
            SaveMixin, TaskingMixin, CrewMixin, MpaMixin, DebriefMixin,
            TrainingMixin, CampaignMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
     # Options overlay rows in display order; the last two open sub-menus.
@@ -573,6 +575,13 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.torpedo_seq = 0
         self.asrocs = []
         self.asroc_seq = 0
+        # Depth charges in the water and the ship's own ASROC/depth-charge
+        # stores (save ``asw.depth_charges``/``own_stores``).
+        self.depth_charges = []
+        self.depth_charge_seq = 0
+        self.depth_charges_left = depth_charge.DEPTH_CHARGE_STOCK
+        self.depth_charge_reload_s = 0.0
+        self.own_asrocs_left = depth_charge.OWN_ASROC_STOCK
         self.nixie_store = ConsumableStore.ownship(self._ownship_loadout)
         self.nixies = []
         self.nixie_seq = 0

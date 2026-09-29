@@ -102,6 +102,7 @@ STATION_HELP = {
           (", / .", "help.control.torp_enable"), ("Y", "help.control.torp_salvo"),
           ("H", "help.control.helo_toggle"), ("B", "help.control.buoy"),
           ("D", "help.control.air_torp"), ("V", "help.control.nixie"),
+          ("A", "help.control.asroc"), ("Z", "help.control.depth_charges"),
           ("Q / E", "help.control.zoom"),
          ("K", "help.control.follow"), ("F", "help.control.flak_release")],
         ["help.note.roe", "help.note.target_depth", "help.note.salvo",
@@ -146,7 +147,8 @@ STATION_HELP = {
         "help.radio.intro",
         [("help.key.up_down", "help.control.hfdf"), ("Enter", "help.control.log_bearing"),
          ("help.key.up_down", "help.control.task_select"),
-         ("A", "help.control.task_accept"), ("D", "help.control.task_decline")],
+         ("A", "help.control.task_accept"), ("D", "help.control.task_decline"),
+         ("R", "help.control.ras_request")],
         ["help.note.hfdf", "help.note.teletype", "help.note.hfdf_map", "help.note.tasking"],
         "help.note.hfdf_tactic"),
     Station.ENGINE: _station(

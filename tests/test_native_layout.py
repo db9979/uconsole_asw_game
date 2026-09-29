@@ -28,6 +28,7 @@ def test_weapons_panel_has_fixed_solution_readiness_inventory_and_active_section
         torpedo_count=4, torpedo_total=4, torpedo_depth=50.0,
         torpedoes=[], roe="FREIGABE", station_page=0, flak_authorized=True,
         helo=NS(torps=2, buoys_left=6, airborne=False, state="HANGAR"),
+        own_asw_stores_line=lambda: "ASROC 4  DC 20",
     )
 
     # Page 0: solution + stages

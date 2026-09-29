@@ -1025,10 +1025,12 @@ class EventMixin:
             if e.key == pygame.K_g and (self.station is Station.BRIDGE or crew_page):
                 self.toggle_action_stations()
                 return
-            if (e.key in (pygame.K_a, pygame.K_d) and self.station is Station.RADIO
-                    and self.station_page == 2):
+            if (e.key in (pygame.K_a, pygame.K_d, pygame.K_r)
+                    and self.station is Station.RADIO and self.station_page == 2):
                 if e.key == pygame.K_a:
                     self._task_accept_selected()
+                elif e.key == pygame.K_r:
+                    self._ras_request_selected()
                 else:
                     self._task_decline_selected()
                 return
@@ -1178,6 +1180,8 @@ class EventMixin:
                     result = self.send_helicopter_dipping_ping()
                     self.flash(message("runtime.helo.dip_ping_sent" if result is True
                                        else "runtime.helo.dip_ping_unavailable"))
+                elif self.station is Station.WEAPONS:
+                    self.fire_own_asroc()
                 elif self.station is Station.ELOKA:
                     self.set_ecm_auto(not self.ecm_jammer.auto_enabled)
                     self.flash(message("runtime.eloka.auto_on"
@@ -1282,6 +1286,8 @@ class EventMixin:
                     self._cycle_eloka_filter("band")
                 elif self.station is Station.OPZ:
                     self._mark_newest_blip()
+            elif e.key == pygame.K_z and self.station is Station.WEAPONS:
+                self.drop_depth_charges()
             elif e.key == pygame.K_y and self.station is Station.WEAPONS:
                 self._cycle_torpedo_salvo()
             elif e.key == pygame.K_g and self.station is Station.ENGINE:

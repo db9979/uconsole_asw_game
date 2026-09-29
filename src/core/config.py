@@ -300,6 +300,23 @@ UBOOT_RADIO_INTEL_P = 0.6
 UBOOT_RADIO_REPORT_AGE_S = (300.0, 900.0)
 UBOOT_RADIO_REPORT_RADIUS_NM = 4.0
 UBOOT_RADIO_REPORT_SHARP_NM = 2.0
+# VLF: the loop antenna copies the broadcast down to VLF_DEPTH_M without the
+# mast, but the slow VLF signal needs VLF_COPY_S.  From broadcast
+# ORDER_FIRST on, a broadcast carries a new HQ order with probability
+# ORDER_P while none is open, at most ORDER_MAX per mission: proceed to an
+# area (AREA_NM away, RADIUS_NM wide, within AREA_S), send a situation report
+# within REPORT_S, or keep radio silence for SILENCE_S.
+UBOOT_RADIO_VLF_DEPTH_M = 25.0
+UBOOT_RADIO_VLF_COPY_S = 60.0
+UBOOT_ORDER_FIRST = 2
+UBOOT_ORDER_P = 0.5
+UBOOT_ORDER_MAX = 4
+UBOOT_ORDER_AREA_NM = (8.0, 15.0)
+UBOOT_ORDER_RADIUS_NM = 3.0
+UBOOT_ORDER_AREA_S = 2400.0
+UBOOT_ORDER_REPORT_S = 1800.0
+UBOOT_ORDER_SILENCE_S = 1200.0
+UBOOT_ORDER_MIN_DEPTH_M = 60.0     # an ordered area lies in water this deep
 # Diesel fuel of conventional boats (fictional): the bunkers hold this many
 # hours of full generator power; a mission starts mid-patrol at this fill.
 # Displayed as litres of diesel per kWh of generator output.
@@ -555,6 +572,23 @@ OPZ_SUGGEST_POSITION_NM = 1.5
 OPZ_SUGGEST_POSITION_RANGE_SHARE = 0.1
 OPZ_SUGGEST_MAX_AGE_S = 30.0
 OPZ_SUGGEST_OBSERVER_NM = 0.5
+# Motion and signature: when both reports carry a course and at least one
+# moves faster than MIN_SPEED_KN, their courses must agree within COURSE_DEG;
+# when both carry a speed, within SPEED_KN plus a share of the faster.  Two
+# operator classifications must be equal (and an AIS report never pairs with
+# a submarine, biological or aircraft classification); an agreeing class
+# multiplies the score by CLASS_BONUS.  AIS reports count while their
+# dynamic data is fresh, up to AIS_MAX_AGE_S.
+OPZ_SUGGEST_MIN_SPEED_KN = 3.0
+OPZ_SUGGEST_COURSE_DEG = 35.0
+OPZ_SUGGEST_SPEED_KN = 4.0
+OPZ_SUGGEST_SPEED_SHARE = 0.25
+OPZ_SUGGEST_CLASS_BONUS = 0.7
+OPZ_SUGGEST_AIS_MAX_AGE_S = 600.0
+# AIS reports in the OPZ: satellite-navigation positions, so a small bearing
+# uncertainty and a high report quality.
+AIS_OPZ_QUALITY = 0.95
+AIS_OPZ_BEARING_UNC_DEG = 0.2
 
 # M10: Telegraph & Maschinenraum (diskrete Motorenbefehle)
 TELEGRAPH_ORDERS = (
@@ -962,6 +996,9 @@ TASK_RAS_SPEED_TOL_KN = 3.0
 TASK_RAS_S = 900.0                 # time alongside for the transfer
 TASK_RAS_FUEL_FRACTION = 0.7       # offered below this fuel ...
 TASK_RAS_PROFILE = "tanker_04"     # friendly supply ship (catalog key)
+TASK_RAS_LOADS = 5                 # stores come over in this many loads
+TASK_RAS_FULL_FRACTION = 0.05      # a request needs this much fuel missing ...
+TASK_RAS_REQUEST_COOLDOWN_S = 1200.0  # ... and this long since the last one
 SCORE_TASK = {                     # (done, failed, declined)
     "sar": (600, -400, -200),
     "identify": (250, -100, -100),
@@ -1011,6 +1048,7 @@ MPA_ALTITUDE_M = 300.0              # search altitude (radar horizon)
 MPA_RADAR_EMITTER = "emitter.own_asset.mpa.radar"
 HELO_RADAR_EMITTER = "emitter.own_asset.helicopter.radar"
 HELO_RADAR_ALTITUDE_M = 150.0      # transit altitude for the radar horizon
+HELO_RADAR_RANGE_NM = 40.0          # helicopter surface-search range, large ship
 MPA_RADAR_RANGE_NM = 60.0           # nominal surface-search range, large ship
 MPA_RADAR_LOOK_S = 2.0              # one look per target per scan
 MPA_RADAR_BEARING_ERR_DEG = 1.0

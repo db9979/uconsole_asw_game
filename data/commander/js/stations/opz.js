@@ -24,7 +24,10 @@ export function renderOpzStation(payload) {
     ["reference", row.refs.map((ref) => labels.get(ref) ?? ref).join(" + ")],
     ["bearing", unit(row.bearing, "\u00b0", 0)],
     ["suggestion_bearing_delta", unit(row.bearing_delta_deg, "\u00b0", 1)],
-    ["suggestion_distance", unit(row.distance_nm, "NM")]], "station_none", (row) => [
+    ["suggestion_distance", unit(row.distance_nm, "NM")],
+    ["suggestion_course_delta", unit(row.course_delta_deg, "\u00b0", 0)],
+    ["suggestion_speed_delta", unit(row.speed_delta_kn, "kn", 1)],
+    ["suggestion_class", row.class_match === null ? "\u2014" : yesNo(row.class_match)]], "station_none", (row) => [
     actionButton("opz_confirm_suggestion", "opz_create_fusion", {refs: [...row.refs]}),
     actionButton("opz_dismiss_suggestion", "opz_dismiss_suggestion", {refs: [...row.refs]})]);
   stationRows($("opz-classifications"), payload.source_classifications, (row) => [["reference", row.ref],

@@ -40,7 +40,7 @@ export function renderHelicopterStation(payload) {
     ["helicopter_dip_cooldown", unit(asset.dip_ping_cooldown_s, "s", 0)],
     ["helicopter_pattern", t(`buoy_pattern_${asset.pattern}`)],
     ["helicopter_pattern_remaining", number(asset.pattern_remaining, 0)],
-    ["helicopter_mad", yesNo(asset.mad_mode)]]);
+    ["helicopter_mad", yesNo(asset.mad_mode)], ["helicopter_radar", yesNo(asset.radar)]]);
   if (!S.stationDrafts.has("helicopter-pattern")) $("helicopter-pattern").value = asset.pattern;
   $("helicopter-mad").textContent = t(asset.mad_mode ? "helicopter_mad_stop" : "helicopter_mad_start");
   $("helicopter-mad").setAttribute("aria-pressed", String(asset.mad_mode));

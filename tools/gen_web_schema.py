@@ -102,6 +102,8 @@ def render_block() -> str:
     lines.append(f"    radioLog: {_array(schema.UBOOT_RADIO_LOG_FIELDS)},\n")
     lines.append(f"    radioLogKinds: {_array(schema.UBOOT_RADIO_LOG_KINDS)},\n")
     lines.append(f"    radioReport: {_array(schema.UBOOT_RADIO_REPORT_FIELDS)},\n")
+    lines.append(f"    radioOrder: {_array(schema.UBOOT_RADIO_ORDER_FIELDS)},\n")
+    lines.append(f"    radioOrderKinds: {_array(schema.UBOOT_RADIO_ORDER_KINDS)},\n")
     lines.append("  };\n")
     lines.append(END)
     return "".join(lines)

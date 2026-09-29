@@ -79,7 +79,7 @@ async function run() {
   const fireControls = [...$("station-weapons").querySelectorAll(".direct-fire-controls input, .direct-fire-controls select, .direct-fire-controls button")];
   const weapons = {
     bounds: [weaponsBounds.left, weaponsBounds.top, weaponsBounds.right, weaponsBounds.bottom],
-    controls: fireControls.length === 5 && fireControls.every((control) => {
+    controls: fireControls.length === 7 && fireControls.every((control) => {
       const bounds = control.getBoundingClientRect();
       return bounds.width >= 24 && bounds.height >= 24;
     }),

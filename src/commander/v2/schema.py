@@ -42,7 +42,8 @@ MPA_STATES = ("BASE", "TRANSIT", "STATION", "RTB")
 # The OPZ's correlation suggestions (``src/sensors/fusion.py``): two refs of
 # the role's own published reports on the same bearing, never applied until
 # the operator fuses them (``opz_create_fusion``) or dismisses them.
-OPZ_SUGGESTION_FIELDS = ("key", "refs", "bearing", "bearing_delta_deg", "distance_nm")
+OPZ_SUGGESTION_FIELDS = ("key", "refs", "bearing", "bearing_delta_deg", "distance_nm",
+                         "course_delta_deg", "speed_delta_kn", "class_match")
 RADIO_TASK_STATES = ("offered", "active", "done", "failed", "declined")
 
 # The common ``weather_station`` block: own-ship atmosphere (every role) and
@@ -140,8 +141,12 @@ UBOOT_EVADE_PLAN_FIELDS = ("type", "bearing", "course", "speed_kn", "depth_m", "
 # The boat's radio room (``radio``, src/core/boat_radio.py): schedule,
 # transmissions, HQ's latest contact report and the message log.
 UBOOT_RADIO_FIELDS = ("antenna", "broadcast", "copied", "next_s", "copy", "send",
-                      "transmitting", "sitreps", "ack_due", "report", "log")
-UBOOT_RADIO_LOG_FIELDS = ("seq", "type", "age_s", "number", "ack", "report")
+                      "transmitting", "sitreps", "ack_due", "report", "log", "vlf",
+                      "order", "orders_done", "orders_failed")
+UBOOT_RADIO_LOG_FIELDS = ("seq", "type", "age_s", "number", "ack", "report", "order")
+# The open HQ order (area orders carry x/y/radius_nm, else null).
+UBOOT_RADIO_ORDER_FIELDS = ("id", "type", "x", "y", "radius_nm", "left_s")
+UBOOT_RADIO_ORDER_KINDS = ("area", "report", "silence")
 UBOOT_RADIO_LOG_KINDS = ("broadcast", "sent", "aborted")
 UBOOT_RADIO_REPORT_FIELDS = ("x", "y", "radius_nm", "course", "speed_kn", "age_s")
 UBOOT_ESM_FIX_FIELDS = ("x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent")
@@ -157,7 +162,7 @@ ROLE_SHAPES = {
     "opz": ("observations", "fusions", "suggestions", "radar", "defense", "asm_observations",
             "source_classifications", "radar_blips", "designated_target_ref", "own_assets"),
     "radio": ("observations", "logged_fixes", "logged_bearings", "messages", "station_down",
-              "navigation", "tactical", "tasks"),
+              "navigation", "tactical", "tasks", "can_request_ras"),
     "engine": ("propulsion", "machinery", "controls", "environment_effects"),
     "helicopter": ("asset", "waypoint", "buoys", "buoy_observations", "acoustic",
                    "navigation", "tactical", "target_choices", "readiness",

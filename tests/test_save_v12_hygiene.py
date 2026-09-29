@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v28_and_older_documents_are_rejected():
+def test_save_is_v31_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (28, "u-jagd-save-v28")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (28, "u-jagd-save-v28")
+    assert (state["version"], state["save_schema"]) == (31, "u-jagd-save-v31")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (31, "u-jagd-save-v31")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -133,6 +133,25 @@ def test_save_is_v28_and_older_documents_are_rejected():
     v27["save_schema"] = "u-jagd-save-v27"
     del v27["route"]
     assert not game._load_save_data(v27)
+    # v28 differs only by the frigate's depth charges and own ASROC stores.
+    v28 = copy.deepcopy(state)
+    v28["version"] = 28
+    v28["save_schema"] = "u-jagd-save-v28"
+    for key in ("depth_charges", "depth_charge_seq", "own_stores"):
+        del v28["asw"][key]
+    assert not game._load_save_data(v28)
+    # v29 differs only by the boat radio's HQ orders (crew.radio version 2).
+    v29 = copy.deepcopy(state)
+    v29["version"] = 29
+    v29["save_schema"] = "u-jagd-save-v29"
+    assert not game._load_save_data(v29)
+    # v30 differs only by the AIS reports' reported position.
+    v30 = copy.deepcopy(state)
+    v30["version"] = 30
+    v30["save_schema"] = "u-jagd-save-v30"
+    for row in v30["ais"]:
+        del row["x"], row["y"]
+    assert not game._load_save_data(v30)
     assert game.save_state() == before
 
 

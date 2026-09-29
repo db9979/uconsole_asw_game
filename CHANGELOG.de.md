@@ -4,6 +4,66 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.69
+
+Version 1.3.69 macht die Versorgung auf See planbar. Der Funkraum kann jetzt
+selbst bei der HQ einen Versorger anfordern (R auf der Seite Aufträge, im
+Browser Versorger anfordern), sobald Kraftstoff oder ein Vorrat knapp wird,
+höchstens alle 20 Minuten nach der letzten Versorgung. Längsseits fließt der
+Kraftstoff jetzt die ganze Zeit, und die Vorräte kommen in fünf Ladungen:
+Torpedos, ASROC, Wasserbomben, Nixie-Täuschkörper sowie CIWS- und
+Geschützmunition, jede Ladung ein Anteil dessen, was noch fehlt, sodass
+früheres Abdrehen behält, was schon übergeben ist. Die Seite Aufträge zeigt
+Kraftstoff, Torpedos, ASROC und Wasserbomben an Bord. Die HQ bietet einen
+Versorger jetzt auch an, wenn ASROC oder Wasserbomben verbraucht sind. VLS-
+Zellen werden auf See nicht nachgeladen. Spielstände bleiben v31.
+
+## 1.3.68
+
+Version 1.3.68 macht die Zuordnungsvorschläge der OPZ klüger. Neben Peilung
+und Position vergleichen sie jetzt Kurs, Fahrt und die Klassifizierung des
+Bedieners: zwei Meldungen mit deutlich verschiedenem Kurs oder verschiedener
+Fahrt oder unpassender Klasse werden nicht mehr vorgeschlagen, und gleiche
+Klassen setzen ein Paar weiter nach oben. Empfangene AIS-Meldungen erscheinen
+jetzt als eigene Meldungen in der OPZ (gemeldete Position, Kurs, Fahrt und
+Name) und werden mit Radar- und Ausguckmeldungen desselben Schiffs
+vorgeschlagen. Eine Fusion übernimmt jetzt Kurs und Fahrt ihrer Mitglieder.
+Spielstände sind jetzt v31 (AIS-Meldungen behalten ihre gemeldete Position);
+v30-Stände laden nicht mehr.
+
+## 1.3.67
+
+Version 1.3.67 lässt die Führung dem besetzten U-Boot während der Mission
+Befehle geben. Unter dem Mast nimmt die VLF-Rahmenantenne den Rundspruch jetzt
+bis 25 m Tiefe auf (langsamer als mit Mast und nur Empfang). Ab dem zweiten
+Rundspruch kann ein Rundspruch einen Befehl enthalten: ein Seegebiet in tiefem
+Wasser anlaufen, eine Lagemeldung absetzen oder Funkstille halten, jeweils mit
+Frist. Funkraumseite, Karte und die Browserkarte Funkraum zeigen den offenen
+Befehl und wie viele ausgeführt wurden; ein verpasster Rundspruch ist ein
+verpasster Befehl. Spielstände sind jetzt v30 (sie behalten die Befehle);
+v29-Stände laden nicht mehr.
+
+## 1.3.66
+
+Version 1.3.66 gibt dem Helikopter ein Seeraumradar. Solange er mit
+eingeholtem Tauchsonar fliegt, sucht es aus 150 m: Schiffe bis 40 sm,
+aufgetauchte U-Boote sowie ausgefahrene Schnorchel oder Sehrohre innerhalb
+seines Radarhorizonts, einen Mast bei ruhiger See auf etwa 10 sm und bei
+rauerer See nur auf wenige Meilen. Jeder Kontakt erreicht die OPZ als RADAR-
+HELO-Track; die Helikopterseite und die Remote-Crew-Ansicht zeigen, ob das
+Radar sucht. Spielstände bleiben v29.
+
+## 1.3.65
+
+Version 1.3.65 gibt der Fregatte zwei weitere U-Jagd-Waffen in der
+Waffenzentrale. `A` startet eines von vier ASROC: Die Rakete fliegt zur
+beobachteten Position des zugewiesenen U-Boots (1 bis 10 sm, aktuelle
+Entfernung nötig) und setzt dort einen Leichttorpedo ab. `Z` wirft ein Muster
+aus fünf Wasserbomben über das Heck (20 an Bord, 45 s Nachladen, mindestens 10
+kn); sie sinken auf die voreingestellte Tiefe und sind bis etwa 25 m tödlich.
+Beide nutzen die Zielprüfungen des Torpedos und stehen auch auf der
+Waffenseite der Remote Crew. Spielstände sind jetzt v29 (sie behalten sinkende
+Wasserbomben und die Bestände); v28-Stände laden nicht mehr.
 ## 1.3.64
 
 Version 1.3.64 räumt die uConsole-Bildschirme auf. Alle Texte nutzen jetzt

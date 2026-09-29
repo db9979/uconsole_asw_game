@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.79
+
+Version 1.3.79 repariert die Kopplung in Safari und Firefox und damit den
+Handy-Ausguck auf dem iPhone. Die Seiten des Spiels verlangten vom Browser,
+gar keinen Referrer zu senden; nach dem Webstandard kennzeichnen Safari und
+Firefox dann die eigenen Anfragen der Seite als herkunftslos („Origin: null“),
+und das Spiel wies sie als fremde Adresse ab, sodass die Kopplung mit „Das
+Spiel hat diese Adresse abgelehnt“ scheiterte. Die Seiten behalten den
+Referrer jetzt für das Spiel selbst und senden weiterhin keinen an andere
+Seiten; Chrome war nie betroffen. Spielstände bleiben v28.
+
 ## 1.3.78
 
 Version 1.3.78 zeigt die Einheiten als 3D-Modelle. Im Einheitenanalysator

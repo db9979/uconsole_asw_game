@@ -12,21 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.78**
+Current release: **1.3.79**
 
-Release 1.3.78 shows the units as 3D models. In the unit analyser (`F8`) the
-first page of every catalog profile is now a slowly turning 3D model of its
-class, ahead of the sound and radar images; in the Remote Crew browser it can
-also be turned by dragging. The Unit Editor shows the same model under the
-selected profile and beside the fields of an opened one. Ships, submarines
-and aircraft are the lookout's own silhouettes built out in 3D, so a unit
-looks in the analyser as it does in the binoculars and the periscope
-(warship, merchant, small craft, submarine, the lookout's helicopter for
-every aircraft); torpedoes, decoys and animals, which no lookout sees, have
-models of their own. The same models now stand in the lookout's binoculars
-and the periscope on the uConsole, in the browser and on the phone, turned by
-the angle on the bow the observer judges once he has made out the class.
-Saves stay v31.
+Release 1.3.79 fixes pairing in Safari and Firefox, and with it the phone
+lookout on an iPhone. The game's pages told the browser to send no referrer at
+all; under the web standard Safari and Firefox then mark the pages' own
+requests as coming from nowhere ("Origin: null"), and the game refused them as
+a foreign address, so pairing failed with "The game refused this address".
+The pages now keep the referrer to the game itself and still send none to any
+other site; Chrome was never affected. Saves stay v28.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

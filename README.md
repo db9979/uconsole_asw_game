@@ -12,18 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.69**
+Current release: **1.3.70**
 
-Release 1.3.69 makes replenishment at sea something you can plan. The radio
-room can now ask HQ for a supply ship itself (R on the Tasks page, or Request
-supply ship in the browser) whenever fuel or any store runs short, at most
-once every 20 minutes after the last one. Alongside, fuel now flows the whole
-time and the stores come over in five loads: torpedoes, ASROC, depth charges,
-Nixie decoys and CIWS and gun rounds, each load a share of what is still
-missing, so breaking away early keeps what already came over. The Tasks page
-shows fuel, torpedoes, ASROC and depth charges aboard. HQ also offers a supply
-ship when ASROC or depth charges have been used. VLS cells are not reloaded at
-sea. Saves stay v31.
+Release 1.3.70 redraws the sea in the lookout's binoculars, the lookout strip,
+the periscope and the phone lookout. Instead of one big wave along the horizon
+the waves now fill the whole sea in perspective: small and close together out
+to a clean horizon, longer and higher toward the eye, every row moving with the
+swell and coming at you, running away or sliding sideways with the wind, with
+white caps in a rough sea. Both on the uConsole and in the Remote Crew browser;
+saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

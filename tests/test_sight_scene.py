@@ -191,3 +191,34 @@ def test_the_bridge_weather_instrument_is_a_small_eyepiece_into_the_wind():
     cloudy = sight_scene.sky_values(12.0, 0.0, 0.0, 0.9, "rain", 0.6, 0.0)
     assert pygame.image.tobytes(draw(12.0, 0.0, cloudy), "RGB") != \
         pygame.image.tobytes(day, "RGB")
+
+
+def test_the_waves_run_on_to_the_horizon_and_grow_toward_the_eye():
+    sky = dict(sight_scene.plain_sky(False), wind_from_deg=0.0)
+
+    def sea(t, sea_state=4.0):
+        return _picture(sky, motion=(0.0, 0.0), outlines=[], crosshair_deg=None,
+                        sea_state=sea_state, line_of_sight=0.0, anim_t=t)
+
+    def wave_rows(picture, y0, y1):
+        # Rows of pixels carrying a wave line: more than one colour across.
+        return sum(1 for y in range(y0, y1)
+                   if len({picture.get_at((x, y))[:3] for x in range(10, 390, 3)}) > 2)
+
+    now = sea(2.0)
+    # The horizon sits at 100 px: waves right below it, not just near the eye.
+    assert wave_rows(now, 102, 125) >= 4
+    assert wave_rows(now, 170, 200) >= 4
+    # The whole field moves, the far rows too.
+    later = sea(3.5)
+    band = (0, 102, 400, 20)
+    assert pygame.image.tobytes(now.subsurface(band), "RGB") != \
+        pygame.image.tobytes(later.subsurface(band), "RGB")
+    # The horizon itself stays a clean straight line (no single big wave).
+    line = [next(y for y in range(60, 140) if now.get_at((x, y))[:3] != now.get_at((x, 60))[:3])
+            for x in range(20, 380, 10)]
+    assert max(line) - min(line) <= 1
+    # Near waves are higher in a rough sea than in a calm one.
+    calm, rough = sea(2.0, 1.0), sea(2.0, 7.0)
+    assert pygame.image.tobytes(calm.subsurface((0, 160, 400, 40)), "RGB") != \
+        pygame.image.tobytes(rough.subsurface((0, 160, 400, 40)), "RGB")

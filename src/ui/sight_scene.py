@@ -326,58 +326,81 @@ def sea_aspect(wind_from_deg: float, line_of_sight: float) -> tuple:
     return math.cos(angle), -math.sin(angle)
 
 
+# Rows of waves between the horizon and the bottom of a picture.
+SEA_ROWS = 18
+
+
 def _draw_sea(s, view, sky, colors, sea_state, t, haze):
+    """The sea as a field of wave rows in perspective: at the horizon a
+    fine, nearly flat line of small crests, toward the eye ever longer and
+    higher waves, all moving with the swell (bearing space, so the field
+    slides past as the line of sight turns)."""
     rect = view.rect
     dy = math.tan(view.tilt) * rect.w / 2.0
     left, right = view.horizon - dy, view.horizon + dy
-    amp = 0.6 + 0.35 * sea_state
-    step = max(6, rect.w // 60)
+    step = max(4, rect.w // 90)
     head, cross = sea_aspect(sky["wind_from_deg"], view.los)
-    # The pattern lies on the sea (bearing space), so it slides past as the
-    # line of sight turns; along the crests it runs with the swell.
+    along = abs(head)
     anchor = view.los * view.px_per_deg
-    swell = cross * t * 14.0
-    crest = [(x, view.base(x) + amp * math.sin((x + anchor - swell) * 0.045 + t * 1.6 * abs(head))
-              + 0.6 * amp * math.sin((x + anchor - swell) * 0.013 - t * 0.9))
-             for x in range(rect.x, rect.right + step, step)]
+    # Far off the waves are too small to break the horizon: a clean line.
+    crest = [(x, view.base(x)) for x in range(rect.x, rect.right + step, step)]
     pygame.draw.polygon(s, colors["sea"][0], crest + [(rect.right, rect.bottom),
                                                        (rect.x, rect.bottom)])
-    top = int(min(left, right) + amp + 2)
+    top = int(min(left, right) + 2)
     depth = rect.bottom - top
     if depth > 4:
         shade = _cached(_SHADE_CACHE, (rect.w, depth, colors["sea"][1]),
                         lambda: _shade((rect.w, depth), colors["sea"][1]))
         s.blit(shade, (rect.x, top))
-    # Wave rows, denser toward the horizon.  Looking into or down the sea the
-    # crests are long rows that come at the eye or run away from it; across
-    # the sea they are short, run sideways and lean with the perspective.
-    rows = 9
-    below = rect.bottom - view.horizon
-    along = abs(head)
-    roll = (t * 0.12 * head) % 1.0
-    for index in range(rows + 1):
-        row = index + roll
-        depth_px = below * (row / rows) ** 1.7
-        if depth_px < 3 or row > rows:
+    below = max(1.0, rect.bottom - view.horizon)
+    # Near waves: height and length grow with the sea state and the picture.
+    near_amp = (1.2 + 0.9 * sea_state) * rect.h / 280.0
+    # Into or down the sea the rows come at the eye or run away from it
+    # (new rows are born at the horizon); across it they run sideways.
+    cycles = t * 0.35 * head
+    roll = cycles % 1.0
+    born = math.floor(cycles)
+    trough = blend(colors["sea"][0], colors["sea"][1], 0.45)
+    for index in range(SEA_ROWS + 1):
+        f = (index + roll) / SEA_ROWS
+        if f > 1.0:
             continue
-        spacing = int(24 + row * 10)
-        length = (6 + row * 3) * (0.55 + 1.1 * along)
-        lean = cross * (1 + row * 0.7) * (1.0 - along)
-        offset = (anchor + t * (6 + row * 3) * cross) % (2 * spacing)
-        shade = blend(colors["wave"], colors["sea"][1], row / (rows + 3))
+        depth_px = below * f ** 1.9
+        if depth_px < 1.0:
+            continue
+        near = depth_px / below
+        n = index - born                      # the row's own identity
+        amp = max(0.35, near_amp * near)
+        wavelength = (10.0 + 150.0 * near) * (0.45 + 0.9 * along)
+        k = math.tau / wavelength
+        drift = cross * t * (4.0 + 40.0 * near)
+        phase = n * 1.7 + t * 1.4 * (1.0 - along)
+        points = []
+        for x in range(rect.x - step, rect.right + step, step):
+            u = (x + anchor - drift) * k + phase
+            points.append((x, view.base(x) + depth_px
+                           - amp * (math.sin(u) + 0.35 * math.sin(2.1 * u + n))))
+        fade = f * 0.9
+        light = blend(blend(colors["sea"][0], colors["wave"], 0.35 + 0.65 * near),
+                      colors["haze"], haze * (1.0 - near) * 0.6)
         # Down-sea the eye sees the waves' backs: fainter rows.
         if head < 0:
-            shade = blend(shade, colors["sea"][1], 0.35 * -head)
-        for x in range(rect.x - 2 * spacing, rect.right, spacing):
-            if (x // spacing + index) % 2:
-                continue
-            x0 = x - offset
-            y0 = view.base(x0) + depth_px
-            pygame.draw.line(s, shade, (x0, y0), (x0 + length, y0 - lean), 1)
-            if sea_state >= 4 and ((x // spacing) * 7 + index) % 5 == 0:
-                pygame.draw.line(s, colors["crest"], (x0 + 2, y0 - 1),
-                                 (x0 + length - 2, y0 - 1 - lean), 1)
-    pygame.draw.lines(s, colors["crest"], False, crest, 1)
+            light = blend(light, colors["sea"][1], 0.35 * -head)
+        width = 2 if near > 0.55 and rect.h >= 200 else 1
+        if near > 0.12:
+            pygame.draw.lines(s, blend(trough, colors["sea"][1], fade),
+                              False, [(x, y + max(1.0, amp * 0.8)) for x, y in points], width)
+        pygame.draw.lines(s, light, False, points, width)
+        if sea_state >= 4 and near > 0.08:
+            # White caps on the highest crests.
+            cap = colors["crest"]
+            for i in range(1, len(points) - 1):
+                if (points[i][1] < points[i - 1][1] and points[i][1] <= points[i + 1][1]
+                        and (i * 7 + n * 3) % max(2, 9 - int(sea_state)) == 0):
+                    x, y = points[i]
+                    half = max(1.0, wavelength * 0.08)
+                    pygame.draw.line(s, cap, (x - half, y), (x + half, y), width)
+    pygame.draw.lines(s, blend(colors["crest"], colors["haze"], 0.4), False, crest, 1)
     # Glitter under the moon or the sun.
     light = sky["light"]
     if light < 0.5 and sky["moon_alt_deg"] > 0:

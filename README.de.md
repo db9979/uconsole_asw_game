@@ -14,19 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.69**
+Aktuelle Version: **1.3.70**
 
-Version 1.3.69 macht die Versorgung auf See planbar. Der Funkraum kann jetzt
-selbst bei der HQ einen Versorger anfordern (R auf der Seite Aufträge, im
-Browser Versorger anfordern), sobald Kraftstoff oder ein Vorrat knapp wird,
-höchstens alle 20 Minuten nach der letzten Versorgung. Längsseits fließt der
-Kraftstoff jetzt die ganze Zeit, und die Vorräte kommen in fünf Ladungen:
-Torpedos, ASROC, Wasserbomben, Nixie-Täuschkörper sowie CIWS- und
-Geschützmunition, jede Ladung ein Anteil dessen, was noch fehlt, sodass
-früheres Abdrehen behält, was schon übergeben ist. Die Seite Aufträge zeigt
-Kraftstoff, Torpedos, ASROC und Wasserbomben an Bord. Die HQ bietet einen
-Versorger jetzt auch an, wenn ASROC oder Wasserbomben verbraucht sind. VLS-
-Zellen werden auf See nicht nachgeladen. Spielstände bleiben v31.
+Version 1.3.70 zeichnet die See im Fernglas des Ausgucks, im Ausguckstreifen, im
+Sehrohr und im Handy-Ausguck neu. Statt einer großen Welle an der Kimm füllen die
+Wellen jetzt die ganze See in Perspektive: klein und dicht bis zur klaren Kimm,
+zum Auge hin länger und höher, jede Reihe bewegt sich mit dem Seegang, läuft je
+nach Wind auf einen zu, davon oder seitlich durchs Bild, bei grober See mit
+Schaumkronen. Auf der uConsole und im Remote-Crew-Browser; Spielstände bleiben
+v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

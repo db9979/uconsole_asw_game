@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.70
+
+Release 1.3.70 redraws the sea in the lookout's binoculars, the lookout strip,
+the periscope and the phone lookout. Instead of one big wave along the horizon
+the waves now fill the whole sea in perspective: small and close together out
+to a clean horizon, longer and higher toward the eye, every row moving with the
+swell and coming at you, running away or sliding sideways with the wind, with
+white caps in a rough sea. Both on the uConsole and in the Remote Crew browser;
+saves stay v27.
+
 ## 1.3.69
 
 Release 1.3.69 makes replenishment at sea something you can plan. The radio

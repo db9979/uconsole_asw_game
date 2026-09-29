@@ -53,7 +53,7 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert set(re.findall(r'\$\("([\w-]+)"\)', js)) <= set(ids)
     code = next(attrs for _, attrs in document.elements if attrs.get("id") == "code")
     name = next(attrs for _, attrs in document.elements if attrs.get("id") == "name")
-    assert code["maxlength"] == "6" and code["pattern"] == "[0-9]{3}[A-Za-z]{3}"
+    assert code["maxlength"] == "12" and code["pattern"] == "[0-9]{3}[A-Za-z]{3}"
     assert code["autocapitalize"] == "characters" and code["autocomplete"] == "off"
     assert code["placeholder"] == "482KMT" and code["aria-describedby"] in ids
     assert name["minlength"] == "1" and name["maxlength"] == "32"

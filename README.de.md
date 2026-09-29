@@ -14,17 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.62**
+Aktuelle Version: **1.3.63**
 
-Version 1.3.62 bringt dem Autopiloten die Seekarte bei. Führt die Strecke
-eines Wegpunkts oder Suchmusters durch Flachwasser oder Land, fügt er Umweg-
-Punkte ein oder meldet im Verlauf, welche Strecke von Hand zu steuern ist.
-Während der Fahrt schaut er einmal pro Sekunde zwei Minuten voraus;
-Flachwasser dort bekommt einen Umweg zum aktuellen Wegpunkt, sonst schaltet
-sich die Route ab und das Schiff dreht auf den Gegenkurs. Er plant mit
-Kartentiefe, Felsen und Wracks gegen Tiefgang plus Kielreserve und 2 m
-Sicherheit. Spielstände bleiben v28; eine Route kann mit Umwegen jetzt bis zu
-16 Punkte haben.
+Version 1.3.63 macht den Kopplungscode leichter einzugeben, auf der
+Crew-Seite und am Handy-Ausguck. Der Code darf so getippt werden, wie `F9` ihn
+zeigt, mit Leerzeichen, in Kleinbuchstaben oder mit verwechselbaren Zeichen
+wie O statt 0, l statt 1 oder S statt 5, und wird trotzdem richtig gelesen.
+„Falscher Kopplungscode“ erscheint nur noch, wenn der Code wirklich falsch ist,
+und nennt den Code, den das Spiel bekommen hat; lehnt das Spiel die Adresse selbst ab (ein
+Lesezeichen oder ein anderer Name für den Host), sagt die Seite, dass sie über
+den QR-Code oder die Adresse aus `F9` zu öffnen ist. Die Kopplungshilfe
+behauptet nicht mehr, der Code laufe nach fünf Minuten ab: er bleibt, solange
+das Spiel läuft, und wechselt nach fünf Fehlversuchen. Spielstände bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

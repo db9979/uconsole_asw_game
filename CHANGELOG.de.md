@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.63
+
+Version 1.3.63 macht den Kopplungscode leichter einzugeben, auf der
+Crew-Seite und am Handy-Ausguck. Der Code darf so getippt werden, wie `F9` ihn
+zeigt, mit Leerzeichen, in Kleinbuchstaben oder mit verwechselbaren Zeichen
+wie O statt 0, l statt 1 oder S statt 5, und wird trotzdem richtig gelesen.
+„Falscher Kopplungscode“ erscheint nur noch, wenn der Code wirklich falsch ist,
+und nennt den Code, den das Spiel bekommen hat; lehnt das Spiel die Adresse selbst ab (ein
+Lesezeichen oder ein anderer Name für den Host), sagt die Seite, dass sie über
+den QR-Code oder die Adresse aus `F9` zu öffnen ist. Die Kopplungshilfe
+behauptet nicht mehr, der Code laufe nach fünf Minuten ab: er bleibt, solange
+das Spiel läuft, und wechselt nach fünf Fehlversuchen. Spielstände bleiben v28.
+
 ## 1.3.62
 
 Version 1.3.62 bringt dem Autopiloten die Seekarte bei. Führt die Strecke

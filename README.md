@@ -12,16 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.62**
+Current release: **1.3.63**
 
-Release 1.3.62 teaches the autopilot the chart. A waypoint or search pattern
-whose leg crosses shoal water or land now gets detour points around it, or a
-warning in the feed which leg to steer by hand. While the route runs, the
-autopilot looks two minutes ahead once a second; shoal water there gets a
-detour to the current waypoint, or the route switches off and the ship turns
-back on the reciprocal course. It plans on charted depth, rocks and wrecks
-against the hull's draft plus keel reserve and a 2 m margin. Saves stay v28; a
-route may now hold up to 16 points with detours.
+Release 1.3.63 makes the pairing code easier to enter, on the crew page and
+on the phone lookout. The code can be typed the way `F9` shows it, with the
+space, in lower case, or with look-alikes such as O for 0, l for 1 or S for 5,
+and it is still read correctly. "Wrong pairing code" now appears only when the
+code really is wrong, and it names the code the game received;
+when the game refuses the address itself (a bookmark or another name for the
+host), the page says to open it from the QR code or the address in `F9`. The
+pairing help no longer claims the code expires after five minutes: it stays
+while the game runs and changes after five wrong tries. Saves stay v28.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

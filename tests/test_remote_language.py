@@ -68,6 +68,9 @@ def test_the_game_tells_its_listener_the_saved_language(tmp_path, monkeypatch):
 
 
 class _Var:
+    # Like tkinter.StringVar: unhashable.
+    __hash__ = None
+
     def __init__(self, value=""):
         self.value = value
 

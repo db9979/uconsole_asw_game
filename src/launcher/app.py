@@ -213,13 +213,14 @@ class Starter:
             pass
         self.tr = Translator(language)
         self.language.set(LANGUAGE_NAMES[language])
-        for variable, (key, values) in self.texts.items():
+        for variable, key, values in self.texts.values():
             variable.set(self.t(key, **values))
         self._build()
 
     def _say(self, variable, key: str, **values):
         """Set a status line by key so a language switch can re-translate it."""
-        self.texts[variable] = (key, values)
+        # Tk variables are unhashable: keyed by their Tcl name.
+        self.texts[str(variable)] = (variable, key, values)
         variable.set(self.t(key, **values))
 
     def report_bug(self):

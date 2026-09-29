@@ -577,7 +577,11 @@ def test_commander_catalogs_cover_markup_and_script():
     metric_keys = set(re.findall(r'\["([a-z_]+)", (?:unit\(|number\(|t\(|`|track\.|item\.|helo\.|typeof |finite\()', js))
     metric_keys -= {"synthetic_range_nm", "sensitivity_db", "cadence_s", "depth_uncertainty_m",
                     "bearing_uncertainty_deg", "range_uncertainty_nm"}
-    dynamic_keys = set(re.findall(r'"((?:aff_|class_|domain_|command_|proposal_|connection_|sound_|phase_|damage_|helo_|reason_)[a-z_]+)"', js))
+    # The generated model map of views/unit-models.js is keyed by catalog
+    # profile keys (such as "helo_torp"), not by catalog text keys.
+    keyed_js = "\n".join(line for line in js.splitlines()
+                         if not re.match(r"\s*(?:export )?const CLASSES = ", line))
+    dynamic_keys = set(re.findall(r'"((?:aff_|class_|domain_|command_|proposal_|connection_|sound_|phase_|damage_|helo_|reason_)[a-z_]+)"', keyed_js))
     dynamic_keys -= {"damage_assign_team", "damage_unassign_team", "damage_control", "class_match"}
     dynamic_keys |= {"connection_syncing", "connection_connected", "connection_stale", "connection_unpaired"}
     dynamic_keys |= {"connection_lobby", "lobby_pending", "lobby_waiting", "lobby_request_cleared",

@@ -4,6 +4,22 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.78
+
+Release 1.3.78 shows the units as 3D models. In the unit analyser (`F8`) the
+first page of every catalog profile is now a slowly turning 3D model of its
+class, ahead of the sound and radar images; in the Remote Crew browser it can
+also be turned by dragging. The Unit Editor shows the same model under the
+selected profile and beside the fields of an opened one. Ships, submarines
+and aircraft are the lookout's own silhouettes built out in 3D, so a unit
+looks in the analyser as it does in the binoculars and the periscope
+(warship, merchant, small craft, submarine, the lookout's helicopter for
+every aircraft); torpedoes, decoys and animals, which no lookout sees, have
+models of their own. The same models now stand in the lookout's binoculars
+and the periscope on the uConsole, in the browser and on the phone, turned by
+the angle on the bow the observer judges once he has made out the class.
+Saves stay v31.
+
 ## 1.3.75
 
 Release 1.3.75 also tidies the git tags on GitHub: when a new version is

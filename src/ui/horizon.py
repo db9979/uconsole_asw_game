@@ -17,7 +17,7 @@ from src.core import config
 from src.core.i18n import message, raw_text
 from src.physics import ship_dynamics
 from src.sensors import nav_lights
-from src.ui import layout, sight_scene, silhouettes
+from src.ui import layout, sight_scene, silhouettes, unit_models
 
 SCALE_COLOR = (170, 232, 208)
 CROSSHAIR_COLOR = (120, 214, 180)
@@ -191,12 +191,16 @@ def horizon_motion(seed: int, sim_t: float, sea_state: float,
 
 def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
                  t: float = 0.0, *, rim=None, lights=None, nav=None,
-                 aloft: bool = False) -> None:
+                 aloft: bool = False, aob_deg: float | None = None) -> None:
     """Procedural side view of a coarse class, ``width`` px long, sitting on
     the horizon (aircraft: hovering above it, or with ``aloft`` centred on
     ``base_y`` at its elevation).  ``t`` (display clock) animates pitch,
-    radar, rotor and wake."""
+    radar, rotor and wake.  With the judged angle on the bow ``aob_deg`` a
+    large enough outline is its 3D model (``unit_models``), turned so."""
     width = max(3, int(width))
+    if unit_models.draw_in_scene(s, cls, cx, base_y, width, color, aob_deg=aob_deg,
+                                 aloft=aloft, nav=nav, t=t):
+        return
     if cls == "torpedo":
         left = cx - width // 2
         pygame.draw.line(s, silhouettes.FOAM, (left, base_y + 1), (left + width, base_y + 1),
@@ -250,7 +254,7 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             draw_outline(s, cls, cx, base, width, blend(colors["steel"], haze_color, fade),
                          anim_t, rim=blend(colors["rim"], haze_color, fade),
                          lights=(sight_scene.WINDOW_LIGHT if lit and not stale else None),
-                         nav=nav, aloft=aloft)
+                         nav=nav, aloft=aloft, aob_deg=row[6] if len(row) > 6 else None)
 
     airborne = [row for row in outlines if len(row) > 5 and row[5] is not None]
     afloat = [row for row in outlines if not (len(row) > 5 and row[5] is not None)]

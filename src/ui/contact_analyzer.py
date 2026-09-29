@@ -15,12 +15,19 @@ from src.data.contact_analysis import (ASSET_ROUTE_PREFIX,
                                        load_contact_analysis_assets,
                                        project_contact_catalog)
 from src.ui import editor_widgets as widgets
-from src.ui import layout
+from src.ui import layout, unit_models
 
 
 MAX_FILTER_CHARS = 48
 SURFACE_CACHE_SIZE = 4
 _ASSET_ORDER = ("acoustic_cruise", "acoustic_high", "radar")
+# The turning 3D model is the first page of every profile; it is drawn,
+# not a packaged image.
+MODEL_KIND = "model"
+_RESOURCE_KINDS = {"subs.json": "sub", "warships.json": "surface",
+                   "civilians.json": "surface", "aircraft.json": "aircraft",
+                   "animals.json": "animal", "torpedoes.json": "torpedo",
+                   "decoys.json": "decoy"}
 
 
 def _wiki_url_for(key: str, cat=CATALOG) -> str | None:
@@ -71,6 +78,8 @@ class ContactAnalyzer:
         self._key_text = ""
         self._rects: dict[str, pygame.Rect] = {}
         self._detail_visible = 1
+        self.model_view = unit_models.ModelView()
+        self._model_classes = unit_models.catalog_model_classes(CATALOG)
         self._prepare_selected_image()
 
     @property
@@ -102,7 +111,15 @@ class ContactAnalyzer:
         profile = self.selected_profile
         if profile is None:
             return []
-        return [kind for kind in _ASSET_ORDER if kind in profile["assets"]]
+        return [MODEL_KIND] + [kind for kind in _ASSET_ORDER if kind in profile["assets"]]
+
+    def model_class(self, profile) -> str:
+        """3D model class of an analyzer profile (catalog key, else resource)."""
+        known = self._model_classes.get(profile["key"])
+        if known is not None:
+            return known
+        return unit_models.model_class(_RESOURCE_KINDS.get(profile["resource"], ""),
+                                       profile["key"])
 
     def _decode_surface(self, route: str) -> pygame.Surface | None:
         cached = self.surface_cache.pop(route, None)
@@ -124,6 +141,8 @@ class ContactAnalyzer:
             self.asset_index = 0
             return
         self.asset_index %= len(kinds)
+        if kinds[self.asset_index] == MODEL_KIND:
+            return
         profile = self.selected_profile
         self._decode_surface(profile["assets"][kinds[self.asset_index]])
 
@@ -141,7 +160,13 @@ class ContactAnalyzer:
         kinds = self._asset_kinds()
         if not kinds:
             return None
-        return (profile["key"], kinds[self.asset_index])
+        kind = kinds[self.asset_index]
+        if kind == MODEL_KIND:
+            # The model page plays the first recording the profile has.
+            if len(kinds) < 2:
+                return None
+            kind = kinds[1]
+        return (profile["key"], kind)
 
     def _sample_available(self) -> bool:
         return (self._current_sample() is not None
@@ -426,13 +451,21 @@ class ContactAnalyzer:
             kinds = self._asset_kinds()
             if kinds:
                 kind = kinds[self.asset_index]
-                route = profile["assets"][kind]
-                image = self.surface_cache.get(route)
-                if image is not None:
-                    image_rect = image.get_rect(midtop=(image_box.centerx,
-                                                        image_box.y + 4))
-                    surface.blit(image, image_rect)
-                legend_y = image_box.y + 187
+                if kind == MODEL_KIND:
+                    model_rect = pygame.Rect(image_box.x + 2, image_box.y + 2,
+                                             image_box.width - 4, 250)
+                    self._rects["model"] = model_rect
+                    self.model_view.draw(surface, model_rect, self.model_class(profile),
+                                         background=widgets.PALETTE.background)
+                    legend_y = model_rect.bottom + 6
+                else:
+                    route = profile["assets"][kind]
+                    image = self.surface_cache.get(route)
+                    if image is not None:
+                        image_rect = image.get_rect(midtop=(image_box.centerx,
+                                                            image_box.y + 4))
+                        surface.blit(image, image_rect)
+                    legend_y = image_box.y + 187
                 legend_h = (image_box.bottom - 30 - legend_y) // 2
                 spectrum_legend = pygame.Rect(image_box.x + 6, legend_y,
                                                image_box.width - 12, legend_h)
@@ -442,7 +475,10 @@ class ContactAnalyzer:
                                                  image_box.bottom - 30 - spectrum_legend.bottom)
                 self._rects["spectrum_legend"] = spectrum_legend
                 self._rects["hypothesis_legend"] = hypothesis_legend
-                if kind == "radar":
+                if kind == MODEL_KIND:
+                    top_key, bottom_key = ("analyzer.model_legend",
+                                           "analyzer.model_scale_legend")
+                elif kind == "radar":
                     top_key, bottom_key = ("analyzer.radar_spectrum_legend",
                                            "analyzer.radar_prf_legend")
                 else:
@@ -454,15 +490,21 @@ class ContactAnalyzer:
                 layout.blit_block(surface, self.tr(bottom_key),
                                   *hypothesis_legend, color=widgets.PALETTE.dim,
                                   size=16, min_size=16)
-                tab_width = max(1, image_box.width // len(kinds))
+                # The model tab is a narrow "3D"; the images share the rest.
+                model_w = 44 if len(kinds) > 1 else image_box.width
+                image_w = max(1, (image_box.width - model_w) // max(1, len(kinds) - 1))
                 tabs = []
+                x = image_box.x
                 for index, asset_kind in enumerate(kinds):
-                    tab = pygame.Rect(image_box.x + index * tab_width, image_box.bottom - 30,
-                                      tab_width, 30)
+                    width = model_w if asset_kind == MODEL_KIND else image_w
+                    tab = pygame.Rect(x, image_box.bottom - 30, width, 30)
+                    x += width
                     tabs.append(tab)
                     if index == self.asset_index:
                         pygame.draw.rect(surface, widgets.PALETTE.raised, tab)
-                    widgets.draw_text(surface, self.tr("analyzer." + asset_kind), tab,
+                    label = ("analyzer.model_tab" if asset_kind == MODEL_KIND
+                             else "analyzer." + asset_kind)
+                    widgets.draw_text(surface, self.tr(label), tab,
                                       color=(widgets.PALETTE.focus if index == self.asset_index
                                              else widgets.PALETTE.dim), size=12, align="center")
                 self._rects["asset_tabs"] = tabs

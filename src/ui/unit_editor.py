@@ -20,6 +20,7 @@ from src.data.validation import (ContentValidationError, ValidationIssue, enum,
                                  unique, validate_user_key, localized_error,
                                  localized_issue)
 from src.ui import editor_widgets as widgets
+from src.ui import unit_models
 
 
 UNIT_VERSION = 1
@@ -503,6 +504,7 @@ class UnitEditor:
         self.path_input = widgets.TextField(maximum=1024)
         self.wiki_input = widgets.TextField(maximum=300)
         self.wiki_result: dict[str, tuple[Any, str]] | None = None
+        self.model_view = unit_models.ModelView()
         self.refresh()
 
     def refresh(self) -> None:
@@ -850,6 +852,19 @@ class UnitEditor:
             return self.wiki_input.handle_text(getattr(event, "text", ""))
         return self.wiki_input.handle_event(event)
 
+    def _draw_model(self, surface: pygame.Surface, rect: pygame.Rect, data) -> None:
+        """The turning 3D model of the profile's class under its caption."""
+        if rect.width < 60 or rect.height < 80:
+            self._rects["model"] = None
+            return
+        widgets.draw_text(surface, self.tr("analyzer.model"), (rect.x, rect.y, rect.width, 24),
+                          color=widgets.PALETTE.dim, size=14, bold=True)
+        box = pygame.Rect(rect.x, rect.y + 26, rect.width, rect.height - 26)
+        pygame.draw.rect(surface, widgets.PALETTE.border, box, 1)
+        self._rects["model"] = box
+        self.model_view.draw(surface, box.inflate(-4, -4), unit_models.unit_model_class(data),
+                             background=widgets.PALETTE.background)
+
     def draw(self, surface: pygame.Surface) -> None:
         # Keep profile-authored values out of translation/template parsing,
         # even when Game has installed an ambient translation scope.
@@ -893,6 +908,13 @@ class UnitEditor:
                                           (detail.x, detail.y + row * 34, detail.width, 30),
                                            color=widgets.PALETTE.text if row == 0 else widgets.PALETTE.dim,
                                            size=19 if row == 0 else 17, bold=row == 0)
+                    data = dict(record.data)
+                    if record.builtin and record.key in self.builtins:
+                        data.setdefault("profile_kind", self.builtins[record.key][0])
+                        data.setdefault("key", record.key)
+                    self._draw_model(surface, pygame.Rect(
+                        detail.x, detail.y + len(lines) * 34 + 8, detail.width,
+                        detail.bottom - detail.y - len(lines) * 34 - 8), data)
                 else:
                     widgets.draw_text(surface, self.tr("editor.no_results"), detail,
                                       color=widgets.PALETTE.dim, align="center")
@@ -940,7 +962,7 @@ class UnitEditor:
                                       size=16 if row == 3 else 17)
                 wiki_url = self.current.data.get("wiki_url")
                 if wiki_url:
-                    wiki_rect = pygame.Rect(nav.x, nav.y + 130, min(200, nav.width), 30)
+                    wiki_rect = pygame.Rect(nav.x, nav.y + 146, min(200, nav.width), 30)
                     self._rects["open_wiki"] = wiki_rect
                     pygame.draw.rect(surface, widgets.PALETTE.raised, wiki_rect)
                     pygame.draw.rect(surface, widgets.PALETTE.focus, wiki_rect, 1)
@@ -948,6 +970,9 @@ class UnitEditor:
                                       color=widgets.PALETTE.text, size=13, align="center")
                 else:
                     self._rects["open_wiki"] = None
+                top = nav.y + 186
+                self._draw_model(surface, pygame.Rect(nav.x, top, nav.width, nav.bottom - top),
+                                 self.current.data)
                 detail = widgets.panel(surface,
                     (content.x + left_w + 12, content.y, content.width - left_w - 12, content.height),
                     "editor.validated_fields", tr=self.tr)

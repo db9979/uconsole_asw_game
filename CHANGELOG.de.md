@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.70
+
+Version 1.3.70 zeichnet die See im Fernglas des Ausgucks, im Ausguckstreifen, im
+Sehrohr und im Handy-Ausguck neu. Statt einer großen Welle an der Kimm füllen die
+Wellen jetzt die ganze See in Perspektive: klein und dicht bis zur klaren Kimm,
+zum Auge hin länger und höher, jede Reihe bewegt sich mit dem Seegang, läuft je
+nach Wind auf einen zu, davon oder seitlich durchs Bild, bei grober See mit
+Schaumkronen. Auf der uConsole und im Remote-Crew-Browser; Spielstände bleiben
+v27.
+
 ## 1.3.69
 
 Version 1.3.69 macht die Versorgung auf See planbar. Der Funkraum kann jetzt

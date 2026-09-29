@@ -255,38 +255,59 @@ export function seaAspect(windFromDeg, lineOfSight) {
   return [Math.cos(angle), -Math.sin(angle)];
 }
 
+// Rows of waves between the horizon and the bottom (src/ui/sight_scene.py).
+const SEA_ROWS = 18;
+
+// The sea as a field of wave rows in perspective: a clean horizon with fine
+// crests below it, toward the eye ever longer and higher waves, all moving
+// with the swell (bearing space, so the field slides past as the view turns).
 function drawSea(g, w, sky, colors, seaState, t, haze) {
-  const amp = .6 + .35 * seaState, step = Math.max(6, Math.floor(w.width / 60)), crest = [];
-  const [head, cross] = seaAspect(sky.wind_from_deg, w.los);
-  // The pattern lies on the sea (bearing space) and runs with the swell.
-  const anchor = w.los * w.pxPerDeg, swell = cross * t * 14;
-  for (let x = 0; x <= w.width + step; x += step) {
-    crest.push([x, w.base(x) + amp * Math.sin((x + anchor - swell) * .045 + t * 1.6 * Math.abs(head)) +
-      .6 * amp * Math.sin((x + anchor - swell) * .013 - t * .9)]);
-  }
+  const step = Math.max(4, Math.floor(w.width / 90));
+  const [head, cross] = seaAspect(sky.wind_from_deg, w.los), along = Math.abs(head);
+  const anchor = w.los * w.pxPerDeg;
   const top = Math.min(w.base(0), w.base(w.width));
   const gradient = g.createLinearGradient(0, top, 0, w.height);
   gradient.addColorStop(0, rgb(colors.sea[0])); gradient.addColorStop(1, rgb(colors.sea[1]));
-  g.fillStyle = gradient; path(g, [...crest, [w.width, w.height], [0, w.height]]); g.fill();
-  // Into or down the sea long rows come at the eye or run away; across it
-  // short crests run sideways and lean with the perspective.
-  const rows = 9, below = w.height - w.horizon, along = Math.abs(head), roll = (((t * .12 * head) % 1) + 1) % 1;
-  for (let index = 0; index <= rows; index++) {
-    const row = index + roll, depth = below * (row / rows) ** 1.7;
-    if (depth < 3 || row > rows) continue;
-    const spacing = Math.floor(24 + row * 10), length = (6 + row * 3) * (.55 + 1.1 * along);
-    const lean = cross * (1 + row * .7) * (1 - along);
-    const offset = (((anchor + t * (6 + row * 3) * cross) % (2 * spacing)) + 2 * spacing) % (2 * spacing);
-    let shade = mix(colors.wave, colors.sea[1], row / (rows + 3));
-    if (head < 0) shade = mix(shade, colors.sea[1], .35 * -head);   // down-sea: the waves' backs
-    for (let x = -2 * spacing; x < w.width; x += spacing) {
-      if ((Math.floor(x / spacing) + index) % 2) continue;
-      const x0 = x - offset, y0 = w.base(x0) + depth;
-      line(g, [x0, y0], [x0 + length, y0 - lean], rgb(shade));
-      if (seaState >= 4 && (Math.floor(x / spacing) * 7 + index) % 5 === 0) line(g, [x0 + 2, y0 - 1], [x0 + length - 2, y0 - 1 - lean], rgb(colors.crest));
+  g.fillStyle = gradient; path(g, [[0, w.base(0)], [w.width, w.base(w.width)], [w.width, w.height], [0, w.height]]); g.fill();
+  const below = Math.max(1, w.height - w.horizon), nearAmp = (1.2 + .9 * seaState) * w.height / 280;
+  // Into or down the sea the rows come at the eye or run away (new rows are
+  // born at the horizon); across it they run sideways.
+  const cycles = t * .35 * head, roll = ((cycles % 1) + 1) % 1, born = Math.floor(cycles);
+  const trough = mix(colors.sea[0], colors.sea[1], .45);
+  for (let index = 0; index <= SEA_ROWS; index++) {
+    const f = (index + roll) / SEA_ROWS;
+    if (f > 1) continue;
+    const depth = below * f ** 1.9;
+    if (depth < 1) continue;
+    const near = depth / below, n = index - born;
+    const amp = Math.max(.35, nearAmp * near), wavelength = (10 + 150 * near) * (.45 + .9 * along);
+    const k = 2 * Math.PI / wavelength, drift = cross * t * (4 + 40 * near), phase = n * 1.7 + t * 1.4 * (1 - along);
+    const points = [];
+    for (let x = -step; x < w.width + step; x += step) {
+      const u = (x + anchor - drift) * k + phase;
+      points.push([x, w.base(x) + depth - amp * (Math.sin(u) + .35 * Math.sin(2.1 * u + n))]);
+    }
+    let light = mix(mix(colors.sea[0], colors.wave, .35 + .65 * near), colors.haze, haze * (1 - near) * .6);
+    if (head < 0) light = mix(light, colors.sea[1], .35 * -head);   // down-sea: the waves' backs
+    const width = near > .55 && w.height >= 200 ? 2 : 1;
+    g.lineWidth = width;
+    if (near > .12) {
+      g.strokeStyle = rgb(mix(trough, colors.sea[1], f * .9));
+      path(g, points.map(([x, y]) => [x, y + Math.max(1, amp * .8)]), false); g.stroke();
+    }
+    g.strokeStyle = rgb(light); path(g, points, false); g.stroke();
+    if (seaState >= 4 && near > .08) {
+      // White caps on the highest crests.
+      const half = Math.max(1, wavelength * .08), every = Math.max(2, 9 - Math.floor(seaState));
+      for (let i = 1; i < points.length - 1; i++) {
+        const [x, y] = points[i];
+        if (y < points[i - 1][1] && y <= points[i + 1][1] && (((i * 7 + n * 3) % every) + every) % every === 0)
+          line(g, [x - half, y], [x + half, y], rgb(colors.crest), width);
+      }
     }
   }
-  g.strokeStyle = rgb(colors.crest); g.lineWidth = 1; path(g, crest, false); g.stroke();
+  g.lineWidth = 1;
+  line(g, [0, w.base(0)], [w.width, w.base(w.width)], rgb(mix(colors.crest, colors.haze, .4)));
   let strength = 0, bearing = 0, glint = [150, 170, 170];
   if (sky.light < .5 && sky.moon_alt_deg > 0) { strength = sky.moon_illumination * (1 - sky.light * 2); bearing = sky.moon_bearing; }
   else if (sky.light >= .5 && sky.sun_alt_deg > -1) { strength = .8; bearing = sky.sun_bearing; glint = mix([226, 236, 236], SUN_DUSK, sky.dusk); }

@@ -4,6 +4,7 @@ import {
   AIRCRAFT_LIFT, CLASSES, ELEVATION_RAD, LIGHT, MATERIALS, MODELS, SCENE_CACHE_SIZE, SCENE_CLASSES,
   SCENE_ELEVATION_RAD, SCENE_MIN_PX, TURN_RAD_S, VARIANT_GROUPS, WATER, WATER_RING,
 } from "./unit-models.js";
+import { buildTree } from "./model-bsp.js";
 
 const FRAME_MS = 1000 / 30;
 const prepared = new Map();
@@ -61,13 +62,13 @@ function prepare(cls) {
   const sided = new Set(data.s);
   const faces = data.f.map((face, index) => {
     const points = face.map((k) => verts[k]);
-    const centroid = [0, 1, 2].map((axis) => points.reduce((sum, p) => sum + p[axis], 0) / points.length);
-    return { face, normal: newell(points), centroid, color: MATERIALS[data.m[index]], sided: sided.has(index) };
+    return { normal: newell(points), color: MATERIALS[data.m[index]], sided: sided.has(index) };
   });
   const radius = Math.max(...verts.map((p) => Math.hypot(p[0], p[1], p[2])));
   const horizontal = Math.max(...verts.map((p) => Math.hypot(p[0], p[1])));
   const height = Math.max(...verts.map((p) => Math.abs(p[2])));
-  mesh = { verts, faces, lines: data.l, floating: data.w, radius, horizontal, height };
+  const tree = buildTree(verts, data.f, faces.map((face) => face.normal), data.l);
+  mesh = { faces, lines: data.l, tree, floating: data.w, radius, horizontal, height };
   prepared.set(cls, mesh);
   return mesh;
 }
@@ -89,10 +90,29 @@ function viewMatrix(yaw, elevation) {
 const apply = (m, p) => [0, 1, 2].map((row) => m[row][0] * p[0] + m[row][1] * p[1] + m[row][2] * p[2]);
 const rgb = (color) => `rgb(${color.map((c) => Math.max(0, Math.min(255, Math.round(c)))).join(",")})`;
 
+// Faces in back-to-front order with their light factor (hidden back faces
+// left out): [kind, index, shade], kind 0 a tree face, 1 a tree line.
+function ordered(mesh, view) {
+  const shades = mesh.faces.map((face) => {
+    const normal = apply(view, face.normal);
+    const facing = normal[2] > 0;
+    if (!facing && !face.sided) return null;
+    const dot = normal[0] * LIGHT[0] + normal[1] * LIGHT[1] + normal[2] * LIGHT[2];
+    return 0.34 + 0.66 * (facing ? Math.max(0, dot) : Math.abs(dot));
+  });
+  const items = [];
+  for (const [kind, index] of mesh.tree.order(view[2])) {
+    if (kind) { items.push([1, index, 1]); continue; }
+    const shade = shades[mesh.tree.faceSrc[index]];
+    if (shade !== null) items.push([0, index, shade]);
+  }
+  return items;
+}
+
 export function drawModel(ctx, width, height, cls, yaw, elevation = ELEVATION_RAD) {
   const mesh = prepare(cls);
   const view = viewMatrix(yaw, elevation);
-  const verts = mesh.verts.map((p) => apply(view, p));
+  const verts = mesh.tree.verts.map((p) => apply(view, p));
   const vertical = mesh.horizontal * Math.sin(elevation) + mesh.height * Math.cos(elevation);
   const reach = mesh.floating ? Math.max(mesh.radius, WATER_RING) : mesh.radius;
   const scale = 0.92 * Math.min(width / (2 * reach), height / (2 * vertical));
@@ -101,17 +121,7 @@ export function drawModel(ctx, width, height, cls, yaw, elevation = ELEVATION_RA
     const persp = 1 / (1 - p[2] / (5 * mesh.radius));
     return [cx + p[0] * scale * persp, cy - p[1] * scale * persp];
   });
-  const items = [];
-  mesh.faces.forEach((face, index) => {
-    const normal = apply(view, face.normal);
-    const facing = normal[2] > 0;
-    if (!facing && !face.sided) return;
-    const dot = normal[0] * LIGHT[0] + normal[1] * LIGHT[1] + normal[2] * LIGHT[2];
-    const lit = facing ? Math.max(0, dot) : Math.abs(dot);
-    items.push([apply(view, face.centroid)[2], 0, index, 0.34 + 0.66 * lit]);
-  });
-  mesh.lines.forEach(([a, b], index) => items.push([(verts[a][2] + verts[b][2]) / 2, 1, index, 1]));
-  items.sort((p, q) => p[0] - q[0] || p[1] - q[1] || p[2] - q[2]);
+  const items = ordered(mesh, view);
   ctx.clearRect(0, 0, width, height);
   if (mesh.floating) {
     ctx.strokeStyle = rgb(WATER);
@@ -121,10 +131,10 @@ export function drawModel(ctx, width, height, cls, yaw, elevation = ELEVATION_RA
     ctx.stroke();
   }
   ctx.lineJoin = "round";
-  for (const [, kind, index, shade] of items) {
+  for (const [kind, index, shade] of items) {
     if (kind) {
-      const [a, b, material] = mesh.lines[index];
-      ctx.strokeStyle = rgb(MATERIALS[material]);
+      const [a, b] = mesh.tree.lines[index];
+      ctx.strokeStyle = rgb(MATERIALS[mesh.lines[mesh.tree.lineSrc[index]][2]]);
       ctx.lineWidth = Math.max(1, scale / 260);
       ctx.beginPath();
       ctx.moveTo(...screen[a]);
@@ -132,13 +142,13 @@ export function drawModel(ctx, width, height, cls, yaw, elevation = ELEVATION_RA
       ctx.stroke();
       continue;
     }
-    const face = mesh.faces[index];
+    const face = mesh.faces[mesh.tree.faceSrc[index]];
     const color = rgb(face.color.map((c) => c * shade));
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
     ctx.lineWidth = 0.6;
     ctx.beginPath();
-    face.face.forEach((k, i) => (i ? ctx.lineTo(...screen[k]) : ctx.moveTo(...screen[k])));
+    mesh.tree.faces[index].forEach((k, i) => (i ? ctx.lineTo(...screen[k]) : ctx.moveTo(...screen[k])));
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -156,7 +166,7 @@ const sceneYaw = (aob) => (aob - 90) * Math.PI / 180;
 function renderSceneSprite(cls, length, aob, color, surfaceOnly) {
   const mesh = prepare(cls);
   const view = viewMatrix(sceneYaw(aob), SCENE_ELEVATION_RAD);
-  const verts = mesh.verts.map((p) => apply(view, p));
+  const verts = mesh.tree.verts.map((p) => apply(view, p));
   const sx = verts.map((p) => p[0] * length), sy = verts.map((p) => -p[1] * length);
   const left = Math.floor(Math.min(...sx)) - 2, top = Math.floor(Math.min(...sy)) - 2;
   const width = Math.ceil(Math.max(...sx)) - left + 3, height = Math.ceil(Math.max(...sy)) - top + 3;
@@ -164,31 +174,21 @@ function renderSceneSprite(cls, length, aob, color, surfaceOnly) {
   canvas.width = Math.max(1, width); canvas.height = Math.max(1, height);
   const g = canvas.getContext("2d");
   const tone = Math.min(1.25, Math.max(.05, (color[0] + color[1] + color[2]) / 3 / 150));
-  const items = [];
-  mesh.faces.forEach((face, index) => {
-    const normal = apply(view, face.normal);
-    const facing = normal[2] > 0;
-    if (!facing && !face.sided) return;
-    const dot = normal[0] * LIGHT[0] + normal[1] * LIGHT[1] + normal[2] * LIGHT[2];
-    const lit = facing ? Math.max(0, dot) : Math.abs(dot);
-    items.push([apply(view, face.centroid)[2], 0, index, .34 + .66 * lit]);
-  });
-  mesh.lines.forEach(([a, b], index) => items.push([(verts[a][2] + verts[b][2]) / 2, 1, index, 1]));
-  items.sort((p, q) => p[0] - q[0] || p[1] - q[1] || p[2] - q[2]);
+  const items = ordered(mesh, view);
   const px = (k) => [sx[k] - left, sy[k] - top];
   const lineColor = rgb(color.map((c) => Math.floor(c * .6)));
-  for (const [, kind, index, shade] of items) {
+  for (const [kind, index, shade] of items) {
     if (kind) {
-      const [a, b] = mesh.lines[index];
+      const [a, b] = mesh.tree.lines[index];
       g.strokeStyle = lineColor; g.lineWidth = Math.max(1, Math.floor(length / 260));
       g.beginPath(); g.moveTo(...px(a)); g.lineTo(...px(b)); g.stroke();
       continue;
     }
-    const face = mesh.faces[index];
+    const face = mesh.faces[mesh.tree.faceSrc[index]];
     const fill = rgb(face.color.map((c, i) => .5 * c * shade * tone + .5 * color[i] * (.55 + .6 * shade)));
     g.fillStyle = fill; g.strokeStyle = fill; g.lineWidth = .5;
     g.beginPath();
-    face.face.forEach((k, i) => (i ? g.lineTo(...px(k)) : g.moveTo(...px(k))));
+    mesh.tree.faces[index].forEach((k, i) => (i ? g.lineTo(...px(k)) : g.moveTo(...px(k))));
     g.closePath(); g.fill(); g.stroke();
   }
   if (surfaceOnly) {

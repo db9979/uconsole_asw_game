@@ -14,6 +14,20 @@ roll and pitch, the fuel bunker with endurance and range, and a mimic of the
 ship's sections from bow to stern with water level, fire lamps and repair
 teams. The console only shows; the orders stay in the station panel.
 
+## 1.3.86
+
+Release 1.3.86 makes the 3D models solid. Until now their faces were drawn
+in the order of their centres, so from many angles a far face was painted over
+a near one: decks showed through superstructures, the far side of a hull
+through the near side, and ships looked hollow. Every model is now split once
+into a binary space partition that gives, from any side, an exact order from
+back to front, on the uConsole and in the browser alike; hull plating is
+closed and faces outward, and hulls, submarines and fuselages are drawn with
+a finer grid. Deckhouses are no longer single blocks: they rise in deck tiers,
+warships drawn in and raked, passenger ships stepping back in terraces,
+merchant ships with a short wheelhouse and bridge wings on top; submarine
+sails are streamlined. Saves stay v32.
+
 ## 1.3.85
 
 Release 1.3.85 lets the helicopter switch its search radar off and on

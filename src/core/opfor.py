@@ -25,6 +25,7 @@ from src.physics import torpedo_dyn
 from src.sensors import lookout_id
 from src.sensors import nav_lights
 from src.core import optics
+from src.ui import unit_variants
 from src.sensors import visual as visual_physics
 from src.sensors.platform import MAST_DEPTH_M
 from src.sonar.platforms import (OWNSHIP_SIGNATURE_KEY, OWNSHIP_TARGET_ID,
@@ -116,8 +117,10 @@ class CrewOrders:
         # look restores them).
         self._lights = {}
         self._elevation = {}
-        # Angle on the bow the crew judges of each made-out silhouette.
+        # Angle on the bow the crew judges of each made-out silhouette and
+        # the type the eye sees of it (the picture only).
         self._aspect = {}
+        self._model = {}
         # Attack computer: stadimeter marks by sighting (``attack_computer``).
         self.tdc = {}
         # Flood state of each torpedo tube, ``[state, seconds left]`` with the
@@ -790,6 +793,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         orders._lights = {}
         orders._elevation = {}
         orders._aspect = {}
+        orders._model = {}
         return
     now = game.sim_t
     seed = int(sub.sensor_seed)
@@ -801,7 +805,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     alert = boat.watch.effectiveness(game.sim_t)
     # Neutral traffic runs its navigation lights; warships run darkened.
     lit = nav_lights.lit(game.world.daylight_stage(), environment["visibility_nm"])
-    lights, elevation, aspects = {}, dict(getattr(orders, "_elevation", {})), {}
+    lights, elevation, aspects, models = {}, dict(getattr(orders, "_elevation", {})), {}, {}
     for target_id, actor, cls, length_m, altitude_m in _scope_candidates(game, boat):
         dx, dy = actor.x - sub.x, actor.y - sub.y
         distance = math.hypot(dx, dy)
@@ -842,6 +846,8 @@ def update_sightings(game, boat: CrewedBoat) -> None:
             lights[ref] = code
         if course is not None and recognized != "unknown":
             aspects[ref] = lookout_id.angle_on_bow(course, true_bearing)
+            models[ref] = unit_variants.entity_model(
+                actor, own_ship=target_id == OWNSHIP_TARGET_ID)
         if altitude_m is not None:
             elevation[ref] = max(-5.0, visual_physics.elevation_deg(
                 altitude_m, distance, config.UBOOT_SCOPE_EYE_HEIGHT_M))
@@ -867,6 +873,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     orders.sightings = rows[:config.UBOOT_SIGHTINGS_MAX]
     orders._lights = lights
     orders._aspect = aspects
+    orders._model = {ref: key for ref, key in models.items() if key is not None}
     orders._elevation = {ref: value for ref, value in elevation.items()
                          if any(row["ref"] == ref for row in orders.sightings)}
     # A phone on the periscope calls its own sightings (src/core/phone_lookout.py).

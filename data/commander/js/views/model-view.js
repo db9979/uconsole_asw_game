@@ -2,11 +2,42 @@
 // of src/ui/unit_models.py with the uConsole's view, shading and turn rate.
 import {
   AIRCRAFT_LIFT, CLASSES, ELEVATION_RAD, LIGHT, MATERIALS, MODELS, SCENE_CACHE_SIZE, SCENE_CLASSES,
-  SCENE_ELEVATION_RAD, SCENE_MIN_PX, TURN_RAD_S, WATER, WATER_RING,
+  SCENE_ELEVATION_RAD, SCENE_MIN_PX, TURN_RAD_S, VARIANT_GROUPS, WATER, WATER_RING,
 } from "./unit-models.js";
 
 const FRAME_MS = 1000 / 30;
 const prepared = new Map();
+// Per-type variants (src/ui/unit_variants.py), loaded by group on first use.
+const variants = new Map(), variantNav = new Map(), loading = new Map();
+const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+const GROUP_MODULES = {
+  naval: () => import("./unit-variants-naval.js"),
+  civil: () => import("./unit-variants-civil.js"),
+  subs: () => import("./unit-variants-subs.js"),
+};
+
+export function loadVariant(key) {
+  if (!own(VARIANT_GROUPS, key)) return Promise.resolve(false);
+  if (variants.has(key)) return Promise.resolve(true);
+  const group = VARIANT_GROUPS[key];
+  if (!loading.has(group) && own(GROUP_MODULES, group)) {
+    loading.set(group, GROUP_MODULES[group]().then((module) => {
+      for (const [name, mesh] of Object.entries(module.VARIANTS)) variants.set(name, mesh);
+      for (const [name, nav] of Object.entries(module.NAV)) variantNav.set(name, nav);
+      return true;
+    }).catch(() => false));
+  }
+  return (loading.get(group) || Promise.resolve(false)).then(() => variants.has(key));
+}
+
+// The model to draw for catalog type ``key`` of class ``cls``: its own
+// variant once loaded (the load starts here), the class model until then.
+export function modelKey(key, cls) {
+  if (typeof key !== "string" || !own(VARIANT_GROUPS, key)) return cls;
+  if (variants.has(key)) return key;
+  loadVariant(key);
+  return cls;
+}
 
 function newell(points) {
   const n = [0, 0, 0];
@@ -24,7 +55,7 @@ function newell(points) {
 function prepare(cls) {
   let mesh = prepared.get(cls);
   if (mesh) return mesh;
-  const data = MODELS[cls] || MODELS.unknown;
+  const data = (own(MODELS, cls) && MODELS[cls]) || variants.get(cls) || MODELS.unknown;
   const verts = [];
   for (let i = 0; i < data.v.length; i += 3) verts.push([data.v[i] / 1000, data.v[i + 1] / 1000, data.v[i + 2] / 1000]);
   const sided = new Set(data.s);
@@ -183,12 +214,15 @@ function sceneSprite(cls, length, aob, color, surfaceOnly) {
 // Draws ``cls`` in an eyepiece turned by the judged angle on the bow,
 // ``width`` px long, afloat on ``base`` (``aloft``: an aircraft centred on
 // it).  Returns the frame for its navigation lights, or null when it is too
-// small or not turned, so the caller draws the flat silhouette instead.
-export function drawInScene(g, cls, cx, base, width, color, aob, aloft = false) {
+// small or not turned, so the caller draws the flat silhouette instead;
+// ``model`` is the identified type (its own variant and light positions).
+export function drawInScene(g, cls, cx, base, width, color, aob, aloft = false, model = null) {
   if (!Number.isFinite(aob) || !SCENE_CLASSES.includes(cls) || width < SCENE_MIN_PX) return null;
   const length = Math.floor(width);
   if (cls === "aircraft" && !aloft) base -= .25 * length;   // hovering over the horizon
-  const {canvas, ox, oy} = sceneSprite(cls, length, aob, color.map((c) => Math.floor(c / 4) * 4), cls !== "aircraft");
+  // An identified type is drawn as its own variant.
+  const key = model === null ? cls : modelKey(model, cls);
+  const {canvas, ox, oy} = sceneSprite(key, length, aob, color.map((c) => Math.floor(c / 4) * 4), cls !== "aircraft");
   g.drawImage(canvas, Math.floor(cx) - ox, Math.floor(base) - oy);
   const view = viewMatrix(sceneYaw(aob), SCENE_ELEVATION_RAD);
   const lift = cls === "aircraft" ? AIRCRAFT_LIFT : 0;
@@ -196,12 +230,12 @@ export function drawInScene(g, cls, cx, base, width, color, aob, aloft = false) 
     const p = apply(view, [.5 - u, 0, v - lift]);
     return [cx + p[0] * length, base - p[1] * length];
   };
-  return {point, poly: (points) => points.map(([u, v]) => point(u, v))};
+  return {point, poly: (points) => points.map(([u, v]) => point(u, v)), nav: variantNav.get(key) || null};
 }
 
 // Turns the model while the canvas is in the page; dragging turns it by
 // hand, and with reduced motion it stands still until dragged.
-export function mountModel(canvas, cls) {
+export function mountModel(canvas, key) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   const still = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -212,7 +246,7 @@ export function mountModel(canvas, cls) {
     const width = Math.max(1, Math.round(canvas.clientWidth * ratio));
     const height = Math.max(1, Math.round(canvas.clientHeight * ratio));
     if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
-    drawModel(ctx, width, height, cls, turnAngle(still ? 0 : (now - start) / 1000) + offset);
+    drawModel(ctx, width, height, modelKey(key, modelClass(key)), turnAngle(still ? 0 : (now - start) / 1000) + offset);
   };
   const frame = (now) => {
     if (!canvas.isConnected) return;
@@ -222,6 +256,8 @@ export function mountModel(canvas, cls) {
     }
     requestAnimationFrame(frame);
   };
+  // The type's own variant arrives with its group: draw it once loaded.
+  loadVariant(key).then((loaded) => { if (loaded && canvas.isConnected) paint(performance.now()); });
   canvas.addEventListener("pointerdown", (event) => { dragX = event.clientX; canvas.setPointerCapture?.(event.pointerId); });
   canvas.addEventListener("pointermove", (event) => {
     if (dragX === null) return;

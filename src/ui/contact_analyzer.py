@@ -114,12 +114,13 @@ class ContactAnalyzer:
         return [MODEL_KIND] + [kind for kind in _ASSET_ORDER if kind in profile["assets"]]
 
     def model_class(self, profile) -> str:
-        """3D model class of an analyzer profile (catalog key, else resource)."""
+        """3D model of an analyzer profile: the type's own variant, else the
+        class (catalog key, else resource)."""
         known = self._model_classes.get(profile["key"])
-        if known is not None:
-            return known
-        return unit_models.model_class(_RESOURCE_KINDS.get(profile["resource"], ""),
-                                       profile["key"])
+        if known is None:
+            known = unit_models.model_class(_RESOURCE_KINDS.get(profile["resource"], ""),
+                                            profile["key"])
+        return unit_models.model_key(profile["key"], known)
 
     def _decode_surface(self, route: str) -> pygame.Surface | None:
         cached = self.surface_cache.pop(route, None)

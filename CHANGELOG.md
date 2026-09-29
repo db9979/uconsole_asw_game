@@ -4,6 +4,20 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.80
+
+Release 1.3.80 gives every ship, submarine and aircraft type its own 3D
+model. Each of the 111 catalog types is built from the public main dimensions
+and general arrangement of the real class (Wikipedia; generic types such as a
+VLCC or a harbour tug use typical values): length, beam and draught, where
+bridge, masts, funnels, guns, missile cells, flight deck, cranes and cargo
+stand, a submarine's sail, planes, rudders and missile deck, an aircraft's
+wings, tail and engines. The same type always looks the same, so a Type 23
+no longer looks like an Arleigh Burke. The analyser, the Unit Editor and the
+eyepieces (binoculars, periscope, phone lookout) show the real type the eye
+sees, so it can be told by sight; the lookout report still names only what
+was made out, and only the report reaches the OPZ. Saves stay v31.
+
 ## 1.3.79
 
 Release 1.3.79 fixes pairing in Safari and Firefox, and with it the phone

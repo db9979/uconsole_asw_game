@@ -316,7 +316,9 @@ def test_model_page_draws_the_turning_model_and_narrow_tab():
     pygame.init()
     analyzer = ContactAnalyzer(tr=Translator("de").t)
     analyzer._set_filter("tanker_03")
-    assert analyzer.model_class(analyzer.selected_profile) == "merchant"
+    # The Tide class has its own model; a profile without one keeps its class.
+    assert analyzer.model_class(analyzer.selected_profile) == "tanker_03"
+    assert analyzer.model_class({"key": "whale", "resource": "animals.json"}) == "whale"
     screen = pygame.Surface((1280, 720))
     analyzer.draw(screen)
     model = analyzer._rects["model"]

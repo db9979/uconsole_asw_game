@@ -74,7 +74,7 @@ LOOKOUT_GLASSES_FIELDS = ("course", "fov_deg", "visibility_nm", "sea_state", "ho
 # horizon (null on the surface); ``aob_deg``: the angle on the bow judged
 # of a made-out silhouette (null before), which turns its 3D model.
 LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "lights", "elevation_deg",
-                          "aob_deg")
+                          "aob_deg", "model")
 SIGHT_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
 # The phone lookouts (``lookout`` binoculars, ``uboot_lookout`` periscope):
 # the eyepiece, the lookout's own sightings (called or not) and his calls.

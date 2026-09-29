@@ -169,9 +169,9 @@ def test_browser_variant_modules_are_generated_and_bounded():
         path = gen_web_schema.variants_js(group)
         text = path.read_text(encoding="utf-8")
         assert text == gen_web_schema.render_variants(group)
-        assert len(text.encode("utf-8")) < 360_000
+        assert len(text.encode("utf-8")) < 420_000
         total += len(text)
-    assert total < 900_000
+    assert total < 1_100_000
     groups = {unit_variants.group_of(key) for key in unit_variants.specs()}
     assert groups == set(gen_web_schema.VARIANT_GROUPS)
 

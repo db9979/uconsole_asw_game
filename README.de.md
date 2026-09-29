@@ -23,7 +23,11 @@ Rumpfseite durch die nahe, und Schiffe wirkten hohl. Jedes Modell wird jetzt
 einmal in eine binäre Raumteilung zerlegt, die von jeder Seite eine exakte
 Reihenfolge von hinten nach vorn ergibt, auf der uConsole wie im Browser; die
 Rumpfbeplankung ist geschlossen und zeigt nach außen, und Rümpfe, U-Boote und
-Flugzeugrümpfe haben ein feineres Raster. Spielstände bleiben v31.
+Flugzeugrümpfe haben ein feineres Raster. Aufbauten sind keine Klötze mehr:
+Sie steigen in Decksstufen an, bei Kriegsschiffen eingezogen und geneigt, bei
+Passagierschiffen in Terrassen zurückgesetzt, bei Handelsschiffen mit kurzem
+Steuerhaus und Brückennocken oben; U-Boot-Türme sind stromlinienförmig.
+Spielstände bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

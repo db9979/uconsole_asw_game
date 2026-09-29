@@ -60,6 +60,7 @@ ESM_CANDIDATES = 3              # a submarine radar among this many library matc
 SURFACE_EXPLAINS_S = 60.0       # a ship track this fresh on the bearing explains the radar
 CLASSIFY_MEAN_S = 180.0         # an operator needs this long on average to call a submarine
 AIR_FIX_S = 120.0               # aircraft attack only a position this fresh
+HELO_READY_MEAN_S = 600.0       # a datum waits this long on average for the helicopter to launch
 _SUPPORT = (("sonar", Station.SONAR), ("radio", Station.RADIO),
             ("eloka", Station.ELOKA), ("damage", Station.DAMAGE),
             ("engine", Station.ENGINE), ("opz", Station.OPZ))
@@ -424,6 +425,9 @@ def helicopter(game, found) -> str:
             return "returning"
         return "monitoring"
     if helo.state == "HANGAR":
+        tick = int(math.floor(game.sim_t / CADENCE_S))
+        if detrand.u01(game.seed, "hunter.helo", tick) >= CADENCE_S / HELO_READY_MEAN_S:
+            return "monitoring"                     # the deck readies the helicopter
         return "launched" if game.launch_helicopter() is True else "monitoring"
     if helo.state != "AUF":
         return "monitoring"

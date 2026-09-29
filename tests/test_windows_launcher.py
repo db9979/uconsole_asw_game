@@ -322,3 +322,28 @@ def test_release_pruning_prints_bare_tags(tmp_path):
     out = subprocess.run([sys.executable, str(tool), "1.3.42"], input=b"v1.3.41\r\nv1.3.43\r\n",
                          capture_output=True, check=True).stdout
     assert out == b"v1.3.41\n"
+
+
+def test_workflow_removes_older_releases_and_their_tags():
+    from pathlib import Path
+
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
+                / "windows.yml").read_text(encoding="utf-8")
+    step = workflow.split("- name: Remove older releases and tags", 1)[1]
+    assert "releases?per_page=100" in step and 'gh release delete "$old"' in step
+    assert "tags?per_page=100" in step
+    assert 'git/refs/tags/$old' in step
+    # Releases go first, so no release is left pointing at a deleted tag.
+    assert step.index("gh release delete") < step.index("git/refs/tags/")
+
+
+def test_tag_pruning_keeps_backup_tags():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "tools" / "prune_releases.py"
+    spec = importlib.util.spec_from_file_location("prune_releases", path)
+    prune = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prune)
+    tags = ["pre-v1-rewrite-main", "pre-v1-rewrite-wip", "v1.3.72", "v1.3.73", "v1.3.74"]
+    assert prune.older_tags("1.3.73", tags) == ["v1.3.72"]

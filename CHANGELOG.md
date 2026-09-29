@@ -4,6 +4,13 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.75
+
+Release 1.3.75 also tidies the git tags on GitHub: when a new version is
+published, the Windows build now deletes every older `vX.Y.Z` tag together
+with its release, so only the newest release and its tag stay. The uConsole
+updater only needs that newest tag. Saves stay v31.
+
 ## 1.3.74
 
 Release 1.3.74 gives the submarine a fair chance against the computer-run

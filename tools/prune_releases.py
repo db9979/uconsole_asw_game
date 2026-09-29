@@ -1,11 +1,12 @@
-"""List the GitHub releases older than the current one (one tag per line).
+"""List the release tags older than the current version (one tag per line).
 
-The Windows workflow keeps only the newest release: after publishing
-``v<APP_VERSION>`` it pipes every release tag into
-``python tools/prune_releases.py <APP_VERSION>`` and deletes the releases
-printed here. Git tags stay, so older versions remain checkable. Only tags of
-the form ``vX.Y.Z`` older than the current version are printed; anything
-newer (a later run that finished first) or unparsable is never touched.
+The Windows workflow keeps only the newest release and its tag: after
+publishing ``v<APP_VERSION>`` it pipes every release tag, and then every git
+tag, into ``python tools/prune_releases.py <APP_VERSION>`` and deletes the
+releases and tags printed here (Dominik, 2026-09-29). The uConsole updater
+fetches only the tag of ``releases/latest``. Only tags of the form ``vX.Y.Z``
+older than the current version are printed; anything newer (a later run that
+finished first) or of another form (such as backup tags) is never touched.
 """
 
 from __future__ import annotations

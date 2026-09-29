@@ -12,15 +12,12 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.74**
+Current release: **1.3.75**
 
-Release 1.3.74 gives the submarine a fair chance against the computer-run
-frigate. When you play the submarine, the frigate's crew now needs about 3
-minutes to recognise a submarine by its sound and about 10 minutes to ready the
-helicopter. On a bare bearing the helicopter only listens with its dipping
-sonar, the patrol aircraft comes only for a position, and aircraft attack only
-from a fix at most 2 minutes old. Breakthrough now runs 5 hours instead of 4
-and Reconnaissance 2 hours instead of 3. Saves stay v31.
+Release 1.3.75 also tidies the git tags on GitHub: when a new version is
+published, the Windows build now deletes every older `vX.Y.Z` tag together
+with its release, so only the newest release and its tag stay. The uConsole
+updater only needs that newest tag. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -178,7 +175,7 @@ The workflow `.github/workflows/windows.yml` builds the program with
 PyInstaller (`packaging/windows/u-jagd-windows.spec`) on every push and pull
 request, runs its headless self-test (a short mission plus the Remote Crew
 pages) and, on `main`, publishes release `v<APP_VERSION>` once per version and then deletes every older
-release, so only the newest one stays (git tags are kept).
+release and its `vX.Y.Z` git tag, so only the newest release and tag stay.
 To build locally on Windows: `python -m pip install -e ".[windows]"` and
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 

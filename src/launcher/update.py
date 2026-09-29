@@ -171,30 +171,71 @@ def clean_environment(environ) -> dict:
     return env
 
 
-def install_script(executable: str, downloaded: str, pid: int) -> str:
-    """A ``cmd`` script that swaps the executable once ``pid`` has exited.
+INSTALL_TRIES = 120  # about two minutes of one-second retries
 
-    It waits for the running starter to end, retries the move while Windows
-    still holds the file, starts the new version and deletes itself.
+
+def _checked_path(path: str) -> str:
+    if (type(path) is not str or not path or '"' in path or "%" in path
+            or "\n" in path or "\r" in path or "!" in path):
+        raise UpdateError("unsupported path")
+    return path
+
+
+def install_script(executable: str, downloaded: str, args=(), log=None) -> str:
+    """A ``cmd`` script that swaps the executable once nothing holds it.
+
+    Replacing a running ``.exe`` fails, so the move is retried once a second
+    until the starter (a one-file build is two processes: the bootloader and
+    Python) has exited. The pause uses ``ping``: ``timeout`` exits at once
+    when stdin is redirected, which used up every retry in milliseconds and
+    left the update as ``.new`` beside the old program (1.3.73 fix). Then it
+    starts the executable (the new one, or the old one if the swap failed,
+    which is logged) and deletes itself.
     """
-    for path in (executable, downloaded):
-        if '"' in path or "%" in path or "\n" in path or "\r" in path:
-            raise UpdateError("unsupported path")
-    if type(pid) is not int or pid <= 0:
-        raise UpdateError("invalid process id")
-    return "\r\n".join((
+    executable, downloaded = _checked_path(executable), _checked_path(downloaded)
+    for arg in args:
+        _checked_path(arg)
+    tail = "".join(f' "{arg}"' for arg in args)
+    lines = [
         "@echo off",
         "setlocal",
-        ":wait",
-        f'tasklist /FI "PID eq {pid}" /NH 2>NUL | find " {pid} " >NUL',
-        "if not errorlevel 1 (timeout /t 1 /nobreak >NUL & goto wait)",
         "set tries=0",
         ":move",
         f'move /Y "{downloaded}" "{executable}" >NUL 2>NUL',
-        "if errorlevel 1 (",
-        "  set /a tries+=1",
-        "  if %tries% LSS 30 (timeout /t 1 /nobreak >NUL & goto move)",
-        ")",
-        f'start "" "{executable}"',
+        "if not errorlevel 1 goto start",
+        "set /a tries+=1",
+        f"if %tries% GEQ {INSTALL_TRIES} goto failed",
+        "ping -n 2 127.0.0.1 >NUL",
+        "goto move",
+        ":failed",
+    ]
+    if log is not None:
+        lines.append(f'echo update failed: "{downloaded}" could not replace '
+                     f'"{executable}" >> "{_checked_path(log)}"')
+    lines += [
+        ":start",
+        f'start "" "{executable}"{tail}',
         '(goto) 2>NUL & del "%~f0"',
-        ""))
+        "",
+    ]
+    return "\r\n".join(lines)
+
+
+def launch_install(executable: str, downloaded: str, args=(), log=None,
+                   popen=None) -> str:
+    """Write the install script and start it detached; the caller then exits."""
+    import subprocess
+    import tempfile
+
+    script = os.path.join(tempfile.gettempdir(), f"u-jagd-update-{os.getpid()}.cmd")
+    try:
+        with open(script, "w", encoding="utf-8", newline="") as handle:
+            handle.write(install_script(executable, downloaded, args, log))
+    except OSError as exc:
+        raise UpdateError(str(exc)) from exc
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    (popen or subprocess.Popen)(
+        ["cmd", "/c", script], creationflags=flags,
+        env=clean_environment(os.environ), stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return script

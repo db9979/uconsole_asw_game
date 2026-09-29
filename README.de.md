@@ -14,16 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.72**
+Aktuelle Version: **1.3.73**
 
-Version 1.3.72 macht das computergesteuerte U-Boot in den Missionen
-Durchbruch, Aufklärung und Geleitzug klüger und gibt der Fregatte mehr
-Torpedos. Das U-Boot schleicht jetzt mit 3 kn, solange es Pings hört oder die
-Fregatte in der Nähe weiß, umfährt eine geortete Fregatte weiträumig, lauert
-dem Geleitzug 2 sm voraus auf, statt ihm nachzulaufen, weicht Pings leise mit
-5 kn aus und schießt deutlich eher auf eine geortete Fregatte zurück. Die
-Fregatte hat in der Doppeljagd 8 und im Abfang 6 Torpedos. Spielstände bleiben
-v31.
+Version 1.3.73 repariert das Selbst-Update unter Windows: Nach **Update
+installieren** ersetzt die neue U-Jagd-Windows.exe jetzt die laufende und
+startet. Bisher blieb der Download als `U-Jagd-Windows.exe.new` daneben liegen
+und die alte Version startete wieder. Der Starter löscht eine solche
+liegengebliebene `.new`-Datei, und der Windows-Build prüft den Austausch bei
+jeder Änderung. Spielstände bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -179,7 +177,9 @@ gespeicherter Fortschritt geht verloren), und der Link unten öffnet die
 
 Bei jedem Start fragt das Programm GitHub, ob es ein neueres Release gibt, und
 bietet **Update installieren** an: Es lädt die neue Datei, prüft Größe und
-SHA-256-Prüfsumme, ersetzt sich selbst und startet neu. Das Programm ist nicht
+SHA-256-Prüfsumme, schließt sich, ersetzt sich selbst und startet die neue
+Version (eine liegengebliebene `U-Jagd-Windows.exe.new` löscht es beim
+nächsten Start). Das Programm ist nicht
 signiert, deshalb warnt Windows SmartScreen beim ersten Start eventuell
 ("Weitere Informationen", "Trotzdem ausführen"). Spielstände und Einstellungen
 liegen wie unter Linux in `%USERPROFILE%\.u-jagd\`.

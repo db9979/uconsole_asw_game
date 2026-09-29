@@ -101,18 +101,47 @@ def test_download_is_verified_and_atomic(tmp_path):
         assert not (tmp_path / "U-Jagd-Windows.exe.new.part").exists()
 
 
-def test_install_script_waits_for_the_starter_and_swaps_the_file():
+def test_install_script_retries_the_swap_with_a_real_pause():
     script = update.install_script(r"C:\Games\U-Jagd-Windows.exe",
-                                   r"C:\Games\U-Jagd-Windows.exe.new", 4242)
-    assert 'PID eq 4242' in script
-    assert r'move /Y "C:\Games\U-Jagd-Windows.exe.new" "C:\Games\U-Jagd-Windows.exe"' in script
-    assert r'start "" "C:\Games\U-Jagd-Windows.exe"' in script
+                                   r"C:\Games\U-Jagd-Windows.exe.new",
+                                   ("--self-test", r"C:\Temp\r.json"), log=r"C:\Logs\u.log")
+    lines = script.split("\r\n")
+    assert r'move /Y "C:\Games\U-Jagd-Windows.exe.new" "C:\Games\U-Jagd-Windows.exe" >NUL 2>NUL' in lines
+    # "timeout" returns at once with redirected stdin; the pause must be ping.
+    assert "timeout" not in script and "ping -n 2 127.0.0.1 >NUL" in lines
+    assert f"if %tries% GEQ {update.INSTALL_TRIES} goto failed" in lines
+    assert lines.index(":failed") < lines.index(":start")
+    assert any(line.startswith("echo update failed") and r"C:\Logs\u.log" in line
+               for line in lines)
+    assert r'start "" "C:\Games\U-Jagd-Windows.exe" "--self-test" "C:\Temp\r.json"' in lines
     assert script.endswith("\r\n")
-    for bad in (r'C:\a"b.exe', r"C:\%PATH%.exe", "C:\\a\nb.exe"):
+    for bad in (r'C:\a"b.exe', r"C:\%PATH%.exe", "C:\\a\nb.exe", r"C:\a!b.exe", ""):
         with pytest.raises(update.UpdateError):
-            update.install_script(bad, r"C:\x.new", 1)
-    with pytest.raises(update.UpdateError):
-        update.install_script(r"C:\x.exe", r"C:\x.new", 0)
+            update.install_script(bad, r"C:\x.new")
+
+
+def test_launch_install_starts_the_script_with_a_clean_environment(monkeypatch, tmp_path):
+    import tempfile
+
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path))
+    monkeypatch.setenv("_PYI_APPLICATION_HOME_DIR", "gone")
+    calls = []
+    script = update.launch_install(r"C:\Games\U.exe", r"C:\Games\U.exe.new",
+                                   popen=lambda cmd, **kw: calls.append((cmd, kw)))
+    assert calls[0][0] == ["cmd", "/c", script]
+    env = calls[0][1]["env"]
+    assert "_PYI_APPLICATION_HOME_DIR" not in env and env["PYINSTALLER_RESET_ENVIRONMENT"] == "1"
+    assert "move /Y" in open(script, encoding="utf-8").read()
+
+
+def test_starter_removes_a_stale_update(monkeypatch, tmp_path):
+    exe = tmp_path / "U-Jagd-Windows.exe"
+    for name in ("U-Jagd-Windows.exe.new", "U-Jagd-Windows.exe.new.part"):
+        (tmp_path / name).write_bytes(b"x")
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(exe))
+    app.remove_stale_update()
+    assert not list(tmp_path.glob("U-Jagd-Windows.exe.*"))
 
 
 def test_game_command_maps_starter_options(monkeypatch):

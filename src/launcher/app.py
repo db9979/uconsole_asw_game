@@ -449,13 +449,10 @@ class Starter:
         def work():
             try:
                 update.download(release, target, progress=progress)
-                script = os.path.join(tempfile.gettempdir(), "u-jagd-update.cmd")
-                with open(script, "w", encoding="utf-8", newline="") as handle:
-                    handle.write(update.install_script(executable, target, os.getpid()))
             except update.UpdateError:
                 self.root.after(0, self._update_failed)
                 return
-            self.root.after(0, lambda: self._restart_into(script))
+            self.root.after(0, lambda: self._restart_into(executable, target))
 
         threading.Thread(target=work, daemon=True).start()
 
@@ -463,17 +460,29 @@ class Starter:
         self.update_button.configure(state="normal")
         self._say(self.update_text, "launcher.update.failed")
 
-    def _restart_into(self, script):
-        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        subprocess.Popen(["cmd", "/c", script], creationflags=flags,
-                         env=update.clean_environment(os.environ),
-                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL)
+    def _restart_into(self, executable, target):
+        try:
+            update.launch_install(executable, target, log=str(log_path()))
+        except update.UpdateError:
+            self._update_failed()
+            return
         self.root.destroy()
+
+
+def remove_stale_update() -> None:
+    """Delete an ``<exe>.new`` left by an update that could not swap in."""
+    if getattr(sys, "frozen", False):
+        for suffix in (".new", ".new.part"):
+            try:
+                os.remove(os.path.abspath(sys.executable) + suffix)
+            except OSError:
+                pass
 
 
 def run() -> int:
     import tkinter as tk
+
+    remove_stale_update()
 
     root = tk.Tk()
     Starter(root)

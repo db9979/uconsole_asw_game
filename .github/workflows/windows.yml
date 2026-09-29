@@ -60,6 +60,30 @@ jobs:
           Get-Content $report
           if ($p.ExitCode -ne 0) { exit 1 }
 
+      - name: Self-test the update swap
+        # "Install update" end to end: the running exe starts the install
+        # script and exits; the script must replace it with <exe>.new and start
+        # the new file (1.3.73 fix: it used to leave .new and restart the old).
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP "update-test"
+          New-Item -ItemType Directory -Force $dir | Out-Null
+          $exe = Join-Path $dir "U-Jagd-Windows.exe"
+          Copy-Item dist\U-Jagd-Windows.exe $exe
+          Copy-Item dist\U-Jagd-Windows.exe "$exe.new"
+          $report = Join-Path $env:RUNNER_TEMP "selftest-swap.json"
+          $p = Start-Process -FilePath $exe -ArgumentList "--update-self-test", "`"$report`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { Write-Error "update self-test exited with $($p.ExitCode)"; exit 1 }
+          $deadline = (Get-Date).AddMinutes(5)
+          $result = $null
+          while ($null -eq $result -and (Get-Date) -lt $deadline) {
+            try { $result = Get-Content $report -Raw -ErrorAction Stop | ConvertFrom-Json } catch { Start-Sleep 2 }
+          }
+          if ($null -eq $result) { Write-Error "the swapped program did not start"; exit 1 }
+          Get-Content $report
+          if (Test-Path "$exe.new") { Write-Error "the update was left as .new"; exit 1 }
+          if (-not $result.ok) { exit 1 }
+
       - uses: actions/upload-artifact@v4
         with:
           name: U-Jagd-Windows-${{ steps.version.outputs.version }}

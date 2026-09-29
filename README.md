@@ -12,15 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.72**
+Current release: **1.3.73**
 
-Release 1.3.72 makes the computer-driven submarine in the breakthrough,
-reconnaissance and convoy missions cleverer and gives the frigate more
-torpedoes. The submarine now creeps at 3 kn while it hears pings or knows the
-frigate is near, passes wide of a frigate it has located, lies in wait 2 NM
-ahead of the convoy instead of chasing it, dodges pings quietly at 5 kn and
-fires back at a located frigate far more readily. The frigate carries 8
-torpedoes in Double Hunt and 6 in Intercept. Saves stay v31.
+Release 1.3.73 fixes the Windows self-update: after **Install update** the
+new U-Jagd-Windows.exe now replaces the running one and starts. Before, the
+download stayed next to it as `U-Jagd-Windows.exe.new` and the old version
+started again. The starter also deletes such a leftover `.new` file, and the
+Windows build now tests the swap on every change. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -169,7 +167,8 @@ lost), and the link at the bottom opens the "Buy me a coffee" page; the game log
 
 At every start the program asks GitHub whether a newer release exists and
 offers **Install update**: it downloads the new file, checks its size and
-SHA-256 digest, replaces itself and restarts. The build is not code-signed,
+SHA-256 digest, closes, replaces itself and starts the new version (a
+leftover `U-Jagd-Windows.exe.new` is deleted at the next start). The build is not code-signed,
 so Windows SmartScreen may warn on the first start ("More info", "Run
 anyway"). Saves and settings live in `%USERPROFILE%\.u-jagd\` as on Linux.
 

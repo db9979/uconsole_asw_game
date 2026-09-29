@@ -157,8 +157,11 @@ export function validateV2State(state) {
     states: ["offered", "active", "done", "failed", "declined"],
   };
   const crewFields = {
-    row: ["on_watch", "watches", "watch_left_s", "turnover", "action_stations", "morale", "effectiveness"],
+    row: ["on_watch", "watches", "watch_left_s", "turnover", "action_stations", "morale", "effectiveness", "casualties"],
     watch: ["index", "fatigue", "on_duty"],
+    casualties: ["wounded", "serious", "returned", "stations", "medic", "spare", "reassign_in_s"],
+    casualtyStation: ["station", "gaps", "posts"],
+    stations: ["sonar", "weapons", "damage"],
   };
   const mpaFields = {
     row: ["state", "airborne", "x", "y", "course", "bearing", "range_nm", "waypoint_x", "waypoint_y", "station_left_s", "ready_in_s", "sorties_left", "buoys", "torpedoes", "radar", "mad", "buoy_mode", "pattern", "pattern_points", "datalink", "relayed"],
@@ -263,7 +266,16 @@ export function validateV2State(state) {
     (crew.watch_left_s === null || (finite(crew.watch_left_s) && crew.watch_left_s >= 0)) &&
     typeof crew.turnover === "boolean" && typeof crew.action_stations === "boolean" &&
     finite(crew.morale) && crew.morale >= 0 && crew.morale <= 1 &&
-    finite(crew.effectiveness) && crew.effectiveness > 0 && crew.effectiveness <= 2;
+    finite(crew.effectiveness) && crew.effectiveness > 0 && crew.effectiveness <= 2 &&
+    exactKeys(crew.casualties, crewFields.casualties) &&
+    [crew.casualties.wounded, crew.casualties.serious, crew.casualties.returned, crew.casualties.spare]
+      .every((value) => Number.isInteger(value) && value >= 0 && value <= 10000) &&
+    Array.isArray(crew.casualties.stations) && crew.casualties.stations.length === crewFields.stations.length &&
+    crew.casualties.stations.every((row, index) => exactKeys(row, crewFields.casualtyStation) &&
+      row.station === crewFields.stations[index] && Number.isInteger(row.posts) && row.posts > 0 && row.posts <= 32 &&
+      Number.isInteger(row.gaps) && row.gaps >= 0 && row.gaps <= row.posts) &&
+    (crew.casualties.medic === null || crewFields.stations.includes(crew.casualties.medic)) &&
+    finite(crew.casualties.reassign_in_s) && crew.casualties.reassign_in_s >= 0;
   // A phone lookout: its eyepiece, what its eye has (called or not) and its calls.
   const phoneOk = (view) => exactKeys(view, sightFields.phone) && skyOk(view.sky) &&
     view.side === (state.role === "lookout" ? "frigate" : "boat") &&

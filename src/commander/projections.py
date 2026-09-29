@@ -720,9 +720,10 @@ def _bridge_route(game):
                         if number > route.index])
 
 
-def _crew(game, watch=None):
-    """A crew's watch bill, fatigue and morale (own-ship truth)."""
+def _crew(game, watch=None, roster=None):
+    """A crew's watch bill, fatigue, morale and wounded (own-ship truth)."""
     view = game.crew_view(watch)
+    hurt = game.casualty_view(roster)
     left = view["watch_left_s"]
     return dict(on_watch=int(view["on_watch"]),
                 watches=[dict(index=int(row["index"]), fatigue=_number(row["fatigue"]),
@@ -731,7 +732,14 @@ def _crew(game, watch=None):
                 turnover=bool(view["turnover"]),
                 action_stations=bool(view["action_stations"]),
                 morale=_number(view["morale"]),
-                effectiveness=_number(view["effectiveness"]))
+                effectiveness=_number(view["effectiveness"]),
+                casualties=dict(
+                    wounded=int(hurt["wounded"]), serious=int(hurt["serious"]),
+                    returned=int(hurt["returned"]),
+                    stations=[dict(station=row["station"], gaps=int(row["gaps"]),
+                                   posts=int(row["posts"])) for row in hurt["stations"]],
+                    medic=hurt["medic"], spare=int(hurt["spare"]),
+                    reassign_in_s=_number(hurt["reassign_in_s"])))
 
 
 def _damage(game):
@@ -1509,7 +1517,7 @@ def _uboot_damage(game, boat):
     sub = boat.sub
     control = sub.damage_control
     return dict(
-        crew=_crew(game, boat.watch),
+        crew=_crew(game, boat.watch, game.peek_roster(boat.sub)),
         power=bool(control.power()), pumping=bool(control.pumping),
         compartments=[dict(
             name=name, water_kg=_number(c.water_kg), capacity_kg=_number(capacity_kg(index)),

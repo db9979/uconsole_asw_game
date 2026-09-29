@@ -483,6 +483,7 @@ class SaveMixin:
             "incidents": self.incidents.serialize(),
             "hq_reports": self.hq_reports.serialize(),
             "rbu": self.rbu_serialize(),
+            "casualties": self.casualties_serialize(),
             "baffle_clear": (None if self.baffle_clear is None
                              else [float(value) for value in self.baffle_clear]),
             "watch": self.crew_watch.serialize(),
@@ -1045,6 +1046,7 @@ class SaveMixin:
         self.incidents = IncidentBoard.restore(data["incidents"])
         self.hq_reports = HqReports.restore(data["hq_reports"])
         self.rbu_restore(data["rbu"])
+        self.casualties_restore(data["casualties"])
         self.baffle_clear = (None if data["baffle_clear"] is None
                              else [float(value) for value in data["baffle_clear"]])
         self.task_sel = 0

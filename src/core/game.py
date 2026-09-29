@@ -75,6 +75,7 @@ from src.core.game_save import (
     MAX_SAVE_DOCUMENT_BYTES)
 from src.core.game_asw import AswWeaponsMixin
 from src.core.game_rbu import RbuMixin
+from src.core.game_casualties import CasualtiesMixin
 from src.core.game_sim import (
     SimMixin,
     SONAR_CLASS_KINDS,
@@ -103,7 +104,7 @@ from src.core.game_welcome import WelcomeMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
-           RadarPictureMixin, AswWeaponsMixin, RbuMixin,
+           RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
            SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, DebriefMixin,
            TrainingMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
     # Options overlay rows in display order; the last two open sub-menus.
@@ -611,6 +612,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # M5: Schadensmodell + Gegentorpedos (Reparatur-Faktor aus Custom-Difficulty)
         self.damage = DamageModel(random.Random(seed + 777),
                                   repair_mult=self.difficulty["repair_mult"])
+        # Wounded crew of the frigate and the submarines (save ``casualties``).
+        self._reset_casualties()
         self.enemy_torpedoes = []
         # Presentation-only torpedo intercept memory (see _update_torpedo_cues);
         # rebuilt from the saved torpedo state on load, never saved itself.

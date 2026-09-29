@@ -4,9 +4,9 @@ This module is deliberately dependency-free because setuptools imports the
 version while building the project.
 """
 
-APP_VERSION = "1.3.93"
-SAVE_VERSION = 37
-SAVE_SCHEMA = "u-jagd-save-v37"
+APP_VERSION = "1.3.94"
+SAVE_VERSION = 38
+SAVE_SCHEMA = "u-jagd-save-v38"
 SPLASH_TEXT = (
     "Anti Sub Marine Warfare on uConsole by Dominik Bornhäußer "
     f"Version {APP_VERSION}"

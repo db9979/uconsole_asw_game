@@ -190,6 +190,8 @@ class Sub:
         # Compartments, leaks, fire, gas and the two damage-control teams;
         # likewise only a crewed boat's (the AI keeps one damage value).
         self.damage_control = BoatDamageControl()
+        # Empty posts in the torpedo room (``game_casualties``; derived).
+        self.weapons_crew_factor = 1.0
         # Own passive TMA on one bearing-only contact and crew reaction.
         self.tma_track = BearingTrack()
         self.tma_track_id = None
@@ -1771,8 +1773,11 @@ class Sub:
                 if scale > 0.0]
 
     def crew_efficiency(self) -> float:
-        """Crew performance in the boat's air (1.0 without an air model)."""
-        return 1.0 if self.endurance is None else self.endurance.air.efficiency()
+        """The torpedo gang's performance: the boat's air (1.0 without an air
+        model) and its empty posts (``weapons_crew_factor``, set by the game
+        from the wounded, not saved)."""
+        air = 1.0 if self.endurance is None else self.endurance.air.efficiency()
+        return air * self.weapons_crew_factor
 
     def _update_air(self, dt: float) -> None:
         """Breathe, scrub and air the boat; the AI's crew also answers foul air."""

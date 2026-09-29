@@ -225,7 +225,8 @@ function renderDamage(dc) {
     return line;
   }));
   renderCrew($("uboot-crew"), $("uboot-crew-actions"), dc.crew,
-    {actionStations: "uboot_action_stations", watchChange: "uboot_watch_change"});
+    {actionStations: "uboot_action_stations", watchChange: "uboot_watch_change",
+      medic: "uboot_casualty_medic", reassign: "uboot_casualty_reassign"});
   metrics($("uboot-dc-teams"), [["uboot_dc_power", t(dc.power ? "uboot_dc_power_on" : "uboot_dc_power_off")],
     ...dc.teams.map((team) => [`uboot_dc_team_${team.team + 1}`, team.transit_s > 0
       ? t("uboot_dc_team_transit", {compartment: t(`uboot_compartment_${team.compartment}`), seconds: number(team.transit_s, 0)})

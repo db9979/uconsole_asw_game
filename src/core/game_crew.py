@@ -123,6 +123,7 @@ class CrewMixin:
     # --- time ---------------------------------------------------------------------
 
     def _update_crew(self, dt: float) -> None:
+        self._update_casualties(dt)
         watch = self.crew_watch
         damaged = sum(1 for room in self.damage.compartments.values() if room.state != "OK")
         kills = sum(1 for sub in self.subs if sub.side == "hostile" and sub.sunk)
@@ -158,10 +159,17 @@ class CrewMixin:
     def _apply_crew_effects(self) -> None:
         """Hand the crews' effectiveness to their sonar and repair teams."""
         effect = self.crew_effect()
-        self._frigate_sonar.sonar.operator_dt_db = crew_model.sonar_penalty_db(effect)
-        self.damage.crew_factor = effect
+        self._frigate_sonar.sonar.operator_dt_db = crew_model.sonar_penalty_db(
+            effect * self.casualty_factor("sonar"))
+        self.damage.crew_factor = effect * self.casualty_factor("damage")
         boat = self._opfor
+        for sub in self.subs:
+            # Empty posts slow every submarine's torpedo gang and repairs.
+            sub.weapons_crew_factor = self.casualty_factor("weapons", sub)
+            sub.damage_control.crew_factor = self.casualty_factor("damage", sub)
         if boat is not None:
             boat_effect = boat.watch.effectiveness(self.sim_t)
-            boat.station.sonar.operator_dt_db = crew_model.sonar_penalty_db(boat_effect)
-            boat.sub.damage_control.crew_factor = boat_effect
+            boat.station.sonar.operator_dt_db = crew_model.sonar_penalty_db(
+                boat_effect * self.casualty_factor("sonar", boat.sub))
+            boat.sub.damage_control.crew_factor = (
+                boat_effect * self.casualty_factor("damage", boat.sub))

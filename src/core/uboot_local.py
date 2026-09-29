@@ -609,6 +609,13 @@ def _command_key(game, current, key, mods) -> None:
                 game.flash(message("uboot.local.tube_rejected", reason=message(
                     f"uboot.reason.{result}" if result in TUBE_REASONS
                     else "uboot.reason.not_ready")), 2.0)
+    elif page == "UBOOT_DAMAGE" and key == pygame.K_m and mods & (pygame.KMOD_SHIFT
+                                                                   | pygame.KMOD_CTRL):
+        if mods & pygame.KMOD_CTRL:
+            if order_allowed(game, "uboot_casualty_reassign"):
+                game.boat_casualty_reassign()
+        elif order_allowed(game, "uboot_casualty_medic"):
+            game.boat_casualty_medic()
     elif page == "UBOOT_DAMAGE" and key == pygame.K_m:
         if order_allowed(game, "uboot_watch_change") and game.boat_change_watch() is not True:
             game.flash(message("crew.watch_blocked"), 2.0)

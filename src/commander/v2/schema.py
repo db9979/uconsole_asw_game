@@ -30,8 +30,13 @@ RADIO_TASK_KINDS = ("sar", "identify", "datum", "ras", "emcon")
 # The crew's watch bill, fatigue and morale (``src/core/crew.py``): the
 # frigate's on the bridge and damage roles, the boat's in ``damage_control``.
 CREW_FIELDS = ("on_watch", "watches", "watch_left_s", "turnover", "action_stations",
-               "morale", "effectiveness")
+               "morale", "effectiveness", "casualties")
 CREW_WATCH_FIELDS = ("index", "fatigue", "on_duty")
+# The ship's own wounded (``src/core/casualties.py``): own-ship truth.
+CASUALTY_FIELDS = ("wounded", "serious", "returned", "stations", "medic", "spare",
+                   "reassign_in_s")
+CASUALTY_STATION_FIELDS = ("station", "gaps", "posts")
+CASUALTY_STATIONS = ("sonar", "weapons", "damage")
 # The patrol aircraft in the OPZ's own assets (``src/air/mpa.py``):
 # commanded own-force datalink state, never what it has not reported.
 MPA_FIELDS = ("state", "airborne", "x", "y", "course", "bearing", "range_nm",

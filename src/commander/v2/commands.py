@@ -533,6 +533,9 @@ V2_ACTION_REGISTRY = {
     "crew_action_stations": V2Action(frozenset({"bridge", "damage"}),
                                      _bool_params("enabled")),
     "crew_watch_change": V2Action(frozenset({"damage"}), _no_params),
+    # The wounded: medical team to the next station, men to the worst one.
+    "crew_casualty_medic": V2Action(frozenset({"damage"}), _no_params),
+    "crew_casualty_reassign": V2Action(frozenset({"damage"}), _no_params),
     "damage_assign_team": V2Action(frozenset({"damage"}),
                                    _team_compartment_params),
     "damage_unassign_team": V2Action(frozenset({"damage"}),
@@ -698,6 +701,8 @@ V2_ACTION_REGISTRY = {
     "uboot_action_stations": V2Action(frozenset({"uboot", "uboot_engine"}),
                                       _bool_params("enabled")),
     "uboot_watch_change": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
+    "uboot_casualty_medic": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
+    "uboot_casualty_reassign": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
     "uboot_mast": V2Action(frozenset({"uboot", "uboot_esm", "uboot_radio"}),
                            _bool_params("enabled")),
     # The radio room sends the boat's situation report to HQ (HF, bearable).

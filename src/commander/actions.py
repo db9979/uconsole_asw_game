@@ -191,6 +191,18 @@ def _crew_watch_change(game, params, _bindings):
     return game.change_watch()
 
 
+def _casualty_result(result):
+    return result if result is True else "not_ready"
+
+
+def _crew_casualty_medic(game, _params, _bindings):
+    return _casualty_result(game.casualty_medic())
+
+
+def _crew_casualty_reassign(game, _params, _bindings):
+    return _casualty_result(game.casualty_reassign())
+
+
 def _radio_task_accept(game, params, _bindings):
     return game.accept_task(params["task"])
 
@@ -756,6 +768,14 @@ def _uboot_watch_change(game, boat, params, _bindings):
     return game.boat_change_watch()
 
 
+def _uboot_casualty_medic(game, boat, _params, _bindings):
+    return _casualty_result(game.boat_casualty_medic())
+
+
+def _uboot_casualty_reassign(game, boat, _params, _bindings):
+    return _casualty_result(game.boat_casualty_reassign())
+
+
 def _uboot_mast(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_mast(params["enabled"]))
 
@@ -839,6 +859,8 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_bulkhead": _uboot_bulkhead,
     "uboot_action_stations": _uboot_action_stations,
     "uboot_watch_change": _uboot_watch_change,
+    "uboot_casualty_medic": _uboot_casualty_medic,
+    "uboot_casualty_reassign": _uboot_casualty_reassign,
     "uboot_o2_candle": _uboot_o2_candle,
     "uboot_mast": _uboot_mast,
     "uboot_radio_send": _uboot_radio_send,
@@ -890,6 +912,8 @@ _V2_ACTION_HANDLERS = {
     "damage_counterflood": _damage_counterflood,
     "crew_action_stations": _crew_action_stations,
     "crew_watch_change": _crew_watch_change,
+    "crew_casualty_medic": _crew_casualty_medic,
+    "crew_casualty_reassign": _crew_casualty_reassign,
     "engine_set_plant": _engine_set_plant,
     "damage_unassign_team": _damage_unassign_team,
     "radio_capture_hfdf": _radio_capture_hfdf,

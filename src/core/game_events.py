@@ -1025,6 +1025,12 @@ class EventMixin:
                 if self.change_watch() is not True:
                     self.flash(message("crew.watch_blocked"), 2.0)
                 return
+            if e.key in (pygame.K_m, pygame.K_u) and crew_page:
+                if e.key == pygame.K_m:
+                    self.casualty_medic()
+                else:
+                    self.casualty_reassign()
+                return
             if e.key == pygame.K_g and (self.station is Station.BRIDGE or crew_page):
                 self.toggle_action_stations()
                 return

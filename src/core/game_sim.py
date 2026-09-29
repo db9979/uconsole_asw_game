@@ -609,6 +609,7 @@ class SimMixin:
     def _update_asw_stores(self, dt: float) -> None:
         scale = (0.0 if self.damage.station_down("weapons") else
                  .5 if self.damage.station_degraded("weapons") else 1.0)
+        scale *= self.casualty_factor("weapons")
         self.player_torpedo_battery.update(dt, scale)
         self.torpedo_count = self.player_torpedo_battery.remaining_total
         self.nixie_store.update(dt)
@@ -763,6 +764,7 @@ class SimMixin:
                 hit = self.damage.torpedo_hit(
                     impact=self._hull_impact(torpedo.x, torpedo.y),
                     hole_scale=config.clamp(20.0 / distance_m, 0.5, 3.0))
+                self.casualties_hit(hit)
                 self._emit_sound("explosion", at=(torpedo.x, torpedo.y))
                 text = ", ".join(self.damage.compartments[k].name for k in hit)
                 self.flash(message("runtime.hit.torpedo", compartments=text), 5.0)

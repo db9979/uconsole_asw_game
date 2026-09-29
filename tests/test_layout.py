@@ -112,7 +112,7 @@ def test_fonts_are_shared_cached_and_replaced_with_display_lifetime(monkeypatch)
     created = []
 
     monkeypatch.setattr(pygame.display, "get_surface", lambda: first_display)
-    monkeypatch.setattr(pygame.font, "SysFont",
+    monkeypatch.setattr(pygame.font, "Font",
                         lambda *args, **kwargs: created.append(object()) or created[-1])
     layout.clear_font_cache()
     first = layout.font(16)
@@ -158,8 +158,9 @@ def test_blit_block_clips_to_original_rect(monkeypatch, align, valign, width, he
 
     px = requested.x + {"left": 0, "center": max(0, (width - 24) // 2),
                         "right": width - 24}[align]
-    offset = {"top": 0, "center": max(0, (height - 11) // 2),
-              "bottom": max(0, height - 11)}[valign]
+    line_h = layout._line_height(f)
+    offset = {"top": 0, "center": max(0, (height - line_h) // 2),
+              "bottom": max(0, height - line_h)}[valign]
     expected = pygame.Rect(px, requested.y + offset, 24, 40)
     expected = expected.clip(requested).clip(original_clip)
     assert screen.get_bounding_rect() == expected

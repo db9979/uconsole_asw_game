@@ -13,7 +13,8 @@ from src.ui import layout
 from src.ui import observations
 
 
-from src.ui.stations.common import (_panel, _station_content_top, draw_station_page_tabs, message)
+from src.ui.stations.common import (_panel, _shortcut_footer, _station_content_top,
+                                    draw_station_page_tabs, message)
 from src.ui.stations.opz import (_helo_dip_contact_line, helo_dip_contacts)
 
 
@@ -304,12 +305,14 @@ def _draw_helicopter_acoustic_view(game, rect):
                          config.COLOR_OK if contact.helo_qualified
                          else config.COLOR_TEXT_DIM, size=12)
     footer = geo["footer"]
-    pygame.draw.rect(screen, (13, 35, 43), footer)
-    pygame.draw.rect(screen, config.COLOR_GRID, footer, 1)
-    # Four main keys; source, contact, modes and filters are in F1.
-    layout.blit_line(screen, "helo.acoustic.keys_view",
-                     (footer.x + 9, footer.y + 10, footer.w - 18, 17),
-                     config.COLOR_TEXT_DIM, size=13)
+    # Four main keys in the station footer row; the rest are in F1.
+    _shortcut_footer(screen, (footer.x + 2, footer.y + (footer.h - 20) // 2 + 2,
+                              footer.w - 4, 20), (
+        ("help.key.page_arrows", "helo.footer.view"),
+        ("←/→", "helo.footer.bearing"),
+        ("I/O", "helo.footer.level"),
+        ("J", "helo.footer.sound"),
+    ))
 
 
 @localized
@@ -386,28 +389,49 @@ def draw_helicopter_view(game, tr=None) -> None:
         cell_gap = 8
         cell_w = (rw - cell_gap) // 2
         cell_h = max(1, (rh - cell_gap) // 2)
+        # label, big value, colour, (count, capacity) for the pip row
         resource_values = (
-            ("helo.air_torpedoes", str(helo.torps), config.COLOR_WARN),
-            ("helo.sonobuoys_ready", str(helo.buoys_left), config.COLOR_TEXT),
-            ("helo.sonobuoys_active", str(len(game.buoys)), config.COLOR_TEXT),
+            ("helo.air_torpedoes", str(helo.torps), config.COLOR_WARN,
+             (helo.torps, config.HELO_TORPS)),
+            ("helo.sonobuoys_ready", str(helo.buoys_left), config.COLOR_TEXT,
+             (helo.buoys_left, config.BUOY_COUNT)),
+            ("helo.sonobuoys_active", str(len(game.buoys)), config.COLOR_TEXT, None),
             ("panel.datalink", "ui.active" if helo.airborne else "helo.standby",
-             config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM),
+             config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM, None),
         )
-        for index, (label, value, color) in enumerate(resource_values):
+        for index, (label, value, color, pips) in enumerate(resource_values):
             cell = pygame.Rect(rx + index % 2 * (cell_w + cell_gap),
                                ry + index // 2 * (cell_h + cell_gap),
                                cell_w, cell_h)
-            pygame.draw.rect(s, (10, 21, 17), cell)
+            pygame.draw.rect(s, config.COLOR_PANEL_BG, cell)
             pygame.draw.rect(s, config.COLOR_GRID, cell, 1)
+            layout.corner_brackets(s, cell)
             label_h = layout.font(14).get_linesize()
-            value_h = layout.font(16).get_linesize()
             layout.blit_line(s, label,
-                             (cell.x + 8, cell.y + 4, cell.w - 16, label_h),
+                             (cell.x + 10, cell.y + 6, cell.w - 20, label_h),
                              config.COLOR_TEXT_DIM, size=14)
+            label_bottom = cell.y + 6 + label_h
+            big = 34 if len(localize(value)) <= 4 else 20
+            if cell.bottom - 4 - label_bottom < layout.font(big).get_linesize():
+                big = 16
+            value_h = layout.font(big).get_linesize()
+            value_y = max(label_bottom, cell.centery - value_h // 2)
             layout.blit_line(s, value,
-                             (cell.x + 8, cell.bottom - value_h - 4,
-                              cell.w - 16, value_h), color, size=16,
-                             align="right")
+                             (cell.x + 10, value_y, cell.w - 20, value_h),
+                             color, size=big, align="center")
+            if pips is not None and cell.bottom - 22 >= value_y + value_h:
+                count, capacity = pips
+                size, gap = 10, 6
+                capacity = max(1, capacity)
+                width = capacity * size + (capacity - 1) * gap
+                px = cell.centerx - width // 2
+                py = cell.bottom - size - 12
+                for pip in range(capacity):
+                    rect = pygame.Rect(px + pip * (size + gap), py, size, size)
+                    if pip < count:
+                        pygame.draw.rect(s, color, rect)
+                    else:
+                        pygame.draw.rect(s, config.COLOR_GRID, rect, 1)
     elif page == 1:
         mission_box = layout.box(s, regions["rules"], "panel.rules")
         mx, my, mw, _ = mission_box

@@ -441,7 +441,7 @@ def _text(screen, text, rect, color=TEXT, size=14, align="left"):
     with layout.clip_to(screen, rect):
         image = font.render(text, True, color)
         rendered = image.get_rect(topleft=(x, rect.y))
-        layout.record_text(text, rendered, rect)
+        layout.record_text(text, rendered, rect, image)
         screen.blit(image, rendered)
 
 
@@ -560,8 +560,12 @@ def _display_controls(game):
 
 def _draw_display_status(game, panel):
     black, contrast, palette, history = _display_controls(game)
-    value = f"P {palette.upper()}  C {contrast:.1f}  BL {black:.2f}  H {history:.0%}"
-    _text(game.screen, value, (panel.right - 336, panel.y + 11, 320, 18),
+    key = ("sonar.line.display_history" if history < 0.995
+           else "sonar.line.display")
+    value = message(key, palette=message(f"sonar.palette.{palette.lower()}"),
+                    contrast=f"{contrast:.1f}", black=f"{black:.2f}",
+                    history=f"{history * 100:.0f}")
+    _text(game.screen, value, (panel.right - 456, panel.y + 11, 440, 18),
           DIM, 12, "right")
 
 

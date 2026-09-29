@@ -115,13 +115,8 @@ def draw_ballast_page(s, game, boat, x, y, w, h) -> None:
                                blows=ballast.blows_left()),
                        size=15, label_w=150)
     fraction = ballast.hp_air_bar / config.UBOOT_HP_AIR_MAX_BAR
-    rect = pygame.Rect(bx, by + 46, bw, 10)
-    pygame.draw.rect(s, config.COLOR_BG, rect)
-    fill = rect.copy()
-    fill.w = int(rect.w * max(0.0, min(1.0, fraction)))
-    pygame.draw.rect(s, config.COLOR_DANGER if ballast.blows_left() == 0
-                     else config.COLOR_OK, fill)
-    pygame.draw.rect(s, config.COLOR_SONAR_RING, rect, 1)
+    layout.meter(s, (bx + 2, by + 46, bw - 4, 8), fraction,
+                 config.COLOR_DANGER if ballast.blows_left() == 0 else config.COLOR_OK)
     trim_y = tanks_y + 104
     trim_box = layout.box(s, (x, trim_y, w, max(60, y + h - trim_y)), "uboot.panel.trim",
                           border=config.COLOR_WARN if out_of_trim else config.COLOR_TEXT)

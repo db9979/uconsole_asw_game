@@ -280,7 +280,8 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                 continue
             pygame.draw.line(s, SCALE_COLOR, (tx, rect.y), (tx, rect.y + (10 if major else 5)), 1)
             if major and rect.h >= 40:
-                layout.blit_line(s, raw_text(f"{tick % 360:03d}"), (tx - 16, rect.y + 11, 32, 13),
+                layout.blit_line(s, raw_text(f"{tick % 360:03d}"),
+                                 (tx - 16, rect.y + 10, 32, layout.line_pitch(11, 0)),
                                  SCALE_COLOR, size=11, align="center")
         if crosshair_deg is not None:
             pygame.draw.line(s, CROSSHAIR_COLOR, (rect.centerx, rect.y + 26),

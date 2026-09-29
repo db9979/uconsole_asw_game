@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.67**
+Aktuelle Version: **1.3.69**
 
-Version 1.3.67 macht die Versorgung auf See planbar. Der Funkraum kann jetzt
+Version 1.3.69 macht die Versorgung auf See planbar. Der Funkraum kann jetzt
 selbst bei der HQ einen Versorger anfordern (R auf der Seite Aufträge, im
 Browser Versorger anfordern), sobald Kraftstoff oder ein Vorrat knapp wird,
 höchstens alle 20 Minuten nach der letzten Versorgung. Längsseits fließt der

@@ -69,14 +69,24 @@ def _shortcut_footer(screen, rect, specs) -> None:
     evenly split across ``rect``, matching sonar_view's always-visible
     footer-legend pattern (layout.command_segment) instead of a plain hint.
     """
-    rect = pygame.Rect(rect)
+    # Two pixels up keep descenders clear of the panel's bottom frame.
+    rect = pygame.Rect(rect).move(0, -2)
     specs = tuple(specs)
     if not specs:
         return
-    width = max(1, rect.w // len(specs))
-    for index, (key, description) in enumerate(specs):
-        segment = pygame.Rect(rect.x + index * width, rect.y, width, rect.h)
+    # Segments share the row by the width their text needs, so a long key
+    # (Backspace) never gets cut while a short one wastes space.
+    face = layout.font(11)
+    needs = [face.size(f"{localize(key)} {localize(description)}")[0] + 16
+             for key, description in specs]
+    spare = max(0, rect.w - sum(needs))
+    x = rect.x
+    for index, ((key, description), need) in enumerate(zip(specs, needs)):
+        width = (rect.right - x if index == len(specs) - 1
+                 else need + spare // len(specs))
+        segment = pygame.Rect(x, rect.y, max(1, width), rect.h)
         layout.command_segment(screen, segment, key, description, size=11)
+        x += width
 
 
 PAGE_TAB_H = 26

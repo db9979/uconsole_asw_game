@@ -392,10 +392,10 @@ def test_scope_prefers_public_radar_range_and_shows_all_scale_controls(monkeypat
         stations_view.draw_opz_view(game)
 
     assert symbols == [("FRIEND", "SURFACE"), ("UNKNOWN", "SURFACE")]
-    footer_y = pygame.Rect(config.STATION_RECT).bottom - 23
+    footer_y = pygame.Rect(config.STATION_RECT).bottom - 28
     footer = " ".join(entry["text"] for entry in text
                       if abs(entry["rect"].y - footer_y) <= 4)
-    assert "PGUP/DN" in footer
+    assert "PgUp/Dn" in footer
     assert "20 NM" in footer
     assert all(str(scale) in footer for scale in (10, 20, 40, 80, 120))
 

@@ -415,11 +415,12 @@ def test_native_six_rows_nonoverlap_and_roomy_join_code(
         console.draw(game)
     assert len(console.row_rects()) == 6
     for entry in text:
-        assert entry["bounds"].contains(entry["rect"])
+        assert entry["bounds"].contains(entry["ink"])
         assert pygame.Rect(0, 0, 1280, 720).contains(entry["bounds"])
         assert "commander." not in entry["text"]
-    assert all(not a["rect"].colliderect(b["rect"])
-               for a, b in combinations(text, 2))
+    overlaps = [(a["text"], b["text"]) for a, b in combinations(text, 2)
+                if a["ink"].colliderect(b["ink"])]
+    assert not overlaps, overlaps
     join = next(entry for entry in text if entry["text"] == "123 ABC")
     assert join["rect"].height >= 60
     game.commander_open = True

@@ -11,7 +11,8 @@ from src.sensors.esm import animated_signal_fingerprint, spectrum_band
 from src.ui import layout
 
 
-from src.ui.stations.common import (_srect, _station_content_top, draw_station_page_tabs, message)
+from src.ui.stations.common import (_shortcut_footer, _srect, _station_content_top,
+                                    draw_station_page_tabs, message)
 
 
 def _near_point(pos, point, radius):
@@ -25,7 +26,7 @@ def eloka_regions(station_rect=None, page=0) -> dict[str, pygame.Rect]:
     inner_x = station.x + 14
     inner_w = station.w - 28
     top = _station_content_top(station, 2)
-    bottom = station.bottom - 14
+    bottom = station.bottom - 34  # the key legend row sits below the box
     height = max(1, bottom - top)
     return {
         "picture": pygame.Rect(inner_x, top, inner_w, height) if page == 0
@@ -180,14 +181,6 @@ def draw_eloka_view(game, tr=None) -> None:
                     else config.COLOR_TEXT_DIM,
                     size=18)
                 by += row_h
-            footer_y = box[1] + box[3] - 26
-            layout.blit_line(surface, message(
-                                 "control.eloka",
-                                 audio=localize("ui.on" if getattr(
-                                     game, "eloka_audio_enabled", True)
-                                     else "ui.off")),
-                             (bx, footer_y, bw, 22),
-                             config.COLOR_TEXT_DIM, size=15)
     else:
         box = layout.box(surface, regions["evidence"], "eloka.panel.evidence")
         rx, ry, rw, rh = box
@@ -250,8 +243,7 @@ def draw_eloka_view(game, tr=None) -> None:
             # radar type/threat/ECM added that exceeded the 510 px uConsole
             # station height and painted over the footer.  Keep both columns
             # inside one explicitly clipped content area instead.
-            footer_y = box[1] + box[3] - 26
-            content = pygame.Rect(rx, ry, rw, max(1, footer_y - ry - 8))
+            content = pygame.Rect(rx, ry, rw, max(1, box[1] + box[3] - ry - 8))
             gap = 14
             details_w = max(270, int(rw * .54))
             analysis_x = rx + details_w + gap
@@ -316,11 +308,10 @@ def draw_eloka_view(game, tr=None) -> None:
                             (analysis_x, analysis_y, analysis_w, 25),
                             config.COLOR_OK, size=16)
                         analysis_y += 28
-        footer_y = box[1] + box[3] - 26
-        layout.blit_line(surface, message(
-                             "control.eloka",
-                             audio=localize("ui.on" if getattr(
-                                 game, "eloka_audio_enabled", True)
-                                 else "ui.off")),
-                         (rx, footer_y, rw, 22),
-                         config.COLOR_TEXT_DIM, size=15)
+    _shortcut_footer(surface, (station.x + 14, station.bottom - 26, station.w - 28, 20), (
+        ("↑/↓", "eloka.footer.select"),
+        ("J", "eloka.footer.jam"),
+        ("A", "eloka.footer.ecm_auto"),
+        ("M", message("eloka.footer.audio", audio=localize(
+            "ui.on" if getattr(game, "eloka_audio_enabled", True) else "ui.off"))),
+    ))

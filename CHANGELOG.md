@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.67
+## 1.3.69
 
-Release 1.3.67 makes replenishment at sea something you can plan. The radio
+Release 1.3.69 makes replenishment at sea something you can plan. The radio
 room can now ask HQ for a supply ship itself (R on the Tasks page, or Request
 supply ship in the browser) whenever fuel or any store runs short, at most
 once every 20 minutes after the last one. Alongside, fuel now flows the whole
@@ -17,9 +17,9 @@ shows fuel, torpedoes, ASROC and depth charges aboard. HQ also offers a supply
 ship when ASROC or depth charges have been used. VLS cells are not reloaded at
 sea. Saves stay v31.
 
-## 1.3.66
+## 1.3.68
 
-Release 1.3.66 makes the OPZ's correlation suggestions smarter. Besides
+Release 1.3.68 makes the OPZ's correlation suggestions smarter. Besides
 bearing and position they now compare course, speed and the operator's
 classification: two reports whose courses or speeds clearly differ, or whose
 classes do not match, are no longer suggested, and agreeing classes rank a
@@ -29,9 +29,9 @@ radar and lookout reports of the same ship. A fusion now carries its members'
 course and speed. Saves are now v31 (AIS reports keep their reported
 position); v30 saves no longer load.
 
-## 1.3.65
+## 1.3.67
 
-Release 1.3.65 lets HQ give the crewed submarine orders during the mission.
+Release 1.3.67 lets HQ give the crewed submarine orders during the mission.
 Below the mast the VLF loop antenna now copies the broadcast down to 25 m
 (slower than with the mast up, and receive only). From the second broadcast
 on, a broadcast may carry an HQ order: proceed to an area in deep water, send
@@ -40,9 +40,9 @@ room page, the chart and the browser's Radio room card show the open order and
 how many were carried out; a missed broadcast is a missed order. Saves are now
 v30 (they keep the orders); v29 saves no longer load.
 
-## 1.3.64
+## 1.3.66
 
-Release 1.3.64 gives the helicopter a surface-search radar. Whenever it flies
+Release 1.3.66 gives the helicopter a surface-search radar. Whenever it flies
 with the dipping sonar stowed it searches from 150 m: ships out to 40 NM,
 surfaced submarines and raised snorkels or periscopes inside its radar
 horizon, a mast at about 10 NM in calm water and only a few miles in a rougher
@@ -50,9 +50,9 @@ sea. Every contact reaches the OPZ as a RADAR-HELO track; the helicopter page
 and the Remote Crew helicopter view show whether the radar is searching. Saves
 stay v29.
 
-## 1.3.63
+## 1.3.65
 
-Release 1.3.63 gives the frigate two more anti-submarine weapons at the
+Release 1.3.65 gives the frigate two more anti-submarine weapons at the
 Weapons station. `A` fires one of four ASROC: the rocket flies to the
 designated submarine's observed position (1 to 10 NM, current range needed)
 and drops a lightweight torpedo there. `Z` drops a pattern of five depth
@@ -61,6 +61,29 @@ sink to the preset depth and are lethal within about 25 m. Both use the
 torpedo's target checks and are also on the Remote Crew weapons page. Saves
 are now v29 (they keep the charges in the water and the stores); v28 saves no
 longer load.
+## 1.3.64
+
+Release 1.3.64 tidies the uConsole screens. Every text now uses the bundled
+JetBrains Mono face, so lines no longer clip on any system, and line spacing
+follows the font. All status bars share one style with quarter marks and
+labels, the engine telegraph highlights the nearest step and warns when a
+direct speed lies between steps, and the bridge gains heading, rudder and
+speed dials. The submarine tab bar, map scale numbers, water column labels, ESM
+compass and the bottom ticker no longer overlap; OPZ, ELOKA and helicopter
+pages get the start screen's frames and a key footer, and the last English
+leftovers in German menus are translated. Saves stay v28.
+
+## 1.3.63
+
+Release 1.3.63 makes the pairing code easier to enter, on the crew page and
+on the phone lookout. The code can be typed the way `F9` shows it, with the
+space, in lower case, or with look-alikes such as O for 0, l for 1 or S for 5,
+and it is still read correctly. "Wrong pairing code" now appears only when the
+code really is wrong, and it names the code the game received;
+when the game refuses the address itself (a bookmark or another name for the
+host), the page says to open it from the QR code or the address in `F9`. The
+pairing help no longer claims the code expires after five minutes: it stays
+while the game runs and changes after five wrong tries. Saves stay v28.
 
 ## 1.3.62
 

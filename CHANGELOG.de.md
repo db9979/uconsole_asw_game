@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.67
+## 1.3.69
 
-Version 1.3.67 macht die Versorgung auf See planbar. Der Funkraum kann jetzt
+Version 1.3.69 macht die Versorgung auf See planbar. Der Funkraum kann jetzt
 selbst bei der HQ einen Versorger anfordern (R auf der Seite Aufträge, im
 Browser Versorger anfordern), sobald Kraftstoff oder ein Vorrat knapp wird,
 höchstens alle 20 Minuten nach der letzten Versorgung. Längsseits fließt der
@@ -18,9 +18,9 @@ Kraftstoff, Torpedos, ASROC und Wasserbomben an Bord. Die HQ bietet einen
 Versorger jetzt auch an, wenn ASROC oder Wasserbomben verbraucht sind. VLS-
 Zellen werden auf See nicht nachgeladen. Spielstände bleiben v31.
 
-## 1.3.66
+## 1.3.68
 
-Version 1.3.66 macht die Zuordnungsvorschläge der OPZ klüger. Neben Peilung
+Version 1.3.68 macht die Zuordnungsvorschläge der OPZ klüger. Neben Peilung
 und Position vergleichen sie jetzt Kurs, Fahrt und die Klassifizierung des
 Bedieners: zwei Meldungen mit deutlich verschiedenem Kurs oder verschiedener
 Fahrt oder unpassender Klasse werden nicht mehr vorgeschlagen, und gleiche
@@ -31,9 +31,9 @@ vorgeschlagen. Eine Fusion übernimmt jetzt Kurs und Fahrt ihrer Mitglieder.
 Spielstände sind jetzt v31 (AIS-Meldungen behalten ihre gemeldete Position);
 v30-Stände laden nicht mehr.
 
-## 1.3.65
+## 1.3.67
 
-Version 1.3.65 lässt die Führung dem besetzten U-Boot während der Mission
+Version 1.3.67 lässt die Führung dem besetzten U-Boot während der Mission
 Befehle geben. Unter dem Mast nimmt die VLF-Rahmenantenne den Rundspruch jetzt
 bis 25 m Tiefe auf (langsamer als mit Mast und nur Empfang). Ab dem zweiten
 Rundspruch kann ein Rundspruch einen Befehl enthalten: ein Seegebiet in tiefem
@@ -43,9 +43,9 @@ Befehl und wie viele ausgeführt wurden; ein verpasster Rundspruch ist ein
 verpasster Befehl. Spielstände sind jetzt v30 (sie behalten die Befehle);
 v29-Stände laden nicht mehr.
 
-## 1.3.64
+## 1.3.66
 
-Version 1.3.64 gibt dem Helikopter ein Seeraumradar. Solange er mit
+Version 1.3.66 gibt dem Helikopter ein Seeraumradar. Solange er mit
 eingeholtem Tauchsonar fliegt, sucht es aus 150 m: Schiffe bis 40 sm,
 aufgetauchte U-Boote sowie ausgefahrene Schnorchel oder Sehrohre innerhalb
 seines Radarhorizonts, einen Mast bei ruhiger See auf etwa 10 sm und bei
@@ -53,9 +53,9 @@ rauerer See nur auf wenige Meilen. Jeder Kontakt erreicht die OPZ als RADAR-
 HELO-Track; die Helikopterseite und die Remote-Crew-Ansicht zeigen, ob das
 Radar sucht. Spielstände bleiben v29.
 
-## 1.3.63
+## 1.3.65
 
-Version 1.3.63 gibt der Fregatte zwei weitere U-Jagd-Waffen in der
+Version 1.3.65 gibt der Fregatte zwei weitere U-Jagd-Waffen in der
 Waffenzentrale. `A` startet eines von vier ASROC: Die Rakete fliegt zur
 beobachteten Position des zugewiesenen U-Boots (1 bis 10 sm, aktuelle
 Entfernung nötig) und setzt dort einen Leichttorpedo ab. `Z` wirft ein Muster
@@ -64,6 +64,31 @@ kn); sie sinken auf die voreingestellte Tiefe und sind bis etwa 25 m tödlich.
 Beide nutzen die Zielprüfungen des Torpedos und stehen auch auf der
 Waffenseite der Remote Crew. Spielstände sind jetzt v29 (sie behalten sinkende
 Wasserbomben und die Bestände); v28-Stände laden nicht mehr.
+## 1.3.64
+
+Version 1.3.64 räumt die uConsole-Bildschirme auf. Alle Texte nutzen jetzt
+die mitgelieferte Schrift JetBrains Mono, damit auf keinem System mehr Zeilen
+abgeschnitten werden, und der Zeilenabstand folgt der Schrift. Alle
+Zustandsbalken haben einen gemeinsamen Stil mit Viertelmarken und
+Beschriftung, der Maschinentelegraph hebt die nächste Stufe hervor und warnt,
+wenn eine Direktfahrt zwischen zwei Stufen liegt, und die Brücke bekommt Kurs-,
+Ruder- und Fahrtanzeige. U-Boot-Reiter, Kartenskala, Wassersäule, ESM-Rose und
+Laufband überlappen nicht mehr; OPZ, ELOKA und Helikopter bekommen die Rahmen
+des Startbilds und eine Tastenzeile, und die letzten englischen Reste in
+deutschen Menüs sind übersetzt. Spielstände bleiben v28.
+
+## 1.3.63
+
+Version 1.3.63 macht den Kopplungscode leichter einzugeben, auf der
+Crew-Seite und am Handy-Ausguck. Der Code darf so getippt werden, wie `F9` ihn
+zeigt, mit Leerzeichen, in Kleinbuchstaben oder mit verwechselbaren Zeichen
+wie O statt 0, l statt 1 oder S statt 5, und wird trotzdem richtig gelesen.
+„Falscher Kopplungscode“ erscheint nur noch, wenn der Code wirklich falsch ist,
+und nennt den Code, den das Spiel bekommen hat; lehnt das Spiel die Adresse selbst ab (ein
+Lesezeichen oder ein anderer Name für den Host), sagt die Seite, dass sie über
+den QR-Code oder die Adresse aus `F9` zu öffnen ist. Die Kopplungshilfe
+behauptet nicht mehr, der Code laufe nach fünf Minuten ab: er bleibt, solange
+das Spiel läuft, und wechselt nach fünf Fehlversuchen. Spielstände bleiben v28.
 
 ## 1.3.62
 

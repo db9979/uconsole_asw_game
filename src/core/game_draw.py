@@ -608,13 +608,26 @@ class DrawMixin:
                   "danger": config.COLOR_DANGER}
         tele_w = face.size(telemetry)[0] + 16
         tele_rect = pygame.Rect(rect.right - tele_w, rect.y + 2, tele_w - 8, rect.h - 2)
-        layout.blit_line(s, raw_text(telemetry), tele_rect, colors[level],
-                         size=16, align="right")
+
+        def strip_text(value, area, color, right=False):
+            # Centred on the strip, so large text keeps its descenders on screen.
+            image = face.render(value, True, color)
+            area = pygame.Rect(area.x, rect.y, area.w, rect.h)
+            x = area.right - image.get_width() if right else area.x
+            ink = image.get_bounding_rect()
+            # The visible glyphs, not the font line, are centred on the strip.
+            top = area.y + max(0, (area.h - ink.h) // 2) - ink.y
+            rendered = image.get_rect(topleft=(x, top))
+            with layout.clip_to(s, area):
+                layout.record_text(value, rendered, area, image)
+                s.blit(image, rendered)
+
+        strip_text(telemetry, tele_rect, colors[level], right=True)
         hint = localize(hint_key) if hint_key else ""
         hint_w = face.size(hint)[0] + 12 if hint else 0
         if hint:
-            layout.blit_line(s, raw_text(hint), (rect.x + 6, rect.y + 2, hint_w, rect.h - 2),
-                             config.COLOR_TEXT_DIM, size=16)
+            strip_text(hint, pygame.Rect(rect.x + 6, rect.y, hint_w, rect.h),
+                       config.COLOR_TEXT_DIM)
         feed_rect = pygame.Rect(rect.x + 6 + hint_w, rect.y + 2,
                                 tele_rect.x - 12 - (rect.x + 6 + hint_w), rect.h - 2)
         latest = self.feed.recent(1) if entries is None else list(entries)[-1:]
@@ -623,16 +636,21 @@ class DrawMixin:
         entry = latest[0]
         text = f"[{entry.stamp}] {entry.tag()} {localize(entry.text)}"
         width = face.size(text)[0]
+        feed_rect = pygame.Rect(feed_rect.x, rect.y, feed_rect.w, rect.h)
+        if width <= feed_rect.w:
+            strip_text(text, feed_rect, entry.color())
+            return
+        surface = face.render(text, True, entry.color())
+        text_y = feed_rect.y + (feed_rect.h - surface.get_height()) // 2
         with layout.clip_to(s, feed_rect):
-            if width <= feed_rect.w:
-                layout.blit_line(s, raw_text(text), feed_rect, entry.color(), size=16)
-            else:
-                # Marquee instead of an ellipsis: the full line stays readable.
-                gap = 60
-                offset = int(self._t * config.TICKER_SCROLL_PX_S) % (width + gap)
-                surface = layout.font(16).render(text, True, entry.color())
-                s.blit(surface, (feed_rect.x - offset, feed_rect.y))
-                s.blit(surface, (feed_rect.x - offset + width + gap, feed_rect.y))
+            # Marquee instead of an ellipsis: the full line stays readable.
+            gap = 60
+            offset = int(self._t * config.TICKER_SCROLL_PX_S) % (width + gap)
+            s.blit(surface, (feed_rect.x - offset, text_y))
+            s.blit(surface, (feed_rect.x - offset + width + gap, text_y))
+            # Soft ends: letters fade out instead of being cut in half.
+            layout.fade_edges(s, feed_rect, config.COLOR_FEED_BG, 28,
+                              left=offset > 0)
 
     def feed_overlay_rect(self) -> pygame.Rect:
         return pygame.Rect(0, config.SCREEN_H - 330, config.SCREEN_W, 330)

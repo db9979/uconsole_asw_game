@@ -212,14 +212,15 @@ def draw_damage_view(game, tr=None) -> None:
         dx, dy, dw, _ = detail
         layout.blit_line(s, _compartment_name(selected_key, selected.name),
                          (dx, dy, dw, 32), config.COLOR_TEXT, size=22)
-        dy += 36
+        dy += layout.line_pitch(22)
+        row = layout.line_pitch(18, gap=3)
         for label, value, color in (
                 ("ui.state", localize(STATE_LABEL[selected.state]), _state_color(selected.state)),
                 ("ui.flooding", f"{selected.flood:.0f}%", config.COLOR_TEXT),
                 ("ui.fire", f"{selected.fire:.0f}%", config.COLOR_DANGER if selected.fire else config.COLOR_TEXT_DIM)):
-            layout.blit_line(s, localize(label), (dx, dy, 140, 26), config.COLOR_TEXT_DIM, size=18)
-            layout.blit_line(s, value, (dx + 144, dy, dw - 144, 26), color, size=18)
-            dy += 30
+            layout.blit_line(s, localize(label), (dx, dy, 140, row), config.COLOR_TEXT_DIM, size=18)
+            layout.blit_line(s, value, (dx + 144, dy, dw - 144, row), color, size=18)
+            dy += row
         trend = game.damage.compartment_trend(selected_key)
         for hazard in ("flood", "fire"):
             rate = trend[hazard + "_rate"]
@@ -228,8 +229,8 @@ def draw_damage_view(game, tr=None) -> None:
                          "damage.falling" if rate < -.001 else "damage.stable")
             layout.blit_line(s, message("damage.net." + hazard,
                 trend=localize(trend_key), rate=f"{rate * 60:+.1f}"),
-                (dx, dy, dw, 26), config.COLOR_WARN if rate > 0 else config.COLOR_TEXT_DIM, size=18)
-            dy += 30
+                (dx, dy, dw, row), config.COLOR_WARN if rate > 0 else config.COLOR_TEXT_DIM, size=18)
+            dy += row
         pygame.draw.line(s, config.COLOR_GRID, (dx, dy), (dx + dw, dy))
         dy += 14
         assignment = game.damage.teams[game.dmg_team]
@@ -237,25 +238,22 @@ def draw_damage_view(game, tr=None) -> None:
                            if assignment is not None else localize("damage.free"))
         layout.blit_line(s, message("damage.team_destination", team=game.dmg_team,
                                     destination=assignment_text),
-                         (dx, dy, dw, 32), config.COLOR_OK, size=18)
-        dy += 36
+                         (dx, dy, dw, row), config.COLOR_OK, size=18)
+        dy += row + 4
         assigned = game.damage.teams_on(selected_key)
-        layout.blit_line(s, "ui.on_scene", (dx, dy, 120, 26), config.COLOR_TEXT_DIM, size=18)
+        layout.blit_line(s, "ui.on_scene", (dx, dy, 120, row), config.COLOR_TEXT_DIM, size=18)
         layout.blit_line(s, message("damage.line.teams_on_scene", teams=", ".join(map(str, assigned)))
-                         if assigned else "damage.line.no_team", (dx + 124, dy, dw - 124, 26),
+                         if assigned else "damage.line.no_team", (dx + 124, dy, dw - 124, row),
                          config.COLOR_OK if assigned else config.COLOR_WARN, size=18)
-        dy += 30
+        dy += row
         room = game.damage.counterflood_room
         layout.blit_line(s, message(
             "damage.line.stability", list=f"{game.damage.list_deg():+.1f}",
             trim=f"{game.damage.trim_deg():+.1f}",
             room=(localize("damage.counterflood.none") if room is None
                   else _compartment_name(room, game.damage.compartments[room].name))),
-            (dx, dy, dw, 26), config.COLOR_WARN if room is not None else config.COLOR_TEXT_DIM,
+            (dx, dy, dw, row), config.COLOR_WARN if room is not None else config.COLOR_TEXT_DIM,
             size=16)
-        dy += 30
-        layout.blit_block(s, "control.damage_team",
-                          dx, dy, dw, max(1, regions["detail"].bottom - dy - 8), config.COLOR_TEXT, size=18)
 
     footer_y = rect.bottom - 52
     layout.status_line(
@@ -295,14 +293,6 @@ def crew_lines(view) -> dict:
         repair=message("crew.effect.repair", value=f"{effect:.0%}"))
 
 
-def _bar(s, rect, value, color) -> None:
-    pygame.draw.rect(s, (18, 42, 39), rect)
-    fill = pygame.Rect(rect)
-    fill.w = max(0, min(rect.w, round(rect.w * value)))
-    pygame.draw.rect(s, color, fill)
-    pygame.draw.rect(s, config.COLOR_GRID, rect, 1)
-
-
 def _draw_crew(game, s, rect) -> None:
     """Page 3: watch bill, fatigue, morale and what they do to the crew."""
     view = game.crew_view()
@@ -322,7 +312,7 @@ def _draw_crew(game, s, rect) -> None:
                                     fatigue=f"{row['fatigue']:.0%}"),
                          (lx, ly, lw, 26), color, size=18)
         tired = row["fatigue"] > config.CREW_FATIGUE_FREE
-        _bar(s, pygame.Rect(lx, ly + 28, lw, 12), row["fatigue"],
+        layout.meter(s, pygame.Rect(lx, ly + 28, lw, 12), row["fatigue"],
              config.COLOR_WARN if tired else config.COLOR_OK)
         ly += 56
     layout.blit_block(s, "crew.explain", lx, ly, lw, max(1, left[1] + left[3] - ly),
@@ -335,11 +325,11 @@ def _draw_crew(game, s, rect) -> None:
         ry += 30
     layout.blit_line(s, lines["effectiveness"], (rx, ry, rw, 26),
                      config.COLOR_OK if effect >= .95 else config.COLOR_WARN, size=18)
-    _bar(s, pygame.Rect(rx, ry + 28, rw, 10), effect / config.CREW_EFFECT_MAX,
+    layout.meter(s, pygame.Rect(rx, ry + 28, rw, 10), effect / config.CREW_EFFECT_MAX,
          config.COLOR_OK if effect >= .95 else config.COLOR_WARN)
     ry += 50
     layout.blit_line(s, lines["morale"], (rx, ry, rw, 26), config.COLOR_TEXT, size=18)
-    _bar(s, pygame.Rect(rx, ry + 28, rw, 10), view["morale"],
+    layout.meter(s, pygame.Rect(rx, ry + 28, rw, 10), view["morale"],
          config.COLOR_OK if view["morale"] >= .5 else config.COLOR_WARN)
     ry += 50
     for key in ("sonar", "repair"):

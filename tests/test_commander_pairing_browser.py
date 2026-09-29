@@ -20,6 +20,7 @@ from src.commander.assets import static_assets
 from src.core import config, manual
 from src.core.game import Game
 from test_commander_assets import ASSETS, PREFIX, Document, catalogs
+from test_phone_lookout_web import sloppy_code
 
 FIREFOX = "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
 
@@ -42,6 +43,7 @@ async function run() {
   root.dataset.hintText = $("browser-hint").textContent;
   $("name").value = "LAN";
   $("code").value = __CODE__;
+  $("code").dispatchEvent(new Event("input"));
   $("pair-form").requestSubmit();
   await until(() => $("pairing").hidden && !$("lobby").hidden, "pairing did not reach the lobby: " + $("pair-error").textContent);
   // A fresh session never held a station, so nothing was revoked.
@@ -88,7 +90,7 @@ def _pair(tmp_path, monkeypatch, *extra_args):
     assert console.address is not None and console.server.solo_mode is False
     console.server._http.assets["/pair-test.js"] = (
         "text/javascript; charset=utf-8",
-        PAIR_SCRIPT.replace("__CODE__", json.dumps(console.pairing_code)).encode("utf-8"))
+        PAIR_SCRIPT.replace("__CODE__", json.dumps(sloppy_code(console.pairing_code))).encode("utf-8"))
     process = subprocess.Popen(
         [chromium, "--headless", "--no-sandbox", "--disable-gpu",
          "--disable-background-networking", "--no-first-run",
@@ -191,3 +193,54 @@ def test_navigation_proposal_limit_matches_the_frigate_top_speed():
         source = ASSETS.joinpath(*relative).read_text(encoding="utf-8")
         assert re.search(rf"speed(?:_kn)? > {limit:g}\b", source), relative
         assert "> 25)" not in source, relative
+
+
+def test_pairing_code_is_read_the_way_people_type_it(tmp_path):
+    from commander_web import run_module_probe
+
+    probe = r"""
+import { normalizePairCode } from "./js/core/pairing-code.js";
+const cases = [["482 KMT", "482KMT"], ["482kmt", "482KMT"], ["4O2 kmt", "402KMT"],
+  ["l8I-K0T", "181KOT"], [" 482 KM1 ", "482KMI"], ["482KMTX", "482KMT"], ["", ""],
+  ["S2B 5Z8", "528SZB"], ["482\u200bKMT", "482KMT"], ["０42abc", "042ABC"]];
+const bad = cases.filter(([raw, want]) => normalizePairCode(raw) !== want);
+document.documentElement.dataset.result = bad.length ? JSON.stringify(bad) : "passed";
+"""
+    root = run_module_probe(tmp_path, probe, budget_ms=2000)
+    assert root.get("data-result") == "passed", root.get("data-failure")
+
+
+def test_only_a_wrong_code_reads_as_a_wrong_code():
+    """The pages show "wrong code" for the route's invalid_code only; the
+    listener's own Host/Origin refusal is a different 403."""
+    import http.client
+
+    en, _de = catalogs()
+    server = commander_transport.CommanderServer(
+        translations={"en": {}, "de": {}}, contact_analysis_assets={})
+    server.start("127.0.0.1", 0)
+    try:
+        host, port = server.address
+        wrong = "000AAA" if server.pairing_code != "000AAA" else "000AAB"
+
+        def pair(origin):
+            connection = http.client.HTTPConnection(host, port, timeout=5)
+            connection.request("POST", "/api/v2/pair", body=json.dumps(
+                {"code": wrong, "name": "P"}), headers={
+                "Origin": origin, "Content-Type": "application/json"})
+            response = connection.getresponse()
+            return response.status, json.loads(response.read())["error"]
+
+        assert pair(f"http://{host}:{port}") == (403, "invalid_code")
+        assert pair("http://u-jagd.example:8765") == (403, "invalid_request")
+    finally:
+        server.stop()
+    for relative in (("js", "input", "wiring.js"), ("js", "phone", "main.js")):
+        source = ASSETS.joinpath(*relative).read_text(encoding="utf-8")
+        assert 'error.reason === "invalid_code"' in source, relative
+        assert '"pair_address"' in source and "normalizePairCode(" in source, relative
+    assert PREFIX + "pair_address" in en and PREFIX + "pair_invalid_code" in en
+    for page in ("index.html", "lookout.html"):
+        # Room for "482 KMT" and stray spaces; the normalized value is checked.
+        assert 'maxlength="12" pattern="[0-9]{3}[A-Za-z]{3}"' in ASSETS.joinpath(page).read_text(
+            encoding="utf-8")

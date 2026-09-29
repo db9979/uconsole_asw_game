@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.67**
+Current release: **1.3.69**
 
-Release 1.3.67 makes replenishment at sea something you can plan. The radio
+Release 1.3.69 makes replenishment at sea something you can plan. The radio
 room can now ask HQ for a supply ship itself (R on the Tasks page, or Request
 supply ship in the browser) whenever fuel or any store runs short, at most
 once every 20 minutes after the last one. Alongside, fuel now flows the whole

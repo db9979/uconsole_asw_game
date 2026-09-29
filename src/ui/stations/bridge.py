@@ -9,7 +9,7 @@ from src.core import config
 from src.core.i18n import (display_message, display_value, localized, localize,
                             message as structured_message)
 from src.core.station import Station
-from src.ui import horizon, layout, sight_scene
+from src.ui import horizon, instruments, layout, sight_scene
 from src.ui import observations
 
 
@@ -104,39 +104,59 @@ def draw_bridge_view(game, tr=None) -> None:
         half = (w - 10) // 2
         nav = layout.box(s, (x, y2, half, box_h), "panel.course_rudder",
                          border=config.COLOR_TEXT)
-        nx, ny, nw, _ = nav
+        nx, ny, nw, nh = nav
+        nav_bottom = ny + nh
+        big, row = layout.line_pitch(32, 2), layout.line_pitch(20, 6)
         layout.blit_line(s, message("bridge.line.course", course=f"{game.ship.course % 360:03.0f}"),
-                         (nx, ny, nw, 38), config.COLOR_TEXT, size=32)
-        layout.status_line(s, nx, ny + 42, nw, "ui.target_value_short",
+                         (nx, ny, nw, big), config.COLOR_TEXT, size=32)
+        ny += big
+        layout.status_line(s, nx, ny, nw, "ui.target_value_short",
                            message("bridge.line.course", course=f"{game.ship.target_course % 360:03.0f}"), size=20, label_w=80)
-        layout.status_line(s, nx, ny + 72, nw, "ui.rudder",
+        ny += row
+        layout.status_line(s, nx, ny, nw, "ui.rudder",
                            message("bridge.line.course", course=f"{game.ship.rudder_angle:+.0f}"), size=20, label_w=80)
+        ny += row
+        instruments.rudder_scale(s, (nx + 8, ny, nw - 16, 18), game.ship.rudder_angle,
+                                 config.SHIP_MAX_RUDDER_DEG)
+        ny += 26
         if math.isfinite(game.ship.turn_radius_nm):
             # Straight ahead the radius says nothing; the line appears in a turn.
-            layout.status_line(s, nx, ny + 102, nw, "ui.turn_radius",
+            layout.status_line(s, nx, ny, nw, "ui.turn_radius",
                                message("bridge.line.range", range=f"{game.ship.turn_radius_nm:.2f}"), size=18, label_w=130)
+        ny += row
         route = game.route
         if route.active:
             wx, wy = route.current()
-            layout.status_line(s, nx, ny + 132, nw, "ui.autopilot", message(
+            layout.status_line(s, nx, ny, nw, "ui.autopilot", message(
                 "bridge.line.route", number=route.index + 1, total=len(route.points),
                 range=f"{math.hypot(wx - game.ship.x, wy - game.ship.y):.1f}"),
                 size=18, label_w=130, color=config.COLOR_WARN)
+        ny += row
+        # The free lower part of the box carries the heading dial.
+        instruments.heading_dial(s, (nx, ny, nw, nav_bottom - ny), game.ship.course,
+                                 game.ship.target_course)
 
         drive = layout.box(s, (x + half + 10, y2, half, box_h), "panel.speed_acoustics",
                            border=config.COLOR_WARN if game.ship.cavitating else config.COLOR_TEXT)
-        dx, dy, dw, _ = drive
+        dx, dy, dw, dh = drive
+        drive_bottom = dy + dh
         layout.blit_line(s, message("bridge.line.speed", speed=f"{game.ship.speed:04.1f}"),
-                         (dx, dy, dw, 38), config.COLOR_TEXT, size=32)
-        layout.status_line(s, dx, dy + 42, dw, "ui.order", display_message("telegraph", game.ship.telegraph),
+                         (dx, dy, dw, big), config.COLOR_TEXT, size=32)
+        dy += big
+        layout.status_line(s, dx, dy, dw, "ui.order", display_message("telegraph", game.ship.telegraph),
                            size=20, label_w=90)
-        layout.status_line(s, dx, dy + 72, dw, "ui.target_value_short",
+        dy += row
+        layout.status_line(s, dx, dy, dw, "ui.target_value_short",
                            message("bridge.line.speed", speed=f"{game.ship.target_speed:.1f}"), size=20, label_w=90)
+        dy += row
         noise = "bridge.cavitation" if game.ship.cavitating else message(
             "bridge.line.own_noise", noise=f"{game.ship.noise_level() * 100:.0f}")
-        layout.blit_line(s, noise, (dx, dy + 102, dw, 24),
+        layout.blit_line(s, noise, (dx, dy, dw, layout.line_pitch(18, 0)),
                          config.COLOR_DANGER if game.ship.cavitating else config.COLOR_OK,
                          size=18)
+        dy += row + 26
+        instruments.speed_dial(s, (dx, dy, dw, drive_bottom - dy), game.ship.speed,
+                               game.ship.target_speed, config.TELEGRAPH_ORDERS[-1][1])
     elif page == 2:
         _draw_bridge_lookout(game, s, pygame.Rect(x, y2, w, content_h - alarm_h - 12))
     else:

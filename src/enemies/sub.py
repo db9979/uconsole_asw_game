@@ -470,6 +470,9 @@ class Sub:
             # A located frigate in torpedo range is attacked even when quiet.
             rate = config.SUB_SOLUTION_ATTACK_RATE * self.stype.aggression
         rate *= self.attack_mult
+        if self.mission_orders is not None:
+            # A mission boat fights its way through: the frigate is its threat.
+            rate *= config.BOAT_AI_ATTACK_MULT
         if rate > 0 and self.asw_rng.random() < rate * dt:
             n = min(2 if dist is not None and dist < 12.0
                     and self.stype.aggression > .8 else 1,
@@ -911,8 +914,14 @@ class Sub:
             self.course = (self.course + config.clamp(
                 diff, -self.motion.turn_rate_deg_s * 2.5 * dt,
                 self.motion.turn_rate_deg_s * 2.5 * dt)) % 360.0
-            self.speed = max(self.speed, min(self.speed_for_state(),
-                                             max(10.0, self.stype.speed_kn * .9)))
+            if (self.mission_orders is not None
+                    and self.memory["last_torpedo_age"] > config.SUB_EVADE_DURATION_S):
+                # A mission boat slips away from a ping quietly below the
+                # layer; only a torpedo in the water makes it run.
+                self.speed = min(self.speed_for_state(), config.BOAT_AI_EVADE_KN)
+            else:
+                self.speed = max(self.speed, min(self.speed_for_state(),
+                                                 max(10.0, self.stype.speed_kn * .9)))
         elif self.state == "WRACK":
             self._hide_by_wreck(dt, world, safe_depth)
         elif self.state == "LAUER":

@@ -1140,6 +1140,10 @@ BOAT_AI_AMBUSH_AHEAD_NM = 2.0
 BOAT_AI_AMBUSH_ABEAM_NM = 3.0
 BOAT_AI_AMBUSH_ARRIVE_NM = 1.0
 BOAT_AI_WAIT_KN = 2.0
+# A mission boat evades a ping at this speed; a torpedo still makes it run.
+BOAT_AI_EVADE_KN = 5.0
+# A mission boat attacks a located frigate this many times as readily.
+BOAT_AI_ATTACK_MULT = 4.0
 
 # W4: Vordefinierte Szenarien (eigene Briefings, Startposition, Schwierigkeit)
 # hq_intel: "coarse" = HQ meldet nur grob Peilung/Entfernung einer Bedrohung,

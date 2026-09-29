@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.89
+
+Version 1.3.89 macht die Maschinenräume der uConsole zu Maschinenleitständen
+im Splash-Stil. Auf der Fregatte wird der Telegraf eine Säule leuchtender
+Stufen neben einem großen Fahrtinstrument, Instrumenten für Drehzahl und
+Eigenlärm und Anlagenlampen; die Seite Systeme hat eine Warn- und Meldetafel
+mit Sammellampe, den Kraftstoffbunker als Tanksäule, Instrumente für Rollen,
+Stampfen und Schlagseite und ein Bild der Schiffsabschnitte vom Bug zum Heck
+mit Wasserstand, LEDs und nummerierten Reparaturtrupps. Auf dem U-Boot zeigt
+die Seite Anlage Instrumente für Fahrt, Batterie (beim Atom-U-Boot die Tiefe)
+und Eigenlärm mit Betriebsartenlampen, und Vorräte zeigt Tanksäulen für
+Batterie, AIP, Diesel und Absorber und einen Balken je Telegrafenstufe.
+
 ## 1.3.88
 
 Version 1.3.88 lässt die OPZ übereinanderliegende Meldungen von selbst

@@ -141,6 +141,7 @@ def test_boat_holds_fire_until_its_solution_converges(monkeypatch):
     sub2.memory["last_ping_age"] = 0.0
     sub2.state = "EVADE"
     sub2.attack_left = 0.0
+    sub2.ai_tube_left = 0.0
     monkeypatch.setattr(sub2.asw_rng, "random", lambda: 0.0)
     fix = PlatformObservation(
         track_id="Lfix", domain="sonar", source="SONAR", observer_x=sub2.x,

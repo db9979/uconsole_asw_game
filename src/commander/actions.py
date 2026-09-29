@@ -574,7 +574,9 @@ def _weapons_deploy_nixie(game, params, _bindings):
 
 # Own-attack refusals the command pipeline reports with its shared codes.
 _OWN_ATTACK_REASONS = {"empty_asroc": "empty", "empty_depth_charges": "empty",
-                       "reloading": "not_ready", "too_slow": "not_ready"}
+                       "reloading": "not_ready", "too_slow": "not_ready",
+                       "rbu_empty": "empty", "rbu_reloading": "not_ready",
+                       "rbu_no_warning": "not_ready"}
 
 
 def _weapons_own_attack(game, params, bindings, fire):
@@ -594,6 +596,15 @@ def _weapons_fire_asroc(game, params, bindings):
 
 def _weapons_drop_depth_charges(game, params, bindings):
     return _weapons_own_attack(game, params, bindings, game.drop_depth_charges_at)
+
+
+def _weapons_fire_rbu(game, params, bindings):
+    return _weapons_own_attack(game, params, bindings, game.fire_rbu_at)
+
+
+def _weapons_rbu_defence(game, _params, _bindings):
+    result = game.fire_rbu_defence()
+    return _OWN_ATTACK_REASONS.get(result, result)
 
 
 def _opz_launch_essm(game, params, bindings):
@@ -946,6 +957,8 @@ _V2_ACTION_HANDLERS = {
     "weapons_deploy_nixie": _weapons_deploy_nixie,
     "weapons_fire_asroc": _weapons_fire_asroc,
     "weapons_drop_depth_charges": _weapons_drop_depth_charges,
+    "weapons_fire_rbu": _weapons_fire_rbu,
+    "weapons_rbu_defence": _weapons_rbu_defence,
     "weapons_set_torpedo_settings": _weapons_set_torpedo_settings,
     "opz_launch_essm": _opz_launch_essm,
     "opz_launch_chaff": _opz_launch_chaff,

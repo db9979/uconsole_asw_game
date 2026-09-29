@@ -1209,6 +1209,11 @@ class EventMixin:
                     self.toggle_radar(domain)
                 elif self.station is Station.HELICOPTER and self.station_page == 3:
                     self.set_helicopter_listen_bearing(None)
+                elif self.station is Station.WEAPONS:
+                    if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                        self.fire_rbu_defence()
+                    else:
+                        self.fire_rbu()
             elif e.key == pygame.K_m:
                 if self.station in (Station.SONAR, Station.WEAPONS,
                                     Station.HELICOPTER):

@@ -102,7 +102,7 @@ class CrewOrders:
               "incident_net": "funk", "incident_front": "funk",
               "incident_whales": "funk", "net_fouled": "navigation",
               "baffles_clearing": "navigation", "baffles_cleared": "navigation",
-              "hf_frigate": "funk"}
+              "hf_frigate": "funk", "rbu_splash": "sonar"}
 
     def __init__(self):
         self.silent = False

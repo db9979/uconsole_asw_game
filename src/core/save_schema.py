@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v36`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v37`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,
@@ -25,7 +25,7 @@ SAVE_ROOT_FIELDS = frozenset({
     "autocrew", "ais", "plot",
     "crew", "weapon_settings", "mission_events",
     "ping_intercepts", "tasking", "watch", "mpa", "radar_marks", "route",
-    "incidents", "baffle_clear", "hq_reports",
+    "incidents", "baffle_clear", "hq_reports", "rbu",
 })
 
 # Save v25: the surface radar's unmarked mast echoes and marked boats

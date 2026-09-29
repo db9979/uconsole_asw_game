@@ -103,6 +103,7 @@ STATION_HELP = {
           ("H", "help.control.helo_toggle"), ("B", "help.control.buoy"),
           ("D", "help.control.air_torp"), ("V", "help.control.nixie"),
           ("A", "help.control.asroc"), ("Z", "help.control.depth_charges"),
+          ("R", "help.control.rbu"), ("Shift+R", "help.control.rbu_defence"),
           ("Q / E", "help.control.zoom"),
          ("K", "help.control.follow"), ("F", "help.control.flak_release")],
         ["help.note.roe", "help.note.target_depth", "help.note.salvo",

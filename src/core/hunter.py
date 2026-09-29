@@ -46,6 +46,7 @@ HELO_DIP_NM = 0.5
 HELO_DROP_NM = 1.5
 BEARING_DATUM_NM = 8.0          # bearing-only datum: this far down the line
 SHIP_FIRE_NM = 6.0
+RBU_FIRE_NM = 2.0               # rocket salvo only on a close, fixed boat
 FIX_MAX_AGE_S = 900.0
 PATTERN_CLEAR_NM = 4.0          # no new buoy pattern where buoys already listen
 ESCORT_AHEAD_NM = 3.0           # the escort's station ahead of the convoy
@@ -410,18 +411,30 @@ def weapons(game, found) -> str:
     if observed and not game.nixies and game.nixie_store.ready > 0:
         if game.deploy_nixie_result() is True:
             return "countermeasure"
+    if observed and game.rbu_defence_bearing() is not None and game.fire_rbu_defence() == "ok":
+        return "countermeasure"
     if game.damage.station_down("weapons"):
         return "monitoring"
     contact = None if found is None else found.get("contact")
     if (contact is None or "x" not in found or contact.range_est is None
-            or contact.range_est > SHIP_FIRE_NM
-            or _running(game, "frigate")):
+            or contact.range_est > SHIP_FIRE_NM):
+        return "monitoring"
+    if _running(game, "frigate"):
+        # A torpedo is out: a boat close enough gets a rocket salvo on top.
+        if (contact.range_est <= RBU_FIRE_NM
+                and game.designate_sonar_target(contact) is True
+                and game.fire_rbu_at(contact, _attack_depth(game, contact)) == "ok"):
+            return "engaged"
         return "monitoring"
     if game.designate_sonar_target(contact) is not True:
         return "monitoring"
-    depth = config.clamp(contact.depth_est if contact.depth_est is not None
-                         else game.torpedo_depth, 10.0, 300.0)
-    return "engaged" if game.launch_torpedo_at(contact, float(depth)) is True else "monitoring"
+    depth = _attack_depth(game, contact)
+    return "engaged" if game.launch_torpedo_at(contact, depth) is True else "monitoring"
+
+
+def _attack_depth(game, contact) -> float:
+    return float(config.clamp(contact.depth_est if contact.depth_est is not None
+                              else game.torpedo_depth, 10.0, 300.0))
 
 
 def helicopter(game, found) -> str:

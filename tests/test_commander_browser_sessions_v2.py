@@ -982,8 +982,9 @@ def _direct_fire_browser_states():
                        visual_class=None, visual_type=None)
     weapons = dict(common, role="weapons", weapons=dict(
         inventory=dict(torpedoes=4, vls=8, ciws=200, aa=40,
-                       chaff_ready=True, nixies=2, asroc=4, depth_charges=20),
+                       chaff_ready=True, nixies=2, asroc=4, depth_charges=20, rbu=36),
         readiness=dict(station_down=False, roe="FREE", ciws_ready=True,
+                       rbu_ready=True, torpedo_warning=False,
                        aa_ready=True, state="available", interlock="clear",
                        reload_s=0.0), designated_target=None,
         navigation=navigation, tactical=[], target_choices=[weapon_row], depth_m=90.0,

@@ -29,7 +29,7 @@ def test_tick_writes_after_the_interval_only():
     game.wait_for_autosave()
     with open(autosave_path(), encoding="utf-8") as stream:
         data = json.load(stream)
-    assert data["save_schema"] == "u-jagd-save-v36"
+    assert data["save_schema"] == "u-jagd-save-v37"
     assert game.autosave_available
     # Nothing is left behind from the staged write.
     assert os.listdir(os.path.dirname(autosave_path())) == ["autosave.json"]

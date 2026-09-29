@@ -26,7 +26,7 @@ export function renderWeaponsStation(payload) {
   metrics($("weapons-inventory"), [["torpedoes", number(inventory.torpedoes, 0)], ["vls", number(inventory.vls, 0)],
     ["ciws", number(inventory.ciws, 0)], ["aa", number(inventory.aa, 0)], ["chaff", yesNo(inventory.chaff_ready)],
     ["nixies", number(inventory.nixies, 0)], ["asroc", number(inventory.asroc, 0)],
-    ["depth_charges", number(inventory.depth_charges, 0)]]);
+    ["depth_charges", number(inventory.depth_charges, 0)], ["rbu", number(inventory.rbu, 0)]]);
   const readiness = payload.readiness;
   metrics($("weapons-readiness"), [["station_down", yesNo(readiness.station_down)], ["roe", stateText("roe", readiness.roe)],
     ["ciws_ready", yesNo(readiness.ciws_ready)], ["aa_ready", yesNo(readiness.aa_ready)],

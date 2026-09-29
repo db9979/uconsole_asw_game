@@ -507,6 +507,7 @@ export function init() {
   });
   $("uboot-decoy").addEventListener("click", () => sendStationAction("uboot_decoy", {}));
   $("uboot-evade").addEventListener("click", () => sendStationAction("uboot_evade", {}));
+  $("uboot-clear-baffles").addEventListener("click", () => sendStationAction("uboot_clear_baffles", {}));
   $("uboot-radio-send").addEventListener("click", () => sendStationAction("uboot_radio_send", {}));
   $("uboot-blow").addEventListener("click", () => sendStationAction("uboot_blow", {}));
   // Wire guidance of a running crew torpedo: new datum from the boat, or cut.
@@ -596,6 +597,7 @@ export function init() {
   $("bridge-route-zigzag").addEventListener("click", () => sendStationAction("bridge_route_pattern", {pattern: "zigzag"}));
   $("bridge-route-square").addEventListener("click", () => sendStationAction("bridge_route_pattern", {pattern: "square"}));
   $("bridge-route-clear").addEventListener("click", () => sendStationAction("bridge_route_clear", {}));
+  $("bridge-clear-baffles").addEventListener("click", () => sendStationAction("bridge_clear_baffles", {}));
   $("helicopter-launch").addEventListener("click", () => sendStationAction("helicopter_launch", {}));
   $("helicopter-return").addEventListener("click", () => sendStationAction("helicopter_return", {}));
   $("helicopter-waypoint-form").addEventListener("submit", (event) => {

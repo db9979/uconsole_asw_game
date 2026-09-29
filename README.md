@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.90**
+Current release: **1.3.99**
 
-Release 1.3.90 turns the damage screens into damage-control consoles on the
+Release 1.3.99 turns the damage screens into damage-control consoles on the
 uConsole and in the browser. On the frigate's uConsole ship plan, water rises
 in each compartment from the keel, a fire glows red and a lost compartment is
 hatched; each compartment card carries a state LED, flood and fire values with
@@ -93,7 +93,7 @@ Menus and editors:
 </tr>
 </table>
 
-More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control example](docs/screenshots/damage-control-alert.png), [submarine damage control](docs/screenshots/uboot-damage-control.png), [engine room systems](docs/screenshots/engineering-systems.png), [scenario selection](docs/screenshots/mission-scenario-selection.png), [options](docs/screenshots/options.png), [Mission Editor](docs/screenshots/mission-editor.png), [Unit Editor](docs/screenshots/unit-editor.png) and the [tactical unit analyzer](docs/screenshots/contact-analyzer.png).
+More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control example](docs/screenshots/damage-control-alert.png), [submarine damage control](docs/screenshots/uboot-damage-control.png), [scenario selection](docs/screenshots/mission-scenario-selection.png), [options](docs/screenshots/options.png), [Mission Editor](docs/screenshots/mission-editor.png), [Unit Editor](docs/screenshots/unit-editor.png) and the [tactical unit analyzer](docs/screenshots/contact-analyzer.png).
 
 ### Remote Crew browser (1920 x 1080)
 
@@ -107,8 +107,7 @@ More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control 
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-sonar-desktop.png"><img src="docs/screenshots/commander-v2-en-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
 </tr>
 <tr>
-<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-engine-desktop.png" alt="Frigate engine room: machinery control console"></a><br><sub>Frigate engine room: machinery control console</sub></td>
-<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-uboot-engine-desktop.png" alt="Submarine engine room: machinery control console"></a><br><sub>Submarine engine room: machinery control console</sub></td>
+<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-en-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-uboot-engine-desktop.png" alt="Submarine engine room: machinery control console"></a><br><sub>Submarine engine room: machinery control console</sub></td>
 </tr>
 </table>
 

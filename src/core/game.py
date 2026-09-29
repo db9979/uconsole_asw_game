@@ -74,6 +74,8 @@ from src.core.game_save import (
     _same_save_value_strict,
     MAX_SAVE_DOCUMENT_BYTES)
 from src.core.game_asw import AswWeaponsMixin
+from src.core.game_rbu import RbuMixin
+from src.core.game_casualties import CasualtiesMixin
 from src.core.game_sim import (
     SimMixin,
     SONAR_CLASS_KINDS,
@@ -87,25 +89,28 @@ from src.core.game_draw import (DrawMixin)
 from src.core.game_operator import (OperatorMixin)
 from src.core.game_pictures import (PicturesMixin)
 from src.core.game_tasking import TaskingMixin
+from src.core.game_incidents import IncidentsMixin
 from src.core.game_crew import CrewMixin
 from src.core.game_mpa import MpaMixin
 from src.core.game_debrief import DebriefMixin
 from src.core.game_training import TrainingMixin
 from src.core.game_campaign import CampaignMixin
 from src.core.game_autosave import AutosaveMixin, CONTINUE_ENTRY
+from src.core.game_reports import ReportsMixin
+from src.core.game_logbook import LogbookMixin
 from src.core.game_bugreport import (BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES,
                                      BugReportMixin)
 from src.core.game_welcome import WelcomeMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
-           RadarPictureMixin, AswWeaponsMixin,
-           SaveMixin, TaskingMixin, CrewMixin, MpaMixin, DebriefMixin,
-           TrainingMixin, CampaignMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
+           RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
+           SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, DebriefMixin,
+           TrainingMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
-                    "bottom_panel", "operator_assist", "live_traffic", "commander")
+                    "bottom_panel", "level", "live_traffic", "commander")
     # Second options page: game setup.  The local side is per launch and never
     # persisted (the frigate is always the default).
     _OPTION_ROWS_SETUP = ("local_side", "aa_lines", "speech")
@@ -199,7 +204,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._radio_acc = 0.0
         self._slow_acc = 0.0
         self._apply_text_size()
-        self.level = "custom"
+        self.level = config.LEVEL_DEFAULT
         self.menu_difficulty = (dict(difficulty) if difficulty
                                 and _valid_difficulty_dict(difficulty)
                                 else dict(config.DEFAULT_DIFFICULTY))
@@ -215,6 +220,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.main_menu = bool(start_menu)
         self.main_menu_sel = 0
         self._init_bug_report()
+        self._init_logbook()
         self._init_autosave()
         self._autosave_armed = False
         if self.main_menu and self.autosave_available:
@@ -391,7 +397,11 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                               else self.menu_difficulty),
                            # A campaign leg brings its carried torpedo stock.
                            **(difficulty_override or {})}
-        self.level = "custom"
+        # The realism level of this mission (preference, saved per mission).
+        self.level = self._preferred_level()
+        self._difficulty_base = tuple(self.difficulty[name]
+                                      for name in config.DIFFICULTY_FIELD_ORDER)
+        self.difficulty = config.apply_level(self.difficulty, self.level)
 
         if reference_sector is not None:
             # A mission's reference world: the named real sector, not seed % 128.
@@ -439,6 +449,12 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.score = 0
         # HQ orders and incidents (save ``tasking``); none in custom missions.
         self._reset_tasking()
+        # Incidents at sea (save ``incidents``); none in custom missions.
+        self._reset_incidents()
+        # A running baffle clearing of the Bridge (save ``baffle_clear``).
+        self.baffle_clear = None
+        # The radio room's own calls to HQ (save ``hq_reports``).
+        self._reset_hq_reports()
         # Watches, fatigue and morale of the frigate crew (save ``watch``).
         self._reset_crew()
         # Post-mission debrief recording (transient, never saved).
@@ -582,6 +598,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.depth_charges_left = depth_charge.DEPTH_CHARGE_STOCK
         self.depth_charge_reload_s = 0.0
         self.own_asrocs_left = depth_charge.OWN_ASROC_STOCK
+        # The ASW rocket launcher (save ``rbu``).
+        self._reset_rbu()
         self.nixie_store = ConsumableStore.ownship(self._ownship_loadout)
         self.nixies = []
         self.nixie_seq = 0
@@ -594,6 +612,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # M5: Schadensmodell + Gegentorpedos (Reparatur-Faktor aus Custom-Difficulty)
         self.damage = DamageModel(random.Random(seed + 777),
                                   repair_mult=self.difficulty["repair_mult"])
+        # Wounded crew of the frigate and the submarines (save ``casualties``).
+        self._reset_casualties()
         self.enemy_torpedoes = []
         # Presentation-only torpedo intercept memory (see _update_torpedo_cues);
         # rebuilt from the saved torpedo state on load, never saved itself.
@@ -777,8 +797,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # may be consumed by menu start; loads replace its world/sonar identity.
         self._prepared_menu_mission = (
             seed, self.scenario_key, self.world_mode,
-            tuple(self.difficulty[name] for name in config.DIFFICULTY_FIELD_ORDER),
-            self.hq_intel_mode(), id(self.world), id(self.sonar)) if self.in_menu else None
+            self._difficulty_base, self.hq_intel_mode(), self.level,
+            id(self.world), id(self.sonar)) if self.in_menu else None
 
     def flash(self, text: object, seconds: float = 3.0) -> None:
         if (getattr(self, "local_side", "frigate") == "uboot"

@@ -33,7 +33,7 @@ export function renderDamageLamps(payload) {
   add("total", t("damage_total"), payload.total >= 30 ? "alarm" : payload.total > 0 ? "caution" : "on", unit(payload.total, "%", 0));
   add("list", t("damage_list"), list >= 10 ? "alarm" : list >= 5 ? "caution" : "on", `${signed(stability.list_deg, 1)}°`);
   add("trim", t("damage_lamp_trim"), trim >= 3 ? "caution" : "on", `${signed(stability.trim_deg, 1)}°`);
-  add("counterflood", t("damage_counterflood"), stability.counterflood_room ? "caution" : stability.can_counterflood ? "on" : "off",
+  add("counterflood", t("damage_lamp_counterflood"), stability.counterflood_room ? "caution" : stability.can_counterflood ? "on" : "off",
     t(stability.counterflood_room ? "uboot_lamp_on" : "uboot_lamp_off"));
   add("teams", t("damage_lamp_teams"), busy ? "on" : "off", `${busy}/${payload.teams.length}`);
   add("sunk", t("sunk"), payload.sunk ? "alarm" : "off", t(payload.sunk ? "uboot_lamp_on" : "uboot_lamp_off"));

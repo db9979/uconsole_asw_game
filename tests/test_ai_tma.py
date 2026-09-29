@@ -131,6 +131,7 @@ def test_boat_holds_fire_until_its_solution_converges(monkeypatch):
     assert len(sub.pending_torpedoes) == before, "unconverged solution was fired on"
     sub.memory["contact_sigma_nm"] = 0.1     # 0.1 / 4 NM = 2.5 % < 5 %
     sub.attack_left = 0.0
+    sub.ai_tube_left = 0.0                   # the tubes are flooded by now
     sub.update(0.1, None, Ocean())
     assert len(sub.pending_torpedoes) > before
     # a positioned (active/datalink) observation is not gated by the threshold
@@ -140,6 +141,7 @@ def test_boat_holds_fire_until_its_solution_converges(monkeypatch):
     sub2.memory["last_ping_age"] = 0.0
     sub2.state = "EVADE"
     sub2.attack_left = 0.0
+    sub2.ai_tube_left = 0.0
     monkeypatch.setattr(sub2.asw_rng, "random", lambda: 0.0)
     fix = PlatformObservation(
         track_id="Lfix", domain="sonar", source="SONAR", observer_x=sub2.x,

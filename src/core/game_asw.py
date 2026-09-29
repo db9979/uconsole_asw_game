@@ -136,6 +136,8 @@ class AswWeaponsMixin:
     def _update_depth_charges(self, dt: float) -> None:
         """Sink the charges; each detonates at its set depth or the seabed."""
         self.depth_charge_reload_s = max(0.0, self.depth_charge_reload_s - dt)
+        # The rocket launcher's rounds share this stage (``SIM_ORDER``).
+        self._update_rbu(dt)
         if not self.depth_charges:
             return
         survivors = []

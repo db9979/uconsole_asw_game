@@ -365,10 +365,15 @@ def draw_weapons_panel(game, tr=None) -> None:
                            message("weapons.line.decoy_asw", nixies=nixies,
                                    asw=game.own_asw_stores_line()),
                            label_w=100, size=15)
-        layout.status_line(s, ix, iy + 90, iw, "ui.helo_torpedoes_short", str(game.helo.torps),
+        half = iw // 2
+        layout.status_line(s, ix, iy + 90, half - 8, "ui.helo_torpedoes_short", str(game.helo.torps),
                             label_w=120, size=17)
-        layout.status_line(s, ix, iy + 120, iw, "ui.buoys", str(game.helo.buoys_left),
+        layout.status_line(s, ix + half, iy + 90, iw - half, "ui.buoys", str(game.helo.buoys_left),
                             label_w=120, size=17)
+        rbu_line = getattr(game, "rbu_stores_line", None)
+        if callable(rbu_line):
+            layout.status_line(s, ix, iy + 120, iw, "weapons.rbu_short", rbu_line(),
+                               label_w=100, size=15)
         choices = getattr(game, "torpedo_type_choices", None)
         if callable(choices):
             stock = next((row[2] for row in choices()
@@ -415,6 +420,6 @@ def draw_weapons_panel(game, tr=None) -> None:
                            label_w=80, size=16)
         for offset, text in enumerate(("weapons.control.depth_compact", "weapons.control.helo",
                                         "weapons.control.air_compact", "weapons.control.nixie",
-                                        "weapons.control.asw")):
+                                        "weapons.control.asw", "weapons.control.rbu")):
             layout.blit_line(s, text, (cx, cy + 56 + offset * 26, cw, 24),
                              config.COLOR_TEXT_DIM, size=15)

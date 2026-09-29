@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.90
+## 1.3.99
 
-Release 1.3.90 turns the damage screens into damage-control consoles on the
+Release 1.3.99 turns the damage screens into damage-control consoles on the
 uConsole and in the browser. On the frigate's uConsole ship plan, water rises
 in each compartment from the keel, a fire glows red and a lost compartment is
 hatched; each compartment card carries a state LED, flood and fire values with
@@ -16,6 +16,86 @@ leak/fire/gas/bulkhead LEDs and team badges, and lamps for the selected
 compartment and the power. The browser's Damage card opens with an
 annunciator panel above a side view of the ship and gauges for list, trim and
 total damage; a click on a compartment still sends the selected team.
+
+## 1.3.98
+
+Release 1.3.98 wounds people. Hits, fire, flooding and gas hurt the crews of
+the frigate and of every submarine at their sonar, weapons and damage-control
+stations; every empty post slows that station (recognition, reloading and
+flooding tubes, repairs), and every third wounded man is out for the mission.
+The damage-control officer sends the medical team (frigate Damage page 3 `M`,
+submarine `Shift+M`, browser button) and re-mans the worst station with up to
+two men from the resting watches (`U`, submarine `Ctrl+M`), who then lack their
+rest; AI ships re-man on their own. Saves are now v38. This completes nine
+improvements from 1.3.90 on, each with a counterpart for the submarine side.
+
+## 1.3.97
+
+Release 1.3.97 adds an ASW rocket launcher to the frigate (Weapons `R`,
+browser button): six-round salvoes 0.4 to 3 NM onto a fresh range fix, 36
+rockets, one minute to reload. `Shift+R` fires a shallow defence line along a
+torpedo warning's bearing that destroys a torpedo it goes off next to. The
+splashes warn every submarine within 3 NM: AI boats evade and the crewed
+boat's sonar room reports their bearing. The AI frigate uses both. Saves are
+now v37.
+
+## 1.3.96
+
+Release 1.3.96 adds a sonar class library: the DEMON page lists the three
+catalogue classes that best fit the operator's shaft, blade and LOFAR marks,
+with a fit in percent, and the F8 analyzer sorts the whole catalogue by fit.
+The submarine's sonar room and the web sonar station have the same library.
+
+## 1.3.95
+
+Release 1.3.95 lets both sides call HQ freely: the radio room sends a
+contact report with its freshest fix (`K`) or asks for support (`H`). Each
+call is on the air for 20 s and can be DF'd by a hostile submarine with its
+antenna up, so the radio becomes a sensor for both sides; accurate reports
+score at the mission's end. Saves are now v36.
+
+## 1.3.94
+
+Release 1.3.94 models baffles: the frigate's hull array and every
+submarine's hull sonar no longer hear within 30 degrees of their own stern,
+the towed array and the VDS still do. Bridge and crewed boat clear their
+baffles with `Ctrl+B` (browser button): 60 degrees to starboard for two
+minutes, then back. An AI submarine close in the frigate's baffles after a
+ping trails her instead of running. Saves are now v35.
+
+## 1.3.93
+
+Release 1.3.93 adds a logbook to the main menu: every finished mission of
+the side the uConsole played is filed in `~/.u-jagd/logbook.json` with the
+best score per mission and five awards per side. The submarine now gets a
+score from its outcome, so both sides can earn the same.
+
+## 1.3.92
+
+Release 1.3.92 adds realism levels Beginner, Standard and Realistic
+(options, kept per mission). They tune only the computer opponent (AI
+submarine attack eagerness and firing threshold, AI frigate classification
+and helicopter delays) and the operator assistance; the mission score is
+scaled by 75, 100 or 125 %.
+
+## 1.3.91
+
+Release 1.3.91 brings incidents at sea. From 20 to 40 minutes into a
+built-in mission up to four come over the teletype: a drift net across the
+track (running over it costs points and fouls a streamed towed array or VDS, a
+shallow submarine fouls it loudly), a weather front with HQ's warning, a
+freighter without AIS to identify, and a pod of whales. HQ passes net, front
+and whales on to the submarine; the AI frigate steers round reported nets.
+Saves are now v34.
+
+## 1.3.90
+
+Release 1.3.90 makes flooding torpedo tubes audible. A submarine flooding a
+tube and opening its outer door makes a transient that the frigate's sonar
+reports as a warning on a measured bearing: loud flooding out to 8 NM, slow
+quiet flooding within 1.5 NM. The crewed boat can flood quietly (`Ctrl+M`,
+browser button); AI boats flood quietly and early on a fix, loudly just
+before a shot on dry tubes. Saves are now v33.
 
 ## 1.3.89
 

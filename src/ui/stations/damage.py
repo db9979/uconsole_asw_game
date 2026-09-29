@@ -365,10 +365,33 @@ def crew_lines(view) -> dict:
         repair=message("crew.effect.repair", value=f"{effect:.0%}"))
 
 
+def casualty_lines(view) -> list:
+    """The wounded, empty posts, medical team and spare hands."""
+    gaps = {row["station"]: row["gaps"] for row in view["stations"]}
+    empty = any(gaps.values())
+    rows = [(message("crew.casualties.wounded", wounded=view["wounded"],
+                     serious=view["serious"], returned=view["returned"]),
+             config.COLOR_WARN if empty else config.COLOR_TEXT_DIM),
+            (message("crew.casualties.posts", **{key: gaps[key] for key in gaps}),
+             config.COLOR_WARN if empty else config.COLOR_TEXT_DIM),
+            (message("crew.casualties.medic", station=message("crew.casualties.at." + view["medic"]))
+             if view["medic"] else message("crew.casualties.medic_idle"), config.COLOR_TEXT_DIM),
+            (message("crew.casualties.spare_wait", spare=view["spare"],
+                     seconds=f"{view['reassign_in_s']:.0f}") if view["reassign_in_s"] > 0.0
+             else message("crew.casualties.spare", spare=view["spare"]), config.COLOR_TEXT_DIM)]
+    return rows
+
+
 def _draw_crew(game, s, rect) -> None:
     """Page 3: watch bill, fatigue, morale and what they do to the crew."""
     view = game.crew_view()
     lines = crew_lines(view)
+    from src.core.crew import sonar_penalty_db
+    effect = view["effectiveness"]
+    # Empty posts weigh on top of the watch's own state.
+    lines["sonar"] = message("crew.effect.sonar", db=f"{sonar_penalty_db(effect * game.casualty_factor('sonar')):+.1f}")
+    lines["repair"] = message("crew.effect.repair",
+                              value=f"{effect * game.casualty_factor('damage'):.0%}")
     top = _station_content_top(rect, 3)
     bottom = rect.bottom - 58
     x, w = rect.x + 16, rect.w - 32
@@ -407,8 +430,15 @@ def _draw_crew(game, s, rect) -> None:
     for key in ("sonar", "repair"):
         layout.blit_line(s, lines[key], (rx, ry, rw, 24), config.COLOR_TEXT_DIM, size=16)
         ry += 28
+    for text, color in casualty_lines(game.casualty_view()):
+        if ry + 24 > right[1] + right[3]:
+            break
+        layout.blit_line(s, text, (rx, ry, rw, 24), color, size=16)
+        ry += 26
     footer_y = rect.bottom - 52
     _shortcut_footer(s, (rect.x + 16, footer_y + 26, rect.w - 32, 19), (
         ("W", "damage.footer.watch"),
         ("G", "damage.footer.action_stations"),
+        ("M", "damage.footer.medic"),
+        ("U", "damage.footer.reassign"),
     ))

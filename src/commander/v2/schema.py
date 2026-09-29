@@ -30,8 +30,13 @@ RADIO_TASK_KINDS = ("sar", "identify", "datum", "ras", "emcon")
 # The crew's watch bill, fatigue and morale (``src/core/crew.py``): the
 # frigate's on the bridge and damage roles, the boat's in ``damage_control``.
 CREW_FIELDS = ("on_watch", "watches", "watch_left_s", "turnover", "action_stations",
-               "morale", "effectiveness")
+               "morale", "effectiveness", "casualties")
 CREW_WATCH_FIELDS = ("index", "fatigue", "on_duty")
+# The ship's own wounded (``src/core/casualties.py``): own-ship truth.
+CASUALTY_FIELDS = ("wounded", "serious", "returned", "stations", "medic", "spare",
+                   "reassign_in_s")
+CASUALTY_STATION_FIELDS = ("station", "gaps", "posts")
+CASUALTY_STATIONS = ("sonar", "weapons", "damage")
 # The patrol aircraft in the OPZ's own assets (``src/air/mpa.py``):
 # commanded own-force datalink state, never what it has not reported.
 MPA_FIELDS = ("state", "airborne", "x", "y", "course", "bearing", "range_nm",
@@ -164,7 +169,8 @@ ROLE_SHAPES = {
     "opz": ("observations", "fusions", "suggestions", "radar", "defense", "asm_observations",
             "source_classifications", "radar_blips", "designated_target_ref", "own_assets"),
     "radio": ("observations", "logged_fixes", "logged_bearings", "messages", "station_down",
-              "navigation", "tactical", "tasks", "can_request_ras"),
+              "navigation", "tactical", "tasks", "can_request_ras",
+              "can_contact_report", "can_request_support"),
     "engine": ("propulsion", "machinery", "controls", "environment_effects", "compartments"),
     "helicopter": ("asset", "waypoint", "buoys", "buoy_observations", "acoustic",
                    "navigation", "tactical", "target_choices", "readiness",

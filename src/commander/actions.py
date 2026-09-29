@@ -45,6 +45,10 @@ def _bridge_route_clear(game, params, _bindings=None):
     return game.clear_route()
 
 
+def _bridge_clear_baffles(game, params, _bindings=None):
+    return game.clear_baffles()
+
+
 def _bound(bindings, ref):
     return bindings.get(ref) if type(ref) is str else None
 
@@ -187,6 +191,18 @@ def _crew_watch_change(game, params, _bindings):
     return game.change_watch()
 
 
+def _casualty_result(result):
+    return result if result is True else "not_ready"
+
+
+def _crew_casualty_medic(game, _params, _bindings):
+    return _casualty_result(game.casualty_medic())
+
+
+def _crew_casualty_reassign(game, _params, _bindings):
+    return _casualty_result(game.casualty_reassign())
+
+
 def _radio_task_accept(game, params, _bindings):
     return game.accept_task(params["task"])
 
@@ -198,6 +214,16 @@ def _radio_task_decline(game, params, _bindings):
 def _radio_request_ras(game, params, _bindings):
     result = game.request_ras()
     # The browser shows the radio room's own refusals as "not ready".
+    return result if result is True or result == "radio_down" else "not_ready"
+
+
+def _radio_contact_report(game, params, _bindings):
+    result = game.send_contact_report()
+    return result if result is True or result == "radio_down" else "not_ready"
+
+
+def _radio_request_support(game, params, _bindings):
+    result = game.request_support()
     return result if result is True or result == "radio_down" else "not_ready"
 
 
@@ -560,7 +586,9 @@ def _weapons_deploy_nixie(game, params, _bindings):
 
 # Own-attack refusals the command pipeline reports with its shared codes.
 _OWN_ATTACK_REASONS = {"empty_asroc": "empty", "empty_depth_charges": "empty",
-                       "reloading": "not_ready", "too_slow": "not_ready"}
+                       "reloading": "not_ready", "too_slow": "not_ready",
+                       "rbu_empty": "empty", "rbu_reloading": "not_ready",
+                       "rbu_no_warning": "not_ready"}
 
 
 def _weapons_own_attack(game, params, bindings, fire):
@@ -580,6 +608,15 @@ def _weapons_fire_asroc(game, params, bindings):
 
 def _weapons_drop_depth_charges(game, params, bindings):
     return _weapons_own_attack(game, params, bindings, game.drop_depth_charges_at)
+
+
+def _weapons_fire_rbu(game, params, bindings):
+    return _weapons_own_attack(game, params, bindings, game.fire_rbu_at)
+
+
+def _weapons_rbu_defence(game, _params, _bindings):
+    result = game.fire_rbu_defence()
+    return _OWN_ATTACK_REASONS.get(result, result)
 
 
 def _opz_launch_essm(game, params, bindings):
@@ -607,6 +644,10 @@ def _uboot_result(result):
 
 def _uboot_set_course(game, boat, params, _bindings):
     return boat.sub.set_orders(course=params["course"])
+
+
+def _uboot_clear_baffles(game, boat, params, _bindings):
+    return opfor.clear_baffles(game, boat)
 
 
 def _uboot_set_speed(game, boat, params, _bindings):
@@ -673,6 +714,10 @@ def _uboot_tube_flood(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_flood_tube(params["tube"]))
 
 
+def _uboot_tube_flood_quiet(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_flood_tube(params["tube"], quiet=True))
+
+
 def _uboot_evade(game, boat, params, _bindings):
     from src.core import boat_threat
     return _uboot_result(boat_threat.evade(game, boat))
@@ -721,6 +766,14 @@ def _uboot_action_stations(game, boat, params, _bindings):
 
 def _uboot_watch_change(game, boat, params, _bindings):
     return game.boat_change_watch()
+
+
+def _uboot_casualty_medic(game, boat, _params, _bindings):
+    return _casualty_result(game.boat_casualty_medic())
+
+
+def _uboot_casualty_reassign(game, boat, _params, _bindings):
+    return _casualty_result(game.boat_casualty_reassign())
 
 
 def _uboot_mast(game, boat, params, _bindings):
@@ -788,12 +841,14 @@ def _uboot_esm_plot(game, boat, params, _bindings):
 _UBOOT_ACTION_HANDLERS = {
     "acknowledge": lambda game, boat, params, _bindings: params == {},
     "uboot_set_course": _uboot_set_course,
+    "uboot_clear_baffles": _uboot_clear_baffles,
     "uboot_set_speed": _uboot_set_speed,
     "uboot_set_depth": _uboot_set_depth,
     "uboot_fire": _uboot_fire,
     "uboot_decoy": _uboot_decoy,
     "uboot_tube_load": _uboot_tube_load,
     "uboot_tube_flood": _uboot_tube_flood,
+    "uboot_tube_flood_quiet": _uboot_tube_flood_quiet,
     "uboot_blow": _uboot_blow,
     "uboot_snorkel": _uboot_snorkel,
     "uboot_charge_rate": _uboot_charge_rate,
@@ -804,6 +859,8 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_bulkhead": _uboot_bulkhead,
     "uboot_action_stations": _uboot_action_stations,
     "uboot_watch_change": _uboot_watch_change,
+    "uboot_casualty_medic": _uboot_casualty_medic,
+    "uboot_casualty_reassign": _uboot_casualty_reassign,
     "uboot_o2_candle": _uboot_o2_candle,
     "uboot_mast": _uboot_mast,
     "uboot_radio_send": _uboot_radio_send,
@@ -831,6 +888,7 @@ _V2_ACTION_HANDLERS = {
     "bridge_route_add": _bridge_route_add,
     "bridge_route_pattern": _bridge_route_pattern,
     "bridge_route_clear": _bridge_route_clear,
+    "bridge_clear_baffles": _bridge_clear_baffles,
     "sonar_classify": _sonar_classify,
     "sonar_set_release": _sonar_set_release,
     "helicopter_qualify": _helicopter_qualify,
@@ -854,11 +912,15 @@ _V2_ACTION_HANDLERS = {
     "damage_counterflood": _damage_counterflood,
     "crew_action_stations": _crew_action_stations,
     "crew_watch_change": _crew_watch_change,
+    "crew_casualty_medic": _crew_casualty_medic,
+    "crew_casualty_reassign": _crew_casualty_reassign,
     "engine_set_plant": _engine_set_plant,
     "damage_unassign_team": _damage_unassign_team,
     "radio_capture_hfdf": _radio_capture_hfdf,
     "radio_task_accept": _radio_task_accept,
     "radio_request_ras": _radio_request_ras,
+    "radio_contact_report": _radio_contact_report,
+    "radio_request_support": _radio_request_support,
     "radio_task_decline": _radio_task_decline,
     "eloka_annotate": _eloka_annotate,
     "eloka_clear_annotation": _eloka_clear_annotation,
@@ -919,6 +981,8 @@ _V2_ACTION_HANDLERS = {
     "weapons_deploy_nixie": _weapons_deploy_nixie,
     "weapons_fire_asroc": _weapons_fire_asroc,
     "weapons_drop_depth_charges": _weapons_drop_depth_charges,
+    "weapons_fire_rbu": _weapons_fire_rbu,
+    "weapons_rbu_defence": _weapons_rbu_defence,
     "weapons_set_torpedo_settings": _weapons_set_torpedo_settings,
     "opz_launch_essm": _opz_launch_essm,
     "opz_launch_chaff": _opz_launch_chaff,

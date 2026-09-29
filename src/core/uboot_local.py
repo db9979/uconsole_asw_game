@@ -595,19 +595,35 @@ def _command_key(game, current, key, mods) -> None:
                 compartment=message(f"uboot.compartment.{compartment}"),
                 task=message(f"uboot.dc.task.{current.dc_task}"))
     elif page == "UBOOT_WEAPONS" and key == pygame.K_m:
-        flood = bool(mods & pygame.KMOD_SHIFT)
+        quiet = bool(mods & pygame.KMOD_CTRL)
+        flood = quiet or bool(mods & pygame.KMOD_SHIFT)
         if order_allowed(game, "uboot_tube_flood" if flood else "uboot_tube_load"):
-            result = sub.command_flood_tube() if flood else sub.command_load_tube()
+            result = (sub.command_flood_tube(quiet=quiet) if flood
+                      else sub.command_load_tube())
             if result is True:
                 _announce(game, "waffen", message(
-                    "uboot.local.tube_flooding" if flood else "uboot.local.tube_loading"))
+                    "uboot.local.tube_flooding_quiet" if quiet
+                    else "uboot.local.tube_flooding" if flood
+                    else "uboot.local.tube_loading"))
             else:
                 game.flash(message("uboot.local.tube_rejected", reason=message(
                     f"uboot.reason.{result}" if result in TUBE_REASONS
                     else "uboot.reason.not_ready")), 2.0)
+    elif page == "UBOOT_DAMAGE" and key == pygame.K_m and mods & (pygame.KMOD_SHIFT
+                                                                   | pygame.KMOD_CTRL):
+        if mods & pygame.KMOD_CTRL:
+            if order_allowed(game, "uboot_casualty_reassign"):
+                game.boat_casualty_reassign()
+        elif order_allowed(game, "uboot_casualty_medic"):
+            game.boat_casualty_medic()
     elif page == "UBOOT_DAMAGE" and key == pygame.K_m:
         if order_allowed(game, "uboot_watch_change") and game.boat_change_watch() is not True:
             game.flash(message("crew.watch_blocked"), 2.0)
+    elif key == pygame.K_b and mods & pygame.KMOD_CTRL:
+        if order_allowed(game, "uboot_clear_baffles"):
+            result = opfor.clear_baffles(game, current)
+            if result is not True:
+                game.flash(message("uboot.local.baffles_rejected"), 2.0)
     elif key == pygame.K_b and not mods & pygame.KMOD_SHIFT:
         if order_allowed(game, "uboot_action_stations"):
             game.boat_set_action_stations(not current.watch.action_stations)

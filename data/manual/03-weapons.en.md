@@ -40,6 +40,7 @@ Torpedo run, seen from above:
 - Salvo doctrine SHOOT-LOOK-SHOOT: at most 2 own torpedoes running.
 - ASROC (`A`): 4 rounds per mission. The rocket flies at 500 kn to the target's observed position (1 to 10 NM, current range needed) and drops the helicopter's lightweight torpedo there, set to the preset depth. It needs the same target checks as the torpedo and counts against the doctrine limit.
 - Depth charges (`Z`): 20 per mission, dropped as a pattern of 5 (three along the wake 20, 80 and 140 m astern, two thrown 70 m abeam), then 45 s to reload the rack. The ship must make at least 10 kn. The charges sink at 3.5 m/s to the preset depth (15-300 m) or the seabed; each 90 kg charge is lethal within about 25 m and still damages out to about 100 m. Submarines within 5 NM hear the detonation and evade.
+- ASW rocket launcher (`R`, RBU/Bofors type): 36 rockets per mission, fired in salvoes of 6, then 60 s to reload. An attack salvo goes to the designated target's observed position 0.4 to 3 NM away (current range needed, same target checks as the torpedo): one round on the aim point, five on a ring of 80 m around it. The rockets fly at 400 kn (about 9 s per NM), and each round sinks at 11 m/s to the preset depth (10-300 m) or the seabed; the 23 kg charges are lethal only within about 14 m and harm out to 60 m, so a rough or stale fix wastes the salvo. **Defence salvo** (`Shift+R`): six rounds in a line 0.3 to 0.8 NM out along the bearing of a torpedo warning at most 5 s old, set to 15 m; a round that goes off within 35 m of a running torpedo destroys it, and the log reports that the torpedo noise ended. Every submarine within 3 NM hears the rockets splash into the water: an AI boat evades at once, the crewed submarine's sonar room reports the splashes with their bearing.
 
 ## Keys {#weapons-keys}
 
@@ -78,6 +79,6 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 
 ## Not modelled {#weapons-limits}
 
-- No ASW rocket launcher (Bofors/RBU type); depth charges only from the stern rack and throwers.
+- Depth charges only from the stern rack and throwers; the rocket launcher has no contact fuze (every round goes off at its set depth) and no anti-torpedo projectile of its own.
 - One torpedo type for the helicopter; the doctrine limit of two own torpedoes running is fixed.
 - No depth ceiling difference between Mk1 and Mk2; both run at the set depth.

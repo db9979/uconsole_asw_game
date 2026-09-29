@@ -35,6 +35,7 @@ SEARCH_KN = 10.0
 TRANSIT_KN = 18.0
 CLOSE_KN = 8.0
 CLOSE_NM = 6.0                  # inside this a position datum is worked, not run at
+NET_CLEAR_NM = 1.0              # look this far past the turning lookahead for nets
 SEARCH_LEG_S = 600.0            # zigzag leg of the search
 SEARCH_BOX_S = 1800.0           # the zigzag's base course turns 90° this often
 CROSS_LEG_S = 300.0             # side of the crossing course for bearing motion
@@ -45,6 +46,7 @@ HELO_DIP_NM = 0.5
 HELO_DROP_NM = 1.5
 BEARING_DATUM_NM = 8.0          # bearing-only datum: this far down the line
 SHIP_FIRE_NM = 6.0
+RBU_FIRE_NM = 2.0               # rocket salvo only on a close, fixed boat
 FIX_MAX_AGE_S = 900.0
 PATTERN_CLEAR_NM = 4.0          # no new buoy pattern where buoys already listen
 ESCORT_AHEAD_NM = 3.0           # the escort's station ahead of the convoy
@@ -136,7 +138,13 @@ def _recognised(game, contact) -> bool:
     """The operator takes ``CLASSIFY_MEAN_S`` on average to recognise the
     sound: a stateless draw per cadence tick and contact."""
     tick = int(math.floor(game.sim_t / CADENCE_S))
-    return detrand.u01(game.seed, "hunter.classify", contact.id, tick) < CADENCE_S / CLASSIFY_MEAN_S
+    return (detrand.u01(game.seed, "hunter.classify", contact.id, tick)
+            < CADENCE_S / (CLASSIFY_MEAN_S * _level_delay(game)))
+
+
+def _level_delay(game) -> float:
+    """The realism level stretches or shortens the crew's reaction times."""
+    return config.LEVEL_HUNTER_DELAY.get(getattr(game, "level", config.LEVEL_DEFAULT), 1.0)
 
 
 def classify(game) -> bool:
@@ -303,6 +311,11 @@ def _steer(game, course: float, speed: float) -> str:
     def safe(heading):
         lookahead = max(0.5, max(ship.speed, speed) * (120.0 / 3600.0))
         rad = math.radians(heading)
+        ahead = lookahead + NET_CLEAR_NM
+        # Reported drift nets are on the chart: steer round them.
+        if game.net_ahead(ship.x, ship.y, ship.x + ahead * math.sin(rad),
+                          ship.y - ahead * math.cos(rad)):
+            return False
         return game.world.hull_is_safe(ship.x + lookahead * math.sin(rad),
                                        ship.y - lookahead * math.cos(rad),
                                        heading, ship.hull_spec)
@@ -356,6 +369,8 @@ def escort_course(game):
 def bridge(game, found) -> str:
     if _nearest_threat(game) is not None:
         return AutocrewController._bridge(game)
+    if getattr(game, "baffle_clear", None) is not None:
+        return "monitoring"                 # let the baffle clearing finish
     ship = game.ship
     escort = escort_course(game)
     if escort is not None and found is not None:
@@ -391,23 +406,35 @@ def sonar(game) -> str:
 
 
 def weapons(game, found) -> str:
-    observed = any(warning["age_s"] <= 2.0
+    observed = any(warning["age_s"] <= 2.0 and warning["source"] != "flood"
                    for warning in game.torpedo_warnings(held=False))
     if observed and not game.nixies and game.nixie_store.ready > 0:
         if game.deploy_nixie_result() is True:
             return "countermeasure"
+    if observed and game.rbu_defence_bearing() is not None and game.fire_rbu_defence() == "ok":
+        return "countermeasure"
     if game.damage.station_down("weapons"):
         return "monitoring"
     contact = None if found is None else found.get("contact")
     if (contact is None or "x" not in found or contact.range_est is None
-            or contact.range_est > SHIP_FIRE_NM
-            or _running(game, "frigate")):
+            or contact.range_est > SHIP_FIRE_NM):
+        return "monitoring"
+    if _running(game, "frigate"):
+        # A torpedo is out: a boat close enough gets a rocket salvo on top.
+        if (contact.range_est <= RBU_FIRE_NM
+                and game.designate_sonar_target(contact) is True
+                and game.fire_rbu_at(contact, _attack_depth(game, contact)) == "ok"):
+            return "engaged"
         return "monitoring"
     if game.designate_sonar_target(contact) is not True:
         return "monitoring"
-    depth = config.clamp(contact.depth_est if contact.depth_est is not None
-                         else game.torpedo_depth, 10.0, 300.0)
-    return "engaged" if game.launch_torpedo_at(contact, float(depth)) is True else "monitoring"
+    depth = _attack_depth(game, contact)
+    return "engaged" if game.launch_torpedo_at(contact, depth) is True else "monitoring"
+
+
+def _attack_depth(game, contact) -> float:
+    return float(config.clamp(contact.depth_est if contact.depth_est is not None
+                              else game.torpedo_depth, 10.0, 300.0))
 
 
 def helicopter(game, found) -> str:
@@ -426,7 +453,8 @@ def helicopter(game, found) -> str:
         return "monitoring"
     if helo.state == "HANGAR":
         tick = int(math.floor(game.sim_t / CADENCE_S))
-        if detrand.u01(game.seed, "hunter.helo", tick) >= CADENCE_S / HELO_READY_MEAN_S:
+        if (detrand.u01(game.seed, "hunter.helo", tick)
+                >= CADENCE_S / (HELO_READY_MEAN_S * _level_delay(game))):
             return "monitoring"                     # the deck readies the helicopter
         # The hunters fly with the search radar on (as before its switch).
         helo.radar_on = True

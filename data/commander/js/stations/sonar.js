@@ -33,6 +33,9 @@ export function renderSonarStation(payload) {
       blades: finite(settings.tools.shaft_hz) && finite(settings.tools.blade_hz) && settings.tools.shaft_hz > 0
         ? number(Math.round(settings.tools.blade_hz / settings.tools.shaft_hz), 0) : "--",
       rpm: finite(settings.tools.shaft_hz) ? number(settings.tools.shaft_hz * 60, 0) : "--"})],
+    ["sonar_library", settings.tools.library.length
+      ? settings.tools.library.map((row) => `${number(row.fit * 100, 0)}% ${row.name}`).join(" · ")
+      : t("sonar_library_none")],
     ["sonar_assist", yesNo(settings.tools.assist)]]);
   if (!S.stationDrafts.has("sonar-integration")) $("sonar-integration").value = String(settings.tools.integration_s);
   if (!S.stationDrafts.has("sonar-demon-band")) $("sonar-demon-band").value = settings.tools.demon_band_hz.map((value) => number(value, 0).replace(/\D/g, "")).join("-");

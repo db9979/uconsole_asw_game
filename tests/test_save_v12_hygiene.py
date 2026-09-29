@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v32_and_older_documents_are_rejected():
+def test_save_is_v38_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (32, "u-jagd-save-v32")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (32, "u-jagd-save-v32")
+    assert (state["version"], state["save_schema"]) == (38, "u-jagd-save-v38")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (38, "u-jagd-save-v38")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -161,6 +161,45 @@ def test_save_is_v32_and_older_documents_are_rejected():
     for row in v31["subs"]:
         del row["radar_hold_s"]
     assert not game._load_save_data(v31)
+    # v32 differs only by the submarines' tube flooding and flood transients.
+    v32 = copy.deepcopy(state)
+    v32["version"] = 32
+    v32["save_schema"] = "u-jagd-save-v32"
+    for row in v32["subs"]:
+        for key in ("flood_noise_left", "flood_quiet", "flood_seq",
+                    "ai_tube_left", "ai_fire_pending"):
+            del row[key]
+    assert not game._load_save_data(v32)
+    # v33 differs only by the incidents at sea.
+    v33 = copy.deepcopy(state)
+    v33["version"] = 33
+    v33["save_schema"] = "u-jagd-save-v33"
+    del v33["incidents"]
+    assert not game._load_save_data(v33)
+    # v34 differs only by the baffle clearing.
+    v34 = copy.deepcopy(state)
+    v34["version"] = 34
+    v34["save_schema"] = "u-jagd-save-v34"
+    del v34["baffle_clear"]
+    assert not game._load_save_data(v34)
+    # v35 differs only by the radio room's own calls.
+    v35 = copy.deepcopy(state)
+    v35["version"] = 35
+    v35["save_schema"] = "u-jagd-save-v35"
+    del v35["hq_reports"]
+    assert not game._load_save_data(v35)
+    # v36 differs only by the ASW rocket launcher.
+    v36 = copy.deepcopy(state)
+    v36["version"] = 36
+    v36["save_schema"] = "u-jagd-save-v36"
+    del v36["rbu"]
+    assert not game._load_save_data(v36)
+    # v37 differs only by the wounded crew.
+    v37 = copy.deepcopy(state)
+    v37["version"] = 37
+    v37["save_schema"] = "u-jagd-save-v37"
+    del v37["casualties"]
+    assert not game._load_save_data(v37)
     assert game.save_state() == before
 
 

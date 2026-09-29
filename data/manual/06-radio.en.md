@@ -39,6 +39,25 @@ Besides the hunt, HQ radios tasks to the ship: the first about 15 to 25 minutes 
 
 Accepted positions are plotted on every chart (also in the Remote Crew browser). Scores are listed at mission end. The radio operator in the browser answers with the same buttons.
 
+## Incidents at sea {#radio-incidents}
+
+The sea brings surprises of its own: the first 20 to 40 minutes into a built-in mission, then one every 30 to 50 minutes, at most four per mission (none in custom missions and lessons). Each is reported on the teletype.
+
+- **Drift net:** a fishing boat reports a net 2 NM long across the ship's track, 3 to 7 NM ahead, hanging from the surface down to 20 m; the radio operator plots it on every chart as a ruler `NET n`, and it is hauled in after an hour. Running over it tears it: the fishermen claim damages (-100 points), and a streamed towed array or variable-depth sonar fouls in it and is hauled in at once. A submarine that crosses it shallower than 20 m fouls it too and is loud for 20 s while it tears free; deeper it passes under.
+- **Weather front:** HQ warns 10 minutes ahead; then rain, a storm or fog holds for 30 to 60 minutes (visibility, wind and rain noise for every sensor, on both sides), and HQ reports when it has passed.
+- **Merchant without AIS:** a freighter running without AIS appears 8 to 15 NM away; HQ reports it with about 2 NM error and offers it as an identify task when fewer than two tasks are open.
+- **Whales:** a fishing boat reports a pod of two to four whales 3 to 6 NM ahead; they are real biological contacts for every sonar.
+
+HQ passes the net, the front and the whales on to the submarine's broadcast; a crewed submarine hears of them when it copies the next broadcast, and its crew plots the net on its own chart.
+
+## Own calls to HQ {#radio-reports}
+
+On the Tasks page the radio room can call HQ itself, at most once every 10 minutes; the line at the foot of the task list says whether a call is on the air, how long until the next one, or that both are ready.
+
+- `K` **Contact report:** sends the position of the freshest located contact (ping, TMA, buoy or fused fix, else an HF/DF cross-fix up to 15 minutes old). HQ acknowledges it on the teletype and vectors the patrol aircraft to it when the aircraft is airborne. HQ never says whether a submarine was really there: each report that put a hostile submarine within 3 NM of the fix earns 150 points at the mission's end (at most three).
+- `H` **Request support:** HQ sends the on-call patrol aircraft toward the ship when it is available (even with the OPZ down), otherwise it says that no support is available.
+- Each call is 20 s of HF transmission. While it is on the air, a submarine with its antenna up (the crewed boat's raised mast, an AI boat at periscope depth) takes an HF/DF bearing on the frigate (+/-8 degrees for a ground wave, +/-16 degrees for a sky wave): the crewed boat gets a report and a bearing line on its chart, an AI boat remembers the direction. Talking to HQ costs silence.
+
 ## Keys {#radio-keys}
 
 <!-- keys:radio -->

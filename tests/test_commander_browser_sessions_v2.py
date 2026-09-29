@@ -915,16 +915,21 @@ async function run() {
   await until(() => !$test("station-damage").hidden && !$test("damage-team").disabled &&
     $test("damage-schematic").width > 1, "actionable damage schematic missing");
   assert($test("helicopter-dip-display").hidden, "Helicopter sonar remains visible at another station");
-  const damageMap = $test("damage-schematic"), damageRect = damageMap.getBoundingClientRect();
-  damageMap.dispatchEvent(new MouseEvent("click", {bubbles: true,
-    clientX: damageRect.left + damageRect.width * .2, clientY: damageRect.top + damageRect.height * .5}));
+  const damageMap = $test("damage-schematic");
+  // The plan can resize once a result arrives (the text equivalent below
+  // wraps), so each click aims at the canvas where it is now.
+  const clickDamagePlan = () => {
+    const rect = damageMap.getBoundingClientRect();
+    damageMap.dispatchEvent(new MouseEvent("click", {bubbles: true,
+      clientX: rect.left + rect.width * .2, clientY: rect.top + rect.height * .5}));
+  };
+  clickDamagePlan();
   await until(() => commands.length === 7, "damage schematic did not assign selected team");
   exact(commands[6], "damage_assign_team", {team: 1, compartment: "engine"}, "damage");
   await terminal();
   $test("damage-team").value = "2";
   $test("damage-team").dispatchEvent(new Event("change", {bubbles: true}));
-  damageMap.dispatchEvent(new MouseEvent("click", {bubbles: true,
-    clientX: damageRect.left + damageRect.width * .2, clientY: damageRect.top + damageRect.height * .5}));
+  clickDamagePlan();
   await until(() => commands.length === 8, "damage schematic did not unassign selected team");
   exact(commands[7], "damage_unassign_team", {team: 2, compartment: "engine"}, "damage");
   states.bridge.bridge.orders.cavitating = true;
@@ -982,8 +987,9 @@ def _direct_fire_browser_states():
                        visual_class=None, visual_type=None)
     weapons = dict(common, role="weapons", weapons=dict(
         inventory=dict(torpedoes=4, vls=8, ciws=200, aa=40,
-                       chaff_ready=True, nixies=2, asroc=4, depth_charges=20),
+                       chaff_ready=True, nixies=2, asroc=4, depth_charges=20, rbu=36),
         readiness=dict(station_down=False, roe="FREE", ciws_ready=True,
+                       rbu_ready=True, torpedo_warning=False,
                        aa_ready=True, state="available", interlock="clear",
                        reload_s=0.0), designated_target=None,
         navigation=navigation, tactical=[], target_choices=[weapon_row], depth_m=90.0,
@@ -1232,7 +1238,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                                         "vernier": False, "shaft_hz": None,
                                         "blade_hz": None, "operator_notch_hz": None,
                                         "demon_band_hz": [400.0, 1400.0],
-                                        "heterodyne_hz": 700.0}},
+                                        "heterodyne_hz": 700.0, "library_marks": 0,
+                                        "library": []}},
                 "visualization": {
                     "broadband": {"bearing_start_deg": 0.0,
                                   "bearing_step_deg": 4.0, "history": []},

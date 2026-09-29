@@ -185,6 +185,12 @@ def draw_damage_page(s, game, boat, x, y, w, h) -> None:
         fatigue=f"{watch.duty_fatigue() * 100:.0f}",
         morale=f"{watch.morale * 100:.0f}"),
         config.COLOR_WARN if watch.effectiveness(game.sim_t) < 0.9 else None))
+    hurt = game.casualty_view(game.peek_roster(boat.sub))
+    gaps = {row["station"]: row["gaps"] for row in hurt["stations"]}
+    rows.append(("uboot.dc.label.wounded", message(
+        "uboot.dc.wounded", wounded=hurt["wounded"], serious=hurt["serious"],
+        spare=hurt["spare"], **gaps),
+        config.COLOR_WARN if any(gaps.values()) else None))
     rows.append(("uboot.dc.label.order", message(
         "uboot.dc.order", compartment=message(f"uboot.compartment.{COMPARTMENTS[selected]}"),
         task=message(f"uboot.dc.task.{task}")), config.COLOR_WARN))

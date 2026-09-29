@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.90
+## 1.3.99
 
-Version 1.3.90 macht die Schadensbildschirme auf der uConsole und im Browser
+Version 1.3.99 macht die Schadensbildschirme auf der uConsole und im Browser
 zu Leckwehr-Leitständen. Im Schiffsplan der Fregatte auf der uConsole steigt
 das Wasser in jeder Abteilung vom Kiel an, ein Brand glüht rot und eine
 ausgefallene Abteilung ist schraffiert; jede Abteilungskarte trägt eine
@@ -18,6 +18,93 @@ den Strom. Die Browser-Karte Schaden beginnt mit einer Warn- und Meldetafel
 über einer Seitenansicht des Schiffs und Rundinstrumenten für Krängung, Trimm
 und Gesamtschaden; ein Klick auf eine Abteilung schickt weiter den gewählten
 Trupp.
+
+## 1.3.98
+
+Version 1.3.98 verwundet Menschen. Treffer, Feuer, Wassereinbruch und Gas
+verletzen die Besatzung der Fregatte und jedes U-Boots an Sonar, Waffen und
+Leckwehr; jeder leere Posten verlangsamt die Station (Erkennen, Nachladen und
+Fluten der Rohre, Reparaturen), und jeder dritte Verwundete fällt für die
+Mission aus. Der Leckwehroffizier schickt das Sanitätsteam (Fregatte
+Schadenskontrolle Seite 3 `M`, U-Boot `Shift+M`, Browser-Knopf) und besetzt die
+schlimmste Station mit bis zu zwei Mann der ruhenden Wachen nach (`U`, U-Boot
+`Ctrl+M`), denen dann die Ruhe fehlt; KI-Schiffe besetzen selbst nach.
+Spielstände sind jetzt v38. Damit sind neun Verbesserungen ab 1.3.90 fertig,
+jede mit einem Gegenstück für die U-Boot-Seite.
+
+## 1.3.97
+
+Version 1.3.97 gibt der Fregatte einen U-Jagd-Raketenwerfer (Waffen `R`,
+Browser-Knopf): Salven zu sechs Raketen 0,4 bis 3 sm auf eine frische
+Entfernungspeilung, 36 Raketen, eine Minute Nachladen. `Shift+R` schießt eine
+flache Abwehrlinie in der Peilung einer Torpedowarnung, die einen Torpedo
+zerstört, neben dem sie detoniert. Die Einschläge warnen jedes U-Boot bis
+3 sm: KI-Boote weichen aus, der Sonarraum des bemannten Boots meldet ihre
+Peilung. Die KI-Fregatte nutzt beides. Spielstände sind jetzt v37.
+
+## 1.3.96
+
+Version 1.3.96 bringt eine Sonar-Klassenbibliothek: die DEMON-Seite zeigt
+die drei Katalogklassen, die am besten zu den Wellen-, Blatt- und
+LOFAR-Marken des Bedieners passen, mit Passung in Prozent, und der
+F8-Analysator sortiert den ganzen Katalog nach Passung. Der Sonarraum des
+U-Boots und die Web-Sonarstation haben dieselbe Bibliothek.
+
+## 1.3.95
+
+Version 1.3.95 lässt beide Seiten frei mit dem Hauptquartier funken: der
+Funkraum sendet eine Kontaktmeldung mit der frischesten Peilung (`K`) oder
+fordert Unterstützung an (`H`). Jeder Spruch ist 20 s auf Sendung und kann
+von einem feindlichen U-Boot mit ausgefahrener Antenne gepeilt werden, so wird
+Funk zum Sensor für beide Seiten; genaue Meldungen zählen am Missionsende.
+Spielstände sind jetzt v36.
+
+## 1.3.94
+
+Version 1.3.94 bildet den toten Winkel achteraus nach: die Rumpfbasis der
+Fregatte und das Rumpfsonar jedes U-Boots hören innerhalb von 30 Grad um das
+eigene Heck nichts mehr, Schleppsonar und VDS schon. Brücke und bemanntes Boot
+räumen den toten Winkel mit `Ctrl+B` (Browser-Knopf): 60 Grad nach Steuerbord
+für zwei Minuten, dann zurück. Ein KI-U-Boot dicht im toten Winkel der
+Fregatte folgt ihr nach einem Ping dort, statt zu fliehen. Spielstände sind
+jetzt v35.
+
+## 1.3.93
+
+Version 1.3.93 bringt ein Logbuch im Hauptmenü: jede beendete Mission der
+Seite, die die uConsole gespielt hat, steht in `~/.u-jagd/logbook.json`, mit
+der Bestpunktzahl je Mission und fünf Auszeichnungen je Seite. Das U-Boot
+bekommt jetzt Punkte aus seinem Ergebnis, sodass beide Seiten gleich viel
+erreichen können.
+
+## 1.3.92
+
+Version 1.3.92 bringt die Realismusstufen Anfänger, Standard und
+Realistisch (Optionen, je Mission gespeichert). Sie stimmen nur den
+Computergegner ab (Angriffslust und Schusslösungsschwelle der KI-U-Boote,
+Klassifizierung und Hubschrauberverzögerung der KI-Fregatte) und die
+Bedienerhilfen; die Missionswertung wird mit 75, 100 oder 125 % gewichtet.
+
+## 1.3.91
+
+Version 1.3.91 bringt Ereignisse auf See. Ab 20 bis 40 Minuten einer
+eingebauten Mission kommen bis zu vier über den Fernschreiber: ein Treibnetz
+quer zum Kurs (Überfahren kostet Punkte und verfängt ein ausgebrachtes
+Schleppsonar oder VDS, ein flach fahrendes U-Boot verfängt sich laut), eine
+Wetterfront mit Warnung des Hauptquartiers, ein Frachter ohne AIS zum
+Identifizieren und eine Walschule. Das Hauptquartier gibt Netz, Front und Wale
+an das U-Boot weiter; die KI-Fregatte umfährt gemeldete Netze. Spielstände
+sind jetzt v34.
+
+## 1.3.90
+
+Version 1.3.90 macht das Fluten der Torpedorohre hörbar. Ein U-Boot, das ein
+Rohr flutet und die Mündungsklappe öffnet, erzeugt einen Transienten, den das
+Sonar der Fregatte als Warnung mit gemessener Peilung meldet: lautes Fluten
+bis 8 sm, langsames leises Fluten bis 1,5 sm. Das bemannte Boot kann leise
+fluten (`Ctrl+M`, Browser-Knopf); KI-Boote fluten leise und früh auf eine
+Peilung, laut kurz vor dem Schuss auf trockene Rohre. Spielstände sind jetzt
+v33.
 
 ## 1.3.89
 

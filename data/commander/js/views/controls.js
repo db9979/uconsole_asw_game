@@ -76,6 +76,11 @@ function directFireSpec(action) {
       ready: common && target && payload.inventory.asroc > 0, readiness: [payload?.inventory.asroc, payload?.readiness]};
     if (action === "weapons_drop_depth_charges") return {ref, params: {ref, depth_m: depth},
       ready: common && target && payload.inventory.depth_charges > 0, readiness: [payload?.inventory.depth_charges, payload?.readiness]};
+    if (action === "weapons_fire_rbu") return {ref, params: {ref, depth_m: depth},
+      ready: common && target && payload.inventory.rbu > 0 && payload.readiness.rbu_ready, readiness: [payload?.inventory.rbu, payload?.readiness]};
+    if (action === "weapons_rbu_defence") return {ref: "", params: {},
+      ready: common && payload.inventory.rbu > 0 && payload.readiness.rbu_ready && payload.readiness.torpedo_warning,
+      readiness: [payload?.inventory.rbu, payload?.readiness]};
     if (action === "weapons_deploy_nixie") return {ref: "", params: {},
       ready: common && payload.inventory.nixies > 0, readiness: [payload?.readiness.station_down, payload?.inventory.nixies]};
   }
@@ -170,7 +175,8 @@ export function renderDirectFireControls() {
   status.dataset.state = pendingConfirm ? "armed" : statusKey;
 }
 function actionHasDepth(action) {
-  return action.includes("torpedo") || action === "weapons_fire_asroc" || action === "weapons_drop_depth_charges";
+  return action.includes("torpedo") || action === "weapons_fire_asroc" || action === "weapons_drop_depth_charges" ||
+    action === "weapons_fire_rbu";
 }
 function actionIncludesInvalidDepth(action, depth) {
   return actionHasDepth(action) && (!finite(depth) || depth < 10 || depth > 300);
@@ -257,12 +263,14 @@ function directFireUnavailableReason(control) {
   const spec = directFireSpec(action);
   if (actionIncludesInvalidDepth(action, spec.params.depth_m)) return unavailable("reason_invalid_depth");
   const payload = S.v2State?.[S.session.station];
-  if (!spec.ref && action !== "weapons_deploy_nixie") return unavailable("reason_no_target");
+  if (!spec.ref && action !== "weapons_deploy_nixie" && action !== "weapons_rbu_defence") return unavailable("reason_no_target");
   if (S.session.station === "weapons") {
     if ((action === "weapons_launch_torpedo" && payload.inventory.torpedoes <= 0) ||
         (action === "weapons_fire_asroc" && payload.inventory.asroc <= 0) ||
         (action === "weapons_drop_depth_charges" && payload.inventory.depth_charges <= 0) ||
-        (action === "weapons_deploy_nixie" && payload.inventory.nixies <= 0)) return unavailable("reason_no_inventory");
+        (action === "weapons_deploy_nixie" && payload.inventory.nixies <= 0) ||
+        (action.startsWith("weapons_") && action.includes("rbu") && payload.inventory.rbu <= 0)) return unavailable("reason_no_inventory");
+    if (action === "weapons_rbu_defence" && !payload.readiness.torpedo_warning) return unavailable("reason_no_torpedo_warning");
     if (action === "weapons_launch_torpedo" && !payload.tubes.some((tube) => tube.state === "ready")) return unavailable("reason_no_ready_tube");
   }
   if (S.session.station === "helicopter") {

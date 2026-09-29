@@ -13,6 +13,7 @@ from enum import Enum
 import numpy as np
 
 from src.core import config
+from src.core.baffles import in_baffles
 from src.sonar import raytrace
 from src.sonar import equation, propagation
 from src.sonar.tma import BearingTrack, solve_tma
@@ -1431,7 +1432,10 @@ class SonarSystem:
             true_bearing = tgt.bearing_from_frigate(frigate)
             observations = {}
             spectral_by_mode = {}
+            baffled = in_baffles(frigate.course, true_bearing)
             for array_mode in array_modes:
+                if array_mode == "BOW" and baffled:
+                    continue            # the hull array is deaf astern
                 array_available = tow_available if array_mode != "VDS" else True
                 preliminary_range = self._passive_range_nm(
                     tgt, dist, frigate, world, range_factor, array_mode,

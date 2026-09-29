@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.90**
+Aktuelle Version: **1.3.99**
 
-Version 1.3.90 macht die Schadensbildschirme auf der uConsole und im Browser
+Version 1.3.99 macht die Schadensbildschirme auf der uConsole und im Browser
 zu Leckwehr-Leitständen. Im Schiffsplan der Fregatte auf der uConsole steigt
 das Wasser in jeder Abteilung vom Kiel an, ein Brand glüht rot und eine
 ausgefallene Abteilung ist schraffiert; jede Abteilungskarte trägt eine
@@ -97,7 +97,7 @@ Menüs und Editoren:
 </tr>
 </table>
 
-Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Schadensabwehr](docs/screenshots/de-damage-control-alert.png), [U-Boot-Leckwehr](docs/screenshots/de-uboot-damage-control.png), [Maschinenraum-Systeme](docs/screenshots/de-engineering-systems.png), [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png), [Optionen](docs/screenshots/de-options.png), [Missionseditor](docs/screenshots/de-mission-editor.png), [Einheiteneditor](docs/screenshots/de-unit-editor.png) und der [taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
+Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Schadensabwehr](docs/screenshots/de-damage-control-alert.png), [U-Boot-Leckwehr](docs/screenshots/de-uboot-damage-control.png), [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png), [Optionen](docs/screenshots/de-options.png), [Missionseditor](docs/screenshots/de-mission-editor.png), [Einheiteneditor](docs/screenshots/de-unit-editor.png) und der [taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
 
 ### Remote-Crew-Browser (1920 x 1080)
 
@@ -111,8 +111,7 @@ Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Scha
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-sonar-desktop.png"><img src="docs/screenshots/commander-v2-de-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
 </tr>
 <tr>
-<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-engine-desktop.png" alt="Fregatten-Maschinenraum: Maschinenleitstand"></a><br><sub>Fregatten-Maschinenraum: Maschinenleitstand</sub></td>
-<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
+<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
 </tr>
 </table>
 

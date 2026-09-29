@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.61
+
+Release 1.3.61 makes the Unit Editor count. Profiles saved there can now be
+placed in your own missions like built-in units, and they take effect there:
+name, speeds, depth, torpedo load, behaviour, acoustics and spawn weight. A
+user submarine takes its sensors, tubes, decoys and battery, diesel or AIP
+plant from the built-in boat of its propulsion. A mission can also place a
+hostile torpedo that is already running on its course at the start, for
+torpedo-evasion drills. Such missions save and load normally (the save's
+catalog snapshot carries the user profiles); built-in scenarios never use
+them. Saves stay v28.
+
 ## 1.3.59
 
 Release 1.3.59 is a clean-up with no change in play. The two largest modules

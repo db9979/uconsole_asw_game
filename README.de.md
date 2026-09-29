@@ -14,16 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.59**
+Aktuelle Version: **1.3.61**
 
-Version 1.3.59 räumt auf, ohne das Spiel zu ändern. Die beiden größten Module
-sind entlang ihrer Nähte geteilt: Radar-, Luft-, ECM-, ESM- und Funklage mit
-Flugkörpern und Angreifern ziehen aus dem Simulationsschritt in ein eigenes
-Modul, und die Aktionen der Remote-Crew-Stationen ziehen aus der Brücke in ein
-eigenes Modul; der Code wird unverändert verschoben, und die
-Aktualisierungsreihenfolge bleibt eingefroren. Der Changelog-Eintrag zu 1.3.43
-beschreibt jetzt, was diese Version tatsächlich behoben hat. Spielstände
-bleiben v28.
+Version 1.3.61 macht den Einheiteneditor wirksam. Dort gespeicherte Profile
+lassen sich jetzt wie eingebaute Einheiten in eigenen Missionen platzieren und
+wirken dort: Name, Fahrtbereich, Tiefe, Torpedozahl, Verhalten, Akustik und
+Häufigkeit. Ein eigenes U-Boot übernimmt Sensoren, Rohre, Täuschkörper und
+seine Batterie-, Diesel- oder AIP-Anlage vom eingebauten Boot seines Antriebs.
+Eine Mission kann außerdem einen feindlichen Torpedo platzieren, der beim
+Start schon auf seinem Kurs läuft, zum Üben des Ausweichens. Solche Missionen
+lassen sich normal speichern und laden (der Katalog-Schnappschuss des
+Spielstands enthält die eigenen Profile); eingebaute Szenarien verwenden sie
+nie. Spielstände bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -555,20 +557,27 @@ Version gilt:
   ersetzt nicht den Küstendatensatz des Spiels.
 - Wirksame Missionswerte sind Seed, Name und Beschreibung; Position, Kurs und
   Fahrt des Spielerschiffs; Seegang, Startzeit, Thermoklinentiefe und eine
-  vorgegebene Wetterart; exakte Einheiten aller integrierten Arten außer
-  Torpedos (U-Boote, Überwasserschiffe, Luftfahrzeuge mit Profilfahrt vom
-  nächsten Flugplatz der Karte, Tiere und stationäre Täuschkörper) mit
+  vorgegebene Wetterart; exakte Einheiten aller Arten, integriert oder aus
+  dem Einheiteneditor (U-Boote, Überwasserschiffe, Luftfahrzeuge mit
+  Profilfahrt vom nächsten Flugplatz der Karte, Tiere, stationäre
+  Täuschkörper und feindliche Torpedos, die schon auf ihrem Kurs laufen) mit
   Platzierung, Kurs, Fahrt und Tiefe; Seed-basierte Zufallsgruppen;
   zeitgesteuerte Ereignisse (Meldung, Erscheinen, Wetter, Ziel); sowie Ziele
   vom Typ `sink`, `survive`, `protect` oder `reach` mit einem Zeitlimit.
 - Bei `sink` muss die Zielliste exakt allen platzierten feindlichen U-Booten
   entsprechen; `protect`-Ziele müssen platzierte befreundete oder neutrale
   Einheiten sein; `reach` braucht ein Zielgebiet.
-- Torpedos und selbst erstellte Einheitenprofile werden für das Spielen der
-  Mission abgelehnt und nicht stillschweigend ignoriert.
-- Ausgaben des Einheiteneditors sind ausschließlich Validierungs- und
-  Erstellungsdaten. Derzeit beeinflusst kein Feld eines Benutzer-Einheitenprofils
-  die laufende Simulation.
+- Eigene Einheitenprofile wirken in den Missionen, die sie verwenden: Name,
+  Fahrtbereich, Tiefe, Torpedozahl, Verhalten, Akustik und Häufigkeit. Ein
+  eigenes U-Boot übernimmt Sensoren, Rohre, Täuschkörper und
+  Batterie-/Diesel-/AIP-Anlage vom eingebauten Boot seines Antriebs
+  (Stichworte `nuclear`/`Kern`, `AIP`, sonst dieselelektrisch). Zusätze aus dem
+  Wikipedia-Import (Radar, Waffen, Gegenmaßnahmen) bleiben beschreibend. Ein
+  fehlendes oder ungültiges Profil lehnt die Mission ab; eingebaute Szenarien
+  verwenden nie Benutzerprofile.
+- Platzieren lassen sich nur feindliche Torpedos, immer feindlich; Torpedos der
+  Fregatte und des Helikopters werden abgelehnt und nicht stillschweigend
+  ignoriert.
 
 ## Spielstände und Benutzerdaten
 

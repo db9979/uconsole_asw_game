@@ -26,6 +26,7 @@ from src.core.limits import MAX_TRACK_DISPLAY_ID_LEN
 from src.sonar import analysis_tools
 from src.sonar import tma_operator
 from src.data.catalog import CATALOG
+from src.data.user_content import default_store
 from src.nations.nations import reference_summary
 from src.ui import layout
 from src.ui.editor_widgets import TextField
@@ -1717,7 +1718,9 @@ class EventMixin:
                 elif action == "load":
                     self._open_administration("load")
                 elif action == "mission_editor":
-                    profiles = set(catalog_builtins(CATALOG))
+                    profiles = set(catalog_builtins(CATALOG)) | {
+                        record.key for record in
+                        default_store(config.SAVE_DIR).list("unit")}
                     self.editor = MissionEditor(tr=self.tr, profile_keys=profiles)
                 elif action == "unit_editor":
                     self.editor = UnitEditor(catalog_builtins(CATALOG), tr=self.tr)

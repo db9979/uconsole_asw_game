@@ -1,6 +1,7 @@
 """Mission runtime = editor scope (plan 1.3, phase 13): reference worlds,
 protect/reach objectives, random groups and events, placed aircraft,
-animals and decoys.  User unit profiles and other world sizes stay rejected."""
+animals and decoys.  Other world sizes stay rejected; user unit profiles
+and placed torpedoes are covered by tests/test_user_profiles_runtime.py."""
 
 import copy
 import json
@@ -308,9 +309,10 @@ def test_aircraft_animals_and_decoys_are_placed_and_saved():
         (round(flight.x, 6), round(flight.y, 6))
 
 
-def test_torpedo_and_user_profiles_stay_rejected():
+def test_friendly_torpedoes_and_missing_user_profiles_stay_rejected():
     game = _game()
-    torpedo = next(iter(game.runtime_catalog.torpedoes))
+    torpedo = next(key for key, profile in game.runtime_catalog.torpedoes.items()
+                   if profile.used_by == "frigate")
     definition = _definition(objective="survive")
     definition["units"]["exact"].append(_placed("fish", torpedo, 220.0, 220.0, depth_m=20.0))
     assert not game.start_custom_mission(definition)

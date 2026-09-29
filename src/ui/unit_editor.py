@@ -41,12 +41,12 @@ class UnitFieldMetadata:
 
 
 UNIT_FIELD_METADATA = {
-    "identity": UnitFieldMetadata(True, False, "User profile loading is not integrated yet."),
-    "movement": UnitFieldMetadata(True, False),
-    "behavior": UnitFieldMetadata(True, False),
-    "weapons": UnitFieldMetadata(True, False),
-    "acoustic": UnitFieldMetadata(True, False),
-    "spawn_weight": UnitFieldMetadata(True, False),
+    "identity": UnitFieldMetadata(True, True, "Effective in custom missions that place the profile."),
+    "movement": UnitFieldMetadata(True, True),
+    "behavior": UnitFieldMetadata(True, True),
+    "weapons": UnitFieldMetadata(True, False, "Wikipedia-import weapons stay descriptive."),
+    "acoustic": UnitFieldMetadata(True, True),
+    "spawn_weight": UnitFieldMetadata(True, True),
 }
 
 _UNIT_KIND_FIELDS = {
@@ -119,8 +119,10 @@ def unit_field_metadata(kind: str) -> dict[str, UnitFieldMetadata]:
     if kind not in PROFILE_KINDS:
         raise ValueError(f"unknown profile kind: {kind}")
     fields = ("version", "key", "profile_kind", "name") + _UNIT_KIND_FIELDS[kind]
-    return {field: UnitFieldMetadata(True, False,
-                                     "Editor-supported; runtime integration pending.")
+    descriptive = set(WIKI_IMPORT_FIELDS) | {"version", "hostile"}
+    return {field: (UnitFieldMetadata(True, False, "Descriptive; no simulation effect.")
+                    if field in descriptive else
+                    UnitFieldMetadata(True, True, "Effective in custom missions."))
             for field in fields}
 
 

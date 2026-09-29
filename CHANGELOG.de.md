@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.61
+
+Version 1.3.61 macht den Einheiteneditor wirksam. Dort gespeicherte Profile
+lassen sich jetzt wie eingebaute Einheiten in eigenen Missionen platzieren und
+wirken dort: Name, Fahrtbereich, Tiefe, Torpedozahl, Verhalten, Akustik und
+Häufigkeit. Ein eigenes U-Boot übernimmt Sensoren, Rohre, Täuschkörper und
+seine Batterie-, Diesel- oder AIP-Anlage vom eingebauten Boot seines Antriebs.
+Eine Mission kann außerdem einen feindlichen Torpedo platzieren, der beim
+Start schon auf seinem Kurs läuft, zum Üben des Ausweichens. Solche Missionen
+lassen sich normal speichern und laden (der Katalog-Schnappschuss des
+Spielstands enthält die eigenen Profile); eingebaute Szenarien verwenden sie
+nie. Spielstände bleiben v28.
+
 ## 1.3.59
 
 Version 1.3.59 räumt auf, ohne das Spiel zu ändern. Die beiden größten Module

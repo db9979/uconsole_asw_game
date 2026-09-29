@@ -491,8 +491,9 @@ function wirePairing() {
     event.preventDefault();
     $("phone-pair-submit").disabled = true;
     $("phone-pair-error").textContent = "";
+    const code = normalizePairCode($("phone-code").value);
     try {
-      adoptSession(await api("/pair", {method: "POST", body: {code: normalizePairCode($("phone-code").value),
+      adoptSession(await api("/pair", {method: "POST", body: {code,
         name: $("phone-name").value.trim(), role: preferredRole()}}));
       $("phone-code").value = "";
       await startWatch();
@@ -500,7 +501,7 @@ function wirePairing() {
       // Only the pairing route's own answer means a wrong code; a bare 403
       // is the listener refusing this address (Host/Origin).
       $("phone-pair-error").textContent = t(error.status === 403 ? (error.reason === "invalid_code" ? "phone_pair_code" : "pair_address") : error.status === 429 ?
-        (error.reason === "session_limit" ? "phone_pair_full" : "phone_pair_rate") : "phone_pair_failed");
+        (error.reason === "session_limit" ? "phone_pair_full" : "phone_pair_rate") : "phone_pair_failed", {code});
     } finally {
       $("phone-pair-submit").disabled = false;
     }

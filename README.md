@@ -16,8 +16,9 @@ Current release: **1.3.61**
 
 Release 1.3.61 makes the pairing code easier to enter, on the crew page and
 on the phone lookout. The code can be typed the way `F9` shows it, with the
-space, in lower case, or with O for 0 and l for 1, and it is still read
-correctly. "Wrong pairing code" now appears only when the code really is wrong;
+space, in lower case, or with look-alikes such as O for 0, l for 1 or S for 5,
+and it is still read correctly. "Wrong pairing code" now appears only when the
+code really is wrong, and it names the code the game received;
 when the game refuses the address itself (a bookmark or another name for the
 host), the page says to open it from the QR code or the address in `F9`. The
 pairing help no longer claims the code expires after five minutes: it stays

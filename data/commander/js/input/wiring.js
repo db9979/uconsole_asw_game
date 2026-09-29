@@ -121,7 +121,7 @@ export function init() {
       // Only the pairing route's own answer means a wrong code; a bare 403
       // is the listener refusing this address (Host/Origin).
       $("pair-error").textContent = t(error?.status === 403 ?
-        (error.reason === "invalid_code" ? "pair_invalid_code" : "pair_address") : "pair_failed");
+        (error.reason === "invalid_code" ? "pair_invalid_code" : "pair_address") : "pair_failed", {code});
       $("code").focus();
     } finally { $("pair-submit").disabled = false; }
   });

@@ -201,7 +201,8 @@ def test_pairing_code_is_read_the_way_people_type_it(tmp_path):
     probe = r"""
 import { normalizePairCode } from "./js/core/pairing-code.js";
 const cases = [["482 KMT", "482KMT"], ["482kmt", "482KMT"], ["4O2 kmt", "402KMT"],
-  ["l8I-K0T", "181KOT"], [" 482 KM1 ", "482KMI"], ["482KMTX", "482KMT"], ["", ""]];
+  ["l8I-K0T", "181KOT"], [" 482 KM1 ", "482KMI"], ["482KMTX", "482KMT"], ["", ""],
+  ["S2B 5Z8", "528SZB"], ["482\u200bKMT", "482KMT"], ["０42abc", "042ABC"]];
 const bad = cases.filter(([raw, want]) => normalizePairCode(raw) !== want);
 document.documentElement.dataset.result = bad.length ? JSON.stringify(bad) : "passed";
 """

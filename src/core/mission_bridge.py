@@ -364,7 +364,8 @@ class MissionBridgeMixin:
         prepared = (self.seed, self.scenario_key, self.world_mode,
                     tuple(candidate_difficulty[name]
                           for name in config.DIFFICULTY_FIELD_ORDER),
-                    self.hq_intel_mode(), id(self.world), id(self.sonar))
+                    self.hq_intel_mode(), self._preferred_level(),
+                    id(self.world), id(self.sonar))
         reuse = (self.in_menu and self._prepared_menu_mission == prepared
                  and self.sim_t == 0.0 and self.mission_time == 0.0
                  and self.custom_mission_definition is None
@@ -443,7 +444,9 @@ class MissionBridgeMixin:
     def _mission_started_notice(self):
         return message("runtime.mission.started",
                        name=self.mission_name_display(),
-                       level=self.mission_level_display(),
+                       level=message("level." + self.level
+                                     if self.level in config.LEVELS
+                                     else "level." + config.LEVEL_DEFAULT),
                        objective=self.mission_objective_display())
 
     def _initial_threat_notice(self):
@@ -515,7 +518,9 @@ class MissionBridgeMixin:
         return message(keys[self.mission.type_key])
 
     def mission_level_display(self):
-        return message("level.custom")
+        level = self.level if self.level in config.LEVELS else config.LEVEL_DEFAULT
+        return message("level.display", level=self.tr("level." + level),
+                       factor=round(config.LEVEL_SCORE_FACTOR[level] * 100))
 
     def mission_description_display(self):
         if self.custom_mission_definition is not None:

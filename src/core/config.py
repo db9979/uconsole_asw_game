@@ -953,6 +953,33 @@ DIFFICULTY_FIELDS = {
 }
 DIFFICULTY_FIELD_ORDER = tuple(DIFFICULTY_FIELDS)
 DEFAULT_DIFFICULTY = {name: spec[4] for name, spec in DIFFICULTY_FIELDS.items()}
+# Realism levels (preference ``level``, saved per mission as ``level``).
+# The level tunes only the computer opponent and the displays, never a human
+# on the other side: an AI submarine attacks more or less eagerly and waits
+# for a better or worse firing solution, and the AI frigate (when the
+# uConsole commands the submarine) classifies and calls its helicopter
+# slower or faster.  Beginner also turns the operator assistance on,
+# Realistic turns it off.  The mission score is multiplied by the factor.
+LEVELS = ("beginner", "standard", "realistic")
+LEVEL_DEFAULT = "standard"
+LEVEL_SCORE_FACTOR = {"beginner": 0.75, "standard": 1.0, "realistic": 1.25}
+# Multipliers on the mission's difficulty values (clamped to their bounds).
+LEVEL_ENEMY = {
+    "beginner": {"enemy_attack_mult": 0.6, "enemy_solution_threshold": 0.75},
+    "standard": {},
+    "realistic": {"enemy_attack_mult": 1.3, "enemy_solution_threshold": 1.25},
+}
+# Multiplier on the AI frigate's mean classification and helicopter times.
+LEVEL_HUNTER_DELAY = {"beginner": 1.5, "standard": 1.0, "realistic": 0.7}
+
+def apply_level(difficulty: dict, level: str) -> dict:
+    """The difficulty values with a realism level's enemy multipliers."""
+    result = dict(difficulty)
+    for name, factor in LEVEL_ENEMY.get(level, {}).items():
+        kind, low, high = DIFFICULTY_FIELDS[name][:3]
+        result[name] = kind(clamp(result[name] * factor, low, high))
+    return result
+
 # Fester Pool für die Bonus-"zweites U-Boot"-Ziehung (2:1 Richtung AIP,
 # entspricht dem bisherigen "harte"/"hardcore"-Pool).
 SECOND_SUB_POOL = ("aip_modern", "ssn", "aip_modern")
@@ -970,9 +997,6 @@ SCORE_AMMO_BONUS = 200             # pro ungenutztem Torpedo (Sieg)
 SCORE_CIVIL_BONUS = 500            # keine zivilen Verluste (Sieg)
 SCORE_TIME_BONUS_MAX = 500         # Zeitbonus, anteilig nach verbleibender Zeit
 
-# Radio tasking (``src/core/tasking.py``): HQ orders and incidents in the
-# built-in scenarios.  The first offer comes after 15-25 minutes, the next
-# every 25-45 minutes, never more than two tasks open at once.
 # Incidents at sea (src/core/incidents.py): schedule and the four kinds.
 INCIDENT_FIRST_S = (1200.0, 2400.0)
 INCIDENT_INTERVAL_S = (1800.0, 3000.0)
@@ -993,6 +1017,10 @@ INCIDENT_DARK_S = 7200.0
 INCIDENT_WHALES_RANGE_NM = (3.0, 6.0)
 INCIDENT_WHALES_COUNT = (2, 4)
 INCIDENT_WHALES_S = 3600.0
+
+# Radio tasking (``src/core/tasking.py``): HQ orders and incidents in the
+# built-in scenarios.  The first offer comes after 15-25 minutes, the next
+# every 25-45 minutes, never more than two tasks open at once.
 TASK_FIRST_OFFER_S = (900.0, 1500.0)
 TASK_INTERVAL_S = (1500.0, 2700.0)
 TASK_MAX_OFFERS = 6

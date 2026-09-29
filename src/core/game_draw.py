@@ -958,9 +958,7 @@ class DrawMixin:
             self.tr("option.frame_rate", fps=self.frame_rate()),
             self.tr("option.bottom_panel") + ": "
             + self.tr("option.bottom_panel." + self.bottom_panel_mode()),
-            self.tr("option.operator_assist") + ": "
-            + self.tr("option.operator_assist." + ("training" if self.operator_assist()
-                                                   else "off")),
+            self._level_option_text(),
             self.tr("option.live_traffic"),
             self.tr("commander.local.option"),
         )
@@ -974,6 +972,16 @@ class DrawMixin:
                           "commander.local.options_hint",
                           292, 650, 696, 46, config.COLOR_TEXT_DIM, size=18,
                           align="center")
+
+    def _level_option_text(self) -> str:
+        """The realism level row; in a mission with another level it says
+        that the choice applies from the next mission."""
+        chosen = self._preferred_level()
+        text = self.tr("option.level", level=self.tr("level." + chosen),
+                       factor=round(config.LEVEL_SCORE_FACTOR[chosen] * 100))
+        if not self.in_menu and not self.game_over and self.level != chosen:
+            text = self.tr("option.level_next", level=self.tr("level." + chosen))
+        return text
 
     def _draw_options_setup_page(self) -> None:
         row = self._options_row_rects()[0]
@@ -1335,6 +1343,10 @@ class DrawMixin:
             self._sonar_audio_sequence = -1
         elif name in ("large_text", "high_contrast", "aa_lines"):
             self._apply_text_size()
+        elif name == "level":
+            # Beginner brings the operator assistance, the others drop it.
+            self.preferences = replace(self.preferences, operator_assist=(
+                "training" if value == "beginner" else "off"))
         elif name == "tooltips":
             self.tooltips_enabled = bool(value)
             self.pinned_tooltip = None

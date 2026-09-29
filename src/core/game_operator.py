@@ -824,8 +824,22 @@ class OperatorMixin:
                                        estimate[0])
 
     def operator_assist(self) -> bool:
-        """Training aids (auto peaks, blade-rate/catalog ranking, ESM IDs) on?"""
+        """Training aids (auto peaks, blade-rate/catalog ranking, ESM IDs) on?
+
+        The mission's realism level decides: Beginner always, Realistic
+        never, Standard as the preference says."""
+        level = getattr(self, "level", config.LEVEL_DEFAULT)
+        if level != config.LEVEL_DEFAULT:
+            return level == "beginner"
         return getattr(self.preferences, "operator_assist", "off") == "training"
+
+    def _preferred_level(self) -> str:
+        """The realism level the next mission starts with (preference)."""
+        level = getattr(self.preferences, "level", config.LEVEL_DEFAULT)
+        return level if level in config.LEVELS else config.LEVEL_DEFAULT
+
+    def level_score_factor(self) -> float:
+        return config.LEVEL_SCORE_FACTOR.get(self.level, 1.0)
 
     def set_sonar_cursor(self, page, frequency_hz):
         if page not in ("lofar", "demon"):

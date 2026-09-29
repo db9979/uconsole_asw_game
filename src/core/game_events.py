@@ -177,8 +177,11 @@ class EventMixin:
                     choices = config.FPS_CHOICES
                     step = -1 if key == pygame.K_LEFT else 1
                     value = choices[(choices.index(self.frame_rate()) + step) % len(choices)]
-                elif name == "operator_assist":
-                    value = ("off" if self.operator_assist() else "training")
+                elif name == "level":
+                    levels = config.LEVELS
+                    step = -1 if key == pygame.K_LEFT else 1
+                    value = levels[(levels.index(self._preferred_level()) + step)
+                                   % len(levels)]
                 elif name == "bottom_panel":
                     choices = layout.BOTTOM_PANEL_MODES
                     value = choices[(choices.index(self.bottom_panel_mode()) + 1)

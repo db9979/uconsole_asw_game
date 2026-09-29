@@ -467,9 +467,9 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             or not 0 <= torpedo_inventory["count"] <= torpedo_inventory["total"] <= 100
             or not bounded(torpedo_inventory["depth"], 0, 10000)):
         return False
-    # "level" is a cosmetic label now; the real custom-difficulty values
+    # The mission's realism level; the difficulty values it already scaled
     # live in mission_runtime["difficulty"] (checked just below).
-    if type(data.get("level")) is not str or not 1 <= len(data["level"]) <= 64:
+    if data.get("level") not in config.LEVELS:
         return False
     runtime_mission = data.get("mission_runtime")
     if not isinstance(runtime_mission, dict):

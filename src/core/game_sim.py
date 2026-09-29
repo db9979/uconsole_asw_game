@@ -1393,6 +1393,9 @@ class SimMixin:
             self.score += bonus + config.SCORE_AMMO_BONUS * self.torpedo_count
             if not self.incident:
                 self.score += config.SCORE_CIVIL_BONUS
+        # The realism level scales the mission's score (Beginner less,
+        # Realistic more).
+        self.score = int(round(self.score * self.level_score_factor()))
         self.announce(message("runtime.mission.won" if win
                               else "runtime.mission.lost"), "mission", 10.0)
         boat = self._opfor

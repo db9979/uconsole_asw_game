@@ -106,7 +106,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
-                    "bottom_panel", "operator_assist", "live_traffic", "commander")
+                    "bottom_panel", "level", "live_traffic", "commander")
     # Second options page: game setup.  The local side is per launch and never
     # persisted (the frigate is always the default).
     _OPTION_ROWS_SETUP = ("local_side", "aa_lines", "speech")
@@ -200,7 +200,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._radio_acc = 0.0
         self._slow_acc = 0.0
         self._apply_text_size()
-        self.level = "custom"
+        self.level = config.LEVEL_DEFAULT
         self.menu_difficulty = (dict(difficulty) if difficulty
                                 and _valid_difficulty_dict(difficulty)
                                 else dict(config.DEFAULT_DIFFICULTY))
@@ -392,7 +392,11 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                               else self.menu_difficulty),
                            # A campaign leg brings its carried torpedo stock.
                            **(difficulty_override or {})}
-        self.level = "custom"
+        # The realism level of this mission (preference, saved per mission).
+        self.level = self._preferred_level()
+        self._difficulty_base = tuple(self.difficulty[name]
+                                      for name in config.DIFFICULTY_FIELD_ORDER)
+        self.difficulty = config.apply_level(self.difficulty, self.level)
 
         if reference_sector is not None:
             # A mission's reference world: the named real sector, not seed % 128.
@@ -778,8 +782,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # may be consumed by menu start; loads replace its world/sonar identity.
         self._prepared_menu_mission = (
             seed, self.scenario_key, self.world_mode,
-            tuple(self.difficulty[name] for name in config.DIFFICULTY_FIELD_ORDER),
-            self.hq_intel_mode(), id(self.world), id(self.sonar)) if self.in_menu else None
+            self._difficulty_base, self.hq_intel_mode(), self.level,
+            id(self.world), id(self.sonar)) if self.in_menu else None
 
     def flash(self, text: object, seconds: float = 3.0) -> None:
         if (getattr(self, "local_side", "frigate") == "uboot"

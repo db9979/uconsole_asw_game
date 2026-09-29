@@ -137,7 +137,13 @@ def _recognised(game, contact) -> bool:
     """The operator takes ``CLASSIFY_MEAN_S`` on average to recognise the
     sound: a stateless draw per cadence tick and contact."""
     tick = int(math.floor(game.sim_t / CADENCE_S))
-    return detrand.u01(game.seed, "hunter.classify", contact.id, tick) < CADENCE_S / CLASSIFY_MEAN_S
+    return (detrand.u01(game.seed, "hunter.classify", contact.id, tick)
+            < CADENCE_S / (CLASSIFY_MEAN_S * _level_delay(game)))
+
+
+def _level_delay(game) -> float:
+    """The realism level stretches or shortens the crew's reaction times."""
+    return config.LEVEL_HUNTER_DELAY.get(getattr(game, "level", config.LEVEL_DEFAULT), 1.0)
 
 
 def classify(game) -> bool:
@@ -432,7 +438,8 @@ def helicopter(game, found) -> str:
         return "monitoring"
     if helo.state == "HANGAR":
         tick = int(math.floor(game.sim_t / CADENCE_S))
-        if detrand.u01(game.seed, "hunter.helo", tick) >= CADENCE_S / HELO_READY_MEAN_S:
+        if (detrand.u01(game.seed, "hunter.helo", tick)
+                >= CADENCE_S / (HELO_READY_MEAN_S * _level_delay(game))):
             return "monitoring"                     # the deck readies the helicopter
         # The hunters fly with the search radar on (as before its switch).
         helo.radar_on = True

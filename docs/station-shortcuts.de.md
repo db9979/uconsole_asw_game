@@ -1,4 +1,4 @@
-# U-Jagd 1.3.86 - Stations- und Tastenkürzel
+# U-Jagd 1.3.95 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -56,6 +56,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `W` | Autopilot: Zickzack-Suche, wachsendes Quadrat, aus |
 | `Rechtsklick` | Autopilot-Wegpunkt auf der Karte setzen |
 | `Backspace` | Autopilot-Route löschen |
+| `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist 30° beiderseits des Hecks taub) |
 
 ## 2 Sonar
 
@@ -122,6 +123,8 @@ Berechtigungsprüfungen bleiben wirksam.
 | `V` | Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen |
 | `A` | ASROC auf den zugewiesenen Kontakt (1-10 sm) |
 | `Z` | Wasserbombenmuster über das Heck |
+| `R` | U-Jagd-Raketensalve auf das Ziel (frische Entfernung, 0,4-3 sm) |
+| `Shift+R` | Raketen-Abwehrsalve in Richtung der Torpedowarnung |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Kamera-Follow an/aus |
 | `F` | Flak-Feuerfreigabe umschalten (gesperrt = feuert nie auf Angreifer) |
@@ -137,6 +140,8 @@ Berechtigungsprüfungen bleiben wirksam.
 | `C` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
 | `W` | Wache jetzt ablösen (Seite Besatzung) |
 | `G` | Gefechtsstationen an/aus |
+| `M` | Sanitätstrupp zur nächsten Station mit Verwundeten (Seite Besatzung) |
+| `U` | Leute aus den Freiwachen zur am schwersten getroffenen Station (Seite Besatzung) |
 | `1-9` | Immer Station wechseln, keine Teamzuweisung |
 | `Klick` | Raum oder Beschriftung wählen; Enter weist das gewählte Team zu |
 
@@ -183,6 +188,8 @@ Berechtigungsprüfungen bleiben wirksam.
 | `A` | Gewählten Auftrag annehmen |
 | `D` | Gewählten Auftrag ablehnen |
 | `R` | Versorger bei der HQ anfordern |
+| `K` | Kontaktmeldung an HQ (der frischeste Fix; KW-Ruf, anpeilbar) |
+| `H` | Unterstützung bei HQ anfordern (der Seefernaufklärer; KW-Ruf, anpeilbar) |
 
 ## 7 Maschinenraum
 

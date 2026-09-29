@@ -1,0 +1,4642 @@
+{
+ "note": "Main dimensions and general arrangement of the real types from public sources (Wikipedia; 'typical' marks a generic type). Schematic, for the 3D models only; gameplay values live in data/contacts.",
+ "variants": {
+  "aip_modern": {
+   "beam_m": 7,
+   "hump": null,
+   "length_m": 56,
+   "name": "Modern AIP boat (Type 212A-type)",
+   "rudders": "x",
+   "sail": {
+    "from": 0.28,
+    "to": 0.42,
+    "top_m": 8
+   },
+   "sail_planes": false,
+   "shape": "teardrop",
+   "source": "typical"
+  },
+  "aux_01": {
+   "beam_m": 9.2,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 8,
+     "u": 0.85
+    }
+   ],
+   "deck_m": 3.5,
+   "draft_m": 2.6,
+   "funnels": [
+    {
+     "top_m": 11,
+     "u": 0.55
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "mcm",
+   "length_m": 54,
+   "masts": [
+    {
+     "kind": "lattice",
+     "top_m": 15,
+     "u": 0.35
+    }
+   ],
+   "name": "Mine countermeasures vessel (Frankenthal/Tripartite type)",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.25,
+     "to": 0.65,
+     "top_m": 9,
+     "width": 0.8
+    }
+   ],
+   "vls": []
+  },
+  "aux_02": {
+   "beam_m": 12,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 2.5,
+   "draft_m": 5,
+   "funnels": [
+    {
+     "top_m": 11,
+     "u": 0.52
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "tug",
+   "length_m": 32,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 15,
+     "u": 0.35
+    }
+   ],
+   "name": "Harbour tug (ASD)",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.2,
+     "to": 0.55,
+     "top_m": 11,
+     "width": 0.7
+    }
+   ],
+   "vls": []
+  },
+  "aux_03": {
+   "beam_m": 6.2,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 2,
+   "draft_m": 1.95,
+   "funnels": [],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "rescue",
+   "length_m": 27.9,
+   "masts": [
+    {
+     "kind": "lattice",
+     "top_m": 11,
+     "u": 0.45
+    }
+   ],
+   "name": "Sea rescue cruiser (DGzRS 28 m class)",
+   "source": "https://de.wikipedia.org/wiki/28-Meter-Klasse_der_DGzRS",
+   "superstructure": [
+    {
+     "from": 0.22,
+     "to": 0.72,
+     "top_m": 7,
+     "width": 0.8
+    }
+   ],
+   "vls": []
+  },
+  "aux_04": {
+   "beam_m": 20.6,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 18,
+     "u": 0.65
+    },
+    {
+     "top_m": 14,
+     "u": 0.97
+    }
+   ],
+   "deck_m": 6,
+   "draft_m": 6.4,
+   "funnels": [
+    {
+     "top_m": 24,
+     "u": 0.55
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "research",
+   "length_m": 116,
+   "masts": [
+    {
+     "kind": "lattice",
+     "top_m": 30,
+     "u": 0.25
+    }
+   ],
+   "name": "Ocean research vessel (e.g. RV Sonne)",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.1,
+     "to": 0.55,
+     "top_m": 22,
+     "width": 0.9
+    }
+   ],
+   "vls": []
+  },
+  "aux_05": {
+   "beam_m": 25,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 25,
+     "u": 0.6
+    },
+    {
+     "top_m": 12,
+     "u": 0.97
+    }
+   ],
+   "deck_m": 8,
+   "draft_m": 7,
+   "funnels": [
+    {
+     "top_m": 28,
+     "u": 0.33
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "offshore",
+   "length_m": 140,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 31,
+     "u": 0.195
+    }
+   ],
+   "name": "Cable layer",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.04,
+     "to": 0.35,
+     "top_m": 25,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "aux_06": {
+   "beam_m": 19,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 12,
+     "u": 0.92
+    }
+   ],
+   "deck_m": 2.5,
+   "draft_m": 6.5,
+   "funnels": [
+    {
+     "top_m": 18,
+     "u": 0.3
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "offshore",
+   "length_m": 85,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 22,
+     "u": 0.175
+    }
+   ],
+   "name": "Platform supply vessel",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.05,
+     "to": 0.3,
+     "top_m": 16,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "aux_07": {
+   "beam_m": 13,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 12,
+     "u": 0.96
+    }
+   ],
+   "deck_m": 3,
+   "draft_m": 6,
+   "funnels": [
+    {
+     "top_m": 14,
+     "u": 0.5
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "trawler",
+   "length_m": 60,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 18,
+     "u": 0.3
+    }
+   ],
+   "name": "Stern trawler",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.18,
+     "to": 0.5,
+     "top_m": 12,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "aux_08": {
+   "beam_m": 15,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 10,
+     "u": 0.96
+    }
+   ],
+   "deck_m": 5,
+   "draft_m": 4.5,
+   "funnels": [
+    {
+     "top_m": 16,
+     "u": 0.5
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "research",
+   "length_m": 75,
+   "masts": [
+    {
+     "kind": "lattice",
+     "top_m": 22,
+     "u": 0.25
+    }
+   ],
+   "name": "Hydrographic survey vessel",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.12,
+     "to": 0.55,
+     "top_m": 15,
+     "width": 0.9
+    }
+   ],
+   "vls": []
+  },
+  "aux_09": {
+   "beam_m": 17,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 15,
+     "u": 0.6
+    }
+   ],
+   "deck_m": 4,
+   "draft_m": 7,
+   "funnels": [
+    {
+     "top_m": 20,
+     "u": 0.38
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "tug",
+   "length_m": 75,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 25,
+     "u": 0.25
+    }
+   ],
+   "name": "Salvage/emergency towing tug",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.1,
+     "to": 0.4,
+     "top_m": 18,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "aux_10": {
+   "beam_m": 6,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 1.5,
+   "draft_m": 1.6,
+   "funnels": [],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "pilot",
+   "length_m": 20,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 8,
+     "u": 0.4
+    }
+   ],
+   "name": "Pilot boat",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.25,
+     "to": 0.6,
+     "top_m": 5,
+     "width": 0.8
+    }
+   ],
+   "vls": []
+  },
+  "cargo_01": {
+   "beam_m": 56,
+   "bow": "bulbous",
+   "cargo": {
+    "from": 0.03,
+    "to": 0.97,
+    "top_m": 42
+   },
+   "cranes": [],
+   "deck_m": 15,
+   "draft_m": 16.0,
+   "funnels": [
+    {
+     "top_m": 52,
+     "u": 0.6
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "container",
+   "length_m": 397,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 61,
+     "u": 0.405
+    }
+   ],
+   "name": "Emma Maersk",
+   "source": "https://en.wikipedia.org/wiki/Emma_M%C3%A6rsk",
+   "superstructure": [
+    {
+     "from": 0.38,
+     "to": 0.43,
+     "top_m": 55,
+     "width": 1.0
+    },
+    {
+     "from": 0.58,
+     "to": 0.63,
+     "top_m": 42,
+     "width": 0.5
+    }
+   ],
+   "vls": []
+  },
+  "cargo_02": {
+   "beam_m": 58.8,
+   "bow": "bulbous",
+   "cargo": {
+    "from": 0.03,
+    "to": 0.97,
+    "top_m": 44
+   },
+   "cranes": [],
+   "deck_m": 15,
+   "draft_m": 14.5,
+   "funnels": [
+    {
+     "top_m": 50,
+     "u": 0.86
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "container",
+   "length_m": 399.9,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 61,
+     "u": 0.345
+    }
+   ],
+   "name": "Ever Given",
+   "source": "https://en.wikipedia.org/wiki/Ever_Given",
+   "superstructure": [
+    {
+     "from": 0.32,
+     "to": 0.37,
+     "top_m": 55,
+     "width": 1.0
+    },
+    {
+     "from": 0.84,
+     "to": 0.88,
+     "top_m": 40,
+     "width": 0.5
+    }
+   ],
+   "vls": []
+  },
+  "cargo_03": {
+   "beam_m": 48.2,
+   "bow": "bulbous",
+   "cargo": {
+    "from": 0.03,
+    "to": 0.97,
+    "top_m": 40
+   },
+   "cranes": [],
+   "deck_m": 14,
+   "draft_m": 15.5,
+   "funnels": [
+    {
+     "top_m": 48,
+     "u": 0.8
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "container",
+   "length_m": 366,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 58,
+     "u": 0.38
+    }
+   ],
+   "name": "Hapag-Lloyd container ship (Hamburg Express class)",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.36,
+     "to": 0.4,
+     "top_m": 52,
+     "width": 1.0
+    },
+    {
+     "from": 0.78,
+     "to": 0.81,
+     "top_m": 40,
+     "width": 0.5
+    }
+   ],
+   "vls": []
+  },
+  "cargo_04": {
+   "beam_m": 22.5,
+   "bow": "bulbous",
+   "cargo": {
+    "from": 0.06,
+    "to": 0.79,
+    "top_m": 20
+   },
+   "cranes": [
+    {
+     "top_m": 26,
+     "u": 0.32
+    },
+    {
+     "top_m": 26,
+     "u": 0.56
+    }
+   ],
+   "deck_m": 6,
+   "draft_m": 8.5,
+   "funnels": [
+    {
+     "top_m": 29,
+     "u": 0.88
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "container",
+   "length_m": 140,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 34,
+     "u": 0.84
+    }
+   ],
+   "name": "Geared feeder container ship",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.8,
+     "to": 0.88,
+     "top_m": 28,
+     "width": 0.9
+    }
+   ],
+   "vls": []
+  },
+  "cargo_05": {
+   "beam_m": 32.3,
+   "bow": "bulbous",
+   "cargo": {
+    "from": 0.04,
+    "to": 0.95,
+    "top_m": 34
+   },
+   "cranes": [],
+   "deck_m": 11,
+   "draft_m": 12,
+   "funnels": [
+    {
+     "top_m": 42,
+     "u": 0.83
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "container",
+   "length_m": 294,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 48,
+     "u": 0.785
+    }
+   ],
+   "name": "Panamax container ship",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.76,
+     "to": 0.81,
+     "top_m": 42,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "cargo_06": {
+   "beam_m": 32.3,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 28,
+     "u": 0.22
+    },
+    {
+     "top_m": 28,
+     "u": 0.37
+    },
+    {
+     "top_m": 28,
+     "u": 0.52
+    },
+    {
+     "top_m": 28,
+     "u": 0.67
+    }
+   ],
+   "deck_m": 6,
+   "draft_m": 11.5,
+   "funnels": [
+    {
+     "top_m": 33,
+     "u": 0.91
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "bulk",
+   "length_m": 190,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 36,
+     "u": 0.875
+    }
+   ],
+   "name": "Handymax bulk carrier",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.83,
+     "to": 0.92,
+     "top_m": 30,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "cargo_07": {
+   "beam_m": 26,
+   "bow": "bulbous",
+   "cargo": {
+    "from": 0.04,
+    "to": 0.97,
+    "top_m": 26
+   },
+   "cranes": [],
+   "deck_m": 9,
+   "draft_m": 7,
+   "funnels": [
+    {
+     "top_m": 32,
+     "u": 0.86
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "roro",
+   "length_m": 200,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 38,
+     "u": 0.095
+    }
+   ],
+   "name": "RoRo cargo ship",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.04,
+     "to": 0.15,
+     "top_m": 32,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "cargo_08": {
+   "beam_m": 32.3,
+   "bow": "bulbous",
+   "cargo": {
+    "from": 0.02,
+    "to": 0.98,
+    "top_m": 36
+   },
+   "cranes": [],
+   "deck_m": 10,
+   "draft_m": 9,
+   "funnels": [
+    {
+     "top_m": 40,
+     "u": 0.86
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "car_carrier",
+   "length_m": 200,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 46,
+     "u": 0.065
+    }
+   ],
+   "name": "Pure car and truck carrier",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.03,
+     "to": 0.1,
+     "top_m": 40,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "cargo_09": {
+   "beam_m": 24,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 24,
+     "u": 0.2
+    },
+    {
+     "top_m": 24,
+     "u": 0.4
+    },
+    {
+     "top_m": 24,
+     "u": 0.6
+    }
+   ],
+   "deck_m": 7,
+   "draft_m": 9,
+   "funnels": [
+    {
+     "top_m": 28,
+     "u": 0.88
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "reefer",
+   "length_m": 150,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 32,
+     "u": 0.845
+    }
+   ],
+   "name": "Reefer ship",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.79,
+     "to": 0.9,
+     "top_m": 26,
+     "width": 0.9
+    }
+   ],
+   "vls": []
+  },
+  "cargo_10": {
+   "beam_m": 45,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 18,
+   "funnels": [
+    {
+     "top_m": 38,
+     "u": 0.92
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "bulk",
+   "length_m": 290,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 41,
+     "u": 0.89
+    }
+   ],
+   "name": "Capesize bulk carrier",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.85,
+     "to": 0.93,
+     "top_m": 35,
+     "width": 0.8
+    }
+   ],
+   "vls": []
+  },
+  "cargo_11": {
+   "beam_m": 25,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 45,
+     "u": 0.35
+    },
+    {
+     "top_m": 45,
+     "u": 0.55
+    }
+   ],
+   "deck_m": 8,
+   "draft_m": 8,
+   "funnels": [
+    {
+     "top_m": 26,
+     "u": 0.9
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "heavy_lift",
+   "length_m": 150,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 34,
+     "u": 0.085
+    }
+   ],
+   "name": "Heavy-lift project cargo ship",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.03,
+     "to": 0.14,
+     "top_m": 28,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "cargo_12": {
+   "beam_m": 18,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 20,
+     "u": 0.25
+    },
+    {
+     "top_m": 20,
+     "u": 0.5
+    }
+   ],
+   "deck_m": 5,
+   "draft_m": 7,
+   "funnels": [
+    {
+     "top_m": 22,
+     "u": 0.9
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "general_cargo",
+   "length_m": 120,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 26,
+     "u": 0.87
+    }
+   ],
+   "name": "General cargo ship",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.82,
+     "to": 0.92,
+     "top_m": 20,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "cargo_13": {
+   "beam_m": 27,
+   "bow": "bulbous",
+   "cargo": {
+    "from": 0.05,
+    "to": 0.78,
+    "top_m": 24
+   },
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 9.5,
+   "funnels": [
+    {
+     "top_m": 32,
+     "u": 0.87
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "container",
+   "length_m": 170,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 38,
+     "u": 0.83
+    }
+   ],
+   "name": "Gearless container feeder",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.8,
+     "to": 0.86,
+     "top_m": 32,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "cargo_14": {
+   "beam_m": 21.5,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 30,
+     "u": 0.3
+    },
+    {
+     "top_m": 30,
+     "u": 0.55
+    }
+   ],
+   "deck_m": 6,
+   "draft_m": 8.5,
+   "funnels": [
+    {
+     "top_m": 26,
+     "u": 0.92
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "general_cargo",
+   "length_m": 140,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 30,
+     "u": 0.885
+    }
+   ],
+   "name": "Multipurpose cargo ship",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.84,
+     "to": 0.93,
+     "top_m": 24,
+     "width": 0.9
+    }
+   ],
+   "vls": []
+  },
+  "cargo_15": {
+   "beam_m": 13.5,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 4,
+   "draft_m": 5.5,
+   "funnels": [
+    {
+     "top_m": 15,
+     "u": 0.92
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "general_cargo",
+   "length_m": 90,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 20,
+     "u": 0.89
+    }
+   ],
+   "name": "Coaster",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.84,
+     "to": 0.94,
+     "top_m": 14,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "civil_transit": {
+   "engines": "underwing",
+   "height_m": 11.76,
+   "kind": "airliner",
+   "length_m": 37.57,
+   "name": "Airbus A320",
+   "source": "https://de.wikipedia.org/wiki/Airbus_A320",
+   "sweep_deg": 25,
+   "tail": "single",
+   "wing_u": {
+    "from": 0.36,
+    "to": 0.58
+   },
+   "wingspan_m": 35.8
+  },
+  "diesel_alt": {
+   "beam_m": 7.5,
+   "hump": null,
+   "length_m": 91,
+   "name": "Older diesel-electric boat (Foxtrot-type)",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.34,
+    "to": 0.5,
+    "top_m": 9
+   },
+   "sail_planes": false,
+   "shape": "cylinder",
+   "source": "typical"
+  },
+  "mil_patrol": {
+   "engines": "fuselage",
+   "height_m": 5.93,
+   "kind": "fighter",
+   "length_m": 21.19,
+   "name": "Sukhoi Su-33 (Flanker-D)",
+   "source": "https://de.wikipedia.org/wiki/Suchoi_Su-33",
+   "sweep_deg": 42,
+   "tail": "twin",
+   "wing_u": {
+    "from": 0.4,
+    "to": 0.8
+   },
+   "wingspan_m": 14.7
+  },
+  "passenger_01": {
+   "beam_m": 41,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 14,
+   "draft_m": 10.3,
+   "funnels": [
+    {
+     "top_m": 62,
+     "u": 0.62
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "cruise",
+   "length_m": 345,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 64,
+     "u": 0.24
+    }
+   ],
+   "name": "RMS Queen Mary 2",
+   "source": "https://en.wikipedia.org/wiki/Queen_Mary_2",
+   "superstructure": [
+    {
+     "from": 0.12,
+     "to": 0.92,
+     "top_m": 55,
+     "width": 0.95
+    }
+   ],
+   "vls": []
+  },
+  "passenger_02": {
+   "beam_m": 47,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 14,
+   "draft_m": 9.3,
+   "funnels": [
+    {
+     "top_m": 70,
+     "u": 0.7
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "cruise",
+   "length_m": 361.8,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 72,
+     "u": 0.535
+    }
+   ],
+   "name": "Oasis-class cruise ship",
+   "source": "https://en.wikipedia.org/wiki/Oasis-class_cruise_ship",
+   "superstructure": [
+    {
+     "from": 0.1,
+     "to": 0.97,
+     "top_m": 65,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_03": {
+   "beam_m": 48.47,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 14,
+   "draft_m": 9.25,
+   "funnels": [
+    {
+     "top_m": 72,
+     "u": 0.72
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "cruise",
+   "length_m": 364.75,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 75.5,
+     "u": 0.535
+    }
+   ],
+   "name": "Icon-class cruise ship",
+   "source": "https://en.wikipedia.org/wiki/Icon-class_cruise_ship",
+   "superstructure": [
+    {
+     "from": 0.1,
+     "to": 0.97,
+     "top_m": 67,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_04": {
+   "beam_m": 39,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 13,
+   "draft_m": 8.6,
+   "funnels": [
+    {
+     "top_m": 60,
+     "u": 0.42
+    },
+    {
+     "top_m": 60,
+     "u": 0.62
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "cruise",
+   "length_m": 341.8,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 61,
+     "u": 0.54
+    }
+   ],
+   "name": "Disney Wish",
+   "source": "https://en.wikipedia.org/wiki/Disney_Wish",
+   "superstructure": [
+    {
+     "from": 0.13,
+     "to": 0.95,
+     "top_m": 55,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_05": {
+   "beam_m": 42,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 13,
+   "draft_m": 8.8,
+   "funnels": [
+    {
+     "top_m": 60,
+     "u": 0.8
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "cruise",
+   "length_m": 337,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 61,
+     "u": 0.535
+    }
+   ],
+   "name": "AIDAnova",
+   "source": "https://en.wikipedia.org/wiki/AIDAnova",
+   "superstructure": [
+    {
+     "from": 0.12,
+     "to": 0.95,
+     "top_m": 55,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_06": {
+   "beam_m": 41,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 13,
+   "draft_m": 8.55,
+   "funnels": [
+    {
+     "top_m": 65,
+     "u": 0.82
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "cruise",
+   "length_m": 339,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 64,
+     "u": 0.53
+    }
+   ],
+   "name": "MSC Seashore",
+   "source": "https://en.wikipedia.org/wiki/MSC_Seashore",
+   "superstructure": [
+    {
+     "from": 0.11,
+     "to": 0.95,
+     "top_m": 58,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_07": {
+   "beam_m": 36,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 12,
+   "draft_m": 8.3,
+   "funnels": [
+    {
+     "top_m": 58,
+     "u": 0.8
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "cruise",
+   "length_m": 316,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 58,
+     "u": 0.535
+    }
+   ],
+   "name": "Mein Schiff 1 (2018)",
+   "source": "https://en.wikipedia.org/wiki/Mein_Schiff_1_(2018)",
+   "superstructure": [
+    {
+     "from": 0.12,
+     "to": 0.95,
+     "top_m": 52,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_08": {
+   "beam_m": 35,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 10,
+   "draft_m": 6.8,
+   "funnels": [
+    {
+     "top_m": 50,
+     "u": 0.78
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "ferry",
+   "length_m": 223.7,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 51,
+     "u": 0.5
+    }
+   ],
+   "name": "MS Color Magic",
+   "source": "https://en.wikipedia.org/wiki/MS_Color_Magic",
+   "superstructure": [
+    {
+     "from": 0.1,
+     "to": 0.9,
+     "top_m": 45,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_09": {
+   "beam_m": 32,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 10,
+   "draft_m": 6.65,
+   "funnels": [
+    {
+     "top_m": 44,
+     "u": 0.66
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "ferry",
+   "length_m": 240,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 44,
+     "u": 0.395
+    }
+   ],
+   "name": "MS Stena Britannica (2010)",
+   "source": "https://en.wikipedia.org/wiki/MV_Stena_Britannica",
+   "superstructure": [
+    {
+     "from": 0.07,
+     "to": 0.72,
+     "top_m": 38,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_10": {
+   "beam_m": 27,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 9,
+   "draft_m": 6.5,
+   "funnels": [
+    {
+     "top_m": 36,
+     "u": 0.58
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "ferry",
+   "length_m": 200,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 38,
+     "u": 0.34
+    }
+   ],
+   "name": "Baltic/North Sea RoPax ferry",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.06,
+     "to": 0.62,
+     "top_m": 32,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_11": {
+   "beam_m": 23.6,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 5.3,
+   "funnels": [
+    {
+     "top_m": 28,
+     "u": 0.76
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "cruise",
+   "length_m": 140,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 29,
+     "u": 0.47
+    }
+   ],
+   "name": "Hurtigruten expedition ship (MS Roald Amundsen)",
+   "source": "https://en.wikipedia.org/wiki/MS_Roald_Amundsen",
+   "superstructure": [
+    {
+     "from": 0.08,
+     "to": 0.86,
+     "top_m": 26,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_12": {
+   "beam_m": 20,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 5.3,
+   "funnels": [
+    {
+     "top_m": 30,
+     "u": 0.76
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "cruise",
+   "length_m": 130,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 34,
+     "u": 0.47
+    }
+   ],
+   "name": "Polar expedition cruise ship",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.08,
+     "to": 0.86,
+     "top_m": 28,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_13": {
+   "beam_m": 11.4,
+   "bow": "plumb",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 2.5,
+   "draft_m": 1.6,
+   "funnels": [],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "cruise",
+   "length_m": 135,
+   "masts": [],
+   "name": "River cruise ship",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.05,
+     "to": 0.97,
+     "top_m": 10,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "passenger_14": {
+   "beam_m": 30,
+   "bow": "wave_piercing",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 6,
+   "draft_m": 3.9,
+   "funnels": [
+    {
+     "top_m": 20,
+     "u": 0.75
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "ferry",
+   "length_m": 112,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 24,
+     "u": 0.25
+    }
+   ],
+   "name": "High-speed catamaran ferry (Incat 112 m type)",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.1,
+     "to": 0.8,
+     "top_m": 18,
+     "width": 0.9
+    }
+   ],
+   "vls": []
+  },
+  "passenger_15": {
+   "beam_m": 30,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 10,
+   "draft_m": 6.8,
+   "funnels": [
+    {
+     "top_m": 45,
+     "u": 0.78
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "ferry",
+   "length_m": 190,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 46,
+     "u": 0.49
+    }
+   ],
+   "name": "Overnight cruise ferry",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.1,
+     "to": 0.88,
+     "top_m": 40,
+     "width": 1.0
+    }
+   ],
+   "vls": []
+  },
+  "ssn": {
+   "beam_m": 13.6,
+   "hump": null,
+   "length_m": 110,
+   "name": "Nuclear attack boat (Akula-type)",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.36,
+    "to": 0.52,
+    "top_m": 11.5
+   },
+   "sail_planes": false,
+   "shape": "double_hull_wide",
+   "source": "typical"
+  },
+  "su_25": {
+   "engines": "fuselage",
+   "height_m": 4.8,
+   "kind": "attack",
+   "length_m": 15.53,
+   "name": "Sukhoi Su-25 (Frogfoot)",
+   "source": "https://de.wikipedia.org/wiki/Suchoi_Su-25",
+   "sweep_deg": 20,
+   "tail": "single",
+   "wing_u": {
+    "from": 0.38,
+    "to": 0.62
+   },
+   "wingspan_m": 14.36
+  },
+  "sub_01": {
+   "beam_m": 10,
+   "hump": null,
+   "length_m": 73,
+   "name": "Type 212CD",
+   "rudders": "x",
+   "sail": {
+    "from": 0.26,
+    "to": 0.38,
+    "top_m": 9
+   },
+   "sail_planes": false,
+   "shape": "teardrop",
+   "source": "https://en.wikipedia.org/wiki/Type_212CD_submarine"
+  },
+  "sub_02": {
+   "beam_m": 6.3,
+   "hump": null,
+   "length_m": 65,
+   "name": "Type 214",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.3,
+    "to": 0.42,
+    "top_m": 7.5
+   },
+   "sail_planes": true,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Type_214_submarine"
+  },
+  "sub_03": {
+   "beam_m": 10.4,
+   "hump": null,
+   "length_m": 115,
+   "name": "Virginia class",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.19,
+    "to": 0.29,
+    "top_m": 10.5
+   },
+   "sail_planes": false,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Virginia-class_submarine"
+  },
+  "sub_04": {
+   "beam_m": 10,
+   "hump": null,
+   "length_m": 110,
+   "name": "Los Angeles class",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.2,
+    "to": 0.3,
+    "top_m": 10.5
+   },
+   "sail_planes": true,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Los_Angeles-class_submarine"
+  },
+  "sub_05": {
+   "beam_m": 12.2,
+   "hump": null,
+   "length_m": 107.6,
+   "name": "Seawolf class",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.22,
+    "to": 0.33,
+    "top_m": 11.5
+   },
+   "sail_planes": false,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Seawolf-class_submarine"
+  },
+  "sub_06": {
+   "beam_m": 11.3,
+   "hump": null,
+   "length_m": 97,
+   "name": "Astute class",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.26,
+    "to": 0.38,
+    "top_m": 11
+   },
+   "sail_planes": false,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Astute-class_submarine"
+  },
+  "sub_07": {
+   "beam_m": 9.8,
+   "hump": null,
+   "length_m": 85.4,
+   "name": "Trafalgar class",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.27,
+    "to": 0.39,
+    "top_m": 10
+   },
+   "sail_planes": false,
+   "shape": "teardrop",
+   "source": "https://en.wikipedia.org/wiki/Trafalgar-class_submarine"
+  },
+  "sub_08": {
+   "beam_m": 7.6,
+   "hump": null,
+   "length_m": 73.6,
+   "name": "Rubis class",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.28,
+    "to": 0.4,
+    "top_m": 8.5
+   },
+   "sail_planes": true,
+   "shape": "teardrop",
+   "source": "https://en.wikipedia.org/wiki/Rubis-class_submarine"
+  },
+  "sub_09": {
+   "beam_m": 8.8,
+   "hump": null,
+   "length_m": 99.5,
+   "name": "Suffren class (Barracuda)",
+   "rudders": "x",
+   "sail": {
+    "from": 0.25,
+    "to": 0.36,
+    "top_m": 9.5
+   },
+   "sail_planes": true,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Suffren-class_submarine"
+  },
+  "sub_10": {
+   "beam_m": 6.2,
+   "hump": null,
+   "length_m": 66.4,
+   "name": "Scorpene class",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.28,
+    "to": 0.4,
+    "top_m": 7.5
+   },
+   "sail_planes": true,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Scorp%C3%A8ne-class_submarine"
+  },
+  "sub_11": {
+   "beam_m": 9.9,
+   "hump": null,
+   "length_m": 72.6,
+   "name": "Kilo class (Project 877)",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.33,
+    "to": 0.5,
+    "top_m": 9
+   },
+   "sail_planes": false,
+   "shape": "teardrop",
+   "source": "https://de.wikipedia.org/wiki/Kilo-Klasse"
+  },
+  "sub_12": {
+   "beam_m": 9.9,
+   "hump": null,
+   "length_m": 73.8,
+   "name": "Improved Kilo (Project 636.3)",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.33,
+    "to": 0.5,
+    "top_m": 9
+   },
+   "sail_planes": false,
+   "shape": "teardrop",
+   "source": "https://en.wikipedia.org/wiki/Kilo-class_submarine"
+  },
+  "sub_13": {
+   "beam_m": 7.1,
+   "hump": null,
+   "length_m": 66.7,
+   "name": "Lada class (Project 677)",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.28,
+    "to": 0.4,
+    "top_m": 8
+   },
+   "sail_planes": true,
+   "shape": "cylinder",
+   "source": "https://de.wikipedia.org/wiki/Lada-Klasse"
+  },
+  "sub_14": {
+   "beam_m": 13,
+   "hump": null,
+   "length_m": 130,
+   "name": "Yasen-M class (Project 885M)",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.24,
+    "to": 0.37,
+    "top_m": 11.5
+   },
+   "sail_planes": false,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Yasen-class_submarine"
+  },
+  "sub_15": {
+   "beam_m": 18.2,
+   "hump": null,
+   "length_m": 155,
+   "name": "Oscar II class (Project 949A)",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.38,
+    "to": 0.52,
+    "top_m": 14
+   },
+   "sail_planes": false,
+   "shape": "double_hull_wide",
+   "source": "https://en.wikipedia.org/wiki/Oscar-class_submarine"
+  },
+  "sub_16": {
+   "beam_m": 13.6,
+   "hump": null,
+   "length_m": 110.3,
+   "name": "Akula class (Project 971)",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.36,
+    "to": 0.52,
+    "top_m": 11.5
+   },
+   "sail_planes": false,
+   "shape": "double_hull_wide",
+   "source": "https://en.wikipedia.org/wiki/Akula-class_submarine"
+  },
+  "sub_17": {
+   "beam_m": 13.5,
+   "hump": {
+    "from": 0.32,
+    "to": 0.6,
+    "top_m": 8.5
+   },
+   "length_m": 170,
+   "name": "Borei class (Project 955)",
+   "rudders": "cross",
+   "sail": {
+    "from": 0.22,
+    "to": 0.32,
+    "top_m": 12
+   },
+   "sail_planes": false,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Borei-class_submarine"
+  },
+  "sub_18": {
+   "beam_m": 7.8,
+   "hump": null,
+   "length_m": 77.4,
+   "name": "Collins class",
+   "rudders": "x",
+   "sail": {
+    "from": 0.28,
+    "to": 0.4,
+    "top_m": 8
+   },
+   "sail_planes": true,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Collins-class_submarine"
+  },
+  "sub_19": {
+   "beam_m": 9.1,
+   "hump": null,
+   "length_m": 84,
+   "name": "Soryu class",
+   "rudders": "x",
+   "sail": {
+    "from": 0.28,
+    "to": 0.4,
+    "top_m": 8.5
+   },
+   "sail_planes": true,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/S%C5%8Dry%C5%AB-class_submarine"
+  },
+  "sub_20": {
+   "beam_m": 9.1,
+   "hump": null,
+   "length_m": 84,
+   "name": "Taigei class",
+   "rudders": "x",
+   "sail": {
+    "from": 0.27,
+    "to": 0.38,
+    "top_m": 8.5
+   },
+   "sail_planes": true,
+   "shape": "cylinder",
+   "source": "https://en.wikipedia.org/wiki/Taigei-class_submarine"
+  },
+  "tanker_01": {
+   "beam_m": 32.3,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 24,
+     "u": 0.36
+    },
+    {
+     "top_m": 24,
+     "u": 0.46
+    },
+    {
+     "top_m": 24,
+     "u": 0.56
+    },
+    {
+     "top_m": 24,
+     "u": 0.66
+    }
+   ],
+   "deck_m": 8.0,
+   "draft_m": 9.12,
+   "funnels": [
+    {
+     "top_m": 33,
+     "u": 0.26
+    }
+   ],
+   "guns": [],
+   "helideck": {
+    "from": 0.84,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "replenishment",
+   "length_m": 210,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 42,
+     "u": 0.16
+    }
+   ],
+   "name": "Lewis and Clark-class dry cargo ship (T-AKE)",
+   "source": "https://en.wikipedia.org/wiki/Lewis_and_Clark-class_dry_cargo_ship",
+   "superstructure": [
+    {
+     "from": 0.04,
+     "to": 0.28,
+     "top_m": 30,
+     "width": 0.95
+    },
+    {
+     "from": 0.76,
+     "to": 0.84,
+     "top_m": 18,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "tanker_02": {
+   "beam_m": 32.4,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 24,
+     "u": 0.3
+    },
+    {
+     "top_m": 24,
+     "u": 0.4
+    },
+    {
+     "top_m": 24,
+     "u": 0.5
+    },
+    {
+     "top_m": 24,
+     "u": 0.6
+    }
+   ],
+   "deck_m": 8.8,
+   "draft_m": 10.2,
+   "funnels": [
+    {
+     "top_m": 32,
+     "u": 0.8
+    }
+   ],
+   "guns": [],
+   "helideck": {
+    "from": 0.86,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "replenishment",
+   "length_m": 227.4,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 40,
+     "u": 0.125
+    }
+   ],
+   "name": "John Lewis-class replenishment oiler (T-AO-205)",
+   "source": "https://en.wikipedia.org/wiki/John_Lewis-class_replenishment_oiler",
+   "superstructure": [
+    {
+     "from": 0.05,
+     "to": 0.2,
+     "top_m": 28,
+     "width": 0.9
+    },
+    {
+     "from": 0.72,
+     "to": 0.85,
+     "top_m": 22,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "tanker_03": {
+   "beam_m": 28.6,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 24,
+     "u": 0.32
+    },
+    {
+     "top_m": 24,
+     "u": 0.42
+    },
+    {
+     "top_m": 24,
+     "u": 0.52
+    },
+    {
+     "top_m": 24,
+     "u": 0.62
+    }
+   ],
+   "deck_m": 8.5,
+   "draft_m": 10,
+   "funnels": [
+    {
+     "top_m": 31,
+     "u": 0.74
+    }
+   ],
+   "guns": [],
+   "helideck": {
+    "from": 0.84,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "replenishment",
+   "length_m": 200.9,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 42,
+     "u": 0.135
+    }
+   ],
+   "name": "Tide-class tanker",
+   "source": "https://en.wikipedia.org/wiki/Tide-class_tanker",
+   "superstructure": [
+    {
+     "from": 0.05,
+     "to": 0.22,
+     "top_m": 30,
+     "width": 0.9
+    },
+    {
+     "from": 0.7,
+     "to": 0.84,
+     "top_m": 20,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "tanker_04": {
+   "beam_m": 24,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 24,
+     "u": 0.38
+    },
+    {
+     "top_m": 24,
+     "u": 0.56
+    }
+   ],
+   "deck_m": 7.1,
+   "draft_m": 7.4,
+   "funnels": [
+    {
+     "top_m": 27,
+     "u": 0.78
+    }
+   ],
+   "guns": [],
+   "helideck": {
+    "from": 0.84,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "replenishment",
+   "length_m": 173.7,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 36,
+     "u": 0.15
+    }
+   ],
+   "name": "Berlin-class replenishment ship (EGV)",
+   "source": "https://en.wikipedia.org/wiki/Berlin-class_replenishment_ship",
+   "superstructure": [
+    {
+     "from": 0.05,
+     "to": 0.25,
+     "top_m": 24,
+     "width": 0.9
+    },
+    {
+     "from": 0.72,
+     "to": 0.84,
+     "top_m": 18,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "tanker_05": {
+   "beam_m": 28.25,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 24,
+     "u": 0.3
+    },
+    {
+     "top_m": 24,
+     "u": 0.4
+    },
+    {
+     "top_m": 24,
+     "u": 0.5
+    },
+    {
+     "top_m": 24,
+     "u": 0.6
+    }
+   ],
+   "deck_m": 8.5,
+   "draft_m": 9.97,
+   "funnels": [
+    {
+     "top_m": 34,
+     "u": 0.78
+    }
+   ],
+   "guns": [],
+   "helideck": {
+    "from": 0.84,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "replenishment",
+   "length_m": 196.5,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 42,
+     "u": 0.75
+    }
+   ],
+   "name": "Wave-class tanker",
+   "source": "https://en.wikipedia.org/wiki/Wave-class_tanker",
+   "superstructure": [
+    {
+     "from": 0.66,
+     "to": 0.84,
+     "top_m": 30,
+     "width": 0.9
+    }
+   ],
+   "vls": []
+  },
+  "tanker_06": {
+   "beam_m": 25.9,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 24,
+     "u": 0.32
+    },
+    {
+     "top_m": 24,
+     "u": 0.43
+    },
+    {
+     "top_m": 24,
+     "u": 0.54
+    },
+    {
+     "top_m": 24,
+     "u": 0.64
+    }
+   ],
+   "deck_m": 7.4,
+   "draft_m": 8.62,
+   "funnels": [
+    {
+     "top_m": 29,
+     "u": 0.73
+    }
+   ],
+   "guns": [],
+   "helideck": {
+    "from": 0.83,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "replenishment",
+   "length_m": 183,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 40,
+     "u": 0.145
+    }
+   ],
+   "name": "Aegir-type replenishment tanker (e.g. HNoMS Maud)",
+   "source": "https://en.wikipedia.org/wiki/HNoMS_Maud",
+   "superstructure": [
+    {
+     "from": 0.05,
+     "to": 0.24,
+     "top_m": 28,
+     "width": 0.9
+    },
+    {
+     "from": 0.7,
+     "to": 0.83,
+     "top_m": 20,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "tanker_07": {
+   "beam_m": 27.2,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 24,
+     "u": 0.35
+    },
+    {
+     "top_m": 24,
+     "u": 0.45
+    },
+    {
+     "top_m": 24,
+     "u": 0.55
+    },
+    {
+     "top_m": 24,
+     "u": 0.63
+    }
+   ],
+   "deck_m": 7.4,
+   "draft_m": 8.4,
+   "funnels": [
+    {
+     "top_m": 32,
+     "u": 0.72
+    }
+   ],
+   "guns": [],
+   "helideck": {
+    "from": 0.82,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "replenishment",
+   "length_m": 193,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 42,
+     "u": 0.165
+    }
+   ],
+   "name": "Vulcano-class logistic support ship",
+   "source": "https://en.wikipedia.org/wiki/Vulcano-class_logistic_support_ship",
+   "superstructure": [
+    {
+     "from": 0.05,
+     "to": 0.28,
+     "top_m": 30,
+     "width": 0.9
+    },
+    {
+     "from": 0.68,
+     "to": 0.82,
+     "top_m": 20,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "tanker_08": {
+   "beam_m": 21,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 24,
+     "u": 0.28
+    },
+    {
+     "top_m": 24,
+     "u": 0.4
+    },
+    {
+     "top_m": 24,
+     "u": 0.52
+    }
+   ],
+   "deck_m": 7.1,
+   "draft_m": 7.25,
+   "funnels": [
+    {
+     "top_m": 28,
+     "u": 0.72
+    }
+   ],
+   "guns": [],
+   "helideck": {
+    "from": 0.82,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "replenishment",
+   "length_m": 146.6,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 36,
+     "u": 0.71
+    }
+   ],
+   "name": "Etna-class replenishment oiler",
+   "source": "https://en.wikipedia.org/wiki/Etna-class_replenishment_oiler",
+   "superstructure": [
+    {
+     "from": 0.6,
+     "to": 0.82,
+     "top_m": 24,
+     "width": 0.9
+    }
+   ],
+   "vls": []
+  },
+  "tanker_09": {
+   "beam_m": 32.6,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 24,
+     "u": 0.28
+    },
+    {
+     "top_m": 24,
+     "u": 0.37
+    },
+    {
+     "top_m": 24,
+     "u": 0.46
+    },
+    {
+     "top_m": 24,
+     "u": 0.55
+    },
+    {
+     "top_m": 24,
+     "u": 0.62
+    }
+   ],
+   "deck_m": 9.4,
+   "draft_m": 11.9,
+   "funnels": [
+    {
+     "top_m": 36,
+     "u": 0.73
+    }
+   ],
+   "guns": [],
+   "helideck": {
+    "from": 0.84,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "replenishment",
+   "length_m": 229.8,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 42,
+     "u": 0.135
+    }
+   ],
+   "name": "Supply-class fast combat support ship",
+   "source": "https://en.wikipedia.org/wiki/Supply-class_fast_combat_support_ship",
+   "superstructure": [
+    {
+     "from": 0.05,
+     "to": 0.22,
+     "top_m": 30,
+     "width": 0.85
+    },
+    {
+     "from": 0.64,
+     "to": 0.82,
+     "top_m": 24,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "tanker_10": {
+   "beam_m": 59,
+   "bow": "bulbous",
+   "cargo": {
+    "from": 0.03,
+    "to": 0.97,
+    "top_m": 44
+   },
+   "cranes": [],
+   "deck_m": 16,
+   "draft_m": 14.5,
+   "funnels": [
+    {
+     "top_m": 50,
+     "u": 0.8
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "container",
+   "length_m": 399.2,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 58,
+     "u": 0.385
+    }
+   ],
+   "name": "Maersk Triple E-class container ship",
+   "source": "https://en.wikipedia.org/wiki/Triple_E-class_container_ship",
+   "superstructure": [
+    {
+     "from": 0.36,
+     "to": 0.41,
+     "top_m": 52,
+     "width": 1.0
+    },
+    {
+     "from": 0.78,
+     "to": 0.82,
+     "top_m": 40,
+     "width": 0.5
+    }
+   ],
+   "vls": []
+  },
+  "tanker_11": {
+   "beam_m": 60,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 20,
+     "u": 0.5
+    }
+   ],
+   "deck_m": 9,
+   "draft_m": 20.5,
+   "funnels": [
+    {
+     "top_m": 42,
+     "u": 0.92
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "tanker",
+   "length_m": 330,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 44,
+     "u": 0.875
+    }
+   ],
+   "name": "VLCC crude oil tanker",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.83,
+     "to": 0.92,
+     "top_m": 38,
+     "width": 0.75
+    }
+   ],
+   "vls": []
+  },
+  "tanker_12": {
+   "beam_m": 44,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 17,
+     "u": 0.5
+    }
+   ],
+   "deck_m": 7,
+   "draft_m": 14.5,
+   "funnels": [
+    {
+     "top_m": 36,
+     "u": 0.92
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "tanker",
+   "length_m": 245,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 38,
+     "u": 0.875
+    }
+   ],
+   "name": "Aframax crude oil tanker",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.83,
+     "to": 0.92,
+     "top_m": 32,
+     "width": 0.75
+    }
+   ],
+   "vls": []
+  },
+  "tanker_13": {
+   "beam_m": 48,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 18,
+     "u": 0.5
+    }
+   ],
+   "deck_m": 8,
+   "draft_m": 17,
+   "funnels": [
+    {
+     "top_m": 39,
+     "u": 0.92
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "tanker",
+   "length_m": 275,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 41,
+     "u": 0.875
+    }
+   ],
+   "name": "Suezmax crude oil tanker",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.83,
+     "to": 0.92,
+     "top_m": 35,
+     "width": 0.75
+    }
+   ],
+   "vls": []
+  },
+  "tanker_14": {
+   "beam_m": 53.8,
+   "bow": "bulbous",
+   "cargo": {
+    "from": 0.08,
+    "to": 0.84,
+    "top_m": 20
+   },
+   "cranes": [],
+   "deck_m": 15,
+   "draft_m": 12,
+   "funnels": [
+    {
+     "top_m": 46,
+     "u": 0.94
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "lng",
+   "length_m": 345,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 48,
+     "u": 0.9
+    }
+   ],
+   "name": "Q-Max LNG carrier",
+   "source": "https://en.wikipedia.org/wiki/Q-Max",
+   "superstructure": [
+    {
+     "from": 0.86,
+     "to": 0.94,
+     "top_m": 42,
+     "width": 0.8
+    }
+   ],
+   "vls": []
+  },
+  "tanker_15": {
+   "beam_m": 46,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 18,
+     "u": 0.5
+    }
+   ],
+   "deck_m": 8,
+   "draft_m": 15,
+   "funnels": [
+    {
+     "top_m": 38,
+     "u": 0.93
+    }
+   ],
+   "guns": [],
+   "helideck": null,
+   "island": null,
+   "layout": "tanker",
+   "length_m": 280,
+   "masts": [
+    {
+     "kind": "pole",
+     "top_m": 40,
+     "u": 0.885
+    }
+   ],
+   "name": "DP shuttle tanker (bow loading)",
+   "source": "typical",
+   "superstructure": [
+    {
+     "from": 0.84,
+     "to": 0.93,
+     "top_m": 34,
+     "width": 0.75
+    },
+    {
+     "from": 0.0,
+     "to": 0.04,
+     "top_m": 16,
+     "width": 0.5
+    }
+   ],
+   "vls": []
+  },
+  "warship_01": {
+   "beam_m": 20.1,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 9.4,
+   "funnels": [
+    {
+     "top_m": 21,
+     "u": 0.46
+    },
+    {
+     "top_m": 21,
+     "u": 0.6
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.12
+    }
+   ],
+   "helideck": {
+    "from": 0.84,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 155.3,
+   "masts": [
+    {
+     "kind": "lattice",
+     "top_m": 42,
+     "u": 0.37
+    }
+   ],
+   "name": "Arleigh Burke-class destroyer (Flight IIA)",
+   "source": "https://en.wikipedia.org/wiki/Arleigh_Burke-class_destroyer",
+   "superstructure": [
+    {
+     "from": 0.24,
+     "to": 0.45,
+     "top_m": 20,
+     "width": 0.75
+    },
+    {
+     "from": 0.45,
+     "to": 0.62,
+     "top_m": 15,
+     "width": 0.7
+    },
+    {
+     "from": 0.62,
+     "to": 0.75,
+     "top_m": 13,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.16,
+     "to": 0.22
+    },
+    {
+     "from": 0.73,
+     "to": 0.84
+    }
+   ]
+  },
+  "warship_02": {
+   "beam_m": 16.8,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 10.2,
+   "funnels": [
+    {
+     "top_m": 22,
+     "u": 0.42
+    },
+    {
+     "top_m": 22,
+     "u": 0.63
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.1
+    },
+    {
+     "u": 0.91
+    }
+   ],
+   "helideck": {
+    "from": 0.72,
+    "to": 0.8
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 173.0,
+   "masts": [
+    {
+     "kind": "lattice",
+     "top_m": 40,
+     "u": 0.33
+    },
+    {
+     "kind": "lattice",
+     "top_m": 36,
+     "u": 0.58
+    }
+   ],
+   "name": "Ticonderoga-class cruiser",
+   "source": "https://en.wikipedia.org/wiki/Ticonderoga-class_cruiser",
+   "superstructure": [
+    {
+     "from": 0.22,
+     "to": 0.5,
+     "top_m": 20,
+     "width": 0.75
+    },
+    {
+     "from": 0.5,
+     "to": 0.72,
+     "top_m": 18,
+     "width": 0.75
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.13,
+     "to": 0.2
+    },
+    {
+     "from": 0.81,
+     "to": 0.88
+    }
+   ]
+  },
+  "warship_03": {
+   "beam_m": 24.6,
+   "bow": "tumblehome",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 6,
+   "draft_m": 8.4,
+   "funnels": [],
+   "guns": [
+    {
+     "u": 0.19
+    },
+    {
+     "u": 0.26
+    }
+   ],
+   "helideck": {
+    "from": 0.72,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 190,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 29,
+     "u": 0.4
+    }
+   ],
+   "name": "Zumwalt-class destroyer",
+   "source": "https://en.wikipedia.org/wiki/Zumwalt-class_destroyer",
+   "superstructure": [
+    {
+     "from": 0.3,
+     "to": 0.52,
+     "top_m": 26,
+     "width": 0.65
+    },
+    {
+     "from": 0.52,
+     "to": 0.7,
+     "top_m": 14,
+     "width": 0.7
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.07,
+     "to": 0.16
+    },
+    {
+     "from": 0.7,
+     "to": 0.78
+    }
+   ]
+  },
+  "warship_04": {
+   "beam_m": 21.2,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 7.4,
+   "funnels": [
+    {
+     "top_m": 22,
+     "u": 0.44
+    },
+    {
+     "top_m": 22,
+     "u": 0.62
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.13
+    }
+   ],
+   "helideck": {
+    "from": 0.78,
+    "to": 0.96
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 152.4,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 40,
+     "u": 0.3
+    },
+    {
+     "kind": "enclosed",
+     "top_m": 32,
+     "u": 0.55
+    }
+   ],
+   "name": "Type 45 destroyer",
+   "source": "https://en.wikipedia.org/wiki/Type_45_destroyer",
+   "superstructure": [
+    {
+     "from": 0.25,
+     "to": 0.66,
+     "top_m": 17,
+     "width": 0.8
+    },
+    {
+     "from": 0.66,
+     "to": 0.78,
+     "top_m": 12,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.17,
+     "to": 0.25
+    }
+   ]
+  },
+  "warship_05": {
+   "beam_m": 16.1,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 7.3,
+   "funnels": [
+    {
+     "top_m": 20,
+     "u": 0.55
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.12
+    }
+   ],
+   "helideck": {
+    "from": 0.8,
+    "to": 0.96
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 133,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 30,
+     "u": 0.36
+    },
+    {
+     "kind": "lattice",
+     "top_m": 24,
+     "u": 0.62
+    }
+   ],
+   "name": "Type 23 frigate",
+   "source": "https://en.wikipedia.org/wiki/Type_23_frigate",
+   "superstructure": [
+    {
+     "from": 0.22,
+     "to": 0.68,
+     "top_m": 15,
+     "width": 0.8
+    },
+    {
+     "from": 0.68,
+     "to": 0.8,
+     "top_m": 10,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.17,
+     "to": 0.22
+    }
+   ]
+  },
+  "warship_06": {
+   "beam_m": 20.8,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 8,
+   "funnels": [
+    {
+     "top_m": 23,
+     "u": 0.5
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.12
+    }
+   ],
+   "helideck": {
+    "from": 0.72,
+    "to": 0.94
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 149.9,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 38,
+     "u": 0.32
+    }
+   ],
+   "name": "Type 26 frigate",
+   "source": "https://en.wikipedia.org/wiki/Type_26_frigate",
+   "superstructure": [
+    {
+     "from": 0.22,
+     "to": 0.46,
+     "top_m": 18,
+     "width": 0.8
+    },
+    {
+     "from": 0.46,
+     "to": 0.56,
+     "top_m": 15,
+     "width": 0.8
+    },
+    {
+     "from": 0.56,
+     "to": 0.72,
+     "top_m": 13,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.15,
+     "to": 0.21
+    },
+    {
+     "from": 0.46,
+     "to": 0.49
+    }
+   ]
+  },
+  "warship_07": {
+   "beam_m": 17.44,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 6,
+   "funnels": [
+    {
+     "top_m": 21,
+     "u": 0.46
+    },
+    {
+     "top_m": 21,
+     "u": 0.55
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.14
+    }
+   ],
+   "helideck": {
+    "from": 0.78,
+    "to": 0.96
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 143,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 38,
+     "u": 0.33
+    },
+    {
+     "kind": "enclosed",
+     "top_m": 30,
+     "u": 0.6
+    }
+   ],
+   "name": "Sachsen-class frigate (F124)",
+   "source": "https://de.wikipedia.org/wiki/Sachsen-Klasse_(2004)",
+   "superstructure": [
+    {
+     "from": 0.25,
+     "to": 0.66,
+     "top_m": 16,
+     "width": 0.8
+    },
+    {
+     "from": 0.66,
+     "to": 0.78,
+     "top_m": 11,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.19,
+     "to": 0.25
+    }
+   ]
+  },
+  "warship_08": {
+   "beam_m": 18.8,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 5,
+   "funnels": [
+    {
+     "top_m": 25,
+     "u": 0.54
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.12
+    }
+   ],
+   "helideck": {
+    "from": 0.74,
+    "to": 0.92
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 149.5,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 40,
+     "u": 0.3
+    },
+    {
+     "kind": "enclosed",
+     "top_m": 34,
+     "u": 0.6
+    }
+   ],
+   "name": "Baden-Wuerttemberg-class frigate (F125)",
+   "source": "https://de.wikipedia.org/wiki/Baden-W%C3%BCrttemberg-Klasse",
+   "superstructure": [
+    {
+     "from": 0.2,
+     "to": 0.44,
+     "top_m": 20,
+     "width": 0.8
+    },
+    {
+     "from": 0.5,
+     "to": 0.74,
+     "top_m": 17,
+     "width": 0.8
+    }
+   ],
+   "vls": []
+  },
+  "warship_09": {
+   "beam_m": 17.44,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 6,
+   "funnels": [
+    {
+     "top_m": 21,
+     "u": 0.46
+    },
+    {
+     "top_m": 21,
+     "u": 0.55
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.14
+    }
+   ],
+   "helideck": {
+    "from": 0.78,
+    "to": 0.96
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 143,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 38,
+     "u": 0.33
+    },
+    {
+     "kind": "enclosed",
+     "top_m": 30,
+     "u": 0.6
+    }
+   ],
+   "name": "Sachsen-class frigate (F124)",
+   "source": "https://de.wikipedia.org/wiki/Sachsen-Klasse_(2004)",
+   "superstructure": [
+    {
+     "from": 0.25,
+     "to": 0.66,
+     "top_m": 16,
+     "width": 0.8
+    },
+    {
+     "from": 0.66,
+     "to": 0.78,
+     "top_m": 11,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.19,
+     "to": 0.25
+    }
+   ]
+  },
+  "warship_10": {
+   "beam_m": 18.8,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 5,
+   "funnels": [
+    {
+     "top_m": 25,
+     "u": 0.54
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.12
+    }
+   ],
+   "helideck": {
+    "from": 0.74,
+    "to": 0.92
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 149.5,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 40,
+     "u": 0.3
+    },
+    {
+     "kind": "enclosed",
+     "top_m": 34,
+     "u": 0.6
+    }
+   ],
+   "name": "Baden-Wuerttemberg-class frigate (F125)",
+   "source": "https://de.wikipedia.org/wiki/Baden-W%C3%BCrttemberg-Klasse",
+   "superstructure": [
+    {
+     "from": 0.2,
+     "to": 0.44,
+     "top_m": 20,
+     "width": 0.8
+    },
+    {
+     "from": 0.5,
+     "to": 0.74,
+     "top_m": 17,
+     "width": 0.8
+    }
+   ],
+   "vls": []
+  },
+  "warship_11": {
+   "beam_m": 18.8,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7.5,
+   "draft_m": 5.18,
+   "funnels": [
+    {
+     "top_m": 21,
+     "u": 0.46
+    },
+    {
+     "top_m": 21,
+     "u": 0.56
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.13
+    }
+   ],
+   "helideck": {
+    "from": 0.78,
+    "to": 0.96
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 144.2,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 38,
+     "u": 0.33
+    },
+    {
+     "kind": "enclosed",
+     "top_m": 30,
+     "u": 0.62
+    }
+   ],
+   "name": "De Zeven Provincien-class frigate",
+   "source": "https://en.wikipedia.org/wiki/De_Zeven_Provinci%C3%ABn-class_frigate",
+   "superstructure": [
+    {
+     "from": 0.25,
+     "to": 0.66,
+     "top_m": 16,
+     "width": 0.8
+    },
+    {
+     "from": 0.66,
+     "to": 0.78,
+     "top_m": 11,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.18,
+     "to": 0.25
+    }
+   ]
+  },
+  "warship_12": {
+   "beam_m": 20.3,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 5.4,
+   "funnels": [
+    {
+     "top_m": 22,
+     "u": 0.46
+    },
+    {
+     "top_m": 22,
+     "u": 0.56
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.09
+    },
+    {
+     "u": 0.14
+    }
+   ],
+   "helideck": {
+    "from": 0.8,
+    "to": 0.96
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 152.87,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 35,
+     "u": 0.33
+    },
+    {
+     "kind": "enclosed",
+     "top_m": 30,
+     "u": 0.6
+    }
+   ],
+   "name": "Horizon-class frigate",
+   "source": "https://en.wikipedia.org/wiki/Horizon-class_frigate",
+   "superstructure": [
+    {
+     "from": 0.26,
+     "to": 0.68,
+     "top_m": 17,
+     "width": 0.8
+    },
+    {
+     "from": 0.68,
+     "to": 0.8,
+     "top_m": 12,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.19,
+     "to": 0.26
+    }
+   ]
+  },
+  "warship_13": {
+   "beam_m": 20,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 7.6,
+   "funnels": [
+    {
+     "top_m": 22,
+     "u": 0.52
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.12
+    }
+   ],
+   "helideck": {
+    "from": 0.75,
+    "to": 0.94
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 142,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 38,
+     "u": 0.32
+    }
+   ],
+   "name": "FREMM multipurpose frigate",
+   "source": "https://en.wikipedia.org/wiki/FREMM_multipurpose_frigate",
+   "superstructure": [
+    {
+     "from": 0.22,
+     "to": 0.62,
+     "top_m": 17,
+     "width": 0.8
+    },
+    {
+     "from": 0.62,
+     "to": 0.75,
+     "top_m": 12,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.16,
+     "to": 0.22
+    }
+   ]
+  },
+  "warship_14": {
+   "beam_m": 15.4,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 4.1,
+   "funnels": [
+    {
+     "top_m": 20,
+     "u": 0.48
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.13
+    }
+   ],
+   "helideck": {
+    "from": 0.78,
+    "to": 0.96
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 125,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 30,
+     "u": 0.3
+    }
+   ],
+   "name": "La Fayette-class frigate",
+   "source": "https://en.wikipedia.org/wiki/La_Fayette-class_frigate",
+   "superstructure": [
+    {
+     "from": 0.2,
+     "to": 0.64,
+     "top_m": 15,
+     "width": 0.8
+    },
+    {
+     "from": 0.64,
+     "to": 0.78,
+     "top_m": 10,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "warship_15": {
+   "beam_m": 10.4,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 4.5,
+   "draft_m": 2.4,
+   "funnels": [],
+   "guns": [
+    {
+     "u": 0.14
+    }
+   ],
+   "helideck": {
+    "from": 0.7,
+    "to": 0.95
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 72.7,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 16,
+     "u": 0.35
+    }
+   ],
+   "name": "Visby-class corvette",
+   "source": "https://en.wikipedia.org/wiki/Visby-class_corvette",
+   "superstructure": [
+    {
+     "from": 0.25,
+     "to": 0.7,
+     "top_m": 11,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "warship_16": {
+   "beam_m": 19.75,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 5.3,
+   "funnels": [
+    {
+     "top_m": 22,
+     "u": 0.48
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.11
+    },
+    {
+     "u": 0.17
+    }
+   ],
+   "helideck": {
+    "from": 0.78,
+    "to": 0.96
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 138.7,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 38,
+     "u": 0.34
+    },
+    {
+     "kind": "enclosed",
+     "top_m": 30,
+     "u": 0.6
+    }
+   ],
+   "name": "Iver Huitfeldt-class frigate",
+   "source": "https://en.wikipedia.org/wiki/Iver_Huitfeldt-class_frigate",
+   "superstructure": [
+    {
+     "from": 0.28,
+     "to": 0.67,
+     "top_m": 17,
+     "width": 0.8
+    },
+    {
+     "from": 0.67,
+     "to": 0.78,
+     "top_m": 12,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.22,
+     "to": 0.28
+    }
+   ]
+  },
+  "warship_17": {
+   "beam_m": 16.8,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 7.6,
+   "funnels": [
+    {
+     "top_m": 21,
+     "u": 0.52
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.12
+    }
+   ],
+   "helideck": {
+    "from": 0.78,
+    "to": 0.96
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 134,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 35,
+     "u": 0.32
+    }
+   ],
+   "name": "Fridtjof Nansen-class frigate",
+   "source": "https://en.wikipedia.org/wiki/Fridtjof_Nansen-class_frigate",
+   "superstructure": [
+    {
+     "from": 0.22,
+     "to": 0.65,
+     "top_m": 16,
+     "width": 0.8
+    },
+    {
+     "from": 0.65,
+     "to": 0.78,
+     "top_m": 11,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.17,
+     "to": 0.22
+    }
+   ]
+  },
+  "warship_18": {
+   "beam_m": 21.4,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 6.25,
+   "funnels": [
+    {
+     "top_m": 23,
+     "u": 0.46
+    },
+    {
+     "top_m": 23,
+     "u": 0.6
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.1
+    }
+   ],
+   "helideck": {
+    "from": 0.83,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 166,
+   "masts": [
+    {
+     "kind": "lattice",
+     "top_m": 44,
+     "u": 0.36
+    }
+   ],
+   "name": "Sejong the Great-class destroyer (KDX-III)",
+   "source": "https://en.wikipedia.org/wiki/Sejong_the_Great-class_destroyer",
+   "superstructure": [
+    {
+     "from": 0.23,
+     "to": 0.45,
+     "top_m": 21,
+     "width": 0.75
+    },
+    {
+     "from": 0.45,
+     "to": 0.6,
+     "top_m": 16,
+     "width": 0.7
+    },
+    {
+     "from": 0.6,
+     "to": 0.7,
+     "top_m": 14,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.13,
+     "to": 0.22
+    },
+    {
+     "from": 0.7,
+     "to": 0.83
+    }
+   ]
+  },
+  "warship_19": {
+   "beam_m": 16.3,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 4.7,
+   "funnels": [
+    {
+     "top_m": 23,
+     "u": 0.5
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.14
+    }
+   ],
+   "helideck": {
+    "from": 0.72,
+    "to": 0.9
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 132.5,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 34,
+     "u": 0.33
+    }
+   ],
+   "name": "Mogami-class frigate",
+   "source": "https://en.wikipedia.org/wiki/Mogami-class_frigate",
+   "superstructure": [
+    {
+     "from": 0.24,
+     "to": 0.6,
+     "top_m": 18,
+     "width": 0.8
+    },
+    {
+     "from": 0.6,
+     "to": 0.72,
+     "top_m": 13,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.2,
+     "to": 0.24
+    }
+   ]
+  },
+  "warship_20": {
+   "beam_m": 21,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 6.1,
+   "funnels": [
+    {
+     "top_m": 22,
+     "u": 0.46
+    },
+    {
+     "top_m": 22,
+     "u": 0.6
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.11
+    }
+   ],
+   "helideck": {
+    "from": 0.8,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 165,
+   "masts": [
+    {
+     "kind": "lattice",
+     "top_m": 43,
+     "u": 0.35
+    }
+   ],
+   "name": "Atago-class destroyer",
+   "source": "https://en.wikipedia.org/wiki/Atago-class_destroyer",
+   "superstructure": [
+    {
+     "from": 0.23,
+     "to": 0.45,
+     "top_m": 21,
+     "width": 0.75
+    },
+    {
+     "from": 0.45,
+     "to": 0.6,
+     "top_m": 16,
+     "width": 0.7
+    },
+    {
+     "from": 0.6,
+     "to": 0.72,
+     "top_m": 14,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.13,
+     "to": 0.23
+    },
+    {
+     "from": 0.72,
+     "to": 0.78
+    }
+   ]
+  },
+  "warship_21": {
+   "beam_m": 18.3,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 5.3,
+   "funnels": [
+    {
+     "top_m": 23,
+     "u": 0.44
+    },
+    {
+     "top_m": 23,
+     "u": 0.56
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.12
+    }
+   ],
+   "helideck": {
+    "from": 0.72,
+    "to": 0.94
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 150.5,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 38,
+     "u": 0.33
+    }
+   ],
+   "name": "Akizuki-class destroyer (2012)",
+   "source": "https://en.wikipedia.org/wiki/Akizuki-class_destroyer_(2010)",
+   "superstructure": [
+    {
+     "from": 0.22,
+     "to": 0.6,
+     "top_m": 20,
+     "width": 0.8
+    },
+    {
+     "from": 0.6,
+     "to": 0.72,
+     "top_m": 15,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.16,
+     "to": 0.22
+    }
+   ]
+  },
+  "warship_22": {
+   "beam_m": 28.5,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 10,
+   "draft_m": 9.1,
+   "funnels": [
+    {
+     "top_m": 34,
+     "u": 0.52
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.78
+    }
+   ],
+   "helideck": {
+    "from": 0.84,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 252,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 55,
+     "u": 0.4
+    },
+    {
+     "kind": "enclosed",
+     "top_m": 45,
+     "u": 0.58
+    }
+   ],
+   "name": "Kirov-class battlecruiser",
+   "source": "https://en.wikipedia.org/wiki/Kirov-class_battlecruiser",
+   "superstructure": [
+    {
+     "from": 0.3,
+     "to": 0.46,
+     "top_m": 32,
+     "width": 0.7
+    },
+    {
+     "from": 0.46,
+     "to": 0.74,
+     "top_m": 24,
+     "width": 0.75
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.07,
+     "to": 0.15
+    },
+    {
+     "from": 0.17,
+     "to": 0.3
+    }
+   ]
+  },
+  "warship_23": {
+   "beam_m": 19.7,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 7.9,
+   "funnels": [
+    {
+     "top_m": 21,
+     "u": 0.46
+    },
+    {
+     "top_m": 21,
+     "u": 0.61
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.11
+    },
+    {
+     "u": 0.17
+    }
+   ],
+   "helideck": {
+    "from": 0.78,
+    "to": 0.94
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 163,
+   "masts": [
+    {
+     "kind": "lattice",
+     "top_m": 34,
+     "u": 0.35
+    },
+    {
+     "kind": "lattice",
+     "top_m": 32,
+     "u": 0.55
+    }
+   ],
+   "name": "Udaloy-class destroyer",
+   "source": "https://de.wikipedia.org/wiki/Udaloy-Klasse",
+   "superstructure": [
+    {
+     "from": 0.24,
+     "to": 0.42,
+     "top_m": 20,
+     "width": 0.7
+    },
+    {
+     "from": 0.42,
+     "to": 0.64,
+     "top_m": 16,
+     "width": 0.7
+    },
+    {
+     "from": 0.64,
+     "to": 0.78,
+     "top_m": 13,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.04,
+     "to": 0.08
+    },
+    {
+     "from": 0.56,
+     "to": 0.59
+    },
+    {
+     "from": 0.73,
+     "to": 0.77
+    }
+   ]
+  },
+  "warship_24": {
+   "beam_m": 16,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 4.5,
+   "funnels": [
+    {
+     "top_m": 21,
+     "u": 0.55
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.14
+    }
+   ],
+   "helideck": {
+    "from": 0.76,
+    "to": 0.95
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 135,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 34,
+     "u": 0.36
+    }
+   ],
+   "name": "Admiral Gorshkov-class frigate",
+   "source": "https://en.wikipedia.org/wiki/Admiral_Gorshkov-class_frigate",
+   "superstructure": [
+    {
+     "from": 0.27,
+     "to": 0.62,
+     "top_m": 16,
+     "width": 0.8
+    },
+    {
+     "from": 0.62,
+     "to": 0.76,
+     "top_m": 11,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.19,
+     "to": 0.27
+    }
+   ]
+  },
+  "warship_25": {
+   "beam_m": 20,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 6.6,
+   "funnels": [
+    {
+     "top_m": 26,
+     "u": 0.48
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.1
+    }
+   ],
+   "helideck": {
+    "from": 0.74,
+    "to": 0.95
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 180,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 42,
+     "u": 0.32
+    }
+   ],
+   "name": "Type 055 destroyer",
+   "source": "https://en.wikipedia.org/wiki/Type_055_destroyer",
+   "superstructure": [
+    {
+     "from": 0.23,
+     "to": 0.4,
+     "top_m": 23,
+     "width": 0.75
+    },
+    {
+     "from": 0.4,
+     "to": 0.55,
+     "top_m": 18,
+     "width": 0.75
+    },
+    {
+     "from": 0.62,
+     "to": 0.74,
+     "top_m": 15,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.14,
+     "to": 0.22
+    },
+    {
+     "from": 0.55,
+     "to": 0.62
+    }
+   ]
+  },
+  "warship_26": {
+   "beam_m": 17,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 8,
+   "draft_m": 6,
+   "funnels": [
+    {
+     "top_m": 22,
+     "u": 0.48
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.11
+    }
+   ],
+   "helideck": {
+    "from": 0.74,
+    "to": 0.94
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 157,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 38,
+     "u": 0.33
+    }
+   ],
+   "name": "Type 052D destroyer",
+   "source": "https://en.wikipedia.org/wiki/Type_052D_destroyer",
+   "superstructure": [
+    {
+     "from": 0.23,
+     "to": 0.4,
+     "top_m": 20,
+     "width": 0.75
+    },
+    {
+     "from": 0.4,
+     "to": 0.53,
+     "top_m": 16,
+     "width": 0.7
+    },
+    {
+     "from": 0.59,
+     "to": 0.74,
+     "top_m": 13,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.15,
+     "to": 0.22
+    },
+    {
+     "from": 0.53,
+     "to": 0.58
+    }
+   ]
+  },
+  "warship_27": {
+   "beam_m": 31.0,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [
+    {
+     "top_m": 28,
+     "u": 0.35
+    },
+    {
+     "top_m": 28,
+     "u": 0.42
+    },
+    {
+     "top_m": 28,
+     "u": 0.5
+    },
+    {
+     "top_m": 28,
+     "u": 0.57
+    }
+   ],
+   "deck_m": 12,
+   "draft_m": 10.8,
+   "funnels": [
+    {
+     "top_m": 38,
+     "u": 0.74
+    }
+   ],
+   "guns": [],
+   "helideck": {
+    "from": 0.83,
+    "to": 0.98
+   },
+   "island": null,
+   "layout": "replenishment",
+   "length_m": 240.0,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 48,
+     "u": 0.2
+    }
+   ],
+   "name": "Type 901 fast combat support ship",
+   "source": "https://en.wikipedia.org/wiki/Type_901_fast_combat_support_ship",
+   "superstructure": [
+    {
+     "from": 0.1,
+     "to": 0.28,
+     "top_m": 34,
+     "width": 0.85
+    },
+    {
+     "from": 0.66,
+     "to": 0.83,
+     "top_m": 26,
+     "width": 0.85
+    }
+   ],
+   "vls": []
+  },
+  "warship_28": {
+   "beam_m": 40.8,
+   "bow": "bulbous",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 20,
+   "draft_m": 11.3,
+   "flight_deck_beam_m": 76.8,
+   "funnels": [],
+   "guns": [],
+   "helideck": null,
+   "island": {
+    "from": 0.58,
+    "to": 0.68,
+    "top_m": 48
+   },
+   "layout": "carrier",
+   "length_m": 332.8,
+   "masts": [
+    {
+     "kind": "lattice",
+     "top_m": 63,
+     "u": 0.63
+    }
+   ],
+   "name": "Nimitz-class aircraft carrier",
+   "source": "https://en.wikipedia.org/wiki/Nimitz-class_aircraft_carrier",
+   "superstructure": [],
+   "vls": []
+  },
+  "warship_29": {
+   "beam_m": 11.1,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 6,
+   "draft_m": 3.7,
+   "funnels": [
+    {
+     "top_m": 19,
+     "u": 0.55
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.14
+    }
+   ],
+   "helideck": {
+    "from": 0.72,
+    "to": 0.92
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 104.5,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 26,
+     "u": 0.38
+    }
+   ],
+   "name": "Steregushchiy-class corvette (Project 20380)",
+   "source": "https://de.wikipedia.org/wiki/Stereguschtschi-Klasse",
+   "superstructure": [
+    {
+     "from": 0.25,
+     "to": 0.6,
+     "top_m": 14,
+     "width": 0.8
+    },
+    {
+     "from": 0.6,
+     "to": 0.72,
+     "top_m": 9,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.2,
+     "to": 0.25
+    }
+   ]
+  },
+  "warship_30": {
+   "beam_m": 16.7,
+   "bow": "raked",
+   "cargo": null,
+   "cranes": [],
+   "deck_m": 7,
+   "draft_m": 6.3,
+   "funnels": [
+    {
+     "top_m": 21,
+     "u": 0.46
+    },
+    {
+     "top_m": 21,
+     "u": 0.55
+    }
+   ],
+   "guns": [
+    {
+     "u": 0.14
+    }
+   ],
+   "helideck": {
+    "from": 0.78,
+    "to": 0.95
+   },
+   "island": null,
+   "layout": "warship",
+   "length_m": 139.0,
+   "masts": [
+    {
+     "kind": "enclosed",
+     "top_m": 36,
+     "u": 0.35
+    },
+    {
+     "kind": "lattice",
+     "top_m": 30,
+     "u": 0.57
+    }
+   ],
+   "name": "Brandenburg-class frigate (F123)",
+   "source": "https://de.wikipedia.org/wiki/Brandenburg-Klasse_(1994)",
+   "superstructure": [
+    {
+     "from": 0.25,
+     "to": 0.63,
+     "top_m": 16,
+     "width": 0.8
+    },
+    {
+     "from": 0.63,
+     "to": 0.78,
+     "top_m": 11,
+     "width": 0.85
+    }
+   ],
+   "vls": [
+    {
+     "from": 0.2,
+     "to": 0.25
+    }
+   ]
+  }
+ },
+ "version": 1
+}

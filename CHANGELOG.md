@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.80
+## 1.3.82
 
-Release 1.3.80 turns the submarine's engine room in the Remote Crew browser
+Release 1.3.82 turns the submarine's engine room in the Remote Crew browser
 into a machinery control console. The large picture area, empty until now, shows
 an annunciator panel of status lamps (dark when off, turquoise while running,
 amber for a caution, flashing red for an alarm, each with its value) for motor,
@@ -17,6 +17,32 @@ balance, depth, high-pressure air and trim angle, tank columns for the stores
 and tanks, and a mimic of the six compartments from bow to stern with the
 water level, the lamps of each room, the bulkheads and the teams at work. The
 orders stay in the station panel. Saves stay v31.
+
+## 1.3.81
+
+Release 1.3.81 shows the own ship's way in the lookout's pictures. Underway
+the waves stream toward the eye looking ahead, away looking astern and from
+bow to stern looking abeam, faster with more speed and without a jump when
+speed or course change. Astern the wake runs as a band of smoother, lighter
+water with foam between the two arms of the Kelvin wave out to the horizon,
+and ahead the bow wave throws its spray into the lower edge of the picture.
+This holds on the uConsole and in the browser for the bridge binoculars, the
+lookout strip and the phone lookout; in the submarine's periscope the water
+streams past with the boat's own speed. Saves stay v31.
+
+## 1.3.80
+
+Release 1.3.80 gives every ship, submarine and aircraft type its own 3D
+model. Each of the 111 catalog types is built from the public main dimensions
+and general arrangement of the real class (Wikipedia; generic types such as a
+VLCC or a harbour tug use typical values): length, beam and draught, where
+bridge, masts, funnels, guns, missile cells, flight deck, cranes and cargo
+stand, a submarine's sail, planes, rudders and missile deck, an aircraft's
+wings, tail and engines. The same type always looks the same, so a Type 23
+no longer looks like an Arleigh Burke. The analyser, the Unit Editor and the
+eyepieces (binoculars, periscope, phone lookout) show the real type the eye
+sees, so it can be told by sight; the lookout report still names only what
+was made out, and only the report reaches the OPZ. Saves stay v31.
 
 ## 1.3.79
 

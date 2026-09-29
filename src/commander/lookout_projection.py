@@ -24,10 +24,11 @@ def _calls(game, side):
             for row in phone_lookout.calls(game, side)[:8]]
 
 
-def _outline(bearing, span, cls, stale, lights, elevation, aob, called, range_nm=None):
+def _outline(bearing, span, cls, stale, lights, elevation, aob, model, called, range_nm=None):
     return dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                 stale=bool(stale), lights=projections._nav_lights(lights),
-                elevation_deg=_number(elevation), aob_deg=_number(aob), called=bool(called),
+                elevation_deg=_number(elevation), aob_deg=_number(aob),
+                model=None if model is None else str(model), called=bool(called),
                 range_nm=_number(range_nm))
 
 
@@ -46,6 +47,7 @@ def _frigate(game):
                 + [_outline(*row, False) for row in unseen])[:24]
     return dict(side="frigate", available=not game.damage.station_down("bridge"),
                 manned=bool(game.lookout_phone), course=_number(game.ship.course % 360.0),
+                speed_kn=_number(game.ship.speed),
                 relative_deg=None, fov_deg=_number(config.LOOKOUT_GLASSES_FOV_DEG),
                 powers=[_number(value) for value in config.LOOKOUT_GLASSES_POWERS],
                 window_deg=None, visibility_nm=_number(weather["visibility_nm"]),
@@ -63,15 +65,18 @@ def _boat(game, boat):
                          "aircraft" if row["kind"] == "FLG" and row["ref"] in elevation
                          else row["cls"], row["stale"], row["lights"],
                          elevation.get(row["ref"]) if row["kind"] == "FLG" else None,
-                         row["aob"], False, row["range_nm"])
+                         row["aob"], row["model"], False, row["range_nm"])
                 for row in (dict(sighting, stale=not 0.0 <= now - sighting["t"] <= 1.0,
                                  lights=(None if now - sighting["t"] > 1.0 else
                                          boat.orders._lights.get(sighting["ref"])),
                                  aob=(None if now - sighting["t"] > 1.0 else
-                                      boat.orders._aspect.get(sighting["ref"])))
+                                      boat.orders._aspect.get(sighting["ref"])),
+                                 model=(None if now - sighting["t"] > 1.0 else
+                                        getattr(boat.orders, "_model", {}).get(sighting["ref"])))
                             for sighting in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX])]
     return dict(side="boat", available=scope["available"], manned=phone_lookout.boat_manned(game),
-                course=_number(boat.sub.course % 360.0), relative_deg=scope["relative_deg"],
+                course=scope["course"], speed_kn=scope["speed_kn"],
+                relative_deg=scope["relative_deg"],
                 fov_deg=scope["fov_deg"],
                 powers=[_number(value) for value in config.UBOOT_SCOPE_POWERS],
                 window_deg=scope["window_deg"],

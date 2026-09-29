@@ -191,15 +191,17 @@ def horizon_motion(seed: int, sim_t: float, sea_state: float,
 
 def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
                  t: float = 0.0, *, rim=None, lights=None, nav=None,
-                 aloft: bool = False, aob_deg: float | None = None) -> None:
+                 aloft: bool = False, aob_deg: float | None = None,
+                 model: str | None = None) -> None:
     """Procedural side view of a coarse class, ``width`` px long, sitting on
     the horizon (aircraft: hovering above it, or with ``aloft`` centred on
     ``base_y`` at its elevation).  ``t`` (display clock) animates pitch,
     radar, rotor and wake.  With the judged angle on the bow ``aob_deg`` a
-    large enough outline is its 3D model (``unit_models``), turned so."""
+    large enough outline is its 3D model (``unit_models``), turned so; an
+    identified type ``model`` is its own variant."""
     width = max(3, int(width))
     if unit_models.draw_in_scene(s, cls, cx, base_y, width, color, aob_deg=aob_deg,
-                                 aloft=aloft, nav=nav, t=t):
+                                 aloft=aloft, nav=nav, t=t, model=model):
         return
     if cls == "torpedo":
         left = cx - width // 2
@@ -215,7 +217,7 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                  visibility_nm: float, motion: tuple, outlines, crosshair_deg=None,
                  land=None, anim_t: float = 0.0, sky=None, sea_state: float = 2.0,
                  elevation_deg: float = 0.0, stabilized: bool = False,
-                 optics_label=None) -> None:
+                 optics_label=None, way=None) -> None:
     """The picture in the eyepiece or binoculars in the start screen's look:
     sky with stars, moon or sun and clouds, the sea in motion, the charted
     coast, the outlines within the field in steel with a lit rim, rain, snow
@@ -223,7 +225,8 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
     window (half width in degrees) and the corner brackets.  ``sky`` is a
     ``sight_scene.sky_values`` dict; without one a clear noon or midnight.
     ``elevation_deg`` tilts the optics up (positive) or down; ``stabilized``
-    takes out all but ``STABILIZED_RESIDUAL`` of the hull's motion."""
+    takes out all but ``STABILIZED_RESIDUAL`` of the hull's motion; ``way``
+    is the own way through the water (``sight_scene.draw_scene``)."""
     rect = pygame.Rect(rect)
     sky = sky if sky is not None else sight_scene.plain_sky(night)
     offset, tilt = motion
@@ -254,13 +257,14 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             draw_outline(s, cls, cx, base, width, blend(colors["steel"], haze_color, fade),
                          anim_t, rim=blend(colors["rim"], haze_color, fade),
                          lights=(sight_scene.WINDOW_LIGHT if lit and not stale else None),
-                         nav=nav, aloft=aloft, aob_deg=row[6] if len(row) > 6 else None)
+                         nav=nav, aloft=aloft, aob_deg=row[6] if len(row) > 6 else None,
+                         model=row[7] if len(row) > 7 else None)
 
     airborne = [row for row in outlines if len(row) > 5 and row[5] is not None]
     afloat = [row for row in outlines if not (len(row) > 5 and row[5] is not None)]
     with layout.clip_to(s, rect):
         colors = sight_scene.draw_scene(
-            s, view, sky, visibility_nm=visibility_nm, sea_state=sea_state, t=anim_t,
+            s, view, sky, visibility_nm=visibility_nm, sea_state=sea_state, t=anim_t, way=way,
             aloft=(lambda colors: draw_rows(airborne, colors, True)) if airborne else None)
         haze_color = colors["haze"]
         if land is not None:

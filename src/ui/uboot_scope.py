@@ -78,7 +78,9 @@ def draw_eyepiece(s, game, boat, rect) -> None:
                  sea_state=getattr(game.world, "effective_sea_state", game.world.sea_state),
                  elevation_deg=sight.elevation_deg, stabilized=sight.stabilized,
                  optics_label=message("sight.optics", elevation=f"{sight.elevation_deg:+.0f}",
-                                      fov=f"{sight.fov_deg:.0f}"))
+                                      fov=f"{sight.fov_deg:.0f}"),
+                 way=dict(speed_kn=boat.sub.speed, course_deg=boat.sub.course,
+                          eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M, hull=False))
 
 
 def sighting_rows(game, boat) -> list:

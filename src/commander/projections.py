@@ -822,9 +822,9 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                  dip_ping_cooldown_s=_number(helo.dip_ping_cooldown),
                  buoy_mode=game.helo_buoy_mode,
                  pattern=str(helo.pattern), pattern_remaining=len(helo.pattern_queue),
-                 mad_mode=bool(helo.mad_mode))
+                 mad_mode=bool(helo.mad_mode), radar=bool(game.helo_radar_active()))
     if asset_only:
-        for key in ("buoy_mode", "pattern", "pattern_remaining", "mad_mode"):
+        for key in ("buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar"):
             asset.pop(key)
         return {"asset": asset}
     water_available = airborne and helo.water_entry_clear(game.world)

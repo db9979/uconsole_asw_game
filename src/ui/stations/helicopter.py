@@ -432,6 +432,8 @@ def draw_helicopter_view(game, tr=None) -> None:
                      remaining=len(getattr(helo, "pattern_queue", ())),
                      mad=localize("ui.active" if getattr(helo, "mad_mode", False)
                                   else "helo.standby"))),
+                 localize("helo.radar_on" if game.helo_radar_active()
+                          else "helo.radar_off"),
                  localize("view.helo.roe"))
         colors = (config.COLOR_TEXT, margin_color, config.COLOR_TEXT_DIM,
                   config.COLOR_OK, config.COLOR_WARN,
@@ -439,6 +441,7 @@ def draw_helicopter_view(game, tr=None) -> None:
                   config.COLOR_OK if (getattr(helo, "pattern_queue", ())
                                       or getattr(helo, "mad_mode", False))
                   else config.COLOR_TEXT_DIM,
+                  config.COLOR_OK if game.helo_radar_active() else config.COLOR_TEXT_DIM,
                   config.COLOR_WARN)
         line_y = my
         line_h = max(30, layout.font(18).get_linesize() + 4)

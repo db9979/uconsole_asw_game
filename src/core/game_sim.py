@@ -542,6 +542,7 @@ class SimMixin:
                          fuel_factor=(config.HELO_ICING_FUEL_FACTOR
                                       if icing != "none" else 1.0))
         self._fly_buoy_pattern()
+        self._update_helo_radar(dt)
         self._update_mpa(dt)
         for buoy in self.buoys:
             buoy.update(dt, self.world)

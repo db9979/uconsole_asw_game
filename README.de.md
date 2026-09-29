@@ -14,17 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.63**
+Aktuelle Version: **1.3.64**
 
-Version 1.3.63 gibt der Fregatte zwei weitere U-Jagd-Waffen in der
-Waffenzentrale. `A` startet eines von vier ASROC: Die Rakete fliegt zur
-beobachteten Position des zugewiesenen U-Boots (1 bis 10 sm, aktuelle
-Entfernung nötig) und setzt dort einen Leichttorpedo ab. `Z` wirft ein Muster
-aus fünf Wasserbomben über das Heck (20 an Bord, 45 s Nachladen, mindestens 10
-kn); sie sinken auf die voreingestellte Tiefe und sind bis etwa 25 m tödlich.
-Beide nutzen die Zielprüfungen des Torpedos und stehen auch auf der
-Waffenseite der Remote Crew. Spielstände sind jetzt v29 (sie behalten sinkende
-Wasserbomben und die Bestände); v28-Stände laden nicht mehr.
+Version 1.3.64 gibt dem Helikopter ein Seeraumradar. Solange er mit
+eingeholtem Tauchsonar fliegt, sucht es aus 150 m: Schiffe bis 40 sm,
+aufgetauchte U-Boote sowie ausgefahrene Schnorchel oder Sehrohre innerhalb
+seines Radarhorizonts, einen Mast bei ruhiger See auf etwa 10 sm und bei
+rauerer See nur auf wenige Meilen. Jeder Kontakt erreicht die OPZ als RADAR-
+HELO-Track; die Helikopterseite und die Remote-Crew-Ansicht zeigen, ob das
+Radar sucht. Spielstände bleiben v29.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

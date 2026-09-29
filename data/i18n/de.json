@@ -5820,5 +5820,8 @@
   "commander.web.weapons_drop_depth_charges": "Wasserbomben-Muster vorbereiten",
   "commander.web.asroc": "ASROC",
   "commander.web.depth_charges": "Wasserbomben",
+  "helo.radar_on": "Radar sucht: Kontakte an OPZ (RADAR-HELO)",
+  "helo.radar_off": "Radar aus (an Deck oder beim Tauchen)",
+  "commander.web.helicopter_radar": "Radar",
   "weapons.control.asw.short": "A ASROC Z WaBo"
 }

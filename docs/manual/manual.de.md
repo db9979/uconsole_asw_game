@@ -889,6 +889,7 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 - **Sonarbojen:** 5 je Einsatz, 8 sm Reichweite, 60 min Batterie; sie treiben mit der Strömung und etwas mit dem Wind. PASSIV-Bojen liefern Peilungen (wie DIFAR); AKTIV-Bojen liefern Entfernung und Peilung alle 30 s (wie DICASS).
 - **Bojenmuster:** mit `X` wird ein Muster geplant: eine Folge von Abwurfpunkten um den Wegpunkt: ein 2x2-Feld (Abstand 1,5 sm), eine Sperre quer zur Peilung vom Schiff zum Wegpunkt (Abstand 3 sm) oder ein Kreis von 1,5 sm Radius, jeweils mit bis zu 4 Bojen des Restvorrats. Der Helikopter fliegt die Punkte nacheinander an und wirft an jedem die gewöhnliche Einzelboje (in der gewählten Betriebsart); EINZELN löscht die Folge, der Rückflug verwirft sie.
 - **MAD-Anflug:** mit `Umschalt+M` und eingeholtem Tauchsonar geht der Helikopter auf 30 m und 90 kn. Ein getauchter Rumpf innerhalb von etwa 400 m Schrägdistanz wird je Sensortakt mit einem zustandslosen Zufallszug erfasst (sicher innerhalb 250 m) und als MAD-Positionsfix ohne Tiefe oder Kurs gemeldet; er zählt für die Entfernungsprüfung der Waffen und, sobald der Helikopter seinen Kontakt freigibt, für die OPZ.
+- **Seeraumradar:** sucht, solange der Helikopter fliegt und das Tauchsonar eingeholt ist (Statuszeile auf Seite 2). Aus 150 m sieht es Schiffe bis 40 sm, aufgetauchte U-Boote sowie ausgefahrene Schnorchel oder Sehrohre innerhalb seines Radarhorizonts (etwa 30 sm). Ein Mast ist klein: bei ruhiger See zeigt er sich auf etwa 10 sm, bei Seegang 3 auf 3-5 sm, bei Seegang 5 verschwindet er im Seegangsecho. Jeder Kontakt geht als `RADAR-HELO`-Track mit dem Helikopter als Beobachter an die OPZ, ein Blick alle 2 s. Das ESM eines besetzten U-Boots hört das Radar und kann seine Besatzung warnen.
 - **Leichttorpedo:** 2 je Einsatz, 55 kn, 12 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
 
 ### Tasten
@@ -949,7 +950,7 @@ Angriffsablauf:
 ### Nicht modelliert
 
 - Keine Kanalverwaltung für Bojen.
-- Kein Radar am Helikopter.
+- Kein Radarschalter am Helikopter (er strahlt immer, wenn er fliegt und der Dom eingeholt ist); KI-U-Boote reagieren nicht auf seine Abstrahlung.
 - Nur ein Helikopter.
 
 ## 9 EloKa

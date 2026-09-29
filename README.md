@@ -12,17 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.63**
+Current release: **1.3.64**
 
-Release 1.3.63 gives the frigate two more anti-submarine weapons at the
-Weapons station. `A` fires one of four ASROC: the rocket flies to the
-designated submarine's observed position (1 to 10 NM, current range needed)
-and drops a lightweight torpedo there. `Z` drops a pattern of five depth
-charges over the stern (20 in the rack, 45 s reload, at least 10 kn); they
-sink to the preset depth and are lethal within about 25 m. Both use the
-torpedo's target checks and are also on the Remote Crew weapons page. Saves
-are now v29 (they keep the charges in the water and the stores); v28 saves no
-longer load.
+Release 1.3.64 gives the helicopter a surface-search radar. Whenever it flies
+with the dipping sonar stowed it searches from 150 m: ships out to 40 NM,
+surfaced submarines and raised snorkels or periscopes inside its radar
+horizon, a mast at about 10 NM in calm water and only a few miles in a rougher
+sea. Every contact reaches the OPZ as a RADAR-HELO track; the helicopter page
+and the Remote Crew helicopter view show whether the radar is searching. Saves
+stay v29.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

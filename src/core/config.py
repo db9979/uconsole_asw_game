@@ -1011,6 +1011,7 @@ MPA_ALTITUDE_M = 300.0              # search altitude (radar horizon)
 MPA_RADAR_EMITTER = "emitter.own_asset.mpa.radar"
 HELO_RADAR_EMITTER = "emitter.own_asset.helicopter.radar"
 HELO_RADAR_ALTITUDE_M = 150.0      # transit altitude for the radar horizon
+HELO_RADAR_RANGE_NM = 40.0          # helicopter surface-search range, large ship
 MPA_RADAR_RANGE_NM = 60.0           # nominal surface-search range, large ship
 MPA_RADAR_LOOK_S = 2.0              # one look per target per scan
 MPA_RADAR_BEARING_ERR_DEG = 1.0

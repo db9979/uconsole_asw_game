@@ -328,6 +328,28 @@ class MpaMixin:
         mpa = self.mpa
         if not (mpa.radar_on and self.mpa_datalink()):
             return
+        self._airborne_radar_sweep(
+            dt, mpa.x, mpa.y, config.MPA_ALTITUDE_M, config.MPA_RADAR_RANGE_NM,
+            "mpa-radar-", "M-", "RADAR-MPA")
+
+    def _update_helo_radar(self, dt: float) -> None:
+        """The helicopter's surface-search radar: on while it flies with the
+        dipping sonar stowed (the same condition as its emission a boat's
+        ESM intercepts); contacts reach the OPZ as ``RADAR-HELO`` tracks."""
+        helo = self.helo
+        if not (helo.airborne and helo.dip_state == "STOWED"):
+            return
+        self._airborne_radar_sweep(
+            dt, helo.x, helo.y, config.HELO_RADAR_ALTITUDE_M,
+            config.HELO_RADAR_RANGE_NM, "helo-radar-", "H-", "RADAR-HELO")
+
+    def helo_radar_active(self) -> bool:
+        return self.helo.airborne and self.helo.dip_state == "STOWED"
+
+    def _airborne_radar_sweep(self, dt, observer_x, observer_y, altitude_m,
+                              range_nm, tag_prefix, id_prefix, source) -> None:
+        """One look per target and scan from an own aircraft: ships, surfaced
+        boats and raised masts inside range and radar horizon."""
         look = config.MPA_RADAR_LOOK_S
         tick = math.floor((self.sim_t + 1e-9) / look)
         if tick == math.floor((self.sim_t - dt + 1e-9) / look):
@@ -348,14 +370,13 @@ class MpaMixin:
                 candidates.append(("sub", sub, config.SUB_MAST_HEIGHT_M,
                                    config.SUB_MAST_RCS_FACTOR))
         for namespace, actor, height_m, rcs in candidates:
-            dx, dy = actor.x - mpa.x, actor.y - mpa.y
+            dx, dy = actor.x - observer_x, actor.y - observer_y
             distance = math.hypot(dx, dy)
-            if distance > min(config.MPA_RADAR_RANGE_NM,
-                              config.radar_horizon_nm(config.MPA_ALTITUDE_M, height_m)):
+            if distance > min(range_nm, config.radar_horizon_nm(altitude_m, height_m)):
                 continue
-            sinr = radar_physics.sinr(distance, config.MPA_RADAR_RANGE_NM, rcs_factor=rcs,
+            sinr = radar_physics.sinr(distance, range_nm, rcs_factor=rcs,
                                       domain="surface", **conditions)
-            tag, key = "mpa-radar-" + namespace, int(actor.id)
+            tag, key = tag_prefix + namespace, int(actor.id)
             if detrand.u01(self.seed, tag, key, tick) >= radar_physics.pd_from_sinr(sinr):
                 continue
             bearing = (math.degrees(math.atan2(dx, -dy))
@@ -364,9 +385,9 @@ class MpaMixin:
             measured = max(0.0, distance * (1.0 + config.MPA_RADAR_RANGE_ERR_FRAC
                                             * detrand.normal(self.seed, tag + "-rng",
                                                              key, tick)))
-            track_id = "M-" + self._observation_key(namespace, actor.id)
+            track_id = id_prefix + self._observation_key(namespace, actor.id)
             self.air_picture.observe(
-                track_id=track_id, kind="SURFACE", target_id=actor.id, source="RADAR-MPA",
-                bearing=bearing, range_nm=measured, observer_x=mpa.x, observer_y=mpa.y,
-                course=None, quality=.6, now=self.sim_t, label=track_id,
-                bearing_uncertainty_deg=config.MPA_RADAR_BEARING_ERR_DEG)
+                track_id=track_id, kind="SURFACE", target_id=actor.id, source=source,
+                bearing=bearing, range_nm=measured, observer_x=observer_x,
+                observer_y=observer_y, course=None, quality=.6, now=self.sim_t,
+                label=track_id, bearing_uncertainty_deg=config.MPA_RADAR_BEARING_ERR_DEG)

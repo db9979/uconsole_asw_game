@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.64
+
+Version 1.3.64 gibt dem Helikopter ein Seeraumradar. Solange er mit
+eingeholtem Tauchsonar fliegt, sucht es aus 150 m: Schiffe bis 40 sm,
+aufgetauchte U-Boote sowie ausgefahrene Schnorchel oder Sehrohre innerhalb
+seines Radarhorizonts, einen Mast bei ruhiger See auf etwa 10 sm und bei
+rauerer See nur auf wenige Meilen. Jeder Kontakt erreicht die OPZ als RADAR-
+HELO-Track; die Helikopterseite und die Remote-Crew-Ansicht zeigen, ob das
+Radar sucht. Spielstände bleiben v29.
+
 ## 1.3.63
 
 Version 1.3.63 gibt der Fregatte zwei weitere U-Jagd-Waffen in der

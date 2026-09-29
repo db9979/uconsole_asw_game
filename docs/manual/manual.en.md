@@ -888,6 +888,7 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 - **Sonobuoys:** 5 per sortie, 8 NM range, 60 min battery; they drift with the current and a little with the wind. PASSIVE buoys give bearings (like DIFAR); ACTIVE buoys give range and bearing every 30 s (like DICASS).
 - **Buoy patterns:** with `X` a pattern is planned: a queue of drop points about the waypoint: a 2x2 field (1.5 NM spacing), a barrier across the bearing from the ship to the waypoint (3 NM spacing) or a circle of 1.5 NM radius, each with up to 4 buoys of the remaining stock. The helicopter flies the points one after the other and drops the ordinary single buoy (in the selected mode) at each; SINGLE clears the queue, returning home drops it.
 - **MAD run:** with `Shift+M` and the dipping sonar stowed the helicopter descends to 30 m and slows to 90 kn. A submerged hull within about 400 m slant range is detected on a stateless draw per sensor tick (sure inside 250 m) and reported as a MAD position fix without depth or course; it feeds the weapons' range check and, once the helicopter releases its contact, Operations.
+- **Surface-search radar:** searches whenever the helicopter is airborne with the dipping sonar stowed (status line on page 2). From 150 m it sees ships out to 40 NM, surfaced submarines and raised snorkels or periscopes inside its radar horizon (about 30 NM). A mast is small: in calm water it shows at about 10 NM, in sea state 3 at 3-5 NM, and in sea state 5 the clutter hides it. Every contact goes to Operations as a `RADAR-HELO` track with the helicopter as observer, one look every 2 s. A crewed submarine's ESM hears the radar and can warn its crew.
 - **Lightweight torpedo:** 2 per sortie, 55 kn, 12 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
 
 ### Keys
@@ -948,7 +949,7 @@ Attack sequence:
 ### Not modelled
 
 - No frequency channel management for buoys.
-- No radar on the helicopter.
+- No radar switch on the helicopter (it always radiates when airborne with the dome stowed); AI submarines do not react to its emission.
 - Only one helicopter.
 
 ## 9 Electronic warfare

@@ -565,8 +565,9 @@ export function validateV2State(state) {
         payload.controls.orders.join(",") !== "ASTERN,STOP,SLOW,HALF,FULL,FLANK" ||
         !exactKeys(payload.environment_effects, ["sea_state", "roll", "pitch", "tas_available", "tas_performance"])) throw new Error("protocol");
   } else if (state.role === "helicopter") {
-    if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "buoy_mode", "pattern", "pattern_remaining", "mad_mode"]) ||
+    if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar"]) ||
         !["single", "field", "barrier", "circle"].includes(payload.asset.pattern) || typeof payload.asset.mad_mode !== "boolean" ||
+        typeof payload.asset.radar !== "boolean" ||
         (payload.waypoint !== null && !exactKeys(payload.waypoint, ["x", "y"])) ||
         !boundedArray(payload.buoys, 64) || payload.buoys.some((row) => !exactKeys(row, ["ref", "label", "x", "y", "battery_s", "active", "mode"]) || typeof row.label !== "string" || !/^SB[0-9]{2,}$/.test(row.label) || !["ACTIVE", "PASSIVE"].includes(row.mode)) ||
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||

@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.64
+
+Release 1.3.64 gives the helicopter a surface-search radar. Whenever it flies
+with the dipping sonar stowed it searches from 150 m: ships out to 40 NM,
+surfaced submarines and raised snorkels or periscopes inside its radar
+horizon, a mast at about 10 NM in calm water and only a few miles in a rougher
+sea. Every contact reaches the OPZ as a RADAR-HELO track; the helicopter page
+and the Remote Crew helicopter view show whether the radar is searching. Saves
+stay v29.
+
 ## 1.3.63
 
 Release 1.3.63 gives the frigate two more anti-submarine weapons at the

@@ -25,7 +25,7 @@ und `Shift+L` trennt eine Fusion weiterhin. Die zusammengelegten Meldungen
 verschwinden aus Trackliste und Karte, jede Zeile endet mit Sensorkürzeln
 (`R` Radar, `V` Ausguck, `A` AIS, `E` ESM, `S` Sonar ...), und die Zieldetails
 und die Remote-Crew-OPZ nennen die Quellen einer Fusion mit Namen.
-Spielstände bleiben v31.
+Spielstände bleiben v32.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

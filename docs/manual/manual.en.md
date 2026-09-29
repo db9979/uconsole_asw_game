@@ -646,7 +646,8 @@ Page 3 commands a maritime patrol aircraft (MPA) on call from the nearest friend
 - `A` requests the aircraft (it first heads for the ship's position) or sends it home.
 - `W` sets the search area on the selected track's plotted position (without a selection on the ship); a click on the chart sets it on that point. A bearing-only track has no position to fly to.
 - `Z` plans a buoy pattern (field, barrier, circle) about the search area; the aircraft flies the points and drops a buoy at each. `Shift+Z` cancels the pattern. `X` drops one buoy where the aircraft is, `Y` switches its buoys between PASSIVE and ACTIVE.
-- `T` switches the aircraft's surface-search radar. From 300 m it sees ships and surfaced or mast-raised submarines out to 60 NM (limited by the radar horizon); its contacts appear as `RADAR-MPA` tracks with the aircraft as observer.
+- `T` switches the aircraft's surface-search radar. From 300 m it sees ships and surfaced or mast-raised submarines out to 60 NM (limited by the radar horizon); its contacts appear as `RADAR-MPA` tracks with the aircraft as observer. AI submarines with a raised mast hear it and go deep (see the helicopter chapter).
+- `V` starts or ends **MAD passes** (browser: *Start MAD passes*/*End MAD passes*) while the aircraft is on its way or on station: once there it descends to 60 m and flies straight passes at 180 kn through the search area, turning back 2 NM past it (a cloverleaf). A submerged hull within about 400 m slant range is detected on a stateless draw each second (sure inside 250 m) and reaches the ship over the datalink as a MAD position fix without depth or course on that submarine's sonar contact. A buoy pattern flies first; `A` (home) ends the passes.
 - `D` drops a torpedo on the designated sonar contact. The same checks as for the helicopter apply (current contact classified as a submarine, rules of engagement, a fresh fix under standard ROE), and the aircraft must be within 2 NM of the datum.
 
 Everything the aircraft learns reaches the ship only by datalink, out to 250 NM. Its buoys report only while the aircraft is within 50 NM of them; once it leaves or lands they go silent for the ship. The sidebar shows its state, bearing and range, the time left on station, stores, sorties left and how many of its buoys are being relayed.
@@ -681,6 +682,7 @@ Everything the aircraft learns reaches the ship only by datalink, out to 250 NM.
 | `X` | Drop one buoy at the aircraft |
 | `Y` | Aircraft buoy mode PASSIVE / ACTIVE |
 | `T` | Aircraft surface-search radar on/off |
+| `V` | Aircraft MAD passes over its waypoint on/off (low and slower, radar horizon shrinks) |
 | `D` | Torpedo on the designated contact (aircraft within 2 NM of the datum) |
 
 ### Standard procedure
@@ -718,7 +720,7 @@ Air defence sequence (missile inbound):
 ### Not modelled
 
 - The helicopter's buoys belong to the helicopter station; OPZ handles only the patrol aircraft's buoys.
-- The patrol aircraft has no dipping sonar, no MAD and no own ESM; it cannot be shot down.
+- The patrol aircraft has no dipping sonar and no own ESM; it cannot be shot down. MAD passes fly over the search area only, not along a track.
 - No automatic fusion: every fusion needs the operator's confirmation. Signatures are compared only as the operator's classifications (no acoustic or emitter fingerprint matching), and AIS carries no ship type.
 - No link-based air control of friendly aircraft.
 
@@ -891,7 +893,7 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 - **Sonobuoys:** 5 per sortie, 8 NM range, 60 min battery; they drift with the current and a little with the wind. PASSIVE buoys give bearings (like DIFAR); ACTIVE buoys give range and bearing every 30 s (like DICASS).
 - **Buoy patterns:** with `X` a pattern is planned: a queue of drop points about the waypoint: a 2x2 field (1.5 NM spacing), a barrier across the bearing from the ship to the waypoint (3 NM spacing) or a circle of 1.5 NM radius, each with up to 4 buoys of the remaining stock. The helicopter flies the points one after the other and drops the ordinary single buoy (in the selected mode) at each; SINGLE clears the queue, returning home drops it.
 - **MAD run:** with `Shift+M` and the dipping sonar stowed the helicopter descends to 30 m and slows to 90 kn. A submerged hull within about 400 m slant range is detected on a stateless draw per sensor tick (sure inside 250 m) and reported as a MAD position fix without depth or course; it feeds the weapons' range check and, once the helicopter releases its contact, Operations.
-- **Surface-search radar:** searches whenever the helicopter is airborne with the dipping sonar stowed (status line on page 2). From 150 m it sees ships out to 40 NM, surfaced submarines and raised snorkels or periscopes inside its radar horizon (about 30 NM). A mast is small: in calm water it shows at about 10 NM, in sea state 3 at 3-5 NM, and in sea state 5 the clutter hides it. Every contact goes to Operations as a `RADAR-HELO` track with the helicopter as observer, one look every 2 s. A crewed submarine's ESM hears the radar and can warn its crew.
+- **Surface-search radar:** searches whenever the helicopter is airborne with the dipping sonar stowed (status line on page 2). From 150 m it sees ships out to 40 NM, surfaced submarines and raised snorkels or periscopes inside its radar horizon (about 30 NM). A mast is small: in calm water it shows at about 10 NM, in sea state 3 at 3-5 NM, and in sea state 5 the clutter hides it. Every contact goes to Operations as a `RADAR-HELO` track with the helicopter as observer, one look every 2 s. A crewed submarine's ESM hears the radar and can warn its crew. `Shift+R` (browser: *Switch radar off*/*on*) switches the radar off and on again; switched off it neither sees nor radiates, and it stays off (saved) until switched on. An AI submarine with its mast or snorkel raised hears an aircraft radar within 40 NM (inside the radar horizon to its mast) on four of five 5-s looks, goes 40 m below snorkel depth and puts off snorkeling for 15 minutes while its battery holds more than 5 %; so a radiating helicopter drives snorkelers down, a silent one may catch them at the surface.
 - **Lightweight torpedo:** 2 per sortie, 55 kn, 12 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
 
 ### Keys
@@ -905,6 +907,7 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 | `Shift+B` | Next sonobuoy mode PASSIVE / ACTIVE |
 | `X` | Buoy pattern: single, 2x2 field, barrier across the waypoint bearing, circle (X again: next; single clears) |
 | `Shift+M` | MAD run on/off: low and slow, dipping sonar stowed |
+| `Shift+R` | Search radar on/off (off: a submarine's ESM does not hear it, but it finds no masts either) |
 | `T` | Sensor source: dipping sonar / sonobuoys |
 | `F` | Confirm / unconfirm selected helicopter contact |
 | `C` | Classify contact (submarine / warship / biological / vessel / aircraft / torpedo) |
@@ -952,7 +955,7 @@ Attack sequence:
 ### Not modelled
 
 - No frequency channel management for buoys.
-- No radar switch on the helicopter (it always radiates when airborne with the dome stowed); AI submarines do not react to its emission.
+- The helicopter radar has no power or sector settings, only on and off; an AI submarine hears it only with its mast or snorkel up.
 - Only one helicopter.
 
 ## 9 Electronic warfare
@@ -1125,7 +1128,7 @@ The crew keeps one shared grease-pencil plot. Every station and every Remote Cre
 | AIP (modern) | 0.85 | 250 m | 5 |
 | Nuclear attack | 0.92 | 400 m | 8 |
 
-Submarines evade for 240 s after hearing a ping or a torpedo, may launch a decoy, lie in wait, snorkel (detectable by HFDF and ESM) and sometimes ping from 15 NM or less. Near the frigate a submarine may instead creep to a charted wreck within 8 NM and lie still on the bottom beside it for 15-30 minutes.
+Submarines evade for 240 s after hearing a ping or a torpedo, may launch a decoy, lie in wait, snorkel (detectable by HFDF and ESM) and sometimes ping from 15 NM or less. Near the frigate a submarine may instead creep to a charted wreck within 8 NM and lie still on the bottom beside it for 15-30 minutes. A submarine with its mast or snorkel raised that hears an aircraft radar (helicopter or patrol aircraft) goes deep and holds off snorkeling for 15 minutes. In the frigate scenarios (1 to 4) a patrol submarine that has heard no ping or torpedo for 10 minutes, keeps more than 2 torpedoes and is more than 10 NM from the frigate torpedoes a merchant passing within 4 NM on about one in seven of its once-a-minute fire windows; each merchant lost costs 300 points.
 
 Submarine physics: the hull accelerates toward an ordered speed (no instant sprints); hydroplanes need speed (below about 4 kn depth changes are slow); radiated noise rises about 12 dB per doubling of speed and jumps when the screw cavitates, and the cavitation speed rises with depth; a torpedo launch makes an 8 s transient; a badly flooded submarine blows ballast once and rises fast and loud; operating below test depth fatigues the hull, and 1.5 x test depth crushes it; a lurking submarine holds its position against the current. Submarines sense like you do: passive bearings from their own sonar, a range only after their own TMA legs (a few minutes), and a shot on that TMA only once its range error has converged (the difficulty field "enemy fire-control convergence": sigma over range at or below 0.25 in the patrol scenarios, 0.15 for the SSN; a solution older than 90 s or re-opened by your course change is not fired on), ESM only with the mast up, the datalink only at mast depth or snorkelling, and a torpedo alarm takes the crew a few seconds (2-15 s) before the submarine evades. Surface ships lose top speed in heavy seas (small ships more).
 
@@ -1241,7 +1244,7 @@ When nobody sails the frigate (the uConsole plays the submarine, or a solo brows
 - A raised mast or snorkel head is seen by the frigate's radar only as a bare blip (see the OPZ chapter).
 - The submarine's ESM hears no other submarine's radar and no missile seeker; it has no scored likelihood analysis, no scan-period measurement and no target motion analysis of an emitter (the cross-fix assumes a slow emitter).
 - The fit grade is the crew's reading of the published ranges, not a likelihood: a wide-band radar measured near the middle of its range can fit better than the true emitter measured near its edge, and the browser shows the first 8 entries.
-- The submarine campaign has no port choices beyond refit and quick turnaround, and no damage-control state carried over (only the overall hull damage). Outside the convoy attack the submarine's torpedoes home on the frigate only, and an AI submarine attacks merchants only as the convoy attack's mission submarine.
+- The submarine campaign has no port choices beyond refit and quick turnaround, and no damage-control state carried over (only the overall hull damage). Outside the convoy attack the submarine's torpedoes home on the frigate only, and an AI submarine attacks merchants only as the convoy attack's mission submarine or as a patrol submarine of a frigate scenario.
 - The AI submarine's report is not heard by the frigate's HF/DF, and it sights the frigate by range and visibility alone, not through a modelled periscope search.
 - The AI hunters cross no ESM bearings into a fix, and their ASROC comes only from friendly warships already in the scenario, never from the frigate's own launcher.
 - The periscope has one magnification and no camera; sightings carry no identification beyond the coarse class, and the stadimeter assumes a class length rather than a masthead height.

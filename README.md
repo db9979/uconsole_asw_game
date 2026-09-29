@@ -22,7 +22,7 @@ appear as suggestions, and `Shift+L` still separates a fusion. The fused
 reports disappear from the track list and the chart, each row ends with
 sensor tags (`R` radar, `V` lookout, `A` AIS, `E` ESM, `S` sonar ...), and the
 track details and the Remote Crew OPZ list a fusion's sources by name. Saves
-stay v31.
+stay v32.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

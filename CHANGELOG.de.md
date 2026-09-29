@@ -15,7 +15,23 @@ und `Shift+L` trennt eine Fusion weiterhin. Die zusammengelegten Meldungen
 verschwinden aus Trackliste und Karte, jede Zeile endet mit Sensorkürzeln
 (`R` Radar, `V` Ausguck, `A` AIS, `E` ESM, `S` Sonar ...), und die Zieldetails
 und die Remote-Crew-OPZ nennen die Quellen einer Fusion mit Namen.
-Spielstände bleiben v31.
+Spielstände bleiben v32.
+
+## 1.3.85
+
+Version 1.3.85 lässt den Helikopter sein Suchradar aus- und wieder
+einschalten (`Shift+R`, Knopf im Browser): Ein strahlender Helikopter oder
+Seefernaufklärer drückt ein KI-U-Boot mit ausgefahrenem Mast oder Schnorchel
+jetzt für 15 Minuten auf Tiefe, ein stiller kann es an der Oberfläche
+erwischen. Der Seefernaufklärer fliegt MAD-Anflüge über sein Suchgebiet (`V`
+auf OPZ-Seite 3, Knopf im Browser) und meldet einen getauchten Rumpf, den er
+überfliegt, als MAD-Ortung per Datenlink. In den Fregattenszenarien
+torpediert ein KI-Patrouillen-U-Boot fern der Fregatte, das nicht gejagt
+wird, ab und zu ein nahes Handelsschiff, und jedes verlorene Handelsschiff
+kostet 300 Punkte. KI gegen KI gemessen blieben die Missionsausgänge in allen
+30 Vorher-nachher-Paaren der Szenarien 1 bis 3 und 5 bis 7 gleich; die Doppeljagd verlor in
+2 von 6 Läufen ein Handelsschiff. Spielstände sind jetzt v32; ältere werden
+nicht geladen.
 
 ## 1.3.84
 

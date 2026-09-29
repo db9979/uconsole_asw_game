@@ -27,7 +27,7 @@ VERSION = 1
 STATE_FIELDS = frozenset({
     "version", "state", "x", "y", "course", "base_x", "base_y",
     "waypoint_x", "waypoint_y", "fuel_s", "ready_t", "sorties", "buoys_left",
-    "torps", "radar_on", "buoy_mode", "pattern", "pattern_queue",
+    "torps", "radar_on", "buoy_mode", "pattern", "pattern_queue", "mad_mode",
 })
 MAX_PATTERN_POINTS = 4
 
@@ -65,6 +65,9 @@ class PatrolAircraft:
         self.buoy_mode = "PASSIVE"
         self.pattern = "single"
         self.pattern_queue: list[tuple[float, float]] = []
+        # MAD run: low and slower, straight passes over the waypoint instead
+        # of the orbit (only on station without a buoy pattern).
+        self.mad_mode = False
 
     # --- state ---------------------------------------------------------------
 
@@ -73,7 +76,18 @@ class PatrolAircraft:
         return self.state in AIRBORNE
 
     @property
+    def mad_run(self) -> bool:
+        """Flying the MAD passes right now (on station, no pattern queued)."""
+        return self.mad_mode and self.state == "STATION" and not self.pattern_queue
+
+    @property
+    def altitude_m(self) -> float:
+        return config.MPA_MAD_ALTITUDE_M if self.mad_run else config.MPA_ALTITUDE_M
+
+    @property
     def speed_kn(self) -> float:
+        if self.mad_run:
+            return config.MPA_MAD_KN
         if self.state == "STATION":
             return config.MPA_STATION_KN
         return config.MPA_TRANSIT_KN if self.airborne else 0.0
@@ -116,6 +130,7 @@ class PatrolAircraft:
         self.state = "RTB"
         self.pattern_queue = []
         self.pattern = "single"
+        self.mad_mode = False
         return True
 
     def deploy_buoy(self, seq: int, world=None) -> Sonobuoy | None:
@@ -155,7 +170,13 @@ class PatrolAircraft:
             self.state = "STATION"
             event = event or "on_station"
         wanted = _bearing(self.x, self.y, *target)
-        if self.state == "STATION" and not self.pattern_queue:
+        if self.mad_run:
+            # Straight passes over the waypoint: steer at it, hold the course
+            # once it is behind and turn back after the leg length (a cloverleaf).
+            behind = abs((wanted - self.course + 540.0) % 360.0 - 180.0) > 90.0
+            if behind and distance <= config.MPA_MAD_LEG_NM:
+                wanted = self.course
+        elif self.state == "STATION" and not self.pattern_queue:
             # Orbit the waypoint: fly the tangent, corrected towards the circle.
             # Clockwise tangent is the bearing from the centre + 90 degrees;
             # outside the circle the correction turns in, inside it out.
@@ -189,7 +210,8 @@ class PatrolAircraft:
                     buoys_left=self.buoys_left, torps=self.torps,
                     radar_on=self.radar_on, buoy_mode=self.buoy_mode,
                     pattern=self.pattern,
-                    pattern_queue=[[x, y] for x, y in self.pattern_queue])
+                    pattern_queue=[[x, y] for x, y in self.pattern_queue],
+                    mad_mode=self.mad_mode)
 
     @staticmethod
     def valid_state(state, world_size_nm: float) -> bool:
@@ -222,7 +244,9 @@ class PatrolAircraft:
             return False
         if type(state["torps"]) is not int or not 0 <= state["torps"] <= config.MPA_TORPS:
             return False
-        if type(state["radar_on"]) is not bool:
+        if type(state["radar_on"]) is not bool or type(state["mad_mode"]) is not bool:
+            return False
+        if state["mad_mode"] and state["state"] not in ("TRANSIT", "STATION"):
             return False
         if state["buoy_mode"] not in ("PASSIVE", "ACTIVE"):
             return False
@@ -248,7 +272,7 @@ class PatrolAircraft:
         aircraft = cls(state["base_x"], state["base_y"])
         for key in ("state", "x", "y", "course", "waypoint_x", "waypoint_y",
                     "fuel_s", "ready_t", "sorties", "buoys_left", "torps",
-                    "radar_on", "buoy_mode", "pattern"):
+                    "radar_on", "buoy_mode", "pattern", "mad_mode"):
             setattr(aircraft, key, state[key])
         aircraft.pattern_queue = [(float(x), float(y)) for x, y in state["pattern_queue"]]
         return aircraft

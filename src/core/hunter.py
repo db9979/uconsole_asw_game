@@ -428,6 +428,8 @@ def helicopter(game, found) -> str:
         tick = int(math.floor(game.sim_t / CADENCE_S))
         if detrand.u01(game.seed, "hunter.helo", tick) >= CADENCE_S / HELO_READY_MEAN_S:
             return "monitoring"                     # the deck readies the helicopter
+        # The hunters fly with the search radar on (as before its switch).
+        helo.radar_on = True
         return "launched" if game.launch_helicopter() is True else "monitoring"
     if helo.state != "AUF":
         return "monitoring"

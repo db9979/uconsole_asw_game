@@ -161,6 +161,9 @@ def merchant_struck(game, ship) -> None:
                   message("runtime.merchant_torpedoed"))
     if ship.sunk:
         game._report_breakup_noise(ship.x, ship.y, 0.0, ship.id)
+        if mode(game) is None:
+            # A frigate mission: the shipping it protects was lost.
+            game.score -= config.SCORE_MERCHANT_LOST
 
 
 def check(game) -> bool:

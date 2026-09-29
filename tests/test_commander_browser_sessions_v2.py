@@ -1014,7 +1014,7 @@ def _direct_fire_browser_states():
                  course=90.0, state="RUN")])))
     helicopter = dict(common, role="helicopter", helicopter=dict(
         asset=dict(helicopter_asset, buoy_mode="PASSIVE", pattern="single",
-                   pattern_remaining=0, mad_mode=False, radar=True), waypoint=None,
+                   pattern_remaining=0, mad_mode=False, radar=True, radar_switch=True), waypoint=None,
         buoys=[dict(ref="opaque-buoy-reference-one", label="SB01", x=252.0, y=248.0,
                     battery_s=500.0, active=True, mode="PASSIVE"),
                dict(ref="opaque-buoy-reference-two", label="SB02", x=253.0, y=247.0,

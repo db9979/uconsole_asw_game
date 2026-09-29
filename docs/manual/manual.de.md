@@ -647,7 +647,8 @@ Seite 3 führt einen Seefernaufklärer (MPA) auf Abruf vom nächsten eigenen Flu
 - `A` fordert das Flugzeug an (es fliegt zuerst zur Schiffsposition) oder schickt es heim.
 - `W` legt das Suchgebiet auf die geplottete Position des gewählten Tracks (ohne Auswahl auf das Schiff); ein Klick in die Karte legt es auf diesen Punkt. Ein reiner Peilungstrack hat keine Position zum Anfliegen.
 - `Z` plant ein Bojenmuster (Feld, Sperre, Kreis) um das Suchgebiet; das Flugzeug fliegt die Punkte ab und wirft an jedem eine Boje. `Shift+Z` bricht das Muster ab. `X` wirft eine Boje dort, wo das Flugzeug ist, `Y` schaltet seine Bojen zwischen PASSIV und AKTIV.
-- `T` schaltet das Seeraumradar des Flugzeugs. Aus 300 m sieht es Schiffe und aufgetauchte oder mit Mast fahrende U-Boote bis 60 sm (begrenzt durch den Radarhorizont); seine Kontakte erscheinen als `RADAR-MPA`-Tracks mit dem Flugzeug als Beobachter.
+- `T` schaltet das Seeraumradar des Flugzeugs. Aus 300 m sieht es Schiffe und aufgetauchte oder mit Mast fahrende U-Boote bis 60 sm (begrenzt durch den Radarhorizont); seine Kontakte erscheinen als `RADAR-MPA`-Tracks mit dem Flugzeug als Beobachter. KI-U-Boote mit ausgefahrenem Mast hören es und tauchen weg (siehe Kapitel Helikopter).
+- `V` beginnt oder beendet **MAD-Überflüge** (Browser: *MAD-Anflüge beginnen*/*beenden*), solange das Flugzeug unterwegs oder auf Station ist: dort geht es auf 60 m und fliegt mit 180 kn gerade Bahnen durch das Suchgebiet und kehrt 2 sm dahinter um (ein Kleeblatt). Ein getauchter Rumpf innerhalb von etwa 400 m Schrägentfernung wird mit einem zustandslosen Zug je Sekunde erfasst (sicher unter 250 m) und erreicht das Schiff per Datenlink als MAD-Ortung ohne Tiefe und Kurs auf dem Sonarkontakt dieses U-Boots. Ein Bojenmuster wird zuerst abgeflogen; `A` (heim) beendet die Überflüge.
 - `D` wirft einen Torpedo auf den zugewiesenen Sonarkontakt. Es gelten dieselben Prüfungen wie beim Helikopter (aktueller, als U-Boot klassifizierter Kontakt, Einsatzregeln, unter Standard-ROE eine frische Ortung), und das Flugzeug muss höchstens 2 sm vom Datum entfernt sein.
 
 Alles, was das Flugzeug erfährt, erreicht das Schiff nur per Datenlink bis 250 sm. Seine Bojen melden nur, solange das Flugzeug höchstens 50 sm von ihnen entfernt ist; fliegt es weg oder landet es, verstummen sie für das Schiff. Die Seitenleiste zeigt Zustand, Peilung und Entfernung, Restzeit auf Station, Vorräte, verbleibende Einsätze und wie viele seiner Bojen übertragen werden.
@@ -682,6 +683,7 @@ Alles, was das Flugzeug erfährt, erreicht das Schiff nur per Datenlink bis 250 
 | `X` | Eine Boje am Flugzeug werfen |
 | `Y` | Bojenmodus des Flugzeugs PASSIV / AKTIV |
 | `T` | Seeraumradar des Flugzeugs ein/aus |
+| `V` | MAD-Anflüge des Flugzeugs über seinen Wegpunkt ein/aus (tief und langsamer, der Radarhorizont schrumpft) |
 | `D` | Torpedo auf den zugewiesenen Kontakt (Flugzeug höchstens 2 sm vom Datum) |
 
 ### Standardablauf
@@ -719,7 +721,7 @@ Ablauf Luftverteidigung (Flugkörper im Anflug):
 ### Nicht modelliert
 
 - Die Bojen des Helikopters gehören zur Helikopterstation; die OPZ führt nur die Bojen des Seefernaufklärers.
-- Der Seefernaufklärer hat kein Tauchsonar, kein MAD und kein eigenes ESM; er kann nicht abgeschossen werden.
+- Der Seefernaufklärer hat kein Tauchsonar und kein eigenes ESM; er kann nicht abgeschossen werden. MAD-Überflüge gehen nur über das Suchgebiet, nicht entlang eines Tracks.
 - Keine automatische Fusion: jede Fusion braucht die Bestätigung des Bedieners. Signaturen werden nur als Klassifizierungen des Bedieners verglichen (kein Abgleich akustischer oder Emitter-Fingerabdrücke), und AIS meldet keinen Schiffstyp.
 - Keine Link-gestützte Luftraumführung befreundeter Flugzeuge.
 
@@ -892,7 +894,7 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 - **Sonarbojen:** 5 je Einsatz, 8 sm Reichweite, 60 min Batterie; sie treiben mit der Strömung und etwas mit dem Wind. PASSIV-Bojen liefern Peilungen (wie DIFAR); AKTIV-Bojen liefern Entfernung und Peilung alle 30 s (wie DICASS).
 - **Bojenmuster:** mit `X` wird ein Muster geplant: eine Folge von Abwurfpunkten um den Wegpunkt: ein 2x2-Feld (Abstand 1,5 sm), eine Sperre quer zur Peilung vom Schiff zum Wegpunkt (Abstand 3 sm) oder ein Kreis von 1,5 sm Radius, jeweils mit bis zu 4 Bojen des Restvorrats. Der Helikopter fliegt die Punkte nacheinander an und wirft an jedem die gewöhnliche Einzelboje (in der gewählten Betriebsart); EINZELN löscht die Folge, der Rückflug verwirft sie.
 - **MAD-Anflug:** mit `Umschalt+M` und eingeholtem Tauchsonar geht der Helikopter auf 30 m und 90 kn. Ein getauchter Rumpf innerhalb von etwa 400 m Schrägdistanz wird je Sensortakt mit einem zustandslosen Zufallszug erfasst (sicher innerhalb 250 m) und als MAD-Positionsfix ohne Tiefe oder Kurs gemeldet; er zählt für die Entfernungsprüfung der Waffen und, sobald der Helikopter seinen Kontakt freigibt, für die OPZ.
-- **Seeraumradar:** sucht, solange der Helikopter fliegt und das Tauchsonar eingeholt ist (Statuszeile auf Seite 2). Aus 150 m sieht es Schiffe bis 40 sm, aufgetauchte U-Boote sowie ausgefahrene Schnorchel oder Sehrohre innerhalb seines Radarhorizonts (etwa 30 sm). Ein Mast ist klein: bei ruhiger See zeigt er sich auf etwa 10 sm, bei Seegang 3 auf 3-5 sm, bei Seegang 5 verschwindet er im Seegangsecho. Jeder Kontakt geht als `RADAR-HELO`-Track mit dem Helikopter als Beobachter an die OPZ, ein Blick alle 2 s. Das ESM eines besetzten U-Boots hört das Radar und kann seine Besatzung warnen.
+- **Seeraumradar:** sucht, solange der Helikopter fliegt und das Tauchsonar eingeholt ist (Statuszeile auf Seite 2). Aus 150 m sieht es Schiffe bis 40 sm, aufgetauchte U-Boote sowie ausgefahrene Schnorchel oder Sehrohre innerhalb seines Radarhorizonts (etwa 30 sm). Ein Mast ist klein: bei ruhiger See zeigt er sich auf etwa 10 sm, bei Seegang 3 auf 3-5 sm, bei Seegang 5 verschwindet er im Seegangsecho. Jeder Kontakt geht als `RADAR-HELO`-Track mit dem Helikopter als Beobachter an die OPZ, ein Blick alle 2 s. Das ESM eines besetzten U-Boots hört das Radar und kann seine Besatzung warnen. `Shift+R` (Browser: *Radar ausschalten*/*einschalten*) schaltet das Radar aus und wieder ein; ausgeschaltet sieht es nichts und strahlt nicht, und es bleibt aus (gespeichert), bis es wieder eingeschaltet wird. Ein KI-U-Boot mit ausgefahrenem Mast oder Schnorchel hört ein Flugzeugradar innerhalb von 40 sm (im Radarhorizont seines Masts) bei vier von fünf Blicken im 5-s-Takt, geht 40 m unter Schnorcheltiefe und schiebt das Schnorcheln 15 Minuten auf, solange seine Batterie mehr als 5 % hält; ein strahlender Helikopter drückt Schnorchler also weg, ein stiller kann sie an der Oberfläche erwischen.
 - **Leichttorpedo:** 2 je Einsatz, 55 kn, 12 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
 
 ### Tasten
@@ -906,6 +908,7 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 | `Umschalt+B` | Modus der nächsten Boje PASSIV / AKTIV |
 | `X` | Bojenmuster: einzeln, 2x2-Feld, Sperre quer zur Wegpunktpeilung, Kreis (X erneut: nächstes; einzeln löscht) |
 | `Shift+M` | MAD-Anflug ein/aus: tief und langsam, Tauchsonar eingeholt |
+| `Shift+R` | Suchradar ein/aus (aus: das ESM eines U-Boots hört es nicht, es findet aber auch keine Masten) |
 | `T` | Sensorquelle: Tauchsonar / Sonarbojen |
 | `F` | Gewählten Hubschrauberkontakt bestätigen / aufheben |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
@@ -953,7 +956,7 @@ Angriffsablauf:
 ### Nicht modelliert
 
 - Keine Kanalverwaltung für Bojen.
-- Kein Radarschalter am Helikopter (er strahlt immer, wenn er fliegt und der Dom eingeholt ist); KI-U-Boote reagieren nicht auf seine Abstrahlung.
+- Das Helikopterradar kennt keine Leistungs- oder Sektoreinstellung, nur ein und aus; ein KI-U-Boot hört es nur mit ausgefahrenem Mast oder Schnorchel.
 - Nur ein Helikopter.
 
 ## 9 EloKa
@@ -1126,7 +1129,7 @@ Die Besatzung führt einen gemeinsamen Fettstift-Plot. Alle Stationen und alle R
 | AIP (modern) | 0,85 | 250 m | 5 |
 | Nuklear-Jagd-U-Boot | 0,92 | 400 m | 8 |
 
-U-Boote weichen nach einem gehörten Ping oder Torpedo 240 s aus, können einen Täuschkörper ausstoßen, lauern, schnorcheln (durch HFDF und ESM erfassbar) und pingen gelegentlich aus 15 sm oder weniger. In der Nähe der Fregatte kann ein U-Boot stattdessen zu einem kartierten Wrack innerhalb von 8 sm schleichen und sich 15-30 Minuten still daneben auf Grund legen.
+U-Boote weichen nach einem gehörten Ping oder Torpedo 240 s aus, können einen Täuschkörper ausstoßen, lauern, schnorcheln (durch HFDF und ESM erfassbar) und pingen gelegentlich aus 15 sm oder weniger. In der Nähe der Fregatte kann ein U-Boot stattdessen zu einem kartierten Wrack innerhalb von 8 sm schleichen und sich 15-30 Minuten still daneben auf Grund legen. Ein U-Boot mit ausgefahrenem Mast oder Schnorchel, das ein Flugzeugradar (Helikopter oder Seefernaufklärer) hört, geht auf Tiefe und schiebt das Schnorcheln 15 Minuten auf. In den Fregattenszenarien (1 bis 4) torpediert ein Patrouillen-U-Boot, das 10 Minuten keinen Ping und keinen Torpedo gehört hat, mehr als 2 Torpedos behält und mehr als 10 sm von der Fregatte entfernt ist, ein Handelsschiff innerhalb von 4 sm bei etwa einem von sieben seiner minütlichen Schussfenster; jedes verlorene Handelsschiff kostet 300 Punkte.
 
 U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint); Tiefenruder brauchen Fahrt (unter etwa 4 kn ändert sich die Tiefe nur langsam); das abgestrahlte Geräusch steigt je Verdopplung der Fahrt um etwa 12 dB und springt, wenn die Schraube kavitiert, wobei die Kavitationsfahrt mit der Tiefe steigt; ein Torpedoausstoß erzeugt 8 s lang ein Transientengeräusch; ein stark geflutetes U-Boot bläst einmal an und steigt schnell und laut auf; unter der Testtiefe ermüdet der Druckkörper, bei 1,5-facher Testtiefe wird er zerdrückt; ein lauerndes U-Boot hält seine Position gegen die Strömung. U-Boote orten wie Sie: passive Peilungen aus dem eigenen Sonar, eine Entfernung erst nach eigenen TMA-Schlägen (einige Minuten), und ein Schuss auf diese TMA erst, wenn ihr Entfernungsfehler konvergiert ist (Schwierigkeitsfeld "Gegnerische Feuerleitkonvergenz": Sigma zu Entfernung höchstens 0,25 in den Patrouillenszenarien, 0,15 beim SSN; eine Lösung, die älter als 90 s ist oder durch Ihre Kursänderung wieder aufgeht, wird nicht beschossen), ESM nur mit ausgefahrenem Mast, den Datalink nur auf Masttiefe oder beim Schnorcheln, und ein Torpedoalarm braucht einige Sekunden Reaktionszeit der Besatzung (2-15 s), bevor das U-Boot ausweicht. Überwasserschiffe verlieren bei schwerer See Höchstfahrt (kleine Schiffe mehr).
 
@@ -1242,7 +1245,7 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das U-Boot oder ein Solo-B
 - Ein ausgefahrener Mast oder Schnorchelkopf erscheint auf dem Fregattenradar nur als bloßer Punkt (siehe Kapitel OPZ).
 - Das ESM des U-Boots hört keine Radare anderer U-Boote und keine Flugkörpersucher; es hat keine gewichtete Wahrscheinlichkeitsanalyse, keine Messung der Umlaufzeit und keine Bewegungsanalyse eines Senders (die Kreuzpeilung nimmt einen langsamen Sender an).
 - Die Passung ist die Lesart der Crew aus den veröffentlichten Bereichen, keine Wahrscheinlichkeit: ein Breitbandradar, nahe der Mitte seines Bereichs gemessen, kann besser passen als der wahre Sender nahe dem Rand, und der Browser zeigt die ersten 8 Einträge.
-- Die U-Boot-Kampagne kennt im Stützpunkt nur Überholung und schnelles Auslaufen und übernimmt keinen Zustand der Leckwehr (nur den gesamten Rumpfschaden). Außerhalb des Geleitzugangriffs suchen die Torpedos des U-Boots nur die Fregatte, und ein KI-U-Boot greift Handelsschiffe nur als Missions-U-Boot des Geleitzugangriffs an.
+- Die U-Boot-Kampagne kennt im Stützpunkt nur Überholung und schnelles Auslaufen und übernimmt keinen Zustand der Leckwehr (nur den gesamten Rumpfschaden). Außerhalb des Geleitzugangriffs suchen die Torpedos des U-Boots nur die Fregatte, und ein KI-U-Boot greift Handelsschiffe nur als Missions-U-Boot des Geleitzugangriffs oder als Patrouillen-U-Boot eines Fregattenszenarios an.
 - Die Meldung des KI-U-Boots hört das HF/DF der Fregatte nicht, und es sichtet die Fregatte nur nach Entfernung und Sichtweite, ohne modellierte Sehrohrsuche.
 - Die KI-Jäger kreuzen ESM-Peilungen nicht zu einem Fix, und ihr ASROC kommt nur von befreundeten Kriegsschiffen, die ohnehin im Szenario sind, nie vom eigenen Starter der Fregatte.
 - Das Sehrohr hat eine Vergrößerung und keine Kamera; Sichtungen tragen keine Identifikation über die grobe Klasse hinaus, und das Stadimeter nimmt eine Klassenlänge statt einer Masthöhe an.

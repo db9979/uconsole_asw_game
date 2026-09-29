@@ -170,6 +170,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `X` | Eine Boje am Flugzeug werfen |
 | `Y` | Bojenmodus des Flugzeugs PASSIV / AKTIV |
 | `T` | Seeraumradar des Flugzeugs ein/aus |
+| `V` | MAD-Anflüge des Flugzeugs über seinen Wegpunkt ein/aus (tief und langsamer, der Radarhorizont schrumpft) |
 | `D` | Torpedo auf den zugewiesenen Kontakt (Flugzeug höchstens 2 sm vom Datum) |
 
 ## 6 Funk
@@ -205,6 +206,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Umschalt+B` | Modus der nächsten Boje PASSIV / AKTIV |
 | `X` | Bojenmuster: einzeln, 2x2-Feld, Sperre quer zur Wegpunktpeilung, Kreis (X erneut: nächstes; einzeln löscht) |
 | `Shift+M` | MAD-Anflug ein/aus: tief und langsam, Tauchsonar eingeholt |
+| `Shift+R` | Suchradar ein/aus (aus: das ESM eines U-Boots hört es nicht, es findet aber auch keine Masten) |
 | `T` | Sensorquelle: Tauchsonar / Sonarbojen |
 | `F` | Gewählten Hubschrauberkontakt bestätigen / aufheben |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |

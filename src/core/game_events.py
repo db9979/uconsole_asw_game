@@ -1036,7 +1036,7 @@ class EventMixin:
                 return
             if self.station is Station.OPZ and self.station_page == 2 and e.key in (
                     pygame.K_a, pygame.K_w, pygame.K_z, pygame.K_x, pygame.K_y,
-                    pygame.K_t, pygame.K_d):
+                    pygame.K_t, pygame.K_d, pygame.K_v):
                 shift = bool(getattr(e, "mod", 0) & pygame.KMOD_SHIFT)
                 order = {
                     pygame.K_a: self.toggle_mpa,
@@ -1046,6 +1046,7 @@ class EventMixin:
                     pygame.K_x: self.mpa_drop_buoy,
                     pygame.K_y: self.toggle_mpa_buoy_mode,
                     pygame.K_t: self.toggle_mpa_radar,
+                    pygame.K_v: self.toggle_mpa_mad,
                     pygame.K_d: self.mpa_attack,
                 }[e.key]
                 self._mpa_order_feedback(order())
@@ -1187,6 +1188,9 @@ class EventMixin:
                     self.flash(message("runtime.eloka.auto_on"
                                        if self.ecm_jammer.auto_enabled else
                                        "runtime.eloka.auto_off"), 1.5)
+            elif (e.key == pygame.K_r and self.station is Station.HELICOPTER
+                  and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+                self.set_helicopter_radar(not self.helo.radar_on)
             elif e.key == pygame.K_r:
                 if self.station in (Station.OPZ, Station.RADAR):
                     domain = ("air" if getattr(e, "mod", 0)

@@ -545,6 +545,7 @@ class SimMixin:
         self._fly_buoy_pattern()
         self._update_helo_radar(dt)
         self._update_mpa(dt)
+        self._update_sub_radar_alert(dt)
         for buoy in self.buoys:
             buoy.update(dt, self.world)
         self.buoys = [buoy for buoy in self.buoys if buoy.active]
@@ -739,8 +740,10 @@ class SimMixin:
         mission_boat = boat_ai.boat(self)
         if mission_boat is not None and boat_missions.mode(self) == "convoy_attack":
             attackers.add(mission_boat.id)
-        # Only the crewed boat's weapons, or the AI boat's in the convoy
-        # attack, may take another ship.
+        # The patrol boats of a frigate mission hunt merchants too (1.3.76).
+        attackers.update(sub.id for sub in boat_ai.patrol_raiders(self))
+        # Only the crewed boat's weapons, the AI boat's in the convoy attack
+        # or a frigate mission's patrol boats may take another ship.
         merchants = ([ship for ship in self.civilians if not ship.sunk]
                      if attackers else [])
         for torpedo in self.enemy_torpedoes:

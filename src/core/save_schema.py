@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v31`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v32`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,

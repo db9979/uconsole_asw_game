@@ -101,7 +101,8 @@ class CrewOrders:
               "test_depth_near": "navigation", "test_depth_over": "navigation",
               "incident_net": "funk", "incident_front": "funk",
               "incident_whales": "funk", "net_fouled": "navigation",
-              "baffles_clearing": "navigation", "baffles_cleared": "navigation"}
+              "baffles_clearing": "navigation", "baffles_cleared": "navigation",
+              "hf_frigate": "funk"}
 
     def __init__(self):
         self.silent = False

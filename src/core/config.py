@@ -1020,6 +1020,18 @@ INCIDENT_NET_HIT_NM = 0.03             # within this of the line: over the net
 INCIDENT_NET_S = 3600.0                # the fishing boat hauls it after this
 INCIDENT_NET_TRANSIENT_S = 20.0        # a submarine tearing free
 SCORE_NET_TORN = 100
+# Free radio messages of the frigate to HQ (src/core/hq_reports.py): a
+# contact report or a request for support is an HF call of RADIO_TX_S,
+# one every RADIO_REPORT_INTERVAL_S.  While it goes out, a submarine with
+# its antenna up can take an HF/DF bearing on the frigate.  A contact report
+# counts at the mission's end when a hostile submarine was within
+# CONTACT_REPORT_CONFIRM_NM of the reported fix (at most
+# CONTACT_REPORT_SCORED of them).
+RADIO_TX_S = 20.0
+RADIO_REPORT_INTERVAL_S = 600.0
+CONTACT_REPORT_CONFIRM_NM = 3.0
+CONTACT_REPORT_SCORED = 3
+SCORE_CONTACT_REPORT = 150
 INCIDENT_FRONT_LEAD_S = 600.0          # HQ's warning ahead of the front
 INCIDENT_FRONT_S = (1800.0, 3600.0)
 INCIDENT_DARK_RANGE_NM = (8.0, 15.0)

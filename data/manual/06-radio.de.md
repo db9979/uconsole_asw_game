@@ -50,6 +50,14 @@ Die See bringt eigene Überraschungen: das erste 20 bis 40 Minuten nach dem Star
 
 Treibnetz, Front und Wale gibt HQ auch in den Rundspruch an das U-Boot; ein besetztes U-Boot erfährt davon, wenn es den nächsten Rundspruch aufnimmt, und seine Crew trägt das Netz in die eigene Karte ein.
 
+## Eigene Rufe an HQ {#radio-reports}
+
+Auf der Aufträge-Seite kann der Funkraum HQ selbst rufen, höchstens alle 10 Minuten; die Zeile am Fuß der Auftragsliste sagt, ob ein Ruf auf Sendung ist, wie lange es bis zum nächsten dauert oder dass beide bereit sind.
+
+- `K` **Kontaktmeldung:** sendet die Position des frischesten georteten Kontakts (Ping-, TMA-, Bojen- oder fusionierter Fix, sonst ein KW-Peilfix bis 15 Minuten alt). HQ bestätigt sie im Fernschreiber und setzt den Seefernaufklärer darauf an, wenn er in der Luft ist. HQ sagt nie, ob dort wirklich ein U-Boot war: Jede Meldung, bei der ein feindliches U-Boot innerhalb 3 sm um den Fix stand, bringt am Missionsende 150 Punkte (höchstens drei).
+- `H` **Unterstützung anfordern:** HQ schickt den bereitstehenden Seefernaufklärer zum Schiff, wenn er verfügbar ist (auch bei ausgefallener OPZ), sonst meldet es, dass keine Unterstützung verfügbar ist.
+- Jeder Ruf sind 20 s KW-Sendung. Solange er auf Sendung ist, nimmt ein U-Boot mit ausgefahrener Antenne (der Mast des besetzten Boots, ein KI-Boot auf Sehrohrtiefe) eine KW-Peilung auf die Fregatte (+/-8 Grad bei Bodenwelle, +/-16 Grad bei Raumwelle): Das besetzte Boot erhält eine Meldung und einen Peilstrahl auf seiner Karte, ein KI-Boot merkt sich die Richtung. Reden mit HQ kostet Funkstille.
+
 ## Tasten {#radio-keys}
 
 <!-- keys:radio -->

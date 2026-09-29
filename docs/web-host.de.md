@@ -121,4 +121,4 @@ im Internet. Die Proxy-Einrichtung und sein Zertifikat werden außerhalb des
 Spiels verwaltet.
 
 Die Webverwaltung liegt unter `/api/v2/web/*` und nutzt die vorhandene v2-Sitzung.
-Alle `/api/v1/*`-Routen bleiben abgeschaltet. Spielstände bleiben exakt v35.
+Alle `/api/v1/*`-Routen bleiben abgeschaltet. Spielstände bleiben exakt v36.

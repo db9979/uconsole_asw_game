@@ -1028,9 +1028,14 @@ class EventMixin:
             if e.key == pygame.K_g and (self.station is Station.BRIDGE or crew_page):
                 self.toggle_action_stations()
                 return
-            if (e.key in (pygame.K_a, pygame.K_d, pygame.K_r)
+            if (e.key in (pygame.K_a, pygame.K_d, pygame.K_r, pygame.K_k, pygame.K_h)
                     and self.station is Station.RADIO and self.station_page == 2):
-                if e.key == pygame.K_a:
+                if e.key in (pygame.K_k, pygame.K_h):
+                    result = (self.send_contact_report() if e.key == pygame.K_k
+                              else self.request_support())
+                    if result is not True:
+                        self.flash(message("runtime.task." + result), 2.5)
+                elif e.key == pygame.K_a:
                     self._task_accept_selected()
                 elif e.key == pygame.K_r:
                     self._ras_request_selected()

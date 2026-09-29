@@ -42,6 +42,7 @@ from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
 from src.core import baffles
 from src.core.incidents import IncidentBoard
+from src.core.hq_reports import HqReports
 from src.core.crew import CrewState
 from src.air.mpa import PatrolAircraft
 from src.air.sonobuoy import OWNERS as BUOY_OWNERS
@@ -503,6 +504,11 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
            and task["target_id"] not in surface_ids for task in board["tasks"]):
         return False
     if any(task["offered_t"] > save_sim_t for task in board["tasks"]):
+        return False
+    # Save v36: the radio room's own calls; none logged after the save time.
+    reports = data.get("hq_reports")
+    if (not HqReports.valid_state(reports)
+            or any(row["t"] > save_sim_t for row in reports["log"])):
         return False
     # Save v35: the Bridge's baffle clearing, ending after the save time.
     if (not baffles.valid_state(data.get("baffle_clear"))

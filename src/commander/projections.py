@@ -786,7 +786,9 @@ def _radio(game, rows, ref_by_track):
                             if row["source"] == "HFDF"][:_MAP_ROWS_MAX],
                  tasks=_radio_tasks(game, station_down),
                  can_request_ras=bool(not station_down and game.tasking.enabled
-                                      and not game.game_over and game.ras_needed()))
+                                      and not game.game_over and game.ras_needed()),
+                 can_contact_report=bool(game.can_send_report("contact")),
+                 can_request_support=bool(game.can_send_report("support")))
 
 
 def _radio_tasks(game, station_down):

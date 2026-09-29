@@ -34,6 +34,7 @@ from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
 from src.core.incidents import IncidentBoard
+from src.core.hq_reports import HqReports
 from src.core.crew import CrewState
 from src.air.mpa import PatrolAircraft
 from src.enemies.endurance import SubmarineEndurance
@@ -480,6 +481,7 @@ class SaveMixin:
             "mission_events": list(self.mission_events_pending),
             "tasking": self.tasking.serialize(),
             "incidents": self.incidents.serialize(),
+            "hq_reports": self.hq_reports.serialize(),
             "baffle_clear": (None if self.baffle_clear is None
                              else [float(value) for value in self.baffle_clear]),
             "watch": self.crew_watch.serialize(),
@@ -1040,6 +1042,7 @@ class SaveMixin:
         self.mission_events_pending = [str(item) for item in data["mission_events"]]
         self.tasking = TaskBoard.restore(data["tasking"])
         self.incidents = IncidentBoard.restore(data["incidents"])
+        self.hq_reports = HqReports.restore(data["hq_reports"])
         self.baffle_clear = (None if data["baffle_clear"] is None
                              else [float(value) for value in data["baffle_clear"]])
         self.task_sel = 0

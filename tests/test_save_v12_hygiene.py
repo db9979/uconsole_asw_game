@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v35_and_older_documents_are_rejected():
+def test_save_is_v36_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (35, "u-jagd-save-v35")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (35, "u-jagd-save-v35")
+    assert (state["version"], state["save_schema"]) == (36, "u-jagd-save-v36")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (36, "u-jagd-save-v36")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -182,6 +182,12 @@ def test_save_is_v35_and_older_documents_are_rejected():
     v34["save_schema"] = "u-jagd-save-v34"
     del v34["baffle_clear"]
     assert not game._load_save_data(v34)
+    # v35 differs only by the radio room's own calls.
+    v35 = copy.deepcopy(state)
+    v35["version"] = 35
+    v35["save_schema"] = "u-jagd-save-v35"
+    del v35["hq_reports"]
+    assert not game._load_save_data(v35)
     assert game.save_state() == before
 
 

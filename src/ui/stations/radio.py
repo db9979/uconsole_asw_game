@@ -1,10 +1,12 @@
 """Radio room view: HFDF bearings and teletype (verbatim from ``stations_view``)."""
 
 
+import math
+
 import pygame
 
 from src.core import config
-from src.core.i18n import localized, raw_text
+from src.core.i18n import localized, message, raw_text
 from src.core.station import Station
 from src.ui import layout
 from src.ui import observations
@@ -163,12 +165,29 @@ def task_detail_lines(game, row) -> list:
     return lines
 
 
+def _draw_report_status(game, s, rect) -> None:
+    """The radio room's own calls: on the air, waiting, or ready (K / H)."""
+    view = game.report_view()
+    if view["transmitting"]:
+        text, color = message("radio.report.status_on_air",
+                              seconds=f"{view['tx_left_s']:.0f}"), config.COLOR_WARN
+    elif view["ready_in_s"] > 0.0:
+        text, color = message("radio.report.status_wait",
+                              minutes=f"{math.ceil(view['ready_in_s'] / 60.0):.0f}"), \
+            config.COLOR_TEXT_DIM
+    else:
+        text, color = message("radio.report.status_ready"), config.COLOR_TEXT
+    layout.blit_line(s, text, rect, color, size=15)
+
+
 def _draw_tasks(game, s, x, cy, w, box_h) -> None:
     split = int(w * .5)
     left = layout.box(s, (x, cy, split - 6, box_h), "panel.tasks")
     right = layout.box(s, (x + split + 6, cy, w - split - 6, box_h), "panel.task_detail")
     rows = game.task_view()
     lx, ly, lw, lh = left
+    _draw_report_status(game, s, (lx, ly + lh - 24, lw, 22))
+    lh -= 30
     if not rows:
         layout.blit_line(s, "radio.task.none" if game.tasking.enabled
                          else "radio.task.disabled",

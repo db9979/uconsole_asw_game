@@ -119,7 +119,9 @@ function renderTasks(payload) {
   list.replaceChildren(...payload.tasks.map(taskCard));
   if (!payload.tasks.length) list.append(node("p", t("radio_task_none"), "empty radio-idle"));
   const request = node("div", undefined, "radio-task-actions");
-  request.append(actionButton("radio_request_ras", "radio_request_ras", {}, payload.can_request_ras));
+  request.append(actionButton("radio_request_ras", "radio_request_ras", {}, payload.can_request_ras),
+    actionButton("radio_contact_report", "radio_contact_report", {}, payload.can_contact_report),
+    actionButton("radio_request_support", "radio_request_support", {}, payload.can_request_support));
   list.append(request);
 }
 

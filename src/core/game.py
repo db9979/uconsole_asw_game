@@ -94,6 +94,7 @@ from src.core.game_debrief import DebriefMixin
 from src.core.game_training import TrainingMixin
 from src.core.game_campaign import CampaignMixin
 from src.core.game_autosave import AutosaveMixin, CONTINUE_ENTRY
+from src.core.game_reports import ReportsMixin
 from src.core.game_logbook import LogbookMixin
 from src.core.game_bugreport import (BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES,
                                      BugReportMixin)
@@ -103,7 +104,7 @@ from src.core.game_welcome import WelcomeMixin
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            RadarPictureMixin, AswWeaponsMixin,
            SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, DebriefMixin,
-           TrainingMixin, CampaignMixin, LogbookMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
+           TrainingMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -450,6 +451,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._reset_incidents()
         # A running baffle clearing of the Bridge (save ``baffle_clear``).
         self.baffle_clear = None
+        # The radio room's own calls to HQ (save ``hq_reports``).
+        self._reset_hq_reports()
         # Watches, fatigue and morale of the frigate crew (save ``watch``).
         self._reset_crew()
         # Post-mission debrief recording (transient, never saved).

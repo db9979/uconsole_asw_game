@@ -132,7 +132,7 @@ export function validateV2State(state) {
     bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings", "crew", "lookout", "route"],
     damage: ["compartments", "teams", "total", "sunk", "stability", "crew"],
     eloka: ["intercepts", "station_down", "status", "hardware"],
-    engine: ["propulsion", "machinery", "controls", "environment_effects"],
+    engine: ["propulsion", "machinery", "controls", "environment_effects", "compartments"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"],
     lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
     opz: ["observations", "fusions", "suggestions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
@@ -574,7 +574,11 @@ export function validateV2State(state) {
         !["AUTO", "DIESEL", "TURBINE"].includes(payload.propulsion.plant_mode) ||
         !exactKeys(payload.machinery, ["station_state", "speed_cap", "effective_speed_cap", "flood", "fire", "repair_teams", "repair_trend", "noise", "grounded"]) ||
         !boundedArray(payload.machinery.repair_teams, 16) || !exactKeys(payload.machinery.repair_trend, ["flood_rate", "fire_rate", "repairable"]) ||
-        !exactKeys(payload.controls, ["orders", "plants", "speed_max_kn"]) || !boundedArray(payload.controls.orders, 6) ||
+        !exactKeys(payload.controls, ["orders", "plants", "speed_max_kn", "rpm_max", "noise_max"]) || !boundedArray(payload.controls.orders, 6) ||
+        !finite(payload.controls.rpm_max) || !finite(payload.controls.noise_max) ||
+        !boundedArray(payload.compartments, 16) || payload.compartments.some((row) => !exactKeys(row, ["key", "state", "flood", "fire", "teams"]) ||
+          typeof row.key !== "string" || typeof row.state !== "string" || !finite(row.flood) || !finite(row.fire) ||
+          !boundedArray(row.teams, 16) || row.teams.some((team) => !Number.isSafeInteger(team))) ||
         !boundedArray(payload.controls.plants, 3) || payload.controls.plants.join(",") !== "AUTO,DIESEL,TURBINE" ||
         payload.controls.orders.join(",") !== "ASTERN,STOP,SLOW,HALF,FULL,FLANK" ||
         !exactKeys(payload.environment_effects, ["sea_state", "roll", "pitch", "tas_available", "tas_performance"])) throw new Error("protocol");

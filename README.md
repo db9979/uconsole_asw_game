@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.87**
+Current release: **1.3.88**
 
-Release 1.3.87 makes the OPZ fuse reports that lie on top of each other by
+Release 1.3.88 makes the OPZ fuse reports that lie on top of each other by
 itself: a ship seen by radar, lookout and AIS is now one contact instead of
 three. Only clear matches are fused (at least one position fix, no second
 candidate from the same kind of sensor); ships close together stay apart and
@@ -106,7 +106,8 @@ More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control 
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-sonar-desktop.png"><img src="docs/screenshots/commander-v2-en-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
 </tr>
 <tr>
-<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-en-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-uboot-engine-desktop.png" alt="Submarine engine room: machinery control console"></a><br><sub>Submarine engine room: machinery control console</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-engine-desktop.png" alt="Frigate engine room: machinery control console"></a><br><sub>Frigate engine room: machinery control console</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-uboot-engine-desktop.png" alt="Submarine engine room: machinery control console"></a><br><sub>Submarine engine room: machinery control console</sub></td>
 </tr>
 </table>
 

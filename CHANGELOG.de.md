@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.87
+## 1.3.88
 
-Version 1.3.87 lässt die OPZ übereinanderliegende Meldungen von selbst
+Version 1.3.88 lässt die OPZ übereinanderliegende Meldungen von selbst
 zusammenlegen: Ein Schiff, das Radar, Ausguck und AIS sehen, ist jetzt ein
 Kontakt statt drei. Zusammengelegt wird nur bei eindeutiger Übereinstimmung
 (mindestens eine Position, kein zweiter Kandidat derselben Sensorart); dicht
@@ -16,6 +16,17 @@ verschwinden aus Trackliste und Karte, jede Zeile endet mit Sensorkürzeln
 (`R` Radar, `V` Ausguck, `A` AIS, `E` ESM, `S` Sonar ...), und die Zieldetails
 und die Remote-Crew-OPZ nennen die Quellen einer Fusion mit Namen.
 Spielstände bleiben v32.
+
+## 1.3.87
+
+Version 1.3.87 gibt dem Maschinenraum der Fregatte im Browser denselben
+Maschinenleitstand wie dem U-Boot: eine Warn- und Meldetafel aus Statuslampen
+für Wellen, Anlage, Kavitation, Kraftstoff, Fahrtbegrenzung, Maschinenschaden,
+Brände und Wassereinbruch an Bord, runde Instrumente für Fahrt,
+Wellendrehzahl, Eigenlärm, Kraftstoff, Rollen und Stampfen, den
+Kraftstoffbunker mit Ausdauer und Reichweite und ein Bild der Schiffsabschnitte
+vom Bug zum Heck mit Wasserstand, Brandlampen und Reparaturtrupps. Der
+Leitstand zeigt nur an; die Befehle bleiben im Stationsbereich.
 
 ## 1.3.86
 

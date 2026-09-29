@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.87**
+Aktuelle Version: **1.3.88**
 
-Version 1.3.87 lässt die OPZ übereinanderliegende Meldungen von selbst
+Version 1.3.88 lässt die OPZ übereinanderliegende Meldungen von selbst
 zusammenlegen: Ein Schiff, das Radar, Ausguck und AIS sehen, ist jetzt ein
 Kontakt statt drei. Zusammengelegt wird nur bei eindeutiger Übereinstimmung
 (mindestens eine Position, kein zweiter Kandidat derselben Sensorart); dicht
@@ -109,7 +109,8 @@ Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Scha
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-sonar-desktop.png"><img src="docs/screenshots/commander-v2-de-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
 </tr>
 <tr>
-<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-engine-desktop.png" alt="Fregatten-Maschinenraum: Maschinenleitstand"></a><br><sub>Fregatten-Maschinenraum: Maschinenleitstand</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
 </tr>
 </table>
 

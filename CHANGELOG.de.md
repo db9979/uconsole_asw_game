@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.78
+
+Version 1.3.78 zeigt die Einheiten als 3D-Modelle. Im Einheitenanalysator
+(`F8`) ist die erste Seite jedes Katalogprofils jetzt ein langsam drehendes
+3D-Modell seiner Klasse, vor den Klang- und Radarbildern; im
+Remote-Crew-Browser lässt es sich zusätzlich durch Ziehen drehen. Der
+Einheiteneditor zeigt dasselbe Modell unter dem gewählten Profil und neben den
+Feldern eines geöffneten. Schiffe, U-Boote und Luftfahrzeuge sind die
+Silhouetten des Ausgucks, räumlich ausgebaut, sodass eine Einheit im
+Analysator so aussieht wie im Fernglas und im Sehrohr (Kriegsschiff,
+Handelsschiff, Kleinfahrzeug, U-Boot, der Hubschrauber des Ausgucks für jedes
+Luftfahrzeug); Torpedos, Täuschkörper und Tiere, die kein Ausguck sieht, haben
+eigene Modelle. Spielstände bleiben v31.
+
 ## 1.3.75
 
 Version 1.3.75 räumt auch die Git-Tags auf GitHub auf: Beim Veröffentlichen

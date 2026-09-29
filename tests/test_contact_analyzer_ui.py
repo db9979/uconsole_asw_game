@@ -32,9 +32,16 @@ def test_filter_selection_images_and_internal_detail_scroll_are_bounded(monkeypa
 
     monkeypatch.setattr(pygame.image, "load", tracked_load)
     analyzer = ContactAnalyzer(packaged_assets=load_contact_analysis_assets())
+    # The first page is the drawn 3D model: no image is decoded for it.
+    assert analyzer._asset_kinds()[0] == contact_analyzer.MODEL_KIND
+    assert not loads
+    screen = pygame.Surface((1280, 720))
+    analyzer.draw(screen)
+    assert not loads
+    analyzer.handle_event(pygame.event.Event(
+        pygame.KEYDOWN, key=pygame.K_RIGHT, unicode="", mod=0))
     assert loads
     initialized_loads = len(loads)
-    screen = pygame.Surface((1280, 720))
     analyzer.draw(screen)
     assert len(loads) == initialized_loads
 
@@ -210,7 +217,9 @@ def test_audio_sample_button_and_space_play_the_shown_mode():
     kinds = analyzer._asset_kinds()
     assert analyzer.handle_event(pygame.event.Event(
         pygame.KEYDOWN, key=pygame.K_SPACE, unicode=" ", mod=0)) is True
-    assert calls and calls[0] == (profile["key"], kinds[0], profile["machine"])
+    # The model page (first) plays the profile's first recording.
+    assert kinds[0] == contact_analyzer.MODEL_KIND
+    assert calls and calls[0] == (profile["key"], kinds[1], profile["machine"])
     assert stops == []
     # Zweiter Space-Klick stoppt die laufende Hörprobe wieder.
     assert analyzer.handle_event(pygame.event.Event(
@@ -301,3 +310,22 @@ def test_game_wires_the_analyzer_audio_sample(monkeypatch):
     game.handle_event(pygame.event.Event(
         pygame.KEYDOWN, key=pygame.K_ESCAPE, unicode="", mod=0))
     assert game.editor is None and game.main_menu
+
+
+def test_model_page_draws_the_turning_model_and_narrow_tab():
+    pygame.init()
+    analyzer = ContactAnalyzer(tr=Translator("de").t)
+    analyzer._set_filter("tanker_03")
+    assert analyzer.model_class(analyzer.selected_profile) == "merchant"
+    screen = pygame.Surface((1280, 720))
+    analyzer.draw(screen)
+    model = analyzer._rects["model"]
+    assert screen.get_rect().contains(model)
+    tabs = analyzer._rects["asset_tabs"]
+    assert tabs[0].width < tabs[1].width and tabs[-1].right <= model.right + 2
+    background = screen.get_at(model.topleft)
+    assert any(screen.get_at((x, model.centery)) != background
+               for x in range(model.left, model.right, 4))
+    # Profiles outside the catalog fall back on their resource.
+    assert analyzer.model_class({"key": "user.x", "resource": "subs.json"}) == "submarine"
+    pygame.quit()

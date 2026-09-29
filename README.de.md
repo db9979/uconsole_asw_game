@@ -14,16 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.79**
+Aktuelle Version: **1.3.80**
 
-Version 1.3.79 repariert die Kopplung in Safari und Firefox und damit den
-Handy-Ausguck auf dem iPhone. Die Seiten des Spiels verlangten vom Browser,
-gar keinen Referrer zu senden; nach dem Webstandard kennzeichnen Safari und
-Firefox dann die eigenen Anfragen der Seite als herkunftslos („Origin: null“),
-und das Spiel wies sie als fremde Adresse ab, sodass die Kopplung mit „Das
-Spiel hat diese Adresse abgelehnt“ scheiterte. Die Seiten behalten den
-Referrer jetzt für das Spiel selbst und senden weiterhin keinen an andere
-Seiten; Chrome war nie betroffen. Spielstände bleiben v28.
+Version 1.3.80 macht aus dem Maschinenraum des U-Boots im Remote-Crew-Browser
+einen Maschinenleitstand. Die große, bisher leere Bildfläche zeigt eine Warn-
+und Meldetafel aus Statuslampen (dunkel, wenn aus, türkis im Betrieb, gelb bei
+einer Warnung, rot blinkend bei einem Alarm, jede mit ihrem Wert) für
+E-Maschine, Schnorchel, Generator, Batterie, Laden, Kraftstoff, Luft,
+Hauptzellen, Pressluft, Pumpen, Trimm, Strom, Wassereinbruch, Leck, Brand und
+Gas, mit einer Sammellampe, die die Alarme zählt. Darunter stehen runde
+Instrumente für Fahrt, Batterie, Energiebilanz, Tiefe, Pressluft und
+Trimmwinkel, Tanksäulen für Vorräte und Zellen und ein Bild der sechs
+Abteilungen vom Bug zum Heck mit Wasserstand, den Lampen jedes Raums, den
+Schotten und den arbeitenden Trupps. Die Befehle bleiben im Stationsbereich.
+Spielstände bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -105,6 +109,9 @@ Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Scha
 <tr>
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-opz-desktop.png"><img src="docs/screenshots/commander-v2-de-opz-desktop.png" alt="OPZ/CIC"></a><br><sub>OPZ/CIC</sub></td>
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-sonar-desktop.png"><img src="docs/screenshots/commander-v2-de-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+</tr>
+<tr>
+<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
 </tr>
 </table>
 

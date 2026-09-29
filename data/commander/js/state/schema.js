@@ -206,10 +206,12 @@ export function validateV2State(state) {
     interceptKinds: ["hull", "dipping", "buoy", "splash", "torpedo"],
     advice: ["uboot.advice.torpedo", "uboot.advice.mast_down", "uboot.advice.slow_down", "uboot.advice.measure_layer", "uboot.advice.go_below", "uboot.advice.evade"],
     evadePlan: ["type", "bearing", "course", "speed_kn", "depth_m", "silent", "decoy"],
-    radio: ["antenna", "broadcast", "copied", "next_s", "copy", "send", "transmitting", "sitreps", "ack_due", "report", "log"],
-    radioLog: ["seq", "type", "age_s", "number", "ack", "report"],
+    radio: ["antenna", "broadcast", "copied", "next_s", "copy", "send", "transmitting", "sitreps", "ack_due", "report", "log", "vlf", "order", "orders_done", "orders_failed"],
+    radioLog: ["seq", "type", "age_s", "number", "ack", "report", "order"],
     radioLogKinds: ["broadcast", "sent", "aborted"],
     radioReport: ["x", "y", "radius_nm", "course", "speed_kn", "age_s"],
+    radioOrder: ["id", "type", "x", "y", "radius_nm", "left_s"],
+    radioOrderKinds: ["area", "report", "silence"],
   };
   // END GENERATED
   if (!validWeatherStation(state.weather_station, opforRoles.has(state.role) || state.role === "uboot_lookout", weatherFields)) throw new Error("protocol");
@@ -485,7 +487,12 @@ export function validateV2State(state) {
         !finite(radio.next_s) || !nullableNumber(radio.copy) || !nullableNumber(radio.send) || !radioReport(radio.report) ||
         !boundedArray(radio.log, 12) || radio.log.some((row) => !exactKeys(row, boatFields.radioLog) ||
           !Number.isInteger(row.seq) || !boatFields.radioLogKinds.includes(row.type) || !nullableNumber(row.age_s) ||
-          (row.number !== null && !Number.isInteger(row.number)) || typeof row.ack !== "boolean" || !radioReport(row.report))) throw new Error("protocol");
+          (row.number !== null && !Number.isInteger(row.number)) || typeof row.ack !== "boolean" || !radioReport(row.report) ||
+          (row.order !== null && !Number.isInteger(row.order))) ||
+        typeof radio.vlf !== "boolean" || !Number.isInteger(radio.orders_done) || !Number.isInteger(radio.orders_failed) ||
+        (radio.order !== null && (!exactKeys(radio.order, boatFields.radioOrder) || !Number.isInteger(radio.order.id) ||
+          !boatFields.radioOrderKinds.includes(radio.order.type) || !finite(radio.order.left_s) ||
+          ["x", "y", "radius_nm"].some((key) => !nullableNumber(radio.order[key]))))) throw new Error("protocol");
   } else if (state.role === "weapons") {
     if (!exactKeys(payload.settings, ["torpedo_type", "choices", "pattern", "enable_nm", "salvo"]) ||
         !boundedArray(payload.settings.choices, 8) ||

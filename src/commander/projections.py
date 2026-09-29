@@ -1593,6 +1593,7 @@ def _uboot_radio(game, boat):
     radio = boat.radio
     progress = radio.progress(game, boat)
     latest = radio.latest_report()
+    order = radio.active_order()
     return dict(
         antenna=bool(progress["antenna"]), broadcast=int(progress["broadcast"]),
         copied=bool(progress["copied"]), next_s=_number(progress["next_s"]),
@@ -1602,8 +1603,16 @@ def _uboot_radio(game, boat):
         report=_uboot_radio_report(game, None if latest is None else latest["report"]),
         log=[dict(seq=int(row["seq"]), type=row["kind"], age_s=_age(game.sim_t, row["t"]),
                   number=None if row["number"] is None else int(row["number"]),
-                  ack=bool(row["ack"]), report=_uboot_radio_report(game, row["report"]))
-             for row in reversed(radio.log)])
+                  ack=bool(row["ack"]), report=_uboot_radio_report(game, row["report"]),
+                  order=None if row["order"] is None else int(row["order"]))
+             for row in reversed(radio.log)],
+        vlf=progress["reception"] == "vlf",
+        order=None if order is None else dict(
+            id=int(order["id"]), type=order["kind"], x=_number(order["x"]),
+            y=_number(order["y"]), radius_nm=_number(order["radius_nm"]),
+            left_s=_number(max(0.0, order["deadline_t"] - game.sim_t))),
+        orders_done=sum(1 for row in radio.orders if row["state"] == "done"),
+        orders_failed=sum(1 for row in radio.orders if row["state"] == "failed"))
 
 
 def _uboot(game, boat, rows, target_ref, asset_refs):

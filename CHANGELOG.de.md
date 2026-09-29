@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.65
+
+Version 1.3.65 lässt die Führung dem besetzten U-Boot während der Mission
+Befehle geben. Unter dem Mast nimmt die VLF-Rahmenantenne den Rundspruch jetzt
+bis 25 m Tiefe auf (langsamer als mit Mast und nur Empfang). Ab dem zweiten
+Rundspruch kann ein Rundspruch einen Befehl enthalten: ein Seegebiet in tiefem
+Wasser anlaufen, eine Lagemeldung absetzen oder Funkstille halten, jeweils mit
+Frist. Funkraumseite, Karte und die Browserkarte Funkraum zeigen den offenen
+Befehl und wie viele ausgeführt wurden; ein verpasster Rundspruch ist ein
+verpasster Befehl. Spielstände sind jetzt v30 (sie behalten die Befehle);
+v29-Stände laden nicht mehr.
+
 ## 1.3.64
 
 Version 1.3.64 gibt dem Helikopter ein Seeraumradar. Solange er mit

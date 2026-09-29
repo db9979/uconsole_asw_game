@@ -12,7 +12,7 @@ import math
 import pygame
 
 from src.core import config
-from src.core.boat_radio import antenna_up
+from src.core.boat_radio import antenna_up, reception
 from src.core.i18n import message
 from src.ui import layout, lines
 
@@ -48,13 +48,38 @@ def report_lines(game, boat, report) -> list:
                     speed=f"{report['speed_kn']:.0f}", age=f"{age_min:.0f}")]
 
 
+def order_line(game, boat):
+    """The open HQ order as one line (bearing and range from the boat now),
+    or the tally of closed ones."""
+    radio = boat.radio
+    order = radio.active_order()
+    if order is None:
+        done = sum(1 for row in radio.orders if row["state"] == "done")
+        failed = sum(1 for row in radio.orders if row["state"] == "failed")
+        if done or failed:
+            return message("uboot.radio.order_closed", done=str(done), failed=str(failed))
+        return message("uboot.radio.order_none")
+    left = _clock(order["deadline_t"] - game.sim_t)
+    if order["kind"] == "area":
+        dx, dy = order["x"] - boat.sub.x, order["y"] - boat.sub.y
+        return message("uboot.radio.order_area", number=str(order["id"]),
+                       bearing=f"{math.degrees(math.atan2(dx, -dy)) % 360.0:03.0f}",
+                       range=f"{math.hypot(dx, dy):.1f}",
+                       radius=f"{order['radius_nm']:.0f}", left=left)
+    return message("uboot.radio.order_" + order["kind"], number=str(order["id"]), left=left)
+
+
 def log_text(game, row):
     age = _clock(game.sim_t - row["t"])
     if row["kind"] == "broadcast":
         key = ("uboot.radio.log.broadcast_report" if row["report"] is not None
                else "uboot.radio.log.broadcast")
         text = message(key, age=age, number=str(row["number"]))
-        return message("uboot.radio.log.with_ack", entry=text) if row["ack"] else text
+        if row["ack"]:
+            text = message("uboot.radio.log.with_ack", entry=text)
+        if row.get("order") is not None:
+            text = message("uboot.radio.log.with_order", entry=text, number=str(row["order"]))
+        return text
     if row["kind"] == "sent":
         return message("uboot.radio.log.sent", age=age, number=str(row["number"]))
     return message("uboot.radio.log.aborted", age=age)
@@ -64,11 +89,14 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
     radio = boat.radio
     progress = radio.progress(game, boat)
     up = antenna_up(boat)
+    mode = reception(boat)
     box = layout.box(s, (x, y, w, 132), "uboot.panel.radio",
                      border=config.COLOR_WARN if radio.transmitting else config.COLOR_TEXT)
     bx, by, bw, _ = box
-    layout.blit_line(s, "uboot.radio.antenna_up" if up else "uboot.radio.antenna_down",
-                     (bx, by, bw, 22), config.COLOR_OK if up else config.COLOR_TEXT_DIM, size=16)
+    layout.blit_line(s, "uboot.radio.antenna_up" if up else "uboot.radio.antenna_vlf"
+                     if mode == "vlf" else "uboot.radio.antenna_down",
+                     (bx, by, bw, 22), config.COLOR_OK if up else config.COLOR_TEXT
+                     if mode == "vlf" else config.COLOR_TEXT_DIM, size=16)
     number = str(progress["broadcast"])
     if progress["copied"]:
         state = message("uboot.radio.broadcast_copied", number=number)
@@ -102,6 +130,12 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
         for index, text in enumerate(report_lines(game, boat, latest["report"])):
             layout.blit_line(s, text, (rx, ry + index * 22, rw, 22), REPORT_COLOR, size=16)
     top += 82
+    orders = layout.box(s, (x, top, w, 50), "uboot.panel.hq_order")
+    ox, oy, ow, _ = orders
+    layout.blit_line(s, order_line(game, boat), (ox, oy, ow, 22),
+                     config.COLOR_WARN if radio.active_order() is not None
+                     else config.COLOR_TEXT_DIM, size=16)
+    top += 58
     listing = layout.box(s, (x, top, w, max(40, h - (top - y))), "uboot.panel.radio_log")
     lx, ly, lw, lh = listing
     if not radio.log:
@@ -114,7 +148,15 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
 
 
 def draw_report_chart(game, boat, view) -> None:
-    """HQ's latest contact report: error circle, reported course and its age."""
+    """HQ's latest contact report: error circle, reported course and its age;
+    and the area of an open HQ order."""
+    order = boat.radio.active_order()
+    if order is not None and order["kind"] == "area":
+        ox, oy = view.world_to_screen(order["x"], order["y"])
+        radius = max(6, int(order["radius_nm"] * view.scale))
+        pygame.draw.circle(game.screen, config.COLOR_OK, (int(ox), int(oy)), radius, 1)
+        layout.blit_line(game.screen, message("uboot.radio.chart_order", number=str(order["id"])),
+                         (int(ox) + 8, int(oy) - radius - 20, 200, 18), config.COLOR_OK, size=12)
     latest = boat.radio.latest_report()
     if latest is None:
         return

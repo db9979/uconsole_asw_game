@@ -14,15 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.64**
+Aktuelle Version: **1.3.65**
 
-Version 1.3.64 gibt dem Helikopter ein Seeraumradar. Solange er mit
-eingeholtem Tauchsonar fliegt, sucht es aus 150 m: Schiffe bis 40 sm,
-aufgetauchte U-Boote sowie ausgefahrene Schnorchel oder Sehrohre innerhalb
-seines Radarhorizonts, einen Mast bei ruhiger See auf etwa 10 sm und bei
-rauerer See nur auf wenige Meilen. Jeder Kontakt erreicht die OPZ als RADAR-
-HELO-Track; die Helikopterseite und die Remote-Crew-Ansicht zeigen, ob das
-Radar sucht. Spielstände bleiben v29.
+Version 1.3.65 lässt die Führung dem besetzten U-Boot während der Mission
+Befehle geben. Unter dem Mast nimmt die VLF-Rahmenantenne den Rundspruch jetzt
+bis 25 m Tiefe auf (langsamer als mit Mast und nur Empfang). Ab dem zweiten
+Rundspruch kann ein Rundspruch einen Befehl enthalten: ein Seegebiet in tiefem
+Wasser anlaufen, eine Lagemeldung absetzen oder Funkstille halten, jeweils mit
+Frist. Funkraumseite, Karte und die Browserkarte Funkraum zeigen den offenen
+Befehl und wie viele ausgeführt wurden; ein verpasster Rundspruch ist ein
+verpasster Befehl. Spielstände sind jetzt v30 (sie behalten die Befehle);
+v29-Stände laden nicht mehr.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -432,7 +434,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v29 gespeichert.
+v30 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -514,7 +516,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion, API-Protokoll **v2** und Speicherformat **v29** sind
+Anwendungsversion, API-Protokoll **v2** und Speicherformat **v30** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -578,8 +580,8 @@ Version gilt:
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v29**. V29
-verlangt das exakte Schema `u-jagd-save-v29` einschließlich der sinkenden Wasserbomben und der eigenen ASROC- und Wasserbombenbestände der Fregatte, der Autopilot-Route der Fregatte, der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v30**. V30
+verlangt das exakte Schema `u-jagd-save-v30` einschließlich der Befehle der Führung an das besetzte U-Boot, der sinkenden Wasserbomben und der eigenen ASROC- und Wasserbombenbestände der Fregatte, der Autopilot-Route der Fregatte, der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
 der Fregatte, des Funkraums des besetzten U-Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen

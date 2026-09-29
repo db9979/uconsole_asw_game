@@ -12,15 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.64**
+Current release: **1.3.65**
 
-Release 1.3.64 gives the helicopter a surface-search radar. Whenever it flies
-with the dipping sonar stowed it searches from 150 m: ships out to 40 NM,
-surfaced submarines and raised snorkels or periscopes inside its radar
-horizon, a mast at about 10 NM in calm water and only a few miles in a rougher
-sea. Every contact reaches the OPZ as a RADAR-HELO track; the helicopter page
-and the Remote Crew helicopter view show whether the radar is searching. Saves
-stay v29.
+Release 1.3.65 lets HQ give the crewed submarine orders during the mission.
+Below the mast the VLF loop antenna now copies the broadcast down to 25 m
+(slower than with the mast up, and receive only). From the second broadcast
+on, a broadcast may carry an HQ order: proceed to an area in deep water, send
+a situation report, or keep radio silence, each with a deadline. The radio
+room page, the chart and the browser's Radio room card show the open order and
+how many were carried out; a missed broadcast is a missed order. Saves are now
+v30 (they keep the orders); v29 saves no longer load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -400,7 +401,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v29 game saves for deterministic restoration of existing sessions.
+in v30 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -471,7 +472,7 @@ Hover over an unavailable browser control to see its current localized reason,
 such as a missing grant, damaged station, cooldown, empty inventory, pending
 order, or the TAS handling-speed limit.
 
-The application version, API protocol **v2**, and save format **v29** are
+The application version, API protocol **v2**, and save format **v30** are
 independent compatibility contracts. Remote Crew uses protocol v2 only; every
 legacy route under `/api/v1/*` is removed and returns 404.
 
@@ -526,8 +527,8 @@ Validated does not mean runtime-effective. In this release:
 
 ## Saves and User Data
 
-This build writes and loads save format **v29** only. V29 requires the exact
-`u-jagd-save-v29` schema, including the frigate's depth charges in the water and its own ASROC and depth-charge stores, the frigate's autopilot route, the crewed submarine's ESM scan-period reference, the crewed submarine's tube states, the frigate's radar blips and OPZ marks, the crewed submarine's attack-computer marks, the frigate's variable-depth sonar, the crewed submarine's radio room, the HQ task board, both crews' watch bills,
+This build writes and loads save format **v30** only. V30 requires the exact
+`u-jagd-save-v30` schema, including the crewed submarine's HQ orders, the frigate's depth charges in the water and its own ASROC and depth-charge stores, the frigate's autopilot route, the crewed submarine's ESM scan-period reference, the crewed submarine's tube states, the frigate's radar blips and OPZ marks, the crewed submarine's attack-computer marks, the frigate's variable-depth sonar, the crewed submarine's radio room, the HQ task board, both crews' watch bills,
 the patrol aircraft and each buoy's owner, the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
 modes, mast, wires, plot, alarm bearings, its sonar station and its ESM

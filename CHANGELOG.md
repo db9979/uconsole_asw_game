@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.65
+
+Release 1.3.65 lets HQ give the crewed submarine orders during the mission.
+Below the mast the VLF loop antenna now copies the broadcast down to 25 m
+(slower than with the mast up, and receive only). From the second broadcast
+on, a broadcast may carry an HQ order: proceed to an area in deep water, send
+a situation report, or keep radio silence, each with a deadline. The radio
+room page, the chart and the browser's Radio room card show the open order and
+how many were carried out; a missed broadcast is a missed order. Saves are now
+v30 (they keep the orders); v29 saves no longer load.
+
 ## 1.3.64
 
 Release 1.3.64 gives the helicopter a surface-search radar. Whenever it flies

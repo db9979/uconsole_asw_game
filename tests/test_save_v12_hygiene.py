@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v29_and_older_documents_are_rejected():
+def test_save_is_v30_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (29, "u-jagd-save-v29")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (29, "u-jagd-save-v29")
+    assert (state["version"], state["save_schema"]) == (30, "u-jagd-save-v30")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (30, "u-jagd-save-v30")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -140,6 +140,11 @@ def test_save_is_v29_and_older_documents_are_rejected():
     for key in ("depth_charges", "depth_charge_seq", "own_stores"):
         del v28["asw"][key]
     assert not game._load_save_data(v28)
+    # v29 differs only by the boat radio's HQ orders (crew.radio version 2).
+    v29 = copy.deepcopy(state)
+    v29["version"] = 29
+    v29["save_schema"] = "u-jagd-save-v29"
+    assert not game._load_save_data(v29)
     assert game.save_state() == before
 
 

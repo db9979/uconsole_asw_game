@@ -140,8 +140,12 @@ UBOOT_EVADE_PLAN_FIELDS = ("type", "bearing", "course", "speed_kn", "depth_m", "
 # The boat's radio room (``radio``, src/core/boat_radio.py): schedule,
 # transmissions, HQ's latest contact report and the message log.
 UBOOT_RADIO_FIELDS = ("antenna", "broadcast", "copied", "next_s", "copy", "send",
-                      "transmitting", "sitreps", "ack_due", "report", "log")
-UBOOT_RADIO_LOG_FIELDS = ("seq", "type", "age_s", "number", "ack", "report")
+                      "transmitting", "sitreps", "ack_due", "report", "log", "vlf",
+                      "order", "orders_done", "orders_failed")
+UBOOT_RADIO_LOG_FIELDS = ("seq", "type", "age_s", "number", "ack", "report", "order")
+# The open HQ order (area orders carry x/y/radius_nm, else null).
+UBOOT_RADIO_ORDER_FIELDS = ("id", "type", "x", "y", "radius_nm", "left_s")
+UBOOT_RADIO_ORDER_KINDS = ("area", "report", "silence")
 UBOOT_RADIO_LOG_KINDS = ("broadcast", "sent", "aborted")
 UBOOT_RADIO_REPORT_FIELDS = ("x", "y", "radius_nm", "course", "speed_kn", "age_s")
 UBOOT_ESM_FIX_FIELDS = ("x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent")

@@ -300,6 +300,23 @@ UBOOT_RADIO_INTEL_P = 0.6
 UBOOT_RADIO_REPORT_AGE_S = (300.0, 900.0)
 UBOOT_RADIO_REPORT_RADIUS_NM = 4.0
 UBOOT_RADIO_REPORT_SHARP_NM = 2.0
+# VLF: the loop antenna copies the broadcast down to VLF_DEPTH_M without the
+# mast, but the slow VLF signal needs VLF_COPY_S.  From broadcast
+# ORDER_FIRST on, a broadcast carries a new HQ order with probability
+# ORDER_P while none is open, at most ORDER_MAX per mission: proceed to an
+# area (AREA_NM away, RADIUS_NM wide, within AREA_S), send a situation report
+# within REPORT_S, or keep radio silence for SILENCE_S.
+UBOOT_RADIO_VLF_DEPTH_M = 25.0
+UBOOT_RADIO_VLF_COPY_S = 60.0
+UBOOT_ORDER_FIRST = 2
+UBOOT_ORDER_P = 0.5
+UBOOT_ORDER_MAX = 4
+UBOOT_ORDER_AREA_NM = (8.0, 15.0)
+UBOOT_ORDER_RADIUS_NM = 3.0
+UBOOT_ORDER_AREA_S = 2400.0
+UBOOT_ORDER_REPORT_S = 1800.0
+UBOOT_ORDER_SILENCE_S = 1200.0
+UBOOT_ORDER_MIN_DEPTH_M = 60.0     # an ordered area lies in water this deep
 # Diesel fuel of conventional boats (fictional): the bunkers hold this many
 # hours of full generator power; a mission starts mid-patrol at this fill.
 # Displayed as litres of diesel per kWh of generator output.

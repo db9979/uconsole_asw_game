@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.73
+
+Version 1.3.73 repariert das Selbst-Update unter Windows: Nach **Update
+installieren** ersetzt die neue U-Jagd-Windows.exe jetzt die laufende und
+startet. Bisher blieb der Download als `U-Jagd-Windows.exe.new` daneben liegen
+und die alte Version startete wieder. Der Starter löscht eine solche
+liegengebliebene `.new`-Datei, und der Windows-Build prüft den Austausch bei
+jeder Änderung. Spielstände bleiben v31.
+
 ## 1.3.72
 
 Version 1.3.72 macht das computergesteuerte U-Boot in den Missionen

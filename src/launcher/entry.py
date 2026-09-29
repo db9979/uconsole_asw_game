@@ -114,6 +114,23 @@ def _gui_self_test() -> str:
     return "ok"
 
 
+def update_self_test(report: str) -> int:
+    """Swap in ``<exe>.new`` exactly as "Install update" does, then exit.
+
+    The install script restarts the swapped executable with ``--self-test
+    REPORT``; the release workflow checks that the report appears and that
+    no ``.new`` file is left behind.
+    """
+    import time
+
+    from src.launcher import update
+
+    executable = os.path.abspath(sys.executable)
+    update.launch_install(executable, f"{executable}.new", ("--self-test", report))
+    time.sleep(3)  # hold the file like a closing starter window
+    return 0
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv[:1] == ["--game"]:
@@ -123,6 +140,8 @@ def main(argv=None) -> int:
         return game_main.main(argv[1:])
     if argv[:1] == ["--self-test"] and len(argv) == 2:
         return self_test(argv[1])
+    if argv[:1] == ["--update-self-test"] and len(argv) == 2:
+        return update_self_test(argv[1])
     from src.launcher.app import run
 
     return run()

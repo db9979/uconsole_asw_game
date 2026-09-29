@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.79
+
+Release 1.3.79 fixes pairing in Safari and Firefox, and with it the phone
+lookout on an iPhone. The game's pages told the browser to send no referrer at
+all; under the web standard Safari and Firefox then mark the pages' own
+requests as coming from nowhere ("Origin: null"), and the game refused them as
+a foreign address, so pairing failed with "The game refused this address".
+The pages now keep the referrer to the game itself and still send none to any
+other site; Chrome was never affected. Saves stay v28.
+
 ## 1.3.78
 
 Release 1.3.78 shows the units as 3D models. In the unit analyser (`F8`) the

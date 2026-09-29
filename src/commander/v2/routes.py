@@ -229,7 +229,11 @@ class _Handler(BaseHTTPRequestHandler):
             # The browser reloads itself when the host was updated under it.
             ("X-U-Jagd-Version", APP_VERSION),
             ("X-Content-Type-Options", "nosniff"), ("X-Frame-Options", "DENY"),
-            ("Referrer-Policy", "no-referrer"),
+            # Not "no-referrer": with it the Fetch standard makes Safari and
+            # Firefox send "Origin: null" on the pages' same-origin POSTs,
+            # which the exact Origin check refuses (pairing then fails).
+            # "same-origin" still sends no referrer to any other site.
+            ("Referrer-Policy", "same-origin"),
             ("Permissions-Policy", "camera=(), microphone=(self), geolocation=()"),
             ("Content-Security-Policy", "default-src 'none'; script-src 'self'; "
              "style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; "

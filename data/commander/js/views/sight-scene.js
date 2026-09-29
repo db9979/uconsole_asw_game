@@ -305,7 +305,7 @@ function drawWay(g, w, colors, way, t, haze) {
     let previous = null;
     for (let i = 0; i <= steps; i++) {
       const along = length * (i / steps) ** 1.6, d = OWN_STERN_M + along;
-      const rag = 1 + .06 * Math.sin(along * .11 + t * 1.3 + i), half = (OWN_BEAM_M / 2 + along * .02) * rag;
+      const rag = 1 + .05 * Math.sin(along * .03 + t * 1.3), half = (OWN_BEAM_M / 2 + along * .02) * rag;
       const edge = Math.atan2(half, d) / RAD;
       const left = seaPoint(w, stern - edge, d, eye), right = seaPoint(w, stern + edge, d, eye);
       edges[0].push(left); edges[1].push(right);

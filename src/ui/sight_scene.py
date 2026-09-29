@@ -401,7 +401,7 @@ def _draw_way(s, view, colors, way, t, haze):
         for i in range(steps + 1):
             along = length * (i / steps) ** 1.6
             d = OWN_STERN_M + along
-            rag = 1.0 + 0.06 * math.sin(along * 0.11 + t * 1.3 + i)
+            rag = 1.0 + 0.05 * math.sin(along * 0.03 + t * 1.3)
             half = (OWN_BEAM_M / 2.0 + along * 0.02) * rag
             edge = math.degrees(math.atan2(half, d))
             left = _sea_point(view, stern - edge, d, eye)

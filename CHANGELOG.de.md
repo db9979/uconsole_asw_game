@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.82
+
+Version 1.3.82 lässt die Sprachmeldungen des Handy-Ausgucks sagen, woran sie
+scheitern. Statt nur „Spracherkennung fehlgeschlagen“ nennt die Seite jetzt die
+Ursache: Siri und Diktierfunktion am iPhone ausgeschaltet (mit dem Weg zum
+Einschalten), Mikrofon nicht erlaubt, Mikrofon belegt, nichts gehört oder der
+Sprachdienst des Handys nicht erreichbar; jeder andere Fehler zeigt seinen
+Fehlercode. Chrome, Firefox und Edge auf dem iPhone nutzen Safaris Technik
+ohne dessen Sprachdienst, deshalb rät die Seite dort für Sprachmeldungen zu
+Safari; das Ziel antippen geht überall. Eine kurze Meldung, die Safari beendet,
+ohne sie als fertig zu markieren, wird jetzt trotzdem gelesen. Spielstände
+bleiben v31.
+
 ## 1.3.81
 
 Version 1.3.81 zeigt die eigene Fahrt in den Bildern des Ausgucks. In Fahrt

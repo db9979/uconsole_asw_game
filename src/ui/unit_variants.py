@@ -15,7 +15,8 @@ from __future__ import annotations
 import json
 import math
 import zlib
-from importlib import resources
+# Bound at import: web tests redirect importlib.resources.files to a page copy.
+from importlib.resources import files as resource_files
 
 from src.ui import unit_models as um
 
@@ -146,7 +147,7 @@ def specs() -> dict:
     global _SPECS
     if _SPECS is None:
         package, name = VARIANTS_RESOURCE
-        data = json.loads(resources.files(package).joinpath(name).read_text(encoding="utf-8"))
+        data = json.loads(resource_files(package).joinpath(name).read_text(encoding="utf-8"))
         if not isinstance(data, dict) or set(data) != {"version", "note", "variants"} \
                 or data["version"] != 1 or not isinstance(data["variants"], dict):
             raise ValueError("variants.json: bad document")

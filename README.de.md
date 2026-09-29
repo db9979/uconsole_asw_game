@@ -14,17 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.81**
+Aktuelle Version: **1.3.82**
 
-Version 1.3.81 zeigt die eigene Fahrt in den Bildern des Ausgucks. In Fahrt
-strömen die Wellen voraus auf das Auge zu, achteraus von ihm fort und querab
-vom Bug zum Heck, schneller mit mehr Fahrt und ohne Sprung, wenn sich Fahrt
-oder Kurs ändern. Achteraus läuft das Kielwasser als Band aus glatterem,
-hellerem Wasser mit Schaum zwischen den beiden Armen der Kelvin-Welle bis zum
-Horizont, und voraus wirft die Bugwelle ihre Gischt in den unteren Bildrand.
-Das gilt auf der uConsole und im Browser für das Brückenfernglas, den
-Ausguckstreifen und den Handy-Ausguck; im Sehrohr des U-Boots strömt das
-Wasser mit der eigenen Fahrt des U-Boots vorbei. Spielstände bleiben v31.
+Version 1.3.82 lässt die Sprachmeldungen des Handy-Ausgucks sagen, woran sie
+scheitern. Statt nur „Spracherkennung fehlgeschlagen“ nennt die Seite jetzt die
+Ursache: Siri und Diktierfunktion am iPhone ausgeschaltet (mit dem Weg zum
+Einschalten), Mikrofon nicht erlaubt, Mikrofon belegt, nichts gehört oder der
+Sprachdienst des Handys nicht erreichbar; jeder andere Fehler zeigt seinen
+Fehlercode. Chrome, Firefox und Edge auf dem iPhone nutzen Safaris Technik
+ohne dessen Sprachdienst, deshalb rät die Seite dort für Sprachmeldungen zu
+Safari; das Ziel antippen geht überall. Eine kurze Meldung, die Safari beendet,
+ohne sie als fertig zu markieren, wird jetzt trotzdem gelesen. Spielstände
+bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

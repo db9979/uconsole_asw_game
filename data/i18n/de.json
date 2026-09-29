@@ -2012,7 +2012,7 @@
   "scenario.double.brief": "Auftrag: Zwei U-Boote operieren im Einsatzsektor (eines davon möglicherweise AIP - nahezu stumm). Belegungen: ESM-Wellen werden erwartet. Ziel: Beide U-Boote versenken, zivile Schifffahrt schützen, ASM-Wellen abwehren.",
   "scenario.double.win": "Beide Ziel-U-Boote versenkt",
   "scenario.intercept.title": "Nuklearer Abfang",
-  "scenario.intercept.brief": "Auftrag: Hochwertiges nukleares U-Boot (SSN) dringt in den Sektor ein - extrem leise, taucht tief unter die Thermokline, kontert aktiv. Nur 4 Torpedos an Bord. Ziel: Versenken, bevor es die Zone verlässt. ASM-Abwehr ist überlebenswichtig.",
+  "scenario.intercept.brief": "Auftrag: Hochwertiges nukleares U-Boot (SSN) dringt in den Sektor ein - extrem leise, taucht tief unter die Thermokline, kontert aktiv. Nur 6 Torpedos an Bord. Ziel: Versenken, bevor es die Zone verlässt. ASM-Abwehr ist überlebenswichtig.",
   "scenario.intercept.win": "SSN vor Zeitablauf versenkt",
   "scenario.intercept.lose": "SSN entkommt / Zeitlimit / Fregatte gesunken",
   "scenario.random.title": "Freie Jagd (Zufall)",

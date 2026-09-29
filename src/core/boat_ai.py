@@ -6,13 +6,17 @@ a mission leg (``Submarine.mission_orders``: course, speed, depth), recomputed
 every substep from the current state, so it needs no saved state; evasion,
 lying in wait and the counter-attack on the frigate keep their priority.
 
-- ``breakthrough``: transit to the goal area below the layer.
+- ``breakthrough``: transit to the goal area below the layer, passing wide
+  of a frigate it holds near the leg.
 - ``recon``: close the frigate's last known position (its own contact, else
   HQ's contact report as the radio room receives it, else its patrol area), come to periscope depth within sighting range and send
   the report once the frigate is in sight there.
-- ``convoy_attack``: run ahead of the convoy on an intercept course below the
-  layer (faster than the convoy) and fire one torpedo at a time at the
-  nearest merchant within attack range.
+- ``convoy_attack``: lie in wait ahead of the convoy, abeam of its track,
+  and fire one torpedo at a time at the nearest merchant within attack
+  range; a convoy that has passed is chased on an intercept course.
+
+Every leg creeps (``BOAT_AI_CREEP_KN``) while the boat is hunted: a ping or
+torpedo heard lately, or its own contact on the frigate close by.
 
 Like the other AI, the boat may read the entities it attacks or sights
 internally; nothing here reaches the frigate's picture.
@@ -108,6 +112,60 @@ def closing_kn(sub, target_kn: float) -> float:
                max(config.BOAT_AI_TRANSIT_KN, target_kn + config.BOAT_AI_CLOSING_KN))
 
 
+def frigate_known(sub):
+    """``(x, y)`` of the frigate from the boat's own fire-control contact, or None."""
+    contact = sub.memory.get("contact")
+    if contact is None or sub.memory.get("contact_age", float("inf")) > config.BOAT_AI_HUNTED_S:
+        return None
+    return contact["x"], contact["y"]
+
+
+def hunted(sub) -> bool:
+    """The boat heard a ping or a torpedo lately, or knows the frigate close."""
+    if min(sub.memory.get("last_ping_age", float("inf")),
+           sub.memory.get("last_torpedo_age", float("inf"))) <= config.BOAT_AI_HUNTED_S:
+        return True
+    known = frigate_known(sub)
+    return known is not None and math.hypot(known[0] - sub.x,
+                                            known[1] - sub.y) <= config.BOAT_AI_THREAT_NM
+
+
+def pace(sub, speed: float) -> float:
+    """Creep when hunted: a slow boat is a quiet boat."""
+    return min(speed, config.BOAT_AI_CREEP_KN) if hunted(sub) else speed
+
+
+def detour(sub, course: float, distance_nm: float) -> float:
+    """Steer ``BOAT_AI_DETOUR_DEG`` off a leg that runs close past the known
+    frigate, turning away from its side."""
+    known = frigate_known(sub)
+    if known is None:
+        return course
+    bearing = _bearing(sub.x, sub.y, *known)
+    off = config.angle_diff_deg(bearing, course)
+    rng = math.hypot(known[0] - sub.x, known[1] - sub.y)
+    if abs(off) >= 90.0 or rng > distance_nm + config.BOAT_AI_DETOUR_NM:
+        return course
+    if rng * abs(math.sin(math.radians(off))) > config.BOAT_AI_DETOUR_NM:
+        return course
+    return (course - math.copysign(config.BOAT_AI_DETOUR_DEG, off or 1.0)) % 360.0
+
+
+def ambush_point(sub, ships):
+    """Where the boat waits for the convoy: ahead of it, abeam of its track on
+    the boat's side; None once the convoy has passed the boat."""
+    cx = sum(ship.x for ship in ships) / len(ships)
+    cy = sum(ship.y for ship in ships) / len(ships)
+    rad = math.radians(ships[0].course)
+    ux, uy = math.sin(rad), -math.cos(rad)
+    rx, ry = sub.x - cx, sub.y - cy
+    if rx * ux + ry * uy < 0.0:
+        return None
+    side = 1.0 if rx * -uy + ry * ux >= 0.0 else -1.0
+    ahead, abeam = config.BOAT_AI_AMBUSH_AHEAD_NM, config.BOAT_AI_AMBUSH_ABEAM_NM
+    return cx + ahead * ux - side * abeam * uy, cy + ahead * uy + side * abeam * ux
+
+
 def orders(game, sub):
     """The mission leg ``(course, speed, depth)`` or None."""
     kind = boat_missions.mode(game)
@@ -115,8 +173,10 @@ def orders(game, sub):
         point = boat_missions.goal(game)
         if point is None:
             return None
-        course = _bearing(sub.x, sub.y, point["x"], point["y"])
-        return _course(game, sub, course), config.BOAT_AI_TRANSIT_KN, _deep(game, sub)
+        distance = math.hypot(point["x"] - sub.x, point["y"] - sub.y)
+        course = detour(sub, _bearing(sub.x, sub.y, point["x"], point["y"]), distance)
+        return (_course(game, sub, course), pace(sub, config.BOAT_AI_TRANSIT_KN),
+                _deep(game, sub))
     if kind == "recon":
         known = recon_target(game, sub)
         if known is None:
@@ -127,7 +187,8 @@ def orders(game, sub):
                     config.BOAT_AI_PERISCOPE_KN, MAST_DEPTH_M - 3.0)
         speed = closing_kn(sub, target_kn)
         px, py = lead(sub, x, y, course, target_kn, speed)
-        return _course(game, sub, _bearing(sub.x, sub.y, px, py)), speed, _deep(game, sub)
+        return (_course(game, sub, _bearing(sub.x, sub.y, px, py)),
+                max(config.BOAT_AI_CREEP_KN, pace(sub, speed)), _deep(game, sub))
     if kind == "convoy_attack":
         ships = convoy_ships(game)
         if not ships:
@@ -139,6 +200,15 @@ def orders(game, sub):
             # Turn the tubes on the target and creep in.
             return (_bearing(sub.x, sub.y, target.x, target.y),
                     config.BOAT_AI_PERISCOPE_KN, _deep(game, sub))
+        wait = ambush_point(sub, ships)
+        if wait is not None:
+            # Ahead of the convoy: lie in wait abeam of its track, quietly.
+            gap = math.hypot(wait[0] - sub.x, wait[1] - sub.y)
+            if gap <= config.BOAT_AI_AMBUSH_ARRIVE_NM:
+                return (_course(game, sub, _bearing(sub.x, sub.y, target.x, target.y)),
+                        config.BOAT_AI_WAIT_KN, _deep(game, sub))
+            return (_course(game, sub, _bearing(sub.x, sub.y, *wait)),
+                    pace(sub, config.BOAT_AI_TRANSIT_KN), _deep(game, sub))
         speed = closing_kn(sub, target.speed)
         cx = sum(ship.x for ship in ships) / len(ships)
         cy = sum(ship.y for ship in ships) / len(ships)

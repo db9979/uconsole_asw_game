@@ -5,6 +5,8 @@ import math
 import sys
 from pathlib import Path
 
+import pytest
+
 from src.core import boat_ai, boat_missions, config
 from src.core.game import Game
 from src.sensors.platform import MAST_DEPTH_M
@@ -146,3 +148,59 @@ def test_the_convoy_boat_closes_the_convoy_from_afar():
     assert speed == min(sub.motion.maximum_speed_kn,
                         ships[0].speed + config.BOAT_AI_CLOSING_KN)
     assert 0.0 < course < 60.0
+
+
+def test_a_hunted_ai_boat_creeps():
+    """1.3.70: a ping heard lately, or the frigate known close, slows the leg."""
+    game, sub = _frigate_game("s5_durchbruch")
+    sub.memory["last_ping_age"] = float("inf")
+    sub.memory["last_torpedo_age"] = float("inf")
+    sub.memory["contact"] = None
+    assert boat_ai.orders(game, sub)[1] == config.BOAT_AI_TRANSIT_KN
+    sub.memory["last_ping_age"] = 30.0
+    assert boat_ai.orders(game, sub)[1] == config.BOAT_AI_CREEP_KN
+    sub.memory["last_ping_age"] = config.BOAT_AI_HUNTED_S + 1.0
+    sub.memory["contact"] = dict(x=sub.x + 5.0, y=sub.y, course=0.0, speed=10.0, noise=0.5)
+    sub.memory["contact_age"] = 10.0
+    assert boat_ai.hunted(sub)
+    sub.memory["contact"]["x"] = sub.x + config.BOAT_AI_THREAT_NM + 5.0
+    assert not boat_ai.hunted(sub)
+
+
+def test_the_breakthrough_boat_passes_wide_of_a_known_frigate():
+    game, sub = _frigate_game("s5_durchbruch")
+    course = 90.0
+    sub.memory["contact_age"] = 10.0
+    sub.memory["contact"] = dict(x=sub.x + 8.0, y=sub.y + 1.0, course=0.0, speed=10.0,
+                                 noise=0.5)
+    # The frigate lies 1 NM south of the leg east: turn away north.
+    assert boat_ai.detour(sub, course, 20.0) == (course - config.BOAT_AI_DETOUR_DEG) % 360.0
+    sub.memory["contact"]["y"] = sub.y - 1.0
+    assert boat_ai.detour(sub, course, 20.0) == course + config.BOAT_AI_DETOUR_DEG
+    # Well clear of the leg or behind the boat: no detour.
+    sub.memory["contact"]["y"] = sub.y + config.BOAT_AI_DETOUR_NM + 2.0
+    assert boat_ai.detour(sub, course, 20.0) == course
+    sub.memory["contact"].update(x=sub.x - 5.0, y=sub.y)
+    assert boat_ai.detour(sub, course, 20.0) == course
+
+
+def test_the_convoy_boat_lies_in_wait_ahead_of_the_convoy():
+    game, sub = _frigate_game("s7_geleitzug")
+    ships = boat_ai.convoy_ships(game)
+    point = boat_ai.ambush_point(sub, ships)
+    assert point is not None
+    cx = sum(ship.x for ship in ships) / len(ships)
+    cy = sum(ship.y for ship in ships) / len(ships)
+    rad = math.radians(ships[0].course)
+    ahead = (point[0] - cx) * math.sin(rad) - (point[1] - cy) * math.cos(rad)
+    assert ahead == pytest.approx(config.BOAT_AI_AMBUSH_AHEAD_NM)
+    assert math.hypot(point[0] - cx, point[1] - cy) == pytest.approx(
+        math.hypot(config.BOAT_AI_AMBUSH_AHEAD_NM, config.BOAT_AI_AMBUSH_ABEAM_NM))
+    # Waiting there, it hovers slowly; a convoy that has passed is chased.
+    sub.x, sub.y = point
+    sub.memory["last_ping_age"] = sub.memory["last_torpedo_age"] = float("inf")
+    if min(math.hypot(s.x - sub.x, s.y - sub.y) for s in ships) > config.BOAT_AI_ATTACK_NM:
+        assert boat_ai.orders(game, sub)[1] == config.BOAT_AI_WAIT_KN
+    sub.x = cx - 10.0 * math.sin(rad)
+    sub.y = cy + 10.0 * math.cos(rad)
+    assert boat_ai.ambush_point(sub, ships) is None

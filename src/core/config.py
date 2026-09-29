@@ -1125,6 +1125,25 @@ BOAT_AI_REPORT_EVERY_S = 120.0     # recon: the report goes out on this cadence
 BOAT_AI_ATTACK_NM = 4.0            # convoy attack: fire at a merchant this close
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0
+# A hunted or closely watched boat creeps: this slow once the frigate is
+# within BOAT_AI_THREAT_NM (its own contact) or for BOAT_AI_HUNTED_S after a
+# ping or a torpedo was heard.
+BOAT_AI_CREEP_KN = 3.0
+BOAT_AI_THREAT_NM = 12.0
+BOAT_AI_HUNTED_S = 600.0
+# Breakthrough: a frigate this close to the leg ahead is passed this far off.
+BOAT_AI_DETOUR_NM = 6.0
+BOAT_AI_DETOUR_DEG = 40.0
+# Convoy attack: lie in wait this far ahead of the convoy and abeam of its
+# track, hovering at the wait speed until the merchants come into range.
+BOAT_AI_AMBUSH_AHEAD_NM = 2.0
+BOAT_AI_AMBUSH_ABEAM_NM = 3.0
+BOAT_AI_AMBUSH_ARRIVE_NM = 1.0
+BOAT_AI_WAIT_KN = 2.0
+# A mission boat evades a ping at this speed; a torpedo still makes it run.
+BOAT_AI_EVADE_KN = 5.0
+# A mission boat attacks a located frigate this many times as readily.
+BOAT_AI_ATTACK_MULT = 4.0
 
 # W4: Vordefinierte Szenarien (eigene Briefings, Startposition, Schwierigkeit)
 # hq_intel: "coarse" = HQ meldet nur grob Peilung/Entfernung einer Bedrohung,
@@ -1160,7 +1179,7 @@ SCENARIOS = {
     ),
     "s2_doppeljagd": dict(
         title="Doppeljagd",
-        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=8,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
                        enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
                        enemy_solution_threshold=0.25,
@@ -1177,7 +1196,7 @@ SCENARIOS = {
     ),
     "s3_abfang": dict(
         title="Nuklearer Abfang",
-        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=4,
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
                        enemy_attack_mult=1.5, enemy_cooldown_s=600.0,
                        enemy_solution_threshold=0.15,
@@ -1187,7 +1206,7 @@ SCENARIOS = {
         ship_start=(320.0, 250.0), ship_course=270.0,
         briefing=("Auftrag: Hochwertiges nukleares U-Boot (SSN) dringt in den "
                   "Sektor ein – extrem leise, taucht tief unter die Thermokline, "
-                  "kontert aktiv. Nur 4 Torpedos an Bord. Ziel: Versenken, bevor es "
+                  "kontert aktiv. Nur 6 Torpedos an Bord. Ziel: Versenken, bevor es "
                   "die Zone verlässt. ASM-Abwehr ist überlebenswichtig."),
         win_text="SSN vor Zeitablauf versenkt",
         lose_text="SSN entkommt / Zeitlimit / Fregatte gesunken",

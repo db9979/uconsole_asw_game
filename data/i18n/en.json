@@ -2012,7 +2012,7 @@
   "scenario.double.brief": "Mission: Two submarines operate in the assigned sector (one may be AIP and nearly silent). ESM waves are expected. Objective: sink both submarines, protect civilian shipping, and defeat ASM waves.",
   "scenario.double.win": "Both target submarines sunk",
   "scenario.intercept.title": "Nuclear intercept",
-  "scenario.intercept.brief": "Mission: A high-value nuclear submarine (SSN) is entering the sector. It is extremely quiet, dives below the thermocline, and actively counters. Only 4 torpedoes are aboard. Sink it before it leaves the zone. ASM defense is vital.",
+  "scenario.intercept.brief": "Mission: A high-value nuclear submarine (SSN) is entering the sector. It is extremely quiet, dives below the thermocline, and actively counters. Only 6 torpedoes are aboard. Sink it before it leaves the zone. ASM defense is vital.",
   "scenario.intercept.win": "SSN sunk before deadline",
   "scenario.intercept.lose": "SSN escapes / time limit / frigate sunk",
   "scenario.random.title": "Free hunt (random)",

@@ -413,8 +413,7 @@ def helicopter(game, found) -> str:
     helo = game.helo
     if game.damage.station_down("flightdeck") or helo.state == "VERLOREN":
         return "monitoring"
-    # Aircraft fly to a position only, never down a bare bearing line.
-    point = datum_point(game, found) if found is not None and "x" in found else None
+    point = datum_point(game, found)
     ship = game.ship
     if point is None or math.hypot(point[0] - ship.x, point[1] - ship.y) > HELO_RANGE_NM:
         if helo.state == "AUF":

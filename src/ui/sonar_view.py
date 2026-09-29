@@ -441,7 +441,7 @@ def _text(screen, text, rect, color=TEXT, size=14, align="left"):
     with layout.clip_to(screen, rect):
         image = font.render(text, True, color)
         rendered = image.get_rect(topleft=(x, rect.y))
-        layout.record_text(text, rendered, rect)
+        layout.record_text(text, rendered, rect, image)
         screen.blit(image, rendered)
 
 

@@ -317,7 +317,7 @@ def _map_label(surface, game, text, pos, color, chart) -> None:
     with layout.clip_to(surface, chart):
         image = face.render(shown, True, color)
         rendered = image.get_rect(topleft=(int(x), int(y)))
-        layout.record_text(shown, rendered, chart)
+        layout.record_text(shown, rendered, chart, image)
         surface.blit(image, rendered)
 
 

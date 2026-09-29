@@ -2692,7 +2692,6 @@
   "control.quit_hint": "Auf/Ab: Auswahl | Enter: bestätigen | Esc: zurück | Simulation läuft weiter",
   "control.radio_log": "Auf/Ab: Signal | Enter: protokollieren",
   "control.quiet_mode": "A: Akustikmodus LEISE/NORMAL",
-  "control.damage_team": "Enter: Team zuweisen\nBackspace: Team rückziehen",
   "control.damage_select": "Links/Rechts: Kompartiment   Auf/Ab: Team 1-3",
   "control.radar_weapons": "E: ESSM   G: Chaff   ←/→: Track",
   "control.ciws_auto": "CIWS: automatisch < 1.5 NM",

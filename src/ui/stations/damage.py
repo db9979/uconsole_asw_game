@@ -212,14 +212,15 @@ def draw_damage_view(game, tr=None) -> None:
         dx, dy, dw, _ = detail
         layout.blit_line(s, _compartment_name(selected_key, selected.name),
                          (dx, dy, dw, 32), config.COLOR_TEXT, size=22)
-        dy += 36
+        dy += layout.line_pitch(22)
+        row = layout.line_pitch(18, gap=3)
         for label, value, color in (
                 ("ui.state", localize(STATE_LABEL[selected.state]), _state_color(selected.state)),
                 ("ui.flooding", f"{selected.flood:.0f}%", config.COLOR_TEXT),
                 ("ui.fire", f"{selected.fire:.0f}%", config.COLOR_DANGER if selected.fire else config.COLOR_TEXT_DIM)):
-            layout.blit_line(s, localize(label), (dx, dy, 140, 26), config.COLOR_TEXT_DIM, size=18)
-            layout.blit_line(s, value, (dx + 144, dy, dw - 144, 26), color, size=18)
-            dy += 30
+            layout.blit_line(s, localize(label), (dx, dy, 140, row), config.COLOR_TEXT_DIM, size=18)
+            layout.blit_line(s, value, (dx + 144, dy, dw - 144, row), color, size=18)
+            dy += row
         trend = game.damage.compartment_trend(selected_key)
         for hazard in ("flood", "fire"):
             rate = trend[hazard + "_rate"]
@@ -228,8 +229,8 @@ def draw_damage_view(game, tr=None) -> None:
                          "damage.falling" if rate < -.001 else "damage.stable")
             layout.blit_line(s, message("damage.net." + hazard,
                 trend=localize(trend_key), rate=f"{rate * 60:+.1f}"),
-                (dx, dy, dw, 26), config.COLOR_WARN if rate > 0 else config.COLOR_TEXT_DIM, size=18)
-            dy += 30
+                (dx, dy, dw, row), config.COLOR_WARN if rate > 0 else config.COLOR_TEXT_DIM, size=18)
+            dy += row
         pygame.draw.line(s, config.COLOR_GRID, (dx, dy), (dx + dw, dy))
         dy += 14
         assignment = game.damage.teams[game.dmg_team]
@@ -237,25 +238,22 @@ def draw_damage_view(game, tr=None) -> None:
                            if assignment is not None else localize("damage.free"))
         layout.blit_line(s, message("damage.team_destination", team=game.dmg_team,
                                     destination=assignment_text),
-                         (dx, dy, dw, 32), config.COLOR_OK, size=18)
-        dy += 36
+                         (dx, dy, dw, row), config.COLOR_OK, size=18)
+        dy += row + 4
         assigned = game.damage.teams_on(selected_key)
-        layout.blit_line(s, "ui.on_scene", (dx, dy, 120, 26), config.COLOR_TEXT_DIM, size=18)
+        layout.blit_line(s, "ui.on_scene", (dx, dy, 120, row), config.COLOR_TEXT_DIM, size=18)
         layout.blit_line(s, message("damage.line.teams_on_scene", teams=", ".join(map(str, assigned)))
-                         if assigned else "damage.line.no_team", (dx + 124, dy, dw - 124, 26),
+                         if assigned else "damage.line.no_team", (dx + 124, dy, dw - 124, row),
                          config.COLOR_OK if assigned else config.COLOR_WARN, size=18)
-        dy += 30
+        dy += row
         room = game.damage.counterflood_room
         layout.blit_line(s, message(
             "damage.line.stability", list=f"{game.damage.list_deg():+.1f}",
             trim=f"{game.damage.trim_deg():+.1f}",
             room=(localize("damage.counterflood.none") if room is None
                   else _compartment_name(room, game.damage.compartments[room].name))),
-            (dx, dy, dw, 26), config.COLOR_WARN if room is not None else config.COLOR_TEXT_DIM,
+            (dx, dy, dw, row), config.COLOR_WARN if room is not None else config.COLOR_TEXT_DIM,
             size=16)
-        dy += 30
-        layout.blit_block(s, "control.damage_team",
-                          dx, dy, dw, max(1, regions["detail"].bottom - dy - 8), config.COLOR_TEXT, size=18)
 
     footer_y = rect.bottom - 52
     layout.status_line(

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.75**
+Aktuelle Version: **1.3.76**
 
-Version 1.3.75 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
+Version 1.3.76 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
 Buchten und um lange Küsten finden: Reicht ein Ausweichpunkt für eine Strecke
 nicht, plant eine Wegsuche auf der Karte die Wendepunkte (die Planung ist
 dabei schneller als bisher). GitHub prüft jetzt jede Änderung mit der ganzen
@@ -195,7 +195,8 @@ Der Workflow `.github/workflows/windows.yml` baut das Programm mit PyInstaller
 führt seinen Selbsttest ohne Bildschirm aus (kurze Mission plus
 Remote-Crew-Seiten) und veröffentlicht auf `main` einmal je Version das
 Release `v<APP_VERSION>`; danach löscht er alle älteren Releases, sodass nur das
-neueste stehen bleibt (Git-Tags bleiben). Selbst bauen unter Windows:
+neueste samt seinem Git-Tag stehen bleibt (ältere `vX.Y.Z`-Tags werden mit
+gelöscht). Selbst bauen unter Windows:
 `python -m pip install -e ".[windows]"` und
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 

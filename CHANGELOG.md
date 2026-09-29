@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.75
+## 1.3.76
 
-Release 1.3.75 lets the Bridge autopilot find its way through channels, into
+Release 1.3.76 lets the Bridge autopilot find its way through channels, into
 bays and round long coasts: when a stand-off detour does not clear a leg, a
 path search on the chart plans the turning points (planning is also faster
 than before). GitHub now runs the whole test suite with the browser tests,
@@ -14,6 +14,13 @@ the generated-file checks, the calibration and the smoke test on every change,
 and two flaky browser checks are fixed: the phone lookout no longer falls back to the pairing screen when the host answers slowly right after pairing, and the status bar check measures with the bundled fonts. The manual no
 longer says the frigate has no ASROC, and `tools/hw_report.py` turns a debug
 run on the uConsole into the hardware checklist's table. Saves stay v31.
+
+## 1.3.75
+
+Release 1.3.75 also tidies the git tags on GitHub: when a new version is
+published, the Windows build now deletes every older `vX.Y.Z` tag together
+with its release, so only the newest release and its tag stay. The uConsole
+updater only needs that newest tag. Saves stay v31.
 
 ## 1.3.74
 

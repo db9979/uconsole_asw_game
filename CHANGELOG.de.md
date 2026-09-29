@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.75
+## 1.3.76
 
-Version 1.3.75 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
+Version 1.3.76 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
 Buchten und um lange Küsten finden: Reicht ein Ausweichpunkt für eine Strecke
 nicht, plant eine Wegsuche auf der Karte die Wendepunkte (die Planung ist
 dabei schneller als bisher). GitHub prüft jetzt jede Änderung mit der ganzen
@@ -16,7 +16,14 @@ repariert: Der Handy-Ausguck fällt nicht mehr auf die Kopplungsseite zurück,
 wenn der Host direkt nach dem Koppeln langsam antwortet, und die Statusleiste
 wird mit den mitgelieferten Schriften vermessen. Das Handbuch behauptet nicht mehr, die
 Fregatte habe kein ASROC, und `tools/hw_report.py` macht aus einem
-Debug-Lauf auf der uConsole die Tabelle der Hardware-Checkliste. Spielstände
+Debug-Lauf auf der uConsole die Tabelle der Hardware-Checkliste. Spielstände bleiben v31.
+
+## 1.3.75
+
+Version 1.3.75 räumt auch die Git-Tags auf GitHub auf: Beim Veröffentlichen
+einer neuen Version löscht der Windows-Build jetzt jeden älteren
+`vX.Y.Z`-Tag zusammen mit seinem Release, sodass nur das neueste Release samt
+Tag bleibt. Der uConsole-Updater braucht nur diesen neuesten Tag. Spielstände
 bleiben v31.
 
 ## 1.3.74

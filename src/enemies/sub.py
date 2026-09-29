@@ -466,6 +466,9 @@ class Sub:
             rate = 0.006 * (0.5 + noise) * self.stype.aggression
         elif noise >= 0.75 and dist is not None and dist < 18.0:
             rate = 0.002 * self.stype.aggression
+        elif dist is not None and dist < config.SUB_SOLUTION_ATTACK_NM:
+            # A located frigate in torpedo range is attacked even when quiet.
+            rate = config.SUB_SOLUTION_ATTACK_RATE * self.stype.aggression
         rate *= self.attack_mult
         if rate > 0 and self.asw_rng.random() < rate * dt:
             n = min(2 if dist is not None and dist < 12.0

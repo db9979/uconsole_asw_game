@@ -240,3 +240,18 @@ def test_the_ai_frigate_escorts_the_convoy_without_a_datum():
     for ship in ships:
         ship.sunk = True
     assert hunter.escort_course(game) is None
+
+
+def test_the_convoy_boat_starts_ahead_of_the_convoy():
+    """1.3.60: a dived boat cannot overtake the convoy, so it starts ahead."""
+    for seed in (61, 3, 7):
+        game, boat = _boat_game("s7_geleitzug", seed=seed)
+        course = math.radians(config.SCENARIOS["s7_geleitzug"]["ship_course"])
+        dx, dy = boat.sub.x - game.ship.x, boat.sub.y - game.ship.y
+        ahead = dx * math.sin(course) - dy * math.cos(course)
+        assert ahead >= config.BOAT_CONVOY_BOAT_AHEAD_NM * 0.75 - 1e-6
+        assert math.hypot(boat.sub.start_pos[0] - boat.sub.x,
+                          boat.sub.start_pos[1] - boat.sub.y) < 0.01
+        assert not game.world.on_land(boat.sub.x, boat.sub.y)
+        assert all(ship.speed <= config.BOAT_CONVOY_SPEED_KN
+                   for ship in boat_missions.convoy(game))

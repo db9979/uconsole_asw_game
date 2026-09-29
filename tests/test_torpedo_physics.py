@@ -143,3 +143,61 @@ def test_torpedo_physics_state_round_trips_and_is_validated():
     broken = copy.deepcopy(state)
     broken["torpedoes_in_flight"][0]["motor_fraction"] = 2.0
     assert not restored._load_save_data(broken)
+
+
+def test_proximity_fuze_fires_at_the_predicted_closest_approach():
+    """1.3.60: the fuze radius arms the warhead; the miss distance is the
+    closest approach the relative track predicts, not the radius itself."""
+    head_on = Torpedo(100.0, 100.0, 0.0, 60.0, None, 0, profile=PROFILE)
+    sub = SimpleNamespace(x=100.0, y=99.8, course=0.0, speed=0.0)
+    speed = config.kn_to_nm_per_s(PROFILE.speed_kn)
+    assert head_on._closest_approach_nm(sub, 100.0, 100.0, speed) == pytest.approx(0.0)
+    passing = Torpedo(100.0, 100.0, 90.0, 60.0, None, 0, profile=PROFILE)
+    miss = passing._closest_approach_nm(SimpleNamespace(x=100.1, y=99.9, course=0.0,
+                                                        speed=0.0), 100.0, 100.0, speed)
+    assert miss == pytest.approx(0.1)
+    # Already opening: the miss is the present distance.
+    opening = Torpedo(100.0, 100.0, 180.0, 60.0, None, 0, profile=PROFILE)
+    assert opening._closest_approach_nm(sub, 100.0, 100.0, speed) == pytest.approx(0.2)
+
+
+def test_a_homing_torpedo_on_a_steady_submarine_is_lethal():
+    """A torpedo running straight at a submarine is no longer set off at the
+    edge of its fuze radius (which did only ~12-18 % damage)."""
+    sub = Sub(100.0, 99.0, 60.0, 0.0, "aip_modern", random.Random(1))
+    sub.course, sub.speed = 90.0, 5.0
+    torpedo = Torpedo(100.0, 100.0, 0.0, 60.0, sub, 0, profile=PROFILE,
+                      kill_dist_nm=0.20, guidance_x=100.0, guidance_y=99.0)
+    for _ in range(4000):
+        torpedo._midcourse_timer = 0.0
+        torpedo.update(0.05, seeker_candidates=[sub])
+        if torpedo.state != "RUN":
+            break
+    assert torpedo.state == "HIT"
+    assert torpedo.last_miss_m < 60.0
+    assert sub.damage >= 75.0
+
+
+def _frigate_observation(sub, range_nm, signal):
+    from src.sensors.platform import PlatformObservation
+    return PlatformObservation(
+        track_id="F", domain="sonar", source="SONAR", observer_x=sub.x,
+        observer_y=sub.y, bearing=sub.course, range_nm=range_nm,
+        x=sub.x, y=sub.y - range_nm, course=90.0, speed_kn=10.0, depth_m=None,
+        quality=1.0, signal=signal, last_seen=0.0, bearing_uncertainty_deg=None,
+        range_uncertainty_nm=None, depth_uncertainty_m=None, label=None)
+
+
+@pytest.mark.parametrize("range_nm, attacks", [(6.0, True), (14.0, False)])
+def test_an_ai_boat_attacks_a_quiet_located_frigate_in_range(range_nm, attacks):
+    """1.3.60: a located frigate within SUB_SOLUTION_ATTACK_NM draws an attack
+    even when she runs quiet; farther off only a loud one does."""
+    sub = Sub(100.0, 100.0, 60.0, 0.0, "aip_modern", random.Random(5))
+    sub.side, sub.attack_left = "hostile", 0.0
+    fired = False
+    for _ in range(3600):
+        sub._maybe_attack(1.0, _frigate_observation(sub, range_nm, signal=0.2))
+        if sub.pending_torpedoes:
+            fired = True
+            break
+    assert fired is attacks

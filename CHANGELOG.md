@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.74
+
+Release 1.3.74 gives the submarine a fair chance against the computer-run
+frigate. When you play the submarine, the frigate's crew now needs about 3
+minutes to recognise a submarine by its sound and about 10 minutes to ready the
+helicopter. On a bare bearing the helicopter only listens with its dipping
+sonar, the patrol aircraft comes only for a position, and aircraft attack only
+from a fix at most 2 minutes old. Breakthrough now runs 5 hours instead of 4
+and Reconnaissance 2 hours instead of 3. Saves stay v31.
+
 ## 1.3.73
 
 Release 1.3.73 fixes the Windows self-update: after **Install update** the

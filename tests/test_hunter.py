@@ -82,7 +82,12 @@ def test_an_hfdf_fix_sends_ship_helicopter_and_patrol_aircraft():
     hunter.bridge(game, found)
     assert abs(game.ship.target_course - 90.0) < 1.0
     assert game.ship.target_speed == hunter.TRANSIT_KN
-    assert hunter.helicopter(game, found) == "launched" and game.helo.airborne
+    # The deck needs HELO_READY_MEAN_S on average to ready the helicopter.
+    for tick in range(1000):
+        game.sim_t = tick * hunter.CADENCE_S
+        if hunter.helicopter(game, found) == "launched":
+            break
+    assert game.helo.airborne and game.sim_t > 0.0
     assert hunter.helicopter(game, found) == "moving"
     assert (game.helo.waypoint_x, game.helo.waypoint_y) == (x, y)
     assert hunter.mpa(game, found) == "requested"
@@ -118,7 +123,8 @@ def test_a_heard_boat_is_classified_pinged_and_attacked():
     sub = boat.sub
     assert sub.set_orders(course=0.0, speed=8.0, depth=60.0) is True
     stores = (game.torpedo_count, game.helo.torps)
-    _run(game, 300.0)
+    # Classifying and readying the helicopter take the crew minutes.
+    _run(game, 1800.0)
     rows = [contact for contact in game.sonar.contacts.values()
             if contact.target_id == sub.id]
     assert rows and rows[0].player_class == "U_BOOT"
@@ -286,3 +292,35 @@ def test_the_submarine_radar_library_holds_only_submarine_emitters():
     assert "emitter.sub_01.mast_radar" in keys
     assert not any(key.startswith("emitter.aux_") for key in keys)
     assert config.HELO_RADAR_EMITTER not in keys
+
+
+def test_a_bare_bearing_sends_no_patrol_aircraft():
+    """1.3.74: the patrol aircraft flies to a position only; a sonar bearing
+    alone leaves it at base."""
+    game, boat = _local_boat(seed=61)
+    _place(game, boat, 60.0)
+    game.sonar.contacts.clear()
+    found = {"bearing": 90.0, "contact": None, "source": "hfdf"}
+    assert hunter.mpa(game, found) == "monitoring" and game.mpa.state == "BASE"
+
+
+def test_recognising_a_submarine_takes_the_operator_minutes():
+    """1.3.74: per cadence tick a contact is recognised with the chance
+    CADENCE_S / CLASSIFY_MEAN_S, so the first call comes after minutes."""
+    game, _boat = _local_boat(seed=61)
+
+    class Row:
+        id = 7
+
+    ticks = []
+    for seed in range(20):
+        game.seed = seed
+        tick = 0
+        while True:
+            game.sim_t = tick * hunter.CADENCE_S
+            if hunter._recognised(game, Row):
+                break
+            tick += 1
+        ticks.append(tick * hunter.CADENCE_S)
+    mean = sum(ticks) / len(ticks)
+    assert 60.0 < mean < 400.0

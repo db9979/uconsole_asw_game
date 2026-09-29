@@ -16,6 +16,7 @@ from src.ui import layout
 from src.ui import chart_symbols
 from src.ui import nato_symbols
 from src.ui import observations
+from src.sensors.fusion import source_groups
 
 
 from src.ui.stations.common import (
@@ -914,7 +915,14 @@ def draw_opz_view(game, tr=None) -> None:
                                "affil.code." + affiliation.lower()),
                            domain=structured_message(OPZ_DOMAIN_CODES[domain]),
                             bearing=observations.format_bearing(track, game.ship), distance=distance)
-            layout.blit_line(s, text, (x + 6, py, w - 6, 24), color, size=15)
+            # Sensor tags (R radar, V lookout, A AIS ...): a fused contact
+            # shows every source behind it at a glance.
+            tags = "".join(localize("opz.source_code." + group)
+                           for group in source_groups(track))
+            tag_w = 12 + 8 * len(tags)
+            layout.blit_line(s, text, (x + 6, py, w - 6 - tag_w, 24), color, size=15)
+            layout.blit_line(s, tags, (x + w - tag_w, py + 2, tag_w, 22),
+                             config.COLOR_TEXT_DIM, size=13, align="right")
             py += 28
         if suggestions:
             # Correlation suggestions: U confirms the top one, Shift+U drops it.
@@ -949,7 +957,10 @@ def draw_opz_view(game, tr=None) -> None:
                              (x + 28, py, w - 28, 22), color, size=18)
             py += 26
             ledger = [
-                message("opz.line.source", source=selected.source),
+                (message("opz.line.sources", sources=" · ".join(
+                    localize("opz.source." + group) for group in source_groups(selected)))
+                 if selected.source == "FUSION"
+                 else message("opz.line.source", source=selected.source)),
                 message("opz.line.bearing", bearing=observations.format_bearing(selected, game.ship)),
                 (message("opz.line.range_available", range=f"{observations.range_nm(selected, game.ship):.1f}")
                  if observations.range_nm(selected, game.ship) is not None else "opz.line.range_unavailable"),

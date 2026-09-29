@@ -37,6 +37,8 @@ class OPZObservation:
     altitude_m: float | None = None
     # Bridge lookout report (lookout_id label), never an operator annotation.
     visual: str | None = None
+    # A fusion's member sensor sources (sorted, distinct); empty otherwise.
+    sources: tuple[str, ...] = ()
 
     @property
     def track_id(self) -> str:
@@ -58,6 +60,21 @@ class ManualFusion:
     fusion_id: str
     members: tuple[str, ...]
     classification: str | None = None
+    # Formed by the OPZ's automatic correlation (``auto_fusion_plan``): it
+    # keeps its identity while at least two member reports are current and
+    # takes in further unambiguous reports; the operator can still dissolve it.
+    auto: bool = False
+
+
+def live_members(fusion: ManualFusion, current) -> tuple[str, ...] | None:
+    """Member reports a fusion stands on now, or None when it has lapsed.
+
+    A manual fusion needs every member; an automatic one the current members
+    as long as at least two remain."""
+    members = tuple(key for key in fusion.members if key in current)
+    if fusion.auto:
+        return members if len(members) >= MIN_FUSION_MEMBERS else None
+    return members if len(members) == len(fusion.members) else None
 
 
 class OPZFusionPicture:
@@ -101,7 +118,9 @@ class OPZFusionPicture:
         self.classifications = {key: value for key, value in self.classifications.items()
                                 if key in current or key in self.fusions}
         for key, fusion in list(self.fusions.items()):
-            if not set(fusion.members) <= current:
+            # Automatic fusions shrink or lapse only in the simulation's own
+            # correlation step (``auto_fuse``), never from a drawn frame.
+            if not fusion.auto and not set(fusion.members) <= current:
                 del self.fusions[key]
                 self.fusion_affiliations.pop(key, None)
 
@@ -121,6 +140,12 @@ class OPZFusionPicture:
     def dissolve(self, fusion_id: str) -> bool:
         if fusion_id not in self.fusions:
             return False
+        # The operator separated these reports: automatic correlation must not
+        # put them straight back together (the pairs count as dismissed).
+        members = self.fusions[fusion_id].members
+        for index, first in enumerate(members):
+            for second in members[index + 1:]:
+                self.dismiss(suggestion_key((first, second)))
         del self.fusions[fusion_id]
         self.suppressed.discard(fusion_id)
         self.classifications.pop(fusion_id, None)
@@ -130,9 +155,10 @@ class OPZFusionPicture:
     def computed(self, fusion: ManualFusion, observations, now: float,
                  stale_s: float) -> OPZObservation | None:
         by_id = {item.observation_id: item for item in observations}
-        members = [by_id.get(key) for key in fusion.members]
-        if any(item is None for item in members):
+        keys = live_members(fusion, by_id)
+        if keys is None:
             return None
+        members = [by_id[key] for key in keys]
         weights = [max(.001, item.display_quality(now, stale_s)) for item in members]
         positioned = [(item, weight) for item, weight in zip(members, weights)
                       if item.x is not None and item.y is not None]
@@ -161,22 +187,107 @@ class OPZFusionPicture:
                  if item.speed_kn is not None]
         speed = (sum(item.speed_kn * weight for item, weight in timed)
                  / sum(weight for _, weight in timed)) if timed else None
+        # The members' reported kind when they agree (an ESM or sonar report
+        # carries none); an AIS member lends the fusion its broadcast name.
+        kinds = {item.kind for item in members} - {"UNKNOWN"}
+        kind = kinds.pop() if len(kinds) == 1 else "UNKNOWN"
+        label = next((item.label for item in members if item.source == "AIS"),
+                     fusion.fusion_id)
         return OPZObservation(
-            fusion.fusion_id, "FUSION", "UNKNOWN", bearing, range_nm, x, y,
+            fusion.fusion_id, "FUSION", kind, bearing, range_nm, x, y,
             course, sum(weights) / len(weights), max(item.last_seen for item in members),
-            fusion.fusion_id, self.classifications.get(fusion.fusion_id),
+            label, self.classifications.get(fusion.fusion_id),
             max((item.bearing_uncertainty_deg or 0.0) for item in members),
-            position_seen, members=fusion.members, speed_kn=speed)
+            position_seen, members=keys, speed_kn=speed,
+            sources=tuple(sorted({item.source for item in members})))
 
     def visible(self, observations, now: float, stale_s: float):
+        """The register: fused reports stand behind their fusion, so they are
+        listed (like suppressed ones) only in the hidden view."""
         self.prune(observations)
         fused = [item for item in (self.computed(fusion, observations, now, stale_s)
                                    for fusion in self.fusions.values()) if item is not None]
+        hidden = set(self.suppressed)
+        hidden.update(member for item in fused for member in item.members)
         all_items = list(observations) + fused
         return tuple(sorted((item for item in all_items
-                            if (item.observation_id in self.suppressed)
+                            if (item.observation_id in hidden)
                             == self.show_suppressed),
                             key=lambda item: item.observation_id))
+
+    def auto_fuse(self, observations, own_x: float, own_y: float, now: float,
+                  stale_s: float) -> tuple[str, ...]:
+        """One automatic correlation step; returns the fusions it formed or
+        extended. Pure in its inputs and the picture's own state."""
+        current = {item.observation_id for item in observations}
+        for key, fusion in list(self.fusions.items()):
+            if not fusion.auto:
+                continue
+            members = live_members(fusion, current)
+            if members is None:
+                self.dissolve_lapsed(key)
+            elif members != fusion.members:
+                self.fusions[key] = ManualFusion(key, members, fusion.classification,
+                                                 auto=True)
+        autos = [(fusion, self.computed(fusion, observations, now, stale_s))
+                 for _, fusion in sorted(self.fusions.items()) if fusion.auto]
+        manual = {member for fusion in self.fusions.values() if not fusion.auto
+                  for member in fusion.members}
+        changed = []
+        for target, members in auto_fusion_plan(
+                observations, own_x, own_y, now,
+                fusions=[(fusion, item) for fusion, item in autos if item is not None],
+                excluded=manual, dismissed=self.dismissed):
+            if target is None:
+                if len(self.fusions) >= MAX_OPZ_FUSIONS:
+                    continue
+                self._sequence += 1
+                target = f"F-{self._sequence:02d}"
+                self.fusions[target] = ManualFusion(target, members, auto=True)
+            else:
+                old = self.fusions[target]
+                self.fusions[target] = ManualFusion(target, members, old.classification,
+                                                    auto=True)
+            changed.append(target)
+        return tuple(changed)
+
+    def dissolve_lapsed(self, fusion_id: str) -> None:
+        """Drop a fusion without dismissing its pairs (it lapsed)."""
+        self.fusions.pop(fusion_id, None)
+        self.suppressed.discard(fusion_id)
+        self.classifications.pop(fusion_id, None)
+        self.fusion_affiliations.pop(fusion_id, None)
+
+
+# Display groups of OPZ report sources, in display order (``opz.source.*``
+# names, ``opz.source_code.*`` one-letter register tags).
+SOURCE_GROUPS = ("radar", "visual", "ais", "esm", "sonar", "helo", "buoy",
+                 "mpa", "hfdf", "hoj", "datalink")
+
+
+def source_group(source: str) -> str:
+    """The display group of one report source string."""
+    if source.startswith(("SONAR-DIP", "HELO")):
+        return "helo"
+    if source.startswith("SONAR-BUOY"):
+        return "buoy"
+    if source.startswith("SONAR"):
+        return "sonar"
+    if source.startswith("RADAR-MPA"):
+        return "mpa"
+    if source.startswith("RADAR"):
+        return "radar"
+    if source.startswith("HFDF"):
+        return "hfdf"
+    return {"LOOKOUT": "visual", "AIS": "ais", "ESM": "esm",
+            "HOJ": "hoj"}.get(source, "datalink")
+
+
+def source_groups(observation) -> tuple[str, ...]:
+    """Distinct display groups behind one register entry, in display order."""
+    sources = observation.sources or (observation.source,)
+    groups = {source_group(source) for source in sources}
+    return tuple(group for group in SOURCE_GROUPS if group in groups)
 
 
 def source_classification(observation_id: str, observations) -> str | None:
@@ -279,6 +390,67 @@ def _own_bearing(observation, own_x: float, own_y: float, observer_nm: float):
     return observation.bearing % 360.0, None, None
 
 
+def _candidate(item, own_x: float, own_y: float, now: float):
+    """(report, family, bearing, position, range) of a comparable report."""
+    family = _sensor_family(item)
+    max_age = (config.OPZ_SUGGEST_AIS_MAX_AGE_S if family == "AIS"
+               else config.OPZ_SUGGEST_MAX_AGE_S)
+    if family is None or not 0.0 <= now - item.last_seen <= max_age:
+        return None
+    geometry = _own_bearing(item, own_x, own_y, config.OPZ_SUGGEST_OBSERVER_NM)
+    if geometry is None:
+        return None
+    return (item, family, *geometry)
+
+
+def _compatible(first, family_a, second, family_b):
+    """Class match (True/None) of two reports of different sensors, or
+    "reject" when domain or signature rules them out."""
+    if family_a == family_b:
+        return "reject"
+    if ("SONAR" in (family_a, family_b) or "AIS" in (family_a, family_b)) and (
+            first.kind in _AIR_KINDS or second.kind in _AIR_KINDS):
+        return "reject"
+    return _class_match(first, family_a, second, family_b)
+
+
+def _score(first, bearing_a, pos_a, range_a, second, bearing_b, pos_b, range_b):
+    """(mean bearing, bearing delta, distance, score, course delta, speed
+    delta) of two reports inside every gate, or None."""
+    unc_a = (first.bearing_uncertainty_deg
+             if first.bearing_uncertainty_deg is not None
+             else config.OPZ_SUGGEST_BEARING_DEFAULT_UNC_DEG)
+    unc_b = (second.bearing_uncertainty_deg
+             if second.bearing_uncertainty_deg is not None
+             else config.OPZ_SUGGEST_BEARING_DEFAULT_UNC_DEG)
+    gate = min(config.OPZ_SUGGEST_BEARING_MAX_DEG,
+               config.OPZ_SUGGEST_BEARING_BASE_DEG + math.hypot(unc_a, unc_b))
+    delta = abs(config.angle_diff_deg(bearing_a, bearing_b))
+    if delta > gate:
+        return None
+    score = delta / gate
+    distance = None
+    if pos_a is not None and pos_b is not None:
+        distance = math.hypot(pos_a[0] - pos_b[0], pos_a[1] - pos_b[1])
+        position_gate = (config.OPZ_SUGGEST_POSITION_NM
+                         + config.OPZ_SUGGEST_POSITION_RANGE_SHARE
+                         * min(range_a, range_b))
+        if distance > position_gate:
+            return None
+        score = .5 * (score + distance / position_gate)
+    motion = _motion_terms(first, second)
+    if motion is None:
+        return None
+    course_delta, speed_delta, terms = motion
+    if terms:
+        score = (score + sum(terms)) / (1 + len(terms))
+    mean = math.degrees(math.atan2(
+        math.sin(math.radians(bearing_a)) + math.sin(math.radians(bearing_b)),
+        math.cos(math.radians(bearing_a)) + math.cos(math.radians(bearing_b))
+    )) % 360.0
+    return mean, delta, distance, score, course_delta, speed_delta
+
+
 def suggest_correlations(observations, own_x: float, own_y: float, now: float, *,
                          fused=(), dismissed=(), limit: int | None = None,
                          ) -> tuple[CorrelationSuggestion, ...]:
@@ -291,18 +463,10 @@ def suggest_correlations(observations, own_x: float, own_y: float, now: float, *
     limit = config.OPZ_SUGGEST_MAX if limit is None else limit
     fused = set(fused)
     dismissed = set(dismissed)
-    candidates = []
-    for item in observations:
-        family = _sensor_family(item)
-        max_age = (config.OPZ_SUGGEST_AIS_MAX_AGE_S if family == "AIS"
-                   else config.OPZ_SUGGEST_MAX_AGE_S)
-        if (family is None or item.observation_id in fused
-                or not 0.0 <= now - item.last_seen <= max_age):
-            continue
-        geometry = _own_bearing(item, own_x, own_y, config.OPZ_SUGGEST_OBSERVER_NM)
-        if geometry is None:
-            continue
-        candidates.append((item, family, *geometry))
+    candidates = [row for row in (_candidate(item, own_x, own_y, now)
+                                  for item in observations
+                                  if item.observation_id not in fused)
+                  if row is not None]
     candidates.sort(key=lambda row: (-row[0].last_seen, row[0].observation_id))
     del candidates[config.OPZ_SUGGEST_CANDIDATES_MAX:]
     candidates.sort(key=lambda row: row[0].observation_id)
@@ -311,48 +475,19 @@ def suggest_correlations(observations, own_x: float, own_y: float, now: float, *
         for second, family_b, bearing_b, pos_b, range_b in candidates[index + 1:]:
             if family_a == family_b:
                 continue
-            if ("SONAR" in (family_a, family_b) or "AIS" in (family_a, family_b)) and (
-                    first.kind in _AIR_KINDS or second.kind in _AIR_KINDS):
-                continue
             key = suggestion_key((first.observation_id, second.observation_id))
             if key in dismissed:
                 continue
-            unc_a = (first.bearing_uncertainty_deg
-                     if first.bearing_uncertainty_deg is not None
-                     else config.OPZ_SUGGEST_BEARING_DEFAULT_UNC_DEG)
-            unc_b = (second.bearing_uncertainty_deg
-                     if second.bearing_uncertainty_deg is not None
-                     else config.OPZ_SUGGEST_BEARING_DEFAULT_UNC_DEG)
-            gate = min(config.OPZ_SUGGEST_BEARING_MAX_DEG,
-                       config.OPZ_SUGGEST_BEARING_BASE_DEG + math.hypot(unc_a, unc_b))
-            delta = abs(config.angle_diff_deg(bearing_a, bearing_b))
-            if delta > gate:
-                continue
-            score = delta / gate
-            distance = None
-            if pos_a is not None and pos_b is not None:
-                distance = math.hypot(pos_a[0] - pos_b[0], pos_a[1] - pos_b[1])
-                position_gate = (config.OPZ_SUGGEST_POSITION_NM
-                                 + config.OPZ_SUGGEST_POSITION_RANGE_SHARE
-                                 * min(range_a, range_b))
-                if distance > position_gate:
-                    continue
-                score = .5 * (score + distance / position_gate)
-            motion = _motion_terms(first, second)
-            if motion is None:
-                continue
-            course_delta, speed_delta, terms = motion
-            if terms:
-                score = (score + sum(terms)) / (1 + len(terms))
-            class_match = _class_match(first, family_a, second, family_b)
+            class_match = _compatible(first, family_a, second, family_b)
             if class_match == "reject":
                 continue
+            scored = _score(first, bearing_a, pos_a, range_a,
+                            second, bearing_b, pos_b, range_b)
+            if scored is None:
+                continue
+            mean, delta, distance, score, course_delta, speed_delta = scored
             if class_match is True:
                 score *= config.OPZ_SUGGEST_CLASS_BONUS
-            mean = math.degrees(math.atan2(
-                math.sin(math.radians(bearing_a)) + math.sin(math.radians(bearing_b)),
-                math.cos(math.radians(bearing_a)) + math.cos(math.radians(bearing_b))
-            )) % 360.0
             pairs.append(CorrelationSuggestion(
                 key, tuple(sorted((first.observation_id, second.observation_id))),
                 mean, delta, distance, round(score, 9), course_delta, speed_delta,
@@ -367,3 +502,86 @@ def suggest_correlations(observations, own_x: float, own_y: float, now: float, *
         used.update(pair.members)
         chosen.append(pair)
     return tuple(chosen)
+
+
+def auto_fusion_plan(observations, own_x: float, own_y: float, now: float, *,
+                     fusions=(), excluded=(), dismissed=()):
+    """Unambiguous cross-sensor matches the OPZ fuses by itself.
+
+    ``fusions`` are the current automatic fusions with their computed report.
+    Returns ``(fusion_id or None, members)`` steps: a new fusion of two
+    reports, or one more report joining an existing fusion. A match counts
+    only when at least one side has a position fix, its score is inside
+    ``OPZ_AUTO_FUSE_SCORE_MAX`` and neither side has another candidate from
+    the same sensor family (so two ships close together stay apart and appear
+    as a suggestion instead). Pure: same inputs, same plan.
+    """
+    dismissed = set(dismissed)
+    by_id = {item.observation_id: item for item in observations}
+    taken = set(excluded)
+    units = []
+    for fusion, item in fusions:
+        reports = [by_id[key] for key in item.members if key in by_id]
+        families = {_sensor_family(report) for report in reports}
+        taken.update(fusion.members)
+        if None in families or len(reports) != len(item.members):
+            continue
+        geometry = _own_bearing(item, own_x, own_y, config.OPZ_SUGGEST_OBSERVER_NM)
+        if geometry is None or not 0.0 <= now - item.last_seen <= config.OPZ_SUGGEST_MAX_AGE_S:
+            continue
+        units.append((fusion.fusion_id, fusion.fusion_id, tuple(reports),
+                      frozenset(families), item, *geometry))
+    raw = [row for row in (_candidate(item, own_x, own_y, now)
+                           for item in observations if item.observation_id not in taken)
+           if row is not None]
+    raw.sort(key=lambda row: (-row[0].last_seen, row[0].observation_id))
+    del raw[config.OPZ_SUGGEST_CANDIDATES_MAX:]
+    for item, family, *geometry in sorted(raw, key=lambda row: row[0].observation_id):
+        units.append((item.observation_id, None, (item,), frozenset((family,)),
+                      item, *geometry))
+    units.sort(key=lambda unit: unit[0])
+    gated = []
+    for index, first in enumerate(units):
+        for second in units[index + 1:]:
+            if first[1] is not None and second[1] is not None:
+                continue
+            if first[3] & second[3] or (first[6] is None and second[6] is None):
+                continue
+            if len(first[2]) + len(second[2]) > MAX_FUSION_MEMBERS:
+                continue
+            verdicts = [_compatible(a, _sensor_family(a), b, _sensor_family(b))
+                        for a in first[2] for b in second[2]]
+            if "reject" in verdicts or any(
+                    suggestion_key((a.observation_id, b.observation_id)) in dismissed
+                    for a in first[2] for b in second[2]):
+                continue
+            scored = _score(first[4], first[5], first[6], first[7],
+                            second[4], second[5], second[6], second[7])
+            if scored is None:
+                continue
+            score = scored[3]
+            if True in verdicts:
+                score *= config.OPZ_SUGGEST_CLASS_BONUS
+            gated.append((score, first, second))
+    partners = {}
+    for _, first, second in gated:
+        partners.setdefault(first[0], []).append(second)
+        partners.setdefault(second[0], []).append(first)
+
+    def unique(unit, other) -> bool:
+        return not any(item[0] != other[0] and item[3] & other[3]
+                       for item in partners[unit[0]])
+
+    plan, used = [], set()
+    for score, first, second in sorted(gated, key=lambda row: (
+            row[0], row[1][0], row[2][0])):
+        if (score > config.OPZ_AUTO_FUSE_SCORE_MAX or first[0] in used
+                or second[0] in used or not unique(first, second)
+                or not unique(second, first)):
+            continue
+        used.update((first[0], second[0]))
+        target = first[1] if first[1] is not None else second[1]
+        members = tuple(sorted(report.observation_id
+                               for report in (*first[2], *second[2])))
+        plan.append((target, members))
+    return tuple(plan)

@@ -12,15 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.87**
+Current release: **1.3.88**
 
-Release 1.3.87 gives the frigate's engine room in the browser the same
-machinery control console as the submarine's: an annunciator panel of status
-lamps for shafts, plant, cavitation, fuel, speed limit, machinery damage,
-fires and flooding aboard, round gauges for speed, shaft RPM, own noise, fuel,
-roll and pitch, the fuel bunker with endurance and range, and a mimic of the
-ship's sections from bow to stern with water level, fire lamps and repair
-teams. The console only shows; the orders stay in the station panel.
+Release 1.3.88 makes the OPZ fuse reports that lie on top of each other by
+itself: a ship seen by radar, lookout and AIS is now one contact instead of
+three. Only clear matches are fused (at least one position fix, no second
+candidate from the same kind of sensor); ships close together stay apart and
+appear as suggestions, and `Shift+L` still separates a fusion. The fused
+reports disappear from the track list and the chart, each row ends with
+sensor tags (`R` radar, `V` lookout, `A` AIS, `E` ESM, `S` sonar ...), and the
+track details and the Remote Crew OPZ list a fusion's sources by name. Saves
+stay v32.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -585,6 +585,13 @@ OPZ_SUGGEST_SPEED_KN = 4.0
 OPZ_SUGGEST_SPEED_SHARE = 0.25
 OPZ_SUGGEST_CLASS_BONUS = 0.7
 OPZ_SUGGEST_AIS_MAX_AGE_S = 600.0
+# Automatic OPZ fusion (``auto_fusion_plan``): every INTERVAL_S of simulation
+# time the OPZ fuses reports of different sensors that lie on top of each
+# other: inside every suggestion gate, with a score of at most SCORE_MAX, at
+# least one side with a position fix, and no second candidate from the same
+# sensor family on either side. Anything less clear stays a suggestion.
+OPZ_AUTO_FUSE_INTERVAL_S = 1.0
+OPZ_AUTO_FUSE_SCORE_MAX = 0.35
 # AIS reports in the OPZ: satellite-navigation positions, so a small bearing
 # uncertainty and a high report quality.
 AIS_OPZ_QUALITY = 0.95

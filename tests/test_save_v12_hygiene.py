@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v31_and_older_documents_are_rejected():
+def test_save_is_v32_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (31, "u-jagd-save-v31")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (31, "u-jagd-save-v31")
+    assert (state["version"], state["save_schema"]) == (32, "u-jagd-save-v32")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (32, "u-jagd-save-v32")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -152,6 +152,15 @@ def test_save_is_v31_and_older_documents_are_rejected():
     for row in v30["ais"]:
         del row["x"], row["y"]
     assert not game._load_save_data(v30)
+    # v31 differs only by the helicopter's radar switch, the patrol
+    # aircraft's MAD passes and the AI boats' radar hold.
+    v31 = copy.deepcopy(state)
+    v31["version"] = 31
+    v31["save_schema"] = "u-jagd-save-v31"
+    del v31["helo"]["radar_on"], v31["mpa"]["mad_mode"]
+    for row in v31["subs"]:
+        del row["radar_hold_s"]
+    assert not game._load_save_data(v31)
     assert game.save_state() == before
 
 

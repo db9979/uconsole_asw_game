@@ -32,7 +32,8 @@ Seite 3 führt einen Seefernaufklärer (MPA) auf Abruf vom nächsten eigenen Flu
 - `A` fordert das Flugzeug an (es fliegt zuerst zur Schiffsposition) oder schickt es heim.
 - `W` legt das Suchgebiet auf die geplottete Position des gewählten Tracks (ohne Auswahl auf das Schiff); ein Klick in die Karte legt es auf diesen Punkt. Ein reiner Peilungstrack hat keine Position zum Anfliegen.
 - `Z` plant ein Bojenmuster (Feld, Sperre, Kreis) um das Suchgebiet; das Flugzeug fliegt die Punkte ab und wirft an jedem eine Boje. `Shift+Z` bricht das Muster ab. `X` wirft eine Boje dort, wo das Flugzeug ist, `Y` schaltet seine Bojen zwischen PASSIV und AKTIV.
-- `T` schaltet das Seeraumradar des Flugzeugs. Aus 300 m sieht es Schiffe und aufgetauchte oder mit Mast fahrende U-Boote bis 60 sm (begrenzt durch den Radarhorizont); seine Kontakte erscheinen als `RADAR-MPA`-Tracks mit dem Flugzeug als Beobachter.
+- `T` schaltet das Seeraumradar des Flugzeugs. Aus 300 m sieht es Schiffe und aufgetauchte oder mit Mast fahrende U-Boote bis 60 sm (begrenzt durch den Radarhorizont); seine Kontakte erscheinen als `RADAR-MPA`-Tracks mit dem Flugzeug als Beobachter. KI-U-Boote mit ausgefahrenem Mast hören es und tauchen weg (siehe Kapitel Helikopter).
+- `V` beginnt oder beendet **MAD-Überflüge** (Browser: *MAD-Anflüge beginnen*/*beenden*), solange das Flugzeug unterwegs oder auf Station ist: dort geht es auf 60 m und fliegt mit 180 kn gerade Bahnen durch das Suchgebiet und kehrt 2 sm dahinter um (ein Kleeblatt). Ein getauchter Rumpf innerhalb von etwa 400 m Schrägentfernung wird mit einem zustandslosen Zug je Sekunde erfasst (sicher unter 250 m) und erreicht das Schiff per Datenlink als MAD-Ortung ohne Tiefe und Kurs auf dem Sonarkontakt dieses U-Boots. Ein Bojenmuster wird zuerst abgeflogen; `A` (heim) beendet die Überflüge.
 - `D` wirft einen Torpedo auf den zugewiesenen Sonarkontakt. Es gelten dieselben Prüfungen wie beim Helikopter (aktueller, als U-Boot klassifizierter Kontakt, Einsatzregeln, unter Standard-ROE eine frische Ortung), und das Flugzeug muss höchstens 2 sm vom Datum entfernt sein.
 
 Alles, was das Flugzeug erfährt, erreicht das Schiff nur per Datenlink bis 250 sm. Seine Bojen melden nur, solange das Flugzeug höchstens 50 sm von ihnen entfernt ist; fliegt es weg oder landet es, verstummen sie für das Schiff. Die Seitenleiste zeigt Zustand, Peilung und Entfernung, Restzeit auf Station, Vorräte, verbleibende Einsätze und wie viele seiner Bojen übertragen werden.
@@ -72,6 +73,6 @@ Ablauf Luftverteidigung (Flugkörper im Anflug):
 ## Nicht modelliert {#opz-limits}
 
 - Die Bojen des Helikopters gehören zur Helikopterstation; die OPZ führt nur die Bojen des Seefernaufklärers.
-- Der Seefernaufklärer hat kein Tauchsonar, kein MAD und kein eigenes ESM; er kann nicht abgeschossen werden.
+- Der Seefernaufklärer hat kein Tauchsonar und kein eigenes ESM; er kann nicht abgeschossen werden. MAD-Überflüge gehen nur über das Suchgebiet, nicht entlang eines Tracks.
 - Keine automatische Fusion: jede Fusion braucht die Bestätigung des Bedieners. Signaturen werden nur als Klassifizierungen des Bedieners verglichen (kein Abgleich akustischer oder Emitter-Fingerabdrücke), und AIS meldet keinen Schiffstyp.
 - Keine Link-gestützte Luftraumführung befreundeter Flugzeuge.

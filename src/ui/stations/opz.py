@@ -364,6 +364,8 @@ def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
                           radar=localize("common.on" if view["radar"] else "common.off"),
                           mode=display_value("buoy_mode", view["buoy_mode"])),
                   config.COLOR_TEXT_DIM))
+    if view["mad"]:
+        lines.append((localize("opz.mpa.mad_run"), config.COLOR_OK))
     lines.append((message("opz.mpa.relayed", relayed=view["relayed"]), config.COLOR_TEXT_DIM))
     if view["pattern"] != "single":
         lines.append((message("opz.mpa.pattern",

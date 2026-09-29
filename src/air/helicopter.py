@@ -110,6 +110,9 @@ class Helicopter:
         self.pattern_queue = []
         # MAD run: low and slow, dipping sonar stowed.
         self.mad_mode = False
+        # Surface-search radar switch: radiates while airborne with the
+        # dipping sonar stowed (a submarine's ESM hears it); off runs silent.
+        self.radar_on = True
 
     @property
     def speed_kn(self) -> float:

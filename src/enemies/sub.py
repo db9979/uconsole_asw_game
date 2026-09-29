@@ -229,6 +229,9 @@ class Sub:
         self._decoy_cd = 0.0
         # W2: aktiver Ping als riskante, seltene Aufklärungsaktion
         self._active_ping_cd = 0.0
+        # Seconds the AI stays deep after its ESM heard an own aircraft's
+        # search radar with the mast or snorkel up (save v32 ``radar_hold_s``).
+        self.radar_hold_s = 0.0
         self.pinged_this_tick = False
         self.countermeasure_store = ConsumableStore.from_catalog(
             runtime_catalog, source.key, "acoustic_decoy")
@@ -730,8 +733,10 @@ class Sub:
         bottom = depth_at(self.x, self.y)
         self.last_bottom_m = bottom
         safe_depth = min(self.stype.max_depth_m, max(0.0, bottom - self._bottom_clearance_m()))
+        self.radar_hold_s = max(0.0, self.radar_hold_s - dt)
         if self.endurance is not None:
             self.endurance.manual = bool(self.manual)
+            self.endurance.hold_ascent = self.radar_hold_s > 0.0 and not self.manual
         self.target_depth = config.clamp(self.target_depth, 0.0, safe_depth)
         old_depth = self.depth
         for key in ("last_ping_age", "last_torpedo_age"):

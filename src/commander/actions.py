@@ -431,6 +431,10 @@ def _helicopter_set_mad(game, params, _bindings):
     return game.set_helicopter_mad(params["enabled"])
 
 
+def _helicopter_set_radar(game, params, _bindings):
+    return game.set_helicopter_radar(params["enabled"])
+
+
 def _helicopter_set_buoy_mode(game, params, _bindings):
     return game.set_helicopter_buoy_mode(params["mode"])
 
@@ -523,6 +527,10 @@ def _mpa_drop_buoy(game, _params, _bindings):
 
 def _mpa_set_buoy_mode(game, params, _bindings):
     return game.set_mpa_buoy_mode(params["mode"])
+
+
+def _mpa_set_mad(game, params, _bindings):
+    return game.set_mpa_mad(params["enabled"])
 
 
 def _mpa_set_radar(game, params, _bindings):
@@ -894,6 +902,7 @@ _V2_ACTION_HANDLERS = {
     "helicopter_deploy_buoy": _helicopter_deploy_buoy,
     "helicopter_set_pattern": _helicopter_set_pattern,
     "helicopter_set_mad": _helicopter_set_mad,
+    "helicopter_set_radar": _helicopter_set_radar,
     "helicopter_set_buoy_mode": _helicopter_set_buoy_mode,
     "helicopter_set_listen_source": _helicopter_set_listen_source,
     "helicopter_set_listen_bearing": _helicopter_set_listen_bearing,
@@ -920,6 +929,7 @@ _V2_ACTION_HANDLERS = {
     "mpa_drop_buoy": _mpa_drop_buoy,
     "mpa_set_buoy_mode": _mpa_set_buoy_mode,
     "mpa_set_radar": _mpa_set_radar,
+    "mpa_set_mad": _mpa_set_mad,
     "mpa_attack": _mpa_attack,
 }
 

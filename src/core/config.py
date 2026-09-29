@@ -701,6 +701,15 @@ RADAR_TRACK_STALE_S = 30.0
 # broadside reference ship) that sea clutter soon hides.  It shows as a bare
 # blip on the PPI only; the OPZ must mark it to start a radar track.
 SUB_MAST_HEIGHT_M = 1.5
+# An AI submarine's ESM hears an own aircraft's search radar (helicopter or
+# patrol aircraft, switched on) while its mast or snorkel is up and the
+# aircraft is above its radar horizon: it goes deep and stays down.
+SUB_RADAR_ALERT_LOOK_S = 5.0        # one ESM look per boat and period
+SUB_RADAR_ALERT_P = 0.8             # chance a look catches the main beam
+SUB_RADAR_ALERT_NM = 40.0           # beyond this the intercept is ignored
+SUB_RADAR_HOLD_S = 900.0            # stays deep this long after an intercept
+SUB_RADAR_HOLD_MIN_BATTERY = 0.05   # below this battery it must snorkel anyway
+SUB_RADAR_DIVE_M = 40.0             # goes this far below snorkel depth
 SUB_MAST_RCS_FACTOR = 0.01
 RADAR_BLIP_LIFE_S = 6.0
 RADAR_BLIP_MAX = 24
@@ -1043,6 +1052,10 @@ MPA_ORBIT_NM = 3.0
 MPA_BUOYS = 16
 MPA_TORPS = 2
 MPA_ALTITUDE_M = 300.0              # search altitude (radar horizon)
+MPA_MAD_ALTITUDE_M = 60.0           # MAD run: low passes over the waypoint
+MPA_MAD_KN = 180.0
+MPA_MAD_LEG_NM = 2.0                # turns back this far past the waypoint
+MPA_MAD_LOOK_S = 1.0                # one MAD look per hull and second
 # The own aircraft's search radars in the emitter library (heard by the
 # crewed boat's ESM; data/contacts/aircraft.json).
 MPA_RADAR_EMITTER = "emitter.own_asset.mpa.radar"
@@ -1125,6 +1138,15 @@ BOAT_AI_REPORT_EVERY_S = 120.0     # recon: the report goes out on this cadence
 BOAT_AI_ATTACK_NM = 4.0            # convoy attack: fire at a merchant this close
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0
+# Frigate missions: an AI patrol boat torpedoes a merchant within
+# BOAT_AI_ATTACK_NM on this fraction of its fire windows, while it is not
+# hunted, the frigate is farther than SUB_RAID_FRIGATE_NM and it keeps more
+# than SUB_RAID_KEEP_TORPEDOES for the frigate. A lost merchant costs score.
+SUB_RAID_P = 0.15
+SUB_RAID_QUIET_S = 600.0
+SUB_RAID_FRIGATE_NM = 10.0
+SUB_RAID_KEEP_TORPEDOES = 2
+SCORE_MERCHANT_LOST = 300
 # A hunted or closely watched boat creeps: this slow once the frigate is
 # within BOAT_AI_THREAT_NM (its own contact) or for BOAT_AI_HUNTED_S after a
 # ping or a torpedo was heard.

@@ -14,19 +14,21 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.84**
+Aktuelle Version: **1.3.85**
 
-Version 1.3.84 lässt den Autopiloten der Brücke den Weg durch Fahrwasser, in
-Buchten und um lange Küsten finden: Reicht ein Ausweichpunkt für eine Strecke
-nicht, plant eine Wegsuche auf der Karte die Wendepunkte (die Planung ist
-dabei schneller als bisher). GitHub prüft jetzt jede Änderung mit der ganzen
-Testsuite samt Browser-Tests, den Prüfungen der erzeugten Dateien, der
-Kalibrierung und dem Smoke-Test, und zwei wackelige Browser-Prüfungen sind
-repariert: Der Handy-Ausguck fällt nicht mehr auf die Kopplungsseite zurück,
-wenn der Host direkt nach dem Koppeln langsam antwortet, und die Statusleiste
-wird mit den mitgelieferten Schriften vermessen. Das Handbuch behauptet nicht mehr, die
-Fregatte habe kein ASROC, und `tools/hw_report.py` macht aus einem
-Debug-Lauf auf der uConsole die Tabelle der Hardware-Checkliste. Spielstände bleiben v31.
+Version 1.3.85 lässt den Helikopter sein Suchradar aus- und wieder
+einschalten (`Shift+R`, Knopf im Browser): Ein strahlender Helikopter oder
+Seefernaufklärer drückt ein KI-U-Boot mit ausgefahrenem Mast oder Schnorchel
+jetzt für 15 Minuten auf Tiefe, ein stiller kann es an der Oberfläche
+erwischen. Der Seefernaufklärer fliegt MAD-Anflüge über sein Suchgebiet (`V`
+auf OPZ-Seite 3, Knopf im Browser) und meldet einen getauchten Rumpf, den er
+überfliegt, als MAD-Ortung per Datenlink. In den Fregattenszenarien
+torpediert ein KI-Patrouillen-U-Boot fern der Fregatte, das nicht gejagt
+wird, ab und zu ein nahes Handelsschiff, und jedes verlorene Handelsschiff
+kostet 300 Punkte. KI gegen KI gemessen blieben die Missionsausgänge in allen
+30 Vorher-nachher-Paaren der Szenarien 1 bis 3 und 5 bis 7 gleich; die Doppeljagd verlor in
+2 von 6 Läufen ein Handelsschiff. Spielstände sind jetzt v32; ältere werden
+nicht geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

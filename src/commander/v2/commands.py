@@ -600,6 +600,7 @@ V2_ACTION_REGISTRY = {
     "helicopter_set_pattern": V2Action(frozenset({"helicopter"}),
                                        _enum_params("kind", ("single", "field", "barrier", "circle"))),
     "helicopter_set_mad": V2Action(frozenset({"helicopter"}), _bool_params("enabled")),
+    "helicopter_set_radar": V2Action(frozenset({"helicopter"}), _bool_params("enabled")),
     "helicopter_set_buoy_mode": V2Action(frozenset({"helicopter"}),
         _enum_params("mode", ("PASSIVE", "ACTIVE"))),
     "helicopter_set_listen_source": V2Action(frozenset({"helicopter"}),
@@ -654,6 +655,7 @@ V2_ACTION_REGISTRY = {
     "mpa_set_buoy_mode": V2Action(frozenset({"opz"}),
                                   _enum_params("mode", ("PASSIVE", "ACTIVE"))),
     "mpa_set_radar": V2Action(frozenset({"opz"}), _bool_params("enabled")),
+    "mpa_set_mad": V2Action(frozenset({"opz"}), _bool_params("enabled")),
     "mpa_attack": V2Action(frozenset({"opz"}), _no_params, direct_fire=True),
     # The crewed submarine's commander.
     # Each boat order belongs to the station that does it aboard; the commander

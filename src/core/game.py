@@ -94,6 +94,7 @@ from src.core.game_debrief import DebriefMixin
 from src.core.game_training import TrainingMixin
 from src.core.game_campaign import CampaignMixin
 from src.core.game_autosave import AutosaveMixin, CONTINUE_ENTRY
+from src.core.game_logbook import LogbookMixin
 from src.core.game_bugreport import (BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES,
                                      BugReportMixin)
 from src.core.game_welcome import WelcomeMixin
@@ -102,7 +103,7 @@ from src.core.game_welcome import WelcomeMixin
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            RadarPictureMixin, AswWeaponsMixin,
            SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, DebriefMixin,
-           TrainingMixin, CampaignMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
+           TrainingMixin, CampaignMixin, LogbookMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -216,6 +217,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.main_menu = bool(start_menu)
         self.main_menu_sel = 0
         self._init_bug_report()
+        self._init_logbook()
         self._init_autosave()
         self._autosave_armed = False
         if self.main_menu and self.autosave_available:

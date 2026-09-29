@@ -150,6 +150,8 @@ class DrawMixin:
             self._draw_welcome_page()
         elif self.menu_screen == BUG_REPORT_ENTRY:
             self._draw_bug_report_page(center)
+        elif self.menu_screen == "logbook":
+            self._draw_logbook_page(center)
         elif self.menu_screen == "training":
             self._draw_training_menu(center)
         elif self.menu_screen == "campaign":
@@ -850,6 +852,9 @@ class DrawMixin:
         campaign_line = self.campaign_end_line()
         if campaign_line is not None:
             lines.append((campaign_line, config.COLOR_WARN, False))
+        logbook_line = self.logbook_end_line()
+        if logbook_line is not None:
+            lines.append((logbook_line, config.COLOR_OK, False))
         board = getattr(self, "tasking", None)
         if board is not None and board.tasks:
             counts = board.counts()

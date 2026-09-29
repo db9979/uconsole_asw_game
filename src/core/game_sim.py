@@ -1407,6 +1407,7 @@ class SimMixin:
                     "uboot.event.mission_lost" if result == "lost"
                     else "uboot.event.mission_won"), stamp=self.world.format_time())
         self._campaign_mission_ended()
+        self._logbook_mission_ended()
 
     # --- M6: Speichern / Laden ---
 

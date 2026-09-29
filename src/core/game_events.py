@@ -1743,6 +1743,8 @@ class EventMixin:
                     self._open_administration("options")
                 elif action == BUG_REPORT_ENTRY:
                     self.open_bug_report()
+                elif action == "logbook":
+                    self.open_logbook()
                 else:
                     self._open_administration("quit")
             elif key in (pygame.K_ESCAPE, pygame.K_q):
@@ -1750,6 +1752,9 @@ class EventMixin:
             return
         if self.menu_screen == BUG_REPORT_ENTRY:
             self._handle_bug_report_key(key)
+            return
+        if self.menu_screen == "logbook":
+            self._handle_logbook_key(key)
             return
         if self.menu_screen == "training":
             count = len(training.LESSONS)

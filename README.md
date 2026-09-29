@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.61**
+Current release: **1.3.63**
 
-Release 1.3.61 makes the pairing code easier to enter, on the crew page and
+Release 1.3.63 makes the pairing code easier to enter, on the crew page and
 on the phone lookout. The code can be typed the way `F9` shows it, with the
 space, in lower case, or with look-alikes such as O for 0, l for 1 or S for 5,
 and it is still read correctly. "Wrong pairing code" now appears only when the
@@ -506,19 +506,25 @@ Validated does not mean runtime-effective. In this release:
   game's coast dataset.
 - Effective mission values are the seed, name and description; player
   position, course and speed; sea state, start time, thermocline depth and an
-  authored weather kind; exact units of every built-in kind except torpedoes
-  (submarines, surface ships, aircraft at profile speed from the nearest
-  charted airbase, animals and static decoys) with their placement, course,
-  speed and depth; seeded random groups; timed events (message, spawn,
+  authored weather kind; exact units of every kind, built-in or from the Unit
+  Editor (submarines, surface ships, aircraft at profile speed from the
+  nearest charted airbase, animals, static decoys and hostile torpedoes
+  already running on their course) with their placement, course, speed and
+  depth; seeded random groups; timed events (message, spawn,
   weather, objective); and `sink`, `survive`, `protect` or `reach` objectives
   with a time limit.
 - For a `sink` objective the target list must exactly match all placed hostile
   submarines; `protect` targets must be placed friendly or neutral units;
   `reach` needs a reach area.
-- Torpedoes and user-created unit profiles are rejected for runtime play rather
-  than silently ignored.
-- Unit Editor output is validation/authoring data only. No user unit-profile
-  field currently changes the running simulation.
+- User unit profiles take effect in the missions that name them: name,
+  speeds, depth, torpedo load, behaviour, acoustics and spawn weight. A user
+  submarine takes its sensors, tubes, decoys and battery/diesel/AIP plant from
+  the built-in boat of its propulsion (keywords `nuclear`/`Kern`, `AIP`,
+  otherwise diesel-electric). Wikipedia-import extras (radar emitter, weapons,
+  countermeasures) stay descriptive. A missing or invalid profile rejects the
+  mission; built-in scenarios never use user profiles.
+- Only enemy torpedoes can be placed, always hostile; frigate and helicopter
+  torpedoes are rejected rather than silently ignored.
 
 ## Saves and User Data
 

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.61**
+Aktuelle Version: **1.3.63**
 
-Version 1.3.61 macht den Kopplungscode leichter einzugeben, auf der
+Version 1.3.63 macht den Kopplungscode leichter einzugeben, auf der
 Crew-Seite und am Handy-Ausguck. Der Code darf so getippt werden, wie `F9` ihn
 zeigt, mit Leerzeichen, in Kleinbuchstaben oder mit verwechselbaren Zeichen
 wie O statt 0, l statt 1 oder S statt 5, und wird trotzdem richtig gelesen.
@@ -557,20 +557,27 @@ Version gilt:
   ersetzt nicht den Küstendatensatz des Spiels.
 - Wirksame Missionswerte sind Seed, Name und Beschreibung; Position, Kurs und
   Fahrt des Spielerschiffs; Seegang, Startzeit, Thermoklinentiefe und eine
-  vorgegebene Wetterart; exakte Einheiten aller integrierten Arten außer
-  Torpedos (U-Boote, Überwasserschiffe, Luftfahrzeuge mit Profilfahrt vom
-  nächsten Flugplatz der Karte, Tiere und stationäre Täuschkörper) mit
+  vorgegebene Wetterart; exakte Einheiten aller Arten, integriert oder aus
+  dem Einheiteneditor (U-Boote, Überwasserschiffe, Luftfahrzeuge mit
+  Profilfahrt vom nächsten Flugplatz der Karte, Tiere, stationäre
+  Täuschkörper und feindliche Torpedos, die schon auf ihrem Kurs laufen) mit
   Platzierung, Kurs, Fahrt und Tiefe; Seed-basierte Zufallsgruppen;
   zeitgesteuerte Ereignisse (Meldung, Erscheinen, Wetter, Ziel); sowie Ziele
   vom Typ `sink`, `survive`, `protect` oder `reach` mit einem Zeitlimit.
 - Bei `sink` muss die Zielliste exakt allen platzierten feindlichen U-Booten
   entsprechen; `protect`-Ziele müssen platzierte befreundete oder neutrale
   Einheiten sein; `reach` braucht ein Zielgebiet.
-- Torpedos und selbst erstellte Einheitenprofile werden für das Spielen der
-  Mission abgelehnt und nicht stillschweigend ignoriert.
-- Ausgaben des Einheiteneditors sind ausschließlich Validierungs- und
-  Erstellungsdaten. Derzeit beeinflusst kein Feld eines Benutzer-Einheitenprofils
-  die laufende Simulation.
+- Eigene Einheitenprofile wirken in den Missionen, die sie verwenden: Name,
+  Fahrtbereich, Tiefe, Torpedozahl, Verhalten, Akustik und Häufigkeit. Ein
+  eigenes U-Boot übernimmt Sensoren, Rohre, Täuschkörper und
+  Batterie-/Diesel-/AIP-Anlage vom eingebauten Boot seines Antriebs
+  (Stichworte `nuclear`/`Kern`, `AIP`, sonst dieselelektrisch). Zusätze aus dem
+  Wikipedia-Import (Radar, Waffen, Gegenmaßnahmen) bleiben beschreibend. Ein
+  fehlendes oder ungültiges Profil lehnt die Mission ab; eingebaute Szenarien
+  verwenden nie Benutzerprofile.
+- Platzieren lassen sich nur feindliche Torpedos, immer feindlich; Torpedos der
+  Fregatte und des Helikopters werden abgelehnt und nicht stillschweigend
+  ignoriert.
 
 ## Spielstände und Benutzerdaten
 

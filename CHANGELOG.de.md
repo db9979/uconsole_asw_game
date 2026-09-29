@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.61
+## 1.3.63
 
-Version 1.3.61 macht den Kopplungscode leichter einzugeben, auf der
+Version 1.3.63 macht den Kopplungscode leichter einzugeben, auf der
 Crew-Seite und am Handy-Ausguck. Der Code darf so getippt werden, wie `F9` ihn
 zeigt, mit Leerzeichen, in Kleinbuchstaben oder mit verwechselbaren Zeichen
 wie O statt 0, l statt 1 oder S statt 5, und wird trotzdem richtig gelesen.
@@ -16,6 +16,31 @@ Lesezeichen oder ein anderer Name für den Host), sagt die Seite, dass sie über
 den QR-Code oder die Adresse aus `F9` zu öffnen ist. Die Kopplungshilfe
 behauptet nicht mehr, der Code laufe nach fünf Minuten ab: er bleibt, solange
 das Spiel läuft, und wechselt nach fünf Fehlversuchen. Spielstände bleiben v28.
+
+## 1.3.62
+
+Version 1.3.62 bringt dem Autopiloten die Seekarte bei. Führt die Strecke
+eines Wegpunkts oder Suchmusters durch Flachwasser oder Land, fügt er Umweg-
+Punkte ein oder meldet im Verlauf, welche Strecke von Hand zu steuern ist.
+Während der Fahrt schaut er einmal pro Sekunde zwei Minuten voraus;
+Flachwasser dort bekommt einen Umweg zum aktuellen Wegpunkt, sonst schaltet
+sich die Route ab und das Schiff dreht auf den Gegenkurs. Er plant mit
+Kartentiefe, Felsen und Wracks gegen Tiefgang plus Kielreserve und 2 m
+Sicherheit. Spielstände bleiben v28; eine Route kann mit Umwegen jetzt bis zu
+16 Punkte haben.
+
+## 1.3.61
+
+Version 1.3.61 macht den Einheiteneditor wirksam. Dort gespeicherte Profile
+lassen sich jetzt wie eingebaute Einheiten in eigenen Missionen platzieren und
+wirken dort: Name, Fahrtbereich, Tiefe, Torpedozahl, Verhalten, Akustik und
+Häufigkeit. Ein eigenes U-Boot übernimmt Sensoren, Rohre, Täuschkörper und
+seine Batterie-, Diesel- oder AIP-Anlage vom eingebauten Boot seines Antriebs.
+Eine Mission kann außerdem einen feindlichen Torpedo platzieren, der beim
+Start schon auf seinem Kurs läuft, zum Üben des Ausweichens. Solche Missionen
+lassen sich normal speichern und laden (der Katalog-Schnappschuss des
+Spielstands enthält die eigenen Profile); eingebaute Szenarien verwenden sie
+nie. Spielstände bleiben v28.
 
 ## 1.3.60
 

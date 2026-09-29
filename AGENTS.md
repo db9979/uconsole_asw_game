@@ -2,7 +2,7 @@
 
 ## Authority and scope
 
-- This is U-Jagd 1.3.61 (`src/core/version.py`); current saves are v28-only. Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 1.3.63 (`src/core/version.py`); current saves are v28-only. Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
 - Older phase/milestone labels under `docs/GDD.md`, `docs/implementation-plan.md`, `docs/plan-0.1.6.md`, and `docs/plan-0.1.7.md` are historical. Current resumable work is tracked in `docs/plan-1.3.md` and `docs/resume.md`.
@@ -94,9 +94,9 @@
 
 ## Current intentional limits
 
-- Editor authoring/validation is broader than runtime. Unit-editor profiles currently have no simulation effect.
+- Editor authoring/validation is broader than runtime. Unit-editor profiles take effect only in custom missions that reference them (`src/data/user_profiles.py` adds them to that mission's runtime catalog and save snapshot; a user submarine clones the v2 systems of the built-in boat of its propulsion); Wikipedia-import extras stay descriptive.
 - A user mission starts only via `F5` from the Mission Editor browser and only with a 500 NM world: `fixed` (the game's current world mode) or `reference` naming a packaged real sector as `sector:<0..127>` (`Coastline.generate(sector_index=...)`). For `sink`, targets must exactly equal all placed hostile submarines; `protect` targets are placed friendly/neutral units; `reach` needs `objective.reach` (x, y, radius_nm).
-- Runtime-effective mission fields are seed/name/description, player pose/speed, sea state/start time/thermocline/weather (an authored weather kind is held as `world.weather_override`, saved), exact units of every built-in kind except torpedoes (submarines, surface ships, aircraft at profile speed from the nearest charted airbase, animals, static decoys) with placement/course/speed/depth, seeded random groups (`MISSION_GROUP_SPEED_KN`/`_DEPTH_M`, a spawn event defers its group), events in time order (message verbatim, spawn, weather, objective; pending ids are the save root field `mission_events`), and objective/time limit. Placed units are remembered as `mission_runtime.units` (mission id → entity id). Other world sizes, torpedoes and user unit profiles are rejected, never silently ignored. Mission world definitions do not replace the packaged coastline dataset.
+- Runtime-effective mission fields are seed/name/description, player pose/speed, sea state/start time/thermocline/weather (an authored weather kind is held as `world.weather_override`, saved), exact units of every kind, built-in or user profile (submarines, surface ships, aircraft at profile speed from the nearest charted airbase, animals, static decoys, hostile enemy torpedoes already running without a launching boat) with placement/course/speed/depth, seeded random groups (`MISSION_GROUP_SPEED_KN`/`_DEPTH_M`, a spawn event defers its group), events in time order (message verbatim, spawn, weather, objective; pending ids are the save root field `mission_events`), and objective/time limit. Placed units are remembered as `mission_runtime.units` (mission id → entity id). Other world sizes, frigate/helicopter torpedoes and missing user profiles are rejected, never silently ignored. Mission world definitions do not replace the packaged coastline dataset.
 - Audio is optional and synthesized at runtime; no device, disabled audio, or an incompatible shared mixer must degrade to silence without changing simulation. There are currently no external image/font/audio assets.
 
 ## uConsole and performance

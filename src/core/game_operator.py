@@ -84,12 +84,57 @@ class OperatorMixin:
             return blocked
         size = float(self.world.size_nm)
         x, y = config.clamp(float(x), 0.0, size), config.clamp(float(y), 0.0, size)
-        if not self.route.add(x, y):
+        if not self.route.active or self.route.kind != "manual":
+            self.route.clear()
+        start = self.route.points[-1] if self.route.points else (self.ship.x, self.ship.y)
+        detour = route_model.plan_detour(self._route_depth, start[0], start[1], x, y,
+                                         self._route_min_depth(), size)
+        if not self.route.add(x, y, detour or ()):
             return "route_full"
+        number = len(self.route.points)
         self.feed.add(self.world.format_time(), "navigation", message(
-            "runtime.route.waypoint", number=len(self.route.points),
+            "runtime.route.waypoint", number=number,
             bearing=f"{route_model.bearing_to(self.ship.x, self.ship.y, x, y):03.0f}"))
+        self._report_route_leg(number, detour)
         return "ok"
+
+    def _route_depth(self, x: float, y: float) -> float:
+        """Chart depth the autopilot plans on: chart datum shoaled by the
+        charted rocks and wrecks (known geography, no live tide)."""
+        depth = self.world.charted_depth_m(x, y)
+        hazard = self.world.ocean.hazard_top_depth_m(x, y)
+        return depth if hazard is None else min(depth, hazard)
+
+    def _route_min_depth(self) -> float:
+        return self.ship.hull_spec.minimum_depth_m + route_model.ROUTE_DEPTH_MARGIN_M
+
+    def _report_route_leg(self, number: int, detour) -> None:
+        """Feed the planning result of the leg ending at waypoint ``number``."""
+        if detour is None:
+            text = message("runtime.route.hazard", number=number)
+        elif detour:
+            text = message("runtime.route.detour", number=number, count=len(detour))
+        else:
+            return
+        self.feed.add(self.world.format_time(), "navigation", text)
+        self.flash(text, 3.0)
+
+    def _plan_route_legs(self, points) -> tuple[list, list]:
+        """Detours for a whole generated route from the ship's position:
+        (points with detours, numbers of legs left crossing a hazard)."""
+        size = float(self.world.size_nm)
+        planned, unsafe = [], []
+        x, y = self.ship.x, self.ship.y
+        for px, py in points:
+            detour = route_model.plan_detour(self._route_depth, x, y, px, py,
+                                             self._route_min_depth(), size)
+            if detour and len(planned) + len(detour) + 1 <= route_model.MAX_ROUTE_POINTS:
+                planned.extend(detour)
+            elif detour is None or detour:
+                unsafe.append(len(planned) + 1)
+            planned.append((px, py))
+            x, y = px, py
+        return planned, unsafe
 
     def start_route_pattern(self, kind: str) -> str:
         """Start a search pattern from the ship's position and course."""
@@ -100,10 +145,13 @@ class OperatorMixin:
             return blocked
         self.route.start_pattern(kind, self.ship.x, self.ship.y, self.ship.course)
         size = float(self.world.size_nm)
-        self.route.points = [(config.clamp(x, 0.0, size), config.clamp(y, 0.0, size))
-                             for x, y in self.route.points]
+        self.route.points, unsafe = self._plan_route_legs(
+            [(config.clamp(x, 0.0, size), config.clamp(y, 0.0, size))
+             for x, y in self.route.points])
         self.feed.add(self.world.format_time(), "navigation",
                       message(f"runtime.route.pattern_{kind}"))
+        for number in unsafe:
+            self._report_route_leg(number, None)
         return "ok"
 
     def cycle_route_pattern(self) -> str:
@@ -129,10 +177,14 @@ class OperatorMixin:
         self.feed.add(self.world.format_time(), "navigation",
                       message("runtime.route.cancelled"))
 
-    def _steer_route(self) -> None:
+    def _steer_route(self, dt: float = 0.0) -> None:
         """Autopilot: steer the ordered course to the route's next waypoint."""
         if not self.route.active or self.damage.station_down("bridge"):
             return
+        period = route_model.WATCH_PERIOD_S
+        if dt > 0.0 and math.floor(self.sim_t / period) != math.floor((self.sim_t + dt) / period):
+            if not self._watch_route_ahead():
+                return
         course, reached = self.route.steer(self.ship.x, self.ship.y)
         if reached:
             if course is None:
@@ -145,6 +197,37 @@ class OperatorMixin:
         if course is not None and abs(((course - self.ship.target_course + 180.0)
                                        % 360.0) - 180.0) > 0.05:
             self.ship.target_course = course
+
+    def _watch_route_ahead(self) -> bool:
+        """Look ahead on the leg (two minutes at the present speed, at
+        least half a mile): chart shoal water there gets a detour to the
+        current waypoint, or stops the route. False when it stopped."""
+        wx, wy = self.route.current()
+        x, y = self.ship.x, self.ship.y
+        distance = math.hypot(wx - x, wy - y)
+        ahead = min(distance, max(route_model.WATCH_MIN_NM, config.kn_to_nm_per_s(
+            abs(self.ship.speed)) * route_model.WATCH_AHEAD_S))
+        if distance <= 0.0 or ahead <= 0.0:
+            return True
+        ex, ey = x + (wx - x) * ahead / distance, y + (wy - y) * ahead / distance
+        minimum = self._route_min_depth()
+        if route_model.leg_hazard(self._route_depth, x, y, ex, ey, minimum) is None:
+            return True
+        detour = route_model.plan_detour(self._route_depth, x, y, wx, wy, minimum,
+                                         float(self.world.size_nm))
+        if detour and self.route.insert_detour(detour):
+            text = message("runtime.route.replanned", count=len(detour))
+            self.feed.add(self.world.format_time(), "navigation", text)
+            self.flash(text, 3.0)
+            return True
+        # No way on: the autopilot turns back the way it came (known safe
+        # water) and hands the ship to the helm.
+        text = message("runtime.route.hazard_stop")
+        self.route.clear()
+        self.ship.target_course = (route_model.bearing_to(x, y, wx, wy) + 180.0) % 360.0
+        self.feed.add(self.world.format_time(), "navigation", text)
+        self.flash(text, 4.0)
+        return False
 
     def order_course(self, course: float) -> str:
         """Apply a Bridge course order and return a stable result code."""

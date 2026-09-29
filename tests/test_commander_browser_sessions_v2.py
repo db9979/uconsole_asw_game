@@ -507,6 +507,9 @@ async function run() {
         assert(getComputedStyle(intercepts.closest(".station-card-view")).display !== "none",
           "ESM annotation controls are hidden in the workstation");
       }
+      // Tell the host which roles are fully checked, so it moves on only then.
+      document.documentElement.dataset.rolesDone =
+        [...layoutChecked].filter((role) => visualRendered.has(role)).join(",");
     }
     const submit = document.getElementById("bridge-course-submit");
     if (!commandSent && latestRole === "bridge" && !submit.disabled) {
@@ -1564,7 +1567,9 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
                   # The first mark can be the previous role's poll: one more
                   # lets the browser poll this role's state on both sides of
                   # its chart fetch before the host moves it on.
-                  and len(presence_marks) >= 4):
+                  and len(presence_marks) >= 4
+                  # A slow browser finishes this role's checks first.
+                  and roles[role_index] in root.get("rolesDone", "").split(",")):
                 role_index += 1
                 grant_and_activate(roster[0]["client_id"], roles[role_index])
                 assert console.server.set_client_grant(

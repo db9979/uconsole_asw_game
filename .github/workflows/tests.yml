@@ -68,4 +68,9 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: pytest
-        run: python -m pytest -q
+        run: python -m pytest -q --ignore=tests/test_commander_browser_sessions_v2.py
+
+      - name: pytest (real-time browser sessions)
+        # These probes race the live host against Chromium; two workers keep
+        # the runner from starving either side.
+        run: python -m pytest -q -n 2 tests/test_commander_browser_sessions_v2.py

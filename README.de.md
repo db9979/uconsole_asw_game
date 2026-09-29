@@ -14,16 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.98**
+Aktuelle Version: **1.3.99**
 
-Version 1.3.98 schließt neun Verbesserungen ab, jede für beide Seiten: das
-Fluten der Torpedorohre ist hörbar, Ereignisse auf See (Treibnetze,
-Wetterfronten, Frachter ohne AIS, Wale), Realismusstufen mit Wertungsfaktor,
-ein Logbuch mit Bestwerten und Auszeichnungen, der tote Winkel achteraus und
-sein Räumen, freie Funksprüche an das Hauptquartier, die die Gegenseite peilen
-kann, eine Sonar-Klassenbibliothek nach Passung, ein U-Jagd-Raketenwerfer, der
-auch Torpedos abwehrt, und Verwundete, die ihre Station bremsen, bis
-Sanitätsteam oder Nachbesetzen helfen. Spielstände sind jetzt v38.
+Version 1.3.99 macht die Schadensbildschirme auf der uConsole und im Browser
+zu Leckwehr-Leitständen. Im Schiffsplan der Fregatte auf der uConsole steigt
+das Wasser in jeder Abteilung vom Kiel an, ein Brand glüht rot und eine
+ausgefallene Abteilung ist schraffiert; jede Abteilungskarte trägt eine
+Zustands-LED, Flutung und Brand mit LEDs und Balken sowie nummerierte
+Trupp-Plaketten. Die Leckwehr-Seite des U-Boots ist eine Abteilungs-Mimik vom
+Heck zum Bug mit Wasserstand, Brandschein, Gasschleier, LEDs für Leck, Brand,
+Gas und Schotten, Trupp-Plaketten und Lampen für die gewählte Abteilung und
+den Strom. Die Browser-Karte Schaden beginnt mit einer Warn- und Meldetafel
+über einer Seitenansicht des Schiffs und Rundinstrumenten für Krängung, Trimm
+und Gesamtschaden; ein Klick auf eine Abteilung schickt weiter den gewählten
+Trupp.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -93,7 +97,7 @@ Menüs und Editoren:
 </tr>
 </table>
 
-Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Schadensabwehr](docs/screenshots/de-damage-control-alert.png), [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png), [Optionen](docs/screenshots/de-options.png), [Missionseditor](docs/screenshots/de-mission-editor.png), [Einheiteneditor](docs/screenshots/de-unit-editor.png) und der [taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
+Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Schadensabwehr](docs/screenshots/de-damage-control-alert.png), [U-Boot-Leckwehr](docs/screenshots/de-uboot-damage-control.png), [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png), [Optionen](docs/screenshots/de-options.png), [Missionseditor](docs/screenshots/de-mission-editor.png), [Einheiteneditor](docs/screenshots/de-unit-editor.png) und der [taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
 
 ### Remote-Crew-Browser (1920 x 1080)
 

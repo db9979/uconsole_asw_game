@@ -72,3 +72,42 @@ def test_submarine_plant_and_stores_pages_are_consoles():
     assert tanks[:2] == ["uboot.label.battery", "uboot.label.fuel"] or \
         tanks[:3] == ["uboot.label.battery", "uboot.label.aip", "uboot.label.fuel"]
     assert "uboot.label.absorber" in tanks
+
+
+def test_frigate_damage_plan_cards_carry_leds_and_bars():
+    pygame.font.init()
+    game = Game(seed=1234, start_menu=False, show_splash=False, fullscreen=False,
+                audio_enabled=False, language="en")
+    game.station = Station.DAMAGE
+    game.station_page = 0
+    game.damage.compartments["engine"].fire = 40.0
+    game.damage.teams = {1: "engine", 2: None, 3: None}
+    shapes = _geometry(game)
+    cards = [shape["title"] for shape in shapes if shape["kind"] == "callout"]
+    assert sorted(cards) == sorted(f"damage.short.{key}" for key in game.damage.compartments)
+
+
+def test_submarine_damage_page_is_a_compartment_mimic():
+    pygame.font.init()
+    game = Game(seed=1234, start_menu=False, show_splash=False, fullscreen=False,
+                audio_enabled=False, language="en")
+    game.local_side = "uboot"
+    game.reset(1234, "s7_geleitzug")
+    game.local_side = "uboot"
+    game.update(.1)
+    uboot_local.set_local_station(game, "uboot_engine")
+    boat = game.opfor
+    boat.command_page = 3
+    control = boat.sub.damage_control
+    control.compartments[3].fire = .5
+    shapes = _geometry(game)
+    rooms = sorted((shape for shape in shapes if shape["kind"] == "room"),
+                   key=lambda shape: shape["rect"].x)
+    # Stern on the left, bow on the right, like the web engine-room mimic.
+    assert [shape["title"] for shape in rooms] == [
+        f"uboot.compartment.{name}" for name in
+        ("stern", "engine", "battery", "quarters", "control", "bow")]
+    assert all(a["rect"].right <= b["rect"].left for a, b in zip(rooms, rooms[1:]))
+    lamps = {shape["title"] for shape in shapes if shape["kind"] == "lamp"}
+    assert {"uboot.dc.lamp.water", "uboot.dc.lamp.leak", "uboot.dc.lamp.fire",
+            "uboot.dc.lamp.gas", "uboot.dc.lamp.bulkhead", "uboot.dc.lamp.power"} <= lamps

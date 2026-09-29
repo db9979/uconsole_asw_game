@@ -915,16 +915,21 @@ async function run() {
   await until(() => !$test("station-damage").hidden && !$test("damage-team").disabled &&
     $test("damage-schematic").width > 1, "actionable damage schematic missing");
   assert($test("helicopter-dip-display").hidden, "Helicopter sonar remains visible at another station");
-  const damageMap = $test("damage-schematic"), damageRect = damageMap.getBoundingClientRect();
-  damageMap.dispatchEvent(new MouseEvent("click", {bubbles: true,
-    clientX: damageRect.left + damageRect.width * .2, clientY: damageRect.top + damageRect.height * .5}));
+  const damageMap = $test("damage-schematic");
+  // The plan can resize once a result arrives (the text equivalent below
+  // wraps), so each click aims at the canvas where it is now.
+  const clickDamagePlan = () => {
+    const rect = damageMap.getBoundingClientRect();
+    damageMap.dispatchEvent(new MouseEvent("click", {bubbles: true,
+      clientX: rect.left + rect.width * .2, clientY: rect.top + rect.height * .5}));
+  };
+  clickDamagePlan();
   await until(() => commands.length === 7, "damage schematic did not assign selected team");
   exact(commands[6], "damage_assign_team", {team: 1, compartment: "engine"}, "damage");
   await terminal();
   $test("damage-team").value = "2";
   $test("damage-team").dispatchEvent(new Event("change", {bubbles: true}));
-  damageMap.dispatchEvent(new MouseEvent("click", {bubbles: true,
-    clientX: damageRect.left + damageRect.width * .2, clientY: damageRect.top + damageRect.height * .5}));
+  clickDamagePlan();
   await until(() => commands.length === 8, "damage schematic did not unassign selected team");
   exact(commands[7], "damage_unassign_team", {team: 2, compartment: "engine"}, "damage");
   states.bridge.bridge.orders.cavitating = true;

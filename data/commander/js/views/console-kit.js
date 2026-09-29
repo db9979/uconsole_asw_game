@@ -45,7 +45,7 @@ export function renderLampPanel(box, master, rows) {
 }
 
 // Round gauge with its scale, coloured zones, needle and ordered value.
-function dial(g, x, y, radius, room, spec, colors) {
+export function dial(g, x, y, radius, room, spec, colors) {
   const {value, min, max, order, zones = [], label, text, sub} = spec;
   const start = Math.PI * .75, sweep = Math.PI * 1.5;
   const angle = (v) => start + sweep * Math.max(0, Math.min(1, (v - min) / Math.max(1e-6, max - min)));

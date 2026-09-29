@@ -6,7 +6,7 @@ Damage control keeps the ship afloat and the stations working after a hit. Three
 
 ## Displays and instruments {#damage-displays}
 
-Page 1 is the ship schematic; page 2 lists details per compartment (flooding, fire, trend, teams on scene, heel); page 3 is the crew's watch bill.
+Page 1 is the ship schematic, drawn as a damage-control console: water rises in each compartment from the keel, a fire glows red and a destroyed compartment is hatched. Each compartment's card carries a state LED, the flood and fire values with their LEDs and bars, and numbered badges for the teams on scene; a legend under the plan explains the LEDs. Page 2 lists details per compartment (flooding, fire, trend, teams on scene, heel); page 3 is the crew's watch bill. In the browser the Damage card opens with an annunciator panel (fires, flooding, lost, getting worse, total damage, list, trim, counter-flooding, teams busy, ship sunk) above a side view of the ship, bow to the left, and gauges for list, trim and total damage; a click on a compartment sends the selected team there.
 
 ```text
   bow                                                   stern

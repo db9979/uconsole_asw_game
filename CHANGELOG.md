@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.99
+
+Release 1.3.99 turns the damage screens into damage-control consoles on the
+uConsole and in the browser. On the frigate's uConsole ship plan, water rises
+in each compartment from the keel, a fire glows red and a lost compartment is
+hatched; each compartment card carries a state LED, flood and fire values with
+LEDs and bars and numbered team badges. The submarine's Damage page is a
+compartment mimic from stern to bow with water level, fire glow, gas haze,
+leak/fire/gas/bulkhead LEDs and team badges, and lamps for the selected
+compartment and the power. The browser's Damage card opens with an
+annunciator panel above a side view of the ship and gauges for list, trim and
+total damage; a click on a compartment still sends the selected team.
+
 ## 1.3.98
 
 Release 1.3.98 wounds people. Hits, fire, flooding and gas hurt the crews of

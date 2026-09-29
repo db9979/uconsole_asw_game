@@ -4,6 +4,21 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.99
+
+Version 1.3.99 macht die Schadensbildschirme auf der uConsole und im Browser
+zu Leckwehr-Leitständen. Im Schiffsplan der Fregatte auf der uConsole steigt
+das Wasser in jeder Abteilung vom Kiel an, ein Brand glüht rot und eine
+ausgefallene Abteilung ist schraffiert; jede Abteilungskarte trägt eine
+Zustands-LED, Flutung und Brand mit LEDs und Balken sowie nummerierte
+Trupp-Plaketten. Die Leckwehr-Seite des U-Boots ist eine Abteilungs-Mimik vom
+Heck zum Bug mit Wasserstand, Brandschein, Gasschleier, LEDs für Leck, Brand,
+Gas und Schotten, Trupp-Plaketten und Lampen für die gewählte Abteilung und
+den Strom. Die Browser-Karte Schaden beginnt mit einer Warn- und Meldetafel
+über einer Seitenansicht des Schiffs und Rundinstrumenten für Krängung, Trimm
+und Gesamtschaden; ein Klick auf eine Abteilung schickt weiter den gewählten
+Trupp.
+
 ## 1.3.98
 
 Version 1.3.98 verwundet Menschen. Treffer, Feuer, Wassereinbruch und Gas

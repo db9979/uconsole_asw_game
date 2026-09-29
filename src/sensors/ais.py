@@ -1,6 +1,7 @@
 """Simulated AIS VHF receiver for the own ship.
 
-Civilian ships that transmit AIS broadcast their own name, course and speed.
+Civilian ships that transmit AIS broadcast their own name, position, course
+and speed.
 Those broadcasts are legitimate observations: the receiver only learns what a
 report contained, only when a report was actually sent (ITU-R M.1371 class-A
 reporting cadence) and only inside VHF line-of-sight.  Radar observations of
@@ -56,6 +57,8 @@ class AISReport:
     t_static: float | None
     dynamic_epoch: int
     static_epoch: int
+    x: float = 0.0          # reported position (NM) at ``t_dynamic``
+    y: float = 0.0
 
 
 class AISReceiver:
@@ -98,13 +101,15 @@ class AISReceiver:
                 # arrives with the next static/voyage message.
                 report = AISReport(ship.id, None, ship.course % 360.0,
                                    max(0.0, ship.speed), now, None,
-                                   dynamic_epoch, static_epoch)
+                                   dynamic_epoch, static_epoch,
+                                   round(ship.x, 4), round(ship.y, 4))
                 self.reports[ship.id] = report
                 continue
             if dynamic_epoch != report.dynamic_epoch:
                 report.dynamic_epoch = dynamic_epoch
                 report.cog = ship.course % 360.0
                 report.sog = max(0.0, ship.speed)
+                report.x, report.y = round(ship.x, 4), round(ship.y, 4)
                 report.t_dynamic = now
             if static_epoch != report.static_epoch:
                 report.static_epoch = static_epoch
@@ -118,6 +123,17 @@ class AISReceiver:
     def label_for(self, target_id: int) -> str | None:
         report = self.reports.get(target_id)
         return None if report is None else report.name
+
+    def fresh(self, report: AISReport, now: float) -> bool:
+        """The report's dynamic data is recent enough to use."""
+        limit = AIS_DYNAMIC_STALE_INTERVALS * reporting_interval_s(report.sog)
+        return 0.0 <= now - report.t_dynamic <= limit
+
+    def position_for(self, report: AISReport, now: float) -> tuple[float, float]:
+        """The reported position dead-reckoned to ``now`` by reported COG/SOG."""
+        run = max(0.0, now - report.t_dynamic) * report.sog / 3600.0
+        rad = math.radians(report.cog)
+        return report.x + run * math.sin(rad), report.y - run * math.cos(rad)
 
     def course_for(self, target_id: int, now: float) -> float | None:
         report = self.reports.get(target_id)
@@ -158,6 +174,9 @@ class AISReceiver:
                 return False
             if (not finite(row["cog"]) or not 0.0 <= row["cog"] < 360.0
                     or not finite(row["sog"]) or not 0.0 <= row["sog"] <= 100.0
+                    or not finite(row["x"]) or not finite(row["y"])
+                    or not -10000.0 <= row["x"] <= 10000.0
+                    or not -10000.0 <= row["y"] <= 10000.0
                     or not finite(row["t_dynamic"])
                     or not 0.0 <= row["t_dynamic"] <= now):
                 return False

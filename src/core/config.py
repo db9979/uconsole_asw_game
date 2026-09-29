@@ -572,6 +572,23 @@ OPZ_SUGGEST_POSITION_NM = 1.5
 OPZ_SUGGEST_POSITION_RANGE_SHARE = 0.1
 OPZ_SUGGEST_MAX_AGE_S = 30.0
 OPZ_SUGGEST_OBSERVER_NM = 0.5
+# Motion and signature: when both reports carry a course and at least one
+# moves faster than MIN_SPEED_KN, their courses must agree within COURSE_DEG;
+# when both carry a speed, within SPEED_KN plus a share of the faster.  Two
+# operator classifications must be equal (and an AIS report never pairs with
+# a submarine, biological or aircraft classification); an agreeing class
+# multiplies the score by CLASS_BONUS.  AIS reports count while their
+# dynamic data is fresh, up to AIS_MAX_AGE_S.
+OPZ_SUGGEST_MIN_SPEED_KN = 3.0
+OPZ_SUGGEST_COURSE_DEG = 35.0
+OPZ_SUGGEST_SPEED_KN = 4.0
+OPZ_SUGGEST_SPEED_SHARE = 0.25
+OPZ_SUGGEST_CLASS_BONUS = 0.7
+OPZ_SUGGEST_AIS_MAX_AGE_S = 600.0
+# AIS reports in the OPZ: satellite-navigation positions, so a small bearing
+# uncertainty and a high report quality.
+AIS_OPZ_QUALITY = 0.95
+AIS_OPZ_BEARING_UNC_DEG = 0.2
 
 # M10: Telegraph & Maschinenraum (diskrete Motorenbefehle)
 TELEGRAPH_ORDERS = (

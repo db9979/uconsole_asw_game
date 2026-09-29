@@ -128,6 +128,31 @@ class PicturesMixin:
         self._opz_source_bindings = bindings
         return observations
 
+    def _ais_opz_observations(self) -> list[OPZObservation]:
+        """Received AIS reports as OPZ reports: the reported position
+        dead-reckoned to now, reported course and speed and the ship's name
+        once its static message is in. A report is what the ship broadcast,
+        never its live state; stale dynamic data drops out."""
+        observations = []
+        for target_id in sorted(self.ais.reports):
+            report = self.ais.reports[target_id]
+            if not self.ais.fresh(report, self.sim_t):
+                continue
+            x, y = self.ais.position_for(report, self.sim_t)
+            dx, dy = x - self.ship.x, y - self.ship.y
+            observation_id = self._opz_observation_id("ais", target_id)
+            fallback = "AIS-" + observation_id[-4:]
+            observations.append(OPZObservation(
+                observation_id, "AIS", "SURFACE",
+                math.degrees(math.atan2(dx, -dy)) % 360.0, math.hypot(dx, dy), x, y,
+                report.cog, config.AIS_OPZ_QUALITY, report.t_dynamic,
+                self.opz_track_label(observation_id, (report.name or fallback)[:24]),
+                self.opz_fusion.classifications.get(observation_id),
+                config.AIS_OPZ_BEARING_UNC_DEG, report.t_dynamic,
+                speed_kn=report.sog))
+            self._opz_source_bindings[observation_id] = report
+        return observations
+
     def _sonar_opz_observations(self, released_only: bool) -> list[OPZObservation]:
         """Return detached Sonar reports without carrying contact identity."""
         observations = []
@@ -283,6 +308,7 @@ class PicturesMixin:
         observations.extend(self._sonar_opz_observations(True))
         observations.extend(self._helicopter_opz_observations())
         observations.extend(self._buoy_opz_observations())
+        observations.extend(self._ais_opz_observations())
         return tuple(sorted(observations, key=lambda item: item.observation_id))
 
     def opz_published_observations(self) -> tuple[OPZObservation, ...]:
@@ -753,7 +779,8 @@ class PicturesMixin:
                      tuple((item.observation_id, item.source, item.kind,
                             item.bearing, item.x, item.y, item.last_seen,
                             item.bearing_uncertainty_deg, item.observer_x,
-                            item.observer_y) for item in observations))
+                            item.observer_y, item.course, item.speed_kn,
+                            item.classification) for item in observations))
         cached = getattr(self, "_opz_suggestion_cache", None)
         if cached is not None and cached[0] == signature:
             return cached[1]

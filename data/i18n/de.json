@@ -5846,5 +5846,8 @@
   "commander.web.uboot_radio_order": "Befehl der Führung",
   "commander.web.uboot_radio_orders": "Befehle",
   "commander.web.uboot_radio_orders_value": "{done} ausgeführt, {failed} nicht ausgeführt",
-  "weapons.control.asw.short": "A ASROC Z WaBo"
+  "weapons.control.asw.short": "A ASROC Z WaBo",
+  "commander.web.suggestion_course_delta": "Kursunterschied",
+  "commander.web.suggestion_speed_delta": "Fahrtunterschied",
+  "commander.web.suggestion_class": "Gleiche Klasse"
 }

@@ -1140,7 +1140,12 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
             key="+".join(refs), refs=refs, bearing=_number(round(suggestion.bearing, 1)),
             bearing_delta_deg=_number(round(suggestion.bearing_delta_deg, 1)),
             distance_nm=(None if suggestion.distance_nm is None
-                         else _number(round(suggestion.distance_nm, 2)))))
+                         else _number(round(suggestion.distance_nm, 2))),
+            course_delta_deg=(None if suggestion.course_delta_deg is None
+                              else _number(round(suggestion.course_delta_deg, 1))),
+            speed_delta_kn=(None if suggestion.speed_delta_kn is None
+                            else _number(round(suggestion.speed_delta_kn, 1))),
+            class_match=suggestion.class_match))
     operational = {
         "bridge": dict(navigation=_own_navigation(game),
                        orders=dict(station_down=game.damage.station_down("bridge"),

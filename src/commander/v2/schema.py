@@ -42,7 +42,8 @@ MPA_STATES = ("BASE", "TRANSIT", "STATION", "RTB")
 # The OPZ's correlation suggestions (``src/sensors/fusion.py``): two refs of
 # the role's own published reports on the same bearing, never applied until
 # the operator fuses them (``opz_create_fusion``) or dismisses them.
-OPZ_SUGGESTION_FIELDS = ("key", "refs", "bearing", "bearing_delta_deg", "distance_nm")
+OPZ_SUGGESTION_FIELDS = ("key", "refs", "bearing", "bearing_delta_deg", "distance_nm",
+                         "course_delta_deg", "speed_delta_kn", "class_match")
 RADIO_TASK_STATES = ("offered", "active", "done", "failed", "declined")
 
 # The common ``weather_station`` block: own-ship atmosphere (every role) and

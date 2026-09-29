@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.66
+
+Release 1.3.66 makes the OPZ's correlation suggestions smarter. Besides
+bearing and position they now compare course, speed and the operator's
+classification: two reports whose courses or speeds clearly differ, or whose
+classes do not match, are no longer suggested, and agreeing classes rank a
+pair higher. Received AIS reports now appear in the OPZ as reports of their
+own (reported position, course, speed and name) and are suggested with the
+radar and lookout reports of the same ship. A fusion now carries its members'
+course and speed. Saves are now v31 (AIS reports keep their reported
+position); v30 saves no longer load.
+
 ## 1.3.65
 
 Release 1.3.65 lets HQ give the crewed submarine orders during the mission.

@@ -5846,5 +5846,8 @@
   "commander.web.uboot_radio_order": "HQ order",
   "commander.web.uboot_radio_orders": "Orders",
   "commander.web.uboot_radio_orders_value": "{done} done, {failed} failed",
-  "weapons.control.asw.short": "A ASROC Z DC"
+  "weapons.control.asw.short": "A ASROC Z DC",
+  "commander.web.suggestion_course_delta": "Course difference",
+  "commander.web.suggestion_speed_delta": "Speed difference",
+  "commander.web.suggestion_class": "Same class"
 }

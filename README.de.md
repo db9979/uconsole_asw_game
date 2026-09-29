@@ -14,17 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.65**
+Aktuelle Version: **1.3.66**
 
-Version 1.3.65 lässt die Führung dem besetzten U-Boot während der Mission
-Befehle geben. Unter dem Mast nimmt die VLF-Rahmenantenne den Rundspruch jetzt
-bis 25 m Tiefe auf (langsamer als mit Mast und nur Empfang). Ab dem zweiten
-Rundspruch kann ein Rundspruch einen Befehl enthalten: ein Seegebiet in tiefem
-Wasser anlaufen, eine Lagemeldung absetzen oder Funkstille halten, jeweils mit
-Frist. Funkraumseite, Karte und die Browserkarte Funkraum zeigen den offenen
-Befehl und wie viele ausgeführt wurden; ein verpasster Rundspruch ist ein
-verpasster Befehl. Spielstände sind jetzt v30 (sie behalten die Befehle);
-v29-Stände laden nicht mehr.
+Version 1.3.66 macht die Zuordnungsvorschläge der OPZ klüger. Neben Peilung
+und Position vergleichen sie jetzt Kurs, Fahrt und die Klassifizierung des
+Bedieners: zwei Meldungen mit deutlich verschiedenem Kurs oder verschiedener
+Fahrt oder unpassender Klasse werden nicht mehr vorgeschlagen, und gleiche
+Klassen setzen ein Paar weiter nach oben. Empfangene AIS-Meldungen erscheinen
+jetzt als eigene Meldungen in der OPZ (gemeldete Position, Kurs, Fahrt und
+Name) und werden mit Radar- und Ausguckmeldungen desselben Schiffs
+vorgeschlagen. Eine Fusion übernimmt jetzt Kurs und Fahrt ihrer Mitglieder.
+Spielstände sind jetzt v31 (AIS-Meldungen behalten ihre gemeldete Position);
+v30-Stände laden nicht mehr.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -434,7 +435,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v30 gespeichert.
+v31 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -516,7 +517,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion, API-Protokoll **v2** und Speicherformat **v30** sind
+Anwendungsversion, API-Protokoll **v2** und Speicherformat **v31** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -580,8 +581,8 @@ Version gilt:
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v30**. V30
-verlangt das exakte Schema `u-jagd-save-v30` einschließlich der Befehle der Führung an das besetzte U-Boot, der sinkenden Wasserbomben und der eigenen ASROC- und Wasserbombenbestände der Fregatte, der Autopilot-Route der Fregatte, der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v31**. V31
+verlangt das exakte Schema `u-jagd-save-v31` einschließlich der gemeldeten Positionen empfangener AIS-Meldungen, der Befehle der Führung an das besetzte U-Boot, der sinkenden Wasserbomben und der eigenen ASROC- und Wasserbombenbestände der Fregatte, der Autopilot-Route der Fregatte, der Umlaufzeit-Referenz des U-Boot-ESM, der Rohrzustände des besetzten U-Boots, der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
 der Fregatte, des Funkraums des besetzten U-Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen

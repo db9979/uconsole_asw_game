@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.66
+
+Version 1.3.66 macht die Zuordnungsvorschläge der OPZ klüger. Neben Peilung
+und Position vergleichen sie jetzt Kurs, Fahrt und die Klassifizierung des
+Bedieners: zwei Meldungen mit deutlich verschiedenem Kurs oder verschiedener
+Fahrt oder unpassender Klasse werden nicht mehr vorgeschlagen, und gleiche
+Klassen setzen ein Paar weiter nach oben. Empfangene AIS-Meldungen erscheinen
+jetzt als eigene Meldungen in der OPZ (gemeldete Position, Kurs, Fahrt und
+Name) und werden mit Radar- und Ausguckmeldungen desselben Schiffs
+vorgeschlagen. Eine Fusion übernimmt jetzt Kurs und Fahrt ihrer Mitglieder.
+Spielstände sind jetzt v31 (AIS-Meldungen behalten ihre gemeldete Position);
+v30-Stände laden nicht mehr.
+
 ## 1.3.65
 
 Version 1.3.65 lässt die Führung dem besetzten U-Boot während der Mission

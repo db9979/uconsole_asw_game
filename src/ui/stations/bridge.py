@@ -253,11 +253,13 @@ def _lookout_land(game):
 
 def lookout_outlines(game, sightings) -> list:
     """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg,
-    aob_deg)`` rows of the lookout's own tracks: the class from his report,
+    aob_deg, model)`` rows of the lookout's own tracks: the class from his report,
     the size from the measured range, the navigation lights he makes out
     (``nav_lights`` code), an aircraft's angle above the horizon (``None``
     on the surface) and the angle on the bow he judges of a made-out
-    silhouette (``None`` before; it turns the model)."""
+    silhouette (``None`` before; it turns the model) and the type his eye
+    sees when it has its own model (the picture only; what he reports is
+    what he made out)."""
     from src.sensors import lookout_id
     lit = getattr(game, "_lookout_lights", {})
     elevation = getattr(game, "_lookout_elevation", {})
@@ -282,7 +284,8 @@ def lookout_outlines(game, sightings) -> list:
         rows.append((track.bearing % 360.0, max(1e-3, min(180.0, span)), cls, stale,
                      lights[0] if lights is not None and not stale else None,
                      None if aloft is None else aloft[0],
-                     None if aspect is None or stale else aspect[0]))
+                     None if aspect is None or stale else aspect[0],
+                     None if aspect is None or stale or len(aspect) < 3 else aspect[2]))
     return rows
 
 

@@ -30,6 +30,7 @@ from src.sensors import visual as visual_physics
 from src.sensors import lookout_id
 from src.sensors import nav_lights
 from src.sensors import threat_cue
+from src.ui import unit_variants
 from src.sonar import equation as sonar_equation
 from src.sonar import propagation as sonar_propagation
 from src.physics import torpedo_dyn
@@ -1498,7 +1499,9 @@ class SimMixin:
         if aspect is not None:
             course = getattr(actor, "course", None)
             if level >= lookout_id.RECOGNIZED and course is not None:
-                aspect[track_id] = (lookout_id.angle_on_bow(course, bearing), self.sim_t)
+                # The eye sees the real ship; the type is the watch's call.
+                aspect[track_id] = (lookout_id.angle_on_bow(course, bearing), self.sim_t,
+                                    unit_variants.entity_model(actor))
             else:
                 aspect.pop(track_id, None)
         if kind == "FLG":

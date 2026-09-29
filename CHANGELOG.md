@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.80
+## 1.3.81
 
-Release 1.3.80 makes the phone lookout's voice reports say why they failed.
+Release 1.3.81 makes the phone lookout's voice reports say why they failed.
 Instead of a bare "Speech recognition failed" the page now names the cause:
 Siri and Dictation switched off on the iPhone (with where to turn them on),
 microphone not allowed, microphone busy, nothing heard, or the phone's speech
@@ -15,6 +15,20 @@ and Edge on an iPhone use Safari's engine without its speech service, so the
 page there advises Safari for voice reports; tapping the target works
 everywhere. A short report that Safari ends without marking it final is now
 still read. Saves stay v31.
+
+## 1.3.80
+
+Release 1.3.80 gives every ship, submarine and aircraft type its own 3D
+model. Each of the 111 catalog types is built from the public main dimensions
+and general arrangement of the real class (Wikipedia; generic types such as a
+VLCC or a harbour tug use typical values): length, beam and draught, where
+bridge, masts, funnels, guns, missile cells, flight deck, cranes and cargo
+stand, a submarine's sail, planes, rudders and missile deck, an aircraft's
+wings, tail and engines. The same type always looks the same, so a Type 23
+no longer looks like an Arleigh Burke. The analyser, the Unit Editor and the
+eyepieces (binoculars, periscope, phone lookout) show the real type the eye
+sees, so it can be told by sight; the lookout report still names only what
+was made out, and only the report reaches the OPZ. Saves stay v31.
 
 ## 1.3.79
 

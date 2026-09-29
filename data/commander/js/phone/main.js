@@ -4,7 +4,7 @@
 // or by tapping it.  The host confirms a call only when its own lookout has
 // something there.  State and commands use the same v2 routes, checks and
 // validators as the desktop client; the session stays in HttpOnly cookies.
-import { S } from "../state/store.js";
+import { S, initialLanguage } from "../state/store.js";
 import { $, lookoutRoles, prefix } from "../core/base.js";
 import { finite, t } from "../core/format.js";
 import { validateSession } from "../net/session.js";
@@ -509,8 +509,7 @@ function wirePairing() {
 }
 
 async function boot() {
-  const language = (navigator.language || "en").toLowerCase().startsWith("de") ? "de" : "en";
-  try { await loadLanguage(language); } catch (_) { /* the page still pairs in plain keys */ }
+  try { await loadLanguage(initialLanguage()); } catch (_) { /* the page still pairs in plain keys */ }
   // Gyroscope and microphone need a secure context (the HTTPS address).
   $("phone-insecure").hidden = window.isSecureContext;
   wirePairing();

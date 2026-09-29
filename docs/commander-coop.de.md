@@ -58,7 +58,10 @@ entfallen), und es zeigt URL, Kopplungscode und QR-Code. Die Schritte 6-8
 bleiben gleich: Stationsanfragen bestätigt der Host im Spielfenster (F9). Den
 Hotspot-Modus gibt es nur unter Linux. Erlaube U-Jagd private Netzwerke, wenn
 die Windows-Firewall fragt. `python main.py --remote-crew` macht dasselbe
-unter Linux.
+unter Linux. Das Feld **Sprache** im Starter (English/Deutsch) wird in den
+Einstellungen gespeichert; Spielfenster und Besatzungsseiten öffnen in dieser
+Sprache, und jeder Browser kann mit dem Knopf English/Deutsch in seiner
+Statusleiste für sich umschalten.
 
 ## Rollensteuerung
 

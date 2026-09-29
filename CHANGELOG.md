@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.71
+
+Release 1.3.71 lets you switch the Remote Crew server between English and
+German. The Windows starter has a Language box at the top: the choice applies
+to the starter at once and is saved in the settings, so the game window and
+every crew browser start in it too. The browser pages now open in the host's
+saved language instead of the browser's, and the crew page has a visible
+English/Deutsch button next to Sound to switch for that browser alone; the web
+host's admin page switches its own page with the saved server language. Saves
+stay v31.
+
 ## 1.3.70
 
 Release 1.3.70 redraws the sea in the lookout's binoculars, the lookout strip,

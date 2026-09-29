@@ -71,6 +71,18 @@ _OVERLOAD_RESPONSE = (
 # Up to 9 stations poll at 2 Hz plus a sonar audio stream; headroom above that.
 # Nine voice sockets, a sonar stream and short HTTP polls need separate slots.
 _CONNECTION_SLOT_LIMIT = 28
+_COLOR_SCHEME_META = b'<meta name="color-scheme" content="dark">'
+
+
+def _with_host_language(page: bytes, language: str) -> bytes:
+    """Name the host's saved language in a page (after its color-scheme
+    meta); the page opens in it and the browser can switch for itself."""
+    if language not in ("en", "de"):
+        return page
+    return page.replace(_COLOR_SCHEME_META, _COLOR_SCHEME_META
+                        + b'\n  <meta name="u-jagd-host-language" content="'
+                        + language.encode("ascii") + b'">', 1)
+
 
 class _HTTPServer(HTTPServer):
     allow_reuse_address = True
@@ -984,9 +996,11 @@ class _Handler(BaseHTTPRequestHandler):
             self._voice_websocket()
         elif self.path in SONAR_SCOPE_ROUTES:
             content_type, body = self.server.assets["/"]
-            self._reply(200, body, content_type)
+            self._reply(200, _with_host_language(body, owner._host_language), content_type)
         elif self.path in self.server.assets:
             content_type, body = self.server.assets[self.path]
+            if content_type.startswith("text/html"):
+                body = _with_host_language(body, owner._host_language)
             self._reply(200, body, content_type)
         elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
             self._reply(200, owner._translations[self.path[-2:]])

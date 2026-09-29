@@ -8,6 +8,7 @@ code from the JSON status file the game writes (``--status-file``).
 
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 import os
 from pathlib import Path
@@ -19,7 +20,7 @@ import webbrowser
 
 from src.core import bugreport
 from src.core.i18n import Translator
-from src.core.preferences import load_preferences
+from src.core.preferences import load_preferences, save_preferences
 from src.core.version import APP_VERSION
 from src.launcher import update
 from src.ui.support import SUPPORT_URL
@@ -65,20 +66,25 @@ def read_status(path: str) -> dict | None:
     return status if isinstance(status, dict) else None
 
 
+LANGUAGE_NAMES = {"en": "English", "de": "Deutsch"}
+
+
 class Starter:
-    def __init__(self, root, check_updates=True):
+    def __init__(self, root, check_updates=True, preferences_path=None):
         import tkinter as tk
         from tkinter import ttk
 
         self.tk, self.ttk = tk, ttk
         self.root = root
-        self.tr = Translator(load_preferences().language)
+        self.preferences_path = preferences_path
+        self.tr = Translator(load_preferences(preferences_path).language)
         self.process = None
         self.log = None
         self.status_file = None
         self.release = None
         self.url = None
-        root.title(self.t("launcher.title", version=APP_VERSION))
+        self.frame = None
+        self.texts = {}
         root.resizable(False, False)
         root.protocol("WM_DELETE_WINDOW", self.close)
 
@@ -87,15 +93,40 @@ class Starter:
         self.windowed = tk.BooleanVar(value=True)
         self.no_audio = tk.BooleanVar(value=False)
         self.port = tk.StringVar(value=str(DEFAULT_PORT))
-        self.state_text = tk.StringVar(value=self.t("launcher.state.stopped"))
+        self.language = tk.StringVar(value=LANGUAGE_NAMES[self.tr.language])
+        self.state_text = tk.StringVar()
         self.url_text = tk.StringVar(value="")
         self.code_text = tk.StringVar(value="")
-        self.update_text = tk.StringVar(value=self.t("launcher.update.checking"))
+        self.update_text = tk.StringVar()
+        self._say(self.state_text, "launcher.state.stopped")
+        self._say(self.update_text, "launcher.update.checking")
+        self._build()
+        if check_updates:
+            self.check_updates()
+        else:
+            self._say(self.update_text, "launcher.update.current", version=APP_VERSION)
+        root.after(POLL_MS, self.poll)
 
-        frame = ttk.Frame(root, padding=14)
+    def _build(self):
+        """(Re)create every widget in the current language; state survives."""
+        tk, ttk, root = self.tk, self.ttk, self.root
+        if self.frame is not None:
+            self.frame.destroy()
+        root.title(self.t("launcher.title", version=APP_VERSION))
+        self.frame = frame = ttk.Frame(root, padding=14)
         frame.grid(sticky="nsew")
         ttk.Label(frame, text=self.t("launcher.heading"),
-                  font=("Segoe UI", 15, "bold")).grid(row=0, column=0, columnspan=2, sticky="w")
+                  font=("Segoe UI", 15, "bold")).grid(row=0, column=0, sticky="w")
+        language = ttk.Frame(frame)
+        language.grid(row=0, column=1, sticky="e")
+        ttk.Label(language, text=self.t("launcher.language")).grid(row=0, column=0,
+                                                                   padx=(0, 6))
+        chooser = ttk.Combobox(language, textvariable=self.language, state="readonly",
+                               width=9, values=list(LANGUAGE_NAMES.values()))
+        chooser.grid(row=0, column=1)
+        chooser.bind("<<ComboboxSelected>>", lambda _event: self.choose_language(
+            next(code for code, name in LANGUAGE_NAMES.items()
+                 if name == self.language.get())))
         options = ttk.LabelFrame(frame, text=self.t("launcher.options"), padding=8)
         options.grid(row=1, column=0, sticky="nsew", pady=(10, 0))
         ttk.Radiobutton(options, text=self.t("launcher.mode.crew"), variable=self.solo,
@@ -155,14 +186,42 @@ class Starter:
         updates.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(10, 0))
         ttk.Label(updates, textvariable=self.update_text, wraplength=380,
                   justify="left").grid(row=0, column=0, sticky="w")
-        self.update_button = ttk.Button(updates, text=self.t("launcher.update.check"),
-                                        command=self.check_updates)
-        self.update_button.grid(row=0, column=1, padx=(8, 0))
-        if check_updates:
-            self.check_updates()
+        if self.release is not None:
+            self.update_button = ttk.Button(updates, text=self.t("launcher.update.install"),
+                                            command=self.install_update)
         else:
-            self.update_text.set(self.t("launcher.update.current", version=APP_VERSION))
-        root.after(POLL_MS, self.poll)
+            self.update_button = ttk.Button(updates, text=self.t("launcher.update.check"),
+                                            command=self.check_updates)
+        self.update_button.grid(row=0, column=1, padx=(8, 0))
+        if self.process is not None:
+            self._set_running(True)
+            self.open_button.configure(state="normal" if self.url else "disabled")
+            self._draw_qr(self.url)
+
+    def choose_language(self, language: str):
+        """Switch the starter's language now and keep it for the game too.
+
+        The game reads ``settings.json`` at launch, so a server started
+        afterwards (and the game window) uses the same language.
+        """
+        if language not in LANGUAGE_NAMES or language == self.tr.language:
+            return
+        preferences = replace(load_preferences(self.preferences_path), language=language)
+        try:
+            save_preferences(preferences, self.preferences_path)
+        except OSError:
+            pass
+        self.tr = Translator(language)
+        self.language.set(LANGUAGE_NAMES[language])
+        for variable, key, values in self.texts.values():
+            variable.set(self.t(key, **values))
+        self._build()
+
+    def _say(self, variable, key: str, **values):
+        """Set a status line by key so a language switch can re-translate it."""
+        # Tk variables are unhashable: keyed by their Tcl name.
+        self.texts[str(variable)] = (variable, key, values)
+        variable.set(self.t(key, **values))
 
     def report_bug(self):
         """Open a prefilled GitHub issue with the crash and server log tails."""
@@ -179,8 +238,8 @@ class Starter:
         path = bugreport.write_report(bugreport.report_text(context, log))
         webbrowser.open(bugreport.issue_url(context, log))
         if path:
-            self.state_text.set(self.t("launcher.bug_report.file",
-                                       path=bugreport.display_path(path)))
+            self._say(self.state_text, "launcher.bug_report.file",
+                      path=bugreport.display_path(path))
 
     def t(self, key: str, **values) -> str:
         return self.tr.translate(key, **values)
@@ -195,7 +254,7 @@ class Starter:
             if not 1024 <= port <= 65535:
                 raise ValueError
         except ValueError:
-            self.state_text.set(self.t("launcher.error.port"))
+            self._say(self.state_text, "launcher.error.port")
             return
         handle, self.status_file = tempfile.mkstemp(prefix="u-jagd-", suffix=".json")
         os.close(handle)
@@ -214,9 +273,9 @@ class Starter:
         except OSError:
             self.log.close()
             self.log = None
-            self.state_text.set(self.t("launcher.error.start"))
+            self._say(self.state_text, "launcher.error.start")
             return
-        self.state_text.set(self.t("launcher.state.starting"))
+        self._say(self.state_text, "launcher.state.starting")
         self._set_running(True)
 
     def stop(self):
@@ -253,8 +312,10 @@ class Starter:
                     self.log = None
                 self._remove_status_file()
                 self._set_running(False)
-                self.state_text.set(self.t("launcher.state.stopped") if code in (0, 1, -15)
-                                    else self.t("launcher.state.crashed", code=code))
+                if code in (0, 1, -15):
+                    self._say(self.state_text, "launcher.state.stopped")
+                else:
+                    self._say(self.state_text, "launcher.state.crashed", code=code)
             else:
                 self._show_status(read_status(self.status_file))
         self.root.after(POLL_MS, self.poll)
@@ -266,12 +327,12 @@ class Starter:
         code = status.get("code") if type(status.get("code")) is str else ""
         state = status.get("state")
         if state == "running" and url:
-            self.state_text.set(self.t("launcher.state.solo" if status.get("solo")
-                                       else "launcher.state.crew"))
+            self._say(self.state_text, "launcher.state.solo" if status.get("solo")
+                      else "launcher.state.crew")
         elif state == "error":
-            self.state_text.set(self.t("launcher.error.listener"))
+            self._say(self.state_text, "launcher.error.listener")
         else:
-            self.state_text.set(self.t("launcher.state.off"))
+            self._say(self.state_text, "launcher.state.off")
         if url != self.url:
             self.url = url
             self.url_text.set(url or "")
@@ -338,7 +399,7 @@ class Starter:
 
     def check_updates(self):
         self.update_button.configure(state="disabled")
-        self.update_text.set(self.t("launcher.update.checking"))
+        self._say(self.update_text, "launcher.update.checking")
 
         def work():
             try:
@@ -352,14 +413,14 @@ class Starter:
     def _update_checked(self, release):
         self.update_button.configure(state="normal")
         if release is False:
-            self.update_text.set(self.t("launcher.update.offline", version=APP_VERSION))
+            self._say(self.update_text, "launcher.update.offline", version=APP_VERSION)
             return
         self.release = release
         if release is None:
-            self.update_text.set(self.t("launcher.update.current", version=APP_VERSION))
+            self._say(self.update_text, "launcher.update.current", version=APP_VERSION)
             return
-        self.update_text.set(self.t("launcher.update.available", version=release.version,
-                                    current=APP_VERSION))
+        self._say(self.update_text, "launcher.update.available", version=release.version,
+                  current=APP_VERSION)
         self.update_button.configure(text=self.t("launcher.update.install"),
                                      command=self.install_update)
 
@@ -382,8 +443,8 @@ class Starter:
 
         def progress(done, total):
             percent = int(done * 100 / total)
-            self.root.after(0, lambda: self.update_text.set(
-                self.t("launcher.update.downloading", percent=percent)))
+            self.root.after(0, lambda: self._say(
+                self.update_text, "launcher.update.downloading", percent=percent))
 
         def work():
             try:
@@ -400,7 +461,7 @@ class Starter:
 
     def _update_failed(self):
         self.update_button.configure(state="normal")
-        self.update_text.set(self.t("launcher.update.failed"))
+        self._say(self.update_text, "launcher.update.failed")
 
     def _restart_into(self, script):
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)

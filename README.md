@@ -12,15 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.70**
+Current release: **1.3.71**
 
-Release 1.3.70 redraws the sea in the lookout's binoculars, the lookout strip,
-the periscope and the phone lookout. Instead of one big wave along the horizon
-the waves now fill the whole sea in perspective: small and close together out
-to a clean horizon, longer and higher toward the eye, every row moving with the
-swell and coming at you, running away or sliding sideways with the wind, with
-white caps in a rough sea. Both on the uConsole and in the Remote Crew browser;
-saves stay v31.
+Release 1.3.71 lets you switch the Remote Crew server between English and
+German. The Windows starter has a Language box at the top: the choice applies
+to the starter at once and is saved in the settings, so the game window and
+every crew browser start in it too. The browser pages now open in the host's
+saved language instead of the browser's, and the crew page has a visible
+English/Deutsch button next to Sound to switch for that browser alone; the web
+host's admin page switches its own page with the saved server language. Saves
+stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -157,7 +158,9 @@ Download `U-Jagd-Windows.exe` from the
 and run it; no Python installation is needed. The starter window lets you
 choose crew mode (several browsers, one station each) or solo mode (one
 browser runs every station), whether this PC plays the submarine, window or
-full screen, sound and the port, then **Start server** opens the game window
+full screen, sound and the port, and the **Language** box at the top switches
+the starter, the game and the crew browsers between English and Deutsch (saved
+in the settings); then **Start server** opens the game window
 with Remote Crew already listening on the PC's private LAN address. The
 starter shows the browser address, the join code and a QR code; station
 requests are approved in the game window (F9) as on the uConsole. Windows may

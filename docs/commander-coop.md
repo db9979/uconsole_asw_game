@@ -50,6 +50,9 @@ already up on the PC's private LAN address (steps 1-5 are done), and it shows
 the URL, the pairing code and a QR code. Steps 6-8 stay the same: the host
 approves station requests in the game window (F9). The hotspot mode is
 Linux-only. Allow U-Jagd on private networks when the Windows firewall asks.
+The starter's **Language** box (English/Deutsch) is saved in the settings; the
+game window and the crew pages open in that language, and each browser can
+switch for itself with the English/Deutsch button in its status bar.
 `python main.py --remote-crew` does the same on Linux.
 
 ## Role Controls

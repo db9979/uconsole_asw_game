@@ -967,6 +967,8 @@ class CommanderBridge:
         if self._server is not None and self._server is not server:
             self.allowed = False
         self._server = server
+        if hasattr(server, "set_host_language"):
+            server.set_host_language(game.preferences.language)
         identity = (id(game.world), id(game.sonar))
         world_replaced = self._identity is not None and identity != self._identity
         if identity != self._identity:

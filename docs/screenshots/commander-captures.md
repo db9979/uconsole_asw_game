@@ -44,6 +44,16 @@ merchants' navigation lights).
 | Periscope, day | [PNG](commander-v2-en-periscope-day.png) | [PNG](commander-v2-de-periscope-day.png) |
 | Periscope, night | [PNG](commander-v2-en-periscope-night.png) | [PNG](commander-v2-de-periscope-night.png) |
 
+## Submarine Engine Room
+
+The engine-room console at 1920 x 1080: a crewed diesel-electric boat of the
+convoy scenario snorkelling at slow ahead and charging, with an authored leak
+in the stern room, team 1 sealing it and the engine room's bulkheads shut.
+
+| Station | English | German |
+| --- | --- | --- |
+| Engine-room console | [PNG](commander-v2-en-uboot-engine-desktop.png) | [PNG](commander-v2-de-uboot-engine-desktop.png) |
+
 ## Mobile Views
 
 The 500 x 844 captures exercise the responsive single-column layout. Chromium's

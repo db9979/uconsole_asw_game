@@ -12,17 +12,19 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.82**
+Current release: **1.3.83**
 
-Release 1.3.82 makes the phone lookout's voice reports say why they failed.
-Instead of a bare "Speech recognition failed" the page now names the cause:
-Siri and Dictation switched off on the iPhone (with where to turn them on),
-microphone not allowed, microphone busy, nothing heard, or the phone's speech
-service unreachable; any other failure shows its error code. Chrome, Firefox
-and Edge on an iPhone use Safari's engine without its speech service, so the
-page there advises Safari for voice reports; tapping the target works
-everywhere. A short report that Safari ends without marking it final is now
-still read. Saves stay v31.
+Release 1.3.83 turns the submarine's engine room in the Remote Crew browser
+into a machinery control console. The large picture area, empty until now, shows
+an annunciator panel of status lamps (dark when off, turquoise while running,
+amber for a caution, flashing red for an alarm, each with its value) for motor,
+snorkel, generator, battery, charging, fuel, air, main ballast, high-pressure
+air, pumps, trim, power, flooding, leak, fire and gas, with a master lamp that
+counts the alarms. Below it are round gauges for speed, battery, energy
+balance, depth, high-pressure air and trim angle, tank columns for the stores
+and tanks, and a mimic of the six compartments from bow to stern with the
+water level, the lamps of each room, the bulkheads and the teams at work. The
+orders stay in the station panel. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -104,6 +106,9 @@ More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control 
 <tr>
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-opz-desktop.png"><img src="docs/screenshots/commander-v2-en-opz-desktop.png" alt="OPZ/CIC"></a><br><sub>OPZ/CIC</sub></td>
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-sonar-desktop.png"><img src="docs/screenshots/commander-v2-en-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
+</tr>
+<tr>
+<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-en-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-uboot-engine-desktop.png" alt="Submarine engine room: machinery control console"></a><br><sub>Submarine engine room: machinery control console</sub></td>
 </tr>
 </table>
 

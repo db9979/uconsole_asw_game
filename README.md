@@ -12,19 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.85**
+Current release: **1.3.87**
 
-Release 1.3.85 lets the helicopter switch its search radar off and on
-(`Shift+R`, browser button): a radiating helicopter or patrol aircraft now
-drives an AI submarine with a raised mast or snorkel deep for 15 minutes, a
-silent one may catch it at the surface. The patrol aircraft flies MAD passes
-over its search area (`V` at Operations page 3, browser button) and reports a
-submerged hull it crosses as a MAD fix over the datalink. In the frigate
-scenarios an AI patrol submarine far from the frigate and not being hunted
-now and then torpedoes a merchant that passes close, and each merchant lost
-costs 300 points. Measured AI against AI, mission outcomes stayed the same in
-all 30 before/after pairs of scenarios 1 to 3 and 5 to 7; the double hunt lost a merchant
-in 2 of 6 runs. Saves are now v32; older saves are not loaded.
+Release 1.3.87 gives the frigate's engine room in the browser the same
+machinery control console as the submarine's: an annunciator panel of status
+lamps for shafts, plant, cavitation, fuel, speed limit, machinery damage,
+fires and flooding aboard, round gauges for speed, shaft RPM, own noise, fuel,
+roll and pitch, the fuel bunker with endurance and range, and a mimic of the
+ship's sections from bow to stern with water level, fire lamps and repair
+teams. The console only shows; the orders stay in the station panel.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -108,7 +104,8 @@ More: [submarine radio room](docs/screenshots/uboot-radio.png), [damage-control 
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-sonar-desktop.png"><img src="docs/screenshots/commander-v2-en-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
 </tr>
 <tr>
-<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-en-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-uboot-engine-desktop.png" alt="Submarine engine room: machinery control console"></a><br><sub>Submarine engine room: machinery control console</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-engine-desktop.png" alt="Frigate engine room: machinery control console"></a><br><sub>Frigate engine room: machinery control console</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-en-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-en-uboot-engine-desktop.png" alt="Submarine engine room: machinery control console"></a><br><sub>Submarine engine room: machinery control console</sub></td>
 </tr>
 </table>
 

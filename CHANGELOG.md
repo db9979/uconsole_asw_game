@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.87
+
+Release 1.3.87 gives the frigate's engine room in the browser the same
+machinery control console as the submarine's: an annunciator panel of status
+lamps for shafts, plant, cavitation, fuel, speed limit, machinery damage,
+fires and flooding aboard, round gauges for speed, shaft RPM, own noise, fuel,
+roll and pitch, the fuel bunker with endurance and range, and a mimic of the
+ship's sections from bow to stern with water level, fire lamps and repair
+teams. The console only shows; the orders stay in the station panel.
+
 ## 1.3.85
 
 Release 1.3.85 lets the helicopter switch its search radar off and on

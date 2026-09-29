@@ -14,21 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.85**
+Aktuelle Version: **1.3.87**
 
-Version 1.3.85 lässt den Helikopter sein Suchradar aus- und wieder
-einschalten (`Shift+R`, Knopf im Browser): Ein strahlender Helikopter oder
-Seefernaufklärer drückt ein KI-U-Boot mit ausgefahrenem Mast oder Schnorchel
-jetzt für 15 Minuten auf Tiefe, ein stiller kann es an der Oberfläche
-erwischen. Der Seefernaufklärer fliegt MAD-Anflüge über sein Suchgebiet (`V`
-auf OPZ-Seite 3, Knopf im Browser) und meldet einen getauchten Rumpf, den er
-überfliegt, als MAD-Ortung per Datenlink. In den Fregattenszenarien
-torpediert ein KI-Patrouillen-U-Boot fern der Fregatte, das nicht gejagt
-wird, ab und zu ein nahes Handelsschiff, und jedes verlorene Handelsschiff
-kostet 300 Punkte. KI gegen KI gemessen blieben die Missionsausgänge in allen
-30 Vorher-nachher-Paaren der Szenarien 1 bis 3 und 5 bis 7 gleich; die Doppeljagd verlor in
-2 von 6 Läufen ein Handelsschiff. Spielstände sind jetzt v32; ältere werden
-nicht geladen.
+Version 1.3.87 gibt dem Maschinenraum der Fregatte im Browser denselben
+Maschinenleitstand wie dem U-Boot: eine Warn- und Meldetafel aus Statuslampen
+für Wellen, Anlage, Kavitation, Kraftstoff, Fahrtbegrenzung, Maschinenschaden,
+Brände und Wassereinbruch an Bord, runde Instrumente für Fahrt,
+Wellendrehzahl, Eigenlärm, Kraftstoff, Rollen und Stampfen, den
+Kraftstoffbunker mit Ausdauer und Reichweite und ein Bild der Schiffsabschnitte
+vom Bug zum Heck mit Wasserstand, Brandlampen und Reparaturtrupps. Der
+Leitstand zeigt nur an; die Befehle bleiben im Stationsbereich.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -112,7 +107,8 @@ Mehr: [U-Boot-Funkraum](docs/screenshots/de-uboot-radio.png), [Beispiel der Scha
 <td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-sonar-desktop.png"><img src="docs/screenshots/commander-v2-de-sonar-desktop.png" alt="Sonar"></a><br><sub>Sonar</sub></td>
 </tr>
 <tr>
-<td colspan="2" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-engine-desktop.png" alt="Fregatten-Maschinenraum: Maschinenleitstand"></a><br><sub>Fregatten-Maschinenraum: Maschinenleitstand</sub></td>
+<td width="50%" align="center"><a href="docs/screenshots/commander-v2-de-uboot-engine-desktop.png"><img src="docs/screenshots/commander-v2-de-uboot-engine-desktop.png" alt="U-Boot-Maschinenraum: Maschinenleitstand"></a><br><sub>U-Boot-Maschinenraum: Maschinenleitstand</sub></td>
 </tr>
 </table>
 

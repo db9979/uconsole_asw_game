@@ -265,7 +265,7 @@ def test_v2_enriched_visualizations_use_canvases_and_accessible_equivalents():
                                      "air_effective_range_nm",
                                      "roleMapSweepCtx"),
         "drawDamageVisual": ("compartments", "flood", "fire", "trend", "teams"),
-        "drawEngineVisual": ("telegraph", "rpm", "speed", "noise",
+        "engineDialSpecs": ("telegraph", "rpm", "speed", "noise",
                              "effective_speed_cap", "roll", "pitch"),
         "drawElokaVisual": ("bearing", "frequency_hz", "prf_hz",
                             "modulation", "candidates", "correlations"),

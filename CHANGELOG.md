@@ -12,7 +12,7 @@ the waves now fill the whole sea in perspective: small and close together out
 to a clean horizon, longer and higher toward the eye, every row moving with the
 swell and coming at you, running away or sliding sideways with the wind, with
 white caps in a rough sea. Both on the uConsole and in the Remote Crew browser;
-saves stay v27.
+saves stay v31.
 
 ## 1.3.69
 

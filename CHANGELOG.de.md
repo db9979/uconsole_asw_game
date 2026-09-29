@@ -12,7 +12,7 @@ Wellen jetzt die ganze See in Perspektive: klein und dicht bis zur klaren Kimm,
 zum Auge hin länger und höher, jede Reihe bewegt sich mit dem Seegang, läuft je
 nach Wind auf einen zu, davon oder seitlich durchs Bild, bei grober See mit
 Schaumkronen. Auf der uConsole und im Remote-Crew-Browser; Spielstände bleiben
-v27.
+v31.
 
 ## 1.3.69
 

@@ -694,6 +694,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # commands continue to use the non-public observation identity.
         self.opz_track_labels = {}
         self.opz_fusion = OPZFusionPicture()
+        # Simulation-time step of the last automatic OPZ fusion pass.
+        self._opz_auto_fuse_step = None
         self._opz_source_bindings = {}
         self._opz_world_identity = id(self.world)
         self.esm_picture = ESMPicture()

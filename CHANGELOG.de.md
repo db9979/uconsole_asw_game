@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.88
+## 1.3.89
 
-Version 1.3.88 macht die Maschinenräume der uConsole zu Maschinenleitständen
+Version 1.3.89 macht die Maschinenräume der uConsole zu Maschinenleitständen
 im Splash-Stil. Auf der Fregatte wird der Telegraf eine Säule leuchtender
 Stufen neben einem großen Fahrtinstrument, Instrumenten für Drehzahl und
 Eigenlärm und Anlagenlampen; die Seite Systeme hat eine Warn- und Meldetafel
@@ -16,6 +16,19 @@ mit Wasserstand, LEDs und nummerierten Reparaturtrupps. Auf dem U-Boot zeigt
 die Seite Anlage Instrumente für Fahrt, Batterie (beim Atom-U-Boot die Tiefe)
 und Eigenlärm mit Betriebsartenlampen, und Vorräte zeigt Tanksäulen für
 Batterie, AIP, Diesel und Absorber und einen Balken je Telegrafenstufe.
+
+## 1.3.88
+
+Version 1.3.88 lässt die OPZ übereinanderliegende Meldungen von selbst
+zusammenlegen: Ein Schiff, das Radar, Ausguck und AIS sehen, ist jetzt ein
+Kontakt statt drei. Zusammengelegt wird nur bei eindeutiger Übereinstimmung
+(mindestens eine Position, kein zweiter Kandidat derselben Sensorart); dicht
+beieinander fahrende Schiffe bleiben getrennt und erscheinen als Vorschlag,
+und `Shift+L` trennt eine Fusion weiterhin. Die zusammengelegten Meldungen
+verschwinden aus Trackliste und Karte, jede Zeile endet mit Sensorkürzeln
+(`R` Radar, `V` Ausguck, `A` AIS, `E` ESM, `S` Sonar ...), und die Zieldetails
+und die Remote-Crew-OPZ nennen die Quellen einer Fusion mit Namen.
+Spielstände bleiben v32.
 
 ## 1.3.87
 

@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.88
+## 1.3.89
 
-Release 1.3.88 turns the uConsole engine rooms into machinery control
+Release 1.3.89 turns the uConsole engine rooms into machinery control
 consoles in the splash style. On the frigate the telegraph becomes a column of
 lit steps beside a large speed gauge, shaft RPM and own-noise gauges and plant
 lamps; the Systems page has an annunciator panel with a master lamp, the fuel
@@ -15,6 +15,18 @@ sections from bow to stern with water level, LEDs and numbered repair teams.
 On the submarine the Plant page shows gauges for speed, battery (depth on a
 nuclear boat) and own noise with mode lamps, and Stores shows tank columns
 for battery, AIP, diesel and absorber and a bar per telegraph step.
+
+## 1.3.88
+
+Release 1.3.88 makes the OPZ fuse reports that lie on top of each other by
+itself: a ship seen by radar, lookout and AIS is now one contact instead of
+three. Only clear matches are fused (at least one position fix, no second
+candidate from the same kind of sensor); ships close together stay apart and
+appear as suggestions, and `Shift+L` still separates a fusion. The fused
+reports disappear from the track list and the chart, each row ends with
+sensor tags (`R` radar, `V` lookout, `A` AIS, `E` ESM, `S` sonar ...), and the
+track details and the Remote Crew OPZ list a fusion's sources by name. Saves
+stay v32.
 
 ## 1.3.87
 

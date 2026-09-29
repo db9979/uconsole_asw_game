@@ -30,6 +30,7 @@ from src.sensors.esm import (
     track_is_operational,
     spectrum_band,
 )
+from src.sensors.fusion import live_members
 
 
 ROLE_NAMES = STATIONS
@@ -1123,12 +1124,12 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
             continue
         observation = _observation(row, _TACTICAL_FIELDS)
         if row["source"] == "FUSION":
-            members = game.opz_fusion.fusions.get(next(
+            fusion = game.opz_fusion.fusions.get(next(
                 (key for key, value in ref_by_track.items() if value == row["ref"]), ""))
-            if (members is None
-                    or any(item not in ref_by_track for item in members.members)):
+            members = None if fusion is None else live_members(fusion, ref_by_track)
+            if members is None:
                 continue
-            observation["members"] = [ref_by_track[item] for item in members.members]
+            observation["members"] = [ref_by_track[item] for item in members]
             opz_fusions.append(observation)
         else:
             opz_observations.append(observation)

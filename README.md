@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.88**
+Current release: **1.3.89**
 
-Release 1.3.88 turns the uConsole engine rooms into machinery control
+Release 1.3.89 turns the uConsole engine rooms into machinery control
 consoles in the splash style. On the frigate the telegraph becomes a column of
 lit steps beside a large speed gauge, shaft RPM and own-noise gauges and plant
 lamps; the Systems page has an annunciator panel with a master lamp, the fuel

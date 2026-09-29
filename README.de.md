@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.88**
+Aktuelle Version: **1.3.89**
 
-Version 1.3.88 macht die Maschinenräume der uConsole zu Maschinenleitständen
+Version 1.3.89 macht die Maschinenräume der uConsole zu Maschinenleitständen
 im Splash-Stil. Auf der Fregatte wird der Telegraf eine Säule leuchtender
 Stufen neben einem großen Fahrtinstrument, Instrumenten für Drehzahl und
 Eigenlärm und Anlagenlampen; die Seite Systeme hat eine Warn- und Meldetafel

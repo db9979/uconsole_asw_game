@@ -26,6 +26,7 @@ export function request(path, { method = "GET", body, auth = true, expected = 20
       if (response.status !== expected) {
         const error = new Error("http");
         error.status = response.status;
+        try { error.reason = (await response.json())?.error; } catch (_) { /* no JSON body */ }
         throw error;
       }
       // A queued command acknowledgement need not contain a JSON body.

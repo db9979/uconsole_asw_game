@@ -12,17 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.60**
+Current release: **1.3.61**
 
-Release 1.3.60 makes both sides able to win. A torpedo's proximity fuze now
-fires at the closest approach its track predicts instead of on entering its
-radius, so a torpedo that homes in hits hard; before, it went off 250 to 370 m
-short and did only 12 to 18 % damage. Hostile torpedoes run 40 kn for 20 NM
-and outpace the frigate, and an AI submarine attacks a located frigate within
-10 NM even when she runs quiet. The submarine missions fit their clocks: the
-breakthrough goal lies 5 NM beyond the frigate, reconnaissance has 3 hours,
-and the convoy sails at 8 kn with the submarine starting on its bow, about
-10 NM ahead. Saves stay v28.
+Release 1.3.61 makes the pairing code easier to enter, on the crew page and
+on the phone lookout. The code can be typed the way `F9` shows it, with the
+space, in lower case, or with O for 0 and l for 1, and it is still read
+correctly. "Wrong pairing code" now appears only when the code really is wrong;
+when the game refuses the address itself (a bookmark or another name for the
+host), the page says to open it from the QR code or the address in `F9`. The
+pairing help no longer claims the code expires after five minutes: it stays
+while the game runs and changes after five wrong tries. Saves stay v28.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

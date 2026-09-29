@@ -10,6 +10,7 @@ import { finite, t } from "../core/format.js";
 import { validateSession } from "../net/session.js";
 import { boundedArray, exactKeys, validateV2State } from "../state/schema.js";
 import { drawSightView, viewMotion } from "../views/sight-scene.js";
+import { normalizePairCode, wirePairCodeInput } from "../core/pairing-code.js";
 import { lineOfSight, wrap180, wrap360 } from "./orientation.js";
 import { createListener, parseReport, speechAvailable } from "./speech.js";
 
@@ -484,19 +485,21 @@ function wireView() {
 // --- start ------------------------------------------------------------------------------
 
 function wirePairing() {
-  $("phone-code").addEventListener("input", () => { $("phone-code").value = $("phone-code").value.toUpperCase(); });
+  wirePairCodeInput($("phone-code"));
   $("phone-language").addEventListener("change", () => loadLanguage($("phone-language").value).catch(() => {}));
   $("phone-pair-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     $("phone-pair-submit").disabled = true;
     $("phone-pair-error").textContent = "";
     try {
-      adoptSession(await api("/pair", {method: "POST", body: {code: $("phone-code").value.trim().toUpperCase(),
+      adoptSession(await api("/pair", {method: "POST", body: {code: normalizePairCode($("phone-code").value),
         name: $("phone-name").value.trim(), role: preferredRole()}}));
       $("phone-code").value = "";
       await startWatch();
     } catch (error) {
-      $("phone-pair-error").textContent = t(error.status === 403 ? "phone_pair_code" : error.status === 429 ?
+      // Only the pairing route's own answer means a wrong code; a bare 403
+      // is the listener refusing this address (Host/Origin).
+      $("phone-pair-error").textContent = t(error.status === 403 ? (error.reason === "invalid_code" ? "phone_pair_code" : "pair_address") : error.status === 429 ?
         (error.reason === "session_limit" ? "phone_pair_full" : "phone_pair_rate") : "phone_pair_failed");
     } finally {
       $("phone-pair-submit").disabled = false;

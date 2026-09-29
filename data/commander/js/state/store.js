@@ -2,8 +2,16 @@ import { defaultSonarPage } from "./shared.js";
 
 // Mutable client state shared by several modules. Transient: never sent to
 // the host, stored or placed in the DOM.
+// Pages open in the host's saved language (the server names it in a meta
+// tag); without one, in the browser's.
+export function initialLanguage() {
+  const host = document.querySelector('meta[name="u-jagd-host-language"]')?.getAttribute("content");
+  if (host === "en" || host === "de") return host;
+  return (navigator.language || "en").toLowerCase().startsWith("de") ? "de" : "en";
+}
+
 export const S = {
-  language: (navigator.language || "en").toLowerCase().startsWith("de") ? "de" : "en",
+  language: initialLanguage(),
   catalog: {},
   // Session metadata stays closure-local: no URL, DOM or persistence.
   session: null,

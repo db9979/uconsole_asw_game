@@ -14,15 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.70**
+Aktuelle Version: **1.3.71**
 
-Version 1.3.70 zeichnet die See im Fernglas des Ausgucks, im Ausguckstreifen, im
-Sehrohr und im Handy-Ausguck neu. Statt einer großen Welle an der Kimm füllen die
-Wellen jetzt die ganze See in Perspektive: klein und dicht bis zur klaren Kimm,
-zum Auge hin länger und höher, jede Reihe bewegt sich mit dem Seegang, läuft je
-nach Wind auf einen zu, davon oder seitlich durchs Bild, bei grober See mit
-Schaumkronen. Auf der uConsole und im Remote-Crew-Browser; Spielstände bleiben
-v31.
+Version 1.3.71 macht die Sprache des Remote-Crew-Servers zwischen Englisch und
+Deutsch umschaltbar. Der Windows-Starter hat oben ein Feld Sprache: Die Wahl
+gilt sofort für den Starter und wird in den Einstellungen gespeichert, sodass
+auch das Spielfenster und jeder Besatzungs-Browser darin starten. Die
+Browser-Seiten öffnen jetzt in der gespeicherten Sprache des Hosts statt in der
+des Browsers, und die Besatzungsseite hat neben Ton einen sichtbaren Knopf
+English/Deutsch, der nur diesen Browser umstellt; die Admin-Seite des Web-Hosts
+wechselt mit der gespeicherten Serversprache auch ihre eigene Sprache.
+Spielstände bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -164,7 +166,9 @@ Lade `U-Jagd-Windows.exe` aus dem
 und starte es; Python ist nicht nötig. Im Starterfenster wählst du den
 Besatzungsmodus (mehrere Browser, je eine Station) oder den Solomodus (ein
 Browser bedient alle Stationen), ob dieser PC das U-Boot spielt, Fenster oder
-Vollbild, Ton und Port; **Server starten** öffnet dann das Spielfenster, und
+Vollbild, Ton und Port, und das Feld **Sprache** oben stellt Starter, Spiel
+und Besatzungs-Browser zwischen English und Deutsch um (in den Einstellungen
+gespeichert); **Server starten** öffnet dann das Spielfenster, und
 Remote Crew lauscht bereits auf der privaten LAN-Adresse des PCs. Der Starter
 zeigt Browser-Adresse, Beitrittscode und QR-Code; Stationsanfragen bestätigst
 du wie auf dem uConsole im Spielfenster (F9). Windows fragt eventuell einmal,

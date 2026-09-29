@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.71
+
+Version 1.3.71 macht die Sprache des Remote-Crew-Servers zwischen Englisch und
+Deutsch umschaltbar. Der Windows-Starter hat oben ein Feld Sprache: Die Wahl
+gilt sofort für den Starter und wird in den Einstellungen gespeichert, sodass
+auch das Spielfenster und jeder Besatzungs-Browser darin starten. Die
+Browser-Seiten öffnen jetzt in der gespeicherten Sprache des Hosts statt in der
+des Browsers, und die Besatzungsseite hat neben Ton einen sichtbaren Knopf
+English/Deutsch, der nur diesen Browser umstellt; die Admin-Seite des Web-Hosts
+wechselt mit der gespeicherten Serversprache auch ihre eigene Sprache.
+Spielstände bleiben v31.
+
 ## 1.3.70
 
 Version 1.3.70 zeichnet die See im Fernglas des Ausgucks, im Ausguckstreifen, im

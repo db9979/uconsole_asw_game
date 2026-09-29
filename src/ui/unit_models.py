@@ -21,7 +21,7 @@ import numpy as np
 import pygame
 
 from src.sensors import lookout_id
-from src.ui import silhouettes
+from src.ui import model_bsp, silhouettes
 
 # The lookout's classes (the same silhouettes the eyepieces draw) plus the
 # units no lookout ever sees: torpedoes, decoys and animals.
@@ -74,12 +74,20 @@ class Mesh:
 
     def to_json(self) -> dict:
         """Plain data for the browser renderer (coordinates in thousandths)."""
+        # Corners at the same (rounded) point are sent once.
+        index, verts, remap = {}, [], []
+        for p in self.verts:
+            key = tuple(int(round(float(c) * 1000)) for c in p)
+            if key not in index:
+                index[key] = len(index)
+                verts.extend(key)
+            remap.append(index[key])
         return {
-            "v": [int(round(float(c) * 1000)) for c in self.verts.ravel()],
-            "f": [list(face) for face in self.faces],
+            "v": verts,
+            "f": [[remap[k] for k in face] for face in self.faces],
             "m": [MATERIAL_NAMES.index(m) for m in self.mats],
             "s": [i for i, two in enumerate(self.sided) if two],
-            "l": [[a, b, MATERIAL_NAMES.index(m)] for a, b, m in self.lines],
+            "l": [[remap[a], remap[b], MATERIAL_NAMES.index(m)] for a, b, m in self.lines],
             "w": self.floating,
         }
 
@@ -109,8 +117,10 @@ class _Builder:
                  if self.verts[i] != self.verts[idx[k - 1]]]
         if len(clean) < 3:
             return
+        pts = np.array([self.verts[i] for i in clean])
+        if float(np.linalg.norm(np.cross(pts[1:-1] - pts[0], pts[2:] - pts[0]).sum(axis=0))) < 1e-10:
+            return  # Flat to a line: a collapsed stem or stern section.
         if center is not None:
-            pts = np.array([self.verts[i] for i in clean])
             if np.dot(_newell(pts), pts.mean(axis=0) - np.asarray(center)) < 0:
                 clean.reverse()
         self.faces.append(clean)
@@ -153,6 +163,10 @@ def _plan(u: float, entrance: float = 0.32, transom: float = 0.72) -> float:
     return 1.0
 
 
+# Points per side of a hull section (deck edge to keel, keel excluded).
+SECTION_SIDE = 4
+
+
 def _hull(b: _Builder, poly, beam: float, draft: float, *, side="hull",
           deck="deck", stations: int = 18, transom: float = 0.72,
           entrance: float = 0.32) -> None:
@@ -169,30 +183,37 @@ def _hull(b: _Builder, poly, beam: float, draft: float, *, side="hull",
         if zb > 1e-6 and u < 0.5:
             # The raked stem: a V from the deck edge down to the stem line.
             rise = top - zb
-            section = [(-half, top), (-0.8 * half, zb + 0.55 * rise),
-                       (-0.4 * half, zb + 0.18 * rise), (0.0, zb),
-                       (0.4 * half, zb + 0.18 * rise), (0.8 * half, zb + 0.55 * rise),
-                       (half, top)]
+            flank = [(half * (1.0 - t), zb + rise * (1.0 - t) ** 1.6)
+                     for t in (k / SECTION_SIDE for k in range(SECTION_SIDE))]
+            section = [(-y, z) for y, z in flank] + [(0.0, zb)] + flank[::-1]
         else:
-            section = [(-half, top), (-half, zb), (-0.72 * half, zb - 0.62 * depth),
-                       (0.0, zb - depth), (0.72 * half, zb - 0.62 * depth), (half, zb),
-                       (half, top)]
+            # A round bilge into a flat floor: sampled closely enough that
+            # the underbody reads as one smooth surface.
+            bilge = [(half * math.cos(a) ** 0.55,
+                      zb - depth * math.sin(a) ** 0.8)
+                     for a in (math.pi * k / 6 for k in range(1, 3))]
+            section = ([(-half, top), (-half, zb)] + [(-y, z) for y, z in bilge]
+                       + [(0.0, zb - depth)] + [(y, z) for y, z in reversed(bilge)]
+                       + [(half, zb), (half, top)])
         rings.append([b.vertex((x, y, z)) for y, z in section])
+    # Every section runs the same way round, so one winding closes the
+    # plating outward everywhere (a per-face guess flips folded stem faces).
+    mid = len(rings) // 2
+    probe = [b.verts[i] for i in (rings[mid][2], rings[mid][3], rings[mid + 1][3],
+                                  rings[mid + 1][2])]
+    outward = _newell(np.array(probe))[2] < 0.0
     for i in range(len(rings) - 1):
         r0, r1 = rings[i], rings[i + 1]
         cx = 0.5 * (b.verts[r0[0]][0] + b.verts[r1[0]][0])
-        # Inside the hull: midway between keel and deck of both sections.
-        zs = [b.verts[i][2] for i in r0 + r1]
-        cz = 0.5 * (min(zs) + max(zs))
         for k in range(len(r0) - 1):
             zmid = (b.verts[r0[k]][2] + b.verts[r0[k + 1]][2]) / 2
             mat = "bottom" if zmid < -1e-6 else side
-            # Two-sided: raked stems and sterns fold the plating over.
-            b.face((r0[k], r0[k + 1], r1[k + 1], r1[k]), mat, center=(cx, 0.0, cz),
-                   two_sided=True)
+            quad = (r0[k], r0[k + 1], r1[k + 1], r1[k])
+            b.face(quad if outward else quad[::-1], mat)
         b.face((r0[-1], r1[-1], r1[0], r0[0]), deck, center=(cx, 0.0, -1.0))
-    b.face(rings[-1], side, center=(0.0, 0.0, 0.0), two_sided=True)
-    b.face(rings[0], side, center=(0.0, 0.0, 0.0), two_sided=True)
+    for ring, inner in ((rings[-1], rings[-2]), (rings[0], rings[1])):
+        zs = [b.verts[i][2] for i in ring]
+        b.face(ring, side, center=(b.verts[inner[0]][0], 0.0, 0.5 * (min(zs) + max(zs))))
 
 
 def _prism(b: _Builder, poly, half_width: float, mat: str, y: float = 0.0) -> None:
@@ -562,6 +583,16 @@ def turn_angle(t: float) -> float:
     return 0.6 + TURN_RAD_S * t
 
 
+def _shading(mesh, view) -> tuple:
+    """Per mesh face: light factor and whether it shows (front faces, and
+    both sides of two-sided plates)."""
+    normals = mesh.normals @ view.T
+    facing = normals[:, 2] > 0.0
+    lit = np.where(facing | ~mesh.sided, np.maximum(0.0, normals @ _LIGHT),
+                   np.abs(normals @ _LIGHT))
+    return 0.34 + 0.66 * lit, facing | mesh.sided
+
+
 def draw_model(surface: pygame.Surface, rect, cls: str, t: float | None = None, *,
                yaw: float | None = None, elevation: float = ELEVATION_RAD) -> int:
     """Draw model ``cls`` fitted into ``rect``, turning with wall time ``t``
@@ -573,9 +604,8 @@ def draw_model(surface: pygame.Surface, rect, cls: str, t: float | None = None, 
     if yaw is None:
         yaw = turn_angle(pygame.time.get_ticks() / 1000.0 if t is None else t)
     view = _view(yaw, elevation)
-    verts = mesh.verts @ view.T
-    normals = mesh.normals @ view.T
-    depth = (mesh.centroids @ view.T)[:, 2]
+    tree = model_bsp.tree_for(cls, mesh)
+    verts = tree.verts @ view.T
     horizontal = float(np.max(np.linalg.norm(mesh.verts[:, :2], axis=1)))
     vertical = (horizontal * math.sin(elevation)
                 + float(np.max(np.abs(mesh.verts[:, 2]))) * math.cos(elevation))
@@ -586,15 +616,8 @@ def draw_model(surface: pygame.Surface, rect, cls: str, t: float | None = None, 
     persp = 1.0 / (1.0 - verts[:, 2] / (5.0 * mesh.radius))
     sx = rect.centerx + verts[:, 0] * scale * persp
     sy = rect.centery - verts[:, 1] * scale * persp
-    facing = normals[:, 2] > 0.0
-    visible = facing | mesh.sided
-    lit = np.abs(normals @ _LIGHT)
-    lit = np.where(facing | ~mesh.sided, np.maximum(0.0, normals @ _LIGHT), lit)
-    shades = np.clip(mesh.colors * (0.34 + 0.66 * lit)[:, None], 0, 255).astype(int)
-    items = [(float(depth[i]), 0, i) for i in np.flatnonzero(visible)]
-    for j, (a, b, _mat) in enumerate(mesh.lines):
-        items.append((float((verts[a, 2] + verts[b, 2]) / 2), 1, j))
-    items.sort()
+    shades, visible = _shading(mesh, view)
+    shades = np.clip(mesh.colors * shades[:, None], 0, 255).astype(int)
     clip = surface.get_clip()
     surface.set_clip(rect.clip(clip) if clip else rect)
     if mesh.floating:
@@ -604,14 +627,17 @@ def draw_model(surface: pygame.Surface, rect, cls: str, t: float | None = None, 
         pygame.draw.lines(surface, WATER, True, ring, 1)
     drawn = 0
     line_w = max(1, int(scale / 260))
-    for _depth, kind, i in items:
+    for kind, i in tree.order(view[2]):
         if kind:
-            a, b, mat = mesh.lines[i]
+            a, b = tree.lines[i]
+            mat = mesh.lines[tree.line_src[i]][2]
             pygame.draw.line(surface, MATERIALS[mat] if mat != "dark" else (30, 34, 38),
                              (sx[a], sy[a]), (sx[b], sy[b]), line_w)
             continue
-        face = mesh.faces[i]
-        pygame.draw.polygon(surface, tuple(shades[i]), [(sx[k], sy[k]) for k in face])
+        src = tree.face_src[i]
+        if not visible[src]:
+            continue
+        pygame.draw.polygon(surface, tuple(shades[src]), [(sx[k], sy[k]) for k in tree.faces[i]])
         drawn += 1
     surface.set_clip(clip)
     return drawn
@@ -681,9 +707,8 @@ def _render_scene_sprite(cls, length_px, aob_deg, color, surface_only):
     darkened to the scene's steel tone and blended with it (haze, night)."""
     mesh = mesh_for(cls)
     view = _view(scene_yaw(aob_deg), SCENE_ELEVATION_RAD)
-    verts = mesh.verts @ view.T
-    normals = mesh.normals @ view.T
-    depth = (mesh.centroids @ view.T)[:, 2]
+    tree = model_bsp.tree_for(cls, mesh)
+    verts = tree.verts @ view.T
     sx, sy = verts[:, 0] * length_px, -verts[:, 1] * length_px
     left, top = int(math.floor(sx.min())) - 2, int(math.floor(sy.min())) - 2
     width = int(math.ceil(sx.max())) - left + 3
@@ -691,28 +716,24 @@ def _render_scene_sprite(cls, length_px, aob_deg, color, surface_only):
     sprite = pygame.Surface((max(1, width), max(1, height)))
     sprite.fill(_COLORKEY)
     sprite.set_colorkey(_COLORKEY)
-    facing = normals[:, 2] > 0.0
-    visible = facing | mesh.sided
-    lit = np.where(facing | ~mesh.sided, np.maximum(0.0, normals @ _LIGHT),
-                   np.abs(normals @ _LIGHT))
+    shade, visible = _shading(mesh, view)
     steel = np.asarray(color, dtype=float)
     tone = min(1.25, max(0.05, float(steel.mean()) / 150.0))
-    shade = (0.34 + 0.66 * lit)[:, None]
+    shade = shade[:, None]
     shades = np.clip(0.5 * mesh.colors * shade * tone + 0.5 * steel * (0.55 + 0.6 * shade),
                      0, 254).astype(int)
-    items = [(float(depth[i]), 0, i) for i in np.flatnonzero(visible)]
-    for j, (a, b, _mat) in enumerate(mesh.lines):
-        items.append((float((verts[a, 2] + verts[b, 2]) / 2), 1, j))
-    items.sort()
     px, py = sx - left, sy - top
     line_color = tuple(int(c * 0.6) for c in steel)
-    for _depth, kind, i in items:
+    for kind, i in tree.order(view[2]):
         if kind:
-            a, b, _mat = mesh.lines[i]
+            a, b = tree.lines[i]
             pygame.draw.line(sprite, line_color, (px[a], py[a]), (px[b], py[b]),
                              max(1, int(length_px / 260)))
             continue
-        pygame.draw.polygon(sprite, tuple(shades[i]), [(px[k], py[k]) for k in mesh.faces[i]])
+        src = tree.face_src[i]
+        if visible[src]:
+            pygame.draw.polygon(sprite, tuple(shades[src]),
+                                [(px[k], py[k]) for k in tree.faces[i]])
     if surface_only:
         # The hull below the waterline stays in the sea: cut the picture at
         # the waterline (level within a pixel at this elevation).

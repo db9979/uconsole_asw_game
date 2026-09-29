@@ -4,6 +4,44 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.62
+
+Version 1.3.62 bringt dem Autopiloten die Seekarte bei. Führt die Strecke
+eines Wegpunkts oder Suchmusters durch Flachwasser oder Land, fügt er Umweg-
+Punkte ein oder meldet im Verlauf, welche Strecke von Hand zu steuern ist.
+Während der Fahrt schaut er einmal pro Sekunde zwei Minuten voraus;
+Flachwasser dort bekommt einen Umweg zum aktuellen Wegpunkt, sonst schaltet
+sich die Route ab und das Schiff dreht auf den Gegenkurs. Er plant mit
+Kartentiefe, Felsen und Wracks gegen Tiefgang plus Kielreserve und 2 m
+Sicherheit. Spielstände bleiben v28; eine Route kann mit Umwegen jetzt bis zu
+16 Punkte haben.
+
+## 1.3.61
+
+Version 1.3.61 macht den Einheiteneditor wirksam. Dort gespeicherte Profile
+lassen sich jetzt wie eingebaute Einheiten in eigenen Missionen platzieren und
+wirken dort: Name, Fahrtbereich, Tiefe, Torpedozahl, Verhalten, Akustik und
+Häufigkeit. Ein eigenes U-Boot übernimmt Sensoren, Rohre, Täuschkörper und
+seine Batterie-, Diesel- oder AIP-Anlage vom eingebauten Boot seines Antriebs.
+Eine Mission kann außerdem einen feindlichen Torpedo platzieren, der beim
+Start schon auf seinem Kurs läuft, zum Üben des Ausweichens. Solche Missionen
+lassen sich normal speichern und laden (der Katalog-Schnappschuss des
+Spielstands enthält die eigenen Profile); eingebaute Szenarien verwenden sie
+nie. Spielstände bleiben v28.
+
+## 1.3.60
+
+Version 1.3.60 macht beide Seiten gewinnbar. Der Annäherungszünder eines
+Torpedos zündet jetzt bei der größten Annäherung, die seine Bahn voraussagt,
+statt schon beim Eintritt in seinen Radius; ein zielsuchender Torpedo trifft
+dadurch schwer. Vorher zündete er 250 bis 370 m zu früh und richtete nur 12 bis
+18 % Schaden an. Feindtorpedos laufen 40 kn über 20 sm und sind schneller als
+die Fregatte, und ein KI-U-Boot greift eine geortete Fregatte innerhalb 10 sm
+auch bei leiser Fahrt an. Die U-Boot-Missionen passen in ihre Zeit: das Ziel des
+Durchbruchs liegt 5 sm hinter der Fregatte, die Aufklärung hat 3 Stunden, und
+der Geleitzug läuft 8 kn, das U-Boot startet an seinem Bug etwa 10 sm voraus. Spielstände
+bleiben v28.
+
 ## 1.3.59
 
 Version 1.3.59 räumt auf, ohne das Spiel zu ändern. Die beiden größten Module

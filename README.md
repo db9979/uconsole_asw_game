@@ -12,15 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.59**
+Current release: **1.3.62**
 
-Release 1.3.59 is a clean-up with no change in play. The two largest modules
-are split along their seams: the radar, air, ECM, ESM and radio pictures with
-missiles and raiders move from the simulation step into their own module, and
-the Remote Crew station action handlers move out of the bridge into their own
-module; the code moves verbatim and the update order stays frozen. The
-changelog entry of 1.3.43 now says what that release actually fixed. Saves
-stay v28.
+Release 1.3.62 teaches the autopilot the chart. A waypoint or search pattern
+whose leg crosses shoal water or land now gets detour points around it, or a
+warning in the feed which leg to steer by hand. While the route runs, the
+autopilot looks two minutes ahead once a second; shoal water there gets a
+detour to the current waypoint, or the route switches off and the ship turns
+back on the reciprocal course. It plans on charted depth, rocks and wrecks
+against the hull's draft plus keel reserve and a 2 m margin. Saves stay v28; a
+route may now hold up to 16 points with detours.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -504,19 +505,25 @@ Validated does not mean runtime-effective. In this release:
   game's coast dataset.
 - Effective mission values are the seed, name and description; player
   position, course and speed; sea state, start time, thermocline depth and an
-  authored weather kind; exact units of every built-in kind except torpedoes
-  (submarines, surface ships, aircraft at profile speed from the nearest
-  charted airbase, animals and static decoys) with their placement, course,
-  speed and depth; seeded random groups; timed events (message, spawn,
+  authored weather kind; exact units of every kind, built-in or from the Unit
+  Editor (submarines, surface ships, aircraft at profile speed from the
+  nearest charted airbase, animals, static decoys and hostile torpedoes
+  already running on their course) with their placement, course, speed and
+  depth; seeded random groups; timed events (message, spawn,
   weather, objective); and `sink`, `survive`, `protect` or `reach` objectives
   with a time limit.
 - For a `sink` objective the target list must exactly match all placed hostile
   submarines; `protect` targets must be placed friendly or neutral units;
   `reach` needs a reach area.
-- Torpedoes and user-created unit profiles are rejected for runtime play rather
-  than silently ignored.
-- Unit Editor output is validation/authoring data only. No user unit-profile
-  field currently changes the running simulation.
+- User unit profiles take effect in the missions that name them: name,
+  speeds, depth, torpedo load, behaviour, acoustics and spawn weight. A user
+  submarine takes its sensors, tubes, decoys and battery/diesel/AIP plant from
+  the built-in boat of its propulsion (keywords `nuclear`/`Kern`, `AIP`,
+  otherwise diesel-electric). Wikipedia-import extras (radar emitter, weapons,
+  countermeasures) stay descriptive. A missing or invalid profile rejects the
+  mission; built-in scenarios never use user profiles.
+- Only enemy torpedoes can be placed, always hostile; frigate and helicopter
+  torpedoes are rejected rather than silently ignored.
 
 ## Saves and User Data
 

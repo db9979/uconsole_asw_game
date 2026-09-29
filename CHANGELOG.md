@@ -4,6 +4,41 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.62
+
+Release 1.3.62 teaches the autopilot the chart. A waypoint or search pattern
+whose leg crosses shoal water or land now gets detour points around it, or a
+warning in the feed which leg to steer by hand. While the route runs, the
+autopilot looks two minutes ahead once a second; shoal water there gets a
+detour to the current waypoint, or the route switches off and the ship turns
+back on the reciprocal course. It plans on charted depth, rocks and wrecks
+against the hull's draft plus keel reserve and a 2 m margin. Saves stay v28; a
+route may now hold up to 16 points with detours.
+
+## 1.3.61
+
+Release 1.3.61 makes the Unit Editor count. Profiles saved there can now be
+placed in your own missions like built-in units, and they take effect there:
+name, speeds, depth, torpedo load, behaviour, acoustics and spawn weight. A
+user submarine takes its sensors, tubes, decoys and battery, diesel or AIP
+plant from the built-in boat of its propulsion. A mission can also place a
+hostile torpedo that is already running on its course at the start, for
+torpedo-evasion drills. Such missions save and load normally (the save's
+catalog snapshot carries the user profiles); built-in scenarios never use
+them. Saves stay v28.
+
+## 1.3.60
+
+Release 1.3.60 makes both sides able to win. A torpedo's proximity fuze now
+fires at the closest approach its track predicts instead of on entering its
+radius, so a torpedo that homes in hits hard; before, it went off 250 to 370 m
+short and did only 12 to 18 % damage. Hostile torpedoes run 40 kn for 20 NM
+and outpace the frigate, and an AI submarine attacks a located frigate within
+10 NM even when she runs quiet. The submarine missions fit their clocks: the
+breakthrough goal lies 5 NM beyond the frigate, reconnaissance has 3 hours,
+and the convoy sails at 8 kn with the submarine starting on its bow, about
+10 NM ahead. Saves stay v28.
+
 ## 1.3.59
 
 Release 1.3.59 is a clean-up with no change in play. The two largest modules

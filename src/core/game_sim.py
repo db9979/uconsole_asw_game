@@ -325,7 +325,7 @@ class SimMixin:
                                    / ship_dynamics.HULL.flood_kg_per_percent)
         self.ship.update_fuel(dt)
         self.world.update(dt)
-        self._steer_route()
+        self._steer_route(dt)
         contact = self.ship.update(dt, self.world, self.damage.list_deg())
         if contact is not None:
             speed_m_s = self.ship.last_impact_speed_kn * 1852.0 / 3600.0

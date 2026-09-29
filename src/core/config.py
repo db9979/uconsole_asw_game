@@ -203,11 +203,15 @@ DMG_REPAIR_RATE = 0.12         # Abpumpung pro Reparaturteam
 DMG_DESTROY_FLOOD = 70.0       # % Flutung -> Kompartiment ZERSTOERT
 DMG_SHIP_SINK_TOTAL = 540.0    # 60 % mittlere Flutung über neun Räume
 DMG_SONAR_DEGRADED_FACTOR = 0.5  # Sonar-Reichweitenfaktor bei gestörter Sonarzentrale
-ENEMY_TORP_SPEED_KN = 28.0
-ENEMY_TORP_RANGE_NM = 30.0
+ENEMY_TORP_SPEED_KN = 40.0
+ENEMY_TORP_RANGE_NM = 20.0
 ENEMY_TORP_HIT_DIST_NM = 0.25
 ENEMY_TORP_QUIET = 0.10            # laut – passiv gut auffindbar
 SUB_ATTACK_COOLDOWN_S = 90.0
+# An AI boat with a located frigate this close attacks even a quiet frigate
+# (per-second chance x aggression); a loud frigate draws fire from 18 NM.
+SUB_SOLUTION_ATTACK_NM = 10.0
+SUB_SOLUTION_ATTACK_RATE = 0.003
 
 # M9: Sensormatrix & manuelle Kontakt-Klassifizierung
 # Passiv (Geräusche): nur Peilung. Ping: Position+Tiefe. Radar: Position.
@@ -1050,7 +1054,7 @@ MISSION_TYPES = {
         name="Aufklaerung", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=7200, win="recon"),
+        time_limit_s=10800, win="recon"),
     "geleitzug": dict(
         name="Geleitzug", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1059,12 +1063,18 @@ MISSION_TYPES = {
 }
 BOAT_CONVOY_SIZE = 4               # merchants in the escorted convoy
 BOAT_CONVOY_SINK = 2               # the boat wins after sinking this many
-BOAT_CONVOY_SPEED_KN = 10.0
+BOAT_CONVOY_SPEED_KN = 8.0
 BOAT_CONVOY_SPACING_NM = 1.0
 BOAT_CONVOY_WARHEAD = 100.0        # a heavyweight hit breaks a merchant
+# The boat starts on the convoy's bow, this far ahead of it and this far off
+# its track to one side (the lesser plus up to the spread), so it can wait
+# for a convoy it could not overtake without running into the screen ahead.
+BOAT_CONVOY_BOAT_AHEAD_NM = 10.0
+BOAT_CONVOY_BOAT_SIDE_NM = 5.0
+BOAT_CONVOY_BOAT_SIDE_SPREAD_NM = 3.0
 # Boat missions: the goal lies this far beyond the frigate's start, seen from
 # the boat's start, and counts as reached within the radius.
-BOAT_GOAL_BEYOND_NM = 10.0
+BOAT_GOAL_BEYOND_NM = 5.0
 BOAT_GOAL_RADIUS_NM = 3.0
 BOAT_GOAL_MIN_DEPTH_M = 40.0
 # The AI boat's mission legs (src/core/boat_ai.py) when nobody crews it.

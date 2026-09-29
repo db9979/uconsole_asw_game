@@ -283,9 +283,9 @@ export function validateV2State(state) {
     // The autopilot route: the waypoints still ahead, numbered from 1.
     const route = payload.route;
     if (!exactKeys(route, routeFields.row) || !routeFields.patterns.includes(route.pattern) ||
-        !Number.isInteger(route.total) || route.total < 0 || route.total > 8 ||
+        !Number.isInteger(route.total) || route.total < 0 || route.total > 16 ||
         !Number.isInteger(route.index) || route.index < 0 || route.index > route.total ||
-        !boundedArray(route.points, 8) || route.points.length !== route.total - route.index ||
+        !boundedArray(route.points, 16) || route.points.length !== route.total - route.index ||
         route.points.some((row, index) => !exactKeys(row, routeFields.point) ||
           row.number !== route.index + index + 1 || !finite(row.x) || !finite(row.y))) throw new Error("protocol");
     if (!exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");

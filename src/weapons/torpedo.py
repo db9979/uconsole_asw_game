@@ -430,8 +430,11 @@ class Torpedo:
                     self.x, self.y, self.depth = hx, hy, hd
                     self.travel -= step * (1.0 - fraction)
                     self.target = body
-                    # Proximity fuze at closest approach: shock-factor damage.
-                    horizontal = self._swept_dist(body, ox, oy) * 1852.0
+                    # Proximity fuze: armed on entering the fuze radius, it
+                    # fires at the closest approach the relative track
+                    # predicts; shock-factor damage from that miss distance.
+                    horizontal = self._closest_approach_nm(
+                        body, hx, hy, step / dt if dt > 0 else 0.0) * 1852.0
                     slant = math.hypot(horizontal, getattr(body, "depth", hd) - hd)
                     self.last_miss_m = slant
                     self.state = "HIT"
@@ -495,6 +498,23 @@ class Torpedo:
             last = (target.depth + self.kill_depth_m - old_depth) / dz
             low, high = max(low, min(first, last)), min(high, max(first, last))
         return low if low <= high else None
+
+    def _closest_approach_nm(self, body, hx: float, hy: float,
+                             speed_nm_s: float) -> float:
+        """Horizontal miss distance at the closest point of approach of the
+        torpedo's current track (from ``hx, hy``) to ``body``'s track."""
+        rad = math.radians(self.course)
+        body_nm_s = config.kn_to_nm_per_s(float(getattr(body, "speed", 0.0) or 0.0))
+        body_rad = math.radians(float(getattr(body, "course", 0.0) or 0.0))
+        rx, ry = body.x - hx, body.y - hy
+        vx = speed_nm_s * math.sin(rad) - body_nm_s * math.sin(body_rad)
+        vy = -speed_nm_s * math.cos(rad) + body_nm_s * math.cos(body_rad)
+        v2 = vx * vx + vy * vy
+        closing = rx * vx + ry * vy
+        if v2 < 1e-18 or closing <= 0.0:
+            return math.hypot(rx, ry)
+        t = closing / v2
+        return math.hypot(rx - vx * t, ry - vy * t)
 
     def _swept_dist(self, sub, ox: float, oy: float) -> float:
         """Min. Distanz Ziel-Position -> Torpedo-Strecke (ox,oy)->(x,y)."""

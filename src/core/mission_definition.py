@@ -41,9 +41,9 @@ MISSION_FIELD_METADATA = {
                                        "and packaged reference sectors (sector:<n>)."),
     "player": FieldMetadata(True, True),
     "environment": FieldMetadata(True, True),
-    "units.exact": FieldMetadata(True, True, "Built-in submarine, surface, aircraft, animal "
-                                             "and decoy profiles; torpedoes and user profiles "
-                                             "are rejected at start."),
+    "units.exact": FieldMetadata(True, True, "Built-in and user submarine, surface, aircraft, "
+                                             "animal and decoy profiles, and hostile enemy "
+                                             "torpedoes already running."),
     "units.random_groups": FieldMetadata(True, True, "Seeded from the preview; a spawn "
                                                      "event defers its group."),
     "objective": FieldMetadata(True, True),

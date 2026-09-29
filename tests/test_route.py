@@ -62,10 +62,11 @@ def test_the_ship_follows_the_route_and_a_helm_order_cancels_it():
     game = _game()
     ship = game.ship
     game.order_speed(15.0)
-    target = (ship.x + 3.0, ship.y)
+    # North-west is open water at this start (east is land, see below).
+    target = (ship.x - 2.1, ship.y - 2.1)
     assert game.add_route_waypoint(*target) == "ok"
     _run(game, 30.0)
-    assert abs(ship.target_course - 90.0) < 3.0
+    assert abs(ship.target_course - 315.0) < 3.0
     assert game.order_course(180.0) == "ok"
     assert not game.route.active and ship.target_course == 180.0
 
@@ -129,7 +130,8 @@ def test_route_saves_and_restores_and_bad_blocks_are_rejected():
         (game.ship.x, game.ship.y, game.ship.target_course)
     for bad in ({"points": [[0, 0]], "index": 3, "kind": "square"},
                 {"points": [[float("nan"), 0]], "index": 0, "kind": "manual"},
-                {"points": [[0, 0]] * 9, "index": 0, "kind": "manual"},
+                {"points": [[0, 0]] * (route_model.MAX_ROUTE_POINTS + 1), "index": 0,
+                 "kind": "manual"},
                 {"points": [], "index": 0, "kind": "spiral"},
                 {"points": [], "index": 0}):
         broken = copy.deepcopy(state)
@@ -156,3 +158,86 @@ def test_remote_crew_route_actions_reach_the_autopilot():
     assert game.route.kind == "zigzag"
     assert handlers["bridge_route_clear"](game, {}) == "ok"
     assert not game.route.active
+
+
+# --- chart safety: shoal-water warnings and detours (1.3.62) ----------------
+
+def _island(x, y):
+    """A synthetic chart: 50 m everywhere but a 2 x 2 NM island at 10,10."""
+    return 0.0 if 9.0 <= x <= 11.0 and 9.0 <= y <= 11.0 else 50.0
+
+
+def test_leg_hazard_and_detour_on_a_synthetic_chart():
+    assert route_model.leg_hazard(_island, 0.0, 0.0, 5.0, 0.0, 11.0) is None
+    t = route_model.leg_hazard(_island, 5.0, 10.0, 15.0, 10.0, 11.0)
+    assert t is not None and 0.35 <= t <= 0.4           # enters the island at x = 9
+    detour = route_model.plan_detour(_island, 5.0, 10.0, 15.0, 10.0, 11.0, 100.0)
+    assert detour
+    legs = [(5.0, 10.0)] + detour + [(15.0, 10.0)]
+    assert all(route_model.leg_hazard(_island, *a, *b, 11.0) is None
+               for a, b in zip(legs, legs[1:]))
+    # Same answer every time; an unsafe end point has no detour.
+    assert route_model.plan_detour(_island, 5.0, 10.0, 15.0, 10.0, 11.0, 100.0) == detour
+    assert route_model.plan_detour(_island, 5.0, 10.0, 10.0, 10.0, 11.0, 100.0) is None
+
+
+def _legs_clear(game):
+    points = [(game.ship.x, game.ship.y)] + game.route.remaining()
+    return all(route_model.leg_hazard(game._route_depth, *a, *b, game._route_min_depth()) is None
+               for a, b in zip(points, points[1:]))
+
+
+def _open_water_game():
+    """The ship in open water west of this start's coast, with a synthetic
+    chart island 2.5 NM east of it (radius 0.6 NM) for the planner."""
+    game = _game()
+    ship = game.ship
+    ship.x, ship.y = ship.x - 6.0, ship.y - 3.0
+    ship.course = ship.target_course = 90.0
+    assert game.world.hull_is_safe(ship.x, ship.y, ship.course, ship.hull_spec)
+    cx, cy = ship.x + 2.5, ship.y
+
+    def chart(x, y):
+        return 0.0 if math.hypot(x - cx, y - cy) <= 0.6 else game.world.charted_depth_m(x, y)
+
+    game._route_depth = chart
+    return game, (cx, cy)
+
+
+def _keys(game, count=4):
+    return [entry.text.get("__u_jagd_i18n__") for entry in game.feed.entries[-count:]
+            if isinstance(entry.text, dict)]
+
+
+def test_a_waypoint_behind_an_island_gets_a_detour_and_a_warning():
+    game, (cx, cy) = _open_water_game()
+    target = (cx + 1.5, cy)
+    assert game.add_route_waypoint(*target) == "ok"
+    assert len(game.route.points) > 1 and game.route.points[-1] == target
+    assert _legs_clear(game)
+    assert "runtime.route.detour" in _keys(game)
+
+
+def test_a_waypoint_on_the_island_is_warned_and_the_watch_stops_short():
+    game, (cx, cy) = _open_water_game()
+    game.order_speed(15.0)
+    assert game.add_route_waypoint(cx, cy) == "ok"
+    assert "runtime.route.hazard" in _keys(game)
+    _run(game, 600.0)
+    assert not game.route.active
+    assert "runtime.route.hazard_stop" in _keys(game, 12)
+    assert math.hypot(game.ship.x - cx, game.ship.y - cy) > 0.6
+    assert abs(((game.ship.target_course - 270.0 + 180.0) % 360.0) - 180.0) < 5.0
+
+
+def test_the_watch_adds_a_detour_to_a_route_loaded_across_the_island():
+    game, (cx, cy) = _open_water_game()
+    game.order_speed(15.0)
+    # A leg straight across (as a save from before could hold it) is
+    # replanned on the way.
+    game.route.points = [(cx + 1.5, cy)]
+    game.route.index = 0
+    _run(game, 600.0)
+    assert "runtime.route.replanned" in _keys(game, 12)
+    assert game.route.active and _legs_clear(game)
+    assert math.hypot(game.ship.x - cx, game.ship.y - cy) > 0.6

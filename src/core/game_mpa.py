@@ -17,6 +17,7 @@ from src.air.mpa import PatrolAircraft
 from src.core import boat_threat
 from src.core import config, detrand
 from src.core.i18n import display_value, message
+from src.sensors import mad as mad_physics
 from src.sensors import radar as radar_physics
 from src.weapons.torpedo import Torpedo
 
@@ -80,6 +81,7 @@ class MpaMixin:
             ready_in_s=mpa.ready_in_s(self.sim_t),
             sorties_left=config.MPA_SORTIES - mpa.sorties,
             buoys=mpa.buoys_left, torpedoes=mpa.torps, radar=mpa.radar_on,
+            mad=mpa.mad_mode,
             buoy_mode=mpa.buoy_mode, pattern=mpa.pattern,
             pattern_points=[tuple(point) for point in mpa.pattern_queue],
             datalink=self.mpa_datalink(),
@@ -321,6 +323,7 @@ class MpaMixin:
                     mpa.pattern = "single"
                     self._mpa_notice("mpa.pattern_done", 2.0)
         self._update_mpa_radar(dt)
+        self._update_mpa_mad(dt)
 
     def _update_mpa_radar(self, dt: float) -> None:
         """One surface-search look per target and scan, published over the
@@ -329,22 +332,116 @@ class MpaMixin:
         if not (mpa.radar_on and self.mpa_datalink()):
             return
         self._airborne_radar_sweep(
-            dt, mpa.x, mpa.y, config.MPA_ALTITUDE_M, config.MPA_RADAR_RANGE_NM,
+            dt, mpa.x, mpa.y, mpa.altitude_m, config.MPA_RADAR_RANGE_NM,
             "mpa-radar-", "M-", "RADAR-MPA")
+
+    def _update_mpa_mad(self, dt: float) -> None:
+        """MAD passes: a stateless draw per submerged hull under the aircraft;
+        a detection reaches the ship over the datalink as a MAD fix."""
+        mpa = self.mpa
+        if not (mpa.mad_run and self.mpa_datalink()):
+            return
+        look = config.MPA_MAD_LOOK_S
+        tick = math.floor((self.sim_t + 1e-9) / look)
+        if tick == math.floor((self.sim_t - dt + 1e-9) / look):
+            return
+        for target in self._sonar_targets():
+            if (getattr(target, "sensor_domain", None) != "subsurface"
+                    or getattr(target, "sunk", False)):
+                continue
+            slant = mad_physics.slant_m(math.hypot(mpa.x - target.x, mpa.y - target.y),
+                                        getattr(target, "depth", 0.0),
+                                        config.MPA_MAD_ALTITUDE_M)
+            if slant > mad_physics.MAD_MAX_SLANT_M:
+                continue
+            probability = mad_physics.detection_probability(slant)
+            if detrand.u01(self.seed, "mpa-mad", int(target.id), tick) >= probability:
+                continue
+            contact = self.sonar._get_contact(target)
+            contact._fx, contact._fy = self.ship.x, self.ship.y
+            previous = contact.fixes.get("MAD")
+            contact.update_mad(mpa.x, mpa.y, self.sim_t,
+                               mad_physics.MAD_FIX_UNCERTAINTY_NM,
+                               mad_physics.MAD_FIX_QUALITY)
+            if previous is None or self.sim_t - previous["measured_at"] >= 10.0:
+                self._mpa_notice("mpa.mad_contact", contact=contact.id)
+
+    def set_mpa_mad(self, enabled):
+        """Start or end the aircraft's MAD passes over its waypoint."""
+        if type(enabled) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        mpa = self.mpa
+        if enabled and mpa.state not in ("TRANSIT", "STATION"):
+            return "not_airborne"
+        mpa.mad_mode = enabled
+        return True
+
+    def toggle_mpa_mad(self):
+        result = self.set_mpa_mad(not self.mpa.mad_mode)
+        if result is True:
+            self.flash(message("mpa.mad_on" if self.mpa.mad_mode else "mpa.mad_off"), 1.5)
+        return result
 
     def _update_helo_radar(self, dt: float) -> None:
         """The helicopter's surface-search radar: on while it flies with the
         dipping sonar stowed (the same condition as its emission a boat's
         ESM intercepts); contacts reach the OPZ as ``RADAR-HELO`` tracks."""
-        helo = self.helo
-        if not (helo.airborne and helo.dip_state == "STOWED"):
+        if not self.helo_radar_active():
             return
+        helo = self.helo
         self._airborne_radar_sweep(
             dt, helo.x, helo.y, config.HELO_RADAR_ALTITUDE_M,
             config.HELO_RADAR_RANGE_NM, "helo-radar-", "H-", "RADAR-HELO")
 
     def helo_radar_active(self) -> bool:
-        return self.helo.airborne and self.helo.dip_state == "STOWED"
+        return (self.helo.airborne and self.helo.dip_state == "STOWED"
+                and self.helo.radar_on)
+
+    def set_helicopter_radar(self, enabled):
+        """Switch the helicopter's search radar (it radiates only while
+        airborne with the dipping sonar stowed)."""
+        if type(enabled) is not bool:
+            return "invalid_value"
+        self.helo.radar_on = enabled
+        self.flash(message("runtime.helo.radar_on" if enabled
+                           else "runtime.helo.radar_off"), 1.5)
+        return True
+
+    def _update_sub_radar_alert(self, dt: float) -> None:
+        """AI submarines' ESM against the frigate's aircraft radars: a boat
+        with its mast or snorkel up that hears one breaks off the snorkel or
+        radio call, goes deep and stays down for ``SUB_RADAR_HOLD_S``."""
+        look = config.SUB_RADAR_ALERT_LOOK_S
+        tick = math.floor((self.sim_t + 1e-9) / look)
+        if tick == math.floor((self.sim_t - dt + 1e-9) / look):
+            return
+        emitters = []
+        if self.helo_radar_active():
+            emitters.append((self.helo.x, self.helo.y, config.HELO_RADAR_ALTITUDE_M))
+        mpa = getattr(self, "mpa", None)
+        if mpa is not None and mpa.airborne and mpa.radar_on:
+            emitters.append((mpa.x, mpa.y, mpa.altitude_m))
+        if not emitters:
+            return
+        for sub in self.subs:
+            if sub.sunk or sub.manual or sub.state == "SINKING" or not self._mast_up(sub):
+                continue
+            heard = any(
+                math.hypot(sub.x - x, sub.y - y) <= min(
+                    config.SUB_RADAR_ALERT_NM,
+                    config.radar_horizon_nm(altitude, config.SUB_MAST_HEIGHT_M))
+                for x, y, altitude in emitters)
+            if not heard or detrand.u01(self.seed, "sub-radar-alert", int(sub.id),
+                                        tick) >= config.SUB_RADAR_ALERT_P:
+                continue
+            sub.radar_hold_s = config.SUB_RADAR_HOLD_S
+            endurance = sub.endurance
+            if endurance is not None and endurance.surface_operation:
+                endurance.phase = "DESCENDING"
+                endurance.return_depth_m = (endurance.profile.snorkel_depth_m
+                                            + config.SUB_RADAR_DIVE_M)
 
     def _airborne_radar_sweep(self, dt, observer_x, observer_y, altitude_m,
                               range_nm, tag_prefix, id_prefix, source) -> None:

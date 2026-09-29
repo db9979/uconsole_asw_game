@@ -161,7 +161,7 @@ export function validateV2State(state) {
     watch: ["index", "fatigue", "on_duty"],
   };
   const mpaFields = {
-    row: ["state", "airborne", "x", "y", "course", "bearing", "range_nm", "waypoint_x", "waypoint_y", "station_left_s", "ready_in_s", "sorties_left", "buoys", "torpedoes", "radar", "buoy_mode", "pattern", "pattern_points", "datalink", "relayed"],
+    row: ["state", "airborne", "x", "y", "course", "bearing", "range_nm", "waypoint_x", "waypoint_y", "station_left_s", "ready_in_s", "sorties_left", "buoys", "torpedoes", "radar", "mad", "buoy_mode", "pattern", "pattern_points", "datalink", "relayed"],
     states: ["BASE", "TRANSIT", "STATION", "RTB"],
   };
   const opzSuggestionFields = ["key", "refs", "bearing", "bearing_delta_deg", "distance_nm", "course_delta_deg", "speed_delta_kn", "class_match"];
@@ -232,7 +232,8 @@ export function validateV2State(state) {
   // The patrol aircraft: position and waypoint only while airborne.
   const nullableFinite = (value) => value === null || finite(value);
   const mpaOk = (mpa) => exactKeys(mpa, mpaFields.row) && mpaFields.states.includes(mpa.state) &&
-    typeof mpa.airborne === "boolean" && typeof mpa.radar === "boolean" && typeof mpa.datalink === "boolean" &&
+    typeof mpa.airborne === "boolean" && typeof mpa.radar === "boolean" && typeof mpa.mad === "boolean" &&
+    typeof mpa.datalink === "boolean" &&
     ["x", "y", "course", "bearing", "range_nm", "waypoint_x", "waypoint_y", "station_left_s", "ready_in_s"]
       .every((key) => nullableFinite(mpa[key]) && (mpa.airborne || key === "ready_in_s" || mpa[key] === null)) &&
     ["sorties_left", "buoys", "torpedoes", "relayed"].every((key) => Number.isInteger(mpa[key]) && mpa[key] >= 0 && mpa[key] <= 64) &&
@@ -578,9 +579,9 @@ export function validateV2State(state) {
         payload.controls.orders.join(",") !== "ASTERN,STOP,SLOW,HALF,FULL,FLANK" ||
         !exactKeys(payload.environment_effects, ["sea_state", "roll", "pitch", "tas_available", "tas_performance"])) throw new Error("protocol");
   } else if (state.role === "helicopter") {
-    if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar"]) ||
+    if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar", "radar_switch"]) ||
         !["single", "field", "barrier", "circle"].includes(payload.asset.pattern) || typeof payload.asset.mad_mode !== "boolean" ||
-        typeof payload.asset.radar !== "boolean" ||
+        typeof payload.asset.radar !== "boolean" || typeof payload.asset.radar_switch !== "boolean" ||
         (payload.waypoint !== null && !exactKeys(payload.waypoint, ["x", "y"])) ||
         !boundedArray(payload.buoys, 64) || payload.buoys.some((row) => !exactKeys(row, ["ref", "label", "x", "y", "battery_s", "active", "mode"]) || typeof row.label !== "string" || !/^SB[0-9]{2,}$/.test(row.label) || !["ACTIVE", "PASSIVE"].includes(row.mode)) ||
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||

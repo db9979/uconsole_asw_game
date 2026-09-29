@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.85**
+Aktuelle Version: **1.3.86**
 
-Version 1.3.85 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach
+Version 1.3.86 macht die 3D-Modelle massiv. Bisher wurden ihre Flächen nach
 ihrem Mittelpunkt sortiert gezeichnet, sodass aus vielen Winkeln eine ferne
 Fläche über eine nahe gemalt wurde: Decks schienen durch Aufbauten, die ferne
 Rumpfseite durch die nahe, und Schiffe wirkten hohl. Jedes Modell wird jetzt
@@ -27,7 +27,7 @@ Flugzeugrümpfe haben ein feineres Raster. Aufbauten sind keine Klötze mehr:
 Sie steigen in Decksstufen an, bei Kriegsschiffen eingezogen und geneigt, bei
 Passagierschiffen in Terrassen zurückgesetzt, bei Handelsschiffen mit kurzem
 Steuerhaus und Brückennocken oben; U-Boot-Türme sind stromlinienförmig.
-Spielstände bleiben v31.
+Spielstände bleiben v32.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

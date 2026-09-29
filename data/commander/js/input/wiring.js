@@ -618,6 +618,8 @@ export function init() {
   });
   $("helicopter-mad").addEventListener("click", () => sendStationAction("helicopter_set_mad",
     {enabled: !S.v2State?.helicopter?.asset.mad_mode}));
+  $("helicopter-radar").addEventListener("click", () => sendStationAction("helicopter_set_radar",
+    {enabled: !S.v2State?.helicopter?.asset.radar_switch}));
   for (const mode of ["acoustic", "map"]) $(
     `helicopter-visual-${mode}`).addEventListener("click", () => {
       S.helicopterVisualPage = mode;

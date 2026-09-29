@@ -696,7 +696,7 @@ def _mpa(game):
                         if airborne else None),
         ready_in_s=(None if view["ready_in_s"] is None else _number(view["ready_in_s"])),
         sorties_left=int(view["sorties_left"]), buoys=int(view["buoys"]),
-        torpedoes=int(view["torpedoes"]), radar=bool(view["radar"]),
+        torpedoes=int(view["torpedoes"]), radar=bool(view["radar"]), mad=bool(view["mad"]),
         buoy_mode=view["buoy_mode"], pattern=view["pattern"],
         pattern_points=[dict(x=_number(x), y=_number(y))
                         for x, y in view["pattern_points"]],
@@ -824,9 +824,11 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                  dip_ping_cooldown_s=_number(helo.dip_ping_cooldown),
                  buoy_mode=game.helo_buoy_mode,
                  pattern=str(helo.pattern), pattern_remaining=len(helo.pattern_queue),
-                 mad_mode=bool(helo.mad_mode), radar=bool(game.helo_radar_active()))
+                 mad_mode=bool(helo.mad_mode), radar=bool(game.helo_radar_active()),
+                 radar_switch=bool(helo.radar_on))
     if asset_only:
-        for key in ("buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar"):
+        for key in ("buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar",
+                    "radar_switch"):
             asset.pop(key)
         return {"asset": asset}
     water_available = airborne and helo.water_entry_clear(game.world)

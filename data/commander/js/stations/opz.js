@@ -57,7 +57,7 @@ function renderMpa(mpa) {
     rows.push(["mpa_ready_in", mpa.ready_in_s === null ? t("mpa_no_sorties") : unit(mpa.ready_in_s / 60, "min", 0)]);
   }
   rows.push(["buoys", number(mpa.buoys, 0)], ["torpedoes", number(mpa.torpedoes, 0)],
-    ["mpa_sorties_left", number(mpa.sorties_left, 0)], ["mpa_radar", yesNo(mpa.radar)],
+    ["mpa_sorties_left", number(mpa.sorties_left, 0)], ["mpa_radar", yesNo(mpa.radar)], ["mpa_mad", yesNo(mpa.mad)],
     ["mpa_buoy_mode", t(mpa.buoy_mode === "ACTIVE" ? "mpa_buoy_active" : "mpa_buoy_passive")],
     ["helicopter_pattern", t(`buoy_pattern_${mpa.pattern}`)]);
   metrics($("opz-mpa"), rows);
@@ -67,6 +67,7 @@ function renderMpa(mpa) {
       : actionButton("mpa_request", "mpa_request", {}, mpa.ready_in_s === 0),
     actionButton("mpa_drop_buoy", "mpa_drop_buoy", {}, tasking && mpa.buoys > 0),
     actionButton(mpa.radar ? "mpa_radar_off" : "mpa_radar_on", "mpa_set_radar", {enabled: !mpa.radar}),
+    actionButton(mpa.mad ? "mpa_mad_off" : "mpa_mad_on", "mpa_set_mad", {enabled: !mpa.mad}),
     actionButton(mpa.buoy_mode === "ACTIVE" ? "mpa_buoy_passive_order" : "mpa_buoy_active_order",
       "mpa_set_buoy_mode", {mode: mpa.buoy_mode === "ACTIVE" ? "PASSIVE" : "ACTIVE"}));
 }

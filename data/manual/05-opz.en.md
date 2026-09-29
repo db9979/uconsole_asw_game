@@ -32,7 +32,8 @@ Page 3 commands a maritime patrol aircraft (MPA) on call from the nearest friend
 - `A` requests the aircraft (it first heads for the ship's position) or sends it home.
 - `W` sets the search area on the selected track's plotted position (without a selection on the ship); a click on the chart sets it on that point. A bearing-only track has no position to fly to.
 - `Z` plans a buoy pattern (field, barrier, circle) about the search area; the aircraft flies the points and drops a buoy at each. `Shift+Z` cancels the pattern. `X` drops one buoy where the aircraft is, `Y` switches its buoys between PASSIVE and ACTIVE.
-- `T` switches the aircraft's surface-search radar. From 300 m it sees ships and surfaced or mast-raised submarines out to 60 NM (limited by the radar horizon); its contacts appear as `RADAR-MPA` tracks with the aircraft as observer.
+- `T` switches the aircraft's surface-search radar. From 300 m it sees ships and surfaced or mast-raised submarines out to 60 NM (limited by the radar horizon); its contacts appear as `RADAR-MPA` tracks with the aircraft as observer. AI submarines with a raised mast hear it and go deep (see the helicopter chapter).
+- `V` starts or ends **MAD passes** (browser: *Start MAD passes*/*End MAD passes*) while the aircraft is on its way or on station: once there it descends to 60 m and flies straight passes at 180 kn through the search area, turning back 2 NM past it (a cloverleaf). A submerged hull within about 400 m slant range is detected on a stateless draw each second (sure inside 250 m) and reaches the ship over the datalink as a MAD position fix without depth or course on that submarine's sonar contact. A buoy pattern flies first; `A` (home) ends the passes.
 - `D` drops a torpedo on the designated sonar contact. The same checks as for the helicopter apply (current contact classified as a submarine, rules of engagement, a fresh fix under standard ROE), and the aircraft must be within 2 NM of the datum.
 
 Everything the aircraft learns reaches the ship only by datalink, out to 250 NM. Its buoys report only while the aircraft is within 50 NM of them; once it leaves or lands they go silent for the ship. The sidebar shows its state, bearing and range, the time left on station, stores, sorties left and how many of its buoys are being relayed.
@@ -72,6 +73,6 @@ Air defence sequence (missile inbound):
 ## Not modelled {#opz-limits}
 
 - The helicopter's buoys belong to the helicopter station; OPZ handles only the patrol aircraft's buoys.
-- The patrol aircraft has no dipping sonar, no MAD and no own ESM; it cannot be shot down.
+- The patrol aircraft has no dipping sonar and no own ESM; it cannot be shot down. MAD passes fly over the search area only, not along a track.
 - No automatic fusion: every fusion needs the operator's confirmation. Signatures are compared only as the operator's classifications (no acoustic or emitter fingerprint matching), and AIS carries no ship type.
 - No link-based air control of friendly aircraft.

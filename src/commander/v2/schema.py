@@ -36,7 +36,7 @@ CREW_WATCH_FIELDS = ("index", "fatigue", "on_duty")
 # commanded own-force datalink state, never what it has not reported.
 MPA_FIELDS = ("state", "airborne", "x", "y", "course", "bearing", "range_nm",
               "waypoint_x", "waypoint_y", "station_left_s", "ready_in_s",
-              "sorties_left", "buoys", "torpedoes", "radar", "buoy_mode", "pattern",
+              "sorties_left", "buoys", "torpedoes", "radar", "mad", "buoy_mode", "pattern",
               "pattern_points", "datalink", "relayed")
 MPA_STATES = ("BASE", "TRANSIT", "STATION", "RTB")
 # The OPZ's correlation suggestions (``src/sensors/fusion.py``): two refs of

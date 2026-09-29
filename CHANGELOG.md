@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.85
+## 1.3.86
 
-Release 1.3.85 makes the 3D models solid. Until now their faces were drawn
+Release 1.3.86 makes the 3D models solid. Until now their faces were drawn
 in the order of their centres, so from many angles a far face was painted over
 a near one: decks showed through superstructures, the far side of a hull
 through the near side, and ships looked hollow. Every model is now split once
@@ -16,7 +16,21 @@ closed and faces outward, and hulls, submarines and fuselages are drawn with
 a finer grid. Deckhouses are no longer single blocks: they rise in deck tiers,
 warships drawn in and raked, passenger ships stepping back in terraces,
 merchant ships with a short wheelhouse and bridge wings on top; submarine
-sails are streamlined. Saves stay v31.
+sails are streamlined. Saves stay v32.
+
+## 1.3.85
+
+Release 1.3.85 lets the helicopter switch its search radar off and on
+(`Shift+R`, browser button): a radiating helicopter or patrol aircraft now
+drives an AI submarine with a raised mast or snorkel deep for 15 minutes, a
+silent one may catch it at the surface. The patrol aircraft flies MAD passes
+over its search area (`V` at Operations page 3, browser button) and reports a
+submerged hull it crosses as a MAD fix over the datalink. In the frigate
+scenarios an AI patrol submarine far from the frigate and not being hunted
+now and then torpedoes a merchant that passes close, and each merchant lost
+costs 300 points. Measured AI against AI, mission outcomes stayed the same in
+all 30 before/after pairs of scenarios 1 to 3 and 5 to 7; the double hunt lost a merchant
+in 2 of 6 runs. Saves are now v32; older saves are not loaded.
 
 ## 1.3.84
 

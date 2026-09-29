@@ -655,7 +655,8 @@ class SaveMixin:
                            hover_x=self.helo.hover_x, hover_y=self.helo.hover_y,
                            pattern=self.helo.pattern,
                            pattern_queue=[list(point) for point in self.helo.pattern_queue],
-                           mad_mode=self.helo.mad_mode),
+                           mad_mode=self.helo.mad_mode,
+                           radar_on=self.helo.radar_on),
             "subs": [dict(id=s.id, x=s.x, y=s.y, depth=s.depth, course=s.course,
                            state=s.state, speed=s.speed, damage=s.damage,
                            torpedoes_left=s.torpedoes_left, heard_ping=s.heard_ping,
@@ -674,6 +675,7 @@ class SaveMixin:
                           torpedo_alerted=s.torpedo_alerted,
                            decoy_cd=s._decoy_cd,
                            active_ping_cd=s._active_ping_cd,
+                           radar_hold_s=s.radar_hold_s,
                            speed_order=s.speed_order,
                            tma_track=[dict(t=p.t, bearing=p.bearing, fx=p.fx, fy=p.fy,
                                            fcourse=p.fcourse,
@@ -1235,6 +1237,7 @@ class SaveMixin:
         self.helo.pattern = hd["pattern"]
         self.helo.pattern_queue = [tuple(point) for point in hd["pattern_queue"]]
         self.helo.mad_mode = hd["mad_mode"]
+        self.helo.radar_on = hd["radar_on"]
         # U-Boote (Phase 2: vollstaendiger KI-Zustand)
         self.subs = []
         for sd in data["subs"]:
@@ -1272,6 +1275,7 @@ class SaveMixin:
             s.torpedo_alerted = sd["torpedo_alerted"]
             s._decoy_cd = sd["decoy_cd"]
             s._active_ping_cd = sd["active_ping_cd"]
+            s.radar_hold_s = sd["radar_hold_s"]
             s.speed_order = sd["speed_order"]
             s.tma_track = BearingTrack()
             s.tma_track.pts = [BearingPoint(p["t"], p["bearing"], p["fx"], p["fy"],

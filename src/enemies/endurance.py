@@ -49,6 +49,9 @@ class SubmarineEndurance:
         # A human crew runs the plant: no automatic ascent, snorkel or radio
         # call (transient, set by the boat each update; never saved).
         self.manual = False
+        # The AI stays down while its ESM warned of an aircraft radar
+        # (transient, set by the boat each update from its saved hold).
+        self.hold_ascent = False
 
     @property
     def fuel_capacity_kwh(self) -> float:
@@ -148,14 +151,18 @@ class SubmarineEndurance:
         if self.phase == "AIP" and self.battery_kwh >= stop - self.ENERGY_EPSILON_KWH:
             self.battery_kwh = max(self.battery_kwh, stop)
             self.phase = "SUBMERGED"
+        held = (self.hold_ascent and self.battery_kwh
+                > self.profile.battery_capacity_kwh * config.SUB_RADAR_HOLD_MIN_BATTERY)
         if self.phase == "SUBMERGED" and self.battery_kwh <= start + self.ENERGY_EPSILON_KWH:
             self.battery_kwh = min(self.battery_kwh, start)
             if self.profile.aip_power_kw is not None and self.aip_energy_kwh > 0.0:
                 self.phase = "AIP"
+            elif held:
+                pass
             else:
                 self.return_depth_m = max(depth_m, self.profile.snorkel_depth_m)
                 self.phase = "ASCENDING"
-        elif (self.phase == "AIP"
+        elif (self.phase == "AIP" and not held
               and self.aip_energy_kwh <= self.ENERGY_EPSILON_KWH):
             self.aip_energy_kwh = 0.0
             self.return_depth_m = max(depth_m, self.profile.snorkel_depth_m)

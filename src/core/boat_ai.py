@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import math
 
-from src.core import boat_missions, boat_radio, config
+from src.core import boat_missions, boat_radio, config, detrand
 from src.core.i18n import message
 from src.sensors.platform import MAST_DEPTH_M, PlatformObservation
 
@@ -235,9 +235,9 @@ def _torpedo_running(game, sub) -> bool:
         for torpedo in game.enemy_torpedoes)
 
 
-def attack(game, sub) -> bool:
+def attack(game, sub, ships=None) -> bool:
     """Fire one torpedo at the nearest merchant within attack range."""
-    ships = [ship for ship in convoy_ships(game)
+    ships = [ship for ship in (convoy_ships(game) if ships is None else ships)
              if math.hypot(ship.x - sub.x, ship.y - sub.y) <= config.BOAT_AI_ATTACK_NM]
     if (not ships or sub.state != "PATROLLE" or sub.torpedoes_left <= 0
             or _torpedo_running(game, sub) or not _window(game, config.BOAT_AI_FIRE_EVERY_S)):
@@ -262,6 +262,41 @@ def attack(game, sub) -> bool:
     return sub._fire_salvo(observation, 1) > 0
 
 
+def patrol_raiders(game) -> list:
+    """AI submarines that may torpedo merchants in a frigate mission: every
+    hostile, uncrewed patrol boat of a built-in frigate scenario (not a boat
+    mission, a custom mission or a training lesson)."""
+    if (boat_missions.mode(game) is not None
+            or getattr(game, "custom_mission_definition", None) is not None
+            or getattr(game, "training", None) is not None):
+        return []
+    return [sub for sub in game.subs
+            if sub.side == "hostile" and not sub.sunk and not sub.manual
+            and sub.state not in ("SINKING", "SUNK")]
+
+
+def _unhunted(sub) -> bool:
+    memory = sub.memory
+    return (memory["last_ping_age"] > config.SUB_RAID_QUIET_S
+            and memory["last_torpedo_age"] > config.SUB_RAID_QUIET_S)
+
+
+def patrol_attack(game, sub) -> bool:
+    """A patrol boat far from the frigate and not hunted torpedoes a merchant
+    that passes close, on a random fraction of its fire windows and keeping
+    torpedoes back for the frigate."""
+    if (sub.torpedoes_left <= config.SUB_RAID_KEEP_TORPEDOES or not _unhunted(sub)
+            or (not game.damage.ship_sunk and math.hypot(
+                game.ship.x - sub.x, game.ship.y - sub.y) < config.SUB_RAID_FRIGATE_NM)
+            or not _window(game, config.BOAT_AI_FIRE_EVERY_S)):
+        return False
+    window = int(math.floor(game.sim_t / config.BOAT_AI_FIRE_EVERY_S))
+    if detrand.u01(game.seed, "sub-raid", int(sub.id), window) >= config.SUB_RAID_P:
+        return False
+    ships = [ship for ship in game.civilians if not ship.sunk]
+    return attack(game, sub, ships)
+
+
 def frigate_sighted(game, sub) -> bool:
     """At periscope depth with the frigate within sighting range."""
     return (sub.depth <= MAST_DEPTH_M and not game.damage.ship_sunk
@@ -282,6 +317,8 @@ def update(game, dt: float) -> None:
     """The boat's weapons and radio on their cadence (after the hunters)."""
     if math.floor(game.sim_t / CADENCE_S) == math.floor((game.sim_t - dt) / CADENCE_S):
         return
+    for raider in patrol_raiders(game):
+        patrol_attack(game, raider)
     sub = boat(game)
     if sub is None:
         return

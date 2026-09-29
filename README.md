@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.79**
+Current release: **1.3.80**
 
-Release 1.3.79 gives every ship, submarine and aircraft type its own 3D
+Release 1.3.80 gives every ship, submarine and aircraft type its own 3D
 model. Each of the 111 catalog types is built from the public main dimensions
 and general arrangement of the real class (Wikipedia; generic types such as a
 VLCC or a harbour tug use typical values): length, beam and draught, where
@@ -23,8 +23,8 @@ stand, a submarine's sail, planes, rudders and missile deck, an aircraft's
 wings, tail and engines. The same type always looks the same, so a Type 23
 no longer looks like an Arleigh Burke. The analyser, the Unit Editor and the
 eyepieces (binoculars, periscope, phone lookout) show the real type the eye
-sees, so it can be told by sight; the lookout's report still names only what
-he made out, and only the report reaches the OPZ. Saves stay v31.
+sees, so it can be told by sight; the lookout report still names only what
+was made out, and only the report reaches the OPZ. Saves stay v31.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

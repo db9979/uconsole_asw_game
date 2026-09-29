@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.79
+## 1.3.80
 
-Version 1.3.79 gibt jedem Schiffs-, U-Boot- und Flugzeugtyp ein eigenes
+Version 1.3.80 gibt jedem Schiffs-, U-Boot- und Flugzeugtyp ein eigenes
 3D-Modell. Jeder der 111 Katalogtypen ist aus den öffentlichen
 Hauptabmessungen und der Anordnung der echten Klasse gebaut (Wikipedia;
 allgemeine Typen wie ein VLCC oder ein Hafenschlepper mit typischen Werten):
@@ -19,6 +19,17 @@ wie eine Arleigh Burke. Analysator, Einheiteneditor und die Okulare
 sodass er sich auf Sicht bestimmen lässt; die Meldung des Ausgucks nennt
 weiter nur, was er ausgemacht hat, und nur sie geht an die OPZ. Spielstände
 bleiben v31.
+
+## 1.3.79
+
+Version 1.3.79 repariert die Kopplung in Safari und Firefox und damit den
+Handy-Ausguck auf dem iPhone. Die Seiten des Spiels verlangten vom Browser,
+gar keinen Referrer zu senden; nach dem Webstandard kennzeichnen Safari und
+Firefox dann die eigenen Anfragen der Seite als herkunftslos („Origin: null“),
+und das Spiel wies sie als fremde Adresse ab, sodass die Kopplung mit „Das
+Spiel hat diese Adresse abgelehnt“ scheiterte. Die Seiten behalten den
+Referrer jetzt für das Spiel selbst und senden weiterhin keinen an andere
+Seiten; Chrome war nie betroffen. Spielstände bleiben v28.
 
 ## 1.3.78
 

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.79**
+Aktuelle Version: **1.3.80**
 
-Version 1.3.79 gibt jedem Schiffs-, U-Boot- und Flugzeugtyp ein eigenes
+Version 1.3.80 gibt jedem Schiffs-, U-Boot- und Flugzeugtyp ein eigenes
 3D-Modell. Jeder der 111 Katalogtypen ist aus den öffentlichen
 Hauptabmessungen und der Anordnung der echten Klasse gebaut (Wikipedia;
 allgemeine Typen wie ein VLCC oder ein Hafenschlepper mit typischen Werten):

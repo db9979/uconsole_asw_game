@@ -33,6 +33,7 @@ from src.enemies.sub import Sub
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
+from src.core.incidents import IncidentBoard
 from src.core.crew import CrewState
 from src.air.mpa import PatrolAircraft
 from src.enemies.endurance import SubmarineEndurance
@@ -478,6 +479,7 @@ class SaveMixin:
             "mission_time": self.mission_time,
             "mission_events": list(self.mission_events_pending),
             "tasking": self.tasking.serialize(),
+            "incidents": self.incidents.serialize(),
             "watch": self.crew_watch.serialize(),
             "mpa": self.mpa.serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
@@ -1035,6 +1037,7 @@ class SaveMixin:
         self.mission_time = data["mission_time"]
         self.mission_events_pending = [str(item) for item in data["mission_events"]]
         self.tasking = TaskBoard.restore(data["tasking"])
+        self.incidents = IncidentBoard.restore(data["incidents"])
         self.task_sel = 0
         self.crew_watch = CrewState.restore(data["watch"])
         self.mpa = PatrolAircraft.restore(data["mpa"], self.world.size_nm)

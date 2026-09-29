@@ -973,6 +973,26 @@ SCORE_TIME_BONUS_MAX = 500         # Zeitbonus, anteilig nach verbleibender Zeit
 # Radio tasking (``src/core/tasking.py``): HQ orders and incidents in the
 # built-in scenarios.  The first offer comes after 15-25 minutes, the next
 # every 25-45 minutes, never more than two tasks open at once.
+# Incidents at sea (src/core/incidents.py): schedule and the four kinds.
+INCIDENT_FIRST_S = (1200.0, 2400.0)
+INCIDENT_INTERVAL_S = (1800.0, 3000.0)
+INCIDENT_MAX = 4
+INCIDENT_NET_RANGE_NM = (3.0, 7.0)     # net across the track this far ahead
+INCIDENT_NET_SPREAD_DEG = 25.0
+INCIDENT_NET_LENGTH_NM = 2.0
+INCIDENT_NET_DEPTH_M = 20.0            # hangs from the surface to this depth
+INCIDENT_NET_HIT_NM = 0.03             # within this of the line: over the net
+INCIDENT_NET_S = 3600.0                # the fishing boat hauls it after this
+INCIDENT_NET_TRANSIENT_S = 20.0        # a submarine tearing free
+SCORE_NET_TORN = 100
+INCIDENT_FRONT_LEAD_S = 600.0          # HQ's warning ahead of the front
+INCIDENT_FRONT_S = (1800.0, 3600.0)
+INCIDENT_DARK_RANGE_NM = (8.0, 15.0)
+INCIDENT_DARK_SPEED_KN = (8.0, 13.0)
+INCIDENT_DARK_S = 7200.0
+INCIDENT_WHALES_RANGE_NM = (3.0, 6.0)
+INCIDENT_WHALES_COUNT = (2, 4)
+INCIDENT_WHALES_S = 3600.0
 TASK_FIRST_OFFER_S = (900.0, 1500.0)
 TASK_INTERVAL_S = (1500.0, 2700.0)
 TASK_MAX_OFFERS = 6

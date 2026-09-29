@@ -98,7 +98,9 @@ class CrewOrders:
               "tube_loaded": "waffen", "tube_flooded": "waffen",
               "torpedo_fired": "waffen", "torpedo_fired_tubeless": "waffen",
               "breakup_heard": "sonar", "hull_hit": "schaden",
-              "test_depth_near": "navigation", "test_depth_over": "navigation"}
+              "test_depth_near": "navigation", "test_depth_over": "navigation",
+              "incident_net": "funk", "incident_front": "funk",
+              "incident_whales": "funk", "net_fouled": "navigation"}
 
     def __init__(self):
         self.silent = False

@@ -39,6 +39,17 @@ Neben der Jagd funkt das HQ Aufträge an das Schiff: den ersten etwa 15 bis 25 M
 
 Angenommene Positionen stehen in jeder Karte (auch im Remote-Crew-Browser). Die Punkte stehen in der Missionsauswertung. Der Funker im Browser antwortet mit denselben Tasten.
 
+## Ereignisse auf See {#radio-incidents}
+
+Die See bringt eigene Überraschungen: das erste 20 bis 40 Minuten nach dem Start einer eingebauten Mission, dann alle 30 bis 50 Minuten eines, höchstens vier je Mission (keine in eigenen Missionen und Lektionen). Jedes kommt über den Fernschreiber.
+
+- **Treibnetz:** Ein Fischer meldet ein 2 sm langes Netz quer zum Kurs, 3 bis 7 sm voraus, von der Oberfläche bis 20 m tief; der Funker trägt es in jede Karte als Lineal `NET n` ein, und nach einer Stunde wird es eingeholt. Wer darüber fährt, zerreißt es: Die Fischer verlangen Schadenersatz (-100 Punkte), und ein ausgebrachtes Schleppsonar oder VDS verfängt sich und wird sofort eingeholt. Ein U-Boot, das flacher als 20 m kreuzt, verfängt sich ebenfalls und ist 20 s laut, bis es sich losreißt; tiefer taucht es darunter durch.
+- **Wetterfront:** HQ warnt 10 Minuten vorher; dann halten Regen, Sturm oder Nebel 30 bis 60 Minuten an (Sicht, Wind und Regengeräusch für jeden Sensor, auf beiden Seiten), und HQ meldet, wenn sie durchgezogen ist.
+- **Handelsschiff ohne AIS:** Ein Frachter ohne AIS taucht 8 bis 15 sm entfernt auf; HQ meldet ihn mit etwa 2 sm Fehler und bietet ihn als Identifizierungsauftrag an, wenn weniger als zwei Aufträge offen sind.
+- **Wale:** Ein Fischer meldet eine Gruppe von zwei bis vier Walen 3 bis 6 sm voraus; sie sind echte biologische Kontakte für jedes Sonar.
+
+Treibnetz, Front und Wale gibt HQ auch in den Rundspruch an das U-Boot; ein besetztes U-Boot erfährt davon, wenn es den nächsten Rundspruch aufnimmt, und seine Crew trägt das Netz in die eigene Karte ein.
+
 ## Tasten {#radio-keys}
 
 <!-- keys:radio -->

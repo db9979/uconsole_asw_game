@@ -87,6 +87,7 @@ from src.core.game_draw import (DrawMixin)
 from src.core.game_operator import (OperatorMixin)
 from src.core.game_pictures import (PicturesMixin)
 from src.core.game_tasking import TaskingMixin
+from src.core.game_incidents import IncidentsMixin
 from src.core.game_crew import CrewMixin
 from src.core.game_mpa import MpaMixin
 from src.core.game_debrief import DebriefMixin
@@ -100,7 +101,7 @@ from src.core.game_welcome import WelcomeMixin
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            RadarPictureMixin, AswWeaponsMixin,
-           SaveMixin, TaskingMixin, CrewMixin, MpaMixin, DebriefMixin,
+           SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, DebriefMixin,
            TrainingMixin, CampaignMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
@@ -439,6 +440,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.score = 0
         # HQ orders and incidents (save ``tasking``); none in custom missions.
         self._reset_tasking()
+        # Incidents at sea (save ``incidents``); none in custom missions.
+        self._reset_incidents()
         # Watches, fatigue and morale of the frigate crew (save ``watch``).
         self._reset_crew()
         # Post-mission debrief recording (transient, never saved).

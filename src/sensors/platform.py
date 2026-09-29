@@ -16,6 +16,7 @@ SIDES = ("friendly", "neutral", "hostile")
 DOCTRINES = (
     "submarine",
     "surface_transit",
+    "dark_transit",
     "surface_combatant",
     "civil_flight",
     "military_patrol",

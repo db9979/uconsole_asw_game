@@ -181,6 +181,9 @@ class BoatRadio:
                           number=str(number))
         if order is not None:
             boat.orders.event("radio_order_" + order["kind"], number=str(order["id"]))
+        tell = getattr(game, "incidents_to_boat", None)
+        if tell is not None:
+            tell(boat, number * config.UBOOT_RADIO_BROADCAST_S)
 
     # -- HQ orders ---------------------------------------------------------------
 

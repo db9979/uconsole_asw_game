@@ -1214,6 +1214,7 @@ class SimMixin:
                             near=(self.ship.x, self.ship.y))
         self._run_mission_events()
         self._update_tasking(dt)
+        self._update_incidents(dt)
         self._check_mission_end()
         self._update_training()
 

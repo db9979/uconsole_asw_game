@@ -35,6 +35,7 @@ SEARCH_KN = 10.0
 TRANSIT_KN = 18.0
 CLOSE_KN = 8.0
 CLOSE_NM = 6.0                  # inside this a position datum is worked, not run at
+NET_CLEAR_NM = 1.0              # look this far past the turning lookahead for nets
 SEARCH_LEG_S = 600.0            # zigzag leg of the search
 SEARCH_BOX_S = 1800.0           # the zigzag's base course turns 90° this often
 CROSS_LEG_S = 300.0             # side of the crossing course for bearing motion
@@ -303,6 +304,11 @@ def _steer(game, course: float, speed: float) -> str:
     def safe(heading):
         lookahead = max(0.5, max(ship.speed, speed) * (120.0 / 3600.0))
         rad = math.radians(heading)
+        ahead = lookahead + NET_CLEAR_NM
+        # Reported drift nets are on the chart: steer round them.
+        if game.net_ahead(ship.x, ship.y, ship.x + ahead * math.sin(rad),
+                          ship.y - ahead * math.cos(rad)):
+            return False
         return game.world.hull_is_safe(ship.x + lookahead * math.sin(rad),
                                        ship.y - lookahead * math.cos(rad),
                                        heading, ship.hull_spec)

@@ -40,6 +40,7 @@ from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
+from src.core.incidents import IncidentBoard
 from src.core.crew import CrewState
 from src.air.mpa import PatrolAircraft
 from src.air.sonobuoy import OWNERS as BUOY_OWNERS
@@ -500,6 +501,11 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
            and task["target_id"] not in surface_ids for task in board["tasks"]):
         return False
     if any(task["offered_t"] > save_sim_t for task in board["tasks"]):
+        return False
+    # Save v34: incidents at sea; none announced after the save time.
+    incidents = data.get("incidents")
+    if (not IncidentBoard.valid_state(incidents)
+            or any(item["announced_t"] > save_sim_t for item in incidents["items"])):
         return False
     intercepts = data.get("ping_intercepts")
     if (not isinstance(intercepts, list) or len(intercepts) > PING_INTERCEPTS_MAX

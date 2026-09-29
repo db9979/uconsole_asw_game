@@ -4,6 +4,20 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.83
+
+Release 1.3.83 turns the submarine's engine room in the Remote Crew browser
+into a machinery control console. The large picture area, empty until now, shows
+an annunciator panel of status lamps (dark when off, turquoise while running,
+amber for a caution, flashing red for an alarm, each with its value) for motor,
+snorkel, generator, battery, charging, fuel, air, main ballast, high-pressure
+air, pumps, trim, power, flooding, leak, fire and gas, with a master lamp that
+counts the alarms. Below it are round gauges for speed, battery, energy
+balance, depth, high-pressure air and trim angle, tank columns for the stores
+and tanks, and a mimic of the six compartments from bow to stern with the
+water level, the lamps of each room, the bulkheads and the teams at work. The
+orders stay in the station panel. Saves stay v31.
+
 ## 1.3.82
 
 Release 1.3.82 makes the phone lookout's voice reports say why they failed.

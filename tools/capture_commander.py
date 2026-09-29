@@ -83,6 +83,9 @@ def capture_specs() -> tuple[Capture, ...]:
                 Capture(f"commander-v2-{language}-periscope-{sight}.png", language,
                         *DESKTOP, "uboot_esm", scene="periscope", sight=sight),
             ))
+        # The submarine's engine-room console (a crewed diesel boat snorkelling).
+        captures.append(Capture(f"commander-v2-{language}-uboot-engine-desktop.png",
+                                language, *DESKTOP, "uboot_engine", sight="engine"))
     return tuple(captures)
 
 
@@ -134,6 +137,7 @@ AUTOMATION = r"""
     if (scene === "periscope") return $("uboot-scope-canvas");
     if (["bridge", "weapons", "opz", "helicopter"].includes(role)) return $("role-map");
     if (role === "radio") return $("radio-df-scope");
+    if (role === "uboot_engine") return $("uboot-engine-dials");
     return $({sonar: "sonar-broadband", damage: "damage-schematic",
       engine: "engine-instruments", eloka: "eloka-scope"}[role]);
   }
@@ -368,6 +372,36 @@ def _workstation_world(game) -> None:
     game.damage.teams = {1: "sonar", 2: "engine", 3: "engine"}
 
 
+ENGINE_SCENARIO = "s7_geleitzug"   # a diesel-electric boat on seed 1234
+
+
+def _engine_world(game, seed: int) -> None:
+    """A crewed diesel boat snorkelling at slow ahead and charging, with a
+    small authored leak aft, for the engine-room console capture."""
+    game.reset(seed, ENGINE_SCENARIO)
+    game.local_side = "uboot"
+    boat = game.claim_opfor_sub()
+    if boat is None or boat.sub.endurance is None:
+        raise RuntimeError("no diesel submarine for the engine-room picture")
+    sub = boat.sub
+    sub.set_orders(speed=6.0, depth=float(sub.endurance.profile.snorkel_depth_m))
+    # Authored stores: a battery worth charging.
+    sub.endurance.battery_kwh = sub.endurance.profile.battery_capacity_kwh * 0.62
+
+    def run(seconds: float) -> None:
+        for _ in range(round(seconds * 10)):
+            game._opfor_hold_s = 3600.0
+            game.update(0.1)
+
+    run(90.0)
+    if sub.command_snorkel(True) is not True:
+        raise RuntimeError("the engine-room boat did not start snorkelling")
+    sub.damage_control.hull_leak(0.4, seed, where="stern")
+    sub.command_dc_team(0, "stern", "seal")
+    sub.command_bulkhead("engine", True)
+    run(30.0)
+
+
 def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000) -> None:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     os.environ["SDL_AUDIODRIVER"] = "dummy"
@@ -391,7 +425,7 @@ def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000) -
             translations = {lang: load_catalog(lang) for lang in ("en", "de")}
             hours = dict(SIGHT_TIMES)
             for language, sight in ((language, sight) for language in ("en", "de")
-                                    for sight in (None, *hours)):
+                                    for sight in (None, "engine", *hours)):
                 specs = [item for item in capture_specs()
                          if item.language == language and item.sight == sight]
                 if not specs:
@@ -404,6 +438,8 @@ def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000) -
                 try:
                     if sight is None:
                         _workstation_world(game)
+                    elif sight == "engine":
+                        _engine_world(game, seed)
                     else:
                         sight_world(game, hours[sight])
                     # Keep browser rendering independent of performance.now();

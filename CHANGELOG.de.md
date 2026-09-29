@@ -4,6 +4,21 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.83
+
+Version 1.3.83 macht aus dem Maschinenraum des U-Boots im Remote-Crew-Browser
+einen Maschinenleitstand. Die große, bisher leere Bildfläche zeigt eine Warn-
+und Meldetafel aus Statuslampen (dunkel, wenn aus, türkis im Betrieb, gelb bei
+einer Warnung, rot blinkend bei einem Alarm, jede mit ihrem Wert) für
+E-Maschine, Schnorchel, Generator, Batterie, Laden, Kraftstoff, Luft,
+Hauptzellen, Pressluft, Pumpen, Trimm, Strom, Wassereinbruch, Leck, Brand und
+Gas, mit einer Sammellampe, die die Alarme zählt. Darunter stehen runde
+Instrumente für Fahrt, Batterie, Energiebilanz, Tiefe, Pressluft und
+Trimmwinkel, Tanksäulen für Vorräte und Zellen und ein Bild der sechs
+Abteilungen vom Bug zum Heck mit Wasserstand, den Lampen jedes Raums, den
+Schotten und den arbeitenden Trupps. Die Befehle bleiben im Stationsbereich.
+Spielstände bleiben v31.
+
 ## 1.3.82
 
 Version 1.3.82 lässt die Sprachmeldungen des Handy-Ausgucks sagen, woran sie

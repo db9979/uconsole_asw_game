@@ -1066,10 +1066,12 @@ BOAT_CONVOY_SINK = 2               # the boat wins after sinking this many
 BOAT_CONVOY_SPEED_KN = 8.0
 BOAT_CONVOY_SPACING_NM = 1.0
 BOAT_CONVOY_WARHEAD = 100.0        # a heavyweight hit breaks a merchant
-# The boat starts this far ahead of the convoy on its track (and up to this
-# far off to either side), so it can wait for a convoy it could not overtake.
-BOAT_CONVOY_BOAT_AHEAD_NM = 14.0
-BOAT_CONVOY_BOAT_SIDE_NM = 4.0
+# The boat starts on the convoy's bow, this far ahead of it and this far off
+# its track to one side (the lesser plus up to the spread), so it can wait
+# for a convoy it could not overtake without running into the screen ahead.
+BOAT_CONVOY_BOAT_AHEAD_NM = 10.0
+BOAT_CONVOY_BOAT_SIDE_NM = 5.0
+BOAT_CONVOY_BOAT_SIDE_SPREAD_NM = 3.0
 # Boat missions: the goal lies this far beyond the frigate's start, seen from
 # the boat's start, and counts as reached within the radius.
 BOAT_GOAL_BEYOND_NM = 5.0

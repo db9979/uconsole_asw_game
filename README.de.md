@@ -24,7 +24,7 @@ dadurch schwer. Vorher zündete er 250 bis 370 m zu früh und richtete nur 12 bi
 die Fregatte, und ein KI-U-Boot greift eine geortete Fregatte innerhalb 10 sm
 auch bei leiser Fahrt an. Die U-Boot-Missionen passen in ihre Zeit: das Ziel des
 Durchbruchs liegt 5 sm hinter der Fregatte, die Aufklärung hat 3 Stunden, und
-der Geleitzug läuft 8 kn, das U-Boot startet etwa 14 sm vor ihm. Spielstände
+der Geleitzug läuft 8 kn, das U-Boot startet an seinem Bug etwa 10 sm voraus. Spielstände
 bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

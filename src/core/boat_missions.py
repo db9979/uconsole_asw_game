@@ -115,18 +115,20 @@ def spawn_convoy(game) -> None:
 
 
 def _station_boat_ahead(game, course: float) -> None:
-    """Put the mission boat ahead of the convoy on its track, where it can
-    wait for it: a convoy running away is faster than a dived boat. The side
-    offset is a stateless draw keyed by the seed, so no stream shifts."""
+    """Put the mission boat on the convoy's bow, where it can wait for it: a
+    convoy running away is faster than a dived boat, and the escort screens
+    dead ahead. The side is a stateless draw keyed by the seed, so no
+    stream shifts."""
     sub = target_sub(game)
     if sub is None:
         return
-    side = ((detrand.u01(game.seed, "convoy-boat-side", 0) * 2.0 - 1.0)
-            * config.BOAT_CONVOY_BOAT_SIDE_NM)
+    draw = detrand.u01(game.seed, "convoy-boat-side", 0) * 2.0 - 1.0
+    side = math.copysign(config.BOAT_CONVOY_BOAT_SIDE_NM
+                         + abs(draw) * config.BOAT_CONVOY_BOAT_SIDE_SPREAD_NM, draw)
     rad = math.radians(course)
     for ahead in (config.BOAT_CONVOY_BOAT_AHEAD_NM, config.BOAT_CONVOY_BOAT_AHEAD_NM * 0.75,
                   config.BOAT_CONVOY_BOAT_AHEAD_NM * 1.25):
-        for offset in (side, 0.0, -side):
+        for offset in (side, -side, 0.0):
             x = game.ship.x + ahead * math.sin(rad) + offset * math.cos(rad)
             y = game.ship.y - ahead * math.cos(rad) + offset * math.sin(rad)
             if _water(game, x, y):

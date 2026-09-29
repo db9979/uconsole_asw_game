@@ -13,8 +13,8 @@ short and did only 12 to 18 % damage. Hostile torpedoes run 40 kn for 20 NM
 and outpace the frigate, and an AI submarine attacks a located frigate within
 10 NM even when she runs quiet. The submarine missions fit their clocks: the
 breakthrough goal lies 5 NM beyond the frigate, reconnaissance has 3 hours,
-and the convoy sails at 8 kn with the submarine starting about 14 NM ahead of
-it. Saves stay v28.
+and the convoy sails at 8 kn with the submarine starting on its bow, about
+10 NM ahead. Saves stay v28.
 
 ## 1.3.59
 

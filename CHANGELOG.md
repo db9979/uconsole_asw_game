@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.62
+
+Release 1.3.62 teaches the autopilot the chart. A waypoint or search pattern
+whose leg crosses shoal water or land now gets detour points around it, or a
+warning in the feed which leg to steer by hand. While the route runs, the
+autopilot looks two minutes ahead once a second; shoal water there gets a
+detour to the current waypoint, or the route switches off and the ship turns
+back on the reciprocal course. It plans on charted depth, rocks and wrecks
+against the hull's draft plus keel reserve and a 2 m margin. Saves stay v28; a
+route may now hold up to 16 points with detours.
+
 ## 1.3.61
 
 Release 1.3.61 makes the Unit Editor count. Profiles saved there can now be

@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.62
+
+Version 1.3.62 bringt dem Autopiloten die Seekarte bei. Führt die Strecke
+eines Wegpunkts oder Suchmusters durch Flachwasser oder Land, fügt er Umweg-
+Punkte ein oder meldet im Verlauf, welche Strecke von Hand zu steuern ist.
+Während der Fahrt schaut er einmal pro Sekunde zwei Minuten voraus;
+Flachwasser dort bekommt einen Umweg zum aktuellen Wegpunkt, sonst schaltet
+sich die Route ab und das Schiff dreht auf den Gegenkurs. Er plant mit
+Kartentiefe, Felsen und Wracks gegen Tiefgang plus Kielreserve und 2 m
+Sicherheit. Spielstände bleiben v28; eine Route kann mit Umwegen jetzt bis zu
+16 Punkte haben.
+
 ## 1.3.61
 
 Version 1.3.61 macht den Einheiteneditor wirksam. Dort gespeicherte Profile

@@ -12,17 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.61**
+Current release: **1.3.62**
 
-Release 1.3.61 makes the Unit Editor count. Profiles saved there can now be
-placed in your own missions like built-in units, and they take effect there:
-name, speeds, depth, torpedo load, behaviour, acoustics and spawn weight. A
-user submarine takes its sensors, tubes, decoys and battery, diesel or AIP
-plant from the built-in boat of its propulsion. A mission can also place a
-hostile torpedo that is already running on its course at the start, for
-torpedo-evasion drills. Such missions save and load normally (the save's
-catalog snapshot carries the user profiles); built-in scenarios never use
-them. Saves stay v28.
+Release 1.3.62 teaches the autopilot the chart. A waypoint or search pattern
+whose leg crosses shoal water or land now gets detour points around it, or a
+warning in the feed which leg to steer by hand. While the route runs, the
+autopilot looks two minutes ahead once a second; shoal water there gets a
+detour to the current waypoint, or the route switches off and the ship turns
+back on the reciprocal course. It plans on charted depth, rocks and wrecks
+against the hull's draft plus keel reserve and a 2 m margin. Saves stay v28; a
+route may now hold up to 16 points with detours.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

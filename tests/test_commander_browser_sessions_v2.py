@@ -479,8 +479,9 @@ async function run() {
           visualRendered.add("sonar");
       }
       if (latestRole === "helicopter") {
-        assert(canvas.getBoundingClientRect().height >= 200,
-          "Helicopter LOFAR view is too small");
+        // The layout settles after the role switch; wait like the other plots.
+        await until(() => canvas.getBoundingClientRect().height >= 200,
+          () => `Helicopter LOFAR view is too small: ${canvas.getBoundingClientRect().height}px`);
         for (const plot of ["broadband", "demon"]) {
           document.querySelector(`[data-helicopter-plot-tab="${plot}"]`).click();
           const plotCanvas = document.getElementById(`helicopter-${plot}-canvas`);

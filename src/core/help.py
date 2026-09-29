@@ -102,6 +102,7 @@ STATION_HELP = {
           (", / .", "help.control.torp_enable"), ("Y", "help.control.torp_salvo"),
           ("H", "help.control.helo_toggle"), ("B", "help.control.buoy"),
           ("D", "help.control.air_torp"), ("V", "help.control.nixie"),
+          ("A", "help.control.asroc"), ("Z", "help.control.depth_charges"),
           ("Q / E", "help.control.zoom"),
          ("K", "help.control.follow"), ("F", "help.control.flak_release")],
         ["help.note.roe", "help.note.target_depth", "help.note.salvo",

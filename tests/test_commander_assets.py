@@ -478,12 +478,14 @@ def test_v2_direct_fire_controls_use_opaque_projections_and_exact_actions():
     assert {
         "weapons-fire-target", "weapons-fire-depth", "weapons-fire-torpedo",
         "weapons-fire-helicopter", "weapons-fire-nixie", "weapons-fire-status",
+        "weapons-fire-asroc", "weapons-drop-depth-charges",
         "opz-fire-target", "opz-fire-essm", "opz-fire-chaff", "opz-fire-status",
         "helicopter-fire-target", "helicopter-fire-depth",
         "helicopter-fire-torpedo", "helicopter-fire-status",
     } <= ids
     actions = {"weapons_launch_torpedo", "helicopter_launch_torpedo",
-               "weapons_deploy_nixie", "opz_launch_essm", "opz_launch_chaff"}
+               "weapons_deploy_nixie", "opz_launch_essm", "opz_launch_chaff",
+               "weapons_fire_asroc", "weapons_drop_depth_charges"}
     assert all(f'data-fire-action="{action}"' in html for action in actions)
     direct = js.split("function directFireSpec", 1)[1].split(
         "function renderStationControls", 1)[0]

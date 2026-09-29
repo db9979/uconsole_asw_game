@@ -1178,6 +1178,8 @@ class EventMixin:
                     result = self.send_helicopter_dipping_ping()
                     self.flash(message("runtime.helo.dip_ping_sent" if result is True
                                        else "runtime.helo.dip_ping_unavailable"))
+                elif self.station is Station.WEAPONS:
+                    self.fire_own_asroc()
                 elif self.station is Station.ELOKA:
                     self.set_ecm_auto(not self.ecm_jammer.auto_enabled)
                     self.flash(message("runtime.eloka.auto_on"
@@ -1282,6 +1284,8 @@ class EventMixin:
                     self._cycle_eloka_filter("band")
                 elif self.station is Station.OPZ:
                     self._mark_newest_blip()
+            elif e.key == pygame.K_z and self.station is Station.WEAPONS:
+                self.drop_depth_charges()
             elif e.key == pygame.K_y and self.station is Station.WEAPONS:
                 self._cycle_torpedo_salvo()
             elif e.key == pygame.K_g and self.station is Station.ENGINE:

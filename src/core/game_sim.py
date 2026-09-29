@@ -87,7 +87,7 @@ SIM_ORDER = (
     "_update_platform_sensors", "_update_underwater_entities",
     "_update_aviation", "_update_raiders", "_update_air_defense",
     "_update_enemy_torpedoes", "_update_player_torpedoes", "_update_asrocs",
-    "_update_sensors", "_update_esm_picture", "_update_radio_picture",
+    "_update_depth_charges", "_update_sensors", "_update_esm_picture", "_update_radio_picture",
     "_update_damage_and_mission", "_record_simlog_state",
 )
 
@@ -1237,6 +1237,7 @@ class SimMixin:
         # A payload entering the water starts moving on the next substep; the
         # current substep was already consumed by ASROC flight.
         self._update_asrocs(dt)
+        self._update_depth_charges(dt)
         if self._sensor_acc >= .25:
             sensor_dt = self._sensor_acc
             self._sensor_acc = 0.0

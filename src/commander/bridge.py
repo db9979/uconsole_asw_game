@@ -192,6 +192,8 @@ from src.commander.actions import (  # noqa: F401 - re-exported
     _mpa_attack,
     _weapons_set_torpedo_settings,
     _weapons_deploy_nixie,
+    _weapons_fire_asroc,
+    _weapons_drop_depth_charges,
     _opz_launch_essm,
     _opz_launch_chaff,
     _UBOOT_REASONS,

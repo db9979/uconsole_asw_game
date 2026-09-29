@@ -12,16 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.62**
+Current release: **1.3.63**
 
-Release 1.3.62 teaches the autopilot the chart. A waypoint or search pattern
-whose leg crosses shoal water or land now gets detour points around it, or a
-warning in the feed which leg to steer by hand. While the route runs, the
-autopilot looks two minutes ahead once a second; shoal water there gets a
-detour to the current waypoint, or the route switches off and the ship turns
-back on the reciprocal course. It plans on charted depth, rocks and wrecks
-against the hull's draft plus keel reserve and a 2 m margin. Saves stay v28; a
-route may now hold up to 16 points with detours.
+Release 1.3.63 gives the frigate two more anti-submarine weapons at the
+Weapons station. `A` fires one of four ASROC: the rocket flies to the
+designated submarine's observed position (1 to 10 NM, current range needed)
+and drops a lightweight torpedo there. `Z` drops a pattern of five depth
+charges over the stern (20 in the rack, 45 s reload, at least 10 kn); they
+sink to the preset depth and are lethal within about 25 m. Both use the
+torpedo's target checks and are also on the Remote Crew weapons page. Saves
+are now v29 (they keep the charges in the water and the stores); v28 saves no
+longer load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -401,7 +402,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v28 game saves for deterministic restoration of existing sessions.
+in v29 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -472,7 +473,7 @@ Hover over an unavailable browser control to see its current localized reason,
 such as a missing grant, damaged station, cooldown, empty inventory, pending
 order, or the TAS handling-speed limit.
 
-The application version, API protocol **v2**, and save format **v27** are
+The application version, API protocol **v2**, and save format **v29** are
 independent compatibility contracts. Remote Crew uses protocol v2 only; every
 legacy route under `/api/v1/*` is removed and returns 404.
 
@@ -527,8 +528,8 @@ Validated does not mean runtime-effective. In this release:
 
 ## Saves and User Data
 
-This build writes and loads save format **v28** only. V28 requires the exact
-`u-jagd-save-v28` schema, including the frigate's autopilot route, the crewed submarine's ESM scan-period reference, the crewed submarine's tube states, the frigate's radar blips and OPZ marks, the crewed submarine's attack-computer marks, the frigate's variable-depth sonar, the crewed submarine's radio room, the HQ task board, both crews' watch bills,
+This build writes and loads save format **v29** only. V29 requires the exact
+`u-jagd-save-v29` schema, including the frigate's depth charges in the water and its own ASROC and depth-charge stores, the frigate's autopilot route, the crewed submarine's ESM scan-period reference, the crewed submarine's tube states, the frigate's radar blips and OPZ marks, the crewed submarine's attack-computer marks, the frigate's variable-depth sonar, the crewed submarine's radio room, the HQ task board, both crews' watch bills,
 the patrol aircraft and each buoy's owner, the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
 modes, mast, wires, plot, alarm bearings, its sonar station and its ESM

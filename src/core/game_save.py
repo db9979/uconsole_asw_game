@@ -55,6 +55,7 @@ from src.air.sonobuoy import Sonobuoy
 from src.world.world import World
 from src.world.coastline import Coastline
 from src.world.grounding import GroundingContact, HullSpec
+from src.weapons.depth_charge import DepthCharge
 from src.weapons.torpedo import EnemyTorpedo, Torpedo
 from src.weapons.asw import (
     ASROC,
@@ -531,6 +532,11 @@ class SaveMixin:
                 "nixie_seq": self.nixie_seq,
                 "asrocs": [item.serialize() for item in self.asrocs],
                 "asroc_seq": self.asroc_seq,
+                "depth_charges": [item.serialize() for item in self.depth_charges],
+                "depth_charge_seq": self.depth_charge_seq,
+                "own_stores": {"depth_charges": self.depth_charges_left,
+                               "asroc": self.own_asrocs_left,
+                               "depth_charge_reload_s": self.depth_charge_reload_s},
             },
             "air_defense": {
                 "version": AIR_DEFENSE_STATE_VERSION,
@@ -1052,6 +1058,11 @@ class SaveMixin:
         self.nixie_seq = asw["nixie_seq"]
         self.asrocs = [ASROC.restore(row) for row in asw["asrocs"]]
         self.asroc_seq = asw["asroc_seq"]
+        self.depth_charges = [DepthCharge.restore(row) for row in asw["depth_charges"]]
+        self.depth_charge_seq = asw["depth_charge_seq"]
+        self.depth_charges_left = asw["own_stores"]["depth_charges"]
+        self.own_asrocs_left = asw["own_stores"]["asroc"]
+        self.depth_charge_reload_s = asw["own_stores"]["depth_charge_reload_s"]
         air_defense = data["air_defense"]
         self._air_defense_loadout = copy.deepcopy(air_defense["loadout"])
         self.asm_speed_kn = self._air_defense_loadout["asm"]["speed_kn"]

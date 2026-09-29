@@ -2,7 +2,7 @@
 
 ## Purpose {#weapons-purpose}
 
-Weapons control turns a sonar contact into a firing solution. It launches the frigate's wire-guided torpedoes, manages the helicopter's stores (buoys, lightweight torpedoes), streams the Nixie towed decoy and releases the AA gun.
+Weapons control turns a sonar contact into a firing solution. It launches the frigate's wire-guided torpedoes and its own ASROC, drops depth charges, manages the helicopter's stores (buoys, lightweight torpedoes), streams the Nixie towed decoy and releases the AA gun.
 
 ## Displays and instruments {#weapons-displays}
 
@@ -38,6 +38,8 @@ Torpedo run, seen from above:
 - The wire updates the datum from the contact's observed position. Without updates it becomes STALE after 3 s and BROKEN after 12 s; the torpedo then continues to the last datum.
 - The seeker homes on the nearest candidate: that can be a decoy, a whale or a merchant ship. A civilian hit ends the mission.
 - Salvo doctrine SHOOT-LOOK-SHOOT: at most 2 own torpedoes running.
+- ASROC (`A`): 4 rounds per mission. The rocket flies at 500 kn to the target's observed position (1 to 10 NM, current range needed) and drops the helicopter's lightweight torpedo there, set to the preset depth. It needs the same target checks as the torpedo and counts against the doctrine limit.
+- Depth charges (`Z`): 20 per mission, dropped as a pattern of 5 (three along the wake 20, 80 and 140 m astern, two thrown 70 m abeam), then 45 s to reload the rack. The ship must make at least 10 kn. The charges sink at 3.5 m/s to the preset depth (15-300 m) or the seabed; each 90 kg charge is lethal within about 25 m and still damages out to about 100 m. Submarines within 5 NM hear the detonation and evade.
 
 ## Keys {#weapons-keys}
 
@@ -76,6 +78,6 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 
 ## Not modelled {#weapons-limits}
 
-- No depth charges, ASW rockets or ship-launched ASROC (ASROC is used only by friendly AI warships).
+- No ASW rocket launcher (Bofors/RBU type); depth charges only from the stern rack and throwers.
 - One torpedo type for the helicopter; the doctrine limit of two own torpedoes running is fixed.
 - No depth ceiling difference between Mk1 and Mk2; both run at the set depth.

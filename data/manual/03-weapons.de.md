@@ -2,7 +2,7 @@
 
 ## Zweck {#weapons-purpose}
 
-Die Waffenzentrale macht aus einem Sonarkontakt eine Feuerlösung. Sie startet die drahtgelenkten Torpedos der Fregatte, verwaltet die Zuladung des Helikopters (Bojen, Leichttorpedos), bringt den geschleppten Täuschkörper Nixie aus und gibt das Flak-Geschütz frei.
+Die Waffenzentrale macht aus einem Sonarkontakt eine Feuerlösung. Sie startet die drahtgelenkten Torpedos und das eigene ASROC der Fregatte, wirft Wasserbomben, verwaltet die Zuladung des Helikopters (Bojen, Leichttorpedos), bringt den geschleppten Täuschkörper Nixie aus und gibt das Flak-Geschütz frei.
 
 ## Anzeigen und Instrumente {#weapons-displays}
 
@@ -38,6 +38,8 @@ Torpedolauf von oben:
 - Der Draht aktualisiert das Datum aus der beobachteten Kontaktposition. Ohne Updates wird er nach 3 s STALE und nach 12 s BROKEN; der Torpedo läuft dann zum letzten Datum weiter.
 - Der Sucher steuert den nächsten Kandidaten an: das kann ein Täuschkörper, ein Wal oder ein Handelsschiff sein. Ein ziviler Treffer beendet die Mission.
 - Salvendoktrin SHOOT-LOOK-SHOOT: höchstens 2 eigene Torpedos gleichzeitig im Wasser.
+- ASROC (`A`): 4 Schuss pro Mission. Die Rakete fliegt mit 500 kn zur beobachteten Position des Ziels (1 bis 10 sm, aktuelle Entfernung nötig) und setzt dort den Leichttorpedo des Helikopters auf der voreingestellten Tiefe ab. Es gelten dieselben Zielprüfungen wie beim Torpedo, und es zählt gegen die Doktringrenze.
+- Wasserbomben (`Z`): 20 pro Mission, geworfen als Muster aus 5 (drei im Kielwasser 20, 80 und 140 m achteraus, zwei 70 m querab geworfen), danach 45 s Nachladen der Ablaufbahn. Das Schiff muss mindestens 10 kn laufen. Die Bomben sinken mit 3,5 m/s bis zur voreingestellten Tiefe (15-300 m) oder zum Grund; jede 90-kg-Ladung ist bis etwa 25 m tödlich und beschädigt noch bis etwa 100 m. U-Boote innerhalb von 5 sm hören die Detonation und weichen aus.
 
 ## Tasten {#weapons-keys}
 
@@ -76,6 +78,6 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 
 ## Nicht modelliert {#weapons-limits}
 
-- Keine Wasserbomben, U-Jagd-Raketen oder vom Schiff gestartetes ASROC (ASROC nutzen nur befreundete KI-Kriegsschiffe).
+- Kein U-Jagd-Raketenwerfer (Typ Bofors/RBU); Wasserbomben nur aus Ablaufbahn und Werfern.
 - Ein Torpedotyp für den Helikopter; die Doktringrenze von zwei laufenden eigenen Torpedos ist fest.
 - Kein Tiefenunterschied zwischen Mk1 und Mk2; beide laufen auf der eingestellten Tiefe.

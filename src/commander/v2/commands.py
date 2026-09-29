@@ -632,6 +632,10 @@ V2_ACTION_REGISTRY = {
         direct_fire=True),
     "weapons_deploy_nixie": V2Action(
         frozenset({"weapons"}), _no_params, direct_fire=True),
+    "weapons_fire_asroc": V2Action(
+        frozenset({"weapons"}), _torpedo_params, direct_fire=True),
+    "weapons_drop_depth_charges": V2Action(
+        frozenset({"weapons"}), _torpedo_params, direct_fire=True),
     "weapons_set_torpedo_settings": V2Action(
         frozenset({"weapons"}), _torpedo_settings_params),
     "opz_launch_essm": V2Action(

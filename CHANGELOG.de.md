@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.63
+
+Version 1.3.63 gibt der Fregatte zwei weitere U-Jagd-Waffen in der
+Waffenzentrale. `A` startet eines von vier ASROC: Die Rakete fliegt zur
+beobachteten Position des zugewiesenen U-Boots (1 bis 10 sm, aktuelle
+Entfernung nötig) und setzt dort einen Leichttorpedo ab. `Z` wirft ein Muster
+aus fünf Wasserbomben über das Heck (20 an Bord, 45 s Nachladen, mindestens 10
+kn); sie sinken auf die voreingestellte Tiefe und sind bis etwa 25 m tödlich.
+Beide nutzen die Zielprüfungen des Torpedos und stehen auch auf der
+Waffenseite der Remote Crew. Spielstände sind jetzt v29 (sie behalten sinkende
+Wasserbomben und die Bestände); v28-Stände laden nicht mehr.
+
 ## 1.3.62
 
 Version 1.3.62 bringt dem Autopiloten die Seekarte bei. Führt die Strecke

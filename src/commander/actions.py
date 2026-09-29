@@ -544,6 +544,30 @@ def _weapons_deploy_nixie(game, params, _bindings):
     return game.deploy_nixie_result()
 
 
+# Own-attack refusals the command pipeline reports with its shared codes.
+_OWN_ATTACK_REASONS = {"empty_asroc": "empty", "empty_depth_charges": "empty",
+                       "reloading": "not_ready", "too_slow": "not_ready"}
+
+
+def _weapons_own_attack(game, params, bindings, fire):
+    binding = _direct_observation(bindings, params["ref"], "DIRECT_SONAR")
+    if binding is None or binding[5] != "weapons":
+        return "unknown_ref"
+    contact = binding[2]
+    if game.sonar.contacts.get(contact.target_id) is not contact:
+        return "stale_ref"
+    result = fire(contact, params["depth_m"])
+    return _OWN_ATTACK_REASONS.get(result, result)
+
+
+def _weapons_fire_asroc(game, params, bindings):
+    return _weapons_own_attack(game, params, bindings, game.fire_own_asroc_at)
+
+
+def _weapons_drop_depth_charges(game, params, bindings):
+    return _weapons_own_attack(game, params, bindings, game.drop_depth_charges_at)
+
+
 def _opz_launch_essm(game, params, bindings):
     binding = _direct_observation(bindings, params["ref"], "DIRECT_ASM")
     if binding is None or binding[5] != "opz":
@@ -877,6 +901,8 @@ _V2_ACTION_HANDLERS = {
     "weapons_launch_torpedo": _weapons_launch_torpedo,
     "helicopter_launch_torpedo": _helicopter_launch_torpedo,
     "weapons_deploy_nixie": _weapons_deploy_nixie,
+    "weapons_fire_asroc": _weapons_fire_asroc,
+    "weapons_drop_depth_charges": _weapons_drop_depth_charges,
     "weapons_set_torpedo_settings": _weapons_set_torpedo_settings,
     "opz_launch_essm": _opz_launch_essm,
     "opz_launch_chaff": _opz_launch_chaff,

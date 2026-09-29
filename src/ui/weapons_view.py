@@ -362,7 +362,9 @@ def draw_weapons_panel(game, tr=None) -> None:
         layout.status_line(s, ix, iy + 30, iw, "weapons.tubes_short", tube_status,
                            label_w=100, size=15)
         layout.status_line(s, ix, iy + 60, iw, "weapons.nixie_short",
-                           str(nixies), label_w=100, size=15)
+                           message("weapons.line.decoy_asw", nixies=nixies,
+                                   asw=game.own_asw_stores_line()),
+                           label_w=100, size=15)
         layout.status_line(s, ix, iy + 90, iw, "ui.helo_torpedoes_short", str(game.helo.torps),
                             label_w=120, size=17)
         layout.status_line(s, ix, iy + 120, iw, "ui.buoys", str(game.helo.buoys_left),
@@ -412,6 +414,7 @@ def draw_weapons_panel(game, tr=None) -> None:
                            config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM,
                            label_w=80, size=16)
         for offset, text in enumerate(("weapons.control.depth_compact", "weapons.control.helo",
-                                        "weapons.control.air_compact", "weapons.control.nixie")):
+                                        "weapons.control.air_compact", "weapons.control.nixie",
+                                        "weapons.control.asw")):
             layout.blit_line(s, text, (cx, cy + 56 + offset * 26, cw, 24),
                              config.COLOR_TEXT_DIM, size=15)

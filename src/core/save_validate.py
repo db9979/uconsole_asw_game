@@ -11,6 +11,7 @@ import math
 
 
 from src.core import config
+from src.weapons import depth_charge
 from src.core.plot import PlotLayer
 from src.ship.route import Route
 from src.core.autocrew import AutocrewController
@@ -796,6 +797,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     pending_enemy_torpedoes = 0
     pending_decoys = 0
     spent_asrocs = {}
+    # The frigate's own ASROC (no platform id) spends its own store.
+    own_stores = data.get("asw", {}).get("own_stores", {})
+    spent_asrocs[(None, depth_charge.OWN_ASROC_KEY)] = (
+        depth_charge.OWN_ASROC_STOCK - own_stores.get("asroc", depth_charge.OWN_ASROC_STOCK))
     used_asrocs = {}
     spent_decoys = {}
     used_decoys = {}
@@ -1569,7 +1574,9 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
         if (origin not in active_origins
                 or not {"launch_platform_id", "launch_weapon_key"}
                 <= set(torpedo)
-                or (origin == "asroc" and (
+                or (origin == "asroc" and launch_weapon_key == depth_charge.OWN_ASROC_KEY
+                    and launch_platform_id is not None)
+                or (origin == "asroc" and launch_weapon_key != depth_charge.OWN_ASROC_KEY and (
                     not identity(launch_platform_id)
                     or not isinstance(launch_weapon_key, str)
                     or runtime_catalog.weapons.get(launch_weapon_key) is None

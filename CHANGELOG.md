@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.63
+
+Release 1.3.63 gives the frigate two more anti-submarine weapons at the
+Weapons station. `A` fires one of four ASROC: the rocket flies to the
+designated submarine's observed position (1 to 10 NM, current range needed)
+and drops a lightweight torpedo there. `Z` drops a pattern of five depth
+charges over the stern (20 in the rack, 45 s reload, at least 10 kn); they
+sink to the preset depth and are lethal within about 25 m. Both use the
+torpedo's target checks and are also on the Remote Crew weapons page. Saves
+are now v29 (they keep the charges in the water and the stores); v28 saves no
+longer load.
+
 ## 1.3.62
 
 Release 1.3.62 teaches the autopilot the chart. A waypoint or search pattern

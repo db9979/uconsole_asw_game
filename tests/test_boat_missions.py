@@ -35,9 +35,10 @@ def test_boat_scenarios_are_listed_with_their_modes():
     assert config.SCENARIO_ORDER[-3:] == ("s5_durchbruch", "s6_aufklaerung", "s7_geleitzug")
     game, _boat = _boat_game("s5_durchbruch")
     assert boat_missions.mode(game) == "breakthrough"
-    assert game.mission.time_limit_s == 14400
+    assert game.mission.time_limit_s == 18000
     game, _boat = _boat_game("s6_aufklaerung")
     assert boat_missions.mode(game) == "recon"
+    assert game.mission.time_limit_s == 7200
     game, _boat = _boat_game("s1_patrouille")
     assert boat_missions.mode(game) is None and boat_missions.goal(game) is None
 

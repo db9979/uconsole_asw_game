@@ -14,14 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.73**
+Aktuelle Version: **1.3.74**
 
-Version 1.3.73 repariert das Selbst-Update unter Windows: Nach **Update
-installieren** ersetzt die neue U-Jagd-Windows.exe jetzt die laufende und
-startet. Bisher blieb der Download als `U-Jagd-Windows.exe.new` daneben liegen
-und die alte Version startete wieder. Der Starter löscht eine solche
-liegengebliebene `.new`-Datei, und der Windows-Build prüft den Austausch bei
-jeder Änderung. Spielstände bleiben v31.
+Version 1.3.74 gibt dem U-Boot eine faire Chance gegen die vom Computer
+geführte Fregatte. Wenn du das U-Boot spielst, braucht die Besatzung der
+Fregatte jetzt etwa 3 Minuten, um ein U-Boot am Geräusch zu erkennen, und etwa
+10 Minuten, um den Hubschrauber klarzumachen. Auf eine bloße Peilung horcht der
+Hubschrauber mit dem Tauchsonar nur, der Seefernaufklärer kommt nur für eine
+Position, und Flugzeuge greifen nur aus einem höchstens 2 Minuten alten Fix an.
+Der Durchbruch dauert jetzt 5 statt 4 Stunden, die Aufklärung 2 statt 3.
+Spielstände bleiben v31.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

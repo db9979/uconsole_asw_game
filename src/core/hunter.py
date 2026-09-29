@@ -58,6 +58,9 @@ ASROC_DATUM_S = 120.0           # only a datum this fresh is passed on for an AS
 ESM_DATUM_S = 300.0             # an ESM bearing on a mast radar stays a datum this long
 ESM_CANDIDATES = 3              # a submarine radar among this many library matches
 SURFACE_EXPLAINS_S = 60.0       # a ship track this fresh on the bearing explains the radar
+CLASSIFY_MEAN_S = 180.0         # an operator needs this long on average to call a submarine
+AIR_FIX_S = 120.0               # aircraft attack only a position this fresh
+HELO_READY_MEAN_S = 600.0       # a datum waits this long on average for the helicopter to launch
 _SUPPORT = (("sonar", Station.SONAR), ("radio", Station.RADIO),
             ("eloka", Station.ELOKA), ("damage", Station.DAMAGE),
             ("engine", Station.ENGINE), ("opz", Station.OPZ))
@@ -129,13 +132,21 @@ def hunt_contacts(game) -> list:
         game.sim_t - contact.last_seen, contact.id))
 
 
+def _recognised(game, contact) -> bool:
+    """The operator takes ``CLASSIFY_MEAN_S`` on average to recognise the
+    sound: a stateless draw per cadence tick and contact."""
+    tick = int(math.floor(game.sim_t / CADENCE_S))
+    return detrand.u01(game.seed, "hunter.classify", contact.id, tick) < CADENCE_S / CLASSIFY_MEAN_S
+
+
 def classify(game) -> bool:
     """Classify a fresh unknown contact whose sound the library knows only
     from submarines, as an operator comparing it with the library would."""
     phrases = sub_signatures(game)
     for contact in sorted(game.sonar.contacts.values(), key=lambda item: item.id):
         if (contact.player_class is None and _fresh(game, contact, 5.0)
-                and any(phrase in (contact.signature or "") for phrase in phrases)):
+                and any(phrase in (contact.signature or "") for phrase in phrases)
+                and _recognised(game, contact)):
             if game.classify_sonar_contact(contact, "U_BOOT") is True:
                 return True
     return False
@@ -414,12 +425,15 @@ def helicopter(game, found) -> str:
             return "returning"
         return "monitoring"
     if helo.state == "HANGAR":
+        tick = int(math.floor(game.sim_t / CADENCE_S))
+        if detrand.u01(game.seed, "hunter.helo", tick) >= CADENCE_S / HELO_READY_MEAN_S:
+            return "monitoring"                     # the deck readies the helicopter
         return "launched" if game.launch_helicopter() is True else "monitoring"
     if helo.state != "AUF":
         return "monitoring"
     contact = found.get("contact")
     if (contact is not None and "x" in found and helo.torps > 0
-            and not _running(game, "helo")
+            and found.get("age", 0.0) <= AIR_FIX_S and not _running(game, "helo")
             and math.hypot(helo.x - found["x"], helo.y - found["y"]) <= HELO_DROP_NM):
         depth = config.clamp(contact.depth_est if contact.depth_est is not None
                              else game.torpedo_depth, 10.0, 300.0)
@@ -430,7 +444,10 @@ def helicopter(game, found) -> str:
         if near > 2.0 and "x" in found:            # a bearing alone: keep listening
             game.set_helicopter_dipping(False)
             return "moving"
-        if _window(game, DIP_PING_EVERY_S) and game.send_helicopter_dipping_ping() is True:
+        # On a bare bearing the dip only listens: a ping would tell the
+        # boat where the helicopter hunts before anything is located.
+        if ("x" in found and _window(game, DIP_PING_EVERY_S)
+                and game.send_helicopter_dipping_ping() is True):
             return "ping"
         return "dipping"
     if helo.dip_state != "STOWED":
@@ -449,7 +466,7 @@ def mpa(game, found) -> str:
     aircraft = game.mpa
     if game.damage.station_down("opz"):
         return "monitoring"
-    point = datum_point(game, found)
+    point = datum_point(game, found) if found is not None and "x" in found else None
     if point is None:
         return "monitoring"
     if aircraft.state == "BASE":
@@ -462,7 +479,7 @@ def mpa(game, found) -> str:
         game.set_mpa_radar(True)
     contact = found.get("contact")
     if (contact is not None and "x" in found and aircraft.torps > 0
-            and not _running(game, "mpa")
+            and found.get("age", 0.0) <= AIR_FIX_S and not _running(game, "mpa")
             and game.designate_sonar_target(contact) is True
             and game.mpa_attack() is True):
         return "engaged"

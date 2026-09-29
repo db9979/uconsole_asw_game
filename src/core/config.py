@@ -1087,12 +1087,12 @@ MISSION_TYPES = {
         name="Durchbruch", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=14400, win="breakthrough"),
+        time_limit_s=18000, win="breakthrough"),
     "aufklaerung": dict(
         name="Aufklaerung", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=10800, win="recon"),
+        time_limit_s=7200, win="recon"),
     "geleitzug": dict(
         name="Geleitzug", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],

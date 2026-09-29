@@ -44,6 +44,8 @@ export function renderHelicopterStation(payload) {
   if (!S.stationDrafts.has("helicopter-pattern")) $("helicopter-pattern").value = asset.pattern;
   $("helicopter-mad").textContent = t(asset.mad_mode ? "helicopter_mad_stop" : "helicopter_mad_start");
   $("helicopter-mad").setAttribute("aria-pressed", String(asset.mad_mode));
+  $("helicopter-radar").textContent = t(asset.radar_switch ? "helicopter_radar_off" : "helicopter_radar_on");
+  $("helicopter-radar").setAttribute("aria-pressed", String(asset.radar_switch));
   metrics($("helicopter-waypoint"), [["position", payload.waypoint ? position(payload.waypoint) : t("station_none")]]);
   const environment = payload.dip_environment;
   metrics($("helicopter-dip-environment"), [

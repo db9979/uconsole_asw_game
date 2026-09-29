@@ -730,7 +730,7 @@ def own_asset_emissions(game):
     emitters = game.runtime_catalog.emitters
     helo = game.helo
     key = config.HELO_RADAR_EMITTER
-    if key in emitters and helo.airborne and helo.dip_state == "STOWED":
+    if key in emitters and game.helo_radar_active():
         controller = RadarSuiteController((emitters[key],), game.seed * 31 + 1)
         for signal in controller.active_signals(game.sim_t, helo.x, helo.y):
             yield signal, config.HELO_RADAR_ALTITUDE_M
@@ -739,7 +739,7 @@ def own_asset_emissions(game):
     if key in emitters and mpa is not None and mpa.airborne and mpa.radar_on:
         controller = RadarSuiteController((emitters[key],), game.seed * 31 + 2)
         for signal in controller.active_signals(game.sim_t, mpa.x, mpa.y):
-            yield signal, config.MPA_ALTITUDE_M
+            yield signal, mpa.altitude_m
 
 
 def band(frequency_hz: float) -> str:

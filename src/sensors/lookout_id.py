@@ -95,6 +95,20 @@ def aircraft_classes(kind: str, profile_key: str | None) -> tuple[str, str, str 
     return "MILITARY_AIRCRAFT", "COMBAT_AIRCRAFT", profile_key
 
 
+# The angle on the bow an observer judges from a made-out silhouette, to
+# the nearest step (display only: it turns the model in the eyepiece).
+ASPECT_STEP_DEG = 10.0
+
+
+def angle_on_bow(course_deg: float, bearing_from_observer_deg: float) -> float:
+    """The observer's angle off the vessel's bow as judged by eye, degrees
+    in (-180, 180]: positive when he sees her starboard side, 0 bow on."""
+    rel = ((bearing_from_observer_deg + 180.0) - course_deg) % 360.0
+    off = rel if rel <= 180.0 else rel - 360.0
+    step = round(off / ASPECT_STEP_DEG) * ASPECT_STEP_DEG
+    return 180.0 if step <= -180.0 else float(step)
+
+
 def encode(level: int, recognized: str, identified: str,
            type_key: str | None) -> str:
     """Track label carrying the visual report (saved with the track)."""

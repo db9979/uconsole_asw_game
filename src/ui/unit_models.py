@@ -165,20 +165,33 @@ def _hull(b: _Builder, poly, beam: float, draft: float, *, side="hull",
         depth = draft * (0.35 + 0.65 * _plan(u, 0.22, 0.4)) if low <= 1e-6 else 0.0
         zb = low
         x = _x(u)
-        section = [(-half, top), (-half, zb), (-0.72 * half, zb - 0.62 * depth),
-                   (0.0, zb - depth), (0.72 * half, zb - 0.62 * depth), (half, zb),
-                   (half, top)]
+        if zb > 1e-6 and u < 0.5:
+            # The raked stem: a V from the deck edge down to the stem line.
+            rise = top - zb
+            section = [(-half, top), (-0.8 * half, zb + 0.55 * rise),
+                       (-0.4 * half, zb + 0.18 * rise), (0.0, zb),
+                       (0.4 * half, zb + 0.18 * rise), (0.8 * half, zb + 0.55 * rise),
+                       (half, top)]
+        else:
+            section = [(-half, top), (-half, zb), (-0.72 * half, zb - 0.62 * depth),
+                       (0.0, zb - depth), (0.72 * half, zb - 0.62 * depth), (half, zb),
+                       (half, top)]
         rings.append([b.vertex((x, y, z)) for y, z in section])
     for i in range(len(rings) - 1):
         r0, r1 = rings[i], rings[i + 1]
         cx = 0.5 * (b.verts[r0[0]][0] + b.verts[r1[0]][0])
+        # Inside the hull: midway between keel and deck of both sections.
+        zs = [b.verts[i][2] for i in r0 + r1]
+        cz = 0.5 * (min(zs) + max(zs))
         for k in range(len(r0) - 1):
             zmid = (b.verts[r0[k]][2] + b.verts[r0[k + 1]][2]) / 2
             mat = "bottom" if zmid < -1e-6 else side
-            b.face((r0[k], r0[k + 1], r1[k + 1], r1[k]), mat, center=(cx, 0.0, 0.0))
+            # Two-sided: raked stems and sterns fold the plating over.
+            b.face((r0[k], r0[k + 1], r1[k + 1], r1[k]), mat, center=(cx, 0.0, cz),
+                   two_sided=True)
         b.face((r0[-1], r1[-1], r1[0], r0[0]), deck, center=(cx, 0.0, -1.0))
-    b.face(rings[-1][:-1] + [rings[-1][-1]], side, center=(0.0, 0.0, 0.0))
-    b.face(rings[0], side, center=(0.0, 0.0, 0.0))
+    b.face(rings[-1], side, center=(0.0, 0.0, 0.0), two_sided=True)
+    b.face(rings[0], side, center=(0.0, 0.0, 0.0), two_sided=True)
 
 
 def _prism(b: _Builder, poly, half_width: float, mat: str, y: float = 0.0) -> None:
@@ -617,3 +630,114 @@ class ModelView:
                        yaw=turn_angle(step / TURN_UPDATES_HZ))
             self._key = key
         surface.blit(self._surface, rect)
+
+
+# Eyepieces (lookout, binoculars, periscope): the observer looks at a
+# vessel from just above the sea, so the view is nearly level.
+SCENE_ELEVATION_RAD = math.radians(4.0)
+# Below this drawn length the silhouette is drawn instead (no detail left).
+SCENE_MIN_PX = 16
+SCENE_CACHE_SIZE = 32
+# Classes the eyepieces turn by their angle on the bow.
+SCENE_CLASSES = ("warship", "merchant", "unknown", "submarine", "aircraft")
+_SCENE_CACHE: dict = {}
+_COLORKEY = (255, 0, 255)
+
+
+def scene_yaw(aob_deg: float) -> float:
+    """Model yaw for an observer ``aob_deg`` off the bow (starboard
+    positive): abeam to starboard the bow points right, bow on at 0."""
+    return math.radians(aob_deg - 90.0)
+
+
+def _scene_sprite(cls: str, length_px: int, aob_deg: float, color, surface_only: bool):
+    key = (cls, length_px, aob_deg, tuple(color), surface_only)
+    sprite = _SCENE_CACHE.pop(key, None)
+    if sprite is None:
+        sprite = _render_scene_sprite(cls, length_px, aob_deg, color, surface_only)
+        while len(_SCENE_CACHE) >= SCENE_CACHE_SIZE:
+            _SCENE_CACHE.pop(next(iter(_SCENE_CACHE)))
+    _SCENE_CACHE[key] = sprite
+    return sprite
+
+
+def _render_scene_sprite(cls, length_px, aob_deg, color, surface_only):
+    """(surface, origin) of the model lit like the eyepiece: the materials
+    darkened to the scene's steel tone and blended with it (haze, night)."""
+    mesh = mesh_for(cls)
+    view = _view(scene_yaw(aob_deg), SCENE_ELEVATION_RAD)
+    verts = mesh.verts @ view.T
+    normals = mesh.normals @ view.T
+    depth = (mesh.centroids @ view.T)[:, 2]
+    sx, sy = verts[:, 0] * length_px, -verts[:, 1] * length_px
+    left, top = int(math.floor(sx.min())) - 2, int(math.floor(sy.min())) - 2
+    width = int(math.ceil(sx.max())) - left + 3
+    height = int(math.ceil(sy.max())) - top + 3
+    sprite = pygame.Surface((max(1, width), max(1, height)))
+    sprite.fill(_COLORKEY)
+    sprite.set_colorkey(_COLORKEY)
+    facing = normals[:, 2] > 0.0
+    visible = facing | mesh.sided
+    lit = np.where(facing | ~mesh.sided, np.maximum(0.0, normals @ _LIGHT),
+                   np.abs(normals @ _LIGHT))
+    steel = np.asarray(color, dtype=float)
+    tone = min(1.25, max(0.05, float(steel.mean()) / 150.0))
+    shade = (0.34 + 0.66 * lit)[:, None]
+    shades = np.clip(0.5 * mesh.colors * shade * tone + 0.5 * steel * (0.55 + 0.6 * shade),
+                     0, 254).astype(int)
+    items = [(float(depth[i]), 0, i) for i in np.flatnonzero(visible)]
+    for j, (a, b, _mat) in enumerate(mesh.lines):
+        items.append((float((verts[a, 2] + verts[b, 2]) / 2), 1, j))
+    items.sort()
+    px, py = sx - left, sy - top
+    line_color = tuple(int(c * 0.6) for c in steel)
+    for _depth, kind, i in items:
+        if kind:
+            a, b, _mat = mesh.lines[i]
+            pygame.draw.line(sprite, line_color, (px[a], py[a]), (px[b], py[b]),
+                             max(1, int(length_px / 260)))
+            continue
+        pygame.draw.polygon(sprite, tuple(shades[i]), [(px[k], py[k]) for k in mesh.faces[i]])
+    if surface_only:
+        # The hull below the waterline stays in the sea: cut the picture at
+        # the waterline (level within a pixel at this elevation).
+        cut = -top + 1 + int(math.ceil(0.1 * math.sin(SCENE_ELEVATION_RAD) * length_px))
+        if cut < height:
+            sprite.fill(_COLORKEY, (0, cut, width, height - cut))
+    return sprite, (-left, -top)
+
+
+class _ScenePoints:
+    """Projects silhouette points ``(u, v)`` like the model (for the lights)."""
+
+    def __init__(self, cls, cx, base_y, length_px, aob_deg):
+        self.view = _view(scene_yaw(aob_deg), SCENE_ELEVATION_RAD)
+        self.cx, self.base_y, self.width = cx, base_y, length_px
+        self.lift = AIRCRAFT_LIFT if cls == "aircraft" else 0.0
+
+    def point(self, u: float, v: float) -> tuple:
+        x, y, _z = self.view @ np.array([_x(u), 0.0, v - self.lift])
+        return (self.cx + x * self.width, self.base_y - y * self.width)
+
+
+def draw_in_scene(s, cls: str, cx: float, base_y: float, width: float, color, *,
+                  aob_deg: float | None, aloft: bool = False, nav: str | None = None,
+                  t: float = 0.0) -> bool:
+    """Draw ``cls`` in an eyepiece turned by the judged angle on the bow,
+    ``width`` px long, afloat on ``base_y`` (``aloft``: an aircraft centred
+    on it); False when it is too small or not turned, so the caller draws
+    the flat silhouette instead."""
+    if aob_deg is None or cls not in SCENE_CLASSES or width < SCENE_MIN_PX:
+        return False
+    length_px = int(width)
+    if cls == "aircraft" and not aloft:
+        base_y -= 0.25 * length_px          # hovering over the horizon
+    surface_only = cls != "aircraft"
+    # Colours in steps of 4 so a slowly changing sky rebuilds rarely.
+    sprite, (ox, oy) = _scene_sprite(cls, length_px, float(aob_deg),
+                                     tuple(int(c) // 4 * 4 for c in color), surface_only)
+    s.blit(sprite, (int(cx) - ox, int(base_y) - oy))
+    if nav is not None:
+        silhouettes.draw_nav_lights(s, cls, _ScenePoints(cls, cx, base_y, length_px, aob_deg),
+                                    length_px, nav, t)
+    return True

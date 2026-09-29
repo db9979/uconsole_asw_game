@@ -9,6 +9,7 @@ identity or reference.
 from src.commander import projections
 from src.core import config, phone_lookout
 from src.ui.stations.bridge import lookout_outlines
+from src.ui.uboot_scope import full_span
 
 
 def _number(value):
@@ -23,10 +24,10 @@ def _calls(game, side):
             for row in phone_lookout.calls(game, side)[:8]]
 
 
-def _outline(bearing, span, cls, stale, lights, elevation, called, range_nm=None):
+def _outline(bearing, span, cls, stale, lights, elevation, aob, called, range_nm=None):
     return dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                 stale=bool(stale), lights=projections._nav_lights(lights),
-                elevation_deg=_number(elevation), called=bool(called),
+                elevation_deg=_number(elevation), aob_deg=_number(aob), called=bool(called),
                 range_nm=_number(range_nm))
 
 
@@ -58,14 +59,16 @@ def _boat(game, boat):
     scope = projections._uboot_scope(game, boat)
     now = game.sim_t
     elevation = boat.orders._elevation
-    outlines = [_outline(row["bearing"], row["span_deg"],
+    outlines = [_outline(row["bearing"], full_span(row["span_deg"], row["aob"]),
                          "aircraft" if row["kind"] == "FLG" and row["ref"] in elevation
                          else row["cls"], row["stale"], row["lights"],
                          elevation.get(row["ref"]) if row["kind"] == "FLG" else None,
-                         False, row["range_nm"])
+                         row["aob"], False, row["range_nm"])
                 for row in (dict(sighting, stale=not 0.0 <= now - sighting["t"] <= 1.0,
                                  lights=(None if now - sighting["t"] > 1.0 else
-                                         boat.orders._lights.get(sighting["ref"])))
+                                         boat.orders._lights.get(sighting["ref"])),
+                                 aob=(None if now - sighting["t"] > 1.0 else
+                                      boat.orders._aspect.get(sighting["ref"])))
                             for sighting in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX])]
     return dict(side="boat", available=scope["available"], manned=phone_lookout.boat_manned(game),
                 course=_number(boat.sub.course % 360.0), relative_deg=scope["relative_deg"],

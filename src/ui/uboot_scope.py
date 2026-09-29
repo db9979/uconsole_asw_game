@@ -30,18 +30,31 @@ def draw_silhouette(s, cls: str, cx: int, base_y: int, width: int, color) -> Non
 
 
 def scope_outlines(game, boat) -> list:
-    """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg)``
-    rows of the sightings (``lights``: the ``nav_lights`` code made out, if
-    any; ``elevation_deg``: an aircraft's angle above the horizon)."""
+    """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg,
+    aob_deg)`` rows of the sightings (``lights``: the ``nav_lights`` code
+    made out, if any; ``elevation_deg``: an aircraft's angle above the
+    horizon; ``aob_deg``: the angle on the bow judged of a made-out
+    silhouette, which turns its model; the span is then its full length)."""
     lights = getattr(boat.orders, "_lights", {})
     elevation = getattr(boat.orders, "_elevation", {})
+    aspects = getattr(boat.orders, "_aspect", {})
     rows = []
     for row in boat.orders.sightings:
         stale = game.sim_t - row["t"] > 1.0
         aloft = elevation.get(row["ref"]) if row["kind"] == "FLG" else None
-        rows.append((row["bearing"], row["span_deg"], "aircraft" if aloft is not None else row["cls"],
-                     stale, None if stale else lights.get(row["ref"]), aloft))
+        aob = None if stale else aspects.get(row["ref"])
+        rows.append((row["bearing"], full_span(row["span_deg"], aob),
+                     "aircraft" if aloft is not None else row["cls"],
+                     stale, None if stale else lights.get(row["ref"]), aloft, aob))
     return rows
+
+
+def full_span(span_deg: float, aob_deg: float | None) -> float:
+    """A sighting's apparent length (foreshortened by its aspect) back to its
+    full length for a model turned by ``aob_deg``."""
+    if aob_deg is None:
+        return span_deg
+    return min(180.0, span_deg / max(0.2, abs(math.sin(math.radians(aob_deg)))))
 
 
 def draw_eyepiece(s, game, boat, rect) -> None:

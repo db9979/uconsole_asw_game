@@ -16,7 +16,10 @@ Silhouetten des Ausgucks, räumlich ausgebaut, sodass eine Einheit im
 Analysator so aussieht wie im Fernglas und im Sehrohr (Kriegsschiff,
 Handelsschiff, Kleinfahrzeug, U-Boot, der Hubschrauber des Ausgucks für jedes
 Luftfahrzeug); Torpedos, Täuschkörper und Tiere, die kein Ausguck sieht, haben
-eigene Modelle. Spielstände bleiben v31.
+eigene Modelle. Dieselben Modelle stehen jetzt im Fernglas des Ausgucks und
+im Sehrohr auf der uConsole, im Browser und am Handy, gedreht um den
+Lagewinkel, den der Beobachter schätzt, sobald er die Klasse ausgemacht hat.
+Spielstände bleiben v31.
 
 ## 1.3.75
 

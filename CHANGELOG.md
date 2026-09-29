@@ -15,7 +15,10 @@ and aircraft are the lookout's own silhouettes built out in 3D, so a unit
 looks in the analyser as it does in the binoculars and the periscope
 (warship, merchant, small craft, submarine, the lookout's helicopter for
 every aircraft); torpedoes, decoys and animals, which no lookout sees, have
-models of their own. Saves stay v31.
+models of their own. The same models now stand in the lookout's binoculars
+and the periscope on the uConsole, in the browser and on the phone, turned by
+the angle on the bow the observer judges once he has made out the class.
+Saves stay v31.
 
 ## 1.3.75
 

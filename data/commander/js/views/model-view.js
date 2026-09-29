@@ -1,6 +1,9 @@
 // Turning 3D model of an analyzer profile on a canvas: the generated meshes
 // of src/ui/unit_models.py with the uConsole's view, shading and turn rate.
-import { CLASSES, ELEVATION_RAD, LIGHT, MATERIALS, MODELS, TURN_RAD_S, WATER, WATER_RING } from "./unit-models.js";
+import {
+  AIRCRAFT_LIFT, CLASSES, ELEVATION_RAD, LIGHT, MATERIALS, MODELS, SCENE_CACHE_SIZE, SCENE_CLASSES,
+  SCENE_ELEVATION_RAD, SCENE_MIN_PX, TURN_RAD_S, WATER, WATER_RING,
+} from "./unit-models.js";
 
 const FRAME_MS = 1000 / 30;
 const prepared = new Map();
@@ -110,6 +113,90 @@ export function drawModel(ctx, width, height, cls, yaw, elevation = ELEVATION_RA
     ctx.stroke();
   }
   return items.length;
+}
+
+// --- the eyepieces (src/ui/unit_models.py draw_in_scene) --------------------
+const sceneCache = new Map();
+
+// Observer ``aob`` degrees off the bow (starboard positive): abeam to
+// starboard the bow points right, bow on at 0.
+const sceneYaw = (aob) => (aob - 90) * Math.PI / 180;
+
+function renderSceneSprite(cls, length, aob, color, surfaceOnly) {
+  const mesh = prepare(cls);
+  const view = viewMatrix(sceneYaw(aob), SCENE_ELEVATION_RAD);
+  const verts = mesh.verts.map((p) => apply(view, p));
+  const sx = verts.map((p) => p[0] * length), sy = verts.map((p) => -p[1] * length);
+  const left = Math.floor(Math.min(...sx)) - 2, top = Math.floor(Math.min(...sy)) - 2;
+  const width = Math.ceil(Math.max(...sx)) - left + 3, height = Math.ceil(Math.max(...sy)) - top + 3;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, width); canvas.height = Math.max(1, height);
+  const g = canvas.getContext("2d");
+  const tone = Math.min(1.25, Math.max(.05, (color[0] + color[1] + color[2]) / 3 / 150));
+  const items = [];
+  mesh.faces.forEach((face, index) => {
+    const normal = apply(view, face.normal);
+    const facing = normal[2] > 0;
+    if (!facing && !face.sided) return;
+    const dot = normal[0] * LIGHT[0] + normal[1] * LIGHT[1] + normal[2] * LIGHT[2];
+    const lit = facing ? Math.max(0, dot) : Math.abs(dot);
+    items.push([apply(view, face.centroid)[2], 0, index, .34 + .66 * lit]);
+  });
+  mesh.lines.forEach(([a, b], index) => items.push([(verts[a][2] + verts[b][2]) / 2, 1, index, 1]));
+  items.sort((p, q) => p[0] - q[0] || p[1] - q[1] || p[2] - q[2]);
+  const px = (k) => [sx[k] - left, sy[k] - top];
+  const lineColor = rgb(color.map((c) => Math.floor(c * .6)));
+  for (const [, kind, index, shade] of items) {
+    if (kind) {
+      const [a, b] = mesh.lines[index];
+      g.strokeStyle = lineColor; g.lineWidth = Math.max(1, Math.floor(length / 260));
+      g.beginPath(); g.moveTo(...px(a)); g.lineTo(...px(b)); g.stroke();
+      continue;
+    }
+    const face = mesh.faces[index];
+    const fill = rgb(face.color.map((c, i) => .5 * c * shade * tone + .5 * color[i] * (.55 + .6 * shade)));
+    g.fillStyle = fill; g.strokeStyle = fill; g.lineWidth = .5;
+    g.beginPath();
+    face.face.forEach((k, i) => (i ? g.lineTo(...px(k)) : g.moveTo(...px(k))));
+    g.closePath(); g.fill(); g.stroke();
+  }
+  if (surfaceOnly) {
+    // The hull below the waterline stays in the sea.
+    const cut = -top + 1 + Math.ceil(.1 * Math.sin(SCENE_ELEVATION_RAD) * length);
+    if (cut < height) g.clearRect(0, cut, width, height - cut);
+  }
+  return {canvas, ox: -left, oy: -top};
+}
+
+function sceneSprite(cls, length, aob, color, surfaceOnly) {
+  const key = `${cls}|${length}|${aob}|${color.join(",")}|${surfaceOnly}`;
+  let sprite = sceneCache.get(key);
+  if (sprite) sceneCache.delete(key);
+  else {
+    sprite = renderSceneSprite(cls, length, aob, color, surfaceOnly);
+    while (sceneCache.size >= SCENE_CACHE_SIZE) sceneCache.delete(sceneCache.keys().next().value);
+  }
+  sceneCache.set(key, sprite);
+  return sprite;
+}
+
+// Draws ``cls`` in an eyepiece turned by the judged angle on the bow,
+// ``width`` px long, afloat on ``base`` (``aloft``: an aircraft centred on
+// it).  Returns the frame for its navigation lights, or null when it is too
+// small or not turned, so the caller draws the flat silhouette instead.
+export function drawInScene(g, cls, cx, base, width, color, aob, aloft = false) {
+  if (!Number.isFinite(aob) || !SCENE_CLASSES.includes(cls) || width < SCENE_MIN_PX) return null;
+  const length = Math.floor(width);
+  if (cls === "aircraft" && !aloft) base -= .25 * length;   // hovering over the horizon
+  const {canvas, ox, oy} = sceneSprite(cls, length, aob, color.map((c) => Math.floor(c / 4) * 4), cls !== "aircraft");
+  g.drawImage(canvas, Math.floor(cx) - ox, Math.floor(base) - oy);
+  const view = viewMatrix(sceneYaw(aob), SCENE_ELEVATION_RAD);
+  const lift = cls === "aircraft" ? AIRCRAFT_LIFT : 0;
+  const point = (u, v) => {
+    const p = apply(view, [.5 - u, 0, v - lift]);
+    return [cx + p[0] * length, base - p[1] * length];
+  };
+  return {point, poly: (points) => points.map(([u, v]) => point(u, v))};
 }
 
 // Turns the model while the canvas is in the page; dragging turns it by

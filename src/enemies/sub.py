@@ -196,6 +196,15 @@ class Sub:
         self.torpedo_alarm_left = -1.0
         self.emergency_ascent = False
         self.transient_left = 0.0
+        # Tube flooding / outer door: a short transient the frigate's sonar
+        # may hear (``flood_seq`` numbers each one, quiet = slow flooding).
+        self.flood_noise_left = 0.0
+        self.flood_quiet = False
+        self.flood_seq = 0
+        # The AI's tubes: -1 dry, > 0 seconds of flooding left, 0 flooded;
+        # a shot ordered on dry tubes waits for the flooding (fire pending).
+        self.ai_tube_left = -1.0
+        self.ai_fire_pending = False
         self.hull_fatigue = 0.0
         self.speed = rng.uniform(self.stype.speed_min_kn,
                                  min(self.stype.speed_kn, 8.0))
@@ -438,6 +447,14 @@ class Sub:
         if self.side != "hostile" or self.sunk or self.state == "SINKING":
             return
         self.attack_left -= dt
+        if (observation is not None and self.ai_tube_left < 0.0
+                and self.torpedoes_left > 0
+                and observation.range_nm is not None
+                and observation.range_nm <= config.SUB_AI_PREFLOOD_NM
+                and (self.weapon_battery is None
+                     or self.weapon_battery.ready_count > 0)):
+            # A stalking boat floods its tubes early and slowly (quiet).
+            self.ai_flood_tubes(quiet=True)
         if (self.attack_left > 0 or self.torpedoes_left <= 0
                 or (self.weapon_battery is not None
                     and self.weapon_battery.ready_count <= 0)):
@@ -476,13 +493,47 @@ class Sub:
         if self.mission_orders is not None:
             # A mission boat fights its way through: the frigate is its threat.
             rate *= config.BOAT_AI_ATTACK_MULT
-        if rate > 0 and self.asw_rng.random() < rate * dt:
-            n = min(2 if dist is not None and dist < 12.0
-                    and self.stype.aggression > .8 else 1,
-                    self.torpedoes_left,
-                    SUB_MAX_PENDING_TORPEDOES - len(self.pending_torpedoes))
-            if self._fire_salvo(observation, n):
-                self.attack_left = self.attack_cooldown
+        if rate <= 0:
+            self.ai_fire_pending = False
+            return
+        if self.ai_fire_pending:
+            if self.ai_tube_left != 0.0:
+                return
+            # The tubes flooded for the shot ordered earlier: fire now.
+            self.ai_fire_pending = False
+        elif self.asw_rng.random() < rate * dt:
+            if self.ai_tube_left != 0.0:
+                # Dry tubes: a hurried, loud flooding before the shot.
+                if self.ai_tube_left < 0.0:
+                    self.ai_flood_tubes(quiet=False)
+                self.ai_fire_pending = True
+                return
+        else:
+            return
+        n = min(2 if dist is not None and dist < 12.0
+                and self.stype.aggression > .8 else 1,
+                self.torpedoes_left,
+                SUB_MAX_PENDING_TORPEDOES - len(self.pending_torpedoes))
+        if self._fire_salvo(observation, n):
+            self.attack_left = self.attack_cooldown
+
+    def flood_transient(self, quiet: bool) -> None:
+        """Tube flooding and the outer door: a brief transient. Loud flooding
+        also raises the radiated level; quiet (slow) flooding is heard only close."""
+        self.flood_seq = (self.flood_seq + 1) % config.SUB_FLOOD_SEQ_MAX
+        self.flood_quiet = bool(quiet)
+        self.flood_noise_left = config.UBOOT_TUBE_FLOOD_NOISE_S
+        if not quiet:
+            self.transient_left = max(self.transient_left,
+                                      config.UBOOT_TUBE_FLOOD_NOISE_S)
+
+    def ai_flood_tubes(self, quiet: bool) -> None:
+        """Start flooding the AI's dry tubes (slow and quiet, or fast and loud)."""
+        if self.manual or self.ai_tube_left >= 0.0:
+            return
+        self.ai_tube_left = (config.UBOOT_TUBE_FLOOD_QUIET_S if quiet
+                             else config.UBOOT_TUBE_FLOOD_S)
+        self.flood_transient(quiet)
 
     def _fire_salvo(self, observation: PlatformObservation, count: int) -> int:
         """Load up to ``count`` torpedoes on ``observation``; returns fired."""
@@ -518,6 +569,9 @@ class Sub:
                 else:
                     self.crew.event("torpedo_fired_tubeless")
         if launched:
+            if not self.manual:
+                self.ai_tube_left = -1.0      # fired: the tubes are dry again
+                self.ai_fire_pending = False
             self.torpedoes_left = (self.weapon_battery.remaining_total
                                    if self.weapon_battery is not None
                                    else self.torpedoes_left - launched)
@@ -729,6 +783,10 @@ class Sub:
     def _update_inner(self, dt: float, observation, world) -> None:
         start_speed = self._actual_speed
         self.transient_left = max(0.0, self.transient_left - dt)
+        self.flood_noise_left = max(0.0, self.flood_noise_left - dt)
+        if not self.manual and self.ai_tube_left > 0.0:
+            left = self.ai_tube_left - dt * self.crew_efficiency()
+            self.ai_tube_left = 0.0 if left <= 1e-9 else left
         depth_at = getattr(world, "depth_m", lambda x, y: 1000.0)
         bottom = depth_at(self.x, self.y)
         self.last_bottom_m = bottom
@@ -1517,9 +1575,10 @@ class Sub:
         self.crew_tubes[tube] = ["dry", 0.0]
         return True
 
-    def command_flood_tube(self, tube=None):
+    def command_flood_tube(self, tube=None, quiet: bool = False):
         """Flood a loaded tube and open its outer door: only a flooded tube fires.
-        Flooding takes ``UBOOT_TUBE_FLOOD_S`` and is a short, audible transient."""
+        Flooding takes ``UBOOT_TUBE_FLOOD_S`` and is a short, audible transient;
+        quiet flooding takes ``UBOOT_TUBE_FLOOD_QUIET_S`` and is heard only close."""
         reason = self._tube_order_ready()
         if reason is not None:
             return reason
@@ -1534,8 +1593,9 @@ class Sub:
             return "invalid_value"
         if battery.tubes[tube].loaded_weapon_key is None or tubes[tube][0] != "dry":
             return "uboot_no_dry_tube"
-        tubes[tube] = ["flooding", float(config.UBOOT_TUBE_FLOOD_S)]
-        self.transient_left = max(self.transient_left, config.UBOOT_TUBE_FLOOD_NOISE_S)
+        tubes[tube] = ["flooding", float(config.UBOOT_TUBE_FLOOD_QUIET_S if quiet
+                                         else config.UBOOT_TUBE_FLOOD_S)]
+        self.flood_transient(bool(quiet))
         return True
 
     def fire_readiness(self, bearing=None, salvo: int = 1):

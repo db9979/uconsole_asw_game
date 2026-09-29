@@ -299,7 +299,7 @@ export function validateV2State(state) {
         typeof payload.orders.cavitating !== "boolean" || payload.orders.speed_max_kn < 0 || payload.orders.speed_max_kn > 100 ||
         !exactKeys(payload.threat, ["observations", "count", "average_flood", "torpedoes"]) ||
         !boundedArray(payload.threat.torpedoes, 8) || payload.threat.torpedoes.some((row) =>
-          !exactKeys(row, ["source", "bearing", "age_s"]) || !["transient", "seeker", "classified"].includes(row.source) ||
+          !exactKeys(row, ["source", "bearing", "age_s"]) || !["transient", "seeker", "flood", "classified"].includes(row.source) ||
           !finite(row.bearing) || row.bearing < 0 || row.bearing >= 360 || !finite(row.age_s) || row.age_s < 0) ||
         !boundedArray(payload.systems, 32) || payload.systems.some((row) => !exactKeys(row, ["key", "state", "down"]) || typeof row.down !== "boolean")) throw new Error("protocol");
     tacticalRows(payload.threat.observations, 128);

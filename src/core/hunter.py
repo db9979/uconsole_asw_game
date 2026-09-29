@@ -391,7 +391,7 @@ def sonar(game) -> str:
 
 
 def weapons(game, found) -> str:
-    observed = any(warning["age_s"] <= 2.0
+    observed = any(warning["age_s"] <= 2.0 and warning["source"] != "flood"
                    for warning in game.torpedo_warnings(held=False))
     if observed and not game.nixies and game.nixie_store.ready > 0:
         if game.deploy_nixie_result() is True:

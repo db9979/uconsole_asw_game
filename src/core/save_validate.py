@@ -1085,6 +1085,15 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                             or (entry["emergency_ascent"]
                                 and entry["blow_available"])
                             or not bounded(entry.get("transient_left"), 0.0, 60.0)
+                            or not bounded(entry.get("flood_noise_left"), 0.0, 60.0)
+                            or type(entry.get("flood_quiet")) is not bool
+                            or type(entry.get("flood_seq")) is not int
+                            or not 0 <= entry["flood_seq"] < config.SUB_FLOOD_SEQ_MAX
+                            or not bounded(entry.get("ai_tube_left"), -1.0,
+                                           config.UBOOT_TUBE_FLOOD_QUIET_S)
+                            or (entry["ai_tube_left"] < 0.0
+                                and entry["ai_tube_left"] != -1.0)
+                            or type(entry.get("ai_fire_pending")) is not bool
                             or not bounded(entry.get("hull_fatigue"), 0.0, 1.0)
                             or not bounded(entry.get("speed_order"), 0.0, 100.0)
                             or not isinstance(entry.get("tma_track"), list)

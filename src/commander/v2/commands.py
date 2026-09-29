@@ -669,6 +669,7 @@ V2_ACTION_REGISTRY = {
     # The torpedo room loads each tube and floods it before the shot.
     "uboot_tube_load": V2Action(frozenset({"uboot_weapons"}), _uboot_tube_params),
     "uboot_tube_flood": V2Action(frozenset({"uboot_weapons"}), _uboot_tube_params),
+    "uboot_tube_flood_quiet": V2Action(frozenset({"uboot_weapons"}), _uboot_tube_params),
     "uboot_evade": V2Action(frozenset({"uboot", "uboot_nav"}), _no_params),
     "uboot_blow": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
     "uboot_snorkel": V2Action(frozenset({"uboot_engine"}), _bool_params("enabled")),

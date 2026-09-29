@@ -49,7 +49,8 @@ def _nearest_threat(game):
     # classified TORPEDO; the entity type is never consulted.
     items += [(None, f"T{index:03d}", warning["bearing"])
               for index, warning in enumerate(game.torpedo_warnings(held=False))
-              if warning["age_s"] <= 2.0]
+              if warning["age_s"] <= 2.0
+              and warning["source"] != "flood"]
     if not items:
         return None
     # `_id` is a str on both branches above so the tie-break stays orderable
@@ -230,7 +231,7 @@ class AutocrewController:
 
     @staticmethod
     def _weapons(game):
-        observed = any(warning["age_s"] <= 2.0
+        observed = any(warning["age_s"] <= 2.0 and warning["source"] != "flood"
                        for warning in game.torpedo_warnings(held=False))
         if observed and not game.nixies and game.nixie_store.ready > 0:
             if game.deploy_nixie_result() is True:

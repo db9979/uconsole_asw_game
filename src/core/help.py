@@ -249,6 +249,7 @@ _UBOOT_HELP = (
         ("X", "help.uboot.decoy"),
         ("M", "help.uboot.tube_load"),
         ("Shift+M", "help.uboot.tube_flood"),
+        ("Ctrl+M", "help.uboot.tube_flood_quiet"),
         ("help.key.uboot_blow", "help.uboot.blow"),
         ("T", "help.uboot.torpedo_depth"),
         ("Y", "help.uboot.salvo"),

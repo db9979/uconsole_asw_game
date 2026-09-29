@@ -439,6 +439,11 @@ UBOOT_DC_STERN_SPEED_FACTOR = 0.5   # shaft and motor room flooded
 # time) and must be flooded before it fires; flooding is briefly audible.
 UBOOT_TUBE_FLOOD_S = 20.0
 UBOOT_TUBE_FLOOD_NOISE_S = 4.0
+UBOOT_TUBE_FLOOD_QUIET_S = 60.0      # slow flooding: quiet, heard only close
+SUB_AI_PREFLOOD_NM = 15.0            # an AI boat floods quietly on a closer fix
+SUB_FLOOD_SEQ_MAX = 1_000_000
+TORP_FLOOD_HEAR_NM = 8.0             # frigate hears loud tube flooding (quiet own ship)
+TORP_FLOOD_QUIET_HEAR_NM = 1.5       # ... and slow, quiet flooding
 UBOOT_TUBE_STATES = ("dry", "flooding", "flooded")
 UBOOT_SCOPE_EYE_HEIGHT_M = 2.5      # optics just above the surface
 UBOOT_SCOPE_FOV_DEG = 32.0          # field of view of the low-power optics
@@ -1147,6 +1152,7 @@ SUB_RAID_QUIET_S = 600.0
 SUB_RAID_FRIGATE_NM = 10.0
 SUB_RAID_KEEP_TORPEDOES = 2
 SCORE_MERCHANT_LOST = 300
+BOAT_AI_PREFLOOD_MARGIN_NM = 3.0   # quiet tube flooding starts this far outside
 # A hunted or closely watched boat creeps: this slow once the frigate is
 # within BOAT_AI_THREAT_NM (its own contact) or for BOAT_AI_HUNTED_S after a
 # ping or a torpedo was heard.

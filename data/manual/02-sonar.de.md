@@ -104,7 +104,7 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 
 Gefechtslage:
 
-1. Ein Starttransient, hochfrequente Ortungsimpulse oder ein neuer lauter Breitbandkontakt ohne Tonale mit schnell wandernder Peilung kann ein Torpedo sein. Als Torpedo klassifizieren (`C`) und die Peilung sofort an die Brücke melden.
+1. Ein Transient beim Rohrfluten warnt, dass ein Schuss folgen kann: Bugsonar und Schleppsonar auf die Peilung richten und Gegenmaßnahmen bereithalten. Ein Starttransient, hochfrequente Ortungsimpulse oder ein neuer lauter Breitbandkontakt ohne Tonale mit schnell wandernder Peilung kann ein Torpedo sein. Als Torpedo klassifizieren (`C`) und die Peilung sofort an die Brücke melden.
 2. Fokus auf dem feindlichen U-Boot halten, damit das Draht-Datum des Torpedos frisch bleibt.
 3. Nur pingen, wenn die Tiefe für den Schuss fehlt oder der Kontakt verloren geht: das U-Boot hört einen Ping bis 60 sm und weicht aus.
 
@@ -122,7 +122,7 @@ Gefechtslage:
 - Ein Kontakt geht 120 s nach der letzten Ortung verloren. Schwache Kontakte weiter verfolgen oder per Ping wieder erfassen.
 - Wracks liefern echte Echos ohne Doppler. Ein U-Boot, das still neben einem kartierten Wrack auf Grund liegt, versteckt sich vor einem CW-Ping in dessen Echo (750 m Entfernungszelle); ein LFM-Ping löst etwa 8 m auf und kann U-Boot und Wrack trennen. Jedes Wrack, das der Gegner erreichen konnte, ist verdächtig.
 - Der Bathythermograph (`E`) misst bis zum Grund, höchstens 1500 m. Erst nach einer Messung zeigt die Wetter- & Sonar-Analyse (`0`) die Schicht, die Schattenzone darunter und einen SOFAR-Kanal.
-- Das Sonar benennt nie einen Torpedo oder ein U-Boot. Es meldet, was es hört: einen mechanischen Starttransient (hörbar bis 35 NM) oder hochfrequente Ortungsimpulse (etwa 6 NM) als Peilung, die der Brückenalarm 60 s hält, und Sinkgeräusche, wenn ein Rumpf sinkt. Das OPZ-Symbol eines Sonarkontakts folgt allein Ihrer Klassifizierung; ein unklassifizierter Kontakt bleibt unbekannt.
+- Das Sonar benennt nie einen Torpedo oder ein U-Boot. Es meldet, was es hört: einen mechanischen Starttransient (hörbar bis 35 NM), hochfrequente Ortungsimpulse (etwa 6 NM) oder den kurzen Transienten eines U-Boots, das ein Torpedorohr flutet und die Mündungsklappe öffnet (eine Warnung, dass ein Schuss folgen kann: bis 8 NM, langsames, leises Fluten nur bis 1,5 NM; beides schrumpft mit Eigenlärm, Seegang und Sonarschaden) als Peilung, die der Brückenalarm 60 s hält, und Sinkgeräusche, wenn ein Rumpf sinkt. Das OPZ-Symbol eines Sonarkontakts folgt allein Ihrer Klassifizierung; ein unklassifizierter Kontakt bleibt unbekannt.
 
 ## Nicht modelliert {#sonar-limits}
 

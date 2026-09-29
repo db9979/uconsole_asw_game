@@ -595,12 +595,16 @@ def _command_key(game, current, key, mods) -> None:
                 compartment=message(f"uboot.compartment.{compartment}"),
                 task=message(f"uboot.dc.task.{current.dc_task}"))
     elif page == "UBOOT_WEAPONS" and key == pygame.K_m:
-        flood = bool(mods & pygame.KMOD_SHIFT)
+        quiet = bool(mods & pygame.KMOD_CTRL)
+        flood = quiet or bool(mods & pygame.KMOD_SHIFT)
         if order_allowed(game, "uboot_tube_flood" if flood else "uboot_tube_load"):
-            result = sub.command_flood_tube() if flood else sub.command_load_tube()
+            result = (sub.command_flood_tube(quiet=quiet) if flood
+                      else sub.command_load_tube())
             if result is True:
                 _announce(game, "waffen", message(
-                    "uboot.local.tube_flooding" if flood else "uboot.local.tube_loading"))
+                    "uboot.local.tube_flooding_quiet" if quiet
+                    else "uboot.local.tube_flooding" if flood
+                    else "uboot.local.tube_loading"))
             else:
                 game.flash(message("uboot.local.tube_rejected", reason=message(
                     f"uboot.reason.{result}" if result in TUBE_REASONS

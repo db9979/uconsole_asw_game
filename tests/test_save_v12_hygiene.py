@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v32_and_older_documents_are_rejected():
+def test_save_is_v33_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (32, "u-jagd-save-v32")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (32, "u-jagd-save-v32")
+    assert (state["version"], state["save_schema"]) == (33, "u-jagd-save-v33")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (33, "u-jagd-save-v33")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -161,6 +161,15 @@ def test_save_is_v32_and_older_documents_are_rejected():
     for row in v31["subs"]:
         del row["radar_hold_s"]
     assert not game._load_save_data(v31)
+    # v32 differs only by the submarines' tube flooding and flood transients.
+    v32 = copy.deepcopy(state)
+    v32["version"] = 32
+    v32["save_schema"] = "u-jagd-save-v32"
+    for row in v32["subs"]:
+        for key in ("flood_noise_left", "flood_quiet", "flood_seq",
+                    "ai_tube_left", "ai_fire_pending"):
+            del row[key]
+    assert not game._load_save_data(v32)
     assert game.save_state() == before
 
 

@@ -206,6 +206,7 @@ from src.commander.actions import (  # noqa: F401 - re-exported
     _uboot_decoy,
     _uboot_tube_load,
     _uboot_tube_flood,
+    _uboot_tube_flood_quiet,
     _uboot_evade,
     _uboot_blow,
     _uboot_snorkel,

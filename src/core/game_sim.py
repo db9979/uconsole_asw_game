@@ -1137,7 +1137,39 @@ class SimMixin:
                 torpedo.x - self.ship.x, -(torpedo.y - self.ship.y))) % 360.0
             key = (int(torpedo.launch_platform_id or 0) * 1000
                    + int(getattr(torpedo, "idx", 0)))
-            cues.append({"kind": kind, "t": self.sim_t, "torpedo": torpedo,
+            cues.append({"kind": kind, "t": self.sim_t, "owner": torpedo,
+                         "report": kind, "serial": id(torpedo),
+                         "bearing": threat_cue.measured_cue_bearing(
+                             true_bearing, self.seed, key, self.sim_t)})
+        cues += self._tube_flood_cues()
+        return cues
+
+    def _tube_flood_cues(self) -> list:
+        """Tube flooding / outer-door transients audible right now.
+
+        Heard only within ``TORP_FLOOD_HEAR_NM`` (slow, quiet flooding
+        ``TORP_FLOOD_QUIET_HEAR_NM``), shrunk by the frigate's own noise, sea
+        state and sonar damage, and never through land. Measurement only: a
+        bearing and the fact of a transient, no identity."""
+        own = (self.ship.passive_sonar_range_nm(
+            1.0, int(getattr(self.world, "effective_sea_state", self.world.sea_state)))
+            / config.SONAR_PASSIVE_BASE_NM) * self._sonar_range_factor()
+        cues = []
+        for sub in self.subs:
+            if sub.sunk or sub.flood_noise_left <= 0.0:
+                continue
+            reach = own * (config.TORP_FLOOD_QUIET_HEAR_NM if sub.flood_quiet
+                           else config.TORP_FLOOD_HEAR_NM)
+            if (math.hypot(sub.x - self.ship.x, sub.y - self.ship.y) > reach
+                    or self.world.sonar_path_blocked(
+                        sub.x, sub.y, sub.depth, self.ship.x, self.ship.y, 5.0)):
+                continue
+            true_bearing = math.degrees(math.atan2(
+                sub.x - self.ship.x, -(sub.y - self.ship.y))) % 360.0
+            key = (config.SUB_FLOOD_SEQ_MAX * (int(sub.id) + 1) + sub.flood_seq) * 1000 + 999
+            cues.append({"kind": "flood", "t": self.sim_t, "owner": sub,
+                         "report": f"flood:{sub.flood_seq}",
+                         "serial": ("flood", id(sub)),
                          "bearing": threat_cue.measured_cue_bearing(
                              true_bearing, self.seed, key, self.sim_t)})
         return cues
@@ -1147,14 +1179,14 @@ class SimMixin:
         self.torpedo_cues = [cue for cue in self.torpedo_cues
                              if self.sim_t - cue["t"] <= config.TORP_CUE_HOLD_S]
         for cue in self.current_torpedo_cues():
-            torpedo = cue.pop("torpedo")
-            reported = self._torpedo_cues_reported.setdefault(torpedo, set())
+            owner, report = cue.pop("owner"), cue.pop("report")
+            reported = self._torpedo_cues_reported.setdefault(owner, set())
             self.torpedo_cues = [held for held in self.torpedo_cues
-                                 if held["serial"] != id(torpedo)]
-            self.torpedo_cues.append(dict(cue, serial=id(torpedo)))
-            if cue["kind"] in reported:
+                                 if held["serial"] != cue["serial"]]
+            self.torpedo_cues.append(cue)
+            if report in reported:
                 continue
-            reported.add(cue["kind"])
+            reported.add(report)
             notice = message(f"runtime.torpedo_cue.{cue['kind']}",
                              bearing=f"{cue['bearing']:05.1f}")
             self.flash(notice, 4.0)

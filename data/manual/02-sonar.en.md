@@ -103,7 +103,7 @@ The display shows measured modulation, not identity. After changing the bearing 
 
 Combat situation:
 
-1. A launch transient, high-frequency sonar pulses, or a new loud broadband contact without tonals and with fast bearing drift may be a torpedo. Classify it as Torpedo (`C`) and report the bearing to the Bridge immediately.
+1. A tube-flooding transient warns that a shot may follow: turn the bow sonar and towed array onto its bearing and get the countermeasures ready. A launch transient, high-frequency sonar pulses, or a new loud broadband contact without tonals and with fast bearing drift may be a torpedo. Classify it as Torpedo (`C`) and report the bearing to the Bridge immediately.
 2. Keep focus on the hostile submarine so the torpedo wire datum stays fresh.
 3. Ping only when you need depth for the shot or the contact is about to be lost: the submarine hears a ping out to 60 NM and starts evading.
 
@@ -121,7 +121,7 @@ Combat situation:
 - A contact is lost 120 s after its last detection. Keep tracking weak contacts, or reacquire with a ping.
 - Wrecks return real echoes without Doppler. A submarine lying still beside a charted wreck hides in that echo from a CW ping (750 m range cell); an LFM ping resolves about 8 m and can separate the submarine from the wreck. Suspect every wreck the enemy could have reached.
 - The bathythermograph (`E`) measures to the seabed, at most 1500 m. Only after a measurement does the weather & sonar analysis (`0`) show the layer, the shadow zone below it and a SOFAR channel.
-- The sonar never names a torpedo or a submarine. It reports what it hears: a mechanical launch transient (heard out to 35 NM) or high-frequency seeker pulses (about 6 NM) as a bearing, held on the Bridge alarm for 60 s, and breaking-up noises when a hull sinks. The OPZ symbol of a sonar contact follows your classification only; an unclassified contact stays unknown.
+- The sonar never names a torpedo or a submarine. It reports what it hears: a mechanical launch transient (heard out to 35 NM), high-frequency seeker pulses (about 6 NM) or the short transient of a submarine flooding a torpedo tube and opening its outer door (a warning that a shot may follow: out to 8 NM, but slow, quiet flooding only within 1.5 NM; both shrink with own noise, sea state and sonar damage) as a bearing, held on the Bridge alarm for 60 s, and breaking-up noises when a hull sinks. The OPZ symbol of a sonar contact follows your classification only; an unclassified contact stays unknown.
 
 ## Not modelled {#sonar-limits}
 

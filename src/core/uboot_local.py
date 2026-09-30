@@ -348,6 +348,9 @@ def handle_key(game, event) -> None:
         if key == pygame.K_F10:
             game._open_administration("options")
             return
+        if key == pygame.K_F2 and mods & pygame.KMOD_SHIFT:
+            game.toggle_crew_assist()
+            return
         if key in (pygame.K_0, pygame.K_KP0) and current is not None:
             # The boat's weather panel (its own instruments and BT), as on the frigate.
             game._clear_station_input()

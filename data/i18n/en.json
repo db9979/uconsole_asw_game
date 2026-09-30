@@ -6345,5 +6345,13 @@
   "commander.web.lobby_player_you": "{name} (you)",
   "commander.web.lobby_countdown": "Mission starts in {seconds} s",
   "commander.web.lobby_waiting_host": "Waiting for the host to start the mission.",
-  "commander.web.lobby_ready_failed": "Ready could not be sent. Try again."
+  "commander.web.lobby_ready_failed": "Ready could not be sent. Try again.",
+  "help.global.crew_assist": "Crew assist: the AI mans every station nobody holds, on both units",
+  "autocrew.assist.on": "Crew assist on: the AI mans every free station",
+  "autocrew.assist.off": "Crew assist off",
+  "autocrew.status.suspended_local": "SUSPENDED: OPERATOR HERE",
+  "commander.web.autocrew_suspended_local": "worked on the uConsole",
+  "commander.web.role_release_ai": "Hand over to AI",
+  "lobby.host_only": "none, host only",
+  "commander.web.lobby_room_host_only": "The uConsole only hosts: every station is played in the browser or by the AI."
 }

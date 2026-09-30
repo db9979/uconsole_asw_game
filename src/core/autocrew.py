@@ -12,7 +12,9 @@ AUTOCREW_STATIONS = (
     "bridge", "sonar", "weapons", "damage", "opz", "radio", "engine",
     "helicopter", "eloka",
 )
-AUTOCREW_VERSION = 1
+AUTOCREW_VERSION = 2
+# Stations the AI hunters work instead while they crew the frigate.
+_HUNTER_STATIONS = frozenset({"bridge", "sonar", "weapons", "helicopter"})
 _CADENCE_S = {
     "bridge": 1.0,
     "sonar": 2.0,
@@ -76,6 +78,27 @@ class AutocrewController:
         self.enabled = {key: False for key in AUTOCREW_STATIONS}
         self.next_due_s = {key: 0.0 for key in AUTOCREW_STATIONS}
         self.last_action = {key: "off" for key in AUTOCREW_STATIONS}
+        # Crew assist: the AI mans every station nobody holds, on both units;
+        # the station the uConsole shows is the local operator's.
+        self.assist = False
+
+    def set_assist(self, enabled: bool, now: float) -> bool:
+        """Switch the crew assist; it enables (or clears) every station."""
+        if type(enabled) is not bool:
+            raise ValueError("invalid Autocrew state")
+        self.assist = enabled
+        for key in AUTOCREW_STATIONS:
+            self.set_enabled(key, enabled, now)
+        return enabled
+
+    @staticmethod
+    def local_holds(game, key) -> bool:
+        """With the assist on, the station the uConsole shows is worked there."""
+        return (bool(getattr(game.autocrew, "assist", False))
+                and not getattr(game, "host_only", False)
+                and getattr(game, "local_side", "frigate") != "uboot"
+                and not getattr(game, "in_menu", False)
+                and station_key(game.station) == key)
 
     def set_enabled(self, station, enabled: bool, now: float) -> bool:
         key = station_key(station)
@@ -98,15 +121,21 @@ class AutocrewController:
         enum_station = Station[key.upper()]
         if game.commander.station_leased(enum_station):
             return "suspended_remote"
+        if self.assist and self.local_holds(game, key):
+            return "suspended_local"
         compartment = _DAMAGE_COMPARTMENT[key]
         if compartment is not None and game.damage.station_down(compartment):
             return "blocked_damage"
         return "active"
 
     def update(self, game) -> None:
+        from src.core import hunter
+        hunting = self.assist and hunter.active(game)
         for key in AUTOCREW_STATIONS:
             due = self.next_due_s[key]
             if game.sim_t + 1e-9 < due or self.status(game, key) != "active":
+                continue
+            if hunting and key in _HUNTER_STATIONS:
                 continue
             action = getattr(self, f"_{key}")(game)
             self.last_action[key] = action if action in _ACTIONS else "monitoring"
@@ -117,6 +146,7 @@ class AutocrewController:
     def serialize(self) -> dict:
         return {
             "version": AUTOCREW_VERSION,
+            "assist": self.assist,
             "stations": {
                 key: {
                     "enabled": self.enabled[key],
@@ -132,6 +162,7 @@ class AutocrewController:
         if not cls.valid_state(data):
             raise ValueError("invalid Autocrew state")
         result = cls()
+        result.assist = data["assist"]
         for key, row in data["stations"].items():
             result.enabled[key] = row["enabled"]
             result.next_due_s[key] = float(row["next_due_s"])
@@ -140,9 +171,10 @@ class AutocrewController:
 
     @staticmethod
     def valid_state(data, sim_t=None) -> bool:
-        if (not isinstance(data, dict) or set(data) != {"version", "stations"}
+        if (not isinstance(data, dict) or set(data) != {"version", "assist", "stations"}
                 or type(data.get("version")) is not int
                 or data["version"] != AUTOCREW_VERSION
+                or type(data.get("assist")) is not bool
                 or not isinstance(data.get("stations"), dict)
                 or set(data["stations"]) != set(AUTOCREW_STATIONS)):
             return False

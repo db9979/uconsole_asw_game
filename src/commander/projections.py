@@ -1344,7 +1344,9 @@ def _opfor_common(game, status, role, boat):
                                         pan=_pan(row.get("pan")))
                                    for row in list(boat.sound_events)[-16:]],
                            callouts=boat.callouts.detached())
-    common["autocrew"] = dict(enabled=False, status="off")
+    # With the crew assist the boat's autocrew takes the station once released.
+    assist = bool(game.autocrew.assist)
+    common["autocrew"] = dict(enabled=assist, status="suspended_remote" if assist else "off")
     common["autocrew_overview"] = []
     return common
 

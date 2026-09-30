@@ -27,7 +27,7 @@ import math
 from functools import lru_cache
 
 from src.core import boat_missions, config, detrand
-from src.core.autocrew import AutocrewController, _nearest_threat
+from src.core.autocrew import AutocrewController, _nearest_threat, station_key
 from src.core.station import Station
 
 CADENCE_S = 2.0
@@ -75,8 +75,13 @@ _SUPPORT = (("sonar", Station.SONAR), ("radio", Station.RADIO),
 
 
 def active(game) -> bool:
-    """A crewed boat is in the water and no human sails the frigate."""
-    if game._opfor is None or game.game_over or game.damage.ship_sunk:
+    """A crewed boat is in the water and no human sails the frigate, or the
+    crew assist lets the AI man every frigate station nobody holds."""
+    if game.game_over or game.damage.ship_sunk:
+        return False
+    if getattr(getattr(game, "autocrew", None), "assist", False):
+        return True
+    if game._opfor is None:
         return False
     commander = getattr(game, "commander", None)
     return (getattr(game, "local_side", "frigate") == "uboot"
@@ -84,7 +89,10 @@ def active(game) -> bool:
 
 
 def manned(game, station) -> bool:
-    return bool(game.commander.station_leased(station))
+    """A browser holds the station, or the uConsole operator works it."""
+    if game.commander.station_leased(station):
+        return True
+    return AutocrewController.local_holds(game, station_key(station))
 
 
 @lru_cache(maxsize=1)

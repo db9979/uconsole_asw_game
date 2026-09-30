@@ -618,9 +618,10 @@ def sonar(game) -> str:
 
 
 def fire_range_nm(game) -> float:
-    """The frigate's own torpedo range: guarding a post in the submarine's
-    missions it waits for a closer shot than when it hunts."""
-    return SHIP_FIRE_NM if boat_missions.mode(game) is None else GUARD_FIRE_NM
+    """The frigate's own torpedo range: guarding a post against a breakthrough
+    or a reconnaissance boat it waits for a closer shot than when it hunts or
+    screens a convoy."""
+    return GUARD_FIRE_NM if boat_missions.mode(game) in ("breakthrough", "recon") else SHIP_FIRE_NM
 
 
 def weapons(game, found) -> str:

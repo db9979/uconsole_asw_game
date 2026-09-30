@@ -1732,7 +1732,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             or not 0 <= world["sea_state"] <= 6
             or not bounded(world["weather_shift_timer"], 0.0,
                            config.WEATHER_SHIFT_PERIOD_S)
-            or world["weather_override"] not in (None, "rain", "storm", "fog")
+            or world["weather_override"] not in (None, "fair", "rain", "storm", "fog")
             or not OceanEnvironment.valid_state(world["ocean"])
             or not Coastline.valid_snapshot(world["coast"])):
         return False

@@ -273,7 +273,7 @@ def source_group(source: str) -> str:
         return "buoy"
     if source.startswith("SONAR"):
         return "sonar"
-    if source.startswith("RADAR-MPA"):
+    if source.startswith(("RADAR-MPA", "MPA-EYE")):
         return "mpa"
     if source.startswith("RADAR"):
         return "radar"

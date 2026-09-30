@@ -120,6 +120,7 @@ class LobbyMixin:
         # the browsers (or runs as the AI boat when nobody takes it).
         self.local_side = "frigate" if self.host_only else room.side
         self.scenario_key = room.scenario_key
+        self.start_weather, self.start_time = room.weather, room.time
         self.lobby_round = True
         self._start_menu_mission()
         # A lobby round with a crew lets the AI man every station nobody holds;
@@ -236,6 +237,8 @@ class LobbyMixin:
                 "scenario." + config.SCENARIO_NAMES[room.scenario_key] + ".title")),
             message("lobby.row.side", side=message(f"menu.side.{room.side}")),
             message("lobby.row.station", station=_station_name(room.station)),
+            message("menu.start_weather", value=message(f"menu.start_weather.{room.weather}")),
+            message("menu.start_time", value=message(f"menu.start_time.{room.time}")),
             message("lobby.row.start"),
         )
         for index, text in enumerate(values):

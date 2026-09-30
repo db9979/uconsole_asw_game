@@ -365,6 +365,7 @@ class MissionBridgeMixin:
                     tuple(candidate_difficulty[name]
                           for name in config.DIFFICULTY_FIELD_ORDER),
                     self.hq_intel_mode(), self._preferred_level(),
+                    self.start_weather, self.start_time,
                     id(self.world), id(self.sonar))
         reuse = (self.in_menu and self._prepared_menu_mission == prepared
                  and self.sim_t == 0.0 and self.mission_time == 0.0
@@ -439,6 +440,34 @@ class MissionBridgeMixin:
         if self.lobby_round:
             # A mission started from the lobby returns the crew there.
             self.open_lobby()
+
+    def _apply_start_environment(self) -> None:
+        """The chosen start weather and time of day ("random" keeps the
+        seed's). Runs in ``reset`` before anything draws from the world;
+        a custom mission then sets its own authored environment."""
+        weather = getattr(self, "start_weather", "random")
+        hour = config.START_TIME_HOURS.get(getattr(self, "start_time", "random"))
+        if hour is not None:
+            self.world.hour = hour
+        if weather in config.START_WEATHER_SEA_STATE:
+            self.world.sea_state = config.START_WEATHER_SEA_STATE[weather]
+            self.world.refresh_weather()
+            self.world.set_weather_override(weather)
+
+    def cycle_start_choice(self, kind: str, step: int) -> None:
+        """Left/Right on a weather or time row of the briefing, lobby or
+        campaign menu."""
+        attribute, choices = (("start_weather", config.START_WEATHER_CHOICES)
+                              if kind == "weather"
+                              else ("start_time", config.START_TIME_CHOICES))
+        current = getattr(self, attribute, "random")
+        index = choices.index(current) if current in choices else 0
+        setattr(self, attribute, choices[(index + step) % len(choices)])
+
+    def start_choice_text(self, kind: str):
+        """'Weather: rain' / 'Time of day: night' for a menu row."""
+        value = self.start_weather if kind == "weather" else self.start_time
+        return message(f"menu.start_{kind}", value=message(f"menu.start_{kind}.{value}"))
 
     def hq_intel_mode_menu(self) -> str:
         return (self.menu_hq_intel if self.menu_hq_intel in config.HQ_INTEL_MODES

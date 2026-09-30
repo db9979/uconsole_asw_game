@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.118**
+Current release: **1.3.122**
 
-Release 1.3.118 makes the browser stations steadier to operate. A drop-down
+Release 1.3.122 makes the browser stations steadier to operate. A drop-down
 list that is open or in use, such as the ESM classification on the submarine,
 the fire-control target or the wire, torpedo type and damage-team choices, no
 longer closes or loses its choice when the station updates; it catches up once

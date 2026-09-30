@@ -244,6 +244,8 @@ def test_random_scenario_accepts_default_difficulty(game):
     press(game, pygame.K_RETURN)
     assert 0 <= game.menu_sel < len(config.DIFFICULTY_FIELD_ORDER)
     press(game, pygame.K_RETURN)
+    assert game.menu_screen == "briefing"      # weather and time of day
+    press(game, pygame.K_RETURN)
     assert not game.in_menu and game.scenario_key == "s4_zufall"
 
 

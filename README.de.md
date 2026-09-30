@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.118**
+Aktuelle Version: **1.3.122**
 
-Version 1.3.118 macht die Browser-Stationen ruhiger in der Bedienung. Eine
+Version 1.3.122 macht die Browser-Stationen ruhiger in der Bedienung. Eine
 Auswahlliste, die offen ist oder gerade bedient wird, etwa die ESM-
 Klassifizierung auf dem U-Boot, das Ziel der Feuerleitung oder die Auswahl von
 Draht, Torpedotyp und Leckwehrtrupp, klappt bei einer Aktualisierung der Station

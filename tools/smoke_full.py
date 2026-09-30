@@ -180,6 +180,8 @@ def _run_smoke() -> None:
     assert g2.menu_screen == "difficulty"
     g2._handle_menu_key(pygame.K_DOWN)       # zweites Feld auswaehlen
     g2._handle_menu_key(pygame.K_RIGHT)      # Wert anheben
+    g2._handle_menu_key(pygame.K_RETURN)     # -> Briefing (Wetter/Uhrzeit)
+    assert g2.menu_screen == "briefing"
     g2._handle_menu_key(pygame.K_RETURN)
     assert not g2.in_menu
     pump(g2, 60)

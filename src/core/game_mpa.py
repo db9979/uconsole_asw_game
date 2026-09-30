@@ -397,6 +397,60 @@ class MpaMixin:
             dt, helo.x, helo.y, config.HELO_RADAR_ALTITUDE_M,
             config.HELO_RADAR_RANGE_NM, "helo-radar-", "H-", "RADAR-HELO")
 
+    def _update_aircrew_eyes(self, dt: float) -> None:
+        """The helicopter's and patrol aircraft's crews look out too: a
+        raised periscope or snorkel head is seen by its feather (the
+        lookout's contrast model from the aircraft's height), published as
+        ``HELO-EYE`` or, over the datalink, ``MPA-EYE`` tracks."""
+        look = config.MPA_RADAR_LOOK_S
+        tick = math.floor((self.sim_t + 1e-9) / look)
+        if tick == math.floor((self.sim_t - dt + 1e-9) / look):
+            return
+        observers = []
+        helo = self.helo
+        if helo.airborne:
+            observers.append((helo.x, helo.y,
+                              config.HELO_RADAR_ALTITUDE_M if helo.dip_state == "STOWED"
+                              else config.AIRCREW_HOVER_EYE_M, "HELO-EYE", "HE-"))
+        mpa = getattr(self, "mpa", None)
+        if mpa is not None and self.mpa_datalink():
+            observers.append((mpa.x, mpa.y, mpa.altitude_m, "MPA-EYE", "ME-"))
+        if not observers:
+            return
+        from src.core.game_sim import LOOKOUT_MODEL
+        from src.sensors import lookout_id
+        from src.sensors import visual as visual_physics
+        environment = self._lookout_environment()
+        for sub in sorted(self.subs, key=lambda item: item.id):
+            if (sub.sunk or sub.state == "SINKING"
+                    or sub.depth <= config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M
+                    or not self._mast_up(sub)):
+                continue
+            strength = visual_physics.feather_strength(sub.speed)
+            for x, y, altitude, source, prefix in observers:
+                dx, dy = sub.x - x, sub.y - y
+                distance = math.hypot(dx, dy)
+                if (LOOKOUT_MODEL.margin("MAST", distance, eye_m=altitude, **environment)
+                        * strength < 1.0 or self.world.land_blocks_line(x, y, sub.x, sub.y)):
+                    continue
+                recognized = LOOKOUT_MODEL.margin(
+                    "MAST", distance, eye_m=altitude,
+                    detail=lookout_id.RECOGNIZE_CYCLES, **environment) * strength >= 1.0
+                key = int(sub.sensor_seed)
+                bearing = (math.degrees(math.atan2(dx, -dy))
+                           + config.LOOKOUT_BEARING_ERR_DEG
+                           * detrand.normal(self.seed, source + "-brg", key, tick)) % 360.0
+                measured = max(0.0, distance * (1.0 + config.LOOKOUT_RANGE_ERR_FRAC
+                                                * detrand.normal(self.seed, source + "-rng",
+                                                                 key, tick)))
+                track_id = prefix + self._observation_key("eye", key)
+                self.air_picture.observe(
+                    track_id=track_id, kind="SUB" if recognized else "SURFACE",
+                    target_id=0, source=source, bearing=bearing, range_nm=measured,
+                    observer_x=x, observer_y=y, course=None, quality=.6,
+                    now=self.sim_t, label=track_id,
+                    bearing_uncertainty_deg=config.LOOKOUT_BEARING_ERR_DEG)
+
     def helo_radar_active(self) -> bool:
         return (self.helo.airborne and self.helo.dip_state == "STOWED"
                 and self.helo.radar_on)

@@ -79,7 +79,7 @@ HEARD_CENTRE_NM = 0.05
 LOOKOUT_MODEL = visual_physics.LookoutModel(
     {"SURFACE": config.LOOKOUT_SURFACE_RANGE_NM, "SUB": config.LOOKOUT_SUB_RANGE_NM,
      "FLG": config.LOOKOUT_AIR_RANGE_NM, "TORP": TORPEDO_WAKE_VISIBLE_NM,
-     "LAND": config.LOOKOUT_LAND_RANGE_NM},
+     "LAND": config.LOOKOUT_LAND_RANGE_NM, "MAST": config.LOOKOUT_FEATHER_RANGE_NM},
     config.WEATHER_VISIBILITY_MAX_NM)
 
 
@@ -272,6 +272,16 @@ class SimMixin:
         self._sound_event_seq += 1
         self._sound_events.append(dict(seq=self._sound_event_seq, kind=kind, pan=pan))
 
+    def _hull_slam(self, previous_pitch: float) -> None:
+        """A bow coming down hard into a head sea slams: a sound only (the
+        seakeeping model already carries the motion)."""
+        pitch = self.ship.pitch
+        if (previous_pitch > -config.HULL_SLAM_PITCH_DEG >= pitch
+                and self.ship.speed >= config.HULL_SLAM_MIN_KN
+                and getattr(self.world, "effective_sea_state", self.world.sea_state)
+                >= config.HULL_SLAM_SEA_STATE):
+            self._emit_sound("hull_slam")
+
     def _sight_fire_level(self, ship):
         """The frigate's own fire for her smoke (0..1, worst compartment);
         None for other ships, whose fire burns down on its own."""
@@ -335,7 +345,11 @@ class SimMixin:
         # Steering gear sits aft under the flight deck; a destroyed room
         # jams the rudder where it is. Stabilizer fins are lost with either
         # hull side destroyed. Floodwater adds displacement.
-        self.ship.steering_jammed = self.damage.station_down("flightdeck")
+        jammed, emergency = self.rudder_casualty()
+        if emergency:
+            # Emergency steering from the steering gear room: half rate.
+            self.ship.turn_rate_scale *= 0.5
+        self.ship.steering_jammed = self.damage.station_down("flightdeck") or jammed
         self.ship.stabilizers_ok = not (self.damage.station_down("hull_left")
                                         or self.damage.station_down("hull_right"))
         self.ship.flood_percent = (self.damage.flood_mass_kg()
@@ -351,7 +365,9 @@ class SimMixin:
         self._telegraph_rung = telegraph
         self._steer_route(dt)
         self._steer_baffle_clear()
+        previous_pitch = self.ship.pitch
         contact = self.ship.update(dt, self.world, self.damage.list_deg())
+        self._hull_slam(previous_pitch)
         self._lay_knuckle("frigate", self.ship, self.ship.yaw_rate)
         if contact is not None:
             speed_m_s = self.ship.last_impact_speed_kn * 1852.0 / 3600.0
@@ -533,6 +549,7 @@ class SimMixin:
     def _update_underwater_entities(self, dt: float) -> None:
         """Aktualisiert U-Boote, Tiere, Zivile und Dekoys."""
         self._deliver_ping_intercepts()
+        self._apply_incident_effects()
         # The AI mission boat's leg for this substep (before it moves).
         boat_ai.steer(self)
         for sub in self.subs:
@@ -605,6 +622,7 @@ class SimMixin:
         self._fly_buoy_pattern()
         self._update_helo_radar(dt)
         self._update_mpa(dt)
+        self._update_aircrew_eyes(dt)
         self._update_sub_radar_alert(dt)
         for buoy in self.buoys:
             buoy.update(dt, self.world)
@@ -1574,7 +1592,8 @@ class SimMixin:
 
     def _lookout_observe(self, actor, namespace: str, kind: str,
                          seed: int, altitude_m: float | None = None,
-                         classes: tuple | None = None, lit: bool = False) -> None:
+                         classes: tuple | None = None, lit: bool = False,
+                         strength: float = 1.0) -> None:
         import random
 
         dx, dy = actor.x - self.ship.x, actor.y - self.ship.y
@@ -1583,8 +1602,9 @@ class SimMixin:
         # A wake stirring glowing plankton at night is seen further.
         environment["glow"] = bioluminescence.wake_glow(
             self.world.glow(), kind, getattr(actor, "speed", 0.0))
-        # A tired lookout needs more contrast (crew watch, 1.0 when fresh).
-        alert = self.crew_effect()
+        # A tired lookout needs more contrast (crew watch, 1.0 when fresh);
+        # ``strength`` scales the target's own contrast (a mast's feather).
+        alert = self.crew_effect() * strength
         margin = alert * LOOKOUT_MODEL.margin(kind, distance, altitude_m=altitude_m,
                                               **environment)
         bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
@@ -1641,9 +1661,13 @@ class SimMixin:
         label = lookout_id.encode(level, recognized, identified, type_key)
         # A bare detection only says what the eye sees: something on the
         # surface or a wake. Submarine/torpedo domains need recognition.
-        published_kind = (kind if level >= lookout_id.RECOGNIZED
-                          or kind in ("SURFACE", "FLG")
-                          else "SURFACE" if kind == "SUB" else "UNKNOWN")
+        # A mast or feather made out as a periscope is a submarine.
+        if kind == "MAST":
+            published_kind = "SUB" if level >= lookout_id.RECOGNIZED else "SURFACE"
+        else:
+            published_kind = (kind if level >= lookout_id.RECOGNIZED
+                              or kind in ("SURFACE", "FLG")
+                              else "SURFACE" if kind == "SUB" else "UNKNOWN")
         if lights is None:
             self._lookout_lights.pop(track_id, None)
         else:
@@ -1651,7 +1675,7 @@ class SimMixin:
         aspect = getattr(self, "_lookout_aspect", None)
         if aspect is not None:
             course = getattr(actor, "course", None)
-            if level >= lookout_id.RECOGNIZED and course is not None:
+            if level >= lookout_id.RECOGNIZED and course is not None and kind != "MAST":
                 # The eye sees the real ship; the type is the watch's call.
                 aspect[track_id] = (lookout_id.angle_on_bow(course, bearing), self.sim_t,
                                     unit_variants.entity_model(actor))
@@ -1720,7 +1744,7 @@ class SimMixin:
                           "ausguck", 4.0)
             return
         text = self.lookout_report_text(report)
-        if kind in ("TORP", "SUB") and level > lookout_id.DETECTED:
+        if kind in ("TORP", "SUB", "MAST") and level > lookout_id.DETECTED:
             self.announce(text, "ausguck", 4.0)
         else:
             self.feed.add(self.world.format_time(), "ausguck", text)
@@ -1805,6 +1829,12 @@ class SimMixin:
                     and actor.depth <= config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M):
                 self._lookout_observe(actor, "sub", "SUB", actor.sensor_seed,
                                       classes=("SUBMARINE", "SUBMARINE", None))
+            elif not actor.sunk and actor.state != "SINKING" and self._mast_up(actor):
+                # A raised periscope or snorkel head: the eye sees its
+                # feather, which grows with the boat's speed.
+                self._lookout_observe(actor, "sub", "MAST", actor.sensor_seed,
+                                      classes=("PERISCOPE", "PERISCOPE", None),
+                                      strength=visual_physics.feather_strength(actor.speed))
         # Civil aircraft show their position and anti-collision lights;
         # military aircraft fly dark.
         for actor in sorted(self.flights.flights, key=lambda item: item.seq):

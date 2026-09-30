@@ -137,6 +137,14 @@ class PlotLayer:
         self.objects = [item for item in self.objects if item["id"] != object_id]
         return len(self.objects) != before
 
+    def move(self, object_id, x: float, y: float) -> bool:
+        """Shift a point object (a drifting marker); False if it is gone."""
+        for item in self.objects:
+            if item["id"] == object_id and "x" in item:
+                item["x"], item["y"] = float(x), float(y)
+                return True
+        return False
+
     def relabel(self, object_id, label: str) -> bool:
         if not valid_label(label):
             return False

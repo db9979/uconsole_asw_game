@@ -16,6 +16,20 @@ The kinds:
 - ``whales``: a pod of whales in the area, reported by a fishing boat: real
   biological contacts for every sonar.
 
+Emergencies aboard (1.3.120), one side each so both lose time:
+
+- ``overboard``: a man overboard from the frigate. He drifts with the
+  surface current (``x``, ``y``); the ship recovers him by passing within
+  ``INCIDENT_OVERBOARD_PICKUP_NM`` at slow speed, or the helicopter by
+  hovering over him, before ``end_t`` (his time in the water).
+- ``rudder``: the frigate's steering gear fails: the rudder is jammed for
+  ``INCIDENT_RUDDER_JAM_S``, then emergency steering turns at half rate
+  until ``end_t``.
+- ``valve``: the snorkel head valve of a submarine (``target_id``) jams:
+  its diesels cannot run until ``end_t``.
+- ``gas``: hydrogen from a submarine's battery: it charges at half rate
+  until ``end_t``.
+
 HQ also passes the net, the front and the whales on to the submarine's
 broadcast, so a crewed boat hears of them when it copies the next one.
 
@@ -29,7 +43,9 @@ from __future__ import annotations
 
 import math
 
-KINDS = ("net", "front", "dark", "whales")
+KINDS = ("net", "front", "dark", "whales", "overboard", "rudder", "valve", "gas")
+# Kinds that name an entity in ``target_id``.
+TARGET_KINDS = ("dark", "valve", "gas")
 WEATHER = ("rain", "storm", "fog")
 VERSION = 1
 MAX_ITEMS = 6
@@ -83,7 +99,7 @@ def valid_item(row) -> bool:
         return False
     if row["weather"] is not None and row["weather"] not in WEATHER:
         return False
-    if (row["kind"] == "dark") != (row["target_id"] is not None):
+    if (row["kind"] in TARGET_KINDS) != (row["target_id"] is not None):
         return False
     if row["target_id"] is not None and not _entity_id(row["target_id"]):
         return False

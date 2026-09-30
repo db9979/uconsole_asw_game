@@ -224,9 +224,10 @@ export function validateV2State(state) {
     interceptKinds: ["hull", "dipping", "buoy", "splash", "torpedo"],
     advice: ["uboot.advice.torpedo", "uboot.advice.mast_down", "uboot.advice.slow_down", "uboot.advice.measure_layer", "uboot.advice.go_below", "uboot.advice.evade"],
     evadePlan: ["type", "bearing", "course", "speed_kn", "depth_m", "silent", "decoy"],
-    radio: ["antenna", "broadcast", "copied", "next_s", "copy", "send", "transmitting", "sitreps", "ack_due", "report", "log", "vlf", "order", "orders_done", "orders_failed"],
+    radio: ["antenna", "broadcast", "copied", "next_s", "copy", "send", "transmitting", "sitreps", "ack_due", "report", "log", "vlf", "order", "orders_done", "orders_failed", "buoy", "buoy_payout", "buoy_rx"],
     radioLog: ["seq", "type", "age_s", "number", "ack", "report", "order"],
     radioLogKinds: ["broadcast", "sent", "aborted"],
+    radioBuoyStates: ["stowed", "streaming", "out", "recovering", "lost"],
     radioReport: ["x", "y", "radius_nm", "course", "speed_kn", "age_s"],
     radioOrder: ["id", "type", "x", "y", "radius_nm", "left_s"],
     radioOrderKinds: ["area", "report", "silence"],
@@ -530,6 +531,7 @@ export function validateV2State(state) {
           (row.number !== null && !Number.isInteger(row.number)) || typeof row.ack !== "boolean" || !radioReport(row.report) ||
           (row.order !== null && !Number.isInteger(row.order))) ||
         typeof radio.vlf !== "boolean" || !Number.isInteger(radio.orders_done) || !Number.isInteger(radio.orders_failed) ||
+        !boatFields.radioBuoyStates.includes(radio.buoy) || !finite(radio.buoy_payout) || typeof radio.buoy_rx !== "boolean" ||
         (radio.order !== null && (!exactKeys(radio.order, boatFields.radioOrder) || !Number.isInteger(radio.order.id) ||
           !boatFields.radioOrderKinds.includes(radio.order.type) || !finite(radio.order.left_s) ||
           ["x", "y", "radius_nm"].some((key) => !nullableNumber(radio.order[key]))))) throw new Error("protocol");

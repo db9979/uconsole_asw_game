@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v41_and_older_documents_are_rejected():
+def test_save_is_v42_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (41, "u-jagd-save-v41")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (41, "u-jagd-save-v41")
+    assert (state["version"], state["save_schema"]) == (42, "u-jagd-save-v42")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (42, "u-jagd-save-v42")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -222,6 +222,11 @@ def test_save_is_v41_and_older_documents_are_rejected():
     v40["save_schema"] = "u-jagd-save-v40"
     del v40["knuckles"]
     assert not game._load_save_data(v40)
+    # v41 differs only by the crewed boat's buoy antenna (``crew.orders.buoy``).
+    v41 = copy.deepcopy(state)
+    v41["version"] = 41
+    v41["save_schema"] = "u-jagd-save-v41"
+    assert not game._load_save_data(v41)
     assert game.save_state() == before
 
 

@@ -10,7 +10,7 @@ import math
 import weakref
 
 from src.core import attack_computer, boat_esm, chart_history, boat_missions, boat_threat, config, opfor, plot
-from src.core import sight_events, station_alarms
+from src.core import buoy_antenna, sight_events, station_alarms
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.enemies.damage_control import COMPARTMENTS, capacity_kg
@@ -1720,7 +1720,10 @@ def _uboot_radio(game, boat):
             y=_number(order["y"]), radius_nm=_number(order["radius_nm"]),
             left_s=_number(max(0.0, order["deadline_t"] - game.sim_t))),
         orders_done=sum(1 for row in radio.orders if row["state"] == "done"),
-        orders_failed=sum(1 for row in radio.orders if row["state"] == "failed"))
+        orders_failed=sum(1 for row in radio.orders if row["state"] == "failed"),
+        buoy=buoy_antenna.status(boat.orders.buoy),
+        buoy_payout=_number(boat.orders.buoy[0]),
+        buoy_rx=progress["reception"] == "buoy")
 
 
 def _uboot(game, boat, rows, target_ref, asset_refs):

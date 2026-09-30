@@ -313,6 +313,17 @@ UBOOT_RADIO_REPORT_SHARP_NM = 2.0
 # within REPORT_S, or keep radio silence for SILENCE_S.
 UBOOT_RADIO_VLF_DEPTH_M = 25.0
 UBOOT_RADIO_VLF_COPY_S = 60.0
+# Towed buoy antenna (src/core/buoy_antenna.py): copies the broadcast down to
+# BUOY_DEPTH_M at BUOY_SPEED_KN or less; the cable parts above BUOY_TEAR_KN.
+UBOOT_BUOY_DEPTH_M = 60.0
+UBOOT_BUOY_SPEED_KN = 6.0
+UBOOT_BUOY_TEAR_KN = 10.0
+UBOOT_BUOY_STREAM_S = 60.0
+UBOOT_BUOY_COPY_S = 30.0
+UBOOT_BUOY_TRAIL_NM = 0.15            # cable length astern (~280 m)
+UBOOT_BUOY_RCS_FACTOR = 0.004         # radar echo relative to a ship (a mast is 0.01)
+UBOOT_BUOY_HEIGHT_M = 0.3             # above the water (radar horizon)
+UBOOT_BUOY_VISUAL = 0.3               # eye contrast vs. a mast's full feather (bare head 0.15)
 UBOOT_ORDER_FIRST = 2
 UBOOT_ORDER_P = 0.5
 UBOOT_ORDER_MAX = 4

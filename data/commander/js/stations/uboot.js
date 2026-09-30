@@ -167,6 +167,8 @@ function renderScope(payload) {
 }
 
 // Energy and stores: bars, energy balance, endurance dived by speed and the boat's air.
+// The towed buoy antenna's limits (config.UBOOT_BUOY_DEPTH_M / _SPEED_KN).
+const BUOY_DEPTH_M = 60, BUOY_SPEED_KN = 6;
 const percent = (value, capacity) => value === null || !capacity ? null : Math.max(0, Math.min(100, value / capacity * 100));
 // Tanks, trim and air bottles: the engineer's numbers and the crew's orders.
 const tonnes = (kg) => `${kg > 0 ? "+" : ""}${number(kg / 1000, 1)}`;
@@ -413,7 +415,10 @@ function renderRadio(radio, nav) {
     : radio.copy !== null ? t("uboot_radio_copying", {number: radio.broadcast, percent: number(radio.copy * 100, 0)})
     : t("uboot_radio_missed", {number: radio.broadcast});
   metrics($("uboot-radio"), [
-    ["uboot_radio_antenna", t(radio.antenna ? "uboot_radio_antenna_up" : radio.vlf ? "uboot_radio_vlf" : "uboot_radio_antenna_down")],
+    ["uboot_radio_antenna", t(radio.antenna ? "uboot_radio_antenna_up" : radio.buoy_rx ? "uboot_radio_buoy_rx"
+      : radio.vlf ? "uboot_radio_vlf" : "uboot_radio_antenna_down")],
+    ["uboot_radio_buoy", t(`uboot_radio_buoy_${radio.buoy}`, {percent: number(radio.buoy_payout * 100, 0),
+      depth: number(BUOY_DEPTH_M, 0), speed: number(BUOY_SPEED_KN, 0)})],
     ["uboot_radio_broadcast", broadcast], ["uboot_radio_next", duration(radio.next_s)],
     ["uboot_radio_sitreps", t(radio.ack_due ? "uboot_radio_sitreps_ack" : "uboot_radio_sitreps_value", {count: radio.sitreps})]]);
   $("uboot-radio-warning").hidden = !radio.transmitting;

@@ -14,17 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.122**
+Aktuelle Version: **1.3.123**
 
-Version 1.3.122 macht die Browser-Stationen ruhiger in der Bedienung. Eine
-Auswahlliste, die offen ist oder gerade bedient wird, etwa die ESM-
-Klassifizierung auf dem U-Boot, das Ziel der Feuerleitung oder die Auswahl von
-Draht, Torpedotyp und Leckwehrtrupp, klappt bei einer Aktualisierung der Station
-nicht mehr zu und verliert ihre Auswahl nicht; sie zieht nach, sobald man sie
-verlässt. Schaltflächen in sich aktualisierenden Listen (ESM-Emitter, Rohre,
-Schotten, Funkkanäle und Aufträge, Befehle an Besatzung und Seefernaufklärer)
-bleiben stehen, sodass ein Klick nicht mehr verloren geht, wenn mitten im Klick
-eine Aktualisierung eintrifft. Spielstände bleiben im Format v41.
+Version 1.3.123 gibt dem U-Boot eine Bojenantenne. Im Funkraum (B oder die
+Funkraum-Karte im Browser) bringt die Crew sie etwa 280 m achteraus aus; sie
+nimmt den Rundspruch der Führung bis 60 m Tiefe bei höchstens 6 kn auf, nur
+Empfang. Über 10 kn reißt das Kabel, und die Boje ist für die Mission verloren.
+Aus der Nähe können Ausguck und Überwasserradar der Fregatte die kleine Boje
+auf dem Wasser finden. Spielstände haben jetzt Format v42; ältere laden nicht.
 
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

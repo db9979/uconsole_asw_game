@@ -55,7 +55,7 @@ CREW_ORDERS_FIELDS = frozenset({
     "steer_torpedo", "events", "battery_state", "keel_warned",
     "obstacle_warned", "obstacle_ahead_nm",
     "scope_rel_deg", "sightings", "sightings_seen", "tdc", "tubes",
-    "baffle_clear",
+    "baffle_clear", "buoy",
 })
 # Save v24: the attack computer's stadimeter marks, ``{ref: {target_id, marks}}``
 # with marks ``[t, x, y]`` in time order.

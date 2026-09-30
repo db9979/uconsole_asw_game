@@ -155,7 +155,9 @@ UBOOT_EVADE_PLAN_FIELDS = ("type", "bearing", "course", "speed_kn", "depth_m", "
 # transmissions, HQ's latest contact report and the message log.
 UBOOT_RADIO_FIELDS = ("antenna", "broadcast", "copied", "next_s", "copy", "send",
                       "transmitting", "sitreps", "ack_due", "report", "log", "vlf",
-                      "order", "orders_done", "orders_failed")
+                      "order", "orders_done", "orders_failed", "buoy", "buoy_payout",
+                      "buoy_rx")
+UBOOT_RADIO_BUOY_STATES = ("stowed", "streaming", "out", "recovering", "lost")
 UBOOT_RADIO_LOG_FIELDS = ("seq", "type", "age_s", "number", "ack", "report", "order")
 # The open HQ order (area orders carry x/y/radius_nm, else null).
 UBOOT_RADIO_ORDER_FIELDS = ("id", "type", "x", "y", "radius_nm", "left_s")

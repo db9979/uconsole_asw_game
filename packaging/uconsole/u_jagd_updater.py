@@ -10,13 +10,13 @@ working even when the game's virtual environment is broken.  Commands:
                         closed, update to the newest release, then start it.
 ``update``              with ``U_JAGD_UPDATE_NOW=1`` (the installer) update
                         only; otherwise (the retired background timer of
-                        releases up to 1.3.108) switch that timer off.
+                        releases up to 1.3.109) switch that timer off.
 ``setup``               create/refresh the venv, menu entry and ``~/.local/bin``
                         command (the installer); removes the old timer.
 ``uninstall``           remove that desktop integration again (keeps the game
                         directory and ``~/.u-jagd`` saves).
 
-Since 1.3.109 nothing is installed automatically: the game shows a newer
+Since 1.3.110 nothing is installed automatically: the game shows a newer
 release with its changelog on the start screen and installs it only when the
 player presses "Update now".
 
@@ -503,7 +503,7 @@ def launch(argv: list[str], app: Path = APP_DIR, install: bool = False) -> int:
 
 def background_update(app: Path = APP_DIR) -> int:
     if not os.environ.get("U_JAGD_UPDATE_NOW"):
-        # The timer of releases up to 1.3.108 still calls this: turn it off.
+        # The timer of releases up to 1.3.109 still calls this: turn it off.
         log("automatic updates are off; the game offers new releases itself")
         retire_timer()
         return 0

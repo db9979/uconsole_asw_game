@@ -26,9 +26,9 @@ The installer
 - adds the menu entry **Games > U-Jagd**, a desktop shortcut and the command
   `~/.local/bin/u-jagd`,
 - brings the checkout to the newest GitHub release and switches off the
-  background timer of older versions (up to 1.3.108).
+  background timer of older versions (up to 1.3.109).
 
-**Updates only on request:** since 1.3.109 nothing is installed on its own.
+**Updates only on request:** since 1.3.110 nothing is installed on its own.
 At start the game asks GitHub once in the background for the newest release
 (tag `vX.Y.Z`, the same source as the Windows starter). When it is newer, the
 start screen (top right) and the main menu (left of the entries) show the new version,

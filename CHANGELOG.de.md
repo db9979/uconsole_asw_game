@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.109
+## 1.3.110
 
-Version 1.3.109 installiert Updates nicht mehr von selbst. Gibt es ein neueres
+Version 1.3.110 installiert Updates nicht mehr von selbst. Gibt es ein neueres
 Release, zeigen Startbildschirm und Hauptmenü dessen Version, den Eintrag aus
 dem Änderungsprotokoll in der Spielsprache und eine Warnung, wenn Spielstände
 dieser Version (auch die automatische Sicherung) damit nicht mehr laden, dazu
@@ -15,6 +15,21 @@ es: Auf der uConsole schließt das Spiel, aktualisiert sich auf das Release und
 startet neu (der alte Hintergrund-Update-Timer schaltet sich selbst ab); das
 Windows-Programm lädt die neue Datei im Hintergrund, prüft sie, tauscht sich
 aus und startet neu. Ohne Netz erscheint kein Hinweis.
+
+## 1.3.109
+
+Version 1.3.109 lässt die KI jede freie Station besetzen. Die neue Crew-Hilfe
+(Shift+F2, in einer Mission aus der Mehrspieler-Lobby immer an) bemannt jede
+Station der Fregatte und eines bemannten U-Boots, die niemand hält, damit
+jeder Spieler bei einer Station bleiben kann: Die Station auf dem Bildschirm
+der uConsole und jede Station, die ein Browser hält, bleiben bei ihrem
+Spieler, und eine im Browser freigegebene Station („An KI übergeben“) geht
+sofort an die KI zurück. Auf dem U-Boot weicht die KI aus, patrouilliert oder
+läuft eine bekannte Fregatte an, hält die Rohre geladen und schießt auf eine
+nahe Ortung, schnorchelt zum Laden, hält den Trimm und schickt die Leckteams.
+In der Lobby kann die uConsole auch nur Gastgeber sein (Station „keine, nur
+Gastgeber“): Sie spielt keine Station, Browser und KI besetzen jede.
+Spielstände sind jetzt v40.
 
 ## 1.3.108
 

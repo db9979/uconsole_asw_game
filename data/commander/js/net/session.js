@@ -54,7 +54,7 @@ function validLobby(lobby) {
   if (lobby === null) return true;
   return exactKeys(lobby, ["mission", "side", "host_station", "countdown_s", "ready", "players"]) &&
     typeof lobby.mission === "string" && lobby.mission.length <= 32 &&
-    ["frigate", "uboot"].includes(lobby.side) && sessionRoles.includes(lobby.host_station) &&
+    ["frigate", "uboot"].includes(lobby.side) && (lobby.host_station === null || sessionRoles.includes(lobby.host_station)) &&
     (lobby.countdown_s === null || finite(lobby.countdown_s) && lobby.countdown_s >= 0 && lobby.countdown_s <= 60) &&
     typeof lobby.ready === "boolean" && Array.isArray(lobby.players) && lobby.players.length <= 12 &&
     lobby.players.every((player) => exactKeys(player, ["name", "stations", "ready", "observer", "you"]) &&

@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.109**
+Current release: **1.3.110**
 
-Release 1.3.109 no longer installs updates on its own. When a newer release
+Release 1.3.110 no longer installs updates on its own. When a newer release
 is published, the start screen and the main menu show its version, its
 changelog entry in the game language and a warning when saved games of this
 version (the autosave too) will not load in it, plus the button **Update now**

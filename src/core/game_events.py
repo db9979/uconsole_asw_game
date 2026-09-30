@@ -87,7 +87,8 @@ class EventMixin:
         self._frame_clock_reset = True
 
     def _local_station_input_locked(self) -> bool:
-        if (not self.autocrew.enabled[station_key(self.station)]
+        key = station_key(self.station)
+        if ((not self.autocrew.enabled[key] or self.autocrew.local_holds(self, key))
                 and not self.commander.station_leased(self.station)):
             return False
         self._clear_station_input()
@@ -746,6 +747,9 @@ class EventMixin:
                 return
             if e.key == pygame.K_F8:
                 self._open_analyzer_in_game()
+                return
+            if e.key == pygame.K_F2 and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                self.toggle_crew_assist()
                 return
             if e.key == pygame.K_F2:
                 enabled = self.autocrew.toggle(self.station, self.sim_t)

@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.109
+## 1.3.110
 
-Release 1.3.109 no longer installs updates on its own. When a newer release
+Release 1.3.110 no longer installs updates on its own. When a newer release
 is published, the start screen and the main menu show its version, its
 changelog entry in the game language and a warning when saved games of this
 version (the autosave too) will not load in it, plus the button **Update now**
@@ -14,6 +14,20 @@ version (the autosave too) will not load in it, plus the button **Update now**
 closes, updates to the release and starts again (the old background update
 timer switches itself off); the Windows program downloads the new file in the
 background, checks it, swaps itself and restarts. Offline no notice appears.
+
+## 1.3.109
+
+Release 1.3.109 lets the AI man every free station. The new crew assist
+(Shift+F2, always on in a mission started from the multiplayer lobby) crews
+each station of the frigate and of a crewed submarine that nobody holds, so
+every player can stay on one station: the station on the uConsole's screen and
+every station a browser holds stay with their player, and a station released
+in the browser ("Hand over to AI") goes straight back to the AI. On the
+submarine the AI commands evasion, patrols or closes a known frigate, keeps
+the tubes loaded and fires at a close fix, snorkels to charge, keeps the trim
+and sends the damage-control teams. In the lobby the uConsole can also be
+host only (station "none, host only"): it plays no station, and the browsers
+and the AI crew every one. Saves are now v40.
 
 ## 1.3.108
 

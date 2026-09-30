@@ -1,5 +1,5 @@
 """Update notice: new releases are shown with their changelog, never installed
-until the player presses "Update now" (1.3.109)."""
+until the player presses "Update now" (1.3.110)."""
 
 import io
 import json

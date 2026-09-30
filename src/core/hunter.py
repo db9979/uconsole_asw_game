@@ -42,6 +42,7 @@ CROSS_LEG_S = 300.0             # side of the crossing course for bearing motion
 PING_EVERY_S = 600.0            # a bare bearing: a ping that finds nothing only sends the boat running
 DIP_PING_EVERY_S = 30.0
 HELO_RANGE_NM = 30.0
+HELO_GUARD_NM = 8.0             # guarding its post the helicopter stays this close
 HELO_DIP_NM = 0.5
 HELO_DROP_NM = 1.5
 BEARING_DATUM_NM = 8.0          # bearing-only datum: this far down the line
@@ -642,7 +643,8 @@ def helicopter(game, found) -> str:
         return "monitoring"
     point = datum_point(game, found)
     ship = game.ship
-    if point is None or math.hypot(point[0] - ship.x, point[1] - ship.y) > HELO_RANGE_NM:
+    reach = HELO_RANGE_NM if boat_missions.mode(game) is None else HELO_GUARD_NM
+    if point is None or math.hypot(point[0] - ship.x, point[1] - ship.y) > reach:
         if helo.state == "AUF":
             if helo.dip_state == "DEPLOYED":
                 game.set_helicopter_dipping(False)
@@ -693,7 +695,9 @@ def helicopter(game, found) -> str:
 
 def mpa(game, found) -> str:
     aircraft = game.mpa
-    if game.damage.station_down("opz"):
+    if game.damage.station_down("opz") or boat_missions.mode(game) is not None:
+        # The patrol aircraft is HQ's asset for the frigate's own hunts; a
+        # frigate guarding its post against the submarine gets none.
         return "monitoring"
     point = datum_point(game, found) if found is not None and "x" in found else None
     if point is None:

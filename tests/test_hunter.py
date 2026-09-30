@@ -532,3 +532,14 @@ def test_the_reconnaissance_boat_comes_up_for_its_look_despite_a_ping():
     assert sub.evade_depth(80.0, 200.0) == 120.0
     sub.mission_orders = None
     assert sub.evade_depth(80.0, 110.0) == 110.0
+
+
+def test_guarding_its_post_the_frigate_has_no_patrol_aircraft_and_a_short_helicopter():
+    game = _boat_mission()
+    ship = game.ship
+    far = {"x": ship.x + hunter.HELO_GUARD_NM + 2.0, "y": ship.y, "contact": None,
+           "source": "hfdf", "age": 0.0}
+    assert hunter.mpa(game, far) == "monitoring" and game.mpa.state == "BASE"
+    assert game.helo.state == "HANGAR"
+    assert hunter.helicopter(game, far) == "monitoring" and game.helo.state == "HANGAR"
+    assert hunter.HELO_GUARD_NM < hunter.HELO_RANGE_NM

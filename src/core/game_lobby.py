@@ -122,8 +122,10 @@ class LobbyMixin:
         self.scenario_key = room.scenario_key
         self.lobby_round = True
         self._start_menu_mission()
-        # A lobby round lets the AI man every station nobody holds.
-        self.autocrew.set_assist(True, self.sim_t)
+        # A lobby round with a crew lets the AI man every station nobody holds;
+        # alone on the uConsole it is a solo game (Shift+F2 still switches it).
+        if self.host_only or room.crew(self.lobby_players()):
+            self.autocrew.set_assist(True, self.sim_t)
         self._take_lobby_station(room.station)
 
     def _take_lobby_station(self, station: str) -> None:

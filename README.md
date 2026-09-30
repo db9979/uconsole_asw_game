@@ -12,19 +12,20 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.113**
+Current release: **1.3.114**
 
-Release 1.3.113 lets you play the uConsole entirely with the mouse and makes
-the charts and the sea traffic easier to read. A click on a key in a
-station's key bar presses it (held like the key), numbered tabs in the top bar
-switch stations, a click on the course, speed or depth dial orders that value,
-numeric entries show a keypad, menu and dialog rows are clickable, the wheel
-moves through menus and a right click cancels. Every chart now draws the own
-track, the earlier positions of each contact and the earlier bearings of the
-selected contact, and chart labels move aside instead of covering each other.
-Cargo ships, tankers and passenger ships steam on steady courses between ports
-and the edge of the sea area, give way to each other under the collision
-regulations and run from nearby detonations.
+Release 1.3.114 makes a player's order win over the AI crew. In multiplayer
+with the crew assist, the AI command dived the submarine every few seconds and
+so pulled down the periscope a player had raised at the mast or in the radio
+room; it now keeps the boat at periscope depth while a player holds the mast
+up. A station the AI mans no longer overrides what a player at another station
+commands: course, depth and evasion stay with a player at Navigation, speed and
+silent running with one in the engine room, trim and damage control with one
+at command, and a raised mast stays up on an alarm while a player at command or
+in the radio room holds it. On the frigate the AI Bridge no longer steers over
+a player in the engine room, the AI weapons and patrol aircraft keep a target a
+player designated, and a contact picked on the uConsole stays picked. A lobby round started
+without any browser is now a solo game with the crew assist off.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

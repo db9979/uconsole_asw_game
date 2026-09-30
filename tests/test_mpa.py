@@ -118,21 +118,24 @@ def test_attack_needs_a_designated_submarine_and_the_datum():
 def test_opz_page_three_keys():
     game = _game()
     game.station, game.station_page = Station.OPZ, 2
-    _key(game, pygame.K_a)
+    # The helicopter's keys: H, X / Shift+X, Shift+B, Ctrl+R.
+    _key(game, pygame.K_h)
     assert game.mpa.state == "TRANSIT"
-    _key(game, pygame.K_z)
+    _key(game, pygame.K_x)
     assert game.mpa.pattern == "field"
-    _key(game, pygame.K_z, pygame.KMOD_SHIFT)
+    _key(game, pygame.K_x, pygame.KMOD_SHIFT)
     assert game.mpa.pattern == "single"
-    _key(game, pygame.K_y)
+    _key(game, pygame.K_b, pygame.KMOD_SHIFT)
     assert game.mpa.buoy_mode == "ACTIVE"
-    _key(game, pygame.K_t)
+    _key(game, pygame.K_r, pygame.KMOD_CTRL)
     assert game.mpa.radar_on is False
+    radars = (game.surface_radar_on, game.air_radar_on)
     game.draw()
-    _key(game, pygame.K_a)
+    _key(game, pygame.K_h)
     assert game.mpa.state == "RTB"
+    assert (game.surface_radar_on, game.air_radar_on) == radars
     game.station_page = 0
-    _key(game, pygame.K_y)
+    _key(game, pygame.K_b, pygame.KMOD_SHIFT)
     assert game.mpa.buoy_mode == "ACTIVE"          # page 1 keeps its own keys
 
 

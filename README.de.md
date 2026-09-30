@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.115**
+Aktuelle Version: **1.3.117**
 
-Version 1.3.115 erweckt die See zum Leben. Die Optiken zeigen Wassersäulen,
+Version 1.3.117 erweckt die See zum Leben. Die Optiken zeigen Wassersäulen,
 Feuer, Rauch und sinkende Schiffe; Karten bewegen sich weich, Pings und
 Detonationen breiten sich als Ringe aus; Zeiger und Telegraf bewegen sich mit
 Masse und die Telegrafenglocke läutet; das Sehrohr kommt aus dem Wasser, mit
@@ -33,6 +33,7 @@ HF/DF-Peilungen streuen. Bei schwerer See startet und landet der Hubschrauber
 nur in einer ruhigen Phase; eine Deckbewegungsanzeige zeigt sie, und weniger
 Fahrt hilft. Spielstände haben jetzt das Format v41; ältere Spielstände laden
 nicht.
+
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -214,17 +214,18 @@ def draw_bridge_view(game, tr=None) -> None:
 
     station_bottom = config.STATION_RECT[1] + config.STATION_RECT[3]
     _shortcut_footer(s, (x, station_bottom - 26, w, 20), (
-        ("←/→", "bridge.footer.course"),
+        # Raised binoculars take the arrows, as the submarine's periscope.
+        ("←/→", "bridge.footer.glasses_train" if game.lookout_glasses
+         else "bridge.footer.course"),
         ("↑/↓", "bridge.footer.glasses_tilt" if game.lookout_glasses
          else "bridge.footer.telegraph"),
-        (", / .", "bridge.footer.glasses_train" if game.lookout_glasses
-         else "bridge.footer.lookout_range"),
+        (", / .", "bridge.footer.lookout_range"),
         ("B", "bridge.footer.glasses_close" if game.lookout_glasses
          else "bridge.footer.glasses"),
     ) if page == 2 else (
         ("←/→", "bridge.footer.course"),
         ("↑/↓", "bridge.footer.telegraph"),
-        ("U", "bridge.footer.set_course"),
+        ("C", "bridge.footer.set_course"),
         ("V", "bridge.footer.set_speed"),
     ))
 

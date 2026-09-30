@@ -116,7 +116,7 @@ def test_opz_pan_follow_and_radar_range_are_independent(game):
     map_state = (game.opz_map_view.cx, game.opz_map_view.cy,
                  game.opz_map_view.scale)
     before_range = game.opz_range_nm
-    press(game, pygame.K_PAGEUP)
+    press(game, pygame.K_q)                  # Q zooms out: a wider radar range
     assert game.opz_range_nm > before_range
     assert (game.opz_map_view.cx, game.opz_map_view.cy,
             game.opz_map_view.scale) == map_state
@@ -246,20 +246,24 @@ def test_help_all_wrapped_lines_reachable_in_all_categories(game, language, larg
     assert "F10" in [key for key, _ in get_global_help(game.tr)[1]]
 
 
-@pytest.mark.parametrize("station,method,legacy", [
-    (Station.WEAPONS, "launch_torpedo", pygame.K_t),
-    (Station.OPZ, "launch_essm", pygame.K_e),
-    (Station.HELICOPTER, "launch_helo_torpedo", pygame.K_d),
+@pytest.mark.parametrize("station,method,letter,fires", [
+    # Ctrl+Enter is the one fire key; T and E no longer fire (E zooms, T
+    # enters the torpedo depth), D stays the air-dropped torpedo.
+    (Station.WEAPONS, "launch_torpedo", pygame.K_t, False),
+    (Station.OPZ, "launch_essm", pygame.K_e, False),
+    (Station.HELICOPTER, "launch_helo_torpedo", pygame.K_d, True),
 ])
-def test_primary_weapon_alias_retains_legacy_keys_and_guards(game, monkeypatch,
-                                                          station, method, legacy):
+def test_ctrl_enter_is_the_fire_key_and_guards(game, monkeypatch,
+                                               station, method, letter, fires):
     calls = []
     game.station = station
     monkeypatch.setattr(game, method, lambda: calls.append(True))
     press(game, pygame.K_RETURN, mod=pygame.KMOD_CTRL)
     press(game, pygame.K_KP_ENTER, mod=pygame.KMOD_CTRL)
-    press(game, legacy)
-    assert len(calls) == 3
+    press(game, letter)
+    game.input_mode = None
+    assert len(calls) == (3 if fires else 2)
+    calls[:] = [True] * 3
     press(game, pygame.K_RETURN, mod=pygame.KMOD_CTRL, repeat=True)
     game._open_administration("help")
     press(game, pygame.K_RETURN, mod=pygame.KMOD_CTRL)

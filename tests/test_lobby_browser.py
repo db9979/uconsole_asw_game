@@ -125,7 +125,9 @@ def test_crew_meets_readies_and_starts_together(tmp_path, monkeypatch, host_only
     assert root["host"] == ("The uConsole only hosts: every station is played in the "
                             "browser or by the AI." if host_only
                             else "The uConsole plays the frigate at the Bridge.")
-    assert root["readyBefore"] == "true"
+    # Pairing into the open lobby seats the browser (sonar beside the uConsole's
+    # bridge, the bridge beside a host-only uConsole), so it can tick ready at once.
+    assert root["readyBefore"] == "false"
     assert root["roomWithStation"] == "true"
     assert "Sonar Sam (you)" in root["players"] and "ready" in root["players"]
     assert not game.in_menu and game.lobby_round

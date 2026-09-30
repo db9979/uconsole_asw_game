@@ -556,9 +556,10 @@ def test_local_boat_mode_keys():
     def key(value, mod=0):
         game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=value, mod=mod, unicode=""))
 
-    key(pygame.K_g)
+    # A: silent running, as the frigate's quiet mode.
+    key(pygame.K_a)
     assert boat.orders.silent
-    key(pygame.K_g)
+    key(pygame.K_a)
     assert not boat.orders.silent
     speed = boat.sub.order_speed
     key(pygame.K_PLUS)

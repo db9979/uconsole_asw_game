@@ -52,12 +52,13 @@ def test_periscope_keys_tilt_power_and_stabilizer():
     _key(game, pygame.K_1)
     _key(game, pygame.K_1)
     sight = boat.scope_optics
+    # Q / E power, as the frigate's binoculars.
     _key(game, pygame.K_UP)
-    _key(game, pygame.K_PERIOD)
+    _key(game, pygame.K_e)
     _key(game, pygame.K_SPACE)
     assert sight.elevation_deg == config.SIGHT_TILT_STEP_DEG
     assert sight.fov_deg == config.UBOOT_SCOPE_FOV_DEG / 4.0 and sight.stabilized
-    _key(game, pygame.K_COMMA)
+    _key(game, pygame.K_q)
     assert sight.fov_deg == config.UBOOT_SCOPE_FOV_DEG
     game.draw()
 

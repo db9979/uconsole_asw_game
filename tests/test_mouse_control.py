@@ -47,7 +47,7 @@ def test_station_tab_click_switches_station(game):
 
 def test_footer_click_opens_the_course_entry_and_the_keypad_orders_it(game):
     game.draw()
-    click(game, target("station", pygame.K_u).rect.center)
+    click(game, target("station", pygame.K_c).rect.center)
     assert game.input_mode == "course"
     game.draw()
     for key in (pygame.K_1, pygame.K_3, pygame.K_5, pygame.K_RETURN):

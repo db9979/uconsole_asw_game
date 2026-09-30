@@ -198,12 +198,13 @@ def test_boat_keys_order_the_watch_bill():
     game, boat = _local_boat()
     uboot_local.set_local_station(game, "uboot_engine")
     boat.command_page = 3
-    _key(game, pygame.K_b)
+    # The frigate's keys: G action stations, W relieves the watch.
+    _key(game, pygame.K_g)
     assert boat.watch.action_stations
-    _key(game, pygame.K_b)
+    _key(game, pygame.K_g)
     assert not boat.watch.action_stations
     boat.watch.turnover_t = None
-    _key(game, pygame.K_m)
+    _key(game, pygame.K_w)
     assert boat.watch.on_watch != 0
     game.draw()
 

@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.115**
+Current release: **1.3.117**
 
-Release 1.3.115 brings the sea to life. The eyepieces show water columns, fire,
+Release 1.3.117 brings the sea to life. The eyepieces show water columns, fire,
 smoke and sinkings; charts move smoothly and pings and detonations ring out;
 needles and the telegraph move with mass and the telegraph bell rings; the
 periscope comes up out of the water with water on the glass. A red light comes
@@ -29,6 +29,7 @@ heavier rain and sferics that crackle on ESM and spread HF/DF bearings. In a
 heavy sea the helicopter launches and lands only in a quiet period; a deck-
 motion gauge shows it, and slowing down helps. Saves are now format v41; older
 saves do not load.
+
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

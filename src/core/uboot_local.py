@@ -451,10 +451,10 @@ def handle_pointer(game, event) -> None:
 # Order keys -> the Remote Crew action they are (its allowlist names the stations).
 _KEY_ACTIONS = {
     pygame.K_c: "uboot_set_course", pygame.K_v: "uboot_set_speed",
-    pygame.K_d: "uboot_set_depth", pygame.K_f: "uboot_fire", pygame.K_x: "uboot_decoy",
+    pygame.K_d: "uboot_set_depth", pygame.K_f: "uboot_fire",
     pygame.K_t: "uboot_fire", pygame.K_y: "uboot_fire", pygame.K_w: "uboot_wire_steer",
     pygame.K_p: "uboot_mast", pygame.K_n: "uboot_snorkel",
-    pygame.K_r: "uboot_charge_rate", pygame.K_a: "uboot_absorber",
+    pygame.K_r: "uboot_charge_rate",
     pygame.K_o: "uboot_o2_candle", pygame.K_z: "uboot_trim_auto",
     pygame.K_u: "uboot_set_depth", pygame.K_j: "uboot_set_depth", pygame.K_h: "uboot_set_depth",
     pygame.K_PLUS: "uboot_set_speed", pygame.K_EQUALS: "uboot_set_speed",
@@ -512,9 +512,26 @@ def _dc_notice(game, key, result, **values) -> None:
     _announce(game, "schaden", message(key, **values), 1.5)
 
 
-def _key_action(key, mods):
+# The engine room's damage page: the frigate's crew-page keys (W watch,
+# M medical team, U men from the resting watches).
+_CREW_PAGE_ACTIONS = {pygame.K_w: "uboot_watch_change", pygame.K_m: "uboot_casualty_medic",
+                      pygame.K_u: "uboot_casualty_reassign"}
+
+
+def _key_action(key, mods, station=None, page=None):
+    """The Remote Crew action a key is at this station/page (its allowlist
+    decides whether the station may give it), or None."""
+    if page == "UBOOT_DAMAGE" and key in _CREW_PAGE_ACTIONS:
+        return _CREW_PAGE_ACTIONS[key]
     if key == pygame.K_g:
-        return "uboot_bottom" if mods & pygame.KMOD_SHIFT else "uboot_silent"
+        # G as on the frigate: action stations; Shift+G lies on the bottom.
+        return "uboot_bottom" if mods & pygame.KMOD_SHIFT else "uboot_action_stations"
+    if key == pygame.K_a:
+        return "uboot_silent"            # A: silent running, the frigate's quiet mode
+    if key == pygame.K_o and mods & pygame.KMOD_SHIFT:
+        return "uboot_absorber"
+    if key == pygame.K_v and station == "uboot_weapons":
+        return "uboot_decoy"             # V: the decoy, as at the frigate's weapons
     if key == pygame.K_b and mods & pygame.KMOD_SHIFT:
         return "uboot_blow"
     if key in (pygame.K_RETURN, pygame.K_KP_ENTER) and mods & pygame.KMOD_CTRL:
@@ -527,7 +544,7 @@ def _command_key(game, current, key, mods) -> None:
     sub = current.sub
     from src.ui import uboot_view
     page = uboot_view.page_name(game, current)
-    action = _key_action(key, mods)
+    action = _key_action(key, mods, local_station(game), page)
     if action == "uboot_fire" and page == "UBOOT_SCOPE" and key in (pygame.K_RETURN,
                                                                      pygame.K_KP_ENTER):
         action = "uboot_scope_fire"       # the periscope fires on its solution
@@ -537,11 +554,11 @@ def _command_key(game, current, key, mods) -> None:
         pages = uboot_view.station_pages(local_station(game))
         current.command_page = (current.command_page
                                 + (-1 if key == pygame.K_PAGEUP else 1)) % len(pages)
-    elif page == "UBOOT_SCOPE" and key in (pygame.K_UP, pygame.K_DOWN, pygame.K_COMMA,
-                                           pygame.K_PERIOD, pygame.K_SPACE):
-        # The eyepiece: tilt, low/high power (, / .; Q/E stay the chart's).
-        optics_key(game, current.scope_optics, key, mods,
-                   zoom_keys=(pygame.K_COMMA, pygame.K_PERIOD))
+    elif page == "UBOOT_SCOPE" and key in (pygame.K_UP, pygame.K_DOWN, pygame.K_q,
+                                           pygame.K_e, pygame.K_SPACE):
+        # The eyepiece, as the frigate's binoculars: tilt, Q/E low/high power,
+        # Space stabilizer (the wheel still zooms the chart).
+        optics_key(game, current.scope_optics, key, mods)
     elif page == "UBOOT_SCOPE" and key in (pygame.K_LEFT, pygame.K_RIGHT):
         if order_allowed(game, "uboot_scope_bearing"):
             step = (config.UBOOT_SCOPE_STEP_FAST_DEG if mods & pygame.KMOD_SHIFT
@@ -612,24 +629,20 @@ def _command_key(game, current, key, mods) -> None:
                 game.flash(message("uboot.local.tube_rejected", reason=message(
                     f"uboot.reason.{result}" if result in TUBE_REASONS
                     else "uboot.reason.not_ready")), 2.0)
-    elif page == "UBOOT_DAMAGE" and key == pygame.K_m and mods & (pygame.KMOD_SHIFT
-                                                                   | pygame.KMOD_CTRL):
-        if mods & pygame.KMOD_CTRL:
-            if order_allowed(game, "uboot_casualty_reassign"):
-                game.boat_casualty_reassign()
-        elif order_allowed(game, "uboot_casualty_medic"):
-            game.boat_casualty_medic()
-    elif page == "UBOOT_DAMAGE" and key == pygame.K_m:
-        if order_allowed(game, "uboot_watch_change") and game.boat_change_watch() is not True:
+    elif page == "UBOOT_DAMAGE" and key == pygame.K_w:
+        if game.boat_change_watch() is not True:
             game.flash(message("crew.watch_blocked"), 2.0)
+    elif page == "UBOOT_DAMAGE" and key == pygame.K_m:
+        game.boat_casualty_medic()
+    elif page == "UBOOT_DAMAGE" and key == pygame.K_u:
+        game.boat_casualty_reassign()
     elif key == pygame.K_b and mods & pygame.KMOD_CTRL:
         if order_allowed(game, "uboot_clear_baffles"):
             result = opfor.clear_baffles(game, current)
             if result is not True:
                 game.flash(message("uboot.local.baffles_rejected"), 2.0)
-    elif key == pygame.K_b and not mods & pygame.KMOD_SHIFT:
-        if order_allowed(game, "uboot_action_stations"):
-            game.boat_set_action_stations(not current.watch.action_stations)
+    elif key == pygame.K_g and not mods & pygame.KMOD_SHIFT:
+        game.boat_set_action_stations(not current.watch.action_stations)
     elif page == "UBOOT_DAMAGE" and key == pygame.K_i:
         if order_allowed(game, "uboot_bulkhead"):
             compartment = damage_control.COMPARTMENTS[current.dc_selected
@@ -648,7 +661,7 @@ def _command_key(game, current, key, mods) -> None:
                            else "runtime.map_follow.off"), 1.5)
     elif key == pygame.K_c:
         begin_input(game, "uboot_course")
-    elif key == pygame.K_v:
+    elif key == pygame.K_v and action != "uboot_decoy":
         begin_input(game, "uboot_speed")
     elif key == pygame.K_d:
         begin_input(game, "uboot_depth")
@@ -683,7 +696,7 @@ def _command_key(game, current, key, mods) -> None:
                                else "uboot.local.evade_" + ("no_threat" if result
                                                             == "uboot_no_threat"
                                                             else "unavailable")), 2.0)
-    elif key == pygame.K_x:
+    elif action == "uboot_decoy":
         result = sub.command_decoy()
         if result is True:
             _announce(game, "waffen", message("uboot.local.decoy"))
@@ -705,11 +718,11 @@ def _command_key(game, current, key, mods) -> None:
             current.orders.steer_torpedo = torpedo.id
             begin_input(game, "uboot_wire_bearing")
     elif key == pygame.K_g:
-        bottom = bool(mods & pygame.KMOD_SHIFT)
-        orders = current.orders
-        on = not (orders.bottomed if bottom else orders.silent)
-        result = sub.command_bottom(on) if bottom else sub.command_silent(on)
-        _mode_notice(game, ("bottom" if bottom else "silent"), on, result)
+        on = not current.orders.bottomed
+        _mode_notice(game, "bottom", on, sub.command_bottom(on))
+    elif key == pygame.K_a:
+        on = not current.orders.silent
+        _mode_notice(game, "silent", on, sub.command_silent(on))
     elif key == pygame.K_p:
         on = not current.orders.mast
         _mode_notice(game, "mast", on, sub.command_mast(on))
@@ -726,7 +739,7 @@ def _command_key(game, current, key, mods) -> None:
                 "uboot.local.charge_rate", rate=message(f"uboot.charge.{rate}")), 1.5)
         else:
             _mode_notice(game, "charge", True, result)
-    elif key == pygame.K_a:
+    elif action == "uboot_absorber":
         result = sub.command_absorber()
         if result is True:
             _announce(game, "navigation", message("uboot.local.absorber"), 2.0)
@@ -736,6 +749,7 @@ def _command_key(game, current, key, mods) -> None:
         on = not sub.ballast.auto
         _mode_notice(game, "trim_auto", on, sub.command_trim_auto(on))
     elif key == pygame.K_o:
+        # Checked after Shift+O (absorber) above: plain O lights a candle.
         result = sub.command_o2_candle()
         if result is True:
             _announce(game, "navigation", message("uboot.local.o2_candle"), 2.0)

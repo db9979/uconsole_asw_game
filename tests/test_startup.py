@@ -14,9 +14,9 @@ from src.world.real_coast import sector_for_seed
 
 
 def test_release_version_and_exact_splash_text():
-    assert APP_VERSION == "1.3.112"
+    assert APP_VERSION == "1.3.113"
     assert SPLASH_TEXT == (
-        "Anti Sub Marine Warfare on uConsole by Dominik Bornhäußer Version 1.3.112"
+        "Anti Sub Marine Warfare on uConsole by Dominik Bornhäußer Version 1.3.113"
     )
 
 

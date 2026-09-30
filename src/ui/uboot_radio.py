@@ -146,6 +146,7 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
 
 
 def draw_report_chart(game, boat, view) -> None:
+    from src.ui.map_view import _map_label
     """HQ's latest contact report: error circle, reported course and its age;
     and the area of an open HQ order."""
     order = boat.radio.active_order()
@@ -153,8 +154,9 @@ def draw_report_chart(game, boat, view) -> None:
         ox, oy = view.world_to_screen(order["x"], order["y"])
         radius = max(6, int(order["radius_nm"] * view.scale))
         pygame.draw.circle(game.screen, config.COLOR_OK, (int(ox), int(oy)), radius, 1)
-        layout.blit_line(game.screen, message("uboot.radio.chart_order", number=str(order["id"])),
-                         (int(ox) + 8, int(oy) - radius - 20, 200, 18), config.COLOR_OK, size=12)
+        _map_label(game.screen, game, message("uboot.radio.chart_order", number=str(order["id"])),
+                   (int(ox) + 8, int(oy) - radius - 20), config.COLOR_OK, config.MAP_RECT,
+                   size=12)
     latest = boat.radio.latest_report()
     if latest is None:
         return
@@ -169,5 +171,5 @@ def draw_report_chart(game, boat, view) -> None:
     rad = math.radians(report["course"])
     lines.line(s, REPORT_COLOR, (int(px), int(py)),
                (int(px + 24 * math.sin(rad)), int(py - 24 * math.cos(rad))), 2)
-    layout.blit_line(s, message("uboot.radio.chart_label", age=f"{age / 60.0:.0f}"),
-                     (int(px) + 8, int(py) - radius - 20, 200, 18), REPORT_COLOR, size=12)
+    _map_label(s, game, message("uboot.radio.chart_label", age=f"{age / 60.0:.0f}"),
+               (int(px) + 8, int(py) - radius - 20), REPORT_COLOR, config.MAP_RECT, size=12)

@@ -21,7 +21,7 @@ from src.core import manual
 from src.core.station import Station
 from src.core.game_shared import (HELP_MANUAL_PAGE, HELP_PAGE_COUNT, SONAR_BAND_PRESETS,
                                   letterbox_layout)
-from src.core import training, uboot_local
+from src.core import pointer_input, training, uboot_local
 from src.core.limits import MAX_TRACK_DISPLAY_ID_LEN
 from src.sonar import analysis_tools
 from src.sonar import tma_operator
@@ -75,6 +75,7 @@ class EventMixin:
 
     def _clear_station_input(self) -> None:
         self.held.clear()
+        self._pointer_held = None
         self._joy_turn = 0
         self._joy_acc = 0.0
         self._joy_x_acc = 0.0
@@ -586,6 +587,11 @@ class EventMixin:
                   and e.key in (pygame.K_0, pygame.K_KP0, pygame.K_ESCAPE)):
                 self.weather_station_open = False
                 self._clear_station_input()
+            return
+        # Full mouse control: a click on a legend, tab, dial or menu row of
+        # the frame on screen acts like its key or entry.
+        if (e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEWHEEL)
+                and pointer_input.handle(self, e)):
             return
         if (self.local_side == "uboot" and not self.in_menu
                 and not self.administration_open

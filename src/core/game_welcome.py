@@ -12,8 +12,8 @@ from __future__ import annotations
 import pygame
 
 from src.core import config, training
-from src.core.i18n import message
-from src.ui import layout
+from src.core.i18n import localize, message
+from src.ui import layout, pointer
 from src.ui.splash_view import draw_menu_panel
 
 WELCOME_SCREEN = "welcome"
@@ -92,6 +92,9 @@ class WelcomeMixin:
             y = _ROW_Y0 + index * _ROW_H
             label = message("welcome.choice", index=str(index + 1),
                             label=message(f"welcome.{choice}"))
+            pointer.add_action((panel.x + 10, y - 6, panel.w - 20, _ROW_H - 8),
+                               lambda _pos, index=index: self._click_menu_row(
+                                   lambda: setattr(self, "welcome_sel", index)))
             layout.blit_line(s, label, (panel.x + 30, y, panel.w - 60, 34),
                              config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM,
                              size=24, align="center")
@@ -101,3 +104,5 @@ class WelcomeMixin:
                              size=17, align="center")
         layout.blit_line(s, "welcome.hint", (cx - 440, panel.bottom + 14, 880, 28),
                          config.COLOR_TEXT_DIM, size=17, align="center")
+        pointer.add_text_keys(localize("welcome.hint"), layout.font(17), cx, panel.bottom + 28,
+                              (None, "Enter", "Esc"))

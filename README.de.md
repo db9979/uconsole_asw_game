@@ -14,19 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.112**
+Aktuelle Version: **1.3.113**
 
-Version 1.3.112 macht den Mehrspieler für den Gastgeber einfacher. F9 ist
-jetzt ein Schalter, Mehrspieler an oder aus: Er nimmt die erste lokale
-Netzwerkadresse oder öffnet ohne Netz den eigenen Hotspot der uConsole;
-Netzwerkmodus, Adresse und Port liegen unter den erweiterten Einstellungen.
-Der Hotspot behält Name und Passwort, der uConsole-Installer richtet ihn ein,
-und Lobby und F9 zeigen zwei Schritte: den WLAN-QR-Code, dann den QR-Code der
-Crew-Seite. Ein Browser, der eine Station anfragt, die ein anderer Spieler
-hält, fragt jetzt diesen Spieler, der sie im Browser übergeben kann; jede
-Station hat immer alle ihre Rechte. Die Kommandozeile hat einen Schalter,
---multiplayer, der die Lobby öffnet, und das Windows-Programm startet ohne
-Starter-Fenster direkt ins Spiel.
+Version 1.3.113 macht die uConsole komplett mit der Maus spielbar und die
+Karten und den Schiffsverkehr leichter lesbar. Ein Klick auf eine Taste in der
+Tastenleiste einer Station drückt sie (gehalten wie die Taste), nummerierte
+Reiter in der Kopfzeile wechseln die Station, ein Klick auf die Kurs-, Fahrt-
+oder Tiefenscheibe befiehlt diesen Wert, Zahleneingaben zeigen ein Tastenfeld,
+Menü- und Dialogzeilen sind anklickbar, das Mausrad blättert durch Menüs und
+ein Rechtsklick bricht ab. Jede Karte zeigt jetzt die eigene Kursspur, die
+früheren Positionen jedes Kontakts und die früheren Peilungen des gewählten
+Kontakts, und Kartenbeschriftungen weichen einander aus, statt sich zu
+verdecken. Frachter, Tanker und Passagierschiffe laufen auf festen Kursen
+zwischen Häfen und dem Rand des Seegebiets, weichen einander nach den
+Kollisionsverhütungsregeln aus und laufen vor nahen Detonationen davon.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

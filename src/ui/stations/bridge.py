@@ -6,10 +6,10 @@ import math
 import pygame
 
 from src.core import config
-from src.core.i18n import (display_message, display_value, localized, localize,
+from src.core.i18n import (display_message, display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.core.station import Station
-from src.ui import horizon, instruments, layout, sight_scene
+from src.ui import horizon, instruments, label_layout, layout, pointer, sight_scene
 from src.ui import observations
 
 
@@ -133,8 +133,11 @@ def draw_bridge_view(game, tr=None) -> None:
                 size=18, label_w=130, color=config.COLOR_WARN)
         ny += row
         # The free lower part of the box carries the heading dial.
-        instruments.heading_dial(s, (nx, ny, nw, nav_bottom - ny), game.ship.course,
-                                 game.ship.target_course)
+        heading_rect = (nx, ny, nw, nav_bottom - ny)
+        instruments.heading_dial(s, heading_rect, game.ship.course, game.ship.target_course)
+        # A click on the dial orders that course, like a typed U entry.
+        pointer.add_action(heading_rect, lambda pos, r=heading_rect: _dial_order(
+            game, "course", instruments.heading_at(r, pos)))
 
         drive = layout.box(s, (x + half + 10, y2, half, box_h), "panel.speed_acoustics",
                            border=config.COLOR_WARN if game.ship.cavitating else config.COLOR_TEXT)
@@ -155,8 +158,11 @@ def draw_bridge_view(game, tr=None) -> None:
                          config.COLOR_DANGER if game.ship.cavitating else config.COLOR_OK,
                          size=18)
         dy += row + 26
-        instruments.speed_dial(s, (dx, dy, dw, drive_bottom - dy), game.ship.speed,
-                               game.ship.target_speed, config.TELEGRAPH_ORDERS[-1][1])
+        speed_rect = (dx, dy, dw, drive_bottom - dy)
+        top_speed = config.TELEGRAPH_ORDERS[-1][1]
+        instruments.speed_dial(s, speed_rect, game.ship.speed, game.ship.target_speed, top_speed)
+        pointer.add_action(speed_rect, lambda pos, r=speed_rect: _dial_order(
+            game, "speed", instruments.speed_at(r, pos, top_speed)))
     elif page == 2:
         _draw_bridge_lookout(game, s, pygame.Rect(x, y2, w, content_h - alarm_h - 12))
     else:
@@ -295,6 +301,14 @@ def lookout_outlines(game, sightings) -> list:
     return rows
 
 
+def _dial_order(game, mode, value) -> None:
+    """A click on a bridge dial: the same order as a typed entry."""
+    if value is None:
+        return
+    from src.core import pointer_input
+    pointer_input.enter_value(game, mode, value)
+
+
 def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
     """Bridge lookout page: north-up scope of the visual sightings.
 
@@ -321,6 +335,8 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
                          config.COLOR_TEXT_DIM, size=14, align="center")
     sightings = game.lookout_sightings()
     scale = radius / max(.1, range_nm)
+    labels = label_layout.LabelField(scope.inflate(-4, -4))
+    labels.reserve((cx - 10, cy - 10, 20, 20))
     for track in sightings:
         dx, dy = track.x - game.ship.x, track.y - game.ship.y
         if math.hypot(dx, dy) > range_nm:
@@ -333,8 +349,11 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
         color = _LOOKOUT_KIND_COLORS.get(track.kind, config.COLOR_TEXT_DIM)
         pygame.draw.circle(s, color, (px, py), 5)
         what = game.lookout_visual_what(track.label)
-        if what is not None and px + 10 < scope.right - 4:
-            layout.blit_line(s, what, (px + 8, py - 18, scope.right - px - 12, 16),
+        if what is not None:
+            shown = localize(what)
+            size = layout.font(13).size(shown)
+            spot = labels.place(size, label_layout.around((px + 8, py - 18), size, 8))
+            layout.blit_line(s, raw_text(shown), (spot.x, spot.y, spot.w + 2, 16),
                              color, size=13)
     heading = math.radians(game.ship.course)
     tip = (cx + math.sin(heading) * 12, cy - math.cos(heading) * 12)

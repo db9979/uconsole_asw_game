@@ -32,7 +32,7 @@ Each station shows only what its sensors and operators know. Sonar contacts are 
 
 ### Controls
 
-The game runs at 1280x720 and is designed for the uConsole keyboard and trackball. The trackball acts as a joystick: horizontal steers on the Bridge, vertical steps the station's main selection elsewhere. A mouse works too: wheel zooms charts, drag pans, click pins a tooltip.
+The game runs at 1280x720 and is designed for the uConsole keyboard and trackball. The trackball acts as a joystick: horizontal steers on the Bridge, vertical steps the station's main selection elsewhere. The uConsole can also be played entirely with the mouse (or the trackball's buttons): a click on a key in a station's key bar presses that key (holding the button holds the key, for example for steering or the telegraph), the numbered tabs in the top bar switch stations, a click on the course, speed or depth dial orders that value, and a numeric entry shows a keypad. Menu rows, dialog rows, save slots and the hints under them are clickable too; the wheel moves through menus and scrolls the help, and a right click cancels like `Esc` in menus, dialogs, entries and at the mission end. On charts the wheel zooms, dragging pans and a click pins a tooltip. A click does exactly what its key does, with the same checks.
 
 Global keys (all stations):
 
@@ -61,6 +61,8 @@ Global keys (all stations):
 | `Q / E or mouse wheel` | Chart zoom only on bridge, weapons, and helicopter |
 | `Drag` | Pan chart (bridge, weapons, and helicopter) |
 | `K` | Camera follow only on visible charts (drag disables it) |
+| `Left click` | Press the clicked key, tab, dial or row |
+| `Right click` | Cancel like Esc in menus and entries |
 | `P` | Plot mode on the Bridge/Weapons/Helo map and OPZ chart: marks, rulers, bearing lines, circles, DR lines (shared by all stations, saved) |
 | `M R B C D · Enter · Bksp` | In plot mode: choose tool, place point with Enter or click (arrows move the cursor, Shift faster), delete the nearest object (Shift: all) |
 | `Esc` | Cancel input or open exit dialog |
@@ -1141,6 +1143,7 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Current | steady field up to 1 kn plus 3 % of the wind, 20 deg right of downwind |
 | Seabed | rock, gravel, sand, silt or mud; affects bottom reflection |
 | Hazards | up to 64 charted wrecks and submerged rocks (tops at least 15 m deep), shown on every chart (wreck: hull line with masts, rock: asterisk; depth of the top when zoomed in, details in the tooltip); both raise the seabed within their footprint and are obstacles for the ship, submarines and weapons |
+| Shipping | cargo ships, tankers and passenger ships steam from destination to destination (the charted ports and exits at the edge of the sea area) on steady courses; they give way under the collision regulations (head-on, crossing from starboard or overtaking: alter 35 deg to starboard when the pass would be closer than 0.5 NM; any ship alters under 0.25 NM) and run from a detonation within 8 NM at full speed for 10 min; work boats and fishing vessels keep wandering, convoys and HQ task ships hold their course |
 | Atmosphere | barometer 975-1025 hPa that falls ahead of rising seas; air temperature from the sea, season, day and cold northerly winds (below 0 deg C in winter storms: snow, icing); gusts; cloud ceiling; sun elevation with civil/nautical twilight; moon phase |
 | Rain lens | rain freshens the top few metres (up to -1 PSU, mixed away by wind) and lowers the surface sound speed |
 | SOFAR channel | an interior sound-speed minimum (about 400-500 m below the surface layer) exists only in deep enough water |
@@ -1165,6 +1168,17 @@ The crew keeps one shared grease-pencil plot. Every station and every Remote Cre
 - **Labels:** objects are numbered M1, R2, B3 and so on. In the web client you can type a label before drawing or rename an object in the list under the map.
 - **Web client:** choose a tool above the map, then click once (mark, bearing line) or twice (ruler, circle, DR line). "Plot track bearing" lays the selected track's measured bearing from its observer position.
 - **Limits:** at most 64 objects and 24 characters per label.
+
+### Chart history and labels
+
+Every tactical chart (Bridge, Weapons, Helicopter, OPZ, the submarine's chart and plot, and the Remote Crew charts) shows where things were, not only where they are:
+
+- **Own track:** a faint dotted line behind the own ship or submarine, one point every 30 s of simulation time, the last 2 hours.
+- **Contact history:** earlier positions of a track as small dots that fade with age, one every minute, the last 12 per track.
+- **Bearing history:** for a bearing-only contact the chart keeps its last 6 bearings; the selected contact's earlier bearings are drawn dashed from where each was taken, so their crossing shows where it may be.
+- **Labels:** chart labels move aside instead of covering each other, the own ship or a symbol: first to the right, then down, up and to the left; bearing-line labels slide along their line.
+
+The history is display only: it is built from what the sensors reported, is never saved and forgets a track 15 minutes after its last report.
 
 ### Opposing submarines
 

@@ -30,13 +30,15 @@ def _drawn_texts(monkeypatch, module):
 def test_frigate_top_bar_names_station_mission_clock_speed_course(monkeypatch):
     game, _server, _bridge = _crewed(seed=31)
     game.station = Station.SONAR
+    game.msg_until = 0.0
     texts = _drawn_texts(monkeypatch, map_view)
     game.draw_top_bar()
-    parts = texts[0].split(" · ")
-    assert parts[0] == "SONAR" and parts[2] == game.world.format_time()
-    assert parts[1] == game.top_bar_scenario()
-    assert parts[3] == f"{game.ship.speed:.1f} kn"
-    assert parts[4] == f"{game.ship.course % 360:03.0f}°"
+    assert texts[:9] == ["1 BRIDGE", "2 SONAR", "3 WEAPONS", "4 DAMAGE", "5 CIC",
+                         "6 RADIO", "7 ENGINE", "8 HELO", "9 EW"]
+    parts = texts[9].split(" · ")
+    assert parts[0] == game.top_bar_scenario() and parts[1] == game.world.format_time()
+    assert parts[2] == f"{game.ship.speed:.1f} kn"
+    assert parts[3] == f"{game.ship.course % 360:03.0f}°"
 
 
 def test_chart_header_shows_only_the_scale(monkeypatch):

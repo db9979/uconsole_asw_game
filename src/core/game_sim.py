@@ -40,6 +40,7 @@ from src.sensors.platform import MAST_DEPTH_M
 from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
+from src.enemies import traffic
 from src.sensors.platform import exchange_friendly_datalink, snapshot_observation
 from src.sonar.sonar import TowState, hull_length_m
 from src.ui import layout
@@ -183,6 +184,8 @@ class SimMixin:
         if sim_started is not None:
             self._perf_sim_s += time.perf_counter() - sim_started
             self._perf_substeps += n
+        # Display-only chart history (own track, earlier fixes and bearings).
+        self.chart_history.record(self)
         self.map_view.set_rect(config.MAP_RECT)
         if self.map_follow:
             self.map_view.cx, self.map_view.cy = self.ship.x, self.ship.y
@@ -248,6 +251,8 @@ class SimMixin:
         of the ship's head (-1 port .. +1 starboard); None plays it centred."""
         if at is not None and self._opfor is not None:
             opfor.hear_detonation(self, self._opfor, float(at[0]), float(at[1]))
+        if at is not None and kind == "explosion":
+            traffic.alarm(self.civilians, float(at[0]), float(at[1]))
         if at is not None and pan is None:
             pan = self._heard_pan(float(at[0]), float(at[1]), kind)
         if kind == "sonar_ping":
@@ -512,6 +517,9 @@ class SimMixin:
                 self.hq_msg(message("runtime.roe_free_confirmed"))
         for animal in self.animals:
             animal.update(dt, self.world)
+        if traffic.due(self.sim_t, dt):
+            traffic.plan(self.civilians, [self.ship, *self.warships, *self.civilians],
+                         self.seed, self.world)
         for civilian in self.civilians:
             civilian.update(dt, getattr(civilian, "_tactical_observation", None),
                             self.world)

@@ -12,7 +12,7 @@ from src.core.i18n import (display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.core.station import Station
 from src.ui.plot_view import draw_plot
-from src.ui import layout
+from src.ui import layout, pointer
 from src.ui import chart_symbols
 from src.ui import nato_symbols
 from src.ui import observations
@@ -1040,3 +1040,4 @@ def draw_opz_view(game, tr=None) -> None:
     footer_rect = pygame.Rect(station.x + 8, station.bottom - 28, scope_w - 16, 20)
     layout.command_segment(s, footer_rect, "help.key.page_arrows", "opz.footer.range", "",
                            f"{max_nm:g} NM  {scales}", size=11)
+    pointer.add_legend(footer_rect, "help.key.page_arrows")

@@ -6,7 +6,7 @@ import { stationActionAvailable } from "../state/availability.js";
 import { renderBridgeOrders } from "./bridge-orders.js";
 import { contextKey } from "../state/display-model.js";
 import { view } from "../state/shared.js";
-import { clearFireConfirmation, showToast } from "./dom.js";
+import { clearFireConfirmation, setControlValue, showToast } from "./dom.js";
 import { hostUnavailableReason } from "./host.js";
 import { renderProposals } from "./feeds.js";
 
@@ -374,7 +374,7 @@ function renderOpzControls() {
   const available = stationActionAvailable() && radar?.live === true;
   $("opz-radar-surface").checked = radar?.surface === true;
   $("opz-radar-air").checked = radar?.air === true;
-  if (finite(radar?.range_nm)) $("opz-range").value = String(radar.range_nm);
+  if (finite(radar?.range_nm)) setControlValue($("opz-range"), String(radar.range_nm));
   for (const id of ["opz-radar-surface", "opz-radar-air", "opz-range"]) $(id).disabled = !available;
   $("opz-create-fusion").disabled = !available || S.opzMarked.size < 2 || S.opzMarked.size > 8;
   const track = selectedTrack();

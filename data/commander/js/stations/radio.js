@@ -2,7 +2,7 @@ import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { finite, number, t, unit } from "../core/format.js";
 import { palette } from "../core/palette.js";
-import { actionButton, node, position, stationRows } from "../views/dom.js";
+import { actionButton, node, patchChildren, position, stationRows } from "../views/dom.js";
 import { selectTrack } from "../views/tracks.js";
 import { drawEmpty, visualContext } from "../views/visual-common.js";
 
@@ -68,9 +68,8 @@ function renderChannels(payload) {
   const list = $("radio-observations");
   const rows = [...payload.observations].sort((a, b) => (a.age_s ?? 1e9) - (b.age_s ?? 1e9));
   $("radio-channel-count").textContent = t("radio_channel_count", {count: rows.length});
-  list.replaceChildren(...rows.map(channel));
-  if (payload.station_down) list.prepend(node("p", t("station_down_state"), "station-alert"));
-  if (!rows.length) list.append(node("p", t("radio_no_signal"), "empty radio-idle"));
+  patchChildren(list, [...(payload.station_down ? [node("p", t("station_down_state"), "station-alert")] : []),
+    ...rows.map(channel), ...(rows.length ? [] : [node("p", t("radio_no_signal"), "empty radio-idle")])]);
 }
 
 // HQ tasks: the order as HQ gave it, its clock and, for an open offer, the
@@ -116,13 +115,12 @@ function renderTasks(payload) {
   const list = $("radio-tasks");
   const open = payload.tasks.filter((row) => !CLOSED_TASK_STATES.includes(row.state)).length;
   $("radio-task-count").textContent = t("radio_task_count", {open});
-  list.replaceChildren(...payload.tasks.map(taskCard));
-  if (!payload.tasks.length) list.append(node("p", t("radio_task_none"), "empty radio-idle"));
   const request = node("div", undefined, "radio-task-actions");
   request.append(actionButton("radio_request_ras", "radio_request_ras", {}, payload.can_request_ras),
     actionButton("radio_contact_report", "radio_contact_report", {}, payload.can_contact_report),
     actionButton("radio_request_support", "radio_request_support", {}, payload.can_request_support));
-  list.append(request);
+  patchChildren(list, [...payload.tasks.map(taskCard),
+    ...(payload.tasks.length ? [] : [node("p", t("radio_task_none"), "empty radio-idle")]), request]);
 }
 
 function renderTeletype(payload) {

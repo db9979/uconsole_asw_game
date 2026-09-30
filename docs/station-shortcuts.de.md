@@ -1,4 +1,4 @@
-# U-Jagd 1.3.112 - Stations- und Tastenkürzel
+# U-Jagd 1.3.113 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -32,6 +32,8 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Q / E oder Mausrad` | Kartenzoom nur auf Brücke, Waffen und Helikopter |
 | `Drag` | Karte verschieben (Brücke, Waffen und Helikopter) |
 | `K` | Kamera-Follow nur auf sichtbaren Karten (Drag schaltet es aus) |
+| `Linksklick` | Angeklickte Taste, Reiter, Scheibe oder Zeile |
+| `Rechtsklick` | Abbrechen wie Esc in Menüs und Eingaben |
 | `P` | Plotmodus auf Brücken-/Waffen-/Helo-Karte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (für alle Stationen, wird gespeichert) |
 | `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
@@ -269,7 +271,8 @@ Berechtigungsprüfungen bleiben wirksam.
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `Numerische Eingabe` | Ziffern, Punkt oder Komma; Backspace; Enter bestätigt; Esc bricht ab. |
+| `Numerische Eingabe` | Ziffern, Punkt oder Komma; Backspace; Enter bestätigt; Esc bricht ab. Mit der Maus über das eingeblendete Tastenfeld. |
+| `Maus` | Klick auf eine Taste der Tastenleiste drückt sie (gehalten wie die Taste); Reiter oben wechseln die Station; Klick auf Kurs-, Fahrt- oder Tiefenscheibe befiehlt den Wert; Menü- und Dialogzeilen anklickbar; Mausrad blättert; Rechtsklick bricht ab wie Esc. |
 | `Hilfe` | ←/→/Tab Kategorie; ↑/↓ zeilenweise; Bild↑/Bild↓ seitenweise; im Handbuch [ ] oder , . bzw. 0-9 Kapitel; F1/Esc schließen. |
 | `Speichern/Laden` | 1 bis 5 wählt Slot; Enter bestätigt; Esc zurück. |
 | `Beenden-Dialog` | ↑/↓ wählen, Enter bestätigen: zurück zum Spiel, speichern und beenden, zum Hauptmenü (ohne Speichern), ohne Speichern beenden; Esc/N schließt. |

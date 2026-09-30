@@ -14,10 +14,10 @@ from __future__ import annotations
 import pygame
 
 from src.core import config
-from src.core.i18n import message, raw_text
+from src.core.i18n import localize, message, raw_text
 from src.core.lobby import HOST_ONLY, ROWS, LobbyRoom, side_stations
 from src.core.station import Station
-from src.ui import layout
+from src.ui import layout, pointer
 from src.ui.splash_view import draw_menu_panel
 
 LOBBY_SCREEN = "lobby"
@@ -244,6 +244,11 @@ class LobbyMixin:
             layout.blit_line(s, message("menu.choice", marker="► " if selected else "  ",
                                         label=text), rect,
                              config.COLOR_WARN if selected else config.COLOR_TEXT, size=20)
+            # A click picks the row: the next value, or the start on the last.
+            pointer.add_action(rect, lambda _pos, index=index, last=len(values) - 1:
+                               self._click_menu_row(
+                                   lambda: setattr(room, "row", index),
+                                   pygame.K_RETURN if index == last else pygame.K_RIGHT))
         # Right bottom: who is here.
         players = self.lobby_players()
         top = right.y + len(values) * 34 + 40
@@ -282,3 +287,5 @@ class LobbyMixin:
                              config.COLOR_WARN, size=18, align="center")
         layout.blit_line(s, "lobby.hint", (panel.x + 20, panel.bottom - 26, panel.w - 40, 22),
                          config.COLOR_TEXT_DIM, size=15, align="center")
+        pointer.add_text_keys(localize("lobby.hint"), layout.font(15), panel.centerx,
+                              panel.bottom - 15, (None, None, "Enter", "Esc", "F9"))

@@ -157,3 +157,54 @@ def depth_dial(screen, rect, depth, ordered, test_depth, crush_depth) -> None:
              if depth > test_depth else config.COLOR_OK)
     lines.line(screen, color, (cx, cy), at(depth, radius - 6), 2)
     pygame.draw.circle(screen, color, (cx, cy), 3)
+
+
+# --- clicks on the dials (full mouse control) --------------------------------------
+# Inverse geometry of the dials above: which value a point on a dial stands
+# for.  Pure screen geometry; the caller turns the value into the same order
+# a typed entry would give.
+
+def _dial_angle(cx, cy, pos):
+    dx, dy = pos[0] - cx, pos[1] - cy
+    if math.hypot(dx, dy) < 6:
+        return None
+    return math.degrees(math.atan2(dx, -dy)) % 360.0
+
+
+def heading_at(rect, pos):
+    """Bearing (whole degrees) under ``pos`` on a heading dial, else None."""
+    rect = pygame.Rect(rect)
+    if not rect.collidepoint(pos):
+        return None
+    angle = _dial_angle(*rect.center, pos)
+    return None if angle is None else int(round(angle)) % 360
+
+
+def _arc_value(rect, pos, maximum):
+    rect = pygame.Rect(rect)
+    if not rect.collidepoint(pos):
+        return None
+    label_h = layout.font(11).get_linesize()
+    radius = min(rect.w // 2, rect.h // 2) - label_h // 2 - 4
+    cx, cy = rect.centerx, rect.centery + radius // 5
+    angle = _dial_angle(cx, cy, pos)
+    if angle is None:
+        return None
+    signed = angle if angle <= 180.0 else angle - 360.0      # -180..180, 0 up
+    if signed < -120.0 or signed > 120.0:
+        return None                                           # the open bottom
+    return max(0.0, min(1.0, (signed + 120.0) / 240.0)) * maximum
+
+
+def speed_at(rect, pos, maximum):
+    """Speed (whole knots) under ``pos`` on a speed dial, else None."""
+    value = _arc_value(rect, pos, max(1.0, float(maximum)))
+    return None if value is None else int(round(value))
+
+
+def depth_at(rect, pos, depth, ordered, crush_depth):
+    """Depth (metres, 5 m steps) under ``pos`` on a depth dial, else None."""
+    step = 100 if crush_depth <= 600 else 200 if crush_depth <= 1200 else 500
+    maximum = float(max(step, math.ceil(max(crush_depth * 1.1, depth, ordered) / step) * step))
+    value = _arc_value(rect, pos, maximum)
+    return None if value is None else int(round(value / 5.0)) * 5

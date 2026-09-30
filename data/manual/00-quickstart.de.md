@@ -28,7 +28,7 @@ Jede Station zeigt nur, was ihre Sensoren und Bediener wissen. Sonarkontakte sin
 
 ## Bedienung {#qs-controls}
 
-Das Spiel läuft mit 1280x720 und ist für Tastatur und Trackball der uConsole ausgelegt. Der Trackball wirkt als Joystick: horizontal steuert er auf der Brücke, vertikal schaltet er sonst die Hauptauswahl der Station. Eine Maus funktioniert ebenfalls: Rad zoomt Karten, Ziehen verschiebt, Klick heftet einen Tooltip an.
+Das Spiel läuft mit 1280x720 und ist für Tastatur und Trackball der uConsole ausgelegt. Der Trackball wirkt als Joystick: horizontal steuert er auf der Brücke, vertikal schaltet er sonst die Hauptauswahl der Station. Die uConsole lässt sich auch ganz mit der Maus (oder den Tasten des Trackballs) spielen: Ein Klick auf eine Taste in der Tastenleiste einer Station drückt diese Taste (gedrückt halten hält die Taste, etwa zum Steuern oder für den Maschinentelegrafen), die nummerierten Reiter in der Kopfzeile wechseln die Station, ein Klick auf die Kurs-, Fahrt- oder Tiefenscheibe befiehlt diesen Wert, und eine Zahleneingabe zeigt ein Tastenfeld. Menüzeilen, Dialogzeilen, Speicherplätze und die Hinweise darunter sind ebenfalls anklickbar; das Mausrad blättert durch Menüs und scrollt die Hilfe, und ein Rechtsklick bricht in Menüs, Dialogen, Eingaben und am Missionsende ab wie `Esc`. Auf Karten zoomt das Rad, Ziehen verschiebt und ein Klick heftet einen Tooltip an. Ein Klick tut genau das, was seine Taste tut, mit denselben Prüfungen.
 
 Globale Tasten (alle Stationen):
 

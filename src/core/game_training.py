@@ -12,7 +12,7 @@ import pygame
 
 from src.core import config, training
 from src.core.i18n import message
-from src.ui import layout
+from src.ui import layout, pointer
 
 
 class TrainingMixin:
@@ -85,6 +85,10 @@ class TrainingMixin:
             title = self.tr("training.lesson." + lesson)
             if lesson in training.BOAT_LESSONS:
                 title = message("training.boat_title", title=title)
+            # A click on a lesson starts it (like selecting it and Enter).
+            pointer.add_action((config.SCREEN_W // 2 - 420, 200 + index * 62 - 16, 840, 58),
+                               lambda _pos, index=index: self._click_menu_row(
+                                   lambda: setattr(self, "menu_sel", index)))
             center(message("training.menu_choice", marker="► " if selected else "  ",
                            index=str(index + 1), title=title),
                    200 + index * 62, color=config.COLOR_TEXT if selected
@@ -92,4 +96,5 @@ class TrainingMixin:
             layout.blit_line(self.screen, "training.lesson_note." + lesson,
                              (config.SCREEN_W // 2 - 420, 220 + index * 62, 840, 24),
                              config.COLOR_TEXT_DIM, size=17, align="center")
-        center(self.tr("training.menu_hint"), 590, color=config.COLOR_TEXT_DIM)
+        center(self.tr("training.menu_hint"), 590, color=config.COLOR_TEXT_DIM,
+               keys=(None, "Enter", "Esc"))

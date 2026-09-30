@@ -164,4 +164,4 @@ class LogbookMixin:
         if not rows:
             layout.blit_line(s, "logbook.none", (x, y + 24, w, 24), config.COLOR_TEXT_DIM,
                              size=18)
-        center(self.tr("logbook.hint"), 608, color=config.COLOR_TEXT_DIM)
+        center(self.tr("logbook.hint"), 608, color=config.COLOR_TEXT_DIM, keys=("→", "Esc"))

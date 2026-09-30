@@ -9,6 +9,7 @@ import { node, position } from "./dom.js";
 import { visualContext } from "./visual-common.js";
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { roleMapSweepCanvas, roleMapSweepCtx } from "./canvases.js";
+import { labelField, placeText } from "./label-layout.js";
 
 export function mapPayload(role) {
   const payload = S.v2State[role];
@@ -326,6 +327,8 @@ export function drawRoleMap(role) {
   drawChartHazards(plot.context, geo?.hazards || [], point, plot.width, plot.height,
     Math.abs(point(1, 0)[0] - point(0, 0)[0]), S.roleMapInfo);
   const [ox, oy] = hasPosition(data.own) ? point(data.own.x, data.own.y) : [plot.width / 2, plot.height / 2];
+  const labels = labelField(plot.width, plot.height);
+  labels.reserve(ox - 12, oy - 12, 24, 24);
   if (hasPosition(data.own)) {
     addRoleMapHit(null, ox, oy);
     addMapInfo(S.roleMapInfo, ox, oy, "own", data.own);
@@ -358,7 +361,8 @@ export function drawRoleMap(role) {
       plot.context.lineWidth = isSelected ? 3 : 1;
       if (isSelected) { plot.context.beginPath(); plot.context.arc(x, y, 14, 0, Math.PI * 2); plot.context.stroke(); }
       plot.context.fillStyle = symbolColor;
-      plot.context.fillText(row.label || row.ref, x + 12, y - 10);
+      labels.reserve(x - 10, y - 10, 20, 20);
+      placeText(plot.context, labels, String(row.label || row.ref), x + 12, y - 10);
       if (finite(row.course)) {
         const angle = row.course * Math.PI / 180, tipX = x + Math.sin(angle) * 22, tipY = y - Math.cos(angle) * 22;
         plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(tipX, tipY); plot.context.stroke();
@@ -404,7 +408,7 @@ export function drawRoleMap(role) {
       plot.context.stroke();
     } else if (finite(item.uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, item.uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
     plot.context.strokeRect(x - 4, y - 4, 8, 8);
-    plot.context.fillStyle = plot.context.strokeStyle; plot.context.fillText(item.waypoint ? item.display || t("station_waypoint") : item.display || item.ref || t("helicopter"), x + 6, y + 12);
+    plot.context.fillStyle = plot.context.strokeStyle; placeText(plot.context, labels, String(item.waypoint ? item.display || t("station_waypoint") : item.display || item.ref || t("helicopter")), x + 6, y + 12);
   }
   if (role === "opz") {
     // Bare mast/snorkel echoes: an afterglow dot, no symbol; a click marks it.

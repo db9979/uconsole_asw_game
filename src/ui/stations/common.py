@@ -7,7 +7,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
-from src.ui import layout
+from src.ui import layout, pointer
 from src.ui import observations
 
 
@@ -86,6 +86,8 @@ def _shortcut_footer(screen, rect, specs) -> None:
                  else need + spare // len(specs))
         segment = pygame.Rect(x, rect.y, max(1, width), rect.h)
         layout.command_segment(screen, segment, key, description, size=11)
+        # A click on the legend presses its key (full mouse control).
+        pointer.add_legend(segment, key)
         x += width
 
 

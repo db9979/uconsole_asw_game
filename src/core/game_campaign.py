@@ -221,7 +221,9 @@ class CampaignMixin:
                                                  920, 30), color, size=20, align="center")
         hint = ("campaign.confirm_new" if getattr(self, "_campaign_confirm_new", False)
                 else "campaign.menu_hint")
-        center(self.tr(hint), 540, color=config.COLOR_TEXT_DIM)
+        center(self.tr(hint), 540, color=config.COLOR_TEXT_DIM,
+               keys=("Enter", None, "N", "Tab", "Esc") if hint == "campaign.menu_hint"
+               else None)
 
     def _boat_campaign_lines(self, state) -> list:
         from src.core import config

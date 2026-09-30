@@ -1,5 +1,5 @@
-# PyInstaller spec of the Windows program: one U-Jagd-Windows.exe holding the
-# starter window and the game (started by the starter with --game).
+# PyInstaller spec of the Windows program: one U-Jagd-Windows.exe that starts
+# the game straight away (src/launcher/entry.py).
 # Build from the repository root:  pyinstaller packaging/windows/u-jagd-windows.spec
 import os
 
@@ -19,7 +19,7 @@ a = Analysis(
     pathex=[root],
     datas=datas,
     hiddenimports=collect_submodules("src") + ["main"],
-    excludes=["pytest"],
+    excludes=["pytest", "tkinter"],  # no Tk window any more
     noarchive=False,
 )
 pyz = PYZ(a.pure)

@@ -8,9 +8,9 @@ entry in the game language, whether saves stop loading (a different
 
 The button hands over to whatever installed the game: the Windows program
 downloads its new ``.exe`` in the background (size and SHA-256 checked), swaps
-it in once it has closed and starts it (``src/launcher/update.py``); run from
-the old Tk starter it exits with ``UPDATE_EXIT_CODE`` and the starter does
-that. The uConsole launcher (``u_jagd_updater.py install``) waits for the game
+it in once it has closed and starts it (``src/launcher/update.py``); in the
+``starter`` mode it exits with ``UPDATE_EXIT_CODE`` and the Windows entry
+point (``src/launcher/entry.py``) does that. The uConsole launcher (``u_jagd_updater.py install``) waits for the game
 to close, updates, then starts it again. Any other install opens the release
 page in the browser. Nothing here touches simulation state.
 """

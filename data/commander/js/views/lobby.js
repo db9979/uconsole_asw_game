@@ -43,6 +43,7 @@ export function renderLobby() {
   const hostMenu = S.session.host !== null && S.hostView?.phase === "menu";
   $("operations").hidden = simlog || !assigned || S.stationPickerOpen || !rolePublished || hostMenu || room !== null;
   renderLobbyRoom(room);
+  renderHandover();
   $("simlog-view").hidden = !simlog;
   if (simlog) loadSimlog();
   document.body.dataset.remoteRole = assigned ? "assigned" : "lobby";
@@ -81,7 +82,7 @@ export function renderLobby() {
     heading.textContent = t(`station_${station}`);
     occupancy.textContent = t(`occupancy_${state}`);
     // A free station is taken at once with all its rights; one a crewmate
-    // holds is requested from the host, who may hand it over.
+    // holds is requested; the holder or the host may hand it over.
     button.textContent = observer ? t("station_view") : record.requested ? t("station_requested")
       : t(state === "available" ? "station_take" : "station_request");
     button.disabled = S.stationMutation || requested !== null || state === "mine";
@@ -150,6 +151,44 @@ function renderLobbyRoom(room) {
   ready.textContent = t(room.ready ? "lobby_unready" : "lobby_ready");
   ready.setAttribute("aria-pressed", String(room.ready));
   ready.disabled = S.stationMutation || !holding && !room.ready;
+}
+// A crewmate asks for a station this browser holds: hand it over or keep it.
+// Rebuilt only when the list changes, so keyboard focus stays on its button.
+function renderHandover() {
+  const entries = S.session.handover;
+  $("handover-band").hidden = entries.length === 0;
+  const list = $("handover-list");
+  const signature = entries.map((entry) => `${entry.station}:${entry.ordinal}:${entry.request_generation}:${entry.name}`).join("|") +
+    `#${document.documentElement.lang}`;
+  if (list.dataset.signature !== signature) {
+    list.replaceChildren(...entries.map((entry) => {
+      const item = node("li");
+      item.append(node("p", t("handover_request", {name: entry.name, station: t(`station_${entry.station}`)})));
+      for (const [accept, label] of [[true, "handover_accept"], [false, "handover_keep"]]) {
+        const button = node("button", t(label));
+        button.type = "button";
+        if (accept) button.className = "primary";
+        button.dataset.station = entry.station;
+        button.dataset.ordinal = String(entry.ordinal);
+        button.dataset.requestGeneration = String(entry.request_generation);
+        button.dataset.accept = String(accept);
+        item.append(button);
+      }
+      return item;
+    }));
+    list.dataset.signature = signature;
+  }
+  for (const button of list.querySelectorAll("button")) button.disabled = S.stationMutation;
+}
+export function decideHandover(button) {
+  const station = button?.dataset?.station;
+  const ordinal = Number(button?.dataset?.ordinal);
+  const generation = Number(button?.dataset?.requestGeneration);
+  const entry = S.session?.handover?.find((item) => item.station === station &&
+    item.ordinal === ordinal && item.request_generation === generation);
+  if (!entry || S.stationMutation) return;
+  mutateStation("/stations/handover", {station, ordinal, request_generation: generation,
+    accept: button.dataset.accept === "true"});
 }
 export async function toggleReady() {
   const room = S.session?.lobby;

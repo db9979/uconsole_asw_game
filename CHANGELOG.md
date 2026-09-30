@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.112
+
+Release 1.3.112 makes multiplayer simpler to host. F9 is now one switch,
+Multiplayer on or off: it uses the first local network address, or opens the
+uConsole's own hotspot when there is no network; network mode, address and
+port sit under the advanced settings. The hotspot keeps its name and password,
+the uConsole installer sets it up, and the lobby and F9 show two steps: the
+Wi-Fi QR code, then the crew page QR code. A browser that asks for a station
+another player holds now asks that player, who can hand it over in the
+browser; every station always carries its full rights. The command line has
+one flag, --multiplayer, which opens the lobby, and the Windows program starts
+straight into the game without a starter window.
+
 ## 1.3.111
 
 Release 1.3.111 adds an engagement sketch to fire control on both sides. The

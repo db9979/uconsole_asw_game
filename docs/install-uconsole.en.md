@@ -30,7 +30,7 @@ The installer
 
 **Updates only on request:** since 1.3.110 nothing is installed on its own.
 At start the game asks GitHub once in the background for the newest release
-(tag `vX.Y.Z`, the same source as the Windows starter). When it is newer, the
+(tag `vX.Y.Z`, the same source as the Windows program). When it is newer, the
 start screen (top right) and the main menu (left of the entries) show the new version,
 its changelog entry in the game language, a warning when saved games of this
 version (the autosave too) will not load in the new update (a different save
@@ -171,15 +171,25 @@ size.
 Optional Remote Crew is configured on the uConsole with `F9` or through **F10 >
 Commander LAN**. The service starts off on every launch.
 
-To let Remote Crew create its own temporary Wi-Fi hotspot when no network is
-available, install the narrowly scoped system helper once from the checkout:
+To let Remote Crew create its own Wi-Fi hotspot when no network is available,
+the narrowly scoped system helper is needed. `install.sh` sets it up by itself
+when the machine has NetworkManager and the Wi-Fi device `wlan0` (it asks for the
+`sudo` password once); without `sudo`, NetworkManager or Wi-Fi it prints a note
+and installs the game anyway (`U_JAGD_NO_HOTSPOT=1` skips the step). To install
+or refresh it by hand from the checkout:
 
 ```sh
 sudo ./packaging/uconsole/install-hotspot-helper.sh
 ```
 
 Continue to launch the game itself without `sudo`. The helper can only create
-and remove the transient U-Jagd hotspot. Remove the system integration with
+and remove the U-Jagd hotspot and make a new hotspot password. The hotspot keeps
+its Wi-Fi name and password across starts (stored root-only in
+`/var/lib/u-jagd/hotspot.json`), so devices that joined once reconnect by
+themselves; **New hotspot password** under F9's advanced network settings
+(multiplayer off) replaces the password and keeps the name. On the hotspot, F9
+and the multiplayer lobby show step 1, the Wi-Fi QR code with name and
+password, next to step 2, the page QR code with the join code. Remove the system integration with
 `sudo ./packaging/uconsole/install-hotspot-helper.sh --uninstall`.
 
 **Wi-Fi power saving:** the Compute Module's Wi-Fi driver (brcmfmac) switches the

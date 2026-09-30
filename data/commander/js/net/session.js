@@ -63,8 +63,19 @@ function validLobby(lobby) {
       player.stations.every((station) => sessionRoles.includes(station)) &&
       typeof player.ready === "boolean" && typeof player.observer === "boolean" && typeof player.you === "boolean");
 }
+// Crewmates asking for a station this browser holds: it hands it over or
+// keeps it (POST /stations/handover). Requester name and ordinal only.
+function validHandover(value) {
+  if (!Array.isArray(value.handover) || value.handover.length > 16) return false;
+  if (value.observer && value.handover.length) return false;
+  return value.handover.every((entry) => exactKeys(entry, ["station", "name", "ordinal", "request_generation"]) &&
+    sessionRoles.includes(entry.station) && value.stations[entry.station].status === "mine" &&
+    typeof entry.name === "string" && entry.name.length >= 1 && entry.name.length <= 32 &&
+    Number.isSafeInteger(entry.ordinal) && entry.ordinal >= 0 && entry.ordinal !== value.ordinal &&
+    Number.isSafeInteger(entry.request_generation) && entry.request_generation >= 1);
+}
 export function validateSession(value) {
-  const fields = ["active_generation", "active_station", "client_id", "csrf", "grants", "name", "host", "lobby", "next_command_seq", "observer", "ordinal", "presence", "protocol", "requested_station", "simlog", "station", "station_generation", "stations"];
+  const fields = ["active_generation", "active_station", "client_id", "csrf", "grants", "handover", "name", "host", "lobby", "next_command_seq", "observer", "ordinal", "presence", "protocol", "requested_station", "simlog", "station", "station_generation", "stations"];
   if (!value || typeof value !== "object" || Array.isArray(value) ||
       Object.keys(value).sort().join(",") !== fields.sort().join(",") || value.protocol !== 2 ||
       typeof value.client_id !== "string" || !value.client_id || value.client_id.length > 128 ||
@@ -110,7 +121,8 @@ export function validateSession(value) {
       value.station !== null && (value.station_generation !== value.stations[value.station].station_generation ||
         value.grants.command !== value.stations[value.station].grants.command ||
         value.grants.direct_fire !== value.stations[value.station].grants.direct_fire ||
-        value.grants.sonar_audio !== value.stations[value.station].grants.sonar_audio)) throw new Error("session");
+        value.grants.sonar_audio !== value.stations[value.station].grants.sonar_audio) ||
+      !validHandover(value)) throw new Error("session");
 }
 export async function resumeSession() {
   try {

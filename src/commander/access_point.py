@@ -17,13 +17,15 @@ import time
 HELPER_PATH = "/usr/libexec/u-jagd-hotspot-helper"
 PKEXEC_PATH = "/usr/bin/pkexec"
 _DEFAULT_COMMAND = (PKEXEC_PATH, "--disable-internal-agent", HELPER_PATH, "serve")
+# The helper keeps the hotspot's name and password; this makes a new password.
+_RENEW_COMMAND = (PKEXEC_PATH, "--disable-internal-agent", HELPER_PATH, "new-password")
 _MAX_MESSAGE_BYTES = 4096
 _INTERFACE = re.compile(r"[a-zA-Z0-9_.:-]{1,32}\Z")
 _PRIVATE_NETWORKS = tuple(ipaddress.IPv4Network(value) for value in (
     "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"))
 _ERROR_CODES = frozenset({
     "authorization", "busy", "dependency", "helper_missing", "no_address",
-    "no_wifi", "protocol", "start", "timeout", "unsupported",
+    "no_wifi", "protocol", "start", "state", "timeout", "unsupported",
 })
 
 
@@ -39,8 +41,11 @@ class HotspotController:
     """Run one helper process without blocking the Pygame/main thread."""
 
     def __init__(self, *, command=None, startup_timeout=20.0, stop_timeout=9.0,
-                 popen=subprocess.Popen):
+                 popen=subprocess.Popen, renew_command=None):
         self._command = tuple(command or _DEFAULT_COMMAND)
+        # A custom helper command renews only with its own explicit command.
+        self._renew_command = (tuple(renew_command) if renew_command is not None
+                               else _RENEW_COMMAND if command is None else None)
         self._startup_timeout = float(startup_timeout)
         self._stop_timeout = float(stop_timeout)
         self._popen = popen
@@ -50,6 +55,10 @@ class HotspotController:
         self.state = "off"
         self.details = None
         self.error = None
+        # "New hotspot password": None, "working", "done" or "error".
+        self.renew_state = None
+        self.renew_error = None
+        self._renew_thread = None
 
     @property
     def available(self):
@@ -62,12 +71,28 @@ class HotspotController:
     def active(self):
         return self.state in ("starting", "running", "stopping")
 
+    @property
+    def renew_supported(self):
+        """The installed helper can make a new stored password."""
+        return self._renew_command is not None and self.available
+
+    @property
+    def can_renew(self):
+        """A new password can be made now: supported and the hotspot off."""
+        return self.renew_supported and not self.active and not self._busy()
+
+    def _busy(self):
+        return any(thread is not None and thread.is_alive()
+                   for thread in (self._thread, self._renew_thread))
+
     def start(self):
         """Begin activation and return immediately."""
-        if self.active or (self._thread is not None and self._thread.is_alive()):
+        if self.active or self._busy():
             return False
         self.details = None
         self.error = None
+        self.renew_state = None
+        self.renew_error = None
         if not self.available:
             self.state = "error"
             self.error = "helper_missing"
@@ -77,6 +102,21 @@ class HotspotController:
         self._thread = threading.Thread(target=self._run, name="commander-hotspot",
                                         daemon=True)
         self._thread.start()
+        return True
+
+    def renew_password(self):
+        """Ask the helper for a new stored password; returns immediately.
+
+        Only while the hotspot is off: the helper holds the Wi-Fi lock while it
+        serves, and the name stays so the network is still recognised.
+        """
+        if not self.can_renew:
+            return False
+        self.renew_state = "working"
+        self.renew_error = None
+        self._renew_thread = threading.Thread(
+            target=self._run_renew, name="commander-hotspot-renew", daemon=True)
+        self._renew_thread.start()
         return True
 
     def request_stop(self):
@@ -103,6 +143,12 @@ class HotspotController:
                 self.details = None
                 self.error = None
                 self.state = "off"
+            elif kind == "renewed":
+                self.renew_state = "done"
+                self.renew_error = None
+            elif kind == "renew_error":
+                self.renew_state = "error"
+                self.renew_error = value if value in _ERROR_CODES else "start"
             elif kind == "error":
                 self.details = None
                 self.error = value if value in _ERROR_CODES else "start"
@@ -128,12 +174,14 @@ class HotspotController:
             # One worker emits at most running plus a terminal event.
             pass
 
-    def _read_startup(self, process):
+    def _read_message(self, process, stop=None):
+        """One bounded JSON line: (payload, None), (None, error) or (None, None)
+        when ``stop`` was set first."""
         selector = selectors.DefaultSelector()
         selector.register(process.stdout, selectors.EVENT_READ)
         deadline = time.monotonic() + self._startup_timeout
         try:
-            while not self._stop_requested.is_set():
+            while stop is None or not stop.is_set():
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     return None, "timeout"
@@ -150,10 +198,44 @@ class HotspotController:
                     if payload.get("status") == "error" and set(payload) == {"status", "code"}:
                         code = payload.get("code")
                         return None, code if code in _ERROR_CODES else "start"
-                    return self._validate_details(payload), None
+                    return payload, None
             return None, None
         finally:
             selector.close()
+
+    def _read_startup(self, process):
+        payload, error = self._read_message(process, self._stop_requested)
+        if payload is None:
+            return None, error
+        return self._validate_details(payload), None
+
+    def _run_renew(self):
+        process = None
+        try:
+            process = self._popen(
+                self._renew_command, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL, bufsize=0, close_fds=True)
+            try:
+                payload, error = self._read_message(process)
+            except OSError:
+                payload, error = None, "protocol"
+            if payload is not None and payload != {"status": "renewed"}:
+                payload, error = None, "protocol"
+            returncode = self._finish_process(process, self._stop_timeout)
+            if payload is not None and returncode == 0:
+                self._emit("renewed")
+            else:
+                if error == "protocol" and returncode in (126, 127):
+                    error = "authorization"
+                self._emit("renew_error", error or "start")
+        except (OSError, subprocess.SubprocessError):
+            self._emit("renew_error", "helper_missing" if process is None else "start")
+        finally:
+            if process is not None:
+                if process.poll() is None:
+                    self._finish_process(process, self._stop_timeout)
+                if process.stdout is not None and not process.stdout.closed:
+                    process.stdout.close()
 
     @staticmethod
     def _validate_details(payload):

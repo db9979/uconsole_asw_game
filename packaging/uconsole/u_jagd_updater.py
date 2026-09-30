@@ -21,7 +21,7 @@ release with its changelog on the start screen and installs it only when the
 player presses "Update now".
 
 Update source: the newest GitHub release (tag ``vX.Y.Z``, the same source the
-Windows starter uses).  Without any release the checkout follows ``origin/main``;
+Windows program uses).  Without any release the checkout follows ``origin/main``;
 ``U_JAGD_UPDATE_CHANNEL=main`` forces that.  Offline, a local modification, a
 non-main branch or a running game skips the update and the installed version
 starts.  A new version whose ``main.py --version`` fails is rolled back.

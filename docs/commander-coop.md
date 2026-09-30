@@ -44,16 +44,16 @@ presence polling stops. Never publish real pairing codes, cookies, or CSRF token
 in screenshots, logs, or issue reports.
 
 **Windows PC as server.** `U-Jagd-Windows.exe` (see the README section
-"Windows program") runs the same game on a Windows PC. Its starter window
-launches the game with `--remote-crew` or `--solo-crew`, so the listener is
-already up on the PC's private LAN address (steps 1-5 are done), and it shows
-the URL, the pairing code and a QR code. Steps 6-8 stay the same: the host
-approves station requests in the game window (F9). The hotspot mode is
-Linux-only. Allow U-Jagd on private networks when the Windows firewall asks.
-The starter's **Language** box (English/Deutsch) is saved in the settings; the
-game window and the crew pages open in that language, and each browser can
-switch for itself with the English/Deutsch button in its status bar.
-`python main.py --remote-crew` does the same on Linux.
+"Windows program") runs the same game on a Windows PC and starts straight
+into it, with no separate starter window. **Multiplayer** in the main menu
+opens the lobby, which starts the listener on the PC's private LAN address
+(steps 1-5 are done) and shows the URL, the pairing code and a QR code.
+Steps 6-8 stay the same: the host approves station requests in the game
+(F9). The hotspot mode is Linux-only. Allow U-Jagd on private networks when
+the Windows firewall asks. The crew pages open in the game's language, and
+each browser can switch for itself with the English/Deutsch button in its
+status bar. `python main.py --multiplayer` (or the EXE with `--multiplayer`)
+goes straight into the lobby after the splash.
 
 ## Role Controls
 
@@ -61,6 +61,10 @@ switch for itself with the English/Deutsch button in its status bar.
   station leases and switch between them without releasing the inactive leases.
   Use Add station for another request; an approved station opens automatically.
   Afterwards, choose any retained lease from the stable station selector.
+- A request for a station a crewmate holds appears in that crewmate's browser
+  ("Name asks for Station") with Hand over and Keep station; the host can still
+  approve or reject it in the F9 roster. A station always carries its full
+  rights: the roster toggles only the SimLog (`L`) and observer (`O`).
 - A leased station is read-only on the uConsole until the host revokes its lease.
   F9 administration and switching the local display to another station
   remain available, and retained inactive browser leases stay exclusive.
@@ -203,9 +207,9 @@ station takes one round trip. Narrow windows fall back to a single scrolling
 column.
 
 **Solo mode** lets one person run the whole game from one browser while the uConsole
-stays the simulation server. Start it with `python main.py --solo-crew` (this launch
-only, first private LAN address, never saved) or switch the "Crew mode" row in the
-F9 overlay; either way pairing still uses the join code. A solo session holds all
+stays the simulation server. Start it with the hidden advanced flag
+`python main.py --solo-crew` (this launch only, first private LAN address, never
+saved; the game itself has no row for it); pairing still uses the join code. A solo session holds all
 nine frigate stations (or, playing the submarine, the submarine's seven) with command, direct fire, sonar audio and SimLog, only one browser
 may pair (a second gets `session_limit` until you remove the first in the roster),
 and leases do not lapse. Changing the mode revokes every session and rotates the code.

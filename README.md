@@ -12,17 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.111**
+Current release: **1.3.112**
 
-Release 1.3.111 adds an engagement sketch to fire control on both sides. The
-frigate's Weapons station and the submarine's Weapons page now draw, north up
-around the own ship, the torpedo's reach, the bearing to the target and, once
-a range is known, the estimated position, the intercept point from the TMA
-course and speed and the torpedo run to it, taken only from the contact's
-observation. The submarine's Command and Navigation pages get labelled round dials for
-course, depth (test and crush depth marked) and speed like the frigate's
-bridge, and the submarine's radio room boxes are sized to their text again,
-so the HQ order no longer runs through the frame.
+Release 1.3.112 makes multiplayer simpler to host. F9 is now one switch,
+Multiplayer on or off: it uses the first local network address, or opens the
+uConsole's own hotspot when there is no network; network mode, address and
+port sit under the advanced settings. The hotspot keeps its name and password,
+the uConsole installer sets it up, and the lobby and F9 show two steps: the
+Wi-Fi QR code, then the crew page QR code. A browser that asks for a station
+another player holds now asks that player, who can hand it over in the
+browser; every station always carries its full rights. The command line has
+one flag, --multiplayer, which opens the lobby, and the Windows program starts
+straight into the game without a starter window.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

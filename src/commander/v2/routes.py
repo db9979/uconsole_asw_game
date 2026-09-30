@@ -416,6 +416,10 @@ class _Handler(BaseHTTPRequestHandler):
                      if session["solo_host"] else None),
             # The host's open multiplayer lobby (players, mission, countdown).
             "lobby": owner.lobby_body_locked(session) if owner is not None else None,
+            # Crewmates asking for a station this session holds: the holder
+            # hands it over or keeps it (``/api/v2/stations/handover``).
+            "handover": (owner.handover_requests_locked(session)
+                         if owner is not None else []),
             "stations": {
                 station: {
                     "status": status(station),
@@ -1240,6 +1244,39 @@ class _Handler(BaseHTTPRequestHandler):
                     else:
                         status = 200
                         response = self._session_v2_body(session, owner._sessions_v2, owner)
+            elif self.path == "/api/v2/stations/handover":
+                try:
+                    session, _, presented = self._authenticated_v2_locked(renew=True)
+                except (UnicodeEncodeError, ValueError):
+                    status, response = 400, {"error": "invalid_request"}
+                else:
+                    if session is None:
+                        self._v2_unauthorized(presented)
+                        return
+                    csrf = self.headers.get("X-U-Jagd-CSRF")
+                    if (csrf is None or not secrets.compare_digest(
+                            csrf.encode("utf-8", errors="surrogatepass"),
+                            session["csrf"].encode("ascii"))):
+                        status, response = 403, {"error": "forbidden"}
+                    elif (type(body) is not dict
+                          or set(body) != {"station", "ordinal", "request_generation", "accept"}
+                          or type(body["station"]) is not str or body["station"] not in ROLES
+                          or type(body["ordinal"]) is not int
+                          or not 0 <= body["ordinal"] <= _SAFE_INTEGER_MAX
+                          or type(body["request_generation"]) is not int
+                          or not 0 <= body["request_generation"] <= _SAFE_INTEGER_MAX
+                          or type(body["accept"]) is not bool):
+                        status, response = 400, {"error": "invalid_request"}
+                    elif session["observer"] or session["lookout_only"]:
+                        status, response = 403, {"error": "forbidden"}
+                    elif not owner.decide_handover_locked(
+                            session, body["station"], body["ordinal"],
+                            body["request_generation"], body["accept"]):
+                        # The station changed hands or the request moved on.
+                        status, response = 409, {"error": "stale_request"}
+                    else:
+                        status = 200
+                        response = self._session_v2_body(session, owner._sessions_v2, owner)
             elif self.path in ("/api/v2/stations/request", "/api/v2/stations/activate",
                                "/api/v2/stations/release"):
                 try:
@@ -1278,7 +1315,7 @@ class _Handler(BaseHTTPRequestHandler):
                                     and station not in session["leases"]
                                     and station not in session["requests"]
                                     and not owner._side_conflict(session, station)):
-                                # Held by a crewmate: the host decides (takeover).
+                                # Held by a crewmate: the holder (handover) or the host decides.
                                 session["next_request_generation"] += 1
                                 session["requests"][station] = session["next_request_generation"]
                             status = 200

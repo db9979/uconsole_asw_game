@@ -3,6 +3,7 @@
 from contextlib import closing
 from copy import deepcopy
 from dataclasses import asdict, replace
+from itertools import combinations
 import http.client
 import json
 import socket
@@ -475,7 +476,7 @@ def test_admin_blocks_held_mouse_joystick_and_weapons_but_not_simulation(game):
         game.handle_event(event)
     key(game, pygame.K_3)
     key(game, pygame.K_LEFT)
-    game.commander.selection = 3
+    game.commander.selection = 2
     key(game, pygame.K_RETURN, mod=pygame.KMOD_CTRL)
     # Enter remains a local proposal decision, never station weapon input.
     assert game.commander.server is None
@@ -524,21 +525,57 @@ def test_legacy_time_keys_do_nothing_under_the_station_lock(game, solo):
     assert game.ship.telegraph == telegraph  # station input stays locked either way
 
 
-def test_crew_mode_row_toggles_solo_and_reaches_the_server(game):
+def test_advanced_row_shows_the_network_rows_and_no_crew_mode_row(game):
     console = game.commander
-    assert console.solo is False and len(console.row_rects()) == 6
+    assert console.rows() == ("service", "roster", "advanced")
     game._open_administration("commander")
-    console.selection = 4
-    key(game, pygame.K_DOWN)
-    assert console.selection == 5
-    key(game, pygame.K_RIGHT)
-    assert console.solo is True
-    key(game, pygame.K_RETURN)
-    assert console.solo is False
-    key(game, pygame.K_DOWN)
-    assert console.selection == 0  # six rows wrap around
     key(game, pygame.K_UP)
-    assert console.selection == 5
+    assert console.selection == 2      # three rows wrap around
+    key(game, pygame.K_RETURN)
+    assert console.advanced and console.rows()[3:] == ("mode", "host", "port")
+    key(game, pygame.K_DOWN)
+    assert console.selection == 3
+    key(game, pygame.K_RIGHT)
+    assert console.network_mode == "hotspot"
+    key(game, pygame.K_RIGHT)
+    assert console.network_mode == "lan"
+    console.selection = 5
+    key(game, pygame.K_DOWN)
+    assert console.selection == 0
+    console.selection = 2
+    key(game, pygame.K_LEFT)           # hiding them keeps the cursor on a row
+    assert not console.advanced and console.selection == 2
+    assert console.solo is False
+
+
+def test_the_switch_picks_the_lan_address_or_falls_back_to_the_hotspot(game, monkeypatch):
+    console = game.commander
+    console._prepared = True
+    started = []
+    monkeypatch.setattr(console, "_prepare_transport", lambda: None)
+    monkeypatch.setattr(console, "_start_transport", lambda host: started.append(host))
+    console.hosts = ("127.0.0.1", "192.168.1.7", "10.0.0.2")
+    console.activate(game)
+    assert started == ["192.168.1.7"] and console.network_mode == "lan"
+    # Without any LAN address the uConsole opens its own hotspot.
+    started.clear()
+    console.hosts = ("127.0.0.1",)
+    monkeypatch.setattr(type(console.hotspot), "available", property(lambda self: True))
+    hotspot_started = []
+    monkeypatch.setattr(console.hotspot, "start", lambda: hotspot_started.append(True))
+    console.activate(game)
+    assert not started and hotspot_started and console.network_mode == "hotspot"
+    # An address chosen under the advanced settings is kept.
+    console.network_mode = "lan"
+    console.hosts = ("127.0.0.1", "192.168.1.7")
+    console.host = "192.168.1.7"
+    console.advanced = True
+    console.selection = console.rows().index("host")
+    console.activate(game, -1)
+    assert console.host == "127.0.0.1"
+    console.selection = 0
+    console.activate(game)
+    assert started == ["127.0.0.1"]
 
 
 def test_new_remote_lease_clears_latched_and_numeric_uconsole_input(game):
@@ -591,11 +628,11 @@ def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     assert game.commander_open
     activate = Mock()
     monkeypatch.setattr(game.commander, "activate", activate)
-    rect = game.commander.row_rects()[4]
+    rect = game.commander.row_rects()[1]
     event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                               pos=(rect.centerx, rect.centery + 140))
     game.handle_event(event)
-    assert game.commander.selection == 4 and not activate.called
+    assert game.commander.selection == 1 and not activate.called
     game.handle_event(event)
     activate.assert_called_once_with(game)
 
@@ -633,10 +670,12 @@ def test_loopback_start_bind_failure_disable_and_translation_cache(game, monkeyp
     assert "127.0.0.1" not in other.error
     other.stop()
     host, port = console.host, console.port
-    for selection in (1, 2, 3):
+    console.advanced = True
+    for selection in (3, 4, 5):
         console.selection = selection
         console.activate(game)
     assert (console.host, console.port) == (host, port)
+    console.advanced = False
     console.selection = 0
     started = time.monotonic()
     console.activate(game)
@@ -724,10 +763,11 @@ def test_port_and_host_are_transient_local_controls(game):
     console = game.commander
     console._prepared = True
     console.hosts = ("127.0.0.1", "192.168.1.2")
-    console.selection = 2
+    console.advanced = True
+    console.selection = 4
     console.handle_key(game, pygame.K_RIGHT)
     assert console.host == "192.168.1.2"
-    console.selection = 3
+    console.selection = 5
     console.handle_key(game, pygame.K_PLUS)
     assert console.port == 8766
     console.handle_key(game, pygame.K_MINUS)
@@ -748,7 +788,7 @@ def test_fifth_row_opens_roster_and_escape_f9_preserve_admin_ownership(game):
     console._prepared = True
     console.server = RosterTransport()
     key(game, pygame.K_F9)
-    console.selection = 4
+    console.selection = 1
     key(game, pygame.K_RETURN)
     assert game.commander_open and console.roster_open
     key(game, pygame.K_ESCAPE)
@@ -773,21 +813,18 @@ def test_roster_keyboard_actions_grant_requests_assign_and_revoke(game):
     # Approval always carries every right of the station.
     assert server._client("bravo")["stations"]["sonar"]["grants"] == {
         "command": True, "direct_fire": False, "sonar_audio": True}
-    console.handle_key(game, pygame.K_c)
-    assert not server._client("bravo")["stations"]["sonar"]["grants"]["command"]
+    # A station always carries its full rights: C, D and U toggle nothing.
     before = server.client_statuses()
-    console.handle_key(game, pygame.K_d)
-    assert server.client_statuses() == before
-    assert console.roster_status == "commander.roster.error.grant"
+    calls = list(server.calls)
+    for removed in (pygame.K_c, pygame.K_d, pygame.K_u):
+        console.handle_key(game, removed)
+    assert server.client_statuses() == before and server.calls == calls
     console.handle_key(game, pygame.K_l)
     assert server._client("bravo")["simlog"]
 
     console.roster_station = local.STATIONS.index("weapons")
     console.handle_key(game, pygame.K_a)
-    assert server._client("bravo")["stations"]["weapons"]["grants"]["command"]
-    console.handle_key(game, pygame.K_d)
     assert server._client("bravo")["stations"]["weapons"]["leased"]
-    assert server._client("bravo")["stations"]["weapons"]["grants"]["direct_fire"]
     server._client("bravo")["stations"]["bridge"].update(
         requested=True, request_generation=2)
     console.handle_key(game, pygame.K_r)
@@ -870,9 +907,10 @@ def test_roster_approves_selected_additive_request_and_keeps_other_request(game)
     assert selected["stations"]["bridge"]["requested"]
 
 
-@pytest.mark.parametrize("action_index", [9, 10])
+@pytest.mark.parametrize("action_index", [6, 7])
 def test_roster_mouse_destructive_actions_require_same_target_double_click(game, action_index):
-    # Action rows: ... 7 observer, 8 revoke station, 9 revoke client, 10 revoke all.
+    # Action rows: 0 approve, 1 reject, 2 assign, 3 SimLog, 4 observer,
+    # 5 revoke station, 6 revoke client, 7 revoke all.
     server = RosterTransport((roster_client("alpha", "Alpha", 0, station="bridge"),
                               roster_client("bravo", "Bravo", 1, station="sonar")))
     console = game.commander
@@ -882,7 +920,7 @@ def test_roster_mouse_destructive_actions_require_same_target_double_click(game,
     point = console.roster_action_rects()[action_index].center
     console.handle_click(game, point)
     assert len(server.statuses) == 2 and not server.calls
-    if action_index == 9:
+    if action_index == 6:
         console.handle_click(game, console.roster_client_rects()[1].center)
         console.handle_click(game, point)
         assert len(server.statuses) == 2
@@ -891,7 +929,7 @@ def test_roster_mouse_destructive_actions_require_same_target_double_click(game,
         console.handle_click(game, point)
         assert len(server.statuses) == 3
     console.handle_click(game, point)
-    assert (len(server.statuses) == 1 if action_index == 9 else
+    assert (len(server.statuses) == 1 if action_index == 6 else
             all(status["active_station"] is None for status in server.statuses))
 
 
@@ -1246,3 +1284,87 @@ def test_bridge_translation_contract():
         key = "commander." + suffix
         en, de = Translator("en").t(key), Translator("de").t(key)
         assert en != key and de != key and en != de
+
+
+class RenewingHotspot(FakeHotspot):
+    renew_supported = True
+
+    def __init__(self, order=None):
+        super().__init__(order)
+        self.renew_state = None
+        self.renew_error = None
+
+    def renew_password(self):
+        self.order.append("renew")
+        self.renew_state = "working"
+        return True
+
+
+def test_new_hotspot_password_row_only_while_multiplayer_is_off(game):
+    console = game.commander
+    order = []
+    console.hotspot = RenewingHotspot(order)
+    assert "renew" not in console.rows()
+    console.advanced = True
+    assert console.rows() == ("service", "roster", "advanced", "mode", "host", "port",
+                              "renew")
+    assert len(console.row_rects()) >= len(console.rows())
+    console.selection = console.rows().index("renew")
+    console.activate(game)
+    assert order == ["renew"]
+    with layout.capture_text() as text:
+        console.draw(game)
+    assert any(game.tr("commander.local.hotspot.renew.working") in entry["text"]
+               for entry in text)
+    # All seven rows stay inside their rectangles, also with large pseudo text.
+    game.tr = Translator("en", pseudolocale()).t
+    layout.configure_for(large_text=True)
+    try:
+        with layout.capture_text() as text:
+            console.draw(game)
+    finally:
+        layout.configure_for(large_text=False)
+        game.tr = game.translator.t
+    for entry in text:
+        assert entry["bounds"].contains(entry["ink"]), entry
+    assert not [(a["text"], b["text"]) for a, b in combinations(text, 2)
+                if a["ink"].colliderect(b["ink"])]
+    # A failed renewal is reported once through the F9 error line.
+    console.hotspot.renew_state = "error"
+    console.hotspot.renew_error = "busy"
+    console.pump(game)
+    assert console.error == "commander.local.hotspot.error.busy"
+    console.error = None
+    console.pump(game)
+    assert console.error is None
+    # While multiplayer runs the row is gone and cannot be triggered.
+    console.hotspot.state = "running"
+    assert "renew" not in console.rows()
+    console.hotspot.state = "off"
+    console.address = ("192.168.1.7", 8765)
+    assert "renew" not in console.rows()
+    console.address = None
+
+
+def test_f9_hotspot_page_numbers_the_wifi_step_then_the_page_step(game):
+    console = game.commander
+    console.hotspot = FakeHotspot()
+    console.hotspot.ready()
+    console.network_mode = "hotspot"
+    console.address = ("10.42.0.1", 8765)
+    console.pairing_code = "123ABC"
+    drawn = []
+    wifi, page = console._hotspot_qr, console._url_qr
+    console._hotspot_qr = lambda *a, **k: drawn.append("wifi") or wifi(*a, **k)
+    console._url_qr = lambda *a, **k: drawn.append("page") or page(*a, **k)
+    try:
+        with layout.capture_text() as text:
+            console.draw(game)
+    finally:
+        console.address = None
+    assert drawn == ["wifi", "page"]
+    shown = {entry["text"]: entry for entry in text}
+    step1 = shown[game.tr("commander.local.hotspot.step1")]
+    step2 = shown[game.tr("commander.local.hotspot.step2")]
+    assert step1["rect"].right <= step2["rect"].left
+    assert "U-Jagd-TEST" in shown and "TestPassword2345" in shown and "123 ABC" in shown

@@ -94,7 +94,13 @@ export function init() {
     applyDefaults(station);
   });
   on("events", renderAlerts);
-  on("session:forgotten", () => { hideAlert(); shownAlertSeq = null; layoutStation = undefined; });
+  on("session:forgotten", () => {
+    hideAlert(); shownAlertSeq = null; layoutStation = undefined;
+    // A forgotten session decides no station requests.
+    $("handover-band").hidden = true;
+    $("handover-list").replaceChildren();
+    delete $("handover-list").dataset.signature;
+  });
   wide.addEventListener("change", () => applyDefaults(layoutStation));
   ultraWide.addEventListener("change", () => { if (S.v2State?.role) renderRoleVisuals(S.v2State.role); });
   document.addEventListener("keydown", (event) => {

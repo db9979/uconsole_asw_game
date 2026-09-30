@@ -1,1 +1,1 @@
-"""Windows starter: runs the game as Remote Crew server and keeps it updated."""
+"""Windows program: entry point (straight into the game) and self-update."""

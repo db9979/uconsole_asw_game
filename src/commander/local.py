@@ -7,7 +7,6 @@ including menu frames, and stop() uses the transport's bounded shutdown.
 
 import ipaddress
 from itertools import islice
-import json
 import os
 import socket
 import ssl
@@ -29,6 +28,12 @@ from src.ui import layout, overlay_style, qr
 
 # Seconds between an accepted admin "end game" and the process quitting.
 WEB_SHUTDOWN_GRACE_S = 2.0
+# F9 rows: one switch, the crew list and the advanced network rows, which only
+# show when opened (network mode, address, port and, while multiplayer is off
+# and the hotspot helper is installed, a new hotspot password).
+BASIC_ROWS = ("service", "roster", "advanced")
+ADVANCED_ROWS = ("mode", "host", "port")
+RENEW_ROW = "renew"
 
 class CommanderConsole:
     def __init__(self, hotspot=None):
@@ -56,6 +61,10 @@ class CommanderConsole:
         # Admin page "end game": the process quits once the result is out.
         self.shutdown_at = None
         self.selection = 0
+        # The advanced network rows are hidden until the host opens them; an
+        # address picked there is kept instead of the automatic choice.
+        self.advanced = False
+        self._host_chosen = False
         self.connected = False
         self.active_crew = False
         self._statuses_cache = None
@@ -80,6 +89,7 @@ class CommanderConsole:
         self.roster_status = None
         self._roster_mouse_confirm = None
         self._hotspot_error_seen = None
+        self._renew_seen = None
         self._qr_payload = None
         self._qr_box_px = None
         self._qr_surface = None
@@ -89,10 +99,6 @@ class CommanderConsole:
         self._lookout_qr_surface = None
         self._url_qr_box_px = None
         self._url_qr_surface = None
-        # Optional launcher status file (Windows starter): written only when
-        # the listener address or join code changes, never per frame.
-        self.status_path = None
-        self._status_written = None
 
     def prepare(self):
         """Discover at most 64 Linux interface IPv4s, with no DNS or LAN probe."""
@@ -133,30 +139,6 @@ class CommanderConsole:
                 return ipaddress.IPv4Address(probe.getsockname()[0])
         except (OSError, ValueError):
             return None
-
-    def publish_status(self):
-        """Write the launcher status file when address or join code changed."""
-        if self.status_path is None:
-            return
-        running = self.address is not None
-        status = {
-            "state": "running" if running else ("error" if self.error else "stopped"),
-            "url": (f"http://{self.address[0]}:{self.address[1]}/" if running else None),
-            "lookout_url": (f"https://{self.tls_address[0]}:{self.tls_address[1]}/lookout"
-                            if running and self.tls_address is not None else None),
-            "code": self.pairing_code if running else None,
-            "solo": self.solo,
-        }
-        if status == self._status_written:
-            return
-        staging = f"{self.status_path}.tmp"
-        try:
-            with open(staging, "w", encoding="utf-8") as handle:
-                json.dump(status, handle, allow_nan=False)
-            os.replace(staging, self.status_path)
-        except OSError:
-            return
-        self._status_written = status
 
     def invalidate_commands(self):
         self.bridge.invalidate_commands()
@@ -290,13 +272,11 @@ class CommanderConsole:
             ok = self.server.grant_station(client_id, station)
             success = message("commander.roster.status.assigned", client=name,
                               station=message(self._station_key(station)))
-        elif action in ("command", "direct_fire", "simlog", "sonar_audio", "observer"):
-            station = ROLES[self.roster_station]
-            enabled = (not selected.get(action, False) if action in ("simlog", "observer") else
-                       not self._station_row(selected, station)["grants"][action])
-            ok = (self.server.set_client_grant(client_id, action, enabled)
-                  if action in ("simlog", "observer") else
-                  self.server.set_client_grant(client_id, station, action, enabled))
+        elif action in ("simlog", "observer"):
+            # A station is always held with its full rights; only the
+            # session-wide SimLog and observer grants remain host toggles.
+            enabled = not selected.get(action, False)
+            ok = self.server.set_client_grant(client_id, action, enabled)
             success = message("commander.roster.status.grant", client=name,
                               capability=message(f"commander.roster.capability.{action}"),
                               state=message("common.on" if enabled else "common.off"))
@@ -389,6 +369,10 @@ class CommanderConsole:
 
     def pump(self, game):
         hotspot_state = self.hotspot.poll()
+        renew_state = getattr(self.hotspot, "renew_state", None)
+        if renew_state == "error" and self._renew_seen != "error":
+            self.error = f"commander.local.hotspot.error.{self.hotspot.renew_error}"
+        self._renew_seen = renew_state
         if self.network_mode == "hotspot":
             if hotspot_state == "running" and self.address is None:
                 try:
@@ -404,7 +388,6 @@ class CommanderConsole:
                 self.error = f"commander.local.hotspot.error.{self.hotspot.error}"
         if self.address is None:
             self._close_confirmation()
-            self.publish_status()
             return
         now = time.monotonic()
         if not self.web_mode and hasattr(self.server, "resolve_station_request"):
@@ -461,7 +444,6 @@ class CommanderConsole:
                 "navigation": self.bridge.navigation_proposal,
             })
         self.pairing_code = self.server.pairing_code
-        self.publish_status()
         if not self.web_mode:
             self._sync_confirmation(game)
         sequence = self.bridge.proposal_sequence
@@ -719,14 +701,12 @@ class CommanderConsole:
         self.autostart(solo=True)
 
     def autostart(self, solo=False):
-        """Launch-time Remote Crew start on the first private LAN address."""
+        """Remote Crew start on the first private LAN address, else the hotspot."""
         self.solo = bool(solo)
         self.error = None
         try:
-            self.prepare()
-            self.host = self.hosts[1] if len(self.hosts) > 1 else self.hosts[0]
             self._prepare_transport()
-            self._start_transport(self.host)
+            self._start_service()
         except (ImportError, OSError, ValueError, RuntimeError):
             self.deactivate()
             self.error = "commander.local.error.start"
@@ -769,36 +749,54 @@ class CommanderConsole:
         self._notice_seq = None
         self.invalidate_commands()
 
+    def rows(self):
+        """Names of the F9 rows on screen, top to bottom."""
+        if not self.advanced:
+            return BASIC_ROWS
+        running = self.address is not None or self.hotspot.active
+        renew = (not running and getattr(self.hotspot, "renew_supported", False))
+        return BASIC_ROWS + ADVANCED_ROWS + ((RENEW_ROW,) if renew else ())
+
+    def _start_service(self):
+        """Switch multiplayer on: the LAN, else the hotspot when no LAN is up.
+
+        Without advanced choices the first private LAN address is used; with
+        none (only loopback) and the hotspot helper installed the uConsole
+        opens its own hotspot instead.
+        """
+        if self.network_mode == "lan":
+            self.prepare()
+            if not self._host_chosen:
+                self.host = self.hosts[1] if len(self.hosts) > 1 else self.hosts[0]
+            if (not self._host_chosen and len(self.hosts) == 1
+                    and self.hotspot.available):
+                self.network_mode = "hotspot"
+        if self.network_mode == "hotspot":
+            self._hotspot_error_seen = None
+            self.hotspot.start()
+            if self.hotspot.state == "error":
+                self._hotspot_error_seen = self.hotspot.error
+                self.error = f"commander.local.hotspot.error.{self.hotspot.error}"
+        else:
+            self._start_transport(self.host)
+
     def activate(self, game, direction=1):
         """Perform the selected local row's explicit action, never a remote action."""
         self.error = None
-        if self.selection == 0:
-            if self.address is not None or self.hotspot.active:
+        rows = self.rows()
+        row = rows[self.selection % len(rows)]
+        running = self.address is not None or self.hotspot.active
+        if row == "service":
+            if running:
                 self.deactivate()
                 return
             try:
                 self._prepare_transport()
-                if self.network_mode == "hotspot":
-                    self._hotspot_error_seen = None
-                    self.hotspot.start()
-                    if self.hotspot.state == "error":
-                        self._hotspot_error_seen = self.hotspot.error
-                        self.error = f"commander.local.hotspot.error.{self.hotspot.error}"
-                else:
-                    self.prepare()
-                    self._start_transport(self.host)
+                self._start_service()
             except (ImportError, OSError, ValueError, RuntimeError):
                 self.deactivate()
                 self.error = "commander.local.error.start"
-        elif self.selection == 1 and self.address is None and not self.hotspot.active:
-            self.network_mode = "hotspot" if self.network_mode == "lan" else "lan"
-        elif (self.selection == 2 and self.network_mode == "lan"
-              and self.address is None and not self.hotspot.active):
-            self.prepare()
-            self.host = self.hosts[(self.hosts.index(self.host) + direction) % len(self.hosts)]
-        elif self.selection == 3 and self.address is None and not self.hotspot.active:
-            self.port = max(1024, min(65535, self.port + direction))
-        elif self.selection == 4:
+        elif row == "roster":
             self.roster_open = True
             self.roster_status = None
             statuses = self._roster()
@@ -806,8 +804,21 @@ class CommanderConsole:
             station = ((self._requested_station(selected) or selected["active_station"])
                        if selected is not None else None)
             self.roster_station = ROLES.index(station) if station in ROLES else 0
-        elif self.selection == 5:
-            self.set_solo(not self.solo)
+        elif row == "advanced":
+            self.advanced = not self.advanced
+            self.selection = min(self.selection, len(self.rows()) - 1)
+        elif row == "mode" and not running:
+            self.network_mode = "hotspot" if self.network_mode == "lan" else "lan"
+        elif row == "host" and self.network_mode == "lan" and not running:
+            self.prepare()
+            self.host = self.hosts[(self.hosts.index(self.host) + direction) % len(self.hosts)]
+            self._host_chosen = True
+        elif row == "port" and not running:
+            self.port = max(1024, min(65535, self.port + direction))
+        elif row == RENEW_ROW and not running:
+            # The helper keeps the Wi-Fi name; phones have to join again.
+            self._renew_seen = None
+            self.hotspot.renew_password()
 
     def handle_key(self, game, key):
         if self.admission.request is not None:
@@ -824,12 +835,13 @@ class CommanderConsole:
                     self.confirm_kind = kinds[0]
             game._open_administration("")
         elif key in (pygame.K_UP, pygame.K_DOWN):
-            self.selection = (self.selection + (1 if key == pygame.K_DOWN else -1)) % 6
+            self.selection = ((self.selection + (1 if key == pygame.K_DOWN else -1))
+                              % len(self.rows()))
         elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             self.activate(game)
         elif key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_MINUS,
                      pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_MINUS, pygame.K_KP_PLUS):
-            if self.selection in (1, 2, 3, 5):
+            if self.rows()[self.selection % len(self.rows())] in ("advanced", *ADVANCED_ROWS):
                 self.activate(game, -1 if key in (pygame.K_LEFT, pygame.K_MINUS,
                                                  pygame.K_KP_MINUS) else 1)
 
@@ -856,14 +868,8 @@ class CommanderConsole:
             self._roster_action("assign")
         elif key == pygame.K_r:
             self._roster_action("reject")
-        elif key == pygame.K_c:
-            self._roster_action("command")
-        elif key == pygame.K_d:
-            self._roster_action("direct_fire")
         elif key == pygame.K_l:
             self._roster_action("simlog")
-        elif key == pygame.K_u:
-            self._roster_action("sonar_audio")
         elif key == pygame.K_o:
             self._roster_action("observer")
         elif key == pygame.K_x:
@@ -876,7 +882,7 @@ class CommanderConsole:
     @staticmethod
     def row_rects():
         """Shared canvas geometry for rendering and local click ownership."""
-        return tuple(pygame.Rect(124, 300 + index * 40, 1032, 34) for index in range(6))
+        return tuple(pygame.Rect(124, 300 + index * 34, 1032, 32) for index in range(7))
 
     @staticmethod
     def roster_client_rects():
@@ -884,7 +890,7 @@ class CommanderConsole:
 
     @staticmethod
     def roster_action_rects():
-        return tuple(pygame.Rect(704, 116 + index * 39, 452, 34) for index in range(11))
+        return tuple(pygame.Rect(704, 116 + index * 39, 452, 34) for index in range(8))
 
     @classmethod
     def roster_station_cycle_rects(cls):
@@ -899,7 +905,7 @@ class CommanderConsole:
         if self.roster_open:
             self._handle_roster_click(canvas)
             return
-        for index, rect in enumerate(self.row_rects()):
+        for index, rect in enumerate(self.row_rects()[:len(self.rows())]):
             if rect.collidepoint(canvas):
                 # Select first, then confirm. A stray click cannot accept a proposal.
                 if self.selection == index:
@@ -925,8 +931,7 @@ class CommanderConsole:
                 self.roster_status = None
                 self._roster_mouse_confirm = None
                 return
-        actions = ("approve", "reject", "assign", "command", "direct_fire", "simlog",
-                   "sonar_audio", "observer",
+        actions = ("approve", "reject", "assign", "simlog", "observer",
                    "revoke_station", "revoke_client", "revoke_all")
         for action, rect in zip(actions, self.roster_action_rects()):
             if rect.collidepoint(canvas):
@@ -1004,33 +1009,7 @@ class CommanderConsole:
                 (124, 104, 1032, 26), config.COLOR_TEXT, size=20, align="center")
             hotspot = self.network_mode == "hotspot"
             if hotspot:
-                details = self.hotspot.details
-                ssid = details.ssid if details is not None else tr("commander.local.unavailable")
-                password = (details.password if details is not None
-                            else tr("commander.local.unavailable"))
-                layout.blit_line(screen, message("commander.local.hotspot.ssid",
-                                                  ssid=raw_text(ssid)),
-                                 (124, 134, 790, 26), config.COLOR_TEXT, size=22,
-                                 align="center")
-                layout.blit_line(screen, message("commander.local.hotspot.password",
-                                                  password=raw_text(password)),
-                                 (124, 164, 790, 34), config.COLOR_WARN, size=28,
-                                 align="center")
-                layout.blit_line(screen, "commander.local.hotspot.qr",
-                                 (936, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
-                                 align="center")
-                layout.blit_line(screen, "commander.local.url.qr",
-                                 (1051, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
-                                 align="center")
-                if details is not None:
-                    surface = self._hotspot_qr(details.ssid, details.password, box_px=105)
-                    screen.blit(surface, (936 + (105 - surface.get_width()) // 2,
-                                          166 + (105 - surface.get_height()) // 2))
-                if self.address is not None:
-                    surface = self._url_qr(self.address[0], self.address[1], box_px=105)
-                    screen.blit(surface, (1051 + (105 - surface.get_width()) // 2,
-                                          166 + (105 - surface.get_height()) // 2))
-                lookout_at = (1051, 280)
+                self._draw_hotspot_steps(screen, tr)
             else:
                 layout.blit_line(screen, "commander.local.url.qr",
                                  (936, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
@@ -1039,39 +1018,40 @@ class CommanderConsole:
                     surface = self._url_qr(self.address[0], self.address[1], box_px=105)
                     screen.blit(surface, (936 + (105 - surface.get_width()) // 2,
                                           166 + (105 - surface.get_height()) // 2))
-                lookout_at = (1051, 134)
+                layout.blit_line(screen, "commander.local.join_code",
+                                 (124, 144, 790, 24), config.COLOR_TEXT_DIM, size=20,
+                                 align="center")
+                code = self.pairing_code or "------"
+                layout.blit_line(screen, raw_text(code[:3] + " " + code[3:]),
+                                 (124, 174, 790, 108), config.COLOR_WARN, size=72,
+                                 align="center")
             # The phone lookout: its own QR code opens the HTTPS page.
             if self.address is not None and self.tls_address is not None:
                 layout.blit_line(screen, "commander.local.lookout.qr",
-                                 (lookout_at[0], lookout_at[1], 105, 28),
-                                 config.COLOR_TEXT_DIM, size=12, align="center")
+                                 (1051, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
+                                 align="center")
                 surface = self._lookout_qr()
-                screen.blit(surface, (lookout_at[0] + (105 - surface.get_width()) // 2,
-                                      lookout_at[1] + 32 + (105 - surface.get_height()) // 2))
-            layout.blit_line(screen, "commander.local.join_code",
-                              (124, 206 if hotspot else 144, 790,
-                               24), config.COLOR_TEXT_DIM, size=20, align="center")
-            code = self.pairing_code or "------"
-            grouped_code = raw_text(code[:3] + " " + code[3:])
-            layout.blit_line(screen, grouped_code,
-                             (124, 228 if hotspot else 174, 790,
-                              72 if hotspot else 108),
-                             config.COLOR_WARN, size=62 if hotspot else 72,
-                             align="center")
+                screen.blit(surface, (1051 + (105 - surface.get_width()) // 2,
+                                      166 + (105 - surface.get_height()) // 2))
             service_state = (f"commander.local.hotspot.state.{self.hotspot.state}"
                              if self.network_mode == "hotspot" and self.hotspot.active
                              else "common.on" if self.address is not None else "common.off")
-            values = (
-                message("commander.local.service", state=tr(service_state)),
-                message("commander.local.mode", mode=tr(
+            texts = {
+                "service": message("commander.local.service", state=tr(service_state)),
+                "roster": "commander.local.roster",
+                "advanced": message("commander.local.advanced", state=tr(
+                    "commander.local.advanced.open" if self.advanced
+                    else "commander.local.advanced.closed")),
+                "mode": message("commander.local.mode", mode=tr(
                     f"commander.local.mode.{self.network_mode}")),
-                (message("commander.local.host", host=self.host)
-                 if self.network_mode == "lan" else "commander.local.hotspot.host_auto"),
-                message("commander.local.port", port=self.port), "commander.local.roster",
-                message("commander.local.crew_mode", mode=tr(
-                    "commander.local.crew_mode.solo" if self.solo
-                    else "commander.local.crew_mode.crew")),
-            )
+                "host": (message("commander.local.host", host=self.host)
+                         if self.network_mode == "lan" else "commander.local.hotspot.host_auto"),
+                "port": message("commander.local.port", port=self.port),
+                RENEW_ROW: message("commander.local.hotspot.renew", state=tr(
+                    "commander.local.hotspot.renew."
+                    + (getattr(self.hotspot, "renew_state", None) or "idle"))),
+            }
+            values = tuple(texts[row] for row in self.rows())
             for index, (text, rect) in enumerate(zip(values, self.row_rects())):
                 layout.blit_line(screen, message("menu.choice", marker=(
                     "> " if index == self.selection else "  "),
@@ -1086,6 +1066,42 @@ class CommanderConsole:
                                    config.COLOR_WARN, size=18)
             layout.blit_line(screen, "commander.local.hint", (124, 646, 1032, 30),
                               config.COLOR_TEXT_DIM, size=16)
+
+    def _draw_hotspot_steps(self, screen, tr):
+        """Hotspot: step 1 joins the Wi-Fi, step 2 opens the crew page.
+
+        Both steps are on screen at once, each with its QR code; the lookout
+        QR keeps the column right of them.
+        """
+        details = self.hotspot.details
+        unavailable = tr("commander.local.unavailable")
+        layout.blit_line(screen, "commander.local.hotspot.step1", (124, 134, 400, 24),
+                         config.COLOR_TEXT, size=18)
+        if details is not None:
+            surface = self._hotspot_qr(details.ssid, details.password, box_px=105)
+            screen.blit(surface, (124 + (105 - surface.get_width()) // 2,
+                                  162 + (105 - surface.get_height()) // 2))
+        layout.blit_line(screen, "commander.local.hotspot.ssid_label",
+                         (240, 164, 284, 24), config.COLOR_TEXT_DIM, size=15)
+        layout.blit_line(screen, raw_text(details.ssid if details is not None
+                                          else unavailable),
+                         (240, 188, 284, 30), config.COLOR_TEXT, size=22)
+        layout.blit_line(screen, "commander.local.hotspot.password_label",
+                         (240, 220, 284, 24), config.COLOR_TEXT_DIM, size=15)
+        layout.blit_line(screen, raw_text(details.password if details is not None
+                                          else unavailable),
+                         (240, 246, 284, 36), config.COLOR_WARN, size=26)
+        layout.blit_line(screen, "commander.local.hotspot.step2", (544, 134, 492, 24),
+                         config.COLOR_TEXT, size=18)
+        if self.address is not None:
+            surface = self._url_qr(self.address[0], self.address[1], box_px=105)
+            screen.blit(surface, (544 + (105 - surface.get_width()) // 2,
+                                  162 + (105 - surface.get_height()) // 2))
+        layout.blit_line(screen, "commander.local.join_code", (660, 166, 376, 24),
+                         config.COLOR_TEXT_DIM, size=18, align="center")
+        code = self.pairing_code or "------"
+        layout.blit_line(screen, raw_text(code[:3] + " " + code[3:]),
+                         (660, 192, 376, 72), config.COLOR_WARN, size=62, align="center")
 
     def _draw_roster(self, game):
         screen, tr = game.screen, game.tr
@@ -1115,25 +1131,13 @@ class CommanderConsole:
             layout.blit_line(screen, text, rect.inflate(-10, -2),
                              config.COLOR_WARN if chosen else config.COLOR_TEXT, size=16)
         state = "common.on" if selected is not None else "common.off"
-        selected_station = ROLES[self.roster_station]
-        station_grants = (self._station_row(selected, selected_station)["grants"]
-                          if selected else {})
         action_texts = (
             "commander.roster.approve", "commander.roster.reject",
             message("commander.roster.assign", station=message(
                 self._station_key(ROLES[self.roster_station]))),
             message("commander.roster.toggle", capability=message(
-                "commander.roster.capability.command"), state=message(
-                    "common.on" if station_grants.get("command") else "common.off")),
-            message("commander.roster.toggle", capability=message(
-                "commander.roster.capability.direct_fire"), state=message(
-                    "common.on" if station_grants.get("direct_fire") else "common.off")),
-            message("commander.roster.toggle", capability=message(
                 "commander.roster.capability.simlog"), state=message(
                     "common.on" if selected and selected["simlog"] else "common.off")),
-            message("commander.roster.toggle", capability=message(
-                "commander.roster.capability.sonar_audio"), state=message(
-                    "common.on" if station_grants.get("sonar_audio") else "common.off")),
             message("commander.roster.toggle", capability=message(
                 "commander.roster.capability.observer"), state=message(
                     "common.on" if selected and selected.get("observer") else "common.off")),

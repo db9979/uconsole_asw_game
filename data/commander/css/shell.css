@@ -127,6 +127,17 @@
 .alert-band[data-level="caution"] .alert-mark { background: var(--caution); }
 .alert-band[data-level="caution"] button { color: var(--caution); }
 
+/* ---- Handover: a crewmate asks for a station this browser holds ------- */
+.handover-band {
+  position: fixed; left: 1rem; bottom: 1rem; z-index: var(--z-toast); max-width: min(28rem, calc(100vw - 2rem));
+  max-height: 50vh; overflow-y: auto; padding: .6rem .75rem; background: var(--caution-bg);
+  color: var(--caution); border: 1px solid var(--caution); box-shadow: 0 .4rem 1.2rem var(--shadow);
+}
+.handover-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
+.handover-list li { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; }
+.handover-list p { flex: 1 1 100%; margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+.handover-list button { min-height: 2.2rem; flex: 1 1 auto; }
+
 .disabled-control-help {
   position: fixed; z-index: var(--z-toast); right: 1rem; bottom: 1rem; max-width: min(42rem, calc(100vw - 2rem));
   max-height: min(16rem, calc(100vh - 2rem)); overflow: auto; margin: 0; padding: .7rem; pointer-events: none;

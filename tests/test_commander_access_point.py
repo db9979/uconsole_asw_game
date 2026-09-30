@@ -105,3 +105,48 @@ def test_close_during_start_is_bounded_and_returns_to_off():
     controller.close()
     assert time.monotonic() - started < 1
     assert controller.state == "off" and controller.details is None
+
+
+def wait_renew(controller, state, timeout=2.0):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        controller.poll()
+        if controller.renew_state == state:
+            return
+        time.sleep(0.01)
+    pytest.fail(f"renewal remained {controller.renew_state!r}, wanted {state!r}")
+
+
+def test_new_password_runs_the_helper_once_and_only_while_the_hotspot_is_off():
+    controller = HotspotController(command=command(running_payload()),
+                                   renew_command=command({"status": "renewed"}, wait=False),
+                                   startup_timeout=1, stop_timeout=1)
+    assert controller.can_renew and controller.renew_password()
+    assert not controller.renew_password() and not controller.start()
+    wait_renew(controller, "done")
+    assert controller.renew_error is None
+    controller._renew_thread.join(1)
+    assert controller.start()
+    assert not controller.can_renew and not controller.renew_password()
+    wait_for(controller, "running")
+    controller.close()
+
+
+@pytest.mark.parametrize("payload, error", [
+    ({"status": "error", "code": "busy"}, "busy"),
+    ({"status": "error", "code": "state"}, "state"),
+    ({"status": "error", "code": "../../etc"}, "start"),
+    ({"status": "renewed", "password": "leak"}, "protocol"),
+])
+def test_new_password_errors_are_sanitized(payload, error):
+    controller = HotspotController(command=command(running_payload()),
+                                   renew_command=command(payload, wait=False),
+                                   startup_timeout=1, stop_timeout=.5)
+    assert controller.renew_password()
+    wait_renew(controller, "error")
+    assert controller.renew_error == error
+
+
+def test_a_custom_serve_command_has_no_implicit_renewal():
+    controller = HotspotController(command=command(running_payload()))
+    assert not controller.can_renew and not controller.renew_password()

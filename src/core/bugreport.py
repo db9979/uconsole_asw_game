@@ -7,7 +7,7 @@ from the query string; the player reviews the text and submits it with their
 own account, so nothing leaves the device without their consent.
 
 * ``issue_url()`` carries the newest lines of ``~/.u-jagd/crash.log`` and is
-  opened in a browser (uConsole desktop, Windows starter).
+  opened in a browser (uConsole desktop, Windows PC).
 * ``short_issue_url()`` carries only version, platform and context so it fits
   the on-screen QR code a phone scans (the uConsole usually has no browser).
 * ``write_report()`` stores the whole report as ``~/.u-jagd/bug-report.txt``

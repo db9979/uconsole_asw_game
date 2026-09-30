@@ -14,7 +14,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import message, raw_text
-from src.core.lobby import ROWS, LobbyRoom, side_stations
+from src.core.lobby import HOST_ONLY, ROWS, LobbyRoom, side_stations
 from src.core.station import Station
 from src.ui import layout
 from src.ui.splash_view import draw_menu_panel
@@ -25,7 +25,7 @@ _PLAYERS_MAX = 12
 
 
 def _station_name(station: str) -> str:
-    return message(f"station.{station}")
+    return message("lobby.host_only" if station == HOST_ONLY else f"station.{station}")
 
 
 class LobbyMixin:
@@ -38,6 +38,9 @@ class LobbyMixin:
         self.lobby_round = False
         self.lobby_notice = None
         self._lobby_published = None
+        # The uConsole only hosts this lobby round: it works no station, so the
+        # browsers and the AI crew every one. Transient, like the leases.
+        self.host_only = False
 
     @property
     def crew_assist(self) -> bool:
@@ -78,6 +81,7 @@ class LobbyMixin:
         if self.lobby is not None:
             self.lobby.cancel()
         self.lobby_round = False
+        self.host_only = False
         self.main_menu = True
         self.menu_screen = "scenario"
         self.main_menu_sel = self.main_menu_index(MULTIPLAYER_ENTRY)
@@ -110,7 +114,10 @@ class LobbyMixin:
     def _start_lobby_mission(self) -> None:
         room = self.lobby
         self._publish_lobby(None)
-        self.local_side = room.side
+        self.host_only = room.station == HOST_ONLY
+        # A host-only uConsole watches from the frigate; the boat is crewed from
+        # the browsers (or runs as the AI boat when nobody takes it).
+        self.local_side = "frigate" if self.host_only else room.side
         self.scenario_key = room.scenario_key
         self.lobby_round = True
         self._start_menu_mission()
@@ -211,7 +218,8 @@ class LobbyMixin:
         top = right.y + len(values) * 34 + 40
         layout.blit_line(s, "lobby.crew", (right.x, top, right.w, 24),
                          config.COLOR_TEXT_DIM, size=17)
-        rows = [(message("lobby.host_player"), [room.station], True, False)]
+        rows = [(message("lobby.host_player"),
+                 [] if room.station == HOST_ONLY else [room.station], True, False)]
         rows += [(raw_text(player["name"]), player["stations"], player["ready"],
                   player["observer"]) for player in players]
         for index, (name, stations, ready, observer) in enumerate(rows[:8]):

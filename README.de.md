@@ -25,6 +25,8 @@ Spieler, und eine im Browser freigegebene Station („An KI übergeben“) geht
 sofort an die KI zurück. Auf dem U-Boot weicht die KI aus, patrouilliert oder
 läuft eine bekannte Fregatte an, hält die Rohre geladen und schießt auf eine
 nahe Ortung, schnorchelt zum Laden, hält den Trimm und schickt die Leckteams.
+In der Lobby kann die uConsole auch nur Gastgeber sein (Station „keine, nur
+Gastgeber“): Sie spielt keine Station, Browser und KI besetzen jede.
 Spielstände sind jetzt v39.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

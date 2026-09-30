@@ -135,3 +135,27 @@ def test_server_publishes_lobby_and_ready_ticks(server):  # noqa: F811
     assert server.lobby_players()[0]["ready"] is False
     status, _, session = request(server, "/api/v2/session", cookie=cookie)
     assert session["lobby"] is None
+
+
+def test_host_only_leaves_every_station_to_the_browsers_and_the_ai(game):
+    from src.core import boat_autocrew
+    from src.core.lobby import HOST_ONLY, station_choices
+    assert station_choices("uboot")[-1] == HOST_ONLY
+    game.open_lobby()
+    game.lobby.row = ROWS.index("station")
+    key(game, pygame.K_LEFT)                       # bridge -> host only
+    assert game.lobby.station == HOST_ONLY
+    assert game.lobby.publication()["host_station"] is None
+    game.draw()
+    game.lobby.row = ROWS.index("side")
+    key(game, pygame.K_RIGHT)                      # the choice survives a side change
+    assert game.lobby.station == HOST_ONLY
+    game._start_lobby_mission()
+    assert game.host_only and game.crew_assist and game.local_side == "frigate"
+    # No station is the uConsole's: the AI works the one on screen too.
+    assert game.autocrew.status(game, game.station.name.lower()) == "active"
+    assert game._local_station_input_locked()
+    assert not boat_autocrew.held(game, "uboot")
+    game._return_to_main_menu()
+    key(game, pygame.K_ESCAPE)
+    assert not game.host_only

@@ -95,6 +95,7 @@ class AutocrewController:
     def local_holds(game, key) -> bool:
         """With the assist on, the station the uConsole shows is worked there."""
         return (bool(getattr(game.autocrew, "assist", False))
+                and not getattr(game, "host_only", False)
                 and getattr(game, "local_side", "frigate") != "uboot"
                 and not getattr(game, "in_menu", False)
                 and station_key(game.station) == key)

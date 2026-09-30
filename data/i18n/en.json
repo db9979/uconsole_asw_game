@@ -6351,5 +6351,7 @@
   "autocrew.assist.off": "Crew assist off",
   "autocrew.status.suspended_local": "SUSPENDED: OPERATOR HERE",
   "commander.web.autocrew_suspended_local": "worked on the uConsole",
-  "commander.web.role_release_ai": "Hand over to AI"
+  "commander.web.role_release_ai": "Hand over to AI",
+  "lobby.host_only": "none, host only",
+  "commander.web.lobby_room_host_only": "The uConsole only hosts: every station is played in the browser or by the AI."
 }

@@ -12,7 +12,7 @@ from commander_web import RealTimeHost, copy_assets, index_html, inject_probe
 from src.commander import server as commander_transport
 from src.core import config, manual
 from src.core.game import Game
-from src.core.lobby import COUNTDOWN_S
+from src.core.lobby import COUNTDOWN_S, HOST_ONLY
 from test_commander_assets import PREFIX, catalogs
 
 LOBBY_SCRIPT = r"""
@@ -58,7 +58,8 @@ addEventListener("load", () => {
 """
 
 
-def test_crew_meets_readies_and_starts_together(tmp_path, monkeypatch):
+@pytest.mark.parametrize("host_only", [False, True])
+def test_crew_meets_readies_and_starts_together(tmp_path, monkeypatch, host_only):
     chromium = (shutil.which("chromium") or shutil.which("chromium-browser")
                 or shutil.which("google-chrome"))
     if not chromium:
@@ -79,6 +80,8 @@ def test_crew_meets_readies_and_starts_together(tmp_path, monkeypatch):
     console.prepare()
     console.hosts = ("127.0.0.1",)
     game.open_lobby()
+    if host_only:
+        game.lobby.station = HOST_ONLY
     assert game.lobby_active and console.address is not None
     console.server._http.assets["/lobby-test.js"] = (
         "text/javascript; charset=utf-8",
@@ -119,8 +122,11 @@ def test_crew_meets_readies_and_starts_together(tmp_path, monkeypatch):
         game.audio.shutdown()
     assert root.get("lobbyTest") == "passed", root.get("failure", root)
     assert root["mission"] == "Mission: Patrol"
-    assert root["host"] == "The uConsole plays the frigate at the Bridge."
+    assert root["host"] == ("The uConsole only hosts: every station is played in the "
+                            "browser or by the AI." if host_only
+                            else "The uConsole plays the frigate at the Bridge.")
     assert root["readyBefore"] == "true"
     assert root["roomWithStation"] == "true"
     assert "Sonar Sam (you)" in root["players"] and "ready" in root["players"]
     assert not game.in_menu and game.lobby_round
+    assert game.host_only is host_only

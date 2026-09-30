@@ -64,7 +64,8 @@ def held(game, role: str) -> bool:
     query = getattr(getattr(game.commander, "server", None), "station_leased", None)
     if query is not None and query(role):
         return True
-    if getattr(game, "local_side", "frigate") == "uboot" and not game.in_menu:
+    if (getattr(game, "local_side", "frigate") == "uboot" and not game.in_menu
+            and not getattr(game, "host_only", False)):
         from src.core import uboot_local
         return uboot_local.local_station(game) == role
     return False

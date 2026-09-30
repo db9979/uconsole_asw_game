@@ -6351,5 +6351,7 @@
   "autocrew.assist.off": "Crew-Hilfe aus",
   "autocrew.status.suspended_local": "PAUSIERT: BEDIENER HIER",
   "commander.web.autocrew_suspended_local": "wird an der uConsole bedient",
-  "commander.web.role_release_ai": "An KI übergeben"
+  "commander.web.role_release_ai": "An KI übergeben",
+  "lobby.host_only": "keine, nur Gastgeber",
+  "commander.web.lobby_room_host_only": "Die uConsole ist nur Gastgeber: Jede Station wird im Browser oder von der KI gespielt."
 }

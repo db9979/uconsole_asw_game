@@ -10,7 +10,8 @@ lying in wait and the counter-attack on the frigate keep their priority.
   of a frigate it holds near the leg.
 - ``recon``: close the frigate's last known position (its own contact, else
   HQ's contact report as the radio room receives it, else its patrol area), come to periscope depth within sighting range and send
-  the report once the frigate is in sight there.
+  the report once a periscope look (``scope_look``) has made the frigate
+  out; the raised periscope is a mast the frigate's radar can see.
 - ``convoy_attack``: lie in wait ahead of the convoy, abeam of its track,
   and fire one torpedo at a time at the nearest merchant within attack
   range; a convoy that has passed is chased on an intercept course.
@@ -313,17 +314,44 @@ def patrol_attack(game, sub) -> bool:
     return fired
 
 
+def scope_look(game, sub) -> float | None:
+    """Seconds into the recon boat's current periscope look, or None while
+    the periscope is down (deep, another mission, or between looks)."""
+    if (sub.manual or sub.sunk or sub.depth > MAST_DEPTH_M
+            or boat_missions.mode(game) != "recon" or boat(game) is not sub):
+        return None
+    cycle = config.BOAT_AI_SCOPE_CYCLE_S
+    phase = detrand.u01(game.seed, "sub-scope-phase", int(sub.id)) * cycle
+    into = (game.sim_t + phase) % cycle
+    return into if into < config.BOAT_AI_SCOPE_LOOK_S else None
+
+
 def frigate_sighted(game, sub) -> bool:
-    """At periscope depth with the frigate within sighting range."""
-    return (sub.depth <= MAST_DEPTH_M and not game.damage.ship_sunk
-            and math.hypot(game.ship.x - sub.x, game.ship.y - sub.y)
-            <= min(config.BOAT_AI_SIGHT_NM, game.world.visibility_nm))
+    """The raised periscope has swept past the frigate and made it out:
+    within ``BOAT_AI_SIGHT_NM``, clear of land and above the optics'
+    contrast threshold at the periscope's eye height (the lookout's model:
+    light, moon, visibility and sea)."""
+    into = scope_look(game, sub)
+    if into is None or game.damage.ship_sunk:
+        return False
+    ship = game.ship
+    distance = math.hypot(ship.x - sub.x, ship.y - sub.y)
+    if distance > config.BOAT_AI_SIGHT_NM:
+        return False
+    relative = (_bearing(sub.x, sub.y, ship.x, ship.y) - sub.course) % 360.0
+    if into < relative / 360.0 * config.BOAT_AI_SCOPE_SWEEP_S:
+        return False
+    from src.core.game_sim import LOOKOUT_MODEL
+    if LOOKOUT_MODEL.margin("SURFACE", distance, eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M,
+                           **game._lookout_environment()) < 1.0:
+        return False
+    return not game.world.land_blocks_line(sub.x, sub.y, ship.x, ship.y)
 
 
 def report(game, sub) -> bool:
     """With the frigate in sight, the AI's situation report wins recon."""
-    if (game.game_over or game.mission_result is not None or not frigate_sighted(game, sub)
-            or not _window(game, config.BOAT_AI_REPORT_EVERY_S)):
+    if (game.game_over or game.mission_result is not None
+            or not frigate_sighted(game, sub)):
         return False
     game._end_mission(False, message("end.reason.boat_reported"))
     return True

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.107**
+Aktuelle Version: **1.3.109**
 
-Version 1.3.107 lässt die KI jede freie Station besetzen. Die neue Crew-Hilfe
+Version 1.3.109 lässt die KI jede freie Station besetzen. Die neue Crew-Hilfe
 (Shift+F2, in einer Mission aus der Mehrspieler-Lobby immer an) bemannt jede
 Station der Fregatte und eines bemannten U-Boots, die niemand hält, damit
 jeder Spieler bei einer Station bleiben kann: Die Station auf dem Bildschirm
@@ -27,7 +27,7 @@ läuft eine bekannte Fregatte an, hält die Rohre geladen und schießt auf eine
 nahe Ortung, schnorchelt zum Laden, hält den Trimm und schickt die Leckteams.
 In der Lobby kann die uConsole auch nur Gastgeber sein (Station „keine, nur
 Gastgeber“): Sie spielt keine Station, Browser und KI besetzen jede.
-Spielstände sind jetzt v39.
+Spielstände sind jetzt v40.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

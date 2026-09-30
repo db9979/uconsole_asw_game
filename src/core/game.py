@@ -456,6 +456,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._reset_incidents()
         # A running baffle clearing of the Bridge (save ``baffle_clear``).
         self.baffle_clear = None
+        # The AI hunters' ESM bearing lines for a cross-fix (save ``hunter_esm``).
+        self.hunter_esm = []
         # The radio room's own calls to HQ (save ``hq_reports``).
         self._reset_hq_reports()
         # Watches, fatigue and morale of the frigate crew (save ``watch``).

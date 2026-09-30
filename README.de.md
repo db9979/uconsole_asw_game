@@ -14,17 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.110**
+Aktuelle Version: **1.3.112**
 
-Version 1.3.110 installiert Updates nicht mehr von selbst. Gibt es ein neueres
-Release, zeigen Startbildschirm und Hauptmenü dessen Version, den Eintrag aus
-dem Änderungsprotokoll in der Spielsprache und eine Warnung, wenn Spielstände
-dieser Version (auch die automatische Sicherung) damit nicht mehr laden, dazu
-den Knopf **Jetzt updaten** (Taste U oder Klick). Erst dieser Knopf installiert
-es: Auf der uConsole schließt das Spiel, aktualisiert sich auf das Release und
-startet neu (der alte Hintergrund-Update-Timer schaltet sich selbst ab); das
-Windows-Programm lädt die neue Datei im Hintergrund, prüft sie, tauscht sich
-aus und startet neu. Ohne Netz erscheint kein Hinweis.
+Version 1.3.112 macht den Mehrspieler für den Gastgeber einfacher. F9 ist
+jetzt ein Schalter, Mehrspieler an oder aus: Er nimmt die erste lokale
+Netzwerkadresse oder öffnet ohne Netz den eigenen Hotspot der uConsole;
+Netzwerkmodus, Adresse und Port liegen unter den erweiterten Einstellungen.
+Der Hotspot behält Name und Passwort, der uConsole-Installer richtet ihn ein,
+und Lobby und F9 zeigen zwei Schritte: den WLAN-QR-Code, dann den QR-Code der
+Crew-Seite. Ein Browser, der eine Station anfragt, die ein anderer Spieler
+hält, fragt jetzt diesen Spieler, der sie im Browser übergeben kann; jede
+Station hat immer alle ihre Rechte. Die Kommandozeile hat einen Schalter,
+--multiplayer, der die Lobby öffnet, und das Windows-Programm startet ohne
+Starter-Fenster direkt ins Spiel.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

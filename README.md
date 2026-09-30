@@ -12,16 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.110**
+Current release: **1.3.112**
 
-Release 1.3.110 no longer installs updates on its own. When a newer release
-is published, the start screen and the main menu show its version, its
-changelog entry in the game language and a warning when saved games of this
-version (the autosave too) will not load in it, plus the button **Update now**
-(key U or a click). Only that button installs it: on the uConsole the game
-closes, updates to the release and starts again (the old background update
-timer switches itself off); the Windows program downloads the new file in the
-background, checks it, swaps itself and restarts. Offline no notice appears.
+Release 1.3.112 makes multiplayer simpler to host. F9 is now one switch,
+Multiplayer on or off: it uses the first local network address, or opens the
+uConsole's own hotspot when there is no network; network mode, address and
+port sit under the advanced settings. The hotspot keeps its name and password,
+the uConsole installer sets it up, and the lobby and F9 show two steps: the
+Wi-Fi QR code, then the crew page QR code. A browser that asks for a station
+another player holds now asks that player, who can hand it over in the
+browser; every station always carries its full rights. The command line has
+one flag, --multiplayer, which opens the lobby, and the Windows program starts
+straight into the game without a starter window.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

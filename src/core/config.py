@@ -1287,7 +1287,7 @@ STRAIT_TRAFFIC_SPACING_NM = 6.0
 SWIMMER_SEARCH_NM = 100.0
 SWIMMER_MIN_WATER_M = 30.0
 SWIMMER_COAST_NM = 3.0
-SWIMMER_APPROACH_NM = 16.0
+SWIMMER_APPROACH_NM = 12.0
 SWIMMER_ZONE_NM = 1.0
 SWIMMER_DEPTH_M = 20.0             # swimmers leave through the lock this shallow
 SWIMMER_SPEED_KN = 1.5             # at most this slow
@@ -1322,9 +1322,9 @@ BOAT_AI_SCOPE_LOOK_S = 24.0
 BOAT_AI_SCOPE_SWEEP_S = 16.0
 BOAT_AI_ATTACK_NM = 4.0            # convoy attack: fire at a merchant this close
 # Escort: a lone, zigzagging supply ship is fired at from farther off.
-BOAT_AI_ESCORT_ATTACK_NM = 7.0
+BOAT_AI_ESCORT_ATTACK_NM = 5.0
 # ... from this far abeam of its base track, clear of the escort ahead of it.
-BOAT_AI_ESCORT_ABEAM_NM = 6.0
+BOAT_AI_ESCORT_ABEAM_NM = 5.0
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0
 # Frigate missions: an AI patrol boat torpedoes a merchant within

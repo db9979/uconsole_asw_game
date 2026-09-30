@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.122
+
+Das U-Boot bekommt eine Bojenantenne. Im Funkraum (B oder die Funkraum-Karte im
+Browser) bringt die Crew sie etwa 280 m achteraus aus; sie nimmt den Rundspruch
+der Führung bis 60 m Tiefe bei höchstens 6 kn auf, nur Empfang. Über 10 kn
+reißt das Kabel, und die Boje ist für die Mission verloren. Aus der Nähe können
+Ausguck und Überwasserradar der Fregatte die kleine Boje auf dem Wasser finden.
+Spielstände haben jetzt Format v42; ältere laden nicht.
+
 ## 1.3.121
 
 Notfälle an Bord ergänzen die Ereignisse auf See. Auf der Fregatte kann ein

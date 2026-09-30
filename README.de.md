@@ -14,19 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.121**
+Aktuelle Version: **1.3.122**
 
-Version 1.3.121 bringt mehr Wirklichkeit auf See. Ein ausgefahrenes Sehrohr
-oder ein Schnorchel zieht eine Schaumfahne, die Ausguck, Heli-Besatzung und
-Seefernaufklärer sehen können; sie wächst mit der Fahrt, langsam heißt also
-unsichtbar, und die U-Boot-Crew warnt über 5 kn. In jedem Szenario und jeder
-Kampagnenmission lassen sich Wetter (schön, Regen, Sturm, Nebel) und Uhrzeit
-wählen oder beide dem Zufall überlassen. Das Schiff klingt lebendiger:
-Generalalarm, Wellenschläge gegen den Bug, die Alarmglocke des U-Boots und
-seine Lüfter bei Schleichfahrt. Notfälle an Bord ergänzen die Ereignisse auf
-See: Mann über Bord und Ruderversager auf der Fregatte, ein klemmendes
-Schnorchelventil oder Batteriegas auf einem Diesel-U-Boot. Spielstände bleiben
-im Format v41.
+Version 1.3.122 gibt dem U-Boot eine Bojenantenne. Im Funkraum (B oder die
+Funkraum-Karte im Browser) bringt die Crew sie etwa 280 m achteraus aus; sie
+nimmt den Rundspruch der Führung bis 60 m Tiefe bei höchstens 6 kn auf, nur
+Empfang. Über 10 kn reißt das Kabel, und die Boje ist für die Mission verloren.
+Aus der Nähe können Ausguck und Überwasserradar der Fregatte die kleine Boje
+auf dem Wasser finden. Spielstände haben jetzt Format v42; ältere laden nicht.
 
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

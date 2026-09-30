@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.122
+
+The submarine gets a towed buoy antenna. In the radio room (B, or the browser's
+Radio room card) the crew streams it about 280 m astern; it copies HQ's
+broadcast down to 60 m at 6 kn or less, receiving only. Above 10 kn the cable
+parts and the buoy is lost for the mission. Close in, the frigate's lookout and
+surface radar can find the small buoy on the water. Saves are now format v42;
+older saves do not load.
+
 ## 1.3.121
 
 Emergencies aboard join the incidents at sea. A man can go overboard from the

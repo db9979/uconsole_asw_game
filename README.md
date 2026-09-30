@@ -12,17 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.121**
+Current release: **1.3.122**
 
-Release 1.3.121 adds more realism at sea. A raised periscope or snorkel draws a
-feather that the lookout, the helicopter crew and the patrol aircraft can see;
-it grows with speed, so slow means hidden, and the submarine crew warns above 5
-kn. Every scenario and campaign mission lets you choose the weather (fair,
-rain, storm, fog) and the time of day, or leave both random. The ship sounds
-more alive: the general alarm, a bow slamming into a head sea, the submarine's
-alarm bell and its fans in silent running. Emergencies aboard join the
-incidents at sea: man overboard and steering failure on the frigate, a jammed
-snorkel valve or battery gas on a diesel submarine. Saves stay format v41.
+Release 1.3.122 gives the submarine a towed buoy antenna. In the radio room (B,
+or the browser's Radio room card) the crew streams it about 280 m astern; it
+copies HQ's broadcast down to 60 m at 6 kn or less, receiving only. Above 10 kn
+the cable parts and the buoy is lost for the mission. Close in, the frigate's
+lookout and surface radar can find the small buoy on the water. Saves are now
+format v42; older saves do not load.
 
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

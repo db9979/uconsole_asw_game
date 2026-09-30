@@ -20,7 +20,7 @@ import math
 import pygame
 
 from src.commander.server import OPFOR_ROLES, V2_ACTION_REGISTRY
-from src.core import attack_computer, boat_esm, config, opfor
+from src.core import attack_computer, boat_esm, buoy_antenna, config, opfor
 from src.core.i18n import display_value, message
 from src.core.station import Station
 from src.enemies import damage_control
@@ -44,6 +44,7 @@ TUBE_REASONS = ("not_ready", "no_torpedoes", "uboot_compartment_down", "uboot_tu
                 "uboot_no_dry_tube")
 # Rejections of boat-mode orders that have their own local text.
 UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot_mast_depth",
+                       "uboot_buoy_lost",
                        "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
                        "uboot_no_air_stores", "uboot_no_hp_air", "uboot_compartment_down")
 
@@ -523,6 +524,9 @@ def _key_action(key, mods, station=None, page=None):
     decides whether the station may give it), or None."""
     if page == "UBOOT_DAMAGE" and key in _CREW_PAGE_ACTIONS:
         return _CREW_PAGE_ACTIONS[key]
+    if (page == "UBOOT_RADIO" and key == pygame.K_b
+            and not mods & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL)):
+        return "uboot_buoy"              # B: stream or recover the buoy antenna
     if key == pygame.K_g:
         # G as on the frigate: action stations; Shift+G lies on the bottom.
         return "uboot_bottom" if mods & pygame.KMOD_SHIFT else "uboot_action_stations"
@@ -726,6 +730,9 @@ def _command_key(game, current, key, mods) -> None:
     elif key == pygame.K_p:
         on = not current.orders.mast
         _mode_notice(game, "mast", on, sub.command_mast(on))
+    elif action == "uboot_buoy":
+        on = not current.orders.buoy[1]
+        _mode_notice(game, "buoy", on, buoy_antenna.order(current.orders.buoy, on))
     elif key == pygame.K_n:
         on = not sub.snorkeling
         _mode_notice(game, "snorkel", on, sub.command_snorkel(on))

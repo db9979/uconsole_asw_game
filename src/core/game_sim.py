@@ -6,6 +6,7 @@ inside ``_update_sim`` is the ``SIM_ORDER`` contract frozen by
 ``tests/test_sim_order.py``."""
 
 import hashlib
+import types
 import math
 import time
 from types import SimpleNamespace
@@ -17,7 +18,7 @@ from src.audio.synthesis import bearing_pan
 from src.core import config
 from src.physics import bioluminescence
 from src.world import thunder
-from src.core import detrand
+from src.core import buoy_antenna, detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
@@ -1403,7 +1404,7 @@ class SimMixin:
             if self._opfor is not None:
                 opfor.update_sonar(self, self._opfor, sensor_dt)
                 opfor.update_wires(self, self._opfor, sensor_dt)
-                opfor.update_crew(self, self._opfor)
+                opfor.update_crew(self, self._opfor, sensor_dt)
         if self._esm_acc >= .5:
             self._esm_acc = 0.0
             self._update_esm_picture()
@@ -1835,6 +1836,15 @@ class SimMixin:
                 self._lookout_observe(actor, "sub", "MAST", actor.sensor_seed,
                                       classes=("PERISCOPE", "PERISCOPE", None),
                                       strength=visual_physics.feather_strength(actor.speed))
+            elif not actor.sunk and actor.state != "SINKING" and self._buoy_afloat(actor):
+                # The crewed boat's buoy antenna astern: a small unknown
+                # object on the water, never made out as a submarine.
+                bx, by = buoy_antenna.position(actor)
+                self._lookout_observe(
+                    types.SimpleNamespace(x=bx, y=by, speed=0.0, id=actor.id,
+                                          course=actor.course),
+                    "buoy", "MAST", actor.sensor_seed + 300_000,
+                    strength=config.UBOOT_BUOY_VISUAL)
         # Civil aircraft show their position and anti-collision lights;
         # military aircraft fly dark.
         for actor in sorted(self.flights.flights, key=lambda item: item.seq):

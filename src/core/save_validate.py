@@ -40,7 +40,7 @@ from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
-from src.core import baffles
+from src.core import baffles, buoy_antenna
 from src.core.incidents import IncidentBoard
 from src.core.hq_reports import HqReports
 from src.weapons import rbu
@@ -147,6 +147,7 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
             or orders["salvo"] not in (1, 2) or type(orders["salvo"]) is not int
             or orders["battery_state"] not in CREW_BATTERY_STATES
             or not baffles.valid_state(orders["baffle_clear"])
+            or not buoy_antenna.valid_state(orders["buoy"])
             or not (orders["obstacle_ahead_nm"] is None
                     or bounded(orders["obstacle_ahead_nm"], 0.0, 10_000.0))):
         return False

@@ -289,6 +289,7 @@ _UBOOT_HELP = (
         ("I", "help.uboot.dc_bulkhead"),
         ("I", "help.uboot.evade"),
         ("help.key.enter", "help.uboot.radio_send"),
+        ("B", "help.uboot.buoy"),
         ("W", "help.uboot.watch_change"),
         ("M", "help.uboot.casualty_medic"),
         ("U", "help.uboot.casualty_reassign"),

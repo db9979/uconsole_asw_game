@@ -5635,7 +5635,7 @@
   "debrief.event.ship_sunk": "Our ship sank",
   "debrief.event.missed": "Submarine within {range} NM for {minutes} min without contact ({layer})",
   "debrief.event.mission_end": "Mission end: {result}",
-  "help.global.debrief": "After the mission ends: debrief with the truth beside what the crew knew",
+  "help.global.debrief": "After the mission ends: debrief with the truth beside what the crew knew (Space plays it back, Tab 10×/60×)",
   "menu.training": "Training",
   "menu.logbook": "Logbook",
   "logbook.title.frigate": "Logbook - frigate",

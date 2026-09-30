@@ -4,6 +4,26 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.115
+
+Version 1.3.115 erweckt die See zum Leben. Die Optiken zeigen Wassersäulen,
+Feuer, Rauch und sinkende Schiffe; Karten bewegen sich weich, Pings und
+Detonationen breiten sich als Ringe aus; Zeiger und Telegraf bewegen sich mit
+Masse und die Telegrafenglocke läutet; das Sehrohr kommt aus dem Wasser, mit
+Wasser auf dem Glas. Nachts und bei Alarm geht Rotlicht an (abschaltbar), und
+die Stationsreiter tragen Alarmlampen auf beiden Seiten, auf der uConsole und im
+Browser. Nach einer Mission läuft die Nachbesprechung als Zeitraffer mit 10×
+oder 60×, auch im Browser. Nachts leuchtet warmes Wasser, wo es aufgewühlt wird,
+sodass Kielwasser und Torpedobahnen auf beiden Seiten weiter zu sehen sind. Eine
+harte Drehung mit Fahrt hinterlässt ein Knuckle, ein Blasenfeld, das das Sonar
+dämpft, ein Falschecho gibt und einen kielwassersuchenden Torpedo ablenken kann.
+Wracks und Felsen geben Echos, Wracks MAD-Anomalien. Stürme bringen Blitze in
+den Optiken, Donner, stärkeren Regen und Sferics, die auf dem ESM knistern und
+HF/DF-Peilungen streuen. Bei schwerer See startet und landet der Hubschrauber
+nur in einer ruhigen Phase; eine Deckbewegungsanzeige zeigt sie, und weniger
+Fahrt hilft. Spielstände haben jetzt das Format v41; ältere Spielstände laden
+nicht.
+
 ## 1.3.114
 
 Version 1.3.114 lässt den Befehl eines Spielers vor der KI-Crew gelten. Im

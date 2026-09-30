@@ -5635,7 +5635,7 @@
   "debrief.event.ship_sunk": "Eigenes Schiff gesunken",
   "debrief.event.missed": "U-Boot {minutes} min lang bis {range} sm nah ohne Kontakt ({layer})",
   "debrief.event.mission_end": "Missionsende: {result}",
-  "help.global.debrief": "Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew",
+  "help.global.debrief": "Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×)",
   "menu.training": "Ausbildung",
   "menu.logbook": "Einsatzbuch",
   "logbook.title.frigate": "Einsatzbuch - Fregatte",

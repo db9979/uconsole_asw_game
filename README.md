@@ -12,20 +12,23 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.114**
+Current release: **1.3.115**
 
-Release 1.3.114 makes a player's order win over the AI crew. In multiplayer
-with the crew assist, the AI command dived the submarine every few seconds and
-so pulled down the periscope a player had raised at the mast or in the radio
-room; it now keeps the boat at periscope depth while a player holds the mast
-up. A station the AI mans no longer overrides what a player at another station
-commands: course, depth and evasion stay with a player at Navigation, speed and
-silent running with one in the engine room, trim and damage control with one
-at command, and a raised mast stays up on an alarm while a player at command or
-in the radio room holds it. On the frigate the AI Bridge no longer steers over
-a player in the engine room, the AI weapons and patrol aircraft keep a target a
-player designated, and a contact picked on the uConsole stays picked. A lobby round started
-without any browser is now a solo game with the crew assist off.
+Release 1.3.115 brings the sea to life. The eyepieces show water columns, fire,
+smoke and sinkings; charts move smoothly and pings and detonations ring out;
+needles and the telegraph move with mass and the telegraph bell rings; the
+periscope comes up out of the water with water on the glass. A red light comes
+on at night and on an alarm (switchable), and the station tabs carry alarm lamps
+on both sides, on the uConsole and in the browser. After a mission the debrief
+plays back at 10x or 60x, in the browser too. At night warm water glows where it
+is stirred, so wakes and torpedo tracks are seen farther on both sides. A hard
+turn at speed leaves a knuckle, a bubble slick that masks sonar, gives a false
+echo and can lure a wake-homing torpedo. Wrecks and rocks return echoes and
+wrecks give MAD anomalies. Storms bring lightning in the eyepieces, thunder,
+heavier rain and sferics that crackle on ESM and spread HF/DF bearings. In a
+heavy sea the helicopter launches and lands only in a quiet period; a deck-
+motion gauge shows it, and slowing down helps. Saves are now format v41; older
+saves do not load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

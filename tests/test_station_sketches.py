@@ -51,9 +51,16 @@ def test_radio_room_text_stays_inside_its_boxes(large):
 
 def test_boat_navigation_page_has_heading_depth_and_speed_dials():
     game = _boat("uboot")
-    shapes, _texts = _draw(game)
-    dials = {shape["title"] for shape in shapes if shape["kind"] == "instrument"}
-    assert {"heading", "depth", "speed"} <= dials
+    shapes, texts = _draw(game)
+    dials = {shape["title"]: shape["rect"] for shape in shapes
+             if shape["kind"] == "instrument"}
+    assert {"heading", "depth", "speed"} <= set(dials)
+    # Each dial is named underneath (Dominik asked which dial shows what).
+    for key, name in (("heading", "Kurs"), ("depth", "Tiefe"), ("speed", "Fahrt")):
+        dial = dials[key]
+        assert any(item["text"] == name and item["ink"].top >= dial.bottom
+                   and dial.left <= item["ink"].centerx <= dial.right
+                   for item in texts), name
     ladder = [shape["rect"] for shape in shapes if shape["kind"] == "box"
               and shape["title"] == "uboot.panel.depth_ladder"]
     assert ladder and ladder[0].h >= uboot_view.NAV_LADDER_MIN_H

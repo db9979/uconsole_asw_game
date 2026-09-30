@@ -638,11 +638,17 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
         strip = layout.box(s, (x, ladder_y, w, dial_h), "")
         sx, sy, sw, sh = strip
         cell = (sw - 16) // 3
-        instruments.heading_dial(s, (sx, sy, cell, sh), sub.course, sub.order_course)
-        instruments.depth_dial(s, (sx + cell + 8, sy, cell, sh), sub.depth,
+        # Each dial carries its name underneath, so it reads without the F1 help.
+        caption = layout.line_pitch(16, 0)
+        dial_sh = sh - caption
+        instruments.heading_dial(s, (sx, sy, cell, dial_sh), sub.course, sub.order_course)
+        instruments.depth_dial(s, (sx + cell + 8, sy, cell, dial_sh), sub.depth,
                                sub.order_depth, sub.stype.max_depth_m, sub.crush_depth_m)
-        instruments.speed_dial(s, (sx + 2 * (cell + 8), sy, cell, sh), sub.speed,
+        instruments.speed_dial(s, (sx + 2 * (cell + 8), sy, cell, dial_sh), sub.speed,
                                sub.order_speed, sub.motion.maximum_speed_kn)
+        for index, name in enumerate(("ui.course", "ui.depth", "ui.speed")):
+            layout.blit_line(s, name, (sx + index * (cell + 8), sy + dial_sh, cell, caption),
+                             config.COLOR_TEXT_DIM, size=16, align="center")
         ladder_y += dial_h + 10
     ladder_h = y + h - ladder_y
     if ladder_h >= 70:

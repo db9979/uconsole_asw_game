@@ -420,7 +420,7 @@ class IncidentsMixin:
 
     def _build_incident_valve(self, index: int):
         sub = self._incident_boat()
-        return dict(x=sub.x, y=sub.y, target_id=int(sub.id),
+        return dict(x=float(sub.x), y=float(sub.y), target_id=int(sub.id),
                     end_t=self.sim_t + config.INCIDENT_BOAT_S)
 
     _build_incident_gas = _build_incident_valve

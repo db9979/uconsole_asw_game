@@ -20,7 +20,8 @@ def _diesel_game():
     """A mission with a diesel boat (the scenario's class draw varies)."""
     for seed in range(5301, 5341):
         game = _game(seed)
-        if game._incident_boat() is not None:
+        sub = game._incident_boat()
+        if sub is not None and not sub.manual:     # an AI-commanded boat
             return game
     raise AssertionError("no diesel boat in 40 seeds")
 
@@ -103,17 +104,20 @@ def test_snorkel_valve_stops_charging_and_battery_gas_halves_it():
     sub = game._incident_boat()
     assert sub is not None
     normal = sub.endurance.generator_kw()
-    assert normal > 0.0
+    assert normal > 0.0, (sub.endurance.fuel_kwh, sub.endurance.profile)
     valve = game._start_incident("valve")
-    assert valve["target_id"] == sub.id and valve_item_ok(valve)
+    assert valve is not None and valve["target_id"] == sub.id, valve
+    assert valve_item_ok(valve), valve
     game._apply_incident_effects()
     assert sub.endurance.generator_kw() == 0.0
-    assert sub.radar_hold_s > 0.0          # the AI boat stays down
+    assert sub.radar_hold_s > 0.0, (sub.manual, sub.radar_hold_s)   # the AI boat stays down
     game.sim_t = valve["end_t"]
     game._update_incidents(0.1)
     gas = game._start_incident("gas")
+    assert gas is not None and gas["target_id"] == sub.id, gas
     game._apply_incident_effects()
-    assert abs(sub.endurance.generator_kw() - 0.5 * normal) < 1e-9
+    assert abs(sub.endurance.generator_kw() - 0.5 * normal) < 1e-9, (
+        sub.endurance.generator_kw(), normal)
     game.sim_t = gas["end_t"]
     game._update_incidents(0.1)
     game._apply_incident_effects()

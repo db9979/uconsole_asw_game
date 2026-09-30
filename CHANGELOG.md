@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.103
+## 1.3.106
 
-Release 1.3.103 adds a multiplayer lobby. The new main-menu entry Multiplayer
+Release 1.3.106 adds a multiplayer lobby. The new main-menu entry Multiplayer
 starts Remote Crew in crew mode and shows the QR code and join code; browsers
 pair, pick their unit and stations and press Ready, and everyone sees the
 mission, the uConsole's unit and station and each crewmate's stations and
@@ -14,6 +14,17 @@ ready tick. The host chooses the mission, which unit the uConsole plays and
 its own station, then starts a five-second countdown that every browser sees,
 and the mission begins for all at once. A mission started from the lobby
 returns everyone to the lobby when it ends.
+
+## 1.3.103
+
+Release 1.3.103 turns the submarine's Damage control card in the browser
+into a damage-control console like the frigate's: an annunciator panel with
+the master lamp (power, water, leaks, fire, gas, lost compartments, shut
+bulkheads, teams, bilge pumps, wounded, trim, high-pressure air and over
+depth) above a side view of the pressure hull with water rising from the
+keel, fire glow, gas haze, leaks, shut bulkheads, a state lamp per
+compartment and the team badges, and gauges for trim, floodwater and
+high-pressure air; the table and the team orders stay below.
 
 ## 1.3.102
 

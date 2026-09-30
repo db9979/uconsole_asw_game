@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.103**
+Current release: **1.3.106**
 
-Release 1.3.103 adds a multiplayer lobby. The new main-menu entry Multiplayer
+Release 1.3.106 adds a multiplayer lobby. The new main-menu entry Multiplayer
 starts Remote Crew in crew mode and shows the QR code and join code; browsers
 pair, pick their unit and stations and press Ready, and everyone sees the
 mission, the uConsole's unit and station and each crewmate's stations and

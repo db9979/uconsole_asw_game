@@ -274,7 +274,7 @@ def test_an_esm_bearing_on_a_mast_radar_becomes_the_search_line():
     point = hunter.datum_point(game, found)
     assert abs(point[1] - game.ship.y) < 2.0 and point[0] > game.ship.x
     hunter.bridge(game, found)
-    assert game.ship.target_speed == hunter.SEARCH_KN + 2.0
+    assert game.ship.target_speed == hunter.LEAD_KN
 
 
 def test_a_ship_on_the_bearing_explains_the_radar(monkeypatch):

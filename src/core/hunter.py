@@ -39,7 +39,7 @@ NET_CLEAR_NM = 1.0              # look this far past the turning lookahead for n
 SEARCH_LEG_S = 600.0            # zigzag leg of the search
 SEARCH_BOX_S = 1800.0           # the zigzag's base course turns 90° this often
 CROSS_LEG_S = 300.0             # side of the crossing course for bearing motion
-PING_EVERY_S = 60.0
+PING_EVERY_S = 600.0            # a bare bearing: a ping that finds nothing only sends the boat running
 DIP_PING_EVERY_S = 30.0
 HELO_RANGE_NM = 30.0
 HELO_DIP_NM = 0.5
@@ -582,7 +582,7 @@ def bridge(game, found) -> str:
         if math.hypot(found["x"] - ship.x, found["y"] - ship.y) > CLOSE_NM:
             return _steer(game, bearing, TRANSIT_KN)
         return _steer(game, bearing + side * 60.0, CLOSE_KN)
-    return _steer(game, found["bearing"] + side * 30.0, SEARCH_KN + 2.0)
+    return _steer(game, found["bearing"] + side * 30.0, LEAD_KN)
 
 
 def sonar(game) -> str:

@@ -12,18 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.116**
+Current release: **1.3.117**
 
-Release 1.3.116 gives the same function the same key at every station, on the
-frigate and on the submarine. Ctrl+Enter is the only fire key (T and E no
-longer fire), Q/E zoom everywhere including the CIC radar range, the
-binoculars and the periscope, and Page Up/Down turn the pages of every
-station. Course, speed and depth are entered with C/V/D on both sides and the
-torpedo run depth with T. The submarine now uses the frigate's G for action
-stations, A for silent running, V for the decoy and W/M/U on its crew page;
-the patrol aircraft takes the helicopter's keys, both aircraft radars sit on
-Ctrl+R, and the helicopter and ELOKA follow the sonar (Shift+A ping, G release
-to CIC, J audio).
+Release 1.3.117 lets the eye find a raised periscope. A periscope or snorkel
+head of a dived submarine now pulls a feather that grows with speed: the bridge
+lookout, the phone lookout and the crews of the helicopter and the patrol
+aircraft see the full plume from 8 kn at almost 3 NM on a clear, calm day, a
+slow head only at about 1 NM, and hardly anything at night or in a heavy sea.
+Close in the lookout recognizes the periscope and calls it with a banner;
+aircrew sightings reach Operations as HELO-EYE and MPA-EYE tracks. This works
+the same for AI boats and the crewed submarine, whose crew warns "feather
+visible, reduce speed" when it runs faster than 5 kn with a mast up.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

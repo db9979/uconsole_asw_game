@@ -38,7 +38,20 @@ TARGET_HEIGHT_M = {
     "FLG": 6.0,        # apparent size of an aircraft
     "TORP": 1.0,       # bubble track
     "LAND": 50.0,      # coastal hills and cliffs
+    "MAST": 1.5,       # raised periscope/snorkel head and its feather
 }
+
+# The feather a raised mast pulls through the water: a bare head at rest is
+# a fraction of the contrast, the full white plume shows from this speed.
+FEATHER_BARE_FRACTION = 0.15
+FEATHER_FULL_KN = 8.0
+
+
+def feather_strength(speed_kn: float) -> float:
+    """Contrast factor of a raised mast's feather (0..1) at ``speed_kn``:
+    a still head shows little, the plume grows with the speed."""
+    fraction = min(max(float(speed_kn) / FEATHER_FULL_KN, 0.0), 1.0)
+    return FEATHER_BARE_FRACTION + (1.0 - FEATHER_BARE_FRACTION) * fraction ** 1.5
 
 
 def optical_horizon_nm(eye_m: float, target_m: float) -> float:

@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.117
+
+Release 1.3.117 lets the eye find a raised periscope. A periscope or snorkel
+head of a dived submarine now pulls a feather that grows with speed: the bridge
+lookout, the phone lookout and the crews of the helicopter and the patrol
+aircraft see the full plume from 8 kn at almost 3 NM on a clear, calm day, a
+slow head only at about 1 NM, and hardly anything at night or in a heavy sea.
+Close in the lookout recognizes the periscope and calls it with a banner;
+aircrew sightings reach Operations as HELO-EYE and MPA-EYE tracks. This works
+the same for AI boats and the crewed submarine, whose crew warns "feather
+visible, reduce speed" when it runs faster than 5 kn with a mast up.
+
 ## 1.3.116
 
 Release 1.3.116 gives the same function the same key at every station, on the

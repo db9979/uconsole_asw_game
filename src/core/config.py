@@ -220,11 +220,16 @@ ESM_RANGE_NM = 150.0            # ESM-"Reichweite" (Peilung von Radargeräten)
 ESM_BEARING_ERR_DEG = 3.0       # ESM-Peilungsfehler (± Grad)
 ESM_EMITTER_PROB = 0.6          # Anteil ziviler Schiffe mit aktivem Radargerät
 # Bridge lookout: explicit horizon/recognition assumptions. A submarine is
-# visually surfaced only at or above 2 m; snorkel-depth operation is excluded.
+# visually surfaced only at or above 2 m; at periscope or snorkel depth only
+# its raised mast and feather are seen (LOOKOUT_FEATHER_RANGE_NM for the full
+# plume by day in calm, clear air; a slow head shows much less).
 LOOKOUT_SURFACE_RANGE_NM = 12.0
 LOOKOUT_SUB_RANGE_NM = 5.0
 LOOKOUT_AIR_RANGE_NM = 20.0
 LOOKOUT_SUB_SURFACED_MAX_DEPTH_M = 2.0
+LOOKOUT_FEATHER_RANGE_NM = 3.5
+# The crewed boat's crew warns of a visible feather above this speed.
+UBOOT_FEATHER_WARN_KN = 5.0
 LOOKOUT_NIGHT_FACTOR = 0.35
 # The 24-hour clock's daylight window (lookout, chart tint, bridge sky).
 DAYLIGHT_START_H = 5.5
@@ -1152,6 +1157,7 @@ MPA_MAD_LOOK_S = 1.0                # one MAD look per hull and second
 # crewed boat's ESM; data/contacts/aircraft.json).
 MPA_RADAR_EMITTER = "emitter.own_asset.mpa.radar"
 HELO_RADAR_EMITTER = "emitter.own_asset.helicopter.radar"
+AIRCREW_HOVER_EYE_M = 20.0        # a hovering (dipping) crew's eye height
 HELO_RADAR_ALTITUDE_M = 150.0      # transit altitude for the radar horizon
 HELO_RADAR_RANGE_NM = 40.0          # helicopter surface-search range, large ship
 MPA_RADAR_RANGE_NM = 60.0           # nominal surface-search range, large ship

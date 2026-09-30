@@ -9,8 +9,8 @@ export const boundedArray = (value, maximum) => Array.isArray(value) && value.le
 // an operator classification.
 const sightingClasses = ["MERCHANT", "TANKER", "CARGO", "PASSENGER", "WARSHIP", "CARRIER", "CRUISER", "DESTROYER",
   "FRIGATE", "CORVETTE", "MINE_WARFARE", "NAVAL_AUXILIARY", "SERVICE", "TUG", "RESEARCH", "OFFSHORE", "FISHING",
-  "SMALL_CRAFT", "RESCUE", "SUBMARINE", "AIRLINER", "MILITARY_AIRCRAFT", "COMBAT_AIRCRAFT", "TORPEDO_WAKE", "SHIP", "LAND"];
-const sightingKinds = ["SURFACE", "SUB", "FLG", "TORP", "LIGHTS"];
+  "SMALL_CRAFT", "RESCUE", "SUBMARINE", "PERISCOPE", "AIRLINER", "MILITARY_AIRCRAFT", "COMBAT_AIRCRAFT", "TORPEDO_WAKE", "SHIP", "LAND"];
+const sightingKinds = ["SURFACE", "SUB", "MAST", "FLG", "TORP", "LIGHTS"];
 const sightingLightsOk = (row) => row.sighted === "LIGHTS"
   ? typeof row.lights === "string" && /^[LR][012][r-][g-][s-](GW|WR|RWR|GGG|AC)?$/.test(row.lights) : row.lights === null;
 function validSightingClass(code, type) {

@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.117
+
+Version 1.3.117 lässt das Auge ein ausgefahrenes Sehrohr finden. Sehrohr oder
+Schnorchelkopf eines getauchten U-Boots ziehen jetzt eine Schaumfahne, die mit
+der Fahrt wächst: Brückenausguck, Handy-Ausguck und die Besatzungen von
+Helikopter und Seefernaufklärer sehen die volle Fahne ab 8 kn an einem klaren,
+ruhigen Tag auf knapp 3 sm, einen langsamen Kopf erst auf etwa 1 sm und nachts
+oder bei schwerer See kaum etwas. Aus der Nähe erkennt der Ausguck das Sehrohr
+und meldet es mit Banner; Sichtungen der Flugzeugbesatzungen erreichen die OPZ
+als HELO-EYE- und MPA-EYE-Tracks. Das gilt für KI-U-Boote und das besetzte
+U-Boot gleich, dessen Crew „Schaumfahne sichtbar, Fahrt verringern“ warnt, wenn
+es mit oben stehendem Mast schneller als 5 kn läuft.
+
 ## 1.3.116
 
 Version 1.3.116 gibt derselben Funktion an jeder Station dieselbe Taste, auf

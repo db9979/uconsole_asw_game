@@ -77,7 +77,7 @@ HEARD_CENTRE_NM = 0.05
 LOOKOUT_MODEL = visual_physics.LookoutModel(
     {"SURFACE": config.LOOKOUT_SURFACE_RANGE_NM, "SUB": config.LOOKOUT_SUB_RANGE_NM,
      "FLG": config.LOOKOUT_AIR_RANGE_NM, "TORP": TORPEDO_WAKE_VISIBLE_NM,
-     "LAND": config.LOOKOUT_LAND_RANGE_NM},
+     "LAND": config.LOOKOUT_LAND_RANGE_NM, "MAST": config.LOOKOUT_FEATHER_RANGE_NM},
     config.WEATHER_VISIBILITY_MAX_NM)
 
 
@@ -554,6 +554,7 @@ class SimMixin:
         self._fly_buoy_pattern()
         self._update_helo_radar(dt)
         self._update_mpa(dt)
+        self._update_aircrew_eyes(dt)
         self._update_sub_radar_alert(dt)
         for buoy in self.buoys:
             buoy.update(dt, self.world)
@@ -1484,14 +1485,16 @@ class SimMixin:
 
     def _lookout_observe(self, actor, namespace: str, kind: str,
                          seed: int, altitude_m: float | None = None,
-                         classes: tuple | None = None, lit: bool = False) -> None:
+                         classes: tuple | None = None, lit: bool = False,
+                         strength: float = 1.0) -> None:
         import random
 
         dx, dy = actor.x - self.ship.x, actor.y - self.ship.y
         distance = math.hypot(dx, dy)
         environment = self._lookout_environment()
-        # A tired lookout needs more contrast (crew watch, 1.0 when fresh).
-        alert = self.crew_effect()
+        # A tired lookout needs more contrast (crew watch, 1.0 when fresh);
+        # ``strength`` scales the target's own contrast (a mast's feather).
+        alert = self.crew_effect() * strength
         margin = alert * LOOKOUT_MODEL.margin(kind, distance, altitude_m=altitude_m,
                                               **environment)
         bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
@@ -1548,9 +1551,13 @@ class SimMixin:
         label = lookout_id.encode(level, recognized, identified, type_key)
         # A bare detection only says what the eye sees: something on the
         # surface or a wake. Submarine/torpedo domains need recognition.
-        published_kind = (kind if level >= lookout_id.RECOGNIZED
-                          or kind in ("SURFACE", "FLG")
-                          else "SURFACE" if kind == "SUB" else "UNKNOWN")
+        # A mast or feather made out as a periscope is a submarine.
+        if kind == "MAST":
+            published_kind = "SUB" if level >= lookout_id.RECOGNIZED else "SURFACE"
+        else:
+            published_kind = (kind if level >= lookout_id.RECOGNIZED
+                              or kind in ("SURFACE", "FLG")
+                              else "SURFACE" if kind == "SUB" else "UNKNOWN")
         if lights is None:
             self._lookout_lights.pop(track_id, None)
         else:
@@ -1558,7 +1565,7 @@ class SimMixin:
         aspect = getattr(self, "_lookout_aspect", None)
         if aspect is not None:
             course = getattr(actor, "course", None)
-            if level >= lookout_id.RECOGNIZED and course is not None:
+            if level >= lookout_id.RECOGNIZED and course is not None and kind != "MAST":
                 # The eye sees the real ship; the type is the watch's call.
                 aspect[track_id] = (lookout_id.angle_on_bow(course, bearing), self.sim_t,
                                     unit_variants.entity_model(actor))
@@ -1627,7 +1634,7 @@ class SimMixin:
                           "ausguck", 4.0)
             return
         text = self.lookout_report_text(report)
-        if kind in ("TORP", "SUB") and level > lookout_id.DETECTED:
+        if kind in ("TORP", "SUB", "MAST") and level > lookout_id.DETECTED:
             self.announce(text, "ausguck", 4.0)
         else:
             self.feed.add(self.world.format_time(), "ausguck", text)
@@ -1712,6 +1719,12 @@ class SimMixin:
                     and actor.depth <= config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M):
                 self._lookout_observe(actor, "sub", "SUB", actor.sensor_seed,
                                       classes=("SUBMARINE", "SUBMARINE", None))
+            elif not actor.sunk and actor.state != "SINKING" and self._mast_up(actor):
+                # A raised periscope or snorkel head: the eye sees its
+                # feather, which grows with the boat's speed.
+                self._lookout_observe(actor, "sub", "MAST", actor.sensor_seed,
+                                      classes=("PERISCOPE", "PERISCOPE", None),
+                                      strength=visual_physics.feather_strength(actor.speed))
         # Civil aircraft show their position and anti-collision lights;
         # military aircraft fly dark.
         for actor in sorted(self.flights.flights, key=lambda item: item.seq):

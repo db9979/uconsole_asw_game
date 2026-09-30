@@ -120,7 +120,7 @@ def test_the_recon_periscope_looks_round_part_of_the_time_and_shows_on_radar():
 def test_the_recon_periscope_needs_the_frigate_above_the_optics_threshold():
     game, sub = _frigate_game("s6_aufklaerung")
     _clear_day(game)
-    sub.x, sub.y = game.ship.x + 7.0, game.ship.y
+    sub.x, sub.y = game.ship.x + config.BOAT_AI_SIGHT_NM - 0.5, game.ship.y
     sub.depth = MAST_DEPTH_M - 3.0
     times = [1000.0 + t for t in range(int(config.BOAT_AI_SCOPE_CYCLE_S))]
 
@@ -128,7 +128,7 @@ def test_the_recon_periscope_needs_the_frigate_above_the_optics_threshold():
         return any(boat_ai.frigate_sighted(game, sub) for game.sim_t in times)
 
     assert seen()
-    _clear_day(game, visibility_nm=2.0)                   # fog: 7 NM is out of sight
+    _clear_day(game, visibility_nm=2.0)                   # fog: out of sight
     assert not seen()
     _clear_day(game, night=True)                          # night: likewise
     assert not seen()

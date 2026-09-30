@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.111
+
+Version 1.3.111 bringt auf beiden Seiten eine Schusslage in die Feuerleitung.
+Die Waffenstation der Fregatte und die Waffenseite des U-Boots zeigen jetzt,
+genordet um das eigene Schiff, die Reichweite des Torpedos, die Peilung zum
+Ziel und, sobald eine Entfernung vorliegt, die geschätzte Position, den
+Treffpunkt aus TMA-Kurs und -Fahrt und die Torpedolaufbahn dorthin, allein
+aus der Beobachtung des Kontakts. Führung und Navigation des U-Boots haben
+beschriftete Rundinstrumente für Kurs, Tiefe (Test- und Zerstörungstiefe markiert) und
+Fahrt wie die Brücke der Fregatte, und die Kästen im Funkraum des U-Boots
+passen wieder zu ihrem Text, sodass der Befehl der Führung nicht mehr durch
+den Rahmen läuft.
+
 ## 1.3.110
 
 Version 1.3.110 installiert Updates nicht mehr von selbst. Gibt es ein neueres

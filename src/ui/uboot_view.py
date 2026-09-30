@@ -18,7 +18,7 @@ from src.commander.server import OPFOR_ROLES
 from src.core import boat_esm, config, opfor, uboot_local
 from src.core.i18n import display_message, display_value, localize, message, raw_text
 from src.core.station import Station
-from src.ui import console, layout, lines, nato_symbols, overlay_style
+from src.ui import console, engagement, instruments, layout, lines, nato_symbols, overlay_style
 from src.ui.feedback import FeedEntry
 from src.ui.map_view import chart_background, draw_chart_frame, draw_chart_geography
 from src.ui.plot_view import draw_plot
@@ -58,6 +58,14 @@ def page_name(game, boat) -> str | None:
 # Station tabs in the top bar: (x, width) of each, in station key order.
 STATION_TAB_W = 100
 CONTACT_ROWS = 10
+# Navigation page: height of the dial strip under the numbers, and the least
+# height the water column keeps below them (px).
+NAV_DIAL_H = 180
+NAV_LADDER_MIN_H = 150
+# Weapons page: least height of the engagement sketch, and the most the
+# contact list above it takes while the sketch is shown (px).
+SKETCH_MIN_H = 170
+SKETCH_LIST_MAX_H = 170
 # Alarms stay on the threat bar this long after the event (s).
 ALARM_WINDOW_S = 120.0
 # A heard ping or ESM intercept fills the threat box only this long; older
@@ -559,6 +567,7 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     half = (w - 10) // 2
     big, row, small = (layout.line_pitch(28, gap=0), layout.line_pitch(18, gap=0),
                        layout.line_pitch(16, gap=0))
+    battery = _battery_fraction(sub)
     # Tall enough for every row at the current text size (large text too).
     needed = layout.line_pitch(16, 16, bold=True) + 2 * big + 2 * row + small + 10
     box_h = max(min(176, max(120, h // 2)), min(needed, h - 80))
@@ -604,7 +613,6 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     layout.blit_line(s, noise, (dx, dy, dw, row),
                      config.COLOR_DANGER if sub.cavitating else config.COLOR_OK, size=18)
     dy += row
-    battery = _battery_fraction(sub)
     phase = sub.endurance.phase if sub.endurance is not None else None
     if battery is not None:
         layout.gauge(s, (dx, dy, dw, small + 8), battery, label="uboot.label.battery",
@@ -623,6 +631,25 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
                      (dx, dy, dw, small),
                      config.COLOR_OK if quiet else config.COLOR_TEXT_DIM, size=16)
     ladder_y = y + box_h + 10
+    # Heading, depth and speed dials as on the frigate's bridge, while the
+    # water column below keeps enough room.
+    dial_h = min(NAV_DIAL_H, y + h - ladder_y - 10 - NAV_LADDER_MIN_H)
+    if dial_h >= 100:
+        strip = layout.box(s, (x, ladder_y, w, dial_h), "")
+        sx, sy, sw, sh = strip
+        cell = (sw - 16) // 3
+        # Each dial carries its name underneath, so it reads without the F1 help.
+        caption = layout.line_pitch(16, 0)
+        dial_sh = sh - caption
+        instruments.heading_dial(s, (sx, sy, cell, dial_sh), sub.course, sub.order_course)
+        instruments.depth_dial(s, (sx + cell + 8, sy, cell, dial_sh), sub.depth,
+                               sub.order_depth, sub.stype.max_depth_m, sub.crush_depth_m)
+        instruments.speed_dial(s, (sx + 2 * (cell + 8), sy, cell, dial_sh), sub.speed,
+                               sub.order_speed, sub.motion.maximum_speed_kn)
+        for index, name in enumerate(("ui.course", "ui.depth", "ui.speed")):
+            layout.blit_line(s, name, (sx + index * (cell + 8), sy + dial_sh, cell, caption),
+                             config.COLOR_TEXT_DIM, size=16, align="center")
+        ladder_y += dial_h + 10
     ladder_h = y + h - ladder_y
     if ladder_h >= 70:
         inner = layout.box(s, (x, ladder_y, w, ladder_h), "uboot.panel.depth_ladder")
@@ -642,6 +669,41 @@ def tube_line(sub, busy_only=False):
         return None
     return raw_text(" · ".join(str(localize(part)) for part in parts)) if parts \
         else raw_text("--")
+
+
+def _boat_torpedo(sub):
+    """Speed and range of the torpedo the next ready tube holds (catalog values)."""
+    battery = sub.weapon_battery
+    catalog = getattr(sub, "runtime_catalog", None)
+    if battery is not None and catalog is not None:
+        for tube in battery.tubes:
+            key = tube.loaded_weapon_key or tube.loading_weapon_key
+            weapon = catalog.weapons.get(key) if key is not None else None
+            profile = (catalog.torpedoes.get(weapon.runtime_profile_key)
+                       if weapon is not None and weapon.runtime_profile_key else None)
+            if profile is not None:
+                return profile.speed_kn, profile.range_nm
+    profile = sub.enemy_torpedo_profile
+    return profile.speed_kn, profile.range_nm
+
+
+def _draw_boat_sketch(s, sub, contact, now, rect) -> None:
+    """The engagement sketch of the chosen sonar contact (observations only)."""
+    inner = layout.box(s, rect, "uboot.panel.engagement")
+    speed, reach = _boat_torpedo(sub)
+    bearing = target = course = target_speed = None
+    fresh = False
+    if contact is not None:
+        bearing = _contact_bearing(contact)
+        position = _contact_position(None, contact, now)
+        if position is not None:
+            target = (position[0] - sub.x, position[1] - sub.y)
+            course, target_speed = contact.tma_course, contact.tma_speed
+            fresh = True
+    engagement.draw_engagement_sketch(
+        s, inner, own_course=sub.course, torpedo_kn=speed, torpedo_range_nm=reach,
+        bearing=bearing, target=target, target_course=course,
+        target_speed_kn=target_speed, fresh=fresh)
 
 
 def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
@@ -702,11 +764,24 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
              levels.get(state, "off"))
             for index, (state, left) in enumerate(states, start=1)], columns, size=14)
         contacts_y += panel_h + 10
-    listing = layout.box(s, (x, contacts_y, w, y + h - contacts_y), "uboot.local.contacts")
-    lx, ly, lw, lh = listing
     selected = boat.station.selected_contact
+    contacts = _contacts(boat)[:CONTACT_ROWS]
+    pitch = 24
+    # The contact list keeps what it needs (at least one row); the rest of
+    # the page is the engagement sketch of the chosen contact.
+    title_h = 8 + layout.font(16, bold=True).get_linesize() + 8
+    list_h = title_h + max(1, len(contacts)) * pitch + 8
+    sketch_h = y + h - contacts_y - min(list_h, SKETCH_LIST_MAX_H) - 10
+    if sketch_h >= SKETCH_MIN_H:
+        list_h = min(list_h, SKETCH_LIST_MAX_H)
+        _draw_boat_sketch(s, sub, selected, game.sim_t,
+                          (x, contacts_y + list_h + 10, w, sketch_h))
+    else:
+        list_h = y + h - contacts_y
+    listing = layout.box(s, (x, contacts_y, w, list_h), "uboot.local.contacts")
+    lx, ly, lw, lh = listing
     rows = []
-    for contact in _contacts(boat)[:CONTACT_ROWS]:
+    for contact in contacts:
         position = _contact_position(boat, contact, game.sim_t)
         distance = (math.hypot(position[0] - sub.x, position[1] - sub.y)
                     if position is not None else None)
@@ -723,8 +798,13 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
         layout.blit_line(s, "uboot.local.no_contacts", (lx, ly, lw, 22),
                          config.COLOR_TEXT_DIM, size=16)
         return
-    pitch = 24
-    for index, (is_selected, text) in enumerate(rows):
+    visible = max(1, lh // pitch)
+    first = 0
+    chosen = next((index for index, row in enumerate(rows) if row[0]), 0)
+    if chosen >= visible:
+        # Scroll so the chosen contact stays in view.
+        first = chosen - visible + 1
+    for index, (is_selected, text) in enumerate(rows[first:first + visible]):
         row_y = ly + index * pitch
         if row_y + pitch > ly + lh:
             break

@@ -75,17 +75,23 @@ def log_text(game, row):
     return message("uboot.radio.log.aborted", age=age)
 
 
+def _box_height(inner: int) -> int:
+    """Outer height of a titled ``layout.box`` whose inner rect is ``inner`` tall."""
+    return 8 + layout.font(16, bold=True).get_linesize() + 8 + inner + 8
+
+
 def draw_radio_page(s, game, boat, x, y, w, h) -> None:
     radio = boat.radio
     progress = radio.progress(game, boat)
     up = antenna_up(boat)
     mode = reception(boat)
-    box = layout.box(s, (x, y, w, 132), "uboot.panel.radio",
+    row = layout.line_pitch(16, 2)
+    box = layout.box(s, (x, y, w, _box_height(3 * row + 24)), "uboot.panel.radio",
                      border=config.COLOR_WARN if radio.transmitting else config.COLOR_TEXT)
     bx, by, bw, _ = box
     layout.blit_line(s, "uboot.radio.antenna_up" if up else "uboot.radio.antenna_vlf"
                      if mode == "vlf" else "uboot.radio.antenna_down",
-                     (bx, by, bw, 22), config.COLOR_OK if up else config.COLOR_TEXT
+                     (bx, by, bw, row), config.COLOR_OK if up else config.COLOR_TEXT
                      if mode == "vlf" else config.COLOR_TEXT_DIM, size=16)
     number = str(progress["broadcast"])
     if progress["copied"]:
@@ -97,8 +103,8 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
         state = message("uboot.radio.broadcast_missed", number=number)
     layout.blit_line(s, message("uboot.radio.schedule", state=state,
                                 next=_clock(progress["next_s"])),
-                     (bx, by + 22, bw, 22), config.COLOR_TEXT, size=16)
-    layout.meter(s, (bx + 2, by + 48, bw - 4, 6),
+                     (bx, by + row, bw, row), config.COLOR_TEXT, size=16)
+    layout.meter(s, (bx + 2, by + 2 * row + 3, bw - 4, 6),
                  progress["copy"] if not progress["copied"] else 1.0, config.COLOR_OK)
     if progress["send"] is not None:
         send = message("uboot.radio.sending", percent=f"{progress['send'] * 100:.0f}")
@@ -107,34 +113,36 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
         send = message("uboot.radio.sitreps_ack" if progress["ack_due"]
                        else "uboot.radio.sitreps", count=str(progress["sitreps"]))
         color = config.COLOR_TEXT
-    layout.blit_line(s, send, (bx, by + 62, bw, 22), color, size=16)
-    layout.meter(s, (bx + 2, by + 88, bw - 4, 6), progress["send"], config.COLOR_WARN)
-    top = y + 140
+    layout.blit_line(s, send, (bx, by + 2 * row + 12, bw, row), color, size=16)
+    layout.meter(s, (bx + 2, by + 3 * row + 15, bw - 4, 6), progress["send"],
+                 config.COLOR_WARN)
+    top = box[1] + box[3] + 8 + 8
     latest = radio.latest_report()
-    report = layout.box(s, (x, top, w, 74), "uboot.panel.hq_report")
+    report = layout.box(s, (x, top, w, _box_height(2 * row)), "uboot.panel.hq_report")
     rx, ry, rw, _ = report
     if latest is None:
-        layout.blit_line(s, "uboot.radio.no_report", (rx, ry, rw, 22),
+        layout.blit_line(s, "uboot.radio.no_report", (rx, ry, rw, row),
                          config.COLOR_TEXT_DIM, size=16)
     else:
         for index, text in enumerate(report_lines(game, boat, latest["report"])):
-            layout.blit_line(s, text, (rx, ry + index * 22, rw, 22), REPORT_COLOR, size=16)
-    top += 82
-    orders = layout.box(s, (x, top, w, 50), "uboot.panel.hq_order")
+            layout.blit_line(s, text, (rx, ry + index * row, rw, row), REPORT_COLOR, size=16)
+    top = report[1] + report[3] + 8 + 8
+    orders = layout.box(s, (x, top, w, _box_height(row)), "uboot.panel.hq_order")
     ox, oy, ow, _ = orders
-    layout.blit_line(s, order_line(game, boat), (ox, oy, ow, 22),
+    layout.blit_line(s, order_line(game, boat), (ox, oy, ow, row),
                      config.COLOR_WARN if radio.active_order() is not None
                      else config.COLOR_TEXT_DIM, size=16)
-    top += 58
+    top = orders[1] + orders[3] + 8 + 8
     listing = layout.box(s, (x, top, w, max(40, h - (top - y))), "uboot.panel.radio_log")
     lx, ly, lw, lh = listing
+    log_row = layout.line_pitch(14, 2)
     if not radio.log:
-        layout.blit_line(s, "uboot.radio.log.empty", (lx, ly, lw, 20),
+        layout.blit_line(s, "uboot.radio.log.empty", (lx, ly, lw, log_row),
                          config.COLOR_TEXT_DIM, size=15)
-    for index, row in enumerate(list(reversed(radio.log))[:max(0, lh // 19)]):
-        layout.blit_line(s, log_text(game, row), (lx, ly + index * 19, lw, 19),
-                         config.COLOR_WARN if row["kind"] != "broadcast" else config.COLOR_TEXT,
-                         size=14)
+    for index, row_data in enumerate(list(reversed(radio.log))[:max(0, lh // log_row)]):
+        layout.blit_line(s, log_text(game, row_data), (lx, ly + index * log_row, lw, log_row),
+                         config.COLOR_WARN if row_data["kind"] != "broadcast"
+                         else config.COLOR_TEXT, size=14)
 
 
 def draw_report_chart(game, boat, view) -> None:

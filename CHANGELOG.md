@@ -4,6 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.114
+
+Release 1.3.114 makes a player's order win over the AI crew. In multiplayer
+with the crew assist, the AI command dived the submarine every few seconds and
+so pulled down the periscope a player had raised at the mast or in the radio
+room; it now keeps the boat at periscope depth while a player holds the mast
+up. A station the AI mans no longer overrides what a player at another station
+commands: course, depth and evasion stay with a player at Navigation, speed and
+silent running with one in the engine room, trim and damage control with one
+at command, and a raised mast stays up on an alarm while a player at command or
+in the radio room holds it. On the frigate the AI Bridge no longer steers over
+a player in the engine room, the AI weapons and patrol aircraft keep a target a
+player designated, and a contact picked on the uConsole stays picked. A lobby round started
+without any browser is now a solo game with the crew assist off.
+
 ## 1.3.113
 
 Release 1.3.113 lets you play the uConsole entirely with the mouse and makes

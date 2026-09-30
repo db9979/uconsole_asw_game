@@ -4,6 +4,23 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.114
+
+Version 1.3.114 lässt den Befehl eines Spielers vor der KI-Crew gelten. Im
+Mehrspieler mit Crew-Hilfe tauchte das KI-Kommando das U-Boot alle paar
+Sekunden weg und holte so das Sehrohr ein, das ein Spieler am Mast oder im
+Funkraum ausgefahren hatte; jetzt hält es das Boot auf Sehrohrtiefe, solange
+ein Spieler den Mast oben hält. Eine Station, die die KI besetzt, übersteuert
+nicht mehr, was ein Spieler an einer anderen Station befiehlt: Kurs, Tiefe und
+Ausweichen bleiben bei einem Spieler an der Navigation, Fahrt und Schleichfahrt
+bei einem im Maschinenraum, Trimm und Leckwehr bei einem am Kommando, und ein
+ausgefahrener Mast bleibt bei Alarm oben, solange ein Spieler am Kommando oder
+im Funkraum ihn hält. Auf der Fregatte steuert die KI-Brücke nicht mehr über
+einen Spieler im Maschinenraum hinweg, KI-Waffen und Seefernaufklärer behalten
+ein Ziel, das ein Spieler bestimmt hat, und ein am uConsole gewählter Kontakt
+bleibt gewählt. Eine Lobby-Runde ohne Browser ist jetzt ein Solospiel mit
+ausgeschalteter Crew-Hilfe.
+
 ## 1.3.113
 
 Version 1.3.113 macht die uConsole komplett mit der Maus spielbar und die

@@ -284,3 +284,15 @@ def test_help_lists_multiplayer_and_hides_the_old_and_advanced_flags(capsys):
     assert "--multiplayer" in text
     for hidden in ("--remote-crew", "--solo-crew", "--play-sub", "--status-file"):
         assert hidden not in text
+
+
+def test_a_lobby_round_alone_is_a_solo_game_without_the_crew_assist(game, monkeypatch):
+    game.open_lobby()
+    game._start_lobby_mission()
+    assert game.lobby_round and not game.crew_assist
+    assert not any(game.autocrew.enabled.values())
+    game._return_to_main_menu()
+    crew = [dict(name="Sonar", stations=["sonar"], ready=True, observer=False, you=False)]
+    monkeypatch.setattr(type(game), "lobby_players", lambda self: crew)
+    game._start_lobby_mission()
+    assert game.crew_assist

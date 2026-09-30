@@ -21,6 +21,13 @@ one the uConsole shows while it plays the boat, is left alone.
 - Mast/ESM: lower the mast when an alarm comes in.
 - Navigation and radio room: watch only.
 
+An order a person gives always wins: a free station never overrides what a
+held station also commands (course and depth with a person at navigation,
+speed and silent running with one in the engine room, trim and damage
+control with one at command, the mast with one at command or in the radio
+room, a contact the uConsole selected), and while a person holds the mast up the
+command keeps the boat at periscope depth.
+
 Stateless: every decision derives from the simulation time, the seed and
 saved boat state, so a loaded game continues identically. Targets come from
 the boat's own sonar contacts (bearing, fix, TMA) and signature library,
@@ -47,6 +54,7 @@ FIX_MAX_AGE_S = 120.0
 EVADE_AGAIN_S = 60.0
 ROLES = ("uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm",
          "uboot_nav", "uboot_radio")
+MAST_ROLES = ("uboot", "uboot_esm", "uboot_radio")   # stations that raise the mast
 
 
 @lru_cache(maxsize=4)
@@ -59,13 +67,18 @@ def _signatures(catalog, categories: frozenset) -> tuple:
     return tuple(sorted(text for text, kinds in owners.items() if kinds <= categories))
 
 
+def _local_boat(game) -> bool:
+    """The uConsole operator works one of the boat's stations."""
+    return (getattr(game, "local_side", "frigate") == "uboot" and not game.in_menu
+            and not getattr(game, "host_only", False))
+
+
 def held(game, role: str) -> bool:
     """A person works ``role``: a browser lease, or the uConsole's boat page."""
     query = getattr(getattr(game.commander, "server", None), "station_leased", None)
     if query is not None and query(role):
         return True
-    if (getattr(game, "local_side", "frigate") == "uboot" and not game.in_menu
-            and not getattr(game, "host_only", False)):
+    if _local_boat(game):
         from src.core import uboot_local
         return uboot_local.local_station(game) == role
     return False
@@ -124,29 +137,40 @@ def _alarm(boat):
 # --- stations -------------------------------------------------------------
 
 def command(game, boat) -> str:
+    """Steer the boat, but never over a person: course, depth and evasion
+    belong to a held navigation station, speed and silent running to a held
+    engine room, and a mast a person raised keeps the boat at periscope depth."""
     sub = boat.sub
+    if held(game, "uboot_nav"):
+        return "monitoring"
+    engine_free = not held(game, "uboot_engine")
     if _alarm(boat) is not None:
         if boat.evaded_t is None or game.sim_t - boat.evaded_t >= EVADE_AGAIN_S:
             if boat_threat.evade(game, boat) is True:
                 return "evading"
         return "monitoring"
-    if boat.orders.silent:
+    if boat.orders.silent and engine_free:
         sub.command_silent(False)
     presets = depth_presets(game, boat)
+    ceiling = float(presets["deep"])
+    if boat.orders.mast and any(held(game, role) for role in MAST_ROLES):
+        ceiling = min(ceiling, float(presets["periscope"]))
     endurance = sub.endurance
     if (endurance is not None and presets["snorkel"] is not None
             and endurance.battery_kwh < BATTERY_LOW * endurance.profile.battery_capacity_kwh
             and not boat_ai.hunted(sub)):
-        sub.set_orders(speed=min(PATROL_KN, sub.motion.maximum_speed_kn),
-                       depth=presets["snorkel"])
+        sub.set_orders(speed=(min(PATROL_KN, sub.motion.maximum_speed_kn)
+                              if engine_free else None),
+                       depth=min(float(presets["snorkel"]), ceiling))
         return "charging"
     leg = boat_ai.orders(game, sub)
     if leg is None:
         leg = _frigate_mission_leg(game, boat)
     course, speed, depth = leg
-    depth = min(float(depth), float(presets["deep"]))
+    depth = min(float(depth), ceiling)
     sub.set_orders(course=float(course) % 360.0,
-                   speed=min(float(speed), float(sub.motion.maximum_speed_kn)),
+                   speed=(min(float(speed), float(sub.motion.maximum_speed_kn))
+                          if engine_free else None),
                    depth=max(0.0, depth))
     return "steering"
 
@@ -198,7 +222,9 @@ def weapons(game, boat) -> str:
 def engine(game, boat) -> str:
     sub = boat.sub
     endurance = sub.endurance
-    if not sub.ballast.auto:
+    # Command shares the trim and the damage-control teams: a person there decides.
+    command_free = not held(game, "uboot")
+    if command_free and not sub.ballast.auto:
         sub.command_trim_auto(True)
     action = "monitoring"
     if endurance is not None:
@@ -218,7 +244,8 @@ def engine(game, boat) -> str:
                 sub.command_absorber()
             elif air.candle_left_s <= 0.0 and air.candles > 0:
                 sub.command_o2_candle()
-    _damage_control(sub)
+    if command_free:
+        _damage_control(sub)
     return action
 
 
@@ -241,6 +268,10 @@ def sonar(game, boat) -> str:
     contacts = [contact for contact in station.sonar.contacts.values() if _fresh(game, contact, 2.0)]
     if not contacts:
         return "monitoring"
+    picked = station.selected_contact
+    if (_local_boat(game) and picked is not None
+            and station.sonar.contacts.get(picked.target_id) is picked):
+        return "monitoring"             # the uConsole's pick (Up/Down) stays picked
     best = max(contacts, key=lambda contact: (contact.snr, -contact.id))
     if station.selected_contact is not best:
         station.selected_contact = best
@@ -249,7 +280,9 @@ def sonar(game, boat) -> str:
 
 
 def esm(game, boat) -> str:
-    if boat.orders.mast and _alarm(boat) is not None:
+    # Command and the radio room raise the mast too: a person there decides.
+    if (boat.orders.mast and _alarm(boat) is not None
+            and not any(held(game, role) for role in MAST_ROLES if role != "uboot_esm")):
         boat.sub.command_mast(False)
         return "mast_down"
     return "monitoring"

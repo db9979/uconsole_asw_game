@@ -686,6 +686,22 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
         layout.blit_line(s, message("uboot.line.tubes", tubes=busy),
                          (fx, fy + 112, fw, 20), config.COLOR_WARN, size=15)
     contacts_y = y + box_h + 10
+    states = opfor.tube_states(sub)
+    if states:
+        # The tube panel: one lamp per tube, lit when flooded and ready.
+        from src.ui import console
+        columns = min(4, len(states))
+        lamp_h = layout.line_pitch(14, 0) + 8
+        panel_h = math.ceil(len(states) / columns) * (lamp_h + 4) + 40
+        tubes = layout.box(s, (x, contacts_y, w, panel_h), "uboot.panel.tubes")
+        levels = {"flooded": "on", "dry": "caution", "flooding": "caution",
+                  "loading": "caution", "empty": "off"}
+        console.lamp_grid(s, (tubes[0], tubes[1], tubes[2], tubes[3]), [
+            (raw_text(str(index)),
+             message(f"uboot.tube_state.{state}", seconds=_fmt(left, "{:.0f}")),
+             levels.get(state, "off"))
+            for index, (state, left) in enumerate(states, start=1)], columns, size=14)
+        contacts_y += panel_h + 10
     listing = layout.box(s, (x, contacts_y, w, y + h - contacts_y), "uboot.local.contacts")
     lx, ly, lw, lh = listing
     selected = boat.station.selected_contact

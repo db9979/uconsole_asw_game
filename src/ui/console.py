@@ -246,3 +246,40 @@ def room(screen, rect, name, *, flood: float, leds, teams=(),
         led(screen, (lx + index * spacing, ly), radius, level)
     if teams:
         badges(screen, rect.centerx, rect.bottom - 26, teams)
+
+
+def bearing_rose(screen, rect, strobes, *, course=None, title="") -> None:
+    """A north-up direction-finding rose: dark scope, 10 degree ticks and one
+    strobe per observed bearing. ``strobes`` are (bearing, color, width,
+    spread_deg, inner) with ``inner`` the strobe's start as a radius fraction
+    and ``spread_deg`` a dim wedge for the bearing's error (0: none)."""
+    rect = pygame.Rect(rect)
+    radius = min(rect.w, rect.h) // 2 - 20
+    if radius < 30:
+        return
+    cx, cy = rect.centerx, rect.centery
+    layout.record_geometry("instrument", rect, str(title))
+    pygame.draw.circle(screen, (6, 13, 25), (cx, cy), radius)
+    for fraction in (.33, .66):
+        pygame.draw.circle(screen, config.COLOR_GRID, (cx, cy), round(radius * fraction), 1)
+    for bearing, color, _width, spread, _inner in strobes:
+        if spread > 0:
+            steps = max(2, int(spread))
+            wedge = [(cx, cy)] + [_polar(cx, cy, radius, bearing - spread + 2 * spread * i / steps)
+                                  for i in range(steps + 1)]
+            lines.polygon(screen, _mix((6, 13, 25), color, .22), wedge)
+    pygame.draw.circle(screen, config.COLOR_SONAR_RING, (cx, cy), radius, 1)
+    for step in range(0, 360, 10):
+        major = step % 30 == 0
+        lines.line(screen, config.COLOR_TEXT_DIM if major else config.COLOR_SONAR_RING,
+                   _polar(cx, cy, radius - (7 if major else 3), step), _polar(cx, cy, radius, step), 1)
+    for step, label in ((0, "000"), (90, "090"), (180, "180"), (270, "270")):
+        x, y = _polar(cx, cy, radius + (10 if step in (0, 180) else 20), step)
+        layout.blit_line(screen, raw_text(label), (x - 16, y - 8, 32, 16),
+                         config.COLOR_TEXT_DIM, size=11, align="center")
+    if course is not None and math.isfinite(course):
+        lines.line(screen, config.COLOR_TEXT, (cx, cy), _polar(cx, cy, radius * .3, course), 2)
+    for bearing, color, width, _spread, inner in strobes:
+        lines.line(screen, color, _polar(cx, cy, radius * inner, bearing),
+                   _polar(cx, cy, radius, bearing), width)
+    pygame.draw.circle(screen, config.COLOR_OK, (cx, cy), 3)

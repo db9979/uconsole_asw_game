@@ -5,9 +5,9 @@ import math
 import pygame
 
 from src.core import config
-from src.core.i18n import display_value, localized, localize, message as structured_message
+from src.core.i18n import raw_text, display_value, localized, localize, message as structured_message
 from src.core.station import Station
-from src.ui import layout
+from src.ui import console, layout
 from src.ui import nato_symbols
 from src.ui import observations
 
@@ -72,6 +72,21 @@ def _inventory_state(game):
     store = getattr(game, "nixie_store", None)
     nixies = store.remaining_total if store is not None else 0
     return ready, tubes, reload_s, nixies
+
+
+def _tube_lamps(game):
+    """One annunciator lamp per torpedo tube: loaded, loading or empty."""
+    battery = getattr(game, "player_torpedo_battery", None)
+    rows = []
+    for tube in getattr(battery, "tubes", ())[:8]:
+        if tube.loaded_weapon_key is not None:
+            level, value = "on", localize("weapons.lamp.loaded")
+        elif tube.loading_weapon_key is not None:
+            level, value = "caution", f"{tube.reload_remaining_s:.0f} s"
+        else:
+            level, value = "off", localize("weapons.lamp.empty")
+        rows.append((message("weapons.lamp.tube", number=tube.index + 1), value, level))
+    return rows
 
 
 def weapons_regions(game, page=0) -> dict:
@@ -172,7 +187,8 @@ def weapons_hit_target(game, pos):
             body_top = active.y + 16 + layout.font(16, bold=True).get_linesize()
             pitch = _active_row_pitch()
             row = (int(pos[1]) - body_top) // pitch
-            capacity = max(0, min(5, (active.bottom - body_top - 30) // pitch))
+            capacity = max(0, min(5, (active.bottom - _tank_reserve(active)
+                                      - body_top - 30) // pitch))
             if 0 <= row < len(game.torpedoes[:capacity]):
                 weapon = game.torpedoes[row]
                 remaining = max(0.0, weapon.range_nm - weapon.travel)
@@ -193,6 +209,11 @@ def weapons_hit_target(game, pos):
                 "control.weapons",
                 target_id="weapons:controls")
     return None
+
+
+def _tank_reserve(rect) -> int:
+    """Height the magazine tanks take at the foot of the active weapons box."""
+    return 138 if rect.height >= 300 else 0
 
 
 @localized
@@ -321,9 +342,15 @@ def draw_weapons_panel(game, tr=None) -> None:
         ready_face, ready_lines = layout.fit_text(
             readiness_text, 14, sw, 96, min_size=14)
         ready_h = max(40, len(ready_lines) * int(ready_face.get_linesize() * 1.15) + 8)
+        ready_y = regions["solution"].bottom - ready_h - 6
         layout.blit_block(s, _readiness_text(readiness), sx,
-                          regions["solution"].bottom - ready_h - 6, sw, ready_h,
+                          ready_y, sw, ready_h,
                           readiness_color, size=14)
+        tubes = _tube_lamps(game)
+        lamp_h = layout.line_pitch(14, 0) + 8
+        if tubes and ready_y - lamp_h - 6 > sy:
+            console.lamp_grid(s, (sx, ready_y - lamp_h - 6, sw, lamp_h), tubes,
+                              len(tubes), size=14)
 
         ready = layout.box(s, regions["stages"], "panel.engagement_stages",
                             border=readiness_color)
@@ -341,12 +368,13 @@ def draw_weapons_panel(game, tr=None) -> None:
                    readiness == "FEUER FREI"),
                   ("FLAK", message("panel.authorized" if game.flak_authorized else "panel.blocked"),
                    game.flak_authorized))
-        for index, (name, value, ok) in enumerate(stages):
-            layout.status_line(s, rx, ry + index * 26, rw, name, value,
-                               color=config.COLOR_OK if ok else config.COLOR_WARN,
-                               label_w=54, size=13)
-        layout.blit_line(s, "weapons.control.launch", (rx, ry + 142, rw, 24), readiness_color, size=14)
-        layout.blit_line(s, "weapons.control.flak", (rx, ry + 166, rw, 24), config.COLOR_TEXT_DIM, size=13)
+        # The interlock chain as annunciator lamps: lit when the stage is clear.
+        lamp_h = layout.line_pitch(13, 0) + 10
+        used = console.lamp_grid(s, (rx, ry, rw, len(stages) * (lamp_h + 4) - 4),
+                                 [(name, value, "on" if ok else "caution")
+                                  for name, value, ok in stages], 1, size=13)
+        layout.blit_line(s, "weapons.control.launch", (rx, ry + used + 12, rw, 24), readiness_color, size=14)
+        layout.blit_line(s, "weapons.control.flak", (rx, ry + used + 36, rw, 24), config.COLOR_TEXT_DIM, size=13)
 
     else:
         regions = weapons_regions(game, 1)
@@ -388,11 +416,27 @@ def draw_weapons_panel(game, tr=None) -> None:
         active = layout.box(s, regions["active"],
                              "panel.active_weapons")
         ax, ay, aw, ah = active
+        tank_h = _tank_reserve(regions["active"]) - 8 if _tank_reserve(regions["active"]) else 0
+        if tank_h:
+            # Magazine columns along the foot: what is left of each store.
+            from src.weapons import rbu
+            stores = (("weapons.tank.torpedoes", game.torpedo_count, game.torpedo_total),
+                      ("weapons.tank.helo", game.helo.torps, config.HELO_TORPS),
+                      ("weapons.tank.buoys", game.helo.buoys_left, config.BUOY_COUNT),
+                      ("weapons.tank.rbu", getattr(game, "rbu_rockets", 0), rbu.STOCK))
+            column = aw // len(stores)
+            for index, (label, left, full) in enumerate(stores):
+                fraction = left / full if full else 0.0
+                console.tank(s, (ax + index * column, ay + ah - tank_h, column - 6, tank_h),
+                             fraction, label=label, text=raw_text(f"{left}"),
+                             level="on" if fraction > .25 else "caution" if left else "alarm")
+            ah -= tank_h + 8
         if not game.torpedoes:
             layout.blit_line(s, "ui.no_weapons", (ax, ay, aw, 24),
                              config.COLOR_TEXT_DIM, size=16)
         pitch = _active_row_pitch()
-        capacity = max(0, min(5, (regions["active"].bottom - ay - 30) // pitch))
+        capacity = max(0, min(5, (regions["active"].bottom - _tank_reserve(regions["active"])
+                                  - ay - 30) // pitch))
         for t in game.torpedoes[:capacity]:
             d = t.guidance_distance_nm()
             d_txt = f"{d:.1f} NM" if d != float("inf") else "--"

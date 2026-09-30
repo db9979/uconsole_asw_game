@@ -8,7 +8,7 @@ import pygame
 from src.core import config
 from src.core.i18n import Translator, localize
 from src.ship.damage import DamageModel
-from src.ui import layout, stations_view, weapons_view
+from src.ui import console, layout, stations_view, weapons_view
 
 
 def test_weapons_panel_has_fixed_solution_readiness_inventory_and_active_sections(monkeypatch):
@@ -74,6 +74,13 @@ def test_weapons_panel_shows_tma_evidence_and_engagement_stages(monkeypatch):
     monkeypatch.setattr(layout, "blit_line", record_line)
     monkeypatch.setattr(layout, "blit_block", record_block)
     monkeypatch.setattr(layout, "status_line", record_status)
+    original_grid = console.lamp_grid
+
+    def record_grid(screen, rect, rows, *args, **kwargs):
+        lines.extend(f"{localize(label)} {localize(value)}" for label, value, _ in rows)
+        return original_grid(screen, rect, rows, *args, **kwargs)
+
+    monkeypatch.setattr(console, "lamp_grid", record_grid)
     contact = NS(id=3, display_label="U-Boot", bearing=80.0, range_est=6.0,
                  confidence=.8, range_source="tma", last_seen=90.0,
                  range_sigma_nm=1.2, depth_est=None, player_class="U_BOOT",

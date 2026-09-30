@@ -100,6 +100,42 @@ def _draw_eloka_signal(surface, rect, track, now: float, channel=None) -> None:
         pygame.draw.lines(surface, faded(config.COLOR_OK), False, wave_points, 2)
 
 
+def _eloka_list_w(picture: pygame.Rect) -> int:
+    """The intercept list's width: the rest of a wide picture holds the rose."""
+    return picture.w if picture.w < 700 else int(picture.w * .58)
+
+
+_THREAT_COLORS = {"critical": "COLOR_DANGER", "high": "COLOR_DANGER",
+                  "medium": "COLOR_WARN"}
+
+
+def _draw_eloka_rose(game, rect, tracks) -> None:
+    """North-up threat rose: one strobe per intercept, longer when fresher,
+    coloured by the operator's threat reading; own course as a short line."""
+    from src.ui import console
+    surface = game.screen
+    lamp_h = layout.line_pitch(14, 0) + 8
+    jamming = bool(getattr(game.ecm_jammer, "channels", ()))
+    down = game.damage.station_down("opz")
+    console.lamp_grid(surface, (rect.x, rect.bottom - 2 * lamp_h - 4, rect.w, 2 * lamp_h + 4), (
+        ("eloka.lamp.esm", "", "alarm" if down else "on"),
+        ("eloka.lamp.jammer", "", "caution" if jamming else "off"),
+        ("eloka.lamp.auto", "", "on" if game.ecm_jammer.auto_enabled else "off"),
+        ("eloka.lamp.tone", "", "on" if getattr(game, "eloka_audio_enabled", False) else "off")),
+        2, size=14)
+    strobes = []
+    for track in tracks:
+        analysis = game.eloka_display_analysis(track)
+        threat = "unknown" if analysis is None else analysis.threat_level
+        color = getattr(config, _THREAT_COLORS.get(threat, "COLOR_OK"))
+        quality = max(.2, min(1.0, float(track.display_quality(game.sim_t))))
+        selected = track.track_key == game.eloka_selected_track_key
+        strobes.append((track.bearing, config.COLOR_TEXT if selected else color,
+                        3 if selected else 2, 0, 1 - .7 * quality))
+    console.bearing_rose(surface, (rect.x, rect.y, rect.w, rect.h - 2 * lamp_h - 16),
+                         strobes, course=getattr(game.ship, "course", None), title="eloka:rose")
+
+
 def eloka_track_at(game, pos, station_rect=None):
     """Return the displayed passive intercept at a canvas position."""
     if pos is None or game.damage.station_down("opz"):
@@ -114,7 +150,7 @@ def eloka_track_at(game, pos, station_rect=None):
     tracks = _eloka_visible_tracks(game)
     for index, track in enumerate(tracks):
         if pygame.Rect(regions["picture"].x, row_y + index * row_height,
-                       regions["picture"].w, 36).collidepoint(pos):
+                       _eloka_list_w(regions["picture"]), 36).collidepoint(pos):
             return track
     return None
 
@@ -134,6 +170,15 @@ def draw_eloka_view(game, tr=None) -> None:
     if page == 0:
         box = layout.box(surface, regions["picture"], "eloka.panel.intercepts")
         bx, by, bw, _ = box
+        list_w = _eloka_list_w(regions["picture"])
+        if list_w < regions["picture"].w:
+            rose = pygame.Rect(regions["picture"].x + list_w + 8, by,
+                               regions["picture"].right - list_w - regions["picture"].x - 18,
+                               box[3])
+            pygame.draw.line(surface, config.COLOR_GRID, (rose.x - 4, by), (rose.x - 4, rose.bottom))
+            _draw_eloka_rose(game, rose, [] if game.damage.station_down("opz")
+                             else _eloka_visible_tracks(game))
+            bw = list_w - 20
         if game.damage.station_down("opz"):
             layout.blit_block(surface, "eloka.state.disabled", bx, by, bw, 48,
                               color=config.COLOR_DANGER, size=18)

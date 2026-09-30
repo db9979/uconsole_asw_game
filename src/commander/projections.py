@@ -61,7 +61,8 @@ def _sightings(game):
                  sighted=row["kind"] if row["code"] is None else None,
                  code=row["code"],
                  type=None if row["type_name"] is None else str(row["type_name"])[:80],
-                 bearing=_number(row["bearing"]), range_nm=_number(row["range_nm"]))
+                 bearing=_number(row["bearing"]), range_nm=_number(row["range_nm"]),
+                 lights=_nav_lights(row.get("lights")))
             for row in reversed(getattr(game, "lookout_reports", [])[-_SIGHTINGS_MAX:])]
 
 

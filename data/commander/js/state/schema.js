@@ -10,7 +10,9 @@ export const boundedArray = (value, maximum) => Array.isArray(value) && value.le
 const sightingClasses = ["MERCHANT", "TANKER", "CARGO", "PASSENGER", "WARSHIP", "CARRIER", "CRUISER", "DESTROYER",
   "FRIGATE", "CORVETTE", "MINE_WARFARE", "NAVAL_AUXILIARY", "SERVICE", "TUG", "RESEARCH", "OFFSHORE", "FISHING",
   "SMALL_CRAFT", "RESCUE", "SUBMARINE", "AIRLINER", "MILITARY_AIRCRAFT", "COMBAT_AIRCRAFT", "TORPEDO_WAKE", "SHIP", "LAND"];
-const sightingKinds = ["SURFACE", "SUB", "FLG", "TORP"];
+const sightingKinds = ["SURFACE", "SUB", "FLG", "TORP", "LIGHTS"];
+const sightingLightsOk = (row) => row.sighted === "LIGHTS"
+  ? typeof row.lights === "string" && /^[LR][012][r-][g-][s-](GW|WR|RWR|GGG|AC)?$/.test(row.lights) : row.lights === null;
 function validSightingClass(code, type) {
   if (code === null) return type === null;
   return sightingClasses.includes(code) && (type === null || (typeof type === "string" && type.length > 0 && type.length <= 80));
@@ -317,7 +319,8 @@ export function validateV2State(state) {
     tacticalRows(payload.threat.observations, 128);
     tacticalRows(payload.tactical_summary, 256);
     if (!boundedArray(payload.sightings, 24) || payload.sightings.some((row) =>
-        !exactKeys(row, ["time", "sighted", "code", "type", "bearing", "range_nm"]) || typeof row.time !== "string" || row.time.length > 8 ||
+        !exactKeys(row, ["time", "sighted", "code", "type", "bearing", "range_nm", "lights"]) || typeof row.time !== "string" || row.time.length > 8 ||
+        !sightingLightsOk(row) ||
         (row.code === null ? !sightingKinds.includes(row.sighted) || row.type !== null : row.sighted !== null || !validSightingClass(row.code, row.type)) ||
         !finite(row.bearing) || row.bearing < 0 || row.bearing >= 360 || !finite(row.range_nm) || row.range_nm < 0 || row.range_nm > 1000)) throw new Error("protocol");
   } else if (isSonar(state.role)) {

@@ -76,5 +76,5 @@ On the Tasks page the radio room can call HQ itself, at most once every 10 minut
 
 ## Not modelled {#radio-limits}
 
-- No free-text radio transmissions or reports to HQ beyond answering tasks; no communication plan or crypto.
+- No free-text radio transmissions: the only own calls to HQ are the contact report and the support request, besides answering tasks; no communication plan or crypto.
 - No frequency tuning: HFDF monitors the whole HF band and lists the detected signals with their frequency.

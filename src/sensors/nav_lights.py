@@ -115,3 +115,25 @@ def valid(value) -> bool:
 def facing(value: str | None) -> int:
     """Silhouette facing for a code: +1 bow right, -1 bow left (default)."""
     return 1 if value and value[0] == "R" else -1
+
+
+def describe(value: str) -> tuple[tuple[str, ...], str | None, str | None]:
+    """What a lookout reads from a code: (lights seen, aspect, work).
+
+    ``lights`` are the single lights in the order he calls them
+    (``masthead1``/``masthead2``, ``red``, ``green``, ``stern``, then the
+    all-round set or ``ac``); ``aspect`` is his reading of the side he sees
+    (``head_on``, ``starboard``, ``port``, ``stern``, ``masthead``) and
+    ``work`` the all-round lights' meaning, each ``None`` when absent.
+    """
+    masts, red, green, stern = int(value[1]), value[2] == "r", value[3] == "g", value[4] == "s"
+    extra = value[5:] or None
+    lights = []
+    if masts:
+        lights.append("masthead%d" % masts)
+    lights += [name for name, on in (("red", red), ("green", green), ("stern", stern)) if on]
+    if extra:
+        lights.append(extra.lower())
+    aspect = ("head_on" if red and green else "starboard" if green else "port" if red
+              else "stern" if stern else "masthead" if masts else None)
+    return tuple(lights), aspect, None if extra is None else extra.lower()

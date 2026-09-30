@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.107
+
+Version 1.3.107 lässt die KI jede freie Station besetzen. Die neue Crew-Hilfe
+(Shift+F2, in einer Mission aus der Mehrspieler-Lobby immer an) bemannt jede
+Station der Fregatte und eines bemannten U-Boots, die niemand hält, damit
+jeder Spieler bei einer Station bleiben kann: Die Station auf dem Bildschirm
+der uConsole und jede Station, die ein Browser hält, bleiben bei ihrem
+Spieler, und eine im Browser freigegebene Station („An KI übergeben“) geht
+sofort an die KI zurück. Auf dem U-Boot weicht die KI aus, patrouilliert oder
+läuft eine bekannte Fregatte an, hält die Rohre geladen und schießt auf eine
+nahe Ortung, schnorchelt zum Laden, hält den Trimm und schickt die Leckteams.
+Spielstände sind jetzt v39.
+
 ## 1.3.106
 
 Version 1.3.106 bringt eine Mehrspieler-Lobby. Der neue Hauptmenüpunkt

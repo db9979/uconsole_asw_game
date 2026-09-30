@@ -12,16 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.106**
+Current release: **1.3.107**
 
-Release 1.3.106 adds a multiplayer lobby. The new main-menu entry Multiplayer
-starts Remote Crew in crew mode and shows the QR code and join code; browsers
-pair, pick their unit and stations and press Ready, and everyone sees the
-mission, the uConsole's unit and station and each crewmate's stations and
-ready tick. The host chooses the mission, which unit the uConsole plays and
-its own station, then starts a five-second countdown that every browser sees,
-and the mission begins for all at once. A mission started from the lobby
-returns everyone to the lobby when it ends.
+Release 1.3.107 lets the AI man every free station. The new crew assist
+(Shift+F2, always on in a mission started from the multiplayer lobby) crews
+each station of the frigate and of a crewed submarine that nobody holds, so
+every player can stay on one station: the station on the uConsole's screen and
+every station a browser holds stay with their player, and a station released
+in the browser ("Hand over to AI") goes straight back to the AI. On the
+submarine the AI commands evasion, patrols or closes a known frigate, keeps
+the tubes loaded and fires at a close fix, snorkels to charge, keeps the trim
+and sends the damage-control teams. Saves are now v39.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

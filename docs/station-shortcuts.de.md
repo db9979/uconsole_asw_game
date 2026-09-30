@@ -1,4 +1,4 @@
-# U-Jagd 1.3.106 - Stations- und Tastenkürzel
+# U-Jagd 1.3.107 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -18,6 +18,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `+ / -` | Telegraph (an jeder Station verfügbar) |
 | `F1 / ?` | Hilfe (diese Anzeige) |
 | `F2` | Autocrew der aktuellen Station umschalten |
+| `Shift+F2` | Crew-Hilfe: Die KI besetzt jede freie Station beider Einheiten |
 | `F3` | Autocrew-Übersicht öffnen |
 | `0` | Wetter- & Sonar-Analyse |
 | `F8` | Taktischer Einheitenanalysator (Katalog, nur lesend) |

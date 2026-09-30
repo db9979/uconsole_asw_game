@@ -14,17 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.106**
+Aktuelle Version: **1.3.107**
 
-Version 1.3.106 bringt eine Mehrspieler-Lobby. Der neue Hauptmenüpunkt
-Mehrspieler startet Remote Crew im Crew-Modus und zeigt QR-Code und
-Beitrittscode; die Browser koppeln, wählen Einheit und Stationen und drücken
-Bereit, und alle sehen die Mission, Einheit und Station des uConsole und die
-Stationen und Bereit-Häkchen jedes Crewmitglieds. Der Gastgeber wählt die
-Mission, die Einheit des uConsole und seine eigene Station und startet dann
-einen Countdown von fünf Sekunden, den jeder Browser sieht; die Mission
-beginnt für alle gleichzeitig. Eine aus der Lobby gestartete Mission führt am
-Ende alle zurück in die Lobby.
+Version 1.3.107 lässt die KI jede freie Station besetzen. Die neue Crew-Hilfe
+(Shift+F2, in einer Mission aus der Mehrspieler-Lobby immer an) bemannt jede
+Station der Fregatte und eines bemannten U-Boots, die niemand hält, damit
+jeder Spieler bei einer Station bleiben kann: Die Station auf dem Bildschirm
+der uConsole und jede Station, die ein Browser hält, bleiben bei ihrem
+Spieler, und eine im Browser freigegebene Station („An KI übergeben“) geht
+sofort an die KI zurück. Auf dem U-Boot weicht die KI aus, patrouilliert oder
+läuft eine bekannte Fregatte an, hält die Rohre geladen und schießt auf eine
+nahe Ortung, schnorchelt zum Laden, hält den Trimm und schickt die Leckteams.
+Spielstände sind jetzt v39.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

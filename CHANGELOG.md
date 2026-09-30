@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.107
+
+Release 1.3.107 lets the AI man every free station. The new crew assist
+(Shift+F2, always on in a mission started from the multiplayer lobby) crews
+each station of the frigate and of a crewed submarine that nobody holds, so
+every player can stay on one station: the station on the uConsole's screen and
+every station a browser holds stay with their player, and a station released
+in the browser ("Hand over to AI") goes straight back to the AI. On the
+submarine the AI commands evasion, patrols or closes a known frigate, keeps
+the tubes loaded and fires at a close fix, snorkels to charge, keeps the trim
+and sends the damage-control teams. Saves are now v39.
+
 ## 1.3.106
 
 Release 1.3.106 adds a multiplayer lobby. The new main-menu entry Multiplayer

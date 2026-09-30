@@ -149,6 +149,8 @@ class CrewOrders:
         # Feather warning edge; None until first seen (never saved: a loaded
         # boat takes the current state without a repeated warning).
         self._feather_warned = None
+        # Silent running as last heard (fan cue edge; transient like above).
+        self._silent_heard = None
         # Chart check along the ordered course (0.25 s cadence), for the displays.
         self.obstacle_ahead_nm = None
         # Intercepts not yet stamped by the crew update (never saved; see
@@ -719,6 +721,10 @@ def update_crew(game, boat: CrewedBoat) -> None:
     if feather and orders._feather_warned is False:
         orders.event("feather_visible", speed=f"{config.UBOOT_FEATHER_WARN_KN:.0f}")
     orders._feather_warned = feather
+    # Silent running: the ventilation fans run down (and up again after).
+    if orders._silent_heard is not None and orders.silent != orders._silent_heard:
+        boat_sound(game, boat, "fans_down" if orders.silent else "fans_up")
+    orders._silent_heard = orders.silent
     pinged = None
     for kind, bearing, level in orders._pending_intercepts:
         boat.intercepts.append(dict(t=float(game.sim_t), kind=kind, bearing=bearing,

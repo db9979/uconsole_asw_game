@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.118**
+Current release: **1.3.119**
 
-Release 1.3.118 lets you choose the weather and the time of day. Every
-scenario's briefing, the campaign screen before sailing, the multiplayer lobby
-and the browser's "New game" dialog now offer weather (random, fair, rain,
-storm, fog) and time of day (random, dawn, day, dusk, night); random keeps what
-the seed gives. A chosen weather holds for the whole mission with its sea state
-in a matching band, and the clock runs on from the chosen time.
+Release 1.3.119 adds shipboard atmosphere to the sound. Action stations on the
+frigate ring the general alarm bell through the ship, and in a heavy head sea
+at speed the bow is heard slamming each time it pitches down hard. The
+submarine rings only a quiet alarm bell, and its ventilation fans are heard
+running down when silent running starts and up again when it ends. The uConsole
+and the Remote Crew browsers play the same cues, all synthesized at runtime.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

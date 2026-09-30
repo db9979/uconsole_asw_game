@@ -14,14 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.118**
+Aktuelle Version: **1.3.119**
 
-Version 1.3.118 lässt Wetter und Uhrzeit wählen. Das Briefing jedes Szenarios,
-der Kampagnenbildschirm vor dem Auslaufen, die Mehrspieler-Lobby und der Dialog
-„Neues Spiel“ im Browser bieten jetzt Wetter (Zufall, schön, Regen, Sturm,
-Nebel) und Uhrzeit (Zufall, Morgengrauen, Tag, Abenddämmerung, Nacht); Zufall
-behält, was der Seed ergibt. Ein gewähltes Wetter hält die ganze Mission mit
-einem passenden Seegang, und die Uhr läuft von der gewählten Zeit weiter.
+Version 1.3.119 bringt Bordatmosphäre in den Ton. Gefechtsstationen auf der
+Fregatte lassen die Alarmglocke durch das Schiff läuten, und in schwerer See
+von vorn schlägt der Bug bei Fahrt hörbar ein, sobald er tief eintaucht. Das
+U-Boot läutet nur eine leise Alarmklingel, und seine Lüfter laufen beim
+Einschalten der Schleichfahrt hörbar aus und beim Aufheben wieder an. uConsole
+und Remote-Crew-Browser spielen dieselben Geräusche, alle zur Laufzeit erzeugt.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

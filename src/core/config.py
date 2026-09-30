@@ -1157,6 +1157,11 @@ MPA_MAD_LOOK_S = 1.0                # one MAD look per hull and second
 # crewed boat's ESM; data/contacts/aircraft.json).
 MPA_RADAR_EMITTER = "emitter.own_asset.mpa.radar"
 HELO_RADAR_EMITTER = "emitter.own_asset.helicopter.radar"
+# The bow slams (a sound) when it pitches down through this angle in a
+# heavy sea at speed.
+HULL_SLAM_PITCH_DEG = 3.5
+HULL_SLAM_MIN_KN = 8.0
+HULL_SLAM_SEA_STATE = 4
 AIRCREW_HOVER_EYE_M = 20.0        # a hovering (dipping) crew's eye height
 HELO_RADAR_ALTITUDE_M = 150.0      # transit altitude for the radar horizon
 HELO_RADAR_RANGE_NM = 40.0          # helicopter surface-search range, large ship

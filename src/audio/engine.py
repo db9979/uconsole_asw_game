@@ -11,7 +11,8 @@ import numpy as np
 import pygame
 
 from src.audio.receiver import smooth_limit
-from src.audio.synthesis import (active_sonar_ping, boat_effect, combat_effect,
+from src.audio.synthesis import (active_sonar_ping, atmosphere_effect, boat_effect,
+                                 combat_effect,
                                  sonar_echo, stereo_bearing, stereo_pan,
                                  tone)
 from src.core import config
@@ -268,8 +269,9 @@ class AudioEngine:
     def play_effect(self, kind: str, pan: float | None = None) -> bool:
         """Play one bounded local combat/handling effect on the alert bus,
         placed left or right by ``pan`` (see ``synthesis.bearing_pan``)."""
+        atmosphere = kind in ("general_alarm", "hull_slam")
         if kind not in {"torpedo_launch", "missile_launch", "gunfire",
-                        "explosion", "water_entry"}:
+                        "explosion", "water_entry"} and not atmosphere:
             return False
         if (not self.enabled or not self.available or self._alert_channel is None
                 or not self.local_effects):
@@ -279,9 +281,9 @@ class AudioEngine:
                     and self._alert_channel.get_queue() is not None):
                 self.alert_dropped_events += 1
                 return False
+            synthesize = atmosphere_effect if atmosphere else combat_effect
             sound = self._sound(
-                lambda: combat_effect(kind, self.sample_rate,
-                                      self.SOURCE_LIMITS["alert"]),
+                lambda: synthesize(kind, self.sample_rate, self.SOURCE_LIMITS["alert"]),
                 ("alert", "effect", kind, self.sample_rate), pan)
             if sound is None:
                 return False
@@ -297,7 +299,8 @@ class AudioEngine:
             return False
 
     BOAT_CUES = frozenset({"hull_creak", "hull_crack", "detonation_near",
-                           "detonation_far", "ping_heard"})
+                           "detonation_far", "ping_heard", "alarm_bell",
+                           "fans_down", "fans_up"})
 
     def play_boat_cue(self, kind: str, pan: float | None = None) -> bool:
         """One atmosphere cue inside the crewed boat (the uConsole as the boat;
@@ -312,7 +315,8 @@ class AudioEngine:
                 self.alert_dropped_events += 1
                 return False
             sound = self._sound(
-                lambda: boat_effect(kind, self.sample_rate, self.SOURCE_LIMITS["alert"]),
+                lambda: (atmosphere_effect if kind in ("alarm_bell", "fans_down", "fans_up")
+                         else boat_effect)(kind, self.sample_rate, self.SOURCE_LIMITS["alert"]),
                 ("alert", "boat", kind, self.sample_rate), pan)
             if sound is None:
                 return False

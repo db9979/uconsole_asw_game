@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.119
+
+Version 1.3.119 bringt Bordatmosphäre in den Ton. Gefechtsstationen auf der
+Fregatte lassen die Alarmglocke durch das Schiff läuten, und in schwerer See
+von vorn schlägt der Bug bei Fahrt hörbar ein, sobald er tief eintaucht. Das
+U-Boot läutet nur eine leise Alarmklingel, und seine Lüfter laufen beim
+Einschalten der Schleichfahrt hörbar aus und beim Aufheben wieder an. uConsole
+und Remote-Crew-Browser spielen dieselben Geräusche, alle zur Laufzeit erzeugt.
+
 ## 1.3.118
 
 Version 1.3.118 lässt Wetter und Uhrzeit wählen. Das Briefing jedes Szenarios,

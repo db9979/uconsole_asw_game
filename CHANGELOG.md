@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.119
+
+Release 1.3.119 adds shipboard atmosphere to the sound. Action stations on the
+frigate ring the general alarm bell through the ship, and in a heavy head sea
+at speed the bow is heard slamming each time it pitches down hard. The
+submarine rings only a quiet alarm bell, and its ventilation fans are heard
+running down when silent running starts and up again when it ends. The uConsole
+and the Remote Crew browsers play the same cues, all synthesized at runtime.
+
 ## 1.3.118
 
 Release 1.3.118 lets you choose the weather and the time of day. Every

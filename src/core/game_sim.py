@@ -269,6 +269,16 @@ class SimMixin:
         self._sound_event_seq += 1
         self._sound_events.append(dict(seq=self._sound_event_seq, kind=kind, pan=pan))
 
+    def _hull_slam(self, previous_pitch: float) -> None:
+        """A bow coming down hard into a head sea slams: a sound only (the
+        seakeeping model already carries the motion)."""
+        pitch = self.ship.pitch
+        if (previous_pitch > -config.HULL_SLAM_PITCH_DEG >= pitch
+                and self.ship.speed >= config.HULL_SLAM_MIN_KN
+                and getattr(self.world, "effective_sea_state", self.world.sea_state)
+                >= config.HULL_SLAM_SEA_STATE):
+            self._emit_sound("hull_slam")
+
     def _heard_pan(self, x: float, y: float, kind: str) -> float:
         """Where the crew hears a sound from ``x, y``: its bearing by ear
         (a few degrees off, deterministic) relative to the ship's head."""
@@ -333,7 +343,9 @@ class SimMixin:
         self.world.update(dt)
         self._steer_route(dt)
         self._steer_baffle_clear()
+        previous_pitch = self.ship.pitch
         contact = self.ship.update(dt, self.world, self.damage.list_deg())
+        self._hull_slam(previous_pitch)
         if contact is not None:
             speed_m_s = self.ship.last_impact_speed_kn * 1852.0 / 3600.0
             heading = math.radians(self.ship.course)

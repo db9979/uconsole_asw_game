@@ -365,3 +365,5 @@ body[data-sonar-scope][data-remote-role="assigned"] .cic-grid { grid-template-co
     linear-gradient(var(--bracket), var(--bracket)) bottom right / 2px .8rem no-repeat,
     var(--scope);
 }
+/* The plot frames only show the brackets: the waterfalls keep their height. */
+.helicopter-acoustic-plots > div:not([hidden]) { padding: 2px; border-color: transparent; }

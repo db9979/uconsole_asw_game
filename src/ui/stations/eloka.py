@@ -355,8 +355,8 @@ def draw_eloka_view(game, tr=None) -> None:
                         analysis_y += 28
     _shortcut_footer(surface, (station.x + 14, station.bottom - 26, station.w - 28, 20), (
         ("↑/↓", "eloka.footer.select"),
-        ("J", "eloka.footer.jam"),
+        ("E", "eloka.footer.jam"),
         ("A", "eloka.footer.ecm_auto"),
-        ("M", message("eloka.footer.audio", audio=localize(
+        ("J", message("eloka.footer.audio", audio=localize(
             "ui.on" if getattr(game, "eloka_audio_enabled", True) else "ui.off"))),
     ))

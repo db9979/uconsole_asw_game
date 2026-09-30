@@ -29,15 +29,15 @@ def test_all_stations_are_selectable():
         game.draw()
 
 
-def test_eloka_m_toggles_only_local_contact_sound():
+def test_eloka_j_toggles_only_local_contact_sound():
     game = Game(seed=31415, start_menu=False, audio_enabled=False)
     game.station = Station.ELOKA
 
     assert game.eloka_audio_enabled is True
-    key(game, pygame.K_m)
+    key(game, pygame.K_j)                    # J: audio, as at the sonar
     assert game.eloka_audio_enabled is False
     assert game.msg["__u_jagd_i18n__"] == "runtime.eloka_audio.off"
-    key(game, pygame.K_m)
+    key(game, pygame.K_j)
     assert game.eloka_audio_enabled is True
     assert game.msg["__u_jagd_i18n__"] == "runtime.eloka_audio.on"
 
@@ -96,7 +96,7 @@ def test_sonar_controls_change_gain_band_and_notch():
 
 def test_direct_course_and_speed_input():
     game = Game(seed=31415, start_menu=False)
-    key(game, pygame.K_u)
+    key(game, pygame.K_c)
     for value in (pygame.K_0, pygame.K_9, pygame.K_0):
         key(game, value)
     key(game, pygame.K_RETURN)
@@ -109,7 +109,7 @@ def test_direct_course_and_speed_input():
     assert game.ship.target_speed == 18.5
 
     game.station = Station.ENGINE
-    key(game, pygame.K_u)
+    key(game, pygame.K_c)
     for value in (pygame.K_2, pygame.K_7, pygame.K_0):
         key(game, value)
     key(game, pygame.K_RETURN)

@@ -74,6 +74,8 @@ def handle(game, e) -> bool:
     if button != 1:
         return False
     canvas = game._window_to_canvas(getattr(e, "pos", None))
+    if layer == "station" and _over_crew_message(game, canvas):
+        return False      # the crew message box lies above every station target
     target = pointer.hit(canvas, layer)
     if target is None:
         return False
@@ -84,6 +86,13 @@ def handle(game, e) -> bool:
     # Held like the key until the button is let go (steering, telegraph).
     game._pointer_held = (target.key, target.mod)
     return True
+
+
+def _over_crew_message(game, canvas) -> bool:
+    commander = getattr(game, "commander", None)
+    if canvas is None or commander is None or not commander.confirm_visible(game):
+        return False
+    return bool(commander.confirm_rect().collidepoint(canvas))
 
 
 def enter_value(game, mode: str, value) -> None:

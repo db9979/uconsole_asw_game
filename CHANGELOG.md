@@ -4,6 +4,20 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.116
+
+Release 1.3.116 gives the same function the same key at every station, on the
+frigate and on the submarine. Ctrl+Enter is the only fire key (T and E no
+longer fire), Q/E zoom everywhere including the CIC radar range, the
+binoculars and the periscope, and Page Up/Down turn the pages of every
+station. Course, speed and depth are entered with C/V/D on both sides and the
+torpedo run depth with T. The submarine now uses the frigate's G for action
+stations, A for silent running, V for the decoy and W/M/U on its crew page;
+the patrol aircraft takes the helicopter's keys, both aircraft radars sit on
+Ctrl+R, and the helicopter and ELOKA follow the sonar (Shift+A ping, G release
+to CIC, J audio). A click on the crew message box is no longer taken by a
+station key underneath it.
+
 ## 1.3.115
 
 Release 1.3.115 seats new players in a sensible order. A browser that pairs

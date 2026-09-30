@@ -55,10 +55,11 @@ def test_context_help_covers_new_station_commands():
     assert opz["Enter"] == "help.control.confirm_live_engage"
 
     helicopter = _help_keys(Station.HELICOPTER)
-    assert helicopter["G / Shift+G"] == "help.control.helo_contact_release"
+    assert helicopter["G"] == "help.control.helo_contact_release"
+    assert helicopter["Shift+↑ / ↓"] == "help.control.helo_contact_select"
 
     eloka = _help_keys(Station.ELOKA)
-    for key in ("F / Shift+F / B", "J", "Shift+J", "A", "M"):
+    for key in ("F / Shift+F / Ctrl+F", "E", "Shift+E", "A", "J"):
         assert key in eloka
 
 

@@ -12,15 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.115**
+Current release: **1.3.116**
 
-Release 1.3.115 seats new players in a sensible order. A browser that pairs
-while the multiplayer lobby is open now takes the first free station of the
-uConsole's unit, the stations that need judgement first: on the frigate Bridge,
-Sonar, Weapons, Helicopter, OPZ, ELOKA, Radio, Engine and Damage control, on the
-submarine Command, Sonar, Weapons, Mast and ESM, Navigation, Engine room and
-Radio room. The AI crew keeps the routine stations well. Every player can still
-change unit and station at any time.
+Release 1.3.116 gives the same function the same key at every station, on the
+frigate and on the submarine. Ctrl+Enter is the only fire key (T and E no
+longer fire), Q/E zoom everywhere including the CIC radar range, the
+binoculars and the periscope, and Page Up/Down turn the pages of every
+station. Course, speed and depth are entered with C/V/D on both sides and the
+torpedo run depth with T. The submarine now uses the frigate's G for action
+stations, A for silent running, V for the decoy and W/M/U on its crew page;
+the patrol aircraft takes the helicopter's keys, both aircraft radars sit on
+Ctrl+R, and the helicopter and ELOKA follow the sonar (Shift+A ping, G release
+to CIC, J audio).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

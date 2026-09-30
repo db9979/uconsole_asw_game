@@ -1134,6 +1134,25 @@ def test_crew_message_box_mouse_select_then_confirm_and_letterbox_rejection(game
     assert game.target is contact and not console.confirm_visible(game)
 
 
+def test_crew_message_box_clicks_win_over_station_targets_beneath(game):
+    from src.ui import pointer
+    console, server, contact = session(game)
+    server.send()
+    console.pump(game)
+    accept = console.confirm_button_rects()[0]
+    pointer.reset()
+    with pointer.layer("station"):
+        pointer.add_key(accept.inflate(40, 40), pygame.K_ESCAPE)
+    try:
+        event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=accept.center)
+        game.handle_event(event)
+        assert game.target is None and console.confirm_visible(game)
+        game.handle_event(event)
+        assert game.target is contact and not console.confirm_visible(game)
+    finally:
+        pointer.reset()
+
+
 def test_crew_message_box_only_consumes_clicks_inside_panel(game):
     console, server, _ = session(game)
     server.send()

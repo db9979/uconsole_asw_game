@@ -1,7 +1,7 @@
 import { $, heloStates } from "../core/base.js";
 import { S } from "../state/store.js";
 import { enumText, number, t, unit } from "../core/format.js";
-import { actionButton, fillFireTargets, metrics, position, stationRows, tacticalEntries, yesNo } from "../views/dom.js";
+import { actionButton, fillFireTargets, metrics, patchChildren, position, stationRows, tacticalEntries, yesNo } from "../views/dom.js";
 
 export function renderOpzStation(payload) {
   const radar = payload.radar;
@@ -87,12 +87,12 @@ function renderMpa(mpa) {
     ["helicopter_pattern", t(`buoy_pattern_${mpa.pattern}`)]);
   metrics($("opz-mpa"), rows);
   const tasking = mpa.state === "TRANSIT" || mpa.state === "STATION";
-  $("opz-mpa-actions").replaceChildren(
+  patchChildren($("opz-mpa-actions"), [
     mpa.airborne ? actionButton("mpa_return", "mpa_return", {}, tasking)
       : actionButton("mpa_request", "mpa_request", {}, mpa.ready_in_s === 0),
     actionButton("mpa_drop_buoy", "mpa_drop_buoy", {}, tasking && mpa.buoys > 0),
     actionButton(mpa.radar ? "mpa_radar_off" : "mpa_radar_on", "mpa_set_radar", {enabled: !mpa.radar}),
     actionButton(mpa.mad ? "mpa_mad_off" : "mpa_mad_on", "mpa_set_mad", {enabled: !mpa.mad}),
     actionButton(mpa.buoy_mode === "ACTIVE" ? "mpa_buoy_passive_order" : "mpa_buoy_active_order",
-      "mpa_set_buoy_mode", {mode: mpa.buoy_mode === "ACTIVE" ? "PASSIVE" : "ACTIVE"}));
+      "mpa_set_buoy_mode", {mode: mpa.buoy_mode === "ACTIVE" ? "PASSIVE" : "ACTIVE"})]);
 }

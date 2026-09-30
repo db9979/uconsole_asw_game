@@ -4,7 +4,7 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.122
+## 1.3.123
 
 The submarine gets a towed buoy antenna. In the radio room (B, or the browser's
 Radio room card) the crew streams it about 280 m astern; it copies HQ's
@@ -12,6 +12,17 @@ broadcast down to 60 m at 6 kn or less, receiving only. Above 10 kn the cable
 parts and the buoy is lost for the mission. Close in, the frigate's lookout and
 surface radar can find the small buoy on the water. Saves are now format v42;
 older saves do not load.
+
+## 1.3.122
+
+Release 1.3.122 makes the browser stations steadier to operate. A drop-down
+list that is open or in use, such as the ESM classification on the submarine,
+the fire-control target or the wire, torpedo type and damage-team choices, no
+longer closes or loses its choice when the station updates; it catches up once
+it is left. Buttons in updating lists (ESM emitters, tubes, bulkheads, radio
+channels and tasks, crew and patrol-aircraft orders) stay in place, so a click
+is no longer lost when an update lands mid-click. Saves stay format v41.
+
 
 ## 1.3.121
 

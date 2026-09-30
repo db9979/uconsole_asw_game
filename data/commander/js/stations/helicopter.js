@@ -2,7 +2,7 @@ import { S } from "../state/store.js";
 import { stopSonarAudio } from "../audio/audio.js";
 import { $, heloStates } from "../core/base.js";
 import { enumText, finite, number, t, unit } from "../core/format.js";
-import { fillFireTargets, metrics, node, position, stationRows, yesNo } from "../views/dom.js";
+import { fillFireTargets, metrics, position, setControlValue, setOptions, stationRows, yesNo } from "../views/dom.js";
 import { palette } from "../core/palette.js";
 import { renderLamps } from "../views/console-kit.js";
 import { visualContext } from "../views/visual-common.js";
@@ -100,19 +100,12 @@ export function renderHelicopterStation(payload) {
   S.helicopterAudioSource = payload.acoustic.source;
   if (!S.stationDrafts.has("helicopter-buoy-mode")) $("helicopter-buoy-mode").value = asset.buoy_mode;
   const listen = $("helicopter-listen-source");
-  if (listen.options.length !== payload.acoustic.sources.length ||
-      payload.acoustic.sources.some((source, index) => listen.options[index]?.value !== source)) {
-    listen.replaceChildren(...payload.acoustic.sources.map((source) => {
-      const option = node("option", source === "DIP" ? t("helicopter_dip_picture") : source);
-      option.value = source;
-      return option;
-    }));
-  }
-  listen.value = payload.acoustic.source;
+  setOptions(listen, payload.acoustic.sources.map((source) => [source, source === "DIP" ? t("helicopter_dip_picture") : source]));
+  setControlValue(listen, payload.acoustic.source);
   if (document.activeElement !== $("helicopter-listen-bearing"))
     $("helicopter-listen-bearing").value = payload.acoustic.listen_bearing ?? "";
-  $("helicopter-audition-mode").value = payload.acoustic.audition_mode;
-  $("helicopter-audio-band").value = payload.acoustic.band_preset;
+  setControlValue($("helicopter-audition-mode"), payload.acoustic.audition_mode);
+  setControlValue($("helicopter-audio-band"), payload.acoustic.band_preset);
   $("helicopter-audio-notch").checked = payload.acoustic.notch;
   if (document.activeElement !== $("helicopter-audio-gain"))
     $("helicopter-audio-gain").value = payload.acoustic.gain_db;

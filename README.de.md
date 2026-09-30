@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.122**
+Aktuelle Version: **1.3.123**
 
-Version 1.3.122 gibt dem U-Boot eine Bojenantenne. Im Funkraum (B oder die
+Version 1.3.123 gibt dem U-Boot eine Bojenantenne. Im Funkraum (B oder die
 Funkraum-Karte im Browser) bringt die Crew sie etwa 280 m achteraus aus; sie
 nimmt den Rundspruch der Führung bis 60 m Tiefe bei höchstens 6 kn auf, nur
 Empfang. Über 10 kn reißt das Kabel, und die Boje ist für die Mission verloren.

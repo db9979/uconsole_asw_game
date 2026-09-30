@@ -14,22 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.114**
+Aktuelle Version: **1.3.115**
 
-Version 1.3.114 lässt den Befehl eines Spielers vor der KI-Crew gelten. Im
-Mehrspieler mit Crew-Hilfe tauchte das KI-Kommando das U-Boot alle paar
-Sekunden weg und holte so das Sehrohr ein, das ein Spieler am Mast oder im
-Funkraum ausgefahren hatte; jetzt hält es das Boot auf Sehrohrtiefe, solange
-ein Spieler den Mast oben hält. Eine Station, die die KI besetzt, übersteuert
-nicht mehr, was ein Spieler an einer anderen Station befiehlt: Kurs, Tiefe und
-Ausweichen bleiben bei einem Spieler an der Navigation, Fahrt und Schleichfahrt
-bei einem im Maschinenraum, Trimm und Leckwehr bei einem am Kommando, und ein
-ausgefahrener Mast bleibt bei Alarm oben, solange ein Spieler am Kommando oder
-im Funkraum ihn hält. Auf der Fregatte steuert die KI-Brücke nicht mehr über
-einen Spieler im Maschinenraum hinweg, KI-Waffen und Seefernaufklärer behalten
-ein Ziel, das ein Spieler bestimmt hat, und ein am uConsole gewählter Kontakt
-bleibt gewählt. Eine Lobby-Runde ohne Browser ist jetzt ein Solospiel mit
-ausgeschalteter Crew-Hilfe.
+Version 1.3.115 setzt neue Spieler in einer sinnvollen Reihenfolge an die
+Stationen. Ein Browser, der bei offener Mehrspieler-Lobby koppelt, bekommt jetzt
+die erste freie Station der Einheit des uConsole, zuerst die Stationen, die
+Urteil brauchen: auf der Fregatte Brücke, Sonar, Waffen, Hubschrauber, OPZ,
+EloKa, Funk, Maschine und Schadensabwehr, auf dem U-Boot Führung, Sonar, Waffen,
+Mast und ESM, Navigation, Maschine und Funkraum. Die Routinestationen hält die
+KI-Crew gut. Jeder Spieler kann Einheit und Station weiter jederzeit wechseln.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

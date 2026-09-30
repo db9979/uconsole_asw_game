@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.115
+
+Release 1.3.115 seats new players in a sensible order. A browser that pairs
+while the multiplayer lobby is open now takes the first free station of the
+uConsole's unit, the stations that need judgement first: on the frigate Bridge,
+Sonar, Weapons, Helicopter, OPZ, ELOKA, Radio, Engine and Damage control, on the
+submarine Command, Sonar, Weapons, Mast and ESM, Navigation, Engine room and
+Radio room. The AI crew keeps the routine stations well. Every player can still
+change unit and station at any time.
+
 ## 1.3.114
 
 Release 1.3.114 makes a player's order win over the AI crew. In multiplayer

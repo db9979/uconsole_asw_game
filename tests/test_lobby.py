@@ -296,3 +296,28 @@ def test_a_lobby_round_alone_is_a_solo_game_without_the_crew_assist(game, monkey
     monkeypatch.setattr(type(game), "lobby_players", lambda self: crew)
     game._start_lobby_mission()
     assert game.crew_assist
+
+
+def test_a_browser_pairing_into_the_lobby_is_seated_in_order(server):  # noqa: F811
+    from src.commander.server import LOBBY_SEAT_ORDER, OPFOR_ROLES, STATIONS
+    assert sorted(LOBBY_SEAT_ORDER["frigate"]) == sorted(STATIONS)
+    assert sorted(LOBBY_SEAT_ORDER["uboot"]) == sorted(OPFOR_ROLES)
+    server.publish_lobby({"mission": "s1_patrouille", "side": "frigate",
+                          "host_station": "bridge", "countdown_s": None})
+    for _ in range(3):
+        pair_v2(server)
+    # The uConsole plays the bridge: the crew starts at sonar, weapons, helicopter.
+    assert [player["stations"] for player in server.lobby_players()] == [
+        ["sonar"], ["weapons"], ["helicopter"]]
+    # A host-only uConsole on the boat: the first browser takes command.
+    server.publish_lobby({"mission": "s1_patrouille", "side": "uboot",
+                          "host_station": None, "countdown_s": None})
+    pair_v2(server)
+    assert server.lobby_players()[-1]["stations"] == ["uboot"]
+
+
+def test_a_browser_pairing_without_a_lobby_gets_no_seat(server):  # noqa: F811
+    pair_v2(server)
+    server.publish_lobby({"mission": "s1_patrouille", "side": "frigate",
+                          "host_station": "bridge", "countdown_s": None})
+    assert server.lobby_players()[0]["stations"] == []

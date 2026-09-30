@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.114**
+Aktuelle Version: **1.3.115**
 
-Version 1.3.114 gibt derselben Funktion an jeder Station dieselbe Taste, auf
+Version 1.3.115 gibt derselben Funktion an jeder Station dieselbe Taste, auf
 der Fregatte wie auf dem U-Boot. Strg+Enter ist die einzige Feuertaste (T und E
 feuern nicht mehr), Q/E zoomen überall, auch den OPZ-Radarbereich, das Fernglas
 und das Sehrohr, und Bild auf/ab blättern an jeder Station. Kurs, Fahrt und

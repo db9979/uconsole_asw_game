@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.114
+## 1.3.115
 
-Version 1.3.114 gibt derselben Funktion an jeder Station dieselbe Taste, auf
+Version 1.3.115 gibt derselben Funktion an jeder Station dieselbe Taste, auf
 der Fregatte wie auf dem U-Boot. Strg+Enter ist die einzige Feuertaste (T und E
 feuern nicht mehr), Q/E zoomen überall, auch den OPZ-Radarbereich, das Fernglas
 und das Sehrohr, und Bild auf/ab blättern an jeder Station. Kurs, Fahrt und
@@ -17,6 +17,23 @@ Seefernaufklärer hat die Tasten des Helikopters, beide Luftfahrzeug-Radare
 liegen auf Strg+R, und Helikopter und ELOKA folgen dem Sonar (Shift+A Ping,
 G Freigabe an die OPZ, J Ton). Ein Klick auf das Meldungsfenster der Crew
 geht nicht mehr an eine Stationstaste darunter.
+
+## 1.3.114
+
+Version 1.3.114 lässt den Befehl eines Spielers vor der KI-Crew gelten. Im
+Mehrspieler mit Crew-Hilfe tauchte das KI-Kommando das U-Boot alle paar
+Sekunden weg und holte so das Sehrohr ein, das ein Spieler am Mast oder im
+Funkraum ausgefahren hatte; jetzt hält es das Boot auf Sehrohrtiefe, solange
+ein Spieler den Mast oben hält. Eine Station, die die KI besetzt, übersteuert
+nicht mehr, was ein Spieler an einer anderen Station befiehlt: Kurs, Tiefe und
+Ausweichen bleiben bei einem Spieler an der Navigation, Fahrt und Schleichfahrt
+bei einem im Maschinenraum, Trimm und Leckwehr bei einem am Kommando, und ein
+ausgefahrener Mast bleibt bei Alarm oben, solange ein Spieler am Kommando oder
+im Funkraum ihn hält. Auf der Fregatte steuert die KI-Brücke nicht mehr über
+einen Spieler im Maschinenraum hinweg, KI-Waffen und Seefernaufklärer behalten
+ein Ziel, das ein Spieler bestimmt hat, und ein am uConsole gewählter Kontakt
+bleibt gewählt. Eine Lobby-Runde ohne Browser ist jetzt ein Solospiel mit
+ausgeschalteter Crew-Hilfe.
 
 ## 1.3.113
 

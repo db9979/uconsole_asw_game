@@ -251,6 +251,10 @@ class AutocrewController:
                          or not game.sonar.focus_locked):
             best = max(contacts, key=lambda contact: (
                 contact.quality, contact.confidence, -contact.id))
+            if (game.selected_contact in contacts
+                    and any(AutocrewController.local_holds(game, key)
+                            for key in AUTOCREW_STATIONS if key != "sonar")):
+                best = game.selected_contact    # the uConsole's pick (Up/Down) wins
             if game.set_sonar_focus(best) is True:
                 return "focused"
         tow = game.sonar.tow_status(game.ship.speed)

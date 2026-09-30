@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.114**
+Current release: **1.3.115**
 
-Release 1.3.114 gives the same function the same key at every station, on the
+Release 1.3.115 gives the same function the same key at every station, on the
 frigate and on the submarine. Ctrl+Enter is the only fire key (T and E no
 longer fire), Q/E zoom everywhere including the CIC radar range, the
 binoculars and the periscope, and Page Up/Down turn the pages of every

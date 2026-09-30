@@ -251,7 +251,7 @@ def test_the_convoy_boat_lies_in_wait_ahead_of_the_convoy():
     # Waiting there, it hovers slowly; a convoy that has passed is chased.
     sub.x, sub.y = point
     sub.memory["last_ping_age"] = sub.memory["last_torpedo_age"] = float("inf")
-    if min(math.hypot(s.x - sub.x, s.y - sub.y) for s in ships) > config.BOAT_AI_ATTACK_NM:
+    if min(math.hypot(s.x - sub.x, s.y - sub.y) for s in ships) > config.BOAT_AI_CONVOY_ATTACK_NM:
         assert boat_ai.orders(game, sub)[1] == config.BOAT_AI_WAIT_KN
     sub.x = cx - 10.0 * math.sin(rad)
     sub.y = cy + 10.0 * math.cos(rad)

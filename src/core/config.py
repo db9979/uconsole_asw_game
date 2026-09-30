@@ -1233,7 +1233,8 @@ BOAT_AI_SIGHT_NM = 12.0            # recon: come up and sight the frigate this c
 BOAT_AI_SCOPE_CYCLE_S = 90.0
 BOAT_AI_SCOPE_LOOK_S = 24.0
 BOAT_AI_SCOPE_SWEEP_S = 16.0
-BOAT_AI_ATTACK_NM = 4.0            # convoy attack: fire at a merchant this close
+BOAT_AI_ATTACK_NM = 4.0            # a patrol raid: fire at a merchant this close
+BOAT_AI_CONVOY_ATTACK_NM = 7.0     # convoy attack: fire at a merchant this close
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0
 # Frigate missions: an AI patrol boat torpedoes a merchant within

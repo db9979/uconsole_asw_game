@@ -197,7 +197,7 @@ def orders(game, sub):
         target = min(ships, key=lambda ship: (math.hypot(ship.x - sub.x, ship.y - sub.y),
                                               ship.id))
         distance = math.hypot(target.x - sub.x, target.y - sub.y)
-        if distance <= config.BOAT_AI_ATTACK_NM:
+        if distance <= config.BOAT_AI_CONVOY_ATTACK_NM:
             # Turn the tubes on the target and creep in.
             return (_bearing(sub.x, sub.y, target.x, target.y),
                     config.BOAT_AI_PERISCOPE_KN, _deep(game, sub))
@@ -237,16 +237,18 @@ def _torpedo_running(game, sub) -> bool:
 
 
 def attack(game, sub, ships=None) -> bool:
-    """Fire one torpedo at the nearest merchant within attack range."""
+    """Fire one torpedo at the nearest merchant within attack range (the
+    convoy's from farther out than a patrol raid's passing merchant)."""
+    reach = config.BOAT_AI_CONVOY_ATTACK_NM if ships is None else config.BOAT_AI_ATTACK_NM
     near = [ship for ship in (convoy_ships(game) if ships is None else ships)
             if math.hypot(ship.x - sub.x, ship.y - sub.y)
-            <= config.BOAT_AI_ATTACK_NM + config.BOAT_AI_PREFLOOD_MARGIN_NM]
+            <= reach + config.BOAT_AI_PREFLOOD_MARGIN_NM]
     if (near and sub.state == "PATROLLE" and sub.torpedoes_left > 0
             and (sub.weapon_battery is None or sub.weapon_battery.ready_count > 0)):
         # Flood the tubes quietly while closing; the shot waits for them.
         sub.ai_flood_tubes(quiet=True)
     ships = [ship for ship in near
-             if math.hypot(ship.x - sub.x, ship.y - sub.y) <= config.BOAT_AI_ATTACK_NM]
+             if math.hypot(ship.x - sub.x, ship.y - sub.y) <= reach]
     if (not ships or sub.state != "PATROLLE" or sub.torpedoes_left <= 0
             or _torpedo_running(game, sub) or not _window(game, config.BOAT_AI_FIRE_EVERY_S)):
         return False

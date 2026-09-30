@@ -54,6 +54,8 @@ PATTERN_CLEAR_NM = 4.0          # no new buoy pattern where buoys already listen
 ESCORT_AHEAD_NM = 3.0           # the escort's station ahead of the convoy
 ESCORT_STATION_NM = 2.5         # farther off than this it closes at transit speed
 ESCORT_LEASH_NM = 8.0           # an escort prosecutes a datum this close to its convoy
+POST_LEASH_NM = 6.0             # breakthrough: the guard prosecutes a datum this close to its post
+POST_STATION_NM = 3.0           # and without one returns when this far from it
 RADAR_DATUM_S = 600.0           # a mast track stays a datum this long
 HQ_DATUM_S = 1800.0             # an HQ datum report stays a datum this long
 CORRELATE_DEG = 10.0            # a mast track this close to a sonar bearing is that contact
@@ -558,6 +560,14 @@ def escort_course(game):
     return course + side * 45.0, ships[0].speed + 2.0
 
 
+def guard_post(game):
+    """The breakthrough guard's post (the frigate's scenario start), or None."""
+    if boat_missions.mode(game) != "breakthrough":
+        return None
+    start = config.SCENARIOS.get(game.scenario_key, {}).get("ship_start")
+    return None if start is None else (float(start[0]), float(start[1]))
+
+
 def bridge(game, found) -> str:
     if _nearest_threat(game) is not None:
         return AutocrewController._bridge(game)
@@ -571,9 +581,17 @@ def bridge(game, found) -> str:
         center = convoy_center(game)
         if math.hypot(point[0] - center[0], point[1] - center[1]) > ESCORT_LEASH_NM:
             found = None
+    post = guard_post(game)
+    if post is not None and found is not None:
+        # Guarding the passage it never lets a boat draw it off its post.
+        point = datum_point(game, found)
+        if math.hypot(point[0] - post[0], point[1] - post[1]) > POST_LEASH_NM:
+            found = None
     if found is None:
         if escort is not None:
             return _steer(game, *escort)
+        if post is not None and math.hypot(post[0] - ship.x, post[1] - ship.y) > POST_STATION_NM:
+            return _steer(game, _bearing(ship.x, ship.y, *post), SEARCH_KN)
         return _steer(game, search_course(game), SEARCH_KN)
     side = 1.0 if math.floor(game.sim_t / CROSS_LEG_S) % 2 else -1.0
     if found["source"] == "lead":

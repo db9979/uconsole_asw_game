@@ -76,5 +76,5 @@ Air defence sequence (missile inbound):
 
 - The helicopter's buoys belong to the helicopter station; OPZ handles only the patrol aircraft's buoys.
 - The patrol aircraft has no dipping sonar and no own ESM; it cannot be shot down. MAD passes fly over the search area only, not along a track.
-- No automatic fusion: every fusion needs the operator's confirmation. Signatures are compared only as the operator's classifications (no acoustic or emitter fingerprint matching), and AIS carries no ship type.
+- Automatic fusion only for a clear match of reports from different sensors with at least one position; bearing-only pairs and ambiguous matches wait for the operator. Signatures are compared only as the operator's classifications (no acoustic or emitter fingerprint matching), and AIS carries no ship type.
 - No link-based air control of friendly aircraft.

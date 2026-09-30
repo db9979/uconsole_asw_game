@@ -76,5 +76,5 @@ Ablauf Luftverteidigung (Flugkörper im Anflug):
 
 - Die Bojen des Helikopters gehören zur Helikopterstation; die OPZ führt nur die Bojen des Seefernaufklärers.
 - Der Seefernaufklärer hat kein Tauchsonar und kein eigenes ESM; er kann nicht abgeschossen werden. MAD-Überflüge gehen nur über das Suchgebiet, nicht entlang eines Tracks.
-- Keine automatische Fusion: jede Fusion braucht die Bestätigung des Bedieners. Signaturen werden nur als Klassifizierungen des Bedieners verglichen (kein Abgleich akustischer oder Emitter-Fingerabdrücke), und AIS meldet keinen Schiffstyp.
+- Automatische Fusion nur bei eindeutiger Übereinstimmung von Meldungen verschiedener Sensoren mit mindestens einer Position; reine Peilungspaare und mehrdeutige Fälle warten auf den Bediener. Signaturen werden nur als Klassifizierungen des Bedieners verglichen (kein Abgleich akustischer oder Emitter-Fingerabdrücke), und AIS meldet keinen Schiffstyp.
 - Keine Link-gestützte Luftraumführung befreundeter Flugzeuge.

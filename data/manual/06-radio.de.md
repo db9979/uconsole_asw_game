@@ -76,5 +76,5 @@ Auf der Aufträge-Seite kann der Funkraum HQ selbst rufen, höchstens alle 10 Mi
 
 ## Nicht modelliert {#radio-limits}
 
-- Keine freien Funksprüche oder Meldungen an das HQ außer der Antwort auf Aufträge; kein Fernmeldeplan und keine Kryptierung.
+- Keine freien Funksprüche: eigene Rufe an das HQ sind nur die Kontaktmeldung und die Unterstützungsanforderung, dazu die Antworten auf Aufträge; kein Fernmeldeplan und keine Kryptierung.
 - Keine Frequenzabstimmung: HFDF überwacht das ganze KW-Band und listet die erfassten Signale mit ihrer Frequenz.

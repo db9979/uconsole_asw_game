@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.101**
+Aktuelle Version: **1.3.103**
 
-Version 1.3.101 bringt eine Mehrspieler-Lobby. Der neue Hauptmenüpunkt
+Version 1.3.103 bringt eine Mehrspieler-Lobby. Der neue Hauptmenüpunkt
 Mehrspieler startet Remote Crew im Crew-Modus und zeigt QR-Code und
 Beitrittscode; die Browser koppeln, wählen Einheit und Stationen und drücken
 Bereit, und alle sehen die Mission, Einheit und Station des uConsole und die

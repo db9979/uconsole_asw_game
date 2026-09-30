@@ -100,10 +100,21 @@ function renderRoute(route) {
   $("bridge-route-clear").disabled = !next;
   $("bridge-route-mode").setAttribute("aria-pressed", String(S.bridgeRouteMode));
 }
+// What the lookout reads from a navigation-light code (nav_lights.describe).
+function lightsText(code) {
+  const masts = Number(code[1]), red = code[2] === "r", green = code[3] === "g", stern = code[4] === "s";
+  const extra = code.slice(5).toLowerCase();
+  const lights = [...(masts ? [`masthead${masts}`] : []), ...(red ? ["red"] : []), ...(green ? ["green"] : []),
+    ...(stern ? ["stern"] : []), ...(extra ? [extra] : [])].map((name) => t(`sighting_light_${name}`));
+  const aspect = red && green ? "head_on" : green ? "starboard" : red ? "port" : stern ? "stern" : masts ? "masthead" : "";
+  const meaning = [...(aspect ? [t(`sighting_aspect_${aspect}`)] : []), ...(extra ? [t(`sighting_work_${extra}`)] : [])];
+  return t("sighting_lights", {lights: lights.join(", "), meaning: meaning.join(", ")});
+}
 function renderSightings(rows) {
   const list = $("bridge-sightings");
   const lines = rows.map((row) => t("sighting_report", {
-    time: row.time, what: row.code === null ? t(`sighting_detect_${row.sighted.toLowerCase()}`) : sightingText(row.code, row.type),
+    time: row.time, what: row.sighted === "LIGHTS" ? lightsText(row.lights) :
+      row.code === null ? t(`sighting_detect_${row.sighted.toLowerCase()}`) : sightingText(row.code, row.type),
     bearing: number(row.bearing, 0).padStart(3, "0"), range: number(row.range_nm, 1)}));
   if (!lines.length) lines.push(t("sightings_none"));
   [...list.children].slice(lines.length).forEach((item) => item.remove());

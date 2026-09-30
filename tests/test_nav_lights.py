@@ -219,3 +219,40 @@ def test_anti_collision_lights_flash():
                    if surface.get_at((x, y))[:3] == NAV_LIGHT["red"])
 
     assert reds(0.05) > 0 and reds(0.5) == 0
+
+
+def test_the_lookout_calls_the_lights_and_what_they_tell():
+    from src.core import config
+    from src.core.i18n import localize
+    game, _server, _bridge = _crewed(seed=61)
+    game.world.hour = 1.0
+    game._lookout_environment = lambda: dict(_environment(True), illumination=1.0)
+    game.crew_effect = lambda: 1.0
+    ship = game.civilians[0]
+    ship.profile = None
+    for other in game.civilians[1:] + game.warships:
+        other.x, other.y = game.ship.x + 60.0, game.ship.y + 60.0
+    # North of us heading west: we see her port side.
+    ship.x, ship.y, ship.course = game.ship.x, game.ship.y - 1.0, 270.0
+    game.world.land_blocks_line = lambda *args: False
+    game._update_lookout_picture()
+    calls = [row for row in game.lookout_reports if row["kind"] == "LIGHTS"]
+    assert [row["lights"] for row in calls] == ["L2r--"]
+    text = localize(game.lookout_report_text(calls[0]))
+    assert "two masthead lights, red side light; showing her port side" in text
+    # The same lights are not called again.
+    game.sim_t += config.LOOKOUT_LIGHTS_REPORT_S + 1.0
+    game._update_lookout_picture()
+    assert len([row for row in game.lookout_reports if row["kind"] == "LIGHTS"]) == 1
+    # She turns towards us: both side lights, called aloud once the interval
+    # has passed since the last call.
+    ship.course = 180.0
+    game.sim_t += 1.0
+    game._update_lookout_picture()
+    calls = [row for row in game.lookout_reports if row["kind"] == "LIGHTS"]
+    assert [row["lights"] for row in calls] == ["L2r--", "R2rg-"]
+    assert "heading for us" in localize(game.lookout_report_text(calls[-1]))
+    # The browser gets the call as a sighting with its lights code.
+    rows = projections._sightings(game)
+    assert rows[0]["sighted"] == "LIGHTS" and rows[0]["lights"] == "R2rg-"
+    assert rows[1]["lights"] is None or rows[1]["sighted"] == "LIGHTS"

@@ -18,6 +18,7 @@ from src.core.station import Station
 from src.core.limits import MAX_OPZ_TRACK_LABELS, MAX_TRACK_DISPLAY_ID_LEN
 from src.sensors import visual as visual_physics
 from src.sensors import lookout_id
+from src.sensors import nav_lights
 from src.world import atmosphere as atmosphere_physics
 from src.world import ocean as ocean_physics
 from src.sonar import raytrace as sonar_raytrace
@@ -38,6 +39,16 @@ from src.air import helicopter as helicopter_physics
 # Shared display/help constants and helpers (re-exported for tests/tools).
 # Names tests and tools import from ``src.core.game`` (kept as re-exports).
 
+
+
+def _listed(items):
+    """Localizable 'a, b, c' from messages (empty list: empty text)."""
+    if not items:
+        return raw_text("")
+    head = items[0]
+    for item in items[1:]:
+        head = message("lookout.list", head=head, tail=item)
+    return head
 
 class PicturesMixin:
     """Picture half of ``Game``: what the stations and browsers are shown."""
@@ -1498,9 +1509,22 @@ class PicturesMixin:
 
     def lookout_report_text(self, report: dict):
         """Localizable report line: 'Bridge lookout: frigate bearing 040, 3.8 NM'."""
+        if report["kind"] == "LIGHTS":
+            return self.lookout_lights_text(report)
         return message("lookout.report", what=self.lookout_report_what(report),
                        bearing=f"{report['bearing']:03.0f}",
                        range=f"{report['range_nm']:.1f}")
+
+    def lookout_lights_text(self, report: dict):
+        """'Bridge lookout: lights bearing 040, 2.8 NM: masthead, red; port side'."""
+        seen, aspect, work = nav_lights.describe(report["lights"])
+        lights = [message(f"lookout.light.{name}") for name in seen]
+        meaning = [message(f"lookout.aspect.{aspect}")] if aspect else []
+        if work:
+            meaning.append(message(f"lookout.work.{work}"))
+        return message("lookout.lights_report", lights=_listed(lights),
+                       meaning=_listed(meaning),
+                       bearing=f"{report['bearing']:03.0f}", range=f"{report['range_nm']:.1f}")
 
     def lookout_report_what(self, report: dict):
         if report["code"] is None:

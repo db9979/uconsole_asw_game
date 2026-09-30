@@ -376,7 +376,7 @@ class _Handler(BaseHTTPRequestHandler):
         return False
 
     @staticmethod
-    def _session_v2_body(session, sessions):
+    def _session_v2_body(session, sessions, owner=None):
         occupied = {station: candidate for candidate in sessions.values()
                     for station in candidate["leases"]}
         active = session["active_station"]
@@ -414,6 +414,8 @@ class _Handler(BaseHTTPRequestHandler):
             # Host command surface: only a solo session carries one.
             "host": ({"generation": session["host_generation"]}
                      if session["solo_host"] else None),
+            # The host's open multiplayer lobby (players, mission, countdown).
+            "lobby": owner.lobby_body_locked(session) if owner is not None else None,
             "stations": {
                 station: {
                     "status": status(station),
@@ -1020,7 +1022,7 @@ class _Handler(BaseHTTPRequestHandler):
                     role = session["active_station"] if session is not None else None
                     body = None
                     if session is not None and self.path == "/api/v2/session":
-                        body = self._session_v2_body(session, owner._sessions_v2)
+                        body = self._session_v2_body(session, owner._sessions_v2, owner)
                     elif session is not None and self.path == "/api/v2/results":
                         body = _json_bytes({"protocol": 2, "results": [
                             dict(result) for result in session["command_results"]]})
@@ -1106,7 +1108,7 @@ class _Handler(BaseHTTPRequestHandler):
                     owner._web_admin_seen.clear()
                     owner._web_admin_results.clear()
                     token, session = owner._new_session_locked("Host", web_host=True)
-                    self._reply(200, self._session_v2_body(session, owner._sessions_v2),
+                    self._reply(200, self._session_v2_body(session, owner._sessions_v2, owner),
                                 set_cookie=self._v2_cookie(token))
                     return
             elif owner.web_auth is not None and self.path == "/api/v2/web/admin":
@@ -1212,9 +1214,32 @@ class _Handler(BaseHTTPRequestHandler):
                     else:
                         token, session = owner._new_session_locked(
                             name, lookout=body.get("role"))
-                        self._reply(200, self._session_v2_body(session, owner._sessions_v2),
+                        self._reply(200, self._session_v2_body(session, owner._sessions_v2, owner),
                                     set_cookie=self._v2_cookie(token))
                         return
+            elif self.path == "/api/v2/lobby/ready":
+                try:
+                    session, _, presented = self._authenticated_v2_locked(renew=True)
+                except (UnicodeEncodeError, ValueError):
+                    status, response = 400, {"error": "invalid_request"}
+                else:
+                    if session is None:
+                        self._v2_unauthorized(presented)
+                        return
+                    csrf = self.headers.get("X-U-Jagd-CSRF")
+                    if (csrf is None or not secrets.compare_digest(
+                            csrf.encode("utf-8", errors="surrogatepass"),
+                            session["csrf"].encode("ascii"))):
+                        status, response = 403, {"error": "forbidden"}
+                    elif (type(body) is not dict or set(body) != {"ready"}
+                          or type(body["ready"]) is not bool):
+                        status, response = 400, {"error": "invalid_request"}
+                    elif not owner.set_ready_locked(session, body["ready"]):
+                        # No lobby open, or a phone lookout / observer.
+                        status, response = 409, {"error": "no_lobby"}
+                    else:
+                        status = 200
+                        response = self._session_v2_body(session, owner._sessions_v2, owner)
             elif self.path in ("/api/v2/stations/request", "/api/v2/stations/activate",
                                "/api/v2/stations/release"):
                 try:
@@ -1257,7 +1282,7 @@ class _Handler(BaseHTTPRequestHandler):
                                 session["next_request_generation"] += 1
                                 session["requests"][station] = session["next_request_generation"]
                             status = 200
-                            response = self._session_v2_body(session, owner._sessions_v2)
+                            response = self._session_v2_body(session, owner._sessions_v2, owner)
                     elif (type(body) is not dict
                           or set(body) != {"station", "station_generation",
                                            "active_generation"}
@@ -1276,7 +1301,7 @@ class _Handler(BaseHTTPRequestHandler):
                                 session, body["station"] if self.path.endswith("/activate")
                                 else None)
                             status = 200
-                            response = self._session_v2_body(session, owner._sessions_v2)
+                            response = self._session_v2_body(session, owner._sessions_v2, owner)
                     elif (body["station"] not in session["leases"]
                           or session["leases"][body["station"]]["generation"]
                           != body["station_generation"]):
@@ -1284,14 +1309,14 @@ class _Handler(BaseHTTPRequestHandler):
                     elif self.path.endswith("/activate"):
                         owner._set_active_station_locked(session, body["station"])
                         status = 200
-                        response = self._session_v2_body(session, owner._sessions_v2)
+                        response = self._session_v2_body(session, owner._sessions_v2, owner)
                     elif (body["active_generation"] != session["active_generation"]
                           or body["station"] != session["active_station"]):
                         status, response = 409, {"error": "stale_active_generation"}
                     else:
                         owner._release_station_locked(session, body["station"])
                         status = 200
-                        response = self._session_v2_body(session, owner._sessions_v2)
+                        response = self._session_v2_body(session, owner._sessions_v2, owner)
             elif self.path == "/api/v2/logout":
                 try:
                     session, digest, presented = self._authenticated_v2_locked(renew=True)

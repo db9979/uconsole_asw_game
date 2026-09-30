@@ -224,6 +224,9 @@ class CommanderServer:
         self._voice_peers = {}
         self._voice_talker = None
         self._v2_proposals = {}
+        # The multiplayer lobby the uConsole host has open (main thread
+        # publishes it, sessions read it); None while no lobby is open.
+        self._lobby = None
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._v2_events = {}
         self._v2_private_events = {}
@@ -749,6 +752,8 @@ class CommanderServer:
             "command_ids": OrderedDict(),
             "command_results": deque(maxlen=_V2_COMMAND_HISTORY_LIMIT),
             "held_commands": {},
+            # Lobby "ready" tick: transient, cleared whenever a lobby closes.
+            "ready": False,
         }
         self._next_v2_ordinal += 1
         digest = hashlib.sha256(token.encode("ascii")).digest()
@@ -1068,6 +1073,50 @@ class CommanderServer:
     def state_push_clients(self) -> int:
         with self._lock:
             return len(self._state_push_clients)
+
+    def publish_lobby(self, room) -> None:
+        """Publish the host's open lobby (``None`` closes it).
+
+        ``room`` is a detached dict of JSON values (mission, side,
+        host_station, countdown_s). Closing a lobby clears every ready tick,
+        so the next round starts with nobody ready.
+        """
+        with self._lock:
+            if room is None and self._lobby is not None:
+                for session in self._sessions_v2.values():
+                    session["ready"] = False
+            self._lobby = None if room is None else dict(room)
+
+    def set_ready_locked(self, session, ready: bool) -> bool:
+        """Tick or clear a crew session's lobby ready flag (transport thread)."""
+        if (self._lobby is None or type(ready) is not bool
+                or session["lookout_only"] or session["observer"]):
+            return False
+        session["ready"] = ready
+        return True
+
+    def lobby_players_locked(self, viewer=None) -> list[dict]:
+        """Lobby roster: every crew browser (no phone lookout), in pairing order."""
+        return [{
+            "name": session["name"],
+            "stations": [station for station in ROLES if station in session["leases"]],
+            "ready": session["ready"],
+            "observer": session["observer"],
+            "you": session is viewer,
+        } for session in sorted(self._sessions_v2.values(), key=lambda item: item["ordinal"])
+            if not session["lookout_only"]]
+
+    def lobby_players(self) -> list[dict]:
+        with self._lock:
+            self._expire_locked()
+            return self.lobby_players_locked()
+
+    def lobby_body_locked(self, session):
+        """The ``lobby`` block of a session body, or None without an open lobby."""
+        if self._lobby is None or session["lookout_only"]:
+            return None
+        return dict(self._lobby, ready=session["ready"],
+                    players=self.lobby_players_locked(session))
 
     def client_statuses(self) -> list[dict]:
         """Return a detached, deterministic local-host roster."""

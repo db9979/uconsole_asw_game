@@ -81,18 +81,21 @@ def test_submarine_choice_is_lesson_five():
     assert training.LESSONS.index(training.BOAT_LESSONS[0]) == 4
 
 
-def test_arrow_keys_and_enter_choose_remote_crew():
+def test_arrow_keys_and_enter_choose_remote_crew(monkeypatch):
     game = first_launch()
+    started = []
+    monkeypatch.setattr(game.commander, "autostart", lambda solo=False: started.append(solo))
     key(game, pygame.K_DOWN)
     key(game, pygame.K_DOWN)
     assert WELCOME_CHOICES[game.welcome_sel] == "remote_crew"
     key(game, pygame.K_RETURN)
-    assert game.commander_open and game.administration_open
-    assert game.main_menu and not game.welcome_active
+    # The multiplayer lobby opens and starts Remote Crew in crew mode.
+    assert game.lobby_active and started == [False]
+    assert not game.main_menu and not game.welcome_active
     assert load_preferences().onboarded is True
-    # Closing the overlay shows the main menu.
+    # Leaving the lobby shows the main menu on its entry.
     key(game, pygame.K_ESCAPE)
-    assert not game.commander_open and game.main_menu
+    assert game.main_menu and MAIN_MENU_ENTRIES[game.main_menu_sel] == "multiplayer"
 
 
 @pytest.mark.parametrize("skip_key", [pygame.K_ESCAPE, pygame.K_4])

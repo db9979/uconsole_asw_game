@@ -12,7 +12,7 @@ import { renderContactAnalysis } from "./analyzer.js";
 import { queueDraw, releaseCanvas } from "./chart.js";
 import { renderDisabledReasons } from "./controls.js";
 import { clearFireDrafts, clearVisuals, node } from "./dom.js";
-import { renderHost } from "./host.js";
+import { renderHost, scenarioText } from "./host.js";
 import { queueLookoutDraw, renderLookoutStatus } from "./lookout.js";
 import { renderSnapshot } from "./render.js";
 import { syncOpzSweepAnimation } from "./role-map.js";
@@ -27,9 +27,13 @@ export function renderLobby() {
   if (!S.session) return;
   const assigned = S.session.station !== null;
   const simlog = simlogActive();
+  // While the host has the multiplayer lobby open the crew meets here, also
+  // those who already hold a station.
+  const room = S.session.host === null && !simlog ? S.session.lobby : null;
   $("pairing").hidden = true;
-  $("lobby").hidden = simlog || assigned && !S.stationPickerOpen || S.session.host !== null && S.hostView?.phase === "menu";
-  $("lobby-back").hidden = !assigned;
+  $("lobby").hidden = simlog || assigned && !S.stationPickerOpen && room === null ||
+    S.session.host !== null && S.hostView?.phase === "menu";
+  $("lobby-back").hidden = !assigned || room !== null;
   // A solo session holds every station, so there is nothing to add or release.
   const solo = S.session.host !== null;
   $("role-rail").hidden = !assigned || S.stationPickerOpen || solo;
@@ -37,7 +41,8 @@ export function renderLobby() {
   for (const id of ["mobile-add-station", "mobile-release-station"]) $(id).hidden = solo;
   const rolePublished = S.v2State?.role === S.session.station;
   const hostMenu = S.session.host !== null && S.hostView?.phase === "menu";
-  $("operations").hidden = simlog || !assigned || S.stationPickerOpen || !rolePublished || hostMenu;
+  $("operations").hidden = simlog || !assigned || S.stationPickerOpen || !rolePublished || hostMenu || room !== null;
+  renderLobbyRoom(room);
   $("simlog-view").hidden = !simlog;
   if (simlog) loadSimlog();
   document.body.dataset.remoteRole = assigned ? "assigned" : "lobby";
@@ -116,6 +121,55 @@ export function renderLobby() {
   $("workstation-release").hidden = solo;
   renderHost();
   renderDisabledReasons();
+}
+function renderLobbyRoom(room) {
+  $("lobby-room").hidden = room === null;
+  if (room === null) return;
+  $("lobby-room-mission").textContent = t("lobby_room_mission", {mission: t(scenarioText[room.mission] ?? "unknown")});
+  $("lobby-room-host").textContent = t("lobby_room_host", {side: t(`lobby_room_side_${room.side}`),
+    station: t(`station_${room.host_station}`)});
+  const rows = [[t("lobby_player_host"), [room.host_station], "lobby_player_ready"],
+    ...room.players.map((player) => [player.you ? t("lobby_player_you", {name: player.name}) : player.name,
+      player.stations, player.observer ? "lobby_player_observer" : player.ready ? "lobby_player_ready" : "lobby_player_waiting"])];
+  $("lobby-room-players").replaceChildren(...rows.map(([name, stations, state]) => {
+    const item = node("li");
+    item.dataset.state = state;
+    item.append(node("strong", name), node("span", stations.length
+      ? stations.map((station) => t(`station_${station}`)).join(", ") : t("lobby_player_none")), node("em", t(state)));
+    return item;
+  }));
+  const holding = stationNames.some((station) => S.session.stations[station].status === "mine");
+  const observer = S.session.observer === true;
+  $("lobby-room-status").textContent = room.countdown_s !== null
+    ? t("lobby_countdown", {seconds: Math.max(1, Math.ceil(room.countdown_s))})
+    : S.lobbyRoomMessage ? t(S.lobbyRoomMessage) : !holding && !observer ? t("lobby_ready_need_station") : t("lobby_waiting_host");
+  const ready = $("lobby-ready");
+  ready.hidden = observer;
+  ready.textContent = t(room.ready ? "lobby_unready" : "lobby_ready");
+  ready.setAttribute("aria-pressed", String(room.ready));
+  ready.disabled = S.stationMutation || !holding && !room.ready;
+}
+export async function toggleReady() {
+  const room = S.session?.lobby;
+  if (!room || S.stationMutation) return;
+  S.stationMutation = true;
+  S.lobbyRoomMessage = null;
+  const context = S.generation;
+  try {
+    const result = await request("/lobby/ready", { method: "POST", body: {ready: !room.ready},
+      csrf: S.session.csrf, guard: () => context === S.generation });
+    if (context !== S.generation) return;
+    acceptSession(result);
+  } catch (error) {
+    if (context !== S.generation || error.message === "cancelled") return;
+    if (error.status === 401) forgetSession("connection_expired");
+    else S.lobbyRoomMessage = "lobby_ready_failed";
+  } finally {
+    if (context === S.generation) {
+      S.stationMutation = false;
+      renderLobby();
+    }
+  }
 }
 function switchRole(from, to) {
   if (S.v2State?.role === from) roleCache.set(from, S.v2State);

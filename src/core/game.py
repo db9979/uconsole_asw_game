@@ -101,12 +101,14 @@ from src.core.game_logbook import LogbookMixin
 from src.core.game_bugreport import (BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES,
                                      BugReportMixin)
 from src.core.game_welcome import WelcomeMixin
+from src.core.game_lobby import LobbyMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
            SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, DebriefMixin,
-           TrainingMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
+           TrainingMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
+           LobbyMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -271,6 +273,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.reset(seed)
         self._autosave_armed = True
         # First launch (no settings.json): the welcome page replaces the menu.
+        self._init_lobby()
         self._init_welcome(start_menu)
         self.splash_active = bool(show_splash)
         self.splash_started_at = self._t

@@ -47,6 +47,7 @@ export const S = {
   requestedSonarFocus: null,
   stationPickerOpen: false,
   lobbyMessage: null,
+  lobbyRoomMessage: null,
   // Unit chosen in the lobby ("frigate" | "opfor"); held stations decide otherwise.
   lobbySide: "frigate",
   commandMessage: null,

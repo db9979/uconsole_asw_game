@@ -99,9 +99,10 @@ def assert_session(body, name):
         "protocol", "client_id", "name", "csrf", "station", "observer",
         "requested_station", "grants", "ordinal", "station_generation",
         "active_station", "active_generation", "simlog",
-        "next_command_seq", "presence", "stations", "host",
+        "next_command_seq", "presence", "stations", "host", "lobby",
     }
     assert body["host"] is None
+    assert body["lobby"] is None
     assert body["protocol"] == 2
     assert isinstance(body["client_id"], str) and body["client_id"]
     assert body["name"] == name

@@ -436,6 +436,9 @@ class MissionBridgeMixin:
         self.main_menu_sel = 0
         self.menu_screen = "scenario"
         self.menu_sel = 0
+        if self.lobby_round:
+            # A mission started from the lobby returns the crew there.
+            self.open_lobby()
 
     def hq_intel_mode_menu(self) -> str:
         return (self.menu_hq_intel if self.menu_hq_intel in config.HQ_INTEL_MODES

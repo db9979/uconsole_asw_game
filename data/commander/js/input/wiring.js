@@ -21,7 +21,7 @@ import { analysisProfile, renderContactAnalysis } from "../views/analyzer.js";
 import { chartGeometry, fitChart, plotClick, plotTrackBearing, queueDraw, releaseCanvas } from "../views/chart.js";
 import { activateDirectFire, confirmFireDialog, renderActionState, renderDirectFireControls, renderSonarControlPage } from "../views/controls.js";
 import { clearFireConfirmation } from "../views/dom.js";
-import { acceptSession, activateTab, chooseSide, chooseStation, mutateStation, renderLobby } from "../views/lobby.js";
+import { acceptSession, activateTab, chooseSide, chooseStation, mutateStation, renderLobby, toggleReady } from "../views/lobby.js";
 import { changeLookoutRange, queueLookoutDraw, renderLookoutStatus, zoom } from "../views/lookout.js";
 import { renderSnapshot } from "../views/render.js";
 import { hideMapTooltip, mapTooltipLines, nearestMapInfo, roleMapGeometry, showMapTooltip, stopOpzSweepAnimation, syncOpzSweepAnimation } from "../views/role-map.js";
@@ -305,6 +305,7 @@ export function init() {
   }
   for (const button of $("side-choice").querySelectorAll("button"))
     button.addEventListener("click", () => chooseSide(button.dataset.side));
+  $("lobby-ready").addEventListener("click", toggleReady);
   $("lobby-back").addEventListener("click", () => {
     S.stationPickerOpen = false;
     renderLobby();

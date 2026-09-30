@@ -1234,7 +1234,7 @@ BOAT_AI_SCOPE_CYCLE_S = 90.0
 BOAT_AI_SCOPE_LOOK_S = 24.0
 BOAT_AI_SCOPE_SWEEP_S = 16.0
 BOAT_AI_ATTACK_NM = 4.0            # a patrol raid: fire at a merchant this close
-BOAT_AI_CONVOY_ATTACK_NM = 5.5     # convoy attack: fire at a merchant this close
+BOAT_AI_CONVOY_ATTACK_NM = 4.0     # convoy attack: fire at a merchant this close
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0
 # Frigate missions: an AI patrol boat torpedoes a merchant within
@@ -1254,8 +1254,8 @@ BOAT_AI_CREEP_KN = 3.0
 BOAT_AI_THREAT_NM = 8.0
 BOAT_AI_HUNTED_S = 600.0
 # Breakthrough: a frigate this close to the leg ahead is passed this far off.
-BOAT_AI_DETOUR_NM = 6.0
-BOAT_AI_DETOUR_DEG = 40.0
+BOAT_AI_DETOUR_NM = 9.0
+BOAT_AI_DETOUR_DEG = 60.0
 # Convoy attack: lie in wait this far ahead of the convoy and abeam of its
 # track, hovering at the wait speed until the merchants come into range.
 BOAT_AI_AMBUSH_AHEAD_NM = 2.0

@@ -302,6 +302,11 @@ def _setup_escort(game) -> None:
     _station_boat_ahead(game, course, (ship.x, ship.y))
 
 
+def escort_origin(game):
+    """Where the supply ship's base track starts (its start position)."""
+    return game.world.nearest_water(*_nominal(game.scenario_key))
+
+
 def supply(game):
     """The escorted supply ship (sunk or not), or None."""
     if mode(game) != "escort":

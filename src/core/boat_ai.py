@@ -160,11 +160,12 @@ def detour(sub, course: float, distance_nm: float) -> float:
     return (course - math.copysign(config.BOAT_AI_DETOUR_DEG, off or 1.0)) % 360.0
 
 
-def ambush_point(sub, ships, course=None, hold=False):
+def ambush_point(sub, ships, course=None, hold=None):
     """Where the boat waits for the convoy: ahead of it, abeam of its track on
     the boat's side; None once the convoy has passed the boat. ``course`` is
-    the track (the lead ship's course by default). With ``hold`` the boat
-    only closes the track sideways and lets the ships come to it."""
+    the track (the lead ship's course by default). With ``hold`` (a point on
+    the base track) the boat only closes that track sideways and lets the
+    ships come to it, whatever their zigzag."""
     cx = sum(ship.x for ship in ships) / len(ships)
     cy = sum(ship.y for ship in ships) / len(ships)
     rad = math.radians(ships[0].course if course is None else course)
@@ -172,11 +173,15 @@ def ambush_point(sub, ships, course=None, hold=False):
     rx, ry = sub.x - cx, sub.y - cy
     if rx * ux + ry * uy < 0.0:
         return None
-    side = 1.0 if rx * -uy + ry * ux >= 0.0 else -1.0
     ahead, abeam = config.BOAT_AI_AMBUSH_AHEAD_NM, config.BOAT_AI_AMBUSH_ABEAM_NM
-    if hold:
-        ahead = max(ahead, rx * ux + ry * uy)
+    if hold is not None:
+        hx, hy = sub.x - hold[0], sub.y - hold[1]
+        side = 1.0 if hx * -uy + hy * ux >= 0.0 else -1.0
+        along = hx * ux + hy * uy
         abeam = config.BOAT_AI_ESCORT_ABEAM_NM
+        return (hold[0] + along * ux - side * abeam * uy,
+                hold[1] + along * uy + side * abeam * ux)
+    side = 1.0 if rx * -uy + ry * ux >= 0.0 else -1.0
     return cx + ahead * ux - side * abeam * uy, cy + ahead * uy + side * abeam * ux
 
 
@@ -220,7 +225,8 @@ def orders(game, sub):
             # Turn the tubes on the target and creep in.
             return (_bearing(sub.x, sub.y, target.x, target.y),
                     config.BOAT_AI_PERISCOPE_KN, _deep(game, sub))
-        wait = ambush_point(sub, ships, track, hold=kind == "escort")
+        wait = ambush_point(sub, ships, track, hold=(boat_missions.escort_origin(game)
+                                                     if kind == "escort" else None))
         if wait is not None:
             # Ahead of the convoy: lie in wait abeam of its track, quietly.
             gap = math.hypot(wait[0] - sub.x, wait[1] - sub.y)

@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { enumText, finite, number, stateText, t, unit } from "../core/format.js";
-import { metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
+import { inUse, metrics, setOptions, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 import { renderLamps } from "../views/console-kit.js";
 
 // The listening console's annunciator lamps: what the operator has switched on.
@@ -74,9 +74,9 @@ export function renderSonarStation(payload) {
   if (!S.stationDrafts.has("sonar-audition-mode")) $("sonar-audition-mode").value = auditionMode;
   if (settings.band_preset && !S.stationDrafts.has("sonar-band")) $("sonar-band").value = settings.band_preset;
   if (settings.band_preset && !S.stationDrafts.has("sonar-listen-band")) $("sonar-listen-band").value = settings.band_preset;
-  $("sonar-harmonic-candidates").replaceChildren(...settings.harmonic_candidates_hz.map((value) => {
-    const option = node("option"); option.value = String(value); return option;
-  }));
+  // The suggestion list stays while the operator types into its field.
+  if (!inUse($("sonar-harmonic-input")))
+    setOptions($("sonar-harmonic-candidates"), settings.harmonic_candidates_hz.map((value) => [String(value), ""]));
   $("sonar-ping").dataset.ready = String(live && settings.ping.ready &&
     (settings.mode !== "TOWED" || settings.tow.available) && (settings.mode !== "VDS" || settings.vds.available));
   $("sonar-bt").dataset.ready = String(live && settings.bt.ready);

@@ -1,12 +1,12 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { number, stateText, unit } from "../core/format.js";
-import { fillFireTargets, metrics, position, stationRows, weaponTargetEntries, yesNo } from "../views/dom.js";
+import { fillFireTargets, inUse, metrics, position, stationRows, weaponTargetEntries, yesNo } from "../views/dom.js";
 
 function renderTorpedoSettings(settings) {
   const typeSelect = $("weapons-torpedo-type");
   const wanted = settings.choices.map((row) => `${row.key}|${row.name}|${row.stock}|${row.loaded}`).join("\n");
-  if (typeSelect.dataset.choices !== wanted) {
+  if (typeSelect.dataset.choices !== wanted && !inUse(typeSelect)) {
     typeSelect.replaceChildren(...settings.choices.map((row) => {
       const option = document.createElement("option");
       option.value = row.key;

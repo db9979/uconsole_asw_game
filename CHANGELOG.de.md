@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.122
+
+Version 1.3.122 macht die Browser-Stationen ruhiger in der Bedienung. Eine
+Auswahlliste, die offen ist oder gerade bedient wird, etwa die ESM-
+Klassifizierung auf dem U-Boot, das Ziel der Feuerleitung oder die Auswahl von
+Draht, Torpedotyp und Leckwehrtrupp, klappt bei einer Aktualisierung der Station
+nicht mehr zu und verliert ihre Auswahl nicht; sie zieht nach, sobald man sie
+verlässt. Schaltflächen in sich aktualisierenden Listen (ESM-Emitter, Rohre,
+Schotten, Funkkanäle und Aufträge, Befehle an Besatzung und Seefernaufklärer)
+bleiben stehen, sodass ein Klick nicht mehr verloren geht, wenn mitten im Klick
+eine Aktualisierung eintrifft. Spielstände bleiben im Format v41.
+
+
 ## 1.3.121
 
 Notfälle an Bord ergänzen die Ereignisse auf See. Auf der Fregatte kann ein

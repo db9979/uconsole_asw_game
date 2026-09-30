@@ -45,6 +45,7 @@ export function actionButton(labelKey, action, params, ready = true, values = {}
   button.type = "button";
   button.dataset.stationAction = action;
   button.dataset.ready = String(ready);
+  button.dataset.stationParams = JSON.stringify(params ?? {});
   button.disabled = !stationActionAvailable() || !ready;
   button.addEventListener("click", () => sendStationAction(action, params));
   return button;
@@ -64,19 +65,62 @@ export function clearFireDrafts() {
     $(id).value = "";
   }
 }
+// A control the operator is using (focused, a drop-down list open) is left
+// alone by state pushes: rebuilding or re-setting it would close the list or
+// throw the pick away. The first push after it loses focus catches it up.
+export const inUse = (element) => element === document.activeElement;
+export function setControlValue(element, value) {
+  if (!inUse(element) && element.value !== value) element.value = value;
+}
+// Replace a drop-down's options only when they changed and it is not in use;
+// the chosen value survives when it is still offered. `rows` is [[value, text]].
+export function setOptions(select, rows) {
+  const signature = JSON.stringify(rows);
+  if (inUse(select) || select.dataset.optionsSignature === signature) return false;
+  const previous = select.value;
+  select.replaceChildren(...rows.map(([value, text]) => {
+    const option = node("option", text);
+    option.value = value;
+    return option;
+  }));
+  select.dataset.optionsSignature = signature;
+  if (rows.some(([value]) => value === previous)) select.value = previous;
+  return true;
+}
+// Bring `element`'s children in line with freshly built `nodes`, keeping every
+// element whose tag, row key and action parameters match: a button under the
+// pointer stays the same button, so a click is not lost when a push lands
+// between press and release.
+export function patchChildren(element, nodes) {
+  nodes.forEach((fresh, index) => {
+    const current = element.childNodes[index];
+    if (!current) element.append(fresh);
+    else if (!patchNode(current, fresh)) current.replaceWith(fresh);
+  });
+  while (element.childNodes.length > nodes.length) element.lastChild.remove();
+}
+function patchNode(current, fresh) {
+  if (current.nodeType !== fresh.nodeType || current.nodeName !== fresh.nodeName) return false;
+  if (current.nodeType !== Node.ELEMENT_NODE) {
+    if (current.nodeValue !== fresh.nodeValue) current.nodeValue = fresh.nodeValue;
+    return true;
+  }
+  for (const key of ["rowKey", "stationParams", "stationAction"])
+    if (current.dataset[key] !== fresh.dataset[key]) return false;
+  for (const {name} of [...current.attributes]) if (!fresh.hasAttribute(name)) current.removeAttribute(name);
+  for (const {name, value} of [...fresh.attributes]) if (current.getAttribute(name) !== value) current.setAttribute(name, value);
+  if ("disabled" in current && current.disabled !== fresh.disabled) current.disabled = fresh.disabled;
+  patchChildren(current, [...fresh.childNodes]);
+  return true;
+}
 export function fillFireTargets(id, rows, designated = null) {
   const select = $(id);
+  if (inUse(select)) return;
   // Without an operator draft, the sonar room's designated target is preselected.
   const previous = S.stationDrafts.has(id) ? select.value : designated || "";
-  select.replaceChildren(node("option", t("fire_select_target")));
-  select.firstElementChild.value = "";
-  for (const row of rows) {
-    const option = node("option", t("fire_target_option", {
-      label: row.label || row.ref, bearing: number(row.bearing, 0), range: number(row.range_nm, 1),
-    }));
-    option.value = row.ref;
-    select.append(option);
-  }
+  setOptions(select, [["", t("fire_select_target")], ...rows.map((row) => [row.ref, t("fire_target_option", {
+    label: row.label || row.ref, bearing: number(row.bearing, 0), range: number(row.range_nm, 1),
+  })])]);
   select.value = rows.some((row) => row.ref === previous) ? previous : "";
   if (previous && !select.value) clearFireConfirmation();
 }

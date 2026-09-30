@@ -14,19 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.121**
+Aktuelle Version: **1.3.122**
 
-Version 1.3.121 bringt mehr Wirklichkeit auf See. Ein ausgefahrenes Sehrohr
-oder ein Schnorchel zieht eine Schaumfahne, die Ausguck, Heli-Besatzung und
-Seefernaufklärer sehen können; sie wächst mit der Fahrt, langsam heißt also
-unsichtbar, und die U-Boot-Crew warnt über 5 kn. In jedem Szenario und jeder
-Kampagnenmission lassen sich Wetter (schön, Regen, Sturm, Nebel) und Uhrzeit
-wählen oder beide dem Zufall überlassen. Das Schiff klingt lebendiger:
-Generalalarm, Wellenschläge gegen den Bug, die Alarmglocke des U-Boots und
-seine Lüfter bei Schleichfahrt. Notfälle an Bord ergänzen die Ereignisse auf
-See: Mann über Bord und Ruderversager auf der Fregatte, ein klemmendes
-Schnorchelventil oder Batteriegas auf einem Diesel-U-Boot. Spielstände bleiben
-im Format v41.
+Version 1.3.122 macht die Browser-Stationen ruhiger in der Bedienung. Eine
+Auswahlliste, die offen ist oder gerade bedient wird, etwa die ESM-
+Klassifizierung auf dem U-Boot, das Ziel der Feuerleitung oder die Auswahl von
+Draht, Torpedotyp und Leckwehrtrupp, klappt bei einer Aktualisierung der Station
+nicht mehr zu und verliert ihre Auswahl nicht; sie zieht nach, sobald man sie
+verlässt. Schaltflächen in sich aktualisierenden Listen (ESM-Emitter, Rohre,
+Schotten, Funkkanäle und Aufträge, Befehle an Besatzung und Seefernaufklärer)
+bleiben stehen, sodass ein Klick nicht mehr verloren geht, wenn mitten im Klick
+eine Aktualisierung eintrifft. Spielstände bleiben im Format v41.
 
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

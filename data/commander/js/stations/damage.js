@@ -1,6 +1,6 @@
 import { $, damageStates } from "../core/base.js";
 import { enumText, number, t, unit } from "../core/format.js";
-import { actionButton, metrics, node, stationRows, yesNo } from "../views/dom.js";
+import { actionButton, metrics, setOptions, stationRows, yesNo } from "../views/dom.js";
 import { renderCrew } from "../views/crew.js";
 
 function compartmentName(payload, key) {
@@ -20,13 +20,7 @@ export function renderDamageStation(payload) {
   valve.textContent = t(stability.counterflood_room ? "damage_counterflood_stop" : "damage_counterflood_start");
   valve.disabled = !stability.counterflood_room && !stability.can_counterflood;
   const selector = $("damage-team");
-  const selectedTeam = selector.value;
-  selector.replaceChildren(...payload.teams.map((team) => {
-    const option = node("option", number(team.team, 0));
-    option.value = String(team.team);
-    return option;
-  }));
-  if (payload.teams.some((team) => String(team.team) === selectedTeam)) selector.value = selectedTeam;
+  setOptions(selector, payload.teams.map((team) => [String(team.team), number(team.team, 0)]));
   stationRows($("damage-teams"), payload.teams, (team) => [["team", team.team], ["compartment", team.compartment]]);
   stationRows($("damage-compartments"), payload.compartments, (room) => [["compartment", room.name],
     ["reference", room.key], ["state", enumText(damageStates, room.state)], ["flood", unit(room.flood, "%")],

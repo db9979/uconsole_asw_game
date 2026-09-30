@@ -12,17 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.121**
+Current release: **1.3.122**
 
-Release 1.3.121 adds more realism at sea. A raised periscope or snorkel draws a
-feather that the lookout, the helicopter crew and the patrol aircraft can see;
-it grows with speed, so slow means hidden, and the submarine crew warns above 5
-kn. Every scenario and campaign mission lets you choose the weather (fair,
-rain, storm, fog) and the time of day, or leave both random. The ship sounds
-more alive: the general alarm, a bow slamming into a head sea, the submarine's
-alarm bell and its fans in silent running. Emergencies aboard join the
-incidents at sea: man overboard and steering failure on the frigate, a jammed
-snorkel valve or battery gas on a diesel submarine. Saves stay format v41.
+Release 1.3.122 makes the browser stations steadier to operate. A drop-down
+list that is open or in use, such as the ESM classification on the submarine,
+the fire-control target or the wire, torpedo type and damage-team choices, no
+longer closes or loses its choice when the station updates; it catches up once
+it is left. Buttons in updating lists (ESM emitters, tubes, bulkheads, radio
+channels and tasks, crew and patrol-aircraft orders) stay in place, so a click
+is no longer lost when an update lands mid-click. Saves stay format v41.
 
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

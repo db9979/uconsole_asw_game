@@ -716,13 +716,16 @@ class Sub:
             self.state = "SINKING"
             self.sink_left = 20.0
 
+    def _mission_pressing_on(self) -> bool:
+        """A mission boat that heard no torpedo lately holds to its mission."""
+        return (self.mission_orders is not None
+                and self.memory["last_torpedo_age"] > config.SUB_EVADE_DURATION_S)
+
     def evade_depth(self, thermo: float, safe_depth: float) -> float:
         """Below the layer, away from a ping; the reconnaissance boat within
         sighting range still comes up for its periscope look, since a ping
         alone does not keep it down (a torpedo in the water does)."""
-        if (self.mission_orders is not None
-                and self.mission_orders[2] <= MAST_DEPTH_M
-                and self.memory["last_torpedo_age"] > config.SUB_EVADE_DURATION_S):
+        if self._mission_pressing_on() and self.mission_orders[2] <= MAST_DEPTH_M:
             return self.mission_orders[2]
         return min(thermo + 40.0, safe_depth)
 
@@ -986,6 +989,7 @@ class Sub:
             if self.evac_left <= 0:
                 # W2: In der Nähe der Fregatte -> still halten und lauschen
                 if (tactical_observation is not None
+                        and not self._mission_pressing_on()
                         and tactical_observation.range_nm is not None
                         and tactical_observation.range_nm < config.SUB_LUER_DIST_NM):
                     # A charted wreck within reach is the better hiding place:
@@ -1015,6 +1019,10 @@ class Sub:
             bearing = self.memory["contact_bearing"]
             target_course = (self.course if bearing is None else
                              (bearing + 180.0 + self.evade_offset) % 360.0)
+            if self._mission_pressing_on():
+                # A ping alone does not turn a mission boat back: it keeps
+                # its leg, deep and slow, and gives way only to a torpedo.
+                target_course = self.mission_orders[0]
             trail = self._baffle_trail(tactical_observation)
             if trail is not None:
                 target_course = trail

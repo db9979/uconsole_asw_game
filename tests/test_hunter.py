@@ -543,3 +543,16 @@ def test_guarding_its_post_the_frigate_has_no_patrol_aircraft_and_a_short_helico
     assert game.helo.state == "HANGAR"
     assert hunter.helicopter(game, far) == "monitoring" and game.helo.state == "HANGAR"
     assert hunter.HELO_GUARD_NM < hunter.HELO_RANGE_NM
+
+
+def test_a_mission_boat_presses_on_through_a_ping_but_not_a_torpedo():
+    game = _boat_mission()
+    sub = next(sub for sub in game.subs if sub.side == "hostile")
+    sub.mission_orders = (123.0, 6.0, 80.0)
+    sub.memory["last_torpedo_age"] = float("inf")
+    assert sub._mission_pressing_on()
+    sub.memory["last_torpedo_age"] = 0.0
+    assert not sub._mission_pressing_on()
+    sub.memory["last_torpedo_age"] = float("inf")
+    sub.mission_orders = None
+    assert not sub._mission_pressing_on()

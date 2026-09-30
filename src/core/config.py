@@ -1225,7 +1225,7 @@ BOAT_AI_TRANSIT_KN = 6.0           # quiet transit below the layer
 BOAT_AI_PERISCOPE_KN = 3.0         # at periscope depth or creeping in to fire
 BOAT_AI_BELOW_LAYER_M = 30.0
 BOAT_AI_MIN_WATER_M = 30.0         # the leg detours round shallower water
-BOAT_AI_SIGHT_NM = 10.0            # recon: come up and sight the frigate this close
+BOAT_AI_SIGHT_NM = 8.0             # recon: come up and sight the frigate this close
 # Recon: at periscope depth the boat raises its periscope for one look every
 # SCOPE_CYCLE_S (phase per boat), LOOK_S long; the head sweeps round from
 # the bow in SWEEP_S and sights the frigate only where the optics make it

@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.120
+
+Emergencies aboard join the incidents at sea. A man can go overboard from the
+frigate: the general alarm sounds, a drifting mark goes on the chart, and the
+Bridge recovers him within 0.1 NM at 5 kn or less, or the helicopter hovering
+over him (+100 points; lost after 20 minutes, -300). The steering gear can
+fail: the rudder jams for 60 s, then turns at half rate from the emergency
+position for 10 minutes. On a diesel submarine the snorkel head valve can jam
+(no charging for 15 minutes; the AI boat stays deep) or battery gas has to be
+vented (half charging rate). The Bridge crew assist steers onto a man overboard
+itself. Up to six incidents per mission.
+
 ## 1.3.119
 
 Release 1.3.119 adds shipboard atmosphere to the sound. Action stations on the

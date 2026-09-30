@@ -43,14 +43,17 @@ Angenommene Positionen stehen in jeder Karte (auch im Remote-Crew-Browser). Die 
 
 ## Ereignisse auf See {#radio-incidents}
 
-Die See bringt eigene Überraschungen: das erste 20 bis 40 Minuten nach dem Start einer eingebauten Mission, dann alle 30 bis 50 Minuten eines, höchstens vier je Mission (keine in eigenen Missionen und Lektionen). Jedes kommt über den Fernschreiber.
+Die See bringt eigene Überraschungen: das erste 20 bis 40 Minuten nach dem Start einer eingebauten Mission, dann alle 30 bis 50 Minuten eines, höchstens sechs je Mission (keine in eigenen Missionen und Lektionen). Jedes kommt über den Fernschreiber.
 
 - **Treibnetz:** Ein Fischer meldet ein 2 sm langes Netz quer zum Kurs, 3 bis 7 sm voraus, von der Oberfläche bis 20 m tief; der Funker trägt es in jede Karte als Lineal `NET n` ein, und nach einer Stunde wird es eingeholt. Wer darüber fährt, zerreißt es: Die Fischer verlangen Schadenersatz (-100 Punkte), und ein ausgebrachtes Schleppsonar oder VDS verfängt sich und wird sofort eingeholt. Ein U-Boot, das flacher als 20 m kreuzt, verfängt sich ebenfalls und ist 20 s laut, bis es sich losreißt; tiefer taucht es darunter durch.
 - **Wetterfront:** HQ warnt 10 Minuten vorher; dann halten Regen, Sturm oder Nebel 30 bis 60 Minuten an (Sicht, Wind und Regengeräusch für jeden Sensor, auf beiden Seiten), und HQ meldet, wenn sie durchgezogen ist.
 - **Handelsschiff ohne AIS:** Ein Frachter ohne AIS taucht 8 bis 15 sm entfernt auf; HQ meldet ihn mit etwa 2 sm Fehler und bietet ihn als Identifizierungsauftrag an, wenn weniger als zwei Aufträge offen sind.
 - **Wale:** Ein Fischer meldet eine Gruppe von zwei bis vier Walen 3 bis 6 sm voraus; sie sind echte biologische Kontakte für jedes Sonar.
+- **Mann über Bord:** Ein Matrose geht neben dem Schiff über Bord; die Generalalarmglocke schlägt an, und die Karte trägt die Marke `OVERBOARD n`, die mit der Oberflächenströmung treibt. Die Brücke fährt eine Williamson-Kurve zurück und nimmt ihn auf, wenn das Schiff höchstens 0,1 sm entfernt mit höchstens 5 kn läuft; der Hubschrauber nimmt ihn auf, wenn er genau über ihm schwebt (Wegpunkt auf die Marke oder Tauchsonar ausgebracht). Gerettet gibt +100 Punkte, nach 20 Minuten im Wasser ist er verloren (-300 Punkte). Führt die KI die Brücke, steuert sie selbst auf die Marke und geht danach wieder auf 12 kn.
+- **Ruderversager:** Die Rudermaschine fällt aus: 60 s klemmt das Ruder, dann steuert die Maschine vom Notruder mit halber Drehrate, bis die Rudermaschine nach 10 Minuten repariert ist.
+- **Schnorchelventil und Batteriegas (U-Boot):** Auf einem dieselelektrischen U-Boot klemmt für 15 Minuten das Schnorchelkopfventil (kein Laden; das KI-U-Boot geht auf Tiefe und bleibt unten) oder es muss Batteriegas abgelüftet werden (halbe Laderate). Die Crew des besetzten U-Boots meldet beides; die Fregatte erfährt nichts davon.
 
-Treibnetz, Front und Wale gibt HQ auch in den Rundspruch an das U-Boot; ein besetztes U-Boot erfährt davon, wenn es den nächsten Rundspruch aufnimmt, und seine Crew trägt das Netz in die eigene Karte ein.
+Treibnetz, Front und Wale (nicht die Notfälle an Bord) gibt HQ auch in den Rundspruch an das U-Boot; ein besetztes U-Boot erfährt davon, wenn es den nächsten Rundspruch aufnimmt, und seine Crew trägt das Netz in die eigene Karte ein.
 
 ## Eigene Rufe an HQ {#radio-reports}
 

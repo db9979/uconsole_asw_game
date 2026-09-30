@@ -101,6 +101,8 @@ class CrewOrders:
               "test_depth_near": "navigation", "test_depth_over": "navigation",
               "incident_net": "funk", "incident_front": "funk",
               "incident_whales": "funk", "net_fouled": "navigation",
+              "incident_valve": "navigation", "incident_valve_end": "navigation",
+              "incident_gas": "schaden", "incident_gas_end": "schaden",
               "baffles_clearing": "navigation", "baffles_cleared": "navigation",
               "hf_frigate": "funk", "rbu_splash": "sonar",
               "wounded": "schaden"}

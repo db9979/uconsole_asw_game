@@ -334,7 +334,11 @@ class SimMixin:
         # Steering gear sits aft under the flight deck; a destroyed room
         # jams the rudder where it is. Stabilizer fins are lost with either
         # hull side destroyed. Floodwater adds displacement.
-        self.ship.steering_jammed = self.damage.station_down("flightdeck")
+        jammed, emergency = self.rudder_casualty()
+        if emergency:
+            # Emergency steering from the steering gear room: half rate.
+            self.ship.turn_rate_scale *= 0.5
+        self.ship.steering_jammed = self.damage.station_down("flightdeck") or jammed
         self.ship.stabilizers_ok = not (self.damage.station_down("hull_left")
                                         or self.damage.station_down("hull_right"))
         self.ship.flood_percent = (self.damage.flood_mass_kg()
@@ -500,6 +504,7 @@ class SimMixin:
     def _update_underwater_entities(self, dt: float) -> None:
         """Aktualisiert U-Boote, Tiere, Zivile und Dekoys."""
         self._deliver_ping_intercepts()
+        self._apply_incident_effects()
         # The AI mission boat's leg for this substep (before it moves).
         boat_ai.steer(self)
         for sub in self.subs:

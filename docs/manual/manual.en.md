@@ -579,7 +579,7 @@ Page 1 is the ship schematic, drawn as a damage-control console: water rises in 
 - **Heel:** off-centre floodwater lists the ship to that side and pulls it off course.
 - **Counter-flooding:** with `C` and a list of 5 degrees or more, damage control opens the flooding valve of the high hull side; water enters at 0.5 % of the room per second until the list is cancelled, never past 60 % of that side, and the valve closes by itself below 1 degree (or with `C` again). The water is real floodwater: it adds weight and draught and a team has to pump it out later.
 - **Trim:** floodwater forward or aft trims the ship (bow down counts positive). Every degree costs 0.5 kn of top speed and, bow down, adds own noise at the bow sonar. The stability line on page 2 shows list, trim and the open valve.
-- **Steering gear and stabilizers:** the steering gear sits aft under the flight deck. If that compartment is destroyed, the rudder jams at its last angle until the room is repaired. A destroyed hull compartment on either side knocks out the fin stabilizers, so the ship rolls more in a seaway. Floodwater adds weight: the ship sits deeper and accelerates more slowly.
+- **Steering gear and stabilizers:** the steering gear sits aft under the flight deck. If that compartment is destroyed, the rudder jams at its last angle until the room is repaired. A steering failure among the incidents (Radio chapter) jams it for 60 s and then leaves half rudder rate from the emergency position for 10 minutes. A destroyed hull compartment on either side knocks out the fin stabilizers, so the ship rolls more in a seaway. Floodwater adds weight: the ship sits deeper and accelerates more slowly.
 
 Station effects: a station loses capability continuously with flooding and fire in its room (sonar and radar range shrink gradually); a destroyed room disables it. A damaged engine room caps speed at 15 kn, a destroyed one at 8 kn; a damaged or destroyed weapons room blocks torpedo launches; a destroyed flight deck prevents helicopter launch and recovery; a destroyed operations room also disables ESM.
 
@@ -794,14 +794,17 @@ Accepted positions are plotted on every chart (also in the Remote Crew browser).
 
 ### Incidents at sea
 
-The sea brings surprises of its own: the first 20 to 40 minutes into a built-in mission, then one every 30 to 50 minutes, at most four per mission (none in custom missions and lessons). Each is reported on the teletype.
+The sea brings surprises of its own: the first 20 to 40 minutes into a built-in mission, then one every 30 to 50 minutes, at most six per mission (none in custom missions and lessons). Each is reported on the teletype.
 
 - **Drift net:** a fishing boat reports a net 2 NM long across the ship's track, 3 to 7 NM ahead, hanging from the surface down to 20 m; the radio operator plots it on every chart as a ruler `NET n`, and it is hauled in after an hour. Running over it tears it: the fishermen claim damages (-100 points), and a streamed towed array or variable-depth sonar fouls in it and is hauled in at once. A submarine that crosses it shallower than 20 m fouls it too and is loud for 20 s while it tears free; deeper it passes under.
 - **Weather front:** HQ warns 10 minutes ahead; then rain, a storm or fog holds for 30 to 60 minutes (visibility, wind and rain noise for every sensor, on both sides), and HQ reports when it has passed.
 - **Merchant without AIS:** a freighter running without AIS appears 8 to 15 NM away; HQ reports it with about 2 NM error and offers it as an identify task when fewer than two tasks are open.
 - **Whales:** a fishing boat reports a pod of two to four whales 3 to 6 NM ahead; they are real biological contacts for every sonar.
+- **Man overboard:** a sailor goes over the side next to the ship; the general alarm sounds and the chart carries the mark `OVERBOARD n`, which drifts with the surface current. The Bridge turns back with a Williamson turn and recovers him when the ship passes within 0.1 NM at 5 kn or less; the helicopter recovers him when it hovers right over him (waypoint on the mark, or dipping sonar lowered). A rescue is worth +100 points; after 20 minutes in the water he is lost (-300 points). When the AI runs the Bridge it steers onto the mark itself and comes back up to 12 kn afterwards.
+- **Steering failure:** the steering gear fails: the rudder is jammed for 60 s, then the engine room steers from the emergency position at half rudder rate until the steering gear is repaired after 10 minutes.
+- **Snorkel valve and battery gas (submarine):** on a diesel-electric submarine the snorkel head valve jams for 15 minutes (no charging; the AI submarine goes deep and stays down), or battery gas has to be vented (half charging rate). The crewed submarine's crew reports both; the frigate learns nothing of them.
 
-HQ passes the net, the front and the whales on to the submarine's broadcast; a crewed submarine hears of them when it copies the next broadcast, and its crew plots the net on its own chart.
+HQ passes the net, the front and the whales (not the emergencies aboard) on to the submarine's broadcast; a crewed submarine hears of them when it copies the next broadcast, and its crew plots the net on its own chart.
 
 ### Own calls to HQ
 

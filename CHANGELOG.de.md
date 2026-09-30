@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.120
+
+Notfälle an Bord ergänzen die Ereignisse auf See. Auf der Fregatte kann ein
+Mann über Bord gehen: Die Generalalarmglocke schlägt an, eine treibende Marke
+kommt in die Karte, und die Brücke nimmt ihn bis 0,1 sm mit höchstens 5 kn auf,
+oder der Hubschrauber schwebend über ihm (+100 Punkte; nach 20 Minuten
+verloren, -300). Die Rudermaschine kann ausfallen: 60 s klemmt das Ruder, dann
+10 Minuten halbe Drehrate vom Notruder. Auf einem Diesel-U-Boot kann das
+Schnorchelkopfventil klemmen (15 Minuten kein Laden; das KI-U-Boot bleibt tief)
+oder Batteriegas muss abgelüftet werden (halbe Laderate). Die KI-Hilfe der
+Brücke steuert selbst auf einen Mann über Bord. Bis zu sechs Ereignisse je
+Mission.
+
 ## 1.3.119
 
 Version 1.3.119 bringt Bordatmosphäre in den Ton. Gefechtsstationen auf der

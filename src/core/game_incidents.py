@@ -34,6 +34,7 @@ class IncidentsMixin:
         board = getattr(self, "incidents", None)
         if board is None or self.game_over:
             return
+        self._incident_dt = dt
         for item in list(board.active()):
             getattr(self, "_progress_incident_" + item["kind"])(item)
         if (board.enabled and self.training is None and self.sim_t >= board.next_t
@@ -285,6 +286,199 @@ class IncidentsMixin:
         if self.sim_t >= item["end_t"]:
             self._end_incident(item)
 
+    # --- a man overboard ------------------------------------------------------------------
+
+    def _incident_candidate_overboard(self) -> bool:
+        return not self.damage.ship_sunk and not self.incidents.active("overboard")
+
+    def _build_incident_overboard(self, index: int):
+        # He goes over the side a ship's length off the track.
+        side = 1.0 if detrand.u01(self.seed, "incident-mob-side", index) < 0.5 else -1.0
+        angle = math.radians(self.ship.course + 90.0 * side)
+        return dict(x=self.ship.x + 0.03 * math.sin(angle),
+                    y=self.ship.y - 0.03 * math.cos(angle),
+                    end_t=self.sim_t + config.INCIDENT_OVERBOARD_S)
+
+    def _announce_incident_overboard(self, item) -> None:
+        self.announce(message(
+            "runtime.incident.overboard", incident=self._incident_label(item),
+            x=f"{item['x']:.1f}", y=f"{item['y']:.1f}",
+            minutes=f"{config.INCIDENT_OVERBOARD_S / 60.0:.0f}",
+            speed=f"{config.INCIDENT_OVERBOARD_PICKUP_KN:.0f}",
+            pickup=f"{config.INCIDENT_OVERBOARD_PICKUP_NM:.1f}"), "bruecke", 6.0)
+        result = self.plot_add("mark", item["x"], item["y"], self._incident_label(item))
+        item["plot_id"] = result if type(result) is int else None
+        self._emit_sound("general_alarm")
+
+    def _progress_incident_overboard(self, item) -> None:
+        # The man drifts with the surface current (and the wind drift).
+        dt = getattr(self, "_incident_dt", 0.0)
+        u, v = self.world.current_vec(item["x"], item["y"])
+        item["x"] += config.kn_to_nm_per_s(u) * dt
+        item["y"] -= config.kn_to_nm_per_s(v) * dt
+        if item["plot_id"] is not None and not self.plot.move(item["plot_id"], item["x"],
+                                                              item["y"]):
+            item["plot_id"] = None
+        pickup = config.INCIDENT_OVERBOARD_PICKUP_NM
+        by_ship = (not self.damage.ship_sunk
+                   and self.ship.speed <= config.INCIDENT_OVERBOARD_PICKUP_KN + 1e-6
+                   and math.hypot(self.ship.x - item["x"], self.ship.y - item["y"]) <= pickup)
+        helo = self.helo
+        # The helicopter winches him up in the hover: sent onto him (its
+        # waypoint on the man) or holding a dip right there.
+        by_helo = (helo.state == "AUF"
+                   and math.hypot(helo.x - item["x"], helo.y - item["y"]) <= pickup
+                   and (helo.hovering or (
+                       helo.waypoint_x is not None and helo.waypoint_y is not None
+                       and math.hypot(helo.waypoint_x - item["x"],
+                                      helo.waypoint_y - item["y"]) <= 2.0 * pickup)))
+        if by_ship or by_helo:
+            self.score += config.SCORE_OVERBOARD_SAVED
+            self._crew_event("task_done_sar")
+            item["end_t"] = self.sim_t
+            self._end_incident(item)
+            self.announce(message(
+                "runtime.incident.overboard_saved" if by_ship
+                else "runtime.incident.overboard_saved_helo",
+                incident=self._incident_label(item),
+                points=f"{config.SCORE_OVERBOARD_SAVED:+d}"), "bruecke", 5.0)
+        elif self.sim_t >= item["end_t"]:
+            self.score -= config.SCORE_OVERBOARD_LOST
+            self._crew_event("task_failed")
+            self._end_incident(item)
+            self.announce(message("runtime.incident.overboard_lost",
+                                  incident=self._incident_label(item),
+                                  points=f"{-config.SCORE_OVERBOARD_LOST:+d}"),
+                          "bruecke", 5.0)
+
+    def overboard_target(self):
+        """(x, y) of the man in the water, or None (Bridge autocrew)."""
+        board = getattr(self, "incidents", None)
+        rows = [] if board is None else board.active("overboard")
+        return None if not rows else (rows[0]["x"], rows[0]["y"])
+
+    def overboard_just_recovered(self, window_s: float = 30.0) -> bool:
+        """Whether a man was picked up in the last ``window_s`` seconds (the
+        Bridge autocrew then brings the speed back up)."""
+        board = getattr(self, "incidents", None)
+        return board is not None and any(
+            item["kind"] == "overboard" and not item["active"]
+            and 0.0 <= self.sim_t - item["end_t"] <= window_s for item in board.items)
+
+    # --- steering gear failure ----------------------------------------------------------
+
+    def _incident_candidate_rudder(self) -> bool:
+        return not self.damage.ship_sunk and not self.incidents.active("rudder")
+
+    def _build_incident_rudder(self, index: int):
+        return dict(x=self.ship.x, y=self.ship.y, end_t=self.sim_t + config.INCIDENT_RUDDER_S)
+
+    def _announce_incident_rudder(self, item) -> None:
+        self.announce(message(
+            "runtime.incident.rudder", incident=self._incident_label(item),
+            jam=f"{config.INCIDENT_RUDDER_JAM_S:.0f}",
+            minutes=f"{(item['end_t'] - item['start_t']) / 60.0:.0f}"), "bruecke", 6.0)
+
+    def _progress_incident_rudder(self, item) -> None:
+        if self.sim_t >= item["end_t"]:
+            self._end_incident(item)
+            self.announce(message("runtime.incident.rudder_end",
+                                  incident=self._incident_label(item)), "bruecke", 4.0)
+        elif (self.sim_t - item["start_t"] >= config.INCIDENT_RUDDER_JAM_S
+              and self.sim_t - self._incident_dt - item["start_t"]
+              < config.INCIDENT_RUDDER_JAM_S):
+            self.announce(message("runtime.incident.rudder_emergency",
+                                  incident=self._incident_label(item)), "bruecke", 4.0)
+
+    def rudder_casualty(self) -> tuple[bool, bool]:
+        """(rudder jammed, on emergency steering) from a steering failure."""
+        board = getattr(self, "incidents", None)
+        for item in ([] if board is None else board.active("rudder")):
+            if self.sim_t < item["end_t"]:
+                return (self.sim_t - item["start_t"] < config.INCIDENT_RUDDER_JAM_S, True)
+        return False, False
+
+    # --- a submarine's snorkel valve and battery gas -------------------------------------
+
+    def _incident_boat(self):
+        """The submarine an emergency strikes: the crewed boat, otherwise the
+        first hostile diesel boat afloat (a boat with a generator)."""
+        boats = ([self._opfor.sub] if self._opfor is not None else []) + sorted(
+            self.subs, key=lambda item: item.id)
+        for sub in boats:
+            endurance = getattr(sub, "endurance", None)
+            if (not sub.sunk and sub.side == "hostile" and endurance is not None
+                    and endurance.profile.generator_power_kw > 0.0):
+                return sub
+        return None
+
+    def _incident_candidate_valve(self) -> bool:
+        return self._incident_boat() is not None and not self.incidents.active("valve")
+
+    def _incident_candidate_gas(self) -> bool:
+        return self._incident_boat() is not None and not self.incidents.active("gas")
+
+    def _build_incident_valve(self, index: int):
+        sub = self._incident_boat()
+        return dict(x=sub.x, y=sub.y, target_id=int(sub.id),
+                    end_t=self.sim_t + config.INCIDENT_BOAT_S)
+
+    _build_incident_gas = _build_incident_valve
+
+    def _announce_incident_valve(self, item) -> None:
+        sub = self._incident_target_sub(item)
+        endurance = sub.endurance
+        if endurance.phase == "SNORKEL":
+            endurance.stop_snorkel() if sub.manual else self._ai_leave_snorkel(sub)
+        if not sub.manual:
+            # The AI boat stays down until the valve is free again.
+            sub.radar_hold_s = max(sub.radar_hold_s, item["end_t"] - self.sim_t)
+        self._incident_boat_event(sub, "incident_valve", item)
+
+    def _announce_incident_gas(self, item) -> None:
+        self._incident_boat_event(self._incident_target_sub(item), "incident_gas", item)
+
+    def _progress_incident_valve(self, item) -> None:
+        self._progress_boat_incident(item)
+
+    _progress_incident_gas = _progress_incident_valve
+
+    def _progress_boat_incident(self, item) -> None:
+        sub = self._incident_target_sub(item)
+        if sub is None or sub.sunk or self.sim_t >= item["end_t"]:
+            self._end_incident(item)
+            if sub is not None and not sub.sunk:
+                self._incident_boat_event(sub, f"incident_{item['kind']}_end", item)
+
+    def _incident_target_sub(self, item):
+        return next((sub for sub in self.subs if sub.id == item["target_id"]), None)
+
+    def _incident_boat_event(self, sub, key: str, item) -> None:
+        boat = self._opfor
+        if boat is not None and boat.sub is sub:
+            boat.orders.event(key, minutes=f"{(item['end_t'] - self.sim_t) / 60.0:.0f}")
+
+    @staticmethod
+    def _ai_leave_snorkel(sub) -> None:
+        endurance = sub.endurance
+        endurance.phase = "DESCENDING"
+        endurance.return_depth_m = endurance.profile.snorkel_depth_m + config.SUB_RADAR_DIVE_M
+
+    def _apply_incident_effects(self) -> None:
+        """Generator power of every submarine this substep: nothing through a
+        jammed snorkel valve, half while battery gas is vented (derived from
+        the saved board, so a loaded game continues identically)."""
+        factors = {}
+        board = getattr(self, "incidents", None)
+        for item in ([] if board is None else board.items):
+            if item["active"] and item["kind"] in ("valve", "gas"):
+                factor = 0.0 if item["kind"] == "valve" else 0.5
+                factors[item["target_id"]] = min(factors.get(item["target_id"], 1.0), factor)
+        for sub in self.subs:
+            endurance = getattr(sub, "endurance", None)
+            if endurance is not None:
+                endurance.generator_factor = factors.get(sub.id, 1.0)
+
     # --- the submarine's broadcast ----------------------------------------------------
 
     def incidents_to_boat(self, boat, broadcast_t: float) -> None:
@@ -294,7 +488,8 @@ class IncidentsMixin:
         if board is None:
             return
         for item in board.items:
-            if (not item["active"] or item["boat_told"] or item["kind"] == "dark"
+            if (not item["active"] or item["boat_told"]
+                    or item["kind"] not in ("net", "front", "whales")
                     or item["announced_t"] > broadcast_t):
                 continue
             item["boat_told"] = True

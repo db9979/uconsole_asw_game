@@ -1032,7 +1032,7 @@ SCORE_TIME_BONUS_MAX = 500         # Zeitbonus, anteilig nach verbleibender Zeit
 # Incidents at sea (src/core/incidents.py): schedule and the four kinds.
 INCIDENT_FIRST_S = (1200.0, 2400.0)
 INCIDENT_INTERVAL_S = (1800.0, 3000.0)
-INCIDENT_MAX = 4
+INCIDENT_MAX = 6
 INCIDENT_NET_RANGE_NM = (3.0, 7.0)     # net across the track this far ahead
 INCIDENT_NET_SPREAD_DEG = 25.0
 INCIDENT_NET_LENGTH_NM = 2.0
@@ -1061,6 +1061,18 @@ INCIDENT_DARK_S = 7200.0
 INCIDENT_WHALES_RANGE_NM = (3.0, 6.0)
 INCIDENT_WHALES_COUNT = (2, 4)
 INCIDENT_WHALES_S = 3600.0
+# Emergencies aboard: a man overboard survives this long in the water; the
+# ship picks him up within this distance at no more than this speed, the
+# helicopter hovering within it.
+INCIDENT_OVERBOARD_S = 1200.0
+INCIDENT_OVERBOARD_PICKUP_NM = 0.1
+INCIDENT_OVERBOARD_PICKUP_KN = 5.0
+SCORE_OVERBOARD_LOST = 300
+SCORE_OVERBOARD_SAVED = 100
+AUTOCREW_RESUME_SPEED_KN = 12.0   # Bridge autocrew speed after a recovery
+INCIDENT_RUDDER_JAM_S = 60.0           # rudder jammed, then emergency steering
+INCIDENT_RUDDER_S = 600.0
+INCIDENT_BOAT_S = 900.0                # a jammed snorkel valve / battery gas
 
 # Radio tasking (``src/core/tasking.py``): HQ orders and incidents in the
 # built-in scenarios.  The first offer comes after 15-25 minutes, the next

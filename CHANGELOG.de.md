@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.107
+## 1.3.109
 
-Version 1.3.107 installiert Updates nicht mehr von selbst. Gibt es ein neueres
+Version 1.3.109 installiert Updates nicht mehr von selbst. Gibt es ein neueres
 Release, zeigen Startbildschirm und Hauptmenü dessen Version, den Eintrag aus
 dem Änderungsprotokoll in der Spielsprache und eine Warnung, wenn Spielstände
 dieser Version (auch die automatische Sicherung) damit nicht mehr laden, dazu
@@ -15,6 +15,33 @@ es: Auf der uConsole schließt das Spiel, aktualisiert sich auf das Release und
 startet neu (der alte Hintergrund-Update-Timer schaltet sich selbst ab); das
 Windows-Programm lädt die neue Datei im Hintergrund, prüft sie, tauscht sich
 aus und startet neu. Ohne Netz erscheint kein Hinweis.
+
+## 1.3.108
+
+Version 1.3.108 gibt dem KI-Aufklärungs-U-Boot eine echte Sehrohrsuche.
+In der Aufklärungsmission von der Fregatte aus sichtet das KI-U-Boot auf
+Sehrohrtiefe die Fregatte nicht mehr nur nach Entfernung und Sichtweite: Es
+fährt alle 90 s für einen 24-s-Rundblick das Sehrohr aus, dreht vom Bug aus
+herum und macht die Fregatte nur dort aus, wo das Kontrastmodell des Ausgucks
+in 2,5 m Augenhöhe es erlaubt (Licht, Mond, Sichtweite, Seegang, Land
+dazwischen). Solange das Sehrohr oben ist, zählt es als ausgefahrener Mast,
+den das Oberflächenradar der Fregatte und der Seefernaufklärer erfassen
+können. Nacht, Nebel und schwere See schützen jetzt die Fregatte, und jeder
+Rundblick ist ein Risiko für das U-Boot.
+
+## 1.3.107
+
+Version 1.3.107 lässt die KI-Jäger und die KI-U-Boote das Funkspektrum
+mehr wie echte Besatzungen nutzen (Spielstandsformat v39). Wenn niemand die
+Fregatte fährt, trägt ihre EloKa eine ESM-Peilung auf das Mastradar eines
+U-Boots als Linie vom eigenen Standort ein, eine je gelaufene Seemeile, und
+kreuzt die neueste Linie mit einer früheren zu einem Positionsdatum für
+Schiff, Hubschrauber und Seefernaufklärer (nicht für das ASROC eines
+befreundeten Geleitschiffs). Ein KI-U-Boot auf Sehrohrtiefe, das die Fregatte
+hält, meldet sie jetzt alle 30 Minuten mit einem 20-s-Kurzwellenruf an seine
+Führung, den das HF/DF der Fregatte hört und peilen kann, gleich wer es
+bedient. Die ESM-Linien werden gespeichert, ein geladenes Spiel setzt die
+Jagd also unverändert fort.
 
 ## 1.3.106
 

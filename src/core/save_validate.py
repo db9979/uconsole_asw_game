@@ -512,6 +512,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             data.get("casualties"), {row.get("id") for row in data.get("subs", ())
                                      if isinstance(row, dict)}):
         return False
+    # Save v39: the AI hunters' ESM bearing lines.
+    from src.core import hunter
+    if not hunter.valid_esm_log(data.get("hunter_esm"), save_sim_t):
+        return False
     # Save v37: the ASW rocket launcher.
     if not rbu.valid_state(data.get("rbu"), 1_000_000.0):
         return False

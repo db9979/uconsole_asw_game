@@ -1,4 +1,4 @@
-"""Update notice on the start screen and the main menu (1.3.107).
+"""Update notice on the start screen and the main menu (1.3.109).
 
 A published newer release is never installed on its own. At launch a daemon
 thread asks GitHub once (``src/launcher/update.fetch_notice``); when a newer

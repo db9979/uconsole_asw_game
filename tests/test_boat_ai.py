@@ -79,7 +79,6 @@ def test_the_ai_boat_reports_the_frigate_only_from_periscope_depth():
         assert not boat_ai.report(game, sub)
     assert game.mission_result is None
     sub.depth = MAST_DEPTH_M - 3.0
-    assert boat_ai.frigate_sighted(game, sub)
     reported = False
     for _ in range(80):
         game.sim_t += 2.0
@@ -88,6 +87,54 @@ def test_the_ai_boat_reports_the_frigate_only_from_periscope_depth():
             break
     assert reported
     assert game.mission_result == "VERLOREN" and _reason(game) == "end.reason.boat_reported"
+
+
+def _clear_day(game, **change):
+    light = dict(visibility_nm=config.WEATHER_VISIBILITY_MAX_NM, night=False,
+                 illumination=0.5, sea_state=1.0)
+    light.update(change)
+    game._lookout_environment = lambda: dict(light)
+
+
+def test_the_recon_periscope_looks_round_part_of_the_time_and_shows_on_radar():
+    game, sub = _frigate_game("s6_aufklaerung")
+    _clear_day(game)
+    sub.x, sub.y = game.ship.x + 3.0, game.ship.y
+    sub.depth = MAST_DEPTH_M - 3.0
+    up, sighted = 0, 0
+    cycle = int(config.BOAT_AI_SCOPE_CYCLE_S)
+    for step in range(cycle):
+        game.sim_t = 1000.0 + step
+        look = boat_ai.scope_look(game, sub)
+        assert (look is not None) == game._mast_up(sub)
+        up += look is not None
+        sighted += boat_ai.frigate_sighted(game, sub)
+    assert up == pytest.approx(config.BOAT_AI_SCOPE_LOOK_S, abs=1)
+    # The head reaches the frigate's bearing part of the way round the sweep.
+    assert 0 < sighted < up
+    sub.depth = MAST_DEPTH_M + 5.0
+    assert all(boat_ai.scope_look(game, sub) is None and not game._mast_up(sub)
+               for game.sim_t in (1000.0 + t for t in range(cycle)))
+
+
+def test_the_recon_periscope_needs_the_frigate_above_the_optics_threshold():
+    game, sub = _frigate_game("s6_aufklaerung")
+    _clear_day(game)
+    sub.x, sub.y = game.ship.x + 7.0, game.ship.y
+    sub.depth = MAST_DEPTH_M - 3.0
+    times = [1000.0 + t for t in range(int(config.BOAT_AI_SCOPE_CYCLE_S))]
+
+    def seen():
+        return any(boat_ai.frigate_sighted(game, sub) for game.sim_t in times)
+
+    assert seen()
+    _clear_day(game, visibility_nm=2.0)                   # fog: 7 NM is out of sight
+    assert not seen()
+    _clear_day(game, night=True)                          # night: likewise
+    assert not seen()
+    _clear_day(game)
+    sub.x = game.ship.x + config.BOAT_AI_SIGHT_NM + 1.0   # beyond the report range
+    assert not seen()
 
 
 def test_the_recon_boat_follows_hq_reports_then_comes_up():

@@ -26,9 +26,9 @@ Der Installer
 - legt den Menüeintrag **Spiele > U-Jagd**, eine Verknüpfung auf dem Desktop und
   den Befehl `~/.local/bin/u-jagd` an,
 - bringt den Checkout auf das neueste GitHub-Release und schaltet den
-  Hintergrund-Timer älterer Versionen (bis 1.3.106) ab.
+  Hintergrund-Timer älterer Versionen (bis 1.3.108) ab.
 
-**Updates nur auf Knopfdruck:** Seit 1.3.107 wird nichts mehr von selbst
+**Updates nur auf Knopfdruck:** Seit 1.3.109 wird nichts mehr von selbst
 installiert. Beim Start fragt das Spiel im Hintergrund einmal bei GitHub nach
 dem neuesten Release (Tag `vX.Y.Z`, dieselbe Quelle wie der Windows-Starter).
 Ist es neuer, zeigen der Startbildschirm (oben rechts) und das Hauptmenü

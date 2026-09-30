@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.107**
+Aktuelle Version: **1.3.109**
 
-Version 1.3.107 installiert Updates nicht mehr von selbst. Gibt es ein neueres
+Version 1.3.109 installiert Updates nicht mehr von selbst. Gibt es ein neueres
 Release, zeigen Startbildschirm und Hauptmenü dessen Version, den Eintrag aus
 dem Änderungsprotokoll in der Spielsprache und eine Warnung, wenn Spielstände
 dieser Version (auch die automatische Sicherung) damit nicht mehr laden, dazu

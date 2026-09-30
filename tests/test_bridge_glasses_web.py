@@ -47,7 +47,8 @@ PROBE = r'''
     $('name').value = 'Lookout'; $('code').value = __CODE__;
     $('pair-form').requestSubmit();
     await until(() => document.body.dataset.remoteRole === 'assigned' &&
-      !$('station-bridge').hidden && !$('bridge-glasses-canvas').closest('[hidden]'), 'binoculars card');
+      !$('station-bridge').hidden && !$('bridge-glasses-canvas').closest('[hidden]'), 'binoculars card',
+      200000);  // the grant waits on the host loop; virtual time runs ahead of it
     await until(() => status().includes('Line of sight'), () => `no line of sight: ${status()}`);
     const relative = () => (status().match(/bow (\d+)/) || [])[1];
     document.querySelector('[data-glasses-turn="10"]').click();

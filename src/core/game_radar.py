@@ -486,7 +486,7 @@ class RadarPictureMixin:
             return
         night = self.world.is_night()
         for sub in self.subs:
-            if not sub.transmitting:
+            if not (sub.transmitting or sub.contact_report_on_air(self.seed, self.sim_t)):
                 continue
             dist = sub.distance_nm(self.ship)
             seed = getattr(sub, "sensor_seed", sub.id)
@@ -700,10 +700,10 @@ class RadarPictureMixin:
 
     # --- Waffenzentrale ---
 
-    @staticmethod
-    def _mast_up(sub) -> bool:
+    def _mast_up(self, sub) -> bool:
         """A mast or snorkel head above the water: the crew's raised mast or
-        snorkel, or an AI boat snorkelling or at radio depth."""
+        snorkel, an AI boat snorkelling or at radio depth, or the AI recon
+        boat's periscope during a look."""
         from src.sensors.platform import MAST_DEPTH_M
         if sub.sunk or sub.depth > MAST_DEPTH_M:
             return False
@@ -711,7 +711,10 @@ class RadarPictureMixin:
         if sub.manual and crew is not None and crew.mast:
             return True
         endurance = sub.endurance
-        return endurance is not None and endurance.phase in ("SNORKEL", "RADIO")
+        if endurance is not None and endurance.phase in ("SNORKEL", "RADIO"):
+            return True
+        from src.core import boat_ai
+        return boat_ai.scope_look(self, sub) is not None
 
     def _update_mast_echoes(self, surface_live, swept_deg, error_scale) -> None:
         """Surface-radar looks at raised masts: a bare blip, or an update of

@@ -173,16 +173,27 @@ Optionales Remote Crew wird auf der uConsole mit `F9` oder über **F10 >
 Commander LAN** eingerichtet. Der Dienst startet bei jedem Programmstart
 ausgeschaltet.
 
-Damit Remote Crew auch ohne vorhandenes Netzwerk einen eigenen, temporaeren
-WLAN-Hotspot anlegen kann, wird einmalig der eng begrenzte System-Helper aus dem
-Checkout installiert:
+Damit Remote Crew auch ohne vorhandenes Netzwerk einen eigenen WLAN-Hotspot
+anlegen kann, braucht es den eng begrenzten System-Helper. `install.sh` richtet
+ihn selbst ein, wenn der Rechner NetworkManager und das WLAN-Gerät `wlan0` hat
+(er fragt einmal nach dem `sudo`-Passwort); ohne `sudo`, NetworkManager oder
+WLAN gibt er einen Hinweis aus und installiert das Spiel trotzdem
+(`U_JAGD_NO_HOTSPOT=1` überspringt den Schritt). Von Hand aus dem Checkout
+installieren oder auffrischen:
 
 ```sh
 sudo ./packaging/uconsole/install-hotspot-helper.sh
 ```
 
 Das Spiel selbst wird weiterhin ohne `sudo` gestartet. Der Helper erlaubt nur
-das Erzeugen und Entfernen des fluechtigen U-Jagd-Hotspots. Zum Entfernen der
+das Erzeugen und Entfernen des U-Jagd-Hotspots und ein neues Hotspot-Passwort.
+Der Hotspot behält WLAN-Name und Passwort über Neustarts hinweg (nur für root
+lesbar in `/var/lib/u-jagd/hotspot.json`), sodass Geräte, die einmal beigetreten
+sind, sich von selbst wieder verbinden; **Neues Hotspot-Passwort** unter den
+erweiterten Netzwerkeinstellungen in F9 (Mehrspieler aus) ersetzt das Passwort
+und behält den Namen. Auf dem Hotspot zeigen F9 und die Mehrspieler-Lobby
+Schritt 1, den WLAN-QR-Code mit Name und Passwort, neben Schritt 2, dem
+Seiten-QR-Code mit dem Beitrittscode. Zum Entfernen der
 Systemintegration dient
 `sudo ./packaging/uconsole/install-hotspot-helper.sh --uninstall`.
 

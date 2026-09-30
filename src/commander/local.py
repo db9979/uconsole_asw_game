@@ -30,9 +30,11 @@ from src.ui import layout, overlay_style, qr
 # Seconds between an accepted admin "end game" and the process quitting.
 WEB_SHUTDOWN_GRACE_S = 2.0
 # F9 rows: one switch, the crew list and the advanced network rows, which only
-# show when opened (network mode, address, port).
+# show when opened (network mode, address, port and, while multiplayer is off
+# and the hotspot helper is installed, a new hotspot password).
 BASIC_ROWS = ("service", "roster", "advanced")
 ADVANCED_ROWS = ("mode", "host", "port")
+RENEW_ROW = "renew"
 
 class CommanderConsole:
     def __init__(self, hotspot=None):
@@ -88,6 +90,7 @@ class CommanderConsole:
         self.roster_status = None
         self._roster_mouse_confirm = None
         self._hotspot_error_seen = None
+        self._renew_seen = None
         self._qr_payload = None
         self._qr_box_px = None
         self._qr_surface = None
@@ -395,6 +398,10 @@ class CommanderConsole:
 
     def pump(self, game):
         hotspot_state = self.hotspot.poll()
+        renew_state = getattr(self.hotspot, "renew_state", None)
+        if renew_state == "error" and self._renew_seen != "error":
+            self.error = f"commander.local.hotspot.error.{self.hotspot.renew_error}"
+        self._renew_seen = renew_state
         if self.network_mode == "hotspot":
             if hotspot_state == "running" and self.address is None:
                 try:
@@ -775,7 +782,11 @@ class CommanderConsole:
 
     def rows(self):
         """Names of the F9 rows on screen, top to bottom."""
-        return BASIC_ROWS + (ADVANCED_ROWS if self.advanced else ())
+        if not self.advanced:
+            return BASIC_ROWS
+        running = self.address is not None or self.hotspot.active
+        renew = (not running and getattr(self.hotspot, "renew_supported", False))
+        return BASIC_ROWS + ADVANCED_ROWS + ((RENEW_ROW,) if renew else ())
 
     def _start_service(self):
         """Switch multiplayer on: the LAN, else the hotspot when no LAN is up.
@@ -835,6 +846,10 @@ class CommanderConsole:
             self._host_chosen = True
         elif row == "port" and not running:
             self.port = max(1024, min(65535, self.port + direction))
+        elif row == RENEW_ROW and not running:
+            # The helper keeps the Wi-Fi name; phones have to join again.
+            self._renew_seen = None
+            self.hotspot.renew_password()
 
     def handle_key(self, game, key):
         if self.admission.request is not None:
@@ -898,7 +913,7 @@ class CommanderConsole:
     @staticmethod
     def row_rects():
         """Shared canvas geometry for rendering and local click ownership."""
-        return tuple(pygame.Rect(124, 300 + index * 40, 1032, 34) for index in range(6))
+        return tuple(pygame.Rect(124, 300 + index * 34, 1032, 32) for index in range(7))
 
     @staticmethod
     def roster_client_rects():
@@ -1025,33 +1040,7 @@ class CommanderConsole:
                 (124, 104, 1032, 26), config.COLOR_TEXT, size=20, align="center")
             hotspot = self.network_mode == "hotspot"
             if hotspot:
-                details = self.hotspot.details
-                ssid = details.ssid if details is not None else tr("commander.local.unavailable")
-                password = (details.password if details is not None
-                            else tr("commander.local.unavailable"))
-                layout.blit_line(screen, message("commander.local.hotspot.ssid",
-                                                  ssid=raw_text(ssid)),
-                                 (124, 134, 790, 26), config.COLOR_TEXT, size=22,
-                                 align="center")
-                layout.blit_line(screen, message("commander.local.hotspot.password",
-                                                  password=raw_text(password)),
-                                 (124, 164, 790, 34), config.COLOR_WARN, size=28,
-                                 align="center")
-                layout.blit_line(screen, "commander.local.hotspot.qr",
-                                 (936, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
-                                 align="center")
-                layout.blit_line(screen, "commander.local.url.qr",
-                                 (1051, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
-                                 align="center")
-                if details is not None:
-                    surface = self._hotspot_qr(details.ssid, details.password, box_px=105)
-                    screen.blit(surface, (936 + (105 - surface.get_width()) // 2,
-                                          166 + (105 - surface.get_height()) // 2))
-                if self.address is not None:
-                    surface = self._url_qr(self.address[0], self.address[1], box_px=105)
-                    screen.blit(surface, (1051 + (105 - surface.get_width()) // 2,
-                                          166 + (105 - surface.get_height()) // 2))
-                lookout_at = (1051, 280)
+                self._draw_hotspot_steps(screen, tr)
             else:
                 layout.blit_line(screen, "commander.local.url.qr",
                                  (936, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
@@ -1060,25 +1049,21 @@ class CommanderConsole:
                     surface = self._url_qr(self.address[0], self.address[1], box_px=105)
                     screen.blit(surface, (936 + (105 - surface.get_width()) // 2,
                                           166 + (105 - surface.get_height()) // 2))
-                lookout_at = (1051, 134)
+                layout.blit_line(screen, "commander.local.join_code",
+                                 (124, 144, 790, 24), config.COLOR_TEXT_DIM, size=20,
+                                 align="center")
+                code = self.pairing_code or "------"
+                layout.blit_line(screen, raw_text(code[:3] + " " + code[3:]),
+                                 (124, 174, 790, 108), config.COLOR_WARN, size=72,
+                                 align="center")
             # The phone lookout: its own QR code opens the HTTPS page.
             if self.address is not None and self.tls_address is not None:
                 layout.blit_line(screen, "commander.local.lookout.qr",
-                                 (lookout_at[0], lookout_at[1], 105, 28),
-                                 config.COLOR_TEXT_DIM, size=12, align="center")
+                                 (1051, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
+                                 align="center")
                 surface = self._lookout_qr()
-                screen.blit(surface, (lookout_at[0] + (105 - surface.get_width()) // 2,
-                                      lookout_at[1] + 32 + (105 - surface.get_height()) // 2))
-            layout.blit_line(screen, "commander.local.join_code",
-                              (124, 206 if hotspot else 144, 790,
-                               24), config.COLOR_TEXT_DIM, size=20, align="center")
-            code = self.pairing_code or "------"
-            grouped_code = raw_text(code[:3] + " " + code[3:])
-            layout.blit_line(screen, grouped_code,
-                             (124, 228 if hotspot else 174, 790,
-                              72 if hotspot else 108),
-                             config.COLOR_WARN, size=62 if hotspot else 72,
-                             align="center")
+                screen.blit(surface, (1051 + (105 - surface.get_width()) // 2,
+                                      166 + (105 - surface.get_height()) // 2))
             service_state = (f"commander.local.hotspot.state.{self.hotspot.state}"
                              if self.network_mode == "hotspot" and self.hotspot.active
                              else "common.on" if self.address is not None else "common.off")
@@ -1093,6 +1078,9 @@ class CommanderConsole:
                 "host": (message("commander.local.host", host=self.host)
                          if self.network_mode == "lan" else "commander.local.hotspot.host_auto"),
                 "port": message("commander.local.port", port=self.port),
+                RENEW_ROW: message("commander.local.hotspot.renew", state=tr(
+                    "commander.local.hotspot.renew."
+                    + (getattr(self.hotspot, "renew_state", None) or "idle"))),
             }
             values = tuple(texts[row] for row in self.rows())
             for index, (text, rect) in enumerate(zip(values, self.row_rects())):
@@ -1109,6 +1097,42 @@ class CommanderConsole:
                                    config.COLOR_WARN, size=18)
             layout.blit_line(screen, "commander.local.hint", (124, 646, 1032, 30),
                               config.COLOR_TEXT_DIM, size=16)
+
+    def _draw_hotspot_steps(self, screen, tr):
+        """Hotspot: step 1 joins the Wi-Fi, step 2 opens the crew page.
+
+        Both steps are on screen at once, each with its QR code; the lookout
+        QR keeps the column right of them.
+        """
+        details = self.hotspot.details
+        unavailable = tr("commander.local.unavailable")
+        layout.blit_line(screen, "commander.local.hotspot.step1", (124, 134, 400, 24),
+                         config.COLOR_TEXT, size=18)
+        if details is not None:
+            surface = self._hotspot_qr(details.ssid, details.password, box_px=105)
+            screen.blit(surface, (124 + (105 - surface.get_width()) // 2,
+                                  162 + (105 - surface.get_height()) // 2))
+        layout.blit_line(screen, "commander.local.hotspot.ssid_label",
+                         (240, 164, 284, 24), config.COLOR_TEXT_DIM, size=15)
+        layout.blit_line(screen, raw_text(details.ssid if details is not None
+                                          else unavailable),
+                         (240, 188, 284, 30), config.COLOR_TEXT, size=22)
+        layout.blit_line(screen, "commander.local.hotspot.password_label",
+                         (240, 220, 284, 24), config.COLOR_TEXT_DIM, size=15)
+        layout.blit_line(screen, raw_text(details.password if details is not None
+                                          else unavailable),
+                         (240, 246, 284, 36), config.COLOR_WARN, size=26)
+        layout.blit_line(screen, "commander.local.hotspot.step2", (544, 134, 492, 24),
+                         config.COLOR_TEXT, size=18)
+        if self.address is not None:
+            surface = self._url_qr(self.address[0], self.address[1], box_px=105)
+            screen.blit(surface, (544 + (105 - surface.get_width()) // 2,
+                                  162 + (105 - surface.get_height()) // 2))
+        layout.blit_line(screen, "commander.local.join_code", (660, 166, 376, 24),
+                         config.COLOR_TEXT_DIM, size=18, align="center")
+        code = self.pairing_code or "------"
+        layout.blit_line(screen, raw_text(code[:3] + " " + code[3:]),
+                         (660, 192, 376, 72), config.COLOR_WARN, size=62, align="center")
 
     def _draw_roster(self, game):
         screen, tr = game.screen, game.tr

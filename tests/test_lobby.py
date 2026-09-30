@@ -159,3 +159,57 @@ def test_host_only_leaves_every_station_to_the_browsers_and_the_ai(game):
     game._return_to_main_menu()
     key(game, pygame.K_ESCAPE)
     assert not game.host_only
+
+
+@pytest.mark.parametrize("language", ["en", "de", "pseudo"])
+@pytest.mark.parametrize("large", [False, True])
+def test_hotspot_lobby_shows_the_wifi_step_and_the_page_step_together(
+        game, language, large):
+    from itertools import combinations
+
+    from src.commander.access_point import HotspotDetails
+    from src.core.i18n import Translator, pseudolocale, translation_scope
+    from src.ui import layout
+
+    game.open_lobby()
+    console = game.commander
+    console.network_mode = "hotspot"
+    console.address = ("10.42.0.1", 8765)
+    console.pairing_code = "123ABC"
+    console.hotspot.details = HotspotDetails(
+        ssid="U-Jagd-7KPX", password="abcdefghijkmnopqrs",
+        address="10.42.0.1", interface="wlan0")
+    drawn = []
+    wifi, page = console._hotspot_qr, console._url_qr
+    console._hotspot_qr = lambda *a, **k: drawn.append(("wifi", a)) or wifi(*a, **k)
+    console._url_qr = lambda *a, **k: drawn.append(("page", a)) or page(*a, **k)
+    game.tr = (Translator("en", pseudolocale()).t if language == "pseudo"
+               else Translator(language).t)
+    layout.configure_for(large_text=large)
+    try:
+        with layout.capture_text() as text, translation_scope(game.tr):
+            game._draw_lobby_page()
+    finally:
+        layout.configure_for(large_text=False)
+        console.address = None
+        console.hotspot.details = None
+    assert drawn == [("wifi", ("U-Jagd-7KPX", "abcdefghijkmnopqrs")),
+                     ("page", ("10.42.0.1", 8765))]
+    shown = [entry["text"] for entry in text]
+    if language != "pseudo":
+        step1 = next(entry for entry in text
+                     if entry["text"] == game.tr("commander.local.hotspot.step1"))
+        step2 = next(entry for entry in text
+                     if entry["text"] == game.tr("commander.local.hotspot.step2"))
+        assert step1["rect"].bottom <= step2["rect"].top
+    assert "abcdefghijkmnopqrs" in shown and "123 ABC" in shown
+    assert "U-Jagd-7KPX" in shown
+    assert "http://10.42.0.1:8765/" in shown
+    panel = pygame.Rect(40, 116, config.SCREEN_W - 80, 500)
+    for entry in text:
+        assert entry["bounds"].contains(entry["ink"]), entry
+        assert panel.contains(entry["bounds"]), entry
+        assert "commander." not in entry["text"] and "lobby." not in entry["text"]
+    overlaps = [(a["text"], b["text"]) for a, b in combinations(text, 2)
+                if a["ink"].colliderect(b["ink"])]
+    assert not overlaps, overlaps

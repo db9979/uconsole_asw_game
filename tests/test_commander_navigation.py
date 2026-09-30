@@ -413,7 +413,7 @@ def test_native_six_rows_nonoverlap_and_roomy_join_code(
     console.error = "commander.local.navigation.bridge_down"
     with layout.capture_text() as text:
         console.draw(game)
-    assert len(console.row_rects()) == 6
+    assert len(console.row_rects()) == 7
     for entry in text:
         assert entry["bounds"].contains(entry["ink"])
         assert pygame.Rect(0, 0, 1280, 720).contains(entry["bounds"])

@@ -3,6 +3,7 @@
 from contextlib import closing
 from copy import deepcopy
 from dataclasses import asdict, replace
+from itertools import combinations
 import http.client
 import json
 import socket
@@ -1283,3 +1284,87 @@ def test_bridge_translation_contract():
         key = "commander." + suffix
         en, de = Translator("en").t(key), Translator("de").t(key)
         assert en != key and de != key and en != de
+
+
+class RenewingHotspot(FakeHotspot):
+    renew_supported = True
+
+    def __init__(self, order=None):
+        super().__init__(order)
+        self.renew_state = None
+        self.renew_error = None
+
+    def renew_password(self):
+        self.order.append("renew")
+        self.renew_state = "working"
+        return True
+
+
+def test_new_hotspot_password_row_only_while_multiplayer_is_off(game):
+    console = game.commander
+    order = []
+    console.hotspot = RenewingHotspot(order)
+    assert "renew" not in console.rows()
+    console.advanced = True
+    assert console.rows() == ("service", "roster", "advanced", "mode", "host", "port",
+                              "renew")
+    assert len(console.row_rects()) >= len(console.rows())
+    console.selection = console.rows().index("renew")
+    console.activate(game)
+    assert order == ["renew"]
+    with layout.capture_text() as text:
+        console.draw(game)
+    assert any(game.tr("commander.local.hotspot.renew.working") in entry["text"]
+               for entry in text)
+    # All seven rows stay inside their rectangles, also with large pseudo text.
+    game.tr = Translator("en", pseudolocale()).t
+    layout.configure_for(large_text=True)
+    try:
+        with layout.capture_text() as text:
+            console.draw(game)
+    finally:
+        layout.configure_for(large_text=False)
+        game.tr = game.translator.t
+    for entry in text:
+        assert entry["bounds"].contains(entry["ink"]), entry
+    assert not [(a["text"], b["text"]) for a, b in combinations(text, 2)
+                if a["ink"].colliderect(b["ink"])]
+    # A failed renewal is reported once through the F9 error line.
+    console.hotspot.renew_state = "error"
+    console.hotspot.renew_error = "busy"
+    console.pump(game)
+    assert console.error == "commander.local.hotspot.error.busy"
+    console.error = None
+    console.pump(game)
+    assert console.error is None
+    # While multiplayer runs the row is gone and cannot be triggered.
+    console.hotspot.state = "running"
+    assert "renew" not in console.rows()
+    console.hotspot.state = "off"
+    console.address = ("192.168.1.7", 8765)
+    assert "renew" not in console.rows()
+    console.address = None
+
+
+def test_f9_hotspot_page_numbers_the_wifi_step_then_the_page_step(game):
+    console = game.commander
+    console.hotspot = FakeHotspot()
+    console.hotspot.ready()
+    console.network_mode = "hotspot"
+    console.address = ("10.42.0.1", 8765)
+    console.pairing_code = "123ABC"
+    drawn = []
+    wifi, page = console._hotspot_qr, console._url_qr
+    console._hotspot_qr = lambda *a, **k: drawn.append("wifi") or wifi(*a, **k)
+    console._url_qr = lambda *a, **k: drawn.append("page") or page(*a, **k)
+    try:
+        with layout.capture_text() as text:
+            console.draw(game)
+    finally:
+        console.address = None
+    assert drawn == ["wifi", "page"]
+    shown = {entry["text"]: entry for entry in text}
+    step1 = shown[game.tr("commander.local.hotspot.step1")]
+    step2 = shown[game.tr("commander.local.hotspot.step2")]
+    assert step1["rect"].right <= step2["rect"].left
+    assert "U-Jagd-TEST" in shown and "TestPassword2345" in shown and "123 ABC" in shown

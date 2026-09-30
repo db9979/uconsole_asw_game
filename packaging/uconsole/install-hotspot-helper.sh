@@ -11,9 +11,12 @@ fi
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 helper=/usr/libexec/u-jagd-hotspot-helper
 policy=/usr/share/polkit-1/actions/io.github.db9979.u-jagd.hotspot.policy
+# The helper keeps the hotspot's Wi-Fi name and password here (root only).
+state_dir=/var/lib/u-jagd
 
 if [ "${1-}" = "--uninstall" ]; then
-    rm -f -- "$helper" "$policy"
+    rm -f -- "$helper" "$policy" "$state_dir/hotspot.json"
+    rmdir -- "$state_dir" 2>/dev/null || true
     printf '%s\n' "U-Jagd hotspot helper removed."
     exit 0
 fi

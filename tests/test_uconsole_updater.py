@@ -231,7 +231,8 @@ def test_installer_updates_checkout_that_predates_it(repos, tmp_path):
     run(work, "git", "commit", "-qm", "installer")
     run(work, "git", "push", "-q", "origin", "main")
     result = subprocess.run(["sh", str(INSTALL)], capture_output=True, text=True,
-                            env={**os.environ, "U_JAGD_DIR": str(app)}, check=True)
+                            env={**os.environ, "U_JAGD_DIR": str(app),
+                                 "U_JAGD_NO_HOTSPOT": "1"}, check=True)
     assert "stub update" in result.stdout and "stub setup" in result.stdout
     assert (app / "packaging/uconsole/u_jagd_updater.py").exists()
 
@@ -393,3 +394,82 @@ def test_online_probe_uses_the_https_proxy(monkeypatch):
     assert module.probe_address() == ("proxy.lan", 3128)
     monkeypatch.delenv("HTTPS_PROXY")
     assert module.probe_address() == ("github.com", 443)
+
+
+def installer_sandbox(tmp_path, *, nmcli=None, sudo_status=0, sudo=True, extra_env=None):
+    """A fake checkout plus a PATH of stubs, so install.sh runs hermetically
+    (also as root: the stub ``id`` reports a normal user)."""
+    app = tmp_path / "app"
+    kit = app / "packaging/uconsole"
+    kit.mkdir(parents=True)
+    (app / ".git").mkdir()
+    (kit / "u_jagd_updater.py").write_text("import sys\nprint('stub', *sys.argv[1:])\n")
+    for name in ("install-hotspot-helper.sh", "u-jagd-hotspot-helper",
+                 "io.github.db9979.u-jagd.hotspot.policy"):
+        (kit / name).write_text((ROOT / "packaging/uconsole" / name).read_text())
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    log = tmp_path / "sudo.log"
+
+    def stub(name, body):
+        path = bin_dir / name
+        path.write_text("#!/bin/sh\n" + body + "\n")
+        path.chmod(0o755)
+
+    stub("id", "echo 1000")
+    stub("git", "exit 0")
+    stub("python3", f'exec "{sys.executable}" "$@"')
+    if sudo:
+        stub("sudo", f'printf "%s\\n" "$*" >> "{log}"\nexit {sudo_status}')
+    if nmcli is not None:
+        stub("nmcli", f"printf '%s\\n' {nmcli}")
+    for tool in ("sh", "dirname", "mkdir", "cmp", "grep", "cat"):
+        real = next((Path(folder) / tool for folder in ("/usr/bin", "/bin")
+                     if (Path(folder) / tool).exists()), None)
+        if real is not None:
+            (bin_dir / tool).symlink_to(real)
+    env = {"PATH": str(bin_dir), "HOME": str(tmp_path / "home"),
+           "U_JAGD_DIR": str(app), **(extra_env or {})}
+    result = subprocess.run(["/bin/sh", str(INSTALL)], capture_output=True, text=True,
+                            env=env, timeout=60)
+    calls = log.read_text().splitlines() if log.exists() else []
+    return result, calls, kit
+
+
+def test_installer_sets_up_the_hotspot_helper_with_sudo(tmp_path):
+    result, calls, kit = installer_sandbox(tmp_path, nmcli="'eth0:ethernet' 'wlan0:wifi'")
+    assert result.returncode == 0, result.stderr
+    assert "stub update" in result.stdout and "stub setup" in result.stdout
+    assert f"sh {kit}/install-hotspot-helper.sh" in calls
+    assert "hotspot helper installed" in result.stdout
+
+
+@pytest.mark.parametrize("case, hint", [
+    ("no_networkmanager", "NetworkManager not found"),
+    ("no_wifi", "no Wi-Fi device wlan0"),
+    ("no_sudo", "sudo not found"),
+    ("sudo_fails", "the hotspot helper was not installed"),
+])
+def test_installer_continues_without_the_hotspot_helper(tmp_path, case, hint):
+    options = dict(nmcli="'wlan0:wifi'")
+    if case == "no_networkmanager":
+        options["nmcli"] = None
+    elif case == "no_wifi":
+        options["nmcli"] = "'eth0:ethernet' 'wlan1:wifi'"
+    elif case == "no_sudo":
+        options["sudo"] = False
+    else:
+        options["sudo_status"] = 1
+    result, calls, kit = installer_sandbox(tmp_path, **options)
+    assert result.returncode == 0, result.stderr
+    assert "stub setup" in result.stdout and "installed. Start it" in result.stdout
+    assert hint in result.stderr
+    if case != "sudo_fails":
+        assert not any("install-hotspot-helper" in call for call in calls)
+
+
+def test_installer_hotspot_opt_out(tmp_path):
+    result, calls, _ = installer_sandbox(tmp_path, nmcli="'wlan0:wifi'",
+                                         extra_env={"U_JAGD_NO_HOTSPOT": "1"})
+    assert result.returncode == 0, result.stderr
+    assert "skipping the hotspot helper" in result.stdout and not calls

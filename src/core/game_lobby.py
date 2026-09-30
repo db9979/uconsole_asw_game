@@ -156,6 +156,42 @@ class LobbyMixin:
             else:
                 self.close_lobby()
 
+    def _draw_lobby_hotspot_steps(self, left, address, details) -> None:
+        """On the uConsole's own hotspot: step 1 joins the Wi-Fi (its QR code,
+        name and password), step 2 opens the crew page (its QR code, address
+        and join code). Both steps show at once."""
+        s, console = self.screen, self.commander
+        box = 120
+        text_x, text_w = left.x + box + 12, left.w - box - 12
+        top = left.y
+        layout.blit_line(s, "commander.local.hotspot.step1", (left.x, top, left.w, 22),
+                         config.COLOR_TEXT, size=16)
+        surface = console._hotspot_qr(details.ssid, details.password, box_px=box)
+        s.blit(surface, (left.x + (box - surface.get_width()) // 2,
+                         top + 28 + (box - surface.get_height()) // 2))
+        layout.blit_line(s, "commander.local.hotspot.ssid_label",
+                         (text_x, top + 28, text_w, 20), config.COLOR_TEXT_DIM, size=14)
+        layout.blit_line(s, raw_text(details.ssid), (text_x, top + 48, text_w, 26),
+                         config.COLOR_TEXT, size=20)
+        layout.blit_line(s, "commander.local.hotspot.password_label",
+                         (text_x, top + 78, text_w, 20), config.COLOR_TEXT_DIM, size=14)
+        layout.blit_line(s, raw_text(details.password), (text_x, top + 98, text_w, 30),
+                         config.COLOR_WARN, size=22)
+        top += 164
+        layout.blit_line(s, "commander.local.hotspot.step2", (left.x, top, left.w, 22),
+                         config.COLOR_TEXT, size=16)
+        surface = console._url_qr(address[0], address[1], box_px=box)
+        s.blit(surface, (left.x + (box - surface.get_width()) // 2,
+                         top + 28 + (box - surface.get_height()) // 2))
+        layout.blit_line(s, raw_text(f"http://{address[0]}:{address[1]}/"),
+                         (text_x, top + 32, text_w, 22), config.COLOR_TEXT, size=14)
+        layout.blit_line(s, "commander.local.join_code", (text_x, top + 62, text_w, 20),
+                         config.COLOR_TEXT_DIM, size=14, align="center")
+        code = console.pairing_code or "------"
+        layout.blit_line(s, raw_text(code[:3] + " " + code[3:]),
+                         (text_x, top + 84, text_w, 56), config.COLOR_WARN, size=44,
+                         align="center")
+
     def _draw_lobby_page(self) -> None:
         s, room = self.screen, self.lobby
         console = self.commander
@@ -166,7 +202,11 @@ class LobbyMixin:
         # Left: how to join (address, code, QR codes).
         left = pygame.Rect(panel.x + 20, panel.y + 52, 360, panel.h - 80)
         address = getattr(console, "address", None)
-        if address is not None:
+        details = getattr(console.hotspot, "details", None)
+        if (address is not None and details is not None
+                and console.network_mode == "hotspot"):
+            self._draw_lobby_hotspot_steps(left, address, details)
+        elif address is not None:
             layout.blit_line(s, "lobby.join", (left.x, left.y, left.w, 24),
                              config.COLOR_TEXT_DIM, size=17, align="center")
             surface = console._url_qr(address[0], address[1], box_px=168)
@@ -181,16 +221,6 @@ class LobbyMixin:
             layout.blit_line(s, raw_text(code[:3] + " " + code[3:]),
                              (left.x, left.y + 262, left.w, 60), config.COLOR_WARN,
                              size=52, align="center")
-            details = getattr(console.hotspot, "details", None)
-            if console.network_mode == "hotspot" and details is not None:
-                layout.blit_line(s, message("commander.local.hotspot.ssid",
-                                            ssid=raw_text(details.ssid)),
-                                 (left.x, left.y + 330, left.w, 22), config.COLOR_TEXT,
-                                 size=16, align="center")
-                layout.blit_line(s, message("commander.local.hotspot.password",
-                                            password=raw_text(details.password)),
-                                 (left.x, left.y + 354, left.w, 22), config.COLOR_WARN,
-                                 size=16, align="center")
         else:
             layout.blit_block(s, console.error or "lobby.starting", left.x, left.y + 40,
                               left.w, 120, config.COLOR_WARN, size=18)

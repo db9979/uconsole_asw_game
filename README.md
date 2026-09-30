@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.110**
+Current release: **1.3.111**
 
-Release 1.3.110 adds an engagement sketch to fire control on both sides. The
+Release 1.3.111 adds an engagement sketch to fire control on both sides. The
 frigate's Weapons station and the submarine's Weapons page now draw, north up
 around the own ship, the torpedo's reach, the bearing to the target and, once
 a range is known, the estimated position, the intercept point from the TMA
 course and speed and the torpedo run to it, taken only from the contact's
-observation. The submarine's Command and Navigation pages get round dials for
+observation. The submarine's Command and Navigation pages get labelled round dials for
 course, depth (test and crush depth marked) and speed like the frigate's
 bridge, and the submarine's radio room boxes are sized to their text again,
 so the HQ order no longer runs through the frame.
@@ -172,9 +172,12 @@ ask once whether U-Jagd may use private networks: allow it, otherwise other
 devices cannot connect. **Stop server** ends the game (unsaved progress is
 lost), and the link at the bottom opens the "Buy me a coffee" page; the game log is kept in `%USERPROFILE%\.u-jagd\logs\server.log`.
 
-At every start the program asks GitHub whether a newer release exists and
-offers **Install update**: it downloads the new file, checks its size and
-SHA-256 digest, closes, replaces itself and starts the new version (a
+At every start the program asks GitHub whether a newer release exists; the
+game's start screen and main menu then show its changelog entry (and a warning
+when saves of this version will not load in it) and offer **Update now**.
+Nothing is installed before that button is pressed: then it downloads the new
+file in the background (progress on the button), checks its size and SHA-256
+digest, closes, replaces itself and starts the new version (a
 leftover `U-Jagd-Windows.exe.new` is deleted at the next start). The build is not code-signed,
 so Windows SmartScreen may warn on the first start ("More info", "Run
 anyway"). Saves and settings live in `%USERPROFILE%\.u-jagd\` as on Linux.
@@ -199,9 +202,10 @@ To build locally on Windows: `python -m pip install -e ".[windows]"` and
 
 ## Quick Start
 
-On the ClockworkPi uConsole, one command installs the game with a menu entry
-and automatic updates (every start fetches the newest release; offline the
-installed version starts):
+On the ClockworkPi uConsole, one command installs the game with a menu entry.
+A newer release is never installed on its own: the start screen shows it with
+its changelog entry and installs it when you press **Update now** (offline no
+notice appears):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/db9979/uconsole_asw_game/main/packaging/uconsole/install.sh | sh

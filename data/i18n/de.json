@@ -6084,7 +6084,7 @@
   "launcher.update.current": "Version {version} ist aktuell.",
   "launcher.update.offline": "Version {version}. Keine Update-Prüfung möglich (offline?).",
   "launcher.update.available": "Update {version} ist verfügbar (installiert: {current}).",
-  "launcher.update.install": "Update installieren",
+  "launcher.update.install": "Jetzt updaten",
   "launcher.update.stop_first": "Stoppe den Server, bevor du das Update installierst.",
   "launcher.update.downloading": "Update wird geladen ... {percent} %",
   "launcher.update.failed": "Das Update ist fehlgeschlagen. Lade es von der Release-Seite.",
@@ -6354,5 +6354,12 @@
   "commander.web.autocrew_suspended_local": "wird an der uConsole bedient",
   "commander.web.role_release_ai": "An KI übergeben",
   "lobby.host_only": "keine, nur Gastgeber",
-  "commander.web.lobby_room_host_only": "Die uConsole ist nur Gastgeber: Jede Station wird im Browser oder von der KI gespielt."
+  "commander.web.lobby_room_host_only": "Die uConsole ist nur Gastgeber: Jede Station wird im Browser oder von der KI gespielt.",
+  "update.available": "Update {version} verfügbar",
+  "update.installed": "Installiert: {version}",
+  "update.saves_break": "Spielstände dieser Version (auch die automatische Sicherung) laden mit dem neuen Update nicht mehr.",
+  "update.button": "U: Jetzt updaten",
+  "update.button_browser": "U: Jetzt updaten (Release-Seite)",
+  "update.failed": "Update fehlgeschlagen, U: nochmal",
+  "update.downloading": "Lade Update … {percent} %"
 }

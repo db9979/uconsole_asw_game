@@ -5,6 +5,7 @@ import argparse
 import ipaddress
 import os
 import random
+import sys
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -83,10 +84,10 @@ def main(argv=None) -> int:
         os.environ["SDL_AUDIODRIVER"] = "dummy"
     # Without a terminal (uConsole menu entry) a crash would leave no trace:
     # ~/.u-jagd/crash.log records start, end and any traceback or fatal signal.
-    return run_logged(lambda: _start(args))
+    return run_logged(lambda: _start(args, argv))
 
 
-def _start(args) -> int:
+def _start(args, argv=None) -> int:
     auth = WebHostAuth(Path.home() / ".u-jagd" / "web-host.json") if args.web_host else None
     if args.reset_web_host_password:
         auth.reset_local()
@@ -126,8 +127,13 @@ def _start(args) -> int:
         game.commander.autostart()
     if getattr(args, "play_sub", False):
         game.local_side = "uboot"
+    check = getattr(game, "start_update_check", None)
+    if check is not None and not args.web_host:
+        # Only a notice: a newer release is installed when the player asks.
+        check("starter" if args.status_file else None,
+              argv if argv is not None else sys.argv[1:])
     game.run()
-    return 0
+    return getattr(game, "update_exit_code", 0)
 
 
 if __name__ == "__main__":

@@ -14,15 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.110**
+Aktuelle Version: **1.3.111**
 
-Version 1.3.110 bringt auf beiden Seiten eine Schusslage in die Feuerleitung.
+Version 1.3.111 bringt auf beiden Seiten eine Schusslage in die Feuerleitung.
 Die Waffenstation der Fregatte und die Waffenseite des U-Boots zeigen jetzt,
 genordet um das eigene Schiff, die Reichweite des Torpedos, die Peilung zum
 Ziel und, sobald eine Entfernung vorliegt, die geschätzte Position, den
 Treffpunkt aus TMA-Kurs und -Fahrt und die Torpedolaufbahn dorthin, allein
 aus der Beobachtung des Kontakts. Führung und Navigation des U-Boots haben
-Rundinstrumente für Kurs, Tiefe (Test- und Zerstörungstiefe markiert) und
+beschriftete Rundinstrumente für Kurs, Tiefe (Test- und Zerstörungstiefe markiert) und
 Fahrt wie die Brücke der Fregatte, und die Kästen im Funkraum des U-Boots
 passen wieder zu ihrem Text, sodass der Befehl der Führung nicht mehr durch
 den Rahmen läuft.
@@ -182,10 +182,13 @@ gespeicherter Fortschritt geht verloren), und der Link unten öffnet die
 "Buy me a coffee"-Seite; das Protokoll liegt in
 `%USERPROFILE%\.u-jagd\logs\server.log`.
 
-Bei jedem Start fragt das Programm GitHub, ob es ein neueres Release gibt, und
-bietet **Update installieren** an: Es lädt die neue Datei, prüft Größe und
-SHA-256-Prüfsumme, schließt sich, ersetzt sich selbst und startet die neue
-Version (eine liegengebliebene `U-Jagd-Windows.exe.new` löscht es beim
+Bei jedem Start fragt das Programm GitHub, ob es ein neueres Release gibt;
+Startbildschirm und Hauptmenü des Spiels zeigen dann dessen Eintrag aus dem
+Änderungsprotokoll (und eine Warnung, wenn Spielstände dieser Version darin
+nicht mehr laden) und bieten **Jetzt updaten** an. Vor diesem Knopf wird nichts
+installiert: Dann lädt es die neue Datei im Hintergrund (Fortschritt auf dem
+Knopf), prüft Größe und SHA-256-Prüfsumme, schließt sich, ersetzt sich selbst
+und startet die neue Version (eine liegengebliebene `U-Jagd-Windows.exe.new` löscht es beim
 nächsten Start). Das Programm ist nicht
 signiert, deshalb warnt Windows SmartScreen beim ersten Start eventuell
 ("Weitere Informationen", "Trotzdem ausführen"). Spielstände und Einstellungen
@@ -214,8 +217,9 @@ gelöscht). Selbst bauen unter Windows:
 ## Schnellstart
 
 Auf der ClockworkPi uConsole installiert ein einziger Befehl das Spiel mit
-Menüeintrag und automatischem Update (jeder Start holt das neueste Release;
-ohne Netz startet die installierte Version):
+Menüeintrag. Ein neues Release wird nie von selbst installiert: Der
+Startbildschirm zeigt es mit seinem Eintrag aus dem Änderungsprotokoll und
+installiert es erst bei **Jetzt updaten** (ohne Netz erscheint kein Hinweis):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/db9979/uconsole_asw_game/main/packaging/uconsole/install.sh | sh

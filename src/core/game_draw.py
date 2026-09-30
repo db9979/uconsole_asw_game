@@ -150,6 +150,8 @@ class DrawMixin:
             # Support link: main menu page only, never over a mission.
             draw_support_corner(s, config.SCREEN_W - 24, 600,
                                 config.COLOR_TEXT, config.COLOR_TEXT_DIM)
+            if not self.welcome_active:
+                self.draw_update_notice(s, splash=False)
         elif self.menu_screen == WELCOME_SCREEN:
             self._draw_welcome_page()
         elif self.menu_screen == BUG_REPORT_ENTRY:
@@ -329,6 +331,7 @@ class DrawMixin:
         s.fill(config.COLOR_BG)
         if self.splash_active:
             draw_splash(s, self._t - self.splash_started_at, self.tr)
+            self.draw_update_notice(s, splash=True)
         elif self.editor is not None:
             self.editor.draw(s)
             if isinstance(self.editor, MissionEditor) and self.editor.mode == "browser":
@@ -1276,6 +1279,7 @@ class DrawMixin:
                 self.update(dt, audio_dt=wall_dt)
                 self.autosave_tick(wall_dt)
                 self.lobby_tick(wall_dt)
+                self.update_tick()
                 self._perf_debug_log(wall_dt)
                 if self.web_mode:
                     game_visible()

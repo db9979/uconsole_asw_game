@@ -100,32 +100,30 @@ def update_self_test(report: str) -> int:
     return 0
 
 
-def remove_stale_update() -> None:
-    """Delete an ``<exe>.new`` left by an update that could not swap in."""
-    if getattr(sys, "frozen", False):
-        for suffix in (".new", ".new.part"):
-            try:
-                os.remove(os.path.abspath(sys.executable) + suffix)
-            except OSError:
-                pass
-
-
 def _install_update(code: int) -> int:
-    """After the game asked for an update, swap in ``<exe>.new`` and restart.
+    """The game quit with ``update.UPDATE_EXIT_CODE``: install the release.
 
-    The game downloads and verifies the new program itself and then quits
-    with ``update.UPDATE_EXIT_CODE``; only the frozen program can replace its
-    own file. Returns 0 once the install script runs, else ``code``.
+    Normally the frozen game downloads and swaps in the new program itself
+    ("Update now", ``src/core/game_update.py``); this is the hand-over the
+    old starter did: fetch the newest release to ``<exe>.new`` unless it is
+    already there (size and SHA-256 checked), then start the install script
+    that replaces this file once it has exited and starts the new version.
+    Only the frozen program can replace itself. Returns 0 once the script
+    runs, else ``code``.
     """
+    from src.core.version import APP_VERSION
     from src.launcher import update
 
     if not getattr(sys, "frozen", False):
         return code
     executable = os.path.abspath(sys.executable)
     downloaded = f"{executable}.new"
-    if not os.path.isfile(downloaded):
-        return code
     try:
+        if not os.path.isfile(downloaded):
+            release = update.check_latest(APP_VERSION)
+            if release is None:
+                return code
+            update.download(release, downloaded)
         update.launch_install(executable, downloaded, log=str(log_path()))
     except update.UpdateError:
         return code
@@ -133,15 +131,16 @@ def _install_update(code: int) -> int:
 
 
 def run_game(argv: list[str]) -> int:
-    """Run the game with ``main.py``'s command line; return its exit code."""
+    """Run the game with ``main.py``'s command line; return its exit code.
+
+    A stale ``<exe>.new`` is removed by the game's own update check.
+    """
     _ensure_streams()
-    remove_stale_update()
     import main as game_main
     from src.launcher import update
 
     code = game_main.main(argv)
-    update_code = getattr(update, "UPDATE_EXIT_CODE", None)
-    if update_code is not None and code == update_code:
+    if code == update.UPDATE_EXIT_CODE:
         return _install_update(code)
     return code
 

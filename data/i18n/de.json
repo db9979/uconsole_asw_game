@@ -6321,5 +6321,12 @@
   "commander.web.lobby_room_host_only": "Die uConsole ist nur Gastgeber: Jede Station wird im Browser oder von der KI gespielt.",
   "commander.local.advanced": "Erweiterte Netzwerkeinstellungen: {state}",
   "commander.local.advanced.open": "eingeblendet",
-  "commander.local.advanced.closed": "ausgeblendet"
+  "commander.local.advanced.closed": "ausgeblendet",
+  "update.available": "Update {version} verfügbar",
+  "update.installed": "Installiert: {version}",
+  "update.saves_break": "Spielstände dieser Version (auch die automatische Sicherung) laden mit dem neuen Update nicht mehr.",
+  "update.button": "U: Jetzt updaten",
+  "update.button_browser": "U: Jetzt updaten (Release-Seite)",
+  "update.failed": "Update fehlgeschlagen, U: nochmal",
+  "update.downloading": "Lade Update … {percent} %"
 }

@@ -134,19 +134,6 @@ def test_launch_install_starts_the_script_with_a_clean_environment(monkeypatch, 
     assert "move /Y" in open(script, encoding="utf-8").read()
 
 
-def test_the_program_removes_a_stale_update_before_the_game(monkeypatch, tmp_path):
-    exe = tmp_path / "U-Jagd-Windows.exe"
-    for name in ("U-Jagd-Windows.exe.new", "U-Jagd-Windows.exe.new.part"):
-        (tmp_path / name).write_bytes(b"x")
-    monkeypatch.setattr(sys, "frozen", True, raising=False)
-    monkeypatch.setattr(sys, "executable", str(exe))
-    import main as game_main
-
-    monkeypatch.setattr(game_main, "main", lambda argv: 0)
-    assert entry.main([]) == 0
-    assert not list(tmp_path.glob("U-Jagd-Windows.exe.*"))
-
-
 def _fake_game_main(monkeypatch, code):
     import main as game_main
 
@@ -181,43 +168,64 @@ def test_the_update_exit_code_installs_the_downloaded_program(monkeypatch, tmp_p
     exe.write_bytes(b"old")
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setattr(sys, "executable", str(exe))
-    monkeypatch.setattr(update, "UPDATE_EXIT_CODE", 75, raising=False)
     installs = []
     monkeypatch.setattr(update, "launch_install",
                         lambda executable, downloaded, args=(), log=None:
                         installs.append((executable, downloaded, args, log)))
+    monkeypatch.setattr(update, "check_latest",
+                        lambda current: pytest.fail("already downloaded"))
     import main as game_main
 
     def game_downloads(argv):
         (tmp_path / "U-Jagd-Windows.exe.new").write_bytes(b"new")
-        return 75
+        return update.UPDATE_EXIT_CODE
 
     monkeypatch.setattr(game_main, "main", game_downloads)
     assert entry.main([]) == 0
     assert installs == [(str(exe), f"{exe}.new", (), str(entry.log_path()))]
-    # Nothing downloaded: no install, the code is passed through.
-    installs.clear()
-    monkeypatch.setattr(game_main, "main", lambda argv: 75)
-    assert entry.main([]) == 75 and installs == []
-    # A failed install script keeps the code too.
-    monkeypatch.setattr(game_main, "main", game_downloads)
+    # A failed install script keeps the code.
 
     def broken(*_args, **_kwargs):
         raise update.UpdateError("no temp dir")
 
     monkeypatch.setattr(update, "launch_install", broken)
-    assert entry.main([]) == 75
+    assert entry.main([]) == update.UPDATE_EXIT_CODE
 
 
-def test_without_an_update_exit_code_every_code_is_passed_through(monkeypatch, tmp_path):
+def test_the_update_exit_code_fetches_the_release_first(monkeypatch, tmp_path):
     exe = tmp_path / "U-Jagd-Windows.exe"
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setattr(sys, "executable", str(exe))
-    monkeypatch.delattr(update, "UPDATE_EXIT_CODE", raising=False)
+    release = update.Release("9.9.9", ASSET_URL, 4, "0" * 64, update.RELEASES_PAGE)
+    steps = []
+    monkeypatch.setattr(update, "check_latest", lambda current: steps.append("check") or release)
+    monkeypatch.setattr(update, "download",
+                        lambda found, target, **_kw: steps.append(("download", found, target)))
     monkeypatch.setattr(update, "launch_install",
-                        lambda *a, **k: pytest.fail("no install without the exit code"))
-    _fake_game_main(monkeypatch, 75)
-    assert entry.main([]) == 75
+                        lambda executable, downloaded, args=(), log=None:
+                        steps.append(("install", downloaded)))
+    _fake_game_main(monkeypatch, update.UPDATE_EXIT_CODE)
+    assert entry.main([]) == 0
+    assert steps == ["check", ("download", release, f"{exe}.new"),
+                     ("install", f"{exe}.new")]
+    # No newer release or offline: nothing is installed, the code stays.
+    steps.clear()
+    monkeypatch.setattr(update, "check_latest", lambda current: None)
+    assert entry.main([]) == update.UPDATE_EXIT_CODE and steps == []
+
+    def offline(current):
+        raise update.UpdateError("offline")
+
+    monkeypatch.setattr(update, "check_latest", offline)
+    assert entry.main([]) == update.UPDATE_EXIT_CODE and steps == []
+
+
+def test_from_source_the_update_exit_code_is_passed_through(monkeypatch):
+    monkeypatch.setattr(sys, "frozen", False, raising=False)
+    monkeypatch.setattr(update, "launch_install",
+                        lambda *a, **k: pytest.fail("only the frozen program replaces itself"))
+    _fake_game_main(monkeypatch, update.UPDATE_EXIT_CODE)
+    assert entry.main([]) == update.UPDATE_EXIT_CODE
 
 
 def test_the_windows_program_has_no_starter_window():
@@ -257,6 +265,40 @@ def test_prepare_uses_the_routed_private_address_without_linux_ioctls(monkeypatc
     assert offline.hosts == ("127.0.0.1",)
 
 
+def test_game_main_checks_for_updates_and_returns_the_update_exit_code(monkeypatch):
+    import main as entry
+
+    calls = []
+
+    class FakeConsole:
+        port = 8765
+
+        def autostart_solo(self):
+            calls.append(("solo", self.port))
+
+    class FakeGame:
+        update_exit_code = 0
+
+        def __init__(self, **_kwargs):
+            self.commander = FakeConsole()
+
+        def start_update_check(self, mode=None, args=()):
+            calls.append(("update_check", mode, tuple(args)))
+
+        def run(self):
+            calls.append("run")
+            self.update_exit_code = exit_code
+
+    monkeypatch.setattr(entry, "Game", FakeGame)
+    monkeypatch.setattr(entry, "load_preferences", lambda: type(
+        "P", (), {"fullscreen": False, "audio": False})())
+    exit_code = 0
+    assert entry.main(["--solo-crew", "--web-port", "9000", "5"]) == 0
+    assert calls == [("solo", 9000),
+                     ("update_check", None, ("--solo-crew", "--web-port", "9000", "5")),
+                     "run"]
+    exit_code = update.UPDATE_EXIT_CODE
+    assert entry.main(["5"]) == update.UPDATE_EXIT_CODE
 def test_frozen_self_test_runs_a_mission_and_serves_remote_crew(tmp_path):
     from src.launcher import entry
 

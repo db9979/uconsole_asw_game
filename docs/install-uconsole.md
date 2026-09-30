@@ -7,7 +7,7 @@ aus dem Repository <https://github.com/db9979/uconsole_asw_game>. Zielsystem ist
 eine uConsole mit Debian-basierter ClockworkPi-Distribution, insbesondere ein
 CM5-System. Befehle ohne `sudo` laufen als normaler Benutzer.
 
-## 0. Schnellinstallation mit automatischem Update (empfohlen)
+## 0. Schnellinstallation mit Update-Hinweis (empfohlen)
 
 Ein einziger Befehl im Terminal der uConsole, als normaler Benutzer (nicht mit
 `sudo`):
@@ -25,22 +25,26 @@ Der Installer
 - richtet die virtuelle Umgebung `.venv` ein,
 - legt den Menüeintrag **Spiele > U-Jagd**, eine Verknüpfung auf dem Desktop und
   den Befehl `~/.local/bin/u-jagd` an,
-- aktiviert einen systemd-Benutzertimer, der drei Minuten nach dem Hochfahren
-  und danach alle sechs Stunden im Hintergrund nach Updates sucht.
+- bringt den Checkout auf das neueste GitHub-Release und schaltet den
+  Hintergrund-Timer älterer Versionen (bis 1.3.109) ab.
 
-**Automatisches Update:** Jeder Start über Menü, Desktop oder `u-jagd` holt
-zuerst das neueste GitHub-Release (Tag `vX.Y.Z`, dieselbe Quelle wie das
-Windows-Programm) und startet dann das Spiel; gibt es noch kein Release, folgt
-die uConsole dem Zweig `main`. Ändern sich die Abhängigkeiten, wird
-`pip install -e .` automatisch ausgeführt. Ohne Internet startet die
-installierte Version sofort: Ein Verbindungstest zu GitHub (höchstens 2,5 s)
-überspringt dann die ganze Update-Suche, und hängende Git-Abrufe brechen nach
-spätestens 60 s ab. Startet eine neue Version nicht einmal
+**Updates nur auf Knopfdruck:** Seit 1.3.110 wird nichts mehr von selbst
+installiert. Beim Start fragt das Spiel im Hintergrund einmal bei GitHub nach
+dem neuesten Release (Tag `vX.Y.Z`, dieselbe Quelle wie das Windows-Programm).
+Ist es neuer, zeigen der Startbildschirm (oben rechts) und das Hauptmenü
+(links neben den Einträgen) die neue Version, den Eintrag aus dem Änderungsprotokoll in der
+Spielsprache, einen Warnhinweis, wenn Spielstände dieser Version (auch die
+automatische Sicherung) mit dem neuen Update nicht mehr laden (anderes
+Spielstandformat), und den Knopf **Jetzt updaten** (Taste U oder Klick). Ohne
+Internet erscheint einfach kein Hinweis. Erst der Knopf beendet das Spiel und
+startet `u_jagd_updater.py install`: Es wartet, bis das Spiel geschlossen ist,
+holt das Release, führt bei geänderten Abhängigkeiten `pip install -e .` aus
+und startet die neue Version. Startet eine neue Version nicht einmal
 (`main.py --version` schlägt fehl), wird sie zurückgerollt und erst die
-nächste Version wieder versucht. Bei eigenen Änderungen im Checkout, auf einem
-anderen Zweig als `main` oder während das Spiel läuft wird nichts verändert.
-Protokoll: `~/.u-jagd/updater.log`. Speicherstände unter `~/.u-jagd/` bleiben
-unberührt.
+nächste Version wieder versucht. Bei eigenen Änderungen im Checkout oder auf
+einem anderen Zweig als `main` wird nichts verändert. Hängende Git-Abrufe
+brechen nach spätestens 60 s ab. Protokoll: `~/.u-jagd/updater.log`.
+Speicherstände unter `~/.u-jagd/` bleiben unberührt.
 
 **Absturzprotokoll:** Jeder Spielstart schreibt nach `~/.u-jagd/crash.log`
 eine Start- und eine Endzeile. Endet das Spiel durch einen Fehler, steht dort
@@ -58,18 +62,18 @@ GitHub-Issue öffnet; die Datei dort anhängen. Nach einem Absturz bietet das
 Hauptmenü den Punkt beim nächsten Start an.
 
 **Startfenster:** Sofort nach dem Klick erscheint ein kleines Fenster „U-Jagd“
-mit dem aktuellen Schritt (Suche nach Updates, Lade Update, Installiere
-Abhängigkeiten, Prüfe neue Version, Starte U-Jagd). Es schließt sich, sobald
-das Spiel sein erstes Bild zeigt. Ein zweiter Start, während U-Jagd schon
-startet oder läuft, öffnet kein zweites Spiel, sondern zeigt drei Sekunden lang
-„U-Jagd läuft bereits.“ (und holt das Spielfenster nach vorn, wenn `wmctrl`
-installiert ist). Läuft gerade das Hintergrund-Update, wartet der Start darauf
-und zeigt das an. `U_JAGD_NO_SPLASH=1` schaltet das Fenster ab.
+mit dem aktuellen Schritt (Starte U-Jagd; nach **Jetzt updaten** auch Warte,
+bis U-Jagd beendet ist, Lade Update, Installiere Abhängigkeiten, Prüfe neue
+Version). Es schließt sich, sobald das Spiel sein erstes Bild zeigt. Ein
+zweiter Start, während U-Jagd schon startet oder läuft, öffnet kein zweites
+Spiel, sondern zeigt drei Sekunden lang „U-Jagd läuft bereits.“ (und holt das
+Spielfenster nach vorn, wenn `wmctrl` installiert ist).
+`U_JAGD_NO_SPLASH=1` schaltet das Fenster ab.
 
 Spielparameter werden durchgereicht, etwa `u-jagd --windowed`. Einmal ohne
-Update starten: `U_JAGD_NO_UPDATE=1 u-jagd`. Statt Releases immer den neuesten
-Stand von `main` holen: `U_JAGD_UPDATE_CHANNEL=main u-jagd`. Menüeintrag,
-Befehl und Timer entfernen (Spiel und Speicherstände bleiben):
+Update-Suche starten: `U_JAGD_NO_UPDATE=1 u-jagd`. Statt Releases beim
+Update den neuesten Stand von `main` holen: `U_JAGD_UPDATE_CHANNEL=main`.
+Menüeintrag und Befehl entfernen (Spiel und Speicherstände bleiben):
 
 ```sh
 sh ~/games/u-jagd/packaging/uconsole/install.sh --uninstall

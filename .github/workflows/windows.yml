@@ -1,4 +1,4 @@
-# Builds the Windows program (U-Jagd-Windows.exe: starter window + game) on
+# Builds the Windows program (U-Jagd-Windows.exe, starts straight into the game) on
 # every push and pull request. A push to main publishes it as the GitHub
 # release "v<APP_VERSION>"; the program's update check reads that release.
 name: Windows program

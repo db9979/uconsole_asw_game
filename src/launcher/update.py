@@ -239,3 +239,114 @@ def launch_install(executable: str, downloaded: str, args=(), log=None,
         env=clean_environment(os.environ), stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return script
+
+
+# --- update notice (game splash, main menu and starter) --------------------
+
+# The game exits with this code after "Update now" when the starter runs it.
+UPDATE_EXIT_CODE = 75
+RAW_FILE = "https://raw.githubusercontent.com/{repository}/{tag}/{path}"
+MAX_TEXT_BYTES = 1 << 21
+MAX_NOTES_CHARS = 700
+_ENTRY = re.compile(r"^## (\d+\.\d+\.\d+)\s*$", re.MULTILINE)
+_SAVE_VERSION = re.compile(r"^SAVE_VERSION\s*=\s*(\d{1,4})\s*$", re.MULTILINE)
+_LINK = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
+_CHANGELOGS = {"en": "CHANGELOG.md", "de": "CHANGELOG.de.md"}
+
+
+@dataclass(frozen=True)
+class Notice:
+    """A newer published release: its version, notes per language and saves."""
+
+    version: str
+    page: str
+    notes: dict
+    save_version: int | None
+
+    def notes_for(self, language: str) -> str:
+        return self.notes.get(language) or self.notes.get("en") or ""
+
+    def breaks_saves(self, current_save_version: int) -> bool:
+        """Saves of this build no longer load in the new release."""
+        return self.save_version is not None and self.save_version != current_save_version
+
+
+def changelog_entry(text: str, version: str) -> str:
+    """The text under ``## version`` in a changelog, ``""`` when missing."""
+    matches = list(_ENTRY.finditer(text))
+    for index, match in enumerate(matches):
+        if match.group(1) == version:
+            end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+            return text[match.end():end].strip()
+    return ""
+
+
+def plain_notes(text: object, limit: int = MAX_NOTES_CHARS) -> str:
+    """Release notes as one plain paragraph (no Markdown), at most ``limit``."""
+    if type(text) is not str:
+        return ""
+    text = _LINK.sub(r"\1", text[:limit * 8])
+    text = re.sub(r"[`*_#>]", "", text)
+    text = " ".join(text.split())
+    if len(text) > limit:
+        text = text[:limit - 1].rsplit(" ", 1)[0].rstrip(",;:") + "…"
+    return text
+
+
+def parse_save_version(text: str) -> int | None:
+    match = _SAVE_VERSION.search(text)
+    return int(match.group(1)) if match else None
+
+
+def _fetch_text(url: str, opener, timeout: float, agent: str) -> str:
+    request = urllib.request.Request(url, headers={"User-Agent": agent})
+    try:
+        with opener(request, timeout=timeout) as response:
+            return _read_bounded(response, MAX_TEXT_BYTES).decode("utf-8")
+    except (OSError, ValueError, UpdateError):
+        return ""
+
+
+def fetch_notice(current: str, opener=urllib.request.urlopen,
+                 timeout: float = 8.0) -> Notice | None:
+    """The newer latest release with its changelog entry, ``None`` if current.
+
+    Nothing is downloaded or installed. The English notes are the release
+    text (the changelog entry, see ``tools/changelog_notes.py``); the German
+    entry and the release's ``SAVE_VERSION`` are read from the tagged files.
+    Raises ``UpdateError`` when GitHub cannot be asked (offline).
+    """
+    agent = f"u-jagd/{current}"
+    request = urllib.request.Request(LATEST_RELEASE_API, headers={
+        "Accept": "application/vnd.github+json", "User-Agent": agent})
+    try:
+        with opener(request, timeout=timeout) as response:
+            payload = json.loads(_read_bounded(response, MAX_METADATA_BYTES))
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return None
+        raise UpdateError(str(exc)) from exc
+    except (OSError, ValueError) as exc:
+        raise UpdateError(str(exc)) from exc
+    if not isinstance(payload, dict) or payload.get("draft") or payload.get("prerelease"):
+        return None
+    tag = payload.get("tag_name")
+    version, installed = parse_version(tag), parse_version(current)
+    if version is None or installed is None or version <= installed:
+        return None
+    number = ".".join(map(str, version))
+    tag = f"v{number}"
+
+    def raw(path: str) -> str:
+        return _fetch_text(RAW_FILE.format(repository=REPOSITORY, tag=tag, path=path),
+                           opener, timeout, agent)
+
+    notes = {}
+    for language, path in _CHANGELOGS.items():
+        notes[language] = plain_notes(changelog_entry(raw(path), number))
+    if not notes["en"]:
+        notes["en"] = plain_notes(payload.get("body"))
+    page = payload.get("html_url")
+    return Notice(number, page if _https_github(page) else RELEASES_PAGE,
+                  {key: value for key, value in notes.items() if value},
+                  parse_save_version(raw("src/core/version.py")))

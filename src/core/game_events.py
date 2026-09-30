@@ -478,6 +478,8 @@ class EventMixin:
                 and getattr(e, "mod", 0) & pygame.KMOD_ALT):
             self.toggle_fullscreen()
             return
+        if self.handle_update_event(e):
+            return
         if self.splash_active:
             if e.type == pygame.QUIT:
                 self.running = False

@@ -4,13 +4,14 @@
 #   curl -fsSL https://raw.githubusercontent.com/db9979/uconsole_asw_game/main/packaging/uconsole/install.sh | sh
 #
 # Clones (or adopts) the game in $U_JAGD_DIR (default ~/games/u-jagd), creates
-# its .venv, adds a menu/desktop entry, the `u-jagd` command and a background
-# update timer.  Every start then updates to the newest GitHub release first;
-# offline the installed version starts.  Run as the normal user, not with sudo.
+# its .venv, brings it to the newest GitHub release and adds a menu/desktop
+# entry and the `u-jagd` command.  Later releases are never installed on their
+# own: the game shows a new release on its start screen and installs it when
+# you press "Update now".  Run as the normal user, not with sudo.
 # On a machine with NetworkManager and a wlan0 Wi-Fi device it also installs
 # the small hotspot helper (asks for the sudo password once); without it, or
 # with U_JAGD_NO_HOTSPOT=1, it prints a note and the game installs anyway.
-#   sh install.sh --uninstall   removes the menu entry, command and timer.
+#   sh install.sh --uninstall   removes the menu entry and command.
 set -eu
 
 REPO_URL=https://github.com/db9979/uconsole_asw_game.git
@@ -106,7 +107,7 @@ else
     git clone --branch main "$REPO_URL" "$APP_DIR"
 fi
 
-python3 "$APP_DIR/packaging/uconsole/u_jagd_updater.py" update
+U_JAGD_UPDATE_NOW=1 python3 "$APP_DIR/packaging/uconsole/u_jagd_updater.py" update
 python3 "$APP_DIR/packaging/uconsole/u_jagd_updater.py" setup
 setup_hotspot || note "hotspot helper setup skipped."
 say "installed. Start it from the menu (Games > U-Jagd) or with: ~/.local/bin/u-jagd"

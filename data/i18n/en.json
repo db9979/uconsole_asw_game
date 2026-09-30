@@ -6321,5 +6321,12 @@
   "commander.web.lobby_room_host_only": "The uConsole only hosts: every station is played in the browser or by the AI.",
   "commander.local.advanced": "Advanced network settings: {state}",
   "commander.local.advanced.open": "shown",
-  "commander.local.advanced.closed": "hidden"
+  "commander.local.advanced.closed": "hidden",
+  "update.available": "Update {version} available",
+  "update.installed": "Installed: {version}",
+  "update.saves_break": "Saved games of this version (the autosave too) will not load in the new version.",
+  "update.button": "U: Update now",
+  "update.button_browser": "U: Update now (release page)",
+  "update.failed": "Update failed, U: try again",
+  "update.downloading": "Downloading update … {percent} %"
 }

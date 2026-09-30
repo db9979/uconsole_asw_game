@@ -14,20 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.109**
+Aktuelle Version: **1.3.110**
 
-Version 1.3.109 lässt die KI jede freie Station besetzen. Die neue Crew-Hilfe
-(Shift+F2, in einer Mission aus der Mehrspieler-Lobby immer an) bemannt jede
-Station der Fregatte und eines bemannten U-Boots, die niemand hält, damit
-jeder Spieler bei einer Station bleiben kann: Die Station auf dem Bildschirm
-der uConsole und jede Station, die ein Browser hält, bleiben bei ihrem
-Spieler, und eine im Browser freigegebene Station („An KI übergeben“) geht
-sofort an die KI zurück. Auf dem U-Boot weicht die KI aus, patrouilliert oder
-läuft eine bekannte Fregatte an, hält die Rohre geladen und schießt auf eine
-nahe Ortung, schnorchelt zum Laden, hält den Trimm und schickt die Leckteams.
-In der Lobby kann die uConsole auch nur Gastgeber sein (Station „keine, nur
-Gastgeber“): Sie spielt keine Station, Browser und KI besetzen jede.
-Spielstände sind jetzt v40.
+Version 1.3.110 installiert Updates nicht mehr von selbst. Gibt es ein neueres
+Release, zeigen Startbildschirm und Hauptmenü dessen Version, den Eintrag aus
+dem Änderungsprotokoll in der Spielsprache und eine Warnung, wenn Spielstände
+dieser Version (auch die automatische Sicherung) damit nicht mehr laden, dazu
+den Knopf **Jetzt updaten** (Taste U oder Klick). Erst dieser Knopf installiert
+es: Auf der uConsole schließt das Spiel, aktualisiert sich auf das Release und
+startet neu (der alte Hintergrund-Update-Timer schaltet sich selbst ab); das
+Windows-Programm lädt die neue Datei im Hintergrund, prüft sie, tauscht sich
+aus und startet neu. Ohne Netz erscheint kein Hinweis.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -180,9 +177,13 @@ U-Jagd private Netzwerke nutzen darf: zulassen, sonst können sich andere
 Geräte nicht verbinden. Das Protokoll liegt in
 `%USERPROFILE%\.u-jagd\logs\server.log`.
 
-Hat das Spiel ein neueres Release geladen und beendet sich zum Installieren,
-ersetzt sich das Programm selbst und startet die neue Version (eine
-liegengebliebene `U-Jagd-Windows.exe.new` löscht es beim
+Bei jedem Start fragt das Programm GitHub, ob es ein neueres Release gibt;
+Startbildschirm und Hauptmenü des Spiels zeigen dann dessen Eintrag aus dem
+Änderungsprotokoll (und eine Warnung, wenn Spielstände dieser Version darin
+nicht mehr laden) und bieten **Jetzt updaten** an. Vor diesem Knopf wird nichts
+installiert: Dann lädt es die neue Datei im Hintergrund (Fortschritt auf dem
+Knopf), prüft Größe und SHA-256-Prüfsumme, schließt sich, ersetzt sich selbst
+und startet die neue Version (eine liegengebliebene `U-Jagd-Windows.exe.new` löscht es beim
 nächsten Start). Das Programm ist nicht
 signiert, deshalb warnt Windows SmartScreen beim ersten Start eventuell
 ("Weitere Informationen", "Trotzdem ausführen"). Spielstände und Einstellungen
@@ -211,8 +212,9 @@ gelöscht). Selbst bauen unter Windows:
 ## Schnellstart
 
 Auf der ClockworkPi uConsole installiert ein einziger Befehl das Spiel mit
-Menüeintrag und automatischem Update (jeder Start holt das neueste Release;
-ohne Netz startet die installierte Version):
+Menüeintrag. Ein neues Release wird nie von selbst installiert: Der
+Startbildschirm zeigt es mit seinem Eintrag aus dem Änderungsprotokoll und
+installiert es erst bei **Jetzt updaten** (ohne Netz erscheint kein Hinweis):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/db9979/uconsole_asw_game/main/packaging/uconsole/install.sh | sh

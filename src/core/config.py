@@ -1246,7 +1246,7 @@ MISSION_TYPES = {
         name="Kampfschwimmer", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=14400, win="swimmers"),
+        time_limit_s=18000, win="swimmers"),
     "versorger": dict(
         name="Versorger", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1276,7 +1276,7 @@ STRAIT_MAX_NM = 24.0
 STRAIT_CHANNEL_NM = 16.0
 STRAIT_DISTANCE_WEIGHT = 0.1
 STRAIT_OPEN_HALF_NM = 8.0
-STRAIT_ENTRY_NM = 16.0             # the boat starts this far before the gate
+STRAIT_ENTRY_NM = 12.0             # the boat starts this far before the gate
 STRAIT_EXIT_NM = 6.0               # its goal lies this far beyond it
 STRAIT_TRAFFIC = 3                 # merchants passing through the strait
 STRAIT_TRAFFIC_SPACING_NM = 6.0
@@ -1287,7 +1287,7 @@ STRAIT_TRAFFIC_SPACING_NM = 6.0
 SWIMMER_SEARCH_NM = 100.0
 SWIMMER_MIN_WATER_M = 30.0
 SWIMMER_COAST_NM = 3.0
-SWIMMER_APPROACH_NM = 20.0
+SWIMMER_APPROACH_NM = 16.0
 SWIMMER_ZONE_NM = 1.0
 SWIMMER_DEPTH_M = 20.0             # swimmers leave through the lock this shallow
 SWIMMER_SPEED_KN = 1.5             # at most this slow
@@ -1357,6 +1357,8 @@ BOAT_AI_WAIT_KN = 2.0
 BOAT_AI_SHADOW_NM = 3.0
 BOAT_AI_SHADOW_ASTERN_NM = 0.3
 BOAT_AI_SWIMMER_APPROACH_NM = 3.0
+# Strait and swimmers: the boat sneaks towards a guarded area this slowly.
+BOAT_AI_STEALTH_KN = 4.0
 # A mission boat ignores a ping from farther than this (its sonar cannot
 # hold the boat there) and evades a closer one at BOAT_AI_EVADE_KN; a
 # torpedo still makes it run.

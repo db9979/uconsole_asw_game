@@ -279,7 +279,7 @@ def _strait_leg(game, sub):
         return (_course(game, sub, _bearing(sub.x, sub.y, ax, ay)),
                 min(speed, sub.motion.maximum_speed_kn), _deep(game, sub))
     course = detour(sub, heading, distance)
-    return (_course(game, sub, course), pace(sub, config.BOAT_AI_TRANSIT_KN),
+    return (_course(game, sub, course), pace(sub, config.BOAT_AI_STEALTH_KN),
             _deep(game, sub))
 
 
@@ -297,7 +297,7 @@ def _swimmer_leg(game, sub):
         # The last miles straight in, slow and shallow.
         return heading, config.BOAT_AI_PERISCOPE_KN, shallow
     course = detour(sub, heading, distance)
-    return (_course(game, sub, course), pace(sub, config.BOAT_AI_TRANSIT_KN),
+    return (_course(game, sub, course), pace(sub, config.BOAT_AI_STEALTH_KN),
             _deep(game, sub))
 
 

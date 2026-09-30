@@ -30,7 +30,7 @@ def _frigate_game(scenario, seed=61, world="fixed"):
 def test_three_new_boat_scenarios_are_listed_and_keyed():
     assert config.SCENARIO_ORDER[-3:] == ("s8_meerenge", "s9_kampfschwimmer", "s10_versorger")
     for key, kind, limit in (("s8_meerenge", "strait", 18000),
-                             ("s9_kampfschwimmer", "swimmers", 14400),
+                             ("s9_kampfschwimmer", "swimmers", 18000),
                              ("s10_versorger", "escort", 10800)):
         assert config.SCENARIOS[key]["boat"] is True
         assert boat_missions.scenario_mode(key) == kind

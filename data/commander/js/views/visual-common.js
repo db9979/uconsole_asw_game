@@ -30,3 +30,21 @@ export function drawEmpty(plot, key = "visual_empty") {
   plot.context.textAlign = "center";
   plot.context.fillText(t(key), plot.width / 2, plot.height / 2);
 }
+// North-up bearing rose face: dark disc, range rings, 10 degree ticks and
+// the four cardinal bearings, so every rose reads like the same instrument.
+export function roseFace(g, cx, cy, radius) {
+  const colors = palette();
+  const at = (r, deg) => [cx + r * Math.sin(deg * Math.PI / 180), cy - r * Math.cos(deg * Math.PI / 180)];
+  g.save();
+  g.fillStyle = colors.bg; g.beginPath(); g.arc(cx, cy, radius, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = colors.line; g.lineWidth = 1;
+  for (const ring of [.33, .66, 1]) { g.beginPath(); g.arc(cx, cy, radius * ring, 0, Math.PI * 2); g.stroke(); }
+  for (let step = 0; step < 360; step += 10) {
+    const major = step % 30 === 0;
+    g.strokeStyle = major ? colors.muted : colors.line;
+    g.beginPath(); g.moveTo(...at(radius - (major ? 7 : 3), step)); g.lineTo(...at(radius, step)); g.stroke();
+  }
+  g.fillStyle = colors.muted; g.textAlign = "center"; g.textBaseline = "middle";
+  for (const step of [0, 90, 180, 270]) g.fillText(String(step).padStart(3, "0"), ...at(radius + 14, step));
+  g.restore();
+}

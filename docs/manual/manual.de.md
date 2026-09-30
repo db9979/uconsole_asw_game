@@ -268,6 +268,8 @@ Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert
 | UMWELT / FUSION | Schallprofil, Schicht, CZ, Array-Vergleich | TAS-Tiefe wählen, Geisterkontakte erkennen |
 | ACTIVE | Gespeicherte Echos mit Alter und Fehler | Entfernung und Tiefe aus Pings |
 
+Die Horchkonsole unter den Detailzeilen ist wie ein Leitstand aufgebaut: Lampen zeigen Ping bereit (gelb, solange ein Ping läuft), Ton und Spitzenwert-Halten, und eine nordorientierte Peilrose zeigt die Horchrichtung (gelb), die toten Winkel achtern (roter Sektor), den eigenen Kurs und jede veröffentlichte Kontaktpeilung. Die Kontaktliste kennzeichnet jeden Kontakt mit einer Lampe und einem Balken für den Störabstand. Der Remote-Crew-Browser zeigt dieselbe Rose neben seinen Wasserfällen.
+
 #### BROADBAND-Wasserfall
 
 ```text
@@ -472,6 +474,8 @@ Torpedolauf von oben:
 - ASROC (`A`): 4 Schuss pro Mission. Die Rakete fliegt mit 500 kn zur beobachteten Position des Ziels (1 bis 10 sm, aktuelle Entfernung nötig) und setzt dort den Leichttorpedo des Helikopters auf der voreingestellten Tiefe ab. Es gelten dieselben Zielprüfungen wie beim Torpedo, und es zählt gegen die Doktringrenze.
 - Wasserbomben (`Z`): 20 pro Mission, geworfen als Muster aus 5 (drei im Kielwasser 20, 80 und 140 m achteraus, zwei 70 m querab geworfen), danach 45 s Nachladen der Ablaufbahn. Das Schiff muss mindestens 10 kn laufen. Die Bomben sinken mit 3,5 m/s bis zur voreingestellten Tiefe (15-300 m) oder zum Grund; jede 90-kg-Ladung ist bis etwa 25 m tödlich und beschädigt noch bis etwa 100 m. U-Boote innerhalb von 5 sm hören die Detonation und weichen aus.
 - U-Jagd-Raketenwerfer (`R`, Typ RBU/Bofors): 36 Raketen pro Mission, abgefeuert in Salven zu 6, danach 60 s Nachladen. Eine Angriffssalve geht auf die beobachtete Position des zugewiesenen Ziels in 0,4 bis 3 sm (aktuelle Entfernung nötig, dieselben Zielprüfungen wie beim Torpedo): ein Schuss auf den Zielpunkt, fünf auf einem Ring von 80 m darum. Die Raketen fliegen mit 400 kn (etwa 9 s je sm), jede Ladung sinkt mit 11 m/s bis zur voreingestellten Tiefe (10-300 m) oder zum Grund; die 23-kg-Ladungen sind nur bis etwa 14 m tödlich und schaden bis 60 m, eine grobe oder alte Ortung verschwendet die Salve. **Abwehrsalve** (`Umschalt+R`): sechs Schuss in einer Linie 0,3 bis 0,8 sm hinaus in Peilung einer höchstens 5 s alten Torpedowarnung, Tiefe 15 m; eine Ladung, die innerhalb von 35 m eines laufenden Torpedos detoniert, zerstört ihn, und das Protokoll meldet, dass das Torpedogeräusch endet. Jedes U-Boot innerhalb von 3 sm hört die Raketen ins Wasser schlagen: ein KI-Boot weicht sofort aus, der Sonarraum des bemannten U-Boots meldet die Einschläge mit ihrer Peilung.
+
+Beide Seiten sind wie ein Feuerleitpult aufgebaut: Auf Seite 1 hat jedes Rohr eine Lampe (grün geladen, gelb im Nachladen, dunkel wenn leer), und die Sperrkette (Ziel, Fix, ROE, Waffe, Flak) ist eine Lampensäule, die Stufe für Stufe grün wird; Seite 2 zeigt die restlichen Torpedos, Hubschraubertorpedos, Sonarbojen und RBU-Raketen als Tanksäulen. Der Remote-Crew-Browser zeigt Station, ROE und Sperre als Lampen und jedes Rohr als Säule.
 
 ### Tasten
 
@@ -765,6 +769,8 @@ Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fern
 - Der Fernschreiber bringt außerdem alle 30 Minuten den Wetterbericht und HQ-Meldungen (Bedrohungswarnungen, ROE FREI).
 - Zum Missionsbeginn meldet das HQ die Bedrohung. Bei **grober** Aufklärung nur eine ungefähre Peilung und Entfernung einer Bedrohung, bei **genauer** Aufklärung zusätzlich jeden eingesetzten feindlichen Einheitentyp mit Anzahl (zum Beispiel "1x Altmetall (Diesel, älter), 2x Luftangriffswelle mit Seezielflugkörpern"), mit den Namen aus dem Einheitenanalysator (`F8`); Positionen bleiben unbestätigt. Patrouille hat immer genaue Aufklärung, Doppeljagd und Nuklearer Abfang grobe, bei der Freien Jagd wählen Sie im Schwierigkeits-Bildschirm (letzte Zeile, "HQ-Aufklärung").
 
+Seite 1 zeigt außerdem eine KW-Peilrose: Jedes aktuelle Signal ist ein Strahl, aufgefächert so breit wie sein Peilfehler.
+
 ### HQ-Aufträge
 
 Neben der Jagd funkt das HQ Aufträge an das Schiff: den ersten etwa 15 bis 25 Minuten nach Beginn einer eingebauten Mission, danach einen alle 25 bis 45 Minuten, höchstens sechs je Mission und zwei gleichzeitig offen. Eigene Missionen erhalten keine. Jedes Angebot kommt über den Fernschreiber und auf Seite 3 (Aufträge). Innerhalb von 5 Minuten mit `A` (annehmen) oder `D` (ablehnen) antworten; keine Antwort gilt als Ablehnung. Ein zerstörter Funkraum kann nicht antworten.
@@ -930,6 +936,8 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 - **Seeraumradar:** sucht, solange der Helikopter fliegt und das Tauchsonar eingeholt ist (Statuszeile auf Seite 2). Aus 150 m sieht es Schiffe bis 40 sm, aufgetauchte U-Boote sowie ausgefahrene Schnorchel oder Sehrohre innerhalb seines Radarhorizonts (etwa 30 sm). Ein Mast ist klein: bei ruhiger See zeigt er sich auf etwa 10 sm, bei Seegang 3 auf 3-5 sm, bei Seegang 5 verschwindet er im Seegangsecho. Jeder Kontakt geht als `RADAR-HELO`-Track mit dem Helikopter als Beobachter an die OPZ, ein Blick alle 2 s. Das ESM eines besetzten U-Boots hört das Radar und kann seine Besatzung warnen. `Shift+R` (Browser: *Radar ausschalten*/*einschalten*) schaltet das Radar aus und wieder ein; ausgeschaltet sieht es nichts und strahlt nicht, und es bleibt aus (gespeichert), bis es wieder eingeschaltet wird. Ein KI-U-Boot mit ausgefahrenem Mast oder Schnorchel hört ein Flugzeugradar innerhalb von 40 sm (im Radarhorizont seines Masts) bei vier von fünf Blicken im 5-s-Takt, geht 40 m unter Schnorcheltiefe und schiebt das Schnorcheln 15 Minuten auf, solange seine Batterie mehr als 5 % hält; ein strahlender Helikopter drückt Schnorchler also weg, ein stiller kann sie an der Oberfläche erwischen.
 - **Leichttorpedo:** 2 je Einsatz, 55 kn, 12 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
 
+Seite 3 zeigt das Tauchsonar wie eine Konsole: Lampen für Dom (grün im Wasser, gelb beim Fieren oder Hieven), Ping bereit und Wassereintritt frei, eine Anzeige des Kabels in der Wassersäule bis zum Grund und ein Sichtgerät mit den Peilungen von Tauchsonar und Bojen als Keile so breit wie ihr Fehler. Seite 4 zeichnet ihre Wasserfälle in denselben Leuchtfarben wie das Sonar des Schiffs.
+
 ### Tasten
 
 | Taste | Funktion |
@@ -1020,6 +1028,8 @@ Seite 1 listet die Erfassungen; Seite 2 zeigt die Belege für die gewählte Erfa
 - Die Korrelation mit Radar- oder Sonartracks nutzt vereinbare Zeit, Peilung und beobachtete Position, nie verborgene Identität.
 - Die Senderbibliothek enthält den Suchkopf des Seezielflugkörpers (9,0-9,5 GHz, PRF 1,8-3,2 kHz, Puls-Doppler). Er sendet nur auf den letzten 18 sm und erst, wenn der Tiefflieger über dem Radarhorizont ist, und er passt ebenso gut zum Feuerleitradar eines Angriffsflugzeugs: Peilungsverlauf und Luftlage entscheiden.
 - ESM läuft aus der OPZ-Abteilung: eine zerstörte OPZ legt es lahm.
+
+Neben der Liste der Auffassungen zeigt eine Peilrose jede Auffassung als Strahl in ihrer Bedrohungsfarbe, und Lampen zeigen ESM, Störer, ECM-Automatik und Ton.
 
 ### Tasten
 

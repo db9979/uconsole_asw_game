@@ -12,18 +12,20 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.99**
+Current release: **1.3.100**
 
-Release 1.3.99 turns the damage screens into damage-control consoles on the
-uConsole and in the browser. On the frigate's uConsole ship plan, water rises
-in each compartment from the keel, a fire glows red and a lost compartment is
-hatched; each compartment card carries a state LED, flood and fire values with
-LEDs and bars and numbered team badges. The submarine's Damage page is a
-compartment mimic from stern to bow with water level, fire glow, gas haze,
-leak/fire/gas/bulkhead LEDs and team badges, and lamps for the selected
-compartment and the power. The browser's Damage card opens with an
-annunciator panel above a side view of the ship and gauges for list, trim and
-total damage; a click on a compartment still sends the selected team.
+Release 1.3.100 brings the sonar, electronic warfare, radio and weapons
+stations up to the console style of the engine and damage screens. The
+frigate's and the submarine's sonar get darker phosphor panels, a listening
+console with lamps for ping, audio and peak hold and a north-up bearing rose
+with listening beam, baffles, own course and contact bearings; each contact
+row carries a lamp and a signal-to-noise bar. The helicopter's dipping sonar
+shows lamps for dome, ping and water entry, a water-column gauge and bearing
+wedges as wide as their error, and its waterfalls use the ship's phosphor
+colours. ESM and HF/DF get bearing roses, the weapons pages tube and interlock
+lamps and magazine tanks. In the browser the sonar and helicopter get the
+same rose and lamps, the weapons card lamps and tube columns and the ESM scope
+a graduated rose.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

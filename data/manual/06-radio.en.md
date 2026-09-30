@@ -27,6 +27,8 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 - The teletype also carries the weather bulletin every 30 minutes and HQ messages (threat warnings, ROE FREE).
 - At mission start HQ reports the threat. With **coarse** intelligence it gives only a rough bearing and range of one threat. With **exact** intelligence it also names every hostile unit type committed to the mission with its number (for example "1x Altmetall (Diesel, älter), 2x air raid wave with anti-ship missiles"), using the names in the unit analyser (`F8`); positions stay unconfirmed. Patrol always gets exact intelligence, Double hunt and Nuclear intercept coarse, and the free hunt lets you choose on its difficulty screen (last row, "HQ intelligence").
 
+Page 1 also shows an HF/DF bearing rose: each current signal is a strobe, fanned as wide as its bearing error.
+
 ## HQ tasks {#radio-tasks}
 
 Besides the hunt, HQ radios tasks to the ship: the first about 15 to 25 minutes into a built-in mission, then one every 25 to 45 minutes, at most six per mission and two open at a time. Custom missions get none. Each offer arrives on the teletype and on page 3 (Tasks). Answer it within 5 minutes with `A` (accept) or `D` (decline); no answer counts as declined. A destroyed radio room cannot answer.

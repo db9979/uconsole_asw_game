@@ -27,6 +27,8 @@ Page 1 lists intercepts; page 2 shows the evidence for the selected intercept (f
 - The emitter library includes the anti-ship missile seeker (9.0-9.5 GHz, PRF 1.8-3.2 kHz, pulse-Doppler). It radiates only in the last 18 NM and only once the sea-skimmer is above the radar horizon, and it matches an attack aircraft's fire-control radar just as well: the bearing trend and the air picture decide.
 - ESM runs from the operations compartment: a destroyed operations room disables it.
 
+Beside the intercept list a bearing rose shows every intercept as a strobe in its threat colour, and lamps show ESM, jammer, automatic ECM and audio.
+
 ## Keys {#eloka-keys}
 
 <!-- keys:eloka -->

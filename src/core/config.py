@@ -1225,7 +1225,7 @@ BOAT_AI_TRANSIT_KN = 6.0           # quiet transit below the layer
 BOAT_AI_PERISCOPE_KN = 3.0         # at periscope depth or creeping in to fire
 BOAT_AI_BELOW_LAYER_M = 30.0
 BOAT_AI_MIN_WATER_M = 30.0         # the leg detours round shallower water
-BOAT_AI_SIGHT_NM = 12.0            # recon: come up and sight the frigate this close
+BOAT_AI_SIGHT_NM = 10.0            # recon: come up and sight the frigate this close
 # Recon: at periscope depth the boat raises its periscope for one look every
 # SCOPE_CYCLE_S (phase per boat), LOOK_S long; the head sweeps round from
 # the bow in SWEEP_S and sights the frigate only where the optics make it
@@ -1234,7 +1234,7 @@ BOAT_AI_SCOPE_CYCLE_S = 90.0
 BOAT_AI_SCOPE_LOOK_S = 24.0
 BOAT_AI_SCOPE_SWEEP_S = 16.0
 BOAT_AI_ATTACK_NM = 4.0            # a patrol raid: fire at a merchant this close
-BOAT_AI_CONVOY_ATTACK_NM = 7.0     # convoy attack: fire at a merchant this close
+BOAT_AI_CONVOY_ATTACK_NM = 5.5     # convoy attack: fire at a merchant this close
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0
 # Frigate missions: an AI patrol boat torpedoes a merchant within
@@ -1251,7 +1251,7 @@ BOAT_AI_PREFLOOD_MARGIN_NM = 3.0   # quiet tube flooding starts this far outside
 # within BOAT_AI_THREAT_NM (its own contact) or for BOAT_AI_HUNTED_S after a
 # ping or a torpedo was heard.
 BOAT_AI_CREEP_KN = 3.0
-BOAT_AI_THREAT_NM = 12.0
+BOAT_AI_THREAT_NM = 8.0
 BOAT_AI_HUNTED_S = 600.0
 # Breakthrough: a frigate this close to the leg ahead is passed this far off.
 BOAT_AI_DETOUR_NM = 6.0

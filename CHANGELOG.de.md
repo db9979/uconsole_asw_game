@@ -4,6 +4,25 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.102
+
+Version 1.3.102 lässt den Brückenausguck nachts und bei schlechter Sicht
+die Positionslichter melden, die er sieht, mit seiner Deutung: beide
+Seitenlichter heißen, ein Fahrzeug hält auf das Schiff zu, und werden laut
+gemeldet, Grün oder Rot allein zeigen seine Steuerbord- oder Backbordseite,
+das Hecklicht allein, dass es abläuft, und Rundumlichter seine Arbeit
+(Fischer, Lotse, manövrierbehindert, Minenräumer) oder, blitzend, ein
+Luftfahrzeug. Die Lichter eines Kontakts meldet er erst wieder, wenn sich ihre
+Aussage ändert, höchstens alle zwei Minuten, und die Remote-Crew-Brücke führt
+die Meldungen mit den übrigen.
+
+## 1.3.101
+
+Version 1.3.101 bringt die Listen „Nicht modelliert“ im Handbuch auf den
+Stand: Die OPZ fusioniert eindeutig passende Meldungen verschiedener Sensoren
+selbst, und der Funkraum ruft das HQ mit Kontaktmeldungen und
+Unterstützungsanforderungen; beide Listen nennen jetzt nur, was wirklich fehlt.
+
 ## 1.3.100
 
 Version 1.3.100 bringt die Stationen Sonar, Elektronische Kampfführung, Funk

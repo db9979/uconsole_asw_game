@@ -12,20 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.100**
+Current release: **1.3.102**
 
-Release 1.3.100 brings the sonar, electronic warfare, radio and weapons
-stations up to the console style of the engine and damage screens. The
-frigate's and the submarine's sonar get darker phosphor panels, a listening
-console with lamps for ping, audio and peak hold and a north-up bearing rose
-with listening beam, baffles, own course and contact bearings; each contact
-row carries a lamp and a signal-to-noise bar. The helicopter's dipping sonar
-shows lamps for dome, ping and water entry, a water-column gauge and bearing
-wedges as wide as their error, and its waterfalls use the ship's phosphor
-colours. ESM and HF/DF get bearing roses, the weapons pages tube and interlock
-lamps and magazine tanks. In the browser the sonar and helicopter get the
-same rose and lamps, the weapons card lamps and tube columns and the ESM scope
-a graduated rose.
+Release 1.3.102 lets the bridge lookout call out the navigation lights he
+sees at night and in poor visibility, with his reading of them: both side
+lights mean a vessel is heading for the ship and are called aloud, green or
+red alone show her starboard or port side, the stern light alone that she is
+going away, and all-round lights her work (fishing, pilot, restricted in
+ability to manoeuvre, clearing mines) or, flashing, an aircraft. He calls a
+contact's lights again only when what they tell changes, at most every two
+minutes, and the Remote Crew bridge lists the calls with the other reports.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

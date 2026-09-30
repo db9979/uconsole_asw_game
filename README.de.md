@@ -14,20 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.100**
+Aktuelle Version: **1.3.102**
 
-Version 1.3.100 bringt die Stationen Sonar, Elektronische Kampfführung, Funk
-und Waffen in den Konsolenstil der Maschinen- und Schadensbildschirme. Das
-Sonar von Fregatte und U-Boot bekommt dunklere Leuchtschirme, eine Horchkonsole
-mit Lampen für Ping, Ton und Spitzenwert-Halten und eine nordorientierte
-Peilrose mit Horchrichtung, toten Winkeln, eigenem Kurs und Kontaktpeilungen;
-jede Kontaktzeile trägt eine Lampe und einen Balken für den Störabstand. Das
-Tauchsonar des Hubschraubers zeigt Lampen für Dom, Ping und Wassereintritt,
-eine Anzeige der Wassersäule und Peilkeile so breit wie ihr Fehler, und seine
-Wasserfälle nutzen die Leuchtfarben des Schiffs. ESM und KW-Peilung bekommen
-Peilrosen, die Waffenseiten Rohr- und Sperrlampen und Magazintanks. Im Browser
-bekommen Sonar und Hubschrauber dieselbe Rose und Lampen, die Waffenkarte
-Lampen und Rohrsäulen und das ESM-Sichtgerät eine Rose mit Skala.
+Version 1.3.102 lässt den Brückenausguck nachts und bei schlechter Sicht
+die Positionslichter melden, die er sieht, mit seiner Deutung: beide
+Seitenlichter heißen, ein Fahrzeug hält auf das Schiff zu, und werden laut
+gemeldet, Grün oder Rot allein zeigen seine Steuerbord- oder Backbordseite,
+das Hecklicht allein, dass es abläuft, und Rundumlichter seine Arbeit
+(Fischer, Lotse, manövrierbehindert, Minenräumer) oder, blitzend, ein
+Luftfahrzeug. Die Lichter eines Kontakts meldet er erst wieder, wenn sich ihre
+Aussage ändert, höchstens alle zwei Minuten, und die Remote-Crew-Brücke führt
+die Meldungen mit den übrigen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

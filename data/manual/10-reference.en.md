@@ -157,7 +157,7 @@ When nobody sails the frigate (the uConsole plays the submarine, or a solo brows
 ### Not modelled {#ref-opfor-limits}
 
 - The radio room knows HQ's broadcast schedule, three kinds of order and situation reports: no free-text messages from HQ, no reception below 25 m (no ELF, no trailing wire), no burst transmission and no other units on the net; HQ's contact report is modelled intelligence, not a sensor of its own.
-- Damage control is six compartments and two teams: no separate pressure-hull and outer-hull damage, no casualties, no smoke or heat spreading, no fire in the air stores and no fire consuming oxygen; the submarine's overall damage (noise, top speed, sinking at 100 %) still adds up from hits, and the AI's submarines keep only that value.
+- Damage control is six compartments and two teams: no separate pressure-hull and outer-hull damage, no smoke or heat spreading, no fire in the air stores and no fire consuming oxygen; the submarine's overall damage (noise, top speed, sinking at 100 %) still adds up from hits, and the AI's submarines keep only that value.
 - Below test depth the hull has no individual fittings, no gradual shrinking of the hull and no stronger welds from a refit; a failure picks its kind and compartment at random, and a crushed submarine is lost at once.
 - The submarine's sounds are simple cues: stereo only tells port from starboard (ahead and astern sound the same), a detonation gives no range estimate and no creak comes from a particular compartment; the submarine's sonar room has no red light.
 - The trim model is one weight and one moment: no free-surface effect, no compressibility of the hull with depth and no separate negative tank; the submarine does not surface fully. Food and fresh water do not run out.

@@ -1456,6 +1456,9 @@ class SimMixin:
         # Navigation lights the lookout made out, per track (never saved; the
         # next observation restores them).
         self._lookout_lights: dict[str, tuple] = {}
+        # What the lookout last called out about each contact's lights:
+        # (aspect, work, time); transient like the report log.
+        self._lookout_lights_called: dict[str, tuple] = {}
         # Elevation (deg above the sea horizon) of each aircraft he sees.
         self._lookout_elevation: dict[str, tuple] = {}
         # Angle on the bow he judges of each silhouette he made out.
@@ -1571,6 +1574,33 @@ class SimMixin:
         # inside the same measurement epoch leaves the track unchanged.
         if level > previous_level and track.label == label:
             self._lookout_report(kind, label, measured_bearing, measured_range)
+        if lights is not None:
+            self._lookout_call_lights(track_id, lights, measured_bearing, measured_range)
+
+    def _lookout_call_lights(self, track_id: str, lights: str, bearing: float,
+                             range_nm: float) -> None:
+        """Call a contact's lights when they first show, or when what they
+        tell (aspect, work) changes; a vessel showing both side lights is
+        heading for the ship and is called aloud."""
+        _seen, aspect, work = nav_lights.describe(lights)
+        called = getattr(self, "_lookout_lights_called", None)
+        if called is None:
+            called = self._lookout_lights_called = {}
+        previous = called.get(track_id)
+        if previous is not None and (previous[:2] == (aspect, work)
+                                     or self.sim_t - previous[2] < config.LOOKOUT_LIGHTS_REPORT_S):
+            return
+        called[track_id] = (aspect, work, self.sim_t)
+        report = dict(t=self.sim_t, stamp=self.world.format_time(), kind="LIGHTS",
+                      level=lookout_id.DETECTED, code=None, type_name=None,
+                      lights=lights, bearing=bearing % 360.0, range_nm=range_nm)
+        self.lookout_reports.append(report)
+        del self.lookout_reports[:-config.LOOKOUT_REPORTS_MAX]
+        text = self.lookout_report_text(report)
+        if aspect == "head_on":
+            self.announce(text, "ausguck", 4.0)
+        else:
+            self.feed.add(self.world.format_time(), "ausguck", text)
 
     def _lookout_report(self, kind: str, label: str, bearing: float,
                         range_nm: float, called: str | None = None) -> None:
@@ -1658,6 +1688,9 @@ class SimMixin:
                     lit=lit and id(actor) in civilians)
         self._lookout_lights = {key: value for key, value in self._lookout_lights.items()
                                 if self.sim_t - value[1] <= config.LOOKOUT_EPOCH_S * 2}
+        self._lookout_lights_called = {
+            key: value for key, value in getattr(self, "_lookout_lights_called", {}).items()
+            if self.sim_t - value[2] <= config.LOOKOUT_LIGHTS_REPORT_S * 5}
         self._lookout_elevation = {
             key: value for key, value in getattr(self, "_lookout_elevation", {}).items()
             if self.sim_t - value[1] <= config.LOOKOUT_EPOCH_S * 2}

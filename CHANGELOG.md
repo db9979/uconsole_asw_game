@@ -4,6 +4,24 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.102
+
+Release 1.3.102 lets the bridge lookout call out the navigation lights he
+sees at night and in poor visibility, with his reading of them: both side
+lights mean a vessel is heading for the ship and are called aloud, green or
+red alone show her starboard or port side, the stern light alone that she is
+going away, and all-round lights her work (fishing, pilot, restricted in
+ability to manoeuvre, clearing mines) or, flashing, an aircraft. He calls a
+contact's lights again only when what they tell changes, at most every two
+minutes, and the Remote Crew bridge lists the calls with the other reports.
+
+## 1.3.101
+
+Release 1.3.101 brings the manual's "Not modelled" lists up to date: the
+Operations room does fuse clearly matching reports of different sensors by
+itself, and the radio room does call HQ with contact reports and support
+requests; both lists now say only what is really missing.
+
 ## 1.3.100
 
 Release 1.3.100 brings the sonar, electronic warfare, radio and weapons

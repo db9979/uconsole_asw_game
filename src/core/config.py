@@ -531,6 +531,9 @@ LOOKOUT_LAND_RANGE_NM = 20.0
 TORPEDO_WAKE_VISIBLE_NM = 1.5
 LOOKOUT_LAND_CHECK_S = 10.0
 LOOKOUT_REPORTS_MAX = 24
+# The lookout calls a lit vessel's lights again only when what they tell
+# (her aspect or her work) changes, at most this often per contact.
+LOOKOUT_LIGHTS_REPORT_S = 120.0
 # Phone lookout (Remote Crew ``lookout``/``uboot_lookout``): a called sighting
 # is confirmed within this bearing, and a called range within this fraction
 # (at least the minimum) of the eye's own estimate.

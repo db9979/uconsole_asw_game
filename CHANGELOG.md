@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.104
+
+Release 1.3.104 makes the AI hunters and the AI submarines use the radio
+spectrum more like real crews (save format v39). When nobody sails the
+frigate, its ELOKA plots an ESM bearing on a submarine's mast radar as a line
+from the ship's position, one per nautical mile run, and crosses the newest
+line with an earlier one into a position datum for ship, helicopter and patrol
+aircraft (not for a friendly escort's ASROC). An AI submarine at periscope
+depth that holds the frigate now reports it to its headquarters once every
+30 minutes with a 20 s HF call, which the frigate's HF/DF hears and can take
+bearings on, whoever crews it. The ESM lines are saved, so a loaded game
+continues the hunt unchanged.
+
 ## 1.3.103
 
 Release 1.3.103 turns the submarine's Damage control card in the browser

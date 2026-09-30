@@ -630,6 +630,20 @@ class Sub:
             return True
         return self.endurance is not None and self.endurance.transmitting
 
+    def contact_report_on_air(self, seed: int, now: float) -> bool:
+        """An AI boat at periscope depth holding the frigate reports it to
+        headquarters: one 20 s HF call at a stateless time in each window."""
+        if (self.manual or self.sunk or self.state == "SINKING"
+                or self.depth > MAST_DEPTH_M
+                or self.memory["contact"] is None
+                or self.memory["contact_age"] > config.SUB_REPORT_CONTACT_S):
+            return False
+        window = math.floor(now / config.SUB_REPORT_PERIOD_S)
+        start = window * config.SUB_REPORT_PERIOD_S + detrand.u01(
+            seed, "sub-contact-report", self.id, window) * (
+                config.SUB_REPORT_PERIOD_S - config.SUB_REPORT_TX_S)
+        return start <= now < start + config.SUB_REPORT_TX_S
+
     # --- Physik/KI ---
 
     # --- physics: planes, hull stress, cavitation, source level ---------------

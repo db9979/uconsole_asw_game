@@ -14,17 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.103**
+Aktuelle Version: **1.3.104**
 
-Version 1.3.103 macht die Karte Leckwehr des U-Boots im Browser zu einem
-Leckwehr-Leitstand wie bei der Fregatte: eine Warn- und Meldetafel mit
-Sammellampe (Strom, Wasser, Lecks, Brand, Gas, ausgefallene Abteilungen,
-geschlossene Schotten, Trupps, Lenzpumpen, Verwundete, Trimm, Pressluft und
-Übertiefe) über einer Seitenansicht des Druckkörpers mit vom Kiel steigendem
-Wasser, Brandschein, Gasschleier, Lecks, geschlossenen Schotten, einer
-Zustandslampe je Abteilung und den Trupp-Plaketten, dazu Rundinstrumente für
-Trimm, Wassereinbruch und Pressluft; Tabelle und Trupp-Befehle bleiben
-darunter.
+Version 1.3.104 lässt die KI-Jäger und die KI-U-Boote das Funkspektrum
+mehr wie echte Besatzungen nutzen (Spielstandsformat v39). Wenn niemand die
+Fregatte fährt, trägt ihre EloKa eine ESM-Peilung auf das Mastradar eines
+U-Boots als Linie vom eigenen Standort ein, eine je gelaufene Seemeile, und
+kreuzt die neueste Linie mit einer früheren zu einem Positionsdatum für
+Schiff, Hubschrauber und Seefernaufklärer (nicht für das ASROC eines
+befreundeten Geleitschiffs). Ein KI-U-Boot auf Sehrohrtiefe, das die Fregatte
+hält, meldet sie jetzt alle 30 Minuten mit einem 20-s-Kurzwellenruf an seine
+Führung, den das HF/DF der Fregatte hört und peilen kann, gleich wer es
+bedient. Die ESM-Linien werden gespeichert, ein geladenes Spiel setzt die
+Jagd also unverändert fort.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

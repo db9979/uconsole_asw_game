@@ -12,16 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.103**
+Current release: **1.3.104**
 
-Release 1.3.103 turns the submarine's Damage control card in the browser
-into a damage-control console like the frigate's: an annunciator panel with
-the master lamp (power, water, leaks, fire, gas, lost compartments, shut
-bulkheads, teams, bilge pumps, wounded, trim, high-pressure air and over
-depth) above a side view of the pressure hull with water rising from the
-keel, fire glow, gas haze, leaks, shut bulkheads, a state lamp per
-compartment and the team badges, and gauges for trim, floodwater and
-high-pressure air; the table and the team orders stay below.
+Release 1.3.104 makes the AI hunters and the AI submarines use the radio
+spectrum more like real crews (save format v39). When nobody sails the
+frigate, its ELOKA plots an ESM bearing on a submarine's mast radar as a line
+from the ship's position, one per nautical mile run, and crosses the newest
+line with an earlier one into a position datum for ship, helicopter and patrol
+aircraft (not for a friendly escort's ASROC). An AI submarine at periscope
+depth that holds the frigate now reports it to its headquarters once every
+30 minutes with a 20 s HF call, which the frigate's HF/DF hears and can take
+bearings on, whoever crews it. The ESM lines are saved, so a loaded game
+continues the hunt unchanged.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

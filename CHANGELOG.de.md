@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.104
+
+Version 1.3.104 lässt die KI-Jäger und die KI-U-Boote das Funkspektrum
+mehr wie echte Besatzungen nutzen (Spielstandsformat v39). Wenn niemand die
+Fregatte fährt, trägt ihre EloKa eine ESM-Peilung auf das Mastradar eines
+U-Boots als Linie vom eigenen Standort ein, eine je gelaufene Seemeile, und
+kreuzt die neueste Linie mit einer früheren zu einem Positionsdatum für
+Schiff, Hubschrauber und Seefernaufklärer (nicht für das ASROC eines
+befreundeten Geleitschiffs). Ein KI-U-Boot auf Sehrohrtiefe, das die Fregatte
+hält, meldet sie jetzt alle 30 Minuten mit einem 20-s-Kurzwellenruf an seine
+Führung, den das HF/DF der Fregatte hört und peilen kann, gleich wer es
+bedient. Die ESM-Linien werden gespeichert, ein geladenes Spiel setzt die
+Jagd also unverändert fort.
+
 ## 1.3.103
 
 Version 1.3.103 macht die Karte Leckwehr des U-Boots im Browser zu einem

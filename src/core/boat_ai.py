@@ -136,10 +136,11 @@ def pace(sub, speed: float) -> float:
     return min(speed, config.BOAT_AI_CREEP_KN) if hunted(sub) else speed
 
 
-def detour(sub, course: float, distance_nm: float) -> float:
+def detour(sub, course: float, distance_nm: float, post=None) -> float:
     """Steer ``BOAT_AI_DETOUR_DEG`` off a leg that runs close past the known
-    frigate, turning away from its side."""
-    known = frigate_known(sub)
+    frigate, else past the guard ``post`` its orders name, turning away from
+    its side."""
+    known = frigate_known(sub) or post
     if known is None:
         return course
     bearing = _bearing(sub.x, sub.y, *known)
@@ -175,7 +176,10 @@ def orders(game, sub):
         if point is None:
             return None
         distance = math.hypot(point["x"] - sub.x, point["y"] - sub.y)
-        course = detour(sub, _bearing(sub.x, sub.y, point["x"], point["y"]), distance)
+        # The orders name the passage the frigate guards (its patrol area).
+        start = config.SCENARIOS.get(game.scenario_key, {}).get("ship_start")
+        post = None if start is None else (float(start[0]), float(start[1]))
+        course = detour(sub, _bearing(sub.x, sub.y, point["x"], point["y"]), distance, post)
         return (_course(game, sub, course), pace(sub, config.BOAT_AI_TRANSIT_KN),
                 _deep(game, sub))
     if kind == "recon":

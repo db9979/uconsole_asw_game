@@ -28,7 +28,8 @@ ausgefahrener Mast bleibt bei Alarm oben, solange ein Spieler am Kommando oder
 im Funkraum ihn hält. Auf der Fregatte steuert die KI-Brücke nicht mehr über
 einen Spieler im Maschinenraum hinweg, KI-Waffen und Seefernaufklärer behalten
 ein Ziel, das ein Spieler bestimmt hat, und ein am uConsole gewählter Kontakt
-bleibt gewählt.
+bleibt gewählt. Eine Lobby-Runde ohne Browser ist jetzt ein Solospiel mit
+ausgeschalteter Crew-Hilfe.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

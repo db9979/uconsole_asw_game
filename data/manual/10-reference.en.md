@@ -168,7 +168,7 @@ When nobody sails the frigate (the uConsole plays the submarine, or a solo brows
 
 ### Crew assist {#ref-crew-assist}
 
-`Shift+F2` (always on in a mission started from the multiplayer lobby) lets the AI man every station nobody holds, on the frigate and on a crewed submarine, so each player can stay on one station. A station a browser holds, and the one the uConsole shows, stay with their player; a station released in the browser ("Hand over to AI") goes back to the AI at once. The assist is saved with the mission (save v40).
+`Shift+F2` (on in a mission started from the multiplayer lobby with a browser taking part or with the uConsole host only) lets the AI man every station nobody holds, on the frigate and on a crewed submarine, so each player can stay on one station. A station a browser holds, and the one the uConsole shows, stay with their player; a station released in the browser ("Hand over to AI") goes back to the AI at once. The assist is saved with the mission (save v40).
 
 - **Frigate:** the AI hunters above work the Bridge, Sonar, Weapons and the helicopter, the autocrew the other stations, also against an AI submarine.
 - **Submarine command:** evades a torpedo or a ping it has heard, otherwise follows the submarine mission's leg or, in a frigate mission, closes a frigate the boat's own sonar has fixed within 12 NM and else patrols at 4 kn below the layer around its start point. It comes to snorkel depth when the battery falls below 35 % and nothing hunts the boat.

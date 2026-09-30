@@ -168,7 +168,7 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das U-Boot oder ein Solo-B
 
 ### Crew-Hilfe {#ref-crew-assist}
 
-`Shift+F2` (in einer Mission aus der Mehrspieler-Lobby immer an) lässt die KI jede Station besetzen, die niemand hält, auf der Fregatte und auf einem bemannten U-Boot, damit jeder Spieler bei einer Station bleiben kann. Eine Station, die ein Browser hält, und die, die die uConsole zeigt, bleiben bei ihrem Spieler; eine im Browser freigegebene Station („An KI übergeben“) geht sofort an die KI zurück. Die Hilfe wird mit der Mission gespeichert (Spielstand v40).
+`Shift+F2` (in einer Mission aus der Mehrspieler-Lobby an, sobald ein Browser teilnimmt oder die uConsole nur Gastgeber ist) lässt die KI jede Station besetzen, die niemand hält, auf der Fregatte und auf einem bemannten U-Boot, damit jeder Spieler bei einer Station bleiben kann. Eine Station, die ein Browser hält, und die, die die uConsole zeigt, bleiben bei ihrem Spieler; eine im Browser freigegebene Station („An KI übergeben“) geht sofort an die KI zurück. Die Hilfe wird mit der Mission gespeichert (Spielstand v40).
 
 - **Fregatte:** Die KI-Jäger oben bedienen Brücke, Sonar, Waffen und den Hubschrauber, die Autocrew die übrigen Stationen, auch gegen ein KI-U-Boot.
 - **U-Boot-Kommando:** weicht einem gehörten Torpedo oder Ping aus, folgt sonst dem Abschnitt der U-Boot-Mission oder läuft in einer Fregattenmission eine Fregatte an, die das eigene Sonar innerhalb von 12 sm geortet hat, und patrouilliert sonst mit 4 kn unter der Sprungschicht um den Startpunkt. Fällt die Batterie unter 35 % und jagt niemand das Boot, geht es auf Schnorcheltiefe.

@@ -24,7 +24,8 @@ silent running with one in the engine room, trim and damage control with one
 at command, and a raised mast stays up on an alarm while a player at command or
 in the radio room holds it. On the frigate the AI Bridge no longer steers over
 a player in the engine room, the AI weapons and patrol aircraft keep a target a
-player designated, and a contact picked on the uConsole stays picked.
+player designated, and a contact picked on the uConsole stays picked. A lobby round started
+without any browser is now a solo game with the crew assist off.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

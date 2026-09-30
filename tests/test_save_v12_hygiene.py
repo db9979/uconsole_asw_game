@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v40_and_older_documents_are_rejected():
+def test_save_is_v41_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (40, "u-jagd-save-v40")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (40, "u-jagd-save-v40")
+    assert (state["version"], state["save_schema"]) == (41, "u-jagd-save-v41")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (41, "u-jagd-save-v41")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -215,6 +215,12 @@ def test_save_is_v40_and_older_documents_are_rejected():
     v39["autocrew"]["version"] = 1
     del v39["autocrew"]["assist"]
     assert not game._load_save_data(v39)
+    # v40 differs only by the hunters' leads.
+    v40 = copy.deepcopy(state)
+    v40["version"] = 40
+    v40["save_schema"] = "u-jagd-save-v40"
+    del v40["hunter_lead"]
+    assert not game._load_save_data(v40)
     assert game.save_state() == before
 
 

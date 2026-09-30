@@ -716,6 +716,16 @@ class Sub:
             self.state = "SINKING"
             self.sink_left = 20.0
 
+    def evade_depth(self, thermo: float, safe_depth: float) -> float:
+        """Below the layer, away from a ping; the reconnaissance boat within
+        sighting range still comes up for its periscope look, since a ping
+        alone does not keep it down (a torpedo in the water does)."""
+        if (self.mission_orders is not None
+                and self.mission_orders[2] <= MAST_DEPTH_M
+                and self.memory["last_torpedo_age"] > config.SUB_EVADE_DURATION_S):
+            return self.mission_orders[2]
+        return min(thermo + 40.0, safe_depth)
+
     def cavitation_onset_kn(self) -> float:
         acoustic = self.stype.acoustic
         onset = getattr(acoustic, "cavitation_speed_knots", None)
@@ -999,13 +1009,7 @@ class Sub:
                         dt, self.speed, self.motion.maximum_speed_kn, self.depth)
                 return
             # Tiefer unter die Thermokline + Kurs ab der Fregatte
-            self.target_depth = min(thermo + 40.0, safe_depth)
-            if (self.mission_orders is not None
-                    and self.mission_orders[2] <= MAST_DEPTH_M
-                    and self.memory["last_torpedo_age"] > config.SUB_EVADE_DURATION_S):
-                # The reconnaissance boat within sighting range still comes
-                # up for its periscope look: a ping alone does not keep it down.
-                self.target_depth = self.mission_orders[2]
+            self.target_depth = self.evade_depth(thermo, safe_depth)
             self._advance_depth(self.target_depth,
                                 self.motion.depth_rate_m_s * 3.0, dt)
             bearing = self.memory["contact_bearing"]

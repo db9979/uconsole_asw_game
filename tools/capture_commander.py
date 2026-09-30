@@ -360,6 +360,18 @@ def _workstation_world(game) -> None:
     game.set_sonar_audition_mode("FILTERED")
     game.set_sonar_band_preset("SHAFT")
     game.set_sonar_notch(True)
+    # Two minutes on watch, so the sonar waterfalls carry a history; the
+    # helicopter flies out and dips (its receiver runs while its deck is shown).
+    game.launch_helicopter()
+    game.set_helicopter_waypoint(game.ship.x + 5.9, game.ship.y - 1.0)
+    shown = game.station
+    from src.core.station import Station
+    game.station = Station.HELICOPTER
+    for step in range(1200):
+        if step == 600:
+            game.set_helicopter_dipping(True)
+        game.update(0.1)
+    game.station = shown
     for _ in range(360):
         game.update(1 / 60)
     # Authored own-ship damage demonstrates the real damage UI;

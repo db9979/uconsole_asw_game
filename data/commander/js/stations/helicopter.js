@@ -3,6 +3,66 @@ import { stopSonarAudio } from "../audio/audio.js";
 import { $, heloStates } from "../core/base.js";
 import { enumText, finite, number, t, unit } from "../core/format.js";
 import { fillFireTargets, metrics, node, position, stationRows, yesNo } from "../views/dom.js";
+import { palette } from "../core/palette.js";
+import { renderLamps } from "../views/console-kit.js";
+import { visualContext } from "../views/visual-common.js";
+
+// The dipping sonar's annunciator lamps: dome, ping, weather and hover.
+function renderHelicopterLamps(asset, ready) {
+  const lamp = (key, ...rest) => [key, ...rest];
+  const dome = {DEPLOYED: "on", DEPLOYING: "caution", RETRIEVING: "caution"}[asset.dip_state] || "off";
+  renderLamps($("helicopter-lamps"), [
+    lamp("dome", t("helicopter_lamp_dome"), dome, unit(asset.dip_depth_m, "m", 0)),
+    lamp("ping", t("sonar_lamp_ping"), ready.can_dipping_ping ? "on" : dome === "on" ? "caution" : "off",
+      ready.can_dipping_ping ? t("sonar_lamp_ready") : t("sonar_lamp_cooldown", {seconds: number(asset.dip_ping_cooldown_s, 0)})),
+    lamp("weather", t("helicopter_lamp_weather"), ready.weather_dipping_safe ? "on" : "alarm",
+      t(ready.weather_dipping_safe ? "sonar_lamp_ok" : "helicopter_lamp_unsafe")),
+    lamp("hover", t("helicopter_lamp_hover"), asset.hovering ? "on" : "off", t(asset.hovering ? "sonar_lamp_on" : "sonar_lamp_off")),
+  ]);
+}
+
+// North-up scope of the dipping sonar: range rings (outer 20 NM), 10 degree
+// ticks, passive bearings with their uncertainty wedge, active fixes and the
+// sonobuoys' bearings in amber.
+function drawDipScope(g, w, h, rows, buoys, colors) {
+  const cx = w / 2, cy = h / 2 + 4, radius = Math.max(10, Math.min(w, h) / 2 - 16);
+  const at = (r, deg) => [cx + r * Math.sin(deg * Math.PI / 180), cy - r * Math.cos(deg * Math.PI / 180)];
+  g.fillStyle = colors.bg; g.beginPath(); g.arc(cx, cy, radius, 0, Math.PI * 2); g.fill();
+  g.lineWidth = 1; g.strokeStyle = colors.line;
+  for (const scale of [.25, .5, .75, 1]) { g.beginPath(); g.arc(cx, cy, radius * scale, 0, Math.PI * 2); g.stroke(); }
+  for (let step = 0; step < 360; step += 10) {
+    const major = step % 30 === 0;
+    g.strokeStyle = major ? colors.muted : colors.line;
+    g.beginPath(); g.moveTo(...at(radius - (major ? 7 : 3), step)); g.lineTo(...at(radius, step)); g.stroke();
+  }
+  g.fillStyle = colors.muted; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("N", ...at(radius + 9, 0));
+  for (const row of rows) {
+    if (!finite(row.bearing)) continue;
+    if (finite(row.bearing_uncertainty_deg)) {
+      const spread = Math.max(1, row.bearing_uncertainty_deg);
+      const a = (row.bearing - spread - 90) * Math.PI / 180, b = (row.bearing + spread - 90) * Math.PI / 180;
+      g.save(); g.globalAlpha = .28; g.fillStyle = colors.accent;
+      g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, radius, a, b); g.closePath(); g.fill(); g.restore();
+    }
+    g.strokeStyle = row.ref === S.selected ? colors.text : colors.accent; g.lineWidth = row.ref === S.selected ? 3 : 2;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(...at(radius, row.bearing)); g.stroke();
+  }
+  g.lineWidth = 1;
+  for (const row of buoys) {
+    if (!finite(row.bearing)) continue;
+    g.strokeStyle = colors.amber; g.beginPath(); g.moveTo(...at(radius * .6, row.bearing)); g.lineTo(...at(radius, row.bearing)); g.stroke();
+  }
+  for (const row of rows) {
+    if (!finite(row.active_bearing) || !finite(row.range_nm)) continue;
+    const [x, y] = at(Math.min(radius, radius * row.range_nm / 20), row.active_bearing);
+    if (finite(row.range_uncertainty_nm)) {
+      g.strokeStyle = colors.amber;
+      g.beginPath(); g.arc(x, y, Math.max(3, Math.min(radius, radius * row.range_uncertainty_nm / 20)), 0, Math.PI * 2); g.stroke();
+    }
+    g.fillStyle = colors.amber; g.beginPath(); g.arc(x, y, 5, 0, Math.PI * 2); g.fill();
+  }
+  g.fillStyle = colors.accent; g.beginPath(); g.arc(cx, cy, 3, 0, Math.PI * 2); g.fill();
+}
 
 export function renderHelicopterStation(payload) {
   const asset = payload.asset;
@@ -111,47 +171,17 @@ export function renderHelicopterStation(payload) {
     ["opz_release_status", t(row.released_to_opz ? "opz_release_active" : "opz_release_private")]],
     "helicopter_dip_empty");
   drawHelicopterDip(payload.dip_observations);
+  renderHelicopterLamps(asset, ready);
+  const scope = visualContext("helicopter-dip-rose");
+  if (scope) drawDipScope(scope.context, scope.width, scope.height, payload.dip_observations, payload.buoy_observations, palette());
 }
 function drawHelicopterDip(rows) {
   const canvas = $("helicopter-dip-canvas"), ctx = canvas.getContext("2d");
   if (!ctx) return;
-  const {width: w, height: h} = canvas;
-  ctx.fillStyle = "#091b1a"; ctx.fillRect(0, 0, w, h);
-  const cx = w / 2, cy = h / 2, radius = Math.min(w, h) * .43;
-  ctx.strokeStyle = "#42645e"; ctx.lineWidth = 1;
-  for (const scale of [.5, 1]) { ctx.beginPath(); ctx.arc(cx, cy, radius * scale, 0, Math.PI * 2); ctx.stroke(); }
-  for (const angle of [0, 90, 180, 270]) {
-    const a = angle * Math.PI / 180;
-    ctx.beginPath(); ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.sin(a) * radius, cy - Math.cos(a) * radius); ctx.stroke();
-  }
-  for (const row of rows) {
-    if (finite(row.bearing)) {
-      const a = row.bearing * Math.PI / 180;
-      if (finite(row.bearing_uncertainty_deg)) {
-        ctx.strokeStyle = "#4e8f7d"; ctx.lineWidth = 1;
-        for (const edge of [-1, 1]) {
-          const b = (row.bearing + edge * row.bearing_uncertainty_deg) * Math.PI / 180;
-          ctx.beginPath(); ctx.moveTo(cx, cy);
-          ctx.lineTo(cx + Math.sin(b) * radius, cy - Math.cos(b) * radius); ctx.stroke();
-        }
-      }
-      ctx.strokeStyle = "#79d8a7"; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.sin(a) * radius, cy - Math.cos(a) * radius); ctx.stroke();
-    }
-    if (finite(row.active_bearing) && finite(row.range_nm)) {
-      const a = row.active_bearing * Math.PI / 180;
-      const dx = Math.sin(a), dy = -Math.cos(a);
-      const r = Math.min(radius, radius * row.range_nm / 20);
-      if (finite(row.range_uncertainty_nm)) {
-        ctx.strokeStyle = "#ffcc70"; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(cx + dx * r, cy + dy * r,
-          Math.max(3, Math.min(radius, radius * row.range_uncertainty_nm / 20)), 0, Math.PI * 2); ctx.stroke();
-      }
-      ctx.fillStyle = "#ffcc70"; ctx.beginPath(); ctx.arc(cx + dx * r, cy + dy * r, 5, 0, Math.PI * 2); ctx.fill();
-    }
-  }
-  ctx.fillStyle = "#a8c3bc"; ctx.font = "14px sans-serif";
-  ctx.fillText(t("helicopter_dip_scale"), 12, h - 12);
+  const {width: w, height: h} = canvas, colors = palette();
+  ctx.fillStyle = colors.scopeBg; ctx.fillRect(0, 0, w, h);
+  ctx.font = "13px ui-monospace, monospace";
+  drawDipScope(ctx, w, h - 16, rows, [], colors);
+  ctx.fillStyle = colors.muted; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillText(t("helicopter_dip_scale"), 12, h - 8);
 }

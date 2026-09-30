@@ -83,10 +83,10 @@ CONFIG_COLORS_HIGH_CONTRAST = {
 
 SONAR_COLORS_STANDARD = {
     "NAVY": (6, 13, 25),
-    "PANEL": (10, 22, 37),
-    "GRID": (24, 49, 65),
-    "DIM": (119, 151, 169),
-    "TEXT": (211, 229, 233),
+    "PANEL": (8, 18, 25),
+    "GRID": (26, 62, 62),
+    "DIM": (104, 168, 156),
+    "TEXT": (190, 244, 222),
     "CYAN": (79, 224, 202),
     "AMBER": (244, 190, 97),
 }

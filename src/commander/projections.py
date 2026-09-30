@@ -544,7 +544,10 @@ def _sonar_visualization(game, rows, sonar_refs):
                       beam_width_deg=_number(sonar.beam_width_deg),
                       listen_mode=str(sonar.audition_mode)[:16],
                       focus_locked=bool(sonar.focus_locked),
-                      audio_enabled=bool(game.sonar_audio_enabled)))
+                      audio_enabled=bool(game.sonar_audio_enabled),
+                      # Own course (own-ship truth) for the bearing rose's baffles.
+                      own_course=_number(_sonar_observer(game).course),
+                      baffle_half_deg=_number(config.SONAR_BAFFLE_HALF_DEG)))
 
 
 def _sonar(game, rows, focus_ref, target_ref, sonar_refs):

@@ -446,7 +446,7 @@ def _text(screen, text, rect, color=TEXT, size=14, align="left"):
 
 
 def waterfall_surface(rows, width, height, gain_db=0.0, *, black_level=0.0,
-                      contrast=1.0, palette="cyan"):
+                      contrast=1.0, palette="cyan", gamma=.72, persistence_floor=.22):
     """Oldest-first rows become a bitmap with newest at TOP; x is bin order.
 
     Zero input stays dark. Gain changes intensity, never time or frequency.
@@ -454,7 +454,8 @@ def waterfall_surface(rows, width, height, gain_db=0.0, *, black_level=0.0,
     """
     width, height = max(1, int(width)), max(1, int(height))
     pixels = waterfall_pixels(rows, gain_db, black_level=black_level,
-                              contrast=contrast, palette=palette)
+                              contrast=contrast, palette=palette, gamma=gamma,
+                              persistence_floor=persistence_floor)
     if pixels is None:
         surface = pygame.Surface((width, height))
         surface.fill(NAVY)
@@ -464,7 +465,7 @@ def waterfall_surface(rows, width, height, gain_db=0.0, *, black_level=0.0,
 
 
 def waterfall_pixels(rows, gain_db=0.0, *, black_level=0.0, contrast=1.0,
-                     palette="cyan", colors=None):
+                     palette="cyan", colors=None, gamma=.72, persistence_floor=.22):
     """Pure phosphor mapping behind waterfall_surface: rows x bins x RGB.
 
     Shared with the packaged contact-analysis images so their traces look
@@ -483,12 +484,12 @@ def waterfall_pixels(rows, gain_db=0.0, *, black_level=0.0, contrast=1.0,
                      * contrast, 0.0, 1.0)
     # CRT-like persistence: the newest line is bright while older energy
     # remains visible as a bounded fading trail.
-    persistence = np.linspace(1.0, .22, len(values), dtype=np.float32)
+    persistence = np.linspace(1.0, persistence_floor, len(values), dtype=np.float32)
     values *= persistence[:, None]
     # A navy-to-phosphor ramp leaves faint receiver noise visible, not invented.
     low, high = colors or (NAVY, PHOSPHOR_PALETTES.get(palette, CYAN))
     low, high = np.asarray(low), np.asarray(high)
-    return (low + values[..., None] ** .72 * (high - low)).astype(np.uint8)
+    return (low + values[..., None] ** gamma * (high - low)).astype(np.uint8)
 
 
 def _circular_broadband(row, width):
@@ -635,7 +636,8 @@ def _grid(screen, rect, xmax, unit):
         label = f"{index * xmax / divisions:.0f}"
         _text(screen, label, (x - 28, rect.bottom + 5, 56, 20), DIM, 13, "center")
     _text(screen, unit, (rect.right - 180, rect.bottom + 25, 180, 19), DIM, 13, "right")
-    pygame.draw.rect(screen, GRID, rect, 1)
+    pygame.draw.rect(screen, config.COLOR_SONAR_RING, rect, 1)
+    layout.corner_brackets(screen, rect)
 
 
 def _trace(screen, rect, values, color=CYAN):
@@ -1832,6 +1834,85 @@ def _draw_details(game, rect, page):
         height = layout.font(size).get_height() + 1
         _text(game.screen, text, (rect.x + 13, y, rect.w - 26, height), color, size)
         y += height
+    _draw_listening_console(game, pygame.Rect(rect.x, y + 6, rect.w, rect.bottom - y - 6), page)
+
+
+def _console_lamps(game):
+    """Ping, audio and peak hold as annunciator lamps (display only)."""
+    sonar = game.sonar
+    ping = ("caution" if getattr(sonar, "ping_active", False) else
+            "on" if getattr(sonar, "ping_ready", True) else "off")
+    return (("sonar.lamp.ping", "", ping),
+            ("sonar.lamp.audio", "", "on" if getattr(game, "sonar_audio_enabled", False) else "off"),
+            ("sonar.lamp.peak", "", "caution" if getattr(sonar, "peak_hold", False) else "off"))
+
+
+def _draw_listening_console(game, rect, page):
+    """Lamps and a bearing rose in the space the detail rows leave free."""
+    from src.ui import console
+    screen = game.screen
+    lamp_h = layout.line_pitch(14, 0) + 8
+    if rect.h < lamp_h + 8 or rect.w < 120:
+        return
+    console.lamp_grid(screen, (rect.x + 10, rect.y, rect.w - 20, lamp_h),
+                      _console_lamps(game), 3, size=14)
+    rose = pygame.Rect(rect.x + 10, rect.y + lamp_h + 8, rect.w - 20,
+                       rect.bottom - rect.y - lamp_h - 16)
+    if page != 5 and min(rose.w, rose.h) >= 96:
+        _draw_bearing_rose(game, rose)
+
+
+def _draw_bearing_rose(game, rect):
+    """North-up rose: own course, baffles, listening beam and contact bearings."""
+    from src.ui import lines
+    screen = game.screen
+    radius = min(rect.w, rect.h) // 2 - 14
+    cx, cy = rect.centerx, rect.centery
+    layout.record_geometry("instrument", rect, "sonar:rose")
+
+    def polar(r, degrees):
+        a = math.radians(degrees)
+        return cx + r * math.sin(a), cy - r * math.cos(a)
+
+    def sector(a, b, r_in, r_out, color):
+        steps = max(2, int(abs(b - a) / 4) + 1)
+        outer = [polar(r_out, a + (b - a) * i / steps) for i in range(steps + 1)]
+        inner = [polar(r_in, a + (b - a) * i / steps) for i in range(steps, -1, -1)]
+        lines.polygon(screen, color, outer + inner)
+
+    pygame.draw.circle(screen, NAVY, (cx, cy), radius)
+    observer = _sonar_observer(game)
+    course = getattr(observer, "course", None)
+    if course is not None:
+        astern = float(course) + 180.0
+        sector(astern - config.SONAR_BAFFLE_HALF_DEG, astern + config.SONAR_BAFFLE_HALF_DEG,
+               0, radius, (40, 26, 30))
+    sonar = game.sonar
+    bearing = float(getattr(sonar, "listen_bearing", 0.0)) % 360
+    half = float(getattr(sonar, "beam_width_deg", 12.0)) / 2
+    sector(bearing - half, bearing + half, radius * .18, radius, (70, 58, 30))
+    lines.line(screen, AMBER, (cx, cy), polar(radius, bearing), 2)
+    for ring in (.5, 1.0):
+        pygame.draw.circle(screen, config.COLOR_SONAR_RING, (cx, cy), round(radius * ring), 1)
+    for step in range(0, 360, 10):
+        major = step % 30 == 0
+        lines.line(screen, DIM if major else GRID, polar(radius - (7 if major else 3), step),
+                   polar(radius, step), 1)
+    for step, label in ((0, "000"), (90, "090"), (180, "180"), (270, "270")):
+        x, y = polar(radius + (9 if step in (0, 180) else 20), step)
+        _text(screen, label, (x - 16, y - 8, 32, 16), DIM, 11, "center")
+    if course is not None:
+        lines.line(screen, TEXT, (cx, cy), polar(radius * .45, float(course)), 2)
+    selected = getattr(game, "selected_contact", None)
+    for contact in sorted(sonar.active_contacts(), key=lambda item: item.id):
+        value = observations.bearing(contact, observer)
+        if not math.isfinite(value):
+            continue
+        chosen = contact is selected
+        lines.line(screen, CYAN if chosen else config.COLOR_OK,
+                   polar(radius * (.55 if chosen else .78), value), polar(radius + 4, value),
+                   3 if chosen else 2)
+    pygame.draw.circle(screen, config.COLOR_OK, (cx, cy), 3)
 
 
 def _draw_contacts(game, rect):
@@ -1866,18 +1947,29 @@ def _draw_contacts(game, rect):
                 "sonar.line.contact",
                 contact=observations.contact_display_id(game, contact),
                 label=label)) + " " + release)
+            age = max(0, getattr(game, "sim_t", 0) - getattr(contact, "last_seen", 0))
+            from src.ui import console
+            console.led(screen, (rect.x + 17, y + 11), 5,
+                        "on" if age < 10 else "caution" if age < 60 else "off")
             _text(screen, contact_line,
-                  (rect.x + 14, y + 2, rect.w - 105, 19), TEXT, 14)
+                  (rect.x + 28, y + 2, rect.w - 119, 19), TEXT, 14)
+            snr = getattr(contact, "snr", None)
+            if snr is not None and math.isfinite(snr):
+                # SNR bar from -10 to +20 dB along the row's foot.
+                fill = max(0.0, min(1.0, (float(snr) + 10.0) / 30.0))
+                bar = pygame.Rect(rect.x + 28, y + 39, rect.w - 42, 2)
+                pygame.draw.rect(screen, layout.METER_TRACK, bar)
+                pygame.draw.rect(screen, config.COLOR_OK if snr >= 6 else AMBER,
+                                 (bar.x, bar.y, round(bar.w * fill), bar.h))
             _text(screen, message("sonar.line.bearing_value",
                                   bearing=observations.format_bearing(
                                       contact, _sonar_observer(game))),
                   (rect.right - 94, y + 2, 82, 19), CYAN, 13, "right")
-            age = max(0, getattr(game, "sim_t", 0) - getattr(contact, "last_seen", 0))
             uncertainty = observations.bearing_uncertainty(contact)
             _text(screen, message("sonar.line.contact_quality", snr=f"{getattr(contact, 'snr', -99):+.1f}",
                                   confidence=f"{getattr(contact, 'confidence', 0):.0%}", age=f"{age:.0f}",
                                   uncertainty=f"{uncertainty:.1f}" if uncertainty is not None else "--"),
-                   (rect.x + 14, y + 23, rect.w - 28, 17), DIM, 12)
+                   (rect.x + 28, y + 21, rect.w - 42, 17), DIM, 12)
 
 
 def _draw_echo_list(game, rect):
@@ -1934,7 +2026,8 @@ def draw_sonar_view(game, tr=None) -> None:
                            ("sonar-contacts", contacts)):
             layout.record_geometry("region", rect, role)
             pygame.draw.rect(screen, PANEL, rect)
-            pygame.draw.rect(screen, GRID, rect, 1)
+            pygame.draw.rect(screen, config.COLOR_SONAR_RING, rect, 1)
+            layout.corner_brackets(screen, rect)
         with layout.clip_to(screen, main):
             if page < 2:
                 _draw_waterfall(game, main, page)

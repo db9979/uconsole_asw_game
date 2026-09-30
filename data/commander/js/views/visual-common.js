@@ -18,6 +18,14 @@ export function visualContext(id) {
   return {element, context, width, height};
 }
 export function drawEmpty(plot, key = "visual_empty") {
+  // A resting scope: faint graticule, so an empty panel still reads as an instrument.
+  const g = plot.context, colors = palette();
+  g.save(); g.strokeStyle = colors.line; g.globalAlpha = .55; g.lineWidth = 1;
+  for (let i = 1; i < 6; i++) {
+    const x = Math.round(plot.width * i / 6) + .5, y = Math.round(plot.height * i / 6) + .5;
+    g.beginPath(); g.moveTo(x, 0); g.lineTo(x, plot.height); g.moveTo(0, y); g.lineTo(plot.width, y); g.stroke();
+  }
+  g.restore();
   plot.context.fillStyle = palette().muted;
   plot.context.textAlign = "center";
   plot.context.fillText(t(key), plot.width / 2, plot.height / 2);

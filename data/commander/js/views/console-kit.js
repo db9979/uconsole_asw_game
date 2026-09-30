@@ -23,6 +23,15 @@ export function keyed(box, keys, make) {
 
 // Lamps are [key, label, level, value]; the master lamp counts alarms and cautions.
 export function renderLampPanel(box, master, rows) {
+  renderLamps(box, rows);
+  const alarms = rows.filter((row) => row[2] === "alarm").length, cautions = rows.filter((row) => row[2] === "caution").length;
+  master.dataset.state = alarms ? "alarm" : cautions ? "caution" : "live";
+  master.textContent = alarms ? t("uboot_engine_master_alarm", {count: alarms})
+    : cautions ? t("uboot_engine_master_caution", {count: cautions}) : t("uboot_engine_master_clear");
+}
+
+// The lamps alone, without a master lamp (the sonar's listening console).
+export function renderLamps(box, rows) {
   const cells = keyed(box, rows.map((row) => row[0]), (key) => {
     const cell = node("div", undefined, "console-lamp");
     cell.setAttribute("role", "listitem");
@@ -38,10 +47,6 @@ export function renderLampPanel(box, master, rows) {
     cell.children[1].textContent = label;
     cell.children[2].textContent = value;
   });
-  const alarms = rows.filter((row) => row[2] === "alarm").length, cautions = rows.filter((row) => row[2] === "caution").length;
-  master.dataset.state = alarms ? "alarm" : cautions ? "caution" : "live";
-  master.textContent = alarms ? t("uboot_engine_master_alarm", {count: alarms})
-    : cautions ? t("uboot_engine_master_caution", {count: cautions}) : t("uboot_engine_master_clear");
 }
 
 // Round gauge with its scale, coloured zones, needle and ordered value.

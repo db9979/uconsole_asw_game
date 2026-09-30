@@ -323,3 +323,45 @@ body[data-sonar-scope][data-remote-role="assigned"] .cic-grid { grid-template-co
   .helicopter-acoustic-plots { min-height: 16rem; }
   .role-visuals[data-split="on"] { display: flex; }
 }
+
+/* Sonar listening console: annunciator lamps and a north-up bearing rose
+   (listening beam, baffles astern, contact bearings), then framed plots. */
+.sonar-console { display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem; align-items: center; gap: .5rem; flex: 0 0 auto; padding-bottom: .35rem; }
+.sonar-lamps { grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr)); align-content: center; }
+.sonar-rose-frame { height: 7.5rem; min-width: 0; }
+.sonar-rose-frame > canvas { width: 100%; height: 100% !important; }
+.sonar-console .visual-equivalent { grid-column: 1 / -1; }
+.sonar-plots > section:not([hidden]) {
+  --bracket: color-mix(in srgb, var(--live) 55%, transparent);
+  padding: .3rem; border: 1px solid var(--line-strong); border-radius: var(--radius);
+  background:
+    linear-gradient(var(--bracket), var(--bracket)) top left / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top left / 2px .8rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top right / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top right / 2px .8rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom left / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom left / 2px .8rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom right / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom right / 2px .8rem no-repeat,
+    var(--scope);
+}
+@media (max-width: 720px) { .sonar-console { grid-template-columns: minmax(0, 1fr); } .sonar-rose-frame { height: 9rem; } }
+
+/* Helicopter sonar: lamps and the dipping scope in the rail, framed plots. */
+.helicopter-lamps { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: .4rem; }
+.helicopter-scope-frame { flex: 0 0 13rem; min-height: 0; margin-bottom: .4rem; }
+.helicopter-scope-frame > canvas { width: 100%; height: 100% !important; }
+.helicopter-acoustic-plots > div:not([hidden]), .helicopter-acoustic-rail {
+  --bracket: color-mix(in srgb, var(--live) 55%, transparent);
+  padding: .3rem; border: 1px solid var(--line-strong); border-radius: var(--radius);
+  background:
+    linear-gradient(var(--bracket), var(--bracket)) top left / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top left / 2px .8rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top right / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top right / 2px .8rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom left / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom left / 2px .8rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom right / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom right / 2px .8rem no-repeat,
+    var(--scope);
+}

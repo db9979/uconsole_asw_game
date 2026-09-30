@@ -107,10 +107,16 @@ def test_manned_stations_are_left_to_their_crew(monkeypatch):
     hunter.update(game, hunter.CADENCE_S)
     assert (game.ship.target_course, game.ship.target_speed) == (course, speed)
     assert game.helo.state == "HANGAR" and game.mpa.state == "BASE"
-    # Only the bridge free: the ship turns, the aircraft stay put.
+    # Only the bridge free: a person in the engine room keeps the helm.
     monkeypatch.setattr(game.commander, "station_leased",
                         lambda station: station is not Station.BRIDGE)
     game.sim_t = 12.0
+    hunter.update(game, hunter.CADENCE_S)
+    assert (game.ship.target_course, game.ship.target_speed) == (course, speed)
+    # Bridge and engine room free: the ship turns, the aircraft stay put.
+    monkeypatch.setattr(game.commander, "station_leased",
+                        lambda station: station not in (Station.BRIDGE, Station.ENGINE))
+    game.sim_t = 14.0
     hunter.update(game, hunter.CADENCE_S)
     assert game.ship.target_speed == hunter.TRANSIT_KN
     assert game.helo.state == "HANGAR" and game.mpa.state == "BASE"

@@ -29,6 +29,10 @@ from src.ui import layout, overlay_style, qr
 
 # Seconds between an accepted admin "end game" and the process quitting.
 WEB_SHUTDOWN_GRACE_S = 2.0
+# F9 rows: one switch, the crew list and the advanced network rows, which only
+# show when opened (network mode, address, port).
+BASIC_ROWS = ("service", "roster", "advanced")
+ADVANCED_ROWS = ("mode", "host", "port")
 
 class CommanderConsole:
     def __init__(self, hotspot=None):
@@ -56,6 +60,10 @@ class CommanderConsole:
         # Admin page "end game": the process quits once the result is out.
         self.shutdown_at = None
         self.selection = 0
+        # The advanced network rows are hidden until the host opens them; an
+        # address picked there is kept instead of the automatic choice.
+        self.advanced = False
+        self._host_chosen = False
         self.connected = False
         self.active_crew = False
         self._statuses_cache = None
@@ -719,14 +727,12 @@ class CommanderConsole:
         self.autostart(solo=True)
 
     def autostart(self, solo=False):
-        """Launch-time Remote Crew start on the first private LAN address."""
+        """Remote Crew start on the first private LAN address, else the hotspot."""
         self.solo = bool(solo)
         self.error = None
         try:
-            self.prepare()
-            self.host = self.hosts[1] if len(self.hosts) > 1 else self.hosts[0]
             self._prepare_transport()
-            self._start_transport(self.host)
+            self._start_service()
         except (ImportError, OSError, ValueError, RuntimeError):
             self.deactivate()
             self.error = "commander.local.error.start"
@@ -769,36 +775,50 @@ class CommanderConsole:
         self._notice_seq = None
         self.invalidate_commands()
 
+    def rows(self):
+        """Names of the F9 rows on screen, top to bottom."""
+        return BASIC_ROWS + (ADVANCED_ROWS if self.advanced else ())
+
+    def _start_service(self):
+        """Switch multiplayer on: the LAN, else the hotspot when no LAN is up.
+
+        Without advanced choices the first private LAN address is used; with
+        none (only loopback) and the hotspot helper installed the uConsole
+        opens its own hotspot instead.
+        """
+        if self.network_mode == "lan":
+            self.prepare()
+            if not self._host_chosen:
+                self.host = self.hosts[1] if len(self.hosts) > 1 else self.hosts[0]
+            if (not self._host_chosen and len(self.hosts) == 1
+                    and self.hotspot.available):
+                self.network_mode = "hotspot"
+        if self.network_mode == "hotspot":
+            self._hotspot_error_seen = None
+            self.hotspot.start()
+            if self.hotspot.state == "error":
+                self._hotspot_error_seen = self.hotspot.error
+                self.error = f"commander.local.hotspot.error.{self.hotspot.error}"
+        else:
+            self._start_transport(self.host)
+
     def activate(self, game, direction=1):
         """Perform the selected local row's explicit action, never a remote action."""
         self.error = None
-        if self.selection == 0:
-            if self.address is not None or self.hotspot.active:
+        rows = self.rows()
+        row = rows[self.selection % len(rows)]
+        running = self.address is not None or self.hotspot.active
+        if row == "service":
+            if running:
                 self.deactivate()
                 return
             try:
                 self._prepare_transport()
-                if self.network_mode == "hotspot":
-                    self._hotspot_error_seen = None
-                    self.hotspot.start()
-                    if self.hotspot.state == "error":
-                        self._hotspot_error_seen = self.hotspot.error
-                        self.error = f"commander.local.hotspot.error.{self.hotspot.error}"
-                else:
-                    self.prepare()
-                    self._start_transport(self.host)
+                self._start_service()
             except (ImportError, OSError, ValueError, RuntimeError):
                 self.deactivate()
                 self.error = "commander.local.error.start"
-        elif self.selection == 1 and self.address is None and not self.hotspot.active:
-            self.network_mode = "hotspot" if self.network_mode == "lan" else "lan"
-        elif (self.selection == 2 and self.network_mode == "lan"
-              and self.address is None and not self.hotspot.active):
-            self.prepare()
-            self.host = self.hosts[(self.hosts.index(self.host) + direction) % len(self.hosts)]
-        elif self.selection == 3 and self.address is None and not self.hotspot.active:
-            self.port = max(1024, min(65535, self.port + direction))
-        elif self.selection == 4:
+        elif row == "roster":
             self.roster_open = True
             self.roster_status = None
             statuses = self._roster()
@@ -806,8 +826,17 @@ class CommanderConsole:
             station = ((self._requested_station(selected) or selected["active_station"])
                        if selected is not None else None)
             self.roster_station = ROLES.index(station) if station in ROLES else 0
-        elif self.selection == 5:
-            self.set_solo(not self.solo)
+        elif row == "advanced":
+            self.advanced = not self.advanced
+            self.selection = min(self.selection, len(self.rows()) - 1)
+        elif row == "mode" and not running:
+            self.network_mode = "hotspot" if self.network_mode == "lan" else "lan"
+        elif row == "host" and self.network_mode == "lan" and not running:
+            self.prepare()
+            self.host = self.hosts[(self.hosts.index(self.host) + direction) % len(self.hosts)]
+            self._host_chosen = True
+        elif row == "port" and not running:
+            self.port = max(1024, min(65535, self.port + direction))
 
     def handle_key(self, game, key):
         if self.admission.request is not None:
@@ -824,12 +853,13 @@ class CommanderConsole:
                     self.confirm_kind = kinds[0]
             game._open_administration("")
         elif key in (pygame.K_UP, pygame.K_DOWN):
-            self.selection = (self.selection + (1 if key == pygame.K_DOWN else -1)) % 6
+            self.selection = ((self.selection + (1 if key == pygame.K_DOWN else -1))
+                              % len(self.rows()))
         elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             self.activate(game)
         elif key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_MINUS,
                      pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_MINUS, pygame.K_KP_PLUS):
-            if self.selection in (1, 2, 3, 5):
+            if self.rows()[self.selection % len(self.rows())] in ("advanced", *ADVANCED_ROWS):
                 self.activate(game, -1 if key in (pygame.K_LEFT, pygame.K_MINUS,
                                                  pygame.K_KP_MINUS) else 1)
 
@@ -899,7 +929,7 @@ class CommanderConsole:
         if self.roster_open:
             self._handle_roster_click(canvas)
             return
-        for index, rect in enumerate(self.row_rects()):
+        for index, rect in enumerate(self.row_rects()[:len(self.rows())]):
             if rect.collidepoint(canvas):
                 # Select first, then confirm. A stray click cannot accept a proposal.
                 if self.selection == index:
@@ -1061,17 +1091,19 @@ class CommanderConsole:
             service_state = (f"commander.local.hotspot.state.{self.hotspot.state}"
                              if self.network_mode == "hotspot" and self.hotspot.active
                              else "common.on" if self.address is not None else "common.off")
-            values = (
-                message("commander.local.service", state=tr(service_state)),
-                message("commander.local.mode", mode=tr(
+            texts = {
+                "service": message("commander.local.service", state=tr(service_state)),
+                "roster": "commander.local.roster",
+                "advanced": message("commander.local.advanced", state=tr(
+                    "commander.local.advanced.open" if self.advanced
+                    else "commander.local.advanced.closed")),
+                "mode": message("commander.local.mode", mode=tr(
                     f"commander.local.mode.{self.network_mode}")),
-                (message("commander.local.host", host=self.host)
-                 if self.network_mode == "lan" else "commander.local.hotspot.host_auto"),
-                message("commander.local.port", port=self.port), "commander.local.roster",
-                message("commander.local.crew_mode", mode=tr(
-                    "commander.local.crew_mode.solo" if self.solo
-                    else "commander.local.crew_mode.crew")),
-            )
+                "host": (message("commander.local.host", host=self.host)
+                         if self.network_mode == "lan" else "commander.local.hotspot.host_auto"),
+                "port": message("commander.local.port", port=self.port),
+            }
+            values = tuple(texts[row] for row in self.rows())
             for index, (text, rect) in enumerate(zip(values, self.row_rects())):
                 layout.blit_line(screen, message("menu.choice", marker=(
                     "> " if index == self.selection else "  "),

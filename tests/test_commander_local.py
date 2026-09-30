@@ -475,7 +475,7 @@ def test_admin_blocks_held_mouse_joystick_and_weapons_but_not_simulation(game):
         game.handle_event(event)
     key(game, pygame.K_3)
     key(game, pygame.K_LEFT)
-    game.commander.selection = 3
+    game.commander.selection = 2
     key(game, pygame.K_RETURN, mod=pygame.KMOD_CTRL)
     # Enter remains a local proposal decision, never station weapon input.
     assert game.commander.server is None
@@ -524,21 +524,57 @@ def test_legacy_time_keys_do_nothing_under_the_station_lock(game, solo):
     assert game.ship.telegraph == telegraph  # station input stays locked either way
 
 
-def test_crew_mode_row_toggles_solo_and_reaches_the_server(game):
+def test_advanced_row_shows_the_network_rows_and_no_crew_mode_row(game):
     console = game.commander
-    assert console.solo is False and len(console.row_rects()) == 6
+    assert console.rows() == ("service", "roster", "advanced")
     game._open_administration("commander")
-    console.selection = 4
-    key(game, pygame.K_DOWN)
-    assert console.selection == 5
-    key(game, pygame.K_RIGHT)
-    assert console.solo is True
-    key(game, pygame.K_RETURN)
-    assert console.solo is False
-    key(game, pygame.K_DOWN)
-    assert console.selection == 0  # six rows wrap around
     key(game, pygame.K_UP)
-    assert console.selection == 5
+    assert console.selection == 2      # three rows wrap around
+    key(game, pygame.K_RETURN)
+    assert console.advanced and console.rows()[3:] == ("mode", "host", "port")
+    key(game, pygame.K_DOWN)
+    assert console.selection == 3
+    key(game, pygame.K_RIGHT)
+    assert console.network_mode == "hotspot"
+    key(game, pygame.K_RIGHT)
+    assert console.network_mode == "lan"
+    console.selection = 5
+    key(game, pygame.K_DOWN)
+    assert console.selection == 0
+    console.selection = 2
+    key(game, pygame.K_LEFT)           # hiding them keeps the cursor on a row
+    assert not console.advanced and console.selection == 2
+    assert console.solo is False
+
+
+def test_the_switch_picks_the_lan_address_or_falls_back_to_the_hotspot(game, monkeypatch):
+    console = game.commander
+    console._prepared = True
+    started = []
+    monkeypatch.setattr(console, "_prepare_transport", lambda: None)
+    monkeypatch.setattr(console, "_start_transport", lambda host: started.append(host))
+    console.hosts = ("127.0.0.1", "192.168.1.7", "10.0.0.2")
+    console.activate(game)
+    assert started == ["192.168.1.7"] and console.network_mode == "lan"
+    # Without any LAN address the uConsole opens its own hotspot.
+    started.clear()
+    console.hosts = ("127.0.0.1",)
+    monkeypatch.setattr(type(console.hotspot), "available", property(lambda self: True))
+    hotspot_started = []
+    monkeypatch.setattr(console.hotspot, "start", lambda: hotspot_started.append(True))
+    console.activate(game)
+    assert not started and hotspot_started and console.network_mode == "hotspot"
+    # An address chosen under the advanced settings is kept.
+    console.network_mode = "lan"
+    console.hosts = ("127.0.0.1", "192.168.1.7")
+    console.host = "192.168.1.7"
+    console.advanced = True
+    console.selection = console.rows().index("host")
+    console.activate(game, -1)
+    assert console.host == "127.0.0.1"
+    console.selection = 0
+    console.activate(game)
+    assert started == ["127.0.0.1"]
 
 
 def test_new_remote_lease_clears_latched_and_numeric_uconsole_input(game):
@@ -591,11 +627,11 @@ def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     assert game.commander_open
     activate = Mock()
     monkeypatch.setattr(game.commander, "activate", activate)
-    rect = game.commander.row_rects()[4]
+    rect = game.commander.row_rects()[1]
     event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                               pos=(rect.centerx, rect.centery + 140))
     game.handle_event(event)
-    assert game.commander.selection == 4 and not activate.called
+    assert game.commander.selection == 1 and not activate.called
     game.handle_event(event)
     activate.assert_called_once_with(game)
 
@@ -633,10 +669,12 @@ def test_loopback_start_bind_failure_disable_and_translation_cache(game, monkeyp
     assert "127.0.0.1" not in other.error
     other.stop()
     host, port = console.host, console.port
-    for selection in (1, 2, 3):
+    console.advanced = True
+    for selection in (3, 4, 5):
         console.selection = selection
         console.activate(game)
     assert (console.host, console.port) == (host, port)
+    console.advanced = False
     console.selection = 0
     started = time.monotonic()
     console.activate(game)
@@ -724,10 +762,11 @@ def test_port_and_host_are_transient_local_controls(game):
     console = game.commander
     console._prepared = True
     console.hosts = ("127.0.0.1", "192.168.1.2")
-    console.selection = 2
+    console.advanced = True
+    console.selection = 4
     console.handle_key(game, pygame.K_RIGHT)
     assert console.host == "192.168.1.2"
-    console.selection = 3
+    console.selection = 5
     console.handle_key(game, pygame.K_PLUS)
     assert console.port == 8766
     console.handle_key(game, pygame.K_MINUS)
@@ -748,7 +787,7 @@ def test_fifth_row_opens_roster_and_escape_f9_preserve_admin_ownership(game):
     console._prepared = True
     console.server = RosterTransport()
     key(game, pygame.K_F9)
-    console.selection = 4
+    console.selection = 1
     key(game, pygame.K_RETURN)
     assert game.commander_open and console.roster_open
     key(game, pygame.K_ESCAPE)

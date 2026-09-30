@@ -14,14 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.123**
+Aktuelle Version: **1.3.124**
 
-Version 1.3.123 gibt dem U-Boot eine Bojenantenne. Im Funkraum (B oder die
-Funkraum-Karte im Browser) bringt die Crew sie etwa 280 m achteraus aus; sie
-nimmt den Rundspruch der Führung bis 60 m Tiefe bei höchstens 6 kn auf, nur
-Empfang. Über 10 kn reißt das Kabel, und die Boje ist für die Mission verloren.
-Aus der Nähe können Ausguck und Überwasserradar der Fregatte die kleine Boje
-auf dem Wasser finden. Spielstände haben jetzt Format v42; ältere laden nicht.
+Version 1.3.124 bringt drei neue Einsätze, die beide Seiten spielen können,
+jeweils mit der KI auf der Gegenseite. In „Meerengen-Sperre“ (8) muss das
+U-Boot durch die nächste Meerenge schlüpfen, während die Fregatte die
+Sperrlinie bewacht; Handelsverkehr fährt hindurch, und ein KI-Boot versteckt
+sich in seinem Lärm. Bei „Kampfschwimmer“ (9) muss das U-Boot zehn Minuten auf
+Sehrohrtiefe und in langsamster Fahrt vor einer Küste liegen, um seine
+Schwimmer auszuschleusen, und die Fregatte bestreift den Küstenabschnitt. Beim
+„Versorgerschutz“ (10) sichert die Fregatte einen zackenden Versorger, und ein
+einziger Torpedotreffer entscheidet. Die Orte ergeben sich aus der echten oder
+erzeugten Küste jeder Welt. Das Szenariomenü nimmt die Tasten 1 bis 9 und 0.
+Speicherformat v43; ältere Spielstände laden nicht.
 
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

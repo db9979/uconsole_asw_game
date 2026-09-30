@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.124
+
+Release 1.3.124 adds three new missions that both sides can play, each with the
+AI on the other side. In "Strait blockade" (8) the submarine must slip through
+the nearest narrow passage while the frigate guards the gate; merchant traffic
+runs through it and an AI boat hides in their noise. In "Combat swimmers" (9)
+the submarine must lie still near a coast for ten minutes at periscope depth
+and dead slow to lock out its swimmers, and the frigate patrols the coast
+section. In "Supply ship escort" (10) the frigate escorts a zigzagging supply
+ship and one torpedo hit decides the mission. The places come from the real or
+generated coastline of each world. The scenario menu takes keys 1 to 9 and 0.
+Save format v43; older saves do not load.
+
 ## 1.3.123
 
 The submarine gets a towed buoy antenna. In the radio room (B, or the browser's

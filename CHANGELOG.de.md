@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.124
+
+Version 1.3.124 bringt drei neue Einsätze, die beide Seiten spielen können,
+jeweils mit der KI auf der Gegenseite. In „Meerengen-Sperre“ (8) muss das
+U-Boot durch die nächste Meerenge schlüpfen, während die Fregatte die
+Sperrlinie bewacht; Handelsverkehr fährt hindurch, und ein KI-Boot versteckt
+sich in seinem Lärm. Bei „Kampfschwimmer“ (9) muss das U-Boot zehn Minuten auf
+Sehrohrtiefe und in langsamster Fahrt vor einer Küste liegen, um seine
+Schwimmer auszuschleusen, und die Fregatte bestreift den Küstenabschnitt. Beim
+„Versorgerschutz“ (10) sichert die Fregatte einen zackenden Versorger, und ein
+einziger Torpedotreffer entscheidet. Die Orte ergeben sich aus der echten oder
+erzeugten Küste jeder Welt. Das Szenariomenü nimmt die Tasten 1 bis 9 und 0.
+Speicherformat v43; ältere Spielstände laden nicht.
+
 ## 1.3.123
 
 Das U-Boot bekommt eine Bojenantenne. Im Funkraum (B oder die Funkraum-Karte im

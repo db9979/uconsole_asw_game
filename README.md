@@ -12,14 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.123**
+Current release: **1.3.124**
 
-Release 1.3.123 gives the submarine a towed buoy antenna. In the radio room (B,
-or the browser's Radio room card) the crew streams it about 280 m astern; it
-copies HQ's broadcast down to 60 m at 6 kn or less, receiving only. Above 10 kn
-the cable parts and the buoy is lost for the mission. Close in, the frigate's
-lookout and surface radar can find the small buoy on the water. Saves are now
-format v42; older saves do not load.
+Release 1.3.124 adds three new missions that both sides can play, each with the
+AI on the other side. In "Strait blockade" (8) the submarine must slip through
+the nearest narrow passage while the frigate guards the gate; merchant traffic
+runs through it and an AI boat hides in their noise. In "Combat swimmers" (9)
+the submarine must lie still near a coast for ten minutes at periscope depth
+and dead slow to lock out its swimmers, and the frigate patrols the coast
+section. In "Supply ship escort" (10) the frigate escorts a zigzagging supply
+ship and one torpedo hit decides the mission. The places come from the real or
+generated coastline of each world. The scenario menu takes keys 1 to 9 and 0.
+Save format v43; older saves do not load.
 
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

@@ -983,14 +983,31 @@ class EventMixin:
                         self.flash(message("runtime.listen.no_contact"))
                     return
             if self.station in (Station.OPZ, Station.RADAR) and \
-                    e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
-                self._cycle_radar_range(
-                    1 if e.key == pygame.K_PAGEUP else -1)
+                    e.key in (pygame.K_q, pygame.K_e):
+                # Q/E zoom everywhere: here they step the radar range.
+                self._cycle_radar_range(1 if e.key == pygame.K_q else -1)
                 return
-            # The raised binoculars take ↑/↓ (tilt), Q/E (zoom) and Space
-            # (stabilizer) from the telegraph and the covered chart.
-            if self.lookout_glasses_shown() and self._lookout_optics_key(e):
+            if (e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN)
+                    and len(STATION_PAGES.get(self.station, ())) > 1):
+                # Page Up/Down page every station with several pages (the
+                # sonar and the helicopter's acoustic page handled above).
+                self._clear_station_input()
+                self.station_page = station_page_step(
+                    self.station, self.station_page,
+                    1 if e.key == pygame.K_PAGEDOWN else -1)
                 return
+            # The raised binoculars take ↑/↓ (tilt), ←/→ (train), Q/E (zoom)
+            # and Space (stabilizer) from the telegraph, the rudder and the
+            # covered chart, exactly as the submarine's periscope.
+            if self.lookout_glasses_shown():
+                if e.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                    step = (config.LOOKOUT_GLASSES_STEP_FAST_DEG
+                            if getattr(e, "mod", 0) & pygame.KMOD_SHIFT
+                            else config.LOOKOUT_GLASSES_STEP_DEG)
+                    self._train_lookout_glasses(step if e.key == pygame.K_RIGHT else -step)
+                    return
+                if self._lookout_optics_key(e):
+                    return
             if e.key in (pygame.K_UP, pygame.K_DOWN):
                 if self.station is Station.DAMAGE:
                     self.dmg_team = (self.dmg_team - 1 +
@@ -1005,6 +1022,9 @@ class EventMixin:
                     self._cycle_engine_telegraph(
                         1 if e.key == pygame.K_UP else -1)
                     self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
+                elif (self.station is Station.HELICOPTER
+                      and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+                    self._cycle_helo_contact(1 if e.key == pygame.K_DOWN else -1)
                 elif self.station is Station.HELICOPTER:
                     self._adjust_helo_waypoint(
                         range_delta=1.0 if e.key == pygame.K_UP else -1.0)
@@ -1054,22 +1074,10 @@ class EventMixin:
                 else:
                     self._task_decline_selected()
                 return
-            if self.station is Station.OPZ and self.station_page == 2 and e.key in (
-                    pygame.K_a, pygame.K_w, pygame.K_z, pygame.K_x, pygame.K_y,
-                    pygame.K_t, pygame.K_d, pygame.K_v):
-                shift = bool(getattr(e, "mod", 0) & pygame.KMOD_SHIFT)
-                order = {
-                    pygame.K_a: self.toggle_mpa,
-                    pygame.K_w: self.mpa_waypoint_to_selection,
-                    pygame.K_z: ((lambda: self.set_mpa_pattern("single")) if shift
-                                 else self.cycle_mpa_pattern),
-                    pygame.K_x: self.mpa_drop_buoy,
-                    pygame.K_y: self.toggle_mpa_buoy_mode,
-                    pygame.K_t: self.toggle_mpa_radar,
-                    pygame.K_v: self.toggle_mpa_mad,
-                    pygame.K_d: self.mpa_attack,
-                }[e.key]
-                self._mpa_order_feedback(order())
+            mpa_order = (self._mpa_key_order(e) if self.station is Station.OPZ
+                         and self.station_page == 2 else None)
+            if mpa_order is not None:
+                self._mpa_order_feedback(mpa_order())
                 return
             if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
                     and self.station is Station.RADIO:
@@ -1134,12 +1142,6 @@ class EventMixin:
                     and self.station_page == 2:
                 self._toggle_lookout_glasses()
             elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
-                    and self.lookout_glasses_shown():
-                step = (config.LOOKOUT_GLASSES_STEP_FAST_DEG
-                        if getattr(e, "mod", 0) & pygame.KMOD_SHIFT
-                        else config.LOOKOUT_GLASSES_STEP_DEG)
-                self._train_lookout_glasses(step if e.key == pygame.K_PERIOD else -step)
-            elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
                     and self.station is Station.BRIDGE and self.station_page == 2:
                 self._cycle_lookout_range(1 if e.key == pygame.K_PERIOD else -1)
             elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
@@ -1188,7 +1190,8 @@ class EventMixin:
                     self.flash(message(
                         "runtime.ciws.authorized" if self.ciws_authorized
                         else "runtime.ciws.withheld"), 1.5)
-            elif e.key == pygame.K_a and (self.station is not Station.SONAR
+            elif e.key == pygame.K_a and (self.station not in (Station.SONAR,
+                                                               Station.HELICOPTER)
                                            or getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
                 if self.station is Station.SONAR:
                     result = self.send_active_ping()
@@ -1212,7 +1215,7 @@ class EventMixin:
                                        if self.ecm_jammer.auto_enabled else
                                        "runtime.eloka.auto_off"), 1.5)
             elif (e.key == pygame.K_r and self.station is Station.HELICOPTER
-                  and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+                  and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
                 self.set_helicopter_radar(not self.helo.radar_on)
             elif e.key == pygame.K_r:
                 if self.station in (Station.OPZ, Station.RADAR):
@@ -1232,14 +1235,6 @@ class EventMixin:
                     self.set_target()
                 elif self.station in (Station.OPZ, Station.RADAR):
                     self.designate_opz_track()
-                elif self.station is Station.ELOKA:
-                    self.eloka_audio_enabled = not self.eloka_audio_enabled
-                    self.flash(message("runtime.eloka_audio.on"
-                                       if self.eloka_audio_enabled else
-                                       "runtime.eloka_audio.off"))
-            elif e.key == pygame.K_u and self.station in (Station.BRIDGE,
-                                                           Station.ENGINE):
-                self._begin_numeric_input("course")
             elif e.key == pygame.K_LEFT:
                 if self.station is Station.BRIDGE:
                     self.held.add(e.key)
@@ -1273,7 +1268,9 @@ class EventMixin:
                     else:
                         self._adjust_helo_waypoint(bearing_delta=15.0)
             elif e.key == pygame.K_c:
-                if self.station in (Station.SONAR, Station.HELICOPTER):
+                if self.station in (Station.BRIDGE, Station.ENGINE):
+                    self._begin_numeric_input("course")
+                elif self.station in (Station.SONAR, Station.HELICOPTER):
                     self._cycle_classification()
                 elif self.station is Station.DAMAGE:
                     self._toggle_counterflood()
@@ -1282,26 +1279,10 @@ class EventMixin:
                 elif self.station is Station.ELOKA:
                     self._cycle_eloka_annotation()
             elif e.key == pygame.K_j and self.station is Station.ELOKA:
-                if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                    technique = self._cycle_jamming_technique(
-                        self.selected_eloka_track())
-                    technique_names = {
-                        "noise": message("eloka.technique.noise"),
-                        "rgpo": message("eloka.technique.rgpo"),
-                        "vgpo": message("eloka.technique.vgpo"),
-                        "false_targets": message(
-                            "eloka.technique.false_targets"),
-                    }
-                    notice = (message("runtime.eloka.technique",
-                                      technique=technique_names[technique])
-                              if technique in technique_names else
-                              message("runtime.eloka.jamming_off"))
-                    self.flash(notice, 1.5)
-                else:
-                    result = self.deploy_jamming(self.selected_eloka_track())
-                    self.flash(message("runtime.eloka.jamming_on"
-                                       if result is True else
-                                       "runtime.eloka.jamming_off"), 1.5)
+                self.eloka_audio_enabled = not self.eloka_audio_enabled
+                self.flash(message("runtime.eloka_audio.on"
+                                   if self.eloka_audio_enabled else
+                                   "runtime.eloka_audio.off"))
             elif e.key == pygame.K_b and (self.station is not Station.SONAR
                                            or getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
                 if self.station is Station.SONAR:
@@ -1314,8 +1295,6 @@ class EventMixin:
                                            else "helo.buoy_mode.passive"))
                     else:
                         self.deploy_buoys()
-                elif self.station is Station.ELOKA:
-                    self._cycle_eloka_filter("band")
                 elif self.station is Station.OPZ:
                     self._mark_newest_blip()
             elif e.key == pygame.K_z and self.station is Station.WEAPONS:
@@ -1369,8 +1348,8 @@ class EventMixin:
                     self.flash(message("runtime.helo.dip_depth",
                                        depth=f"{self.helo.dip_depth_target_m:.0f}"))
             elif e.key == pygame.K_e:
-                if self.station in (Station.OPZ, Station.RADAR):
-                    self.launch_essm()
+                if self.station is Station.ELOKA:
+                    self._eloka_jamming_key(e)
                 elif self._map_station_visible():
                     self.map_view.set_rect(config.MAP_RECT)
                     self.map_view.step_zoom(1, config.MAP_ZOOM_STEPS_NM)
@@ -1380,13 +1359,10 @@ class EventMixin:
             elif e.key == pygame.K_g and self.station is Station.SONAR:
                 self._toggle_sonar_release()
             elif e.key == pygame.K_g and self.station is Station.HELICOPTER:
-                if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                    self._toggle_sonar_release()
-                else:
-                    self._cycle_helo_contact(1)
+                self._toggle_sonar_release()
             elif e.key == pygame.K_t:
                 if self.station is Station.WEAPONS:
-                    self.launch_torpedo()
+                    self._begin_numeric_input("torpedo_depth")
                 elif self.station is Station.SONAR:
                     self.set_sonar_tma_enabled(not self.sonar.tma_enabled)
                     self.flash(message("runtime.tma.on" if self.sonar.tma_enabled
@@ -1431,9 +1407,10 @@ class EventMixin:
                 elif self.station is Station.SONAR:
                     self._cycle_sonar_band()
                 elif self.station is Station.ELOKA:
+                    mods = getattr(e, "mod", 0)
                     self._cycle_eloka_filter(
-                        "threat" if getattr(e, "mod", 0) & pygame.KMOD_SHIFT
-                        else "status")
+                        "band" if mods & pygame.KMOD_CTRL
+                        else "threat" if mods & pygame.KMOD_SHIFT else "status")
                 elif self.station is Station.OPZ:
                     if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
                         self._cycle_opz_contact_filter()
@@ -2101,6 +2078,16 @@ class EventMixin:
                     "dr", pending[0], pending[1], course=pending[2],
                     speed_kn=number))
             return
+        if mode == "torpedo_depth":
+            if not 10.0 <= number <= 300.0:
+                self.flash(message("event.invalid_input"), 2.0)
+                return
+            self.torpedo_depth = number
+            self.flash(message("runtime.numeric.torpedo_depth",
+                               depth=f"{number:.0f}"), 2.0)
+            self.input_mode = None
+            self.input_buffer = ""
+            return
         if mode in ("course", "bearing"):
             if not 0.0 <= number < 360.0:
                 self.flash(message("runtime.numeric.angle"), 2.0)
@@ -2152,12 +2139,59 @@ class EventMixin:
             self.input_buffer = ""
             prompt = message("runtime.input.course",
                              current=f"{self.ship.target_course:03.0f}")
+        elif mode == "torpedo_depth":
+            self.input_buffer = ""
+            prompt = message("runtime.input.torpedo_depth",
+                             current=f"{self.torpedo_depth:.0f}")
         else:
             self.input_buffer = ""
             prompt = message("runtime.input.speed",
                              current=f"{self.ship.target_speed:.1f}")
         self.flash(message("runtime.input.pending", prompt=localize(prompt, self.tr),
                             value=self.input_buffer), 60.0)
+
+    def _mpa_key_order(self, e):
+        """OPZ page 3: the patrol aircraft's order for a key, on the same keys
+        as the helicopter (H, W, X, B, Shift+B, Shift+M, Ctrl+R, D), or None."""
+        mods = getattr(e, "mod", 0)
+        shift, ctrl = bool(mods & pygame.KMOD_SHIFT), bool(mods & pygame.KMOD_CTRL)
+        if e.key == pygame.K_h:
+            return self.toggle_mpa
+        if e.key == pygame.K_w:
+            return self.mpa_waypoint_to_selection
+        if e.key == pygame.K_x:
+            return ((lambda: self.set_mpa_pattern("single")) if shift
+                    else self.cycle_mpa_pattern)
+        if e.key == pygame.K_b:
+            return self.toggle_mpa_buoy_mode if shift else self.mpa_drop_buoy
+        if e.key == pygame.K_m and shift:
+            return self.toggle_mpa_mad
+        if e.key == pygame.K_r and ctrl:
+            return self.toggle_mpa_radar
+        if e.key == pygame.K_d:
+            return self.mpa_attack
+        return None
+
+    def _eloka_jamming_key(self, e) -> None:
+        """ELOKA: E engages/releases the directional jammer on the selected
+        intercept, Shift+E cycles the ECM technique."""
+        if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+            technique = self._cycle_jamming_technique(self.selected_eloka_track())
+            technique_names = {
+                "noise": message("eloka.technique.noise"),
+                "rgpo": message("eloka.technique.rgpo"),
+                "vgpo": message("eloka.technique.vgpo"),
+                "false_targets": message("eloka.technique.false_targets"),
+            }
+            notice = (message("runtime.eloka.technique",
+                              technique=technique_names[technique])
+                      if technique in technique_names else
+                      message("runtime.eloka.jamming_off"))
+            self.flash(notice, 1.5)
+        else:
+            result = self.deploy_jamming(self.selected_eloka_track())
+            self.flash(message("runtime.eloka.jamming_on" if result is True
+                               else "runtime.eloka.jamming_off"), 1.5)
 
     def _begin_track_id_input(self) -> None:
         """Open bounded OPZ entry for the selected track's shared display ID."""

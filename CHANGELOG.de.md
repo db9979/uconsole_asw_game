@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.101
+
+Version 1.3.101 bringt eine Mehrspieler-Lobby. Der neue Hauptmenüpunkt
+Mehrspieler startet Remote Crew im Crew-Modus und zeigt QR-Code und
+Beitrittscode; die Browser koppeln, wählen Einheit und Stationen und drücken
+Bereit, und alle sehen die Mission, Einheit und Station des uConsole und die
+Stationen und Bereit-Häkchen jedes Crewmitglieds. Der Gastgeber wählt die
+Mission, die Einheit des uConsole und seine eigene Station und startet dann
+einen Countdown von fünf Sekunden, den jeder Browser sieht; die Mission
+beginnt für alle gleichzeitig. Eine aus der Lobby gestartete Mission führt am
+Ende alle zurück in die Lobby.
+
 ## 1.3.100
 
 Version 1.3.100 bringt die Stationen Sonar, Elektronische Kampfführung, Funk

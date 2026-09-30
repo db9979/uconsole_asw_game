@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.101
+
+Release 1.3.101 adds a multiplayer lobby. The new main-menu entry Multiplayer
+starts Remote Crew in crew mode and shows the QR code and join code; browsers
+pair, pick their unit and stations and press Ready, and everyone sees the
+mission, the uConsole's unit and station and each crewmate's stations and
+ready tick. The host chooses the mission, which unit the uConsole plays and
+its own station, then starts a five-second countdown that every browser sees,
+and the mission begins for all at once. A mission started from the lobby
+returns everyone to the lobby when it ends.
+
 ## 1.3.100
 
 Release 1.3.100 brings the sonar, electronic warfare, radio and weapons

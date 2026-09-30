@@ -112,7 +112,7 @@ def test_a_sunk_boat_ends_the_boat_campaign(tmp_path, monkeypatch):
 def test_the_campaign_screen_switches_to_the_boat(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "SAVE_DIR", str(tmp_path))
     game = _menu_game(seed=400)
-    game.main_menu_sel = 2
+    game.main_menu_sel = game.main_menu_index("campaign")
     _key(game, pygame.K_RETURN)
     assert game.menu_screen == "campaign" and game.campaign_side == "frigate"
     _key(game, pygame.K_TAB)
@@ -128,7 +128,7 @@ def test_the_campaign_screen_switches_to_the_boat(tmp_path, monkeypatch):
     assert game.boat_campaign.port and game.boat_campaign.history[0]["result"] == "lost"
     game.draw()
     _key(game, pygame.K_m)
-    game.main_menu_sel = 2
+    game.main_menu_sel = game.main_menu_index("campaign")
     _key(game, pygame.K_RETURN)
     assert game.campaign_side == "boat"
     game.draw()

@@ -9,7 +9,7 @@ import { mutateStation, switchSoloSide } from "./lobby.js";
 import { opforRoles } from "../core/base.js";
 
 // ---- Solo host surface --------------------------------------------------
-const scenarioText = {s1_patrouille: "scenario_s1_patrouille", s2_doppeljagd: "scenario_s2_doppeljagd",
+export const scenarioText = {s1_patrouille: "scenario_s1_patrouille", s2_doppeljagd: "scenario_s2_doppeljagd",
   s3_abfang: "scenario_s3_abfang", s4_zufall: "scenario_s4_zufall",
   s5_durchbruch: "scenario_s5_durchbruch", s6_aufklaerung: "scenario_s6_aufklaerung",
   s7_geleitzug: "scenario_s7_geleitzug"};

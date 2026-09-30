@@ -72,6 +72,7 @@ def test_a_loaded_lesson_gets_its_coach_back_and_r_restarts_it():
 def test_training_menu_starts_the_chosen_lesson():
     game = _menu_game()
     _key(game, pygame.K_DOWN)
+    _key(game, pygame.K_DOWN)
     _key(game, pygame.K_RETURN)
     assert game.menu_screen == "training"
     _key(game, pygame.K_3)
@@ -144,7 +145,7 @@ def test_a_campaign_leg_carries_stock_damage_and_helicopter(tmp_path, monkeypatc
 def test_campaign_menu_new_port_and_sail(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "SAVE_DIR", str(tmp_path))
     game = _menu_game(seed=400)
-    game.main_menu_sel = 2
+    game.main_menu_sel = game.main_menu_index("campaign")
     _key(game, pygame.K_RETURN)
     assert game.menu_screen == "campaign"
     game.draw()
@@ -154,13 +155,13 @@ def test_campaign_menu_new_port_and_sail(tmp_path, monkeypatch):
     assert game._campaign_confirm_new
     game.draw()
     _key(game, pygame.K_ESCAPE)
-    game.main_menu_sel = 2
+    game.main_menu_sel = game.main_menu_index("campaign")
     _key(game, pygame.K_RETURN)
     _key(game, pygame.K_RETURN)
     assert game.campaign_mission and game.scenario_key == campaign_model.LEGS[0]
     game._end_mission(False, "test")
     _key(game, pygame.K_m)
-    game.main_menu_sel = 2
+    game.main_menu_sel = game.main_menu_index("campaign")
     _key(game, pygame.K_RETURN)
     game.draw()
     _key(game, pygame.K_2)

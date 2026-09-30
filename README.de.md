@@ -14,20 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.100**
+Aktuelle Version: **1.3.101**
 
-Version 1.3.100 bringt die Stationen Sonar, Elektronische Kampfführung, Funk
-und Waffen in den Konsolenstil der Maschinen- und Schadensbildschirme. Das
-Sonar von Fregatte und U-Boot bekommt dunklere Leuchtschirme, eine Horchkonsole
-mit Lampen für Ping, Ton und Spitzenwert-Halten und eine nordorientierte
-Peilrose mit Horchrichtung, toten Winkeln, eigenem Kurs und Kontaktpeilungen;
-jede Kontaktzeile trägt eine Lampe und einen Balken für den Störabstand. Das
-Tauchsonar des Hubschraubers zeigt Lampen für Dom, Ping und Wassereintritt,
-eine Anzeige der Wassersäule und Peilkeile so breit wie ihr Fehler, und seine
-Wasserfälle nutzen die Leuchtfarben des Schiffs. ESM und KW-Peilung bekommen
-Peilrosen, die Waffenseiten Rohr- und Sperrlampen und Magazintanks. Im Browser
-bekommen Sonar und Hubschrauber dieselbe Rose und Lampen, die Waffenkarte
-Lampen und Rohrsäulen und das ESM-Sichtgerät eine Rose mit Skala.
+Version 1.3.101 bringt eine Mehrspieler-Lobby. Der neue Hauptmenüpunkt
+Mehrspieler startet Remote Crew im Crew-Modus und zeigt QR-Code und
+Beitrittscode; die Browser koppeln, wählen Einheit und Stationen und drücken
+Bereit, und alle sehen die Mission, Einheit und Station des uConsole und die
+Stationen und Bereit-Häkchen jedes Crewmitglieds. Der Gastgeber wählt die
+Mission, die Einheit des uConsole und seine eigene Station und startet dann
+einen Countdown von fünf Sekunden, den jeder Browser sieht; die Mission
+beginnt für alle gleichzeitig. Eine aus der Lobby gestartete Mission führt am
+Ende alle zurück in die Lobby.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

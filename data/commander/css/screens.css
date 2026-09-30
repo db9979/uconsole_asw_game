@@ -19,6 +19,21 @@
 .lobby-heading { max-width: 60rem; padding-bottom: .9rem; border-bottom: 1px solid var(--line); }
 .lobby-heading > p:last-child { margin-top: .5rem; color: var(--text-dim); }
 .lobby-status { min-height: 2.5rem; padding: .6rem 0; color: var(--caution); }
+/* Multiplayer lobby (crew room): mission, players with ready ticks, ready button. */
+.lobby-room { display: grid; gap: .5rem; max-width: 60rem; margin: .4rem 0 1rem; padding: .9rem 1rem; background: var(--bg-2); border: 1px solid var(--line); border-top: 2px solid var(--caution); border-radius: var(--radius); }
+.lobby-room h2 { color: var(--caution); font-size: var(--font-md); }
+.lobby-room-mission { color: var(--text); font-weight: 650; }
+.lobby-room-host { color: var(--text-dim); }
+.lobby-room-players { display: grid; gap: .25rem; margin: 0; padding: 0; list-style: none; }
+.lobby-room-players li { display: grid; grid-template-columns: minmax(0, 14rem) minmax(0, 1fr) auto; gap: .6rem; padding: .35rem .5rem; background: var(--bg-1); border-left: 3px solid var(--alarm); overflow-wrap: anywhere; }
+.lobby-room-players li[data-state="lobby_player_ready"] { border-left-color: var(--live); }
+.lobby-room-players li[data-state="lobby_player_observer"] { border-left-color: var(--info); }
+.lobby-room-players li span { color: var(--text-dim); }
+.lobby-room-players li em { font-style: normal; color: var(--text); }
+.lobby-room-status { min-height: 1.6rem; color: var(--caution); font-weight: 650; }
+.lobby-ready { justify-self: start; min-width: 12rem; min-height: 44px; }
+.lobby-ready[aria-pressed="true"] { border-color: var(--live); color: var(--live); }
+@media (max-width: 40rem) { .lobby-room-players li { grid-template-columns: 1fr; } }
 .side-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 12rem)); gap: .55rem; padding: 4px; }
 .side-choice button { min-height: 44px; }
 .station-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: .55rem; padding: 4px; }

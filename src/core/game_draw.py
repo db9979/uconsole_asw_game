@@ -150,6 +150,8 @@ class DrawMixin:
             self._draw_welcome_page()
         elif self.menu_screen == BUG_REPORT_ENTRY:
             self._draw_bug_report_page(center)
+        elif self.lobby_active:
+            self._draw_lobby_page()
         elif self.menu_screen == "logbook":
             self._draw_logbook_page(center)
         elif self.menu_screen == "training":
@@ -1269,6 +1271,7 @@ class DrawMixin:
                     self._perf_traffic_s += time.perf_counter() - commander_started
                 self.update(dt, audio_dt=wall_dt)
                 self.autosave_tick(wall_dt)
+                self.lobby_tick(wall_dt)
                 self._perf_debug_log(wall_dt)
                 if self.web_mode:
                     game_visible()

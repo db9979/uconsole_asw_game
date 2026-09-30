@@ -272,7 +272,9 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             _draw_land(s, rect, land, line_of_sight=line_of_sight, fov_deg=fov_deg,
                        horizon=horizon, tilt=tilt, night=sky["light"] < 0.5,
                        visibility_nm=visibility_nm, haze_color=haze_color, colors=colors)
+        silhouettes.set_glow(colors.get("glow", 0.0))
         draw_rows(afloat, colors, False)
+        silhouettes.set_glow(0.0)
         sight_events_view.draw_events(s, view, colors, sky, events, anim_t)
         sight_scene.draw_weather(s, view, sky, colors, visibility_nm=visibility_nm, t=anim_t)
         if lens is not None:

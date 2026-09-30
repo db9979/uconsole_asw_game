@@ -1179,7 +1179,12 @@ class OperatorMixin:
                 self.flash(message("runtime.helo.deck_down"))
                 return
             if result == "weather_unsafe":
-                self.flash(message("runtime.helo.weather_unsafe"))
+                flight = self.helicopter_weather()
+                if flight["status"] != "no_go" and not flight["deck_safe"]:
+                    # Only the deck moves too much: wait for the next lull.
+                    self.flash(message("runtime.helo.deck_motion"))
+                else:
+                    self.flash(message("runtime.helo.weather_unsafe"))
                 return
             if result is not True:
                 self.flash(message("runtime.helo.lost"))

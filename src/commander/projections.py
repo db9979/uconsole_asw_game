@@ -10,7 +10,7 @@ import math
 import weakref
 
 from src.core import attack_computer, boat_esm, chart_history, boat_missions, boat_threat, config, opfor, plot
-from src.core import sight_events
+from src.core import sight_events, station_alarms
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.enemies.damage_control import COMPARTMENTS, capacity_kg
@@ -276,9 +276,12 @@ def _common(game, status, role):
                      wind_from_deg=_number(weather["wind_from_deg"]),
                      wind_speed_kn=_number(weather["wind_speed_kn"]),
                      rain_intensity=_number(weather["rain_intensity"]),
-                     visibility_nm=_number(weather["visibility_nm"])),
+                     visibility_nm=_number(weather["visibility_nm"]),
+                     # Thunderstorm activity 0..1: sferics on ESM and HF/DF.
+                     storm=_number(game.world.thunderstorm())),
                 weather_station=_weather_station(game),
                 plot=_plot(game),
+                alarms=_alarm_rows(station_alarms.frigate(game)),
                 mission=dict(name=localize(game.mission_name_display(), game.tr),
                              objective=localize(game.mission_objective_display(), game.tr),
                              remaining_s=_number(game.mission.remaining_s(game.mission_time))),
@@ -289,6 +292,25 @@ def _common(game, status, role):
                     # Spoken crew reports: the feed lines' key and bearing
                     # only; each browser words them in its own language.
                     callouts=game.callouts.detached()))
+
+
+def _deck_motion(game) -> dict:
+    """Own ship's roll and pitch against the flight-deck limits and how long
+    the deck has been quiet (own ship: legitimate truth)."""
+    from src.air import helicopter as helicopter_physics
+    quiet = float(game.ship.deck_quiet_s)
+    return dict(roll_deg=_number(game.ship.roll), pitch_deg=_number(game.ship.pitch),
+                roll_limit_deg=_number(helicopter_physics.DECK_ROLL_LIMIT_DEG),
+                pitch_limit_deg=_number(helicopter_physics.DECK_PITCH_LIMIT_DEG),
+                quiet_s=_number(min(quiet, helicopter_physics.DECK_QUIET_MAX_S)),
+                window_s=_number(helicopter_physics.DECK_WINDOW_S),
+                window_open=bool(helicopter_physics.deck_window_open(
+                    quiet, game.ship.roll, game.ship.pitch)))
+
+
+def _alarm_rows(levels: dict) -> list:
+    """The station tabs' alarm lamps, in station order (display only)."""
+    return [dict(station=station, level=level) for station, level in sorted(levels.items())]
 
 
 def redacted_state(status):
@@ -1055,6 +1077,8 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                       weather_launch_safe=flight_weather["launch_safe"],
                       weather_dipping_safe=flight_weather["dipping_safe"],
                       crosswind_kn=_number(flight_weather["crosswind_kn"]),
+                      # The flight deck's motion and its quiet-period window.
+                      deck_motion=_deck_motion(game),
                      rtb_margin_s=(None if distance is None else _number(
                          helo.fuel_s - distance / max(.001, config.kn_to_nm_per_s(
                              config.HELO_SPEED_KN)) - config.HELO_FUEL_RESERVE_S))))
@@ -1370,6 +1394,7 @@ def _opfor_common(game, status, role, boat):
     assist = bool(game.autocrew.assist)
     common["autocrew"] = dict(enabled=assist, status="suspended_remote" if assist else "off")
     common["autocrew_overview"] = []
+    common["alarms"] = _alarm_rows(station_alarms.boat(game, boat))
     return common
 
 

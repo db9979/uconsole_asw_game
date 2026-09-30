@@ -49,8 +49,15 @@ export function palette(sky, haze) {
     crest: mix(mix([96, 150, 156], [186, 212, 214], light), hazeColor, haze * .5),
     steel: mix(STEEL_NIGHT, STEEL_DAY, light), rim: mix(mix(RIM_NIGHT, RIM_DAY, light), SUN_DUSK, dusk * .5),
     cloud: mix(mix([26, 36, 46], [196, 204, 208], light), [196, 130, 96], dusk * .6),
-    cloudRim: mix(mix([70, 96, 108], [238, 242, 242], light), [250, 190, 130], dusk * .7)};
+    cloudRim: mix(mix([70, 96, 108], [238, 242, 242], light), [250, 190, 130], dusk * .7),
+    // Glowing plankton in stirred water (night bloom, 0..1).
+    glow: (Number(sky.glow) || 0) * (1 - haze * .6)};
 }
+// Bioluminescence: wakes and torpedo tracks glow blue-green by ``foamGlow``
+// (set from the sky while the afloat outlines are drawn).
+const GLOW = [70, 235, 205];
+let foamGlow = 0;
+const foamColor = () => rgb(mix(FOAM, GLOW, clamp(foamGlow)));
 
 // --- silhouettes (the uConsole's profiles, generated) -----------------------
 // Height of the aircraft's body in its profile (src/ui/silhouettes.py).
@@ -126,7 +133,7 @@ function drawNavLights(g, cls, frame, width, code, t, navPoints = null) {
 // The bubble track of a running torpedo (src/ui/silhouettes.py draw_bubble_track).
 function drawBubbleTrack(g, cx, base, width, t) {
   width = Math.max(3, width);
-  const left = cx - width / 2, foam = rgb(FOAM);
+  const left = cx - width / 2, foam = foamColor();
   line(g, [left, base + 1], [left + width, base + 1], foam, Math.max(1, Math.min(3, Math.floor(width / 40) + 1)));
   const count = Math.max(3, Math.min(18, Math.floor(width / 8)));
   g.strokeStyle = foam; g.lineWidth = 1;
@@ -176,7 +183,7 @@ export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, l
     for (const [u, v] of profile.windows) { const [x, y] = frame.point(u, v); g.fillRect(Math.floor(x), Math.floor(y), size + 1, size); }
   }
   if (profile.wake && detail) {
-    const bow = frame.point(.03, 0), stern = frame.point(1, 0), foam = rgb(FOAM);
+    const bow = frame.point(.03, 0), stern = frame.point(1, 0), foam = foamColor();
     for (let index = 0; index < 3; index++) {
       const phase = (t * 1.7 + index * .33) % 1, reach = width * (.01 + .035 * phase), rise = width * .018 * (1 - phase);
       line(g, [bow[0] + facing * reach * .3, bow[1]], [bow[0] + facing * reach, bow[1] - rise], foam);
@@ -312,7 +319,8 @@ function drawWay(g, w, colors, way, t, haze) {
   const speed = Number(way.speed_kn) || 0;
   if (speed < 1 || way.hull === false) return;
   const course = way.course_deg, eye = way.eye_m ?? 18;
-  const strength = clamp(speed / 20) * (1 - haze * .7), foam = mix(colors.sea[0], colors.crest, .35 + .55 * strength);
+  const strength = clamp(speed / 20) * (1 - haze * .7), glow = (colors.glow || 0) * strength;
+  const foam = mix(mix(colors.sea[0], colors.crest, .35 + .55 * strength), GLOW, .85 * glow);
   const stern = (course + 180) % 360, fov = w.width / w.pxPerDeg;
   if (w.visible(stern, 40)) {
     const length = 150 + speed * 120, steps = 16, edges = [[], []];
@@ -329,7 +337,7 @@ function drawWay(g, w, colors, way, t, haze) {
       }
       previous = [left, right];
     }
-    g.lineWidth = 1; g.strokeStyle = rgb(mix(colors.sea[0], colors.crest, .15 + .3 * strength));
+    g.lineWidth = 1; g.strokeStyle = rgb(mix(mix(colors.sea[0], colors.crest, .15 + .3 * strength), GLOW, .6 * glow));
     for (const edge of edges) { path(g, edge, false); g.stroke(); }
     for (let k = 0; k < WAKE_FOAM; k++) {
       const phase = ((t * (.05 + speed * .006) + k * .382) % 1 + 1) % 1;
@@ -453,6 +461,39 @@ function drawSea(g, w, sky, colors, seaState, t, haze, way = null) {
   }
 }
 
+// Lightning (src/world/thunder.py, src/ui/sight_scene.py draw_lightning):
+// the state carries a strike's brightness and bearing while it flashes; the
+// page holds each new strike for FLASH_MS of its own time so a 4 Hz state
+// still shows it, with the same double flicker as the uConsole.
+const FLASH_MS = 700;
+const LIGHTNING = [200, 196, 255], BOLT = [238, 236, 255];
+let strike = null;
+
+function drawLightning(g, w, sky) {
+  const now = performance.now(), level = Number(sky.lightning) || 0, bearing = Number(sky.lightning_bearing) || 0;
+  if (level > .02 && (!strike || strike.bearing !== bearing)) strike = { bearing, level, at: now };
+  if (!strike) return;
+  const age = (now - strike.at) / 1000;
+  if (age > FLASH_MS / 1000) { if (level <= .02) strike = null; return; }
+  const flicker = age < .12 || (age > .22 && age < .3) ? 1 : .45;
+  const light = strike.level * flicker * Math.sqrt(1 - age / (FLASH_MS / 1000));
+  g.save(); g.globalCompositeOperation = "lighter";
+  g.fillStyle = `rgba(${LIGHTNING.join(", ")}, ${(.3 * light).toFixed(3)})`; g.fillRect(0, 0, w.width, w.height);
+  g.restore();
+  if (!w.visible(strike.bearing, 0)) return;
+  let x = w.x(strike.bearing), y = 0;
+  const bottom = w.base(x), step = Math.max(6, bottom / 9), seed = Math.floor(strike.bearing * 100);
+  const points = [[x, y]];
+  for (let index = 1; y < bottom; index++) {
+    y = Math.min(bottom, y + step);
+    x += (((seed * (index * 7 + 3)) % 23) - 11) * w.width / 1200;
+    points.push([x, y]);
+  }
+  const width = light > .5 ? 2 : 1, color = rgb(mix(LIGHTNING, BOLT, light));
+  for (let index = 1; index < points.length; index++) line(g, points[index - 1], points[index], color, width);
+  g.lineWidth = 1;
+}
+
 function drawWeather(g, w, sky, colors, visibility, t, haze) {
   if (visibility < 3) {
     const band = w.height * (.1 + .25 * (1 - visibility / 3)), y0 = w.horizon - band / 2;
@@ -460,7 +501,10 @@ function drawWeather(g, w, sky, colors, visibility, t, haze) {
     gradient.addColorStop(0, `rgba(${haze0}, 0)`); gradient.addColorStop(.5, `rgba(${haze0}, .67)`); gradient.addColorStop(1, `rgba(${haze0}, 0)`);
     g.fillStyle = gradient; g.fillRect(0, y0, w.width, band);
   }
+  drawLightning(g, w, sky);
   if (sky.precipitation === "none" || sky.intensity <= 0) return;
+  // A thunderstorm pours: up to 60 % more streaks.
+  sky = { ...sky, intensity: sky.intensity * (1 + .6 * (Number(sky.storm) || 0)) };
   const lateral = Math.sin((sky.wind_from_deg - w.los + 180) * Math.PI / 180);
   const color = rgb(mix(mix([70, 96, 104], [196, 208, 212], sky.light), colors.haze, haze * .3));
   const mod = (value, size) => ((value % size) + size) % size;
@@ -577,7 +621,9 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
   const airborne = v.outlines.filter(aloft);
   drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null);
   drawSea(g, w, sky, colors, v.sea_state, t, haze, v.way ?? null);
+  foamGlow = colors.glow;
   drawRows(v.outlines.filter((row) => !aloft(row)));
+  foamGlow = 0;
   if (Array.isArray(v.events) && v.events.length) drawSightEvents(g, w, colors, sky, v.events, haze, t);
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);
   // A periscope's head glass: water running off after raising, waves washing over.

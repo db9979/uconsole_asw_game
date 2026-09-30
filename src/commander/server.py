@@ -25,6 +25,7 @@ from src.commander.web_auth import WebHostAuth
 from src.core.config import SHIP_SPEED_MAX_KN
 
 from src.commander.v2.wire import (
+    DEBRIEF_MAX_BYTES,
     station_grants,  # noqa: F401
     _log,
     _CONNECTION_DEADLINE_S,
@@ -235,6 +236,7 @@ class CommanderServer:
         # id(entry) -> (entry, compact JSON bytes) of the last SimLog publication
         # (main thread only); holding the entry keeps its id from being reused.
         self._v2_simlog_entry_bytes = {}
+        self._v2_debriefs = {}
         unpublished = dict(protocol=2, version="", session="unpublished", epoch=0,
                            revision=0, seq=0, phase="blocked", role=None,
                            chart_revision="unpublished")
@@ -457,6 +459,7 @@ class CommanderServer:
         self._v2_events.clear()
         self._v2_private_events.clear()
         self._v2_simlogs.clear()
+        self._v2_debriefs.clear()
         if rotate_code:
             self._rotate_code_locked()
 
@@ -816,6 +819,7 @@ class CommanderServer:
             self._v2_events.clear()
             self._v2_private_events.clear()
             self._v2_simlogs.clear()
+            self._v2_debriefs.clear()
 
     def web_reclaim_available(self):
         with self._lock:
@@ -1021,6 +1025,7 @@ class CommanderServer:
             self._v2_events.clear()
             self._v2_private_events.clear()
             self._v2_simlogs.clear()
+            self._v2_debriefs.clear()
             for session in self._sessions_v2.values():
                 self._reject_session_commands_locked(session, "session_revoked")
                 if not session["solo_host"]:
@@ -1519,7 +1524,7 @@ class CommanderServer:
                          "seq", "phase", "role", "chart_revision"}
         assigned_fields = status_fields | {"clock", "environment", "mission",
                                            "autocrew", "autocrew_overview", "audio",
-                                           "weather_station", "plot"}
+                                           "weather_station", "plot", "alarms"}
         if (not isinstance(states, dict) or not isinstance(charts, dict)
                 or set(states) != expected or set(charts) != expected):
             raise ValueError("invalid v2 publication")
@@ -1781,6 +1786,26 @@ class CommanderServer:
         self._v2_simlog_entry_bytes = kept
         with self._lock:
             self._v2_simlogs = encoded
+
+    def publish_debrief_v2(self, *, world_session, world_epoch, documents):
+        """Publish the finished mission's debrief replay per side (``frigate``,
+        ``uboot``); an empty mapping withdraws it (a mission is running)."""
+        if (not _ref(world_session) or type(world_epoch) is not int
+                or type(documents) is not dict
+                or not set(documents) <= {"frigate", "uboot"}):
+            raise ValueError("invalid v2 debrief publication")
+        encoded = {}
+        for side, document in documents.items():
+            if (type(document) is not dict or document.get("side") != side
+                    or set(document) != {"side", "frames", "events", "speeds"}):
+                raise ValueError("invalid v2 debrief publication")
+            payload = _json_bytes(dict(document, protocol=2, available=True,
+                                       session=world_session, epoch=world_epoch))
+            if len(payload) > DEBRIEF_MAX_BYTES:
+                raise ValueError("v2 debrief publication size limit exceeded")
+            encoded[side] = payload
+        with self._lock:
+            self._v2_debriefs = encoded
 
     def clear_sonar_audio(self):
         """Clear every live-audio byte and context without touching a session."""

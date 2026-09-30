@@ -5,8 +5,11 @@ import math
 import random
 
 from src.core import config
+from src.physics import bioluminescence
 from src.world import atmosphere
 from src.world.coastline import Coastline
+from src.world import thunder
+from src.world.knuckles import KnuckleField
 from src.world.ocean import OceanEnvironment
 from src.world.grounding import (DEFAULT_HULL_SPEC, grounding_contact,
                                  hull_is_safe, swept_grounding)
@@ -57,6 +60,9 @@ class World:
         # speed, wind drift, seabed, hazards). Built from stateless seeded
         # draws, so no existing RNG sequence moves.
         self.ocean = OceanEnvironment(seed, self.size_nm, self.charted_depth_m)
+        # Bubble slicks of hard turns at speed (saved by the game, root
+        # key ``knuckles``; src/world/knuckles.py).
+        self.knuckles = KnuckleField()
 
     @staticmethod
     def _weather_endpoint(rng_state, sea_state: int) -> dict:
@@ -158,6 +164,23 @@ class World:
         such as the barometer that respond ahead of the sea."""
         self.weather_values()
         return self.sea_state, self._weather_target_sea, self.weather_shift_timer
+
+    def bioluminescence(self) -> float:
+        """Bloom strength (0..1) of this world's water now: seeded, and
+        following the sea-surface temperature (strongest in summer)."""
+        return bioluminescence.bloom(self.ocean.seed, self.ocean.sea_surface_temperature_c(self.hour))
+
+    def glow(self) -> float:
+        """What a lookout sees of the bloom: only at night."""
+        return self.bioluminescence() if self.is_night() else 0.0
+
+    def thunderstorm(self) -> float:
+        """Thunderstorm activity (0..1) of the current weather (``thunder.py``)."""
+        return thunder.activity(self.weather_kind(), self.rain_intensity)
+
+    def lightning(self, t: float):
+        """The lightning at sim time ``t``: (brightness, bearing, NM) or None."""
+        return thunder.flash(self.ocean.seed, t, self.thunderstorm())
 
     def latitude_deg(self) -> float | None:
         """Centre latitude of a real coastline sector, if the world has one."""

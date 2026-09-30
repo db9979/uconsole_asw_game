@@ -46,11 +46,3 @@ def make_scanlines(w: int, h: int, alpha: int = config.SCANLINE_ALPHA):
     for y in range(0, h, 3):
         s.fill((0, 0, 0, alpha), (0, y, w, 1))
     return s
-
-
-def make_night_overlay(w: int, h: int, color: tuple = config.NIGHT_MODE_COLOR):
-    """W2: Rotlicht-Nachtsicht - Multiply-Blend unterdrückt Grün/Blau,
-    Rotanteil bleibt (Nachtsichtschutz an Bord)."""
-    s = pygame.Surface((w, h))
-    s.fill(color)
-    return s

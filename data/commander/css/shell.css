@@ -40,6 +40,16 @@
 .station-tab[aria-selected="true"] { color: var(--live-strong); background: var(--bg-3); border-bottom-color: var(--live); }
 .station-key { padding: 0 .28rem; border: 1px solid var(--line-strong); border-radius: 2px; color: var(--text-faint); font: var(--font-xs) var(--font-mono); line-height: 1.4; }
 .station-tab[aria-selected="true"] .station-key { border-color: var(--live); color: var(--live); }
+/* Alarm lamps: red blinking for danger, steady amber for a warning. */
+.station-tab[data-alarm]::after { content: ""; width: .5rem; height: .5rem; border-radius: 50%; flex: 0 0 auto; }
+.station-tab[data-alarm="warn"]::after { background: var(--caution); }
+.station-tab[data-alarm="danger"]::after { background: var(--alarm); animation: alarm-lamp .8s steps(1, end) infinite; }
+@keyframes alarm-lamp { 55% { background: var(--alarm-bg); } }
+@media (prefers-reduced-motion: reduce) { .station-tab[data-alarm="danger"]::after { animation: none; } }
+/* Red light (night, alarm): a multiply layer over the whole page. */
+body::after { content: ""; position: fixed; inset: 0; z-index: 2147483000; pointer-events: none;
+  background: var(--red-light); mix-blend-mode: multiply; opacity: 0; transition: opacity 1.5s ease; }
+body.red-light::after { opacity: 1; }
 #workstation-add-station { flex: 0 0 auto; min-height: 2rem; padding: .15rem .55rem; font-size: var(--font-xs); }
 
 .status-mission { display: flex; align-items: center; gap: .5rem; flex: 1 1 8rem; min-width: 0; overflow: hidden; }

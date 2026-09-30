@@ -8,7 +8,7 @@ from src.core import config
 from src.core.i18n import localized, localize, raw_text
 from src.core.station import Station
 from src.sensors.esm import animated_signal_fingerprint, spectrum_band
-from src.ui import layout
+from src.ui import layout, sferics
 
 
 from src.ui.stations.common import (_shortcut_footer, _srect, _station_content_top,
@@ -132,8 +132,13 @@ def _draw_eloka_rose(game, rect, tracks) -> None:
         selected = track.track_key == game.eloka_selected_track_key
         strobes.append((track.bearing, config.COLOR_TEXT if selected else color,
                         3 if selected else 2, 0, 1 - .7 * quality))
-    console.bearing_rose(surface, (rect.x, rect.y, rect.w, rect.h - 2 * lamp_h - 16),
-                         strobes, course=getattr(game.ship, "course", None), title="eloka:rose")
+    rose = pygame.Rect(rect.x, rect.y, rect.w, rect.h - 2 * lamp_h - 16)
+    console.bearing_rose(surface, rose, strobes, course=getattr(game.ship, "course", None),
+                         title="eloka:rose")
+    storm = game.world.thunderstorm()
+    if storm > 0.0 and min(rose.w, rose.h) // 2 - 20 >= 30:
+        sferics.draw_rose(surface, rose.center, min(rose.w, rose.h) // 2 - 20, storm, game._t)
+        sferics.draw_label(surface, (rose.x, rose.bottom - 2, rose.w, 16), storm)
 
 
 def eloka_track_at(game, pos, station_rect=None):

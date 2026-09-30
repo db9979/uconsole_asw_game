@@ -11,6 +11,7 @@ from src.core.i18n import display_value, localized, localize
 from src.core.station import Station
 from src.ui import layout
 from src.ui import observations
+from src.air import helicopter as helicopter_physics
 
 
 from src.ui.stations.common import (_panel, _shortcut_footer, _station_content_top,
@@ -39,10 +40,13 @@ def helicopter_regions(game=None, station_rect=None, page=0) -> dict[str, pygame
         status_h = min(status_h + 10, max(int(available * 0.45),
                                           available - gap - 110))
         resources_h = max(1, available - status_h - gap)
+        # The deck-motion gauge takes the right third beside the resources.
+        deck_w = width // 3
         return {
             "station": station,
             "status": pygame.Rect(x, top, width, status_h),
-            "resources": pygame.Rect(x, top + status_h + gap, width, resources_h),
+            "resources": pygame.Rect(x, top + status_h + gap, width - deck_w - gap, resources_h),
+            "deck": pygame.Rect(x + width - deck_w, top + status_h + gap, deck_w, resources_h),
             "rules": empty,
         }
     else:
@@ -50,6 +54,7 @@ def helicopter_regions(game=None, station_rect=None, page=0) -> dict[str, pygame
             "station": station,
             "status": empty,
             "resources": empty,
+            "deck": empty,
             "rules": pygame.Rect(x, top, width, available),
         }
 
@@ -361,6 +366,74 @@ def _draw_helicopter_acoustic_view(game, rect):
     ))
 
 
+DECK_STEEL = (70, 110, 118)
+DECK_SEA = (18, 60, 74)
+
+
+def _draw_deck_gauge(game, s, region) -> None:
+    """The flight deck's motion: the stern seen from aft rolling against the
+    horizon, the pitch bar with its limit, and the quiet-period bar that
+    fills while the deck stays inside its limits (a launch/recovery window)."""
+    if region.w < 60 or region.h < 60:
+        return
+    x, y, w, h = layout.box(s, region, "helo.deck.title")
+    ship = game.ship
+    roll_deg = float(getattr(ship, "roll", 0.0))
+    pitch_deg = float(getattr(ship, "pitch", 0.0))
+    quiet = float(getattr(ship, "deck_quiet_s", 0.0))
+    open_ = helicopter_physics.deck_window_open(quiet, roll_deg, pitch_deg)
+    inside = helicopter_physics.deck_within_limits(roll_deg, pitch_deg)
+    label_h = layout.font(14).get_linesize()
+    bar_h = 10
+    picture = pygame.Rect(x, y, w, max(20, h - 3 * label_h - bar_h - 14))
+    cx, cy = picture.centerx - 10, picture.centery
+    # Horizon (fixed) and the stern silhouette tilted by the roll.
+    pygame.draw.rect(s, DECK_SEA, (picture.x, cy, picture.w - 22, picture.bottom - cy))
+    pygame.draw.line(s, config.COLOR_GRID, (picture.x, cy), (picture.right - 22, cy), 1)
+    half = min(picture.w - 22, picture.h * 2) * 0.32
+    roll = math.radians(roll_deg)
+    ux, uy = math.cos(roll), math.sin(roll)
+    def turned(shape):
+        return [(cx + px * ux - py * uy, cy + px * uy + py * ux) for px, py in shape]
+
+    color = config.COLOR_OK if open_ else config.COLOR_WARN if inside else config.COLOR_DANGER
+    # Hull below the deck, the hangar above it (seen from astern).
+    points = turned([(-half, 0), (half, 0), (half * 0.8, half * 0.45), (-half * 0.8, half * 0.45)])
+    pygame.draw.polygon(s, DECK_STEEL, points)
+    pygame.draw.polygon(s, DECK_STEEL, turned([(-half * 0.55, 0), (half * 0.55, 0),
+                                               (half * 0.5, -half * 0.5),
+                                               (-half * 0.5, -half * 0.5)]))
+    pygame.draw.line(s, color, points[0], points[1], 3)
+    for limit in (-helicopter_physics.DECK_ROLL_LIMIT_DEG, helicopter_physics.DECK_ROLL_LIMIT_DEG):
+        rad = math.radians(limit)
+        tip = (cx + half * 1.1 * math.cos(rad), cy + half * 1.1 * math.sin(rad))
+        pygame.draw.line(s, config.COLOR_TEXT_DIM, (cx + half * 0.95 * math.cos(rad),
+                                                    cy + half * 0.95 * math.sin(rad)), tip, 1)
+    # Pitch bar at the right: centre is level, the ticks the limit.
+    bar = pygame.Rect(picture.right - 14, picture.y + 4, 8, picture.h - 8)
+    pygame.draw.rect(s, config.COLOR_GRID, bar, 1)
+    scale = bar.h / 2 / (helicopter_physics.DECK_PITCH_LIMIT_DEG * 2.0)
+    for limit in (-helicopter_physics.DECK_PITCH_LIMIT_DEG, helicopter_physics.DECK_PITCH_LIMIT_DEG):
+        ty = bar.centery - limit * scale
+        pygame.draw.line(s, config.COLOR_TEXT_DIM, (bar.x - 3, ty), (bar.right + 2, ty), 1)
+    py = bar.centery - max(-2 * helicopter_physics.DECK_PITCH_LIMIT_DEG,
+                           min(2 * helicopter_physics.DECK_PITCH_LIMIT_DEG, pitch_deg)) * scale
+    pygame.draw.rect(s, color, (bar.x + 1, py - 2, bar.w - 2, 4))
+    ly = picture.bottom + 4
+    layout.blit_line(s, message("helo.deck.roll", roll=f"{abs(roll_deg):.1f}",
+                                limit=f"{helicopter_physics.DECK_ROLL_LIMIT_DEG:.0f}"),
+                     (x, ly, w, label_h), config.COLOR_TEXT, size=14)
+    layout.blit_line(s, message("helo.deck.pitch", pitch=f"{abs(pitch_deg):.1f}",
+                                limit=f"{helicopter_physics.DECK_PITCH_LIMIT_DEG:.1f}"),
+                     (x, ly + label_h, w, label_h), config.COLOR_TEXT, size=14)
+    fill = min(1.0, quiet / helicopter_physics.DECK_WINDOW_S)
+    track = pygame.Rect(x, ly + 2 * label_h + 2, w, bar_h)
+    pygame.draw.rect(s, config.COLOR_GRID, track, 1)
+    pygame.draw.rect(s, color, (track.x + 1, track.y + 1, int((track.w - 2) * fill), track.h - 2))
+    layout.blit_line(s, "helo.deck.open" if open_ else "helo.deck.wait",
+                     (x, track.bottom + 2, w, label_h), color, size=14)
+
+
 @localized
 def draw_helicopter_view(game, tr=None) -> None:
     """Eigene Deckansicht fuer Status, Reichweite und Einsatzfreigaben."""
@@ -430,6 +503,7 @@ def draw_helicopter_view(game, tr=None) -> None:
                    config.COLOR_WARN if dip_state != "STOWED" else
                    config.COLOR_TEXT_DIM), label_w=_label_w("helo.dip_sonar", 15, 120), size=15)
 
+        _draw_deck_gauge(game, s, regions["deck"])
         resources = layout.box(s, regions["resources"], "ui.resources_grid")
         rx, ry, rw, rh = resources
         cell_gap = 8

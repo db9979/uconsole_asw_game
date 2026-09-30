@@ -21,7 +21,7 @@ from src.core.boat_radio import BoatRadio
 from src.core.crew import CrewState
 from src.core.i18n import message
 from src.core.plot import PlotLayer
-from src.physics import torpedo_dyn
+from src.physics import bioluminescence, torpedo_dyn
 from src.sensors import lookout_id
 from src.sensors import nav_lights
 from src.core import optics
@@ -597,7 +597,8 @@ def obstacle_ahead_nm(world, sub):
     return None
 
 
-BOAT_CUES = ("hull_creak", "hull_crack", "detonation_near", "detonation_far", "ping_heard")
+BOAT_CUES = ("hull_creak", "hull_crack", "detonation_near", "detonation_far", "ping_heard",
+             "thunder")
 # Intercepts the crew hears through the hull as a ping.
 _PING_INTERCEPTS = ("hull", "dipping", "buoy")
 _HULL_FAILURES = ("hull_bolts", "hull_seal", "hull_fracture", "hull_collapse")
@@ -827,6 +828,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     now = game.sim_t
     seed = int(sub.sensor_seed)
     environment = game._lookout_environment()
+    bloom = game.world.glow()
     epoch = math.floor((now + 1e-9) / config.LOOKOUT_EPOCH_S)
     previous = {row["ref"]: row for row in orders.sightings}
     rows = []
@@ -839,6 +841,8 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         dx, dy = actor.x - sub.x, actor.y - sub.y
         distance = math.hypot(dx, dy)
         kind = SIGHTING_KINDS[cls]
+        environment["glow"] = bioluminescence.wake_glow(bloom, kind,
+                                                        getattr(actor, "speed", 0.0))
         margin = alert * _SCOPE_MODEL.margin(kind, distance, altitude_m=altitude_m,
                                              eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M,
                                              **environment)

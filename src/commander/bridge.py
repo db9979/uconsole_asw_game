@@ -73,7 +73,7 @@ import numpy as np
 
 from src.audio.receiver import smooth_limit
 from src.sonar.sonar import SonarSystem
-from src.core import config, opfor
+from src.core import config, debrief_replay, opfor
 from src.sensors import lookout_id
 from src.commander.lookout_projection import build_lookout_states
 from src.commander.server import (HOST_ROLE, OPFOR_ROLES, ROLES, UBOOT_COMMAND_ROLES, SIMLOG_ENTRIES_MAX,
@@ -1028,6 +1028,7 @@ class CommanderBridge:
                             commands_allowed=self.allowed is True and connected and phase == "live")
         redacted = game.in_menu or game.main_menu or game.splash_active
         self._publish_role_simlog(server, game, redacted)
+        self._publish_debrief(server, game)
         if redacted:
             self._refs.clear()
             self._esm_refs.clear()
@@ -1470,6 +1471,26 @@ class CommanderBridge:
                 world_session=self._session, world_epoch=self._epoch,
                 entries_by_role=entries)
             self._simlog_fingerprint = fingerprint
+
+    def _publish_debrief(self, server, game):
+        """The debrief replay goes out once the mission has ended (each side
+        its own recording) and is withdrawn while a mission runs."""
+        if not hasattr(server, "publish_debrief_v2"):
+            return
+        ended = bool(game.game_over) and hasattr(game, "frigate_debrief")
+        boat = getattr(game, "boat_debrief", None) if ended else None
+        fingerprint = (self._session, self._epoch, ended,
+                       id(game.frigate_debrief) if ended else None, id(boat))
+        if fingerprint == getattr(self, "_debrief_fingerprint", None):
+            return
+        documents = {}
+        if ended:
+            documents["frigate"] = debrief_replay.document(game.frigate_debrief, "frigate")
+            if boat is not None:
+                documents["uboot"] = debrief_replay.document(boat, "uboot")
+        server.publish_debrief_v2(world_session=self._session, world_epoch=self._epoch,
+                                  documents=documents)
+        self._debrief_fingerprint = fingerprint
 
     def _publish_events_v2(self, server, game):
         public = {role: [] for role in ROLES}

@@ -137,3 +137,26 @@ def test_observer_state_never_carries_truth_or_secrets(server):
                 yield from keys(item)
     assert not forbidden & set(keys(state))
     assert json.dumps(state) == json.dumps(json.loads(transport._json_bytes(state)))
+
+
+def test_debrief_replay_is_served_per_side_only_after_publication(server):
+    _publish(server)
+    _, cookie, _, paired = pair_v2(server, "Crew")
+    assert server.grant_station(paired["client_id"], "bridge")
+    status, _, body = request(server, "/api/v2/debrief", cookie=cookie)
+    assert status == 200 and body == {"protocol": 2, "available": False}
+    frame = dict(t=0.0, ship=dict(x=1.0, y=2.0, course=0), subs=[], known=[], assets=[],
+                 own_weapons=[], enemy_weapons=[], buoys=[])
+    documents = {side: dict(side=side, frames=[frame], events=[], speeds=[10, 60])
+                 for side in ("frigate", "uboot")}
+    documents["uboot"]["frames"] = [dict(frame, ship=dict(x=9.0, y=9.0, course=0))]
+    server.publish_debrief_v2(world_session="observer-world", world_epoch=0,
+                              documents=documents)
+    status, _, body = request(server, "/api/v2/debrief", cookie=cookie)
+    assert status == 200 and body["available"] is True and body["side"] == "frigate"
+    assert body["frames"][0]["ship"]["x"] == 1.0
+    server.publish_debrief_v2(world_session="observer-world", world_epoch=0, documents={})
+    status, _, body = request(server, "/api/v2/debrief", cookie=cookie)
+    assert body == {"protocol": 2, "available": False}
+    status, _, _ = request(server, "/api/v2/debrief")
+    assert status in (401, 403)

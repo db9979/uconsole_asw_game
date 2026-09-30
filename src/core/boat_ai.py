@@ -28,6 +28,7 @@ from __future__ import annotations
 import math
 
 from src.core import boat_missions, boat_radio, config, detrand
+from src.physics import bioluminescence
 from src.core.i18n import message
 from src.sensors.platform import MAST_DEPTH_M, PlatformObservation
 
@@ -342,8 +343,9 @@ def frigate_sighted(game, sub) -> bool:
     if into < relative / 360.0 * config.BOAT_AI_SCOPE_SWEEP_S:
         return False
     from src.core.game_sim import LOOKOUT_MODEL
+    glow = bioluminescence.wake_glow(game.world.glow(), "SURFACE", ship.speed)
     if LOOKOUT_MODEL.margin("SURFACE", distance, eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M,
-                           **game._lookout_environment()) < 1.0:
+                           glow=glow, **game._lookout_environment()) < 1.0:
         return False
     return not game.world.land_blocks_line(sub.x, sub.y, ship.x, ship.y)
 

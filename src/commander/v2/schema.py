@@ -71,7 +71,8 @@ WEATHER_BOAT_FIELDS = (
 # in the picture, sun and moon; the bridge lookout's binoculars (``lookout``).
 SKY_FIELDS = ("light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg",
               "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg",
-              "moon_illumination", "moon_waxing")
+              "moon_illumination", "moon_waxing", "glow", "storm", "lightning",
+              "lightning_bearing")
 LOOKOUT_GLASSES_FIELDS = ("course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset",
                           "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines",
                           "events")

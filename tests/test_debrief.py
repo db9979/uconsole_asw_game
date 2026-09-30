@@ -112,3 +112,80 @@ def test_page_opens_only_after_the_end_and_owns_input():
     _key(game, pygame.K_ESCAPE)                  # closes the page, not the game
     assert not game.debrief_open and not game.quit_confirm
     game.draw()
+
+
+def test_replay_interpolates_and_flashes_events():
+    from src.core import debrief_replay
+    frames = [_frame(0.0, (0.0, 0.0)), _frame(60.0, (6.0, 0.0))]
+    frames[1]["ship"] = dict(x=2.0, y=0.0, course=90)
+    moved = debrief_replay.interpolate(frames, 30.0)
+    assert moved["subs"][0]["x"] == 3.0 and moved["ship"]["x"] == 1.0
+    assert moved["ship"]["course"] == 45.0
+    assert debrief_replay.interpolate(frames, 99.0) is frames[-1]
+    events = [dict(t=20.0, kind="own_shot", params={}), dict(t=25.0, kind="missed", params={})]
+    assert [e["kind"] for e, _k in debrief_replay.flashes(events, 21.0, 10)] == ["own_shot"]
+    assert debrief_replay.flashes(events, 20.0 + 10 * debrief_replay.FLASH_WALL_S + 1, 10) == []
+
+
+def test_replay_plays_at_ten_and_sixty_times_on_wall_time():
+    from src.core import debrief_replay
+    frames = [_frame(0.0, (0.0, 0.0)), _frame(600.0, (1.0, 0.0))]
+    replay = debrief_replay.Replay()
+    replay.toggle(frames)
+    replay.advance(frames, 100.0)
+    replay.advance(frames, 100.2)
+    assert abs(replay.t - 2.0) < 1e-9
+    replay.cycle_speed()
+    replay.advance(frames, 100.4)
+    assert abs(replay.t - 14.0) < 1e-9
+    for step in range(1, 200):
+        replay.advance(frames, 100.4 + step * 0.2)
+    assert replay.t == 600.0 and not replay.playing
+
+
+def test_replay_keys_and_buttons_on_the_page():
+    game = _game()
+    for _ in range(60):
+        game.update(0.5)
+    game._end_mission(False, "test")
+    _key(game, pygame.K_d)
+    _key(game, pygame.K_HOME)
+    assert game.debrief_replay.t == game.debrief.frames[0]["t"]
+    _key(game, pygame.K_SPACE)
+    assert game.debrief_replay.playing
+    _key(game, pygame.K_TAB)
+    assert game.debrief_replay.speed == 60
+    game.draw()
+    from src.ui.debrief_view import PLAY
+    game._handle_debrief_click(PLAY.center)
+    assert not game.debrief_replay.playing
+    game.draw()
+
+
+def test_replay_document_for_the_browser_is_detached_and_bilingual():
+    from src.core import debrief_replay
+    game = _game()
+    for _ in range(60):
+        game.update(0.5)
+    game._end_mission(False, "test")
+    doc = debrief_replay.document(game.frigate_debrief, "frigate")
+    json.dumps(doc, allow_nan=False)
+    assert doc["side"] == "frigate" and doc["frames"]
+    assert all("target" not in row for frame in doc["frames"] for row in frame["known"])
+    assert doc["events"][-1]["type"] == "mission_end"
+    assert doc["events"][-1]["en"] != doc["events"][-1]["de"]
+
+
+def test_bridge_publishes_the_replay_only_after_the_end():
+    from src.commander.bridge import CommanderBridge
+    from test_commander_bridge import Server
+    game = _game()
+    for _ in range(20):
+        game.update(0.5)
+    server, bridge = Server(), CommanderBridge()
+    bridge.pump(game, server, now=10.0)
+    assert server.debriefs["documents"] == {}
+    game._end_mission(False, "test")
+    bridge.pump(game, server, now=11.0)
+    documents = server.debriefs["documents"]
+    assert set(documents) == {"frigate"} and documents["frigate"]["frames"]

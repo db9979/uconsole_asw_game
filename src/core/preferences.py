@@ -23,6 +23,8 @@ class Preferences:
     tooltips: bool = True
     simlog: bool = False
     night_mode: bool = False
+    # Red light by itself at night and on an alarm (night_mode keeps it on).
+    red_light_auto: bool = True
     high_contrast: bool = False
     # Anti-aliased chart and plot lines (pygame.gfxdraw); off by default
     # until the uConsole frame-time cost is measured (plan 1.3, phase 10).
@@ -83,7 +85,7 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
         language = defaults.language
     values: dict[str, object] = {"language": language}
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
-                 "night_mode", "high_contrast", "aa_lines", "speech", "live_ais_enabled",
+                 "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "live_ais_enabled",
                  "live_adsb_enabled", "onboarded"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)

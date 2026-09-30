@@ -1354,7 +1354,9 @@ class PicturesMixin:
                           and (ceiling is None or ceiling >= config.HELO_CEILING_MIN_FT)
                           and icing != "severe")
         # Launch and recovery also need a deck-motion window (own ship).
-        deck_safe = helicopter_physics.deck_within_limits(self.ship.roll, self.ship.pitch)
+        # (inside the roll/pitch limits for a quiet period, DECK_WINDOW_S).
+        deck_safe = helicopter_physics.deck_window_open(
+            self.ship.deck_quiet_s, self.ship.roll, self.ship.pitch)
         launch_safe = launch_weather and deck_safe
         dipping_safe = (
             weather["wind_speed_kn"] <= config.HELO_DIP_WIND_MAX_KN

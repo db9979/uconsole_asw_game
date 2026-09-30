@@ -15,6 +15,7 @@ from src.core.hq_reports import HqReports
 from src.core.i18n import message
 from src.sensors import hfdf as hf_physics
 from src.sensors.platform import MAST_DEPTH_M
+from src.world import thunder
 
 # The frigate calls a shore station over a long path, like the boats do.
 FRIGATE_HF_SEED = 90_210
@@ -113,7 +114,8 @@ class ReportsMixin:
                     sub.x, sub.y, self.ship.x, self.ship.y)):
                 continue
             error = config.HFDF_BEARING_ERR_DEG * (
-                hf_physics.SKY_WAVE_BEARING_FACTOR if mode == "SKY" else 1.0)
+                hf_physics.SKY_WAVE_BEARING_FACTOR if mode == "SKY" else 1.0) \
+                * thunder.sferics_factor(self.world.thunderstorm())
             truth = math.degrees(math.atan2(self.ship.x - sub.x, -(self.ship.y - sub.y)))
             noise = detrand.normal(self.seed, "frigate-hf", sub.id,
                                    int(self.sim_t * 10.0))

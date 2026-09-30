@@ -184,6 +184,12 @@ class EventMixin:
                     step = -1 if key == pygame.K_LEFT else 1
                     value = levels[(levels.index(self._preferred_level()) + step)
                                    % len(levels)]
+                elif name == "night_mode":
+                    # Red light: automatic -> always on -> off -> automatic.
+                    following = {"auto": "on", "on": "off", "off": "auto"}[
+                        self.red_light_mode()]
+                    self._set_preference("red_light_auto", following == "auto")
+                    value = following == "on"
                 elif name == "bottom_panel":
                     choices = layout.BOTTOM_PANEL_MODES
                     value = choices[(choices.index(self.bottom_panel_mode()) + 1)

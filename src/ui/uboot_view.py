@@ -19,10 +19,11 @@ from src.core import boat_esm, config, opfor, uboot_local
 from src.core.i18n import display_message, display_value, localize, message, raw_text
 from src.core.station import Station
 from src.ui import (chart_trails, console, engagement, instruments, label_layout, layout, lines,
-                    map_fx_view, nato_symbols, overlay_style, pointer)
+                    map_fx_view, nato_symbols, overlay_style, pointer, sferics)
 from src.ui.feedback import FeedEntry
 from src.ui.map_view import chart_background, draw_chart_frame, draw_chart_geography
 from src.ui.plot_view import draw_plot
+from src.ui.red_light import draw_lamp
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.stations_view import (_panel, _shortcut_footer, _station_content_top,
                                   draw_station_page_tabs, station_page_tab_at)
@@ -148,6 +149,7 @@ def draw_top_bar(game, boat) -> None:
     shown = uboot_local.local_station(game)
     leased = getattr(getattr(game.commander, "server", None), "station_leased", None)
     tabs = station_tab_rects()
+    alarms = game.station_alarm_levels()
     for index, (role, rect) in enumerate(zip(OPFOR_ROLES, tabs)):
         active = role == shown
         remote = bool(leased and leased(role))
@@ -161,6 +163,7 @@ def draw_top_bar(game, boat) -> None:
         layout.blit_line(s, label, rect, config.COLOR_WARN if remote else
                          config.COLOR_TEXT if active else config.COLOR_TEXT_DIM,
                          size=14, align="center")
+        draw_lamp(s, rect, alarms.get(role), game._t)
     sub = boat.sub if boat is not None else None
     text = message("uboot.top.status", scenario=raw_text(game.top_bar_scenario()),
                    time=game.world.format_time(),
@@ -1188,6 +1191,10 @@ def _draw_esm_rose(s, game, boat, rect, threats) -> None:
         lx, ly = at(track.bearing, max(radius * .3, radius * .78 - steps[id(emitter)] * 14))
         layout.blit_line(s, raw_text(boat_esm.emitter_label(track.track_key)),
                          (lx - 18, ly - 8, 36, 16), color, size=12, align="center")
+    storm = game.world.thunderstorm()
+    if storm > 0.0:
+        sferics.draw_rose(s, (cx, cy), radius, storm, game._t)
+        sferics.draw_label(s, (rect.x + 4, rect.bottom - 18, rect.w - 8, 16), storm)
     memory = sub.memory
     for age, bearing, color in ((memory["last_ping_age"], boat.orders.ping_bearing,
                                  config.COLOR_WARN),

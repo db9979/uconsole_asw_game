@@ -1287,13 +1287,16 @@ STRAIT_TRAFFIC_SPACING_NM = 6.0
 SWIMMER_SEARCH_NM = 100.0
 SWIMMER_MIN_WATER_M = 30.0
 SWIMMER_COAST_NM = 3.0
-SWIMMER_APPROACH_NM = 12.0
+SWIMMER_APPROACH_NM = 16.0
 SWIMMER_ZONE_NM = 1.0
 SWIMMER_DEPTH_M = 20.0             # swimmers leave through the lock this shallow
 SWIMMER_SPEED_KN = 1.5             # at most this slow
 SWIMMER_HOLD_S = 600.0             # for this long without a break
 SWIMMER_GUARD_NM = 12.0            # radius of the coast section the frigate guards
 SWIMMER_GUARD_SHIFT_NM = 6.0       # its centre lies up to this far along the coast
+# The frigate starts this share of the section's radius along the coast
+# from its centre (at one end of its sweep, drawn from the seed).
+SWIMMER_GUARD_START = 0.7
 # Supply ship escort: a replenishment ship on a zigzag, the frigate close
 # by, the boat ahead of it; one hit from the boat decides it.
 ESCORT_SPEED_KN = 12.0

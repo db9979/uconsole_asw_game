@@ -118,8 +118,14 @@ def frigate_start(world, scenario_key, seed):
         gate = mission_geo.strait(world, _nominal(scenario_key))
         return gate["x"], gate["y"], (gate["axis"] + 90.0) % 360.0
     if kind == "swimmers":
+        # At one end of its coast section, sweeping back along it.
         guard = _guard_of(world, scenario_key, seed)
-        return guard["x"], guard["y"], guard["course"]
+        side = 1.0 if detrand.u01(seed, "swimmer-guard-end", 0) < 0.5 else -1.0
+        reach = side * guard["radius_nm"] * config.SWIMMER_GUARD_START
+        rad = math.radians(guard["course"])
+        x, y = world.nearest_water(guard["x"] + reach * math.sin(rad),
+                                   guard["y"] - reach * math.cos(rad))
+        return float(x), float(y), (guard["course"] + (180.0 if side > 0 else 0.0)) % 360.0
     if kind == "escort":
         course = escort_base_course(world, scenario_key)
         nx, ny = _nominal(scenario_key)

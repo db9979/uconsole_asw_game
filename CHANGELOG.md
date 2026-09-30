@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.118
+
+Release 1.3.118 lets you choose the weather and the time of day. Every
+scenario's briefing, the campaign screen before sailing, the multiplayer lobby
+and the browser's "New game" dialog now offer weather (random, fair, rain,
+storm, fog) and time of day (random, dawn, day, dusk, night); random keeps what
+the seed gives. A chosen weather holds for the whole mission with its sea state
+in a matching band, and the clock runs on from the chosen time.
+
 ## 1.3.117
 
 Release 1.3.117 lets the eye find a raised periscope. A periscope or snorkel

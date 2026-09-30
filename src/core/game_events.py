@@ -1814,8 +1814,7 @@ class EventMixin:
                 self.scenario_key = config.SCENARIO_ORDER[self.menu_sel]
                 sc = config.SCENARIOS[self.scenario_key]
                 self.menu_screen = "difficulty" if sc["difficulty"] is None else "briefing"
-                if self.menu_screen == "difficulty":
-                    self.menu_sel = 0
+                self.menu_sel = 0
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self.main_menu = True
                 self.main_menu_sel = self.main_menu_index("new")
@@ -1841,17 +1840,25 @@ class EventMixin:
                 self.menu_difficulty[name] = (
                     int(round(value)) if kind is int else round(value, 6))
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
+                # The free hunt's briefing then sets weather and time.
                 self.scenario_key = "s4_zufall"
-                self._start_menu_mission()
+                self.menu_screen = "briefing"
+                self.menu_sel = 0
             elif key == pygame.K_ESCAPE:
                 self.menu_screen = "scenario"
                 self.menu_sel = 3
             return
-        # briefing
+        # briefing: Up/Down pick the weather or time row, Left/Right change it.
         if key in (pygame.K_RETURN, pygame.K_SPACE):
             self._start_menu_mission()
+        elif key in (pygame.K_UP, pygame.K_DOWN):
+            self.menu_sel = 1 - min(1, max(0, self.menu_sel))
+        elif key in (pygame.K_LEFT, pygame.K_RIGHT):
+            self.cycle_start_choice(("weather", "time")[min(1, max(0, self.menu_sel))],
+                                    1 if key == pygame.K_RIGHT else -1)
         elif key == pygame.K_ESCAPE:
             self.menu_screen = "scenario"
+            self.menu_sel = config.SCENARIO_ORDER.index(self.scenario_key)
 
     def _joy_step(self, delta: int) -> None:
         """uConsole-Trackball Y-Achse: stationsabhängiger Schritt."""

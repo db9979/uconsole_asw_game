@@ -14,18 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.117**
+Aktuelle Version: **1.3.118**
 
-Version 1.3.117 lässt das Auge ein ausgefahrenes Sehrohr finden. Sehrohr oder
-Schnorchelkopf eines getauchten U-Boots ziehen jetzt eine Schaumfahne, die mit
-der Fahrt wächst: Brückenausguck, Handy-Ausguck und die Besatzungen von
-Helikopter und Seefernaufklärer sehen die volle Fahne ab 8 kn an einem klaren,
-ruhigen Tag auf knapp 3 sm, einen langsamen Kopf erst auf etwa 1 sm und nachts
-oder bei schwerer See kaum etwas. Aus der Nähe erkennt der Ausguck das Sehrohr
-und meldet es mit Banner; Sichtungen der Flugzeugbesatzungen erreichen die OPZ
-als HELO-EYE- und MPA-EYE-Tracks. Das gilt für KI-U-Boote und das besetzte
-U-Boot gleich, dessen Crew „Schaumfahne sichtbar, Fahrt verringern“ warnt, wenn
-es mit oben stehendem Mast schneller als 5 kn läuft.
+Version 1.3.118 lässt Wetter und Uhrzeit wählen. Das Briefing jedes Szenarios,
+der Kampagnenbildschirm vor dem Auslaufen, die Mehrspieler-Lobby und der Dialog
+„Neues Spiel“ im Browser bieten jetzt Wetter (Zufall, schön, Regen, Sturm,
+Nebel) und Uhrzeit (Zufall, Morgengrauen, Tag, Abenddämmerung, Nacht); Zufall
+behält, was der Seed ergibt. Ein gewähltes Wetter hält die ganze Mission mit
+einem passenden Seegang, und die Uhr läuft von der gewählten Zeit weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.118
+
+Version 1.3.118 lässt Wetter und Uhrzeit wählen. Das Briefing jedes Szenarios,
+der Kampagnenbildschirm vor dem Auslaufen, die Mehrspieler-Lobby und der Dialog
+„Neues Spiel“ im Browser bieten jetzt Wetter (Zufall, schön, Regen, Sturm,
+Nebel) und Uhrzeit (Zufall, Morgengrauen, Tag, Abenddämmerung, Nacht); Zufall
+behält, was der Seed ergibt. Ein gewähltes Wetter hält die ganze Mission mit
+einem passenden Seegang, und die Uhr läuft von der gewählten Zeit weiter.
+
 ## 1.3.117
 
 Version 1.3.117 lässt das Auge ein ausgefahrenes Sehrohr finden. Sehrohr oder

@@ -12,17 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.117**
+Current release: **1.3.118**
 
-Release 1.3.117 lets the eye find a raised periscope. A periscope or snorkel
-head of a dived submarine now pulls a feather that grows with speed: the bridge
-lookout, the phone lookout and the crews of the helicopter and the patrol
-aircraft see the full plume from 8 kn at almost 3 NM on a clear, calm day, a
-slow head only at about 1 NM, and hardly anything at night or in a heavy sea.
-Close in the lookout recognizes the periscope and calls it with a banner;
-aircrew sightings reach Operations as HELO-EYE and MPA-EYE tracks. This works
-the same for AI boats and the crewed submarine, whose crew warns "feather
-visible, reduce speed" when it runs faster than 5 kn with a mast up.
+Release 1.3.118 lets you choose the weather and the time of day. Every
+scenario's briefing, the campaign screen before sailing, the multiplayer lobby
+and the browser's "New game" dialog now offer weather (random, fair, rain,
+storm, fog) and time of day (random, dawn, day, dusk, night); random keeps what
+the seed gives. A chosen weather holds for the whole mission with its sea state
+in a matching band, and the clock runs on from the chosen time.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

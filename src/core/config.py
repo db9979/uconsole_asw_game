@@ -1278,6 +1278,13 @@ BOAT_AI_ATTACK_MULT = 4.0
 # (Typ und Anzahl); None = im Menü wählbar. Nur die Startmeldung hängt davon
 # ab, deshalb gehört die Einstellung nicht in den gespeicherten Schwierigkeitssatz.
 HQ_INTEL_MODES = ("coarse", "exact")
+# Start weather and time of day of a scenario or campaign mission, chosen in
+# the briefing, lobby or campaign menu ("random" keeps the seed's own). A
+# chosen weather holds for the whole mission, its sea within the kind's band.
+START_WEATHER_CHOICES = ("random", "fair", "rain", "storm", "fog")
+START_WEATHER_SEA_STATE = {"fair": 1, "rain": 3, "storm": 5, "fog": 1}
+START_TIME_CHOICES = ("random", "dawn", "day", "dusk", "night")
+START_TIME_HOURS = {"dawn": 6.0, "day": 12.0, "dusk": 19.0, "night": 1.0}
 SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
                   "s5_durchbruch", "s6_aufklaerung", "s7_geleitzug")
 # Catalog name of each scenario (``scenario.<name>.title`` and friends).

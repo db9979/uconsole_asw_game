@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.105
+## 1.3.108
 
-Version 1.3.105 gibt dem KI-Aufklärungs-U-Boot eine echte Sehrohrsuche.
+Version 1.3.108 gibt dem KI-Aufklärungs-U-Boot eine echte Sehrohrsuche.
 In der Aufklärungsmission von der Fregatte aus sichtet das KI-U-Boot auf
 Sehrohrtiefe die Fregatte nicht mehr nur nach Entfernung und Sichtweite: Es
 fährt alle 90 s für einen 24-s-Rundblick das Sehrohr aus, dreht vom Bug aus
@@ -17,9 +17,9 @@ den das Oberflächenradar der Fregatte und der Seefernaufklärer erfassen
 können. Nacht, Nebel und schwere See schützen jetzt die Fregatte, und jeder
 Rundblick ist ein Risiko für das U-Boot.
 
-## 1.3.104
+## 1.3.107
 
-Version 1.3.104 lässt die KI-Jäger und die KI-U-Boote das Funkspektrum
+Version 1.3.107 lässt die KI-Jäger und die KI-U-Boote das Funkspektrum
 mehr wie echte Besatzungen nutzen (Spielstandsformat v39). Wenn niemand die
 Fregatte fährt, trägt ihre EloKa eine ESM-Peilung auf das Mastradar eines
 U-Boots als Linie vom eigenen Standort ein, eine je gelaufene Seemeile, und
@@ -30,6 +30,18 @@ hält, meldet sie jetzt alle 30 Minuten mit einem 20-s-Kurzwellenruf an seine
 Führung, den das HF/DF der Fregatte hört und peilen kann, gleich wer es
 bedient. Die ESM-Linien werden gespeichert, ein geladenes Spiel setzt die
 Jagd also unverändert fort.
+
+## 1.3.106
+
+Version 1.3.106 bringt eine Mehrspieler-Lobby. Der neue Hauptmenüpunkt
+Mehrspieler startet Remote Crew im Crew-Modus und zeigt QR-Code und
+Beitrittscode; die Browser koppeln, wählen Einheit und Stationen und drücken
+Bereit, und alle sehen die Mission, Einheit und Station des uConsole und die
+Stationen und Bereit-Häkchen jedes Crewmitglieds. Der Gastgeber wählt die
+Mission, die Einheit des uConsole und seine eigene Station und startet dann
+einen Countdown von fünf Sekunden, den jeder Browser sieht; die Mission
+beginnt für alle gleichzeitig. Eine aus der Lobby gestartete Mission führt am
+Ende alle zurück in die Lobby.
 
 ## 1.3.103
 

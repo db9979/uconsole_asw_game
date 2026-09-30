@@ -58,9 +58,9 @@ class WelcomeMixin:
             self.menu_sel = training.LESSONS.index(lesson)
             self.local_side = training.side_of(lesson)
         elif choice == "remote_crew":
-            # Closing the overlay lands on the main menu, as F9 from there.
-            self._to_main_menu_from_welcome("new")
-            self._open_administration("commander")
+            # The multiplayer lobby starts Remote Crew and shows how to join.
+            self._to_main_menu_from_welcome("multiplayer")
+            self.open_lobby()
         else:
             self._to_main_menu_from_welcome("new")
 

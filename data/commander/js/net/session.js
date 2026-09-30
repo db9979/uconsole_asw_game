@@ -40,6 +40,7 @@ export function forgetSession(message = "connection_unpaired") {
   S.eventHighWater = 0;
   S.eventHistory = [];
   S.lobbyMessage = null;
+  S.lobbyRoomMessage = null;
   S.stationMutation = false;
   S.hostView = null;
   S.hostPending = null;
@@ -47,8 +48,23 @@ export function forgetSession(message = "connection_unpaired") {
   emit("session:forgotten");
   setConnection("unpaired", message);
 }
+// The host's open multiplayer lobby: mission, the uConsole's unit and
+// station, the countdown and every crew browser with its ready tick.
+function validLobby(lobby) {
+  if (lobby === null) return true;
+  return exactKeys(lobby, ["mission", "side", "host_station", "countdown_s", "ready", "players"]) &&
+    typeof lobby.mission === "string" && lobby.mission.length <= 32 &&
+    ["frigate", "uboot"].includes(lobby.side) && sessionRoles.includes(lobby.host_station) &&
+    (lobby.countdown_s === null || finite(lobby.countdown_s) && lobby.countdown_s >= 0 && lobby.countdown_s <= 60) &&
+    typeof lobby.ready === "boolean" && Array.isArray(lobby.players) && lobby.players.length <= 12 &&
+    lobby.players.every((player) => exactKeys(player, ["name", "stations", "ready", "observer", "you"]) &&
+      typeof player.name === "string" && player.name.length >= 1 && player.name.length <= 32 &&
+      Array.isArray(player.stations) && player.stations.length <= sessionRoles.length &&
+      player.stations.every((station) => sessionRoles.includes(station)) &&
+      typeof player.ready === "boolean" && typeof player.observer === "boolean" && typeof player.you === "boolean");
+}
 export function validateSession(value) {
-  const fields = ["active_generation", "active_station", "client_id", "csrf", "grants", "name", "host", "next_command_seq", "observer", "ordinal", "presence", "protocol", "requested_station", "simlog", "station", "station_generation", "stations"];
+  const fields = ["active_generation", "active_station", "client_id", "csrf", "grants", "name", "host", "lobby", "next_command_seq", "observer", "ordinal", "presence", "protocol", "requested_station", "simlog", "station", "station_generation", "stations"];
   if (!value || typeof value !== "object" || Array.isArray(value) ||
       Object.keys(value).sort().join(",") !== fields.sort().join(",") || value.protocol !== 2 ||
       typeof value.client_id !== "string" || !value.client_id || value.client_id.length > 128 ||
@@ -71,7 +87,7 @@ export function validateSession(value) {
       typeof value.observer !== "boolean" || (value.observer && (value.grants.command || value.host !== null || !value.simlog)) ||
       (value.host !== null && (!exactKeys(value.host, ["generation"]) ||
         !Number.isSafeInteger(value.host.generation) || value.host.generation < 0)) ||
-      value.active_station !== value.station ||
+      value.active_station !== value.station || !validLobby(value.lobby) ||
       !value.stations || typeof value.stations !== "object" || Array.isArray(value.stations) ||
       Object.keys(value.stations).join(",") !== sessionRoles.join(",")) throw new Error("session");
   for (const station of sessionRoles) {

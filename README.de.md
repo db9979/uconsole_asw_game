@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.105**
+Aktuelle Version: **1.3.108**
 
-Version 1.3.105 gibt dem KI-Aufklärungs-U-Boot eine echte Sehrohrsuche.
+Version 1.3.108 gibt dem KI-Aufklärungs-U-Boot eine echte Sehrohrsuche.
 In der Aufklärungsmission von der Fregatte aus sichtet das KI-U-Boot auf
 Sehrohrtiefe die Fregatte nicht mehr nur nach Entfernung und Sichtweite: Es
 fährt alle 90 s für einen 24-s-Rundblick das Sehrohr aus, dreht vom Bug aus

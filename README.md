@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.105**
+Current release: **1.3.108**
 
-Release 1.3.105 gives the AI reconnaissance submarine a real periscope
+Release 1.3.108 gives the AI reconnaissance submarine a real periscope
 search. In the reconnaissance mission played from the frigate, the AI boat at
 periscope depth no longer sights the frigate just by range and visibility: it
 raises its periscope for a 24 s look every 90 s, sweeps round from the bow

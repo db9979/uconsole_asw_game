@@ -1738,6 +1738,8 @@ class EventMixin:
                     self.main_menu = False
                     self.menu_screen = "side"
                     self.menu_sel = 1 if self.local_side == "uboot" else 0
+                elif action == "multiplayer":
+                    self.open_lobby()
                 elif action == "training":
                     self.main_menu = False
                     self.menu_screen = "training"
@@ -1771,6 +1773,9 @@ class EventMixin:
             return
         if self.menu_screen == BUG_REPORT_ENTRY:
             self._handle_bug_report_key(key)
+            return
+        if self.lobby_active:
+            self._handle_lobby_key(key)
             return
         if self.menu_screen == "logbook":
             self._handle_logbook_key(key)

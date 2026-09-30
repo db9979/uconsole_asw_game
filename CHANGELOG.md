@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.105
+## 1.3.108
 
-Release 1.3.105 gives the AI reconnaissance submarine a real periscope
+Release 1.3.108 gives the AI reconnaissance submarine a real periscope
 search. In the reconnaissance mission played from the frigate, the AI boat at
 periscope depth no longer sights the frigate just by range and visibility: it
 raises its periscope for a 24 s look every 90 s, sweeps round from the bow
@@ -16,9 +16,9 @@ periscope is up it counts as a raised mast, so the frigate's surface radar and
 the patrol aircraft can catch it. Night, fog and heavy seas now shield the
 frigate, and every look is a risk for the boat.
 
-## 1.3.104
+## 1.3.107
 
-Release 1.3.104 makes the AI hunters and the AI submarines use the radio
+Release 1.3.107 makes the AI hunters and the AI submarines use the radio
 spectrum more like real crews (save format v39). When nobody sails the
 frigate, its ELOKA plots an ESM bearing on a submarine's mast radar as a line
 from the ship's position, one per nautical mile run, and crosses the newest
@@ -28,6 +28,17 @@ depth that holds the frigate now reports it to its headquarters once every
 30 minutes with a 20 s HF call, which the frigate's HF/DF hears and can take
 bearings on, whoever crews it. The ESM lines are saved, so a loaded game
 continues the hunt unchanged.
+
+## 1.3.106
+
+Release 1.3.106 adds a multiplayer lobby. The new main-menu entry Multiplayer
+starts Remote Crew in crew mode and shows the QR code and join code; browsers
+pair, pick their unit and stations and press Ready, and everyone sees the
+mission, the uConsole's unit and station and each crewmate's stations and
+ready tick. The host chooses the mission, which unit the uConsole plays and
+its own station, then starts a five-second countdown that every browser sees,
+and the mission begins for all at once. A mission started from the lobby
+returns everyone to the lobby when it ends.
 
 ## 1.3.103
 

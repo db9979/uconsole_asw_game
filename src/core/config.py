@@ -1254,8 +1254,8 @@ BOAT_AI_CREEP_KN = 4.0
 BOAT_AI_THREAT_NM = 8.0
 BOAT_AI_HUNTED_S = 300.0
 # Breakthrough: a frigate this close to the leg ahead is passed this far off.
-BOAT_AI_DETOUR_NM = 9.0
-BOAT_AI_DETOUR_DEG = 60.0
+BOAT_AI_DETOUR_NM = 6.0
+BOAT_AI_DETOUR_DEG = 45.0
 # Convoy attack: lie in wait this far ahead of the convoy and abeam of its
 # track, hovering at the wait speed until the merchants come into range.
 BOAT_AI_AMBUSH_AHEAD_NM = 2.0

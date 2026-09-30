@@ -1,4 +1,4 @@
-# U-Jagd 1.3.120 - Stations- und Tastenkürzel
+# U-Jagd 1.3.121 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -40,7 +40,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
-| `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew |
+| `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×) |
 
 ## 1 Brücke
 

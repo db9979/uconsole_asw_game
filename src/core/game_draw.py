@@ -20,11 +20,12 @@ from src.core.preferences import save_preferences
 from src.core.help import get_global_help, get_help, get_sop, get_uboot_help
 from src.core import manual
 from src.core.station import Station
-from src.core import pointer_input, uboot_local
+from src.core import pointer_input, station_alarms, uboot_local
 from src.nations.nations import reference_summary
 from src.ui import layout, pointer
 from src.ui import observations
 from src.ui import overlay_style
+from src.ui.red_light import RedLight, draw_lamp
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -386,6 +387,42 @@ class DrawMixin:
         return bool(self.administration_open
                     or (self.game_over and not self.debrief_open))
 
+    def red_light_mode(self) -> str:
+        """The red light's option: "off", "auto" (night, alarm) or "on"."""
+        if self.preferences.night_mode:
+            return "on"
+        return "auto" if self.preferences.red_light_auto else "off"
+
+    def _mission_shown(self) -> bool:
+        return not (self.in_menu or self.splash_active or self.editor is not None
+                    or self.simlog_view_open or self.game_over)
+
+    def station_alarm_levels(self) -> dict:
+        """The station lamps of the side shown, refreshed four times a
+        second of wall time (display only)."""
+        if not self._mission_shown():
+            self._alarm_cache = (None, {})
+            return {}
+        stamp, levels = getattr(self, "_alarm_cache", (None, {}))
+        if stamp is None or not 0.0 <= self._t - stamp < 0.25:
+            levels = station_alarms.for_side(self)
+            self._alarm_cache = (self._t, levels)
+        return levels
+
+    def _draw_red_light(self, s) -> None:
+        mode = self.red_light_mode()
+        if mode == "on":
+            target = 1.0
+        elif mode == "auto" and self._mission_shown():
+            target = station_alarms.red_light_target(self, self.station_alarm_levels())
+        else:
+            target = 0.0
+        light = getattr(self, "_red_light", None)
+        if light is None:
+            light = self._red_light = RedLight()
+        if light.step(target, self._t) > 0.0:
+            s.blit(light.overlay(s.get_size()), (0, 0), special_flags=pygame.BLEND_MULT)
+
     def _draw(self) -> None:
         # Mouse targets are rebuilt with every frame (src/ui/pointer.py).
         pointer.reset()
@@ -514,8 +551,7 @@ class DrawMixin:
                                     (0, 0, config.SCREEN_W, config.SCREEN_H))
         if self._scanlines is not None:
             s.blit(self._scanlines, (0, 0))
-        if self.preferences.night_mode:
-            s.blit(self._night_overlay, (0, 0), special_flags=pygame.BLEND_MULT)
+        self._draw_red_light(s)
 
     @localized
     def draw_navigation_input(self) -> None:
@@ -568,6 +604,7 @@ class DrawMixin:
         # The nine stations as tabs (key number and short name), like the
         # submarine's; a click on a tab presses its number key.
         tabs = frigate_station_tab_rects()
+        alarms = self.station_alarm_levels()
         for index, (station, rect) in enumerate(zip(list(Station), tabs)):
             active = station is self.station
             if active:
@@ -581,6 +618,7 @@ class DrawMixin:
                             name=message(f"top.tab.{station.name.lower()}"))
             layout.blit_line(s, label, rect, config.COLOR_TEXT if active
                              else config.COLOR_TEXT_DIM, size=14, align="center")
+            draw_lamp(s, rect, alarms.get(station.name.lower()), self._t)
             pointer.add_key(rect, pygame.K_1 + index)
         self._top_status_right = tabs[-1].right
         if self.msg and self._t < self.msg_until:
@@ -1079,7 +1117,7 @@ class DrawMixin:
             self.tr("option.simlog") + ": "
             + self.tr("common.on" if self.preferences.simlog else "common.off"),
             self.tr("option.night_mode") + ": "
-            + self.tr("common.on" if self.preferences.night_mode else "common.off"),
+            + self.tr("option.red_light." + self.red_light_mode()),
             self.tr("option.high_contrast") + ": "
             + self.tr("common.on" if self.preferences.high_contrast else "common.off"),
             self.tr("option.frame_rate", fps=self.frame_rate()),

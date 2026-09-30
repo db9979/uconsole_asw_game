@@ -14,18 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.120**
+Aktuelle Version: **1.3.121**
 
-Notfälle an Bord ergänzen die Ereignisse auf See. Auf der Fregatte kann ein
-Mann über Bord gehen: Die Generalalarmglocke schlägt an, eine treibende Marke
-kommt in die Karte, und die Brücke nimmt ihn bis 0,1 sm mit höchstens 5 kn auf,
-oder der Hubschrauber schwebend über ihm (+100 Punkte; nach 20 Minuten
-verloren, -300). Die Rudermaschine kann ausfallen: 60 s klemmt das Ruder, dann
-10 Minuten halbe Drehrate vom Notruder. Auf einem Diesel-U-Boot kann das
-Schnorchelkopfventil klemmen (15 Minuten kein Laden; das KI-U-Boot bleibt tief)
-oder Batteriegas muss abgelüftet werden (halbe Laderate). Die KI-Hilfe der
-Brücke steuert selbst auf einen Mann über Bord. Bis zu sechs Ereignisse je
-Mission.
+Version 1.3.121 bringt mehr Wirklichkeit auf See. Ein ausgefahrenes Sehrohr
+oder ein Schnorchel zieht eine Schaumfahne, die Ausguck, Heli-Besatzung und
+Seefernaufklärer sehen können; sie wächst mit der Fahrt, langsam heißt also
+unsichtbar, und die U-Boot-Crew warnt über 5 kn. In jedem Szenario und jeder
+Kampagnenmission lassen sich Wetter (schön, Regen, Sturm, Nebel) und Uhrzeit
+wählen oder beide dem Zufall überlassen. Das Schiff klingt lebendiger:
+Generalalarm, Wellenschläge gegen den Bug, die Alarmglocke des U-Boots und
+seine Lüfter bei Schleichfahrt. Notfälle an Bord ergänzen die Ereignisse auf
+See: Mann über Bord und Ruderversager auf der Fregatte, ein klemmendes
+Schnorchelventil oder Batteriegas auf einem Diesel-U-Boot. Spielstände bleiben
+im Format v41.
+
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -4,7 +4,7 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.120
+## 1.3.121
 
 Emergencies aboard join the incidents at sea. A man can go overboard from the
 frigate: the general alarm sounds, a drifting mark goes on the chart, and the
@@ -16,7 +16,7 @@ position for 10 minutes. On a diesel submarine the snorkel head valve can jam
 vented (half charging rate). The Bridge crew assist steers onto a man overboard
 itself. Up to six incidents per mission.
 
-## 1.3.119
+## 1.3.120
 
 Release 1.3.119 adds shipboard atmosphere to the sound. Action stations on the
 frigate ring the general alarm bell through the ship, and in a heavy head sea
@@ -25,7 +25,7 @@ submarine rings only a quiet alarm bell, and its ventilation fans are heard
 running down when silent running starts and up again when it ends. The uConsole
 and the Remote Crew browsers play the same cues, all synthesized at runtime.
 
-## 1.3.118
+## 1.3.119
 
 Release 1.3.118 lets you choose the weather and the time of day. Every
 scenario's briefing, the campaign screen before sailing, the multiplayer lobby
@@ -34,7 +34,7 @@ storm, fog) and time of day (random, dawn, day, dusk, night); random keeps what
 the seed gives. A chosen weather holds for the whole mission with its sea state
 in a matching band, and the clock runs on from the chosen time.
 
-## 1.3.117
+## 1.3.118
 
 Release 1.3.117 lets the eye find a raised periscope. A periscope or snorkel
 head of a dived submarine now pulls a feather that grows with speed: the bridge
@@ -45,6 +45,25 @@ Close in the lookout recognizes the periscope and calls it with a banner;
 aircrew sightings reach Operations as HELO-EYE and MPA-EYE tracks. This works
 the same for AI boats and the crewed submarine, whose crew warns "feather
 visible, reduce speed" when it runs faster than 5 kn with a mast up.
+
+## 1.3.117
+
+Release 1.3.117 brings the sea to life. The eyepieces show water columns, fire,
+smoke and sinkings; charts move smoothly and pings and detonations ring out;
+needles and the telegraph move with mass and the telegraph bell rings; the
+periscope comes up out of the water with water on the glass. A red light comes
+on at night and on an alarm (switchable), and the station tabs carry alarm lamps
+on both sides, on the uConsole and in the browser. After a mission the debrief
+plays back at 10x or 60x, in the browser too. At night warm water glows where it
+is stirred, so wakes and torpedo tracks are seen farther on both sides. A hard
+turn at speed leaves a knuckle, a bubble slick that masks sonar, gives a false
+echo and can lure a wake-homing torpedo. Wrecks and rocks return echoes and
+wrecks give MAD anomalies. Storms bring lightning in the eyepieces, thunder,
+heavier rain and sferics that crackle on ESM and spread HF/DF bearings. In a
+heavy sea the helicopter launches and lands only in a quiet period; a deck-
+motion gauge shows it, and slowing down helps. Saves are now format v41; older
+saves do not load.
+
 
 ## 1.3.116
 

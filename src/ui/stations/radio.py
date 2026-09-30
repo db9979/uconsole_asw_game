@@ -82,8 +82,13 @@ def draw_radio_view(game, tr=None) -> None:
                          if i == selected_idx else config.COLOR_HFDF,
                          3 if i == selected_idx else 2, _hfdf_error_deg(report), .25)
                         for i, report in enumerate(reports[:12])]
-            console.bearing_rose(s, (lx, left[1] + left[3] - 34 - rose_h, lw, rose_h),
-                                 strobes, course=game.ship.course, title="radio:rose")
+            rose = pygame.Rect(lx, left[1] + left[3] - 34 - rose_h, lw, rose_h)
+            console.bearing_rose(s, rose, strobes, course=game.ship.course, title="radio:rose")
+            storm = game.world.thunderstorm()
+            if storm > 0.0:
+                from src.ui import sferics
+                sferics.draw_rose(s, rose.center, min(rose.w, rose.h) // 2 - 20, storm, game._t)
+                sferics.draw_label(s, (rose.x, rose.bottom, rose.w, 16), storm)
         if not reports:
             layout.blit_line(s, "panel.no_transmission", (lx, ly, lw, 26),
                              config.COLOR_TEXT_DIM, size=18)

@@ -3,15 +3,69 @@
 A heading dial with the ordered course, a rudder-angle scale and a speed
 dial. They show only own-ship values the bridge already prints as numbers;
 nothing here reads or changes simulation state.
+
+The needles have mass: each follows its value like a damped spring on the
+wall clock (``needle``), so it swings in and settles instead of jumping, and
+the speed needle trembles a little with the engine.  The first sight of a
+needle (or one after a pause) shows the value at once.
 """
 
+from collections import OrderedDict
 import math
+import time
 
 import pygame
 
 from src.core import config
 from src.core.i18n import raw_text
 from src.ui import layout, lines
+
+
+# Needle dynamics: natural frequency (rad/s) and damping ratio (a light
+# overshoot); a needle not drawn for this long starts at its value again.
+NEEDLE_OMEGA = 7.0
+NEEDLE_ZETA = 0.5
+NEEDLE_RESET_S = 0.5
+NEEDLES_MAX = 32
+_NEEDLES = OrderedDict()
+
+
+def needle(key, target: float, *, circular: bool = False, now: float | None = None) -> float:
+    """The shown position of needle ``key`` chasing ``target`` (degrees on a
+    compass when ``circular``).  Display only, wall clock."""
+    now = time.monotonic() if now is None else now
+    state = _NEEDLES.get(key)
+    if state is None or not 0.0 <= now - state[2] <= NEEDLE_RESET_S:
+        value, velocity, since = float(target), 0.0, now
+    else:
+        value, velocity, last, since = state
+        elapsed = now - last
+        while elapsed > 1e-6:
+            step = min(elapsed, 1.0 / 120.0)
+            error = float(target) - value
+            if circular:
+                error = (error + 180.0) % 360.0 - 180.0
+            accel = NEEDLE_OMEGA ** 2 * error - 2.0 * NEEDLE_ZETA * NEEDLE_OMEGA * velocity
+            velocity += accel * step
+            value += velocity * step
+            elapsed -= step
+        if circular:
+            value %= 360.0
+    _NEEDLES[key] = (value, velocity, now, since)
+    _NEEDLES.move_to_end(key)
+    while len(_NEEDLES) > NEEDLES_MAX:
+        _NEEDLES.popitem(last=False)
+    return value
+
+
+def _tremble(key, level: float) -> float:
+    """A little engine tremble of needle ``key`` (degrees), stronger at
+    speed; none on its first sight."""
+    state = _NEEDLES.get(key)
+    if state is None or state[2] - state[3] < 0.1:
+        return 0.0
+    t = state[2]
+    return max(0.0, min(1.0, level)) * 0.6 * (math.sin(t * 23.0) + 0.5 * math.sin(t * 37.0))
 
 
 def _polar(cx, cy, radius, bearing_deg):
@@ -47,7 +101,8 @@ def heading_dial(screen, rect, course, ordered) -> None:
     right = _polar(cx, cy, radius - 12, ordered + 5)
     pygame.draw.polygon(screen, config.COLOR_WARN, ((ox, oy), left, right), 1)
     # Heading needle.
-    lines.line(screen, config.COLOR_OK, (cx, cy), _polar(cx, cy, radius - 6, course), 2)
+    shown = needle(("heading", tuple(rect)), course, circular=True)
+    lines.line(screen, config.COLOR_OK, (cx, cy), _polar(cx, cy, radius - 6, shown), 2)
     pygame.draw.circle(screen, config.COLOR_OK, (cx, cy), 3)
 
 
@@ -65,7 +120,7 @@ def rudder_scale(screen, rect, angle, maximum) -> None:
         x = mid + round(step / maximum * (rect.w // 2 - 1))
         lines.line(screen, config.COLOR_TEXT_DIM if step else config.COLOR_TEXT,
                    (x, base - (8 if step == 0 else 5)), (x, base), 1)
-    value = max(-maximum, min(maximum, float(angle)))
+    value = max(-maximum, min(maximum, needle(("rudder", tuple(rect)), float(angle))))
     x = mid + round(value / maximum * (rect.w // 2 - 1))
     band = pygame.Rect(min(mid, x), base - 4, abs(x - mid), 3)
     if band.w:
@@ -105,7 +160,11 @@ def speed_dial(screen, rect, speed, ordered, maximum) -> None:
     left, right = (_polar(cx, cy, radius + 10, start + sweep * min(1.0, abs(ordered) / maximum) + d)
                    for d in (-4, 4))
     pygame.draw.polygon(screen, config.COLOR_WARN, ((ox, oy), left, right), 1)
-    lines.line(screen, config.COLOR_OK, (cx, cy), at(abs(speed), radius - 6), 2)
+    key = ("speed", tuple(rect))
+    shown = needle(key, abs(speed))
+    tip = _polar(cx, cy, radius - 6, start + sweep * max(0.0, min(1.0, shown / maximum))
+                 + _tremble(key, shown / maximum))
+    lines.line(screen, config.COLOR_OK, (cx, cy), tip, 2)
     pygame.draw.circle(screen, config.COLOR_OK, (cx, cy), 3)
 
 
@@ -155,7 +214,7 @@ def depth_dial(screen, rect, depth, ordered, test_depth, crush_depth) -> None:
     pygame.draw.polygon(screen, config.COLOR_WARN, ((ox, oy), left, right), 1)
     color = (config.COLOR_DANGER if depth >= crush_depth else config.COLOR_WARN
              if depth > test_depth else config.COLOR_OK)
-    lines.line(screen, color, (cx, cy), at(depth, radius - 6), 2)
+    lines.line(screen, color, (cx, cy), at(needle(("depth", tuple(rect)), depth), radius - 6), 2)
     pygame.draw.circle(screen, color, (cx, cy), 3)
 
 

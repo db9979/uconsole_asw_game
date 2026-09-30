@@ -427,6 +427,11 @@ def hydrostatic_draft_m(model: HullModel, mass_kg: float) -> float:
 # ship averages the slope over its beam/length).
 ROLL_WAVE_GAIN = 0.55
 PITCH_WAVE_GAIN = 0.35
+# Running into the sea meets the waves faster and pitches harder; running
+# with it softer: pitch forcing x (1 + gain x speed(kn) x cos(wave angle)),
+# never below ENCOUNTER_MIN.  At rest the sea is met as before.
+ENCOUNTER_PITCH_GAIN = 0.03
+ENCOUNTER_MIN = 0.6
 SEAKEEPING_SUBSTEP_S = 0.05
 
 
@@ -453,12 +458,14 @@ def seakeeping_step(model: HullModel, roll_deg: float, roll_rate: float,
         zeta_roll += model.stabilizer_zeta * min(
             1.0, (speed_mps / model.stabilizer_full_mps) ** 2)
     w_r, w_p = model.roll_omega, model.pitch_omega
+    encounter = max(ENCOUNTER_MIN, 1.0 + ENCOUNTER_PITCH_GAIN * (speed_mps / 0.514444)
+                    * math.cos(rel))
     for index in range(steps):
         t = clock_s + (index + 1) * h
         slope = math.degrees(wave_slope_rad(seed, t, sea_state))
         slope_p = math.degrees(wave_slope_rad(seed + 7919, t, sea_state))
         roll_eq = ROLL_WAVE_GAIN * beam * slope + heel + list_deg
-        pitch_eq = PITCH_WAVE_GAIN * head * slope_p
+        pitch_eq = PITCH_WAVE_GAIN * head * slope_p * encounter
         roll_rate += h * (-2.0 * zeta_roll * w_r * roll_rate
                           - w_r * w_r * (roll_deg - roll_eq))
         roll_deg += h * roll_rate

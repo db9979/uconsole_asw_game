@@ -188,6 +188,8 @@ class RbuMixin:
                 self.flash(text, 4.0)
                 self.feed.add(self.world.format_time(), "sonar", text)
         if item.lead:
+            self.sight_events.detonation(item.x, item.y, self.sim_t, "rbu", item.depth)
+            self.map_fx.splash("frigate", self.sim_t, item.x, item.y)
             self._emit_sound("explosion", at=(item.x, item.y))
 
     def rbu_stores_line(self):

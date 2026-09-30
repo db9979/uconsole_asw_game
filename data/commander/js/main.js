@@ -62,6 +62,7 @@ import "./views/lookout.js";
 import { init as initInputWiring } from "./input/wiring.js";
 import { init as initViewsStationTabs } from "./views/station-tabs.js";
 import { init as initViewsHost } from "./views/host.js";
+import { init as initViewsDebrief } from "./views/debrief.js";
 import { init as initAppBootstrap } from "./app/bootstrap.js";
 import { setPageVersion } from "./net/version.js";
 
@@ -73,4 +74,5 @@ initViewsLayout();
 initInputWiring();
 initViewsStationTabs();
 initViewsHost();
+initViewsDebrief();
 initAppBootstrap();

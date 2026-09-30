@@ -644,7 +644,15 @@ class EnemyTorpedo:
                                     max(3.0, getattr(target, "depth", 5.0) + 1.0))
         else:
             wake = getattr(ship, "wake_strength_at", None)
-            if wake is not None and wake(self.x, self.y) >= WAKE_HOMING_THRESHOLD:
+            field = getattr(world, "knuckles", None)
+            lure = (field.lure(self.x, self.y, getattr(self, "id", getattr(self, "idx", 0)))
+                    if wake is not None and field is not None and field.items else None)
+            if lure is not None:
+                # A knuckle's bubble cloud reads as dense wake: the seeker
+                # runs into it and circles there while it lasts.
+                desired = math.degrees(math.atan2(
+                    lure["x"] - self.x, -(lure["y"] - self.y))) % 360.0
+            elif wake is not None and wake(self.x, self.y) >= WAKE_HOMING_THRESHOLD:
                 # Wake homing: follow the bubble trail toward its young end.
                 desired = self._wake_course(ship)
         if desired is not None:

@@ -5,7 +5,7 @@ import math
 
 import pygame
 
-from src.core import config
+from src.core import config, sight_events
 from src.core.i18n import (display_message, display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.core.station import Station
@@ -247,7 +247,8 @@ def _lookout_scope_rect(area: pygame.Rect) -> pygame.Rect:
 LOOKOUT_HORIZON_H = 72
 LOOKOUT_HORIZON_FOV_DEG = 90.0
 # Assumed lengths (m) of the lookout kinds for the apparent size on the horizon.
-_LOOKOUT_KIND_LENGTH_M = {"SURFACE": 120.0, "SUB": 70.0, "FLG": 15.0, "TORP": 40.0}
+# A torpedo is seen by its bubble track, a few hundred metres long.
+_LOOKOUT_KIND_LENGTH_M = {"SURFACE": 120.0, "SUB": 70.0, "FLG": 15.0, "TORP": 260.0}
 _LOOKOUT_KIND_CLASS = {"SURFACE": "unknown", "SUB": "unknown", "FLG": "aircraft",
                        "TORP": "torpedo"}
 
@@ -382,7 +383,7 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
                                           weather["wind_from_deg"] - game.ship.course),
             outlines=lookout_outlines(game, sightings), land=_lookout_land(game),
             anim_t=game.sim_t, sky=sight_scene.sky_state(game), sea_state=weather["sea_state"],
-            way=own_way(game))
+            way=own_way(game), events=sight_events.frigate_rows(game))
         iy += strip_h + 6
         ih -= strip_h + 6
     layout.blit_line(s, message("bridge.line.lookout_visibility",
@@ -459,7 +460,8 @@ def draw_lookout_glasses(game) -> None:
                                       game.lookout_glasses_rel),
         outlines=lookout_outlines(game, sightings), land=land, anim_t=game.sim_t,
         sky=sight_scene.sky_state(game), sea_state=weather["sea_state"],
-        elevation_deg=sight.elevation_deg, stabilized=sight.stabilized, way=own_way(game))
+        elevation_deg=sight.elevation_deg, stabilized=sight.stabilized, way=own_way(game),
+        events=sight_events.frigate_rows(game))
     pygame.draw.rect(s, config.COLOR_SONAR_RING, eyepiece, 1)
     layout.blit_line(s, structured_message(
         "bridge.line.glasses_bearing", bearing=f"{line_of_sight:03.0f}",

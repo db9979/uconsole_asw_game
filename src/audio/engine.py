@@ -271,7 +271,7 @@ class AudioEngine:
         placed left or right by ``pan`` (see ``synthesis.bearing_pan``)."""
         atmosphere = kind in ("general_alarm", "hull_slam")
         if kind not in {"torpedo_launch", "missile_launch", "gunfire",
-                        "explosion", "water_entry"} and not atmosphere:
+                        "explosion", "water_entry", "telegraph", "thunder"} and not atmosphere:
             return False
         if (not self.enabled or not self.available or self._alert_channel is None
                 or not self.local_effects):
@@ -300,7 +300,7 @@ class AudioEngine:
 
     BOAT_CUES = frozenset({"hull_creak", "hull_crack", "detonation_near",
                            "detonation_far", "ping_heard", "alarm_bell",
-                           "fans_down", "fans_up"})
+                           "fans_down", "fans_up", "thunder"})
 
     def play_boat_cue(self, kind: str, pan: float | None = None) -> bool:
         """One atmosphere cue inside the crewed boat (the uConsole as the boat;

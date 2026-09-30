@@ -12,17 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.120**
+Current release: **1.3.121**
 
-Emergencies aboard join the incidents at sea. A man can go overboard from the
-frigate: the general alarm sounds, a drifting mark goes on the chart, and the
-Bridge recovers him within 0.1 NM at 5 kn or less, or the helicopter hovering
-over him (+100 points; lost after 20 minutes, -300). The steering gear can
-fail: the rudder jams for 60 s, then turns at half rate from the emergency
-position for 10 minutes. On a diesel submarine the snorkel head valve can jam
-(no charging for 15 minutes; the AI boat stays deep) or battery gas has to be
-vented (half charging rate). The Bridge crew assist steers onto a man overboard
-itself. Up to six incidents per mission.
+Release 1.3.121 adds more realism at sea. A raised periscope or snorkel draws a
+feather that the lookout, the helicopter crew and the patrol aircraft can see;
+it grows with speed, so slow means hidden, and the submarine crew warns above 5
+kn. Every scenario and campaign mission lets you choose the weather (fair,
+rain, storm, fog) and the time of day, or leave both random. The ship sounds
+more alive: the general alarm, a bow slamming into a head sea, the submarine's
+alarm bell and its fans in silent running. Emergencies aboard join the
+incidents at sea: man overboard and steering failure on the frigate, a jammed
+snorkel valve or battery gas on a diesel submarine. Saves stay format v41.
+
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

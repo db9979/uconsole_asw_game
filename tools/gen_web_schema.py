@@ -77,6 +77,8 @@ def render_block() -> str:
     lines.append(f"    glasses: {_array(schema.LOOKOUT_GLASSES_FIELDS)},\n")
     lines.append(f"    outline: {_array(schema.LOOKOUT_OUTLINE_FIELDS)},\n")
     lines.append(f"    classes: {_array(schema.SIGHT_CLASSES)},\n")
+    lines.append(f"    event: {_array(schema.SIGHT_EVENT_FIELDS)},\n")
+    lines.append(f"    eventKinds: {_array(schema.SIGHT_EVENT_KINDS)},\n")
     lines.append(f"    phone: {_array(schema.LOOKOUT_PHONE_FIELDS)},\n")
     lines.append(f"    phoneOutline: {_array(schema.LOOKOUT_PHONE_OUTLINE_FIELDS)},\n")
     lines.append(f"    call: {_array(schema.LOOKOUT_CALL_FIELDS)},\n")

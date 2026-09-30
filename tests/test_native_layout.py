@@ -194,7 +194,7 @@ def test_large_text_helicopter_resource_lines_have_full_text_bounds(monkeypatch)
     original = layout.blit_line
 
     def record(screen, text, rect, color, size=14, align="left"):
-        if text in {"helo.air_torpedoes", "helo.sonobuoys_ready",
+        if isinstance(text, str) and text in {"helo.air_torpedoes", "helo.sonobuoys_ready",
                     "helo.sonobuoys_active", "panel.datalink",
                     "2", "6", "0", "helo.standby"}:
             calls.append((text, pygame.Rect(rect), size))

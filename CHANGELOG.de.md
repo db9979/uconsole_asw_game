@@ -4,7 +4,7 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.120
+## 1.3.121
 
 Notfälle an Bord ergänzen die Ereignisse auf See. Auf der Fregatte kann ein
 Mann über Bord gehen: Die Generalalarmglocke schlägt an, eine treibende Marke
@@ -17,7 +17,7 @@ oder Batteriegas muss abgelüftet werden (halbe Laderate). Die KI-Hilfe der
 Brücke steuert selbst auf einen Mann über Bord. Bis zu sechs Ereignisse je
 Mission.
 
-## 1.3.119
+## 1.3.120
 
 Version 1.3.119 bringt Bordatmosphäre in den Ton. Gefechtsstationen auf der
 Fregatte lassen die Alarmglocke durch das Schiff läuten, und in schwerer See
@@ -26,7 +26,7 @@ U-Boot läutet nur eine leise Alarmklingel, und seine Lüfter laufen beim
 Einschalten der Schleichfahrt hörbar aus und beim Aufheben wieder an. uConsole
 und Remote-Crew-Browser spielen dieselben Geräusche, alle zur Laufzeit erzeugt.
 
-## 1.3.118
+## 1.3.119
 
 Version 1.3.118 lässt Wetter und Uhrzeit wählen. Das Briefing jedes Szenarios,
 der Kampagnenbildschirm vor dem Auslaufen, die Mehrspieler-Lobby und der Dialog
@@ -35,7 +35,7 @@ Nebel) und Uhrzeit (Zufall, Morgengrauen, Tag, Abenddämmerung, Nacht); Zufall
 behält, was der Seed ergibt. Ein gewähltes Wetter hält die ganze Mission mit
 einem passenden Seegang, und die Uhr läuft von der gewählten Zeit weiter.
 
-## 1.3.117
+## 1.3.118
 
 Version 1.3.117 lässt das Auge ein ausgefahrenes Sehrohr finden. Sehrohr oder
 Schnorchelkopf eines getauchten U-Boots ziehen jetzt eine Schaumfahne, die mit
@@ -47,6 +47,27 @@ und meldet es mit Banner; Sichtungen der Flugzeugbesatzungen erreichen die OPZ
 als HELO-EYE- und MPA-EYE-Tracks. Das gilt für KI-U-Boote und das besetzte
 U-Boot gleich, dessen Crew „Schaumfahne sichtbar, Fahrt verringern“ warnt, wenn
 es mit oben stehendem Mast schneller als 5 kn läuft.
+
+## 1.3.117
+
+Version 1.3.117 erweckt die See zum Leben. Die Optiken zeigen Wassersäulen,
+Feuer, Rauch und sinkende Schiffe; Karten bewegen sich weich, Pings und
+Detonationen breiten sich als Ringe aus; Zeiger und Telegraf bewegen sich mit
+Masse und die Telegrafenglocke läutet; das Sehrohr kommt aus dem Wasser, mit
+Wasser auf dem Glas. Nachts und bei Alarm geht Rotlicht an (abschaltbar), und
+die Stationsreiter tragen Alarmlampen auf beiden Seiten, auf der uConsole und im
+Browser. Nach einer Mission läuft die Nachbesprechung als Zeitraffer mit 10×
+oder 60×, auch im Browser. Nachts leuchtet warmes Wasser, wo es aufgewühlt wird,
+sodass Kielwasser und Torpedobahnen auf beiden Seiten weiter zu sehen sind. Eine
+harte Drehung mit Fahrt hinterlässt ein Knuckle, ein Blasenfeld, das das Sonar
+dämpft, ein Falschecho gibt und einen kielwassersuchenden Torpedo ablenken kann.
+Wracks und Felsen geben Echos, Wracks MAD-Anomalien. Stürme bringen Blitze in
+den Optiken, Donner, stärkeren Regen und Sferics, die auf dem ESM knistern und
+HF/DF-Peilungen streuen. Bei schwerer See startet und landet der Hubschrauber
+nur in einer ruhigen Phase; eine Deckbewegungsanzeige zeigt sie, und weniger
+Fahrt hilft. Spielstände haben jetzt das Format v41; ältere Spielstände laden
+nicht.
+
 
 ## 1.3.116
 

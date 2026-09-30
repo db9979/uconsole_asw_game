@@ -1,3 +1,4 @@
+import { renderStationAlarms } from "../views/station-tabs.js";
 import { S } from "../state/store.js";
 import { renderSound } from "../audio/alerts.js";
 import { openSonarAudioSocket, renderSonarAudio, scheduleSonarAudioPoll, sonarAudioAuthorized, sonarFilterValues, sonarGainValue, stopSonarAudio, stopSpeech, syncGameAudio } from "../audio/audio.js";
@@ -763,6 +764,10 @@ export function init() {
       renderSound();
       syncGameAudio();
     } catch (_) { S.soundEnabled = false; renderSound(); $("sound").textContent = t("sound_unavailable"); }
+  });
+  $("red-light").addEventListener("change", () => {
+    S.redLightAuto = $("red-light").checked;
+    renderStationAlarms();
   });
   $("speech").disabled = !("speechSynthesis" in window);
   $("speech").addEventListener("change", () => {

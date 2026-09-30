@@ -365,6 +365,8 @@ class MpaMixin:
                                mad_physics.MAD_FIX_QUALITY)
             if previous is None or self.sim_t - previous["measured_at"] >= 10.0:
                 self._mpa_notice("mpa.mad_contact", contact=contact.id)
+        self._mad_wreck_anomalies(mpa.x, mpa.y, config.MPA_MAD_ALTITUDE_M, "mpa-mad", tick,
+                                  "mpa.mad_anomaly")
 
     def set_mpa_mad(self, enabled):
         """Start or end the aircraft's MAD passes over its waypoint."""

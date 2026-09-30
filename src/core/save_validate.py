@@ -512,6 +512,13 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             data.get("casualties"), {row.get("id") for row in data.get("subs", ())
                                      if isinstance(row, dict)}):
         return False
+    # Save v41: the bubble slicks of hard turns (knuckles); none laid after
+    # the save time (a boat that laid one may be gone since).
+    from src.world.knuckles import KnuckleField
+    knuckles = data.get("knuckles")
+    if (not KnuckleField.valid(knuckles)
+            or any(row["t"] > save_sim_t for row in knuckles)):
+        return False
     # Save v39: the AI hunters' ESM bearing lines.
     from src.core import hunter
     if not hunter.valid_esm_log(data.get("hunter_esm"), save_sim_t):
@@ -707,6 +714,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     if (any(not bounded(ship[key], -100.0, 100.0)
             for key in ("roll_rate", "pitch_rate"))
             or not bounded(ship["clock"], 0.0, 1e12)
+            or not bounded(ship["deck_quiet_s"], 0.0, 3600.0)
             or not isinstance(wake, list)
             or len(wake) > ship_dynamics.HULL.wake_max_points
             or any(not isinstance(point, list) or len(point) != 4

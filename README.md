@@ -12,18 +12,20 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.112**
+Current release: **1.3.113**
 
-Release 1.3.112 makes multiplayer simpler to host. F9 is now one switch,
-Multiplayer on or off: it uses the first local network address, or opens the
-uConsole's own hotspot when there is no network; network mode, address and
-port sit under the advanced settings. The hotspot keeps its name and password,
-the uConsole installer sets it up, and the lobby and F9 show two steps: the
-Wi-Fi QR code, then the crew page QR code. A browser that asks for a station
-another player holds now asks that player, who can hand it over in the
-browser; every station always carries its full rights. The command line has
-one flag, --multiplayer, which opens the lobby, and the Windows program starts
-straight into the game without a starter window.
+Release 1.3.113 evens out the AI frigate and the AI submarine. In the
+frigate scenarios the AI hunters now run down HQ's start report of the threat
+and a lost submarine bearing, ping a bare bearing only every 10 minutes so a
+ping that finds nothing no longer sends the submarine running, and no longer
+take a long-radiating ship radar for a submarine mast. In the submarine
+scenarios a mission submarine keeps its course through a ping and gives way
+only to a torpedo, and the frigate guards its post: against a breakthrough it
+stays by its patrol position with no patrol aircraft, and against a
+breakthrough or reconnaissance it fires its own torpedo from 3 NM and keeps its
+helicopter within 8 NM. The breakthrough submarine skirts the frigate's patrol
+position, the reconnaissance report counts within 5 NM and the convoy
+submarine fires from 3 NM. Saves move to format v41 (the hunters' leads).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

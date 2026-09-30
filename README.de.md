@@ -14,19 +14,21 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.112**
+Aktuelle Version: **1.3.113**
 
-Version 1.3.112 macht den Mehrspieler für den Gastgeber einfacher. F9 ist
-jetzt ein Schalter, Mehrspieler an oder aus: Er nimmt die erste lokale
-Netzwerkadresse oder öffnet ohne Netz den eigenen Hotspot der uConsole;
-Netzwerkmodus, Adresse und Port liegen unter den erweiterten Einstellungen.
-Der Hotspot behält Name und Passwort, der uConsole-Installer richtet ihn ein,
-und Lobby und F9 zeigen zwei Schritte: den WLAN-QR-Code, dann den QR-Code der
-Crew-Seite. Ein Browser, der eine Station anfragt, die ein anderer Spieler
-hält, fragt jetzt diesen Spieler, der sie im Browser übergeben kann; jede
-Station hat immer alle ihre Rechte. Die Kommandozeile hat einen Schalter,
---multiplayer, der die Lobby öffnet, und das Windows-Programm startet ohne
-Starter-Fenster direkt ins Spiel.
+Version 1.3.113 gleicht KI-Fregatte und KI-U-Boot an. In den
+Fregatten-Szenarien folgen die KI-Jäger jetzt der Startmeldung der Führung
+über die Bedrohung und einer verlorenen U-Boot-Peilung, pingen auf eine bloße
+Peilung nur alle 10 Minuten, damit ein Ping ohne Treffer das U-Boot nicht mehr
+davonjagt, und halten ein lange strahlendes Schiffsradar nicht mehr für einen
+U-Boot-Mast. In den U-Boot-Szenarien hält ein Missions-U-Boot bei einem Ping
+seinen Kurs und weicht nur einem Torpedo aus, und die Fregatte bewacht ihren
+Posten: Gegen einen Durchbruch bleibt sie ohne Seefernaufklärer bei ihrer
+Patrouillenposition, gegen Durchbruch und Aufklärung schießt sie ihren eigenen
+Torpedo erst ab 3 sm und hält ihren Hubschrauber innerhalb 8 sm. Das
+Durchbruch-U-Boot umgeht die Patrouillenposition der Fregatte, die
+Aufklärungsmeldung zählt innerhalb 5 sm, und das Geleitzug-U-Boot schießt ab
+3 sm. Spielstände wechseln auf Format v41 (die Spuren der Jäger).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

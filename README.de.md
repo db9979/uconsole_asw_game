@@ -14,18 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.108**
+Aktuelle Version: **1.3.109**
 
-Version 1.3.108 gibt dem KI-Aufklärungs-U-Boot eine echte Sehrohrsuche.
-In der Aufklärungsmission von der Fregatte aus sichtet das KI-U-Boot auf
-Sehrohrtiefe die Fregatte nicht mehr nur nach Entfernung und Sichtweite: Es
-fährt alle 90 s für einen 24-s-Rundblick das Sehrohr aus, dreht vom Bug aus
-herum und macht die Fregatte nur dort aus, wo das Kontrastmodell des Ausgucks
-in 2,5 m Augenhöhe es erlaubt (Licht, Mond, Sichtweite, Seegang, Land
-dazwischen). Solange das Sehrohr oben ist, zählt es als ausgefahrener Mast,
-den das Oberflächenradar der Fregatte und der Seefernaufklärer erfassen
-können. Nacht, Nebel und schwere See schützen jetzt die Fregatte, und jeder
-Rundblick ist ein Risiko für das U-Boot.
+Version 1.3.109 bringt auf beiden Seiten eine Schusslage in die Feuerleitung.
+Die Waffenstation der Fregatte und die Waffenseite des U-Boots zeigen jetzt,
+genordet um das eigene Schiff, die Reichweite des Torpedos, die Peilung zum
+Ziel und, sobald eine Entfernung vorliegt, die geschätzte Position, den
+Treffpunkt aus TMA-Kurs und -Fahrt und die Torpedolaufbahn dorthin, allein
+aus der Beobachtung des Kontakts. Führung und Navigation des U-Boots haben
+Rundinstrumente für Kurs, Tiefe (Test- und Zerstörungstiefe markiert) und
+Fahrt wie die Brücke der Fregatte, und die Kästen im Funkraum des U-Boots
+passen wieder zu ihrem Text, sodass der Befehl der Führung nicht mehr durch
+den Rahmen läuft.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

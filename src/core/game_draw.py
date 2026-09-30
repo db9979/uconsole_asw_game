@@ -44,6 +44,10 @@ from src.ui.stations_view import (
     draw_opz_view,
     draw_radio_view,
     draw_helicopter_view)
+
+# Width of the soft ends of the scrolling ticker line: a few letters fade
+# out instead of one glyph being cut in half.
+TICKER_FADE_PX = 64
 from src.ui.stations_view import opz_ppi_rect
 from src.ui.mission_editor import MissionEditor
 from src.ui.simlog_view import draw_simlog_view
@@ -653,7 +657,7 @@ class DrawMixin:
             s.blit(surface, (feed_rect.x - offset, text_y))
             s.blit(surface, (feed_rect.x - offset + width + gap, text_y))
             # Soft ends: letters fade out instead of being cut in half.
-            layout.fade_edges(s, feed_rect, config.COLOR_FEED_BG, 28,
+            layout.fade_edges(s, feed_rect, config.COLOR_FEED_BG, TICKER_FADE_PX,
                               left=offset > 0)
 
     def feed_overlay_rect(self) -> pygame.Rect:

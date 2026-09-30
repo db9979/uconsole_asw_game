@@ -4507,6 +4507,7 @@
   "uboot.panel.course_depth": "COURSE / DEPTH",
   "uboot.panel.depth_ladder": "WATER COLUMN",
   "uboot.panel.fire_control": "FIRE CONTROL",
+  "uboot.panel.engagement": "ENGAGEMENT PLOT",
   "uboot.line.depth": "{depth} m",
   "uboot.line.battery_value": "{value} % ({phase})",
   "uboot.line.battery": "Battery {value} % ({phase})",

@@ -1362,7 +1362,9 @@ BOAT_AI_STEALTH_KN = 4.0
 # A mission boat ignores a ping from farther than this (its sonar cannot
 # hold the boat there) and evades a closer one at BOAT_AI_EVADE_KN; a
 # torpedo still makes it run.
-BOAT_AI_PING_IGNORE_NM = 8.0
+BOAT_AI_PING_IGNORE_NM = 5.0
+# ... and may fire back down the bearing of such a ping this long after it.
+BOAT_AI_COUNTERFIRE_S = 30.0
 BOAT_AI_EVADE_KN = 5.0
 # A mission boat attacks a located frigate this many times as readily.
 BOAT_AI_ATTACK_MULT = 12.0

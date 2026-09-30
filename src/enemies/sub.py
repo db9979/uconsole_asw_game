@@ -503,8 +503,11 @@ class Sub:
         noise = observation.signal
         close_fix = dist is not None and dist < 20.0
         rate = 0.0
+        # A mission boat, pinged from close by, answers down the bearing for
+        # longer: it only hears pings inside BOAT_AI_PING_IGNORE_NM.
+        window = config.BOAT_AI_COUNTERFIRE_S if self.mission_orders is not None else 2.0
         bearing_counterfire = (dist is None and self.heard_ping
-                               and self.memory["last_ping_age"] <= 2.0)
+                               and self.memory["last_ping_age"] <= window)
         if (self.state == "EVADE" and self.heard_ping
                 and (close_fix or bearing_counterfire)):
             rate = 0.006 * (0.5 + noise) * self.stype.aggression

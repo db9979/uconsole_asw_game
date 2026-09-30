@@ -14,25 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.117**
+Aktuelle Version: **1.3.118**
 
-Version 1.3.117 erweckt die See zum Leben. Die Optiken zeigen Wassersäulen,
-Feuer, Rauch und sinkende Schiffe; Karten bewegen sich weich, Pings und
-Detonationen breiten sich als Ringe aus; Zeiger und Telegraf bewegen sich mit
-Masse und die Telegrafenglocke läutet; das Sehrohr kommt aus dem Wasser, mit
-Wasser auf dem Glas. Nachts und bei Alarm geht Rotlicht an (abschaltbar), und
-die Stationsreiter tragen Alarmlampen auf beiden Seiten, auf der uConsole und im
-Browser. Nach einer Mission läuft die Nachbesprechung als Zeitraffer mit 10×
-oder 60×, auch im Browser. Nachts leuchtet warmes Wasser, wo es aufgewühlt wird,
-sodass Kielwasser und Torpedobahnen auf beiden Seiten weiter zu sehen sind. Eine
-harte Drehung mit Fahrt hinterlässt ein Knuckle, ein Blasenfeld, das das Sonar
-dämpft, ein Falschecho gibt und einen kielwassersuchenden Torpedo ablenken kann.
-Wracks und Felsen geben Echos, Wracks MAD-Anomalien. Stürme bringen Blitze in
-den Optiken, Donner, stärkeren Regen und Sferics, die auf dem ESM knistern und
-HF/DF-Peilungen streuen. Bei schwerer See startet und landet der Hubschrauber
-nur in einer ruhigen Phase; eine Deckbewegungsanzeige zeigt sie, und weniger
-Fahrt hilft. Spielstände haben jetzt das Format v41; ältere Spielstände laden
-nicht.
+Version 1.3.118 macht die Browser-Stationen ruhiger in der Bedienung. Eine
+Auswahlliste, die offen ist oder gerade bedient wird, etwa die ESM-
+Klassifizierung auf dem U-Boot, das Ziel der Feuerleitung oder die Auswahl von
+Draht, Torpedotyp und Leckwehrtrupp, klappt bei einer Aktualisierung der Station
+nicht mehr zu und verliert ihre Auswahl nicht; sie zieht nach, sobald man sie
+verlässt. Schaltflächen in sich aktualisierenden Listen (ESM-Emitter, Rohre,
+Schotten, Funkkanäle und Aufträge, Befehle an Besatzung und Seefernaufklärer)
+bleiben stehen, sodass ein Klick nicht mehr verloren geht, wenn mitten im Klick
+eine Aktualisierung eintrifft. Spielstände bleiben im Format v41.
 
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

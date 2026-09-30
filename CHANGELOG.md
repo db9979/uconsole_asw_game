@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.118
+
+Release 1.3.118 makes the browser stations steadier to operate. A drop-down
+list that is open or in use, such as the ESM classification on the submarine,
+the fire-control target or the wire, torpedo type and damage-team choices, no
+longer closes or loses its choice when the station updates; it catches up once
+it is left. Buttons in updating lists (ESM emitters, tubes, bulkheads, radio
+channels and tasks, crew and patrol-aircraft orders) stay in place, so a click
+is no longer lost when an update lands mid-click. Saves stay format v41.
+
+
 ## 1.3.117
 
 Release 1.3.117 brings the sea to life. The eyepieces show water columns, fire,

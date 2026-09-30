@@ -12,23 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.117**
+Current release: **1.3.118**
 
-Release 1.3.117 brings the sea to life. The eyepieces show water columns, fire,
-smoke and sinkings; charts move smoothly and pings and detonations ring out;
-needles and the telegraph move with mass and the telegraph bell rings; the
-periscope comes up out of the water with water on the glass. A red light comes
-on at night and on an alarm (switchable), and the station tabs carry alarm lamps
-on both sides, on the uConsole and in the browser. After a mission the debrief
-plays back at 10x or 60x, in the browser too. At night warm water glows where it
-is stirred, so wakes and torpedo tracks are seen farther on both sides. A hard
-turn at speed leaves a knuckle, a bubble slick that masks sonar, gives a false
-echo and can lure a wake-homing torpedo. Wrecks and rocks return echoes and
-wrecks give MAD anomalies. Storms bring lightning in the eyepieces, thunder,
-heavier rain and sferics that crackle on ESM and spread HF/DF bearings. In a
-heavy sea the helicopter launches and lands only in a quiet period; a deck-
-motion gauge shows it, and slowing down helps. Saves are now format v41; older
-saves do not load.
+Release 1.3.118 makes the browser stations steadier to operate. A drop-down
+list that is open or in use, such as the ESM classification on the submarine,
+the fire-control target or the wire, torpedo type and damage-team choices, no
+longer closes or loses its choice when the station updates; it catches up once
+it is left. Buttons in updating lists (ESM emitters, tubes, bulkheads, radio
+channels and tasks, crew and patrol-aircraft orders) stay in place, so a click
+is no longer lost when an update lands mid-click. Saves stay format v41.
 
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

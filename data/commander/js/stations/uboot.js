@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { duration, number, stateText, t, unit } from "../core/format.js";
-import { actionButton, fillFireTargets, metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
+import { actionButton, fillFireTargets, inUse, metrics, node, patchChildren, setControlValue, setOptions, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 import { renderCrew } from "../views/crew.js";
 import { drawBoatBallast, drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
 import { drawBoatDamage, renderBoatDamageLamps } from "./uboot-damage.js";
@@ -24,7 +24,7 @@ function showStationCards(role) {
 
 // The torpedo room: each tube's state, with its load or flood order.
 function renderTubes(tubes) {
-  $("uboot-tubes").replaceChildren(...(tubes.length ? tubes.map((row, index) => {
+  patchChildren($("uboot-tubes"), (tubes.length ? tubes.map((row, index) => {
     const line = node("p", undefined, "uboot-log-line");
     line.append(node("span", t(`uboot_tube_${row.state}`, {tube: index + 1, seconds: number(row.seconds, 0)})));
     if (row.state === "empty") line.append(actionButton("uboot_tube_load", "uboot_tube_load", {tube: index}));
@@ -205,8 +205,9 @@ function renderBallast(ballast) {
 // bulkhead switch), the two teams and the power.
 function renderDamage(dc) {
   const pct = (value) => number(value, 0);
-  $("uboot-dc-rows").replaceChildren(...dc.compartments.map((row) => {
+  patchChildren($("uboot-dc-rows"), dc.compartments.map((row) => {
     const line = document.createElement("tr");
+    line.dataset.rowKey = row.name;
     line.dataset.down = String(row.down);
     line.dataset.alert = String(row.fire_pct > 0 || row.leak_pct > 0 || row.chlorine_pct > 0);
     const bulkhead = node("button", t(row.closed ? "uboot_dc_bulkhead_open" : "uboot_dc_bulkhead_close"));
@@ -321,8 +322,9 @@ function renderEsm(esm, status) {
   $("uboot-esm-warning").hidden = !warning;
   $("uboot-esm-warning").textContent = warning;
   if (!esmSelected(esm)) S.ubootEsmSelected = esm.emitters[0]?.number ?? null;
-  $("uboot-esm-emitters").replaceChildren(...esm.emitters.map((row) => {
+  patchChildren($("uboot-esm-emitters"), esm.emitters.map((row) => {
     const line = document.createElement("tr");
+    line.dataset.rowKey = String(row.number);
     line.dataset.live = String(row.live);
     line.dataset.threat = String(row.mast_threat);
     line.setAttribute("aria-selected", String(row.number === S.ubootEsmSelected));
@@ -356,17 +358,20 @@ function renderEsm(esm, status) {
     ["uboot_esm_col_fix", row.fix ? fixText(row.fix) : t("uboot_esm_no_fix")],
     ["uboot_esm_fix_state", row.fix === null ? t("unavailable") : t(row.fix.consistent ? "uboot_esm_fix_consistent" : "uboot_esm_fix_inconsistent", {lines: row.fix.lines})],
     ["uboot_esm_col_class", row.classification ? `${row.classification.name} (${stateText("uboot_esm_role", row.classification.role)}, ${t(`uboot_esm_fit_${row.classification.fit}`)})` : t("uboot_esm_unclassified")]]);
+  // The candidate list stays put while the operator has it open or has picked
+  // one; it follows the crew's classification only when untouched.
   const select = $("uboot-esm-class");
-  if (!S.stationDrafts.has("uboot-esm-class") || select.dataset.emitter !== String(row.number)) {
+  if (select.dataset.emitter !== String(row.number)) {
+    if (inUse(select)) select.blur();
     S.stationDrafts.delete("uboot-esm-class");
     select.dataset.emitter = String(row.number);
-    const options = [Object.assign(document.createElement("option"), {value: "-1", textContent: t("uboot_esm_unclassified")}),
-      ...row.candidates.map((candidate, index) => Object.assign(document.createElement("option"),
-        {value: String(index), textContent: `${candidate.name} (${stateText("uboot_esm_role", candidate.role)}, ${t(`uboot_esm_fit_${candidate.fit}`)})`}))];
-    select.replaceChildren(...options);
+  }
+  setOptions(select, [["-1", t("uboot_esm_unclassified")], ...row.candidates.map((candidate, index) =>
+    [String(index), `${candidate.name} (${stateText("uboot_esm_role", candidate.role)}, ${t(`uboot_esm_fit_${candidate.fit}`)})`])]);
+  if (!S.stationDrafts.has("uboot-esm-class")) {
     const current = row.classification ? row.candidates.findIndex((candidate) =>
       candidate.name === row.classification.name && candidate.role === row.classification.role) : -1;
-    select.value = String(current);
+    setControlValue(select, String(current));
   }
   $("uboot-esm-plot").textContent = t(row.fix ? "uboot_esm_to_plot_fix" : "uboot_esm_to_plot_bearing");
 }
@@ -507,9 +512,7 @@ export function renderUbootStation(payload) {
     ["course", unit(row.course, "°", 0)], ["uboot_wire", t(row.wire === "CUT" ? "uboot_wire_cut_state" : `uboot_wire_${(row.wire || "none").toLowerCase()}`)],
     ["uboot_datum", row.datum_bearing === null ? t("unavailable") : `${unit(row.datum_bearing, "°", 0)} / ${unit(row.datum_range_nm, "NM")}`]], "uboot_no_weapons");
   const select = $("uboot-wire-weapon"), active = wired.filter((row) => row.wire === "ACTIVE");
-  const previous = select.value;
-  select.replaceChildren(...active.map((row) => Object.assign(document.createElement("option"), {value: row.ref, textContent: row.label})));
-  if (active.some((row) => row.ref === previous)) select.value = previous;
+  setOptions(select, active.map((row) => [row.ref, row.label]));
   $("uboot-wire-steer").dataset.ready = $("uboot-wire-cut").dataset.ready = String(active.length > 0);
   stationRows($("uboot-contacts"), payload.contacts, sonarEntries);
   renderLog(payload.feed);

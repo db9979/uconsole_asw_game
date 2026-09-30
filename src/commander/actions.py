@@ -1011,6 +1011,10 @@ def _host_load(game, params):
 
 
 def _host_new_game(game, params):
+    if "weather" in params:
+        game.start_weather = params["weather"]
+    if "time" in params:
+        game.start_time = params["time"]
     return game.start_new_game(params["scenario"], params["world_mode"],
                                params.get("difficulty"), params.get("seed"))
 

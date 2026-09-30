@@ -220,11 +220,16 @@ ESM_RANGE_NM = 150.0            # ESM-"Reichweite" (Peilung von Radargeräten)
 ESM_BEARING_ERR_DEG = 3.0       # ESM-Peilungsfehler (± Grad)
 ESM_EMITTER_PROB = 0.6          # Anteil ziviler Schiffe mit aktivem Radargerät
 # Bridge lookout: explicit horizon/recognition assumptions. A submarine is
-# visually surfaced only at or above 2 m; snorkel-depth operation is excluded.
+# visually surfaced only at or above 2 m; at periscope or snorkel depth only
+# its raised mast and feather are seen (LOOKOUT_FEATHER_RANGE_NM for the full
+# plume by day in calm, clear air; a slow head shows much less).
 LOOKOUT_SURFACE_RANGE_NM = 12.0
 LOOKOUT_SUB_RANGE_NM = 5.0
 LOOKOUT_AIR_RANGE_NM = 20.0
 LOOKOUT_SUB_SURFACED_MAX_DEPTH_M = 2.0
+LOOKOUT_FEATHER_RANGE_NM = 3.5
+# The crewed boat's crew warns of a visible feather above this speed.
+UBOOT_FEATHER_WARN_KN = 5.0
 LOOKOUT_NIGHT_FACTOR = 0.35
 # The 24-hour clock's daylight window (lookout, chart tint, bridge sky).
 DAYLIGHT_START_H = 5.5
@@ -1027,7 +1032,7 @@ SCORE_TIME_BONUS_MAX = 500         # Zeitbonus, anteilig nach verbleibender Zeit
 # Incidents at sea (src/core/incidents.py): schedule and the four kinds.
 INCIDENT_FIRST_S = (1200.0, 2400.0)
 INCIDENT_INTERVAL_S = (1800.0, 3000.0)
-INCIDENT_MAX = 4
+INCIDENT_MAX = 6
 INCIDENT_NET_RANGE_NM = (3.0, 7.0)     # net across the track this far ahead
 INCIDENT_NET_SPREAD_DEG = 25.0
 INCIDENT_NET_LENGTH_NM = 2.0
@@ -1056,6 +1061,18 @@ INCIDENT_DARK_S = 7200.0
 INCIDENT_WHALES_RANGE_NM = (3.0, 6.0)
 INCIDENT_WHALES_COUNT = (2, 4)
 INCIDENT_WHALES_S = 3600.0
+# Emergencies aboard: a man overboard survives this long in the water; the
+# ship picks him up within this distance at no more than this speed, the
+# helicopter hovering within it.
+INCIDENT_OVERBOARD_S = 1200.0
+INCIDENT_OVERBOARD_PICKUP_NM = 0.1
+INCIDENT_OVERBOARD_PICKUP_KN = 5.0
+SCORE_OVERBOARD_LOST = 300
+SCORE_OVERBOARD_SAVED = 100
+AUTOCREW_RESUME_SPEED_KN = 12.0   # Bridge autocrew speed after a recovery
+INCIDENT_RUDDER_JAM_S = 60.0           # rudder jammed, then emergency steering
+INCIDENT_RUDDER_S = 600.0
+INCIDENT_BOAT_S = 900.0                # a jammed snorkel valve / battery gas
 
 # Radio tasking (``src/core/tasking.py``): HQ orders and incidents in the
 # built-in scenarios.  The first offer comes after 15-25 minutes, the next
@@ -1152,6 +1169,12 @@ MPA_MAD_LOOK_S = 1.0                # one MAD look per hull and second
 # crewed boat's ESM; data/contacts/aircraft.json).
 MPA_RADAR_EMITTER = "emitter.own_asset.mpa.radar"
 HELO_RADAR_EMITTER = "emitter.own_asset.helicopter.radar"
+# The bow slams (a sound) when it pitches down through this angle in a
+# heavy sea at speed.
+HULL_SLAM_PITCH_DEG = 3.5
+HULL_SLAM_MIN_KN = 8.0
+HULL_SLAM_SEA_STATE = 4
+AIRCREW_HOVER_EYE_M = 20.0        # a hovering (dipping) crew's eye height
 HELO_RADAR_ALTITUDE_M = 150.0      # transit altitude for the radar horizon
 HELO_RADAR_RANGE_NM = 40.0          # helicopter surface-search range, large ship
 MPA_RADAR_RANGE_NM = 60.0           # nominal surface-search range, large ship
@@ -1272,6 +1295,13 @@ BOAT_AI_ATTACK_MULT = 4.0
 # (Typ und Anzahl); None = im Menü wählbar. Nur die Startmeldung hängt davon
 # ab, deshalb gehört die Einstellung nicht in den gespeicherten Schwierigkeitssatz.
 HQ_INTEL_MODES = ("coarse", "exact")
+# Start weather and time of day of a scenario or campaign mission, chosen in
+# the briefing, lobby or campaign menu ("random" keeps the seed's own). A
+# chosen weather holds for the whole mission, its sea within the kind's band.
+START_WEATHER_CHOICES = ("random", "fair", "rain", "storm", "fog")
+START_WEATHER_SEA_STATE = {"fair": 1, "rain": 3, "storm": 5, "fog": 1}
+START_TIME_CHOICES = ("random", "dawn", "day", "dusk", "night")
+START_TIME_HOURS = {"dawn": 6.0, "day": 12.0, "dusk": 19.0, "night": 1.0}
 SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
                   "s5_durchbruch", "s6_aufklaerung", "s7_geleitzug")
 # Catalog name of each scenario (``scenario.<name>.title`` and friends).

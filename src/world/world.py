@@ -119,10 +119,15 @@ class World:
     # Authored weather of a mission: fixed atmosphere values per kind (the
     # sea state stays the mission's).  Saved in the world block.
     WEATHER_OVERRIDES = {
+        "fair": dict(wind_speed_kn=6.0, rain_intensity=0.0,
+                     visibility_nm=config.WEATHER_VISIBILITY_MAX_NM),
         "rain": dict(wind_speed_kn=18.0, rain_intensity=0.5, visibility_nm=6.0),
         "storm": dict(wind_speed_kn=38.0, rain_intensity=0.8, visibility_nm=4.0),
         "fog": dict(wind_speed_kn=4.0, rain_intensity=0.1, visibility_nm=1.0),
     }
+
+    # While a weather kind holds, the sea it drifts through stays in its band.
+    OVERRIDE_SEA_BANDS = {"fair": (0, 2), "rain": (2, 4), "storm": (5, 6), "fog": (0, 2)}
 
     def set_weather_override(self, kind) -> None:
         """Hold the authored weather ``kind`` (None or "clear" releases it)."""
@@ -384,7 +389,9 @@ class World:
         while self.weather_shift_timer >= config.WEATHER_SHIFT_PERIOD_S:
             self.weather_shift_timer -= config.WEATHER_SHIFT_PERIOD_S
             d = self.rng.choice([-1, 0, 0, 1])
-            self.sea_state = max(0, min(6, self.sea_state + d))
+            low, high = self.OVERRIDE_SEA_BANDS.get(
+                getattr(self, "weather_override", None), (0, 6))
+            self.sea_state = max(low, min(high, self.sea_state + d))
             self.refresh_weather()
 
     def is_night(self) -> bool:

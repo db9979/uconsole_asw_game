@@ -73,7 +73,7 @@ class CrewOrders:
               "buoy_splash": "sonar", "evade": "navigation",
               "evade_decoy": "navigation",
               "mast_lowered": "navigation", "esm_intercept": "sonar",
-              "obstacle_ahead": "navigation",
+              "obstacle_ahead": "navigation", "feather_visible": "navigation",
               "sighting_warship": "sonar", "sighting_merchant": "sonar",
               "sighting_aircraft": "sonar", "sighting_torpedo": "sonar",
               "sighting_unknown": "sonar",
@@ -101,6 +101,8 @@ class CrewOrders:
               "test_depth_near": "navigation", "test_depth_over": "navigation",
               "incident_net": "funk", "incident_front": "funk",
               "incident_whales": "funk", "net_fouled": "navigation",
+              "incident_valve": "navigation", "incident_valve_end": "navigation",
+              "incident_gas": "schaden", "incident_gas_end": "schaden",
               "baffles_clearing": "navigation", "baffles_cleared": "navigation",
               "hf_frigate": "funk", "rbu_splash": "sonar",
               "wounded": "schaden"}
@@ -146,6 +148,11 @@ class CrewOrders:
         self._battery_state = "ok"
         self._keel_warned = False
         self._obstacle_warned = False
+        # Feather warning edge; None until first seen (never saved: a loaded
+        # boat takes the current state without a repeated warning).
+        self._feather_warned = None
+        # Silent running as last heard (fan cue edge; transient like above).
+        self._silent_heard = None
         # Chart check along the ordered course (0.25 s cadence), for the displays.
         self.obstacle_ahead_nm = None
         # Intercepts not yet stamped by the crew update (never saved; see
@@ -712,6 +719,15 @@ def update_crew(game, boat: CrewedBoat) -> None:
     if ahead is not None and sub.order_speed > 0.0 and not orders._obstacle_warned:
         orders.event("obstacle_ahead", distance=f"{ahead:.1f}")
     orders._obstacle_warned = ahead is not None and sub.order_speed > 0.0
+    feather = bool(orders.mast and not sub.sunk and sub.depth <= MAST_DEPTH_M
+                   and sub.speed > config.UBOOT_FEATHER_WARN_KN)
+    if feather and orders._feather_warned is False:
+        orders.event("feather_visible", speed=f"{config.UBOOT_FEATHER_WARN_KN:.0f}")
+    orders._feather_warned = feather
+    # Silent running: the ventilation fans run down (and up again after).
+    if orders._silent_heard is not None and orders.silent != orders._silent_heard:
+        boat_sound(game, boat, "fans_down" if orders.silent else "fans_up")
+    orders._silent_heard = orders.silent
     pinged = None
     for kind, bearing, level in orders._pending_intercepts:
         boat.intercepts.append(dict(t=float(game.sim_t), kind=kind, bearing=bearing,

@@ -14,25 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.117**
+Aktuelle Version: **1.3.121**
 
-Version 1.3.117 erweckt die See zum Leben. Die Optiken zeigen Wassersäulen,
-Feuer, Rauch und sinkende Schiffe; Karten bewegen sich weich, Pings und
-Detonationen breiten sich als Ringe aus; Zeiger und Telegraf bewegen sich mit
-Masse und die Telegrafenglocke läutet; das Sehrohr kommt aus dem Wasser, mit
-Wasser auf dem Glas. Nachts und bei Alarm geht Rotlicht an (abschaltbar), und
-die Stationsreiter tragen Alarmlampen auf beiden Seiten, auf der uConsole und im
-Browser. Nach einer Mission läuft die Nachbesprechung als Zeitraffer mit 10×
-oder 60×, auch im Browser. Nachts leuchtet warmes Wasser, wo es aufgewühlt wird,
-sodass Kielwasser und Torpedobahnen auf beiden Seiten weiter zu sehen sind. Eine
-harte Drehung mit Fahrt hinterlässt ein Knuckle, ein Blasenfeld, das das Sonar
-dämpft, ein Falschecho gibt und einen kielwassersuchenden Torpedo ablenken kann.
-Wracks und Felsen geben Echos, Wracks MAD-Anomalien. Stürme bringen Blitze in
-den Optiken, Donner, stärkeren Regen und Sferics, die auf dem ESM knistern und
-HF/DF-Peilungen streuen. Bei schwerer See startet und landet der Hubschrauber
-nur in einer ruhigen Phase; eine Deckbewegungsanzeige zeigt sie, und weniger
-Fahrt hilft. Spielstände haben jetzt das Format v41; ältere Spielstände laden
-nicht.
+Version 1.3.121 bringt mehr Wirklichkeit auf See. Ein ausgefahrenes Sehrohr
+oder ein Schnorchel zieht eine Schaumfahne, die Ausguck, Heli-Besatzung und
+Seefernaufklärer sehen können; sie wächst mit der Fahrt, langsam heißt also
+unsichtbar, und die U-Boot-Crew warnt über 5 kn. In jedem Szenario und jeder
+Kampagnenmission lassen sich Wetter (schön, Regen, Sturm, Nebel) und Uhrzeit
+wählen oder beide dem Zufall überlassen. Das Schiff klingt lebendiger:
+Generalalarm, Wellenschläge gegen den Bug, die Alarmglocke des U-Boots und
+seine Lüfter bei Schleichfahrt. Notfälle an Bord ergänzen die Ereignisse auf
+See: Mann über Bord und Ruderversager auf der Fregatte, ein klemmendes
+Schnorchelventil oder Batteriegas auf einem Diesel-U-Boot. Spielstände bleiben
+im Format v41.
 
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

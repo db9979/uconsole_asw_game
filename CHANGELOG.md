@@ -4,6 +4,48 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.121
+
+Emergencies aboard join the incidents at sea. A man can go overboard from the
+frigate: the general alarm sounds, a drifting mark goes on the chart, and the
+Bridge recovers him within 0.1 NM at 5 kn or less, or the helicopter hovering
+over him (+100 points; lost after 20 minutes, -300). The steering gear can
+fail: the rudder jams for 60 s, then turns at half rate from the emergency
+position for 10 minutes. On a diesel submarine the snorkel head valve can jam
+(no charging for 15 minutes; the AI boat stays deep) or battery gas has to be
+vented (half charging rate). The Bridge crew assist steers onto a man overboard
+itself. Up to six incidents per mission.
+
+## 1.3.120
+
+Release 1.3.119 adds shipboard atmosphere to the sound. Action stations on the
+frigate ring the general alarm bell through the ship, and in a heavy head sea
+at speed the bow is heard slamming each time it pitches down hard. The
+submarine rings only a quiet alarm bell, and its ventilation fans are heard
+running down when silent running starts and up again when it ends. The uConsole
+and the Remote Crew browsers play the same cues, all synthesized at runtime.
+
+## 1.3.119
+
+Release 1.3.118 lets you choose the weather and the time of day. Every
+scenario's briefing, the campaign screen before sailing, the multiplayer lobby
+and the browser's "New game" dialog now offer weather (random, fair, rain,
+storm, fog) and time of day (random, dawn, day, dusk, night); random keeps what
+the seed gives. A chosen weather holds for the whole mission with its sea state
+in a matching band, and the clock runs on from the chosen time.
+
+## 1.3.118
+
+Release 1.3.117 lets the eye find a raised periscope. A periscope or snorkel
+head of a dived submarine now pulls a feather that grows with speed: the bridge
+lookout, the phone lookout and the crews of the helicopter and the patrol
+aircraft see the full plume from 8 kn at almost 3 NM on a clear, calm day, a
+slow head only at about 1 NM, and hardly anything at night or in a heavy sea.
+Close in the lookout recognizes the periscope and calls it with a banner;
+aircrew sightings reach Operations as HELO-EYE and MPA-EYE tracks. This works
+the same for AI boats and the crewed submarine, whose crew warns "feather
+visible, reduce speed" when it runs faster than 5 kn with a mast up.
+
 ## 1.3.117
 
 Release 1.3.117 brings the sea to life. The eyepieces show water columns, fire,

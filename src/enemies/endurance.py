@@ -52,6 +52,9 @@ class SubmarineEndurance:
         # The AI stays down while its ESM warned of an aircraft radar
         # (transient, set by the boat each update from its saved hold).
         self.hold_ascent = False
+        # Generator power left by an emergency aboard (a jammed snorkel valve
+        # 0, battery gas 0.5); transient, set by the game each substep.
+        self.generator_factor = 1.0
 
     @property
     def fuel_capacity_kwh(self) -> float:
@@ -62,7 +65,7 @@ class SubmarineEndurance:
         if self.fuel_kwh <= self.ENERGY_EPSILON_KWH:
             return 0.0
         rate = config.UBOOT_CHARGE_POWER[self.charge_rate] if self.manual else 1.0
-        return self.profile.generator_power_kw * rate
+        return self.profile.generator_power_kw * rate * self.generator_factor
 
     def set_charge_rate(self, rate):
         if rate not in config.UBOOT_CHARGE_RATES:

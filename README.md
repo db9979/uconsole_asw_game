@@ -12,23 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.117**
+Current release: **1.3.121**
 
-Release 1.3.117 brings the sea to life. The eyepieces show water columns, fire,
-smoke and sinkings; charts move smoothly and pings and detonations ring out;
-needles and the telegraph move with mass and the telegraph bell rings; the
-periscope comes up out of the water with water on the glass. A red light comes
-on at night and on an alarm (switchable), and the station tabs carry alarm lamps
-on both sides, on the uConsole and in the browser. After a mission the debrief
-plays back at 10x or 60x, in the browser too. At night warm water glows where it
-is stirred, so wakes and torpedo tracks are seen farther on both sides. A hard
-turn at speed leaves a knuckle, a bubble slick that masks sonar, gives a false
-echo and can lure a wake-homing torpedo. Wrecks and rocks return echoes and
-wrecks give MAD anomalies. Storms bring lightning in the eyepieces, thunder,
-heavier rain and sferics that crackle on ESM and spread HF/DF bearings. In a
-heavy sea the helicopter launches and lands only in a quiet period; a deck-
-motion gauge shows it, and slowing down helps. Saves are now format v41; older
-saves do not load.
+Release 1.3.121 adds more realism at sea. A raised periscope or snorkel draws a
+feather that the lookout, the helicopter crew and the patrol aircraft can see;
+it grows with speed, so slow means hidden, and the submarine crew warns above 5
+kn. Every scenario and campaign mission lets you choose the weather (fair,
+rain, storm, fog) and the time of day, or leave both random. The ship sounds
+more alive: the general alarm, a bow slamming into a head sea, the submarine's
+alarm bell and its fans in silent running. Emergencies aboard join the
+incidents at sea: man overboard and steering failure on the frigate, a jammed
+snorkel valve or battery gas on a diesel submarine. Saves stay format v41.
 
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

@@ -140,6 +140,24 @@ class DrawMixin:
         if key is not None:
             self.handle_event(pointer_input.key_event(key))
 
+    def _draw_start_choices(self, center, top: int, cx: int,
+                            selected: int | None = None) -> None:
+        """The weather and time-of-day rows of a briefing: Up/Down select,
+        Left/Right (or a click on the row's left/right part) change."""
+        row_h = 26
+        current = self.menu_sel if selected is None else selected
+        for i, kind in enumerate(("weather", "time")):
+            y = top + i * row_h
+            for part, key in ((0, pygame.K_LEFT), (1, None), (2, pygame.K_RIGHT)):
+                pointer.add_action(
+                    (cx - 300 + part * 200, y - row_h // 2, 200, row_h),
+                    lambda _pos, i=i, key=key: self._click_menu_row(
+                        lambda: setattr(self, "menu_sel", i), key))
+            chosen = i == current
+            center(message("menu.choice", marker="► " if chosen else "  ",
+                           label=self.start_choice_text(kind)),
+                   y, color=config.COLOR_TEXT if chosen else config.COLOR_TEXT_DIM)
+
     @localized
     def draw_menu(self) -> None:
         """W4: Szenario -> (Level bei s4) -> Briefing -> Start."""
@@ -274,11 +292,12 @@ class DrawMixin:
                 center(message("menu.loss_value",
                                loss=self.tr("scenario." + scenario_key + ".lose")), 448,
                        color=config.COLOR_DANGER)
-            center(self.tr("menu.start_hint"), 520,
-                   color=config.COLOR_TEXT_DIM, keys=("Enter", "Esc"))
+            self._draw_start_choices(center, 478, cx)
+            center(self.tr("menu.start_hint"), 536,
+                   color=config.COLOR_TEXT_DIM, keys=("Enter", None, "Esc"))
             center(message("menu.local_side", side=message(
                 "menu.local_side.uboot" if self.local_side == "uboot"
-                else "menu.local_side.frigate")), 556,
+                else "menu.local_side.frigate")), 566,
                 color=config.COLOR_WARN if self.local_side == "uboot"
                 else config.COLOR_TEXT_DIM)
 

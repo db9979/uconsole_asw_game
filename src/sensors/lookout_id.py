@@ -24,14 +24,14 @@ IDENTIFY_CYCLES = 3.2
 LABEL_PREFIX = "VISUAL"
 
 # Class code -> relative size of the silhouette against the calibrated
-# detection height of its kind (SURFACE 12 m, SUB 3 m, FLG 6 m).
+# detection height of its kind (SURFACE 12 m, SUB 3 m, FLG 6 m, MAST 1.5 m).
 CLASS_SIZE = {
     "MERCHANT": 1.5, "TANKER": 1.6, "CARGO": 1.5, "PASSENGER": 1.6,
     "WARSHIP": 1.0, "CARRIER": 2.0, "CRUISER": 1.2, "DESTROYER": 1.0,
     "FRIGATE": 0.9, "CORVETTE": 0.7, "MINE_WARFARE": 0.6, "NAVAL_AUXILIARY": 1.3,
     "SERVICE": 0.7, "TUG": 0.6, "RESEARCH": 0.7, "OFFSHORE": 0.8,
     "FISHING": 0.6, "SMALL_CRAFT": 0.4, "RESCUE": 0.45,
-    "SUBMARINE": 1.0,
+    "SUBMARINE": 1.0, "PERISCOPE": 1.0,
     "AIRLINER": 1.4, "MILITARY_AIRCRAFT": 0.9, "COMBAT_AIRCRAFT": 0.9,
     "TORPEDO_WAKE": 1.0, "SHIP": 1.0, "LAND": 1.0,
 }

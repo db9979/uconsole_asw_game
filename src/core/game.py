@@ -216,6 +216,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                                 else dict(config.DEFAULT_DIFFICULTY))
         # Free-hunt choice for the start report; fixed scenarios set their own.
         self.menu_hq_intel = "coarse"
+        # Start weather and time of the next scenario/campaign mission.
+        self.start_weather = "random"
+        self.start_time = "random"
         self.in_menu = start_menu
         self.menu_sel = 0  # Index in DIFFICULTY_FIELD_ORDER or SCENARIO_ORDER
         self.seed = seed
@@ -421,6 +424,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         if sc["difficulty"] is None:
             self.world.sea_state = int(self.difficulty["sea_state_start"])
             self.world.refresh_weather()
+        self._apply_start_environment()
         start = sc["ship_start"] or (250.0, 250.0)
         course = sc["ship_course"]
         if course is None:
@@ -816,6 +820,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._prepared_menu_mission = (
             seed, self.scenario_key, self.world_mode,
             self._difficulty_base, self.hq_intel_mode(), self.level,
+            self.start_weather, self.start_time,
             id(self.world), id(self.sonar)) if self.in_menu else None
 
     def flash(self, text: object, seconds: float = 3.0) -> None:

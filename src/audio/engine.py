@@ -269,7 +269,7 @@ class AudioEngine:
         """Play one bounded local combat/handling effect on the alert bus,
         placed left or right by ``pan`` (see ``synthesis.bearing_pan``)."""
         if kind not in {"torpedo_launch", "missile_launch", "gunfire",
-                        "explosion", "water_entry"}:
+                        "explosion", "water_entry", "telegraph"}:
             return False
         if (not self.enabled or not self.available or self._alert_channel is None
                 or not self.local_effects):

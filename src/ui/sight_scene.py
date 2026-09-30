@@ -635,6 +635,69 @@ def draw_weather(s, view: View, sky: dict, colors: dict, *, visibility_nm: float
             pygame.draw.circle(s, color, (int(x), int(y)), 1 + (i % 3 == 0))
 
 
+# Water on the periscope's head glass: how long the water takes to run off a
+# raised scope, the sea state from which waves wash over it, and how long
+# drops stay on the glass after a wave.
+RAISE_DRAIN_S = 1.4
+WASH_SEA_MIN = 3.5
+DROPS_S = 2.5
+DROP_COUNT = 18
+WATER_COLOR = (12, 58, 66)
+WATER_FOAM = (150, 214, 208)
+
+
+def lens_water(t: float, sea_state: float, raised_s: float | None = None) -> tuple:
+    """(cover 0..1, drops 0..1) on the periscope's glass at display time
+    ``t``: the share of the picture under water (from below) and how wet
+    the glass still is.  A scope raised ``raised_s`` ago is still draining;
+    in a rough sea the bigger waves wash over the head now and then.
+    Cosmetic only; the browser uses the same formula (sight-scene.js)."""
+    cover = drops = 0.0
+    if raised_s is not None and raised_s >= 0.0:
+        cover = _clamp(1.0 - raised_s / RAISE_DRAIN_S)
+        drops = _clamp(1.0 - (raised_s - RAISE_DRAIN_S) / DROPS_S) if raised_s < RAISE_DRAIN_S + DROPS_S else 0.0
+    if sea_state >= WASH_SEA_MIN:
+        period = 5.0 + sea_state
+        phase = t / period
+        wave = math.floor(phase)
+        amp = 0.75 + 0.25 * math.sin(wave * 1.7)
+        crest = amp * math.sin(math.tau * phase)
+        threshold = 1.1 - 0.12 * sea_state
+        cover = max(cover, _clamp((crest - threshold) / max(0.05, 1.0 - threshold)) * 0.9)
+        # Drops after this wave's crest (a quarter period in) if it washed over.
+        since = (phase - wave - 0.25) * period
+        if amp > threshold and 0.0 <= since <= DROPS_S + period * 0.25:
+            drops = max(drops, _clamp(1.0 - max(0.0, since - period * 0.25) / DROPS_S))
+    return cover, drops
+
+
+def draw_lens_water(s, rect, cover: float, drops: float, t: float) -> None:
+    """Water over the lower ``cover`` of the picture with a moving wavy
+    line and foam, and drops running down the glass."""
+    rect = pygame.Rect(rect)
+    if cover > 0.01:
+        top = rect.bottom - cover * rect.h
+        step = max(6, rect.w // 60)
+        points = [(rect.x, rect.bottom)]
+        for x in range(rect.x, rect.right + step, step):
+            points.append((min(x, rect.right), top + 5.0 * math.sin(x / 37.0 + t * 3.1)
+                           + 3.0 * math.sin(x / 11.0 - t * 5.3)))
+        points.append((rect.right, rect.bottom))
+        pygame.draw.polygon(s, WATER_COLOR, points)
+        pygame.draw.lines(s, WATER_FOAM, False, points[1:-1], 2)
+    if drops > 0.02:
+        count = int(DROP_COUNT * drops)
+        for index in range(count):
+            fx = (index * 0.5698 + 0.13) % 1.0
+            fy = (index * 0.7549 + 0.29) % 1.0
+            x = rect.x + fx * rect.w
+            y = rect.y + (fy * 0.85 + 0.06 * (1.0 - drops)) * rect.h
+            radius = max(2, int((3 + (index % 4) * 2) * rect.w / 600.0 + 1))
+            pygame.draw.circle(s, WATER_FOAM, (int(x), int(y)), radius, 1)
+            pygame.draw.circle(s, (230, 250, 250), (int(x - radius * 0.4), int(y - radius * 0.4)),
+                               max(1, radius // 3))
+
+
 def _fog(width, height, color) -> pygame.Surface:
     surf = pygame.Surface((max(1, width), max(1, height)), pygame.SRCALPHA)
     for y in range(max(1, height)):

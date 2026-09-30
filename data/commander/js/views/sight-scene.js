@@ -480,6 +480,55 @@ function drawWeather(g, w, sky, colors, visibility, t, haze) {
   }
 }
 
+// Water on the periscope's head glass (src/ui/sight_scene.py lens_water):
+// [cover 0..1 from below, drops 0..1].  ``raisedS``: seconds since the head
+// came out of the water (null when unknown or long ago).
+const RAISE_DRAIN_S = 1.4, WASH_SEA_MIN = 3.5, DROPS_S = 2.5, DROP_COUNT = 18;
+const WATER_COLOR = [12, 58, 66], WATER_FOAM = [150, 214, 208];
+export function lensWater(t, seaState, raisedS = null) {
+  let cover = 0, drops = 0;
+  if (Number.isFinite(raisedS) && raisedS >= 0) {
+    cover = clamp(1 - raisedS / RAISE_DRAIN_S);
+    drops = raisedS < RAISE_DRAIN_S + DROPS_S ? clamp(1 - (raisedS - RAISE_DRAIN_S) / DROPS_S) : 0;
+  }
+  if (seaState >= WASH_SEA_MIN) {
+    const period = 5 + seaState, phase = t / period, wave = Math.floor(phase);
+    const amp = .75 + .25 * Math.sin(wave * 1.7), crest = amp * Math.sin(2 * Math.PI * phase);
+    const threshold = 1.1 - .12 * seaState;
+    cover = Math.max(cover, clamp((crest - threshold) / Math.max(.05, 1 - threshold)) * .9);
+    const since = (phase - wave - .25) * period;
+    if (amp > threshold && since >= 0 && since <= DROPS_S + period * .25)
+      drops = Math.max(drops, clamp(1 - Math.max(0, since - period * .25) / DROPS_S));
+  }
+  return [cover, drops];
+}
+
+function drawLensWater(g, width, height, cover, drops, t) {
+  if (cover > .01) {
+    const top = height - cover * height, step = Math.max(6, Math.floor(width / 60));
+    g.beginPath(); g.moveTo(0, height);
+    const edge = [];
+    for (let x = 0; x <= width + step; x += step) {
+      const px = Math.min(x, width);
+      edge.push([px, top + 5 * Math.sin(px / 37 + t * 3.1) + 3 * Math.sin(px / 11 - t * 5.3)]);
+    }
+    for (const [x, y] of edge) g.lineTo(x, y);
+    g.lineTo(width, height); g.closePath(); g.fillStyle = rgb(WATER_COLOR); g.fill();
+    g.strokeStyle = rgb(WATER_FOAM); g.lineWidth = 2; g.beginPath();
+    edge.forEach(([x, y], index) => index ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke();
+  }
+  if (drops > .02) {
+    const count = Math.floor(DROP_COUNT * drops);
+    for (let index = 0; index < count; index++) {
+      const fx = (index * .5698 + .13) % 1, fy = (index * .7549 + .29) % 1;
+      const x = fx * width, y = (fy * .85 + .06 * (1 - drops)) * height;
+      const radius = Math.max(2, Math.floor((3 + (index % 4) * 2) * width / 600 + 1));
+      g.strokeStyle = rgb(WATER_FOAM); g.lineWidth = 1; g.beginPath(); g.arc(x, y, radius, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = "rgb(230, 250, 250)"; g.beginPath(); g.arc(x - radius * .4, y - radius * .4, Math.max(1, Math.floor(radius / 3)), 0, Math.PI * 2); g.fill();
+    }
+  }
+}
+
 function drawFrame(g, width, height) {
   g.strokeStyle = rgb(mix(FRAME, [0, 0, 0], .4)); g.lineWidth = 1; g.strokeRect(.5, .5, width - 1, height - 1);
   const size = Math.max(6, Math.min(18, width / 6, height / 4));
@@ -531,6 +580,8 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
   drawRows(v.outlines.filter((row) => !aloft(row)));
   if (Array.isArray(v.events) && v.events.length) drawSightEvents(g, w, colors, sky, v.events, haze, t);
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);
+  // A periscope's head glass: water running off after raising, waves washing over.
+  if (v.lens) drawLensWater(g, width, height, ...lensWater(t, v.sea_state, v.lens.raised_s ?? null), t);
   if (Number.isFinite(v.wind_rose_deg)) drawWindRose(g, height, colors, v.wind_rose_deg);
   const labelStep = [10, 30, 45, 90].find((step) => step * w.pxPerDeg >= SCALE_LABEL_MIN_PX) ?? 90;
   const first = Math.floor((v.bearing - v.fov_deg / 2) / 5) * 5;

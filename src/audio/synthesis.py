@@ -129,9 +129,29 @@ def sonar_echo(frequency_hz: float, pulse: str, level: float,
     return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
 
 
+def telegraph_bell(sample_rate: int, amplitude: float = .28) -> np.ndarray:
+    """The engine telegraph's double ring as the handle drops into its new
+    order: two strokes of a small bell (inharmonic partials, long decay)."""
+    duration = 1.2
+    count = max(1, int(duration * sample_rate))
+    t = np.arange(count, dtype=np.float64) / sample_rate
+    signal = np.zeros(count)
+    for onset_s, gain in ((0.0, 1.0), (.22, .8)):
+        local = t - onset_s
+        ring = np.where(local >= 0.0, np.exp(-4.5 * np.maximum(local, 0.0)), 0.0)
+        for partial, weight in ((1.0, 1.0), (2.76, .45), (5.40, .2)):
+            signal += gain * weight * ring * np.sin(2 * np.pi * 1180.0 * partial * np.maximum(local, 0.0))
+    signal *= amplitude * .45
+    edge = min(count // 2, max(1, round(.006 * sample_rate)))
+    signal[-edge:] *= np.linspace(1.0, 0.0, edge)
+    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
 def combat_effect(kind: str, sample_rate: int,
                   amplitude: float = .28) -> np.ndarray:
     """Deterministic layered one-shot effects for local shipboard events."""
+    if kind == "telegraph":
+        return telegraph_bell(sample_rate, amplitude)
     profiles = {
         "torpedo_launch": (.72, 35.0, 900.0, 181, 72.0, 23.0),
         "missile_launch": (.95, 90.0, 5200.0, 223, 180.0, 820.0),

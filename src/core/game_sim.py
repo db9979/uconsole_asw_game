@@ -340,6 +340,11 @@ class SimMixin:
                                    / ship_dynamics.HULL.flood_kg_per_percent)
         self.ship.update_fuel(dt)
         self.world.update(dt)
+        # The telegraph rings as a new order drops in (sound only).
+        telegraph = self.ship.telegraph
+        if telegraph != getattr(self, "_telegraph_rung", telegraph):
+            self._emit_sound("telegraph")
+        self._telegraph_rung = telegraph
         self._steer_route(dt)
         self._steer_baffle_clear()
         contact = self.ship.update(dt, self.world, self.damage.list_deg())

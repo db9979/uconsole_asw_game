@@ -215,7 +215,7 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                  visibility_nm: float, motion: tuple, outlines, crosshair_deg=None,
                  land=None, anim_t: float = 0.0, sky=None, sea_state: float = 2.0,
                  elevation_deg: float = 0.0, stabilized: bool = False,
-                 optics_label=None, way=None, events=()) -> None:
+                 optics_label=None, way=None, events=(), lens=None) -> None:
     """The picture in the eyepiece or binoculars in the start screen's look:
     sky with stars, moon or sun and clouds, the sea in motion, the charted
     coast, the outlines within the field in steel with a lit rim, rain, snow
@@ -226,7 +226,8 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
     takes out all but ``STABILIZED_RESIDUAL`` of the hull's motion; ``way``
     is the own way through the water (``sight_scene.draw_scene``);
     ``events`` are the ``sight_events`` rows the eye can see (columns, fire,
-    sinkings), drawn at the display time ``anim_t``."""
+    sinkings), drawn at the display time ``anim_t``; ``lens`` is the water
+    on a periscope's glass (``sight_scene.lens_water``: cover, drops)."""
     rect = pygame.Rect(rect)
     sky = sky if sky is not None else sight_scene.plain_sky(night)
     offset, tilt = motion
@@ -274,6 +275,8 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
         draw_rows(afloat, colors, False)
         sight_events_view.draw_events(s, view, colors, sky, events, anim_t)
         sight_scene.draw_weather(s, view, sky, colors, visibility_nm=visibility_nm, t=anim_t)
+        if lens is not None:
+            sight_scene.draw_lens_water(s, rect, lens[0], lens[1], anim_t)
         # Labels at least ``SCALE_LABEL_MIN_PX`` apart (the narrow lookout
         # strip labels every 30 degrees, the eyepieces every 10).
         label_step = next((step for step in (10, 30, 45, 90)

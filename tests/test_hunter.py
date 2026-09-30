@@ -324,3 +324,63 @@ def test_recognising_a_submarine_takes_the_operator_minutes():
         ticks.append(tick * hunter.CADENCE_S)
     mean = sum(ticks) / len(ticks)
     assert 60.0 < mean < 400.0
+
+
+def test_two_esm_lines_from_a_mile_apart_cross_into_a_datum():
+    game, boat = _local_boat(seed=61)
+    _place(game, boat, 15.0, bearing=90.0, depth=12.0)
+    truth = (boat.sub.x, boat.sub.y)
+    _listen_esm(game)
+    assert hunter.log_esm(game) is True
+    assert hunter.log_esm(game) is False              # no new line without a baseline
+    assert hunter.datum(game)["source"] == "esm" and "x" not in hunter.datum(game)
+    game.ship.y -= 5.0                                # run 5 NM north
+    _listen_esm(game, 30)
+    assert hunter.log_esm(game) is True
+    found = hunter.datum(game)
+    assert found["source"] == "esm" and found["contact"] is None
+    assert math.hypot(found["x"] - truth[0], found["y"] - truth[1]) < 3.0
+    # An ESM fix is too coarse for a friendly escort's ASROC.
+    assert hunter.asroc(game, found) == "monitoring"
+    # The lines are saved and restored exactly; malformed lines are rejected.
+    state = game.save_state()
+    assert state["hunter_esm"] == game.hunter_esm and len(state["hunter_esm"]) == 2
+    assert hunter.valid_esm_log(state["hunter_esm"], game.sim_t)
+    assert not hunter.valid_esm_log(state["hunter_esm"], game.sim_t - 1000.0)
+    assert not hunter.valid_esm_log([dict(state["hunter_esm"][0], bearing=360.0)], game.sim_t)
+    assert not hunter.valid_esm_log([dict(state["hunter_esm"][0], extra=1.0)], game.sim_t)
+    # Old lines lapse.
+    game.sim_t += hunter.ESM_FIX_S + 1.0
+    hunter.log_esm(game)
+    assert hunter.esm_fix(game) is None
+
+
+def test_bearing_lines_cross_only_ahead_and_steeply_enough():
+    a = dict(t=0.0, x=0.0, y=0.0, bearing=90.0)
+    b = dict(t=0.0, x=0.0, y=-10.0, bearing=135.0)
+    x, y = hunter.cross(a, b)
+    assert abs(x - 10.0) < 1e-9 and abs(y) < 1e-9
+    assert hunter.cross(a, dict(b, bearing=315.0)) is None          # behind
+    assert hunter.cross(a, dict(b, y=-1.0, bearing=95.0)) is None   # too shallow
+
+
+def test_an_ai_submarine_holding_the_frigate_reports_it_on_hf():
+    from src.core.game import Game
+    game = Game(seed=7, start_menu=False, show_splash=False)
+    sub = next(item for item in game.subs if not item.manual)
+    sub.memory["contact"] = dict(x=game.ship.x, y=game.ship.y)
+    sub.memory["contact_age"] = 30.0
+    sub.depth = 60.0
+    assert not any(sub.contact_report_on_air(game.seed, t * 5.0) for t in range(360))
+    sub.depth = 15.0
+    on = [t * 5.0 for t in range(360) if sub.contact_report_on_air(game.seed, t * 5.0)]
+    assert 1 <= len(on) <= 4 and on[-1] - on[0] < config.SUB_REPORT_TX_S
+    sub.memory["contact_age"] = config.SUB_REPORT_CONTACT_S + 1.0
+    assert not sub.contact_report_on_air(game.seed, on[0])
+    sub.memory["contact_age"] = 30.0
+    # The frigate's HF/DF hears the call.
+    sub.x, sub.y = game.ship.x + 20.0, game.ship.y
+    game.world.land_blocks_line = lambda *args: False
+    game.sim_t = on[0]
+    game._update_radio_picture()
+    assert any(report.track_id == f"H-{sub.id}" for report in game.hfdf_bearings())

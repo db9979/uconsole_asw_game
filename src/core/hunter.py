@@ -59,6 +59,12 @@ ASROC_EVERY_S = 120.0
 ASROC_DATUM_S = 120.0           # only a datum this fresh is passed on for an ASROC
 ESM_DATUM_S = 300.0             # an ESM bearing on a mast radar stays a datum this long
 ESM_CANDIDATES = 3              # a submarine radar among this many library matches
+ESM_LOG_MAX = 8                 # ESM bearing lines the hunters' ELOKA keeps (saved)
+ESM_LOG_BASE_NM = 1.0           # a new line only this far from the last one's origin
+ESM_LOG_FRESH_S = 30.0          # an intercept at most this old is plotted
+ESM_FIX_S = 900.0               # lines this old cross into a fix
+ESM_FIX_CROSS_DEG = 15.0        # two lines must cross at least this steeply
+ESM_FIX_MAX_NM = 60.0           # a fix farther down either line is no fix
 SURFACE_EXPLAINS_S = 60.0       # a ship track this fresh on the bearing explains the radar
 CLASSIFY_MEAN_S = 180.0         # an operator needs this long on average to call a submarine
 AIR_FIX_S = 120.0               # aircraft attack only a position this fresh
@@ -239,6 +245,74 @@ def esm_bearings(game) -> list:
     return [track for _, _, track in sorted(rows, key=lambda row: (row[0], row[1]))]
 
 
+def log_esm(game) -> bool:
+    """The ELOKA operator plots the freshest ESM bearing on a mast radar as a
+    line from the ship's position, one per nautical mile run, so bearings
+    from two places can be crossed. Returns whether a line was added."""
+    log = game.hunter_esm
+    log[:] = [row for row in log if 0.0 <= game.sim_t - row["t"] <= ESM_FIX_S]
+    fresh = [track for track in esm_bearings(game) if track.age(game.sim_t) <= ESM_LOG_FRESH_S]
+    if not fresh:
+        return False
+    track = fresh[0]
+    if log and math.hypot(log[-1]["x"] - track.observer_x,
+                          log[-1]["y"] - track.observer_y) < ESM_LOG_BASE_NM:
+        return False
+    log.append(dict(t=float(game.sim_t), x=float(track.observer_x),
+                    y=float(track.observer_y), bearing=float(track.bearing) % 360.0))
+    del log[:-ESM_LOG_MAX]
+    return True
+
+
+def valid_esm_log(value, save_sim_t: float) -> bool:
+    """Save v39 ``hunter_esm``: at most ESM_LOG_MAX lines, oldest first, none
+    after the save time, finite positions and bearings in [0, 360)."""
+    if not isinstance(value, list) or len(value) > ESM_LOG_MAX:
+        return False
+    last = None
+    for row in value:
+        if (not isinstance(row, dict) or set(row) != {"t", "x", "y", "bearing"}
+                or any(type(row[key]) is not float or not math.isfinite(row[key])
+                       for key in row)
+                or not 0.0 <= row["t"] <= save_sim_t
+                or not 0.0 <= row["bearing"] < 360.0
+                or abs(row["x"]) > 1e6 or abs(row["y"]) > 1e6
+                or (last is not None and row["t"] < last)):
+            return False
+        last = row["t"]
+    return True
+
+
+def cross(a, b):
+    """Where two bearing lines meet ahead of both origins, or None."""
+    ax, ay = math.sin(math.radians(a["bearing"])), -math.cos(math.radians(a["bearing"]))
+    bx, by = math.sin(math.radians(b["bearing"])), -math.cos(math.radians(b["bearing"]))
+    det = ax * (-by) - ay * (-bx)
+    angle = _off(a["bearing"], b["bearing"])
+    if abs(det) < 1e-9 or not ESM_FIX_CROSS_DEG <= angle <= 180.0 - ESM_FIX_CROSS_DEG:
+        return None
+    dx, dy = b["x"] - a["x"], b["y"] - a["y"]
+    ra = (dx * (-by) - dy * (-bx)) / det
+    rb = (ax * dy - ay * dx) / det
+    if not (0.0 < ra <= ESM_FIX_MAX_NM and 0.0 < rb <= ESM_FIX_MAX_NM):
+        return None
+    return a["x"] + ra * ax, a["y"] + ra * ay
+
+
+def esm_fix(game):
+    """The newest ESM line crossed with the newest earlier one it meets:
+    (x, y, age of the newest line), or None."""
+    log = [row for row in game.hunter_esm if 0.0 <= game.sim_t - row["t"] <= ESM_FIX_S]
+    if len(log) < 2:
+        return None
+    newest = log[-1]
+    for earlier in reversed(log[:-1]):
+        point = cross(earlier, newest)
+        if point is not None:
+            return point[0], point[1], game.sim_t - newest["t"]
+    return None
+
+
 def _on_bearing(game, track, contacts):
     """The sonar contact whose bearing runs through a mast track, or None."""
     ship = game.ship
@@ -269,6 +343,10 @@ def datum(game):
         if 0.0 <= age <= FIX_MAX_AGE_S:
             positions.append((age, 1, {"x": fix["x"], "y": fix["y"], "contact": None,
                                        "source": "hfdf", "age": age}))
+    fix = esm_fix(game)
+    if fix is not None:
+        positions.append((fix[2], 3, {"x": fix[0], "y": fix[1], "contact": None,
+                                      "source": "esm", "age": fix[2]}))
     for task in hq_datums(game):
         age = game.sim_t - task["report_t"]
         positions.append((age, 2, {"x": task["x"], "y": task["y"], "contact": None,
@@ -540,7 +618,7 @@ def mpa(game, found) -> str:
 def asroc(game, found) -> str:
     """Pass a fresh located datum over the datalink: the nearest friendly
     escort with an ASROC in range fires one (one weapon in the water at a time)."""
-    if (found is None or "x" not in found or found["source"] == "hq"
+    if (found is None or "x" not in found or found["source"] in ("hq", "esm")
             or found.get("age", 0.0) > ASROC_DATUM_S
             or _running(game, "asroc") or game.asrocs or not _window(game, ASROC_EVERY_S)):
         return "monitoring"
@@ -570,6 +648,8 @@ def update(game, dt: float) -> None:
         sonar(game)
     if not manned(game, Station.OPZ):
         mark_blips(game)
+    if not manned(game, Station.ELOKA):
+        log_esm(game)
     found = datum(game)
     if not manned(game, Station.BRIDGE):
         bridge(game, found)

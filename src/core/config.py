@@ -1250,9 +1250,9 @@ BOAT_AI_PREFLOOD_MARGIN_NM = 3.0   # quiet tube flooding starts this far outside
 # A hunted or closely watched boat creeps: this slow once the frigate is
 # within BOAT_AI_THREAT_NM (its own contact) or for BOAT_AI_HUNTED_S after a
 # ping or a torpedo was heard.
-BOAT_AI_CREEP_KN = 3.0
+BOAT_AI_CREEP_KN = 4.0
 BOAT_AI_THREAT_NM = 8.0
-BOAT_AI_HUNTED_S = 600.0
+BOAT_AI_HUNTED_S = 300.0
 # Breakthrough: a frigate this close to the leg ahead is passed this far off.
 BOAT_AI_DETOUR_NM = 9.0
 BOAT_AI_DETOUR_DEG = 60.0

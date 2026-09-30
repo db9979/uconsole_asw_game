@@ -617,11 +617,18 @@ def sonar(game) -> str:
     return AutocrewController._sonar(game)
 
 
+def guarding(game) -> bool:
+    """The frigate guards its post alone against a breakthrough or a
+    reconnaissance boat (a convoy escort keeps its helicopter's full reach
+    and the patrol aircraft)."""
+    return boat_missions.mode(game) in ("breakthrough", "recon")
+
+
 def fire_range_nm(game) -> float:
     """The frigate's own torpedo range: guarding a post against a breakthrough
     or a reconnaissance boat it waits for a closer shot than when it hunts or
     screens a convoy."""
-    return GUARD_FIRE_NM if boat_missions.mode(game) in ("breakthrough", "recon") else SHIP_FIRE_NM
+    return GUARD_FIRE_NM if guarding(game) else SHIP_FIRE_NM
 
 
 def weapons(game, found) -> str:
@@ -662,7 +669,7 @@ def helicopter(game, found) -> str:
         return "monitoring"
     point = datum_point(game, found)
     ship = game.ship
-    reach = HELO_RANGE_NM if boat_missions.mode(game) is None else HELO_GUARD_NM
+    reach = HELO_GUARD_NM if guarding(game) else HELO_RANGE_NM
     if point is None or math.hypot(point[0] - ship.x, point[1] - ship.y) > reach:
         if helo.state == "AUF":
             if helo.dip_state == "DEPLOYED":
@@ -714,9 +721,9 @@ def helicopter(game, found) -> str:
 
 def mpa(game, found) -> str:
     aircraft = game.mpa
-    if game.damage.station_down("opz") or boat_missions.mode(game) is not None:
-        # The patrol aircraft is HQ's asset for the frigate's own hunts; a
-        # frigate guarding its post against the submarine gets none.
+    if game.damage.station_down("opz") or guarding(game):
+        # A frigate guarding its post against the submarine gets no patrol
+        # aircraft; HQ sends it to hunts and to convoys.
         return "monitoring"
     point = datum_point(game, found) if found is not None and "x" in found else None
     if point is None:

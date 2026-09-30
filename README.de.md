@@ -14,17 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.102**
+Aktuelle Version: **1.3.103**
 
-Version 1.3.102 lässt den Brückenausguck nachts und bei schlechter Sicht
-die Positionslichter melden, die er sieht, mit seiner Deutung: beide
-Seitenlichter heißen, ein Fahrzeug hält auf das Schiff zu, und werden laut
-gemeldet, Grün oder Rot allein zeigen seine Steuerbord- oder Backbordseite,
-das Hecklicht allein, dass es abläuft, und Rundumlichter seine Arbeit
-(Fischer, Lotse, manövrierbehindert, Minenräumer) oder, blitzend, ein
-Luftfahrzeug. Die Lichter eines Kontakts meldet er erst wieder, wenn sich ihre
-Aussage ändert, höchstens alle zwei Minuten, und die Remote-Crew-Brücke führt
-die Meldungen mit den übrigen.
+Version 1.3.103 macht die Karte Leckwehr des U-Boots im Browser zu einem
+Leckwehr-Leitstand wie bei der Fregatte: eine Warn- und Meldetafel mit
+Sammellampe (Strom, Wasser, Lecks, Brand, Gas, ausgefallene Abteilungen,
+geschlossene Schotten, Trupps, Lenzpumpen, Verwundete, Trimm, Pressluft und
+Übertiefe) über einer Seitenansicht des Druckkörpers mit vom Kiel steigendem
+Wasser, Brandschein, Gasschleier, Lecks, geschlossenen Schotten, einer
+Zustandslampe je Abteilung und den Trupp-Plaketten, dazu Rundinstrumente für
+Trimm, Wassereinbruch und Pressluft; Tabelle und Trupp-Befehle bleiben
+darunter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

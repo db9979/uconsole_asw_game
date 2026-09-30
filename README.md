@@ -12,16 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.102**
+Current release: **1.3.103**
 
-Release 1.3.102 lets the bridge lookout call out the navigation lights he
-sees at night and in poor visibility, with his reading of them: both side
-lights mean a vessel is heading for the ship and are called aloud, green or
-red alone show her starboard or port side, the stern light alone that she is
-going away, and all-round lights her work (fishing, pilot, restricted in
-ability to manoeuvre, clearing mines) or, flashing, an aircraft. He calls a
-contact's lights again only when what they tell changes, at most every two
-minutes, and the Remote Crew bridge lists the calls with the other reports.
+Release 1.3.103 turns the submarine's Damage control card in the browser
+into a damage-control console like the frigate's: an annunciator panel with
+the master lamp (power, water, leaks, fire, gas, lost compartments, shut
+bulkheads, teams, bilge pumps, wounded, trim, high-pressure air and over
+depth) above a side view of the pressure hull with water rising from the
+keel, fire glow, gas haze, leaks, shut bulkheads, a state lamp per
+compartment and the team badges, and gauges for trim, floodwater and
+high-pressure air; the table and the team orders stay below.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

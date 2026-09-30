@@ -6168,7 +6168,7 @@
   "scenario.strait.win": "Fregatte: U-Boot versenkt oder Meerenge bis zum Zeitlimit gehalten",
   "scenario.strait.lose": "U-Boot passiert die Meerenge / Fregatte gesunken",
   "scenario.swimmers.title": "Kampfschwimmer (U-Boot)",
-  "scenario.swimmers.brief": "U-Boot-Mission. Das U-Boot muss Kampfschwimmer vor einer Küste absetzen: Es muss in einer Zone von 1 sm Radius vor der Küste höchstens 20 m tief und höchstens 1,5 kn schnell 10 Minuten ohne Unterbrechung liegen, während die Schwimmer durch die Schleuse aussteigen. Es startet etwa 12 sm draußen auf See; sein Auftrag nennt Peilung und Entfernung zur Zone. Die Fregatte bewacht einen Küstenabschnitt von 12 sm Radius darum, ohne die genaue Zone zu kennen. Sie muss das U-Boot versenken oder das Absetzen bis zum Zeitlimit (5 Stunden) verhindern.",
+  "scenario.swimmers.brief": "U-Boot-Mission. Das U-Boot muss Kampfschwimmer vor einer Küste absetzen: Es muss in einer Zone von 1 sm Radius vor der Küste höchstens 20 m tief und höchstens 1,5 kn schnell 10 Minuten ohne Unterbrechung liegen, während die Schwimmer durch die Schleuse aussteigen. Es startet etwa 12 sm draußen auf See; sein Auftrag nennt Peilung und Entfernung zur Zone. Die Fregatte bewacht einen Küstenabschnitt von 18 sm Radius darum, ohne die genaue Zone zu kennen. Sie muss das U-Boot versenken oder das Absetzen bis zum Zeitlimit (5 Stunden) verhindern.",
   "scenario.swimmers.win": "Fregatte: U-Boot versenkt oder Absetzen bis zum Zeitlimit verhindert",
   "scenario.swimmers.lose": "Kampfschwimmer abgesetzt / Fregatte gesunken",
   "scenario.escort.title": "Versorgerschutz (U-Boot)",

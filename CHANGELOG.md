@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.105
+
+Release 1.3.105 gives the AI reconnaissance submarine a real periscope
+search. In the reconnaissance mission played from the frigate, the AI boat at
+periscope depth no longer sights the frigate just by range and visibility: it
+raises its periscope for a 24 s look every 90 s, sweeps round from the bow
+and makes the frigate out only where the lookout's contrast model at 2.5 m eye
+height allows (light, moon, visibility, sea state, land in the way). While the
+periscope is up it counts as a raised mast, so the frigate's surface radar and
+the patrol aircraft can catch it. Night, fog and heavy seas now shield the
+frigate, and every look is a risk for the boat.
+
 ## 1.3.104
 
 Release 1.3.104 makes the AI hunters and the AI submarines use the radio

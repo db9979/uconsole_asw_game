@@ -70,6 +70,10 @@ Statusleiste für sich umschalten.
   inaktiven Leases freizugeben. Verwende Station hinzufügen für eine weitere
   Anfrage; eine genehmigte Station wird automatisch geöffnet. Danach kann jede
   behaltene Lease über die stabile Stationsauswahl geöffnet werden.
+- Eine Anfrage für eine Station, die ein Crewmitglied hält, erscheint in dessen
+  Browser („Name fragt nach Station“) mit Übergeben und Station behalten; der Host
+  kann sie weiterhin im F9-Roster freigeben oder ablehnen. Eine Station hat immer
+  alle ihre Rechte: das Roster schaltet nur das SimLog (`L`) und Beobachter (`O`).
 - Eine Station mit aktiver Lease ist auf der uConsole schreibgeschützt, bis der
   Host ihre Lease widerruft. F9-Verwaltung und das Umschalten der lokalen
   Anzeige auf eine andere Station bleiben verfügbar; behaltene inaktive

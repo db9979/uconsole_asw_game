@@ -298,13 +298,11 @@ class CommanderConsole:
             ok = self.server.grant_station(client_id, station)
             success = message("commander.roster.status.assigned", client=name,
                               station=message(self._station_key(station)))
-        elif action in ("command", "direct_fire", "simlog", "sonar_audio", "observer"):
-            station = ROLES[self.roster_station]
-            enabled = (not selected.get(action, False) if action in ("simlog", "observer") else
-                       not self._station_row(selected, station)["grants"][action])
-            ok = (self.server.set_client_grant(client_id, action, enabled)
-                  if action in ("simlog", "observer") else
-                  self.server.set_client_grant(client_id, station, action, enabled))
+        elif action in ("simlog", "observer"):
+            # A station is always held with its full rights; only the
+            # session-wide SimLog and observer grants remain host toggles.
+            enabled = not selected.get(action, False)
+            ok = self.server.set_client_grant(client_id, action, enabled)
             success = message("commander.roster.status.grant", client=name,
                               capability=message(f"commander.roster.capability.{action}"),
                               state=message("common.on" if enabled else "common.off"))
@@ -886,14 +884,8 @@ class CommanderConsole:
             self._roster_action("assign")
         elif key == pygame.K_r:
             self._roster_action("reject")
-        elif key == pygame.K_c:
-            self._roster_action("command")
-        elif key == pygame.K_d:
-            self._roster_action("direct_fire")
         elif key == pygame.K_l:
             self._roster_action("simlog")
-        elif key == pygame.K_u:
-            self._roster_action("sonar_audio")
         elif key == pygame.K_o:
             self._roster_action("observer")
         elif key == pygame.K_x:
@@ -914,7 +906,7 @@ class CommanderConsole:
 
     @staticmethod
     def roster_action_rects():
-        return tuple(pygame.Rect(704, 116 + index * 39, 452, 34) for index in range(11))
+        return tuple(pygame.Rect(704, 116 + index * 39, 452, 34) for index in range(8))
 
     @classmethod
     def roster_station_cycle_rects(cls):
@@ -955,8 +947,7 @@ class CommanderConsole:
                 self.roster_status = None
                 self._roster_mouse_confirm = None
                 return
-        actions = ("approve", "reject", "assign", "command", "direct_fire", "simlog",
-                   "sonar_audio", "observer",
+        actions = ("approve", "reject", "assign", "simlog", "observer",
                    "revoke_station", "revoke_client", "revoke_all")
         for action, rect in zip(actions, self.roster_action_rects()):
             if rect.collidepoint(canvas):
@@ -1147,25 +1138,13 @@ class CommanderConsole:
             layout.blit_line(screen, text, rect.inflate(-10, -2),
                              config.COLOR_WARN if chosen else config.COLOR_TEXT, size=16)
         state = "common.on" if selected is not None else "common.off"
-        selected_station = ROLES[self.roster_station]
-        station_grants = (self._station_row(selected, selected_station)["grants"]
-                          if selected else {})
         action_texts = (
             "commander.roster.approve", "commander.roster.reject",
             message("commander.roster.assign", station=message(
                 self._station_key(ROLES[self.roster_station]))),
             message("commander.roster.toggle", capability=message(
-                "commander.roster.capability.command"), state=message(
-                    "common.on" if station_grants.get("command") else "common.off")),
-            message("commander.roster.toggle", capability=message(
-                "commander.roster.capability.direct_fire"), state=message(
-                    "common.on" if station_grants.get("direct_fire") else "common.off")),
-            message("commander.roster.toggle", capability=message(
                 "commander.roster.capability.simlog"), state=message(
                     "common.on" if selected and selected["simlog"] else "common.off")),
-            message("commander.roster.toggle", capability=message(
-                "commander.roster.capability.sonar_audio"), state=message(
-                    "common.on" if station_grants.get("sonar_audio") else "common.off")),
             message("commander.roster.toggle", capability=message(
                 "commander.roster.capability.observer"), state=message(
                     "common.on" if selected and selected.get("observer") else "common.off")),

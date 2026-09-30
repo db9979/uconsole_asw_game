@@ -49,6 +49,9 @@ HOST_ROLE = "host"
 # Observers (plan 1.3, phase 12): read-only pseudo-role the host grants; a
 # session then views any station without a lease and gets the SimLog.
 OBSERVER_MAX = 2
+# Pending requests one holder sees for its stations in the session body
+# (``handover``); the crew limit bounds it well below this.
+HANDOVER_MAX = 16
 
 
 def role_side(role):

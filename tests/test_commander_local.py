@@ -812,21 +812,18 @@ def test_roster_keyboard_actions_grant_requests_assign_and_revoke(game):
     # Approval always carries every right of the station.
     assert server._client("bravo")["stations"]["sonar"]["grants"] == {
         "command": True, "direct_fire": False, "sonar_audio": True}
-    console.handle_key(game, pygame.K_c)
-    assert not server._client("bravo")["stations"]["sonar"]["grants"]["command"]
+    # A station always carries its full rights: C, D and U toggle nothing.
     before = server.client_statuses()
-    console.handle_key(game, pygame.K_d)
-    assert server.client_statuses() == before
-    assert console.roster_status == "commander.roster.error.grant"
+    calls = list(server.calls)
+    for removed in (pygame.K_c, pygame.K_d, pygame.K_u):
+        console.handle_key(game, removed)
+    assert server.client_statuses() == before and server.calls == calls
     console.handle_key(game, pygame.K_l)
     assert server._client("bravo")["simlog"]
 
     console.roster_station = local.STATIONS.index("weapons")
     console.handle_key(game, pygame.K_a)
-    assert server._client("bravo")["stations"]["weapons"]["grants"]["command"]
-    console.handle_key(game, pygame.K_d)
     assert server._client("bravo")["stations"]["weapons"]["leased"]
-    assert server._client("bravo")["stations"]["weapons"]["grants"]["direct_fire"]
     server._client("bravo")["stations"]["bridge"].update(
         requested=True, request_generation=2)
     console.handle_key(game, pygame.K_r)
@@ -909,9 +906,10 @@ def test_roster_approves_selected_additive_request_and_keeps_other_request(game)
     assert selected["stations"]["bridge"]["requested"]
 
 
-@pytest.mark.parametrize("action_index", [9, 10])
+@pytest.mark.parametrize("action_index", [6, 7])
 def test_roster_mouse_destructive_actions_require_same_target_double_click(game, action_index):
-    # Action rows: ... 7 observer, 8 revoke station, 9 revoke client, 10 revoke all.
+    # Action rows: 0 approve, 1 reject, 2 assign, 3 SimLog, 4 observer,
+    # 5 revoke station, 6 revoke client, 7 revoke all.
     server = RosterTransport((roster_client("alpha", "Alpha", 0, station="bridge"),
                               roster_client("bravo", "Bravo", 1, station="sonar")))
     console = game.commander
@@ -921,7 +919,7 @@ def test_roster_mouse_destructive_actions_require_same_target_double_click(game,
     point = console.roster_action_rects()[action_index].center
     console.handle_click(game, point)
     assert len(server.statuses) == 2 and not server.calls
-    if action_index == 9:
+    if action_index == 6:
         console.handle_click(game, console.roster_client_rects()[1].center)
         console.handle_click(game, point)
         assert len(server.statuses) == 2
@@ -930,7 +928,7 @@ def test_roster_mouse_destructive_actions_require_same_target_double_click(game,
         console.handle_click(game, point)
         assert len(server.statuses) == 3
     console.handle_click(game, point)
-    assert (len(server.statuses) == 1 if action_index == 9 else
+    assert (len(server.statuses) == 1 if action_index == 6 else
             all(status["active_station"] is None for status in server.statuses))
 
 

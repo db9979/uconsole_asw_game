@@ -61,6 +61,10 @@ switch for itself with the English/Deutsch button in its status bar.
   station leases and switch between them without releasing the inactive leases.
   Use Add station for another request; an approved station opens automatically.
   Afterwards, choose any retained lease from the stable station selector.
+- A request for a station a crewmate holds appears in that crewmate's browser
+  ("Name asks for Station") with Hand over and Keep station; the host can still
+  approve or reject it in the F9 roster. A station always carries its full
+  rights: the roster toggles only the SimLog (`L`) and observer (`O`).
 - A leased station is read-only on the uConsole until the host revokes its lease.
   F9 administration and switching the local display to another station
   remain available, and retained inactive browser leases stay exclusive.

@@ -99,8 +99,9 @@ def assert_session(body, name):
         "protocol", "client_id", "name", "csrf", "station", "observer",
         "requested_station", "grants", "ordinal", "station_generation",
         "active_station", "active_generation", "simlog",
-        "next_command_seq", "presence", "stations", "host", "lobby",
+        "next_command_seq", "presence", "stations", "host", "lobby", "handover",
     }
+    assert body["handover"] == []
     assert body["host"] is None
     assert body["lobby"] is None
     assert body["protocol"] == 2
@@ -343,6 +344,96 @@ def test_station_request_requires_cookie_csrf_and_exact_schema(server):
     assert second["stations"]["bridge"]["requested"]
     assert second["stations"]["bridge"]["status"] == "occupied"
     assert second["requested_station"] == "bridge"  # Canonical compatibility alias.
+
+
+def _handover_pair(server):
+    """A holder of the weapons station and a crewmate asking for it."""
+    _, holder_cookie, _, holder = pair_v2(server, "Holder")
+    _, asker_cookie, _, asker = pair_v2(server, "Asker")
+    route = "/api/v2/stations/request"
+    assert request(server, route, "POST", {"station": "weapons"}, holder_cookie,
+                   holder["csrf"])[2]["station"] == "weapons"
+    asked = request(server, route, "POST", {"station": "weapons"}, asker_cookie,
+                    asker["csrf"])[2]
+    assert asked["requested_station"] == "weapons" and asked["handover"] == []
+    held = request(server, "/api/v2/session", cookie=holder_cookie)[2]
+    generation = asked["stations"]["weapons"]["request_generation"]
+    # Requester's name and ordinal only; no client id or credential.
+    assert held["handover"] == [{"station": "weapons", "name": "Asker",
+                                 "ordinal": asker["ordinal"],
+                                 "request_generation": generation}]
+    decision = {"station": "weapons", "ordinal": asker["ordinal"],
+                "request_generation": generation}
+    return (holder_cookie, holder), (asker_cookie, asker), decision
+
+
+def test_holder_hands_a_requested_station_over_with_full_rights(server):
+    (holder_cookie, holder), (asker_cookie, asker), decision = _handover_pair(server)
+    status, _, body = request(server, "/api/v2/stations/handover", "POST",
+                              dict(decision, accept=True), holder_cookie, holder["csrf"])
+    assert status == 200
+    assert body["stations"]["weapons"]["status"] == "occupied"
+    assert body["station"] is None and body["handover"] == []
+    taken = request(server, "/api/v2/session", cookie=asker_cookie)[2]
+    assert taken["station"] == "weapons" and taken["requested_station"] is None
+    assert taken["stations"]["weapons"]["grants"] == {
+        "command": True, "direct_fire": True, "sonar_audio": False}
+    # The same decision again is stale: the holder no longer holds the station.
+    assert request(server, "/api/v2/stations/handover", "POST", dict(decision, accept=True),
+                   holder_cookie, holder["csrf"])[:3:2] == (409, {"error": "stale_request"})
+
+
+def test_holder_declines_a_request_and_keeps_the_station(server):
+    (holder_cookie, holder), (asker_cookie, asker), decision = _handover_pair(server)
+    status, _, body = request(server, "/api/v2/stations/handover", "POST",
+                              dict(decision, accept=False), holder_cookie, holder["csrf"])
+    assert status == 200 and body["station"] == "weapons" and body["handover"] == []
+    asked = request(server, "/api/v2/session", cookie=asker_cookie)[2]
+    assert asked["requested_station"] is None and asked["station"] is None
+
+
+def test_handover_refuses_stale_generation_wrong_holder_and_bad_bodies(server):
+    (holder_cookie, holder), (asker_cookie, asker), decision = _handover_pair(server)
+    route = "/api/v2/stations/handover"
+    body = dict(decision, accept=True)
+    assert request(server, route, "POST", body)[0] == 401
+    assert request(server, route, "POST", body, holder_cookie)[0] == 403
+    assert request(server, route, "POST", body, holder_cookie, "wrong")[0] == 403
+    for bad in ({}, dict(decision), dict(body, extra=1), dict(body, accept=1),
+                dict(body, station="Weapons"), dict(body, ordinal=True),
+                dict(body, ordinal=-1), dict(body, request_generation="1"),
+                dict(body, request_generation=2 ** 60), [], None):
+        assert request(server, route, "POST", bad, holder_cookie, holder["csrf"])[0] == 400
+    stale = dict(body, request_generation=decision["request_generation"] + 1)
+    assert request(server, route, "POST", stale, holder_cookie, holder["csrf"])[0] == 409
+    # Only the holder decides: the asker (or a third browser) cannot.
+    _, third_cookie, _, third = pair_v2(server, "Third")
+    assert request(server, route, "POST", body, third_cookie, third["csrf"])[0] == 409
+    assert request(server, route, "POST", dict(body, ordinal=holder["ordinal"]),
+                   asker_cookie, asker["csrf"])[0] == 409
+    assert request(server, route, "POST", dict(body, station="sonar"),
+                   holder_cookie, holder["csrf"])[0] == 409
+    # Nothing changed hands.
+    assert request(server, "/api/v2/session", cookie=holder_cookie)[2]["station"] == "weapons"
+    assert request(server, "/api/v2/session", cookie=asker_cookie)[2][
+        "requested_station"] == "weapons"
+    # Locked form for the host-side API: exact holder and generation only.
+    assert not server.decide_handover(asker["client_id"], "weapons", asker["ordinal"],
+                                      decision["request_generation"], True)
+    assert not server.decide_handover(holder["client_id"], "weapons", asker["ordinal"],
+                                      decision["request_generation"], "yes")
+    assert server.decide_handover(holder["client_id"], "weapons", asker["ordinal"],
+                                  decision["request_generation"], True)
+    assert request(server, "/api/v2/session", cookie=asker_cookie)[2]["station"] == "weapons"
+
+
+def test_observers_get_no_handover_entries_or_decisions(server):
+    (holder_cookie, holder), _, decision = _handover_pair(server)
+    assert server.set_client_grant(holder["client_id"], "observer", True)
+    body = request(server, "/api/v2/session", cookie=holder_cookie)[2]
+    assert body["observer"] and body["handover"] == []
+    assert request(server, "/api/v2/stations/handover", "POST", dict(decision, accept=True),
+                   holder_cookie, holder["csrf"])[0] == 403
 
 
 def test_multi_station_activation_and_station_specific_release_are_exact(server):

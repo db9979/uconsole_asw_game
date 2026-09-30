@@ -28,6 +28,7 @@ or trigger sensor/TMA work. Candidate-load methods have no network side effects.
 | GET /api/v2/results, /proposals, /events | Role- and session-scoped command state |
 | GET /api/v2/simlog | Host-granted full-truth diagnostic snapshots, at most 64 entries |
 | POST /api/v2/stations/request, /activate, /release | Strict lease operations |
+| POST /api/v2/stations/handover | The holder hands a requested station over or keeps it |
 | POST /api/v2/commands | Strict action envelope; 202 means queued, not applied |
 | POST /api/v2/sonar/audio | Separately granted live Sonar audio polling |
 | POST /api/v2/helicopter/audio | Separately granted live helicopter audio polling |
@@ -58,6 +59,20 @@ identified by a separate monotonic active generation. Station requests are
 additive; activation does not release another lease. Release, revocation,
 takeover, expiry, and world replacement invalidate authority
 at their defined scope.
+
+A request for a station a crewmate holds waits for a decision. The holder's
+session body lists it under `handover`: at most 16 entries
+`{"station", "name", "ordinal", "request_generation"}` (the requester's display
+name and pairing ordinal, never a client id or credential), in station order and
+then pairing order; observers and phone lookouts always get `[]`. The holder
+answers with `POST /api/v2/stations/handover` and the exact body
+`{"station": str, "ordinal": int, "request_generation": int, "accept": bool}`
+(cookie, Origin and CSRF as for the other station routes). `accept: true` hands
+the station over with its full rights, exactly like the host's roster approval;
+`false` declines the request. A malformed body is 400, an observer or phone
+lookout 403, and a decision for a station the session no longer holds or a
+request that changed is 409 `stale_request`. The host roster keeps approving and
+rejecting requests as before.
 
 Activation validates the target lease and its station generation but does not
 compare an older active generation; this lets a client select any still-retained

@@ -244,7 +244,8 @@ function drawOpzSweepOverlay() {
   resizeCanvas(roleMapSweepCanvas, roleMapSweepCtx, width, height);
   roleMapSweepCtx.clearRect(0, 0, width, height);
   const role = S.v2State?.role, fxGeometry = role ? roleMapGeometry(role, width, height) : null;
-  if (fxGeometry && S.v2State?.plot?.fx) drawMapFx(roleMapSweepCtx, S.v2State.plot.fx, fxGeometry.point, fxGeometry.scale);
+  // Marks spread only while the mission runs; after the end they hold still.
+  if (fxGeometry && S.v2State?.plot?.fx && S.v2State.phase === "live") drawMapFx(roleMapSweepCtx, S.v2State.plot.fx, fxGeometry.point, fxGeometry.scale);
   const radar = S.v2State?.role === "opz" ? S.v2State.opz.radar : null;
   const own = S.v2State?.role === "opz" ? S.v2State.opz.own_assets.ship : null;
   if (!radar?.live || !(radar.surface || radar.air) || !hasPosition(own)) return;

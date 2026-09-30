@@ -6379,6 +6379,6 @@
   "commander.web.helo_deck_values": "Roll {roll}° · pitch {pitch}°",
   "commander.web.helo_deck_open": "Window open: launch and recovery",
   "commander.web.helo_deck_wait": "Waiting for a quiet period",
-  "helo.deck.roll": "Roll {roll}° / {limit}°",
-  "helo.deck.pitch": "Pitch {pitch}° / {limit}°"
+  "helo.deck.roll": "Roll {roll}° (limit {limit}°)",
+  "helo.deck.pitch": "Pitch {pitch}° (limit {limit}°)"
 }

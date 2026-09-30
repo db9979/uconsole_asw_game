@@ -6379,6 +6379,6 @@
   "commander.web.helo_deck_values": "Rollen {roll}° · Stampfen {pitch}°",
   "commander.web.helo_deck_open": "Fenster offen: Start und Landung",
   "commander.web.helo_deck_wait": "Warten auf ruhige Phase",
-  "helo.deck.roll": "Rollen {roll}° / {limit}°",
-  "helo.deck.pitch": "Stampfen {pitch}° / {limit}°"
+  "helo.deck.roll": "Rollen {roll}° (Grenze {limit}°)",
+  "helo.deck.pitch": "Stampfen {pitch}° (Grenze {limit}°)"
 }

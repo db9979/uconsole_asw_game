@@ -832,6 +832,9 @@ async function run() {
   await sleep(120);
   baseObserver.disconnect();
   assert(baseRedraws <= 1, "OPZ redraws the whole map on every sweep frame");
+  // Ping rings and splashes animate on the same layer while they spread;
+  // clear them so only the sweep itself is compared below.
+  states.opz.plot = {...states.opz.plot, fx: {pings: [], echoes: [], splashes: []}};
   states.opz.phase = "ended";
   await until(() => $test("role-visual-state").textContent.includes("inactive") ||
     $test("role-visual-state").textContent.includes("inaktiv"), "ended OPZ state missing");

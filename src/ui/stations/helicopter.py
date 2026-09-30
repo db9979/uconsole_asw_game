@@ -40,13 +40,14 @@ def helicopter_regions(game=None, station_rect=None, page=0) -> dict[str, pygame
         status_h = min(status_h + 10, max(int(available * 0.45),
                                           available - gap - 110))
         resources_h = max(1, available - status_h - gap)
-        # The deck-motion gauge takes the right third beside the resources.
-        deck_w = width // 3
+        # The deck-motion gauge is a strip below the resources.
+        deck_h = min(max(96, resources_h // 3), max(1, resources_h - 150))
         return {
             "station": station,
             "status": pygame.Rect(x, top, width, status_h),
-            "resources": pygame.Rect(x, top + status_h + gap, width - deck_w - gap, resources_h),
-            "deck": pygame.Rect(x + width - deck_w, top + status_h + gap, deck_w, resources_h),
+            "resources": pygame.Rect(x, top + status_h + gap, width,
+                                     resources_h - deck_h - gap),
+            "deck": pygame.Rect(x, top + status_h + resources_h - deck_h + gap, width, deck_h),
             "rules": empty,
         }
     else:
@@ -385,7 +386,9 @@ def _draw_deck_gauge(game, s, region) -> None:
     inside = helicopter_physics.deck_within_limits(roll_deg, pitch_deg)
     label_h = layout.font(14).get_linesize()
     bar_h = 10
-    picture = pygame.Rect(x, y, w, max(20, h - 3 * label_h - bar_h - 14))
+    # Left: the picture; right: the values, the quiet-period bar and state.
+    picture = pygame.Rect(x, y, min(w // 2, 260), h)
+    tx, tw = picture.right + 12, max(1, x + w - picture.right - 12)
     cx, cy = picture.centerx - 10, picture.centery
     # Horizon (fixed) and the stern silhouette tilted by the roll.
     pygame.draw.rect(s, DECK_SEA, (picture.x, cy, picture.w - 22, picture.bottom - cy))
@@ -393,6 +396,7 @@ def _draw_deck_gauge(game, s, region) -> None:
     half = min(picture.w - 22, picture.h * 2) * 0.32
     roll = math.radians(roll_deg)
     ux, uy = math.cos(roll), math.sin(roll)
+
     def turned(shape):
         return [(cx + px * ux - py * uy, cy + px * uy + py * ux) for px, py in shape]
 
@@ -409,7 +413,7 @@ def _draw_deck_gauge(game, s, region) -> None:
         tip = (cx + half * 1.1 * math.cos(rad), cy + half * 1.1 * math.sin(rad))
         pygame.draw.line(s, config.COLOR_TEXT_DIM, (cx + half * 0.95 * math.cos(rad),
                                                     cy + half * 0.95 * math.sin(rad)), tip, 1)
-    # Pitch bar at the right: centre is level, the ticks the limit.
+    # Pitch bar at the right of the picture: centre is level, ticks the limit.
     bar = pygame.Rect(picture.right - 14, picture.y + 4, 8, picture.h - 8)
     pygame.draw.rect(s, config.COLOR_GRID, bar, 1)
     scale = bar.h / 2 / (helicopter_physics.DECK_PITCH_LIMIT_DEG * 2.0)
@@ -419,19 +423,19 @@ def _draw_deck_gauge(game, s, region) -> None:
     py = bar.centery - max(-2 * helicopter_physics.DECK_PITCH_LIMIT_DEG,
                            min(2 * helicopter_physics.DECK_PITCH_LIMIT_DEG, pitch_deg)) * scale
     pygame.draw.rect(s, color, (bar.x + 1, py - 2, bar.w - 2, 4))
-    ly = picture.bottom + 4
+    ly = y + max(0, (h - 3 * label_h - bar_h - 6) // 2)
     layout.blit_line(s, message("helo.deck.roll", roll=f"{abs(roll_deg):.1f}",
                                 limit=f"{helicopter_physics.DECK_ROLL_LIMIT_DEG:.0f}"),
-                     (x, ly, w, label_h), config.COLOR_TEXT, size=14)
+                     (tx, ly, tw, label_h), config.COLOR_TEXT, size=14)
     layout.blit_line(s, message("helo.deck.pitch", pitch=f"{abs(pitch_deg):.1f}",
                                 limit=f"{helicopter_physics.DECK_PITCH_LIMIT_DEG:.1f}"),
-                     (x, ly + label_h, w, label_h), config.COLOR_TEXT, size=14)
+                     (tx, ly + label_h, tw, label_h), config.COLOR_TEXT, size=14)
     fill = min(1.0, quiet / helicopter_physics.DECK_WINDOW_S)
-    track = pygame.Rect(x, ly + 2 * label_h + 2, w, bar_h)
+    track = pygame.Rect(tx, ly + 2 * label_h + 3, tw, bar_h)
     pygame.draw.rect(s, config.COLOR_GRID, track, 1)
     pygame.draw.rect(s, color, (track.x + 1, track.y + 1, int((track.w - 2) * fill), track.h - 2))
     layout.blit_line(s, "helo.deck.open" if open_ else "helo.deck.wait",
-                     (x, track.bottom + 2, w, label_h), color, size=14)
+                     (tx, track.bottom + 3, tw, label_h), color, size=14)
 
 
 @localized

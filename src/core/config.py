@@ -1321,6 +1321,10 @@ BOAT_AI_SCOPE_CYCLE_S = 90.0
 BOAT_AI_SCOPE_LOOK_S = 24.0
 BOAT_AI_SCOPE_SWEEP_S = 16.0
 BOAT_AI_ATTACK_NM = 4.0            # convoy attack: fire at a merchant this close
+# Escort: a lone, zigzagging supply ship is fired at from farther off.
+BOAT_AI_ESCORT_ATTACK_NM = 7.0
+# ... from this far abeam of its base track, clear of the escort ahead of it.
+BOAT_AI_ESCORT_ABEAM_NM = 6.0
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0
 # Frigate missions: an AI patrol boat torpedoes a merchant within
@@ -1353,7 +1357,10 @@ BOAT_AI_WAIT_KN = 2.0
 BOAT_AI_SHADOW_NM = 3.0
 BOAT_AI_SHADOW_ASTERN_NM = 0.3
 BOAT_AI_SWIMMER_APPROACH_NM = 3.0
-# A mission boat evades a ping at this speed; a torpedo still makes it run.
+# A mission boat ignores a ping from farther than this (its sonar cannot
+# hold the boat there) and evades a closer one at BOAT_AI_EVADE_KN; a
+# torpedo still makes it run.
+BOAT_AI_PING_IGNORE_NM = 8.0
 BOAT_AI_EVADE_KN = 5.0
 # A mission boat attacks a located frigate this many times as readily.
 BOAT_AI_ATTACK_MULT = 4.0

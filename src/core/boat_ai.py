@@ -160,10 +160,11 @@ def detour(sub, course: float, distance_nm: float) -> float:
     return (course - math.copysign(config.BOAT_AI_DETOUR_DEG, off or 1.0)) % 360.0
 
 
-def ambush_point(sub, ships, course=None):
+def ambush_point(sub, ships, course=None, hold=False):
     """Where the boat waits for the convoy: ahead of it, abeam of its track on
     the boat's side; None once the convoy has passed the boat. ``course`` is
-    the track (the lead ship's course by default)."""
+    the track (the lead ship's course by default). With ``hold`` the boat
+    only closes the track sideways and lets the ships come to it."""
     cx = sum(ship.x for ship in ships) / len(ships)
     cy = sum(ship.y for ship in ships) / len(ships)
     rad = math.radians(ships[0].course if course is None else course)
@@ -173,6 +174,9 @@ def ambush_point(sub, ships, course=None):
         return None
     side = 1.0 if rx * -uy + ry * ux >= 0.0 else -1.0
     ahead, abeam = config.BOAT_AI_AMBUSH_AHEAD_NM, config.BOAT_AI_AMBUSH_ABEAM_NM
+    if hold:
+        ahead = max(ahead, rx * ux + ry * uy)
+        abeam = config.BOAT_AI_ESCORT_ABEAM_NM
     return cx + ahead * ux - side * abeam * uy, cy + ahead * uy + side * abeam * ux
 
 
@@ -212,11 +216,11 @@ def orders(game, sub):
         target = min(ships, key=lambda ship: (math.hypot(ship.x - sub.x, ship.y - sub.y),
                                               ship.id))
         distance = math.hypot(target.x - sub.x, target.y - sub.y)
-        if distance <= config.BOAT_AI_ATTACK_NM:
+        if distance <= attack_nm(game):
             # Turn the tubes on the target and creep in.
             return (_bearing(sub.x, sub.y, target.x, target.y),
                     config.BOAT_AI_PERISCOPE_KN, _deep(game, sub))
-        wait = ambush_point(sub, ships, track)
+        wait = ambush_point(sub, ships, track, hold=kind == "escort")
         if wait is not None:
             # Ahead of the convoy: lie in wait abeam of its track, quietly.
             gap = math.hypot(wait[0] - sub.x, wait[1] - sub.y)
@@ -308,18 +312,29 @@ def _torpedo_running(game, sub) -> bool:
         for torpedo in game.enemy_torpedoes)
 
 
+def attack_nm(game) -> float:
+    """How close the boat closes a ship before it fires."""
+    if boat_missions.mode(game) == "escort":
+        return config.BOAT_AI_ESCORT_ATTACK_NM
+    return config.BOAT_AI_ATTACK_NM
+
+
 def attack(game, sub, ships=None) -> bool:
     """Fire one torpedo at the nearest merchant within attack range."""
     near = [ship for ship in (convoy_ships(game) if ships is None else ships)
             if math.hypot(ship.x - sub.x, ship.y - sub.y)
-            <= config.BOAT_AI_ATTACK_NM + config.BOAT_AI_PREFLOOD_MARGIN_NM]
-    if (near and sub.state == "PATROLLE" and sub.torpedoes_left > 0
+            <= attack_nm(game) + config.BOAT_AI_PREFLOOD_MARGIN_NM]
+    # Against the lone supply ship the boat fires even while it slips away
+    # from a ping: one hit decides the mission.
+    ready = sub.state == "PATROLLE" or (sub.state == "EVADE"
+                                        and boat_missions.mode(game) == "escort")
+    if (near and ready and sub.torpedoes_left > 0
             and (sub.weapon_battery is None or sub.weapon_battery.ready_count > 0)):
         # Flood the tubes quietly while closing; the shot waits for them.
         sub.ai_flood_tubes(quiet=True)
     ships = [ship for ship in near
-             if math.hypot(ship.x - sub.x, ship.y - sub.y) <= config.BOAT_AI_ATTACK_NM]
-    if (not ships or sub.state != "PATROLLE" or sub.torpedoes_left <= 0
+             if math.hypot(ship.x - sub.x, ship.y - sub.y) <= attack_nm(game)]
+    if (not ships or not ready or sub.torpedoes_left <= 0
             or _torpedo_running(game, sub) or not _window(game, config.BOAT_AI_FIRE_EVERY_S)):
         return False
     if sub.weapon_battery is not None and sub.weapon_battery.ready_count <= 0:

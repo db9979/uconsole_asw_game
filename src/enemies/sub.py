@@ -316,6 +316,12 @@ class Sub:
                     if kind != "hull" and previous >= 20.0:
                         self.crew.event(f"ping_{kind}_heard", bearing=f"{bearing:03.0f}")
             return
+        if (self.mission_orders is not None and source is not None
+                and math.hypot(source[0] - self.x, source[1] - self.y)
+                > config.BOAT_AI_PING_IGNORE_NM):
+            # A mission boat keeps to its orders under a faint, distant ping:
+            # that sonar cannot hold it at this range.
+            return
         if not self.sunk and self.state != "SINKING":
             self.state = "EVADE"
             self.evac_left = config.SUB_EVADE_DURATION_S

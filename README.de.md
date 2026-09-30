@@ -14,17 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.106**
+Aktuelle Version: **1.3.108**
 
-Version 1.3.106 bringt eine Mehrspieler-Lobby. Der neue Hauptmenüpunkt
-Mehrspieler startet Remote Crew im Crew-Modus und zeigt QR-Code und
-Beitrittscode; die Browser koppeln, wählen Einheit und Stationen und drücken
-Bereit, und alle sehen die Mission, Einheit und Station des uConsole und die
-Stationen und Bereit-Häkchen jedes Crewmitglieds. Der Gastgeber wählt die
-Mission, die Einheit des uConsole und seine eigene Station und startet dann
-einen Countdown von fünf Sekunden, den jeder Browser sieht; die Mission
-beginnt für alle gleichzeitig. Eine aus der Lobby gestartete Mission führt am
-Ende alle zurück in die Lobby.
+Version 1.3.108 gibt dem KI-Aufklärungs-U-Boot eine echte Sehrohrsuche.
+In der Aufklärungsmission von der Fregatte aus sichtet das KI-U-Boot auf
+Sehrohrtiefe die Fregatte nicht mehr nur nach Entfernung und Sichtweite: Es
+fährt alle 90 s für einen 24-s-Rundblick das Sehrohr aus, dreht vom Bug aus
+herum und macht die Fregatte nur dort aus, wo das Kontrastmodell des Ausgucks
+in 2,5 m Augenhöhe es erlaubt (Licht, Mond, Sichtweite, Seegang, Land
+dazwischen). Solange das Sehrohr oben ist, zählt es als ausgefahrener Mast,
+den das Oberflächenradar der Fregatte und der Seefernaufklärer erfassen
+können. Nacht, Nebel und schwere See schützen jetzt die Fregatte, und jeder
+Rundblick ist ein Risiko für das U-Boot.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

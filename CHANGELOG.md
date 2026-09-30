@@ -4,6 +4,31 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.108
+
+Release 1.3.108 gives the AI reconnaissance submarine a real periscope
+search. In the reconnaissance mission played from the frigate, the AI boat at
+periscope depth no longer sights the frigate just by range and visibility: it
+raises its periscope for a 24 s look every 90 s, sweeps round from the bow
+and makes the frigate out only where the lookout's contrast model at 2.5 m eye
+height allows (light, moon, visibility, sea state, land in the way). While the
+periscope is up it counts as a raised mast, so the frigate's surface radar and
+the patrol aircraft can catch it. Night, fog and heavy seas now shield the
+frigate, and every look is a risk for the boat.
+
+## 1.3.107
+
+Release 1.3.107 makes the AI hunters and the AI submarines use the radio
+spectrum more like real crews (save format v39). When nobody sails the
+frigate, its ELOKA plots an ESM bearing on a submarine's mast radar as a line
+from the ship's position, one per nautical mile run, and crosses the newest
+line with an earlier one into a position datum for ship, helicopter and patrol
+aircraft (not for a friendly escort's ASROC). An AI submarine at periscope
+depth that holds the frigate now reports it to its headquarters once every
+30 minutes with a 20 s HF call, which the frigate's HF/DF hears and can take
+bearings on, whoever crews it. The ESM lines are saved, so a loaded game
+continues the hunt unchanged.
+
 ## 1.3.106
 
 Release 1.3.106 adds a multiplayer lobby. The new main-menu entry Multiplayer

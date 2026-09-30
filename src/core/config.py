@@ -534,6 +534,12 @@ LOOKOUT_REPORTS_MAX = 24
 # The lookout calls a lit vessel's lights again only when what they tell
 # (her aspect or her work) changes, at most this often per contact.
 LOOKOUT_LIGHTS_REPORT_S = 120.0
+# An AI submarine at periscope depth that holds the frigate reports it to
+# its headquarters once per window, 20 s on HF (heard by the frigate's HF/DF);
+# only while its last contact is at most this old.
+SUB_REPORT_PERIOD_S = 1800.0
+SUB_REPORT_TX_S = 20.0
+SUB_REPORT_CONTACT_S = 600.0
 # Phone lookout (Remote Crew ``lookout``/``uboot_lookout``): a called sighting
 # is confirmed within this bearing, and a called range within this fraction
 # (at least the minimum) of the eye's own estimate.
@@ -1220,7 +1226,13 @@ BOAT_AI_PERISCOPE_KN = 3.0         # at periscope depth or creeping in to fire
 BOAT_AI_BELOW_LAYER_M = 30.0
 BOAT_AI_MIN_WATER_M = 30.0         # the leg detours round shallower water
 BOAT_AI_SIGHT_NM = 8.0             # recon: come up and sight the frigate this close
-BOAT_AI_REPORT_EVERY_S = 120.0     # recon: the report goes out on this cadence
+# Recon: at periscope depth the boat raises its periscope for one look every
+# SCOPE_CYCLE_S (phase per boat), LOOK_S long; the head sweeps round from
+# the bow in SWEEP_S and sights the frigate only where the optics make it
+# out.  While raised it is a mast the frigate's and the aircraft's radars see.
+BOAT_AI_SCOPE_CYCLE_S = 90.0
+BOAT_AI_SCOPE_LOOK_S = 24.0
+BOAT_AI_SCOPE_SWEEP_S = 16.0
 BOAT_AI_ATTACK_NM = 4.0            # convoy attack: fire at a merchant this close
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0

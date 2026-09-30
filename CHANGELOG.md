@@ -15,7 +15,8 @@ torpedo run depth with T. The submarine now uses the frigate's G for action
 stations, A for silent running, V for the decoy and W/M/U on its crew page;
 the patrol aircraft takes the helicopter's keys, both aircraft radars sit on
 Ctrl+R, and the helicopter and ELOKA follow the sonar (Shift+A ping, G release
-to CIC, J audio).
+to CIC, J audio). A click on the crew message box is no longer taken by a
+station key underneath it.
 
 ## 1.3.113
 

@@ -38,6 +38,7 @@ from src.commander.v2.wire import (
     _V2_STATION_LEASE_S,
     _V2_SESSION_LIMIT,
     STATIONS,
+    LOBBY_SEAT_ORDER,
     OPFOR_ROLES,
     UBOOT_COMMAND_ROLES,
     ROLES,
@@ -769,7 +770,20 @@ class CommanderServer:
             self._auto_grant_locked(session, lookout)
         elif self._solo:
             self._solo_grant_all_locked(session)
+        elif self._lobby is not None:
+            self._lobby_seat_locked(session)
         return token, session
+
+    def _lobby_seat_locked(self, session):
+        """Seat a browser that pairs into an open lobby on the first free
+        station of the host's unit in ``LOBBY_SEAT_ORDER`` (never the
+        uConsole's own station)."""
+        order = LOBBY_SEAT_ORDER.get(self._lobby.get("side"), ())
+        for station in order:
+            if (station != self._lobby.get("host_station")
+                    and self._auto_grant_locked(session, station)):
+                return station
+        return None
 
     def _pair_admitted_locked(self, lookout) -> bool:
         """Room for one more session: the crew limit, or in solo mode the solo

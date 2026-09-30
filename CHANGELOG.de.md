@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.115
+
+Version 1.3.115 setzt neue Spieler in einer sinnvollen Reihenfolge an die
+Stationen. Ein Browser, der bei offener Mehrspieler-Lobby koppelt, bekommt jetzt
+die erste freie Station der Einheit des uConsole, zuerst die Stationen, die
+Urteil brauchen: auf der Fregatte Brücke, Sonar, Waffen, Hubschrauber, OPZ,
+EloKa, Funk, Maschine und Schadensabwehr, auf dem U-Boot Führung, Sonar, Waffen,
+Mast und ESM, Navigation, Maschine und Funkraum. Die Routinestationen hält die
+KI-Crew gut. Jeder Spieler kann Einheit und Station weiter jederzeit wechseln.
+
 ## 1.3.114
 
 Version 1.3.114 lässt den Befehl eines Spielers vor der KI-Crew gelten. Im

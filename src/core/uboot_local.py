@@ -1,4 +1,4 @@
-"""The uConsole playing the hostile submarine (``--play-sub`` / menu ``U``).
+"""The uConsole playing the hostile submarine (new game or lobby side).
 
 The frigate then belongs to the Remote Crew browsers (or to its autocrew);
 the local screen, keys and sound serve only the crewed boat.  The boat has the

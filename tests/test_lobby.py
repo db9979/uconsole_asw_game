@@ -213,3 +213,74 @@ def test_hotspot_lobby_shows_the_wifi_step_and_the_page_step_together(
     overlaps = [(a["text"], b["text"]) for a, b in combinations(text, 2)
                 if a["ink"].colliderect(b["ink"])]
     assert not overlaps, overlaps
+
+
+def _launch(monkeypatch, argv, onboarded=True):
+    """Run ``main.main(argv)`` with a real Game up to its main loop."""
+    import main as entry
+    from src.commander.local import CommanderConsole
+    from src.core.preferences import Preferences
+
+    seen = []
+    autostarts = []
+    monkeypatch.setattr(CommanderConsole, "autostart",
+                        lambda self, solo=False: autostarts.append((solo, self.port)))
+    monkeypatch.setattr(Game, "run", lambda self: seen.append(self))
+    monkeypatch.setattr(entry, "load_preferences", lambda: Preferences(
+        language="en", fullscreen=False, audio=False, onboarded=onboarded))
+    assert entry.main(argv) == 0
+    game = seen[0]
+    game.commander.stop()
+    return game, autostarts
+
+
+@pytest.mark.parametrize("flag", ["--multiplayer", "--remote-crew"])
+def test_multiplayer_flag_opens_the_lobby_after_the_splash(monkeypatch, flag):
+    game, autostarts = _launch(monkeypatch, [flag, "--windowed", "5"])
+    assert autostarts == [(False, 8765)]  # crew mode, as the menu entry
+    assert game.splash_active and not game.commander.solo
+    game._t = game.splash_started_at + 1.0
+    key(game, pygame.K_SPACE)
+    assert not game.splash_active
+    assert game.lobby_active and game.menu_screen == LOBBY_SCREEN
+    game.draw()
+    key(game, pygame.K_ESCAPE)
+    assert game.main_menu and not game.lobby_active
+    assert game.main_menu_sel == game.main_menu_index(MULTIPLAYER_ENTRY)
+
+
+def test_multiplayer_flag_wins_over_the_first_launch_welcome(monkeypatch):
+    game, autostarts = _launch(monkeypatch, ["--multiplayer", "--web-port", "9000", "5"],
+                               onboarded=False)
+    assert autostarts == [(False, 9000)]
+    assert game.lobby_active and not game.welcome_active
+
+
+def test_without_the_flag_the_game_opens_the_main_menu(monkeypatch):
+    game, autostarts = _launch(monkeypatch, ["5"])
+    assert autostarts == [] and game.main_menu and not game.lobby_active
+
+
+@pytest.mark.parametrize("argv", [
+    ["--play-sub"], ["--status-file", "s.json"],
+    ["--multiplayer", "--solo-crew"], ["--remote-crew", "--solo-crew"],
+    ["--multiplayer", "--web-host", "--public-origin", "https://a.test"],
+    ["--multiplayer", "--web-port", "80"]])
+def test_removed_and_conflicting_launch_flags_are_rejected(argv, capsys):
+    import main as entry
+
+    with pytest.raises(SystemExit) as raised:
+        entry.main(argv)
+    assert raised.value.code == 2
+    capsys.readouterr()
+
+
+def test_help_lists_multiplayer_and_hides_the_old_and_advanced_flags(capsys):
+    import main as entry
+
+    with pytest.raises(SystemExit):
+        entry.main(["--help"])
+    text = capsys.readouterr().out
+    assert "--multiplayer" in text
+    for hidden in ("--remote-crew", "--solo-crew", "--play-sub", "--status-file"):
+        assert hidden not in text

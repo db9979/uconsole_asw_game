@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Danke! Das Spiel füllt Version, Plattform und Log selbst aus („Fehler melden“ im Hauptmenü, im Windows-Starter oder im Browser-Menü).
+        Danke! Das Spiel füllt Version, Plattform und Log selbst aus („Fehler melden“ im Hauptmenü oder im Browser-Menü).
         Thanks! The game fills in version, platform and log itself ("Report a bug" in the main menu, the Windows starter or the browser menu).
   - type: textarea
     id: what

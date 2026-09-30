@@ -1,9 +1,10 @@
 """Multiplayer lobby page of the start menu (model in ``lobby.py``).
 
-"Multiplayer" in the main menu opens it: Remote Crew starts by itself in
-crew mode, the page shows the join QR code and code, the players with their
-stations and ready ticks, and the host's mission, unit and own station. The
-host starts a short wall-clock countdown; the mission then begins for all.
+"Multiplayer" in the main menu (or ``--multiplayer`` at launch) opens it:
+Remote Crew starts by itself in crew mode, the page shows the join QR code
+and code, the players with their stations and ready ticks, and the host's
+mission, unit and own station. The host starts a short wall-clock
+countdown; the mission then begins for all.
 A mission started here returns to the lobby when it ends. The page belongs to
 the start menu: nothing is simulated while it is open.
 """

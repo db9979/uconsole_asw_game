@@ -20,26 +20,21 @@ def main(argv=None) -> int:
     parser.add_argument("seed", nargs="?", type=int)
     parser.add_argument("--windowed", action="store_true")
     parser.add_argument("--no-audio", action="store_true")
-    parser.add_argument("--solo-crew", action="store_true",
-                        help="start Remote Crew in solo mode for this launch: one "
-                             "paired browser operates every station and the game "
-                             "controls (never persisted)")
-    parser.add_argument("--remote-crew", action="store_true",
-                        help="start Remote Crew in crew mode on the first private "
-                             "LAN address for this launch (as F9 would)")
-    parser.add_argument("--status-file", metavar="PATH",
-                        help="write the Remote Crew address and join code as JSON "
-                             "to PATH whenever they change (used by the Windows "
-                             "starter)")
-    parser.add_argument("--play-sub", action="store_true",
-                        help="the uConsole plays the hostile submarine for this "
-                             "launch; the frigate is crewed through Remote Crew "
-                             "(F9) or runs on autocrew (never persisted)")
+    parser.add_argument("--multiplayer", action="store_true",
+                        help="go straight into the multiplayer lobby after the "
+                             "splash, as the main-menu entry does (Remote Crew "
+                             "starts in crew mode)")
+    # Old name of --multiplayer, kept so existing shortcuts keep working.
+    parser.add_argument("--remote-crew", dest="multiplayer", action="store_true",
+                        help=argparse.SUPPRESS)
+    # Advanced: one paired browser operates every station and the game
+    # controls (this launch only, never persisted); the game has no menu row.
+    parser.add_argument("--solo-crew", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--web-host", action="store_true",
                         help="run one browser-only room behind a local HTTPS reverse proxy")
     parser.add_argument("--public-origin", metavar="HTTPS_ORIGIN",
                         help="exact public HTTPS origin used by the reverse proxy; "
-                             "without --web-host, Remote Crew (F9, crew or solo) "
+                             "without --web-host, Remote Crew (F9 or the lobby) "
                              "answers on this proxy origin and on its LAN address")
     parser.add_argument("--web-port", type=int, default=8765)
     parser.add_argument("--web-bind", default="127.0.0.1", metavar="PRIVATE_IP",
@@ -49,10 +44,12 @@ def main(argv=None) -> int:
                         help="reset the web host password during this web-host launch")
     parser.add_argument("--version", action="version", version=APP_VERSION)
     args = parser.parse_args(argv)
-    if args.web_host and (args.solo_crew or not args.public_origin):
-        parser.error("--web-host requires --public-origin and excludes --solo-crew")
-    if args.remote_crew and (args.web_host or args.solo_crew):
-        parser.error("--remote-crew excludes --web-host and --solo-crew")
+    if args.web_host and not args.public_origin:
+        parser.error("--web-host requires --public-origin")
+    if args.web_host and (args.multiplayer or args.solo_crew):
+        parser.error("--web-host excludes --multiplayer and --solo-crew")
+    if args.multiplayer and args.solo_crew:
+        parser.error("--multiplayer excludes --solo-crew")
     if args.web_bind != "127.0.0.1" and not args.web_host:
         parser.error("--web-bind requires --web-host")
     if args.reset_web_host_password and not args.web_host:
@@ -116,16 +113,13 @@ def _start(args) -> int:
     elif args.public_origin is not None:
         # Local game: Remote Crew (F9) also answers behind this HTTPS proxy.
         game.commander.public_origin = args.public_origin
-    if args.status_file:
-        game.commander.status_path = os.path.abspath(args.status_file)
-    if (args.solo_crew or args.remote_crew) and args.web_port != 8765:
+    if (args.solo_crew or args.multiplayer) and args.web_port != 8765:
         game.commander.port = args.web_port
     if args.solo_crew:
         game.commander.autostart_solo()
-    elif args.remote_crew:
-        game.commander.autostart()
-    if getattr(args, "play_sub", False):
-        game.local_side = "uboot"
+    elif args.multiplayer:
+        # As the main-menu entry: the lobby starts Remote Crew in crew mode.
+        game.open_lobby()
     game.run()
     return 0
 

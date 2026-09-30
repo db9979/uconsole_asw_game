@@ -29,8 +29,8 @@ Der Installer
   und danach alle sechs Stunden im Hintergrund nach Updates sucht.
 
 **Automatisches Update:** Jeder Start über Menü, Desktop oder `u-jagd` holt
-zuerst das neueste GitHub-Release (Tag `vX.Y.Z`, dieselbe Quelle wie der
-Windows-Starter) und startet dann das Spiel; gibt es noch kein Release, folgt
+zuerst das neueste GitHub-Release (Tag `vX.Y.Z`, dieselbe Quelle wie das
+Windows-Programm) und startet dann das Spiel; gibt es noch kein Release, folgt
 die uConsole dem Zweig `main`. Ändern sich die Abhängigkeiten, wird
 `pip install -e .` automatisch ausgeführt. Ohne Internet startet die
 installierte Version sofort: Ein Verbindungstest zu GitHub (höchstens 2,5 s)

@@ -236,7 +236,7 @@ _WEB_HELP = (
 )
 
 
-# The uConsole playing the hostile submarine (--play-sub / Options page 2).
+# The uConsole playing the hostile submarine (new game "Hostile submarine", the lobby or Options page 2).
 _UBOOT_HELP = (
     "help.uboot.title",
     [

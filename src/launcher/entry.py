@@ -1,23 +1,27 @@
 """Entry point of the packaged Windows program.
 
-``U-Jagd.exe`` opens the starter window; ``U-Jagd.exe --game …`` runs the
-game itself with the normal command line of ``main.py`` (the starter launches
-itself this way); ``U-Jagd.exe --self-test REPORT`` is the headless build
-check used by the release workflow.
+``U-Jagd-Windows.exe [ARGS]`` starts the game straight away with the normal
+command line of ``main.py``; everything else (multiplayer, side, station) is
+chosen inside the game. A leading ``--game`` (the old starter's form) is
+accepted and ignored. ``--self-test REPORT`` and ``--update-self-test
+REPORT`` are the headless build checks used by the release workflow.
 """
 
 from __future__ import annotations
 
 import os
+from pathlib import Path
 import sys
+
+
+def log_path() -> Path:
+    return Path.home() / ".u-jagd" / "logs" / "server.log"
 
 
 def _ensure_streams():
     """A windowed build has no console: keep tracebacks in the server log."""
     if sys.stdout is not None and sys.stderr is not None:
         return
-    from src.launcher.app import log_path
-
     path = log_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     stream = open(path, "a", encoding="utf-8", buffering=1)
@@ -71,47 +75,12 @@ def self_test(report: str) -> int:
                     game.commander.stop()
                 config.SAVE_DIR, config.SAVE_PATH = previous
         code = 0 if all(results.get(p) == 200 for p in ("/", "/manual-en")) else 1
-        results["gui"] = _gui_self_test()
-        if os.name == "nt" and results["gui"] != "ok":
-            code = 1
     except Exception:  # noqa: BLE001 - the report carries the traceback
         results["error"] = traceback.format_exc()
     results["ok"] = code == 0
     with open(report, "w", encoding="utf-8") as handle:
         json.dump(results, handle, indent=2)
     return code
-
-
-def _gui_self_test() -> str:
-    """Build the starter window once (Tk bundled, QR drawn), then close it."""
-    try:
-        import tempfile
-        import tkinter as tk
-
-        from src.launcher.app import Starter
-
-        root = tk.Tk()
-        try:
-            root.withdraw()
-            with tempfile.TemporaryDirectory(prefix="u-jagd-gui-") as folder:
-                settings = os.path.join(folder, "settings.json")
-                starter = Starter(root, check_updates=False, preferences_path=settings)
-                starter._show_status({"state": "running", "url": "http://192.168.1.2:8765/",
-                                      "code": "123ABC", "solo": False})
-                root.update()
-                if not starter.qr.find_all():
-                    return "qr missing"
-                # The language switch rebuilds the window and saves the choice.
-                for language in ("de", "en"):
-                    starter.choose_language(language)
-                    root.update()
-                if starter.tr.language != "en" or not os.path.exists(settings):
-                    return "language switch"
-        finally:
-            root.destroy()
-    except Exception as exc:  # noqa: BLE001 - reported, fatal only on Windows
-        return f"{type(exc).__name__}: {exc}"
-    return "ok"
 
 
 def update_self_test(report: str) -> int:
@@ -127,24 +96,65 @@ def update_self_test(report: str) -> int:
 
     executable = os.path.abspath(sys.executable)
     update.launch_install(executable, f"{executable}.new", ("--self-test", report))
-    time.sleep(3)  # hold the file like a closing starter window
+    time.sleep(3)  # hold the file like a closing game window
     return 0
+
+
+def remove_stale_update() -> None:
+    """Delete an ``<exe>.new`` left by an update that could not swap in."""
+    if getattr(sys, "frozen", False):
+        for suffix in (".new", ".new.part"):
+            try:
+                os.remove(os.path.abspath(sys.executable) + suffix)
+            except OSError:
+                pass
+
+
+def _install_update(code: int) -> int:
+    """After the game asked for an update, swap in ``<exe>.new`` and restart.
+
+    The game downloads and verifies the new program itself and then quits
+    with ``update.UPDATE_EXIT_CODE``; only the frozen program can replace its
+    own file. Returns 0 once the install script runs, else ``code``.
+    """
+    from src.launcher import update
+
+    if not getattr(sys, "frozen", False):
+        return code
+    executable = os.path.abspath(sys.executable)
+    downloaded = f"{executable}.new"
+    if not os.path.isfile(downloaded):
+        return code
+    try:
+        update.launch_install(executable, downloaded, log=str(log_path()))
+    except update.UpdateError:
+        return code
+    return 0
+
+
+def run_game(argv: list[str]) -> int:
+    """Run the game with ``main.py``'s command line; return its exit code."""
+    _ensure_streams()
+    remove_stale_update()
+    import main as game_main
+    from src.launcher import update
+
+    code = game_main.main(argv)
+    update_code = getattr(update, "UPDATE_EXIT_CODE", None)
+    if update_code is not None and code == update_code:
+        return _install_update(code)
+    return code
 
 
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    if argv[:1] == ["--game"]:
-        _ensure_streams()
-        import main as game_main
-
-        return game_main.main(argv[1:])
     if argv[:1] == ["--self-test"] and len(argv) == 2:
         return self_test(argv[1])
     if argv[:1] == ["--update-self-test"] and len(argv) == 2:
         return update_self_test(argv[1])
-    from src.launcher.app import run
-
-    return run()
+    if argv[:1] == ["--game"]:
+        argv = argv[1:]
+    return run_game(argv)
 
 
 if __name__ == "__main__":

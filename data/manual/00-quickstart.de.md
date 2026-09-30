@@ -24,7 +24,7 @@ Das Schiff ist in neun Stationen gegliedert. Die Tasten `1`-`9` wählen eine Sta
 
 Jede Station zeigt nur, was ihre Sensoren und Bediener wissen. Sonarkontakte sind verrauschte Peilungen, bis Ping, TMA, Boje oder Kreuzpeilung eine Entfernung liefern. Keine Station zeigt „die Wahrheit".
 
-`F2` übergibt die aktuelle Station an die Autocrew; `F3` zeigt, welche Stationen automatisch laufen. Nutzen Sie das, um sich auf ein oder zwei Stationen zu konzentrieren.
+`F2` übergibt die aktuelle Station an die Autocrew; `F3` zeigt, welche Stationen automatisch laufen. Nutzen Sie das, um sich auf ein oder zwei Stationen zu konzentrieren. `Shift+F2` schaltet die Crew-Hilfe: Die KI besetzt jede Station beider Einheiten, die niemand hält, und die Station auf dem Bildschirm bleibt Ihre. Eine Mission aus der Mehrspieler-Lobby hat sie immer an.
 
 ## Bedienung {#qs-controls}
 

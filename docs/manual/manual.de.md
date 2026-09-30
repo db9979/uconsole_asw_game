@@ -28,7 +28,7 @@ Das Schiff ist in neun Stationen gegliedert. Die Tasten `1`-`9` wählen eine Sta
 
 Jede Station zeigt nur, was ihre Sensoren und Bediener wissen. Sonarkontakte sind verrauschte Peilungen, bis Ping, TMA, Boje oder Kreuzpeilung eine Entfernung liefern. Keine Station zeigt „die Wahrheit".
 
-`F2` übergibt die aktuelle Station an die Autocrew; `F3` zeigt, welche Stationen automatisch laufen. Nutzen Sie das, um sich auf ein oder zwei Stationen zu konzentrieren.
+`F2` übergibt die aktuelle Station an die Autocrew; `F3` zeigt, welche Stationen automatisch laufen. Nutzen Sie das, um sich auf ein oder zwei Stationen zu konzentrieren. `Shift+F2` schaltet die Crew-Hilfe: Die KI besetzt jede Station beider Einheiten, die niemand hält, und die Station auf dem Bildschirm bleibt Ihre. Eine Mission aus der Mehrspieler-Lobby hat sie immer an.
 
 ### Bedienung
 
@@ -47,6 +47,7 @@ Globale Tasten (alle Stationen):
 | `+ / -` | Telegraph (an jeder Station verfügbar) |
 | `F1 / ?` | Hilfe (diese Anzeige) |
 | `F2` | Autocrew der aktuellen Station umschalten |
+| `Shift+F2` | Crew-Hilfe: Die KI besetzt jede freie Station beider Einheiten |
 | `F3` | Autocrew-Übersicht öffnen |
 | `0` | Wetter- & Sonar-Analyse |
 | `F8` | Taktischer Einheitenanalysator (Katalog, nur lesend) |
@@ -1282,6 +1283,16 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das U-Boot oder ein Solo-B
 - **Seefernaufklärer:** Er wird angefordert, sobald ein Positionsdatum besteht (nie für eine bloße Peilung), fliegt mit eingeschaltetem Radar zum Datum, legt einen Bojenkreis, wo im Umkreis von 4 sm keine Boje horcht, und greift ein geortetes U-Boot in seiner Abwurfweite aus einem höchstens 2 Minuten alten Fix über den Datenlink an.
 - **ASROC:** Ein Positionsdatum der eigenen Sensoren (keine Meldung der Führung), höchstens 2 Minuten alt, geht per Datenlink an das nächste befreundete KI-Kriegsschiff mit ASROC in Reichweite, höchstens alle 2 Minuten und nie, solange ein ASROC fliegt oder sein Torpedo läuft. Die KI-Jäger feuern weder das eigene ASROC der Fregatte noch ihre Wasserbomben (beides bleibt einem Spieler an der Waffenstation vorbehalten), und die U-Boot-Szenarien stellen dafür keinen Geleitschutz.
 - Die übrigen Stationen (Schadensbekämpfung, Maschinenraum, OPZ-Luftverteidigung, EloKa) laufen mit den Regeln der Autocrew. Die Jagd hat keinen eigenen Zustand; die Radarpunkte und Markierungen der OPZ, nach denen sie handelt, werden gespeichert (Spielstand v25), ein geladenes Spiel setzt sie also unverändert fort.
+
+#### Crew-Hilfe
+
+`Shift+F2` (in einer Mission aus der Mehrspieler-Lobby immer an) lässt die KI jede Station besetzen, die niemand hält, auf der Fregatte und auf einem bemannten U-Boot, damit jeder Spieler bei einer Station bleiben kann. Eine Station, die ein Browser hält, und die, die die uConsole zeigt, bleiben bei ihrem Spieler; eine im Browser freigegebene Station („An KI übergeben“) geht sofort an die KI zurück. Die Hilfe wird mit der Mission gespeichert (Spielstand v39).
+
+- **Fregatte:** Die KI-Jäger oben bedienen Brücke, Sonar, Waffen und den Hubschrauber, die Autocrew die übrigen Stationen, auch gegen ein KI-U-Boot.
+- **U-Boot-Kommando:** weicht einem gehörten Torpedo oder Ping aus, folgt sonst dem Abschnitt der U-Boot-Mission oder läuft in einer Fregattenmission eine Fregatte an, die das eigene Sonar innerhalb von 12 sm geortet hat, und patrouilliert sonst mit 4 kn unter der Sprungschicht um den Startpunkt. Fällt die Batterie unter 35 % und jagt niemand das Boot, geht es auf Schnorcheltiefe.
+- **U-Boot-Waffen:** hält die Rohre geladen, flutet leise, sobald ein gehörtes Ziel eine Ortung innerhalb von 8 sm hat, und schießt einen Torpedo nach dem anderen auf eine Ortung innerhalb von 4 sm. Ziel ist ein Kontakt, dessen Signatur die Bibliothek nur von Kriegsschiffen kennt (beim Geleitzugangriff von Handelsschiffen).
+- **Maschinenraum:** schnorchelt ungejagt bis 95 % Ladung, hält den Trimm automatisch, beantwortet schlechte Luft mit Absorbern und Sauerstoffkerzen und schickt die zwei Leckteams dorthin, wo Feuer, Lecks oder Wasser am schlimmsten sind.
+- **Sonar und Mast:** Das Sonar hält den Fokus auf dem lautesten frischen Kontakt; der Mast fährt bei einem solchen Alarm ein. Navigation und Funkraum halten nur Wache.
 
 #### Nicht modelliert
 

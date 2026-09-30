@@ -40,6 +40,17 @@ class LobbyMixin:
         self._lobby_published = None
 
     @property
+    def crew_assist(self) -> bool:
+        """The AI mans every station nobody holds, on both units."""
+        return self.autocrew.assist
+
+    def toggle_crew_assist(self) -> bool:
+        enabled = self.autocrew.set_assist(not self.autocrew.assist, self.sim_t)
+        self._clear_station_input()
+        self.flash(message("autocrew.assist.on" if enabled else "autocrew.assist.off"))
+        return enabled
+
+    @property
     def lobby_active(self) -> bool:
         return (self.in_menu and not self.main_menu and self.lobby is not None
                 and self.menu_screen == LOBBY_SCREEN)
@@ -103,6 +114,8 @@ class LobbyMixin:
         self.scenario_key = room.scenario_key
         self.lobby_round = True
         self._start_menu_mission()
+        # A lobby round lets the AI man every station nobody holds.
+        self.autocrew.set_assist(True, self.sim_t)
         self._take_lobby_station(room.station)
 
     def _take_lobby_station(self, station: str) -> None:

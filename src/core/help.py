@@ -16,6 +16,7 @@ _GLOBAL_HELP = (
         ("+ / -", "help.global.telegraph"),
         ("F1 / ?", "help.global.display"),
         ("F2", "help.global.autocrew_toggle"),
+        ("Shift+F2", "help.global.crew_assist"),
         ("F3", "help.global.autocrew_overview"),
         ("0", "help.global.weather_station"),
         ("F8", "help.global.analyzer"),

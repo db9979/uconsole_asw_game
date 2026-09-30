@@ -22,6 +22,9 @@ export function renderSnapshot(resetDraft = false) {
     ? t("autocrew_overview", {stations: S.v2State.autocrew_overview.filter((row) => row.enabled)
       .map((row) => `${t(`station_${row.station}`)}: ${t(`autocrew_${row.status}`)}`).join(", ")})
     : t("autocrew_overview_none");
+  // With the autocrew on, releasing the station hands it over to the AI.
+  const release = t(S.v2State?.autocrew?.enabled ? "role_release_ai" : "role_release");
+  for (const id of ["release-station", "mobile-release-station"]) $(id).textContent = release;
   // Compact status-bar clocks; the full names are the tooltips.
   metrics($("mission-metrics"), [
     ["status_remaining", duration(S.snapshot.mission.remaining_s)],

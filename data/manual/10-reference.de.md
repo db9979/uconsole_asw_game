@@ -154,6 +154,16 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das U-Boot oder ein Solo-B
 - **ASROC:** Ein Positionsdatum der eigenen Sensoren (keine Meldung der Führung), höchstens 2 Minuten alt, geht per Datenlink an das nächste befreundete KI-Kriegsschiff mit ASROC in Reichweite, höchstens alle 2 Minuten und nie, solange ein ASROC fliegt oder sein Torpedo läuft. Die KI-Jäger feuern weder das eigene ASROC der Fregatte noch ihre Wasserbomben (beides bleibt einem Spieler an der Waffenstation vorbehalten), und die U-Boot-Szenarien stellen dafür keinen Geleitschutz.
 - Die übrigen Stationen (Schadensbekämpfung, Maschinenraum, OPZ-Luftverteidigung, EloKa) laufen mit den Regeln der Autocrew. Die Jagd hat keinen eigenen Zustand; die Radarpunkte und Markierungen der OPZ, nach denen sie handelt, werden gespeichert (Spielstand v25), ein geladenes Spiel setzt sie also unverändert fort.
 
+### Crew-Hilfe {#ref-crew-assist}
+
+`Shift+F2` (in einer Mission aus der Mehrspieler-Lobby immer an) lässt die KI jede Station besetzen, die niemand hält, auf der Fregatte und auf einem bemannten U-Boot, damit jeder Spieler bei einer Station bleiben kann. Eine Station, die ein Browser hält, und die, die die uConsole zeigt, bleiben bei ihrem Spieler; eine im Browser freigegebene Station („An KI übergeben“) geht sofort an die KI zurück. Die Hilfe wird mit der Mission gespeichert (Spielstand v39).
+
+- **Fregatte:** Die KI-Jäger oben bedienen Brücke, Sonar, Waffen und den Hubschrauber, die Autocrew die übrigen Stationen, auch gegen ein KI-U-Boot.
+- **U-Boot-Kommando:** weicht einem gehörten Torpedo oder Ping aus, folgt sonst dem Abschnitt der U-Boot-Mission oder läuft in einer Fregattenmission eine Fregatte an, die das eigene Sonar innerhalb von 12 sm geortet hat, und patrouilliert sonst mit 4 kn unter der Sprungschicht um den Startpunkt. Fällt die Batterie unter 35 % und jagt niemand das Boot, geht es auf Schnorcheltiefe.
+- **U-Boot-Waffen:** hält die Rohre geladen, flutet leise, sobald ein gehörtes Ziel eine Ortung innerhalb von 8 sm hat, und schießt einen Torpedo nach dem anderen auf eine Ortung innerhalb von 4 sm. Ziel ist ein Kontakt, dessen Signatur die Bibliothek nur von Kriegsschiffen kennt (beim Geleitzugangriff von Handelsschiffen).
+- **Maschinenraum:** schnorchelt ungejagt bis 95 % Ladung, hält den Trimm automatisch, beantwortet schlechte Luft mit Absorbern und Sauerstoffkerzen und schickt die zwei Leckteams dorthin, wo Feuer, Lecks oder Wasser am schlimmsten sind.
+- **Sonar und Mast:** Das Sonar hält den Fokus auf dem lautesten frischen Kontakt; der Mast fährt bei einem solchen Alarm ein. Navigation und Funkraum halten nur Wache.
+
 ### Nicht modelliert {#ref-opfor-limits}
 
 - Der Funkraum kennt den Rundspruchplan der Führung, drei Befehlsarten und Lagemeldungen: keine freien Nachrichten der Führung, kein Empfang unter 25 m (kein ELF, keine Schleppantenne), keine Kurzsignale und keine anderen Einheiten im Netz; die Feindlage der Führung ist modellierte Aufklärung, kein eigener Sensor.

@@ -24,7 +24,7 @@ The ship is split into nine stations. Keys `1`-`9` select a station; pressing th
 
 Each station shows only what its sensors and operators know. Sonar contacts are noisy bearings until a ping, TMA, buoy or cross-fix supplies range. No station shows "the truth".
 
-`F2` hands the current station to the autocrew; `F3` shows which stations run automatically. Use it when you want to concentrate on one or two stations.
+`F2` hands the current station to the autocrew; `F3` shows which stations run automatically. Use it when you want to concentrate on one or two stations. `Shift+F2` switches the crew assist: the AI mans every station of both units that nobody holds, and the station on screen stays yours. A mission started from the multiplayer lobby always has it on.
 
 ## Controls {#qs-controls}
 

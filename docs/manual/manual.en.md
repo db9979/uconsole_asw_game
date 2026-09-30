@@ -28,7 +28,7 @@ The ship is split into nine stations. Keys `1`-`9` select a station; pressing th
 
 Each station shows only what its sensors and operators know. Sonar contacts are noisy bearings until a ping, TMA, buoy or cross-fix supplies range. No station shows "the truth".
 
-`F2` hands the current station to the autocrew; `F3` shows which stations run automatically. Use it when you want to concentrate on one or two stations.
+`F2` hands the current station to the autocrew; `F3` shows which stations run automatically. Use it when you want to concentrate on one or two stations. `Shift+F2` switches the crew assist: the AI mans every station of both units that nobody holds, and the station on screen stays yours. A mission started from the multiplayer lobby always has it on.
 
 ### Controls
 
@@ -47,6 +47,7 @@ Global keys (all stations):
 | `+ / -` | Telegraph (available at every station) |
 | `F1 / ?` | Help (this display) |
 | `F2` | Toggle Autocrew for the current station |
+| `Shift+F2` | Crew assist: the AI mans every station nobody holds, on both units |
 | `F3` | Open Autocrew overview |
 | `0` | Weather & sonar analysis panel |
 | `F8` | Tactical Unit Analyzer (read-only catalog) |
@@ -1281,6 +1282,16 @@ When nobody sails the frigate (the uConsole plays the submarine, or a solo brows
 - **Patrol aircraft:** requested once a position datum exists (never for a bare bearing); it flies to the datum with its radar on, lays a circle of buoys where none listen within 4 NM, and attacks a located submarine within its drop range over the datalink from a fix at most 2 minutes old.
 - **ASROC:** a position datum at most 2 minutes old from the ship's own sensors (not an HQ report) is passed over the datalink to the nearest friendly AI warship that carries ASROC and has it in range, at most every 2 minutes and never while an ASROC is in flight or its torpedo is running. The AI hunters do not fire the frigate's own ASROC or depth charges (those stay with a player at the Weapons station), and the submarine scenarios add no escort for it.
 - The other stations (damage control, engine room, OPZ air defence, ELOKA) run the autocrew's policies. The hunt keeps no state of its own; the radar blips and the OPZ's marks it acts on are saved (save v25), so a loaded game continues it unchanged.
+
+#### Crew assist
+
+`Shift+F2` (always on in a mission started from the multiplayer lobby) lets the AI man every station nobody holds, on the frigate and on a crewed submarine, so each player can stay on one station. A station a browser holds, and the one the uConsole shows, stay with their player; a station released in the browser ("Hand over to AI") goes back to the AI at once. The assist is saved with the mission (save v39).
+
+- **Frigate:** the AI hunters above work the Bridge, Sonar, Weapons and the helicopter, the autocrew the other stations, also against an AI submarine.
+- **Submarine command:** evades a torpedo or a ping it has heard, otherwise follows the submarine mission's leg or, in a frigate mission, closes a frigate the boat's own sonar has fixed within 12 NM and else patrols at 4 kn below the layer around its start point. It comes to snorkel depth when the battery falls below 35 % and nothing hunts the boat.
+- **Submarine weapons:** keeps the tubes loaded, floods quietly once a heard target has a fix within 8 NM and fires one torpedo at a time down a fix within 4 NM. A target is a contact whose signature the library knows only from warships (in the convoy attack, from merchants).
+- **Engine room:** snorkels to charge up to 95 % while unhunted, keeps the trim automatic, answers foul air with absorbers and oxygen candles and sends the two damage-control teams where fire, leaks or water are worst.
+- **Sonar and mast:** the sonar keeps the focus on the loudest fresh contact; the mast comes down on such an alarm. Navigation and the radio room only keep watch.
 
 #### Not modelled
 

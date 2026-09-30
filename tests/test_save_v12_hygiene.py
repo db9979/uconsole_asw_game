@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v39_and_older_documents_are_rejected():
+def test_save_is_v40_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (39, "u-jagd-save-v39")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (39, "u-jagd-save-v39")
+    assert (state["version"], state["save_schema"]) == (40, "u-jagd-save-v40")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (40, "u-jagd-save-v40")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -200,6 +200,21 @@ def test_save_is_v39_and_older_documents_are_rejected():
     v37["save_schema"] = "u-jagd-save-v37"
     del v37["casualties"]
     assert not game._load_save_data(v37)
+    # v38 lacks the hunters' ESM log and the crew assist.
+    v38 = copy.deepcopy(state)
+    v38["version"] = 38
+    v38["save_schema"] = "u-jagd-save-v38"
+    del v38["hunter_esm"]
+    v38["autocrew"]["version"] = 1
+    del v38["autocrew"]["assist"]
+    assert not game._load_save_data(v38)
+    # v39 differs only by the crew assist in the autocrew block.
+    v39 = copy.deepcopy(state)
+    v39["version"] = 39
+    v39["save_schema"] = "u-jagd-save-v39"
+    v39["autocrew"]["version"] = 1
+    del v39["autocrew"]["assist"]
+    assert not game._load_save_data(v39)
     assert game.save_state() == before
 
 

@@ -126,9 +126,11 @@ function renderLobbyRoom(room) {
   $("lobby-room").hidden = room === null;
   if (room === null) return;
   $("lobby-room-mission").textContent = t("lobby_room_mission", {mission: t(scenarioText[room.mission] ?? "unknown")});
-  $("lobby-room-host").textContent = t("lobby_room_host", {side: t(`lobby_room_side_${room.side}`),
-    station: t(`station_${room.host_station}`)});
-  const rows = [[t("lobby_player_host"), [room.host_station], "lobby_player_ready"],
+  const side = t(`lobby_room_side_${room.side}`);
+  $("lobby-room-host").textContent = room.host_station === null ? t("lobby_room_host_only")
+    : t("lobby_room_host", {side, station: t(`station_${room.host_station}`)});
+  const hostStations = room.host_station === null ? [] : [room.host_station];
+  const rows = [[t("lobby_player_host"), hostStations, "lobby_player_ready"],
     ...room.players.map((player) => [player.you ? t("lobby_player_you", {name: player.name}) : player.name,
       player.stations, player.observer ? "lobby_player_observer" : player.ready ? "lobby_player_ready" : "lobby_player_waiting"])];
   $("lobby-room-players").replaceChildren(...rows.map(([name, stations, state]) => {

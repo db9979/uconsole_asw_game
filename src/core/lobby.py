@@ -1,7 +1,8 @@
 """The multiplayer lobby: where the crew meets before a shared start.
 
 Pure, transient model (never saved, never part of settings). The uConsole
-host picks the mission, which unit it plays and its own station; browsers
+host picks the mission, which unit it plays and its own station, or only
+hosts (``HOST_ONLY``: every station belongs to the browsers or the AI); browsers
 pick their stations and tick "ready" (``CommanderServer.set_ready_locked``).
 The host then starts a short countdown and the mission begins for everyone
 at once. After the mission the game returns here, stations kept, ready
@@ -18,11 +19,19 @@ ROWS = ("mission", "side", "station", "start")
 SIDES = ("frigate", "uboot")
 # Wall seconds between "start" and the mission.
 COUNTDOWN_S = 5.0
+# Station choice of a uConsole that only hosts: every station is played from
+# the browsers or by the AI.
+HOST_ONLY = "host"
 
 
 def side_stations(side: str) -> tuple:
     """Stations the uConsole may play on ``side`` (Remote Crew role names)."""
     return STATIONS if side == "frigate" else OPFOR_ROLES
+
+
+def station_choices(side: str) -> tuple:
+    """The uConsole's station choices on ``side``: a station, or host only."""
+    return (*side_stations(side), HOST_ONLY)
 
 
 class LobbyRoom:
@@ -34,7 +43,7 @@ class LobbyRoom:
         self.scenario_index = (config.SCENARIO_ORDER.index(scenario_key)
                                if scenario_key in config.SCENARIO_ORDER else 0)
         self.side = side if side in SIDES else "frigate"
-        self.station = (station if station in side_stations(self.side)
+        self.station = (station if station in station_choices(self.side)
                         else side_stations(self.side)[0])
         self.countdown_s = None
         # First "start" with players not ready arms this; a second one starts.
@@ -58,9 +67,10 @@ class LobbyRoom:
             self.scenario_index = (self.scenario_index + step) % len(config.SCENARIO_ORDER)
         elif row == "side":
             self.side = SIDES[(SIDES.index(self.side) + 1) % len(SIDES)]
-            self.station = side_stations(self.side)[0]
+            if self.station != HOST_ONLY:
+                self.station = side_stations(self.side)[0]
         elif row == "station":
-            stations = side_stations(self.side)
+            stations = station_choices(self.side)
             self.station = stations[(stations.index(self.station) + step) % len(stations)]
 
     @staticmethod
@@ -104,7 +114,7 @@ class LobbyRoom:
         return {
             "mission": self.scenario_key,
             "side": self.side,
-            "host_station": self.station,
+            "host_station": None if self.station == HOST_ONLY else self.station,
             "countdown_s": (None if self.countdown_s is None
                             else round(self.countdown_s, 1)),
         }

@@ -110,10 +110,10 @@ export function validateV2State(state) {
       !finite(state.environment.rain_intensity) || state.environment.rain_intensity < 0 || state.environment.rain_intensity > 1 ||
       !finite(state.environment.visibility_nm) || state.environment.visibility_nm < .1 || state.environment.visibility_nm > 30 ||
       !exactKeys(state.autocrew, ["enabled", "status"]) || typeof state.autocrew.enabled !== "boolean" ||
-      !["off", "active", "suspended_remote", "blocked_damage"].includes(state.autocrew.status) ||
+      !["off", "active", "suspended_remote", "suspended_local", "blocked_damage"].includes(state.autocrew.status) ||
       !boundedArray(state.autocrew_overview, 9) || state.autocrew_overview.some((row) => !exactKeys(row, ["station", "enabled", "status"]) ||
         !stationNames.includes(row.station) || typeof row.enabled !== "boolean" ||
-        !["off", "active", "suspended_remote", "blocked_damage"].includes(row.status)) ||
+        !["off", "active", "suspended_remote", "suspended_local", "blocked_damage"].includes(row.status)) ||
       !exactKeys(state.mission, ["name", "objective", "remaining_s"]) ||
       !exactKeys(state.audio, ["events", "callouts"]) ||
       !boundedArray(state.audio.callouts, 16) ||

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.109**
+Aktuelle Version: **1.3.110**
 
-Version 1.3.109 bringt auf beiden Seiten eine Schusslage in die Feuerleitung.
+Version 1.3.110 bringt auf beiden Seiten eine Schusslage in die Feuerleitung.
 Die Waffenstation der Fregatte und die Waffenseite des U-Boots zeigen jetzt,
 genordet um das eigene Schiff, die Reichweite des Torpedos, die Peilung zum
 Ziel und, sobald eine Entfernung vorliegt, die geschätzte Position, den

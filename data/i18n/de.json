@@ -6346,5 +6346,13 @@
   "commander.web.lobby_player_you": "{name} (du)",
   "commander.web.lobby_countdown": "Mission startet in {seconds} s",
   "commander.web.lobby_waiting_host": "Warte auf den Start durch den Gastgeber.",
-  "commander.web.lobby_ready_failed": "Bereit konnte nicht gesendet werden. Nochmal versuchen."
+  "commander.web.lobby_ready_failed": "Bereit konnte nicht gesendet werden. Nochmal versuchen.",
+  "help.global.crew_assist": "Crew-Hilfe: Die KI besetzt jede freie Station beider Einheiten",
+  "autocrew.assist.on": "Crew-Hilfe an: Die KI besetzt jede freie Station",
+  "autocrew.assist.off": "Crew-Hilfe aus",
+  "autocrew.status.suspended_local": "PAUSIERT: BEDIENER HIER",
+  "commander.web.autocrew_suspended_local": "wird an der uConsole bedient",
+  "commander.web.role_release_ai": "An KI übergeben",
+  "lobby.host_only": "keine, nur Gastgeber",
+  "commander.web.lobby_room_host_only": "Die uConsole ist nur Gastgeber: Jede Station wird im Browser oder von der KI gespielt."
 }

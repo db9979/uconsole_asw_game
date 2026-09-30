@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.109
+## 1.3.110
 
-Version 1.3.109 bringt auf beiden Seiten eine Schusslage in die Feuerleitung.
+Version 1.3.110 bringt auf beiden Seiten eine Schusslage in die Feuerleitung.
 Die Waffenstation der Fregatte und die Waffenseite des U-Boots zeigen jetzt,
 genordet um das eigene Schiff, die Reichweite des Torpedos, die Peilung zum
 Ziel und, sobald eine Entfernung vorliegt, die geschätzte Position, den
@@ -16,6 +16,21 @@ Rundinstrumente für Kurs, Tiefe (Test- und Zerstörungstiefe markiert) und
 Fahrt wie die Brücke der Fregatte, und die Kästen im Funkraum des U-Boots
 passen wieder zu ihrem Text, sodass der Befehl der Führung nicht mehr durch
 den Rahmen läuft.
+
+## 1.3.109
+
+Version 1.3.109 lässt die KI jede freie Station besetzen. Die neue Crew-Hilfe
+(Shift+F2, in einer Mission aus der Mehrspieler-Lobby immer an) bemannt jede
+Station der Fregatte und eines bemannten U-Boots, die niemand hält, damit
+jeder Spieler bei einer Station bleiben kann: Die Station auf dem Bildschirm
+der uConsole und jede Station, die ein Browser hält, bleiben bei ihrem
+Spieler, und eine im Browser freigegebene Station („An KI übergeben“) geht
+sofort an die KI zurück. Auf dem U-Boot weicht die KI aus, patrouilliert oder
+läuft eine bekannte Fregatte an, hält die Rohre geladen und schießt auf eine
+nahe Ortung, schnorchelt zum Laden, hält den Trimm und schickt die Leckteams.
+In der Lobby kann die uConsole auch nur Gastgeber sein (Station „keine, nur
+Gastgeber“): Sie spielt keine Station, Browser und KI besetzen jede.
+Spielstände sind jetzt v40.
 
 ## 1.3.108
 

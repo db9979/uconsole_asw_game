@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.109**
+Current release: **1.3.110**
 
-Release 1.3.109 adds an engagement sketch to fire control on both sides. The
+Release 1.3.110 adds an engagement sketch to fire control on both sides. The
 frigate's Weapons station and the submarine's Weapons page now draw, north up
 around the own ship, the torpedo's reach, the bearing to the target and, once
 a range is known, the estimated position, the intercept point from the TMA

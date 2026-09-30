@@ -19,7 +19,7 @@ from src.core import detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
-from src.core import boat_ai, boat_debrief, boat_missions, hunter, opfor, phone_lookout
+from src.core import boat_ai, boat_autocrew, boat_debrief, boat_missions, hunter, opfor, phone_lookout
 from src.core.limits import (
     MAX_DECOYS,
     MAX_ENEMY_TORPEDOES,
@@ -1302,8 +1302,10 @@ class SimMixin:
         # Automation consumes observations published in this substep; actuator
         # changes take effect on the following physics substep.
         self.autocrew.update(self)
-        # With nobody on the frigate, the hunters crew its unleased stations.
+        # With nobody on the frigate, the hunters crew its unleased stations;
+        # with the crew assist the boat's autocrew mans its free stations.
         hunter.update(self, dt)
+        boat_autocrew.update(self, dt)
         # An uncrewed mission boat fires and reports on its own cadence.
         boat_ai.update(self, dt)
         self._record_simlog_state(dt)

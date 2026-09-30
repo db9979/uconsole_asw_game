@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.109
+## 1.3.110
 
-Release 1.3.109 adds an engagement sketch to fire control on both sides. The
+Release 1.3.110 adds an engagement sketch to fire control on both sides. The
 frigate's Weapons station and the submarine's Weapons page now draw, north up
 around the own ship, the torpedo's reach, the bearing to the target and, once
 a range is known, the estimated position, the intercept point from the TMA
@@ -15,6 +15,20 @@ observation. The submarine's Command and Navigation pages get round dials for
 course, depth (test and crush depth marked) and speed like the frigate's
 bridge, and the submarine's radio room boxes are sized to their text again,
 so the HQ order no longer runs through the frame.
+
+## 1.3.109
+
+Release 1.3.109 lets the AI man every free station. The new crew assist
+(Shift+F2, always on in a mission started from the multiplayer lobby) crews
+each station of the frigate and of a crewed submarine that nobody holds, so
+every player can stay on one station: the station on the uConsole's screen and
+every station a browser holds stay with their player, and a station released
+in the browser ("Hand over to AI") goes straight back to the AI. On the
+submarine the AI commands evasion, patrols or closes a known frigate, keeps
+the tubes loaded and fires at a close fix, snorkels to charge, keeps the trim
+and sends the damage-control teams. In the lobby the uConsole can also be
+host only (station "none, host only"): it plays no station, and the browsers
+and the AI crew every one. Saves are now v40.
 
 ## 1.3.108
 

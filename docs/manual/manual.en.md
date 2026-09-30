@@ -268,6 +268,8 @@ The station has six pages. `PgUp`/`PgDn` (or `2` again) cycles them. The listeni
 | UMWELT / FUSION | Sound profile, layer, CZ, array comparison | Choosing TAS depth, spotting ghost contacts |
 | ACTIVE | Stored echoes with age and error | Range and depth from pings |
 
+The listening console below the detail rows works like a control desk: lamps show ping ready (amber while a ping is out), audio and peak hold, and a north-up bearing rose shows the listening beam (amber), the baffles astern (red sector), own course and every published contact bearing. The contact list marks each contact with a lamp and a signal-to-noise bar. The Remote Crew browser shows the same rose beside its waterfalls.
+
 #### BROADBAND waterfall
 
 ```text
@@ -471,6 +473,8 @@ Torpedo run, seen from above:
 - ASROC (`A`): 4 rounds per mission. The rocket flies at 500 kn to the target's observed position (1 to 10 NM, current range needed) and drops the helicopter's lightweight torpedo there, set to the preset depth. It needs the same target checks as the torpedo and counts against the doctrine limit.
 - Depth charges (`Z`): 20 per mission, dropped as a pattern of 5 (three along the wake 20, 80 and 140 m astern, two thrown 70 m abeam), then 45 s to reload the rack. The ship must make at least 10 kn. The charges sink at 3.5 m/s to the preset depth (15-300 m) or the seabed; each 90 kg charge is lethal within about 25 m and still damages out to about 100 m. Submarines within 5 NM hear the detonation and evade.
 - ASW rocket launcher (`R`, RBU/Bofors type): 36 rockets per mission, fired in salvoes of 6, then 60 s to reload. An attack salvo goes to the designated target's observed position 0.4 to 3 NM away (current range needed, same target checks as the torpedo): one round on the aim point, five on a ring of 80 m around it. The rockets fly at 400 kn (about 9 s per NM), and each round sinks at 11 m/s to the preset depth (10-300 m) or the seabed; the 23 kg charges are lethal only within about 14 m and harm out to 60 m, so a rough or stale fix wastes the salvo. **Defence salvo** (`Shift+R`): six rounds in a line 0.3 to 0.8 NM out along the bearing of a torpedo warning at most 5 s old, set to 15 m; a round that goes off within 35 m of a running torpedo destroys it, and the log reports that the torpedo noise ended. Every submarine within 3 NM hears the rockets splash into the water: an AI boat evades at once, the crewed submarine's sonar room reports the splashes with their bearing.
+
+Both pages are laid out as a fire-control desk: on page 1 each tube has a lamp (green loaded, amber reloading, dark when empty) and the interlock chain (target, fix, ROE, weapon, flak) is a column of lamps that lights green stage by stage; page 2 shows the remaining torpedoes, helicopter torpedoes, sonobuoys and RBU rockets as tank columns. The Remote Crew browser shows station, ROE and interlock as lamps and each tube as a column.
 
 ### Keys
 
@@ -764,6 +768,8 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 - The teletype also carries the weather bulletin every 30 minutes and HQ messages (threat warnings, ROE FREE).
 - At mission start HQ reports the threat. With **coarse** intelligence it gives only a rough bearing and range of one threat. With **exact** intelligence it also names every hostile unit type committed to the mission with its number (for example "1x Altmetall (Diesel, älter), 2x air raid wave with anti-ship missiles"), using the names in the unit analyser (`F8`); positions stay unconfirmed. Patrol always gets exact intelligence, Double hunt and Nuclear intercept coarse, and the free hunt lets you choose on its difficulty screen (last row, "HQ intelligence").
 
+Page 1 also shows an HF/DF bearing rose: each current signal is a strobe, fanned as wide as its bearing error.
+
 ### HQ tasks
 
 Besides the hunt, HQ radios tasks to the ship: the first about 15 to 25 minutes into a built-in mission, then one every 25 to 45 minutes, at most six per mission and two open at a time. Custom missions get none. Each offer arrives on the teletype and on page 3 (Tasks). Answer it within 5 minutes with `A` (accept) or `D` (decline); no answer counts as declined. A destroyed radio room cannot answer.
@@ -929,6 +935,8 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 - **Surface-search radar:** searches whenever the helicopter is airborne with the dipping sonar stowed (status line on page 2). From 150 m it sees ships out to 40 NM, surfaced submarines and raised snorkels or periscopes inside its radar horizon (about 30 NM). A mast is small: in calm water it shows at about 10 NM, in sea state 3 at 3-5 NM, and in sea state 5 the clutter hides it. Every contact goes to Operations as a `RADAR-HELO` track with the helicopter as observer, one look every 2 s. A crewed submarine's ESM hears the radar and can warn its crew. `Shift+R` (browser: *Switch radar off*/*on*) switches the radar off and on again; switched off it neither sees nor radiates, and it stays off (saved) until switched on. An AI submarine with its mast or snorkel raised hears an aircraft radar within 40 NM (inside the radar horizon to its mast) on four of five 5-s looks, goes 40 m below snorkel depth and puts off snorkeling for 15 minutes while its battery holds more than 5 %; so a radiating helicopter drives snorkelers down, a silent one may catch them at the surface.
 - **Lightweight torpedo:** 2 per sortie, 55 kn, 12 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
 
+Page 3 shows the dipping sonar like a console: lamps for dome (green in the water, amber while lowering or raising), ping ready and water entry clear, a gauge of the cable in the water column down to the seabed, and a scope with the dipping and buoy bearings as wedges as wide as their error. Page 4 draws its waterfalls in the same phosphor colours as the ship's sonar.
+
 ### Keys
 
 | Key | Action |
@@ -1019,6 +1027,8 @@ Page 1 lists intercepts; page 2 shows the evidence for the selected intercept (f
 - Correlation with radar or sonar tracks uses compatible time, bearing and observed position, never hidden identity.
 - The emitter library includes the anti-ship missile seeker (9.0-9.5 GHz, PRF 1.8-3.2 kHz, pulse-Doppler). It radiates only in the last 18 NM and only once the sea-skimmer is above the radar horizon, and it matches an attack aircraft's fire-control radar just as well: the bearing trend and the air picture decide.
 - ESM runs from the operations compartment: a destroyed operations room disables it.
+
+Beside the intercept list a bearing rose shows every intercept as a strobe in its threat colour, and lamps show ESM, jammer, automatic ECM and audio.
 
 ### Keys
 

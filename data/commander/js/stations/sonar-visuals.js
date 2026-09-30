@@ -13,8 +13,58 @@ import { drawEmpty, visualContext } from "../views/visual-common.js";
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 
 export const broadbandVisible = () => S.sonarVisualPage === "broadband" || S.sonarVisualPage === "overview";
+// North-up bearing rose of the listening console: baffles astern, the
+// listening beam and the published contact bearings (selected one bold).
+function drawSonarRose(visual, observations) {
+  const plot = visualContext("sonar-rose");
+  const receiver = visual.receiver;
+  const rows = observations.filter((row) => finite(row.bearing));
+  const box = $("sonar-rose-text");
+  box.replaceChildren(node("li", t("sonar_rose_beam", {bearing: number(receiver.listen_bearing % 360, 0), width: number(receiver.beam_width_deg, 0)})),
+    ...rows.slice(0, 12).map((row) => node("li", t("sonar_rose_contact", {label: row.label, bearing: number(row.bearing % 360, 0)}))));
+  if (!plot) return;
+  const {context: g, width, height} = plot, colors = palette();
+  const cx = width / 2, cy = height / 2, radius = Math.max(10, Math.min(width, height) / 2 - 14);
+  const at = (r, deg) => [cx + r * Math.sin(deg * Math.PI / 180), cy - r * Math.cos(deg * Math.PI / 180)];
+  const sector = (from, to, inner, color) => {
+    g.fillStyle = color; g.beginPath();
+    const a = (from - 90) * Math.PI / 180, b = (to - 90) * Math.PI / 180;
+    g.arc(cx, cy, radius, a, b); g.arc(cx, cy, inner, b, a, true); g.closePath(); g.fill();
+  };
+  g.fillStyle = colors.bg; g.beginPath(); g.arc(cx, cy, radius, 0, Math.PI * 2); g.fill();
+  if (finite(receiver.own_course)) {
+    const astern = receiver.own_course + 180;
+    g.save(); g.globalAlpha = .28;
+    sector(astern - receiver.baffle_half_deg, astern + receiver.baffle_half_deg, 0, colors.red); g.restore();
+  }
+  const bearing = receiver.listen_bearing % 360, half = receiver.beam_width_deg / 2;
+  g.save(); g.globalAlpha = .35; sector(bearing - half, bearing + half, radius * .18, colors.amber); g.restore();
+  g.strokeStyle = colors.line; g.lineWidth = 1;
+  for (const ring of [.5, 1]) { g.beginPath(); g.arc(cx, cy, radius * ring, 0, Math.PI * 2); g.stroke(); }
+  for (let step = 0; step < 360; step += 10) {
+    const major = step % 30 === 0;
+    g.strokeStyle = major ? colors.muted : colors.line;
+    const [x1, y1] = at(radius - (major ? 6 : 3), step), [x2, y2] = at(radius, step);
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+  }
+  g.fillStyle = colors.muted; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText("N", ...at(radius + 8, 0));
+  g.strokeStyle = colors.amber; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(cx, cy); g.lineTo(...at(radius, bearing)); g.stroke();
+  if (finite(receiver.own_course)) {
+    g.strokeStyle = colors.text; g.beginPath(); g.moveTo(cx, cy); g.lineTo(...at(radius * .45, receiver.own_course)); g.stroke();
+  }
+  for (const row of rows) {
+    const chosen = row.ref === S.selected;
+    g.strokeStyle = chosen ? colors.text : colors.accent; g.lineWidth = chosen ? 3 : 2;
+    g.beginPath(); g.moveTo(...at(radius * (chosen ? .55 : .78), row.bearing)); g.lineTo(...at(radius + 3, row.bearing)); g.stroke();
+  }
+  g.lineWidth = 1; g.fillStyle = colors.accent; g.beginPath(); g.arc(cx, cy, 3, 0, Math.PI * 2); g.fill();
+}
+
 export function drawSonarVisuals() {
   const visual = S.v2State.sonar.visualization;
+  drawSonarRose(visual, S.v2State.sonar.observations);
   const historyRows = (name, fallback) => {
     const rows = [...sonarHistory[name].values()].filter((row) => row.stamp >= S.v2State.clock.sim - 600);
     return rows.length ? rows.sort((a, b) => b.stamp - a.stamp) : fallback;

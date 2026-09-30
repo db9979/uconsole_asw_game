@@ -231,7 +231,8 @@ def test_sonar_visualization_exact_schema_bounds_finite_and_detached(published):
     assert set(visual["demon"]) == {"frequency_min_hz", "frequency_max_hz",
         "bin_step_hz", "spectrum", "history", "analysis"}
     assert set(visual["receiver"]) == {"array", "listen_bearing",
-        "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled"}
+        "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled",
+        "own_course", "baffle_half_deg"}
     assert len(visual["broadband"]["history"]) == config.SONAR_BROADBAND_LONG_ROWS
     assert visual["broadband"]["bearing_step_deg"] == 4.0
     assert all(len(row["bins"]) == 90 for row in visual["broadband"]["history"])

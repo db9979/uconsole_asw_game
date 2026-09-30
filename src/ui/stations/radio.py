@@ -70,11 +70,25 @@ def draw_radio_view(game, tr=None) -> None:
         lx, ly, lw, _ = left
         reports = game.hfdf_bearings()
         row_h = 34
+        # The lower part of the box is the DF rose: live bearings with their
+        # error wedge, logged bearings dim.
+        rose_h = max(0, left[3] - 34 - 4 * row_h)
+        if rose_h >= 150:
+            from src.ui import console
+            selected_idx = min(game.radio_sel, len(reports) - 1) if reports else -1
+            strobes = [(float(row["bearing"]) % 360, config.COLOR_TEXT_DIM, 1, 0, .6)
+                       for row in list(game.hfdf_log)[-6:]]
+            strobes += [(observations.bearing(report, game.ship), config.COLOR_WARN
+                         if i == selected_idx else config.COLOR_HFDF,
+                         3 if i == selected_idx else 2, _hfdf_error_deg(report), .25)
+                        for i, report in enumerate(reports[:12])]
+            console.bearing_rose(s, (lx, left[1] + left[3] - 34 - rose_h, lw, rose_h),
+                                 strobes, course=game.ship.course, title="radio:rose")
         if not reports:
             layout.blit_line(s, "panel.no_transmission", (lx, ly, lw, 26),
                              config.COLOR_TEXT_DIM, size=18)
         else:
-            capacity = max(1, (left[3] - 60) // row_h)
+            capacity = max(1, ((left[3] - 60) if rose_h < 150 else 4 * row_h) // row_h)
             selected_idx = min(game.radio_sel, len(reports) - 1)
             start = max(0, min(selected_idx - capacity // 2,
                                len(reports) - capacity))

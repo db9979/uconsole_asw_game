@@ -58,25 +58,19 @@ _HELICOPTER_WATERFALL_CACHE = {}
 
 
 def _helicopter_waterfall(screen, rect, rows, *, receiver, amber=False):
-    """Render bounded acoustic history in one vectorized surface."""
-    pygame.draw.rect(screen, (7, 21, 28), rect)
+    """Render bounded acoustic history in one vectorized surface, in the
+    ship sonar's phosphor (newest row on top, fading trail)."""
+    from src.ui import sonar_view
+    pygame.draw.rect(screen, sonar_view.NAVY, rect)
     if rows and rect.w > 0 and rect.h > 0:
         key = (receiver, receiver.sequence, rect.size, amber)
         scaled = _HELICOPTER_WATERFALL_CACHE.get(key)
         if scaled is None:
             values = np.clip(np.asarray(rows[-64:], dtype=np.float32), 0, 1)
             if values.ndim == 2 and values.shape[1] > 0:
-                levels = (values[::-1].T * 255).astype(np.uint16)
-                pixels = np.zeros((*levels.shape, 3), dtype=np.uint8)
-                if amber:
-                    pixels[..., 0] = levels
-                    pixels[..., 1] = levels * 3 // 4
-                    pixels[..., 2] = levels // 5
-                else:
-                    pixels[..., 0] = levels // 4
-                    pixels[..., 1] = levels
-                    pixels[..., 2] = levels * 3 // 4
-                surface = pygame.surfarray.make_surface(pixels)
+                pixels = sonar_view.waterfall_pixels(
+                    values, contrast=1.6, palette="amber" if amber else "green")
+                surface = pygame.surfarray.make_surface(pixels.transpose(1, 0, 2))
                 scaled = pygame.transform.scale(surface, rect.size)
                 if len(_HELICOPTER_WATERFALL_CACHE) >= 4:
                     _HELICOPTER_WATERFALL_CACHE.clear()
@@ -88,11 +82,13 @@ def _helicopter_waterfall(screen, rect, rows, *, receiver, amber=False):
         y = rect.y + tick * rect.h // 5
         pygame.draw.line(screen, (24, 55, 61), (x, rect.y), (x, rect.bottom - 1))
         pygame.draw.line(screen, (24, 55, 61), (rect.x, y), (rect.right - 1, y))
-    pygame.draw.rect(screen, config.COLOR_GRID, rect, 1)
+    pygame.draw.rect(screen, config.COLOR_SONAR_RING, rect, 1)
+    layout.corner_brackets(screen, rect)
 
 
 def _helicopter_trace(screen, rect, values, color):
-    pygame.draw.rect(screen, (7, 21, 28), rect)
+    from src.ui import console, sonar_view
+    pygame.draw.rect(screen, sonar_view.NAVY, rect)
     for tick in range(1, 5):
         pygame.draw.line(screen, (24, 55, 61),
                          (rect.x, rect.y + tick * rect.h // 5),
@@ -101,8 +97,50 @@ def _helicopter_trace(screen, rect, values, color):
         points = [(rect.x + int(i * (rect.w - 2) / (len(values) - 1)),
                    rect.bottom - 2 - int(max(0, min(1, value)) * (rect.h - 4)))
                   for i, value in enumerate(values)]
-        pygame.draw.lines(screen, color, False, points, 1)
-    pygame.draw.rect(screen, config.COLOR_GRID, rect, 1)
+        # A dim fill under the trace, then the bright line (a phosphor A-scope).
+        pygame.draw.polygon(screen, console._mix(sonar_view.NAVY, color, .22),
+                            [(points[0][0], rect.bottom - 2), *points,
+                             (points[-1][0], rect.bottom - 2)])
+        pygame.draw.lines(screen, color, False, points, 2)
+    pygame.draw.rect(screen, config.COLOR_SONAR_RING, rect, 1)
+    layout.corner_brackets(screen, rect)
+
+
+def _dip_scope(screen, center, radius):
+    """The dipping sonar's scope: dark disc, range rings, 10 degree ticks, north."""
+    from src.ui import sonar_view
+    cx, cy = (int(v) for v in center)
+    if radius < 12:
+        return
+    pygame.draw.circle(screen, sonar_view.NAVY, (cx, cy), radius)
+    for fraction in (.25, .5, .75):
+        pygame.draw.circle(screen, config.COLOR_GRID, (cx, cy), max(1, int(radius * fraction)), 1)
+    pygame.draw.circle(screen, config.COLOR_SONAR_RING, (cx, cy), radius, 1)
+    for step in range(0, 360, 10):
+        major = step % 90 == 0
+        theta = math.radians(step)
+        inner = radius - (9 if major else 5 if step % 30 == 0 else 3)
+        pygame.draw.line(screen, config.COLOR_TEXT_DIM if step % 30 == 0 else config.COLOR_SONAR_RING,
+                         (cx + math.sin(theta) * inner, cy - math.cos(theta) * inner),
+                         (cx + math.sin(theta) * radius, cy - math.cos(theta) * radius), 1)
+    for step in (0, 90, 180, 270):
+        theta = math.radians(step)
+        pygame.draw.line(screen, config.COLOR_GRID, (cx, cy),
+                         (cx + math.sin(theta) * radius, cy - math.cos(theta) * radius), 1)
+    layout.blit_line(screen, "N", (cx - 10, cy - radius - 20, 20, 18),
+                     config.COLOR_TEXT_DIM, size=14, align="center")
+    pygame.draw.circle(screen, config.COLOR_OK, (cx, cy), 3)
+
+
+def _dip_lamps(game, helo):
+    """Dome, ping and water entry as annunciator lamps (display only)."""
+    dome = {"DEPLOYED": "on", "DEPLOYING": "caution", "RETRIEVING": "caution"}.get(
+        helo.dip_state, "off")
+    ping = ("on" if helo.dip_ping_ready else
+            "caution" if helo.dip_available else "off")
+    water = ("on" if helo.airborne and helo.water_entry_clear(game.world) else "off")
+    return (("helo.lamp.dome", "", dome), ("helo.lamp.ping", "", ping),
+            ("helo.lamp.water", "", water))
 
 
 _HELO_ACOUSTIC_PAGES = (("helo.acoustic.broadband", "helo.acoustic.broadband_axis"),
@@ -214,15 +252,23 @@ def _draw_helicopter_acoustic_view(game, rect):
                 state=localize("ui.on" if audible else "ui.off"),
                 volume=f"{game.sonar_volume:.0%}"),
     )
-    for item, box in zip(status, geo["statuses"]):
-        pygame.draw.rect(screen, (13, 35, 43), box)
-        pygame.draw.rect(screen, config.COLOR_GRID, box, 1)
-        layout.blit_line(screen, item, box.inflate(-10, -6), config.COLOR_TEXT,
-                         size=13)
+    from src.ui import console
+    levels = ("on" if ready else "caution",
+              "on" if game.helo_listen_bearing is not None else "off",
+              "on" if game.helo_audition.audition_mode != "BROADBAND" else "off",
+              "on" if audible else "off")
+    for item, box, level in zip(status, geo["statuses"], levels):
+        pygame.draw.rect(screen, config.COLOR_PANEL_BG, box)
+        pygame.draw.rect(screen, console.level_color(level) if level != "off"
+                         else config.COLOR_SONAR_RING, box, 1)
+        console.led(screen, (box.x + 12, box.centery), 5, level)
+        layout.blit_line(screen, item, (box.x + 24, box.y + 3, box.w - 30, box.h - 6),
+                         config.COLOR_TEXT, size=13)
     main, rail, plot = geo["main"], geo["rail"], geo["plot"]
     for box in (main, rail):
-        pygame.draw.rect(screen, (9, 29, 38), box)
-        pygame.draw.rect(screen, config.COLOR_GRID, box, 1)
+        pygame.draw.rect(screen, config.COLOR_PANEL_BG, box)
+        pygame.draw.rect(screen, config.COLOR_SONAR_RING, box, 1)
+        layout.corner_brackets(screen, box)
     layout.blit_line(screen, _HELO_ACOUSTIC_PAGES[page][0],
                      (main.x + 10, main.y + 6, main.w - 130, 23),
                      config.COLOR_TEXT, size=17)
@@ -480,18 +526,14 @@ def draw_helicopter_view(game, tr=None) -> None:
     elif page == 2:
         plot = layout.box(s, regions["rules"], "helo.dip_sonar")
         px, py, pw, ph = plot
-        center_x, center_y = px + min(pw * .34, ph * .42), py + ph * .48
-        radius = int(min(pw * .28, ph * .42))
-        for fraction in (.5, 1.0):
-            pygame.draw.circle(s, config.COLOR_GRID,
-                               (int(center_x), int(center_y)),
-                               max(1, int(radius * fraction)), 1)
-        for bearing in (0, 90, 180, 270):
-            theta = math.radians(bearing)
-            end = (int(center_x + math.sin(theta) * radius),
-                   int(center_y - math.cos(theta) * radius))
-            pygame.draw.line(s, config.COLOR_GRID,
-                             (int(center_x), int(center_y)), end, 1)
+        from src.ui import console
+        lamp_h = layout.line_pitch(14, 0) + 8
+        lamps = pygame.Rect(int(px + 8), py + 30, max(1, int(pw * .56)), lamp_h)
+        console.lamp_grid(s, lamps, _dip_lamps(game, helo), 3, size=14)
+        center_x = px + min(pw * .34, ph * .42)
+        radius = int(min(pw * .28, ph * .42, (py + ph - 90 - lamps.bottom - 24) / 2))
+        center_y = lamps.bottom + 24 + radius
+        _dip_scope(s, (center_x, center_y), radius)
         gauge_x, gauge_y = int(px + pw * .62), py + 12
         gauge_h = min(160, max(80, ph // 3))
         depth_limit = (helo.dip_depth_limit(game.world) if helo.airborne else 0.0)
@@ -502,14 +544,23 @@ def draw_helicopter_view(game, tr=None) -> None:
         thermocline = (layer if layer is not None and helo.dip_depth_m >= layer
                        else None)
         gauge_max = max(50.0, depth_limit)
-        pygame.draw.rect(s, config.COLOR_GRID,
-                         pygame.Rect(gauge_x, gauge_y, 22, gauge_h), 1)
+        column = pygame.Rect(gauge_x, gauge_y, 22, gauge_h)
+        # The water column: darker with depth, the limit as a floor line.
+        for band in range(4):
+            top = column.y + column.h * band // 4
+            pygame.draw.rect(s, console._mix(config.COLOR_PANEL_BG, console.WATER, .45 - band * .09),
+                             (column.x, top, column.w, column.h * (band + 1) // 4 - column.h * band // 4))
+        pygame.draw.line(s, console.WATER, column.topleft, (column.right - 1, column.y), 2)
+        pygame.draw.rect(s, layout.BRACKET_COLOR, column, 1)
         if thermocline is not None and thermocline <= gauge_max:
             layer_y = gauge_y + int(gauge_h * thermocline / gauge_max)
             pygame.draw.line(s, config.COLOR_WARN,
                              (gauge_x - 5, layer_y), (gauge_x + 27, layer_y), 2)
         if helo.dip_state != "STOWED":
             dome_y = gauge_y + int(gauge_h * min(1.0, helo.dip_depth_m / gauge_max))
+            # The cable from the surface to the dome.
+            pygame.draw.line(s, config.COLOR_TEXT_DIM, (gauge_x + 11, gauge_y),
+                             (gauge_x + 11, dome_y), 1)
             pygame.draw.circle(s, config.COLOR_OK, (gauge_x + 11, dome_y), 5)
         gauge_text_x = gauge_x + 34
         gauge_text_w = max(1, int(px + pw - gauge_text_x))
@@ -542,13 +593,14 @@ def draw_helicopter_view(game, tr=None) -> None:
             if passive:
                 theta = math.radians(contact.dip_bearing)
                 if contact.dip_bearing_uncertainty_deg is not None:
-                    for edge in (-1, 1):
-                        bound = math.radians(contact.dip_bearing + edge *
-                                             contact.dip_bearing_uncertainty_deg)
-                        bound_end = (int(center_x + math.sin(bound) * radius),
-                                     int(center_y - math.cos(bound) * radius))
-                        pygame.draw.line(s, config.COLOR_GRID,
-                                         (int(center_x), int(center_y)), bound_end, 1)
+                    # The bearing's uncertainty as a dim wedge (at least 1 degree wide).
+                    spread = max(1.0, float(contact.dip_bearing_uncertainty_deg))
+                    wedge = [(center_x, center_y)] + [
+                        (center_x + math.sin(math.radians(contact.dip_bearing + a)) * radius,
+                         center_y - math.cos(math.radians(contact.dip_bearing + a)) * radius)
+                        for a in np.linspace(-spread, spread, 7)]
+                    pygame.draw.polygon(s, console._mix(config.COLOR_PANEL_BG, config.COLOR_OK, .25),
+                                        wedge)
                 end = (int(center_x + math.sin(theta) * radius),
                        int(center_y - math.cos(theta) * radius))
                 pygame.draw.line(s, config.COLOR_OK,
@@ -595,12 +647,7 @@ def draw_helicopter_view(game, tr=None) -> None:
         spectrum = game.helo_receiver.spectrum
         graph = pygame.Rect(int(px + 6), int(py + ph - 66),
                             max(1, int(pw * .56)), 55)
-        pygame.draw.rect(s, config.COLOR_GRID, graph, 1)
-        if len(spectrum) > 1:
-            points = [(graph.x + int(i * (graph.w - 2) / (len(spectrum) - 1)),
-                       graph.bottom - 2 - int(max(0, min(1, value)) * (graph.h - 4)))
-                      for i, value in enumerate(spectrum)]
-            pygame.draw.lines(s, config.COLOR_OK, False, points, 1)
+        _helicopter_trace(s, graph, spectrum, config.COLOR_OK)
         layout.blit_line(s, "helo.dip_scale", (int(center_x - radius),
                          int(center_y + radius + 4), radius * 2, 20),
                          config.COLOR_TEXT_DIM, size=14, align="center")

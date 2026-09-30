@@ -27,6 +27,8 @@ Seite 1 listet die Erfassungen; Seite 2 zeigt die Belege für die gewählte Erfa
 - Die Senderbibliothek enthält den Suchkopf des Seezielflugkörpers (9,0-9,5 GHz, PRF 1,8-3,2 kHz, Puls-Doppler). Er sendet nur auf den letzten 18 sm und erst, wenn der Tiefflieger über dem Radarhorizont ist, und er passt ebenso gut zum Feuerleitradar eines Angriffsflugzeugs: Peilungsverlauf und Luftlage entscheiden.
 - ESM läuft aus der OPZ-Abteilung: eine zerstörte OPZ legt es lahm.
 
+Neben der Liste der Auffassungen zeigt eine Peilrose jede Auffassung als Strahl in ihrer Bedrohungsfarbe, und Lampen zeigen ESM, Störer, ECM-Automatik und Ton.
+
 ## Tasten {#eloka-keys}
 
 <!-- keys:eloka -->

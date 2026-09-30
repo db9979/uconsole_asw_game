@@ -14,20 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.99**
+Aktuelle Version: **1.3.100**
 
-Version 1.3.99 macht die Schadensbildschirme auf der uConsole und im Browser
-zu Leckwehr-Leitständen. Im Schiffsplan der Fregatte auf der uConsole steigt
-das Wasser in jeder Abteilung vom Kiel an, ein Brand glüht rot und eine
-ausgefallene Abteilung ist schraffiert; jede Abteilungskarte trägt eine
-Zustands-LED, Flutung und Brand mit LEDs und Balken sowie nummerierte
-Trupp-Plaketten. Die Leckwehr-Seite des U-Boots ist eine Abteilungs-Mimik vom
-Heck zum Bug mit Wasserstand, Brandschein, Gasschleier, LEDs für Leck, Brand,
-Gas und Schotten, Trupp-Plaketten und Lampen für die gewählte Abteilung und
-den Strom. Die Browser-Karte Schaden beginnt mit einer Warn- und Meldetafel
-über einer Seitenansicht des Schiffs und Rundinstrumenten für Krängung, Trimm
-und Gesamtschaden; ein Klick auf eine Abteilung schickt weiter den gewählten
-Trupp.
+Version 1.3.100 bringt die Stationen Sonar, Elektronische Kampfführung, Funk
+und Waffen in den Konsolenstil der Maschinen- und Schadensbildschirme. Das
+Sonar von Fregatte und U-Boot bekommt dunklere Leuchtschirme, eine Horchkonsole
+mit Lampen für Ping, Ton und Spitzenwert-Halten und eine nordorientierte
+Peilrose mit Horchrichtung, toten Winkeln, eigenem Kurs und Kontaktpeilungen;
+jede Kontaktzeile trägt eine Lampe und einen Balken für den Störabstand. Das
+Tauchsonar des Hubschraubers zeigt Lampen für Dom, Ping und Wassereintritt,
+eine Anzeige der Wassersäule und Peilkeile so breit wie ihr Fehler, und seine
+Wasserfälle nutzen die Leuchtfarben des Schiffs. ESM und KW-Peilung bekommen
+Peilrosen, die Waffenseiten Rohr- und Sperrlampen und Magazintanks. Im Browser
+bekommen Sonar und Hubschrauber dieselbe Rose und Lampen, die Waffenkarte
+Lampen und Rohrsäulen und das ESM-Sichtgerät eine Rose mit Skala.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

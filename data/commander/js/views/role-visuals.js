@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { $, damageStates, isBoatCommand, isSonar, opforRoles } from "../core/base.js";
-import { enumText, finite, number, t } from "../core/format.js";
+import { enumText, finite, number, stateText, t, unit } from "../core/format.js";
 import { palette } from "../core/palette.js";
 import { syncPlotAnimation } from "../plot/clock.js";
 import { heatmap } from "../plot/heatmap.js";
@@ -9,7 +9,7 @@ import { filteredEloka, mapRoles, overviewPlotList, ultraWide, wideScreen } from
 import { drawSonarVisuals } from "../stations/sonar-visuals.js";
 import { clearVisuals, node } from "./dom.js";
 import { drawRoleMap, syncOpzSweepAnimation } from "./role-map.js";
-import { drawEmpty, visualContext } from "./visual-common.js";
+import { drawEmpty, roseFace, visualContext } from "./visual-common.js";
 import { schedule } from "../core/scheduler.js";
 import { drawRadioVisual } from "../stations/radio.js";
 import { drawUbootEngineDials, renderUbootEngineConsole } from "../stations/uboot-engine-room.js";
@@ -32,7 +32,7 @@ function drawElokaVisual() {
   const simNow = finite(S.v2State.clock?.sim) ? S.v2State.clock.sim : 0;
   const scopeWidth = plot.width * .43;
   const radius = Math.min(scopeWidth, plot.height) * .38, cx = scopeWidth / 2, cy = plot.height / 2;
-  plot.context.strokeStyle = palette().line; plot.context.beginPath(); plot.context.arc(cx, cy, radius, 0, Math.PI * 2); plot.context.stroke();
+  roseFace(plot.context, cx, cy, radius);
   for (const row of intercepts) { const angle = row.bearing * Math.PI / 180; plot.context.save(); plot.context.globalAlpha = .2 + .8 * row.quality; plot.context.strokeStyle = palette().amber; plot.context.lineWidth = 2 + row.quality * 3; if (row.signal_state !== "LIVE") plot.context.setLineDash([5, 5]); plot.context.beginPath(); plot.context.moveTo(cx, cy); plot.context.lineTo(cx + Math.sin(angle) * radius, cy - Math.cos(angle) * radius); plot.context.stroke(); plot.context.restore(); }
   const focused = intercepts[0];
   const gx = scopeWidth + 12, gy = 16, gw = plot.width - gx - 12, gh = plot.height - 32;
@@ -73,13 +73,44 @@ function drawElokaVisual() {
   $("eloka-scope-text").replaceChildren(...equivalents);
   if (!intercepts.length) $("eloka-scope-text").textContent = t("visual_empty");
 }
+// Annunciator lamp on the canvas: an LED, a label and a value in a framed tile.
+function canvasLamp(g, x, y, w, h, label, value, color) {
+  g.fillStyle = "rgba(8, 24, 28, .92)"; g.fillRect(x, y, w, h);
+  g.strokeStyle = color; g.globalAlpha = .75; g.strokeRect(x + .5, y + .5, w - 1, h - 1); g.globalAlpha = 1;
+  const r = Math.min(7, h / 4), cx = x + 12 + r, cy = y + h / 2;
+  g.fillStyle = color; g.shadowColor = color; g.shadowBlur = 8;
+  g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
+  g.textAlign = "left"; g.fillStyle = palette().muted; g.fillText(label, cx + r + 8, cy - 4, w / 2);
+  g.textAlign = "right"; g.fillStyle = palette().text; g.fillText(value, x + w - 10, cy + 12, w - 2 * r - 30);
+}
 function drawWeaponsVisual() {
   const plot = visualContext("weapons-system"), payload = S.v2State.weapons;
   if (!plot) return;
-  const stages = [payload.readiness.station_down ? t("station_down_state") : t("station_live_state"), payload.readiness.roe, payload.readiness.interlock];
-  stages.forEach((text, index) => { const x = 10 + index * plot.width / 3; plot.context.fillStyle = index === 2 && payload.readiness.interlock ? "#53421f" : "#24493f"; plot.context.fillRect(x, 20, plot.width / 3 - 20, 45); plot.context.fillStyle = palette().text; plot.context.textAlign = "center"; plot.context.fillText(text, x + plot.width / 6 - 10, 48, plot.width / 3 - 28); });
-  payload.tubes.forEach((tube, index) => { const x = 10 + index * Math.max(36, (plot.width - 20) / Math.max(1, payload.tubes.length)); plot.context.strokeStyle = tube.state === "ready" ? palette().accent : palette().amber; plot.context.strokeRect(x, 90, 28, 55); plot.context.fillStyle = palette().text; plot.context.fillText(String(tube.tube), x + 14, 122); });
-  $("weapons-system-text").textContent = t("weapons_equivalent", {state: payload.readiness.state, interlock: payload.readiness.interlock, tubes: payload.tubes.map((tube) => `${tube.tube}:${tube.state}/${number(tube.reload_s, 0)}s`).join(", ") || t("station_none"), nixies: number(payload.inventory.nixies, 0), active: payload.active_assets.length});
+  const g = plot.context, p = palette(), readiness = payload.readiness, w = plot.width;
+  const down = readiness.station_down, blocked = Boolean(readiness.interlock);
+  const stages = [
+    [t("weapons_lamp_station"), down ? t("station_down_state") : t("station_live_state"), down ? p.red : p.accent],
+    [t("weapons_lamp_roe"), stateText("roe", readiness.roe), p.accent],
+    [t("weapons_lamp_interlock"), blocked ? readiness.interlock : readiness.state, blocked ? p.amber : p.accent]];
+  const lampW = (w - 20 - 2 * 10) / 3;
+  stages.forEach(([label, value, color], index) => canvasLamp(g, 10 + index * (lampW + 10), 12, lampW, 46, label, value, color));
+  // Tubes as columns: full when loaded, the reload counts down in the column.
+  const tubes = payload.tubes, top = 76, height = Math.max(60, plot.height - top - 12);
+  const pitch = Math.min(90, (w - 20) / Math.max(1, tubes.length));
+  tubes.forEach((tube, index) => {
+    const x = 10 + index * pitch, cw = pitch - 12, ready = tube.state === "ready";
+    const color = ready ? p.accent : tube.state === "reloading" ? p.amber : p.muted;
+    g.fillStyle = "rgba(8, 24, 28, .92)"; g.fillRect(x, top, cw, height);
+    g.strokeStyle = p.line; g.strokeRect(x + .5, top + .5, cw - 1, height - 1);
+    const fill = ready ? 1 : tube.state === "reloading" ? .35 : 0, inner = height - 46;
+    g.fillStyle = color; g.globalAlpha = .55; g.fillRect(x + 4, top + 24 + inner * (1 - fill), cw - 8, inner * fill); g.globalAlpha = 1;
+    g.fillStyle = color; g.shadowColor = color; g.shadowBlur = 8;
+    g.beginPath(); g.arc(x + cw / 2, top + 12, 5, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
+    g.textAlign = "center"; g.fillStyle = p.text;
+    g.fillText(`${t("weapons_tube")} ${number(tube.tube, 0)}`, x + cw / 2, top + height - 8, cw - 4);
+    if (!ready && finite(tube.reload_s)) g.fillText(unit(tube.reload_s, "s", 0), x + cw / 2, top + 24 + inner / 2, cw - 4);
+  });
+  $("weapons-system-text").textContent = t("weapons_equivalent", {state: readiness.state, interlock: readiness.interlock, tubes: tubes.map((tube) => `${tube.tube}:${tube.state}/${number(tube.reload_s, 0)}s`).join(", ") || t("station_none"), nixies: number(payload.inventory.nixies, 0), active: payload.active_assets.length});
 }
 function visualStationDown(role) {
   const payload = S.v2State?.[role];

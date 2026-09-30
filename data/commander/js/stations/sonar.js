@@ -2,6 +2,23 @@ import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { enumText, finite, number, stateText, t, unit } from "../core/format.js";
 import { metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
+import { renderLamps } from "../views/console-kit.js";
+
+// The listening console's annunciator lamps: what the operator has switched on.
+function renderSonarLamps(settings) {
+  const onOff = (flag) => [flag ? "on" : "off", t(flag ? "sonar_lamp_on" : "sonar_lamp_off")];
+  const down = settings.station_down;
+  const lamp = (key, ...rest) => [key, ...rest];
+  renderLamps($("sonar-lamps"), [
+    lamp("station", t("sonar_lamp_station"), down ? "alarm" : "on", t(down ? "sonar_lamp_down" : "sonar_lamp_ok")),
+    lamp("ping", t("sonar_lamp_ping"), settings.ping.ready ? "on" : "caution",
+      settings.ping.ready ? t("sonar_lamp_ready") : t("sonar_lamp_cooldown", {seconds: number(settings.ping.cooldown_s, 0)})),
+    lamp("track", t("sonar_lamp_track"), ...onOff(Boolean(settings.focus_ref))),
+    lamp("audio", t("sonar_lamp_audio"), ...onOff(settings.audio_enabled)),
+    lamp("notch", t("sonar_lamp_notch"), ...onOff(settings.notch)),
+    lamp("peak", t("sonar_lamp_peak"), settings.peak_hold ? "caution" : "off", t(settings.peak_hold ? "sonar_lamp_on" : "sonar_lamp_off")),
+  ]);
+}
 
 export function renderSonarStation(payload) {
   const settings = payload.settings;
@@ -12,6 +29,7 @@ export function renderSonarStation(payload) {
     $(id).hidden = submarine;
   $("station-sonar-title").textContent = t(submarine ? "station_uboot_sonar" : "station_sonar");
   const auditionMode = payload.visualization.receiver.listen_mode;
+  renderSonarLamps(settings);
   metrics($("sonar-settings"), [["sonar_mode", stateText("sonar_array", settings.mode)], ["sonar_page", number(settings.page, 0)],
     ["sonar_listen_bearing", unit(settings.listen_bearing, "\u00b0", 0)], ["sonar_focus", settings.focus_ref || t("station_none")],
     ["sonar_target", settings.target_ref || t("station_none")], ["station_down", yesNo(settings.station_down)],

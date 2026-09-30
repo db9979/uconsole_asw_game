@@ -9,7 +9,12 @@ export function plotAxes(plot, xmax, ymax, xunit, yunit, xorigin = 0, reverseY =
   for (let tick = 0; tick <= 4; tick++) {
     const x = left + tick * width / 4, y = top + tick * height / 4;
     context.fillText(`${number(xorigin + xmax * tick / 4, 0)}${tick === 4 ? xunit : ""}`, x, top + height + 20);
-    context.textAlign = "right"; context.fillText(`${number(ymax * (reverseY ? 1 - tick / 4 : tick / 4), ymax < 2 ? 1 : 0)}`, left - 6, y + 4); context.textAlign = "center";
+    // A short plot labels only its ends and middle, so the values never overlap.
+    if (height >= 64 || tick % 2 === 0) {
+      context.textAlign = "right";
+      context.fillText(`${number(ymax * (reverseY ? 1 - tick / 4 : tick / 4), ymax < .5 ? 2 : ymax < 2 ? 1 : 0)}`, left - 6, y + 4);
+      context.textAlign = "center";
+    }
     context.beginPath(); context.moveTo(x, top); context.lineTo(x, top + height); context.stroke();
   }
   context.fillText(yunit, left, 14);

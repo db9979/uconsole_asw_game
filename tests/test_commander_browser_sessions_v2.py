@@ -1253,7 +1253,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                     "tma": [], "bt": None, "active_echoes": [],
                         "receiver": {"array": "BOW", "listen_bearing": 25.0,
                                      "beam_width_deg": 30.0, "listen_mode": "BROADBAND",
-                                     "focus_locked": False, "audio_enabled": False}}}
+                                     "focus_locked": False, "audio_enabled": False,
+                                     "own_course": 90.0, "baffle_half_deg": 30.0}}}
         return common
     chart = {"protocol": 2, "revision": legacy["chart_revision"], "size_nm": 500,
              "landmasses": [], "disclaimer": "Synthetic test chart"}

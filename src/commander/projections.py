@@ -10,6 +10,7 @@ import math
 import weakref
 
 from src.core import attack_computer, boat_esm, chart_history, boat_missions, boat_threat, config, opfor, plot
+from src.core import sight_events, station_alarms
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.enemies.damage_control import COMPARTMENTS, capacity_kg
@@ -236,8 +237,18 @@ def _plot(game, layer=None, own=None):
             row.update(now_x=_number(now_x), now_y=_number(now_y),
                        cpa_nm=_number(distance), cpa_s=_number(seconds))
         objects.append(row)
+    side = "frigate" if layer is None else ("boat", own.id)
     return dict(objects=objects, max_objects=plot.MAX_OBJECTS, max_label=plot.MAX_LABEL,
-                trail=_own_trail(game, "frigate" if layer is None else ("boat", own.id)))
+                trail=_own_trail(game, side), fx=_map_fx(game, side))
+
+
+def _map_fx(game, side):
+    """Own pings, the echoes they brought back and own charges going off
+    (age, x, y), for the charts' moving marks (own-side knowledge only)."""
+    fx = getattr(game, "map_fx", None)
+    rows = fx.rows(side, game.sim_t) if fx is not None else {}
+    return {key: [[_number(age), _number(x), _number(y)] for age, x, y in rows.get(key, ())]
+            for key in ("pings", "echoes", "splashes")}
 
 
 def _own_trail(game, side_key):
@@ -265,9 +276,12 @@ def _common(game, status, role):
                      wind_from_deg=_number(weather["wind_from_deg"]),
                      wind_speed_kn=_number(weather["wind_speed_kn"]),
                      rain_intensity=_number(weather["rain_intensity"]),
-                     visibility_nm=_number(weather["visibility_nm"])),
+                     visibility_nm=_number(weather["visibility_nm"]),
+                     # Thunderstorm activity 0..1: sferics on ESM and HF/DF.
+                     storm=_number(game.world.thunderstorm())),
                 weather_station=_weather_station(game),
                 plot=_plot(game),
+                alarms=_alarm_rows(station_alarms.frigate(game)),
                 mission=dict(name=localize(game.mission_name_display(), game.tr),
                              objective=localize(game.mission_objective_display(), game.tr),
                              remaining_s=_number(game.mission.remaining_s(game.mission_time))),
@@ -278,6 +292,25 @@ def _common(game, status, role):
                     # Spoken crew reports: the feed lines' key and bearing
                     # only; each browser words them in its own language.
                     callouts=game.callouts.detached()))
+
+
+def _deck_motion(game) -> dict:
+    """Own ship's roll and pitch against the flight-deck limits and how long
+    the deck has been quiet (own ship: legitimate truth)."""
+    from src.air import helicopter as helicopter_physics
+    quiet = float(game.ship.deck_quiet_s)
+    return dict(roll_deg=_number(game.ship.roll), pitch_deg=_number(game.ship.pitch),
+                roll_limit_deg=_number(helicopter_physics.DECK_ROLL_LIMIT_DEG),
+                pitch_limit_deg=_number(helicopter_physics.DECK_PITCH_LIMIT_DEG),
+                quiet_s=_number(min(quiet, helicopter_physics.DECK_QUIET_MAX_S)),
+                window_s=_number(helicopter_physics.DECK_WINDOW_S),
+                window_open=bool(helicopter_physics.deck_window_open(
+                    quiet, game.ship.roll, game.ship.pitch)))
+
+
+def _alarm_rows(levels: dict) -> list:
+    """The station tabs' alarm lamps, in station order (display only)."""
+    return [dict(station=station, level=level) for station, level in sorted(levels.items())]
 
 
 def redacted_state(status):
@@ -1044,6 +1077,8 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                       weather_launch_safe=flight_weather["launch_safe"],
                       weather_dipping_safe=flight_weather["dipping_safe"],
                       crosswind_kn=_number(flight_weather["crosswind_kn"]),
+                      # The flight deck's motion and its quiet-period window.
+                      deck_motion=_deck_motion(game),
                      rtb_margin_s=(None if distance is None else _number(
                          helo.fuel_s - distance / max(.001, config.kn_to_nm_per_s(
                              config.HELO_SPEED_KN)) - config.HELO_FUEL_RESERVE_S))))
@@ -1347,7 +1382,8 @@ def _opfor_common(game, status, role, boat):
     # The commander sees the boat's own plot; the sonar room has none.
     common["plot"] = (_plot(game, boat.plot, boat.sub) if role in ("uboot", "uboot_nav") else
                       dict(objects=[], max_objects=plot.MAX_OBJECTS,
-                           max_label=plot.MAX_LABEL, trail=[]))
+                           max_label=plot.MAX_LABEL, trail=[],
+                           fx=dict(pings=[], echoes=[], splashes=[])))
     common["mission"]["objective"] = localize(boat_missions.objective(game, boat), game.tr)
     # The boat's own atmosphere cues (hull, detonations), never the frigate's.
     common["audio"] = dict(events=[dict(seq=int(row["seq"]), cue=str(row["kind"]),
@@ -1358,6 +1394,7 @@ def _opfor_common(game, status, role, boat):
     assist = bool(game.autocrew.assist)
     common["autocrew"] = dict(enabled=assist, status="suspended_remote" if assist else "off")
     common["autocrew_overview"] = []
+    common["alarms"] = _alarm_rows(station_alarms.boat(game, boat))
     return common
 
 
@@ -1397,6 +1434,16 @@ def _nav_lights(code):
     return code if code is not None and nav_lights.valid(code) else None
 
 
+def _sight_events(rows, now):
+    """What an eye sees happen (``sight_events`` rows): type, measured
+    bearing and range, age, lifetime, size and a fire's strength; no entity."""
+    return [dict(type=str(row["kind"]), bearing=_number(row["bearing"]),
+                 range_nm=_number(row["range_nm"]), age_s=_age(now, row["at_s"]),
+                 dur_s=_number(row["dur_s"]), size_m=_number(row["size_m"]),
+                 level=_number(row["level"]))
+            for row in rows[:8]]
+
+
 def _lookout_glasses(game):
     """The bridge lookout's binoculars: the horizon in motion and the outlines
     of his own sightings (measured bearing, class he made out, apparent
@@ -1421,7 +1468,8 @@ def _lookout_glasses(game):
                                elevation_deg=_number(elevation), aob_deg=_number(aob),
                                model=None if model is None else str(model))
                           for bearing, span, cls, stale, lights, elevation, aob, model in
-                          lookout_outlines(game, game.lookout_sightings())[:16]])
+                          lookout_outlines(game, game.lookout_sightings())[:16]],
+                events=_sight_events(sight_events.frigate_rows(game), game.sim_t))
 
 
 def _uboot_scope(game, boat):
@@ -1459,7 +1507,8 @@ def _uboot_scope(game, boat):
                                  else _number(boat.orders._aspect.get(row["ref"]))),
                         model=(None if now - row["t"] > 1.0
                                else getattr(boat.orders, "_model", {}).get(row["ref"])))
-                   for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]])
+                   for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]],
+        events=_sight_events(sight_events.boat_rows(game, boat), now))
 
 
 def _uboot_solution(boat, ref, now):

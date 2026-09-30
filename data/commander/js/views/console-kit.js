@@ -83,13 +83,37 @@ export function dial(g, x, y, radius, room, spec, colors) {
   if (sub) g.fillText(sub, x, y + radius * .95 + 16, room);
 }
 
-// The gauges in one, two or three rows (whichever gives the largest dials),
-// with a text equivalent of each.
-export function drawDialPanel(canvasId, textId, makeSpecs) {
+// Needles with mass (src/ui/instruments.py needle): each follows its value
+// like a damped spring on the wall clock, so it swings in and settles; a
+// needle not drawn for half a second starts at its value again.
+const NEEDLE_OMEGA = 7, NEEDLE_ZETA = .5, NEEDLE_RESET_S = .5;
+const needles = new Map(), panels = new Map();
+function needle(key, target, span) {
+  const now = performance.now() / 1000, state = needles.get(key);
+  if (!finite(target)) { needles.delete(key); return {value: target, settled: true}; }
+  if (!state || !(now - state.t >= 0 && now - state.t <= NEEDLE_RESET_S)) {
+    needles.set(key, {value: target, velocity: 0, t: now});
+    return {value: target, settled: true};
+  }
+  let {value, velocity} = state, elapsed = now - state.t;
+  while (elapsed > 1e-6) {
+    const step = Math.min(elapsed, 1 / 120), accel = NEEDLE_OMEGA ** 2 * (target - value) - 2 * NEEDLE_ZETA * NEEDLE_OMEGA * velocity;
+    velocity += accel * step; value += velocity * step; elapsed -= step;
+  }
+  needles.set(key, {value, velocity, t: now});
+  // A gauge without a finite span settles relative to its value, so its
+  // needle never keeps the page animating.
+  const scale = finite(span) && Math.abs(span) > 0 ? Math.abs(span) : Math.max(1, Math.abs(target));
+  return {value, settled: Math.abs(target - value) < scale * .002 && Math.abs(velocity) < scale * .01};
+}
+
+function paintDials(canvasId) {
+  const panel = panels.get(canvasId);
+  if (!panel) return false;
+  panel.frame = null;
   const plot = visualContext(canvasId);
-  if (!plot) return;
-  const {context: g, width, height} = plot, colors = palette();
-  const specs = makeSpecs(colors);
+  if (!plot) return false;
+  const {context: g, width, height} = plot, specs = panel.specs, colors = panel.colors;
   const fit = (columns) => {
     const rows = Math.ceil(specs.length / columns), cellW = width / columns, cellH = height / rows;
     return {columns, cellW, cellH, radius: Math.min(cellW * .36, (cellH - 44) * .5)};
@@ -97,10 +121,24 @@ export function drawDialPanel(canvasId, textId, makeSpecs) {
   const {columns, cellW, cellH, radius: best} = [specs.length, Math.ceil(specs.length / 2), Math.ceil(specs.length / 3)]
     .map(fit).reduce((a, b) => b.radius > a.radius ? b : a);
   const radius = Math.max(18, best);
+  let moving = false;
   specs.forEach((spec, index) => {
     const x = cellW * (index % columns + .5), y = cellH * Math.floor(index / columns) + cellH * .5 - 12;
-    dial(g, x, y, radius, cellW - 10, spec, colors);
+    const shown = needle(`${canvasId}:${index}`, spec.value, spec.max - spec.min);
+    moving ||= !shown.settled;
+    dial(g, x, y, radius, cellW - 10, {...spec, value: shown.value}, colors);
   });
+  if (moving) panel.frame = requestAnimationFrame(() => paintDials(canvasId));
+  return true;
+}
+
+// The gauges in one, two or three rows (whichever gives the largest dials),
+// with a text equivalent of each.
+export function drawDialPanel(canvasId, textId, makeSpecs) {
+  const colors = palette(), specs = makeSpecs(colors), previous = panels.get(canvasId);
+  if (previous?.frame) cancelAnimationFrame(previous.frame);
+  panels.set(canvasId, {specs, colors, frame: null});
+  if (!paintDials(canvasId)) return;
   const box = $(textId), tag = box.tagName === "UL" ? "li" : "p";
   box.replaceChildren(...specs.map((spec) => node(tag, `${spec.label}: ${spec.text}${spec.sub ? ` (${spec.sub})` : ""}`)));
 }

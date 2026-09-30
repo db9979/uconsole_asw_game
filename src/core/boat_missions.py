@@ -156,6 +156,7 @@ def merchant_struck(game, ship) -> None:
     if ship is None or ship.sunk:
         return
     ship.hit(config.BOAT_CONVOY_WARHEAD)
+    game.sight_events.ship_hit(ship, game.sim_t)
     game._emit_sound("explosion", at=(ship.x, ship.y))
     game.feed.add(game.world.format_time(), "schaden",
                   message("runtime.merchant_torpedoed"))

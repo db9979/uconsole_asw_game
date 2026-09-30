@@ -14,6 +14,7 @@ from src.core.i18n import message
 from src.sensors import radar as radar_physics
 from src.sensors import threat_cue
 from src.sensors import hfdf as hf_physics
+from src.world import thunder
 from src.data import catalog as contact_catalog
 from src.data.catalog import EmitterProfile
 from src.sensors.esm import (
@@ -502,7 +503,8 @@ class RadarPictureMixin:
                     self.ship.x, self.ship.y, sub.x, sub.y)):
                 continue
             error = config.HFDF_BEARING_ERR_DEG * (
-                hf_physics.SKY_WAVE_BEARING_FACTOR if mode == "SKY" else 1.0)
+                hf_physics.SKY_WAVE_BEARING_FACTOR if mode == "SKY" else 1.0) \
+                * thunder.sferics_factor(self.world.thunderstorm())
             noise = self._smooth_sensor_noise(seed * 777, self.sim_t, 10.0)
             brg = (sub.bearing_from_frigate(self.ship) + noise * error) % 360.0
             self.radio_picture.observe(track_id=f"H-{sub.id}", kind="HF",

@@ -248,10 +248,20 @@ function fullSpan(span, aob) {
   return Math.min(180, span / Math.max(.2, Math.abs(Math.sin(aob * Math.PI / 180))));
 }
 
+// When the scope's head last came out of the water (wall clock ms), for the
+// water running off its glass; unknown until it was once seen down.
+const scopeRaise = {down: false, since: null};
+export function scopeRaisedSeconds(available, now = performance.now()) {
+  if (!available) { scopeRaise.down = true; scopeRaise.since = null; return null; }
+  if (scopeRaise.down) { scopeRaise.down = false; scopeRaise.since = now; }
+  return scopeRaise.since === null ? null : (now - scopeRaise.since) / 1000;
+}
+
 function drawScopeFrame(id, scope) {
   const plot = visualContext(id);
   if (!plot) return false;
   const {context: g, width, height} = plot, colors = palette();
+  const raisedS = scopeRaisedSeconds(scope.available);
   if (!scope.available) {
     label(g, t("uboot_scope_mast_down"), width / 2, height / 2, colors.muted, "center");
     return true;
@@ -262,6 +272,7 @@ function drawScopeFrame(id, scope) {
     optics_label: opticsText(scopeOptics, scope.fov_deg),
     // The boat's own way: the water streams past just below the eye (no wake in view).
     way: {speed_kn: scope.speed_kn, course_deg: scope.course, eye_m: SCOPE_EYE_M, hull: false},
+    lens: {raised_s: raisedS},
     outlines: scope.sightings.map((row) => ({bearing: row.bearing, span_deg: fullSpan(row.span_deg, row.aob_deg), cls: row.cls,
       stale: row.age_s === null || row.age_s > 1, lights: row.lights, elevation_deg: row.elevation_deg, aob_deg: row.aob_deg, model: row.model,
       ...(Number.isFinite(row.elevation_deg) ? {cls: "aircraft"} : {})}))}, performance.now() / 1000, g.font);

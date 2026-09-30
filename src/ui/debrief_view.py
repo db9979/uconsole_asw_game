@@ -14,7 +14,7 @@ import math
 
 import pygame
 
-from src.core import config
+from src.core import config, debrief_replay
 from src.core.i18n import localize, localized, message
 from src.ui import layout
 
@@ -22,6 +22,9 @@ PANEL = pygame.Rect(12, 12, 1256, 696)
 MAP = pygame.Rect(24, 64, 780, 556)
 SIDE = pygame.Rect(820, 64, 436, 556)
 TIMELINE = pygame.Rect(24, 632, 1232, 30)
+# Replay buttons in the title row: play/pause (Space) and 10x/60x (Tab).
+PLAY = pygame.Rect(1040, 14, 104, 30)
+SPEED = pygame.Rect(1152, 14, 104, 30)
 EVENT_COLORS = {
     "first_contact": config.COLOR_WARN, "first_fix": config.COLOR_WARN,
     "classified": config.COLOR_WARN, "own_shot": config.COLOR_FLIGHT,
@@ -111,23 +114,47 @@ def draw_debrief(game) -> None:
         layout.blit_line(s, "debrief.empty", PANEL.inflate(-40, -40), config.COLOR_TEXT_DIM,
                          size=22, align="center")
         return
+    replay = game.debrief_replay
+    game.advance_debrief_replay(game._t)
     index = max(0, min(game.debrief_index, len(recorder.frames) - 1))
-    frame = recorder.frames[index]
+    frame = debrief_replay.interpolate(recorder.frames, replay.t) or recorder.frames[index]
     layout.blit_line(s, message("debrief.title", time=_clock(frame["t"]),
                                 end=_clock(recorder.frames[-1]["t"])),
                      (24, 18, 1000, 26), config.COLOR_TEXT, size=22)
-    _draw_map(game, s, recorder, index)
+    _draw_buttons(s, replay)
+    _draw_map(game, s, recorder, index, frame)
     _draw_side(game, s, recorder, frame)
     _draw_timeline(s, recorder, frame)
     layout.blit_line(s, "debrief.keys", (24, 670, 1232, 26), config.COLOR_TEXT_DIM, size=16)
 
 
-def _draw_map(game, s, recorder, index) -> None:
+def replay_button_at(pos):
+    """``"play"``/``"speed"`` under a click on the replay buttons, else None."""
+    if pos is None:
+        return None
+    if PLAY.collidepoint(pos):
+        return "play"
+    if SPEED.collidepoint(pos):
+        return "speed"
+    return None
+
+
+def _draw_buttons(s, replay) -> None:
+    for rect, text, lit in ((PLAY, "debrief.pause" if replay.playing else "debrief.play",
+                             replay.playing),
+                            (SPEED, message("debrief.speed", speed=replay.speed), False)):
+        pygame.draw.rect(s, config.COLOR_TAB_ACTIVE if lit else config.COLOR_PANEL_BG, rect)
+        pygame.draw.rect(s, config.COLOR_SONAR_RING if lit else config.COLOR_GRID, rect, 1)
+        layout.blit_line(s, text, rect.inflate(-8, -4), config.COLOR_TEXT, size=16,
+                         align="center")
+
+
+def _draw_map(game, s, recorder, index, frame) -> None:
     pygame.draw.rect(s, config.COLOR_GEO_BG, MAP)
     pygame.draw.rect(s, config.COLOR_GRID, MAP, 1)
     to_screen, scale = _projector(recorder)
-    frames = recorder.frames[:index + 1]
-    frame = frames[-1]
+    # The tracks grow up to the replay cursor (the interpolated frame).
+    frames = [f for f in recorder.frames[:index + 1] if f["t"] < frame["t"]] + [frame]
     with layout.clip_to(s, MAP):
         # Grid every 5 NM (or coarser) as a scale.
         step = 5.0
@@ -192,6 +219,15 @@ def _draw_map(game, s, recorder, index) -> None:
         for asset in frame["assets"]:
             ax, ay = to_screen(asset["x"], asset["y"])
             pygame.draw.rect(s, asset_color, (int(ax) - 4, int(ay) - 4, 8, 8), 1)
+        # Shots, pings, hits and sinkings flash where they happened.
+        for event, k in debrief_replay.flashes(recorder.events, frame["t"],
+                                              game.debrief_replay.speed):
+            fx, fy = to_screen(*debrief_replay.flash_position(event, frame))
+            color = EVENT_COLORS[event["kind"]]
+            fade = tuple(int(b + (c - b) * (1.0 - k)) for c, b in zip(color, config.COLOR_GEO_BG))
+            pygame.draw.circle(s, fade, (int(fx), int(fy)), int(8 + 34 * k), 2)
+            if k < 0.25:
+                pygame.draw.circle(s, color, (int(fx), int(fy)), 5)
     layout.blit_line(s, message(recorder.prefix + "legend", step=f"{step:g}"), (MAP.x, 42, MAP.w, 20),
                      config.COLOR_TEXT_DIM, size=13, align="right")
 

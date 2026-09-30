@@ -330,6 +330,8 @@ function draw(now) {
     elevation_deg: P.elevation, stabilized: false,
     way: view.side === "frigate" ? {speed_kn: view.speed_kn, course_deg: view.course}
       : {speed_kn: view.speed_kn, course_deg: view.course, eye_m: SCOPE_EYE_M, hull: false},
+    // The periscope's glass: waves wash over it in a rough sea.
+    lens: view.side === "boat" ? {raised_s: null} : null,
     optics_label: t("optics_status", {elevation: `${P.elevation >= 0 ? "+" : ""}${Math.round(P.elevation)}`, fov: Math.round(fovDeg)})},
     now / 1000, "13px ui-monospace, monospace");
   // Called sightings carry a small mark above them.

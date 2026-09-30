@@ -345,7 +345,14 @@ def ray_excess_db(world, sensor_x: float, sensor_y: float, sensor_depth_m: float
     distance = math.hypot(target_x - sensor_x, target_y - sensor_y)
     tl = raytrace.lookup_tl_db(table, frequency_hz, distance,
                                min(target_depth_m, key[3]), key[3])
-    return tl - _spherical_db(distance) - ray_anchor_db()
+    return tl - _spherical_db(distance) - ray_anchor_db() + bubble_loss_db(
+        world, sensor_x, sensor_y, target_x, target_y)
+
+
+def bubble_loss_db(world, x0: float, y0: float, x1: float, y1: float) -> float:
+    """Loss of a path through the bubble slick of a hard turn (knuckle)."""
+    field = getattr(world, "knuckles", None)
+    return 0.0 if field is None or not field.items else field.path_loss_db(x0, y0, x1, y1)
 
 
 def ray_reference_excess_db(range_nm: float, frequency_hz: float) -> float:

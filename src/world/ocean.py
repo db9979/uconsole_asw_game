@@ -173,6 +173,7 @@ class OceanEnvironment:
         self.tide_kx = detrand.uniform(-grad, grad, seed, "tide-kx")
         self.tide_ky = detrand.uniform(-grad, grad, seed, "tide-ky")
         self.day_of_year = 1 + int(detrand.u01(seed, "season") * 365.0)
+        self.seed = int(seed)
         self._waves = []
         for index in range(INTERNAL_WAVES):
             period = detrand.uniform(1200.0, 3600.0, seed, "iw-period", index)

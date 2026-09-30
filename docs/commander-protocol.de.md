@@ -2,7 +2,7 @@
 
 [English](commander-protocol.md)
 
-Anwendung 1.3.10, API-Protokoll 2, ausschließlich Spielstandsformat v40. Diese
+Anwendung 1.3.10, API-Protokoll 2, ausschließlich Spielstandsformat v41. Diese
 Versionen sind voneinander unabhängig. Zugangsdaten, Netzwerksitzungen, Leases,
 Befehlswarteschlangen oder Vorschläge werden nicht gespeichert. Gemeinsame
 Anmerkungen und von der Besatzung angenommene Ziel-/Navigations-Sollwerte verwenden

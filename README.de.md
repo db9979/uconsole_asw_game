@@ -14,18 +14,26 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.116**
+Aktuelle Version: **1.3.117**
 
-Version 1.3.116 gibt derselben Funktion an jeder Station dieselbe Taste, auf
-der Fregatte wie auf dem U-Boot. Strg+Enter ist die einzige Feuertaste (T und E
-feuern nicht mehr), Q/E zoomen überall, auch den OPZ-Radarbereich, das Fernglas
-und das Sehrohr, und Bild auf/ab blättern an jeder Station. Kurs, Fahrt und
-Tiefe werden auf beiden Seiten mit C/V/D eingegeben, die Torpedo-Lauftiefe mit
-T. Das U-Boot nutzt jetzt wie die Fregatte G für Gefechtsstationen, A für
-Schleichfahrt, V für den Täuschkörper und W/M/U auf der Besatzungsseite; der
-Seefernaufklärer hat die Tasten des Helikopters, beide Luftfahrzeug-Radare
-liegen auf Strg+R, und Helikopter und ELOKA folgen dem Sonar (Shift+A Ping,
-G Freigabe an die OPZ, J Ton).
+Version 1.3.117 erweckt die See zum Leben. Die Optiken zeigen Wassersäulen,
+Feuer, Rauch und sinkende Schiffe; Karten bewegen sich weich, Pings und
+Detonationen breiten sich als Ringe aus; Zeiger und Telegraf bewegen sich mit
+Masse und die Telegrafenglocke läutet; das Sehrohr kommt aus dem Wasser, mit
+Wasser auf dem Glas. Nachts und bei Alarm geht Rotlicht an (abschaltbar), und
+die Stationsreiter tragen Alarmlampen auf beiden Seiten, auf der uConsole und im
+Browser. Nach einer Mission läuft die Nachbesprechung als Zeitraffer mit 10×
+oder 60×, auch im Browser. Nachts leuchtet warmes Wasser, wo es aufgewühlt wird,
+sodass Kielwasser und Torpedobahnen auf beiden Seiten weiter zu sehen sind. Eine
+harte Drehung mit Fahrt hinterlässt ein Knuckle, ein Blasenfeld, das das Sonar
+dämpft, ein Falschecho gibt und einen kielwassersuchenden Torpedo ablenken kann.
+Wracks und Felsen geben Echos, Wracks MAD-Anomalien. Stürme bringen Blitze in
+den Optiken, Donner, stärkeren Regen und Sferics, die auf dem ESM knistern und
+HF/DF-Peilungen streuen. Bei schwerer See startet und landet der Hubschrauber
+nur in einer ruhigen Phase; eine Deckbewegungsanzeige zeigt sie, und weniger
+Fahrt hilft. Spielstände haben jetzt das Format v41; ältere Spielstände laden
+nicht.
+
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

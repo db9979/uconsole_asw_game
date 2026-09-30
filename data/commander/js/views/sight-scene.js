@@ -6,6 +6,7 @@
 // (the view's ``sky`` block and outlines); the phase is the wall clock.
 import { drawInScene } from "./model-view.js";
 import { DETAIL_MIN_PX, FOAM, NAV_LIGHT, PROFILES } from "./silhouette-profiles.js";
+import { drawSightEvents } from "./sight-events.js";
 
 const SKY_NIGHT = [[3, 7, 16], [20, 44, 62]], SKY_DAY = [[34, 88, 118], [138, 176, 182]], SKY_DUSK = [[24, 30, 60], [204, 128, 78]];
 const SEA_NIGHT = [[10, 44, 58], [2, 9, 15]], SEA_DAY = [[24, 78, 92], [6, 34, 46]], SEA_DUSK = [[44, 50, 66], [8, 14, 26]];
@@ -48,8 +49,15 @@ export function palette(sky, haze) {
     crest: mix(mix([96, 150, 156], [186, 212, 214], light), hazeColor, haze * .5),
     steel: mix(STEEL_NIGHT, STEEL_DAY, light), rim: mix(mix(RIM_NIGHT, RIM_DAY, light), SUN_DUSK, dusk * .5),
     cloud: mix(mix([26, 36, 46], [196, 204, 208], light), [196, 130, 96], dusk * .6),
-    cloudRim: mix(mix([70, 96, 108], [238, 242, 242], light), [250, 190, 130], dusk * .7)};
+    cloudRim: mix(mix([70, 96, 108], [238, 242, 242], light), [250, 190, 130], dusk * .7),
+    // Glowing plankton in stirred water (night bloom, 0..1).
+    glow: (Number(sky.glow) || 0) * (1 - haze * .6)};
 }
+// Bioluminescence: wakes and torpedo tracks glow blue-green by ``foamGlow``
+// (set from the sky while the afloat outlines are drawn).
+const GLOW = [70, 235, 205];
+let foamGlow = 0;
+const foamColor = () => rgb(mix(FOAM, GLOW, clamp(foamGlow)));
 
 // --- silhouettes (the uConsole's profiles, generated) -----------------------
 // Height of the aircraft's body in its profile (src/ui/silhouettes.py).
@@ -122,6 +130,19 @@ function drawNavLights(g, cls, frame, width, code, t, navPoints = null) {
 
 // With the judged angle on the bow ``aob`` a large enough ship, submarine or
 // aircraft is drawn as its 3D model turned to that aspect.
+// The bubble track of a running torpedo (src/ui/silhouettes.py draw_bubble_track).
+function drawBubbleTrack(g, cx, base, width, t) {
+  width = Math.max(3, width);
+  const left = cx - width / 2, foam = foamColor();
+  line(g, [left, base + 1], [left + width, base + 1], foam, Math.max(1, Math.min(3, Math.floor(width / 40) + 1)));
+  const count = Math.max(3, Math.min(18, Math.floor(width / 8)));
+  g.strokeStyle = foam; g.lineWidth = 1;
+  for (let k = 0; k < count; k++) {
+    const phase = ((t * .7 + k * .618) % 1 + 1) % 1, radius = Math.max(1, Math.floor(1 + 2 * Math.sin(Math.PI * phase)));
+    g.beginPath(); g.arc(left + width * ((k + .5) / count), base + 1, radius, 0, Math.PI * 2); g.stroke();
+  }
+}
+
 export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, lights = null, nav = null, aloft = false, aob = null, model = null} = {}) {
   width = Math.max(3, width);
   const scene = drawInScene(g, cls, cx, base, width, fill, aob, aloft, model);
@@ -130,7 +151,7 @@ export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, l
     return;
   }
   if (cls === "torpedo") {
-    line(g, [cx - width / 2, base + 1], [cx + width / 2, base + 1], rgb(FOAM), Math.max(1, Math.min(3, width / 12)));
+    drawBubbleTrack(g, cx, base, width, t);
     return;
   }
   const facing = navFacing(nav);
@@ -162,7 +183,7 @@ export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, l
     for (const [u, v] of profile.windows) { const [x, y] = frame.point(u, v); g.fillRect(Math.floor(x), Math.floor(y), size + 1, size); }
   }
   if (profile.wake && detail) {
-    const bow = frame.point(.03, 0), stern = frame.point(1, 0), foam = rgb(FOAM);
+    const bow = frame.point(.03, 0), stern = frame.point(1, 0), foam = foamColor();
     for (let index = 0; index < 3; index++) {
       const phase = (t * 1.7 + index * .33) % 1, reach = width * (.01 + .035 * phase), rise = width * .018 * (1 - phase);
       line(g, [bow[0] + facing * reach * .3, bow[1]], [bow[0] + facing * reach, bow[1] - rise], foam);
@@ -298,7 +319,8 @@ function drawWay(g, w, colors, way, t, haze) {
   const speed = Number(way.speed_kn) || 0;
   if (speed < 1 || way.hull === false) return;
   const course = way.course_deg, eye = way.eye_m ?? 18;
-  const strength = clamp(speed / 20) * (1 - haze * .7), foam = mix(colors.sea[0], colors.crest, .35 + .55 * strength);
+  const strength = clamp(speed / 20) * (1 - haze * .7), glow = (colors.glow || 0) * strength;
+  const foam = mix(mix(colors.sea[0], colors.crest, .35 + .55 * strength), GLOW, .85 * glow);
   const stern = (course + 180) % 360, fov = w.width / w.pxPerDeg;
   if (w.visible(stern, 40)) {
     const length = 150 + speed * 120, steps = 16, edges = [[], []];
@@ -315,7 +337,7 @@ function drawWay(g, w, colors, way, t, haze) {
       }
       previous = [left, right];
     }
-    g.lineWidth = 1; g.strokeStyle = rgb(mix(colors.sea[0], colors.crest, .15 + .3 * strength));
+    g.lineWidth = 1; g.strokeStyle = rgb(mix(mix(colors.sea[0], colors.crest, .15 + .3 * strength), GLOW, .6 * glow));
     for (const edge of edges) { path(g, edge, false); g.stroke(); }
     for (let k = 0; k < WAKE_FOAM; k++) {
       const phase = ((t * (.05 + speed * .006) + k * .382) % 1 + 1) % 1;
@@ -439,6 +461,39 @@ function drawSea(g, w, sky, colors, seaState, t, haze, way = null) {
   }
 }
 
+// Lightning (src/world/thunder.py, src/ui/sight_scene.py draw_lightning):
+// the state carries a strike's brightness and bearing while it flashes; the
+// page holds each new strike for FLASH_MS of its own time so a 4 Hz state
+// still shows it, with the same double flicker as the uConsole.
+const FLASH_MS = 700;
+const LIGHTNING = [200, 196, 255], BOLT = [238, 236, 255];
+let strike = null;
+
+function drawLightning(g, w, sky) {
+  const now = performance.now(), level = Number(sky.lightning) || 0, bearing = Number(sky.lightning_bearing) || 0;
+  if (level > .02 && (!strike || strike.bearing !== bearing)) strike = { bearing, level, at: now };
+  if (!strike) return;
+  const age = (now - strike.at) / 1000;
+  if (age > FLASH_MS / 1000) { if (level <= .02) strike = null; return; }
+  const flicker = age < .12 || (age > .22 && age < .3) ? 1 : .45;
+  const light = strike.level * flicker * Math.sqrt(1 - age / (FLASH_MS / 1000));
+  g.save(); g.globalCompositeOperation = "lighter";
+  g.fillStyle = `rgba(${LIGHTNING.join(", ")}, ${(.3 * light).toFixed(3)})`; g.fillRect(0, 0, w.width, w.height);
+  g.restore();
+  if (!w.visible(strike.bearing, 0)) return;
+  let x = w.x(strike.bearing), y = 0;
+  const bottom = w.base(x), step = Math.max(6, bottom / 9), seed = Math.floor(strike.bearing * 100);
+  const points = [[x, y]];
+  for (let index = 1; y < bottom; index++) {
+    y = Math.min(bottom, y + step);
+    x += (((seed * (index * 7 + 3)) % 23) - 11) * w.width / 1200;
+    points.push([x, y]);
+  }
+  const width = light > .5 ? 2 : 1, color = rgb(mix(LIGHTNING, BOLT, light));
+  for (let index = 1; index < points.length; index++) line(g, points[index - 1], points[index], color, width);
+  g.lineWidth = 1;
+}
+
 function drawWeather(g, w, sky, colors, visibility, t, haze) {
   if (visibility < 3) {
     const band = w.height * (.1 + .25 * (1 - visibility / 3)), y0 = w.horizon - band / 2;
@@ -446,7 +501,10 @@ function drawWeather(g, w, sky, colors, visibility, t, haze) {
     gradient.addColorStop(0, `rgba(${haze0}, 0)`); gradient.addColorStop(.5, `rgba(${haze0}, .67)`); gradient.addColorStop(1, `rgba(${haze0}, 0)`);
     g.fillStyle = gradient; g.fillRect(0, y0, w.width, band);
   }
+  drawLightning(g, w, sky);
   if (sky.precipitation === "none" || sky.intensity <= 0) return;
+  // A thunderstorm pours: up to 60 % more streaks.
+  sky = { ...sky, intensity: sky.intensity * (1 + .6 * (Number(sky.storm) || 0)) };
   const lateral = Math.sin((sky.wind_from_deg - w.los + 180) * Math.PI / 180);
   const color = rgb(mix(mix([70, 96, 104], [196, 208, 212], sky.light), colors.haze, haze * .3));
   const mod = (value, size) => ((value % size) + size) % size;
@@ -462,6 +520,55 @@ function drawWeather(g, w, sky, colors, visibility, t, haze) {
       const x = mod(index * 97 + 13 * Math.sin(t * .7 + index) + t * 22 * lateral, w.width);
       const y = mod(index * 53 + t * (26 + (index % 5) * 6), w.height), size = index % 3 === 0 ? 3 : 2;
       g.fillRect(x, y, size, size);
+    }
+  }
+}
+
+// Water on the periscope's head glass (src/ui/sight_scene.py lens_water):
+// [cover 0..1 from below, drops 0..1].  ``raisedS``: seconds since the head
+// came out of the water (null when unknown or long ago).
+const RAISE_DRAIN_S = 1.4, WASH_SEA_MIN = 3.5, DROPS_S = 2.5, DROP_COUNT = 18;
+const WATER_COLOR = [12, 58, 66], WATER_FOAM = [150, 214, 208];
+export function lensWater(t, seaState, raisedS = null) {
+  let cover = 0, drops = 0;
+  if (Number.isFinite(raisedS) && raisedS >= 0) {
+    cover = clamp(1 - raisedS / RAISE_DRAIN_S);
+    drops = raisedS < RAISE_DRAIN_S + DROPS_S ? clamp(1 - (raisedS - RAISE_DRAIN_S) / DROPS_S) : 0;
+  }
+  if (seaState >= WASH_SEA_MIN) {
+    const period = 5 + seaState, phase = t / period, wave = Math.floor(phase);
+    const amp = .75 + .25 * Math.sin(wave * 1.7), crest = amp * Math.sin(2 * Math.PI * phase);
+    const threshold = 1.1 - .12 * seaState;
+    cover = Math.max(cover, clamp((crest - threshold) / Math.max(.05, 1 - threshold)) * .9);
+    const since = (phase - wave - .25) * period;
+    if (amp > threshold && since >= 0 && since <= DROPS_S + period * .25)
+      drops = Math.max(drops, clamp(1 - Math.max(0, since - period * .25) / DROPS_S));
+  }
+  return [cover, drops];
+}
+
+function drawLensWater(g, width, height, cover, drops, t) {
+  if (cover > .01) {
+    const top = height - cover * height, step = Math.max(6, Math.floor(width / 60));
+    g.beginPath(); g.moveTo(0, height);
+    const edge = [];
+    for (let x = 0; x <= width + step; x += step) {
+      const px = Math.min(x, width);
+      edge.push([px, top + 5 * Math.sin(px / 37 + t * 3.1) + 3 * Math.sin(px / 11 - t * 5.3)]);
+    }
+    for (const [x, y] of edge) g.lineTo(x, y);
+    g.lineTo(width, height); g.closePath(); g.fillStyle = rgb(WATER_COLOR); g.fill();
+    g.strokeStyle = rgb(WATER_FOAM); g.lineWidth = 2; g.beginPath();
+    edge.forEach(([x, y], index) => index ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke();
+  }
+  if (drops > .02) {
+    const count = Math.floor(DROP_COUNT * drops);
+    for (let index = 0; index < count; index++) {
+      const fx = (index * .5698 + .13) % 1, fy = (index * .7549 + .29) % 1;
+      const x = fx * width, y = (fy * .85 + .06 * (1 - drops)) * height;
+      const radius = Math.max(2, Math.floor((3 + (index % 4) * 2) * width / 600 + 1));
+      g.strokeStyle = rgb(WATER_FOAM); g.lineWidth = 1; g.beginPath(); g.arc(x, y, radius, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = "rgb(230, 250, 250)"; g.beginPath(); g.arc(x - radius * .4, y - radius * .4, Math.max(1, Math.floor(radius / 3)), 0, Math.PI * 2); g.fill();
     }
   }
 }
@@ -490,7 +597,8 @@ function drawWindRose(g, height, colors, windFromDeg) {
 
 // One eyepiece picture.  ``v``: bearing (line of sight), fov_deg,
 // horizon_offset, horizon_tilt, visibility_nm, sea_state, sky, outlines
-// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg, model}]) and an optional window_deg crosshair;
+// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg, model}]), the events the eye
+// sees happen (``events``, src/core/sight_events.py) and an optional window_deg crosshair;
 // no_scale hides the bearing scale, wind_rose_deg draws the weather
 // instrument's wind rose in the top left corner; way ({speed_kn, course_deg,
 // eye_m, hull}) is the own way through the water (wave stream, bow wave, wake).
@@ -513,8 +621,13 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
   const airborne = v.outlines.filter(aloft);
   drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null);
   drawSea(g, w, sky, colors, v.sea_state, t, haze, v.way ?? null);
+  foamGlow = colors.glow;
   drawRows(v.outlines.filter((row) => !aloft(row)));
+  foamGlow = 0;
+  if (Array.isArray(v.events) && v.events.length) drawSightEvents(g, w, colors, sky, v.events, haze, t);
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);
+  // A periscope's head glass: water running off after raising, waves washing over.
+  if (v.lens) drawLensWater(g, width, height, ...lensWater(t, v.sea_state, v.lens.raised_s ?? null), t);
   if (Number.isFinite(v.wind_rose_deg)) drawWindRose(g, height, colors, v.wind_rose_deg);
   const labelStep = [10, 30, 45, 90].find((step) => step * w.pxPerDeg >= SCALE_LABEL_MIN_PX) ?? 90;
   const first = Math.floor((v.bearing - v.fov_deg / 2) / 5) * 5;

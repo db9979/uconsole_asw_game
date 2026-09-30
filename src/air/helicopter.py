@@ -44,8 +44,26 @@ DECK_ROLL_LIMIT_DEG = 8.0
 DECK_PITCH_LIMIT_DEG = 3.5
 
 
+# A launch or recovery needs a quiet period: the deck inside its limits for
+# this long (the flight deck officer waits for the lull between wave groups).
+DECK_WINDOW_S = 6.0
+DECK_QUIET_MAX_S = 3600.0
+
+
 def deck_within_limits(roll_deg: float, pitch_deg: float) -> bool:
     return abs(roll_deg) <= DECK_ROLL_LIMIT_DEG and abs(pitch_deg) <= DECK_PITCH_LIMIT_DEG
+
+
+def deck_quiet_step(quiet_s: float, roll_deg: float, pitch_deg: float, dt: float) -> float:
+    """Seconds the deck has stayed inside its limits after one step."""
+    if not deck_within_limits(roll_deg, pitch_deg):
+        return 0.0
+    return min(DECK_QUIET_MAX_S, quiet_s + dt)
+
+
+def deck_window_open(quiet_s: float, roll_deg: float = 0.0, pitch_deg: float = 0.0) -> bool:
+    """A launch/recovery window: inside the limits now and quiet long enough."""
+    return deck_within_limits(roll_deg, pitch_deg) and quiet_s >= DECK_WINDOW_S - 1e-6
 
 
 # Plan 1.3 phase 6: sonobuoy patterns (a queue of drop points the helicopter

@@ -17,6 +17,8 @@ from src.commander.local import CommanderConsole
 from src.core import config
 from src.core.plot import PlotLayer
 from src.core.chart_history import ChartHistory
+from src.core.map_fx import MapFx
+from src.core.sight_events import SightEvents
 from src.core.autocrew import AutocrewController
 from src.core.callouts import CalloutLog
 from src.ship.route import Route
@@ -60,7 +62,7 @@ from src.weapons.air_defense import air_defense_loadout, make_softkill_store
 # Shared display/help constants and helpers (re-exported for tests/tools).
 from src.core.game_shared import (  # noqa: F401
     HELP_MANUAL_PAGE, HELP_PAGE_COUNT, SONAR_BAND_PRESETS, TMA_ACCEPT_MIN_FIT,
-    letterbox_layout, make_night_overlay, make_scanlines)
+    letterbox_layout, make_scanlines)
 # Entity classes tests import from ``src.core.game`` (kept as re-exports).
 from src.enemies.decoy import Decoy  # noqa: F401
 from src.weapons.torpedo import EnemyTorpedo  # noqa: F401
@@ -171,7 +173,6 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.screen = pygame.Surface((config.SCREEN_W, config.SCREEN_H))
         self._scanlines = make_scanlines(config.SCREEN_W, config.SCREEN_H) \
             if config.CRT_SCANLINES else None
-        self._night_overlay = make_night_overlay(config.SCREEN_W, config.SCREEN_H)
         self.clock = pygame.time.Clock()
         self.audio = AudioEngine(sample_rate=config.AUDIO_SAMPLE_RATE,
                                  enabled=requested_audio)
@@ -791,6 +792,10 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                                  config.MAP_ZOOM_MAX_PX_PER_NM)
         self.opz_map_view = Viewport(self.world.size_nm, 1.0, 100.0)
         self.chart_history = ChartHistory()
+        # Display only: water columns, fire and sinkings the eyes can see.
+        self.sight_events = SightEvents()
+        # Display only: ping wavefronts, echoes and splashes on the charts.
+        self.map_fx = MapFx()
         self._reset_map_view()
         self.hq_msg(message("runtime.hq.roe", roe=self.roe))
         weather = self.world.weather_values()

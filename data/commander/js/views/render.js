@@ -6,6 +6,8 @@ import { queueDraw } from "./chart.js";
 import { metrics } from "./dom.js";
 import { queueLookoutDraw, renderLookoutStatus } from "./lookout.js";
 import { renderStationView } from "./station-view.js";
+import { renderStationAlarms } from "./station-tabs.js";
+import { renderDebriefButton } from "./debrief.js";
 import { flushSonarFocus, renderDetail, renderTracks } from "./tracks.js";
 import { renderWeatherStation } from "./weather.js";
 
@@ -33,6 +35,8 @@ export function renderSnapshot(resetDraft = false) {
   ]);
   for (const [row, key] of [...$("mission-metrics").children].map((row, index) => [row, ["remaining", "mission_clock", "world_clock"][index]])) row.title = t(key);
   renderStationView();
+  renderStationAlarms();
+  renderDebriefButton();
   renderBridgeOrders();
   $("chart-disclaimer").textContent = S.chart.disclaimer;
   $("snapshot-meta").textContent = t("snapshot_meta", { version: S.snapshot.version, seq: S.snapshot.seq, revision: S.snapshot.revision, sim: number(S.snapshot.clock.sim, 1) });

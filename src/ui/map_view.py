@@ -13,7 +13,7 @@ from src.core import config
 from src.core.i18n import (display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.ui.plot_view import draw_plot
-from src.ui import chart_symbols, chart_trails, label_layout, layout, lines, theme
+from src.ui import chart_symbols, chart_trails, label_layout, layout, lines, map_fx_view, theme
 from src.world import atmosphere
 from src.ui import nato_symbols
 from src.ui import observations
@@ -496,6 +496,10 @@ def draw_map_view(game, tr=None) -> None:
                 s, history.sides.get("frigate"), view, r, chart_background(game),
                 own_now=(game.ship.x, game.ship.y),
                 selected_bearing_key=getattr(chosen, "id", None))
+        fx = getattr(game, "map_fx", None)
+        if fx is not None:
+            map_fx_view.draw_fx(s, fx.rows("frigate", game.sim_t), view.world_to_screen,
+                                view.scale, r, chart_background(game))
 
         tracks = game.radar_tracks()
 

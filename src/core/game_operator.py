@@ -506,6 +506,7 @@ class OperatorMixin:
         if not self.sonar.fire_ping():
             return "not_ready"
         self._remember_ping_pulse()
+        self.map_fx.ping("frigate", self.sim_t, self.ship.x, self.ship.y)
         self._emit_sound("sonar_ping")
         self.sonar.queue_ping(self.ship, self._sonar_targets(), self.world,
                               self.sim_t, self._sonar_range_factor(),
@@ -543,6 +544,7 @@ class OperatorMixin:
         if not self.helo.fire_dipping_ping():
             return "not_ready"
         self._remember_ping_pulse()
+        self.map_fx.ping("frigate", self.sim_t, self.helo.x, self.helo.y)
         self._emit_sound("sonar_ping")
         self.sonar.queue_ping(self.helo, self._sonar_targets(), self.world,
                               self.sim_t, self._sonar_range_factor(),
@@ -1177,7 +1179,12 @@ class OperatorMixin:
                 self.flash(message("runtime.helo.deck_down"))
                 return
             if result == "weather_unsafe":
-                self.flash(message("runtime.helo.weather_unsafe"))
+                flight = self.helicopter_weather()
+                if flight["status"] != "no_go" and not flight["deck_safe"]:
+                    # Only the deck moves too much: wait for the next lull.
+                    self.flash(message("runtime.helo.deck_motion"))
+                else:
+                    self.flash(message("runtime.helo.weather_unsafe"))
                 return
             if result is not True:
                 self.flash(message("runtime.helo.lost"))

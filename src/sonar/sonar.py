@@ -97,6 +97,42 @@ class _WreckEcho:
                                        -(self.y - frigate.y))) % 360.0
 
 
+class _RockEcho(_WreckEcho):
+    """Stationary echo of a charted underwater rock (a rough pinnacle: a
+    weaker, broad return than a steel hull)."""
+
+    extra_ts_db = -3.0
+
+    def __init__(self, index: int, hazard, seed: int):
+        super().__init__(index, hazard, seed)
+        self.depth = hazard.top_depth_m + 3.0
+        self.length_m = max(20.0, float(hazard.length_m))
+
+
+class _KnuckleEcho:
+    """The bubble slick of a hard turn: a soft, stationary echo that fades
+    with the knuckle (src/world/knuckles.py)."""
+
+    speed = 0.0
+    course = 0.0
+
+    def __init__(self, index: int, item: dict, strength: float):
+        from src.core import detrand
+        from src.world import knuckles
+
+        self.id = 0
+        self.x, self.y = item["x"], item["y"]
+        self.depth = knuckles.ECHO_DEPTH_M
+        self.length_m = 150.0
+        self.extra_ts_db = knuckles.ECHO_TS_DB - 12.0 * (1.0 - strength)
+        self.sensor_seed = int(detrand.bits(int(item["t"] * 1000.0) & 0x7FFFFFFF,
+                                            "knuckle-echo", index) & 0x7FFFFFFF)
+
+    def bearing_from_frigate(self, frigate) -> float:
+        return math.degrees(math.atan2(self.x - frigate.x,
+                                       -(self.y - frigate.y))) % 360.0
+
+
 def _lambert_mu_db(world, x_nm: float, y_nm: float) -> float:
     from src.world.ocean import SEDIMENTS
 
@@ -1880,19 +1916,30 @@ class SonarSystem:
 
     def _queue_clutter(self, frigate, world, t_real: float,
                        range_factor: float, mode: str) -> None:
-        """Wrecks on the seabed return real echoes that no contact owns."""
+        """Wrecks and rocks on the seabed and the bubble slicks of hard turns
+        return real echoes that no contact owns."""
         ocean = getattr(world, "ocean", None)
         if ocean is None:
             return
         source_depth = self.sensor_depth_m(mode, frigate)
-        for index, hazard in enumerate(ocean.hazards):
-            if (hazard.kind != "wreck"
-                    or len(self._pending_clutter) >= self.MAX_PENDING_CLUTTER):
-                continue
-            distance = math.hypot(hazard.x_nm - frigate.x, hazard.y_nm - frigate.y)
+        near = [(index, hazard) for index, hazard in enumerate(ocean.hazards)
+                if math.hypot(hazard.x_nm - frigate.x, hazard.y_nm - frigate.y)
+                <= self.CLUTTER_SEARCH_NM]
+        # Wrecks first (the strongest), then knuckles, then rocks.
+        sources = [_WreckEcho(index, hazard, ocean.seed) for index, hazard in near
+                   if hazard.kind == "wreck"]
+        field = getattr(world, "knuckles", None)
+        if field is not None:
+            sources += [_KnuckleEcho(index, item, strength)
+                        for index, item, strength in field.echoes()]
+        sources += [_RockEcho(index, hazard, ocean.seed) for index, hazard in near
+                    if hazard.kind == "rock"]
+        for echo in sources:
+            if len(self._pending_clutter) >= self.MAX_PENDING_CLUTTER:
+                break
+            distance = math.hypot(echo.x - frigate.x, echo.y - frigate.y)
             if distance > self.CLUTTER_SEARCH_NM or distance < 0.05:
                 continue
-            echo = _WreckEcho(index, hazard, ocean.seed)
             terms = self.active_terms(echo, frigate, world, range_factor, mode)
             if terms.signal_excess_db <= 0.0:
                 continue

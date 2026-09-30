@@ -12,18 +12,24 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.116**
+Current release: **1.3.117**
 
-Release 1.3.116 gives the same function the same key at every station, on the
-frigate and on the submarine. Ctrl+Enter is the only fire key (T and E no
-longer fire), Q/E zoom everywhere including the CIC radar range, the
-binoculars and the periscope, and Page Up/Down turn the pages of every
-station. Course, speed and depth are entered with C/V/D on both sides and the
-torpedo run depth with T. The submarine now uses the frigate's G for action
-stations, A for silent running, V for the decoy and W/M/U on its crew page;
-the patrol aircraft takes the helicopter's keys, both aircraft radars sit on
-Ctrl+R, and the helicopter and ELOKA follow the sonar (Shift+A ping, G release
-to CIC, J audio).
+Release 1.3.117 brings the sea to life. The eyepieces show water columns, fire,
+smoke and sinkings; charts move smoothly and pings and detonations ring out;
+needles and the telegraph move with mass and the telegraph bell rings; the
+periscope comes up out of the water with water on the glass. A red light comes
+on at night and on an alarm (switchable), and the station tabs carry alarm lamps
+on both sides, on the uConsole and in the browser. After a mission the debrief
+plays back at 10x or 60x, in the browser too. At night warm water glows where it
+is stirred, so wakes and torpedo tracks are seen farther on both sides. A hard
+turn at speed leaves a knuckle, a bubble slick that masks sonar, gives a false
+echo and can lure a wake-homing torpedo. Wrecks and rocks return echoes and
+wrecks give MAD anomalies. Storms bring lightning in the eyepieces, thunder,
+heavier rain and sferics that crackle on ESM and spread HF/DF bearings. In a
+heavy sea the helicopter launches and lands only in a quiet period; a deck-
+motion gauge shows it, and slowing down helps. Saves are now format v41; older
+saves do not load.
+
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

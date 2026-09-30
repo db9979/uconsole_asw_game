@@ -40,6 +40,8 @@ function playGameEffect(kind, pan = null) {
     torpedo_launch: [95, 38, .72, .16, "sawtooth"],
     missile_launch: [150, 1250, .9, .13, "sawtooth"], gunfire: [115, 52, .42, .16, "square"],
     explosion: [68, 25, 1.1, .20, "sawtooth"], water_entry: [260, 90, .58, .11, "triangle"],
+    // The engine telegraph's ring as the order drops in.
+    telegraph: [1180, 1180, .9, .07, "sine"],
     // Returned echoes: CW a steady carrier tone, LFM a short 100 Hz sweep.
     sonar_echo_cw: [900, 900, .55, .07, "sine"], sonar_echo_cw_faint: [900, 900, .55, .025, "sine"],
     sonar_echo_lfm: [850, 950, .32, .08, "sine"], sonar_echo_lfm_faint: [850, 950, .32, .03, "sine"],
@@ -50,6 +52,8 @@ function playGameEffect(kind, pan = null) {
     detonation_near: [60, 24, 1.6, .22, "sawtooth"], detonation_far: [42, 22, 2.4, .09, "triangle"],
     // Another platform's active ping: heard by the frigate, or on the hull.
     enemy_ping: [1300, 1300, .5, .08, "sine"], ping_heard: [1300, 1300, .6, .10, "sine"],
+    // Thunder after a close lightning strike (src/world/thunder.py).
+    thunder: [52, 26, 2.6, .12, "sawtooth"],
   }[kind];
   const [startHz, endHz, duration, gainLevel, type] = profile;
   const oscillator = S.audio.createOscillator();
@@ -57,7 +61,7 @@ function playGameEffect(kind, pan = null) {
   const now = S.audio.currentTime;
   oscillator.type = type;
   oscillator.frequency.setValueAtTime(startHz, now);
-  if (kind.startsWith("sonar_echo_lfm") || kind === "hull_creak") oscillator.frequency.linearRampToValueAtTime(endHz, now + duration);
+  if (kind.startsWith("sonar_echo_lfm") || kind === "hull_creak" || kind === "thunder") oscillator.frequency.linearRampToValueAtTime(endHz, now + duration);
   else oscillator.frequency.setValueAtTime(endHz, now + duration);
   gain.gain.setValueAtTime(0, now);
   gain.gain.linearRampToValueAtTime(volume * gainLevel, now + .012);

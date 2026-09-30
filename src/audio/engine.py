@@ -269,7 +269,7 @@ class AudioEngine:
         """Play one bounded local combat/handling effect on the alert bus,
         placed left or right by ``pan`` (see ``synthesis.bearing_pan``)."""
         if kind not in {"torpedo_launch", "missile_launch", "gunfire",
-                        "explosion", "water_entry"}:
+                        "explosion", "water_entry", "telegraph", "thunder"}:
             return False
         if (not self.enabled or not self.available or self._alert_channel is None
                 or not self.local_effects):
@@ -297,7 +297,7 @@ class AudioEngine:
             return False
 
     BOAT_CUES = frozenset({"hull_creak", "hull_crack", "detonation_near",
-                           "detonation_far", "ping_heard"})
+                           "detonation_far", "ping_heard", "thunder"})
 
     def play_boat_cue(self, kind: str, pan: float | None = None) -> bool:
         """One atmosphere cue inside the crewed boat (the uConsole as the boat;

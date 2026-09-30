@@ -32,9 +32,9 @@ export function filteredEloka(intercepts) {
 // the target's cached picture at once (marked stale, commands disabled) until
 // its fresh state arrives; a world/lease change clears every entry.
 export const roleCache = new Map();
-export const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_launch", "missile_launch", "gunfire", "explosion", "water_entry",
+export const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_launch", "missile_launch", "gunfire", "explosion", "water_entry", "telegraph",
   "sonar_echo_cw", "sonar_echo_cw_faint", "sonar_echo_lfm", "sonar_echo_lfm_faint", "alarm",
-  "hull_creak", "hull_crack", "detonation_near", "detonation_far", "enemy_ping", "ping_heard"]);
+  "hull_creak", "hull_crack", "detonation_near", "detonation_far", "enemy_ping", "ping_heard", "thunder"]);
 // Spoken crew reports (src/core/callouts.py KEYS); the text is the browser's own.
 export const calloutKinds = new Set(["torpedo", "contact", "breakup", "torpedo_away", "hit", "won", "lost",
   "action_stations", "mpa_on_station", "ping", "dipping", "buoy_ping", "splash", "evade", "mast_threat", "leak", "fire",

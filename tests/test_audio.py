@@ -34,7 +34,7 @@ def test_sonar_and_combat_synthesis_is_finite_and_distinct():
     ping = active_sonar_ping(900, rate)
     effects = [combat_effect(kind, rate) for kind in
                ("torpedo_launch", "missile_launch", "gunfire", "explosion",
-                "water_entry")]
+                "water_entry", "telegraph")]
     for signal in (ping, *effects):
         assert signal.dtype == np.float32
         assert signal.size > 100

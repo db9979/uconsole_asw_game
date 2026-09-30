@@ -163,6 +163,9 @@ class AswWeaponsMixin:
                 sub.hit(amount)
             else:
                 sub.alert_torpedo(source=(charge.x, charge.y))
+        self.sight_events.detonation(charge.x, charge.y, self.sim_t, "depth_charge",
+                                     charge.depth)
+        self.map_fx.splash("frigate", self.sim_t, charge.x, charge.y)
         self._emit_sound("explosion", at=(charge.x, charge.y))
 
     def own_asw_stores_line(self):

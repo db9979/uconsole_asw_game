@@ -473,6 +473,31 @@ def draw_chart_geography(game, view, r) -> None:
 
 
 @localized
+def _draw_guard_area(game, view, r) -> None:
+    """What the frigate's orders tell it to guard (authored mission data):
+    the strait's gate or the coast section of the swimmers' mission."""
+    from src.core import boat_missions
+    area = boat_missions.guard_area(game)
+    if area is None:
+        return
+    s = game.screen
+    color = config.COLOR_WARN
+    if area["kind"] == "gate":
+        (ax, ay), (bx, by) = area["ends"]
+        p1 = view.world_to_screen(ax, ay)
+        p2 = view.world_to_screen(bx, by)
+        lines.line(s, color, (int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])), 2)
+        label_at = (int(max(p1[0], p2[0])) + 6, int(min(p1[1], p2[1])) - 16)
+        key = "map.guard.gate"
+    else:
+        px, py = view.world_to_screen(area["x"], area["y"])
+        radius = max(8, int(area["radius_nm"] * view.scale))
+        pygame.draw.circle(s, color, (int(px), int(py)), radius, 1)
+        label_at = (int(px) + 6, int(py) - radius - 16)
+        key = "map.guard.coast"
+    _map_label(s, game, key, label_at, color, r, size=12)
+
+
 def draw_map_view(game, tr=None) -> None:
     layout.configure_for(game)
     s = game.screen
@@ -489,6 +514,7 @@ def draw_map_view(game, tr=None) -> None:
         ox, oy = view.world_to_screen(game.ship.x, game.ship.y)
         labels.reserve((int(ox) - 10, int(oy) - 10, 20, 20))
         draw_chart_geography(game, view, r)
+        _draw_guard_area(game, view, r)
         history = getattr(game, "chart_history", None)
         if history is not None:
             chosen = game.selected_contact or game.target

@@ -52,6 +52,8 @@ PATTERN_CLEAR_NM = 4.0          # no new buoy pattern where buoys already listen
 ESCORT_AHEAD_NM = 3.0           # the escort's station ahead of the convoy
 ESCORT_STATION_NM = 2.5         # farther off than this it closes at transit speed
 ESCORT_LEASH_NM = 8.0           # an escort prosecutes a datum this close to its convoy
+GUARD_REACH = 0.7               # a coast patrol sweeps this share of the section's radius
+GUARD_SHORE_NM = 1.5            # a gate patrol turns this far off either shore
 RADAR_DATUM_S = 600.0           # a mast track stays a datum this long
 HQ_DATUM_S = 1800.0             # an HQ datum report stays a datum this long
 CORRELATE_DEG = 10.0            # a mast track this close to a sonar bearing is that contact
@@ -452,6 +454,39 @@ def escort_course(game):
     return course + side * 45.0, ships[0].speed + 2.0
 
 
+def guard_course(game):
+    """Course and speed of a barrier patrol across what the frigate guards
+    (the strait's gate, the coast section of the swimmers' mission), or None.
+
+    The frigate sweeps between the two ends of a line at search speed; the
+    end it steers for alternates with the time a sweep takes, so the patrol
+    needs no state. Outside the area it first closes it at transit speed."""
+    area = boat_missions.guard_area(game)
+    if area is None:
+        return None
+    ship = game.ship
+    if area["kind"] == "gate":
+        # Clear of the shores: the sweep stays GUARD_SHORE_NM inside the ends.
+        (ax, ay), (bx, by) = area["ends"]
+        cx, cy = (ax + bx) / 2.0, (ay + by) / 2.0
+        half = math.hypot(bx - ax, by - ay) / 2.0
+        keep = max(0.0, half - GUARD_SHORE_NM) / max(half, 1e-9)
+        ends = ((cx + (ax - cx) * keep, cy + (ay - cy) * keep),
+                (cx + (bx - cx) * keep, cy + (by - cy) * keep))
+    else:
+        rad = math.radians(area["course"])
+        reach = area["radius_nm"] * GUARD_REACH
+        ends = ((area["x"] + reach * math.sin(rad), area["y"] - reach * math.cos(rad)),
+                (area["x"] - reach * math.sin(rad), area["y"] + reach * math.cos(rad)))
+        if math.hypot(area["x"] - ship.x, area["y"] - ship.y) > area["radius_nm"]:
+            return _bearing(ship.x, ship.y, area["x"], area["y"]), TRANSIT_KN
+    (ax, ay), (bx, by) = ends
+    length = max(1.0, math.hypot(bx - ax, by - ay))
+    sweep_s = length / SEARCH_KN * 3600.0
+    tx, ty = (ax, ay) if math.floor(game.sim_t / sweep_s) % 2 else (bx, by)
+    return _bearing(ship.x, ship.y, tx, ty), SEARCH_KN
+
+
 def bridge(game, found) -> str:
     if _nearest_threat(game) is not None:
         return AutocrewController._bridge(game)
@@ -468,6 +503,9 @@ def bridge(game, found) -> str:
     if found is None:
         if escort is not None:
             return _steer(game, *escort)
+        guard = guard_course(game)
+        if guard is not None:
+            return _steer(game, *guard)
         return _steer(game, search_course(game), SEARCH_KN)
     side = 1.0 if math.floor(game.sim_t / CROSS_LEG_S) % 2 else -1.0
     if "x" in found:

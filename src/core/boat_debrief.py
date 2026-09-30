@@ -23,7 +23,8 @@ TRACKED_MIN_S = 60.0
 
 def outcome(game, boat) -> str:
     """The mission from the boat's side: won, broke_through, reported,
-    convoy_sunk, escaped, survived, trained, lost, over."""
+    convoy_sunk, passed, landed, supply_sunk, escaped, survived, trained,
+    lost, over."""
     sub = boat.sub if boat is not None else None
     if sub is not None and (sub.sunk or sub.state == "SINKING"):
         return "lost"
@@ -40,6 +41,12 @@ def outcome(game, boat) -> str:
         return "reported"
     if key == "end.reason.convoy_lost":
         return "convoy_sunk"
+    if key == "end.reason.boat_passed_strait":
+        return "passed"
+    if key == "end.reason.swimmers_landed":
+        return "landed"
+    if key == "end.reason.supply_sunk":
+        return "supply_sunk"
     if key == "end.reason.sub_escaped" and sub is not None and \
             str(reason.get("params", {}).get("contact")) == str(sub.id):
         return "escaped"

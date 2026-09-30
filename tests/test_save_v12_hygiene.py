@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v42_and_older_documents_are_rejected():
+def test_save_is_v43_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (42, "u-jagd-save-v42")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (42, "u-jagd-save-v42")
+    assert (state["version"], state["save_schema"]) == (43, "u-jagd-save-v43")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (43, "u-jagd-save-v43")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -226,7 +226,14 @@ def test_save_is_v42_and_older_documents_are_rejected():
     v41 = copy.deepcopy(state)
     v41["version"] = 41
     v41["save_schema"] = "u-jagd-save-v41"
+    del v41["swimmer_hold_s"]
     assert not game._load_save_data(v41)
+    # v42 differs only by the combat swimmers' lock-out (``swimmer_hold_s``).
+    v42 = copy.deepcopy(state)
+    v42["version"] = 42
+    v42["save_schema"] = "u-jagd-save-v42"
+    del v42["swimmer_hold_s"]
+    assert not game._load_save_data(v42)
     assert game.save_state() == before
 
 

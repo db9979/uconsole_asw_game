@@ -15,6 +15,13 @@ lying in wait and the counter-attack on the frigate keep their priority.
 - ``convoy_attack``: lie in wait ahead of the convoy, abeam of its track,
   and fire one torpedo at a time at the nearest merchant within attack
   range; a convoy that has passed is chased on an intercept course.
+- ``strait``: transit to the goal beyond the gate like the breakthrough;
+  unhunted, it tucks in under a merchant passing the same way within
+  ``BOAT_AI_SHADOW_NM`` and keeps its speed, hiding in its noise.
+- ``swimmers``: transit to the zone off the coast below the layer, come up to
+  swimmer depth ``BOAT_AI_SWIMMER_APPROACH_NM`` out and stop in the zone.
+- ``escort``: as the convoy attack, against the zigzagging supply ship,
+  waiting on its base course.
 
 Every leg creeps (``BOAT_AI_CREEP_KN``) while the boat is hunted: a ping or
 torpedo heard lately, or its own contact on the frigate close by.
@@ -153,12 +160,13 @@ def detour(sub, course: float, distance_nm: float) -> float:
     return (course - math.copysign(config.BOAT_AI_DETOUR_DEG, off or 1.0)) % 360.0
 
 
-def ambush_point(sub, ships):
+def ambush_point(sub, ships, course=None):
     """Where the boat waits for the convoy: ahead of it, abeam of its track on
-    the boat's side; None once the convoy has passed the boat."""
+    the boat's side; None once the convoy has passed the boat. ``course`` is
+    the track (the lead ship's course by default)."""
     cx = sum(ship.x for ship in ships) / len(ships)
     cy = sum(ship.y for ship in ships) / len(ships)
-    rad = math.radians(ships[0].course)
+    rad = math.radians(ships[0].course if course is None else course)
     ux, uy = math.sin(rad), -math.cos(rad)
     rx, ry = sub.x - cx, sub.y - cy
     if rx * ux + ry * uy < 0.0:
@@ -191,10 +199,16 @@ def orders(game, sub):
         px, py = lead(sub, x, y, course, target_kn, speed)
         return (_course(game, sub, _bearing(sub.x, sub.y, px, py)),
                 max(config.BOAT_AI_CREEP_KN, pace(sub, speed)), _deep(game, sub))
-    if kind == "convoy_attack":
+    if kind == "strait":
+        return _strait_leg(game, sub)
+    if kind == "swimmers":
+        return _swimmer_leg(game, sub)
+    if kind in boat_missions.SHIP_MODES:
         ships = convoy_ships(game)
         if not ships:
             return None
+        track = (boat_missions.escort_base_course(game.world, game.scenario_key)
+                 if kind == "escort" else None)
         target = min(ships, key=lambda ship: (math.hypot(ship.x - sub.x, ship.y - sub.y),
                                               ship.id))
         distance = math.hypot(target.x - sub.x, target.y - sub.y)
@@ -202,7 +216,7 @@ def orders(game, sub):
             # Turn the tubes on the target and creep in.
             return (_bearing(sub.x, sub.y, target.x, target.y),
                     config.BOAT_AI_PERISCOPE_KN, _deep(game, sub))
-        wait = ambush_point(sub, ships)
+        wait = ambush_point(sub, ships, track)
         if wait is not None:
             # Ahead of the convoy: lie in wait abeam of its track, quietly.
             gap = math.hypot(wait[0] - sub.x, wait[1] - sub.y)
@@ -218,6 +232,63 @@ def orders(game, sub):
         course = _bearing(sub.x, sub.y, cx, cy)
         return _course(game, sub, course), speed, _deep(game, sub)
     return None
+
+
+def shadow_ship(game, sub, heading: float):
+    """A merchant passing the strait the boat's way within
+    ``BOAT_AI_SHADOW_NM`` it can hide under, or None."""
+    best = None
+    for ship in game.civilians:
+        if ship.sunk or abs(config.angle_diff_deg(ship.course, heading)) > 60.0:
+            continue
+        distance = math.hypot(ship.x - sub.x, ship.y - sub.y)
+        if distance > config.BOAT_AI_SHADOW_NM:
+            continue
+        if ship.speed > sub.motion.maximum_speed_kn - 1.0:
+            continue
+        key = (distance, ship.id)
+        if best is None or key < best[0]:
+            best = (key, ship)
+    return None if best is None else best[1]
+
+
+def _strait_leg(game, sub):
+    point = boat_missions.goal(game)
+    if point is None:
+        return None
+    distance = math.hypot(point["x"] - sub.x, point["y"] - sub.y)
+    heading = _bearing(sub.x, sub.y, point["x"], point["y"])
+    ship = None if hunted(sub) else shadow_ship(game, sub, heading)
+    if ship is not None:
+        # Tuck in close astern of it and keep its speed, below the layer.
+        rad = math.radians(ship.course)
+        ax = ship.x - config.BOAT_AI_SHADOW_ASTERN_NM * math.sin(rad)
+        ay = ship.y + config.BOAT_AI_SHADOW_ASTERN_NM * math.cos(rad)
+        gap = math.hypot(ax - sub.x, ay - sub.y)
+        speed = ship.speed + (2.0 if gap > 0.3 else 0.0)
+        return (_course(game, sub, _bearing(sub.x, sub.y, ax, ay)),
+                min(speed, sub.motion.maximum_speed_kn), _deep(game, sub))
+    course = detour(sub, heading, distance)
+    return (_course(game, sub, course), pace(sub, config.BOAT_AI_TRANSIT_KN),
+            _deep(game, sub))
+
+
+def _swimmer_leg(game, sub):
+    point = boat_missions.goal(game)
+    if point is None:
+        return None
+    distance = math.hypot(point["x"] - sub.x, point["y"] - sub.y)
+    heading = _bearing(sub.x, sub.y, point["x"], point["y"])
+    shallow = config.SWIMMER_DEPTH_M - 3.0
+    if distance <= point["radius_nm"] * 0.5:
+        # In the zone: stop at swimmer depth for the lock-out.
+        return heading, 0.0, shallow
+    if distance <= config.BOAT_AI_SWIMMER_APPROACH_NM:
+        # The last miles straight in, slow and shallow.
+        return heading, config.BOAT_AI_PERISCOPE_KN, shallow
+    course = detour(sub, heading, distance)
+    return (_course(game, sub, course), pace(sub, config.BOAT_AI_TRANSIT_KN),
+            _deep(game, sub))
 
 
 def steer(game) -> None:
@@ -369,7 +440,7 @@ def update(game, dt: float) -> None:
     if sub is None:
         return
     kind = boat_missions.mode(game)
-    if kind == "convoy_attack":
+    if kind in boat_missions.SHIP_MODES:
         attack(game, sub)
     elif kind == "recon":
         report(game, sub)

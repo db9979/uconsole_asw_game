@@ -1237,6 +1237,21 @@ MISSION_TYPES = {
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
         time_limit_s=10800, win="convoy_attack"),
+    "meerenge": dict(
+        name="Meerenge", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        time_limit_s=18000, win="strait"),
+    "kampfschwimmer": dict(
+        name="Kampfschwimmer", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        time_limit_s=14400, win="swimmers"),
+    "versorger": dict(
+        name="Versorger", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
+        time_limit_s=10800, win="escort"),
 }
 BOAT_CONVOY_SIZE = 4               # merchants in the escorted convoy
 BOAT_CONVOY_SINK = 2               # the boat wins after sinking this many
@@ -1249,6 +1264,44 @@ BOAT_CONVOY_WARHEAD = 100.0        # a heavyweight hit breaks a merchant
 BOAT_CONVOY_BOAT_AHEAD_NM = 10.0
 BOAT_CONVOY_BOAT_SIDE_NM = 5.0
 BOAT_CONVOY_BOAT_SIDE_SPREAD_NM = 3.0
+# Mission geography (src/core/mission_geo.py): water shallower than this
+# is a wall for a dived boat.
+MISSION_GEO_WALL_DEPTH_M = 30.0
+# Strait blockade: the narrowest passage this wide near the nominal start,
+# with open water this far along it on both sides; without one the gate is
+# a declared barrier line this wide across open water.
+STRAIT_SEARCH_NM = 100.0
+STRAIT_MIN_NM = 4.0
+STRAIT_MAX_NM = 24.0
+STRAIT_CHANNEL_NM = 16.0
+STRAIT_DISTANCE_WEIGHT = 0.1
+STRAIT_OPEN_HALF_NM = 8.0
+STRAIT_ENTRY_NM = 16.0             # the boat starts this far before the gate
+STRAIT_EXIT_NM = 6.0               # its goal lies this far beyond it
+STRAIT_TRAFFIC = 3                 # merchants passing through the strait
+STRAIT_TRAFFIC_SPACING_NM = 6.0
+# Combat swimmers: a zone off a coast near the nominal start, with at
+# least this much water, the coast within this distance behind it and open
+# sea for the approach. The boat stops in the zone at swimmer depth for the
+# lock-out; the frigate guards a coast section around it.
+SWIMMER_SEARCH_NM = 100.0
+SWIMMER_MIN_WATER_M = 30.0
+SWIMMER_COAST_NM = 3.0
+SWIMMER_APPROACH_NM = 20.0
+SWIMMER_ZONE_NM = 1.0
+SWIMMER_DEPTH_M = 20.0             # swimmers leave through the lock this shallow
+SWIMMER_SPEED_KN = 1.5             # at most this slow
+SWIMMER_HOLD_S = 600.0             # for this long without a break
+SWIMMER_GUARD_NM = 12.0            # radius of the coast section the frigate guards
+SWIMMER_GUARD_SHIFT_NM = 6.0       # its centre lies up to this far along the coast
+# Supply ship escort: a replenishment ship on a zigzag, the frigate close
+# by, the boat ahead of it; one hit from the boat decides it.
+ESCORT_SPEED_KN = 12.0
+ESCORT_FRIGATE_ABEAM_NM = 1.5      # the frigate starts this far on its beam
+ESCORT_CLEAR_NM = 45.0             # clear water ahead of the base course
+ESCORT_ZIGZAG_LEG_S = 480.0
+ESCORT_ZIGZAG_DEG = (20.0, 40.0)   # each leg this far off the base course
+ESCORT_WARHEAD = 100.0
 # Boat missions: the goal lies this far beyond the frigate's start, seen from
 # the boat's start, and counts as reached within the radius.
 BOAT_GOAL_BEYOND_NM = 5.0
@@ -1295,6 +1348,11 @@ BOAT_AI_AMBUSH_AHEAD_NM = 2.0
 BOAT_AI_AMBUSH_ABEAM_NM = 3.0
 BOAT_AI_AMBUSH_ARRIVE_NM = 1.0
 BOAT_AI_WAIT_KN = 2.0
+# Strait: hide under a merchant passing the same way this close, this far
+# astern of it. Swimmers: come up to swimmer depth this far from the zone.
+BOAT_AI_SHADOW_NM = 3.0
+BOAT_AI_SHADOW_ASTERN_NM = 0.3
+BOAT_AI_SWIMMER_APPROACH_NM = 3.0
 # A mission boat evades a ping at this speed; a torpedo still makes it run.
 BOAT_AI_EVADE_KN = 5.0
 # A mission boat attacks a located frigate this many times as readily.
@@ -1314,12 +1372,14 @@ START_WEATHER_SEA_STATE = {"fair": 1, "rain": 3, "storm": 5, "fog": 1}
 START_TIME_CHOICES = ("random", "dawn", "day", "dusk", "night")
 START_TIME_HOURS = {"dawn": 6.0, "day": 12.0, "dusk": 19.0, "night": 1.0}
 SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
-                  "s5_durchbruch", "s6_aufklaerung", "s7_geleitzug")
+                  "s5_durchbruch", "s6_aufklaerung", "s7_geleitzug",
+                  "s8_meerenge", "s9_kampfschwimmer", "s10_versorger")
 # Catalog name of each scenario (``scenario.<name>.title`` and friends).
 SCENARIO_NAMES = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
                   "s3_abfang": "intercept", "s4_zufall": "random",
                   "s5_durchbruch": "breakthrough", "s6_aufklaerung": "recon",
-                  "s7_geleitzug": "convoy_attack"}
+                  "s7_geleitzug": "convoy_attack", "s8_meerenge": "strait",
+                  "s9_kampfschwimmer": "swimmers", "s10_versorger": "escort"}
 SCENARIOS = {
     "s1_patrouille": dict(
         title="Patrouille",
@@ -1417,6 +1477,53 @@ SCENARIOS = {
         briefing="U-Boot: Zwei Handelsschiffe des Geleitzugs versenken.",
         win_text="Geleitzug geschuetzt",
         lose_text="Zwei Handelsschiffe verloren / Fregatte gesunken",
+    ),
+    # Scenarios 8 to 10: ship_start is the nominal start the mission
+    # geography is searched from (src/core/mission_geo.py).
+    "s8_meerenge": dict(
+        title="Meerengen-Sperre",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="meerenge",
+        hq_intel="coarse",
+        ship_start=(250.0, 180.0), ship_course=90.0,
+        boat=True,
+        briefing="U-Boot: Durch die Meerenge, die die Fregatte sperrt.",
+        win_text="Meerenge gehalten",
+        lose_text="U-Boot passiert die Meerenge / Fregatte gesunken",
+    ),
+    "s9_kampfschwimmer": dict(
+        title="Kampfschwimmer",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="kampfschwimmer",
+        hq_intel="coarse",
+        ship_start=(440.0, 100.0), ship_course=0.0,
+        boat=True,
+        briefing="U-Boot: Kampfschwimmer vor der Kueste absetzen.",
+        win_text="Kueste geschuetzt",
+        lose_text="Kampfschwimmer abgesetzt / Fregatte gesunken",
+    ),
+    "s10_versorger": dict(
+        title="Versorgerschutz",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="versorger",
+        hq_intel="coarse",
+        ship_start=(150.0, 350.0), ship_course=90.0,
+        boat=True,
+        briefing="U-Boot: Den Versorger im Zickzack treffen.",
+        win_text="Versorger geschuetzt",
+        lose_text="Versorger versenkt / Fregatte gesunken",
     ),
     "s4_zufall": dict(
         title="Freie Jagd (Zufall)",

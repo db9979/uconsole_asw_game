@@ -847,11 +847,12 @@ class SimMixin:
         boat = self._opfor
         attackers = {boat.sub.id} if boat is not None else set()
         mission_boat = boat_ai.boat(self)
-        if mission_boat is not None and boat_missions.mode(self) == "convoy_attack":
+        if mission_boat is not None and boat_missions.mode(self) in boat_missions.SHIP_MODES:
             attackers.add(mission_boat.id)
         # The patrol boats of a frigate mission hunt merchants too (1.3.76).
         attackers.update(sub.id for sub in boat_ai.patrol_raiders(self))
         # Only the crewed boat's weapons, the AI boat's in the convoy attack
+        # or the supply ship escort
         # or a frigate mission's patrol boats may take another ship.
         merchants = ([ship for ship in self.civilians if not ship.sunk]
                      if attackers else [])
@@ -1336,6 +1337,7 @@ class SimMixin:
         self._update_tasking(dt)
         self._update_incidents(dt)
         self._update_hq_reports()
+        boat_missions.update(self, dt)
         self._check_mission_end()
         self._update_training()
 

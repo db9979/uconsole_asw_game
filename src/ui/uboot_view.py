@@ -1387,7 +1387,8 @@ def end_text(game, boat) -> str:
 
 _END_WINS = ("uboot.end.won", "uboot.end.escaped", "uboot.end.survived",
              "uboot.end.trained", "uboot.end.broke_through", "uboot.end.reported",
-             "uboot.end.convoy_sunk")
+             "uboot.end.convoy_sunk", "uboot.end.passed", "uboot.end.landed",
+             "uboot.end.supply_sunk")
 
 
 def draw_end_panel(game, boat) -> None:

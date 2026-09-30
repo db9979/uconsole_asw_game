@@ -12,19 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.113**
+Current release: **1.3.114**
 
-Release 1.3.113 lets you play the uConsole entirely with the mouse and makes
-the charts and the sea traffic easier to read. A click on a key in a
-station's key bar presses it (held like the key), numbered tabs in the top bar
-switch stations, a click on the course, speed or depth dial orders that value,
-numeric entries show a keypad, menu and dialog rows are clickable, the wheel
-moves through menus and a right click cancels. Every chart now draws the own
-track, the earlier positions of each contact and the earlier bearings of the
-selected contact, and chart labels move aside instead of covering each other.
-Cargo ships, tankers and passenger ships steam on steady courses between ports
-and the edge of the sea area, give way to each other under the collision
-regulations and run from nearby detonations.
+Release 1.3.114 gives the same function the same key at every station, on the
+frigate and on the submarine. Ctrl+Enter is the only fire key (T and E no
+longer fire), Q/E zoom everywhere including the CIC radar range, the
+binoculars and the periscope, and Page Up/Down turn the pages of every
+station. Course, speed and depth are entered with C/V/D on both sides and the
+torpedo run depth with T. The submarine now uses the frigate's G for action
+stations, A for silent running, V for the decoy and W/M/U on its crew page;
+the patrol aircraft takes the helicopter's keys, both aircraft radars sit on
+Ctrl+R, and the helicopter and ELOKA follow the sonar (Shift+A ping, G release
+to CIC, J audio).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

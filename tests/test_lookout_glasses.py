@@ -54,20 +54,26 @@ def test_b_raises_the_binoculars_only_on_the_lookout_page():
     assert not game.lookout_glasses_shown()
 
 
-def test_glasses_train_with_comma_and_period_instead_of_the_radius():
+def test_glasses_train_with_the_arrows_as_the_periscope():
     game = _game(5)
     _lookout_page(game)
-    radius = game.lookout_range_nm
+    course = game.ship.target_course
     _key(game, pygame.K_b)
-    _key(game, pygame.K_PERIOD)
+    _key(game, pygame.K_RIGHT)
     assert game.lookout_glasses_rel == config.LOOKOUT_GLASSES_STEP_DEG
-    _key(game, pygame.K_COMMA, pygame.KMOD_SHIFT)
+    _key(game, pygame.K_LEFT, pygame.KMOD_SHIFT)
     assert game.lookout_glasses_rel == (config.LOOKOUT_GLASSES_STEP_DEG
                                         - config.LOOKOUT_GLASSES_STEP_FAST_DEG) % 360.0
-    assert game.lookout_range_nm == radius
-    _key(game, pygame.K_b)
+    # The arrows never reach the rudder while the glasses are up.
+    assert not ({pygame.K_LEFT, pygame.K_RIGHT} & game.held)
+    game.update(0.5)
+    assert game.ship.target_course == course
+    # , / . keep the scope radius with the glasses up or down.
+    radius = game.lookout_range_nm
     _key(game, pygame.K_PERIOD)
-    assert game.lookout_range_nm != radius           # the radius again once closed
+    assert game.lookout_range_nm != radius
+    assert game.lookout_glasses_rel == (config.LOOKOUT_GLASSES_STEP_DEG
+                                        - config.LOOKOUT_GLASSES_STEP_FAST_DEG) % 360.0           # the radius again once closed
 
 
 def test_glasses_cover_the_chart_pointer_and_a_panorama_click_trains_them():

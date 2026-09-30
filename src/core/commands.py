@@ -34,9 +34,9 @@ SONAR_PAGE_COUNT = len(STATION_PAGES[Station.SONAR])
 
 
 STATION_COMMAND_HINTS = {
-    Station.BRIDGE: "Links/Rechts Kurs | Auf/Ab Telegraph | U/V Direkt | Q/E Zoom | K Follow",
+    Station.BRIDGE: "Links/Rechts Kurs | Auf/Ab Telegraph | C/V Direkt | Q/E Zoom | K Follow",
     Station.SONAR: (
-        "Peilung Links/Rechts | Kontakt Auf/Ab | A Ping | Y TAS | M Ziel",
+        "Peilung Links/Rechts | Kontakt Auf/Ab | Shift+A Ping | Y TAS | M Ziel",
         "control.hint.sonar_release",
     ),
     Station.WEAPONS: "control.hint.weapons",

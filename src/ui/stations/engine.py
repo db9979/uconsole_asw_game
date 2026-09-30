@@ -50,7 +50,7 @@ def draw_engine_view(game, tr=None) -> None:
     _shortcut_footer(s, (x, station_bottom - 26, w, 20), (
         ("↑/↓", "engine.footer.telegraph"),
         ("A", "engine.footer.quiet"),
-        ("U", "engine.footer.set_course"),
+        ("C", "engine.footer.set_course"),
         ("V", "engine.footer.set_speed"),
     ))
 

@@ -127,14 +127,15 @@ def test_surface_and_air_radars_toggle_independently():
 def test_range_keys_cycle_display_scale_without_changing_sensor_maximum():
     game = opz_game()
     assert game.opz_range_nm == 40.0
-    press(game, pygame.K_PAGEDOWN)
+    # Q / E zoom as everywhere: E closer, Q wider.
+    press(game, pygame.K_e)
     assert game.opz_range_nm == 20.0
-    press(game, pygame.K_PAGEUP)
+    press(game, pygame.K_q)
     assert game.opz_range_nm == 40.0
-    press(game, pygame.K_PAGEUP)
+    press(game, pygame.K_q)
     assert game.opz_range_nm == 80.0
     before = game.radar_effective_range("surface")
-    press(game, pygame.K_PAGEUP)
+    press(game, pygame.K_q)
     assert game.radar_effective_range("surface") == before
 
 
@@ -395,7 +396,7 @@ def test_scope_prefers_public_radar_range_and_shows_all_scale_controls(monkeypat
     footer_y = pygame.Rect(config.STATION_RECT).bottom - 28
     footer = " ".join(entry["text"] for entry in text
                       if abs(entry["rect"].y - footer_y) <= 4)
-    assert "PgUp/Dn" in footer
+    assert "Q/E" in footer
     assert "20 NM" in footer
     assert all(str(scale) in footer for scale in (10, 20, 40, 80, 120))
 

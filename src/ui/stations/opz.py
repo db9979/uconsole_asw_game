@@ -1038,6 +1038,6 @@ def draw_opz_view(game, tr=None) -> None:
         for scale in config.RADAR_RANGE_SCALES_NM)
     # The station footer row, like every other station's key legend.
     footer_rect = pygame.Rect(station.x + 8, station.bottom - 28, scope_w - 16, 20)
-    layout.command_segment(s, footer_rect, "help.key.page_arrows", "opz.footer.range", "",
+    layout.command_segment(s, footer_rect, "Q/E", "opz.footer.range", "",
                            f"{max_nm:g} NM  {scales}", size=11)
-    pointer.add_legend(footer_rect, "help.key.page_arrows")
+    pointer.add_legend(footer_rect, "Q/E")

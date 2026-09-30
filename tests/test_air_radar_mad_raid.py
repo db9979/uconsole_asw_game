@@ -63,7 +63,7 @@ def test_the_helicopter_radar_switch_silences_radar_and_esm():
     helo = _airborne(game, game.ship.x + 5.0, game.ship.y)
     assert game.helo_radar_active()
     game.station = Station.HELICOPTER
-    _key(game, pygame.K_r, pygame.KMOD_SHIFT)
+    _key(game, pygame.K_r, pygame.KMOD_CTRL)       # Ctrl+R: the aircraft radar
     assert helo.radar_on is False and not game.helo_radar_active()
     assert not [signal for signal, _height in boat_esm.own_asset_emissions(game)
                 if abs(_height - config.HELO_RADAR_ALTITUDE_M) < 1e-9]
@@ -174,7 +174,7 @@ def test_mad_passes_need_an_airborne_aircraft_and_are_saved():
     mpa = _on_station(game, game.ship.x + 10.0, game.ship.y)
     game.station = Station.OPZ
     game.station_page = 2
-    _key(game, pygame.K_v)
+    _key(game, pygame.K_m, pygame.KMOD_SHIFT)      # Shift+M, as the helicopter's MAD
     assert mpa.mad_mode is True
     assert game.mpa_view()["mad"] is True
     other = _game(7604)

@@ -14,20 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.113**
+Aktuelle Version: **1.3.114**
 
-Version 1.3.113 macht die uConsole komplett mit der Maus spielbar und die
-Karten und den Schiffsverkehr leichter lesbar. Ein Klick auf eine Taste in der
-Tastenleiste einer Station drückt sie (gehalten wie die Taste), nummerierte
-Reiter in der Kopfzeile wechseln die Station, ein Klick auf die Kurs-, Fahrt-
-oder Tiefenscheibe befiehlt diesen Wert, Zahleneingaben zeigen ein Tastenfeld,
-Menü- und Dialogzeilen sind anklickbar, das Mausrad blättert durch Menüs und
-ein Rechtsklick bricht ab. Jede Karte zeigt jetzt die eigene Kursspur, die
-früheren Positionen jedes Kontakts und die früheren Peilungen des gewählten
-Kontakts, und Kartenbeschriftungen weichen einander aus, statt sich zu
-verdecken. Frachter, Tanker und Passagierschiffe laufen auf festen Kursen
-zwischen Häfen und dem Rand des Seegebiets, weichen einander nach den
-Kollisionsverhütungsregeln aus und laufen vor nahen Detonationen davon.
+Version 1.3.114 gibt derselben Funktion an jeder Station dieselbe Taste, auf
+der Fregatte wie auf dem U-Boot. Strg+Enter ist die einzige Feuertaste (T und E
+feuern nicht mehr), Q/E zoomen überall, auch den OPZ-Radarbereich, das Fernglas
+und das Sehrohr, und Bild auf/ab blättern an jeder Station. Kurs, Fahrt und
+Tiefe werden auf beiden Seiten mit C/V/D eingegeben, die Torpedo-Lauftiefe mit
+T. Das U-Boot nutzt jetzt wie die Fregatte G für Gefechtsstationen, A für
+Schleichfahrt, V für den Täuschkörper und W/M/U auf der Besatzungsseite; der
+Seefernaufklärer hat die Tasten des Helikopters, beide Luftfahrzeug-Radare
+liegen auf Strg+R, und Helikopter und ELOKA folgen dem Sonar (Shift+A Ping,
+G Freigabe an die OPZ, J Ton).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

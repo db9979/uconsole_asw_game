@@ -4508,6 +4508,7 @@
   "uboot.panel.course_depth": "KURS / TIEFE",
   "uboot.panel.depth_ladder": "WASSERSÄULE",
   "uboot.panel.fire_control": "FEUERLEITUNG",
+  "uboot.panel.engagement": "SCHUSSLAGE",
   "uboot.line.depth": "{depth} m",
   "uboot.line.battery_value": "{value} % ({phase})",
   "uboot.line.battery": "Batterie {value} % ({phase})",

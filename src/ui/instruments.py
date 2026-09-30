@@ -107,3 +107,53 @@ def speed_dial(screen, rect, speed, ordered, maximum) -> None:
     pygame.draw.polygon(screen, config.COLOR_WARN, ((ox, oy), left, right), 1)
     lines.line(screen, config.COLOR_OK, (cx, cy), at(abs(speed), radius - 6), 2)
     pygame.draw.circle(screen, config.COLOR_OK, (cx, cy), 3)
+
+
+def depth_dial(screen, rect, depth, ordered, test_depth, crush_depth) -> None:
+    """A 240 degree depth gauge from the surface to below crush depth.
+
+    The arc beyond test depth is amber, beyond crush depth red; the hollow
+    triangle is the ordered depth and the needle the boat's depth.
+    """
+    rect = pygame.Rect(rect)
+    face = layout.font(11)
+    label_h = face.get_linesize()
+    radius = min(rect.w // 2, rect.h // 2) - label_h // 2 - 4
+    if radius < 24:
+        return
+    layout.record_geometry("instrument", rect, "depth")
+    cx, cy = rect.centerx, rect.centery + radius // 5
+    step = 100 if crush_depth <= 600 else 200 if crush_depth <= 1200 else 500
+    maximum = float(max(step, math.ceil(max(crush_depth * 1.1, depth, ordered) / step) * step))
+    start, sweep = -120.0, 240.0
+
+    def angle(value):
+        return start + sweep * max(0.0, min(1.0, value / maximum))
+
+    def at(value, r):
+        return _polar(cx, cy, r, angle(value))
+
+    points = [at(maximum * i / 48, radius) for i in range(49)]
+    lines.lines(screen, config.COLOR_SONAR_RING, False, points, 1)
+    for lo, hi, color in ((test_depth, crush_depth, config.COLOR_WARN),
+                          (crush_depth, maximum, config.COLOR_DANGER)):
+        if hi > lo:
+            steps = max(2, int((angle(hi) - angle(lo)) / 4) + 1)
+            band = [at(lo + (hi - lo) * i / steps, radius - 3) for i in range(steps + 1)]
+            lines.lines(screen, color, False, band, 3)
+    for metres in range(0, int(maximum) + 1, step // 2):
+        major = metres % step == 0
+        lines.line(screen, config.COLOR_TEXT_DIM if major else config.COLOR_GRID,
+                   at(metres, radius - (8 if major else 4)), at(metres, radius), 1)
+        if major and metres % (2 * step) == 0:
+            tx, ty = at(metres, radius - 10 - label_h)
+            layout.blit_line(screen, raw_text(f"{metres}"),
+                             (int(tx) - 18, int(ty) - label_h // 2, 36, label_h),
+                             config.COLOR_TEXT_DIM, size=11, align="center")
+    ox, oy = at(ordered, radius + 1)
+    left, right = (_polar(cx, cy, radius + 10, angle(ordered) + d) for d in (-4, 4))
+    pygame.draw.polygon(screen, config.COLOR_WARN, ((ox, oy), left, right), 1)
+    color = (config.COLOR_DANGER if depth >= crush_depth else config.COLOR_WARN
+             if depth > test_depth else config.COLOR_OK)
+    lines.line(screen, color, (cx, cy), at(depth, radius - 6), 2)
+    pygame.draw.circle(screen, color, (cx, cy), 3)

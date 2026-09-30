@@ -68,7 +68,7 @@ Frigate workstations:
 </tr>
 </table>
 
-Playing the submarine (new game: **Hostile submarine**):
+Playing the submarine (`--play-sub`):
 
 <table>
 <tr>
@@ -146,9 +146,9 @@ views; needs an installed Chromium on `PATH`).
   same observation-led controls, and use separately granted direct fire.
   The browser console is a one-viewport combat-information-centre layout for
   large desktop monitors: status bar, central instrument and collapsible docks.
-  **Multiplayer** in the main menu (or `python main.py --multiplayer`) opens
-  the lobby: mission, side and the uConsole's own station are chosen there,
-  the browsers join with the code shown; see [Remote Crew setup](docs/commander-coop.md).
+  `python main.py --solo-crew` (or the F9 "Crew mode" row) lets one browser run
+  all nine stations plus save/load and new game while the
+  uConsole stays the simulation server; see [Remote Crew setup](docs/commander-coop.md).
 - Conservative station Autocrew with local `F2` control and an `F3` overview.
   Remote Crew temporarily suspends Autocrew only for the leased station.
 - Deterministic marine weather with wind, rain, visibility and smooth sea-state
@@ -160,15 +160,18 @@ views; needs an installed Chromium on `PATH`).
 
 Download `U-Jagd-Windows.exe` from the
 [latest release](https://github.com/db9979/uconsole_asw_game/releases/latest)
-and run it; no Python installation is needed. It starts straight into the
-game, exactly like `python main.py` (command-line options such as
-`--windowed` or `--multiplayer` work the same): there is no separate starter
-window, everything is chosen in the game. **Multiplayer** in the main menu
-opens the lobby with Remote Crew on the PC's private LAN address and shows
-the browser address, the join code and a QR code; station requests are
-approved in the game (F9) as on the uConsole. Windows may ask once whether
-U-Jagd may use private networks: allow it, otherwise other devices cannot
-connect. The game log is kept in `%USERPROFILE%\.u-jagd\logs\server.log`.
+and run it; no Python installation is needed. The starter window lets you
+choose crew mode (several browsers, one station each) or solo mode (one
+browser runs every station), whether this PC plays the submarine, window or
+full screen, sound and the port, and the **Language** box at the top switches
+the starter, the game and the crew browsers between English and Deutsch (saved
+in the settings); then **Start server** opens the game window
+with Remote Crew already listening on the PC's private LAN address. The
+starter shows the browser address, the join code and a QR code; station
+requests are approved in the game window (F9) as on the uConsole. Windows may
+ask once whether U-Jagd may use private networks: allow it, otherwise other
+devices cannot connect. **Stop server** ends the game (unsaved progress is
+lost), and the link at the bottom opens the "Buy me a coffee" page; the game log is kept in `%USERPROFILE%\.u-jagd\logs\server.log`.
 
 At every start the program asks GitHub whether a newer release exists; the
 game's start screen and main menu then show its changelog entry (and a warning
@@ -248,14 +251,11 @@ launch. There is no `--fullscreen` or command-line language option. After a
 package installation, the same entry point is available as `u-jagd`, for
 example `u-jagd --windowed`.
 
-`python main.py --multiplayer` goes straight into the multiplayer lobby after
-the splash, as the main-menu entry does: Remote Crew starts in crew mode on
-the first private LAN address (`--web-port` picks the port, default 8765).
-The side (frigate or submarine) is chosen in the lobby or when a new game
-asks **Which unit do you play?**. The old `--remote-crew` still works as
-another name for `--multiplayer`. The hidden advanced flag `--solo-crew`
-starts Remote Crew in solo mode for this launch (one browser runs all nine
-stations plus save/load and new game); the game has no menu row for it.
+`python main.py --remote-crew` starts Remote Crew in crew mode on the first
+private LAN address at launch, as the F9 row would (`--solo-crew` does the same
+in solo mode; `--web-port` picks the port, default 8765). `--status-file PATH`
+writes the Remote Crew address and join code as JSON to `PATH` whenever they
+change; the Windows starter reads it.
 
 ## Starting a Game
 
@@ -424,7 +424,7 @@ another device. No router forwarding is needed or supported.
 
 To reach the same crew or solo session through your own HTTPS reverse proxy as
 well, start the game with `--public-origin https://asw.example.net` (optionally
-with `--multiplayer` or `--solo-crew`) and point the proxy at the LAN URL shown in F9. The LAN URL
+with `--solo-crew`) and point the proxy at the LAN URL shown in F9. The LAN URL
 keeps working; F9 then shows both addresses. Details and security notes:
 [`docs/web-host.de.md`](docs/web-host.de.md).
 

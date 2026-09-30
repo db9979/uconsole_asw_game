@@ -71,7 +71,7 @@ Arbeitsplätze der Fregatte:
 </tr>
 </table>
 
-Als U-Boot spielen (neues Spiel: **Feindliches U-Boot**):
+Als U-Boot spielen (`--play-sub`):
 
 <table>
 <tr>
@@ -152,10 +152,10 @@ Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py
   nutzen und mit einer getrennten Freigabe direkt Waffen einsetzen.
   Die Browserkonsole ist ein Gefechtszentrale-Layout auf einer Bildschirmseite
   für große Desktop-Monitore: Statusleiste, zentrales Instrument und
-  einklappbare Seitenleisten. **Mehrspieler** im Hauptmenü (oder
-  `python main.py --multiplayer`) öffnet die Lobby: Mission, Seite und die
-  eigene Station der uConsole werden dort gewählt, die Browser treten mit dem
-  angezeigten Code bei; siehe [Einrichtung von Remote Crew](docs/commander-coop.de.md).
+  einklappbare Seitenleisten. `python main.py --solo-crew` (oder die F9-Zeile
+  „Crew-Modus“) lässt einen einzigen Browser alle neun Stationen samt
+  Speichern/Laden und neuem Spiel bedienen, während die uConsole der
+  Simulationsserver bleibt; siehe [Einrichtung von Remote Crew](docs/commander-coop.de.md).
 - Konservative stationsbezogene Autocrew mit `F2` und einer Übersicht mit `F3`.
   Remote Crew pausiert Autocrew nur für die jeweils belegte Station.
 - Deterministisches Seewetter mit Wind, Regen, Sicht und weichen
@@ -168,15 +168,19 @@ Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py
 
 Lade `U-Jagd-Windows.exe` aus dem
 [neuesten Release](https://github.com/db9979/uconsole_asw_game/releases/latest)
-und starte es; Python ist nicht nötig. Es startet direkt ins Spiel, genau
-wie `python main.py` (Kommandozeilenoptionen wie `--windowed` oder
-`--multiplayer` wirken gleich): Ein eigenes Starterfenster gibt es nicht,
-alles wird im Spiel gewählt. **Mehrspieler** im Hauptmenü öffnet die Lobby
-mit Remote Crew auf der privaten LAN-Adresse des PCs und zeigt
-Browser-Adresse, Beitrittscode und QR-Code; Stationsanfragen bestätigst du
-wie auf der uConsole im Spiel (F9). Windows fragt eventuell einmal, ob
-U-Jagd private Netzwerke nutzen darf: zulassen, sonst können sich andere
-Geräte nicht verbinden. Das Protokoll liegt in
+und starte es; Python ist nicht nötig. Im Starterfenster wählst du den
+Besatzungsmodus (mehrere Browser, je eine Station) oder den Solomodus (ein
+Browser bedient alle Stationen), ob dieser PC das U-Boot spielt, Fenster oder
+Vollbild, Ton und Port, und das Feld **Sprache** oben stellt Starter, Spiel
+und Besatzungs-Browser zwischen English und Deutsch um (in den Einstellungen
+gespeichert); **Server starten** öffnet dann das Spielfenster, und
+Remote Crew lauscht bereits auf der privaten LAN-Adresse des PCs. Der Starter
+zeigt Browser-Adresse, Beitrittscode und QR-Code; Stationsanfragen bestätigst
+du wie auf dem uConsole im Spielfenster (F9). Windows fragt eventuell einmal,
+ob U-Jagd private Netzwerke nutzen darf: zulassen, sonst können sich andere
+Geräte nicht verbinden. **Server stoppen** beendet das Spiel (nicht
+gespeicherter Fortschritt geht verloren), und der Link unten öffnet die
+"Buy me a coffee"-Seite; das Protokoll liegt in
 `%USERPROFILE%\.u-jagd\logs\server.log`.
 
 Bei jedem Start fragt das Programm GitHub, ob es ein neueres Release gibt;
@@ -260,15 +264,12 @@ gespeicherten Optionen. Es gibt weder `--fullscreen` noch eine
 Kommandozeilenoption für die Sprache. Nach einer Paketinstallation ist derselbe
 Einstiegspunkt als `u-jagd` verfügbar, beispielsweise `u-jagd --windowed`.
 
-`python main.py --multiplayer` geht nach dem Startbild direkt in die
-Mehrspieler-Lobby, wie der Eintrag im Hauptmenü: Remote Crew startet im
-Besatzungsmodus auf der ersten privaten LAN-Adresse (`--web-port` wählt den
-Port, Standard 8765). Die Seite (Fregatte oder U-Boot) wird in der Lobby
-gewählt oder wenn ein neues Spiel **Welche Einheit spielst du?** fragt. Das
-alte `--remote-crew` funktioniert weiter als anderer Name für
-`--multiplayer`. Die verborgene Expertenoption `--solo-crew` startet Remote
-Crew für diesen Start im Solomodus (ein Browser bedient alle neun Stationen
-samt Speichern/Laden und neuem Spiel); im Spiel gibt es dafür keine Zeile.
+`python main.py --remote-crew` startet Remote Crew beim Start im
+Besatzungsmodus auf der ersten privaten LAN-Adresse, wie es die F9-Zeile tun
+würde (`--solo-crew` entsprechend im Solomodus; `--web-port` wählt den Port,
+Standard 8765). `--status-file PFAD` schreibt Remote-Crew-Adresse und
+Beitrittscode als JSON nach `PFAD`, sobald sie sich ändern; der
+Windows-Starter liest diese Datei.
 
 ## Spiel starten
 
@@ -460,8 +461,7 @@ noch unterstützt.
 
 Soll dieselbe Crew- oder Solo-Sitzung zusätzlich über einen eigenen
 HTTPS-Reverse-Proxy erreichbar sein, starten Sie das Spiel mit
-`--public-origin https://asw.example.net` (bei Bedarf mit `--multiplayer`
-oder `--solo-crew`) und
+`--public-origin https://asw.example.net` (bei Bedarf mit `--solo-crew`) und
 lassen den Proxy auf die in F9 angezeigte LAN-Adresse zeigen. Die LAN-Adresse
 bleibt nutzbar; F9 zeigt dann beide Adressen. Details und Sicherheitshinweise:
 [`docs/web-host.de.md`](docs/web-host.de.md).

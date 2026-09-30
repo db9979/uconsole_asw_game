@@ -17,6 +17,18 @@ browser; every station always carries its full rights. The command line has
 one flag, --multiplayer, which opens the lobby, and the Windows program starts
 straight into the game without a starter window.
 
+## 1.3.111
+
+Release 1.3.111 adds an engagement sketch to fire control on both sides. The
+frigate's Weapons station and the submarine's Weapons page now draw, north up
+around the own ship, the torpedo's reach, the bearing to the target and, once
+a range is known, the estimated position, the intercept point from the TMA
+course and speed and the torpedo run to it, taken only from the contact's
+observation. The submarine's Command and Navigation pages get labelled round dials for
+course, depth (test and crush depth marked) and speed like the frigate's
+bridge, and the submarine's radio room boxes are sized to their text again,
+so the HQ order no longer runs through the frame.
+
 ## 1.3.110
 
 Release 1.3.110 no longer installs updates on its own. When a newer release

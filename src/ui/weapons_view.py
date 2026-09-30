@@ -7,9 +7,12 @@ import pygame
 from src.core import config
 from src.core.i18n import raw_text, display_value, localized, localize, message as structured_message
 from src.core.station import Station
-from src.ui import console, layout
+from src.ui import console, engagement, layout
 from src.ui import nato_symbols
 from src.ui import observations
+
+# Least height the fire-control box keeps free for the engagement sketch (px).
+SKETCH_MIN_H = 130
 
 
 def message(key, **values):
@@ -211,6 +214,36 @@ def weapons_hit_target(game, pos):
     return None
 
 
+def _torpedo_profile(game):
+    """Speed and range of the torpedo type the tubes load (catalog values)."""
+    from src.weapons.torpedo import Torpedo
+    for weapon in getattr(game, "_ownship_loadout", {}).get("weapons", ()):
+        if weapon.get("key") == getattr(game, "torpedo_type", None):
+            profile = game.runtime_catalog.torpedoes.get(weapon["runtime_profile_key"])
+            if profile is not None:
+                return profile.speed_kn, profile.range_nm
+    return Torpedo.SPEED_KN, Torpedo.RANGE_NM
+
+
+def _draw_sketch(s, game, c, fresh, rect) -> None:
+    """The engagement sketch from the assigned contact's observation only."""
+    ship = getattr(game, "ship", None)
+    if ship is None:
+        return
+    speed, reach = _torpedo_profile(game)
+    bearing = target = course = target_speed = None
+    if c is not None:
+        bearing = _display_bearing(c, ship)
+        est_x, est_y = _contact_position(c, ship)
+        if est_x is not None and est_y is not None:
+            target = (est_x - ship.x, est_y - ship.y)
+            course, target_speed = c.tma_course, c.tma_speed
+    engagement.draw_engagement_sketch(
+        s, rect, own_course=ship.course, torpedo_kn=speed, torpedo_range_nm=reach,
+        bearing=bearing, target=target, target_course=course,
+        target_speed_kn=target_speed, fresh=fresh)
+
+
 def _tank_reserve(rect) -> int:
     """Height the magazine tanks take at the foot of the active weapons box."""
     return 138 if rect.height >= 300 else 0
@@ -294,6 +327,7 @@ def draw_weapons_panel(game, tr=None) -> None:
                              config.COLOR_WARN, size=20)
             layout.blit_block(s, "tooltip.target_contact",
                               sx, sy + 40, sw, 48, config.COLOR_TEXT_DIM, size=16)
+            sy += 88
         else:
             displayed_range = _display_range(c, getattr(game, "ship", None)) \
                 if getattr(game, "ship", None) is not None else c.range_est
@@ -348,9 +382,13 @@ def draw_weapons_panel(game, tr=None) -> None:
                           readiness_color, size=14)
         tubes = _tube_lamps(game)
         lamp_h = layout.line_pitch(14, 0) + 8
+        sketch_bottom = ready_y - 8
         if tubes and ready_y - lamp_h - 6 > sy:
             console.lamp_grid(s, (sx, ready_y - lamp_h - 6, sw, lamp_h), tubes,
                               len(tubes), size=14)
+            sketch_bottom = ready_y - lamp_h - 14
+        if sketch_bottom - sy >= SKETCH_MIN_H:
+            _draw_sketch(s, game, c, fresh_solution, (sx, sy + 4, sw, sketch_bottom - sy - 4))
 
         ready = layout.box(s, regions["stages"], "panel.engagement_stages",
                             border=readiness_color)

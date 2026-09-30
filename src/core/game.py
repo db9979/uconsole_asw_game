@@ -17,6 +17,8 @@ from src.commander.local import CommanderConsole
 from src.core import config
 from src.core.plot import PlotLayer
 from src.core.chart_history import ChartHistory
+from src.core.map_fx import MapFx
+from src.core.sight_events import SightEvents
 from src.core.autocrew import AutocrewController
 from src.core.callouts import CalloutLog
 from src.ship.route import Route
@@ -791,6 +793,10 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                                  config.MAP_ZOOM_MAX_PX_PER_NM)
         self.opz_map_view = Viewport(self.world.size_nm, 1.0, 100.0)
         self.chart_history = ChartHistory()
+        # Display only: water columns, fire and sinkings the eyes can see.
+        self.sight_events = SightEvents()
+        # Display only: ping wavefronts, echoes and splashes on the charts.
+        self.map_fx = MapFx()
         self._reset_map_view()
         self.hq_msg(message("runtime.hq.roe", roe=self.roe))
         weather = self.world.weather_values()

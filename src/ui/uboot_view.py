@@ -19,7 +19,7 @@ from src.core import boat_esm, config, opfor, uboot_local
 from src.core.i18n import display_message, display_value, localize, message, raw_text
 from src.core.station import Station
 from src.ui import (chart_trails, console, engagement, instruments, label_layout, layout, lines,
-                    nato_symbols, overlay_style, pointer)
+                    map_fx_view, nato_symbols, overlay_style, pointer)
 from src.ui.feedback import FeedEntry
 from src.ui.map_view import chart_background, draw_chart_frame, draw_chart_geography
 from src.ui.plot_view import draw_plot
@@ -384,6 +384,10 @@ def draw_chart(game, boat) -> None:
                 s, history.sides.get(("boat", boat.sub.id)), view, r, chart_background(game),
                 own_now=(boat.sub.x, boat.sub.y),
                 selected_bearing_key=getattr(chosen, "id", None))
+        fx = getattr(game, "map_fx", None)
+        if fx is not None:
+            map_fx_view.draw_fx(s, fx.rows(("boat", boat.sub.id), game.sim_t),
+                                view.world_to_screen, view.scale, r, chart_background(game))
         _draw_chart_overlays(game, boat, view, r)
     draw_chart_frame(game, view, r, boat.chart_follow)
     _draw_mission_line(game, boat, r)

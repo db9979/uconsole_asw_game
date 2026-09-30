@@ -974,6 +974,7 @@ def send_ping(game, boat: CrewedBoat):
     result = boat.sub.command_ping()
     if result is not True:
         return result
+    game.map_fx.ping(("boat", boat.sub.id), game.sim_t, boat.sub.x, boat.sub.y)
     sonar.queue_ping(boat.station.observer, boat.sonar_targets(game), game.world,
                      game.sim_t, 1.0, mode="BOW")
     return True

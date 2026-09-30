@@ -299,6 +299,21 @@ def draw_nav_lights(s, cls: str, frame: _Frame, width: float, code: str,
         pygame.draw.circle(s, color, (int(x), int(y)), core)
 
 
+def draw_bubble_track(s, cx: float, base_y: float, width: float, t: float = 0.0) -> None:
+    """The bubble track of a running torpedo on the sea: a pale streak with
+    bubbles breaking along it (display clock ``t``)."""
+    width = max(3.0, float(width))
+    left = cx - width / 2.0
+    pygame.draw.line(s, FOAM, (left, base_y + 1), (left + width, base_y + 1),
+                     max(1, min(3, int(width // 40) + 1)))
+    count = max(3, min(18, int(width / 8)))
+    for k in range(count):
+        phase = (t * 0.7 + k * 0.618) % 1.0
+        x = left + width * ((k + 0.5) / count)
+        radius = max(1, int(1 + 2 * math.sin(math.pi * phase)))
+        pygame.draw.circle(s, FOAM, (int(x), int(base_y + 1)), radius, 1)
+
+
 def draw_profile(s, cls: str, cx: float, base_y: float, width: float, color, *,
                  t: float = 0.0, facing: int = -1, rim=None, lights=None,
                  wake: bool = True, nav: str | None = None, aloft: bool = False) -> _Frame:

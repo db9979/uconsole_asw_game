@@ -11,7 +11,7 @@ import math
 
 import pygame
 
-from src.core import attack_computer, config, opfor
+from src.core import attack_computer, config, opfor, sight_events
 from src.core.i18n import display_value, localize, message
 from src.ui import layout
 
@@ -80,7 +80,8 @@ def draw_eyepiece(s, game, boat, rect) -> None:
                  optics_label=message("sight.optics", elevation=f"{sight.elevation_deg:+.0f}",
                                       fov=f"{sight.fov_deg:.0f}"),
                  way=dict(speed_kn=boat.sub.speed, course_deg=boat.sub.course,
-                          eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M, hull=False))
+                          eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M, hull=False),
+                 events=sight_events.boat_rows(game, boat))
 
 
 def sighting_rows(game, boat) -> list:

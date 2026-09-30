@@ -73,7 +73,8 @@ SKY_FIELDS = ("light", "dusk", "cloud", "precipitation", "intensity", "wind_from
               "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg",
               "moon_illumination", "moon_waxing")
 LOOKOUT_GLASSES_FIELDS = ("course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset",
-                          "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines")
+                          "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines",
+                          "events")
 # ``lights``: the navigation lights made out (``src/sensors/nav_lights.py``
 # code) or null; ``elevation_deg``: an aircraft's angle above the sea
 # horizon (null on the surface); ``aob_deg``: the angle on the bow judged
@@ -81,12 +82,16 @@ LOOKOUT_GLASSES_FIELDS = ("course", "speed_kn", "fov_deg", "visibility_nm", "sea
 LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "lights", "elevation_deg",
                           "aob_deg", "model")
 SIGHT_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
+# What the eye sees happen (``src/core/sight_events.py``): water columns,
+# fireballs, fire and smoke, sinkings; bearing and range from the observer.
+SIGHT_EVENT_FIELDS = ("type", "bearing", "range_nm", "age_s", "dur_s", "size_m", "level")
+SIGHT_EVENT_KINDS = ("column", "blast", "fire", "sinking")
 # The phone lookouts (``lookout`` binoculars, ``uboot_lookout`` periscope):
 # the eyepiece, the lookout's own sightings (called or not) and his calls.
 LOOKOUT_PHONE_FIELDS = ("side", "available", "manned", "course", "speed_kn", "relative_deg",
                         "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset",
                         "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines",
-                        "calls")
+                        "calls", "events")
 LOOKOUT_PHONE_OUTLINE_FIELDS = LOOKOUT_OUTLINE_FIELDS + ("called", "range_nm")
 LOOKOUT_CALL_FIELDS = ("seq", "age_s", "category", "bearing", "range_nm", "confirmed")
 LOOKOUT_CALL_CATEGORIES = ("contact", "ship", "warship", "merchant", "aircraft", "submarine",

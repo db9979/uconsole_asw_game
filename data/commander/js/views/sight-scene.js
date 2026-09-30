@@ -6,6 +6,7 @@
 // (the view's ``sky`` block and outlines); the phase is the wall clock.
 import { drawInScene } from "./model-view.js";
 import { DETAIL_MIN_PX, FOAM, NAV_LIGHT, PROFILES } from "./silhouette-profiles.js";
+import { drawSightEvents } from "./sight-events.js";
 
 const SKY_NIGHT = [[3, 7, 16], [20, 44, 62]], SKY_DAY = [[34, 88, 118], [138, 176, 182]], SKY_DUSK = [[24, 30, 60], [204, 128, 78]];
 const SEA_NIGHT = [[10, 44, 58], [2, 9, 15]], SEA_DAY = [[24, 78, 92], [6, 34, 46]], SEA_DUSK = [[44, 50, 66], [8, 14, 26]];
@@ -122,6 +123,19 @@ function drawNavLights(g, cls, frame, width, code, t, navPoints = null) {
 
 // With the judged angle on the bow ``aob`` a large enough ship, submarine or
 // aircraft is drawn as its 3D model turned to that aspect.
+// The bubble track of a running torpedo (src/ui/silhouettes.py draw_bubble_track).
+function drawBubbleTrack(g, cx, base, width, t) {
+  width = Math.max(3, width);
+  const left = cx - width / 2, foam = rgb(FOAM);
+  line(g, [left, base + 1], [left + width, base + 1], foam, Math.max(1, Math.min(3, Math.floor(width / 40) + 1)));
+  const count = Math.max(3, Math.min(18, Math.floor(width / 8)));
+  g.strokeStyle = foam; g.lineWidth = 1;
+  for (let k = 0; k < count; k++) {
+    const phase = ((t * .7 + k * .618) % 1 + 1) % 1, radius = Math.max(1, Math.floor(1 + 2 * Math.sin(Math.PI * phase)));
+    g.beginPath(); g.arc(left + width * ((k + .5) / count), base + 1, radius, 0, Math.PI * 2); g.stroke();
+  }
+}
+
 export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, lights = null, nav = null, aloft = false, aob = null, model = null} = {}) {
   width = Math.max(3, width);
   const scene = drawInScene(g, cls, cx, base, width, fill, aob, aloft, model);
@@ -130,7 +144,7 @@ export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, l
     return;
   }
   if (cls === "torpedo") {
-    line(g, [cx - width / 2, base + 1], [cx + width / 2, base + 1], rgb(FOAM), Math.max(1, Math.min(3, width / 12)));
+    drawBubbleTrack(g, cx, base, width, t);
     return;
   }
   const facing = navFacing(nav);
@@ -490,7 +504,8 @@ function drawWindRose(g, height, colors, windFromDeg) {
 
 // One eyepiece picture.  ``v``: bearing (line of sight), fov_deg,
 // horizon_offset, horizon_tilt, visibility_nm, sea_state, sky, outlines
-// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg, model}]) and an optional window_deg crosshair;
+// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg, model}]), the events the eye
+// sees happen (``events``, src/core/sight_events.py) and an optional window_deg crosshair;
 // no_scale hides the bearing scale, wind_rose_deg draws the weather
 // instrument's wind rose in the top left corner; way ({speed_kn, course_deg,
 // eye_m, hull}) is the own way through the water (wave stream, bow wave, wake).
@@ -514,6 +529,7 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
   drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null);
   drawSea(g, w, sky, colors, v.sea_state, t, haze, v.way ?? null);
   drawRows(v.outlines.filter((row) => !aloft(row)));
+  if (Array.isArray(v.events) && v.events.length) drawSightEvents(g, w, colors, sky, v.events, haze, t);
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);
   if (Number.isFinite(v.wind_rose_deg)) drawWindRose(g, height, colors, v.wind_rose_deg);
   const labelStep = [10, 30, 45, 90].find((step) => step * w.pxPerDeg >= SCALE_LABEL_MIN_PX) ?? 90;

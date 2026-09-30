@@ -186,6 +186,7 @@ class SimMixin:
             self._perf_substeps += n
         # Display-only chart history (own track, earlier fixes and bearings).
         self.chart_history.record(self)
+        self.sight_events.refresh(self.sim_t, self._sight_fire_level)
         self.map_view.set_rect(config.MAP_RECT)
         if self.map_follow:
             self.map_view.cx, self.map_view.cy = self.ship.x, self.ship.y
@@ -268,6 +269,14 @@ class SimMixin:
             self.audio.play_effect(kind, pan=pan)
         self._sound_event_seq += 1
         self._sound_events.append(dict(seq=self._sound_event_seq, kind=kind, pan=pan))
+
+    def _sight_fire_level(self, ship):
+        """The frigate's own fire for her smoke (0..1, worst compartment);
+        None for other ships, whose fire burns down on its own."""
+        if ship is not self.ship:
+            return None
+        return max((room.fire for room in self.damage.compartments.values()),
+                   default=0.0) / 100.0
 
     def _heard_pan(self, x: float, y: float, kind: str) -> float:
         """Where the crew hears a sound from ``x, y``: its bearing by ear
@@ -644,6 +653,7 @@ class SimMixin:
                        chaff_target=clouds.get(asm.chaff_cloud))
             if asm.state == "TREFFER":
                 hit = self.damage.missile_hit(*self._hull_impact(asm.x, asm.y))
+                self.sight_events.ship_hit(self.ship, self.sim_t, blast=True)
                 self._emit_sound("explosion", at=(asm.x, asm.y))
                 self.announce(message("runtime.hit.asm", compartments=", ".join(
                     self.damage.compartments[k].name for k in hit)),
@@ -773,6 +783,7 @@ class SimMixin:
                     impact=self._hull_impact(torpedo.x, torpedo.y),
                     hole_scale=config.clamp(20.0 / distance_m, 0.5, 3.0))
                 self.casualties_hit(hit)
+                self.sight_events.ship_hit(self.ship, self.sim_t)
                 self._emit_sound("explosion", at=(torpedo.x, torpedo.y))
                 text = ", ".join(self.damage.compartments[k].name for k in hit)
                 self.flash(message("runtime.hit.torpedo", compartments=text), 5.0)
@@ -925,9 +936,15 @@ class SimMixin:
             if torpedo.state != "HIT":
                 continue
             self._emit_sound("explosion", at=(torpedo.x, torpedo.y))
+            if not isinstance(torpedo.target, SurfaceShip):
+                self.sight_events.detonation(torpedo.x, torpedo.y, self.sim_t, "torpedo",
+                                             getattr(torpedo, "depth", 0.0))
+            elif torpedo.target.side == "hostile":
+                self.sight_events.ship_hit(torpedo.target, self.sim_t)
             if (isinstance(torpedo.target, SurfaceShip)
                     and torpedo.target.side != "hostile"):
                 torpedo.target.sunk = True
+                self.sight_events.ship_hit(torpedo.target, self.sim_t)
                 self.incident = True
                 self.live_traffic.mark_ship_destroyed(
                     getattr(torpedo.target, "live_mmsi", None))
@@ -1098,6 +1115,9 @@ class SimMixin:
         while self.sonar.echo_events:
             echo = self.sonar.echo_events.pop(0)
             self._emit_echo(echo)
+            receiver = self.helo if echo.get("mode") == "DIPPING" else self.ship
+            self.map_fx.echo("frigate", self.sim_t, receiver.x, receiver.y,
+                             echo.get("bearing"), echo.get("range_nm"))
             if echo["contact_id"] == 0:
                 self.feed.add(self.world.format_time(), "sonar",
                               message("runtime.echo.unassociated",

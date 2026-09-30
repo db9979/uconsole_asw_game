@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.107
+
+Release 1.3.107 no longer installs updates on its own. When a newer release
+is published, the start screen and the main menu show its version, its
+changelog entry in the game language and a warning when saved games of this
+version (the autosave too) will not load in it, plus the button **Update now**
+(key U or a click). Only that button installs it: on the uConsole the game
+closes, updates to the release and starts again (the old background update
+timer switches itself off); the Windows program downloads the new file in the
+background, checks it, swaps itself and restarts. Offline no notice appears.
+
 ## 1.3.106
 
 Release 1.3.106 adds a multiplayer lobby. The new main-menu entry Multiplayer

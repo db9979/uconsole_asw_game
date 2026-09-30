@@ -312,7 +312,14 @@ class Starter:
                     self.log = None
                 self._remove_status_file()
                 self._set_running(False)
-                if code in (0, 1, -15):
+                if code == update.UPDATE_EXIT_CODE:
+                    # "Update now" in the game: install the offered release.
+                    self._say(self.state_text, "launcher.state.stopped")
+                    if self.release is not None:
+                        self.install_update()
+                    else:
+                        self.check_updates()
+                elif code in (0, 1, -15):
                     self._say(self.state_text, "launcher.state.stopped")
                 else:
                     self._say(self.state_text, "launcher.state.crashed", code=code)

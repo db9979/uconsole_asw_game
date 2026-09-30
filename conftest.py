@@ -9,6 +9,8 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+# The game never asks GitHub for new releases from a test run.
+os.environ.setdefault("U_JAGD_NO_UPDATE_CHECK", "1")
 
 
 def pytest_configure(config):

@@ -6083,7 +6083,7 @@
   "launcher.update.current": "Version {version} is up to date.",
   "launcher.update.offline": "Version {version}. No update check possible (offline?).",
   "launcher.update.available": "Update {version} is available (installed: {current}).",
-  "launcher.update.install": "Install update",
+  "launcher.update.install": "Update now",
   "launcher.update.stop_first": "Stop the server before installing the update.",
   "launcher.update.downloading": "Downloading update ... {percent} %",
   "launcher.update.failed": "The update failed. Download it from the releases page.",
@@ -6345,5 +6345,12 @@
   "commander.web.lobby_player_you": "{name} (you)",
   "commander.web.lobby_countdown": "Mission starts in {seconds} s",
   "commander.web.lobby_waiting_host": "Waiting for the host to start the mission.",
-  "commander.web.lobby_ready_failed": "Ready could not be sent. Try again."
+  "commander.web.lobby_ready_failed": "Ready could not be sent. Try again.",
+  "update.available": "Update {version} available",
+  "update.installed": "Installed: {version}",
+  "update.saves_break": "Saved games of this version (the autosave too) will not load in the new version.",
+  "update.button": "U: Update now",
+  "update.button_browser": "U: Update now (release page)",
+  "update.failed": "Update failed, U: try again",
+  "update.downloading": "Downloading update … {percent} %"
 }

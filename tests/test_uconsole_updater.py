@@ -197,15 +197,18 @@ def test_setup_and_uninstall_desktop_integration(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "ensure_venv", lambda app, force_install=False: None)
     monkeypatch.setattr(module, "systemctl", lambda *args: True)
     monkeypatch.setattr(module, "desktop_dir", lambda: home / "Desktop")
+    old_units = home / ".config/systemd/user"
+    old_units.mkdir(parents=True)
+    for name in module.TIMER_UNITS:
+        (old_units / name).write_text("[Unit]\n")
     assert module.setup(ROOT) == 0
     entry = (home / ".local/share/applications/u-jagd.desktop").read_text()
     assert f'Exec="{LAUNCH}"' in entry and "Categories=Game;" in entry
     assert (home / "Desktop/u-jagd.desktop").stat().st_mode & stat.S_IXUSR
     assert (home / ".local/bin/u-jagd").resolve() == LAUNCH
-    timer = (home / ".config/systemd/user/u-jagd-update.timer").read_text()
-    assert "OnUnitActiveSec=6h" in timer
-    service = (home / ".config/systemd/user/u-jagd-update.service").read_text()
-    assert f'"{UPDATER}" update' in service
+    assert "aktualisiert sich selbst" not in entry
+    # No background timer any more; the one of older releases is removed.
+    assert not (home / ".config/systemd/user/u-jagd-update.timer").exists()
     assert module.uninstall() == 0
     assert not (home / ".local/bin/u-jagd").is_symlink()
     assert not (home / ".local/share/applications/u-jagd.desktop").exists()
@@ -314,16 +317,74 @@ def test_start_during_background_update_waits_then_starts(tmp_path, monkeypatch)
     monkeypatch.setattr(module.GameLock, "acquire", acquire)
     with pytest.raises(Execed):
         module.launch(["--windowed"])
-    assert released and calls["shown"] == [] and calls["updated"] == 1
+    assert released and calls["shown"] == [] and calls["updated"] == 0
     assert (tmp_path / ".u-jagd/updater.lock").read_text().startswith("game ")
 
 
-def test_first_start_updates_and_marks_game(tmp_path, monkeypatch):
+def test_start_never_updates_and_marks_game(tmp_path, monkeypatch):
     module = load_updater()
     calls = launch_env(module, tmp_path, monkeypatch)
     with pytest.raises(Execed):
         module.launch([])
-    assert calls["updated"] == 1 and "U_JAGD_SPLASH_FD" not in calls["env"]
+    assert calls["updated"] == 0 and "U_JAGD_SPLASH_FD" not in calls["env"]
+
+
+def test_update_now_waits_for_the_game_then_updates_and_starts(tmp_path, monkeypatch):
+    module = load_updater()
+    calls = launch_env(module, tmp_path, monkeypatch)
+    game = module.GameLock()
+    assert game.try_acquire()
+    game.set_role("game")
+    waited = []
+
+    def acquire(self, timeout_s):
+        os.close(game.fd)  # the game has saved and closed
+        waited.append(timeout_s)
+        return self.try_acquire()
+
+    monkeypatch.setattr(module.GameLock, "acquire", acquire)
+    with pytest.raises(Execed):
+        module.main(["install", "--windowed"])
+    assert waited == [module.INSTALL_WAIT_S] and calls["shown"] == []
+    assert calls["updated"] == 1
+
+
+def test_update_now_gives_up_when_the_game_stays_open(tmp_path, monkeypatch):
+    module = load_updater()
+    calls = launch_env(module, tmp_path, monkeypatch)
+    game = module.GameLock()
+    assert game.try_acquire()
+    monkeypatch.setattr(module.GameLock, "acquire", lambda self, timeout_s: False)
+    assert module.launch([], install=True) == 1
+    assert calls["updated"] == 0 and "env" not in calls
+    os.close(game.fd)
+
+
+def test_old_background_timer_only_switches_itself_off(tmp_path, monkeypatch):
+    module = load_updater()
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("U_JAGD_UPDATE_NOW", raising=False)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    units = tmp_path / "config/systemd/user"
+    units.mkdir(parents=True)
+    for name in module.TIMER_UNITS:
+        (units / name).write_text("[Unit]\n")
+    commands = []
+    monkeypatch.setattr(module, "systemctl", lambda *args: commands.append(args) or True)
+    monkeypatch.setattr(module, "update", lambda app=None: pytest.fail("installed by timer"))
+    assert module.background_update() == 0
+    assert ("disable", "--now", "u-jagd-update.timer") in commands
+    assert not any(units.iterdir())
+
+
+def test_installer_update_still_installs(tmp_path, monkeypatch):
+    module = load_updater()
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("U_JAGD_UPDATE_NOW", "1")
+    done = []
+    monkeypatch.setattr(module, "update", lambda app=None: done.append(app) or True)
+    assert module.background_update() == 0 and len(done) == 1
+    assert 'U_JAGD_UPDATE_NOW=1 python3' in INSTALL.read_text()
 
 
 def test_game_closes_start_window_pipe_once(monkeypatch):

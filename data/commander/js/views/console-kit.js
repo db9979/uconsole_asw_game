@@ -101,16 +101,18 @@ function needle(key, target, span) {
     velocity += accel * step; value += velocity * step; elapsed -= step;
   }
   needles.set(key, {value, velocity, t: now});
-  const scale = Math.max(1e-6, Math.abs(span));
+  // A gauge without a finite span settles relative to its value, so its
+  // needle never keeps the page animating.
+  const scale = finite(span) && Math.abs(span) > 0 ? Math.abs(span) : Math.max(1, Math.abs(target));
   return {value, settled: Math.abs(target - value) < scale * .002 && Math.abs(velocity) < scale * .01};
 }
 
 function paintDials(canvasId) {
   const panel = panels.get(canvasId);
-  if (!panel) return;
+  if (!panel) return false;
   panel.frame = null;
   const plot = visualContext(canvasId);
-  if (!plot) return;
+  if (!plot) return false;
   const {context: g, width, height} = plot, specs = panel.specs, colors = panel.colors;
   const fit = (columns) => {
     const rows = Math.ceil(specs.length / columns), cellW = width / columns, cellH = height / rows;
@@ -127,6 +129,7 @@ function paintDials(canvasId) {
     dial(g, x, y, radius, cellW - 10, {...spec, value: shown.value}, colors);
   });
   if (moving) panel.frame = requestAnimationFrame(() => paintDials(canvasId));
+  return true;
 }
 
 // The gauges in one, two or three rows (whichever gives the largest dials),
@@ -135,7 +138,7 @@ export function drawDialPanel(canvasId, textId, makeSpecs) {
   const colors = palette(), specs = makeSpecs(colors), previous = panels.get(canvasId);
   if (previous?.frame) cancelAnimationFrame(previous.frame);
   panels.set(canvasId, {specs, colors, frame: null});
-  paintDials(canvasId);
+  if (!paintDials(canvasId)) return;
   const box = $(textId), tag = box.tagName === "UL" ? "li" : "p";
   box.replaceChildren(...specs.map((spec) => node(tag, `${spec.label}: ${spec.text}${spec.sub ? ` (${spec.sub})` : ""}`)));
 }

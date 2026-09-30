@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.115
+## 1.3.116
 
-Version 1.3.115 gibt derselben Funktion an jeder Station dieselbe Taste, auf
+Version 1.3.116 gibt derselben Funktion an jeder Station dieselbe Taste, auf
 der Fregatte wie auf dem U-Boot. Strg+Enter ist die einzige Feuertaste (T und E
 feuern nicht mehr), Q/E zoomen überall, auch den OPZ-Radarbereich, das Fernglas
 und das Sehrohr, und Bild auf/ab blättern an jeder Station. Kurs, Fahrt und
@@ -17,6 +17,16 @@ Seefernaufklärer hat die Tasten des Helikopters, beide Luftfahrzeug-Radare
 liegen auf Strg+R, und Helikopter und ELOKA folgen dem Sonar (Shift+A Ping,
 G Freigabe an die OPZ, J Ton). Ein Klick auf das Meldungsfenster der Crew
 geht nicht mehr an eine Stationstaste darunter.
+
+## 1.3.115
+
+Version 1.3.115 setzt neue Spieler in einer sinnvollen Reihenfolge an die
+Stationen. Ein Browser, der bei offener Mehrspieler-Lobby koppelt, bekommt jetzt
+die erste freie Station der Einheit des uConsole, zuerst die Stationen, die
+Urteil brauchen: auf der Fregatte Brücke, Sonar, Waffen, Hubschrauber, OPZ,
+EloKa, Funk, Maschine und Schadensabwehr, auf dem U-Boot Führung, Sonar, Waffen,
+Mast und ESM, Navigation, Maschine und Funkraum. Die Routinestationen hält die
+KI-Crew gut. Jeder Spieler kann Einheit und Station weiter jederzeit wechseln.
 
 ## 1.3.114
 

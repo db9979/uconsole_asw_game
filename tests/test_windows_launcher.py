@@ -238,8 +238,13 @@ def test_remote_crew_flag_autostarts_crew_mode_with_status_file(monkeypatch, tmp
             calls.append(("solo", self.port, self.status_path))
 
     class FakeGame:
+        update_exit_code = 0
+
         def __init__(self, **_kwargs):
             self.commander = FakeConsole()
+
+        def start_update_check(self, mode=None, args=()):
+            calls.append(("update_check", mode))
 
         def run(self):
             calls.append("run")
@@ -250,10 +255,10 @@ def test_remote_crew_flag_autostarts_crew_mode_with_status_file(monkeypatch, tmp
     status = str(tmp_path / "s.json")
     assert entry.main(["--remote-crew", "--web-port", "9000",
                        "--status-file", status, "5"]) == 0
-    assert calls == [("crew", 9000, status), "run"]
+    assert calls == [("crew", 9000, status), ("update_check", "starter"), "run"]
     calls.clear()
     assert entry.main(["--solo-crew", "5"]) == 0
-    assert calls == [("solo", 8765, None), "run"]
+    assert calls == [("solo", 8765, None), ("update_check", None), "run"]
     for bad in (["--remote-crew", "--solo-crew"], ["--remote-crew", "--web-port", "80"],
                 ["--remote-crew", "--web-host", "--public-origin", "https://a.test"]):
         with pytest.raises(SystemExit):

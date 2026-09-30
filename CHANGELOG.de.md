@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.110
+
+Version 1.3.110 installiert Updates nicht mehr von selbst. Gibt es ein neueres
+Release, zeigen Startbildschirm und Hauptmenü dessen Version, den Eintrag aus
+dem Änderungsprotokoll in der Spielsprache und eine Warnung, wenn Spielstände
+dieser Version (auch die automatische Sicherung) damit nicht mehr laden, dazu
+den Knopf **Jetzt updaten** (Taste U oder Klick). Erst dieser Knopf installiert
+es: Auf der uConsole schließt das Spiel, aktualisiert sich auf das Release und
+startet neu (der alte Hintergrund-Update-Timer schaltet sich selbst ab); das
+Windows-Programm lädt die neue Datei im Hintergrund, prüft sie, tauscht sich
+aus und startet neu. Ohne Netz erscheint kein Hinweis.
+
 ## 1.3.109
 
 Version 1.3.109 lässt die KI jede freie Station besetzen. Die neue Crew-Hilfe

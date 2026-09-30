@@ -7,7 +7,7 @@ repository <https://github.com/db9979/uconsole_asw_game>. The target system is a
 uConsole with a Debian-based ClockworkPi distribution, particularly a CM5
 system. Commands without `sudo` run as a regular user.
 
-## 0. One-command install with automatic updates (recommended)
+## 0. One-command install with update notice (recommended)
 
 Run a single command in the uConsole terminal as your normal user (not with
 `sudo`):
@@ -25,20 +25,24 @@ The installer
 - creates the `.venv` virtual environment,
 - adds the menu entry **Games > U-Jagd**, a desktop shortcut and the command
   `~/.local/bin/u-jagd`,
-- enables a systemd user timer that checks for updates in the background three
-  minutes after boot and every six hours after that.
+- brings the checkout to the newest GitHub release and switches off the
+  background timer of older versions (up to 1.3.109).
 
-**Automatic updates:** every start from the menu, the desktop or `u-jagd` first
-fetches the newest GitHub release (tag `vX.Y.Z`, the same source as the Windows
-starter) and then starts the game; while there is no release yet, the uConsole
-follows the `main` branch. When dependencies change, `pip install -e .` runs
-automatically. Without internet the installed version starts at once: a connection test to
-GitHub (at most 2.5 s) then skips the whole update check, and a stalled git
-download gives up after 60 s at most. A new version that
-does not even start (`main.py --version` fails) is rolled back, and only the
-next version is tried again. Local changes in the checkout, a branch other than
-`main`, or a running game leave everything untouched. Log:
-`~/.u-jagd/updater.log`. Saves under `~/.u-jagd/` are not touched.
+**Updates only on request:** since 1.3.110 nothing is installed on its own.
+At start the game asks GitHub once in the background for the newest release
+(tag `vX.Y.Z`, the same source as the Windows starter). When it is newer, the
+start screen (top right) and the main menu (left of the entries) show the new version,
+its changelog entry in the game language, a warning when saved games of this
+version (the autosave too) will not load in the new update (a different save
+format), and the button **Update now** (key U or a click). Without internet no
+notice appears. Only the button closes the game and runs
+`u_jagd_updater.py install`: it waits until the game has closed, fetches the
+release, runs `pip install -e .` when dependencies changed and starts the new
+version. A new version that does not even start (`main.py --version` fails) is
+rolled back, and only the next version is tried again. Local changes in the
+checkout or a branch other than `main` leave everything untouched. A stalled
+git download gives up after 60 s at most. Log: `~/.u-jagd/updater.log`. Saves
+under `~/.u-jagd/` are not touched.
 
 **Crash log:** every game start writes a start and an end line to
 `~/.u-jagd/crash.log`. If the game ends on an error, the traceback is there;
@@ -55,18 +59,18 @@ phone; attach the file there. After a crash the main menu offers the entry at
 the next start.
 
 **Start window:** right after the click a small "U-Jagd" window shows the
-current step (checking for updates, downloading the update, installing
-dependencies, checking the new version, starting U-Jagd). It closes as soon as
-the game shows its first frame. A second start while U-Jagd is already starting
-or running opens no second game; it shows "U-Jagd is already running." for
-three seconds instead (and brings the game window to the front when `wmctrl` is
-installed). If the background update is running, the start waits for it and
-says so. `U_JAGD_NO_SPLASH=1` turns the window off.
+current step (starting U-Jagd; after **Update now** also waiting for U-Jagd to
+close, downloading the update, installing dependencies, checking the new
+version). It closes as soon as the game shows its first frame. A second start
+while U-Jagd is already starting or running opens no second game; it shows
+"U-Jagd is already running." for three seconds instead (and brings the game
+window to the front when `wmctrl` is installed). `U_JAGD_NO_SPLASH=1` turns
+the window off.
 
 Game arguments are passed through, for example `u-jagd --windowed`. Start once
-without updating: `U_JAGD_NO_UPDATE=1 u-jagd`. Always take the newest `main`
-instead of releases: `U_JAGD_UPDATE_CHANNEL=main u-jagd`. To remove the menu
-entry, command and timer (game and saves stay):
+without looking for updates: `U_JAGD_NO_UPDATE=1 u-jagd`. Take the newest
+`main` instead of releases when updating: `U_JAGD_UPDATE_CHANNEL=main`. To
+remove the menu entry and command (game and saves stay):
 
 ```sh
 sh ~/games/u-jagd/packaging/uconsole/install.sh --uninstall

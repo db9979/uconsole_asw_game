@@ -14,20 +14,21 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.113**
+Aktuelle Version: **1.3.114**
 
-Version 1.3.113 macht die uConsole komplett mit der Maus spielbar und die
-Karten und den Schiffsverkehr leichter lesbar. Ein Klick auf eine Taste in der
-Tastenleiste einer Station drückt sie (gehalten wie die Taste), nummerierte
-Reiter in der Kopfzeile wechseln die Station, ein Klick auf die Kurs-, Fahrt-
-oder Tiefenscheibe befiehlt diesen Wert, Zahleneingaben zeigen ein Tastenfeld,
-Menü- und Dialogzeilen sind anklickbar, das Mausrad blättert durch Menüs und
-ein Rechtsklick bricht ab. Jede Karte zeigt jetzt die eigene Kursspur, die
-früheren Positionen jedes Kontakts und die früheren Peilungen des gewählten
-Kontakts, und Kartenbeschriftungen weichen einander aus, statt sich zu
-verdecken. Frachter, Tanker und Passagierschiffe laufen auf festen Kursen
-zwischen Häfen und dem Rand des Seegebiets, weichen einander nach den
-Kollisionsverhütungsregeln aus und laufen vor nahen Detonationen davon.
+Version 1.3.114 lässt den Befehl eines Spielers vor der KI-Crew gelten. Im
+Mehrspieler mit Crew-Hilfe tauchte das KI-Kommando das U-Boot alle paar
+Sekunden weg und holte so das Sehrohr ein, das ein Spieler am Mast oder im
+Funkraum ausgefahren hatte; jetzt hält es das Boot auf Sehrohrtiefe, solange
+ein Spieler den Mast oben hält. Eine Station, die die KI besetzt, übersteuert
+nicht mehr, was ein Spieler an einer anderen Station befiehlt: Kurs, Tiefe und
+Ausweichen bleiben bei einem Spieler an der Navigation, Fahrt und Schleichfahrt
+bei einem im Maschinenraum, Trimm und Leckwehr bei einem am Kommando, und ein
+ausgefahrener Mast bleibt bei Alarm oben, solange ein Spieler am Kommando oder
+im Funkraum ihn hält. Auf der Fregatte steuert die KI-Brücke nicht mehr über
+einen Spieler im Maschinenraum hinweg, KI-Waffen und Seefernaufklärer behalten
+ein Ziel, das ein Spieler bestimmt hat, und ein am uConsole gewählter Kontakt
+bleibt gewählt.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

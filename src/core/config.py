@@ -1325,7 +1325,7 @@ BOAT_AI_SCOPE_LOOK_S = 24.0
 BOAT_AI_SCOPE_SWEEP_S = 16.0
 BOAT_AI_ATTACK_NM = 4.0            # convoy attack: fire at a merchant this close
 # Escort: a lone, zigzagging supply ship is fired at from farther off.
-BOAT_AI_ESCORT_ATTACK_NM = 5.0
+BOAT_AI_ESCORT_ATTACK_NM = 6.0
 # ... from this far abeam of its base track, clear of the escort ahead of it.
 BOAT_AI_ESCORT_ABEAM_NM = 5.0
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it

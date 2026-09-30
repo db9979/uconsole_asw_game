@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.113
+## 1.3.124
 
-Release 1.3.113 evens out the AI frigate and the AI submarine. In the
+Release 1.3.124 evens out the AI frigate and the AI submarine. In the
 frigate scenarios the AI hunters now run down HQ's start report of the threat
 and a lost submarine bearing, ping a bare bearing only every 10 minutes so a
 ping that finds nothing no longer sends the submarine running, and no longer
@@ -17,7 +17,141 @@ stays by its patrol position with no patrol aircraft, and against a
 breakthrough or reconnaissance it fires its own torpedo from 3 NM and keeps its
 helicopter within 8 NM. The breakthrough submarine skirts the frigate's patrol
 position, the reconnaissance report counts within 5 NM and the convoy
-submarine fires from 3 NM. Saves move to format v41 (the hunters' leads).
+submarine fires from 3 NM. Saves move to format v43 (the hunters' leads).
+
+## 1.3.123
+
+The submarine gets a towed buoy antenna. In the radio room (B, or the browser's
+Radio room card) the crew streams it about 280 m astern; it copies HQ's
+broadcast down to 60 m at 6 kn or less, receiving only. Above 10 kn the cable
+parts and the buoy is lost for the mission. Close in, the frigate's lookout and
+surface radar can find the small buoy on the water. Saves are now format v42;
+older saves do not load.
+
+## 1.3.122
+
+Release 1.3.122 makes the browser stations steadier to operate. A drop-down
+list that is open or in use, such as the ESM classification on the submarine,
+the fire-control target or the wire, torpedo type and damage-team choices, no
+longer closes or loses its choice when the station updates; it catches up once
+it is left. Buttons in updating lists (ESM emitters, tubes, bulkheads, radio
+channels and tasks, crew and patrol-aircraft orders) stay in place, so a click
+is no longer lost when an update lands mid-click. Saves stay format v41.
+
+
+## 1.3.121
+
+Emergencies aboard join the incidents at sea. A man can go overboard from the
+frigate: the general alarm sounds, a drifting mark goes on the chart, and the
+Bridge recovers him within 0.1 NM at 5 kn or less, or the helicopter hovering
+over him (+100 points; lost after 20 minutes, -300). The steering gear can
+fail: the rudder jams for 60 s, then turns at half rate from the emergency
+position for 10 minutes. On a diesel submarine the snorkel head valve can jam
+(no charging for 15 minutes; the AI boat stays deep) or battery gas has to be
+vented (half charging rate). The Bridge crew assist steers onto a man overboard
+itself. Up to six incidents per mission.
+
+## 1.3.120
+
+Release 1.3.119 adds shipboard atmosphere to the sound. Action stations on the
+frigate ring the general alarm bell through the ship, and in a heavy head sea
+at speed the bow is heard slamming each time it pitches down hard. The
+submarine rings only a quiet alarm bell, and its ventilation fans are heard
+running down when silent running starts and up again when it ends. The uConsole
+and the Remote Crew browsers play the same cues, all synthesized at runtime.
+
+## 1.3.119
+
+Release 1.3.118 lets you choose the weather and the time of day. Every
+scenario's briefing, the campaign screen before sailing, the multiplayer lobby
+and the browser's "New game" dialog now offer weather (random, fair, rain,
+storm, fog) and time of day (random, dawn, day, dusk, night); random keeps what
+the seed gives. A chosen weather holds for the whole mission with its sea state
+in a matching band, and the clock runs on from the chosen time.
+
+## 1.3.118
+
+Release 1.3.117 lets the eye find a raised periscope. A periscope or snorkel
+head of a dived submarine now pulls a feather that grows with speed: the bridge
+lookout, the phone lookout and the crews of the helicopter and the patrol
+aircraft see the full plume from 8 kn at almost 3 NM on a clear, calm day, a
+slow head only at about 1 NM, and hardly anything at night or in a heavy sea.
+Close in the lookout recognizes the periscope and calls it with a banner;
+aircrew sightings reach Operations as HELO-EYE and MPA-EYE tracks. This works
+the same for AI boats and the crewed submarine, whose crew warns "feather
+visible, reduce speed" when it runs faster than 5 kn with a mast up.
+
+## 1.3.117
+
+Release 1.3.117 brings the sea to life. The eyepieces show water columns, fire,
+smoke and sinkings; charts move smoothly and pings and detonations ring out;
+needles and the telegraph move with mass and the telegraph bell rings; the
+periscope comes up out of the water with water on the glass. A red light comes
+on at night and on an alarm (switchable), and the station tabs carry alarm lamps
+on both sides, on the uConsole and in the browser. After a mission the debrief
+plays back at 10x or 60x, in the browser too. At night warm water glows where it
+is stirred, so wakes and torpedo tracks are seen farther on both sides. A hard
+turn at speed leaves a knuckle, a bubble slick that masks sonar, gives a false
+echo and can lure a wake-homing torpedo. Wrecks and rocks return echoes and
+wrecks give MAD anomalies. Storms bring lightning in the eyepieces, thunder,
+heavier rain and sferics that crackle on ESM and spread HF/DF bearings. In a
+heavy sea the helicopter launches and lands only in a quiet period; a deck-
+motion gauge shows it, and slowing down helps. Saves are now format v41; older
+saves do not load.
+
+
+## 1.3.116
+
+Release 1.3.116 gives the same function the same key at every station, on the
+frigate and on the submarine. Ctrl+Enter is the only fire key (T and E no
+longer fire), Q/E zoom everywhere including the CIC radar range, the
+binoculars and the periscope, and Page Up/Down turn the pages of every
+station. Course, speed and depth are entered with C/V/D on both sides and the
+torpedo run depth with T. The submarine now uses the frigate's G for action
+stations, A for silent running, V for the decoy and W/M/U on its crew page;
+the patrol aircraft takes the helicopter's keys, both aircraft radars sit on
+Ctrl+R, and the helicopter and ELOKA follow the sonar (Shift+A ping, G release
+to CIC, J audio). A click on the crew message box is no longer taken by a
+station key underneath it.
+
+## 1.3.115
+
+Release 1.3.115 seats new players in a sensible order. A browser that pairs
+while the multiplayer lobby is open now takes the first free station of the
+uConsole's unit, the stations that need judgement first: on the frigate Bridge,
+Sonar, Weapons, Helicopter, OPZ, ELOKA, Radio, Engine and Damage control, on the
+submarine Command, Sonar, Weapons, Mast and ESM, Navigation, Engine room and
+Radio room. The AI crew keeps the routine stations well. Every player can still
+change unit and station at any time.
+
+## 1.3.114
+
+Release 1.3.114 makes a player's order win over the AI crew. In multiplayer
+with the crew assist, the AI command dived the submarine every few seconds and
+so pulled down the periscope a player had raised at the mast or in the radio
+room; it now keeps the boat at periscope depth while a player holds the mast
+up. A station the AI mans no longer overrides what a player at another station
+commands: course, depth and evasion stay with a player at Navigation, speed and
+silent running with one in the engine room, trim and damage control with one
+at command, and a raised mast stays up on an alarm while a player at command or
+in the radio room holds it. On the frigate the AI Bridge no longer steers over
+a player in the engine room, the AI weapons and patrol aircraft keep a target a
+player designated, and a contact picked on the uConsole stays picked. A lobby round started
+without any browser is now a solo game with the crew assist off.
+
+## 1.3.113
+
+Release 1.3.113 lets you play the uConsole entirely with the mouse and makes
+the charts and the sea traffic easier to read. A click on a key in a
+station's key bar presses it (held like the key), numbered tabs in the top bar
+switch stations, a click on the course, speed or depth dial orders that value,
+numeric entries show a keypad, menu and dialog rows are clickable, the wheel
+moves through menus and a right click cancels. Every chart now draws the own
+track, the earlier positions of each contact and the earlier bearings of the
+selected contact, and chart labels move aside instead of covering each other.
+Cargo ships, tankers and passenger ships steam on steady courses between ports
+and the edge of the sea area, give way to each other under the collision
+regulations and run from nearby detonations.
 
 ## 1.3.112
 

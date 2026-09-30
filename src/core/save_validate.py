@@ -40,7 +40,7 @@ from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
-from src.core import baffles
+from src.core import baffles, buoy_antenna
 from src.core.incidents import IncidentBoard
 from src.core.hq_reports import HqReports
 from src.weapons import rbu
@@ -147,6 +147,7 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
             or orders["salvo"] not in (1, 2) or type(orders["salvo"]) is not int
             or orders["battery_state"] not in CREW_BATTERY_STATES
             or not baffles.valid_state(orders["baffle_clear"])
+            or not buoy_antenna.valid_state(orders["buoy"])
             or not (orders["obstacle_ahead_nm"] is None
                     or bounded(orders["obstacle_ahead_nm"], 0.0, 10_000.0))):
         return False
@@ -512,11 +513,18 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             data.get("casualties"), {row.get("id") for row in data.get("subs", ())
                                      if isinstance(row, dict)}):
         return False
+    # Save v41: the bubble slicks of hard turns (knuckles); none laid after
+    # the save time (a boat that laid one may be gone since).
+    from src.world.knuckles import KnuckleField
+    knuckles = data.get("knuckles")
+    if (not KnuckleField.valid(knuckles)
+            or any(row["t"] > save_sim_t for row in knuckles)):
+        return False
     # Save v39: the AI hunters' ESM bearing lines.
     from src.core import hunter
     if not hunter.valid_esm_log(data.get("hunter_esm"), save_sim_t):
         return False
-    # Save v41: the AI hunters' lead.
+    # Save v43: the AI hunters' lead.
     if not hunter.valid_lead(data.get("hunter_lead"), save_sim_t):
         return False
     # Save v37: the ASW rocket launcher.
@@ -710,6 +718,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     if (any(not bounded(ship[key], -100.0, 100.0)
             for key in ("roll_rate", "pitch_rate"))
             or not bounded(ship["clock"], 0.0, 1e12)
+            or not bounded(ship["deck_quiet_s"], 0.0, 3600.0)
             or not isinstance(wake, list)
             or len(wake) > ship_dynamics.HULL.wake_max_points
             or any(not isinstance(point, list) or len(point) != 4
@@ -1727,7 +1736,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             or not 0 <= world["sea_state"] <= 6
             or not bounded(world["weather_shift_timer"], 0.0,
                            config.WEATHER_SHIFT_PERIOD_S)
-            or world["weather_override"] not in (None, "rain", "storm", "fog")
+            or world["weather_override"] not in (None, "fair", "rain", "storm", "fog")
             or not OceanEnvironment.valid_state(world["ocean"])
             or not Coastline.valid_snapshot(world["coast"])):
         return False

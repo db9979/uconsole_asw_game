@@ -15,6 +15,17 @@ import pygame
 
 # Bow wave, wake and rotor wash: the colour of broken water.
 FOAM = (215, 225, 225)
+# Stirred water lit by plankton at night (``set_glow``, bioluminescence).
+GLOW = (70, 235, 205)
+_foam = FOAM
+
+
+def set_glow(level: float) -> None:
+    """Wakes and torpedo tracks glow blue-green by ``level`` (0..1) until the
+    next call; the eyepiece sets it from its sky and resets it after."""
+    global _foam
+    k = max(0.0, min(1.0, float(level)))
+    _foam = tuple(int(a + (b - a) * k) for a, b in zip(FOAM, GLOW))
 # Below this drawn length the details merge into the fill.
 DETAIL_MIN_PX = 40
 
@@ -209,7 +220,7 @@ def draw_wake(s, frame: _Frame, width: float, t: float) -> None:
         phase = (t * 1.7 + i * 0.33) % 1.0
         reach = width * (0.01 + 0.035 * phase)
         rise = width * 0.018 * (1.0 - phase)
-        pygame.draw.line(s, FOAM, (bx + fwd * reach * 0.3, by),
+        pygame.draw.line(s, _foam, (bx + fwd * reach * 0.3, by),
                          (bx + fwd * reach, by - rise), 1)
     sx, sy = frame.point(1.0, 0.0)
     step = max(3.0, width * 0.04)
@@ -219,7 +230,7 @@ def draw_wake(s, frame: _Frame, width: float, t: float) -> None:
         if start > width * 0.35:
             break
         x0 = sx - fwd * start
-        pygame.draw.line(s, FOAM, (x0, sy), (x0 - fwd * step * 0.8, sy), 1)
+        pygame.draw.line(s, _foam, (x0, sy), (x0 - fwd * step * 0.8, sy), 1)
 
 
 def _draw_rotor(s, frame: _Frame, profile: dict, color, t: float) -> None:
@@ -297,6 +308,21 @@ def draw_nav_lights(s, cls: str, frame: _Frame, width: float, code: str,
         glow = tuple(int(c * 0.45) for c in color)
         pygame.draw.circle(s, glow, (int(x), int(y)), core + 2)
         pygame.draw.circle(s, color, (int(x), int(y)), core)
+
+
+def draw_bubble_track(s, cx: float, base_y: float, width: float, t: float = 0.0) -> None:
+    """The bubble track of a running torpedo on the sea: a pale streak with
+    bubbles breaking along it (display clock ``t``)."""
+    width = max(3.0, float(width))
+    left = cx - width / 2.0
+    pygame.draw.line(s, _foam, (left, base_y + 1), (left + width, base_y + 1),
+                     max(1, min(3, int(width // 40) + 1)))
+    count = max(3, min(18, int(width / 8)))
+    for k in range(count):
+        phase = (t * 0.7 + k * 0.618) % 1.0
+        x = left + width * ((k + 0.5) / count)
+        radius = max(1, int(1 + 2 * math.sin(math.pi * phase)))
+        pygame.draw.circle(s, _foam, (int(x), int(base_y + 1)), radius, 1)
 
 
 def draw_profile(s, cls: str, cx: float, base_y: float, width: float, color, *,

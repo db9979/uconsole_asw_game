@@ -9,6 +9,8 @@ import { node, position } from "./dom.js";
 import { visualContext } from "./visual-common.js";
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { roleMapSweepCanvas, roleMapSweepCtx } from "./canvases.js";
+import { labelField, placeText } from "./label-layout.js";
+import { drawAfterglow, drawFurthestOn, drawMapFx, furthestOnNm, mapFxActive } from "./map-fx.js";
 
 export function mapPayload(role) {
   const payload = S.v2State[role];
@@ -67,10 +69,13 @@ export function updateOpzSweepSample(state) {
   const rate = finite(radar.sweep_rate_deg_s) ? radar.sweep_rate_deg_s : 90;
   S.opzSweepSample = {offset: wrap360(radar.sweep_bearing - state.clock.sim * rate), rate};
 }
+// The overlay animates while the OPZ radar turns or a moving mark (ping
+// wavefront, echo, splash) is still on the chart.
 function opzSweepActive() {
   const radar = S.v2State?.role === "opz" ? S.v2State.opz.radar : null;
-  return S.connected && !document.hidden && navigator.onLine !== false && S.opzSweepSample?.rate > 0 && S.v2State?.phase === "live" &&
-    radar?.live === true && (radar.surface || radar.air) && !$("role-map").closest("[hidden]") &&
+  const sweeping = S.opzSweepSample?.rate > 0 && radar?.live === true && (radar.surface || radar.air);
+  return S.connected && !document.hidden && navigator.onLine !== false && S.v2State?.phase === "live" &&
+    (sweeping || mapFxActive(S.v2State?.plot?.fx)) && !$("role-map").closest("[hidden]") &&
     $("role-map").clientWidth > 0 && $("role-map").clientHeight > 0;
 }
 export function stopOpzSweepAnimation() {
@@ -238,6 +243,9 @@ function drawOpzSweepOverlay() {
   }
   resizeCanvas(roleMapSweepCanvas, roleMapSweepCtx, width, height);
   roleMapSweepCtx.clearRect(0, 0, width, height);
+  const role = S.v2State?.role, fxGeometry = role ? roleMapGeometry(role, width, height) : null;
+  // Marks spread only while the mission runs; after the end they hold still.
+  if (fxGeometry && S.v2State?.plot?.fx && S.v2State.phase === "live") drawMapFx(roleMapSweepCtx, S.v2State.plot.fx, fxGeometry.point, fxGeometry.scale);
   const radar = S.v2State?.role === "opz" ? S.v2State.opz.radar : null;
   const own = S.v2State?.role === "opz" ? S.v2State.opz.own_assets.ship : null;
   if (!radar?.live || !(radar.surface || radar.air) || !hasPosition(own)) return;
@@ -254,6 +262,7 @@ function drawOpzSweepOverlay() {
   const reach = Math.max(radar.surface ? radar.surface_effective_range_nm : 0,
     radar.air ? radar.air_effective_range_nm : 0);
   const length = reach * geometry.scale;
+  drawAfterglow(roleMapSweepCtx, ox, oy, length, bearing);
   roleMapSweepCtx.strokeStyle = palette().accent;
   roleMapSweepCtx.lineWidth = 1.5;
   roleMapSweepCtx.beginPath();
@@ -326,6 +335,8 @@ export function drawRoleMap(role) {
   drawChartHazards(plot.context, geo?.hazards || [], point, plot.width, plot.height,
     Math.abs(point(1, 0)[0] - point(0, 0)[0]), S.roleMapInfo);
   const [ox, oy] = hasPosition(data.own) ? point(data.own.x, data.own.y) : [plot.width / 2, plot.height / 2];
+  const labels = labelField(plot.width, plot.height);
+  labels.reserve(ox - 12, oy - 12, 24, 24);
   if (hasPosition(data.own)) {
     addRoleMapHit(null, ox, oy);
     addMapInfo(S.roleMapInfo, ox, oy, "own", data.own);
@@ -351,6 +362,8 @@ export function drawRoleMap(role) {
       addRoleMapHit(row.ref, x, y);
       addMapInfo(S.roleMapInfo, x, y, "track", row);
       if (finite(row.range_uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, row.range_uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
+      // Furthest-on circle: how far the contact can have gone since its fix.
+      if (role === "opz") { const reach = furthestOnNm(row.domain, row.age_s); if (reach !== null) drawFurthestOn(plot.context, x, y, reach * scale); }
       // Same NATO symbol as the chart and the uConsole: affiliation frame + domain glyph.
       const symbolColor = colors[row.affiliation] || colors.UNKNOWN;
       drawNatoSymbol(plot.context, x, y, row.affiliation, row.domain, symbolColor, 7);
@@ -358,7 +371,8 @@ export function drawRoleMap(role) {
       plot.context.lineWidth = isSelected ? 3 : 1;
       if (isSelected) { plot.context.beginPath(); plot.context.arc(x, y, 14, 0, Math.PI * 2); plot.context.stroke(); }
       plot.context.fillStyle = symbolColor;
-      plot.context.fillText(row.label || row.ref, x + 12, y - 10);
+      labels.reserve(x - 10, y - 10, 20, 20);
+      placeText(plot.context, labels, String(row.label || row.ref), x + 12, y - 10);
       if (finite(row.course)) {
         const angle = row.course * Math.PI / 180, tipX = x + Math.sin(angle) * 22, tipY = y - Math.cos(angle) * 22;
         plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(tipX, tipY); plot.context.stroke();
@@ -404,7 +418,7 @@ export function drawRoleMap(role) {
       plot.context.stroke();
     } else if (finite(item.uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, item.uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
     plot.context.strokeRect(x - 4, y - 4, 8, 8);
-    plot.context.fillStyle = plot.context.strokeStyle; plot.context.fillText(item.waypoint ? item.display || t("station_waypoint") : item.display || item.ref || t("helicopter"), x + 6, y + 12);
+    plot.context.fillStyle = plot.context.strokeStyle; placeText(plot.context, labels, String(item.waypoint ? item.display || t("station_waypoint") : item.display || item.ref || t("helicopter")), x + 6, y + 12);
   }
   if (role === "opz") {
     // Bare mast/snorkel echoes: an afterglow dot, no symbol; a click marks it.
@@ -432,5 +446,5 @@ export function drawRoleMap(role) {
   equivalent.push(...data.observations.map((row) => t("role_map_observation", {ref: row.ref, bearing: number(row.bearing, 0), position: hasPosition(row) ? position(row) : t("bearing_only")})));
   equivalent.push(...data.fixes.map((row) => t("role_map_fix", {ref: row.ref, position: position(row), uncertainty: number(row.uncertainty_nm, 1)})));
   $("role-map-text").replaceChildren(...equivalent.slice(0, 256).map((text) => node("li", text)));
-  if (role === "opz") drawOpzSweepOverlay();
+  drawOpzSweepOverlay();
 }

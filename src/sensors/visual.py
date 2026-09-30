@@ -23,6 +23,8 @@ from __future__ import annotations
 
 import math
 
+from src.physics import bioluminescence
+
 KOSCHMIEDER = 3.912
 EPS0 = 0.02
 ALPHA0_RAD = math.radians(1.0 / 60.0) * 3.0     # ~3 arcmin knee
@@ -38,7 +40,20 @@ TARGET_HEIGHT_M = {
     "FLG": 6.0,        # apparent size of an aircraft
     "TORP": 1.0,       # bubble track
     "LAND": 50.0,      # coastal hills and cliffs
+    "MAST": 1.5,       # raised periscope/snorkel head and its feather
 }
+
+# The feather a raised mast pulls through the water: a bare head at rest is
+# a fraction of the contrast, the full white plume shows from this speed.
+FEATHER_BARE_FRACTION = 0.15
+FEATHER_FULL_KN = 8.0
+
+
+def feather_strength(speed_kn: float) -> float:
+    """Contrast factor of a raised mast's feather (0..1) at ``speed_kn``:
+    a still head shows little, the plume grows with the speed."""
+    fraction = min(max(float(speed_kn) / FEATHER_FULL_KN, 0.0), 1.0)
+    return FEATHER_BARE_FRACTION + (1.0 - FEATHER_BARE_FRACTION) * fraction ** 1.5
 
 
 def optical_horizon_nm(eye_m: float, target_m: float) -> float:
@@ -114,14 +129,17 @@ class LookoutModel:
     def margin(self, kind: str, range_nm: float, *, visibility_nm: float,
                night: bool, illumination: float, sea_state: float,
                altitude_m: float | None = None, detail: float = 1.0,
-               eye_m: float = LOOKOUT_EYE_HEIGHT_M) -> float:
+               eye_m: float = LOOKOUT_EYE_HEIGHT_M, glow: float = 0.0) -> float:
         """Apparent contrast over threshold (>= 1 means seen).
 
         ``detail`` > 1 asks for a finer resolved feature (Johnson cycles
         over relative target size): the resolved height shrinks by that
         factor, the horizon still belongs to the whole target.  ``eye_m``
         is the observer's eye height (the frigate's lookout by default, a
-        periscope sits just above the water)."""
+        periscope sits just above the water).  ``glow`` (0..1) is how
+        strongly the target's wake lights up plankton at night
+        (``src/physics/bioluminescence.py``): it takes back part of the
+        night's contrast penalty."""
         height = TARGET_HEIGHT_M[kind]
         top = height if altitude_m is None else max(height, altitude_m)
         if range_nm > optical_horizon_nm(eye_m, top):
@@ -132,7 +150,10 @@ class LookoutModel:
             # not against the whitecaps.
             eps *= 1.0 + SEA_CLUTTER_PER_STATE * max(0.0, sea_state)
         if night:
-            eps *= self.night_factor(illumination)
+            factor = self.night_factor(illumination)
+            if glow > 0.0:
+                factor **= bioluminescence.night_exponent(glow)
+            eps *= factor
         return apparent_contrast(self.c0[kind], range_nm, visibility_nm) / eps
 
     def sighting_range_nm(self, kind: str, *, visibility_nm: float, night: bool,

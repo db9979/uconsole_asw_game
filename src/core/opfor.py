@@ -15,13 +15,13 @@ import math
 
 from src.audio.synthesis import bearing_pan
 from src.core.callouts import CalloutLog
-from src.core import baffles, config, detrand
+from src.core import baffles, buoy_antenna, config, detrand
 from src.core.boat_esm import BoatESM
 from src.core.boat_radio import BoatRadio
 from src.core.crew import CrewState
 from src.core.i18n import message
 from src.core.plot import PlotLayer
-from src.physics import torpedo_dyn
+from src.physics import bioluminescence, torpedo_dyn
 from src.sensors import lookout_id
 from src.sensors import nav_lights
 from src.core import optics
@@ -73,7 +73,8 @@ class CrewOrders:
               "buoy_splash": "sonar", "evade": "navigation",
               "evade_decoy": "navigation",
               "mast_lowered": "navigation", "esm_intercept": "sonar",
-              "obstacle_ahead": "navigation",
+              "obstacle_ahead": "navigation", "feather_visible": "navigation",
+              "buoy_streamed": "funk", "buoy_recovered": "funk", "buoy_torn": "funk",
               "sighting_warship": "sonar", "sighting_merchant": "sonar",
               "sighting_aircraft": "sonar", "sighting_torpedo": "sonar",
               "sighting_unknown": "sonar",
@@ -101,6 +102,8 @@ class CrewOrders:
               "test_depth_near": "navigation", "test_depth_over": "navigation",
               "incident_net": "funk", "incident_front": "funk",
               "incident_whales": "funk", "net_fouled": "navigation",
+              "incident_valve": "navigation", "incident_valve_end": "navigation",
+              "incident_gas": "schaden", "incident_gas_end": "schaden",
               "baffles_clearing": "navigation", "baffles_cleared": "navigation",
               "hf_frigate": "funk", "rbu_splash": "sonar",
               "wounded": "schaden"}
@@ -137,6 +140,8 @@ class CrewOrders:
         self._last_course = None
         # A running baffle clearing (``baffles.py``), or None.
         self.baffle_clear = None
+        # The towed buoy antenna (save v42): [payout, ordered out, lost].
+        self.buoy = buoy_antenna.new_state()
         # Local fire-control presets (the web sends them with each shot).
         self.torpedo_depth = None
         self.salvo = 1
@@ -146,6 +151,11 @@ class CrewOrders:
         self._battery_state = "ok"
         self._keel_warned = False
         self._obstacle_warned = False
+        # Feather warning edge; None until first seen (never saved: a loaded
+        # boat takes the current state without a repeated warning).
+        self._feather_warned = None
+        # Silent running as last heard (fan cue edge; transient like above).
+        self._silent_heard = None
         # Chart check along the ordered course (0.25 s cadence), for the displays.
         self.obstacle_ahead_nm = None
         # Intercepts not yet stamped by the crew update (never saved; see
@@ -202,7 +212,8 @@ class CrewOrders:
             obstacle_warned=self._obstacle_warned,
             obstacle_ahead_nm=self.obstacle_ahead_nm,
             baffle_clear=(None if self.baffle_clear is None
-                          else [float(value) for value in self.baffle_clear]))
+                          else [float(value) for value in self.baffle_clear]),
+            buoy=[float(self.buoy[0]), bool(self.buoy[1]), bool(self.buoy[2])])
 
     def restore(self, data: dict) -> None:
         """Restore a validated ``crew.orders`` block in place."""
@@ -235,6 +246,7 @@ class CrewOrders:
         self.obstacle_ahead_nm = data["obstacle_ahead_nm"]
         self.baffle_clear = (None if data["baffle_clear"] is None
                              else [float(value) for value in data["baffle_clear"]])
+        self.buoy = [float(data["buoy"][0]), data["buoy"][1], data["buoy"][2]]
 
 
 class CrewWire:
@@ -597,7 +609,8 @@ def obstacle_ahead_nm(world, sub):
     return None
 
 
-BOAT_CUES = ("hull_creak", "hull_crack", "detonation_near", "detonation_far", "ping_heard")
+BOAT_CUES = ("hull_creak", "hull_crack", "detonation_near", "detonation_far", "ping_heard",
+             "thunder")
 # Intercepts the crew hears through the hull as a ping.
 _PING_INTERCEPTS = ("hull", "dipping", "buoy")
 _HULL_FAILURES = ("hull_bolts", "hull_seal", "hull_fracture", "hull_collapse")
@@ -684,11 +697,15 @@ def clear_baffles(game, boat: CrewedBoat):
     return True
 
 
-def update_crew(game, boat: CrewedBoat) -> None:
+def update_crew(game, boat: CrewedBoat, dt: float = 0.0) -> None:
     """Crew warnings from the boat's own state (0.25 s cadence)."""
     sub, orders = boat.sub, boat.orders
     if sub.sunk:
         return
+    buoy = buoy_antenna.step(orders.buoy, dt, sub.speed)
+    if buoy is not None:
+        orders.event(buoy, **({"speed": f"{config.UBOOT_BUOY_TEAR_KN:.0f}"}
+                              if buoy == "buoy_torn" else {}))
     orders.baffle_clear, back = baffles.step(orders.baffle_clear, sub.order_course,
                                              game.sim_t)
     if back is not None and sub.set_orders(course=back) is True:
@@ -711,6 +728,15 @@ def update_crew(game, boat: CrewedBoat) -> None:
     if ahead is not None and sub.order_speed > 0.0 and not orders._obstacle_warned:
         orders.event("obstacle_ahead", distance=f"{ahead:.1f}")
     orders._obstacle_warned = ahead is not None and sub.order_speed > 0.0
+    feather = bool(orders.mast and not sub.sunk and sub.depth <= MAST_DEPTH_M
+                   and sub.speed > config.UBOOT_FEATHER_WARN_KN)
+    if feather and orders._feather_warned is False:
+        orders.event("feather_visible", speed=f"{config.UBOOT_FEATHER_WARN_KN:.0f}")
+    orders._feather_warned = feather
+    # Silent running: the ventilation fans run down (and up again after).
+    if orders._silent_heard is not None and orders.silent != orders._silent_heard:
+        boat_sound(game, boat, "fans_down" if orders.silent else "fans_up")
+    orders._silent_heard = orders.silent
     pinged = None
     for kind, bearing, level in orders._pending_intercepts:
         boat.intercepts.append(dict(t=float(game.sim_t), kind=kind, bearing=bearing,
@@ -827,6 +853,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     now = game.sim_t
     seed = int(sub.sensor_seed)
     environment = game._lookout_environment()
+    bloom = game.world.glow()
     epoch = math.floor((now + 1e-9) / config.LOOKOUT_EPOCH_S)
     previous = {row["ref"]: row for row in orders.sightings}
     rows = []
@@ -839,6 +866,8 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         dx, dy = actor.x - sub.x, actor.y - sub.y
         distance = math.hypot(dx, dy)
         kind = SIGHTING_KINDS[cls]
+        environment["glow"] = bioluminescence.wake_glow(bloom, kind,
+                                                        getattr(actor, "speed", 0.0))
         margin = alert * _SCOPE_MODEL.margin(kind, distance, altitude_m=altitude_m,
                                              eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M,
                                              **environment)
@@ -974,6 +1003,7 @@ def send_ping(game, boat: CrewedBoat):
     result = boat.sub.command_ping()
     if result is not True:
         return result
+    game.map_fx.ping(("boat", boat.sub.id), game.sim_t, boat.sub.x, boat.sub.y)
     sonar.queue_ping(boat.station.observer, boat.sonar_targets(game), game.world,
                      game.sim_t, 1.0, mode="BOW")
     return True

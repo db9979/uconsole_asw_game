@@ -119,6 +119,7 @@ def test_real_replacements_still_revoke_on_next_pump(game, paired_menu, change):
         if change == "difficulty":
             key(game, pygame.K_DOWN)
             key(game, pygame.K_RIGHT)
+            key(game, pygame.K_RETURN)  # Difficulty -> briefing.
         key(game, pygame.K_RETURN)
     assert game.world is not world and game.sonar is not sonar
     assert server.connected and game.commander.bridge.allowed

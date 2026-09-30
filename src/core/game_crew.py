@@ -10,6 +10,7 @@ them exactly (``_apply_crew_effects``).
 from __future__ import annotations
 
 from src.core import crew as crew_model
+from src.core import opfor
 from src.core.crew import CrewState
 from src.core.i18n import message
 
@@ -63,6 +64,9 @@ class CrewMixin:
         if not self.crew_watch.set_action_stations(enabled, self.sim_t):
             return "not_ready"
         self._crew_notice("crew.action_stations_on" if enabled else "crew.action_stations_off")
+        if enabled:
+            # The general alarm rings through the ship.
+            self._emit_sound("general_alarm")
         self._apply_crew_effects()
         return True
 
@@ -88,6 +92,9 @@ class CrewMixin:
             return "not_ready"
         self._boat_crew_notice(boat, "crew.action_stations_on" if enabled
                                else "crew.action_stations_off")
+        if enabled:
+            # Submerged the boat rings only its quiet alarm bell.
+            opfor.boat_sound(self, boat, "alarm_bell")
         self._apply_crew_effects()
         return True
 

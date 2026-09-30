@@ -13,7 +13,7 @@ from src.core import config
 from src.core.i18n import (display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.ui.plot_view import draw_plot
-from src.ui import chart_symbols, layout, lines, theme
+from src.ui import chart_symbols, chart_trails, label_layout, layout, lines, map_fx_view, theme
 from src.world import atmosphere
 from src.ui import nato_symbols
 from src.ui import observations
@@ -304,16 +304,28 @@ def _visible_landmasses(coast, view, rect):
             and land.bounds[3] >= top and land.bounds[1] <= bottom]
 
 
-def _map_label(surface, game, text, pos, color, chart) -> None:
-    """Label beside a chart symbol, flipped left/down so it is never cut off."""
+def _map_label(surface, game, text, pos, color, chart, candidates=None,
+               size=None) -> None:
+    """Label beside a chart symbol, flipped left/down so it is never cut off.
+
+    Inside a :func:`label_layout.label_scope` the label also steps aside
+    from labels placed before it (``candidates`` overrides the default
+    positions around ``pos``)."""
     shown = localize(text)
-    face = game.font
+    face = layout.font(size) if size else game.font
     width, height = face.size(shown)
     chart = pygame.Rect(chart)
-    x, y = pos
-    if x + width > chart.right - 2:
-        x = max(chart.x + 2, pos[0] - width - 24)
-    y = min(max(y, chart.y + 2), chart.bottom - height - 2)
+    field = label_layout.active()
+    if field is not None:
+        if callable(candidates):
+            candidates = candidates((width, height))
+        x, y = field.place((width, height), candidates
+                           or label_layout.around(pos, (width, height))).topleft
+    else:
+        x, y = pos
+        if x + width > chart.right - 2:
+            x = max(chart.x + 2, pos[0] - width - 24)
+        y = min(max(y, chart.y + 2), chart.bottom - height - 2)
     with layout.clip_to(surface, chart):
         image = face.render(shown, True, color)
         rendered = image.get_rect(topleft=(int(x), int(y)))
@@ -472,8 +484,22 @@ def draw_map_view(game, tr=None) -> None:
 
     # See-Hintergrund; bleibt auch ausserhalb der Weltgrenzen sichtbar.
     pygame.draw.rect(s, chart_background(game), r)
-    with layout.clip_to(s, r):
+    with layout.clip_to(s, r), label_layout.label_scope(r) as labels:
+        # Own ship first: no label may cover it.
+        ox, oy = view.world_to_screen(game.ship.x, game.ship.y)
+        labels.reserve((int(ox) - 10, int(oy) - 10, 20, 20))
         draw_chart_geography(game, view, r)
+        history = getattr(game, "chart_history", None)
+        if history is not None:
+            chosen = game.selected_contact or game.target
+            chart_trails.draw_side(
+                s, history.sides.get("frigate"), view, r, chart_background(game),
+                own_now=(game.ship.x, game.ship.y),
+                selected_bearing_key=getattr(chosen, "id", None))
+        fx = getattr(game, "map_fx", None)
+        if fx is not None:
+            map_fx_view.draw_fx(s, fx.rows("frigate", game.sim_t), view.world_to_screen,
+                                view.scale, r, chart_background(game))
 
         tracks = game.radar_tracks()
 
@@ -553,11 +579,10 @@ def draw_map_view(game, tr=None) -> None:
             pygame.draw.circle(s, color, (px, py), radius, 1)
             lines.line(s, color, (px - 6, py), (px + 6, py), 1)
             lines.line(s, color, (px, py - 6), (px, py + 6), 1)
-            layout.blit_line(
-                s, message("map.line.sonar_fix",
-                           contact=observations.contact_display_id(game, contact),
-                           source=fix["source"]),
-                (px + 9, py - 19, 180, 18), color, size=12)
+            _map_label(s, game, message(
+                "map.line.sonar_fix",
+                contact=observations.contact_display_id(game, contact),
+                source=fix["source"]), (px + 9, py - 19), color, r, size=12)
 
         contact = game.selected_contact or game.target
         if contact is not None:
@@ -629,9 +654,8 @@ def draw_map_view(game, tr=None) -> None:
             else:
                 radius = max(4, int(fix["sigma_nm"] * view.scale))
                 pygame.draw.circle(s, config.COLOR_ESM, (int(px), int(py)), radius, 1)
-            layout.blit_line(s, message("map.hfdf_fix", label=fix["label"], age=f"{age:.0f}"),
-                             (int(px) + 8, int(py) - 20, 350, 20),
-                             config.COLOR_ESM, size=14)
+            _map_label(s, game, message("map.hfdf_fix", label=fix["label"], age=f"{age:.0f}"),
+                       (int(px) + 8, int(py) - 20), config.COLOR_ESM, r, size=14)
 
         # Autopilot route: from the ship through the waypoints still ahead.
         route = getattr(game, "route", None)
@@ -642,9 +666,9 @@ def draw_map_view(game, tr=None) -> None:
                 lines.line(s, config.COLOR_WARN, (int(previous[0]), int(previous[1])),
                            (int(point[0]), int(point[1])), 1)
                 pygame.draw.circle(s, config.COLOR_WARN, (int(point[0]), int(point[1])), 5, 1)
-                layout.blit_line(s, message("map.route_waypoint", number=number),
-                                 (int(point[0]) + 7, int(point[1]) - 18, 60, 16),
-                                 config.COLOR_WARN, size=12)
+                _map_label(s, game, message("map.route_waypoint", number=number),
+                           (int(point[0]) + 7, int(point[1]) - 18),
+                           config.COLOR_WARN, r, size=12)
                 previous = point
 
         # Fregatte: Pfeil in Kursrichtung
@@ -655,10 +679,9 @@ def draw_map_view(game, tr=None) -> None:
         target_ey = int(py + 42 * math.sin(target_ang))
         lines.line(s, config.COLOR_TEXT_DIM, (int(px), int(py)),
                          (target_ex, target_ey), 1)
-        layout.blit_line(s, structured_message("map.target_course",
+        _map_label(s, game, structured_message("map.target_course",
                                                course=f"{game.ship.target_course:03.0f}"),
-                         (int(px) + 8, int(py) + 10, 124, 18),
-                         config.COLOR_TEXT_DIM, size=12)
+                   (int(px) + 8, int(py) + 10), config.COLOR_TEXT_DIM, r, size=12)
         L = 14
         lines.line(s, config.COLOR_TEXT, (int(px), int(py)),
                          (int(px + L * math.cos(ang)), int(py + L * math.sin(ang))), 3)

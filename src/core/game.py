@@ -16,6 +16,9 @@ from src.audio.speech import Speaker, find_engine
 from src.commander.local import CommanderConsole
 from src.core import config
 from src.core.plot import PlotLayer
+from src.core.chart_history import ChartHistory
+from src.core.map_fx import MapFx
+from src.core.sight_events import SightEvents
 from src.core.autocrew import AutocrewController
 from src.core.callouts import CalloutLog
 from src.ship.route import Route
@@ -37,6 +40,7 @@ from src.enemies.animal import Animal
 from src.enemies.civilian import CivilianShip
 from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
+from src.enemies import traffic
 from src.sensors.tracks import TrackPicture
 from src.sensors.fusion import OPZFusionPicture
 from src.sensors.esm import ECMJammer, ESMPicture
@@ -58,7 +62,7 @@ from src.weapons.air_defense import air_defense_loadout, make_softkill_store
 # Shared display/help constants and helpers (re-exported for tests/tools).
 from src.core.game_shared import (  # noqa: F401
     HELP_MANUAL_PAGE, HELP_PAGE_COUNT, SONAR_BAND_PRESETS, TMA_ACCEPT_MIN_FIT,
-    letterbox_layout, make_night_overlay, make_scanlines)
+    letterbox_layout, make_scanlines)
 # Entity classes tests import from ``src.core.game`` (kept as re-exports).
 from src.enemies.decoy import Decoy  # noqa: F401
 from src.weapons.torpedo import EnemyTorpedo  # noqa: F401
@@ -169,7 +173,6 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.screen = pygame.Surface((config.SCREEN_W, config.SCREEN_H))
         self._scanlines = make_scanlines(config.SCREEN_W, config.SCREEN_H) \
             if config.CRT_SCANLINES else None
-        self._night_overlay = make_night_overlay(config.SCREEN_W, config.SCREEN_H)
         self.clock = pygame.time.Clock()
         self.audio = AudioEngine(sample_rate=config.AUDIO_SAMPLE_RATE,
                                  enabled=requested_audio)
@@ -213,6 +216,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                                 else dict(config.DEFAULT_DIFFICULTY))
         # Free-hunt choice for the start report; fixed scenarios set their own.
         self.menu_hq_intel = "coarse"
+        # Start weather and time of the next scenario/campaign mission.
+        self.start_weather = "random"
+        self.start_time = "random"
         self.in_menu = start_menu
         self.menu_sel = 0  # Index in DIFFICULTY_FIELD_ORDER or SCENARIO_ORDER
         self.seed = seed
@@ -418,6 +424,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         if sc["difficulty"] is None:
             self.world.sea_state = int(self.difficulty["sea_state_start"])
             self.world.refresh_weather()
+        self._apply_start_environment()
         start = sc["ship_start"] or (250.0, 250.0)
         course = sc["ship_course"]
         if course is None:
@@ -528,11 +535,13 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.civilians = []
         for _ in range(self.mission.civilian_count):
             cx, cy = at_dist(20.0, 100.0)
-            self.civilians.append(CivilianShip(
+            merchant = CivilianShip(
                 cx, cy, rng=rng,
                 profile=self.runtime_catalog.pick_surface(rng, hostile=False),
                 side="neutral", doctrine="surface_transit",
-                runtime_catalog=self.runtime_catalog))
+                runtime_catalog=self.runtime_catalog)
+            traffic.assign_lane(merchant, self.seed, self.world)
+            self.civilians.append(merchant)
 
         if self.mission.win_mode == "convoy_attack":
             from src.core import boat_missions
@@ -579,6 +588,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.simlog_view_map = False
         self.simlog_map_fit = simlog_map.FIT_WORLD
         self.held = set()
+        self._pointer_held = None
         self._map_drag = None
         self._map_drag_moved = False
         # Waffenzentrale (M3, Munitionsbestand aus Custom-Difficulty)
@@ -788,6 +798,11 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                                  config.MAP_ZOOM_MIN_PX_PER_NM,
                                  config.MAP_ZOOM_MAX_PX_PER_NM)
         self.opz_map_view = Viewport(self.world.size_nm, 1.0, 100.0)
+        self.chart_history = ChartHistory()
+        # Display only: water columns, fire and sinkings the eyes can see.
+        self.sight_events = SightEvents()
+        # Display only: ping wavefronts, echoes and splashes on the charts.
+        self.map_fx = MapFx()
         self._reset_map_view()
         self.hq_msg(message("runtime.hq.roe", roe=self.roe))
         weather = self.world.weather_values()
@@ -808,6 +823,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._prepared_menu_mission = (
             seed, self.scenario_key, self.world_mode,
             self._difficulty_base, self.hq_intel_mode(), self.level,
+            self.start_weather, self.start_time,
             id(self.world), id(self.sonar)) if self.in_menu else None
 
     def flash(self, text: object, seconds: float = 3.0) -> None:

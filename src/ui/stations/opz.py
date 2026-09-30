@@ -12,7 +12,8 @@ from src.core.i18n import (display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.core.station import Station
 from src.ui.plot_view import draw_plot
-from src.ui import layout
+from src.core import map_fx
+from src.ui import layout, map_fx_view, pointer
 from src.ui import chart_symbols
 from src.ui import nato_symbols
 from src.ui import observations
@@ -650,6 +651,10 @@ def draw_opz_view(game, tr=None) -> None:
     coast_segments = (_contour_segments_in_circle(
         coast, game.ship.x, game.ship.y, max_nm) if coast is not None else [])
     with layout.clip_to(s, chart):
+        if radar_live:
+            # Phosphor afterglow behind the beam, under everything else.
+            map_fx_view.draw_afterglow(s, own_x, own_y, radar_radius,
+                                       game.radar_sweep_bearing(), config.COLOR_GEO_BG)
         # Radar presentation remains ship-centred and independent of the camera.
         for ring_index in range(1, 5):
             rr = radar_radius * ring_index / 4.0
@@ -701,6 +706,10 @@ def draw_opz_view(game, tr=None) -> None:
             pygame.draw.line(s, (70, 190, 130), (own_x, own_y),
                              (own_x + radar_radius * math.sin(ang),
                               own_y - radar_radius * math.cos(ang)), 2)
+        fx = getattr(game, "map_fx", None)
+        if fx is not None:
+            map_fx_view.draw_fx(s, fx.rows("frigate", game.sim_t), view.world_to_screen,
+                                px_per_nm, chart, config.COLOR_GEO_BG)
         nato_symbols.draw_symbol(s, (own_x, own_y), "FRIEND", "SURFACE", 18)
         nato_symbols.draw_motion_vector(
             s, (own_x, own_y), game.ship.course, game.ship.speed,
@@ -775,6 +784,10 @@ def draw_opz_view(game, tr=None) -> None:
         if not chart.collidepoint(bx, by):
             continue
         plotted[track.track_id] = (bx, by)
+        # Furthest-on circle: how far the contact can have gone since its fix.
+        reach = map_fx.furthest_on_nm(track["kind"], game.sim_t - track.last_seen)
+        if reach is not None:
+            map_fx_view.draw_furthest_on(s, bx, by, reach * px_per_nm, chart, config.COLOR_GEO_BG)
         if track["source"].startswith("RADAR"):
             glow = _radar_glow(game, observations.bearing(track, game.ship))
             if glow > 0.0:
@@ -1038,5 +1051,6 @@ def draw_opz_view(game, tr=None) -> None:
         for scale in config.RADAR_RANGE_SCALES_NM)
     # The station footer row, like every other station's key legend.
     footer_rect = pygame.Rect(station.x + 8, station.bottom - 28, scope_w - 16, 20)
-    layout.command_segment(s, footer_rect, "help.key.page_arrows", "opz.footer.range", "",
+    layout.command_segment(s, footer_rect, "Q/E", "opz.footer.range", "",
                            f"{max_nm:g} NM  {scales}", size=11)
+    pointer.add_legend(footer_rect, "Q/E")

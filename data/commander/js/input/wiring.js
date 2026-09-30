@@ -1,3 +1,4 @@
+import { renderStationAlarms } from "../views/station-tabs.js";
 import { S } from "../state/store.js";
 import { renderSound } from "../audio/alerts.js";
 import { openSonarAudioSocket, renderSonarAudio, scheduleSonarAudioPoll, sonarAudioAuthorized, sonarFilterValues, sonarGainValue, stopSonarAudio, stopSpeech, syncGameAudio } from "../audio/audio.js";
@@ -764,6 +765,10 @@ export function init() {
       syncGameAudio();
     } catch (_) { S.soundEnabled = false; renderSound(); $("sound").textContent = t("sound_unavailable"); }
   });
+  $("red-light").addEventListener("change", () => {
+    S.redLightAuto = $("red-light").checked;
+    renderStationAlarms();
+  });
   $("speech").disabled = !("speechSynthesis" in window);
   $("speech").addEventListener("change", () => {
     S.speechEnabled = $("speech").checked && "speechSynthesis" in window;
@@ -921,10 +926,11 @@ export function init() {
   $("role-map").addEventListener("lostpointercapture", () => { S.roleMapDrag = null; });
   $("role-map").addEventListener("keydown", (event) => {
     const role = S.v2State?.role;
-    if (!mapRoles.has(role) || !["+", "=", "-", "Home", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+    if (!mapRoles.has(role) || !["+", "=", "-", "e", "q", "Home", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
     event.preventDefault();
-    if (["+", "="].includes(event.key)) changeRoleMapZoom(1.4);
-    else if (event.key === "-") changeRoleMapZoom(1 / 1.4);
+    // Q / E zoom as on the uConsole; + / - stay.
+    if (["+", "=", "e"].includes(event.key)) changeRoleMapZoom(1.4);
+    else if (["-", "q"].includes(event.key)) changeRoleMapZoom(1 / 1.4);
     else if (event.key === "Home") $("role-map-fit").click();
     else { const amount = S.chart.size_nm / roleMapViews[role].zoom / 10; if (event.key === "ArrowLeft") roleMapViews[role].x -= amount; if (event.key === "ArrowRight") roleMapViews[role].x += amount; if (event.key === "ArrowUp") roleMapViews[role].y -= amount; if (event.key === "ArrowDown") roleMapViews[role].y += amount; queueVisualDraw(); }
   });
@@ -1025,9 +1031,10 @@ export function init() {
   canvas.addEventListener("pointercancel", () => { S.drag = null; });
   canvas.addEventListener("keydown", (event) => {
     if (!S.snapshot || !S.chart) return;
-    if (["+", "=", "-", "Home", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) event.preventDefault();
-    if (event.key === "+" || event.key === "=") zoom(1.4);
-    else if (event.key === "-") zoom(1 / 1.4);
+    if (["+", "=", "-", "e", "q", "Home", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) event.preventDefault();
+    // Q / E zoom as on the uConsole; + / - stay.
+    if (event.key === "+" || event.key === "=" || event.key === "e") zoom(1.4);
+    else if (event.key === "-" || event.key === "q") zoom(1 / 1.4);
     else if (event.key === "Home") fitChart();
     else if (event.key.startsWith("Arrow")) {
       const distance = 65 / chartGeometry().scale;

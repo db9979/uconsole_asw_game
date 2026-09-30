@@ -5,11 +5,11 @@ import math
 
 import pygame
 
-from src.core import config
-from src.core.i18n import (display_message, display_value, localized, localize,
+from src.core import config, sight_events
+from src.core.i18n import (display_message, display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.core.station import Station
-from src.ui import horizon, instruments, layout, sight_scene
+from src.ui import horizon, instruments, label_layout, layout, pointer, sight_scene
 from src.ui import observations
 
 
@@ -133,8 +133,11 @@ def draw_bridge_view(game, tr=None) -> None:
                 size=18, label_w=130, color=config.COLOR_WARN)
         ny += row
         # The free lower part of the box carries the heading dial.
-        instruments.heading_dial(s, (nx, ny, nw, nav_bottom - ny), game.ship.course,
-                                 game.ship.target_course)
+        heading_rect = (nx, ny, nw, nav_bottom - ny)
+        instruments.heading_dial(s, heading_rect, game.ship.course, game.ship.target_course)
+        # A click on the dial orders that course, like a typed U entry.
+        pointer.add_action(heading_rect, lambda pos, r=heading_rect: _dial_order(
+            game, "course", instruments.heading_at(r, pos)))
 
         drive = layout.box(s, (x + half + 10, y2, half, box_h), "panel.speed_acoustics",
                            border=config.COLOR_WARN if game.ship.cavitating else config.COLOR_TEXT)
@@ -155,8 +158,11 @@ def draw_bridge_view(game, tr=None) -> None:
                          config.COLOR_DANGER if game.ship.cavitating else config.COLOR_OK,
                          size=18)
         dy += row + 26
-        instruments.speed_dial(s, (dx, dy, dw, drive_bottom - dy), game.ship.speed,
-                               game.ship.target_speed, config.TELEGRAPH_ORDERS[-1][1])
+        speed_rect = (dx, dy, dw, drive_bottom - dy)
+        top_speed = config.TELEGRAPH_ORDERS[-1][1]
+        instruments.speed_dial(s, speed_rect, game.ship.speed, game.ship.target_speed, top_speed)
+        pointer.add_action(speed_rect, lambda pos, r=speed_rect: _dial_order(
+            game, "speed", instruments.speed_at(r, pos, top_speed)))
     elif page == 2:
         _draw_bridge_lookout(game, s, pygame.Rect(x, y2, w, content_h - alarm_h - 12))
     else:
@@ -208,17 +214,18 @@ def draw_bridge_view(game, tr=None) -> None:
 
     station_bottom = config.STATION_RECT[1] + config.STATION_RECT[3]
     _shortcut_footer(s, (x, station_bottom - 26, w, 20), (
-        ("←/→", "bridge.footer.course"),
+        # Raised binoculars take the arrows, as the submarine's periscope.
+        ("←/→", "bridge.footer.glasses_train" if game.lookout_glasses
+         else "bridge.footer.course"),
         ("↑/↓", "bridge.footer.glasses_tilt" if game.lookout_glasses
          else "bridge.footer.telegraph"),
-        (", / .", "bridge.footer.glasses_train" if game.lookout_glasses
-         else "bridge.footer.lookout_range"),
+        (", / .", "bridge.footer.lookout_range"),
         ("B", "bridge.footer.glasses_close" if game.lookout_glasses
          else "bridge.footer.glasses"),
     ) if page == 2 else (
         ("←/→", "bridge.footer.course"),
         ("↑/↓", "bridge.footer.telegraph"),
-        ("U", "bridge.footer.set_course"),
+        ("C", "bridge.footer.set_course"),
         ("V", "bridge.footer.set_speed"),
     ))
 
@@ -240,7 +247,8 @@ def _lookout_scope_rect(area: pygame.Rect) -> pygame.Rect:
 LOOKOUT_HORIZON_H = 72
 LOOKOUT_HORIZON_FOV_DEG = 90.0
 # Assumed lengths (m) of the lookout kinds for the apparent size on the horizon.
-_LOOKOUT_KIND_LENGTH_M = {"SURFACE": 120.0, "SUB": 70.0, "FLG": 15.0, "TORP": 40.0}
+# A torpedo is seen by its bubble track, a few hundred metres long.
+_LOOKOUT_KIND_LENGTH_M = {"SURFACE": 120.0, "SUB": 70.0, "FLG": 15.0, "TORP": 260.0}
 _LOOKOUT_KIND_CLASS = {"SURFACE": "unknown", "SUB": "unknown", "FLG": "aircraft",
                        "TORP": "torpedo"}
 
@@ -295,6 +303,14 @@ def lookout_outlines(game, sightings) -> list:
     return rows
 
 
+def _dial_order(game, mode, value) -> None:
+    """A click on a bridge dial: the same order as a typed entry."""
+    if value is None:
+        return
+    from src.core import pointer_input
+    pointer_input.enter_value(game, mode, value)
+
+
 def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
     """Bridge lookout page: north-up scope of the visual sightings.
 
@@ -321,6 +337,8 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
                          config.COLOR_TEXT_DIM, size=14, align="center")
     sightings = game.lookout_sightings()
     scale = radius / max(.1, range_nm)
+    labels = label_layout.LabelField(scope.inflate(-4, -4))
+    labels.reserve((cx - 10, cy - 10, 20, 20))
     for track in sightings:
         dx, dy = track.x - game.ship.x, track.y - game.ship.y
         if math.hypot(dx, dy) > range_nm:
@@ -333,8 +351,11 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
         color = _LOOKOUT_KIND_COLORS.get(track.kind, config.COLOR_TEXT_DIM)
         pygame.draw.circle(s, color, (px, py), 5)
         what = game.lookout_visual_what(track.label)
-        if what is not None and px + 10 < scope.right - 4:
-            layout.blit_line(s, what, (px + 8, py - 18, scope.right - px - 12, 16),
+        if what is not None:
+            shown = localize(what)
+            size = layout.font(13).size(shown)
+            spot = labels.place(size, label_layout.around((px + 8, py - 18), size, 8))
+            layout.blit_line(s, raw_text(shown), (spot.x, spot.y, spot.w + 2, 16),
                              color, size=13)
     heading = math.radians(game.ship.course)
     tip = (cx + math.sin(heading) * 12, cy - math.cos(heading) * 12)
@@ -362,7 +383,7 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
                                           weather["wind_from_deg"] - game.ship.course),
             outlines=lookout_outlines(game, sightings), land=_lookout_land(game),
             anim_t=game.sim_t, sky=sight_scene.sky_state(game), sea_state=weather["sea_state"],
-            way=own_way(game))
+            way=own_way(game), events=sight_events.frigate_rows(game))
         iy += strip_h + 6
         ih -= strip_h + 6
     layout.blit_line(s, message("bridge.line.lookout_visibility",
@@ -439,7 +460,8 @@ def draw_lookout_glasses(game) -> None:
                                       game.lookout_glasses_rel),
         outlines=lookout_outlines(game, sightings), land=land, anim_t=game.sim_t,
         sky=sight_scene.sky_state(game), sea_state=weather["sea_state"],
-        elevation_deg=sight.elevation_deg, stabilized=sight.stabilized, way=own_way(game))
+        elevation_deg=sight.elevation_deg, stabilized=sight.stabilized, way=own_way(game),
+        events=sight_events.frigate_rows(game))
     pygame.draw.rect(s, config.COLOR_SONAR_RING, eyepiece, 1)
     layout.blit_line(s, structured_message(
         "bridge.line.glasses_bearing", bearing=f"{line_of_sight:03.0f}",

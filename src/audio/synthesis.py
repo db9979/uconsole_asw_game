@@ -129,9 +129,48 @@ def sonar_echo(frequency_hz: float, pulse: str, level: float,
     return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
 
 
+def telegraph_bell(sample_rate: int, amplitude: float = .28) -> np.ndarray:
+    """The engine telegraph's double ring as the handle drops into its new
+    order: two strokes of a small bell (inharmonic partials, long decay)."""
+    duration = 1.2
+    count = max(1, int(duration * sample_rate))
+    t = np.arange(count, dtype=np.float64) / sample_rate
+    signal = np.zeros(count)
+    for onset_s, gain in ((0.0, 1.0), (.22, .8)):
+        local = t - onset_s
+        ring = np.where(local >= 0.0, np.exp(-4.5 * np.maximum(local, 0.0)), 0.0)
+        for partial, weight in ((1.0, 1.0), (2.76, .45), (5.40, .2)):
+            signal += gain * weight * ring * np.sin(2 * np.pi * 1180.0 * partial * np.maximum(local, 0.0))
+    signal *= amplitude * .45
+    edge = min(count // 2, max(1, round(.006 * sample_rate)))
+    signal[-edge:] *= np.linspace(1.0, 0.0, edge)
+    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
+def thunder_roll(sample_rate: int, amplitude: float = .28) -> np.ndarray:
+    """A thunderclap far off: a short crack, then a low rumble rolling in
+    slow swells (band-limited noise, deterministic)."""
+    duration = 2.8
+    count = max(1, int(duration * sample_rate))
+    t = np.arange(count, dtype=np.float64) / sample_rate
+    rumble = filtered_noise_event(duration, sample_rate, 22.0, 320.0, amplitude, 503)[:count]
+    crack = filtered_noise_event(duration, sample_rate, 400.0, 2600.0, amplitude, 509)[:count]
+    swell = (.55 + .45 * np.sin(2 * np.pi * 1.3 * t) * np.sin(2 * np.pi * .55 * t + .8)) \
+        * np.minimum(1.0, t * 6.0) * np.exp(-1.1 * t)
+    signal = 2.2 * rumble * swell + .9 * crack * np.exp(-14.0 * t)
+    edge = min(count // 2, max(1, round(.006 * sample_rate)))
+    signal[:edge] *= np.linspace(0.0, 1.0, edge)
+    signal[-edge:] *= np.linspace(1.0, 0.0, edge)
+    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
 def combat_effect(kind: str, sample_rate: int,
                   amplitude: float = .28) -> np.ndarray:
     """Deterministic layered one-shot effects for local shipboard events."""
+    if kind == "telegraph":
+        return telegraph_bell(sample_rate, amplitude)
+    if kind == "thunder":
+        return thunder_roll(sample_rate, amplitude)
     profiles = {
         "torpedo_launch": (.72, 35.0, 900.0, 181, 72.0, 23.0),
         "missile_launch": (.95, 90.0, 5200.0, 223, 180.0, 820.0),
@@ -177,6 +216,8 @@ def boat_effect(kind: str, sample_rate: int, amplitude: float = .28) -> np.ndarr
     """Deterministic atmosphere cues heard inside the crewed boat: the hull
     creaking deep down, a hull failure's crack, near/distant detonations and
     a hunter's ping on the hull."""
+    if kind == "thunder":
+        return thunder_roll(sample_rate, amplitude * .6)
     if kind == "hull_creak":
         duration = 1.8
         count = int(duration * sample_rate)
@@ -216,6 +257,55 @@ def boat_effect(kind: str, sample_rate: int, amplitude: float = .28) -> np.ndarr
             * np.exp(-(2.6 if near else 1.6) * t)
         signal = noise * envelope
         signal += amplitude * (.7 if near else .35) * np.sin(2 * np.pi * 38.0 * t) * envelope
+    edge = min(count // 2, max(1, round(.006 * sample_rate)))
+    signal[:edge] *= np.linspace(0.0, 1.0, edge)
+    signal[-edge:] *= np.linspace(1.0, 0.0, edge)
+    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
+ATMOSPHERE_KINDS = ("general_alarm", "hull_slam", "alarm_bell", "fans_down", "fans_up")
+
+
+def atmosphere_effect(kind: str, sample_rate: int, amplitude: float = .28) -> np.ndarray:
+    """Deterministic shipboard atmosphere: the frigate's general alarm (an
+    electric bell ringing through the ship), a bow slamming into a head sea,
+    the boat's quiet alarm bell and its ventilation fans running down or up
+    for silent running."""
+    if kind in ("general_alarm", "alarm_bell"):
+        # An electric bell: fast hammer strokes on an inharmonic gong.
+        duration = 2.6 if kind == "general_alarm" else 1.2
+        rate = 16.0 if kind == "general_alarm" else 20.0
+        count = int(duration * sample_rate)
+        t = np.arange(count, dtype=np.float64) / sample_rate
+        stroke = np.exp(-18.0 * ((t * rate) % 1.0) / rate)
+        base = 1180.0 if kind == "general_alarm" else 1650.0
+        body = sum(weight * np.sin(2 * np.pi * base * ratio * t)
+                   for ratio, weight in ((1.0, 1.0), (2.76, .5), (5.4, .25)))
+        envelope = np.minimum(1.0, t * 40.0) * np.minimum(1.0, (duration - t) * 8.0)
+        gain = amplitude * (.55 if kind == "general_alarm" else .3)
+        signal = gain * stroke * envelope * body / 1.75
+    elif kind == "hull_slam":
+        # The bow coming down on a sea: a deep thud and the hull's shudder.
+        duration = 1.4
+        count = int(duration * sample_rate)
+        t = np.arange(count, dtype=np.float64) / sample_rate
+        noise = filtered_noise_event(duration, sample_rate, 25.0, 320.0,
+                                     amplitude, 491).astype(np.float64)
+        envelope = np.minimum(1.0, t * 60.0) * np.exp(-3.2 * t)
+        shudder = 1.0 + .5 * np.sin(2 * np.pi * 7.0 * t)
+        signal = envelope * (noise * shudder + amplitude * .9 * np.sin(2 * np.pi * 32.0 * t))
+    else:
+        # Fans: a hum with blade tone whose speed runs down (or up).
+        duration = 2.4
+        count = int(duration * sample_rate)
+        t = np.arange(count, dtype=np.float64) / sample_rate
+        fraction = t / duration
+        speed = 1.0 - fraction if kind == "fans_down" else fraction
+        speed = speed * speed * (3.0 - 2.0 * speed)
+        phase = 2 * np.pi * np.cumsum(40.0 + 180.0 * speed) / sample_rate
+        noise = filtered_noise_event(duration, sample_rate, 180.0, 1400.0,
+                                     amplitude, 499).astype(np.float64)
+        signal = (.35 + .65 * speed) * speed * (amplitude * .5 * np.sin(phase) + .4 * noise)
     edge = min(count // 2, max(1, round(.006 * sample_rate)))
     signal[:edge] *= np.linspace(0.0, 1.0, edge)
     signal[-edge:] *= np.linspace(1.0, 0.0, edge)

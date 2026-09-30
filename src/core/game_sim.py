@@ -6,6 +6,7 @@ inside ``_update_sim`` is the ``SIM_ORDER`` contract frozen by
 ``tests/test_sim_order.py``."""
 
 import hashlib
+import types
 import math
 import time
 from types import SimpleNamespace
@@ -15,7 +16,9 @@ import pygame
 from src.audio.preview import unit_sonar_preview
 from src.audio.synthesis import bearing_pan
 from src.core import config
-from src.core import detrand
+from src.physics import bioluminescence
+from src.world import thunder
+from src.core import buoy_antenna, detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
@@ -40,6 +43,7 @@ from src.sensors.platform import MAST_DEPTH_M
 from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
+from src.enemies import traffic
 from src.sensors.platform import exchange_friendly_datalink, snapshot_observation
 from src.sonar.sonar import TowState, hull_length_m
 from src.ui import layout
@@ -76,7 +80,7 @@ HEARD_CENTRE_NM = 0.05
 LOOKOUT_MODEL = visual_physics.LookoutModel(
     {"SURFACE": config.LOOKOUT_SURFACE_RANGE_NM, "SUB": config.LOOKOUT_SUB_RANGE_NM,
      "FLG": config.LOOKOUT_AIR_RANGE_NM, "TORP": TORPEDO_WAKE_VISIBLE_NM,
-     "LAND": config.LOOKOUT_LAND_RANGE_NM},
+     "LAND": config.LOOKOUT_LAND_RANGE_NM, "MAST": config.LOOKOUT_FEATHER_RANGE_NM},
     config.WEATHER_VISIBILITY_MAX_NM)
 
 
@@ -183,6 +187,9 @@ class SimMixin:
         if sim_started is not None:
             self._perf_sim_s += time.perf_counter() - sim_started
             self._perf_substeps += n
+        # Display-only chart history (own track, earlier fixes and bearings).
+        self.chart_history.record(self)
+        self.sight_events.refresh(self.sim_t, self._sight_fire_level)
         self.map_view.set_rect(config.MAP_RECT)
         if self.map_follow:
             self.map_view.cx, self.map_view.cy = self.ship.x, self.ship.y
@@ -248,6 +255,8 @@ class SimMixin:
         of the ship's head (-1 port .. +1 starboard); None plays it centred."""
         if at is not None and self._opfor is not None:
             opfor.hear_detonation(self, self._opfor, float(at[0]), float(at[1]))
+        if at is not None and kind == "explosion":
+            traffic.alarm(self.civilians, float(at[0]), float(at[1]))
         if at is not None and pan is None:
             pan = self._heard_pan(float(at[0]), float(at[1]), kind)
         if kind == "sonar_ping":
@@ -263,6 +272,24 @@ class SimMixin:
             self.audio.play_effect(kind, pan=pan)
         self._sound_event_seq += 1
         self._sound_events.append(dict(seq=self._sound_event_seq, kind=kind, pan=pan))
+
+    def _hull_slam(self, previous_pitch: float) -> None:
+        """A bow coming down hard into a head sea slams: a sound only (the
+        seakeeping model already carries the motion)."""
+        pitch = self.ship.pitch
+        if (previous_pitch > -config.HULL_SLAM_PITCH_DEG >= pitch
+                and self.ship.speed >= config.HULL_SLAM_MIN_KN
+                and getattr(self.world, "effective_sea_state", self.world.sea_state)
+                >= config.HULL_SLAM_SEA_STATE):
+            self._emit_sound("hull_slam")
+
+    def _sight_fire_level(self, ship):
+        """The frigate's own fire for her smoke (0..1, worst compartment);
+        None for other ships, whose fire burns down on its own."""
+        if ship is not self.ship:
+            return None
+        return max((room.fire for room in self.damage.compartments.values()),
+                   default=0.0) / 100.0
 
     def _heard_pan(self, x: float, y: float, kind: str) -> float:
         """Where the crew hears a sound from ``x, y``: its bearing by ear
@@ -319,16 +346,30 @@ class SimMixin:
         # Steering gear sits aft under the flight deck; a destroyed room
         # jams the rudder where it is. Stabilizer fins are lost with either
         # hull side destroyed. Floodwater adds displacement.
-        self.ship.steering_jammed = self.damage.station_down("flightdeck")
+        jammed, emergency = self.rudder_casualty()
+        if emergency:
+            # Emergency steering from the steering gear room: half rate.
+            self.ship.turn_rate_scale *= 0.5
+        self.ship.steering_jammed = self.damage.station_down("flightdeck") or jammed
         self.ship.stabilizers_ok = not (self.damage.station_down("hull_left")
                                         or self.damage.station_down("hull_right"))
         self.ship.flood_percent = (self.damage.flood_mass_kg()
                                    / ship_dynamics.HULL.flood_kg_per_percent)
         self.ship.update_fuel(dt)
         self.world.update(dt)
+        self.world.knuckles.advance(self.sim_t)
+        self._hear_thunder()
+        # The telegraph rings as a new order drops in (sound only).
+        telegraph = self.ship.telegraph
+        if telegraph != getattr(self, "_telegraph_rung", telegraph):
+            self._emit_sound("telegraph")
+        self._telegraph_rung = telegraph
         self._steer_route(dt)
         self._steer_baffle_clear()
+        previous_pitch = self.ship.pitch
         contact = self.ship.update(dt, self.world, self.damage.list_deg())
+        self._hull_slam(previous_pitch)
+        self._lay_knuckle("frigate", self.ship, self.ship.yaw_rate)
         if contact is not None:
             speed_m_s = self.ship.last_impact_speed_kn * 1852.0 / 3600.0
             heading = math.radians(self.ship.course)
@@ -480,14 +521,45 @@ class SimMixin:
                           message("runtime.enemy_ping.feed",
                                   bearing=f"{bearing:03.0f}"))
 
+    def _hear_thunder(self) -> None:
+        """Thunder rolls in after each close strike (sound only; the strikes
+        are stateless, ``src/world/thunder.py``): on the frigate, and in the
+        crewed boat while it is shallow enough to hear the surface."""
+        last = getattr(self, "_thunder_t", None)
+        self._thunder_t = self.sim_t
+        if last is None or not last < self.sim_t <= last + 5.0:
+            return
+        level = self.world.thunderstorm()
+        for _loudness, bearing in thunder.thunder(self.world.ocean.seed, last, self.sim_t, level):
+            self._emit_sound("thunder", pan=bearing_pan(bearing, self.ship.course))
+            boat = self._opfor
+            if boat is not None and not boat.sub.sunk and boat.sub.depth <= MAST_DEPTH_M:
+                opfor.boat_sound(self, boat, "thunder", bearing)
+
+    def _lay_knuckle(self, owner, platform, turn_deg_s: float) -> None:
+        """A hard turn at speed leaves a knuckle (src/world/knuckles.py);
+        the frigate's bridge hears of the first one of a turn."""
+        field = self.world.knuckles
+        item = field.observe(owner, platform.x, platform.y, platform.speed, turn_deg_s,
+                             self.sim_t)
+        if (item is not None and owner == "frigate"
+                and not field.fresh_from("frigate", self.sim_t, 60.0)):
+            self.feed.add(self.world.format_time(), "navigation",
+                          message("runtime.knuckle_laid"))
+
     def _update_underwater_entities(self, dt: float) -> None:
         """Aktualisiert U-Boote, Tiere, Zivile und Dekoys."""
         self._deliver_ping_intercepts()
+        self._apply_incident_effects()
         # The AI mission boat's leg for this substep (before it moves).
         boat_ai.steer(self)
         for sub in self.subs:
             was_sunk = sub.sunk
+            course_before = sub.course
             sub.update(dt, getattr(sub, "_tactical_observation", None), self.world)
+            if not sub.sunk and dt > 0.0:
+                self._lay_knuckle(int(sub.id), sub, config.angle_diff_deg(
+                    sub.course, course_before) / dt)
             distance = math.hypot(sub.x - self.ship.x, sub.y - self.ship.y)
             if (sub.pinged_this_tick
                     and distance <= config.SONAR_PING_HEAR_RANGE_NM
@@ -512,6 +584,9 @@ class SimMixin:
                 self.hq_msg(message("runtime.roe_free_confirmed"))
         for animal in self.animals:
             animal.update(dt, self.world)
+        if traffic.due(self.sim_t, dt):
+            traffic.plan(self.civilians, [self.ship, *self.warships, *self.civilians],
+                         self.seed, self.world)
         for civilian in self.civilians:
             civilian.update(dt, getattr(civilian, "_tactical_observation", None),
                             self.world)
@@ -537,15 +612,18 @@ class SimMixin:
                 and not self.helicopter_weather()["dipping_safe"]):
             self.helo.set_dipping(False, self.world)
         icing = (self.atmosphere()["icing"] if self.helo.airborne else "none")
+        self.ship.deck_quiet_s = helicopter_physics.deck_quiet_step(
+            self.ship.deck_quiet_s, self.ship.roll, self.ship.pitch, dt)
         self.helo.update(dt, self.ship, self.world,
                          recovery_available=not self.damage.station_down("flightdeck")
-                         and helicopter_physics.deck_within_limits(
-                             self.ship.roll, self.ship.pitch),
+                         and helicopter_physics.deck_window_open(
+                             self.ship.deck_quiet_s, self.ship.roll, self.ship.pitch),
                          fuel_factor=(config.HELO_ICING_FUEL_FACTOR
                                       if icing != "none" else 1.0))
         self._fly_buoy_pattern()
         self._update_helo_radar(dt)
         self._update_mpa(dt)
+        self._update_aircrew_eyes(dt)
         self._update_sub_radar_alert(dt)
         for buoy in self.buoys:
             buoy.update(dt, self.world)
@@ -605,6 +683,34 @@ class SimMixin:
                 notice = message("runtime.helo.mad_contact", contact=contact.id)
                 self.flash(notice, 3.0)
                 self.feed.add(self.world.format_time(), "sonar", notice)
+        self._mad_wreck_anomalies(helo.x, helo.y, mad_physics.MAD_ALTITUDE_M,
+                                  "mad", tick, "runtime.helo.mad_anomaly")
+
+    def _mad_wreck_anomalies(self, x: float, y: float, altitude_m: float,
+                             tag: str, tick: int, key: str) -> None:
+        """A steel wreck on the seabed moves the MAD needle like a hull: an
+        anomaly without a contact (a false target the crew must weigh against
+        the chart).  Stateless draws; the notice is held back 30 s a wreck."""
+        heard = getattr(self, "_mad_wreck_heard", None)
+        if heard is None:
+            heard = self._mad_wreck_heard = {}
+        for index, hazard in enumerate(self.world.charted_hazards()):
+            if hazard.kind != "wreck":
+                continue
+            slant = mad_physics.slant_m(math.hypot(x - hazard.x_nm, y - hazard.y_nm),
+                                        hazard.top_depth_m, altitude_m)
+            if slant > mad_physics.MAD_MAX_SLANT_M:
+                continue
+            if detrand.u01(self.seed, tag + "-wreck", index, tick) >= \
+                    mad_physics.detection_probability(slant):
+                continue
+            if not 0.0 <= self.sim_t - heard.get(index, -1e9) < 30.0:
+                heard[index] = self.sim_t
+                bearing = math.degrees(math.atan2(x - self.ship.x, -(y - self.ship.y))) % 360.0
+                notice = message(key, bearing=f"{bearing:03.0f}")
+                if getattr(self, "local_side", "frigate") != "uboot":
+                    self.flash(notice, 3.0)
+                self.feed.add(self.world.format_time(), "sonar", notice)
 
     def _update_asw_stores(self, dt: float) -> None:
         scale = (0.0 if self.damage.station_down("weapons") else
@@ -636,6 +742,7 @@ class SimMixin:
                        chaff_target=clouds.get(asm.chaff_cloud))
             if asm.state == "TREFFER":
                 hit = self.damage.missile_hit(*self._hull_impact(asm.x, asm.y))
+                self.sight_events.ship_hit(self.ship, self.sim_t, blast=True)
                 self._emit_sound("explosion", at=(asm.x, asm.y))
                 self.announce(message("runtime.hit.asm", compartments=", ".join(
                     self.damage.compartments[k].name for k in hit)),
@@ -765,6 +872,7 @@ class SimMixin:
                     impact=self._hull_impact(torpedo.x, torpedo.y),
                     hole_scale=config.clamp(20.0 / distance_m, 0.5, 3.0))
                 self.casualties_hit(hit)
+                self.sight_events.ship_hit(self.ship, self.sim_t)
                 self._emit_sound("explosion", at=(torpedo.x, torpedo.y))
                 text = ", ".join(self.damage.compartments[k].name for k in hit)
                 self.flash(message("runtime.hit.torpedo", compartments=text), 5.0)
@@ -917,9 +1025,15 @@ class SimMixin:
             if torpedo.state != "HIT":
                 continue
             self._emit_sound("explosion", at=(torpedo.x, torpedo.y))
+            if not isinstance(torpedo.target, SurfaceShip):
+                self.sight_events.detonation(torpedo.x, torpedo.y, self.sim_t, "torpedo",
+                                             getattr(torpedo, "depth", 0.0))
+            elif torpedo.target.side == "hostile":
+                self.sight_events.ship_hit(torpedo.target, self.sim_t)
             if (isinstance(torpedo.target, SurfaceShip)
                     and torpedo.target.side != "hostile"):
                 torpedo.target.sunk = True
+                self.sight_events.ship_hit(torpedo.target, self.sim_t)
                 self.incident = True
                 self.live_traffic.mark_ship_destroyed(
                     getattr(torpedo.target, "live_mmsi", None))
@@ -1090,6 +1204,9 @@ class SimMixin:
         while self.sonar.echo_events:
             echo = self.sonar.echo_events.pop(0)
             self._emit_echo(echo)
+            receiver = self.helo if echo.get("mode") == "DIPPING" else self.ship
+            self.map_fx.echo("frigate", self.sim_t, receiver.x, receiver.y,
+                             echo.get("bearing"), echo.get("range_nm"))
             if echo["contact_id"] == 0:
                 self.feed.add(self.world.format_time(), "sonar",
                               message("runtime.echo.unassociated",
@@ -1287,7 +1404,7 @@ class SimMixin:
             if self._opfor is not None:
                 opfor.update_sonar(self, self._opfor, sensor_dt)
                 opfor.update_wires(self, self._opfor, sensor_dt)
-                opfor.update_crew(self, self._opfor)
+                opfor.update_crew(self, self._opfor, sensor_dt)
         if self._esm_acc >= .5:
             self._esm_acc = 0.0
             self._update_esm_picture()
@@ -1476,14 +1593,19 @@ class SimMixin:
 
     def _lookout_observe(self, actor, namespace: str, kind: str,
                          seed: int, altitude_m: float | None = None,
-                         classes: tuple | None = None, lit: bool = False) -> None:
+                         classes: tuple | None = None, lit: bool = False,
+                         strength: float = 1.0) -> None:
         import random
 
         dx, dy = actor.x - self.ship.x, actor.y - self.ship.y
         distance = math.hypot(dx, dy)
         environment = self._lookout_environment()
-        # A tired lookout needs more contrast (crew watch, 1.0 when fresh).
-        alert = self.crew_effect()
+        # A wake stirring glowing plankton at night is seen further.
+        environment["glow"] = bioluminescence.wake_glow(
+            self.world.glow(), kind, getattr(actor, "speed", 0.0))
+        # A tired lookout needs more contrast (crew watch, 1.0 when fresh);
+        # ``strength`` scales the target's own contrast (a mast's feather).
+        alert = self.crew_effect() * strength
         margin = alert * LOOKOUT_MODEL.margin(kind, distance, altitude_m=altitude_m,
                                               **environment)
         bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
@@ -1540,9 +1662,13 @@ class SimMixin:
         label = lookout_id.encode(level, recognized, identified, type_key)
         # A bare detection only says what the eye sees: something on the
         # surface or a wake. Submarine/torpedo domains need recognition.
-        published_kind = (kind if level >= lookout_id.RECOGNIZED
-                          or kind in ("SURFACE", "FLG")
-                          else "SURFACE" if kind == "SUB" else "UNKNOWN")
+        # A mast or feather made out as a periscope is a submarine.
+        if kind == "MAST":
+            published_kind = "SUB" if level >= lookout_id.RECOGNIZED else "SURFACE"
+        else:
+            published_kind = (kind if level >= lookout_id.RECOGNIZED
+                              or kind in ("SURFACE", "FLG")
+                              else "SURFACE" if kind == "SUB" else "UNKNOWN")
         if lights is None:
             self._lookout_lights.pop(track_id, None)
         else:
@@ -1550,7 +1676,7 @@ class SimMixin:
         aspect = getattr(self, "_lookout_aspect", None)
         if aspect is not None:
             course = getattr(actor, "course", None)
-            if level >= lookout_id.RECOGNIZED and course is not None:
+            if level >= lookout_id.RECOGNIZED and course is not None and kind != "MAST":
                 # The eye sees the real ship; the type is the watch's call.
                 aspect[track_id] = (lookout_id.angle_on_bow(course, bearing), self.sim_t,
                                     unit_variants.entity_model(actor))
@@ -1619,7 +1745,7 @@ class SimMixin:
                           "ausguck", 4.0)
             return
         text = self.lookout_report_text(report)
-        if kind in ("TORP", "SUB") and level > lookout_id.DETECTED:
+        if kind in ("TORP", "SUB", "MAST") and level > lookout_id.DETECTED:
             self.announce(text, "ausguck", 4.0)
         else:
             self.feed.add(self.world.format_time(), "ausguck", text)
@@ -1704,6 +1830,21 @@ class SimMixin:
                     and actor.depth <= config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M):
                 self._lookout_observe(actor, "sub", "SUB", actor.sensor_seed,
                                       classes=("SUBMARINE", "SUBMARINE", None))
+            elif not actor.sunk and actor.state != "SINKING" and self._mast_up(actor):
+                # A raised periscope or snorkel head: the eye sees its
+                # feather, which grows with the boat's speed.
+                self._lookout_observe(actor, "sub", "MAST", actor.sensor_seed,
+                                      classes=("PERISCOPE", "PERISCOPE", None),
+                                      strength=visual_physics.feather_strength(actor.speed))
+            elif not actor.sunk and actor.state != "SINKING" and self._buoy_afloat(actor):
+                # The crewed boat's buoy antenna astern: a small unknown
+                # object on the water, never made out as a submarine.
+                bx, by = buoy_antenna.position(actor)
+                self._lookout_observe(
+                    types.SimpleNamespace(x=bx, y=by, speed=0.0, id=actor.id,
+                                          course=actor.course),
+                    "buoy", "MAST", actor.sensor_seed + 300_000,
+                    strength=config.UBOOT_BUOY_VISUAL)
         # Civil aircraft show their position and anti-collision lights;
         # military aircraft fly dark.
         for actor in sorted(self.flights.flights, key=lambda item: item.seq):

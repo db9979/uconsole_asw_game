@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v41_and_older_documents_are_rejected():
+def test_save_is_v43_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (41, "u-jagd-save-v41")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (41, "u-jagd-save-v41")
+    assert (state["version"], state["save_schema"]) == (43, "u-jagd-save-v43")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (43, "u-jagd-save-v43")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -214,13 +214,25 @@ def test_save_is_v41_and_older_documents_are_rejected():
     v39["save_schema"] = "u-jagd-save-v39"
     v39["autocrew"]["version"] = 1
     del v39["autocrew"]["assist"]
+    del v39["knuckles"]
     assert not game._load_save_data(v39)
-    # v40 differs only by the hunters' leads.
+    # v40 differs only by the knuckles (bubble slicks of hard turns).
     v40 = copy.deepcopy(state)
     v40["version"] = 40
     v40["save_schema"] = "u-jagd-save-v40"
-    del v40["hunter_lead"]
+    del v40["knuckles"]
     assert not game._load_save_data(v40)
+    # v41 differs only by the crewed boat's buoy antenna (``crew.orders.buoy``).
+    v41 = copy.deepcopy(state)
+    v41["version"] = 41
+    v41["save_schema"] = "u-jagd-save-v41"
+    assert not game._load_save_data(v41)
+    # v42 differs only by the hunters' leads.
+    v42 = copy.deepcopy(state)
+    v42["version"] = 42
+    v42["save_schema"] = "u-jagd-save-v42"
+    del v42["hunter_lead"]
+    assert not game._load_save_data(v42)
     assert game.save_state() == before
 
 

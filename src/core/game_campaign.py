@@ -146,6 +146,14 @@ class CampaignMixin:
             self.campaign_side = "frigate" if boat_side else "boat"
             self._campaign_confirm_new = False
             return
+        if key in (pygame.K_UP, pygame.K_DOWN):
+            self.menu_sel = 1 - min(1, max(0, self.menu_sel))
+            return
+        if key in (pygame.K_LEFT, pygame.K_RIGHT):
+            # Weather and time of the next leg.
+            self.cycle_start_choice(("weather", "time")[min(1, max(0, self.menu_sel))],
+                                    1 if key == pygame.K_RIGHT else -1)
+            return
         confirm = getattr(self, "_campaign_confirm_new", False)
         if key == pygame.K_n and (state is None or state.status != "active" or confirm):
             self._campaign_confirm_new = False
@@ -219,9 +227,13 @@ class CampaignMixin:
         for index, (text, color) in enumerate(lines):
             layout.blit_line(self.screen, text, (config.SCREEN_W // 2 - 460, 210 + index * 36,
                                                  920, 30), color, size=20, align="center")
+        if state is not None and state.status == "active" and not state.port:
+            self._draw_start_choices(center, 478, config.SCREEN_W // 2)
         hint = ("campaign.confirm_new" if getattr(self, "_campaign_confirm_new", False)
                 else "campaign.menu_hint")
-        center(self.tr(hint), 540, color=config.COLOR_TEXT_DIM)
+        center(self.tr(hint), 540, color=config.COLOR_TEXT_DIM,
+               keys=("Enter", None, "N", "Tab", "Esc") if hint == "campaign.menu_hint"
+               else None)
 
     def _boat_campaign_lines(self, state) -> list:
         from src.core import config

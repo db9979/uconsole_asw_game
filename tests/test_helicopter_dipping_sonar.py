@@ -363,7 +363,11 @@ def test_native_keys_control_release_and_dipping(monkeypatch):
     assert game.helo.dip_state == "DEPLOYING"
     game.helo.update(40.0, game.ship, game.world)
     assert game.helo.dip_state == "DEPLOYED"
+    # Shift+A pings, as at the sonar.
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_a, mod=0))
+    assert game.helo.dip_ping_cooldown == 0.0
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_a,
+                                         mod=pygame.KMOD_SHIFT))
     assert game.helo.dip_ping_cooldown == config.HELO_DIP_PING_COOLDOWN_S
     prior_depth = game.helo.dip_depth_target_m
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_v, mod=0))
@@ -389,19 +393,19 @@ def test_helicopter_station_can_cycle_and_release_its_own_dip_plot():
     game.sonar.contacts[dip_found.target_id] = dip_found
 
     assert game.selected_contact is None
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_g, mod=0))
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN,
+                                         mod=pygame.KMOD_SHIFT))
     assert game.selected_contact is dip_found
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f, mod=0))
     assert dip_found.helo_qualified
 
-    game.handle_event(pygame.event.Event(
-        pygame.KEYDOWN, key=pygame.K_g, mod=pygame.KMOD_SHIFT))
+    # G releases to CIC, as at the sonar.
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_g, mod=0))
     assert dip_found.dip_released_to_opz is True
     assert dip_found.released_to_opz is False
     assert ship_only.released_to_opz is False
 
-    game.handle_event(pygame.event.Event(
-        pygame.KEYDOWN, key=pygame.K_g, mod=pygame.KMOD_SHIFT))
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_g, mod=0))
     assert dip_found.dip_released_to_opz is False
 
 
@@ -475,14 +479,14 @@ def test_helicopter_station_can_classify_its_own_selected_contact():
     dip_found.update_dip_passive(200.0, game.sim_t, 12.0, 34.0, 1.5)
     game.sonar.contacts[dip_found.target_id] = dip_found
 
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_g, mod=0))
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN,
+                                         mod=pygame.KMOD_SHIFT))
     assert game.selected_contact is dip_found
 
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c))
     assert dip_found.player_class == "U_BOOT"
 
-    game.handle_event(pygame.event.Event(
-        pygame.KEYDOWN, key=pygame.K_g, mod=pygame.KMOD_SHIFT))
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_g, mod=0))
     game.roe = "FREE"  # only classification gates a release under FREE ROE
     result = game.launch_helicopter_torpedo_at(dip_found, 90.0)
     assert result != "not_classified"

@@ -6,7 +6,7 @@ Operations (OPZ / CIC) builds the tactical picture above the water: surface and 
 
 ## Displays and instruments {#opz-displays}
 
-Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track; page 3 commands the patrol aircraft. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `PgUp`/`PgDn`), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
+Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track; page 3 commands the patrol aircraft. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `Q`/`E` as the zoom keys elsewhere; `PgUp`/`PgDn` page), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
 
 ```text
  NATO frame colours (operator annotation, not truth)
@@ -31,11 +31,12 @@ Page 1 is a full-height free chart with all published tracks; page 2 is the targ
 
 Page 3 commands a maritime patrol aircraft (MPA) on call from the nearest friendly airfield (without one it comes in from the nearest map edge). It flies at 300 kn in transit and orbits its search area at 200 kn in a 3 NM circle. Each sortie lasts up to 5 h including a 15 min reserve; at bingo fuel it turns home by itself. After landing it needs 30 min on the ground and then flies once more: 2 sorties per mission, each with 16 sonobuoys and 2 lightweight torpedoes.
 
-- `A` requests the aircraft (it first heads for the ship's position) or sends it home.
+- The aircraft uses the helicopter's keys. `H` requests the aircraft (it first heads for the ship's position) or sends it home.
 - `W` sets the search area on the selected track's plotted position (without a selection on the ship); a click on the chart sets it on that point. A bearing-only track has no position to fly to.
-- `Z` plans a buoy pattern (field, barrier, circle) about the search area; the aircraft flies the points and drops a buoy at each. `Shift+Z` cancels the pattern. `X` drops one buoy where the aircraft is, `Y` switches its buoys between PASSIVE and ACTIVE.
-- `T` switches the aircraft's surface-search radar. From 300 m it sees ships and surfaced or mast-raised submarines out to 60 NM (limited by the radar horizon); its contacts appear as `RADAR-MPA` tracks with the aircraft as observer. AI submarines with a raised mast hear it and go deep (see the helicopter chapter).
-- `V` starts or ends **MAD passes** (browser: *Start MAD passes*/*End MAD passes*) while the aircraft is on its way or on station: once there it descends to 60 m and flies straight passes at 180 kn through the search area, turning back 2 NM past it (a cloverleaf). A submerged hull within about 400 m slant range is detected on a stateless draw each second (sure inside 250 m) and reaches the ship over the datalink as a MAD position fix without depth or course on that submarine's sonar contact. A buoy pattern flies first; `A` (home) ends the passes.
+- `X` plans a buoy pattern (field, barrier, circle) about the search area; the aircraft flies the points and drops a buoy at each. `Shift+X` cancels the pattern. `B` drops one buoy where the aircraft is, `Shift+B` switches its buoys between PASSIVE and ACTIVE.
+- `Ctrl+R` switches the aircraft's surface-search radar (as the helicopter's). From 300 m it sees ships and surfaced or mast-raised submarines out to 60 NM (limited by the radar horizon); its contacts appear as `RADAR-MPA` tracks with the aircraft as observer. AI submarines with a raised mast hear it and go deep (see the helicopter chapter).
+- Like the helicopter's, the aircraft's crew sees a raised mast's feather (see the helicopter chapter); while the datalink holds, these sightings appear as `MPA-EYE` tracks.
+- `Shift+M` starts or ends **MAD passes** (browser: *Start MAD passes*/*End MAD passes*) while the aircraft is on its way or on station: once there it descends to 60 m and flies straight passes at 180 kn through the search area, turning back 2 NM past it (a cloverleaf). A submerged hull within about 400 m slant range is detected on a stateless draw each second (sure inside 250 m) and reaches the ship over the datalink as a MAD position fix without depth or course on that submarine's sonar contact. A buoy pattern flies first; `H` (home) ends the passes.
 - `D` drops a torpedo on the designated sonar contact. The same checks as for the helicopter apply (current contact classified as a submarine, rules of engagement, a fresh fix under standard ROE), and the aircraft must be within 2 NM of the datum.
 
 Everything the aircraft learns reaches the ship only by datalink, out to 250 NM. Its buoys report only while the aircraft is within 50 NM of them; once it leaves or lands they go silent for the ship. The sidebar shows its state, bearing and range, the time left on station, stores, sorties left and how many of its buoys are being relayed.
@@ -52,7 +53,7 @@ Air defence sequence (missile inbound):
 
 ```text
   40 NM  ASM detected (air radar / ESM seeker bearing)
-  30 NM  ESSM envelope          -> E / Ctrl+Enter (2 fire channels)
+  30 NM  ESSM envelope          -> Ctrl+Enter (2 fire channels)
    8 NM  chaff cone             -> G (40 % break-lock, short blindness)
  1.5 NM  CIWS                   -> must be released with I
 ```

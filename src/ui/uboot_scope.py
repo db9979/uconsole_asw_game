@@ -11,7 +11,7 @@ import math
 
 import pygame
 
-from src.core import attack_computer, config, opfor
+from src.core import attack_computer, config, opfor, sight_events
 from src.core.i18n import display_value, localize, message
 from src.ui import layout
 
@@ -60,6 +60,28 @@ def full_span(span_deg: float, aob_deg: float | None) -> float:
     return min(180.0, span_deg / max(0.2, abs(math.sin(math.radians(aob_deg)))))
 
 
+# When each boat's scope last broke the surface (sim s; display only).
+_RAISED = {}
+
+
+def raised_seconds(game, boat):
+    """Seconds since the scope's head came out of the water, or None while
+    it is down or when it was never seen down (display only, for the water
+    running off the glass)."""
+    key = getattr(boat.sub, "id", id(boat))
+    if not opfor.scope_available(boat):
+        _RAISED[key] = None
+        if len(_RAISED) > 8:
+            _RAISED.pop(next(iter(_RAISED)))
+        return None
+    if key not in _RAISED:
+        return None
+    since = _RAISED[key]
+    if since is None or since > game.sim_t:
+        since = _RAISED[key] = game.sim_t
+    return game.sim_t - since
+
+
 def draw_eyepiece(s, game, boat, rect) -> None:
     """The picture in the eyepiece: sky, sea, horizon in motion, bearing scale,
     crosshair and the outlines of the boat's sightings within the field,
@@ -80,7 +102,11 @@ def draw_eyepiece(s, game, boat, rect) -> None:
                  optics_label=message("sight.optics", elevation=f"{sight.elevation_deg:+.0f}",
                                       fov=f"{sight.fov_deg:.0f}"),
                  way=dict(speed_kn=boat.sub.speed, course_deg=boat.sub.course,
-                          eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M, hull=False))
+                          eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M, hull=False),
+                 events=sight_events.boat_rows(game, boat),
+                 lens=sight_scene.lens_water(
+                     game.sim_t, getattr(game.world, "effective_sea_state", game.world.sea_state),
+                     raised_seconds(game, boat)))
 
 
 def sighting_rows(game, boat) -> list:

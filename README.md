@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.113**
+Current release: **1.3.124**
 
-Release 1.3.113 evens out the AI frigate and the AI submarine. In the
+Release 1.3.124 evens out the AI frigate and the AI submarine. In the
 frigate scenarios the AI hunters now run down HQ's start report of the threat
 and a lost submarine bearing, ping a bare bearing only every 10 minutes so a
 ping that finds nothing no longer sends the submarine running, and no longer
@@ -25,7 +25,7 @@ stays by its patrol position with no patrol aircraft, and against a
 breakthrough or reconnaissance it fires its own torpedo from 3 NM and keeps its
 helicopter within 8 NM. The breakthrough submarine skirts the frigate's patrol
 position, the reconnaissance report counts within 5 NM and the convoy
-submarine fires from 3 NM. Saves move to format v41 (the hunters' leads).
+submarine fires from 3 NM. Saves move to format v43 (the hunters' leads).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

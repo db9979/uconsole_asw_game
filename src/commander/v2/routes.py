@@ -31,6 +31,7 @@ from src.commander.v2.wire import (
     HOST_ROLE,
     ROLES,
     LOOKOUT_ROLES,
+    OPFOR_ROLES,
     SONAR_AUDIO_FRAMES,
     SONAR_AUDIO_RATE,
     SONAR_AUDIO_RESUME_BLOCKS,
@@ -1017,7 +1018,8 @@ class _Handler(BaseHTTPRequestHandler):
         elif self.path in ("/api/v2/session", "/api/v2/state",
                            "/api/v2/state?sonar=stream", "/api/v2/chart",
                            "/api/v2/results", "/api/v2/proposals",
-                           "/api/v2/events", "/api/v2/simlog", "/api/v2/host"):
+                           "/api/v2/events", "/api/v2/simlog", "/api/v2/host",
+                           "/api/v2/debrief"):
             try:
                 with owner._lock:
                     session, digest, presented = self._authenticated_v2_locked(renew=True)
@@ -1060,6 +1062,11 @@ class _Handler(BaseHTTPRequestHandler):
                             body = _json_bytes({"protocol": 2,
                                 "session": state["session"], "epoch": state["epoch"],
                                 "role": role, "latest_seq": 0, "events": []})
+                    elif session is not None and self.path == "/api/v2/debrief":
+                        # Only after the mission ends, and only the own side's.
+                        side = "uboot" if role in (*OPFOR_ROLES, "uboot_lookout") else "frigate"
+                        body = (owner._v2_debriefs.get(side) if role is not None else None
+                                ) or _json_bytes({"protocol": 2, "available": False})
                     elif session is not None and self.path == "/api/v2/simlog":
                         body = (owner._v2_simlogs.get(role) if role is not None
                                 and session["simlog"] else None)

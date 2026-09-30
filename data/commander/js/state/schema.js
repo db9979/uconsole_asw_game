@@ -9,8 +9,8 @@ export const boundedArray = (value, maximum) => Array.isArray(value) && value.le
 // an operator classification.
 const sightingClasses = ["MERCHANT", "TANKER", "CARGO", "PASSENGER", "WARSHIP", "CARRIER", "CRUISER", "DESTROYER",
   "FRIGATE", "CORVETTE", "MINE_WARFARE", "NAVAL_AUXILIARY", "SERVICE", "TUG", "RESEARCH", "OFFSHORE", "FISHING",
-  "SMALL_CRAFT", "RESCUE", "SUBMARINE", "AIRLINER", "MILITARY_AIRCRAFT", "COMBAT_AIRCRAFT", "TORPEDO_WAKE", "SHIP", "LAND"];
-const sightingKinds = ["SURFACE", "SUB", "FLG", "TORP", "LIGHTS"];
+  "SMALL_CRAFT", "RESCUE", "SUBMARINE", "PERISCOPE", "AIRLINER", "MILITARY_AIRCRAFT", "COMBAT_AIRCRAFT", "TORPEDO_WAKE", "SHIP", "LAND"];
+const sightingKinds = ["SURFACE", "SUB", "MAST", "FLG", "TORP", "LIGHTS"];
 const sightingLightsOk = (row) => row.sighted === "LIGHTS"
   ? typeof row.lights === "string" && /^[LR][012][r-][g-][s-](GW|WR|RWR|GGG|AC)?$/.test(row.lights) : row.lights === null;
 function validSightingClass(code, type) {
@@ -34,8 +34,16 @@ const PLOT_FIELDS = {
   dr: ["id", "shape", "label", "t", "x", "y", "course", "speed_kn", "now_x", "now_y", "cpa_nm", "cpa_s"],
 };
 function validPlot(plot) {
-  if (!exactKeys(plot, ["objects", "max_objects", "max_label"]) || !Number.isInteger(plot.max_objects) ||
+  if (!exactKeys(plot, ["objects", "max_objects", "max_label", "trail", "fx"]) || !Number.isInteger(plot.max_objects) ||
       !Number.isInteger(plot.max_label) || !boundedArray(plot.objects, plot.max_objects)) return false;
+  // Own track (own-platform truth): at most two hours of [x, y] points.
+  if (!boundedArray(plot.trail, 240) ||
+      !plot.trail.every((row) => Array.isArray(row) && row.length === 2 && finite(row[0]) && finite(row[1]))) return false;
+  // Moving chart marks (own pings, their echoes, own charges): [age_s, x, y].
+  const fxRows = (rows, maximum) => boundedArray(rows, maximum) && rows.every((row) => Array.isArray(row) &&
+    row.length === 3 && row.every(finite) && row[0] >= 0);
+  if (!exactKeys(plot.fx, ["pings", "echoes", "splashes"]) || !fxRows(plot.fx.pings, 6) ||
+      !fxRows(plot.fx.echoes, 12) || !fxRows(plot.fx.splashes, 12)) return false;
   const ids = new Set();
   return plot.objects.every((item) => {
     const fields = item && PLOT_FIELDS[item.shape];
@@ -98,10 +106,10 @@ export function validateV2State(state) {
     if (!exactKeys(state, status)) throw new Error("protocol");
     return;
   }
-  const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station", "plot"];
+  const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station", "plot", "alarms"];
   if (!sessionRoles.includes(state.role) || state.role !== S.session?.station ||
       !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "world"]) ||
-      !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm"]) ||
+      !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm", "storm"]) ||
       !Number.isInteger(state.environment.sea_state) || state.environment.sea_state < 0 || state.environment.sea_state > 6 ||
       !finite(state.environment.effective_sea_state) || state.environment.effective_sea_state < 0 || state.environment.effective_sea_state > 6 ||
       typeof state.environment.is_night !== "boolean" || !["clear", "rain", "storm", "fog"].includes(state.environment.weather) ||
@@ -109,12 +117,15 @@ export function validateV2State(state) {
       !finite(state.environment.wind_speed_kn) || state.environment.wind_speed_kn < 0 || state.environment.wind_speed_kn > 80 ||
       !finite(state.environment.rain_intensity) || state.environment.rain_intensity < 0 || state.environment.rain_intensity > 1 ||
       !finite(state.environment.visibility_nm) || state.environment.visibility_nm < .1 || state.environment.visibility_nm > 30 ||
+      !finite(state.environment.storm) || state.environment.storm < 0 || state.environment.storm > 1 ||
       !exactKeys(state.autocrew, ["enabled", "status"]) || typeof state.autocrew.enabled !== "boolean" ||
       !["off", "active", "suspended_remote", "suspended_local", "blocked_damage"].includes(state.autocrew.status) ||
       !boundedArray(state.autocrew_overview, 9) || state.autocrew_overview.some((row) => !exactKeys(row, ["station", "enabled", "status"]) ||
         !stationNames.includes(row.station) || typeof row.enabled !== "boolean" ||
         !["off", "active", "suspended_remote", "suspended_local", "blocked_damage"].includes(row.status)) ||
       !exactKeys(state.mission, ["name", "objective", "remaining_s"]) ||
+      !boundedArray(state.alarms, 9) || state.alarms.some((row) => !exactKeys(row, ["station", "level"]) ||
+        !stationNames.includes(row.station) || !["warn", "danger"].includes(row.level)) ||
       !exactKeys(state.audio, ["events", "callouts"]) ||
       !boundedArray(state.audio.callouts, 16) ||
       state.audio.callouts.some((row, index, rows) => !exactKeys(row, ["seq", "key", "bearing"]) ||
@@ -136,14 +147,14 @@ export function validateV2State(state) {
     eloka: ["intercepts", "station_down", "status", "hardware"],
     engine: ["propulsion", "machinery", "controls", "environment_effects", "compartments"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"],
-    lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
+    lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
     opz: ["observations", "fusions", "suggestions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical", "tasks", "can_request_ras", "can_contact_report", "can_request_support"],
     sonar: ["observations", "settings", "visualization"],
     uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
-    uboot_lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
+    uboot_lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
     uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_radio: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_sonar: ["observations", "settings", "visualization"],
@@ -177,11 +188,13 @@ export function validateV2State(state) {
     boat: ["mast_radar_nm", "mast_radar_calm_nm", "sighting_nm", "sighting_ref_nm", "ambient_bands_hz", "ambient_excess_db", "snorkel_available", "snorkeling", "snorkel_max_kn", "snorkel_noise_db", "snorkel_lines_hz"],
   };
   const sightFields = {
-    sky: ["light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg", "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg", "moon_illumination", "moon_waxing"],
-    glasses: ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines"],
+    sky: ["light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg", "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg", "moon_illumination", "moon_waxing", "glow", "storm", "lightning", "lightning_bearing"],
+    glasses: ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "events"],
     outline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model"],
     classes: ["warship", "merchant", "aircraft", "torpedo", "unknown"],
-    phone: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls"],
+    event: ["type", "bearing", "range_nm", "age_s", "dur_s", "size_m", "level"],
+    eventKinds: ["column", "blast", "fire", "sinking"],
+    phone: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
     phoneOutline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model", "called", "range_nm"],
     call: ["seq", "age_s", "category", "bearing", "range_nm", "confirmed"],
     callCategories: ["contact", "ship", "warship", "merchant", "aircraft", "submarine", "torpedo"],
@@ -211,9 +224,10 @@ export function validateV2State(state) {
     interceptKinds: ["hull", "dipping", "buoy", "splash", "torpedo"],
     advice: ["uboot.advice.torpedo", "uboot.advice.mast_down", "uboot.advice.slow_down", "uboot.advice.measure_layer", "uboot.advice.go_below", "uboot.advice.evade"],
     evadePlan: ["type", "bearing", "course", "speed_kn", "depth_m", "silent", "decoy"],
-    radio: ["antenna", "broadcast", "copied", "next_s", "copy", "send", "transmitting", "sitreps", "ack_due", "report", "log", "vlf", "order", "orders_done", "orders_failed"],
+    radio: ["antenna", "broadcast", "copied", "next_s", "copy", "send", "transmitting", "sitreps", "ack_due", "report", "log", "vlf", "order", "orders_done", "orders_failed", "buoy", "buoy_payout", "buoy_rx"],
     radioLog: ["seq", "type", "age_s", "number", "ack", "report", "order"],
     radioLogKinds: ["broadcast", "sent", "aborted"],
+    radioBuoyStates: ["stowed", "streaming", "out", "recovering", "lost"],
     radioReport: ["x", "y", "radius_nm", "course", "speed_kn", "age_s"],
     radioOrder: ["id", "type", "x", "y", "radius_nm", "left_s"],
     radioOrderKinds: ["area", "report", "silence"],
@@ -254,7 +268,13 @@ export function validateV2State(state) {
   const elevationOk = (value) => value === null || (finite(value) && value >= -5 && value <= 90);
   const aobOk = (value) => value === null || (finite(value) && value >= -180 && value <= 180);
   const modelOk = (value) => value === null || (typeof value === "string" && /^[a-z0-9_]{1,32}$/.test(value));
-  const glassesOk = (glasses) => exactKeys(glasses, sightFields.glasses) && skyOk(glasses.sky) &&
+  // What the eye sees happen: water columns, fire, sinkings (display only).
+  const sightEventsOk = (rows) => boundedArray(rows, 8) && rows.every((row) => exactKeys(row, sightFields.event) &&
+    sightFields.eventKinds.includes(row.type) && finite(row.bearing) && row.bearing >= 0 && row.bearing < 360 &&
+    finite(row.range_nm) && row.range_nm >= 0 && finite(row.age_s) && row.age_s >= 0 &&
+    finite(row.dur_s) && row.dur_s > 0 && finite(row.size_m) && row.size_m > 0 &&
+    finite(row.level) && row.level >= 0 && row.level <= 1);
+  const glassesOk = (glasses) => exactKeys(glasses, sightFields.glasses) && skyOk(glasses.sky) && sightEventsOk(glasses.events) &&
     ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll"].every((key) => finite(glasses[key])) &&
     glasses.fov_deg > 0 && glasses.fov_deg <= 180 &&
     boundedArray(glasses.outlines, 16) && glasses.outlines.every((row) => exactKeys(row, sightFields.outline) &&
@@ -279,7 +299,7 @@ export function validateV2State(state) {
     (crew.casualties.medic === null || crewFields.stations.includes(crew.casualties.medic)) &&
     finite(crew.casualties.reassign_in_s) && crew.casualties.reassign_in_s >= 0;
   // A phone lookout: its eyepiece, what its eye has (called or not) and its calls.
-  const phoneOk = (view) => exactKeys(view, sightFields.phone) && skyOk(view.sky) &&
+  const phoneOk = (view) => exactKeys(view, sightFields.phone) && skyOk(view.sky) && sightEventsOk(view.events) &&
     view.side === (state.role === "lookout" ? "frigate" : "boat") &&
     ["available", "manned"].every((key) => typeof view[key] === "boolean") &&
     ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"].every((key) => finite(view[key])) &&
@@ -408,7 +428,8 @@ export function validateV2State(state) {
     // The periscope: line of sight, light and the crew's own sightings (no target truth).
     const scope = payload.scope;
     const scopeNumbers = ["relative_deg", "bearing", "course", "speed_kn", "fov_deg", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"];
-    if (!exactKeys(scope, ["available", "night", ...scopeNumbers, "sky", "sightings"]) || !skyOk(scope.sky) ||
+    if (!exactKeys(scope, ["available", "night", ...scopeNumbers, "sky", "sightings", "events"]) || !skyOk(scope.sky) ||
+        !sightEventsOk(scope.events) ||
         typeof scope.available !== "boolean" || typeof scope.night !== "boolean" ||
         scopeNumbers.some((key) => !finite(scope[key])) || scope.relative_deg < 0 || scope.relative_deg >= 360 ||
         !boundedArray(scope.sightings, 16) || scope.sightings.some((row) =>
@@ -510,6 +531,7 @@ export function validateV2State(state) {
           (row.number !== null && !Number.isInteger(row.number)) || typeof row.ack !== "boolean" || !radioReport(row.report) ||
           (row.order !== null && !Number.isInteger(row.order))) ||
         typeof radio.vlf !== "boolean" || !Number.isInteger(radio.orders_done) || !Number.isInteger(radio.orders_failed) ||
+        !boatFields.radioBuoyStates.includes(radio.buoy) || !finite(radio.buoy_payout) || typeof radio.buoy_rx !== "boolean" ||
         (radio.order !== null && (!exactKeys(radio.order, boatFields.radioOrder) || !Number.isInteger(radio.order.id) ||
           !boatFields.radioOrderKinds.includes(radio.order.type) || !finite(radio.order.left_s) ||
           ["x", "y", "radius_nm"].some((key) => !nullableNumber(radio.order[key]))))) throw new Error("protocol");
@@ -607,7 +629,11 @@ export function validateV2State(state) {
         (payload.waypoint !== null && !exactKeys(payload.waypoint, ["x", "y"])) ||
         !boundedArray(payload.buoys, 64) || payload.buoys.some((row) => !exactKeys(row, ["ref", "label", "x", "y", "battery_s", "active", "mode"]) || typeof row.label !== "string" || !/^SB[0-9]{2,}$/.test(row.label) || !["ACTIVE", "PASSIVE"].includes(row.mode)) ||
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
-        !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_pattern", "can_mad", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "weather_launch_safe", "weather_dipping_safe", "crosswind_kn", "rtb_margin_s"]) ||
+        !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_pattern", "can_mad", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "weather_launch_safe", "weather_dipping_safe", "crosswind_kn", "rtb_margin_s", "deck_motion"]) ||
+        !exactKeys(payload.readiness.deck_motion, ["roll_deg", "pitch_deg", "roll_limit_deg", "pitch_limit_deg", "quiet_s", "window_s", "window_open"]) ||
+        typeof payload.readiness.deck_motion.window_open !== "boolean" ||
+        !["roll_deg", "pitch_deg"].every((key) => finite(payload.readiness.deck_motion[key]) && Math.abs(payload.readiness.deck_motion[key]) <= 90) ||
+        !["roll_limit_deg", "pitch_limit_deg", "quiet_s", "window_s"].every((key) => finite(payload.readiness.deck_motion[key]) && payload.readiness.deck_motion[key] >= 0 && payload.readiness.deck_motion[key] <= 3600) ||
         [payload.readiness.flightdeck_down, payload.readiness.can_launch, payload.readiness.can_return, payload.readiness.can_set_waypoint, payload.readiness.can_deploy_buoy, payload.readiness.can_set_dipping, payload.readiness.can_set_dip_depth, payload.readiness.can_dipping_ping, payload.readiness.weather_launch_safe, payload.readiness.weather_dipping_safe].some((value) => typeof value !== "boolean") ||
         !finite(payload.readiness.crosswind_kn) || payload.readiness.crosswind_kn < 0 || payload.readiness.crosswind_kn > 80) throw new Error("protocol");
     tacticalRows(payload.tactical, 128, helicopterTacticalFields.slice(tacticalFields.length));

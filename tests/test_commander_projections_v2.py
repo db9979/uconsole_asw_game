@@ -40,7 +40,7 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
     game, bridge, server = published
     common = {"protocol", "version", "session", "epoch", "revision", "seq",
               "phase", "role", "chart_revision", "clock", "environment", "mission",
-              "autocrew", "autocrew_overview", "audio", "weather_station", "plot"}
+              "autocrew", "autocrew_overview", "audio", "weather_station", "plot", "alarms"}
     assert set(server.v2_states) == {None, *ROLES}
     # Without a crewed submarine its roles are published redacted.
     assert all(server.v2_states[role] == server.v2_states[None]
@@ -64,6 +64,7 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
             "wind_speed_kn": weather["wind_speed_kn"],
             "rain_intensity": weather["rain_intensity"],
             "visibility_nm": weather["visibility_nm"],
+            "storm": game.world.thunderstorm(),
         }
         assert server.v2_states[role]["autocrew"] == {
             "enabled": False, "status": "off"}

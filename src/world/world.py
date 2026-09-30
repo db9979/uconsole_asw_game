@@ -5,8 +5,11 @@ import math
 import random
 
 from src.core import config
+from src.physics import bioluminescence
 from src.world import atmosphere
 from src.world.coastline import Coastline
+from src.world import thunder
+from src.world.knuckles import KnuckleField
 from src.world.ocean import OceanEnvironment
 from src.world.grounding import (DEFAULT_HULL_SPEC, grounding_contact,
                                  hull_is_safe, swept_grounding)
@@ -57,6 +60,9 @@ class World:
         # speed, wind drift, seabed, hazards). Built from stateless seeded
         # draws, so no existing RNG sequence moves.
         self.ocean = OceanEnvironment(seed, self.size_nm, self.charted_depth_m)
+        # Bubble slicks of hard turns at speed (saved by the game, root
+        # key ``knuckles``; src/world/knuckles.py).
+        self.knuckles = KnuckleField()
 
     @staticmethod
     def _weather_endpoint(rng_state, sea_state: int) -> dict:
@@ -113,10 +119,15 @@ class World:
     # Authored weather of a mission: fixed atmosphere values per kind (the
     # sea state stays the mission's).  Saved in the world block.
     WEATHER_OVERRIDES = {
+        "fair": dict(wind_speed_kn=6.0, rain_intensity=0.0,
+                     visibility_nm=config.WEATHER_VISIBILITY_MAX_NM),
         "rain": dict(wind_speed_kn=18.0, rain_intensity=0.5, visibility_nm=6.0),
         "storm": dict(wind_speed_kn=38.0, rain_intensity=0.8, visibility_nm=4.0),
         "fog": dict(wind_speed_kn=4.0, rain_intensity=0.1, visibility_nm=1.0),
     }
+
+    # While a weather kind holds, the sea it drifts through stays in its band.
+    OVERRIDE_SEA_BANDS = {"fair": (0, 2), "rain": (2, 4), "storm": (5, 6), "fog": (0, 2)}
 
     def set_weather_override(self, kind) -> None:
         """Hold the authored weather ``kind`` (None or "clear" releases it)."""
@@ -158,6 +169,23 @@ class World:
         such as the barometer that respond ahead of the sea."""
         self.weather_values()
         return self.sea_state, self._weather_target_sea, self.weather_shift_timer
+
+    def bioluminescence(self) -> float:
+        """Bloom strength (0..1) of this world's water now: seeded, and
+        following the sea-surface temperature (strongest in summer)."""
+        return bioluminescence.bloom(self.ocean.seed, self.ocean.sea_surface_temperature_c(self.hour))
+
+    def glow(self) -> float:
+        """What a lookout sees of the bloom: only at night."""
+        return self.bioluminescence() if self.is_night() else 0.0
+
+    def thunderstorm(self) -> float:
+        """Thunderstorm activity (0..1) of the current weather (``thunder.py``)."""
+        return thunder.activity(self.weather_kind(), self.rain_intensity)
+
+    def lightning(self, t: float):
+        """The lightning at sim time ``t``: (brightness, bearing, NM) or None."""
+        return thunder.flash(self.ocean.seed, t, self.thunderstorm())
 
     def latitude_deg(self) -> float | None:
         """Centre latitude of a real coastline sector, if the world has one."""
@@ -361,7 +389,9 @@ class World:
         while self.weather_shift_timer >= config.WEATHER_SHIFT_PERIOD_S:
             self.weather_shift_timer -= config.WEATHER_SHIFT_PERIOD_S
             d = self.rng.choice([-1, 0, 0, 1])
-            self.sea_state = max(0, min(6, self.sea_state + d))
+            low, high = self.OVERRIDE_SEA_BANDS.get(
+                getattr(self, "weather_override", None), (0, 6))
+            self.sea_state = max(low, min(high, self.sea_state + d))
             self.refresh_weather()
 
     def is_night(self) -> bool:

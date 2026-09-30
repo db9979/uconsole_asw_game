@@ -51,6 +51,10 @@ class Server:
     def publish_simlog_v2(self, **payload):
         self.simlogs = deepcopy(payload)
 
+    def publish_debrief_v2(self, **payload):
+        json.dumps(payload, allow_nan=False)
+        self.debriefs = deepcopy(payload)
+
     def drain_commands_v2(self):
         return []
 

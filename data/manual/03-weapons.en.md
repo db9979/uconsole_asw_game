@@ -17,7 +17,7 @@ The readiness line is checked top to bottom; the first failed check is shown:
  BLOCKED: NOT CLASSIFIED       classify as submarine or warship (Sonar C)
  BLOCKED: NO TORPEDOES / NO TUBE READY / SALVO LIMIT
  BLOCKED: WEAPONS ROOM DAMAGED
- WEAPONS FREE                  -> T or Ctrl+Enter
+ WEAPONS FREE                  -> Ctrl+Enter
 ```
 
 Torpedo run, seen from above:
@@ -34,7 +34,7 @@ Torpedo run, seen from above:
 - Search pattern (`X`): the snake (+/-15 deg about the datum course, default), a circle of 0.4 NM about the enable point, or a helix that opens from 0.15 NM by 0.15 NM per turn to 1 NM. The pattern runs only once the seeker is enabled and has not acquired.
 - Seeker enable point (`,` / `.`): 0.6 to 3.0 NM from the datum in 0.2 NM steps (default 1.2 NM). Earlier enable finds a target that has moved off the datum; later enable keeps the weapon quiet longer.
 - Salvo (`Y`): one torpedo, or two in a +/-8 deg spread with their own datums turned about the ship; a spread needs two loaded tubes of the selected type and counts against the doctrine limit.
-- Preset depth 10-300 m (default 60 m). A wrong depth is a miss: take depth from a ping, not from TMA.
+- Preset depth 10-300 m (default 60 m): hold `↑`/`↓` or type it after `T`, as on the submarine. A wrong depth is a miss: take depth from a ping, not from TMA.
 - The wire updates the datum from the contact's observed position. Without updates it becomes STALE after 3 s and BROKEN after 12 s; the torpedo then continues to the last datum.
 - The seeker homes on the nearest candidate: that can be a decoy, a whale or a merchant ship. A civilian hit ends the mission.
 - Salvo doctrine SHOOT-LOOK-SHOOT: at most 2 own torpedoes running.

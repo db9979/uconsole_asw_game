@@ -144,7 +144,8 @@ export function init() {
   $("host-new-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!$("host-new-form").reportValidity()) return;
-    const params = {scenario: $("host-new-scenario").value, world_mode: $("host-new-world").value};
+    const params = {scenario: $("host-new-scenario").value, world_mode: $("host-new-world").value,
+      weather: $("host-new-weather").value, time: $("host-new-time").value};
     const difficultyInputs = $("host-new-difficulty").querySelectorAll("input");
     if (difficultyInputs.length && !difficultyInputs[0].disabled) {
       const difficulty = {};

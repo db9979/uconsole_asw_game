@@ -103,7 +103,8 @@ class BugReportMixin:
             layout.blit_line(s, status, (x, 450, w, 26),
                              config.COLOR_WARN if status == "bugreport.no_browser"
                              else config.COLOR_OK, size=18)
-        center(self.tr("bugreport.hint"), 560, color=config.COLOR_TEXT_DIM)
+        center(self.tr("bugreport.hint"), 560, color=config.COLOR_TEXT_DIM,
+               keys=("Enter", "Esc"))
 
 
 # Main-menu entries in display order (labels in ``MAIN_MENU_LABELS``).

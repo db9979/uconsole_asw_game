@@ -31,7 +31,8 @@ LOOKOUT = dict(course=90.0, speed_kn=12.0, fov_deg=16.0, visibility_nm=30.0, sea
                sky=dict(light=0.0, dusk=0.0, cloud=0.25, precipitation="none", intensity=0.0,
                         wind_from_deg=270.0, sun_bearing=300.0, sun_alt_deg=-20.0,
                         moon_bearing=180.0, moon_alt_deg=30.0, moon_illumination=0.8,
-                        moon_waxing=True))
+                        moon_waxing=True, glow=0.0, storm=0.0, lightning=0.0,
+                        lightning_bearing=0.0), events=[])
 
 def _projected(name):
     """A block exactly as the host projects it for a fresh game."""
@@ -831,6 +832,9 @@ async function run() {
   await sleep(120);
   baseObserver.disconnect();
   assert(baseRedraws <= 1, "OPZ redraws the whole map on every sweep frame");
+  // Ping rings and splashes animate on the same layer while they spread;
+  // clear them so only the sweep itself is compared below.
+  states.opz.plot = {...states.opz.plot, fx: {pings: [], echoes: [], splashes: []}};
   states.opz.phase = "ended";
   await until(() => $test("role-visual-state").textContent.includes("inactive") ||
     $test("role-visual-state").textContent.includes("inaktiv"), "ended OPZ state missing");
@@ -968,10 +972,11 @@ def _direct_fire_browser_states():
                    environment=dict(sea_state=2, effective_sea_state=2.4,
                                     is_night=False, weather="clear",
                                     wind_from_deg=245.0, wind_speed_kn=12.0,
-                                    rain_intensity=.1, visibility_nm=24.0),
+                                    rain_intensity=.1, visibility_nm=24.0, storm=0.0),
                    mission=dict(name="Fire test", objective="Observe", remaining_s=500.0),
                    autocrew=dict(enabled=False, status="off"), autocrew_overview=[],
-                   audio=dict(events=[], callouts=[]), weather_station=WEATHER_STATION, plot=PLOT)
+                   audio=dict(events=[], callouts=[]), weather_station=WEATHER_STATION, plot=PLOT,
+                   alarms=[])
     navigation = dict(x=250.0, y=250.0, course=0.0, speed=10.0,
                       target_course=0.0, target_speed=10.0, rudder_angle=0.0,
                       yaw_rate=0.0, turn_radius_nm=None)
@@ -1045,7 +1050,10 @@ def _direct_fire_browser_states():
                          can_dipping_ping=False,
                          weather_launch_safe=True,
                          weather_dipping_safe=True, crosswind_kn=4.0,
-                         rtb_margin_s=600.0)))
+                         rtb_margin_s=600.0,
+                         deck_motion=dict(roll_deg=2.0, pitch_deg=-1.0, roll_limit_deg=8.0,
+                                          pitch_limit_deg=3.5, quiet_s=9.0, window_s=6.0,
+                                          window_open=True))))
     damage = dict(common, role="damage", damage=dict(
         compartments=[dict(key="engine", name="Engine", state="BESCHAEDIGT",
                            flood=20.0, fire=10.0, repairable=True,
@@ -1184,12 +1192,13 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             effective_sea_state=float(legacy["environment"]["sea_state"]),
             is_night=legacy["environment"]["is_night"], weather="clear",
             wind_from_deg=220.0, wind_speed_kn=10.0,
-            rain_intensity=0.0, visibility_nm=30.0)
+            rain_intensity=0.0, visibility_nm=30.0, storm=0.0)
         common["autocrew"] = {"enabled": False, "status": "off"}
         common["autocrew_overview"] = []
         common["audio"] = {"events": list(legacy["sound_events"]), "callouts": []}
         common["weather_station"] = WEATHER_STATION
         common["plot"] = PLOT
+        common["alarms"] = []
         if role == "bridge":
             common[role] = {"navigation": {key: legacy["ownship"][key] for key in (
                 "x", "y", "course", "speed", "target_course", "target_speed")},

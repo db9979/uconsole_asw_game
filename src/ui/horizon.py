@@ -17,7 +17,7 @@ from src.core import config
 from src.core.i18n import message, raw_text
 from src.physics import ship_dynamics
 from src.sensors import nav_lights
-from src.ui import layout, sight_scene, silhouettes, unit_models
+from src.ui import layout, sight_events_view, sight_scene, silhouettes, unit_models
 
 SCALE_COLOR = (170, 232, 208)
 CROSSHAIR_COLOR = (120, 214, 180)
@@ -204,9 +204,7 @@ def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
                                  aloft=aloft, nav=nav, t=t, model=model):
         return
     if cls == "torpedo":
-        left = cx - width // 2
-        pygame.draw.line(s, silhouettes.FOAM, (left, base_y + 1), (left + width, base_y + 1),
-                         max(1, min(3, width // 12)))
+        silhouettes.draw_bubble_track(s, cx, base_y, width, t)
         return
     silhouettes.draw_profile(s, cls if cls in silhouettes.PROFILES else "unknown",
                              cx, base_y, width, color, t=t, rim=rim, lights=lights,
@@ -217,7 +215,7 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                  visibility_nm: float, motion: tuple, outlines, crosshair_deg=None,
                  land=None, anim_t: float = 0.0, sky=None, sea_state: float = 2.0,
                  elevation_deg: float = 0.0, stabilized: bool = False,
-                 optics_label=None, way=None) -> None:
+                 optics_label=None, way=None, events=(), lens=None) -> None:
     """The picture in the eyepiece or binoculars in the start screen's look:
     sky with stars, moon or sun and clouds, the sea in motion, the charted
     coast, the outlines within the field in steel with a lit rim, rain, snow
@@ -226,7 +224,10 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
     ``sight_scene.sky_values`` dict; without one a clear noon or midnight.
     ``elevation_deg`` tilts the optics up (positive) or down; ``stabilized``
     takes out all but ``STABILIZED_RESIDUAL`` of the hull's motion; ``way``
-    is the own way through the water (``sight_scene.draw_scene``)."""
+    is the own way through the water (``sight_scene.draw_scene``);
+    ``events`` are the ``sight_events`` rows the eye can see (columns, fire,
+    sinkings), drawn at the display time ``anim_t``; ``lens`` is the water
+    on a periscope's glass (``sight_scene.lens_water``: cover, drops)."""
     rect = pygame.Rect(rect)
     sky = sky if sky is not None else sight_scene.plain_sky(night)
     offset, tilt = motion
@@ -271,8 +272,13 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             _draw_land(s, rect, land, line_of_sight=line_of_sight, fov_deg=fov_deg,
                        horizon=horizon, tilt=tilt, night=sky["light"] < 0.5,
                        visibility_nm=visibility_nm, haze_color=haze_color, colors=colors)
+        silhouettes.set_glow(colors.get("glow", 0.0))
         draw_rows(afloat, colors, False)
+        silhouettes.set_glow(0.0)
+        sight_events_view.draw_events(s, view, colors, sky, events, anim_t)
         sight_scene.draw_weather(s, view, sky, colors, visibility_nm=visibility_nm, t=anim_t)
+        if lens is not None:
+            sight_scene.draw_lens_water(s, rect, lens[0], lens[1], anim_t)
         # Labels at least ``SCALE_LABEL_MIN_PX`` apart (the narrow lookout
         # strip labels every 30 degrees, the eyepieces every 10).
         label_step = next((step for step in (10, 30, 45, 90)

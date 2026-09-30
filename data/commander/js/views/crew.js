@@ -1,7 +1,7 @@
 // The crew's watch bill, fatigue and morale (frigate bridge/damage, boat
 // damage control): metrics plus the two orders the role may give.
 import { number, t, unit } from "../core/format.js";
-import { actionButton, metrics } from "./dom.js";
+import { actionButton, metrics, patchChildren } from "./dom.js";
 
 export function renderCrew(list, actions, crew, orders) {
   const relief = crew.action_stations ? t("crew_no_relief") : crew.turnover ? t("crew_turnover")
@@ -32,5 +32,5 @@ export function renderCrew(list, actions, crew, orders) {
     buttons.push(actionButton("crew_medic_next", orders.medic, {}, gaps));
     buttons.push(actionButton("crew_reassign", orders.reassign, {}, gaps && hurt.spare > 0 && hurt.reassign_in_s <= 0));
   }
-  actions.replaceChildren(...buttons);
+  patchChildren(actions, buttons);
 }

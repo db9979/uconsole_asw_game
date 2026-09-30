@@ -11,7 +11,7 @@ import math
 
 import pygame
 
-from src.core import config
+from src.core import buoy_antenna, config
 from src.core.boat_radio import antenna_up, reception
 from src.core.i18n import message
 from src.ui import layout, lines
@@ -59,6 +59,15 @@ def order_line(game, boat):
     return message("uboot.radio.order_" + order["kind"], number=str(order["id"]), left=left)
 
 
+def buoy_line(boat):
+    """The towed buoy antenna's state line (``buoy_antenna.py``)."""
+    state = boat.orders.buoy
+    return message("uboot.radio.buoy." + buoy_antenna.status(state),
+                   percent=f"{state[0] * 100:.0f}",
+                   depth=f"{config.UBOOT_BUOY_DEPTH_M:.0f}",
+                   speed=f"{config.UBOOT_BUOY_SPEED_KN:.0f}")
+
+
 def log_text(game, row):
     age = _clock(game.sim_t - row["t"])
     if row["kind"] == "broadcast":
@@ -86,13 +95,14 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
     up = antenna_up(boat)
     mode = reception(boat)
     row = layout.line_pitch(16, 2)
-    box = layout.box(s, (x, y, w, _box_height(3 * row + 24)), "uboot.panel.radio",
+    box = layout.box(s, (x, y, w, _box_height(4 * row + 24)), "uboot.panel.radio",
                      border=config.COLOR_WARN if radio.transmitting else config.COLOR_TEXT)
     bx, by, bw, _ = box
-    layout.blit_line(s, "uboot.radio.antenna_up" if up else "uboot.radio.antenna_vlf"
+    layout.blit_line(s, "uboot.radio.antenna_up" if up else "uboot.radio.antenna_buoy"
+                     if mode == "buoy" else "uboot.radio.antenna_vlf"
                      if mode == "vlf" else "uboot.radio.antenna_down",
                      (bx, by, bw, row), config.COLOR_OK if up else config.COLOR_TEXT
-                     if mode == "vlf" else config.COLOR_TEXT_DIM, size=16)
+                     if mode in ("vlf", "buoy") else config.COLOR_TEXT_DIM, size=16)
     number = str(progress["broadcast"])
     if progress["copied"]:
         state = message("uboot.radio.broadcast_copied", number=number)
@@ -116,6 +126,8 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
     layout.blit_line(s, send, (bx, by + 2 * row + 12, bw, row), color, size=16)
     layout.meter(s, (bx + 2, by + 3 * row + 15, bw - 4, 6), progress["send"],
                  config.COLOR_WARN)
+    layout.blit_line(s, buoy_line(boat), (bx, by + 3 * row + 24, bw, row),
+                     config.COLOR_WARN if boat.orders.buoy[2] else config.COLOR_TEXT, size=16)
     top = box[1] + box[3] + 8 + 8
     latest = radio.latest_report()
     report = layout.box(s, (x, top, w, _box_height(2 * row)), "uboot.panel.hq_report")
@@ -146,6 +158,7 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
 
 
 def draw_report_chart(game, boat, view) -> None:
+    from src.ui.map_view import _map_label
     """HQ's latest contact report: error circle, reported course and its age;
     and the area of an open HQ order."""
     order = boat.radio.active_order()
@@ -153,8 +166,9 @@ def draw_report_chart(game, boat, view) -> None:
         ox, oy = view.world_to_screen(order["x"], order["y"])
         radius = max(6, int(order["radius_nm"] * view.scale))
         pygame.draw.circle(game.screen, config.COLOR_OK, (int(ox), int(oy)), radius, 1)
-        layout.blit_line(game.screen, message("uboot.radio.chart_order", number=str(order["id"])),
-                         (int(ox) + 8, int(oy) - radius - 20, 200, 18), config.COLOR_OK, size=12)
+        _map_label(game.screen, game, message("uboot.radio.chart_order", number=str(order["id"])),
+                   (int(ox) + 8, int(oy) - radius - 20), config.COLOR_OK, config.MAP_RECT,
+                   size=12)
     latest = boat.radio.latest_report()
     if latest is None:
         return
@@ -169,5 +183,5 @@ def draw_report_chart(game, boat, view) -> None:
     rad = math.radians(report["course"])
     lines.line(s, REPORT_COLOR, (int(px), int(py)),
                (int(px + 24 * math.sin(rad)), int(py - 24 * math.cos(rad))), 2)
-    layout.blit_line(s, message("uboot.radio.chart_label", age=f"{age / 60.0:.0f}"),
-                     (int(px) + 8, int(py) - radius - 20, 200, 18), REPORT_COLOR, size=12)
+    _map_label(s, game, message("uboot.radio.chart_label", age=f"{age / 60.0:.0f}"),
+               (int(px) + 8, int(py) - radius - 20), REPORT_COLOR, config.MAP_RECT, size=12)

@@ -85,7 +85,7 @@ export function validateState(state) {
   if (display.tracks.some((track) => new Set(track.fixes.map((fix) => fix.source)).size !== track.fixes.length)) throw new Error("protocol");
   const environment = display.environment;
   if (environment != null && (typeof environment !== "object" || Array.isArray(environment) ||
-      Object.keys(environment).sort().join(",") !== "effective_sea_state,is_night,rain_intensity,sea_state,visibility_nm,weather,wind_from_deg,wind_speed_kn" ||
+      Object.keys(environment).sort().join(",") !== "effective_sea_state,is_night,rain_intensity,sea_state,storm,visibility_nm,weather,wind_from_deg,wind_speed_kn" ||
       (environment.sea_state !== null && (!Number.isInteger(environment.sea_state) || environment.sea_state < 0 || environment.sea_state > 9)) ||
       (environment.is_night !== null && typeof environment.is_night !== "boolean"))) throw new Error("protocol");
 }

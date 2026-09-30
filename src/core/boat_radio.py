@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import math
 
-from src.core import config, detrand
+from src.core import buoy_antenna, config, detrand
 from src.sensors.platform import MAST_DEPTH_M
 
 VERSION = 2
@@ -66,18 +66,24 @@ def antenna_up(boat) -> bool:
 
 
 def reception(boat):
-    """How the boat hears the broadcast now: "hf" (mast up), "vlf" (loop
-    antenna at shallow depth) or None."""
+    """How the boat hears the broadcast now: "hf" (mast up), "buoy" (the
+    towed buoy antenna, ``buoy_antenna.py``), "vlf" (loop antenna at
+    shallow depth) or None."""
     if antenna_up(boat):
         return "hf"
     sub = boat.sub
-    if not sub.sunk and sub.depth <= config.UBOOT_RADIO_VLF_DEPTH_M:
+    if sub.sunk:
+        return None
+    if buoy_antenna.receiving(boat.orders.buoy, sub.depth, sub.speed):
+        return "buoy"
+    if sub.depth <= config.UBOOT_RADIO_VLF_DEPTH_M:
         return "vlf"
     return None
 
 
 def copy_seconds(mode) -> float:
-    return config.UBOOT_RADIO_COPY_S if mode == "hf" else config.UBOOT_RADIO_VLF_COPY_S
+    return {"hf": config.UBOOT_RADIO_COPY_S,
+            "buoy": config.UBOOT_BUOY_COPY_S}.get(mode, config.UBOOT_RADIO_VLF_COPY_S)
 
 
 class BoatRadio:

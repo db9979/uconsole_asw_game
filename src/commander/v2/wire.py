@@ -39,6 +39,15 @@ UBOOT_COMMAND_ROLES = tuple(role for role in OPFOR_ROLES if role != "uboot_sonar
 # solo mode never leases them and they claim no crewed boat by themselves.
 LOOKOUT_ROLES = ("lookout", "uboot_lookout")
 ROLES = STATIONS + OPFOR_ROLES + LOOKOUT_ROLES
+# The order a new crew browser is seated in an open lobby: the stations that
+# need judgement first, the routine ones the AI crew keeps well last. The
+# browser can change its station at any time.
+LOBBY_SEAT_ORDER = {
+    "frigate": ("bridge", "sonar", "weapons", "helicopter", "opz", "eloka", "radio",
+                "engine", "damage"),
+    "uboot": ("uboot", "uboot_sonar", "uboot_weapons", "uboot_esm", "uboot_nav",
+              "uboot_engine", "uboot_radio"),
+}
 # Roles with a sonar room (waterfall stream), and the gated capabilities.
 SONAR_ROLES = ("sonar", "uboot_sonar")
 DIRECT_FIRE_ROLES = ("weapons", "helicopter", "opz", "uboot_weapons")
@@ -193,6 +202,8 @@ def _websocket_frame(payload, opcode=2):
 
 
 SIMLOG_MAX_BYTES = 2 * 1024 * 1024
+# The finished mission's debrief replay, one document per side.
+DEBRIEF_MAX_BYTES = 1024 * 1024
 EVENTS_MAX = 128
 SIMLOG_ENTRIES_MAX = 64
 

@@ -648,14 +648,27 @@ def weapons(game, found) -> str:
     if _running(game, "frigate"):
         # A torpedo is out: a boat close enough gets a rocket salvo on top.
         if (contact.range_est <= RBU_FIRE_NM
+                and _may_designate(game, contact, Station.SONAR, Station.OPZ)
                 and game.designate_sonar_target(contact) is True
                 and game.fire_rbu_at(contact, _attack_depth(game, contact)) == "ok"):
             return "engaged"
         return "monitoring"
-    if game.designate_sonar_target(contact) is not True:
+    if (not _may_designate(game, contact, Station.SONAR, Station.OPZ)
+            or game.designate_sonar_target(contact) is not True):
         return "monitoring"
     depth = _attack_depth(game, contact)
     return "engaged" if game.launch_torpedo_at(contact, depth) is True else "monitoring"
+
+
+def _may_designate(game, contact, *holders) -> bool:
+    """The AI designates ``contact`` unless a person at one of ``holders``
+    (the stations that designate too) has another live target designated."""
+    current = game.target
+    if current is None or current is contact or not any(
+            manned(game, station) for station in holders):
+        return True
+    return not (game.sonar.contacts.get(current.target_id) is current
+                and _fresh(game, current))
 
 
 def _attack_depth(game, contact) -> float:
@@ -738,6 +751,7 @@ def mpa(game, found) -> str:
         game.set_mpa_radar(True)
     contact = found.get("contact")
     if (contact is not None and "x" in found and aircraft.torps > 0
+            and _may_designate(game, contact, Station.SONAR, Station.WEAPONS)
             and found.get("age", 0.0) <= AIR_FIX_S and not _running(game, "mpa")
             and game.designate_sonar_target(contact) is True
             and game.mpa_attack() is True):
@@ -795,7 +809,8 @@ def update(game, dt: float) -> None:
         log_esm(game)
     note_lead(game)
     found = datum(game)
-    if not manned(game, Station.BRIDGE):
+    # The engine room orders course and speed too: a person there steers.
+    if not manned(game, Station.BRIDGE) and not manned(game, Station.ENGINE):
         bridge(game, found)
     if not manned(game, Station.WEAPONS):
         weapons(game, found)

@@ -35,6 +35,7 @@ _ACTIONS = frozenset({
     "off", "enabled", "monitoring", "tma", "bt", "tas", "released", "focused",
     "countermeasure", "air_defense", "repair", "hfdf", "identified",
     "limited_speed", "returning", "evading", "correcting", "engaged",
+    "recovering",
 })
 
 
@@ -226,6 +227,27 @@ class AutocrewController:
                 changed = True
             return "evading" if changed else "monitoring"
 
+        man = game.overboard_target() if hasattr(game, "overboard_target") else None
+        if man is not None:
+            # Man overboard: steer onto the marker and come down to pickup
+            # speed for the last mile.
+            dx, dy = man[0] - game.ship.x, man[1] - game.ship.y
+            course = math.degrees(math.atan2(dx, -dy)) % 360.0
+            speed = (config.INCIDENT_OVERBOARD_PICKUP_KN - 1.0
+                     if math.hypot(dx, dy) <= 1.0 else 15.0)
+            changed = False
+            if (safe(course) and abs(((game.ship.target_course - course + 180.0)
+                                      % 360.0) - 180.0) > 3.0
+                    and game.order_course(course) == "ok"):
+                changed = True
+            if (abs(game.ship.target_speed - speed) > 0.5
+                    and game.order_speed(speed) == "ok"):
+                changed = True
+            return "recovering" if changed else "monitoring"
+        if (hasattr(game, "overboard_just_recovered") and game.overboard_just_recovered()
+                and game.ship.target_speed < config.INCIDENT_OVERBOARD_PICKUP_KN
+                and game.order_speed(config.AUTOCREW_RESUME_SPEED_KN) == "ok"):
+            return "recovering"
         if safe(game.ship.target_course):
             return "monitoring"
         for delta in (30.0, -30.0, 60.0, -60.0, 90.0, -90.0):
@@ -251,6 +273,10 @@ class AutocrewController:
                          or not game.sonar.focus_locked):
             best = max(contacts, key=lambda contact: (
                 contact.quality, contact.confidence, -contact.id))
+            if (game.selected_contact in contacts
+                    and any(AutocrewController.local_holds(game, key)
+                            for key in AUTOCREW_STATIONS if key != "sonar")):
+                best = game.selected_contact    # the uConsole's pick (Up/Down) wins
             if game.set_sonar_focus(best) is True:
                 return "focused"
         tow = game.sonar.tow_status(game.ship.speed)

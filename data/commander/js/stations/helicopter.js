@@ -2,10 +2,39 @@ import { S } from "../state/store.js";
 import { stopSonarAudio } from "../audio/audio.js";
 import { $, heloStates } from "../core/base.js";
 import { enumText, finite, number, t, unit } from "../core/format.js";
-import { fillFireTargets, metrics, node, position, stationRows, yesNo } from "../views/dom.js";
+import { fillFireTargets, metrics, position, setControlValue, setOptions, stationRows, yesNo } from "../views/dom.js";
 import { palette } from "../core/palette.js";
 import { renderLamps } from "../views/console-kit.js";
 import { visualContext } from "../views/visual-common.js";
+
+// The flight deck's motion (src/ui/stations/helicopter.py _draw_deck_gauge):
+// the stern seen from aft rolling against the horizon, the pitch bar with its
+// limits and the quiet-period bar that fills while the deck stays inside.
+function drawDeckMotion(deck) {
+  const canvas = $("helicopter-deck-canvas"), g = canvas.getContext("2d"), p = palette();
+  const w = canvas.width, h = canvas.height, cx = (w - 30) / 2, cy = h * .45, half = Math.min(w - 30, h * 2) * .3;
+  const inside = Math.abs(deck.roll_deg) <= deck.roll_limit_deg && Math.abs(deck.pitch_deg) <= deck.pitch_limit_deg;
+  const color = deck.window_open ? p.accent : inside ? p.amber : p.red;
+  g.fillStyle = p.scopeBg; g.fillRect(0, 0, w, h);
+  g.fillStyle = p.panel; g.fillRect(0, cy, w - 30, h - 24 - cy);
+  g.strokeStyle = p.line; g.lineWidth = 1; g.beginPath(); g.moveTo(0, cy); g.lineTo(w - 30, cy); g.stroke();
+  const roll = deck.roll_deg * Math.PI / 180, ux = Math.cos(roll), uy = Math.sin(roll);
+  const turned = (shape) => shape.map(([px, py]) => [cx + px * ux - py * uy, cy + px * uy + py * ux]);
+  const poly = (points, fill) => { g.fillStyle = fill; g.beginPath(); points.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fill(); };
+  const hull = turned([[-half, 0], [half, 0], [half * .8, half * .45], [-half * .8, half * .45]]);
+  poly(hull, p.muted); poly(turned([[-half * .55, 0], [half * .55, 0], [half * .5, -half * .5], [-half * .5, -half * .5]]), p.muted);
+  g.strokeStyle = color; g.lineWidth = 3; g.beginPath(); g.moveTo(...hull[0]); g.lineTo(...hull[1]); g.stroke();
+  const barX = w - 20, barTop = 6, barH = h - 36, scale = barH / 2 / (deck.pitch_limit_deg * 2);
+  g.lineWidth = 1; g.strokeStyle = p.line; g.strokeRect(barX, barTop, 8, barH);
+  for (const limit of [-deck.pitch_limit_deg, deck.pitch_limit_deg]) {
+    const y = barTop + barH / 2 - limit * scale; g.strokeStyle = p.text; g.beginPath(); g.moveTo(barX - 3, y); g.lineTo(barX + 11, y); g.stroke();
+  }
+  const pitch = Math.max(-2 * deck.pitch_limit_deg, Math.min(2 * deck.pitch_limit_deg, deck.pitch_deg));
+  g.fillStyle = color; g.fillRect(barX + 1, barTop + barH / 2 - pitch * scale - 2, 6, 4);
+  const fill = Math.min(1, deck.quiet_s / Math.max(deck.window_s, .1));
+  g.strokeStyle = p.line; g.strokeRect(4, h - 16, w - 8, 10); g.fillStyle = color; g.fillRect(5, h - 15, (w - 10) * fill, 8);
+  $("helicopter-deck-text").textContent = `${t("helo_deck_values", {roll: number(Math.abs(deck.roll_deg), 1), pitch: number(Math.abs(deck.pitch_deg), 1)})} \u00b7 ${t(deck.window_open ? "helo_deck_open" : "helo_deck_wait")}`;
+}
 
 // The dipping sonar's annunciator lamps: dome, ping, weather and hover.
 function renderHelicopterLamps(asset, ready) {
@@ -71,19 +100,12 @@ export function renderHelicopterStation(payload) {
   S.helicopterAudioSource = payload.acoustic.source;
   if (!S.stationDrafts.has("helicopter-buoy-mode")) $("helicopter-buoy-mode").value = asset.buoy_mode;
   const listen = $("helicopter-listen-source");
-  if (listen.options.length !== payload.acoustic.sources.length ||
-      payload.acoustic.sources.some((source, index) => listen.options[index]?.value !== source)) {
-    listen.replaceChildren(...payload.acoustic.sources.map((source) => {
-      const option = node("option", source === "DIP" ? t("helicopter_dip_picture") : source);
-      option.value = source;
-      return option;
-    }));
-  }
-  listen.value = payload.acoustic.source;
+  setOptions(listen, payload.acoustic.sources.map((source) => [source, source === "DIP" ? t("helicopter_dip_picture") : source]));
+  setControlValue(listen, payload.acoustic.source);
   if (document.activeElement !== $("helicopter-listen-bearing"))
     $("helicopter-listen-bearing").value = payload.acoustic.listen_bearing ?? "";
-  $("helicopter-audition-mode").value = payload.acoustic.audition_mode;
-  $("helicopter-audio-band").value = payload.acoustic.band_preset;
+  setControlValue($("helicopter-audition-mode"), payload.acoustic.audition_mode);
+  setControlValue($("helicopter-audio-band"), payload.acoustic.band_preset);
   $("helicopter-audio-notch").checked = payload.acoustic.notch;
   if (document.activeElement !== $("helicopter-audio-gain"))
     $("helicopter-audio-gain").value = payload.acoustic.gain_db;
@@ -116,6 +138,7 @@ export function renderHelicopterStation(payload) {
     ["helicopter_dip_winch_rate", unit(environment.winch_rate_m_s, "m/s", 1)],
     ["helicopter_dip_below_layer", environment.below_thermocline === null ? t("station_none") : yesNo(environment.below_thermocline)]]);
   const ready = payload.readiness;
+  drawDeckMotion(ready.deck_motion);
   metrics($("helicopter-readiness"), [["flightdeck_down", yesNo(ready.flightdeck_down)],
     ["helicopter_can_launch", yesNo(ready.can_launch)], ["helicopter_can_return", yesNo(ready.can_return)],
     ["deck_state", ready.deck_state], ["helicopter_can_waypoint", yesNo(ready.can_set_waypoint)],

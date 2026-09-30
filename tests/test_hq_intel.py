@@ -46,6 +46,8 @@ def test_free_hunt_menu_row_selects_exact_intel_with_counts_and_air_waves():
     assert game.menu_hq_intel == "exact"
     game.draw()
     press(game, pygame.K_RETURN)
+    assert game.menu_screen == "briefing"      # weather and time of day
+    press(game, pygame.K_RETURN)
     assert not game.in_menu and game.scenario_key == "s4_zufall"
     [report] = intel_reports(game)
     text = localize(report, game.tr)

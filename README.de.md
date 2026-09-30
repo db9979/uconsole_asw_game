@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.113**
+Aktuelle Version: **1.3.124**
 
-Version 1.3.113 gleicht KI-Fregatte und KI-U-Boot an. In den
+Version 1.3.124 gleicht KI-Fregatte und KI-U-Boot an. In den
 Fregatten-Szenarien folgen die KI-Jäger jetzt der Startmeldung der Führung
 über die Bedrohung und einer verlorenen U-Boot-Peilung, pingen auf eine bloße
 Peilung nur alle 10 Minuten, damit ein Ping ohne Treffer das U-Boot nicht mehr
@@ -28,7 +28,7 @@ Patrouillenposition, gegen Durchbruch und Aufklärung schießt sie ihren eigenen
 Torpedo erst ab 3 sm und hält ihren Hubschrauber innerhalb 8 sm. Das
 Durchbruch-U-Boot umgeht die Patrouillenposition der Fregatte, die
 Aufklärungsmeldung zählt innerhalb 5 sm, und das Geleitzug-U-Boot schießt ab
-3 sm. Spielstände wechseln auf Format v41 (die Spuren der Jäger).
+3 sm. Spielstände wechseln auf Format v43 (die Spuren der Jäger).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

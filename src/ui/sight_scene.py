@@ -99,7 +99,8 @@ def _body(hour: float) -> tuple:
 
 def sky_values(hour: float, lunar_age_days: float, moon_illumination: float,
                cloud_cover: float, precipitation: str, rain_intensity: float,
-               wind_from_deg: float) -> dict:
+               wind_from_deg: float, glow: float = 0.0, storm: float = 0.0,
+               lightning=None) -> dict:
     """The sky of the eyepieces from observed values only (detached)."""
     light, dusk = daylight(hour)
     sun_bearing, sun_alt = _body(hour)
@@ -115,7 +116,15 @@ def sky_values(hour: float, lunar_age_days: float, moon_illumination: float,
                 sun_bearing=round(sun_bearing, 2), sun_alt_deg=round(sun_alt, 2),
                 moon_bearing=round(moon_bearing, 2), moon_alt_deg=round(moon_alt, 2),
                 moon_illumination=round(_clamp(moon_illumination), 4),
-                moon_waxing=bool((lunar_age_days % LUNAR_MONTH_D) < LUNAR_MONTH_D / 2.0))
+                moon_waxing=bool((lunar_age_days % LUNAR_MONTH_D) < LUNAR_MONTH_D / 2.0),
+                # Bioluminescence at night: stirred water (wakes, torpedo
+                # tracks) glows blue-green (``src/physics/bioluminescence.py``).
+                glow=round(_clamp(glow), 4),
+                # Thunderstorm (``src/world/thunder.py``): activity 0..1 makes
+                # the rain heavier; a strike lights the picture at its bearing.
+                storm=round(_clamp(storm), 4),
+                lightning=round(_clamp(lightning[0]), 4) if lightning else 0.0,
+                lightning_bearing=round(lightning[1] % 360.0, 2) if lightning else 0.0)
 
 
 def sky_state(game) -> dict:
@@ -124,7 +133,8 @@ def sky_state(game) -> dict:
     return sky_values(game.world.hour, game.lunar_age_days(),
                       atmosphere["moon_illumination"], atmosphere["cloud_cover"],
                       atmosphere["precipitation"], atmosphere["rain_intensity"],
-                      atmosphere["wind_from_deg"])
+                      atmosphere["wind_from_deg"], game.world.glow(),
+                      game.world.thunderstorm(), game.world.lightning(game.sim_t))
 
 
 def plain_sky(night: bool) -> dict:
@@ -151,7 +161,9 @@ def palette(sky: dict, haze: float) -> dict:
                 cloud=blend(blend((26, 36, 46), (196, 204, 208), light),
                             (196, 130, 96), dusk * 0.6),
                 cloud_rim=blend(blend((70, 96, 108), (238, 242, 242), light),
-                                (250, 190, 130), dusk * 0.7))
+                                (250, 190, 130), dusk * 0.7),
+                # Glowing plankton in stirred water (night bloom, 0..1).
+                glow=float(sky.get("glow", 0.0)) * (1.0 - haze * 0.6))
 
 
 def _cached(cache, key, build):
@@ -339,6 +351,8 @@ OWN_STERN_M = 100.0
 OWN_BEAM_M = 17.0
 KELVIN_DEG = 19.47
 WAKE_FOAM = 48
+# The blue-green light of stirred plankton (bioluminescence).
+GLOW = (70, 235, 205)
 BOW_SPRAY = 28
 _FLOW = OrderedDict()
 
@@ -388,6 +402,9 @@ def _draw_way(s, view, colors, way, t, haze):
     eye = float(way.get("eye_m", 18.0))
     strength = _clamp(speed / 20.0) * (1.0 - haze * 0.7)
     foam = blend(colors["sea"][0], colors["crest"], 0.35 + 0.55 * strength)
+    glow = colors.get("glow", 0.0) * strength
+    if glow > 0.0:
+        foam = blend(foam, GLOW, 0.85 * glow)
     rect = view.rect
     stern = (course + 180.0) % 360.0
     # The wake: a band of smoother, lighter churned water behind the stern,
@@ -414,6 +431,8 @@ def _draw_way(s, view, colors, way, t, haze):
                 pygame.draw.polygon(s, calm, [previous[0], previous[1], right, left])
             previous = (left, right)
         rim = blend(colors["sea"][0], colors["crest"], 0.15 + 0.3 * strength)
+        if glow > 0.0:
+            rim = blend(rim, GLOW, 0.6 * glow)
         for line in edges:
             pygame.draw.lines(s, rim, False, line, 1)
         for k in range(WAKE_FOAM):
@@ -615,9 +634,12 @@ def draw_weather(s, view: View, sky: dict, colors: dict, *, visibility_nm: float
         fog = _cached(_SHADE_CACHE, ("fog", rect.w, band, colors["haze"]),
                       lambda: _fog(rect.w, band, colors["haze"]))
         s.blit(fog, (rect.x, int(view.horizon - band / 2)))
+    draw_lightning(s, view, sky)
     kind, intensity = sky["precipitation"], sky["intensity"]
     if kind == "none" or intensity <= 0.0:
         return
+    # A thunderstorm pours: up to 60 % more streaks.
+    intensity = intensity * (1.0 + 0.6 * sky.get("storm", 0.0))
     lateral = math.sin(math.radians(sky["wind_from_deg"] - view.los + 180.0))
     color = blend(blend((70, 96, 104), (196, 208, 212), sky["light"]), colors["haze"], haze * 0.3)
     if kind == "rain":
@@ -633,6 +655,104 @@ def draw_weather(s, view: View, sky: dict, colors: dict, *, visibility_nm: float
             x = rect.x + (i * 97 + 13 * math.sin(t * 0.7 + i) + t * 22 * lateral) % rect.w
             y = rect.y + (i * 53 + t * (26 + i % 5 * 6)) % rect.h
             pygame.draw.circle(s, color, (int(x), int(y)), 1 + (i % 3 == 0))
+
+
+LIGHTNING = (200, 196, 255)
+BOLT = (238, 236, 255)
+
+
+def draw_lightning(s, view: View, sky: dict) -> None:
+    """A strike: the picture flashes pale violet, and a bolt forks down to
+    the horizon when its bearing lies in the field of view."""
+    level = sky.get("lightning", 0.0)
+    if level <= 0.02:
+        return
+    rect = view.rect
+    lift = int(70 * level)
+    s.fill((lift, lift, int(lift * 1.15)), rect, special_flags=pygame.BLEND_RGB_ADD)
+    bearing = sky.get("lightning_bearing", 0.0)
+    if not view.visible(bearing):
+        return
+    x = view.x(bearing)
+    y, bottom = float(rect.y), view.base(x)
+    seed = int(bearing * 100.0)
+    points = [(x, y)]
+    step = max(6.0, (bottom - y) / 9.0)
+    index = 0
+    while y < bottom:
+        index += 1
+        y = min(bottom, y + step)
+        x += ((seed * (index * 7 + 3)) % 23 - 11) * rect.w / 1200.0
+        points.append((x, y))
+    width = 2 if level > 0.5 else 1
+    pygame.draw.lines(s, blend(LIGHTNING, BOLT, level), False, points, width)
+    if len(points) > 4:
+        fork = points[3]
+        pygame.draw.line(s, LIGHTNING, fork, (fork[0] + (seed % 2 * 2 - 1) * step,
+                                              fork[1] + step * 1.4), 1)
+
+
+# Water on the periscope's head glass: how long the water takes to run off a
+# raised scope, the sea state from which waves wash over it, and how long
+# drops stay on the glass after a wave.
+RAISE_DRAIN_S = 1.4
+WASH_SEA_MIN = 3.5
+DROPS_S = 2.5
+DROP_COUNT = 18
+WATER_COLOR = (12, 58, 66)
+WATER_FOAM = (150, 214, 208)
+
+
+def lens_water(t: float, sea_state: float, raised_s: float | None = None) -> tuple:
+    """(cover 0..1, drops 0..1) on the periscope's glass at display time
+    ``t``: the share of the picture under water (from below) and how wet
+    the glass still is.  A scope raised ``raised_s`` ago is still draining;
+    in a rough sea the bigger waves wash over the head now and then.
+    Cosmetic only; the browser uses the same formula (sight-scene.js)."""
+    cover = drops = 0.0
+    if raised_s is not None and raised_s >= 0.0:
+        cover = _clamp(1.0 - raised_s / RAISE_DRAIN_S)
+        drops = _clamp(1.0 - (raised_s - RAISE_DRAIN_S) / DROPS_S) if raised_s < RAISE_DRAIN_S + DROPS_S else 0.0
+    if sea_state >= WASH_SEA_MIN:
+        period = 5.0 + sea_state
+        phase = t / period
+        wave = math.floor(phase)
+        amp = 0.75 + 0.25 * math.sin(wave * 1.7)
+        crest = amp * math.sin(math.tau * phase)
+        threshold = 1.1 - 0.12 * sea_state
+        cover = max(cover, _clamp((crest - threshold) / max(0.05, 1.0 - threshold)) * 0.9)
+        # Drops after this wave's crest (a quarter period in) if it washed over.
+        since = (phase - wave - 0.25) * period
+        if amp > threshold and 0.0 <= since <= DROPS_S + period * 0.25:
+            drops = max(drops, _clamp(1.0 - max(0.0, since - period * 0.25) / DROPS_S))
+    return cover, drops
+
+
+def draw_lens_water(s, rect, cover: float, drops: float, t: float) -> None:
+    """Water over the lower ``cover`` of the picture with a moving wavy
+    line and foam, and drops running down the glass."""
+    rect = pygame.Rect(rect)
+    if cover > 0.01:
+        top = rect.bottom - cover * rect.h
+        step = max(6, rect.w // 60)
+        points = [(rect.x, rect.bottom)]
+        for x in range(rect.x, rect.right + step, step):
+            points.append((min(x, rect.right), top + 5.0 * math.sin(x / 37.0 + t * 3.1)
+                           + 3.0 * math.sin(x / 11.0 - t * 5.3)))
+        points.append((rect.right, rect.bottom))
+        pygame.draw.polygon(s, WATER_COLOR, points)
+        pygame.draw.lines(s, WATER_FOAM, False, points[1:-1], 2)
+    if drops > 0.02:
+        count = int(DROP_COUNT * drops)
+        for index in range(count):
+            fx = (index * 0.5698 + 0.13) % 1.0
+            fy = (index * 0.7549 + 0.29) % 1.0
+            x = rect.x + fx * rect.w
+            y = rect.y + (fy * 0.85 + 0.06 * (1.0 - drops)) * rect.h
+            radius = max(2, int((3 + (index % 4) * 2) * rect.w / 600.0 + 1))
+            pygame.draw.circle(s, WATER_FOAM, (int(x), int(y)), radius, 1)
+            pygame.draw.circle(s, (230, 250, 250), (int(x - radius * 0.4), int(y - radius * 0.4)),
+                               max(1, radius // 3))
 
 
 def _fog(width, height, color) -> pygame.Surface:

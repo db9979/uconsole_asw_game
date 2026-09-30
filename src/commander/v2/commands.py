@@ -11,7 +11,8 @@ from src.core import plot
 from src.core.config import (NATO_AFFILIATIONS, PLAYER_CLASSES,
                              RADAR_RANGE_SCALES_NM, SHIP_SPEED_MAX_KN,
                              HELO_DIP_DEPTH_MIN_M, HELO_DIP_DEPTH_MAX_M,
-                             DIFFICULTY_FIELDS, SAVE_SLOTS, SCENARIO_ORDER)
+                             DIFFICULTY_FIELDS, SAVE_SLOTS, SCENARIO_ORDER,
+                             START_TIME_CHOICES, START_WEATHER_CHOICES)
 from src.commander.v2.wire import (
     HOST_ROLE,
     ROLES,
@@ -136,7 +137,7 @@ def _range_params(params):
 UBOOT_REASONS = frozenset((
     "uboot_no_torpedoes", "uboot_reloading", "uboot_out_of_arc", "uboot_no_decoys",
     "uboot_no_threat",
-    "uboot_too_deep", "uboot_no_snorkel", "uboot_no_wire", "uboot_mast_depth",
+    "uboot_too_deep", "uboot_no_snorkel", "uboot_no_wire", "uboot_mast_depth", "uboot_buoy_lost",
     "uboot_mast_down", "uboot_no_sighting", "uboot_no_stadimeter",
     "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
     "uboot_no_air_stores", "uboot_no_hp_air", "uboot_compartment_down",
@@ -435,7 +436,10 @@ def _instructor_environment_params(params):
 def _new_game_params(params):
     required = {"scenario", "world_mode"}
     if (type(params) is not dict or not required <= set(params)
-            or not set(params) <= required | {"difficulty", "seed"}):
+            or not set(params) <= required | {"difficulty", "seed", "weather", "time"}):
+        return False
+    if ("weather" in params and params["weather"] not in START_WEATHER_CHOICES
+            or "time" in params and params["time"] not in START_TIME_CHOICES):
         return False
     if not (type(params["scenario"]) is str and params["scenario"] in SCENARIO_ORDER
             and type(params["world_mode"]) is str
@@ -707,6 +711,8 @@ V2_ACTION_REGISTRY = {
                            _bool_params("enabled")),
     # The radio room sends the boat's situation report to HQ (HF, bearable).
     "uboot_radio_send": V2Action(frozenset({"uboot_radio"}), _no_params),
+    # The towed buoy antenna: stream (enabled) or recover it.
+    "uboot_buoy": V2Action(frozenset({"uboot", "uboot_radio"}), _bool_params("enabled")),
     "uboot_wire_steer": V2Action(frozenset({"uboot_weapons"}), _uboot_wire_params),
     "uboot_wire_cut": V2Action(frozenset({"uboot_weapons"}), _single_ref_params),
     "uboot_silent": V2Action(frozenset({"uboot", "uboot_engine"}), _bool_params("enabled")),

@@ -114,7 +114,8 @@ def test_uconsole_filters_reconcile_selection_without_persistence():
     game.eloka_status_filter = "ALL"
     game.eloka_selected_track_key = "E0000000000000001"
 
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_b, mod=0))
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f,
+                                         mod=pygame.KMOD_CTRL))
     assert game.eloka_band_filter == "A_C"
     assert game.eloka_selected_track_key is None
     assert "eloka_status_filter" not in game.save_state()["esm"]

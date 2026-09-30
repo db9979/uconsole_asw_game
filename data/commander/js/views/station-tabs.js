@@ -50,7 +50,29 @@ export function renderStationTabs(leased, shown) {
     tab.tabIndex = on ? 0 : -1;
     tab.title = `${t(`station_${tab.dataset.station}`)} \u00b7 ${t("station_tab_hint", {key: stationKey(tab.dataset.station)})}`;
   }
+  renderStationAlarms();
 }
+// Alarm lamps on the tabs (the projection's ``alarms``: this side's stations
+// with a torpedo, missile, fire or leak alarm) and the red light, which comes
+// on by itself at night and on an alarm unless switched off in the settings.
+export function renderStationAlarms() {
+  const alarms = new Map((S.v2State?.alarms ?? []).map((row) => [row.station, row.level]));
+  for (const tab of $("station-tabs").children) {
+    const level = alarms.get(tab.dataset.station);
+    if (level) {
+      tab.dataset.alarm = level;
+      tab.title = `${t(`station_${tab.dataset.station}`)} \u00b7 ${t(`station_alarm_${level}`)}`;
+    } else delete tab.dataset.alarm;
+  }
+  const danger = [...alarms.values()].includes("danger");
+  const red = S.redLightAuto !== false && Boolean(S.v2State?.role) &&
+    (danger || S.v2State?.environment?.is_night === true);
+  document.body.classList.toggle("red-light", red);
+  // Sferics: a thunderstorm crackles on the ESM and HF/DF receivers.
+  const storm = Number(S.v2State?.environment?.storm) || 0;
+  $("sferics").hidden = !(storm > 0 && SFERICS_STATIONS.has(S.v2State?.role));
+}
+const SFERICS_STATIONS = new Set(["eloka", "radio", "uboot_esm", "uboot_radio"]);
 function stepStation(delta) {
   const held = stationNames.filter((station) => S.session?.stations[station].status === "mine");
   if (held.length < 2) return;

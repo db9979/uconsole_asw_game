@@ -12,6 +12,7 @@ import pygame
 from src.core import config
 from src.core.boat_debrief import BoatDebriefRecorder
 from src.core.debrief import DebriefRecorder
+from src.core.debrief_replay import Replay
 
 
 class DebriefMixin:
@@ -26,6 +27,7 @@ class DebriefMixin:
         self.debrief = self.frigate_debrief
         self.debrief_open = False
         self.debrief_index = 0
+        self.debrief_replay = Replay()
         self._debrief_acc = 0.0
 
     def _debrief_recorders(self):
@@ -62,7 +64,29 @@ class DebriefMixin:
                         and self.boat_debrief is not None else self.frigate_debrief)
         self.debrief_open = True
         self.debrief_index = max(0, len(self.debrief.frames) - 1)
+        self.debrief_replay = Replay()
+        self._seek_debrief_frame()
         return True
+
+    def _seek_debrief_frame(self) -> None:
+        """Put the replay cursor on the selected frame (and stop playing)."""
+        frames = self.debrief.frames
+        self.debrief_replay.playing = False
+        if frames:
+            self.debrief_replay.seek(frames[max(0, min(self.debrief_index, len(frames) - 1))]["t"])
+
+    def advance_debrief_replay(self, wall_now: float) -> None:
+        """Move a playing replay on by the wall time since the last frame."""
+        replay = self.debrief_replay
+        if replay.playing:
+            replay.advance(self.debrief.frames, wall_now)
+            self.debrief_index = self.debrief.frame_index_at(replay.t)
+
+    def toggle_debrief_replay(self) -> None:
+        self.debrief_replay.toggle(self.debrief.frames)
+
+    def cycle_debrief_speed(self) -> None:
+        self.debrief_replay.cycle_speed()
 
     def close_debrief(self) -> None:
         self.debrief_open = False
@@ -91,6 +115,18 @@ class DebriefMixin:
 
     def _handle_debrief_key(self, key: int, mod: int = 0) -> None:
         big = 6 if mod & pygame.KMOD_SHIFT else 1
+        if key == pygame.K_SPACE:
+            self.toggle_debrief_replay()
+            return
+        if key == pygame.K_TAB:
+            self.cycle_debrief_speed()
+            return
+        previous = self.debrief_index
+        self._debrief_navigate(key, big)
+        if self.debrief_index != previous or key in (pygame.K_HOME, pygame.K_END):
+            self._seek_debrief_frame()
+
+    def _debrief_navigate(self, key: int, big: int) -> None:
         if key in (pygame.K_ESCAPE, pygame.K_d):
             self.close_debrief()
         elif key == pygame.K_LEFT:
@@ -107,7 +143,15 @@ class DebriefMixin:
             self._jump_debrief_event(1)
 
     def _handle_debrief_click(self, canvas) -> None:
-        from src.ui.debrief_view import timeline_index_at
+        from src.ui.debrief_view import replay_button_at, timeline_index_at
+        button = replay_button_at(canvas)
+        if button == "play":
+            self.toggle_debrief_replay()
+            return
+        if button == "speed":
+            self.cycle_debrief_speed()
+            return
         index = timeline_index_at(self, canvas)
         if index is not None:
             self.debrief_index = index
+            self._seek_debrief_frame()

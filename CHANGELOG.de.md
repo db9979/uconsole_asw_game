@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.113
+## 1.3.124
 
-Version 1.3.113 gleicht KI-Fregatte und KI-U-Boot an. In den
+Version 1.3.124 gleicht KI-Fregatte und KI-U-Boot an. In den
 Fregatten-Szenarien folgen die KI-Jäger jetzt der Startmeldung der Führung
 über die Bedrohung und einer verlorenen U-Boot-Peilung, pingen auf eine bloße
 Peilung nur alle 10 Minuten, damit ein Ping ohne Treffer das U-Boot nicht mehr
@@ -18,7 +18,150 @@ Patrouillenposition, gegen Durchbruch und Aufklärung schießt sie ihren eigenen
 Torpedo erst ab 3 sm und hält ihren Hubschrauber innerhalb 8 sm. Das
 Durchbruch-U-Boot umgeht die Patrouillenposition der Fregatte, die
 Aufklärungsmeldung zählt innerhalb 5 sm, und das Geleitzug-U-Boot schießt ab
-3 sm. Spielstände wechseln auf Format v41 (die Spuren der Jäger).
+3 sm. Spielstände wechseln auf Format v43 (die Spuren der Jäger).
+
+## 1.3.123
+
+Das U-Boot bekommt eine Bojenantenne. Im Funkraum (B oder die Funkraum-Karte im
+Browser) bringt die Crew sie etwa 280 m achteraus aus; sie nimmt den Rundspruch
+der Führung bis 60 m Tiefe bei höchstens 6 kn auf, nur Empfang. Über 10 kn
+reißt das Kabel, und die Boje ist für die Mission verloren. Aus der Nähe können
+Ausguck und Überwasserradar der Fregatte die kleine Boje auf dem Wasser finden.
+Spielstände haben jetzt Format v42; ältere laden nicht.
+
+## 1.3.122
+
+Version 1.3.122 macht die Browser-Stationen ruhiger in der Bedienung. Eine
+Auswahlliste, die offen ist oder gerade bedient wird, etwa die ESM-
+Klassifizierung auf dem U-Boot, das Ziel der Feuerleitung oder die Auswahl von
+Draht, Torpedotyp und Leckwehrtrupp, klappt bei einer Aktualisierung der Station
+nicht mehr zu und verliert ihre Auswahl nicht; sie zieht nach, sobald man sie
+verlässt. Schaltflächen in sich aktualisierenden Listen (ESM-Emitter, Rohre,
+Schotten, Funkkanäle und Aufträge, Befehle an Besatzung und Seefernaufklärer)
+bleiben stehen, sodass ein Klick nicht mehr verloren geht, wenn mitten im Klick
+eine Aktualisierung eintrifft. Spielstände bleiben im Format v41.
+
+
+## 1.3.121
+
+Notfälle an Bord ergänzen die Ereignisse auf See. Auf der Fregatte kann ein
+Mann über Bord gehen: Die Generalalarmglocke schlägt an, eine treibende Marke
+kommt in die Karte, und die Brücke nimmt ihn bis 0,1 sm mit höchstens 5 kn auf,
+oder der Hubschrauber schwebend über ihm (+100 Punkte; nach 20 Minuten
+verloren, -300). Die Rudermaschine kann ausfallen: 60 s klemmt das Ruder, dann
+10 Minuten halbe Drehrate vom Notruder. Auf einem Diesel-U-Boot kann das
+Schnorchelkopfventil klemmen (15 Minuten kein Laden; das KI-U-Boot bleibt tief)
+oder Batteriegas muss abgelüftet werden (halbe Laderate). Die KI-Hilfe der
+Brücke steuert selbst auf einen Mann über Bord. Bis zu sechs Ereignisse je
+Mission.
+
+## 1.3.120
+
+Version 1.3.119 bringt Bordatmosphäre in den Ton. Gefechtsstationen auf der
+Fregatte lassen die Alarmglocke durch das Schiff läuten, und in schwerer See
+von vorn schlägt der Bug bei Fahrt hörbar ein, sobald er tief eintaucht. Das
+U-Boot läutet nur eine leise Alarmklingel, und seine Lüfter laufen beim
+Einschalten der Schleichfahrt hörbar aus und beim Aufheben wieder an. uConsole
+und Remote-Crew-Browser spielen dieselben Geräusche, alle zur Laufzeit erzeugt.
+
+## 1.3.119
+
+Version 1.3.118 lässt Wetter und Uhrzeit wählen. Das Briefing jedes Szenarios,
+der Kampagnenbildschirm vor dem Auslaufen, die Mehrspieler-Lobby und der Dialog
+„Neues Spiel“ im Browser bieten jetzt Wetter (Zufall, schön, Regen, Sturm,
+Nebel) und Uhrzeit (Zufall, Morgengrauen, Tag, Abenddämmerung, Nacht); Zufall
+behält, was der Seed ergibt. Ein gewähltes Wetter hält die ganze Mission mit
+einem passenden Seegang, und die Uhr läuft von der gewählten Zeit weiter.
+
+## 1.3.118
+
+Version 1.3.117 lässt das Auge ein ausgefahrenes Sehrohr finden. Sehrohr oder
+Schnorchelkopf eines getauchten U-Boots ziehen jetzt eine Schaumfahne, die mit
+der Fahrt wächst: Brückenausguck, Handy-Ausguck und die Besatzungen von
+Helikopter und Seefernaufklärer sehen die volle Fahne ab 8 kn an einem klaren,
+ruhigen Tag auf knapp 3 sm, einen langsamen Kopf erst auf etwa 1 sm und nachts
+oder bei schwerer See kaum etwas. Aus der Nähe erkennt der Ausguck das Sehrohr
+und meldet es mit Banner; Sichtungen der Flugzeugbesatzungen erreichen die OPZ
+als HELO-EYE- und MPA-EYE-Tracks. Das gilt für KI-U-Boote und das besetzte
+U-Boot gleich, dessen Crew „Schaumfahne sichtbar, Fahrt verringern“ warnt, wenn
+es mit oben stehendem Mast schneller als 5 kn läuft.
+
+## 1.3.117
+
+Version 1.3.117 erweckt die See zum Leben. Die Optiken zeigen Wassersäulen,
+Feuer, Rauch und sinkende Schiffe; Karten bewegen sich weich, Pings und
+Detonationen breiten sich als Ringe aus; Zeiger und Telegraf bewegen sich mit
+Masse und die Telegrafenglocke läutet; das Sehrohr kommt aus dem Wasser, mit
+Wasser auf dem Glas. Nachts und bei Alarm geht Rotlicht an (abschaltbar), und
+die Stationsreiter tragen Alarmlampen auf beiden Seiten, auf der uConsole und im
+Browser. Nach einer Mission läuft die Nachbesprechung als Zeitraffer mit 10×
+oder 60×, auch im Browser. Nachts leuchtet warmes Wasser, wo es aufgewühlt wird,
+sodass Kielwasser und Torpedobahnen auf beiden Seiten weiter zu sehen sind. Eine
+harte Drehung mit Fahrt hinterlässt ein Knuckle, ein Blasenfeld, das das Sonar
+dämpft, ein Falschecho gibt und einen kielwassersuchenden Torpedo ablenken kann.
+Wracks und Felsen geben Echos, Wracks MAD-Anomalien. Stürme bringen Blitze in
+den Optiken, Donner, stärkeren Regen und Sferics, die auf dem ESM knistern und
+HF/DF-Peilungen streuen. Bei schwerer See startet und landet der Hubschrauber
+nur in einer ruhigen Phase; eine Deckbewegungsanzeige zeigt sie, und weniger
+Fahrt hilft. Spielstände haben jetzt das Format v41; ältere Spielstände laden
+nicht.
+
+
+## 1.3.116
+
+Version 1.3.116 gibt derselben Funktion an jeder Station dieselbe Taste, auf
+der Fregatte wie auf dem U-Boot. Strg+Enter ist die einzige Feuertaste (T und E
+feuern nicht mehr), Q/E zoomen überall, auch den OPZ-Radarbereich, das Fernglas
+und das Sehrohr, und Bild auf/ab blättern an jeder Station. Kurs, Fahrt und
+Tiefe werden auf beiden Seiten mit C/V/D eingegeben, die Torpedo-Lauftiefe mit
+T. Das U-Boot nutzt jetzt wie die Fregatte G für Gefechtsstationen, A für
+Schleichfahrt, V für den Täuschkörper und W/M/U auf der Besatzungsseite; der
+Seefernaufklärer hat die Tasten des Helikopters, beide Luftfahrzeug-Radare
+liegen auf Strg+R, und Helikopter und ELOKA folgen dem Sonar (Shift+A Ping,
+G Freigabe an die OPZ, J Ton). Ein Klick auf das Meldungsfenster der Crew
+geht nicht mehr an eine Stationstaste darunter.
+
+## 1.3.115
+
+Version 1.3.115 setzt neue Spieler in einer sinnvollen Reihenfolge an die
+Stationen. Ein Browser, der bei offener Mehrspieler-Lobby koppelt, bekommt jetzt
+die erste freie Station der Einheit des uConsole, zuerst die Stationen, die
+Urteil brauchen: auf der Fregatte Brücke, Sonar, Waffen, Hubschrauber, OPZ,
+EloKa, Funk, Maschine und Schadensabwehr, auf dem U-Boot Führung, Sonar, Waffen,
+Mast und ESM, Navigation, Maschine und Funkraum. Die Routinestationen hält die
+KI-Crew gut. Jeder Spieler kann Einheit und Station weiter jederzeit wechseln.
+
+## 1.3.114
+
+Version 1.3.114 lässt den Befehl eines Spielers vor der KI-Crew gelten. Im
+Mehrspieler mit Crew-Hilfe tauchte das KI-Kommando das U-Boot alle paar
+Sekunden weg und holte so das Sehrohr ein, das ein Spieler am Mast oder im
+Funkraum ausgefahren hatte; jetzt hält es das Boot auf Sehrohrtiefe, solange
+ein Spieler den Mast oben hält. Eine Station, die die KI besetzt, übersteuert
+nicht mehr, was ein Spieler an einer anderen Station befiehlt: Kurs, Tiefe und
+Ausweichen bleiben bei einem Spieler an der Navigation, Fahrt und Schleichfahrt
+bei einem im Maschinenraum, Trimm und Leckwehr bei einem am Kommando, und ein
+ausgefahrener Mast bleibt bei Alarm oben, solange ein Spieler am Kommando oder
+im Funkraum ihn hält. Auf der Fregatte steuert die KI-Brücke nicht mehr über
+einen Spieler im Maschinenraum hinweg, KI-Waffen und Seefernaufklärer behalten
+ein Ziel, das ein Spieler bestimmt hat, und ein am uConsole gewählter Kontakt
+bleibt gewählt. Eine Lobby-Runde ohne Browser ist jetzt ein Solospiel mit
+ausgeschalteter Crew-Hilfe.
+
+## 1.3.113
+
+Version 1.3.113 macht die uConsole komplett mit der Maus spielbar und die
+Karten und den Schiffsverkehr leichter lesbar. Ein Klick auf eine Taste in der
+Tastenleiste einer Station drückt sie (gehalten wie die Taste), nummerierte
+Reiter in der Kopfzeile wechseln die Station, ein Klick auf die Kurs-, Fahrt-
+oder Tiefenscheibe befiehlt diesen Wert, Zahleneingaben zeigen ein Tastenfeld,
+Menü- und Dialogzeilen sind anklickbar, das Mausrad blättert durch Menüs und
+ein Rechtsklick bricht ab. Jede Karte zeigt jetzt die eigene Kursspur, die
+früheren Positionen jedes Kontakts und die früheren Peilungen des gewählten
+Kontakts, und Kartenbeschriftungen weichen einander aus, statt sich zu
+verdecken. Frachter, Tanker und Passagierschiffe laufen auf festen Kursen
+zwischen Häfen und dem Rand des Seegebiets, weichen einander nach den
+Kollisionsverhütungsregeln aus und laufen vor nahen Detonationen davon.
 
 ## 1.3.112
 

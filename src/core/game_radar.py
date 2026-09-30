@@ -8,12 +8,13 @@ Verbatim move from ``game_sim.py`` (1.3.59); the stages still run in the
 import math
 
 
-from src.core import config
+from src.core import buoy_antenna, config
 from src.core import detrand
 from src.core.i18n import message
 from src.sensors import radar as radar_physics
 from src.sensors import threat_cue
 from src.sensors import hfdf as hf_physics
+from src.world import thunder
 from src.data import catalog as contact_catalog
 from src.data.catalog import EmitterProfile
 from src.sensors.esm import (
@@ -502,7 +503,8 @@ class RadarPictureMixin:
                     self.ship.x, self.ship.y, sub.x, sub.y)):
                 continue
             error = config.HFDF_BEARING_ERR_DEG * (
-                hf_physics.SKY_WAVE_BEARING_FACTOR if mode == "SKY" else 1.0)
+                hf_physics.SKY_WAVE_BEARING_FACTOR if mode == "SKY" else 1.0) \
+                * thunder.sferics_factor(self.world.thunderstorm())
             noise = self._smooth_sensor_noise(seed * 777, self.sim_t, 10.0)
             brg = (sub.bearing_from_frigate(self.ship) + noise * error) % 360.0
             self.radio_picture.observe(track_id=f"H-{sub.id}", kind="HF",
@@ -727,16 +729,14 @@ class RadarPictureMixin:
         horizon = config.radar_horizon_nm(config.RADAR_ANTENNA_HEIGHT_M,
                                           config.SUB_MAST_HEIGHT_M)
         tick = math.floor(self.sim_t * 4.0 + 1e-6)
-        for sub in self.subs:
-            if not self._mast_up(sub):
-                continue
-            dist = math.hypot(sub.x - self.ship.x, sub.y - self.ship.y)
-            bearing = math.degrees(math.atan2(sub.x - self.ship.x,
-                                              -(sub.y - self.ship.y))) % 360.0
-            if (dist > horizon or not self._radar_look(
-                    "surface", sub.sensor_seed, dist, bearing, swept_deg=swept_deg,
-                    rcs_factor=config.SUB_MAST_RCS_FACTOR)
-                    or self.world.land_blocks_line(self.ship.x, self.ship.y, sub.x, sub.y)):
+        for sub, sx, sy, key, rcs, reach in self._surface_heads(horizon):
+            dist = math.hypot(sx - self.ship.x, sy - self.ship.y)
+            bearing = math.degrees(math.atan2(sx - self.ship.x,
+                                              -(sy - self.ship.y))) % 360.0
+            if (dist > reach or not self._radar_look(
+                    "surface", key, dist, bearing, swept_deg=swept_deg,
+                    rcs_factor=rcs)
+                    or self.world.land_blocks_line(self.ship.x, self.ship.y, sx, sy)):
                 continue
             bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
             range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
@@ -757,6 +757,28 @@ class RadarPictureMixin:
                 observer_x=self.ship.x, observer_y=self.ship.y,
                 x=self.ship.x + measured * math.sin(rad),
                 y=self.ship.y - measured * math.cos(rad)))
+
+    def _surface_heads(self, mast_horizon):
+        """What of each submarine rides on the water for the surface radar:
+        a raised mast, or the crewed boat's streamed buoy antenna (smaller
+        and lower, astern of the boat).  Rows ``(sub, x, y, key, rcs, horizon)``."""
+        rows = []
+        for sub in self.subs:
+            if self._mast_up(sub):
+                rows.append((sub, sub.x, sub.y, sub.sensor_seed,
+                             config.SUB_MAST_RCS_FACTOR, mast_horizon))
+            elif self._buoy_afloat(sub):
+                bx, by = buoy_antenna.position(sub)
+                rows.append((sub, bx, by, sub.sensor_seed + 300_000,
+                             config.UBOOT_BUOY_RCS_FACTOR, config.radar_horizon_nm(
+                                 config.RADAR_ANTENNA_HEIGHT_M, config.UBOOT_BUOY_HEIGHT_M)))
+        return rows
+
+    def _buoy_afloat(self, sub) -> bool:
+        """The crewed boat's buoy antenna rides on the surface."""
+        crew = getattr(sub, "crew", None)
+        return (sub.manual and crew is not None and not sub.sunk
+                and buoy_antenna.afloat(getattr(crew, "buoy", None), sub.speed))
 
     def _observe_mast(self, track_id, sub_id, bearing, range_nm, observer_x, observer_y,
                       bearing_error) -> None:

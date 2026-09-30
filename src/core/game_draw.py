@@ -20,11 +20,12 @@ from src.core.preferences import save_preferences
 from src.core.help import get_global_help, get_help, get_sop, get_uboot_help
 from src.core import manual
 from src.core.station import Station
-from src.core import uboot_local
+from src.core import pointer_input, station_alarms, uboot_local
 from src.nations.nations import reference_summary
-from src.ui import layout
+from src.ui import layout, pointer
 from src.ui import observations
 from src.ui import overlay_style
+from src.ui.red_light import RedLight, draw_lamp
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -34,6 +35,7 @@ from src.core.game_welcome import WELCOME_SCREEN
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.weather_station import draw_weather_station
 from src.ui import uboot_view
+from src.ui.stations.common import _shortcut_footer as shortcut_footer
 from src.ui.stations_view import (
     draw_autocrew_overview,
     draw_bridge_view,
@@ -56,6 +58,20 @@ from src.ui.weapons_view import draw_weapons_overlay, draw_weapons_panel
 from src.core.game_shared import HELP_MANUAL_PAGE, HELP_PAGE_COUNT, letterbox_layout
 # Names tests and tools import from ``src.core.game`` (kept as re-exports).
 from src.core.game_events import _ECO_REFRESH_EVENTS
+
+
+FRIGATE_TAB_W = 84
+
+
+def frigate_station_tab_rects() -> list:
+    """Top-bar tab rectangles of the frigate's nine stations."""
+    return [pygame.Rect(4 + index * (FRIGATE_TAB_W + 3), 3, FRIGATE_TAB_W,
+                        config.TOP_BAR_H - 6) for index in range(len(list(Station)))]
+
+
+# The end panel's keys (frigate), drawn as a clickable legend.
+END_KEYS = (("D", "end.key.debrief"), ("R", "end.key.restart"),
+            ("M", "end.key.menu"), ("Esc", "end.key.exit"))
 
 
 class DrawMixin:
@@ -118,6 +134,30 @@ class DrawMixin:
 
     # --- Input ---
 
+    def _click_menu_row(self, select, key=pygame.K_RETURN) -> None:
+        """A click on a menu row: select it, then press ``key`` (Enter)."""
+        select()
+        if key is not None:
+            self.handle_event(pointer_input.key_event(key))
+
+    def _draw_start_choices(self, center, top: int, cx: int,
+                            selected: int | None = None) -> None:
+        """The weather and time-of-day rows of a briefing: Up/Down select,
+        Left/Right (or a click on the row's left/right part) change."""
+        row_h = 26
+        current = self.menu_sel if selected is None else selected
+        for i, kind in enumerate(("weather", "time")):
+            y = top + i * row_h
+            for part, key in ((0, pygame.K_LEFT), (1, None), (2, pygame.K_RIGHT)):
+                pointer.add_action(
+                    (cx - 300 + part * 200, y - row_h // 2, 200, row_h),
+                    lambda _pos, i=i, key=key: self._click_menu_row(
+                        lambda: setattr(self, "menu_sel", i), key))
+            chosen = i == current
+            center(message("menu.choice", marker="► " if chosen else "  ",
+                           label=self.start_choice_text(kind)),
+                   y, color=config.COLOR_TEXT if chosen else config.COLOR_TEXT_DIM)
+
     @localized
     def draw_menu(self) -> None:
         """W4: Szenario -> (Level bei s4) -> Briefing -> Start."""
@@ -126,11 +166,19 @@ class DrawMixin:
         # The start screen's night hunt, dimmed, behind every menu page.
         draw_menu_backdrop(s, self._t)
 
-        def center(text: str, y: int, font=None, color=config.COLOR_TEXT) -> None:
+        def center(text: str, y: int, font=None, color=config.COLOR_TEXT, keys=None) -> None:
             f = font or self.menu_font
             text = localize(text)
             surf = f.render(text, True, color)
             s.blit(surf, surf.get_rect(center=(cx, y)))
+            if keys:
+                # Each "a | b" part of a key hint is clickable.
+                pointer.add_text_keys(text, f, cx, y, keys)
+
+        def row(y: int, height: int, select, width: int = 720) -> None:
+            """A clickable menu row: select it and press Enter."""
+            pointer.add_action((cx - width // 2, y - height // 2, width, height),
+                               lambda _pos: self._click_menu_row(select))
 
         draw_logo(s, cx, 34)
 
@@ -140,6 +188,8 @@ class DrawMixin:
             draw_menu_panel(s, (cx - 260, 148, 520, 412),
                             (cx - 250, 157 + self.main_menu_sel * step, 500, step - 4))
             for i, entry in enumerate(entries):
+                row(157 + step // 2 - 2 + i * step, step - 2,
+                    lambda i=i: setattr(self, "main_menu_sel", i), 500)
                 marker = "> " if i == self.main_menu_sel else "  "
                 color = config.COLOR_TEXT if i == self.main_menu_sel else config.COLOR_TEXT_DIM
                 center(message("menu.choice", marker=marker,
@@ -167,6 +217,7 @@ class DrawMixin:
         elif self.menu_screen == "side":
             center(self.tr("menu.choose_side"), 170, color=config.COLOR_TEXT_DIM)
             for i, side in enumerate(("frigate", "uboot")):
+                row(262 + i * 90, 80, lambda i=i: setattr(self, "menu_sel", i), 860)
                 selected = i == self.menu_sel
                 center(message("menu.choice", marker="► " if selected else "  ",
                                label=self.tr(f"menu.side.{side}")),
@@ -174,12 +225,14 @@ class DrawMixin:
                        config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM)
                 layout.blit_line(s, f"menu.side.{side}.note", (cx - 420, 285 + i * 90, 840, 26),
                                  config.COLOR_TEXT_DIM, size=18, align="center")
-            center(self.tr("menu.side_hint"), 470, color=config.COLOR_TEXT_DIM)
+            center(self.tr("menu.side_hint"), 470, color=config.COLOR_TEXT_DIM,
+                   keys=(None, "Enter", "Esc"))
         elif self.menu_screen == "scenario":
             center(self.tr("menu.choose_scenario"),
                    150, color=config.COLOR_TEXT_DIM)
             scenario_names = config.SCENARIO_NAMES
             for i, key in enumerate(config.SCENARIO_ORDER):
+                row(240 + i * 40, 38, lambda i=i: setattr(self, "menu_sel", i))
                 sc = config.SCENARIOS[key]
                 marker = "► " if i == self.menu_sel else "  "
                 col = config.COLOR_TEXT if i == self.menu_sel \
@@ -192,8 +245,17 @@ class DrawMixin:
                        240 + i * 40, color=col)
         elif self.menu_screen == "difficulty":
             center(self.tr("menu.choose_difficulty"),
-                   150, color=config.COLOR_TEXT_DIM)
+                   150, color=config.COLOR_TEXT_DIM, keys=("Enter", "Esc"),
+                   )
             row_h = 26
+            for i in range(len(config.DIFFICULTY_FIELD_ORDER) + 1):
+                # Left part lowers, right part raises, the middle selects.
+                y = 190 + i * row_h
+                for part, key in ((0, pygame.K_LEFT), (1, None), (2, pygame.K_RIGHT)):
+                    pointer.add_action(
+                        (cx - 360 + part * 240, y - row_h // 2, 240, row_h),
+                        lambda _pos, i=i, key=key: self._click_menu_row(
+                            lambda: setattr(self, "menu_sel", i), key))
             for i, name in enumerate(config.DIFFICULTY_FIELD_ORDER):
                 kind, _low, _high, _step, _default = config.DIFFICULTY_FIELDS[name]
                 marker = "► " if i == self.menu_sel else "  "
@@ -230,11 +292,12 @@ class DrawMixin:
                 center(message("menu.loss_value",
                                loss=self.tr("scenario." + scenario_key + ".lose")), 448,
                        color=config.COLOR_DANGER)
-            center(self.tr("menu.start_hint"), 520,
-                   color=config.COLOR_TEXT_DIM)
+            self._draw_start_choices(center, 478, cx)
+            center(self.tr("menu.start_hint"), 536,
+                   color=config.COLOR_TEXT_DIM, keys=("Enter", None, "Esc"))
             center(message("menu.local_side", side=message(
                 "menu.local_side.uboot" if self.local_side == "uboot"
-                else "menu.local_side.frigate")), 556,
+                else "menu.local_side.frigate")), 566,
                 color=config.COLOR_WARN if self.local_side == "uboot"
                 else config.COLOR_TEXT_DIM)
 
@@ -248,11 +311,11 @@ class DrawMixin:
         else:
             world_label = self.tr("menu.fixed_chart")
         center(self.tr("menu.world_status", world=world_label, seed=self.seed),
-               config.SCREEN_H - 68, color=config.COLOR_OK)
+               config.SCREEN_H - 68, color=config.COLOR_OK, keys=("W", "R"))
         center(self.tr("menu.seed_fullscreen", seed=self.seed,
                        action=self.tr("menu.windowed" if self.fullscreen
                                       else "menu.fullscreen")),
-               config.SCREEN_H - 40, color=config.COLOR_TEXT_DIM)
+               config.SCREEN_H - 40, color=config.COLOR_TEXT_DIM, keys=(None, "F"))
 
     # --- W0: Draw-Grid ---
 
@@ -324,7 +387,45 @@ class DrawMixin:
         return bool(self.administration_open
                     or (self.game_over and not self.debrief_open))
 
+    def red_light_mode(self) -> str:
+        """The red light's option: "off", "auto" (night, alarm) or "on"."""
+        if self.preferences.night_mode:
+            return "on"
+        return "auto" if self.preferences.red_light_auto else "off"
+
+    def _mission_shown(self) -> bool:
+        return not (self.in_menu or self.splash_active or self.editor is not None
+                    or self.simlog_view_open or self.game_over)
+
+    def station_alarm_levels(self) -> dict:
+        """The station lamps of the side shown, refreshed four times a
+        second of wall time (display only)."""
+        if not self._mission_shown():
+            self._alarm_cache = (None, {})
+            return {}
+        stamp, levels = getattr(self, "_alarm_cache", (None, {}))
+        if stamp is None or not 0.0 <= self._t - stamp < 0.25:
+            levels = station_alarms.for_side(self)
+            self._alarm_cache = (self._t, levels)
+        return levels
+
+    def _draw_red_light(self, s) -> None:
+        mode = self.red_light_mode()
+        if mode == "on":
+            target = 1.0
+        elif mode == "auto" and self._mission_shown():
+            target = station_alarms.red_light_target(self, self.station_alarm_levels())
+        else:
+            target = 0.0
+        light = getattr(self, "_red_light", None)
+        if light is None:
+            light = self._red_light = RedLight()
+        if light.step(target, self._t) > 0.0:
+            s.blit(light.overlay(s.get_size()), (0, 0), special_flags=pygame.BLEND_MULT)
+
     def _draw(self) -> None:
+        # Mouse targets are rebuilt with every frame (src/ui/pointer.py).
+        pointer.reset()
         self._apply_text_size()
         s = self.screen
         eco = self._eco_display_active()
@@ -342,7 +443,8 @@ class DrawMixin:
         elif self.simlog_view_open:
             draw_simlog_view(self)
         elif self.in_menu:
-            self.draw_menu()
+            with pointer.layer("menu"):
+                self.draw_menu()
         elif self._splash_backdrop_active():
             # Modal overlays and the mission end sit on the start screen's
             # night hunt; the station behind is not drawn (saves uConsole CPU).
@@ -418,20 +520,21 @@ class DrawMixin:
                     self.draw_end_panel()
             finally:
                 config.STATION_RECT = previous_rect
-        if self.quit_confirm:
-            self.draw_quit_overlay()
-        elif self.help_open:
-            self.draw_help_overlay()
-        elif self.nations_open:
-            self.draw_nations_overlay()
-        elif self.save_ui is not None:
-            self.draw_save_ui()
-        elif self.options_open:
-            self.draw_options_overlay()
-        elif self.live_traffic_open:
-            self.draw_live_traffic_overlay()
-        elif self.commander_open:
-            self.commander.draw(self)
+        with pointer.layer("overlay"):
+            if self.quit_confirm:
+                self.draw_quit_overlay()
+            elif self.help_open:
+                self.draw_help_overlay()
+            elif self.nations_open:
+                self.draw_nations_overlay()
+            elif self.save_ui is not None:
+                self.draw_save_ui()
+            elif self.options_open:
+                self.draw_options_overlay()
+            elif self.live_traffic_open:
+                self.draw_live_traffic_overlay()
+            elif self.commander_open:
+                self.commander.draw(self)
         self.commander.draw_confirm(self)
         if self.msg and self._t < self.msg_until:
             self._draw_flash_banner(s)
@@ -448,8 +551,7 @@ class DrawMixin:
                                     (0, 0, config.SCREEN_W, config.SCREEN_H))
         if self._scanlines is not None:
             s.blit(self._scanlines, (0, 0))
-        if self.preferences.night_mode:
-            s.blit(self._night_overlay, (0, 0), special_flags=pygame.BLEND_MULT)
+        self._draw_red_light(s)
 
     @localized
     def draw_navigation_input(self) -> None:
@@ -467,6 +569,22 @@ class DrawMixin:
         layout.blit_line(self.screen, self.tr("input.hint"),
                          (rect.x + 14, rect.y + 38, rect.w - 28, 22),
                          config.COLOR_TEXT_DIM, size=14)
+        # A keypad under the entry: every key is a click (full mouse control).
+        keys = ([(raw_text(str(digit)), pygame.K_0 + digit) for digit in range(10)]
+                + [(raw_text("."), pygame.K_PERIOD), (raw_text("⌫"), pygame.K_BACKSPACE),
+                   ("help.key.enter", pygame.K_RETURN), (raw_text("Esc"), pygame.K_ESCAPE)])
+        narrow = (rect.w - 2 * 96) // (len(keys) - 2)
+        with pointer.layer("input"):
+            x = rect.x
+            for index, (label, key) in enumerate(keys):
+                width = 96 if index >= len(keys) - 2 else narrow
+                cell = pygame.Rect(x, rect.bottom + 4, width - 4, 34)
+                x += width
+                pygame.draw.rect(self.screen, config.COLOR_OVERLAY_BG, cell)
+                pygame.draw.rect(self.screen, config.COLOR_GRID, cell, 1)
+                layout.blit_line(self.screen, label, cell.inflate(-4, -6),
+                                 config.COLOR_TEXT, size=16, align="center")
+                pointer.add_key(cell, key)
 
     @localized
     def top_bar_scenario(self) -> str:
@@ -483,16 +601,35 @@ class DrawMixin:
         pygame.draw.line(s, config.COLOR_SONAR_RING,
                          (0, config.TOP_BAR_H - 1),
                          (config.SCREEN_W, config.TOP_BAR_H - 1), 1)
-        station = display_value("station", self.station.name, self.tr).upper()
-        txt = self.tr("top.status", station=station,
-                      scenario=self.top_bar_scenario(),
+        # The nine stations as tabs (key number and short name), like the
+        # submarine's; a click on a tab presses its number key.
+        tabs = frigate_station_tab_rects()
+        alarms = self.station_alarm_levels()
+        for index, (station, rect) in enumerate(zip(list(Station), tabs)):
+            active = station is self.station
+            if active:
+                pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, rect)
+                pygame.draw.line(s, config.COLOR_SONAR_RING, rect.bottomleft,
+                                 (rect.right - 1, rect.bottom), 2)
+            if index:
+                pygame.draw.line(s, config.COLOR_GRID, (rect.x - 2, rect.y + 4),
+                                 (rect.x - 2, rect.bottom - 4), 1)
+            label = message("top.tab", number=index + 1,
+                            name=message(f"top.tab.{station.name.lower()}"))
+            layout.blit_line(s, label, rect, config.COLOR_TEXT if active
+                             else config.COLOR_TEXT_DIM, size=14, align="center")
+            draw_lamp(s, rect, alarms.get(station.name.lower()), self._t)
+            pointer.add_key(rect, pygame.K_1 + index)
+        self._top_status_right = tabs[-1].right
+        if self.msg and self._t < self.msg_until:
+            return      # the flash banner stands in the status line's place
+        txt = self.tr("top.status_short", scenario=self.top_bar_scenario(),
                       time=self.world.format_time(), speed=f"{self.ship.speed:.1f}",
                       course=f"{self.ship.course % 360:03.0f}")
-        layout.blit_line(s, txt, (10, 4, config.SCREEN_W - 20,
+        left = tabs[-1].right + 12
+        layout.blit_line(s, txt, (left, 4, config.SCREEN_W - left - 10,
                                   config.TOP_BAR_H - 8),
-                         config.COLOR_TEXT, size=18)
-        self._top_status_right = 10 + layout.font(layout.scaled_size(18)).size(
-            localize(txt))[0]
+                         config.COLOR_TEXT, size=16, align="right")
 
     def draw_bottom_panel(self, entries=None, rows=None, heading="feed.heading",
                           ticker_keys=None, ticker_hint="ticker.hint") -> None:
@@ -738,6 +875,8 @@ class DrawMixin:
             "station", self.station.name, self.tr).upper())
         overlay_style.title(s, help_title, (bx + 18, by + 8, bw - 36, 40), size=30,
                             align="left")
+        # Mouse: the title steps the category, the wheel scrolls.
+        pointer.add_key((bx + 18, by + 8, bw - 36, 40), pygame.K_TAB)
         overlay_style.rule(s, bx + 18, by + 48, bw - 36)
         x = bx + 20
         w = bw - 40
@@ -802,6 +941,7 @@ class DrawMixin:
                               color=config.COLOR_TEXT, size=18)
         layout.blit_line(s, "nations.close", (bx + bw - 160, by + bh - 30, 140, 24),
                          overlay_style.accent_color(), size=16, align="right")
+        pointer.add_key((bx + bw - 160, by + bh - 30, 140, 24), pygame.K_n)
 
     @localized
     def draw_save_ui(self) -> None:
@@ -824,6 +964,8 @@ class DrawMixin:
             layout.blit_line(s, message("save.slot", marker=">" if selected else " ",
                                          slot=slot, info=localize(info)),
                              (bx + 24, ly, bw - 48, 32), col, size=19)
+            pointer.add_action((bx + 14, ly - 4, bw - 28, 36),
+                               lambda _pos, slot=slot: self._click_save_slot(slot))
             ly += 42
         hint = "save.live"
         if self.save_confirm:
@@ -831,6 +973,15 @@ class DrawMixin:
                     else "save.replace")
         layout.blit_line(s, hint, (bx + 18, by + bh - 54, bw - 36, 34),
                          overlay_style.accent_color(), size=18, align="center")
+        if hint == "save.live":
+            pointer.add_text_keys(localize(hint), layout.font(18), bx + bw // 2,
+                                  by + bh - 37, ("Esc", None))
+
+    def _click_save_slot(self, slot: int) -> None:
+        """A click on a slot picks it; a second click on it confirms."""
+        if not (self.save_slot == slot and self.save_confirm):
+            self.handle_event(pointer_input.key_event(pygame.K_1 + slot - 1))
+        self.handle_event(pointer_input.key_event(pygame.K_RETURN))
 
     @localized
     def draw_end_panel(self) -> None:
@@ -882,9 +1033,9 @@ class DrawMixin:
             size = 26 if big else 20
             height = 36 if big else 26
             if text == "end.restart":
-                # The key legend may wrap onto a second line.
-                layout.blit_block(s, text, x + 16, ly, w - 32, 50, c, size=18,
-                                  align="center")
+                # The keys as a clickable legend, like the station footers.
+                with pointer.layer("end"):
+                    shortcut_footer(s, (x + 16, ly + 14, w - 32, 22), END_KEYS)
                 ly += 50
                 continue
             if index == 0:
@@ -966,7 +1117,7 @@ class DrawMixin:
             self.tr("option.simlog") + ": "
             + self.tr("common.on" if self.preferences.simlog else "common.off"),
             self.tr("option.night_mode") + ": "
-            + self.tr("common.on" if self.preferences.night_mode else "common.off"),
+            + self.tr("option.red_light." + self.red_light_mode()),
             self.tr("option.high_contrast") + ": "
             + self.tr("common.on" if self.preferences.high_contrast else "common.off"),
             self.tr("option.frame_rate", fps=self.frame_rate()),
@@ -1154,6 +1305,9 @@ class DrawMixin:
                                         label=self.tr(label)),
                              (rect.x + 20, rect.y + 124 + index * 40, rect.w - 40, 32),
                              overlay_style.text_color(selected), size=22)
+            pointer.add_action((rect.x + 14, rect.y + 120 + index * 40, rect.w - 28, 36),
+                               lambda _pos, index=index: self._click_menu_row(
+                                   lambda: setattr(self, "quit_selection", index)))
         layout.blit_line(s, "control.quit_hint",
                          (rect.x + 20, rect.bottom - 44, rect.w - 40, 28),
                          config.COLOR_TEXT_DIM, size=18, align="center")

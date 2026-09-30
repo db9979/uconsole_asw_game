@@ -488,6 +488,7 @@ class SaveMixin:
                              else [float(value) for value in self.baffle_clear]),
             "hunter_esm": [dict(row) for row in self.hunter_esm],
             "hunter_lead": copy.deepcopy(self.hunter_lead),
+            "knuckles": self.world.knuckles.serialize(),
             "watch": self.crew_watch.serialize(),
             "mpa": self.mpa.serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
@@ -525,6 +526,7 @@ class SaveMixin:
                           roll=self.ship.roll, pitch=self.ship.pitch,
                           roll_rate=self.ship.roll_rate,
                           pitch_rate=self.ship.pitch_rate,
+                          deck_quiet_s=self.ship.deck_quiet_s,
                           wake=[list(point) for point in self.ship.wake],
                           quiet_mode=self.ship.quiet_mode,
                           plant_mode=self.ship.plant_mode,
@@ -1013,6 +1015,7 @@ class SaveMixin:
         self.ship.pitch = ship["pitch"]
         self.ship.roll_rate = ship["roll_rate"]
         self.ship.pitch_rate = ship["pitch_rate"]
+        self.ship.deck_quiet_s = float(ship["deck_quiet_s"])
         self.ship.wake = [list(point) for point in ship["wake"]]
         self.ship.quiet_mode = ship["quiet_mode"]
         self.ship.plant_mode = ship["plant_mode"]
@@ -1053,6 +1056,7 @@ class SaveMixin:
                              else [float(value) for value in data["baffle_clear"]])
         self.hunter_esm = [dict(row) for row in data["hunter_esm"]]
         self.hunter_lead = copy.deepcopy(data["hunter_lead"])
+        self.world.knuckles.restore(data["knuckles"], data["sim_t"])
         self.task_sel = 0
         self.crew_watch = CrewState.restore(data["watch"])
         self.mpa = PatrolAircraft.restore(data["mpa"], self.world.size_nm)

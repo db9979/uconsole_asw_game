@@ -29,4 +29,5 @@ PLOT = dict(objects=[
     dict(id=4, shape="circle", label="C4", t=0.0, x=252.0, y=252.0, radius_nm=3.0),
     dict(id=5, shape="dr", label="D5", t=0.0, x=240.0, y=250.0, course=90.0,
          speed_kn=10.0, now_x=241.0, now_y=250.0, cpa_nm=0.5, cpa_s=120.0),
-], max_objects=64, max_label=24)
+], max_objects=64, max_label=24, trail=[[249.0, 251.0], [249.5, 250.5]],
+    fx=dict(pings=[[4.0, 250.0, 250.0]], echoes=[], splashes=[[2.0, 251.0, 249.0]]))

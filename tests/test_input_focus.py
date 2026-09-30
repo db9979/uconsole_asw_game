@@ -135,7 +135,7 @@ def test_active_station_number_cycles_only_its_real_pages(game):
 
 def test_numeric_entry_owns_station_digits(game):
     game.station = Station.BRIDGE
-    press(game, pygame.K_u)
+    press(game, pygame.K_c)
     press(game, pygame.K_2)
     assert game.station is Station.BRIDGE
     assert game.input_mode == "course" and game.input_buffer == "2"
@@ -167,7 +167,7 @@ def test_team_assignment_allows_teams_to_share_selected_room(game):
 
 def test_numeric_input_stays_live_and_invalid_value_remains_editable(game):
     press(game, pygame.K_UP)
-    press(game, pygame.K_u)
+    press(game, pygame.K_c)
     assert not game.held
     for key in (pygame.K_9, pygame.K_9, pygame.K_9, pygame.K_RETURN):
         press(game, key)
@@ -243,6 +243,8 @@ def test_random_scenario_accepts_default_difficulty(game):
     press(game, pygame.K_4)
     press(game, pygame.K_RETURN)
     assert 0 <= game.menu_sel < len(config.DIFFICULTY_FIELD_ORDER)
+    press(game, pygame.K_RETURN)
+    assert game.menu_screen == "briefing"      # weather and time of day
     press(game, pygame.K_RETURN)
     assert not game.in_menu and game.scenario_key == "s4_zufall"
 
@@ -338,7 +340,7 @@ def test_alt_enter_never_confirms_current_action(game, monkeypatch, context):
     if context == "menu":
         game.in_menu = True
     elif context == "course":
-        press(game, pygame.K_u)
+        press(game, pygame.K_c)
         game.input_buffer = "180"
     else:
         press(game, pygame.K_ESCAPE)

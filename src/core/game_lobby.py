@@ -14,10 +14,10 @@ from __future__ import annotations
 import pygame
 
 from src.core import config
-from src.core.i18n import message, raw_text
+from src.core.i18n import localize, message, raw_text
 from src.core.lobby import HOST_ONLY, ROWS, LobbyRoom, side_stations
 from src.core.station import Station
-from src.ui import layout
+from src.ui import layout, pointer
 from src.ui.splash_view import draw_menu_panel
 
 LOBBY_SCREEN = "lobby"
@@ -120,10 +120,13 @@ class LobbyMixin:
         # the browsers (or runs as the AI boat when nobody takes it).
         self.local_side = "frigate" if self.host_only else room.side
         self.scenario_key = room.scenario_key
+        self.start_weather, self.start_time = room.weather, room.time
         self.lobby_round = True
         self._start_menu_mission()
-        # A lobby round lets the AI man every station nobody holds.
-        self.autocrew.set_assist(True, self.sim_t)
+        # A lobby round with a crew lets the AI man every station nobody holds;
+        # alone on the uConsole it is a solo game (Shift+F2 still switches it).
+        if self.host_only or room.crew(self.lobby_players()):
+            self.autocrew.set_assist(True, self.sim_t)
         self._take_lobby_station(room.station)
 
     def _take_lobby_station(self, station: str) -> None:
@@ -234,6 +237,8 @@ class LobbyMixin:
                 "scenario." + config.SCENARIO_NAMES[room.scenario_key] + ".title")),
             message("lobby.row.side", side=message(f"menu.side.{room.side}")),
             message("lobby.row.station", station=_station_name(room.station)),
+            message("menu.start_weather", value=message(f"menu.start_weather.{room.weather}")),
+            message("menu.start_time", value=message(f"menu.start_time.{room.time}")),
             message("lobby.row.start"),
         )
         for index, text in enumerate(values):
@@ -244,6 +249,11 @@ class LobbyMixin:
             layout.blit_line(s, message("menu.choice", marker="► " if selected else "  ",
                                         label=text), rect,
                              config.COLOR_WARN if selected else config.COLOR_TEXT, size=20)
+            # A click picks the row: the next value, or the start on the last.
+            pointer.add_action(rect, lambda _pos, index=index, last=len(values) - 1:
+                               self._click_menu_row(
+                                   lambda: setattr(room, "row", index),
+                                   pygame.K_RETURN if index == last else pygame.K_RIGHT))
         # Right bottom: who is here.
         players = self.lobby_players()
         top = right.y + len(values) * 34 + 40
@@ -282,3 +292,5 @@ class LobbyMixin:
                              config.COLOR_WARN, size=18, align="center")
         layout.blit_line(s, "lobby.hint", (panel.x + 20, panel.bottom - 26, panel.w - 40, 22),
                          config.COLOR_TEXT_DIM, size=15, align="center")
+        pointer.add_text_keys(localize("lobby.hint"), layout.font(15), panel.centerx,
+                              panel.bottom - 15, (None, None, "Enter", "Esc", "F9"))

@@ -53,6 +53,9 @@ class Ship:
         self.pitch = 0.0
         self.roll_rate = 0.0
         self.pitch_rate = 0.0
+        # Seconds the flight deck has been inside its motion limits (saved);
+        # a ship starts at rest, so the deck starts quiet.
+        self.deck_quiet_s = 60.0
         self._clock = 0.0
         # Derived each tick from damage control (not saved state).
         self.flood_percent = 0.0

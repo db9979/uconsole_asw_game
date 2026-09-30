@@ -257,7 +257,11 @@ def assets(tmp_path, monkeypatch):
     for name in top_level_files():
         (tmp_path / name).write_text(f"fixture {name}", encoding="utf-8")
 
+    real_files = transport.resources.files
+
     def files(package):
+        if package == "data.i18n":        # the debrief wording reads the catalogs
+            return real_files(package)
         assert package == "data.commander"
         return tmp_path
 

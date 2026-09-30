@@ -191,7 +191,7 @@ def test_projection_carries_sightings_without_truth():
     assert scope["available"] and scope["night"] is False
     assert set(scope) == {"available", "relative_deg", "bearing", "course", "speed_kn",
                           "fov_deg", "window_deg", "night", "visibility_nm", "sea_state", "horizon_offset",
-                          "horizon_tilt", "sky", "sightings"}
+                          "horizon_tilt", "sky", "sightings", "events"}
     assert set(scope["sky"]) == set(web_schema.SKY_FIELDS)
     # The boat's own way for the streaming water in the eyepiece.
     assert scope["course"] == pytest.approx(boat.sub.course % 360.0)

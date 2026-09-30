@@ -257,7 +257,7 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 @media (max-width: 60rem) { .uboot-dc-columns { grid-template-columns: minmax(0, 1fr); } }
 .uboot-dc-columns section { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
 .uboot-dc-columns h4 { margin: 0; }
-#uboot-dc-canvas { height: clamp(9rem, 20vh, 13rem); }
+#uboot-dc-canvas { height: clamp(15rem, 32vh, 22rem); }
 .uboot-dc-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .uboot-dc-table th, .uboot-dc-table td { padding: .2rem .35rem; text-align: left; border-bottom: 1px solid var(--line); }
 .uboot-dc-table tr[data-alert="true"] { color: var(--amber); }

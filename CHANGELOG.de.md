@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.103
+
+Version 1.3.103 macht die Karte Leckwehr des U-Boots im Browser zu einem
+Leckwehr-Leitstand wie bei der Fregatte: eine Warn- und Meldetafel mit
+Sammellampe (Strom, Wasser, Lecks, Brand, Gas, ausgefallene Abteilungen,
+geschlossene Schotten, Trupps, Lenzpumpen, Verwundete, Trimm, Pressluft und
+Übertiefe) über einer Seitenansicht des Druckkörpers mit vom Kiel steigendem
+Wasser, Brandschein, Gasschleier, Lecks, geschlossenen Schotten, einer
+Zustandslampe je Abteilung und den Trupp-Plaketten, dazu Rundinstrumente für
+Trimm, Wassereinbruch und Pressluft; Tabelle und Trupp-Befehle bleiben
+darunter.
+
 ## 1.3.102
 
 Version 1.3.102 lässt den Brückenausguck nachts und bei schlechter Sicht

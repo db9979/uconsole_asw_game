@@ -3,7 +3,8 @@ import { $ } from "../core/base.js";
 import { duration, number, stateText, t, unit } from "../core/format.js";
 import { actionButton, fillFireTargets, metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 import { renderCrew } from "../views/crew.js";
-import { drawBoatBallast, drawBoatDamage, drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
+import { drawBoatBallast, drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
+import { drawBoatDamage, renderBoatDamageLamps } from "./uboot-damage.js";
 
 // Alarm age with the boat's own measured bearing (never the source's truth).
 const alarmText = (age, bearing) => age === null ? t("station_none")
@@ -519,6 +520,7 @@ export function renderUbootStation(payload) {
   renderBallast(payload.ballast);
   drawBoatBallast("uboot-ballast-canvas", payload);
   renderDamage(payload.damage_control);
+  renderBoatDamageLamps(payload);
   drawBoatDamage("uboot-dc-canvas", payload);
 }
 

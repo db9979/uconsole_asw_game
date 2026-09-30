@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.103
+
+Release 1.3.103 turns the submarine's Damage control card in the browser
+into a damage-control console like the frigate's: an annunciator panel with
+the master lamp (power, water, leaks, fire, gas, lost compartments, shut
+bulkheads, teams, bilge pumps, wounded, trim, high-pressure air and over
+depth) above a side view of the pressure hull with water rising from the
+keel, fire glow, gas haze, leaks, shut bulkheads, a state lamp per
+compartment and the team badges, and gauges for trim, floodwater and
+high-pressure air; the table and the team orders stay below.
+
 ## 1.3.102
 
 Release 1.3.102 lets the bridge lookout call out the navigation lights he

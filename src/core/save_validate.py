@@ -516,6 +516,9 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     from src.core import hunter
     if not hunter.valid_esm_log(data.get("hunter_esm"), save_sim_t):
         return False
+    # Save v41: the AI hunters' lead.
+    if not hunter.valid_lead(data.get("hunter_lead"), save_sim_t):
+        return False
     # Save v37: the ASW rocket launcher.
     if not rbu.valid_state(data.get("rbu"), 1_000_000.0):
         return False

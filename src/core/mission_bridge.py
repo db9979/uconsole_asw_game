@@ -468,6 +468,9 @@ class MissionBridgeMixin:
         bearing = int(((math.degrees(math.atan2(dx, -dy)) % 360.0 + 22.5)
                        // 45.0) * 45.0) % 360
         distance = max(5, int((math.hypot(dx, dy) + 2.5) // 5.0) * 5)
+        if domain == "underwater":
+            from src.core import hunter
+            hunter.set_hq_lead(self, bearing, distance)
         return message(f"runtime.hq.threat_{domain}", bearing=f"{bearing:03d}",
                        range=distance)
 

@@ -25,7 +25,7 @@ SAVE_ROOT_FIELDS = frozenset({
     "autocrew", "ais", "plot",
     "crew", "weapon_settings", "mission_events",
     "ping_intercepts", "tasking", "watch", "mpa", "radar_marks", "route",
-    "incidents", "baffle_clear", "hq_reports", "rbu", "casualties", "hunter_esm",
+    "incidents", "baffle_clear", "hq_reports", "rbu", "casualties", "hunter_esm", "hunter_lead",
 })
 
 # Save v25: the surface radar's unmarked mast echoes and marked boats

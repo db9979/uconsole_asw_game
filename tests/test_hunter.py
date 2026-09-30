@@ -63,6 +63,7 @@ def test_without_observations_the_frigate_searches_regardless_of_the_boat():
         game, boat = _local_boat(seed=61)
         _place(game, boat, distance, bearing=200.0)
         game.sonar.contacts.clear()
+        game.hunter_lead = None                  # no HQ report either
         assert hunter.datum(game) is None
         hunter.bridge(game, None)
         courses.append((round(game.ship.target_course, 6), game.ship.target_speed))
@@ -74,6 +75,7 @@ def test_an_hfdf_fix_sends_ship_helicopter_and_patrol_aircraft():
     game, boat = _local_boat(seed=61)
     _place(game, boat, 60.0)
     game.sonar.contacts.clear()
+    game.hunter_lead = None                  # no HQ report either
     x, y = game.ship.x + 12.0, game.ship.y
     _fix(game, x, y)
     found = hunter.datum(game)
@@ -100,6 +102,7 @@ def test_manned_stations_are_left_to_their_crew(monkeypatch):
     game, boat = _local_boat(seed=61)
     _place(game, boat, 60.0)
     game.sonar.contacts.clear()
+    game.hunter_lead = None                  # no HQ report either
     _fix(game, game.ship.x + 12.0, game.ship.y)
     monkeypatch.setattr(game.commander, "station_leased", lambda station: True)
     course, speed = game.ship.target_course, game.ship.target_speed
@@ -120,6 +123,7 @@ def test_a_heard_boat_is_classified_pinged_and_attacked():
     game, boat = _local_boat(seed=61)
     game.world.land_blocks_line = lambda *args: False
     _place(game, boat, 3.0, bearing=90.0, depth=60.0)
+    game.hunter_lead = None                  # moved away from HQ's start report
     sub = boat.sub
     assert sub.set_orders(course=0.0, speed=8.0, depth=60.0) is True
     stores = (game.torpedo_count, game.helo.torps)
@@ -153,6 +157,7 @@ def test_the_frigate_hunts_without_the_autocrew():
     assert not any(game.autocrew.enabled.values())
     _place(game, boat, 60.0)
     game.sonar.contacts.clear()
+    game.hunter_lead = None                  # no HQ report either
     _fix(game, game.ship.x, game.ship.y - 12.0)
     _run(game, 4.0)
     assert abs(((game.ship.target_course + 180.0) % 360.0) - 180.0) < 1.0
@@ -171,6 +176,7 @@ def _mast_up(game, boat, distance_nm=6.0, bearing=90.0):
 def test_the_opz_marks_a_mast_blip_and_the_hunt_goes_there():
     game, boat = _local_boat(seed=62)
     game.sonar.contacts.clear()
+    game.hunter_lead = None                  # no HQ report either
     _mast_up(game, boat, 3.0, bearing=90.0)
     sub = boat.sub
     for _ in range(240):
@@ -204,6 +210,7 @@ def test_the_freshest_of_mast_track_hfdf_fix_and_hq_report_is_the_datum():
     game, boat = _local_boat(seed=63)
     _place(game, boat, 60.0)
     game.sonar.contacts.clear()
+    game.hunter_lead = None                  # no HQ report either
     assert hunter.datum(game) is None
     task = dict(id=99, kind="datum", state="offered", offered_t=game.sim_t,
                 respond_by_t=game.sim_t + 600.0, deadline_t=game.sim_t + 3600.0,
@@ -252,6 +259,7 @@ def _listen_esm(game, seconds=120):
         game.sim_t += 1.0
         game._update_esm_picture()
     game.sonar.contacts.clear()
+    game.hunter_lead = None                  # no HQ report either
 
 
 def test_an_esm_bearing_on_a_mast_radar_becomes_the_search_line():
@@ -300,6 +308,7 @@ def test_a_bare_bearing_sends_no_patrol_aircraft():
     game, boat = _local_boat(seed=61)
     _place(game, boat, 60.0)
     game.sonar.contacts.clear()
+    game.hunter_lead = None                  # no HQ report either
     found = {"bearing": 90.0, "contact": None, "source": "hfdf"}
     assert hunter.mpa(game, found) == "monitoring" and game.mpa.state == "BASE"
 

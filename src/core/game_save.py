@@ -487,6 +487,7 @@ class SaveMixin:
             "baffle_clear": (None if self.baffle_clear is None
                              else [float(value) for value in self.baffle_clear]),
             "hunter_esm": [dict(row) for row in self.hunter_esm],
+            "hunter_lead": None if self.hunter_lead is None else dict(self.hunter_lead),
             "watch": self.crew_watch.serialize(),
             "mpa": self.mpa.serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
@@ -1051,6 +1052,7 @@ class SaveMixin:
         self.baffle_clear = (None if data["baffle_clear"] is None
                              else [float(value) for value in data["baffle_clear"]])
         self.hunter_esm = [dict(row) for row in data["hunter_esm"]]
+        self.hunter_lead = None if data["hunter_lead"] is None else dict(data["hunter_lead"])
         self.task_sel = 0
         self.crew_watch = CrewState.restore(data["watch"])
         self.mpa = PatrolAircraft.restore(data["mpa"], self.world.size_nm)

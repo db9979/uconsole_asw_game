@@ -1000,6 +1000,12 @@ class Sub:
                 return
             # Tiefer unter die Thermokline + Kurs ab der Fregatte
             self.target_depth = min(thermo + 40.0, safe_depth)
+            if (self.mission_orders is not None
+                    and self.mission_orders[2] <= MAST_DEPTH_M
+                    and self.memory["last_torpedo_age"] > config.SUB_EVADE_DURATION_S):
+                # The reconnaissance boat within sighting range still comes
+                # up for its periscope look: a ping alone does not keep it down.
+                self.target_depth = self.mission_orders[2]
             self._advance_depth(self.target_depth,
                                 self.motion.depth_rate_m_s * 3.0, dt)
             bearing = self.memory["contact_bearing"]

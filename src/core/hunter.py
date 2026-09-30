@@ -46,6 +46,7 @@ HELO_DIP_NM = 0.5
 HELO_DROP_NM = 1.5
 BEARING_DATUM_NM = 8.0          # bearing-only datum: this far down the line
 SHIP_FIRE_NM = 6.0
+GUARD_FIRE_NM = 3.0             # the frigate's own shot in the submarine's missions
 RBU_FIRE_NM = 2.0               # rocket salvo only on a close, fixed boat
 FIX_MAX_AGE_S = 900.0
 PATTERN_CLEAR_NM = 4.0          # no new buoy pattern where buoys already listen
@@ -58,6 +59,7 @@ CORRELATE_DEG = 10.0            # a mast track this close to a sonar bearing is 
 ASROC_EVERY_S = 120.0
 ASROC_DATUM_S = 120.0           # only a datum this fresh is passed on for an ASROC
 ESM_DATUM_S = 300.0             # an ESM bearing on a mast radar stays a datum this long
+ESM_STEADY_S = 600.0            # a boat's radar is up only briefly; longer is a ship
 ESM_CANDIDATES = 3              # a submarine radar among this many library matches
 ESM_LOG_MAX = 8                 # ESM bearing lines the hunters' ELOKA keeps (saved)
 ESM_LOG_BASE_NM = 1.0           # a new line only this far from the last one's origin
@@ -68,6 +70,11 @@ ESM_FIX_MAX_NM = 60.0           # a fix farther down either line is no fix
 SURFACE_EXPLAINS_S = 60.0       # a ship track this fresh on the bearing explains the radar
 CLASSIFY_MEAN_S = 180.0         # an operator needs this long on average to call a submarine
 AIR_FIX_S = 120.0               # aircraft attack only a position this fresh
+LEAD_HQ_S = 3600.0              # HQ's start report of the threat leads the search this long
+LEAD_SONAR_S = 1200.0           # a lost submarine bearing is run down this long
+LEAD_CLEAR_NM = 3.0             # within this of HQ's reported position its lead is spent
+LEAD_MAX_NM = 60.0              # a bearing lead is run down no farther than this
+LEAD_KN = 14.0                  # speed down a lead: fast, still listening
 HELO_READY_MEAN_S = 600.0       # a datum waits this long on average for the helicopter to launch
 _SUPPORT = (("sonar", Station.SONAR), ("radio", Station.RADIO),
             ("eloka", Station.ELOKA), ("damage", Station.DAMAGE),
@@ -232,6 +239,8 @@ def esm_bearings(game) -> list:
         age = track.age(game.sim_t)
         if age > ESM_DATUM_S:
             continue
+        if track.last_seen - track.first_seen > ESM_STEADY_S:
+            continue            # radiating this long is a ship, not a mast
         analysis = game.eloka_analysis(track)
         if analysis is None or not any(
                 candidate.emitter_key in sub_keys
@@ -363,7 +372,103 @@ def datum(game):
     if bearings:
         _, _, _, bearing, source = min(bearings)
         return {"bearing": bearing, "contact": None, "source": source}
+    line = (game.hunter_lead or {}).get("sonar")
+    point = None if line is None else _sonar_point(game, line)
+    if point is None:
+        point = lead_point(game)
+    if point is not None:
+        return {"x": point[0], "y": point[1], "contact": None, "source": "lead", "age": 0.0}
     return None
+
+
+def set_hq_lead(game, bearing: float, range_nm: float) -> None:
+    """HQ's start report of the nearest threat (rounded bearing and range
+    from the ship, as the teletype prints it) marks the area to search.
+    In the submarine's missions the frigate guards its own post instead."""
+    if boat_missions.mode(game) is not None:
+        return
+    game.hunter_lead = dict(game.hunter_lead or {"hq": None, "sonar": None})
+    game.hunter_lead["hq"] = _line(game.sim_t, game.ship.x, game.ship.y, bearing, range_nm)
+
+
+def _line(t, x, y, bearing, range_nm):
+    return dict(t=float(t), x=float(x), y=float(y), bearing=float(bearing) % 360.0,
+                range=None if range_nm is None else float(range_nm))
+
+
+def note_lead(game) -> None:
+    """Keep the leads current: a fresh submarine bearing becomes the sonar
+    lead (the line from where it was heard); stale leads are dropped."""
+    lead = dict(game.hunter_lead or {"hq": None, "sonar": None})
+    for contact in hunt_contacts(game):
+        if _fresh(game, contact, 5.0):
+            lead["sonar"] = _line(game.sim_t, contact.observer_x, contact.observer_y,
+                                  contact.bearing, None)
+            break
+    if lead["sonar"] is not None and _sonar_point(game, lead["sonar"]) is None:
+        lead["sonar"] = None
+    centre = hq_area(game)
+    if lead["hq"] is not None and (centre is None or math.hypot(
+            centre[0] - game.ship.x, centre[1] - game.ship.y) <= LEAD_CLEAR_NM):
+        lead["hq"] = None
+    game.hunter_lead = None if lead == {"hq": None, "sonar": None} else lead
+
+
+def _sonar_point(game, line):
+    """A point ``BEARING_DATUM_NM`` down a lost bearing past the ship, or
+    None once the line is stale or the ship has run it out."""
+    if not 0.0 <= game.sim_t - line["t"] <= LEAD_SONAR_S:
+        return None
+    rad = math.radians(line["bearing"])
+    ux, uy = math.sin(rad), -math.cos(rad)
+    ship = game.ship
+    along = max(0.0, (ship.x - line["x"]) * ux + (ship.y - line["y"]) * uy) + BEARING_DATUM_NM
+    if along > LEAD_MAX_NM:
+        return None
+    return line["x"] + along * ux, line["y"] + along * uy
+
+
+def hq_area(game):
+    """The position HQ reported the threat at, or None."""
+    line = (game.hunter_lead or {}).get("hq")
+    if line is None or not 0.0 <= game.sim_t - line["t"] <= LEAD_HQ_S:
+        return None
+    rad = math.radians(line["bearing"])
+    return (line["x"] + line["range"] * math.sin(rad),
+            line["y"] - line["range"] * math.cos(rad))
+
+
+def lead_point(game):
+    """HQ's reported position of the threat, or None without one or once
+    the ship has been there."""
+    return hq_area(game)
+
+
+def valid_lead(value, save_sim_t: float) -> bool:
+    """Save ``hunter_lead``: None, or the HQ and sonar leads, each None or a
+    line of finite floats (range None for a sonar bearing, set for HQ's)
+    taken no later than the save."""
+    if value is None:
+        return True
+    if not isinstance(value, dict) or set(value) != {"hq", "sonar"} or value == {
+            "hq": None, "sonar": None}:
+        return False
+    for key, line in value.items():
+        if line is None:
+            continue
+        if not isinstance(line, dict) or set(line) != {"t", "x", "y", "bearing", "range"}:
+            return False
+        if (line["range"] is None) != (key == "sonar"):
+            return False
+        numbers = [line[name] for name in ("t", "x", "y", "bearing")]
+        if line["range"] is not None:
+            numbers.append(line["range"])
+        if not (all(type(item) is float and math.isfinite(item) for item in numbers)
+                and 0.0 <= line["t"] <= save_sim_t and 0.0 <= line["bearing"] < 360.0
+                and abs(line["x"]) <= 1e6 and abs(line["y"]) <= 1e6
+                and (line["range"] is None or 0.0 <= line["range"] <= 1e4)):
+            return False
+    return True
 
 
 def datum_point(game, found):
@@ -470,6 +575,8 @@ def bridge(game, found) -> str:
             return _steer(game, *escort)
         return _steer(game, search_course(game), SEARCH_KN)
     side = 1.0 if math.floor(game.sim_t / CROSS_LEG_S) % 2 else -1.0
+    if found["source"] == "lead":
+        return _steer(game, _bearing(ship.x, ship.y, found["x"], found["y"]), LEAD_KN)
     if "x" in found:
         bearing = _bearing(ship.x, ship.y, found["x"], found["y"])
         if math.hypot(found["x"] - ship.x, found["y"] - ship.y) > CLOSE_NM:
@@ -491,6 +598,12 @@ def sonar(game) -> str:
     return AutocrewController._sonar(game)
 
 
+def fire_range_nm(game) -> float:
+    """The frigate's own torpedo range: guarding a post in the submarine's
+    missions it waits for a closer shot than when it hunts."""
+    return SHIP_FIRE_NM if boat_missions.mode(game) is None else GUARD_FIRE_NM
+
+
 def weapons(game, found) -> str:
     observed = any(warning["age_s"] <= 2.0 and warning["source"] != "flood"
                    for warning in game.torpedo_warnings(held=False))
@@ -503,7 +616,7 @@ def weapons(game, found) -> str:
         return "monitoring"
     contact = None if found is None else found.get("contact")
     if (contact is None or "x" not in found or contact.range_est is None
-            or contact.range_est > SHIP_FIRE_NM):
+            or contact.range_est > fire_range_nm(game)):
         return "monitoring"
     if _running(game, "frigate"):
         # A torpedo is out: a boat close enough gets a rocket salvo on top.
@@ -618,7 +731,7 @@ def mpa(game, found) -> str:
 def asroc(game, found) -> str:
     """Pass a fresh located datum over the datalink: the nearest friendly
     escort with an ASROC in range fires one (one weapon in the water at a time)."""
-    if (found is None or "x" not in found or found["source"] in ("hq", "esm")
+    if (found is None or "x" not in found or found["source"] in ("hq", "esm", "lead")
             or found.get("age", 0.0) > ASROC_DATUM_S
             or _running(game, "asroc") or game.asrocs or not _window(game, ASROC_EVERY_S)):
         return "monitoring"
@@ -650,6 +763,7 @@ def update(game, dt: float) -> None:
         mark_blips(game)
     if not manned(game, Station.ELOKA):
         log_esm(game)
+    note_lead(game)
     found = datum(game)
     if not manned(game, Station.BRIDGE):
         bridge(game, found)

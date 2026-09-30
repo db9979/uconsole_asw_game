@@ -618,9 +618,9 @@ def sonar(game) -> str:
 
 
 def guarding(game) -> bool:
-    """The frigate guards its post alone against a breakthrough or a
-    reconnaissance boat (a convoy escort keeps its helicopter's full reach
-    and the patrol aircraft)."""
+    """The frigate guards its post against a breakthrough or a
+    reconnaissance boat: a closer shot and a short helicopter (a convoy
+    escort keeps its helicopter's full reach)."""
     return boat_missions.mode(game) in ("breakthrough", "recon")
 
 
@@ -721,9 +721,9 @@ def helicopter(game, found) -> str:
 
 def mpa(game, found) -> str:
     aircraft = game.mpa
-    if game.damage.station_down("opz") or guarding(game):
-        # A frigate guarding its post against the submarine gets no patrol
-        # aircraft; HQ sends it to hunts and to convoys.
+    if game.damage.station_down("opz") or boat_missions.mode(game) == "breakthrough":
+        # A frigate guarding the passage against a breakthrough gets no
+        # patrol aircraft; HQ sends it to hunts, convoys and reconnaissance.
         return "monitoring"
     point = datum_point(game, found) if found is not None and "x" in found else None
     if point is None:

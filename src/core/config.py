@@ -1217,7 +1217,7 @@ BOAT_CONVOY_BOAT_SIDE_NM = 5.0
 BOAT_CONVOY_BOAT_SIDE_SPREAD_NM = 3.0
 # Boat missions: the goal lies this far beyond the frigate's start, seen from
 # the boat's start, and counts as reached within the radius.
-BOAT_GOAL_BEYOND_NM = 5.0
+BOAT_GOAL_BEYOND_NM = 10.0
 BOAT_GOAL_RADIUS_NM = 3.0
 BOAT_GOAL_MIN_DEPTH_M = 40.0
 # The AI boat's mission legs (src/core/boat_ai.py) when nobody crews it.

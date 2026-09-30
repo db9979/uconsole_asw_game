@@ -16,6 +16,7 @@ from src.audio.speech import Speaker, find_engine
 from src.commander.local import CommanderConsole
 from src.core import config
 from src.core.plot import PlotLayer
+from src.core.chart_history import ChartHistory
 from src.core.autocrew import AutocrewController
 from src.core.callouts import CalloutLog
 from src.ship.route import Route
@@ -37,6 +38,7 @@ from src.enemies.animal import Animal
 from src.enemies.civilian import CivilianShip
 from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
+from src.enemies import traffic
 from src.sensors.tracks import TrackPicture
 from src.sensors.fusion import OPZFusionPicture
 from src.sensors.esm import ECMJammer, ESMPicture
@@ -525,11 +527,13 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.civilians = []
         for _ in range(self.mission.civilian_count):
             cx, cy = at_dist(20.0, 100.0)
-            self.civilians.append(CivilianShip(
+            merchant = CivilianShip(
                 cx, cy, rng=rng,
                 profile=self.runtime_catalog.pick_surface(rng, hostile=False),
                 side="neutral", doctrine="surface_transit",
-                runtime_catalog=self.runtime_catalog))
+                runtime_catalog=self.runtime_catalog)
+            traffic.assign_lane(merchant, self.seed, self.world)
+            self.civilians.append(merchant)
 
         if self.mission.win_mode == "convoy_attack":
             from src.core import boat_missions
@@ -576,6 +580,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.simlog_view_map = False
         self.simlog_map_fit = simlog_map.FIT_WORLD
         self.held = set()
+        self._pointer_held = None
         self._map_drag = None
         self._map_drag_moved = False
         # Waffenzentrale (M3, Munitionsbestand aus Custom-Difficulty)
@@ -785,6 +790,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                                  config.MAP_ZOOM_MIN_PX_PER_NM,
                                  config.MAP_ZOOM_MAX_PX_PER_NM)
         self.opz_map_view = Viewport(self.world.size_nm, 1.0, 100.0)
+        self.chart_history = ChartHistory()
         self._reset_map_view()
         self.hq_msg(message("runtime.hq.roe", roe=self.roe))
         weather = self.world.weather_values()

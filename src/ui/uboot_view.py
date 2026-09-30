@@ -18,7 +18,8 @@ from src.commander.server import OPFOR_ROLES
 from src.core import boat_esm, config, opfor, uboot_local
 from src.core.i18n import display_message, display_value, localize, message, raw_text
 from src.core.station import Station
-from src.ui import console, engagement, instruments, layout, lines, nato_symbols, overlay_style
+from src.ui import (chart_trails, console, engagement, instruments, label_layout, layout, lines,
+                    nato_symbols, overlay_style, pointer)
 from src.ui.feedback import FeedEntry
 from src.ui.map_view import chart_background, draw_chart_frame, draw_chart_geography
 from src.ui.plot_view import draw_plot
@@ -249,9 +250,9 @@ def _contact_position(boat, contact, now):
     return (contact.observed_x, contact.observed_y) if fresh else None
 
 
-def _label(surface, game, text, pos, color, chart) -> None:
+def _label(surface, game, text, pos, color, chart, candidates=None, size=None) -> None:
     from src.ui.map_view import _map_label
-    _map_label(surface, game, text, pos, color, chart)
+    _map_label(surface, game, text, pos, color, chart, candidates=candidates, size=size)
 
 
 def _own_torpedoes(game, sub):
@@ -295,7 +296,11 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
         lines.line(s, color, (int(bx), int(by)), (int(ex), int(ey)),
                          2 if is_selected else 1)
         lx, ly = bx + 90 * math.sin(rad), by - 90 * math.cos(rad)
-        _label(s, game, label, (int(lx) + 6, int(ly) - 8), color, r)
+        # Bearing-only labels slide outward along their own line.
+        _label(s, game, label, (int(lx) + 6, int(ly) - 8), color, r,
+               candidates=lambda size, rad=rad: label_layout.along(
+                   (bx, by), (math.sin(rad), -math.cos(rad)),
+                   (90, 125, 160, 195, 230), size))
     draw_esm_chart(game, boat, view, r)
     draw_intercept_lines(game, boat, view, bx, by)
     draw_report_chart(game, boat, view)
@@ -322,9 +327,8 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
     target = math.radians(sub.order_course - 90.0)
     lines.line(s, config.COLOR_TEXT_DIM, (int(bx), int(by)),
                      (int(bx + 42 * math.cos(target)), int(by + 42 * math.sin(target))), 1)
-    layout.blit_line(s, message("map.target_course",
-                                           course=f"{sub.order_course:03.0f}"),
-                     (int(bx) + 12, int(by) + 12, 124, 18), config.COLOR_TEXT_DIM, size=12)
+    _label(s, game, message("map.target_course", course=f"{sub.order_course:03.0f}"),
+           (int(bx) + 12, int(by) + 12), config.COLOR_TEXT_DIM, r, size=12)
     color = nato_symbols.draw_symbol(s, (bx, by), "FRIEND", "SUBSURFACE", 20)
     heading = math.radians(sub.course - 90.0)
     lines.line(s, color, (int(bx), int(by)),
@@ -343,8 +347,8 @@ def _draw_mission_goal(game, view) -> None:
     px, py = view.world_to_screen(point["x"], point["y"])
     radius = max(6, int(point["radius_nm"] * view.scale))
     pygame.draw.circle(s, config.COLOR_OK, (int(px), int(py)), radius, 2)
-    layout.blit_line(s, "uboot.chart.goal", (int(px) + radius + 4, int(py) - 9, 80, 18),
-                     config.COLOR_OK, size=12)
+    _label(s, game, "uboot.chart.goal", (int(px) + radius + 4, int(py) - 9),
+           config.COLOR_OK, config.MAP_RECT, size=12)
 
 
 def _draw_mission_line(game, boat, r) -> None:
@@ -368,9 +372,18 @@ def draw_chart(game, boat) -> None:
         pygame.draw.rect(s, config.COLOR_GEO_GRID, r, 1)
         return
     view = chart_view(game, boat)
-    with layout.clip_to(s, r):
+    with layout.clip_to(s, r), label_layout.label_scope(r) as labels:
+        bx, by = view.world_to_screen(boat.sub.x, boat.sub.y)
+        labels.reserve((int(bx) - 12, int(by) - 12, 24, 24))
         draw_chart_geography(game, view, r)
         draw_plot(game.screen, game, view, r, layer=boat.plot, own=boat.sub)
+        history = getattr(game, "chart_history", None)
+        if history is not None:
+            chosen = boat.station.selected_contact
+            chart_trails.draw_side(
+                s, history.sides.get(("boat", boat.sub.id)), view, r, chart_background(game),
+                own_now=(boat.sub.x, boat.sub.y),
+                selected_bearing_key=getattr(chosen, "id", None))
         _draw_chart_overlays(game, boat, view, r)
     draw_chart_frame(game, view, r, boat.chart_follow)
     _draw_mission_line(game, boat, r)
@@ -641,11 +654,22 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
         # Each dial carries its name underneath, so it reads without the F1 help.
         caption = layout.line_pitch(16, 0)
         dial_sh = sh - caption
-        instruments.heading_dial(s, (sx, sy, cell, dial_sh), sub.course, sub.order_course)
-        instruments.depth_dial(s, (sx + cell + 8, sy, cell, dial_sh), sub.depth,
+        dials = [pygame.Rect(sx + index * (cell + 8), sy, cell, dial_sh) for index in range(3)]
+        instruments.heading_dial(s, dials[0], sub.course, sub.order_course)
+        instruments.depth_dial(s, dials[1], sub.depth,
                                sub.order_depth, sub.stype.max_depth_m, sub.crush_depth_m)
-        instruments.speed_dial(s, (sx + 2 * (cell + 8), sy, cell, dial_sh), sub.speed,
+        instruments.speed_dial(s, dials[2], sub.speed,
                                sub.order_speed, sub.motion.maximum_speed_kn)
+        # A click on a dial orders that course, depth or speed (as typed).
+        from src.core import pointer_input
+        pointer.add_action(dials[0], lambda pos, r=dials[0]: pointer_input.enter_value(
+            game, "uboot_course", instruments.heading_at(r, pos)))
+        pointer.add_action(dials[1], lambda pos, r=dials[1], d=sub.depth, o=sub.order_depth,
+                           c=sub.crush_depth_m: pointer_input.enter_value(
+            game, "uboot_depth", instruments.depth_at(r, pos, d, o, c)))
+        pointer.add_action(dials[2], lambda pos, r=dials[2], m=sub.motion.maximum_speed_kn:
+                           pointer_input.enter_value(game, "uboot_speed",
+                                                     instruments.speed_at(r, pos, m)))
         for index, name in enumerate(("ui.course", "ui.depth", "ui.speed")):
             layout.blit_line(s, name, (sx + index * (cell + 8), sy + dial_sh, cell, caption),
                              config.COLOR_TEXT_DIM, size=16, align="center")
@@ -1368,8 +1392,10 @@ def draw_end_panel(game, boat) -> None:
         # A boat campaign leg: the standing and what comes next.
         layout.blit_line(s, campaign, (rect.x + 16, rect.y + 72, rect.w - 32, 28),
                          config.COLOR_WARN, size=16, align="center")
-    layout.blit_block(s, "uboot.end.hint", rect.x + 16, rect.y + 80 + extra, rect.w - 32,
-                      56, config.COLOR_TEXT_DIM, size=16, align="center")
+    # The keys as a clickable legend, like the station footers.
+    with pointer.layer("end"):
+        _footer(s, (rect.x + 16, rect.y + 96 + extra, rect.w - 32, 22),
+                (("D", "end.key.debrief"), ("R", "end.key.restart"), ("M", "end.key.menu")))
 
 
 def silent_light(s, boat) -> bool:

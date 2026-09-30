@@ -34,8 +34,11 @@ const PLOT_FIELDS = {
   dr: ["id", "shape", "label", "t", "x", "y", "course", "speed_kn", "now_x", "now_y", "cpa_nm", "cpa_s"],
 };
 function validPlot(plot) {
-  if (!exactKeys(plot, ["objects", "max_objects", "max_label"]) || !Number.isInteger(plot.max_objects) ||
+  if (!exactKeys(plot, ["objects", "max_objects", "max_label", "trail"]) || !Number.isInteger(plot.max_objects) ||
       !Number.isInteger(plot.max_label) || !boundedArray(plot.objects, plot.max_objects)) return false;
+  // Own track (own-platform truth): at most two hours of [x, y] points.
+  if (!boundedArray(plot.trail, 240) ||
+      !plot.trail.every((row) => Array.isArray(row) && row.length === 2 && finite(row[0]) && finite(row[1]))) return false;
   const ids = new Set();
   return plot.objects.every((item) => {
     const fields = item && PLOT_FIELDS[item.shape];

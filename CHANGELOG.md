@@ -4,6 +4,20 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.113
+
+Release 1.3.113 lets you play the uConsole entirely with the mouse and makes
+the charts and the sea traffic easier to read. A click on a key in a
+station's key bar presses it (held like the key), numbered tabs in the top bar
+switch stations, a click on the course, speed or depth dial orders that value,
+numeric entries show a keypad, menu and dialog rows are clickable, the wheel
+moves through menus and a right click cancels. Every chart now draws the own
+track, the earlier positions of each contact and the earlier bearings of the
+selected contact, and chart labels move aside instead of covering each other.
+Cargo ships, tankers and passenger ships steam on steady courses between ports
+and the edge of the sea area, give way to each other under the collision
+regulations and run from nearby detonations.
+
 ## 1.3.112
 
 Release 1.3.112 makes multiplayer simpler to host. F9 is now one switch,

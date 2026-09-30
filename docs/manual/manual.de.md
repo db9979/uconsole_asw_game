@@ -32,7 +32,7 @@ Jede Station zeigt nur, was ihre Sensoren und Bediener wissen. Sonarkontakte sin
 
 ### Bedienung
 
-Das Spiel läuft mit 1280x720 und ist für Tastatur und Trackball der uConsole ausgelegt. Der Trackball wirkt als Joystick: horizontal steuert er auf der Brücke, vertikal schaltet er sonst die Hauptauswahl der Station. Eine Maus funktioniert ebenfalls: Rad zoomt Karten, Ziehen verschiebt, Klick heftet einen Tooltip an.
+Das Spiel läuft mit 1280x720 und ist für Tastatur und Trackball der uConsole ausgelegt. Der Trackball wirkt als Joystick: horizontal steuert er auf der Brücke, vertikal schaltet er sonst die Hauptauswahl der Station. Die uConsole lässt sich auch ganz mit der Maus (oder den Tasten des Trackballs) spielen: Ein Klick auf eine Taste in der Tastenleiste einer Station drückt diese Taste (gedrückt halten hält die Taste, etwa zum Steuern oder für den Maschinentelegrafen), die nummerierten Reiter in der Kopfzeile wechseln die Station, ein Klick auf die Kurs-, Fahrt- oder Tiefenscheibe befiehlt diesen Wert, und eine Zahleneingabe zeigt ein Tastenfeld. Menüzeilen, Dialogzeilen, Speicherplätze und die Hinweise darunter sind ebenfalls anklickbar; das Mausrad blättert durch Menüs und scrollt die Hilfe, und ein Rechtsklick bricht in Menüs, Dialogen, Eingaben und am Missionsende ab wie `Esc`. Auf Karten zoomt das Rad, Ziehen verschiebt und ein Klick heftet einen Tooltip an. Ein Klick tut genau das, was seine Taste tut, mit denselben Prüfungen.
 
 Globale Tasten (alle Stationen):
 
@@ -61,6 +61,8 @@ Globale Tasten (alle Stationen):
 | `Q / E oder Mausrad` | Kartenzoom nur auf Brücke, Waffen und Helikopter |
 | `Drag` | Karte verschieben (Brücke, Waffen und Helikopter) |
 | `K` | Kamera-Follow nur auf sichtbaren Karten (Drag schaltet es aus) |
+| `Linksklick` | Angeklickte Taste, Reiter, Scheibe oder Zeile |
+| `Rechtsklick` | Abbrechen wie Esc in Menüs und Eingaben |
 | `P` | Plotmodus auf Brücken-/Waffen-/Helo-Karte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (für alle Stationen, wird gespeichert) |
 | `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
@@ -1142,6 +1144,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Strömung | festes Feld bis 1 kn plus 3 % des Windes, 20 Grad rechts der Windrichtung |
 | Meeresboden | Fels, Kies, Sand, Schluff oder Schlick; beeinflusst die Bodenreflexion |
 | Hindernisse | bis zu 64 kartierte Wracks und Unterwasserfelsen (Spitzen mindestens 15 m tief), auf jeder Karte eingetragen (Wrack: Rumpfstrich mit Masten, Fels: Sternchen; Tiefe der Oberkante beim Heranzoomen, Details im Tooltip); beide heben in ihrer Grundfläche den Meeresboden an und sind Hindernisse für Schiff, U-Boote und Waffen |
+| Schiffsverkehr | Frachter, Tanker und Passagierschiffe laufen auf festen Kursen von Ziel zu Ziel (die eingezeichneten Häfen und Ausgänge am Rand des Seegebiets); sie weichen nach den Kollisionsverhütungsregeln aus (entgegenkommend, von Steuerbord kreuzend oder beim Überholen: 35 Grad nach Steuerbord, wenn der Passierabstand unter 0,5 NM läge; jedes Schiff weicht unter 0,25 NM aus) und laufen vor einer Detonation innerhalb von 8 NM 10 min mit voller Fahrt davon; Arbeits- und Fischereifahrzeuge ziehen weiter frei umher, Geleitzüge und Schiffe von HQ-Aufträgen halten ihren Kurs |
 | Atmosphäre | Barometer 975-1025 hPa, das vor steigendem Seegang fällt; Lufttemperatur aus Wasser, Jahreszeit, Tageszeit und kaltem Nordwind (in Winterstürmen unter 0 Grad C: Schnee, Vereisung); Böen; Wolkenuntergrenze; Sonnenstand mit bürgerlicher/nautischer Dämmerung; Mondphase |
 | Regenlinse | Regen süßt die obersten Meter aus (bis -1 PSU, vom Wind eingemischt) und senkt die Schallgeschwindigkeit an der Oberfläche |
 | SOFAR-Kanal | ein inneres Schallgeschwindigkeitsminimum (etwa 400-500 m unter der Deckschicht) gibt es nur in ausreichend tiefem Wasser |
@@ -1166,6 +1169,17 @@ Die Besatzung führt einen gemeinsamen Fettstift-Plot. Alle Stationen und alle R
 - **Bezeichnungen:** Objekte werden als M1, R2, B3 usw. nummeriert. Im Web-Client kann vor dem Zeichnen eine Bezeichnung eingegeben oder ein Objekt in der Liste unter der Karte umbenannt werden.
 - **Web-Client:** über der Karte ein Werkzeug wählen, dann einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken. „Trackpeilung plotten“ legt die gemessene Peilung des gewählten Tracks von dessen Beobachterposition an.
 - **Grenzen:** höchstens 64 Objekte und 24 Zeichen je Bezeichnung.
+
+### Kartenverlauf und Beschriftungen
+
+Jede taktische Karte (Brücke, Waffen, Helikopter, OPZ, Karte und Plot des U-Boots und die Karten der Remote Crew) zeigt, wo etwas war, nicht nur, wo es ist:
+
+- **Eigene Kursspur:** eine schwache gepunktete Linie hinter dem eigenen Schiff oder U-Boot, ein Punkt alle 30 s Simulationszeit, die letzten 2 Stunden.
+- **Kontaktverlauf:** frühere Positionen eines Tracks als kleine Punkte, die mit dem Alter verblassen, einer pro Minute, die letzten 12 je Track.
+- **Peilverlauf:** Für einen reinen Peilkontakt behält die Karte die letzten 6 Peilungen; die früheren Peilungen des gewählten Kontakts werden gestrichelt von dort gezeichnet, wo sie genommen wurden, sodass ihr Schnitt zeigt, wo er sein kann.
+- **Beschriftungen:** Kartenbeschriftungen weichen aus, statt einander, das eigene Schiff oder ein Symbol zu verdecken: zuerst nach rechts, dann nach unten, oben und links; Beschriftungen von Peillinien gleiten an ihrer Linie entlang.
+
+Der Verlauf dient nur der Anzeige: Er entsteht aus dem, was die Sensoren gemeldet haben, wird nie gespeichert und vergisst einen Track 15 Minuten nach seiner letzten Meldung.
 
 ### Gegnerische U-Boote
 

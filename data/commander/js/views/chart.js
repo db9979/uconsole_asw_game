@@ -11,6 +11,7 @@ import { queueVisualDraw } from "./role-visuals.js";
 import { schedule } from "../core/scheduler.js";
 import { stationActionAvailable } from "../state/availability.js";
 import { canvas, ctx } from "./canvases.js";
+import { labelField, placeText } from "./label-layout.js";
 
 export function chartGeometry() {
   const width = canvas.clientWidth;
@@ -187,6 +188,8 @@ function drawChartFrame() {
   // Positioned tracks outside the view (plus their uncertainty ring) are
   // culled in world coordinates before any point transform.
   const cullMargin = 60 / scale;
+  const labels = labelField(width, height);
+  if (ownPosition) labels.reserve(ox - 12, oy - 12, 24, 24);
   for (const track of S.snapshot.tracks) {
     if (finite(track.x) && finite(track.y)) {
       const ring = finite(track.range_uncertainty_nm) ? Math.max(0, track.range_uncertainty_nm) : 0;
@@ -230,7 +233,8 @@ function drawChartFrame() {
     drawSymbol(x, y, track.domain, color, fontSize * .65, track.affiliation);
     if (track.ref === S.selected) { ctx.strokeStyle = palette().accent; ctx.lineWidth = 2; ctx.strokeRect(x - 25, y - 25, 50, 50); }
     ctx.fillStyle = color;
-    ctx.fillText(String(track.label ?? ""), x + 31, y - 9, Math.max(60, width - x - 37));
+    labels.reserve(x - 12, y - 12, 24, 24);
+    placeText(ctx, labels, String(track.label ?? ""), x + 31, y - 9, Math.max(60, width - x - 37));
     S.chartHits.push({ ref: track.ref, x, y });
     addMapInfo(S.chartInfo, x, y, "track", track);
   }
@@ -246,7 +250,7 @@ function drawChartFrame() {
       ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y); ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.stroke();
       ctx.fillStyle = ctx.strokeStyle;
-      ctx.fillText(`${String(track.label ?? "")} ${fix.source}`, x + 9, y - 8, Math.max(50, width - x - 13));
+      placeText(ctx, labels, `${String(track.label ?? "")} ${fix.source}`, x + 9, y - 8, Math.max(50, width - x - 13));
       S.chartHits.push({ ref: track.ref, x, y });
       addMapInfo(S.chartInfo, x, y, "fix", {...fix, label: track.label});
     }
@@ -272,7 +276,7 @@ function drawChartFrame() {
     const [hx, hy] = point(helo.x, helo.y);
     if (hx > -30 && hy > -30 && hx < width + 30 && hy < height + 30) {
       drawSymbol(hx, hy, "AIR", palette().accent, 8);
-      ctx.fillStyle = palette().accent; ctx.fillText(t("helicopter"), hx + 15, hy + 5);
+      ctx.fillStyle = palette().accent; placeText(ctx, labels, t("helicopter"), hx + 15, hy + 5);
     }
   }
   if (S.v2State?.plot) drawPlotLayer(ctx, point, scale, width, height, null);
@@ -364,6 +368,16 @@ export function drawPlotLayer(context, point, scale, width, height, info) {
   const objects = S.v2State?.plot?.objects || [];
   const far = 2 * Math.hypot(width, height) / Math.max(scale, 1e-6);
   context.save();
+  // Own track (a point every 30 s of the last two hours), under the plot.
+  const trail = S.v2State?.plot?.trail || [];
+  if (trail.length > 1) {
+    context.strokeStyle = palette().accent; context.fillStyle = palette().accent;
+    context.globalAlpha = .35; context.lineWidth = 1; context.beginPath();
+    trail.forEach(([tx, ty], index) => { const [px, py] = point(tx, ty); if (index) context.lineTo(px, py); else context.moveTo(px, py); });
+    context.stroke(); context.globalAlpha = .7;
+    for (const [tx, ty] of trail) { const [px, py] = point(tx, ty); if (px > -4 && py > -4 && px < width + 4 && py < height + 4) context.fillRect(px - 1, py - 1, 2, 2); }
+    context.globalAlpha = 1;
+  }
   context.strokeStyle = palette().plot; context.fillStyle = palette().plot; context.lineWidth = 1.5;
   for (const item of objects) {
     const [x, y] = point(item.x, item.y);

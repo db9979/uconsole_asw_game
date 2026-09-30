@@ -9,7 +9,7 @@ from copy import deepcopy
 import math
 import weakref
 
-from src.core import attack_computer, boat_esm, boat_missions, boat_threat, config, opfor, plot
+from src.core import attack_computer, boat_esm, chart_history, boat_missions, boat_threat, config, opfor, plot
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.enemies.damage_control import COMPARTMENTS, capacity_kg
@@ -236,7 +236,17 @@ def _plot(game, layer=None, own=None):
             row.update(now_x=_number(now_x), now_y=_number(now_y),
                        cpa_nm=_number(distance), cpa_s=_number(seconds))
         objects.append(row)
-    return dict(objects=objects, max_objects=plot.MAX_OBJECTS, max_label=plot.MAX_LABEL)
+    return dict(objects=objects, max_objects=plot.MAX_OBJECTS, max_label=plot.MAX_LABEL,
+                trail=_own_trail(game, "frigate" if layer is None else ("boat", own.id)))
+
+
+def _own_trail(game, side_key):
+    """The own ship's (or boat's) recent track: own-platform truth only."""
+    history = getattr(game, "chart_history", None)
+    side = history.sides.get(side_key) if history is not None else None
+    if side is None:
+        return []
+    return [[_number(x), _number(y)] for x, y in list(side.own)[-chart_history.OWN_POINTS:]]
 
 
 def _common(game, status, role):
@@ -1337,7 +1347,7 @@ def _opfor_common(game, status, role, boat):
     # The commander sees the boat's own plot; the sonar room has none.
     common["plot"] = (_plot(game, boat.plot, boat.sub) if role in ("uboot", "uboot_nav") else
                       dict(objects=[], max_objects=plot.MAX_OBJECTS,
-                           max_label=plot.MAX_LABEL))
+                           max_label=plot.MAX_LABEL, trail=[]))
     common["mission"]["objective"] = localize(boat_missions.objective(game, boat), game.tr)
     # The boat's own atmosphere cues (hull, detonations), never the frigate's.
     common["audio"] = dict(events=[dict(seq=int(row["seq"]), cue=str(row["kind"]),

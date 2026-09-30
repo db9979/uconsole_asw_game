@@ -12,18 +12,19 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.112**
+Current release: **1.3.113**
 
-Release 1.3.112 makes multiplayer simpler to host. F9 is now one switch,
-Multiplayer on or off: it uses the first local network address, or opens the
-uConsole's own hotspot when there is no network; network mode, address and
-port sit under the advanced settings. The hotspot keeps its name and password,
-the uConsole installer sets it up, and the lobby and F9 show two steps: the
-Wi-Fi QR code, then the crew page QR code. A browser that asks for a station
-another player holds now asks that player, who can hand it over in the
-browser; every station always carries its full rights. The command line has
-one flag, --multiplayer, which opens the lobby, and the Windows program starts
-straight into the game without a starter window.
+Release 1.3.113 lets you play the uConsole entirely with the mouse and makes
+the charts and the sea traffic easier to read. A click on a key in a
+station's key bar presses it (held like the key), numbered tabs in the top bar
+switch stations, a click on the course, speed or depth dial orders that value,
+numeric entries show a keypad, menu and dialog rows are clickable, the wheel
+moves through menus and a right click cancels. Every chart now draws the own
+track, the earlier positions of each contact and the earlier bearings of the
+selected contact, and chart labels move aside instead of covering each other.
+Cargo ships, tankers and passenger ships steam on steady courses between ports
+and the edge of the sea area, give way to each other under the collision
+regulations and run from nearby detonations.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

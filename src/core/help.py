@@ -32,6 +32,8 @@ _GLOBAL_HELP = (
         ("help.key.mouse_zoom", "help.global.map_zoom"),
         ("Drag", "help.global.map_pan"),
         ("K", "help.global.map_follow"),
+        ("help.key.mouse_click", "help.global.mouse_click"),
+        ("help.key.mouse_right", "help.global.mouse_right"),
         ("P", "help.global.plot"),
         ("help.key.plot_keys", "help.global.plot_keys"),
         ("Esc", "help.cancel"),

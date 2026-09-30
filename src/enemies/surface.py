@@ -189,7 +189,17 @@ class SurfaceShip:
             self._update_civil(dt, world)
 
     def _update_civil(self, dt: float, world) -> None:
-        if self.live_mmsi is None:
+        if self._torpedo_evade_left > 0.0:
+            # A detonation close by (src/enemies/traffic.py): run from it.
+            self._torpedo_evade_left = max(0.0, self._torpedo_evade_left - dt)
+            self.target_course = (self._torpedo_threat_bearing + 180.0) % 360.0
+            self.target_speed = self.speed_cap_kn
+            if self._torpedo_evade_left <= 0.0:
+                self.target_speed = sum(self.profile.speed_kn) * 0.5
+        elif self.live_mmsi is None and self.turn_delta >= 1.0:
+            # On a shipping lane: src/enemies/traffic.py orders the course.
+            self.turn_left -= dt
+        elif self.live_mmsi is None:
             self.turn_left -= dt
             if self.turn_left <= 0:
                 self.turn_left = self.rng.uniform(600.0, 1800.0)

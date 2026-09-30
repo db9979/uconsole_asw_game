@@ -3,7 +3,12 @@
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
+import json
+import os
 import stat
+import sys
+
+import pytest
 import xml.etree.ElementTree as ET
 
 
@@ -77,10 +82,14 @@ def test_start_uses_volatile_dbus_bound_activation(monkeypatch):
     monkeypatch.setattr(hotspot, "_active_for_device",
                         lambda device: ("/old-active", "/old-connection"))
     monkeypatch.setattr(hotspot, "_wait_for_address", lambda: "10.42.0.1")
+    monkeypatch.setattr(module, "hotspot_credentials",
+                        lambda: ("U-Jagd-7KPX", "abcdefghijkmnopqrs"))
 
     details = hotspot.start()
 
     assert details["status"] == "running" and details["address"] == "10.42.0.1"
+    assert (details["ssid"], details["password"]) == ("U-Jagd-7KPX", "abcdefghijkmnopqrs")
+    assert calls[0][0]["802-11-wireless"]["ssid"] == b"U-Jagd-7KPX"
     assert hotspot.previous_connection == "/old-connection"
     assert calls[0][1:] == (
         "/device", "/", {"persist": "volatile", "bind-activation": "dbus-client"})
@@ -142,3 +151,160 @@ def test_checkout_installers_are_executable_and_helper_has_no_shell_runner():
     assert "shell=True" not in helper_text
     assert "PATH=/usr/sbin:/usr/bin:/sbin:/bin" in installer_text
     assert "/usr/bin/python3 -I -c 'import dbus'" in installer_text
+
+
+@pytest.fixture
+def stateful(tmp_path, monkeypatch):
+    module = load_helper()
+    monkeypatch.setattr(module, "STATE_DIR", str(tmp_path / "var-lib-u-jagd"))
+    monkeypatch.setattr(module, "STATE_OWNER_UID", os.getuid())
+    return module, tmp_path / "var-lib-u-jagd" / "hotspot.json"
+
+
+def test_credentials_are_made_once_privately_and_reused(stateful):
+    module, state = stateful
+    ssid, password = module.hotspot_credentials()
+
+    assert module.valid_credentials(ssid, password)
+    assert stat.S_IMODE(state.parent.stat().st_mode) == 0o700
+    assert stat.S_IMODE(state.stat().st_mode) == 0o600
+    assert json.loads(state.read_text()) == {
+        "version": 1, "ssid": ssid, "password": password}
+    assert [path.name for path in state.parent.iterdir()] == ["hotspot.json"]
+    for _ in range(3):
+        assert module.hotspot_credentials() == (ssid, password)
+
+
+def test_new_password_keeps_the_network_name(stateful):
+    module, state = stateful
+    ssid, password = module.hotspot_credentials()
+    renewed = module.hotspot_credentials(renew_password=True)
+
+    assert renewed[0] == ssid and renewed[1] != password
+    assert module.valid_credentials(*renewed)
+    assert module.hotspot_credentials() == renewed
+
+
+@pytest.mark.parametrize("content", [
+    "", "not json", "[]", '{"version": 1, "ssid": "U-Jagd-7KPX"}',
+    '{"version": 2, "ssid": "U-Jagd-7KPX", "password": "abcdefghijkmnopqrs"}',
+    '{"version": true, "ssid": "U-Jagd-7KPX", "password": "abcdefghijkmnopqrs"}',
+    '{"version": 1, "ssid": "U-Jagd-7KPI", "password": "abcdefghijkmnopqrs"}',
+    '{"version": 1, "ssid": "Evil-Net", "password": "abcdefghijkmnopqrs"}',
+    '{"version": 1, "ssid": "U-Jagd-7KPX", "password": "short"}',
+    '{"version": 1, "ssid": "U-Jagd-7KPX", "password": "abcdefghijkmnopqr0"}',
+    '{"version": 1, "ssid": "U-Jagd-7KPX", "password": "abcdefghijkmnopqrs", "x": 1}',
+    '{"version": 1, "ssid": "U-Jagd-7KPX", "password": "' + "a" * 2000 + '"}',
+])
+def test_invalid_state_is_replaced_with_new_credentials(stateful, content):
+    module, state = stateful
+    state.parent.mkdir(mode=0o700)
+    state.write_text(content)
+    state.chmod(0o600)
+
+    ssid, password = module.hotspot_credentials()
+
+    assert module.valid_credentials(ssid, password)
+    assert json.loads(state.read_text())["password"] == password
+
+
+def test_loose_permissions_are_not_trusted(stateful):
+    module, state = stateful
+    state.parent.mkdir(mode=0o755)
+    state.write_text('{"version": 1, "ssid": "U-Jagd-7KPX", '
+                     '"password": "abcdefghijkmnopqrs"}')
+    state.chmod(0o644)
+
+    assert module.hotspot_credentials() != ("U-Jagd-7KPX", "abcdefghijkmnopqrs")
+    assert stat.S_IMODE(state.parent.stat().st_mode) == 0o700
+    assert stat.S_IMODE(state.stat().st_mode) == 0o600
+
+
+def test_symlinked_state_file_is_never_followed(stateful, tmp_path):
+    module, state = stateful
+    state.parent.mkdir(mode=0o700)
+    target = tmp_path / "elsewhere.json"
+    target.write_text('{"version": 1, "ssid": "U-Jagd-7KPX", '
+                      '"password": "abcdefghijkmnopqrs"}')
+    target.chmod(0o600)
+    state.symlink_to(target)
+
+    ssid, password = module.hotspot_credentials()
+
+    assert (ssid, password) != ("U-Jagd-7KPX", "abcdefghijkmnopqrs")
+    assert not state.is_symlink() and state.is_file()
+    assert "abcdefghijkmnopqrs" in target.read_text()     # target untouched
+
+
+def test_symlinked_or_foreign_state_directory_is_refused(stateful, tmp_path, monkeypatch):
+    module, state = stateful
+    real = tmp_path / "real"
+    real.mkdir(mode=0o700)
+    state.parent.symlink_to(real)
+    with pytest.raises(module.HotspotError) as refused:
+        module.hotspot_credentials()
+    assert refused.value.code == "state"
+    assert not list(real.iterdir())
+
+    state.parent.unlink()
+    state.parent.mkdir(mode=0o700)
+    monkeypatch.setattr(module, "STATE_OWNER_UID", os.getuid() + 1)
+    with pytest.raises(module.HotspotError):
+        module.hotspot_credentials()
+
+
+def test_failed_write_leaves_the_old_state_and_no_temporary(stateful, monkeypatch):
+    module, state = stateful
+    before = module.hotspot_credentials()
+
+    real_fsync = os.fsync
+
+    def broken_fsync(descriptor):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(module.os, "fsync", broken_fsync)
+    with pytest.raises(module.HotspotError):
+        module.hotspot_credentials(renew_password=True)
+    monkeypatch.setattr(module.os, "fsync", real_fsync)
+    assert [path.name for path in state.parent.iterdir()] == ["hotspot.json"]
+    assert json.loads(state.read_text())["password"] == before[1]
+
+
+def test_new_password_subcommand_is_the_only_other_entry(stateful, monkeypatch, capsys):
+    module, state = stateful
+    monkeypatch.setattr(module, "LOCK_PATH", str(state.parent.parent / "lock"))
+    monkeypatch.setattr(module.os, "geteuid", lambda: 0)
+    monkeypatch.setattr(module.os, "fstat", _root_fstat(module.os.fstat))
+    monkeypatch.setattr(sys, "argv", ["helper", "new-password"])
+    monkeypatch.setattr(module, "STATE_OWNER_UID", 0)
+    first = None
+    for _ in range(2):
+        assert module.main() == 0
+        assert capsys.readouterr().out == '{"status":"renewed"}\n'
+        password = json.loads(state.read_text())["password"]
+        assert password != first
+        first = password
+    for argv in (["helper"], ["helper", "serve", "x"], ["helper", "new-password", "x"],
+                 ["helper", "reset"]):
+        monkeypatch.setattr(sys, "argv", argv)
+        assert module.main() == 2
+        assert json.loads(capsys.readouterr().out) == {
+            "status": "error", "code": "authorization"}
+
+
+def _root_fstat(real_fstat):
+    """Pretend files are root-owned so main() runs unprivileged in tests."""
+    def fstat(descriptor):
+        result = real_fstat(descriptor)
+        return os.stat_result((result.st_mode, result.st_ino, result.st_dev,
+                               result.st_nlink, 0, 0, result.st_size,
+                               result.st_atime, result.st_mtime, result.st_ctime))
+    return fstat
+
+
+def test_uninstall_also_forgets_the_stored_hotspot_credentials():
+    installer_text = INSTALLER.read_text(encoding="utf-8")
+    assert "state_dir=/var/lib/u-jagd" in installer_text
+    assert '"$state_dir/hotspot.json"' in installer_text
+    helper = load_helper()
+    assert helper.STATE_DIR == "/var/lib/u-jagd" and helper.STATE_NAME == "hotspot.json"

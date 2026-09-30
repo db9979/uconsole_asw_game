@@ -45,7 +45,7 @@ STATIONS = (
     (Station.ELOKA, "eloka"),
 )
 
-# The crewed submarine's seven stations (the uConsole playing ``--play-sub``).
+# The crewed submarine's seven stations (the uConsole playing the submarine).
 UBOOT_STATIONS = (
     ("uboot", "command"),
     ("uboot_sonar", "sonar"),

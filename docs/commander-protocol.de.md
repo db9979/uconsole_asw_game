@@ -30,6 +30,7 @@ Methoden zum Laden eines Kandidaten haben keine Netzwerknebenwirkungen.
 | GET /api/v2/results, /proposals, /events | Rollen- und sitzungsbegrenzter Befehlszustand |
 | GET /api/v2/simlog | Vom Host freigegebene Full-Truth-Diagnose-Snapshots, höchstens 64 Einträge |
 | POST /api/v2/stations/request, /activate, /release | Strikte Lease-Operationen |
+| POST /api/v2/stations/handover | Der Inhaber übergibt eine angefragte Station oder behält sie |
 | POST /api/v2/commands | Strikter Aktionsumschlag; 202 bedeutet eingereiht, nicht angewendet |
 | POST /api/v2/sonar/audio | Separat freigegebene Live-Sonaraudio-Abfrage |
 | POST /api/v2/helicopter/audio | Separat freigegebene Live-Helikopteraudio-Abfrage |
@@ -64,6 +65,21 @@ eine behaltene Lease ist aktiv und wird durch eine separate monotone
 Stationsanfragen sind additiv; die Aktivierung gibt keine andere Lease frei.
 Release, Widerruf, Übernahme, Ablauf und Weltersatz machen
 die Berechtigung in ihrem jeweils definierten Geltungsbereich ungültig.
+
+Eine Anfrage für eine Station, die ein Crewmitglied hält, wartet auf eine
+Entscheidung. Der Sitzungskörper des Inhabers führt sie unter `handover`:
+höchstens 16 Einträge `{"station", "name", "ordinal", "request_generation"}`
+(Anzeigename und Kopplungsnummer des Anfragenden, nie eine Client-ID oder
+Zugangsdaten), nach Station und dann Kopplungsreihenfolge sortiert; Beobachter und
+Telefon-Ausgucke erhalten immer `[]`. Der Inhaber antwortet mit
+`POST /api/v2/stations/handover` und dem exakten Körper
+`{"station": str, "ordinal": int, "request_generation": int, "accept": bool}`
+(Cookie, `Origin` und CSRF wie bei den anderen Stationsrouten). `accept: true`
+übergibt die Station mit allen ihren Rechten, genau wie die Freigabe im Host-Roster;
+`false` lehnt die Anfrage ab. Ein fehlerhafter Körper ergibt 400, ein Beobachter
+oder Telefon-Ausguck 403, und eine Entscheidung für eine nicht mehr gehaltene
+Station oder eine geänderte Anfrage 409 `stale_request`. Das Host-Roster gibt
+Anfragen weiterhin frei oder lehnt sie ab.
 
 Die Aktivierung validiert die Ziel-Lease und ihre Stationsgeneration, vergleicht
 aber keine ältere aktive Generation; dadurch kann ein Client nach einer

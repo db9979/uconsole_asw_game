@@ -4,16 +4,24 @@
 Runs with the system ``python3`` and only the standard library, so it keeps
 working even when the game's virtual environment is broken.  Commands:
 
-``launch [game args]``  update (best effort), then replace this process with
-                        the game (``.venv/bin/python main.py``).
-``update``              update only; used by the background systemd timer.
-``setup``               create/refresh the venv, menu entry, ``~/.local/bin``
-                        command and the background timer (the installer).
+``launch [game args]``  replace this process with the game
+                        (``.venv/bin/python main.py``); never updates.
+``install [game args]`` "Update now" in the game: wait until the game has
+                        closed, update to the newest release, then start it.
+``update``              with ``U_JAGD_UPDATE_NOW=1`` (the installer) update
+                        only; otherwise (the retired background timer of
+                        releases up to 1.3.109) switch that timer off.
+``setup``               create/refresh the venv, menu entry and ``~/.local/bin``
+                        command (the installer); removes the old timer.
 ``uninstall``           remove that desktop integration again (keeps the game
                         directory and ``~/.u-jagd`` saves).
 
+Since 1.3.110 nothing is installed automatically: the game shows a newer
+release with its changelog on the start screen and installs it only when the
+player presses "Update now".
+
 Update source: the newest GitHub release (tag ``vX.Y.Z``, the same source the
-Windows starter uses).  Without any release the checkout follows ``origin/main``;
+Windows program uses).  Without any release the checkout follows ``origin/main``;
 ``U_JAGD_UPDATE_CHANNEL=main`` forces that.  Offline, a local modification, a
 non-main branch or a running game skips the update and the installed version
 starts.  A new version whose ``main.py --version`` fails is rolled back.
@@ -49,6 +57,7 @@ GIT_TIMEOUT_S = 60
 GIT_ENV = {"GIT_TERMINAL_PROMPT": "0", "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
            "GIT_HTTP_LOW_SPEED_TIME": "15"}
 PIP_TIMEOUT_S = 1200
+INSTALL_WAIT_S = 120  # "Update now": the game saves and closes in this time
 VERIFY_TIMEOUT_S = 90
 LOG_MAX_BYTES = 256 * 1024
 APP_ID = "u-jagd"
@@ -240,6 +249,7 @@ MESSAGES = {
         "rollback": "Update fehlgeschlagen, starte bisherige Version …",
         "start": "Starte U-Jagd …",
         "busy": "Hintergrund-Update läuft, bitte warten …",
+        "closing": "Warte, bis U-Jagd beendet ist …",
         "running": "U-Jagd läuft bereits.",
         "failed": "Start fehlgeschlagen, siehe ~/.u-jagd/updater.log",
     },
@@ -251,6 +261,7 @@ MESSAGES = {
         "rollback": "Update failed, starting the previous version …",
         "start": "Starting U-Jagd …",
         "busy": "Background update running, please wait …",
+        "closing": "Waiting for U-Jagd to close …",
         "running": "U-Jagd is already running.",
         "failed": "Start failed, see ~/.u-jagd/updater.log",
     },
@@ -444,22 +455,33 @@ def show_briefly(app: Path, key: str) -> None:
             pass
 
 
-def launch(argv: list[str], app: Path = APP_DIR) -> int:
+def launch(argv: list[str], app: Path = APP_DIR, install: bool = False) -> int:
+    """Start the game; ``install`` first updates to the newest release."""
     lock = GameLock()
     splash = None
     if not lock.try_acquire():
-        if lock.holder() != "update":
+        if install:
+            # "Update now": the game that asked is still closing.
+            splash = Splash(app)
+            splash.status("closing")
+            if not lock.acquire(INSTALL_WAIT_S):
+                log("game did not close; update not installed")
+                splash.close()
+                return 1
+        elif lock.holder() != "update":
             log("U-Jagd is already running or starting; second start ignored")
             show_briefly(app, "running")
             return 0
-        splash = Splash(app)
-        splash.status("busy")
-        if not lock.acquire(PIP_TIMEOUT_S):
-            splash.close()
-            return 1
+        else:
+            splash = Splash(app)
+            splash.status("busy")
+            if not lock.acquire(PIP_TIMEOUT_S):
+                splash.close()
+                return 1
     lock.set_role("launch")
     splash = splash or Splash(app)
-    update(app, progress=splash.status)
+    if install:
+        update(app, progress=splash.status)
     try:
         ensure_venv(app)
     except (OSError, subprocess.SubprocessError) as exc:
@@ -480,6 +502,11 @@ def launch(argv: list[str], app: Path = APP_DIR) -> int:
 
 
 def background_update(app: Path = APP_DIR) -> int:
+    if not os.environ.get("U_JAGD_UPDATE_NOW"):
+        # The timer of releases up to 1.3.109 still calls this: turn it off.
+        log("automatic updates are off; the game offers new releases itself")
+        retire_timer()
+        return 0
     lock = GameLock()
     if not lock.try_acquire():
         log("game running; background update postponed")
@@ -508,8 +535,8 @@ def desktop_entry(app: Path) -> str:
         "Name=U-Jagd\n"
         "GenericName=Anti-Submarine Warfare\n"
         "GenericName[de]=U-Boot-Jagd\n"
-        "Comment=Anti Sub Marine Warfare on uConsole (updates itself)\n"
-        "Comment[de]=U-Boot-Jagd auf der uConsole (aktualisiert sich selbst)\n"
+        "Comment=Anti Sub Marine Warfare on uConsole\n"
+        "Comment[de]=U-Boot-Jagd auf der uConsole\n"
         f"Exec=\"{launcher}\"\n"
         f"Icon={icon}\n"
         "Terminal=false\n"
@@ -518,20 +545,23 @@ def desktop_entry(app: Path) -> str:
     )
 
 
-def systemd_units(app: Path) -> dict[str, str]:
-    script = app / "packaging/uconsole/u_jagd_updater.py"
-    return {
-        "u-jagd-update.service": (
-            "[Unit]\nDescription=U-Jagd background update\n"
-            "After=network-online.target\n\n"
-            "[Service]\nType=oneshot\n"
-            f"ExecStart=/usr/bin/env python3 \"{script}\" update\n"
-            "Nice=10\nIOSchedulingClass=idle\n"),
-        "u-jagd-update.timer": (
-            "[Unit]\nDescription=Check for U-Jagd updates\n\n"
-            "[Timer]\nOnBootSec=3min\nOnUnitActiveSec=6h\nPersistent=true\n\n"
-            "[Install]\nWantedBy=timers.target\n"),
-    }
+TIMER_UNITS = ("u-jagd-update.timer", "u-jagd-update.service")
+
+
+def retire_timer() -> None:
+    """Switch off and remove the background update timer of older releases."""
+    systemctl("disable", "--now", TIMER_UNITS[0])
+    removed = False
+    for name in TIMER_UNITS:
+        path = config_home() / "systemd/user" / name
+        if path.is_symlink() or path.exists():
+            try:
+                path.unlink()
+                removed = True
+            except OSError:
+                pass
+    if removed:
+        systemctl("daemon-reload")
 
 
 def write_text(path: Path, text: str, mode: int = 0o644) -> None:
@@ -580,28 +610,21 @@ def setup(app: Path = APP_DIR) -> int:
     if bin_link.is_symlink() or bin_link.exists():
         bin_link.unlink()
     bin_link.symlink_to(app / "packaging/uconsole/u-jagd-launch")
-    for name, text in systemd_units(app).items():
-        write_text(config_home() / "systemd/user" / name, text)
-    if systemctl("daemon-reload") and systemctl("enable", "--now", "u-jagd-update.timer"):
-        log("background update timer enabled")
-    else:
-        log("systemd user timer unavailable; updates run at every start only")
+    retire_timer()
     log(f"setup complete in {app}")
     return 0
 
 
 def uninstall() -> int:
-    systemctl("disable", "--now", "u-jagd-update.timer")
+    retire_timer()
     paths = [data_home() / "applications" / f"{APP_ID}.desktop",
              Path.home() / ".local/bin" / APP_ID]
-    paths += [config_home() / "systemd/user" / name for name in systemd_units(APP_DIR)]
     desk = desktop_dir()
     if desk is not None:
         paths.append(desk / f"{APP_ID}.desktop")
     for path in paths:
         if path.is_symlink() or path.exists():
             path.unlink()
-    systemctl("daemon-reload")
     log(f"desktop integration removed; game files stay in {APP_DIR}")
     return 0
 
@@ -610,6 +633,8 @@ def main(argv: list[str]) -> int:
     command = argv[0] if argv else "launch"
     if command == "launch":
         return launch(argv[1:])
+    if command == "install":
+        return launch(argv[1:], install=True)
     if command == "update":
         return background_update()
     if command == "setup":

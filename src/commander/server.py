@@ -46,6 +46,7 @@ from src.commander.v2.wire import (
     DIRECT_FIRE_ROLES,
     SONAR_AUDIO_ROLES,
     HOST_ROLE,
+    HANDOVER_MAX,
     OBSERVER_MAX,
     role_side,
     HOST_MAX_BYTES,
@@ -1249,6 +1250,60 @@ class CommanderServer:
                 return False
             del session["requests"][station]
             return True
+
+    def handover_requests_locked(self, session) -> list[dict]:
+        """Pending requests for the stations ``session`` holds, as the
+        ``handover`` block of its session body: requester name and ordinal
+        only, station order then pairing order, bounded. Observers and phone
+        lookouts decide nothing."""
+        if session["observer"] or session["lookout_only"]:
+            return []
+        rows = sorted(((ROLES.index(station), other["ordinal"], station, other)
+                       for other in self._sessions_v2.values() if other is not session
+                       for station in other["requests"] if station in session["leases"]),
+                      key=lambda row: row[:2])
+        return [{"station": station, "name": other["name"], "ordinal": other["ordinal"],
+                 "request_generation": other["requests"][station]}
+                for _index, _ordinal, station, other in rows[:HANDOVER_MAX]]
+
+    def decide_handover_locked(self, holder, station, ordinal, request_generation,
+                               accept) -> bool:
+        """The holder of ``station`` hands it to the exact pending request of
+        the session with ``ordinal`` (full rights, like the host approval) or
+        declines it. False when the holder no longer holds the station or the
+        request changed (stale)."""
+        if (station not in ROLES or type(ordinal) is not int
+                or type(request_generation) is not int or type(accept) is not bool
+                or holder["observer"] or holder["lookout_only"]
+                or station not in holder["leases"]):
+            return False
+        requester = next((other for other in self._sessions_v2.values()
+                          if other["ordinal"] == ordinal and other is not holder), None)
+        if (requester is None
+                or requester["requests"].get(station) != request_generation):
+            return False
+        if not accept:
+            del requester["requests"][station]
+            return True
+        if requester["observer"] or self._side_conflict(requester, station):
+            return False
+        self._release_station_locked(holder, station)
+        requester["leases"][station] = {
+            "generation": self._station_generations[station],
+            "grants": self._station_grants(station),
+        }
+        del requester["requests"][station]
+        self._set_active_station_locked(requester, station)
+        return True
+
+    def decide_handover(self, client_id, station, ordinal, request_generation,
+                        accept) -> bool:
+        """Locked form of ``decide_handover_locked`` for the holder ``client_id``."""
+        with self._lock:
+            self._expire_locked()
+            holder = self._session_by_client_locked(client_id)
+            return holder is not None and self.decide_handover_locked(
+                holder, station, ordinal, request_generation, accept)
 
     def revoke_station(self, station) -> bool:
         if station not in ROLES:

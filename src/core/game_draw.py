@@ -44,6 +44,10 @@ from src.ui.stations_view import (
     draw_opz_view,
     draw_radio_view,
     draw_helicopter_view)
+
+# Width of the soft ends of the scrolling ticker line: a few letters fade
+# out instead of one glyph being cut in half.
+TICKER_FADE_PX = 64
 from src.ui.stations_view import opz_ppi_rect
 from src.ui.mission_editor import MissionEditor
 from src.ui.simlog_view import draw_simlog_view
@@ -146,6 +150,8 @@ class DrawMixin:
             # Support link: main menu page only, never over a mission.
             draw_support_corner(s, config.SCREEN_W - 24, 600,
                                 config.COLOR_TEXT, config.COLOR_TEXT_DIM)
+            if not self.welcome_active:
+                self.draw_update_notice(s, splash=False)
         elif self.menu_screen == WELCOME_SCREEN:
             self._draw_welcome_page()
         elif self.menu_screen == BUG_REPORT_ENTRY:
@@ -325,6 +331,7 @@ class DrawMixin:
         s.fill(config.COLOR_BG)
         if self.splash_active:
             draw_splash(s, self._t - self.splash_started_at, self.tr)
+            self.draw_update_notice(s, splash=True)
         elif self.editor is not None:
             self.editor.draw(s)
             if isinstance(self.editor, MissionEditor) and self.editor.mode == "browser":
@@ -653,7 +660,7 @@ class DrawMixin:
             s.blit(surface, (feed_rect.x - offset, text_y))
             s.blit(surface, (feed_rect.x - offset + width + gap, text_y))
             # Soft ends: letters fade out instead of being cut in half.
-            layout.fade_edges(s, feed_rect, config.COLOR_FEED_BG, 28,
+            layout.fade_edges(s, feed_rect, config.COLOR_FEED_BG, TICKER_FADE_PX,
                               left=offset > 0)
 
     def feed_overlay_rect(self) -> pygame.Rect:
@@ -1272,6 +1279,7 @@ class DrawMixin:
                 self.update(dt, audio_dt=wall_dt)
                 self.autosave_tick(wall_dt)
                 self.lobby_tick(wall_dt)
+                self.update_tick()
                 self._perf_debug_log(wall_dt)
                 if self.web_mode:
                     game_visible()

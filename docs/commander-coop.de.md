@@ -51,17 +51,17 @@ Kopplungscodes, Cookies oder CSRF-Token in Bildschirmfotos, Protokollen oder
 Fehlerberichten.
 
 **Windows-PC als Server.** `U-Jagd-Windows.exe` (siehe README-Abschnitt
-"Windows-Programm") führt dasselbe Spiel auf einem Windows-PC aus. Das
-Starterfenster startet das Spiel mit `--remote-crew` oder `--solo-crew`, der
-Listener läuft also schon auf der privaten LAN-Adresse des PCs (Schritte 1-5
-entfallen), und es zeigt URL, Kopplungscode und QR-Code. Die Schritte 6-8
-bleiben gleich: Stationsanfragen bestätigt der Host im Spielfenster (F9). Den
-Hotspot-Modus gibt es nur unter Linux. Erlaube U-Jagd private Netzwerke, wenn
-die Windows-Firewall fragt. `python main.py --remote-crew` macht dasselbe
-unter Linux. Das Feld **Sprache** im Starter (English/Deutsch) wird in den
-Einstellungen gespeichert; Spielfenster und Besatzungsseiten öffnen in dieser
-Sprache, und jeder Browser kann mit dem Knopf English/Deutsch in seiner
-Statusleiste für sich umschalten.
+"Windows-Programm") führt dasselbe Spiel auf einem Windows-PC aus und
+startet direkt hinein, ohne eigenes Starterfenster. **Mehrspieler** im
+Hauptmenü öffnet die Lobby; sie startet den Listener auf der privaten
+LAN-Adresse des PCs (Schritte 1-5 entfallen) und zeigt URL, Kopplungscode und
+QR-Code. Die Schritte 6-8 bleiben gleich: Stationsanfragen bestätigt der Host
+im Spiel (F9). Den Hotspot-Modus gibt es nur unter Linux. Erlaube U-Jagd
+private Netzwerke, wenn die Windows-Firewall fragt. Die Besatzungsseiten
+öffnen in der Sprache des Spiels, und jeder Browser kann mit dem Knopf
+English/Deutsch in seiner Statusleiste für sich umschalten.
+`python main.py --multiplayer` (oder die EXE mit `--multiplayer`) geht nach
+dem Startbild direkt in die Lobby.
 
 ## Rollensteuerung
 
@@ -70,6 +70,10 @@ Statusleiste für sich umschalten.
   inaktiven Leases freizugeben. Verwende Station hinzufügen für eine weitere
   Anfrage; eine genehmigte Station wird automatisch geöffnet. Danach kann jede
   behaltene Lease über die stabile Stationsauswahl geöffnet werden.
+- Eine Anfrage für eine Station, die ein Crewmitglied hält, erscheint in dessen
+  Browser („Name fragt nach Station“) mit Übergeben und Station behalten; der Host
+  kann sie weiterhin im F9-Roster freigeben oder ablehnen. Eine Station hat immer
+  alle ihre Rechte: das Roster schaltet nur das SimLog (`L`) und Beobachter (`O`).
 - Eine Station mit aktiver Lease ist auf der uConsole schreibgeschützt, bis der
   Host ihre Lease widerruft. F9-Verwaltung und das Umschalten der lokalen
   Anzeige auf eine andere Station bleiben verfügbar; behaltene inaktive
@@ -221,9 +225,9 @@ Schmale Fenster fallen auf eine einzelne scrollende Spalte zurück.
 
 Der **Solo-Modus** lässt eine Person das ganze Spiel aus einem Browser bedienen,
 während die uConsole der Simulations-Server bleibt. Start mit
-`python main.py --solo-crew` (nur dieser Start, erste private LAN-Adresse, nie
-gespeichert) oder über die Zeile „Crew-Modus“ im F9-Overlay; die Kopplung läuft weiter
-über den Beitrittscode. Eine Solo-Sitzung hält alle neun Fregattenstationen (als U-Boot die sieben des U-Boots) mit Befehlen,
+der verborgenen Expertenoption `python main.py --solo-crew` (nur dieser Start,
+erste private LAN-Adresse, nie gespeichert; im Spiel selbst gibt es dafür keine
+Zeile); die Kopplung läuft weiter über den Beitrittscode. Eine Solo-Sitzung hält alle neun Fregattenstationen (als U-Boot die sieben des U-Boots) mit Befehlen,
 Direktfeuer, Sonar-Audio und SimLog, es kann nur ein Browser koppeln (ein zweiter
 erhält `session_limit`, bis der erste im Roster entfernt wird), und Leases verfallen
 nicht. Ein Moduswechsel widerruft alle Sitzungen und rotiert den Code.

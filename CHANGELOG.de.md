@@ -4,6 +4,45 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.112
+
+Version 1.3.112 macht den Mehrspieler für den Gastgeber einfacher. F9 ist
+jetzt ein Schalter, Mehrspieler an oder aus: Er nimmt die erste lokale
+Netzwerkadresse oder öffnet ohne Netz den eigenen Hotspot der uConsole;
+Netzwerkmodus, Adresse und Port liegen unter den erweiterten Einstellungen.
+Der Hotspot behält Name und Passwort, der uConsole-Installer richtet ihn ein,
+und Lobby und F9 zeigen zwei Schritte: den WLAN-QR-Code, dann den QR-Code der
+Crew-Seite. Ein Browser, der eine Station anfragt, die ein anderer Spieler
+hält, fragt jetzt diesen Spieler, der sie im Browser übergeben kann; jede
+Station hat immer alle ihre Rechte. Die Kommandozeile hat einen Schalter,
+--multiplayer, der die Lobby öffnet, und das Windows-Programm startet ohne
+Starter-Fenster direkt ins Spiel.
+
+## 1.3.111
+
+Version 1.3.111 bringt auf beiden Seiten eine Schusslage in die Feuerleitung.
+Die Waffenstation der Fregatte und die Waffenseite des U-Boots zeigen jetzt,
+genordet um das eigene Schiff, die Reichweite des Torpedos, die Peilung zum
+Ziel und, sobald eine Entfernung vorliegt, die geschätzte Position, den
+Treffpunkt aus TMA-Kurs und -Fahrt und die Torpedolaufbahn dorthin, allein
+aus der Beobachtung des Kontakts. Führung und Navigation des U-Boots haben
+beschriftete Rundinstrumente für Kurs, Tiefe (Test- und Zerstörungstiefe markiert) und
+Fahrt wie die Brücke der Fregatte, und die Kästen im Funkraum des U-Boots
+passen wieder zu ihrem Text, sodass der Befehl der Führung nicht mehr durch
+den Rahmen läuft.
+
+## 1.3.110
+
+Version 1.3.110 installiert Updates nicht mehr von selbst. Gibt es ein neueres
+Release, zeigen Startbildschirm und Hauptmenü dessen Version, den Eintrag aus
+dem Änderungsprotokoll in der Spielsprache und eine Warnung, wenn Spielstände
+dieser Version (auch die automatische Sicherung) damit nicht mehr laden, dazu
+den Knopf **Jetzt updaten** (Taste U oder Klick). Erst dieser Knopf installiert
+es: Auf der uConsole schließt das Spiel, aktualisiert sich auf das Release und
+startet neu (der alte Hintergrund-Update-Timer schaltet sich selbst ab); das
+Windows-Programm lädt die neue Datei im Hintergrund, prüft sie, tauscht sich
+aus und startet neu. Ohne Netz erscheint kein Hinweis.
+
 ## 1.3.109
 
 Version 1.3.109 lässt die KI jede freie Station besetzen. Die neue Crew-Hilfe

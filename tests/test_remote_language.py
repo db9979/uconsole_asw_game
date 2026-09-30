@@ -1,5 +1,5 @@
-"""Remote Crew server language: the starter's switch, the host language the
-pages open in, and the visible switch on the crew page."""
+"""Remote Crew server language: the host language the pages open in and the
+visible switch on the crew page."""
 
 import shutil
 import subprocess
@@ -11,8 +11,6 @@ from commander_web import copy_assets, index_html, inject_probe
 from src.commander import server as commander_transport
 from src.core import config, manual
 from src.core.game import Game
-from src.core.preferences import load_preferences, save_preferences, Preferences
-from src.launcher import app
 from test_commander_assets import PREFIX, Document, catalogs
 
 
@@ -65,48 +63,6 @@ def test_the_game_tells_its_listener_the_saved_language(tmp_path, monkeypatch):
     finally:
         console.stop()
         game.audio.shutdown()
-
-
-class _Var:
-    # Like tkinter.StringVar: unhashable.
-    __hash__ = None
-
-    def __init__(self, value=""):
-        self.value = value
-
-    def set(self, value):
-        self.value = value
-
-    def get(self):
-        return self.value
-
-
-def test_starter_language_switch_relabels_and_is_saved_for_the_game(tmp_path):
-    path = tmp_path / "settings.json"
-    save_preferences(Preferences(language="en", fullscreen=False, onboarded=False), path)
-    starter = object.__new__(app.Starter)
-    starter.preferences_path = path
-    starter.tr = app.Translator("en")
-    starter.language = _Var("English")
-    starter.texts = {}
-    starter.state_text, starter.update_text = _Var(), _Var()
-    rebuilt = []
-    starter._build = lambda: rebuilt.append(starter.tr.language)
-    starter._say(starter.state_text, "launcher.state.stopped")
-    starter._say(starter.update_text, "launcher.update.current", version="9.9.9")
-
-    starter.choose_language("de")
-    _en, de = catalogs()
-    assert rebuilt == ["de"] and starter.language.get() == "Deutsch"
-    assert starter.state_text.get() == de["launcher.state.stopped"]
-    assert starter.update_text.get() == de["launcher.update.current"].format(version="9.9.9")
-    saved = load_preferences(path)
-    # Only the language changes; a first launch keeps its welcome page.
-    assert saved.language == "de" and saved.fullscreen is False and saved.onboarded is False
-    starter.choose_language("de")
-    starter.choose_language("fr")
-    assert rebuilt == ["de"]
-    assert set(app.LANGUAGE_NAMES) == {"en", "de"}
 
 
 SWITCH_SCRIPT = r"""
@@ -177,6 +133,6 @@ def test_crew_page_opens_in_the_host_language_and_switches_visibly(tmp_path, mon
 
 def test_language_switch_prose_is_in_both_catalogs():
     en, de = catalogs()
-    for key in (PREFIX + "language_switch", "launcher.language"):
-        assert en[key] and de[key] and en[key] != de[key]
+    key = PREFIX + "language_switch"
+    assert en[key] and de[key] and en[key] != de[key]
     assert 'id="language-switch"' in index_html()

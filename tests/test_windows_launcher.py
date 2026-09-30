@@ -1,4 +1,4 @@
-"""Windows starter: update rules, game command line, status file, autostart."""
+"""Windows program: update rules, straight start into the game, exit codes."""
 
 import hashlib
 import io
@@ -8,7 +8,7 @@ import urllib.error
 
 import pytest
 
-from src.launcher import app, update
+from src.launcher import entry, update
 
 ASSET_URL = ("https://github.com/db9979/uconsole_asw_game/releases/download/"
              "v9.9.9/U-Jagd-Windows.exe")
@@ -134,70 +134,113 @@ def test_launch_install_starts_the_script_with_a_clean_environment(monkeypatch, 
     assert "move /Y" in open(script, encoding="utf-8").read()
 
 
-def test_starter_removes_a_stale_update(monkeypatch, tmp_path):
+def _fake_game_main(monkeypatch, code):
+    import main as game_main
+
+    calls = []
+
+    def fake(argv):
+        calls.append(list(argv))
+        return code
+
+    monkeypatch.setattr(game_main, "main", fake)
+    return calls
+
+
+def test_the_program_starts_straight_into_the_game(monkeypatch):
+    calls = _fake_game_main(monkeypatch, 0)
+    assert entry.main([]) == 0
+    assert entry.main(["--windowed", "--multiplayer", "7"]) == 0
+    # The old starter's "--game" prefix is accepted and dropped.
+    assert entry.main(["--game", "--no-audio"]) == 0
+    assert calls == [[], ["--windowed", "--multiplayer", "7"], ["--no-audio"]]
+    monkeypatch.setattr(sys, "argv", ["U-Jagd-Windows.exe", "--windowed"])
+    assert entry.main() == 0 and calls[-1] == ["--windowed"]
+
+
+def test_the_program_passes_the_game_exit_code_through(monkeypatch):
+    calls = _fake_game_main(monkeypatch, 3)
+    assert entry.main(["5"]) == 3 and calls == [["5"]]
+
+
+def test_the_update_exit_code_installs_the_downloaded_program(monkeypatch, tmp_path):
     exe = tmp_path / "U-Jagd-Windows.exe"
-    for name in ("U-Jagd-Windows.exe.new", "U-Jagd-Windows.exe.new.part"):
-        (tmp_path / name).write_bytes(b"x")
+    exe.write_bytes(b"old")
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setattr(sys, "executable", str(exe))
-    app.remove_stale_update()
-    assert not list(tmp_path.glob("U-Jagd-Windows.exe.*"))
+    installs = []
+    monkeypatch.setattr(update, "launch_install",
+                        lambda executable, downloaded, args=(), log=None:
+                        installs.append((executable, downloaded, args, log)))
+    monkeypatch.setattr(update, "check_latest",
+                        lambda current: pytest.fail("already downloaded"))
+    import main as game_main
+
+    def game_downloads(argv):
+        (tmp_path / "U-Jagd-Windows.exe.new").write_bytes(b"new")
+        return update.UPDATE_EXIT_CODE
+
+    monkeypatch.setattr(game_main, "main", game_downloads)
+    assert entry.main([]) == 0
+    assert installs == [(str(exe), f"{exe}.new", (), str(entry.log_path()))]
+    # A failed install script keeps the code.
+
+    def broken(*_args, **_kwargs):
+        raise update.UpdateError("no temp dir")
+
+    monkeypatch.setattr(update, "launch_install", broken)
+    assert entry.main([]) == update.UPDATE_EXIT_CODE
 
 
-def test_game_command_maps_starter_options(monkeypatch):
+def test_the_update_exit_code_fetches_the_release_first(monkeypatch, tmp_path):
+    exe = tmp_path / "U-Jagd-Windows.exe"
     monkeypatch.setattr(sys, "frozen", True, raising=False)
-    monkeypatch.setattr(sys, "executable", r"C:\Games\U-Jagd-Windows.exe")
-    assert app.game_command({"port": 8765}, "s.json") == [
-        r"C:\Games\U-Jagd-Windows.exe", "--game", "--remote-crew",
-        "--web-port", "8765", "--status-file", "s.json"]
-    assert app.game_command({"solo": True, "play_sub": True, "windowed": True,
-                             "no_audio": True, "port": 9000}, "s.json")[2:] == [
-        "--solo-crew", "--play-sub", "--windowed", "--no-audio",
-        "--web-port", "9000", "--status-file", "s.json"]
-    with pytest.raises(ValueError):
-        app.game_command({"port": 80}, "s.json")
-    monkeypatch.setattr(sys, "frozen", False)
-    command = app.game_command({}, "s.json")
-    assert command[1].endswith("main.py") and command[2] == "--remote-crew"
+    monkeypatch.setattr(sys, "executable", str(exe))
+    release = update.Release("9.9.9", ASSET_URL, 4, "0" * 64, update.RELEASES_PAGE)
+    steps = []
+    monkeypatch.setattr(update, "check_latest", lambda current: steps.append("check") or release)
+    monkeypatch.setattr(update, "download",
+                        lambda found, target, **_kw: steps.append(("download", found, target)))
+    monkeypatch.setattr(update, "launch_install",
+                        lambda executable, downloaded, args=(), log=None:
+                        steps.append(("install", downloaded)))
+    _fake_game_main(monkeypatch, update.UPDATE_EXIT_CODE)
+    assert entry.main([]) == 0
+    assert steps == ["check", ("download", release, f"{exe}.new"),
+                     ("install", f"{exe}.new")]
+    # No newer release or offline: nothing is installed, the code stays.
+    steps.clear()
+    monkeypatch.setattr(update, "check_latest", lambda current: None)
+    assert entry.main([]) == update.UPDATE_EXIT_CODE and steps == []
+
+    def offline(current):
+        raise update.UpdateError("offline")
+
+    monkeypatch.setattr(update, "check_latest", offline)
+    assert entry.main([]) == update.UPDATE_EXIT_CODE and steps == []
 
 
-def test_read_status_tolerates_missing_and_broken_files(tmp_path):
-    path = tmp_path / "status.json"
-    assert app.read_status(str(path)) is None
-    path.write_text("{", encoding="utf-8")
-    assert app.read_status(str(path)) is None
-    path.write_text("[]", encoding="utf-8")
-    assert app.read_status(str(path)) is None
-    path.write_text('{"state": "running"}', encoding="utf-8")
-    assert app.read_status(str(path)) == {"state": "running"}
+def test_from_source_the_update_exit_code_is_passed_through(monkeypatch):
+    monkeypatch.setattr(sys, "frozen", False, raising=False)
+    monkeypatch.setattr(update, "launch_install",
+                        lambda *a, **k: pytest.fail("only the frozen program replaces itself"))
+    _fake_game_main(monkeypatch, update.UPDATE_EXIT_CODE)
+    assert entry.main([]) == update.UPDATE_EXIT_CODE
 
 
-def test_console_publishes_status_only_on_change(tmp_path):
-    from src.commander.local import CommanderConsole
+def test_the_windows_program_has_no_starter_window():
+    from pathlib import Path
 
-    console = CommanderConsole()
-    console.publish_status()  # no path: nothing happens
-    path = tmp_path / "status.json"
-    console.status_path = str(path)
-    console.publish_status()
-    assert json.loads(path.read_text()) == {"state": "stopped", "url": None,
-                                            "code": None, "solo": False,
-                                            "lookout_url": None}
-    path.unlink()
-    console.publish_status()
-    assert not path.exists()  # unchanged status is not rewritten
-    console.address, console.pairing_code = ("192.168.1.20", 8765), "123ABC"
-    console.publish_status()
-    assert json.loads(path.read_text()) == {
-        "state": "running", "url": "http://192.168.1.20:8765/", "code": "123ABC",
-        "solo": False, "lookout_url": None}
-    console.tls_address = ("192.168.1.20", 8766)
-    console.publish_status()
-    assert json.loads(path.read_text())["lookout_url"] == "https://192.168.1.20:8766/lookout"
-    console.address, console.error = None, "commander.local.error.start"
-    console.publish_status()
-    assert json.loads(path.read_text())["state"] == "error"
-    assert not (tmp_path / "status.json.tmp").exists()
+    root = Path(__file__).resolve().parents[1]
+    assert not (root / "src" / "launcher" / "app.py").exists()
+    source = (root / "src" / "launcher" / "entry.py").read_text(encoding="utf-8")
+    assert "tkinter" not in source
+    spec = (root / "packaging" / "windows" / "u-jagd-windows.spec").read_text(encoding="utf-8")
+    assert '"tkinter"' in spec.split("excludes=", 1)[1].split("\n", 1)[0]
+    from src.core.i18n import load_catalog
+
+    for lang in ("en", "de"):
+        assert not [key for key in load_catalog(lang) if key.startswith("launcher.")]
 
 
 def test_prepare_uses_the_routed_private_address_without_linux_ioctls(monkeypatch):
@@ -222,44 +265,40 @@ def test_prepare_uses_the_routed_private_address_without_linux_ioctls(monkeypatc
     assert offline.hosts == ("127.0.0.1",)
 
 
-def test_remote_crew_flag_autostarts_crew_mode_with_status_file(monkeypatch, tmp_path):
+def test_game_main_checks_for_updates_and_returns_the_update_exit_code(monkeypatch):
     import main as entry
 
     calls = []
 
     class FakeConsole:
         port = 8765
-        status_path = None
-
-        def autostart(self):
-            calls.append(("crew", self.port, self.status_path))
 
         def autostart_solo(self):
-            calls.append(("solo", self.port, self.status_path))
+            calls.append(("solo", self.port))
 
     class FakeGame:
+        update_exit_code = 0
+
         def __init__(self, **_kwargs):
             self.commander = FakeConsole()
 
+        def start_update_check(self, mode=None, args=()):
+            calls.append(("update_check", mode, tuple(args)))
+
         def run(self):
             calls.append("run")
+            self.update_exit_code = exit_code
 
     monkeypatch.setattr(entry, "Game", FakeGame)
     monkeypatch.setattr(entry, "load_preferences", lambda: type(
         "P", (), {"fullscreen": False, "audio": False})())
-    status = str(tmp_path / "s.json")
-    assert entry.main(["--remote-crew", "--web-port", "9000",
-                       "--status-file", status, "5"]) == 0
-    assert calls == [("crew", 9000, status), "run"]
-    calls.clear()
-    assert entry.main(["--solo-crew", "5"]) == 0
-    assert calls == [("solo", 8765, None), "run"]
-    for bad in (["--remote-crew", "--solo-crew"], ["--remote-crew", "--web-port", "80"],
-                ["--remote-crew", "--web-host", "--public-origin", "https://a.test"]):
-        with pytest.raises(SystemExit):
-            entry.main(bad)
-
-
+    exit_code = 0
+    assert entry.main(["--solo-crew", "--web-port", "9000", "5"]) == 0
+    assert calls == [("solo", 9000),
+                     ("update_check", None, ("--solo-crew", "--web-port", "9000", "5")),
+                     "run"]
+    exit_code = update.UPDATE_EXIT_CODE
+    assert entry.main(["5"]) == update.UPDATE_EXIT_CODE
 def test_frozen_self_test_runs_a_mission_and_serves_remote_crew(tmp_path):
     from src.launcher import entry
 
@@ -270,33 +309,12 @@ def test_frozen_self_test_runs_a_mission_and_serves_remote_crew(tmp_path):
     assert result["sim_t"] > 0 and result["code"] is True
 
 
-def test_launcher_prose_is_in_both_catalogs():
-    from src.core.i18n import load_catalog
-
-    source = (app.__file__, update.__file__)
-    keys = set()
-    import re
-    for path in source:
-        with open(path, encoding="utf-8") as handle:
-            keys.update(re.findall(r'"(launcher\.[a-z_.]+)"', handle.read()))
-    en, de = load_catalog("en"), load_catalog("de")
-    assert keys and keys <= set(en) and keys <= set(de)
-
-
 def test_update_restart_drops_the_old_extraction_directory():
     env = update.clean_environment({
         "PATH": r"C:\Windows", "_PYI_APPLICATION_HOME_DIR": r"C:\Temp\_MEI123",
         "_PYI_ARCHIVE_FILE": r"C:\Games\U-Jagd-Windows.exe",
         "_PYI_PARENT_PROCESS_LEVEL": "1", "_MEIPASS2": r"C:\Temp\_MEI123"})
     assert env == {"PATH": r"C:\Windows", "PYINSTALLER_RESET_ENVIRONMENT": "1"}
-
-
-def test_starter_links_the_support_page():
-    from src.ui.support import SUPPORT_URL
-
-    source = open(app.__file__, encoding="utf-8").read()
-    assert "launcher.support" in source and "SUPPORT_URL" in source
-    assert SUPPORT_URL.startswith("https://buymeacoffee.com/")
 
 
 def test_release_pruning_keeps_the_current_and_newer_releases():

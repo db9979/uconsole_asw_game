@@ -5,6 +5,7 @@ import fcntl
 import ipaddress
 import json
 import os
+import re
 import select
 import secrets
 import signal
@@ -30,6 +31,17 @@ LOCK_PATH = "/run/u-jagd-hotspot.lock"
 WIFI_DEVICE_TYPE = 2
 ACTIVE_ACTIVATED = 2
 WIFI_REQUIRED_CAPABILITIES = 0x08 | 0x20 | 0x40 | 0x200  # CCMP, RSN, AP, 2.4 GHz
+# The hotspot keeps one name and password across starts, so phones that
+# joined once reconnect by themselves. Root-owned, 0700 directory, 0600 file.
+STATE_DIR = "/var/lib/u-jagd"
+STATE_NAME = "hotspot.json"
+STATE_OWNER_UID = 0
+STATE_MAX_BYTES = 1024
+STATE_VERSION = 1
+SSID_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+PASSWORD_ALPHABET = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+SSID_PATTERN = re.compile("U-Jagd-[" + SSID_ALPHABET + "]{4}\\Z")
+PASSWORD_PATTERN = re.compile("[" + PASSWORD_ALPHABET + "]{18}\\Z")
 PRIVATE_NETWORKS = tuple(ipaddress.IPv4Network(value) for value in (
     "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"))
 
@@ -63,6 +75,131 @@ def acquire_lock():
         except (NameError, OSError):
             pass
         raise HotspotError("busy") from None
+
+
+def new_ssid():
+    return "U-Jagd-" + "".join(secrets.choice(SSID_ALPHABET) for _ in range(4))
+
+
+def new_password():
+    return "".join(secrets.choice(PASSWORD_ALPHABET) for _ in range(18))
+
+
+def valid_credentials(ssid, password):
+    return (isinstance(ssid, str) and isinstance(password, str)
+            and SSID_PATTERN.fullmatch(ssid) is not None
+            and PASSWORD_PATTERN.fullmatch(password) is not None)
+
+
+def _open_state_dir():
+    """Open (creating if needed) the private state directory, never a link."""
+    try:
+        os.mkdir(STATE_DIR, 0o700)
+    except FileExistsError:
+        pass
+    except OSError:
+        raise HotspotError("state") from None
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+    try:
+        descriptor = os.open(STATE_DIR, flags)
+    except OSError:
+        raise HotspotError("state") from None
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISDIR(metadata.st_mode) or metadata.st_uid != STATE_OWNER_UID:
+            raise HotspotError("state")
+        if stat.S_IMODE(metadata.st_mode) != 0o700:
+            os.fchmod(descriptor, 0o700)
+    except OSError:
+        os.close(descriptor)
+        raise HotspotError("state") from None
+    except HotspotError:
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
+def _load_state(dir_fd):
+    """The stored (ssid, password), or None when missing, unsafe or invalid."""
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK
+    try:
+        descriptor = os.open(STATE_NAME, flags, dir_fd=dir_fd)
+    except OSError:
+        # Missing, a symbolic link (ELOOP) or unreadable: make a new one.
+        return None
+    try:
+        metadata = os.fstat(descriptor)
+        if (not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != STATE_OWNER_UID
+                or metadata.st_nlink != 1 or metadata.st_mode & 0o077
+                or metadata.st_size > STATE_MAX_BYTES):
+            return None
+        raw = os.read(descriptor, STATE_MAX_BYTES + 1)
+    except OSError:
+        return None
+    finally:
+        os.close(descriptor)
+    if len(raw) > STATE_MAX_BYTES:
+        return None
+    try:
+        payload = json.loads(raw.decode("ascii"))
+    except (UnicodeError, ValueError):
+        return None
+    if (not isinstance(payload, dict)
+            or set(payload) != {"version", "ssid", "password"}
+            or payload.get("version") != STATE_VERSION
+            or type(payload.get("version")) is not int
+            or not valid_credentials(payload.get("ssid"), payload.get("password"))):
+        return None
+    return payload["ssid"], payload["password"]
+
+
+def _save_state(dir_fd, ssid, password):
+    """Write the state atomically: temp file, fsync, rename, fsync directory."""
+    body = json.dumps({"version": STATE_VERSION, "ssid": ssid, "password": password},
+                      ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+    temporary = "." + STATE_NAME + "." + secrets.token_hex(8) + ".tmp"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC
+    try:
+        descriptor = os.open(temporary, flags, 0o600, dir_fd=dir_fd)
+    except OSError:
+        raise HotspotError("state") from None
+    try:
+        try:
+            os.fchmod(descriptor, 0o600)
+            data = (body + "\n").encode("ascii")
+            while data:
+                data = data[os.write(descriptor, data):]
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        # Renaming over the old entry replaces it even if it is a symbolic
+        # link; the link's target is never written.
+        os.replace(temporary, STATE_NAME, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        os.fsync(dir_fd)
+    except OSError:
+        try:
+            os.unlink(temporary, dir_fd=dir_fd)
+        except OSError:
+            pass
+        raise HotspotError("state") from None
+
+
+def hotspot_credentials(renew_password=False):
+    """The persistent (ssid, password); made once, or a new password on request."""
+    dir_fd = _open_state_dir()
+    try:
+        stored = _load_state(dir_fd)
+        if stored is not None and not renew_password:
+            return stored
+        ssid = stored[0] if stored is not None else new_ssid()
+        password = new_password()
+        if stored is not None:
+            while password == stored[1]:
+                password = new_password()
+        _save_state(dir_fd, ssid, password)
+        return ssid, password
+    finally:
+        os.close(dir_fd)
 
 
 class NetworkManagerHotspot:
@@ -215,10 +352,7 @@ class NetworkManagerHotspot:
         self._delete_stale_profiles()
         self.device_path, interface = self._wifi_device()
         _, self.previous_connection = self._active_for_device(self.device_path)
-        suffix_alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-        password_alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-        ssid = "U-Jagd-" + "".join(secrets.choice(suffix_alphabet) for _ in range(4))
-        password = "".join(secrets.choice(password_alphabet) for _ in range(18))
+        ssid, password = hotspot_credentials()
         options = self.dbus.Dictionary(
             {"persist": self.dbus.String("volatile"),
              "bind-activation": self.dbus.String("dbus-client")}, signature="sv")
@@ -295,10 +429,34 @@ def run_service(dbus_module):
     return 0 if valid_command and clean else 1
 
 
+def renew_password():
+    """``new-password``: keep the name, store a new password (hotspot off)."""
+    try:
+        lock_descriptor = acquire_lock()
+    except HotspotError as exc:
+        emit({"status": "error", "code": exc.code})
+        return 2
+    try:
+        hotspot_credentials(renew_password=True)
+    except HotspotError as exc:
+        emit({"status": "error", "code": exc.code})
+        return 1
+    except Exception:
+        emit({"status": "error", "code": "state"})
+        return 1
+    finally:
+        os.close(lock_descriptor)
+    emit({"status": "renewed"})
+    return 0
+
+
 def main():
-    if os.geteuid() != 0 or sys.argv != [sys.argv[0], "serve"]:
+    if os.geteuid() != 0 or sys.argv not in (
+            [sys.argv[0], "serve"], [sys.argv[0], "new-password"]):
         emit({"status": "error", "code": "authorization"})
         return 2
+    if sys.argv[1] == "new-password":
+        return renew_password()
     try:
         import dbus
     except ImportError:

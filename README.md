@@ -12,19 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.109**
+Current release: **1.3.112**
 
-Release 1.3.109 lets the AI man every free station. The new crew assist
-(Shift+F2, always on in a mission started from the multiplayer lobby) crews
-each station of the frigate and of a crewed submarine that nobody holds, so
-every player can stay on one station: the station on the uConsole's screen and
-every station a browser holds stay with their player, and a station released
-in the browser ("Hand over to AI") goes straight back to the AI. On the
-submarine the AI commands evasion, patrols or closes a known frigate, keeps
-the tubes loaded and fires at a close fix, snorkels to charge, keeps the trim
-and sends the damage-control teams. In the lobby the uConsole can also be
-host only (station "none, host only"): it plays no station, and the browsers
-and the AI crew every one. Saves are now v40.
+Release 1.3.112 makes multiplayer simpler to host. F9 is now one switch,
+Multiplayer on or off: it uses the first local network address, or opens the
+uConsole's own hotspot when there is no network; network mode, address and
+port sit under the advanced settings. The hotspot keeps its name and password,
+the uConsole installer sets it up, and the lobby and F9 show two steps: the
+Wi-Fi QR code, then the crew page QR code. A browser that asks for a station
+another player holds now asks that player, who can hand it over in the
+browser; every station always carries its full rights. The command line has
+one flag, --multiplayer, which opens the lobby, and the Windows program starts
+straight into the game without a starter window.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -174,9 +173,12 @@ ask once whether U-Jagd may use private networks: allow it, otherwise other
 devices cannot connect. **Stop server** ends the game (unsaved progress is
 lost), and the link at the bottom opens the "Buy me a coffee" page; the game log is kept in `%USERPROFILE%\.u-jagd\logs\server.log`.
 
-At every start the program asks GitHub whether a newer release exists and
-offers **Install update**: it downloads the new file, checks its size and
-SHA-256 digest, closes, replaces itself and starts the new version (a
+At every start the program asks GitHub whether a newer release exists; the
+game's start screen and main menu then show its changelog entry (and a warning
+when saves of this version will not load in it) and offer **Update now**.
+Nothing is installed before that button is pressed: then it downloads the new
+file in the background (progress on the button), checks its size and SHA-256
+digest, closes, replaces itself and starts the new version (a
 leftover `U-Jagd-Windows.exe.new` is deleted at the next start). The build is not code-signed,
 so Windows SmartScreen may warn on the first start ("More info", "Run
 anyway"). Saves and settings live in `%USERPROFILE%\.u-jagd\` as on Linux.
@@ -201,9 +203,10 @@ To build locally on Windows: `python -m pip install -e ".[windows]"` and
 
 ## Quick Start
 
-On the ClockworkPi uConsole, one command installs the game with a menu entry
-and automatic updates (every start fetches the newest release; offline the
-installed version starts):
+On the ClockworkPi uConsole, one command installs the game with a menu entry.
+A newer release is never installed on its own: the start screen shows it with
+its changelog entry and installs it when you press **Update now** (offline no
+notice appears):
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/db9979/uconsole_asw_game/main/packaging/uconsole/install.sh | sh

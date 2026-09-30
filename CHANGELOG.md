@@ -4,6 +4,42 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.112
+
+Release 1.3.112 makes multiplayer simpler to host. F9 is now one switch,
+Multiplayer on or off: it uses the first local network address, or opens the
+uConsole's own hotspot when there is no network; network mode, address and
+port sit under the advanced settings. The hotspot keeps its name and password,
+the uConsole installer sets it up, and the lobby and F9 show two steps: the
+Wi-Fi QR code, then the crew page QR code. A browser that asks for a station
+another player holds now asks that player, who can hand it over in the
+browser; every station always carries its full rights. The command line has
+one flag, --multiplayer, which opens the lobby, and the Windows program starts
+straight into the game without a starter window.
+
+## 1.3.111
+
+Release 1.3.111 adds an engagement sketch to fire control on both sides. The
+frigate's Weapons station and the submarine's Weapons page now draw, north up
+around the own ship, the torpedo's reach, the bearing to the target and, once
+a range is known, the estimated position, the intercept point from the TMA
+course and speed and the torpedo run to it, taken only from the contact's
+observation. The submarine's Command and Navigation pages get labelled round dials for
+course, depth (test and crush depth marked) and speed like the frigate's
+bridge, and the submarine's radio room boxes are sized to their text again,
+so the HQ order no longer runs through the frame.
+
+## 1.3.110
+
+Release 1.3.110 no longer installs updates on its own. When a newer release
+is published, the start screen and the main menu show its version, its
+changelog entry in the game language and a warning when saved games of this
+version (the autosave too) will not load in it, plus the button **Update now**
+(key U or a click). Only that button installs it: on the uConsole the game
+closes, updates to the release and starts again (the old background update
+timer switches itself off); the Windows program downloads the new file in the
+background, checks it, swaps itself and restarts. Offline no notice appears.
+
 ## 1.3.109
 
 Release 1.3.109 lets the AI man every free station. The new crew assist

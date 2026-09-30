@@ -319,7 +319,7 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     session = {"protocol": 2, "client_id": "layout-client", "name": "Layout Lobby",
                "csrf": "layout-csrf", "ordinal": 0, "presence": 1.0,
                 "next_command_seq": 0, "observer": False, "active_station": None,
-                "active_generation": 0, "simlog": False, "host": None, "lobby": None,
+                "active_generation": 0, "simlog": False, "host": None, "lobby": None, "handover": [],
                 "station": None, "requested_station": None, "station_generation": 0,
                 "stations": {
                     station: {
@@ -826,7 +826,7 @@ def test_native_host_menu_join_code_is_focal_and_bounded(language, large):
         with layout.capture_text() as text:
             console.draw(game)
         canvas = pygame.Rect(0, 0, 1280, 720)
-        assert len(console.row_rects()) == 6
+        assert len(console.row_rects()) == 7
         assert all(canvas.contains(entry["bounds"]) for entry in text)
         assert all(entry["bounds"].contains(entry["rect"]) for entry in text)
         assert game.tr("commander.local.join_code") in {entry["text"] for entry in text}

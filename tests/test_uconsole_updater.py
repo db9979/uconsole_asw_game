@@ -197,15 +197,18 @@ def test_setup_and_uninstall_desktop_integration(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "ensure_venv", lambda app, force_install=False: None)
     monkeypatch.setattr(module, "systemctl", lambda *args: True)
     monkeypatch.setattr(module, "desktop_dir", lambda: home / "Desktop")
+    old_units = home / ".config/systemd/user"
+    old_units.mkdir(parents=True)
+    for name in module.TIMER_UNITS:
+        (old_units / name).write_text("[Unit]\n")
     assert module.setup(ROOT) == 0
     entry = (home / ".local/share/applications/u-jagd.desktop").read_text()
     assert f'Exec="{LAUNCH}"' in entry and "Categories=Game;" in entry
     assert (home / "Desktop/u-jagd.desktop").stat().st_mode & stat.S_IXUSR
     assert (home / ".local/bin/u-jagd").resolve() == LAUNCH
-    timer = (home / ".config/systemd/user/u-jagd-update.timer").read_text()
-    assert "OnUnitActiveSec=6h" in timer
-    service = (home / ".config/systemd/user/u-jagd-update.service").read_text()
-    assert f'"{UPDATER}" update' in service
+    assert "aktualisiert sich selbst" not in entry
+    # No background timer any more; the one of older releases is removed.
+    assert not (home / ".config/systemd/user/u-jagd-update.timer").exists()
     assert module.uninstall() == 0
     assert not (home / ".local/bin/u-jagd").is_symlink()
     assert not (home / ".local/share/applications/u-jagd.desktop").exists()
@@ -231,7 +234,8 @@ def test_installer_updates_checkout_that_predates_it(repos, tmp_path):
     run(work, "git", "commit", "-qm", "installer")
     run(work, "git", "push", "-q", "origin", "main")
     result = subprocess.run(["sh", str(INSTALL)], capture_output=True, text=True,
-                            env={**os.environ, "U_JAGD_DIR": str(app)}, check=True)
+                            env={**os.environ, "U_JAGD_DIR": str(app),
+                                 "U_JAGD_NO_HOTSPOT": "1"}, check=True)
     assert "stub update" in result.stdout and "stub setup" in result.stdout
     assert (app / "packaging/uconsole/u_jagd_updater.py").exists()
 
@@ -314,16 +318,74 @@ def test_start_during_background_update_waits_then_starts(tmp_path, monkeypatch)
     monkeypatch.setattr(module.GameLock, "acquire", acquire)
     with pytest.raises(Execed):
         module.launch(["--windowed"])
-    assert released and calls["shown"] == [] and calls["updated"] == 1
+    assert released and calls["shown"] == [] and calls["updated"] == 0
     assert (tmp_path / ".u-jagd/updater.lock").read_text().startswith("game ")
 
 
-def test_first_start_updates_and_marks_game(tmp_path, monkeypatch):
+def test_start_never_updates_and_marks_game(tmp_path, monkeypatch):
     module = load_updater()
     calls = launch_env(module, tmp_path, monkeypatch)
     with pytest.raises(Execed):
         module.launch([])
-    assert calls["updated"] == 1 and "U_JAGD_SPLASH_FD" not in calls["env"]
+    assert calls["updated"] == 0 and "U_JAGD_SPLASH_FD" not in calls["env"]
+
+
+def test_update_now_waits_for_the_game_then_updates_and_starts(tmp_path, monkeypatch):
+    module = load_updater()
+    calls = launch_env(module, tmp_path, monkeypatch)
+    game = module.GameLock()
+    assert game.try_acquire()
+    game.set_role("game")
+    waited = []
+
+    def acquire(self, timeout_s):
+        os.close(game.fd)  # the game has saved and closed
+        waited.append(timeout_s)
+        return self.try_acquire()
+
+    monkeypatch.setattr(module.GameLock, "acquire", acquire)
+    with pytest.raises(Execed):
+        module.main(["install", "--windowed"])
+    assert waited == [module.INSTALL_WAIT_S] and calls["shown"] == []
+    assert calls["updated"] == 1
+
+
+def test_update_now_gives_up_when_the_game_stays_open(tmp_path, monkeypatch):
+    module = load_updater()
+    calls = launch_env(module, tmp_path, monkeypatch)
+    game = module.GameLock()
+    assert game.try_acquire()
+    monkeypatch.setattr(module.GameLock, "acquire", lambda self, timeout_s: False)
+    assert module.launch([], install=True) == 1
+    assert calls["updated"] == 0 and "env" not in calls
+    os.close(game.fd)
+
+
+def test_old_background_timer_only_switches_itself_off(tmp_path, monkeypatch):
+    module = load_updater()
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("U_JAGD_UPDATE_NOW", raising=False)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    units = tmp_path / "config/systemd/user"
+    units.mkdir(parents=True)
+    for name in module.TIMER_UNITS:
+        (units / name).write_text("[Unit]\n")
+    commands = []
+    monkeypatch.setattr(module, "systemctl", lambda *args: commands.append(args) or True)
+    monkeypatch.setattr(module, "update", lambda app=None: pytest.fail("installed by timer"))
+    assert module.background_update() == 0
+    assert ("disable", "--now", "u-jagd-update.timer") in commands
+    assert not any(units.iterdir())
+
+
+def test_installer_update_still_installs(tmp_path, monkeypatch):
+    module = load_updater()
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("U_JAGD_UPDATE_NOW", "1")
+    done = []
+    monkeypatch.setattr(module, "update", lambda app=None: done.append(app) or True)
+    assert module.background_update() == 0 and len(done) == 1
+    assert 'U_JAGD_UPDATE_NOW=1 python3' in INSTALL.read_text()
 
 
 def test_game_closes_start_window_pipe_once(monkeypatch):
@@ -393,3 +455,82 @@ def test_online_probe_uses_the_https_proxy(monkeypatch):
     assert module.probe_address() == ("proxy.lan", 3128)
     monkeypatch.delenv("HTTPS_PROXY")
     assert module.probe_address() == ("github.com", 443)
+
+
+def installer_sandbox(tmp_path, *, nmcli=None, sudo_status=0, sudo=True, extra_env=None):
+    """A fake checkout plus a PATH of stubs, so install.sh runs hermetically
+    (also as root: the stub ``id`` reports a normal user)."""
+    app = tmp_path / "app"
+    kit = app / "packaging/uconsole"
+    kit.mkdir(parents=True)
+    (app / ".git").mkdir()
+    (kit / "u_jagd_updater.py").write_text("import sys\nprint('stub', *sys.argv[1:])\n")
+    for name in ("install-hotspot-helper.sh", "u-jagd-hotspot-helper",
+                 "io.github.db9979.u-jagd.hotspot.policy"):
+        (kit / name).write_text((ROOT / "packaging/uconsole" / name).read_text())
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    log = tmp_path / "sudo.log"
+
+    def stub(name, body):
+        path = bin_dir / name
+        path.write_text("#!/bin/sh\n" + body + "\n")
+        path.chmod(0o755)
+
+    stub("id", "echo 1000")
+    stub("git", "exit 0")
+    stub("python3", f'exec "{sys.executable}" "$@"')
+    if sudo:
+        stub("sudo", f'printf "%s\\n" "$*" >> "{log}"\nexit {sudo_status}')
+    if nmcli is not None:
+        stub("nmcli", f"printf '%s\\n' {nmcli}")
+    for tool in ("sh", "dirname", "mkdir", "cmp", "grep", "cat"):
+        real = next((Path(folder) / tool for folder in ("/usr/bin", "/bin")
+                     if (Path(folder) / tool).exists()), None)
+        if real is not None:
+            (bin_dir / tool).symlink_to(real)
+    env = {"PATH": str(bin_dir), "HOME": str(tmp_path / "home"),
+           "U_JAGD_DIR": str(app), **(extra_env or {})}
+    result = subprocess.run(["/bin/sh", str(INSTALL)], capture_output=True, text=True,
+                            env=env, timeout=60)
+    calls = log.read_text().splitlines() if log.exists() else []
+    return result, calls, kit
+
+
+def test_installer_sets_up_the_hotspot_helper_with_sudo(tmp_path):
+    result, calls, kit = installer_sandbox(tmp_path, nmcli="'eth0:ethernet' 'wlan0:wifi'")
+    assert result.returncode == 0, result.stderr
+    assert "stub update" in result.stdout and "stub setup" in result.stdout
+    assert f"sh {kit}/install-hotspot-helper.sh" in calls
+    assert "hotspot helper installed" in result.stdout
+
+
+@pytest.mark.parametrize("case, hint", [
+    ("no_networkmanager", "NetworkManager not found"),
+    ("no_wifi", "no Wi-Fi device wlan0"),
+    ("no_sudo", "sudo not found"),
+    ("sudo_fails", "the hotspot helper was not installed"),
+])
+def test_installer_continues_without_the_hotspot_helper(tmp_path, case, hint):
+    options = dict(nmcli="'wlan0:wifi'")
+    if case == "no_networkmanager":
+        options["nmcli"] = None
+    elif case == "no_wifi":
+        options["nmcli"] = "'eth0:ethernet' 'wlan1:wifi'"
+    elif case == "no_sudo":
+        options["sudo"] = False
+    else:
+        options["sudo_status"] = 1
+    result, calls, kit = installer_sandbox(tmp_path, **options)
+    assert result.returncode == 0, result.stderr
+    assert "stub setup" in result.stdout and "installed. Start it" in result.stdout
+    assert hint in result.stderr
+    if case != "sudo_fails":
+        assert not any("install-hotspot-helper" in call for call in calls)
+
+
+def test_installer_hotspot_opt_out(tmp_path):
+    result, calls, _ = installer_sandbox(tmp_path, nmcli="'wlan0:wifi'",
+                                         extra_env={"U_JAGD_NO_HOTSPOT": "1"})
+    assert result.returncode == 0, result.stderr
+    assert "skipping the hotspot helper" in result.stdout and not calls

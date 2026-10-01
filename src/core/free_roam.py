@@ -258,10 +258,17 @@ def candidates(game) -> list:
             continue
         if name == "merchants" and _merchants_about(game) >= config.FREE_MAX_MERCHANTS:
             continue
-        if name == "hunt" and (patrol_boat(game) is None or game.damage.ship_sunk):
+        if name == "hunt" and (patrol_boat(game) is None or game.damage.ship_sunk
+                               or game.mission_time < config.FREE_HUNT_AFTER_S
+                               or _hunted_lately(game)):
             continue
         rows.append((name, weight))
     return rows
+
+
+def _hunted_lately(game) -> bool:
+    last = [row["t"] for row in game.free_roam["log"] if row["kind"] == "hunt"]
+    return bool(last) and game.sim_t - last[-1] < config.FREE_HUNT_GAP_S
 
 
 def encounter(game, index: int, forced: str | None = None):

@@ -225,11 +225,17 @@ def test_the_supply_boat_fills_torpedoes_and_battery():
     assert sub.endurance.battery_kwh == sub.endurance.profile.battery_capacity_kwh
 
 
-def test_the_hunt_gives_the_frigate_a_lead_and_warns_the_boat():
+def test_the_hunt_gives_the_frigate_a_lead_and_warns_the_boat(monkeypatch):
     game, boat = _boat()
     assert game.hunter_lead is None
+    # No reported hunt in the first half hour.
+    assert free_roam.encounter(game, 0, "hunt") is None
+    monkeypatch.setattr(config, "FREE_HUNT_AFTER_S", 0.0)
     assert free_roam.encounter(game, 0, "hunt") == "hunt"
     assert game.hunter_lead is not None and game.hunter_lead["hq"] is not None
+    game.free_roam["log"].append({"t": game.sim_t, "kind": "hunt"})
+    # At most one an hour.
+    assert free_roam.encounter(game, 1, "hunt") is None
 
 
 def test_the_boat_patrol_ends_with_the_boat_or_the_frigate():

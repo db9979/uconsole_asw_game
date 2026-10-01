@@ -1221,7 +1221,7 @@ FREE_FIRST_ENCOUNTER_S = (300.0, 600.0)
 FREE_ENCOUNTER_INTERVAL_S = (900.0, 1800.0)
 FREE_ENCOUNTER_WEIGHTS = {"frigate": (("sub", 4), ("neutral_sub", 1), ("raid", 1),
                                       ("merchants", 2)),
-                          "uboot": (("hunt", 4), ("merchants", 3))}
+                          "uboot": (("hunt", 2), ("merchants", 3))}
 FREE_MAX_HOSTILE = 2
 FREE_MAX_NEUTRAL = 1
 FREE_MAX_MERCHANTS = 10            # merchants about before more are brought in
@@ -1230,7 +1230,9 @@ FREE_MERCHANT_SPAWN_NM = (12.0, 22.0)
 FREE_MERCHANT_GROUP = (1, 3)
 FREE_RECYCLE_NM = 70.0
 FREE_RECYCLE_QUIET_S = 1200.0
-FREE_HUNT_SIGMA_NM = 4.0           # error of the lead the frigate gets on the boat
+FREE_HUNT_SIGMA_NM = 8.0           # error of the lead the frigate gets on the boat
+FREE_HUNT_AFTER_S = 1800.0          # no reported hunt in the first half hour
+FREE_HUNT_GAP_S = 3600.0            # and at most one an hour
 FREE_LOG_MAX = 8
 FREE_NEUTRAL_SUNK = 1000           # penalty: a neutral submarine sunk
 FREE_RAID_AFTER_S = 1800.0          # no air raid in the first half hour

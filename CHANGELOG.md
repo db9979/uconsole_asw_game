@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.128
+
+Release 1.3.128 makes the game more robust. A nightly soak test now plays
+every mission on both sides for an hour each with random input at every
+station, saving and reloading along the way, and opens a bug report when
+anything breaks. Its first run found that a submarine mission saved while a
+sonar contact was selected could not be loaded again; that is fixed. Saves
+stay format v44.
+
 ## 1.3.127
 
 Release 1.3.127 keeps your saved games across updates. A save slot or autosave

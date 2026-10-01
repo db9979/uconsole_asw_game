@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.128
+
+Version 1.3.128 macht das Spiel robuster. Ein nächtlicher Dauertest spielt
+jetzt jede Mission auf beiden Seiten je eine Stunde lang mit zufälligen
+Eingaben an allen Stationen, speichert und lädt dabei, und legt bei jedem
+Fehler eine Fehlermeldung an. Sein erster Lauf fand, dass eine U-Boot-Mission,
+die mit ausgewähltem Sonarkontakt gespeichert wurde, nicht mehr geladen werden
+konnte; das ist behoben. Spielstände bleiben im Format v44.
+
 ## 1.3.127
 
 Version 1.3.127 rettet Spielstände über Updates. Ein Speicherplatz oder

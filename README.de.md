@@ -14,14 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.127**
+Aktuelle Version: **1.3.128**
 
-Version 1.3.127 rettet Spielstände über Updates. Ein Speicherplatz oder
-Autosave einer älteren Version, zurück bis Version 1.3.98 (Spielstandformat
-v38), lädt jetzt: Er wird Schritt für Schritt auf das aktuelle Format gebracht
-und danach so streng geprüft wie bisher, sodass ein Update keine unterbrochene
-Mission mehr verwirft. Der Update-Hinweis warnt nur noch, wenn Spielstände zu
-alt für das neue Release sind. Gespeichert wird im Format v44.
+Version 1.3.128 macht das Spiel robuster. Ein nächtlicher Dauertest spielt
+jetzt jede Mission auf beiden Seiten je eine Stunde lang mit zufälligen
+Eingaben an allen Stationen, speichert und lädt dabei, und legt bei jedem
+Fehler eine Fehlermeldung an. Sein erster Lauf fand, dass eine U-Boot-Mission,
+die mit ausgewähltem Sonarkontakt gespeichert wurde, nicht mehr geladen werden
+konnte; das ist behoben. Spielstände bleiben im Format v44.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

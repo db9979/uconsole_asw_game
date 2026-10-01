@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.127**
+Current release: **1.3.128**
 
-Release 1.3.127 keeps your saved games across updates. A save slot or autosave
-written by an older release, back to release 1.3.98 (save format v38), now
-loads: it is brought up to the current format step by step and then checked as
-strictly as before, so an update no longer throws away a mission you
-interrupted. The update notice warns about saves only when they are too old
-for the new release. Saves are written as format v44.
+Release 1.3.128 makes the game more robust. A nightly soak test now plays
+every mission on both sides for an hour each with random input at every
+station, saving and reloading along the way, and opens a bug report when
+anything breaks. Its first run found that a submarine mission saved while a
+sonar contact was selected could not be loaded again; that is fixed. Saves
+stay format v44.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -136,9 +136,13 @@ class SaveMixin:
             self._restore_sonar_system(station["sonar"], {**by_id, **targets},
                                        observer=boat.station.observer)
             self._restore_rng(self.sonar.rng, station["rng"])
+            # Contacts are keyed by target id; the selection is saved by the
+            # contact's own id (as on the frigate's station).
+            selected_id = station["selected_contact_id"]
             self.selected_contact = (
-                self.sonar.contacts.get(int(station["selected_contact_id"]))
-                if station["selected_contact_id"] is not None else None)
+                next((contact for contact in self.sonar.contacts.values()
+                      if contact.id == int(selected_id)), None)
+                if selected_id is not None else None)
             self.target = (self.sonar.contacts.get(int(station["target_id"]))
                            if station["target_id"] is not None else None)
         self._opfor = boat

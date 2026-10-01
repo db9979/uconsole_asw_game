@@ -483,6 +483,10 @@ class MissionBridgeMixin:
 
     def _initial_threat_notice(self):
         """Return one coarse, static intelligence cue for the mission start."""
+        from src.core import boat_missions
+        if boat_missions.mode(self) in boat_missions.GUARDED_MODES:
+            # Scenarios 8 to 10: the frigate guards its post without a report.
+            return message("runtime.hq.threat_unknown")
         candidates = [target for target in self.subs if target.side == "hostile"]
         domain = "underwater"
         if not candidates:

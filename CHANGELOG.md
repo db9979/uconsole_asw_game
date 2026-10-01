@@ -15,7 +15,10 @@ and dead slow to lock out its swimmers, and the frigate patrols the coast
 section. In "Supply ship escort" (10) the frigate escorts a zigzagging supply
 ship and one torpedo hit decides the mission. The places come from the real or
 generated coastline of each world. The scenario menu takes keys 1 to 9 and 0.
-Save format v43; older saves do not load.
+In AI-against-AI test runs each new mission now goes either way about half the
+time: the AI submarine sneaks at 4 kn, ignores pings from farther than 5 NM and
+fires back down a closer one, and HQ no longer passes the frigate a submarine
+datum in scenarios 5 to 10. Save format v43; older saves do not load.
 
 ## 1.3.123
 

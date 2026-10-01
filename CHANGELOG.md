@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.132
+
+Release 1.3.132 numbers each side's scenarios from 1. The frigate list reads
+1 Patrol, 2 Double hunt, 3 Nuclear intercept, 4 Free hunt; the submarine list
+1 Breakthrough, 2 Reconnaissance, 3 Convoy attack, 4 Strait blockade, 5 Combat
+swimmers, 6 Supply ship escort, and the number keys follow the list on the
+screen. The manual counts the submarine scenarios the same way. Save format v44
+unchanged.
+
 ## 1.3.131
 
 Release 1.3.131 adds short missions. The briefing, the campaign screen, the

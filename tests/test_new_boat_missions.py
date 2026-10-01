@@ -36,11 +36,11 @@ def test_three_new_boat_scenarios_are_listed_and_keyed():
         assert boat_missions.scenario_mode(key) == kind
         game = _frigate_game(key)
         assert boat_missions.mode(game) == kind and game.mission.time_limit_s == limit
-    # Key 0 picks the tenth scenario in the submarine's menu list.
+    # Key 6 picks the sixth and last scenario of the submarine's menu list.
     game = Game(seed=5, start_menu=False, audio_enabled=False)
     game.local_side = "uboot"
     game.in_menu, game.main_menu, game.menu_screen = True, False, "scenario"
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_0, mod=0, unicode="0"))
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_6, mod=0, unicode="6"))
     assert config.SCENARIO_ORDER[game.menu_sel] == "s10_versorger"
 
 

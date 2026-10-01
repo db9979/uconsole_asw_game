@@ -1816,7 +1816,8 @@ class EventMixin:
             return
         if self.menu_screen == "scenario":
             # Only the scenarios of the side chosen before; ``menu_sel`` stays
-            # an index into SCENARIO_ORDER, the number keys its 1-9 and 0.
+            # an index into SCENARIO_ORDER, the number keys count the side's
+            # own list from 1.
             keys = config.scenarios_for_side(self.local_side)
             pos = keys.index(config.SCENARIO_ORDER[self.scenario_menu_index()])
             number = {pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2, pygame.K_4: 3,
@@ -1826,9 +1827,8 @@ class EventMixin:
                 self.menu_sel = config.SCENARIO_ORDER.index(keys[(pos - 1) % len(keys)])
             elif key == pygame.K_DOWN:
                 self.menu_sel = config.SCENARIO_ORDER.index(keys[(pos + 1) % len(keys)])
-            elif number is not None and number < len(config.SCENARIO_ORDER):
-                if config.SCENARIO_ORDER[number] in keys:
-                    self.menu_sel = number
+            elif number is not None and number < len(keys):
+                self.menu_sel = config.SCENARIO_ORDER.index(keys[number])
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
                 self.scenario_key = config.SCENARIO_ORDER[self.scenario_menu_index()]
                 sc = config.SCENARIOS[self.scenario_key]

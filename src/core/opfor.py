@@ -419,7 +419,12 @@ class CrewedBoat:
 
 
 def choose_boat(game):
-    """The living hostile submarine with the smallest ID, or None."""
+    """The living hostile submarine with the smallest ID, or None; a custom
+    submarine mission's own boat (``boat_id``) first."""
+    from src.core import custom_boat
+    own = custom_boat.boat(game)
+    if own is not None and not own.sunk and own.state not in ("SINKING", "SUNK"):
+        return own
     candidates = [sub for sub in game.subs
                   if getattr(sub, "side", "hostile") == "hostile"
                   and not sub.sunk and sub.state not in ("SINKING", "SUNK")]

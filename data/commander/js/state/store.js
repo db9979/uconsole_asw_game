@@ -38,6 +38,9 @@ export const S = {
   hostPending: null,
   hostMessage: null,
   hostMessageTimer: null,
+  // Own-mission library of the solo host (net/missions.js, views/missions.js).
+  missionLibrary: null,
+  missionCatalog: null,
   stationRenderSignature: null,
   nextCommandSeq: 0,
   stationMutation: false,

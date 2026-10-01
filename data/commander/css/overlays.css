@@ -167,13 +167,53 @@ dialog h2 { margin-bottom: .5rem; color: var(--live-strong); text-shadow: 0 0 .7
 .simlog-map-sidebar ol { display: grid; gap: .2rem; margin: 0; padding: 0; list-style: none; }
 .simlog-map-sidebar li { padding-left: .5rem; border-left: 3px solid var(--unit-color); color: var(--text-dim); font: var(--font-xs)/1.4 var(--font-mono); }
 
+/* Own missions of the solo host and the browser Mission Planner. */
+#missions-dialog { width: min(96vw, 80rem); max-width: none; max-height: 94dvh; overflow: auto; }
+.missions-head { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--line); }
+.missions-head .eyebrow { margin-bottom: .2rem; }
+.missions-head-actions, .missions-row-actions, .missions-item-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
+.missions-status-row { display: flex; align-items: center; gap: .6rem; min-height: 2rem; margin: .4rem 0; }
+.missions-status-row .host-status { flex: 1 1 auto; margin: 0; }
+#missions-status[data-status="rejected"] { color: var(--alarm); }
+#missions-status[data-status="applied"] { color: var(--live-2); }
+.missions-list { display: grid; gap: .45rem; margin: .6rem 0 0; padding: 0; list-style: none; }
+.missions-row { display: grid; gap: .3rem; padding: .55rem .7rem; background: var(--bg-1); border: 1px solid var(--line); border-left: 3px solid var(--live); border-radius: var(--radius); }
+.missions-row.invalid { border-left-color: var(--alarm); }
+.missions-row-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem .8rem; }
+.missions-row-head strong { color: var(--text); }
+.missions-row-head span { color: var(--text-dim); font: var(--font-xs)/1.4 var(--font-mono); }
+.missions-hint, .missions-issue { margin: 0; font-size: var(--font-xs); }
+.missions-hint { color: var(--caution); }
+.missions-issue { color: var(--alarm); }
+.missions-row-actions button, .missions-item-actions button { min-height: 2rem; font-size: var(--font-xs); }
+.missions-editor h3 { margin: .3rem 0 .5rem; color: var(--live); }
+.missions-editor-body { display: grid; grid-template-columns: minmax(0, 3fr) minmax(16rem, 2fr); gap: .8rem; min-width: 0; }
+.missions-form { min-width: 0; }
+.missions-tabs { display: flex; flex-wrap: wrap; gap: .3rem; margin-bottom: .5rem; }
+.missions-tabs button { min-height: 2rem; font-size: var(--font-xs); }
+.missions-tabs button[aria-selected="true"] { color: var(--on-live); background: var(--live); border-color: var(--live); }
+.missions-panel { min-width: 0; max-height: 58dvh; overflow: auto; padding: .6rem; background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--radius); }
+.missions-stack { display: grid; gap: .6rem; }
+.missions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .4rem .7rem; align-items: end; }
+.missions-item { padding: .5rem; border: 1px solid var(--line); border-radius: var(--radius); }
+.missions-item-actions, .missions-wide { grid-column: 1 / -1; }
+.missions-field { display: flex; flex-direction: column; gap: .15rem; margin: 0; color: var(--text-dim); font-size: var(--font-xs); }
+.missions-dialog .missions-field input, .missions-dialog .missions-field select, .missions-dialog .missions-field textarea { width: 100%; min-width: 0; }
+.missions-field textarea { min-height: 4rem; resize: vertical; }
+.missions-targets { display: flex; flex-wrap: wrap; gap: .3rem .8rem; }
+.missions-targets label { display: inline-flex; align-items: center; gap: .3rem; margin: 0; }
+.missions-targets input { width: auto; }
+.missions-map-pane { display: grid; align-content: start; gap: .4rem; min-width: 0; }
+.missions-map { display: block; width: 100%; aspect-ratio: 1; background: var(--scope); border: 1px solid var(--line); border-radius: var(--radius); cursor: crosshair; }
+.missions-map-pane p { margin: 0; }
+
 @media (max-width: 899px) {
   body.workstation-mode .tab-panel:not(#panel-operations):not([hidden]) { inset: 0; border-radius: 0; padding: .8rem; }
   .lookout-bar { grid-template-columns: minmax(0, 1fr) auto; }
   .lookout-title { display: none; }
-  .guide-layout, .analyzer-workspace, .analysis-images, .analysis-component-groups, .weather-grid, .simlog-map-layout { grid-template-columns: minmax(0, 1fr); }
+  .guide-layout, .analyzer-workspace, .analysis-images, .analysis-component-groups, .weather-grid, .simlog-map-layout, .missions-editor-body { grid-template-columns: minmax(0, 1fr); }
   .guide-nav { position: static; }
   .analyzer-workspace { grid-template-rows: minmax(0, .8fr) minmax(0, 1.2fr); }
-  #weather-dialog, #simlog-map-dialog { width: 100vw; max-height: 100dvh; height: 100dvh; border-width: 0; border-radius: 0; }
+  #weather-dialog, #simlog-map-dialog, #missions-dialog { width: 100vw; max-height: 100dvh; height: 100dvh; border-width: 0; border-radius: 0; }
   .simlog-map-layout { grid-template-rows: minmax(12rem, 2fr) minmax(6rem, 1fr); }
 }

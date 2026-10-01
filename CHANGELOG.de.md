@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.133
+
+Version 1.3.133 lässt eigene Missionen für beide Seiten bauen und teilen. In der
+Übersicht des Missionseditors kann die Spielerseite jetzt die Fregatte oder ein
+selbst platziertes U-Boot sein (die KI besetzt dann die Fregatte), und der
+Editor gibt Fairness-Hinweise. Eigene Missionen stehen im Startmenü (`O`), in
+der Mehrspieler-Lobby und im Dialog „Neues Spiel“ des Browsers. `Strg+E` teilt
+eine Mission mit ihren eigenen Einheiten in den Austauschordner
+`~/.u-jagd/share`, `Strg+I` listet und importiert die Dateien dort, und `O`
+öffnet den Ordner. Im Solo-Modus hat der Browser eine Seite „Eigene Missionen“
+zum Auflisten, Herunterladen, Hochladen, Bearbeiten, Löschen und Starten, mit
+einem Missionsplaner auf einer Sektorkarte. Speicherformat v44 unverändert.
+
 ## 1.3.132
 
 Version 1.3.132 zählt die Szenarien jeder Seite ab 1. Die Fregatte zeigt

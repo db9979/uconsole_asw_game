@@ -52,8 +52,9 @@ export function forgetSession(message = "connection_unpaired") {
 // station, the countdown and every crew browser with its ready tick.
 function validLobby(lobby) {
   if (lobby === null) return true;
-  return exactKeys(lobby, ["mission", "side", "host_station", "countdown_s", "ready", "players"]) &&
+  return exactKeys(lobby, ["mission", "mission_name", "side", "host_station", "countdown_s", "ready", "players"]) &&
     typeof lobby.mission === "string" && lobby.mission.length <= 32 &&
+    (lobby.mission_name === null || typeof lobby.mission_name === "string" && lobby.mission_name.length <= 80) &&
     ["frigate", "uboot"].includes(lobby.side) && (lobby.host_station === null || sessionRoles.includes(lobby.host_station)) &&
     (lobby.countdown_s === null || finite(lobby.countdown_s) && lobby.countdown_s >= 0 && lobby.countdown_s <= 60) &&
     typeof lobby.ready === "boolean" && Array.isArray(lobby.players) && lobby.players.length <= 12 &&

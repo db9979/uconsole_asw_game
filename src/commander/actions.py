@@ -1026,6 +1026,18 @@ def _host_new_game(game, params):
                                params.get("difficulty"), params.get("seed"))
 
 
+def _host_start_mission(game, params):
+    """Start an own mission of the Mission Editor's library (solo host)."""
+    from src.core import config
+    from src.data.user_content import default_store
+    from src.data.validation import ContentValidationError
+    try:
+        definition = default_store(config.SAVE_DIR).load("mission", params["key"])
+    except (OSError, ValueError, ContentValidationError):
+        return "no_mission"
+    return True if game.start_custom_mission(definition) else "mission_rejected"
+
+
 def _host_instructor_environment(game, params):
     """Apply a bounded, save-compatible exercise environment change."""
     if params["event"] is not None:
@@ -1063,5 +1075,6 @@ _HOST_ACTION_HANDLERS = {
     "host_save": _host_save,
     "host_load": _host_load,
     "host_new_game": _host_new_game,
+    "host_start_mission": _host_start_mission,
     "host_instructor_environment": _host_instructor_environment,
 }

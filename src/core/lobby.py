@@ -54,10 +54,26 @@ class LobbyRoom:
         self.countdown_s = None
         # First "start" with players not ready arms this; a second one starts.
         self.force_armed = False
+        # Own missions of the Mission Editor: {side: ((key, name), ...)},
+        # handed in by the game (``set_custom_missions``); ``custom_key`` is
+        # the chosen one, None for a built-in scenario.
+        self.custom_missions: dict[str, tuple] = {side: () for side in SIDES}
+        self.custom_key: str | None = None
 
     @property
     def scenario_key(self) -> str:
         return config.SCENARIO_ORDER[self.scenario_index]
+
+    def set_custom_missions(self, missions: dict) -> None:
+        """The own missions per side; a vanished choice falls back to the scenario."""
+        self.custom_missions = {side: tuple(missions.get(side, ())) for side in SIDES}
+        if self.custom_key not in {key for key, _name in self.custom_missions[self.side]}:
+            self.custom_key = None
+
+    @property
+    def custom_name(self) -> str | None:
+        return next((name for key, name in self.custom_missions[self.side]
+                     if key == self.custom_key), None)
 
     def _fit_scenario(self) -> None:
         """Keep the mission one of the side's own (else that side's first)."""
@@ -76,12 +92,18 @@ class LobbyRoom:
         self.force_armed = False
         row = ROWS[self.row]
         if row == "mission":
-            # Only the missions of the side the uConsole plays.
+            # Only the missions of the side the uConsole plays, then its own.
             keys = config.scenarios_for_side(self.side)
-            pos = keys.index(self.scenario_key)
-            self.scenario_index = config.SCENARIO_ORDER.index(keys[(pos + step) % len(keys)])
+            options = [(key, None) for key in keys] + [
+                (self.scenario_key, key) for key, _name in self.custom_missions[self.side]]
+            pos = next((index for index, (scenario, custom) in enumerate(options)
+                        if custom == self.custom_key
+                        and (custom is not None or scenario == self.scenario_key)), 0)
+            scenario, self.custom_key = options[(pos + step) % len(options)]
+            self.scenario_index = config.SCENARIO_ORDER.index(scenario)
         elif row == "side":
             self.side = SIDES[(SIDES.index(self.side) + 1) % len(SIDES)]
+            self.custom_key = None
             self._fit_scenario()
             if self.station != HOST_ONLY:
                 self.station = side_stations(self.side)[0]
@@ -137,7 +159,8 @@ class LobbyRoom:
     def publication(self) -> dict:
         """The detached lobby block every crew browser sees."""
         return {
-            "mission": self.scenario_key,
+            "mission": "custom" if self.custom_key is not None else self.scenario_key,
+            "mission_name": self.custom_name,
             "side": self.side,
             "host_station": None if self.station == HOST_ONLY else self.station,
             "countdown_s": (None if self.countdown_s is None

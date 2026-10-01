@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.133
+
+Release 1.3.133 lets you build your own missions for both sides and share them.
+In the Mission Editor's overview the player side can now be the frigate or a
+submarine you place yourself (the AI then crews the frigate), and the editor
+gives fairness hints. Own missions appear in the start menu (`O`), in the
+multiplayer lobby and in the browser's "New game" dialog. `Ctrl+E` shares a
+mission with its own units into the exchange folder `~/.u-jagd/share`, `Ctrl+I`
+lists and imports the files there and `O` opens the folder. In solo mode the
+browser has an "Own missions" page to list, download, upload, edit, delete and
+start missions, with a Mission Planner on a sector map. Save format v44
+unchanged.
+
 ## 1.3.132
 
 Release 1.3.132 numbers each side's scenarios from 1. The frigate list reads

@@ -35,7 +35,7 @@ TORPEDOES_MAX = 40                # above any boat's load; ``None`` is a full lo
 DAMAGE_CARRY_MAX = 60             # hull damage (%) a boat can sail with
 # The boat's side of ``boat_debrief.outcome``: the missions it won.
 WINS = ("won", "broke_through", "reported", "convoy_sunk", "passed", "landed",
-        "supply_sunk", "escaped", "survived")
+        "supply_sunk", "escaped", "survived", "objective")
 
 
 class BoatCampaignState:

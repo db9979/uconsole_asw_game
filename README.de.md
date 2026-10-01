@@ -14,14 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.132**
+Aktuelle Version: **1.3.133**
 
-Version 1.3.132 zählt die Szenarien jeder Seite ab 1. Die Fregatte zeigt
-1 Patrouille, 2 Doppeljagd, 3 Nuklearer Abfang, 4 Freie Jagd; das U-Boot
-1 Durchbruch, 2 Aufklärung, 3 Geleitzug, 4 Meerengen-Sperre, 5 Kampfschwimmer,
-6 Versorgerschutz, und die Zifferntasten folgen der Liste auf dem Bildschirm.
-Das Handbuch zählt die U-Boot-Szenarien genauso. Speicherformat v44
-unverändert.
+Version 1.3.133 lässt eigene Missionen für beide Seiten bauen und teilen. In der
+Übersicht des Missionseditors kann die Spielerseite jetzt die Fregatte oder ein
+selbst platziertes U-Boot sein (die KI besetzt dann die Fregatte), und der
+Editor gibt Fairness-Hinweise. Eigene Missionen stehen im Startmenü (`O`), in
+der Mehrspieler-Lobby und im Dialog „Neues Spiel“ des Browsers. `Strg+E` teilt
+eine Mission mit ihren eigenen Einheiten in den Austauschordner
+`~/.u-jagd/share`, `Strg+I` listet und importiert die Dateien dort, und `O`
+öffnet den Ordner. Im Solo-Modus hat der Browser eine Seite „Eigene Missionen“
+zum Auflisten, Herunterladen, Hochladen, Bearbeiten, Löschen und Starten, mit
+einem Missionsplaner auf einer Sektorkarte. Speicherformat v44 unverändert.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

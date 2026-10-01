@@ -554,6 +554,10 @@ def objective(game, boat):
     kind = mode(game)
     if boat.sub.sunk:
         return message("uboot.objective_lost")
+    from src.core import custom_boat
+    custom = custom_boat.objective(game, boat.sub)
+    if custom is not None:
+        return custom
     if kind in ("breakthrough", "strait", "swimmers"):
         point = goal(game)
         dx, dy = point["x"] - boat.sub.x, point["y"] - boat.sub.y

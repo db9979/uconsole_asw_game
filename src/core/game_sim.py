@@ -22,7 +22,7 @@ from src.core import buoy_antenna, detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
-from src.core import boat_ai, boat_autocrew, boat_debrief, boat_missions, hunter, opfor, phone_lookout
+from src.core import boat_ai, boat_autocrew, boat_debrief, boat_missions, custom_boat, hunter, opfor, phone_lookout
 from src.core.limits import (
     MAX_DECOYS,
     MAX_ENEMY_TORPEDOES,
@@ -1464,7 +1464,7 @@ class SimMixin:
         if self.incident:
             self._end_mission(False, message("end.reason.incident"))
             return
-        if boat_missions.check(self):
+        if boat_missions.check(self) or custom_boat.check(self):
             return
         definition = self.custom_mission_definition
         if definition is not None and m.win_mode in ("protect", "reach"):

@@ -98,6 +98,7 @@ from src.core.game_crew import CrewMixin
 from src.core.game_mpa import MpaMixin
 from src.core.game_debrief import DebriefMixin
 from src.core.game_training import TrainingMixin
+from src.core.game_custom import CustomMissionMixin
 from src.core.game_campaign import CampaignMixin
 from src.core.game_autosave import AutosaveMixin, CONTINUE_ENTRY
 from src.core.game_resilience import ResilienceMixin
@@ -113,7 +114,7 @@ from src.core.game_update import UpdateNoticeMixin
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
            SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, DebriefMixin,
-           TrainingMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
+           TrainingMixin, CustomMissionMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
            LobbyMixin, UpdateNoticeMixin, ResilienceMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",

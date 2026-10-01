@@ -475,6 +475,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.baffle_clear = None
         # The AI hunters' ESM bearing lines for a cross-fix (save ``hunter_esm``).
         self.hunter_esm = []
+        # Their lead: HQ's start report or a lost submarine bearing (save
+        # ``hunter_lead``).
+        self.hunter_lead = None
         # The radio room's own calls to HQ (save ``hq_reports``).
         self._reset_hq_reports()
         # Watches, fatigue and morale of the frigate crew (save ``watch``).

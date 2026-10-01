@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.124
+## 1.3.125
 
-Version 1.3.124 bringt drei neue Einsätze, die beide Seiten spielen können,
+Version 1.3.125 bringt drei neue Einsätze, die beide Seiten spielen können,
 jeweils mit der KI auf der Gegenseite. In „Meerengen-Sperre“ (8) muss das
 U-Boot durch die nächste Meerenge schlüpfen, während die Fregatte die
 Sperrlinie bewacht; Handelsverkehr fährt hindurch, und ein KI-Boot versteckt
@@ -19,8 +19,24 @@ erzeugten Küste jeder Welt. Das Szenariomenü nimmt die Tasten 1 bis 9 und 0. I
 Testläufen KI gegen KI geht jeder neue Einsatz jetzt etwa zur Hälfte für jede
 Seite aus: Das KI-U-Boot schleicht mit 4 kn, überhört Pings aus mehr als 5 sm
 und schießt auf einen näheren zurück, und das HQ meldet der Fregatte in den
-Szenarien 5 bis 10 kein U-Boot-Datum mehr. Speicherformat v43; ältere
+Szenarien 5 bis 10 kein U-Boot-Datum mehr. Speicherformat v44; ältere
 Spielstände laden nicht.
+
+## 1.3.124
+
+Version 1.3.124 gleicht KI-Fregatte und KI-U-Boot an. In den
+Fregatten-Szenarien folgen die KI-Jäger jetzt der Startmeldung der Führung
+über die Bedrohung und einer verlorenen U-Boot-Peilung, pingen auf eine bloße
+Peilung nur alle 10 Minuten, damit ein Ping ohne Treffer das U-Boot nicht mehr
+davonjagt, und halten ein lange strahlendes Schiffsradar nicht mehr für einen
+U-Boot-Mast. In den U-Boot-Szenarien hält ein Missions-U-Boot bei einem Ping
+seinen Kurs und weicht nur einem Torpedo aus, und die Fregatte bewacht ihren
+Posten: Gegen einen Durchbruch bleibt sie ohne Seefernaufklärer bei ihrer
+Patrouillenposition, gegen Durchbruch und Aufklärung schießt sie ihren eigenen
+Torpedo erst ab 3 sm und hält ihren Hubschrauber innerhalb 8 sm. Das
+Durchbruch-U-Boot umgeht die Patrouillenposition der Fregatte, die
+Aufklärungsmeldung zählt innerhalb 5 sm, und das Geleitzug-U-Boot schießt ab
+3 sm. Spielstände wechseln auf Format v43 (die Spuren der Jäger).
 
 ## 1.3.123
 

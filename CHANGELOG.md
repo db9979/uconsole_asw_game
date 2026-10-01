@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.124
+## 1.3.125
 
-Release 1.3.124 adds three new missions that both sides can play, each with the
+Release 1.3.125 adds three new missions that both sides can play, each with the
 AI on the other side. In "Strait blockade" (8) the submarine must slip through
 the nearest narrow passage while the frigate guards the gate; merchant traffic
 runs through it and an AI boat hides in their noise. In "Combat swimmers" (9)
@@ -18,7 +18,22 @@ generated coastline of each world. The scenario menu takes keys 1 to 9 and 0.
 In AI-against-AI test runs each new mission now goes either way about half the
 time: the AI submarine sneaks at 4 kn, ignores pings from farther than 5 NM and
 fires back down a closer one, and HQ no longer passes the frigate a submarine
-datum in scenarios 5 to 10. Save format v43; older saves do not load.
+datum in scenarios 5 to 10. Save format v44; older saves do not load.
+
+## 1.3.124
+
+Release 1.3.124 evens out the AI frigate and the AI submarine. In the
+frigate scenarios the AI hunters now run down HQ's start report of the threat
+and a lost submarine bearing, ping a bare bearing only every 10 minutes so a
+ping that finds nothing no longer sends the submarine running, and no longer
+take a long-radiating ship radar for a submarine mast. In the submarine
+scenarios a mission submarine keeps its course through a ping and gives way
+only to a torpedo, and the frigate guards its post: against a breakthrough it
+stays by its patrol position with no patrol aircraft, and against a
+breakthrough or reconnaissance it fires its own torpedo from 3 NM and keeps its
+helicopter within 8 NM. The breakthrough submarine skirts the frigate's patrol
+position, the reconnaissance report counts within 5 NM and the convoy
+submarine fires from 3 NM. Saves move to format v43 (the hunters' leads).
 
 ## 1.3.123
 

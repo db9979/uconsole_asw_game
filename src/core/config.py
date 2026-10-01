@@ -1315,7 +1315,7 @@ BOAT_AI_TRANSIT_KN = 6.0           # quiet transit below the layer
 BOAT_AI_PERISCOPE_KN = 3.0         # at periscope depth or creeping in to fire
 BOAT_AI_BELOW_LAYER_M = 30.0
 BOAT_AI_MIN_WATER_M = 30.0         # the leg detours round shallower water
-BOAT_AI_SIGHT_NM = 8.0             # recon: come up and sight the frigate this close
+BOAT_AI_SIGHT_NM = 5.0             # recon: come up and sight the frigate this close
 # Recon: at periscope depth the boat raises its periscope for one look every
 # SCOPE_CYCLE_S (phase per boat), LOOK_S long; the head sweeps round from
 # the bow in SWEEP_S and sights the frigate only where the optics make it
@@ -1323,7 +1323,8 @@ BOAT_AI_SIGHT_NM = 8.0             # recon: come up and sight the frigate this c
 BOAT_AI_SCOPE_CYCLE_S = 90.0
 BOAT_AI_SCOPE_LOOK_S = 24.0
 BOAT_AI_SCOPE_SWEEP_S = 16.0
-BOAT_AI_ATTACK_NM = 4.0            # convoy attack: fire at a merchant this close
+BOAT_AI_ATTACK_NM = 4.0            # a patrol raid: fire at a merchant this close
+BOAT_AI_CONVOY_ATTACK_NM = 3.0     # convoy attack: fire at a merchant this close
 # Escort: a lone, zigzagging supply ship is fired at from farther off.
 BOAT_AI_ESCORT_ATTACK_NM = 5.5
 # ... from this far abeam of its base track, clear of the escort ahead of it.
@@ -1343,12 +1344,12 @@ BOAT_AI_PREFLOOD_MARGIN_NM = 3.0   # quiet tube flooding starts this far outside
 # A hunted or closely watched boat creeps: this slow once the frigate is
 # within BOAT_AI_THREAT_NM (its own contact) or for BOAT_AI_HUNTED_S after a
 # ping or a torpedo was heard.
-BOAT_AI_CREEP_KN = 3.0
-BOAT_AI_THREAT_NM = 12.0
-BOAT_AI_HUNTED_S = 600.0
+BOAT_AI_CREEP_KN = 4.0
+BOAT_AI_THREAT_NM = 8.0
+BOAT_AI_HUNTED_S = 300.0
 # Breakthrough: a frigate this close to the leg ahead is passed this far off.
 BOAT_AI_DETOUR_NM = 6.0
-BOAT_AI_DETOUR_DEG = 40.0
+BOAT_AI_DETOUR_DEG = 45.0
 # Convoy attack: lie in wait this far ahead of the convoy and abeam of its
 # track, hovering at the wait speed until the merchants come into range.
 BOAT_AI_AMBUSH_AHEAD_NM = 2.0

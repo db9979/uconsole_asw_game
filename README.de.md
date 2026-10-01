@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.124**
+Aktuelle Version: **1.3.125**
 
-Version 1.3.124 bringt drei neue Einsätze, die beide Seiten spielen können,
+Version 1.3.125 bringt drei neue Einsätze, die beide Seiten spielen können,
 jeweils mit der KI auf der Gegenseite. In „Meerengen-Sperre“ (8) muss das
 U-Boot durch die nächste Meerenge schlüpfen, während die Fregatte die
 Sperrlinie bewacht; Handelsverkehr fährt hindurch, und ein KI-Boot versteckt
@@ -29,9 +29,8 @@ erzeugten Küste jeder Welt. Das Szenariomenü nimmt die Tasten 1 bis 9 und 0. I
 Testläufen KI gegen KI geht jeder neue Einsatz jetzt etwa zur Hälfte für jede
 Seite aus: Das KI-U-Boot schleicht mit 4 kn, überhört Pings aus mehr als 5 sm
 und schießt auf einen näheren zurück, und das HQ meldet der Fregatte in den
-Szenarien 5 bis 10 kein U-Boot-Datum mehr. Speicherformat v43; ältere
+Szenarien 5 bis 10 kein U-Boot-Datum mehr. Speicherformat v44; ältere
 Spielstände laden nicht.
-
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

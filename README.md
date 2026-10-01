@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.124**
+Current release: **1.3.125**
 
-Release 1.3.124 adds three new missions that both sides can play, each with the
+Release 1.3.125 adds three new missions that both sides can play, each with the
 AI on the other side. In "Strait blockade" (8) the submarine must slip through
 the nearest narrow passage while the frigate guards the gate; merchant traffic
 runs through it and an AI boat hides in their noise. In "Combat swimmers" (9)
@@ -26,8 +26,7 @@ generated coastline of each world. The scenario menu takes keys 1 to 9 and 0.
 In AI-against-AI test runs each new mission now goes either way about half the
 time: the AI submarine sneaks at 4 kn, ignores pings from farther than 5 NM and
 fires back down a closer one, and HQ no longer passes the frigate a submarine
-datum in scenarios 5 to 10. Save format v43; older saves do not load.
-
+datum in scenarios 5 to 10. Save format v44; older saves do not load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

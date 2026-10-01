@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v43_and_older_documents_are_rejected():
+def test_save_is_v44_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (43, "u-jagd-save-v43")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (43, "u-jagd-save-v43")
+    assert (state["version"], state["save_schema"]) == (44, "u-jagd-save-v44")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (44, "u-jagd-save-v44")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -227,13 +227,21 @@ def test_save_is_v43_and_older_documents_are_rejected():
     v41["version"] = 41
     v41["save_schema"] = "u-jagd-save-v41"
     del v41["swimmer_hold_s"]
+    del v41["hunter_lead"]
     assert not game._load_save_data(v41)
-    # v42 differs only by the combat swimmers' lock-out (``swimmer_hold_s``).
+    # v42 also lacks the hunters' leads.
     v42 = copy.deepcopy(state)
     v42["version"] = 42
     v42["save_schema"] = "u-jagd-save-v42"
+    del v42["hunter_lead"]
     del v42["swimmer_hold_s"]
     assert not game._load_save_data(v42)
+    # v43 differs only by the combat swimmers' lock-out (``swimmer_hold_s``).
+    v43 = copy.deepcopy(state)
+    v43["version"] = 43
+    v43["save_schema"] = "u-jagd-save-v43"
+    del v43["swimmer_hold_s"]
+    assert not game._load_save_data(v43)
     assert game.save_state() == before
 
 

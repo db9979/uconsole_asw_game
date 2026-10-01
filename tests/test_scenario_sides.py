@@ -45,7 +45,7 @@ def test_frigate_list_cycles_and_numbers_only_frigate_scenarios():
         game._handle_menu_key(pygame.K_DOWN)
     assert seen == ["s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
                     "s1_patrouille"]
-    game._handle_menu_key(pygame.K_6)                         # a boat scenario: ignored
+    game._handle_menu_key(pygame.K_5)                         # past the frigate list: ignored
     assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s2_doppeljagd"
     game._handle_menu_key(pygame.K_3)
     game._handle_menu_key(pygame.K_RETURN)
@@ -59,9 +59,11 @@ def test_boat_list_starts_at_the_first_boat_scenario():
     assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s5_durchbruch"
     game._handle_menu_key(pygame.K_UP)                        # wraps within the boat list
     assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s10_versorger"
-    game._handle_menu_key(pygame.K_1)                         # a frigate scenario: ignored
+    game._handle_menu_key(pygame.K_7)                         # past the boat list: ignored
     assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s10_versorger"
-    game._handle_menu_key(pygame.K_7)
+    game._handle_menu_key(pygame.K_1)                         # the boat list counts from 1
+    assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s5_durchbruch"
+    game._handle_menu_key(pygame.K_3)
     game._handle_menu_key(pygame.K_RETURN)
     assert game.scenario_key == "s7_geleitzug" and game.menu_screen == "briefing"
     game._handle_menu_key(pygame.K_ESCAPE)                    # back to the boat list

@@ -260,7 +260,7 @@ class DrawMixin:
                 lv = self.tr("menu.difficulty_fixed" if sc["difficulty"] is not None
                              else "menu.difficulty_custom")
                 title = self.tr("scenario." + scenario_names[key] + ".title")
-                center(message("menu.scenario_choice", index=(i + 1) % 10,
+                center(message("menu.scenario_choice", index=row_i + 1,
                                marker=marker, title=title, level=lv),
                        220 + row_i * 40, color=col)
         elif self.menu_screen == "difficulty":

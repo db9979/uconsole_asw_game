@@ -483,6 +483,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.swimmer_hold_s = 0.0
         # The counters of scenarios 13, 19 and 20 (save ``mission_progress``).
         self.mission_progress = mission_modes.new_progress()
+        # A free patrol's encounters and points (save ``free_roam``; set up by
+        # ``boat_missions.setup`` once the world is populated).
+        self.free_roam = None
         # HQ orders and incidents (save ``tasking``); none in custom missions.
         self._reset_tasking()
         # Incidents at sea (save ``incidents``); none in custom missions.

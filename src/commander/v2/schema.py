@@ -26,7 +26,7 @@ RADIO_TASK_FIELDS = ("id", "type", "state", "name", "persons", "x", "y", "radius
                      "course", "speed_kn", "bearing", "range_nm", "respond_s",
                      "remaining_s", "progress", "sighted", "verdict", "points",
                      "can_answer")
-RADIO_TASK_KINDS = ("sar", "identify", "datum", "ras", "emcon")
+RADIO_TASK_KINDS = ("sar", "identify", "datum", "ras", "emcon", "patrol")
 # The crew's watch bill, fatigue and morale (``src/core/crew.py``): the
 # frigate's on the bridge and damage roles, the boat's in ``damage_control``.
 CREW_FIELDS = ("on_watch", "watches", "watch_left_s", "turnover", "action_stations",
@@ -169,7 +169,7 @@ UBOOT_RADIO_BUOY_STATES = ("stowed", "streaming", "out", "recovering", "lost")
 UBOOT_RADIO_LOG_FIELDS = ("seq", "type", "age_s", "number", "ack", "report", "order")
 # The open HQ order (area orders carry x/y/radius_nm, else null).
 UBOOT_RADIO_ORDER_FIELDS = ("id", "type", "x", "y", "radius_nm", "left_s")
-UBOOT_RADIO_ORDER_KINDS = ("area", "report", "silence")
+UBOOT_RADIO_ORDER_KINDS = ("area", "report", "silence", "attack", "landing", "supply", "recon")
 UBOOT_RADIO_LOG_KINDS = ("broadcast", "sent", "aborted")
 UBOOT_RADIO_REPORT_FIELDS = ("x", "y", "radius_nm", "course", "speed_kn", "age_s")
 UBOOT_ESM_FIX_FIELDS = ("x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent")

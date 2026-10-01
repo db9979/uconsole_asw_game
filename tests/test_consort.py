@@ -99,6 +99,9 @@ def test_its_sonar_reaches_the_frigate_only_as_measurements():
     ship = game.consort_ship()
     # Put the boat inside the active sonar's reach.
     sub.x, sub.y = ship.x + 2.0, ship.y + 1.0
+    # Only the active echo here: a passive cross-fix (tested below) may also
+    # land on the contact, with its own wider error and no depth.
+    game._consort_passive_reports = lambda _ship: None
     heard = []
     sub.hear_ping = lambda source=None, kind="hull": heard.append((source, kind))
     _run(game, 25)
@@ -155,8 +158,8 @@ def test_save_round_trip_and_strict_validation():
 
 
 def test_older_saves_get_no_consort():
-    doc = {"version": 45}
-    save_migrate.STEPS[45](doc)
+    doc = {"version": 46}
+    save_migrate.STEPS[46](doc)
     assert doc["consort"] is None
 
 

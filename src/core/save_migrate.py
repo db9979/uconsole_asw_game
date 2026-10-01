@@ -68,6 +68,20 @@ def _v44_to_v45(doc: dict) -> None:
 
 
 def _v45_to_v46(doc: dict) -> None:
+    # A free patrol's block (no older save runs one) and the boat radio's
+    # order fields of the free patrol's own kinds.
+    doc["free_roam"] = None
+    crew = doc.get("crew")
+    radio = crew.get("radio") if isinstance(crew, dict) else None
+    if isinstance(radio, dict) and radio.get("version") == 2:
+        radio["version"] = 3
+        for order in radio.get("orders") or ():
+            if isinstance(order, dict):
+                order.update(target_id=None, name=None, course=None, speed_kn=None,
+                             since=None, points=0)
+
+
+def _v46_to_v47(doc: dict) -> None:
     # The group hunt's consort destroyer (scenarios 21 and 22, which no older save runs).
     doc["consort"] = None
 
@@ -81,6 +95,7 @@ STEPS = {
     43: _v43_to_v44,
     44: _v44_to_v45,
     45: _v45_to_v46,
+    46: _v46_to_v47,
 }
 
 

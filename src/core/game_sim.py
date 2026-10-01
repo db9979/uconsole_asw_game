@@ -22,7 +22,7 @@ from src.core import buoy_antenna, detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
-from src.core import boat_ai, boat_autocrew, boat_debrief, boat_missions, custom_boat, hunter, opfor, phone_lookout
+from src.core import boat_ai, boat_autocrew, boat_debrief, boat_missions, custom_boat, free_roam, hunter, opfor, phone_lookout
 from src.core.limits import (
     MAX_DECOYS,
     MAX_ENEMY_TORPEDOES,
@@ -1465,6 +1465,9 @@ class SimMixin:
         if self.mission_result is not None:
             return
         m = self.mission
+        if free_roam.check(self):
+            # A free patrol ends only with own ship (src/core/free_roam.py).
+            return
         if self.damage.ship_sunk:
             self._end_mission(False, message("end.reason.frigate_sunk"))
             return

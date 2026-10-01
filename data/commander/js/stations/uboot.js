@@ -404,9 +404,10 @@ function radioOrderText(radio, nav) {
   const order = radio.order;
   if (order === null) return t("uboot_radio_order_none");
   const left = duration(order.left_s);
-  if (order.type !== "area") return t(`uboot_radio_order_${order.type}`, {number: order.id, left});
+  // Orders without a position (report, silence, recon) carry null x/y.
+  if (order.x === null || order.y === null) return t(`uboot_radio_order_${order.type}`, {number: order.id, left});
   const dx = order.x - nav.x, dy = order.y - nav.y;
-  return t("uboot_radio_order_area", {number: order.id, left, radius: number(order.radius_nm, 0),
+  return t(`uboot_radio_order_${order.type}`, {number: order.id, left, radius: number(order.radius_nm, 0),
     bearing: number((Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360, 0), range: number(Math.hypot(dx, dy), 1)});
 }
 

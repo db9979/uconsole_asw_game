@@ -13,6 +13,8 @@ accepted task runs to its deadline and ends done or failed.  The kinds:
 - ``ras``: replenishment at sea with a friendly supply ship (fuel and
   torpedoes back to the mission load).
 - ``emcon``: radar silence for a period.
+- ``patrol``: hold a sector for a while (a free patrol only,
+  ``free_roam.py``).
 
 This module holds the board (state, schema, bounds) and the pure geometry;
 ``game_tasking.py`` connects it to the world.  Every draw is counter-based
@@ -23,7 +25,7 @@ from __future__ import annotations
 
 import math
 
-KINDS = ("sar", "identify", "datum", "ras", "emcon")
+KINDS = ("sar", "identify", "datum", "ras", "emcon", "patrol")
 STATES = ("offered", "active", "done", "failed", "declined")
 OPEN_STATES = ("offered", "active")
 VERDICTS = ("clear", "suspect")

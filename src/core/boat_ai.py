@@ -190,6 +190,9 @@ def orders(game, sub):
     """The mission leg ``(course, speed, depth)`` or None."""
     from src.core import mission_modes
     kind = boat_missions.mode(game)
+    if kind == "free_boat":
+        from src.core import free_roam
+        return free_roam.ai_leg(game, sub)
     if kind in mission_modes.MODES and kind not in boat_missions.SHIP_MODES:
         return mission_modes.ai_orders(game, sub, kind)
     if kind == "breakthrough":

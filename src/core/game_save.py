@@ -14,7 +14,7 @@ import weakref
 import pygame
 
 from src.audio.receiver import AcousticReceiver
-from src.core import config
+from src.core import config, free_roam
 from src.core.plot import PlotLayer
 from src.core.autocrew import AutocrewController
 from src.core.i18n import message
@@ -497,6 +497,7 @@ class SaveMixin:
             "knuckles": self.world.knuckles.serialize(),
             "swimmer_hold_s": float(self.swimmer_hold_s),
             "mission_progress": dict(self.mission_progress),
+            "free_roam": free_roam.serialize(self),
             "watch": self.crew_watch.serialize(),
             "mpa": self.mpa.serialize(),
             "consort": None if self.consort is None else self.consort.serialize(),
@@ -1068,6 +1069,7 @@ class SaveMixin:
         self.world.knuckles.restore(data["knuckles"], data["sim_t"])
         self.swimmer_hold_s = float(data["swimmer_hold_s"])
         self.mission_progress = dict(data["mission_progress"])
+        self.free_roam = free_roam.restore(data["free_roam"])
         self.task_sel = 0
         self.crew_watch = CrewState.restore(data["watch"])
         self.mpa = PatrolAircraft.restore(data["mpa"], self.world.size_nm)
@@ -1456,7 +1458,7 @@ class SaveMixin:
                 wd["fingerprint"])
             restore_platform(w, wd, w.signature_key)
             self.warships.append(w)
-        # Save v46: the consort destroyer (one of the warships) and its orders.
+        # Save v47: the consort destroyer (one of the warships) and its orders.
         self._reset_consort()
         self.consort = ConsortOrders.restore(data["consort"])
         if self.consort is not None:

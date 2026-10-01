@@ -166,7 +166,7 @@ export function validateV2State(state) {
   const radioFields = ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg"];
   const radioTaskFields = {
     row: ["id", "type", "state", "name", "persons", "x", "y", "radius_nm", "course", "speed_kn", "bearing", "range_nm", "respond_s", "remaining_s", "progress", "sighted", "verdict", "points", "can_answer"],
-    kinds: ["sar", "identify", "datum", "ras", "emcon"],
+    kinds: ["sar", "identify", "datum", "ras", "emcon", "patrol"],
     states: ["offered", "active", "done", "failed", "declined"],
   };
   const crewFields = {
@@ -236,7 +236,7 @@ export function validateV2State(state) {
     radioBuoyStates: ["stowed", "streaming", "out", "recovering", "lost"],
     radioReport: ["x", "y", "radius_nm", "course", "speed_kn", "age_s"],
     radioOrder: ["id", "type", "x", "y", "radius_nm", "left_s"],
-    radioOrderKinds: ["area", "report", "silence"],
+    radioOrderKinds: ["area", "report", "silence", "attack", "landing", "supply", "recon"],
   };
   // END GENERATED
   if (!validWeatherStation(state.weather_station, opforRoles.has(state.role) || state.role === "uboot_lookout", weatherFields)) throw new Error("protocol");

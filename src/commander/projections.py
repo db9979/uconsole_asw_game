@@ -284,7 +284,9 @@ def _common(game, status, role):
                 alarms=_alarm_rows(station_alarms.frigate(game)),
                 mission=dict(name=localize(game.mission_name_display(), game.tr),
                              objective=localize(game.mission_objective_display(), game.tr),
-                             remaining_s=_number(game.mission.remaining_s(game.mission_time))),
+                             # A free patrol has no time limit to count down.
+                             remaining_s=(None if game.mission.open_ended else _number(
+                                 game.mission.remaining_s(game.mission_time)))),
                 audio=dict(
                     events=[dict(seq=int(row["seq"]), cue=str(row["kind"]),
                                  pan=_pan(row.get("pan")))
@@ -1740,15 +1742,24 @@ def _uboot_radio(game, boat):
                   order=None if row["order"] is None else int(row["order"]))
              for row in reversed(radio.log)],
         vlf=progress["reception"] == "vlf",
-        order=None if order is None else dict(
-            id=int(order["id"]), type=order["kind"], x=_number(order["x"]),
-            y=_number(order["y"]), radius_nm=_number(order["radius_nm"]),
-            left_s=_number(max(0.0, order["deadline_t"] - game.sim_t))),
+        order=None if order is None else _uboot_radio_order(game, order),
         orders_done=sum(1 for row in radio.orders if row["state"] == "done"),
         orders_failed=sum(1 for row in radio.orders if row["state"] == "failed"),
         buoy=buoy_antenna.status(boat.orders.buoy),
         buoy_payout=_number(boat.orders.buoy[0]),
         buoy_rx=progress["reception"] == "buoy")
+
+
+def _uboot_radio_order(game, order):
+    """The open HQ order; an attack's position is its reported one,
+    dead-reckoned (src/core/free_roam.py), never the merchant's truth."""
+    x, y = order["x"], order["y"]
+    if order["kind"] == "attack":
+        from src.core import free_roam
+        x, y = free_roam.target_position(order, game.sim_t)
+    return dict(id=int(order["id"]), type=order["kind"], x=_number(x), y=_number(y),
+                radius_nm=_number(order["radius_nm"]),
+                left_s=_number(max(0.0, order["deadline_t"] - game.sim_t)))
 
 
 def _uboot(game, boat, rows, target_ref, asset_refs):

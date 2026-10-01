@@ -4,57 +4,68 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.139
+## 1.3.140
 
-Version 1.3.139 bringt drei neue uConsole-Seiten. Die Navigation des U-Boots
+Version 1.3.140 bringt drei neue uConsole-Seiten. Die Navigation des U-Boots
 öffnet mit einer Lotsenkarte samt Echolot: Kartentiefen um das Boot, zu tiefes
 Wasser rot, der befohlene Kurs voraus, der Meeresgrund der letzten zehn Minuten
 und die Tiefe voraus; ein Klick in die Karte befiehlt den Kurs. Die Statusseite
 des Hubschraubers ist eine Konsole mit Lampen, Tank, Rückkehrrose und
 Beladung. Die erste Seite des Funkraums zeigt die Funkpeilungen und Standorte
-auf einer Karte neben der Empfangsliste. Spielstandformat v46 unverändert.
+auf einer Karte neben der Empfangsliste. Spielstandformat v47 unverändert.
 
-## 1.3.138
+## 1.3.139
 
-Version 1.3.138 gleicht die Szenarien 11 bis 20 in voller Länge aus, gemessen
+Version 1.3.139 gleicht die Szenarien 11 bis 20 in voller Länge aus, gemessen
 mit KI-gegen-KI-Partien über je sechs Seeds. Bei Fühlung halten muss die
 Fregatte jetzt 80 % der Zeit Kontakt halten, und ein verlorener Kontakt zählt
 früher. Im Duell beginnt das U-Boot 8 bis 12 sm entfernt, das Ziel von
 Angeschlagen heim liegt näher, und bei Seenot unter Bedrohung beginnt die
 Fregatte weiter von den Rettungsinseln entfernt. Die Kurzeinsätze bleiben
-unverändert. Spielstandformat v46 unverändert.
+unverändert. Spielstandformat v47 unverändert.
 
-## 1.3.137
+## 1.3.138
 
-Version 1.3.137 macht aus der Kampagne einen Feldzug für beide Seiten. Eine
+Version 1.3.138 macht aus der Kampagne einen Feldzug für beide Seiten. Eine
 Karte des Sektors zeigt drei offene Brennpunkte, jeder eines der Szenarien der
 Seite mit einer Rolle (Patrouille, Angriff, Verteidigung), dazu die
 Entscheidung, sobald die Lage 75 erreicht. Siege und Niederlagen verschieben
 Lage und Feindstärke, liegen gelassene Verteidigungen zählen als Verlust, und
 neue Brennpunkte öffnen nach der Lage, so verzweigt sich der Feldzug. Er endet
 mit Sieg, Niederlage oder nach zwölf Einsätzen unentschieden. Ältere Kampagnen
-laufen mit ihren Ergebnissen weiter. Spielstandformat v46 unverändert.
+laufen mit ihren Ergebnissen weiter. Spielstandformat v47 unverändert.
 
-## 1.3.136
+## 1.3.137
 
-Version 1.3.136 bringt die Gruppenjagd. In den neuen Szenarien Suchgruppe
+Version 1.3.137 bringt die Gruppenjagd. In den neuen Szenarien Suchgruppe
 (Fregatte 11) und Jagdgruppe (U-Boot 11) fährt der Zerstörer LUETJENS mit der
 Fregatte. OPZ-Seite 4 und die OPZ im Browser führen ihn: Formation, einen
 Punkt absuchen oder verfolgen, halten oder selbständig, Aktivsonar,
 Waffenfreigabe und ASROC auf Befehl. Seine Passivpeilungen kreuzen sich mit
 denen der Fregatte zu Standorten, und seine Pings orten nahe U-Boote.
-Spielstände wechseln auf Format v46; Spielstände v38 bis v45 lassen sich weiter
+Spielstände wechseln auf Format v47; Spielstände v38 bis v46 lassen sich weiter
 laden.
 
-## 1.3.135
+## 1.3.136
 
-Version 1.3.135 lässt zwei Crews gegeneinander spielen. Die neue Lobby-Zeile
+Version 1.3.136 lässt zwei Crews gegeneinander spielen. Die neue Lobby-Zeile
 Gegner schaltet zwischen KI und zweiter Crew: Browser kommen zur Fregatte
 (blau) oder zum U-Boot (rot), je nachdem, wo weniger Leute sind, die Teams
 bleiben für die Runde fest, jede Einheit hat ihren eigenen Sprechfunk, und
 jedes Team erhält sein eigenes Ergebnis. Mit der Lobby-Station „keine, nur
 Gastgeber“ zeigt die uConsole einen Schiedsrichter-Bildschirm ohne das
-Lagebild einer Seite. Spielstandformat v45 unverändert.
+Lagebild einer Seite. Spielstandformat v46 unverändert.
+
+## 1.3.135
+
+Version 1.3.135 bringt Freie Fahrt als letzten Eintrag beider Seiten: kein
+Zeitlimit, einfach fahren. Das Hauptquartier schickt laufend Funkaufträge (die
+Fregatte bekommt zusätzlich Sektorpatrouillen, das U-Boot Angriffs-, Landungs-,
+Versorgungs- und Aufklärungsbefehle), dazu kommen zufällige Begegnungen und
+Ereignisse: U-Boote, Handelsgruppen, Luftangriffe, KI-Jäger, Zwischenfälle auf
+See. Punkte sammeln sich, solange Schiff oder Boot schwimmt; Wetter und
+Uhrzeit wählt man wie gewohnt beim Start. Spielstände wechseln auf Format v46;
+Spielstände v38 bis v45 lassen sich weiter laden.
 
 ## 1.3.134
 

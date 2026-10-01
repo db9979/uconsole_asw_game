@@ -98,6 +98,11 @@ def _fresh(game, contact, age_s=FIX_MAX_AGE_S) -> bool:
 def targets(game, boat) -> list:
     """Fresh contacts the crew would shoot at, nearest known fix first."""
     kind = boat_missions.mode(game)
+    if kind == "free_boat":
+        # A free patrol attacks merchants only on HQ's order to sink one.
+        from src.core import free_roam
+        order = free_roam.active_order(game)
+        kind = "convoy_attack" if order is not None and order["kind"] == "attack" else None
     categories = (frozenset({"TANKER", "FRACHT", "PASSAGIER"}) if kind == "convoy_attack"
                   else frozenset({"TANKER"}) if kind in ("escort", "ras")
                   else frozenset({"KAMPFSCHIFF"}))

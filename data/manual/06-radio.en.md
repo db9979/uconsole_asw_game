@@ -33,7 +33,7 @@ The **cross-fix chart** beside it is the radio room's plotting sheet, north up, 
 
 ## HQ tasks {#radio-tasks}
 
-Besides the hunt, HQ radios tasks to the ship: the first about 15 to 25 minutes into a built-in mission, then one every 25 to 45 minutes, at most six per mission and two open at a time. Custom missions get none. Each offer arrives on the teletype and on page 3 (Tasks). Answer it within 5 minutes with `A` (accept) or `D` (decline); no answer counts as declined. A destroyed radio room cannot answer.
+Besides the hunt, HQ radios tasks to the ship: the first about 15 to 25 minutes into a built-in mission, then one every 25 to 45 minutes, at most six per mission and two open at a time (on a free patrol every 10 to 20 minutes without a cap, with the sector patrol as a sixth kind; see the reference chapter). Custom missions get none. Each offer arrives on the teletype and on page 3 (Tasks). Answer it within 5 minutes with `A` (accept) or `D` (decline); no answer counts as declined. A destroyed radio room cannot answer.
 
 - **Distress call (SAR):** a life raft with 2 to 6 people, reported by EPIRB with about 0.5 NM error and drifting with current and wind. The survivors last according to the sea temperature, from 40 minutes in water below 8 °C to 100 minutes above 20 °C. The raft is sighted within 2 NM by day (3 NM at night by its strobe); then the circle on the chart shrinks onto it. Take them aboard by lying within 0.25 NM at 3 kn or less for 4 minutes, or let the helicopter hover overhead (one minute per person, only when the weather allows dipping). +600 points, -400 if they are lost.
 - **Identify merchant:** HQ names a merchant within 60 NM and gives its position with about 2 NM error. It counts as identified once the lookout has published its identification or the helicopter passes within 1 NM with at least 1 NM visibility. About a third are flagged as suspect: HQ then passes a submarine datum near the ship. 40 minutes.
@@ -45,7 +45,7 @@ Accepted positions are plotted on every chart (also in the Remote Crew browser).
 
 ## Incidents at sea {#radio-incidents}
 
-The sea brings surprises of its own: the first 20 to 40 minutes into a built-in mission, then one every 30 to 50 minutes, at most six per mission (none in custom missions and lessons). Each is reported on the teletype.
+The sea brings surprises of its own: the first 20 to 40 minutes into a built-in mission, then one every 30 to 50 minutes, at most six per mission (on a free patrol every 20 to 40 minutes without a cap; none in custom missions and lessons). Each is reported on the teletype.
 
 - **Drift net:** a fishing boat reports a net 2 NM long across the ship's track, 3 to 7 NM ahead, hanging from the surface down to 20 m; the radio operator plots it on every chart as a ruler `NET n`, and it is hauled in after an hour. Running over it tears it: the fishermen claim damages (-100 points), and a streamed towed array or variable-depth sonar fouls in it and is hauled in at once. A submarine that crosses it shallower than 20 m fouls it too and is loud for 20 s while it tears free; deeper it passes under.
 - **Weather front:** HQ warns 10 minutes ahead; then rain, a storm or fog holds for 30 to 60 minutes (visibility, wind and rain noise for every sensor, on both sides), and HQ reports when it has passed.

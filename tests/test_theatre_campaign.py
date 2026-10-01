@@ -42,9 +42,11 @@ def _play(front, role=None, won=True, enemy_sunk=0, sunk=False, relieved=False):
 # --- hotspots ---------------------------------------------------------------------
 
 def test_every_built_in_scenario_of_a_side_is_a_hotspot_but_the_free_hunt():
-    frigate = set(config.scenarios_for_side("frigate")) - {"s4_zufall"}
+    # The free patrol has no victory, so it is never a hotspot.
+    frigate = set(config.scenarios_for_side("frigate")) - {"s4_zufall", "frei_fregatte"}
     assert set(theatre.SCENARIO_ROLES["frigate"]) == frigate
-    assert set(theatre.SCENARIO_ROLES["boat"]) == set(config.scenarios_for_side("uboot"))
+    assert (set(theatre.SCENARIO_ROLES["boat"])
+            == set(config.scenarios_for_side("uboot")) - {"frei_uboot"})
     for roles in theatre.SCENARIO_ROLES.values():
         assert set(roles.values()) == set(theatre.ROLES)
         assert list(roles.values()).count("decisive") == 1

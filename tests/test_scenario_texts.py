@@ -16,7 +16,8 @@ KEYS = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
         "s15_versorgung": "ras", "s16_seenot": "rescue", "s17_duell": "duel",
         "s18_heimkehr": "homecoming", "s19_abholung": "pickup",
         "s20_lauschposten": "elint", "s21_suchgruppe": "search_group",
-        "s22_jagdgruppe": "hunter_group"}
+        "s22_jagdgruppe": "hunter_group",
+        "frei_fregatte": "free", "frei_uboot": "free_boat"}
 
 
 def test_menu_goal_and_loss_lines_are_translated():

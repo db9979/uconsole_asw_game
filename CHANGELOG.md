@@ -4,53 +4,63 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.139
+## 1.3.140
 
-Release 1.3.139 adds three uConsole pages. The submarine's Navigation station
+Release 1.3.140 adds three uConsole pages. The submarine's Navigation station
 opens on a pilot chart with an echo sounder: charted depths around the boat,
 water too deep for it in red, the ordered course ahead, the seabed of the last
 ten minutes and the depth ahead; a click on the chart orders the course. The
 helicopter's status page is a console with lamps, a fuel tank, a return rose
 and its stores. The radio room's first page shows the HF/DF bearings and fixes
-on a chart beside the intercept list. Save format v46 unchanged.
+on a chart beside the intercept list. Save format v47 unchanged.
 
-## 1.3.138
+## 1.3.139
 
-Release 1.3.138 balances scenarios 11 to 20 at full length, measured with
+Release 1.3.139 balances scenarios 11 to 20 at full length, measured with
 AI-against-AI games on six seeds each. Trail now asks the frigate to hold
 contact for 80 % of the time, and a lost contact counts sooner. In the duel the
 submarine starts 8 to 12 NM out, the damaged homecoming's goal lies nearer, and
 in Rescue under threat the frigate starts farther from the rafts. The short
-variants are unchanged. Save format v46 unchanged.
+variants are unchanged. Save format v47 unchanged.
 
-## 1.3.137
+## 1.3.138
 
-Release 1.3.137 turns the campaign into a theatre campaign for both sides. A
+Release 1.3.138 turns the campaign into a theatre campaign for both sides. A
 sector chart shows three open hotspots, each one of the side's scenarios with a
 role (patrol, strike, defence), plus the decisive battle once the front
 situation reaches 75. Wins and losses move the situation and the enemy
 strength, ignored defence hotspots count as losses, and new hotspots open by
 the situation, so the campaign branches. It ends in victory, defeat or a draw
 after twelve missions. Older campaigns carry on with their results. Save
-format v46 unchanged.
+format v47 unchanged.
 
-## 1.3.136
+## 1.3.137
 
-Release 1.3.136 brings the group hunt. In the new scenarios Search group
+Release 1.3.137 brings the group hunt. In the new scenarios Search group
 (frigate 11) and Hunter group (submarine 11) the destroyer LUETJENS sails with
 the frigate. OPZ page 4 and the browser's OPZ command it: formation, search or
 prosecute a point, hold or auto, active sonar, weapons release and ASROC on
 order. Its passive bearings cross with the frigate's into fixes, and its pings
-fix nearby submarines. Saves move to format v46; v38 to v45 saves still load.
+fix nearby submarines. Saves move to format v47; v38 to v46 saves still load.
 
-## 1.3.135
+## 1.3.136
 
-Release 1.3.135 lets two crews play each other. The lobby's new row Opponent
+Release 1.3.136 lets two crews play each other. The lobby's new row Opponent
 switches between the AI and a second crew: browsers join the frigate (blue) or
 the submarine (red), whichever has fewer people, the teams are fixed for the
 round, each unit has its own voice channel, and each team gets its own result.
 With the lobby station "none, host only" the uConsole shows an umpire screen
-without either side's picture. Save format v45 unchanged.
+without either side's picture. Save format v46 unchanged.
+
+## 1.3.135
+
+Release 1.3.135 adds Free patrol as the last entry of both sides: no time
+limit, just sail. HQ keeps sending radio tasks (the frigate also gets sector
+patrols; the submarine gets attack, landing, supply and recon orders), and
+random encounters and events keep coming: submarines, merchant groups, air
+raids, AI hunters, incidents at sea. Points add up for as long as the ship or
+boat stays afloat; weather and time are chosen at the start as usual. Saves
+move to format v46; v38 to v45 saves still load.
 
 ## 1.3.134
 

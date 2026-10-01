@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v46_older_documents_are_rejected_from_v38_on_lifted():
+def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (46, "u-jagd-save-v46")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (46, "u-jagd-save-v46")
+    assert (state["version"], state["save_schema"]) == (47, "u-jagd-save-v47")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (47, "u-jagd-save-v47")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -200,7 +200,7 @@ def test_save_is_v46_older_documents_are_rejected_from_v38_on_lifted():
     v37["save_schema"] = "u-jagd-save-v37"
     del v37["casualties"]
     assert not game._load_save_data(v37)
-    # From v38 on an older document is lifted to v46 (src/core/save_migrate.py);
+    # From v38 on an older document is lifted to v47 (src/core/save_migrate.py);
     # the samples of real older releases are in tests/test_save_migrate.py.
     # v38 lacks the hunters' ESM log and the crew assist.
     v38 = copy.deepcopy(state)
@@ -250,12 +250,12 @@ def test_save_is_v46_older_documents_are_rejected_from_v38_on_lifted():
     del v43["consort"]
     del v43["swimmer_hold_s"]
     assert _game()._load_save_data(v43)       # lifted (save_migrate)
-    # v45 differs only by the consort destroyer of the group hunts.
-    v45 = copy.deepcopy(state)
-    v45["version"] = 45
-    v45["save_schema"] = "u-jagd-save-v45"
-    del v45["consort"]
-    assert _game()._load_save_data(v45)       # lifted (save_migrate)
+    # v46 differs only by the consort destroyer of the group hunts.
+    v46 = copy.deepcopy(state)
+    v46["version"] = 46
+    v46["save_schema"] = "u-jagd-save-v46"
+    del v46["consort"]
+    assert _game()._load_save_data(v46)       # lifted (save_migrate)
     # The rejected documents never touched this game (the lifted ones went to
     # fresh games, whose constructors raise the global entity ids).
     after = game.save_state()

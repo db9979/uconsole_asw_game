@@ -36,13 +36,16 @@ GUARDED_MODES = ("strait", "swimmers", "escort")
 # Missions where HQ has no intelligence on the boat: no start report, no
 # datum task. The supply ship escort keeps HQ's reports like the convoy.
 UNREPORTED_MODES = ("strait", "swimmers")
+# Missions where the boat slips past a guard and snaps a shot at it when it
+# comes loud down its bearing (src/enemies/sub.py).
+SNAP_MODES = ("strait", "swimmers")
 
 
 def mode(game):
     """One of ``MODES``, or None for a frigate mission."""
     if getattr(game, "custom_mission_definition", None) is not None:
         return None
-    value = getattr(game.mission, "win_mode", None)
+    value = getattr(getattr(game, "mission", None), "win_mode", None)
     return value if value in MODES else None
 
 

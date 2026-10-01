@@ -308,10 +308,13 @@ def _swimmer_leg(game, sub):
 def steer(game) -> None:
     """Set every boat's mission leg for this substep (None when it has none)."""
     mission_boat = boat(game)
-    guarded = boat_missions.mode(game) in boat_missions.GUARDED_MODES
+    kind = boat_missions.mode(game)
+    guarded = kind in boat_missions.GUARDED_MODES
+    snap = kind in boat_missions.SNAP_MODES
     for sub in game.subs:
         sub.mission_orders = orders(game, sub) if sub is mission_boat else None
         sub.mission_guarded = guarded and sub is mission_boat
+        sub.mission_snap = snap and sub is mission_boat
 
 
 def _window(game, period: float) -> bool:

@@ -16,10 +16,12 @@ Schwimmer auszuschleusen, und die Fregatte bestreift den Küstenabschnitt. Beim
 „Versorgerschutz“ (10) sichert die Fregatte einen zackenden Versorger, und ein
 einziger Torpedotreffer entscheidet. Die Orte ergeben sich aus der echten oder
 erzeugten Küste jeder Welt. Das Szenariomenü nimmt die Tasten 1 bis 9 und 0. In
-Testläufen KI gegen KI geht jeder neue Einsatz jetzt etwa zur Hälfte für jede
-Seite aus: Das KI-U-Boot schleicht mit 4 kn, überhört Pings aus mehr als 5 sm
-und schießt auf einen näheren zurück, und das HQ meldet der Fregatte in den Szenarien 8 bis 10 kein U-Boot-Datum mehr. Speicherformat v44; ältere
-Spielstände laden nicht.
+Testläufen KI gegen KI (je sechs Seeds) ging jeder neue Einsatz dreimal für
+jede Seite aus: Das KI-U-Boot schleicht mit 4 kn, überhört Pings aus mehr als
+5 sm, schießt auf einen näheren zurück und gibt in der Meerenge und vor der
+Küste einen Schnellschuss auf eine laute Fregatte ab; sechs Handelsschiffe
+pendeln durch die Meerenge, und das HQ meldet der Fregatte in den Szenarien 8
+und 9 kein U-Boot-Datum. Speicherformat v44; ältere Spielstände laden nicht.
 
 ## 1.3.124
 

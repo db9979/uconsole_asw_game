@@ -1241,7 +1241,7 @@ MISSION_TYPES = {
         name="Meerenge", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=18000, win="strait"),
+        time_limit_s=14400, win="strait"),
     "kampfschwimmer": dict(
         name="Kampfschwimmer", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1293,8 +1293,8 @@ SWIMMER_ZONE_NM = 1.0
 SWIMMER_DEPTH_M = 20.0             # swimmers leave through the lock this shallow
 SWIMMER_SPEED_KN = 1.5             # at most this slow
 SWIMMER_HOLD_S = 600.0             # for this long without a break
-SWIMMER_GUARD_NM = 25.0            # radius of the coast section the frigate guards
-SWIMMER_GUARD_SHIFT_NM = 12.5      # its centre lies up to this far along the coast
+SWIMMER_GUARD_NM = 26.0            # radius of the coast section the frigate guards
+SWIMMER_GUARD_SHIFT_NM = 13.0      # its centre lies up to this far along the coast
 # The frigate starts this share of the section's radius along the coast
 # from its centre (at one end of its sweep, drawn from the seed).
 SWIMMER_GUARD_START = 0.7
@@ -1327,9 +1327,9 @@ BOAT_AI_SCOPE_SWEEP_S = 16.0
 BOAT_AI_ATTACK_NM = 4.0            # a patrol raid: fire at a merchant this close
 BOAT_AI_CONVOY_ATTACK_NM = 3.0     # convoy attack: fire at a merchant this close
 # Escort: a lone, zigzagging supply ship is fired at from farther off.
-BOAT_AI_ESCORT_ATTACK_NM = 5.0
+BOAT_AI_ESCORT_ATTACK_NM = 5.25
 # ... from this far abeam of its base track, clear of the escort ahead of it.
-BOAT_AI_ESCORT_ABEAM_NM = 4.5
+BOAT_AI_ESCORT_ABEAM_NM = 4.75
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0
 # Frigate missions: an AI patrol boat torpedoes a merchant within
@@ -1502,7 +1502,7 @@ SCENARIOS = {
         title="Meerengen-Sperre",
         difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
-                       enemy_attack_mult=1.0, enemy_cooldown_s=300.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
                        enemy_solution_threshold=0.25,
                        second_sub_prob=0.0),
         mission_type="meerenge",
@@ -1532,7 +1532,7 @@ SCENARIOS = {
         title="Versorgerschutz",
         difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
-                       enemy_attack_mult=1.0, enemy_cooldown_s=300.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
                        enemy_solution_threshold=0.25,
                        second_sub_prob=0.0),
         mission_type="versorger",

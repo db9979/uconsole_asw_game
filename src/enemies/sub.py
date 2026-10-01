@@ -224,6 +224,9 @@ class Sub:
         # Scenarios 8 to 10 (src/core/boat_missions.GUARDED_MODES): the boat
         # slips past a guard and answers a close ping; never saved either.
         self.mission_guarded = False
+        # Scenarios 8 and 9 (boat_missions.SNAP_MODES): a snap shot down the
+        # bearing of a loud frigate; never saved either.
+        self.mission_snap = False
         self._lofar_phase = 0.0  # M11: LOFAR-Pulsphase
         self.sunk = False
         self.heard_ping = False
@@ -516,8 +519,8 @@ class Sub:
             rate = 0.006 * (0.5 + noise) * self.stype.aggression
         elif noise >= 0.75 and dist is not None and dist < 18.0:
             rate = 0.002 * self.stype.aggression
-        elif noise >= 0.75 and dist is None and self.mission_guarded:
-            # Scenarios 8 to 10: a loud frigate closing on its bearing gets a
+        elif noise >= 0.75 and dist is None and self.mission_snap:
+            # Scenarios 8 and 9: a loud frigate closing on its bearing gets a
             # snap shot down that bearing; the seeker finds it.
             rate = 0.002 * self.stype.aggression
         elif dist is not None and dist < config.SUB_SOLUTION_ATTACK_NM:

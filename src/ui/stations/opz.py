@@ -390,6 +390,96 @@ def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
     return py
 
 
+def _draw_consort(game, s, chart, view, px_per_nm, page) -> None:
+    """The consort destroyer is own-force datalink truth; on the group page
+    also its search point and its sonar's bearing lines (measurements)."""
+    consort_view = game.consort_view() if hasattr(game, "consort_view") else None
+    if consort_view is None or consort_view["sunk"]:
+        return
+    color = config.COLOR_FLIGHT
+    if page == 3 and consort_view["datalink"]:
+        for row in consort_view["bearings"]:
+            ox, oy = view.world_to_screen(row["x"], row["y"])
+            rad = math.radians(row["bearing"])
+            reach = config.CONSORT_XFIX_MAX_NM * px_per_nm
+            pygame.draw.line(s, _scale_color(color, .7), (int(ox), int(oy)),
+                             (int(ox + reach * math.sin(rad)), int(oy - reach * math.cos(rad))), 1)
+        point = consort_view["point"]
+        if point is not None and consort_view["working"] in ("search", "prosecute"):
+            wx, wy = view.world_to_screen(*point)
+            if chart.collidepoint(wx, wy):
+                pygame.draw.line(s, color, (wx - 7, wy), (wx + 7, wy), 1)
+                pygame.draw.line(s, color, (wx, wy - 7), (wx, wy + 7), 1)
+                orbit = (config.CONSORT_PROSECUTE_ORBIT_NM
+                         if consort_view["working"] == "prosecute"
+                         else config.CONSORT_SEARCH_ORBIT_NM)
+                radius = int(orbit * px_per_nm)
+                if radius >= 4:
+                    pygame.draw.circle(s, config.COLOR_TEXT_DIM, (int(wx), int(wy)), radius, 1)
+    cx, cy = view.world_to_screen(consort_view["x"], consort_view["y"])
+    if not chart.collidepoint(cx, cy):
+        return
+    col = nato_symbols.draw_symbol(s, (cx, cy), "FRIEND", "SURFACE", 17)
+    nato_symbols.draw_motion_vector(s, (cx, cy), consort_view["course"],
+                                    consort_view["speed_kn"], px_per_nm, col,
+                                    max_px=min(chart.size) * .3)
+    layout.blit_line(s, raw_text(consort_view["callsign"] + " DL"),
+                     (int(cx) + 13, int(cy) + 8, 110, 19), col, size=12)
+
+
+def _draw_consort_sidebar(game, s, x, py, w, bottom) -> int:
+    """OPZ page 4: the consort destroyer's orders, state and order keys."""
+    consort_view = game.consort_view() if hasattr(game, "consort_view") else None
+    if consort_view is None:
+        layout.blit_block(s, "opz.group.none", x, py, w, 44,
+                          color=config.COLOR_TEXT_DIM, size=15)
+        return py + 48
+    lines = [(message("opz.group.ship", callsign=raw_text(consort_view["callsign"])),
+              config.COLOR_TEXT)]
+    if consort_view["sunk"]:
+        lines.append((localize("opz.group.lost"), config.COLOR_DANGER))
+    else:
+        lines.append((message("opz.group.position", bearing=f"{consort_view['bearing']:03.0f}",
+                              range=f"{consort_view['range_nm']:.1f}",
+                              course=f"{consort_view['course']:03.0f}",
+                              speed=f"{consort_view['speed_kn']:.0f}"), config.COLOR_TEXT_DIM))
+        lines.append((localize("opz.group.datalink_on" if consort_view["datalink"]
+                               else "opz.group.datalink_off"),
+                      config.COLOR_OK if consort_view["datalink"] else config.COLOR_WARN))
+        mode = display_value("consort_mode", consort_view["mode"])
+        working = display_value("consort_mode", consort_view["working"])
+        lines.append((message("opz.group.mode", mode=mode, working=working), config.COLOR_TEXT))
+        lines.append((message("opz.group.station",
+                              station=display_value("consort_station",
+                                                    consort_view["station"])),
+                      config.COLOR_TEXT_DIM))
+        lines.append((message("opz.group.sensors",
+                              sonar=localize("opz.group.active" if consort_view["active"]
+                                             else "opz.group.passive"),
+                              bearings=len(consort_view["bearings"])),
+                      config.COLOR_WARN if consort_view["active"] else config.COLOR_TEXT_DIM))
+        lines.append((message("opz.group.weapons",
+                              state=localize("opz.group.free" if consort_view["weapons_free"]
+                                             else "opz.group.tight"),
+                              asroc=consort_view["asroc"]),
+                      config.COLOR_WARN if consort_view["weapons_free"] else config.COLOR_TEXT_DIM))
+    for text, color in lines:
+        if py + 24 > bottom:
+            return py
+        layout.blit_line(s, text, (x, py, w, 24), color, size=15)
+        py += 26
+    py += 4
+    pygame.draw.line(s, config.COLOR_GRID, (x, py), (x + w, py))
+    py += 6
+    for key in ("opz.group.keys_orders", "opz.group.keys_point", "opz.group.keys_sensors",
+                "opz.group.keys_weapons"):
+        if py + 22 > bottom:
+            break
+        layout.blit_line(s, key, (x, py, w, 22), config.COLOR_TEXT_DIM, size=14)
+        py += 24
+    return py
+
+
 def _opz_radar_range_nm(game) -> float:
     value = getattr(game, "radar_range_nm", None)
     if value is None:
@@ -726,6 +816,7 @@ def draw_opz_view(game, tr=None) -> None:
             layout.blit_line(s, "HSP-5 DL",
                              (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12)
     _draw_mpa(game, s, chart, view, px_per_nm, page)
+    _draw_consort(game, s, chart, view, px_per_nm, page)
     # Own weapons are commanded own assets (wire/datalink), not sensor tracks:
     # torpedoes from ship, helicopter or ASROC payload, ASROC and ESSM flights.
     own_weapons = (
@@ -955,6 +1046,8 @@ def draw_opz_view(game, tr=None) -> None:
                 py += 24
     elif page == 2:
         _draw_mpa_sidebar(game, s, x, py, w, regions["classify"].top - 7)
+    elif page == 3:
+        _draw_consort_sidebar(game, s, x, py, w, regions["classify"].top - 7)
     else:
         selected = game.selected_opz_track()
         if selected is None:

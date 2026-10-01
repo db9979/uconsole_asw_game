@@ -1599,7 +1599,9 @@ class CommanderServer(MissionLibraryServerMixin):
                                 "opz_degraded", "active_limit", "no_fuel",
                                 "weather_unsafe", "no_save", "save_failed",
                                 "no_mission", "mission_rejected",
-                                "lookout_not_confirmed", *UBOOT_REASONS}
+                                "lookout_not_confirmed", "no_consort", "consort_lost",
+                                "no_link", "stale_fix", "busy", "no_weapon", "no_track",
+                                *UBOOT_REASONS}
                           else "action_rejected")
             return self._finish_v2_locked(
                 session, envelope, "applied" if reason == "ok" else "rejected", reason)

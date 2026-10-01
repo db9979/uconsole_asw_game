@@ -184,6 +184,7 @@ class MissionBridgeMixin:
         self.incidents = IncidentBoard(None)
         # The patrol aircraft flies from the airfield nearest the placed ship.
         self._reset_mpa()
+        self._reset_consort()
         self.feed.entries[-1].text = self._mission_started_notice()
         self.hq_msg(self._initial_threat_notice())
         self.in_menu = False
@@ -612,6 +613,7 @@ class MissionBridgeMixin:
                 "versorgung": "mission.ras", "seenot": "mission.rescue",
                 "duell": "mission.duel", "heimkehr": "mission.homecoming",
                 "abholung": "mission.pickup", "lauschposten": "mission.elint",
+                "suchgruppe": "mission.search_group",
                 "custom": "mission.custom"}
         name = message(keys[self.mission.type_key])
         return message("mission.short_variant", name=name) if self.short_mission else name

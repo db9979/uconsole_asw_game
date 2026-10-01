@@ -271,6 +271,8 @@ def source_group(source: str) -> str:
         return "helo"
     if source.startswith("SONAR-BUOY"):
         return "buoy"
+    if source.startswith("SONAR-CONSORT"):
+        return "datalink"
     if source.startswith("SONAR"):
         return "sonar"
     if source.startswith(("RADAR-MPA", "MPA-EYE")):
@@ -313,7 +315,7 @@ class CorrelationSuggestion:
 # Sensor families whose reports may be suggested together (different families
 # only). Remote reports (buoys, dipping sonar, helicopter MAD), home-on-jam
 # strobes, datalinked own weapons and fusions are never suggested.
-_REMOTE_PREFIXES = ("SONAR-BUOY", "SONAR-DIP", "HELO")
+_REMOTE_PREFIXES = ("SONAR-BUOY", "SONAR-DIP", "SONAR-CONSORT", "HELO")
 _AIR_KINDS = ("FLG", "ASM", "AIR", "HELO")
 
 

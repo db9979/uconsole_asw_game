@@ -63,6 +63,12 @@ def render_block() -> str:
     lines.append(f"    row: {_array(schema.MPA_FIELDS)},\n")
     lines.append(f"    states: {_array(schema.MPA_STATES)},\n")
     lines.append("  };\n")
+    lines.append("  const consortFields = {\n")
+    lines.append(f"    row: {_array(schema.CONSORT_FIELDS)},\n")
+    lines.append(f"    bearing: {_array(schema.CONSORT_BEARING_FIELDS)},\n")
+    lines.append(f"    modes: {_array(schema.CONSORT_MODES)},\n")
+    lines.append(f"    stations: {_array(schema.CONSORT_STATIONS)},\n")
+    lines.append("  };\n")
     lines.append("  const opzSuggestionFields = "
                  f"{_array(schema.OPZ_SUGGESTION_FIELDS)};\n")
     lines.append("  const helicopterTacticalFields = "

@@ -69,8 +69,8 @@ export function validateState(state) {
       !display.ownship || ["x", "y"].some((key) => display.ownship[key] !== null && !finite(display.ownship[key])) ||
       !display.clock || !display.mission || !Array.isArray(display.tracks) ||
       display.tracks.some((track) => !track || typeof track.ref !== "string" || !track.ref ||
-        !Array.isArray(track.fixes) || track.fixes.length > 4 || track.fixes.some((fix) => !fix ||
-          !["PING", "DIPPING", "TMA", "SONOBUOY"].includes(fix.source) ||
+        !Array.isArray(track.fixes) || track.fixes.length > 7 || track.fixes.some((fix) => !fix ||
+          !["PING", "DIPPING", "TMA", "SONOBUOY", "MAD", "VISUAL", "CONSORT"].includes(fix.source) ||
           ![fix.x, fix.y, fix.measured_at, fix.fixed_at, fix.measurement_age_s,
             fix.fix_age_s, fix.uncertainty_nm, fix.quality].every(finite) ||
           fix.fixed_at < fix.measured_at || fix.measurement_age_s < 0 || fix.fix_age_s < 0 ||

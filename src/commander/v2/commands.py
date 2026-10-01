@@ -686,6 +686,15 @@ V2_ACTION_REGISTRY = {
     "mpa_set_radar": V2Action(frozenset({"opz"}), _bool_params("enabled")),
     "mpa_set_mad": V2Action(frozenset({"opz"}), _bool_params("enabled")),
     "mpa_attack": V2Action(frozenset({"opz"}), _no_params, direct_fire=True),
+    # The consort destroyer of a group hunt (OPZ page 4): its ASROC is direct fire.
+    "consort_set_mode": V2Action(frozenset({"opz"}), _enum_params(
+        "mode", ("auto", "formation", "search", "prosecute", "hold"))),
+    "consort_set_point": V2Action(frozenset({"opz"}), _waypoint_params),
+    "consort_set_station": V2Action(frozenset({"opz"}), _enum_params(
+        "station", ("starboard", "ahead", "port", "astern"))),
+    "consort_set_active": V2Action(frozenset({"opz"}), _bool_params("enabled")),
+    "consort_set_weapons": V2Action(frozenset({"opz"}), _bool_params("enabled")),
+    "consort_fire": V2Action(frozenset({"opz"}), _no_params, direct_fire=True),
     # The crewed submarine's commander.
     # Each boat order belongs to the station that does it aboard; the commander
     # keeps course, speed and depth.

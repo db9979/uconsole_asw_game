@@ -96,6 +96,7 @@ from src.core.game_tasking import TaskingMixin
 from src.core.game_incidents import IncidentsMixin
 from src.core.game_crew import CrewMixin
 from src.core.game_mpa import MpaMixin
+from src.core.game_consort import ConsortMixin
 from src.core.game_debrief import DebriefMixin
 from src.core.game_training import TrainingMixin
 from src.core.game_custom import CustomMissionMixin
@@ -113,7 +114,7 @@ from src.core.game_update import UpdateNoticeMixin
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
-           SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, DebriefMixin,
+           SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, ConsortMixin, DebriefMixin,
            TrainingMixin, CustomMissionMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
            LobbyMixin, UpdateNoticeMixin, ResilienceMixin):
     # Options overlay rows in display order; the last two open sub-menus.
@@ -596,6 +597,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                     runtime_catalog=self.runtime_catalog)
                 w.anchor = self.warship_anchor
                 self.warships.append(w)
+        # Group hunt: the consort destroyer on its formation station.
+        self._setup_consort()
 
         # W2: Akustische Dekoys (werden bei Torpedo-Alarm abgeworfen)
         self.decoys = []

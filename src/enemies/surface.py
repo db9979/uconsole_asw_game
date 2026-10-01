@@ -104,6 +104,9 @@ class SurfaceShip:
         self.sensor_contact_age = config.RADAR_TRACK_STALE_S
         # Kriegsschiff: Loiter + ASM
         self.anchor = None  # (x, y) – vom Game gesetzt
+        # The consort of a group hunt (src/core/game_consort.py): the
+        # frigate's OPZ sets its course and speed and decides its weapons.
+        self.commanded = False
         self.waypoint = None
         self.orbit_direction = rng.choice((-1, 1))
         self.attack_left = self.profile.asm_cooldown_s
@@ -245,7 +248,12 @@ class SurfaceShip:
             self._steer(dt, self.motion.turn_rate_deg_s, world)
             self._move(dt, world)
             self._maybe_asm(dt)
-            self._maybe_asroc(asw_observation)
+            if not self.commanded:
+                self._maybe_asroc(asw_observation)
+            return
+        if self.commanded:
+            self._steer(dt, self.motion.turn_rate_deg_s, world)
+            self._move(dt, world)
             return
         dist = (math.hypot(self.sensor_contact[0] - self.x, self.sensor_contact[1] - self.y)
                 if self.sensor_contact is not None else float("inf"))

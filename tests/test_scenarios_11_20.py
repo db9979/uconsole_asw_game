@@ -43,8 +43,9 @@ def _end(game):
 
 
 def test_both_sides_now_have_ten_scenarios():
-    assert len(config.scenarios_for_side("frigate")) == 10
-    assert len(config.scenarios_for_side("uboot")) == 10
+    # Ten each, plus the group hunt (scenarios s21 and s22, tests/test_consort.py).
+    assert len(config.scenarios_for_side("frigate")) == 11
+    assert len(config.scenarios_for_side("uboot")) == 11
     for key, (kind, limit) in {**FRIGATE, **BOAT}.items():
         assert config.SCENARIOS[key].get("boat", False) is (key in BOAT)
         assert boat_missions.scenario_mode(key) == kind

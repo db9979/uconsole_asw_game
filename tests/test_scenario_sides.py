@@ -8,10 +8,10 @@ from src.core.lobby import LobbyRoom
 
 BOAT = ("s5_durchbruch", "s6_aufklaerung", "s7_geleitzug", "s8_meerenge",
         "s9_kampfschwimmer", "s10_versorger", "s17_duell", "s18_heimkehr",
-        "s19_abholung", "s20_lauschposten")
+        "s19_abholung", "s20_lauschposten", "s22_jagdgruppe")
 FRIGATE = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
            "s11_geleitschutz", "s12_datum", "s13_fuehlung", "s14_hafenschutz",
-           "s15_versorgung", "s16_seenot")
+           "s15_versorgung", "s16_seenot", "s21_suchgruppe")
 
 
 def test_each_scenario_belongs_to_exactly_one_side():
@@ -44,7 +44,7 @@ def test_frigate_list_cycles_and_numbers_only_frigate_scenarios():
     game = _menu("frigate")
     game.draw()
     seen = []
-    for _ in range(12):
+    for _ in range(13):
         seen.append("custom" if game.menu_sel == game.custom_row_sel()
                     else config.SCENARIO_ORDER[game.scenario_menu_index()])
         game._handle_menu_key(pygame.K_DOWN)
@@ -67,7 +67,7 @@ def test_boat_list_starts_at_the_first_boat_scenario():
     game._handle_menu_key(pygame.K_UP)                        # wraps to the own missions
     assert game.menu_sel == game.custom_row_sel()
     game._handle_menu_key(pygame.K_UP)                        # then the boat list's last
-    assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s20_lauschposten"
+    assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s22_jagdgruppe"
     game._handle_menu_key(pygame.K_6)
     assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s10_versorger"
     game._handle_menu_key(pygame.K_1)                         # the boat list counts from 1
@@ -92,7 +92,7 @@ def test_lobby_cycles_the_missions_of_its_side():
     assert room.side == "uboot" and room.scenario_key == "s5_durchbruch"
     room.row = 0
     room.change(-1)
-    assert room.scenario_key == "s20_lauschposten"
+    assert room.scenario_key == "s22_jagdgruppe"
     assert LobbyRoom("s7_geleitzug", "frigate").scenario_key == "s1_patrouille"
 
 

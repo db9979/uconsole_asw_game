@@ -594,6 +594,7 @@ class SimMixin:
         for civilian in self.civilians:
             civilian.update(dt, getattr(civilian, "_tactical_observation", None),
                             self.world)
+        self._update_consort(dt)
         for w in self.warships:
             w.update(dt, getattr(w, "_tactical_observation", None), self.world,
                      asw_observation=getattr(w, "_asw_observation", None))
@@ -1015,10 +1016,12 @@ class SimMixin:
             if torpedo.launch_origin == "frigate":
                 torpedo.wire_tension_update(dt, self.ship.speed,
                                             self.ship.yaw_rate)
+            # The consort's position is on the datalink: every own search
+            # pattern is planned clear of it, so own seekers never take it.
             torpedo.update(dt, seeker_candidates=(
                 [s for s in self.subs if not s.sunk]
                 + [d for d in self.decoys if not d.dead]
-                + [w for w in self.warships if not w.sunk]
+                + [w for w in self.warships if not w.sunk and not w.commanded]
                 + [a for a in self.animals if not a.dead]
                 + [c for c in self.civilians if not c.sunk]), world=self.world,
                 collision_candidates=self.civilians)

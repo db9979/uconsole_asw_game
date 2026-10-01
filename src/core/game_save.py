@@ -38,6 +38,7 @@ from src.core.incidents import IncidentBoard
 from src.core.hq_reports import HqReports
 from src.core.crew import CrewState
 from src.air.mpa import PatrolAircraft
+from src.core.consort import ConsortOrders
 from src.enemies.endurance import SubmarineEndurance
 from src.enemies.surface import SurfaceShip
 from src.sensors.tracks import TrackPicture
@@ -498,6 +499,7 @@ class SaveMixin:
             "mission_progress": dict(self.mission_progress),
             "watch": self.crew_watch.serialize(),
             "mpa": self.mpa.serialize(),
+            "consort": None if self.consort is None else self.consort.serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
             "radar_marks": dict(
                 blip_seq=int(self.radar_blip_seq),
@@ -1454,6 +1456,11 @@ class SaveMixin:
                 wd["fingerprint"])
             restore_platform(w, wd, w.signature_key)
             self.warships.append(w)
+        # Save v46: the consort destroyer (one of the warships) and its orders.
+        self._reset_consort()
+        self.consort = ConsortOrders.restore(data["consort"])
+        if self.consort is not None:
+            self.consort_ship().commanded = True
         # W2: Dekoys
         self.decoys = []
         for dd in data["decoys"]:

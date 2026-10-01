@@ -50,6 +50,35 @@ export function renderOpzStation(payload) {
         ["position", position(asset)], ["course", unit(asset.course, "\u00b0", 0)], ["fuel", unit(asset.fuel_s, "s", 0)],
         ["torpedoes", number(asset.torpedoes, 0)], ["buoys", number(asset.buoys, 0)]]);
   renderMpa(payload.own_assets.mpa);
+  renderConsort(payload.own_assets.consort);
+}
+
+// The consort destroyer of a group hunt: its orders, state and stores.
+const consortModes = ["auto", "formation", "search", "prosecute", "hold"];
+const consortStations = ["starboard", "ahead", "port", "astern"];
+function renderConsort(consort) {
+  $("opz-consort-card").hidden = consort === null;
+  if (consort === null) return;
+  const rows = [["consort_ship", consort.callsign], ["state", t(consort.sunk ? "consort_lost" : "consort_afloat")]];
+  if (!consort.sunk) {
+    rows.push(["position", position(consort)], ["bearing", unit(consort.bearing, "\u00b0", 0)],
+      ["range", unit(consort.range_nm, "NM", 1)], ["course", unit(consort.course, "\u00b0", 0)],
+      ["speed", unit(consort.speed_kn, "kn")], ["consort_datalink", yesNo(consort.datalink)],
+      ["consort_order", t(`consort_mode_${consort.mode}`)], ["consort_working", t(`consort_mode_${consort.working}`)],
+      ["consort_station", t(`consort_station_${consort.station}`)], ["consort_active", yesNo(consort.active)],
+      ["consort_weapons_free", yesNo(consort.weapons_free)], ["consort_asroc", number(consort.asroc, 0)],
+      ["consort_bearings", number(consort.bearings.length, 0)]);
+  }
+  metrics($("opz-consort"), rows);
+  const live = !consort.sunk && consort.datalink;
+  const next = consortStations[(consortStations.indexOf(consort.station) + 1) % consortStations.length];
+  patchChildren($("opz-consort-actions"), [
+    ...consortModes.filter((mode) => mode !== "formation").map((mode) =>
+      actionButton(`consort_order_${mode}`, "consort_set_mode", {mode}, live && consort.mode !== mode)),
+    actionButton("consort_next_station", "consort_set_station", {station: next}, live),
+    actionButton(consort.active ? "consort_active_off" : "consort_active_on", "consort_set_active", {enabled: !consort.active}, live),
+    actionButton(consort.weapons_free ? "consort_weapons_tight" : "consort_weapons_free_order", "consort_set_weapons", {enabled: !consort.weapons_free}, live),
+    actionButton("consort_fire", "consort_fire", {}, live && consort.asroc > 0)]);
 }
 
 // Sensor groups of report sources, in display order (``source_group`` in

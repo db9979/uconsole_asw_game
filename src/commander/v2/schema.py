@@ -44,6 +44,14 @@ MPA_FIELDS = ("state", "airborne", "x", "y", "course", "bearing", "range_nm",
               "sorties_left", "buoys", "torpedoes", "radar", "mad", "buoy_mode", "pattern",
               "pattern_points", "datalink", "relayed")
 MPA_STATES = ("BASE", "TRANSIT", "STATION", "RTB")
+# The consort destroyer of a group hunt (``src/core/consort.py``): commanded
+# own-force datalink state, and its sonar's bearing lines (measurements).
+CONSORT_FIELDS = ("callsign", "sunk", "datalink", "x", "y", "course", "speed_kn",
+                  "bearing", "range_nm", "mode", "working", "station", "point_x",
+                  "point_y", "active", "weapons_free", "asroc", "bearings")
+CONSORT_BEARING_FIELDS = ("observer_x", "observer_y", "bearing", "uncertainty_deg", "age_s")
+CONSORT_MODES = ("auto", "formation", "search", "prosecute", "hold")
+CONSORT_STATIONS = ("starboard", "ahead", "port", "astern")
 # The OPZ's correlation suggestions (``src/sensors/fusion.py``): two refs of
 # the role's own published reports on the same bearing, never applied until
 # the operator fuses them (``opz_create_fusion``) or dismisses them.

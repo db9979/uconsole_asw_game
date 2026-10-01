@@ -1311,7 +1311,7 @@ MISSION_TYPES = {
         name="Seenot", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
-        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.75, scale=1.4,
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.75, scale=1.95,
         win="rescue"),
     "duell": dict(
         name="Duell", weight=0, subs=1,

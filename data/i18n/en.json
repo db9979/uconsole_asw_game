@@ -6557,7 +6557,7 @@
   "scenario.ras.win": "Transfer complete or submarine sunk",
   "scenario.ras.lose": "Tanker sunk / time limit / frigate sunk",
   "scenario.rescue.title": "Rescue under threat",
-  "scenario.rescue.brief": "Frigate mission. A patrol aircraft has ditched; its crew drifts in two life rafts (call signs BRAVO 1 and BRAVO 2, 5 and 4 persons) about 2.5 NM apart. HQ reports their positions with an error of about half a mile. The frigate starts about 18 NM away. A submarine lies in wait near the rafts. The ship takes a crew aboard within 0.25 NM at 3 kn or slower in about 4 minutes; the helicopter overhead winches up one person a minute. The frigate wins when both crews are aboard; sinking the submarine alone does not end the mission. It loses when a crew is lost or the time limit (2 hours) runs out.",
+  "scenario.rescue.brief": "Frigate mission. A patrol aircraft has ditched; its crew drifts in two life rafts (call signs BRAVO 1 and BRAVO 2, 5 and 4 persons) about 2.5 NM apart. HQ reports their positions with an error of about half a mile. The frigate starts about 35 NM away. A submarine lies in wait near the rafts. The ship takes a crew aboard within 0.25 NM at 3 kn or slower in about 4 minutes; the helicopter overhead winches up one person a minute. The frigate wins when both crews are aboard; sinking the submarine alone does not end the mission. It loses when a crew is lost or the time limit (2 hours) runs out.",
   "scenario.rescue.win": "Both crews rescued",
   "scenario.rescue.lose": "Crew lost / time limit / frigate sunk",
   "scenario.duel.title": "Duel",

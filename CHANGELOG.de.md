@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.132
+
+Version 1.3.132 zählt die Szenarien jeder Seite ab 1. Die Fregatte zeigt
+1 Patrouille, 2 Doppeljagd, 3 Nuklearer Abfang, 4 Freie Jagd; das U-Boot
+1 Durchbruch, 2 Aufklärung, 3 Geleitzug, 4 Meerengen-Sperre, 5 Kampfschwimmer,
+6 Versorgerschutz, und die Zifferntasten folgen der Liste auf dem Bildschirm.
+Das Handbuch zählt die U-Boot-Szenarien genauso. Speicherformat v44
+unverändert.
+
 ## 1.3.131
 
 Version 1.3.131 bringt Kurzeinsätze. Briefing, Kampagnenbildschirm,

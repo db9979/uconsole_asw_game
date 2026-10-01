@@ -26,7 +26,7 @@ generated coastline of each world. The scenario menu takes keys 1 to 9 and 0.
 In AI-against-AI test runs each new mission now goes either way about half the
 time: the AI submarine sneaks at 4 kn, ignores pings from farther than 5 NM and
 fires back down a closer one, and HQ no longer passes the frigate a submarine
-datum in scenarios 5 to 10. Save format v44; older saves do not load.
+datum in scenarios 8 to 10. Save format v44; older saves do not load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

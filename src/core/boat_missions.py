@@ -31,6 +31,8 @@ from src.sonar.platforms import OWNSHIP_TARGET_ID
 MODES = ("breakthrough", "recon", "convoy_attack", "strait", "swimmers", "escort")
 # Modes whose merchants the boat's torpedoes may take.
 SHIP_MODES = ("convoy_attack", "escort")
+# Scenarios 8 to 10: the boat slips past a guard that HQ tells nothing.
+GUARDED_MODES = ("strait", "swimmers", "escort")
 
 
 def mode(game):

@@ -254,9 +254,9 @@ class TaskingMixin:
         return bool(self._identify_candidates())
 
     def _task_candidate_datum(self) -> bool:
-        # In a submarine mission (scenarios 5 to 10) HQ has no intelligence
-        # on the boat: the frigate knows only what it guards.
-        if boat_missions.mode(self) is not None:
+        # In scenarios 8 to 10 HQ has no intelligence on the boat: the
+        # frigate knows only what it guards.
+        if boat_missions.mode(self) in boat_missions.GUARDED_MODES:
             return False
         return any(sub.side == "hostile" and not sub.sunk for sub in self.subs)
 

@@ -1371,7 +1371,9 @@ BOAT_AI_PING_IGNORE_NM = 5.0
 BOAT_AI_COUNTERFIRE_S = 30.0
 BOAT_AI_EVADE_KN = 5.0
 # A mission boat attacks a located frigate this many times as readily.
-BOAT_AI_ATTACK_MULT = 12.0
+BOAT_AI_ATTACK_MULT = 4.0
+# ... and in scenarios 8 to 10, where it must slip past the guard.
+BOAT_AI_GUARDED_ATTACK_MULT = 12.0
 
 # W4: Vordefinierte Szenarien (eigene Briefings, Startposition, Schwierigkeit)
 # hq_intel: "coarse" = HQ meldet nur grob Peilung/Entfernung einer Bedrohung,

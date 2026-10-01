@@ -483,6 +483,10 @@ class MissionBridgeMixin:
 
     def _initial_threat_notice(self):
         """Return one coarse, static intelligence cue for the mission start."""
+        from src.core import boat_missions
+        if boat_missions.mode(self) in boat_missions.UNREPORTED_MODES:
+            # Scenarios 8 and 9: the frigate guards its post without a report.
+            return message("runtime.hq.threat_unknown")
         candidates = [target for target in self.subs if target.side == "hostile"]
         domain = "underwater"
         if not candidates:
@@ -548,7 +552,8 @@ class MissionBridgeMixin:
         keys = {"patrouille": "mission.patrol", "doppeljagd": "mission.double",
                 "konvoi": "mission.convoy", "nuklearer_abfang": "mission.intercept",
                 "durchbruch": "mission.breakthrough", "aufklaerung": "mission.recon",
-                "geleitzug": "mission.convoy_attack",
+                "geleitzug": "mission.convoy_attack", "meerenge": "mission.strait",
+                "kampfschwimmer": "mission.swimmers", "versorger": "mission.escort",
                 "custom": "mission.custom"}
         return message(keys[self.mission.type_key])
 
@@ -589,7 +594,8 @@ class MissionBridgeMixin:
                             "protect": "mission.objective.protect",
                             "reach": "mission.objective.reach"}.get(
                                 objective_type, "mission.objective.sink"))
-        if self.mission.win_mode in ("breakthrough", "recon", "convoy_attack"):
+        if self.mission.win_mode in ("breakthrough", "recon", "convoy_attack", "strait",
+                                     "swimmers", "escort"):
             objective = message("mission.objective." + self.mission.win_mode)
         elif self.mission.win_mode == "survive":
             objective = message("mission.objective.convoy")

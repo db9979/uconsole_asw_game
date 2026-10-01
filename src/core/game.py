@@ -431,6 +431,12 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         course = sc["ship_course"]
         if course is None:
             course = 90.0
+        from src.core import boat_missions
+        placed = boat_missions.frigate_start(self.world, scenario_key, seed)
+        if placed is not None:
+            # Scenarios 8 to 10: the strait's gate, the coast section or
+            # the supply ship's beam (src/core/mission_geo.py).
+            start, course = placed[:2], placed[2]
         sx, sy = self.world.nearest_safe_hull(start[0], start[1], course)
         self.ship = Ship(x_nm=sx, y_nm=sy, course_deg=course)
         self.live_traffic.configure(self, self.world, self.preferences)
@@ -461,6 +467,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.mission_events_pending = []
         self.mission_time = 0.0
         self.score = 0
+        # The combat swimmers' lock-out so far (save ``swimmer_hold_s``).
+        self.swimmer_hold_s = 0.0
         # HQ orders and incidents (save ``tasking``); none in custom missions.
         self._reset_tasking()
         # Incidents at sea (save ``incidents``); none in custom missions.
@@ -545,9 +553,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
             traffic.assign_lane(merchant, self.seed, self.world)
             self.civilians.append(merchant)
 
-        if self.mission.win_mode == "convoy_attack":
-            from src.core import boat_missions
-            boat_missions.spawn_convoy(self)
+        # A boat mission's own units: the convoy, the strait's traffic, the
+        # supply ship, and the boat at its start (src/core/boat_missions.py).
+        boat_missions.setup(self)
 
         # KAMPFSCHIFF (Kontakt-DB): feindliche Kriegsschiffe loiteren um
         # die feindliche Basis und feuern ASM, wenn die Fregatte naehert.

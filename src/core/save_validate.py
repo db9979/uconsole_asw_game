@@ -520,6 +520,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     if (not KnuckleField.valid(knuckles)
             or any(row["t"] > save_sim_t for row in knuckles)):
         return False
+    # Save v44: the combat swimmers' lock-out so far.
+    from src.core import boat_missions
+    if not boat_missions.valid_hold(data.get("swimmer_hold_s")):
+        return False
     # Save v39: the AI hunters' ESM bearing lines.
     from src.core import hunter
     if not hunter.valid_esm_log(data.get("hunter_esm"), save_sim_t):

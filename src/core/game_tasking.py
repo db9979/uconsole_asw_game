@@ -9,7 +9,7 @@ identifications and, inside the model, the raft and the named ship.
 
 import math
 
-from src.core import config, detrand
+from src.core import boat_missions, config, detrand
 from src.core import tasking
 from src.core.i18n import message, raw_text
 from src.core.tasking import TaskBoard
@@ -254,6 +254,10 @@ class TaskingMixin:
         return bool(self._identify_candidates())
 
     def _task_candidate_datum(self) -> bool:
+        # In scenarios 8 and 9 HQ has no intelligence on the boat: the
+        # frigate knows only what it guards.
+        if boat_missions.mode(self) in boat_missions.UNREPORTED_MODES:
+            return False
         return any(sub.side == "hostile" and not sub.sunk for sub in self.subs)
 
     def _task_candidate_ras(self) -> bool:

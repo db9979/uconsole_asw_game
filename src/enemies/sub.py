@@ -221,6 +221,12 @@ class Sub:
         # A boat mission's leg (course, speed, depth) set every substep by
         # src/core/boat_ai.py for the AI's mission boat; never saved.
         self.mission_orders = None
+        # Scenarios 8 to 10 (src/core/boat_missions.GUARDED_MODES): the boat
+        # slips past a guard and answers a close ping; never saved either.
+        self.mission_guarded = False
+        # Scenarios 8 and 9 (boat_missions.SNAP_MODES): a snap shot down the
+        # bearing of a loud frigate; never saved either.
+        self.mission_snap = False
         self._lofar_phase = 0.0  # M11: LOFAR-Pulsphase
         self.sunk = False
         self.heard_ping = False
@@ -315,6 +321,12 @@ class Sub:
                     self.crew.intercept(kind, bearing, self.ping_level_db(source, kind))
                     if kind != "hull" and previous >= 20.0:
                         self.crew.event(f"ping_{kind}_heard", bearing=f"{bearing:03.0f}")
+            return
+        if (self.mission_guarded and source is not None
+                and math.hypot(source[0] - self.x, source[1] - self.y)
+                > config.BOAT_AI_PING_IGNORE_NM):
+            # A mission boat keeps to its orders under a faint, distant ping:
+            # that sonar cannot hold it at this range.
             return
         if not self.sunk and self.state != "SINKING":
             self.state = "EVADE"
@@ -497,12 +509,19 @@ class Sub:
         noise = observation.signal
         close_fix = dist is not None and dist < 20.0
         rate = 0.0
+        # A mission boat, pinged from close by, answers down the bearing for
+        # longer: it only hears pings inside BOAT_AI_PING_IGNORE_NM.
+        window = config.BOAT_AI_COUNTERFIRE_S if self.mission_guarded else 2.0
         bearing_counterfire = (dist is None and self.heard_ping
-                               and self.memory["last_ping_age"] <= 2.0)
+                               and self.memory["last_ping_age"] <= window)
         if (self.state == "EVADE" and self.heard_ping
                 and (close_fix or bearing_counterfire)):
             rate = 0.006 * (0.5 + noise) * self.stype.aggression
         elif noise >= 0.75 and dist is not None and dist < 18.0:
+            rate = 0.002 * self.stype.aggression
+        elif noise >= 0.75 and dist is None and self.mission_snap:
+            # Scenarios 8 and 9: a loud frigate closing on its bearing gets a
+            # snap shot down that bearing; the seeker finds it.
             rate = 0.002 * self.stype.aggression
         elif dist is not None and dist < config.SUB_SOLUTION_ATTACK_NM:
             # A located frigate in torpedo range is attacked even when quiet.
@@ -510,7 +529,8 @@ class Sub:
         rate *= self.attack_mult
         if self.mission_orders is not None:
             # A mission boat fights its way through: the frigate is its threat.
-            rate *= config.BOAT_AI_ATTACK_MULT
+            rate *= (config.BOAT_AI_GUARDED_ATTACK_MULT if self.mission_guarded
+                     else config.BOAT_AI_ATTACK_MULT)
         if rate <= 0:
             self.ai_fire_pending = False
             return

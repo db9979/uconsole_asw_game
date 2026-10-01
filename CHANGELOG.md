@@ -13,7 +13,25 @@ its recovery point, an in-memory copy at most one minute old, and says so in
 the feed; Remote Crew browsers get their stations back as after a load. After
 repeated faults, or an error that still ends the game, the recovery point
 becomes the autosave, so "Continue mission" resumes it. Every caught fault is
-written to crash.log for a bug report. Saves stay format v43.
+written to crash.log for a bug report. Saves stay format v44.
+
+## 1.3.125
+
+Release 1.3.125 adds three new missions that both sides can play, each with the
+AI on the other side. In "Strait blockade" (8) the submarine must slip through
+the nearest narrow passage while the frigate guards the gate; merchant traffic
+runs through it and an AI boat hides in their noise. In "Combat swimmers" (9)
+the submarine must lie still near a coast for ten minutes at periscope depth
+and dead slow to lock out its swimmers, and the frigate patrols the coast
+section. In "Supply ship escort" (10) the frigate escorts a zigzagging supply
+ship and one torpedo hit decides the mission. The places come from the real or
+generated coastline of each world. The scenario menu takes keys 1 to 9 and 0.
+In AI-against-AI test runs (six seeds each) every new mission went three times
+each way: the AI submarine sneaks at 4 kn, ignores pings from farther than 5 NM,
+fires back down a closer one and, in the strait and off the coast, snaps a shot
+at a loud frigate; the strait stays busy with six merchants shuttling through
+it, and HQ passes the frigate no submarine datum in scenarios 8 and 9. Save
+format v44; older saves do not load.
 
 ## 1.3.124
 

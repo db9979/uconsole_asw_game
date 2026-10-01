@@ -25,7 +25,7 @@ Ereignisprotokoll; Browser der Remote Crew bekommen ihre Stationen wie nach
 dem Laden zurück. Nach wiederholten Fehlern oder einem Fehler, der das Spiel
 doch beendet, wird der Wiederherstellungspunkt zum Autosave, sodass „Einsatz
 fortsetzen“ die Mission weiterführt. Jeder abgefangene Fehler landet für einen
-Fehlerbericht in crash.log. Spielstände bleiben im Format v43.
+Fehlerbericht in crash.log. Spielstände bleiben im Format v44.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

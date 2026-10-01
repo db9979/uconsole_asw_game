@@ -247,8 +247,9 @@ class DrawMixin:
             center(self.tr("menu.choose_scenario"),
                    150, color=config.COLOR_TEXT_DIM)
             scenario_names = config.SCENARIO_NAMES
+            step = 40 if len(config.SCENARIO_ORDER) <= 8 else 34
             for i, key in enumerate(config.SCENARIO_ORDER):
-                row(240 + i * 40, 38, lambda i=i: setattr(self, "menu_sel", i))
+                row(220 + i * step, step - 2, lambda i=i: setattr(self, "menu_sel", i))
                 sc = config.SCENARIOS[key]
                 marker = "► " if i == self.menu_sel else "  "
                 col = config.COLOR_TEXT if i == self.menu_sel \
@@ -256,9 +257,9 @@ class DrawMixin:
                 lv = self.tr("menu.difficulty_fixed" if sc["difficulty"] is not None
                              else "menu.difficulty_custom")
                 title = self.tr("scenario." + scenario_names[key] + ".title")
-                center(message("menu.scenario_choice", index=i + 1,
+                center(message("menu.scenario_choice", index=(i + 1) % 10,
                                marker=marker, title=title, level=lv),
-                       240 + i * 40, color=col)
+                       220 + i * step, color=col)
         elif self.menu_screen == "difficulty":
             center(self.tr("menu.choose_difficulty"),
                    150, color=config.COLOR_TEXT_DIM, keys=("Enter", "Esc"),

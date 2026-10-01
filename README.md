@@ -21,7 +21,7 @@ its recovery point, an in-memory copy at most one minute old, and says so in
 the feed; Remote Crew browsers get their stations back as after a load. After
 repeated faults, or an error that still ends the game, the recovery point
 becomes the autosave, so "Continue mission" resumes it. Every caught fault is
-written to crash.log for a bug report. Saves stay format v43.
+written to crash.log for a bug report. Saves stay format v44.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

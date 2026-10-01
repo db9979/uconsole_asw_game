@@ -54,6 +54,8 @@ PATTERN_CLEAR_NM = 4.0          # no new buoy pattern where buoys already listen
 ESCORT_AHEAD_NM = 3.0           # the escort's station ahead of the convoy
 ESCORT_STATION_NM = 2.5         # farther off than this it closes at transit speed
 ESCORT_LEASH_NM = 8.0           # an escort prosecutes a datum this close to its convoy
+GUARD_REACH = 0.7               # a coast patrol sweeps this share of the section's radius
+GUARD_SHORE_NM = 1.5            # a gate patrol turns this far off either shore
 POST_LEASH_NM = 6.0             # breakthrough: the guard prosecutes a datum this close to its post
 POST_STATION_NM = 3.0           # and without one returns when this far from it
 RADAR_DATUM_S = 600.0           # a mast track stays a datum this long
@@ -560,6 +562,58 @@ def escort_course(game):
     return course + side * 45.0, ships[0].speed + 2.0
 
 
+def guard_course(game):
+    """Course and speed of a barrier patrol across what the frigate guards
+    (the strait's gate, the coast section of the swimmers' mission), or None.
+
+    The frigate sweeps between the two ends of a line at search speed; the
+    end it steers for alternates with the time a sweep takes, so the patrol
+    needs no state. Outside the area it first closes it at transit speed."""
+    area = boat_missions.guard_area(game)
+    if area is None:
+        return None
+    ship = game.ship
+    if area["kind"] == "gate":
+        # Clear of the shores: the sweep stays GUARD_SHORE_NM inside the ends.
+        (ax, ay), (bx, by) = area["ends"]
+        cx, cy = (ax + bx) / 2.0, (ay + by) / 2.0
+        half = math.hypot(bx - ax, by - ay) / 2.0
+        keep = max(0.0, half - GUARD_SHORE_NM) / max(half, 1e-9)
+        ends = ((cx + (ax - cx) * keep, cy + (ay - cy) * keep),
+                (cx + (bx - cx) * keep, cy + (by - cy) * keep))
+    else:
+        rad = math.radians(area["course"])
+        reach = area["radius_nm"] * GUARD_REACH
+        ends = ((area["x"] + reach * math.sin(rad), area["y"] - reach * math.cos(rad)),
+                (area["x"] - reach * math.sin(rad), area["y"] + reach * math.cos(rad)))
+        if math.hypot(area["x"] - ship.x, area["y"] - ship.y) > area["radius_nm"]:
+            return _bearing(ship.x, ship.y, area["x"], area["y"]), TRANSIT_KN
+    (ax, ay), (bx, by) = ends
+    length = max(1.0, math.hypot(bx - ax, by - ay))
+    sweep_s = length / SEARCH_KN * 3600.0
+    leg = int(math.floor(game.sim_t / sweep_s))
+    if area.get("start", 1.0) < 0.0:
+        leg += 1                    # started at the far end: first back to the near one
+    tx, ty = (ax, ay) if leg % 2 else (bx, by)
+    return _bearing(ship.x, ship.y, tx, ty), SEARCH_KN
+
+
+def guard_holds(game, point) -> bool:
+    """Whether a datum at ``point`` lies where the barrier patrol may
+    prosecute it: within ``POST_LEASH_NM`` of the gate or inside the coast
+    section. Without a barrier any datum is prosecuted."""
+    area = boat_missions.guard_area(game)
+    if area is None or point is None:
+        return True
+    if area["kind"] == "gate":
+        (ax, ay), (bx, by) = area["ends"]
+        cx, cy = (ax + bx) / 2.0, (ay + by) / 2.0
+        reach = math.hypot(bx - ax, by - ay) / 2.0 + POST_LEASH_NM
+    else:
+        cx, cy, reach = area["x"], area["y"], area["radius_nm"]
+    return math.hypot(point[0] - cx, point[1] - cy) <= reach
+
+
 def guard_post(game):
     """The breakthrough guard's post (the frigate's scenario start), or None."""
     if boat_missions.mode(game) != "breakthrough":
@@ -587,9 +641,14 @@ def bridge(game, found) -> str:
         point = datum_point(game, found)
         if math.hypot(point[0] - post[0], point[1] - post[1]) > POST_LEASH_NM:
             found = None
+    if found is not None and not guard_holds(game, datum_point(game, found)):
+        found = None
     if found is None:
         if escort is not None:
             return _steer(game, *escort)
+        guard = guard_course(game)
+        if guard is not None:
+            return _steer(game, *guard)
         if post is not None and math.hypot(post[0] - ship.x, post[1] - ship.y) > POST_STATION_NM:
             return _steer(game, _bearing(ship.x, ship.y, *post), SEARCH_KN)
         return _steer(game, search_course(game), SEARCH_KN)
@@ -621,7 +680,7 @@ def guarding(game) -> bool:
     """The frigate guards its post against a breakthrough or a
     reconnaissance boat: a closer shot and a short helicopter (a convoy
     escort keeps its helicopter's full reach)."""
-    return boat_missions.mode(game) in ("breakthrough", "recon")
+    return boat_missions.mode(game) in ("breakthrough", "recon", "strait", "swimmers")
 
 
 def fire_range_nm(game) -> float:

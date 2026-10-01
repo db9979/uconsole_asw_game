@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.127
+
+Release 1.3.127 keeps your saved games across updates. A save slot or autosave
+written by an older release, back to release 1.3.98 (save format v38), now
+loads: it is brought up to the current format step by step and then checked as
+strictly as before, so an update no longer throws away a mission you
+interrupted. The update notice warns about saves only when they are too old
+for the new release. Saves are written as format v44.
+
 ## 1.3.126
 
 Release 1.3.126 keeps a mission alive when something goes wrong. A station

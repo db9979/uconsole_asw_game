@@ -19,7 +19,7 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v44_and_older_documents_are_rejected():
+def test_save_is_v44_older_documents_are_rejected_from_v38_on_lifted():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
     assert (state["version"], state["save_schema"]) == (44, "u-jagd-save-v44")
@@ -200,6 +200,8 @@ def test_save_is_v44_and_older_documents_are_rejected():
     v37["save_schema"] = "u-jagd-save-v37"
     del v37["casualties"]
     assert not game._load_save_data(v37)
+    # From v38 on an older document is lifted to v44 (src/core/save_migrate.py);
+    # the samples of real older releases are in tests/test_save_migrate.py.
     # v38 lacks the hunters' ESM log and the crew assist.
     v38 = copy.deepcopy(state)
     v38["version"] = 38
@@ -207,7 +209,7 @@ def test_save_is_v44_and_older_documents_are_rejected():
     del v38["hunter_esm"]
     v38["autocrew"]["version"] = 1
     del v38["autocrew"]["assist"]
-    assert not game._load_save_data(v38)
+    assert _game()._load_save_data(v38)       # lifted (save_migrate)
     # v39 differs only by the crew assist in the autocrew block.
     v39 = copy.deepcopy(state)
     v39["version"] = 39
@@ -215,34 +217,38 @@ def test_save_is_v44_and_older_documents_are_rejected():
     v39["autocrew"]["version"] = 1
     del v39["autocrew"]["assist"]
     del v39["knuckles"]
-    assert not game._load_save_data(v39)
+    assert _game()._load_save_data(v39)       # lifted (save_migrate)
     # v40 differs only by the knuckles (bubble slicks of hard turns).
     v40 = copy.deepcopy(state)
     v40["version"] = 40
     v40["save_schema"] = "u-jagd-save-v40"
     del v40["knuckles"]
-    assert not game._load_save_data(v40)
+    assert _game()._load_save_data(v40)       # lifted (save_migrate)
     # v41 differs only by the crewed boat's buoy antenna (``crew.orders.buoy``).
     v41 = copy.deepcopy(state)
     v41["version"] = 41
     v41["save_schema"] = "u-jagd-save-v41"
     del v41["swimmer_hold_s"]
     del v41["hunter_lead"]
-    assert not game._load_save_data(v41)
+    assert _game()._load_save_data(v41)       # lifted (save_migrate)
     # v42 also lacks the hunters' leads.
     v42 = copy.deepcopy(state)
     v42["version"] = 42
     v42["save_schema"] = "u-jagd-save-v42"
     del v42["hunter_lead"]
     del v42["swimmer_hold_s"]
-    assert not game._load_save_data(v42)
+    assert _game()._load_save_data(v42)       # lifted (save_migrate)
     # v43 differs only by the combat swimmers' lock-out (``swimmer_hold_s``).
     v43 = copy.deepcopy(state)
     v43["version"] = 43
     v43["save_schema"] = "u-jagd-save-v43"
     del v43["swimmer_hold_s"]
-    assert not game._load_save_data(v43)
-    assert game.save_state() == before
+    assert _game()._load_save_data(v43)       # lifted (save_migrate)
+    # The rejected documents never touched this game (the lifted ones went to
+    # fresh games, whose constructors raise the global entity ids).
+    after = game.save_state()
+    after.pop("next_entity_ids"), before.pop("next_entity_ids")
+    assert after == before
 
 
 def test_sub_ping_cooldown_and_surface_evasion_survive_save_load():

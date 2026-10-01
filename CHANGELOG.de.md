@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.127
+
+Version 1.3.127 rettet Spielstände über Updates. Ein Speicherplatz oder
+Autosave einer älteren Version, zurück bis Version 1.3.98 (Spielstandformat
+v38), lädt jetzt: Er wird Schritt für Schritt auf das aktuelle Format gebracht
+und danach so streng geprüft wie bisher, sodass ein Update keine unterbrochene
+Mission mehr verwirft. Der Update-Hinweis warnt nur noch, wenn Spielstände zu
+alt für das neue Release sind. Gespeichert wird im Format v44.
+
 ## 1.3.126
 
 Version 1.3.126 hält eine Mission am Leben, wenn etwas schiefgeht. Eine

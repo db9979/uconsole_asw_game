@@ -22,6 +22,7 @@ from src.core.mission import Mission
 from src.core.station import Station
 from src.core import opfor
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
+from src.core.save_migrate import migrate as migrate_save
 from src.sensors.ais import AISReceiver
 from src.sonar import analysis_tools
 from src.ship import damage as damage_physics
@@ -1694,6 +1695,9 @@ class SaveMixin:
     _valid_save_document = staticmethod(valid_save_document)
 
     def _load_save_data(self, data: dict) -> bool:
+        # An older format (from MIGRATE_FROM on) is lifted to the current one
+        # first; the strict validation below then decides as for any save.
+        data = migrate_save(data)
         try:
             if (not isinstance(data, dict)
                     or type(data.get("time_scale_idx")) is not int

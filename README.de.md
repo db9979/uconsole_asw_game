@@ -14,18 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.126**
+Aktuelle Version: **1.3.127**
 
-Version 1.3.126 hält eine Mission am Leben, wenn etwas schiefgeht. Eine
-Stationsanzeige, die sich nicht zeichnen lässt, zeigt jetzt „Anzeige gestört“,
-während die Mission und alle anderen Stationen weiterlaufen. Ein Fehler in der
-Simulation setzt die Mission auf ihren Wiederherstellungspunkt zurück, eine
-Kopie im Speicher von höchstens einer Minute, und meldet das im
-Ereignisprotokoll; Browser der Remote Crew bekommen ihre Stationen wie nach
-dem Laden zurück. Nach wiederholten Fehlern oder einem Fehler, der das Spiel
-doch beendet, wird der Wiederherstellungspunkt zum Autosave, sodass „Einsatz
-fortsetzen“ die Mission weiterführt. Jeder abgefangene Fehler landet für einen
-Fehlerbericht in crash.log. Spielstände bleiben im Format v44.
+Version 1.3.127 rettet Spielstände über Updates. Ein Speicherplatz oder
+Autosave einer älteren Version, zurück bis Version 1.3.98 (Spielstandformat
+v38), lädt jetzt: Er wird Schritt für Schritt auf das aktuelle Format gebracht
+und danach so streng geprüft wie bisher, sodass ein Update keine unterbrochene
+Mission mehr verwirft. Der Update-Hinweis warnt nur noch, wenn Spielstände zu
+alt für das neue Release sind. Gespeichert wird im Format v44.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

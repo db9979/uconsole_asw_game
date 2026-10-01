@@ -1,0 +1,109 @@
+"""Save migration: older save documents are lifted to the current format.
+
+Each step turns a document of format ``n`` into one of format ``n + 1`` and
+only adds what that format introduced, with the value a running game of the
+older release effectively had (the feature did not exist yet).  The result
+then goes through the same strict validation and candidate restore as any
+current save; a document this module cannot lift stays rejected.
+
+Rules for a format change: bump ``SAVE_VERSION``, add the step here, and add
+a frozen sample of the old format to ``tests/data/saves/`` (written by the
+release before the change, ``tools/make_save_sample.py``).
+``tests/test_save_migrate.py`` loads every sample.
+
+Pure functions on plain JSON data; nothing here touches a running game.
+"""
+
+from __future__ import annotations
+
+import copy
+
+from src.core.version import SAVE_VERSION
+
+# Oldest format a step exists for (release 1.3.98, 2026-09-29).
+MIGRATE_FROM = 38
+
+
+def _v38_to_v39(doc: dict) -> None:
+    # The AI hunters' ESM bearing lines for a cross-fix.
+    doc["hunter_esm"] = []
+
+
+def _v39_to_v40(doc: dict) -> None:
+    # The crew assist that lets the AI man every free station (off before).
+    autocrew = doc.get("autocrew")
+    if isinstance(autocrew, dict) and autocrew.get("version") == 1:
+        autocrew["version"] = 2
+        autocrew.setdefault("assist", False)
+
+
+def _v40_to_v41(doc: dict) -> None:
+    # Knuckles (bubble slicks of hard turns) and the flight deck's quiet time.
+    doc["knuckles"] = []
+    ship = doc.get("ship")
+    if isinstance(ship, dict):
+        ship.setdefault("deck_quiet_s", 60.0)
+
+
+def _v41_to_v42(doc: dict) -> None:
+    # The crewed boat's towed buoy antenna: stowed.
+    crew = doc.get("crew")
+    if isinstance(crew, dict) and isinstance(crew.get("orders"), dict):
+        crew["orders"].setdefault("buoy", [0.0, False, False])
+
+
+def _v42_to_v43(doc: dict) -> None:
+    # The AI hunters' leads from HQ's start report and a lost bearing.
+    doc["hunter_lead"] = None
+
+
+def _v43_to_v44(doc: dict) -> None:
+    # The combat swimmers' lock-out (mission s9, which no older save runs).
+    doc["swimmer_hold_s"] = 0.0
+
+
+STEPS = {
+    38: _v38_to_v39,
+    39: _v39_to_v40,
+    40: _v40_to_v41,
+    41: _v41_to_v42,
+    42: _v42_to_v43,
+    43: _v43_to_v44,
+}
+
+
+def schema_tag(version: int) -> str:
+    return f"u-jagd-save-v{version}"
+
+
+def document_version(data) -> int | None:
+    """The format of a save document whose version and tag agree, else None."""
+    if not isinstance(data, dict):
+        return None
+    version = data.get("version")
+    if type(version) is not int or data.get("save_schema") != schema_tag(version):
+        return None
+    return version
+
+
+def can_migrate(data) -> bool:
+    version = document_version(data)
+    return version is not None and MIGRATE_FROM <= version < SAVE_VERSION
+
+
+def migrate(data):
+    """Return ``data`` lifted to ``SAVE_VERSION`` (a copy), or ``data`` itself
+    when it is current or cannot be lifted (validation then decides)."""
+    if not can_migrate(data):
+        return data
+    doc = copy.deepcopy(data)
+    version = doc["version"]
+    while version < SAVE_VERSION:
+        step = STEPS.get(version)
+        if step is None:
+            return data
+        step(doc)
+        version += 1
+        doc["version"] = version
+        doc["save_schema"] = schema_tag(version)
+    return doc

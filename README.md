@@ -12,16 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.126**
+Current release: **1.3.127**
 
-Release 1.3.126 keeps a mission alive when something goes wrong. A station
-view that fails to draw now shows "Display fault" while the mission and every
-other station keep running. A fault in the simulation puts the mission back to
-its recovery point, an in-memory copy at most one minute old, and says so in
-the feed; Remote Crew browsers get their stations back as after a load. After
-repeated faults, or an error that still ends the game, the recovery point
-becomes the autosave, so "Continue mission" resumes it. Every caught fault is
-written to crash.log for a bug report. Saves stay format v44.
+Release 1.3.127 keeps your saved games across updates. A save slot or autosave
+written by an older release, back to release 1.3.98 (save format v38), now
+loads: it is brought up to the current format step by step and then checked as
+strictly as before, so an update no longer throws away a mission you
+interrupted. The update notice warns about saves only when they are too old
+for the new release. Saves are written as format v44.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

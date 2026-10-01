@@ -14,21 +14,24 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.124**
+Aktuelle Version: **1.3.125**
 
-Version 1.3.124 gleicht KI-Fregatte und KI-U-Boot an. In den
-Fregatten-Szenarien folgen die KI-Jäger jetzt der Startmeldung der Führung
-über die Bedrohung und einer verlorenen U-Boot-Peilung, pingen auf eine bloße
-Peilung nur alle 10 Minuten, damit ein Ping ohne Treffer das U-Boot nicht mehr
-davonjagt, und halten ein lange strahlendes Schiffsradar nicht mehr für einen
-U-Boot-Mast. In den U-Boot-Szenarien hält ein Missions-U-Boot bei einem Ping
-seinen Kurs und weicht nur einem Torpedo aus, und die Fregatte bewacht ihren
-Posten: Gegen einen Durchbruch bleibt sie ohne Seefernaufklärer bei ihrer
-Patrouillenposition, gegen Durchbruch und Aufklärung schießt sie ihren eigenen
-Torpedo erst ab 3 sm und hält ihren Hubschrauber innerhalb 8 sm. Das
-Durchbruch-U-Boot umgeht die Patrouillenposition der Fregatte, die
-Aufklärungsmeldung zählt innerhalb 5 sm, und das Geleitzug-U-Boot schießt ab
-3 sm. Spielstände wechseln auf Format v43 (die Spuren der Jäger).
+Version 1.3.125 bringt drei neue Einsätze, die beide Seiten spielen können,
+jeweils mit der KI auf der Gegenseite. In „Meerengen-Sperre“ (8) muss das
+U-Boot durch die nächste Meerenge schlüpfen, während die Fregatte die
+Sperrlinie bewacht; Handelsverkehr fährt hindurch, und ein KI-Boot versteckt
+sich in seinem Lärm. Bei „Kampfschwimmer“ (9) muss das U-Boot zehn Minuten auf
+Sehrohrtiefe und in langsamster Fahrt vor einer Küste liegen, um seine
+Schwimmer auszuschleusen, und die Fregatte bestreift den Küstenabschnitt. Beim
+„Versorgerschutz“ (10) sichert die Fregatte einen zackenden Versorger, und ein
+einziger Torpedotreffer entscheidet. Die Orte ergeben sich aus der echten oder
+erzeugten Küste jeder Welt. Das Szenariomenü nimmt die Tasten 1 bis 9 und 0. In
+Testläufen KI gegen KI (je sechs Seeds) ging jeder neue Einsatz dreimal für
+jede Seite aus: Das KI-U-Boot schleicht mit 4 kn, überhört Pings aus mehr als
+5 sm, schießt auf einen näheren zurück und gibt in der Meerenge und vor der
+Küste einen Schnellschuss auf eine laute Fregatte ab; sechs Handelsschiffe
+pendeln durch die Meerenge, und das HQ meldet der Fregatte in den Szenarien 8
+und 9 kein U-Boot-Datum. Speicherformat v44; ältere Spielstände laden nicht.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

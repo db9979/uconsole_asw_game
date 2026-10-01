@@ -12,20 +12,23 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.124**
+Current release: **1.3.125**
 
-Release 1.3.124 evens out the AI frigate and the AI submarine. In the
-frigate scenarios the AI hunters now run down HQ's start report of the threat
-and a lost submarine bearing, ping a bare bearing only every 10 minutes so a
-ping that finds nothing no longer sends the submarine running, and no longer
-take a long-radiating ship radar for a submarine mast. In the submarine
-scenarios a mission submarine keeps its course through a ping and gives way
-only to a torpedo, and the frigate guards its post: against a breakthrough it
-stays by its patrol position with no patrol aircraft, and against a
-breakthrough or reconnaissance it fires its own torpedo from 3 NM and keeps its
-helicopter within 8 NM. The breakthrough submarine skirts the frigate's patrol
-position, the reconnaissance report counts within 5 NM and the convoy
-submarine fires from 3 NM. Saves move to format v43 (the hunters' leads).
+Release 1.3.125 adds three new missions that both sides can play, each with the
+AI on the other side. In "Strait blockade" (8) the submarine must slip through
+the nearest narrow passage while the frigate guards the gate; merchant traffic
+runs through it and an AI boat hides in their noise. In "Combat swimmers" (9)
+the submarine must lie still near a coast for ten minutes at periscope depth
+and dead slow to lock out its swimmers, and the frigate patrols the coast
+section. In "Supply ship escort" (10) the frigate escorts a zigzagging supply
+ship and one torpedo hit decides the mission. The places come from the real or
+generated coastline of each world. The scenario menu takes keys 1 to 9 and 0.
+In AI-against-AI test runs (six seeds each) every new mission went three times
+each way: the AI submarine sneaks at 4 kn, ignores pings from farther than 5 NM,
+fires back down a closer one and, in the strait and off the coast, snaps a shot
+at a loud frigate; the strait stays busy with six merchants shuttling through
+it, and HQ passes the frigate no submarine datum in scenarios 8 and 9. Save
+format v44; older saves do not load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -97,8 +97,9 @@ def _fresh(game, contact, age_s=FIX_MAX_AGE_S) -> bool:
 
 def targets(game, boat) -> list:
     """Fresh contacts the crew would shoot at, nearest known fix first."""
-    categories = (frozenset({"TANKER", "FRACHT", "PASSAGIER"})
-                  if boat_missions.mode(game) == "convoy_attack"
+    kind = boat_missions.mode(game)
+    categories = (frozenset({"TANKER", "FRACHT", "PASSAGIER"}) if kind == "convoy_attack"
+                  else frozenset({"TANKER"}) if kind == "escort"
                   else frozenset({"KAMPFSCHIFF"}))
     phrases = _signatures(game.runtime_catalog, categories)
     rows = [contact for contact in boat.station.sonar.contacts.values()

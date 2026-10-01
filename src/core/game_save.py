@@ -489,6 +489,7 @@ class SaveMixin:
             "hunter_esm": [dict(row) for row in self.hunter_esm],
             "hunter_lead": copy.deepcopy(self.hunter_lead),
             "knuckles": self.world.knuckles.serialize(),
+            "swimmer_hold_s": float(self.swimmer_hold_s),
             "watch": self.crew_watch.serialize(),
             "mpa": self.mpa.serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
@@ -1057,6 +1058,7 @@ class SaveMixin:
         self.hunter_esm = [dict(row) for row in data["hunter_esm"]]
         self.hunter_lead = copy.deepcopy(data["hunter_lead"])
         self.world.knuckles.restore(data["knuckles"], data["sim_t"])
+        self.swimmer_hold_s = float(data["swimmer_hold_s"])
         self.task_sel = 0
         self.crew_watch = CrewState.restore(data["watch"])
         self.mpa = PatrolAircraft.restore(data["mpa"], self.world.size_nm)

@@ -1813,9 +1813,10 @@ class EventMixin:
                 self.menu_sel = (self.menu_sel - 1) % n
             elif key == pygame.K_DOWN:
                 self.menu_sel = (self.menu_sel + 1) % n
-            elif key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4,
-                         pygame.K_5, pygame.K_6, pygame.K_7)[:n]:
-                self.menu_sel = int(pygame.key.name(key)) - 1
+            elif key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5,
+                         pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9, pygame.K_0)[:n]:
+                # 1 to 9, and 0 for the tenth.
+                self.menu_sel = (int(pygame.key.name(key)) - 1) % 10
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
                 self.scenario_key = config.SCENARIO_ORDER[self.menu_sel]
                 sc = config.SCENARIOS[self.scenario_key]

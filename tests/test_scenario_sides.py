@@ -40,11 +40,13 @@ def test_frigate_list_cycles_and_numbers_only_frigate_scenarios():
     game = _menu("frigate")
     game.draw()
     seen = []
-    for _ in range(5):
-        seen.append(config.SCENARIO_ORDER[game.scenario_menu_index()])
+    for _ in range(6):
+        seen.append("custom" if game.menu_sel == game.custom_row_sel()
+                    else config.SCENARIO_ORDER[game.scenario_menu_index()])
         game._handle_menu_key(pygame.K_DOWN)
+    # The list ends with the side's own missions, then wraps.
     assert seen == ["s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
-                    "s1_patrouille"]
+                    "custom", "s1_patrouille"]
     game._handle_menu_key(pygame.K_5)                         # past the frigate list: ignored
     assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s2_doppeljagd"
     game._handle_menu_key(pygame.K_3)
@@ -57,7 +59,9 @@ def test_boat_list_starts_at_the_first_boat_scenario():
     game = _menu("uboot")
     game.draw()
     assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s5_durchbruch"
-    game._handle_menu_key(pygame.K_UP)                        # wraps within the boat list
+    game._handle_menu_key(pygame.K_UP)                        # wraps to the own missions
+    assert game.menu_sel == game.custom_row_sel()
+    game._handle_menu_key(pygame.K_UP)                        # then the boat list's last
     assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s10_versorger"
     game._handle_menu_key(pygame.K_7)                         # past the boat list: ignored
     assert config.SCENARIO_ORDER[game.scenario_menu_index()] == "s10_versorger"
@@ -85,3 +89,36 @@ def test_lobby_cycles_the_missions_of_its_side():
     room.change(-1)
     assert room.scenario_key == "s10_versorger"
     assert LobbyRoom("s7_geleitzug", "frigate").scenario_key == "s1_patrouille"
+
+
+def test_own_missions_row_lists_only_the_sides_missions(tmp_path):
+    from src.core.mission_definition import default_mission
+    from src.data.user_content import default_store
+    store = default_store(config.SAVE_DIR)
+    frigate = default_mission("user.own_frigate")
+    frigate.update(name="Own frigate")
+    frigate["objective"].update(type="survive")
+    store.save("mission", frigate)
+    boat = default_mission("user.own_boat")
+    boat.update(name="Own boat", side="uboot", boat_id="me")
+    boat["units"]["exact"] = [{"id": "me", "profile": "diesel_alt", "side": "hostile",
+                               "placement": {"kind": "fixed", "x": 300.0, "y": 250.0},
+                               "course_deg": 0.0, "speed_kn": 0.0, "depth_m": 60.0}]
+    boat["objective"].update(type="survive")
+    store.save("mission", boat)
+    game = _menu("uboot")
+    game._handle_menu_key(pygame.K_o)
+    assert game.menu_screen == "custom"
+    assert [record.key for record in game._custom_records] == ["user.own_boat"]
+    game.draw()
+    game._handle_menu_key(pygame.K_RETURN)
+    assert not game.in_menu and game.local_side == "uboot"
+    assert game.custom_mission_definition["key"] == "user.own_boat"
+    game.audio.shutdown()
+    other = _menu("frigate")
+    other._handle_menu_key(pygame.K_UP)
+    other._handle_menu_key(pygame.K_RETURN)
+    assert [record.key for record in other._custom_records] == ["user.own_frigate"]
+    other._handle_menu_key(pygame.K_ESCAPE)
+    assert other.menu_screen == "scenario" and other.menu_sel == other.custom_row_sel()
+    other.audio.shutdown()

@@ -6537,5 +6537,11 @@
   "editor.share_folder_opened": "Austauschordner {path} geöffnet",
   "editor.share_folder_path": "Austauschordner: {path}",
   "editor.share_hint": "Strg+E/I: teilen/importieren",
-  "editor.folder_hint": "O: Ordner"
+  "editor.folder_hint": "O: Ordner",
+  "menu.custom.row": "O. {marker}Eigene Missionen (Missionsplaner) ...",
+  "menu.custom.title.frigate": "Eigene Missionen der Fregatte - Enter: Start | Esc/Q: zurück",
+  "menu.custom.title.uboot": "Eigene Missionen des U-Boots - Enter: Start | Esc/Q: zurück",
+  "menu.custom.empty": "Noch keine eigenen Missionen für diese Seite. Im Missionsplaner (Hauptmenü) eine bauen oder dort mit Strg+I eine geteilte Datei importieren.",
+  "menu.custom.hint": "Auf/Ab wählen · Enter Start · Esc zurück",
+  "menu.custom.start_failed": "Diese Mission kann nicht starten: im Missionsplaner öffnen und prüfen"
 }

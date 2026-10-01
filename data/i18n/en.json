@@ -6537,5 +6537,11 @@
   "editor.share_folder_opened": "Opened the exchange folder {path}",
   "editor.share_folder_path": "Exchange folder: {path}",
   "editor.share_hint": "Ctrl+E/I: share/import",
-  "editor.folder_hint": "O: folder"
+  "editor.folder_hint": "O: folder",
+  "menu.custom.row": "O. {marker}Own missions (Mission Editor) ...",
+  "menu.custom.title.frigate": "Own frigate missions - Enter: start | Esc/Q: back",
+  "menu.custom.title.uboot": "Own submarine missions - Enter: start | Esc/Q: back",
+  "menu.custom.empty": "No own missions for this side yet. Build one in the Mission Editor (main menu) or import a shared file there with Ctrl+I.",
+  "menu.custom.hint": "Up/Down choose · Enter start · Esc back",
+  "menu.custom.start_failed": "This mission cannot start: open it in the Mission Editor and check it"
 }

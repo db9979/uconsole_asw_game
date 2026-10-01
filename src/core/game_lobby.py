@@ -66,6 +66,7 @@ class LobbyMixin:
                        else "uboot")
             self.lobby = LobbyRoom(self.scenario_key, self.local_side, station)
         self.lobby.cancel()
+        self._refresh_lobby_missions()
         self.main_menu = False
         self.menu_screen = LOBBY_SCREEN
         self.lobby_notice = None
@@ -76,6 +77,17 @@ class LobbyMixin:
             console.set_solo(False)
         if console.address is None and not console.hotspot.active:
             console.autostart()
+
+    def _refresh_lobby_missions(self) -> None:
+        """Hand the lobby the own missions of both sides (read when it opens)."""
+        side = self.local_side
+        missions = {}
+        for choice in ("frigate", "uboot"):
+            self.local_side = choice
+            missions[choice] = [(record.key, str(record.data.get("name", record.key))[:80])
+                                for record in self.custom_menu_records()]
+        self.local_side = side
+        self.lobby.set_custom_missions(missions)
 
     def close_lobby(self) -> None:
         """Back to the main menu; Remote Crew keeps running."""
@@ -123,12 +135,26 @@ class LobbyMixin:
         self.start_weather, self.start_time = room.weather, room.time
         self.start_length = room.length
         self.lobby_round = True
-        self._start_menu_mission()
+        definition = self._lobby_custom_definition(room)
+        if definition is None:
+            self._start_menu_mission()
+        elif not self.start_custom_mission(definition):
+            self.lobby_round = False
+            self.lobby_notice = "menu.custom.start_failed"
+            return
         # A lobby round with a crew lets the AI man every station nobody holds;
         # alone on the uConsole it is a solo game (Shift+F2 still switches it).
         if self.host_only or room.crew(self.lobby_players()):
             self.autocrew.set_assist(True, self.sim_t)
         self._take_lobby_station(room.station)
+
+    def _lobby_custom_definition(self, room):
+        """The chosen own mission's definition, read now (None: a scenario)."""
+        if room.custom_key is None:
+            return None
+        record = next((record for record in self.custom_menu_records()
+                       if record.key == room.custom_key), None)
+        return None if record is None else record.data
 
     def _take_lobby_station(self, station: str) -> None:
         """Put the uConsole on its lobby station in the new mission."""
@@ -234,8 +260,9 @@ class LobbyMixin:
         # Right top: the host's choices.
         right = pygame.Rect(left.right + 30, left.y, panel.right - left.right - 50, left.h)
         values = (
-            message("lobby.row.mission", mission=message(
-                "scenario." + config.SCENARIO_NAMES[room.scenario_key] + ".title")),
+            message("lobby.row.mission", mission=(
+                raw_text(room.custom_name) if room.custom_name is not None else message(
+                    "scenario." + config.SCENARIO_NAMES[room.scenario_key] + ".title"))),
             message("lobby.row.side", side=message(f"menu.side.{room.side}")),
             message("lobby.row.station", station=_station_name(room.station)),
             message("menu.start_weather", value=message(f"menu.start_weather.{room.weather}")),

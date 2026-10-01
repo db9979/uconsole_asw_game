@@ -1097,15 +1097,16 @@ class CommanderServer:
     def publish_lobby(self, room) -> None:
         """Publish the host's open lobby (``None`` closes it).
 
-        ``room`` is a detached dict of JSON values (mission, side,
-        host_station, countdown_s). Closing a lobby clears every ready tick,
+        ``room`` is a detached dict of JSON values (mission, mission_name,
+        side, host_station, countdown_s). Closing a lobby clears every ready tick,
         so the next round starts with nobody ready.
         """
         with self._lock:
             if room is None and self._lobby is not None:
                 for session in self._sessions_v2.values():
                     session["ready"] = False
-            self._lobby = None if room is None else dict(room)
+            # ``mission_name``: an own mission's authored name (else None).
+            self._lobby = None if room is None else {"mission_name": None, **dict(room)}
 
     def set_ready_locked(self, session, ready: bool) -> bool:
         """Tick or clear a crew session's lobby ready flag (transport thread)."""

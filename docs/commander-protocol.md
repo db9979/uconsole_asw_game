@@ -357,6 +357,34 @@ The web-host admin action set (`POST /api/v2/web/admin`) includes `shutdown`
 game process after a short grace period, so a web-hosted game does not keep running
 in the background.
 
+## Own-Mission Library (solo host, protocol v2, additive)
+
+Only a session carrying `host` (solo mode) may use these routes; other sessions get
+403. `GET /api/v2/missions` returns the Mission Editor's missions
+(`{protocol, revision, missions, units, user_profiles, results, truncated}`; each
+mission row carries `key`, `name`, `side`, `objective`, `valid`, `issues` and `hints`
+in both languages, the referenced user-unit keys and the mission document).
+`GET /api/v2/editor/catalog` returns the static editor catalog (profiles, the 128
+reference sectors with their countries and the closed enums) and
+`GET /api/v2/editor/sector?i=N` one packaged sector's coast outlines (404 when
+unknown). The host view carries `missions_revision`, which changes whenever the
+library does.
+
+`POST /api/v2/missions` (Origin and CSRF as for commands, body at most 1 MiB plus
+4096 bytes, else 413) takes exactly one of `{protocol: 2, id, op: "save", mission,
+overwrite}`, `{protocol: 2, id, op: "import", bundle, overwrite}` (a
+`u-jagd.editor-bundle` share file) or `{protocol: 2, id, op: "delete", key}` and
+answers 202 `{status: "pending", id}`; 400 for another shape, 429 with four
+requests pending. The main thread validates the content exactly like the
+uConsole's editor and writes the user store; the outcome appears in the library's
+`results` (the last eight, `{id, status: "applied"|"rejected", reason, issues}`,
+reason `exists` when overwrite was not set). Requests of a session that lost the
+host surface are dropped. Starting a mission is the host command
+`host_start_mission {key}` (phases as `host_new_game`; `no_mission` when the key is
+missing or unreadable, `mission_rejected` when the runtime refuses it). The browser
+switches the solo side to the mission's side first. Nothing here enters saves or
+settings.
+
 ## Test Scope
 
 Transport tests cover live loopback framing, Host/Origin, pairing/TTL/rate limits,

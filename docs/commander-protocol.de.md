@@ -408,6 +408,34 @@ Die Admin-Aktionen des Webspiels (`POST /api/v2/web/admin`) enthalten `shutdown`
 Spielprozess nach einer kurzen Frist, damit ein Webspiel nicht im Hintergrund
 weiterläuft.
 
+## Bibliothek eigener Missionen (Solo-Gastgeber, Protokoll v2, additiv)
+
+Nur eine Sitzung mit `host` (Solo-Modus) darf diese Routen nutzen; andere Sitzungen
+erhalten 403. `GET /api/v2/missions` liefert die Missionen des Missionseditors
+(`{protocol, revision, missions, units, user_profiles, results, truncated}`; jede
+Missionszeile trägt `key`, `name`, `side`, `objective`, `valid`, `issues` und `hints`
+in beiden Sprachen, die Schlüssel der verwendeten eigenen Einheiten und das
+Missionsdokument). `GET /api/v2/editor/catalog` liefert den statischen
+Editorkatalog (Profile, die 128 Referenzsektoren mit ihren Ländern und die
+geschlossenen Auswahllisten) und `GET /api/v2/editor/sector?i=N` die Küstenlinien
+eines paketierten Sektors (404, wenn unbekannt). Die Host-Sicht trägt
+`missions_revision`, die sich bei jeder Änderung der Bibliothek ändert.
+
+`POST /api/v2/missions` (Origin und CSRF wie bei Befehlen, Körper höchstens 1 MiB
+plus 4096 Byte, sonst 413) nimmt genau eine der Formen `{protocol: 2, id, op:
+"save", mission, overwrite}`, `{protocol: 2, id, op: "import", bundle, overwrite}`
+(eine Teilen-Datei `u-jagd.editor-bundle`) oder `{protocol: 2, id, op: "delete",
+key}` und antwortet 202 `{status: "pending", id}`; 400 bei anderer Form, 429 bei
+vier wartenden Anfragen. Der Hauptthread prüft den Inhalt genau wie der Editor der
+uConsole und schreibt in den Benutzerspeicher; das Ergebnis steht in `results` der
+Bibliothek (die letzten acht, `{id, status: "applied"|"rejected", reason, issues}`,
+Grund `exists`, wenn overwrite nicht gesetzt war). Anfragen einer Sitzung, die die
+Gastgeberrolle verloren hat, werden verworfen. Eine Mission startet der
+Host-Befehl `host_start_mission {key}` (Phasen wie `host_new_game`; `no_mission`,
+wenn der Schlüssel fehlt oder nicht lesbar ist, `mission_rejected`, wenn die
+Laufzeit sie abweist). Der Browser wechselt vorher die Solo-Seite auf die Seite der
+Mission. Nichts davon gelangt in Spielstände oder Einstellungen.
+
 ## Testumfang
 
 Transporttests decken echtes Loopback-Framing, Host/Origin, Kopplung/TTL/Rate-Limits,

@@ -136,6 +136,7 @@ DISPLAY_KEYS = {
         "BRIDGE_MISSION": "station.page.bridge_mission",
         "BRIDGE_LOOKOUT": "station.page.bridge_lookout",
         "UBOOT_NAV": "station.page.uboot_nav",
+        "UBOOT_PILOT": "station.page.uboot_pilot",
         "UBOOT_WEAPONS": "station.page.uboot_weapons",
         "UBOOT_ENGINE": "station.page.uboot_engine",
         "UBOOT_SUPPLY": "station.page.uboot_supply",

@@ -12,6 +12,7 @@ from src.ui import layout
 from src.ui import observations
 
 
+from src.ui.stations.radio_chart import CHART_WINDOW_S, chart_half_nm, draw_hfdf_chart
 from src.ui.stations.common import (
     _hfdf_error_deg,
     _panel,
@@ -39,34 +40,11 @@ def draw_radio_view(game, tr=None) -> None:
     box_h = station_rect.bottom - cy - 34
 
     if page == 0:
-        # Current intercepts left; the operator's logged bearings and the
-        # resulting cross-fixes right (same data as the Remote Crew radio).
-        split = int(w * .56)
-        left = layout.box(s, (x, cy, split - 6, box_h), "panel.hfdf")
-        log_box = layout.box(s, (x + split + 6, cy, w - split - 6, box_h), "panel.hfdf_log")
-        gx, gy, gw, gh = log_box
-        logged = list(game.hfdf_log)[-6:]
-        if not logged:
-            layout.blit_line(s, "radio.log_empty", (gx, gy, gw, 24),
-                             config.COLOR_TEXT_DIM, size=16)
-        for row in reversed(logged):
-            layout.blit_line(s, message(
-                "radio.line.logged", label=raw_text(row["label"]),
-                bearing=f"{row['bearing'] % 360:05.1f}",
-                x=f"{row['observer_x']:.1f}", y=f"{row['observer_y']:.1f}",
-                age=f"{max(0.0, game.sim_t - row['t']):.0f}"),
-                (gx, gy, gw, 24), config.COLOR_TEXT, size=16)
-            gy += 26
-        gy += 8
-        for fix in list(game.hfdf_fixes.values())[-4:]:
-            if gy + 24 > log_box[1] + gh:
-                break
-            layout.blit_line(s, message(
-                "radio.line.fix", label=raw_text(fix["label"]),
-                sigma=f"{fix['sigma_nm']:.1f}",
-                age=f"{max(0.0, game.sim_t - fix['t']):.0f}"),
-                (gx, gy, gw, 24), config.COLOR_OK, size=16)
-            gy += 26
+        # Current intercepts and the DF rose left; the cross-fix chart with
+        # the operator's logged bearings and fixes right.
+        regions = hfdf_regions(x, cy, w, box_h)
+        left = layout.box(s, regions["left"], "panel.hfdf")
+        _draw_chart_and_log(game, s, layout.box(s, regions["right"], "panel.hfdf_chart"))
         lx, ly, lw, _ = left
         reports = game.hfdf_bearings()
         row_h = 34
@@ -144,6 +122,58 @@ def draw_radio_view(game, tr=None) -> None:
         ("↑/↓", "radio.footer.select"),
         ("Enter", "radio.footer.log"),
     ))
+
+
+# Page 1: share of the width for the intercepts and the DF rose (the rest is
+# the cross-fix chart), and the log rows under the chart.
+HFDF_LEFT_SHARE = .4
+HFDF_LOG_ROWS = 4
+
+
+def hfdf_regions(x, cy, w, box_h) -> dict:
+    """Page 1 geometry shared by drawing and the station tooltips."""
+    split = int(w * HFDF_LEFT_SHARE)
+    return {"left": pygame.Rect(x, cy, split - 6, box_h),
+            "right": pygame.Rect(x + split + 6, cy, w - split - 6, box_h)}
+
+
+def _draw_chart_and_log(game, s, inner) -> None:
+    """The cross-fix chart, with the newest logged bearings (left) and the
+    fixes (right) in two columns below it."""
+    gx, gy, gw, gh = inner
+    row_h = max(22, layout.font(15).get_linesize() + 2)
+    chart = pygame.Rect(gx, gy, gw, max(1, gh - HFDF_LOG_ROWS * row_h - 8))
+    reports = game.hfdf_bearings()
+    selected = (game.hfdf_display_id(reports[min(game.radio_sel, len(reports) - 1)])
+                if reports else None)
+    view = draw_hfdf_chart(s, game, chart, selected)
+    if view is not None:
+        layout.blit_line(s, message("radio.chart.scale", range=f"{chart_half_nm(view):.0f}"),
+                         (chart.x + 6, chart.bottom - 24, 180, layout.font(14).get_linesize()),
+                         config.COLOR_TEXT_DIM, size=14)
+    top = chart.bottom + 8
+    column = (gw - 12) // 2
+    logged = list(game.hfdf_log)[-HFDF_LOG_ROWS:]
+    if not logged:
+        layout.blit_line(s, "radio.log_empty", (gx, top, gw, row_h),
+                         config.COLOR_TEXT_DIM, size=15)
+    for index, row in enumerate(reversed(logged)):
+        age = max(0.0, game.sim_t - row["t"])
+        layout.blit_line(s, message(
+            "radio.line.logged", label=raw_text(row["label"]),
+            bearing=f"{row['bearing'] % 360:05.1f}",
+            x=f"{row['observer_x']:.1f}", y=f"{row['observer_y']:.1f}",
+            age=f"{age:.0f}"),
+            (gx, top + index * row_h, column, row_h),
+            config.COLOR_TEXT if age <= CHART_WINDOW_S else config.COLOR_TEXT_DIM, size=15)
+    fixes = list(game.hfdf_fixes.values())[-HFDF_LOG_ROWS:]
+    for index, fix in enumerate(reversed(fixes)):
+        age = max(0.0, game.sim_t - fix["t"])
+        layout.blit_line(s, message(
+            "radio.line.fix", label=raw_text(fix["label"]),
+            sigma=f"{fix['sigma_nm']:.1f}", age=f"{age:.0f}"),
+            (gx + column + 12, top + index * row_h, column, row_h),
+            config.COLOR_OK if age <= CHART_WINDOW_S else config.COLOR_TEXT_DIM, size=15)
 
 
 def task_line(game, row) -> object:

@@ -273,9 +273,10 @@ def bearing_rose(screen, rect, strobes, *, course=None, title="") -> None:
         major = step % 30 == 0
         lines.line(screen, config.COLOR_TEXT_DIM if major else config.COLOR_SONAR_RING,
                    _polar(cx, cy, radius - (7 if major else 3), step), _polar(cx, cy, radius, step), 1)
+    row = layout.font(11).get_linesize()
     for step, label in ((0, "000"), (90, "090"), (180, "180"), (270, "270")):
         x, y = _polar(cx, cy, radius + (10 if step in (0, 180) else 20), step)
-        layout.blit_line(screen, raw_text(label), (x - 16, y - 8, 32, 16),
+        layout.blit_line(screen, raw_text(label), (x - 16, y - row // 2, 32, row),
                          config.COLOR_TEXT_DIM, size=11, align="center")
     if course is not None and math.isfinite(course):
         lines.line(screen, config.COLOR_TEXT, (cx, cy), _polar(cx, cy, radius * .3, course), 2)

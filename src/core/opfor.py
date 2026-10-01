@@ -19,6 +19,7 @@ from src.core import baffles, buoy_antenna, config, detrand
 from src.core.boat_esm import BoatESM
 from src.core.boat_radio import BoatRadio
 from src.core.crew import CrewState
+from src.core.echo_sounder import EchoSounder
 from src.core.i18n import message
 from src.core.plot import PlotLayer
 from src.physics import bioluminescence, torpedo_dyn
@@ -349,6 +350,8 @@ class CrewedBoat:
         # buoy splashes).  Display only and never saved; a loaded boat
         # starts with an empty picture.
         self.intercepts = deque(maxlen=config.UBOOT_INTERCEPTS_MAX)
+        # Echo-sounder trace of the navigation page (display only, never saved).
+        self.sounder = EchoSounder()
         # Spoken crew reports from this feed (transient, like the frigate's).
         self.callouts = CalloutLog("boat")
         self.evaded_t = None             # last evasion order (sim s, transient)
@@ -729,6 +732,7 @@ def update_crew(game, boat: CrewedBoat, dt: float = 0.0) -> None:
     if shallow and not orders._keel_warned:
         orders.event("shallow_water")
     orders._keel_warned = shallow
+    boat.sounder.sample(game.sim_t, sub.x, sub.y, bottom, sub.depth)
     ahead = orders.obstacle_ahead_nm = obstacle_ahead_nm(game.world, sub)
     if ahead is not None and sub.order_speed > 0.0 and not orders._obstacle_warned:
         orders.event("obstacle_ahead", distance=f"{ahead:.1f}")

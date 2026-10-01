@@ -6509,5 +6509,12 @@
   "mission.short_variant": "{name} (Kurzeinsatz)",
   "commander.web.host_new_length": "Länge",
   "commander.web.start_length_normal": "volle Mission",
-  "commander.web.start_length_short": "Kurzeinsatz (30-60 min)"
+  "commander.web.start_length_short": "Kurzeinsatz (30-60 min)",
+  "end.reason.boat_held_out": "Das U-Boot hat bis zum Ende der Mission durchgehalten",
+  "end.reason.boat_point_reached": "Das U-Boot hat seinen Zielpunkt erreicht",
+  "end.reason.boat_targets_sunk": "Das U-Boot hat alle Ziele versenkt",
+  "uboot.end.objective": "AUFTRAG ERFÜLLT - SIEG",
+  "uboot.objective.custom_reach": "Zielpunkt erreichen: Peilung {bearing}, {range} sm (noch {left})",
+  "uboot.objective.custom_sink": "Ziele versenken: {sunk} von {total} versenkt (noch {left})",
+  "uboot.objective.custom_survive": "Bis zum Ende der Mission durchhalten (noch {left})"
 }

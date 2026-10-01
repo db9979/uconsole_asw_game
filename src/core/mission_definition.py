@@ -18,6 +18,12 @@ MISSION_VERSION = 1
 REFERENCE_SECTOR_COUNT = 128
 REFERENCE_PREFIX = "sector:"
 SIDES = ("friendly", "neutral", "hostile")
+# The side the player commands: the frigate, or the submarine named by
+# ``boat_id`` (a placed hostile submarine) with the AI hunting it.
+PLAYER_SIDES = ("frigate", "uboot")
+# Objectives each player side can be given.
+SIDE_OBJECTIVES = {"frigate": ("sink", "survive", "protect", "reach"),
+                   "uboot": ("sink", "survive", "reach")}
 OBJECTIVE_TYPES = ("sink", "survive", "protect", "reach")
 EVENT_TYPES = ("message", "spawn", "weather", "objective")
 PLACEMENT_TYPES = ("fixed", "sector")
@@ -34,6 +40,8 @@ class FieldMetadata:
 # only means consumed by the current game runtime, not that a field is useful.
 MISSION_FIELD_METADATA = {
     "key": FieldMetadata(True, False, "User content identity; integration pending."),
+    "side": FieldMetadata(True, True, "frigate, or uboot with boat_id naming the "
+                                      "placed hostile submarine the player commands."),
     "name": FieldMetadata(True, True),
     "description": FieldMetadata(True, True),
     "seed": FieldMetadata(True, True),
@@ -58,6 +66,8 @@ def default_mission(key: str = "user.new_mission") -> dict[str, Any]:
         "name": "New mission",
         "description": "",
         "seed": 1,
+        "side": "frigate",
+        "boat_id": "",
         "world": {"kind": "fixed", "size_nm": 500.0, "sectors": []},
         "player": {"x": 250.0, "y": 250.0, "course_deg": 0.0,
                    "speed_kn": 12.0},
@@ -257,6 +267,8 @@ def validate_mission(data: Mapping[str, Any],
                 problems += finite_number(reach.get("radius_nm"), "objective.reach.radius_nm",
                                           minimum=0.1, maximum=50)
 
+    problems += _side_problems(data, exact)
+
     events = data.get("events")
     if not isinstance(events, list):
         problems.append(issue("events", "array", "must be an array")); events = []
@@ -285,6 +297,40 @@ def validate_mission(data: Mapping[str, Any],
         elif event.get("type") == "objective":
             problems += enum(event.get("action"), f"{path}.action", ("complete", "fail"))
     problems += unique(event_ids, "events.id")
+    return problems
+
+
+def mission_side(data: Mapping[str, Any]) -> str:
+    """The side the player commands (missions without the field: frigate)."""
+    side = data.get("side", "frigate") if isinstance(data, Mapping) else "frigate"
+    return side if side in PLAYER_SIDES else "frigate"
+
+
+def _side_problems(data: Mapping[str, Any], exact: list) -> list[ValidationIssue]:
+    """``side``/``boat_id``: optional, a boat mission names its own submarine."""
+    problems = []
+    if "side" in data:
+        problems += enum(data.get("side"), "side", PLAYER_SIDES)
+    if "boat_id" in data:
+        problems += text(data.get("boat_id"), "boat_id", required=False, maximum=64)
+    if data.get("side") != "uboot":
+        return problems
+    units = {unit.get("id"): unit for unit in exact if isinstance(unit, Mapping)}
+    boat = units.get(data.get("boat_id"))
+    if boat is None:
+        problems.append(issue("boat_id", "required",
+                              "a submarine mission names its placed submarine"))
+    elif boat.get("side") != "hostile":
+        problems.append(issue("boat_id", "side", "the player's submarine must be hostile"))
+    objective = data.get("objective")
+    if isinstance(objective, Mapping):
+        if objective.get("type") not in SIDE_OBJECTIVES["uboot"]:
+            problems.append(issue("objective.type", "side",
+                                  "a submarine mission cannot protect units"))
+        targets = objective.get("target_ids", [])
+        if isinstance(targets, list) and data.get("boat_id") in targets:
+            problems.append(issue("objective.target_ids", "side",
+                                  "the player's submarine cannot be its own target"))
     return problems
 
 

@@ -6509,5 +6509,12 @@
   "mission.short_variant": "{name} (short)",
   "commander.web.host_new_length": "Length",
   "commander.web.start_length_normal": "full mission",
-  "commander.web.start_length_short": "short (30-60 min)"
+  "commander.web.start_length_short": "short (30-60 min)",
+  "end.reason.boat_held_out": "The submarine held out to the end of the mission",
+  "end.reason.boat_point_reached": "The submarine reached its objective point",
+  "end.reason.boat_targets_sunk": "The submarine sank all its targets",
+  "uboot.end.objective": "OBJECTIVE ACHIEVED - VICTORY",
+  "uboot.objective.custom_reach": "Reach the objective point: bearing {bearing}, {range} nm (time left {left})",
+  "uboot.objective.custom_sink": "Sink the targets: {sunk} of {total} sunk (time left {left})",
+  "uboot.objective.custom_survive": "Stay afloat to the end of the mission (time left {left})"
 }

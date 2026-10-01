@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 
-from src.core import config, detrand
+from src.core import config, detrand, free_roam
 from src.core.i18n import message
 from src.core.incidents import (KINDS, WEATHER, IncidentBoard, segment_distance_nm,
                                  segments_cross)
@@ -37,11 +37,13 @@ class IncidentsMixin:
         self._incident_dt = dt
         for item in list(board.active()):
             getattr(self, "_progress_incident_" + item["kind"])(item)
+        # A free patrol has no cap and a shorter interval (free_roam.py).
+        interval, cap = free_roam.incident_interval(self)
         if (board.enabled and self.training is None and self.sim_t >= board.next_t
-                and board.count < config.INCIDENT_MAX):
+                and (cap is None or board.count < cap)):
             self._start_incident()
             board.next_t = self.sim_t + detrand.uniform(
-                *config.INCIDENT_INTERVAL_S, self.seed, "incident-interval", board.count)
+                *interval, self.seed, "incident-interval", board.count)
 
     def _start_incident(self, kind: str | None = None):
         """Start the next incident (``kind`` forces one, for tests)."""

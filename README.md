@@ -12,15 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.134**
+Current release: **1.3.135**
 
-Release 1.3.134 brings ten new scenarios, so each side now has ten. The
-frigate gets 5 Convoy escort, 6 Flaming datum, 7 Trail (peacetime, weapons
-tight, hold sonar contact), 8 Replenishment at sea, 9 Rescue under threat and
-10 Harbour defence; the submarine gets 7 Duel, 8 Damaged homecoming, 9 Agent
-pick-up and 10 Listening post. Key `0` picks the tenth row. An AI plays the
-other side in each, every one has a short variant, and both sides win them in
-AI-against-AI games. Saves move to format v45; v38 to v44 saves still load.
+Release 1.3.135 adds Free patrol as the last entry of both sides: no time
+limit, just sail. HQ keeps sending radio tasks (the frigate also gets sector
+patrols; the submarine gets attack, landing, supply and recon orders), and
+random encounters and events keep coming: submarines, merchant groups, air
+raids, AI hunters, incidents at sea. Points add up for as long as the ship or
+boat stays afloat; weather and time are chosen at the start as usual. Saves
+move to format v46; v38 to v45 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -394,7 +394,7 @@ def set_hq_lead(game, bearing: float, range_nm: float) -> None:
     in scenarios 12, 13, 15 to 18 the report leads it like a hunt."""
     from src.core import mission_modes
     kind = boat_missions.mode(game)
-    if kind is not None and kind not in mission_modes.LEAD_MODES:
+    if kind is not None and kind not in mission_modes.LEAD_MODES + ("free_boat",):
         return
     game.hunter_lead = dict(game.hunter_lead or {"hq": None, "sonar": None})
     game.hunter_lead["hq"] = _line(game.sim_t, game.ship.x, game.ship.y, bearing, range_nm)

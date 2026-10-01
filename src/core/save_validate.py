@@ -528,6 +528,13 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     from src.core import mission_modes
     if not mission_modes.valid_progress(data.get("mission_progress")):
         return False
+    # Save v46: a free patrol's encounters and points; only in one.
+    from src.core import free_roam
+    free = data.get("free_roam")
+    if not free_roam.valid_state(free, save_sim_t):
+        return False
+    if free is not None and not free_roam.scenario_free(data.get("scenario_key")):
+        return False
     # Save v39: the AI hunters' ESM bearing lines.
     from src.core import hunter
     if not hunter.valid_esm_log(data.get("hunter_esm"), save_sim_t):

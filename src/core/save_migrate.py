@@ -67,6 +67,20 @@ def _v44_to_v45(doc: dict) -> None:
     doc["mission_progress"] = dict(hold_s=0.0, count_s=0.0, gap_s=0.0, phase=0, flags=0)
 
 
+def _v45_to_v46(doc: dict) -> None:
+    # A free patrol's block (no older save runs one) and the boat radio's
+    # order fields of the free patrol's own kinds.
+    doc["free_roam"] = None
+    crew = doc.get("crew")
+    radio = crew.get("radio") if isinstance(crew, dict) else None
+    if isinstance(radio, dict) and radio.get("version") == 2:
+        radio["version"] = 3
+        for order in radio.get("orders") or ():
+            if isinstance(order, dict):
+                order.update(target_id=None, name=None, course=None, speed_kn=None,
+                             since=None, points=0)
+
+
 STEPS = {
     38: _v38_to_v39,
     39: _v39_to_v40,
@@ -75,6 +89,7 @@ STEPS = {
     42: _v42_to_v43,
     43: _v43_to_v44,
     44: _v44_to_v45,
+    45: _v45_to_v46,
 }
 
 

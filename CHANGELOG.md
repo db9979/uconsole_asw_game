@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.126
+
+Release 1.3.126 lists the scenarios by side. After "New game" you first pick
+the frigate or the submarine, and the list then shows only that side's
+missions: Patrol, Double hunt, Nuclear intercept and Free hunt on the frigate;
+Breakthrough, Reconnaissance, Convoy attack, Strait blockade, Combat swimmers
+and Supply ship escort on the submarine. The titles therefore lose their
+"(submarine)" suffix, which read as if the frigate were meant to play them.
+The multiplayer lobby and the browser's New game dialog filter the same way,
+and Esc in the scenario list returns to the side choice. Save format v44
+unchanged.
+
 ## 1.3.125
 
 Release 1.3.125 adds three new missions that both sides can play, each with the

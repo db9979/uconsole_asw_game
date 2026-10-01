@@ -14,24 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.125**
+Aktuelle Version: **1.3.126**
 
-Version 1.3.125 bringt drei neue Einsätze, die beide Seiten spielen können,
-jeweils mit der KI auf der Gegenseite. In „Meerengen-Sperre“ (8) muss das
-U-Boot durch die nächste Meerenge schlüpfen, während die Fregatte die
-Sperrlinie bewacht; Handelsverkehr fährt hindurch, und ein KI-Boot versteckt
-sich in seinem Lärm. Bei „Kampfschwimmer“ (9) muss das U-Boot zehn Minuten auf
-Sehrohrtiefe und in langsamster Fahrt vor einer Küste liegen, um seine
-Schwimmer auszuschleusen, und die Fregatte bestreift den Küstenabschnitt. Beim
-„Versorgerschutz“ (10) sichert die Fregatte einen zackenden Versorger, und ein
-einziger Torpedotreffer entscheidet. Die Orte ergeben sich aus der echten oder
-erzeugten Küste jeder Welt. Das Szenariomenü nimmt die Tasten 1 bis 9 und 0. In
-Testläufen KI gegen KI (je sechs Seeds) ging jeder neue Einsatz dreimal für
-jede Seite aus: Das KI-U-Boot schleicht mit 4 kn, überhört Pings aus mehr als
-5 sm, schießt auf einen näheren zurück und gibt in der Meerenge und vor der
-Küste einen Schnellschuss auf eine laute Fregatte ab; sechs Handelsschiffe
-pendeln durch die Meerenge, und das HQ meldet der Fregatte in den Szenarien 8
-und 9 kein U-Boot-Datum. Speicherformat v44; ältere Spielstände laden nicht.
+Version 1.3.126 ordnet die Szenarien nach Seiten. Nach „Neues Spiel“ wählst
+du zuerst Fregatte oder U-Boot, und die Liste zeigt danach nur die Einsätze
+dieser Seite: Patrouille, Doppeljagd, Nuklearer Abfang und Freie Jagd auf der
+Fregatte; Durchbruch, Aufklärung, Geleitzug, Meerengen-Sperre, Kampfschwimmer
+und Versorgerschutz auf dem U-Boot. Die Titel verlieren deshalb den Zusatz
+„(U-Boot)“, der so wirkte, als solle die Fregatte sie spielen. Die
+Mehrspieler-Lobby und der Dialog „Neues Spiel“ im Browser filtern genauso, und
+Esc in der Szenarienliste führt zurück zur Seitenwahl. Speicherformat v44
+unverändert.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

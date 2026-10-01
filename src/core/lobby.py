@@ -43,6 +43,7 @@ class LobbyRoom:
         self.scenario_index = (config.SCENARIO_ORDER.index(scenario_key)
                                if scenario_key in config.SCENARIO_ORDER else 0)
         self.side = side if side in SIDES else "frigate"
+        self._fit_scenario()
         self.station = (station if station in station_choices(self.side)
                         else side_stations(self.side)[0])
         # Start weather and time of day (config.START_*_CHOICES).
@@ -56,6 +57,12 @@ class LobbyRoom:
     def scenario_key(self) -> str:
         return config.SCENARIO_ORDER[self.scenario_index]
 
+    def _fit_scenario(self) -> None:
+        """Keep the mission one of the side's own (else that side's first)."""
+        keys = config.scenarios_for_side(self.side)
+        if self.scenario_key not in keys:
+            self.scenario_index = config.SCENARIO_ORDER.index(keys[0])
+
     def move(self, step: int) -> None:
         self.row = (self.row + step) % len(ROWS)
         self.force_armed = False
@@ -67,9 +74,13 @@ class LobbyRoom:
         self.force_armed = False
         row = ROWS[self.row]
         if row == "mission":
-            self.scenario_index = (self.scenario_index + step) % len(config.SCENARIO_ORDER)
+            # Only the missions of the side the uConsole plays.
+            keys = config.scenarios_for_side(self.side)
+            pos = keys.index(self.scenario_key)
+            self.scenario_index = config.SCENARIO_ORDER.index(keys[(pos + step) % len(keys)])
         elif row == "side":
             self.side = SIDES[(SIDES.index(self.side) + 1) % len(SIDES)]
+            self._fit_scenario()
             if self.station != HOST_ONLY:
                 self.station = side_stations(self.side)[0]
         elif row == "station":

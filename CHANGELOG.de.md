@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.126
+
+Version 1.3.126 ordnet die Szenarien nach Seiten. Nach „Neues Spiel“ wählst
+du zuerst Fregatte oder U-Boot, und die Liste zeigt danach nur die Einsätze
+dieser Seite: Patrouille, Doppeljagd, Nuklearer Abfang und Freie Jagd auf der
+Fregatte; Durchbruch, Aufklärung, Geleitzug, Meerengen-Sperre, Kampfschwimmer
+und Versorgerschutz auf dem U-Boot. Die Titel verlieren deshalb den Zusatz
+„(U-Boot)“, der so wirkte, als solle die Fregatte sie spielen. Die
+Mehrspieler-Lobby und der Dialog „Neues Spiel“ im Browser filtern genauso, und
+Esc in der Szenarienliste führt zurück zur Seitenwahl. Speicherformat v44
+unverändert.
+
 ## 1.3.125
 
 Version 1.3.125 bringt drei neue Einsätze, die beide Seiten spielen können,

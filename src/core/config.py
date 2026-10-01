@@ -1286,8 +1286,8 @@ MISSION_TYPES = {
         time_limit_s=7200, short_time_limit_s=2700, short_scale=0.75, win="rescue"),
     "duell": dict(
         name="Duell", weight=0, subs=1,
-        sub_types=["diesel_alt", "aip_modern"],
-        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        sub_types=["aip_modern"],
+        animals=(1, 2), civilians=(3, 5), asm=(0, 0), warships=(0, 0),
         time_limit_s=10800, short_time_limit_s=2700, win="duel"),
     "heimkehr": dict(
         name="Heimkehr", weight=0, subs=1,
@@ -1442,8 +1442,8 @@ DATUM_SPRINT_S = 1800.0
 # never lose it for too long at a stretch.
 TRAIL_START_NM = 6.0
 TRAIL_FRESH_S = 30.0               # a contact heard this lately ...
-TRAIL_FIX_S = 300.0                # ... and located this lately counts as held
-TRAIL_GOAL_FRACTION = 0.6
+TRAIL_FIX_S = 600.0                # ... and located this lately counts as held
+TRAIL_GOAL_FRACTION = 0.5
 TRAIL_LOST_S = 1200.0
 TRAIL_SPRINT_KN = 22.0
 TRAIL_LEG_S = 600.0                # the hunted boat's sprint-and-drift cycle
@@ -1757,10 +1757,10 @@ SCENARIOS = {
     ),
     "s17_duell": dict(
         title="Duell",
-        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+        difficulty=dict(quiet_mult=1.4, repair_mult=1.0, torpedo_count=6,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
-                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
-                       enemy_solution_threshold=0.25,
+                       enemy_attack_mult=1.5, enemy_cooldown_s=300.0,
+                       enemy_solution_threshold=0.35,
                        second_sub_prob=0.0),
         mission_type="duell",
         hq_intel="coarse",

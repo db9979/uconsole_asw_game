@@ -41,6 +41,7 @@ SEARCH_BOX_S = 1800.0           # the zigzag's base course turns 90° this often
 CROSS_LEG_S = 300.0             # side of the crossing course for bearing motion
 PING_EVERY_S = 600.0            # a bare bearing: a ping that finds nothing only sends the boat running
 DIP_PING_EVERY_S = 30.0
+TRAIL_PING_EVERY_S = 180.0      # scenario 13: no weapon follows a ping
 HELO_RANGE_NM = 30.0
 HELO_GUARD_NM = 8.0             # guarding its post the helicopter stays this close
 HELO_DIP_NM = 0.5
@@ -677,8 +678,10 @@ def sonar(game) -> str:
     if classify(game):
         return "classified"
     contacts = hunt_contacts(game)
+    # Trailing in peacetime a ping costs nothing but noise: it pings more often.
+    every = TRAIL_PING_EVERY_S if boat_missions.mode(game) == "trail" else PING_EVERY_S
     if (contacts and not game._contact_range_fresh(contacts[0])
-            and _fresh(game, contacts[0], 30.0) and _window(game, PING_EVERY_S)
+            and _fresh(game, contacts[0], 30.0) and _window(game, every)
             and game.send_active_ping() is True):
         return "ping"
     return AutocrewController._sonar(game)

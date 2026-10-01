@@ -26,7 +26,7 @@ Frigate side (the frigate's objective):
 Submarine side (the boat's objective):
 
 - ``duel``: the boat seeks out the frigate and must sink it; the frigate
-  wins by sinking it or holding out to the time limit.
+  must sink the boat, which wins the duel when still afloat at the time limit.
 - ``homecoming``: the boat starts damaged (hull ``HOMECOMING_DAMAGE``, half
   a battery) and must reach its home area ``HOMECOMING_NM`` away; the
   frigate comes in on its flank.
@@ -55,7 +55,7 @@ from src.sensors.platform import MAST_DEPTH_M
 
 MODES = ("datum", "trail", "ras", "rescue", "duel", "homecoming", "pickup", "elint")
 # Missions whose objective is the frigate's: the time limit is the boat's.
-FRIGATE_MODES = ("datum", "trail", "ras", "rescue")
+FRIGATE_MODES = ("datum", "trail", "ras", "rescue", "duel")
 # Missions where the AI hunters get HQ's start report as their lead.
 LEAD_MODES = ("datum", "trail", "ras", "rescue", "homecoming")
 # Missions without HQ tasking beyond their own tasks.
@@ -363,16 +363,20 @@ def update(game, kind, dt: float) -> None:
         _elint_listen(game, dt)
 
 
-def trail_held(game) -> bool:
-    """The frigate's sonar picture holds the trailed boat: heard lately and
-    located (ping or TMA range) not long ago."""
+def trail_heard(game) -> bool:
+    """The frigate's sonar picture heard the trailed boat lately."""
     sub = boat_missions.target_sub(game)
     if sub is None:
         return False
     contact = game.sonar.contacts.get(sub.id)
-    if contact is None or not 0.0 <= game.sim_t - contact.last_seen <= config.TRAIL_FRESH_S:
+    return contact is not None and 0.0 <= game.sim_t - contact.last_seen <= config.TRAIL_FRESH_S
+
+
+def trail_held(game) -> bool:
+    """Contact is held: heard lately and located (a ping or TMA range) not long ago."""
+    if not trail_heard(game):
         return False
-    # Held means located: a range from a ping or TMA, not a bare bearing.
+    contact = game.sonar.contacts.get(boat_missions.target_sub(game).id)
     return (contact.range_seen is not None
             and 0.0 <= game.sim_t - contact.range_seen <= config.TRAIL_FIX_S)
 
@@ -389,6 +393,8 @@ def _trail_contact(game, dt: float) -> None:
     progress = _progress(game)
     if trail_held(game):
         progress["count_s"] = min(PROGRESS_MAX_S, progress["count_s"] + dt)
+    # Lost means not even heard; a bare bearing keeps the trail alive.
+    if trail_heard(game):
         progress["gap_s"] = 0.0
     else:
         progress["gap_s"] = min(PROGRESS_MAX_S, progress["gap_s"] + dt)
@@ -638,7 +644,7 @@ def outcome(game, key):
             "end.reason.trail_lost": "shaken", "end.reason.trail_short": "shaken",
             "end.reason.datum_time": "survived", "end.reason.ras_time": "survived",
             "end.reason.ras_tanker_sunk": "supply_sunk",
-            "end.reason.rescue_lost": "survived"}.get(key)
+            "end.reason.rescue_lost": "survived", "end.reason.duel_survived": "survived"}.get(key)
 
 
 # --- the AI boat's legs (src/core/boat_ai.py) ---------------------------------------------
@@ -751,7 +757,8 @@ def frigate_leg(game, found):
         bearing = _bearing(ship.x, ship.y, *point)
         side = 1.0 if math.floor(game.sim_t / hunter.CROSS_LEG_S) % 2 else -1.0
         if "x" not in found:
-            return found["bearing"] + side * 20.0, 12.0
+            # Close on a slant: bearing motion for the TMA, range for a ping.
+            return found["bearing"] + side * 30.0, 16.0
         if math.hypot(point[0] - ship.x, point[1] - ship.y) > 2.5:
             return bearing, 16.0
         return bearing + side * 40.0, 10.0

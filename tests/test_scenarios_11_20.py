@@ -154,11 +154,12 @@ def test_the_rescue_needs_both_rafts_even_after_the_boat_is_sunk():
     assert _end(game) == ("VERLOREN", "end.reason.rescue_lost")
 
 
-def test_the_duel_is_won_by_the_frigate_holding_out():
+def test_the_duel_goes_to_the_boat_still_afloat_at_the_time_limit():
     game, boat = _boat_game("s17_duell")
     assert "frigate" in localize(boat_missions.objective(game, boat)).lower()
     game.mission_time = game.mission.time_limit_s
-    assert _end(game) == ("SIEG", "end.reason.duel_survived")
+    assert _end(game) == ("VERLOREN", "end.reason.duel_survived")
+    assert boat_debrief.outcome(game, boat) == "survived"
 
 
 def test_the_damaged_boat_wins_by_reaching_home():

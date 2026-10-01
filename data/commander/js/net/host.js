@@ -10,15 +10,17 @@ import { boundedArray, exactKeys } from "../state/schema.js";
 // Solo host surface: the published host view and the one host command in
 // flight. Rendering follows via the "host" topic.
 const hostResultText = {ok: "host_result_ok", phase_blocked: "host_result_phase_blocked",
+  no_mission: "host_result_no_mission", mission_rejected: "host_result_mission_rejected",
   no_save: "host_result_no_save", save_failed: "host_result_save_failed",
   session_revoked: "host_result_session_revoked", stale_world_session: "host_result_stale",
   stale_world_epoch: "host_result_stale", stale_generation: "host_result_stale",
   role_revoked: "host_result_revoked", expired: "host_result_stale",
   context_invalidated: "host_result_stale"};
 function validateHost(value) {
-  const fields = ["epoch", "difficulty", "difficulty_fields", "phase", "protocol", "scenario", "scenarios", "session", "slots", "world_mode"];
+  const fields = ["epoch", "difficulty", "difficulty_fields", "missions_revision", "phase", "protocol", "scenario", "scenarios", "session", "slots", "world_mode"];
   if (!exactKeys(value, fields) || value.protocol !== 2 || typeof value.session !== "string" ||
       !Number.isSafeInteger(value.epoch) || value.epoch < 0 ||
+      !Number.isSafeInteger(value.missions_revision) || value.missions_revision < 0 ||
       !Object.hasOwn(phases, value.phase) ||
       !["fixed", "procedural", "real_fixed"].includes(value.world_mode) || typeof value.scenario !== "string" ||
       !boundedArray(value.difficulty_fields, 32) || !value.difficulty_fields.every((row) =>
@@ -44,7 +46,10 @@ export async function pollHost(context) {
     const next = await request("/host", {guard: () => context === S.generation});
     if (context !== S.generation) return;
     validateHost(next);
+    const missionsChanged = S.hostView?.missions_revision !== next.missions_revision;
     S.hostView = next;
+    // The own-mission library changed on the host: refresh it when shown.
+    if (missionsChanged) emit("missions-revision");
   } catch (error) {
     // The host surface can be withdrawn while the session lives: 403 only
     // means "refresh the session", it is not an expired login.

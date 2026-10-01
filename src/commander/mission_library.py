@@ -128,8 +128,13 @@ class MissionLibrary:
                 "units": referenced,
                 "data": data,
             })
+        user_profiles = [{"key": key, "kind": str(data.get("profile_kind", "")),
+                          "name": str(data.get("name", key))[:80],
+                          "warship": data.get("category") == "KAMPFSCHIFF"}
+                         for key, data in sorted(units.items())][:4 * LIBRARY_MAX_MISSIONS]
         return {"protocol": 2, "revision": self.revision, "missions": missions,
                 "units": [units[key] for key in sorted(wanted)],
+                "user_profiles": user_profiles,
                 "results": list(self._results), "truncated": truncated}
 
     def apply(self, op) -> dict:

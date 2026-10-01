@@ -5,6 +5,7 @@ import { renderDisabledReasons, unavailable } from "./controls.js";
 import { node } from "./dom.js";
 import { simlogActive } from "./simlog.js";
 import { sendHostAction } from "../net/host.js";
+import { fetchLibrary } from "../net/missions.js";
 import { mutateStation, switchSoloSide } from "./lobby.js";
 import { opforRoles } from "../core/base.js";
 
@@ -36,7 +37,7 @@ export function renderHost() {
   const menu = active && S.hostView?.phase === "menu";
   $("host-screen").hidden = !menu || simlogActive();
   if (!active) {
-    for (const id of ["host-save", "host-load", "host-new",
+    for (const id of ["host-save", "host-load", "host-new", "host-missions",
                       "host-instructor", "host-side", "host-screen-new", "host-screen-load",
                       "host-new-start"]) $(id).disabled = true;
     for (const button of $("host-slot-list").querySelectorAll("button"))
@@ -49,6 +50,7 @@ export function renderHost() {
   $("host-save").disabled = !any;
   $("host-load").disabled = !replacing;
   $("host-new").disabled = !replacing;
+  $("host-missions").disabled = !ready;
   $("host-instructor").disabled = !any;
   const boat = opforRoles.has(S.session.station);
   $("host-side").textContent = t(boat ? "host_play_frigate" : "host_play_opfor");
@@ -93,11 +95,34 @@ function openSlotDialog(mode) {
   dialog.querySelector("button:not(:disabled)")?.focus();
 }
 function syncNewGameDifficulty() {
-  const scenario = S.hostView?.scenarios.find((row) => row.key === $("host-new-scenario").value);
+  const value = $("host-new-scenario").value;
+  const scenario = S.hostView?.scenarios.find((row) => row.key === value);
   const free = Boolean(scenario) && !scenario.fixed;
   for (const input of $("host-new-difficulty").querySelectorAll("input")) input.disabled = !free;
-  $("host-new-difficulty-note").textContent = scenario
+  // An own mission brings its own weather, time and length.
+  const own = value.startsWith(OWN_PREFIX);
+  for (const id of ["host-new-world", "host-new-weather", "host-new-time", "host-new-length", "host-new-seed"])
+    $(id).disabled = own;
+  $("host-new-difficulty-note").textContent = own ? t("host_new_own_note") : scenario
     ? t(free ? "host_new_difficulty_free" : "host_new_difficulty_fixed") : "";
+}
+const OWN_PREFIX = "own:";
+// The library's valid missions of the chosen side, after the built-in ones.
+function appendOwnMissions(side, preferred) {
+  const rows = (S.missionLibrary?.missions ?? []).filter((row) => row.valid && row.side === side);
+  $("host-new-scenario").querySelector("optgroup")?.remove();
+  if (!rows.length) return;
+  const group = node("optgroup");
+  group.label = t("host_new_own_group");
+  for (const row of rows) {
+    const option = node("option", row.name || row.key);
+    option.value = OWN_PREFIX + row.key;
+    group.append(option);
+  }
+  $("host-new-scenario").append(group);
+  if (preferred && $("host-new-scenario").querySelector(`option[value="${CSS.escape(preferred)}"]`))
+    $("host-new-scenario").value = preferred;
+  syncNewGameDifficulty();
 }
 // The scenario list shows only the missions of the chosen side.
 function fillNewGameScenarios(preferred) {
@@ -109,6 +134,7 @@ function fillNewGameScenarios(preferred) {
     return option;
   }));
   if (rows.some((row) => row.key === preferred)) $("host-new-scenario").value = preferred;
+  appendOwnMissions(side, preferred);
   syncNewGameDifficulty();
 }
 function openNewGameDialog() {
@@ -138,6 +164,10 @@ function openNewGameDialog() {
   dialog.hidden = false;
   if (!dialog.open) dialog.showModal();
   $("host-new-side").focus();
+  // The own missions arrive with the library; the list grows when it is read.
+  fetchLibrary().then(() => {
+    if (dialog.open) appendOwnMissions($("host-new-side").value, $("host-new-scenario").value);
+  }).catch(() => {});
 }
 
 export function init() {
@@ -154,6 +184,17 @@ export function init() {
   $("host-new-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!$("host-new-form").reportValidity()) return;
+    const choice = $("host-new-scenario").value;
+    if (choice.startsWith(OWN_PREFIX)) {
+      closeHostDialog($("host-new-dialog"));
+      const boat = opforRoles.has(S.session?.station);
+      if (($("host-new-side").value === "uboot") !== boat) {
+        await mutateStation("/stations/request", {station: boat ? "bridge" : "uboot"});
+        if (opforRoles.has(S.session?.station) === boat) return;
+      }
+      sendHostAction("host_start_mission", {key: choice.slice(OWN_PREFIX.length)});
+      return;
+    }
     const params = {scenario: $("host-new-scenario").value, world_mode: $("host-new-world").value,
       weather: $("host-new-weather").value, time: $("host-new-time").value,
       length: $("host-new-length").value};

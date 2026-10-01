@@ -29,7 +29,7 @@ SECTOR_MAX_BYTES = 64 * 1024
 MISSION_OPS_PENDING_MAX = 4
 MISSION_OPS = ("save", "import", "delete")
 _BLANK = _json_bytes({"protocol": 2, "revision": 0, "missions": [], "units": [],
-                      "results": [], "truncated": False})
+                      "user_profiles": [], "results": [], "truncated": False})
 
 
 def _text_id(value) -> bool:

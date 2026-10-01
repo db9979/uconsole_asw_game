@@ -24,6 +24,7 @@ from src.commander.assets import static_assets
 from src.commander.web_auth import WebHostAuth
 from src.core.config import SHIP_SPEED_MAX_KN
 
+from src.commander.missions import MissionLibraryServerMixin
 from src.commander.v2.wire import (
     DEBRIEF_MAX_BYTES,
     station_grants,  # noqa: F401
@@ -149,7 +150,7 @@ from src.commander.v2.routes import (  # noqa: F401
     _HTTPServer,
     _Handler)
 
-class CommanderServer:
+class CommanderServer(MissionLibraryServerMixin):
     """Thread-safe v2 publications and leased commands, with explicit lifecycle.
 
     ``address`` is available only while started. Command timestamps use
@@ -231,6 +232,7 @@ class CommanderServer:
         # publishes it, sessions read it); None while no lobby is open.
         self._lobby = None
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
+        self._init_missions()
         self._v2_events = {}
         self._v2_private_events = {}
         self._v2_simlogs = {}
@@ -457,6 +459,7 @@ class CommanderServer:
         self._web_admin_results.clear()
         self._v2_proposals.clear()
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
+        self._clear_missions_locked()
         self._v2_events.clear()
         self._v2_private_events.clear()
         self._v2_simlogs.clear()
@@ -1527,6 +1530,7 @@ class CommanderServer:
                                "weapons_down", "weapons_degraded", "out_of_range",
                                 "opz_degraded", "active_limit", "no_fuel",
                                 "weather_unsafe", "no_save", "save_failed",
+                                "no_mission", "mission_rejected",
                                 "lookout_not_confirmed", *UBOOT_REASONS}
                           else "action_rejected")
             return self._finish_v2_locked(

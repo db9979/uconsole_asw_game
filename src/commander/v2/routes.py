@@ -25,6 +25,7 @@ from src.commander.v2.commands import (
     _number,
     _object,
     _v2_command_valid)
+from src.commander.missions import MISSION_UPLOAD_MAX_BYTES
 from src.commander.v2.wire import (
     station_grants,
     AUDIO_SOCKET_TIMEOUT_S,
@@ -343,7 +344,9 @@ class _Handler(BaseHTTPRequestHandler):
             self.send_error(400)
             return
         length = int(length)
-        if length > 4096:
+        # Only a mission upload (solo host, checked in _post) may be larger.
+        if length > (MISSION_UPLOAD_MAX_BYTES if self.command == "POST"
+                     and self.path == "/api/v2/missions" else 4096):
             self.send_error(413)
             return
         if self.command == "GET":
@@ -1084,6 +1087,23 @@ class _Handler(BaseHTTPRequestHandler):
                 self.send_error(403)
             else:
                 self._v2_unauthorized(presented)
+        elif (self.path in ("/api/v2/missions", "/api/v2/editor/catalog")
+              or self.path.startswith("/api/v2/editor/sector?i=")):
+            # The own-mission library: the solo host surface only.
+            try:
+                with owner._lock:
+                    session, _, presented = self._authenticated_v2_locked(renew=True)
+                    body = (owner.mission_route_body_locked(session, self.path)
+                            if session is not None else None)
+            except (UnicodeEncodeError, ValueError):
+                self.send_error(400)
+                return
+            if session is None:
+                self._v2_unauthorized(presented)
+            elif body is None:
+                self.send_error(403 if not session["solo_host"] else 404)
+            else:
+                self._reply(200, body)
         else:
             self.send_error(404)
 
@@ -1251,6 +1271,29 @@ class _Handler(BaseHTTPRequestHandler):
                     else:
                         status = 200
                         response = self._session_v2_body(session, owner._sessions_v2, owner)
+            elif self.path == "/api/v2/missions":
+                try:
+                    session, _, presented = self._authenticated_v2_locked(renew=True)
+                except (UnicodeEncodeError, ValueError):
+                    status, response = 400, {"error": "invalid_request"}
+                else:
+                    if session is None:
+                        self._v2_unauthorized(presented)
+                        return
+                    csrf = self.headers.get("X-U-Jagd-CSRF")
+                    if (csrf is None or not secrets.compare_digest(
+                            csrf.encode("utf-8", errors="surrogatepass"),
+                            session["csrf"].encode("ascii"))):
+                        status, response = 403, {"error": "forbidden"}
+                    else:
+                        result = owner.enqueue_mission_op_locked(session, body)
+                        status, response = {
+                            "pending": (202, {"status": "pending", "id": body.get("id")
+                                              if type(body) is dict else None}),
+                            "forbidden": (403, {"error": "forbidden"}),
+                            "invalid": (400, {"error": "invalid_request"}),
+                            "queue_full": (429, {"error": "queue_full"}),
+                        }[result]
             elif self.path == "/api/v2/stations/handover":
                 try:
                     session, _, presented = self._authenticated_v2_locked(renew=True)

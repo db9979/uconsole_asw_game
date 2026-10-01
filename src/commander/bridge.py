@@ -76,6 +76,7 @@ from src.sonar.sonar import SonarSystem
 from src.core import config, debrief_replay, opfor
 from src.sensors import lookout_id
 from src.commander.lookout_projection import build_lookout_states
+from src.commander.mission_library import MissionLibrary, editor_catalog
 from src.commander.server import (HOST_ROLE, OPFOR_ROLES, ROLES, UBOOT_COMMAND_ROLES, SIMLOG_ENTRIES_MAX,
                                   SIMLOG_MAX_BYTES, V2_ACTION_REGISTRY, _json_bytes)
 from src.commander.projections import (ROLE_NAMES, build_opfor_states,
@@ -328,6 +329,9 @@ class CommanderBridge:
         self._last_publish = None
         self._slots = None
         self._slots_at = None
+        # Own-mission library of the solo host (src/commander/mission_library.py).
+        self._missions = MissionLibrary()
+        self._missions_published = None
         self._audio_context = None
         self._audio_receiver_sequence = None
         self._audio_filter = None
@@ -1029,6 +1033,7 @@ class CommanderBridge:
         redacted = game.in_menu or game.main_menu or game.splash_active
         self._publish_role_simlog(server, game, redacted)
         self._publish_debrief(server, game)
+        self._pump_missions(server, now)
         if redacted:
             self._refs.clear()
             self._esm_refs.clear()
@@ -1243,6 +1248,26 @@ class CommanderBridge:
         self._last_publish = now
         self._dirty = False
 
+    def _pump_missions(self, server, now):
+        """Own-mission library of the solo host: apply queued requests, publish
+        the library when it changed and the editor catalog once."""
+        if (getattr(server, "solo_mode", False) is not True
+                or not hasattr(server, "take_mission_ops")):
+            return
+        for op in server.take_mission_ops():
+            self._missions.apply(op)
+            self._dirty = True
+        view = self._missions.view(now)
+        if view is not self._missions_published:
+            try:
+                server.publish_missions_v2(view)
+            except ValueError:
+                server.publish_missions_v2(dict(view, missions=[], units=[], truncated=True))
+            self._missions_published = view
+            self._dirty = True              # the host view carries the revision
+        if not server.editor_catalog_published:
+            server.publish_editor_catalog_v2(*editor_catalog())
+
     @staticmethod
     def _slot_rows():
         """Metadata only (stat, never parse): which save slots hold a file."""
@@ -1275,7 +1300,8 @@ class CommanderBridge:
                      min=low, max=high, step=step, default=default)
                 for name, (kind, low, high, step, default)
                 in config.DIFFICULTY_FIELDS.items()],
-            slots=[dict(row) for row in self._slots])
+            slots=[dict(row) for row in self._slots],
+            missions_revision=self._missions.revision)
 
     def _publish_sonar_audio(self, game, server, phase):
         """Copy only complete mixed receiver blocks on the main thread."""

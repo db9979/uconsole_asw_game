@@ -1508,9 +1508,9 @@ START_TIME_HOURS = {"dawn": 6.0, "day": 12.0, "dusk": 19.0, "night": 1.0}
 START_LENGTH_CHOICES = ("normal", "short")
 SHORT_SUB_SPAWN_NM = ((5.0, 8.0), (8.0, 14.0))   # first boat, every further one
 SHORT_DISTANCE_SCALE = 0.5
-SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang",
+SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
                   "s11_geleitschutz", "s12_datum", "s13_fuehlung",
-                  "s14_hafenschutz", "s15_versorgung", "s16_seenot", "s4_zufall",
+                  "s14_hafenschutz", "s15_versorgung", "s16_seenot",
                   "s5_durchbruch", "s6_aufklaerung", "s7_geleitzug",
                   "s8_meerenge", "s9_kampfschwimmer", "s10_versorger",
                   "s17_duell", "s18_heimkehr", "s19_abholung", "s20_lauschposten")

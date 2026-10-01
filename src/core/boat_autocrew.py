@@ -99,7 +99,7 @@ def targets(game, boat) -> list:
     """Fresh contacts the crew would shoot at, nearest known fix first."""
     kind = boat_missions.mode(game)
     categories = (frozenset({"TANKER", "FRACHT", "PASSAGIER"}) if kind == "convoy_attack"
-                  else frozenset({"TANKER"}) if kind == "escort"
+                  else frozenset({"TANKER"}) if kind in ("escort", "ras")
                   else frozenset({"KAMPFSCHIFF"}))
     phrases = _signatures(game.runtime_catalog, categories)
     rows = [contact for contact in boat.station.sonar.contacts.values()

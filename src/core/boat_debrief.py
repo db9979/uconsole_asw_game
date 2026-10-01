@@ -47,6 +47,10 @@ def outcome(game, boat) -> str:
         return "landed"
     if key == "end.reason.supply_sunk":
         return "supply_sunk"
+    from src.core import mission_modes
+    extra = mission_modes.outcome(game, key)
+    if extra is not None:
+        return extra
     if key == "end.reason.sub_escaped" and sub is not None and \
             str(reason.get("params", {}).get("contact")) == str(sub.id):
         return "escaped"

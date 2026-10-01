@@ -174,6 +174,8 @@ def escape_point(game):
 def frigate_start(world, scenario_key, seed, short: bool = False):
     """``(x, y, course)`` of the frigate in these scenarios, else None."""
     kind = boat_missions.scenario_mode(scenario_key)
+    if kind not in ("datum", "trail", "ras", "rescue", "homecoming"):
+        return None
     scale = scale_for(scenario_key, short)
     cx, cy = centre(world, scenario_key)
     if kind == "datum":

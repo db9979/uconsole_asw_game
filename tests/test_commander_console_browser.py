@@ -35,7 +35,8 @@ async function until(check, message, limit = 1500) {
   throw new Fail(message);
 }
 const boatScenarios = ["s5_durchbruch", "s6_aufklaerung", "s7_geleitzug", "s8_meerenge",
-  "s9_kampfschwimmer", "s10_versorger"];
+  "s9_kampfschwimmer", "s10_versorger", "s17_duell", "s18_heimkehr", "s19_abholung",
+  "s20_lauschposten"];
 const scenarioIsBoat = (key) => boatScenarios.includes(key);
 const scriptErrors = [];
 window.addEventListener("error", (event) => scriptErrors.push(event.message));

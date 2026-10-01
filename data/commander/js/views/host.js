@@ -13,7 +13,12 @@ export const scenarioText = {s1_patrouille: "scenario_s1_patrouille", s2_doppelj
   s3_abfang: "scenario_s3_abfang", s4_zufall: "scenario_s4_zufall",
   s5_durchbruch: "scenario_s5_durchbruch", s6_aufklaerung: "scenario_s6_aufklaerung",
   s7_geleitzug: "scenario_s7_geleitzug", s8_meerenge: "scenario_s8_meerenge",
-  s9_kampfschwimmer: "scenario_s9_kampfschwimmer", s10_versorger: "scenario_s10_versorger"};
+  s9_kampfschwimmer: "scenario_s9_kampfschwimmer", s10_versorger: "scenario_s10_versorger",
+  s11_geleitschutz: "scenario_s11_geleitschutz", s12_datum: "scenario_s12_datum",
+  s13_fuehlung: "scenario_s13_fuehlung", s14_hafenschutz: "scenario_s14_hafenschutz",
+  s15_versorgung: "scenario_s15_versorgung", s16_seenot: "scenario_s16_seenot",
+  s17_duell: "scenario_s17_duell", s18_heimkehr: "scenario_s18_heimkehr",
+  s19_abholung: "scenario_s19_abholung", s20_lauschposten: "scenario_s20_lauschposten"};
 const hostPhaseAllows = (kind) => {
   const phase = S.hostView?.phase;
   return kind === "any" ? phase === "live" :

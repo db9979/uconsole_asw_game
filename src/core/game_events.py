@@ -44,6 +44,7 @@ from src.ui import simlog_map
 from src.ui.weapons_view import weapons_hit_target
 # Names tests and tools import from ``src.core.game`` (kept as re-exports).
 from src.core.game_save import _read_save_document
+from src.core.preferences import GRAPHICS_LEVELS
 from src.core.game_bugreport import BUG_REPORT_ENTRY
 
 
@@ -190,6 +191,12 @@ class EventMixin:
                         self.red_light_mode()]
                     self._set_preference("red_light_auto", following == "auto")
                     value = following == "on"
+                elif name == "graphics":
+                    levels = GRAPHICS_LEVELS
+                    step = -1 if key == pygame.K_LEFT else 1
+                    current = (self.preferences.graphics
+                               if self.preferences.graphics in levels else "normal")
+                    value = levels[(levels.index(current) + step) % len(levels)]
                 elif name == "bottom_panel":
                     choices = layout.BOTTOM_PANEL_MODES
                     value = choices[(choices.index(self.bottom_panel_mode()) + 1)

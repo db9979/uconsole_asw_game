@@ -12,14 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.128**
+Current release: **1.3.129**
 
-Release 1.3.128 makes the game more robust. A nightly soak test now plays
-every mission on both sides for an hour each with random input at every
-station, saving and reloading along the way, and opens a bug report when
-anything breaks. Its first run found that a submarine mission saved while a
-sonar contact was selected could not be loaded again; that is fixed. Saves
-stay format v44.
+Release 1.3.129 adds a graphics level under Options: "Low" saves the
+uConsole's processor (no radar afterglow, a calmer menu background), "Normal"
+shows every effect and "Full" also smooths chart lines; the uConsole starts at
+Normal, Windows at Full. In a window or full screen larger than 1280 x 720 the
+picture is now scaled sharply: whole factors repeat pixels exactly and other
+sizes no longer show uneven text rows or blur. The level never changes what a
+station shows as information. Saves stay format v44.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

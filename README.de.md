@@ -14,14 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.128**
+Aktuelle Version: **1.3.129**
 
-Version 1.3.128 macht das Spiel robuster. Ein nächtlicher Dauertest spielt
-jetzt jede Mission auf beiden Seiten je eine Stunde lang mit zufälligen
-Eingaben an allen Stationen, speichert und lädt dabei, und legt bei jedem
-Fehler eine Fehlermeldung an. Sein erster Lauf fand, dass eine U-Boot-Mission,
-die mit ausgewähltem Sonarkontakt gespeichert wurde, nicht mehr geladen werden
-konnte; das ist behoben. Spielstände bleiben im Format v44.
+Version 1.3.129 bringt unter Optionen eine Grafikstufe: „Sparsam“ schont den
+Prozessor der uConsole (kein Radar-Nachleuchten, ruhigerer Menühintergrund),
+„Normal“ zeigt alle Effekte und „Voll“ glättet zusätzlich die Kartenlinien;
+die uConsole startet mit Normal, Windows mit Voll. In einem Fenster oder
+Vollbild größer als 1280 x 720 wird das Bild jetzt scharf skaliert: ganze
+Faktoren wiederholen Pixel exakt, andere Größen zeigen keine ungleichmäßigen
+Textzeilen und keine Unschärfe mehr. Die Stufe ändert nie, welche
+Informationen eine Station zeigt. Spielstände bleiben im Format v44.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -121,7 +121,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                     "bottom_panel", "level", "live_traffic", "commander")
     # Second options page: game setup.  The local side is per launch and never
     # persisted (the frigate is always the default).
-    _OPTION_ROWS_SETUP = ("local_side", "aa_lines", "speech")
+    _OPTION_ROWS_SETUP = ("local_side", "graphics", "speech")
     _OPTION_PAGES = (_OPTION_ROWS, _OPTION_ROWS_SETUP)
 
     def __init__(self, seed: int = 42, difficulty: dict = None,

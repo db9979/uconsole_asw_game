@@ -13,7 +13,7 @@ from src.core.game import Game
 from src.core.preferences import Preferences, load_preferences, save_preferences
 from src.core.station import Station
 from src.sensors import lookout_id
-from src.ui import horizon, layout, lines, theme
+from src.ui import horizon, layout, lines, quality, theme
 from src.ui.stations import bridge as bridge_view
 from src.world import atmosphere
 
@@ -33,15 +33,22 @@ def _mean_brightness(surface, rect) -> float:
     return total / max(1, count)
 
 
-def test_aa_lines_preference_round_trips_and_defaults_off(tmp_path):
+def test_graphics_preference_round_trips_and_reads_the_old_line_switch(tmp_path):
     path = tmp_path / "preferences.json"
     path.write_text(json.dumps({"language": "de", "audio": False}), encoding="utf-8")
-    assert load_preferences(path).aa_lines is False
-    expected = Preferences(aa_lines=True)
+    loaded = load_preferences(path)
+    assert loaded.graphics == "normal" and loaded.aa_lines is False   # Linux default
+    expected = Preferences(graphics="full", aa_lines=True)
     assert save_preferences(expected, path) == path
     assert load_preferences(path) == expected
-    path.write_text(json.dumps({"aa_lines": "yes"}), encoding="utf-8")
-    assert load_preferences(path).aa_lines is False
+    path.write_text(json.dumps({"aa_lines": "yes", "graphics": "ultra"}), encoding="utf-8")
+    assert load_preferences(path).graphics == "normal"
+    # A settings file from before the levels: the line switch meant "full".
+    path.write_text(json.dumps({"aa_lines": True}), encoding="utf-8")
+    assert load_preferences(path).graphics == "full"
+    path.write_text(json.dumps({"graphics": "low", "aa_lines": True}), encoding="utf-8")
+    low = load_preferences(path)
+    assert low.graphics == "low" and low.aa_lines is False
 
 
 def test_daylight_stage_boundaries():
@@ -118,14 +125,14 @@ def test_line_helper_switches_between_plain_and_anti_aliased_paths():
     # gfxdraw blends edge pixels: more distinct colours than the plain path.
     assert len(surfaces[True]) > len(surfaces[False])
     game = _game()
-    game.preferences = replace(game.preferences, aa_lines=True)
+    game.preferences = replace(game.preferences, graphics="full")
     layout.configure_for(game)
     assert lines.ENABLED is True
-    game.preferences = replace(game.preferences, aa_lines=False)
+    game.preferences = replace(game.preferences, graphics="normal")
     layout.configure_for(game)
     assert lines.ENABLED is False
     # The chart draws with the anti-aliased path on both sides.
-    game.preferences = replace(game.preferences, aa_lines=True)
+    game.preferences = replace(game.preferences, graphics="full")
     layout.configure_for(game)
     game.station = Station.BRIDGE
     game.draw()
@@ -136,30 +143,37 @@ def test_line_helper_switches_between_plain_and_anti_aliased_paths():
     lines.ENABLED = False
 
 
-def test_options_setup_page_carries_the_anti_aliasing_switch(monkeypatch):
+def test_options_setup_page_carries_the_graphics_level(monkeypatch):
     from src.core import game_draw
     monkeypatch.setattr(game_draw, "save_preferences", lambda *_a, **_k: None)
     game = _game(start_menu=True)
-    assert Game._OPTION_ROWS_SETUP == ("local_side", "aa_lines", "speech")
+    assert Game._OPTION_ROWS_SETUP == ("local_side", "graphics", "speech")
     assert len(Game._OPTION_ROWS) == 13          # page 1 stays within its footer
     game._open_administration("options")
     game._set_options_page(1)
     assert game._option_rows() is Game._OPTION_ROWS_SETUP
     game.draw()
-    assert game.preferences.aa_lines is False
+    assert game.preferences.graphics == "normal"
     game._handle_administration_key(pygame.K_DOWN)
     assert game.options_sel == 1
     game._handle_administration_key(pygame.K_RETURN)
-    assert game.preferences.aa_lines is True and lines.ENABLED is True
+    assert game.preferences.graphics == "full" and game.preferences.aa_lines is True
+    assert lines.ENABLED is True
     game.draw()
+    game._handle_administration_key(pygame.K_RETURN)
+    assert game.preferences.graphics == "low" and lines.ENABLED is False
+    assert quality.LEVEL == "low"
+    game.draw()
+    game._handle_administration_key(pygame.K_LEFT)
+    assert game.preferences.graphics == "full"
     # The mouse hits the drawn row, not the side's help text under row 0.
     rects = Game._option_row_hit_rects(Game._OPTION_ROWS_SETUP)
     assert rects[1] == Game._options_row_rects()[6]
     game._window_to_canvas = lambda pos: pos
     game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=rects[1].center))
     assert game.options_sel == 1
-    game._set_preference("aa_lines", False)
-    assert lines.ENABLED is False
+    game._set_preference("graphics", "normal")
+    assert lines.ENABLED is False and quality.LEVEL == "normal"
     layout.configure_for(large_text=False)
 
 

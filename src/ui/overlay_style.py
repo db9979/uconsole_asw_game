@@ -13,7 +13,7 @@ from collections import OrderedDict
 import pygame
 
 from src.core import config
-from src.ui import layout, splash_view
+from src.ui import layout, quality, splash_view
 
 PHOSPHOR = splash_view.PHOSPHOR
 PHOSPHOR_DIM = splash_view.PHOSPHOR_DIM
@@ -36,8 +36,30 @@ _DIM = {}
 BACKDROP_DIM_ALPHA = 110
 
 
+_BACKDROP_FRAME = {}
+
+
 def backdrop(surface: pygame.Surface, t: float) -> None:
-    """The start-screen scene over the whole canvas, lightly dimmed."""
+    """The start-screen scene over the whole canvas, lightly dimmed.
+
+    At the low graphics level the scene is drawn a few times a second and the
+    finished frame is reused in between (src/ui/quality.py)."""
+    size = surface.get_size()
+    if quality.LEVEL == "low":
+        stamp = quality.backdrop_time(t)
+        cached = _BACKDROP_FRAME.get(size)
+        if cached is not None and cached[0] == stamp:
+            surface.blit(cached[1], (0, 0))
+            return
+        _draw_backdrop(surface, stamp)
+        _BACKDROP_FRAME.clear()
+        _BACKDROP_FRAME[size] = (stamp, surface.copy())
+        return
+    _BACKDROP_FRAME.clear()
+    _draw_backdrop(surface, t)
+
+
+def _draw_backdrop(surface: pygame.Surface, t: float) -> None:
     splash_view.draw_scene(surface, t)
     size = surface.get_size()
     dim = _DIM.get(size)

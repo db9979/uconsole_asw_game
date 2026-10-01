@@ -85,7 +85,7 @@ Update die uConsole spürbar belastet.
 
 | Prüfpunkt | Vorgehen | Erwartung | Ergebnis |
 |---|---|---|---|
-| Anti-Aliasing | Option `aa_lines` an/aus, Brücke mit Karte | Mehrkosten unter 1 ms je Frame, sonst Voreinstellung aus lassen | |
+| Grafikstufe | Option Grafik Sparsam/Normal/Voll (Voll = geglättete Linien), Brücke mit Karte, OPZ-Radar, Menü | Normal ohne Mehrkosten gegenüber 1.3.125; Voll unter 1 ms Mehrkosten je Frame, sonst auf der uConsole Normal lassen; Sparsam spürbar günstiger | |
 | Tag/Nacht-Karte | Startzeiten 06:00, 12:00, 22:00 | Wasserfläche in drei Stufen getönt, Kontraste lesbar | |
 | Anti-Aliasing (Boot) | Option an, uConsole spielt das Boot, Führungsseite mit Karte | Peilstriche und Rohr-Schussfeld geglättet, Frame-Zeit wie bei der Fregatte | |
 | Wetterband | Szenario mit Regen (Wetterstation zeigt Regen), dann Sturm | Schraffur über der Karte sichtbar, aber Symbole und Text lesbar; Sturm mit gelbem Rand | |

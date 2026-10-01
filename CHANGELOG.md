@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.129
+
+Release 1.3.129 adds a graphics level under Options: "Low" saves the
+uConsole's processor (no radar afterglow, a calmer menu background), "Normal"
+shows every effect and "Full" also smooths chart lines; the uConsole starts at
+Normal, Windows at Full. In a window or full screen larger than 1280 x 720 the
+picture is now scaled sharply: whole factors repeat pixels exactly and other
+sizes no longer show uneven text rows or blur. The level never changes what a
+station shows as information. Saves stay format v44.
+
 ## 1.3.128
 
 Release 1.3.128 makes the game more robust. A nightly soak test now plays

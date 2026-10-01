@@ -24,7 +24,7 @@ from src.core import pointer_input, station_alarms, uboot_local
 from src.nations.nations import reference_summary
 from src.ui import layout, pointer
 from src.ui import observations
-from src.ui import overlay_style
+from src.ui import overlay_style, quality
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
@@ -139,11 +139,11 @@ class DrawMixin:
         if (w, h) == (config.SCREEN_W, config.SCREEN_H):
             display.blit(self.screen, (0, 0))
         elif config.FILL_SCREEN:
-            display.blit(pygame.transform.scale(self.screen, (w, h)), (0, 0))
+            display.blit(quality.scale_canvas(self.screen, (w, h)), (0, 0))
         else:
+            # Sharp smooth scaling for the graphics level (src/ui/quality.py).
             _, ox, oy, sw, sh = letterbox_layout(w, h)
-            display.blit(
-                pygame.transform.scale(self.screen, (sw, sh)), (ox, oy))
+            display.blit(quality.scale_canvas(self.screen, (sw, sh)), (ox, oy))
         pygame.display.flip()
 
     # --- Input ---
@@ -1172,16 +1172,16 @@ class DrawMixin:
             layout.blit_block(self.screen, "option.local_side.locked",
                               row.x + 24, row.bottom + 170, row.w - 24, 50,
                               config.COLOR_WARN, size=18)
-        # Display: anti-aliased chart lines (row 7 leaves the side's help room).
+        # Display: the graphics level (row 7 leaves the side's help room).
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[1]]
         selected = self.options_sel == 1
         if selected:
             overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
-        value = (self.tr("option.aa_lines") + ": "
-                 + self.tr("common.on" if self.preferences.aa_lines else "common.off"))
+        value = self.tr("option.graphics",
+                        level=self.tr("option.graphics." + quality.LEVEL))
         layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
                          config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
-        layout.blit_block(self.screen, "option.aa_lines.help",
+        layout.blit_block(self.screen, "option.graphics.help",
                           row.x + 24, row.bottom + 10, row.w - 24, 80,
                           config.COLOR_TEXT_DIM, size=18)
         # Spoken crew reports; the help says whether espeak-ng was found.
@@ -1534,6 +1534,9 @@ class DrawMixin:
                                      enabled=bool(value))
             self._audio_timer = 0.0
             self._sonar_audio_sequence = -1
+        elif name == "graphics":
+            self.preferences = replace(self.preferences, aa_lines=value == "full")
+            self._apply_text_size()
         elif name in ("large_text", "high_contrast", "aa_lines"):
             self._apply_text_size()
         elif name == "level":

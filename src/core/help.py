@@ -165,7 +165,8 @@ STATION_HELP = {
          ("A", "help.control.task_accept"), ("D", "help.control.task_decline"),
          ("R", "help.control.ras_request"), ("K", "help.control.contact_report"),
          ("H", "help.control.request_support")],
-        ["help.note.hfdf", "help.note.teletype", "help.note.hfdf_map", "help.note.tasking"],
+        ["help.note.hfdf", "help.note.teletype", "help.note.hfdf_map", "help.note.hfdf_chart",
+         "help.note.tasking"],
         "help.note.hfdf_tactic"),
     Station.ENGINE: _station(
         "help.engine.intro",
@@ -199,7 +200,8 @@ STATION_HELP = {
           ("help.key.p3_notch", "help.control.notch"),
           ("help.key.p3_mode", "help.control.helo_audition_mode"),
           ("help.key.p3_band", "help.control.helo_band")],
-        ["help.note.helo_stores", "help.note.helo_fuel", "help.note.buoys",
+        ["help.note.helo_stores", "help.note.helo_console", "help.note.helo_fuel",
+          "help.note.buoys",
           "help.note.buoy_patterns", "help.note.mad",
           "help.note.helo_roe", "help.note.shared_controls"], "help.note.helo_tactic"),
     Station.ELOKA: _station(
@@ -259,6 +261,7 @@ _UBOOT_HELP = (
         ("Q / E", "help.uboot.zoom"),
         ("K", "help.uboot.follow"),
         ("help.key.uboot_drag", "help.uboot.drag"),
+        ("help.key.mouse_click", "help.uboot.pilot_click"),
         ("help.key.arrows", "help.uboot.contact"),
         ("help.key.uboot_fire", "help.uboot.fire"),
         ("F", "help.uboot.fire_bearing"),

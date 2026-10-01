@@ -6,7 +6,7 @@ The radio room handles communications with HQ and HF direction finding (HFDF). H
 
 ## Displays and instruments {#radio-displays}
 
-Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
+Page 1 lists current HFDF signals with the DF rose on the left and the cross-fix chart with the bearing log on the right; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
 
 ```text
  HFDF SIGNALS               BEARING LOG
@@ -28,6 +28,8 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 - At mission start HQ reports the threat. With **coarse** intelligence it gives only a rough bearing and range of one threat. With **exact** intelligence it also names every hostile unit type committed to the mission with its number (for example "1x Altmetall (Diesel, älter), 2x air raid wave with anti-ship missiles"), using the names in the unit analyser (`F8`); positions stay unconfirmed. Patrol always gets exact intelligence, Double hunt and Nuclear intercept coarse, and the free hunt lets you choose on its difficulty screen (last row, "HQ intelligence").
 
 Page 1 also shows an HF/DF bearing rose: each current signal is a strobe, fanned as wide as its bearing error.
+
+The **cross-fix chart** beside it is the radio room's plotting sheet, north up, with grid and coastline: every logged bearing of the last 5 minutes is a line drawn from where the ship took it (the origin as a small circle), the current intercepts are thin lines from the ship with their error fan (the selected one amber), two logged bearings of the same signal that cross mark their crossing with a diamond, and each cross-fix shows its error ellipse with its label and 1-sigma error. Older lines fade. The chart frames the ship, every origin and fix and shows its half width (at least ±20 NM); below it are the newest logged bearings and fixes. It draws only what the radio room measured and computed, never the emitter itself.
 
 ## HQ tasks {#radio-tasks}
 

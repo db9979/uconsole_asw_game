@@ -6168,7 +6168,7 @@
   "scenario.strait.win": "Frigate: submarine sunk or strait held to the time limit",
   "scenario.strait.lose": "Submarine passes the strait / frigate sunk",
   "scenario.swimmers.title": "Combat swimmers (submarine)",
-  "scenario.swimmers.brief": "Submarine mission. The submarine must land combat swimmers off a coast: it has to stop in a zone of 1 NM radius off the coast, no deeper than 20 m and no faster than 1.5 kn, for 10 minutes without a break while the swimmers leave through the lock. It starts about 12 NM out at sea; its orders give bearing and range to the zone. The frigate guards a coast section of 18 NM radius around it without knowing the exact zone. It must sink the submarine or keep the swimmers from landing until the time limit (5 hours).",
+  "scenario.swimmers.brief": "Submarine mission. The submarine must land combat swimmers off a coast: it has to stop in a zone of 1 NM radius off the coast, no deeper than 20 m and no faster than 1.5 kn, for 10 minutes without a break while the swimmers leave through the lock. It starts about 12 NM out at sea; its orders give bearing and range to the zone. The frigate guards a coast section of 15 NM radius around it without knowing the exact zone. It must sink the submarine or keep the swimmers from landing until the time limit (5 hours).",
   "scenario.swimmers.win": "Frigate: submarine sunk or swimmers kept off to the time limit",
   "scenario.swimmers.lose": "Swimmers landed / frigate sunk",
   "scenario.escort.title": "Supply ship escort (submarine)",

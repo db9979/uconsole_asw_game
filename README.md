@@ -12,20 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.124**
+Current release: **1.3.126**
 
-Release 1.3.124 evens out the AI frigate and the AI submarine. In the
-frigate scenarios the AI hunters now run down HQ's start report of the threat
-and a lost submarine bearing, ping a bare bearing only every 10 minutes so a
-ping that finds nothing no longer sends the submarine running, and no longer
-take a long-radiating ship radar for a submarine mast. In the submarine
-scenarios a mission submarine keeps its course through a ping and gives way
-only to a torpedo, and the frigate guards its post: against a breakthrough it
-stays by its patrol position with no patrol aircraft, and against a
-breakthrough or reconnaissance it fires its own torpedo from 3 NM and keeps its
-helicopter within 8 NM. The breakthrough submarine skirts the frigate's patrol
-position, the reconnaissance report counts within 5 NM and the convoy
-submarine fires from 3 NM. Saves move to format v43 (the hunters' leads).
+Release 1.3.126 keeps a mission alive when something goes wrong. A station
+view that fails to draw now shows "Display fault" while the mission and every
+other station keep running. A fault in the simulation puts the mission back to
+its recovery point, an in-memory copy at most one minute old, and says so in
+the feed; Remote Crew browsers get their stations back as after a load. After
+repeated faults, or an error that still ends the game, the recovery point
+becomes the autosave, so "Continue mission" resumes it. Every caught fault is
+written to crash.log for a bug report. Saves stay format v43.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

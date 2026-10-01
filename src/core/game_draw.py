@@ -74,6 +74,20 @@ END_KEYS = (("D", "end.key.debrief"), ("R", "end.key.restart"),
             ("M", "end.key.menu"), ("Esc", "end.key.exit"))
 
 
+# The frigate station views drawn below the top bar (Bridge is the default),
+# looked up by name at draw time so tests can replace a module-level view.
+_STATION_VIEWS = {
+    Station.SONAR: "draw_sonar_view",
+    Station.WEAPONS: "draw_weapons_panel",
+    Station.DAMAGE: "draw_damage_view",
+    Station.OPZ: "draw_opz_view",
+    Station.RADIO: "draw_radio_view",
+    Station.ENGINE: "draw_engine_view",
+    Station.HELICOPTER: "draw_helicopter_view",
+    Station.ELOKA: "draw_eloka_view",
+}
+
+
 class DrawMixin:
     """Display half of ``Game``: ``draw``, the overlays and ``run``."""
 
@@ -196,7 +210,9 @@ class DrawMixin:
                                label=self.tr(MAIN_MENU_LABELS[entry]).upper()),
                        157 + step // 2 - 2 + i * step, color=color)
             if self.bug_report_offer:
-                center(self.tr("menu.bug_report.offer"), 584, color=config.COLOR_WARN)
+                center(self.tr("menu.bug_report.offer_continue"
+                               if self.autosave_available else
+                               "menu.bug_report.offer"), 584, color=config.COLOR_WARN)
             # Support link: main menu page only, never over a mission.
             draw_support_corner(s, config.SCREEN_W - 24, 600,
                                 config.COLOR_TEXT, config.COLOR_TEXT_DIM)
@@ -455,7 +471,8 @@ class DrawMixin:
                 else:
                     self.draw_end_panel()
         elif self.local_side == "uboot":
-            uboot_view.draw(self)
+            self.guarded_view("uboot", (0, 0, config.SCREEN_W, config.SCREEN_H),
+                              uboot_view.draw, self)
         elif eco:
             self.draw_top_bar()
             self.draw_eco_display()
@@ -481,31 +498,19 @@ class DrawMixin:
                     with layout.clip_to(s, config.STATION_RECT):
                         draw_weather_station(self)
                 elif map_station:
-                    draw_map_view(self)
+                    self.guarded_view("map", config.MAP_RECT, draw_map_view, self)
                     if self.lookout_glasses_shown():
                         draw_lookout_glasses(self)
                     if self.station is Station.WEAPONS:
                         draw_weapons_overlay(self)
                 if not self._station_overlay_open:
+                    view = globals()[_STATION_VIEWS.get(self.station,
+                                                        "draw_bridge_view")]
                     with layout.clip_to(s, config.STATION_RECT):
-                        if self.station is Station.SONAR:
-                            draw_sonar_view(self)
-                        elif self.station is Station.WEAPONS:
-                            draw_weapons_panel(self)
-                        elif self.station is Station.DAMAGE:
-                            draw_damage_view(self)
-                        elif self.station is Station.OPZ:
-                            draw_opz_view(self)
-                        elif self.station is Station.RADIO:
-                            draw_radio_view(self)
-                        elif self.station is Station.ENGINE:
-                            draw_engine_view(self)
-                        elif self.station is Station.HELICOPTER:
-                            draw_helicopter_view(self)
-                        elif self.station is Station.ELOKA:
-                            draw_eloka_view(self)
-                        else:
-                            draw_bridge_view(self)
+                        # A failing view shows a notice; the rest of the
+                        # frame and the simulation go on.
+                        self.guarded_view(self.station.name.lower(),
+                                          config.STATION_RECT, view, self)
                 if (self.station is not Station.OPZ and not self.weather_station_open
                         and not self.feed_overlay_open):
                     self.draw_bottom_panel()
@@ -1409,31 +1414,38 @@ class DrawMixin:
                 wall_dt = self.clock.tick(self.frame_rate()) / 1000.0
                 dt = self._frame_dt(wall_dt)
                 self._t += dt
-                events_started = (time.perf_counter()
-                                  if self._perf_debug_enabled else None)
-                for e in pygame.event.get():
-                    if not self.web_mode:
-                        self.handle_event(e)
-                        if e.type in _ECO_REFRESH_EVENTS:
-                            self._eco_drawn_at = float("-inf")
-                if events_started is not None:
-                    self._perf_events_s += time.perf_counter() - events_started
-                commander_started = (time.perf_counter()
-                                     if self._perf_debug_enabled else None)
-                self.commander.pump(self)
-                if commander_started is not None:
-                    now = time.perf_counter()
-                    self._perf_commander_s += now - commander_started
-                    self._perf_commander_max_s = max(
-                        self._perf_commander_max_s, now - commander_started)
-                    commander_started = now
-                self.live_traffic.pump(self)
-                if commander_started is not None:
-                    self._perf_traffic_s += time.perf_counter() - commander_started
-                self.update(dt, audio_dt=wall_dt)
-                self.autosave_tick(wall_dt)
-                self.lobby_tick(wall_dt)
-                self.update_tick()
+                try:
+                    events_started = (time.perf_counter()
+                                      if self._perf_debug_enabled else None)
+                    for e in pygame.event.get():
+                        if not self.web_mode:
+                            self.handle_event(e)
+                            if e.type in _ECO_REFRESH_EVENTS:
+                                self._eco_drawn_at = float("-inf")
+                    if events_started is not None:
+                        self._perf_events_s += time.perf_counter() - events_started
+                    commander_started = (time.perf_counter()
+                                         if self._perf_debug_enabled else None)
+                    self.commander.pump(self)
+                    if commander_started is not None:
+                        now = time.perf_counter()
+                        self._perf_commander_s += now - commander_started
+                        self._perf_commander_max_s = max(
+                            self._perf_commander_max_s, now - commander_started)
+                        commander_started = now
+                    self.live_traffic.pump(self)
+                    if commander_started is not None:
+                        self._perf_traffic_s += time.perf_counter() - commander_started
+                    self.update(dt, audio_dt=wall_dt)
+                    self.autosave_tick(wall_dt)
+                    self.lobby_tick(wall_dt)
+                    self.update_tick()
+                    self.recovery_tick(wall_dt)
+                except Exception as exc:  # noqa: BLE001 - fault policy
+                    # A running mission falls back to its recovery
+                    # snapshot (src/core/game_resilience.py).
+                    if not self.recover_from_fault(exc, "simulation"):
+                        raise
                 self._perf_debug_log(wall_dt)
                 if self.web_mode:
                     game_visible()
@@ -1442,13 +1454,23 @@ class DrawMixin:
                 if self._skip_eco_frame():
                     continue
                 draw_started = time.perf_counter() if self._perf_debug_enabled else None
-                self.draw()
+                try:
+                    self.draw()
+                except Exception as exc:  # noqa: BLE001 - display only
+                    self.view_fault(exc, "frame", (0, 0, config.SCREEN_W,
+                                                   config.SCREEN_H))
                 self.compose_frame()
                 game_visible()
                 if draw_started is not None:
                     self._perf_draw_s += time.perf_counter() - draw_started
             # A normal quit (never a crash) keeps the running mission.
             self.autosave_on_exit()
+        except Exception:
+            # The error ends the game: keep the last recovery point so the
+            # next start's "Continue" resumes the mission.
+            if self._mission_running_for_autosave() and not self.game_over:
+                self.write_recovery_autosave()
+            raise
         finally:
             try:
                 self.commander.stop()

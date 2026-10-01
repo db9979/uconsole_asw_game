@@ -1033,6 +1033,13 @@ SAVE_PATH = os.path.join(SAVE_DIR, "save.json")   # Legacy (v1)
 # A running mission is written to SAVE_DIR/autosave.json this often (wall
 # seconds) and on a normal quit; "Continue" in the main menu resumes it.
 AUTOSAVE_INTERVAL_S = 300.0
+# Fault resilience (src/core/game_resilience.py): a running mission keeps an
+# in-memory recovery snapshot this often (wall seconds); a simulation error
+# restores it.  More than RECOVERY_MAX_RESTORES restores within
+# RECOVERY_WINDOW_S (frame seconds) give up to the main menu with "Continue".
+RECOVERY_SNAPSHOT_INTERVAL_S = 60.0
+RECOVERY_WINDOW_S = 300.0
+RECOVERY_MAX_RESTORES = 2
 SAVE_SLOTS = 5
 MISSION_ESCAPE_RADIUS_NM = 150.0   # Ziel-Boot gilt als entkommen ab dieser Distanz zum Startpunkt
 SCORE_SUNK = 1000                  # pro versenktem Ziel-U-Boot

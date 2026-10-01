@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.126
+
+Release 1.3.126 keeps a mission alive when something goes wrong. A station
+view that fails to draw now shows "Display fault" while the mission and every
+other station keep running. A fault in the simulation puts the mission back to
+its recovery point, an in-memory copy at most one minute old, and says so in
+the feed; Remote Crew browsers get their stations back as after a load. After
+repeated faults, or an error that still ends the game, the recovery point
+becomes the autosave, so "Continue mission" resumes it. Every caught fault is
+written to crash.log for a bug report. Saves stay format v43.
+
 ## 1.3.124
 
 Release 1.3.124 evens out the AI frigate and the AI submarine. In the

@@ -6452,5 +6452,10 @@
   "commander.web.helo_deck_open": "Fenster offen: Start und Landung",
   "commander.web.helo_deck_wait": "Warten auf ruhige Phase",
   "helo.deck.roll": "Rollen {roll}° (Grenze {limit}°)",
-  "helo.deck.pitch": "Stampfen {pitch}° (Grenze {limit}°)"
+  "helo.deck.pitch": "Stampfen {pitch}° (Grenze {limit}°)",
+  "resilience.restored": "Simulationsfehler abgefangen: die Mission läuft ab {seconds} s vorher weiter",
+  "resilience.abandoned": "Die Mission ließ sich nach wiederholten Fehlern nicht fortsetzen. Sie ist gesichert: „Einsatz fortsetzen“ führt sie weiter.",
+  "resilience.view_fault.title": "Anzeige gestört",
+  "resilience.view_fault.hint": "Der Fehler wurde protokolliert. Die Mission läuft weiter; andere Station wählen.",
+  "menu.bug_report.offer_continue": "Der letzte Start ist abgestürzt. „Einsatz fortsetzen“ führt sie weiter, „Fehler melden“ schickt das Log."
 }

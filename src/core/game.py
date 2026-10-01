@@ -100,6 +100,7 @@ from src.core.game_debrief import DebriefMixin
 from src.core.game_training import TrainingMixin
 from src.core.game_campaign import CampaignMixin
 from src.core.game_autosave import AutosaveMixin, CONTINUE_ENTRY
+from src.core.game_resilience import ResilienceMixin
 from src.core.game_reports import ReportsMixin
 from src.core.game_logbook import LogbookMixin
 from src.core.game_bugreport import (BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES,
@@ -113,7 +114,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
            RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
            SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, DebriefMixin,
            TrainingMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
-           LobbyMixin, UpdateNoticeMixin):
+           LobbyMixin, UpdateNoticeMixin, ResilienceMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -232,6 +233,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._init_update_notice()
         self._init_logbook()
         self._init_autosave()
+        self._init_resilience()
         self._autosave_armed = False
         if self.main_menu and self.autosave_available:
             # A mission was left running (quit or crash): offer "Continue".

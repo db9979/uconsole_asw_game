@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.126
+
+Version 1.3.126 hält eine Mission am Leben, wenn etwas schiefgeht. Eine
+Stationsanzeige, die sich nicht zeichnen lässt, zeigt jetzt „Anzeige gestört“,
+während die Mission und alle anderen Stationen weiterlaufen. Ein Fehler in der
+Simulation setzt die Mission auf ihren Wiederherstellungspunkt zurück, eine
+Kopie im Speicher von höchstens einer Minute, und meldet das im
+Ereignisprotokoll; Browser der Remote Crew bekommen ihre Stationen wie nach
+dem Laden zurück. Nach wiederholten Fehlern oder einem Fehler, der das Spiel
+doch beendet, wird der Wiederherstellungspunkt zum Autosave, sodass „Einsatz
+fortsetzen“ die Mission weiterführt. Jeder abgefangene Fehler landet für einen
+Fehlerbericht in crash.log. Spielstände bleiben im Format v43.
+
 ## 1.3.124
 
 Version 1.3.124 gleicht KI-Fregatte und KI-U-Boot an. In den

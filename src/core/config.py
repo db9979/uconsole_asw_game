@@ -1288,6 +1288,8 @@ MISSION_TYPES = {
         time_limit_s=10800, short_time_limit_s=2700,
         short_scale=0.75, win="escort"),
     # Scenarios 11 to 20 (src/core/mission_modes.py).
+    # ``scale``, ``spawn_nm`` and ``goal_fraction`` tune the full length the way
+    # the ``short_*`` keys tune the short variant (AI-against-AI fairness).
     "datum": dict(
         name="Datum", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1297,7 +1299,8 @@ MISSION_TYPES = {
         name="Fuehlung", weight=0, subs=1,
         sub_types=["ssn"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5, scale=0.6,
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5,
+        scale=0.6, goal_fraction=0.8,
         win="trail"),
     "versorgung": dict(
         name="Versorgung", weight=0, subs=1,
@@ -1314,12 +1317,12 @@ MISSION_TYPES = {
         name="Duell", weight=0, subs=1,
         sub_types=["aip_modern"],
         animals=(1, 2), civilians=(3, 5), asm=(0, 0), warships=(0, 0),
-        time_limit_s=10800, short_time_limit_s=2700, spawn_nm=(6.0, 10.0), win="duel"),
+        time_limit_s=10800, short_time_limit_s=2700, spawn_nm=(8.0, 12.0), win="duel"),
     "heimkehr": dict(
         name="Heimkehr", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=18000, short_time_limit_s=3600, short_scale=0.35, scale=0.7,
+        time_limit_s=18000, short_time_limit_s=3600, short_scale=0.35, scale=0.35,
         win="homecoming"),
     "abholung": dict(
         name="Abholung", weight=0, subs=1,

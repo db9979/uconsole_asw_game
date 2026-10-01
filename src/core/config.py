@@ -1100,7 +1100,7 @@ TASK_INTERVAL_S = (1500.0, 2700.0)
 TASK_MAX_OFFERS = 6
 TASK_MAX_OPEN = 2
 TASK_RESPONSE_S = 300.0            # accept or decline inside this window
-TASK_DURATION_S = {"identify": 2400.0, "datum": 3000.0, "ras": 3600.0}
+TASK_DURATION_S = {"identify": 2400.0, "datum": 3000.0, "ras": 3600.0, "patrol": 3600.0}
 TASK_EMCON_S = (1200.0, 1800.0)    # ordered radar silence
 TASK_EMCON_GRACE_S = 90.0          # time to switch the radars off
 TASK_SAR_RANGE_NM = (10.0, 25.0)   # distress position from own ship
@@ -1141,6 +1141,7 @@ SCORE_TASK = {                     # (done, failed, declined)
     "datum": (250, -150, -200),
     "ras": (100, 0, 0),
     "emcon": (200, -250, -200),
+    "patrol": (250, -100, -50),
 }
 
 # Crew fatigue, watches and morale (src/core/crew.py; game assumptions).
@@ -1207,6 +1208,58 @@ MPA_NO_BASE_OFFSET_NM = 150.0       # no friendly airfield: arrives from the map
 # Missionstypen: Zeitfenster in Echtzeit-Simulationssekunden.
 # Lange Einsatzfenster lassen Zeit für Aufmerksamkeits- und Suchphasen.
 # win = "sink" (Ziel versenken) oder "survive" (Zeitlimit überstehen)
+# Free patrol (src/core/free_roam.py): the "time limit" is out of reach
+# (about three years), so the patrol ends only when own ship is lost.
+FREE_TIME_LIMIT_S = 1.0e8
+# Encounters: the first after FIRST_S, then one every INTERVAL_S (stateless
+# draws keyed by seed and count). The frigate meets a hostile submarine, a
+# neutral one in transit, an air raid or merchants; the submarine's hunter
+# gets a lead on it, or merchants pass. At most MAX_HOSTILE hostile and
+# MAX_NEUTRAL neutral submarines are about at once; far-off units (beyond
+# RECYCLE_NM of both sides, unheard) are reused for the next encounter.
+FREE_FIRST_ENCOUNTER_S = (300.0, 600.0)
+FREE_ENCOUNTER_INTERVAL_S = (900.0, 1800.0)
+FREE_ENCOUNTER_WEIGHTS = {"frigate": (("sub", 4), ("neutral_sub", 1), ("raid", 1),
+                                      ("merchants", 2)),
+                          "uboot": (("hunt", 2), ("merchants", 3))}
+FREE_MAX_HOSTILE = 2
+FREE_MAX_NEUTRAL = 1
+FREE_MAX_MERCHANTS = 10            # merchants about before more are brought in
+FREE_SUB_SPAWN_NM = (18.0, 30.0)
+FREE_MERCHANT_SPAWN_NM = (12.0, 22.0)
+FREE_MERCHANT_GROUP = (1, 3)
+FREE_RECYCLE_NM = 70.0
+FREE_RECYCLE_QUIET_S = 1200.0
+FREE_HUNT_SIGMA_NM = 8.0           # error of the lead the frigate gets on the boat
+FREE_HUNT_AFTER_S = 1800.0          # no reported hunt in the first half hour
+FREE_HUNT_GAP_S = 3600.0            # and at most one an hour
+FREE_LOG_MAX = 8
+FREE_NEUTRAL_SUNK = 1000           # penalty: a neutral submarine sunk
+FREE_RAID_AFTER_S = 1800.0          # no air raid in the first half hour
+# HQ tasks of the frigate: endless, more often than in a scenario.
+FREE_TASK_FIRST_S = (120.0, 300.0)
+FREE_TASK_INTERVAL_S = (600.0, 1200.0)
+FREE_PATROL_RANGE_NM = (12.0, 25.0)
+FREE_PATROL_RADIUS_NM = 4.0
+FREE_PATROL_HOLD_S = 900.0          # inside the sector this long fulfils it
+# Incidents at sea: endless, more often.
+FREE_INCIDENT_FIRST_S = (600.0, 1200.0)
+FREE_INCIDENT_INTERVAL_S = (1200.0, 2400.0)
+# HQ orders of the submarine: almost every broadcast while none is open.
+FREE_ORDER_P = 0.85
+FREE_ORDER_S = {"attack": 3600.0, "landing": 3600.0, "supply": 2700.0, "recon": 3600.0}
+FREE_ORDER_POINTS = {"area": (150, -50), "report": (100, -50), "silence": (100, -50),
+                     "attack": (400, -150), "landing": (400, -150), "supply": (100, 0),
+                     "recon": (300, -100)}
+FREE_MERCHANT_SUNK = 100            # any other merchant the boat sinks
+FREE_FRIGATE_SUNK = 1500            # the boat sinks the hunting frigate
+FREE_LANDING_HOLD_S = 300.0         # swimmers out: shallow and slow this long
+FREE_LANDING_MAX_NM = 40.0          # a coast farther off is not ordered
+FREE_SUPPLY_HOLD_S = 300.0          # alongside the supply boat this long
+FREE_SUPPLY_RADIUS_NM = 1.0
+FREE_SUPPLY_KN = 3.0
+FREE_ATTACK_RANGE_NM = (10.0, 20.0)
+FREE_ATTACK_SIGMA_NM = 1.5
 MISSION_TYPES = {
     "patrouille": dict(
         name="Patrouille", weight=40, subs=1,
@@ -1304,6 +1357,18 @@ MISSION_TYPES = {
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
         time_limit_s=14400, short_time_limit_s=2700, short_scale=0.5, win="elint"),
+    # Free patrol (src/core/free_roam.py): no time limit, no short variant.
+    # The frigate starts alone; encounters bring the submarines later.
+    "freifahrt": dict(
+        name="Freie Fahrt", weight=0, subs=0,
+        sub_types=["diesel_alt", "aip_modern", "ssn"],
+        animals=(2, 4), civilians=(3, 5), asm=(0, 0), warships=(0, 0),
+        time_limit_s=FREE_TIME_LIMIT_S, win="free"),
+    "freifahrt_uboot": dict(
+        name="Freie Fahrt", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(2, 4), civilians=(3, 5), asm=(0, 0), warships=(0, 0),
+        time_limit_s=FREE_TIME_LIMIT_S, win="free_boat"),
 }
 BOAT_CONVOY_SIZE = 4               # merchants in the escorted convoy
 BOAT_CONVOY_SINK = 2               # the boat wins after sinking this many
@@ -1513,7 +1578,8 @@ SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
                   "s14_hafenschutz", "s15_versorgung", "s16_seenot",
                   "s5_durchbruch", "s6_aufklaerung", "s7_geleitzug",
                   "s8_meerenge", "s9_kampfschwimmer", "s10_versorger",
-                  "s17_duell", "s18_heimkehr", "s19_abholung", "s20_lauschposten")
+                  "s17_duell", "s18_heimkehr", "s19_abholung", "s20_lauschposten",
+                  "frei_fregatte", "frei_uboot")
 # Catalog name of each scenario (``scenario.<name>.title`` and friends).
 SCENARIO_NAMES = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
                   "s3_abfang": "intercept", "s4_zufall": "random",
@@ -1524,7 +1590,8 @@ SCENARIO_NAMES = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
                   "s13_fuehlung": "trail", "s14_hafenschutz": "harbour",
                   "s15_versorgung": "ras", "s16_seenot": "rescue",
                   "s17_duell": "duel", "s18_heimkehr": "homecoming",
-                  "s19_abholung": "pickup", "s20_lauschposten": "elint"}
+                  "s19_abholung": "pickup", "s20_lauschposten": "elint",
+                  "frei_fregatte": "free", "frei_uboot": "free_boat"}
 SCENARIOS = {
     "s1_patrouille": dict(
         title="Patrouille",
@@ -1814,6 +1881,36 @@ SCENARIOS = {
         briefing="U-Boot: Funk und Radar der Fregatte aufzeichnen und melden.",
         win_text="Aufklaerung verhindert",
         lose_text="Aufklaerung gemeldet / Fregatte gesunken",
+    ),
+    # Free patrol on either side (src/core/free_roam.py; 1.3.135).
+    "frei_fregatte": dict(
+        title="Freie Fahrt",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=8,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="freifahrt",
+        hq_intel="coarse",
+        ship_start=(300.0, 300.0), ship_course=0.0,
+        briefing="Fregatte: Freie Fahrt ohne Zeitlimit, Funkauftraege erfuellen.",
+        win_text="",
+        lose_text="Fregatte gesunken / ziviler Verlust",
+    ),
+    "frei_uboot": dict(
+        title="Freie Fahrt",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=8,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="freifahrt_uboot",
+        hq_intel="coarse",
+        ship_start=(300.0, 300.0), ship_course=0.0,
+        boat=True,
+        briefing="U-Boot: Freie Fahrt ohne Zeitlimit, Befehle der Fuehrung erfuellen.",
+        win_text="",
+        lose_text="U-Boot gesunken",
     ),
     "s4_zufall": dict(
         title="Freie Jagd (Zufall)",

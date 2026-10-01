@@ -21,7 +21,10 @@ From broadcast ``UBOOT_ORDER_FIRST`` on, a broadcast may carry a new HQ
 order while none is open (deterministic per seed and broadcast number, so a
 missed broadcast is a missed order): proceed to an area, send a situation
 report, or keep radio silence, each with a deadline. The radio room tracks
-them; they do not decide the mission.
+them; they do not decide the mission. On a free patrol (``free_roam.py``)
+the orders never run out and four more kinds come: sink a named merchant,
+land swimmers off a coast, meet a supply boat, and sight and report the
+frigate; each closed order books its points there.
 
 A situation report goes out on HF: ``UBOOT_RADIO_TX_S`` of transmission with
 the antenna up, during which the frigate's HF direction finder can take a
@@ -37,16 +40,25 @@ import math
 from src.core import buoy_antenna, config, detrand
 from src.sensors.platform import MAST_DEPTH_M
 
-VERSION = 2
+VERSION = 3
 LOG_KINDS = ("broadcast", "sent", "aborted")
 STATE_FIELDS = frozenset({"version", "seq", "copied", "copy_since", "tx_until",
                           "tx_since", "sitreps", "ack_due", "log", "orders",
                           "order_seq"})
 LOG_FIELDS = frozenset({"seq", "t", "kind", "number", "ack", "report", "order"})
+# The kinds of a scenario (drawn by index, so never reordered) and the extra
+# kinds of a free patrol (src/core/free_roam.py).
 ORDER_KINDS = ("area", "report", "silence")
+FREE_ORDER_KINDS = ORDER_KINDS + ("attack", "landing", "supply", "recon")
+# Orders with a position (x, y, radius_nm); an attack also has the target's
+# reported course and speed and the merchant it names.
+POSITION_KINDS = ("area", "attack", "landing", "supply")
+ORDER_SEQ_LIMIT = 10_000
+MAX_NAME = 24
 ORDER_STATES = ("active", "done", "failed")
 ORDER_FIELDS = frozenset({"id", "kind", "number", "issued_t", "deadline_t", "x", "y",
-                          "radius_nm", "state", "ended_t"})
+                          "radius_nm", "state", "ended_t", "target_id", "name",
+                          "course", "speed_kn", "since", "points"})
 ORDERS_KEPT = 6
 REPORT_FIELDS = frozenset({"x", "y", "radius_nm", "course", "speed_kn", "as_of"})
 
@@ -137,7 +149,7 @@ class BoatRadio:
         boat.orders.event("radio_sending")
         order = self.active_order()
         if order is not None and order["kind"] == "silence":
-            self._close_order(boat, order, "failed", game.sim_t)
+            self._close_order(boat, order, "failed", game.sim_t, game)
         return True
 
     # -- the schedule (crew cadence) -------------------------------------------
@@ -157,11 +169,12 @@ class BoatRadio:
                 self._add(now, "sent", number=self.sitreps)
                 boat.orders.event("radio_sent", number=str(self.sitreps))
                 order = self.active_order()
-                if order is not None and order["kind"] == "report":
-                    self._close_order(boat, order, "done", now)
                 from src.core import boat_missions
+                if order is not None and (order["kind"] == "report" or (
+                        order["kind"] == "recon" and boat_missions.frigate_in_sight(boat))):
+                    self._close_order(boat, order, "done", now, game)
                 boat_missions.report_sent(game, boat)
-        self._update_orders(boat, now)
+        self._update_orders(game, boat, now)
         mode = reception(boat)
         if mode is None:
             self.copy_since = None
@@ -195,6 +208,13 @@ class BoatRadio:
 
     def _issue_order(self, game, boat, number: int, now: float):
         """The order broadcast ``number`` carries for this boat, or None."""
+        from src.core import free_roam
+        if free_roam.boat_side(game):
+            order = free_roam.issue_order(game, boat, self, number, now)
+            if order is not None:
+                self.orders.append(order)
+                del self.orders[:-ORDERS_KEPT]
+            return order
         seed = int(game.seed)
         if (number < config.UBOOT_ORDER_FIRST or self.active_order() is not None
                 or self.order_seq >= config.UBOOT_ORDER_MAX
@@ -212,29 +232,37 @@ class BoatRadio:
             else:
                 (x, y), radius = point, config.UBOOT_ORDER_RADIUS_NM
         self.order_seq += 1
-        order = dict(id=self.order_seq, kind=kind, number=int(number), issued_t=float(now),
-                     deadline_t=float(now) + duration, x=x, y=y, radius_nm=radius,
-                     state="active", ended_t=None)
+        order = new_order(self.order_seq, kind, number, now, now + duration,
+                          x=x, y=y, radius_nm=radius)
         self.orders.append(order)
         del self.orders[:-ORDERS_KEPT]
         return order
 
-    def _close_order(self, boat, order, state: str, now: float) -> None:
+    def _close_order(self, boat, order, state: str, now: float, game=None) -> None:
         order["state"] = state
         order["ended_t"] = float(now)
         boat.orders.event("order_" + state, number=str(order["id"]))
+        if game is not None:
+            from src.core import free_roam
+            free_roam.order_closed(game, boat, order)
 
-    def _update_orders(self, boat, now: float) -> None:
+    def _update_orders(self, game, boat, now: float) -> None:
         order = self.active_order()
         if order is None:
             return
         sub = boat.sub
+        if order["kind"] not in ORDER_KINDS:
+            from src.core import free_roam
+            state = free_roam.order_state(game, boat, order, now)
+            if state is not None:
+                self._close_order(boat, order, state, now, game)
+            return
         if order["kind"] == "area" and not sub.sunk and math.hypot(
                 sub.x - order["x"], sub.y - order["y"]) <= order["radius_nm"]:
-            self._close_order(boat, order, "done", now)
+            self._close_order(boat, order, "done", now, game)
         elif now >= order["deadline_t"]:
             self._close_order(boat, order, "done" if order["kind"] == "silence"
-                              else "failed", now)
+                              else "failed", now, game)
 
     def progress(self, game, boat) -> dict:
         """Copy and transmission progress (0..1, or None) and the schedule."""
@@ -329,27 +357,55 @@ class BoatRadio:
         return radio
 
 
+def new_order(order_id: int, kind: str, number: int, now: float, deadline: float,
+              **fields) -> dict:
+    """An open HQ order; ``fields`` set the position and the attack target."""
+    order = dict(id=int(order_id), kind=kind, number=int(number), issued_t=float(now),
+                 deadline_t=float(deadline), x=None, y=None, radius_nm=None,
+                 state="active", ended_t=None, target_id=None, name=None, course=None,
+                 speed_kn=None, since=None, points=0)
+    order.update(fields)
+    return order
+
+
 def _valid_orders(orders, order_seq) -> bool:
     if (not isinstance(orders, list) or len(orders) > ORDERS_KEPT
-            or order_seq > config.UBOOT_ORDER_MAX):
+            or order_seq > ORDER_SEQ_LIMIT):
         return False
     previous, active = 0, 0
     for order in orders:
         if not isinstance(order, dict) or set(order) != ORDER_FIELDS:
             return False
         if (type(order["id"]) is not int or not previous < order["id"] <= order_seq
-                or order["kind"] not in ORDER_KINDS or order["state"] not in ORDER_STATES
+                or order["kind"] not in FREE_ORDER_KINDS or order["state"] not in ORDER_STATES
                 or type(order["number"]) is not int or not 0 <= order["number"] <= 2**31
                 or not _finite(order["issued_t"]) or order["issued_t"] < 0.0
                 or not _finite(order["deadline_t"])
                 or order["deadline_t"] < order["issued_t"]):
             return False
         previous = order["id"]
-        area = order["kind"] == "area"
+        area = order["kind"] in POSITION_KINDS
         for key in ("x", "y", "radius_nm"):
             if (order[key] is None) == area or (area and not _finite(order[key])):
                 return False
         if area and order["radius_nm"] <= 0.0:
+            return False
+        attack = order["kind"] == "attack"
+        if (order["target_id"] is None) == attack or attack and (
+                type(order["target_id"]) is not int or not 0 <= order["target_id"] <= 2**31):
+            return False
+        if (order["name"] is None) == attack or attack and (
+                type(order["name"]) is not str or not order["name"].isprintable()
+                or not 1 <= len(order["name"]) <= MAX_NAME):
+            return False
+        for key in ("course", "speed_kn"):
+            if (order[key] is None) == attack or attack and (
+                    not _finite(order[key]) or not 0.0 <= order[key] < 360.0):
+                return False
+        if order["since"] is not None and (not _finite(order["since"])
+                                           or order["since"] < order["issued_t"]):
+            return False
+        if type(order["points"]) is not int or not -10_000 <= order["points"] <= 10_000:
             return False
         if order["state"] == "active":
             active += 1

@@ -9,7 +9,7 @@ identifications and, inside the model, the raft and the named ship.
 
 import math
 
-from src.core import boat_missions, config, detrand
+from src.core import boat_missions, config, detrand, free_roam
 from src.core import tasking
 from src.core.i18n import message, raw_text
 from src.core.tasking import TaskBoard
@@ -181,12 +181,14 @@ class TaskingMixin:
                     self._close_task(task, "declined", notice="task.no_answer")
                 continue
             getattr(self, "_progress_task_" + task["kind"])(task, dt)
+        # A free patrol has no cap and a shorter interval (free_roam.py).
+        interval, cap = free_roam.task_interval(self)
         if (board.enabled and self.sim_t >= board.next_offer_t
-                and board.offers < config.TASK_MAX_OFFERS
+                and (cap is None or board.offers < cap)
                 and len(board.open_tasks()) < config.TASK_MAX_OPEN):
             self._offer_task()
             board.next_offer_t = self.sim_t + detrand.uniform(
-                *config.TASK_INTERVAL_S, self.seed, "task-interval", board.offers)
+                *interval, self.seed, "task-interval", board.offers)
 
     def _offer_task(self, kind: str | None = None, requested: bool = False,
                     target=None):
@@ -269,6 +271,11 @@ class TaskingMixin:
         stores = self.ras_shortfall()
         return profile is not None and (low_fuel or any(
             stores[key] > 0 for key in ("torpedoes", "asroc", "depth_charges")))
+
+    def _task_candidate_patrol(self) -> bool:
+        # Only a free patrol holds sectors for HQ.
+        return free_roam.frigate_side(self) and not any(
+            task["kind"] == "patrol" for task in self.tasking.open_tasks())
 
     def _task_candidate_emcon(self) -> bool:
         return ((self.surface_radar_on or self.air_radar_on)
@@ -359,6 +366,12 @@ class TaskingMixin:
                     speed_kn=config.TASK_RAS_SPEED_KN,
                     name=str(tanker.name)[:tasking.MAX_NAME] or "-",
                     target_id=tanker.id)
+
+    def _build_task_patrol(self, index: int):
+        point = self._task_water_point(index, "task-patrol", *config.FREE_PATROL_RANGE_NM)
+        if point is None:
+            return None
+        return dict(x=point[0], y=point[1], radius_nm=config.FREE_PATROL_RADIUS_NM)
 
     def _build_task_emcon(self, index: int):
         duration = detrand.uniform(*config.TASK_EMCON_S, self.seed, "task-emcon", index)
@@ -578,6 +591,15 @@ class TaskingMixin:
         if task["progress"] >= 1.0:
             self.ship.fuel_kg = self.ship.fuel_capacity_kg
             self._close_task(task, "done")
+
+    def _progress_task_patrol(self, task, dt: float) -> None:
+        """Hold the sector: own ship inside it for ``FREE_PATROL_HOLD_S``."""
+        if self._task_expired(task):
+            return
+        if math.hypot(self.ship.x - task["x"], self.ship.y - task["y"]) <= task["radius_nm"]:
+            task["progress"] = min(1.0, task["progress"] + dt / config.FREE_PATROL_HOLD_S)
+            if task["progress"] >= 1.0:
+                self._close_task(task, "done")
 
     def _progress_task_emcon(self, task, dt: float) -> None:
         radiating = self.surface_radar_on or self.air_radar_on

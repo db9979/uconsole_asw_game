@@ -612,6 +612,7 @@ class MissionBridgeMixin:
                 "versorgung": "mission.ras", "seenot": "mission.rescue",
                 "duell": "mission.duel", "heimkehr": "mission.homecoming",
                 "abholung": "mission.pickup", "lauschposten": "mission.elint",
+                "freifahrt": "mission.free", "freifahrt_uboot": "mission.free_boat",
                 "custom": "mission.custom"}
         name = message(keys[self.mission.type_key])
         return message("mission.short_variant", name=name) if self.short_mission else name
@@ -654,7 +655,12 @@ class MissionBridgeMixin:
                             "reach": "mission.objective.reach"}.get(
                                 objective_type, "mission.objective.sink"))
         from src.core import mission_modes
-        if self.mission.win_mode in mission_modes.MODES:
+        if self.mission.win_mode == "free":
+            from src.core import free_roam
+            objective = free_roam.frigate_objective(self)
+        elif self.mission.win_mode == "free_boat":
+            objective = message("mission.objective.free_boat")
+        elif self.mission.win_mode in mission_modes.MODES:
             objective = mission_modes.frigate_objective(self, self.mission.win_mode)
         elif self.mission.win_mode in ("breakthrough", "recon", "convoy_attack", "strait",
                                        "swimmers", "escort"):

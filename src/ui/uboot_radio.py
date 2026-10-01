@@ -50,6 +50,10 @@ def order_line(game, boat):
             return message("uboot.radio.order_closed", done=str(done), failed=str(failed))
         return message("uboot.radio.order_none")
     left = _clock(order["deadline_t"] - game.sim_t)
+    if order["kind"] not in ("area", "report", "silence"):
+        # The free patrol's own kinds (src/core/free_roam.py).
+        from src.core import free_roam
+        return free_roam.order_text(game, boat, order)
     if order["kind"] == "area":
         dx, dy = order["x"] - boat.sub.x, order["y"] - boat.sub.y
         return message("uboot.radio.order_area", number=str(order["id"]),
@@ -162,8 +166,13 @@ def draw_report_chart(game, boat, view) -> None:
     """HQ's latest contact report: error circle, reported course and its age;
     and the area of an open HQ order."""
     order = boat.radio.active_order()
-    if order is not None and order["kind"] == "area":
-        ox, oy = view.world_to_screen(order["x"], order["y"])
+    if order is not None and order["x"] is not None:
+        x, y = order["x"], order["y"]
+        if order["kind"] == "attack":
+            # The ordered merchant's reported position, dead-reckoned.
+            from src.core import free_roam
+            x, y = free_roam.target_position(order, game.sim_t)
+        ox, oy = view.world_to_screen(x, y)
         radius = max(6, int(order["radius_nm"] * view.scale))
         pygame.draw.circle(game.screen, config.COLOR_OK, (int(ox), int(oy)), radius, 1)
         _map_label(game.screen, game, message("uboot.radio.chart_order", number=str(order["id"])),

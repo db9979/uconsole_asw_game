@@ -1099,7 +1099,8 @@ class CommanderBridge:
             if self._threats is not None and threats - self._threats:
                 self._event("threat", "warning", "commander.event.threat")
             self._threats = threats
-            remaining = _number(game.mission.remaining_s(game.mission_time))
+            remaining = (None if game.mission.open_ended
+                         else _number(game.mission.remaining_s(game.mission_time)))
             result = game.mission_result
             if self._mission_state is not None:
                 previous_remaining, previous_result = self._mission_state

@@ -69,9 +69,16 @@ class Mission:
             base += f" | {self.warship_count}× feindliches Oberflächenschiff!"
         return base
 
+    @property
+    def open_ended(self) -> bool:
+        """A free patrol: no time limit to show (src/core/free_roam.py)."""
+        return self.win_mode in ("free", "free_boat")
+
     def remaining_s(self, elapsed_s: float) -> float:
         return max(0.0, self.time_limit_s - elapsed_s)
 
     def format_remaining(self, elapsed_s: float) -> str:
+        if self.open_ended:
+            return "--:--"
         s = int(self.remaining_s(elapsed_s))
         return f"{s // 60:02d}:{s % 60:02d}"

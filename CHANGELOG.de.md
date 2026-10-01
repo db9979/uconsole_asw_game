@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.135
+
+Version 1.3.135 bringt Freie Fahrt als letzten Eintrag beider Seiten: kein
+Zeitlimit, einfach fahren. Das Hauptquartier schickt laufend Funkaufträge (die
+Fregatte bekommt zusätzlich Sektorpatrouillen, das U-Boot Angriffs-, Landungs-,
+Versorgungs- und Aufklärungsbefehle), dazu kommen zufällige Begegnungen und
+Ereignisse: U-Boote, Handelsgruppen, Luftangriffe, KI-Jäger, Zwischenfälle auf
+See. Punkte sammeln sich, solange Schiff oder Boot schwimmt; Wetter und
+Uhrzeit wählt man wie gewohnt beim Start. Spielstände wechseln auf Format v46;
+Spielstände v38 bis v45 lassen sich weiter laden.
+
 ## 1.3.134
 
 Version 1.3.134 bringt zehn neue Szenarien, damit hat jede Seite zehn. Die

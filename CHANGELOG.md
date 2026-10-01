@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.135
+
+Release 1.3.135 adds Free patrol as the last entry of both sides: no time
+limit, just sail. HQ keeps sending radio tasks (the frigate also gets sector
+patrols; the submarine gets attack, landing, supply and recon orders), and
+random encounters and events keep coming: submarines, merchant groups, air
+raids, AI hunters, incidents at sea. Points add up for as long as the ship or
+boat stays afloat; weather and time are chosen at the start as usual. Saves
+move to format v46; v38 to v45 saves still load.
+
 ## 1.3.134
 
 Release 1.3.134 brings ten new scenarios, so each side now has ten. The

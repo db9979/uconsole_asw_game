@@ -12,7 +12,9 @@ from src.core.game import Game
 from src.core.i18n import localize
 from src.core.lobby import ROWS, LobbyRoom
 
-SHORT = [key for key in config.SCENARIO_ORDER if key != "s4_zufall"]
+# The random scenario and the open-ended free patrols have no short variant.
+SHORT = [key for key in config.SCENARIO_ORDER
+         if key not in ("s4_zufall", "frei_fregatte", "frei_uboot")]
 
 
 def _game():

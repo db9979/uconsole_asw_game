@@ -128,7 +128,7 @@ def test_orders_are_deterministic_bounded_and_saved():
     restored = BoatRadio.from_save(json.loads(json.dumps(radio)))
     assert restored.orders == boat.radio.orders
     for mutate in (lambda r: r.pop("orders"),
-                   lambda r: r.update(order_seq=config.UBOOT_ORDER_MAX + 1),
+                   lambda r: r.update(order_seq=boat_radio.ORDER_SEQ_LIMIT + 1),
                    lambda r: r["orders"][0].update(kind="attack"),
                    lambda r: r["orders"][0].update(state="active", ended_t=None) or
                    r["orders"].append(dict(r["orders"][0], id=r["order_seq"] + 1)),

@@ -30,14 +30,15 @@ from src.sonar.platforms import OWNSHIP_TARGET_ID
 
 # Scenarios 11 to 20 add the modes of ``src/core/mission_modes.py``.
 MODES = ("breakthrough", "recon", "convoy_attack", "strait", "swimmers", "escort",
-         "datum", "trail", "ras", "rescue", "duel", "homecoming", "pickup", "elint")
+         "datum", "trail", "ras", "rescue", "duel", "homecoming", "pickup", "elint",
+         "free_boat")
 # Modes whose merchants the boat's torpedoes may take.
 SHIP_MODES = ("convoy_attack", "escort", "ras")
 # Scenarios 8 to 10: the boat slips past or attacks a guarding frigate.
 GUARDED_MODES = ("strait", "swimmers", "escort", "pickup", "rescue", "duel")
 # Missions where HQ has no intelligence on the boat: no start report, no
 # datum task. The supply ship escort keeps HQ's reports like the convoy.
-UNREPORTED_MODES = ("strait", "swimmers", "pickup", "elint")
+UNREPORTED_MODES = ("strait", "swimmers", "pickup", "elint", "free_boat")
 # Missions where the boat slips past a guard and snaps a shot at it when it
 # comes loud down its bearing (src/enemies/sub.py).
 SNAP_MODES = ("strait", "swimmers", "pickup", "rescue", "duel")
@@ -259,7 +260,8 @@ def distance_scale(game) -> float:
 
 def setup(game) -> None:
     """Place a boat mission's own units once the world is populated."""
-    from src.core import mission_modes
+    from src.core import free_roam, mission_modes
+    free_roam.setup(game)
     kind = mode(game)
     if kind in mission_modes.MODES:
         mission_modes.setup(game, kind)
@@ -356,8 +358,10 @@ def supply(game):
 
 def update(game, dt: float) -> None:
     """The supply ship's zigzag, the swimmers' lock-out and the strait's
-    traffic, every substep (and the counters of scenarios 11 to 20)."""
-    from src.core import mission_modes
+    traffic, every substep (and the counters of scenarios 11 to 20, the
+    encounters of a free patrol)."""
+    from src.core import free_roam, mission_modes
+    free_roam.update(game, dt)
     kind = mode(game)
     if kind in mission_modes.MODES:
         mission_modes.update(game, kind, dt)
@@ -512,6 +516,8 @@ def merchant_struck(game, ship) -> None:
                           else "runtime.merchant_torpedoed"))
     if ship.sunk:
         game._report_breakup_noise(ship.x, ship.y, 0.0, ship.id)
+        from src.core import free_roam
+        free_roam.merchant_sunk(game, ship)
         if mode(game) is None:
             # A frigate mission: the shipping it protects was lost.
             game.score -= config.SCORE_MERCHANT_LOST
@@ -523,6 +529,9 @@ def check(game) -> bool:
     kind = mode(game)
     if kind is None:
         return False
+    if kind == "free_boat":
+        from src.core import free_roam
+        return free_roam.check(game)
     sub = target_sub(game)
     if kind in mission_modes.MODES:
         return mission_modes.check(game, kind, sub,
@@ -584,6 +593,9 @@ def objective(game, boat):
     custom = custom_boat.objective(game, boat.sub)
     if custom is not None:
         return custom
+    if kind == "free_boat":
+        from src.core import free_roam
+        return free_roam.boat_objective(game, boat)
     if kind in mission_modes.MODES:
         return mission_modes.boat_objective(game, boat, kind)
     if kind in ("breakthrough", "strait", "swimmers"):

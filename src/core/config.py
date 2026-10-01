@@ -1562,6 +1562,17 @@ SCENARIOS = {
     ),
 }
 
+
+def scenario_side(key: str) -> str:
+    """The side a scenario is played from: "uboot" for a boat mission, else "frigate"."""
+    return "uboot" if SCENARIOS[key].get("boat") else "frigate"
+
+
+def scenarios_for_side(side: str) -> tuple:
+    """Scenarios listed for ``side`` in the menus, in ``SCENARIO_ORDER``."""
+    return tuple(key for key in SCENARIO_ORDER if scenario_side(key) == side)
+
+
 # Farben (CRT-Grün-Theme)
 COLOR_BG = (4, 9, 15)
 # Gemeinsamer geografischer Hintergrund fuer Karte und PPI.

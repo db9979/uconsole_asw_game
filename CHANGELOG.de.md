@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.129
+## 1.3.130
 
-Version 1.3.129 bringt unter Optionen eine Grafikstufe: „Sparsam“ schont den
+Version 1.3.130 bringt unter Optionen eine Grafikstufe: „Sparsam“ schont den
 Prozessor der uConsole (kein Radar-Nachleuchten, ruhigerer Menühintergrund),
 „Normal“ zeigt alle Effekte und „Voll“ glättet zusätzlich die Kartenlinien;
 die uConsole startet mit Normal, Windows mit Voll. In einem Fenster oder
@@ -15,27 +15,27 @@ Faktoren wiederholen Pixel exakt, andere Größen zeigen keine ungleichmäßigen
 Textzeilen und keine Unschärfe mehr. Die Stufe ändert nie, welche
 Informationen eine Station zeigt. Spielstände bleiben im Format v44.
 
-## 1.3.128
+## 1.3.129
 
-Version 1.3.128 macht das Spiel robuster. Ein nächtlicher Dauertest spielt
+Version 1.3.129 macht das Spiel robuster. Ein nächtlicher Dauertest spielt
 jetzt jede Mission auf beiden Seiten je eine Stunde lang mit zufälligen
 Eingaben an allen Stationen, speichert und lädt dabei, und legt bei jedem
 Fehler eine Fehlermeldung an. Sein erster Lauf fand, dass eine U-Boot-Mission,
 die mit ausgewähltem Sonarkontakt gespeichert wurde, nicht mehr geladen werden
 konnte; das ist behoben. Spielstände bleiben im Format v44.
 
-## 1.3.127
+## 1.3.128
 
-Version 1.3.127 rettet Spielstände über Updates. Ein Speicherplatz oder
+Version 1.3.128 rettet Spielstände über Updates. Ein Speicherplatz oder
 Autosave einer älteren Version, zurück bis Version 1.3.98 (Spielstandformat
 v38), lädt jetzt: Er wird Schritt für Schritt auf das aktuelle Format gebracht
 und danach so streng geprüft wie bisher, sodass ein Update keine unterbrochene
 Mission mehr verwirft. Der Update-Hinweis warnt nur noch, wenn Spielstände zu
 alt für das neue Release sind. Gespeichert wird im Format v44.
 
-## 1.3.126
+## 1.3.127
 
-Version 1.3.126 hält eine Mission am Leben, wenn etwas schiefgeht. Eine
+Version 1.3.127 hält eine Mission am Leben, wenn etwas schiefgeht. Eine
 Stationsanzeige, die sich nicht zeichnen lässt, zeigt jetzt „Anzeige gestört“,
 während die Mission und alle anderen Stationen weiterlaufen. Ein Fehler in der
 Simulation setzt die Mission auf ihren Wiederherstellungspunkt zurück, eine
@@ -45,6 +45,17 @@ dem Laden zurück. Nach wiederholten Fehlern oder einem Fehler, der das Spiel
 doch beendet, wird der Wiederherstellungspunkt zum Autosave, sodass „Einsatz
 fortsetzen“ die Mission weiterführt. Jeder abgefangene Fehler landet für einen
 Fehlerbericht in crash.log. Spielstände bleiben im Format v44.
+## 1.3.126
+
+Version 1.3.126 ordnet die Szenarien nach Seiten. Nach „Neues Spiel“ wählst
+du zuerst Fregatte oder U-Boot, und die Liste zeigt danach nur die Einsätze
+dieser Seite: Patrouille, Doppeljagd, Nuklearer Abfang und Freie Jagd auf der
+Fregatte; Durchbruch, Aufklärung, Geleitzug, Meerengen-Sperre, Kampfschwimmer
+und Versorgerschutz auf dem U-Boot. Die Titel verlieren deshalb den Zusatz
+„(U-Boot)“, der so wirkte, als solle die Fregatte sie spielen. Die
+Mehrspieler-Lobby und der Dialog „Neues Spiel“ im Browser filtern genauso, und
+Esc in der Szenarienliste führt zurück zur Seitenwahl. Speicherformat v44
+unverändert.
 
 ## 1.3.125
 

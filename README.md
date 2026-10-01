@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.129**
+Current release: **1.3.130**
 
-Release 1.3.129 adds a graphics level under Options: "Low" saves the
+Release 1.3.130 adds a graphics level under Options: "Low" saves the
 uConsole's processor (no radar afterglow, a calmer menu background), "Normal"
 shows every effect and "Full" also smooths chart lines; the uConsole starts at
 Normal, Windows at Full. In a window or full screen larger than 1280 x 720 the

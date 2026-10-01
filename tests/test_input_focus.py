@@ -437,10 +437,12 @@ def test_quit_dialog_last_entry_still_exits_without_saving(game):
     assert not list(Path(config.SAVE_DIR).glob("*.json"))
 
 
-def test_scenario_list_escape_goes_back_to_main_menu(game):
+def test_scenario_list_escape_goes_back_to_the_side_choice(game):
     game.in_menu = True
     game.main_menu = False
     game.menu_screen = "scenario"
+    press(game, pygame.K_ESCAPE)
+    assert game.menu_screen == "side" and not game.main_menu and not game.quit_confirm
     press(game, pygame.K_ESCAPE)
     assert game.main_menu and not game.quit_confirm
 

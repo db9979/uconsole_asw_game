@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.129
+## 1.3.130
 
-Release 1.3.129 adds a graphics level under Options: "Low" saves the
+Release 1.3.130 adds a graphics level under Options: "Low" saves the
 uConsole's processor (no radar afterglow, a calmer menu background), "Normal"
 shows every effect and "Full" also smooths chart lines; the uConsole starts at
 Normal, Windows at Full. In a window or full screen larger than 1280 x 720 the
@@ -14,27 +14,27 @@ picture is now scaled sharply: whole factors repeat pixels exactly and other
 sizes no longer show uneven text rows or blur. The level never changes what a
 station shows as information. Saves stay format v44.
 
-## 1.3.128
+## 1.3.129
 
-Release 1.3.128 makes the game more robust. A nightly soak test now plays
+Release 1.3.129 makes the game more robust. A nightly soak test now plays
 every mission on both sides for an hour each with random input at every
 station, saving and reloading along the way, and opens a bug report when
 anything breaks. Its first run found that a submarine mission saved while a
 sonar contact was selected could not be loaded again; that is fixed. Saves
 stay format v44.
 
-## 1.3.127
+## 1.3.128
 
-Release 1.3.127 keeps your saved games across updates. A save slot or autosave
+Release 1.3.128 keeps your saved games across updates. A save slot or autosave
 written by an older release, back to release 1.3.98 (save format v38), now
 loads: it is brought up to the current format step by step and then checked as
 strictly as before, so an update no longer throws away a mission you
 interrupted. The update notice warns about saves only when they are too old
 for the new release. Saves are written as format v44.
 
-## 1.3.126
+## 1.3.127
 
-Release 1.3.126 keeps a mission alive when something goes wrong. A station
+Release 1.3.127 keeps a mission alive when something goes wrong. A station
 view that fails to draw now shows "Display fault" while the mission and every
 other station keep running. A fault in the simulation puts the mission back to
 its recovery point, an in-memory copy at most one minute old, and says so in
@@ -42,6 +42,17 @@ the feed; Remote Crew browsers get their stations back as after a load. After
 repeated faults, or an error that still ends the game, the recovery point
 becomes the autosave, so "Continue mission" resumes it. Every caught fault is
 written to crash.log for a bug report. Saves stay format v44.
+## 1.3.126
+
+Release 1.3.126 lists the scenarios by side. After "New game" you first pick
+the frigate or the submarine, and the list then shows only that side's
+missions: Patrol, Double hunt, Nuclear intercept and Free hunt on the frigate;
+Breakthrough, Reconnaissance, Convoy attack, Strait blockade, Combat swimmers
+and Supply ship escort on the submarine. The titles therefore lose their
+"(submarine)" suffix, which read as if the frigate were meant to play them.
+The multiplayer lobby and the browser's New game dialog filter the same way,
+and Esc in the scenario list returns to the side choice. Save format v44
+unchanged.
 
 ## 1.3.125
 

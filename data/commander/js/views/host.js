@@ -99,14 +99,21 @@ function syncNewGameDifficulty() {
   $("host-new-difficulty-note").textContent = scenario
     ? t(free ? "host_new_difficulty_free" : "host_new_difficulty_fixed") : "";
 }
-function openNewGameDialog() {
-  if (!S.hostView) return;
-  const dialog = $("host-new-dialog");
-  $("host-new-scenario").replaceChildren(...S.hostView.scenarios.map((row) => {
+// The scenario list shows only the missions of the chosen side.
+function fillNewGameScenarios(preferred) {
+  const side = $("host-new-side").value;
+  const rows = S.hostView.scenarios.filter((row) => row.side === side);
+  $("host-new-scenario").replaceChildren(...rows.map((row) => {
     const option = node("option", t(scenarioText[row.key] ?? "unknown"));
     option.value = row.key;
     return option;
   }));
+  if (rows.some((row) => row.key === preferred)) $("host-new-scenario").value = preferred;
+  syncNewGameDifficulty();
+}
+function openNewGameDialog() {
+  if (!S.hostView) return;
+  const dialog = $("host-new-dialog");
   $("host-new-difficulty").replaceChildren(...S.hostView.difficulty_fields.map((field) => {
     const wrapper = node("div", undefined, "field");
     const inputId = `host-new-difficulty-${field.name}`;
@@ -123,15 +130,14 @@ function openNewGameDialog() {
     wrapper.append(label, input);
     return wrapper;
   }));
-  $("host-new-scenario").value = S.hostView.scenario;
   $("host-new-world").value = S.hostView.world_mode;
   $("host-new-side").value = opforRoles.has(S.session?.station) ? "uboot" : "frigate";
+  fillNewGameScenarios(S.hostView.scenario);
   $("host-new-seed").value = "";
-  syncNewGameDifficulty();
   renderDisabledReasons();
   dialog.hidden = false;
   if (!dialog.open) dialog.showModal();
-  $("host-new-scenario").focus();
+  $("host-new-side").focus();
 }
 
 export function init() {
@@ -142,6 +148,9 @@ export function init() {
   $("host-new-cancel").addEventListener("click", () => closeHostDialog($("host-new-dialog")));
   $("instructor-cancel").addEventListener("click", () => closeHostDialog($("instructor-dialog")));
   $("host-new-scenario").addEventListener("change", syncNewGameDifficulty);
+  $("host-new-side").addEventListener("change", () => {
+    if (S.hostView) fillNewGameScenarios($("host-new-scenario").value);
+  });
   $("host-new-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!$("host-new-form").reportValidity()) return;

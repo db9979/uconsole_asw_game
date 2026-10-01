@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.129**
+Aktuelle Version: **1.3.130**
 
-Version 1.3.129 bringt unter Optionen eine Grafikstufe: „Sparsam“ schont den
+Version 1.3.130 bringt unter Optionen eine Grafikstufe: „Sparsam“ schont den
 Prozessor der uConsole (kein Radar-Nachleuchten, ruhigerer Menühintergrund),
 „Normal“ zeigt alle Effekte und „Voll“ glättet zusätzlich die Kartenlinien;
 die uConsole startet mit Normal, Windows mit Voll. In einem Fenster oder

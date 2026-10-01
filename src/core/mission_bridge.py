@@ -606,7 +606,7 @@ class MissionBridgeMixin:
             return raw_text(self.mission.name)
         keys = {"patrouille": "mission.patrol", "doppeljagd": "mission.double",
                 "konvoi": "mission.convoy", "nuklearer_abfang": "mission.intercept",
-                "durchbruch": "mission.breakthrough", "aufklaerung": "mission.recon",
+                "durchbruch": "mission.breakthrough", "jagdgruppe": "mission.breakthrough", "aufklaerung": "mission.recon",
                 "geleitzug": "mission.convoy_attack", "meerenge": "mission.strait",
                 "kampfschwimmer": "mission.swimmers", "versorger": "mission.escort",
                 "datum": "mission.datum", "fuehlung": "mission.trail",

@@ -1218,7 +1218,7 @@ CONSORT_REPORT_S = 10.0             # cadence of the passive cross-fix
 CONSORT_XFIX_MIN_DEG = 15.0         # poorer cuts are not reported
 CONSORT_XFIX_MAX_NM = 30.0
 CONSORT_PING_S = 20.0               # active sonar transmission interval
-CONSORT_ACTIVE_RANGE_NM = 7.0
+CONSORT_ACTIVE_RANGE_NM = 5.0
 CONSORT_ACTIVE_ERR_NM = 0.15
 CONSORT_ACTIVE_DEPTH_ERR_M = 15.0
 CONSORT_HEAR_PING_NM = 25.0         # submarines intercept its pings this far
@@ -1331,7 +1331,15 @@ MISSION_TYPES = {
         name="Suchgruppe", weight=0, subs=2,
         sub_types=["aip_modern", "ssn"],
         animals=(2, 3), civilians=(2, 3), asm=(0, 0), warships=(0, 0),
-        time_limit_s=14400, short_time_limit_s=3600, win="sink"),
+        time_limit_s=10800, short_time_limit_s=2700, win="sink"),
+    # The breakthrough against frigate and destroyer: a quiet boat that starts
+    # a little farther out (tuned with the fairness measurement).
+    "jagdgruppe": dict(
+        name="Jagdgruppe", weight=0, subs=1,
+        sub_types=["aip_modern"],
+        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        time_limit_s=18000, short_time_limit_s=3600,
+        short_spawn_nm=(8.0, 11.0), short_scale=0.2, win="breakthrough"),
 }
 BOAT_CONVOY_SIZE = 4               # merchants in the escorted convoy
 BOAT_CONVOY_SINK = 2               # the boat wins after sinking this many
@@ -1869,7 +1877,7 @@ SCENARIOS = {
                        enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
                        enemy_solution_threshold=0.25,
                        second_sub_prob=0.0),
-        mission_type="durchbruch",
+        mission_type="jagdgruppe",
         hq_intel="coarse",
         ship_start=(260.0, 300.0), ship_course=90.0,
         boat=True, consort=True,

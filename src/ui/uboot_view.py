@@ -636,11 +636,16 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     dy += row
     phase = sub.endurance.phase if sub.endurance is not None else None
     if battery is not None:
+        value = message("uboot.line.battery_value", value=_fmt(battery * 100),
+                        phase=(display_message("endurance_phase", phase)
+                               if phase else raw_text("--")))
+        text_font = layout.font(16)
+        if (text_font.size(layout.localize("uboot.label.battery"))[0]
+                + text_font.size(layout.localize(value))[0] + 8 > dw):
+            # A long phase name would cut the label: the percentage only.
+            value = message("telemetry.value.percent", value=_fmt(battery * 100))
         layout.gauge(s, (dx, dy, dw, small + 8), battery, label="uboot.label.battery",
-                     value=message("uboot.line.battery_value", value=_fmt(battery * 100),
-                                   phase=(display_message("endurance_phase", phase)
-                                          if phase else raw_text("--"))),
-                     color=_battery_color(battery))
+                     value=value, color=_battery_color(battery))
         dy += small + 10
     modes = [key for key, on in (("uboot.mode.silent", boat.orders.silent),
                                  ("uboot.mode.snorkel", sub.snorkeling),

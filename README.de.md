@@ -14,16 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.134**
+Aktuelle Version: **1.3.139**
 
-Version 1.3.134 bringt zehn neue Szenarien, damit hat jede Seite zehn. Die
-Fregatte bekommt 5 Geleitschutz, 6 Brennendes Datum, 7 Fühlung halten (Frieden,
-Waffen gesperrt, Sonarkontakt halten), 8 Versorgung auf See, 9 Seenot unter
-Bedrohung und 10 Hafenschutz; das U-Boot bekommt 7 Duell, 8 Angeschlagen heim,
-9 Agenten abholen und 10 Lauschposten. Taste `0` wählt die zehnte Zeile. In
-jedem spielt eine KI die Gegenseite, jedes hat einen Kurzeinsatz, und in
-KI-gegen-KI-Partien gewinnen beide Seiten. Spielstände wechseln auf Format
-v45; Spielstände v38 bis v44 lassen sich weiter laden.
+Version 1.3.139 bringt fünf Neuerungen in einem Update. Zwei Crews können jetzt
+gegeneinander spielen: Fregatte gegen U-Boot aus der Lobby, mit einem
+Schiedsrichter-Bildschirm auf der uConsole (1.3.135). In den Gruppenjagden
+Suchgruppe und Jagdgruppe führt die Fregatte den Zerstörer LUETJENS von
+OPZ-Seite 4 aus (1.3.136, Spielstände v46). Die Kampagne wird zum Feldzug mit
+Brennpunkten auf einer Sektorkarte für beide Seiten (1.3.137). Die Szenarien
+11 bis 20 sind in voller Länge ausgeglichen (1.3.138). Die uConsole bekommt die
+Lotsenkarte mit Echolot im U-Boot, eine Hubschrauber-Konsole und eine
+Funkpeil-Karte im Funkraum (1.3.139). Spielstände v38 bis v45 lassen sich
+weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

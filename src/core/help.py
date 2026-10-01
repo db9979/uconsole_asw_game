@@ -120,7 +120,7 @@ STATION_HELP = {
         [("<- / ->", "help.control.compartment"), ("help.key.up_down", "help.control.team"),
          ("Enter", "help.control.assign"), ("Backspace", "help.control.withdraw"),
          ("C", "help.control.counterflood"),
-         ("W", "help.control.watch_change"), ("G", "help.control.action_stations"),
+         ("W", "help.control.watch_change"), ("G", "help.control.action_stations_crew"),
          ("M", "help.control.casualty_medic"), ("U", "help.control.casualty_reassign"),
          ("1-9", "help.control.station_only"), ("control.help.click", "control.help.compartment")],
         ["help.note.damage_states", "help.note.destroyed", "help.note.sinking",

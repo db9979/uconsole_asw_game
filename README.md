@@ -12,15 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.130**
+Current release: **1.3.131**
 
-Release 1.3.130 adds a graphics level under Options: "Low" saves the
-uConsole's processor (no radar afterglow, a calmer menu background), "Normal"
-shows every effect and "Full" also smooths chart lines; the uConsole starts at
-Normal, Windows at Full. In a window or full screen larger than 1280 x 720 the
-picture is now scaled sharply: whole factors repeat pixels exactly and other
-sizes no longer show uneven text rows or blur. The level never changes what a
-station shows as information. Saves stay format v44.
+Release 1.3.131 adds short missions. The briefing, the campaign screen, the
+multiplayer lobby and the browser's "New game" dialog now have a length row:
+every fixed scenario except the free hunt can be played as a short mission of
+30 to 60 minutes with the same goal, a shorter time limit and a start closer
+to the action, so a mission fits into an evening or a break. Each short
+variant was tuned with AI-against-AI games so that frigate and submarine win
+about equally often. Saves stay format v44.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

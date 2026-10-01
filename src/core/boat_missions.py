@@ -203,8 +203,8 @@ def goal(game):
     fx, fy = start
     bearing = math.degrees(math.atan2(fx - sx, -(fy - sy))) % 360.0
     point = None
-    for distance in (config.BOAT_GOAL_BEYOND_NM, config.BOAT_GOAL_BEYOND_NM * 1.5,
-                     config.BOAT_GOAL_BEYOND_NM * 0.5):
+    beyond = config.BOAT_GOAL_BEYOND_NM * distance_scale(game)
+    for distance in (beyond, beyond * 1.5, beyond * 0.5):
         for delta in (0.0, 20.0, -20.0, 40.0, -40.0, 60.0, -60.0, 90.0, -90.0):
             rad = math.radians(bearing + delta)
             x = fx + distance * math.sin(rad)
@@ -231,7 +231,7 @@ def _strait_goal(game):
     cached = getattr(game, "_boat_goal_cache", None)
     if cached is not None and cached[0] == key:
         return cached[1]
-    exit_nm = config.STRAIT_EXIT_NM
+    exit_nm = config.STRAIT_EXIT_NM * distance_scale(game)
     point = mission_geo.walk(game.world, row["x"], row["y"], exit_heading(row, sub.start_pos),
                              (exit_nm, exit_nm * 0.75, exit_nm * 1.25, exit_nm * 0.5))
     if point is None:
@@ -239,6 +239,13 @@ def _strait_goal(game):
     result = dict(x=float(point[0]), y=float(point[1]), radius_nm=config.BOAT_GOAL_RADIUS_NM)
     game._boat_goal_cache = (key, result)
     return result
+
+
+def distance_scale(game) -> float:
+    """Start distances of a boat mission: shorter in the short variant."""
+    if not getattr(game, "short_mission", False):
+        return 1.0
+    return float(game.mission.spec.get("short_scale", config.SHORT_DISTANCE_SCALE))
 
 
 def setup(game) -> None:
@@ -269,7 +276,7 @@ def _setup_strait(game) -> None:
     from src.enemies.civilian import CivilianShip
     row = gate(game)
     first = 0.0 if detrand.u01(game.seed, "strait-side", 0) < 0.5 else 180.0
-    entry = config.STRAIT_ENTRY_NM
+    entry = config.STRAIT_ENTRY_NM * distance_scale(game)
     for turn in (first, 180.0 - first):
         heading = (row["axis"] + turn) % 360.0
         point = mission_geo.walk(game.world, row["x"], row["y"], heading,
@@ -297,7 +304,7 @@ def _setup_strait(game) -> None:
 def _setup_swimmers(game) -> None:
     """The boat out at sea, seaward of the zone."""
     row = zone(game)
-    approach = config.SWIMMER_APPROACH_NM
+    approach = config.SWIMMER_APPROACH_NM * distance_scale(game)
     point = mission_geo.walk(game.world, row["x"], row["y"], row["seaward"],
                              (approach, approach * 0.8, approach * 1.2, approach * 0.6,
                               approach * 0.4))
@@ -444,10 +451,11 @@ def _station_boat_ahead(game, course: float, around) -> None:
         return
     draw = detrand.u01(game.seed, "convoy-boat-side", 0) * 2.0 - 1.0
     side = math.copysign(config.BOAT_CONVOY_BOAT_SIDE_NM
-                         + abs(draw) * config.BOAT_CONVOY_BOAT_SIDE_SPREAD_NM, draw)
+                         + abs(draw) * config.BOAT_CONVOY_BOAT_SIDE_SPREAD_NM, draw
+                         ) * distance_scale(game)
     rad = math.radians(course)
-    for ahead in (config.BOAT_CONVOY_BOAT_AHEAD_NM, config.BOAT_CONVOY_BOAT_AHEAD_NM * 0.75,
-                  config.BOAT_CONVOY_BOAT_AHEAD_NM * 1.25):
+    nominal = config.BOAT_CONVOY_BOAT_AHEAD_NM * distance_scale(game)
+    for ahead in (nominal, nominal * 0.75, nominal * 1.25):
         for offset in (side, -side, 0.0):
             x = around[0] + ahead * math.sin(rad) + offset * math.cos(rad)
             y = around[1] - ahead * math.cos(rad) + offset * math.sin(rad)

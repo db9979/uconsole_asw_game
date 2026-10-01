@@ -14,16 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.130**
+Aktuelle Version: **1.3.131**
 
-Version 1.3.130 bringt unter Optionen eine Grafikstufe: „Sparsam“ schont den
-Prozessor der uConsole (kein Radar-Nachleuchten, ruhigerer Menühintergrund),
-„Normal“ zeigt alle Effekte und „Voll“ glättet zusätzlich die Kartenlinien;
-die uConsole startet mit Normal, Windows mit Voll. In einem Fenster oder
-Vollbild größer als 1280 x 720 wird das Bild jetzt scharf skaliert: ganze
-Faktoren wiederholen Pixel exakt, andere Größen zeigen keine ungleichmäßigen
-Textzeilen und keine Unschärfe mehr. Die Stufe ändert nie, welche
-Informationen eine Station zeigt. Spielstände bleiben im Format v44.
+Version 1.3.131 bringt Kurzeinsätze. Briefing, Kampagnenbildschirm,
+Mehrspieler-Lobby und der Dialog „Neues Spiel“ im Browser haben jetzt eine
+Zeile Länge: Jedes feste Szenario außer der freien Jagd lässt sich als
+Kurzeinsatz von 30 bis 60 Minuten spielen, mit demselben Ziel, kürzerem
+Zeitlimit und einem Start näher am Geschehen, sodass eine Mission in einen
+Abend oder eine Pause passt. Jeder Kurzeinsatz wurde mit KI-gegen-KI-Partien
+so eingestellt, dass Fregatte und U-Boot etwa gleich oft gewinnen. Spielstände
+bleiben im Format v44.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -12,7 +12,8 @@ from src.core.config import (NATO_AFFILIATIONS, PLAYER_CLASSES,
                              RADAR_RANGE_SCALES_NM, SHIP_SPEED_MAX_KN,
                              HELO_DIP_DEPTH_MIN_M, HELO_DIP_DEPTH_MAX_M,
                              DIFFICULTY_FIELDS, SAVE_SLOTS, SCENARIO_ORDER,
-                             START_TIME_CHOICES, START_WEATHER_CHOICES)
+                             START_LENGTH_CHOICES, START_TIME_CHOICES,
+                             START_WEATHER_CHOICES)
 from src.commander.v2.wire import (
     HOST_ROLE,
     ROLES,
@@ -436,10 +437,12 @@ def _instructor_environment_params(params):
 def _new_game_params(params):
     required = {"scenario", "world_mode"}
     if (type(params) is not dict or not required <= set(params)
-            or not set(params) <= required | {"difficulty", "seed", "weather", "time"}):
+            or not set(params) <= required | {"difficulty", "seed", "weather", "time",
+                                                  "length"}):
         return False
     if ("weather" in params and params["weather"] not in START_WEATHER_CHOICES
-            or "time" in params and params["time"] not in START_TIME_CHOICES):
+            or "time" in params and params["time"] not in START_TIME_CHOICES
+            or "length" in params and params["length"] not in START_LENGTH_CHOICES):
         return False
     if not (type(params["scenario"]) is str and params["scenario"] in SCENARIO_ORDER
             and type(params["world_mode"]) is str

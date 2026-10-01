@@ -220,6 +220,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # Start weather and time of the next scenario/campaign mission.
         self.start_weather = "random"
         self.start_time = "random"
+        self.start_length = "normal"
         self.in_menu = start_menu
         self.menu_sel = 0  # Index in DIFFICULTY_FIELD_ORDER or SCENARIO_ORDER
         self.seed = seed
@@ -460,6 +461,11 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # M6: Mission (W4: Szenario kann den Typ fixieren)
         self.mission = Mission(seed, type_key=sc["mission_type"],
                                difficulty=self.difficulty)
+        if (getattr(self, "start_length", "normal") == "short"
+                and self.mission.spec is not None
+                and "short_time_limit_s" in self.mission.spec):
+            # The short variant: its time limit marks it (save ``mission_runtime``).
+            self.mission.time_limit_s = self.mission.spec["short_time_limit_s"]
         self.custom_mission_definition = None
         # Mission unit id -> entity id of the placed unit (custom missions).
         self.mission_units = {}
@@ -513,7 +519,10 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
             plan.append(rng.choice(config.SECOND_SUB_POOL))
         self.subs = []
         for i, stype in enumerate(plan):
-            min_d, max_d = (12.0, 20.0) if i == 0 else (22.0, 45.0)
+            min_d, max_d = ((self.mission.spec.get("short_spawn_nm",
+                                                   config.SHORT_SUB_SPAWN_NM[0]) if i == 0
+                             else config.SHORT_SUB_SPAWN_NM[1]) if self.short_mission
+                            else (12.0, 20.0) if i == 0 else (22.0, 45.0))
             sx, sy = at_dist(min_d, max_d)
             s = Sub(sx, sy,
                     depth_m=rng.uniform(40.0, min(
@@ -833,7 +842,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._prepared_menu_mission = (
             seed, self.scenario_key, self.world_mode,
             self._difficulty_base, self.hq_intel_mode(), self.level,
-            self.start_weather, self.start_time,
+            self.start_weather, self.start_time, self.start_length,
             id(self.world), id(self.sonar)) if self.in_menu else None
 
     def flash(self, text: object, seconds: float = 3.0) -> None:

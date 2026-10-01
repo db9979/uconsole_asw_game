@@ -365,7 +365,7 @@ class MissionBridgeMixin:
                     tuple(candidate_difficulty[name]
                           for name in config.DIFFICULTY_FIELD_ORDER),
                     self.hq_intel_mode(), self._preferred_level(),
-                    self.start_weather, self.start_time,
+                    self.start_weather, self.start_time, self.start_length,
                     id(self.world), id(self.sonar))
         reuse = (self.in_menu and self._prepared_menu_mission == prepared
                  and self.sim_t == 0.0 and self.mission_time == 0.0
@@ -454,20 +454,41 @@ class MissionBridgeMixin:
             self.world.refresh_weather()
             self.world.set_weather_override(weather)
 
+    START_CHOICE_ROWS = ("weather", "time", "length")
+
+    def start_choice_rows(self) -> tuple:
+        """The start rows of the selected scenario: no length row for the
+        free hunt, whose time limit is its own choice."""
+        spec = config.MISSION_TYPES.get(
+            config.SCENARIOS.get(self.scenario_key, {}).get("mission_type"))
+        if spec is None or "short_time_limit_s" not in spec:
+            return self.START_CHOICE_ROWS[:2]
+        return self.START_CHOICE_ROWS
+
     def cycle_start_choice(self, kind: str, step: int) -> None:
-        """Left/Right on a weather or time row of the briefing, lobby or
-        campaign menu."""
-        attribute, choices = (("start_weather", config.START_WEATHER_CHOICES)
-                              if kind == "weather"
-                              else ("start_time", config.START_TIME_CHOICES))
-        current = getattr(self, attribute, "random")
+        """Left/Right on a weather, time or length row of the briefing,
+        lobby or campaign menu."""
+        choices = {"weather": config.START_WEATHER_CHOICES,
+                   "time": config.START_TIME_CHOICES,
+                   "length": config.START_LENGTH_CHOICES}[kind]
+        current = getattr(self, f"start_{kind}", choices[0])
         index = choices.index(current) if current in choices else 0
-        setattr(self, attribute, choices[(index + step) % len(choices)])
+        setattr(self, f"start_{kind}", choices[(index + step) % len(choices)])
 
     def start_choice_text(self, kind: str):
-        """'Weather: rain' / 'Time of day: night' for a menu row."""
-        value = self.start_weather if kind == "weather" else self.start_time
+        """'Weather: rain' / 'Time of day: night' / 'Length: short' for a menu row."""
+        value = getattr(self, f"start_{kind}")
         return message(f"menu.start_{kind}", value=message(f"menu.start_{kind}.{value}"))
+
+    @property
+    def short_mission(self) -> bool:
+        """The running mission is a scenario's short variant (its time limit
+        is the short one, so a loaded save knows it too)."""
+        mission = getattr(self, "mission", None)
+        spec = getattr(mission, "spec", None)
+        return (spec is not None and getattr(self, "custom_mission_definition", None) is None
+                and "short_time_limit_s" in spec
+                and float(mission.time_limit_s) == float(spec["short_time_limit_s"]))
 
     def hq_intel_mode_menu(self) -> str:
         return (self.menu_hq_intel if self.menu_hq_intel in config.HQ_INTEL_MODES
@@ -555,7 +576,8 @@ class MissionBridgeMixin:
                 "geleitzug": "mission.convoy_attack", "meerenge": "mission.strait",
                 "kampfschwimmer": "mission.swimmers", "versorger": "mission.escort",
                 "custom": "mission.custom"}
-        return message(keys[self.mission.type_key])
+        name = message(keys[self.mission.type_key])
+        return message("mission.short_variant", name=name) if self.short_mission else name
 
     def mission_level_display(self):
         level = self.level if self.level in config.LEVELS else config.LEVEL_DEFAULT

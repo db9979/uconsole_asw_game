@@ -6502,5 +6502,12 @@
   "option.graphics.low": "Sparsam",
   "option.graphics.normal": "Normal",
   "option.graphics.full": "Voll",
-  "option.graphics.help": "Sparsam: einfache Pixel-Skalierung, kein Radar-Nachleuchten, ruhigerer Menühintergrund; spart Rechenzeit auf der uConsole. Normal (Standard der uConsole): alle Effekte und scharfe Skalierung auf größeren Bildschirmen. Voll (Standard unter Windows): glättet zusätzlich Karten- und Plotlinien. Nur das Bild ändert sich, nie die Simulation oder was eine Station anzeigt."
+  "option.graphics.help": "Sparsam: einfache Pixel-Skalierung, kein Radar-Nachleuchten, ruhigerer Menühintergrund; spart Rechenzeit auf der uConsole. Normal (Standard der uConsole): alle Effekte und scharfe Skalierung auf größeren Bildschirmen. Voll (Standard unter Windows): glättet zusätzlich Karten- und Plotlinien. Nur das Bild ändert sich, nie die Simulation oder was eine Station anzeigt.",
+  "menu.start_length": "Länge: {value}",
+  "menu.start_length.normal": "volle Mission",
+  "menu.start_length.short": "Kurzeinsatz (30-60 min)",
+  "mission.short_variant": "{name} (Kurzeinsatz)",
+  "commander.web.host_new_length": "Länge",
+  "commander.web.start_length_normal": "volle Mission",
+  "commander.web.start_length_short": "Kurzeinsatz (30-60 min)"
 }

@@ -155,12 +155,12 @@ class DrawMixin:
             self.handle_event(pointer_input.key_event(key))
 
     def _draw_start_choices(self, center, top: int, cx: int,
-                            selected: int | None = None) -> None:
-        """The weather and time-of-day rows of a briefing: Up/Down select,
-        Left/Right (or a click on the row's left/right part) change."""
-        row_h = 26
+                            selected: int | None = None, rows=None) -> None:
+        """The weather, time-of-day and length rows of a briefing: Up/Down
+        select, Left/Right (or a click on the row's left/right part) change."""
+        row_h = 24
         current = self.menu_sel if selected is None else selected
-        for i, kind in enumerate(("weather", "time")):
+        for i, kind in enumerate(rows or self.start_choice_rows()):
             y = top + i * row_h
             for part, key in ((0, pygame.K_LEFT), (1, None), (2, pygame.K_RIGHT)):
                 pointer.add_action(
@@ -312,12 +312,12 @@ class DrawMixin:
                 center(message("menu.loss_value",
                                loss=self.tr("scenario." + scenario_key + ".lose")), 448,
                        color=config.COLOR_DANGER)
-            self._draw_start_choices(center, 478, cx)
-            center(self.tr("menu.start_hint"), 536,
+            self._draw_start_choices(center, 470, cx)
+            center(self.tr("menu.start_hint"), 544,
                    color=config.COLOR_TEXT_DIM, keys=("Enter", None, "Esc"))
             center(message("menu.local_side", side=message(
                 "menu.local_side.uboot" if self.local_side == "uboot"
-                else "menu.local_side.frigate")), 566,
+                else "menu.local_side.frigate")), 572,
                 color=config.COLOR_WARN if self.local_side == "uboot"
                 else config.COLOR_TEXT_DIM)
 

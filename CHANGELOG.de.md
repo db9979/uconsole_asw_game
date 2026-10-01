@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.131
+
+Version 1.3.131 bringt Kurzeinsätze. Briefing, Kampagnenbildschirm,
+Mehrspieler-Lobby und der Dialog „Neues Spiel“ im Browser haben jetzt eine
+Zeile Länge: Jedes feste Szenario außer der freien Jagd lässt sich als
+Kurzeinsatz von 30 bis 60 Minuten spielen, mit demselben Ziel, kürzerem
+Zeitlimit und einem Start näher am Geschehen, sodass eine Mission in einen
+Abend oder eine Pause passt. Jeder Kurzeinsatz wurde mit KI-gegen-KI-Partien
+so eingestellt, dass Fregatte und U-Boot etwa gleich oft gewinnen. Spielstände
+bleiben im Format v44.
+
 ## 1.3.130
 
 Version 1.3.130 bringt unter Optionen eine Grafikstufe: „Sparsam“ schont den

@@ -1872,9 +1872,12 @@ class EventMixin:
         if key in (pygame.K_RETURN, pygame.K_SPACE):
             self._start_menu_mission()
         elif key in (pygame.K_UP, pygame.K_DOWN):
-            self.menu_sel = 1 - min(1, max(0, self.menu_sel))
+            rows = len(self.start_choice_rows())
+            self.menu_sel = (min(rows - 1, max(0, self.menu_sel))
+                             + (1 if key == pygame.K_DOWN else -1)) % rows
         elif key in (pygame.K_LEFT, pygame.K_RIGHT):
-            self.cycle_start_choice(("weather", "time")[min(1, max(0, self.menu_sel))],
+            self.cycle_start_choice(self.start_choice_rows()[
+                min(len(self.start_choice_rows()) - 1, max(0, self.menu_sel))],
                                     1 if key == pygame.K_RIGHT else -1)
         elif key == pygame.K_ESCAPE:
             self.menu_screen = "scenario"

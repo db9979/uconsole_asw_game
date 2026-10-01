@@ -4,9 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.131
+
+Release 1.3.131 adds short missions. The briefing, the campaign screen, the
+multiplayer lobby and the browser's "New game" dialog now have a length row:
+every fixed scenario except the free hunt can be played as a short mission of
+30 to 60 minutes with the same goal, a shorter time limit and a start closer
+to the action, so a mission fits into an evening or a break. Each short
+variant was tuned with AI-against-AI games so that frigate and submarine win
+about equally often. Saves stay format v44.
+
 ## 1.3.130
 
-Release 1.3.130 adds a graphics level under Options: "Low" saves the
+Release 1.3.130 adds a graphics level under Options: "Economy" saves the
 uConsole's processor (no radar afterglow, a calmer menu background), "Normal"
 shows every effect and "Full" also smooths chart lines; the uConsole starts at
 Normal, Windows at Full. In a window or full screen larger than 1280 x 720 the

@@ -6502,5 +6502,12 @@
   "option.graphics.low": "Economy",
   "option.graphics.normal": "Normal",
   "option.graphics.full": "Full",
-  "option.graphics.help": "Economy: plain pixel scaling, no radar afterglow, a calmer menu backdrop; saves CPU on the uConsole. Normal (uConsole default): every effect and sharp scaling on larger screens. Full (Windows default): also smooths chart and plot lines. Only the picture changes, never the simulation or what a station shows."
+  "option.graphics.help": "Economy: plain pixel scaling, no radar afterglow, a calmer menu backdrop; saves CPU on the uConsole. Normal (uConsole default): every effect and sharp scaling on larger screens. Full (Windows default): also smooths chart and plot lines. Only the picture changes, never the simulation or what a station shows.",
+  "menu.start_length": "Length: {value}",
+  "menu.start_length.normal": "full mission",
+  "menu.start_length.short": "short (30-60 min)",
+  "mission.short_variant": "{name} (short)",
+  "commander.web.host_new_length": "Length",
+  "commander.web.start_length_normal": "full mission",
+  "commander.web.start_length_short": "short (30-60 min)"
 }

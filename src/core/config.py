@@ -1212,53 +1212,57 @@ MISSION_TYPES = {
         name="Patrouille", weight=40, subs=1,
         sub_types=["diesel_alt", "aip_modern", "ssn"],
         animals=(2, 4), civilians=(2, 3), asm=(0, 1), warships=(0, 1),
-        time_limit_s=10800, win="sink"),
+        time_limit_s=10800, short_time_limit_s=1800, win="sink"),
     "doppeljagd": dict(
         name="Doppeljagd", weight=25, subs=2,
         sub_types=["diesel_alt", "aip_modern", "ssn"],
         animals=(2, 3), civilians=(1, 2), asm=(1, 2), warships=(1, 2),
-        time_limit_s=18000, win="sink"),
+        time_limit_s=18000, short_time_limit_s=3600, win="sink"),
     "konvoi": dict(
         name="Konvoi-Schutz", weight=20, subs=2,
         sub_types=["aip_modern", "ssn"],
         animals=(1, 3), civilians=(3, 4), asm=(0, 1), warships=(1, 2),
-        time_limit_s=14400, win="survive"),
+        time_limit_s=14400, short_time_limit_s=2700, win="survive"),
     "nuklearer_abfang": dict(
         name="Nuklearer-Abfang", weight=15, subs=1,
         sub_types=["ssn"],
         animals=(0, 2), civilians=(1, 2), asm=(1, 2), warships=(0, 1),
-        time_limit_s=10800, win="sink"),
+        time_limit_s=10800, short_time_limit_s=2700, win="sink"),
     # Boat missions: the objective is the submarine's (src/core/boat_missions.py).
     "durchbruch": dict(
         name="Durchbruch", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=18000, win="breakthrough"),
+        time_limit_s=18000, short_time_limit_s=3600,
+        short_spawn_nm=(4.0, 6.0), short_scale=0.2, win="breakthrough"),
     "aufklaerung": dict(
         name="Aufklaerung", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=7200, win="recon"),
+        time_limit_s=7200, short_time_limit_s=2700,
+        short_spawn_nm=(10.0, 16.0), win="recon"),
     "geleitzug": dict(
         name="Geleitzug", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
-        time_limit_s=10800, win="convoy_attack"),
+        time_limit_s=10800, short_time_limit_s=2100, win="convoy_attack"),
     "meerenge": dict(
         name="Meerenge", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=14400, win="strait"),
+        time_limit_s=14400, short_time_limit_s=2700, win="strait"),
     "kampfschwimmer": dict(
         name="Kampfschwimmer", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=21600, win="swimmers"),
+        time_limit_s=21600, short_time_limit_s=2700,
+        short_scale=0.25, win="swimmers"),
     "versorger": dict(
         name="Versorger", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
-        time_limit_s=10800, win="escort"),
+        time_limit_s=10800, short_time_limit_s=2700,
+        short_scale=0.75, win="escort"),
 }
 BOAT_CONVOY_SIZE = 4               # merchants in the escorted convoy
 BOAT_CONVOY_SINK = 2               # the boat wins after sinking this many
@@ -1396,6 +1400,18 @@ START_WEATHER_CHOICES = ("random", "fair", "rain", "storm", "fog")
 START_WEATHER_SEA_STATE = {"fair": 1, "rain": 3, "storm": 5, "fog": 1}
 START_TIME_CHOICES = ("random", "dawn", "day", "dusk", "night")
 START_TIME_HOURS = {"dawn": 6.0, "day": 12.0, "dusk": 19.0, "night": 1.0}
+# Mission length (briefing, lobby, campaign, web host): "short" is the
+# 30 to 60 minute variant of a scenario (``short_time_limit_s`` of its
+# mission type), starting closer to the action: the hostile submarines spawn
+# nearer (``SHORT_SUB_SPAWN_NM``) and a boat mission's own start distances
+# shrink by ``SHORT_DISTANCE_SCALE``; a mission type may set its own
+# ``short_spawn_nm`` (first boat) and ``short_scale``. Each variant is tuned
+# with the AI-against-AI fairness measurement. Goals stay the same. The free hunt has
+# its own time limit and no short variant. A save keeps the shorter time
+# limit, which is how a loaded mission knows it is short.
+START_LENGTH_CHOICES = ("normal", "short")
+SHORT_SUB_SPAWN_NM = ((5.0, 8.0), (8.0, 14.0))   # first boat, every further one
+SHORT_DISTANCE_SCALE = 0.5
 SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
                   "s5_durchbruch", "s6_aufklaerung", "s7_geleitzug",
                   "s8_meerenge", "s9_kampfschwimmer", "s10_versorger")

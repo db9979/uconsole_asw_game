@@ -404,3 +404,65 @@ class MissionDefinition:
 
     def to_dict(self) -> dict[str, Any]:
         return copy.deepcopy(self.data)
+
+
+# Fairness hints (editor only, never a validation error): rough transit
+# speeds of each side for "can this side still make it in time".
+HINT_FRIGATE_KN = 20.0
+HINT_BOAT_KN = 8.0
+HINT_DETECT_NM = 3.0
+HINT_MAX = 4
+
+
+def mission_hints(data: Mapping[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    """(message key, params) warnings that a mission may be hard to win for
+    one side; empty for an invalid mission. Pure and bounded."""
+    if validate_mission(data):
+        return []
+    sectors = {sector["id"]: sector for sector in data["world"].get("sectors", [])}
+
+    def where(placement):
+        if placement["kind"] == "fixed":
+            return float(placement["x"]), float(placement["y"])
+        sector = sectors[placement["sector"]]
+        return (sector["x"] + sector["width"] / 2.0, sector["y"] + sector["height"] / 2.0)
+
+    exact = {unit["id"]: unit for unit in data["units"]["exact"]}
+    groups = {group["id"]: group for group in data["units"]["random_groups"]}
+    positions = {key: where(unit["placement"]) for key, unit in exact.items()}
+    positions.update({key: where(group["placement"]) for key, group in groups.items()})
+    frigate = (float(data["player"]["x"]), float(data["player"]["y"]))
+    objective = data["objective"]
+    limit_s = float(objective["time_limit_s"])
+    side = mission_side(data)
+    hints: list[tuple[str, dict[str, Any]]] = []
+
+    def far(start, point, speed_kn, share):
+        distance = ((start[0] - point[0]) ** 2 + (start[1] - point[1]) ** 2) ** 0.5
+        return distance, distance / speed_kn * 3600.0 > limit_s * share
+
+    if side == "uboot":
+        boat = positions[data["boat_id"]]
+        mover, speed, who = boat, HINT_BOAT_KN, "boat"
+        distance = ((boat[0] - frigate[0]) ** 2 + (boat[1] - frigate[1]) ** 2) ** 0.5
+        if distance < HINT_DETECT_NM:
+            hints.append(("editor.hint.boat_close", {"range": f"{distance:.1f}"}))
+    else:
+        mover, speed, who = frigate, HINT_FRIGATE_KN, "frigate"
+        hostile = [key for key, unit in {**exact, **groups}.items() if unit["side"] == "hostile"]
+        if objective["type"] in ("survive", "protect") and not hostile:
+            hints.append(("editor.hint.no_threat", {}))
+    minutes = int(limit_s // 60)
+    if objective["type"] == "reach":
+        point = objective["reach"]
+        distance, late = far(mover, (float(point["x"]), float(point["y"])), speed, 1.0)
+        if late:
+            hints.append((f"editor.hint.reach_far.{who}",
+                          {"range": f"{distance:.0f}", "minutes": minutes}))
+    elif objective["type"] == "sink" and objective["target_ids"]:
+        nearest = min(far(mover, positions[target], speed, 0.5)
+                      for target in objective["target_ids"] if target in positions)
+        if nearest[1]:
+            hints.append((f"editor.hint.sink_far.{who}",
+                          {"range": f"{nearest[0]:.0f}", "minutes": minutes}))
+    return hints[:HINT_MAX]

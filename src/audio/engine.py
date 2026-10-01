@@ -98,6 +98,10 @@ class AudioEngine:
         self.sonar_neutral_blocks = 0
         # True audible gaps: the primed mixer channel was found idle.
         self.sonar_channel_idle = 0
+        # The same, but after a late worker iteration: the host held the
+        # interpreter (a slow first frame, a loaded CI runner), which
+        # pump_late already records; not a playback fault.
+        self.sonar_channel_idle_late = 0
         # Worker scheduling: iterations later than SONAR_PUMP_LATE_S, and the
         # longest gap between two iterations since the last debug line.
         self.sonar_pump_late = 0
@@ -620,9 +624,11 @@ class AudioEngine:
                     self._sonar_primed = True
                     self._sonar_pump_last_at = None
                 now = time.monotonic()
+                late = False
                 if self._sonar_pump_last_at is not None:
                     gap = now - self._sonar_pump_last_at
                     if gap > self.SONAR_PUMP_LATE_S:
+                        late = True
                         self.sonar_pump_late += 1
                     self.sonar_pump_late_max_s = max(self.sonar_pump_late_max_s, gap)
                 self._sonar_pump_last_at = now
@@ -634,7 +640,10 @@ class AudioEngine:
                         and not self._sonar_channel.get_busy()):
                     # The mixer ran dry between two iterations: an audible dip
                     # (the next play() fades in) that no other counter sees.
-                    self.sonar_channel_idle += 1
+                    if late:
+                        self.sonar_channel_idle_late += 1
+                    else:
+                        self.sonar_channel_idle += 1
                 if (self._sonar_refilling and self._sonar_buffer_duration
                         >= self.SONAR_REFILL_S - 1e-6):
                     self._sonar_refilling = False
@@ -888,7 +897,7 @@ class AudioEngine:
                 "sonar_holds={sh} alert_drops={ad} "
                 "sonar_underruns={su} sonar_concealed={sc} sonar_neutral={sn} "
                 "sonar_stale={ss} buffer_s={bs:.2f} rate_adj={ra:+.4f} "
-                "channel_idle={ci} pump_late={pl} pump_late_max_ms={pm:.0f} "
+                "channel_idle={ci} channel_idle_late={cl} pump_late={pl} pump_late_max_ms={pm:.0f} "
                 "queue_stranded={qs} worker_restarts={wr} "
                 "input_gaps={ig} evictions={ev} rate={r} ch={c}\n").format(
             qs=self.sonar_queue_stranded, wr=self.sonar_worker_restarts,
@@ -898,7 +907,7 @@ class AudioEngine:
             rb=produced,
             su=self.sonar_local_underruns, sn=self.sonar_neutral_blocks,
             ss=int(self.sonar_stale), bs=self._sonar_buffer_duration,
-            ci=self.sonar_channel_idle, pl=self.sonar_pump_late, pm=late_max_ms,
+            ci=self.sonar_channel_idle, cl=self.sonar_channel_idle_late, pl=self.sonar_pump_late, pm=late_max_ms,
             ig=self.sonar_input_gaps,
             r=self.sample_rate, c=self.channels)
         append_bounded_log(config.SAVE_DIR, "audio_debug.log", line,

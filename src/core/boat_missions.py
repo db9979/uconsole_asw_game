@@ -31,8 +31,11 @@ from src.sonar.platforms import OWNSHIP_TARGET_ID
 MODES = ("breakthrough", "recon", "convoy_attack", "strait", "swimmers", "escort")
 # Modes whose merchants the boat's torpedoes may take.
 SHIP_MODES = ("convoy_attack", "escort")
-# Scenarios 8 to 10: the boat slips past a guard that HQ tells nothing.
+# Scenarios 8 to 10: the boat slips past or attacks a guarding frigate.
 GUARDED_MODES = ("strait", "swimmers", "escort")
+# Missions where HQ has no intelligence on the boat: no start report, no
+# datum task. The supply ship escort keeps HQ's reports like the convoy.
+UNREPORTED_MODES = ("strait", "swimmers")
 
 
 def mode(game):
@@ -323,12 +326,31 @@ def supply(game):
 
 
 def update(game, dt: float) -> None:
-    """The supply ship's zigzag and the swimmers' lock-out, every substep."""
+    """The supply ship's zigzag, the swimmers' lock-out and the strait's
+    traffic, every substep."""
     kind = mode(game)
     if kind == "escort":
         _zigzag(game)
     elif kind == "swimmers":
         _hold(game, dt)
+    elif kind == "strait":
+        _shuttle(game)
+
+
+def _shuttle(game) -> None:
+    """The strait stays busy: a merchant ``STRAIT_TRAFFIC_TURN_NM`` beyond
+    the gate turns back through it (stateless, from its position)."""
+    row = gate(game)
+    for index in range(config.STRAIT_TRAFFIC):
+        ship = game.mission_entity(f"traffic-{index + 1}")
+        if ship is None or ship.sunk:
+            continue
+        ahead, _across = mission_geo.along((ship.x, ship.y), row)
+        if abs(ahead) < config.STRAIT_TRAFFIC_TURN_NM:
+            continue
+        back = row["axis"] if ahead < 0.0 else (row["axis"] + 180.0) % 360.0
+        if abs(config.angle_diff_deg(ship.target_course, back)) > 90.0:
+            ship.target_course = back
 
 
 def zigzag_course(game) -> float:

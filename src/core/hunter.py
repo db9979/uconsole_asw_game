@@ -595,6 +595,22 @@ def guard_course(game):
     return _bearing(ship.x, ship.y, tx, ty), SEARCH_KN
 
 
+def guard_holds(game, point) -> bool:
+    """Whether a datum at ``point`` lies where the barrier patrol may
+    prosecute it: within ``POST_LEASH_NM`` of the gate or inside the coast
+    section. Without a barrier any datum is prosecuted."""
+    area = boat_missions.guard_area(game)
+    if area is None or point is None:
+        return True
+    if area["kind"] == "gate":
+        (ax, ay), (bx, by) = area["ends"]
+        cx, cy = (ax + bx) / 2.0, (ay + by) / 2.0
+        reach = math.hypot(bx - ax, by - ay) / 2.0 + POST_LEASH_NM
+    else:
+        cx, cy, reach = area["x"], area["y"], area["radius_nm"]
+    return math.hypot(point[0] - cx, point[1] - cy) <= reach
+
+
 def guard_post(game):
     """The breakthrough guard's post (the frigate's scenario start), or None."""
     if boat_missions.mode(game) != "breakthrough":
@@ -622,6 +638,8 @@ def bridge(game, found) -> str:
         point = datum_point(game, found)
         if math.hypot(point[0] - post[0], point[1] - post[1]) > POST_LEASH_NM:
             found = None
+    if found is not None and not guard_holds(game, datum_point(game, found)):
+        found = None
     if found is None:
         if escort is not None:
             return _steer(game, *escort)
@@ -659,7 +677,7 @@ def guarding(game) -> bool:
     """The frigate guards its post against a breakthrough or a
     reconnaissance boat: a closer shot and a short helicopter (a convoy
     escort keeps its helicopter's full reach)."""
-    return boat_missions.mode(game) in ("breakthrough", "recon")
+    return boat_missions.mode(game) in ("breakthrough", "recon", "strait", "swimmers")
 
 
 def fire_range_nm(game) -> float:

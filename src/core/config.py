@@ -1278,8 +1278,9 @@ STRAIT_DISTANCE_WEIGHT = 0.1
 STRAIT_OPEN_HALF_NM = 8.0
 STRAIT_ENTRY_NM = 12.0             # the boat starts this far before the gate
 STRAIT_EXIT_NM = 6.0               # its goal lies this far beyond it
-STRAIT_TRAFFIC = 3                 # merchants passing through the strait
-STRAIT_TRAFFIC_SPACING_NM = 6.0
+STRAIT_TRAFFIC = 6                 # merchants passing through the strait
+STRAIT_TRAFFIC_SPACING_NM = 5.0
+STRAIT_TRAFFIC_TURN_NM = 14.0      # this far beyond the gate a merchant comes back
 # Combat swimmers: a zone off a coast near the nominal start, with at
 # least this much water, the coast within this distance behind it and open
 # sea for the approach. The boat stops in the zone at swimmer depth for the
@@ -1326,9 +1327,9 @@ BOAT_AI_SCOPE_SWEEP_S = 16.0
 BOAT_AI_ATTACK_NM = 4.0            # a patrol raid: fire at a merchant this close
 BOAT_AI_CONVOY_ATTACK_NM = 3.0     # convoy attack: fire at a merchant this close
 # Escort: a lone, zigzagging supply ship is fired at from farther off.
-BOAT_AI_ESCORT_ATTACK_NM = 5.5
+BOAT_AI_ESCORT_ATTACK_NM = 4.0
 # ... from this far abeam of its base track, clear of the escort ahead of it.
-BOAT_AI_ESCORT_ABEAM_NM = 5.0
+BOAT_AI_ESCORT_ABEAM_NM = 4.0
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0
 # Frigate missions: an AI patrol boat torpedoes a merchant within

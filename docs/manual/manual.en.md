@@ -687,7 +687,7 @@ Page 4 (Group) commands the consort of a group hunt: the destroyer LUETJENS (hul
 - **Orders:** `Y` auto, `F` formation (each press moves it to the next station 5 NM off the frigate: starboard beam, ahead, port beam, astern), `H` hold (4 kn on its course), `X` search about a point (it closes at 18 kn and circles the point 4 NM out at 10 kn so its sonar hears), `W` prosecute the selected track's plotted position (26 kn, then a 2 NM circle with active sonar). A click on the chart sets the point and switches formation, hold or auto to search.
 - **Auto:** it keeps formation until the frigate's own picture holds a contact you classified as a submarine or designated with a position fix under 10 minutes old; then it prosecutes the freshest one with active sonar.
 - **Sonar:** every 10 s its passive bearings appear on page 4 as lines from the destroyer. Its hull sonar hears a submarine within 8 NM, and nothing while it runs faster than 15 kn. Where one cuts the frigate's own passive bearing on the same contact at 15° or more and within 30 NM, the contact gets a `CONSORT` fix (uncertainty from both bearing errors and the cut). `Shift+A` switches its active sonar: every 20 s a ping fixes each submerged contact within 5 NM with position and depth (more likely the closer it is) as a `CONSORT` fix; every submarine within 25 NM hears the ping.
-- **Weapons:** `Shift+F` switches weapons free or tight (tight at the start). Free, it fires one ASROC at most every 3 minutes on the auto contact's fix when that fix is under 2 minutes old and 1 to 12 NM from the destroyer. `Ctrl+Enter` orders one ASROC on the selected track's fix (under 2 minutes old); without a selection on the auto contact. Only one of its ASROC is in the air at a time. While nobody works the frigate's OPZ (the AI crews the frigate), the hunters may also send it a located datum for an ASROC.
+- **Weapons:** `Shift+W` switches weapons free or tight (tight at the start). Free, it fires one ASROC at most every 3 minutes on the auto contact's fix when that fix is under 2 minutes old and 1 to 12 NM from the destroyer. `Ctrl+Enter` orders one ASROC on the selected track's fix (under 2 minutes old); without a selection on the auto contact. Only one of its ASROC is in the air at a time. While nobody works the frigate's OPZ (the AI crews the frigate), the hunters may also send it a located datum for an ASROC.
 
 If the destroyer is sunk the page and the event log say so; the mission goes on. The browser's OPZ has the same orders in the card *Consort destroyer*, and its chart shows the destroyer, its point and its bearing lines.
 
@@ -726,7 +726,7 @@ If the destroyer is sunk the page and the event log say so; the mission goes on.
 | `Y / F / H` | OPZ page 4 (group hunt): consort auto / next formation station / hold |
 | `X / W` | OPZ page 4: consort searches here / prosecutes the selected track (or click the chart) |
 | `Shift+A` | OPZ page 4: consort's active sonar on/off |
-| `Shift+F` | OPZ page 4: consort's weapons free / tight |
+| `Shift+W` | OPZ page 4: consort's weapons free / tight |
 | `Ctrl+Enter` | OPZ page 4: one ASROC from the consort on the selected track (fix under 2 min) |
 
 ### Standard procedure

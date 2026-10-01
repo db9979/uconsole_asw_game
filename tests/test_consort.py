@@ -173,7 +173,7 @@ def test_opz_group_page_keys_and_drawing(language):
     game.station_page = 3
     game.draw()
     _key(game, pygame.K_a, pygame.KMOD_SHIFT)
-    _key(game, pygame.K_f, pygame.KMOD_SHIFT)
+    _key(game, pygame.K_w, pygame.KMOD_SHIFT)
     assert game.consort.active and game.consort.weapons_free
     _key(game, pygame.K_x)
     assert game.consort.mode == "search"

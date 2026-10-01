@@ -324,7 +324,7 @@ def test_a_browser_pairing_without_a_lobby_gets_no_seat(server):  # noqa: F811
 
 
 def test_lobby_cycles_into_the_sides_own_missions():
-    room = LobbyRoom("s16_seenot", "frigate")                 # last frigate scenario
+    room = LobbyRoom("s21_suchgruppe", "frigate")             # last frigate scenario
     room.set_custom_missions({"frigate": [("user.a", "Alpha")], "uboot": [("user.b", "Bravo")]})
     room.change(1)
     assert room.custom_key == "user.a" and room.custom_name == "Alpha"

@@ -2254,11 +2254,11 @@ class EventMixin:
     def _consort_key_order(self, e):
         """OPZ page 4: the consort destroyer's order for a key, or None:
         F formation station, W prosecute the selected track, X search here,
-        H hold, Y auto, Shift+A active sonar, Shift+F weapons free."""
+        H hold, Y auto, Shift+A active sonar, Shift+W weapons free."""
         mods = getattr(e, "mod", 0)
         shift = bool(mods & pygame.KMOD_SHIFT)
         orders = getattr(self, "consort", None)
-        if e.key == pygame.K_f and shift:
+        if e.key == pygame.K_w and shift:
             return lambda: self.set_consort_weapons(
                 not orders.weapons_free if orders is not None else True)
         if e.key == pygame.K_a and shift:

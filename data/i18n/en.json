@@ -6855,7 +6855,7 @@
   "opz.group.keys_orders": "Y auto · F formation · H hold",
   "opz.group.keys_point": "X search · W or click: point",
   "opz.group.keys_sensors": "Shift+A active sonar on/off",
-  "opz.group.keys_weapons": "Shift+F weapons · Ctrl+Enter ASROC",
+  "opz.group.keys_weapons": "Shift+W weapons · Ctrl+Enter ASROC",
   "enum.consort_mode.auto": "auto",
   "enum.consort_mode.formation": "formation",
   "enum.consort_mode.search": "search",

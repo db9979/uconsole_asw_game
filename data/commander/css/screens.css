@@ -30,8 +30,8 @@
 .lobby-room-players li[data-state="lobby_player_observer"] { border-left-color: var(--info); }
 .lobby-room-players li span { color: var(--text-dim); }
 .lobby-room-versus { color: var(--caution); font-weight: 650; }
-.lobby-room-players li[data-team="frigate"] { box-shadow: inset 4px 0 0 #2f7fb8; }
-.lobby-room-players li[data-team="uboot"] { box-shadow: inset 4px 0 0 #b0503a; }
+.lobby-room-players li[data-team="frigate"] { box-shadow: inset 4px 0 0 var(--blue); }
+.lobby-room-players li[data-team="uboot"] { box-shadow: inset 4px 0 0 var(--red); }
 .lobby-room-players li em { font-style: normal; color: var(--text); }
 .lobby-room-status { min-height: 1.6rem; color: var(--caution); font-weight: 650; }
 .lobby-ready { justify-self: start; min-width: 12rem; min-height: 44px; }

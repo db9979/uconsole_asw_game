@@ -152,7 +152,7 @@ STATION_HELP = {
           ("Y / F / H", "help.control.consort_orders"),
           ("X / W", "help.control.consort_point"),
           ("Shift+A", "help.control.consort_active"),
-          ("Shift+F", "help.control.consort_weapons"),
+          ("Shift+W", "help.control.consort_weapons"),
           ("Ctrl+Enter", "help.control.consort_fire")],
         ["help.note.radar", "help.note.ais_esm", "help.note.nato", "help.note.ciws",
          "help.note.jammer", "help.note.clutter", "help.note.chaff", "help.note.mpa",

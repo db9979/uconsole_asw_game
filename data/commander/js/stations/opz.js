@@ -54,8 +54,8 @@ export function renderOpzStation(payload) {
 }
 
 // The consort destroyer of a group hunt: its orders, state and stores.
-const consortModes = ["auto", "formation", "search", "prosecute", "hold"];
-const consortStations = ["starboard", "ahead", "port", "astern"];
+const consortModes = "auto formation search prosecute hold".split(" ");
+const consortStations = "starboard ahead port astern".split(" ");
 function renderConsort(consort) {
   $("opz-consort-card").hidden = consort === null;
   if (consort === null) return;

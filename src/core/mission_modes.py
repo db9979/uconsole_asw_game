@@ -57,7 +57,7 @@ MODES = ("datum", "trail", "ras", "rescue", "duel", "homecoming", "pickup", "eli
 # Missions whose objective is the frigate's: the time limit is the boat's.
 FRIGATE_MODES = ("datum", "trail", "ras", "rescue")
 # Missions where the AI hunters get HQ's start report as their lead.
-LEAD_MODES = ("datum", "trail", "ras", "rescue", "duel", "homecoming")
+LEAD_MODES = ("datum", "trail", "ras", "rescue", "homecoming")
 # Missions without HQ tasking beyond their own tasks.
 OWN_TASK_MODES = ("ras", "rescue")
 RESCUE_NAMES = ("BRAVO 1", "BRAVO 2")      # call signs of the two rafts
@@ -187,7 +187,7 @@ def frigate_start(world, scenario_key, seed, short: bool = False):
     if kind == "ras":
         course = base_course(world, scenario_key)
         quarter = 180.0 + (detrand.u01(seed, "ras-quarter", 0) * 80.0 - 40.0)
-        x, y = _reach(world, cx, cy, course + quarter, config.RAS_FRIGATE_NM * scale)
+        x, y = _reach(world, cx, cy, course + quarter, config.RAS_FRIGATE_NM)
         return float(x), float(y), course
     if kind == "rescue":
         angle = 360.0 * detrand.u01(seed, "rescue-frigate", 0)
@@ -196,7 +196,7 @@ def frigate_start(world, scenario_key, seed, short: bool = False):
     if kind == "homecoming":
         course = base_course(world, scenario_key)
         side = 90.0 if detrand.u01(seed, "home-flank", 0) < 0.5 else -90.0
-        x, y = _reach(world, cx, cy, course + side, config.HOMECOMING_FRIGATE_NM * scale)
+        x, y = _reach(world, cx, cy, course + side, config.HOMECOMING_FRIGATE_NM)
         return float(x), float(y), _bearing(x, y, cx, cy)
     return None
 
@@ -252,7 +252,7 @@ def _setup_datum(game) -> None:
 def _setup_trail(game) -> None:
     course = base_course(game.world, game.scenario_key)
     side = detrand.u01(game.seed, "trail-side", 0) * 2.0 - 1.0
-    ahead = config.TRAIL_START_NM * _scale(game)
+    ahead = config.TRAIL_START_NM
     x, y = _offset(game.ship.x, game.ship.y, course, ahead)
     x, y = _offset(x, y, course + 90.0, side)
     x, y = game.world.nearest_water(x, y)
@@ -273,7 +273,7 @@ def _setup_ras(game) -> None:
     game.civilians.append(ship)
     game.mission_units["supply-1"] = int(ship.id)
     game.ship.fuel_kg = config.RAS_FUEL_START * game.ship.fuel_capacity_kg
-    boat_missions._station_boat_ahead(game, course, (ship.x, ship.y))
+    boat_missions._station_boat_ahead(game, course, (ship.x, ship.y), config.RAS_BOAT_AHEAD_NM)
 
 
 def _setup_rescue(game) -> None:
@@ -648,19 +648,18 @@ def ai_orders(game, sub, kind):
                 else sub.course)
         left = datum_radius(game) - math.hypot(sub.x - cx, sub.y - cy)
         course = boat_ai.detour(sub, away, max(0.0, left))
-        early = game.mission_time < config.DATUM_SPRINT_S * _scale(game)
+        early = game.mission_time < config.DATUM_SPRINT_S
         speed = (config.DATUM_SPRINT_KN if early and not boat_ai.hunted(sub)
                  else boat_ai.pace(sub, config.BOAT_AI_STEALTH_KN))
         return boat_ai._course(game, sub, course), speed, deep
     if kind == "trail":
-        course = base_course(game.world, game.scenario_key)
-        speed = config.TRAIL_KN
-        if boat_ai.hunted(sub):
-            window = int(math.floor(game.sim_t / config.TRAIL_LEG_S))
-            weave = (detrand.u01(game.seed, "trail-weave", window) * 2.0 - 1.0)
-            course += weave * config.TRAIL_WEAVE_DEG
-            into = game.sim_t - window * config.TRAIL_LEG_S
-            speed = config.TRAIL_SPRINT_KN if into < config.TRAIL_SPRINT_S else config.TRAIL_DRIFT_KN
+        # Trailed in peacetime, it works to shake the frigate off from the
+        # start: a sprint on a new heading, then a quiet drift below the layer.
+        window = int(math.floor(game.sim_t / config.TRAIL_LEG_S))
+        weave = detrand.u01(game.seed, "trail-weave", window) * 2.0 - 1.0
+        course = base_course(game.world, game.scenario_key) + weave * config.TRAIL_WEAVE_DEG
+        into = game.sim_t - window * config.TRAIL_LEG_S
+        speed = config.TRAIL_SPRINT_KN if into < config.TRAIL_SPRINT_S else config.TRAIL_DRIFT_KN
         return (boat_ai._course(game, sub, course % 360.0),
                 min(speed, sub.motion.maximum_speed_kn), deep)
     if kind == "rescue":
@@ -682,10 +681,11 @@ def ai_orders(game, sub, kind):
         x, y, course, target_kn = known
         if math.hypot(x - sub.x, y - sub.y) <= config.DUEL_CLOSE_NM:
             return _attack_leg(game, sub, known, deep)
-        speed = boat_ai.closing_kn(sub, target_kn)
+        # It stalks quietly: a dived boat that runs is heard first.
+        speed = config.BOAT_AI_STEALTH_KN
         px, py = boat_ai.lead(sub, x, y, course, target_kn, speed)
         return (boat_ai._course(game, sub, _bearing(sub.x, sub.y, px, py)),
-                max(config.BOAT_AI_CREEP_KN, boat_ai.pace(sub, speed)), deep)
+                boat_ai.pace(sub, speed), deep)
     if kind == "homecoming" or (kind == "pickup" and _progress(game)["phase"] == 1):
         point = goal(game, kind)
         distance = math.hypot(point["x"] - sub.x, point["y"] - sub.y)
@@ -760,19 +760,17 @@ def frigate_leg(game, found):
             return None
         return _ras_station(game, tx, ty, task["course"], task["speed_kn"])
     if kind == "rescue":
-        if point is not None and math.hypot(point[0] - ship.x,
-                                            point[1] - ship.y) <= config.RESCUE_LEASH_NM:
-            return None
+        # The crews come first; the sonar and the tubes still fight the boat.
         raft = rescue_point(game)
         if raft is None:
             return None
         distance = math.hypot(raft[0] - ship.x, raft[1] - ship.y)
         bearing = _bearing(ship.x, ship.y, *raft)
-        if distance > 2.0:
+        if distance > 1.0:
             return bearing, hunter.TRANSIT_KN
-        if distance > 0.6:
-            return bearing, hunter.CLOSE_KN
-        return bearing, (2.5 if distance > 0.12 else 0.5)
+        if distance > 0.4:
+            return bearing, 10.0
+        return bearing, (3.0 if distance > 0.12 else 0.5)
     return None
 
 
@@ -794,12 +792,13 @@ def _ras_station(game, tx, ty, course, speed_kn):
             speed_kn + config.clamp(along * 15.0, -2.5, 6.0))
 
 
-def rescue_point(game):
-    """The reported position of the nearest raft still in the water, or None."""
+def rescue_point(game, flyer: bool = False):
+    """The reported position of the raft the ship (nearest to it) or the
+    helicopter (the other one, only while two are left) makes for, or None."""
     rows = [task for task in mission_tasks(game, "sar") if task["state"] == "active"]
-    if not rows:
+    if not rows or (flyer and len(rows) < 2):
         return None
     ship = game.ship
-    task = min(rows, key=lambda row: (math.hypot(row["x"] - ship.x, row["y"] - ship.y),
-                                      row["id"]))
+    rows.sort(key=lambda row: (math.hypot(row["x"] - ship.x, row["y"] - ship.y), row["id"]))
+    task = rows[-1] if flyer else rows[0]
     return task["x"], task["y"]

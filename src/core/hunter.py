@@ -686,10 +686,11 @@ def sonar(game) -> str:
 
 def guarding(game) -> bool:
     """The frigate guards its post against a breakthrough or a
-    reconnaissance boat: a closer shot and a short helicopter (a convoy
-    escort keeps its helicopter's full reach)."""
+    reconnaissance boat, or is tied to a duel or the rafts: a closer shot
+    and a short helicopter (a convoy escort keeps its helicopter's full
+    reach)."""
     return boat_missions.mode(game) in ("breakthrough", "recon", "strait", "swimmers",
-                                        "pickup")
+                                        "pickup", "duel", "rescue")
 
 
 def fire_range_nm(game) -> float:
@@ -804,20 +805,21 @@ def helicopter(game, found) -> str:
 
 
 def _rescue_flight(game, found):
-    """Scenario 16: without a fresh fix close by, the helicopter flies to the
-    nearest raft (its reported position) and winches the crew up."""
+    """Scenario 16: the helicopter flies to a raft (its reported position;
+    the one the ship does not make for while two are left) and winches the
+    crew up."""
     from src.core import mission_modes
     if boat_missions.mode(game) != "rescue":
         return None
-    raft = mission_modes.rescue_point(game)
+    raft = mission_modes.rescue_point(game, flyer=True)
     if raft is None:
-        return None
-    point = datum_point(game, found) if found is not None and "x" in found else None
-    if point is not None and math.hypot(point[0] - game.ship.x,
-                                        point[1] - game.ship.y) <= HELO_RANGE_NM:
         return None
     helo = game.helo
     if helo.state == "HANGAR":
+        tick = int(math.floor(game.sim_t / CADENCE_S))
+        if (detrand.u01(game.seed, "hunter.helo", tick)
+                >= CADENCE_S / (HELO_READY_MEAN_S * _level_delay(game))):
+            return "monitoring"                     # the deck readies the helicopter
         helo.radar_on = True
         return "launched" if game.launch_helicopter() is True else "monitoring"
     if helo.state != "AUF":
@@ -827,9 +829,14 @@ def _rescue_flight(game, found):
         return "moving"
     if helo.dip_state != "STOWED":
         return "monitoring"
+    # It stops 0.3 NM short of a waypoint: aim past the raft until overhead.
+    gap = math.hypot(raft[0] - helo.x, raft[1] - helo.y)
+    aim = raft
+    if gap > 0.15:
+        aim = (raft[0] + 0.3 * (raft[0] - helo.x) / gap, raft[1] + 0.3 * (raft[1] - helo.y) / gap)
     waypoint = (helo.waypoint_x, helo.waypoint_y)
-    if None in waypoint or math.hypot(waypoint[0] - raft[0], waypoint[1] - raft[1]) > 0.1:
-        game.set_helicopter_waypoint(float(raft[0]), float(raft[1]))
+    if None in waypoint or math.hypot(waypoint[0] - aim[0], waypoint[1] - aim[1]) > 0.1:
+        game.set_helicopter_waypoint(float(aim[0]), float(aim[1]))
     return "rescue"
 
 

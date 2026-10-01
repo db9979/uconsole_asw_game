@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.133
+
+Version 1.3.133 bringt zehn neue Szenarien, damit hat jede Seite zehn. Die
+Fregatte bekommt 5 Geleitschutz, 6 Brennendes Datum, 7 Fühlung halten (Frieden,
+Waffen gesperrt, Sonarkontakt halten), 8 Versorgung auf See, 9 Seenot unter
+Bedrohung und 10 Hafenschutz; das U-Boot bekommt 7 Duell, 8 Angeschlagen heim,
+9 Agenten abholen und 10 Lauschposten. Taste `0` wählt die zehnte Zeile. In
+jedem spielt eine KI die Gegenseite, jedes hat einen Kurzeinsatz, und in
+KI-gegen-KI-Partien gewinnen beide Seiten. Spielstände wechseln auf Format
+v45; Spielstände v38 bis v44 lassen sich weiter laden.
+
 ## 1.3.132
 
 Version 1.3.132 zählt die Szenarien jeder Seite ab 1. Die Fregatte zeigt

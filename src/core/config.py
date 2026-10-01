@@ -1293,7 +1293,7 @@ MISSION_TYPES = {
         name="Heimkehr", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=18000, short_time_limit_s=3600, short_scale=0.25, win="homecoming"),
+        time_limit_s=18000, short_time_limit_s=3600, short_scale=0.35, win="homecoming"),
     "abholung": dict(
         name="Abholung", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1433,26 +1433,26 @@ BOAT_AI_GUARDED_ATTACK_MULT = 12.0
 # beside the wreck and must slip out of the datum circle, the frigate comes
 # in from far off with the exact datum.
 DATUM_ESCAPE_NM = 12.0
-DATUM_FRIGATE_NM = 16.0
+DATUM_FRIGATE_NM = 20.0
 DATUM_BOAT_NM = 1.0
-DATUM_SPRINT_KN = 8.0              # the boat runs while the frigate is far off
-DATUM_SPRINT_S = 1200.0
+DATUM_SPRINT_KN = 9.0              # the boat runs while the frigate is far off
+DATUM_SPRINT_S = 1800.0
 # Trail: peacetime, weapons tight. HQ hands the contact over ahead of the
 # frigate; it must hold sonar contact for a share of the time limit and
 # never lose it for too long at a stretch.
 TRAIL_START_NM = 6.0
-TRAIL_FRESH_S = 60.0               # a contact heard this lately counts as held
-TRAIL_GOAL_FRACTION = 0.5
+TRAIL_FRESH_S = 10.0               # a contact heard this lately counts as held
+TRAIL_GOAL_FRACTION = 0.8
 TRAIL_LOST_S = 1200.0
-TRAIL_KN = 8.0
-TRAIL_SPRINT_KN = 16.0
+TRAIL_SPRINT_KN = 22.0
 TRAIL_LEG_S = 600.0                # the hunted boat's sprint-and-drift cycle
-TRAIL_SPRINT_S = 180.0
-TRAIL_DRIFT_KN = 3.0
+TRAIL_SPRINT_S = 240.0
+TRAIL_DRIFT_KN = 4.0
 TRAIL_WEAVE_DEG = 60.0
 # Replenishment at sea: a tanker on a straight course; the frigate starts
 # low on fuel on its quarter and must lie alongside for the transfer.
-RAS_FRIGATE_NM = 8.0
+RAS_FRIGATE_NM = 3.0                # the frigate starts on the tanker's quarter
+RAS_BOAT_AHEAD_NM = 20.0           # the boat waits this far ahead on the tanker's bow
 RAS_FUEL_START = 0.4
 RAS_LEASH_NM = 4.0                 # the AI frigate prosecutes a datum this close to the tanker
 RAS_STATION_NM = 0.15              # its station abeam of the tanker
@@ -1461,7 +1461,6 @@ RESCUE_FRIGATE_NM = 18.0
 RESCUE_SPREAD_NM = 2.5
 RESCUE_BOAT_NM = 3.0
 RESCUE_PERSONS = (5, 4)
-RESCUE_LEASH_NM = 3.0              # the AI frigate prosecutes a datum this close
 # Duel: the boat seeks out the frigate and attacks it.
 DUEL_CLOSE_NM = 6.0
 # Damaged homecoming: the boat starts damaged with half a battery and must
@@ -1479,7 +1478,7 @@ PICKUP_ESCAPE_NM = 15.0
 # ``ELINT_EMITTERS`` kinds within range) and reports them by radio.
 ELINT_START_NM = 22.0
 ELINT_RANGE_NM = 25.0
-ELINT_GOAL_S = 1200.0
+ELINT_GOAL_S = 900.0
 ELINT_EMITTERS = 2
 ELINT_STANDOFF_NM = 12.0
 

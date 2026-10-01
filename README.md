@@ -12,14 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.132**
+Current release: **1.3.133**
 
-Release 1.3.132 numbers each side's scenarios from 1. The frigate list reads
-1 Patrol, 2 Double hunt, 3 Nuclear intercept, 4 Free hunt; the submarine list
-1 Breakthrough, 2 Reconnaissance, 3 Convoy attack, 4 Strait blockade, 5 Combat
-swimmers, 6 Supply ship escort, and the number keys follow the list on the
-screen. The manual counts the submarine scenarios the same way. Save format v44
-unchanged.
+Release 1.3.133 brings ten new scenarios, so each side now has ten. The
+frigate gets 5 Convoy escort, 6 Flaming datum, 7 Trail (peacetime, weapons
+tight, hold sonar contact), 8 Replenishment at sea, 9 Rescue under threat and
+10 Harbour defence; the submarine gets 7 Duel, 8 Damaged homecoming, 9 Agent
+pick-up and 10 Listening post. Key `0` picks the tenth row. An AI plays the
+other side in each, every one has a short variant, and both sides win them in
+AI-against-AI games. Saves move to format v45; v38 to v44 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

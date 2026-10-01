@@ -34,13 +34,13 @@ MODES = ("breakthrough", "recon", "convoy_attack", "strait", "swimmers", "escort
 # Modes whose merchants the boat's torpedoes may take.
 SHIP_MODES = ("convoy_attack", "escort", "ras")
 # Scenarios 8 to 10: the boat slips past or attacks a guarding frigate.
-GUARDED_MODES = ("strait", "swimmers", "escort", "pickup")
+GUARDED_MODES = ("strait", "swimmers", "escort", "pickup", "rescue", "duel")
 # Missions where HQ has no intelligence on the boat: no start report, no
 # datum task. The supply ship escort keeps HQ's reports like the convoy.
 UNREPORTED_MODES = ("strait", "swimmers", "pickup", "elint")
 # Missions where the boat slips past a guard and snaps a shot at it when it
 # comes loud down its bearing (src/enemies/sub.py).
-SNAP_MODES = ("strait", "swimmers", "pickup")
+SNAP_MODES = ("strait", "swimmers", "pickup", "rescue", "duel")
 # The coast section and swimmers' zone serve the agent pick-up too.
 ZONE_MODES = ("swimmers", "pickup")
 
@@ -456,7 +456,7 @@ def spawn_convoy(game) -> None:
     _station_boat_ahead(game, course, (game.ship.x, game.ship.y))
 
 
-def _station_boat_ahead(game, course: float, around) -> None:
+def _station_boat_ahead(game, course: float, around, ahead_nm: float | None = None) -> None:
     """Put the mission boat on the convoy's bow, where it can wait for it: a
     convoy running away is faster than a dived boat, and the escort screens
     dead ahead. The side is a stateless draw keyed by the seed, so no
@@ -469,7 +469,8 @@ def _station_boat_ahead(game, course: float, around) -> None:
                          + abs(draw) * config.BOAT_CONVOY_BOAT_SIDE_SPREAD_NM, draw
                          ) * distance_scale(game)
     rad = math.radians(course)
-    nominal = config.BOAT_CONVOY_BOAT_AHEAD_NM * distance_scale(game)
+    nominal = (config.BOAT_CONVOY_BOAT_AHEAD_NM if ahead_nm is None else ahead_nm
+               ) * distance_scale(game)
     for ahead in (nominal, nominal * 0.75, nominal * 1.25):
         for offset in (side, -side, 0.0):
             x = around[0] + ahead * math.sin(rad) + offset * math.cos(rad)

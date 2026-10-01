@@ -14,14 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.132**
+Aktuelle Version: **1.3.133**
 
-Version 1.3.132 zählt die Szenarien jeder Seite ab 1. Die Fregatte zeigt
-1 Patrouille, 2 Doppeljagd, 3 Nuklearer Abfang, 4 Freie Jagd; das U-Boot
-1 Durchbruch, 2 Aufklärung, 3 Geleitzug, 4 Meerengen-Sperre, 5 Kampfschwimmer,
-6 Versorgerschutz, und die Zifferntasten folgen der Liste auf dem Bildschirm.
-Das Handbuch zählt die U-Boot-Szenarien genauso. Speicherformat v44
-unverändert.
+Version 1.3.133 bringt zehn neue Szenarien, damit hat jede Seite zehn. Die
+Fregatte bekommt 5 Geleitschutz, 6 Brennendes Datum, 7 Fühlung halten (Frieden,
+Waffen gesperrt, Sonarkontakt halten), 8 Versorgung auf See, 9 Seenot unter
+Bedrohung und 10 Hafenschutz; das U-Boot bekommt 7 Duell, 8 Angeschlagen heim,
+9 Agenten abholen und 10 Lauschposten. Taste `0` wählt die zehnte Zeile. In
+jedem spielt eine KI die Gegenseite, jedes hat einen Kurzeinsatz, und in
+KI-gegen-KI-Partien gewinnen beide Seiten. Spielstände wechseln auf Format
+v45; Spielstände v38 bis v44 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

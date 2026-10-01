@@ -146,7 +146,17 @@ def _texts(game):
     return " ".join(item["text"] for item in texts)
 
 
-def test_splash_and_main_menu_show_version_notes_and_save_warning():
+def test_lifted_saves_need_no_warning():
+    """Newer releases lift saves from MIGRATE_FROM on (src/core/save_migrate.py)."""
+    game = _game(show_splash=True)
+    game.update_notice = _notice(save_version=SAVE_VERSION + 1)
+    text = _texts(game)
+    assert "9.9.9" in text and "will not load" not in text
+
+
+def test_splash_and_main_menu_show_version_notes_and_save_warning(monkeypatch):
+    # A build too old to be lifted by the new release.
+    monkeypatch.setattr(game_update.save_migrate, "MIGRATE_FROM", SAVE_VERSION + 1)
     game = _game(show_splash=True)
     game.update_notice = _notice(save_version=SAVE_VERSION + 1)
     text = _texts(game)
@@ -163,8 +173,9 @@ def test_splash_and_main_menu_show_version_notes_and_save_warning():
     assert "9.9.9" not in _texts(game)
 
 
-def test_german_notice_uses_german_notes():
+def test_german_notice_uses_german_notes(monkeypatch):
     from src.core.preferences import Preferences
+    monkeypatch.setattr(game_update.save_migrate, "MIGRATE_FROM", SAVE_VERSION + 1)
     game = _game(show_splash=True, preferences=Preferences(language="de"))
     game.update_notice = _notice(save_version=SAVE_VERSION + 1)
     text = _texts(game)

@@ -14,17 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.126**
+Aktuelle Version: **1.3.131**
 
-Version 1.3.126 ordnet die Szenarien nach Seiten. Nach „Neues Spiel“ wählst
-du zuerst Fregatte oder U-Boot, und die Liste zeigt danach nur die Einsätze
-dieser Seite: Patrouille, Doppeljagd, Nuklearer Abfang und Freie Jagd auf der
-Fregatte; Durchbruch, Aufklärung, Geleitzug, Meerengen-Sperre, Kampfschwimmer
-und Versorgerschutz auf dem U-Boot. Die Titel verlieren deshalb den Zusatz
-„(U-Boot)“, der so wirkte, als solle die Fregatte sie spielen. Die
-Mehrspieler-Lobby und der Dialog „Neues Spiel“ im Browser filtern genauso, und
-Esc in der Szenarienliste führt zurück zur Seitenwahl. Speicherformat v44
-unverändert.
+Version 1.3.131 bringt Kurzeinsätze. Briefing, Kampagnenbildschirm,
+Mehrspieler-Lobby und der Dialog „Neues Spiel“ im Browser haben jetzt eine
+Zeile Länge: Jedes feste Szenario außer der freien Jagd lässt sich als
+Kurzeinsatz von 30 bis 60 Minuten spielen, mit demselben Ziel, kürzerem
+Zeitlimit und einem Start näher am Geschehen, sodass eine Mission in einen
+Abend oder eine Pause passt. Jeder Kurzeinsatz wurde mit KI-gegen-KI-Partien
+so eingestellt, dass Fregatte und U-Boot etwa gleich oft gewinnen. Spielstände
+bleiben im Format v44.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -101,6 +101,10 @@ def test_steering_failure_jams_then_halves_the_rudder_rate():
 
 def test_snorkel_valve_stops_charging_and_battery_gas_halves_it():
     game = _diesel_game()
+    # start_new_game() draws a fresh seed, so the random incident timer could
+    # start another valve or gas incident on this boat at the gas's end time
+    # (the CI flake "450.0 == 900.0"); only the explicit incidents count here.
+    game.incidents.next_t = float("inf")
     sub = game._incident_boat()
     assert sub is not None
     normal = sub.endurance.generator_kw()

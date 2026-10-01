@@ -12,17 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.126**
+Current release: **1.3.131**
 
-Release 1.3.126 lists the scenarios by side. After "New game" you first pick
-the frigate or the submarine, and the list then shows only that side's
-missions: Patrol, Double hunt, Nuclear intercept and Free hunt on the frigate;
-Breakthrough, Reconnaissance, Convoy attack, Strait blockade, Combat swimmers
-and Supply ship escort on the submarine. The titles therefore lose their
-"(submarine)" suffix, which read as if the frigate were meant to play them.
-The multiplayer lobby and the browser's New game dialog filter the same way,
-and Esc in the scenario list returns to the side choice. Save format v44
-unchanged.
+Release 1.3.131 adds short missions. The briefing, the campaign screen, the
+multiplayer lobby and the browser's "New game" dialog now have a length row:
+every fixed scenario except the free hunt can be played as a short mission of
+30 to 60 minutes with the same goal, a shorter time limit and a start closer
+to the action, so a mission fits into an evening or a break. Each short
+variant was tuned with AI-against-AI games so that frigate and submarine win
+about equally often. Saves stay format v44.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

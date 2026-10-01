@@ -4,6 +4,58 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.131
+
+Version 1.3.131 bringt Kurzeinsätze. Briefing, Kampagnenbildschirm,
+Mehrspieler-Lobby und der Dialog „Neues Spiel“ im Browser haben jetzt eine
+Zeile Länge: Jedes feste Szenario außer der freien Jagd lässt sich als
+Kurzeinsatz von 30 bis 60 Minuten spielen, mit demselben Ziel, kürzerem
+Zeitlimit und einem Start näher am Geschehen, sodass eine Mission in einen
+Abend oder eine Pause passt. Jeder Kurzeinsatz wurde mit KI-gegen-KI-Partien
+so eingestellt, dass Fregatte und U-Boot etwa gleich oft gewinnen. Spielstände
+bleiben im Format v44.
+
+## 1.3.130
+
+Version 1.3.130 bringt unter Optionen eine Grafikstufe: „Sparsam“ schont den
+Prozessor der uConsole (kein Radar-Nachleuchten, ruhigerer Menühintergrund),
+„Normal“ zeigt alle Effekte und „Voll“ glättet zusätzlich die Kartenlinien;
+die uConsole startet mit Normal, Windows mit Voll. In einem Fenster oder
+Vollbild größer als 1280 x 720 wird das Bild jetzt scharf skaliert: ganze
+Faktoren wiederholen Pixel exakt, andere Größen zeigen keine ungleichmäßigen
+Textzeilen und keine Unschärfe mehr. Die Stufe ändert nie, welche
+Informationen eine Station zeigt. Spielstände bleiben im Format v44.
+
+## 1.3.129
+
+Version 1.3.129 macht das Spiel robuster. Ein nächtlicher Dauertest spielt
+jetzt jede Mission auf beiden Seiten je eine Stunde lang mit zufälligen
+Eingaben an allen Stationen, speichert und lädt dabei, und legt bei jedem
+Fehler eine Fehlermeldung an. Sein erster Lauf fand, dass eine U-Boot-Mission,
+die mit ausgewähltem Sonarkontakt gespeichert wurde, nicht mehr geladen werden
+konnte; das ist behoben. Spielstände bleiben im Format v44.
+
+## 1.3.128
+
+Version 1.3.128 rettet Spielstände über Updates. Ein Speicherplatz oder
+Autosave einer älteren Version, zurück bis Version 1.3.98 (Spielstandformat
+v38), lädt jetzt: Er wird Schritt für Schritt auf das aktuelle Format gebracht
+und danach so streng geprüft wie bisher, sodass ein Update keine unterbrochene
+Mission mehr verwirft. Der Update-Hinweis warnt nur noch, wenn Spielstände zu
+alt für das neue Release sind. Gespeichert wird im Format v44.
+
+## 1.3.127
+
+Version 1.3.127 hält eine Mission am Leben, wenn etwas schiefgeht. Eine
+Stationsanzeige, die sich nicht zeichnen lässt, zeigt jetzt „Anzeige gestört“,
+während die Mission und alle anderen Stationen weiterlaufen. Ein Fehler in der
+Simulation setzt die Mission auf ihren Wiederherstellungspunkt zurück, eine
+Kopie im Speicher von höchstens einer Minute, und meldet das im
+Ereignisprotokoll; Browser der Remote Crew bekommen ihre Stationen wie nach
+dem Laden zurück. Nach wiederholten Fehlern oder einem Fehler, der das Spiel
+doch beendet, wird der Wiederherstellungspunkt zum Autosave, sodass „Einsatz
+fortsetzen“ die Mission weiterführt. Jeder abgefangene Fehler landet für einen
+Fehlerbericht in crash.log. Spielstände bleiben im Format v44.
 ## 1.3.126
 
 Version 1.3.126 ordnet die Szenarien nach Seiten. Nach „Neues Spiel“ wählst

@@ -15,7 +15,7 @@ from src.commander.server import OPFOR_ROLES, STATIONS
 from src.core import config
 
 # Rows of the uConsole lobby page, top to bottom.
-ROWS = ("mission", "side", "station", "weather", "time", "start")
+ROWS = ("mission", "side", "station", "weather", "time", "length", "start")
 SIDES = ("frigate", "uboot")
 # Wall seconds between "start" and the mission.
 COUNTDOWN_S = 5.0
@@ -49,6 +49,8 @@ class LobbyRoom:
         # Start weather and time of day (config.START_*_CHOICES).
         self.weather = "random"
         self.time = "random"
+        # Mission length (config.START_LENGTH_CHOICES).
+        self.length = "normal"
         self.countdown_s = None
         # First "start" with players not ready arms this; a second one starts.
         self.force_armed = False
@@ -92,6 +94,9 @@ class LobbyRoom:
         elif row == "time":
             choices = config.START_TIME_CHOICES
             self.time = choices[(choices.index(self.time) + step) % len(choices)]
+        elif row == "length":
+            choices = config.START_LENGTH_CHOICES
+            self.length = choices[(choices.index(self.length) + step) % len(choices)]
 
     @staticmethod
     def crew(players) -> list:

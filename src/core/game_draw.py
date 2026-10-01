@@ -24,7 +24,7 @@ from src.core import pointer_input, station_alarms, uboot_local
 from src.nations.nations import reference_summary
 from src.ui import layout, pointer
 from src.ui import observations
-from src.ui import overlay_style
+from src.ui import overlay_style, quality
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
@@ -72,6 +72,20 @@ def frigate_station_tab_rects() -> list:
 # The end panel's keys (frigate), drawn as a clickable legend.
 END_KEYS = (("D", "end.key.debrief"), ("R", "end.key.restart"),
             ("M", "end.key.menu"), ("Esc", "end.key.exit"))
+
+
+# The frigate station views drawn below the top bar (Bridge is the default),
+# looked up by name at draw time so tests can replace a module-level view.
+_STATION_VIEWS = {
+    Station.SONAR: "draw_sonar_view",
+    Station.WEAPONS: "draw_weapons_panel",
+    Station.DAMAGE: "draw_damage_view",
+    Station.OPZ: "draw_opz_view",
+    Station.RADIO: "draw_radio_view",
+    Station.ENGINE: "draw_engine_view",
+    Station.HELICOPTER: "draw_helicopter_view",
+    Station.ELOKA: "draw_eloka_view",
+}
 
 
 class DrawMixin:
@@ -125,11 +139,11 @@ class DrawMixin:
         if (w, h) == (config.SCREEN_W, config.SCREEN_H):
             display.blit(self.screen, (0, 0))
         elif config.FILL_SCREEN:
-            display.blit(pygame.transform.scale(self.screen, (w, h)), (0, 0))
+            display.blit(quality.scale_canvas(self.screen, (w, h)), (0, 0))
         else:
+            # Sharp smooth scaling for the graphics level (src/ui/quality.py).
             _, ox, oy, sw, sh = letterbox_layout(w, h)
-            display.blit(
-                pygame.transform.scale(self.screen, (sw, sh)), (ox, oy))
+            display.blit(quality.scale_canvas(self.screen, (sw, sh)), (ox, oy))
         pygame.display.flip()
 
     # --- Input ---
@@ -141,12 +155,12 @@ class DrawMixin:
             self.handle_event(pointer_input.key_event(key))
 
     def _draw_start_choices(self, center, top: int, cx: int,
-                            selected: int | None = None) -> None:
-        """The weather and time-of-day rows of a briefing: Up/Down select,
-        Left/Right (or a click on the row's left/right part) change."""
-        row_h = 26
+                            selected: int | None = None, rows=None) -> None:
+        """The weather, time-of-day and length rows of a briefing: Up/Down
+        select, Left/Right (or a click on the row's left/right part) change."""
+        row_h = 24
         current = self.menu_sel if selected is None else selected
-        for i, kind in enumerate(("weather", "time")):
+        for i, kind in enumerate(rows or self.start_choice_rows()):
             y = top + i * row_h
             for part, key in ((0, pygame.K_LEFT), (1, None), (2, pygame.K_RIGHT)):
                 pointer.add_action(
@@ -196,7 +210,9 @@ class DrawMixin:
                                label=self.tr(MAIN_MENU_LABELS[entry]).upper()),
                        157 + step // 2 - 2 + i * step, color=color)
             if self.bug_report_offer:
-                center(self.tr("menu.bug_report.offer"), 584, color=config.COLOR_WARN)
+                center(self.tr("menu.bug_report.offer_continue"
+                               if self.autosave_available else
+                               "menu.bug_report.offer"), 584, color=config.COLOR_WARN)
             # Support link: main menu page only, never over a mission.
             draw_support_corner(s, config.SCREEN_W - 24, 600,
                                 config.COLOR_TEXT, config.COLOR_TEXT_DIM)
@@ -296,12 +312,12 @@ class DrawMixin:
                 center(message("menu.loss_value",
                                loss=self.tr("scenario." + scenario_key + ".lose")), 448,
                        color=config.COLOR_DANGER)
-            self._draw_start_choices(center, 478, cx)
-            center(self.tr("menu.start_hint"), 536,
+            self._draw_start_choices(center, 470, cx)
+            center(self.tr("menu.start_hint"), 544,
                    color=config.COLOR_TEXT_DIM, keys=("Enter", None, "Esc"))
             center(message("menu.local_side", side=message(
                 "menu.local_side.uboot" if self.local_side == "uboot"
-                else "menu.local_side.frigate")), 566,
+                else "menu.local_side.frigate")), 572,
                 color=config.COLOR_WARN if self.local_side == "uboot"
                 else config.COLOR_TEXT_DIM)
 
@@ -459,7 +475,8 @@ class DrawMixin:
                 else:
                     self.draw_end_panel()
         elif self.local_side == "uboot":
-            uboot_view.draw(self)
+            self.guarded_view("uboot", (0, 0, config.SCREEN_W, config.SCREEN_H),
+                              uboot_view.draw, self)
         elif eco:
             self.draw_top_bar()
             self.draw_eco_display()
@@ -485,31 +502,19 @@ class DrawMixin:
                     with layout.clip_to(s, config.STATION_RECT):
                         draw_weather_station(self)
                 elif map_station:
-                    draw_map_view(self)
+                    self.guarded_view("map", config.MAP_RECT, draw_map_view, self)
                     if self.lookout_glasses_shown():
                         draw_lookout_glasses(self)
                     if self.station is Station.WEAPONS:
                         draw_weapons_overlay(self)
                 if not self._station_overlay_open:
+                    view = globals()[_STATION_VIEWS.get(self.station,
+                                                        "draw_bridge_view")]
                     with layout.clip_to(s, config.STATION_RECT):
-                        if self.station is Station.SONAR:
-                            draw_sonar_view(self)
-                        elif self.station is Station.WEAPONS:
-                            draw_weapons_panel(self)
-                        elif self.station is Station.DAMAGE:
-                            draw_damage_view(self)
-                        elif self.station is Station.OPZ:
-                            draw_opz_view(self)
-                        elif self.station is Station.RADIO:
-                            draw_radio_view(self)
-                        elif self.station is Station.ENGINE:
-                            draw_engine_view(self)
-                        elif self.station is Station.HELICOPTER:
-                            draw_helicopter_view(self)
-                        elif self.station is Station.ELOKA:
-                            draw_eloka_view(self)
-                        else:
-                            draw_bridge_view(self)
+                        # A failing view shows a notice; the rest of the
+                        # frame and the simulation go on.
+                        self.guarded_view(self.station.name.lower(),
+                                          config.STATION_RECT, view, self)
                 if (self.station is not Station.OPZ and not self.weather_station_open
                         and not self.feed_overlay_open):
                     self.draw_bottom_panel()
@@ -1170,16 +1175,16 @@ class DrawMixin:
             layout.blit_block(self.screen, "option.local_side.locked",
                               row.x + 24, row.bottom + 170, row.w - 24, 50,
                               config.COLOR_WARN, size=18)
-        # Display: anti-aliased chart lines (row 7 leaves the side's help room).
+        # Display: the graphics level (row 7 leaves the side's help room).
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[1]]
         selected = self.options_sel == 1
         if selected:
             overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
-        value = (self.tr("option.aa_lines") + ": "
-                 + self.tr("common.on" if self.preferences.aa_lines else "common.off"))
+        value = self.tr("option.graphics",
+                        level=self.tr("option.graphics." + quality.LEVEL))
         layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
                          config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
-        layout.blit_block(self.screen, "option.aa_lines.help",
+        layout.blit_block(self.screen, "option.graphics.help",
                           row.x + 24, row.bottom + 10, row.w - 24, 80,
                           config.COLOR_TEXT_DIM, size=18)
         # Spoken crew reports; the help says whether espeak-ng was found.
@@ -1413,31 +1418,38 @@ class DrawMixin:
                 wall_dt = self.clock.tick(self.frame_rate()) / 1000.0
                 dt = self._frame_dt(wall_dt)
                 self._t += dt
-                events_started = (time.perf_counter()
-                                  if self._perf_debug_enabled else None)
-                for e in pygame.event.get():
-                    if not self.web_mode:
-                        self.handle_event(e)
-                        if e.type in _ECO_REFRESH_EVENTS:
-                            self._eco_drawn_at = float("-inf")
-                if events_started is not None:
-                    self._perf_events_s += time.perf_counter() - events_started
-                commander_started = (time.perf_counter()
-                                     if self._perf_debug_enabled else None)
-                self.commander.pump(self)
-                if commander_started is not None:
-                    now = time.perf_counter()
-                    self._perf_commander_s += now - commander_started
-                    self._perf_commander_max_s = max(
-                        self._perf_commander_max_s, now - commander_started)
-                    commander_started = now
-                self.live_traffic.pump(self)
-                if commander_started is not None:
-                    self._perf_traffic_s += time.perf_counter() - commander_started
-                self.update(dt, audio_dt=wall_dt)
-                self.autosave_tick(wall_dt)
-                self.lobby_tick(wall_dt)
-                self.update_tick()
+                try:
+                    events_started = (time.perf_counter()
+                                      if self._perf_debug_enabled else None)
+                    for e in pygame.event.get():
+                        if not self.web_mode:
+                            self.handle_event(e)
+                            if e.type in _ECO_REFRESH_EVENTS:
+                                self._eco_drawn_at = float("-inf")
+                    if events_started is not None:
+                        self._perf_events_s += time.perf_counter() - events_started
+                    commander_started = (time.perf_counter()
+                                         if self._perf_debug_enabled else None)
+                    self.commander.pump(self)
+                    if commander_started is not None:
+                        now = time.perf_counter()
+                        self._perf_commander_s += now - commander_started
+                        self._perf_commander_max_s = max(
+                            self._perf_commander_max_s, now - commander_started)
+                        commander_started = now
+                    self.live_traffic.pump(self)
+                    if commander_started is not None:
+                        self._perf_traffic_s += time.perf_counter() - commander_started
+                    self.update(dt, audio_dt=wall_dt)
+                    self.autosave_tick(wall_dt)
+                    self.lobby_tick(wall_dt)
+                    self.update_tick()
+                    self.recovery_tick(wall_dt)
+                except Exception as exc:  # noqa: BLE001 - fault policy
+                    # A running mission falls back to its recovery
+                    # snapshot (src/core/game_resilience.py).
+                    if not self.recover_from_fault(exc, "simulation"):
+                        raise
                 self._perf_debug_log(wall_dt)
                 if self.web_mode:
                     game_visible()
@@ -1446,13 +1458,23 @@ class DrawMixin:
                 if self._skip_eco_frame():
                     continue
                 draw_started = time.perf_counter() if self._perf_debug_enabled else None
-                self.draw()
+                try:
+                    self.draw()
+                except Exception as exc:  # noqa: BLE001 - display only
+                    self.view_fault(exc, "frame", (0, 0, config.SCREEN_W,
+                                                   config.SCREEN_H))
                 self.compose_frame()
                 game_visible()
                 if draw_started is not None:
                     self._perf_draw_s += time.perf_counter() - draw_started
             # A normal quit (never a crash) keeps the running mission.
             self.autosave_on_exit()
+        except Exception:
+            # The error ends the game: keep the last recovery point so the
+            # next start's "Continue" resumes the mission.
+            if self._mission_running_for_autosave() and not self.game_over:
+                self.write_recovery_autosave()
+            raise
         finally:
             try:
                 self.commander.stop()
@@ -1515,6 +1537,9 @@ class DrawMixin:
                                      enabled=bool(value))
             self._audio_timer = 0.0
             self._sonar_audio_sequence = -1
+        elif name == "graphics":
+            self.preferences = replace(self.preferences, aa_lines=value == "full")
+            self._apply_text_size()
         elif name in ("large_text", "high_contrast", "aa_lines"):
             self._apply_text_size()
         elif name == "level":

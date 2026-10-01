@@ -140,6 +140,19 @@ def record_exception(exc_type, exc_value, exc_tb, root: str | None = None,
     _append(root, f"--- {_stamp()} U-Jagd {APP_VERSION} crashed ({where}):\n{text}")
 
 
+def record_fault(exc_type, exc_value, exc_tb, where: str = "main loop") -> None:
+    """Append a caught fault the game recovered from (not a crash).
+
+    The line says ``caught`` rather than ``crashed`` so the next start does
+    not count the launch as crashed; the traceback still reaches bug reports.
+    """
+    if _active_root is None:
+        return
+    text = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    _append(_active_root,
+            f"--- {_stamp()} U-Jagd {APP_VERSION} caught fault ({where}):\n{text}")
+
+
 def note(text: str) -> None:
     """Append one context line (mission start) while crash logging runs."""
     if _active_root is not None:

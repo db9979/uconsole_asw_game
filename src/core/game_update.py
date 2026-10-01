@@ -29,6 +29,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import message, raw_text
+from src.core import save_migrate
 from src.core.version import APP_VERSION, SAVE_VERSION
 from src.launcher import update
 from src.launcher.update import UPDATE_EXIT_CODE
@@ -216,7 +217,9 @@ class UpdateNoticeMixin:
                          (x, y, w, 20), config.COLOR_TEXT_DIM, size=14)
         y += 22
         button_h = 34
-        warn_h = 58 if notice.breaks_saves(SAVE_VERSION) else 0
+        # Saves from format MIGRATE_FROM on are lifted by newer releases.
+        warn_h = 58 if (notice.breaks_saves(SAVE_VERSION)
+                        and SAVE_VERSION < save_migrate.MIGRATE_FROM) else 0
         notes_h = rect.bottom - 10 - button_h - 6 - warn_h - y
         notes = notice.notes_for(self.translator.language)
         if notes and notes_h > 16:

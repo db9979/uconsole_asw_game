@@ -12,6 +12,12 @@ from src.core.config import BOTTOM_PANEL_MODES, FPS_CHOICES, FPS_DEFAULT, LEVELS
 from src.core.i18n import SUPPORTED_LANGUAGES, detect_system_language
 
 _MAX_CREDENTIAL_LEN = 256
+GRAPHICS_LEVELS = ("low", "normal", "full")
+
+
+def _default_graphics() -> str:
+    import sys
+    return "full" if sys.platform == "win32" else "normal"
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,8 +32,11 @@ class Preferences:
     # Red light by itself at night and on an alarm (night_mode keeps it on).
     red_light_auto: bool = True
     high_contrast: bool = False
-    # Anti-aliased chart and plot lines (pygame.gfxdraw); off by default
-    # until the uConsole frame-time cost is measured (plan 1.3, phase 10).
+    # Graphics level (src/ui/quality.py): "low", "normal" (uConsole default)
+    # or "full" (Windows default, adds anti-aliased chart lines).
+    graphics: str = field(default_factory=_default_graphics)
+    # Legacy switch of the anti-aliased lines, kept in step with "full" so an
+    # older build reading this file sees the same choice.
     aa_lines: bool = False
     # Spoken crew reports through an installed espeak-ng (silent without).
     speech: bool = False
@@ -98,6 +107,12 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     assist = payload.get("operator_assist", defaults.operator_assist)
     values["operator_assist"] = (assist if assist in ("off", "training")
                                  else defaults.operator_assist)
+    graphics = payload.get("graphics")
+    if graphics not in GRAPHICS_LEVELS:
+        # Settings from before the levels: the line switch meant "full".
+        graphics = "full" if values["aa_lines"] else defaults.graphics
+    values["graphics"] = graphics
+    values["aa_lines"] = graphics == "full"
     level = payload.get("level")
     if level not in LEVELS:
         # Settings from before the levels: assistance meant the beginner.

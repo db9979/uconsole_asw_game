@@ -425,10 +425,11 @@ def report(args, elapsed, epochs, counters, streams, sessions, stats, perf, audi
     if audio_rows:
         last = audio_rows[-1]
         print("local mixer: underruns {:.0f}, concealed {:.0f}, neutral {:.0f}, "
-              "channel_idle {:.0f}, pump_late {:.0f} (max {:.0f} ms), drops {:.0f}, "
+              "channel_idle {:.0f} (+{:.0f} after a late pump), pump_late {:.0f} (max {:.0f} ms), drops {:.0f}, "
               "input_gaps {:.0f}, buffer {:.2f} s".format(
                   last.get("sonar_underruns", 0), last.get("sonar_concealed", 0),
                   last.get("sonar_neutral", 0), last.get("channel_idle", 0),
+                  last.get("channel_idle_late", 0),
                   last.get("pump_late", 0),
                   max(row.get("pump_late_max_ms", 0) for row in audio_rows),
                   last.get("sonar_drops", 0), last.get("input_gaps", 0),

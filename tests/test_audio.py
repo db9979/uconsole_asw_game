@@ -948,17 +948,23 @@ def test_pump_counts_idle_channel_and_late_iterations(mixer, monkeypatch):
         engine._pump_sonar_once()
     assert engine.sonar_pump_late == 0
     # The worker was starved for 0.4 s and finds the channel idle: one late
-    # iteration, one audible gap, both reported once in the debug line.
+    # iteration and one gap the host caused (the interpreter was held),
+    # counted apart from playback faults.
     clock[0] += .4
     channels[1].get_busy.return_value = False
     engine._pump_sonar_once()
     assert engine.sonar_pump_late == 1
     assert engine.sonar_pump_late_max_s == pytest.approx(.4)
-    assert engine.sonar_channel_idle == 1
+    assert engine.sonar_channel_idle == 0 and engine.sonar_channel_idle_late == 1
     channels[1].get_busy.return_value = True
     clock[0] += .02
     engine._pump_sonar_once()
-    assert engine.sonar_channel_idle == 1 and engine.sonar_pump_late == 1
+    assert engine.sonar_channel_idle == 0 and engine.sonar_pump_late == 1
+    # An on-time iteration that finds the channel dry is a true gap.
+    clock[0] += .02
+    channels[1].get_busy.return_value = False
+    engine._pump_sonar_once()
+    assert engine.sonar_channel_idle == 1 and engine.sonar_channel_idle_late == 1
     engine.shutdown()
 
 

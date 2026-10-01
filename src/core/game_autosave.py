@@ -95,7 +95,10 @@ class AutosaveMixin:
         Returns False when there is nothing to save or the previous background
         write is still running (it is never queued twice).
         """
-        if not self._mission_running_for_autosave() or self.game_over:
+        if (not self._mission_running_for_autosave() or self.game_over
+                or getattr(self, "_autosave_blocked", False)):
+            # Blocked: the recovery snapshot already is the autosave and the
+            # live state behind it failed (src/core/game_resilience.py).
             return False
         thread = self._autosave_thread
         if thread is not None and thread.is_alive():
@@ -103,8 +106,13 @@ class AutosaveMixin:
                 return False
             thread.join()
         try:
-            payload = json.dumps(self.save_state(), allow_nan=False,
+            document = self.save_state()
+            payload = json.dumps(document, allow_nan=False,
                                  separators=(",", ":")).encode("utf-8")
+            # The same document is a fresh recovery point at no extra cost.
+            take = getattr(self, "take_recovery_snapshot", None)
+            if take is not None:
+                take(document)
         except (TypeError, ValueError, OverflowError, RecursionError):
             self._autosave_failed = True
             return False

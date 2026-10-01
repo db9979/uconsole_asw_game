@@ -44,6 +44,7 @@ from src.ui import simlog_map
 from src.ui.weapons_view import weapons_hit_target
 # Names tests and tools import from ``src.core.game`` (kept as re-exports).
 from src.core.game_save import _read_save_document
+from src.core.preferences import GRAPHICS_LEVELS
 from src.core.game_bugreport import BUG_REPORT_ENTRY
 
 
@@ -190,6 +191,12 @@ class EventMixin:
                         self.red_light_mode()]
                     self._set_preference("red_light_auto", following == "auto")
                     value = following == "on"
+                elif name == "graphics":
+                    levels = GRAPHICS_LEVELS
+                    step = -1 if key == pygame.K_LEFT else 1
+                    current = (self.preferences.graphics
+                               if self.preferences.graphics in levels else "normal")
+                    value = levels[(levels.index(current) + step) % len(levels)]
                 elif name == "bottom_panel":
                     choices = layout.BOTTOM_PANEL_MODES
                     value = choices[(choices.index(self.bottom_panel_mode()) + 1)
@@ -1865,9 +1872,12 @@ class EventMixin:
         if key in (pygame.K_RETURN, pygame.K_SPACE):
             self._start_menu_mission()
         elif key in (pygame.K_UP, pygame.K_DOWN):
-            self.menu_sel = 1 - min(1, max(0, self.menu_sel))
+            rows = len(self.start_choice_rows())
+            self.menu_sel = (min(rows - 1, max(0, self.menu_sel))
+                             + (1 if key == pygame.K_DOWN else -1)) % rows
         elif key in (pygame.K_LEFT, pygame.K_RIGHT):
-            self.cycle_start_choice(("weather", "time")[min(1, max(0, self.menu_sel))],
+            self.cycle_start_choice(self.start_choice_rows()[
+                min(len(self.start_choice_rows()) - 1, max(0, self.menu_sel))],
                                     1 if key == pygame.K_RIGHT else -1)
         elif key == pygame.K_ESCAPE:
             self.menu_screen = "scenario"

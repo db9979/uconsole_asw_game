@@ -85,10 +85,11 @@ def set_text_scale(scale: float = 1.0) -> float:
 
 def configure_for(game=None, *, large_text: bool | None = None) -> float:
     """Apply a game's text/color preferences without retaining the game object."""
-    from src.ui import lines, theme
+    from src.ui import quality, theme
     theme.configure_for(game)
     preferences = getattr(game, "preferences", None)
-    lines.ENABLED = bool(getattr(preferences, "aa_lines", False))
+    # The graphics level also switches the anti-aliased lines (src/ui/lines.py).
+    quality.configure(getattr(preferences, "graphics", "normal"))
     if large_text is None:
         preferences = getattr(game, "preferences", None)
         large_text = bool(getattr(preferences, "large_text", False))

@@ -100,6 +100,7 @@ from src.core.game_debrief import DebriefMixin
 from src.core.game_training import TrainingMixin
 from src.core.game_campaign import CampaignMixin
 from src.core.game_autosave import AutosaveMixin, CONTINUE_ENTRY
+from src.core.game_resilience import ResilienceMixin
 from src.core.game_reports import ReportsMixin
 from src.core.game_logbook import LogbookMixin
 from src.core.game_bugreport import (BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES,
@@ -113,14 +114,14 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
            RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
            SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, DebriefMixin,
            TrainingMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
-           LobbyMixin, UpdateNoticeMixin):
+           LobbyMixin, UpdateNoticeMixin, ResilienceMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
                     "bottom_panel", "level", "live_traffic", "commander")
     # Second options page: game setup.  The local side is per launch and never
     # persisted (the frigate is always the default).
-    _OPTION_ROWS_SETUP = ("local_side", "aa_lines", "speech")
+    _OPTION_ROWS_SETUP = ("local_side", "graphics", "speech")
     _OPTION_PAGES = (_OPTION_ROWS, _OPTION_ROWS_SETUP)
 
     def __init__(self, seed: int = 42, difficulty: dict = None,
@@ -219,6 +220,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # Start weather and time of the next scenario/campaign mission.
         self.start_weather = "random"
         self.start_time = "random"
+        self.start_length = "normal"
         self.in_menu = start_menu
         self.menu_sel = 0  # Index in DIFFICULTY_FIELD_ORDER or SCENARIO_ORDER
         self.seed = seed
@@ -232,6 +234,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._init_update_notice()
         self._init_logbook()
         self._init_autosave()
+        self._init_resilience()
         self._autosave_armed = False
         if self.main_menu and self.autosave_available:
             # A mission was left running (quit or crash): offer "Continue".
@@ -458,6 +461,11 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # M6: Mission (W4: Szenario kann den Typ fixieren)
         self.mission = Mission(seed, type_key=sc["mission_type"],
                                difficulty=self.difficulty)
+        if (getattr(self, "start_length", "normal") == "short"
+                and self.mission.spec is not None
+                and "short_time_limit_s" in self.mission.spec):
+            # The short variant: its time limit marks it (save ``mission_runtime``).
+            self.mission.time_limit_s = self.mission.spec["short_time_limit_s"]
         self.custom_mission_definition = None
         # Mission unit id -> entity id of the placed unit (custom missions).
         self.mission_units = {}
@@ -511,7 +519,10 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
             plan.append(rng.choice(config.SECOND_SUB_POOL))
         self.subs = []
         for i, stype in enumerate(plan):
-            min_d, max_d = (12.0, 20.0) if i == 0 else (22.0, 45.0)
+            min_d, max_d = ((self.mission.spec.get("short_spawn_nm",
+                                                   config.SHORT_SUB_SPAWN_NM[0]) if i == 0
+                             else config.SHORT_SUB_SPAWN_NM[1]) if self.short_mission
+                            else (12.0, 20.0) if i == 0 else (22.0, 45.0))
             sx, sy = at_dist(min_d, max_d)
             s = Sub(sx, sy,
                     depth_m=rng.uniform(40.0, min(
@@ -831,7 +842,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._prepared_menu_mission = (
             seed, self.scenario_key, self.world_mode,
             self._difficulty_base, self.hq_intel_mode(), self.level,
-            self.start_weather, self.start_time,
+            self.start_weather, self.start_time, self.start_length,
             id(self.world), id(self.sonar)) if self.in_menu else None
 
     def flash(self, text: object, seconds: float = 3.0) -> None:

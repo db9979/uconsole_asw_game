@@ -13,7 +13,7 @@ from src.core.i18n import (display_value, localized, localize, raw_text,
 from src.core.station import Station
 from src.ui.plot_view import draw_plot
 from src.core import map_fx
-from src.ui import layout, map_fx_view, pointer
+from src.ui import layout, map_fx_view, pointer, quality
 from src.ui import chart_symbols
 from src.ui import nato_symbols
 from src.ui import observations
@@ -651,7 +651,7 @@ def draw_opz_view(game, tr=None) -> None:
     coast_segments = (_contour_segments_in_circle(
         coast, game.ship.x, game.ship.y, max_nm) if coast is not None else [])
     with layout.clip_to(s, chart):
-        if radar_live:
+        if radar_live and quality.afterglow():
             # Phosphor afterglow behind the beam, under everything else.
             map_fx_view.draw_afterglow(s, own_x, own_y, radar_radius,
                                        game.radar_sweep_bearing(), config.COLOR_GEO_BG)

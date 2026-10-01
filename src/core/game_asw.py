@@ -33,7 +33,7 @@ class AswWeaponsMixin:
         Returns a result code or None."""
         if contact is None or self.sim_t - contact.last_seen >= config.SONAR_CONTACT_LOST_S:
             return "invalid_target"
-        if self._target_affiliation_interlock(contact) is not None:
+        if self._target_affiliation_interlock(contact) is not None or self.weapons_tight():
             return "roe_blocked"
         if self.weapon_classification(contact) != "U_BOOT":
             return "not_classified"
@@ -56,7 +56,10 @@ class AswWeaponsMixin:
                 "empty_depth_charges": "runtime.depth_charge.empty",
                 "reloading": "runtime.depth_charge.reloading",
                 "too_slow": "runtime.depth_charge.too_slow"}
-        self.flash(message(keys[result]), 2.5)
+        key = keys[result]
+        if result == "roe_blocked" and self.weapons_tight():
+            key = "runtime.roe.weapons_tight"
+        self.flash(message(key), 2.5)
         return result
 
     def fire_own_asroc(self) -> str:

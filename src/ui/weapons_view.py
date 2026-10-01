@@ -56,6 +56,7 @@ def _readiness_text(value):
         "BLOCKIERT: KEIN ROHR BEREIT": "weapons.readiness.no_tube",
         "BLOCKIERT: SALVENLIMIT": "weapons.readiness.salvo_limit",
         "BLOCKIERT: WAFFENZENTRALE GESTOERT": "weapons.readiness.weapons_down",
+        "BLOCKIERT: WAFFEN GESPERRT": "weapons.readiness.weapons_tight",
         "FEUER FREI": "weapons.readiness.clear",
     }
     if value in keys:

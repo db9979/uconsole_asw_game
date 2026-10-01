@@ -253,7 +253,7 @@ class MpaMixin:
             return "invalid_target"
         if self.damage.station_down("opz"):
             return "opz_down"
-        if self._target_affiliation_interlock(contact) is not None:
+        if self._target_affiliation_interlock(contact) is not None or self.weapons_tight():
             return "roe_blocked"
         if self.roe == "STD" and not self._contact_range_fresh(contact):
             return "not_located"

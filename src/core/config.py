@@ -1263,6 +1263,47 @@ MISSION_TYPES = {
         animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
         time_limit_s=10800, short_time_limit_s=2700,
         short_scale=0.75, win="escort"),
+    # Scenarios 11 to 20 (src/core/mission_modes.py).
+    "datum": dict(
+        name="Datum", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5, win="datum"),
+    "fuehlung": dict(
+        name="Fuehlung", weight=0, subs=1,
+        sub_types=["ssn"],
+        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5, win="trail"),
+    "versorgung": dict(
+        name="Versorgung", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5, win="ras"),
+    "seenot": dict(
+        name="Seenot", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5, win="rescue"),
+    "duell": dict(
+        name="Duell", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        time_limit_s=10800, short_time_limit_s=2700, win="duel"),
+    "heimkehr": dict(
+        name="Heimkehr", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        time_limit_s=18000, short_time_limit_s=3600, short_scale=0.25, win="homecoming"),
+    "abholung": dict(
+        name="Abholung", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        time_limit_s=21600, short_time_limit_s=2700, short_scale=0.25, win="pickup"),
+    "lauschposten": dict(
+        name="Lauschposten", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        time_limit_s=14400, short_time_limit_s=2700, short_scale=0.5, win="elint"),
 }
 BOAT_CONVOY_SIZE = 4               # merchants in the escorted convoy
 BOAT_CONVOY_SINK = 2               # the boat wins after sinking this many
@@ -1386,6 +1427,61 @@ BOAT_AI_EVADE_KN = 5.0
 BOAT_AI_ATTACK_MULT = 4.0
 # ... and in scenarios 8 to 10, where it must slip past the guard.
 BOAT_AI_GUARDED_ATTACK_MULT = 12.0
+# Scenarios 11 to 20 (src/core/mission_modes.py). Distances shrink in the
+# short variant by the mission type's ``short_scale``.
+# Flaming datum: a merchant torpedoed at the nominal start; the boat starts
+# beside the wreck and must slip out of the datum circle, the frigate comes
+# in from far off with the exact datum.
+DATUM_ESCAPE_NM = 12.0
+DATUM_FRIGATE_NM = 16.0
+DATUM_BOAT_NM = 1.0
+DATUM_SPRINT_KN = 8.0              # the boat runs while the frigate is far off
+DATUM_SPRINT_S = 1200.0
+# Trail: peacetime, weapons tight. HQ hands the contact over ahead of the
+# frigate; it must hold sonar contact for a share of the time limit and
+# never lose it for too long at a stretch.
+TRAIL_START_NM = 6.0
+TRAIL_FRESH_S = 60.0               # a contact heard this lately counts as held
+TRAIL_GOAL_FRACTION = 0.5
+TRAIL_LOST_S = 1200.0
+TRAIL_KN = 8.0
+TRAIL_SPRINT_KN = 16.0
+TRAIL_LEG_S = 600.0                # the hunted boat's sprint-and-drift cycle
+TRAIL_SPRINT_S = 180.0
+TRAIL_DRIFT_KN = 3.0
+TRAIL_WEAVE_DEG = 60.0
+# Replenishment at sea: a tanker on a straight course; the frigate starts
+# low on fuel on its quarter and must lie alongside for the transfer.
+RAS_FRIGATE_NM = 8.0
+RAS_FUEL_START = 0.4
+RAS_LEASH_NM = 4.0                 # the AI frigate prosecutes a datum this close to the tanker
+RAS_STATION_NM = 0.15              # its station abeam of the tanker
+# Rescue: two life rafts of a ditched patrol aircraft; the boat waits near them.
+RESCUE_FRIGATE_NM = 18.0
+RESCUE_SPREAD_NM = 2.5
+RESCUE_BOAT_NM = 3.0
+RESCUE_PERSONS = (5, 4)
+RESCUE_LEASH_NM = 3.0              # the AI frigate prosecutes a datum this close
+# Duel: the boat seeks out the frigate and attacks it.
+DUEL_CLOSE_NM = 6.0
+# Damaged homecoming: the boat starts damaged with half a battery and must
+# reach its home area; the frigate comes in on its flank.
+HOMECOMING_NM = 20.0
+HOMECOMING_FRIGATE_NM = 12.0
+HOMECOMING_DAMAGE = 30.0
+HOMECOMING_BATTERY = 0.5
+# Agent pick-up: the swimmers' zone and coast section; the team comes aboard
+# like the swimmers leave, then the boat runs out to deep water.
+PICKUP_HOLD_S = 600.0
+PICKUP_ESCAPE_NM = 15.0
+# Listening post: the boat records the hunters' radars at periscope depth
+# with the mast up (``ELINT_GOAL_S`` emitter-seconds from at least
+# ``ELINT_EMITTERS`` kinds within range) and reports them by radio.
+ELINT_START_NM = 22.0
+ELINT_RANGE_NM = 25.0
+ELINT_GOAL_S = 1200.0
+ELINT_EMITTERS = 2
+ELINT_STANDOFF_NM = 12.0
 
 # W4: Vordefinierte Szenarien (eigene Briefings, Startposition, Schwierigkeit)
 # hq_intel: "coarse" = HQ meldet nur grob Peilung/Entfernung einer Bedrohung,
@@ -1412,15 +1508,23 @@ START_TIME_HOURS = {"dawn": 6.0, "day": 12.0, "dusk": 19.0, "night": 1.0}
 START_LENGTH_CHOICES = ("normal", "short")
 SHORT_SUB_SPAWN_NM = ((5.0, 8.0), (8.0, 14.0))   # first boat, every further one
 SHORT_DISTANCE_SCALE = 0.5
-SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
+SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang",
+                  "s11_geleitschutz", "s12_datum", "s13_fuehlung",
+                  "s14_hafenschutz", "s15_versorgung", "s16_seenot", "s4_zufall",
                   "s5_durchbruch", "s6_aufklaerung", "s7_geleitzug",
-                  "s8_meerenge", "s9_kampfschwimmer", "s10_versorger")
+                  "s8_meerenge", "s9_kampfschwimmer", "s10_versorger",
+                  "s17_duell", "s18_heimkehr", "s19_abholung", "s20_lauschposten")
 # Catalog name of each scenario (``scenario.<name>.title`` and friends).
 SCENARIO_NAMES = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
                   "s3_abfang": "intercept", "s4_zufall": "random",
                   "s5_durchbruch": "breakthrough", "s6_aufklaerung": "recon",
                   "s7_geleitzug": "convoy_attack", "s8_meerenge": "strait",
-                  "s9_kampfschwimmer": "swimmers", "s10_versorger": "escort"}
+                  "s9_kampfschwimmer": "swimmers", "s10_versorger": "escort",
+                  "s11_geleitschutz": "convoy_escort", "s12_datum": "datum",
+                  "s13_fuehlung": "trail", "s14_hafenschutz": "harbour",
+                  "s15_versorgung": "ras", "s16_seenot": "rescue",
+                  "s17_duell": "duel", "s18_heimkehr": "homecoming",
+                  "s19_abholung": "pickup", "s20_lauschposten": "elint"}
 SCENARIOS = {
     "s1_patrouille": dict(
         title="Patrouille",
@@ -1565,6 +1669,151 @@ SCENARIOS = {
         briefing="U-Boot: Den Versorger im Zickzack treffen.",
         win_text="Versorger geschuetzt",
         lose_text="Versorger versenkt / Fregatte gesunken",
+    ),
+    # Scenarios 11 to 20 (src/core/mission_modes.py; 1.3.133).
+    "s11_geleitschutz": dict(
+        title="Geleitschutz",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="geleitzug",
+        hq_intel="coarse",
+        ship_start=(250.0, 300.0), ship_course=90.0,
+        briefing="Fregatte: Einen Geleitzug aus vier Frachtern schuetzen.",
+        win_text="Geleitzug geschuetzt",
+        lose_text="Zwei Frachter verloren / Fregatte gesunken",
+    ),
+    "s12_datum": dict(
+        title="Brennendes Datum",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="datum",
+        hq_intel="coarse",
+        ship_start=(300.0, 300.0), ship_course=0.0,
+        briefing="Fregatte: Das U-Boot vom Untergangsort eines Frachters aus jagen.",
+        win_text="U-Boot versenkt",
+        lose_text="U-Boot entkommt / Zeitlimit / Fregatte gesunken",
+    ),
+    "s13_fuehlung": dict(
+        title="Fuehlung halten",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="fuehlung",
+        hq_intel="coarse",
+        ship_start=(260.0, 320.0), ship_course=90.0,
+        briefing="Fregatte: Ein fremdes Atom-U-Boot ohne Waffen verfolgen.",
+        win_text="Fuehlung gehalten",
+        lose_text="Fuehlung verloren / Zeitlimit",
+    ),
+    "s14_hafenschutz": dict(
+        title="Hafenschutz",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=300.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="kampfschwimmer",
+        hq_intel="coarse",
+        ship_start=(440.0, 100.0), ship_course=0.0,
+        briefing="Fregatte: Kampfschwimmer vor der eigenen Kueste verhindern.",
+        win_text="Kueste geschuetzt",
+        lose_text="Kampfschwimmer abgesetzt / Fregatte gesunken",
+    ),
+    "s15_versorgung": dict(
+        title="Versorgung auf See",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="versorgung",
+        hq_intel="coarse",
+        ship_start=(200.0, 350.0), ship_course=90.0,
+        briefing="Fregatte: Laengsseits eines Tankers Treibstoff uebernehmen.",
+        win_text="Versorgung abgeschlossen",
+        lose_text="Tanker versenkt / Zeitlimit / Fregatte gesunken",
+    ),
+    "s16_seenot": dict(
+        title="Seenot unter Bedrohung",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="seenot",
+        hq_intel="coarse",
+        ship_start=(320.0, 280.0), ship_course=0.0,
+        briefing="Fregatte: Notgewasserte Flugzeugbesatzung retten.",
+        win_text="Besatzung gerettet",
+        lose_text="Besatzung verloren / Zeitlimit / Fregatte gesunken",
+    ),
+    "s17_duell": dict(
+        title="Duell",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="duell",
+        hq_intel="coarse",
+        ship_start=(300.0, 300.0), ship_course=0.0,
+        boat=True,
+        briefing="U-Boot: Die Fregatte versenken.",
+        win_text="Fregatte ueberlebt",
+        lose_text="Fregatte gesunken",
+    ),
+    "s18_heimkehr": dict(
+        title="Angeschlagen heim",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="heimkehr",
+        hq_intel="coarse",
+        ship_start=(280.0, 300.0), ship_course=90.0,
+        boat=True,
+        briefing="U-Boot: Beschaedigt den Heimathafen erreichen.",
+        win_text="U-Boot aufgehalten",
+        lose_text="U-Boot erreicht den Heimathafen / Fregatte gesunken",
+    ),
+    "s19_abholung": dict(
+        title="Agenten abholen",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="abholung",
+        hq_intel="coarse",
+        ship_start=(440.0, 100.0), ship_course=0.0,
+        boat=True,
+        briefing="U-Boot: Ein Team an der Kueste abholen und entkommen.",
+        win_text="Abholung verhindert",
+        lose_text="Team abgeholt / Fregatte gesunken",
+    ),
+    "s20_lauschposten": dict(
+        title="Lauschposten",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="lauschposten",
+        hq_intel="coarse",
+        ship_start=(300.0, 300.0), ship_course=0.0,
+        boat=True,
+        briefing="U-Boot: Funk und Radar der Fregatte aufzeichnen und melden.",
+        win_text="Aufklaerung verhindert",
+        lose_text="Aufklaerung gemeldet / Fregatte gesunken",
     ),
     "s4_zufall": dict(
         title="Freie Jagd (Zufall)",

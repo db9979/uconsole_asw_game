@@ -5,8 +5,8 @@ version while building the project.
 """
 
 APP_VERSION = "1.3.131"
-SAVE_VERSION = 44
-SAVE_SCHEMA = "u-jagd-save-v44"
+SAVE_VERSION = 45
+SAVE_SCHEMA = "u-jagd-save-v45"
 SPLASH_TEXT = (
     "Anti Sub Marine Warfare on uConsole by Dominik Bornhäußer "
     f"Version {APP_VERSION}"

@@ -188,7 +188,10 @@ def ambush_point(sub, ships, course=None, hold=None):
 
 def orders(game, sub):
     """The mission leg ``(course, speed, depth)`` or None."""
+    from src.core import mission_modes
     kind = boat_missions.mode(game)
+    if kind in mission_modes.MODES and kind not in boat_missions.SHIP_MODES:
+        return mission_modes.ai_orders(game, sub, kind)
     if kind == "breakthrough":
         point = boat_missions.goal(game)
         if point is None:
@@ -315,6 +318,8 @@ def steer(game) -> None:
         sub.mission_orders = orders(game, sub) if sub is mission_boat else None
         sub.mission_guarded = guarded and sub is mission_boat
         sub.mission_snap = snap and sub is mission_boat
+        # Scenario 13 is peacetime: no AI boat fires.
+        sub.mission_peace = kind == "trail"
 
 
 def _window(game, period: float) -> bool:
@@ -329,7 +334,7 @@ def _torpedo_running(game, sub) -> bool:
 
 def attack_nm(game) -> float:
     """How close the mission boat closes a convoy ship before it fires."""
-    if boat_missions.mode(game) == "escort":
+    if boat_missions.mode(game) in ("escort", "ras"):
         return config.BOAT_AI_ESCORT_ATTACK_NM
     return config.BOAT_AI_CONVOY_ATTACK_NM
 
@@ -344,7 +349,7 @@ def attack(game, sub, ships=None) -> bool:
     # Against the lone supply ship the boat fires even while it slips away
     # from a ping: one hit decides the mission.
     ready = sub.state == "PATROLLE" or (sub.state == "EVADE"
-                                        and boat_missions.mode(game) == "escort")
+                                        and boat_missions.mode(game) in ("escort", "ras"))
     if (near and ready and sub.torpedoes_left > 0
             and (sub.weapon_battery is None or sub.weapon_battery.ready_count > 0)):
         # Flood the tubes quietly while closing; the shot waits for them.
@@ -476,3 +481,7 @@ def update(game, dt: float) -> None:
         attack(game, sub)
     elif kind == "recon":
         report(game, sub)
+    elif kind == "elint" and sub.depth <= MAST_DEPTH_M:
+        # The recording complete, the AI's report goes out at once.
+        from src.core import mission_modes
+        mission_modes.elint_report(game)

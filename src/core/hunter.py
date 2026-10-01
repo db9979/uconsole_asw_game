@@ -591,7 +591,10 @@ def guard_course(game):
     (ax, ay), (bx, by) = ends
     length = max(1.0, math.hypot(bx - ax, by - ay))
     sweep_s = length / SEARCH_KN * 3600.0
-    tx, ty = (ax, ay) if math.floor(game.sim_t / sweep_s) % 2 else (bx, by)
+    leg = int(math.floor(game.sim_t / sweep_s))
+    if area.get("start", 1.0) < 0.0:
+        leg += 1                    # started at the far end: first back to the near one
+    tx, ty = (ax, ay) if leg % 2 else (bx, by)
     return _bearing(ship.x, ship.y, tx, ty), SEARCH_KN
 
 

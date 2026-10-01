@@ -1246,7 +1246,7 @@ MISSION_TYPES = {
         name="Kampfschwimmer", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=18000, win="swimmers"),
+        time_limit_s=21600, win="swimmers"),
     "versorger": dict(
         name="Versorger", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1288,13 +1288,13 @@ STRAIT_TRAFFIC_TURN_NM = 14.0      # this far beyond the gate a merchant comes b
 SWIMMER_SEARCH_NM = 100.0
 SWIMMER_MIN_WATER_M = 30.0
 SWIMMER_COAST_NM = 3.0
-SWIMMER_APPROACH_NM = 12.0
+SWIMMER_APPROACH_NM = 8.0
 SWIMMER_ZONE_NM = 1.0
 SWIMMER_DEPTH_M = 20.0             # swimmers leave through the lock this shallow
 SWIMMER_SPEED_KN = 1.5             # at most this slow
 SWIMMER_HOLD_S = 600.0             # for this long without a break
-SWIMMER_GUARD_NM = 15.0            # radius of the coast section the frigate guards
-SWIMMER_GUARD_SHIFT_NM = 7.5       # its centre lies up to this far along the coast
+SWIMMER_GUARD_NM = 25.0            # radius of the coast section the frigate guards
+SWIMMER_GUARD_SHIFT_NM = 12.5      # its centre lies up to this far along the coast
 # The frigate starts this share of the section's radius along the coast
 # from its centre (at one end of its sweep, drawn from the seed).
 SWIMMER_GUARD_START = 0.7
@@ -1327,9 +1327,9 @@ BOAT_AI_SCOPE_SWEEP_S = 16.0
 BOAT_AI_ATTACK_NM = 4.0            # a patrol raid: fire at a merchant this close
 BOAT_AI_CONVOY_ATTACK_NM = 3.0     # convoy attack: fire at a merchant this close
 # Escort: a lone, zigzagging supply ship is fired at from farther off.
-BOAT_AI_ESCORT_ATTACK_NM = 4.0
+BOAT_AI_ESCORT_ATTACK_NM = 5.0
 # ... from this far abeam of its base track, clear of the escort ahead of it.
-BOAT_AI_ESCORT_ABEAM_NM = 4.0
+BOAT_AI_ESCORT_ABEAM_NM = 4.5
 BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
 BOAT_AI_FIRE_EVERY_S = 60.0
 # Frigate missions: an AI patrol boat torpedoes a merchant within
@@ -1361,7 +1361,7 @@ BOAT_AI_WAIT_KN = 2.0
 # astern of it. Swimmers: come up to swimmer depth this far from the zone.
 BOAT_AI_SHADOW_NM = 3.0
 BOAT_AI_SHADOW_ASTERN_NM = 0.3
-BOAT_AI_SWIMMER_APPROACH_NM = 3.0
+BOAT_AI_SWIMMER_APPROACH_NM = 1.0
 # Strait and swimmers: the boat sneaks towards a guarded area this slowly.
 BOAT_AI_STEALTH_KN = 4.0
 # A mission boat ignores a ping from farther than this (its sonar cannot
@@ -1502,7 +1502,7 @@ SCENARIOS = {
         title="Meerengen-Sperre",
         difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
-                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=300.0,
                        enemy_solution_threshold=0.25,
                        second_sub_prob=0.0),
         mission_type="meerenge",
@@ -1517,7 +1517,7 @@ SCENARIOS = {
         title="Kampfschwimmer",
         difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
-                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=300.0,
                        enemy_solution_threshold=0.25,
                        second_sub_prob=0.0),
         mission_type="kampfschwimmer",
@@ -1532,7 +1532,7 @@ SCENARIOS = {
         title="Versorgerschutz",
         difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
-                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=300.0,
                        enemy_solution_threshold=0.25,
                        second_sub_prob=0.0),
         mission_type="versorger",

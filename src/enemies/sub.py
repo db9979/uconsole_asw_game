@@ -516,6 +516,10 @@ class Sub:
             rate = 0.006 * (0.5 + noise) * self.stype.aggression
         elif noise >= 0.75 and dist is not None and dist < 18.0:
             rate = 0.002 * self.stype.aggression
+        elif noise >= 0.75 and dist is None and self.mission_guarded:
+            # Scenarios 8 to 10: a loud frigate closing on its bearing gets a
+            # snap shot down that bearing; the seeker finds it.
+            rate = 0.002 * self.stype.aggression
         elif dist is not None and dist < config.SUB_SOLUTION_ATTACK_NM:
             # A located frigate in torpedo range is attacked even when quiet.
             rate = config.SUB_SOLUTION_ATTACK_RATE * self.stype.aggression

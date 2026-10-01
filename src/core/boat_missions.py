@@ -96,18 +96,26 @@ def _zone_of(world, scenario_key):
                 seaward=found["seaward"])
 
 
+def _guard_shift(seed) -> float:
+    """How far along the coast the guarded section's centre lies off the zone."""
+    return (detrand.u01(seed, "swimmer-guard", 0) * 2.0 - 1.0) * config.SWIMMER_GUARD_SHIFT_NM
+
+
 def _guard_of(world, scenario_key, seed):
     """The coast section the frigate guards: a circle whose centre lies up to
     ``SWIMMER_GUARD_SHIFT_NM`` along the coast from the zone, off the coast."""
     zone = _zone_of(world, scenario_key)
-    shift = (detrand.u01(seed, "swimmer-guard", 0) * 2.0 - 1.0) * config.SWIMMER_GUARD_SHIFT_NM
+    shift = _guard_shift(seed)
     along = math.radians(zone["seaward"] + 90.0)
     out = math.radians(zone["seaward"])
     x = zone["x"] + shift * math.sin(along) + 3.0 * math.sin(out)
     y = zone["y"] - shift * math.cos(along) - 3.0 * math.cos(out)
     x, y = world.nearest_water(x, y)
     return dict(kind="circle", x=float(x), y=float(y), radius_nm=config.SWIMMER_GUARD_NM,
-                course=(zone["seaward"] + 90.0) % 360.0)
+                course=(zone["seaward"] + 90.0) % 360.0,
+                # The end of the section the frigate starts from (+1 ahead
+                # along ``course``, -1 astern), drawn from the seed.
+                start=1.0 if detrand.u01(seed, "swimmer-guard-end", 0) < 0.5 else -1.0)
 
 
 def escort_base_course(world, scenario_key) -> float:
@@ -125,12 +133,11 @@ def frigate_start(world, scenario_key, seed):
     if kind == "swimmers":
         # At one end of its coast section, sweeping back along it.
         guard = _guard_of(world, scenario_key, seed)
-        side = 1.0 if detrand.u01(seed, "swimmer-guard-end", 0) < 0.5 else -1.0
-        reach = side * guard["radius_nm"] * config.SWIMMER_GUARD_START
+        reach = guard["start"] * guard["radius_nm"] * config.SWIMMER_GUARD_START
         rad = math.radians(guard["course"])
         x, y = world.nearest_water(guard["x"] + reach * math.sin(rad),
                                    guard["y"] - reach * math.cos(rad))
-        return float(x), float(y), (guard["course"] + (180.0 if side > 0 else 0.0)) % 360.0
+        return float(x), float(y), (guard["course"] + (180.0 if guard["start"] > 0 else 0.0)) % 360.0
     if kind == "escort":
         course = escort_base_course(world, scenario_key)
         nx, ny = _nominal(scenario_key)

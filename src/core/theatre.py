@@ -50,7 +50,7 @@ SIDES = ("frigate", "boat")
 SCENARIO_ROLES = {
     "frigate": {
         "s1_patrouille": "patrol", "s13_fuehlung": "patrol",
-        "s2_doppeljagd": "strike", "s12_datum": "strike",
+        "s2_doppeljagd": "strike", "s12_datum": "strike", "s21_suchgruppe": "strike",
         "s11_geleitschutz": "defence", "s14_hafenschutz": "defence",
         "s15_versorgung": "defence", "s16_seenot": "defence",
         "s3_abfang": "decisive",
@@ -61,7 +61,7 @@ SCENARIO_ROLES = {
         "s7_geleitzug": "strike", "s9_kampfschwimmer": "strike",
         "s10_versorger": "strike",
         "s5_durchbruch": "defence", "s18_heimkehr": "defence",
-        "s19_abholung": "defence",
+        "s19_abholung": "defence", "s22_jagdgruppe": "defence",
         "s17_duell": "decisive",
     },
 }

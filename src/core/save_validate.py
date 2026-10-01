@@ -785,8 +785,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                        for key in contact_fields - {"kind"})
                 or not -1.0 <= contact["normal_x"] <= 1.0
                 or not -1.0 <= contact["normal_y"] <= 1.0
-                or not -1.0 <= contact["hull_longitudinal"] <= 1.0
-                or not -1.0 <= contact["hull_lateral"] <= 1.0))
+                # The hull fractions come out of float geometry and may
+                # overshoot the hull's end by rounding.
+                or not -1.0 - 1e-9 <= contact["hull_longitudinal"] <= 1.0 + 1e-9
+                or not -1.0 - 1e-9 <= contact["hull_lateral"] <= 1.0 + 1e-9))
             or any(abs(ship[key] - pose[index]) > 1e-9
                    for index, key in enumerate(("x", "y", "course")))):
         return False

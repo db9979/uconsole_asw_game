@@ -1267,7 +1267,8 @@ class CommanderBridge:
             protocol=2, session=self._session, epoch=self._epoch, phase=phase,
             world_mode=game.world_mode, scenario=game.scenario_key,
             difficulty=dict(game.menu_difficulty),
-            scenarios=[dict(key=key, fixed=config.SCENARIOS[key]["difficulty"] is not None)
+            scenarios=[dict(key=key, fixed=config.SCENARIOS[key]["difficulty"] is not None,
+                            side=config.scenario_side(key))
                        for key in config.SCENARIO_ORDER],
             difficulty_fields=[
                 dict(name=name, kind=("int" if kind is int else "float"),

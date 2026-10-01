@@ -860,8 +860,7 @@ def test_new_game_asks_which_unit_the_uconsole_plays():
     game._handle_menu_key(pygame.K_2)
     game._handle_menu_key(pygame.K_RETURN)
     assert game.local_side == "uboot" and game.menu_screen == "scenario"
-    game._handle_menu_key(pygame.K_ESCAPE)
-    game._handle_menu_key(pygame.K_RETURN)
+    game._handle_menu_key(pygame.K_ESCAPE)                 # back to the side choice
     assert game.menu_screen == "side" and game.menu_sel == 1  # Last choice preselected.
     game._handle_menu_key(pygame.K_UP)
     game._handle_menu_key(pygame.K_RETURN)

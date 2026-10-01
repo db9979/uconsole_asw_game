@@ -33,8 +33,8 @@ function validateHost(value) {
         return row.kind === "int" ? Number.isInteger(amount) && amount >= row.min && amount <= row.max :
           Number.isFinite(amount) && amount >= row.min && amount <= row.max;
       }) ||
-      !boundedArray(value.scenarios, 16) || !value.scenarios.every((row) => exactKeys(row, ["key", "fixed"]) &&
-        typeof row.key === "string" && typeof row.fixed === "boolean") ||
+      !boundedArray(value.scenarios, 16) || !value.scenarios.every((row) => exactKeys(row, ["key", "fixed", "side"]) &&
+        typeof row.key === "string" && typeof row.fixed === "boolean" && ["frigate", "uboot"].includes(row.side)) ||
       !boundedArray(value.slots, 8) || !value.slots.every((row) => exactKeys(row, ["slot", "saved", "modified"]) &&
         Number.isSafeInteger(row.slot) && row.slot >= 1 && typeof row.saved === "boolean" &&
         (row.modified === null || Number.isSafeInteger(row.modified)))) throw new Error("protocol");

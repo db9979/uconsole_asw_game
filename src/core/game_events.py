@@ -1808,23 +1808,29 @@ class EventMixin:
                 self.main_menu_sel = self.main_menu_index("new")
             return
         if self.menu_screen == "scenario":
-            n = len(config.SCENARIO_ORDER)
+            # Only the scenarios of the side chosen before; ``menu_sel`` stays
+            # an index into SCENARIO_ORDER, the number keys its 1-9 and 0.
+            keys = config.scenarios_for_side(self.local_side)
+            pos = keys.index(config.SCENARIO_ORDER[self.scenario_menu_index()])
+            number = {pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2, pygame.K_4: 3,
+                      pygame.K_5: 4, pygame.K_6: 5, pygame.K_7: 6, pygame.K_8: 7,
+                      pygame.K_9: 8, pygame.K_0: 9}.get(key)
             if key == pygame.K_UP:
-                self.menu_sel = (self.menu_sel - 1) % n
+                self.menu_sel = config.SCENARIO_ORDER.index(keys[(pos - 1) % len(keys)])
             elif key == pygame.K_DOWN:
-                self.menu_sel = (self.menu_sel + 1) % n
-            elif key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5,
-                         pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9, pygame.K_0)[:n]:
-                # 1 to 9, and 0 for the tenth.
-                self.menu_sel = (int(pygame.key.name(key)) - 1) % 10
+                self.menu_sel = config.SCENARIO_ORDER.index(keys[(pos + 1) % len(keys)])
+            elif number is not None and number < len(config.SCENARIO_ORDER):
+                if config.SCENARIO_ORDER[number] in keys:
+                    self.menu_sel = number
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
-                self.scenario_key = config.SCENARIO_ORDER[self.menu_sel]
+                self.scenario_key = config.SCENARIO_ORDER[self.scenario_menu_index()]
                 sc = config.SCENARIOS[self.scenario_key]
                 self.menu_screen = "difficulty" if sc["difficulty"] is None else "briefing"
                 self.menu_sel = 0
             elif key in (pygame.K_ESCAPE, pygame.K_q):
-                self.main_menu = True
-                self.main_menu_sel = self.main_menu_index("new")
+                # Back to the side choice the list belongs to.
+                self.menu_screen = "side"
+                self.menu_sel = 1 if self.local_side == "uboot" else 0
             return
         if self.menu_screen == "difficulty":
             # The last row (after the saved difficulty fields) is the HQ intel.
@@ -1866,6 +1872,14 @@ class EventMixin:
         elif key == pygame.K_ESCAPE:
             self.menu_screen = "scenario"
             self.menu_sel = config.SCENARIO_ORDER.index(self.scenario_key)
+
+    def scenario_menu_index(self) -> int:
+        """The scenario menu's selection, kept within the uConsole side's list."""
+        keys = config.scenarios_for_side(self.local_side)
+        sel = self.menu_sel
+        if 0 <= sel < len(config.SCENARIO_ORDER) and config.SCENARIO_ORDER[sel] in keys:
+            return sel
+        return config.SCENARIO_ORDER.index(keys[0])
 
     def _joy_step(self, delta: int) -> None:
         """uConsole-Trackball Y-Achse: stationsabhängiger Schritt."""

@@ -34,6 +34,9 @@ async function until(check, message, limit = 1500) {
   }
   throw new Fail(message);
 }
+const boatScenarios = ["s5_durchbruch", "s6_aufklaerung", "s7_geleitzug", "s8_meerenge",
+  "s9_kampfschwimmer", "s10_versorger"];
+const scenarioIsBoat = (key) => boatScenarios.includes(key);
 const scriptErrors = [];
 window.addEventListener("error", (event) => scriptErrors.push(event.message));
 window.addEventListener("unhandledrejection", (event) => scriptErrors.push(String(event.reason)));
@@ -140,7 +143,13 @@ async function run() {
   $("host-new").click();
   await until(() => $("host-new-dialog").open, "new game dialog did not reopen");
   assert($("host-new-side").value === "frigate", "the side does not start at the frigate");
+  assert([...$("host-new-scenario").options].every((option) => !scenarioIsBoat(option.value)),
+    "the frigate side lists a submarine scenario");
   $("host-new-side").value = "uboot";
+  $("host-new-side").dispatchEvent(new Event("change", {bubbles: true}));
+  assert([...$("host-new-scenario").options].length > 0 &&
+    [...$("host-new-scenario").options].every((option) => scenarioIsBoat(option.value)),
+    "the submarine side lists a frigate scenario");
   $("host-new-seed").value = "4242";
   $("host-new-form").requestSubmit();
   await until(() => $("station-tab-uboot") && !$("station-tab-bridge"),
@@ -224,4 +233,5 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
     assert root.get("data-console-test") == "passed", root.get(
         "data-failure", stdout[-4000:] + stderr[-2000:])
     assert (saves / "slot3.json").is_file()
-    assert (game.seed, game.scenario_key, game.world_mode) == (4242, "s1_patrouille", "procedural")
+    # The last new game ran on the submarine side, whose list starts at the breakthrough.
+    assert (game.seed, game.scenario_key, game.world_mode) == (4242, "s5_durchbruch", "procedural")

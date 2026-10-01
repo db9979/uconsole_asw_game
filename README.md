@@ -12,23 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.125**
+Current release: **1.3.126**
 
-Release 1.3.125 adds three new missions that both sides can play, each with the
-AI on the other side. In "Strait blockade" (8) the submarine must slip through
-the nearest narrow passage while the frigate guards the gate; merchant traffic
-runs through it and an AI boat hides in their noise. In "Combat swimmers" (9)
-the submarine must lie still near a coast for ten minutes at periscope depth
-and dead slow to lock out its swimmers, and the frigate patrols the coast
-section. In "Supply ship escort" (10) the frigate escorts a zigzagging supply
-ship and one torpedo hit decides the mission. The places come from the real or
-generated coastline of each world. The scenario menu takes keys 1 to 9 and 0.
-In AI-against-AI test runs (six seeds each) every new mission went three times
-each way: the AI submarine sneaks at 4 kn, ignores pings from farther than 5 NM,
-fires back down a closer one and, in the strait and off the coast, snaps a shot
-at a loud frigate; the strait stays busy with six merchants shuttling through
-it, and HQ passes the frigate no submarine datum in scenarios 8 and 9. Save
-format v44; older saves do not load.
+Release 1.3.126 lists the scenarios by side. After "New game" you first pick
+the frigate or the submarine, and the list then shows only that side's
+missions: Patrol, Double hunt, Nuclear intercept and Free hunt on the frigate;
+Breakthrough, Reconnaissance, Convoy attack, Strait blockade, Combat swimmers
+and Supply ship escort on the submarine. The titles therefore lose their
+"(submarine)" suffix, which read as if the frigate were meant to play them.
+The multiplayer lobby and the browser's New game dialog filter the same way,
+and Esc in the scenario list returns to the side choice. Save format v44
+unchanged.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -228,22 +228,25 @@ class DrawMixin:
             center(self.tr("menu.side_hint"), 470, color=config.COLOR_TEXT_DIM,
                    keys=(None, "Enter", "Esc"))
         elif self.menu_screen == "scenario":
-            center(self.tr("menu.choose_scenario"),
-                   150, color=config.COLOR_TEXT_DIM)
+            # Only the scenarios of the side picked before (frigate or boat).
+            side_key = ("menu.choose_scenario.uboot" if self.local_side == "uboot"
+                        else "menu.choose_scenario.frigate")
+            center(self.tr(side_key), 150, color=config.COLOR_TEXT_DIM)
             scenario_names = config.SCENARIO_NAMES
-            step = 40 if len(config.SCENARIO_ORDER) <= 8 else 34
-            for i, key in enumerate(config.SCENARIO_ORDER):
-                row(220 + i * step, step - 2, lambda i=i: setattr(self, "menu_sel", i))
+            current = self.scenario_menu_index()
+            for row_i, key in enumerate(config.scenarios_for_side(self.local_side)):
+                i = config.SCENARIO_ORDER.index(key)
+                row(220 + row_i * 40, 38, lambda i=i: setattr(self, "menu_sel", i))
                 sc = config.SCENARIOS[key]
-                marker = "► " if i == self.menu_sel else "  "
-                col = config.COLOR_TEXT if i == self.menu_sel \
+                marker = "► " if i == current else "  "
+                col = config.COLOR_TEXT if i == current \
                     else config.COLOR_TEXT_DIM
                 lv = self.tr("menu.difficulty_fixed" if sc["difficulty"] is not None
                              else "menu.difficulty_custom")
                 title = self.tr("scenario." + scenario_names[key] + ".title")
                 center(message("menu.scenario_choice", index=(i + 1) % 10,
                                marker=marker, title=title, level=lv),
-                       220 + i * step, color=col)
+                       220 + row_i * 40, color=col)
         elif self.menu_screen == "difficulty":
             center(self.tr("menu.choose_difficulty"),
                    150, color=config.COLOR_TEXT_DIM, keys=("Enter", "Esc"),

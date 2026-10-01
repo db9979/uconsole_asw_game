@@ -227,6 +227,8 @@ class Sub:
         # Scenarios 8 and 9 (boat_missions.SNAP_MODES): a snap shot down the
         # bearing of a loud frigate; never saved either.
         self.mission_snap = False
+        # Scenario 13 (trail) is peacetime: the boat never fires; never saved.
+        self.mission_peace = False
         self._lofar_phase = 0.0  # M11: LOFAR-Pulsphase
         self.sunk = False
         self.heard_ping = False
@@ -474,7 +476,8 @@ class Sub:
 
     def _maybe_attack(self, dt: float, observation: PlatformObservation | None) -> None:
         """Gegenschlag, wenn die Fregatte laut/pinged wurde (Captain's Log §2.2)."""
-        if self.side != "hostile" or self.sunk or self.state == "SINKING":
+        if (self.side != "hostile" or self.sunk or self.state == "SINKING"
+                or self.mission_peace):
             return
         self.attack_left -= dt
         if (observation is not None and self.ai_tube_left < 0.0
@@ -1677,7 +1680,9 @@ class Sub:
 
     def fire_readiness(self, bearing=None, salvo: int = 1):
         """Why a crew torpedo shot is impossible now, or None when ready."""
-        if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):
+        if (not self.manual or self.sunk or self.state in ("SINKING", "SUNK")
+                or self.mission_peace):
+            # Scenario 13 is peacetime: the tubes stay closed.
             return "not_ready"
         if self.damage_control.down("bow"):
             return "uboot_compartment_down"     # torpedo room flooded or burning

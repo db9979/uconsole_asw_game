@@ -14,7 +14,7 @@ from src.audio.engine import AudioEngine
 from src.audio.receiver import AcousticReceiver
 from src.audio.speech import Speaker, find_engine
 from src.commander.local import CommanderConsole
-from src.core import config
+from src.core import config, mission_modes
 from src.core.plot import PlotLayer
 from src.core.chart_history import ChartHistory
 from src.core.map_fx import MapFx
@@ -434,10 +434,14 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         if course is None:
             course = 90.0
         from src.core import boat_missions
-        placed = boat_missions.frigate_start(self.world, scenario_key, seed)
+        short = (getattr(self, "start_length", "normal") == "short"
+                 and "short_time_limit_s" in config.MISSION_TYPES.get(
+                     sc["mission_type"], {}))
+        placed = boat_missions.frigate_start(self.world, scenario_key, seed, short)
         if placed is not None:
-            # Scenarios 8 to 10: the strait's gate, the coast section or
-            # the supply ship's beam (src/core/mission_geo.py).
+            # Scenarios 8 to 20: the strait's gate, the coast section, the
+            # supply ship's beam, the datum, the tanker's quarter ...
+            # (src/core/mission_geo.py, src/core/mission_modes.py).
             start, course = placed[:2], placed[2]
         sx, sy = self.world.nearest_safe_hull(start[0], start[1], course)
         self.ship = Ship(x_nm=sx, y_nm=sy, course_deg=course)
@@ -476,6 +480,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.score = 0
         # The combat swimmers' lock-out so far (save ``swimmer_hold_s``).
         self.swimmer_hold_s = 0.0
+        # The counters of scenarios 13, 19 and 20 (save ``mission_progress``).
+        self.mission_progress = mission_modes.new_progress()
         # HQ orders and incidents (save ``tasking``); none in custom missions.
         self._reset_tasking()
         # Incidents at sea (save ``incidents``); none in custom missions.

@@ -494,7 +494,7 @@ def _draw_guard_area(game, view, r) -> None:
         radius = max(8, int(area["radius_nm"] * view.scale))
         pygame.draw.circle(s, color, (int(px), int(py)), radius, 1)
         label_at = (int(px) + 6, int(py) - radius - 16)
-        key = "map.guard.coast"
+        key = area.get("label", "map.guard.coast")
     _map_label(s, game, key, label_at, color, r, size=12)
 
 

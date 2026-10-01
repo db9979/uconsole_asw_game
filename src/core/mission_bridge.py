@@ -533,10 +533,14 @@ class MissionBridgeMixin:
 
     def _initial_threat_notice(self):
         """Return one coarse, static intelligence cue for the mission start."""
-        from src.core import boat_missions
+        from src.core import boat_missions, mission_modes
         if boat_missions.mode(self) in boat_missions.UNREPORTED_MODES:
-            # Scenarios 8 and 9: the frigate guards its post without a report.
+            # Scenarios 8, 9, 19, 20: the frigate guards its post without a report.
             return message("runtime.hq.threat_unknown")
+        exact = mission_modes.start_notice(self, boat_missions.mode(self))
+        if exact is not None:
+            # Scenarios 12 and 13: the datum, the handed-over contact.
+            return exact
         candidates = [target for target in self.subs if target.side == "hostile"]
         domain = "underwater"
         if not candidates:
@@ -604,6 +608,10 @@ class MissionBridgeMixin:
                 "durchbruch": "mission.breakthrough", "aufklaerung": "mission.recon",
                 "geleitzug": "mission.convoy_attack", "meerenge": "mission.strait",
                 "kampfschwimmer": "mission.swimmers", "versorger": "mission.escort",
+                "datum": "mission.datum", "fuehlung": "mission.trail",
+                "versorgung": "mission.ras", "seenot": "mission.rescue",
+                "duell": "mission.duel", "heimkehr": "mission.homecoming",
+                "abholung": "mission.pickup", "lauschposten": "mission.elint",
                 "custom": "mission.custom"}
         name = message(keys[self.mission.type_key])
         return message("mission.short_variant", name=name) if self.short_mission else name
@@ -645,8 +653,11 @@ class MissionBridgeMixin:
                             "protect": "mission.objective.protect",
                             "reach": "mission.objective.reach"}.get(
                                 objective_type, "mission.objective.sink"))
-        if self.mission.win_mode in ("breakthrough", "recon", "convoy_attack", "strait",
-                                     "swimmers", "escort"):
+        from src.core import mission_modes
+        if self.mission.win_mode in mission_modes.MODES:
+            objective = mission_modes.frigate_objective(self, self.mission.win_mode)
+        elif self.mission.win_mode in ("breakthrough", "recon", "convoy_attack", "strait",
+                                       "swimmers", "escort"):
             objective = message("mission.objective." + self.mission.win_mode)
         elif self.mission.win_mode == "survive":
             objective = message("mission.objective.convoy")

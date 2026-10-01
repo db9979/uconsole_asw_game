@@ -10,7 +10,12 @@ KEYS = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
         "s3_abfang": "intercept", "s4_zufall": "random",
         "s5_durchbruch": "breakthrough", "s6_aufklaerung": "recon",
         "s7_geleitzug": "convoy_attack", "s8_meerenge": "strait",
-        "s9_kampfschwimmer": "swimmers", "s10_versorger": "escort"}
+        "s9_kampfschwimmer": "swimmers", "s10_versorger": "escort",
+        "s11_geleitschutz": "convoy_escort", "s12_datum": "datum",
+        "s13_fuehlung": "trail", "s14_hafenschutz": "harbour",
+        "s15_versorgung": "ras", "s16_seenot": "rescue", "s17_duell": "duel",
+        "s18_heimkehr": "homecoming", "s19_abholung": "pickup",
+        "s20_lauschposten": "elint"}
 
 
 def test_menu_goal_and_loss_lines_are_translated():

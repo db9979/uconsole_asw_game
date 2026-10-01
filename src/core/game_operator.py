@@ -1414,6 +1414,9 @@ class OperatorMixin:
             self.flash(message("runtime.roe.blocked",
                                affiliation=display_value("affiliation", blocked, self.tr)))
             return "roe_blocked"
+        if self.weapons_tight():
+            self.flash(message("runtime.roe.weapons_tight"))
+            return "roe_blocked"
         if self.roe == "STD" and not self._contact_range_fresh(contact):
             self.flash(message("runtime.target.not_located"))
             return "not_located"
@@ -1630,6 +1633,8 @@ class OperatorMixin:
         if blocked is not None:
             return (f"BLOCKIERT: ZUGEHOERIGKEIT {blocked}",
                     config.COLOR_DANGER)
+        if self.weapons_tight():
+            return "BLOCKIERT: WAFFEN GESPERRT", config.COLOR_DANGER
         if not self._contact_range_fresh(self.target) and self.roe == "STD":
             return "BLOCKIERT: KEINE ENTFERNUNG", config.COLOR_WARN
         if self.weapon_classification(self.target) not in ("U_BOOT", "KAMPFSCHIFF"):
@@ -1711,6 +1716,11 @@ class OperatorMixin:
         affiliations = self._contact_affiliations(contact)
         return next((value for value in ("FRIEND", "NEUTRAL", "HOSTILE")
                      if value in affiliations), "UNKNOWN")
+
+    def weapons_tight(self) -> bool:
+        """Scenario 13 is peacetime: no weapon may be released at a submarine."""
+        from src.core import boat_missions
+        return boat_missions.mode(self) == "trail"
 
     def _target_affiliation_interlock(self, contact=None):
         """Return a protected OPZ affiliation for the assigned sonar target."""
@@ -1913,6 +1923,9 @@ class OperatorMixin:
         if blocked is not None:
             self.flash(message("runtime.roe.blocked",
                                affiliation=display_value("affiliation", blocked, self.tr)))
+            return "roe_blocked"
+        if self.weapons_tight():
+            self.flash(message("runtime.roe.weapons_tight"))
             return "roe_blocked"
         if self.roe == "STD":
             if not self._contact_range_fresh(contact):

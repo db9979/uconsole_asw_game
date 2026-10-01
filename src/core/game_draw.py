@@ -252,9 +252,10 @@ class DrawMixin:
             scenario_names = config.SCENARIO_NAMES
             current = (None if self.menu_sel == self.custom_row_sel()
                        else self.scenario_menu_index())
+            step = 36                     # ten missions and the own-missions row
             for row_i, key in enumerate(config.scenarios_for_side(self.local_side)):
                 i = config.SCENARIO_ORDER.index(key)
-                row(220 + row_i * 40, 38, lambda i=i: setattr(self, "menu_sel", i))
+                row(220 + row_i * step, 34, lambda i=i: setattr(self, "menu_sel", i))
                 sc = config.SCENARIOS[key]
                 marker = "► " if i == current else "  "
                 col = config.COLOR_TEXT if i == current \
@@ -264,13 +265,13 @@ class DrawMixin:
                 title = self.tr("scenario." + scenario_names[key] + ".title")
                 center(message("menu.scenario_choice", index=row_i + 1,
                                marker=marker, title=title, level=lv),
-                       220 + row_i * 40, color=col)
+                       220 + row_i * step, color=col)
             # The last row: the side's own missions from the Mission Editor.
             row_i = len(config.scenarios_for_side(self.local_side))
             custom = self.custom_row_sel()
-            row(220 + row_i * 40, 38, lambda: setattr(self, "menu_sel", custom))
+            row(220 + row_i * step, 34, lambda: setattr(self, "menu_sel", custom))
             center(message("menu.custom.row", marker="► " if self.menu_sel == custom else "  "),
-                   220 + row_i * 40, color=config.COLOR_TEXT if self.menu_sel == custom
+                   220 + row_i * step, color=config.COLOR_TEXT if self.menu_sel == custom
                    else config.COLOR_TEXT_DIM)
         elif self.menu_screen == CUSTOM_SCREEN:
             self._draw_custom_menu(center)

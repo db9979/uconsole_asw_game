@@ -12,18 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.133**
+Current release: **1.3.134**
 
-Release 1.3.133 lets you build your own missions for both sides and share them.
-In the Mission Editor's overview the player side can now be the frigate or a
-submarine you place yourself (the AI then crews the frigate), and the editor
-gives fairness hints. Own missions appear in the start menu (`O`), in the
-multiplayer lobby and in the browser's "New game" dialog. `Ctrl+E` shares a
-mission with its own units into the exchange folder `~/.u-jagd/share`, `Ctrl+I`
-lists and imports the files there and `O` opens the folder. In solo mode the
-browser has an "Own missions" page to list, download, upload, edit, delete and
-start missions, with a Mission Planner on a sector map. Save format v44
-unchanged.
+Release 1.3.134 brings ten new scenarios, so each side now has ten. The
+frigate gets 5 Convoy escort, 6 Flaming datum, 7 Trail (peacetime, weapons
+tight, hold sonar contact), 8 Replenishment at sea, 9 Rescue under threat and
+10 Harbour defence; the submarine gets 7 Duel, 8 Damaged homecoming, 9 Agent
+pick-up and 10 Listening post. Key `0` picks the tenth row. An AI plays the
+other side in each, every one has a short variant, and both sides win them in
+AI-against-AI games. Saves move to format v45; v38 to v44 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

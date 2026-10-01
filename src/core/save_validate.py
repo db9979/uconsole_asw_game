@@ -524,6 +524,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     from src.core import boat_missions
     if not boat_missions.valid_hold(data.get("swimmer_hold_s")):
         return False
+    # Save v45: the counters of scenarios 13, 19 and 20.
+    from src.core import mission_modes
+    if not mission_modes.valid_progress(data.get("mission_progress")):
+        return False
     # Save v39: the AI hunters' ESM bearing lines.
     from src.core import hunter
     if not hunter.valid_esm_log(data.get("hunter_esm"), save_sim_t):

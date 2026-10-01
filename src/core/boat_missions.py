@@ -28,17 +28,21 @@ from src.core import config, detrand, mission_geo
 from src.core.i18n import message, raw_text
 from src.sonar.platforms import OWNSHIP_TARGET_ID
 
-MODES = ("breakthrough", "recon", "convoy_attack", "strait", "swimmers", "escort")
+# Scenarios 11 to 20 add the modes of ``src/core/mission_modes.py``.
+MODES = ("breakthrough", "recon", "convoy_attack", "strait", "swimmers", "escort",
+         "datum", "trail", "ras", "rescue", "duel", "homecoming", "pickup", "elint")
 # Modes whose merchants the boat's torpedoes may take.
-SHIP_MODES = ("convoy_attack", "escort")
+SHIP_MODES = ("convoy_attack", "escort", "ras")
 # Scenarios 8 to 10: the boat slips past or attacks a guarding frigate.
-GUARDED_MODES = ("strait", "swimmers", "escort")
+GUARDED_MODES = ("strait", "swimmers", "escort", "pickup", "rescue", "duel")
 # Missions where HQ has no intelligence on the boat: no start report, no
 # datum task. The supply ship escort keeps HQ's reports like the convoy.
-UNREPORTED_MODES = ("strait", "swimmers")
+UNREPORTED_MODES = ("strait", "swimmers", "pickup", "elint")
 # Missions where the boat slips past a guard and snaps a shot at it when it
 # comes loud down its bearing (src/enemies/sub.py).
-SNAP_MODES = ("strait", "swimmers")
+SNAP_MODES = ("strait", "swimmers", "pickup", "rescue", "duel")
+# The coast section and swimmers' zone serve the agent pick-up too.
+ZONE_MODES = ("swimmers", "pickup")
 
 
 def mode(game):
@@ -127,13 +131,14 @@ def escort_base_course(world, scenario_key) -> float:
                                      float(spec["ship_course"]))
 
 
-def frigate_start(world, scenario_key, seed):
-    """``(x, y, course)`` of the frigate in scenarios 8 to 10, else None."""
+def frigate_start(world, scenario_key, seed, short: bool = False):
+    """``(x, y, course)`` of the frigate in scenarios 8 to 20, else None."""
+    from src.core import mission_modes
     kind = scenario_mode(scenario_key)
     if kind == "strait":
         gate = mission_geo.strait(world, _nominal(scenario_key))
         return gate["x"], gate["y"], (gate["axis"] + 90.0) % 360.0
-    if kind == "swimmers":
+    if kind in ZONE_MODES:
         # At one end of its coast section, sweeping back along it.
         guard = _guard_of(world, scenario_key, seed)
         reach = guard["start"] * guard["radius_nm"] * config.SWIMMER_GUARD_START
@@ -147,7 +152,7 @@ def frigate_start(world, scenario_key, seed):
         side = math.radians(course + 90.0)
         return (nx + config.ESCORT_FRIGATE_ABEAM_NM * math.sin(side),
                 ny - config.ESCORT_FRIGATE_ABEAM_NM * math.cos(side), course)
-    return None
+    return mission_modes.frigate_start(world, scenario_key, seed, short)
 
 
 def gate(game):
@@ -158,8 +163,8 @@ def gate(game):
 
 
 def zone(game):
-    """The swimmers' zone ``{x, y, radius_nm, seaward}`` or None."""
-    if mode(game) != "swimmers":
+    """The swimmers' (or agents') zone ``{x, y, radius_nm, seaward}`` or None."""
+    if mode(game) not in ZONE_MODES:
         return None
     return _zone_of(game.world, game.scenario_key)
 
@@ -167,12 +172,13 @@ def zone(game):
 def guard_area(game):
     """What the frigate guards, as its orders give it (authored mission
     data): ``{kind: "gate", ends}`` or ``{kind: "circle", x, y, radius_nm}``."""
+    from src.core import mission_modes
     kind = mode(game)
     if kind == "strait":
         return dict(kind="gate", ends=_gate_ends(gate(game)))
-    if kind == "swimmers":
+    if kind in ZONE_MODES:
         return _guard_of(game.world, game.scenario_key, game.seed)
-    return None
+    return mission_modes.guard_area(game, kind)
 
 
 def exit_heading(gate_row, start_pos) -> float:
@@ -184,9 +190,12 @@ def exit_heading(gate_row, start_pos) -> float:
 def goal(game):
     """The boat's goal area ``{x, y, radius_nm}`` or None: the breakthrough
     goal, the area beyond the strait or the swimmers' zone."""
+    from src.core import mission_modes
     kind = mode(game)
     if kind == "swimmers":
         return zone(game)
+    if kind in ("homecoming", "pickup"):
+        return mission_modes.goal(game, kind)
     if kind == "strait":
         return _strait_goal(game)
     if kind != "breakthrough":
@@ -250,8 +259,11 @@ def distance_scale(game) -> float:
 
 def setup(game) -> None:
     """Place a boat mission's own units once the world is populated."""
+    from src.core import mission_modes
     kind = mode(game)
-    if kind == "convoy_attack":
+    if kind in mission_modes.MODES:
+        mission_modes.setup(game, kind)
+    elif kind == "convoy_attack":
         spawn_convoy(game)
     elif kind == "strait":
         _setup_strait(game)
@@ -336,17 +348,20 @@ def escort_origin(game):
 
 
 def supply(game):
-    """The escorted supply ship (sunk or not), or None."""
-    if mode(game) != "escort":
+    """The escorted supply ship or the replenishment tanker (sunk or not), or None."""
+    if mode(game) not in ("escort", "ras"):
         return None
     return game.mission_entity("supply-1")
 
 
 def update(game, dt: float) -> None:
     """The supply ship's zigzag, the swimmers' lock-out and the strait's
-    traffic, every substep."""
+    traffic, every substep (and the counters of scenarios 11 to 20)."""
+    from src.core import mission_modes
     kind = mode(game)
-    if kind == "escort":
+    if kind in mission_modes.MODES:
+        mission_modes.update(game, kind, dt)
+    elif kind == "escort":
         _zigzag(game)
     elif kind == "swimmers":
         _hold(game, dt)
@@ -441,7 +456,7 @@ def spawn_convoy(game) -> None:
     _station_boat_ahead(game, course, (game.ship.x, game.ship.y))
 
 
-def _station_boat_ahead(game, course: float, around) -> None:
+def _station_boat_ahead(game, course: float, around, ahead_nm: float | None = None) -> None:
     """Put the mission boat on the convoy's bow, where it can wait for it: a
     convoy running away is faster than a dived boat, and the escort screens
     dead ahead. The side is a stateless draw keyed by the seed, so no
@@ -454,7 +469,8 @@ def _station_boat_ahead(game, course: float, around) -> None:
                          + abs(draw) * config.BOAT_CONVOY_BOAT_SIDE_SPREAD_NM, draw
                          ) * distance_scale(game)
     rad = math.radians(course)
-    nominal = config.BOAT_CONVOY_BOAT_AHEAD_NM * distance_scale(game)
+    nominal = (config.BOAT_CONVOY_BOAT_AHEAD_NM if ahead_nm is None else ahead_nm
+               ) * distance_scale(game)
     for ahead in (nominal, nominal * 0.75, nominal * 1.25):
         for offset in (side, -side, 0.0):
             x = around[0] + ahead * math.sin(rad) + offset * math.cos(rad)
@@ -468,7 +484,7 @@ def _station_boat_ahead(game, course: float, around) -> None:
 def convoy(game) -> list:
     """The convoy's merchants, in convoy order (sunk ones included); in the
     supply ship escort, the supply ship."""
-    if mode(game) == "escort":
+    if mode(game) in ("escort", "ras"):
         ship = supply(game)
         return [] if ship is None else [ship]
     rows = []
@@ -487,7 +503,7 @@ def merchant_struck(game, ship) -> None:
     """A crewed boat's torpedo hit a merchant: book the warhead, report it."""
     if ship is None or ship.sunk:
         return
-    escort = mode(game) == "escort" and ship is supply(game)
+    escort = mode(game) in ("escort", "ras") and ship is supply(game)
     ship.hit(config.ESCORT_WARHEAD if escort else config.BOAT_CONVOY_WARHEAD)
     game.sight_events.ship_hit(ship, game.sim_t)
     game._emit_sound("explosion", at=(ship.x, ship.y))
@@ -503,10 +519,14 @@ def merchant_struck(game, ship) -> None:
 
 def check(game) -> bool:
     """End a boat mission when it is decided; True when this module owns it."""
+    from src.core import mission_modes
     kind = mode(game)
     if kind is None:
         return False
     sub = target_sub(game)
+    if kind in mission_modes.MODES:
+        return mission_modes.check(game, kind, sub,
+                                   sub is None or sub.sunk or sub.state == "SINKING")
     if sub is None or sub.sunk or sub.state == "SINKING":
         game._end_mission(True, message("end.reason.targets_sunk"))
         return True
@@ -543,7 +563,12 @@ def frigate_in_sight(boat) -> bool:
 
 
 def report_sent(game, boat) -> None:
-    """A situation report went out: with the frigate in sight it wins recon."""
+    """A situation report went out: with the frigate in sight it wins recon,
+    with the recording complete the listening post."""
+    if mode(game) == "elint" and boat.sub is target_sub(game):
+        from src.core import mission_modes
+        mission_modes.elint_report(game)
+        return
     if (mode(game) == "recon" and not game.game_over and game.mission_result is None
             and boat.sub is target_sub(game) and frigate_in_sight(boat)):
         game._end_mission(False, message("end.reason.boat_reported"))
@@ -551,6 +576,7 @@ def report_sent(game, boat) -> None:
 
 def objective(game, boat):
     """The boat's own mission line (its orders from HQ, own truth only)."""
+    from src.core import mission_modes
     kind = mode(game)
     if boat.sub.sunk:
         return message("uboot.objective_lost")
@@ -558,6 +584,8 @@ def objective(game, boat):
     custom = custom_boat.objective(game, boat.sub)
     if custom is not None:
         return custom
+    if kind in mission_modes.MODES:
+        return mission_modes.boat_objective(game, boat, kind)
     if kind in ("breakthrough", "strait", "swimmers"):
         point = goal(game)
         dx, dy = point["x"] - boat.sub.x, point["y"] - boat.sub.y

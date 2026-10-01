@@ -41,6 +41,7 @@ SEARCH_BOX_S = 1800.0           # the zigzag's base course turns 90° this often
 CROSS_LEG_S = 300.0             # side of the crossing course for bearing motion
 PING_EVERY_S = 600.0            # a bare bearing: a ping that finds nothing only sends the boat running
 DIP_PING_EVERY_S = 30.0
+TRAIL_PING_EVERY_S = 180.0      # scenario 13: no weapon follows a ping
 HELO_RANGE_NM = 30.0
 HELO_GUARD_NM = 8.0             # guarding its post the helicopter stays this close
 HELO_DIP_NM = 0.5
@@ -389,8 +390,11 @@ def datum(game):
 def set_hq_lead(game, bearing: float, range_nm: float) -> None:
     """HQ's start report of the nearest threat (rounded bearing and range
     from the ship, as the teletype prints it) marks the area to search.
-    In the submarine's missions the frigate guards its own post instead."""
-    if boat_missions.mode(game) is not None:
+    In the submarine's missions the frigate guards its own post instead;
+    in scenarios 12, 13, 15 to 18 the report leads it like a hunt."""
+    from src.core import mission_modes
+    kind = boat_missions.mode(game)
+    if kind is not None and kind not in mission_modes.LEAD_MODES:
         return
     game.hunter_lead = dict(game.hunter_lead or {"hq": None, "sonar": None})
     game.hunter_lead["hq"] = _line(game.sim_t, game.ship.x, game.ship.y, bearing, range_nm)
@@ -627,6 +631,11 @@ def bridge(game, found) -> str:
         return AutocrewController._bridge(game)
     if getattr(game, "baffle_clear", None) is not None:
         return "monitoring"                 # let the baffle clearing finish
+    from src.core import mission_modes
+    leg = mission_modes.frigate_leg(game, found)
+    if leg is not None:
+        # The trail, the replenishment alongside, the rafts (scenarios 13, 15, 16).
+        return _steer(game, *leg)
     ship = game.ship
     escort = escort_course(game)
     if escort is not None and found is not None:
@@ -669,8 +678,10 @@ def sonar(game) -> str:
     if classify(game):
         return "classified"
     contacts = hunt_contacts(game)
+    # Trailing in peacetime a ping costs nothing but noise: it pings more often.
+    every = TRAIL_PING_EVERY_S if boat_missions.mode(game) == "trail" else PING_EVERY_S
     if (contacts and not game._contact_range_fresh(contacts[0])
-            and _fresh(game, contacts[0], 30.0) and _window(game, PING_EVERY_S)
+            and _fresh(game, contacts[0], 30.0) and _window(game, every)
             and game.send_active_ping() is True):
         return "ping"
     return AutocrewController._sonar(game)
@@ -678,9 +689,11 @@ def sonar(game) -> str:
 
 def guarding(game) -> bool:
     """The frigate guards its post against a breakthrough or a
-    reconnaissance boat: a closer shot and a short helicopter (a convoy
-    escort keeps its helicopter's full reach)."""
-    return boat_missions.mode(game) in ("breakthrough", "recon", "strait", "swimmers")
+    reconnaissance boat, or is tied to a duel or the rafts: a closer shot
+    and a short helicopter (a convoy escort keeps its helicopter's full
+    reach)."""
+    return boat_missions.mode(game) in ("breakthrough", "recon", "strait", "swimmers",
+                                        "pickup", "duel", "rescue")
 
 
 def fire_range_nm(game) -> float:
@@ -739,6 +752,9 @@ def helicopter(game, found) -> str:
     helo = game.helo
     if game.damage.station_down("flightdeck") or helo.state == "VERLOREN":
         return "monitoring"
+    rescue = _rescue_flight(game, found)
+    if rescue is not None:
+        return rescue
     point = datum_point(game, found)
     ship = game.ship
     reach = HELO_GUARD_NM if guarding(game) else HELO_RANGE_NM
@@ -789,6 +805,42 @@ def helicopter(game, found) -> str:
     if near <= HELO_DIP_NM and game.set_helicopter_dipping(True) is True:
         return "dipping"
     return "moving"
+
+
+def _rescue_flight(game, found):
+    """Scenario 16: the helicopter flies to a raft (its reported position;
+    the one the ship does not make for while two are left) and winches the
+    crew up."""
+    from src.core import mission_modes
+    if boat_missions.mode(game) != "rescue":
+        return None
+    raft = mission_modes.rescue_point(game, flyer=True)
+    if raft is None:
+        return None
+    helo = game.helo
+    if helo.state == "HANGAR":
+        tick = int(math.floor(game.sim_t / CADENCE_S))
+        if (detrand.u01(game.seed, "hunter.helo", tick)
+                >= CADENCE_S / (HELO_READY_MEAN_S * _level_delay(game))):
+            return "monitoring"                     # the deck readies the helicopter
+        helo.radar_on = True
+        return "launched" if game.launch_helicopter() is True else "monitoring"
+    if helo.state != "AUF":
+        return "monitoring"
+    if helo.dip_state == "DEPLOYED":
+        game.set_helicopter_dipping(False)
+        return "moving"
+    if helo.dip_state != "STOWED":
+        return "monitoring"
+    # It stops 0.3 NM short of a waypoint: aim past the raft until overhead.
+    gap = math.hypot(raft[0] - helo.x, raft[1] - helo.y)
+    aim = raft
+    if gap > 0.15:
+        aim = (raft[0] + 0.3 * (raft[0] - helo.x) / gap, raft[1] + 0.3 * (raft[1] - helo.y) / gap)
+    waypoint = (helo.waypoint_x, helo.waypoint_y)
+    if None in waypoint or math.hypot(waypoint[0] - aim[0], waypoint[1] - aim[1]) > 0.1:
+        game.set_helicopter_waypoint(float(aim[0]), float(aim[1]))
+    return "rescue"
 
 
 def mpa(game, found) -> str:

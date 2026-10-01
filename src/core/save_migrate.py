@@ -62,6 +62,11 @@ def _v43_to_v44(doc: dict) -> None:
     doc["swimmer_hold_s"] = 0.0
 
 
+def _v44_to_v45(doc: dict) -> None:
+    # The counters of scenarios 13, 19 and 20, which no older save runs.
+    doc["mission_progress"] = dict(hold_s=0.0, count_s=0.0, gap_s=0.0, phase=0, flags=0)
+
+
 STEPS = {
     38: _v38_to_v39,
     39: _v39_to_v40,
@@ -69,6 +74,7 @@ STEPS = {
     41: _v41_to_v42,
     42: _v42_to_v43,
     43: _v43_to_v44,
+    44: _v44_to_v45,
 }
 
 

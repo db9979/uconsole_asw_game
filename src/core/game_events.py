@@ -1775,6 +1775,8 @@ class EventMixin:
                     self.menu_screen = "campaign"
                     self.menu_sel = 0
                     self.campaign_side = "boat" if self.local_side == "uboot" else "frigate"
+                    self._campaign_briefing = None
+                    self.campaign_hotspot_sel = 0
                 elif action == "load":
                     self._open_administration("load")
                 elif action == "mission_editor":

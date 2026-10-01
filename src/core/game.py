@@ -504,6 +504,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.training = None
         # Whether this mission is the current campaign leg (never saved).
         self.campaign_mission = False
+        self.campaign_hotspot = None
         self._campaign_leg_shown = False
         self.mission_result = None   # None | "SIEG" | "VERLOREN"
         self.result_reason = ""

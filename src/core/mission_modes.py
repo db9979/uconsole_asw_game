@@ -386,7 +386,7 @@ def trail_goal_s(game) -> float:
     """Contact time the frigate must hold: a share of the time limit (the
     full length may ask a larger share, ``goal_fraction``)."""
     fraction = (config.TRAIL_GOAL_FRACTION if getattr(game, "short_mission", False)
-                else game.mission.spec.get("goal_fraction", config.TRAIL_GOAL_FRACTION))
+                else (game.mission.spec or {}).get("goal_fraction", config.TRAIL_GOAL_FRACTION))
     return float(game.mission.time_limit_s) * float(fraction)
 
 

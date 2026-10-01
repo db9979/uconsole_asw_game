@@ -531,7 +531,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
             min_d, max_d = ((self.mission.spec.get("short_spawn_nm",
                                                    config.SHORT_SUB_SPAWN_NM[0]) if i == 0
                              else config.SHORT_SUB_SPAWN_NM[1]) if self.short_mission
-                            else self.mission.spec.get("spawn_nm", (12.0, 20.0)) if i == 0
+                            else (self.mission.spec or {}).get("spawn_nm", (12.0, 20.0)) if i == 0
                             else (22.0, 45.0))
             sx, sy = at_dist(min_d, max_d)
             s = Sub(sx, sy,

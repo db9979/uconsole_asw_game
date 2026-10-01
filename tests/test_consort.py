@@ -202,3 +202,35 @@ def test_remote_crew_projection_and_actions():
     assert V2_ACTIONS["consort_fire"].direct_fire
     assert V2_ACTIONS["consort_set_mode"].validate_params({"mode": "prosecute"})
     assert not V2_ACTIONS["consort_set_mode"].validate_params({"mode": "attack"})
+
+
+def test_its_hull_sonar_hears_only_near_and_slow():
+    game = _game()
+    ship = game.consort_ship()
+    sub = game.subs[0]
+    sub.x, sub.y = ship.x + config.CONSORT_PASSIVE_NM + 2.0, ship.y
+    game._consort_passive_reports(ship)
+    assert game._consort_bearings == {}
+    sub.x = ship.x + 3.0
+    ship.speed = config.CONSORT_PASSIVE_MAX_KN + 5.0
+    game._consort_passive_reports(ship)
+    assert game._consort_bearings == {}
+
+
+def test_hunter_group_destroyer_has_two_asroc():
+    assert _game("s22_jagdgruppe").consort_view()["asroc"] == 2
+    assert _game("s21_suchgruppe").consort_view()["asroc"] == 8
+
+
+def test_the_hunters_use_its_asroc_only_without_a_person_in_the_opz(monkeypatch):
+    from src.core import hunter
+    game = _game()
+    ship = game.consort_ship()
+    sub = game.subs[0]
+    sub.x, sub.y = ship.x + 4.0, ship.y
+    found = dict(x=sub.x, y=sub.y, source="sonar", age=0.0, contact=None)
+    monkeypatch.setattr(hunter, "_window", lambda game, every: True)
+    monkeypatch.setattr(hunter, "manned", lambda game, station: station == Station.OPZ)
+    assert hunter.asroc(game, found) == "monitoring"      # weapons tight, OPZ crewed
+    game.consort.weapons_free = True
+    assert hunter.asroc(game, found) == "asroc"

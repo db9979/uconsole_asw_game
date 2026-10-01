@@ -1215,6 +1215,8 @@ CONSORT_SEARCH_ORBIT_NM = 4.0
 CONSORT_PROSECUTE_ORBIT_NM = 2.0
 CONSORT_DATALINK_NM = 100.0         # Link 11 (HF) to the frigate
 CONSORT_REPORT_S = 10.0             # cadence of the passive cross-fix
+CONSORT_PASSIVE_NM = 8.0           # its hull sonar hears a submarine this far
+CONSORT_PASSIVE_MAX_KN = 15.0      # faster, its own flow noise deafens it
 CONSORT_XFIX_MIN_DEG = 15.0         # poorer cuts are not reported
 CONSORT_XFIX_MAX_NM = 30.0
 CONSORT_PING_S = 20.0               # active sonar transmission interval
@@ -1295,7 +1297,8 @@ MISSION_TYPES = {
         name="Fuehlung", weight=0, subs=1,
         sub_types=["ssn"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5, win="trail"),
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5, scale=0.6,
+        win="trail"),
     "versorgung": dict(
         name="Versorgung", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1305,17 +1308,19 @@ MISSION_TYPES = {
         name="Seenot", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
-        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.75, win="rescue"),
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.75, scale=1.4,
+        win="rescue"),
     "duell": dict(
         name="Duell", weight=0, subs=1,
         sub_types=["aip_modern"],
         animals=(1, 2), civilians=(3, 5), asm=(0, 0), warships=(0, 0),
-        time_limit_s=10800, short_time_limit_s=2700, win="duel"),
+        time_limit_s=10800, short_time_limit_s=2700, spawn_nm=(6.0, 10.0), win="duel"),
     "heimkehr": dict(
         name="Heimkehr", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=18000, short_time_limit_s=3600, short_scale=0.35, win="homecoming"),
+        time_limit_s=18000, short_time_limit_s=3600, short_scale=0.35, scale=0.7,
+        win="homecoming"),
     "abholung": dict(
         name="Abholung", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1332,14 +1337,15 @@ MISSION_TYPES = {
         sub_types=["aip_modern", "ssn"],
         animals=(2, 3), civilians=(2, 3), asm=(0, 0), warships=(0, 0),
         time_limit_s=10800, short_time_limit_s=2700, win="sink"),
-    # The breakthrough against frigate and destroyer: a quiet boat that starts
-    # a little farther out (tuned with the fairness measurement).
+    # The breakthrough against frigate and destroyer: a quiet boat whose goal
+    # area lies a little nearer in the short variant (tuned with the fairness
+    # measurement).
     "jagdgruppe": dict(
         name="Jagdgruppe", weight=0, subs=1,
         sub_types=["aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
         time_limit_s=18000, short_time_limit_s=3600,
-        short_spawn_nm=(8.0, 11.0), short_scale=0.2, win="breakthrough"),
+        short_spawn_nm=(4.0, 6.0), short_scale=0.15, win="breakthrough"),
 }
 BOAT_CONVOY_SIZE = 4               # merchants in the escorted convoy
 BOAT_CONVOY_SINK = 2               # the boat wins after sinking this many
@@ -1881,6 +1887,8 @@ SCENARIOS = {
         hq_intel="coarse",
         ship_start=(260.0, 300.0), ship_course=90.0,
         boat=True, consort=True,
+        # The destroyer comes off a long patrol with two ASROC left.
+        consort_asroc=2,
         briefing="U-Boot: Durch die Jagdgruppe aus Fregatte und Zerstoerer brechen.",
         win_text="U-Boot aufgehalten",
         lose_text="U-Boot bricht durch / Fregatte gesunken",

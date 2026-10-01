@@ -50,6 +50,9 @@ class ConsortMixin:
         ship.speed = ship.target_speed = min(12.0, ship.speed_cap_kn)
         ship.emitter = True
         ship.commanded = True
+        rounds = config.SCENARIOS[self.scenario_key].get("consort_asroc")
+        if rounds is not None and ship.asroc_battery is not None:
+            _limit_stores(ship.asroc_battery, int(rounds))
         orders.warship_id = ship.id
         self.warships.append(ship)
         self.consort = orders
@@ -308,8 +311,10 @@ class ConsortMixin:
         """Its hull sonar's bearings: lines on the OPZ, and a cross-fix with the
         frigate's own passive bearing on the same contact."""
         bearings = {}
+        deaf = ship.speed > config.CONSORT_PASSIVE_MAX_KN
         for sub in sorted(self.subs, key=lambda item: item.id):
-            if sub.sunk:
+            if (sub.sunk or deaf or math.hypot(sub.x - ship.x, sub.y - ship.y)
+                    > config.CONSORT_PASSIVE_NM):
                 continue
             reports = [report for report in ship.sensor_suite.tracks_for_candidate(
                 sub, self.sim_t) if report.domain == "sonar"
@@ -380,3 +385,15 @@ class ConsortMixin:
                              count=str(echoes))
             self.flash(notice, 2.5)
             self.feed.add(self.world.format_time(), "sonar", notice)
+
+
+def _limit_stores(battery, rounds: int) -> None:
+    """Leave ``rounds`` weapons aboard (a scenario's lighter load): emptied
+    from the magazines first, then from the tubes."""
+    for magazine in sorted(battery.magazines.values(), key=lambda item: item.key):
+        loaded = sum(tube.loaded_weapon_key is not None for tube in battery.tubes)
+        stowed = sum(item.stowed for item in battery.magazines.values())
+        magazine.stowed -= min(magazine.stowed, max(0, loaded + stowed - rounds))
+    for tube in battery.tubes:
+        if sum(item.loaded_weapon_key is not None for item in battery.tubes) > rounds:
+            tube.loaded_weapon_key = None

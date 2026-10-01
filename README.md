@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.133**
+Current release: **1.3.134**
 
-Release 1.3.133 brings ten new scenarios, so each side now has ten. The
+Release 1.3.134 brings ten new scenarios, so each side now has ten. The
 frigate gets 5 Convoy escort, 6 Flaming datum, 7 Trail (peacetime, weapons
 tight, hold sonar contact), 8 Replenishment at sea, 9 Rescue under threat and
 10 Harbour defence; the submarine gets 7 Duel, 8 Damaged homecoming, 9 Agent

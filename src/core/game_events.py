@@ -39,6 +39,7 @@ from src.ui.stations_view import (damage_compartment_at, eloka_track_at,
                                     opz_world_at,
                                     station_page_tab_at)
 from src.ui.mission_editor import MissionEditor
+from src.core.game_custom import CUSTOM_SCREEN
 from src.ui.unit_editor import UnitEditor, catalog_builtins
 from src.ui import simlog_map
 from src.ui.weapons_view import weapons_hit_target
@@ -515,7 +516,7 @@ class EventMixin:
                     and self.editor.mode == "browser"):
                 selected = self.editor.selected
                 if selected is not None and not selected.builtin:
-                    if self.start_custom_mission(selected.data):
+                    if self.start_user_mission(selected.data):
                         self.editor = None
                         self.audio.stop_preview()
                     else:
@@ -1801,6 +1802,9 @@ class EventMixin:
         if self.menu_screen == "campaign":
             self._handle_campaign_menu_key(key)
             return
+        if self.menu_screen == CUSTOM_SCREEN:
+            self._handle_custom_menu_key(key)
+            return
         if self.menu_screen == "side":
             if key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_TAB):
                 self.menu_sel = 1 - self.menu_sel
@@ -1818,17 +1822,23 @@ class EventMixin:
             # Only the scenarios of the side chosen before; ``menu_sel`` stays
             # an index into SCENARIO_ORDER, the number keys count the side's
             # own list from 1.
+            # The last row opens the own missions of the side (game_custom).
             keys = config.scenarios_for_side(self.local_side)
-            pos = keys.index(config.SCENARIO_ORDER[self.scenario_menu_index()])
+            custom = self.custom_row_sel()
+            sels = [config.SCENARIO_ORDER.index(item) for item in keys] + [custom]
+            pos = sels.index(custom if self.menu_sel == custom else self.scenario_menu_index())
             number = {pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2, pygame.K_4: 3,
                       pygame.K_5: 4, pygame.K_6: 5, pygame.K_7: 6, pygame.K_8: 7,
                       pygame.K_9: 8, pygame.K_0: 9}.get(key)
             if key == pygame.K_UP:
-                self.menu_sel = config.SCENARIO_ORDER.index(keys[(pos - 1) % len(keys)])
+                self.menu_sel = sels[(pos - 1) % len(sels)]
             elif key == pygame.K_DOWN:
-                self.menu_sel = config.SCENARIO_ORDER.index(keys[(pos + 1) % len(keys)])
+                self.menu_sel = sels[(pos + 1) % len(sels)]
             elif number is not None and number < len(keys):
                 self.menu_sel = config.SCENARIO_ORDER.index(keys[number])
+            elif key == pygame.K_o or (key in (pygame.K_RETURN, pygame.K_SPACE)
+                                       and self.menu_sel == custom):
+                self.open_custom_menu()
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
                 self.scenario_key = config.SCENARIO_ORDER[self.scenario_menu_index()]
                 sc = config.SCENARIOS[self.scenario_key]

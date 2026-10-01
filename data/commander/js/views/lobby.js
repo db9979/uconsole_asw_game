@@ -126,7 +126,10 @@ export function renderLobby() {
 function renderLobbyRoom(room) {
   $("lobby-room").hidden = room === null;
   if (room === null) return;
-  $("lobby-room-mission").textContent = t("lobby_room_mission", {mission: t(scenarioText[room.mission] ?? "unknown")});
+  // An own mission from the Mission Editor shows its authored name.
+  const mission = room.mission === "custom" && room.mission_name !== null ? room.mission_name
+    : t(scenarioText[room.mission] ?? "unknown");
+  $("lobby-room-mission").textContent = t("lobby_room_mission", {mission});
   const side = t(`lobby_room_side_${room.side}`);
   $("lobby-room-host").textContent = room.host_station === null ? t("lobby_room_host_only")
     : t("lobby_room_host", {side, station: t(`station_${room.host_station}`)});

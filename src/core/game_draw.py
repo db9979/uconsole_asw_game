@@ -52,6 +52,7 @@ from src.ui.stations_view import (
 TICKER_FADE_PX = 64
 from src.ui.stations_view import opz_ppi_rect
 from src.ui.mission_editor import MissionEditor
+from src.core.game_custom import CUSTOM_SCREEN
 from src.ui.simlog_view import draw_simlog_view
 from src.ui.weapons_view import draw_weapons_overlay, draw_weapons_panel
 # Shared display/help constants and helpers (re-exported for tests/tools).
@@ -249,10 +250,12 @@ class DrawMixin:
                         else "menu.choose_scenario.frigate")
             center(self.tr(side_key), 150, color=config.COLOR_TEXT_DIM)
             scenario_names = config.SCENARIO_NAMES
-            current = self.scenario_menu_index()
+            current = (None if self.menu_sel == self.custom_row_sel()
+                       else self.scenario_menu_index())
+            step = 36                     # ten missions and the own-missions row
             for row_i, key in enumerate(config.scenarios_for_side(self.local_side)):
                 i = config.SCENARIO_ORDER.index(key)
-                row(220 + row_i * 40, 38, lambda i=i: setattr(self, "menu_sel", i))
+                row(220 + row_i * step, 34, lambda i=i: setattr(self, "menu_sel", i))
                 sc = config.SCENARIOS[key]
                 marker = "► " if i == current else "  "
                 col = config.COLOR_TEXT if i == current \
@@ -262,7 +265,16 @@ class DrawMixin:
                 title = self.tr("scenario." + scenario_names[key] + ".title")
                 center(message("menu.scenario_choice", index=row_i + 1,
                                marker=marker, title=title, level=lv),
-                       220 + row_i * 40, color=col)
+                       220 + row_i * step, color=col)
+            # The last row: the side's own missions from the Mission Editor.
+            row_i = len(config.scenarios_for_side(self.local_side))
+            custom = self.custom_row_sel()
+            row(220 + row_i * step, 34, lambda: setattr(self, "menu_sel", custom))
+            center(message("menu.custom.row", marker="► " if self.menu_sel == custom else "  "),
+                   220 + row_i * step, color=config.COLOR_TEXT if self.menu_sel == custom
+                   else config.COLOR_TEXT_DIM)
+        elif self.menu_screen == CUSTOM_SCREEN:
+            self._draw_custom_menu(center)
         elif self.menu_screen == "difficulty":
             center(self.tr("menu.choose_difficulty"),
                    150, color=config.COLOR_TEXT_DIM, keys=("Enter", "Esc"),

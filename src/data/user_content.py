@@ -17,6 +17,21 @@ from src.data.validation import (ContentValidationError, ValidationIssue, issue,
 DEFAULT_ROOT = Path.home() / ".u-jagd"
 BUNDLE_FORMAT = "u-jagd.editor-bundle"
 BUNDLE_VERSION = 1
+# Exchange folder for shared missions (``~/.u-jagd/share``): an export lands
+# there, the import list shows its files. Bounded: files read and listed.
+SHARE_DIR = "share"
+SHARE_MAX_FILES = 100
+BUNDLE_MAX_BYTES = 1024 * 1024
+BUNDLE_MAX_ITEMS = 64
+
+
+@dataclass(frozen=True)
+class SharedFile:
+    """One bundle file in the exchange folder (``error`` when unreadable)."""
+    path: Path
+    missions: tuple[tuple[str, str, str], ...] = ()   # (key, name, side)
+    units: int = 0
+    error: str = ""
 
 
 @dataclass(frozen=True)
@@ -79,6 +94,10 @@ def _stage_bytes(path: Path, value: bytes) -> Path:
     return Path(temporary)
 
 
+def _reject_constant(name: str):
+    raise ValueError(f"non-finite JSON constant {name}")
+
+
 def _remove_if_present(path: str | Path) -> None:
     try:
         os.unlink(path)
@@ -94,6 +113,7 @@ class UserContentStore:
                  unit_validator: Callable[[Mapping[str, Any]], Iterable[ValidationIssue]] | None = None):
         self.root = Path(root).expanduser()
         self.roots = {"mission": self.root / "missions", "unit": self.root / "units"}
+        self.share_root = self.root / SHARE_DIR
         self.validators = {"mission": mission_validator, "unit": unit_validator}
 
     def _kind(self, kind: str) -> str:
@@ -170,19 +190,77 @@ class UserContentStore:
         raise_for_issues(problems)
         return atomic_write_json(path, payload)
 
+    def mission_bundle(self, mission: Mapping[str, Any]) -> dict[str, Any]:
+        """A shareable bundle of one mission with the user unit profiles it
+        references, so it starts on another console too."""
+        from src.data.user_profiles import referenced_user_keys
+        units = []
+        for key in referenced_user_keys(mission):
+            try:
+                units.append(self.load("unit", key))
+            except FileNotFoundError:
+                raise ContentValidationError([
+                    issue(f"units.{key}", "missing", "referenced unit profile is missing")]) from None
+        payload = {"format": BUNDLE_FORMAT, "version": BUNDLE_VERSION,
+                   "missions": [dict(mission)], "units": units}
+        raise_for_issues(self._validate_bundle(payload))
+        return payload
+
+    def export_mission(self, mission: Mapping[str, Any], path: str | Path | None = None) -> Path:
+        """Write one mission with its user units; default: the exchange folder."""
+        payload = self.mission_bundle(mission)
+        if path is None:
+            path = safe_content_path(self.share_root, str(mission["key"]))
+        return atomic_write_json(path, payload)
+
+    def read_bundle(self, path: str | Path) -> Any:
+        """Parse a bundle file, bounded in size (validation is the caller's)."""
+        path = Path(path).expanduser()
+        if path.is_symlink():
+            raise ContentValidationError([issue("path", "symlink", "refusing symlinked path")])
+        with path.open("rb") as stream:
+            raw = stream.read(BUNDLE_MAX_BYTES + 1)
+        if len(raw) > BUNDLE_MAX_BYTES:
+            raise ContentValidationError([issue("bundle", "size", "bundle file is too large")])
+        return json.loads(raw.decode("utf-8"), parse_constant=_reject_constant)
+
+    def shared_files(self) -> list[SharedFile]:
+        """The bundle files in the exchange folder, sorted by name, bounded."""
+        root = self.share_root
+        if not root.is_dir() or root.is_symlink() or (self.root.exists() and self.root.is_symlink()):
+            return []
+        rows = []
+        for path in sorted(root.glob("*.json"))[:SHARE_MAX_FILES]:
+            if path.is_symlink() or not path.is_file():
+                continue
+            try:
+                payload = self.read_bundle(path)
+                problems = self._validate_bundle(payload)
+            except (OSError, ValueError, UnicodeDecodeError, ContentValidationError) as exc:
+                rows.append(SharedFile(path, error=type(exc).__name__))
+                continue
+            if problems:
+                rows.append(SharedFile(path, error=problems[0].code))
+                continue
+            rows.append(SharedFile(path, tuple(
+                (item["key"], item["name"], str(item.get("side", "frigate")))
+                for item in payload["missions"]), len(payload["units"])))
+        return rows
+
     def import_bundle(self, source: str | Path | Mapping[str, Any], *,
                       overwrite: bool = False) -> list[ContentRecord]:
         if isinstance(source, Mapping):
             payload = dict(source)
         else:
-            with Path(source).open("r", encoding="utf-8") as stream:
-                payload = json.load(stream)
+            payload = self.read_bundle(source)
         raise_for_issues(self._validate_bundle(payload))
         pending = []
         for plural, kind in (("missions", "mission"), ("units", "unit")):
             for data in payload[plural]:
                 path = self.path_for(kind, data["key"])
                 if path.exists() and not overwrite:
+                    if self._same_content(kind, data):
+                        continue            # already here, unchanged: nothing to write
                     raise ContentValidationError([
                         issue(f"{plural}.{data['key']}", "exists", "content already exists")])
                 pending.append((kind, data, path))
@@ -244,10 +322,19 @@ class UserContentStore:
         return [ContentRecord(data["key"], kind, dict(data), source=path)
                 for kind, data, path, _, _ in staged]
 
+    def _same_content(self, kind: str, data: Mapping[str, Any]) -> bool:
+        try:
+            return self.load(kind, data["key"]) == json.loads(json.dumps(data))
+        except (OSError, ValueError, ContentValidationError):
+            return False
+
     def _validate_bundle(self, payload: Any) -> list[ValidationIssue]:
         if not isinstance(payload, Mapping):
             return [issue("bundle", "object", "bundle must be an object")]
         problems = []
+        if set(payload) != {"format", "version", "missions", "units"}:
+            problems.append(issue("bundle", "schema",
+                                  "must have exactly format, version, missions and units"))
         if payload.get("format") != BUNDLE_FORMAT:
             problems.append(issue("format", "format", f"must be {BUNDLE_FORMAT!r}"))
         if payload.get("version") != BUNDLE_VERSION:
@@ -257,6 +344,9 @@ class UserContentStore:
             values = payload.get(plural)
             if not isinstance(values, list):
                 problems.append(issue(plural, "array", "must be an array"))
+                continue
+            if len(values) > BUNDLE_MAX_ITEMS:
+                problems.append(issue(plural, "size", f"at most {BUNDLE_MAX_ITEMS} items"))
                 continue
             for index, value in enumerate(values):
                 base = f"{plural}[{index}]"

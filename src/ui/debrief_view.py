@@ -55,7 +55,7 @@ def event_text(event, prefix: str = "debrief.") -> str:
             "uboot.end." + result if prefix != "debrief." and result in (
                 "won", "broke_through", "reported", "convoy_sunk", "passed", "landed",
                 "supply_sunk", "escaped", "home", "picked_up", "elint", "shaken",
-                "survived", "trained", "lost", "over")
+                "survived", "objective", "trained", "lost", "over")
             else "end.victory" if result == "SIEG" else "end.defeat")
     return localize(message(prefix + "event." + event["kind"],
                    **{key: str(value) for key, value in params.items()}))

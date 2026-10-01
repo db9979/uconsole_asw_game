@@ -11,8 +11,9 @@ import math
 
 from src.core import config, crashlog
 from src.core.i18n import message, raw_text
-from src.core.mission_definition import (_stable_seed, reference_sector_index,
-                                         static_preview, validate_mission)
+from src.core.mission_definition import (_stable_seed, mission_side,
+                                         reference_sector_index, static_preview,
+                                         validate_mission)
 from src.air.flights import Flight
 from src.enemies.animal import Animal
 from src.core.tasking import TaskBoard
@@ -106,10 +107,23 @@ class MissionBridgeMixin:
                  else profile.speed_kn))
             if float(unit.get("speed_kn", 0.0)) > maximum_speed:
                 return False
+        side = mission_side(definition)
+        if side == "uboot":
+            # The player's boat is a placed hostile submarine; its targets are
+            # any other placed units or groups.
+            boat = next((unit for unit in exact if unit["id"] == definition["boat_id"]), None)
+            if boat is None or boat["profile"] not in catalog.subs \
+                    or boat["side"] != "hostile" or objective["type"] == "protect":
+                return False
+            if objective["type"] == "sink" and not all(
+                    self._boat_target_profiles(definition, target, catalog)
+                    for target in objective["target_ids"] or [None]):
+                return False
         expected_targets = {unit["id"] for unit in exact
                             if unit["profile"] in catalog.subs
                             and unit["side"] == "hostile"}
-        if objective["type"] == "sink" and set(objective["target_ids"]) != expected_targets:
+        if (side == "frigate" and objective["type"] == "sink"
+                and set(objective["target_ids"]) != expected_targets):
             return False
         if objective["type"] == "protect":
             # Protected units are placed friendly or neutral units.
@@ -176,6 +190,18 @@ class MissionBridgeMixin:
         self.main_menu = False
         self._reset_map_view()
         return True
+
+    @staticmethod
+    def _boat_target_profiles(definition: dict, target, catalog) -> bool:
+        """A submarine mission's sink target: merchant ships only (the boat's
+        torpedoes take merchants and the frigate, never escorts or boats)."""
+        units = definition["units"]
+        profiles = ([unit["profile"] for unit in units["exact"] if unit["id"] == target]
+                    + [profile for group in units["random_groups"] if group["id"] == target
+                       for profile in group["profiles"]])
+        return bool(profiles) and all(
+            profile in catalog.surfaces and catalog.surfaces[profile].category != "KAMPFSCHIFF"
+            for profile in profiles)
 
     FLASH_TEXT_SIZE = 18
     FLASH_MAX_LINES = 2
@@ -321,7 +347,10 @@ class MissionBridgeMixin:
                               message("runtime.mission.weather_changed",
                                       weather=message(weather_key[event["weather"]])))
             elif kind == "objective" and self.mission_result is None:
-                self._end_mission(event["action"] == "complete",
+                # The result is kept from the frigate's side: on a submarine
+                # mission the boat completing its objective is a frigate loss.
+                self._end_mission((event["action"] == "complete")
+                                  != (mission_side(definition) == "uboot"),
                                   raw_text(event["message"]) if event.get("message")
                                   else message("end.reason.event_complete"
                                                if event["action"] == "complete"

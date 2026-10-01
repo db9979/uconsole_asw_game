@@ -434,6 +434,14 @@ def _instructor_environment_params(params):
                 "torpedo_transient")))
 
 
+def _mission_key_params(params):
+    """An own mission's store key (``user.<lowercase/digit/_/->``)."""
+    if type(params) is not dict or set(params) != {"key"} or type(params["key"]) is not str:
+        return False
+    from src.data.validation import validate_user_key
+    return not validate_user_key(params["key"])
+
+
 def _new_game_params(params):
     required = {"scenario", "world_mode"}
     if (type(params) is not dict or not required <= set(params)
@@ -488,6 +496,8 @@ V2_ACTION_REGISTRY = {
                               phases=_HOST_REPLACING),
     "host_instructor_environment": V2Action(
         _HOST_STATIONS, _instructor_environment_params, phases=_HOST_ANY),
+    "host_start_mission": V2Action(_HOST_STATIONS, _mission_key_params,
+                                   phases=_HOST_REPLACING),
     "bridge_set_course": V2Action(frozenset({"bridge"}), _course_params),
     "bridge_set_speed": V2Action(frozenset({"bridge"}), _speed_params),
     # Autopilot route: waypoints on the chart, search patterns, clear.

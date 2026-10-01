@@ -9,16 +9,39 @@ from typing import Any, Iterable, Mapping
 import pygame
 
 from src.core.i18n import raw_text, translation_scope
-from src.core.mission_definition import (MISSION_FIELD_METADATA, REFERENCE_PREFIX,
-                                         MissionDefinition, default_mission,
+from src.core.mission_definition import (MISSION_FIELD_METADATA, PLAYER_SIDES,
+                                         REFERENCE_PREFIX, MissionDefinition,
+                                         default_mission, mission_hints, mission_side,
                                          reference_sector_index)
-from src.data.user_content import ContentRecord, UserContentStore
+from src.data.user_content import ContentRecord, SharedFile, UserContentStore
 from src.data.validation import (ContentValidationError, localized_error,
                                  localized_issue)
 from src.ui import editor_widgets as widgets
 from src.world.real_coast import SECTOR_COUNT, sector_for_index
 
 WORLD_KINDS = ("fixed", "reference")
+
+
+def open_folder(path: Path) -> bool:
+    """Show a folder in the system file manager (Windows Explorer, a desktop
+    opener elsewhere); False when the system has none. Never blocks."""
+    import os
+    import shutil
+    import subprocess
+    import sys
+    try:
+        path.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if sys.platform.startswith("win"):
+            os.startfile(str(path))          # type: ignore[attr-defined]
+            return True
+        opener = shutil.which("open" if sys.platform == "darwin" else "xdg-open")
+        if opener is None:
+            return False
+        subprocess.Popen([opener, str(path)], stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, start_new_session=True)
+        return True
+    except OSError:
+        return False
 _SECTOR_SUMMARIES: list[tuple[int, tuple[str, ...], tuple[tuple[tuple[float, float], ...], ...]]] = []
 
 
@@ -67,6 +90,11 @@ class MissionEditor:
         self._delete_pending: tuple[str, int] | None = None
         self.path_action: str | None = None
         self.path_input = widgets.TextField(maximum=1024)
+        # The exchange-folder import list (Ctrl+I) and a pending overwrite.
+        self.share_open = False
+        self.share_files: list[SharedFile] = []
+        self.share_box = widgets.ListBox()
+        self._overwrite_pending: Path | None = None
         self.focus_area = "fields"
         self.refresh()
 
@@ -75,8 +103,10 @@ class MissionEditor:
                    for key, value in sorted(self.builtins.items())]
         records.extend(self.store.list("mission"))
         self.records = records
-        self.listbox.set_items([f"{'[built-in]' if item.builtin else '[user]'} {item.key}"
-                                for item in records])
+        self.listbox.set_items([
+            f"{'[built-in]' if item.builtin else '[user]'}"
+            f"{' [U]' if mission_side(item.data) == 'uboot' else ''} {item.key}"
+            for item in records])
 
     @property
     def selected(self) -> ContentRecord | None:
@@ -208,6 +238,88 @@ class MissionEditor:
         self.refresh()
         return records
 
+    def share_mission(self) -> Path:
+        """Export the open (else the selected user) mission with its user
+        units into the exchange folder."""
+        if self.mode == "editor" and self.current is not None:
+            mission = self.current.to_dict()
+        else:
+            record = self.selected
+            if record is None or record.builtin:
+                raise ValueError("no user mission selected")
+            mission = record.data
+        path = self.store.export_mission(mission)
+        self.status = self.tr("editor.shared", path=str(path))
+        return path
+
+    def open_share_list(self) -> None:
+        self.share_files = self.store.shared_files()
+        self.share_box.set_items([self._share_label(item) for item in self.share_files])
+        self.share_open = True
+        self._overwrite_pending = None
+        self.status = self.tr("editor.share_list_hint" if self.share_files
+                              else "editor.share_empty", path=str(self.store.share_root))
+
+    def _share_label(self, item: SharedFile) -> str:
+        if item.error:
+            return f"{item.path.name}  ({item.error})"
+        names = ", ".join(name for _key, name, _side in item.missions) or "-"
+        return f"{item.path.name}  {names}"
+
+    def import_shared(self, index: int) -> None:
+        """Import one exchange-folder file; an existing mission needs a second
+        Enter to be overwritten."""
+        if not 0 <= index < len(self.share_files):
+            return
+        path = self.share_files[index].path
+        overwrite = self._overwrite_pending == path
+        try:
+            self.import_bundle(path, overwrite=overwrite)
+        except ContentValidationError as exc:
+            if any(problem.code == "exists" for problem in exc.issues) and not overwrite:
+                self._overwrite_pending = path
+                self.status = self.tr("editor.share_exists")
+                return
+            self.status = localized_error(exc, self.tr)
+            return
+        except (OSError, ValueError) as exc:
+            self.status = localized_error(exc, self.tr)
+            return
+        self._overwrite_pending = None
+        self.share_open = False
+        self.status = self.tr("editor.path_result", action=self.tr("editor.imported"),
+                              path=path.name)
+
+    def _handle_share(self, event: pygame.event.Event) -> bool:
+        if event.type != pygame.KEYDOWN:
+            if event.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEWHEEL):
+                rect = self._rects.get("share")
+                if rect is not None:
+                    self.share_box.handle_event(event, rect)
+            return True
+        if event.key == pygame.K_ESCAPE:
+            self.share_open = False
+            self.status = ""
+            return True
+        if event.key == pygame.K_TAB:
+            self.share_open = False
+            self._begin_path("import")
+            return True
+        if event.key == pygame.K_o:
+            self._open_share_folder()
+            return True
+        if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            self.import_shared(self.share_box.selected)
+            return True
+        if self.share_box.handle_event(event, self._rects.get("share", pygame.Rect(0, 0, 1, 1))):
+            self._overwrite_pending = None
+        return True
+
+    def _open_share_folder(self) -> None:
+        opened = open_folder(self.store.share_root)
+        self.status = self.tr("editor.share_folder_opened" if opened
+                              else "editor.share_folder_path", path=str(self.store.share_root))
+
     @staticmethod
     def _next_id(values: Iterable[Mapping[str, Any]], prefix: str) -> str:
         used = {str(value.get("id", "")) for value in values}
@@ -222,12 +334,23 @@ class MissionEditor:
             return
         data = self.current.data
         if self.tab == "overview":
-            subset = {key: data[key] for key in ("key", "name", "description", "seed")}
+            data.setdefault("side", "frigate")
+            data.setdefault("boat_id", "")
+            subset = {key: data[key] for key in ("key", "name", "description", "seed",
+                                                 "side", "boat_id")}
             rows = widgets.mapping_rows(subset)
             # The temporary dictionary needs setters aimed at the actual model.
             for row in rows:
                 key = row.path
                 row.setter = lambda value, field=key: data.__setitem__(field, value)
+                if key == "side":
+                    row.choices = lambda: [(side, self.tr("editor.side." + side))
+                                           for side in PLAYER_SIDES]
+                elif key == "boat_id":
+                    row.choices = lambda: [("", self.tr("editor.boat_none"))] + [
+                        (unit["id"], unit["id"]) for unit in data["units"]["exact"]
+                        if isinstance(unit, dict) and unit.get("side") == "hostile"
+                        and isinstance(unit.get("id"), str)]
         elif self.tab == "world":
             rows = (widgets.mapping_rows(data["world"], "world")
                     + widgets.mapping_rows(data["player"], "player")
@@ -404,6 +527,19 @@ class MissionEditor:
             event = pygame.event.Event(pygame.KEYDOWN, key=key, mod=0, unicode="")
         if self.path_action:
             return self._handle_path(event)
+        if self.share_open:
+            return self._handle_share(event)
+        if (event.type == pygame.KEYDOWN and event.key == pygame.K_e
+                and getattr(event, "mod", 0) & pygame.KMOD_CTRL
+                and not (self.mode == "editor" and self.fields.editing)):
+            if getattr(event, "mod", 0) & pygame.KMOD_SHIFT:
+                self._begin_path("export")
+                return True
+            try:
+                self.share_mission()
+            except (ContentValidationError, OSError, ValueError) as exc:
+                self.status = localized_error(exc, self.tr)
+            return True
         if self.mode == "browser":
             changed = self.listbox.handle_event(event, self._rects.get("browser", pygame.Rect(28, 104, 424, 532)))
             if event.type == pygame.KEYDOWN:
@@ -412,7 +548,9 @@ class MissionEditor:
                 if event.key == pygame.K_n:
                     self.new(); return True
                 if event.key == pygame.K_i and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
-                    self._begin_path("import"); return True
+                    self.open_share_list(); return True
+                if event.key == pygame.K_o:
+                    self._open_share_folder(); return True
             return changed
         if self.fields.editing:
             if (event.type == pygame.KEYDOWN and event.key == pygame.K_s
@@ -512,10 +650,8 @@ class MissionEditor:
                 except (ContentValidationError, OSError) as exc:
                     self.status = localized_error(exc, self.tr)
                 return True
-            if event.key == pygame.K_e and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
-                self._begin_path("export"); return True
             if event.key == pygame.K_i and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
-                self._begin_path("import"); return True
+                self.open_share_list(); return True
         return False
 
     def draw(self, surface: pygame.Surface) -> None:
@@ -536,7 +672,8 @@ class MissionEditor:
                 self._draw_browser(surface, content)
             elif self.current:
                 self._draw_editor(surface, content)
-        hints = (("editor.select_hint", "editor.open_hint", "editor.new_hint")
+        hints = (("editor.select_hint", "editor.open_hint", "editor.new_hint",
+                  "editor.share_hint", "editor.folder_hint")
                   if self.mode == "browser" else
                   ("editor.arrow_hint", "editor.edit_hint", "editor.add_hint", "editor.remove_hint",
                    "editor.save_hint", "editor.bundle_hint", "editor.cancel_hint"))
@@ -546,6 +683,21 @@ class MissionEditor:
                               max(1, bounds.width * 2 // 3), 110)
             inner = widgets.panel(surface, box, "editor.bundle_path", tr=self.tr)
             self.path_input.draw(surface, pygame.Rect(inner.x, inner.y + 5, inner.width, 34), focused=True)
+        if self.share_open:
+            box = pygame.Rect(max(20, bounds.width // 8), max(60, bounds.height // 6),
+                              max(1, bounds.width * 3 // 4), max(1, bounds.height * 2 // 3))
+            inner = widgets.panel(surface, box, "editor.share_title", tr=self.tr)
+            list_rect = pygame.Rect(inner.x, inner.y, inner.width, max(1, inner.height - 30))
+            self._rects["share"] = list_rect
+            if self.share_files:
+                self.share_box.draw(surface, list_rect)
+            else:
+                widgets.draw_text(surface, self.tr("editor.share_empty",
+                                                   path=str(self.store.share_root)),
+                                  list_rect, color=widgets.PALETTE.dim)
+            widgets.draw_text(surface, self.tr("editor.share_keys"),
+                              (inner.x, inner.bottom - 26, inner.width, 24),
+                              color=widgets.PALETTE.dim, size=13)
         if self.status:
             widgets.draw_text(surface, raw_text(self.status), (bounds.width // 2, 18, bounds.width // 2 - 20, 28),
                               color=widgets.PALETTE.focus, align="right", size=13)
@@ -561,13 +713,18 @@ class MissionEditor:
             widgets.draw_text(surface, self.tr("editor.no_missions"), inner,
                               color=widgets.PALETTE.dim)
             return
-        values = (record.key, record.data.get("name", ""), record.data.get("description", ""),
+        values = (raw_text(record.key), raw_text(record.data.get("name", "")),
+                  raw_text(record.data.get("description", "")),
                   self.tr("editor.read_only" if record.builtin else "editor.user_mission"),
+                  self.tr("editor.side." + mission_side(record.data)),
                   self.tr("editor.runtime_scope"))
-        for row, value in enumerate(values):
-            widgets.draw_text(surface, raw_text(value),
+        hints = [self.tr(key, **params) for key, params in mission_hints(record.data)]
+        for row, value in enumerate(values + tuple(hints)):
+            widgets.draw_text(surface, raw_text(value) if isinstance(value, str) else value,
                               (inner.x, inner.y + row * 32, inner.width, 28),
-                              color=widgets.PALETTE.focus if row == 4 else widgets.PALETTE.text)
+                              color=(widgets.PALETTE.danger if row >= len(values)
+                                     else widgets.PALETTE.focus if row == 5
+                                     else widgets.PALETTE.text))
 
     def _draw_editor(self, surface: pygame.Surface, content: pygame.Rect) -> None:
         self._sync_fields()
@@ -661,7 +818,12 @@ class MissionEditor:
                  self.tr("editor.preview_markers", count=len(preview["markers"])),
                  self.tr("editor.preview_events", count=len(preview["events"])),
                  self.tr("editor.static_only"), self.tr("editor.runtime_scope"))
-        for row, line in enumerate(lines):
+        hints = [self.tr(key, **params) for key, params in mission_hints(self._data())] \
+            or [self.tr("editor.hint.none")]
+        for row, line in enumerate(lines + tuple(hints)):
             widgets.draw_text(surface, line,
                               (details.x, details.y + row * 30, details.width, 26),
-                              color=widgets.PALETTE.focus if row >= 4 else widgets.PALETTE.text)
+                              color=(widgets.PALETTE.danger if row >= len(lines)
+                                     and hints[0] != self.tr("editor.hint.none")
+                                     else widgets.PALETTE.focus if row >= 4
+                                     else widgets.PALETTE.text))

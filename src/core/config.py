@@ -1283,7 +1283,7 @@ MISSION_TYPES = {
         name="Seenot", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
-        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5, win="rescue"),
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.75, win="rescue"),
     "duell": dict(
         name="Duell", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1441,8 +1441,9 @@ DATUM_SPRINT_S = 1800.0
 # frigate; it must hold sonar contact for a share of the time limit and
 # never lose it for too long at a stretch.
 TRAIL_START_NM = 6.0
-TRAIL_FRESH_S = 10.0               # a contact heard this lately counts as held
-TRAIL_GOAL_FRACTION = 0.8
+TRAIL_FRESH_S = 30.0               # a contact heard this lately ...
+TRAIL_FIX_S = 300.0                # ... and located this lately counts as held
+TRAIL_GOAL_FRACTION = 0.6
 TRAIL_LOST_S = 1200.0
 TRAIL_SPRINT_KN = 22.0
 TRAIL_LEG_S = 600.0                # the hunted boat's sprint-and-drift cycle

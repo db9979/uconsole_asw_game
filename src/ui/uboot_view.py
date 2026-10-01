@@ -1389,7 +1389,7 @@ _END_WINS = ("uboot.end.won", "uboot.end.escaped", "uboot.end.survived",
              "uboot.end.trained", "uboot.end.broke_through", "uboot.end.reported",
              "uboot.end.convoy_sunk", "uboot.end.passed", "uboot.end.landed",
              "uboot.end.supply_sunk", "uboot.end.home", "uboot.end.picked_up",
-             "uboot.end.elint", "uboot.end.shaken")
+             "uboot.end.elint", "uboot.end.shaken", "uboot.end.objective")
 
 
 def draw_end_panel(game, boat) -> None:

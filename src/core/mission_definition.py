@@ -18,6 +18,12 @@ MISSION_VERSION = 1
 REFERENCE_SECTOR_COUNT = 128
 REFERENCE_PREFIX = "sector:"
 SIDES = ("friendly", "neutral", "hostile")
+# The side the player commands: the frigate, or the submarine named by
+# ``boat_id`` (a placed hostile submarine) with the AI hunting it.
+PLAYER_SIDES = ("frigate", "uboot")
+# Objectives each player side can be given.
+SIDE_OBJECTIVES = {"frigate": ("sink", "survive", "protect", "reach"),
+                   "uboot": ("sink", "survive", "reach")}
 OBJECTIVE_TYPES = ("sink", "survive", "protect", "reach")
 EVENT_TYPES = ("message", "spawn", "weather", "objective")
 PLACEMENT_TYPES = ("fixed", "sector")
@@ -34,6 +40,8 @@ class FieldMetadata:
 # only means consumed by the current game runtime, not that a field is useful.
 MISSION_FIELD_METADATA = {
     "key": FieldMetadata(True, False, "User content identity; integration pending."),
+    "side": FieldMetadata(True, True, "frigate, or uboot with boat_id naming the "
+                                      "placed hostile submarine the player commands."),
     "name": FieldMetadata(True, True),
     "description": FieldMetadata(True, True),
     "seed": FieldMetadata(True, True),
@@ -58,6 +66,8 @@ def default_mission(key: str = "user.new_mission") -> dict[str, Any]:
         "name": "New mission",
         "description": "",
         "seed": 1,
+        "side": "frigate",
+        "boat_id": "",
         "world": {"kind": "fixed", "size_nm": 500.0, "sectors": []},
         "player": {"x": 250.0, "y": 250.0, "course_deg": 0.0,
                    "speed_kn": 12.0},
@@ -257,6 +267,8 @@ def validate_mission(data: Mapping[str, Any],
                 problems += finite_number(reach.get("radius_nm"), "objective.reach.radius_nm",
                                           minimum=0.1, maximum=50)
 
+    problems += _side_problems(data, exact)
+
     events = data.get("events")
     if not isinstance(events, list):
         problems.append(issue("events", "array", "must be an array")); events = []
@@ -285,6 +297,40 @@ def validate_mission(data: Mapping[str, Any],
         elif event.get("type") == "objective":
             problems += enum(event.get("action"), f"{path}.action", ("complete", "fail"))
     problems += unique(event_ids, "events.id")
+    return problems
+
+
+def mission_side(data: Mapping[str, Any]) -> str:
+    """The side the player commands (missions without the field: frigate)."""
+    side = data.get("side", "frigate") if isinstance(data, Mapping) else "frigate"
+    return side if side in PLAYER_SIDES else "frigate"
+
+
+def _side_problems(data: Mapping[str, Any], exact: list) -> list[ValidationIssue]:
+    """``side``/``boat_id``: optional, a boat mission names its own submarine."""
+    problems = []
+    if "side" in data:
+        problems += enum(data.get("side"), "side", PLAYER_SIDES)
+    if "boat_id" in data:
+        problems += text(data.get("boat_id"), "boat_id", required=False, maximum=64)
+    if data.get("side") != "uboot":
+        return problems
+    units = {unit.get("id"): unit for unit in exact if isinstance(unit, Mapping)}
+    boat = units.get(data.get("boat_id"))
+    if boat is None:
+        problems.append(issue("boat_id", "required",
+                              "a submarine mission names its placed submarine"))
+    elif boat.get("side") != "hostile":
+        problems.append(issue("boat_id", "side", "the player's submarine must be hostile"))
+    objective = data.get("objective")
+    if isinstance(objective, Mapping):
+        if objective.get("type") not in SIDE_OBJECTIVES["uboot"]:
+            problems.append(issue("objective.type", "side",
+                                  "a submarine mission cannot protect units"))
+        targets = objective.get("target_ids", [])
+        if isinstance(targets, list) and data.get("boat_id") in targets:
+            problems.append(issue("objective.target_ids", "side",
+                                  "the player's submarine cannot be its own target"))
     return problems
 
 
@@ -358,3 +404,65 @@ class MissionDefinition:
 
     def to_dict(self) -> dict[str, Any]:
         return copy.deepcopy(self.data)
+
+
+# Fairness hints (editor only, never a validation error): rough transit
+# speeds of each side for "can this side still make it in time".
+HINT_FRIGATE_KN = 20.0
+HINT_BOAT_KN = 8.0
+HINT_DETECT_NM = 3.0
+HINT_MAX = 4
+
+
+def mission_hints(data: Mapping[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    """(message key, params) warnings that a mission may be hard to win for
+    one side; empty for an invalid mission. Pure and bounded."""
+    if validate_mission(data):
+        return []
+    sectors = {sector["id"]: sector for sector in data["world"].get("sectors", [])}
+
+    def where(placement):
+        if placement["kind"] == "fixed":
+            return float(placement["x"]), float(placement["y"])
+        sector = sectors[placement["sector"]]
+        return (sector["x"] + sector["width"] / 2.0, sector["y"] + sector["height"] / 2.0)
+
+    exact = {unit["id"]: unit for unit in data["units"]["exact"]}
+    groups = {group["id"]: group for group in data["units"]["random_groups"]}
+    positions = {key: where(unit["placement"]) for key, unit in exact.items()}
+    positions.update({key: where(group["placement"]) for key, group in groups.items()})
+    frigate = (float(data["player"]["x"]), float(data["player"]["y"]))
+    objective = data["objective"]
+    limit_s = float(objective["time_limit_s"])
+    side = mission_side(data)
+    hints: list[tuple[str, dict[str, Any]]] = []
+
+    def far(start, point, speed_kn, share):
+        distance = ((start[0] - point[0]) ** 2 + (start[1] - point[1]) ** 2) ** 0.5
+        return distance, distance / speed_kn * 3600.0 > limit_s * share
+
+    if side == "uboot":
+        boat = positions[data["boat_id"]]
+        mover, speed, who = boat, HINT_BOAT_KN, "boat"
+        distance = ((boat[0] - frigate[0]) ** 2 + (boat[1] - frigate[1]) ** 2) ** 0.5
+        if distance < HINT_DETECT_NM:
+            hints.append(("editor.hint.boat_close", {"range": f"{distance:.1f}"}))
+    else:
+        mover, speed, who = frigate, HINT_FRIGATE_KN, "frigate"
+        hostile = [key for key, unit in {**exact, **groups}.items() if unit["side"] == "hostile"]
+        if objective["type"] in ("survive", "protect") and not hostile:
+            hints.append(("editor.hint.no_threat", {}))
+    minutes = int(limit_s // 60)
+    if objective["type"] == "reach":
+        point = objective["reach"]
+        distance, late = far(mover, (float(point["x"]), float(point["y"])), speed, 1.0)
+        if late:
+            hints.append((f"editor.hint.reach_far.{who}",
+                          {"range": f"{distance:.0f}", "minutes": minutes}))
+    elif objective["type"] == "sink" and objective["target_ids"]:
+        nearest = min(far(mover, positions[target], speed, 0.5)
+                      for target in objective["target_ids"] if target in positions)
+        if nearest[1]:
+            hints.append((f"editor.hint.sink_far.{who}",
+                          {"range": f"{nearest[0]:.0f}", "minutes": minutes}))
+    return hints[:HINT_MAX]

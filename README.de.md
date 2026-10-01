@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.133**
+Aktuelle Version: **1.3.134**
 
-Version 1.3.133 bringt zehn neue Szenarien, damit hat jede Seite zehn. Die
+Version 1.3.134 bringt zehn neue Szenarien, damit hat jede Seite zehn. Die
 Fregatte bekommt 5 Geleitschutz, 6 Brennendes Datum, 7 Fühlung halten (Frieden,
 Waffen gesperrt, Sonarkontakt halten), 8 Versorgung auf See, 9 Seenot unter
 Bedrohung und 10 Hafenschutz; das U-Boot bekommt 7 Duell, 8 Angeschlagen heim,

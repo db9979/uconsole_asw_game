@@ -364,12 +364,17 @@ def update(game, kind, dt: float) -> None:
 
 
 def trail_held(game) -> bool:
-    """The frigate's sonar picture holds the trailed boat (heard lately)."""
+    """The frigate's sonar picture holds the trailed boat: heard lately and
+    located (ping or TMA range) not long ago."""
     sub = boat_missions.target_sub(game)
     if sub is None:
         return False
     contact = game.sonar.contacts.get(sub.id)
-    return contact is not None and 0.0 <= game.sim_t - contact.last_seen <= config.TRAIL_FRESH_S
+    if contact is None or not 0.0 <= game.sim_t - contact.last_seen <= config.TRAIL_FRESH_S:
+        return False
+    # Held means located: a range from a ping or TMA, not a bare bearing.
+    return (contact.range_seen is not None
+            and 0.0 <= game.sim_t - contact.range_seen <= config.TRAIL_FIX_S)
 
 
 def trail_goal_s(game) -> float:

@@ -580,6 +580,10 @@ def objective(game, boat):
     kind = mode(game)
     if boat.sub.sunk:
         return message("uboot.objective_lost")
+    from src.core import custom_boat
+    custom = custom_boat.objective(game, boat.sub)
+    if custom is not None:
+        return custom
     if kind in mission_modes.MODES:
         return mission_modes.boat_objective(game, boat, kind)
     if kind in ("breakthrough", "strait", "swimmers"):

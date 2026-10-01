@@ -23,8 +23,8 @@ TRACKED_MIN_S = 60.0
 
 def outcome(game, boat) -> str:
     """The mission from the boat's side: won, broke_through, reported,
-    convoy_sunk, passed, landed, supply_sunk, escaped, survived, trained,
-    lost, over."""
+    convoy_sunk, passed, landed, supply_sunk, escaped, survived, objective,
+    trained, lost, over."""
     sub = boat.sub if boat is not None else None
     if sub is not None and (sub.sunk or sub.state == "SINKING"):
         return "lost"
@@ -54,6 +54,12 @@ def outcome(game, boat) -> str:
     if key == "end.reason.sub_escaped" and sub is not None and \
             str(reason.get("params", {}).get("contact")) == str(sub.id):
         return "escaped"
+    from src.core import custom_boat
+    if custom_boat.definition(game) is not None:
+        # A submarine custom mission: the frigate's loss is the boat's win.
+        if key == custom_boat.HELD_OUT_REASON:
+            return "survived"
+        return "objective" if game.mission_result == "VERLOREN" else "over"
     if key == "end.reason.time_limit" and game.mission.win_mode == "sink":
         return "survived"
     return "over"

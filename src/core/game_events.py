@@ -607,6 +607,17 @@ class EventMixin:
         if (e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEWHEEL)
                 and pointer_input.handle(self, e)):
             return
+        if (self.umpire_view_active() and not self.administration_open
+                and not self.game_over):
+            # The umpire screen works no station: only help, Remote Crew and
+            # quit (Esc) reach it; everything else stays with the crews.
+            if e.type == pygame.QUIT:
+                self._open_administration("quit")
+            elif e.type == pygame.KEYDOWN and e.key in (pygame.K_F1, pygame.K_F9,
+                                                        pygame.K_ESCAPE):
+                self._open_administration({pygame.K_F1: "help", pygame.K_F9: "commander",
+                                           pygame.K_ESCAPE: "quit"}[e.key])
+            return
         if (self.local_side == "uboot" and not self.in_menu
                 and not self.administration_open
                 and e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,

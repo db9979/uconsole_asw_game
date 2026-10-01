@@ -2,8 +2,11 @@
 // Voice is an independent, transient browser channel. It never calls game commands.
 (() => {
   const $ = (id) => document.getElementById(id);
+  // Sender byte: the index in the host's ROLES order (frigate, then boat);
+  // each unit's crew only ever hears its own unit.
   const stations = ["bridge", "sonar", "weapons", "damage", "opz", "radio",
-    "engine", "helicopter", "eloka"];
+    "engine", "helicopter", "eloka", "uboot", "uboot_sonar", "uboot_weapons",
+    "uboot_engine", "uboot_esm", "uboot_nav", "uboot_radio"];
   let strings = {}, availability = null, socket = null, context = null;
   let stream = null, capture = null, held = false, ready = false, starting = false;
   let station = null, generation = 0, lastError = "";

@@ -161,7 +161,9 @@ class SimMixin:
             self._sonar_audio_sequence = -1
             return
         playing_boat = self.local_side == "uboot"
-        self.audio.local_effects = not playing_boat
+        # The umpire screen of a crew-versus-crew round plays nothing of either unit.
+        umpire = self.umpire_view_active()
+        self.audio.local_effects = not playing_boat and not umpire
         if playing_boat and self._opfor is None:
             self.claim_opfor_sub()
         # Operator adjustments follow wall time; hull and weapon motion do not.
@@ -200,7 +202,9 @@ class SimMixin:
             self.opz_map_view.clamp_center()
         if not self.game_over:
             audio_started = time.perf_counter() if self._perf_debug_enabled else None
-            if playing_boat:
+            if umpire:
+                self._stop_sonar_audio()
+            elif playing_boat:
                 # The local mixer plays the boat's own sonar room only.
                 if self._opfor is not None and self.station is Station.SONAR:
                     with self.sonar_perspective(self._opfor.station):

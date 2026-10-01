@@ -226,11 +226,15 @@ class CommanderServer(MissionLibraryServerMixin):
         # switches it off (plan 1.3, phase 12).
         self._voice_enabled = True
         self._voice_peers = {}
-        self._voice_talker = None
+        # One push-to-talk talker per unit: the frigate's crew and the
+        # boat's crew each have their own voice room (``role_side``).
+        self._voice_talkers = {}
         self._v2_proposals = {}
         # The multiplayer lobby the uConsole host has open (main thread
         # publishes it, sessions read it); None while no lobby is open.
         self._lobby = None
+        # Crew versus crew (``lock_teams``): sessions keep their team.
+        self._teams_locked = False
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._init_missions()
         self._v2_events = {}
@@ -435,7 +439,7 @@ class CommanderServer(MissionLibraryServerMixin):
             chr(65 + letters // divisor % 26) for divisor in (26**2, 26, 1))
 
     def _revoke_locked(self, *, rotate_code=False):
-        self._voice_talker = None
+        self._voice_talkers.clear()
         self._voice_peers.clear()
         self._clear_sonar_audio_locked()
         self._clear_helicopter_audio_locked()
@@ -522,11 +526,33 @@ class CommanderServer(MissionLibraryServerMixin):
             return self._uboot_stream_context, self._uboot_stream_payload
         return self._sonar_stream_context, self._sonar_stream_payload
 
-    @staticmethod
-    def _side_conflict(session, station):
-        """A session never holds (or requests into) roles of both sides."""
+    def _side_conflict(self, session, station):
+        """A session never holds (or requests into) roles of both sides, and
+        in a crew-versus-crew round never changes its team."""
         side = role_side(station)
-        return any(role_side(role) != side for role in session["leases"])
+        if any(role_side(role) != side for role in session["leases"]):
+            return True
+        if not getattr(self, "_teams_locked", False) or session["observer"]:
+            return False
+        if session.get("team") is None and session["leases"]:
+            session["team"] = role_side(next(iter(session["leases"])))
+        team = session.get("team")
+        return team is not None and team != side
+
+    def lock_teams(self, locked: bool) -> None:
+        """Crew versus crew: while ``locked`` every browser stays with the unit
+        it crews when the round starts (or first takes); never persisted."""
+        with self._lock:
+            self._teams_locked = bool(locked)
+            for session in self._sessions_v2.values():
+                session["team"] = (role_side(next(iter(session["leases"])))
+                                   if locked and session["leases"]
+                                   and not session["observer"]
+                                   and not session.get("web_host") else None)
+
+    def teams_locked(self) -> bool:
+        with self._lock:
+            return self._teams_locked
 
     # The grant table lives in wire.py so the routes can build session bodies
     # without importing this module.
@@ -783,8 +809,19 @@ class CommanderServer(MissionLibraryServerMixin):
     def _lobby_seat_locked(self, session):
         """Seat a browser that pairs into an open lobby on the first free
         station of the host's unit in ``LOBBY_SEAT_ORDER`` (never the
-        uConsole's own station)."""
-        order = LOBBY_SEAT_ORDER.get(self._lobby.get("side"), ())
+        uConsole's own station). Against a second crew it joins the unit with
+        fewer humans (the frigate, with more stations, on a tie)."""
+        side = self._lobby.get("side")
+        if self._lobby.get("versus") == "crew":
+            counts = {"frigate": 0, "uboot": 0}
+            if self._lobby.get("host_station") is not None:
+                counts[side] += 1
+            for other in self._sessions_v2.values():
+                if other is not session and other["leases"] and not other["observer"]:
+                    counts["uboot" if role_side(next(iter(other["leases"]))) == "opfor"
+                           else "frigate"] += 1
+            side = min(("frigate", "uboot"), key=lambda unit: counts[unit])
+        order = LOBBY_SEAT_ORDER.get(side, ())
         for station in order:
             if (station != self._lobby.get("host_station")
                     and self._auto_grant_locked(session, station)):
@@ -905,7 +942,8 @@ class CommanderServer(MissionLibraryServerMixin):
     def voice_talker(self):
         """Detached station label for an optional Pygame status display."""
         with self._lock:
-            peer = self._voice_talker
+            peer = (self._voice_talkers.get("frigate")
+                    or self._voice_talkers.get("opfor"))
             return None if peer is None else peer.station
 
     @property
@@ -919,7 +957,7 @@ class CommanderServer(MissionLibraryServerMixin):
         with self._lock:
             self._voice_enabled = enabled
             if not enabled:
-                self._voice_talker = None
+                self._voice_talkers.clear()
                 for peer in self._voice_peers.values():
                     peer.outgoing.clear()
 
@@ -933,19 +971,47 @@ class CommanderServer(MissionLibraryServerMixin):
                 and session["active_station"] == peer.station
                 and session["active_generation"] == peer.active_generation)
 
-    def _voice_status_locked(self):
-        talker = self._voice_talker
+    def voice_talker_for_locked(self, station):
+        """The station talking in ``station``'s unit voice room, or None."""
+        peer = self._voice_talkers.get(role_side(station))
+        return None if peer is None else peer.station
+
+    def voice_press_locked(self, peer) -> None:
+        """Push-to-talk: ``peer`` takes its unit's room if nobody talks there."""
+        team = role_side(peer.station)
+        if self._voice_talkers.get(team) is None:
+            self._voice_talkers[team] = peer
+            self._voice_status_locked(team)
+
+    def voice_release_locked(self, peer) -> None:
+        team = role_side(peer.station)
+        if self._voice_talkers.get(team) is peer:
+            del self._voice_talkers[team]
+            self._voice_status_locked(team)
+
+    def voice_relay_locked(self, peer, payload) -> None:
+        """One PCM frame of the talker to the other peers of its unit only: a
+        crew never hears the other unit's crew."""
+        team = role_side(peer.station)
+        if self._voice_talkers.get(team) is not peer:
+            return
+        frame = bytes((ROLES.index(peer.station),)) + payload
+        for other in self._voice_peers.values():
+            if other is not peer and role_side(other.station) == team:
+                other.enqueue(2, frame)
+
+    def _voice_status_locked(self, team):
+        talker = self._voice_talkers.get(team)
         payload = _json_bytes({"type": "talker",
                                "station": None if talker is None else talker.station})
         for peer in self._voice_peers.values():
-            peer.outgoing.append((1, payload))
+            if role_side(peer.station) == team:
+                peer.outgoing.append((1, payload))
 
     def _voice_disconnect_locked(self, peer):
         if self._voice_peers.get(peer.digest) is peer:
             del self._voice_peers[peer.digest]
-        if self._voice_talker is peer:
-            self._voice_talker = None
-            self._voice_status_locked()
+        self.voice_release_locked(peer)
 
     def publish_web_proposals(self, snapshot):
         payload = _json_bytes(snapshot)
@@ -1109,7 +1175,9 @@ class CommanderServer(MissionLibraryServerMixin):
                 for session in self._sessions_v2.values():
                     session["ready"] = False
             # ``mission_name``: an own mission's authored name (else None).
-            self._lobby = None if room is None else {"mission_name": None, **dict(room)}
+            # ``versus``: "crew" when a second crew plays the other unit.
+            self._lobby = None if room is None else {"mission_name": None, "versus": "ai",
+                                                     **dict(room)}
 
     def set_ready_locked(self, session, ready: bool) -> bool:
         """Tick or clear a crew session's lobby ready flag (transport thread)."""

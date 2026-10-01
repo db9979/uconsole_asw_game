@@ -15,8 +15,11 @@ from src.commander.server import OPFOR_ROLES, STATIONS
 from src.core import config
 
 # Rows of the uConsole lobby page, top to bottom.
-ROWS = ("mission", "side", "station", "weather", "time", "length", "start")
+ROWS = ("mission", "side", "station", "versus", "weather", "time", "length", "start")
 SIDES = ("frigate", "uboot")
+# Who plays the other unit: the AI (browsers join the uConsole's unit), or a
+# second crew (two teams, each only with its own unit's picture).
+VERSUS = ("ai", "crew")
 # Wall seconds between "start" and the mission.
 COUNTDOWN_S = 5.0
 # Station choice of a uConsole that only hosts: every station is played from
@@ -27,6 +30,11 @@ HOST_ONLY = "host"
 def side_stations(side: str) -> tuple:
     """Stations the uConsole may play on ``side`` (Remote Crew role names)."""
     return STATIONS if side == "frigate" else OPFOR_ROLES
+
+
+def player_side(stations) -> str:
+    """The unit a browser crews, from the stations it holds."""
+    return "uboot" if any(station in OPFOR_ROLES for station in stations) else "frigate"
 
 
 def station_choices(side: str) -> tuple:
@@ -51,6 +59,8 @@ class LobbyRoom:
         self.time = "random"
         # Mission length (config.START_LENGTH_CHOICES).
         self.length = "normal"
+        # The other unit: AI, or a second crew of browsers (``VERSUS``).
+        self.versus = "ai"
         self.countdown_s = None
         # First "start" with players not ready arms this; a second one starts.
         self.force_armed = False
@@ -110,6 +120,8 @@ class LobbyRoom:
         elif row == "station":
             stations = station_choices(self.side)
             self.station = stations[(stations.index(self.station) + step) % len(stations)]
+        elif row == "versus":
+            self.versus = VERSUS[(VERSUS.index(self.versus) + 1) % len(VERSUS)]
         elif row == "weather":
             choices = config.START_WEATHER_CHOICES
             self.weather = choices[(choices.index(self.weather) + step) % len(choices)]
@@ -129,11 +141,27 @@ class LobbyRoom:
     def all_ready(self, players) -> bool:
         return all(player["ready"] for player in self.crew(players))
 
+    def teams(self, players) -> dict:
+        """Players per unit (``frigate``/``uboot``) in a crew-versus-crew round;
+        the uConsole counts for its unit unless it only hosts."""
+        teams = {side: [] for side in SIDES}
+        if self.station != HOST_ONLY:
+            teams[self.side].append(None)
+        for player in self.crew(players):
+            teams[player_side(player["stations"])].append(player)
+        return teams
+
+    def teams_manned(self, players) -> bool:
+        """Both units have at least one human (only asked in a versus round)."""
+        return self.versus != "crew" or all(self.teams(players).values())
+
     def request_start(self, players) -> str:
-        """Start the countdown: "started", or "confirm" while players are not ready."""
+        """Start the countdown: "started", or "confirm" while players are not
+        ready or, against a second crew, a unit has nobody."""
         if self.countdown_s is not None:
             return "running"
-        if not self.all_ready(players) and not self.force_armed:
+        if ((not self.all_ready(players) or not self.teams_manned(players))
+                and not self.force_armed):
             self.force_armed = True
             return "confirm"
         self.force_armed = False
@@ -163,6 +191,7 @@ class LobbyRoom:
             "mission_name": self.custom_name,
             "side": self.side,
             "host_station": None if self.station == HOST_ONLY else self.station,
+            "versus": self.versus,
             "countdown_s": (None if self.countdown_s is None
                             else round(self.countdown_s, 1)),
         }

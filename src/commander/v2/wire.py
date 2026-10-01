@@ -39,6 +39,8 @@ UBOOT_COMMAND_ROLES = tuple(role for role in OPFOR_ROLES if role != "uboot_sonar
 # solo mode never leases them and they claim no crewed boat by themselves.
 LOOKOUT_ROLES = ("lookout", "uboot_lookout")
 ROLES = STATIONS + OPFOR_ROLES + LOOKOUT_ROLES
+# Workstations with web-host push-to-talk; each unit's crew has its own room.
+VOICE_ROLES = STATIONS + OPFOR_ROLES
 # The order a new crew browser is seated in an open lobby: the stations that
 # need judgement first, the routine ones the AI crew keeps well last. The
 # browser can change its station at any time.

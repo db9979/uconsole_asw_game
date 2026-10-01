@@ -133,14 +133,24 @@ function renderLobbyRoom(room) {
   const side = t(`lobby_room_side_${room.side}`);
   $("lobby-room-host").textContent = room.host_station === null ? t("lobby_room_host_only")
     : t("lobby_room_host", {side, station: t(`station_${room.host_station}`)});
+  // Crew versus crew: two teams, the frigate's crew against the boat's.
+  const versus = room.versus === "crew";
+  $("lobby-room-versus").hidden = !versus;
+  $("lobby-room-versus").textContent = versus ? t("lobby_room_versus") : "";
+  const team = (stations, observer) => observer || !stations.length ? ""
+    : stations.some((station) => opforRoles.has(station)) ? "uboot" : "frigate";
   const hostStations = room.host_station === null ? [] : [room.host_station];
-  const rows = [[t("lobby_player_host"), hostStations, "lobby_player_ready"],
+  const rows = [[t("lobby_player_host"), hostStations, "lobby_player_ready", team(hostStations, false)],
     ...room.players.map((player) => [player.you ? t("lobby_player_you", {name: player.name}) : player.name,
-      player.stations, player.observer ? "lobby_player_observer" : player.ready ? "lobby_player_ready" : "lobby_player_waiting"])];
-  $("lobby-room-players").replaceChildren(...rows.map(([name, stations, state]) => {
+      player.stations, player.observer ? "lobby_player_observer" : player.ready ? "lobby_player_ready" : "lobby_player_waiting",
+      team(player.stations, player.observer)])];
+  const order = {frigate: 0, uboot: 1, "": 2};
+  if (versus) rows.sort((a, b) => order[a[3]] - order[b[3]]);
+  $("lobby-room-players").replaceChildren(...rows.map(([name, stations, state, unit]) => {
     const item = node("li");
     item.dataset.state = state;
-    item.append(node("strong", name), node("span", stations.length
+    if (versus && unit) item.dataset.team = unit;
+    item.append(node("strong", versus && unit ? t(`lobby_team_${unit}`, {name}) : name), node("span", stations.length
       ? stations.map((station) => t(`station_${station}`)).join(", ") : t("lobby_player_none")), node("em", t(state)));
     return item;
   }));

@@ -35,6 +35,7 @@ from src.core.game_welcome import WELCOME_SCREEN
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.weather_station import draw_weather_station
 from src.ui import uboot_view
+from src.ui import umpire_view
 from src.ui.stations.common import _shortcut_footer as shortcut_footer
 from src.ui.stations_view import (
     draw_autocrew_overview,
@@ -486,6 +487,10 @@ class DrawMixin:
                     uboot_view.draw_end_panel(self, self.opfor)
                 else:
                     self.draw_end_panel()
+        elif self.umpire_view_active():
+            # Crew versus crew with a host-only uConsole: no tactical picture.
+            self.guarded_view("umpire", (0, 0, config.SCREEN_W, config.SCREEN_H),
+                              umpire_view.draw, self)
         elif self.local_side == "uboot":
             self.guarded_view("uboot", (0, 0, config.SCREEN_W, config.SCREEN_H),
                               uboot_view.draw, self)
@@ -1030,6 +1035,9 @@ class DrawMixin:
              else "end.expired",
              config.COLOR_TEXT_DIM, False),
         ]
+        versus_line = self.versus_end_line()
+        if versus_line is not None:
+            lines.append((versus_line, config.COLOR_WARN, False))
         campaign_line = self.campaign_end_line()
         if campaign_line is not None:
             lines.append((campaign_line, config.COLOR_WARN, False))

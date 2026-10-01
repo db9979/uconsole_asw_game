@@ -12,15 +12,20 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.123**
+Current release: **1.3.124**
 
-Release 1.3.123 gives the submarine a towed buoy antenna. In the radio room (B,
-or the browser's Radio room card) the crew streams it about 280 m astern; it
-copies HQ's broadcast down to 60 m at 6 kn or less, receiving only. Above 10 kn
-the cable parts and the buoy is lost for the mission. Close in, the frigate's
-lookout and surface radar can find the small buoy on the water. Saves are now
-format v42; older saves do not load.
-
+Release 1.3.124 evens out the AI frigate and the AI submarine. In the
+frigate scenarios the AI hunters now run down HQ's start report of the threat
+and a lost submarine bearing, ping a bare bearing only every 10 minutes so a
+ping that finds nothing no longer sends the submarine running, and no longer
+take a long-radiating ship radar for a submarine mast. In the submarine
+scenarios a mission submarine keeps its course through a ping and gives way
+only to a torpedo, and the frigate guards its post: against a breakthrough it
+stays by its patrol position with no patrol aircraft, and against a
+breakthrough or reconnaissance it fires its own torpedo from 3 NM and keeps its
+helicopter within 8 NM. The breakthrough submarine skirts the frigate's patrol
+position, the reconnaissance report counts within 5 NM and the convoy
+submarine fires from 3 NM. Saves move to format v43 (the hunters' leads).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

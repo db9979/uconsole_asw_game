@@ -14,15 +14,21 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.123**
+Aktuelle Version: **1.3.124**
 
-Version 1.3.123 gibt dem U-Boot eine Bojenantenne. Im Funkraum (B oder die
-Funkraum-Karte im Browser) bringt die Crew sie etwa 280 m achteraus aus; sie
-nimmt den Rundspruch der Führung bis 60 m Tiefe bei höchstens 6 kn auf, nur
-Empfang. Über 10 kn reißt das Kabel, und die Boje ist für die Mission verloren.
-Aus der Nähe können Ausguck und Überwasserradar der Fregatte die kleine Boje
-auf dem Wasser finden. Spielstände haben jetzt Format v42; ältere laden nicht.
-
+Version 1.3.124 gleicht KI-Fregatte und KI-U-Boot an. In den
+Fregatten-Szenarien folgen die KI-Jäger jetzt der Startmeldung der Führung
+über die Bedrohung und einer verlorenen U-Boot-Peilung, pingen auf eine bloße
+Peilung nur alle 10 Minuten, damit ein Ping ohne Treffer das U-Boot nicht mehr
+davonjagt, und halten ein lange strahlendes Schiffsradar nicht mehr für einen
+U-Boot-Mast. In den U-Boot-Szenarien hält ein Missions-U-Boot bei einem Ping
+seinen Kurs und weicht nur einem Torpedo aus, und die Fregatte bewacht ihren
+Posten: Gegen einen Durchbruch bleibt sie ohne Seefernaufklärer bei ihrer
+Patrouillenposition, gegen Durchbruch und Aufklärung schießt sie ihren eigenen
+Torpedo erst ab 3 sm und hält ihren Hubschrauber innerhalb 8 sm. Das
+Durchbruch-U-Boot umgeht die Patrouillenposition der Fregatte, die
+Aufklärungsmeldung zählt innerhalb 5 sm, und das Geleitzug-U-Boot schießt ab
+3 sm. Spielstände wechseln auf Format v43 (die Spuren der Jäger).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

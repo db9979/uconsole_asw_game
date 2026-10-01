@@ -4,6 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.124
+
+Release 1.3.124 evens out the AI frigate and the AI submarine. In the
+frigate scenarios the AI hunters now run down HQ's start report of the threat
+and a lost submarine bearing, ping a bare bearing only every 10 minutes so a
+ping that finds nothing no longer sends the submarine running, and no longer
+take a long-radiating ship radar for a submarine mast. In the submarine
+scenarios a mission submarine keeps its course through a ping and gives way
+only to a torpedo, and the frigate guards its post: against a breakthrough it
+stays by its patrol position with no patrol aircraft, and against a
+breakthrough or reconnaissance it fires its own torpedo from 3 NM and keeps its
+helicopter within 8 NM. The breakthrough submarine skirts the frigate's patrol
+position, the reconnaissance report counts within 5 NM and the convoy
+submarine fires from 3 NM. Saves move to format v43 (the hunters' leads).
+
 ## 1.3.123
 
 The submarine gets a towed buoy antenna. In the radio room (B, or the browser's

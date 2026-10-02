@@ -48,7 +48,9 @@ def test_ping_reaction_enters_evasive_state():
     sub.hear_ping()
     assert sub.state == "EVADE"
     assert sub.heard_ping is True
-    assert sub.evac_left == config.SUB_EVADE_DURATION_S
+    from src.core import commander_traits
+    # The commander's character scales the evasion (src/core/commander_traits.py).
+    assert sub.evac_left == config.SUB_EVADE_DURATION_S * commander_traits.sub_factor(sub, "evade")
 
 
 def test_torpedo_swept_collision_hits_between_frames():

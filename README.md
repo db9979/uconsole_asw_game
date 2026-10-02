@@ -12,17 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.154**
+Current release: **1.3.155**
 
-Release 1.3.154 redraws the damage-control pictures like a real damage-
+Release 1.3.155 redraws the damage-control pictures like a real damage-
 control board. The frigate is a side profile with decks, superstructure and
 masts, every compartment at its real height, the sea and waterline outside
 with draft marks, floodwater tilted by the trim, open holes with water
 rushing in, fitted patches and pumps discharging over the side, and a cross-
 section that lists with the ship. The submarine is a cutaway of its pressure
 hull with sail, fittings, water, fire, chlorine, leaks and round bulkhead
-doors, on the uConsole and in the browser. Saves stay v48; v38 to v47 saves
-still load.
+doors, on the uConsole and in the browser. Apply buttons in the browser
+(seeker, torpedo settings, plant, helicopter pattern) no longer jump back
+for a moment. Saves stay v49; v38 to v48 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

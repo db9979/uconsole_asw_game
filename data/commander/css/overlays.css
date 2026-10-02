@@ -217,3 +217,21 @@ dialog h2 { margin-bottom: .5rem; color: var(--live-strong); text-shadow: 0 0 .7
   #weather-dialog, #simlog-map-dialog, #missions-dialog { width: 100vw; max-height: 100dvh; height: 100dvh; border-width: 0; border-radius: 0; }
   .simlog-map-layout { grid-template-rows: minmax(12rem, 2fr) minmax(6rem, 1fr); }
 }
+
+/* Executive officer (optional language model) */
+#advisor-dialog { width: min(94vw, 56rem); max-width: none; height: min(90dvh, 48rem); max-height: none; padding: 0; border-color: var(--live); }
+.advisor-shell { display: flex; flex-direction: column; gap: .5rem; height: 100%; padding: .8rem 1rem; box-sizing: border-box; }
+.advisor-modes { display: flex; flex-wrap: wrap; gap: .4rem; }
+.advisor-modes button[aria-pressed="true"] { border-color: var(--live); color: var(--live); }
+.advisor-log { flex: 1; min-height: 8rem; overflow-y: auto; margin: 0; padding: .4rem .6rem; list-style: none; border: 1px solid var(--line); }
+.advisor-entry { margin-bottom: .8rem; }
+.advisor-entry p { margin: .15rem 0; white-space: pre-wrap; }
+.advisor-question { color: var(--text-dim); }
+.advisor-state { color: var(--caution); }
+.advisor-commands { margin: .2rem 0; padding-left: 1.2rem; color: var(--live); }
+.advisor-input { display: flex; gap: .5rem; }
+.advisor-input input { flex: 1; min-width: 0; }
+.debrief-report { white-space: pre-wrap; max-height: 18rem; overflow-y: auto; }
+.missions-generate { margin: .4rem 0 .8rem; }
+.missions-generate-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.missions-generate-row input { flex: 1 1 16rem; min-width: 0; }

@@ -102,9 +102,16 @@ def draw_radio_view(game, tr=None) -> None:
     else:
         right = layout.box(s, (x, cy, w, box_h), "panel.messages")
         rx, ry, rw, rh = right
-        msgs = game.messages[-10:] if game.messages else [("--:--", message("ui.no_traffic"))]
+        # The language model's wording, when there is one, replaces the
+        # catalog line (fewer, taller rows; the feed keeps the original).
+        worded = getattr(game, "llm_radio_text", None)
+        count = 6 if worded is not None and game.llm_radio.styled else 10
+        msgs = game.messages[-count:] if game.messages else [("--:--", message("ui.no_traffic"))]
         row_h = max(46, (rh - 40) // max(1, len(msgs)))
         for row, (stamp, txt) in enumerate(msgs):
+            styled = worded(stamp, txt) if worded is not None and game.messages else None
+            if styled is not None:
+                txt = raw_text(styled)
             if row == len(msgs) - 1:
                 pygame.draw.rect(s, (20, 38, 27), (rx - 4, ry - 2, rw + 8, row_h - 2))
             layout.blit_line(s, stamp, (rx, ry, 90, 26), config.COLOR_OK, size=17)

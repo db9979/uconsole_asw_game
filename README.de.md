@@ -14,17 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.154**
+Aktuelle Version: **1.3.155**
 
-Version 1.3.154 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
+Version 1.3.155 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
 Fregatte ist ein Seitenriss mit Decks, Aufbauten und Masten, jede Abteilung
 auf ihrer wirklichen Höhe, außen See und Wasserlinie mit Tiefgangsmarken,
 Leckwasser, das sich mit dem Trimm neigt, offene Lecks mit einströmendem
 Wasser, gesetzte Leckpflaster und Pumpen, die über Bord lenzen, und ein
 Querschnitt, der mit dem Schiff krängt. Das U-Boot ist ein Schnittbild des
 Druckkörpers mit Turm, Einbauten, Wasser, Brand, Chlorgas, Lecks und runden
-Schotttüren, auf der uConsole und im Browser. Spielstände bleiben v48; v38
-bis v47 lassen sich weiter laden.
+Schotttüren, auf der uConsole und im Browser. Übernehmen-Knöpfe im Browser
+(Suchkopf, Torpedoeinstellung, Antrieb, Hubschraubermuster) springen nicht
+mehr kurz zurück. Spielstände bleiben v49; v38 bis v48 lassen sich weiter
+laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -96,6 +96,10 @@ class MissionEditor:
         self.share_box = widgets.ListBox()
         self._overwrite_pending: Path | None = None
         self.focus_area = "fields"
+        # The optional language model (the game sets it): G and Shift+G write
+        # a mission from a few words; it opens here unsaved for checking.
+        self.llm_host = None
+        self._swallow_text = None
         self.refresh()
 
     def refresh(self) -> None:
@@ -488,17 +492,49 @@ class MissionEditor:
 
     def _begin_path(self, action: str) -> None:
         self.path_action = action
+        if action.startswith("generate"):
+            self.path_input.value = ""
+            self.path_input.selected_all = False
+            self.status = self.tr("editor.generate_prompt")
+            return
         self.path_input.value = str(self.store.root / "editor-bundle.json")
         self.path_input.selected_all = True
         self.status = self.tr("editor.enter_bundle_path")
 
+    def _generate(self, side: str) -> None:
+        reason = self.llm_host.generate_mission(self.path_input.value, side)
+        self.status = self.tr("editor.generate_" + (reason or "pending"))
+
+    def generated(self, mission, error=None, issues=()) -> None:
+        """The model's mission arrived (or did not): open it as an unsaved draft."""
+        if mission is None:
+            listing = "; ".join(f"{problem.path}: {problem.message}" for problem in issues[:3])
+            self.status = self.tr("editor.generate_failed",
+                                  reason=self.tr("llm.error." + (error or "bad_reply")),
+                                  issues=listing)
+            return
+        self.current = MissionDefinition(mission)
+        self.mode = "editor"
+        self.tab_index = 0
+        self.focus_area = "fields"
+        self._sync_fields()
+        self.status = self.tr("editor.generate_done")
+
     def _handle_path(self, event: pygame.event.Event) -> bool:
         if event.type != pygame.KEYDOWN and event.type != pygame.TEXTINPUT:
             return False
+        swallow, self._swallow_text = self._swallow_text, None
+        if event.type == pygame.TEXTINPUT and swallow and getattr(event, "text", "") == swallow:
+            return True
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.path_action = None
             return True
         if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            if self.path_action.startswith("generate"):
+                if self.path_input.value.strip():
+                    self._generate("uboot" if self.path_action == "generate_uboot" else "frigate")
+                    self.path_action = None
+                return True
             try:
                 if self.path_action == "export":
                     self.export_bundle(self.path_input.value)
@@ -551,6 +587,17 @@ class MissionEditor:
                     self.open_share_list(); return True
                 if event.key == pygame.K_o:
                     self._open_share_folder(); return True
+                if event.key == pygame.K_g and self.llm_host is not None:
+                    if not self.llm_host.llm_active():
+                        self.status = self.tr("editor.generate_llm_off")
+                    elif self.llm_host.mission_gen.busy:
+                        self.status = self.tr("editor.generate_llm_busy")
+                    else:
+                        shift = getattr(event, "mod", 0) & pygame.KMOD_SHIFT
+                        self._begin_path("generate_uboot" if shift else "generate")
+                        # The G itself also arrives as typed text: not part of the prompt.
+                        self._swallow_text = "G" if shift else "g"
+                    return True
             return changed
         if self.fields.editing:
             if (event.type == pygame.KEYDOWN and event.key == pygame.K_s
@@ -674,6 +721,8 @@ class MissionEditor:
                 self._draw_editor(surface, content)
         hints = (("editor.select_hint", "editor.open_hint", "editor.new_hint",
                   "editor.share_hint", "editor.folder_hint")
+                 + (("editor.generate_hint",) if self.llm_host is not None
+                    and self.llm_host.llm_active() else ())
                   if self.mode == "browser" else
                   ("editor.arrow_hint", "editor.edit_hint", "editor.add_hint", "editor.remove_hint",
                    "editor.save_hint", "editor.bundle_hint", "editor.cancel_hint"))
@@ -681,7 +730,9 @@ class MissionEditor:
         if self.path_action:
             box = pygame.Rect(max(20, bounds.width // 6), bounds.height // 2 - 55,
                               max(1, bounds.width * 2 // 3), 110)
-            inner = widgets.panel(surface, box, "editor.bundle_path", tr=self.tr)
+            title = ("editor.generate_title." + self.path_action.split("_")[-1]
+                     if self.path_action.startswith("generate") else "editor.bundle_path")
+            inner = widgets.panel(surface, box, title, tr=self.tr)
             self.path_input.draw(surface, pygame.Rect(inner.x, inner.y + 5, inner.width, 34), focused=True)
         if self.share_open:
             box = pygame.Rect(max(20, bounds.width // 8), max(60, bounds.height // 6),

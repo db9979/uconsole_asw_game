@@ -22,8 +22,8 @@ def _game(seed=1201):
 def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (48, "u-jagd-save-v48")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (48, "u-jagd-save-v48")
+    assert (state["version"], state["save_schema"]) == (49, "u-jagd-save-v49")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (49, "u-jagd-save-v49")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -200,13 +200,14 @@ def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     v37["save_schema"] = "u-jagd-save-v37"
     del v37["casualties"]
     assert not game._load_save_data(v37)
-    # From v38 on an older document is lifted to v48 (src/core/save_migrate.py);
+    # From v38 on an older document is lifted to v49 (src/core/save_migrate.py);
     # the samples of real older releases are in tests/test_save_migrate.py.
     # v38 lacks the hunters' ESM log and the crew assist.
     v38 = copy.deepcopy(state)
     v38["version"] = 38
     v38["save_schema"] = "u-jagd-save-v38"
     del v38["consort"]
+    del v38["llm"]
     del v38["hunter_esm"]
     v38["autocrew"]["version"] = 1
     del v38["autocrew"]["assist"]
@@ -216,6 +217,7 @@ def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     v39["version"] = 39
     v39["save_schema"] = "u-jagd-save-v39"
     del v39["consort"]
+    del v39["llm"]
     v39["autocrew"]["version"] = 1
     del v39["autocrew"]["assist"]
     del v39["knuckles"]
@@ -225,6 +227,7 @@ def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     v40["version"] = 40
     v40["save_schema"] = "u-jagd-save-v40"
     del v40["consort"]
+    del v40["llm"]
     del v40["knuckles"]
     assert _game()._load_save_data(v40)       # lifted (save_migrate)
     # v41 differs only by the crewed boat's buoy antenna (``crew.orders.buoy``).
@@ -232,6 +235,7 @@ def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     v41["version"] = 41
     v41["save_schema"] = "u-jagd-save-v41"
     del v41["consort"]
+    del v41["llm"]
     del v41["swimmer_hold_s"]
     del v41["hunter_lead"]
     assert _game()._load_save_data(v41)       # lifted (save_migrate)
@@ -240,6 +244,7 @@ def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     v42["version"] = 42
     v42["save_schema"] = "u-jagd-save-v42"
     del v42["consort"]
+    del v42["llm"]
     del v42["hunter_lead"]
     del v42["swimmer_hold_s"]
     assert _game()._load_save_data(v42)       # lifted (save_migrate)
@@ -248,6 +253,7 @@ def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     v43["version"] = 43
     v43["save_schema"] = "u-jagd-save-v43"
     del v43["consort"]
+    del v43["llm"]
     del v43["swimmer_hold_s"]
     assert _game()._load_save_data(v43)       # lifted (save_migrate)
     # v46 differs only by the consort destroyer of the group hunts.
@@ -255,7 +261,14 @@ def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     v46["version"] = 46
     v46["save_schema"] = "u-jagd-save-v46"
     del v46["consort"]
+    del v46["llm"]
     assert _game()._load_save_data(v46)       # lifted (save_migrate)
+    # v48 differs only by the language model's block (``llm``).
+    v48 = copy.deepcopy(state)
+    v48["version"] = 48
+    v48["save_schema"] = "u-jagd-save-v48"
+    del v48["llm"]
+    assert _game()._load_save_data(v48)       # lifted (save_migrate)
     # The rejected documents never touched this game (the lifted ones went to
     # fresh games, whose constructors raise the global entity ids).
     after = game.save_state()

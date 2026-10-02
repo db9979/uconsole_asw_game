@@ -27,7 +27,8 @@ MISSIONS_MAX_BYTES = 3 * 1024 * 1024
 EDITOR_CATALOG_MAX_BYTES = 512 * 1024
 SECTOR_MAX_BYTES = 64 * 1024
 MISSION_OPS_PENDING_MAX = 4
-MISSION_OPS = ("save", "import", "delete")
+MISSION_OPS = ("save", "import", "delete", "generate")
+GENERATE_REQUEST_MAX = 500
 _BLANK = _json_bytes({"protocol": 2, "revision": 0, "missions": [], "units": [],
                       "user_profiles": [], "results": [], "truncated": False})
 
@@ -47,6 +48,13 @@ def valid_mission_op(body) -> bool:
     if op == "save":
         return (set(body) == {"protocol", "id", "op", "mission", "overwrite"}
                 and type(body["mission"]) is dict and type(body["overwrite"]) is bool)
+    if op == "generate":
+        # A mission from a few words (optional language model, src/llm/mission_gen.py).
+        request = body.get("request")
+        return (set(body) == {"protocol", "id", "op", "request", "side"}
+                and body["side"] in ("frigate", "uboot") and type(request) is str
+                and 0 < len(request.strip()) <= GENERATE_REQUEST_MAX
+                and all(char.isprintable() for char in request))
     if op == "import":
         return (set(body) == {"protocol", "id", "op", "bundle", "overwrite"}
                 and type(body["bundle"]) is dict and type(body["overwrite"]) is bool)

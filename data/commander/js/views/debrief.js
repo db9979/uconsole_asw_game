@@ -5,6 +5,7 @@ import { request } from "../net/request.js";
 import { boundedArray, exactKeys } from "../state/schema.js";
 import { resizeCanvas } from "./chart.js";
 import { node } from "./dom.js";
+import { advisorReport } from "./advisor.js";
 
 // ---- Debrief replay (after the mission only) ---------------------------------
 // The host publishes each side's finished recording once the mission has
@@ -226,9 +227,16 @@ export async function openDebrief() {
     $("debrief-status").textContent = "";
     if (!dialog.open) { dialog.hidden = false; dialog.showModal(); }
     draw();
+    showReport();
   } catch (_) {
     $("debrief-status").textContent = t("debrief_unavailable");
   }
+}
+// The after-action report of the language model, when one was written.
+async function showReport() {
+  const text = await advisorReport();
+  $("debrief-report-box").hidden = !text;
+  $("debrief-report").textContent = text || "";
 }
 // The button shows only once the mission is over.
 export function renderDebriefButton() {

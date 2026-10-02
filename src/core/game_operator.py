@@ -2055,6 +2055,9 @@ class OperatorMixin:
         if len(self.messages) > 40:
             self.messages.pop(0)
         self.feed.add(stamp, "funk", text)
+        # With the optional language model, the radio room also gets the
+        # message worded like real traffic (display only, src/llm/radio.py).
+        self.llm_radio_offer(stamp, text)
 
     def assign_contact_profile(self, contact, profile_key):
         """Operator annotation: this contact matches that catalog profile."""

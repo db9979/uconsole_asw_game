@@ -79,6 +79,7 @@ from src.commander.lookout_projection import build_lookout_states
 from src.commander.mission_library import MissionLibrary, editor_catalog
 from src.commander.server import (HOST_ROLE, OPFOR_ROLES, ROLES, UBOOT_COMMAND_ROLES, SIMLOG_ENTRIES_MAX,
                                   SIMLOG_MAX_BYTES, V2_ACTION_REGISTRY, _json_bytes)
+from src.commander.advisor_web import pump_advisor
 from src.commander.projections import (ROLE_NAMES, build_opfor_states,
                                        build_role_states, known_chart,
                                        redacted_chart, redacted_state)
@@ -277,6 +278,8 @@ def sonar_pcm_s16le(samples) -> bytes:
 class CommanderBridge:
     def __init__(self):
         self._server = None
+        # What the advisor last published (src/commander/advisor_web.py).
+        self._advisor_published = {}
         self._allowed = True
         self._grant_lease = None
         self._identity = None
@@ -1049,7 +1052,8 @@ class CommanderBridge:
         redacted = game.in_menu or game.main_menu or game.splash_active
         self._publish_role_simlog(server, game, redacted)
         self._publish_debrief(server, game)
-        self._pump_missions(server, now)
+        self._pump_missions(server, now, game)
+        pump_advisor(server, game, self._advisor_published)
         if redacted:
             self._refs.clear()
             self._esm_refs.clear()
@@ -1276,14 +1280,19 @@ class CommanderBridge:
         self._last_publish = now
         self._dirty = False
 
-    def _pump_missions(self, server, now):
+    def _pump_missions(self, server, now, game=None):
         """Own-mission library of the solo host: apply queued requests, publish
         the library when it changed and the editor catalog once."""
         if (getattr(server, "solo_mode", False) is not True
                 or not hasattr(server, "take_mission_ops")):
             return
         for op in server.take_mission_ops():
-            self._missions.apply(op)
+            if op.body["op"] == "generate":
+                self._missions.generate(op, game)
+            else:
+                self._missions.apply(op)
+            self._dirty = True
+        if self._missions.generated(game):
             self._dirty = True
         view = self._missions.view(now)
         if view is not self._missions_published:

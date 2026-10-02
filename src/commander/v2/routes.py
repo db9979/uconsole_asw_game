@@ -1014,7 +1014,7 @@ class _Handler(BaseHTTPRequestHandler):
                            "/api/v2/state?sonar=stream", "/api/v2/chart",
                            "/api/v2/results", "/api/v2/proposals",
                            "/api/v2/events", "/api/v2/simlog", "/api/v2/host",
-                           "/api/v2/debrief"):
+                           "/api/v2/debrief", "/api/v2/advisor"):
             try:
                 with owner._lock:
                     session, digest, presented = self._authenticated_v2_locked(renew=True)
@@ -1062,6 +1062,9 @@ class _Handler(BaseHTTPRequestHandler):
                         side = "uboot" if role in (*OPFOR_ROLES, "uboot_lookout") else "frigate"
                         body = (owner._v2_debriefs.get(side) if role is not None else None
                                 ) or _json_bytes({"protocol": 2, "available": False})
+                    elif session is not None and self.path == "/api/v2/advisor":
+                        # The asker's own log (src/commander/advisor_web.py).
+                        body = owner.advisor_body_locked(session)
                     elif session is not None and self.path == "/api/v2/simlog":
                         body = (owner._v2_simlogs.get(role) if role is not None
                                 and session["simlog"] else None)
@@ -1240,6 +1243,29 @@ class _Handler(BaseHTTPRequestHandler):
                         self._reply(200, self._session_v2_body(session, owner._sessions_v2, owner),
                                     set_cookie=self._v2_cookie(token))
                         return
+            elif self.path == "/api/v2/advisor":
+                try:
+                    session, _, presented = self._authenticated_v2_locked(renew=True)
+                except (UnicodeEncodeError, ValueError):
+                    status, response = 400, {"error": "invalid_request"}
+                else:
+                    if session is None:
+                        self._v2_unauthorized(presented)
+                        return
+                    csrf = self.headers.get("X-U-Jagd-CSRF")
+                    if (csrf is None or not secrets.compare_digest(
+                            csrf.encode("utf-8", errors="surrogatepass"),
+                            session["csrf"].encode("ascii"))):
+                        status, response = 403, {"error": "forbidden"}
+                    else:
+                        result = owner.enqueue_advisor_locked(session, body)
+                        status, response = {
+                            "pending": (202, {"status": "pending"}),
+                            "forbidden": (403, {"error": "forbidden"}),
+                            "invalid": (400, {"error": "invalid_request"}),
+                            "busy": (429, {"error": "busy"}),
+                            "queue_full": (429, {"error": "queue_full"}),
+                        }[result]
             elif self.path == MIC_ROUTE:
                 # Noise discipline: the crew browser's microphone level.
                 try:

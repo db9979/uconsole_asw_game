@@ -102,6 +102,12 @@ def _v47_to_v48(doc: dict) -> None:
                            turns_done=0.0, search_course=None)
 
 
+def _v48_to_v49(doc: dict) -> None:
+    # The optional language model (1.3.146): no advisor help, no experimental
+    # opponent, as every mission before it.
+    doc["llm"] = {"advisor_sides": [], "experimental": False, "opfor": None}
+
+
 STEPS = {
     38: _v38_to_v39,
     39: _v39_to_v40,
@@ -113,6 +119,7 @@ STEPS = {
     45: _v45_to_v46,
     46: _v46_to_v47,
     47: _v47_to_v48,
+    48: _v48_to_v49,
 }
 
 

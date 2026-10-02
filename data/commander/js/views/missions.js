@@ -4,8 +4,9 @@ import { on } from "../core/events.js";
 import { t } from "../core/format.js";
 import { node } from "./dom.js";
 import { sendHostAction } from "../net/host.js";
-import { UPLOAD_MAX_BYTES, fetchCatalog, fetchCoast, fetchLibrary, missionBundle,
-  missionRequest } from "../net/missions.js";
+import { GENERATE_ATTEMPTS, UPLOAD_MAX_BYTES, fetchCatalog, fetchCoast, fetchLibrary, generatedKey,
+  missionBundle, missionRequest } from "../net/missions.js";
+import { secureId } from "../net/commands.js";
 import { mutateStation } from "./lobby.js";
 
 // Own missions of the solo host: the library (start, edit, download, upload,
@@ -144,6 +145,35 @@ async function runRequest(op, fields, okKey, values = {}) {
   } catch (error) {
     setStatus(error.reason === "too_large" ? "missions_too_large" : "missions_result_failed", {}, "rejected");
     return null;
+  }
+}
+
+// A mission from a few words (optional language model on the host): stored
+// under a fresh key, then opened in the planner for checking.
+async function generateMission() {
+  const text = $("missions-generate-text").value.trim();
+  if (!text) return;
+  const button = $("missions-generate");
+  button.disabled = true;
+  setStatus("missions_generate_pending", {}, "pending");
+  try {
+    const id = secureId();
+    const outcome = await missionRequest("generate", {id, request: text, side: $("missions-generate-side").value},
+      GENERATE_ATTEMPTS);
+    if (outcome.status === "applied") {
+      $("missions-generate-text").value = "";
+      renderLibrary(true);
+      const row = S.missionLibrary?.missions.find((item) => item.key === generatedKey(id));
+      setStatus("missions_generate_done", {}, "applied");
+      if (row) openEditor(row);
+    } else {
+      const reason = t(`missions_generate_reason_${outcome.reason}`) || t("missions_generate_failed");
+      setStatus("missions_generate_rejected", {reason, issues: issueText(outcome.issues)}, "rejected");
+    }
+  } catch (_) {
+    setStatus("missions_generate_failed", {}, "rejected");
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -654,6 +684,10 @@ export function init() {
   $("host-missions").addEventListener("click", openMissions);
   $("missions-close").addEventListener("click", closeDialog);
   $("missions-new").addEventListener("click", () => openEditor(null));
+  $("missions-generate").addEventListener("click", generateMission);
+  $("missions-generate-text").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); generateMission(); }
+  });
   $("missions-upload").addEventListener("click", () => $("missions-upload-input").click());
   $("missions-upload-input").addEventListener("change", () => {
     uploadFile($("missions-upload-input").files[0]);

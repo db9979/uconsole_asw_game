@@ -1601,6 +1601,9 @@ class SimMixin:
                     else "uboot.event.mission_won"), stamp=self.world.format_time())
         self._campaign_mission_ended()
         self._logbook_mission_ended()
+        # Optional: the language model writes the after-action report
+        # (wall time, display only; nothing waits for it).
+        self._llm_mission_ended()
 
     # --- M6: Speichern / Laden ---
 

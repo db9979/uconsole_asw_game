@@ -15,7 +15,7 @@ import math
 
 from src.audio.synthesis import bearing_pan
 from src.core.callouts import CalloutLog
-from src.core import baffles, boat_nav, buoy_antenna, config, detrand
+from src.core import baffles, boat_nav, buoy_antenna, config, detrand, shock
 from src.core.boat_esm import BoatESM
 from src.core.boat_radio import BoatRadio
 from src.core.crew import CrewState
@@ -658,6 +658,13 @@ def boat_sound(game, boat, cue: str, bearing: float | None = None) -> None:
         game.audio.play_boat_cue(cue, pan=pan)
 
 
+def boat_shock(boat, cue: str) -> None:
+    """The boat shaken by a detonation close by (``src/core/shock.py``): a
+    display cue for the boat's screens, no sound of its own."""
+    boat.sound_seq += 1
+    boat.sound_events.append(dict(seq=boat.sound_seq, kind=cue, pan=None))
+
+
 def creak_chance(depth_m: float, test_depth_m: float) -> float:
     """Chance per creak check: none shallow, rising to 1 at test depth."""
     ratio = depth_m / max(test_depth_m, 1.0)
@@ -695,6 +702,9 @@ def hear_detonation(game, boat, x: float, y: float) -> None:
                * detrand.normal(sub.sensor_seed, "detonation", int(game.sim_t * 1000.0))) % 360.0
     key = "detonation_near" if near else "detonation_far"
     boat_sound(game, boat, key, bearing)
+    felt = shock.cue(distance)
+    if felt is not None:
+        boat_shock(boat, felt)
     boat.orders.event(key, bearing=f"{round(bearing) % 360:03d}")
 
 
@@ -790,6 +800,7 @@ def update_crew(game, boat: CrewedBoat, dt: float = 0.0) -> None:
     for key, values in orders.drain_events():
         if key in _HULL_FAILURES:
             boat_sound(game, boat, "hull_crack")
+            boat_shock(boat, "shock_light")
         if "compartment" in values:
             values = dict(values, compartment=message(
                 f"uboot.compartment.{values['compartment']}"))

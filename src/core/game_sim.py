@@ -18,7 +18,7 @@ from src.audio.synthesis import bearing_pan
 from src.core import config
 from src.physics import bioluminescence
 from src.world import thunder
-from src.core import buoy_antenna, detrand
+from src.core import buoy_antenna, detrand, shock
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
@@ -281,6 +281,13 @@ class SimMixin:
             self.audio.play_effect(kind, pan=pan)
         self._sound_event_seq += 1
         self._sound_events.append(dict(seq=self._sound_event_seq, kind=kind, pan=pan))
+        if at is not None and kind == "explosion":
+            felt = shock.cue(math.hypot(float(at[0]) - self.ship.x, float(at[1]) - self.ship.y))
+            if felt is not None:
+                # The own ship shakes (a display cue, no sound of its own).
+                self._sound_event_seq += 1
+                self._sound_events.append(dict(seq=self._sound_event_seq, kind=felt,
+                                               pan=None))
 
     def _hull_slam(self, previous_pitch: float) -> None:
         """A bow coming down hard into a head sea slams: a sound only (the

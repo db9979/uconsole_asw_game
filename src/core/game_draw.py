@@ -26,6 +26,7 @@ from src.ui import layout, pointer
 from src.ui import observations
 from src.ui import overlay_style, quality
 from src.ui.red_light import RedLight, draw_lamp
+from src.ui.shock_fx import ShockFx
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -578,6 +579,23 @@ class DrawMixin:
         if self._scanlines is not None:
             s.blit(self._scanlines, (0, 0))
         self._draw_red_light(s)
+        self._draw_shock(s)
+
+    def _draw_shock(self, s) -> None:
+        """Shake the shown side's screens after a detonation close by
+        (``src/ui/shock_fx.py``; display only, wall time)."""
+        fx = getattr(self, "_shock_fx", None)
+        if fx is None:
+            fx = self._shock_fx = ShockFx()
+        if self.local_side == "uboot":
+            boat = self.opfor
+            events = boat.sound_events if boat is not None else ()
+            context = ("uboot", id(boat))
+        else:
+            events, context = self._sound_events, ("frigate", id(self.ship))
+        fx.pump(context, events, self._t)
+        if self._mission_shown() and fx.active(self._t):
+            fx.draw(s, self._t, low=quality.LEVEL == "low")
 
     @localized
     def draw_navigation_input(self) -> None:

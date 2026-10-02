@@ -59,7 +59,10 @@ function playGameEffect(kind, pan = null) {
     fans_down: [220, 40, 2.4, .05, "triangle"], fans_up: [40, 220, 2.4, .05, "triangle"],
     // Thunder after a close lightning strike (src/world/thunder.py).
     thunder: [52, 26, 2.6, .12, "sawtooth"],
+    // A detonation close by shakes the picture (views/shock.js); its sound is the detonation's.
+    shock_light: null, shock_heavy: null,
   }[kind];
+  if (!profile) return;
   const [startHz, endHz, duration, gainLevel, type] = profile;
   const oscillator = S.audio.createOscillator();
   const gain = S.audio.createGain();

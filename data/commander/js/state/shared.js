@@ -35,7 +35,9 @@ export const roleCache = new Map();
 export const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_launch", "missile_launch", "gunfire", "explosion", "water_entry", "telegraph",
   "sonar_echo_cw", "sonar_echo_cw_faint", "sonar_echo_lfm", "sonar_echo_lfm_faint", "alarm",
   "hull_creak", "hull_crack", "detonation_near", "detonation_far", "enemy_ping", "ping_heard",
-  "general_alarm", "hull_slam", "alarm_bell", "fans_down", "fans_up", "thunder"]);
+  "general_alarm", "hull_slam", "alarm_bell", "fans_down", "fans_up", "thunder",
+  // A detonation close to the own ship: the picture shakes (no sound of its own).
+  "shock_light", "shock_heavy"]);
 // Spoken crew reports (src/core/callouts.py KEYS); the text is the browser's own.
 export const calloutKinds = new Set(["torpedo", "contact", "breakup", "torpedo_away", "hit", "won", "lost",
   "action_stations", "mpa_on_station", "ping", "dipping", "buoy_ping", "splash", "evade", "mast_threat", "leak", "fire",

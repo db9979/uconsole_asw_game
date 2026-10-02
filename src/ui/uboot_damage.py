@@ -12,7 +12,7 @@ import pygame
 from src.core import config
 from src.core.i18n import message, raw_text
 from src.enemies.damage_control import COMPARTMENTS, TASKS, capacity_kg
-from src.ui import console, damage_section, layout
+from src.ui import console, damage_section, layout, pointer
 
 
 
@@ -101,7 +101,7 @@ def draw_damage_page(s, game, boat, x, y, w, h) -> None:
             ("uboot.dc.lamp.fire", raw_text(f"{_pct(c.fire)} %"), levels["fire"]),
             ("uboot.dc.lamp.gas", raw_text(f"{_pct(c.chlorine)} %"), levels["gas"]),
             ("uboot.dc.lamp.bulkhead", "uboot.dc.closed" if c.closed else "uboot.dc.open",
-             levels["bulkhead"]),
+             levels["bulkhead"], "I"),
             ("uboot.dc.lamp.power",
              "uboot.dc.power_on" if control.power() else "uboot.dc.power_off_short",
              "on" if control.power() else "alarm")]

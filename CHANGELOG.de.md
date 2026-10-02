@@ -4,6 +4,22 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.163
+
+Version 1.3.163 macht die Stationen per Mausklick bedienbar.
+Statuslampen, Tastenhinweise im Text einer Station, Seitenreiter,
+Listenzeilen und die Werte in der unteren Statuszeile reagieren jetzt auf
+beiden Seiten auf einen Klick: Eine Lampe oder ein Hinweis drückt seine
+Taste (etwa den ELOKA-Ton, das Spitzenhalten des Sonars, das Tauchsonar des
+Hubschraubers, die Zeilen des Maschinentelegrafen oder die Schleichfahrt des
+U-Boots), und ein Wert wie Flutung oder Torpedos öffnet die Station, die ihn
+bearbeitet. Das Sonar des U-Boots nimmt erstmals Klicks an, und das Element
+unter der Maus bekommt einen dünnen Rahmen. Ein Klick tut genau das, was
+seine Taste tut, mit denselben Prüfungen; die Feuertaste bleibt nur an der
+Waffenstation anklickbar. In der Remote Crew drückt ein Klick auf eine
+Sonar-, Hubschrauber- oder Maschinenlampe ihren Knopf. Spielstände bleiben
+v49; v38 bis v48 lassen sich weiter laden.
+
 ## 1.3.162
 
 Version 1.3.162 zeigt der Brücke den eigenen Hubschrauber der Fregatte.

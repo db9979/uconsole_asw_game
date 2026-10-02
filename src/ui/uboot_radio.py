@@ -14,7 +14,7 @@ import pygame
 from src.core import boat_nav, buoy_antenna, config
 from src.core.boat_radio import antenna_up, reception
 from src.core.i18n import message, raw_text
-from src.ui import layout, lines
+from src.ui import layout, lines, pointer
 
 REPORT_COLOR = config.COLOR_WARN
 # A contact report is drawn on the chart until it is this old (s).
@@ -104,11 +104,12 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
     box = layout.box(s, (x, y, w, _box_height(4 * row + 24)), "uboot.panel.radio",
                      border=config.COLOR_WARN if radio.transmitting else config.COLOR_TEXT)
     bx, by, bw, _ = box
-    layout.blit_line(s, "uboot.radio.antenna_up" if up else "uboot.radio.antenna_buoy"
-                     if mode == "buoy" else "uboot.radio.antenna_vlf"
-                     if mode == "vlf" else "uboot.radio.antenna_down",
-                     (bx, by, bw, row), config.COLOR_OK if up else config.COLOR_TEXT
+    antenna = ("uboot.radio.antenna_up" if up else "uboot.radio.antenna_buoy"
+               if mode == "buoy" else "uboot.radio.antenna_vlf"
+               if mode == "vlf" else "uboot.radio.antenna_down")
+    layout.blit_line(s, antenna, (bx, by, bw, row), config.COLOR_OK if up else config.COLOR_TEXT
                      if mode in ("vlf", "buoy") else config.COLOR_TEXT_DIM, size=16)
+    pointer.add_token_keys((bx, by, bw, row), antenna, 16, (("(P)", "P"),))
     number = str(progress["broadcast"])
     if progress["copied"]:
         state = message("uboot.radio.broadcast_copied", number=number)
@@ -132,6 +133,8 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
     layout.blit_line(s, send, (bx, by + 2 * row + 12, bw, row), color, size=16)
     layout.meter(s, (bx + 2, by + 3 * row + 15, bw - 4, 6), progress["send"],
                  config.COLOR_WARN)
+    pointer.add_token_keys((bx, by + 3 * row + 24, bw, row), buoy_line(boat), 16,
+                           (("(B)", "B"),))
     layout.blit_line(s, buoy_line(boat), (bx, by + 3 * row + 24, bw, row),
                      config.COLOR_WARN if boat.orders.buoy[2] else config.COLOR_TEXT, size=16)
     top = box[1] + box[3] + 8 + 8

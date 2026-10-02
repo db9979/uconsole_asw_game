@@ -14,19 +14,21 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.162**
+Aktuelle Version: **1.3.163**
 
-Version 1.3.162 zeigt der Brücke den eigenen Hubschrauber der Fregatte.
-Sobald die Brücke ihn sehen kann, fliegt das Hubschraubermodell im Fernglas
-des Ausgucks, im Horizontstreifen, in der Fernglas-Karte der Remote Crew, im
-Handy-Ausguck und im Trefferbild an seiner wahren Position und mit seinem
-Kurs: Er hebt vom Flugdeck achteraus ab, steigt weg, schwebt tief über
-seinem Tauchsonar und zeigt nachts seine Positionslichter. Das Ausguck-
-Sichtgerät markiert ihn als „eigener Hubschrauber“, das Panorama mit einem
-grünen Strich, und die Liste unter dem Fernglas nennt ihn zuerst. Tief
-fliegende Luftfahrzeuge stehen jetzt vor der See statt hinter den Wellen.
-An den Meldungen des Ausgucks ändert sich nichts. Spielstände bleiben v49;
-v38 bis v48 lassen sich weiter laden.
+Version 1.3.163 macht die Stationen per Mausklick bedienbar.
+Statuslampen, Tastenhinweise im Text einer Station, Seitenreiter,
+Listenzeilen und die Werte in der unteren Statuszeile reagieren jetzt auf
+beiden Seiten auf einen Klick: Eine Lampe oder ein Hinweis drückt seine
+Taste (etwa den ELOKA-Ton, das Spitzenhalten des Sonars, das Tauchsonar des
+Hubschraubers, die Zeilen des Maschinentelegrafen oder die Schleichfahrt des
+U-Boots), und ein Wert wie Flutung oder Torpedos öffnet die Station, die ihn
+bearbeitet. Das Sonar des U-Boots nimmt erstmals Klicks an, und das Element
+unter der Maus bekommt einen dünnen Rahmen. Ein Klick tut genau das, was
+seine Taste tut, mit denselben Prüfungen; die Feuertaste bleibt nur an der
+Waffenstation anklickbar. In der Remote Crew drückt ein Klick auf eine
+Sonar-, Hubschrauber- oder Maschinenlampe ihren Knopf. Spielstände bleiben
+v49; v38 bis v48 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

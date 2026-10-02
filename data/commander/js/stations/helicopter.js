@@ -41,9 +41,10 @@ function renderHelicopterLamps(asset, ready) {
   const lamp = (key, ...rest) => [key, ...rest];
   const dome = {DEPLOYED: "on", DEPLOYING: "caution", RETRIEVING: "caution"}[asset.dip_state] || "off";
   renderLamps($("helicopter-lamps"), [
-    lamp("dome", t("helicopter_lamp_dome"), dome, unit(asset.dip_depth_m, "m", 0)),
+    lamp("dome", t("helicopter_lamp_dome"), dome, unit(asset.dip_depth_m, "m", 0), "helicopter-dip-toggle"),
     lamp("ping", t("sonar_lamp_ping"), ready.can_dipping_ping ? "on" : dome === "on" ? "caution" : "off",
-      ready.can_dipping_ping ? t("sonar_lamp_ready") : t("sonar_lamp_cooldown", {seconds: number(asset.dip_ping_cooldown_s, 0)})),
+      ready.can_dipping_ping ? t("sonar_lamp_ready") : t("sonar_lamp_cooldown", {seconds: number(asset.dip_ping_cooldown_s, 0)}),
+      "helicopter-dip-ping"),
     lamp("weather", t("helicopter_lamp_weather"), ready.weather_dipping_safe ? "on" : "alarm",
       t(ready.weather_dipping_safe ? "sonar_lamp_ok" : "helicopter_lamp_unsafe")),
     lamp("hover", t("helicopter_lamp_hover"), asset.hovering ? "on" : "off", t(asset.hovering ? "sonar_lamp_on" : "sonar_lamp_off")),

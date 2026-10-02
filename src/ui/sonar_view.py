@@ -13,6 +13,7 @@ from src.core.i18n import (display_message, display_value, localized, localize,
 from src.sonar import analysis_tools, class_library, tma_operator
 from src.ui import layout
 from src.ui import observations
+from src.ui import pointer
 from src.ui import profile_cursor
 
 
@@ -1842,9 +1843,12 @@ def _console_lamps(game):
     sonar = game.sonar
     ping = ("caution" if getattr(sonar, "ping_active", False) else
             "on" if getattr(sonar, "ping_ready", True) else "off")
-    return (("sonar.lamp.ping", "", ping),
-            ("sonar.lamp.audio", "", "on" if getattr(game, "sonar_audio_enabled", False) else "off"),
-            ("sonar.lamp.peak", "", "caution" if getattr(sonar, "peak_hold", False) else "off"))
+    # A click on a lamp presses its key (Shift+A ping, J audio, Space peak hold).
+    return (("sonar.lamp.ping", "", ping, "Shift+A"),
+            ("sonar.lamp.audio", "", "on" if getattr(game, "sonar_audio_enabled", False)
+             else "off", "J"),
+            ("sonar.lamp.peak", "", "caution" if getattr(sonar, "peak_hold", False)
+             else "off", "Space"))
 
 
 def _draw_listening_console(game, rect, page):
@@ -1931,6 +1935,7 @@ def _draw_contacts(game, rect):
             y = row_rect.y
             layout.record_geometry("sonar-contact", row_rect,
                                    f"sonar:contact:{contact.id}")
+            pointer.add_hotspot(row_rect.clip(rect))
             if contact is selected:
                 pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, row_rect)
                 pygame.draw.rect(screen, CYAN, (row_rect.x, y, 3, row_rect.h))
@@ -1988,6 +1993,7 @@ def _draw_echo_list(game, rect):
             y = row_rect.y
             layout.record_geometry("sonar-echo", row_rect,
                                    f"sonar:echo:{echo.get('contact_id', '')}")
+            pointer.add_hotspot(row_rect.clip(rect))
             color = _echo_color(float(echo["age_s"]))
             _text(screen, message("sonar.line.echo_bearing", contact=echo.get('contact_id', '--'),
                                   bearing=f"{float(echo['bearing']) % 360:05.1f}"),
@@ -2014,6 +2020,8 @@ def draw_sonar_view(game, tr=None) -> None:
               (station.x + 14, station.y + 9, 315, 29), TEXT, 21)
         for i, (name, tab) in enumerate(zip(PAGES, geometry["tabs"])):
             layout.record_geometry("sonar-tab", tab, f"sonar:tab:{i}")
+            # Tabs, list rows and footer keys: sonar_click_target takes the click.
+            pointer.add_hotspot(tab)
             if i == page:
                 pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, tab)
                 pygame.draw.line(screen, CYAN, tab.bottomleft, (tab.right - 1, tab.bottom), 2)
@@ -2049,6 +2057,9 @@ def draw_sonar_view(game, tr=None) -> None:
             rect = segment["rect"]
             layout.record_geometry("sonar-action", rect,
                                    f"sonar:action:{segment['action']}")
+            if segment["action"] != "cursor" and not (     # a readout, not a switch
+                    segment["action"] == "array" and getattr(game, "local_side", None) == "uboot"):
+                pointer.add_hotspot(rect)
             pygame.draw.rect(screen, PANEL, rect)
             pygame.draw.line(screen, GRID, rect.topright, rect.bottomright)
             layout.command_segment(screen, rect, *segment["text"], size=11)

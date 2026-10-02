@@ -381,11 +381,17 @@ def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
     py += 4
     pygame.draw.line(s, config.COLOR_GRID, (x, py), (x + w, py))
     py += 6
-    for key in ("opz.mpa.keys_orders", "opz.mpa.keys_area", "opz.mpa.keys_buoys",
-                "opz.mpa.keys_weapons"):
+    for key, tokens in (
+            ("opz.mpa.keys_orders", (("H", "H"),)),
+            ("opz.mpa.keys_area", (("W", "W"),)),
+            ("opz.mpa.keys_buoys", (("X", "X"), ("B", "B"), ("Shift+B", "Shift+B"))),
+            ("opz.mpa.keys_weapons", (("Ctrl+R", "Ctrl+R"), ("Strg+R", "Ctrl+R"),
+                                      ("Shift+M", "Shift+M"), ("D", "D")))):
         if py + 22 > bottom:
             break
         layout.blit_line(s, key, (x, py, w, 22), config.COLOR_TEXT_DIM, size=14)
+        # Each key in the hint is a switch (full mouse control).
+        pointer.add_token_keys((x, py, w, 22), key, 14, tokens)
         py += 24
     return py
 
@@ -953,6 +959,10 @@ def draw_opz_view(game, tr=None) -> None:
         row = layout.line_pitch(15, 6)
         layout.status_line(s, x, py, w, "opz.label.radar", radar_state,
                            label_w=label_w, size=15)
+        # Surface and air radar switch with a click on their state (R, Shift+R).
+        pointer.add_line_keys((x + label_w + 4, py, w - label_w - 4,
+                               layout.font(15).get_linesize()), radar_state, 15,
+                              ("R", "Shift+R"), separator=" | ")
         py += row
         severity = game.radar_weather_severity()
         weather_key = ("opz.weather.clear" if severity <= 0.0 else
@@ -978,6 +988,7 @@ def draw_opz_view(game, tr=None) -> None:
                                     chaff=f"{game.chaff_cd:.0f}"),
                             label_w=label_w, size=15)
         py += row
+        pointer.add_key((x, py, w, layout.font(15).get_linesize()), pygame.K_i)
         layout.status_line(s, x, py, w, "opz.label.ciws",
                             localize("opz.ciws.authorized" if game.ciws_authorized
                                      else "opz.ciws.withheld"),
@@ -988,10 +999,11 @@ def draw_opz_view(game, tr=None) -> None:
         pygame.draw.line(s, config.COLOR_GRID, (x, py), (x + w, py))
         py += 8
         contact_filter = getattr(game, "opz_contact_filter", "ALL")
-        layout.blit_block(s, message(
-            "opz.tracks_heading_filtered",
-            filter=display_value("contact_filter", contact_filter)),
-            x, py, w, 22, color=config.COLOR_TEXT, size=16)
+        heading = message("opz.tracks_heading_filtered",
+                          filter=display_value("contact_filter", contact_filter))
+        layout.blit_block(s, heading, x, py, w, 22, color=config.COLOR_TEXT, size=16)
+        pointer.add_token_keys((x, py, w, 22), heading, 16, (("(Shift+F)", "Shift+F"),),
+                               min_size=layout.MIN_OPERATIONAL_FONT)
         py += 24
         content_bottom = regions["classify"].top - 7
         suggestions = (game.opz_suggestions()[:OPZ_SUGGESTION_ROWS]
@@ -1140,6 +1152,7 @@ def draw_opz_view(game, tr=None) -> None:
         pygame.draw.rect(s, config.COLOR_GRID, rect, 1)
         layout.blit_line(s, key, rect, config.COLOR_TEXT_DIM, size=14,
                          align="center")
+        pointer.add_hotspot(rect)       # opz_action_at takes the click
 
     scales = " ".join(
         f"[{scale:g}]" if scale == max_nm else f"{scale:g}"

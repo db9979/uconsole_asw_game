@@ -33,6 +33,9 @@ class Target:
     key: int | None = None
     mod: int = 0
     action: Callable | None = None
+    # Hover only: the station's own hit test takes the click (page tabs,
+    # sonar segments, OPZ buttons); the target just shows it is clickable.
+    hover_only: bool = False
 
 
 _targets: list[Target] = []
@@ -68,6 +71,28 @@ def add_action(rect, action: Callable) -> None:
         _targets.append(Target(pygame.Rect(rect), _layer[-1], action=action))
 
 
+def add_hotspot(rect) -> None:
+    """``rect`` is clickable through the station's own hit test: hover only."""
+    if len(_targets) < MAX_TARGETS:
+        _targets.append(Target(pygame.Rect(rect), _layer[-1], hover_only=True))
+
+
+def add_spec(rect, spec) -> None:
+    """A click on ``rect`` presses ``spec``: a key code, ``(key, mod)``, a
+    legend label (``"Shift+A"``, ``"U/V"``: split left/right), or a callable
+    UI action; None leaves the rectangle display only."""
+    if spec is None:
+        return
+    if callable(spec):
+        add_action(rect, spec)
+    elif isinstance(spec, str):
+        add_legend(rect, spec)
+    elif isinstance(spec, tuple):
+        add_key(rect, *spec)
+    else:
+        add_key(rect, spec)
+
+
 def hit(pos, owner: str) -> Target | None:
     """The topmost target of layer ``owner`` under ``pos`` (canvas pixels)."""
     if pos is None:
@@ -80,6 +105,12 @@ def hit(pos, owner: str) -> Target | None:
 
 def targets(owner: str | None = None) -> list[Target]:
     return [t for t in _targets if owner is None or t.layer == owner]
+
+
+def hover_rect(pos, owner: str) -> pygame.Rect | None:
+    """The clickable rectangle under ``pos`` for the hover frame, or None."""
+    target = hit(pos, owner)
+    return None if target is None else target.rect
 
 
 # --- footer legends ---------------------------------------------------------------
@@ -134,7 +165,8 @@ def legend_keys(label) -> list[tuple[int, int]]:
     parts = _PAIRS.get(label)
     if parts is None:
         parts = [label] if label.strip() == "/" else [
-            part for part in (p.strip() for p in label.replace(" / ", "/").split("/")) if part]
+            word for part in label.replace(" / ", "/").split("/")
+            for word in part.split() if word]
     keys = []
     for part in parts:
         found = _one_key(part)
@@ -184,3 +216,106 @@ def add_text_keys(text: str, face, center_x: int, center_y: int, keys,
         elif key is not None:
             add_key(rect, key)
         x += width + sep_w
+
+
+def add_line_keys(rect, text: str, size: int, keys, separator: str | None = None,
+                  align: str = "left") -> None:
+    """Register the parts of a one-line hint drawn by ``layout.blit_line``.
+
+    ``text`` is the localized line, split at ``separator`` (`` | `` or `` · ``
+    by default); ``keys`` holds one :func:`add_spec` entry per part (None:
+    text only).  A line that had to shrink keeps its parts in proportion; a
+    part that fell off the clipped line is not registered.
+    """
+    from src.ui import layout
+    rect = pygame.Rect(rect)
+    if not text or rect.w <= 0:
+        return
+    if separator is None:
+        separator = " | " if " | " in text else " · "
+    face = layout.font(size)
+    parts = text.split(separator)
+    total = max(1, face.size(text)[0])
+    scale = min(1.0, rect.w / total)
+    shown = total * scale
+    x = (rect.x if align == "left" else rect.right - shown if align == "right"
+         else rect.centerx - shown / 2)
+    sep_w = face.size(separator)[0] * scale
+    height = min(rect.h, face.get_linesize() + 4)
+    top = rect.y + max(0, (rect.h - height) // 2)
+    for part, spec in zip(parts, keys):
+        width = face.size(part)[0] * scale
+        area = pygame.Rect(round(x) - 3, top, round(width) + 6, height).clip(
+            rect.inflate(6, 0))
+        if area.w > 4:
+            add_spec(area, spec)
+        x += width + sep_w
+
+
+_SEPARATORS = (" | ", " · ", "  ", " / ")
+
+
+def token_spans(text: str, tokens) -> list:
+    """``(start, end, spec)`` of each key token found in ``text``, in order.
+
+    A token (``"H:"``, ``"Shift+A"``, ``"U/V"``) counts only as a whole word;
+    its part runs to the next token or the next separator (`` | ``, `` · ``,
+    two spaces), whichever comes first.  Tokens not found are skipped, so
+    one token list serves English and German.
+    """
+    import re
+    found = []
+    cursor = 0
+    for token, spec in tokens:
+        pattern = re.compile((r"(?<![\w+/])" if token[:1].isalnum() else "")
+                             + re.escape(token)
+                             + (r"(?![\w+])" if token[-1:].isalnum() else ""))
+        match = pattern.search(text, cursor)
+        if match is None:
+            continue
+        found.append((match.start(), spec))
+        cursor = match.end()
+    spans = []
+    for index, (start, spec) in enumerate(found):
+        end = found[index + 1][0] if index + 1 < len(found) else len(text)
+        for separator in _SEPARATORS[:3]:
+            cut = text.find(separator, start + 1)
+            if 0 <= cut < end:
+                end = cut
+        spans.append((start, len(text[:end].rstrip()), spec))
+    return spans
+
+
+def add_token_keys(rect, text, size: int, tokens, align: str = "left",
+                   min_size: int | None = None) -> None:
+    """Register the key tokens of a hint drawn by ``layout.blit_line`` (or
+    ``blit_block`` with its ``min_size``) in ``rect``: the same fitting, so
+    a shrunk, wrapped or shortened line keeps its parts where they are drawn.
+
+    ``text`` is what was drawn (catalog key, message or text); ``tokens``
+    holds ``(token, spec)`` pairs, see :func:`token_spans`.
+    """
+    from src.ui import layout
+    x, y, w, h = pygame.Rect(rect)
+    if w <= 0 or h <= 0:
+        return
+    if min_size is None:
+        min_size = min(size, max(layout.MIN_OPERATIONAL_FONT, size - 4))
+    min_size = min(min_size, size)
+    fitted = layout.fit_block_text(text, w, h, min_size)
+    if not fitted:
+        return
+    face, lines = layout.fit_text(fitted, size, w, h, min_size)
+    pitch = layout._line_height(face)
+    bounds = pygame.Rect(x - 3, y, w + 6, h)
+    tokens = tuple(tokens)
+    for index, line in enumerate(lines):
+        width = layout.text_width(face, line)
+        left = (x if align == "left" else x + w - width if align == "right"
+                else x + max(0, (w - width) // 2))
+        for start, end, spec in token_spans(line, tokens):
+            x0 = left + layout.text_width(face, line[:start])
+            x1 = left + layout.text_width(face, line[:end])
+            area = pygame.Rect(x0 - 3, y + index * pitch, x1 - x0 + 6, pitch).clip(bounds)
+            if area.w > 4 and area.h > 4:
+                add_spec(area, spec)

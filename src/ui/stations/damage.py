@@ -8,7 +8,7 @@ from src.core import config
 from src.core.i18n import localized, localize, raw_text
 from src.core.station import Station
 from src.ship.damage import COMPARTMENTS
-from src.ui import console, damage_section, layout
+from src.ui import console, damage_section, layout, pointer
 
 
 from src.ui.stations.common import (
@@ -146,6 +146,7 @@ def draw_damage_view(game, tr=None) -> None:
         for i, (key, c) in enumerate(items):
             card = regions["compartments"][key]["callout"]
             _draw_callout(game, s, card, i, key, c, i == game.dmg_cursor, line_h)
+            pointer.add_hotspot(card)       # damage_compartment_at takes the click
         _draw_legend(s, pygame.Rect(plan.x, plan.bottom - 30, plan.w, 24))
     else:
         detail = layout.box(s, regions["detail"],

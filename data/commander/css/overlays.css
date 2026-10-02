@@ -223,12 +223,12 @@ dialog h2 { margin-bottom: .5rem; color: var(--live-strong); text-shadow: 0 0 .7
 .advisor-shell { display: flex; flex-direction: column; gap: .5rem; height: 100%; padding: .8rem 1rem; box-sizing: border-box; }
 .advisor-modes { display: flex; flex-wrap: wrap; gap: .4rem; }
 .advisor-modes button[aria-pressed="true"] { border-color: var(--live); color: var(--live); }
-.advisor-log { flex: 1; min-height: 8rem; overflow-y: auto; margin: 0; padding: .4rem .6rem; list-style: none; border: 1px solid var(--line, #2a3b44); }
+.advisor-log { flex: 1; min-height: 8rem; overflow-y: auto; margin: 0; padding: .4rem .6rem; list-style: none; border: 1px solid var(--line); }
 .advisor-entry { margin-bottom: .8rem; }
 .advisor-entry p { margin: .15rem 0; white-space: pre-wrap; }
 .advisor-question { color: var(--text-dim); }
-.advisor-state { color: var(--warn, #f3cf79); }
-.advisor-commands { margin: .2rem 0; padding-left: 1.2rem; color: var(--ok, #8fdfab); }
+.advisor-state { color: var(--caution); }
+.advisor-commands { margin: .2rem 0; padding-left: 1.2rem; color: var(--live); }
 .advisor-input { display: flex; gap: .5rem; }
 .advisor-input input { flex: 1; min-width: 0; }
 .debrief-report { white-space: pre-wrap; max-height: 18rem; overflow-y: auto; }

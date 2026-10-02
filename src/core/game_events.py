@@ -764,8 +764,10 @@ class EventMixin:
                 else:
                     self._handle_menu_key(e.key)
                 return
-            if e.key == pygame.K_F7 and not self.game_over:
-                # The executive officer (optional language model), both sides.
+            if (e.key == pygame.K_F7 and not self.game_over
+                    and not self.commander.confirm_visible(self)):
+                # The executive officer (optional language model), both sides;
+                # an open crew confirmation keeps F7 as its reject key.
                 self._open_administration("advisor")
                 return
             if self.local_side == "uboot" and not self._uboot_dispatch:

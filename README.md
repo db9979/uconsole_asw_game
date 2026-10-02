@@ -12,13 +12,12 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.155**
+Current release: **1.3.158**
 
-Release 1.3.155 makes the optional language model work with reasoning models.
-The game asks the server for answers without a thinking phase, reads answers
-sent as content parts, and the connection test now says when only reasoning
-came back. The API key is typed as asterisks, and the options page no longer
-reads the key file on every frame. Saves stay v49; v38 to v48 saves still load.
+Release 1.3.158 fixes the browser header: the executive officer's button
+("Ask XO") now sits in the toolbar beside the sound switch instead of being
+squeezed into a column of single letters next to the mission name. Saves stay
+v49; v38 to v48 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

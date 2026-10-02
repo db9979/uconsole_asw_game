@@ -152,6 +152,7 @@ dialog h2 { margin-bottom: .5rem; color: var(--live-strong); text-shadow: 0 0 .7
 .debrief-events li { border-left: 3px solid var(--event-color, var(--line)); padding-left: .35rem; margin-bottom: .2rem; }
 .debrief-events li.past { color: var(--text); }
 #debrief-open { min-height: 1.8rem; padding: .1rem .6rem; font-size: var(--font-xs); }
+#advisor-open { flex: none; white-space: nowrap; }
 #simlog-map-dialog { width: min(96vw, 96rem); max-width: none; height: min(94dvh, 64rem); max-height: none; padding: 0; border-color: var(--live); }
 .simlog-map-shell { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: .6rem; height: 100%; min-width: 0; min-height: 0; padding: .85rem; overflow: hidden; }
 .simlog-map-header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--line); }

@@ -207,9 +207,44 @@ gelöscht). Selbst bauen unter Windows:
 `python -m pip install -e ".[windows]"` und
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 
+## macOS-App
+
+Lade `U-Jagd-macOS-arm64.zip` (Apple Silicon) oder `U-Jagd-macOS-x86_64.zip`
+(Intel-Mac) aus dem
+[neuesten Release](https://github.com/db9979/uconsole_asw_game/releases/latest),
+entpacke es und ziehe `U-Jagd.app` in den Ordner Programme (oder einen anderen
+Ordner, in den du schreiben darfst); Python ist nicht nötig. Die App startet
+wie das Windows-Programm direkt ins Spiel. Sie ist nicht mit einem
+Apple-Entwicklerzertifikat signiert und nicht notarisiert, deshalb braucht der
+erste Start einen Schritt mehr: Rechtsklick (oder Control-Klick) auf die App,
+**Öffnen** wählen und **Öffnen** bestätigen (ab macOS 15: einmal öffnen, dann
+**Systemeinstellungen > Datenschutz & Sicherheit > Dennoch öffnen**), oder im
+Terminal die Download-Quarantäne entfernen mit
+`xattr -dr com.apple.quarantine /Applications/U-Jagd.app`. macOS fragt
+eventuell, ob U-Jagd Geräte im lokalen Netzwerk finden und eingehende
+Verbindungen annehmen darf: für Remote Crew beides erlauben. Die Tasten sind
+dieselben wie auf den anderen Systemen (`Ctrl`, nicht `Cmd`).
+
+**Jetzt updaten** arbeitet wie im Windows-Programm: Die App lädt das Zip für
+ihren Prozessor, prüft Größe und SHA-256-Prüfsumme, entpackt die neue
+`U-Jagd.app` neben sich, schließt sich, tauscht das Bundle aus (das alte wird
+erst gelöscht, wenn das neue an seinem Platz ist) und öffnet die neue Version.
+Eine App, die aus dem Download-Ordner in Quarantäne oder aus einem Ordner ohne
+Schreibrecht läuft, öffnet stattdessen die Release-Seite. Spielstände und
+Einstellungen liegen wie unter Linux in `~/.u-jagd/`; ein Update fasst sie nie an.
+
+Derselbe Workflow baut `U-Jagd.app` mit PyInstaller
+(`packaging/macos/u-jagd-macos.spec`) nativ für arm64 und x86_64 (pygame und
+NumPy veröffentlichen keine universal2-Wheels), testet sie selbst, packt sie
+mit `ditto -c -k --keepParent` und hängt auf `main` in einem letzten Job beide
+Zips und das Windows-Programm an dasselbe Release. Selbst bauen auf einem Mac:
+`python -m pip install -e ".[macos]"` und
+`pyinstaller packaging/macos/u-jagd-macos.spec`.
+
 ## Voraussetzungen
 
-- Linux (oder Windows mit dem fertigen [Windows-Programm](#windows-programm))
+- Linux (oder Windows oder macOS mit dem fertigen [Windows-Programm](#windows-programm)
+  oder der [macOS-App](#macos-app))
 - Python 3.11 oder neuer
 - Pygame 2.6 oder neuer
 - NumPy 2.0 oder neuer

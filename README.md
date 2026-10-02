@@ -193,9 +193,43 @@ release and its `vX.Y.Z` git tag, so only the newest release and tag stay.
 To build locally on Windows: `python -m pip install -e ".[windows]"` and
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 
+## macOS app
+
+Download `U-Jagd-macOS-arm64.zip` (Apple silicon) or `U-Jagd-macOS-x86_64.zip`
+(Intel Mac) from the
+[latest release](https://github.com/db9979/uconsole_asw_game/releases/latest),
+unzip it and move `U-Jagd.app` to Applications (or any folder you can write
+to); no Python installation is needed. The app starts straight into the game
+like the Windows program. It is not signed with an Apple developer certificate
+or notarized, so the first start needs one extra step: right-click (or
+Control-click) the app, choose **Open** and confirm **Open** (on macOS 15 and
+later: open it once, then **System Settings > Privacy & Security > Open
+Anyway**), or remove the download quarantine in Terminal with
+`xattr -dr com.apple.quarantine /Applications/U-Jagd.app`. macOS may ask
+whether U-Jagd may find devices on the local network and accept incoming
+connections: allow both for Remote Crew. Keys are the same as on the other
+systems (`Ctrl`, not `Cmd`).
+
+**Update now** works as in the Windows program: the app downloads the zip for
+its processor, checks its size and SHA-256 digest, unpacks the new
+`U-Jagd.app` beside itself, closes, swaps the bundle (the old one is deleted
+only once the new one is in place) and opens the new version. An app run from
+the quarantined download folder or a folder you cannot write to opens the
+release page instead. Saves and settings live in `~/.u-jagd/` as on Linux; an
+update never touches them.
+
+The same workflow builds `U-Jagd.app` with PyInstaller
+(`packaging/macos/u-jagd-macos.spec`) natively for arm64 and x86_64 (pygame
+and NumPy publish no universal2 wheels), self-tests it, zips it with
+`ditto -c -k --keepParent` and, on `main`, a final job attaches both zips and
+the Windows program to the same release. To build locally on a Mac:
+`python -m pip install -e ".[macos]"` and
+`pyinstaller packaging/macos/u-jagd-macos.spec`.
+
 ## Requirements
 
-- Linux (or Windows with the packaged [Windows program](#windows-program))
+- Linux (or Windows or macOS with the packaged [Windows program](#windows-program)
+  or [macOS app](#macos-app))
 - Python 3.11 or newer
 - Pygame 2.6 or newer
 - NumPy 2.0 or newer

@@ -8,7 +8,7 @@ from src.core import config
 from src.core.i18n import localized, localize, raw_text
 from src.core.station import Station
 from src.ship.damage import COMPARTMENTS
-from src.ui import console, layout
+from src.ui import console, damage_section, layout
 
 
 from src.ui.stations.common import (
@@ -23,8 +23,13 @@ from src.ui.stations.common import (
 
 # --- Schadensbekämpfung (M5, M14) ------------------------------------------
 
+# Lamp cards under the profile, stern to bow, then the hull voids.
+CARD_ORDER = ("flightdeck", "engine", "radio", "opz", "weapons",
+              "bridge", "sonar", "hull_left", "hull_right")
+
+
 def damage_regions(game=None, station_rect=None, page=0) -> dict:
-    """Shared fictional deck-plan geometry in virtual-canvas coordinates.
+    """Shared fictional side-profile geometry in virtual-canvas coordinates.
 
     ``compartments`` preserves COMPARTMENTS/save ordering. Each entry contains
     a convex ``polygon``, a ``callout`` Rect and an interior ``anchor`` point.
@@ -46,57 +51,39 @@ def damage_regions(game=None, station_rect=None, page=0) -> dict:
         detail = pygame.Rect(station.centerx - detail_w // 2, top,
                              detail_w, max(1, bottom - top))
         schematic = pygame.Rect(0, 0, 0, 0)
-    hull_w = min(200, int(max(schematic.w, detail.w) * .30))
-    hull_center_x = (schematic.centerx if page == 0 else detail.centerx)
-    hull_rect = pygame.Rect(hull_center_x - hull_w // 2, top + 40,
-                            hull_w, max(1, bottom - top - 90))
-
-    def points(coords):
-        return tuple((round(hull_rect.x + x * hull_rect.w),
-                      round(hull_rect.y + y * hull_rect.h)) for x, y in coords)
-
-    hull = points(((.5, 0), (.82, .12), (1, .28), (1, .87),
-                   (.87, 1), (.13, 1), (0, .87), (0, .28), (.18, .12)))
-    polygons = {
-        "bridge": ((.2, .27), (.8, .27), (.8, .37), (.2, .37)),
-        "sonar": ((.35, .07), (.65, .07), (.82, .15), (.18, .15)),
-        "weapons": ((.18, .16), (.82, .16), (.8, .26), (.2, .26)),
-        "opz": ((.2, .38), (.8, .38), (.8, .49), (.2, .49)),
-        "radio": ((.2, .5), (.8, .5), (.8, .6), (.2, .6)),
-        "engine": ((.2, .61), (.8, .61), (.8, .73), (.2, .73)),
-        "flightdeck": ((.2, .74), (.8, .74), (.86, .98), (.14, .98)),
-        "hull_left": ((.02, .29), (.17, .29), (.17, .88), (.12, .96), (.02, .86)),
-        "hull_right": ((.83, .29), (.98, .29), (.98, .86), (.88, .96), (.83, .88)),
-    }
-    # Callout order is spatial; the public mapping and keyboard order are not.
-    left = ("sonar", "bridge", "opz", "engine", "hull_left")
-    right = ("weapons", "radio", "flightdeck", "hull_right")
-    ref_width = schematic.w if page == 0 else full_w
     compartments = {}
+    profile = section = pygame.Rect(0, 0, 0, 0)
     if page == 0:
-        for key, _ in COMPARTMENTS:
-            side = left if key in left else right
-            row = side.index(key)
-            row_h = hull_rect.h // len(side)
-            callout_w = int(ref_width * .28)
-            callout_h = min(row_h - 5, max(48, layout.font(16).get_linesize() * 2 + 10))
-            callout = pygame.Rect(schematic.x if side is left else schematic.right - callout_w,
-                                  hull_rect.y + row * row_h, callout_w, callout_h)
-            polygon = points(polygons[key])
+        # Side profile over a grid of lamp cards; the cross-section with both
+        # hull voids beside the profile (bow right, like the plan aboard).
+        cols = 5 if schematic.w >= 900 else 3
+        rows = -(-len(COMPARTMENTS) // cols)
+        line_h = layout.font(16).get_linesize() + 2
+        card_h = max(44, line_h * 2 + 8)
+        gap = 6
+        legend_h = 28
+        title_h = 26
+        cards_top = schematic.bottom - legend_h - rows * card_h - (rows - 1) * gap
+        art = pygame.Rect(schematic.x, schematic.y + title_h, schematic.w,
+                          max(40, cards_top - gap - schematic.y - title_h))
+        section_w = max(90, min(art.w // 5, art.h))
+        profile = pygame.Rect(art.x, art.y, art.w - section_w - gap, art.h)
+        section = pygame.Rect(profile.right + gap, art.y, section_w, art.h)
+        heel = float(game.damage.list_deg()) if game is not None and hasattr(game, "damage") else 0.0
+        draft = float(getattr(getattr(game, "damage", None), "draft_m", 7.5))
+        polygons = damage_section.frigate_room_polygons(profile, section, heel, draft)
+        card_w = (schematic.w - (cols - 1) * gap) // cols
+        for index, key in enumerate(CARD_ORDER):
+            col, row = index % cols, index // cols
+            callout = pygame.Rect(schematic.x + col * (card_w + gap),
+                                  cards_top + row * (card_h + gap), card_w, card_h)
+            polygon = polygons[key]
             anchor = (sum(p[0] for p in polygon) // len(polygon),
                       sum(p[1] for p in polygon) // len(polygon))
             compartments[key] = {"polygon": polygon, "callout": callout, "anchor": anchor}
-    features = {
-        "gun": points(((.43, .085), (.57, .085), (.59, .13), (.41, .13))),
-        "barrel": points(((.5, .085), (.5, .035))),
-        "vls": points(((.32, .18), (.68, .18), (.68, .24), (.32, .24))),
-        "mast": points(((.5, .4), (.5, .47), (.28, .435), (.72, .435))),
-        "funnel": points(((.37, .63), (.63, .63), (.63, .7), (.37, .7))),
-        "hangar": points(((.3, .76), (.7, .76), (.7, .83), (.3, .83))),
-        "helipad": points(((.28, .86), (.72, .86), (.72, .95), (.28, .95))),
-    }
+        compartments = {key: compartments[key] for key, _ in COMPARTMENTS}
     return {"station": station, "schematic": schematic, "detail": detail,
-            "hull": hull, "features": features, "compartments": compartments,
+            "profile": profile, "section": section, "compartments": compartments,
             "footer": pygame.Rect(station.x + 16, station.bottom - 56, station.w - 32, 48)}
 
 
@@ -141,41 +128,24 @@ def draw_damage_view(game, tr=None) -> None:
         layout.record_geometry("schematic", plan, "damage.schematic.title")
         layout.blit_line(s, "damage.schematic.title", (plan.x, plan.y, plan.w, 26),
                          config.COLOR_TEXT_DIM, size=16)
-        pygame.draw.polygon(s, (12, 32, 34), regions["hull"])
-        pygame.draw.polygon(s, (115, 161, 163), regions["hull"], 2)
+        selected_room = selected_key
+        damage_section.draw_frigate_profile(s, regions["profile"], game.damage, selected_room)
+        damage_section.draw_frigate_section(s, regions["section"], game.damage, selected_room)
+        layout.record_geometry("schematic", regions["profile"], "damage.profile.title")
+        sec = regions["section"]
+        layout.blit_line(s, message("damage.section.list", list=f"{game.damage.list_deg():+.1f}"),
+                         (sec.x, sec.bottom - 20, sec.w, 20),
+                         config.COLOR_WARN if abs(game.damage.list_deg()) >= 5.0
+                         else config.COLOR_TEXT_DIM, size=14, align="center")
+        prof = regions["profile"]
+        layout.blit_line(s, message("damage.profile.draft",
+                                    draft=f"{float(getattr(game.damage, 'draft_m', 7.5)):.1f}",
+                                    trim=f"{game.damage.trim_deg():+.1f}"),
+                         (prof.x + 4, prof.bottom - 20, prof.w // 2, 20), (120, 190, 230), size=14)
         line_h = layout.font(16).get_linesize() + 2
         for i, (key, c) in enumerate(items):
-            region = regions["compartments"][key]
-            polygon, card, anchor = region["polygon"], region["callout"], region["anchor"]
-            sc = _state_color(c.state)
-            is_sel = i == game.dmg_cursor
-            _draw_compartment(s, polygon, c)
-            pygame.draw.polygon(s, config.COLOR_TEXT if is_sel else sc,
-                                polygon, 3 if is_sel else 1)
-            left_side = card.centerx < anchor[0]
-            edge = card.midright if left_side else card.midleft
-            endpoint = (min(p[0] for p in polygon) if left_side else max(p[0] for p in polygon),
-                        anchor[1])
-            pygame.draw.lines(s, sc, False,
-                              (edge, (edge[0] + (10 if left_side else -10), edge[1]), endpoint), 1)
-            _draw_callout(game, s, card, i, key, c, is_sel, line_h)
-        for name, pts in regions["features"].items():
-            if name in ("barrel", "mast"):
-                pygame.draw.lines(s, (124, 161, 163), False, pts, 2)
-            else:
-                pygame.draw.polygon(s, (124, 161, 163), pts, 1)
-            if name in ("vls", "funnel", "hangar"):
-                for step in range(1, 4):
-                    fx = round(pts[0][0] + (pts[1][0] - pts[0][0]) * step / 4)
-                    pygame.draw.line(s, (90, 125, 129), (fx, pts[0][1]),
-                                     (fx, pts[2][1]), 1)
-            if name == "helipad":
-                bounds = pygame.Rect(pts[0], (pts[2][0] - pts[0][0],
-                                              pts[2][1] - pts[0][1]))
-                inset = bounds.inflate(-bounds.w // 2, -bounds.h // 3)
-                pygame.draw.line(s, config.COLOR_TEXT_DIM, inset.topleft, inset.bottomleft, 1)
-                pygame.draw.line(s, config.COLOR_TEXT_DIM, inset.topright, inset.bottomright, 1)
-                pygame.draw.line(s, config.COLOR_TEXT_DIM, inset.midleft, inset.midright, 1)
+            card = regions["compartments"][key]["callout"]
+            _draw_callout(game, s, card, i, key, c, i == game.dmg_cursor, line_h)
         _draw_legend(s, pygame.Rect(plan.x, plan.bottom - 30, plan.w, 24))
     else:
         detail = layout.box(s, regions["detail"],
@@ -246,51 +216,6 @@ def draw_damage_view(game, tr=None) -> None:
 def _state_level(c) -> str:
     return ("alarm" if c.state in ("ZERSTOERT", "FLUTEND") else
             "caution" if c.state != "OK" else "on")
-
-
-def _masked(s, polygon, paint) -> None:
-    """Let ``paint`` draw on a scratch layer and keep only the compartment."""
-    bounds = pygame.Rect(min(p[0] for p in polygon), min(p[1] for p in polygon), 1, 1)
-    bounds.width = max(p[0] for p in polygon) - bounds.x + 1
-    bounds.height = max(p[1] for p in polygon) - bounds.y + 1
-    layer = pygame.Surface(bounds.size, pygame.SRCALPHA)
-    paint(layer, bounds)
-    mask = pygame.Surface(bounds.size, pygame.SRCALPHA)
-    pygame.draw.polygon(mask, (255, 255, 255, 255),
-                        [(x - bounds.x, y - bounds.y) for x, y in polygon])
-    layer.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
-    s.blit(layer, bounds.topleft)
-
-
-def _draw_compartment(s, polygon, c) -> None:
-    """Deck, water level from the keel up, fire glow and wreck hatching."""
-    pygame.draw.polygon(s, (18, 42, 39), polygon)
-    flood = max(0.0, min(100.0, float(c.flood))) / 100.0
-    fire = max(0.0, min(100.0, float(c.fire))) / 100.0
-    lost = c.state == "ZERSTOERT"
-    if not (flood or fire or lost):
-        return
-
-    def paint(layer, bounds):
-        w, h = bounds.size
-        if flood:
-            level = round(h * (1 - flood))
-            layer.fill((40, 110, 160, 170), (0, level, w, h - level))
-            pygame.draw.line(layer, (132, 194, 223, 255), (0, level), (w, level), 1)
-        if fire:
-            glow = pygame.Surface((w, h), pygame.SRCALPHA)
-            cx, cy = w // 2, h // 2
-            for step in range(4, 0, -1):
-                alpha = round(40 + 150 * fire * (5 - step) / 4)
-                pygame.draw.ellipse(glow, (255, 110 + 20 * step, 50, min(230, alpha)),
-                                    (cx - w * step // 8, cy - h * step // 8,
-                                     w * step // 4, h * step // 4))
-            layer.blit(glow, (0, 0))
-        if lost:
-            for x in range(-h, w, 9):
-                pygame.draw.line(layer, (225, 78, 70, 200), (x, h), (x + h, 0), 1)
-
-    _masked(s, polygon, paint)
 
 
 def _draw_callout(game, s, card, index, key, c, is_sel, line_h) -> None:

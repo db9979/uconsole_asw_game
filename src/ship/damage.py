@@ -460,6 +460,10 @@ class DamageModel:
         head = waterline - max(geo["floor"], c.water_level_m())
         return orifice_inflow_m3_s(c.hole_m2, head) / geo["volume"] * 100.0
 
+    def inflow_pct_s(self, key: str) -> float:
+        """Water now rushing in through the room's hole (percent per second)."""
+        return self._inflow_pct_s(self.compartments[key])
+
     def compartment_trend(self, key: str) -> dict:
         """Pure instantaneous net rates, excluding random spread/transitions.
 

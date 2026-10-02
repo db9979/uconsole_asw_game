@@ -3,6 +3,9 @@ import { $ } from "../core/base.js";
 import { finite, number, t, unit } from "../core/format.js";
 import { node } from "../views/dom.js";
 import { drawDialPanel, keyed, pct, renderLampPanel, signed } from "../views/console-kit.js";
+import { palette } from "../core/palette.js";
+import { visualContext } from "../views/visual-common.js";
+import { drawBoatSection } from "./damage-section.js";
 
 // The submarine's engine-room control console on the stage: an annunciator
 // panel of status lamps, round gauges, tank columns and the compartment
@@ -130,8 +133,8 @@ function renderTanks(payload) {
   });
 }
 
-// Compartment mimic, bow to stern: water level, the lamps of each room and
-// the bulkhead switch state; the teams working in it.
+// Compartment row under the cutaway, stern to bow by CSS order: name, water
+// and the teams working in it (the lamps stay for screen readers and tests).
 function renderMimic(payload) {
   const dc = payload.damage_control;
   const cells = keyed($("uboot-engine-compartments"), dc.compartments.map((row) => row.name), (name) => {
@@ -200,7 +203,14 @@ function dialSpecs(payload, colors) {
 
 export function drawUbootEngineDials() {
   const payload = S.v2State?.uboot_engine;
-  if (payload?.plant) drawDialPanel("uboot-engine-dials", "uboot-engine-dials-text", (colors) => dialSpecs(payload, colors));
+  if (!payload?.plant) return;
+  drawDialPanel("uboot-engine-dials", "uboot-engine-dials-text", (colors) => dialSpecs(payload, colors));
+  const plot = visualContext("uboot-engine-cutaway");
+  if (plot) {
+    const dc = payload.damage_control;
+    drawBoatSection(plot.context, {x: 4, y: 4, width: plot.width - 8, height: plot.height - 8},
+      dc.compartments, dc.teams, payload.ballast.trim_deg, palette());
+  }
 }
 
 export function renderUbootEngineConsole(payload) {

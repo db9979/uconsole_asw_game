@@ -1093,6 +1093,9 @@ class CommanderBridge:
             self._dirty = True
             return
         if drained:
+            # Publish the state a command produced together with its result, so
+            # a browser that settles the command never sees the older state.
+            self._dirty = True
             # A host command may have loaded or started a world: settle that change
             # in this very frame, so the browser never sees the new state while the
             # bridge still owes an epoch bump (which would eat its next command).

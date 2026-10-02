@@ -261,6 +261,16 @@
 .console-readout { display: grid; gap: .05rem; min-width: 0; padding: .25rem .45rem; background: var(--scope); border: 1px solid var(--line); border-radius: var(--radius); }
 .console-readout span { overflow: hidden; color: var(--text-dim); font-size: .62rem; letter-spacing: .06em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .console-readout strong { overflow: hidden; color: var(--live); font: 600 var(--font-sm) var(--font-mono); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+/* The boat's engine room: the cutaway drawing (damage-section.js) with a
+   compact row of names, water and teams under its compartments, stern left. */
+.console-mimic:has(.console-cutaway) { display: flex; flex-direction: column; }
+.console-cutaway { display: block; width: 100%; flex: 1 1 8rem; min-height: 8rem; }
+.console-rooms.console-cutaway-rooms { flex: 0 0 auto; min-height: 0; grid-template-columns: .14fr .2fr .17fr .15fr .18fr .16fr; padding: .2rem 11% .2rem 7%; background: none; border: 0; border-radius: 0; }
+.console-cutaway-rooms .console-room { border-radius: 3px; min-height: 0; padding: .15rem .1rem; }
+.console-cutaway-rooms .console-room-water, .console-cutaway-rooms .console-room-leds { display: none; }
+.console-cutaway-rooms [data-key="stern"] { order: 1; } .console-cutaway-rooms [data-key="engine"] { order: 2; }
+.console-cutaway-rooms [data-key="battery"] { order: 3; } .console-cutaway-rooms [data-key="quarters"] { order: 4; }
+.console-cutaway-rooms [data-key="control"] { order: 5; } .console-cutaway-rooms [data-key="bow"] { order: 6; }
 .console-rooms.console-ship { grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto minmax(8rem, 1fr) auto; border-radius: 3.2rem 1rem 1rem 3.2rem; }
 .console-ship .console-room[data-side] { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; gap: .6rem; padding: .25rem .6rem; border-radius: 3px; }
 .console-ship .console-room[data-side] .console-room-leds { display: flex; width: auto; margin: 0; }

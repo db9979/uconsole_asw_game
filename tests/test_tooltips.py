@@ -105,7 +105,7 @@ def test_every_station_has_meaningful_context(game, station, pos):
     (Station.BRIDGE, (700, 150), "COURSE / RUDDER"),
     (Station.SONAR, (100, 200), "BROADBAND BIN"),
     (Station.WEAPONS, (700, 150), "FIRE-CONTROL SOLUTION"),
-    (Station.DAMAGE, (30, 150), "Flooding"),
+    (Station.DAMAGE, (400, 300), "Flooding"),
     (Station.OPZ, (1100, 120), "OPERATIONS / CIC CONTROLS"),
     (Station.RADIO, (30, 120), "HFDF BEARINGS"),
     (Station.ENGINE, (30, 120), "ENGINE ORDER"),

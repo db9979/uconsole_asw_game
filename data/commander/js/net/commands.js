@@ -139,6 +139,8 @@ export async function pollV2Result(context) {
     status: result.status, reasoncode: result.reasoncode};
   if (result.status === "rejected" && command.body.action === "sonar_set_focus") S.requestedSonarFocus = null;
   S.pending = null;
-  S.stationDrafts.clear();
+  // The snapshot in hand predates the result: keep the operator's picks until
+  // the next one, which carries the command's effect (see poll.js).
+  S.clearDraftsAfter = S.snapshot?.seq ?? -1;
   emit("command:settled");
 }

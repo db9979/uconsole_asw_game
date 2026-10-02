@@ -872,10 +872,18 @@ def _crew(game, watch=None, roster=None):
                     reassign_in_s=_number(hurt["reassign_in_s"])))
 
 
+def _leak_state(room) -> str:
+    """An own hull hole as the damage-control plot shows it."""
+    if room.hole_m2 <= 0.0 or room.state == "ZERSTOERT":
+        return "none"
+    return "open" if room.state == "FLUTEND" else "patched"
+
+
 def _damage(game):
     compartments = [dict(key=room.key, name=game.tr("compartment." + room.key),
                           state=room.state, flood=_number(room.flood),
-                          fire=_number(room.fire),
+                          fire=_number(room.fire), leak=_leak_state(room),
+                          inflow=_number(game.damage.inflow_pct_s(room.key)),
                            repairable=room.key in game.damage.repair_candidates(),
                            trend={key: _number(value) if key != "repairable" else bool(value)
                                   for key, value in game.damage.compartment_trend(
@@ -886,6 +894,7 @@ def _damage(game):
     return dict(compartments=compartments, teams=teams, crew=_crew(game),
                 total=_number(game.damage.total), sunk=bool(game.damage.ship_sunk),
                 stability=dict(list_deg=_number(game.damage.list_deg()),
+                               draft_m=_number(game.damage.draft_m),
                                trim_deg=_number(game.damage.trim_deg()),
                                counterflood_room=game.damage.counterflood_room,
                                can_counterflood=(

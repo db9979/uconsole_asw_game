@@ -123,7 +123,6 @@ export async function poll() {
         S.opzSuppressed.clear();
         S.opzManage = false;
         S.stationDrafts.clear();
-        S.ubootSeekerSent = null;
       }
       // Drafts and forms of the previous context are dropped by the views.
       emit("context:changed", worldChanged);
@@ -137,6 +136,10 @@ export async function poll() {
       }
     }
     S.snapshot = next;
+    if (S.clearDraftsAfter !== null && (changed || next.seq > S.clearDraftsAfter)) {
+      S.stationDrafts.clear();
+      S.clearDraftsAfter = null;
+    }
     S.roleStale = false;
     emit("role:fresh");
     syncStatePush();

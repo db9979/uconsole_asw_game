@@ -4,6 +4,21 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.160
+
+Version 1.3.160 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
+Fregatte ist ein Seitenriss mit Decks, Aufbauten und Masten, jede Abteilung
+auf ihrer wirklichen Höhe, außen See und Wasserlinie mit Tiefgangsmarken,
+Leckwasser, das sich mit dem Trimm neigt, offene Lecks mit einströmendem
+Wasser, gesetzte Leckpflaster und Pumpen, die über Bord lenzen, und ein
+Querschnitt, der mit dem Schiff krängt. Das U-Boot ist ein Schnittbild des
+Druckkörpers mit Turm, Einbauten, Wasser, Brand, Chlorgas, Lecks und runden
+Schotttüren, auf der uConsole und im Browser. Übernehmen-Knöpfe im Browser
+(Suchkopf, Torpedoeinstellung, Antrieb, Hubschraubermuster) springen nicht
+mehr kurz zurück, und das aktive Sonar des Begleitzerstörers pingt in jedem
+Spiel mit gleichem Startwert gleich. Spielstände bleiben v49; v38 bis v48
+lassen sich weiter laden.
+
 ## 1.3.159
 
 Version 1.3.159 ersetzt die feste Missionsliste im Startmenü durch eine rollende.

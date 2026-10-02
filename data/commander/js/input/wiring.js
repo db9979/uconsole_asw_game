@@ -427,8 +427,10 @@ export function init() {
   });
   $("sonar-clear-focus").addEventListener("click", () => sendStationAction("sonar_clear_focus", {}));
   $("sonar-array-apply").addEventListener("click", () => sendStationAction("sonar_set_array_mode", {mode: $("sonar-array-mode").value}));
+  // Apply buttons keep the picked values as drafts until the command settles
+  // (settling clears every draft); dropping them on the click let a state
+  // push from before the command flip the controls back.
   $("weapons-settings-apply").addEventListener("click", () => {
-    for (const id of ["weapons-torpedo-type", "weapons-pattern", "weapons-enable", "weapons-salvo"]) S.stationDrafts.delete(id);
     sendStationAction("weapons_set_torpedo_settings", {torpedo_type: $("weapons-torpedo-type").value,
       pattern: $("weapons-pattern").value, enable_nm: $("weapons-enable").valueAsNumber,
       salvo: Number($("weapons-salvo").value)});
@@ -498,7 +500,6 @@ export function init() {
   });
   $("engine-quiet").addEventListener("click", () => sendStationAction("engine_set_quiet_mode", {enabled: !S.v2State.engine.propulsion.quiet_mode}));
   $("engine-plant-apply").addEventListener("click", () => {
-    S.stationDrafts.delete("engine-plant");
     sendStationAction("engine_set_plant", {mode: $("engine-plant").value});
   });
   $("damage-counterflood").addEventListener("click", () => sendStationAction("damage_counterflood",
@@ -598,10 +599,8 @@ export function init() {
   $("uboot-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));
   $("uboot-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
   $("uboot-seeker-apply").addEventListener("click", () => {
-    for (const id of ["uboot-seeker-pattern", "uboot-seeker-enable"]) S.stationDrafts.delete(id);
-    const setting = {pattern: $("uboot-seeker-pattern").value, enable_nm: $("uboot-seeker-enable").valueAsNumber};
-    S.ubootSeekerSent = {...setting, ackSeq: null};
-    sendStationAction("uboot_torpedo_settings", setting);
+    sendStationAction("uboot_torpedo_settings", {pattern: $("uboot-seeker-pattern").value,
+      enable_nm: $("uboot-seeker-enable").valueAsNumber});
   });
   $("uboot-route-mode").addEventListener("click", () => {
     S.ubootRouteMode = !S.ubootRouteMode;
@@ -641,7 +640,6 @@ export function init() {
   });
   $("opz-mpa-pattern-apply").addEventListener("click", () => sendStationAction("mpa_set_pattern", {kind: $("opz-mpa-pattern").value}));
   $("helicopter-pattern-apply").addEventListener("click", () => {
-    S.stationDrafts.delete("helicopter-pattern");
     sendStationAction("helicopter_set_pattern", {kind: $("helicopter-pattern").value});
   });
   $("helicopter-mad").addEventListener("click", () => sendStationAction("helicopter_set_mad",

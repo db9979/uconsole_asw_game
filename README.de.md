@@ -14,17 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.159**
+Aktuelle Version: **1.3.160**
 
-Version 1.3.159 macht die Missionsauswahl im Startmenü zu einer rollenden Liste.
-Mit zwölf Szenarien je Seite war die Liste in die Welt- und Seed-Zeilen
-darunter gewachsen. Jetzt stehen neun Zeilen auf einmal in einem Feld mit
-Rollbalken, das der Auswahl folgt (Auf/Ab, Mausrad, Bild auf/ab, Pos1/Ende),
-und darunter der Anfang der Einsatzbesprechung des gewählten Szenarios. Eigene
-Missionen, die Schwierigkeit der freien Jagd und die Lektionen rollen genauso,
-lange Menüzeilen werden auf Bildschirmbreite verkleinert, und die Liste „Neues
-Spiel“ im Browser nennt die Freie Fahrt. Spielstände bleiben v49; Spielstände
-v38 bis v48 lassen sich weiter laden.
+Version 1.3.160 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
+Fregatte ist ein Seitenriss mit Decks, Aufbauten und Masten, jede Abteilung
+auf ihrer wirklichen Höhe, außen See und Wasserlinie mit Tiefgangsmarken,
+Leckwasser, das sich mit dem Trimm neigt, offene Lecks mit einströmendem
+Wasser, gesetzte Leckpflaster und Pumpen, die über Bord lenzen, und ein
+Querschnitt, der mit dem Schiff krängt. Das U-Boot ist ein Schnittbild des
+Druckkörpers mit Turm, Einbauten, Wasser, Brand, Chlorgas, Lecks und runden
+Schotttüren, auf der uConsole und im Browser. Übernehmen-Knöpfe im Browser
+(Suchkopf, Torpedoeinstellung, Antrieb, Hubschraubermuster) springen nicht
+mehr kurz zurück. Spielstände bleiben v49; v38 bis v48 lassen sich weiter
+laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

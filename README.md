@@ -12,16 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.159**
+Current release: **1.3.160**
 
-Release 1.3.159 turns the start menu's mission list into a scrolling list. With
-twelve scenarios per side the list had grown into the world and seed lines
-below it. Now nine rows show at once in a panel with a scroll bar that follows
-the selection (Up/Down, wheel, PgUp/PgDn, Home/End), and the start of the
-selected scenario's briefing appears below. The own missions, the free hunt's
-difficulty and the lessons scroll the same way, long menu lines shrink to the
-screen, and the browser's new-game list names the free patrol. Saves stay v49;
-v38 to v48 saves still load.
+Release 1.3.160 redraws the damage-control pictures like a real damage-
+control board. The frigate is a side profile with decks, superstructure and
+masts, every compartment at its real height, the sea and waterline outside
+with draft marks, floodwater tilted by the trim, open holes with water
+rushing in, fitted patches and pumps discharging over the side, and a cross-
+section that lists with the ship. The submarine is a cutaway of its pressure
+hull with sail, fittings, water, fire, chlorine, leaks and round bulkhead
+doors, on the uConsole and in the browser. Apply buttons in the browser
+(seeker, torpedo settings, plant, helicopter pattern) no longer jump back
+for a moment. Saves stay v49; v38 to v48 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -20,7 +20,8 @@ export const scenarioText = {s1_patrouille: "scenario_s1_patrouille", s2_doppelj
   s15_versorgung: "scenario_s15_versorgung", s16_seenot: "scenario_s16_seenot",
   s17_duell: "scenario_s17_duell", s18_heimkehr: "scenario_s18_heimkehr",
   s19_abholung: "scenario_s19_abholung", s20_lauschposten: "scenario_s20_lauschposten",
-  s21_suchgruppe: "scenario_s21_suchgruppe", s22_jagdgruppe: "scenario_s22_jagdgruppe"};
+  s21_suchgruppe: "scenario_s21_suchgruppe", s22_jagdgruppe: "scenario_s22_jagdgruppe",
+  frei_fregatte: "scenario_frei_fregatte", frei_uboot: "scenario_frei_uboot"};
 const hostPhaseAllows = (kind) => {
   const phase = S.hostView?.phase;
   return kind === "any" ? phase === "live" :

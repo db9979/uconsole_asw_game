@@ -12,7 +12,10 @@ import pygame
 
 from src.core import config, training
 from src.core.i18n import message
-from src.ui import layout, pointer
+from src.ui import layout, menu_list, pointer
+
+# Lessons shown at once on the training page (the list scrolls).
+TRAINING_ROWS = 6
 
 
 class TrainingMixin:
@@ -80,21 +83,28 @@ class TrainingMixin:
 
     def _draw_training_menu(self, center) -> None:
         center(self.tr("training.menu_title"), 150, color=config.COLOR_TEXT_DIM)
-        for index, lesson in enumerate(training.LESSONS):
+        count = len(training.LESSONS)
+        first = menu_list.first_row(count, self.menu_sel, TRAINING_ROWS)
+        for index in range(first, min(count, first + TRAINING_ROWS)):
+            lesson = training.LESSONS[index]
+            y = 200 + (index - first) * 62
             selected = index == self.menu_sel
             title = self.tr("training.lesson." + lesson)
             if lesson in training.BOAT_LESSONS:
                 title = message("training.boat_title", title=title)
             # A click on a lesson starts it (like selecting it and Enter).
-            pointer.add_action((config.SCREEN_W // 2 - 420, 200 + index * 62 - 16, 840, 58),
+            pointer.add_action((config.SCREEN_W // 2 - 420, y - 16, 840, 58),
                                lambda _pos, index=index: self._click_menu_row(
                                    lambda: setattr(self, "menu_sel", index)))
             center(message("training.menu_choice", marker="► " if selected else "  ",
                            index=str(index + 1), title=title),
-                   200 + index * 62, color=config.COLOR_TEXT if selected
-                   else config.COLOR_TEXT_DIM)
+                   y, color=config.COLOR_TEXT if selected
+                   else config.COLOR_TEXT_DIM, width=840)
             layout.blit_line(self.screen, "training.lesson_note." + lesson,
-                             (config.SCREEN_W // 2 - 420, 220 + index * 62, 840, 24),
+                             (config.SCREEN_W // 2 - 420, y + 20, 840, 24),
                              config.COLOR_TEXT_DIM, size=17, align="center")
+        menu_list.draw_scrollbar(self.screen, (config.SCREEN_W // 2 + 432, 184,
+                                               8, TRAINING_ROWS * 62),
+                                 first, TRAINING_ROWS, count)
         center(self.tr("training.menu_hint"), 590, color=config.COLOR_TEXT_DIM,
                keys=(None, "Enter", "Esc"))

@@ -14,13 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.158**
+Aktuelle Version: **1.3.159**
 
-Version 1.3.158 korrigiert die Kopfzeile im Browser: Der Knopf des Ersten
-Offiziers („IWO fragen“) sitzt jetzt in der Werkzeugleiste neben dem
-Tonschalter, statt neben dem Missionsnamen zu einer Säule aus einzelnen
-Buchstaben gequetscht zu werden. Spielstände bleiben v49; Spielstände v38 bis
-v48 lassen sich weiter laden.
+Version 1.3.159 macht die Missionsauswahl im Startmenü zu einer rollenden Liste.
+Mit zwölf Szenarien je Seite war die Liste in die Welt- und Seed-Zeilen
+darunter gewachsen. Jetzt stehen neun Zeilen auf einmal in einem Feld mit
+Rollbalken, das der Auswahl folgt (Auf/Ab, Mausrad, Bild auf/ab, Pos1/Ende),
+und darunter der Anfang der Einsatzbesprechung des gewählten Szenarios. Eigene
+Missionen, die Schwierigkeit der freien Jagd und die Lektionen rollen genauso,
+lange Menüzeilen werden auf Bildschirmbreite verkleinert, und die Liste „Neues
+Spiel“ im Browser nennt die Freie Fahrt. Spielstände bleiben v49; Spielstände
+v38 bis v48 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

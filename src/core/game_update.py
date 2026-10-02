@@ -8,7 +8,9 @@ entry in the game language, whether saves stop loading (a different
 
 The button hands over to whatever installed the game: the Windows program
 downloads its new ``.exe`` in the background (size and SHA-256 checked), swaps
-it in once it has closed and starts it (``src/launcher/update.py``); in the
+it in once it has closed and starts it (``src/launcher/update.py``); the macOS
+app downloads its processor's zip, unpacks the new ``U-Jagd.app`` beside the
+running one and swaps the bundle once it has closed; in the
 ``starter`` mode it exits with ``UPDATE_EXIT_CODE`` and the Windows entry
 point (``src/launcher/entry.py``) does that. The uConsole launcher (``u_jagd_updater.py install``) waits for the game
 to close, updates, then starts it again. Any other install opens the release
@@ -35,7 +37,7 @@ from src.launcher import update
 from src.launcher.update import UPDATE_EXIT_CODE
 from src.ui import layout
 
-UPDATE_MODES = ("windows", "starter", "uconsole", "browser")
+UPDATE_MODES = ("windows", "macos", "starter", "uconsole", "browser")
 ROOT = Path(__file__).resolve().parents[2]
 UPDATER = ROOT / "packaging" / "uconsole" / "u_jagd_updater.py"
 # Start screen: top right, over the sky; main menu: left of the entries.
@@ -48,7 +50,13 @@ ACCENT = (236, 204, 128)
 def default_update_mode() -> str:
     """How "Update now" installs: the uConsole launcher for its own checkout."""
     if getattr(sys, "frozen", False):
-        return "windows"
+        if sys.platform != "darwin":
+            return "windows"
+        # A bundle macOS runs translocated, or in a folder this user cannot
+        # write, cannot replace itself: those open the release page.
+        replaceable = (update.mac_bundle(sys.executable) is not None
+                       and update.mac_asset_name() is not None)
+        return "macos" if replaceable else "browser"
     if (os.name == "posix" and UPDATER.exists() and (ROOT / ".git").exists()
             and Path(sys.prefix).resolve() == (ROOT / ".venv").resolve()):
         return "uconsole"
@@ -57,6 +65,11 @@ def default_update_mode() -> str:
 
 def remove_stale_download() -> None:
     """Delete an ``<exe>.new`` left by an update that could not swap in."""
+    if sys.platform == "darwin":
+        bundle = update.mac_bundle(sys.executable)
+        if bundle is not None:
+            update.remove_mac_leftovers(bundle)
+        return
     for suffix in (".new", ".new.part"):
         try:
             os.remove(os.path.abspath(sys.executable) + suffix)
@@ -84,7 +97,7 @@ class UpdateNoticeMixin:
             return False
         self.update_mode = mode if mode in UPDATE_MODES else default_update_mode()
         self.update_args = tuple(str(arg) for arg in args)
-        if self.update_mode == "windows":
+        if self.update_mode in ("windows", "macos"):
             remove_stale_download()
 
         def work() -> None:
@@ -113,6 +126,9 @@ class UpdateNoticeMixin:
             return False
         if self.update_mode == "windows":
             self._download_windows_update(notice)
+            return False
+        if self.update_mode == "macos":
+            self._download_macos_update(notice)
             return False
         if self.update_mode == "starter":
             self.update_exit_code = UPDATE_EXIT_CODE
@@ -167,13 +183,52 @@ class UpdateNoticeMixin:
 
         threading.Thread(target=work, name="update-download", daemon=True).start()
 
+    def _download_macos_update(self, notice) -> None:
+        """Fetch and unpack the new app beside this one; ``update_tick`` swaps it."""
+        if self.update_progress is not None:
+            return  # already downloading
+        bundle = update.mac_bundle(sys.executable)
+        asset = update.mac_asset_name()
+        if bundle is None or asset is None:
+            webbrowser.open(notice.page)
+            return
+        self.update_failed = False
+        self.update_progress = 0
+
+        def progress(done: int, total: int) -> None:
+            # The last percent is the unpacking.
+            self.update_progress = min(99, int(done * 100 / max(1, total)))
+
+        def work() -> None:
+            try:
+                release = update.check_latest(APP_VERSION, asset_name=asset)
+                if release is None:
+                    webbrowser.open(notice.page)
+                    self.update_progress = None
+                    return
+                update.download(release, bundle.archive, progress=progress)
+                update.unpack_app(bundle.archive, bundle)
+            except update.UpdateError:
+                update.remove_mac_leftovers(bundle)
+                self.update_failed = True
+                self.update_progress = None
+                return
+            self.update_progress = 100
+            self._update_ready = bundle
+
+        threading.Thread(target=work, name="update-download", daemon=True).start()
+
     def update_tick(self) -> None:
         """Main loop: once the download is complete, swap and restart."""
         ready, self._update_ready = self._update_ready, None
         if ready is None:
             return
+        log = str(Path.home() / ".u-jagd" / "updater.log")
         try:
-            update.launch_install(*ready, log=str(Path.home() / ".u-jagd" / "updater.log"))
+            if isinstance(ready, update.MacBundle):
+                update.launch_mac_install(ready, log=log)
+            else:
+                update.launch_install(*ready, log=log)
         except update.UpdateError:
             self.update_failed = True
             self.update_progress = None

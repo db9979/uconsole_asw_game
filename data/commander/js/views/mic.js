@@ -47,7 +47,9 @@ function render() {
   meter.dataset.band = band(loudest);
   const status = failure ? t(failure) : !on && crew === 0 ? t("mic_hint")
     : t(`mic_band_${band(loudest)}`);
-  $("mic-status").textContent = quiet ? `${status} · ${t("mic_quiet_ordered")}` : status;
+  const text = quiet ? `${status} · ${t("mic_quiet_ordered")}` : status;
+  $("mic-status").textContent = text;
+  meter.title = text;
 }
 
 function send(now) {

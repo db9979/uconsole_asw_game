@@ -340,7 +340,9 @@ body.shock-dust::after {
 
 /* Noise discipline (views/mic.js): the own microphone against the host's
    thresholds, green quiet, amber heard close by, red heard far off. */
-.mic-discipline { display: inline-flex; align-items: center; gap: .4rem; }
+.mic-discipline { display: inline-flex; align-items: center; gap: .3rem; }
+/* The header stays one line: the band reads from the meter's colour and title. */
+.mic-discipline > button { min-height: 2rem; padding: .15rem .55rem; font-size: var(--font-xs); }
 .mic-meter { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 5px; gap: 1px; height: 1.1rem; align-items: stretch; }
 .mic-meter i { border: 1px solid var(--line); background: transparent; }
 .mic-meter i[data-band="quiet"].lit { background: var(--live); }

@@ -4,7 +4,8 @@ of the exclusive station roles.  Moved verbatim from ``server.py``;
 """
 
 from src.commander.v2.wire import (
-    ROLES, DIRECT_FIRE_ROLES, SONAR_AUDIO_ROLES, HANDOVER_MAX, _V2_STATION_CAPABILITIES)
+    ROLES, DIRECT_FIRE_ROLES, SONAR_AUDIO_ROLES, HANDOVER_MAX,
+    _V2_STATION_CAPABILITIES)
 
 
 class StationLeaseServerMixin:

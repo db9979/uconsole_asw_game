@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from src.core import noise_discipline as nd
+from src.core import game_noise, noise_discipline as nd
 from src.core.game import Game
 from src.core.i18n import localize
 
@@ -69,7 +69,7 @@ def test_a_mishap_under_quiet_mode_is_louder_and_reported(game, monkeypatch):
 def test_the_frigate_hears_a_submarine_crew_fumble(game, monkeypatch):
     sub = next(sub for sub in game.subs if not sub.sunk)
     sub.x, sub.y = game.ship.x + 0.5, game.ship.y
-    sub_key = int(sub.id) + 1
+    sub_key = game_noise.platform_key(sub)
     monkeypatch.setattr(nd, "mishap",
                         lambda seed, key, window, rate: "tool" if key == sub_key else None)
     game.ship.speed = 0.0
@@ -114,7 +114,7 @@ def test_the_crewed_boat_hears_the_frigate_and_its_own_fumbles(monkeypatch):
     game.ship.speed = 0.0
     boat.orders.silent = True
     boat.sub.speed = 2.0
-    boat_key = int(boat.sub.id) + 1
+    boat_key = game_noise.platform_key(boat.sub)
     monkeypatch.setattr(nd, "mishap", lambda seed, key, window, rate: "pot")
     game._update_sim(0.1)
     keys = [key for key, _ in boat.orders._events]

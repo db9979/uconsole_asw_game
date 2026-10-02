@@ -23,6 +23,11 @@ VOICE_SOURCES = ("local", "remote")
 FRIGATE_KEY = 0
 
 
+def platform_key(sub) -> int:
+    """Stable per-boat key (entity ids are process-global, the sensor seed is not)."""
+    return 1 + int(sub.sensor_seed) % 1_000_000
+
+
 class NoiseMixin:
     """Crew noise: mishaps under the routine, voices from the microphones."""
 
@@ -110,7 +115,7 @@ class NoiseMixin:
             crewed = boat is not None and boat.sub is sub
             quiet = nd.sub_quiet(sub)
             effect = boat.watch.effectiveness(self.sim_t) if crewed else 1.0
-            key = int(sub.id) + 1
+            key = platform_key(sub)
             kind = nd.mishap(self.seed, key, window, nd.risk_per_h(effect, quiet))
             voice = self.crew_voice_level("uboot") if crewed else 0
             base = 1.0 - sub.machinery_quiet_factor()

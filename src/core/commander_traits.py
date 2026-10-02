@@ -45,7 +45,7 @@ HINT_AT_S = 90.0
 
 def sub_kind(sub) -> str:
     """The character of one submarine's commander."""
-    return KINDS[detrand.bits(int(sub.sensor_seed), "commander", int(sub.id)) % len(KINDS)]
+    return KINDS[detrand.bits(int(sub.sensor_seed), "commander", 0) % len(KINDS)]
 
 
 def sub_factor(sub, name: str) -> float:

@@ -15,8 +15,9 @@ Querschnitt, der mit dem Schiff krängt. Das U-Boot ist ein Schnittbild des
 Druckkörpers mit Turm, Einbauten, Wasser, Brand, Chlorgas, Lecks und runden
 Schotttüren, auf der uConsole und im Browser. Übernehmen-Knöpfe im Browser
 (Suchkopf, Torpedoeinstellung, Antrieb, Hubschraubermuster) springen nicht
-mehr kurz zurück. Spielstände bleiben v49; v38 bis v48 lassen sich weiter
-laden.
+mehr kurz zurück, und das aktive Sonar des Begleitzerstörers pingt in jedem
+Spiel mit gleichem Startwert gleich. Spielstände bleiben v49; v38 bis v48
+lassen sich weiter laden.
 
 ## 1.3.158
 

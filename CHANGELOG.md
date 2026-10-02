@@ -15,7 +15,9 @@ section that lists with the ship. The submarine is a cutaway of its pressure
 hull with sail, fittings, water, fire, chlorine, leaks and round bulkhead
 doors, on the uConsole and in the browser. Apply buttons in the browser
 (seeker, torpedo settings, plant, helicopter pattern) no longer jump back
-for a moment. Saves stay v49; v38 to v48 saves still load.
+for a moment, and the escort destroyer's active sonar now pings the same way
+in every game with the same seed. Saves stay v49; v38 to v48 saves still
+load.
 
 ## 1.3.158
 

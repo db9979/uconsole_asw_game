@@ -148,13 +148,16 @@ def ping_echo(seed: int, consort, target, tick: int, blocked: bool):
     if distance > reach:
         return None
     probability = config.clamp(1.0 - (distance / reach) ** 2, 0.1, 0.95)
-    if detrand.u01(seed, "consort_ping", target.id, tick) >= probability:
+    # Keyed on the boat's sensor seed: entity ids are process-global, so two
+    # games with the same seed would otherwise ping differently.
+    key = 1 + int(getattr(target, "sensor_seed", 0)) % 1_000_000
+    if detrand.u01(seed, "consort_ping", key, tick) >= probability:
         return None
     error = config.CONSORT_ACTIVE_ERR_NM * (0.5 + distance / reach)
-    x = target.x + error * detrand.normal(seed, "consort_ping_x", target.id, tick)
-    y = target.y + error * detrand.normal(seed, "consort_ping_y", target.id, tick)
+    x = target.x + error * detrand.normal(seed, "consort_ping_x", key, tick)
+    y = target.y + error * detrand.normal(seed, "consort_ping_y", key, tick)
     depth = max(0.0, float(getattr(target, "depth", 0.0)) + config.CONSORT_ACTIVE_DEPTH_ERR_M
-                * detrand.normal(seed, "consort_ping_d", target.id, tick))
+                * detrand.normal(seed, "consort_ping_d", key, tick))
     return x, y, depth, config.clamp(1.0 - distance / reach, 0.3, 1.0)
 
 

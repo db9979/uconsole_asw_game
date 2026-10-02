@@ -141,7 +141,8 @@ def draw_llm_settings(game) -> None:
     def on_off(value):
         return message("common.on" if value else "common.off")
 
-    key = keystore.load_key()
+    # The configured key (read when it was set), never the key file per frame.
+    key = game.llm.config.api_key
     values = {
         "llm_enabled": on_off(prefs.llm_enabled),
         "llm_url": raw_text(prefs.llm_url),

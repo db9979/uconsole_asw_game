@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.155
+## 1.3.156
 
-Version 1.3.155 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
+Version 1.3.156 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
 Fregatte ist ein Seitenriss mit Decks, Aufbauten und Masten, jede Abteilung
 auf ihrer wirklichen Höhe, außen See und Wasserlinie mit Tiefgangsmarken,
 Leckwasser, das sich mit dem Trimm neigt, offene Lecks mit einströmendem
@@ -17,6 +17,24 @@ Schotttüren, auf der uConsole und im Browser. Übernehmen-Knöpfe im Browser
 (Suchkopf, Torpedoeinstellung, Antrieb, Hubschraubermuster) springen nicht
 mehr kurz zurück. Spielstände bleiben v49; v38 bis v48 lassen sich weiter
 laden.
+
+## 1.3.155
+
+Version 1.3.155 macht das optionale Sprachmodell mit Denkmodellen wie Qwen3
+nutzbar.
+
+- Das Spiel bittet den Server um Antworten ohne Denkphase (`enable_thinking`
+  aus, das verstehen vLLM und SGLang); ein Server, der den Schalter ablehnt,
+  wird ohne ihn erneut gefragt, und danach immer ohne.
+- Antworten, die als Liste von Teilen kommen, werden gelesen.
+- Kommen nur Denkschritte zurück, melden Verbindungstest und Erster Offizier
+  „nur Denkschritte, keine Antwort“ statt „Antwort nicht verwendbar“. Der Test
+  darf bis zu 32 Token antworten.
+- Der API-Schlüssel erscheint beim Tippen als Sternchen, und die Optionsseite
+  nutzt den eingestellten Schlüssel, statt die Schlüsseldatei bei jedem Bild zu
+  lesen.
+
+Spielstände bleiben v49; Spielstände v38 bis v48 lassen sich weiter laden.
 
 ## 1.3.154
 

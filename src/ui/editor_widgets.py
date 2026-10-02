@@ -166,9 +166,10 @@ class ListBox:
 
 
 class TextField:
-    def __init__(self, value: str = "", maximum: int = 256):
+    def __init__(self, value: str = "", maximum: int = 256, *, secret: bool = False):
         self.value = value
         self.maximum = maximum
+        self.secret = secret        # drawn as asterisks (an API key)
         self.selected_all = False
         self._key_text = ""
 
@@ -213,7 +214,7 @@ class TextField:
     def draw(self, surface: pygame.Surface, rect: pygame.Rect, *, focused: bool = False) -> None:
         pygame.draw.rect(surface, PALETTE.background, rect)
         pygame.draw.rect(surface, PALETTE.focus if focused else PALETTE.border, rect, 2 if focused else 1)
-        shown = self.value + ("_" if focused else "")
+        shown = ("*" * len(self.value) if self.secret else self.value) + ("_" if focused else "")
         text_font = font(15)
         available = max(1, rect.width - 16)
         if text_font.size(shown)[0] > available:

@@ -133,7 +133,8 @@ class AdvisorUiMixin:
             self.start_llm_test()
         elif name in TEXT_ROWS:
             value = "" if name == "llm_key" else getattr(self.preferences, name)
-            self.llm_field = TextField(value=value, maximum=TEXT_ROWS[name])
+            self.llm_field = TextField(value=value, maximum=TEXT_ROWS[name],
+                                       secret=name == "llm_key")
             self.llm_field_name = name
         elif name == "llm_coach":
             cycle = LLM_COACH_CYCLE

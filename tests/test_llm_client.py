@@ -33,6 +33,31 @@ def test_answer_is_cleaned_and_bounded():
         assert service.answered == 1 and service.last_error is None
 
 
+def test_thinking_is_switched_off_and_a_refusal_drops_the_switch():
+    with FakeLlmServer(lambda body: 400 if "chat_template_kwargs" in body else "OK") as server:
+        service = _service(server.url)
+        for _ in range(2):
+            request = service.submit("p", [{"role": "user", "content": "q"}])
+            assert request.wait(5) and request.ok and request.text == "OK"
+        assert server.requests[0]["chat_template_kwargs"] == {"enable_thinking": False}
+        # Refused once, then the server is asked without the switch.
+        assert ["chat_template_kwargs" in body for body in server.requests] == [True, False, False]
+
+
+def test_content_parts_and_reasoning_only_answers():
+    parts = {"role": "assistant", "content": [{"type": "text", "text": "Ver"},
+                                              {"type": "text", "text": "standen"}]}
+    with FakeLlmServer(parts) as server:
+        request = _service(server.url).submit("p", [{"role": "user", "content": "q"}])
+        assert request.wait(5) and request.text == "Verstanden"
+    for message in ({"role": "assistant", "content": None, "reasoning_content": "Hmm, let me"},
+                    {"role": "assistant", "content": "<think>Hmm, the user wants"}):
+        with FakeLlmServer(message) as server:
+            request = _service(server.url).submit("p", [{"role": "user", "content": "q"}])
+            request.wait(5)
+            assert request.status == "failed" and request.error == "thinking"
+
+
 def test_errors_are_categories_never_raw_text():
     with FakeLlmServer("x", status=401) as server:
         request = _service(server.url).submit("p", [{"role": "user", "content": "q"}])

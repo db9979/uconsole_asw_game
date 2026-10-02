@@ -182,10 +182,14 @@ export async function advisorReport() {
 
 // The button shows during a mission on a station of either side, and only
 // when the host has the language model switched on (checked now and then).
-const CHECK_MS = 20000;
+// The check shares the one request lane with commands: it runs once per
+// world and then rarely, and never while a command or host action waits.
+const CHECK_MS = 60000;
 let lastCheck = -Infinity;
+let checkedWorld = null;
 async function checkAvailable() {
   lastCheck = performance.now();
+  checkedWorld = `${S.v2State?.session}:${S.v2State?.epoch}`;
   try {
     const value = await request("/advisor");
     if (validAdvisor(value)) { advisor.doc = value; renderAdvisorButton(); }
@@ -195,7 +199,9 @@ export function renderAdvisorButton() {
   const role = S.v2State?.role;
   const eligible = Boolean(role) && S.v2State?.phase === "live" && S.session?.grants?.command === true &&
     !["lookout", "uboot_lookout"].includes(role);
-  if (eligible && !$("advisor-dialog").open && performance.now() - lastCheck > CHECK_MS) checkAvailable();
+  const world = `${S.v2State?.session}:${S.v2State?.epoch}`;
+  if (eligible && !$("advisor-dialog").open && !S.pending && S.hostPending == null &&
+      (world !== checkedWorld || performance.now() - lastCheck > CHECK_MS)) checkAvailable();
   const show = eligible && advisor.doc?.available === true;
   $("advisor-open").hidden = !show;
   if (!eligible && $("advisor-dialog").open) $("advisor-dialog").close();

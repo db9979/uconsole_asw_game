@@ -41,7 +41,7 @@ def draw_engine_view(game, tr=None) -> None:
     if page == 0:
         gap = 16
         col_w = (w - gap) // 2
-        _draw_orders(s, ship, (x, cy, col_w, content_h))
+        _draw_orders(s, game, ship, (x, cy, col_w, content_h))
         _draw_propulsion(s, game, ship, (x + col_w + gap, cy, col_w, content_h))
     else:
         _draw_systems(s, game, ship, (x, cy, w, content_h))
@@ -69,7 +69,17 @@ def _step_speed(ship) -> float:
             else config.TELEGRAPH_ORDERS[ship.order_idx][1])
 
 
-def _draw_orders(s, ship, rect) -> None:
+def _telegraph_click(game, row: int) -> None:
+    """A click on a telegraph step: the ↑/↓ presses that reach it, so the
+    order runs through the keyboard path with its checks and feedback."""
+    from src.core import pointer_input
+    ship = game.ship
+    current = 0 if getattr(ship, "astern", False) else ship.order_idx + 1
+    key = pygame.K_UP if row > current else pygame.K_DOWN
+    pointer_input.press(game, key, times=abs(row - current))
+
+
+def _draw_orders(s, game, ship, rect) -> None:
     """The telegraph as a column of lit steps."""
     ox, oy, ow, oh = layout.box(s, rect, "panel.engine_order")
     layout.blit_line(s, display_message("telegraph", ship.telegraph), (ox, oy, ow, 40),
@@ -89,7 +99,8 @@ def _draw_orders(s, ship, rect) -> None:
         selected = astern if i == 0 else not astern and i - 1 == ship.order_idx
         level = ("caution" if i == 0 else "on") if selected else "off"
         console.lamp(s, (ox, oy, ow, step_h), display_message("telegraph", name),
-                     message("bridge.line.speed", speed=f"{sp:4.1f}"), level, size=18)
+                     message("bridge.line.speed", speed=f"{sp:4.1f}"), level, size=18,
+                     key=lambda _pos, row=i: _telegraph_click(game, row))
         oy += step_h + 4
 
 
@@ -105,11 +116,12 @@ def _draw_propulsion(s, game, ship, rect) -> None:
         ("panel.shaft", display_message("telegraph", ship.telegraph),
          "caution" if getattr(ship, "astern", False) else "on" if abs(ship.speed) > .05 else "off"),
         ("ui.plant_mode", display_value("plant", plant),
-         "on" if plant == "DIESEL" else "caution" if plant == "TURBINE" else "off"),
+         "on" if plant == "DIESEL" else "caution" if plant == "TURBINE" else "off", "G"),
         ("engine.course", raw_text(f"{ship.course:03.0f}° / {ship.target_course:03.0f}°"),
-         "on" if abs((ship.course - ship.target_course + 180) % 360 - 180) < 1 else "caution"),
+         "on" if abs((ship.course - ship.target_course + 180) % 360 - 180) < 1 else "caution",
+         "C"),
         ("ui.acoustic_mode", "engine.quiet_short" if ship.quiet_mode else "station.normal",
-         "on" if ship.quiet_mode else "off"),
+         "on" if ship.quiet_mode else "off", "A"),
         ("engine.lamp.cavitation", "common.yes" if ship.cavitating else "common.no",
          "alarm" if ship.cavitating else "off"),
         ("view.engine.speed_limit", message("bridge.line.speed", speed=f"{cap:.0f}"),
@@ -170,7 +182,7 @@ def _system_lamps(game, ship) -> list:
          "caution" if cap < config.SHIP_SPEED_MAX_KN - .05 else "off"),
         ("ui.plant_mode", message("engine.plant_short", plant=display_value("plant", plant),
                                   cap=f"{plant_cap:.0f}"),
-         "on" if plant == "DIESEL" else "caution" if plant == "TURBINE" else "off"),
+         "on" if plant == "DIESEL" else "caution" if plant == "TURBINE" else "off", "G"),
         ("engine.fuel", raw_text(f"{fuel:.0%}"),
          "alarm" if fuel <= 0.1 else "caution" if fuel <= 0.25 else "on"),
         ("engine.lamp.fires_aboard", raw_text(str(fires)), "alarm" if fires else "off"),
@@ -180,7 +192,7 @@ def _system_lamps(game, ship) -> list:
         ("engine.lamp.grounded", "common.yes" if getattr(ship, "grounded", False) else "common.no",
          "alarm" if getattr(ship, "grounded", False) else "off"),
         ("ui.acoustic_mode", "engine.quiet_short" if ship.quiet_mode else "station.normal",
-         "on" if ship.quiet_mode else "off"),
+         "on" if ship.quiet_mode else "off", "A"),
     ]
     sonar_range = ship.passive_sonar_range_nm(0.5, sea)
     if game.sonar_mode == "TOWED":
@@ -204,7 +216,7 @@ def _draw_systems(s, game, ship, rect) -> None:
     lamp_h = math.ceil(len(rows) / columns) * 34 + 8
     title_h = layout.font(16, bold=True).get_linesize() + 8
     ann = pygame.Rect(x, y, w, min(h // 2, title_h + lamp_h + 16))
-    master = console.master_level(level for _label, _value, level in rows)
+    master = console.master_level(row[2] for row in rows)
     ax, ay, aw, ah = layout.box(s, ann, "engine.panel.annunciator",
                                 border={"alarm": config.COLOR_DANGER,
                                         "caution": config.COLOR_WARN}.get(master))

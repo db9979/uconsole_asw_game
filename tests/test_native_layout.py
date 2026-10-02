@@ -77,7 +77,7 @@ def test_weapons_panel_shows_tma_evidence_and_engagement_stages(monkeypatch):
     original_grid = console.lamp_grid
 
     def record_grid(screen, rect, rows, *args, **kwargs):
-        lines.extend(f"{localize(label)} {localize(value)}" for label, value, _ in rows)
+        lines.extend(f"{localize(label)} {localize(value)}" for label, value, *_ in rows)
         return original_grid(screen, rect, rows, *args, **kwargs)
 
     monkeypatch.setattr(console, "lamp_grid", record_grid)

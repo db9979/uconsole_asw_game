@@ -20,7 +20,7 @@ VERSION = str(run_path(ROOT / "src" / "core" / "version.py")["APP_VERSION"])
 # Only dialog keys, which help.py does not list, are maintained here.
 DIALOG_SECTION = ("Eingabe und Dialoge", (
     ("Numerische Eingabe", "Ziffern, Punkt oder Komma; Backspace; Enter bestätigt; Esc bricht ab. Mit der Maus über das eingeblendete Tastenfeld."),
-    ("Maus", "Klick auf eine Taste der Tastenleiste drückt sie (gehalten wie die Taste); Reiter oben wechseln die Station; Klick auf Kurs-, Fahrt- oder Tiefenscheibe befiehlt den Wert; Menü- und Dialogzeilen anklickbar; Mausrad blättert; Rechtsklick bricht ab wie Esc."),
+    ("Maus", "Klick auf eine Taste der Tastenleiste drückt sie (gehalten wie die Taste); Reiter oben wechseln die Station; Klick auf Kurs-, Fahrt- oder Tiefenscheibe befiehlt den Wert; Statuslampen, Tastenhinweise, Seitenreiter, Listenzeilen und Werte der Statuszeile anklickbar (Rahmen unter der Maus; Strg+Enter nur an Station 3); Menü- und Dialogzeilen anklickbar; Mausrad blättert; Rechtsklick bricht ab wie Esc."),
     ("Hilfe", "←/→/Tab Kategorie; ↑/↓ zeilenweise; Bild↑/Bild↓ seitenweise; im Handbuch [ ] oder , . bzw. 0-9 Kapitel; F1/Esc schließen."),
     ("Speichern/Laden", "1 bis 5 wählt Slot; Enter bestätigt; Esc zurück."),
     ("Beenden-Dialog", "↑/↓ wählen, Enter bestätigen: zurück zum Spiel, speichern und beenden, zum Hauptmenü (ohne Speichern), ohne Speichern beenden; Esc/N schließt."),

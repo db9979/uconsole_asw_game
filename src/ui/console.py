@@ -12,7 +12,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import localize, raw_text
-from src.ui import layout, lines
+from src.ui import layout, lines, pointer
 
 LEVELS = ("off", "on", "caution", "alarm")
 LED_OFF = (36, 58, 60)
@@ -45,10 +45,14 @@ def master_level(levels) -> str:
     return "alarm" if "alarm" in levels else "caution" if "caution" in levels else "on"
 
 
-def lamp(screen, rect, label, value, level: str, size: int = 16) -> None:
-    """One annunciator tile: LED, label and its value on one row."""
+def lamp(screen, rect, label, value, level: str, size: int = 16, key=None) -> None:
+    """One annunciator tile: LED, label and its value on one row.
+
+    ``key`` makes the tile a switch: a click presses that key (a legend
+    label such as ``"Shift+A"``, see ``pointer.add_spec``)."""
     rect = pygame.Rect(rect)
     layout.record_geometry("lamp", rect, str(label))
+    pointer.add_spec(rect, key)
     color = level_color(level)
     fill = config.COLOR_PANEL_BG if level in ("off", "on") else _mix(config.COLOR_PANEL_BG, color, .16)
     pygame.draw.rect(screen, fill, rect)
@@ -82,10 +86,10 @@ def lamp_grid(screen, rect, rows, columns: int, gap: int = 4, size: int = 16) ->
     count = math.ceil(len(rows) / columns)
     tile_h = max(layout.line_pitch(size, 0) + 8, min(40, (rect.h - gap * (count - 1)) // count))
     tile_w = (rect.w - gap * (columns - 1)) // columns
-    for index, (label, value, level) in enumerate(rows):
+    for index, (label, value, level, *key) in enumerate(rows):
         col, line = index % columns, index // columns
         lamp(screen, (rect.x + col * (tile_w + gap), rect.y + line * (tile_h + gap),
-                      tile_w, tile_h), label, value, level, size)
+                      tile_w, tile_h), label, value, level, size, key[0] if key else None)
     return count * tile_h + (count - 1) * gap
 
 

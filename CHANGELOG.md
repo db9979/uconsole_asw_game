@@ -4,6 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.163
+
+Release 1.3.163 makes the stations work by mouse click. Status lamps, key
+hints in a station's text, page tabs, list rows and the readings in the
+bottom status line now react to a click on both sides: a lamp or hint
+presses its key (for example the ELOKA tone, the sonar peak hold, the
+helicopter's dipping sonar, the engine telegraph rows or the submarine's
+silent running), and a reading such as flooding or torpedoes opens the
+station that handles it. The submarine's sonar takes clicks for the first
+time, and the element under the mouse gets a thin frame. A click does
+exactly what its key does, with the same checks; the fire key stays
+clickable only at the weapons station. In Remote Crew, clicking a sonar,
+helicopter or engine lamp presses its button. Saves stay v49; v38 to v48
+saves still load.
+
 ## 1.3.162
 
 Release 1.3.162 shows the frigate's own helicopter to the bridge. Whenever

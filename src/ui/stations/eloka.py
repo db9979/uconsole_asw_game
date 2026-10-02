@@ -119,9 +119,11 @@ def _draw_eloka_rose(game, rect, tracks) -> None:
     down = game.damage.station_down("opz")
     console.lamp_grid(surface, (rect.x, rect.bottom - 2 * lamp_h - 4, rect.w, 2 * lamp_h + 4), (
         ("eloka.lamp.esm", "", "alarm" if down else "on"),
-        ("eloka.lamp.jammer", "", "caution" if jamming else "off"),
-        ("eloka.lamp.auto", "", "on" if game.ecm_jammer.auto_enabled else "off"),
-        ("eloka.lamp.tone", "", "on" if getattr(game, "eloka_audio_enabled", False) else "off")),
+        # Jammer, automatic ECM and tone are switches (E, A, J).
+        ("eloka.lamp.jammer", "", "caution" if jamming else "off", "E"),
+        ("eloka.lamp.auto", "", "on" if game.ecm_jammer.auto_enabled else "off", "A"),
+        ("eloka.lamp.tone", "", "on" if getattr(game, "eloka_audio_enabled", False) else "off",
+         "J")),
         2, size=14)
     strobes = []
     for track in tracks:

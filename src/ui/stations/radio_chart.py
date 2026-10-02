@@ -14,7 +14,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import message, raw_text
-from src.ui import console, layout, lines, nato_symbols
+from src.ui import console, label_layout, layout, lines, nato_symbols
 from src.ui.map_view import _visible_landmasses, clip_polygon_to_rect, grid_step_nm
 from src.ui.viewport import Viewport
 
@@ -169,7 +169,9 @@ def draw_hfdf_chart(s, game, rect, selected_label=None) -> Viewport | None:
     items = chart_items(game)
     view = chart_view(game, items, rect)
     pygame.draw.rect(s, _BACKGROUND, rect)
-    with layout.clip_to(s, rect):
+    north = (rect.right - 24, rect.y + 4, 20, layout.font(14).get_linesize())
+    with layout.clip_to(s, rect), label_layout.label_scope(rect) as labels:
+        labels.reserve(north)
         _geography(s, game, view, rect)
         # Live intercepts from the ship: an error wedge and a thin line.
         for row in items["live"]:
@@ -196,7 +198,7 @@ def draw_hfdf_chart(s, game, rect, selected_label=None) -> Viewport | None:
             lines.lines(s, color, True, _ellipse(view, fix), 2)
             px, py = view.world_to_screen(fix["x"], fix["y"])
             pygame.draw.circle(s, color, (int(px), int(py)), 3)
-            layout.blit_line(s, message("radio.chart.fix_label", label=raw_text(fix["label"]),
+            label_layout.blit_line(s, message("radio.chart.fix_label", label=raw_text(fix["label"]),
                                         sigma=f"{fix['sigma_nm']:.1f}"),
                              (int(px) + 8, int(py) - 20, 190, layout.font(14).get_linesize()), color, size=14)
         # Own ship last, on top.
@@ -205,8 +207,7 @@ def draw_hfdf_chart(s, game, rect, selected_label=None) -> Viewport | None:
         lines.line(s, config.COLOR_OK, (sx, sy),
                    (sx + 18 * math.sin(heading), sy - 18 * math.cos(heading)), 2)
         nato_symbols.draw_symbol(s, (sx, sy), "FRIEND", "SURFACE", 16)
-        layout.blit_line(s, "uboot.pilot.north",
-                         (rect.right - 24, rect.y + 4, 20, layout.font(14).get_linesize()),
+        layout.blit_line(s, "uboot.pilot.north", north,
                          config.COLOR_TEXT_DIM, size=14, align="center")
         if not (items["logged"] or items["live"] or items["fixes"]):
             layout.blit_line(s, "radio.chart.empty",

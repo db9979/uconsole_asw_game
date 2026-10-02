@@ -53,3 +53,19 @@ export function placeText(context, field, text, x, y, maxWidth) {
   const box = field.place(w, h, around(x, y - h, w, h));
   context.fillText(text, box.x, box.y + h, maxWidth);
 }
+
+// Speed label past a motion vector's tip (unit direction ux, uy), on the far
+// side from its own line, like the uConsole chart; steps aside like any label.
+export function placeTip(context, field, text, tipX, tipY, ux, uy) {
+  const size = parseFloat(context.font) || 12;
+  const w = context.measureText(text).width, h = size;
+  const x = ux >= -.2 ? tipX + 4 : tipX - 4 - w, y = tipY - h / 2 + uy * (h / 2 + 2);
+  const box = field.place(w, h, around(x, y, w, h, 4));
+  context.fillText(text, box.x, box.y + h);
+}
+
+// Keep later labels off text drawn at a fixed place (baseline x, y).
+export function reserveText(context, field, text, x, y) {
+  const size = parseFloat(context.font) || 12;
+  field.reserve(x, y - size, context.measureText(text).width, size + 2);
+}

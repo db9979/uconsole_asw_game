@@ -72,14 +72,28 @@ def active() -> LabelField | None:
 
 
 @contextmanager
-def label_scope(bounds):
-    """Labels drawn inside this block avoid each other within ``bounds``."""
-    field = LabelField(bounds)
+def label_scope(bounds, field: LabelField | None = None):
+    """Labels drawn inside this block avoid each other within ``bounds``.
+
+    Passing the ``field`` of an earlier scope continues it, so an overlay
+    drawn over a finished chart (the weapons station's target marks) steps
+    aside from the chart's labels as well."""
+    if field is None or pygame.Rect(bounds) != field.bounds:
+        field = LabelField(bounds)
     _ACTIVE.append(field)
     try:
         yield field
     finally:
         _ACTIVE.pop()
+
+
+def free_rect(size, candidates, bounds) -> pygame.Rect:
+    """Place a label of ``size``: through the active field when there is
+    one, otherwise its first candidate kept inside ``bounds``."""
+    field = active()
+    if field is not None:
+        return field.place(size, candidates)
+    return LabelField(bounds).place(size, candidates[:1])
 
 
 def around(pos, size, symbol_gap: int = 14) -> list[tuple[int, int]]:
@@ -107,3 +121,17 @@ def along(origin, bearing_unit, distances, size, offset=(6, -8)) -> list[tuple[i
         points.append((int(px) + offset[0], int(py) + offset[1]))
         points.append((int(px) - int(size[0]) - offset[0], int(py) + offset[1]))
     return points
+
+
+def blit_line(surface, text, rect, color, size: int = 12) -> None:
+    """``layout.blit_line`` for a chart label: inside a label scope the box
+    shrinks to the text and steps aside from labels placed before it."""
+    from src.core.i18n import localize
+    from src.ui import layout
+    x, y, w, h = (int(value) for value in rect)
+    field = active()
+    if field is not None:
+        width = min(w, layout.text_width(layout.font(size), localize(text)) + 2)
+        x, y = field.place((width, h), around((x, y), (width, h))).topleft
+        w = width
+    layout.blit_line(surface, text, (x, y, w, h), color, size=size)

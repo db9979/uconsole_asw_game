@@ -1,0 +1,172 @@
+"""Chart labels never cover each other or run off the chart.
+
+A crowded picture like the one reported from the weapons station: two
+aircraft with speed vectors right beside the frigate, the assigned target
+on a bearing only, a second contact with a TMA fix, the scale line in the
+corner and the grid numbers along the edges. Every text drawn on the
+frigate's chart (Bridge, Weapons, Helicopter) and on the crewed submarine's
+chart is traced with its glyph box; no two may overlap and none may leave
+the chart, in English and German (frigate also with large text).
+"""
+
+from __future__ import annotations
+
+import itertools
+
+import pygame
+import pytest
+
+from src.core import config
+from src.core.game import Game
+from src.core.preferences import Preferences
+from src.core import uboot_local
+from src.core.station import Station
+from src.sonar.sonar import Contact
+from src.ui import layout, map_view
+
+
+def _game(language: str, large: bool = False) -> Game:
+    prefs = Preferences(language=language, fullscreen=False, audio=False,
+                        large_text=large, tooltips=False)
+    game = Game(seed=1234, start_menu=False, show_splash=False,
+                audio_enabled=False, preferences=prefs)
+    game.msg_until = 0.0
+    return game
+
+
+def _crowd(game: Game, selected_fix: bool) -> None:
+    ship = game.ship
+    # Two aircraft passing right over the frigate (one leaving the chart's
+    # left edge) and a surface radar track: speed labels near other labels.
+    tracks = [
+        dict(kind="FLG", track_id="T-A1", target_id=1, source="RADAR",
+             x=ship.x - .35, y=ship.y - .25, course=300.0, speed_kn=350.0,
+             label="1F05A1", quality=1.0),
+        dict(kind="FLG", track_id="T-A2", target_id=2, source="RADAR",
+             x=ship.x - .30, y=ship.y - .20, course=300.0, speed_kn=330.0,
+             label="E1BF75", quality=1.0),
+        dict(kind="FLG", track_id="T-A3", target_id=3, source="RADAR",
+             x=ship.x - 1.15, y=ship.y - .55, course=280.0, speed_kn=30.0,
+             label="77C0DE", quality=1.0),
+        dict(kind="SURFACE", track_id="T-S1", target_id=4, source="RADAR",
+             x=ship.x + .2, y=ship.y + .1, course=90.0, speed_kn=14.0,
+             label="9A2B44", quality=1.0),
+    ]
+    game.radar_tracks = lambda: [dict(track) for track in tracks]
+    target = Contact(2, 900, "passiv", "sub")
+    target.passive_bearing = target.bearing = 100.0
+    target.observer_x, target.observer_y = ship.x, ship.y
+    fixed = Contact(3, 901, "passiv", "sub")
+    fixed.passive_bearing = fixed.bearing = 140.0
+    fixed.observed_x, fixed.observed_y = ship.x + .3, ship.y + .35
+    fixed.range_est, fixed.range_source, fixed.range_sigma_nm = .46, "tma", .1
+    fixed.tma_course, fixed.tma_speed = 60.0, 8.0
+    fixed.observer_x, fixed.observer_y = ship.x, ship.y
+    game.sonar.contacts[target.id] = target
+    game.sonar.contacts[fixed.id] = fixed
+    game.target = target
+    game.selected_contact = fixed if selected_fix else None
+    game.map_follow = True
+    game.map_view.scale = 160.0
+
+
+def _chart(game: Game) -> pygame.Rect:
+    with layout.bottom_panel_regions(game.bottom_panel_mode()):
+        return pygame.Rect(config.MAP_RECT)
+
+
+def _problems(game: Game) -> list:
+    with layout.capture_text() as traced:
+        game.draw()
+    chart = _chart(game)
+    inside = [item for item in traced if item["ink"].colliderect(chart)
+              and chart.collidepoint(item["ink"].center)]
+    problems = [f"off chart: {item['text']!r} {item['ink']}"
+                for item in inside if not chart.contains(item["ink"])]
+    for a, b in itertools.combinations(inside, 2):
+        if a["ink"].colliderect(b["ink"]):
+            problems.append(f"overlap: {a['text']!r} {a['ink']} / "
+                            f"{b['text']!r} {b['ink']}")
+    return problems
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("station", [Station.BRIDGE, Station.WEAPONS,
+                                     Station.HELICOPTER])
+@pytest.mark.parametrize("selected_fix", [False, True])
+@pytest.mark.parametrize("large", [False, True])
+def test_frigate_chart_labels_do_not_overlap(language, station, selected_fix, large):
+    game = _game(language, large)
+    game.station = station
+    game.station_page = 0
+    _crowd(game, selected_fix)
+    assert _problems(game) == []
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_weapons_target_is_labelled_once(language):
+    game = _game(language)
+    game.station = Station.WEAPONS
+    _crowd(game, selected_fix=False)
+    with layout.capture_text() as traced:
+        game.draw()
+    chart = _chart(game)
+    labels = [item["text"] for item in traced
+              if chart.collidepoint(item["ink"].center) and "K02" in item["text"]]
+    assert len(labels) == 1, labels
+    assert "Shift+A" in labels[0]
+
+
+def test_scale_line_keeps_grid_numbers_out_of_its_band():
+    game = _game("de")
+    game.station = Station.BRIDGE
+    game.draw()
+    chart = _chart(game)
+    band = map_view.scale_rect(chart)
+    for scale in (2.0, 5.0, 12.0, 40.0, 90.0, 160.0, 400.0):
+        game.map_view.scale = scale
+        for offset in range(0, 40, 4):
+            game.map_view.cy = game.ship.y + offset / scale
+            game.map_follow = False
+            with layout.capture_text() as traced:
+                game.draw()
+            numbers = [item for item in traced
+                       if chart.collidepoint(item["ink"].center)
+                       and item["text"].replace(".", "").isdigit()]
+            assert all(not item["ink"].colliderect(band) for item in numbers), \
+                (scale, offset, [(item["text"], item["ink"]) for item in numbers])
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("role", ["uboot", "uboot_nav", "uboot_weapons"])
+@pytest.mark.parametrize("scenario", [None, "s5_durchbruch", "s8_meerenge"])
+def test_submarine_chart_labels_do_not_overlap(language, role, scenario):
+    game = _game(language)
+    game.local_side = "uboot"
+    if scenario is not None:
+        assert game.start_new_game(scenario, "fixed", seed=61)
+    for _ in range(600):
+        game.update(.1)
+    game.msg_until = 0.0
+    uboot_local.set_local_station(game, role)
+    assert _problems(game) == []
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_opz_chart_labels_do_not_overlap(language):
+    from src.ui.stations import opz
+    game = _game(language)
+    for _ in range(900):
+        game.update(.1)
+    game.msg_until = 0.0
+    game.station = Station.OPZ
+    game.station_page = 0
+    with layout.capture_text() as traced:
+        game.draw()
+    with layout.bottom_panel_regions(game.bottom_panel_mode()):
+        chart = pygame.Rect(opz.opz_regions(config.OPZ_STATION_RECT)["chart"])
+    inside = [item for item in traced if chart.collidepoint(item["ink"].center)]
+    assert inside, "the OPZ chart should carry labels"
+    overlaps = [(a["text"], b["text"]) for a, b in itertools.combinations(inside, 2)
+                if a["ink"].colliderect(b["ink"])]
+    assert overlaps == []

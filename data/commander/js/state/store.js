@@ -63,6 +63,7 @@ export const S = {
   ubootEsmSelected: null,
   // Bridge route mode: a chart click adds an autopilot waypoint.
   bridgeRouteMode: false,
+  ubootRouteMode: false,
   requestQueue: Promise.resolve(),
   activeRequest: null,
   languageRequest: 0,

@@ -14,18 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.140**
+Aktuelle Version: **1.3.145**
 
-Version 1.3.140 bringt fünf Neuerungen in einem Update. Zwei Crews können jetzt
-gegeneinander spielen: Fregatte gegen U-Boot aus der Lobby, mit einem
-Schiedsrichter-Bildschirm auf der uConsole (1.3.136). In den Gruppenjagden
-Suchgruppe und Jagdgruppe führt die Fregatte den Zerstörer LUETJENS von
-OPZ-Seite 4 aus (1.3.137, Spielstände v47). Die Kampagne wird zum Feldzug mit
-Brennpunkten auf einer Sektorkarte für beide Seiten (1.3.138). Die Szenarien
-11 bis 20 sind in voller Länge ausgeglichen (1.3.139). Die uConsole bekommt die
-Lotsenkarte mit Echolot im U-Boot, eine Hubschrauber-Konsole und eine
-Funkpeil-Karte im Funkraum (1.3.140). Spielstände v38 bis v46 lassen sich
-weiter laden.
+Version 1.3.145 verbessert die Stationen des U-Boots in fünf Schritten. Das
+Handbuch hat ein U-Boot-Kapitel mit einem Standardablauf für jede
+Bootsstation, den auch F1 zeigt (1.3.141). Die Waffenstation stellt Suchmuster
+und Einschaltpunkt des Suchkopfs wie die Fregatte ein (1.3.142). Die
+Navigation koppelt mit GPS-Fix und steuert eine Route aus Wegpunkten oder
+einem Suchmuster (1.3.143, Spielstände v48). Die uConsole zeichnet beide
+Seiten deutlich schneller, die U-Boot-Seite etwa viermal so schnell
+(1.3.144). Die Navigation im Browser bekommt das Echolot (1.3.145).
+Spielstände v38 bis v47 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

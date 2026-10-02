@@ -37,7 +37,7 @@ from __future__ import annotations
 import math
 import random
 
-from src.core import config, detrand
+from src.core import boat_nav, config, detrand
 from src.core.i18n import message, raw_text
 
 MODES = ("free", "free_boat")
@@ -777,8 +777,9 @@ def order_text(game, boat, order) -> object:
     if order["x"] is not None:
         x, y = ((target_position(order, now)) if order["kind"] == "attack"
                 else (order["x"], order["y"]))
-        params.update(bearing=f"{_bearing(boat.sub.x, boat.sub.y, x, y):03.0f}",
-                      range=f"{math.hypot(x - boat.sub.x, y - boat.sub.y):.1f}",
+        bx, by = boat_nav.position(boat)
+        params.update(bearing=f"{_bearing(bx, by, x, y):03.0f}",
+                      range=f"{math.hypot(x - bx, y - by):.1f}",
                       radius=f"{order['radius_nm']:.0f}")
     if order["kind"] == "attack":
         params.update(name=raw_text(order["name"]), course=f"{order['course']:03.0f}",

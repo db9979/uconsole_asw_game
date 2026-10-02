@@ -12,17 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.140**
+Current release: **1.3.145**
 
-Release 1.3.140 brings five changes in one update. Two crews can now play
-each other: frigate against submarine from the lobby, with an umpire screen on
-the uConsole (1.3.136). In the group hunts Search group and Hunter group the
-frigate commands the destroyer LUETJENS from OPZ page 4 (1.3.137, saves v47).
-The campaign becomes a theatre campaign with hotspots on a sector chart for
-both sides (1.3.138). Scenarios 11 to 20 are balanced at full length
-(1.3.139). The uConsole gets the submarine's pilot chart with echo sounder, a
-helicopter console and an HF/DF chart in the radio room (1.3.140). v38 to v46
-saves still load.
+Release 1.3.145 improves the submarine's stations in five steps. The manual
+has a submarine chapter with a standard procedure for each boat station, shown
+by F1 too (1.3.141). Weapons sets the seeker's search pattern and enable point
+like the frigate (1.3.142). Navigation keeps dead reckoning with a GPS fix and
+steers a route of waypoints or a search pattern (1.3.143, saves v48). The
+uConsole draws both sides much faster, the submarine side about four times
+(1.3.144). The browser's Navigation station gets the echo sounder (1.3.145).
+v38 to v47 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -13,6 +13,71 @@ function label(g, text, x, y, color, align = "left") {
   g.fillText(text, x, y);
 }
 
+// Echo sounder as on the uConsole's navigation page: the seabed sounded over
+// the last minutes beside the boat's own depth (keel clearance in colour), and
+// the charted profile ahead on the ordered course from the navigated position.
+export function drawBoatSounder(id, payload) {
+  const plot = visualContext(id);
+  if (!plot) return;
+  const {context: g, width, height} = plot, colors = palette();
+  const nav = payload.navigation, sounder = nav.sounder;
+  const scale = Math.max(1, sounder.scale_m);
+  const left = 44, top = 8, bottomPx = height - 22, right = width - 8;
+  if (right - left < 80 || bottomPx - top < 30) return;
+  const split = left + (right - left) * .7;
+  const y = (depth) => top + (bottomPx - top) * Math.max(0, Math.min(1, depth / scale));
+  const tx = (age) => left + (split - left) * Math.max(0, Math.min(1, 1 - age / sounder.window_s));
+  const ax = (distance) => split + (right - split) * distance / sounder.ahead_nm;
+  g.fillStyle = colors.scopeBg; g.fillRect(left, top, right - left, bottomPx - top);
+  const step = [10, 20, 50, 100, 200, 500, 1000, 2000].find((value) => scale / value <= 5) || 5000;
+  g.font = "12px sans-serif"; g.strokeStyle = colors.line; g.lineWidth = 1;
+  for (let depth = 0; depth <= scale; depth += step) {
+    g.beginPath(); g.moveTo(left, y(depth)); g.lineTo(right, y(depth)); g.stroke();
+    label(g, String(depth), left - 6, y(depth), colors.muted, "right");
+  }
+  const seabed = (points, alpha) => {
+    if (points.length < 2) return;
+    g.globalAlpha = alpha; g.fillStyle = colors.line; g.beginPath(); g.moveTo(points[0][0], bottomPx);
+    for (const [px, py] of points) g.lineTo(px, py);
+    g.lineTo(points[points.length - 1][0], bottomPx); g.closePath(); g.fill(); g.globalAlpha = 1;
+    g.strokeStyle = colors.muted; g.lineWidth = 2; g.beginPath();
+    points.forEach(([px, py], index) => index ? g.lineTo(px, py) : g.moveTo(px, py)); g.stroke();
+  };
+  const past = sounder.past;
+  seabed(past.map(([age, bottom]) => [tx(age), y(bottom)]), 1);
+  // Thin water under the keel glows amber, then red.
+  for (const [age, bottom, depth] of past) {
+    const clearance = bottom - depth;
+    if (clearance >= sounder.caution_m) continue;
+    g.strokeStyle = clearance < sounder.warn_m ? colors.red : colors.amber; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(tx(age), y(depth)); g.lineTo(tx(age), y(bottom)); g.stroke();
+  }
+  if (past.length >= 2) {
+    g.strokeStyle = colors.accent; g.lineWidth = 2; g.beginPath();
+    past.forEach(([age, , depth], index) => index ? g.lineTo(tx(age), y(depth)) : g.moveTo(tx(age), y(depth))); g.stroke();
+  }
+  g.setLineDash([4, 4]); seabed(sounder.ahead.map(([distance, depth]) => [ax(distance), y(depth)]), .45); g.setLineDash([]);
+  // Ordered depth ahead, the obstacle the chart check found, the crush depth.
+  g.strokeStyle = colors.text; g.lineWidth = 1; g.setLineDash([5, 5]);
+  g.beginPath(); g.moveTo(split, y(nav.target_depth_m)); g.lineTo(right, y(nav.target_depth_m)); g.stroke(); g.setLineDash([]);
+  if (finite(nav.obstacle_ahead_nm)) {
+    g.strokeStyle = colors.red; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(ax(nav.obstacle_ahead_nm), top); g.lineTo(ax(nav.obstacle_ahead_nm), bottomPx); g.stroke();
+  }
+  if (nav.crush_depth_m <= scale) {
+    g.strokeStyle = colors.red; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(left, y(nav.crush_depth_m)); g.lineTo(right, y(nav.crush_depth_m)); g.stroke();
+  }
+  // Now: the boat at its depth.
+  g.strokeStyle = colors.muted; g.lineWidth = 1; g.beginPath(); g.moveTo(split, top); g.lineTo(split, bottomPx); g.stroke();
+  g.fillStyle = colors.accent; g.beginPath(); g.ellipse(split, y(nav.depth_m), 10, 4, 0, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = colors.line; g.strokeRect(left, top, right - left, bottomPx - top);
+  if (past.length < 2) label(g, t("uboot_sounder_no_trace"), left + 8, top + 12, colors.muted);
+  label(g, t("uboot_sounder_past", {minutes: number(sounder.window_s / 60, 0)}), left, height - 9, colors.muted);
+  label(g, t("uboot_sounder_now"), split, height - 9, colors.muted, "center");
+  label(g, t("uboot_sounder_ahead", {range: number(sounder.ahead_nm, 0)}), right, height - 9, colors.muted, "right");
+}
+
 // Water column: surface, periscope depth, layer (after BT), ordered and safe
 // depth, the seabed and the boat itself at its depth.
 export function drawBoatDepth(id, payload) {

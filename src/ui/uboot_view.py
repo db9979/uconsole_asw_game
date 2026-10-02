@@ -10,12 +10,13 @@ torpedoes, the known chart and the boat's own sonar contacts.  The frigate's
 position, plot, feed and systems never appear.
 """
 
+import copy
 import math
 
 import pygame
 
 from src.commander.server import OPFOR_ROLES
-from src.core import boat_esm, config, opfor, uboot_local
+from src.core import boat_esm, boat_nav, config, opfor, uboot_local
 from src.core.i18n import display_message, display_value, localize, message, raw_text
 from src.core.station import Station
 from src.ui import (chart_trails, console, engagement, instruments, label_layout, layout, lines,
@@ -102,6 +103,51 @@ def chart_view(game, boat) -> Viewport:
         view.cx, view.cy = boat.sub.x, boat.sub.y
         view.clamp_center()
     return view
+
+
+def geo_view(game, boat, view=None) -> Viewport:
+    """The chart camera for the crew's chart data (coast, soundings, goals,
+    HQ's reports, the route): shifted by the dead-reckoning error, so the
+    chart lies where the navigator believes it lies against the boat."""
+    geo = copy.copy(view if view is not None else chart_view(game, boat))
+    ex, ey = boat_nav.error(boat)
+    geo.cx += ex
+    geo.cy += ey
+    return geo
+
+
+def chart_geo_point(game, boat, pos):
+    """Chart coordinates of a click on the chart (navigated frame), else None."""
+    canvas = chart_pointer(game, pos)
+    if canvas is None:
+        return None
+    return geo_view(game, boat).screen_to_world(*canvas)
+
+
+def _draw_route(game, boat, geo, bx, by, r) -> None:
+    """The route's waypoints and legs (from the boat to the next point)."""
+    route = boat.orders.route
+    if not route.points:
+        return
+    s = game.screen
+    points = [geo.world_to_screen(x, y) for x, y in route.points]
+    start = max(0, min(route.index, len(points) - 1)) if route.active else 0
+    chain = ([(bx, by)] if route.active else []) + points[start:]
+    if len(chain) >= 2:
+        lines.lines(s, config.COLOR_OK, False, [(int(x), int(y)) for x, y in chain], 1)
+    for number, (px, py) in enumerate(points, start=1):
+        done = route.active and number - 1 < route.index
+        color = config.COLOR_TEXT_DIM if done else config.COLOR_OK
+        pygame.draw.circle(s, color, (int(px), int(py)), 5, 1)
+        _label(s, game, raw_text(f"W{number}"), (int(px) + 7, int(py) - 18), color, r, size=12)
+
+
+def _draw_dr_circle(game, boat, view, bx, by) -> None:
+    """The navigator's own estimate of the position error around the boat."""
+    radius = boat_nav.uncertainty_nm(boat) * view.scale
+    if radius >= 6.0:
+        pygame.draw.circle(game.screen, config.COLOR_TEXT_DIM, (int(bx), int(by)),
+                           int(min(radius, 4000.0)), 1)
 
 
 def chart_pointer(game, pos):
@@ -307,8 +353,11 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
                    (90, 125, 160, 195, 230), size))
     draw_esm_chart(game, boat, view, r)
     draw_intercept_lines(game, boat, view, bx, by)
-    draw_report_chart(game, boat, view)
-    _draw_mission_goal(game, view)
+    geo = geo_view(game, boat, view)
+    draw_report_chart(game, boat, geo)
+    _draw_mission_goal(game, geo)
+    _draw_route(game, boat, geo, bx, by, r)
+    _draw_dr_circle(game, boat, view, bx, by)
     # Own torpedoes in the water (commanded own weapons).
     for index, torpedo in enumerate(_own_torpedoes(game, sub), start=1):
         px, py = view.world_to_screen(torpedo.x, torpedo.y)
@@ -379,7 +428,7 @@ def draw_chart(game, boat) -> None:
     with layout.clip_to(s, r), label_layout.label_scope(r) as labels:
         bx, by = view.world_to_screen(boat.sub.x, boat.sub.y)
         labels.reserve((int(bx) - 12, int(by) - 12, 24, 24))
-        draw_chart_geography(game, view, r)
+        draw_chart_geography(game, geo_view(game, boat, view), r)
         draw_plot(game.screen, game, view, r, layer=boat.plot, own=boat.sub)
         history = getattr(game, "chart_history", None)
         if history is not None:
@@ -746,7 +795,7 @@ def _draw_boat_sketch(s, sub, contact, now, rect) -> None:
 def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
     sub = boat.sub
     battery = sub.weapon_battery
-    box_h = min(172, h // 2)
+    box_h = min(196, h // 2)
     fire = layout.box(s, (x, y, w, box_h), "uboot.panel.fire_control",
                       border=config.COLOR_TEXT)
     fx, fy, fw, _ = fire
@@ -779,11 +828,16 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
         depth=_fmt(orders.torpedo_depth) if orders.torpedo_depth else message("uboot.value.auto_depth"),
         salvo=orders.salvo, wires=wired),
         (fx + half + 10, fy + 88, half, 20), config.COLOR_TEXT_DIM, size=15)
+    # The seeker settings of the next shots (X pattern, ", ." enable point).
+    layout.blit_line(s, message(
+        "uboot.line.seeker", pattern=display_value("torpedo_pattern", orders.torpedo_pattern),
+        enable=f"{orders.torpedo_enable_nm:.1f}"),
+        (fx, fy + 112, fw, 20), config.COLOR_TEXT_DIM, size=15)
     busy = tube_line(sub, busy_only=True)
     if busy is not None:
         # Only tubes that are not ready; "tubes ready n/m" covers the rest.
         layout.blit_line(s, message("uboot.line.tubes", tubes=busy),
-                         (fx, fy + 112, fw, 20), config.COLOR_WARN, size=15)
+                         (fx, fy + 134, fw, 20), config.COLOR_WARN, size=15)
     contacts_y = y + box_h + 10
     states = opfor.tube_states(sub)
     if states:
@@ -874,7 +928,7 @@ _FOOTERS = {
                                  ("Shift+G", "uboot.footer.bottom")),
     ("uboot_nav", "UBOOT_PILOT"): (("C", "uboot.footer.course"), ("D", "uboot.footer.depth"),
                                    ("U/J/H", "uboot.footer.presets"),
-                                   ("Shift+G", "uboot.footer.bottom")),
+                                   ("W", "uboot.footer.route")),
     # At most four main keys per page; fire bearing, decoy and flooding are in F1.
     ("uboot_weapons", "UBOOT_WEAPONS"): (("↑/↓", "uboot.footer.contact"),
                                          ("help.key.uboot_fire", "uboot.footer.fire"),
@@ -1422,12 +1476,33 @@ def draw_end_panel(game, boat) -> None:
                 (("D", "end.key.debrief"), ("R", "end.key.restart"), ("M", "end.key.menu")))
 
 
+# Solid tint surfaces of the silent light, keyed on (size, multiply, floor).
+# A blended blit of a solid surface gives the same pixels as a blended fill
+# but takes the SIMD blitters (a blended full-screen fill is ~30x slower).
+_SILENT_TINT: dict = {}
+
+
+def _silent_tints(size) -> tuple:
+    key = (tuple(size), tuple(config.UBOOT_SILENT_LIGHT),
+           tuple(config.UBOOT_SILENT_LIGHT_FLOOR))
+    tints = _SILENT_TINT.get(key)
+    if tints is None:
+        _SILENT_TINT.clear()
+        multiply, floor = pygame.Surface(key[0]), pygame.Surface(key[0])
+        multiply.fill(key[1])
+        floor.fill(key[2])
+        tints = _SILENT_TINT[key] = (multiply, floor)
+    return tints
+
+
 def silent_light(s, boat) -> bool:
     """Silent running: the boat rigs for red, dimmed light (display only)."""
     if boat is None or not boat.orders.silent or boat.sub.sunk:
         return False
-    s.fill(config.UBOOT_SILENT_LIGHT, special_flags=pygame.BLEND_MULT)
-    s.fill(config.UBOOT_SILENT_LIGHT_FLOOR, special_flags=pygame.BLEND_ADD)
+    multiply, floor = _silent_tints(s.get_size())
+    # Like the fills, the blits keep to the surface's clip.
+    s.blit(multiply, (0, 0), special_flags=pygame.BLEND_MULT)
+    s.blit(floor, (0, 0), special_flags=pygame.BLEND_ADD)
     return True
 
 

@@ -120,6 +120,10 @@ class SimMixin:
 
     def _drain_enemy_torpedoes(self) -> None:
         for sub in self.subs:
+            # A crew's shot carries its weapons officer's seeker settings.
+            orders = sub.crew if sub.manual else None
+            pattern = getattr(orders, "torpedo_pattern", "straight")
+            enable_nm = getattr(orders, "torpedo_enable_nm", None)
             while (sub.pending_torpedoes
                    and len(self.enemy_torpedoes) < MAX_ENEMY_TORPEDOES):
                 row = sub.pending_torpedoes.pop(0)
@@ -133,7 +137,8 @@ class SimMixin:
                                  guidance_x=guidance[0], guidance_y=guidance[1],
                                  launch_platform_id=launch_platform_id,
                                  launch_weapon_key=launch_weapon_key,
-                                 time_since_launch=0.0))
+                                 time_since_launch=0.0,
+                                 pattern=pattern, enable_nm=enable_nm))
 
     def update(self, dt: float, audio_dt: float | None = None) -> None:
         with layout.bottom_panel_regions(self.bottom_panel_mode()):

@@ -20,7 +20,8 @@ import math
 import pygame
 
 from src.commander.server import OPFOR_ROLES, V2_ACTION_REGISTRY
-from src.core import attack_computer, boat_esm, buoy_antenna, config, opfor
+from src.core import attack_computer, boat_esm, boat_nav, buoy_antenna, config, opfor
+from src.physics import torpedo_dyn
 from src.core.i18n import display_value, message
 from src.core.station import Station
 from src.enemies import damage_control
@@ -284,6 +285,8 @@ def finish_input(game) -> bool:
     if result is not True:
         game.flash(message("event.invalid_input"), 2.0)
         return False
+    if field == "course":
+        boat_nav.cancel_on_helm(current)  # a helm order takes the boat off its route
     game.input_mode, game.input_buffer = None, ""
     _announce(game, "navigation",
               message(f"uboot.local.ordered_{field}", value=f"{number:.0f}"))
@@ -434,6 +437,15 @@ def handle_pointer(game, event) -> None:
             current.command_page = page
             return
         game._uboot_chart_drag = uboot_view.chart_pointer(game, pos)
+    elif (event.type == pygame.MOUSEBUTTONDOWN and event.button == 3
+          and local_station(game) == "uboot_nav" and not station_remote(game)):
+        # Right click on the chart: a route waypoint, as on the frigate's bridge.
+        point = uboot_view.chart_geo_point(game, current, pos)
+        if point is not None and order_allowed(game, "uboot_route_waypoint"):
+            result = boat_nav.add_waypoint(current, point[0], point[1],
+                                           float(game.world.size_nm))
+            if result is not True:
+                game.flash(message("uboot.local.route_full"), 2.0)
     elif event.type == pygame.MOUSEMOTION and game._uboot_chart_drag is not None:
         pointer = game._window_to_canvas(pos)
         if pointer is None:
@@ -536,6 +548,12 @@ def _key_action(key, mods, station=None, page=None):
         return "uboot_absorber"
     if key == pygame.K_v and station == "uboot_weapons":
         return "uboot_decoy"             # V: the decoy, as at the frigate's weapons
+    if key in (pygame.K_x, pygame.K_COMMA, pygame.K_PERIOD):
+        return "uboot_torpedo_settings"  # X pattern, , / . enable point (frigate keys)
+    if station == "uboot_nav" and key == pygame.K_w:
+        return "uboot_route_pattern"     # W: search pattern, as the frigate's bridge
+    if station == "uboot_nav" and key == pygame.K_BACKSPACE:
+        return "uboot_route_clear"
     if key == pygame.K_b and mods & pygame.KMOD_SHIFT:
         return "uboot_blow"
     if key in (pygame.K_RETURN, pygame.K_KP_ENTER) and mods & pygame.KMOD_CTRL:
@@ -706,6 +724,24 @@ def _command_key(game, current, key, mods) -> None:
             _announce(game, "waffen", message("uboot.local.decoy"))
         else:
             game.flash(message("uboot.local.decoy_unavailable"), 2.0)
+    elif action == "uboot_torpedo_settings":
+        orders = current.orders
+        if key == pygame.K_x:
+            patterns = torpedo_dyn.BOAT_SEARCH_PATTERNS
+            orders.torpedo_pattern = patterns[(patterns.index(orders.torpedo_pattern) + 1)
+                                              % len(patterns)]
+        else:
+            step = torpedo_dyn.ENABLE_RANGE_STEP_NM * (1 if key == pygame.K_PERIOD else -1)
+            orders.torpedo_enable_nm = torpedo_dyn.quantized_enable_nm(
+                min(torpedo_dyn.BOAT_ENABLE_DEFAULT_NM, orders.torpedo_enable_nm + step))
+        _announce(game, "waffen", message(
+            "uboot.local.torpedo_settings",
+            pattern=display_value("torpedo_pattern", orders.torpedo_pattern),
+            enable=f"{orders.torpedo_enable_nm:.1f}"), 2.0)
+    elif action == "uboot_route_pattern":
+        boat_nav.cycle_pattern(current, float(game.world.size_nm))
+    elif action == "uboot_route_clear":
+        boat_nav.clear(current)
     elif key == pygame.K_t:
         begin_input(game, "uboot_torpedo_depth")
     elif key == pygame.K_y:

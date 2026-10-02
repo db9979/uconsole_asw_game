@@ -143,7 +143,7 @@ UBOOT_REASONS = frozenset((
     "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
     "uboot_no_air_stores", "uboot_no_hp_air", "uboot_compartment_down",
     "uboot_no_antenna", "uboot_transmitting", "uboot_no_solution",
-    "uboot_tube_dry", "uboot_tubes_full", "uboot_no_dry_tube"))
+    "uboot_tube_dry", "uboot_tubes_full", "uboot_no_dry_tube", "uboot_route_full"))
 
 
 def _uboot_tube_params(params):
@@ -362,6 +362,22 @@ def _uboot_wire_params(params):
             and all(type(params[key]) in (int, float) and math.isfinite(params[key])
                     for key in ("bearing", "range_nm"))
             and 0 <= params["bearing"] < 360 and 0.05 <= params["range_nm"] <= 40)
+
+
+def _uboot_waypoint_params(params):
+    """A route waypoint in chart coordinates (NM, inside the world)."""
+    return (type(params) is dict and set(params) == {"x", "y"}
+            and all(type(params[key]) in (int, float) and math.isfinite(params[key])
+                    and 0 <= params[key] <= 10_000 for key in ("x", "y")))
+
+
+def _uboot_torpedo_settings_params(params):
+    """Search pattern and seeker enable point (0.6 to 3 NM before the datum)."""
+    return (type(params) is dict and set(params) == {"pattern", "enable_nm"}
+            and params["pattern"] in ("straight", "snake", "circle", "helix")
+            and type(params["enable_nm"]) in (int, float)
+            and math.isfinite(params["enable_nm"])
+            and 0.6 <= params["enable_nm"] <= 3.0)
 
 
 def _uboot_fire_params(params):
@@ -700,6 +716,14 @@ V2_ACTION_REGISTRY = {
     # keeps course, speed and depth.
     "uboot_set_course": V2Action(frozenset({"uboot", "uboot_nav"}), _course_params),
     "uboot_clear_baffles": V2Action(frozenset({"uboot", "uboot_nav"}), _no_params),
+    # The navigation's route: chart waypoints, a search pattern, or none.
+    "uboot_route_waypoint": V2Action(frozenset({"uboot_nav"}), _uboot_waypoint_params),
+    "uboot_route_pattern": V2Action(frozenset({"uboot_nav"}),
+                                    _enum_params("pattern", ("zigzag", "square"))),
+    "uboot_route_clear": V2Action(frozenset({"uboot_nav"}), _no_params),
+    # The weapons officer's seeker settings for the following shots.
+    "uboot_torpedo_settings": V2Action(frozenset({"uboot_weapons"}),
+                                       _uboot_torpedo_settings_params),
     "uboot_set_speed": V2Action(frozenset({"uboot", "uboot_engine"}), _uboot_speed_params),
     "uboot_set_depth": V2Action(frozenset({"uboot", "uboot_nav"}), _uboot_depth_params),
     "uboot_fire": V2Action(frozenset({"uboot_weapons"}), _uboot_fire_params,

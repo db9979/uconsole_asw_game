@@ -105,6 +105,12 @@ ENABLE_RANGE_MAX_NM = 3.0
 ENABLE_RANGE_STEP_NM = 0.2
 SALVO_SPREAD_DEG = 8.0
 SALVO_SIZES = (1, 2)
+# A crewed submarine's torpedo: the seeker switches on 3 NM before its datum
+# unless the weapons officer sets a later point, and runs straight on an
+# enabled search unless the crew orders a pattern (the 1.3.140 behaviour is
+# straight at 3 NM, which also every AI shot keeps).
+BOAT_SEARCH_PATTERNS = ("straight",) + SEARCH_PATTERNS
+BOAT_ENABLE_DEFAULT_NM = 3.0
 
 
 def snake_offset(phase: float) -> tuple[float, float]:

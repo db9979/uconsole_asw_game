@@ -384,6 +384,7 @@ export function init() {
     "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target",
     "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range", "uboot-fire-depth",
     "uboot-fire-salvo", "uboot-wire-weapon", "uboot-wire-bearing", "uboot-wire-range",
+    "uboot-seeker-pattern", "uboot-seeker-enable",
     "weapons-torpedo-type", "weapons-pattern", "weapons-enable", "weapons-salvo", "engine-plant", "helicopter-pattern"]) {
     $(id).addEventListener("input", () => S.stationDrafts.add(id));
     $(id).addEventListener("change", () => S.stationDrafts.add(id));
@@ -596,6 +597,18 @@ export function init() {
   $("simlog-export").addEventListener("click", () => exportSimlog());
   $("uboot-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));
   $("uboot-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
+  $("uboot-seeker-apply").addEventListener("click", () => {
+    for (const id of ["uboot-seeker-pattern", "uboot-seeker-enable"]) S.stationDrafts.delete(id);
+    sendStationAction("uboot_torpedo_settings", {pattern: $("uboot-seeker-pattern").value,
+      enable_nm: $("uboot-seeker-enable").valueAsNumber});
+  });
+  $("uboot-route-mode").addEventListener("click", () => {
+    S.ubootRouteMode = !S.ubootRouteMode;
+    $("uboot-route-mode").setAttribute("aria-pressed", String(S.ubootRouteMode));
+  });
+  $("uboot-route-zigzag").addEventListener("click", () => sendStationAction("uboot_route_pattern", {pattern: "zigzag"}));
+  $("uboot-route-square").addEventListener("click", () => sendStationAction("uboot_route_pattern", {pattern: "square"}));
+  $("uboot-route-clear").addEventListener("click", () => sendStationAction("uboot_route_clear", {}));
   $("bridge-route-mode").addEventListener("click", () => {
     S.bridgeRouteMode = !S.bridgeRouteMode;
     $("bridge-route-mode").setAttribute("aria-pressed", String(S.bridgeRouteMode));
@@ -894,6 +907,15 @@ export function init() {
         sendStationAction("opz_mark_blip", {ref: contact.ref});
       } else if (contact) {
         selectTrack(contact.ref);
+      } else if (!contact && gesture.role === "uboot_nav" && S.ubootRouteMode && stationActionAvailable()) {
+        // Route mode at the boat's navigation: a waypoint on the crew's chart,
+        // which lies shifted by the dead-reckoning error against the boat.
+        const geometry = roleMapGeometry(gesture.role), state = roleMapViews[gesture.role];
+        const nav = S.v2State.uboot_nav.navigation;
+        const worldX = state.x + (x - rect.width / 2) / geometry.scale + (nav.est_x - nav.x);
+        const worldY = state.y + (y - rect.height / 2) / geometry.scale + (nav.est_y - nav.y);
+        if (finite(worldX) && finite(worldY) && worldX >= 0 && worldX <= 1000 && worldY >= 0 && worldY <= 1000)
+          sendStationAction("uboot_route_waypoint", {x: worldX, y: worldY});
       } else if (!contact && gesture.role === "bridge" && S.bridgeRouteMode && stationActionAvailable()) {
         // Route mode on the bridge: a click on open chart adds a waypoint.
         const geometry = roleMapGeometry(gesture.role), state = roleMapViews[gesture.role];
@@ -1061,8 +1083,8 @@ export function init() {
     if (boatFrame) return;
     boatFrame = requestAnimationFrame(() => { boatFrame = 0; drawUbootGraphics(S.v2State?.[S.v2State?.role]); });
   };
-  for (const id of ["uboot-depth-canvas", "uboot-esm-canvas", "uboot-scope-canvas", "uboot-ballast-canvas",
-    "uboot-dc-canvas"])
+  for (const id of ["uboot-depth-canvas", "uboot-sounder-canvas", "uboot-esm-canvas", "uboot-scope-canvas",
+    "uboot-ballast-canvas", "uboot-dc-canvas"])
     new ResizeObserver(boatRedraw).observe($(id));
   window.addEventListener("resize", () => { queueDraw(); queueLookoutDraw(); queueVisualDraw(); });
   window.addEventListener("hashchange", () => { applySimlogView(); loadSimlog(); });

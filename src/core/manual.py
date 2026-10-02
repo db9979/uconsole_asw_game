@@ -24,13 +24,13 @@ from functools import lru_cache
 from importlib.resources import files as _resource_files
 
 from src.core.help import (_GLOBAL_HELP, _UBOOT_HELP, _WEB_HELP, STATION_HELP,
-                           STATION_SOP)
+                           STATION_SOP, UBOOT_SOP, UBOOT_SOP_SLUGS)
 from src.core.i18n import Translator
 from src.core.station import Station
 
 LANGUAGES = ("en", "de")
 CHAPTERS = ("quickstart", "bridge", "sonar", "weapons", "damage", "opz", "radio",
-            "engine", "helicopter", "eloka", "reference")
+            "engine", "helicopter", "eloka", "submarine", "reference")
 STATION_CHAPTERS = {
     Station.BRIDGE: "bridge", Station.SONAR: "sonar", Station.WEAPONS: "weapons",
     Station.DAMAGE: "damage", Station.OPZ: "opz", Station.RADIO: "radio",
@@ -40,7 +40,7 @@ _CHAPTER_STATIONS = {chapter: station for station, chapter in STATION_CHAPTERS.i
 KEY_TABLES = ("global", "web", *STATION_CHAPTERS.values())
 
 _HEADING = re.compile(r"^(#{1,3})\s+(.+?)\s+\{#([a-z0-9][a-z0-9-]*)\}\s*$")
-_MARKER = re.compile(r"^<!--\s*(keys|sop):([a-z]+)\s*-->$")
+_MARKER = re.compile(r"^<!--\s*(keys|sop):([a-z_]+)\s*-->$")
 _ORDERED = re.compile(r"^\d+\.\s+(.*)$")
 _TABLE_RULE = re.compile(r"^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?$")
 _INLINE = re.compile(r"`([^`]+)`|\*\*([^*]+)\*\*")
@@ -87,7 +87,12 @@ def _key_table(name: str, tr) -> tuple:
     return tuple((tr(key), tr(action)) for key, action in rows)
 
 
+_UBOOT_SOP_MARKERS = {f"uboot_{slug}": station for station, slug in UBOOT_SOP_SLUGS.items()}
+
+
 def _sop(name: str, tr) -> tuple:
+    if name in _UBOOT_SOP_MARKERS:
+        return tuple(tr(key) for key in UBOOT_SOP[_UBOOT_SOP_MARKERS[name]])
     if name not in _CHAPTER_STATIONS:
         raise ManualError(f"unknown procedure {name!r}")
     return tuple(tr(key) for key in STATION_SOP[_CHAPTER_STATIONS[name]])

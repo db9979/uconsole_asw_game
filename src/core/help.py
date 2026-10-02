@@ -228,6 +228,13 @@ _SOP_SLUGS = {
 }
 STATION_SOP = {station: tuple(f"help.sop.{slug}.{step}" for step in range(1, 6))
                for station, slug in _SOP_SLUGS.items()}
+# The crewed submarine's stations (``uboot_local`` station ids) and their
+# procedures (``help.sop.uboot.<slug>.*``, manual markers ``sop:uboot_<slug>``).
+UBOOT_SOP_SLUGS = {"uboot": "command", "uboot_sonar": "sonar", "uboot_weapons": "weapons",
+                   "uboot_engine": "engine", "uboot_esm": "esm", "uboot_nav": "nav",
+                   "uboot_radio": "radio"}
+UBOOT_SOP = {station: tuple(f"help.sop.uboot.{slug}.{step}" for step in range(1, 6))
+             for station, slug in UBOOT_SOP_SLUGS.items()}
 
 # Remote Crew browser keys (``data/commander/js`` keydown handlers).
 _WEB_HELP = (
@@ -272,6 +279,8 @@ _UBOOT_HELP = (
         ("help.key.uboot_blow", "help.uboot.blow"),
         ("T", "help.uboot.torpedo_depth"),
         ("Y", "help.uboot.salvo"),
+        ("X", "help.uboot.torpedo_pattern"),
+        (", / .", "help.uboot.torpedo_enable"),
         ("W", "help.uboot.wire_steer"),
         ("Shift+W", "help.uboot.wire_cut"),
         ("A", "help.uboot.silent"),
@@ -304,6 +313,9 @@ _UBOOT_HELP = (
         ("U", "help.uboot.casualty_reassign"),
         ("G", "help.uboot.action_stations"),
         ("Ctrl+B", "help.uboot.clear_baffles"),
+        ("help.key.route_click", "help.uboot.route_waypoint"),
+        ("W", "help.uboot.route_pattern"),
+        ("Backspace", "help.uboot.route_clear"),
         ("0", "help.uboot.weather"),
         ("S / L / F9", "help.uboot.admin"),
     ],
@@ -344,6 +356,12 @@ def get_sop(station: Station, tr=None) -> list:
     """Return the localized standard procedure steps for one station."""
     tr = tr or Translator("de").t
     return [tr(key) for key in STATION_SOP.get(station, ())]
+
+
+def get_uboot_sop(station: str, tr=None) -> list:
+    """Return the localized standard procedure of one submarine station."""
+    tr = tr or Translator("de").t
+    return [tr(key) for key in UBOOT_SOP.get(station, ())]
 
 
 def get_web_help(tr=None) -> tuple:

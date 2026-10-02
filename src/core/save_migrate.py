@@ -86,6 +86,22 @@ def _v46_to_v47(doc: dict) -> None:
     doc["consort"] = None
 
 
+def _v47_to_v48(doc: dict) -> None:
+    # A crewed boat's seeker settings, dead reckoning and route, and each
+    # running hostile torpedo's search: what 1.3.140 did (straight, seeker on
+    # 3 NM before the datum, an exact position, no route).
+    crew = doc.get("crew")
+    orders = crew.get("orders") if isinstance(crew, dict) else None
+    if isinstance(orders, dict):
+        orders.update(torpedo_pattern="straight", torpedo_enable_nm=3.0,
+                      nav=[0.0, 0.0, 0.0, 0.0, 0],
+                      route={"points": [], "index": 0, "kind": "manual"})
+    for torpedo in doc.get("enemy_torpedoes") or ():
+        if isinstance(torpedo, dict):
+            torpedo.update(pattern="straight", enable_nm=3.0, search_phase=0.0,
+                           turns_done=0.0, search_course=None)
+
+
 STEPS = {
     38: _v38_to_v39,
     39: _v39_to_v40,
@@ -96,6 +112,7 @@ STEPS = {
     44: _v44_to_v45,
     45: _v45_to_v46,
     46: _v46_to_v47,
+    47: _v47_to_v48,
 }
 
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import math
 
-from src.core import config, detrand
+from src.core import boat_nav, config, detrand
 from src.core.opfor import depth_presets, measured_layer_m
 
 KINDS = ("hull", "dipping", "buoy", "splash", "torpedo")
@@ -160,6 +160,7 @@ def evade(game, boat):
         return "uboot_no_threat"
     if boat.orders.bottomed:
         sub.command_bottom(False)
+    boat_nav.cancel_on_helm(boat)
     sub.command_silent(plan["silent"])
     result = sub.set_orders(course=plan["course"] % 360.0, speed=plan["speed_kn"],
                             depth=plan["depth_m"])

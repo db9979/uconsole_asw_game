@@ -324,6 +324,16 @@ UBOOT_BUOY_TRAIL_NM = 0.15            # cable length astern (~280 m)
 UBOOT_BUOY_RCS_FACTOR = 0.004         # radar echo relative to a ship (a mast is 0.01)
 UBOOT_BUOY_HEIGHT_M = 0.3             # above the water (radar horizon)
 UBOOT_BUOY_VISUAL = 0.3               # eye contrast vs. a mast's full feather (bare head 0.15)
+# Dead reckoning of a crewed boat (src/core/boat_nav.py): dived, the navigated
+# position drifts at up to DR_DRIFT_KN (a nuclear boat's inertial navigation
+# at DR_NUCLEAR_FACTOR of it) plus a random walk of DR_WALK_NM a minute, up to
+# DR_ERROR_MAX_NM; GPS_FIX_S with the mast raised at periscope depth fixes it.
+UBOOT_DR_DRIFT_KN = 0.4
+UBOOT_DR_WALK_NM = 0.02
+UBOOT_DR_NUCLEAR_FACTOR = 0.3
+UBOOT_DR_ERROR_MAX_NM = 8.0
+UBOOT_DR_SURFACE_M = 3.0
+UBOOT_GPS_FIX_S = 20.0
 UBOOT_ORDER_FIRST = 2
 UBOOT_ORDER_P = 0.5
 UBOOT_ORDER_MAX = 4

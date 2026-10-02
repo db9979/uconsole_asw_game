@@ -40,7 +40,7 @@ from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
-from src.core import baffles, buoy_antenna
+from src.core import baffles, boat_nav, buoy_antenna
 from src.core.incidents import IncidentBoard
 from src.core.hq_reports import HqReports
 from src.weapons import rbu
@@ -149,6 +149,11 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
             or orders["battery_state"] not in CREW_BATTERY_STATES
             or not baffles.valid_state(orders["baffle_clear"])
             or not buoy_antenna.valid_state(orders["buoy"])
+            or orders["torpedo_pattern"] not in torpedo_dyn.BOAT_SEARCH_PATTERNS
+            or not bounded(orders["torpedo_enable_nm"], torpedo_dyn.ENABLE_RANGE_MIN_NM,
+                           torpedo_dyn.BOAT_ENABLE_DEFAULT_NM)
+            or not boat_nav.valid_state(orders["nav"])
+            or not Route.valid_state(orders["route"], config.WORLD_SIZE_NM)
             or not (orders["obstacle_ahead_nm"] is None
                     or bounded(orders["obstacle_ahead_nm"], 0.0, 10_000.0))):
         return False
@@ -943,7 +948,19 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                             "profile_key", "guidance_x", "guidance_y",
                             "terminal_active", "seeker_acquired",
                             "seeker_target", "travel", "launch_platform_id",
-                            "launch_weapon_key"} <= set(entry):
+                            "launch_weapon_key", "pattern", "enable_nm",
+                            "search_phase", "turns_done", "search_course"} <= set(entry):
+                        return False
+                    # Save v48: the crew's search pattern and seeker enable point.
+                    search_course = entry["search_course"]
+                    if (entry["pattern"] not in torpedo_dyn.BOAT_SEARCH_PATTERNS
+                            or not bounded(entry["enable_nm"], torpedo_dyn.ENABLE_RANGE_MIN_NM,
+                                           torpedo_dyn.BOAT_ENABLE_DEFAULT_NM)
+                            or not bounded(entry["search_phase"], 0, 1_000_000)
+                            or not bounded(entry["turns_done"], 0, 1_000_000)
+                            or (search_course is not None
+                                and (not bounded(search_course, 0, 360)
+                                     or search_course == 360))):
                         return False
                     profile_key = entry.get("profile_key")
                     profile = runtime_catalog.torpedoes.get(profile_key)

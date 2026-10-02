@@ -542,7 +542,8 @@ class EnemyTorpedo:
                    guidance_x: float = None, guidance_y: float = None, *,
                    launch_platform_id: int | None = None,
                    launch_weapon_key: str | None = None,
-                   time_since_launch: float | None = None):
+                   time_since_launch: float | None = None,
+                   pattern: str = "straight", enable_nm: float | None = None):
         self.id = EnemyTorpedo._next_id
         EnemyTorpedo._next_id += 1
         self.x = x_nm
@@ -575,6 +576,16 @@ class EnemyTorpedo:
         self.motor_fraction = 1.0
         self.depth_rate = 0.0
         self.target_depth = depth_m
+        # Crew settings at launch (save v48): the search the enabled seeker
+        # runs while it holds nothing, and how far before the datum it
+        # switches on. Defaults are the AI's shot: straight, 3 NM.
+        self.pattern = (pattern if pattern in torpedo_dyn.BOAT_SEARCH_PATTERNS
+                        else "straight")
+        self.enable_nm = (torpedo_dyn.BOAT_ENABLE_DEFAULT_NM if enable_nm is None
+                          else float(enable_nm))
+        self.search_phase = 0.0          # serpentine phase
+        self.turns_done = 0.0            # helix progress, in full circles
+        self.search_course = None        # base course of the serpentine
 
     def _spoolup_factor(self) -> float:
         return Torpedo._spoolup_factor(self)
@@ -622,10 +633,10 @@ class EnemyTorpedo:
             self.seeker_acquired = False
             self._seeker_target = None
         if self.guidance_x is None or self.guidance_y is None:
-            seeker_active = math.hypot(ship.x - self.x, ship.y - self.y) <= 3.0
+            seeker_active = math.hypot(ship.x - self.x, ship.y - self.y) <= self.enable_nm
         else:
             seeker_active = math.hypot(
-                self.guidance_x - self.x, self.guidance_y - self.y) <= 3.0
+                self.guidance_x - self.x, self.guidance_y - self.y) <= self.enable_nm
         self.terminal_active = self.terminal_active or seeker_active
         if self.terminal_active:
             candidate = self._candidate([ship, *surface_targets, *seeker_candidates],
@@ -655,6 +666,8 @@ class EnemyTorpedo:
             elif wake is not None and wake(self.x, self.y) >= WAKE_HOMING_THRESHOLD:
                 # Wake homing: follow the bubble trail toward its young end.
                 desired = self._wake_course(ship)
+            elif self.terminal_active and self.pattern != "straight":
+                desired = self._pattern_course(dt, fraction)
         if desired is not None:
             diff = config.angle_diff_deg(desired, self.course)
             rate = torpedo_dyn.turn_rate_deg_s(self.TURN_DEG_PER_S, fraction)
@@ -703,6 +716,22 @@ class EnemyTorpedo:
             self.state = "SASE"
 
     TURN_DEG_PER_S = 6.0
+
+    def _pattern_course(self, dt: float, fraction: float) -> float:
+        """Course of the crew's search pattern once the seeker is enabled
+        and holds nothing: a serpentine about the course it had when it
+        switched on, or a circle or opening helix (the frigate's patterns)."""
+        if self.search_course is None:
+            self.search_course = self.course
+        if self.pattern == "snake":
+            self.search_phase += dt * 0.03
+            return (self.search_course
+                    + torpedo_dyn.snake_offset(self.search_phase)[0]) % 360.0
+        rate = torpedo_dyn.pattern_turn_deg_s(
+            self.pattern, self.speed_nm_per_s * max(0.0, fraction), self.turns_done)
+        rate = min(rate, torpedo_dyn.turn_rate_deg_s(self.TURN_DEG_PER_S, fraction))
+        self.turns_done += rate * dt / 360.0
+        return (self.course + rate * dt) % 360.0
 
     def _wake_course(self, ship) -> float:
         """Course along the wake toward its youngest sampled point."""

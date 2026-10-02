@@ -17,7 +17,7 @@ from src.core.launch_signal import game_visible
 from src.core.i18n import (Translator, display_value, localized, localize,
                            message, raw_text, translation_scope)
 from src.core.preferences import save_preferences
-from src.core.help import get_global_help, get_help, get_sop, get_uboot_help
+from src.core.help import get_global_help, get_help, get_sop, get_uboot_help, get_uboot_sop
 from src.core import manual
 from src.core.station import Station
 from src.core import pointer_input, station_alarms, uboot_local
@@ -760,8 +760,8 @@ class DrawMixin:
                 label = observations.telemetry_label(key, short=True)
                 parts.append(f"{localize(label)} {localize(compact)}")
         face = layout.font(16)
-        while width is not None and len(parts) > 1 and face.size(
-                " \u00b7 ".join(parts))[0] > width:
+        while width is not None and len(parts) > 1 and layout.text_width(
+                face, " \u00b7 ".join(parts)) > width:
             parts.pop()
         return " \u00b7 ".join(parts)
 
@@ -780,12 +780,12 @@ class DrawMixin:
                  else "warn" if any(row[2] == "warn" for row in rows) else "ok")
         colors = {"ok": config.COLOR_TEXT, "warn": config.COLOR_WARN,
                   "danger": config.COLOR_DANGER}
-        tele_w = face.size(telemetry)[0] + 16
+        tele_w = layout.text_width(face, telemetry) + 16
         tele_rect = pygame.Rect(rect.right - tele_w, rect.y + 2, tele_w - 8, rect.h - 2)
 
         def strip_text(value, area, color, right=False):
             # Centred on the strip, so large text keeps its descenders on screen.
-            image = face.render(value, True, color)
+            image = layout.render_line(face, value, color)
             area = pygame.Rect(area.x, rect.y, area.w, rect.h)
             x = area.right - image.get_width() if right else area.x
             ink = image.get_bounding_rect()
@@ -878,8 +878,13 @@ class DrawMixin:
             title, bindings = get_global_help(self.tr)
             text = title + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in bindings)
         elif self.help_page == 1 and self.local_side == "uboot":
+            from src.core import uboot_local
             title, bindings = get_uboot_help(self.tr)
+            sop = get_uboot_sop(uboot_local.local_station(self), self.tr)
             text = title + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in bindings)
+            if sop:
+                text += ("\n\n" + self.tr("help.sop.title") + "\n"
+                         + "\n".join(f"{n}. {step}" for n, step in enumerate(sop, 1)))
         elif self.help_page == 1:
             sop = get_sop(self.station, self.tr)
             text = (intro + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in keys)

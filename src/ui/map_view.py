@@ -313,7 +313,7 @@ def _map_label(surface, game, text, pos, color, chart, candidates=None,
     positions around ``pos``)."""
     shown = localize(text)
     face = layout.font(size) if size else game.font
-    width, height = face.size(shown)
+    width, height = layout.text_size(face, shown)
     chart = pygame.Rect(chart)
     field = label_layout.active()
     if field is not None:
@@ -327,7 +327,7 @@ def _map_label(surface, game, text, pos, color, chart, candidates=None,
             x = max(chart.x + 2, pos[0] - width - 24)
         y = min(max(y, chart.y + 2), chart.bottom - height - 2)
     with layout.clip_to(surface, chart):
-        image = face.render(shown, True, color)
+        image = layout.render_line(face, shown, color)
         rendered = image.get_rect(topleft=(int(x), int(y)))
         layout.record_text(shown, rendered, chart, image)
         surface.blit(image, rendered)
@@ -411,7 +411,7 @@ def draw_chart_geography(game, view, r) -> None:
     # that would run off the chart or into the other axis' corner is left out.
     face = game.font
     label_h = face.get_linesize()
-    left_w = face.size("0000")[0] + 6
+    left_w = layout.text_width(face, "0000") + 6
     bottom_band = r[1] + r[3] - label_h - 2
     with layout.clip_to(s, r):
         for k in range(gx0, gx1 + 1):
@@ -419,7 +419,7 @@ def draw_chart_geography(game, view, r) -> None:
             x, _ = view.world_to_screen(g, 0)
             if r[0] <= x <= r[0] + r[2]:
                 lines.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
-                image = face.render(grid_label(g), True, config.COLOR_TEXT_DIM)
+                image = layout.render_line(face, grid_label(g), config.COLOR_TEXT_DIM)
                 if int(x) + 3 >= r[0] + left_w and int(x) + 3 + image.get_width() <= r[0] + r[2] - 2:
                     s.blit(image, (int(x) + 3, bottom_band))
         for k in range(gy0, gy1 + 1):
@@ -428,7 +428,7 @@ def draw_chart_geography(game, view, r) -> None:
             if r[1] <= y <= r[1] + r[3]:
                 lines.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
                 if int(y) + 3 + label_h <= bottom_band:
-                    s.blit(face.render(grid_label(g), True, config.COLOR_TEXT_DIM),
+                    s.blit(layout.render_line(face, grid_label(g), config.COLOR_TEXT_DIM),
                            (r[0] + 3, int(y) + 3))
 
     # Land / Inseln. Legacy/fake coast providers retain their old API.

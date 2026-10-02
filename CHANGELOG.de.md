@@ -4,6 +4,51 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.145
+
+Version 1.3.145 bringt das Echolot in die Navigation des U-Boots im Browser:
+der gelotete Meeresgrund der letzten zehn Minuten neben der eigenen Tiefe,
+wenig Wasser unter dem Kiel gelb und rot, und das Kartenprofil voraus auf dem
+befohlenen Kurs mit dem Hindernis, das der Kartencheck gefunden hat.
+Spielstandformat v48 unverändert.
+
+## 1.3.144
+
+Version 1.3.144 lässt die uConsole auf beiden Seiten schneller zeichnen.
+Textbreiten, umbrochene Zeilen und gezeichnete Texte werden gemerkt und
+wiederverwendet, und das Rotlicht der Schleichfahrt mischt nicht mehr zweimal
+pro Bild den ganzen Schirm. In einem Messlauf ohne Bildschirm braucht ein
+U-Boot-Bild etwa ein Viertel der Zeit, mit Schleichfahrt etwa ein Sechstel,
+ein Fregatten-Bild weniger als die Hälfte. `tools/bench_draw.py` misst jede
+Station beider Seiten. Spielstandformat v48 unverändert.
+
+## 1.3.143
+
+Version 1.3.143 gibt der Navigation des U-Boots Koppelnavigation und eine
+Route. Getaucht wandert der gekoppelte Ort langsam vom wahren weg (bei einem
+Atomboot weniger); ein GPS-Fix mit 20 s Mast oben an Sehrohrtiefe setzt ihn
+zurück. Die Karte der Crew liegt dort, wo der Navigator sie vermutet,
+Kartencheck voraus und Route rechnen von diesem Ort, und die Lotsenkarte zeigt
+die Fehlerschätzung und das Alter des Fixes. Ein Rechtsklick in die Karte setzt
+einen Wegpunkt, `W` legt eine Zickzack- oder Quadratsuche und `Rücktaste`
+löscht die Route; der Browser hat dieselben Knöpfe und einen Klickmodus.
+Spielstände wechseln auf Format v48; v38 bis v47 lassen sich weiter laden.
+
+## 1.3.142
+
+Version 1.3.142 lässt die Waffenstation des U-Boots den Suchkopf der nächsten
+Schüsse wie auf der Fregatte einstellen: Suchmuster gerade, Schlange, Kreis
+oder Helix (`X`) und den Einschaltpunkt 0,6 bis 3,0 sm vor dem Datum (`,` und
+`.`), im Browser auf der Waffen-Karte. Die Vorgaben behalten den bisherigen
+Schuss. Spielstandformat v48.
+
+## 1.3.141
+
+Version 1.3.141 ergänzt das Handbuchkapitel „U-Boot" mit der Aufgabe jeder
+Bootsstation und einem Standardablauf in fünf Schritten für alle sieben
+Stationen. F1 zeigt auf der U-Boot-Seite den Ablauf der besetzten Station, und
+der Handbuchleser öffnet beim U-Boot-Kapitel. Spielstandformat v47 unverändert.
+
 ## 1.3.140
 
 Version 1.3.140 bringt drei neue uConsole-Seiten. Die Navigation des U-Boots

@@ -11,7 +11,7 @@ import math
 
 import pygame
 
-from src.core import buoy_antenna, config
+from src.core import boat_nav, buoy_antenna, config
 from src.core.boat_radio import antenna_up, reception
 from src.core.i18n import message
 from src.ui import layout, lines
@@ -27,9 +27,10 @@ def _clock(seconds) -> str:
 
 
 def report_lines(game, boat, report) -> list:
-    """Text lines of one HQ contact report, seen from the boat's position now."""
-    sub = boat.sub
-    dx, dy = report["x"] - sub.x, report["y"] - sub.y
+    """Text lines of one HQ contact report, seen from the boat's navigated
+    position now."""
+    bx, by = boat_nav.position(boat)
+    dx, dy = report["x"] - bx, report["y"] - by
     bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
     age_min = max(0.0, game.sim_t - report["as_of"]) / 60.0
     return [message("uboot.radio.report_position", bearing=f"{bearing:03.0f}",
@@ -55,7 +56,8 @@ def order_line(game, boat):
         from src.core import free_roam
         return free_roam.order_text(game, boat, order)
     if order["kind"] == "area":
-        dx, dy = order["x"] - boat.sub.x, order["y"] - boat.sub.y
+        bx, by = boat_nav.position(boat)
+        dx, dy = order["x"] - bx, order["y"] - by
         return message("uboot.radio.order_area", number=str(order["id"]),
                        bearing=f"{math.degrees(math.atan2(dx, -dy)) % 360.0:03.0f}",
                        range=f"{math.hypot(dx, dy):.1f}",

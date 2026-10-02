@@ -1114,6 +1114,102 @@ Automatic mode (`A`) picks targets and techniques and couples jamming with soft-
 - No communications intelligence (COMINT) or radio intercept; HF signals are handled by the radio room (HFDF).
 - No decoy launchers other than chaff and no towed radar decoys.
 
+## 10 Submarine
+
+### Overview
+
+A second crew can play the submarine on the uConsole or in browsers (the lobby, `F9` or a new game as the submarine). The boat has seven stations; each order is accepted only from the station that owns it, and an AI fills every free station when the crew assist is on. This chapter gives each station's job and standard procedure; the key table and the boat's missions are in the reference chapter (*Crewed opposing submarine*).
+
+### Command
+
+Command sees the whole boat: chart, navigation, weapons and contacts, the periscope and the threat page. It orders course, speed and depth, lies on the bottom, pings, takes a BT and evades on the freshest alarm.
+
+1. Take over at periscope depth with the mast down; read the threat page and HQ's order before moving.
+2. Once the frigate, its sonar or a helicopter is heard: below the layer (J), slow and silent running (A).
+3. Build the attack: Sonar holds the bearing, Weapons gets a range from TMA, ping or stadimeter.
+4. Come up to periscope depth slowly and quietly; raise the mast (P) only for short looks.
+5. After a ping or torpedo alarm evade at once (I); clear the baffles (Ctrl+B) before turning back.
+
+### Sonar
+
+The submarine's sonar room works like the frigate's, without towed array, OPZ release, plot and telegraph. The hull sonar is deaf in the baffles astern.
+
+1. Search broadband all round; give every new contact a number and watch its bearing drift.
+2. Listen on the strongest contact with the filters and classify it by its lines.
+3. Astern the hull sonar is deaf: ask Command for a baffle clearing every 20 to 30 minutes.
+4. Report pings and torpedo noise at once; their bearing is the base of every evasion.
+5. Ping only to finish an attack: the frigate hears every ping and gets your bearing.
+
+### Weapons
+
+Weapons loads and floods the tubes, sets run depth and salvo, fires at a selected contact or down an entered bearing, steers the wired torpedoes and launches decoys. The fire-control box shows the seeker setting of the next shots.
+
+1. Load tubes (M) and flood them early and slowly (Ctrl+M); fast flooding (Shift+M) is loud.
+2. Before the shot set run depth (T), salvo (Y), search pattern (X) and enable point (, / .).
+3. Pick a contact with a fresh range and fire with Ctrl+Enter, or down an entered bearing (F).
+4. Steer the wired torpedo (W) onto new bearings; cut the wire (Shift+W) before hard manoeuvres.
+5. Against a torpedo launch a decoy (V) and reload at once.
+
+### Engine room
+
+The engine room runs the telegraph, snorkel and charge rate, silent running, the trim tanks and the emergency blow, keeps the air breathable and leads the damage-control teams.
+
+1. Keep the battery charged: snorkel (N) at night or in poor visibility, charge rate (R) to suit the threat.
+2. Silent running (A) whenever the frigate is close: at most 5 kn.
+3. Watch carbon dioxide and oxygen on the stores page; fit an absorber (Shift+O) or light a candle (O) in time.
+4. Leave the trim on automatic (Z); trim by hand only for a silent hover.
+5. On damage send the teams (Enter), shut bulkheads (I); blow (Shift+B) only as the last resort.
+
+### Mast & ESM
+
+Mast & ESM raises the mast at periscope depth, listens for radars on the ESM rose, classifies the emitters, plots cross-fixes and looks through the periscope.
+
+1. Raise the mast (P) only at periscope depth and only for a short time.
+2. Watch the ESM rose: a main-beam hit means the radar may already see the mast.
+3. Classify each emitter (← / →) and send cross-fixes to the plot (Enter).
+4. Lower the mast at once when a helicopter or aircraft radar gets stronger.
+5. On the periscope page take stadimeter ranges for the attack computer (Enter).
+
+### Navigation
+
+Navigation orders course and depth, watches keel and shoals on the pilot chart and the echo sounder, keeps the dead reckoning and steers the route.
+
+1. Before every course or depth order check the pilot chart: keel, shoals and land ahead.
+2. Watch the DR position lamp: dived the error grows; take a GPS fix with the mast up (20 s) when it is safe.
+3. Lay a route with right clicks or a search pattern (W); a helm order ends the route.
+4. Keep at least the DR error clear of shoals: the chart check runs from the navigated position.
+5. In shallow water lie on the bottom to hide (Shift+G) and lift off before moving.
+
+### Radio room
+
+The radio room copies HQ's broadcasts, reads HQ's orders and contact reports and sends situation reports.
+
+1. Note the next HQ broadcast; copy it with the mast up, the buoy antenna (B) or VLF.
+2. Pass HQ's orders and contact reports to Command; their bearings are from the navigated position.
+3. Send a situation report (Enter) only when ordered or safe: the frigate can take an HF bearing.
+4. Stream the buoy antenna at 6 kn or less and recover it before going faster than 10 kn.
+5. A contact report gets older by the minute: its error circle grows, the target moves on.
+
+### Dead reckoning and route
+
+- Dived, the boat knows its position only by dead reckoning. The navigated position drifts from the true one by a steady set of up to 0.4 kn that log and gyro cannot see (a nuclear boat's inertial navigation drifts 0.3 times as much), plus a small random walk once a minute; the error stays below 8 NM.
+- The crew's chart (coast, soundings, hazards, mission goal, HQ's reports and the route) is drawn where the navigator believes it lies against the boat. The boat itself, its own sonar contacts and own torpedoes stay where the boat measures them.
+- A GPS fix: mast up at periscope depth for 20 s puts the navigated position back on the true one. The **DR position** lamp on the Chart & sounder page shows the navigator's own error estimate and the minutes since the fix, or the fix being taken.
+- The chart check ahead and the route steer from the navigated position, so an old fix can lead the boat into water the chart calls clear.
+- The route: a right click on the chart adds a waypoint (at most 8), `W` lays a zigzag or expanding-square search from the boat and steps to off, `Backspace` clears it. Any course order from the helm or an evasion ends the route; a baffle clearing has the helm while it runs. In the browser **Set waypoints on chart** turns clicks on the chart into waypoints.
+
+### Torpedo seeker
+
+- `X` steps the search pattern of the next shots: straight (as before), snake, circle or helix. The torpedo runs straight to the datum; once its seeker is on and it has found nothing, it searches in that pattern.
+- `,` and `.` move the enable point between 0.6 and 3.0 NM before the datum in 0.2 NM steps (default 3.0 NM). A late enable point keeps the seeker blind longer, so decoys and other ships on the way are not taken.
+- A torpedo in the water keeps the settings it was fired with; the browser's Weapons card sets both with **Apply**.
+
+### Not modelled
+
+- No position fixes from landmarks, soundings or stars; only GPS clears the dead-reckoning error.
+- The plot keeps its marks where they were drawn against the boat; it does not move with a fix.
+- No separate control room or diving officer station; trim and ballast stay with the engine room.
+
 ## Reference data
 
 All values are the defaults of the current game version. Custom difficulty and missions can change stocks and time limits.
@@ -1293,6 +1389,8 @@ The top bar shows the submarine's seven stations as tabs: `1` Command, `2` Sonar
 | `Shift+B` | Emergency blow, once (Command, Engine room) |
 | `T` | Torpedo run depth 5-300 m (Weapons) |
 | `Y` | One torpedo or a two-torpedo spread (Weapons) |
+| `X` | Seeker search pattern: straight, snake, circle, helix (Weapons) |
+| `, / .` | Seeker enable point -/+ (0.6 to 3.0 NM before the datum, 0.2 NM steps; Weapons) |
 | `W` | Steer the newest wired torpedo: bearing, then distance (Weapons) |
 | `Shift+W` | Cut the newest torpedo's wire (Weapons) |
 | `A` | Silent running on/off, at most 5 kn (Command, Engine room) |
@@ -1325,6 +1423,9 @@ The top bar shows the submarine's seven stations as tabs: `1` Command, `2` Sonar
 | `U` | Engine room, damage page: men from the resting watches to the worst-hit station |
 | `G` | Action stations on/off (all watches on duty, alert but tiring) |
 | `Ctrl+B` | Clear baffles: 60° to starboard for two minutes, then back (the hull sonar is deaf astern) |
+| `Right click` | Add a route waypoint on the chart (Navigation) |
+| `W` | Route: zigzag search, expanding square, off (Navigation) |
+| `Backspace` | Clear the route (Navigation) |
 | `0` | Weather panel of the submarine (0 or Esc closes) |
 | `S / L / F9` | Save / load / Remote Crew (the frigate's crew) |
 
@@ -1359,7 +1460,7 @@ Submarine scenarios 1 to 10 give the submarine the objective; the frigate's task
 
 #### Free patrol
 
-Scenario 12 on either side is a free patrol: no time limit and no victory, just the sea, HQ's orders and what turns up. It ends only when own ship is lost (on the submarine side also when the submarine sinks the frigate); the end panel gives the hours at sea and the points. There is no short variant; weather and time of day are chosen as for any scenario. Quitting keeps the patrol in the autosave, and it saves to a slot like any mission (save v47).
+Scenario 12 on either side is a free patrol: no time limit and no victory, just the sea, HQ's orders and what turns up. It ends only when own ship is lost (on the submarine side also when the submarine sinks the frigate); the end panel gives the hours at sea and the points. There is no short variant; weather and time of day are chosen as for any scenario. Quitting keeps the patrol in the autosave, and it saves to a slot like any mission (save v48).
 
 - **Frigate:** the ship starts alone. HQ's tasks have no cap and come more often: the first after 2 to 5 minutes, then one every 10 to 20 minutes (still two open at a time), and besides distress, identify, datum, replenishment and radar silence a sixth kind, **sector patrol**: a circle of 4 NM radius 12 to 25 NM away to hold for 15 minutes in all within an hour (+250, -100 failed, -50 declined). Incidents at sea come every 20 to 40 minutes without a cap.
 - **Encounters (frigate):** every 15 to 30 minutes (the first after 5 to 10): a hostile submarine (diesel, AIP or nuclear) 18 to 30 NM out, which HQ reports with a rough bearing and range; a neutral submarine in transit, reported the same way, which must not be sunk (-1000); an air raid (not in the first half hour); or a group of one to three merchants crossing ahead. At most two hostile and one neutral submarine are about at once; hostile submarines also attack merchants as on a patrol. A submarine or merchant more than 70 NM from both ships and unheard for 20 minutes comes back as a later encounter.

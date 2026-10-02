@@ -237,6 +237,13 @@ def boat_effect(kind: str, sample_rate: int, amplitude: float = .28) -> np.ndarr
                                      amplitude, 457).astype(np.float64)
         signal = noise * 2.2 * np.exp(-30.0 * t)
         signal += amplitude * .8 * np.sin(2 * np.pi * 46.0 * t) * np.exp(-6.0 * t)
+    elif kind == "torpedo_seeker":
+        # A homing torpedo's seeker pulse: short and high, a little ringing.
+        duration = .22
+        count = int(duration * sample_rate)
+        t = np.arange(count, dtype=np.float64) / sample_rate
+        envelope = np.where(t < .06, 1.0, np.exp(-28.0 * (t - .06)))
+        signal = amplitude * .7 * envelope * np.sin(2 * np.pi * 2600.0 * t)
     elif kind == "ping_heard":
         # A hunter's ping through the hull: a hard tone and its ringing tail.
         duration = 1.2

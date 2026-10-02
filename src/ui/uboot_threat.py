@@ -49,10 +49,15 @@ def draw_threat_page(s, game, boat, x, y, w, h) -> None:
                        trend=message("uboot.threat_page.trend." + (view["trend"] or "none")))
     layout.blit_line(s, loud, (bx, by + row, bw, row),
                      config.COLOR_DANGER if view["echo_likely"] else config.COLOR_TEXT, size=16)
-    layout.blit_line(s, message("uboot.threat_page.other", splash=str(counts["splash"]),
-                                torpedo=str(counts["torpedo"]), esm=str(view["esm_count"])),
-                     (bx, by + 2 * row, bw, row),
-                     config.COLOR_DANGER if counts["torpedo"] else config.COLOR_TEXT, size=16)
+    clock = view["clock"]
+    other = (message("uboot.threat_page.other", splash=str(counts["splash"]),
+                     torpedo=str(counts["torpedo"]), esm=str(view["esm_count"]))
+             if clock is None else
+             message("uboot.threat_page.clock", bearing=f"{round(clock['bearing']) % 360:03d}",
+                     tti=str(clock["tti_s"])))
+    layout.blit_line(s, other, (bx, by + 2 * row, bw, row),
+                     config.COLOR_DANGER if counts["torpedo"] or clock else config.COLOR_TEXT,
+                     size=16)
     own_y = y + frame + 3 * row + 8
     own = layout.box(s, (x, own_y, w, frame + 2 * row), "uboot.panel.own_signature")
     ox, oy, ow, _ = own

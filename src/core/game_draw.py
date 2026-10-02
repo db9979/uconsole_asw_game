@@ -27,6 +27,7 @@ from src.ui import observations
 from src.ui import overlay_style, quality
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.shock_fx import ShockFx
+from src.ui import hit_inset
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -547,6 +548,11 @@ class DrawMixin:
                     self.draw_end_panel()
             finally:
                 config.STATION_RECT = previous_rect
+        if (self._mission_shown() and not self._station_overlay_open
+                and not self.umpire_view_active()):
+            # A hit seen or heard: the small picture over the station.
+            self.guarded_view("hit_view", tuple(hit_inset.RECT), hit_inset.draw, self, s,
+                              "uboot" if self.local_side == "uboot" else "frigate")
         with pointer.layer("overlay"):
             if self.quit_confirm:
                 self.draw_quit_overlay()

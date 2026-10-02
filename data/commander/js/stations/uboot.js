@@ -471,7 +471,9 @@ function renderThreat(threat) {
     ["uboot_threat_trend", t(`uboot_threat_trend_${threat.trend || "none"}`)],
     ["uboot_threat_other", t("uboot_threat_other_value", {splash: counts.splash, torpedo: counts.torpedo, esm: threat.esm_count})],
     ["uboot_threat_layer", t(`uboot_threat_layer_${threat.layer}`, {depth: number(threat.depth_m, 0), layer: threat.layer_m === null ? "-" : number(threat.layer_m, 0)})],
-    ["uboot_threat_noise", t(`uboot_threat_noise_${threat.noise}`)]]);
+    ["uboot_threat_noise", t(`uboot_threat_noise_${threat.noise}`)],
+    ["uboot_threat_clock", threat.clock === null ? t("station_none")
+      : t("uboot_threat_clock_value", {bearing: number(threat.clock.bearing, 0), tti: number(threat.clock.tti_s, 0)})]]);
   $("uboot-threat-warning").hidden = !threat.echo_likely && counts.torpedo === 0;
   $("uboot-threat-warning").textContent = counts.torpedo ? t("uboot_threat_torpedo_warning") : t("uboot_threat_echo_warning");
   const advice = threat.advice.map((key) => node("p", t(key.replaceAll(".", "_")), "uboot-log-line"));

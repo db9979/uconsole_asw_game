@@ -152,7 +152,7 @@ UBOOT_ESM_CANDIDATE_FIELDS = ("name", "role", "fit")
 # its own intercepts, layer, noise and mast, and the evasion order (``plan``).
 UBOOT_THREAT_FIELDS = ("intercepts", "counts", "loudest_db", "echo_likely", "trend",
                        "layer", "layer_m", "depth_m", "noise", "mast", "esm_count",
-                       "advice", "plan")
+                       "advice", "plan", "clock")
 UBOOT_INTERCEPT_FIELDS = ("type", "bearing", "level_db", "age_s")
 UBOOT_INTERCEPT_KINDS = ("hull", "dipping", "buoy", "splash", "torpedo")
 UBOOT_THREAT_ADVICE = ("uboot.advice.torpedo", "uboot.advice.mast_down",

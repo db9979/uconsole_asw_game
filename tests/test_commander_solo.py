@@ -257,7 +257,7 @@ def _publication():
                   phase="live", chart_revision="s", clock={}, environment={},
                   mission={}, autocrew={"enabled": False, "status": "off"}, autocrew_overview=[],
                   audio={"events": [], "callouts": []}, weather_station=WEATHER_STATION, plot=PLOT,
-                  alarms=[])
+                  alarms=[], hit_view=None)
     chart = dict(protocol=2, revision="s", size_nm=500, landmasses=[], disclaimer="")
     redacted = {key: common[key] for key in (
         "protocol", "version", "session", "epoch", "revision", "seq", "phase",

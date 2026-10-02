@@ -5,36 +5,41 @@
 import { $ } from "../core/base.js";
 
 const CUES = new Set(["shock_light", "shock_heavy"]);
-const SVG = "http://www.w3.org/2000/svg";
 let context = null;
 let highWater = 0;
 
 function crackLayer() {
-  let layer = $("shock-cracks");
+  let layer = document.getElementById("shock-cracks");
   if (layer) return layer;
-  layer = document.createElementNS(SVG, "svg");
+  layer = document.createElement("canvas");
   layer.id = "shock-cracks";
-  layer.setAttribute("viewBox", "-150 -150 300 300");
+  layer.width = layer.height = 300;
   layer.setAttribute("aria-hidden", "true");
-  // A fixed pattern: eleven jagged lines from one point of impact.
-  let seed = 7;
-  const next = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-  for (let line = 0; line < 11; line += 1) {
-    let angle = next() * Math.PI * 2, x = 0, y = 0, points = "0,0";
-    const steps = 4 + Math.floor(next() * 5);
-    for (let step = 0; step < steps; step += 1) {
-      angle += next() - .5;
-      const length = 140 * (.08 + next() * .12);
-      x += Math.cos(angle) * length; y += Math.sin(angle) * length;
-      points += ` ${x.toFixed(1)},${y.toFixed(1)}`;
+  const g = layer.getContext("2d");
+  if (g) {
+    g.translate(150, 150);
+    g.strokeStyle = "rgba(255, 236, 226, .95)";
+    g.lineWidth = 1.2;
+    // A fixed pattern: eleven jagged lines from one point of impact.
+    let seed = 7;
+    const next = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let line = 0; line < 11; line += 1) {
+      let angle = next() * Math.PI * 2, x = 0, y = 0;
+      g.beginPath();
+      g.moveTo(0, 0);
+      const steps = 4 + Math.floor(next() * 5);
+      for (let step = 0; step < steps; step += 1) {
+        angle += next() - .5;
+        const length = 140 * (.08 + next() * .12);
+        x += Math.cos(angle) * length; y += Math.sin(angle) * length;
+        g.lineTo(x, y);
+      }
+      g.stroke();
     }
-    const path = document.createElementNS(SVG, "polyline");
-    path.setAttribute("points", points);
-    layer.append(path);
+    g.beginPath();
+    g.arc(0, 0, 4, 0, Math.PI * 2);
+    g.stroke();
   }
-  const ring = document.createElementNS(SVG, "circle");
-  ring.setAttribute("r", "4");
-  layer.append(ring);
   document.body.append(layer);
   return layer;
 }

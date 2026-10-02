@@ -15,7 +15,8 @@ import math
 
 from src.audio.synthesis import bearing_pan
 from src.core.callouts import CalloutLog
-from src.core import baffles, boat_nav, buoy_antenna, config, detrand, shock
+from src.core import baffles, boat_nav, buoy_antenna, config, detrand, shock, torpedo_seeker
+from src.sensors import threat_cue
 from src.core.boat_esm import BoatESM
 from src.core.boat_radio import BoatRadio
 from src.core.crew import CrewState
@@ -71,6 +72,7 @@ class CrewOrders:
               "battery_low": "navigation", "battery_empty": "navigation",
               "shallow_water": "navigation", "wire_broken": "waffen",
               "ping_heard": "sonar", "torpedo_heard": "sonar",
+              "torpedo_locked": "sonar", "torpedo_steady": "sonar",
               "ping_dipping_heard": "sonar", "ping_buoy_heard": "sonar",
               "buoy_splash": "sonar", "evade": "navigation",
               "evade_decoy": "navigation",
@@ -383,6 +385,8 @@ class CrewedBoat:
         self.sound_events = deque(maxlen=config.UBOOT_SOUND_EVENTS_MAX)
         self.sound_seq = 0
         self._creak_tick = None
+        # The crew's rough clock of the nearest locked-on seeker (transient).
+        self.seeker_clock = None
         # Cached radiating adapters (identity stays stable between updates).
         self._ownship_source = None
         self._torpedo_sources = {}
@@ -642,7 +646,7 @@ def obstacle_ahead_nm(world, sub, origin=None):
 
 
 BOAT_CUES = ("hull_creak", "hull_crack", "detonation_near", "detonation_far", "ping_heard",
-             "thunder")
+             "thunder", "torpedo_seeker")
 # Intercepts the crew hears through the hull as a ping.
 _PING_INTERCEPTS = ("hull", "dipping", "buoy")
 _HULL_FAILURES = ("hull_bolts", "hull_seal", "hull_fracture", "hull_collapse")
@@ -687,6 +691,49 @@ def update_creak(game, boat) -> None:
     chance = creak_chance(sub.depth, sub.stype.max_depth_m)
     if chance > 0.0 and detrand.u01(sub.sensor_seed, "hull-creak", tick) < chance:
         boat_sound(game, boat, "hull_creak")
+
+
+def hear_seekers(game, boat) -> None:
+    """Homing torpedo seekers the boat's sonar room hears: pulses on the
+    measured bearing (slow searching, fast locked on), "torpedo locked on"
+    with the crew's rough clock and "bearing steady" once each
+    (``src/core/torpedo_seeker.py``; sound and reports only)."""
+    sub = boat.sub
+    ear = getattr(boat, "_seeker_ear", None)
+    if ear is None:
+        ear = boat._seeker_ear = torpedo_seeker.SeekerEar()
+    heard = []
+    if not (sub.sunk or boat.sonar_down()):
+        for torpedo in game.torpedoes:
+            if torpedo.state != "RUN" or not torpedo.terminal_active:
+                continue
+            distance = math.hypot(torpedo.x - sub.x, torpedo.y - sub.y)
+            if (distance > config.TORP_SEEKER_INTERCEPT_NM
+                    or game.world.sonar_path_blocked(torpedo.x, torpedo.y, torpedo.depth,
+                                                     sub.x, sub.y, sub.depth)):
+                continue
+            key = int(torpedo.launch_platform_id or 0) * 1000 + int(torpedo.idx) + 500
+            true_bearing = math.degrees(math.atan2(torpedo.x - sub.x, -(torpedo.y - sub.y)))
+            bearing = threat_cue.measured_cue_bearing(true_bearing % 360.0, sub.sensor_seed,
+                                                      key, game.sim_t)
+            heard.append((key, bearing, bool(torpedo.seeker_acquired), distance))
+    ear.forget(row[0] for row in heard)
+    boat.seeker_clock = None
+    for key, bearing, locked, distance in heard:
+        tti = (torpedo_seeker.estimated_tti(distance, sub.sensor_seed, key, game.sim_t)
+               if locked else None)
+        if locked and (boat.seeker_clock is None or tti < boat.seeker_clock["tti_s"]):
+            boat.seeker_clock = dict(bearing=bearing, tti_s=tti)
+        reported = ear.reported.setdefault(key, set())
+        if locked and "locked" not in reported:
+            reported.add("locked")
+            boat.orders.event("torpedo_locked", bearing=f"{round(bearing) % 360:03d}",
+                              tti=f"{tti:.0f}")
+        for event in ear.hear(key, bearing, game.sim_t, locked):
+            if event == "ping":
+                boat_sound(game, boat, "torpedo_seeker", bearing)
+            else:
+                boat.orders.event("torpedo_steady", bearing=f"{round(bearing) % 360:03d}")
 
 
 def hear_detonation(game, boat, x: float, y: float) -> None:
@@ -799,6 +846,7 @@ def update_crew(game, boat: CrewedBoat, dt: float = 0.0) -> None:
     update_sightings(game, boat)
     boat.radio.update(game, boat)
     update_creak(game, boat)
+    hear_seekers(game, boat)
     for key, values in orders.drain_events():
         if key in _HULL_FAILURES:
             boat_sound(game, boat, "hull_crack")

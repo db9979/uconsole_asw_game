@@ -78,7 +78,8 @@ def draw_bridge_view(game, tr=None) -> None:
         threats.append(("TORPEDO", localize(message(
             "bridge.line.torpedo_" + warning["source"],
             bearing=f"{warning['bearing']:05.1f}",
-            age=f"{warning['age_s']:.0f}"))))
+            age=f"{warning['age_s']:.0f}",
+            tti=f"{warning['tti_s']:.0f}" if warning.get("tti_s") is not None else ""))))
     if game.damage.avg_flood() >= 25:
         threats.append((localize("station.damage"), localize(message(
             "station.tooltip.mean_flooding", flooding=f"{game.damage.avg_flood():.0f}"))))

@@ -321,10 +321,19 @@ body.shock-dust::after {
 @keyframes shock-crack { from { opacity: .85; } to { opacity: 0; } }
 #shock-cracks {
   position: fixed; left: 62%; top: 34%; width: min(36vw, 24rem); height: min(36vw, 24rem); translate: -50% -50%;
-  pointer-events: none; z-index: var(--z-toast); opacity: 0; fill: none; stroke: rgba(255, 236, 226, .95); stroke-width: 1.2;
+  pointer-events: none; z-index: var(--z-toast); opacity: 0;
 }
 #shock-cracks.shock-cracked { animation: shock-crack 12s linear; }
 @media (prefers-reduced-motion: reduce) {
   #operations.shock-light, #operations.shock-heavy { animation-name: shock-dim; }
   body.shock-dust::after { animation: none; }
 }
+
+/* The hit picture (views/hit-view.js): a small window over the station. */
+#hit-view {
+  position: fixed; top: 4.5rem; right: 1rem; z-index: var(--z-toast); margin: 0; padding: .2rem;
+  width: min(22rem, calc(100vw - 2rem)); background: var(--bg-2); border: 1px solid var(--alarm);
+  border-radius: var(--radius); pointer-events: none; box-shadow: 0 .6rem 1.4rem -.4rem var(--shadow);
+}
+#hit-view figcaption { padding: .1rem .3rem .2rem; color: var(--caution); font: var(--font-sm)/1.3 var(--font-mono); }
+#hit-view canvas { display: block; width: 100%; height: auto; aspect-ratio: 32 / 17; }

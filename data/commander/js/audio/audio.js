@@ -61,6 +61,8 @@ function playGameEffect(kind, pan = null) {
     thunder: [52, 26, 2.6, .12, "sawtooth"],
     // A detonation close by shakes the picture (views/shock.js); its sound is the detonation's.
     shock_light: null, shock_heavy: null,
+    // A homing torpedo's seeker pulse (src/core/torpedo_seeker.py).
+    torpedo_seeker: [2600, 2600, .14, .08, "sine"],
   }[kind];
   if (!profile) return;
   const [startHz, endHz, duration, gainLevel, type] = profile;

@@ -81,7 +81,11 @@ def picture(game, boat) -> dict:
         echo_likely=loudest is not None and loudest >= config.UBOOT_PING_ECHO_LIKELY_DB,
         trend=trend, layer=layer, layer_m=None if layer_m is None else round(layer_m, 1),
         depth_m=round(float(sub.depth), 1), noise=noise, mast=bool(orders.mast),
-        esm_count=len(orders.esm), advice=advice(game, boat, layer, noise))
+        esm_count=len(orders.esm), advice=advice(game, boat, layer, noise),
+        # The crew's rough clock of the nearest seeker locked on (by ear).
+        clock=(None if getattr(boat, "seeker_clock", None) is None else dict(
+            bearing=round(boat.seeker_clock["bearing"] % 360.0, 1),
+            tti_s=round(boat.seeker_clock["tti_s"]))))
 
 
 def advice(game, boat, layer: str, noise: str) -> list[str]:

@@ -13,7 +13,7 @@ from src.core.i18n import message, raw_text
 from src.ui import layout
 
 ERROR_KEYS = ("disabled", "bad_url", "network", "timeout", "auth", "rate_limit",
-              "server", "bad_reply", "busy")
+              "server", "bad_reply", "thinking", "busy")
 
 
 def status_text(state):

@@ -12,16 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.154**
+Current release: **1.3.155**
 
-Release 1.3.154 adds an optional language model over an OpenAI-compatible
-interface (a LAN server or a cloud service). It is off by default and the
-game plays exactly as without it. Switched on, it words radio traffic, writes
-an after-action report, and gives you an executive officer (F7, also in the
-browser) for situation reports, questions, confirmed orders without weapons,
-classification help and station briefings, plus a coach, a logbook review, a
-mission generator in the editor and the web planner, and an experimental,
-unscored opponent (saves v49). v38 to v48 saves still load.
+Release 1.3.155 makes the optional language model work with reasoning models.
+The game asks the server for answers without a thinking phase, reads answers
+sent as content parts, and the connection test now says when only reasoning
+came back. The API key is typed as asterisks, and the options page no longer
+reads the key file on every frame. Saves stay v49; v38 to v48 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -403,7 +403,7 @@ class LlmMixin:
             return False
         request = self.llm.submit("test", [
             {"role": "system", "content": "Reply with the single word OK."},
-            {"role": "user", "content": "Radio check."}], max_tokens=10, temperature=0.0)
+            {"role": "user", "content": "Radio check."}], max_tokens=32, temperature=0.0)
         self.llm_test = dict(status="pending", request=request,
                              started=datetime.datetime.now())
         if request is None:

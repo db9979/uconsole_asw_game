@@ -726,6 +726,18 @@ async function until(check, message) {
   for (let index = 0; index < 700; index++) { if (check()) return; await sleep(20); }
   throw new Error(`${message}; connection=${$test("connection")?.textContent}; errors=${browserErrors.join(" | ")}`);
 }
+// The overlay may still be redrawn once after a state change (a layout or
+// resize pass); wait until two frames 80 ms apart agree, then return it.
+async function settledFrame(canvas) {
+  let previous = canvas.toDataURL();
+  for (let index = 0; index < 40; index++) {
+    await sleep(80);
+    const frame = canvas.toDataURL();
+    if (frame === previous) return frame;
+    previous = frame;
+  }
+  return previous;
+}
 const exact = (body, action, params, station) => {
   assert(Object.keys(body).sort().join(",") === "action,active_generation,id,params,protocol,resource_revision,seq,station,station_generation,world_epoch,world_session", `${action} envelope fields`);
   assert(body.protocol === 2 && body.action === action && body.station === station, `${action} routing`);
@@ -838,8 +850,7 @@ async function run() {
   states.opz.phase = "ended";
   await until(() => $test("role-visual-state").textContent.includes("inactive") ||
     $test("role-visual-state").textContent.includes("inaktiv"), "ended OPZ state missing");
-  await sleep(80);
-  const endedFrame = sweepLayer.toDataURL();
+  const endedFrame = await settledFrame(sweepLayer);
   await sleep(120);
   assert(sweepLayer.toDataURL() === endedFrame, "OPZ sweep continues after the mission ended");
   states.opz.phase = "live";
@@ -847,8 +858,7 @@ async function run() {
   states.opz.opz.radar.surface = false; states.opz.opz.radar.air = false;
   await until(() => !$test("opz-radar-surface").checked && !$test("opz-radar-air").checked,
     "radars-off state missing");
-  await sleep(80);
-  const radarsOffFrame = sweepLayer.toDataURL();
+  const radarsOffFrame = await settledFrame(sweepLayer);
   await sleep(120);
   assert(sweepLayer.toDataURL() === radarsOffFrame, "OPZ sweep continues with both radars off");
   states.opz.opz.radar.surface = true; states.opz.opz.radar.air = true;

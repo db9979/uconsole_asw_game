@@ -258,6 +258,15 @@ def boat_effect(kind: str, sample_rate: int, amplitude: float = .28) -> np.ndarr
         signal = amplitude * (.35 if far else .6) * signal / 2.0 * np.exp(-decay * t)
         click = np.exp(-400.0 * t) * (1.0 - 2.0 * ((np.arange(count) * 7919) % 97) / 96.0)
         signal += amplitude * (.1 if far else .3) * click
+    elif kind == "dive_alarm":
+        # The crash-dive alarm: a rattling klaxon, three bursts.
+        duration = 2.1
+        count = int(duration * sample_rate)
+        t = np.arange(count, dtype=np.float64) / sample_rate
+        tone = np.sign(np.sin(2 * np.pi * 410.0 * t)) * .6 + .4 * np.sin(2 * np.pi * 820.0 * t)
+        rattle = .55 + .45 * np.sign(np.sin(2 * np.pi * 28.0 * t))
+        bursts = (np.mod(t, .7) < .55).astype(np.float64)
+        signal = amplitude * .45 * tone * rattle * bursts
     elif kind == "ping_heard":
         # A hunter's ping through the hull: a hard tone and its ringing tail.
         duration = 1.2

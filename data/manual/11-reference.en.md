@@ -236,6 +236,30 @@ When nobody sails the frigate (the uConsole plays the submarine, or a solo brows
 - The AI hunters' ASROC comes only from friendly warships already in the scenario, never from the frigate's own launcher.
 - The periscope has one magnification and no camera; sightings carry no identification beyond the coarse class, and the stadimeter assumes a class length rather than a masthead height.
 
+## Noise discipline and microphone {#ref-noise}
+
+- Now and then a crew drops a tool, slams a hatch, knocks a pot or rattles a chain: a short metallic bang for 3 s that raises the own noise. A fresh crew fumbles about twice an hour, a tired or demoralised one up to five times as often. Silent running (the frigate's quiet mode, the submarine's silent running or lying on the bottom) cuts it to 30 %, but repairs and reloading then go at 75 % speed.
+- Within 4 NM the enemy hears such a bang on its bearing (less through its own machinery noise): the frigate's sonar reports a metallic transient, the submarine's sonar room a transient. The own crew reports its fumble under silent running.
+- **Microphone:** the players' voices count too. On the uConsole it is the option *Microphone* (off by default); in the browser the button *Microphone on* next to the sound button (asks for the microphone; only on a secure page). A meter of 20 cells shows the own level against the thresholds: up to 5 quiet (green, unheard), 6 to 11 heard close by (yellow), from 12 heard far off (red, up to 2.5 NM at full volume). The outlined cell is the crew's loudest voice. A voice above the threshold raises the own noise by up to 20 %; the enemy hears voices, and the own crew is told to keep it down when it is far too loud. Only the level number leaves the browser, never sound; it counts for 1.5 s and is never saved.
+
+## Enemy commanders {#ref-commanders}
+
+- Every computer submarine commander and the AI hunter frigate's captain has one of four characters, fixed by the seed: **daring** (attacks early, gives way briefly, rarely lies in wait), **fox** (lies in wait long and far, pings little), **cautious** (gives way long, holds fire, keeps its distance) and **hunter** (stubborn, runs a lost bearing down for long).
+- Each character changes existing tactics only by factors (attack rate, evasion time, lurking distance; the hunter's closing speed, ping interval, firing range and lead time); across the four they average out.
+- In about six of ten missions HQ hints at the character after 90 s (*Intelligence rates the enemy's commander ...*); the debrief names it.
+
+## Shock, hit picture and seekers {#ref-shock}
+
+- A detonation within 0.6 NM of the own ship shakes the picture and dims the light; within 0.15 NM the instrument glass cracks for a moment. Both are display only.
+- When the own side sees a hit happen (a fireball, a torpedo's water column, a ship going down), a small window trained on its bearing opens for 8 s at every station; a hit only heard opens it with the bearing and the noise.
+- Through the binoculars and the periscope a made-out ship shows its bow wave and wake: high and white when she is fast, hardly any when slow.
+- A homing torpedo's seeker pings slowly while it searches and fast once it has locked on. Frigate and submarine hear it: *torpedo locked on*, *bearing steady* (collision course) and on the submarine's threat page a rough torpedo clock, the time to impact guessed by ear.
+
+## Daily mission {#ref-daily}
+
+- The main menu's *Daily mission* offers one fixed mission per side and day, the same for every player: the date picks the scenario and the seed, and with it the real sea area, weather and time. The length is always the normal one.
+- The page shows today's best score of each side; a finished daily mission (also after midnight, for yesterday's) keeps the best win in the logbook for 30 days. The realism level is the player's own setting.
+
 ## Mission and scoring {#ref-mission}
 
 - Scenarios: frigate 1 Patrol, 2 Double hunt, 3 Nuclear intercept, 4 Random (custom difficulty), 5 Convoy escort, 6 Flaming datum, 7 Trail, 8 Harbour defence, 9 Replenishment at sea, 10 Rescue under threat, 11 Search group, 12 Free patrol; submarine 1 Breakthrough, 2 Reconnaissance, 3 Convoy attack, 4 Strait blockade, 5 Combat swimmers, 6 Supply ship escort, 7 Duel, 8 Damaged homecoming, 9 Agent pick-up, 10 Listening post, 11 Hunter group, 12 Free patrol (key `0` picks the tenth, the eleventh and twelfth with the arrow keys). User missions start from the Mission Editor (`F5` in its browser). The runtime takes the editor's scope: a 500 NM fixed world or a packaged reference sector (`sector:0` to `sector:127`), the authored weather, placed submarines, surface ships, aircraft (patrolling a 10 NM box at profile speed), animals, static decoys and hostile torpedoes already running on their course, seeded random groups, timed events (message, spawn, weather, objective) and the objectives sink, survive, protect (keep the named units alive until the time limit) and reach (enter the objective point's radius). Profiles saved in the Unit Editor can be placed like built-in ones and take effect in that mission (speeds, depth, torpedo load, behaviour, acoustics); a user submarine takes sensors, tubes, decoys and its battery, diesel or AIP plant from the built-in boat of its propulsion. Frigate and helicopter torpedoes, missing user profiles and other world sizes are refused at start. In the editor's World tab, `Enter` on Kind or Reference opens a pick list (`Up`/`Down`, `PgUp`/`PgDn`, `Enter` takes, `Esc` cancels); Reference lists the 128 sectors with their countries, and picking one makes the world a 500 NM reference world. The Preview tab then draws that sector's coast.

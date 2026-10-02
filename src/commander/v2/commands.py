@@ -143,7 +143,8 @@ UBOOT_REASONS = frozenset((
     "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
     "uboot_no_air_stores", "uboot_no_hp_air", "uboot_compartment_down",
     "uboot_no_antenna", "uboot_transmitting", "uboot_no_solution",
-    "uboot_tube_dry", "uboot_tubes_full", "uboot_no_dry_tube", "uboot_route_full"))
+    "uboot_tube_dry", "uboot_tubes_full", "uboot_no_dry_tube", "uboot_route_full",
+    "uboot_not_surfaced"))
 
 
 def _uboot_tube_params(params):
@@ -763,6 +764,8 @@ V2_ACTION_REGISTRY = {
     "uboot_wire_cut": V2Action(frozenset({"uboot_weapons"}), _single_ref_params),
     "uboot_silent": V2Action(frozenset({"uboot", "uboot_engine"}), _bool_params("enabled")),
     "uboot_bottom": V2Action(frozenset({"uboot", "uboot_nav"}), _bool_params("enabled")),
+    # Surface (enabled) or, from the surface, a crash dive.
+    "uboot_surface": V2Action(frozenset({"uboot", "uboot_nav"}), _bool_params("enabled")),
     # The periscope: Command and the mast station train it and read the stadimeter.
     # The phone on the periscope (``uboot_lookout``) trains it and reads the
     # stadimeter too.

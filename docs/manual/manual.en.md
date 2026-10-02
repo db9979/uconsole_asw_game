@@ -1204,6 +1204,14 @@ The radio room copies HQ's broadcasts, reads HQ's orders and contact reports and
 - `,` and `.` move the enable point between 0.6 and 3.0 NM before the datum in 0.2 NM steps (default 3.0 NM). A late enable point keeps the seeker blind longer, so decoys and other ships on the way are not taken.
 - A torpedo in the water keeps the settings it was fired with; the browser's Weapons card sets both with **Apply**.
 
+### Surfacing and crash dive
+
+- `Shift+H` (browser: **Surface**, Command or Navigation) orders the boat up to the surface. At 2 m or less it is surfaced: the low-pressure blower empties the main ballast within 2 minutes (no bottle air), the hatch is open and the boat airs itself.
+- Surfaced, the diesels (`N`) run in the open air: up to 12 kn (or the boat's top speed) instead of 6 kn on the snorkel, and the generator gives 1.3 times its snorkel power, so the battery charges faster.
+- The bridge watch looks out from 6 m instead of the periscope's 2.5 m and sees farther; its reports read **Bridge:** and an aircraft is called as an alarm. The scope page shows the bridge watch's view.
+- The enemy sees a surfaced boat too: the frigate's surface radar and the radars of helicopter and patrol aircraft see hull and conning tower (ten times a mast's echo), and lookouts see it by eye.
+- `H` from the surface or with blown tanks (browser: **Crash dive**) is the crash dive: alarm, masts and snorkel down, vents open, full ahead, ordered depth 40 m. Blown tanks hold the boat above 10 m until the vents have flooded them (up to 40 s), and the flooding vents are a transient the enemy may hear. From deeper than 12 m a crash dive is refused.
+
 ### Not modelled
 
 - No position fixes from landmarks, soundings or stars; only GPS clears the dead-reckoning error.
@@ -1395,6 +1403,8 @@ The top bar shows the submarine's seven stations as tabs: `1` Command, `2` Sonar
 | `Shift+W` | Cut the newest torpedo's wire (Weapons) |
 | `A` | Silent running on/off, at most 5 kn (Command, Engine room) |
 | `Shift+G` | Lie on the bottom / lift off (Command, Navigation) |
+| `Shift+H` | Surface: up to the surface, bridge watch, diesels in the open air (Command, Navigation) |
+| `H` | From the surface: crash dive, vents open, full ahead (Command, Navigation) |
 | `N` | Snorkel up/down, diesels charge at snorkel depth (Engine room) |
 | `P` | Raise/lower mast at periscope depth: ESM hears radars, the periscope sees, the radio antenna is up (Command, Mast & ESM, Radio room) |
 | `Arrow keys` | Mast & ESM page: select an emitter |
@@ -1505,6 +1515,30 @@ When nobody sails the frigate (the uConsole plays the submarine, or a solo brows
 - The submarine campaign has no port choices beyond refit and quick turnaround, and no damage-control state carried over (only the overall hull damage). The campaign's hotspot markers only place a mission on the chart: each mission is played in its scenario's own setting in the sector, not at the marker. Outside the convoy attack the submarine's torpedoes home on the frigate only, and an AI submarine attacks merchants only as the convoy attack's mission submarine or as a patrol submarine of a frigate scenario.
 - The AI hunters' ASROC comes only from friendly warships already in the scenario, never from the frigate's own launcher.
 - The periscope has one magnification and no camera; sightings carry no identification beyond the coarse class, and the stadimeter assumes a class length rather than a masthead height.
+
+### Noise discipline and microphone
+
+- Now and then a crew drops a tool, slams a hatch, knocks a pot or rattles a chain: a short metallic bang for 3 s that raises the own noise. A fresh crew fumbles about twice an hour, a tired or demoralised one up to five times as often. Silent running (the frigate's quiet mode, the submarine's silent running or lying on the bottom) cuts it to 30 %, but repairs and reloading then go at 75 % speed.
+- Within 4 NM the enemy hears such a bang on its bearing (less through its own machinery noise): the frigate's sonar reports a metallic transient, the submarine's sonar room a transient. The own crew reports its fumble under silent running.
+- **Microphone:** the players' voices count too. On the uConsole it is the option *Microphone* (off by default); in the browser the button *Microphone on* next to the sound button (asks for the microphone; only on a secure page). A meter of 20 cells shows the own level against the thresholds: up to 5 quiet (green, unheard), 6 to 11 heard close by (yellow), from 12 heard far off (red, up to 2.5 NM at full volume). The outlined cell is the crew's loudest voice. A voice above the threshold raises the own noise by up to 20 %; the enemy hears voices, and the own crew is told to keep it down when it is far too loud. Only the level number leaves the browser, never sound; it counts for 1.5 s and is never saved.
+
+### Enemy commanders
+
+- Every computer submarine commander and the AI hunter frigate's captain has one of four characters, fixed by the seed: **daring** (attacks early, gives way briefly, rarely lies in wait), **fox** (lies in wait long and far, pings little), **cautious** (gives way long, holds fire, keeps its distance) and **hunter** (stubborn, runs a lost bearing down for long).
+- Each character changes existing tactics only by factors (attack rate, evasion time, lurking distance; the hunter's closing speed, ping interval, firing range and lead time); across the four they average out.
+- In about six of ten missions HQ hints at the character after 90 s (*Intelligence rates the enemy's commander ...*); the debrief names it.
+
+### Shock, hit picture and seekers
+
+- A detonation within 0.6 NM of the own ship shakes the picture and dims the light; within 0.15 NM the instrument glass cracks for a moment. Both are display only.
+- When the own side sees a hit happen (a fireball, a torpedo's water column, a ship going down), a small window trained on its bearing opens for 8 s at every station; a hit only heard opens it with the bearing and the noise.
+- Through the binoculars and the periscope a made-out ship shows its bow wave and wake: high and white when she is fast, hardly any when slow.
+- A homing torpedo's seeker pings slowly while it searches and fast once it has locked on. Frigate and submarine hear it: *torpedo locked on*, *bearing steady* (collision course) and on the submarine's threat page a rough torpedo clock, the time to impact guessed by ear.
+
+### Daily mission
+
+- The main menu's *Daily mission* offers one fixed mission per side and day, the same for every player: the date picks the scenario and the seed, and with it the real sea area, weather and time. The length is always the normal one.
+- The page shows today's best score of each side; a finished daily mission (also after midnight, for yesterday's) keeps the best win in the logbook for 30 days. The realism level is the player's own setting.
 
 ### Mission and scoring
 

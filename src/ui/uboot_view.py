@@ -699,6 +699,7 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     modes = [key for key, on in (("uboot.mode.silent", boat.orders.silent),
                                  ("uboot.mode.snorkel", sub.snorkeling),
                                  ("uboot.mode.bottom", boat.orders.bottomed),
+                                 ("uboot.mode.surfaced", sub.surfaced),
                                  ("uboot.mode.mast", boat.orders.mast)) if on]
     quiet = boat.orders.quiet_active(sub)
     layout.blit_line(s, message("uboot.line.modes", modes=raw_text(" · ".join(

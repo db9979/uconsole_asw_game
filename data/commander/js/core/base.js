@@ -50,7 +50,7 @@ export const reasons = {
   no_track: "reason_no_track",
   uboot_no_torpedoes: "reason_uboot_no_torpedoes", uboot_reloading: "reason_uboot_reloading",
   uboot_out_of_arc: "reason_uboot_out_of_arc", uboot_no_decoys: "reason_uboot_no_decoys",
-  uboot_no_threat: "reason_uboot_no_threat",
+  uboot_no_threat: "reason_uboot_no_threat", uboot_not_surfaced: "reason_uboot_not_surfaced",
   uboot_too_deep: "reason_uboot_too_deep", uboot_no_snorkel: "reason_uboot_no_snorkel",
   uboot_no_wire: "reason_uboot_no_wire", uboot_mast_depth: "reason_uboot_mast_depth", uboot_buoy_lost: "reason_uboot_buoy_lost",
   uboot_mast_down: "reason_uboot_mast_down", uboot_no_sighting: "reason_uboot_no_sighting",

@@ -66,6 +66,8 @@ function playGameEffect(kind, pan = null) {
     // Noise discipline (src/core/noise_discipline.py): metal on metal aboard,
     // or farther and duller from an enemy crew.
     crew_clank: [1380, 1100, .3, .10, "square"], crew_transient: [850, 620, .45, .05, "triangle"],
+    // The crash-dive alarm (src/enemies/sub.py ``command_crash_dive``).
+    dive_alarm: [410, 410, 2.0, .06, "sawtooth"],
   }[kind];
   if (!profile) return;
   const [startHz, endHz, duration, gainLevel, type] = profile;

@@ -1902,6 +1902,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             silent=bool(sub.crew is not None and sub.crew.silent),
             quiet=bool(sub.crew is not None and sub.crew.quiet_active(sub)),
             bottomed=bool(sub.crew is not None and sub.crew.bottomed),
+            surfaced=bool(sub.surfaced),
             mast=bool(sub.crew is not None and sub.crew.mast)),
         weapons=dict(
             torpedoes=int(sub.torpedoes_left),

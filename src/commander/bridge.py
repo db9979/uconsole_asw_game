@@ -228,6 +228,7 @@ from src.commander.actions import (  # noqa: F401 - re-exported
     _uboot_radio_send,
     _uboot_silent,
     _uboot_bottom,
+    _uboot_surface,
     _uboot_scope_bearing,
     _uboot_scope_mark,
     _uboot_scope_fire,

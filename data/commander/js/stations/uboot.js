@@ -82,6 +82,7 @@ function renderChips(nav, status, alarms, scope) {
     ["uboot_chip_mast", status.mast, "caution"],
     ["uboot_chip_scope", scope.available, "caution"],
     ["uboot_chip_bottom", status.bottomed, "on"],
+    ["uboot_chip_surfaced", status.surfaced, "caution"],
     ["uboot_chip_cavitating", nav.cavitating, "alarm"],
     ["uboot_chip_transmitting", status.transmitting, "caution"],
   ];
@@ -103,7 +104,7 @@ function renderChips(nav, status, alarms, scope) {
 // Paired on/off orders: the button of the current state is pressed and not offered again.
 function renderModePairs(nav, status, ballast) {
   const state = {uboot_silent: status.silent, uboot_snorkel: status.snorkeling, uboot_mast: status.mast,
-    uboot_bottom: status.bottomed, uboot_trim_auto: ballast.auto};
+    uboot_bottom: status.bottomed, uboot_trim_auto: ballast.auto, uboot_surface: status.surfaced};
   const possible = {uboot_snorkel: status.snorkel_available,
     uboot_mast: status.mast || nav.depth_m <= (nav.depth_presets.periscope ?? 0) + 3.5};
   for (const button of document.querySelectorAll("#station-uboot [data-uboot-mode]")) {

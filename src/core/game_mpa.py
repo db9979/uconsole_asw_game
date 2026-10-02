@@ -517,8 +517,9 @@ class MpaMixin:
         for sub in self.subs:
             if sub.sunk:
                 continue
-            if sub.depth <= 2.0:
-                candidates.append(("sub", sub, 3.0, 0.1))
+            if sub.depth <= config.UBOOT_SURFACED_DEPTH_M:
+                candidates.append(("sub", sub, config.SUB_SURFACED_HEIGHT_M,
+                                   config.SUB_SURFACED_RCS_FACTOR))
             elif self._mast_up(sub):
                 candidates.append(("sub", sub, config.SUB_MAST_HEIGHT_M,
                                    config.SUB_MAST_RCS_FACTOR))

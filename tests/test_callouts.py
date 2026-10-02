@@ -155,7 +155,7 @@ def test_options_setup_page_toggles_speech(monkeypatch):
     assert game.preferences.speech is True
     game.draw()
     rects = Game._option_row_hit_rects(Game._OPTION_ROWS_SETUP)
-    assert rects[2] == Game._options_row_rects()[10]
+    assert rects[2] == Game._options_row_rects()[Game._SETUP_ROW_INDICES[2]]
 
 
 def test_projection_carries_callouts_to_every_frigate_role():

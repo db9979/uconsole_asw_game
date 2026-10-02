@@ -82,6 +82,7 @@ function renderChips(nav, status, alarms, scope) {
     ["uboot_chip_mast", status.mast, "caution"],
     ["uboot_chip_scope", scope.available, "caution"],
     ["uboot_chip_bottom", status.bottomed, "on"],
+    ["uboot_chip_surfaced", status.surfaced, "caution"],
     ["uboot_chip_cavitating", nav.cavitating, "alarm"],
     ["uboot_chip_transmitting", status.transmitting, "caution"],
   ];
@@ -103,7 +104,7 @@ function renderChips(nav, status, alarms, scope) {
 // Paired on/off orders: the button of the current state is pressed and not offered again.
 function renderModePairs(nav, status, ballast) {
   const state = {uboot_silent: status.silent, uboot_snorkel: status.snorkeling, uboot_mast: status.mast,
-    uboot_bottom: status.bottomed, uboot_trim_auto: ballast.auto};
+    uboot_bottom: status.bottomed, uboot_trim_auto: ballast.auto, uboot_surface: status.surfaced};
   const possible = {uboot_snorkel: status.snorkel_available,
     uboot_mast: status.mast || nav.depth_m <= (nav.depth_presets.periscope ?? 0) + 3.5};
   for (const button of document.querySelectorAll("#station-uboot [data-uboot-mode]")) {
@@ -472,7 +473,9 @@ function renderThreat(threat) {
     ["uboot_threat_trend", t(`uboot_threat_trend_${threat.trend || "none"}`)],
     ["uboot_threat_other", t("uboot_threat_other_value", {splash: counts.splash, torpedo: counts.torpedo, esm: threat.esm_count})],
     ["uboot_threat_layer", t(`uboot_threat_layer_${threat.layer}`, {depth: number(threat.depth_m, 0), layer: threat.layer_m === null ? "-" : number(threat.layer_m, 0)})],
-    ["uboot_threat_noise", t(`uboot_threat_noise_${threat.noise}`)]]);
+    ["uboot_threat_noise", t(`uboot_threat_noise_${threat.noise}`)],
+    ["uboot_threat_clock", threat.clock === null ? t("station_none")
+      : t("uboot_threat_clock_value", {bearing: number(threat.clock.bearing, 0), tti: number(threat.clock.tti_s, 0)})]]);
   $("uboot-threat-warning").hidden = !threat.echo_likely && counts.torpedo === 0;
   $("uboot-threat-warning").textContent = counts.torpedo ? t("uboot_threat_torpedo_warning") : t("uboot_threat_echo_warning");
   const advice = threat.advice.map((key) => node("p", t(key.replaceAll(".", "_")), "uboot-log-line"));
@@ -531,8 +534,10 @@ export function renderUbootStation(payload) {
     ["uboot_decoys", number(weapons.decoys, 0)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
   renderTubes(weapons.tubes);
-  if (!S.stationDrafts.has("uboot-seeker-pattern")) setControlValue($("uboot-seeker-pattern"), weapons.pattern);
-  if (!S.stationDrafts.has("uboot-seeker-enable")) setControlValue($("uboot-seeker-enable"), String(weapons.enable_nm));
+  // A sent seeker setting holds its controls until the host has applied it.
+  const seekerSent = S.pending?.body?.action === "uboot_torpedo_settings";
+  if (!seekerSent && !S.stationDrafts.has("uboot-seeker-pattern")) setControlValue($("uboot-seeker-pattern"), weapons.pattern);
+  if (!seekerSent && !S.stationDrafts.has("uboot-seeker-enable")) setControlValue($("uboot-seeker-enable"), String(weapons.enable_nm));
   metrics($("uboot-alarms"), [
     ["uboot_ping_heard", alarmText(alarms.ping_age_s, alarms.ping_bearing)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);

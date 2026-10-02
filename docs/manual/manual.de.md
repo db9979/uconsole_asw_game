@@ -1206,6 +1206,14 @@ Der Funkraum schreibt die Sendungen des HQ mit, liest Befehle und Kontaktmeldung
 - `,` und `.` verschieben den Einschaltpunkt zwischen 0,6 und 3,0 sm vor dem Datum in Schritten von 0,2 sm (Vorgabe 3,0 sm). Ein später Einschaltpunkt hält den Suchkopf länger blind, so dass er Täuschkörper und andere Schiffe auf dem Weg nicht nimmt.
 - Ein Torpedo im Wasser behält die Einstellung, mit der er geschossen wurde; die Waffen-Karte im Browser stellt beides mit **Anwenden** ein.
 
+### Auftauchen und Alarmtauchen
+
+- `Shift+H` (Browser: **Auftauchen**, Kommando oder Navigation) lässt das U-Boot an die Oberfläche gehen. Bei 2 m oder weniger ist es aufgetaucht: Das Niederdruckgebläse bläst die Hauptzellen in 2 Minuten aus (ohne Pressluft aus den Flaschen), das Luk ist offen und das U-Boot lüftet sich.
+- Aufgetaucht laufen die Diesel (`N`) an der freien Luft: bis 12 kn (oder die Höchstfahrt des U-Boots) statt 6 kn am Schnorchel, und der Generator gibt das 1,3-fache seiner Schnorchelleistung, die Batterie lädt also schneller.
+- Die Brückenwache sieht aus 6 m statt aus den 2,5 m des Sehrohrs und damit weiter; ihre Meldungen beginnen mit **Brücke:**, ein Flugzeug meldet sie als Alarm. Die Sehrohrseite zeigt den Blick der Brückenwache.
+- Auch der Gegner sieht ein aufgetauchtes U-Boot: Das Überwasserradar der Fregatte und die Radare von Hubschrauber und Seefernaufklärer sehen Rumpf und Turm (das Zehnfache des Echos eines Masts), Ausgucks sehen es mit dem Auge.
+- `H` von der Oberfläche oder mit ausgeblasenen Zellen (Browser: **Alarmtauchen**) ist das Alarmtauchen: Alarm, Masten und Schnorchel ein, Flutventile auf, äußerste Kraft, befohlene Tiefe 40 m. Ausgeblasene Zellen halten das U-Boot über 10 m, bis die Flutventile sie geflutet haben (bis 40 s), und das Fluten ist ein Geräusch, das der Gegner hören kann. Aus mehr als 12 m Tiefe wird Alarmtauchen abgelehnt.
+
 ### Nicht modelliert
 
 - Keine Ortsbestimmung über Landmarken, Lotungen oder Sterne; nur GPS löscht den Koppelfehler.
@@ -1397,6 +1405,8 @@ Die obere Leiste zeigt die sieben Stationen des U-Boots als Reiter: `1` Führung
 | `Shift+W` | Draht des neuesten Torpedos kappen (Waffen) |
 | `A` | Schleichfahrt ein/aus, höchstens 5 kn (Führung, Maschine) |
 | `Shift+G` | Auf Grund legen / abheben (Führung, Navigation) |
+| `Shift+H` | Auftauchen: an die Oberfläche, Brückenwache, Diesel an der Luft (Kommando, Navigation) |
+| `H` | Von der Oberfläche: Alarmtauchen, Flutventile auf, äußerste Kraft (Kommando, Navigation) |
 | `N` | Schnorchel aus-/einfahren, Diesel laden auf Schnorcheltiefe (Maschine) |
 | `P` | Mast aus-/einfahren auf Sehrohrtiefe: ESM hört Radare, das Sehrohr sieht, die Funkantenne ist klar (Führung, Mast & ESM, Funkraum) |
 | `Pfeiltasten` | Seite Mast & ESM: Emitter wählen |
@@ -1507,6 +1517,30 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das U-Boot oder ein Solo-B
 - Die U-Boot-Kampagne kennt im Stützpunkt nur Überholung und schnelles Auslaufen und übernimmt keinen Zustand der Leckwehr (nur den gesamten Rumpfschaden). Die Markierungen der Brennpunkte verorten einen Einsatz nur auf der Karte: jeder Einsatz wird im eigenen Rahmen seines Szenarios im Sektor gefahren, nicht an der Markierung. Außerhalb des Geleitzugangriffs suchen die Torpedos des U-Boots nur die Fregatte, und ein KI-U-Boot greift Handelsschiffe nur als Missions-U-Boot des Geleitzugangriffs oder als Patrouillen-U-Boot eines Fregattenszenarios an.
 - Das ASROC der KI-Jäger kommt nur von befreundeten Kriegsschiffen, die ohnehin im Szenario sind, nie vom eigenen Starter der Fregatte.
 - Das Sehrohr hat eine Vergrößerung und keine Kamera; Sichtungen tragen keine Identifikation über die grobe Klasse hinaus, und das Stadimeter nimmt eine Klassenlänge statt einer Masthöhe an.
+
+### Geräuschdisziplin und Mikrofon
+
+- Ab und zu lässt eine Besatzung ein Werkzeug fallen, schlägt ein Schott zu, stößt an einen Topf oder lässt eine Kette rasseln: ein kurzer metallischer Schlag für 3 s, der das eigene Geräusch erhöht. Eine frische Besatzung patzt etwa zweimal in der Stunde, eine müde oder entmutigte bis fünfmal so oft. Schleichfahrt (der Leisemodus der Fregatte, die Schleichfahrt des U-Boots oder das Liegen auf Grund) senkt das auf 30 %, dafür gehen Reparaturen und Nachladen dann nur mit 75 % voran.
+- Bis 4 sm hört der Gegner einen solchen Schlag in seiner Peilung (durch das eigene Maschinengeräusch weniger): Das Sonar der Fregatte meldet einen metallischen Transienten, der Horchraum des U-Boots einen Transienten. Die eigene Besatzung meldet ihr Missgeschick unter Schleichfahrt.
+- **Mikrofon:** Auch die Stimmen der Spieler zählen. Auf der uConsole ist es die Option *Mikrofon* (aus als Vorgabe); im Browser der Knopf *Mikrofon an* neben dem Ton-Knopf (fragt nach dem Mikrofon; nur auf einer sicheren Seite). Eine Anzeige aus 20 Feldern zeigt den eigenen Pegel gegen die Schwellen: bis 5 leise (grün, ungehört), 6 bis 11 in der Nähe hörbar (gelb), ab 12 weit hörbar (rot, bei voller Lautstärke bis 2,5 sm). Das umrandete Feld ist die lauteste Stimme der Besatzung. Eine Stimme über der Schwelle erhöht das eigene Geräusch um bis zu 20 %; der Gegner hört Stimmen, und die eigene Besatzung wird zur Ruhe ermahnt, wenn es viel zu laut ist. Nur die Pegelzahl verlässt den Browser, nie Ton; sie gilt 1,5 s und wird nie gespeichert.
+
+### Gegnerische Kommandanten
+
+- Jeder Computer-U-Boot-Kommandant und der Kapitän der KI-Jagdfregatte hat einen von vier Charakteren, durch den Seed festgelegt: **Draufgänger** (greift früh an, weicht kurz aus, lauert selten), **Fuchs** (lauert lange und weit, pingt wenig), **Vorsichtiger** (weicht lange aus, hält das Feuer zurück, hält Abstand) und **Jäger** (hartnäckig, läuft eine verlorene Peilung lange ab).
+- Jeder Charakter ändert die vorhandene Taktik nur über Faktoren (Angriffsrate, Ausweichzeit, Lauerabstand; bei der Jagdfregatte Annäherungsfahrt, Pingabstand, Schussweite und Vorhaltezeit); über die vier gleichen sie sich aus.
+- In etwa sechs von zehn Einsätzen deutet die Führung den Charakter nach 90 s an (*Der Nachrichtendienst hält den gegnerischen Kommandanten für ...*); die Nachbesprechung nennt ihn.
+
+### Erschütterung, Trefferbild und Suchköpfe
+
+- Eine Detonation innerhalb 0,6 sm vom eigenen Schiff lässt das Bild wackeln und das Licht flackern; innerhalb 0,15 sm springt kurz das Instrumentenglas. Beides ist nur Anzeige.
+- Sieht die eigene Seite einen Treffer (Feuerball, Wassersäule eines Torpedos, ein sinkendes Schiff), öffnet sich an jeder Station für 8 s ein kleines Fenster in seine Peilung; ein nur gehörter Treffer öffnet es mit Peilung und Geräusch.
+- Im Fernglas und im Sehrohr zeigt ein erkanntes Schiff Bugwelle und Kielwasser: hoch und weiß bei schneller Fahrt, kaum etwas bei langsamer.
+- Der Suchkopf eines zielsuchenden Torpedos pingt langsam, solange er sucht, und schnell, sobald er aufgeschaltet hat. Fregatte und U-Boot hören das: *Torpedo hat aufgeschaltet*, *Peilung steht* (Kollisionskurs) und auf der Bedrohungsseite des U-Boots eine grobe Torpedouhr, die nach Gehör geschätzte Zeit bis zum Einschlag.
+
+### Tageseinsatz
+
+- *Tageseinsatz* im Hauptmenü bietet je Seite und Tag einen festen Einsatz, für alle Spieler gleich: Das Datum wählt Szenario und Seed und damit das echte Seegebiet, Wetter und Tageszeit. Die Länge ist immer die normale.
+- Die Seite zeigt den heutigen Bestwert jeder Seite; ein beendeter Tageseinsatz (auch nach Mitternacht, für den von gestern) hält den besten Sieg 30 Tage im Einsatzbuch. Die Realismusstufe ist die eigene Einstellung.
 
 ### Mission und Wertung
 

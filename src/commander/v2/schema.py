@@ -87,9 +87,10 @@ LOOKOUT_GLASSES_FIELDS = ("course", "speed_kn", "fov_deg", "visibility_nm", "sea
 # ``lights``: the navigation lights made out (``src/sensors/nav_lights.py``
 # code) or null; ``elevation_deg``: an aircraft's angle above the sea
 # horizon (null on the surface); ``aob_deg``: the angle on the bow judged
-# of a made-out silhouette (null before), which turns its 3D model.
+# of a made-out silhouette (null before), which turns its 3D model;
+# ``way``: the white water of a made-out ship's way, 0..1 (null before).
 LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "lights", "elevation_deg",
-                          "aob_deg", "model")
+                          "aob_deg", "model", "way")
 SIGHT_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
 # What the eye sees happen (``src/core/sight_events.py``): water columns,
 # fireballs, fire and smoke, sinkings; bearing and range from the observer.
@@ -151,7 +152,7 @@ UBOOT_ESM_CANDIDATE_FIELDS = ("name", "role", "fit")
 # its own intercepts, layer, noise and mast, and the evasion order (``plan``).
 UBOOT_THREAT_FIELDS = ("intercepts", "counts", "loudest_db", "echo_likely", "trend",
                        "layer", "layer_m", "depth_m", "noise", "mast", "esm_count",
-                       "advice", "plan")
+                       "advice", "plan", "clock")
 UBOOT_INTERCEPT_FIELDS = ("type", "bearing", "level_db", "age_s")
 UBOOT_INTERCEPT_KINDS = ("hull", "dipping", "buoy", "splash", "torpedo")
 UBOOT_THREAT_ADVICE = ("uboot.advice.torpedo", "uboot.advice.mast_down",

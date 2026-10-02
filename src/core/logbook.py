@@ -159,6 +159,19 @@ class Logbook:
                 return True
         return False
 
+    def record_daily(self, side: str, key: str, won: bool, score: int, keep: int) -> bool:
+        """A daily mission's best score under ``side:daily_YYYYMMDD``; only the
+        newest ``keep`` days per side are kept. Returns whether it is new."""
+        full = f"{side}:{key}"
+        new_best = bool(won) and score > 0 and score > self.best.get(full, 0)
+        if new_best:
+            self.best[full] = int(min(score, MAX_SCORE))
+        days = sorted((name for name in self.best
+                       if name.startswith(f"{side}:daily_")), reverse=True)
+        for old in days[keep:]:
+            del self.best[old]
+        return new_best
+
     def totals(self, side: str) -> tuple:
         """(missions, victories) of one side, over the kept entries."""
         rows = [row for row in self.entries if row["side"] == side]

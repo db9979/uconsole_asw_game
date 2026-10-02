@@ -51,7 +51,7 @@ export function drawBridgeGlasses(now) {
       fov_deg: opticsFov(glasses.optics, lookout.fov_deg), elevation_deg: glasses.optics.elevation,
       stabilized: glasses.optics.stabilized, stab_label: t("sight_stabilized"),
       optics_label: opticsText(glasses.optics, lookout.fov_deg),
-      way: {speed_kn: lookout.speed_kn, course_deg: lookout.course}},
+      way: {speed_kn: lookout.speed_kn, course_deg: lookout.course}, eyepiece: "binoculars"},
     now / 1000, plot.context.font);
 }
 
@@ -69,7 +69,8 @@ export function renderBridgeStation(payload) {
     ["systems_down", payload.systems.filter((item) => item.down).map((item) => item.key).join(", ") || t("station_none")],
     ["threat_tracks", payload.threat.observations.map((row) => row.label).join(", ") || t("station_none")],
     ["torpedo_warning", payload.threat.torpedoes.length ? t(`torpedo_warning_${payload.threat.torpedoes[0].source}`, {
-      bearing: number(payload.threat.torpedoes[0].bearing, 1), age: number(payload.threat.torpedoes[0].age_s, 0)}) : t("torpedo_warning_none")]]);
+      bearing: number(payload.threat.torpedoes[0].bearing, 1), age: number(payload.threat.torpedoes[0].age_s, 0),
+      tti: number(payload.threat.torpedoes[0].tti_s, 0)}) : t("torpedo_warning_none")]]);
   renderRoute(payload.route);
   stationRows($("bridge-tactical"), payload.tactical_summary, tacticalEntries);
   renderSightings(payload.sightings);

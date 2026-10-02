@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.146**
+Current release: **1.3.154**
 
-Release 1.3.146 adds an optional language model over an OpenAI-compatible
+Release 1.3.154 adds an optional language model over an OpenAI-compatible
 interface (a LAN server or a cloud service). It is off by default and the
 game plays exactly as without it. Switched on, it words radio traffic, writes
 an after-action report, and gives you an executive officer (F7, also in the

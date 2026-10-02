@@ -760,11 +760,17 @@ class RadarPictureMixin:
 
     def _surface_heads(self, mast_horizon):
         """What of each submarine rides on the water for the surface radar:
-        a raised mast, or the crewed boat's streamed buoy antenna (smaller
-        and lower, astern of the boat).  Rows ``(sub, x, y, key, rcs, horizon)``."""
+        a surfaced boat's hull and conning tower, a raised mast, or the
+        crewed boat's streamed buoy antenna (smaller and lower, astern of the
+        boat).  Rows ``(sub, x, y, key, rcs, horizon)``."""
         rows = []
         for sub in self.subs:
-            if self._mast_up(sub):
+            if (not sub.sunk and sub.state != "SINKING"
+                    and sub.depth <= config.UBOOT_SURFACED_DEPTH_M):
+                rows.append((sub, sub.x, sub.y, sub.sensor_seed,
+                             config.SUB_SURFACED_RCS_FACTOR, config.radar_horizon_nm(
+                                 config.RADAR_ANTENNA_HEIGHT_M, config.SUB_SURFACED_HEIGHT_M)))
+            elif self._mast_up(sub):
                 rows.append((sub, sub.x, sub.y, sub.sensor_seed,
                              config.SUB_MAST_RCS_FACTOR, mast_horizon))
             elif self._buoy_afloat(sub):

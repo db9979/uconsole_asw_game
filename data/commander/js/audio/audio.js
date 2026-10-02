@@ -59,7 +59,17 @@ function playGameEffect(kind, pan = null) {
     fans_down: [220, 40, 2.4, .05, "triangle"], fans_up: [40, 220, 2.4, .05, "triangle"],
     // Thunder after a close lightning strike (src/world/thunder.py).
     thunder: [52, 26, 2.6, .12, "sawtooth"],
+    // A detonation close by shakes the picture (views/shock.js); its sound is the detonation's.
+    shock_light: null, shock_heavy: null,
+    // A homing torpedo's seeker pulse (src/core/torpedo_seeker.py).
+    torpedo_seeker: [2600, 2600, .14, .08, "sine"],
+    // Noise discipline (src/core/noise_discipline.py): metal on metal aboard,
+    // or farther and duller from an enemy crew.
+    crew_clank: [1380, 1100, .3, .10, "square"], crew_transient: [850, 620, .45, .05, "triangle"],
+    // The crash-dive alarm (src/enemies/sub.py ``command_crash_dive``).
+    dive_alarm: [410, 410, 2.0, .06, "sawtooth"],
   }[kind];
+  if (!profile) return;
   const [startHz, endHz, duration, gainLevel, type] = profile;
   const oscillator = S.audio.createOscillator();
   const gain = S.audio.createGain();

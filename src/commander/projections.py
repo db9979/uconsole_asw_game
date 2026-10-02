@@ -293,7 +293,62 @@ def _common(game, status, role):
                             for row in list(game._sound_events)[-16:]],
                     # Spoken crew reports: the feed lines' key and bearing
                     # only; each browser words them in its own language.
-                    callouts=game.callouts.detached()))
+                    callouts=game.callouts.detached()),
+                hit_view=_hit_view(game, "frigate"),
+                crew_noise=_crew_noise(game, "frigate"))
+
+
+def _outline_dicts(rows) -> list:
+    """Eyepiece outline rows (``lookout_outlines``/``scope_outlines``) as
+    published outlines (``LOOKOUT_OUTLINE_FIELDS``)."""
+    return [dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
+                 stale=bool(stale), lights=_nav_lights(lights),
+                 elevation_deg=_number(elevation), aob_deg=_number(aob),
+                 model=None if model is None else str(model), way=_number(way))
+            for bearing, span, cls, stale, lights, elevation, aob, model, way in rows]
+
+
+def _crew_noise(game, side):
+    """Noise discipline of one side (``src/core/noise_discipline.py``): the
+    crew's held microphone level, its thresholds and whether "Ruhe im Boot"
+    (silent running / quiet mode) is ordered."""
+    from src.core import noise_discipline as nd
+    if side == "uboot":
+        quiet = game.opfor is not None and nd.sub_quiet(game.opfor.sub)
+    else:
+        quiet = bool(game.ship.quiet_mode)
+    return dict(voice=int(game.crew_voice_level(side)), safe=nd.VOICE_SAFE,
+                loud=nd.VOICE_LOUD, max=nd.VOICE_LEVEL_MAX, quiet=bool(quiet))
+
+
+def _hit_view(game, side):
+    """The hit picture (``src/core/hit_view.py``) of one side, or None: in
+    sight the side's own eyepiece outlines and sight events toward the hit,
+    heard only its bearing."""
+    from src.core import hit_view
+    view = hit_view.current(game, side)
+    if view is None:
+        return None
+    result = dict(mode=view["mode"], kind=view["kind"],
+                  bearing=_number(view["bearing"] % 360.0), age_s=_number(view["age_s"]),
+                  fov_deg=_number(hit_view.FOV_DEG), visibility_nm=None, sea_state=None,
+                  sky=None, outlines=[], events=[])
+    if view["mode"] == "sight":
+        weather = game.world.weather_values()
+        if side == "uboot":
+            from src.ui.uboot_scope import scope_outlines
+            boat = game.opfor
+            outlines = scope_outlines(game, boat) if opfor.scope_available(boat) else []
+            rows = sight_events.boat_rows(game, boat)
+        else:
+            from src.ui.stations.bridge import lookout_outlines
+            outlines = lookout_outlines(game, game.lookout_sightings())
+            rows = sight_events.frigate_rows(game)
+        result.update(visibility_nm=_number(weather["visibility_nm"]),
+                      sea_state=_number(weather["sea_state"]), sky=_sky(game),
+                      outlines=_outline_dicts(outlines[:12]),
+                      events=_sight_events(rows, game.sim_t))
+    return result
 
 
 def _deck_motion(game) -> dict:
@@ -1266,7 +1321,8 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                     average_flood=_number(game.damage.avg_flood()),
                                     torpedoes=[dict(source=warning["source"],
                                                     bearing=_number(warning["bearing"]),
-                                                    age_s=_number(warning["age_s"]))
+                                                    age_s=_number(warning["age_s"]),
+                                                    tti_s=_number(warning.get("tti_s")))
                                                for warning in game.torpedo_warnings()[:8]]),
                         systems=[dict(key=key, state=game.damage.station_state(key),
                                       down=game.damage.station_down(key))
@@ -1421,6 +1477,8 @@ def _opfor_common(game, status, role, boat):
                                         pan=_pan(row.get("pan")))
                                    for row in list(boat.sound_events)[-16:]],
                            callouts=boat.callouts.detached())
+    common["hit_view"] = _hit_view(game, "uboot")
+    common["crew_noise"] = _crew_noise(game, "uboot")
     # With the crew assist the boat's autocrew takes the station once released.
     assist = bool(game.autocrew.assist)
     common["autocrew"] = dict(enabled=assist, status="suspended_remote" if assist else "off")
@@ -1497,8 +1555,8 @@ def _lookout_glasses(game):
                 outlines=[dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                                stale=bool(stale), lights=_nav_lights(lights),
                                elevation_deg=_number(elevation), aob_deg=_number(aob),
-                               model=None if model is None else str(model))
-                          for bearing, span, cls, stale, lights, elevation, aob, model in
+                               model=None if model is None else str(model), way=_number(way))
+                          for bearing, span, cls, stale, lights, elevation, aob, model, way in
                           lookout_outlines(game, game.lookout_sightings())[:16]],
                 events=_sight_events(sight_events.frigate_rows(game), game.sim_t))
 
@@ -1537,7 +1595,9 @@ def _uboot_scope(game, boat):
                         aob_deg=(None if now - row["t"] > 1.0
                                  else _number(boat.orders._aspect.get(row["ref"]))),
                         model=(None if now - row["t"] > 1.0
-                               else getattr(boat.orders, "_model", {}).get(row["ref"])))
+                               else getattr(boat.orders, "_model", {}).get(row["ref"])),
+                        way=(None if now - row["t"] > 1.0
+                             else _number(getattr(boat.orders, "_way", {}).get(row["ref"]))))
                    for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]],
         events=_sight_events(sight_events.boat_rows(game, boat), now))
 
@@ -1713,6 +1773,8 @@ def _uboot_threat(game, boat):
         {key: value for key, value in plan.items() if key != "kind"}, type=plan["kind"],
         bearing=_number(plan["bearing"]), course=_number(plan["course"]),
         speed_kn=_number(plan["speed_kn"]), depth_m=_number(plan["depth_m"]))
+    view["clock"] = None if view["clock"] is None else dict(
+        bearing=_number(view["clock"]["bearing"]), tti_s=_number(view["clock"]["tti_s"]))
     return view
 
 
@@ -1852,6 +1914,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             silent=bool(sub.crew is not None and sub.crew.silent),
             quiet=bool(sub.crew is not None and sub.crew.quiet_active(sub)),
             bottomed=bool(sub.crew is not None and sub.crew.bottomed),
+            surfaced=bool(sub.surfaced),
             mast=bool(sub.crew is not None and sub.crew.mast)),
         weapons=dict(
             torpedoes=int(sub.torpedoes_left),

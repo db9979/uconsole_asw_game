@@ -9,7 +9,7 @@ identifications and, inside the model, the raft and the named ship.
 
 import math
 
-from src.core import boat_missions, config, detrand, free_roam
+from src.core import boat_missions, commander_traits, config, detrand, free_roam, hunter
 from src.core import tasking
 from src.core.i18n import message, raw_text
 from src.core.tasking import TaskBoard
@@ -169,7 +169,24 @@ class TaskingMixin:
 
     # --- the schedule ----------------------------------------------------------
 
+    def _commander_hint(self, dt: float) -> None:
+        """Early in a mission HQ sometimes hints at the enemy commander's
+        character (``commander_traits``): to the frigate about the first AI
+        submarine, to a crewed boat about an AI hunter frigate's captain."""
+        at = commander_traits.HINT_AT_S
+        if not self.mission_time - dt < at <= self.mission_time or self.game_over:
+            return
+        boat = self._opfor
+        subs = sorted((sub for sub in self.subs if sub.side == "hostile" and not sub.sunk
+                       and (boat is None or sub is not boat.sub)), key=lambda sub: sub.id)
+        if subs and commander_traits.hinted(self.seed, "frigate"):
+            self.hq_msg(message("hq.commander_hint." + commander_traits.sub_kind(subs[0])))
+        if (boat is not None and hunter.active(self)
+                and commander_traits.hinted(self.seed, "uboot")):
+            boat.orders.event("hq_hint_" + commander_traits.hunter_kind(self.seed))
+
     def _update_tasking(self, dt: float) -> None:
+        self._commander_hint(dt)
         board = getattr(self, "tasking", None)
         if board is None or self.game_over:
             return

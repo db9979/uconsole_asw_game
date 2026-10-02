@@ -71,8 +71,8 @@ def test_a_loaded_lesson_gets_its_coach_back_and_r_restarts_it():
 
 def test_training_menu_starts_the_chosen_lesson():
     game = _menu_game()
-    _key(game, pygame.K_DOWN)
-    _key(game, pygame.K_DOWN)
+    while game.main_menu_entries()[game.main_menu_sel] != "training":
+        _key(game, pygame.K_DOWN)
     _key(game, pygame.K_RETURN)
     assert game.menu_screen == "training"
     _key(game, pygame.K_3)

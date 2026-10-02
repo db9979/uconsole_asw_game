@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.146
+## 1.3.154
 
-Release 1.3.146 adds an optional language model over an OpenAI-compatible
+Release 1.3.154 adds an optional language model over an OpenAI-compatible
 interface (a LAN server such as Ollama or LM Studio, or a cloud service). It
 is off by default and the game plays exactly as without it; every job falls
 back to the game's own texts when the server is off or slow. Options page 2,
@@ -35,6 +35,71 @@ experimental opponent, with a connection test.
 
 Saves are now v49 (the advisor marks and the experimental opponent's plan);
 v38 to v48 saves still load.
+
+## 1.3.153
+
+Release 1.3.153 lets the submarine surface. `Shift+H` (browser: Surface)
+takes the boat up; the low-pressure blower empties the main ballast, the
+diesels run in the open air at up to 12 kn and charge faster, and a bridge
+watch looks out from 6 m and calls aircraft as an alarm. A surfaced boat is
+seen by the frigate's radar, by aircraft radars and by lookouts. `H` from the
+surface is the crash dive: alarm, masts down, vents open, full ahead; blown
+tanks hold the boat up until the vents have flooded them. Save format v48
+unchanged.
+
+## 1.3.152
+
+Release 1.3.152 adds the daily mission to the main menu: one fixed mission per
+side and day, the same for every player, in the day's real sea area at the
+normal length. The page shows today's best score of each side, and the
+logbook keeps each day's best win for 30 days. Save format v48 unchanged.
+
+## 1.3.151
+
+Release 1.3.151 gives every computer submarine commander and the AI hunter
+frigate's captain a character: daring, fox, cautious or hunter. Each changes
+attack rate, evasion, lurking or the hunter's closing speed, pings, firing
+range and lead time by a factor. HQ sometimes hints at it early on and the
+debrief names it. Save format v48 unchanged.
+
+## 1.3.150
+
+Release 1.3.150 brings noise discipline. Now and then a crew drops a tool or
+slams a hatch: a short bang the enemy may hear within 4 NM, more often with a
+tired crew, rarer under silent running, which in turn slows repairs and
+reloading. The players' own voices count too: the uConsole option Microphone
+and the browser's Microphone button show the level against the thresholds
+(quiet, heard close by, heard far off), and a crew that is too loud makes its
+ship or boat louder. Only the level number is sent, never sound. Save format
+v48 unchanged.
+
+## 1.3.149
+
+Release 1.3.149 makes a homing torpedo's terminal phase audible: its seeker
+pings slowly while it searches and fast once locked on. Frigate and submarine
+report "torpedo locked on" and "bearing steady", and the submarine's threat
+page shows a rough torpedo clock. Save format v48 unchanged.
+
+## 1.3.148
+
+Release 1.3.148 shows hits in a small picture: when the own side sees a
+fireball, a torpedo's water column or a ship going down, a window trained on
+its bearing opens for 8 s at every station; a hit only heard shows the
+bearing and the noise. On the uConsole and in the browser. Save format v48
+unchanged.
+
+## 1.3.147
+
+Release 1.3.147 draws bow waves and wakes on made-out ships in the
+binoculars and the periscope, high and white at speed, and gives both
+optics a round rim. Save format v48 unchanged.
+
+## 1.3.146
+
+Release 1.3.146 shakes the own ship's screens after a detonation close by:
+within 0.6 NM the picture shakes and the light flickers, within 0.15 NM the
+instrument glass cracks for a moment. Display only, on the uConsole and in
+the browser. Save format v48 unchanged.
 
 ## 1.3.145
 

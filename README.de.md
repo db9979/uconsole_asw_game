@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.146**
+Aktuelle Version: **1.3.154**
 
-Version 1.3.146 bringt ein optionales Sprachmodell über eine
+Version 1.3.154 bringt ein optionales Sprachmodell über eine
 OpenAI-kompatible Schnittstelle (ein Server im LAN oder ein Cloud-Dienst). Es
 ist ab Werk aus, und das Spiel läuft genau wie ohne. Eingeschaltet formuliert
 es den Funkverkehr, schreibt einen Einsatzbericht und gibt dir einen Ersten

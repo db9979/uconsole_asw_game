@@ -125,12 +125,20 @@ class LlmMixin:
             return None
         if (getattr(self, "training", None) is not None
                 or getattr(self, "campaign_mission", False)
-                or getattr(self, "daily_mission", None) is not None or self.llm_pvp()):
+                or self._llm_daily_running() or self.llm_pvp()):
             return None
         if getattr(self, "_opfor", None) is None:
             return "subs"
         from src.core import hunter
         return "hunter" if hunter.active(self) else None
+
+    def _llm_daily_running(self) -> bool:
+        """This mission is today's daily mission (scored for everyone alike)."""
+        from src.core import daily
+        side = "uboot" if getattr(self, "_opfor", None) is not None else "frigate"
+        return (self.custom_mission_definition is None
+                and self.world_mode == daily.WORLD_MODE
+                and daily.match(int(self.seed), self.scenario_key, side) is not None)
 
     def llm_opfor_plan(self, side: str):
         """The plan the AI side follows (saved, so it holds after a load)."""

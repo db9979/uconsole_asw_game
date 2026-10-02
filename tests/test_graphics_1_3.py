@@ -147,7 +147,7 @@ def test_options_setup_page_carries_the_graphics_level(monkeypatch):
     from src.core import game_draw
     monkeypatch.setattr(game_draw, "save_preferences", lambda *_a, **_k: None)
     game = _game(start_menu=True)
-    assert Game._OPTION_ROWS_SETUP == ("local_side", "graphics", "speech", "llm")
+    assert Game._OPTION_ROWS_SETUP == ("local_side", "graphics", "speech", "microphone", "llm")
     assert len(Game._OPTION_ROWS) == 13          # page 1 stays within its footer
     game._open_administration("options")
     game._set_options_page(1)

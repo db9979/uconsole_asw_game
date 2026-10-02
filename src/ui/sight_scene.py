@@ -51,6 +51,12 @@ LUNAR_MONTH_D = 29.530588
 _CACHE_MAX = 8
 _SKY_CACHE = OrderedDict()
 _SHADE_CACHE = OrderedDict()
+_MASK_CACHE = OrderedDict()
+# The eyepiece's rim: binoculars show two overlapping round fields, the
+# periscope a rounded field; the edge falls off over this share of the height.
+EYEPIECE_KINDS = ("binoculars", "scope")
+EYEPIECE_SOFT = 0.07
+EYEPIECE_RIM = (4, 10, 14)
 _FIELD = {}
 
 
@@ -176,6 +182,34 @@ def _cached(cache, key, build):
     else:
         cache.move_to_end(key)
     return surf
+
+
+def _eyepiece_mask(size, kind: str) -> pygame.Surface:
+    import numpy as np
+    w, h = max(2, int(size[0])), max(2, int(size[1]))
+    surf = pygame.Surface((w, h), pygame.SRCALPHA)
+    surf.fill((*EYEPIECE_RIM, 0))
+    xs = np.arange(w, dtype=np.float32)[:, None] + 0.5
+    ys = np.arange(h, dtype=np.float32)[None, :] + 0.5
+    if kind == "binoculars":
+        r = h / 2.0
+        centers = (min(w / 2.0, r), max(w / 2.0, w - r))
+        d = np.minimum(np.hypot(xs - centers[0], ys - h / 2.0),
+                       np.hypot(xs - centers[1], ys - h / 2.0)) / r
+    else:
+        # A rounded field (superellipse) that keeps the whole width.
+        u = np.abs(xs - w / 2.0) / (w / 2.0)
+        v = np.abs(ys - h / 2.0) / (h / 2.0)
+        d = (u ** 6 + v ** 6) ** (1.0 / 6.0)
+    soft = EYEPIECE_SOFT * h / (h / 2.0)
+    alpha = np.clip((d - (1.0 - soft)) / soft, 0.0, 1.0) * 255.0
+    pygame.surfarray.pixels_alpha(surf)[:, :] = alpha.astype(np.uint8)
+    return surf
+
+
+def eyepiece_mask(size, kind: str) -> pygame.Surface:
+    """The cached rim over an eyepiece picture of ``size``."""
+    return _cached(_MASK_CACHE, (tuple(size), kind), lambda: _eyepiece_mask(size, kind))
 
 
 def _gradient(size, top, bottom) -> pygame.Surface:

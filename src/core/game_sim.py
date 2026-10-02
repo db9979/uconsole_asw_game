@@ -18,7 +18,7 @@ from src.audio.synthesis import bearing_pan
 from src.core import config
 from src.physics import bioluminescence
 from src.world import thunder
-from src.core import buoy_antenna, detrand
+from src.core import buoy_antenna, detrand, shock, torpedo_seeker
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
@@ -73,6 +73,9 @@ TORPEDO_WAKE_VISIBLE_DEPTH_M = 15.0
 # heard from everywhere (centred) rather than from a bearing.
 ENEMY_PING_HZ = 1300.0
 ENEMY_PING_VOLUME = 0.3
+# A homing torpedo's seeker pulses as the crew hears them (torpedo_seeker.py).
+SEEKER_PING_HZ = 2600.0
+SEEKER_PING_VOLUME = 0.22
 HEARD_CENTRE_NM = 0.05
 
 
@@ -272,6 +275,10 @@ class SimMixin:
             self.audio.play_ping()
         elif kind == "enemy_ping":
             self.audio.play_ping(ENEMY_PING_HZ, ENEMY_PING_VOLUME, pan=pan)
+        elif kind == "torpedo_seeker":
+            self.audio.play_ping(SEEKER_PING_HZ, SEEKER_PING_VOLUME, pan=pan)
+        elif kind == "crew_transient":
+            self.audio.play_boat_cue(kind, pan=pan)
         elif kind == "esm_contact":
             if (self.station is Station.ELOKA
                     and self.eloka_audio_enabled
@@ -281,6 +288,13 @@ class SimMixin:
             self.audio.play_effect(kind, pan=pan)
         self._sound_event_seq += 1
         self._sound_events.append(dict(seq=self._sound_event_seq, kind=kind, pan=pan))
+        if at is not None and kind == "explosion":
+            felt = shock.cue(math.hypot(float(at[0]) - self.ship.x, float(at[1]) - self.ship.y))
+            if felt is not None:
+                # The own ship shakes (a display cue, no sound of its own).
+                self._sound_event_seq += 1
+                self._sound_events.append(dict(seq=self._sound_event_seq, kind=felt,
+                                               pan=None))
 
     def _hull_slam(self, previous_pitch: float) -> None:
         """A bow coming down hard into a head sea slams: a sound only (the
@@ -1261,7 +1275,8 @@ class SimMixin:
                 continue
             distance = math.hypot(torpedo.x - self.ship.x, torpedo.y - self.ship.y)
             kind = threat_cue.torpedo_cue_kind(
-                torpedo.time_since_launch, torpedo.terminal_active, distance)
+                torpedo.time_since_launch, torpedo.terminal_active, distance,
+                acquired=bool(torpedo.seeker_acquired))
             if kind is None or self.world.sonar_path_blocked(
                     torpedo.x, torpedo.y, torpedo.depth,
                     self.ship.x, self.ship.y, 5.0):
@@ -1271,9 +1286,14 @@ class SimMixin:
             key = (int(torpedo.launch_platform_id or 0) * 1000
                    + int(getattr(torpedo, "idx", 0)))
             cues.append({"kind": kind, "t": self.sim_t, "owner": torpedo,
-                         "report": kind, "serial": id(torpedo),
+                         "report": kind, "serial": id(torpedo), "ear": key,
                          "bearing": threat_cue.measured_cue_bearing(
-                             true_bearing, self.seed, key, self.sim_t)})
+                             true_bearing, self.seed, key, self.sim_t),
+                         # The crew's rough torpedo clock once it hears the
+                         # seeker locked on (torpedo_seeker.estimated_tti).
+                         "tti_s": (torpedo_seeker.estimated_tti(distance, self.seed, key,
+                                                                self.sim_t)
+                                   if kind == "locked" else None)})
         cues += self._tube_flood_cues()
         return cues
 
@@ -1311,7 +1331,9 @@ class SimMixin:
         """Announce each intercept once and hold it briefly on the alarm board."""
         self.torpedo_cues = [cue for cue in self.torpedo_cues
                              if self.sim_t - cue["t"] <= config.TORP_CUE_HOLD_S]
-        for cue in self.current_torpedo_cues():
+        current = self.current_torpedo_cues()
+        self._hear_seekers(current)
+        for cue in current:
             owner, report = cue.pop("owner"), cue.pop("report")
             reported = self._torpedo_cues_reported.setdefault(owner, set())
             self.torpedo_cues = [held for held in self.torpedo_cues
@@ -1320,21 +1342,48 @@ class SimMixin:
             if report in reported:
                 continue
             reported.add(report)
-            notice = message(f"runtime.torpedo_cue.{cue['kind']}",
-                             bearing=f"{cue['bearing']:05.1f}")
+            if cue["kind"] == "locked":
+                notice = message("runtime.torpedo_cue.locked", bearing=f"{cue['bearing']:05.1f}",
+                                 tti=f"{cue['tti_s']:.0f}")
+            else:
+                notice = message(f"runtime.torpedo_cue.{cue['kind']}",
+                                 bearing=f"{cue['bearing']:05.1f}")
             self.flash(notice, 4.0)
             self.audio.play_alert("danger")
             self.feed.add(self.world.format_time(), "sonar", notice)
+
+    def _hear_seekers(self, cues) -> None:
+        """Seeker pings on their measured bearing, slow while searching and
+        fast once locked, and "bearing steady" once (sound and crew report
+        only; ``src/core/torpedo_seeker.py``)."""
+        ear = getattr(self, "_seeker_ear", None)
+        if ear is None:
+            ear = self._seeker_ear = torpedo_seeker.SeekerEar()
+        heard = [cue for cue in cues if cue["kind"] in ("seeker", "locked")]
+        ear.forget(cue["ear"] for cue in heard)
+        for cue in heard:
+            for event in ear.hear(cue["ear"], cue["bearing"], self.sim_t,
+                                  cue["kind"] == "locked"):
+                if event == "ping":
+                    self._emit_sound("torpedo_seeker",
+                                     pan=bearing_pan(cue["bearing"], self.ship.course))
+                else:
+                    notice = message("runtime.torpedo_cue.steady",
+                                     bearing=f"{cue['bearing']:05.1f}")
+                    self.flash(notice, 4.0)
+                    self.feed.add(self.world.format_time(), "sonar", notice)
 
     def torpedo_warnings(self, held: bool = True) -> list:
         """Detached torpedo alarms: held intercepts plus operator-classified
         TORPEDO contacts. `held=False` uses only intercepts audible now."""
         cues = (self.torpedo_cues if held else self.current_torpedo_cues())
         rows = [{"source": cue["kind"], "bearing": cue["bearing"],
-                 "age_s": self.sim_t - cue["t"], "contact": None}
+                 "age_s": self.sim_t - cue["t"], "contact": None,
+                 "tti_s": cue.get("tti_s")}
                 for cue in cues]
         rows += [{"source": "classified", "bearing": contact.bearing,
-                  "age_s": self.sim_t - contact.last_seen, "contact": contact.id}
+                  "age_s": self.sim_t - contact.last_seen, "contact": contact.id,
+                  "tti_s": None}
                  for contact in self.sonar.active_contacts()
                  if contact.player_class == "TORPEDO"]
         return sorted(rows, key=lambda row: (row["age_s"], row["bearing"]))
@@ -1356,6 +1405,7 @@ class SimMixin:
     def _update_sim(self, dt: float) -> None:
         self.sim_t += dt
         self.mission_time += dt
+        self._update_crew_noise()
         self._mission_time_warning()
         self._update_navigation(dt)
         self._update_asw_stores(dt)
@@ -1699,7 +1749,8 @@ class SimMixin:
             if level >= lookout_id.RECOGNIZED and course is not None and kind != "MAST":
                 # The eye sees the real ship; the type is the watch's call.
                 aspect[track_id] = (lookout_id.angle_on_bow(course, bearing), self.sim_t,
-                                    unit_variants.entity_model(actor))
+                                    unit_variants.entity_model(actor),
+                                    lookout_id.way_level(getattr(actor, "speed", 0.0)))
             else:
                 aspect.pop(track_id, None)
         if kind == "FLG":

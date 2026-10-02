@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.146
+## 1.3.154
 
-Version 1.3.146 bringt ein optionales Sprachmodell über eine
+Version 1.3.154 bringt ein optionales Sprachmodell über eine
 OpenAI-kompatible Schnittstelle (ein Server im LAN wie Ollama oder LM Studio
 oder ein Cloud-Dienst). Es ist ab Werk aus, und das Spiel läuft genau wie
 ohne; jede Aufgabe fällt auf die eigenen Texte des Spiels zurück, wenn der
@@ -38,6 +38,75 @@ experimentellen Gegner ein, mit einem Verbindungstest.
 
 Spielstände sind jetzt v49 (die Berater-Markierung und der Plan des
 experimentellen Gegners); Spielstände v38 bis v48 lassen sich weiter laden.
+
+## 1.3.153
+
+Version 1.3.153 lässt das U-Boot auftauchen. `Shift+H` (Browser: Auftauchen)
+bringt das U-Boot nach oben; das Niederdruckgebläse bläst die Hauptzellen aus,
+die Diesel laufen an der freien Luft mit bis zu 12 kn und laden schneller, und
+eine Brückenwache sieht aus 6 m Höhe und meldet Flugzeuge als Alarm. Ein
+aufgetauchtes U-Boot sehen das Radar der Fregatte, die Radare der
+Luftfahrzeuge und die Ausgucks. `H` von der Oberfläche ist das Alarmtauchen:
+Alarm, Masten ein, Flutventile auf, äußerste Kraft; ausgeblasene Zellen
+halten das U-Boot oben, bis die Flutventile sie geflutet haben.
+Speicherformat v48 unverändert.
+
+## 1.3.152
+
+Version 1.3.152 bringt den Tageseinsatz ins Hauptmenü: je Seite und Tag ein
+fester Einsatz, für alle Spieler gleich, im echten Seegebiet des Tages und in
+normaler Länge. Die Seite zeigt den heutigen Bestwert jeder Seite, und das
+Einsatzbuch hält den besten Sieg jedes Tages 30 Tage. Speicherformat v48
+unverändert.
+
+## 1.3.151
+
+Version 1.3.151 gibt jedem Computer-U-Boot-Kommandanten und dem Kapitän der
+KI-Jagdfregatte einen Charakter: Draufgänger, Fuchs, Vorsichtiger oder Jäger.
+Jeder ändert Angriffsrate, Ausweichen, Lauern oder bei der Jagdfregatte
+Annäherung, Pings, Schussweite und Vorhaltezeit um einen Faktor. Die Führung
+deutet ihn manchmal früh an, die Nachbesprechung nennt ihn. Speicherformat
+v48 unverändert.
+
+## 1.3.150
+
+Version 1.3.150 bringt Geräuschdisziplin. Ab und zu lässt eine Besatzung ein
+Werkzeug fallen oder schlägt ein Schott zu: ein kurzer Schlag, den der Gegner
+bis 4 sm hören kann, häufiger bei einer müden Besatzung, seltener unter
+Schleichfahrt, die dafür Reparaturen und Nachladen bremst. Auch die Stimmen
+der Spieler zählen: die uConsole-Option Mikrofon und der Mikrofon-Knopf im
+Browser zeigen den Pegel gegen die Schwellen (leise, in der Nähe hörbar, weit
+hörbar), und eine zu laute Besatzung macht ihr Schiff oder U-Boot lauter. Es
+wird nur die Pegelzahl gesendet, nie Ton. Speicherformat v48 unverändert.
+
+## 1.3.149
+
+Version 1.3.149 macht die Endphase eines zielsuchenden Torpedos hörbar: Sein
+Suchkopf pingt langsam, solange er sucht, und schnell, sobald er aufgeschaltet
+hat. Fregatte und U-Boot melden „Torpedo hat aufgeschaltet“ und „Peilung
+steht“, und die Bedrohungsseite des U-Boots zeigt eine grobe Torpedouhr.
+Speicherformat v48 unverändert.
+
+## 1.3.148
+
+Version 1.3.148 zeigt Treffer in einem kleinen Bild: Sieht die eigene Seite
+einen Feuerball, die Wassersäule eines Torpedos oder ein sinkendes Schiff,
+öffnet sich an jeder Station für 8 s ein Fenster in seine Peilung; ein nur
+gehörter Treffer zeigt Peilung und Geräusch. Auf der uConsole und im Browser.
+Speicherformat v48 unverändert.
+
+## 1.3.147
+
+Version 1.3.147 zeichnet Bugwellen und Kielwasser erkannter Schiffe in
+Fernglas und Sehrohr, hoch und weiß bei schneller Fahrt, und gibt beiden
+Optiken einen runden Rand. Speicherformat v48 unverändert.
+
+## 1.3.146
+
+Version 1.3.146 lässt nach einer nahen Detonation die Bildschirme des eigenen
+Schiffs wackeln: innerhalb 0,6 sm wackelt das Bild und das Licht flackert,
+innerhalb 0,15 sm springt kurz das Instrumentenglas. Nur Anzeige, auf der
+uConsole und im Browser. Speicherformat v48 unverändert.
 
 ## 1.3.145
 

@@ -304,7 +304,8 @@ class AudioEngine:
 
     BOAT_CUES = frozenset({"hull_creak", "hull_crack", "detonation_near",
                            "detonation_far", "ping_heard", "alarm_bell",
-                           "fans_down", "fans_up", "thunder"})
+                           "fans_down", "fans_up", "thunder", "torpedo_seeker",
+                           "crew_clank", "crew_transient", "dive_alarm"})
 
     def play_boat_cue(self, kind: str, pan: float | None = None) -> bool:
         """One atmosphere cue inside the crewed boat (the uConsole as the boat;

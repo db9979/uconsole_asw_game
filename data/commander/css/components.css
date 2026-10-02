@@ -293,3 +293,64 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 .support-link:hover, .support-link:focus-visible { color: var(--text); }
 .bug-report-link { color: var(--muted); text-decoration: underline; text-underline-offset: 0.2em; }
 .bug-report-link:hover, .bug-report-link:focus-visible { color: var(--text); }
+
+/* A detonation close to the own ship (views/shock.js): jolt, emergency light,
+   dust and, after a heavy one, a cracked glass that fades. */
+@keyframes shock-jolt {
+  0% { transform: translate(0, 0); filter: none; }
+  8% { transform: translate(var(--shock-px), calc(var(--shock-px) * -.6)); filter: sepia(1) saturate(3) hue-rotate(-45deg) brightness(var(--shock-dim)); }
+  20% { transform: translate(calc(var(--shock-px) * -.8), calc(var(--shock-px) * .5)); }
+  38% { transform: translate(calc(var(--shock-px) * .5), calc(var(--shock-px) * -.3)); }
+  60% { transform: translate(calc(var(--shock-px) * -.2), calc(var(--shock-px) * .1)); }
+  100% { transform: translate(0, 0); filter: none; }
+}
+@keyframes shock-dim {
+  0%, 100% { filter: none; }
+  10% { filter: sepia(1) saturate(3) hue-rotate(-45deg) brightness(var(--shock-dim)); }
+}
+#operations.shock-light { --shock-px: 4px; --shock-dim: .75; animation: shock-jolt .6s ease-out; }
+#operations.shock-heavy { --shock-px: 10px; --shock-dim: .45; animation: shock-jolt 1.1s ease-out; }
+@keyframes shock-dust { from { opacity: .9; transform: translateY(0); } to { opacity: 0; transform: translateY(160px); } }
+body.shock-dust::after {
+  content: ""; position: fixed; inset: 0 0 auto 0; height: 70vh; pointer-events: none; z-index: var(--z-toast);
+  background-image: radial-gradient(circle, rgba(226, 200, 180, .8) 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(226, 200, 180, .6) 1px, transparent 1.4px);
+  background-size: 97px 83px, 61px 71px; background-position: 13px 7px, 41px 29px;
+  opacity: 0; animation: shock-dust 2.4s ease-in;
+}
+@keyframes shock-crack { from { opacity: .85; } to { opacity: 0; } }
+#shock-cracks {
+  position: fixed; left: 62%; top: 34%; width: min(36vw, 24rem); height: min(36vw, 24rem); translate: -50% -50%;
+  pointer-events: none; z-index: var(--z-toast); opacity: 0;
+}
+#shock-cracks.shock-cracked { animation: shock-crack 12s linear; }
+@media (prefers-reduced-motion: reduce) {
+  #operations.shock-light, #operations.shock-heavy { animation-name: shock-dim; }
+  body.shock-dust::after { animation: none; }
+}
+
+/* The hit picture (views/hit-view.js): a small window over the station. */
+#hit-view {
+  position: fixed; top: 4.5rem; right: 1rem; z-index: var(--z-toast); margin: 0; padding: .2rem;
+  width: min(22rem, calc(100vw - 2rem)); background: var(--bg-2); border: 1px solid var(--alarm);
+  border-radius: var(--radius); pointer-events: none; box-shadow: 0 .6rem 1.4rem -.4rem var(--shadow);
+}
+#hit-view figcaption { padding: .1rem .3rem .2rem; color: var(--caution); font: var(--font-sm)/1.3 var(--font-mono); }
+#hit-view canvas { display: block; width: 100%; height: auto; aspect-ratio: 32 / 17; }
+
+/* Noise discipline (views/mic.js): the own microphone against the host's
+   thresholds, green quiet, amber heard close by, red heard far off. */
+.mic-discipline { display: inline-flex; align-items: center; gap: .3rem; }
+/* The header stays one line: the band reads from the meter's colour and title. */
+.mic-discipline > button { min-height: 2rem; padding: .15rem .55rem; font-size: var(--font-xs); }
+.mic-meter { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 5px; gap: 1px; height: 1.1rem; align-items: stretch; }
+.mic-meter i { border: 1px solid var(--line); background: transparent; }
+.mic-meter i[data-band="quiet"].lit { background: var(--live); }
+.mic-meter i[data-band="near"] { border-color: var(--caution); }
+.mic-meter i[data-band="near"].lit { background: var(--caution); }
+.mic-meter i[data-band="far"] { border-color: var(--alarm); }
+.mic-meter i[data-band="far"].lit { background: var(--alarm); }
+.mic-meter i.crew { outline: 2px solid var(--text); outline-offset: -1px; }
+.mic-status { font-size: var(--font-xs); color: var(--text-dim); max-width: 16rem; }
+.mic-meter[data-band="far"] + .mic-status { color: var(--alarm); }
+.mic-meter[data-band="near"] + .mic-status { color: var(--caution); }

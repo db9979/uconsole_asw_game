@@ -137,6 +137,15 @@ class BoatBallast:
         self.load_trim_kg = max(-config.UBOOT_LOAD_MAX_KG,
                                 self.load_trim_kg - config.UBOOT_TORPEDO_KG)
 
+    def lp_blow(self, dt: float) -> bool:
+        """Surfaced: the low-pressure blower empties the main ballast (no
+        bottle air).  Returns whether the tanks just ran empty."""
+        if self.mbt <= 0.0:
+            return False
+        self.venting = False
+        self.mbt = max(0.0, self.mbt - dt / config.UBOOT_MBT_LP_BLOW_S)
+        return self.mbt <= 0.0
+
     # --- crew orders -------------------------------------------------------
 
     def blow(self):

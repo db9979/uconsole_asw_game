@@ -32,6 +32,7 @@ from src.commander.v2.wire import (
     HOST_ROLE,
     ROLES,
     LOOKOUT_ROLES,
+    MIC_ROUTE,
     OPFOR_ROLES,
     VOICE_ROLES,
     SONAR_AUDIO_FRAMES,
@@ -1265,6 +1266,29 @@ class _Handler(BaseHTTPRequestHandler):
                             "busy": (429, {"error": "busy"}),
                             "queue_full": (429, {"error": "queue_full"}),
                         }[result]
+            elif self.path == MIC_ROUTE:
+                # Noise discipline: the crew browser's microphone level.
+                try:
+                    session, digest, presented = self._authenticated_v2_locked(renew=False)
+                except (UnicodeEncodeError, ValueError):
+                    status, response = 400, {"error": "invalid_request"}
+                else:
+                    if session is None:
+                        self._v2_unauthorized(presented)
+                        return
+                    csrf = self.headers.get("X-U-Jagd-CSRF")
+                    if (csrf is None or not secrets.compare_digest(
+                            csrf.encode("utf-8", errors="surrogatepass"),
+                            session["csrf"].encode("ascii"))):
+                        status, response = 403, {"error": "forbidden"}
+                    elif type(body) is not dict or set(body) != {"protocol", "level"} \
+                            or body["protocol"] != 2:
+                        status, response = 400, {"error": "invalid_request"}
+                    elif not owner.set_mic_level_locked(session, digest, body["level"],
+                                                        time.monotonic()):
+                        status, response = 409, {"error": "no_station"}
+                    else:
+                        status, response = 200, {"status": "ok"}
             elif self.path == "/api/v2/lobby/ready":
                 try:
                     session, _, presented = self._authenticated_v2_locked(renew=True)

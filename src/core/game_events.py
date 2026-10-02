@@ -1784,6 +1784,8 @@ class EventMixin:
                     self.main_menu = False
                     self.menu_screen = "side"
                     self.menu_sel = 1 if self.local_side == "uboot" else 0
+                elif action == "daily":
+                    self.open_daily()
                 elif action == "multiplayer":
                     self.open_lobby()
                 elif action == "training":
@@ -1828,6 +1830,9 @@ class EventMixin:
             return
         if self.menu_screen == "logbook":
             self._handle_logbook_key(key)
+            return
+        if self.menu_screen == "daily":
+            self._handle_daily_key(key)
             return
         if self.menu_screen == "training":
             count = len(training.LESSONS)

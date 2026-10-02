@@ -48,7 +48,9 @@ def test_the_frigate_hears_detonations_echoes_and_pings_from_their_bearing():
     game._emit_sound("explosion", at=(ship.x - 5.0, ship.y))         # port beam
     assert _last(game._sound_events)["pan"] == -1.0
     game._emit_sound("explosion", at=(ship.x, ship.y))               # own hull: centred
-    assert _last(game._sound_events)["pan"] == 0.0
+    assert _last(game._sound_events)["kind"] == "shock_heavy"        # and shakes the ship
+    assert [row for row in game._sound_events
+            if row["kind"] == "explosion"][-1]["pan"] == 0.0
     game._emit_sound("sonar_ping")                                   # own ping: centred
     assert _last(game._sound_events)["pan"] is None
     game._emit_echo(dict(t=game.sim_t, bearing=270.0, snr_db=20.0))

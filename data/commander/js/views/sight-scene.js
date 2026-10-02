@@ -573,6 +573,62 @@ function drawLensWater(g, width, height, cover, drops, t) {
   }
 }
 
+// Bow wave and wake of a made-out ship (src/ui/ship_way.py): ``level`` 0..1
+// is the white water the eye sees, ``aob`` places bow and stern.
+const WAY_FOAM = [236, 246, 246];
+function drawShipWay(g, cx, base, width, aob, level, t, foam, sea) {
+  if (!Number.isFinite(level) || level < .05 || width < 8 || !Number.isFinite(aob)) return;
+  const side = Math.sin(aob * Math.PI / 180), toward = Math.cos(aob * Math.PI / 180);
+  const face = side >= 0 ? 1 : -1, half = width / 2 * Math.max(.12, Math.abs(side));
+  const bowX = cx + face * half, sternX = cx - face * half;
+  const white = mix(sea, foam, .55 + .45 * level);
+  const rise = Math.max(1.5, width * .07 * level), spread = width * (.05 + .1 * level) * (.5 + .5 * Math.abs(toward));
+  for (let k = 0; k < 3; k += 1) {
+    const phase = (t * (.8 + 1.4 * level) + k * .33) % 1, reach = spread * (.4 + .6 * phase), lift = rise * (1 - phase);
+    for (const dir of [-1, 1]) line(g, [bowX, base - lift * .3], [bowX + dir * reach, base - lift * (.2 + .8 * (1 - phase))], rgb(white));
+  }
+  line(g, [bowX - face * width * .03, base], [bowX + face * spread * .5, base], rgb(white), level > .5 ? 2 : 1);
+  line(g, [bowX, base], [bowX + (sternX - bowX) * (.3 + .4 * level), base], rgb(mix(sea, foam, .3 + .5 * level)));
+  const length = width * (.3 + 1.4 * level), across = Math.max(.15, Math.abs(side)), steps = 7;
+  for (let i = 0; i < steps; i += 1) {
+    const f = i / steps, x0 = sternX - face * length * f * across, x1 = sternX - face * length * (i + 1) / steps * across;
+    const band = 1 + 4 * level * f, color = rgb(mix(white, sea, .1 + .8 * f));
+    if (toward < 0) line(g, [x0, base + band * .3], [x1, base + band + 2 * level * -toward * (i + 1)], color);
+    else line(g, [x0, base + 1 + band / 2], [x1, base + 1 + band / 2], color, Math.max(1, Math.floor(band)));
+  }
+}
+
+// The optics' rim (src/ui/sight_scene.py eyepiece_mask): two overlapping
+// round fields for binoculars, a rounded field for the periscope.
+const EYEPIECE_SOFT = .07, EYEPIECE_RIM = [4, 10, 14], eyepieceMasks = new Map();
+function eyepieceMask(width, height, kind) {
+  const w = Math.max(2, Math.round(width)), h = Math.max(2, Math.round(height)), key = `${w}x${h}:${kind}`;
+  let mask = eyepieceMasks.get(key);
+  if (mask) return mask;
+  mask = document.createElement("canvas");
+  mask.width = w; mask.height = h;
+  const context = mask.getContext("2d"), image = context.createImageData(w, h), data = image.data;
+  const r = h / 2, centers = [Math.min(w / 2, r), Math.max(w / 2, w - r)], soft = EYEPIECE_SOFT * 2;
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const px = x + .5, py = y + .5;
+      const d = kind === "binoculars"
+        ? Math.min(Math.hypot(px - centers[0], py - r), Math.hypot(px - centers[1], py - r)) / r
+        : ((Math.abs(px - w / 2) / (w / 2)) ** 6 + (Math.abs(py - r) / r) ** 6) ** (1 / 6);
+      const index = (y * w + x) * 4;
+      data[index] = EYEPIECE_RIM[0]; data[index + 1] = EYEPIECE_RIM[1]; data[index + 2] = EYEPIECE_RIM[2];
+      data[index + 3] = Math.round(clamp((d - (1 - soft)) / soft) * 255);
+    }
+  }
+  context.putImageData(image, 0, 0);
+  if (eyepieceMasks.size > 6) eyepieceMasks.delete(eyepieceMasks.keys().next().value);
+  eyepieceMasks.set(key, mask);
+  return mask;
+}
+function drawEyepiece(g, width, height, kind) {
+  if (kind === "binoculars" || kind === "scope") g.drawImage(eyepieceMask(width, height, kind), 0, 0, width, height);
+}
+
 function drawFrame(g, width, height) {
   g.strokeStyle = rgb(mix(FRAME, [0, 0, 0], .4)); g.lineWidth = 1; g.strokeRect(.5, .5, width - 1, height - 1);
   const size = Math.max(6, Math.min(18, width / 6, height / 4));
@@ -597,7 +653,7 @@ function drawWindRose(g, height, colors, windFromDeg) {
 
 // One eyepiece picture.  ``v``: bearing (line of sight), fov_deg,
 // horizon_offset, horizon_tilt, visibility_nm, sea_state, sky, outlines
-// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg, model}]), the events the eye
+// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg, model, way}]), the events the eye
 // sees happen (``events``, src/core/sight_events.py) and an optional window_deg crosshair;
 // no_scale hides the bearing scale, wind_rose_deg draws the weather
 // instrument's wind rose in the top left corner; way ({speed_kn, course_deg,
@@ -613,7 +669,9 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
       const cx = w.x(row.bearing), fade = row.stale ? .55 : haze * .6;
       // Aircraft hang in the still sky at their elevation, behind the clouds.
       const base = aloft(row) ? w.skyY - row.elevation_deg * w.pxPerDeg : w.base(cx);
-      drawProfile(g, row.cls, cx, base, Math.min(width, Math.max(3, row.span_deg * w.pxPerDeg)), mix(colors.steel, colors.haze, fade),
+      const span = Math.min(width, Math.max(3, row.span_deg * w.pxPerDeg));
+      if (!aloft(row) && !row.stale) drawShipWay(g, cx, base, span, row.aob_deg ?? null, row.way ?? null, t, mix(WAY_FOAM, colors.haze, haze * .6), colors.sea[0]);
+      drawProfile(g, row.cls, cx, base, span, mix(colors.steel, colors.haze, fade),
         {t, rim: mix(colors.rim, colors.haze, fade), lights: lit && !row.stale ? WINDOW_LIGHT : null,
           nav: row.stale ? null : row.lights ?? null, aloft: aloft(row), aob: row.stale ? null : row.aob_deg ?? null, model: row.stale ? null : row.model ?? null});
     }
@@ -628,6 +686,7 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);
   // A periscope's head glass: water running off after raising, waves washing over.
   if (v.lens) drawLensWater(g, width, height, ...lensWater(t, v.sea_state, v.lens.raised_s ?? null), t);
+  if (v.eyepiece) drawEyepiece(g, width, height, v.eyepiece);
   if (Number.isFinite(v.wind_rose_deg)) drawWindRose(g, height, colors, v.wind_rose_deg);
   const labelStep = [10, 30, 45, 90].find((step) => step * w.pxPerDeg >= SCALE_LABEL_MIN_PX) ?? 90;
   const first = Math.floor((v.bearing - v.fov_deg / 2) / 5) * 5;

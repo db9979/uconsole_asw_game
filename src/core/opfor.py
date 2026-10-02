@@ -15,7 +15,8 @@ import math
 
 from src.audio.synthesis import bearing_pan
 from src.core.callouts import CalloutLog
-from src.core import baffles, boat_nav, buoy_antenna, config, detrand
+from src.core import baffles, boat_nav, buoy_antenna, config, detrand, shock, torpedo_seeker
+from src.sensors import threat_cue
 from src.core.boat_esm import BoatESM
 from src.core.boat_radio import BoatRadio
 from src.core.crew import CrewState
@@ -31,6 +32,7 @@ from src.sensors import visual as visual_physics
 from src.sensors.platform import MAST_DEPTH_M
 from src.sonar.platforms import (OWNSHIP_SIGNATURE_KEY, OWNSHIP_TARGET_ID,
                                  OWN_TORPEDO_TARGET_BASE, SCOPE_AIR_TARGET_ID,
+                                 SCOPE_MPA_TARGET_ID,
                                  OwnShipAcousticSource, OwnTorpedoAcousticSource,
                                  SubSonarPlatform)
 from src.sonar.sonar import SonarSystem, hull_length_m
@@ -43,7 +45,7 @@ SIGHTING_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
 SIGHTING_KINDS = {"warship": "SURFACE", "merchant": "SURFACE", "unknown": "SURFACE",
                   "aircraft": "FLG", "torpedo": "TORP"}
 _RECOGNIZE_CLASS = {"warship": "WARSHIP", "merchant": "MERCHANT"}
-_SIGHTING_LENGTH_M = {"aircraft": 15.0, "torpedo": 40.0}
+_SIGHTING_LENGTH_M = {"aircraft": 15.0, "mpa": 35.0, "torpedo": 40.0}
 _SCOPE_AIR_ALTITUDE_M = 60.0
 # The periscope shares the frigate lookout's contrast model (anchored ranges).
 _SCOPE_MODEL = visual_physics.LookoutModel(
@@ -71,6 +73,13 @@ class CrewOrders:
               "battery_low": "navigation", "battery_empty": "navigation",
               "shallow_water": "navigation", "wire_broken": "waffen",
               "ping_heard": "sonar", "torpedo_heard": "sonar",
+              "torpedo_locked": "sonar", "torpedo_steady": "sonar",
+              "crew_mishap_tool": "navigation", "crew_mishap_hatch": "navigation",
+              "crew_mishap_pot": "navigation", "crew_mishap_chain": "navigation",
+              "voice_far": "navigation", "transient_heard": "sonar",
+              "voices_heard": "sonar",
+              "hq_hint_daring": "funk", "hq_hint_fox": "funk",
+              "hq_hint_cautious": "funk", "hq_hint_hunter": "funk",
               "ping_dipping_heard": "sonar", "ping_buoy_heard": "sonar",
               "buoy_splash": "sonar", "evade": "navigation",
               "evade_decoy": "navigation",
@@ -111,7 +120,12 @@ class CrewOrders:
               "wounded": "schaden", "gps_fix": "navigation",
               "route_waypoint": "navigation", "route_pattern_zigzag": "navigation",
               "route_pattern_square": "navigation", "route_cancelled": "navigation",
-              "route_complete": "navigation", "route_reached": "navigation"}
+              "route_complete": "navigation", "route_reached": "navigation",
+              "crash_dive": "navigation", "tanks_lp_blown": "navigation",
+              "surfaced": "navigation",
+              "bridge_warship": "sonar", "bridge_merchant": "sonar",
+              "bridge_aircraft": "sonar", "bridge_torpedo": "sonar",
+              "bridge_unknown": "sonar"}
 
     def __init__(self):
         self.silent = False
@@ -134,6 +148,8 @@ class CrewOrders:
         # the type the eye sees of it (the picture only).
         self._aspect = {}
         self._model = {}
+        # Bow wave and wake the eye sees of a made-out ship (0..1).
+        self._way = {}
         # Attack computer: stadimeter marks by sighting (``attack_computer``).
         self.tdc = {}
         # Flood state of each torpedo tube, ``[state, seconds left]`` with the
@@ -166,6 +182,8 @@ class CrewOrders:
         # Feather warning edge; None until first seen (never saved: a loaded
         # boat takes the current state without a repeated warning).
         self._feather_warned = None
+        # Surfaced at the previous look (None: not yet seen; never saved).
+        self._surfaced_seen = None
         # Silent running as last heard (fan cue edge; transient like above).
         self._silent_heard = None
         # Chart check along the ordered course (0.25 s cadence), for the displays.
@@ -381,6 +399,8 @@ class CrewedBoat:
         self.sound_events = deque(maxlen=config.UBOOT_SOUND_EVENTS_MAX)
         self.sound_seq = 0
         self._creak_tick = None
+        # The crew's rough clock of the nearest locked-on seeker (transient).
+        self.seeker_clock = None
         # Cached radiating adapters (identity stays stable between updates).
         self._ownship_source = None
         self._torpedo_sources = {}
@@ -640,7 +660,7 @@ def obstacle_ahead_nm(world, sub, origin=None):
 
 
 BOAT_CUES = ("hull_creak", "hull_crack", "detonation_near", "detonation_far", "ping_heard",
-             "thunder")
+             "thunder", "torpedo_seeker", "crew_clank", "crew_transient", "dive_alarm")
 # Intercepts the crew hears through the hull as a ping.
 _PING_INTERCEPTS = ("hull", "dipping", "buoy")
 _HULL_FAILURES = ("hull_bolts", "hull_seal", "hull_fracture", "hull_collapse")
@@ -656,6 +676,13 @@ def boat_sound(game, boat, cue: str, bearing: float | None = None) -> None:
     boat.sound_events.append(dict(seq=boat.sound_seq, kind=cue, pan=pan))
     if game.local_side == "uboot" and game.opfor is boat:
         game.audio.play_boat_cue(cue, pan=pan)
+
+
+def boat_shock(boat, cue: str) -> None:
+    """The boat shaken by a detonation close by (``src/core/shock.py``): a
+    display cue for the boat's screens, no sound of its own."""
+    boat.sound_seq += 1
+    boat.sound_events.append(dict(seq=boat.sound_seq, kind=cue, pan=None))
 
 
 def creak_chance(depth_m: float, test_depth_m: float) -> float:
@@ -680,6 +707,49 @@ def update_creak(game, boat) -> None:
         boat_sound(game, boat, "hull_creak")
 
 
+def hear_seekers(game, boat) -> None:
+    """Homing torpedo seekers the boat's sonar room hears: pulses on the
+    measured bearing (slow searching, fast locked on), "torpedo locked on"
+    with the crew's rough clock and "bearing steady" once each
+    (``src/core/torpedo_seeker.py``; sound and reports only)."""
+    sub = boat.sub
+    ear = getattr(boat, "_seeker_ear", None)
+    if ear is None:
+        ear = boat._seeker_ear = torpedo_seeker.SeekerEar()
+    heard = []
+    if not (sub.sunk or boat.sonar_down()):
+        for torpedo in game.torpedoes:
+            if torpedo.state != "RUN" or not torpedo.terminal_active:
+                continue
+            distance = math.hypot(torpedo.x - sub.x, torpedo.y - sub.y)
+            if (distance > config.TORP_SEEKER_INTERCEPT_NM
+                    or game.world.sonar_path_blocked(torpedo.x, torpedo.y, torpedo.depth,
+                                                     sub.x, sub.y, sub.depth)):
+                continue
+            key = int(torpedo.launch_platform_id or 0) * 1000 + int(torpedo.idx) + 500
+            true_bearing = math.degrees(math.atan2(torpedo.x - sub.x, -(torpedo.y - sub.y)))
+            bearing = threat_cue.measured_cue_bearing(true_bearing % 360.0, sub.sensor_seed,
+                                                      key, game.sim_t)
+            heard.append((key, bearing, bool(torpedo.seeker_acquired), distance))
+    ear.forget(row[0] for row in heard)
+    boat.seeker_clock = None
+    for key, bearing, locked, distance in heard:
+        tti = (torpedo_seeker.estimated_tti(distance, sub.sensor_seed, key, game.sim_t)
+               if locked else None)
+        if locked and (boat.seeker_clock is None or tti < boat.seeker_clock["tti_s"]):
+            boat.seeker_clock = dict(bearing=bearing, tti_s=tti)
+        reported = ear.reported.setdefault(key, set())
+        if locked and "locked" not in reported:
+            reported.add("locked")
+            boat.orders.event("torpedo_locked", bearing=f"{round(bearing) % 360:03d}",
+                              tti=f"{tti:.0f}")
+        for event in ear.hear(key, bearing, game.sim_t, locked):
+            if event == "ping":
+                boat_sound(game, boat, "torpedo_seeker", bearing)
+            else:
+                boat.orders.event("torpedo_steady", bearing=f"{round(bearing) % 360:03d}")
+
+
 def hear_detonation(game, boat, x: float, y: float) -> None:
     """A detonation in the water: the crew hears it, close or distant, with
     the bearing its own ears measure (a few degrees off)."""
@@ -695,6 +765,9 @@ def hear_detonation(game, boat, x: float, y: float) -> None:
                * detrand.normal(sub.sensor_seed, "detonation", int(game.sim_t * 1000.0))) % 360.0
     key = "detonation_near" if near else "detonation_far"
     boat_sound(game, boat, key, bearing)
+    felt = shock.cue(distance)
+    if felt is not None:
+        boat_shock(boat, felt)
     boat.orders.event(key, bearing=f"{round(bearing) % 360:03d}")
 
 
@@ -768,6 +841,10 @@ def update_crew(game, boat: CrewedBoat, dt: float = 0.0) -> None:
     if feather and orders._feather_warned is False:
         orders.event("feather_visible", speed=f"{config.UBOOT_FEATHER_WARN_KN:.0f}")
     orders._feather_warned = feather
+    surfaced = sub.surfaced
+    if surfaced and orders._surfaced_seen is False:
+        orders.event("surfaced")
+    orders._surfaced_seen = surfaced
     # Silent running: the ventilation fans run down (and up again after).
     if orders._silent_heard is not None and orders.silent != orders._silent_heard:
         boat_sound(game, boat, "fans_down" if orders.silent else "fans_up")
@@ -787,9 +864,13 @@ def update_crew(game, boat: CrewedBoat, dt: float = 0.0) -> None:
     update_sightings(game, boat)
     boat.radio.update(game, boat)
     update_creak(game, boat)
+    hear_seekers(game, boat)
     for key, values in orders.drain_events():
+        if key == "crash_dive":
+            boat_sound(game, boat, "dive_alarm")
         if key in _HULL_FAILURES:
             boat_sound(game, boat, "hull_crack")
+            boat_shock(boat, "shock_light")
         if "compartment" in values:
             values = dict(values, compartment=message(
                 f"uboot.compartment.{values['compartment']}"))
@@ -800,9 +881,21 @@ def update_crew(game, boat: CrewedBoat, dt: float = 0.0) -> None:
 # --- periscope -------------------------------------------------------------------
 
 def scope_available(boat) -> bool:
-    """The optics are above the water: mast raised at periscope depth."""
+    """The optics are above the water: mast raised at periscope depth, or
+    the bridge watch of the surfaced boat."""
     sub, orders = boat.sub, boat.orders
-    return bool(orders.mast and not sub.sunk and sub.depth <= MAST_DEPTH_M + 1.0)
+    return bool(not sub.sunk and (orders.mast and sub.depth <= MAST_DEPTH_M + 1.0
+                                  or sub.surfaced))
+
+
+def bridge_watch(boat) -> bool:
+    """Surfaced: the watch on the conning tower looks out (higher eye)."""
+    return bool(boat.sub.surfaced)
+
+
+def eye_height_m(boat) -> float:
+    return (config.UBOOT_BRIDGE_EYE_HEIGHT_M if bridge_watch(boat)
+            else config.UBOOT_SCOPE_EYE_HEIGHT_M)
 
 
 def scope_bearing(boat) -> float:
@@ -860,6 +953,10 @@ def _scope_candidates(game, boat) -> list:
     if helo is not None and helo.airborne:
         rows.append((SCOPE_AIR_TARGET_ID, helo, "aircraft",
                      _SIGHTING_LENGTH_M["aircraft"], _SCOPE_AIR_ALTITUDE_M))
+    mpa = getattr(game, "mpa", None)
+    if mpa is not None and mpa.airborne:
+        rows.append((SCOPE_MPA_TARGET_ID, mpa, "aircraft",
+                     _SIGHTING_LENGTH_M["mpa"], float(mpa.altitude_m)))
     for torpedo in game.torpedoes:
         if torpedo.state == "RUN":
             rows.append((OWN_TORPEDO_TARGET_BASE + int(torpedo.idx), torpedo, "torpedo",
@@ -884,9 +981,12 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         orders._elevation = {}
         orders._aspect = {}
         orders._model = {}
+        orders._way = {}
         return
     now = game.sim_t
     seed = int(sub.sensor_seed)
+    eye = eye_height_m(boat)
+    bridge = bridge_watch(boat)
     environment = game._lookout_environment()
     bloom = game.world.glow()
     epoch = math.floor((now + 1e-9) / config.LOOKOUT_EPOCH_S)
@@ -897,6 +997,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     # Neutral traffic runs its navigation lights; warships run darkened.
     lit = nav_lights.lit(game.world.daylight_stage(), environment["visibility_nm"])
     lights, elevation, aspects, models = {}, dict(getattr(orders, "_elevation", {})), {}, {}
+    ways = {}
     for target_id, actor, cls, length_m, altitude_m in _scope_candidates(game, boat):
         dx, dy = actor.x - sub.x, actor.y - sub.y
         distance = math.hypot(dx, dy)
@@ -904,7 +1005,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         environment["glow"] = bioluminescence.wake_glow(bloom, kind,
                                                         getattr(actor, "speed", 0.0))
         margin = alert * _SCOPE_MODEL.margin(kind, distance, altitude_m=altitude_m,
-                                             eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M,
+                                             eye_m=eye,
                                              **environment)
         true_bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
         course = getattr(actor, "course", None)
@@ -921,7 +1022,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         recognized = cls
         if cls in _RECOGNIZE_CLASS and _SCOPE_MODEL.margin(
                 kind, distance, altitude_m=altitude_m,
-                eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M,
+                eye_m=eye,
                 detail=lookout_id.RECOGNIZE_CYCLES
                 / lookout_id.CLASS_SIZE[_RECOGNIZE_CLASS[cls]],
                 **environment) * alert < 1.0:
@@ -939,11 +1040,13 @@ def update_sightings(game, boat: CrewedBoat) -> None:
             lights[ref] = code
         if course is not None and recognized != "unknown":
             aspects[ref] = lookout_id.angle_on_bow(course, true_bearing)
+            if kind not in ("TORP", "FLG"):
+                ways[ref] = lookout_id.way_level(getattr(actor, "speed", 0.0))
             models[ref] = unit_variants.entity_model(
                 actor, own_ship=target_id == OWNSHIP_TARGET_ID)
         if altitude_m is not None:
             elevation[ref] = max(-5.0, visual_physics.elevation_deg(
-                altitude_m, distance, config.UBOOT_SCOPE_EYE_HEIGHT_M))
+                altitude_m, distance, eye))
         old = previous.get(ref)
         if old is not None and recognized == "unknown" and old["cls"] != "unknown":
             recognized = old["cls"]      # a class once made out is held
@@ -966,6 +1069,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     orders.sightings = rows[:config.UBOOT_SIGHTINGS_MAX]
     orders._lights = lights
     orders._aspect = aspects
+    orders._way = ways
     orders._model = {ref: key for ref, key in models.items() if key is not None}
     orders._elevation = {ref: value for ref, value in elevation.items()
                          if any(row["ref"] == ref for row in orders.sightings)}
@@ -976,7 +1080,8 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         if row["ref"] not in orders._sightings_seen and row["t"] == now:
             orders._sightings_seen.add(row["ref"])
             if not called_by_phone:
-                orders.event("sighting_" + row["cls"], bearing=f"{row['bearing']:03.0f}")
+                orders.event(("bridge_" if bridge else "sighting_") + row["cls"],
+                             bearing=f"{row['bearing']:03.0f}")
 
 
 def sighting_in_crosshair(boat, now: float):

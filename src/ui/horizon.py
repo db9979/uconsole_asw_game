@@ -17,7 +17,7 @@ from src.core import config
 from src.core.i18n import message, raw_text
 from src.physics import ship_dynamics
 from src.sensors import nav_lights
-from src.ui import layout, sight_events_view, sight_scene, silhouettes, unit_models
+from src.ui import layout, quality, ship_way, sight_events_view, sight_scene, silhouettes, unit_models
 
 SCALE_COLOR = (170, 232, 208)
 CROSSHAIR_COLOR = (120, 214, 180)
@@ -215,7 +215,8 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                  visibility_nm: float, motion: tuple, outlines, crosshair_deg=None,
                  land=None, anim_t: float = 0.0, sky=None, sea_state: float = 2.0,
                  elevation_deg: float = 0.0, stabilized: bool = False,
-                 optics_label=None, way=None, events=(), lens=None) -> None:
+                 optics_label=None, way=None, events=(), lens=None,
+                 eyepiece: str | None = None) -> None:
     """The picture in the eyepiece or binoculars in the start screen's look:
     sky with stars, moon or sun and clouds, the sea in motion, the charted
     coast, the outlines within the field in steel with a lit rim, rain, snow
@@ -227,7 +228,9 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
     is the own way through the water (``sight_scene.draw_scene``);
     ``events`` are the ``sight_events`` rows the eye can see (columns, fire,
     sinkings), drawn at the display time ``anim_t``; ``lens`` is the water
-    on a periscope's glass (``sight_scene.lens_water``: cover, drops)."""
+    on a periscope's glass (``sight_scene.lens_water``: cover, drops);
+    ``eyepiece`` (``"binoculars"`` or ``"scope"``) rounds the field with
+    the optics' rim (not at the low graphics level)."""
     rect = pygame.Rect(rect)
     sky = sky if sky is not None else sight_scene.plain_sky(night)
     offset, tilt = motion
@@ -255,10 +258,16 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                 base = horizon + int(math.tan(tilt) * (cx - rect.centerx))
             width = min(rect.w, max(3, int(span_deg * px_per_deg)))
             fade = 0.55 if stale else haze * 0.6
+            aob = row[6] if len(row) > 6 else None
+            way = row[8] if len(row) > 8 else None
+            if not aloft and not stale and aob is not None and way:
+                # White water first, the hull stands in it.
+                ship_way.draw(s, cx, base, width, aob, way, anim_t,
+                              blend(ship_way.FOAM, haze_color, haze * 0.6), colors["sea"][0])
             draw_outline(s, cls, cx, base, width, blend(colors["steel"], haze_color, fade),
                          anim_t, rim=blend(colors["rim"], haze_color, fade),
                          lights=(sight_scene.WINDOW_LIGHT if lit and not stale else None),
-                         nav=nav, aloft=aloft, aob_deg=row[6] if len(row) > 6 else None,
+                         nav=nav, aloft=aloft, aob_deg=aob,
                          model=row[7] if len(row) > 7 else None)
 
     airborne = [row for row in outlines if len(row) > 5 and row[5] is not None]
@@ -279,6 +288,8 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
         sight_scene.draw_weather(s, view, sky, colors, visibility_nm=visibility_nm, t=anim_t)
         if lens is not None:
             sight_scene.draw_lens_water(s, rect, lens[0], lens[1], anim_t)
+        if eyepiece in sight_scene.EYEPIECE_KINDS and quality.LEVEL != "low":
+            s.blit(sight_scene.eyepiece_mask(rect.size, eyepiece), rect.topleft)
         # Labels at least ``SCALE_LABEL_MIN_PX`` apart (the narrow lookout
         # strip labels every 30 degrees, the eyepieces every 10).
         label_step = next((step for step in (10, 30, 45, 90)

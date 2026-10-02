@@ -185,9 +185,11 @@ class Advisor:
         self.logs: OrderedDict[str, deque] = OrderedDict()
         self._pending: list = []
         self._seq = 0
+        self.version = 0
         self.coach_next_wall = None
 
     def reset(self) -> None:
+        self.version += 1
         self.logs.clear()
         self._pending.clear()
         self.coach_next_wall = None
@@ -209,6 +211,7 @@ class Advisor:
             log = self.logs[asker] = deque(maxlen=MAX_LOG)
         self.logs.move_to_end(asker)
         log.append(entry)
+        self.version += 1
         return entry
 
     def ask(self, service, game, asker: str, kind: str, *, side: str, language: str,
@@ -268,6 +271,8 @@ class Advisor:
                 entry.update(status="done", answer=clean_text(request.text, MAX_ANSWER))
             changed.append(entry)
         self._pending = still
+        if changed:
+            self.version += 1
         return changed
 
     def find(self, asker: str, seq: int):

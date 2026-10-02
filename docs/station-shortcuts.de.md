@@ -23,6 +23,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Shift+F2` | Crew-Hilfe: Die KI besetzt jede freie Station beider Einheiten |
 | `F3` | Autocrew-Übersicht öffnen |
 | `0` | Wetter- & Sonar-Analyse |
+| `F7` | Erster Offizier (optionales Sprachmodell) |
 | `F8` | Taktischer Einheitenanalysator (Katalog, nur lesend) |
 | `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte) |
 | `F9` | Lokale Commander-LAN-Verwaltung öffnen |

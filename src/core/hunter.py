@@ -29,6 +29,7 @@ from functools import lru_cache
 from src.core import boat_missions, config, detrand
 from src.core.autocrew import AutocrewController, _nearest_threat, station_key
 from src.core.station import Station
+from src.llm import opponent
 
 CADENCE_S = 2.0
 SEARCH_KN = 10.0
@@ -507,6 +508,10 @@ def _window(game, period: float) -> bool:
 
 def _steer(game, course: float, speed: float) -> str:
     ship = game.ship
+    # The experimental opponent's plan (optional language model, never scored).
+    plan = game.llm_opfor_plan("hunter") if hasattr(game, "llm_opfor_plan") else None
+    if plan is not None:
+        speed = opponent.hunter_speed(game, plan, speed)
 
     def safe(heading):
         lookahead = max(0.5, max(ship.speed, speed) * (120.0 / 3600.0))

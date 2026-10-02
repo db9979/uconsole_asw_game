@@ -14,17 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.145**
+Aktuelle Version: **1.3.146**
 
-Version 1.3.145 verbessert die Stationen des U-Boots in fünf Schritten. Das
-Handbuch hat ein U-Boot-Kapitel mit einem Standardablauf für jede
-Bootsstation, den auch F1 zeigt (1.3.141). Die Waffenstation stellt Suchmuster
-und Einschaltpunkt des Suchkopfs wie die Fregatte ein (1.3.142). Die
-Navigation koppelt mit GPS-Fix und steuert eine Route aus Wegpunkten oder
-einem Suchmuster (1.3.143, Spielstände v48). Die uConsole zeichnet beide
-Seiten deutlich schneller, die U-Boot-Seite etwa viermal so schnell
-(1.3.144). Die Navigation im Browser bekommt das Echolot (1.3.145).
-Spielstände v38 bis v47 lassen sich weiter laden.
+Version 1.3.146 bringt ein optionales Sprachmodell über eine
+OpenAI-kompatible Schnittstelle (ein Server im LAN oder ein Cloud-Dienst). Es
+ist ab Werk aus, und das Spiel läuft genau wie ohne. Eingeschaltet formuliert
+es den Funkverkehr, schreibt einen Einsatzbericht und gibt dir einen Ersten
+Offizier (F7, auch im Browser) für Lagemeldungen, Fragen, bestätigte Befehle
+ohne Waffen, Klassifizierungshilfe und Einweisungen, dazu einen Coach, eine
+Bewertung des Dienstbuchs, einen Missionsgenerator in Editor und Web-Planer
+und einen experimentellen, ungewerteten Gegner (Spielstände v49).
+Spielstände v38 bis v48 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

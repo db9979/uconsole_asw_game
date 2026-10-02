@@ -501,6 +501,7 @@ class SaveMixin:
             "watch": self.crew_watch.serialize(),
             "mpa": self.mpa.serialize(),
             "consort": None if self.consort is None else self.consort.serialize(),
+            "llm": self.llm_serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
             "radar_marks": dict(
                 blip_seq=int(self.radar_blip_seq),
@@ -1461,6 +1462,8 @@ class SaveMixin:
                 wd["fingerprint"])
             restore_platform(w, wd, w.signature_key)
             self.warships.append(w)
+        # Save v49: the language model's marks and the experimental opponent's plan.
+        self.llm_restore(data["llm"])
         # Save v47: the consort destroyer (one of the warships) and its orders.
         self._reset_consort()
         self.consort = ConsortOrders.restore(data["consort"])

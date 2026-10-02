@@ -64,6 +64,7 @@ import { init as initViewsStationTabs } from "./views/station-tabs.js";
 import { init as initViewsHost } from "./views/host.js";
 import { init as initViewsMissions } from "./views/missions.js";
 import { init as initViewsDebrief } from "./views/debrief.js";
+import { init as initViewsAdvisor } from "./views/advisor.js";
 import { init as initAppBootstrap } from "./app/bootstrap.js";
 import { setPageVersion } from "./net/version.js";
 
@@ -77,4 +78,5 @@ initViewsStationTabs();
 initViewsHost();
 initViewsMissions();
 initViewsDebrief();
+initViewsAdvisor();
 initAppBootstrap();

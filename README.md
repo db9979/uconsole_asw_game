@@ -12,16 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.145**
+Current release: **1.3.146**
 
-Release 1.3.145 improves the submarine's stations in five steps. The manual
-has a submarine chapter with a standard procedure for each boat station, shown
-by F1 too (1.3.141). Weapons sets the seeker's search pattern and enable point
-like the frigate (1.3.142). Navigation keeps dead reckoning with a GPS fix and
-steers a route of waypoints or a search pattern (1.3.143, saves v48). The
-uConsole draws both sides much faster, the submarine side about four times
-(1.3.144). The browser's Navigation station gets the echo sounder (1.3.145).
-v38 to v47 saves still load.
+Release 1.3.146 adds an optional language model over an OpenAI-compatible
+interface (a LAN server or a cloud service). It is off by default and the
+game plays exactly as without it. Switched on, it words radio traffic, writes
+an after-action report, and gives you an executive officer (F7, also in the
+browser) for situation reports, questions, confirmed orders without weapons,
+classification help and station briefings, plus a coach, a logbook review, a
+mission generator in the editor and the web planner, and an experimental,
+unscored opponent (saves v49). v38 to v48 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

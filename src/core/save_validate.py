@@ -47,6 +47,7 @@ from src.weapons import rbu
 from src.core.crew import CrewState
 from src.air.mpa import PatrolAircraft
 from src.core.consort import ConsortOrders
+from src.core.game_llm import valid_llm_state
 from src.air.sonobuoy import OWNERS as BUOY_OWNERS
 from src.enemies.endurance import SubmarineEndurance
 from src.sensors.esm import valid_esm_state
@@ -1514,6 +1515,9 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     # Save v21: the patrol aircraft (its stores bound its buoys and torpedoes).
     mpa = data.get("mpa")
     if not PatrolAircraft.valid_state(mpa, world_size):
+        return False
+    # Save v49: the language model's marks and the experimental opponent's plan.
+    if not valid_llm_state(data.get("llm")):
         return False
     # Save v47: the consort destroyer's orders; it must be a friendly warship.
     consort = data.get("consort")

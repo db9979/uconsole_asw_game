@@ -14,11 +14,25 @@ import datetime
 
 from src.core import logbook as logbook_model
 from src.core.i18n import localize, message, raw_text, translation_scope
-from src.llm import advisor as advisor_model, facts, keystore, prompts
+from src.llm import advisor as advisor_model, facts, keystore, opponent, prompts
 from src.llm.client import LlmConfig, LlmService, clean_text
+from src.llm.mission_gen import MissionGenerator
 from src.llm.radio import RadioVoice, message_key
 
 LOCAL = "local"
+SIDES = ("frigate", "uboot")
+
+
+def valid_llm_state(value) -> bool:
+    """The save's ``llm`` block (v49)."""
+    from src.core.save_schema import LLM_FIELDS
+
+    return (isinstance(value, dict) and set(value) == LLM_FIELDS
+            and isinstance(value["advisor_sides"], list)
+            and len(value["advisor_sides"]) == len(set(value["advisor_sides"]))
+            and all(side in SIDES for side in value["advisor_sides"])
+            and type(value["experimental"]) is bool
+            and opponent.valid_state(value["opfor"]))
 REPORT_MAX = 2_000
 REVIEW_ENTRIES = 30
 
@@ -33,6 +47,7 @@ class LlmMixin:
         self.llm_reports: dict = {}
         self.llm_review = None
         self.llm_test = None
+        self.mission_gen = MissionGenerator()
         self._llm_report_requests: dict = {}
         self._llm_review_request = None
         self._reset_llm_mission()
@@ -55,8 +70,12 @@ class LlmMixin:
     def _reset_llm_mission(self) -> None:
         """A new mission: no styled radio, report, advice or advisor mark."""
         self._reset_llm_transient()
-        self.llm_advisor_used = False
+        # Sides ("frigate", "uboot") whose crew used the advisor's help in
+        # this mission (saved): their logbook entry is marked.
+        self.llm_advisor_sides = set()
         self.llm_experimental = False
+        # The experimental opponent's plan in force (saved), or None.
+        self.llm_opfor = None
 
     def _reset_llm_transient(self) -> None:
         """Loaded or new world: drop what belongs to the old picture (the
@@ -66,6 +85,9 @@ class LlmMixin:
         self.advisor.reset()
         self.llm_reports = {}
         self._llm_report_requests = {}
+        self._llm_opfor_request = None
+        self._llm_opfor_next = None
+        self._llm_opfor_side = None
 
     # -- the per-frame pump (wall time, outside the simulation) ----------------
 
@@ -79,9 +101,79 @@ class LlmMixin:
                 self._coach_banner(entry["answer"])
         self._poll_llm_reports()
         self._poll_llm_review()
-        if hasattr(self, "_poll_mission_generator"):
-            self._poll_mission_generator()
+        self._poll_mission_generator()
+        self._llm_opfor_tick()
         self._coach_tick()
+
+    # -- save (v49) ------------------------------------------------------------
+
+    def llm_serialize(self) -> dict:
+        return {"advisor_sides": sorted(self.llm_advisor_sides),
+                "experimental": bool(self.llm_experimental),
+                "opfor": None if self.llm_opfor is None else dict(self.llm_opfor)}
+
+    def llm_restore(self, data: dict) -> None:
+        self.llm_advisor_sides = set(data["advisor_sides"])
+        self.llm_experimental = bool(data["experimental"])
+        self.llm_opfor = None if data["opfor"] is None else dict(data["opfor"])
+
+    # -- 10: experimental opponent (not scored) --------------------------------
+
+    def llm_opfor_side(self):
+        """"subs" or "hunter" when the experimental opponent may run, else None."""
+        if not (self.preferences.llm_opfor and self.llm.active) or not self._advisor_mission_running():
+            return None
+        if (getattr(self, "training", None) is not None
+                or getattr(self, "campaign_mission", False)
+                or getattr(self, "daily_mission", None) is not None or self.llm_pvp()):
+            return None
+        if getattr(self, "_opfor", None) is None:
+            return "subs"
+        from src.core import hunter
+        return "hunter" if hunter.active(self) else None
+
+    def llm_opfor_plan(self, side: str):
+        """The plan the AI side follows (saved, so it holds after a load)."""
+        plan = self.llm_opfor
+        return plan["plan"] if plan is not None and plan["side"] == side else None
+
+    def _llm_opfor_tick(self) -> None:
+        side = self.llm_opfor_side()
+        request = self._llm_opfor_request
+        if request is not None and request.finished:
+            self._llm_opfor_request = None
+            chosen = opponent.parse(self._llm_opfor_side, request.text) if request.ok else None
+            if chosen is not None and side == self._llm_opfor_side:
+                self.llm_opfor = {"side": side, "plan": chosen[0], "since": float(self.sim_t)}
+                self.llm_experimental = True
+        if side is None or self._llm_opfor_request is not None:
+            return
+        if self._llm_opfor_next is None:
+            self._llm_opfor_next = float(self.sim_t)
+        if self.sim_t < self._llm_opfor_next:
+            return
+        self._llm_opfor_next = float(self.sim_t) + opponent.INTERVAL_S
+        self._llm_opfor_side = side
+        self._llm_opfor_request = opponent.request(self.llm, side, self)
+
+    # -- 7: mission generator (Mission Editor; the web planner in the bridge) --
+
+    def generate_mission(self, text: str, side: str):
+        """Mission Editor: ask for a mission; None when sent, else why not."""
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        keys = getattr(getattr(self, "editor", None), "profile_keys", None)
+        return self.mission_gen.start(
+            self.llm, self.llm_language(), side, text, key=f"user.llm_{stamp}",
+            owner="editor", profile_keys=keys)
+
+    def _poll_mission_generator(self) -> None:
+        gen = self.mission_gen
+        if not gen.poll() or gen.owner != "editor":
+            return
+        editor = getattr(self, "editor", None)
+        if editor is not None and hasattr(editor, "generated"):
+            editor.generated(gen.mission, gen.error, gen.issues)
+        gen.reset()
 
     # -- 1: radio messages worded like radio traffic ----------------------------
 
@@ -207,8 +299,13 @@ class LlmMixin:
         result = self.advisor.ask(self.llm, self, asker, kind, side=side,
                                   language=self.llm_language(), text=text, station=station)
         if isinstance(result, dict) and kind in advisor_model.HELP_KINDS:
-            self.llm_advisor_used = True
+            self.llm_advisor_sides.add(side)
         return result
+
+    @property
+    def llm_advisor_used(self) -> bool:
+        """The uConsole's own side had the advisor's help in this mission."""
+        return self.advisor_side() in getattr(self, "llm_advisor_sides", ())
 
     def advisor_confirm(self, seq: int, *, asker: str = LOCAL, side: str | None = None):
         """Run a typed order the player confirmed (uConsole only; a browser

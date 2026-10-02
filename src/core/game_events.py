@@ -1802,6 +1802,7 @@ class EventMixin:
                         record.key for record in
                         default_store(config.SAVE_DIR).list("unit")}
                     self.editor = MissionEditor(tr=self.tr, profile_keys=profiles)
+                    self.editor.llm_host = self
                 elif action == "unit_editor":
                     self.editor = UnitEditor(catalog_builtins(CATALOG), tr=self.tr)
                 elif action == "contact_analyzer":

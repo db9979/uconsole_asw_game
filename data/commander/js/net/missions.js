@@ -76,17 +76,17 @@ export async function fetchCoast(index) {
 }
 
 // Queue one library request, then read the library until its result arrives.
-export async function missionRequest(op, fields) {
+export async function missionRequest(op, fields, attempts = 24) {
   if (!S.session?.host) throw new Error("forbidden");
-  const id = secureId();
-  const body = {protocol: 2, id, op, ...fields};
+  const id = fields.id ?? secureId();
+  const body = {protocol: 2, op, ...fields, id};
   if (JSON.stringify(body).length > UPLOAD_MAX_BYTES + 4000) {
     const error = new Error("too_large");
     error.reason = "too_large";
     throw error;
   }
   await request("/missions", {method: "POST", body, expected: 202, csrf: S.session.csrf});
-  for (let attempt = 0; attempt < 24; attempt += 1) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, attempt ? 400 : 150));
     const library = await fetchLibrary();
     const result = library.results.find((row) => row.id === id);
@@ -103,3 +103,10 @@ export function missionBundle(row, library) {
   return {format: "u-jagd.editor-bundle", version: 1, missions: [row.data],
     units: library.units.filter((unit) => row.units.includes(unit.key))};
 }
+
+// The key the host stores a generated mission under (mission_library.generated_key).
+export function generatedKey(id) {
+  return `user.llm_${id.toLowerCase().replace(/[^0-9a-f]/g, "").slice(0, 12)}`;
+}
+// Language model answers take long: wait up to about three minutes.
+export const GENERATE_ATTEMPTS = 450;

@@ -8,6 +8,7 @@ identity or reference.
 
 from src.commander import projections
 from src.core import config, phone_lookout, sight_events
+from src.ui import own_helo
 from src.ui.stations.bridge import lookout_outlines
 from src.ui.uboot_scope import full_span
 
@@ -44,8 +45,11 @@ def _frigate(game):
     called = lookout_outlines(game, game.lookout_sightings())
     unseen = lookout_outlines(game, sorted(game.lookout_eye.values(),
                                            key=lambda eye: eye.track_id))
-    outlines = ([_outline(*row, True) for row in called]
-                + [_outline(*row, False) for row in unseen])[:24]
+    helo = own_helo.outline(game)
+    outlines = ([] if helo is None else [_outline(*helo, False)]) + (
+        [_outline(*row, True) for row in called]
+        + [_outline(*row, False) for row in unseen])
+    outlines = outlines[:24]
     return dict(side="frigate", available=not game.damage.station_down("bridge"),
                 manned=bool(game.lookout_phone), course=_number(game.ship.course % 360.0),
                 speed_kn=_number(game.ship.speed),

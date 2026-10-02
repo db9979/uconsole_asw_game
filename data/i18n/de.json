@@ -4891,6 +4891,7 @@
   "help.bridge.glasses_optics": "Fernglas oben (wie das Sehrohr): ↑/↓ neigen 2° (Umschalt: 10°) statt Maschinentelegraf, ←/→ schwenken 5° (Umschalt: 20°) statt Ruder, Q/E Zoom (16°, 8°, 4° Feld), Leertaste Stabilisierung",
   "bridge.line.glasses_row": "{bearing}°  {what}  {range} sm",
   "bridge.line.glasses_unknown": "nicht erkannt",
+  "bridge.line.own_helo": "eigener Hubschrauber",
   "weather.line.temperature_boat": "Luft {air} °C  Wasser {sea} °C",
   "weather.box.boat": "U-Boot · Tarnung und Geräusch",
   "weather.boat.mast_radar": "Mast im Radar: erfasst auf {range} sm (ruhige See {calm} sm)",

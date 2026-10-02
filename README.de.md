@@ -14,17 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.161**
+Aktuelle Version: **1.3.162**
 
-Version 1.3.161 hält die Beschriftungen der Seekarte auseinander. An der
-Waffenstation trägt das zugewiesene Ziel ein einziges Label mit dem
-Ping-Hinweis statt zwei übereinander, der Maßstab in der Kartenecke liegt
-nicht mehr auf der ersten Gitterzahl, Fahrtangaben von Flugzeugen und
-Kontakten bleiben im Kartenbild und weichen anderen Labels aus, und die
-Auftragszeile des U-Boots steht unter dem Maßstab. Das OPZ-Lagebild und die
-Kreuzpeilungskarte im Funkraum setzen ihre Labels genauso, und die
-Browserkarten halten ihre Labels von den Achsenzahlen fern. Spielstände
-bleiben v49; v38 bis v48 lassen sich weiter laden.
+Version 1.3.162 zeigt der Brücke den eigenen Hubschrauber der Fregatte.
+Sobald die Brücke ihn sehen kann, fliegt das Hubschraubermodell im Fernglas
+des Ausgucks, im Horizontstreifen, in der Fernglas-Karte der Remote Crew, im
+Handy-Ausguck und im Trefferbild an seiner wahren Position und mit seinem
+Kurs: Er hebt vom Flugdeck achteraus ab, steigt weg, schwebt tief über
+seinem Tauchsonar und zeigt nachts seine Positionslichter. Das Ausguck-
+Sichtgerät markiert ihn als „eigener Hubschrauber“, das Panorama mit einem
+grünen Strich, und die Liste unter dem Fernglas nennt ihn zuerst. Tief
+fliegende Luftfahrzeuge stehen jetzt vor der See statt hinter den Wellen.
+An den Meldungen des Ausgucks ändert sich nichts. Spielstände bleiben v49;
+v38 bis v48 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

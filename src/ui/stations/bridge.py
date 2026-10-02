@@ -10,7 +10,7 @@ from src.core.i18n import (display_message, display_value, localized, localize, 
                             message as structured_message)
 from src.core.station import Station
 from src.ui import horizon, instruments, label_layout, layout, pointer, sight_scene
-from src.ui import observations
+from src.ui import observations, own_helo
 
 
 from src.ui.stations.common import (
@@ -307,6 +307,33 @@ def lookout_outlines(game, sightings) -> list:
     return rows
 
 
+def eye_outlines(game, sightings) -> list:
+    """Everything the bridge's eye draws in an eyepiece: the own helicopter
+    in sight (own asset, ``own_helo``; first, so a bounded list keeps it)
+    and the outlines of the lookout's own sightings."""
+    helo = own_helo.outline(game)
+    rows = lookout_outlines(game, sightings)
+    return rows if helo is None else [helo] + rows
+
+
+def _draw_own_helo_mark(game, s, cx, cy, scale, range_nm, labels) -> None:
+    """The own helicopter on the lookout scope while the bridge sees it
+    (own asset: its true position, ``own_helo``)."""
+    if own_helo.outline(game) is None:
+        return
+    dx, dy = game.helo.x - game.ship.x, game.helo.y - game.ship.y
+    if math.hypot(dx, dy) > range_nm:
+        return
+    px, py = int(cx + dx * scale), int(cy + dy * scale)
+    pygame.draw.circle(s, config.COLOR_OK, (px, py), 4, 1)
+    pygame.draw.line(s, config.COLOR_OK, (px - 7, py - 6), (px + 7, py - 6), 1)
+    shown = localize("bridge.line.own_helo")
+    size = layout.font(13).size(shown)
+    spot = labels.place(size, label_layout.around((px + 8, py - 18), size, 8))
+    layout.blit_line(s, raw_text(shown), (spot.x, spot.y, spot.w + 2, 16), config.COLOR_OK,
+                     size=13)
+
+
 def _dial_order(game, mode, value) -> None:
     """A click on a bridge dial: the same order as a typed entry."""
     if value is None:
@@ -361,6 +388,7 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
             spot = labels.place(size, label_layout.around((px + 8, py - 18), size, 8))
             layout.blit_line(s, raw_text(shown), (spot.x, spot.y, spot.w + 2, 16),
                              color, size=13)
+    _draw_own_helo_mark(game, s, cx, cy, scale, range_nm, labels)
     heading = math.radians(game.ship.course)
     tip = (cx + math.sin(heading) * 12, cy - math.cos(heading) * 12)
     left = (cx + math.sin(heading + 2.5) * 8, cy - math.cos(heading + 2.5) * 8)
@@ -385,7 +413,7 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
             visibility_nm=weather["visibility_nm"],
             motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"],
                                           weather["wind_from_deg"] - game.ship.course),
-            outlines=lookout_outlines(game, sightings), land=_lookout_land(game),
+            outlines=eye_outlines(game, sightings), land=_lookout_land(game),
             anim_t=game.sim_t, sky=sight_scene.sky_state(game), sea_state=weather["sea_state"],
             way=own_way(game), events=sight_events.frigate_rows(game))
         iy += strip_h + 6
@@ -462,7 +490,7 @@ def draw_lookout_glasses(game) -> None:
         motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"],
                                       weather["wind_from_deg"] - course,
                                       game.lookout_glasses_rel),
-        outlines=lookout_outlines(game, sightings), land=land, anim_t=game.sim_t,
+        outlines=eye_outlines(game, sightings), land=land, anim_t=game.sim_t,
         sky=sight_scene.sky_state(game), sea_state=weather["sea_state"],
         elevation_deg=sight.elevation_deg, stabilized=sight.stabilized, way=own_way(game),
         events=sight_events.frigate_rows(game), eyepiece="binoculars")
@@ -498,6 +526,11 @@ def draw_lookout_glasses(game) -> None:
         px = _panorama_x(panorama, track.bearing % 360.0, course)
         color = _LOOKOUT_KIND_COLORS.get(track.kind, config.COLOR_TEXT_DIM)
         pygame.draw.line(s, color, (px, panorama.y + 12), (px, panorama.bottom - 12), 3)
+    helo = own_helo.seen(game)
+    if helo is not None:
+        # The own helicopter in sight: a short tick high in the panorama.
+        px = _panorama_x(panorama, helo[0][0], course)
+        pygame.draw.line(s, config.COLOR_OK, (px, panorama.y + 4), (px, panorama.y + 20), 3)
     half = fov / 2.0
     left = panorama.x + int((horizon.relative_offset(line_of_sight - half, course) + 180.0)
                             / 360.0 * panorama.w)
@@ -511,6 +544,14 @@ def draw_lookout_glasses(game) -> None:
                      config.COLOR_TEXT_DIM, size=14)
     # The lookout's sightings, nearest the line of sight first.
     row_y = panorama.bottom + 48
+    if helo is not None:
+        in_view = abs(horizon.relative_offset(helo[0][0], line_of_sight)) <= fov / 2.0
+        layout.blit_line(s, structured_message(
+            "bridge.line.glasses_row", bearing=f"{helo[0][0] % 360.0:03.0f}",
+            what=localize("bridge.line.own_helo"), range=f"{helo[1]:.1f}"),
+            (frame.x + 10, row_y, frame.w - 20, 20),
+            config.COLOR_WARN if in_view else config.COLOR_OK, size=15)
+        row_y += 21
     rows = sorted((track for track in sightings if track.bearing is not None),
                   key=lambda track: abs(horizon.relative_offset(track.bearing, line_of_sight)))
     for track in rows:

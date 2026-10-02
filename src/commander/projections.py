@@ -341,8 +341,8 @@ def _hit_view(game, side):
             outlines = scope_outlines(game, boat) if opfor.scope_available(boat) else []
             rows = sight_events.boat_rows(game, boat)
         else:
-            from src.ui.stations.bridge import lookout_outlines
-            outlines = lookout_outlines(game, game.lookout_sightings())
+            from src.ui.stations.bridge import eye_outlines
+            outlines = eye_outlines(game, game.lookout_sightings())
             rows = sight_events.frigate_rows(game)
         result.update(visibility_nm=_number(weather["visibility_nm"]),
                       sea_state=_number(weather["sea_state"]), sky=_sky(game),
@@ -1547,7 +1547,7 @@ def _lookout_glasses(game):
     of his own sightings (measured bearing, class he made out, apparent
     length from the measured range); never a target's position."""
     from src.ui import horizon
-    from src.ui.stations.bridge import lookout_outlines
+    from src.ui.stations.bridge import eye_outlines
     weather = game.world.weather_values()
     # Pitch and roll by the heading to the sea; the browser turns them with
     # its own line of sight (``horizon_offset``/``horizon_tilt``: the bow).
@@ -1566,7 +1566,7 @@ def _lookout_glasses(game):
                                elevation_deg=_number(elevation), aob_deg=_number(aob),
                                model=None if model is None else str(model), way=_number(way))
                           for bearing, span, cls, stale, lights, elevation, aob, model, way in
-                          lookout_outlines(game, game.lookout_sightings())[:16]],
+                          eye_outlines(game, game.lookout_sightings())[:16]],
                 events=_sight_events(sight_events.frigate_rows(game), game.sim_t))
 
 

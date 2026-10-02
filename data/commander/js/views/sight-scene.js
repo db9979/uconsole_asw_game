@@ -17,6 +17,8 @@ const STEEL_NIGHT = [19, 36, 46], STEEL_DAY = [44, 56, 64], RIM_NIGHT = [84, 150
 const WINDOW_LIGHT = [250, 205, 120], FRAME = [40, 96, 90], WIND_ARROW = [120, 214, 180];
 const SCALE = "rgb(170, 232, 208)", CROSSHAIR = "rgb(120, 214, 180)";
 const STABILIZED_RESIDUAL = .12;   // src/ui/horizon.py
+// Below this elevation an aircraft stands on the moving sea horizon in front of the sea (LOW_AIR_DEG).
+const LOW_AIR_DEG = 1;
 const VISIBILITY_MAX_NM = 30, BODY_MAX_ALT_DEG = 45, SCALE_LABEL_MIN_PX = 36;
 
 const clamp = (value, low = 0, high = 1) => Math.max(low, Math.min(high, value));
@@ -668,7 +670,8 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
       if (!w.visible(row.bearing, row.span_deg / 2)) continue;
       const cx = w.x(row.bearing), fade = row.stale ? .55 : haze * .6;
       // Aircraft hang in the still sky at their elevation, behind the clouds.
-      const base = aloft(row) ? w.skyY - row.elevation_deg * w.pxPerDeg : w.base(cx);
+      const base = !aloft(row) ? w.base(cx) : row.elevation_deg < LOW_AIR_DEG ? w.base(cx) - row.elevation_deg * w.pxPerDeg
+        : w.skyY - row.elevation_deg * w.pxPerDeg;
       const span = Math.min(width, Math.max(3, row.span_deg * w.pxPerDeg));
       if (!aloft(row) && !row.stale) drawShipWay(g, cx, base, span, row.aob_deg ?? null, row.way ?? null, t, mix(WAY_FOAM, colors.haze, haze * .6), colors.sea[0]);
       drawProfile(g, row.cls, cx, base, span, mix(colors.steel, colors.haze, fade),
@@ -676,11 +679,14 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
           nav: row.stale ? null : row.lights ?? null, aloft: aloft(row), aob: row.stale ? null : row.aob_deg ?? null, model: row.stale ? null : row.model ?? null});
     }
   };
-  const airborne = v.outlines.filter(aloft);
+  // Aircraft high over the sea horizon hang in the sky behind the clouds; a low one (hovering,
+  // the own helicopter close aboard or over its deck) stands in front of the sea.
+  const high = (row) => aloft(row) && row.elevation_deg >= LOW_AIR_DEG;
+  const airborne = v.outlines.filter(high);
   drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null);
   drawSea(g, w, sky, colors, v.sea_state, t, haze, v.way ?? null);
   foamGlow = colors.glow;
-  drawRows(v.outlines.filter((row) => !aloft(row)));
+  drawRows(v.outlines.filter((row) => !high(row)));
   foamGlow = 0;
   if (Array.isArray(v.events) && v.events.length) drawSightEvents(g, w, colors, sky, v.events, haze, t);
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);

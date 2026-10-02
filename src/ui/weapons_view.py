@@ -7,7 +7,7 @@ import pygame
 from src.core import config
 from src.core.i18n import raw_text, display_value, localized, localize, message as structured_message
 from src.core.station import Station
-from src.ui import console, engagement, layout
+from src.ui import console, engagement, label_layout, layout, map_view
 from src.ui import nato_symbols
 from src.ui import observations
 
@@ -258,7 +258,10 @@ def draw_weapons_overlay(game, tr=None) -> None:
     view = game.map_view
     r = config.MAP_RECT
 
-    with layout.clip_to(s, r):
+    # Continue the chart's label field: the target marks never cover a
+    # chart label, and the chart's own contact label is not repeated.
+    with layout.clip_to(s, r), label_layout.label_scope(
+            r, map_view.last_label_field()):
         for t in game.torpedoes:
             px, py = view.world_to_screen(t.x, t.y)
             ang = math.radians(t.course - 90.0)
@@ -268,6 +271,9 @@ def draw_weapons_overlay(game, tr=None) -> None:
             pygame.draw.circle(s, config.COLOR_WARN, (int(px), int(py)), 3)
 
         c = game.target
+        # The chart already draws and labels the selected contact (or, with
+        # none selected, the target) with its line, fix and motion vector.
+        charted = c is not None and (game.selected_contact or game.target) is c
         if c is not None:
             px, py = view.world_to_screen(game.ship.x, game.ship.y)
             brg = math.radians(_display_bearing(c, game.ship))
@@ -282,25 +288,26 @@ def draw_weapons_overlay(game, tr=None) -> None:
                 pygame.draw.line(s, config.COLOR_DANGER, (int(tx), int(ty) - 10),
                                  (int(tx), int(ty) + 10), 2)
                 pygame.draw.circle(s, config.COLOR_DANGER, (int(tx), int(ty)), 8, 1)
-                nato_symbols.draw_motion_vector(
-                    s, (tx, ty), getattr(c, "tma_course", None),
-                    getattr(c, "tma_speed", None),
-                    view.scale, config.COLOR_DANGER, font=game.font, max_px=120)
-                layout.blit_line(s, message("weapons.overlay.fix",
-                                            contact=observations.contact_display_id(game, c),
-                                            source=src),
-                                 (int(tx) + 12, int(ty) - 22, 130, 20),
-                                 config.COLOR_DANGER, size=14)
-            else:
+                if not charted:
+                    nato_symbols.draw_motion_vector(
+                        s, (tx, ty), getattr(c, "tma_course", None),
+                        getattr(c, "tma_speed", None),
+                        view.scale, config.COLOR_DANGER, font=game.font, max_px=120)
+                    map_view._map_label(
+                        s, game, message("weapons.overlay.fix",
+                                         contact=observations.contact_display_id(game, c),
+                                         source=src),
+                        (int(tx) + 12, int(ty) - 22), config.COLOR_DANGER, r, size=14)
+            elif not charted:
                 ex = px + 300 * math.sin(brg)
                 ey = py - 300 * math.cos(brg)
                 pygame.draw.line(s, config.COLOR_DANGER, (int(px), int(py)),
                                  (int(ex), int(ey)), 1)
-                layout.blit_line(s, structured_message(
-                    "weapons.line.bearing_only",
-                    contact=observations.contact_display_id(game, c)),
-                                 (int(px) + 12, int(py) - 22, 260, 22),
-                                 config.COLOR_DANGER, size=14)
+                map_view._map_label(
+                    s, game, structured_message(
+                        "weapons.line.bearing_only.short",
+                        contact=observations.contact_display_id(game, c)),
+                    (int(px) + 12, int(py) - 22), config.COLOR_DANGER, r, size=14)
 
 
 @localized

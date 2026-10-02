@@ -9,7 +9,7 @@ import { node, position } from "./dom.js";
 import { visualContext } from "./visual-common.js";
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { roleMapSweepCanvas, roleMapSweepCtx } from "./canvases.js";
-import { labelField, placeText } from "./label-layout.js";
+import { labelField, placeText, placeTip, reserveText } from "./label-layout.js";
 import { drawAfterglow, drawFurthestOn, drawMapFx, furthestOnNm, mapFxActive } from "./map-fx.js";
 
 export function mapPayload(role) {
@@ -325,6 +325,10 @@ export function drawRoleMap(role) {
     plot.context.closePath(); plot.context.fill(); plot.context.stroke();
   }
   plot.context.font = "12px sans-serif";
+  // One label field for the whole map: axis numbers and the north mark are
+  // reserved first, contact and speed labels step aside from them.
+  const labels = labelField(plot.width, plot.height);
+  labels.reserve(plot.width - 40, 4, 36, 18);
   plot.context.lineWidth = 3;
   plot.context.strokeStyle = "#07151c";
   plot.context.fillStyle = "#b5c8cf";
@@ -333,25 +337,26 @@ export function drawRoleMap(role) {
     if (x >= 0 && x + plot.context.measureText(text).width + 2 <= plot.width) {
       plot.context.strokeText(text, x + 2, plot.height - 5);
       plot.context.fillText(text, x + 2, plot.height - 5);
+      reserveText(plot.context, labels, text, x + 2, plot.height - 5);
     }
     if (y >= 10 && y <= plot.height - 20) {
       const baseline = y + 4;
       plot.context.strokeText(text, 4, baseline);
       plot.context.fillText(text, 4, baseline);
+      reserveText(plot.context, labels, text, 4, baseline);
     }
   }
   plot.context.lineWidth = 1;
   plot.context.fillStyle = palette().muted;
   for (const label of [...(geo?.labels || []), ...(geo?.airbases || [])]) {
     const [x, y] = point(label.x, label.y);
-    if (x >= 0 && x <= plot.width && y >= 0 && y <= plot.height) plot.context.fillText(label.name, x + 5, y - 5);
+    if (x >= 0 && x <= plot.width && y >= 0 && y <= plot.height) placeText(plot.context, labels, label.name, x + 5, y - 5);
   }
   for (const base of geo?.airbases || []) { const [x, y] = point(base.x, base.y); plot.context.strokeRect(x - 3, y - 3, 6, 6); addMapInfo(S.roleMapInfo, x, y, "base", base); }
   // Charted wrecks (hull line with masts) and underwater rocks (asterisk).
   drawChartHazards(plot.context, geo?.hazards || [], point, plot.width, plot.height,
     Math.abs(point(1, 0)[0] - point(0, 0)[0]), S.roleMapInfo);
   const [ox, oy] = hasPosition(data.own) ? framePoint(data.own.x, data.own.y) : [plot.width / 2, plot.height / 2];
-  const labels = labelField(plot.width, plot.height);
   labels.reserve(ox - 12, oy - 12, 24, 24);
   if (hasPosition(data.own)) {
     addRoleMapHit(null, ox, oy);
@@ -392,7 +397,7 @@ export function drawRoleMap(role) {
       if (finite(row.course)) {
         const angle = row.course * Math.PI / 180, tipX = x + Math.sin(angle) * 22, tipY = y - Math.cos(angle) * 22;
         plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(tipX, tipY); plot.context.stroke();
-        if (finite(row.speed_kn)) plot.context.fillText(unit(row.speed_kn, "kn", 0), tipX + 4, tipY + 4);
+        if (finite(row.speed_kn)) placeTip(plot.context, labels, unit(row.speed_kn, "kn", 0), tipX, tipY, Math.sin(angle), -Math.cos(angle));
       }
     } else if (finite(row.bearing) && (hasPosition(data.own) ||
         finite(row.observer_x) && finite(row.observer_y))) {

@@ -12,18 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.160**
+Current release: **1.3.161**
 
-Release 1.3.160 redraws the damage-control pictures like a real damage-
-control board. The frigate is a side profile with decks, superstructure and
-masts, every compartment at its real height, the sea and waterline outside
-with draft marks, floodwater tilted by the trim, open holes with water
-rushing in, fitted patches and pumps discharging over the side, and a cross-
-section that lists with the ship. The submarine is a cutaway of its pressure
-hull with sail, fittings, water, fire, chlorine, leaks and round bulkhead
-doors, on the uConsole and in the browser. Apply buttons in the browser
-(seeker, torpedo settings, plant, helicopter pattern) no longer jump back
-for a moment. Saves stay v49; v38 to v48 saves still load.
+Release 1.3.161 keeps chart labels from covering each other. On the
+weapons station the assigned target carries one label with the ping hint
+instead of two stacked ones, the scale line in the chart corner no longer
+sits on the first grid number, speed labels of aircraft and contacts stay
+inside the chart and step aside from other labels, and the submarine's
+orders line moved below the scale. The CIC scope and the radio room's
+cross-fix chart place their labels the same way, and the browser maps keep
+their labels off the axis numbers. Saves stay v49; v38 to v48 saves still
+load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

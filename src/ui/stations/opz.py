@@ -13,7 +13,7 @@ from src.core.i18n import (display_value, localized, localize, raw_text,
 from src.core.station import Station
 from src.ui.plot_view import draw_plot
 from src.core import map_fx
-from src.ui import layout, map_fx_view, pointer, quality
+from src.ui import label_layout, layout, map_fx_view, pointer, quality
 from src.ui import chart_symbols
 from src.ui import nato_symbols
 from src.ui import observations
@@ -334,7 +334,7 @@ def _draw_mpa(game, s, chart, view, px_per_nm, page) -> None:
     col = nato_symbols.draw_symbol(s, (mx, my), "FRIEND", "AIR", 17)
     nato_symbols.draw_motion_vector(s, (mx, my), mpa.course, mpa.speed_kn,
                                     px_per_nm, col, max_px=min(chart.size) * .3)
-    layout.blit_line(s, "MPA DL", (int(mx) + 13, int(my) - 10, 94, 19), col, size=12)
+    label_layout.blit_line(s, "MPA DL", (int(mx) + 13, int(my) - 10, 94, 19), col, size=12)
 
 
 def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
@@ -423,7 +423,7 @@ def _draw_consort(game, s, chart, view, px_per_nm, page) -> None:
     nato_symbols.draw_motion_vector(s, (cx, cy), consort_view["course"],
                                     consort_view["speed_kn"], px_per_nm, col,
                                     max_px=min(chart.size) * .3)
-    layout.blit_line(s, raw_text(consort_view["callsign"] + " DL"),
+    label_layout.blit_line(s, raw_text(consort_view["callsign"] + " DL"),
                      (int(cx) + 13, int(cy) + 8, 110, 19), col, size=12)
 
 
@@ -731,199 +731,201 @@ def draw_opz_view(game, tr=None) -> None:
     layout.corner_brackets(s, map_rect)
     previous_clip = s.get_clip()
     s.set_clip(chart)
-    station_live = not game.damage.station_down("opz")
-    radar_live = station_live and (game.surface_radar_on or game.air_radar_on)
-    px_per_nm = view.scale
-    own_x, own_y = view.world_to_screen(game.ship.x, game.ship.y)
-    radar_radius = max_nm * px_per_nm
+    # Chart labels step aside from each other (and from the speed labels).
+    with label_layout.label_scope(chart):
+        station_live = not game.damage.station_down("opz")
+        radar_live = station_live and (game.surface_radar_on or game.air_radar_on)
+        px_per_nm = view.scale
+        own_x, own_y = view.world_to_screen(game.ship.x, game.ship.y)
+        radar_radius = max_nm * px_per_nm
 
-    coast = getattr(game.world, "coast", None)
-    coast_segments = (_contour_segments_in_circle(
-        coast, game.ship.x, game.ship.y, max_nm) if coast is not None else [])
-    with layout.clip_to(s, chart):
-        if radar_live and quality.afterglow():
-            # Phosphor afterglow behind the beam, under everything else.
-            map_fx_view.draw_afterglow(s, own_x, own_y, radar_radius,
-                                       game.radar_sweep_bearing(), config.COLOR_GEO_BG)
-        # Radar presentation remains ship-centred and independent of the camera.
-        for ring_index in range(1, 5):
-            rr = radar_radius * ring_index / 4.0
-            if not _ring_visible((own_x, own_y), rr, chart):
-                continue
-            pygame.draw.circle(s, config.COLOR_SONAR_RING,
-                               (int(own_x), int(own_y)), max(1, int(rr)), 1)
-        # Axis lines clipped to the chart (strong zoom gives huge radii).
-        x0 = max(chart.left, own_x - radar_radius)
-        x1 = min(chart.right, own_x + radar_radius)
-        if chart.top <= own_y <= chart.bottom and x0 < x1:
-            pygame.draw.line(s, config.COLOR_SONAR_RING,
-                             (int(x0), int(own_y)), (int(x1), int(own_y)), 1)
-        y0 = max(chart.top, own_y - radar_radius)
-        y1 = min(chart.bottom, own_y + radar_radius)
-        if chart.left <= own_x <= chart.right and y0 < y1:
-            pygame.draw.line(s, config.COLOR_SONAR_RING,
-                             (int(own_x), int(y0)), (int(own_x), int(y1)), 1)
-        # Range labels at the top of each ring, beside the north axis.
-        for ring_index in range(1, 5):
-            rr = radar_radius * ring_index / 4.0
-            if not chart.top - 18 <= own_y - rr <= chart.bottom:
-                continue
-            layout.blit_line(
-                s, message("map.tooltip.range_value",
-                           range=f"{max_nm * ring_index / 4.0:g}"),
-                (int(own_x) + 4, int(own_y - rr) + 1, 80, 18),
-                config.COLOR_TEXT_DIM, size=layout.MIN_OPERATIONAL_FONT)
-
-        if station_live and game.surface_radar_on:
-            coast_range = min(max_nm, game.radar_effective_range("surface"))
-            for first, second in coast_segments:
-                if max(math.hypot(first[0] - game.ship.x, first[1] - game.ship.y),
-                       math.hypot(second[0] - game.ship.x, second[1] - game.ship.y)) > coast_range:
+        coast = getattr(game.world, "coast", None)
+        coast_segments = (_contour_segments_in_circle(
+            coast, game.ship.x, game.ship.y, max_nm) if coast is not None else [])
+        with layout.clip_to(s, chart):
+            if radar_live and quality.afterglow():
+                # Phosphor afterglow behind the beam, under everything else.
+                map_fx_view.draw_afterglow(s, own_x, own_y, radar_radius,
+                                           game.radar_sweep_bearing(), config.COLOR_GEO_BG)
+            # Radar presentation remains ship-centred and independent of the camera.
+            for ring_index in range(1, 5):
+                rr = radar_radius * ring_index / 4.0
+                if not _ring_visible((own_x, own_y), rr, chart):
                     continue
-                mx = (first[0] + second[0]) * .5
-                my = (first[1] + second[1]) * .5
-                bearing = math.degrees(math.atan2(mx - game.ship.x,
-                                                  -(my - game.ship.y))) % 360.0
-                glow = _radar_glow(game, bearing)
+                pygame.draw.circle(s, config.COLOR_SONAR_RING,
+                                   (int(own_x), int(own_y)), max(1, int(rr)), 1)
+            # Axis lines clipped to the chart (strong zoom gives huge radii).
+            x0 = max(chart.left, own_x - radar_radius)
+            x1 = min(chart.right, own_x + radar_radius)
+            if chart.top <= own_y <= chart.bottom and x0 < x1:
+                pygame.draw.line(s, config.COLOR_SONAR_RING,
+                                 (int(x0), int(own_y)), (int(x1), int(own_y)), 1)
+            y0 = max(chart.top, own_y - radar_radius)
+            y1 = min(chart.bottom, own_y + radar_radius)
+            if chart.left <= own_x <= chart.right and y0 < y1:
+                pygame.draw.line(s, config.COLOR_SONAR_RING,
+                                 (int(own_x), int(y0)), (int(own_x), int(y1)), 1)
+            # Range labels at the top of each ring, beside the north axis.
+            for ring_index in range(1, 5):
+                rr = radar_radius * ring_index / 4.0
+                if not chart.top - 18 <= own_y - rr <= chart.bottom:
+                    continue
+                label_layout.blit_line(
+                    s, message("map.tooltip.range_value",
+                               range=f"{max_nm * ring_index / 4.0:g}"),
+                    (int(own_x) + 4, int(own_y - rr) + 1, 80, 18),
+                    config.COLOR_TEXT_DIM, size=layout.MIN_OPERATIONAL_FONT)
+
+            if station_live and game.surface_radar_on:
+                coast_range = min(max_nm, game.radar_effective_range("surface"))
+                for first, second in coast_segments:
+                    if max(math.hypot(first[0] - game.ship.x, first[1] - game.ship.y),
+                           math.hypot(second[0] - game.ship.x, second[1] - game.ship.y)) > coast_range:
+                        continue
+                    mx = (first[0] + second[0]) * .5
+                    my = (first[1] + second[1]) * .5
+                    bearing = math.degrees(math.atan2(mx - game.ship.x,
+                                                      -(my - game.ship.y))) % 360.0
+                    glow = _radar_glow(game, bearing)
+                    if glow > 0.0:
+                        pygame.draw.line(
+                            s, _scale_color((75, 180, 105), .25 + .75 * glow),
+                            view.world_to_screen(*first), view.world_to_screen(*second), 2)
+
+            if radar_live:
+                _draw_radar_clutter(game, s, (own_x, own_y), int(radar_radius))
+                ang = math.radians(game.radar_sweep_bearing())
+                pygame.draw.line(s, (70, 190, 130), (own_x, own_y),
+                                 (own_x + radar_radius * math.sin(ang),
+                                  own_y - radar_radius * math.cos(ang)), 2)
+            fx = getattr(game, "map_fx", None)
+            if fx is not None:
+                map_fx_view.draw_fx(s, fx.rows("frigate", game.sim_t), view.world_to_screen,
+                                    px_per_nm, chart, config.COLOR_GEO_BG)
+            nato_symbols.draw_symbol(s, (own_x, own_y), "FRIEND", "SURFACE", 18)
+            nato_symbols.draw_motion_vector(
+                s, (own_x, own_y), game.ship.course, game.ship.speed,
+                px_per_nm, config.COLOR_TEXT, max_px=min(chart.size) * .3)
+
+        # Own-force aircraft is datalink truth, not a radar/sensor track.
+        helo = getattr(game, "helo", None)
+        if helo is not None and helo.airborne:
+            hx, hy = view.world_to_screen(helo.x, helo.y)
+            if chart.collidepoint(hx, hy):
+                hcol = nato_symbols.draw_symbol(s, (hx, hy), "FRIEND", "AIR", 17)
+                nato_symbols.draw_motion_vector(s, (hx, hy), helo.course, helo.SPEED_KN,
+                                                px_per_nm, hcol, max_px=min(chart.size) * .3)
+                label_layout.blit_line(s, "HSP-5 DL",
+                                 (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12)
+        _draw_mpa(game, s, chart, view, px_per_nm, page)
+        _draw_consort(game, s, chart, view, px_per_nm, page)
+        # Own weapons are commanded own assets (wire/datalink), not sensor tracks:
+        # torpedoes from ship, helicopter or ASROC payload, ASROC and ESSM flights.
+        own_weapons = (
+            [(item, "UNDERWATER_WEAPON", f"T{item.idx}")
+             for item in getattr(game, "torpedoes", ())]
+            + [(item, "MISSILE", f"ASROC {item.seq}")
+               for item in getattr(game, "asrocs", ())]
+            + [(item, "MISSILE", "ESSM") for item in getattr(game, "essms", ())])
+        for item, domain, label in own_weapons:
+            wx, wy = view.world_to_screen(item.x, item.y)
+            if not chart.collidepoint(wx, wy):
+                continue
+            wcol = nato_symbols.draw_symbol(s, (wx, wy), "FRIEND", domain, 12)
+            course = getattr(item, "course", None)
+            if course is not None:
+                rad = math.radians(course)
+                pygame.draw.line(s, wcol, (int(wx), int(wy)),
+                                 (int(wx + 12 * math.sin(rad)), int(wy - 12 * math.cos(rad))), 1)
+            label_layout.blit_line(s, raw_text(label),
+                             (int(wx) + 10, int(wy) - 9, 80, 17), wcol, size=12)
+        cic_tracks = (game.opz_tracks() if hasattr(game, "opz_tracks")
+                      else game.radar_tracks())
+        selected_id = game.opz_selected_track_id
+        plotted = {}
+        for track in (t for t in cic_tracks if _observation_position(t)[0] is None):
+            ray = _opz_bearing_ray(game, track, chart, view)
+            if ray is None:
+                continue
+            start, (sx, sy) = ray
+            affiliation = game.opz_affiliation(track["track_id"])
+            domain = nato_symbols.domain_for_kind(track["kind"])
+            col = nato_symbols.AFFILIATION_COLORS[affiliation]
+            pygame.draw.line(s, col, start, (sx, sy), 1)
+            plotted[track.track_id] = (sx, sy)
+            nato_symbols.draw_symbol(s, (sx, sy), affiliation, domain, 14,
+                                     track["track_id"] == selected_id)
+            nato_symbols.draw_motion_vector(s, (sx, sy), track.course, track.speed_kn,
+                                            px_per_nm, col, max_px=min(chart.size) * .3)
+            label_layout.blit_line(s, track["source"],
+                             (int(sx) - 22, int(sy) - 21, 66, 18), col, size=12)
+
+        # Unmarked mast/snorkel echoes: a bare afterglow dot, no symbol or label,
+        # dimming with the time since the sweep painted it.
+        for blip in (game.radar_blip_view() if hasattr(game, "radar_blip_view") else []):
+            px, py = view.world_to_screen(blip["x"], blip["y"])
+            if not chart.collidepoint(px, py):
+                continue
+            fade = 1.0 - (game.sim_t - blip["t"]) / config.RADAR_BLIP_LIFE_S
+            pygame.draw.circle(s, _scale_color((120, 255, 150), max(.2, fade)),
+                               (int(px), int(py)), 3)
+
+        # Gemeinsames Lagebild: Oberflaeche, Luft und Flugkoerper im selben Scope.
+        for track in (t for t in cic_tracks if _observation_position(t)[0] is not None):
+            observed_x, observed_y = _observation_position(track)
+            bx, by = view.world_to_screen(observed_x, observed_y)
+            if not chart.collidepoint(bx, by):
+                continue
+            plotted[track.track_id] = (bx, by)
+            # Furthest-on circle: how far the contact can have gone since its fix.
+            reach = map_fx.furthest_on_nm(track["kind"], game.sim_t - track.last_seen)
+            if reach is not None:
+                map_fx_view.draw_furthest_on(s, bx, by, reach * px_per_nm, chart, config.COLOR_GEO_BG)
+            if track["source"].startswith("RADAR"):
+                glow = _radar_glow(game, observations.bearing(track, game.ship))
                 if glow > 0.0:
-                    pygame.draw.line(
-                        s, _scale_color((75, 180, 105), .25 + .75 * glow),
-                        view.world_to_screen(*first), view.world_to_screen(*second), 2)
+                    pygame.draw.circle(s, _scale_color((120, 255, 150), glow),
+                                       (int(bx), int(by)), 3)
+            affiliation = game.opz_affiliation(track["track_id"])
+            domain = nato_symbols.domain_for_kind(track["kind"])
+            col = nato_symbols.draw_symbol(
+                s, (bx, by), affiliation, domain, 16,
+                track["track_id"] == selected_id)
+            nato_symbols.draw_motion_vector(s, (bx, by), track.course, track.speed_kn,
+                                            px_per_nm, col, max_px=min(chart.size) * .3)
+            label_layout.blit_line(s, track["label"],
+                              (int(bx) + 12, int(by) - 10, 118, 19), col, size=12)
 
-        if radar_live:
-            _draw_radar_clutter(game, s, (own_x, own_y), int(radar_radius))
-            ang = math.radians(game.radar_sweep_bearing())
-            pygame.draw.line(s, (70, 190, 130), (own_x, own_y),
-                             (own_x + radar_radius * math.sin(ang),
-                              own_y - radar_radius * math.cos(ang)), 2)
-        fx = getattr(game, "map_fx", None)
-        if fx is not None:
-            map_fx_view.draw_fx(s, fx.rows("frigate", game.sim_t), view.world_to_screen,
-                                px_per_nm, chart, config.COLOR_GEO_BG)
-        nato_symbols.draw_symbol(s, (own_x, own_y), "FRIEND", "SURFACE", 18)
-        nato_symbols.draw_motion_vector(
-            s, (own_x, own_y), game.ship.course, game.ship.speed,
-            px_per_nm, config.COLOR_TEXT, max_px=min(chart.size) * .3)
+        for fusion in (track for track in cic_tracks if track.source == "FUSION"):
+            if fusion.track_id not in plotted:
+                continue
+            for member in fusion.members:
+                if member in plotted:
+                    pygame.draw.line(s, config.COLOR_WARN, plotted[fusion.track_id],
+                                     plotted[member], 1)
 
-    # Own-force aircraft is datalink truth, not a radar/sensor track.
-    helo = getattr(game, "helo", None)
-    if helo is not None and helo.airborne:
-        hx, hy = view.world_to_screen(helo.x, helo.y)
-        if chart.collidepoint(hx, hy):
-            hcol = nato_symbols.draw_symbol(s, (hx, hy), "FRIEND", "AIR", 17)
-            nato_symbols.draw_motion_vector(s, (hx, hy), helo.course, helo.SPEED_KN,
-                                            px_per_nm, hcol, max_px=min(chart.size) * .3)
-            layout.blit_line(s, "HSP-5 DL",
-                             (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12)
-    _draw_mpa(game, s, chart, view, px_per_nm, page)
-    _draw_consort(game, s, chart, view, px_per_nm, page)
-    # Own weapons are commanded own assets (wire/datalink), not sensor tracks:
-    # torpedoes from ship, helicopter or ASROC payload, ASROC and ESSM flights.
-    own_weapons = (
-        [(item, "UNDERWATER_WEAPON", f"T{item.idx}")
-         for item in getattr(game, "torpedoes", ())]
-        + [(item, "MISSILE", f"ASROC {item.seq}")
-           for item in getattr(game, "asrocs", ())]
-        + [(item, "MISSILE", "ESSM") for item in getattr(game, "essms", ())])
-    for item, domain, label in own_weapons:
-        wx, wy = view.world_to_screen(item.x, item.y)
-        if not chart.collidepoint(wx, wy):
-            continue
-        wcol = nato_symbols.draw_symbol(s, (wx, wy), "FRIEND", domain, 12)
-        course = getattr(item, "course", None)
-        if course is not None:
-            rad = math.radians(course)
-            pygame.draw.line(s, wcol, (int(wx), int(wy)),
-                             (int(wx + 12 * math.sin(rad)), int(wy - 12 * math.cos(rad))), 1)
-        layout.blit_line(s, raw_text(label),
-                         (int(wx) + 10, int(wy) - 9, 80, 17), wcol, size=12)
-    cic_tracks = (game.opz_tracks() if hasattr(game, "opz_tracks")
-                  else game.radar_tracks())
-    selected_id = game.opz_selected_track_id
-    plotted = {}
-    for track in (t for t in cic_tracks if _observation_position(t)[0] is None):
-        ray = _opz_bearing_ray(game, track, chart, view)
-        if ray is None:
-            continue
-        start, (sx, sy) = ray
-        affiliation = game.opz_affiliation(track["track_id"])
-        domain = nato_symbols.domain_for_kind(track["kind"])
-        col = nato_symbols.AFFILIATION_COLORS[affiliation]
-        pygame.draw.line(s, col, start, (sx, sy), 1)
-        plotted[track.track_id] = (sx, sy)
-        nato_symbols.draw_symbol(s, (sx, sy), affiliation, domain, 14,
-                                 track["track_id"] == selected_id)
-        nato_symbols.draw_motion_vector(s, (sx, sy), track.course, track.speed_kn,
-                                        px_per_nm, col, max_px=min(chart.size) * .3)
-        layout.blit_line(s, track["source"],
-                         (int(sx) - 22, int(sy) - 21, 66, 18), col, size=12)
-
-    # Unmarked mast/snorkel echoes: a bare afterglow dot, no symbol or label,
-    # dimming with the time since the sweep painted it.
-    for blip in (game.radar_blip_view() if hasattr(game, "radar_blip_view") else []):
-        px, py = view.world_to_screen(blip["x"], blip["y"])
-        if not chart.collidepoint(px, py):
-            continue
-        fade = 1.0 - (game.sim_t - blip["t"]) / config.RADAR_BLIP_LIFE_S
-        pygame.draw.circle(s, _scale_color((120, 255, 150), max(.2, fade)),
-                           (int(px), int(py)), 3)
-
-    # Gemeinsames Lagebild: Oberflaeche, Luft und Flugkoerper im selben Scope.
-    for track in (t for t in cic_tracks if _observation_position(t)[0] is not None):
-        observed_x, observed_y = _observation_position(track)
-        bx, by = view.world_to_screen(observed_x, observed_y)
-        if not chart.collidepoint(bx, by):
-            continue
-        plotted[track.track_id] = (bx, by)
-        # Furthest-on circle: how far the contact can have gone since its fix.
-        reach = map_fx.furthest_on_nm(track["kind"], game.sim_t - track.last_seen)
-        if reach is not None:
-            map_fx_view.draw_furthest_on(s, bx, by, reach * px_per_nm, chart, config.COLOR_GEO_BG)
-        if track["source"].startswith("RADAR"):
-            glow = _radar_glow(game, observations.bearing(track, game.ship))
-            if glow > 0.0:
-                pygame.draw.circle(s, _scale_color((120, 255, 150), glow),
-                                   (int(bx), int(by)), 3)
-        affiliation = game.opz_affiliation(track["track_id"])
-        domain = nato_symbols.domain_for_kind(track["kind"])
-        col = nato_symbols.draw_symbol(
-            s, (bx, by), affiliation, domain, 16,
-            track["track_id"] == selected_id)
-        nato_symbols.draw_motion_vector(s, (bx, by), track.course, track.speed_kn,
-                                        px_per_nm, col, max_px=min(chart.size) * .3)
-        layout.blit_line(s, track["label"],
-                          (int(bx) + 12, int(by) - 10, 118, 19), col, size=12)
-
-    for fusion in (track for track in cic_tracks if track.source == "FUSION"):
-        if fusion.track_id not in plotted:
-            continue
-        for member in fusion.members:
-            if member in plotted:
-                pygame.draw.line(s, config.COLOR_WARN, plotted[fusion.track_id],
-                                 plotted[member], 1)
-
-    # Die ESSM-Auswahl bleibt bewusst von der allgemeinen CIC-Auswahl getrennt.
-    asm_tracks = game.asm_tracks()
-    for i, track in enumerate(asm_tracks):
-        observed_x, observed_y = _observation_position(track)
-        if observed_x is not None and observed_y is not None:
-            dx, dy = observed_x - game.ship.x, observed_y - game.ship.y
-            dist = math.hypot(dx, dy)
-            brg = math.degrees(math.atan2(dx, -dy)) % 360.0
-        elif observations.range_nm(track, game.ship) is not None:
-            dist = observations.range_nm(track, game.ship)
-            brg = observations.bearing(track, game.ship)
-        else:
-            continue
-        rad = math.radians(brg)
-        bx, by = view.world_to_screen(
-            game.ship.x + dist * math.sin(rad),
-            game.ship.y - dist * math.cos(rad))
-        if not chart.collidepoint(bx, by):
-            continue
-        if i == min(game.asm_sel, len(asm_tracks) - 1):
-            pygame.draw.circle(s, config.COLOR_DANGER, (int(bx), int(by)), 16, 1)
-    draw_plot(s, game, view, chart)
+        # Die ESSM-Auswahl bleibt bewusst von der allgemeinen CIC-Auswahl getrennt.
+        asm_tracks = game.asm_tracks()
+        for i, track in enumerate(asm_tracks):
+            observed_x, observed_y = _observation_position(track)
+            if observed_x is not None and observed_y is not None:
+                dx, dy = observed_x - game.ship.x, observed_y - game.ship.y
+                dist = math.hypot(dx, dy)
+                brg = math.degrees(math.atan2(dx, -dy)) % 360.0
+            elif observations.range_nm(track, game.ship) is not None:
+                dist = observations.range_nm(track, game.ship)
+                brg = observations.bearing(track, game.ship)
+            else:
+                continue
+            rad = math.radians(brg)
+            bx, by = view.world_to_screen(
+                game.ship.x + dist * math.sin(rad),
+                game.ship.y - dist * math.cos(rad))
+            if not chart.collidepoint(bx, by):
+                continue
+            if i == min(game.asm_sel, len(asm_tracks) - 1):
+                pygame.draw.circle(s, config.COLOR_DANGER, (int(bx), int(by)), 16, 1)
+        draw_plot(s, game, view, chart)
 
     s.set_clip(previous_clip)
     side_top = regions["sidebar"].y

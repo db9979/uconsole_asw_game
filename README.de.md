@@ -14,19 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.160**
+Aktuelle Version: **1.3.161**
 
-Version 1.3.160 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
-Fregatte ist ein Seitenriss mit Decks, Aufbauten und Masten, jede Abteilung
-auf ihrer wirklichen Höhe, außen See und Wasserlinie mit Tiefgangsmarken,
-Leckwasser, das sich mit dem Trimm neigt, offene Lecks mit einströmendem
-Wasser, gesetzte Leckpflaster und Pumpen, die über Bord lenzen, und ein
-Querschnitt, der mit dem Schiff krängt. Das U-Boot ist ein Schnittbild des
-Druckkörpers mit Turm, Einbauten, Wasser, Brand, Chlorgas, Lecks und runden
-Schotttüren, auf der uConsole und im Browser. Übernehmen-Knöpfe im Browser
-(Suchkopf, Torpedoeinstellung, Antrieb, Hubschraubermuster) springen nicht
-mehr kurz zurück. Spielstände bleiben v49; v38 bis v48 lassen sich weiter
-laden.
+Version 1.3.161 hält die Beschriftungen der Seekarte auseinander. An der
+Waffenstation trägt das zugewiesene Ziel ein einziges Label mit dem
+Ping-Hinweis statt zwei übereinander, der Maßstab in der Kartenecke liegt
+nicht mehr auf der ersten Gitterzahl, Fahrtangaben von Flugzeugen und
+Kontakten bleiben im Kartenbild und weichen anderen Labels aus, und die
+Auftragszeile des U-Boots steht unter dem Maßstab. Das OPZ-Lagebild und die
+Kreuzpeilungskarte im Funkraum setzen ihre Labels genauso, und die
+Browserkarten halten ihre Labels von den Achsenzahlen fern. Spielstände
+bleiben v49; v38 bis v48 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

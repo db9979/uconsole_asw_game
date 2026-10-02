@@ -12,11 +12,13 @@ function renderSonarLamps(settings) {
   renderLamps($("sonar-lamps"), [
     lamp("station", t("sonar_lamp_station"), down ? "alarm" : "on", t(down ? "sonar_lamp_down" : "sonar_lamp_ok")),
     lamp("ping", t("sonar_lamp_ping"), settings.ping.ready ? "on" : "caution",
-      settings.ping.ready ? t("sonar_lamp_ready") : t("sonar_lamp_cooldown", {seconds: number(settings.ping.cooldown_s, 0)})),
+      settings.ping.ready ? t("sonar_lamp_ready") : t("sonar_lamp_cooldown", {seconds: number(settings.ping.cooldown_s, 0)}),
+      "sonar-ping"),
     lamp("track", t("sonar_lamp_track"), ...onOff(Boolean(settings.focus_ref))),
     lamp("audio", t("sonar_lamp_audio"), ...onOff(settings.audio_enabled)),
-    lamp("notch", t("sonar_lamp_notch"), ...onOff(settings.notch)),
-    lamp("peak", t("sonar_lamp_peak"), settings.peak_hold ? "caution" : "off", t(settings.peak_hold ? "sonar_lamp_on" : "sonar_lamp_off")),
+    lamp("notch", t("sonar_lamp_notch"), ...onOff(settings.notch), "sonar-notch"),
+    lamp("peak", t("sonar_lamp_peak"), settings.peak_hold ? "caution" : "off", t(settings.peak_hold ? "sonar_lamp_on" : "sonar_lamp_off"),
+      "sonar-peak"),
   ]);
 }
 

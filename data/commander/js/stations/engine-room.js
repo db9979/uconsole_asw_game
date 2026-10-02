@@ -19,14 +19,14 @@ const stateLevel = (state) => state === "ZERSTOERT" ? "alarm" : state === "OK" ?
 function lamps(payload) {
   const p = payload.propulsion, m = payload.machinery, e = payload.environment_effects, c = payload.controls;
   const rows = [];
-  const add = (key, label, level, value) => rows.push([key, label, level, value]);
+  const add = (key, label, level, value, control) => rows.push([key, label, level, value, control]);
   const turning = p.speed > .05 || p.telegraph !== "STOP";
   add("shaft", t("engine_lamp_shaft"), turning ? (p.telegraph === "ASTERN" ? "caution" : "on") : "off",
     t(`telegraph_${p.telegraph.toLowerCase()}`));
   add("auto", t("engine_lamp_auto"), p.plant_mode === "AUTO" ? "on" : "off", onOff(p.plant_mode === "AUTO"));
   add("diesel", t("engine_lamp_diesel"), p.plant_mode === "DIESEL" ? "on" : "off", onOff(p.plant_mode === "DIESEL"));
   add("turbine", t("engine_lamp_turbine"), p.plant_mode === "TURBINE" ? "on" : "off", onOff(p.plant_mode === "TURBINE"));
-  add("quiet", t("quiet_mode"), p.quiet_mode ? "on" : "off", onOff(p.quiet_mode));
+  add("quiet", t("quiet_mode"), p.quiet_mode ? "on" : "off", onOff(p.quiet_mode), "engine-quiet");
   add("cavitating", t("uboot_chip_cavitating"), p.cavitating ? "alarm" : "off", onOff(p.cavitating));
   const fuel = pct(p.fuel_kg, p.fuel_capacity_kg);
   add("fuel", t("uboot_lamp_fuel"), fuel === null ? "off" : fuel <= 5 ? "alarm" : fuel <= 20 ? "caution" : "on", unit(fuel, "%", 0));

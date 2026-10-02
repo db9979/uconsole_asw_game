@@ -120,6 +120,8 @@ def draw_station_page_tabs(screen, station_rect, pages, current_page,
     tabs = _station_page_tab_rects(station_rect, len(pages))
     for i, (name, tab) in enumerate(zip(pages, tabs)):
         active = (i == current_page)
+        # The station's own hit test (station_page_tab_at) takes the click.
+        pointer.add_hotspot(tab)
         if active:
             pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, tab)
             pygame.draw.line(screen, config.COLOR_SONAR_RING,

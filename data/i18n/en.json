@@ -6607,7 +6607,7 @@
   "end.key.menu": "Main menu",
   "end.key.exit": "Exit",
   "help.key.mouse_click": "Left click",
-  "help.global.mouse_click": "Press the clicked key, tab, dial or row",
+  "help.global.mouse_click": "Press the clicked key, lamp, hint, tab, dial or row",
   "help.key.mouse_right": "Right click",
   "help.global.mouse_right": "Cancel like Esc in menus and entries",
   "esm.sferics": "Sferics: thunderstorm static, HF bearings spread",

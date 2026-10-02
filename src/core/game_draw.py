@@ -98,6 +98,17 @@ _STATION_VIEWS = {
 }
 
 
+
+# Telemetry readings and the station (number key) each belongs to, frigate
+# and submarine; a click on a reading opens that station.
+TELEMETRY_STATION = {
+    "telemetry.course_speed": 1, "telemetry.noise": 7, "telemetry.flooding": 4,
+    "telemetry.torpedoes": 3, "telemetry.crew": 4,
+    "uboot.telemetry.course_speed": 1, "uboot.telemetry.depth": 6,
+    "uboot.telemetry.noise": 4, "uboot.telemetry.battery": 4,
+    "uboot.telemetry.torpedoes": 3, "uboot.telemetry.damage": 4,
+}
+
 class DrawMixin:
     """Display half of ``Game``: ``draw``, the overlays and ``run``."""
 
@@ -589,10 +600,28 @@ class DrawMixin:
             if payload is not None and anchor is not None:
                 layout.draw_tooltip(s, payload, anchor,
                                     (0, 0, config.SCREEN_W, config.SCREEN_H))
+        self._draw_pointer_hover(s)
         if self._scanlines is not None:
             s.blit(self._scanlines, (0, 0))
         self._draw_red_light(s)
         self._draw_shock(s)
+
+    def _draw_pointer_hover(self, s) -> None:
+        """Frame the clickable key, lamp or tab under the mouse (display only)."""
+        if (self.splash_active or self.editor is not None or self.simlog_view_open
+                or not pygame.mouse.get_focused()):
+            return
+        canvas = self._window_to_canvas(pygame.mouse.get_pos())
+        rect = pointer.hover_rect(canvas, pointer_input.owner(self))
+        if rect is None:
+            return
+        rect = rect.clip(s.get_rect())
+        if rect.w < 2 or rect.h < 2:
+            return
+        glow = pygame.Surface(rect.size, pygame.SRCALPHA)
+        glow.fill((*config.COLOR_TEXT[:3], 30))
+        s.blit(glow, rect.topleft)
+        pygame.draw.rect(s, config.COLOR_TEXT, rect, 1)
 
     def _draw_shock(self, s) -> None:
         """Shake the shown side's screens after a detonation close by
@@ -768,8 +797,9 @@ class DrawMixin:
         label_w = max(face.size(label)[0] for label in labels) + 10
         colors = {"ok": config.COLOR_TEXT, "warn": config.COLOR_WARN,
                   "danger": config.COLOR_DANGER}
-        for index, ((_key, value, level, _compact), label) in enumerate(zip(rows, labels)):
+        for index, ((key, value, level, _compact), label) in enumerate(zip(rows, labels)):
             y = rect.y + index * pitch
+            pointer.add_spec((rect.x, y, rect.w, pitch), self._telemetry_station_click(key))
             layout.blit_line(self.screen, raw_text(label), (rect.x, y, label_w, pitch),
                              config.COLOR_TEXT_DIM, size=16)
             layout.blit_line(self.screen, value, (rect.x + label_w, y,
@@ -783,18 +813,38 @@ class DrawMixin:
         Readings that do not fit are left out whole (never clipped); the
         F11 overlay always shows all of them.
         """
+        return " \u00b7 ".join(text for _key, text in
+                                self._ticker_telemetry_parts(width, rows, keys))
+
+    def _ticker_telemetry_parts(self, width: int | None = None, rows=None,
+                                keys=None) -> list:
+        """``(row key, text)`` of the readings the ticker shows."""
         parts = []
         keys = observations.TICKER_KEYS if keys is None else keys
         rows = observations.telemetry_rows(self) if rows is None else rows
         for key, _value, _level, compact in rows:
             if key in keys:
                 label = observations.telemetry_label(key, short=True)
-                parts.append(f"{localize(label)} {localize(compact)}")
+                parts.append((key, f"{localize(label)} {localize(compact)}"))
         face = layout.font(16)
         while width is not None and len(parts) > 1 and layout.text_width(
-                face, " \u00b7 ".join(parts)) > width:
+                face, " \u00b7 ".join(text for _key, text in parts)) > width:
             parts.pop()
-        return " \u00b7 ".join(parts)
+        return parts
+
+    def _telemetry_station_click(self, row_key: str):
+        """A click on a reading opens the station it belongs to (its number
+        key, never pressed at that station itself so it does not page)."""
+        number = TELEMETRY_STATION.get(row_key)
+        if number is None:
+            return None
+        if self.local_side == "uboot":
+            shown = uboot_local.OPFOR_ROLES.index(uboot_local.local_station(self)) + 1
+        else:
+            shown = list(Station).index(self.station) + 1
+        if shown == number:
+            return None
+        return pygame.K_0 + number
 
     @localized
     def draw_status_ticker(self, entries=None, rows=None, keys=None,
@@ -806,7 +856,8 @@ class DrawMixin:
         pygame.draw.line(s, config.COLOR_SONAR_RING, rect.topleft, rect.topright, 1)
         face = layout.font(16)
         rows = observations.telemetry_rows(self) if rows is None else rows
-        telemetry = self._ticker_telemetry_text(int(rect.w * .6) - 16, rows, keys)
+        parts = self._ticker_telemetry_parts(int(rect.w * .6) - 16, rows, keys)
+        telemetry = " \u00b7 ".join(text for _key, text in parts)
         level = ("danger" if any(row[2] == "danger" for row in rows)
                  else "warn" if any(row[2] == "warn" for row in rows) else "ok")
         colors = {"ok": config.COLOR_TEXT, "warn": config.COLOR_WARN,
@@ -828,6 +879,11 @@ class DrawMixin:
                 s.blit(image, rendered)
 
         strip_text(telemetry, tele_rect, colors[level], right=True)
+        # A click on a reading opens its station (full mouse control).
+        pointer.add_line_keys(pygame.Rect(tele_rect.x, rect.y, tele_rect.w, rect.h),
+                              telemetry, 16, [self._telemetry_station_click(key)
+                                              for key, _text in parts],
+                              separator=" \u00b7 ", align="right")
         hint = localize(hint_key) if hint_key else ""
         hint_w = face.size(hint)[0] + 12 if hint else 0
         if hint:
@@ -835,6 +891,10 @@ class DrawMixin:
                        config.COLOR_TEXT_DIM)
         feed_rect = pygame.Rect(rect.x + 6 + hint_w, rect.y + 2,
                                 tele_rect.x - 12 - (rect.x + 6 + hint_w), rect.h - 2)
+        if hint:
+            # "F11 LOG" and the newest event open the log, as F11 does.
+            pointer.add_key((rect.x, rect.y, feed_rect.right - rect.x, rect.h),
+                            pygame.K_F11)
         latest = self.feed.recent(1) if entries is None else list(entries)[-1:]
         if not latest or feed_rect.w <= 20:
             return

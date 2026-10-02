@@ -77,7 +77,7 @@ def handle(game, e) -> bool:
     if layer == "station" and _over_crew_message(game, canvas):
         return False      # the crew message box lies above every station target
     target = pointer.hit(canvas, layer)
-    if target is None:
+    if target is None or target.hover_only:
         return False
     if target.action is not None:
         target.action(canvas)
@@ -109,3 +109,11 @@ def enter_value(game, mode: str, value) -> None:
     game._begin_numeric_input(mode)
     game.input_buffer = text
     game._finish_numeric_input()
+
+
+def press(game, key: int, mod: int = 0, times: int = 1) -> None:
+    """Press and release ``key`` ``times`` times through the keyboard path
+    (a click that stands for several key steps, such as a telegraph row)."""
+    for _ in range(max(0, int(times))):
+        game.handle_event(key_event(key, mod))
+        game.handle_event(key_event(key, mod, down=False))

@@ -13,7 +13,7 @@ import pygame
 
 from src.core import attack_computer, config, opfor, sight_events
 from src.core.i18n import display_value, localize, message
-from src.ui import layout
+from src.ui import layout, pointer
 
 from src.ui import sight_scene  # noqa: E402
 from src.ui.horizon import (draw_horizon, draw_outline, land_view,  # noqa: E402,F401
@@ -154,6 +154,9 @@ def draw_scope_page(s, game, boat, x, y, w, h) -> None:
         pygame.draw.rect(s, config.COLOR_SONAR_RING, view, 1)
         layout.blit_block(s, "uboot.line.scope_mast_down", view.x + 12, view.y + view.h // 2 - 24,
                           view.w - 24, 48, config.COLOR_TEXT_DIM, size=18, align="center")
+        pointer.add_token_keys((view.x + 12, view.y + view.h // 2 - 24, view.w - 24, 48),
+                               "uboot.line.scope_mast_down", 18, (("P", "P"),),
+                               align="center", min_size=layout.MIN_OPERATIONAL_FONT)
     info_y = y + box_h + 8
     line_of_sight = opfor.scope_bearing(boat)
     layout.blit_line(s, message("uboot.line.scope_bearing", bearing=f"{line_of_sight:03.0f}",
@@ -168,6 +171,8 @@ def draw_scope_page(s, game, boat, x, y, w, h) -> None:
                      (x, info_y + 26, w, 20), config.COLOR_TEXT_DIM, size=15)
     text, color = tdc_line(game, boat)
     layout.blit_line(s, text, (x, info_y + 48, w, 20), color, size=15)
+    # Enter marks the crosshair sighting; Ctrl+Enter fires only at station 3.
+    pointer.add_token_keys((x, info_y + 48, w, 20), text, 15, (("Enter", "Enter"),))
     list_y = info_y + 72
     list_h = y + h - list_y
     if list_h < 40:
@@ -178,6 +183,9 @@ def draw_scope_page(s, game, boat, x, y, w, h) -> None:
     if not rows:
         layout.blit_line(s, "uboot.line.no_sighting" if available else "uboot.line.scope_mast_down",
                          (lx, ly, lw, 22), config.COLOR_TEXT_DIM, size=16)
+        if not available:
+            pointer.add_token_keys((lx, ly, lw, 22), "uboot.line.scope_mast_down", 16,
+                                   (("P", "P"),))
         return
     for index, (text, color) in enumerate(rows):
         row_y = ly + index * 22

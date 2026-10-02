@@ -234,3 +234,27 @@ def test_experimental_opponent_never_runs_in_campaign_or_lessons():
         game.campaign_mission = False
         game.preferences = dataclasses.replace(game.preferences, llm_opfor=False)
         assert game.llm_opfor_side() is None
+
+
+def test_settings_page_masks_the_key_and_never_reads_the_key_file_per_frame(
+        isolated_saves, monkeypatch):
+    import pygame
+    from src.core.game_advisor import LLM_ROWS
+    from src.llm import keystore
+    from src.ui import advisor_view
+    game = _game()
+    keystore.save_key("sk-secret-key-123456")
+    game.configure_llm()
+    game._open_administration("llm")
+    game.llm_sel = LLM_ROWS.index("llm_key")
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, mod=0, unicode="\r"))
+    assert game.llm_field_name == "llm_key"
+    game.llm_field.value = "sk-typed-secret"
+    shown = []
+    monkeypatch.setattr(keystore, "load_key", lambda: (_ for _ in ()).throw(AssertionError))
+    monkeypatch.setattr(advisor_view.layout, "blit_line",
+                        lambda _s, text, *a, **k: shown.append(str(text)))
+    import src.ui.editor_widgets as widgets
+    monkeypatch.setattr(widgets, "draw_text", lambda _s, text, *a, **k: shown.append(str(text)))
+    advisor_view.draw_llm_settings(game)
+    assert not any("secret" in text for text in shown)

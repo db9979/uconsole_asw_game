@@ -35,7 +35,7 @@ MAX_PROMPT_CHARS = 24_000
 STATUSES = ("pending", "running", "done", "failed", "dropped")
 # Error categories shown to the player (never a raw server message).
 ERRORS = ("disabled", "bad_url", "network", "timeout", "auth", "rate_limit",
-          "server", "bad_reply", "busy")
+          "server", "bad_reply", "thinking", "busy")
 
 _THINK = re.compile(r"<think>.*?(?:</think>|$)", re.DOTALL | re.IGNORECASE)
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
@@ -150,6 +150,8 @@ class LlmService:
         self.failed = 0
         self.last_error = None
         self.last_latency_s = None
+        # Ask for answers without a reasoning phase until a server refuses.
+        self._no_think = True
 
     # -- configuration -------------------------------------------------------
 
@@ -159,6 +161,8 @@ class LlmService:
 
     def configure(self, config: LlmConfig) -> None:
         with self._lock:
+            if config.base_url != self._config.base_url:
+                self._no_think = True
             self._config = config
 
     @property
@@ -245,6 +249,10 @@ class LlmService:
         }
         if request.json_mode:
             body["response_format"] = {"type": "json_object"}
+        if self._no_think:
+            # Reasoning models (Qwen3 on vLLM/SGLang) would spend the whole
+            # budget thinking; servers that do not know the switch say 400.
+            body["chat_template_kwargs"] = {"enable_thinking": False}
         url = config.base_url.rstrip("/") + "/chat/completions"
         headers = {"Content-Type": "application/json", "Accept": "application/json",
                    "User-Agent": "u-jagd"}
@@ -260,6 +268,9 @@ class LlmService:
                 raise _LlmError("auth") from None
             if exc.code == 429:
                 raise _LlmError("rate_limit") from None
+            if self._no_think and exc.code == 400:
+                self._no_think = False
+                return self._post(config, request)
             if request.json_mode and exc.code == 400:
                 # Some servers do not know response_format: ask once without.
                 request.json_mode = False
@@ -277,11 +288,23 @@ class LlmService:
             raise _LlmError("bad_reply")
         try:
             payload = json.loads(raw.decode("utf-8"))
-            content = payload["choices"][0]["message"]["content"]
-        except (UnicodeError, ValueError, KeyError, IndexError, TypeError):
+            message = payload["choices"][0]["message"]
+            content = message.get("content")
+        except (UnicodeError, ValueError, KeyError, IndexError, TypeError, AttributeError):
             raise _LlmError("bad_reply") from None
+        if isinstance(content, list):
+            # Content as a list of parts: keep the text parts.
+            content = "".join(part.get("text", "") for part in content
+                              if isinstance(part, dict) and part.get("type") == "text"
+                              and isinstance(part.get("text"), str))
         text = clean_text(content)
         if not text:
+            # Only reasoning came back (in its own field or an open <think>):
+            # the budget ran out before the answer.
+            thought = any(isinstance(message.get(name), str) and message.get(name).strip()
+                          for name in ("reasoning_content", "reasoning"))
+            if thought or (isinstance(content, str) and "<think>" in content.lower()):
+                raise _LlmError("thinking")
             raise _LlmError("bad_reply")
         return text
 

@@ -1476,12 +1476,33 @@ def draw_end_panel(game, boat) -> None:
                 (("D", "end.key.debrief"), ("R", "end.key.restart"), ("M", "end.key.menu")))
 
 
+# Solid tint surfaces of the silent light, keyed on (size, multiply, floor).
+# A blended blit of a solid surface gives the same pixels as a blended fill
+# but takes the SIMD blitters (a blended full-screen fill is ~30x slower).
+_SILENT_TINT: dict = {}
+
+
+def _silent_tints(size) -> tuple:
+    key = (tuple(size), tuple(config.UBOOT_SILENT_LIGHT),
+           tuple(config.UBOOT_SILENT_LIGHT_FLOOR))
+    tints = _SILENT_TINT.get(key)
+    if tints is None:
+        _SILENT_TINT.clear()
+        multiply, floor = pygame.Surface(key[0]), pygame.Surface(key[0])
+        multiply.fill(key[1])
+        floor.fill(key[2])
+        tints = _SILENT_TINT[key] = (multiply, floor)
+    return tints
+
+
 def silent_light(s, boat) -> bool:
     """Silent running: the boat rigs for red, dimmed light (display only)."""
     if boat is None or not boat.orders.silent or boat.sub.sunk:
         return False
-    s.fill(config.UBOOT_SILENT_LIGHT, special_flags=pygame.BLEND_MULT)
-    s.fill(config.UBOOT_SILENT_LIGHT_FLOOR, special_flags=pygame.BLEND_ADD)
+    multiply, floor = _silent_tints(s.get_size())
+    # Like the fills, the blits keep to the surface's clip.
+    s.blit(multiply, (0, 0), special_flags=pygame.BLEND_MULT)
+    s.blit(floor, (0, 0), special_flags=pygame.BLEND_ADD)
     return True
 
 

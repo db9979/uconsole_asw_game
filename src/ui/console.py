@@ -60,8 +60,8 @@ def lamp(screen, rect, label, value, level: str, size: int = 16) -> None:
     top = rect.y + max(0, (rect.h - row) // 2)
     avail = rect.right - text_x - 6
     face = layout.font(size)
-    label_need = face.size(localize(label))[0] + 8
-    value_need = face.size(localize(value))[0] + 1 if value else 0
+    label_need = layout.text_width(face, localize(label)) + 8
+    value_need = layout.text_width(face, localize(value)) + 1 if value else 0
     # The value keeps what the label leaves free, at least three fifths.
     value_w = min(value_need, max(avail - label_need, avail * 3 // 5)) if value else 0
     label_color = config.COLOR_TEXT if level != "off" else config.COLOR_TEXT_DIM

@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.156
+## 1.3.159
 
-Release 1.3.156 redraws the damage-control pictures like a real damage-
+Release 1.3.159 redraws the damage-control pictures like a real damage-
 control board. The frigate is a side profile with decks, superstructure and
 masts, every compartment at its real height, the sea and waterline outside
 with draft marks, floodwater tilted by the trim, open holes with water
@@ -16,6 +16,12 @@ hull with sail, fittings, water, fire, chlorine, leaks and round bulkhead
 doors, on the uConsole and in the browser. Apply buttons in the browser
 (seeker, torpedo settings, plant, helicopter pattern) no longer jump back
 for a moment. Saves stay v49; v38 to v48 saves still load.
+
+## 1.3.158
+
+- In the browser the executive officer's button now sits in the toolbar
+  beside the sound switch; next to the mission name the crowded header had
+  squeezed it into a column of single letters.
 
 ## 1.3.155
 

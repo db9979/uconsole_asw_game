@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.156
+## 1.3.159
 
-Version 1.3.156 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
+Version 1.3.159 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
 Fregatte ist ein Seitenriss mit Decks, Aufbauten und Masten, jede Abteilung
 auf ihrer wirklichen Höhe, außen See und Wasserlinie mit Tiefgangsmarken,
 Leckwasser, das sich mit dem Trimm neigt, offene Lecks mit einströmendem
@@ -17,6 +17,12 @@ Schotttüren, auf der uConsole und im Browser. Übernehmen-Knöpfe im Browser
 (Suchkopf, Torpedoeinstellung, Antrieb, Hubschraubermuster) springen nicht
 mehr kurz zurück. Spielstände bleiben v49; v38 bis v48 lassen sich weiter
 laden.
+
+## 1.3.158
+
+- Im Browser sitzt der Knopf des Ersten Offiziers jetzt in der Werkzeugleiste
+  neben dem Tonschalter; neben dem Missionsnamen hatte die volle Kopfzeile ihn
+  zu einer Säule aus einzelnen Buchstaben gequetscht.
 
 ## 1.3.155
 

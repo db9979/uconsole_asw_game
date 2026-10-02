@@ -36,6 +36,10 @@ PROBE = r'''
     $('name').value = 'XO'; $('code').value = __CODE__;
     $('pair-form').requestSubmit();
     await until(() => !$('advisor-open').hidden, 'advisor button', 3000);
+    // The header button stays on one line (it was squeezed into a letter column).
+    const button = $('advisor-open').getBoundingClientRect();
+    if (button.height > 48 || button.width < button.height)
+      throw new Error(`advisor button squeezed: ${Math.round(button.width)}x${Math.round(button.height)}`);
     $('advisor-open').click();
     const dialog = $('advisor-dialog');
     await until(() => dialog.open, 'dialog');

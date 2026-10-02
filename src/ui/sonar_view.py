@@ -2,19 +2,31 @@
 
 import math
 from collections import OrderedDict
-from functools import lru_cache
 
 import numpy as np
 import pygame
 
 from src.core import config
-from src.core.i18n import (display_message, display_value, localized, localize,
-                            message as structured_message)
+from src.core.i18n import display_message, display_value, localized, localize
 from src.sonar import analysis_tools, class_library, tma_operator
 from src.ui import layout
 from src.ui import observations
 from src.ui import pointer
 from src.ui import profile_cursor
+from src.ui.sonar_data import (  # noqa: F401
+    PAGES, ACTIVE_HISTORY_WINDOW_S, DEMON_DISPLAY_MAX_HZ, _sonar_observer,
+    message, _observed_bearing, _bearing_line, _history_for_page,
+    _visible_contacts, _visible_echoes, _list_rows, _array_readout,
+    _circular_broadband, _linear_lofar, _lofar_frequencies,
+    _process_lofar_rows, _waterfall_controls, _display_controls,
+    spectrum_peaks, peak_label, place_peak_labels, _translator, _tow_status,
+    _vds_status, active_echoes, _harmonic_candidates, _selected_harmonic,
+    _demon_evidence, _bearing_series, tma_observation_summary,
+    tma_closing_rate_kn, _detail_evidence, _array_state_line, _ping_line,
+    _console_lamps)
+from src.ui.sonar_hit import (  # noqa: F401
+    _panels, _waterfall_plot, sonar_geometry, sonar_click_target,
+    sonar_hit_target, _active_geometry, _echo_point, _ascope_point, _tma_plot)
 
 
 NAVY = (6, 13, 25)
@@ -29,402 +41,8 @@ PHOSPHOR_PALETTES = {
     "amber": (255, 184, 62),
     "cyan": CYAN,
 }
-PAGES = ("BROADBAND", "LOFAR", "DEMON", "TMA", "UMWELT/FUSION", "ACTIVE")
-ACTIVE_HISTORY_WINDOW_S = 120.0
-DEMON_DISPLAY_MAX_HZ = 50.0
 _WATERFALL_CACHE = OrderedDict()
 _WATERFALL_CACHE_SCREEN = None
-
-
-
-def _sonar_observer(game):
-    """Listening platform of the active sonar workstation (frigate or boat)."""
-    observer = getattr(game, "sonar_observer", None)
-    return getattr(game, "ship", None) if observer is None else observer
-
-def message(key, **values):
-    """A structured message: localized at draw time so layouts can abbreviate."""
-    return structured_message(key, **values)
-
-
-def _observed_bearing(observation) -> float:
-    return observations.bearing(observation)
-
-
-def _bearing_line(game, bearing) -> str:
-    return layout.format_bearing_pair(
-        bearing, getattr(_sonar_observer(game), "course", 0.0))
-
-
-def _panels(game, page):
-    station = pygame.Rect(config.STATION_RECT)
-    # Tightened top/bottom margins (was +73/-124): the larger operational
-    # font floor needs a few extra px in `details` so worst-case content
-    # (e.g. a fully evidenced TMA solution) never clips.
-    body = pygame.Rect(station.x + 12, station.y + 43,
-                       station.w - 24, station.h - 68)
-    rail_w = min(350, max(240, round(body.w * .28)))
-    main = pygame.Rect(body.x, body.y, body.w - rail_w - 12, body.h)
-    rail = pygame.Rect(main.right + 12, body.y, rail_w, body.h)
-    # Reserve three full contact rows on every page. Long interpretation notes
-    # belong in the bounded tooltip rather than displacing operational data.
-    contact_min_h = 33 + 3 * 43
-    details = pygame.Rect(rail.x, rail.y, rail.w,
-                          max(1, rail.h - contact_min_h - 8))
-    contacts = pygame.Rect(rail.x, details.bottom + 8, rail.w,
-                           rail.bottom - details.bottom - 8)
-    return main, details, contacts
-
-
-def _waterfall_plot(panel, page):
-    top = panel.y + (105 if page == 1 else 61)
-    return pygame.Rect(panel.x + 57, top, panel.w - 83,
-                       panel.bottom - 47 - top)
-
-
-def _history_for_page(sonar, page):
-    if page == 0 and getattr(sonar, "broadband_long_history", None):
-        return sonar.broadband_long_history, sonar.broadband_long_times, \
-            config.SONAR_BROADBAND_LONG_ROWS
-    if page == 0:
-        return (getattr(sonar, "broadband_history", []),
-                getattr(sonar, "history_times", []), config.LOFAR_HISTORY_COLS)
-    return (getattr(sonar, "lofar_history", []),
-            getattr(sonar, "lofar_times", []), config.LOFAR_HISTORY_COLS)
-
-
-def _visible_contacts(game, rect):
-    contacts = sorted(game.sonar.active_contacts(), key=lambda item: item.id)
-    capacity = max(1, (rect.h - 33) // 43)
-    selected = getattr(game, "selected_contact", None)
-    index = next((i for i, item in enumerate(contacts) if item is selected), 0)
-    start = max(0, min(index - capacity // 2, len(contacts) - capacity))
-    return contacts, start, contacts[start:start + capacity]
-
-
-def _visible_echoes(game, rect):
-    latest = {}
-    for echo in active_echoes(game.sonar, getattr(game, "sim_t", 0.0)):
-        latest[echo.get("contact_id")] = echo
-    capacity = max(1, (rect.h - 33) // 43)
-    return list(reversed(list(latest.values())[-capacity:])), len(latest)
-
-
-def _list_rows(game, rect, page):
-    """Return the exact visible row payloads and painted hit rectangles."""
-    if page == 5:
-        rows, total = _visible_echoes(game, rect)
-    else:
-        _, _, rows = _visible_contacts(game, rect)
-        total = None
-    return [(item, pygame.Rect(rect.x + 5, rect.y + 32 + index * 43,
-                               rect.w - 10, 41))
-            for index, item in enumerate(rows)], total
-
-
-def _array_readout(game):
-    """Array in use; a towed/variable-depth array adds its state until ready."""
-    sonar = game.sonar
-    mode = getattr(game, "sonar_mode", "BOW")
-    name = display_value("array", mode)
-    status = (_vds_status(sonar) if mode == "VDS" else None) or (
-        _tow_status(sonar, getattr(_sonar_observer(game), "speed", 0.0))
-        if mode != "BOW" else None)
-    if status is None or status["available"]:
-        return name
-    return f"{name} {status['payout_percent']:.0f}%"
-
-
-def sonar_geometry(game, page=None):
-    """Return the canonical rectangles used by both sonar draw and hit paths."""
-    layout.configure_for(game)
-    station = pygame.Rect(config.STATION_RECT)
-    page = int(getattr(game, "sonar_page", 0) if page is None else page) % len(PAGES)
-    tab_x = station.x + 348
-    tab_w = max(50, (station.w - 362) // len(PAGES))
-    tabs = [pygame.Rect(tab_x + i * tab_w, station.y + 9, tab_w - 5, 27)
-            for i in range(len(PAGES))]
-    main, details, contacts = _panels(game, page)
-    sonar = game.sonar
-    on_off = lambda flag: localize("ui.on" if flag else "ui.off")
-    array = ("SHIFT+B", "sonar.footer.array", "", _array_readout(game))
-    gain = ("I/O", "sonar.footer.gain", "", f"{getattr(sonar, 'gain_db', 0):+.0f} dB")
-    band = ("F/D", "sonar.footer.band_filter", "",
-            f"{getattr(sonar, 'band_low_hz', 0):.0f}-{getattr(sonar, 'band_high_hz', 300):.0f} Hz")
-    notch = ("N", "sonar.footer.notch", "", on_off(getattr(sonar, "notch_enabled", False)))
-    audio = ("J", "sonar.footer.audio", "", on_off(getattr(game, "sonar_audio_enabled", False)))
-    # One row of at most four main keys per page; the rest lives in F1.
-    specs = ((array, "array"), (gain, "gain"),
-             (("SPACE", "sonar.footer.peak", "", on_off(getattr(sonar, "peak_hold", False))), "peak"),
-             (audio, "audio"))
-    tools = getattr(game, "sonar_tools", None)
-    if page in (1, 2) and tools is not None:
-        # Analysis pages: the operator's cursor tools replace peak/audio.
-        cursor = tools.lofar_cursor_hz if page == 1 else tools.demon_cursor_hz
-        harmonic = _selected_harmonic(game)
-        mark = (structured_message("sonar.footer.demon_marks",
-                                   shaft="--" if tools.shaft_hz is None else f"{tools.shaft_hz:.1f}",
-                                   blade="--" if tools.blade_hz is None else f"{tools.blade_hz:.1f}")
-                if page == 2 else
-                f"{harmonic:.1f} Hz" if harmonic is not None else localize("ui.off"))
-        specs = ((("K", "sonar.footer.mark", "", mark), "harmonic"),
-                 (("Z/X", "sonar.footer.cursor", "", f"{cursor:.1f} Hz"), "cursor"),
-                 (("Q", "sonar.footer.integration", "", f"{tools.integration_s} s"), "integration"),
-                 (band, "band_filter") if page == 1 else (gain, "gain"))
-    elif page in (1, 4):
-        specs = ((array, "array"), (gain, "gain"), (band, "band_filter"), (notch, "notch"))
-    contact = getattr(game, "selected_contact", None)
-    if page == 3 and contact is not None and hasattr(game, "tma_hypothesis"):
-        hypothesis = game.tma_hypothesis(contact)
-        evaluation = game.tma_evaluation(contact)
-        specs = (
-            (("K", "sonar.footer.tma_accept", "",
-              "--" if evaluation is None else f"{evaluation['fit']:.0%}"), "tma_accept"),
-            (("Z/X", "sonar.footer.tma_course", "", f"{hypothesis.course:05.1f}\u00b0"), "cursor"),
-            (("^Z/^X", "sonar.footer.tma_speed", "", f"{hypothesis.speed_kn:.1f} kn"), "cursor"),
-            (("Q", "sonar.footer.tma_range", "", f"{hypothesis.range_nm:.1f} NM"), "cursor"))
-    footer = []
-    width = (station.w - 28) // len(specs)
-    for index, (spec, action) in enumerate(specs):
-        rect = pygame.Rect(station.x + 14 + index * width,
-                           station.bottom - 22, width - 6, 19)
-        footer.append(dict(rect=rect, action=action, text=spec, safe=True))
-    return dict(station=station, tabs=tabs, main=main, details=details,
-                contacts=contacts, footer=footer)
-
-
-def sonar_click_target(game, pos):
-    """Resolve only explicitly safe sonar actions; return no simulation object."""
-    if pos is None:
-        return None
-    geometry = sonar_geometry(game)
-    if not geometry["station"].collidepoint(pos):
-        return None
-    for page, rect in enumerate(geometry["tabs"]):
-        if rect.collidepoint(pos):
-            return {"action": "page_set", "value": page, "safe": True}
-    page = int(getattr(game, "sonar_page", 0)) % len(PAGES)
-    plot = _waterfall_plot(geometry["main"], page)
-    if page == 0 and plot.collidepoint(pos):
-        bearing = (pos[0] - plot.x) / max(1, plot.w - 1) * 360.0
-        contacts = list(getattr(game.sonar, "active_contacts", lambda: ())())
-        threshold = max(3.0, float(getattr(game.sonar, "beam_width_deg", 0.0)) / 2.0)
-        nearest = min(
-            contacts,
-            key=lambda item: abs((_observed_bearing(item) - bearing + 180.0) % 360.0 - 180.0),
-            default=None,
-        )
-        if nearest is not None:
-            separation = abs((_observed_bearing(nearest) - bearing + 180.0) % 360.0 - 180.0)
-            if separation <= threshold:
-                return {"action": "contact_listen", "value": nearest.id, "safe": True}
-        return {"action": "listen_bearing", "value": bearing % 360.0, "safe": True}
-    if geometry["contacts"].collidepoint(pos):
-        for item, rect in _list_rows(game, geometry["contacts"], page)[0]:
-            if rect.collidepoint(pos):
-                action = "echo" if page == 5 else "contact"
-                value = item.get("contact_id") if page == 5 else item.id
-                return {"action": action, "value": value, "safe": True}
-    for segment in geometry["footer"]:
-        if segment["rect"].collidepoint(pos):
-            return {key: segment[key] for key in ("action", "safe")}
-    return None
-
-
-@localized
-def sonar_hit_target(game, pos):
-    """Return context for a plotted receiver datum or displayed observation."""
-    layout.configure_for(game)
-    station = pygame.Rect(config.STATION_RECT)
-    if pos is None or not station.collidepoint(pos):
-        return None
-    page = int(getattr(game, "sonar_page", 0)) % len(PAGES)
-    sonar = game.sonar
-    geometry = sonar_geometry(game, page)
-    main, details, contacts_rect = (geometry["main"], geometry["details"],
-                                    geometry["contacts"])
-    for index, tab in enumerate(geometry["tabs"]):
-        if tab.collidepoint(pos):
-            return layout.tooltip_payload(
-                message("sonar.tooltip.page", page=display_value("sonar_page", PAGES[index])),
-                "sonar.tooltip.safe_page", target_id=f"sonar:tab:{index}")
-    for segment in geometry["footer"]:
-        if segment["rect"].collidepoint(pos):
-            return layout.tooltip_payload(
-                segment["text"][1], "sonar.tooltip.safe_control",
-                target_id=f"sonar:action:{segment['action']}")
-    if contacts_rect.collidepoint(pos):
-        rows = _list_rows(game, contacts_rect, page)[0]
-        if page == 5:
-            for echo, rect in rows:
-                if rect.collidepoint(pos):
-                    break
-            else:
-                echo = None
-            if echo is not None:
-                return layout.tooltip_payload(
-                    message("sonar.tooltip.echo_title", contact=echo.get('contact_id', '--')),
-                    _bearing_line(game, echo["bearing"]),
-                    message("sonar.tooltip.range", range=f"{float(echo['range_nm']):.2f}"),
-                    message("sonar.tooltip.uncertainty_age", uncertainty=f"{float(echo.get('range_sigma_nm', 0)):.2f}", age=f"{echo['age_s']:.1f}"),
-                    message("sonar.tooltip.active_source", mode=echo.get('mode', '--')),
-                    target_id=f"sonar:echo:{echo.get('contact_id', '')}")
-        else:
-            for contact, rect in rows:
-                if rect.collidepoint(pos):
-                    break
-            else:
-                contact = None
-            if contact is not None:
-                label = display_value("classification",
-                                      getattr(contact, "player_class", None))
-                return layout.tooltip_payload(
-                    message("sonar.tooltip.contact_title",
-                            contact=observations.contact_display_id(game, contact)),
-                    observations.format_bearing_pair(
-                        contact, _sonar_observer(game)),
-                    message("observation.bearing_uncertainty", uncertainty=f"{observations.bearing_uncertainty(contact):.1f}")
-                    if observations.bearing_uncertainty(contact) is not None else None,
-                    message("sonar.tooltip.classification", classification=label),
-                    message("sonar.tooltip.opz_release",
-                            state=localize("sonar.release.released"
-                                           if getattr(contact, "released_to_opz", False)
-                                           else "sonar.release.private")),
-                    message("sonar.tooltip.level_confidence", level=f"{getattr(contact, 'snr', -99):+.1f}", confidence=f"{getattr(contact, 'confidence', 0):.0%}"),
-                    message("sonar.tooltip.track_age", age=f"{max(0, game.sim_t - getattr(contact, 'last_seen', 0)):.0f}"),
-                    message("observation.fix_age", age=f"{max(0, game.sim_t - contact.range_seen):.0f}")
-                    if getattr(contact, "range_est", None) is not None
-                    and getattr(contact, "range_seen", None) is not None else None,
-                    target_id=f"sonar:contact:{contact.id}")
-        return None
-    if details.collidepoint(pos):
-        return layout.tooltip_payload(
-            message("sonar.evaluation"), message("sonar.tooltip.page", page=display_value('sonar_page', PAGES[page])),
-            message("sonar.evaluation_caption"),
-            message("control.sonar_page"),
-            target_id=f"sonar:details:{page}")
-    if not main.collidepoint(pos):
-        if station.y + 40 <= pos[1] < station.y + 70:
-            return layout.tooltip_payload(
-                message("sonar.control_status"),
-                message("sonar.tooltip.array", array=display_value("array", getattr(game, 'sonar_mode', 'BOW'))),
-                message("sonar.tooltip.listen_bearing", bearing=_bearing_line(
-                    game, getattr(sonar, "listen_bearing", 0))),
-                message("sonar.tooltip.gain_filter", gain=f"{getattr(sonar, 'gain_db', 0):+.0f}", low=f"{getattr(sonar, 'band_low_hz', 0):.0f}", high=f"{getattr(sonar, 'band_high_hz', 300):.0f}"),
-                message("control.sonar"),
-                target_id="sonar:controls")
-        return None
-    if page in (0, 1):
-        plot = _waterfall_plot(main, page)
-        if not plot.collidepoint(pos):
-            return None
-        axis = (pos[0] - plot.x) / max(1, plot.w - 1)
-        rows, times, history_rows = _history_for_page(sonar, page)
-        live = page == 1 and not len(rows)
-        if live:
-            spectrum = getattr(getattr(sonar, "receiver", None), "spectrum", [])
-            rows = [spectrum] if len(spectrum) else []
-        count = len(rows) if live else max(history_rows, len(rows))
-        row = len(rows) - 1 - int((pos[1] - plot.y) * count / plot.h)
-        if not 0 <= row < len(rows) or not len(rows[row]):
-            return layout.tooltip_payload(
-                message("sonar.tooltip.broadband_bin" if page == 0 else "sonar.tooltip.lofar_bin"),
-                message("sonar.no_receiver_data"),
-                target_id=f"sonar:empty-history:{page}")
-        stamp = (message("sonar.tooltip.sim_time", time=f"{times[row]:.1f}")
-                 if row < len(times) else None)
-        if page == 0:
-            bin_count = len(rows[row])
-            bin_index = round(axis * bin_count) % bin_count
-            bearing = bin_index * (360.0 / bin_count)
-            level = float(np.clip(_circular_broadband(rows[row], plot.w)[
-                int(pos[0] - plot.x)] * 10 ** (getattr(sonar, "gain_db", 0) / 20), 0, 1))
-            return layout.tooltip_payload(
-                message("sonar.tooltip.broadband_bin"), _bearing_line(game, bearing),
-                message("sonar.tooltip.relative_level", level=f"{level:.3f}"),
-                stamp,
-                message("tooltip.omni_sample"),
-                target_id=f"sonar:broadband:{bearing:.1f}")
-        frequency = axis * config.LOFAR_FMAX_HZ
-        processed = _process_lofar_rows(
-            np.asarray([rows[row]], dtype=float), _waterfall_controls(game, page),
-            getattr(sonar, "process_lofar_column", None) is not None)
-        level = float(_linear_lofar(processed[0], plot.w)[int(pos[0] - plot.x)])
-        bearings = getattr(sonar, "lofar_bearings", [])
-        beam = (bearings[row] if row < len(bearings) else
-                getattr(sonar, "listen_bearing", 0) if live else None)
-        return layout.tooltip_payload(
-            message("sonar.tooltip.lofar_bin"), message("sonar.tooltip.frequency_level", frequency=f"{frequency:.1f}", level=f"{level:.3f}"),
-            stamp,
-            message("sonar.tooltip.beam_source", bearing=_bearing_line(game, beam))
-            if beam is not None else None,
-            target_id=f"sonar:lofar:{frequency:.1f}")
-    if page == 2:
-        plot = pygame.Rect(main.x + 57, main.y + 62, main.w - 83,
-                           main.h - 109)
-        if not plot.collidepoint(pos):
-            return None
-        frequency = (pos[0] - plot.x) / max(1, plot.w - 1) * DEMON_DISPLAY_MAX_HZ
-        spectrum = getattr(getattr(sonar, "receiver", None),
-                           "demon_spectrum", [])
-        index = min(len(spectrum) - 1, max(0, round(frequency) - 1)) \
-            if len(spectrum) else 0
-        level = float(spectrum[index]) if len(spectrum) else 0.0
-        return layout.tooltip_payload(
-            message("sonar.tooltip.demon_line"), message("sonar.tooltip.frequency_level", frequency=f"{frequency:.1f}", level=f"{level:.3f}"),
-            message("sonar.envelope_source"),
-            target_id=f"sonar:demon:{frequency:.1f}")
-    if page == 3:
-        contact = getattr(game, "selected_contact", None)
-        track = getattr(sonar, "_tracks", {}).get(
-            getattr(contact, "target_id", None))
-        points = list(getattr(track, "pts", []))
-        if not points:
-            return None
-        plot, _, _, xy = _tma_plot(main, points)
-        index = min(range(len(xy)), key=lambda i:
-                    (xy[i][0] - pos[0]) ** 2 + (xy[i][1] - pos[1]) ** 2)
-        if not plot.collidepoint(pos) or pygame.Vector2(xy[index]).distance_to(pos) > 8:
-            return None
-        point = points[index]
-        return layout.tooltip_payload(
-            message("sonar.tma_point"),
-            layout.format_bearing_pair(point.bearing,
-                                       getattr(point, "fcourse", 0.0)),
-            message("sonar.tooltip.sim_time", time=f"{float(point.t):.1f}"),
-            message("sonar.tooltip.recorded_course", course=f"{float(getattr(point, 'fcourse', 0)) % 360:05.1f}"),
-            message("sonar.tma_source"),
-            target_id=f"sonar:tma:{float(point.t):.1f}")
-    if page == 5:
-        echoes = active_echoes(sonar, getattr(game, "sim_t", 0.0))
-        if echoes:
-            ascope, polar, max_range = _active_geometry(main, echoes)
-            if polar.collidepoint(pos):
-                echo = min(echoes, key=lambda item: pygame.Vector2(
-                    _echo_point(polar, max_range, item)).distance_to(pos))
-                distance = pygame.Vector2(_echo_point(polar, max_range, echo)).distance_to(pos)
-            elif ascope.collidepoint(pos):
-                latest = {item.get("contact_id"): item for item in echoes}
-                echo = min(latest.values(), key=lambda item: abs(
-                    _ascope_point(ascope, max_range, item)[0] - pos[0]))
-                x, y = _ascope_point(ascope, max_range, echo)
-                distance = max(abs(x - pos[0]), y - pos[1])
-            else:
-                return None
-            if distance > 8:
-                return None
-            return layout.tooltip_payload(
-                message("sonar.tooltip.active_echoes", count=len(echoes)),
-                message("sonar.tooltip.echo_title", contact=echo.get('contact_id', '--')),
-                message("sonar.line.echo_age_mode", age=f"{echo['age_s']:.1f}", mode=echo.get('mode', '--')),
-                _bearing_line(game, echo["bearing"]),
-                message("sonar.tooltip.range_sigma", range=f"{float(echo['range_nm']):.2f}", sigma=f"{float(echo.get('range_sigma_nm', 0)):.2f}"),
-                message("sonar.active_source"),
-                target_id=f"sonar:active-plot:{echo.get('contact_id')}:{echo['t']}")
-    return layout.tooltip_payload(message("sonar.tooltip.plot"),
-                                  message("sonar.tooltip.page", page=display_value('sonar_page', PAGES[page])),
-                                  message("sonar.displayed_data"),
-                                  target_id=f"sonar:plot:{page}")
 
 
 def _text(screen, text, rect, color=TEXT, size=14, align="left"):
@@ -491,73 +109,6 @@ def waterfall_pixels(rows, gain_db=0.0, *, black_level=0.0, contrast=1.0,
     low, high = colors or (NAVY, PHOSPHOR_PALETTES.get(palette, CYAN))
     low, high = np.asarray(low), np.asarray(high)
     return (low + values[..., None] ** gamma * (high - low)).astype(np.uint8)
-
-
-def _circular_broadband(row, width):
-    """Interpolate 180 circular bearing bins, joining 358 degrees to north."""
-    width = max(1, int(width))
-    values = np.asarray(row, dtype=float)
-    if values.size == 0:
-        return np.zeros(width)
-    source = np.arange(values.size + 1, dtype=float)
-    wrapped = np.concatenate((values, values[:1]))
-    target = np.linspace(0.0, float(values.size), width)
-    return np.interp(target, source, wrapped)
-
-
-def _linear_lofar(row, width):
-    """Interpolate the existing 1/2/5 Hz bins onto an honest linear Hz axis."""
-    if len(row) == 0:
-        return np.zeros(width)
-    frequencies = _lofar_frequencies(len(row))
-    return np.interp(np.linspace(0.0, config.LOFAR_FMAX_HZ, width),
-                     frequencies, row)
-
-
-@lru_cache(maxsize=8)
-def _lofar_frequencies(size):
-    return np.asarray([config.lofar_bin_freq(i) for i in range(size)])
-
-
-def _process_lofar_rows(raw, controls, apply_filters=True):
-    """Vectorized equivalent of Sonar.process_lofar_column over all rows."""
-    gain_db, band_low, band_high, notch_enabled, ship_speed = controls[:5]
-    operator_notch = controls[5] if len(controls) > 5 else None
-    gain = 10.0 ** (gain_db / 20.0)
-    processed = np.clip(raw * gain, 0.0, 1.0)
-    if not apply_filters or raw.shape[-1] == 0:
-        return processed
-    frequencies = _lofar_frequencies(raw.shape[-1])
-    in_band = (frequencies >= band_low) & (frequencies <= band_high)
-    processed[:, ~in_band] = 0.0
-    if notch_enabled:
-        shaft = 10.0 + 1.9 * ship_speed
-        notch = in_band & (np.abs(frequencies - shaft) < 5.0)
-        processed[:, notch] = np.clip(raw[:, notch] * gain * 0.15, 0.0, 1.0)
-    if operator_notch is not None:
-        notch = in_band & (np.abs(frequencies - operator_notch) < 2.5)
-        processed[:, notch] = np.clip(raw[:, notch] * gain * 0.15, 0.0, 1.0)
-    return processed
-
-
-def _waterfall_controls(game, page):
-    sonar = game.sonar
-    filters = page == 1 and getattr(sonar, "process_lofar_column", None) is not None
-    notch = filters and getattr(sonar, "notch_enabled", False)
-    tools = getattr(game, "sonar_tools", None)
-    return (getattr(sonar, "gain_db", 0.0),
-            getattr(sonar, "band_low_hz", 0.0) if filters else 0.0,
-            getattr(sonar, "band_high_hz", 300.0) if filters else 300.0,
-            notch, getattr(_sonar_observer(game), "speed", 0.0) if notch else 0.0,
-            getattr(sonar, "operator_notch_hz", None) if filters else None,
-            getattr(tools, "integration_s", 2) if page in (1, 2) else 2)
-
-
-def _display_controls(game):
-    return (float(getattr(game, "sonar_display_black", 0.0)),
-            float(getattr(game, "sonar_display_contrast", 1.6)),
-            str(getattr(game, "sonar_display_palette", "green")),
-            float(getattr(game, "sonar_display_history", 1.0)))
 
 
 def _draw_display_status(game, panel):
@@ -655,84 +206,6 @@ def _trace(screen, rect, values, color=CYAN):
 PEAK_LABEL_W = 40
 
 
-def spectrum_peaks(values, frequencies, limit=8, min_separation_hz=0.0):
-    """Prominent local maxima of a displayed spectrum as ``(hz, level)``.
-
-    A peak must stand clearly above the median floor and its own
-    neighbourhood; the frequency is refined by a parabola through the three
-    bins around it. Strongest first, thinned so labels cannot overlap, then
-    returned in frequency order. Pure and bounded (``limit``).
-    """
-    v = np.nan_to_num(np.asarray(values, dtype=float), nan=0.0,
-                      posinf=0.0, neginf=0.0)
-    f = np.asarray(frequencies, dtype=float)
-    if v.size < 3 or f.size != v.size or limit <= 0:
-        return []
-    top = float(v.max())
-    floor = float(np.median(v))
-    span = top - floor
-    if top < .03 or span <= 1e-6:
-        return []
-    threshold = max(floor + .25 * span, floor * 1.6, .03)
-    inner = v[1:-1]
-    local = np.flatnonzero((inner > v[:-2]) & (inner >= v[2:])
-                           & (inner >= threshold)) + 1
-    window = 4
-    candidates = []
-    for i in local:
-        left = v[max(0, i - window):i].min()
-        right = v[i + 1:i + 1 + window].min()
-        if v[i] - max(left, right) < .1 * span:
-            continue
-        x0, x1, x2 = f[i - 1], f[i], f[i + 1]
-        y0, y1, y2 = v[i - 1], v[i], v[i + 1]
-        denominator = (x0 - x1) * (x0 - x2) * (x1 - x2)
-        hz = x1
-        if abs(denominator) > 1e-12:
-            a = (x2 * (y1 - y0) + x1 * (y0 - y2) + x0 * (y2 - y1)) / denominator
-            b = (x2 * x2 * (y0 - y1) + x1 * x1 * (y2 - y0)
-                 + x0 * x0 * (y1 - y2)) / denominator
-            if a < 0:
-                hz = float(np.clip(-b / (2 * a), x0, x2))
-        candidates.append((float(v[i]), -int(i), float(hz)))
-    chosen = []
-    for level, _, hz in sorted(candidates, reverse=True):
-        if all(abs(hz - other) >= min_separation_hz for other, _ in chosen):
-            chosen.append((hz, level))
-            if len(chosen) >= limit:
-                break
-    return sorted(chosen)
-
-
-def peak_label(hz):
-    return f"{hz:.1f}" if hz < 100 else f"{hz:.0f}"
-
-
-def place_peak_labels(apexes, bounds, obstacles=(), height=12):
-    """Collision-free label boxes for ``(x, y, width, text, level)`` apexes.
-
-    Strongest first: above the apex when there is headroom, otherwise beside
-    it (right, then left, then one row lower). A label with no free place is dropped rather than
-    drawn over another value. Returns ``(box, text, x, y, above)``.
-    """
-    bounds = pygame.Rect(bounds)
-    taken = [pygame.Rect(box) for box in obstacles]
-    placed = []
-    for x, y, width, text, _ in sorted(apexes, key=lambda a: (-a[4], a[0])):
-        side_top = max(bounds.y + 1, y - height // 2)
-        options = [(pygame.Rect(x - width // 2, y - height - 3, width, height), True)]
-        options += [(pygame.Rect(left, top, width, height), False)
-                    for top in (side_top, side_top + height)
-                    for left in (x + 4, x - 4 - width)]
-        for box, above in options:
-            if (bounds.contains(box)
-                    and not any(box.inflate(4, 0).colliderect(other) for other in taken)):
-                taken.append(box)
-                placed.append((box, text, x, y, above))
-                break
-    return placed
-
-
 def _draw_peak_labels(screen, rect, values, frequencies, xmin, xmax,
                       marker_hz=None, color=TEXT):
     """Frequency value above every prominent peak of a spectrum strip."""
@@ -760,91 +233,9 @@ def _draw_peak_labels(screen, rect, values, frequencies, xmin, xmax,
         _text(screen, text, box, color, 10, "center")
 
 
-def _translator(game, tr=None):
-    return tr or getattr(game, "tr", None) or (lambda text: text)
-
-
-def _tow_status(sonar, ship_speed=0.0):
-    """Normalize the public TAS status for UI-only consumers and old fixtures."""
-    status_fn = getattr(sonar, "tow_status", None)
-    if status_fn is not None:
-        status = dict(status_fn(ship_speed))
-    else:
-        state = getattr(getattr(sonar, "tow_state", "STOWED"), "value",
-                        getattr(sonar, "tow_state", "STOWED"))
-        payout = float(getattr(sonar, "tow_payout", 0.0))
-        status = dict(state=state, payout=payout, payout_percent=payout * 100.0,
-                      available=state == "STREAMED", handling_ok=True,
-                      performance=float(getattr(sonar, "tow_performance", 0.0)),
-                      depth_m=getattr(sonar, "towed_depth_m",
-                                      config.SONAR_TOWED_DEPTH_M),
-                      depth_target_m=getattr(sonar, "towed_depth_target_m",
-                                             config.SONAR_TOWED_DEPTH_M))
-    status.setdefault("payout_percent", float(status.get("payout", 0.0)) * 100.0)
-    status.setdefault("performance", 0.0)
-    status.setdefault("handling_ok", True)
-    status.setdefault("available", False)
-    return status
-
-
-def _vds_status(sonar):
-    """Public VDS status, or None for sonar fixtures without a VDS."""
-    status_fn = getattr(sonar, "vds_status", None)
-    return dict(status_fn()) if status_fn is not None else None
-
-
-def active_echoes(sonar, now, window_s=ACTIVE_HISTORY_WINDOW_S):
-    """Return bounded, recent measurement dictionaries without altering history."""
-    limit = int(getattr(config, "SONAR_ECHO_HISTORY_MAX", 80))
-    result = []
-    for echo in list(getattr(sonar, "echo_history", []))[-limit:]:
-        try:
-            age = max(0.0, float(now) - float(echo["t"]))
-            values = (float(echo["bearing"]), float(echo["range_nm"]),
-                      float(echo.get("range_sigma_nm", 0.0)),
-                      float(echo.get("snr_db", 0.0)))
-        except (KeyError, TypeError, ValueError):
-            continue
-        if age <= window_s and np.isfinite(values).all():
-            item = dict(echo)
-            item["age_s"] = age
-            result.append(item)
-    return result
-
-
 def _echo_color(age_s):
     fade = max(0.0, 1.0 - age_s / ACTIVE_HISTORY_WINDOW_S)
     return tuple(round(NAVY[i] + fade * (CYAN[i] - NAVY[i])) for i in range(3))
-
-
-def _active_geometry(panel, echoes):
-    gap = 18
-    left_w = round((panel.w - 48 - gap) * .57)
-    ascope = pygame.Rect(panel.x + 46, panel.y + 83, left_w, panel.h - 130)
-    polar = pygame.Rect(ascope.right + gap, ascope.y,
-                        panel.right - ascope.right - gap - 18, ascope.h)
-    max_range = max(5.0, max((float(e["range_nm"]) +
-                              float(e.get("range_sigma_nm", 0.0))
-                              for e in echoes), default=5.0))
-    return ascope, polar, min(100.0, np.ceil(max_range / 5.0) * 5.0)
-
-
-def _echo_point(polar, max_range, echo, distance=None):
-    radius = max(10, min(polar.w, polar.h) // 2 - 13)
-    bearing = np.deg2rad(float(echo["bearing"]))
-    if distance is None:
-        distance = min(max_range, float(echo["range_nm"]))
-    radial = distance / max_range * radius
-    return (round(polar.centerx + np.sin(bearing) * radial),
-            round(polar.centery - np.cos(bearing) * radial))
-
-
-def _ascope_point(ascope, max_range, echo):
-    x = ascope.x + round(min(max_range, float(echo["range_nm"]))
-                         / max_range * (ascope.w - 1))
-    height = round(np.clip((float(echo.get("snr_db", 0)) + 12) / 28,
-                           .08, 1.0) * (ascope.h - 12))
-    return x, ascope.bottom - 2 - height
 
 
 def _draw_active(game, panel, tr=None):
@@ -1083,21 +474,6 @@ def _draw_waterfall(game, panel, page):
                                  (x, spectrum_rect.bottom - 1 if vernier else plot.bottom - 1), 1)
 
 
-def _harmonic_candidates(sonar):
-    """Expose bounded receiver peaks as operator-selectable hypotheses."""
-    peaks = getattr(getattr(sonar, "receiver", None), "peaks", [])
-    return sorted({float(hz) for hz, _ in list(peaks)[:6]
-                   if np.isfinite(hz) and 0 < float(hz) <= config.LOFAR_FMAX_HZ})
-
-
-def _selected_harmonic(game):
-    """The operator's fundamental (placed with the cursor), if any."""
-    selected = getattr(game, "sonar_harmonic_hz", None)
-    if selected is None or not np.isfinite(selected) or selected <= 0:
-        return None
-    return float(selected)
-
-
 def _library_rows(game):
     """Class library: catalog classes sorted by fit to the operator's marks."""
     library = getattr(game, "sonar_class_library", None)
@@ -1115,18 +491,6 @@ def _library_rows(game):
                              name=str(getattr(signature, "label", signature.key))),
                      TEXT, 13))
     return rows
-
-
-def _demon_evidence(sonar):
-    spectrum = np.asarray(getattr(getattr(sonar, "receiver", None), "demon_spectrum", []))
-    analysis = getattr(sonar, "demon_analysis", None) or {}
-    rate = analysis.get("blade_rate_hz")
-    # Require a real envelope line above the floor before presenting hypotheses.
-    evidence = (spectrum.size >= 3 and np.isfinite(spectrum).all()
-                and float(np.max(spectrum)) > max(.02, float(np.median(spectrum)) * 2)
-                and analysis.get("confidence", 0) >= .2
-                and rate is not None and rate > 0)
-    return spectrum, analysis, bool(evidence)
 
 
 def _draw_demon(game, panel):
@@ -1206,100 +570,6 @@ def _draw_demon(game, panel):
     if assist and not evidence:
         _text(screen, "sonar.low_evidence",
               (plot.x + 12, plot.y + 12, plot.w - 24, 22), AMBER, 14)
-
-
-def _bearing_series(points):
-    """Unwrap adjacent observed bearings so 359 -> 1 crosses north, not 180."""
-    times = np.asarray([p.t for p in points], dtype=float)
-    bearings = np.rad2deg(np.unwrap(np.deg2rad([p.bearing for p in points])))
-    return times, bearings
-
-
-def _tma_plot(panel, points):
-    plot = pygame.Rect(panel.x + 65, panel.y + 69, panel.w - 95, panel.h - 116)
-    times, bearings = _bearing_series(points)
-    lo = float(np.min(bearings)) - 3 if len(points) else 0.0
-    hi = float(np.max(bearings)) + 3 if len(points) else 360.0
-    start = float(times[0]) if len(points) else 0.0
-    end = max(start + 1, float(times[-1])) if len(points) else 60.0
-    xy = [(plot.x + round((t - start) / (end - start) * (plot.w - 1)),
-           plot.bottom - 1 - round((b - lo) / (hi - lo) * (plot.h - 1)))
-          for t, b in zip(times, bearings)]
-    return plot, times, bearings, xy
-
-
-def tma_observation_summary(track, now, solution_quality=0.0):
-    """Summarize only the bearing history and recorded ownship legs."""
-    points = list(getattr(track, "pts", []))
-    if not points:
-        return dict(rate=None, legs=0, geometry="KEINE",
-                    state="ZU WENIG HISTORIE", age=None, span=0.0)
-    times, bearings = _bearing_series(points)
-    span = float(times[-1] - times[0]) if len(points) > 1 else 0.0
-    rate = None
-    if span > 0.0:
-        weights = np.asarray([
-            1.0 / max(0.05, float(getattr(point, "uncertainty_deg", 1.0))) ** 2
-            for point in points], dtype=float)
-        mean_time = float(np.average(times, weights=weights))
-        mean_bearing = float(np.average(bearings, weights=weights))
-        centered = times - mean_time
-        denom = float(np.dot(weights, centered * centered))
-        if denom > 0.0:
-            rate = float(np.dot(weights * centered,
-                                bearings - mean_bearing) / denom * 60.0)
-
-    leg_courses = []
-    for point in points:
-        course = getattr(point, "fcourse", None)
-        if course is None:
-            continue
-        if (not leg_courses or abs(config.angle_diff_deg(course, leg_courses[-1]))
-                >= config.TMA_MIN_COURSE_CHG_DEG):
-            leg_courses.append(course)
-    legs = len(leg_courses)
-    course_span = max((abs(config.angle_diff_deg(first, second))
-                       for i, first in enumerate(leg_courses)
-                       for second in leg_courses[i + 1:]), default=0.0)
-    geometry_ok = legs >= 2 and course_span >= config.TMA_MIN_COURSE_CHG_DEG
-    age = max(0.0, float(now) - float(times[-1]))
-    enough_history = (len(points) >= config.TMA_MIN_PTS
-                      and span >= config.TMA_MIN_SPAN_S)
-    if age > 30.0:
-        state = "VERALTET"
-    elif not enough_history:
-        state = "ZU WENIG HISTORIE"
-    elif not geometry_ok:
-        state = "SCHWACHE GEOMETRIE"
-    elif solution_quality < config.TMA_RANGE_MIN_QUALITY:
-        state = "KONVERGIEREND"
-    else:
-        state = "LOESUNG STABIL"
-    return dict(rate=rate, legs=legs,
-                geometry="BRAUCHBAR" if geometry_ok else "SCHWACH",
-                state=state, age=age, span=span)
-
-
-def tma_closing_rate_kn(ship, bearing_deg, course_deg, speed_kn):
-    """Range-rate (closing positive) along the line of sight to a TMA fix.
-
-    Pure display-derived value from data already shown alongside it (TMA
-    course/speed, own ship state); never stored, so it carries no save-schema
-    or determinism risk. This is what a real Doppler shift on an active ping
-    would report - the sign and magnitude of the closing rate - without
-    modeling the acoustic frequency shift itself.
-    """
-    if course_deg is None or speed_kn is None:
-        return None
-    bearing = math.radians(bearing_deg)
-    los = (math.sin(bearing), -math.cos(bearing))
-    course = math.radians(course_deg)
-    target_vx, target_vy = speed_kn * math.sin(course), -speed_kn * math.cos(course)
-    own_course = math.radians(getattr(ship, "course", 0.0))
-    own_speed = float(getattr(ship, "speed", 0.0))
-    own_vx, own_vy = own_speed * math.sin(own_course), -own_speed * math.cos(own_course)
-    relative_vx, relative_vy = target_vx - own_vx, target_vy - own_vy
-    return -(relative_vx * los[0] + relative_vy * los[1])
 
 
 def _draw_tma(game, panel):
@@ -1523,49 +793,6 @@ def _draw_environment(game, panel):
     if not contacts:
         _text(screen, "sonar.no_array_contacts",
               (panel.x + 20, y, panel.w - 40, 19), DIM, 13)
-
-
-def _detail_evidence(game, page):
-    """Return page-specific public evidence provenance, age, and freshness."""
-    sonar = game.sonar
-    now = float(getattr(game, "sim_t", 0.0))
-    stamp = None
-    if page in (0, 1, 2):
-        source = localize("sonar.source.receiver")
-        times = getattr(sonar, "history_times" if page == 0 else "lofar_times", [])
-        if len(times):
-            stamp = float(times[-1])
-    elif page == 3:
-        source = localize("sonar.source.tma_track")
-        contact = getattr(game, "selected_contact", None)
-        track = getattr(sonar, "_tracks", {}).get(getattr(contact, "target_id", None))
-        points = getattr(track, "pts", [])
-        stamps = ([float(points[-1].t)] if points else [])
-        tma_seen = getattr(contact, "tma_seen", None)
-        if tma_seen is not None:
-            stamps.append(float(tma_seen))
-        if stamps:
-            stamp = max(stamps)
-    elif page == 4:
-        source = localize("sonar.source.bt_profile")
-        profile = getattr(sonar, "bt_profile", None)
-        if profile is not None and profile.get("t") is not None:
-            stamp = float(profile["t"])
-    else:
-        echoes = active_echoes(sonar, now)
-        if echoes:
-            source = localize("sonar.source.active_echo")
-            stamp = float(echoes[-1]["t"])
-        else:
-            source = localize("sonar.source.active_ping")
-            pending = getattr(sonar, "_pending_pings", [])
-            if pending:
-                stamp = max(float(item["sent_at"]) for item in pending)
-    if stamp is None:
-        return source, None, localize("sonar.evidence.absent")
-    age = max(0.0, now - stamp)
-    state = "sonar.evidence.stale" if age > 30.0 else "sonar.evidence.current"
-    return source, age, localize(state)
 
 
 def _detail_rows(game, page):
@@ -1795,31 +1022,6 @@ def _detail_rows(game, page):
     return rows
 
 
-def _array_state_line(game):
-    """Towed or variable-depth array while it is moving or not yet ready."""
-    sonar = game.sonar
-    speed = getattr(_sonar_observer(game), "speed", 0.0)
-    for name, status in (("VDS", _vds_status(sonar)), ("TAS", _tow_status(sonar, speed))):
-        if status is None or status["state"] == "STOWED" or status["available"]:
-            continue
-        pause = (" " + localize(message("ui.pause"))
-                 if not status["handling_ok"] and status["state"] in (
-                     "DEPLOYING", "RETRIEVING") else "")
-        return message("sonar.line.array_state", array=name,
-                       state=display_message("tow", status["state"]),
-                       payout=f"{status['payout_percent']:.0f}",
-                       stability=f"{status['performance']:.0%}", pause=pause)
-    return None
-
-
-def _ping_line(game):
-    sonar = game.sonar
-    return (message("sonar.ping_echo") if getattr(sonar, "ping_active", False) else
-            message("sonar.ping_ready") if getattr(sonar, "ping_ready", True) else
-            message("sonar.ping_cooldown", seconds=
-                    f"{getattr(sonar, 'ping_cooldown_remaining', 0):.0f}"))
-
-
 def _draw_details(game, rect, page):
     rows = _detail_rows(game, page)
     reduction = 0
@@ -1836,19 +1038,6 @@ def _draw_details(game, rect, page):
         _text(game.screen, text, (rect.x + 13, y, rect.w - 26, height), color, size)
         y += height
     _draw_listening_console(game, pygame.Rect(rect.x, y + 6, rect.w, rect.bottom - y - 6), page)
-
-
-def _console_lamps(game):
-    """Ping, audio and peak hold as annunciator lamps (display only)."""
-    sonar = game.sonar
-    ping = ("caution" if getattr(sonar, "ping_active", False) else
-            "on" if getattr(sonar, "ping_ready", True) else "off")
-    # A click on a lamp presses its key (Shift+A ping, J audio, Space peak hold).
-    return (("sonar.lamp.ping", "", ping, "Shift+A"),
-            ("sonar.lamp.audio", "", "on" if getattr(game, "sonar_audio_enabled", False)
-             else "off", "J"),
-            ("sonar.lamp.peak", "", "caution" if getattr(sonar, "peak_hold", False)
-             else "off", "Space"))
 
 
 def _draw_listening_console(game, rect, page):

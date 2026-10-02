@@ -12,13 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.155**
+Current release: **1.3.157**
 
-Release 1.3.155 makes the optional language model work with reasoning models.
-The game asks the server for answers without a thinking phase, reads answers
-sent as content parts, and the connection test now says when only reasoning
-came back. The API key is typed as asterisks, and the options page no longer
-reads the key file on every frame. Saves stay v49; v38 to v48 saves still load.
+Release 1.3.157 turns the start menu's mission list into a scrolling list. With
+twelve scenarios per side the list had grown into the world and seed lines
+below it. Now nine rows show at once in a panel with a scroll bar that follows
+the selection (Up/Down, wheel, PgUp/PgDn, Home/End), and the start of the
+selected scenario's briefing appears below. The own missions, the free hunt's
+difficulty and the lessons scroll the same way, long menu lines shrink to the
+screen, and the browser's new-game list names the free patrol. Saves stay v49;
+v38 to v48 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

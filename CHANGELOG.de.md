@@ -4,6 +4,34 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.157
+
+Version 1.3.157 ersetzt die feste Missionsliste im Startmenü durch eine rollende.
+Mit zwölf Szenarien je Seite und der Zeile für eigene Missionen lagen die
+letzten Zeilen über den Welt- und Seed-Zeilen am unteren Bildrand.
+
+- Die Szenarioliste zeigt neun Zeilen auf einmal in einem Feld mit Rollbalken
+  und Pfeilmarken; der Ausschnitt folgt der Auswahl. `Auf`/`Ab` und das Mausrad
+  gehen einen Schritt, `Bild auf`/`Bild ab` eine Seite (bei festem realem
+  Sektor wählen sie weiter den Sektor), `Pos1`/`Ende` springen zur ersten und
+  letzten Zeile.
+- Unter der Liste steht der Anfang der Einsatzbesprechung des gewählten
+  Szenarios (bei der Zeile für eigene Missionen, was sie öffnet).
+- Eigene Missionen, die Schwierigkeitsliste der freien Jagd und die Lektionen
+  rollen genauso; die Beschreibung einer eigenen Mission berührt die
+  Tastenzeile nicht mehr.
+- Zentrierte Menüzeilen, die breiter als der Bildschirm sind (große Schrift,
+  lange Sektornamen), werden verkleinert, statt über beide Ränder zu laufen,
+  und die Tastenzeile des Einsatzbuchs bleibt frei von der Sektorzeile.
+- Die Liste „Neues Spiel“ im Browser nannte die Freie Fahrt „Unbekannt“; jetzt
+  steht ihr Name dort, und der Browser nimmt bis zu 128 Szenarien an.
+- Ein neuer Layouttest zeichnet jede Seite des Startmenüs auf Englisch und
+  Deutsch, mit normaler und großer Schrift und mit festem realem Sektor, auch
+  mit weit mehr Missionen als heute, und schlägt bei jeder überlappenden oder
+  aus dem Bild laufenden Zeile fehl.
+
+Spielstände bleiben v49; Spielstände v38 bis v48 lassen sich weiter laden.
+
 ## 1.3.155
 
 Version 1.3.155 macht das optionale Sprachmodell mit Denkmodellen wie Qwen3

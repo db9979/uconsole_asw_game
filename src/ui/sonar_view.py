@@ -435,11 +435,11 @@ def _text(screen, text, rect, color=TEXT, size=14, align="left"):
     text = layout.fit_line(text, font, rect.w)
     x = rect.x
     if align == "right":
-        x = rect.right - font.size(text)[0]
+        x = rect.right - layout.text_width(font, text)
     elif align == "center":
-        x += (rect.w - font.size(text)[0]) // 2
+        x += (rect.w - layout.text_width(font, text)) // 2
     with layout.clip_to(screen, rect):
-        image = font.render(text, True, color)
+        image = layout.render_line(font, text, color)
         rendered = image.get_rect(topleft=(x, rect.y))
         layout.record_text(text, rendered, rect, image)
         screen.blit(image, rendered)

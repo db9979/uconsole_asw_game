@@ -26,6 +26,19 @@ _TEXT_TRACE = None
 _TRUNCATION_TRACE = None
 COMMAND_KEY_COLOR = (142, 232, 255)
 COMMAND_DESCRIPTION_COLOR = (205, 216, 222)
+# Text memo (display only): word wraps, line widths and rendered line images
+# keyed on the font object and the exact text (and colour), so a label that
+# does not change between frames is laid out and rasterized once.  Pure and
+# bounded: a full memo is emptied, never grown; results never depend on it.
+# Only faces held by the font cache are memoized (their SDL lifetime is
+# managed there); any other font object is measured and rendered directly.
+_MEMO_FONT_IDS: set = set()
+_WRAP_MEMO: dict = {}
+_WIDTH_MEMO: dict = {}
+_IMAGE_MEMO: dict = {}
+WRAP_MEMO_MAX = 4096
+WIDTH_MEMO_MAX = 4096
+IMAGE_MEMO_MAX = 512
 
 
 # Bottom-panel modes: "docked" keeps the 180 px event feed + telemetry band
@@ -65,9 +78,52 @@ def ticker_rect() -> pygame.Rect:
     return pygame.Rect(0, config.SCREEN_H - TICKER_H, config.SCREEN_W, TICKER_H)
 
 
+def clear_text_memo() -> None:
+    """Forget memoized wraps, widths and line images (display only)."""
+    _WRAP_MEMO.clear()
+    _WIDTH_MEMO.clear()
+    _IMAGE_MEMO.clear()
+
+
+def _bounded_put(memo: dict, limit: int, key, value):
+    if len(memo) >= limit:
+        memo.clear()
+    memo[key] = value
+    return value
+
+
+def text_size(f: pygame.font.Font, text: str) -> tuple:
+    """``f.size(text)``, memoized per font object and text."""
+    if id(f) not in _MEMO_FONT_IDS:
+        return tuple(f.size(text))
+    key = (f, text)
+    size = _WIDTH_MEMO.get(key)
+    if size is None:
+        size = _bounded_put(_WIDTH_MEMO, WIDTH_MEMO_MAX, key, tuple(f.size(text)))
+    return size
+
+
+def text_width(f: pygame.font.Font, text: str) -> int:
+    """``f.size(text)[0]``, memoized per font object and text."""
+    return text_size(f, text)[0]
+
+
+def render_line(f: pygame.font.Font, text: str, color) -> pygame.Surface:
+    """``f.render(text, True, color)``, memoized; callers must not draw on it."""
+    if id(f) not in _MEMO_FONT_IDS:
+        return f.render(text, True, color)
+    key = (f, text, tuple(color))
+    image = _IMAGE_MEMO.get(key)
+    if image is None:
+        image = _bounded_put(_IMAGE_MEMO, IMAGE_MEMO_MAX, key, f.render(text, True, color))
+    return image
+
+
 def clear_font_cache() -> None:
     """Drop SDL-bound fonts before pygame teardown or display replacement."""
     global _FONT_CACHE_DISPLAY
+    clear_text_memo()
+    _MEMO_FONT_IDS.clear()
     _FONT_CACHE.clear()
     _FONT_CACHE_DISPLAY = None
 
@@ -207,6 +263,7 @@ def font(size: int, bold: bool = False) -> pygame.font.Font:
     if f is None:
         f = _load_font(rendered_size, bold)
         _FONT_CACHE[key] = f
+        _MEMO_FONT_IDS.add(id(f))
     return f
 
 
@@ -224,6 +281,16 @@ def wrap_text(text: str, f: pygame.font.Font, width_px: int) -> list:
     """Word-Wrap über f.size(); explizite Newlines werden respektiert."""
     if width_px <= 0:
         return []
+    if id(f) not in _MEMO_FONT_IDS:
+        return _wrap_text(text, f, width_px)
+    key = (f, text, width_px)
+    lines = _WRAP_MEMO.get(key)
+    if lines is None:
+        lines = _bounded_put(_WRAP_MEMO, WRAP_MEMO_MAX, key, tuple(_wrap_text(text, f, width_px)))
+    return list(lines)
+
+
+def _wrap_text(text: str, f: pygame.font.Font, width_px: int) -> list:
     out = []
     for para in text.split("\n"):
         words = para.split(" ")
@@ -255,7 +322,7 @@ def ellipsize(text: object, f: pygame.font.Font, width_px: int,
     value = str(text)
     if width_px <= 0:
         return ""
-    if f.size(value)[0] <= width_px:
+    if text_width(f, value) <= width_px:
         return value
     if _TRUNCATION_TRACE is not None:
         _TRUNCATION_TRACE.append({"text": value, "width": int(width_px),
@@ -322,11 +389,11 @@ def fit_block_text(value, w: int, h: int, min_size: int = MIN_OPERATIONAL_FONT) 
 def fit_line(value, f: pygame.font.Font, width_px: int) -> str:
     """One line: full text, else its catalog abbreviation, else ellipsized."""
     text = localize(value)
-    if f.size(text)[0] <= width_px:
+    if text_width(f, text) <= width_px:
         return text
     candidates = [localize(item) for item in short_candidates(value)]
     for candidate in candidates:
-        if f.size(candidate)[0] <= width_px:
+        if text_width(f, candidate) <= width_px:
             return candidate
     return ellipsize(candidates[-1] if candidates else text, f, width_px)
 
@@ -352,10 +419,10 @@ def blit_block(screen, text: str, x: int, y: int, w: int, h: int,
         for i, line in enumerate(lines):
             px = x
             if align == "center":
-                px = x + max(0, (w - f.size(line)[0]) // 2)
+                px = x + max(0, (w - text_width(f, line)) // 2)
             elif align == "right":
-                px = x + w - f.size(line)[0]
-            image = f.render(line, True, color)
+                px = x + w - text_width(f, line)
+            image = render_line(f, line, color)
             rendered = image.get_rect(topleft=(px, y + i * lh))
             record_text(line, rendered, rect, image)
             screen.blit(image, rendered)
@@ -521,7 +588,7 @@ def panel(screen, rect, title: str = "", title_size: int = 20) -> int:
     title = localize(title)
     if title:
         f, lines = fit_text(title, title_size, w - 28, 40, min_size=12)
-        image = f.render(lines[0], True, config.COLOR_TEXT)
+        image = render_line(f, lines[0], config.COLOR_TEXT)
         rendered = image.get_rect(topleft=(x + 14, y + 8))
         record_text(lines[0], rendered, (x + 14, y + 8, w - 28, 40), image)
         screen.blit(image, rendered)
@@ -539,8 +606,8 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
     lab = fit_line(label, f, label_w - 4)
     val = fit_line(value, f, w - label_w - 4)
     with clip_to(screen, (x, y, w, f.get_linesize())):
-        label_image = f.render(lab, True, dcol)
-        value_image = f.render(val, True, col)
+        label_image = render_line(f, lab, dcol)
+        value_image = render_line(f, val, col)
         bounds = pygame.Rect(x, y, w, f.get_linesize())
         label_rect = label_image.get_rect(topleft=(x, y))
         value_rect = value_image.get_rect(topleft=(x + label_w + 4, y))
@@ -567,9 +634,9 @@ def command_segment(screen, rect, key: str, description: str,
             if not localize(text) or x >= rect.right - 4:
                 continue
             if index and x > rect.x + 6:
-                x += face.size(" ")[0]
+                x += text_width(face, " ")
             shown = fit_line(text, face, rect.right - 4 - x)
-            image = face.render(shown, True, color)
+            image = render_line(face, shown, color)
             rendered = image.get_rect(topleft=(x, rect.y + max(
                 0, (rect.h - face.get_linesize()) // 2)))
             record_text(shown, rendered, rect, image)

@@ -78,7 +78,7 @@ def _shortcut_footer(screen, rect, specs) -> None:
     # Segments share the row by the width their text needs, so a long key
     # (Backspace) never gets cut while a short one wastes space.
     face = layout.font(11)
-    needs = [face.size(f"{localize(key)} {localize(description)}")[0] + 16
+    needs = [layout.text_width(face, f"{localize(key)} {localize(description)}") + 16
              for key, description in specs]
     spare = max(0, rect.w - sum(needs))
     x = rect.x

@@ -67,6 +67,29 @@ function setHostMessage(message) {
   }
   emit("host");
 }
+// A host command can be sent: solo host, nothing in flight, connected, and a
+// host view of the world the console shows. A side switch re-leases every
+// station (a new world session or epoch); the console first resyncs its new
+// station, and a host view polled just before the switch landed would make
+// the command stale.
+const hostActionReady = () => Boolean(S.session?.host && S.hostView && !S.hostPending && S.connected &&
+  S.v2State && S.hostView.session === S.v2State.session && S.hostView.epoch === S.v2State.epoch);
+// Send once the console is ready again (after a side switch), instead of
+// dropping the command silently while it resyncs; a console that does not
+// become ready reports the command as stale.
+export async function sendHostActionWhenReady(action, params, limitMs = 15000) {
+  const context = S.generation;
+  const deadline = performance.now() + limitMs;
+  while (!hostActionReady()) {
+    if (context !== S.generation) return;
+    if (performance.now() >= deadline) {
+      setHostMessage({key: "host_result_stale", status: "rejected"});
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  await sendHostAction(action, params);
+}
 export async function sendHostAction(action, params) {
   if (!S.session?.host || !S.hostView || S.hostPending || !S.connected) return;
   let id;

@@ -726,17 +726,44 @@ async function until(check, message) {
   for (let index = 0; index < 700; index++) { if (check()) return; await sleep(20); }
   throw new Error(`${message}; connection=${$test("connection")?.textContent}; errors=${browserErrors.join(" | ")}`);
 }
+// A canvas whose backing store matches its current layout box (the page's
+// resizeCanvas() rule): reading clientWidth/clientHeight forces layout now,
+// while the redraw for a layout change waits for a ResizeObserver callback,
+// which runs only in a rendering step. Under --virtual-time-budget, on a
+// loaded host, timers can race far ahead of rendering steps, so a canvas
+// could look "settled" for 80 ms and still owe that redraw (CI: "OPZ sweep
+// continues after the mission ended" with the sweep layer 6-33 px shorter
+// after the redraw).
+function canvasCaughtUp(canvas) {
+  const width = canvas.clientWidth, height = canvas.clientHeight;
+  const dpr = Math.min(Math.min(window.devicePixelRatio || 1, 3), Math.sqrt(8000000 / Math.max(1, width * height)));
+  return canvas.width === Math.max(1, Math.round(width * dpr)) &&
+    canvas.height === Math.max(1, Math.round(height * dpr));
+}
 // The overlay may still be redrawn once after a state change (a layout or
-// resize pass); wait until two frames 80 ms apart agree, then return it.
+// resize pass); wait until it has caught up with its layout and two samples
+// 80 ms apart agree, then return it.
 async function settledFrame(canvas) {
-  let previous = canvas.toDataURL();
+  let previous = null;
   for (let index = 0; index < 40; index++) {
-    await sleep(80);
-    const frame = canvas.toDataURL();
-    if (frame === previous) return frame;
+    const frame = canvasCaughtUp(canvas) ? canvas.toDataURL() : null;
+    if (frame !== null && frame === previous) return frame;
     previous = frame;
+    await sleep(80);
   }
-  return previous;
+  return canvas.toDataURL();
+}
+// A still overlay is unchanged 120 ms later. A layout change in between is a
+// resize redraw, not motion: settle again and compare at the new size.
+async function stillAfter(canvas) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const frame = await settledFrame(canvas);
+    const size = `${canvas.clientWidth}x${canvas.clientHeight}`;
+    await sleep(120);
+    if (`${canvas.clientWidth}x${canvas.clientHeight}` !== size || !canvasCaughtUp(canvas)) continue;
+    return canvas.toDataURL() === frame;
+  }
+  return false;
 }
 const exact = (body, action, params, station) => {
   assert(Object.keys(body).sort().join(",") === "action,active_generation,id,params,protocol,resource_revision,seq,station,station_generation,world_epoch,world_session", `${action} envelope fields`);
@@ -850,17 +877,13 @@ async function run() {
   states.opz.phase = "ended";
   await until(() => $test("role-visual-state").textContent.includes("inactive") ||
     $test("role-visual-state").textContent.includes("inaktiv"), "ended OPZ state missing");
-  const endedFrame = await settledFrame(sweepLayer);
-  await sleep(120);
-  assert(sweepLayer.toDataURL() === endedFrame, "OPZ sweep continues after the mission ended");
+  assert(await stillAfter(sweepLayer), "OPZ sweep continues after the mission ended");
   states.opz.phase = "live";
   await until(() => !$test("opz-fire-target").disabled, "OPZ did not resume");
   states.opz.opz.radar.surface = false; states.opz.opz.radar.air = false;
   await until(() => !$test("opz-radar-surface").checked && !$test("opz-radar-air").checked,
     "radars-off state missing");
-  const radarsOffFrame = await settledFrame(sweepLayer);
-  await sleep(120);
-  assert(sweepLayer.toDataURL() === radarsOffFrame, "OPZ sweep continues with both radars off");
+  assert(await stillAfter(sweepLayer), "OPZ sweep continues with both radars off");
   states.opz.opz.radar.surface = true; states.opz.opz.radar.air = true;
   await until(() => $test("opz-radar-surface").checked && $test("opz-radar-air").checked,
     "radars did not resume");

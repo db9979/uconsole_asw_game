@@ -4,7 +4,7 @@ import { t } from "../core/format.js";
 import { renderDisabledReasons, unavailable } from "./controls.js";
 import { node } from "./dom.js";
 import { simlogActive } from "./simlog.js";
-import { sendHostAction } from "../net/host.js";
+import { sendHostAction, sendHostActionWhenReady } from "../net/host.js";
 import { fetchLibrary } from "../net/missions.js";
 import { mutateStation, switchSoloSide } from "./lobby.js";
 import { opforRoles } from "../core/base.js";
@@ -198,6 +198,10 @@ export function init() {
       if (($("host-new-side").value === "uboot") !== boat) {
         await mutateStation("/stations/request", {station: boat ? "bridge" : "uboot"});
         if (opforRoles.has(S.session?.station) === boat) return;
+        // The console resyncs its new station first; a command sent now
+        // would be dropped.
+        sendHostActionWhenReady("host_start_mission", {key: choice.slice(OWN_PREFIX.length)});
+        return;
       }
       sendHostAction("host_start_mission", {key: choice.slice(OWN_PREFIX.length)});
       return;
@@ -222,6 +226,10 @@ export function init() {
     if (($("host-new-side").value === "uboot") !== boat) {
       await mutateStation("/stations/request", {station: boat ? "bridge" : "uboot"});
       if (opforRoles.has(S.session?.station) === boat) return;
+      // The console resyncs its new station first; a command sent now
+      // would be dropped.
+      sendHostActionWhenReady("host_new_game", params);
+      return;
     }
     sendHostAction("host_new_game", params);
   });

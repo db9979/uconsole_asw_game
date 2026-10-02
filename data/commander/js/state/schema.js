@@ -411,8 +411,16 @@ export function validateV2State(state) {
         !exactKeys(visual.receiver, ["array", "listen_bearing", "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled", "own_course", "baffle_half_deg"]) || !finite(visual.receiver.baffle_half_deg) || !["BROADBAND", "FILTERED", "HETERODYNE"].includes(visual.receiver.listen_mode) || typeof visual.receiver.focus_locked !== "boolean" || typeof visual.receiver.audio_enabled !== "boolean") throw new Error("protocol");
   } else if (isBoatCommand(state.role)) {
     const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
-    const navNumbers = ["x", "y", "course", "target_course", "speed", "target_speed", "depth_m", "target_depth_m", "safe_depth_m", "max_depth_m", "crush_depth_m", "max_speed_kn", "noise"];
-    if (!exactKeys(nav, [...navNumbers, "water_depth_m", "under_keel_m", "obstacle_ahead_nm", "depth_presets", "cavitating"]) || navNumbers.some((key) => !finite(nav[key])) ||
+    const navNumbers = ["x", "y", "course", "target_course", "speed", "target_speed", "depth_m", "target_depth_m", "safe_depth_m", "max_depth_m", "crush_depth_m", "max_speed_kn", "noise", "est_x", "est_y", "dr_error_nm", "fix_age_s", "fix_progress"];
+    if (!exactKeys(nav, [...navNumbers, "water_depth_m", "under_keel_m", "obstacle_ahead_nm", "depth_presets", "cavitating", "route", "sounder"]) || navNumbers.some((key) => !finite(nav[key])) ||
+        !exactKeys(nav.sounder, ["past", "ahead", "scale_m", "window_s", "ahead_nm", "warn_m", "caution_m"]) ||
+        [nav.sounder.scale_m, nav.sounder.window_s, nav.sounder.ahead_nm, nav.sounder.warn_m, nav.sounder.caution_m].some((value) => !finite(value) || value <= 0) ||
+        !boundedArray(nav.sounder.past, 64) || nav.sounder.past.some((row) => !boundedArray(row, 3) || row.length !== 3 || !row.every(finite)) ||
+        !boundedArray(nav.sounder.ahead, 32) || nav.sounder.ahead.some((row) => !boundedArray(row, 2) || row.length !== 2 || !row.every(finite)) ||
+        !exactKeys(nav.route, ["points", "index", "type", "active"]) || !boundedArray(nav.route.points, 16) ||
+        nav.route.points.some((point) => !boundedArray(point, 2) || point.length !== 2 || !point.every(finite)) ||
+        !Number.isInteger(nav.route.index) || nav.route.index < 0 || !["manual", "zigzag", "square"].includes(nav.route.type) ||
+        typeof nav.route.active !== "boolean" ||
         !exactKeys(nav.depth_presets, ["periscope", "snorkel", "above_layer", "below_layer", "deep", "layer"]) ||
         Object.values(nav.depth_presets).some((value) => value !== null && (!finite(value) || value < 0 || value > 1000)) ||
         [nav.water_depth_m, nav.under_keel_m, nav.obstacle_ahead_nm].some((value) => value !== null && !finite(value)) || typeof nav.cavitating !== "boolean" ||
@@ -422,7 +430,8 @@ export function validateV2State(state) {
         [status.emergency_ascent, status.blow_available, status.transmitting].some((value) => typeof value !== "boolean") ||
         (status.battery !== null && !finite(status.battery)) ||
         (status.endurance_phase !== null && (typeof status.endurance_phase !== "string" || status.endurance_phase.length > 16)) ||
-        !exactKeys(weapons, ["torpedoes", "tubes_ready", "tubes", "reload_s", "ready", "reason", "arc_center_deg", "arc_width_deg", "decoys", "decoy_ready"]) ||
+        !exactKeys(weapons, ["torpedoes", "tubes_ready", "tubes", "reload_s", "ready", "reason", "arc_center_deg", "arc_width_deg", "decoys", "decoy_ready", "pattern", "enable_nm"]) ||
+        !["straight", "snake", "circle", "helix"].includes(weapons.pattern) || !finite(weapons.enable_nm) ||
         !boundedArray(weapons.tubes, 32) || weapons.tubes.some((row) => !exactKeys(row, ["state", "seconds"]) ||
           !["empty", "loading", "dry", "flooding", "flooded"].includes(row.state) || (row.seconds !== null && !finite(row.seconds))) ||
         [weapons.torpedoes, weapons.tubes_ready, weapons.decoys].some((value) => !Number.isInteger(value) || value < 0) ||

@@ -281,3 +281,34 @@ def test_commander_serves_manual_pages_with_security_headers():
     for invalid in ({"fr": "x"}, {"en": ""}, {"en": b"x"}, ["en"]):
         with pytest.raises(ValueError):
             CommanderServer(manual_pages=invalid)
+
+
+def test_the_submarine_chapter_carries_every_boat_station_procedure():
+    from src.core.help import UBOOT_SOP, UBOOT_SOP_SLUGS
+    for lang in manual.LANGUAGES:
+        catalog = load_catalog(lang)
+        blocks = _blocks("submarine", lang)
+        markers = [b.marker for b in blocks if b.marker]
+        assert markers == [f"sop:uboot_{slug}" for slug in UBOOT_SOP_SLUGS.values()]
+        for station, keys in UBOOT_SOP.items():
+            assert len(keys) == 5 and all(catalog.get(key) for key in keys), station
+            block = next(b for b in blocks if b.marker == f"sop:uboot_{UBOOT_SOP_SLUGS[station]}")
+            assert block.items == tuple(catalog[key] for key in keys)
+    text = "\n".join(manual.text_lines(_blocks("submarine", "en"), 400))
+    assert f"{config.UBOOT_GPS_FIX_S:.0f} s" in text
+    assert f"{config.UBOOT_DR_DRIFT_KN:.1f} kn" in text
+    assert f"{config.UBOOT_DR_ERROR_MAX_NM:.0f} NM" in text
+
+
+def test_f1_on_the_submarine_side_shows_the_station_procedure_and_chapter():
+    from src.core.game import Game
+    game = Game(seed=7, start_menu=False, audio_enabled=False, language="en")
+    game.local_side = "uboot"
+    game.uboot_station = "uboot_nav"
+    game._open_administration("help")
+    assert manual.CHAPTERS[game.help_manual_chapter] == "submarine"
+    game.help_page = 1
+    lines, _visible = game._help_lines()
+    text = " ".join(lines)
+    assert "Standard procedure" in text
+    assert Translator("en").t("help.sop.uboot.nav.2")[:30] in text

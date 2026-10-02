@@ -10,7 +10,7 @@ import math
 import weakref
 
 from src.core import attack_computer, boat_esm, chart_history, boat_missions, boat_threat, config, opfor, plot
-from src.core import buoy_antenna, sight_events, station_alarms
+from src.core import boat_nav, buoy_antenna, sight_events, station_alarms
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.enemies.damage_control import COMPARTMENTS, capacity_kg
@@ -1762,6 +1762,27 @@ def _uboot_radio_order(game, order):
                 left_s=_number(max(0.0, order["deadline_t"] - game.sim_t)))
 
 
+def _uboot_sounder(game, boat):
+    """The echo-sounder strip as on the uConsole's navigation page: own
+    soundings over the window (age, seabed, own depth; every second sample)
+    and the charted profile ahead on the ordered course (own chart)."""
+    from src.ui import uboot_pilot
+    sub, now = boat.sub, game.sim_t
+    past = [[_number(now - t), _number(b), _number(d)]
+            for t, _x, _y, b, d in boat.sounder.window(now)][::-2][::-1]
+    bottom = sub.last_bottom_m
+    if bottom is not None and math.isfinite(bottom):
+        past.append([0.0, _number(max(0.0, bottom)), _number(sub.depth)])
+    ahead = [[_number(distance), _number(depth)]
+             for distance, depth in uboot_pilot.ahead_profile(game, sub)]
+    scale = uboot_pilot.sounder_scale_m(sub, [row[1] for row in past] + [row[1] for row in ahead])
+    return dict(past=past, ahead=ahead, scale_m=_number(scale),
+                window_s=_number(uboot_pilot.WINDOW_S),
+                ahead_nm=_number(config.UBOOT_OBSTACLE_LOOKAHEAD_NM),
+                warn_m=_number(config.UBOOT_UNDER_KEEL_WARN_M),
+                caution_m=_number(uboot_pilot.PILOT_CAUTION_M))
+
+
 def _uboot(game, boat, rows, target_ref, asset_refs):
     """The crewed submarine's commander: own boat (legitimate truth), its
     orders, weapons and the boat's own sonar contacts."""
@@ -1780,6 +1801,8 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
     alarms = sub.memory
     state = ("sunk" if sub.sunk else "sinking" if sub.state == "SINKING"
              else "manual" if sub.manual else "ai")
+    est_x, est_y = boat_nav.position(boat)
+    route = boat.orders.route
     return dict(
         navigation=dict(
             x=_number(sub.x), y=_number(sub.y), course=_number(sub.course),
@@ -1795,7 +1818,17 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             depth_presets={key: _number(value) for key, value
                            in opfor.depth_presets(game, boat).items()},
             obstacle_ahead_nm=_number(boat.orders.obstacle_ahead_nm),
-            cavitating=bool(sub.cavitating), noise=_number(sub.noise_level())),
+            cavitating=bool(sub.cavitating), noise=_number(sub.noise_level()),
+            # Dead reckoning: where the crew believes the boat is (their chart
+            # is drawn about it), the navigator's error estimate and the fix.
+            est_x=_number(est_x), est_y=_number(est_y),
+            dr_error_nm=_number(boat_nav.uncertainty_nm(boat)),
+            fix_age_s=_number(boat.orders.nav[2]),
+            fix_progress=_number(boat_nav.fix_progress(boat)),
+            route=dict(points=[[_number(x), _number(y)] for x, y in route.points],
+                       index=int(route.index), type=str(route.kind),
+                       active=bool(route.active)),
+            sounder=_uboot_sounder(game, boat)),
         status=dict(
             state=state, damage=_number(sub.damage),
             emergency_ascent=bool(sub.emergency_ascent),
@@ -1820,6 +1853,8 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
                             if launcher is not None else None),
             arc_width_deg=(_number(launcher.arc_width_deg)
                            if launcher is not None else None),
+            pattern=str(boat.orders.torpedo_pattern),
+            enable_nm=_number(boat.orders.torpedo_enable_nm),
             decoys=(int(store.remaining_total) if store is not None else 0),
             decoy_ready=bool(store is not None and store.ready > 0
                              and sub._decoy_cd <= 0.0 and not sub.pending_decoys)),

@@ -17,7 +17,7 @@ from src.core.launch_signal import game_visible
 from src.core.i18n import (Translator, display_value, localized, localize,
                            message, raw_text, translation_scope)
 from src.core.preferences import save_preferences
-from src.core.help import get_global_help, get_help, get_sop, get_uboot_help
+from src.core.help import get_global_help, get_help, get_sop, get_uboot_help, get_uboot_sop
 from src.core import manual
 from src.core.station import Station
 from src.core import pointer_input, station_alarms, uboot_local
@@ -878,8 +878,13 @@ class DrawMixin:
             title, bindings = get_global_help(self.tr)
             text = title + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in bindings)
         elif self.help_page == 1 and self.local_side == "uboot":
+            from src.core import uboot_local
             title, bindings = get_uboot_help(self.tr)
+            sop = get_uboot_sop(uboot_local.local_station(self), self.tr)
             text = title + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in bindings)
+            if sop:
+                text += ("\n\n" + self.tr("help.sop.title") + "\n"
+                         + "\n".join(f"{n}. {step}" for n, step in enumerate(sop, 1)))
         elif self.help_page == 1:
             sop = get_sop(self.station, self.tr)
             text = (intro + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in keys)

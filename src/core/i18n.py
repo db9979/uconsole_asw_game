@@ -97,7 +97,8 @@ DISPLAY_KEYS = {
                   "STATION": "enum.mpa_state.station", "RTB": "enum.mpa_state.rtb"},
     "plant": {"AUTO": "enum.plant.AUTO", "DIESEL": "enum.plant.DIESEL",
               "TURBINE": "enum.plant.TURBINE"},
-    "torpedo_pattern": {"snake": "enum.torpedo_pattern.snake",
+    "torpedo_pattern": {"straight": "enum.torpedo_pattern.straight",
+                        "snake": "enum.torpedo_pattern.snake",
                         "circle": "enum.torpedo_pattern.circle",
                         "helix": "enum.torpedo_pattern.helix"},
     "profile_kind": {

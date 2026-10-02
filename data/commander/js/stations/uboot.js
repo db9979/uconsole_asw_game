@@ -3,7 +3,7 @@ import { $ } from "../core/base.js";
 import { duration, number, stateText, t, unit } from "../core/format.js";
 import { actionButton, fillFireTargets, inUse, metrics, node, patchChildren, setControlValue, setOptions, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 import { renderCrew } from "../views/crew.js";
-import { drawBoatBallast, drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
+import { drawBoatBallast, drawBoatDepth, drawBoatEsm, drawBoatScope, drawBoatSounder } from "./uboot-graphics.js";
 import { drawBoatDamage, renderBoatDamageLamps } from "./uboot-damage.js";
 
 // Alarm age with the boat's own measured bearing (never the source's truth).
@@ -383,7 +383,7 @@ function renderEsm(esm, status) {
 // Radio room: HQ broadcast schedule, own situation reports and HQ's contact
 // report (modelled intelligence with its age and error circle).
 function radioReportText(report, nav) {
-  const dx = report.x - nav.x, dy = report.y - nav.y;
+  const dx = report.x - nav.est_x, dy = report.y - nav.est_y;
   const bearing = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
   return t("uboot_radio_report_value", {bearing: number(bearing, 0), range: number(Math.hypot(dx, dy), 1),
     radius: number(report.radius_nm, 0), course: number(report.course, 0), speed: number(report.speed_kn, 0),
@@ -406,7 +406,7 @@ function radioOrderText(radio, nav) {
   const left = duration(order.left_s);
   // Orders without a position (report, silence, recon) carry null x/y.
   if (order.x === null || order.y === null) return t(`uboot_radio_order_${order.type}`, {number: order.id, left});
-  const dx = order.x - nav.x, dy = order.y - nav.y;
+  const dx = order.x - nav.est_x, dy = order.y - nav.est_y;
   return t(`uboot_radio_order_${order.type}`, {number: order.id, left, radius: number(order.radius_nm, 0),
     bearing: number((Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360, 0), range: number(Math.hypot(dx, dy), 1)});
 }
@@ -431,6 +431,35 @@ function renderRadio(radio, nav) {
     ["uboot_radio_orders", t("uboot_radio_orders_value", {done: radio.orders_done, failed: radio.orders_failed})]]);
   $("uboot-radio-log").replaceChildren(...(radio.log.length ? radio.log.map((row) => node("p", radioLogText(row), "uboot-log-line"))
     : [node("p", t("uboot_radio_log_empty"), "uboot-log-line")]));
+}
+
+// The least water under the keel over the sounder's window.
+function renderSounder(nav) {
+  const clearances = nav.sounder.past.map(([, bottom, depth]) => bottom - depth);
+  const text = clearances.length ? t("uboot_sounder_least", {depth: number(Math.min(...clearances), 0),
+    minutes: number(nav.sounder.window_s / 60, 0)}) : t("uboot_sounder_no_trace");
+  if ($("uboot-sounder-text").textContent !== text) $("uboot-sounder-text").textContent = text;
+}
+
+// Dead reckoning: the navigator's error estimate and the last GPS fix.
+function drText(nav) {
+  if (nav.fix_progress > 0) return t("uboot_dr_fixing", {percent: number(nav.fix_progress * 100, 0)});
+  return t("uboot_dr_value", {error: number(nav.dr_error_nm, 1), age: number(nav.fix_age_s / 60, 0)});
+}
+
+// The route: next waypoint from the navigated position, or none.
+function renderRoute(nav) {
+  const route = nav.route, next = route.active ? route.points[route.index] : null;
+  let text = t("bridge_route_none");
+  if (next) {
+    const dx = next[0] - nav.est_x, dy = next[1] - nav.est_y;
+    text = t("bridge_route_next", {pattern: t(`bridge_route_pattern_${route.type}`), number: route.index + 1,
+      total: route.points.length, bearing: number((Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360, 0).padStart(3, "0"),
+      range: number(Math.hypot(dx, dy), 1)});
+  }
+  if ($("uboot-route-status").textContent !== text) $("uboot-route-status").textContent = text;
+  $("uboot-route-clear").disabled = !next;
+  $("uboot-route-mode").setAttribute("aria-pressed", String(S.ubootRouteMode));
 }
 
 function renderThreat(threat) {
@@ -474,7 +503,9 @@ export function renderUbootStation(payload) {
     ["uboot_under_keel", unit(nav.under_keel_m, "m", 0)],
     ["uboot_obstacle_ahead", nav.obstacle_ahead_nm === null ? t("station_none") : unit(nav.obstacle_ahead_nm, "NM")],
     ["uboot_water_depth", unit(nav.water_depth_m, "m", 0)], ["uboot_safe_depth", unit(nav.safe_depth_m, "m", 0)],
-    ["uboot_layer", nav.depth_presets.layer === null ? t("uboot_layer_unknown") : unit(nav.depth_presets.layer, "m", 0)]]);
+    ["uboot_layer", nav.depth_presets.layer === null ? t("uboot_layer_unknown") : unit(nav.depth_presets.layer, "m", 0)],
+    ["uboot_dr_position", drText(nav)]]);
+  renderRoute(nav);
   // Chart check along the ordered course and water under the keel.
   const obstacle = nav.obstacle_ahead_nm !== null && nav.target_speed > 0;
   const shallow = nav.under_keel_m !== null && nav.under_keel_m < 15 && !status.bottomed;
@@ -499,6 +530,8 @@ export function renderUbootStation(payload) {
     ["uboot_decoys", number(weapons.decoys, 0)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
   renderTubes(weapons.tubes);
+  if (!S.stationDrafts.has("uboot-seeker-pattern")) setControlValue($("uboot-seeker-pattern"), weapons.pattern);
+  if (!S.stationDrafts.has("uboot-seeker-enable")) setControlValue($("uboot-seeker-enable"), String(weapons.enable_nm));
   metrics($("uboot-alarms"), [
     ["uboot_ping_heard", alarmText(alarms.ping_age_s, alarms.ping_bearing)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
@@ -523,6 +556,8 @@ export function renderUbootStation(payload) {
   stationRows($("uboot-contacts"), payload.contacts, sonarEntries);
   renderLog(payload.feed);
   drawBoatDepth("uboot-depth-canvas", payload);
+  drawBoatSounder("uboot-sounder-canvas", payload);
+  renderSounder(payload.navigation);
   drawBoatEsm("uboot-esm-canvas", payload);
   renderScope(payload);
   renderSupply(payload.plant);
@@ -538,6 +573,7 @@ export function renderUbootStation(payload) {
 export function drawUbootGraphics(payload) {
   if (!payload?.esm) return;
   drawBoatDepth("uboot-depth-canvas", payload);
+  drawBoatSounder("uboot-sounder-canvas", payload);
   drawBoatEsm("uboot-esm-canvas", payload);
   drawBoatScope("uboot-scope-canvas", payload);
   drawBoatBallast("uboot-ballast-canvas", payload);

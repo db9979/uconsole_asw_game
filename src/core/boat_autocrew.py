@@ -155,6 +155,8 @@ def command(game, boat) -> str:
             if boat_threat.evade(game, boat) is True:
                 return "evading"
         return "monitoring"
+    if boat.orders.route.active:
+        return "monitoring"              # the navigator's route has the helm
     if boat.orders.silent and engine_free:
         sub.command_silent(False)
     presets = depth_presets(game, boat)

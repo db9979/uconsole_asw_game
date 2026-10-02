@@ -22,8 +22,8 @@ def _game(seed=1201):
 def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (47, "u-jagd-save-v47")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (47, "u-jagd-save-v47")
+    assert (state["version"], state["save_schema"]) == (48, "u-jagd-save-v48")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (48, "u-jagd-save-v48")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -200,7 +200,7 @@ def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     v37["save_schema"] = "u-jagd-save-v37"
     del v37["casualties"]
     assert not game._load_save_data(v37)
-    # From v38 on an older document is lifted to v47 (src/core/save_migrate.py);
+    # From v38 on an older document is lifted to v48 (src/core/save_migrate.py);
     # the samples of real older releases are in tests/test_save_migrate.py.
     # v38 lacks the hunters' ESM log and the crew assist.
     v38 = copy.deepcopy(state)

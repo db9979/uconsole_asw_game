@@ -135,7 +135,8 @@ class EventMixin:
         self.help_page = 0
         self.help_scroll = 0
         self.help_manual_chapter = manual.CHAPTERS.index(
-            manual.STATION_CHAPTERS.get(self.station, "quickstart"))
+            "submarine" if self.local_side == "uboot"
+            else manual.STATION_CHAPTERS.get(self.station, "quickstart"))
         if self.save_ui is not None:
             self.save_info = []
             for slot in range(1, 6):

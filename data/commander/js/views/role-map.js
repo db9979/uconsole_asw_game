@@ -48,9 +48,16 @@ export function mapPayload(role) {
         x: row.fix.x, y: row.fix.y, uncertainty_nm: row.fix.major_nm,
         ellipse: {major: row.fix.major_nm, minor: row.fix.minor_nm, axis: row.fix.axis_deg}})).concat(
         // HQ's latest contact report from the radio room, with its error circle.
-        payload.radio.report ? [{ref: "HQ", x: payload.radio.report.x, y: payload.radio.report.y,
+        payload.radio.report ? [{ref: "HQ", geo: true, x: payload.radio.report.x, y: payload.radio.report.y,
           uncertainty_nm: payload.radio.report.radius_nm,
-          display: t("uboot_radio_chart_label", {age: Math.round((payload.radio.report.age_s ?? 0) / 60)})}] : [])};
+          display: t("uboot_radio_chart_label", {age: Math.round((payload.radio.report.age_s ?? 0) / 60)})}] : []),
+      // Dead reckoning: the crew's chart (coast, soundings, HQ's report, the
+      // route) lies where the navigator believes it lies against the boat.
+      geoShift: finite(nav.est_x) && finite(nav.est_y) ? {x: nav.est_x - nav.x, y: nav.est_y - nav.y} : null,
+      route: nav.route.points.slice(nav.route.active ? nav.route.index : 0).map(([x, y]) => ({x, y})),
+      routeActive: nav.route.active,
+      routeWaypoints: nav.route.points.map(([x, y], index) => ({x, y, geo: true, waypoint: true,
+        display: t("bridge_route_point", {number: index + 1})}))};
   }
   return {own: payload.navigation, observations: payload.tactical,
     assets: [payload.asset, ...payload.buoys.map((buoy) => ({...buoy, display: buoy.label})),
@@ -290,7 +297,10 @@ export function drawRoleMap(role) {
   if (viewState.follow && hasPosition(followTarget)) { viewState.x = followTarget.x; viewState.y = followTarget.y; }
   $("role-map-follow").setAttribute("aria-pressed", String(Boolean(viewState.follow)));
   $("role-map-follow").textContent = t(role === "helicopter" ? "follow_helicopter" : "follow");
-  const {scale, point} = roleMapGeometry(role, plot.width, plot.height);
+  const {scale, point: framePoint} = roleMapGeometry(role, plot.width, plot.height);
+  // Chart data in the crew's navigated frame (the boat's dead reckoning).
+  const shift = data.geoShift;
+  const point = shift ? (x, y) => framePoint(x - shift.x, y - shift.y) : framePoint;
   const geo = S.chart.geography;
   if (geo?.depths.length) {
     const size = geo.depths.length, cell = S.chart.size_nm / Math.max(1, size - 1);
@@ -340,7 +350,7 @@ export function drawRoleMap(role) {
   // Charted wrecks (hull line with masts) and underwater rocks (asterisk).
   drawChartHazards(plot.context, geo?.hazards || [], point, plot.width, plot.height,
     Math.abs(point(1, 0)[0] - point(0, 0)[0]), S.roleMapInfo);
-  const [ox, oy] = hasPosition(data.own) ? point(data.own.x, data.own.y) : [plot.width / 2, plot.height / 2];
+  const [ox, oy] = hasPosition(data.own) ? framePoint(data.own.x, data.own.y) : [plot.width / 2, plot.height / 2];
   const labels = labelField(plot.width, plot.height);
   labels.reserve(ox - 12, oy - 12, 24, 24);
   if (hasPosition(data.own)) {
@@ -364,7 +374,7 @@ export function drawRoleMap(role) {
     plot.context.strokeStyle = isSelected ? palette().accent : colors[row.affiliation] || colors.UNKNOWN;
     plot.context.lineWidth = isSelected ? 3 : 1;
     if (hasPosition(row)) {
-      const [x, y] = point(row.x, row.y);
+      const [x, y] = framePoint(row.x, row.y);
       addRoleMapHit(row.ref, x, y);
       addMapInfo(S.roleMapInfo, x, y, "track", row);
       if (finite(row.range_uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, row.range_uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
@@ -387,7 +397,7 @@ export function drawRoleMap(role) {
     } else if (finite(row.bearing) && (hasPosition(data.own) ||
         finite(row.observer_x) && finite(row.observer_y))) {
       const [bx, by] = finite(row.observer_x) && finite(row.observer_y) ?
-        point(row.observer_x, row.observer_y) : [ox, oy];
+        framePoint(row.observer_x, row.observer_y) : [ox, oy];
       const angle = row.bearing * Math.PI / 180;
       if (finite(row.bearing_uncertainty_deg)) {
         const delta = row.bearing_uncertainty_deg * Math.PI / 180, length = Math.max(plot.width, plot.height);
@@ -401,7 +411,7 @@ export function drawRoleMap(role) {
   }
   plot.context.lineWidth = 1;
   for (const log of data.bearingLogs) {
-    const [x, y] = point(log.observer_x, log.observer_y), angle = log.bearing * Math.PI / 180;
+    const [x, y] = framePoint(log.observer_x, log.observer_y), angle = log.bearing * Math.PI / 180;
     plot.context.strokeStyle = palette().amber; plot.context.setLineDash([3, 4]); plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(x + Math.sin(angle) * plot.width, y - Math.cos(angle) * plot.width); plot.context.stroke(); plot.context.setLineDash([]);
   }
   if (role === "bridge" && payload.route.points.length && hasPosition(data.own)) {
@@ -411,8 +421,15 @@ export function drawRoleMap(role) {
     for (const row of payload.route.points) plot.context.lineTo(...point(row.x, row.y));
     plot.context.stroke(); plot.context.setLineDash([]);
   }
-  for (const item of [...data.fixes, ...data.assets]) if (hasPosition(item)) {
-    const [x, y] = point(item.x, item.y);
+  if (data.routeActive && data.route.length && hasPosition(data.own)) {
+    // The boat's route from the boat through each waypoint still ahead.
+    plot.context.strokeStyle = palette().amber; plot.context.setLineDash([6, 4]); plot.context.beginPath();
+    plot.context.moveTo(ox, oy);
+    for (const row of data.route) plot.context.lineTo(...point(row.x, row.y));
+    plot.context.stroke(); plot.context.setLineDash([]);
+  }
+  for (const item of [...data.fixes, ...data.assets, ...(data.routeWaypoints || [])]) if (hasPosition(item)) {
+    const [x, y] = (item.geo ? point : framePoint)(item.x, item.y);
     addRoleMapHit(null, x, y);
     addMapInfo(S.roleMapInfo, x, y, "asset", item);
     plot.context.strokeStyle = item.waypoint ? palette().amber : palette().blue;
@@ -444,7 +461,7 @@ export function drawRoleMap(role) {
     const byRef = new Map(data.observations.map((row) => [row.ref, row]));
     for (const fusion of payload.fusions) if (hasPosition(fusion)) for (const ref of fusion.members) { const member = byRef.get(ref); if (hasPosition(member)) { plot.context.strokeStyle = "#697f88"; plot.context.beginPath(); plot.context.moveTo(...point(fusion.x, fusion.y)); plot.context.lineTo(...point(member.x, member.y)); plot.context.stroke(); } }
   }
-  drawPlotLayer(plot.context, point, scale, plot.width, plot.height, null);
+  drawPlotLayer(plot.context, framePoint, scale, plot.width, plot.height, null);
   renderPlotList();
   $("role-map-scale").textContent = t("role_map_scale", {distance: number(S.chart.size_nm / viewState.zoom, 0)});
   plot.context.save(); plot.context.textAlign = "right"; plot.context.fillStyle = palette().text; plot.context.fillText("N ↑", plot.width - 10, 18); plot.context.restore();

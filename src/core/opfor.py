@@ -15,7 +15,7 @@ import math
 
 from src.audio.synthesis import bearing_pan
 from src.core.callouts import CalloutLog
-from src.core import baffles, buoy_antenna, config, detrand
+from src.core import baffles, boat_nav, buoy_antenna, config, detrand
 from src.core.boat_esm import BoatESM
 from src.core.boat_radio import BoatRadio
 from src.core.crew import CrewState
@@ -35,6 +35,7 @@ from src.sonar.platforms import (OWNSHIP_SIGNATURE_KEY, OWNSHIP_TARGET_ID,
                                  SubSonarPlatform)
 from src.sonar.sonar import SonarSystem, hull_length_m
 from src.sonar.station import SonarStation
+from src.ship.route import Route
 
 # Periscope sightings: coarse classes the eye makes out, their lookout kind
 # (``src/sensors/visual.py``) and the Johnson class of the recognition step.
@@ -107,7 +108,10 @@ class CrewOrders:
               "incident_gas": "schaden", "incident_gas_end": "schaden",
               "baffles_clearing": "navigation", "baffles_cleared": "navigation",
               "hf_frigate": "funk", "rbu_splash": "sonar",
-              "wounded": "schaden"}
+              "wounded": "schaden", "gps_fix": "navigation",
+              "route_waypoint": "navigation", "route_pattern_zigzag": "navigation",
+              "route_pattern_square": "navigation", "route_cancelled": "navigation",
+              "route_complete": "navigation", "route_reached": "navigation"}
 
     def __init__(self):
         self.silent = False
@@ -146,6 +150,13 @@ class CrewOrders:
         # Local fire-control presets (the web sends them with each shot).
         self.torpedo_depth = None
         self.salvo = 1
+        # The weapons officer's seeker settings (save v48), shared by every
+        # station that fires: search pattern and enable point before the datum.
+        self.torpedo_pattern = "straight"
+        self.torpedo_enable_nm = torpedo_dyn.BOAT_ENABLE_DEFAULT_NM
+        # Dead reckoning and the navigation's route (save v48, ``boat_nav``).
+        self.nav = boat_nav.new_state()
+        self.route = Route()
         self.pending_bearing = None
         self.steer_torpedo = None
         self._events = []
@@ -214,7 +225,12 @@ class CrewOrders:
             obstacle_ahead_nm=self.obstacle_ahead_nm,
             baffle_clear=(None if self.baffle_clear is None
                           else [float(value) for value in self.baffle_clear]),
-            buoy=[float(self.buoy[0]), bool(self.buoy[1]), bool(self.buoy[2])])
+            buoy=[float(self.buoy[0]), bool(self.buoy[1]), bool(self.buoy[2])],
+            torpedo_pattern=self.torpedo_pattern,
+            torpedo_enable_nm=float(self.torpedo_enable_nm),
+            nav=[float(self.nav[0]), float(self.nav[1]), float(self.nav[2]),
+                 float(self.nav[3]), int(self.nav[4])],
+            route=self.route.serialize())
 
     def restore(self, data: dict) -> None:
         """Restore a validated ``crew.orders`` block in place."""
@@ -248,6 +264,10 @@ class CrewOrders:
         self.baffle_clear = (None if data["baffle_clear"] is None
                              else [float(value) for value in data["baffle_clear"]])
         self.buoy = [float(data["buoy"][0]), data["buoy"][1], data["buoy"][2]]
+        self.torpedo_pattern = data["torpedo_pattern"]
+        self.torpedo_enable_nm = float(data["torpedo_enable_nm"])
+        self.nav = [float(value) for value in data["nav"][:4]] + [int(data["nav"][4])]
+        self.route = Route.restore(data["route"])
 
 
 class CrewWire:
@@ -600,17 +620,19 @@ def depth_presets(game, boat) -> dict:
                 above_layer=above, below_layer=below, deep=safe, layer=layer)
 
 
-def obstacle_ahead_nm(world, sub):
+def obstacle_ahead_nm(world, sub, origin=None):
     """Distance to the first charted obstacle (land, or a seabed shallower than
     the boat's keel) along the ordered course, within the look-ahead; else None.
-    Known geography only: the chart the crew holds, no other vessel."""
+    Known geography only: the chart the crew holds, no other vessel, checked
+    from ``origin`` (the crew's navigated position; the boat's by default)."""
     step = 0.25
     keel = max(sub.depth, sub.order_depth) + config.UBOOT_BOTTOM_CLEARANCE_M
     rad = math.radians(sub.order_course)
+    ox, oy = (sub.x, sub.y) if origin is None else origin
     distance = step
     while distance <= config.UBOOT_OBSTACLE_LOOKAHEAD_NM + 1e-9:
-        x = sub.x + distance * math.sin(rad)
-        y = sub.y - distance * math.cos(rad)
+        x = ox + distance * math.sin(rad)
+        y = oy - distance * math.cos(rad)
         if world.on_land(x, y) or world.charted_depth_m(x, y) < keel:
             return distance
         distance += step
@@ -718,6 +740,9 @@ def update_crew(game, boat: CrewedBoat, dt: float = 0.0) -> None:
                                              game.sim_t)
     if back is not None and sub.set_orders(course=back) is True:
         orders.event("baffles_cleared", course=f"{back:03.0f}")
+    if boat_nav.step(orders.nav, sub, dt, game.sim_t, scope_available(boat)) == "gps_fix":
+        orders.event("gps_fix")
+    boat_nav.steer(boat)
     battery = battery_fraction(sub)
     if battery is not None:
         state = ("empty" if battery <= config.UBOOT_BATTERY_EMPTY_FRACTION
@@ -733,7 +758,8 @@ def update_crew(game, boat: CrewedBoat, dt: float = 0.0) -> None:
         orders.event("shallow_water")
     orders._keel_warned = shallow
     boat.sounder.sample(game.sim_t, sub.x, sub.y, bottom, sub.depth)
-    ahead = orders.obstacle_ahead_nm = obstacle_ahead_nm(game.world, sub)
+    ahead = orders.obstacle_ahead_nm = obstacle_ahead_nm(game.world, sub,
+                                                         boat_nav.position(boat))
     if ahead is not None and sub.order_speed > 0.0 and not orders._obstacle_warned:
         orders.event("obstacle_ahead", distance=f"{ahead:.1f}")
     orders._obstacle_warned = ahead is not None and sub.order_speed > 0.0

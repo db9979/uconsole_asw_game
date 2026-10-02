@@ -10,12 +10,14 @@ kept in a one-entry cache; the sounder trace is ``CrewedBoat.sounder``.
 """
 
 import math
+from types import SimpleNamespace
 
 import pygame
 
-from src.core import config
+from src.core import boat_nav, config
 from src.core.echo_sounder import WINDOW_S
 from src.core.i18n import message, raw_text
+from src.ship import route as route_model
 from src.ui import chart_symbols, console, layout, lines, nato_symbols, pointer
 from src.ui.map_view import _visible_landmasses, clip_polygon_to_rect
 from src.ui.viewport import Viewport
@@ -112,13 +114,25 @@ def _depth_picture(world, gx0, gy0, cols, rows, cell_nm, keel):
     return surface
 
 
+def _own(game, sub):
+    """Where the crew believes the boat is: its dead-reckoned position for
+    the crewed boat (``boat_nav``), the true one otherwise."""
+    boat = getattr(game, "opfor", None)
+    if boat is not None and boat.sub is sub:
+        x, y = boat_nav.position(boat)
+        return SimpleNamespace(x=x, y=y)
+    return sub
+
+
 def pilot_view(game, sub, rect) -> Viewport:
-    """North-up camera centred on the boat, PILOT_RANGE_NM to each side."""
+    """North-up chart camera centred on the boat's navigated position,
+    PILOT_RANGE_NM to each side."""
     rect = pygame.Rect(rect)
     view = Viewport(game.world.size_nm, 1e-6, 1e6)
     view.set_rect(tuple(rect))
     view.scale = rect.w / (2.0 * PILOT_RANGE_NM)
-    view.cx, view.cy = sub.x, sub.y
+    own = _own(game, sub)
+    view.cx, view.cy = own.x, own.y
     return view
 
 
@@ -127,7 +141,8 @@ def bearing_at(game, sub, rect, pos):
     if pos is None or not pygame.Rect(rect).collidepoint(pos):
         return None
     wx, wy = pilot_view(game, sub, rect).screen_to_world(*pos)
-    dx, dy = wx - sub.x, wy - sub.y
+    own = _own(game, sub)
+    dx, dy = wx - own.x, wy - own.y
     if math.hypot(dx, dy) < 1e-6:
         return None
     return round(math.degrees(math.atan2(dx, -dy))) % 360
@@ -145,6 +160,8 @@ def draw_pilot_chart(s, game, boat, rect) -> None:
     if rect.w < 80 or rect.h < 60:
         return
     sub = boat.sub
+    own = _own(game, sub)
+    shift_x, shift_y = boat_nav.error(boat)
     world = game.world
     view = pilot_view(game, sub, rect)
     cell_nm = PILOT_CELL_PX / view.scale
@@ -167,7 +184,7 @@ def draw_pilot_chart(s, game, boat, rect) -> None:
         hazards = getattr(world, "charted_hazards", None)
         if hazards is not None:
             chart_symbols.draw_hazards(s, hazards(), view.world_to_screen, tuple(rect), view.scale)
-        bx, by = view.world_to_screen(sub.x, sub.y)
+        bx, by = view.world_to_screen(own.x, own.y)
         # Range rings every 2 NM with their distance.
         ring_row = layout.font(12).get_linesize()
         for ring_nm in range(2, int(PILOT_RANGE_NM * 2) + 1, 2):
@@ -178,15 +195,15 @@ def draw_pilot_chart(s, game, boat, rect) -> None:
                                  (int(bx) + 3, int(by) - radius, 28, ring_row),
                                  config.COLOR_TEXT_DIM, size=12)
         # The wake: where the boat was over the sounder's window.
-        trail = [view.world_to_screen(x, y)
+        trail = [view.world_to_screen(x + shift_x, y + shift_y)
                  for _t, x, y, _b, _d in boat.sounder.window(game.sim_t)]
         if len(trail) >= 2:
             lines.lines(s, config.COLOR_TEXT_DIM, False, trail + [(bx, by)], 1)
         # Ordered course ahead to the look-ahead, ticks every PILOT_TICK_MIN.
         ahead = config.UBOOT_OBSTACLE_LOOKAHEAD_NM
-        ex, ey = view.world_to_screen(*_ray(sub, sub.order_course, ahead))
+        ex, ey = view.world_to_screen(*_ray(own, sub.order_course, ahead))
         lines.line(s, config.COLOR_TEXT, (bx, by), (ex, ey), 2)
-        far = view.world_to_screen(*_ray(sub, sub.order_course, PILOT_RANGE_NM * 2))
+        far = view.world_to_screen(*_ray(own, sub.order_course, PILOT_RANGE_NM * 2))
         lines.line(s, config.COLOR_TEXT_DIM, (ex, ey), far, 1)
         step = max(0.0, sub.speed) * PILOT_TICK_MIN / 60.0
         if step >= 0.2:
@@ -194,13 +211,13 @@ def draw_pilot_chart(s, game, boat, rect) -> None:
             nx, ny = math.cos(rad), math.sin(rad)
             distance = step
             while distance <= ahead + 1e-9:
-                tx, ty = view.world_to_screen(*_ray(sub, sub.order_course, distance))
+                tx, ty = view.world_to_screen(*_ray(own, sub.order_course, distance))
                 lines.line(s, config.COLOR_TEXT, (tx - 6 * nx, ty - 6 * ny),
                            (tx + 6 * nx, ty + 6 * ny), 2)
                 distance += step
         obstacle = boat.orders.obstacle_ahead_nm
         if obstacle is not None:
-            ox, oy = view.world_to_screen(*_ray(sub, sub.order_course, obstacle))
+            ox, oy = view.world_to_screen(*_ray(own, sub.order_course, obstacle))
             for sx, sy in ((1, 1), (1, -1)):
                 lines.line(s, config.COLOR_DANGER, (ox - 7 * sx, oy - 7 * sy),
                            (ox + 7 * sx, oy + 7 * sy), 3)
@@ -226,13 +243,14 @@ def draw_pilot_chart(s, game, boat, rect) -> None:
 
 def ahead_profile(game, sub) -> list:
     """Charted depth along the ordered course out to the look-ahead:
-    ``(distance_nm, depth_m)`` from the boat outwards."""
+    ``(distance_nm, depth_m)`` from the boat's navigated position outwards."""
     ahead = config.UBOOT_OBSTACLE_LOOKAHEAD_NM
+    own = _own(game, sub)
     rows = []
     for index in range(SOUNDER_AHEAD_POINTS + 1):
         distance = ahead * index / SOUNDER_AHEAD_POINTS
         rows.append((distance, max(0.0, game.world.charted_depth_m(
-            *_ray(sub, sub.order_course, distance)))))
+            *_ray(own, sub.order_course, distance)))))
     return rows
 
 
@@ -366,12 +384,41 @@ def pilot_lamps(game, boat) -> list:
                       range=f"{config.UBOOT_OBSTACLE_LOOKAHEAD_NM:.0f}"),
          "alarm" if obstacle is not None and obstacle < 2.0 else
          "caution" if obstacle is not None else "on"),
+        dr_lamp(game, boat),
+        route_lamp(boat),
     ]
+
+
+def dr_lamp(game, boat):
+    """The dead-reckoning readout: the navigator's error estimate and the
+    age of the last fix, or the GPS fix being taken."""
+    progress = boat_nav.fix_progress(boat)
+    if progress > 0.0:
+        return ("uboot.pilot.lamp.position",
+                message("uboot.pilot.value.fixing", percent=f"{progress * 100:.0f}"), "on")
+    error = boat_nav.uncertainty_nm(boat)
+    return ("uboot.pilot.lamp.position",
+            message("uboot.pilot.value.dr", error=f"{error:.1f}",
+                    age=f"{boat.orders.nav[2] / 60.0:.0f}"),
+            "alarm" if error >= 2.0 else "caution" if error >= 0.5 else "on")
+
+
+def route_lamp(boat):
+    """The route: next waypoint and its bearing from the navigated position."""
+    route = boat.orders.route
+    if not route.active:
+        return ("uboot.pilot.lamp.route", "uboot.pilot.value.route_off", "off")
+    bx, by = boat_nav.position(boat)
+    x, y = route.points[route.index]
+    return ("uboot.pilot.lamp.route",
+            message("uboot.pilot.value.route", number=f"{route.index + 1}",
+                    count=f"{len(route.points)}",
+                    bearing=f"{route_model.bearing_to(bx, by, x, y):03.0f}"), "on")
 
 
 def draw_pilot_page(s, game, boat, x, y, w, h) -> None:
     """Navigation station, first page: readouts, pilot chart, echo sounder."""
-    lamp_h = console.lamp_grid(s, (x, y, w, 2 * (layout.line_pitch(14, 0) + 8) + 4),
+    lamp_h = console.lamp_grid(s, (x, y, w, 3 * (layout.line_pitch(14, 0) + 8) + 8),
                                pilot_lamps(game, boat), 2, size=14)
     top = y + lamp_h + 8
     rest = y + h - top

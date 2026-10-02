@@ -9,7 +9,8 @@ name so existing imports keep working."""
 import math
 
 
-from src.core import attack_computer, buoy_antenna, config, opfor
+from src.core import attack_computer, boat_nav, buoy_antenna, config, opfor
+from src.physics import torpedo_dyn
 from src.core import phone_lookout
 
 
@@ -667,7 +668,30 @@ def _uboot_result(result):
 
 
 def _uboot_set_course(game, boat, params, _bindings):
-    return boat.sub.set_orders(course=params["course"])
+    result = boat.sub.set_orders(course=params["course"])
+    if result is True:
+        boat_nav.cancel_on_helm(boat)    # a helm order takes the boat off its route
+    return result
+
+
+def _uboot_torpedo_settings(game, boat, params, _bindings):
+    """The weapons officer's seeker settings for the next shots."""
+    boat.orders.torpedo_pattern = params["pattern"]
+    boat.orders.torpedo_enable_nm = torpedo_dyn.quantized_enable_nm(
+        float(params["enable_nm"]))
+    return True
+
+
+def _uboot_route_waypoint(game, boat, params, _bindings):
+    return boat_nav.add_waypoint(boat, params["x"], params["y"], float(game.world.size_nm))
+
+
+def _uboot_route_pattern(game, boat, params, _bindings):
+    return boat_nav.start_pattern(boat, params["pattern"], float(game.world.size_nm))
+
+
+def _uboot_route_clear(game, boat, params, _bindings):
+    return boat_nav.clear(boat)
 
 
 def _uboot_clear_baffles(game, boat, params, _bindings):
@@ -869,6 +893,10 @@ def _uboot_esm_plot(game, boat, params, _bindings):
 _UBOOT_ACTION_HANDLERS = {
     "acknowledge": lambda game, boat, params, _bindings: params == {},
     "uboot_set_course": _uboot_set_course,
+    "uboot_torpedo_settings": _uboot_torpedo_settings,
+    "uboot_route_waypoint": _uboot_route_waypoint,
+    "uboot_route_pattern": _uboot_route_pattern,
+    "uboot_route_clear": _uboot_route_clear,
     "uboot_clear_baffles": _uboot_clear_baffles,
     "uboot_set_speed": _uboot_set_speed,
     "uboot_set_depth": _uboot_set_depth,

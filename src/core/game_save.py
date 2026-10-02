@@ -836,7 +836,10 @@ class SaveMixin:
                                      if t._seeker_target in self.nixies else None),
                        time_since_launch=t.time_since_launch,
                        energy_s=t.energy_s, motor_fraction=t.motor_fraction,
-                       depth_rate=t.depth_rate, target_depth=t.target_depth)
+                       depth_rate=t.depth_rate, target_depth=t.target_depth,
+                       pattern=t.pattern, enable_nm=t.enable_nm,
+                       search_phase=t.search_phase, turns_done=t.turns_done,
+                       search_course=t.search_course)
                 for t in self.enemy_torpedoes],
             "asms": [dict(x=a.x, y=a.y, course=a.course, seq=a.seq,
                             profile_key=a.profile_key,
@@ -1528,7 +1531,11 @@ class SaveMixin:
                                  guidance_y=ed["guidance_y"],
                                  launch_platform_id=ed["launch_platform_id"],
                                  launch_weapon_key=ed["launch_weapon_key"],
-                                 time_since_launch=ed["time_since_launch"]))
+                                 time_since_launch=ed["time_since_launch"],
+                                 pattern=ed["pattern"], enable_nm=ed["enable_nm"]))
+            self.enemy_torpedoes[-1].search_phase = ed["search_phase"]
+            self.enemy_torpedoes[-1].turns_done = ed["turns_done"]
+            self.enemy_torpedoes[-1].search_course = ed["search_course"]
             self.enemy_torpedoes[-1].travel = ed["travel"]
             self.enemy_torpedoes[-1].id = ed["id"]
             self.enemy_torpedoes[-1].terminal_active = ed["terminal_active"]

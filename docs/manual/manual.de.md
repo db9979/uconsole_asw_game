@@ -1115,6 +1115,102 @@ Der Automatikmodus (`A`) wählt Ziele und Techniken und koppelt das Stören wäh
 - Keine Fernmeldeaufklärung (COMINT); KW-Signale bearbeitet der Funkraum (HFDF).
 - Keine Täuschkörperwerfer außer Düppel und keine geschleppten Radartäuschkörper.
 
+## 10 U-Boot
+
+### Überblick
+
+Eine zweite Crew kann das U-Boot auf der uConsole oder im Browser spielen (Lobby, `F9` oder ein neues Spiel als U-Boot). Das Boot hat sieben Stationen; jeder Befehl wird nur von der Station angenommen, der er gehört, und eine KI besetzt jede freie Station, wenn die Crew-Hilfe an ist. Dieses Kapitel nennt Aufgabe und Standardablauf jeder Station; die Tastentabelle und die Einsätze des Bootes stehen im Kapitel Referenz (*Bemanntes gegnerisches U-Boot*).
+
+### Kommandant
+
+Der Kommandant sieht das ganze Boot: Karte, Navigation, Waffen und Kontakte, das Sehrohr und die Bedrohungsseite. Er befiehlt Kurs, Fahrt und Tiefe, legt das Boot auf Grund, pingt, nimmt ein BT und weicht auf den frischesten Alarm aus.
+
+1. An Sehrohrtiefe mit eingefahrenem Mast übernehmen; vor dem Losfahren Bedrohungsseite und HQ-Befehl lesen.
+2. Sobald Fregatte, Sonar oder Hubschrauber zu hören sind: unter die Sprungschicht (J), langsam und Schleichfahrt (A).
+3. Angriff aufbauen: Sonar hält die Peilung, Waffen holt eine Entfernung aus TMA, Ping oder Stadimeter.
+4. Langsam und leise auf Sehrohrtiefe gehen; den Mast (P) nur für kurze Rundblicke ausfahren.
+5. Nach Ping- oder Torpedoalarm sofort ausweichen (I); vor dem Zurückdrehen die Hecklücke klären (Strg+B).
+
+### Sonar
+
+Der Sonarraum des U-Boots arbeitet wie der der Fregatte, ohne Schleppsonar, OPZ-Freigabe, Plot und Telegraph. Achteraus ist das Rumpfsonar in der Hecklücke taub.
+
+1. Breitbandig rundum suchen; jeden neuen Kontakt nummerieren und seine Peilwanderung beobachten.
+2. Den stärksten Kontakt mit den Filtern abhören und an seinen Linien klassifizieren.
+3. Achteraus ist das Rumpfsonar taub: alle 20 bis 30 Minuten das Klären der Hecklücke beim Kommandanten anfordern.
+4. Pings und Torpedogeräusche sofort melden; ihre Peilung ist die Grundlage jedes Ausweichens.
+5. Nur zum Abschluss eines Angriffs pingen: die Fregatte hört jeden Ping und erhält deine Peilung.
+
+### Waffen
+
+Die Waffenstation lädt und flutet die Rohre, stellt Lauftiefe und Fächer ein, schießt auf einen gewählten Kontakt oder eine eingegebene Peilung, lenkt die drahtgelenkten Torpedos und stößt Täuschkörper aus. Der Feuerleitkasten zeigt die Suchkopf-Einstellung der nächsten Schüsse.
+
+1. Rohre laden (M) und früh und langsam fluten (Strg+M); schnelles Fluten (Umschalt+M) ist laut.
+2. Vor dem Schuss Lauftiefe (T), Fächer (Y), Suchmuster (X) und Einschaltpunkt (, / .) einstellen.
+3. Einen Kontakt mit frischer Entfernung wählen und mit Strg+Enter schießen oder auf eine eingegebene Peilung (F).
+4. Den drahtgelenkten Torpedo (W) auf neue Peilungen lenken; vor harten Manövern den Draht kappen (Umschalt+W).
+5. Gegen einen Torpedo einen Täuschkörper ausstoßen (V) und sofort nachladen.
+
+### Maschinenraum
+
+Der Maschinenraum fährt Telegraph, Schnorchel und Laderate, Schleichfahrt, die Trimmzellen und das Notanblasen, hält die Luft atembar und führt die Leckwehrtrupps.
+
+1. Die Batterie geladen halten: schnorcheln (N) nachts oder bei schlechter Sicht, Laderate (R) nach Lage.
+2. Schleichfahrt (A), sobald die Fregatte nahe ist: höchstens 5 kn.
+3. Kohlendioxid und Sauerstoff auf der Vorratsseite beobachten; rechtzeitig Absorber (Umschalt+O) oder Kerze (O).
+4. Den Trimm auf Automatik lassen (Z); nur für ein leises Schweben von Hand trimmen.
+5. Bei Schäden die Trupps schicken (Enter), Schotten schließen (I); Anblasen (Umschalt+B) nur als letztes Mittel.
+
+### Mast & ESM
+
+Mast & ESM fährt den Mast an Sehrohrtiefe aus, hört auf der ESM-Rose nach Radaren, klassifiziert die Sender, plottet Kreuzpeilungen und schaut durchs Sehrohr.
+
+1. Den Mast (P) nur an Sehrohrtiefe und nur kurz ausfahren.
+2. Die ESM-Rose beobachten: ein Hauptkeulentreffer heißt, das Radar sieht den Mast vielleicht schon.
+3. Jeden Sender klassifizieren (← / →) und Kreuzpeilungen in den Plot geben (Enter).
+4. Den Mast sofort einfahren, wenn ein Hubschrauber- oder Flugzeugradar stärker wird.
+5. Auf der Sehrohrseite Stadimeter-Entfernungen für den Rechner nehmen (Enter).
+
+### Navigation
+
+Die Navigation befiehlt Kurs und Tiefe, achtet auf Kiel und Untiefen auf Lotsenkarte und Echolot, führt die Koppelnavigation und steuert die Route.
+
+1. Vor jedem Kurs- oder Tiefenbefehl die Lotsenkarte prüfen: Kiel, Untiefen und Land voraus.
+2. Die Lampe Koppelort beobachten: getaucht wächst der Fehler; bei ruhiger Lage mit ausgefahrenem Mast einen GPS-Fix nehmen (20 s).
+3. Eine Route mit Rechtsklicks oder einem Suchmuster (W) legen; ein Ruderbefehl beendet die Route.
+4. Mindestens den Koppelfehler Abstand zu Untiefen halten: der Kartencheck rechnet vom gekoppelten Ort.
+5. In flachem Wasser zum Verstecken auf Grund legen (Umschalt+G) und vor dem Losfahren abheben.
+
+### Funkraum
+
+Der Funkraum schreibt die Sendungen des HQ mit, liest Befehle und Kontaktmeldungen des HQ und sendet Lagemeldungen.
+
+1. Die nächste HQ-Sendung notieren; sie mit Mast, Bojenantenne (B) oder VLF mitschreiben.
+2. HQ-Befehle und Kontaktmeldungen an den Kommandanten geben; ihre Peilungen gelten vom gekoppelten Ort.
+3. Lagemeldungen (Enter) nur auf Befehl oder in sicherer Lage senden: die Fregatte kann eine KW-Peilung nehmen.
+4. Die Bojenantenne bei höchstens 6 kn ausbringen und vor mehr als 10 kn einholen.
+5. Eine Kontaktmeldung altert mit jeder Minute: ihr Fehlerkreis wächst, das Ziel fährt weiter.
+
+### Koppelnavigation und Route
+
+- Getaucht kennt das Boot seinen Ort nur durch Koppeln. Der gekoppelte Ort wandert vom wahren Ort weg: durch eine gleichmäßige Versetzung bis 0,4 kn, die Log und Kreisel nicht sehen (die Trägheitsnavigation eines Atomboots wandert nur 0,3-mal so viel), dazu einmal pro Minute ein kleiner Zufallsschritt; der Fehler bleibt unter 8 sm.
+- Die Karte der Crew (Küste, Tiefen, Hindernisse, Einsatzziel, HQ-Meldungen und Route) liegt dort, wo der Navigator sie gegenüber dem Boot vermutet. Das Boot selbst, seine eigenen Sonarkontakte und eigenen Torpedos bleiben dort, wo das Boot sie misst.
+- Ein GPS-Fix: 20 s Mast oben an Sehrohrtiefe setzen den gekoppelten Ort wieder auf den wahren. Die Lampe **Koppelort** auf der Seite Karte & Echolot zeigt die eigene Fehlerschätzung des Navigators und die Minuten seit dem Fix oder den laufenden Fix.
+- Kartencheck voraus und Route rechnen vom gekoppelten Ort; ein alter Fix kann das Boot so in Wasser führen, das die Karte für frei hält.
+- Die Route: ein Rechtsklick auf die Karte setzt einen Wegpunkt (höchstens 8), `W` legt eine Zickzack- oder Quadratsuche ab dem Boot und schaltet weiter bis aus, `Rücktaste` löscht sie. Jeder Kursbefehl vom Ruder und jedes Ausweichen beendet die Route; das Klären der Hecklücke hat das Ruder, solange es läuft. Im Browser macht **Wegpunkte auf der Karte setzen** Klicks auf die Karte zu Wegpunkten.
+
+### Torpedo-Suchkopf
+
+- `X` schaltet das Suchmuster der nächsten Schüsse weiter: gerade (wie bisher), Schlange, Kreis oder Helix. Der Torpedo läuft gerade zum Datum; ist sein Suchkopf an und hat nichts gefunden, sucht er in diesem Muster.
+- `,` und `.` verschieben den Einschaltpunkt zwischen 0,6 und 3,0 sm vor dem Datum in Schritten von 0,2 sm (Vorgabe 3,0 sm). Ein später Einschaltpunkt hält den Suchkopf länger blind, so dass er Täuschkörper und andere Schiffe auf dem Weg nicht nimmt.
+- Ein Torpedo im Wasser behält die Einstellung, mit der er geschossen wurde; die Waffen-Karte im Browser stellt beides mit **Anwenden** ein.
+
+### Nicht modelliert
+
+- Keine Ortsbestimmung über Landmarken, Lotungen oder Sterne; nur GPS löscht den Koppelfehler.
+- Der Plot behält seine Marken dort, wo sie gegenüber dem Boot gezeichnet wurden; er wandert mit einem Fix nicht mit.
+- Keine eigene Zentrale und kein LI-Platz; Trimm und Ballast bleiben beim Maschinenraum.
+
 ## Referenzdaten
 
 Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigkeit und Missionen können Bestände und Zeitlimits ändern.
@@ -1294,6 +1390,8 @@ Die obere Leiste zeigt die sieben Stationen des U-Boots als Reiter: `1` Führung
 | `Umschalt+B` | Notanblasen, einmal (Führung, Maschine) |
 | `T` | Torpedo-Lauftiefe 5-300 m (Waffen) |
 | `Y` | Ein Torpedo oder Zweierfächer (Waffen) |
+| `X` | Suchmuster des Suchers: gerade, Schlange, Kreis, Helix (Waffen) |
+| `, / .` | Sucheraktivierung -/+ (0,6 bis 3,0 sm vor dem Datum, Schritte 0,2 sm; Waffen) |
 | `W` | Neuesten Drahttorpedo lenken: Peilung, dann Entfernung (Waffen) |
 | `Shift+W` | Draht des neuesten Torpedos kappen (Waffen) |
 | `A` | Schleichfahrt ein/aus, höchstens 5 kn (Führung, Maschine) |
@@ -1326,6 +1424,9 @@ Die obere Leiste zeigt die sieben Stationen des U-Boots als Reiter: `1` Führung
 | `U` | Maschine, Seite Schaden: Leute aus den Freiwachen zur am schwersten getroffenen Station |
 | `G` | Gefechtsstationen an/aus (alle Wachen im Dienst, aufmerksam, aber ermüdend) |
 | `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist achtern taub) |
+| `Rechtsklick` | Routen-Wegpunkt auf der Karte setzen (Navigation) |
+| `W` | Route: Zickzack-Suche, wachsendes Quadrat, aus (Navigation) |
+| `Backspace` | Route löschen (Navigation) |
 | `0` | Wetterseite des U-Boots (0 oder Esc schließt) |
 | `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
 

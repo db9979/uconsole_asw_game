@@ -2,7 +2,7 @@
 
 ## Authority and scope
 
-- This is U-Jagd 1.3.159 (`src/core/version.py`); saves are written as v49 and older saves from v38 on are lifted to v49 on load (`src/core/save_migrate.py`). Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 1.3.160 (`src/core/version.py`); saves are written as v49 and older saves from v38 on are lifted to v49 on load (`src/core/save_migrate.py`). Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
 - Older phase/milestone labels under `docs/GDD.md`, `docs/implementation-plan.md`, `docs/plan-0.1.6.md`, and `docs/plan-0.1.7.md` are historical. Current resumable work is tracked in `docs/plan-1.3.md` and `docs/resume.md`.

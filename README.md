@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.159**
+Current release: **1.3.160**
 
-Release 1.3.159 redraws the damage-control pictures like a real damage-
+Release 1.3.160 redraws the damage-control pictures like a real damage-
 control board. The frigate is a side profile with decks, superstructure and
 masts, every compartment at its real height, the sea and waterline outside
 with draft marks, floodwater tilted by the trim, open holes with water

@@ -28,7 +28,7 @@ from src.sonar import tma_operator
 from src.data.catalog import CATALOG
 from src.data.user_content import default_store
 from src.nations.nations import reference_summary
-from src.ui import layout
+from src.ui import layout, menu_list
 from src.ui.editor_widgets import TextField
 from src.ui.map_view import map_hit_target
 from src.ui.stations.bridge import lookout_glasses_bearing_at
@@ -39,7 +39,7 @@ from src.ui.stations_view import (damage_compartment_at, eloka_track_at,
                                     opz_world_at,
                                     station_page_tab_at)
 from src.ui.mission_editor import MissionEditor
-from src.core.game_custom import CUSTOM_SCREEN
+from src.core.game_custom import CUSTOM_SCREEN, SCENARIO_ROWS
 from src.ui.unit_editor import UnitEditor, catalog_builtins
 from src.ui import simlog_map
 from src.ui.weapons_view import weapons_hit_target
@@ -1876,7 +1876,7 @@ class EventMixin:
             # The last row opens the own missions of the side (game_custom).
             keys = config.scenarios_for_side(self.local_side)
             custom = self.custom_row_sel()
-            sels = [config.SCENARIO_ORDER.index(item) for item in keys] + [custom]
+            sels = self.scenario_menu_rows()
             pos = sels.index(custom if self.menu_sel == custom else self.scenario_menu_index())
             number = {pygame.K_1: 0, pygame.K_2: 1, pygame.K_3: 2, pygame.K_4: 3,
                       pygame.K_5: 4, pygame.K_6: 5, pygame.K_7: 6, pygame.K_8: 7,
@@ -1885,6 +1885,11 @@ class EventMixin:
                 self.menu_sel = sels[(pos - 1) % len(sels)]
             elif key == pygame.K_DOWN:
                 self.menu_sel = sels[(pos + 1) % len(sels)]
+            elif key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+                self.menu_sel = sels[menu_list.page_step(
+                    len(sels), pos, SCENARIO_ROWS, 1 if key == pygame.K_PAGEDOWN else -1)]
+            elif key in (pygame.K_HOME, pygame.K_END):
+                self.menu_sel = sels[0 if key == pygame.K_HOME else -1]
             elif number is not None and number < len(keys):
                 self.menu_sel = config.SCENARIO_ORDER.index(keys[number])
             elif key == pygame.K_o or (key in (pygame.K_RETURN, pygame.K_SPACE)

@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.159
+## 1.3.160
 
-Release 1.3.159 redraws the damage-control pictures like a real damage-
+Release 1.3.160 redraws the damage-control pictures like a real damage-
 control board. The frigate is a side profile with decks, superstructure and
 masts, every compartment at its real height, the sea and waterline outside
 with draft marks, floodwater tilted by the trim, open holes with water
@@ -18,6 +18,31 @@ doors, on the uConsole and in the browser. Apply buttons in the browser
 for a moment, and the escort destroyer's active sonar now pings the same way
 in every game with the same seed. Saves stay v49; v38 to v48 saves still
 load.
+
+## 1.3.159
+
+Release 1.3.159 replaces the start menu's fixed mission list with a scrolling
+one. With twelve scenarios per side and the own-missions row, the last rows
+were drawn over the world and seed lines at the bottom of the screen.
+
+- The scenario list shows nine rows at once in a panel with a scroll bar and
+  arrow marks; the window follows the selection. `Up`/`Down` and the mouse
+  wheel step, `PgUp`/`PgDn` move a page (with a fixed real sector they still
+  choose the sector), `Home`/`End` jump to the first and last row.
+- Below the list stands the start of the selected scenario's briefing (for
+  the own-missions row, what it opens).
+- The own missions, the free hunt's difficulty list and the lessons scroll
+  the same way; the own missions' description no longer touches the key hint.
+- Centred menu lines that are wider than the screen (large text, long sector
+  names) shrink to fit instead of running off both edges, and the logbook's
+  key hint keeps clear of the fixed-sector line.
+- The browser's "New game" list named the free patrol "unknown"; it now shows
+  its name, and the browser accepts up to 128 scenarios in the host view.
+- A new layout test draws every start-menu page in English and German, with
+  normal and large text and with a fixed real sector, also with far more
+  missions than today, and fails on any overlapping or off-screen line.
+
+Saves stay v49; v38 to v48 saves still load.
 
 ## 1.3.158
 

@@ -180,9 +180,9 @@ class LogbookMixin:
                              config.COLOR_OK if date else config.COLOR_TEXT_DIM, size=18)
             layout.blit_line(s, "logbook.award_hint." + award, (ax + 16, y + 22, 434, 20),
                              config.COLOR_TEXT_DIM, size=14)
-            y += 46
+            y += 44
         # The latest missions.
-        y = 480
+        y = 466
         layout.blit_line(s, "logbook.recent", (x, y, w, 24), config.COLOR_TEXT_DIM, size=18)
         rows = [row for row in book.entries if row["side"] == side][-RECENT_ROWS:]
         for row in reversed(rows):
@@ -203,7 +203,7 @@ class LogbookMixin:
         if not rows:
             layout.blit_line(s, "logbook.none", (x, y + 24, w, 24), config.COLOR_TEXT_DIM,
                              size=18)
-        center(self.tr("logbook.hint"), 608, color=config.COLOR_TEXT_DIM, keys=("→", "Esc"))
+        center(self.tr("logbook.hint"), 604, color=config.COLOR_TEXT_DIM, keys=("→", "Esc"))
         self._draw_logbook_panel(book, side)
 
     def _draw_logbook_panel(self, book, side: str) -> None:

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.159**
+Aktuelle Version: **1.3.160**
 
-Version 1.3.159 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
+Version 1.3.160 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
 Fregatte ist ein Seitenriss mit Decks, Aufbauten und Masten, jede Abteilung
 auf ihrer wirklichen Höhe, außen See und Wasserlinie mit Tiefgangsmarken,
 Leckwasser, das sich mit dem Trimm neigt, offene Lecks mit einströmendem

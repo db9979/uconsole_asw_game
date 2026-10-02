@@ -4,6 +4,51 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.145
+
+Release 1.3.145 puts the echo sounder into the browser's Navigation station
+of the submarine: the seabed sounded over the last ten minutes beside the
+boat's own depth, thin water under the keel in amber and red, and the charted
+profile ahead on the ordered course with the obstacle the chart check found.
+Save format v48 unchanged.
+
+## 1.3.144
+
+Release 1.3.144 makes the uConsole draw faster on both sides. Text widths,
+wrapped lines and rendered text are now remembered and reused, and the red
+light of silent running no longer blends the whole screen twice per frame.
+In a headless benchmark a submarine frame takes about a quarter of the time,
+with silent running about a sixth, and a frigate frame less than half.
+`tools/bench_draw.py` measures every station of both sides. Save format v48
+unchanged.
+
+## 1.3.143
+
+Release 1.3.143 gives the submarine's navigation dead reckoning and a route.
+Dived, the navigated position slowly drifts from the true one (less on a
+nuclear boat); a GPS fix with the mast up at periscope depth for 20 s puts it
+back. The crew's chart lies where the navigator believes it lies, the chart
+check ahead and the route steer from that position, and the pilot chart shows
+the error estimate and the age of the fix. A right click on the chart adds a
+waypoint, `W` lays a zigzag or expanding-square search and `Backspace` clears
+the route; the browser has the same buttons and a click mode. Saves move to
+format v48; v38 to v47 saves still load.
+
+## 1.3.142
+
+Release 1.3.142 lets the submarine's Weapons station set the seeker of the
+next shots like the frigate: search pattern straight, snake, circle or helix
+(`X`) and the enable point 0.6 to 3.0 NM before the datum (`,` and `.`), in
+the browser on the Weapons card. The defaults keep the earlier shot. Save
+format v48.
+
+## 1.3.141
+
+Release 1.3.141 adds the manual chapter "Submarine" with each boat station's
+job and a five-step standard procedure for all seven stations. F1 on the
+submarine side shows the procedure of the station in use, and the manual
+reader opens on the submarine chapter. Save format v47 unchanged.
+
 ## 1.3.140
 
 Release 1.3.140 adds three uConsole pages. The submarine's Navigation station

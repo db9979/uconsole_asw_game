@@ -180,13 +180,25 @@ export async function advisorReport() {
   }
 }
 
-// The button shows during a mission on a station of either side.
+// The button shows during a mission on a station of either side, and only
+// when the host has the language model switched on (checked now and then).
+const CHECK_MS = 20000;
+let lastCheck = -Infinity;
+async function checkAvailable() {
+  lastCheck = performance.now();
+  try {
+    const value = await request("/advisor");
+    if (validAdvisor(value)) { advisor.doc = value; renderAdvisorButton(); }
+  } catch (_) { /* stays as it was */ }
+}
 export function renderAdvisorButton() {
   const role = S.v2State?.role;
-  const show = Boolean(role) && S.v2State?.phase === "live" && S.session?.grants?.command === true &&
+  const eligible = Boolean(role) && S.v2State?.phase === "live" && S.session?.grants?.command === true &&
     !["lookout", "uboot_lookout"].includes(role);
+  if (eligible && !$("advisor-dialog").open && performance.now() - lastCheck > CHECK_MS) checkAvailable();
+  const show = eligible && advisor.doc?.available === true;
   $("advisor-open").hidden = !show;
-  if (!show && $("advisor-dialog").open) $("advisor-dialog").close();
+  if (!eligible && $("advisor-dialog").open) $("advisor-dialog").close();
 }
 function open() {
   const dialog = $("advisor-dialog");

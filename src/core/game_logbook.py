@@ -12,7 +12,7 @@ import datetime
 
 import pygame
 
-from src.core import boat_campaign, boat_debrief, config
+from src.core import boat_campaign, boat_debrief, config, daily
 from src.core import logbook as logbook_model
 from src.core.i18n import message, raw_text
 from src.ui import layout
@@ -72,6 +72,7 @@ class LogbookMixin:
             level=level, won=won, score=score,
             minutes=max(0, int(self.mission_time // 60)), shots=min(shots, 1000),
             sunk=min(sunk, 100), earned=earned)
+        result["daily_best"] = bool(self._file_daily(book, side, scenario, won, score))
         if not logbook_model.save_logbook(book):
             self.flash(message("logbook.save_failed"), 4.0)
             return
@@ -86,6 +87,8 @@ class LogbookMixin:
         parts = [self.tr("logbook.end.score." + entry["side"], score=entry["score"])]
         if result["new_best"]:
             parts.append(self.tr("logbook.end.best"))
+        if result.get("daily_best"):
+            parts.append(self.tr("logbook.end.daily_best"))
         for award in result["awards"]:
             parts.append(self.tr("logbook.award." + award))
         return raw_text(" · ".join(parts))
@@ -125,7 +128,8 @@ class LogbookMixin:
         # Best scores per scenario.
         layout.blit_line(s, "logbook.best", (x, 214, 440, 24), config.COLOR_TEXT_DIM, size=18)
         best = sorted((key.partition(":")[2], value) for key, value in book.best.items()
-                      if key.startswith(side + ":"))
+                      if key.startswith(side + ":")
+                      and not daily.is_daily_key(key.partition(":")[2]))
         y = 240
         for scenario, score in best[:7]:
             layout.blit_line(s, message("logbook.best_row", scenario=self._scenario_label(scenario),

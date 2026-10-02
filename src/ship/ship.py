@@ -41,6 +41,8 @@ class Ship:
         self.astern = False
         self.speed_cap = config.SHIP_SPEED_MAX_KN
         self.quiet_mode = False
+        # Noise of the crew's mishaps and voices (game_noise, recomputed each substep).
+        self.crew_noise = 0.0
         self.plant_mode = "AUTO"
         self.trim_noise = 0.0        # from DamageModel.trim_noise_boost(), per tick
         self.fuel_capacity_kg = config.SHIP_FUEL_CAPACITY_KG
@@ -360,7 +362,13 @@ class Ship:
     # --- Akustik (vereinfacht, Captain's Log §1.1) ---
 
     def noise_level(self) -> float:
-        """Relativer Rauschpegel der Fregatte (0 = leise, 1 = laut)."""
+        """Relativer Rauschpegel der Fregatte (0 = leise, 1 = laut), with the
+        crew's own noise (``noise_discipline``) on top."""
+        return config.clamp(self.machinery_noise_level() + self.crew_noise, 0.0,
+                            NOISE_LEVEL_MAX)
+
+    def machinery_noise_level(self) -> float:
+        """The frigate's noise without the crew's mishaps and voices."""
         n = max(0.0, (self.speed - 4.0) / (config.SHIP_SPEED_REFERENCE_KN - 4.0))
         if self.cavitating:
             n = max(n, 0.85 + 0.02 * (self.speed - config.CAVITATION_KN))

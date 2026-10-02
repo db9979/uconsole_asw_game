@@ -40,6 +40,8 @@ class Preferences:
     aa_lines: bool = False
     # Spoken crew reports through an installed espeak-ng (silent without).
     speech: bool = False
+    # Noise discipline: the uConsole's own microphone (level only, opt-in).
+    microphone: bool = False
     # Frame-rate cap from FPS_CHOICES; the default 30 saves uConsole CPU.
     frame_rate: int = FPS_DEFAULT
     # Event feed + telemetry: "ticker" (one status strip, full feed on F11)
@@ -94,7 +96,7 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
         language = defaults.language
     values: dict[str, object] = {"language": language}
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
-                 "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "live_ais_enabled",
+                 "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "microphone", "live_ais_enabled",
                  "live_adsb_enabled", "onboarded"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)

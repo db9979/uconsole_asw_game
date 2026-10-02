@@ -844,6 +844,10 @@ def _uboot_bottom(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_bottom(params["enabled"]))
 
 
+def _uboot_surface(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_surface(params["enabled"]))
+
+
 def _uboot_scope_bearing(game, boat, params, _bindings):
     if not boat.sub._crew_ready():
         return "not_ready"
@@ -924,6 +928,7 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_silent": _uboot_silent,
     "uboot_evade": _uboot_evade,
     "uboot_bottom": _uboot_bottom,
+    "uboot_surface": _uboot_surface,
     "uboot_scope_bearing": _uboot_scope_bearing,
     "uboot_scope_mark": _uboot_scope_mark,
     "uboot_scope_fire": _uboot_scope_fire,

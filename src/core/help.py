@@ -285,6 +285,8 @@ _UBOOT_HELP = (
         ("Shift+W", "help.uboot.wire_cut"),
         ("A", "help.uboot.silent"),
         ("Shift+G", "help.uboot.bottom"),
+        ("Shift+H", "help.uboot.surface"),
+        ("H", "help.uboot.crash_dive"),
         ("N", "help.uboot.snorkel"),
         ("P", "help.uboot.mast"),
         ("help.key.arrows", "help.uboot.esm_select"),

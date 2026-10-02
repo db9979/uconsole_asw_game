@@ -469,7 +469,8 @@ class IncidentsMixin:
     def _apply_incident_effects(self) -> None:
         """Generator power of every submarine this substep: nothing through a
         jammed snorkel valve, half while battery gas is vented (derived from
-        the saved board, so a loaded game continues identically)."""
+        the saved board, so a loaded game continues identically); a crewed
+        boat's diesels give more surfaced, without the snorkel head's losses."""
         factors = {}
         board = getattr(self, "incidents", None)
         for item in ([] if board is None else board.items):
@@ -479,7 +480,10 @@ class IncidentsMixin:
         for sub in self.subs:
             endurance = getattr(sub, "endurance", None)
             if endurance is not None:
-                endurance.generator_factor = factors.get(sub.id, 1.0)
+                surfaced = (sub.manual and not sub.sunk
+                            and sub.depth <= config.UBOOT_SURFACED_DEPTH_M)
+                endurance.generator_factor = factors.get(sub.id, 1.0) * (
+                    config.UBOOT_SURFACE_DIESEL_FACTOR if surfaced else 1.0)
 
     # --- the submarine's broadcast ----------------------------------------------------
 

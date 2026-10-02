@@ -33,6 +33,8 @@ OWNSHIP_SIGNATURE_KEY = "warship_30"
 OWNSHIP_TARGET_ID = 900_000
 # The frigate's helicopter as a periscope sighting (it has no sonar contact).
 SCOPE_AIR_TARGET_ID = 900_001
+# ... and its patrol aircraft (seen from the surfaced boat's bridge too).
+SCOPE_MPA_TARGET_ID = 900_002
 OWN_TORPEDO_TARGET_BASE = 3_000_000
 # Radiated-level steps of the own cavitation and quiet state (gameplay tuning).
 OWNSHIP_CAVITATION_DB = 6.0
@@ -106,10 +108,13 @@ class OwnShipAcousticSource:
     lofar_lines = SurfaceShip.lofar_lines
     broadband = SurfaceShip.broadband
     acoustic_signature = SurfaceShip.acoustic_signature
-    quiet_factor = SurfaceShip.quiet_factor
     noise_level = SurfaceShip.noise_level
     distance_nm = SurfaceShip.distance_nm
     bearing_from_frigate = SurfaceShip.bearing_from_frigate
+
+    def quiet_factor(self) -> float:
+        """SurfaceShip's speed law, less the crew's mishaps and voices."""
+        return max(0.0, SurfaceShip.quiet_factor(self) - getattr(self._ship, "crew_noise", 0.0))
 
     def __init__(self, ship, damage, runtime_catalog):
         self._ship = ship

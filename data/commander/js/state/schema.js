@@ -106,7 +106,7 @@ export function validateV2State(state) {
     if (!exactKeys(state, status)) throw new Error("protocol");
     return;
   }
-  const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station", "plot", "alarms"];
+  const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station", "plot", "alarms", "hit_view", "crew_noise"];
   if (!sessionRoles.includes(state.role) || state.role !== S.session?.station ||
       !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "world"]) ||
       !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm", "storm"]) ||
@@ -196,12 +196,12 @@ export function validateV2State(state) {
   const sightFields = {
     sky: ["light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg", "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg", "moon_illumination", "moon_waxing", "glow", "storm", "lightning", "lightning_bearing"],
     glasses: ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "events"],
-    outline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model"],
+    outline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model", "way"],
     classes: ["warship", "merchant", "aircraft", "torpedo", "unknown"],
     event: ["type", "bearing", "range_nm", "age_s", "dur_s", "size_m", "level"],
     eventKinds: ["column", "blast", "fire", "sinking"],
     phone: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
-    phoneOutline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model", "called", "range_nm"],
+    phoneOutline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model", "way", "called", "range_nm"],
     call: ["seq", "age_s", "category", "bearing", "range_nm", "confirmed"],
     callCategories: ["contact", "ship", "warship", "merchant", "aircraft", "submarine", "torpedo"],
   };
@@ -225,7 +225,7 @@ export function validateV2State(state) {
     esmHistory: ["age_s", "x", "y", "bearing"],
     esmFix: ["x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent"],
     esmCandidate: ["name", "role", "fit"],
-    threat: ["intercepts", "counts", "loudest_db", "echo_likely", "trend", "layer", "layer_m", "depth_m", "noise", "mast", "esm_count", "advice", "plan"],
+    threat: ["intercepts", "counts", "loudest_db", "echo_likely", "trend", "layer", "layer_m", "depth_m", "noise", "mast", "esm_count", "advice", "plan", "clock"],
     intercept: ["type", "bearing", "level_db", "age_s"],
     interceptKinds: ["hull", "dipping", "buoy", "splash", "torpedo"],
     advice: ["uboot.advice.torpedo", "uboot.advice.mast_down", "uboot.advice.slow_down", "uboot.advice.measure_layer", "uboot.advice.go_below", "uboot.advice.evade"],
@@ -285,6 +285,7 @@ export function validateV2State(state) {
   const elevationOk = (value) => value === null || (finite(value) && value >= -5 && value <= 90);
   const aobOk = (value) => value === null || (finite(value) && value >= -180 && value <= 180);
   const modelOk = (value) => value === null || (typeof value === "string" && /^[a-z0-9_]{1,32}$/.test(value));
+  const wayOk = (value) => value === null || (finite(value) && value >= 0 && value <= 1);
   // What the eye sees happen: water columns, fire, sinkings (display only).
   const sightEventsOk = (rows) => boundedArray(rows, 8) && rows.every((row) => exactKeys(row, sightFields.event) &&
     sightFields.eventKinds.includes(row.type) && finite(row.bearing) && row.bearing >= 0 && row.bearing < 360 &&
@@ -296,7 +297,8 @@ export function validateV2State(state) {
     glasses.fov_deg > 0 && glasses.fov_deg <= 180 &&
     boundedArray(glasses.outlines, 16) && glasses.outlines.every((row) => exactKeys(row, sightFields.outline) &&
       finite(row.bearing) && finite(row.span_deg) && row.span_deg > 0 && sightFields.classes.includes(row.cls) &&
-      typeof row.stale === "boolean" && navLightsOk(row.lights) && elevationOk(row.elevation_deg) && aobOk(row.aob_deg) && modelOk(row.model));
+      typeof row.stale === "boolean" && navLightsOk(row.lights) && elevationOk(row.elevation_deg) && aobOk(row.aob_deg) && modelOk(row.model) &&
+      wayOk(row.way));
   const crewOk = (crew) => exactKeys(crew, crewFields.row) &&
     Number.isInteger(crew.on_watch) && crew.on_watch >= 1 && crew.on_watch <= 3 &&
     Array.isArray(crew.watches) && crew.watches.length === 3 &&
@@ -326,12 +328,35 @@ export function validateV2State(state) {
     boundedArray(view.outlines, 24) && view.outlines.every((row) => exactKeys(row, sightFields.phoneOutline) &&
       finite(row.bearing) && finite(row.span_deg) && row.span_deg > 0 && sightFields.classes.includes(row.cls) &&
       typeof row.stale === "boolean" && typeof row.called === "boolean" && navLightsOk(row.lights) &&
-      elevationOk(row.elevation_deg) && aobOk(row.aob_deg) && modelOk(row.model) &&
+      elevationOk(row.elevation_deg) && aobOk(row.aob_deg) && modelOk(row.model) && wayOk(row.way) &&
       (row.range_nm === null || (finite(row.range_nm) && row.range_nm >= 0))) &&
     boundedArray(view.calls, 8) && view.calls.every((row) => exactKeys(row, sightFields.call) &&
       Number.isSafeInteger(row.seq) && row.seq >= 1 && finite(row.age_s) && row.age_s >= 0 &&
       sightFields.callCategories.includes(row.category) && finite(row.bearing) && row.bearing >= 0 && row.bearing < 360 &&
       (row.range_nm === null || (finite(row.range_nm) && row.range_nm >= 0)) && typeof row.confirmed === "boolean");
+  // The hit picture (src/core/hit_view.py): null, or a hit in sight (the
+  // side's own eyepiece toward it) or only heard (its bearing).
+  // Noise discipline (src/core/noise_discipline.py): the crew's held
+  // microphone level and its thresholds.
+  const noise = state.crew_noise;
+  if (!exactKeys(noise, ["voice", "safe", "loud", "max", "quiet"]) ||
+      !Number.isSafeInteger(noise.max) || noise.max < 1 || noise.max > 100 ||
+      ![noise.voice, noise.safe, noise.loud].every((value) => Number.isSafeInteger(value) && value >= 0 && value <= noise.max) ||
+      noise.safe > noise.loud || typeof noise.quiet !== "boolean") throw new Error("protocol");
+  const hit = state.hit_view;
+  const outlineOk = (row) => exactKeys(row, sightFields.outline) &&
+    finite(row.bearing) && finite(row.span_deg) && row.span_deg > 0 && sightFields.classes.includes(row.cls) &&
+    typeof row.stale === "boolean" && navLightsOk(row.lights) && elevationOk(row.elevation_deg) && aobOk(row.aob_deg) &&
+    modelOk(row.model) && wayOk(row.way);
+  if (hit !== null && (!exactKeys(hit, ["mode", "kind", "bearing", "age_s", "fov_deg", "visibility_nm", "sea_state", "sky", "outlines", "events"]) ||
+      ![["sight", ["column", "blast", "sinking"]], ["sonar", ["hit", "breakup"]]].some(([mode, kinds]) => hit.mode === mode && kinds.includes(hit.kind)) ||
+      !finite(hit.bearing) || hit.bearing < 0 || hit.bearing >= 360 || !finite(hit.age_s) || hit.age_s < 0 ||
+      !finite(hit.fov_deg) || hit.fov_deg <= 0 || hit.fov_deg > 90 ||
+      (hit.mode === "sight" ? !finite(hit.visibility_nm) || !finite(hit.sea_state) || !skyOk(hit.sky) ||
+        !boundedArray(hit.outlines, 12) || !hit.outlines.every(outlineOk) || !sightEventsOk(hit.events)
+        : hit.visibility_nm !== null || hit.sea_state !== null || hit.sky !== null ||
+          !Array.isArray(hit.outlines) || hit.outlines.length || !Array.isArray(hit.events) || hit.events.length)))
+    throw new Error("protocol");
   if (lookoutRoles.includes(state.role)) {
     if (!phoneOk(payload)) throw new Error("protocol");
   } else if (state.role === "bridge") {
@@ -350,7 +375,8 @@ export function validateV2State(state) {
         typeof payload.orders.cavitating !== "boolean" || payload.orders.speed_max_kn < 0 || payload.orders.speed_max_kn > 100 ||
         !exactKeys(payload.threat, ["observations", "count", "average_flood", "torpedoes"]) ||
         !boundedArray(payload.threat.torpedoes, 8) || payload.threat.torpedoes.some((row) =>
-          !exactKeys(row, ["source", "bearing", "age_s"]) || !["transient", "seeker", "flood", "classified"].includes(row.source) ||
+          !exactKeys(row, ["source", "bearing", "age_s", "tti_s"]) || !["transient", "seeker", "locked", "flood", "classified"].includes(row.source) ||
+          (row.tti_s !== null && (!finite(row.tti_s) || row.tti_s < 0)) ||
           !finite(row.bearing) || row.bearing < 0 || row.bearing >= 360 || !finite(row.age_s) || row.age_s < 0) ||
         !boundedArray(payload.systems, 32) || payload.systems.some((row) => !exactKeys(row, ["key", "state", "down"]) || typeof row.down !== "boolean")) throw new Error("protocol");
     tacticalRows(payload.threat.observations, 128);
@@ -424,8 +450,8 @@ export function validateV2State(state) {
         !exactKeys(nav.depth_presets, ["periscope", "snorkel", "above_layer", "below_layer", "deep", "layer"]) ||
         Object.values(nav.depth_presets).some((value) => value !== null && (!finite(value) || value < 0 || value > 1000)) ||
         [nav.water_depth_m, nav.under_keel_m, nav.obstacle_ahead_nm].some((value) => value !== null && !finite(value)) || typeof nav.cavitating !== "boolean" ||
-        !exactKeys(status, ["state", "damage", "emergency_ascent", "blow_available", "battery", "endurance_phase", "transmitting", "snorkel_available", "snorkeling", "silent", "quiet", "bottomed", "mast"]) ||
-        [status.snorkel_available, status.snorkeling, status.silent, status.quiet, status.bottomed, status.mast].some((value) => typeof value !== "boolean") ||
+        !exactKeys(status, ["state", "damage", "emergency_ascent", "blow_available", "battery", "endurance_phase", "transmitting", "snorkel_available", "snorkeling", "silent", "quiet", "bottomed", "surfaced", "mast"]) ||
+        [status.snorkel_available, status.snorkeling, status.silent, status.quiet, status.bottomed, status.surfaced, status.mast].some((value) => typeof value !== "boolean") ||
         !["manual", "ai", "sinking", "sunk"].includes(status.state) || !finite(status.damage) ||
         [status.emergency_ascent, status.blow_available, status.transmitting].some((value) => typeof value !== "boolean") ||
         (status.battery !== null && !finite(status.battery)) ||
@@ -459,8 +485,8 @@ export function validateV2State(state) {
         typeof scope.available !== "boolean" || typeof scope.night !== "boolean" ||
         scopeNumbers.some((key) => !finite(scope[key])) || scope.relative_deg < 0 || scope.relative_deg >= 360 ||
         !boundedArray(scope.sightings, 16) || scope.sightings.some((row) =>
-          !exactKeys(row, ["ref", "category", "cls", "bearing", "span_deg", "quality", "age_s", "range_nm", "range_sigma_nm", "range_age_s", "solution", "lights", "elevation_deg", "aob_deg", "model"]) || !navLightsOk(row.lights) ||
-          !elevationOk(row.elevation_deg) || !aobOk(row.aob_deg) || !modelOk(row.model) ||
+          !exactKeys(row, ["ref", "category", "cls", "bearing", "span_deg", "quality", "age_s", "range_nm", "range_sigma_nm", "range_age_s", "solution", "lights", "elevation_deg", "aob_deg", "model", "way"]) || !navLightsOk(row.lights) ||
+          !elevationOk(row.elevation_deg) || !aobOk(row.aob_deg) || !modelOk(row.model) || !wayOk(row.way) ||
           (row.solution !== null && (!exactKeys(row.solution, ["marks", "course", "speed_kn", "lead_deg", "run_s", "quality"]) ||
             !Number.isSafeInteger(row.solution.marks) || row.solution.marks < 1 || row.solution.marks > 6 ||
             [row.solution.course, row.solution.speed_kn, row.solution.lead_deg, row.solution.run_s].some((value) => value !== null && !finite(value)) ||
@@ -543,7 +569,9 @@ export function validateV2State(state) {
         !boundedArray(threat.advice, 4) || !threat.advice.every((key) => boatFields.advice.includes(key)) ||
         (plan !== null && (!exactKeys(plan, boatFields.evadePlan) || !["torpedo", "ping"].includes(plan.type) ||
           ["bearing", "course", "speed_kn", "depth_m"].some((key) => !finite(plan[key])) ||
-          typeof plan.silent !== "boolean" || typeof plan.decoy !== "boolean"))) throw new Error("protocol");
+          typeof plan.silent !== "boolean" || typeof plan.decoy !== "boolean")) ||
+        (threat.clock !== null && (!exactKeys(threat.clock, ["bearing", "tti_s"]) ||
+          !finite(threat.clock.bearing) || !finite(threat.clock.tti_s) || threat.clock.tti_s < 0))) throw new Error("protocol");
     // Radio room: schedule, own transmissions and HQ's (modelled) contact report.
     const radio = payload.radio;
     const radioReport = (report) => report === null || (exactKeys(report, boatFields.radioReport) &&

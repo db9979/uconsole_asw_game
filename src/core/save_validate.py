@@ -106,7 +106,7 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
     rules as the frigate's.
     """
     from src.sonar.platforms import (OWNSHIP_TARGET_ID, OWN_TORPEDO_TARGET_BASE,
-                                     SCOPE_AIR_TARGET_ID)
+                                     SCOPE_AIR_TARGET_ID, SCOPE_MPA_TARGET_ID)
 
     crew = data.get("crew")
     sub_rows = {row.get("id"): row for row in data.get("subs", ())
@@ -172,7 +172,8 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
     sightings = orders["sightings"]
     if not isinstance(sightings, list) or len(sightings) > config.UBOOT_SIGHTINGS_MAX:
         return False
-    sighting_ids = set(entity_ids) | {OWNSHIP_TARGET_ID, SCOPE_AIR_TARGET_ID} | own_torpedo_ids
+    sighting_ids = (set(entity_ids) | {OWNSHIP_TARGET_ID, SCOPE_AIR_TARGET_ID,
+                                       SCOPE_MPA_TARGET_ID} | own_torpedo_ids)
     refs = set()
     for row in sightings:
         if (not isinstance(row, dict) or set(row) != CREW_SIGHTING_FIELDS

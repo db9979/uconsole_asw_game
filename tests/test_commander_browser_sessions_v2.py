@@ -18,7 +18,7 @@ from src.sonar.sonar import Contact
 from src.core import manual
 from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_analysis,
                                    browser_state, catalogs)
-from commander_fixtures import PLOT, WEATHER_STATION
+from commander_fixtures import CREW_NOISE, PLOT, WEATHER_STATION
 
 
 
@@ -976,7 +976,7 @@ def _direct_fire_browser_states():
                    mission=dict(name="Fire test", objective="Observe", remaining_s=500.0),
                    autocrew=dict(enabled=False, status="off"), autocrew_overview=[],
                    audio=dict(events=[], callouts=[]), weather_station=WEATHER_STATION, plot=PLOT,
-                   alarms=[])
+                   alarms=[], hit_view=None, crew_noise=CREW_NOISE)
     navigation = dict(x=250.0, y=250.0, course=0.0, speed=10.0,
                       target_course=0.0, target_speed=10.0, rudder_angle=0.0,
                       yaw_rate=0.0, turn_radius_nm=None)
@@ -1199,6 +1199,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
         common["weather_station"] = WEATHER_STATION
         common["plot"] = PLOT
         common["alarms"] = []
+        common["hit_view"] = None
+        common["crew_noise"] = CREW_NOISE
         if role == "bridge":
             common[role] = {"navigation": {key: legacy["ownship"][key] for key in (
                 "x", "y", "course", "speed", "target_course", "target_speed")},

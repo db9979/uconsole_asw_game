@@ -175,7 +175,7 @@ def boat_rows(game, boat) -> list[dict]:
     events = getattr(game, "sight_events", None)
     if events is None or not opfor.scope_available(boat):
         return []
-    return events.visible(boat.sub.x, boat.sub.y, config.UBOOT_SCOPE_EYE_HEIGHT_M, game.sim_t,
+    return events.visible(boat.sub.x, boat.sub.y, opfor.eye_height_m(boat), game.sim_t,
                           visibility_nm=_visibility(game))
 
 

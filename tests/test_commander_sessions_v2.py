@@ -15,7 +15,7 @@ from commander_web import top_level_files
 from src.commander import CommanderServer
 from src.commander import server as transport
 from src.commander.v2 import routes
-from commander_fixtures import PLOT, WEATHER_STATION
+from commander_fixtures import CREW_NOISE, PLOT, WEATHER_STATION
 
 
 @pytest.fixture
@@ -86,11 +86,11 @@ def projection_states(revision="chart"):
                    clock={}, environment={}, mission={},
                    autocrew={"enabled": False, "status": "off"}, autocrew_overview=[],
                    audio={"events": [], "callouts": []}, weather_station=WEATHER_STATION, plot=PLOT,
-                   alarms=[])
+                   alarms=[], hit_view=None, crew_noise=CREW_NOISE)
     return {None: {key: value for key, value in common.items()
                     if key not in ("clock", "environment", "mission", "autocrew",
                                    "autocrew_overview", "audio",
-                                   "weather_station", "plot", "alarms")} | {"role": None},
+                                   "weather_station", "plot", "alarms", "hit_view", "crew_noise")} | {"role": None},
             **{role: dict(common, role=role, **{role: {}})
                for role in transport.ROLES}}
 

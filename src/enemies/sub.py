@@ -10,7 +10,7 @@ import random
 from src.core.baffles import in_baffles
 from src.core import config
 from src.physics import submarine as sub_physics
-from src.core import detrand
+from src.core import commander_traits, detrand
 from src.sonar.tma import BearingTrack, solve_tma
 from src.data import catalog
 from src.data import fingerprint as fingerprint_mod
@@ -203,6 +203,8 @@ class Sub:
         # may hear (``flood_seq`` numbers each one, quiet = slow flooding).
         self.flood_noise_left = 0.0
         self.flood_quiet = False
+        # Noise of the crew's mishaps and voices (game_noise, recomputed each substep).
+        self.crew_noise = 0.0
         self.flood_seq = 0
         # The AI's tubes: -1 dry, > 0 seconds of flooding left, 0 flooded;
         # a shot ordered on dry tubes waits for the flooding (fire pending).
@@ -332,7 +334,9 @@ class Sub:
             return
         if not self.sunk and self.state != "SINKING":
             self.state = "EVADE"
-            self.evac_left = config.SUB_EVADE_DURATION_S
+            # A daring commander gives way briefly, a cautious one long.
+            self.evac_left = config.SUB_EVADE_DURATION_S * commander_traits.sub_factor(
+                self, "evade")
             self.heard_ping = True
             self.memory["last_ping_age"] = 0.0
             self.evade_offset = self.rng.uniform(-30.0, 30.0)
@@ -529,7 +533,7 @@ class Sub:
         elif dist is not None and dist < config.SUB_SOLUTION_ATTACK_NM:
             # A located frigate in torpedo range is attacked even when quiet.
             rate = config.SUB_SOLUTION_ATTACK_RATE * self.stype.aggression
-        rate *= self.attack_mult
+        rate *= self.attack_mult * commander_traits.sub_factor(self, "attack")
         if self.mission_orders is not None:
             # A mission boat fights its way through: the frigate is its threat.
             rate *= (config.BOAT_AI_GUARDED_ATTACK_MULT if self.mission_guarded
@@ -1014,7 +1018,8 @@ class Sub:
                 if (tactical_observation is not None
                         and not self._mission_pressing_on()
                         and tactical_observation.range_nm is not None
-                        and tactical_observation.range_nm < config.SUB_LUER_DIST_NM):
+                        and tactical_observation.range_nm < config.SUB_LUER_DIST_NM
+                        * commander_traits.sub_factor(self, "lurk")):
                     # A charted wreck within reach is the better hiding place:
                     # lie on the bottom beside it instead of hovering.
                     hide = self.wreck_hiding_spot(world)
@@ -1243,6 +1248,10 @@ class Sub:
     # --- Akustik ---
 
     def quiet_factor(self) -> float:
+        """Stillheit with the crew's own noise (``noise_discipline``) off it."""
+        return config.clamp(self.machinery_quiet_factor() - self.crew_noise, 0.0, 1.0)
+
+    def machinery_quiet_factor(self) -> float:
         """Stillheit: Sprint/Ausweichen laut, LAUER besonders leise."""
         q = self.stype.quiet * self.quiet_mult - 0.30 * (self.damage / 100.0)
         if self.state == "EVADE":
@@ -1451,7 +1460,8 @@ class Sub:
             if crew.silent:
                 ceiling = min(ceiling, config.UBOOT_SILENT_MAX_KN)
             if self.snorkeling:
-                ceiling = min(ceiling, config.UBOOT_SNORKEL_MAX_KN)
+                ceiling = min(ceiling, config.UBOOT_SURFACE_MAX_KN if self.surfaced
+                              else config.UBOOT_SNORKEL_MAX_KN)
         control = self.damage_control
         if not control.power():
             ceiling = 0.0                       # no power: the motor stops
@@ -1549,6 +1559,9 @@ class Sub:
         vent = self.order_depth > config.UBOOT_MBT_SURFACE_DEPTH_M + 2.0
         notices = ballast.update(dt, flooding_kg=flooding, flood_moment_kg=moment,
                                  compressor=compressor, vent_ordered=vent, power=power)
+        if (power and self.surfaced and self.order_depth <= config.UBOOT_SURFACED_DEPTH_M
+                and not ballast.blowing and ballast.lp_blow(dt)):
+            notices.append("tanks_lp_blown")
         if ballast.dived() and not self.emergency_ascent:
             drift = ballast.vertical_drift_mps(flooding, self.speed, moment)
             bottom = self.last_bottom_m if self.last_bottom_m is not None else float("inf")
@@ -1810,6 +1823,44 @@ class Sub:
         return True
 
     @property
+    def surfaced(self) -> bool:
+        """Fully up: hull and conning tower above the water."""
+        return not self.sunk and self.depth <= config.UBOOT_SURFACED_DEPTH_M
+
+    def command_surface(self, on):
+        """Crew: surface (once up, the low-pressure blower empties the main
+        ballast) or, near the surface, a crash dive."""
+        if type(on) is not bool:
+            return "invalid_value"
+        if not self._crew_ready():
+            return "not_ready"
+        if not on:
+            return self.command_crash_dive()
+        if self.damage_control.down("control"):
+            return "uboot_compartment_down"
+        self.crew.bottomed = False
+        self.order_depth = 0.0
+        return True
+
+    def command_crash_dive(self):
+        """Crew: alarm dive from the surface or snorkel depth: masts and snorkel
+        down, vents open, full ahead and down to ``UBOOT_CRASH_DIVE_DEPTH_M``.
+        Blown tanks hold the boat up until the vents have flooded them."""
+        if not self._crew_ready():
+            return "not_ready"
+        if self.depth > config.UBOOT_MBT_SURFACE_DEPTH_M + 2.0:
+            return "uboot_not_surfaced"
+        self.crew.mast = False
+        self.crew.bottomed = False
+        if self.snorkeling:
+            self.endurance.stop_snorkel()
+        self.order_depth = config.UBOOT_CRASH_DIVE_DEPTH_M
+        self.order_speed = float(self.motion.maximum_speed_kn)
+        self.transient_left = max(self.transient_left, config.UBOOT_CRASH_DIVE_NOISE_S)
+        self.crew.event("crash_dive")
+        return True
+
+    @property
     def snorkeling(self) -> bool:
         return self.endurance is not None and self.endurance.phase == "SNORKEL"
 
@@ -1841,7 +1892,7 @@ class Sub:
         endurance = self.endurance
         airing = (endurance.phase in ("SNORKEL", "RADIO")
                   and self.depth <= endurance.profile.snorkel_depth_m
-                  + endurance.DEPTH_TOLERANCE_M)
+                  + endurance.DEPTH_TOLERANCE_M) or (self.manual and self.surfaced)
         notices = endurance.air.update(dt, ventilating=airing, automatic=not self.manual)
         if not self.manual:
             if (endurance.air.level() == "danger"
@@ -1910,7 +1961,9 @@ class Sub:
         if self.depth > self.endurance.profile.snorkel_depth_m + 1.0:
             return "uboot_too_deep"
         self.crew.bottomed = False
-        self.order_depth = self.endurance.profile.snorkel_depth_m
+        if self.order_depth > config.UBOOT_SURFACED_DEPTH_M:
+            # Surfaced (or surfacing) the diesels run in the open air.
+            self.order_depth = self.endurance.profile.snorkel_depth_m
         self.endurance.start_snorkel(self.depth)
         return True
 

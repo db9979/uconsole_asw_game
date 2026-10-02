@@ -26,7 +26,7 @@ from __future__ import annotations
 import math
 from functools import lru_cache
 
-from src.core import boat_missions, config, detrand
+from src.core import boat_missions, commander_traits, config, detrand
 from src.core.autocrew import AutocrewController, _nearest_threat, station_key
 from src.core.station import Station
 
@@ -426,7 +426,9 @@ def note_lead(game) -> None:
 def _sonar_point(game, line):
     """A point ``BEARING_DATUM_NM`` down a lost bearing past the ship, or
     None once the line is stale or the ship has run it out."""
-    if not 0.0 <= game.sim_t - line["t"] <= LEAD_SONAR_S:
+    # A stubborn captain runs a lost bearing down longer.
+    if not 0.0 <= game.sim_t - line["t"] <= LEAD_SONAR_S * commander_traits.hunter_factor(
+            game, "lead"):
         return None
     rad = math.radians(line["bearing"])
     ux, uy = math.sin(rad), -math.cos(rad)
@@ -668,7 +670,8 @@ def bridge(game, found) -> str:
         bearing = _bearing(ship.x, ship.y, found["x"], found["y"])
         if math.hypot(found["x"] - ship.x, found["y"] - ship.y) > CLOSE_NM:
             return _steer(game, bearing, TRANSIT_KN)
-        return _steer(game, bearing + side * 60.0, CLOSE_KN)
+        return _steer(game, bearing + side * 60.0,
+                      CLOSE_KN * commander_traits.hunter_factor(game, "close"))
     return _steer(game, found["bearing"] + side * 30.0, LEAD_KN)
 
 
@@ -679,7 +682,8 @@ def sonar(game) -> str:
         return "classified"
     contacts = hunt_contacts(game)
     # Trailing in peacetime a ping costs nothing but noise: it pings more often.
-    every = TRAIL_PING_EVERY_S if boat_missions.mode(game) == "trail" else PING_EVERY_S
+    every = (TRAIL_PING_EVERY_S if boat_missions.mode(game) == "trail"
+             else PING_EVERY_S * commander_traits.hunter_factor(game, "ping"))
     if (contacts and not game._contact_range_fresh(contacts[0])
             and _fresh(game, contacts[0], 30.0) and _window(game, every)
             and game.send_active_ping() is True):
@@ -700,7 +704,8 @@ def fire_range_nm(game) -> float:
     """The frigate's own torpedo range: guarding a post against a breakthrough
     or a reconnaissance boat it waits for a closer shot than when it hunts or
     screens a convoy."""
-    return GUARD_FIRE_NM if guarding(game) else SHIP_FIRE_NM
+    return (GUARD_FIRE_NM if guarding(game)
+            else SHIP_FIRE_NM * commander_traits.hunter_factor(game, "fire"))
 
 
 def weapons(game, found) -> str:

@@ -242,6 +242,15 @@ LOOKOUT_EPOCH_S = 0.5
 # Crewed hostile submarine (manual crew controls; the AI never uses these).
 UBOOT_SILENT_MAX_KN = 5.0          # silent running: speed ceiling
 UBOOT_SNORKEL_MAX_KN = 6.0         # snorkelling: speed ceiling (mast drag)
+# Surfaced (fully up, src/enemies/sub.py ``command_surface``): diesels run in
+# the open air, a bridge watch looks out, a crash dive floods the tanks first.
+UBOOT_SURFACED_DEPTH_M = 2.0       # at or above this the boat is surfaced
+UBOOT_SURFACE_MAX_KN = 12.0        # on the diesels at the surface (or the boat's maximum)
+UBOOT_SURFACE_DIESEL_FACTOR = 1.3  # generator power without the snorkel head's losses
+UBOOT_MBT_LP_BLOW_S = 120.0        # low-pressure blower empties the main ballast
+UBOOT_BRIDGE_EYE_HEIGHT_M = 6.0    # the bridge watch on the conning tower
+UBOOT_CRASH_DIVE_DEPTH_M = 40.0    # a crash dive's ordered depth (within safe depth)
+UBOOT_CRASH_DIVE_NOISE_S = 8.0     # flooding vents: a transient the enemy may hear
 UBOOT_BOTTOM_CLEARANCE_M = 3.0     # lying on the bottom: keel clearance
 UBOOT_BATTERY_WARN_FRACTION = 0.20 # battery warning / nearly empty
 UBOOT_BATTERY_EMPTY_FRACTION = 0.03
@@ -769,6 +778,8 @@ SUB_RADAR_HOLD_S = 900.0            # stays deep this long after an intercept
 SUB_RADAR_HOLD_MIN_BATTERY = 0.05   # below this battery it must snorkel anyway
 SUB_RADAR_DIVE_M = 40.0             # goes this far below snorkel depth
 SUB_MAST_RCS_FACTOR = 0.01
+SUB_SURFACED_RCS_FACTOR = 0.1       # a surfaced boat's hull and conning tower
+SUB_SURFACED_HEIGHT_M = 3.0
 RADAR_BLIP_LIFE_S = 6.0
 RADAR_BLIP_MAX = 24
 RADAR_BLIP_GATE_NM = 1.0

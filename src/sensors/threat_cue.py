@@ -14,19 +14,20 @@ import math
 
 from src.core import config, detrand
 
-TORPEDO_CUE_KINDS = ("transient", "seeker")
+TORPEDO_CUE_KINDS = ("transient", "seeker", "locked")
 
 
 def torpedo_cue_kind(time_since_launch: float, terminal_active: bool,
-                     distance_nm: float) -> str | None:
+                     distance_nm: float, acquired: bool = False) -> str | None:
     """Return the audible torpedo intercept for one running weapon, if any.
 
     The launch transient is loud and brief (spool-up); the active seeker
     radiates high-frequency pulses that are heard well beyond its own homing
-    range but far less than a launch.
+    range but far less than a launch, and much faster once it has acquired
+    something (``locked``, ``src/core/torpedo_seeker.py``).
     """
     if terminal_active and distance_nm <= config.TORP_SEEKER_INTERCEPT_NM:
-        return "seeker"
+        return "locked" if acquired else "seeker"
     if (time_since_launch < config.TORP_SPOOLUP_S
             and distance_nm <= config.TORP_TRANSIENT_HEAR_NM):
         return "transient"

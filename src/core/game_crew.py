@@ -10,7 +10,7 @@ them exactly (``_apply_crew_effects``).
 from __future__ import annotations
 
 from src.core import crew as crew_model
-from src.core import opfor
+from src.core import noise_discipline, opfor
 from src.core.crew import CrewState
 from src.core.i18n import message
 
@@ -168,15 +168,20 @@ class CrewMixin:
         effect = self.crew_effect()
         self._frigate_sonar.sonar.operator_dt_db = crew_model.sonar_penalty_db(
             effect * self.casualty_factor("sonar"))
-        self.damage.crew_factor = effect * self.casualty_factor("damage")
+        # "Ruhe im Boot" (silent running, quiet mode): work goes slower.
+        hush = noise_discipline.QUIET_WORK_FACTOR
+        self.damage.crew_factor = (effect * self.casualty_factor("damage")
+                                   * (hush if self.ship.quiet_mode else 1.0))
         boat = self._opfor
         for sub in self.subs:
             # Empty posts slow every submarine's torpedo gang and repairs.
-            sub.weapons_crew_factor = self.casualty_factor("weapons", sub)
-            sub.damage_control.crew_factor = self.casualty_factor("damage", sub)
+            work = hush if noise_discipline.sub_quiet(sub) else 1.0
+            sub.weapons_crew_factor = self.casualty_factor("weapons", sub) * work
+            sub.damage_control.crew_factor = self.casualty_factor("damage", sub) * work
         if boat is not None:
             boat_effect = boat.watch.effectiveness(self.sim_t)
             boat.station.sonar.operator_dt_db = crew_model.sonar_penalty_db(
                 boat_effect * self.casualty_factor("sonar", boat.sub))
             boat.sub.damage_control.crew_factor = (
-                boat_effect * self.casualty_factor("damage", boat.sub))
+                boat_effect * self.casualty_factor("damage", boat.sub)
+                * (hush if noise_discipline.sub_quiet(boat.sub) else 1.0))

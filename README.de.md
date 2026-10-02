@@ -14,17 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.145**
+Aktuelle Version: **1.3.153**
 
-Version 1.3.145 verbessert die Stationen des U-Boots in fünf Schritten. Das
-Handbuch hat ein U-Boot-Kapitel mit einem Standardablauf für jede
-Bootsstation, den auch F1 zeigt (1.3.141). Die Waffenstation stellt Suchmuster
-und Einschaltpunkt des Suchkopfs wie die Fregatte ein (1.3.142). Die
-Navigation koppelt mit GPS-Fix und steuert eine Route aus Wegpunkten oder
-einem Suchmuster (1.3.143, Spielstände v48). Die uConsole zeichnet beide
-Seiten deutlich schneller, die U-Boot-Seite etwa viermal so schnell
-(1.3.144). Die Navigation im Browser bekommt das Echolot (1.3.145).
-Spielstände v38 bis v47 lassen sich weiter laden.
+Version 1.3.153 macht Einsätze in acht Schritten spannender. Eine nahe
+Detonation lässt die Bildschirme wackeln (1.3.146), erkannte Schiffe zeigen
+in den Optiken Bugwelle und Kielwasser (1.3.147), und ein kleines Bild zeigt
+Treffer (1.3.148). Man hört, wie der Suchkopf eines Torpedos aufschaltet
+(1.3.149). Geräuschdisziplin: Besatzungen patzen hörbar, und die Mikrofone
+der Spieler zeigen, ob ihre Stimmen sie verraten könnten (1.3.150).
+Gegnerische Kommandanten haben einen Charakter (1.3.151), das Hauptmenü hat
+einen Tageseinsatz (1.3.152), und das U-Boot kann auftauchen, mit Brückenwache
+auf den Dieseln laufen und alarmtauchen (1.3.153). Spielstände bleiben v48;
+v38 bis v47 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

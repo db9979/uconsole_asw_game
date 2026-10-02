@@ -31,3 +31,6 @@ PLOT = dict(objects=[
          speed_kn=10.0, now_x=241.0, now_y=250.0, cpa_nm=0.5, cpa_s=120.0),
 ], max_objects=64, max_label=24, trail=[[249.0, 251.0], [249.5, 250.5]],
     fx=dict(pings=[[4.0, 250.0, 250.0]], echoes=[], splashes=[[2.0, 251.0, 249.0]]))
+
+# Noise discipline of a crew without microphones (projections._crew_noise).
+CREW_NOISE = {"voice": 0, "safe": 5, "loud": 11, "max": 20, "quiet": False}

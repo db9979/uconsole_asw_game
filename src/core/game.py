@@ -95,6 +95,8 @@ from src.core.game_pictures import (PicturesMixin)
 from src.core.game_tasking import TaskingMixin
 from src.core.game_incidents import IncidentsMixin
 from src.core.game_crew import CrewMixin
+from src.core.game_noise import NoiseMixin
+from src.core.game_daily import DailyMixin
 from src.core.game_mpa import MpaMixin
 from src.core.game_consort import ConsortMixin
 from src.core.game_debrief import DebriefMixin
@@ -114,7 +116,7 @@ from src.core.game_update import UpdateNoticeMixin
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
-           SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, ConsortMixin, DebriefMixin,
+           SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, NoiseMixin, DailyMixin, MpaMixin, ConsortMixin, DebriefMixin,
            TrainingMixin, CustomMissionMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
            LobbyMixin, UpdateNoticeMixin, ResilienceMixin):
     # Options overlay rows in display order; the last two open sub-menus.
@@ -123,7 +125,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                     "bottom_panel", "level", "live_traffic", "commander")
     # Second options page: game setup.  The local side is per launch and never
     # persisted (the frigate is always the default).
-    _OPTION_ROWS_SETUP = ("local_side", "graphics", "speech")
+    _OPTION_ROWS_SETUP = ("local_side", "graphics", "speech", "microphone")
     _OPTION_PAGES = (_OPTION_ROWS, _OPTION_ROWS_SETUP)
 
     def __init__(self, seed: int = 42, difficulty: dict = None,

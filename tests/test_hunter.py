@@ -454,7 +454,10 @@ def test_a_lost_sonar_bearing_is_run_down_then_given_up():
     ship.x += hunter.LEAD_MAX_NM
     assert hunter.datum(game) is None
     ship.x -= hunter.LEAD_MAX_NM
-    game.hunter_lead["sonar"]["t"] = game.sim_t - hunter.LEAD_SONAR_S - 1.0
+    from src.core import commander_traits
+    # The captain's character stretches or shortens the run-down.
+    lead_s = hunter.LEAD_SONAR_S * commander_traits.hunter_factor(game, "lead")
+    game.hunter_lead["sonar"]["t"] = game.sim_t - lead_s - 1.0
     hunter.note_lead(game)
     assert game.hunter_lead is None
 

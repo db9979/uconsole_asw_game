@@ -72,7 +72,7 @@ def test_events_from_contacts_shots_and_the_end(monkeypatch):
     game.mission_time = 50.0
     game._end_mission(True, "test")
     kinds = [event["kind"] for event in recorder.events]
-    assert kinds[-2:] == ["sub_sunk", "mission_end"]
+    assert kinds[-3:] == ["sub_sunk", "enemy_commander", "mission_end"]
     assert recorder.metrics()["first_contact_t"] == 10.0
     assert json.loads(json.dumps(recorder.frames)) == recorder.frames
 

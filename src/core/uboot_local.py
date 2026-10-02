@@ -47,7 +47,8 @@ TUBE_REASONS = ("not_ready", "no_torpedoes", "uboot_compartment_down", "uboot_tu
 UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot_mast_depth",
                        "uboot_buoy_lost",
                        "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
-                       "uboot_no_air_stores", "uboot_no_hp_air", "uboot_compartment_down")
+                       "uboot_no_air_stores", "uboot_no_hp_air", "uboot_compartment_down",
+                       "uboot_not_surfaced")
 
 
 def playing(game) -> bool:
@@ -556,6 +557,8 @@ def _key_action(key, mods, station=None, page=None):
         return "uboot_route_clear"
     if key == pygame.K_b and mods & pygame.KMOD_SHIFT:
         return "uboot_blow"
+    if key == pygame.K_h and mods & pygame.KMOD_SHIFT:
+        return "uboot_surface"           # Shift+H: surface (H: deep, from the surface a crash dive)
     if key in (pygame.K_RETURN, pygame.K_KP_ENTER) and mods & pygame.KMOD_CTRL:
         return "uboot_fire"
     return _KEY_ACTIONS.get(key)
@@ -687,6 +690,11 @@ def _command_key(game, current, key, mods) -> None:
         begin_input(game, "uboot_speed")
     elif key == pygame.K_d:
         begin_input(game, "uboot_depth")
+    elif action == "uboot_surface":
+        _mode_notice(game, "surface", True, sub.command_surface(True))
+    elif key == pygame.K_h and (sub.surfaced or not sub.ballast.dived()):
+        # H from the surface (or with blown tanks): crash dive.
+        _mode_notice(game, "surface", False, sub.command_crash_dive())
     elif key in (pygame.K_u, pygame.K_j, pygame.K_h):
         # One-step depth orders: U periscope (Shift: snorkel depth), J below the
         # measured layer (Shift: above it), H deep (safe depth).

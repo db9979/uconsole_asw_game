@@ -17,11 +17,12 @@ from __future__ import annotations
 
 import math
 
-from src.core import config
+from src.core import commander_traits, config
 
 # Event kinds in display order of importance (the timeline colours them).
 EVENT_KINDS = ("first_contact", "first_fix", "classified", "own_shot", "enemy_shot",
-               "sub_sunk", "own_damage", "ship_sunk", "missed", "pinged", "mission_end")
+               "sub_sunk", "own_damage", "ship_sunk", "missed", "pinged", "enemy_commander",
+               "mission_end")
 
 
 class DebriefRecorder:
@@ -118,12 +119,22 @@ class DebriefRecorder:
         for span in self.spans():
             self.add_event(span["t"], "missed", minutes=round(span["duration_s"] / 60.0),
                            range=round(span["min_range_nm"], 1), layer=span["layer"])
+        character = self.enemy_character(game)
+        if character is not None:
+            self.add_event(t, "enemy_commander", character=character)
         self.add_event(t, "mission_end", result=self.result(game))
         self.events.sort(key=lambda event: event["t"])
         self._ended = True
 
     def capture(self, game, t: float) -> dict:
         return capture(game, t)
+
+    def enemy_character(self, game):
+        """The first AI submarine commander's character (``commander_traits``)."""
+        crewed = getattr(game, "_opfor", None)
+        subs = sorted((sub for sub in game.subs if sub.side == "hostile"
+                       and (crewed is None or sub is not crewed.sub)), key=lambda sub: sub.id)
+        return commander_traits.sub_kind(subs[0]) if subs else None
 
     def spans(self) -> list[dict]:
         return missed_chances(self.frames)

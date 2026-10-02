@@ -33,6 +33,8 @@ PUBLIC_FILES = (
     # The phone lookout (binoculars or periscope, gyroscope and voice).
     ("/lookout", "lookout.html", _HTML),
     ("/sonar-audio-worklet.js", "sonar-audio-worklet.js", _JS),
+    # Noise discipline: the opt-in microphone level meter's capture.
+    ("/noise-mic.js", "noise-mic.js", _JS),
     ("/manual.css", "manual.css", _CSS),
 )
 # Files only served by the authenticated web-host room (admin page and voice).

@@ -14,8 +14,8 @@ def _write(path, data=b"x"):
 
 
 def _fixture(root):
-    for name in ("index.html", "lookout.html", "sonar-audio-worklet.js", "manual.css",
-                 "admin.html", "admin.js", "admin.css", "voice.js", "voice-worklet.js"):
+    for name in ("index.html", "lookout.html", "sonar-audio-worklet.js", "noise-mic.js",
+                 "manual.css", "admin.html", "admin.js", "admin.css", "voice.js", "voice-worklet.js"):
         _write(root / name, name.encode())
 
 

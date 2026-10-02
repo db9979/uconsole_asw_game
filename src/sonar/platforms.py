@@ -106,10 +106,13 @@ class OwnShipAcousticSource:
     lofar_lines = SurfaceShip.lofar_lines
     broadband = SurfaceShip.broadband
     acoustic_signature = SurfaceShip.acoustic_signature
-    quiet_factor = SurfaceShip.quiet_factor
     noise_level = SurfaceShip.noise_level
     distance_nm = SurfaceShip.distance_nm
     bearing_from_frigate = SurfaceShip.bearing_from_frigate
+
+    def quiet_factor(self) -> float:
+        """SurfaceShip's speed law, less the crew's mishaps and voices."""
+        return max(0.0, SurfaceShip.quiet_factor(self) - getattr(self._ship, "crew_noise", 0.0))
 
     def __init__(self, ship, damage, runtime_catalog):
         self._ship = ship

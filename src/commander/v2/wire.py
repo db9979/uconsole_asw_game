@@ -38,6 +38,12 @@ UBOOT_COMMAND_ROLES = tuple(role for role in OPFOR_ROLES if role != "uboot_sonar
 # played on a phone paired by QR code (``/lookout``). Neither is a workstation:
 # solo mode never leases them and they claim no crewed boat by themselves.
 LOOKOUT_ROLES = ("lookout", "uboot_lookout")
+# Noise discipline (src/core/noise_discipline.py VOICE_LEVEL_MAX): a crew
+# browser's microphone level 0..MIC_LEVEL_MAX, held MIC_HOLD_S wall seconds.
+MIC_ROUTE = "/api/v2/mic"
+MIC_LEVEL_MAX = 20
+MIC_HOLD_S = 1.5
+MIC_CLIENTS_MAX = 32
 ROLES = STATIONS + OPFOR_ROLES + LOOKOUT_ROLES
 # Workstations with web-host push-to-talk; each unit's crew has its own room.
 VOICE_ROLES = STATIONS + OPFOR_ROLES

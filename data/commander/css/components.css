@@ -337,3 +337,18 @@ body.shock-dust::after {
 }
 #hit-view figcaption { padding: .1rem .3rem .2rem; color: var(--caution); font: var(--font-sm)/1.3 var(--font-mono); }
 #hit-view canvas { display: block; width: 100%; height: auto; aspect-ratio: 32 / 17; }
+
+/* Noise discipline (views/mic.js): the own microphone against the host's
+   thresholds, green quiet, amber heard close by, red heard far off. */
+.mic-discipline { display: inline-flex; align-items: center; gap: .4rem; }
+.mic-meter { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 5px; gap: 1px; height: 1.1rem; align-items: stretch; }
+.mic-meter i { border: 1px solid var(--line); background: transparent; }
+.mic-meter i[data-band="quiet"].lit { background: var(--live); }
+.mic-meter i[data-band="near"] { border-color: var(--caution); }
+.mic-meter i[data-band="near"].lit { background: var(--caution); }
+.mic-meter i[data-band="far"] { border-color: var(--alarm); }
+.mic-meter i[data-band="far"].lit { background: var(--alarm); }
+.mic-meter i.crew { outline: 2px solid var(--text); outline-offset: -1px; }
+.mic-status { font-size: var(--font-xs); color: var(--text-dim); max-width: 16rem; }
+.mic-meter[data-band="far"] + .mic-status { color: var(--alarm); }
+.mic-meter[data-band="near"] + .mic-status { color: var(--caution); }

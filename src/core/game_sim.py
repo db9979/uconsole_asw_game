@@ -277,6 +277,8 @@ class SimMixin:
             self.audio.play_ping(ENEMY_PING_HZ, ENEMY_PING_VOLUME, pan=pan)
         elif kind == "torpedo_seeker":
             self.audio.play_ping(SEEKER_PING_HZ, SEEKER_PING_VOLUME, pan=pan)
+        elif kind == "crew_transient":
+            self.audio.play_boat_cue(kind, pan=pan)
         elif kind == "esm_contact":
             if (self.station is Station.ELOKA
                     and self.eloka_audio_enabled
@@ -1403,6 +1405,7 @@ class SimMixin:
     def _update_sim(self, dt: float) -> None:
         self.sim_t += dt
         self.mission_time += dt
+        self._update_crew_noise()
         self._mission_time_warning()
         self._update_navigation(dt)
         self._update_asw_stores(dt)

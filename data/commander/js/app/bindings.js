@@ -17,6 +17,7 @@ import { acceptSession, activateTab, renderLobby } from "../views/lobby.js";
 import { renderSnapshot } from "../views/render.js";
 import { syncShock } from "../views/shock.js";
 import { syncHitView } from "../views/hit-view.js";
+import { syncMic, wireMic } from "../views/mic.js";
 import { updateOpzSweepSample } from "../views/role-map.js";
 import { queueVisualDraw, renderRoleVisuals } from "../views/role-visuals.js";
 import { applySimlogView, loadSimlog } from "../views/simlog.js";
@@ -74,6 +75,7 @@ function followState(state) {
   syncGameAudio();
   syncShock(state);
   syncHitView(state);
+  syncMic(state);
   // A new world epoch (the host's local input advances it) closes the live
   // audio socket; resume it once the state for the new epoch has arrived.
   const audioWorld = `${state.session}:${state.epoch}`;
@@ -87,6 +89,7 @@ function followState(state) {
 }
 
 export function init() {
+  wireMic();
   on("session:metadata", acceptSession);
   on("session:forgetting", () => stopSonarAudio());
   on("session:forgetting", () => stopStatePush("session forgotten"));

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import math
 
-from src.core import config
+from src.core import commander_traits, config
 from src.core.debrief import DebriefRecorder, _bearing, _known_position
 from src.sonar.platforms import OWNSHIP_TARGET_ID
 
@@ -132,6 +132,11 @@ class BoatDebriefRecorder(DebriefRecorder):
         if sub.sunk and not self._ship_lost:
             self._ship_lost = True
             self.add_event(t, "ship_sunk")
+
+    def enemy_character(self, game):
+        """The AI hunter frigate captain's character, when the AI hunted."""
+        from src.core import hunter
+        return commander_traits.hunter_kind(game.seed) if hunter.active(game) else None
 
     def capture(self, game, t: float) -> dict:
         boat = self._boat(game)

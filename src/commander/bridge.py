@@ -969,6 +969,17 @@ class CommanderBridge:
             self._gate = gate
             self._dirty = True
 
+    @staticmethod
+    def _pump_microphones(game, server, phase, now) -> None:
+        """Hand the crews' microphone levels (noise discipline) to the game as
+        held input; nothing while no mission runs."""
+        levels = getattr(server, "mic_levels", None)
+        if phase != "live" or levels is None or not hasattr(game, "set_crew_voice"):
+            return
+        for side, level in levels(now).items():
+            if level > 0:
+                game.set_crew_voice(side, level, "remote")
+
     def pump(self, game, server, now=None):
         """Project and drain at most four commands; publish at 2 Hz/no catchup."""
         self._main_thread()
@@ -1070,6 +1081,7 @@ class CommanderBridge:
                      or not server.authority_current_v2(self._navigation_lease))):
             self._proposal_status("expired", navigation=True)
         drained = self._commands_v2(game, server, now, phase, realtime=realtime)
+        self._pump_microphones(game, server, phase, now if not realtime else None)
         if (id(game.world), id(game.sonar)) != self._identity:
             # A host command replaced the world: never publish it under the old
             # session. The next pump rebases (solo) before anything is shown.

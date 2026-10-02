@@ -244,6 +244,20 @@ def boat_effect(kind: str, sample_rate: int, amplitude: float = .28) -> np.ndarr
         t = np.arange(count, dtype=np.float64) / sample_rate
         envelope = np.where(t < .06, 1.0, np.exp(-28.0 * (t - .06)))
         signal = amplitude * .7 * envelope * np.sin(2 * np.pi * 2600.0 * t)
+    elif kind in ("crew_clank", "crew_transient"):
+        # Metal on metal: a dropped tool or a slammed hatch, inharmonic and
+        # short; heard from the enemy it is farther, duller and quieter.
+        far = kind == "crew_transient"
+        duration = .5 if far else .35
+        count = int(duration * sample_rate)
+        t = np.arange(count, dtype=np.float64) / sample_rate
+        decay = 9.0 if far else 16.0
+        partials = ((310.0, 1.0), (847.0, .55), (1523.0, .3)) if far else (
+            (523.0, 1.0), (1377.0, .6), (2213.0, .4), (3170.0, .25))
+        signal = sum(weight * np.sin(2 * np.pi * freq * t) for freq, weight in partials)
+        signal = amplitude * (.35 if far else .6) * signal / 2.0 * np.exp(-decay * t)
+        click = np.exp(-400.0 * t) * (1.0 - 2.0 * ((np.arange(count) * 7919) % 97) / 96.0)
+        signal += amplitude * (.1 if far else .3) * click
     elif kind == "ping_heard":
         # A hunter's ping through the hull: a hard tone and its ringing tail.
         duration = 1.2

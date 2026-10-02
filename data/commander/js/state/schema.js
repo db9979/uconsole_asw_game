@@ -106,7 +106,7 @@ export function validateV2State(state) {
     if (!exactKeys(state, status)) throw new Error("protocol");
     return;
   }
-  const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station", "plot", "alarms", "hit_view"];
+  const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station", "plot", "alarms", "hit_view", "crew_noise"];
   if (!sessionRoles.includes(state.role) || state.role !== S.session?.station ||
       !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "world"]) ||
       !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm", "storm"]) ||
@@ -336,6 +336,13 @@ export function validateV2State(state) {
       (row.range_nm === null || (finite(row.range_nm) && row.range_nm >= 0)) && typeof row.confirmed === "boolean");
   // The hit picture (src/core/hit_view.py): null, or a hit in sight (the
   // side's own eyepiece toward it) or only heard (its bearing).
+  // Noise discipline (src/core/noise_discipline.py): the crew's held
+  // microphone level and its thresholds.
+  const noise = state.crew_noise;
+  if (!exactKeys(noise, ["voice", "safe", "loud", "max", "quiet"]) ||
+      !Number.isSafeInteger(noise.max) || noise.max < 1 || noise.max > 100 ||
+      ![noise.voice, noise.safe, noise.loud].every((value) => Number.isSafeInteger(value) && value >= 0 && value <= noise.max) ||
+      noise.safe > noise.loud || typeof noise.quiet !== "boolean") throw new Error("protocol");
   const hit = state.hit_view;
   const outlineOk = (row) => exactKeys(row, sightFields.outline) &&
     finite(row.bearing) && finite(row.span_deg) && row.span_deg > 0 && sightFields.classes.includes(row.cls) &&

@@ -73,6 +73,12 @@ class CrewOrders:
               "shallow_water": "navigation", "wire_broken": "waffen",
               "ping_heard": "sonar", "torpedo_heard": "sonar",
               "torpedo_locked": "sonar", "torpedo_steady": "sonar",
+              "crew_mishap_tool": "navigation", "crew_mishap_hatch": "navigation",
+              "crew_mishap_pot": "navigation", "crew_mishap_chain": "navigation",
+              "voice_far": "navigation", "transient_heard": "sonar",
+              "voices_heard": "sonar",
+              "hq_hint_daring": "funk", "hq_hint_fox": "funk",
+              "hq_hint_cautious": "funk", "hq_hint_hunter": "funk",
               "ping_dipping_heard": "sonar", "ping_buoy_heard": "sonar",
               "buoy_splash": "sonar", "evade": "navigation",
               "evade_decoy": "navigation",
@@ -646,7 +652,7 @@ def obstacle_ahead_nm(world, sub, origin=None):
 
 
 BOAT_CUES = ("hull_creak", "hull_crack", "detonation_near", "detonation_far", "ping_heard",
-             "thunder", "torpedo_seeker")
+             "thunder", "torpedo_seeker", "crew_clank", "crew_transient")
 # Intercepts the crew hears through the hull as a ping.
 _PING_INTERCEPTS = ("hull", "dipping", "buoy")
 _HULL_FAILURES = ("hull_bolts", "hull_seal", "hull_fracture", "hull_collapse")

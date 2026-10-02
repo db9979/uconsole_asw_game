@@ -27,7 +27,7 @@ from src.ui import observations
 from src.ui import overlay_style, quality
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.shock_fx import ShockFx
-from src.ui import hit_inset
+from src.ui import hit_inset, mic_meter
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -230,6 +230,8 @@ class DrawMixin:
             self._draw_lobby_page()
         elif self.menu_screen == "logbook":
             self._draw_logbook_page(center)
+        elif self.menu_screen == "daily":
+            self._draw_daily_page(center)
         elif self.menu_screen == "training":
             self._draw_training_menu(center)
         elif self.menu_screen == "campaign":
@@ -552,6 +554,9 @@ class DrawMixin:
                 and not self.umpire_view_active()):
             # A hit seen or heard: the small picture over the station.
             self.guarded_view("hit_view", tuple(hit_inset.RECT), hit_inset.draw, self, s,
+                              "uboot" if self.local_side == "uboot" else "frigate")
+            # Noise discipline: the microphone meter in the top bar.
+            self.guarded_view("mic_meter", tuple(mic_meter.RECT), mic_meter.draw, self, s,
                               "uboot" if self.local_side == "uboot" else "frigate")
         with pointer.layer("overlay"):
             if self.quit_confirm:
@@ -1111,7 +1116,7 @@ class DrawMixin:
                      for index in range(max(len(page) for page in cls._OPTION_PAGES)))
 
     # Row rect index of each setup-page row (the side's help text sits between).
-    _SETUP_ROW_INDICES = (0, 6, 10)
+    _SETUP_ROW_INDICES = (0, 6, 9, 12)
 
     @classmethod
     def _option_row_hit_rects(cls, rows) -> tuple:
@@ -1234,7 +1239,7 @@ class DrawMixin:
         layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
                          config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
         layout.blit_block(self.screen, "option.graphics.help",
-                          row.x + 24, row.bottom + 10, row.w - 24, 80,
+                          row.x + 24, row.bottom + 8, row.w - 24, 62,
                           config.COLOR_TEXT_DIM, size=18)
         # Spoken crew reports; the help says whether espeak-ng was found.
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[2]]
@@ -1249,6 +1254,18 @@ class DrawMixin:
                           else "option.speech.missing",
                           row.x + 24, row.bottom + 6, row.w - 24, 64,
                           config.COLOR_TEXT_DIM, size=18)
+        # Noise discipline: the uConsole's own microphone (level only).
+        row = self._options_row_rects()[self._SETUP_ROW_INDICES[3]]
+        selected = self.options_sel == 3
+        if selected:
+            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
+        mic = self.__dict__.get("microphone")
+        value = (self.tr("option.microphone") + ": "
+                 + self.tr("common.on" if self.preferences.microphone else "common.off"))
+        if self.preferences.microphone and mic is not None and mic.tried and not mic.available:
+            value += " · " + self.tr("option.microphone.missing")
+        layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
+                         config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
         layout.blit_block(self.screen,
                           "commander.local.options_hint",
                           292, 650, 696, 46, config.COLOR_TEXT_DIM, size=18,
@@ -1487,6 +1504,7 @@ class DrawMixin:
                             self._perf_commander_max_s, now - commander_started)
                         commander_started = now
                     self.live_traffic.pump(self)
+                    self._pump_microphone(wall_dt)
                     if commander_started is not None:
                         self._perf_traffic_s += time.perf_counter() - commander_started
                     self.update(dt, audio_dt=wall_dt)
@@ -1526,6 +1544,7 @@ class DrawMixin:
             raise
         finally:
             try:
+                self.close_microphone()
                 self.commander.stop()
             finally:
                 try:
@@ -1586,6 +1605,9 @@ class DrawMixin:
                                      enabled=bool(value))
             self._audio_timer = 0.0
             self._sonar_audio_sequence = -1
+        elif name == "microphone":
+            # Switched again: the next frame opens the device afresh.
+            self.close_microphone()
         elif name == "graphics":
             self.preferences = replace(self.preferences, aa_lines=value == "full")
             self._apply_text_size()

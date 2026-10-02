@@ -294,7 +294,8 @@ def _common(game, status, role):
                     # Spoken crew reports: the feed lines' key and bearing
                     # only; each browser words them in its own language.
                     callouts=game.callouts.detached()),
-                hit_view=_hit_view(game, "frigate"))
+                hit_view=_hit_view(game, "frigate"),
+                crew_noise=_crew_noise(game, "frigate"))
 
 
 def _outline_dicts(rows) -> list:
@@ -305,6 +306,19 @@ def _outline_dicts(rows) -> list:
                  elevation_deg=_number(elevation), aob_deg=_number(aob),
                  model=None if model is None else str(model), way=_number(way))
             for bearing, span, cls, stale, lights, elevation, aob, model, way in rows]
+
+
+def _crew_noise(game, side):
+    """Noise discipline of one side (``src/core/noise_discipline.py``): the
+    crew's held microphone level, its thresholds and whether "Ruhe im Boot"
+    (silent running / quiet mode) is ordered."""
+    from src.core import noise_discipline as nd
+    if side == "uboot":
+        quiet = game.opfor is not None and nd.sub_quiet(game.opfor.sub)
+    else:
+        quiet = bool(game.ship.quiet_mode)
+    return dict(voice=int(game.crew_voice_level(side)), safe=nd.VOICE_SAFE,
+                loud=nd.VOICE_LOUD, max=nd.VOICE_LEVEL_MAX, quiet=bool(quiet))
 
 
 def _hit_view(game, side):
@@ -1460,6 +1474,7 @@ def _opfor_common(game, status, role, boat):
                                    for row in list(boat.sound_events)[-16:]],
                            callouts=boat.callouts.detached())
     common["hit_view"] = _hit_view(game, "uboot")
+    common["crew_noise"] = _crew_noise(game, "uboot")
     # With the crew assist the boat's autocrew takes the station once released.
     assist = bool(game.autocrew.assist)
     common["autocrew"] = dict(enabled=assist, status="suspended_remote" if assist else "off")

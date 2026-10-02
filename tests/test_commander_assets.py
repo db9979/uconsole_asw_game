@@ -79,7 +79,8 @@ def test_commander_resources_are_self_contained_and_csp_safe():
         assert tag not in {"iframe", "img", "object", "embed", "style"}
         for key in ("src", "href"):
             if key in attrs:
-                assert (attrs[key] in {"./js/main.js", "./js/browser-check.js", "./voice.js"}
+                assert (attrs[key] in {"./js/main.js", "./js/browser-check.js", "./voice.js",
+                                       "./noise-mic.js"}
                         or key == "href" and re.fullmatch(r"\./css/[a-z]+\.css", attrs[key])
                         or key == "href" and attrs[key].startswith("#guide-")
                         or key == "href" and attrs[key] == "/manual-en"

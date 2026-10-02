@@ -63,6 +63,9 @@ function playGameEffect(kind, pan = null) {
     shock_light: null, shock_heavy: null,
     // A homing torpedo's seeker pulse (src/core/torpedo_seeker.py).
     torpedo_seeker: [2600, 2600, .14, .08, "sine"],
+    // Noise discipline (src/core/noise_discipline.py): metal on metal aboard,
+    // or farther and duller from an enemy crew.
+    crew_clank: [1380, 1100, .3, .10, "square"], crew_transient: [850, 620, .45, .05, "triangle"],
   }[kind];
   if (!profile) return;
   const [startHz, endHz, duration, gainLevel, type] = profile;

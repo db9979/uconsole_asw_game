@@ -14,7 +14,7 @@ from src.commander.server import (CommanderServer, OPFOR_ROLES, ROLES, STATIONS,
 from src.core import config
 from src.core.game import Game
 from src.ui import layout
-from commander_fixtures import PLOT, WEATHER_STATION
+from commander_fixtures import CREW_NOISE, PLOT, WEATHER_STATION
 
 
 @pytest.fixture
@@ -257,7 +257,7 @@ def _publication():
                   phase="live", chart_revision="s", clock={}, environment={},
                   mission={}, autocrew={"enabled": False, "status": "off"}, autocrew_overview=[],
                   audio={"events": [], "callouts": []}, weather_station=WEATHER_STATION, plot=PLOT,
-                  alarms=[], hit_view=None)
+                  alarms=[], hit_view=None, crew_noise=CREW_NOISE)
     chart = dict(protocol=2, revision="s", size_nm=500, landmasses=[], disclaimer="")
     redacted = {key: common[key] for key in (
         "protocol", "version", "session", "epoch", "revision", "seq", "phase",

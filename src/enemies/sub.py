@@ -10,7 +10,7 @@ import random
 from src.core.baffles import in_baffles
 from src.core import config
 from src.physics import submarine as sub_physics
-from src.core import detrand
+from src.core import commander_traits, detrand
 from src.sonar.tma import BearingTrack, solve_tma
 from src.data import catalog
 from src.data import fingerprint as fingerprint_mod
@@ -203,6 +203,8 @@ class Sub:
         # may hear (``flood_seq`` numbers each one, quiet = slow flooding).
         self.flood_noise_left = 0.0
         self.flood_quiet = False
+        # Noise of the crew's mishaps and voices (game_noise, recomputed each substep).
+        self.crew_noise = 0.0
         self.flood_seq = 0
         # The AI's tubes: -1 dry, > 0 seconds of flooding left, 0 flooded;
         # a shot ordered on dry tubes waits for the flooding (fire pending).
@@ -332,7 +334,9 @@ class Sub:
             return
         if not self.sunk and self.state != "SINKING":
             self.state = "EVADE"
-            self.evac_left = config.SUB_EVADE_DURATION_S
+            # A daring commander gives way briefly, a cautious one long.
+            self.evac_left = config.SUB_EVADE_DURATION_S * commander_traits.sub_factor(
+                self, "evade")
             self.heard_ping = True
             self.memory["last_ping_age"] = 0.0
             self.evade_offset = self.rng.uniform(-30.0, 30.0)
@@ -529,7 +533,7 @@ class Sub:
         elif dist is not None and dist < config.SUB_SOLUTION_ATTACK_NM:
             # A located frigate in torpedo range is attacked even when quiet.
             rate = config.SUB_SOLUTION_ATTACK_RATE * self.stype.aggression
-        rate *= self.attack_mult
+        rate *= self.attack_mult * commander_traits.sub_factor(self, "attack")
         if self.mission_orders is not None:
             # A mission boat fights its way through: the frigate is its threat.
             rate *= (config.BOAT_AI_GUARDED_ATTACK_MULT if self.mission_guarded
@@ -1014,7 +1018,8 @@ class Sub:
                 if (tactical_observation is not None
                         and not self._mission_pressing_on()
                         and tactical_observation.range_nm is not None
-                        and tactical_observation.range_nm < config.SUB_LUER_DIST_NM):
+                        and tactical_observation.range_nm < config.SUB_LUER_DIST_NM
+                        * commander_traits.sub_factor(self, "lurk")):
                     # A charted wreck within reach is the better hiding place:
                     # lie on the bottom beside it instead of hovering.
                     hide = self.wreck_hiding_spot(world)
@@ -1243,6 +1248,10 @@ class Sub:
     # --- Akustik ---
 
     def quiet_factor(self) -> float:
+        """Stillheit with the crew's own noise (``noise_discipline``) off it."""
+        return config.clamp(self.machinery_quiet_factor() - self.crew_noise, 0.0, 1.0)
+
+    def machinery_quiet_factor(self) -> float:
         """Stillheit: Sprint/Ausweichen laut, LAUER besonders leise."""
         q = self.stype.quiet * self.quiet_mult - 0.30 * (self.damage / 100.0)
         if self.state == "EVADE":

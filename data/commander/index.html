@@ -17,6 +17,7 @@
   <script src="./js/browser-check.js" defer></script>
   <script type="module" src="./js/main.js"></script>
   <script src="./voice.js" defer></script>
+  <script src="./noise-mic.js" defer></script>
 </head>
 <body>
   <div id="bootstrap" class="bootstrap"><span class="brand-mark" aria-hidden="true"></span><strong>U-Jagd Commander</strong><span class="loading" role="progressbar" data-i18n-aria="loading"></span><p id="bootstrap-hint" class="bootstrap-hint" role="alert" hidden></p></div>
@@ -32,6 +33,7 @@
       <div class="status-actions">
         <button id="language-switch" type="button" lang="de" data-i18n-aria="language_switch"></button>
         <button id="sound" type="button" aria-pressed="false" data-i18n="sound_off"></button>
+        <div id="mic-discipline" class="mic-discipline" role="group" data-i18n-aria="mic_group" hidden><button id="mic-toggle" type="button" aria-pressed="false" data-i18n="mic_on"></button><div id="mic-meter" class="mic-meter" role="meter" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0" data-i18n-aria="mic_meter"></div><span id="mic-status" class="mic-status" role="status" aria-live="polite"></span></div>
         <button id="disabled-control-explain" type="button" aria-expanded="false" aria-controls="disabled-control-help" data-i18n-aria="disabled_control_explain" hidden>?</button>
         <details id="settings-menu" class="menu"><summary data-i18n="settings_menu"></summary><div class="menu-panel preferences">
         <label class="language"><span data-i18n="language"></span><select id="language"><option value="en" data-i18n="english"></option><option value="de" data-i18n="german"></option></select></label>

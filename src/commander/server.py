@@ -45,6 +45,9 @@ from src.commander.v2.wire import (
     UBOOT_COMMAND_ROLES,
     ROLES,
     LOOKOUT_ROLES,
+    MIC_CLIENTS_MAX,
+    MIC_HOLD_S,
+    MIC_LEVEL_MAX,
     SONAR_ROLES,
     DIRECT_FIRE_ROLES,
     SONAR_AUDIO_ROLES,
@@ -221,6 +224,9 @@ class CommanderServer(MissionLibraryServerMixin):
         # socket per session (digest -> client token).
         self._state_push_sequence = 0
         self._state_push_clients = {}
+        # Noise discipline: each crew browser's latest microphone level
+        # (digest -> (level, monotonic time)); transient, never saved.
+        self._mic_levels = {}
         self._state_push_enabled = True
         # Voice starts enabled in the web-host room; the host's option row
         # switches it off (plan 1.3, phase 12).
@@ -441,6 +447,7 @@ class CommanderServer(MissionLibraryServerMixin):
     def _revoke_locked(self, *, rotate_code=False):
         self._voice_talkers.clear()
         self._voice_peers.clear()
+        self._mic_levels.clear()
         self._clear_sonar_audio_locked()
         self._clear_helicopter_audio_locked()
         self._clear_uboot_audio_locked()
@@ -1179,6 +1186,37 @@ class CommanderServer(MissionLibraryServerMixin):
             self._lobby = None if room is None else {"mission_name": None, "versus": "ai",
                                                      **dict(room)}
 
+    def set_mic_level_locked(self, session, digest, level, now) -> bool:
+        """One crew browser's microphone level (transport thread): only a
+        station holder on a leased station, never a phone or an observer."""
+        role = session["active_station"]
+        if (type(level) is not int or not 0 <= level <= MIC_LEVEL_MAX
+                or session["lookout_only"] or session["observer"]
+                or role not in ROLES or role in LOOKOUT_ROLES
+                or role not in session["leases"]):
+            return False
+        if digest not in self._mic_levels and len(self._mic_levels) >= MIC_CLIENTS_MAX:
+            return False
+        self._mic_levels[digest] = (level, float(now))
+        return True
+
+    def mic_levels(self, now=None) -> dict:
+        """The loudest held microphone level per side (``frigate``/``uboot``)
+        of the sessions still holding a station; stale reports are dropped."""
+        now = time.monotonic() if now is None else now
+        levels = {"frigate": 0, "uboot": 0}
+        with self._lock:
+            for digest, (level, at) in list(self._mic_levels.items()):
+                session = self._sessions_v2.get(digest)
+                role = None if session is None else session["active_station"]
+                if (session is None or not 0.0 <= now - at <= MIC_HOLD_S
+                        or role not in session["leases"]):
+                    del self._mic_levels[digest]
+                    continue
+                side = "uboot" if role_side(role) == "opfor" else "frigate"
+                levels[side] = max(levels[side], level)
+        return levels
+
     def set_ready_locked(self, session, ready: bool) -> bool:
         """Tick or clear a crew session's lobby ready flag (transport thread)."""
         if (self._lobby is None or type(ready) is not bool
@@ -1614,7 +1652,7 @@ class CommanderServer(MissionLibraryServerMixin):
         assigned_fields = status_fields | {"clock", "environment", "mission",
                                            "autocrew", "autocrew_overview", "audio",
                                            "weather_station", "plot", "alarms",
-                                           "hit_view"}
+                                           "hit_view", "crew_noise"}
         if (not isinstance(states, dict) or not isinstance(charts, dict)
                 or set(states) != expected or set(charts) != expected):
             raise ValueError("invalid v2 publication")

@@ -39,7 +39,9 @@ export const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_la
   // A detonation close to the own ship: the picture shakes (no sound of its own).
   "shock_light", "shock_heavy",
   // A homing torpedo's seeker pulses: slow searching, fast once locked on.
-  "torpedo_seeker"]);
+  "torpedo_seeker",
+  // Noise discipline: the own crew's fumble, an enemy crew's heard transient.
+  "crew_clank", "crew_transient"]);
 // Spoken crew reports (src/core/callouts.py KEYS); the text is the browser's own.
 export const calloutKinds = new Set(["torpedo", "contact", "breakup", "torpedo_away", "hit", "won", "lost",
   "action_stations", "mpa_on_station", "ping", "dipping", "buoy_ping", "splash", "evade", "mast_threat", "leak", "fire",

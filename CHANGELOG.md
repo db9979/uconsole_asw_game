@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.162
+
+Release 1.3.162 shows the frigate's own helicopter to the bridge. Whenever
+the bridge can see it, the helicopter model flies in the lookout's binoculars,
+the horizon strip, the Remote Crew binoculars card, the phone lookout and the
+hit picture at its true position and heading: it lifts off the flight deck
+astern, climbs away, hovers low over its dipping sonar and shows its position
+lights at night. The lookout scope marks it as "own helicopter", the
+panorama with a green tick and the list under the binoculars names it first.
+Low aircraft now stand in front of the sea instead of behind the waves.
+Nothing changes in what the lookout reports. Saves stay v49; v38 to v48
+saves still load.
+
 ## 1.3.160
 
 Release 1.3.160 redraws the damage-control pictures like a real damage-

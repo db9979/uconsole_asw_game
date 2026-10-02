@@ -14,19 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.160**
+Aktuelle Version: **1.3.162**
 
-Version 1.3.160 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
-Fregatte ist ein Seitenriss mit Decks, Aufbauten und Masten, jede Abteilung
-auf ihrer wirklichen Höhe, außen See und Wasserlinie mit Tiefgangsmarken,
-Leckwasser, das sich mit dem Trimm neigt, offene Lecks mit einströmendem
-Wasser, gesetzte Leckpflaster und Pumpen, die über Bord lenzen, und ein
-Querschnitt, der mit dem Schiff krängt. Das U-Boot ist ein Schnittbild des
-Druckkörpers mit Turm, Einbauten, Wasser, Brand, Chlorgas, Lecks und runden
-Schotttüren, auf der uConsole und im Browser. Übernehmen-Knöpfe im Browser
-(Suchkopf, Torpedoeinstellung, Antrieb, Hubschraubermuster) springen nicht
-mehr kurz zurück. Spielstände bleiben v49; v38 bis v48 lassen sich weiter
-laden.
+Version 1.3.162 zeigt der Brücke den eigenen Hubschrauber der Fregatte.
+Sobald die Brücke ihn sehen kann, fliegt das Hubschraubermodell im Fernglas
+des Ausgucks, im Horizontstreifen, in der Fernglas-Karte der Remote Crew, im
+Handy-Ausguck und im Trefferbild an seiner wahren Position und mit seinem
+Kurs: Er hebt vom Flugdeck achteraus ab, steigt weg, schwebt tief über
+seinem Tauchsonar und zeigt nachts seine Positionslichter. Das Ausguck-
+Sichtgerät markiert ihn als „eigener Hubschrauber“, das Panorama mit einem
+grünen Strich, und die Liste unter dem Fernglas nennt ihn zuerst. Tief
+fliegende Luftfahrzeuge stehen jetzt vor der See statt hinter den Wellen.
+An den Meldungen des Ausgucks ändert sich nichts. Spielstände bleiben v49;
+v38 bis v48 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

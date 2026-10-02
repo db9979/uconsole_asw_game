@@ -282,7 +282,8 @@ export function validateV2State(state) {
     sightFields.sky.every((key) => ["precipitation", "moon_waxing"].includes(key) || finite(sky[key])) &&
     [sky.light, sky.dusk, sky.cloud, sky.intensity, sky.moon_illumination].every((value) => value >= 0 && value <= 1);
   const navLightsOk = (code) => code === null || (typeof code === "string" && /^[LR][012][r-][g-][s-](GW|WR|RWR|GGG|AC)?$/.test(code));
-  const elevationOk = (value) => value === null || (finite(value) && value >= -5 && value <= 90);
+  // Down to -30°: the own helicopter on the flight deck below the bridge (src/ui/own_helo.py).
+  const elevationOk = (value) => value === null || (finite(value) && value >= -30 && value <= 90);
   const aobOk = (value) => value === null || (finite(value) && value >= -180 && value <= 180);
   const modelOk = (value) => value === null || (typeof value === "string" && /^[a-z0-9_]{1,32}$/.test(value));
   const wayOk = (value) => value === null || (finite(value) && value >= 0 && value <= 1);

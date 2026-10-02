@@ -4891,6 +4891,7 @@
   "help.bridge.glasses_optics": "Binoculars up (as the periscope): ↑/↓ tilt 2° (Shift: 10°) instead of the telegraph, ←/→ train 5° (Shift: 20°) instead of the rudder, Q/E zoom (16°, 8°, 4° field), Space stabilizer",
   "bridge.line.glasses_row": "{bearing}°  {what}  {range} NM",
   "bridge.line.glasses_unknown": "unidentified",
+  "bridge.line.own_helo": "own helicopter",
   "weather.line.temperature_boat": "Air {air} °C  Sea {sea} °C",
   "weather.box.boat": "Submarine · concealment and noise",
   "weather.boat.mast_radar": "Mast on radar: seen at {range} NM (calm sea {calm} NM)",

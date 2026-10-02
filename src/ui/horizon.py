@@ -26,6 +26,10 @@ SCALE_LABEL_MIN_PX = 36
 MOTION_PX_PER_RAD = 260.0
 # A stabilized binocular or periscope keeps this share of the hull motion.
 STABILIZED_RESIDUAL = 0.12
+# An aircraft lower than this above the sea horizon (a helicopter hovering
+# over its dipping sonar, the own helicopter close aboard) is drawn against
+# the moving sea horizon in front of the sea, not hidden behind it.
+LOW_AIR_DEG = 1.0
 # Charted coast on the horizon: rays per full circle, the observer's move that
 # re-casts them, the bounded cache, and the assumed coastal heights (m; the
 # chart has no elevation, so hills vary smoothly along the coast).
@@ -242,16 +246,20 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
     px_per_deg = rect.w / fov_deg
     lit = sky["light"] < 0.45
 
-    def draw_rows(rows, colors, aloft):
+    def draw_rows(rows, colors):
         haze, haze_color = colors["haze_level"], colors["haze"]
         for row in rows:
             bearing, span_deg, cls, stale = row[:4]
+            aloft = len(row) > 5 and row[5] is not None
             nav = row[4] if len(row) > 4 else None
             off = relative_offset(bearing, line_of_sight)
             if abs(off) > fov_deg / 2 + span_deg / 2:
                 continue
             cx = rect.centerx + int(off * px_per_deg)
-            if aloft:
+            if aloft and row[5] < LOW_AIR_DEG:
+                # Low over the water: at its elevation above the moving horizon.
+                base = horizon + int(math.tan(tilt) * (cx - rect.centerx) - row[5] * px_per_deg)
+            elif aloft:
                 # In the still sky at its elevation, behind the clouds.
                 base = int(view.alt_y(0.0, cx) - row[5] * px_per_deg)
             else:
@@ -270,19 +278,24 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                          nav=nav, aloft=aloft, aob_deg=aob,
                          model=row[7] if len(row) > 7 else None)
 
-    airborne = [row for row in outlines if len(row) > 5 and row[5] is not None]
-    afloat = [row for row in outlines if not (len(row) > 5 and row[5] is not None)]
+    # Aircraft high over the sea horizon hang in the sky behind the clouds;
+    # a low one (``LOW_AIR_DEG``: hovering, the own helicopter close aboard
+    # or over its deck) stands in front of the sea with the ships.
+    airborne = [row for row in outlines
+                if len(row) > 5 and row[5] is not None and row[5] >= LOW_AIR_DEG]
+    afloat = [row for row in outlines
+              if not (len(row) > 5 and row[5] is not None and row[5] >= LOW_AIR_DEG)]
     with layout.clip_to(s, rect):
         colors = sight_scene.draw_scene(
             s, view, sky, visibility_nm=visibility_nm, sea_state=sea_state, t=anim_t, way=way,
-            aloft=(lambda colors: draw_rows(airborne, colors, True)) if airborne else None)
+            aloft=(lambda colors: draw_rows(airborne, colors)) if airborne else None)
         haze_color = colors["haze"]
         if land is not None:
             _draw_land(s, rect, land, line_of_sight=line_of_sight, fov_deg=fov_deg,
                        horizon=horizon, tilt=tilt, night=sky["light"] < 0.5,
                        visibility_nm=visibility_nm, haze_color=haze_color, colors=colors)
         silhouettes.set_glow(colors.get("glow", 0.0))
-        draw_rows(afloat, colors, False)
+        draw_rows(afloat, colors)
         silhouettes.set_glow(0.0)
         sight_events_view.draw_events(s, view, colors, sky, events, anim_t)
         sight_scene.draw_weather(s, view, sky, colors, visibility_nm=visibility_nm, t=anim_t)

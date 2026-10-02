@@ -90,8 +90,8 @@ def draw(game, s, side: str) -> None:
         outlines = scope_outlines(game, boat) if opfor.scope_available(boat) else []
         rows = sight_events.boat_rows(game, boat)
     else:
-        from src.ui.stations.bridge import lookout_outlines
-        outlines = lookout_outlines(game, game.lookout_sightings())
+        from src.ui.stations.bridge import eye_outlines
+        outlines = eye_outlines(game, game.lookout_sightings())
         rows = sight_events.frigate_rows(game)
     horizon.draw_horizon(s, picture, line_of_sight=view["bearing"], fov_deg=hit_view.FOV_DEG,
                          night=game.world.is_night(), visibility_nm=weather["visibility_nm"],

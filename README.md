@@ -12,18 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.160**
+Current release: **1.3.162**
 
-Release 1.3.160 redraws the damage-control pictures like a real damage-
-control board. The frigate is a side profile with decks, superstructure and
-masts, every compartment at its real height, the sea and waterline outside
-with draft marks, floodwater tilted by the trim, open holes with water
-rushing in, fitted patches and pumps discharging over the side, and a cross-
-section that lists with the ship. The submarine is a cutaway of its pressure
-hull with sail, fittings, water, fire, chlorine, leaks and round bulkhead
-doors, on the uConsole and in the browser. Apply buttons in the browser
-(seeker, torpedo settings, plant, helicopter pattern) no longer jump back
-for a moment. Saves stay v49; v38 to v48 saves still load.
+Release 1.3.162 shows the frigate's own helicopter to the bridge. Whenever
+the bridge can see it, the helicopter model flies in the lookout's binoculars,
+the horizon strip, the Remote Crew binoculars card, the phone lookout and the
+hit picture at its true position and heading: it lifts off the flight deck
+astern, climbs away, hovers low over its dipping sonar and shows its position
+lights at night. The lookout scope marks it as "own helicopter", the
+panorama with a green tick and the list under the binoculars names it first.
+Low aircraft now stand in front of the sea instead of behind the waves.
+Nothing changes in what the lookout reports. Saves stay v49; v38 to v48
+saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

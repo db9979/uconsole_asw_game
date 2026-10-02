@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.162
+
+Version 1.3.162 zeigt der Brücke den eigenen Hubschrauber der Fregatte.
+Sobald die Brücke ihn sehen kann, fliegt das Hubschraubermodell im Fernglas
+des Ausgucks, im Horizontstreifen, in der Fernglas-Karte der Remote Crew, im
+Handy-Ausguck und im Trefferbild an seiner wahren Position und mit seinem
+Kurs: Er hebt vom Flugdeck achteraus ab, steigt weg, schwebt tief über
+seinem Tauchsonar und zeigt nachts seine Positionslichter. Das Ausguck-
+Sichtgerät markiert ihn als „eigener Hubschrauber“, das Panorama mit einem
+grünen Strich, und die Liste unter dem Fernglas nennt ihn zuerst. Tief
+fliegende Luftfahrzeuge stehen jetzt vor der See statt hinter den Wellen.
+An den Meldungen des Ausgucks ändert sich nichts. Spielstände bleiben v49;
+v38 bis v48 lassen sich weiter laden.
+
 ## 1.3.160
 
 Version 1.3.160 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die

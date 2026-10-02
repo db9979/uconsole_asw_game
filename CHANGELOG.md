@@ -4,6 +4,12 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.158
+
+- In the browser the executive officer's button now sits in the toolbar
+  beside the sound switch; next to the mission name the crowded header had
+  squeezed it into a column of single letters.
+
 ## 1.3.155
 
 Release 1.3.155 makes the optional language model work with reasoning models

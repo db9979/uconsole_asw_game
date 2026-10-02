@@ -4,6 +4,12 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.158
+
+- Im Browser sitzt der Knopf des Ersten Offiziers jetzt in der Werkzeugleiste
+  neben dem Tonschalter; neben dem Missionsnamen hatte die volle Kopfzeile ihn
+  zu einer Säule aus einzelnen Buchstaben gequetscht.
+
 ## 1.3.155
 
 Version 1.3.155 macht das optionale Sprachmodell mit Denkmodellen wie Qwen3

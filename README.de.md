@@ -14,14 +14,13 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.155**
+Aktuelle Version: **1.3.158**
 
-Version 1.3.155 macht das optionale Sprachmodell mit Denkmodellen nutzbar.
-Das Spiel bittet den Server um Antworten ohne Denkphase, liest auch Antworten
-in Teilen, und der Verbindungstest meldet jetzt, wenn nur Denkschritte
-zurückkamen. Der API-Schlüssel erscheint beim Tippen als Sternchen, und die
-Optionsseite liest die Schlüsseldatei nicht mehr bei jedem Bild. Spielstände
-bleiben v49; Spielstände v38 bis v48 lassen sich weiter laden.
+Version 1.3.158 korrigiert die Kopfzeile im Browser: Der Knopf des Ersten
+Offiziers („IWO fragen“) sitzt jetzt in der Werkzeugleiste neben dem
+Tonschalter, statt neben dem Missionsnamen zu einer Säule aus einzelnen
+Buchstaben gequetscht zu werden. Spielstände bleiben v49; Spielstände v38 bis
+v48 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

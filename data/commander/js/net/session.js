@@ -29,6 +29,7 @@ export function forgetSession(message = "connection_unpaired") {
   S.chartRole = null;
   S.selected = null;
   S.pending = null;
+  S.clearDraftsAfter = null;
   S.commandMessage = null;
   view.initialized = false;
   lookoutView.rangeNm = 100;

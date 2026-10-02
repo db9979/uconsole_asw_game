@@ -136,6 +136,10 @@ export async function poll() {
       }
     }
     S.snapshot = next;
+    if (S.clearDraftsAfter !== null && (changed || next.seq > S.clearDraftsAfter)) {
+      S.stationDrafts.clear();
+      S.clearDraftsAfter = null;
+    }
     S.roleStale = false;
     emit("role:fresh");
     syncStatePush();

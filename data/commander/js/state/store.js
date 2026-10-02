@@ -59,6 +59,8 @@ export const S = {
   opzSuppressed: new Set(),
   opzManage: false,
   stationDrafts: new Set(),
+  // Snapshot seq after which a settled command's drafts are dropped.
+  clearDraftsAfter: null,
   // Emitter the mast station has selected in the boat's ESM list (by number).
   ubootEsmSelected: null,
   // Bridge route mode: a chart click adds an autopilot waypoint.

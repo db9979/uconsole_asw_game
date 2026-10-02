@@ -31,15 +31,17 @@ def draw_silhouette(s, cls: str, cx: int, base_y: int, width: int, color) -> Non
 
 def scope_outlines(game, boat) -> list:
     """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg,
-    aob_deg, model)`` rows of the sightings (``lights``: the ``nav_lights`` code
+    aob_deg, model, way)`` rows of the sightings (``lights``: the ``nav_lights`` code
     made out, if any; ``elevation_deg``: an aircraft's angle above the
     horizon; ``aob_deg``: the angle on the bow judged of a made-out
     silhouette, which turns its model; the span is then its full length;
-    ``model``: the type the eye sees, when it has its own model)."""
+    ``model``: the type the eye sees, when it has its own model; ``way``:
+    the white water of a made-out ship's way, 0..1)."""
     lights = getattr(boat.orders, "_lights", {})
     elevation = getattr(boat.orders, "_elevation", {})
     aspects = getattr(boat.orders, "_aspect", {})
     models = getattr(boat.orders, "_model", {})
+    ways = getattr(boat.orders, "_way", {})
     rows = []
     for row in boat.orders.sightings:
         stale = game.sim_t - row["t"] > 1.0
@@ -48,7 +50,8 @@ def scope_outlines(game, boat) -> list:
         rows.append((row["bearing"], full_span(row["span_deg"], aob),
                      "aircraft" if aloft is not None else row["cls"],
                      stale, None if stale else lights.get(row["ref"]), aloft, aob,
-                     None if aob is None else models.get(row["ref"])))
+                     None if aob is None else models.get(row["ref"]),
+                     None if aob is None else ways.get(row["ref"])))
     return rows
 
 
@@ -106,7 +109,8 @@ def draw_eyepiece(s, game, boat, rect) -> None:
                  events=sight_events.boat_rows(game, boat),
                  lens=sight_scene.lens_water(
                      game.sim_t, getattr(game.world, "effective_sea_state", game.world.sea_state),
-                     raised_seconds(game, boat)))
+                     raised_seconds(game, boat)),
+                 eyepiece="scope")
 
 
 def sighting_rows(game, boat) -> list:

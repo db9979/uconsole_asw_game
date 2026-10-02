@@ -1493,8 +1493,8 @@ def _lookout_glasses(game):
                 outlines=[dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                                stale=bool(stale), lights=_nav_lights(lights),
                                elevation_deg=_number(elevation), aob_deg=_number(aob),
-                               model=None if model is None else str(model))
-                          for bearing, span, cls, stale, lights, elevation, aob, model in
+                               model=None if model is None else str(model), way=_number(way))
+                          for bearing, span, cls, stale, lights, elevation, aob, model, way in
                           lookout_outlines(game, game.lookout_sightings())[:16]],
                 events=_sight_events(sight_events.frigate_rows(game), game.sim_t))
 
@@ -1533,7 +1533,9 @@ def _uboot_scope(game, boat):
                         aob_deg=(None if now - row["t"] > 1.0
                                  else _number(boat.orders._aspect.get(row["ref"]))),
                         model=(None if now - row["t"] > 1.0
-                               else getattr(boat.orders, "_model", {}).get(row["ref"])))
+                               else getattr(boat.orders, "_model", {}).get(row["ref"])),
+                        way=(None if now - row["t"] > 1.0
+                             else _number(getattr(boat.orders, "_way", {}).get(row["ref"]))))
                    for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]],
         events=_sight_events(sight_events.boat_rows(game, boat), now))
 

@@ -134,6 +134,8 @@ class CrewOrders:
         # the type the eye sees of it (the picture only).
         self._aspect = {}
         self._model = {}
+        # Bow wave and wake the eye sees of a made-out ship (0..1).
+        self._way = {}
         # Attack computer: stadimeter marks by sighting (``attack_computer``).
         self.tdc = {}
         # Flood state of each torpedo tube, ``[state, seconds left]`` with the
@@ -895,6 +897,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         orders._elevation = {}
         orders._aspect = {}
         orders._model = {}
+        orders._way = {}
         return
     now = game.sim_t
     seed = int(sub.sensor_seed)
@@ -908,6 +911,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     # Neutral traffic runs its navigation lights; warships run darkened.
     lit = nav_lights.lit(game.world.daylight_stage(), environment["visibility_nm"])
     lights, elevation, aspects, models = {}, dict(getattr(orders, "_elevation", {})), {}, {}
+    ways = {}
     for target_id, actor, cls, length_m, altitude_m in _scope_candidates(game, boat):
         dx, dy = actor.x - sub.x, actor.y - sub.y
         distance = math.hypot(dx, dy)
@@ -950,6 +954,8 @@ def update_sightings(game, boat: CrewedBoat) -> None:
             lights[ref] = code
         if course is not None and recognized != "unknown":
             aspects[ref] = lookout_id.angle_on_bow(course, true_bearing)
+            if kind not in ("TORP", "FLG"):
+                ways[ref] = lookout_id.way_level(getattr(actor, "speed", 0.0))
             models[ref] = unit_variants.entity_model(
                 actor, own_ship=target_id == OWNSHIP_TARGET_ID)
         if altitude_m is not None:
@@ -977,6 +983,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     orders.sightings = rows[:config.UBOOT_SIGHTINGS_MAX]
     orders._lights = lights
     orders._aspect = aspects
+    orders._way = ways
     orders._model = {ref: key for ref, key in models.items() if key is not None}
     orders._elevation = {ref: value for ref, value in elevation.items()
                          if any(row["ref"] == ref for row in orders.sightings)}

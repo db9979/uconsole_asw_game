@@ -98,6 +98,15 @@ def aircraft_classes(kind: str, profile_key: str | None) -> tuple[str, str, str 
 # The angle on the bow an observer judges from a made-out silhouette, to
 # the nearest step (display only: it turns the model in the eyepiece).
 ASPECT_STEP_DEG = 10.0
+# Bow wave and wake of a made-out ship: full at this speed, judged in tenths
+# (display only; the eye estimates a ship's way from them).
+WAY_FULL_KN = 25.0
+
+
+def way_level(speed_kn: float) -> float:
+    """How much white water a made-out ship throws up, 0..1 in tenths."""
+    level = max(0.0, min(1.0, float(speed_kn) / WAY_FULL_KN))
+    return round(level * 10.0) / 10.0
 
 
 def angle_on_bow(course_deg: float, bearing_from_observer_deg: float) -> float:

@@ -51,7 +51,7 @@ export function drawBridgeGlasses(now) {
       fov_deg: opticsFov(glasses.optics, lookout.fov_deg), elevation_deg: glasses.optics.elevation,
       stabilized: glasses.optics.stabilized, stab_label: t("sight_stabilized"),
       optics_label: opticsText(glasses.optics, lookout.fov_deg),
-      way: {speed_kn: lookout.speed_kn, course_deg: lookout.course}},
+      way: {speed_kn: lookout.speed_kn, course_deg: lookout.course}, eyepiece: "binoculars"},
     now / 1000, plot.context.font);
 }
 

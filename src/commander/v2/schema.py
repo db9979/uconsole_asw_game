@@ -87,9 +87,10 @@ LOOKOUT_GLASSES_FIELDS = ("course", "speed_kn", "fov_deg", "visibility_nm", "sea
 # ``lights``: the navigation lights made out (``src/sensors/nav_lights.py``
 # code) or null; ``elevation_deg``: an aircraft's angle above the sea
 # horizon (null on the surface); ``aob_deg``: the angle on the bow judged
-# of a made-out silhouette (null before), which turns its 3D model.
+# of a made-out silhouette (null before), which turns its 3D model;
+# ``way``: the white water of a made-out ship's way, 0..1 (null before).
 LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "lights", "elevation_deg",
-                          "aob_deg", "model")
+                          "aob_deg", "model", "way")
 SIGHT_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
 # What the eye sees happen (``src/core/sight_events.py``): water columns,
 # fireballs, fire and smoke, sinkings; bearing and range from the observer.

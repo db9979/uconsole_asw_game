@@ -196,12 +196,12 @@ export function validateV2State(state) {
   const sightFields = {
     sky: ["light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg", "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg", "moon_illumination", "moon_waxing", "glow", "storm", "lightning", "lightning_bearing"],
     glasses: ["course", "speed_kn", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "events"],
-    outline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model"],
+    outline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model", "way"],
     classes: ["warship", "merchant", "aircraft", "torpedo", "unknown"],
     event: ["type", "bearing", "range_nm", "age_s", "dur_s", "size_m", "level"],
     eventKinds: ["column", "blast", "fire", "sinking"],
     phone: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
-    phoneOutline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model", "called", "range_nm"],
+    phoneOutline: ["bearing", "span_deg", "cls", "stale", "lights", "elevation_deg", "aob_deg", "model", "way", "called", "range_nm"],
     call: ["seq", "age_s", "category", "bearing", "range_nm", "confirmed"],
     callCategories: ["contact", "ship", "warship", "merchant", "aircraft", "submarine", "torpedo"],
   };
@@ -285,6 +285,7 @@ export function validateV2State(state) {
   const elevationOk = (value) => value === null || (finite(value) && value >= -5 && value <= 90);
   const aobOk = (value) => value === null || (finite(value) && value >= -180 && value <= 180);
   const modelOk = (value) => value === null || (typeof value === "string" && /^[a-z0-9_]{1,32}$/.test(value));
+  const wayOk = (value) => value === null || (finite(value) && value >= 0 && value <= 1);
   // What the eye sees happen: water columns, fire, sinkings (display only).
   const sightEventsOk = (rows) => boundedArray(rows, 8) && rows.every((row) => exactKeys(row, sightFields.event) &&
     sightFields.eventKinds.includes(row.type) && finite(row.bearing) && row.bearing >= 0 && row.bearing < 360 &&
@@ -296,7 +297,8 @@ export function validateV2State(state) {
     glasses.fov_deg > 0 && glasses.fov_deg <= 180 &&
     boundedArray(glasses.outlines, 16) && glasses.outlines.every((row) => exactKeys(row, sightFields.outline) &&
       finite(row.bearing) && finite(row.span_deg) && row.span_deg > 0 && sightFields.classes.includes(row.cls) &&
-      typeof row.stale === "boolean" && navLightsOk(row.lights) && elevationOk(row.elevation_deg) && aobOk(row.aob_deg) && modelOk(row.model));
+      typeof row.stale === "boolean" && navLightsOk(row.lights) && elevationOk(row.elevation_deg) && aobOk(row.aob_deg) && modelOk(row.model) &&
+      wayOk(row.way));
   const crewOk = (crew) => exactKeys(crew, crewFields.row) &&
     Number.isInteger(crew.on_watch) && crew.on_watch >= 1 && crew.on_watch <= 3 &&
     Array.isArray(crew.watches) && crew.watches.length === 3 &&
@@ -326,7 +328,7 @@ export function validateV2State(state) {
     boundedArray(view.outlines, 24) && view.outlines.every((row) => exactKeys(row, sightFields.phoneOutline) &&
       finite(row.bearing) && finite(row.span_deg) && row.span_deg > 0 && sightFields.classes.includes(row.cls) &&
       typeof row.stale === "boolean" && typeof row.called === "boolean" && navLightsOk(row.lights) &&
-      elevationOk(row.elevation_deg) && aobOk(row.aob_deg) && modelOk(row.model) &&
+      elevationOk(row.elevation_deg) && aobOk(row.aob_deg) && modelOk(row.model) && wayOk(row.way) &&
       (row.range_nm === null || (finite(row.range_nm) && row.range_nm >= 0))) &&
     boundedArray(view.calls, 8) && view.calls.every((row) => exactKeys(row, sightFields.call) &&
       Number.isSafeInteger(row.seq) && row.seq >= 1 && finite(row.age_s) && row.age_s >= 0 &&
@@ -459,8 +461,8 @@ export function validateV2State(state) {
         typeof scope.available !== "boolean" || typeof scope.night !== "boolean" ||
         scopeNumbers.some((key) => !finite(scope[key])) || scope.relative_deg < 0 || scope.relative_deg >= 360 ||
         !boundedArray(scope.sightings, 16) || scope.sightings.some((row) =>
-          !exactKeys(row, ["ref", "category", "cls", "bearing", "span_deg", "quality", "age_s", "range_nm", "range_sigma_nm", "range_age_s", "solution", "lights", "elevation_deg", "aob_deg", "model"]) || !navLightsOk(row.lights) ||
-          !elevationOk(row.elevation_deg) || !aobOk(row.aob_deg) || !modelOk(row.model) ||
+          !exactKeys(row, ["ref", "category", "cls", "bearing", "span_deg", "quality", "age_s", "range_nm", "range_sigma_nm", "range_age_s", "solution", "lights", "elevation_deg", "aob_deg", "model", "way"]) || !navLightsOk(row.lights) ||
+          !elevationOk(row.elevation_deg) || !aobOk(row.aob_deg) || !modelOk(row.model) || !wayOk(row.way) ||
           (row.solution !== null && (!exactKeys(row.solution, ["marks", "course", "speed_kn", "lead_deg", "run_s", "quality"]) ||
             !Number.isSafeInteger(row.solution.marks) || row.solution.marks < 1 || row.solution.marks > 6 ||
             [row.solution.course, row.solution.speed_kn, row.solution.lead_deg, row.solution.run_s].some((value) => value !== null && !finite(value)) ||

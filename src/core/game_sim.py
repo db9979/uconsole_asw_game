@@ -1703,7 +1703,8 @@ class SimMixin:
             if level >= lookout_id.RECOGNIZED and course is not None and kind != "MAST":
                 # The eye sees the real ship; the type is the watch's call.
                 aspect[track_id] = (lookout_id.angle_on_bow(course, bearing), self.sim_t,
-                                    unit_variants.entity_model(actor))
+                                    unit_variants.entity_model(actor),
+                                    lookout_id.way_level(getattr(actor, "speed", 0.0)))
             else:
                 aspect.pop(track_id, None)
         if kind == "FLG":

@@ -599,8 +599,9 @@ export function init() {
   $("uboot-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
   $("uboot-seeker-apply").addEventListener("click", () => {
     for (const id of ["uboot-seeker-pattern", "uboot-seeker-enable"]) S.stationDrafts.delete(id);
-    sendStationAction("uboot_torpedo_settings", {pattern: $("uboot-seeker-pattern").value,
-      enable_nm: $("uboot-seeker-enable").valueAsNumber});
+    const setting = {pattern: $("uboot-seeker-pattern").value, enable_nm: $("uboot-seeker-enable").valueAsNumber};
+    S.ubootSeekerSent = {...setting, ackSeq: null};
+    sendStationAction("uboot_torpedo_settings", setting);
   });
   $("uboot-route-mode").addEventListener("click", () => {
     S.ubootRouteMode = !S.ubootRouteMode;

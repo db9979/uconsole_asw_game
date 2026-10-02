@@ -176,6 +176,56 @@ class MissionLibrary:
         self._view = None                     # republish with the result
         return result
 
+    # -- the mission generator (optional language model) ---------------------
+
+    @staticmethod
+    def generated_key(op_id: str) -> str:
+        """The key a generated mission is stored under (the page knows it too)."""
+        return "user.llm_" + "".join(char for char in op_id.lower() if char in "0123456789abcdef")[:12]
+
+    def generate(self, op, game) -> None:
+        """Ask the model for a mission; the result arrives through ``generated``."""
+        body = op.body
+        gen = getattr(game, "mission_gen", None)
+        reason = "llm_off"
+        if gen is not None:
+            reason = gen.start(game.llm, game.llm_language(), body["side"], body["request"],
+                               key=self.generated_key(body["id"]), owner=("web", body["id"]),
+                               profile_keys=self._profile_keys(self.store()))
+        if reason is not None:
+            self._results.append({"id": body["id"], "status": "rejected",
+                                  "reason": reason[:16], "issues": []})
+            self._view = None
+
+    def generated(self, game) -> bool:
+        """Store a finished generation of the page; True when a result joined."""
+        gen = getattr(game, "mission_gen", None)
+        if (gen is None or gen.status not in ("done", "failed")
+                or not isinstance(gen.owner, tuple) or gen.owner[0] != "web"):
+            return False
+        op_id = gen.owner[1]
+        if gen.status == "done":
+            store = self.store()
+            try:
+                if store.path_for("mission", gen.mission["key"]).exists():
+                    raise ContentValidationError([issue("key", "exists", "content already exists")])
+                store.save("mission", gen.mission)
+            except ContentValidationError as error:
+                result = {"id": op_id, "status": "rejected", "reason": "invalid",
+                          "issues": [_texts(problem) for problem in error.issues[:ISSUES_MAX]]}
+            except (OSError, ValueError, TypeError):
+                result = {"id": op_id, "status": "rejected", "reason": "failed", "issues": []}
+            else:
+                result = {"id": op_id, "status": "applied", "reason": "generated", "issues": []}
+        else:
+            result = {"id": op_id, "status": "rejected",
+                      "reason": ("llm_" + (gen.error or "failed"))[:16],
+                      "issues": [_texts(problem) for problem in gen.issues[:ISSUES_MAX]]}
+        gen.reset()
+        self._results.append(result)
+        self._view = None
+        return True
+
     def mission(self, key):
         """A stored mission's definition by key (None when absent or invalid)."""
         try:

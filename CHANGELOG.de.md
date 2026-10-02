@@ -4,6 +4,43 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.154
+
+Version 1.3.154 bringt ein optionales Sprachmodell über eine
+OpenAI-kompatible Schnittstelle (ein Server im LAN wie Ollama oder LM Studio
+oder ein Cloud-Dienst). Es ist ab Werk aus, und das Spiel läuft genau wie
+ohne; jede Aufgabe fällt auf die eigenen Texte des Spiels zurück, wenn der
+Server aus oder langsam ist. Optionen Seite 2, Sprachmodell, stellt Adresse,
+Modell, API-Schlüssel (in einer eigenen Datei oder der Umgebung, nie in
+Einstellungen, Spielständen oder einem Browser), den Coach und den
+experimentellen Gegner ein, mit einem Verbindungstest.
+
+- Funkverkehr erscheint zusätzlich wie echter Funk formuliert neben dem
+  Original, auf der Funkseite der Fregatte, im Funkraum des U-Boots und im
+  Browser.
+- Nach der Mission schreibt das Modell für jede Seite einen Einsatzbericht:
+  `B` in der Nachbesprechung, in der Wiedergabe im Browser und im Dienstbuch.
+- Der Erste Offizier (`F7`, im Browser eine Schaltfläche): Lagemeldung,
+  Fragen aus dem eigenen Lagebild und dem Handbuch, getippte Befehle (Kurs,
+  Fahrt, Tiefe, Schleichfahrt, Gefechtsstationen, nie Waffen), die erst nach
+  Bestätigung gegeben werden, Klassifizierungshilfe und eine Einweisung für
+  die Station. Ein Coach gibt ab und zu einen kurzen Tipp.
+- Das Dienstbuch lässt die Dienstzeit vom Modell bewerten (`A`) und behält die
+  Berichte (`B`). Missionen mit Hilfe des Beraters sind markiert und bekommen
+  keine Bestwertung und keine Auszeichnung.
+- Der Missionseditor (`G`, `Umschalt+G`) und der Missionsplaner im Browser
+  schreiben eine Mission aus wenigen Worten; sie durchläuft dieselbe Prüfung
+  wie jede eigene Mission und öffnet sich zum Prüfen.
+- Ein experimenteller Gegner lässt das Modell alle 3 Minuten den Plan der
+  KI-Seite aus einer festen Liste wählen; solche Missionen sind markiert und
+  nie gewertet, und in Kampagne, Lektionen, Tageseinsatz und Spiel mit zwei
+  Crews läuft er nie.
+- Im Browser springen die Suchkopf-Einstellungen des U-Boots nach Übernehmen
+  nicht mehr kurz auf die alten Werte zurück.
+
+Spielstände sind jetzt v49 (die Berater-Markierung und der Plan des
+experimentellen Gegners); Spielstände v38 bis v48 lassen sich weiter laden.
+
 ## 1.3.153
 
 Version 1.3.153 lässt das U-Boot auftauchen. `Shift+H` (Browser: Auftauchen)

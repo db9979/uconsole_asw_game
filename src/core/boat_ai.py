@@ -36,6 +36,7 @@ import math
 
 from src.core import boat_missions, boat_radio, config, detrand
 from src.physics import bioluminescence
+from src.llm import opponent
 from src.core.i18n import message
 from src.sensors.platform import MAST_DEPTH_M, PlatformObservation
 
@@ -317,8 +318,12 @@ def steer(game) -> None:
     kind = boat_missions.mode(game)
     guarded = kind in boat_missions.GUARDED_MODES
     snap = kind in boat_missions.SNAP_MODES
+    # The experimental opponent's plan (optional language model, never scored).
+    plan = game.llm_opfor_plan("subs") if hasattr(game, "llm_opfor_plan") else None
     for sub in game.subs:
         sub.mission_orders = orders(game, sub) if sub is mission_boat else None
+        sub.llm_orders = (None if plan is None or sub is mission_boat or sub.side != "hostile"
+                          else opponent.sub_orders(game, sub, plan))
         sub.mission_guarded = guarded and sub is mission_boat
         sub.mission_snap = snap and sub is mission_boat
         # Scenario 13 is peacetime: no AI boat fires.

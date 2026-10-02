@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v48`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v49`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,
@@ -27,7 +27,12 @@ SAVE_ROOT_FIELDS = frozenset({
     "ping_intercepts", "tasking", "watch", "mpa", "radar_marks", "route",
     "incidents", "baffle_clear", "hq_reports", "rbu", "casualties", "hunter_esm",
     "knuckles", "hunter_lead", "swimmer_hold_s", "mission_progress", "free_roam", "consort",
+    "llm",
 })
+
+# Save v49: the optional language model's marks and the experimental
+# opponent's plan in force (``src/core/game_llm.py``).
+LLM_FIELDS = frozenset({"advisor_sides", "experimental", "opfor"})
 
 # Save v25: the surface radar's unmarked mast echoes and marked boats
 # (``Game.radar_blips``, ``radar_blip_seq``, ``_radar_marked``).

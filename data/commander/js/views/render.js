@@ -8,6 +8,7 @@ import { queueLookoutDraw, renderLookoutStatus } from "./lookout.js";
 import { renderStationView } from "./station-view.js";
 import { renderStationAlarms } from "./station-tabs.js";
 import { renderDebriefButton } from "./debrief.js";
+import { renderAdvisorButton } from "./advisor.js";
 import { flushSonarFocus, renderDetail, renderTracks } from "./tracks.js";
 import { renderWeatherStation } from "./weather.js";
 
@@ -37,6 +38,7 @@ export function renderSnapshot(resetDraft = false) {
   renderStationView();
   renderStationAlarms();
   renderDebriefButton();
+  renderAdvisorButton();
   renderBridgeOrders();
   $("chart-disclaimer").textContent = S.chart.disclaimer;
   $("snapshot-meta").textContent = t("snapshot_meta", { version: S.snapshot.version, seq: S.snapshot.seq, revision: S.snapshot.revision, sim: number(S.snapshot.clock.sim, 1) });

@@ -12,17 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.153**
+Current release: **1.3.154**
 
-Release 1.3.153 makes missions more tense in eight steps. A close detonation
-shakes the screens (1.3.146), made-out ships show bow waves and wakes in the
-optics (1.3.147), and a small picture shows hits (1.3.148). A homing
-torpedo's seeker can be heard locking on (1.3.149). Noise discipline: crews
-fumble audibly, and the players' microphones show whether their voices could
-give them away (1.3.150). Enemy commanders have a character (1.3.151), the
-main menu has a daily mission (1.3.152), and the submarine can surface,
-run on its diesels with a bridge watch and crash dive (1.3.153). Saves stay
-v48; v38 to v47 saves still load.
+Release 1.3.154 adds an optional language model over an OpenAI-compatible
+interface (a LAN server or a cloud service). It is off by default and the
+game plays exactly as without it. Switched on, it words radio traffic, writes
+an after-action report, and gives you an executive officer (F7, also in the
+browser) for situation reports, questions, confirmed orders without weapons,
+classification help and station briefings, plus a coach, a logbook review, a
+mission generator in the editor and the web planner, and an experimental,
+unscored opponent (saves v49). v38 to v48 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

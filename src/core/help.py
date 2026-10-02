@@ -21,6 +21,7 @@ _GLOBAL_HELP = (
         ("Shift+F2", "help.global.crew_assist"),
         ("F3", "help.global.autocrew_overview"),
         ("0", "help.global.weather_station"),
+        ("F7", "help.global.advisor"),
         ("F8", "help.global.analyzer"),
         ("F4", "help.global.simlog_view"),
         ("F9", "help.global.commander"),

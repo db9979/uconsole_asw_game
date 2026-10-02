@@ -26,6 +26,8 @@ class DebriefMixin:
         self.boat_debrief = None
         self.debrief = self.frigate_debrief
         self.debrief_open = False
+        self.debrief_report_open = False
+        self.debrief_report_scroll = 0
         self.debrief_index = 0
         self.debrief_replay = Replay()
         self._debrief_acc = 0.0
@@ -115,6 +117,18 @@ class DebriefMixin:
 
     def _handle_debrief_key(self, key: int, mod: int = 0) -> None:
         big = 6 if mod & pygame.KMOD_SHIFT else 1
+        if key == pygame.K_b:
+            # The language model's after-action report in the side panel.
+            self.debrief_report_open = not getattr(self, "debrief_report_open", False)
+            self.debrief_report_scroll = 0
+            return
+        if getattr(self, "debrief_report_open", False) and key in (
+                pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+            step = 8 if key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN) else 1
+            if key in (pygame.K_UP, pygame.K_PAGEUP):
+                step = -step
+            self.debrief_report_scroll = max(0, self.debrief_report_scroll + step)
+            return
         if key == pygame.K_SPACE:
             self.toggle_debrief_replay()
             return

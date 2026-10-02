@@ -25,6 +25,7 @@ from src.commander.web_auth import WebHostAuth
 from src.core.config import SHIP_SPEED_MAX_KN
 
 from src.commander.missions import MissionLibraryServerMixin
+from src.commander.advisor_web import AdvisorServerMixin
 from src.commander.v2.wire import (
     DEBRIEF_MAX_BYTES,
     station_grants,  # noqa: F401
@@ -153,7 +154,7 @@ from src.commander.v2.routes import (  # noqa: F401
     _HTTPServer,
     _Handler)
 
-class CommanderServer(MissionLibraryServerMixin):
+class CommanderServer(MissionLibraryServerMixin, AdvisorServerMixin):
     """Thread-safe v2 publications and leased commands, with explicit lifecycle.
 
     ``address`` is available only while started. Command timestamps use
@@ -243,6 +244,7 @@ class CommanderServer(MissionLibraryServerMixin):
         self._teams_locked = False
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._init_missions()
+        self._init_advisor()
         self._v2_events = {}
         self._v2_private_events = {}
         self._v2_simlogs = {}
@@ -471,6 +473,7 @@ class CommanderServer(MissionLibraryServerMixin):
         self._v2_proposals.clear()
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._clear_missions_locked()
+        self._clear_advisor_locked()
         self._v2_events.clear()
         self._v2_private_events.clear()
         self._v2_simlogs.clear()

@@ -4,6 +4,40 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.154
+
+Release 1.3.154 adds an optional language model over an OpenAI-compatible
+interface (a LAN server such as Ollama or LM Studio, or a cloud service). It
+is off by default and the game plays exactly as without it; every job falls
+back to the game's own texts when the server is off or slow. Options page 2,
+Language model, sets the address, model, API key (kept in its own file or the
+environment, never in settings, saves or a browser), the coach and the
+experimental opponent, with a connection test.
+
+- Radio traffic is also shown worded like real traffic beside the original,
+  on the frigate's radio page, the submarine's radio room and in the browser.
+- After the mission the model writes an after-action report for each side:
+  `B` in the debrief, the browser's debrief replay and the logbook.
+- The executive officer (`F7`, and a button in the browser): situation
+  report, questions answered from the own picture and the manual, typed
+  orders (course, speed, depth, quiet running, action stations, never
+  weapons) that run only after confirmation, classification help and a
+  station briefing. A coach can give a short tip now and then.
+- The logbook asks the model for a review of the service record (`A`) and
+  keeps the reports (`B`). Missions with the advisor's help are marked and
+  earn no best score or award.
+- The Mission Editor (`G`, `Shift+G`) and the browser's Mission Planner write
+  a mission from a few words; it passes the same validator as every own
+  mission and opens for checking.
+- An experimental opponent lets the model pick the AI side's plan from a
+  fixed list every 3 minutes; such missions are marked and never scored, and
+  it never runs in the campaign, lessons, the daily mission or two-crew play.
+- In the browser the submarine's seeker settings no longer jump back to the
+  old values for a moment after Apply.
+
+Saves are now v49 (the advisor marks and the experimental opponent's plan);
+v38 to v48 saves still load.
+
 ## 1.3.153
 
 Release 1.3.153 lets the submarine surface. `Shift+H` (browser: Surface)

@@ -13,7 +13,7 @@ import pygame
 
 from src.core import boat_nav, buoy_antenna, config
 from src.core.boat_radio import antenna_up, reception
-from src.core.i18n import message
+from src.core.i18n import message, raw_text
 from src.ui import layout, lines
 
 REPORT_COLOR = config.COLOR_WARN
@@ -154,6 +154,15 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
     listing = layout.box(s, (x, top, w, max(40, h - (top - y))), "uboot.panel.radio_log")
     lx, ly, lw, lh = listing
     log_row = layout.line_pitch(14, 2)
+    # The open order worded as radio traffic by the optional language model.
+    worded = getattr(game, "llm_boat_order_text", None)
+    worded = worded(radio.active_order()) if worded is not None else None
+    if worded:
+        block_h = min(lh // 2, 3 * log_row + 6)
+        layout.blit_block(s, raw_text(worded), lx, ly, lw, block_h,
+                          color=config.COLOR_WARN, size=14)
+        ly += block_h
+        lh -= block_h
     if not radio.log:
         layout.blit_line(s, "uboot.radio.log.empty", (lx, ly, lw, log_row),
                          config.COLOR_TEXT_DIM, size=15)

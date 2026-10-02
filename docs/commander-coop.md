@@ -223,6 +223,18 @@ menu the browser shows a start screen. Editors, options, network administration,
 quit and credentials stay host-only. With every station leased Autocrew is
 suspended for all of them.
 
+**Crew versus crew.** In the lobby the row *Opponent* switches between *AI* and
+*second crew (frigate vs submarine)*. With a second crew every paired browser is
+seated on the unit with fewer people (the uConsole counts for its own unit; on a
+tie the frigate), so the frigate (blue) and the submarine (red) fill up evenly;
+before the start a browser can still take another station. If one team is still
+empty, a second Enter starts anyway and the AI crews that unit. During the round
+the teams are fixed: each browser sees only its own unit's picture, and voice is a
+separate channel per unit. With the lobby station *none, host only* the uConsole
+plays no unit and shows the umpire screen (mission, time left, crewed stations per
+team) without either crew's picture. At the end each team gets its own result
+(victory or defeat).
+
 ## Lifecycle and Limits
 
 Local disable or process shutdown first stops the listener and revokes credentials.

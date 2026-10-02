@@ -33,6 +33,7 @@ from src.ui.uboot_radio import draw_radio_page, draw_report_chart
 from src.ui.uboot_threat import draw_intercept_lines, draw_threat_page
 from src.enemies.damage_control import COMPARTMENTS
 from src.ui.uboot_scope import draw_scope_page
+from src.ui.uboot_pilot import draw_pilot_page
 from src.ui.viewport import Viewport
 from src.ui.weather_station import draw_weather_station
 
@@ -42,7 +43,7 @@ STATION_PAGES = {"uboot": UBOOT_PAGES, "uboot_weapons": ("UBOOT_WEAPONS",),
                  "uboot_engine": ("UBOOT_ENGINE", "UBOOT_SUPPLY", "UBOOT_BALLAST",
                                   "UBOOT_DAMAGE"),
                  "uboot_esm": ("UBOOT_ESM", "UBOOT_SCOPE"),
-                 "uboot_nav": ("UBOOT_NAV", "UBOOT_THREAT"),
+                 "uboot_nav": ("UBOOT_PILOT", "UBOOT_NAV", "UBOOT_THREAT"),
                  "uboot_radio": ("UBOOT_RADIO",)}
 
 
@@ -635,11 +636,16 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     dy += row
     phase = sub.endurance.phase if sub.endurance is not None else None
     if battery is not None:
+        value = message("uboot.line.battery_value", value=_fmt(battery * 100),
+                        phase=(display_message("endurance_phase", phase)
+                               if phase else raw_text("--")))
+        text_font = layout.font(16)
+        if (text_font.size(layout.localize("uboot.label.battery"))[0]
+                + text_font.size(layout.localize(value))[0] + 8 > dw):
+            # A long phase name would cut the label: the percentage only.
+            value = message("telemetry.value.percent", value=_fmt(battery * 100))
         layout.gauge(s, (dx, dy, dw, small + 8), battery, label="uboot.label.battery",
-                     value=message("uboot.line.battery_value", value=_fmt(battery * 100),
-                                   phase=(display_message("endurance_phase", phase)
-                                          if phase else raw_text("--"))),
-                     color=_battery_color(battery))
+                     value=value, color=_battery_color(battery))
         dy += small + 10
     modes = [key for key, on in (("uboot.mode.silent", boat.orders.silent),
                                  ("uboot.mode.snorkel", sub.snorkeling),
@@ -866,6 +872,9 @@ _FOOTERS = {
     ("uboot_nav", "UBOOT_NAV"): (("C", "uboot.footer.course"), ("D", "uboot.footer.depth"),
                                  ("U/J/H", "uboot.footer.presets"),
                                  ("Shift+G", "uboot.footer.bottom")),
+    ("uboot_nav", "UBOOT_PILOT"): (("C", "uboot.footer.course"), ("D", "uboot.footer.depth"),
+                                   ("U/J/H", "uboot.footer.presets"),
+                                   ("Shift+G", "uboot.footer.bottom")),
     # At most four main keys per page; fire bearing, decoy and flooding are in F1.
     ("uboot_weapons", "UBOOT_WEAPONS"): (("↑/↓", "uboot.footer.contact"),
                                          ("help.key.uboot_fire", "uboot.footer.fire"),
@@ -919,7 +928,8 @@ def draw_command_panel(game, boat) -> None:
         content_y += 54
         content_h -= 54
     name = pages[page]
-    drawer = {"UBOOT_NAV": _draw_nav_page, "UBOOT_WEAPONS": _draw_weapons_page,
+    drawer = {"UBOOT_NAV": _draw_nav_page, "UBOOT_PILOT": draw_pilot_page,
+              "UBOOT_WEAPONS": _draw_weapons_page,
               "UBOOT_ENGINE": _draw_engine_page, "UBOOT_SUPPLY": _draw_supply_page,
               "UBOOT_ESM": _draw_esm_page, "UBOOT_BALLAST": draw_ballast_page,
               "UBOOT_DAMAGE": draw_damage_page,

@@ -8,10 +8,10 @@ from src.core.lobby import LobbyRoom
 
 BOAT = ("s5_durchbruch", "s6_aufklaerung", "s7_geleitzug", "s8_meerenge",
         "s9_kampfschwimmer", "s10_versorger", "s17_duell", "s18_heimkehr",
-        "s19_abholung", "s20_lauschposten", "frei_uboot")
+        "s19_abholung", "s20_lauschposten", "s22_jagdgruppe", "frei_uboot")
 FRIGATE = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
            "s11_geleitschutz", "s12_datum", "s13_fuehlung", "s14_hafenschutz",
-           "s15_versorgung", "s16_seenot", "frei_fregatte")
+           "s15_versorgung", "s16_seenot", "s21_suchgruppe", "frei_fregatte")
 
 
 def test_each_scenario_belongs_to_exactly_one_side():
@@ -44,7 +44,7 @@ def test_frigate_list_cycles_and_numbers_only_frigate_scenarios():
     game = _menu("frigate")
     game.draw()
     seen = []
-    for _ in range(13):
+    for _ in range(14):
         seen.append("custom" if game.menu_sel == game.custom_row_sel()
                     else config.SCENARIO_ORDER[game.scenario_menu_index()])
         game._handle_menu_key(pygame.K_DOWN)
@@ -83,7 +83,7 @@ def test_boat_list_starts_at_the_first_boat_scenario():
 def test_lobby_cycles_the_missions_of_its_side():
     room = LobbyRoom("s1_patrouille", "frigate")
     seen = set()
-    for _ in range(12):
+    for _ in range(13):
         room.change(1)
         seen.add(room.scenario_key)
     assert seen == set(config.scenarios_for_side("frigate"))

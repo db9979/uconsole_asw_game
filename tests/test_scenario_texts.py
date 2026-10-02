@@ -15,7 +15,8 @@ KEYS = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
         "s13_fuehlung": "trail", "s14_hafenschutz": "harbour",
         "s15_versorgung": "ras", "s16_seenot": "rescue", "s17_duell": "duel",
         "s18_heimkehr": "homecoming", "s19_abholung": "pickup",
-        "s20_lauschposten": "elint",
+        "s20_lauschposten": "elint", "s21_suchgruppe": "search_group",
+        "s22_jagdgruppe": "hunter_group",
         "frei_fregatte": "free", "frei_uboot": "free_boat"}
 
 

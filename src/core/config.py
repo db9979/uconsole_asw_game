@@ -1204,6 +1204,30 @@ MPA_RELAY_NM = 50.0                 # buoys heard only this close to the aircraf
 MPA_DATALINK_NM = 250.0             # aircraft to ship link (line of sight at altitude)
 MPA_DROP_NM = 2.0                   # torpedo release this close to the datum
 MPA_NO_BASE_OFFSET_NM = 150.0       # no friendly airfield: arrives from the map edge
+# Group hunt (src/core/consort.py): the consort destroyer of scenarios 21 and 22.
+CONSORT_PROFILE = "warship_01"      # catalog key: hull sonar and ASROC
+CONSORT_CALLSIGN = "LUETJENS"
+CONSORT_STATION_NM = 5.0            # formation station off the frigate (sonar baseline)
+CONSORT_HOLD_KN = 4.0
+CONSORT_SEARCH_KN = 10.0            # quiet enough for the hull sonar
+CONSORT_TRANSIT_KN = 18.0
+CONSORT_SPRINT_KN = 26.0
+CONSORT_SEARCH_ORBIT_NM = 4.0
+CONSORT_PROSECUTE_ORBIT_NM = 2.0
+CONSORT_DATALINK_NM = 100.0         # Link 11 (HF) to the frigate
+CONSORT_REPORT_S = 10.0             # cadence of the passive cross-fix
+CONSORT_PASSIVE_NM = 8.0           # its hull sonar hears a submarine this far
+CONSORT_PASSIVE_MAX_KN = 15.0      # faster, its own flow noise deafens it
+CONSORT_XFIX_MIN_DEG = 15.0         # poorer cuts are not reported
+CONSORT_XFIX_MAX_NM = 30.0
+CONSORT_PING_S = 20.0               # active sonar transmission interval
+CONSORT_ACTIVE_RANGE_NM = 5.0
+CONSORT_ACTIVE_ERR_NM = 0.15
+CONSORT_ACTIVE_DEPTH_ERR_M = 15.0
+CONSORT_HEAR_PING_NM = 25.0         # submarines intercept its pings this far
+CONSORT_FIX_FRESH_S = 120.0         # weapons free: shoot only on fixes this fresh
+CONSORT_SHOT_GAP_S = 180.0          # at most one ASROC this often
+CONSORT_AUTO_FIX_S = 600.0          # auto mode prosecutes a submarine fix this fresh
 
 # Missionstypen: Zeitfenster in Echtzeit-Simulationssekunden.
 # Lange Einsatzfenster lassen Zeit für Aufmerksamkeits- und Suchphasen.
@@ -1317,6 +1341,8 @@ MISSION_TYPES = {
         time_limit_s=10800, short_time_limit_s=2700,
         short_scale=0.75, win="escort"),
     # Scenarios 11 to 20 (src/core/mission_modes.py).
+    # ``scale``, ``spawn_nm`` and ``goal_fraction`` tune the full length the way
+    # the ``short_*`` keys tune the short variant (AI-against-AI fairness).
     "datum": dict(
         name="Datum", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1326,7 +1352,9 @@ MISSION_TYPES = {
         name="Fuehlung", weight=0, subs=1,
         sub_types=["ssn"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5, win="trail"),
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.5,
+        scale=0.6, goal_fraction=0.8,
+        win="trail"),
     "versorgung": dict(
         name="Versorgung", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1336,17 +1364,19 @@ MISSION_TYPES = {
         name="Seenot", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
-        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.75, win="rescue"),
+        time_limit_s=7200, short_time_limit_s=2700, short_scale=0.75, scale=1.95,
+        win="rescue"),
     "duell": dict(
         name="Duell", weight=0, subs=1,
         sub_types=["aip_modern"],
         animals=(1, 2), civilians=(3, 5), asm=(0, 0), warships=(0, 0),
-        time_limit_s=10800, short_time_limit_s=2700, win="duel"),
+        time_limit_s=10800, short_time_limit_s=2700, spawn_nm=(8.0, 12.0), win="duel"),
     "heimkehr": dict(
         name="Heimkehr", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=18000, short_time_limit_s=3600, short_scale=0.35, win="homecoming"),
+        time_limit_s=18000, short_time_limit_s=3600, short_scale=0.35, scale=0.35,
+        win="homecoming"),
     "abholung": dict(
         name="Abholung", weight=0, subs=1,
         sub_types=["diesel_alt", "aip_modern"],
@@ -1357,6 +1387,21 @@ MISSION_TYPES = {
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
         time_limit_s=14400, short_time_limit_s=2700, short_scale=0.5, win="elint"),
+    # Group hunt (src/core/game_consort.py): the frigate and its consort.
+    "suchgruppe": dict(
+        name="Suchgruppe", weight=0, subs=2,
+        sub_types=["aip_modern", "ssn"],
+        animals=(2, 3), civilians=(2, 3), asm=(0, 0), warships=(0, 0),
+        time_limit_s=14400, short_time_limit_s=2700, spawn_nm=(8.0, 14.0), win="sink"),
+    # The breakthrough against frigate and destroyer: a quiet boat that starts
+    # close and whose goal lies just beyond the frigate's position, in both
+    # lengths (tuned with the fairness measurement).
+    "jagdgruppe": dict(
+        name="Jagdgruppe", weight=0, subs=1,
+        sub_types=["aip_modern"],
+        animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
+        time_limit_s=5400, short_time_limit_s=3600, spawn_nm=(4.0, 6.0),
+        scale=0.15, short_spawn_nm=(4.0, 6.0), short_scale=0.15, win="breakthrough"),
     # Free patrol (src/core/free_roam.py): no time limit, no short variant.
     # The frigate starts alone; encounters bring the submarines later.
     "freifahrt": dict(
@@ -1576,10 +1621,11 @@ SHORT_DISTANCE_SCALE = 0.5
 SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
                   "s11_geleitschutz", "s12_datum", "s13_fuehlung",
                   "s14_hafenschutz", "s15_versorgung", "s16_seenot",
+                  "s21_suchgruppe",
                   "s5_durchbruch", "s6_aufklaerung", "s7_geleitzug",
                   "s8_meerenge", "s9_kampfschwimmer", "s10_versorger",
                   "s17_duell", "s18_heimkehr", "s19_abholung", "s20_lauschposten",
-                  "frei_fregatte", "frei_uboot")
+                  "s22_jagdgruppe", "frei_fregatte", "frei_uboot")
 # Catalog name of each scenario (``scenario.<name>.title`` and friends).
 SCENARIO_NAMES = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
                   "s3_abfang": "intercept", "s4_zufall": "random",
@@ -1591,6 +1637,7 @@ SCENARIO_NAMES = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
                   "s15_versorgung": "ras", "s16_seenot": "rescue",
                   "s17_duell": "duel", "s18_heimkehr": "homecoming",
                   "s19_abholung": "pickup", "s20_lauschposten": "elint",
+                  "s21_suchgruppe": "search_group", "s22_jagdgruppe": "hunter_group",
                   "frei_fregatte": "free", "frei_uboot": "free_boat"}
 SCENARIOS = {
     "s1_patrouille": dict(
@@ -1881,6 +1928,39 @@ SCENARIOS = {
         briefing="U-Boot: Funk und Radar der Fregatte aufzeichnen und melden.",
         win_text="Aufklaerung verhindert",
         lose_text="Aufklaerung gemeldet / Fregatte gesunken",
+    ),
+    # Group hunt: the frigate with its consort destroyer (src/core/consort.py).
+    "s21_suchgruppe": dict(
+        title="Suchgruppe",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=8,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="suchgruppe",
+        hq_intel="coarse",
+        ship_start=(250.0, 300.0), ship_course=0.0,
+        consort=True,
+        briefing="Suchgruppe: Fregatte und Zerstoerer jagen zwei U-Boote.",
+        win_text="Beide U-Boote versenkt",
+        lose_text="Zeitlimit / Fregatte gesunken",
+    ),
+    "s22_jagdgruppe": dict(
+        title="Jagdgruppe",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="jagdgruppe",
+        hq_intel="coarse",
+        ship_start=(260.0, 300.0), ship_course=90.0,
+        boat=True, consort=True,
+        # The destroyer comes off a long patrol with two ASROC left.
+        consort_asroc=2,
+        briefing="U-Boot: Durch die Jagdgruppe aus Fregatte und Zerstoerer brechen.",
+        win_text="U-Boot aufgehalten",
+        lose_text="U-Boot bricht durch / Fregatte gesunken",
     ),
     # Free patrol on either side (src/core/free_roam.py; 1.3.135).
     "frei_fregatte": dict(

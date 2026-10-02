@@ -106,10 +106,11 @@ def _nominal(scenario_key):
 
 
 def scale_for(scenario_key, short: bool) -> float:
-    """Start distances of the scenario: shorter in the short variant."""
-    if not short:
-        return 1.0
+    """Start distances of the scenario: shorter in the short variant; a
+    mission type may scale its full length too (``scale``)."""
     spec = config.MISSION_TYPES.get(config.SCENARIOS[scenario_key]["mission_type"], {})
+    if not short:
+        return float(spec.get("scale", 1.0))
     return float(spec.get("short_scale", config.SHORT_DISTANCE_SCALE))
 
 
@@ -382,7 +383,11 @@ def trail_held(game) -> bool:
 
 
 def trail_goal_s(game) -> float:
-    return float(game.mission.time_limit_s) * config.TRAIL_GOAL_FRACTION
+    """Contact time the frigate must hold: a share of the time limit (the
+    full length may ask a larger share, ``goal_fraction``)."""
+    fraction = (config.TRAIL_GOAL_FRACTION if getattr(game, "short_mission", False)
+                else (game.mission.spec or {}).get("goal_fraction", config.TRAIL_GOAL_FRACTION))
+    return float(game.mission.time_limit_s) * float(fraction)
 
 
 def trail_lost_s(game) -> float:

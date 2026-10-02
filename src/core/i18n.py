@@ -89,6 +89,10 @@ DISPLAY_KEYS = {
     "buoy_pattern": {"single": "enum.buoy_pattern.single", "field": "enum.buoy_pattern.field",
                      "barrier": "enum.buoy_pattern.barrier", "circle": "enum.buoy_pattern.circle"},
     "buoy_mode": {"PASSIVE": "enum.buoy_mode.passive", "ACTIVE": "enum.buoy_mode.active"},
+    "consort_mode": {mode: "enum.consort_mode." + mode
+                     for mode in ("auto", "formation", "search", "prosecute", "hold")},
+    "consort_station": {key: "enum.consort_station." + key
+                        for key in ("starboard", "ahead", "port", "astern")},
     "mpa_state": {"BASE": "enum.mpa_state.base", "TRANSIT": "enum.mpa_state.transit",
                   "STATION": "enum.mpa_state.station", "RTB": "enum.mpa_state.rtb"},
     "plant": {"AUTO": "enum.plant.AUTO", "DIESEL": "enum.plant.DIESEL",
@@ -132,6 +136,7 @@ DISPLAY_KEYS = {
         "BRIDGE_MISSION": "station.page.bridge_mission",
         "BRIDGE_LOOKOUT": "station.page.bridge_lookout",
         "UBOOT_NAV": "station.page.uboot_nav",
+        "UBOOT_PILOT": "station.page.uboot_pilot",
         "UBOOT_WEAPONS": "station.page.uboot_weapons",
         "UBOOT_ENGINE": "station.page.uboot_engine",
         "UBOOT_SUPPLY": "station.page.uboot_supply",
@@ -148,6 +153,7 @@ DISPLAY_KEYS = {
         "OPZ_PICTURE": "station.page.opz_picture",
         "OPZ_TARGET": "station.page.opz_target",
         "OPZ_MPA": "station.page.opz_mpa",
+        "OPZ_GROUP": "station.page.opz_group",
         "RADIO_HFDF": "station.page.radio_hfdf",
         "RADIO_MESSAGES": "station.page.radio_messages",
         "RADIO_TASKS": "station.page.radio_tasks",

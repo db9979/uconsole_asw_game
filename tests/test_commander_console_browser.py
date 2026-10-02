@@ -36,7 +36,7 @@ async function until(check, message, limit = 1500) {
 }
 const boatScenarios = ["s5_durchbruch", "s6_aufklaerung", "s7_geleitzug", "s8_meerenge",
   "s9_kampfschwimmer", "s10_versorger", "s17_duell", "s18_heimkehr", "s19_abholung",
-  "s20_lauschposten", "frei_uboot"];
+  "s20_lauschposten", "s22_jagdgruppe", "frei_uboot"];
 const scenarioIsBoat = (key) => boatScenarios.includes(key);
 const scriptErrors = [];
 window.addEventListener("error", (event) => scriptErrors.push(event.message));
@@ -152,9 +152,14 @@ async function run() {
     [...$("host-new-scenario").options].every((option) => scenarioIsBoat(option.value)),
     "the submarine side lists a frigate scenario");
   $("host-new-seed").value = "4242";
+  const missionBefore = $("mission-name").textContent;
   $("host-new-form").requestSubmit();
   await until(() => $("station-tab-uboot") && !$("station-tab-bridge"),
     "the submarine side was not taken", 3000);
+  // The side switch comes first and the new game after it: wait for the new
+  // mission, or the page could finish before the game was replaced.
+  await until(() => $("mission-name").textContent && $("mission-name").textContent !== missionBefore,
+    `the submarine mission did not start (${$("host-status").textContent})`, 6000);
   assert(scriptErrors.length === 0, `script errors: ${scriptErrors.join(" | ")}`);
 }
 

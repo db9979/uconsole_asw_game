@@ -180,6 +180,12 @@ export function validateV2State(state) {
     row: ["state", "airborne", "x", "y", "course", "bearing", "range_nm", "waypoint_x", "waypoint_y", "station_left_s", "ready_in_s", "sorties_left", "buoys", "torpedoes", "radar", "mad", "buoy_mode", "pattern", "pattern_points", "datalink", "relayed"],
     states: ["BASE", "TRANSIT", "STATION", "RTB"],
   };
+  const consortFields = {
+    row: ["callsign", "sunk", "datalink", "x", "y", "course", "speed_kn", "bearing", "range_nm", "mode", "working", "station", "point_x", "point_y", "active", "weapons_free", "asroc", "bearings"],
+    bearing: ["observer_x", "observer_y", "bearing", "uncertainty_deg", "age_s"],
+    modes: ["auto", "formation", "search", "prosecute", "hold"],
+    stations: ["starboard", "ahead", "port", "astern"],
+  };
   const opzSuggestionFields = ["key", "refs", "bearing", "bearing_delta_deg", "distance_nm", "course_delta_deg", "speed_delta_kn", "class_match"];
   const helicopterTacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type", "classification", "released_to_opz"];
   const weatherFields = {
@@ -258,6 +264,17 @@ export function validateV2State(state) {
     ["sorties_left", "buoys", "torpedoes", "relayed"].every((key) => Number.isInteger(mpa[key]) && mpa[key] >= 0 && mpa[key] <= 64) &&
     ["PASSIVE", "ACTIVE"].includes(mpa.buoy_mode) && ["single", "field", "barrier", "circle"].includes(mpa.pattern) &&
     boundedArray(mpa.pattern_points, 4) && mpa.pattern_points.every((row) => exactKeys(row, ["x", "y"]) && finite(row.x) && finite(row.y));
+  // The consort destroyer: commanded own-force state, or null without one.
+  const consortOk = (row) => row === null || (exactKeys(row, consortFields.row) &&
+    typeof row.callsign === "string" && row.callsign.length > 0 && row.callsign.length <= 40 &&
+    ["sunk", "datalink", "active", "weapons_free"].every((key) => typeof row[key] === "boolean") &&
+    ["x", "y", "course", "speed_kn", "bearing", "range_nm"].every((key) => finite(row[key])) &&
+    ["point_x", "point_y"].every((key) => nullableFinite(row[key])) &&
+    consortFields.modes.includes(row.mode) && consortFields.modes.includes(row.working) &&
+    consortFields.stations.includes(row.station) &&
+    Number.isInteger(row.asroc) && row.asroc >= 0 && row.asroc <= 64 &&
+    boundedArray(row.bearings, 8) && row.bearings.every((bearing) => exactKeys(bearing, consortFields.bearing) &&
+      consortFields.bearing.every((key) => finite(bearing[key]))));
   // A crew's watch bill: three watches, fatigue and morale 0..1.
   // The eyepieces' sky and the bridge lookout's binoculars (display only).
   const skyOk = (sky) => exactKeys(sky, sightFields.sky) &&
@@ -585,7 +602,8 @@ export function validateV2State(state) {
            typeof row.ref !== "string" || !/^blip-[0-9]{1,18}$/.test(row.ref) || [row.x, row.y, row.age_s].some((value) => !finite(value)))) throw new Error("protocol");
     tacticalRows(payload.asm_observations, 128);
     if (payload.designated_target_ref !== null && (typeof payload.designated_target_ref !== "string" || !pictureRefs.has(payload.designated_target_ref))) throw new Error("protocol");
-    if (!exactKeys(payload.own_assets, ["ship", "helicopter", "mpa", "weapons"]) || !mpaOk(payload.own_assets.mpa) ||
+    if (!exactKeys(payload.own_assets, ["ship", "helicopter", "mpa", "consort", "weapons"]) || !mpaOk(payload.own_assets.mpa) ||
+        !consortOk(payload.own_assets.consort) ||
         !boundedArray(payload.own_assets.weapons, 104) || payload.own_assets.weapons.some((row) => !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state"])) ||
         !exactKeys(payload.own_assets.ship, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
         !exactKeys(payload.own_assets.helicopter, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s"])) throw new Error("protocol");

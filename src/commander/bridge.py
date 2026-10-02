@@ -73,7 +73,7 @@ import numpy as np
 
 from src.audio.receiver import smooth_limit
 from src.sonar.sonar import SonarSystem
-from src.core import config, debrief_replay, opfor
+from src.core import boat_campaign, boat_debrief, config, debrief_replay, opfor
 from src.sensors import lookout_id
 from src.commander.lookout_projection import build_lookout_states
 from src.commander.mission_library import MissionLibrary, editor_catalog
@@ -308,6 +308,7 @@ class CommanderBridge:
         self._threats = None
         self._mission_state = None
         self._mission_warned = set()
+        self._boat_result_sent = False
         self._chart = None
         self._chart_world = None
         self._published_chart = None
@@ -406,6 +407,8 @@ class CommanderBridge:
             "damage": frozenset(("bridge", "damage")),
             "threat": frozenset(("bridge", "opz", "weapons")),
             "mission": frozenset(ROLE_NAMES),
+            # The crewed boat's own result (its side's view of the mission).
+            "boat_mission": frozenset(OPFOR_ROLES),
         }.get(kind, frozenset())
         self._event_seq += 1
         self._events.append(dict(seq=self._event_seq, kind=kind,
@@ -1018,6 +1021,7 @@ class CommanderBridge:
                 self._fingerprint = self._damage = self._threats = None
                 self._mission_state = None
                 self._mission_warned.clear()
+                self._boat_result_sent = False
                 self._gate = None
             self._identity = identity
             self._dirty = True
@@ -1117,6 +1121,13 @@ class CommanderBridge:
                         self._event("mission", "warning",
                                     "commander.event.mission.warning_" + str(min(crossed)))
             self._mission_state = (remaining, result)
+            boat = game.opfor
+            boat_ended = bool(game.game_over) and boat is not None
+            if boat_ended and not self._boat_result_sent:
+                won = boat_debrief.outcome(game, boat) in boat_campaign.WINS
+                self._event("boat_mission", "info" if won else "warning",
+                            "commander.event.mission." + ("won" if won else "lost"))
+            self._boat_result_sent = boat_ended
         self._status.update(session=self._session, epoch=self._epoch,
                             revision=self._revision, seq=self._seq)
         if self._language != game.preferences.language:

@@ -619,6 +619,12 @@ export function init() {
     const x = $("opz-mpa-x").valueAsNumber, y = $("opz-mpa-y").valueAsNumber;
     if (finite(x) && finite(y) && x >= 0 && x <= 1000 && y >= 0 && y <= 1000) sendStationAction("mpa_set_waypoint", {x, y});
   });
+  $("opz-consort-point-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!event.currentTarget.reportValidity()) return;
+    const x = $("opz-consort-x").valueAsNumber, y = $("opz-consort-y").valueAsNumber;
+    if (finite(x) && finite(y) && x >= 0 && x <= 1000 && y >= 0 && y <= 1000) sendStationAction("consort_set_point", {x, y});
+  });
   $("opz-mpa-pattern-apply").addEventListener("click", () => sendStationAction("mpa_set_pattern", {kind: $("opz-mpa-pattern").value}));
   $("helicopter-pattern-apply").addEventListener("click", () => {
     S.stationDrafts.delete("helicopter-pattern");

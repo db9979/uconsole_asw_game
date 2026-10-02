@@ -892,8 +892,13 @@ def asroc(game, found) -> str:
         return "monitoring"
     contact = found.get("contact")
     depth = None if contact is None else contact.depth_est
+    # A consort under the OPZ's command (src/core/consort.py): a person in the
+    # OPZ decides with its weapons release; otherwise the AI works the OPZ.
+    orders = getattr(game, "consort", None)
+    consort_free = (orders is not None and orders.weapons_free) or not manned(game, Station.OPZ)
     escorts = [ship for ship in game.warships
                if ship.side == "friendly" and not ship.sunk
+               and (consort_free or not ship.commanded)
                and ship.asroc_weapon_key() is not None and not ship.pending_asroc]
     for ship in sorted(escorts, key=lambda item: (
             math.hypot(item.x - found["x"], item.y - found["y"]), item.id)):

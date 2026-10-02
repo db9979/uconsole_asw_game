@@ -1,4 +1,4 @@
-# U-Jagd 1.3.125 - Stations- und Tastenkürzel
+# U-Jagd 1.3.140 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -145,7 +145,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Backspace` | Gewähltes Team zurückziehen |
 | `C` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
 | `W` | Wache jetzt ablösen (Seite Besatzung) |
-| `G` | Gefechtsstationen an/aus |
+| `G` | Gefechtsstationen an/aus (Seite Besatzung) |
 | `M` | Sanitätstrupp zur nächsten Station mit Verwundeten (Seite Besatzung) |
 | `U` | Leute aus den Freiwachen zur am schwersten getroffenen Station (Seite Besatzung) |
 | `1-9` | Immer Station wechseln, keine Teamzuweisung |
@@ -183,6 +183,11 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Ctrl+R` | Seeraumradar des Flugzeugs ein/aus |
 | `Shift+M` | MAD-Anflüge des Flugzeugs über seinen Wegpunkt ein/aus (tief und langsamer, der Radarhorizont schrumpft) |
 | `D` | Torpedo auf den zugewiesenen Kontakt (Flugzeug höchstens 2 sm vom Datum) |
+| `Y / F / H` | OPZ-Seite 4 (Gruppenjagd): Begleiter selbständig / nächster Formationsplatz / halten |
+| `X / W` | OPZ-Seite 4: Begleiter sucht hier / verfolgt den gewählten Track (oder Klick in die Karte) |
+| `Shift+A` | OPZ-Seite 4: Aktivsonar des Begleiters an/aus |
+| `Shift+W` | OPZ-Seite 4: Waffen des Begleiters frei / gesperrt |
+| `Strg+Enter` | OPZ-Seite 4: ein ASROC des Begleiters auf den gewählten Track (Standort unter 2 min) |
 
 ## 6 Funk
 

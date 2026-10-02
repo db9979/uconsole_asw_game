@@ -15,7 +15,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import localize, message, raw_text
-from src.core.lobby import HOST_ONLY, ROWS, LobbyRoom, side_stations
+from src.core.lobby import HOST_ONLY, ROWS, LobbyRoom, player_side, side_stations
 from src.core.station import Station
 from src.ui import layout, pointer
 from src.ui.splash_view import draw_menu_panel
@@ -42,6 +42,41 @@ class LobbyMixin:
         # The uConsole only hosts this lobby round: it works no station, so the
         # browsers and the AI crew every one. Transient, like the leases.
         self.host_only = False
+        # A crew-versus-crew lobby round: the frigate's and the boat's crews
+        # play each other, every browser stays with its unit. Transient.
+        self.versus_round = False
+
+    def _set_versus_round(self, enabled: bool) -> None:
+        self.versus_round = bool(enabled)
+        server = getattr(self.commander, "server", None)
+        if server is not None and hasattr(server, "lock_teams"):
+            server.lock_teams(self.versus_round)
+
+    def umpire_view_active(self) -> bool:
+        """A host-only uConsole in a crew-versus-crew round shows no tactical
+        picture of either unit (both crews may see its screen)."""
+        return (self.versus_round and self.host_only and self.running
+                and not self.in_menu and not self.main_menu)
+
+    def versus_outcome(self):
+        """(frigate won, boat won) of a finished crew-versus-crew round, each
+        from its own unit's view, or None."""
+        if not (self.versus_round and self.game_over):
+            return None
+        from src.core import boat_campaign, boat_debrief
+        boat = self._opfor
+        frigate_won = self.mission_result == "SIEG"
+        if boat is None:
+            return frigate_won, not frigate_won
+        return frigate_won, boat_debrief.outcome(self, boat) in boat_campaign.WINS
+
+    def versus_end_line(self):
+        outcome = self.versus_outcome()
+        if outcome is None:
+            return None
+        frigate, boat = (message("lobby.versus.won" if won else "lobby.versus.lost")
+                         for won in outcome)
+        return message("lobby.versus.result", frigate=frigate, boat=boat)
 
     @property
     def crew_assist(self) -> bool:
@@ -66,6 +101,7 @@ class LobbyMixin:
                        else "uboot")
             self.lobby = LobbyRoom(self.scenario_key, self.local_side, station)
         self.lobby.cancel()
+        self._set_versus_round(False)
         self._refresh_lobby_missions()
         self.main_menu = False
         self.menu_screen = LOBBY_SCREEN
@@ -95,6 +131,7 @@ class LobbyMixin:
             self.lobby.cancel()
         self.lobby_round = False
         self.host_only = False
+        self._set_versus_round(False)
         self.main_menu = True
         self.menu_screen = "scenario"
         self.main_menu_sel = self.main_menu_index(MULTIPLAYER_ENTRY)
@@ -135,6 +172,8 @@ class LobbyMixin:
         self.start_weather, self.start_time = room.weather, room.time
         self.start_length = room.length
         self.lobby_round = True
+        # Against a second crew every browser keeps the unit it crews now.
+        self._set_versus_round(room.versus == "crew")
         definition = self._lobby_custom_definition(room)
         if definition is None:
             self._start_menu_mission()
@@ -178,9 +217,11 @@ class LobbyMixin:
             if ROWS[room.row] != "start":
                 room.change(1)
                 return
-            result = room.request_start(self.lobby_players())
-            self.lobby_notice = ("lobby.notice.confirm" if result == "confirm"
-                                 else None)
+            players = self.lobby_players()
+            result = room.request_start(players)
+            self.lobby_notice = (None if result != "confirm"
+                                 else "lobby.notice.confirm" if room.teams_manned(players)
+                                 else "lobby.notice.team_empty")
         elif key in (pygame.K_ESCAPE, pygame.K_q):
             if room.cancel():
                 self.lobby_notice = "lobby.notice.cancelled"
@@ -265,19 +306,21 @@ class LobbyMixin:
                     "scenario." + config.SCENARIO_NAMES[room.scenario_key] + ".title"))),
             message("lobby.row.side", side=message(f"menu.side.{room.side}")),
             message("lobby.row.station", station=_station_name(room.station)),
+            message("lobby.row.versus", versus=message(f"lobby.versus.{room.versus}")),
             message("menu.start_weather", value=message(f"menu.start_weather.{room.weather}")),
             message("menu.start_time", value=message(f"menu.start_time.{room.time}")),
             message("menu.start_length", value=message(f"menu.start_length.{room.length}")),
             message("lobby.row.start"),
         )
+        row_h = 30
         for index, text in enumerate(values):
             selected = index == room.row
-            rect = pygame.Rect(right.x, right.y + index * 34, right.w, 30)
+            rect = pygame.Rect(right.x, right.y + index * row_h, right.w, row_h - 3)
             if selected:
                 pygame.draw.rect(s, (18, 52, 58), rect)
             layout.blit_line(s, message("menu.choice", marker="► " if selected else "  ",
                                         label=text), rect,
-                             config.COLOR_WARN if selected else config.COLOR_TEXT, size=20)
+                             config.COLOR_WARN if selected else config.COLOR_TEXT, size=19)
             # A click picks the row: the next value, or the start on the last.
             pointer.add_action(rect, lambda _pos, index=index, last=len(values) - 1:
                                self._click_menu_row(
@@ -285,39 +328,57 @@ class LobbyMixin:
                                    pygame.K_RETURN if index == last else pygame.K_RIGHT))
         # Right bottom: who is here.
         players = self.lobby_players()
-        top = right.y + len(values) * 34 + 40
-        layout.blit_line(s, "lobby.crew", (right.x, top, right.w, 24),
-                         config.COLOR_TEXT_DIM, size=17)
+        top = right.y + len(values) * row_h + 30
+        versus = room.versus == "crew"
+        layout.blit_line(s, "lobby.crew.teams" if versus else "lobby.crew",
+                         (right.x, top, right.w, 24), config.COLOR_TEXT_DIM, size=17)
+        # (name, stations, ready, observer, unit or None)
         rows = [(message("lobby.host_player"),
-                 [] if room.station == HOST_ONLY else [room.station], True, False)]
+                 [] if room.station == HOST_ONLY else [room.station], True, False,
+                 None if room.station == HOST_ONLY else room.side)]
         rows += [(raw_text(player["name"]), player["stations"], player["ready"],
-                  player["observer"]) for player in players]
-        for index, (name, stations, ready, observer) in enumerate(rows[:8]):
-            y = top + 28 + index * 26
+                  player["observer"], player_side(player["stations"])
+                  if player["stations"] and not player["observer"] else None)
+                 for player in players]
+        if versus:
+            # Two teams: the frigate's crew first, then the boat's, then the rest.
+            order = {"frigate": 0, "uboot": 1, None: 2}
+            rows = sorted(rows, key=lambda row: order[row[4]])
+        shown = 5
+        for index, (name, stations, ready, observer, unit) in enumerate(rows[:shown]):
+            y = top + 26 + index * 24
+            if versus and unit is not None:
+                # The team stripe: blue for the frigate, red for the boat.
+                pygame.draw.rect(s, (40, 110, 160) if unit == "frigate" else (170, 70, 50),
+                                 (right.x - 10, y + 3, 5, 18))
             state = ("lobby.player.observer" if observer else "lobby.player.ready" if ready
                      else "lobby.player.no_station" if not stations
                      else "lobby.player.waiting")
             color = (config.COLOR_TEXT if ready or observer else config.COLOR_WARN)
-            layout.blit_line(s, name, (right.x, y, 220, 24), config.COLOR_TEXT, size=17)
+            layout.blit_line(s, name, (right.x, y, 220, 22), config.COLOR_TEXT, size=16)
             layout.blit_line(s, raw_text(", ".join(self.tr(f"station.{station}")
                                                    for station in stations)) if stations
                              else "lobby.player.none",
-                             (right.x + 230, y, right.w - 400, 24), config.COLOR_TEXT_DIM,
+                             (right.x + 230, y, right.w - 400, 22), config.COLOR_TEXT_DIM,
                              size=15)
-            layout.blit_line(s, state, (right.right - 160, y, 160, 24), color, size=16,
+            layout.blit_line(s, state, (right.right - 160, y, 160, 22), color, size=15,
                              align="right")
+        if len(rows) > shown:
+            layout.blit_line(s, message("lobby.more", count=str(len(rows) - shown)),
+                             (right.x, top + 26 + shown * 24, right.w, 20),
+                             config.COLOR_TEXT_DIM, size=14, align="right")
         if len(rows) == 1:
-            layout.blit_line(s, "lobby.nobody", (right.x, top + 56, right.w, 24),
+            layout.blit_line(s, "lobby.nobody", (right.x, top + 54, right.w, 24),
                              config.COLOR_TEXT_DIM, size=16)
         # Countdown or notice.
         if room.countdown_s is not None:
             layout.blit_line(s, message("lobby.countdown",
                                         seconds=str(max(1, int(room.countdown_s + 0.999)))),
-                             (right.x, right.y + len(values) * 34, right.w, 34),
+                             (right.x, right.y + len(values) * row_h, right.w, 30),
                              config.COLOR_WARN, size=26, align="center")
         elif self.lobby_notice:
             layout.blit_line(s, self.lobby_notice,
-                             (right.x, right.y + len(values) * 34 + 4, right.w, 26),
+                             (right.x, right.y + len(values) * row_h + 2, right.w, 26),
                              config.COLOR_WARN, size=18, align="center")
         layout.blit_line(s, "lobby.hint", (panel.x + 20, panel.bottom - 26, panel.w - 40, 22),
                          config.COLOR_TEXT_DIM, size=15, align="center")

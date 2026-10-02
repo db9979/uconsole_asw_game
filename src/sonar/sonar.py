@@ -143,7 +143,9 @@ def _lambert_mu_db(world, x_nm: float, y_nm: float) -> float:
 
 
 # Independent fix sources a contact retains (one dated fix each).
-FIX_SOURCES = ("PING", "DIPPING", "TMA", "SONOBUOY", "MAD", "VISUAL")
+FIX_SOURCES = ("PING", "DIPPING", "TMA", "SONOBUOY", "MAD", "VISUAL", "CONSORT")
+# Sources whose fix ages out like a ping (the others like a passive track).
+POINT_FIX_SOURCES = ("PING", "DIPPING", "MAD", "VISUAL", "CONSORT")
 SOUND_SPEED_KN = config.SOUND_SPEED_M_S * 3600.0 / 1852.0
 DOPPLER_SIGMA_HZ = 0.02
 DOPPLER_MIN_QUALITY = 0.3
@@ -440,7 +442,7 @@ class Contact:
         for source in FIX_SOURCES:
             fix = self.fixes.get(source)
             lifetime = (config.SONAR_PING_FIX_MAX_AGE_S
-                        if source in ("PING", "DIPPING", "MAD", "VISUAL")
+                        if source in POINT_FIX_SOURCES
                         else config.SONAR_CONTACT_LOST_S)
             if (fix is not None and 0.0 <= now - fix["measured_at"] <= lifetime):
                 result.append(dict(fix))
@@ -484,7 +486,7 @@ class Contact:
         """
         for source in tuple(self.fixes):
             lifetime = (config.SONAR_PING_FIX_MAX_AGE_S
-                        if source in ("PING", "DIPPING", "MAD", "VISUAL")
+                        if source in POINT_FIX_SOURCES
                         else config.SONAR_CONTACT_LOST_S)
             measured_at = self.fixes[source].get("measured_at")
             if measured_at is None or t - measured_at > lifetime:
@@ -578,6 +580,30 @@ class Contact:
         self.range_source = "mad"
         self.range_seen = t
         self.origin = "mad"
+
+    def update_consort(self, x: float, y: float, t: float, uncertainty_nm: float,
+                       quality: float, depth_m=None, depth_uncertainty_m=None):
+        """A fix from the consort over the datalink: its active echo, or its
+        passive bearing crossed with the frigate's. A fresh own ping keeps
+        precedence over it."""
+        self.expire_ping_fix(t)
+        self._publish_fix("CONSORT", t, t, x, y, uncertainty_nm, quality,
+                          depth_m, depth_uncertainty_m)
+        self.confidence = min(1.0, max(self.confidence, quality))
+        self.quality = max(self.quality, quality)
+        self.last_seen = max(self.last_seen, t)
+        if self.range_source == "ping":
+            return
+        self.observed_x, self.observed_y = x, y
+        self.bearing = math.degrees(math.atan2(x - self._fx, -(y - self._fy))) % 360
+        self.range_est = math.hypot(x - self._fx, y - self._fy)
+        self.range_sigma_nm = uncertainty_nm
+        self.bearing_uncertainty_deg = None
+        self.depth_est = depth_m
+        self.depth_sigma_m = depth_uncertainty_m
+        self.range_source = "consort"
+        self.range_seen = t
+        self.origin = "consort"
 
     def update_visual(self, bearing: float, range_nm: float, t: float,
                       uncertainty_nm: float, quality: float,

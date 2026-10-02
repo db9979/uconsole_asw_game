@@ -567,6 +567,30 @@ def _mpa_attack(game, _params, _bindings):
     return game.mpa_attack()
 
 
+def _consort_set_mode(game, params, _bindings):
+    return game.set_consort_mode(params["mode"])
+
+
+def _consort_set_point(game, params, _bindings):
+    return game.set_consort_point(params["x"], params["y"])
+
+
+def _consort_set_station(game, params, _bindings):
+    return game.set_consort_station(params["station"])
+
+
+def _consort_set_active(game, params, _bindings):
+    return game.set_consort_active(params["enabled"])
+
+
+def _consort_set_weapons(game, params, _bindings):
+    return game.set_consort_weapons(params["enabled"])
+
+
+def _consort_fire(game, _params, _bindings):
+    return game.consort_fire_on_prosecution()
+
+
 def _weapons_set_torpedo_settings(game, params, _bindings):
     """Type, pattern, enable point and salvo in one settings command; the
     first refused value stops the sequence and names the reason."""
@@ -1000,6 +1024,12 @@ _V2_ACTION_HANDLERS = {
     "mpa_set_radar": _mpa_set_radar,
     "mpa_set_mad": _mpa_set_mad,
     "mpa_attack": _mpa_attack,
+    "consort_set_mode": _consort_set_mode,
+    "consort_set_point": _consort_set_point,
+    "consort_set_station": _consort_set_station,
+    "consort_set_active": _consort_set_active,
+    "consort_set_weapons": _consort_set_weapons,
+    "consort_fire": _consort_fire,
 }
 
 

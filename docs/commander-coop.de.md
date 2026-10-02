@@ -242,6 +242,19 @@ scheitert geschlossen. Im Hauptmenü der uConsole zeigt der Browser einen Startb
 Editoren, Optionen, Netzwerkverwaltung, Beenden und Zugangsdaten bleiben Host-Sache.
 Sind alle Stationen geleast, ist die Autocrew für alle ausgesetzt.
 
+**Crew gegen Crew.** In der Lobby schaltet die Zeile *Gegner* zwischen *KI* und
+*zweite Crew (Fregatte gegen U-Boot)* um. Mit zweiter Crew kommt jeder gekoppelte
+Browser in die Einheit mit weniger Leuten (die uConsole zählt für ihre eigene
+Einheit, bei Gleichstand die Fregatte), so füllen sich Fregatte (blau) und U-Boot
+(rot) gleichmäßig; vor dem Start kann ein Browser noch eine andere Station nehmen.
+Ist ein Team noch leer, startet ein zweites Enter trotzdem, und die KI besetzt diese
+Einheit. Während der Runde sind die Teams fest: Jeder Browser sieht nur das Lagebild
+der eigenen Einheit, Sprechfunk ist ein eigener Kanal je Einheit. Mit der
+Lobby-Station *keine, nur Gastgeber* spielt die uConsole keine Einheit und zeigt den
+Schiedsrichter-Bildschirm (Mission, Restzeit, besetzte Stationen je Team) ohne das
+Lagebild einer Crew. Am Ende erhält jedes Team sein
+eigenes Ergebnis (Sieg oder Niederlage).
+
 ## Lebenszyklus und Grenzen
 
 Lokales Deaktivieren oder das Beenden des Prozesses stoppt zuerst den Listener und

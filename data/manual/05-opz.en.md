@@ -6,7 +6,7 @@ Operations (OPZ / CIC) builds the tactical picture above the water: surface and 
 
 ## Displays and instruments {#opz-displays}
 
-Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track; page 3 commands the patrol aircraft. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `Q`/`E` as the zoom keys elsewhere; `PgUp`/`PgDn` page), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
+Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track; page 3 commands the patrol aircraft; page 4 commands the consort destroyer of a group hunt. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `Q`/`E` as the zoom keys elsewhere; `PgUp`/`PgDn` page), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
 
 ```text
  NATO frame colours (operator annotation, not truth)
@@ -40,6 +40,17 @@ Page 3 commands a maritime patrol aircraft (MPA) on call from the nearest friend
 - `D` drops a torpedo on the designated sonar contact. The same checks as for the helicopter apply (current contact classified as a submarine, rules of engagement, a fresh fix under standard ROE), and the aircraft must be within 2 NM of the datum.
 
 Everything the aircraft learns reaches the ship only by datalink, out to 250 NM. Its buoys report only while the aircraft is within 50 NM of them; once it leaves or lands they go silent for the ship. The sidebar shows its state, bearing and range, the time left on station, stores, sorties left and how many of its buoys are being relayed.
+
+## Consort destroyer {#opz-consort}
+
+Page 4 (Group) commands the consort of a group hunt: the destroyer LUETJENS (hull sonar, 8 ASROC, 2 in the Hunter group) that sails with the frigate in frigate scenario 11 (Search group) and submarine scenario 11 (Hunter group). Other missions have no consort and the page says so. The destroyer is an own unit on the datalink (out to 100 NM): its position, course, speed, orders and stores are shown as truth, drawn on the OPZ chart as a friendly symbol labelled with its call sign and `DL`; what its sonar hears reaches the frigate only as measurements.
+
+- **Orders:** `Y` auto, `F` formation (each press moves it to the next station 5 NM off the frigate: starboard beam, ahead, port beam, astern), `H` hold (4 kn on its course), `X` search about a point (it closes at 18 kn and circles the point 4 NM out at 10 kn so its sonar hears), `W` prosecute the selected track's plotted position (26 kn, then a 2 NM circle with active sonar). A click on the chart sets the point and switches formation, hold or auto to search.
+- **Auto:** it keeps formation until the frigate's own picture holds a contact you classified as a submarine or designated with a position fix under 10 minutes old; then it prosecutes the freshest one with active sonar.
+- **Sonar:** every 10 s its passive bearings appear on page 4 as lines from the destroyer. Its hull sonar hears a submarine within 8 NM, and nothing while it runs faster than 15 kn. Where one cuts the frigate's own passive bearing on the same contact at 15° or more and within 30 NM, the contact gets a `CONSORT` fix (uncertainty from both bearing errors and the cut). `Shift+A` switches its active sonar: every 20 s a ping fixes each submerged contact within 5 NM with position and depth (more likely the closer it is) as a `CONSORT` fix; every submarine within 25 NM hears the ping.
+- **Weapons:** `Shift+W` switches weapons free or tight (tight at the start). Free, it fires one ASROC at most every 3 minutes on the auto contact's fix when that fix is under 2 minutes old and 1 to 12 NM from the destroyer. `Ctrl+Enter` orders one ASROC on the selected track's fix (under 2 minutes old); without a selection on the auto contact. Only one of its ASROC is in the air at a time. While nobody works the frigate's OPZ (the AI crews the frigate), the hunters may also send it a located datum for an ASROC.
+
+If the destroyer is sunk the page and the event log say so; the mission goes on. The browser's OPZ has the same orders in the card *Consort destroyer*, and its chart shows the destroyer, its point and its bearing lines.
 
 ## Keys {#opz-keys}
 
@@ -79,3 +90,4 @@ Air defence sequence (missile inbound):
 - The patrol aircraft has no dipping sonar and no own ESM; it cannot be shot down. MAD passes fly over the search area only, not along a track.
 - Automatic fusion only for a clear match of reports from different sensors with at least one position; bearing-only pairs and ambiguous matches wait for the operator. Signatures are compared only as the operator's classifications (no acoustic or emitter fingerprint matching), and AIS carries no ship type.
 - No link-based air control of friendly aircraft.
+- The consort destroyer cannot be crewed from a station of its own: it has no helicopter, towed array or torpedoes, takes orders only from the frigate's OPZ, and its bearings are not shared with the helicopter or the patrol aircraft. Own torpedoes never home on it (its datalink position is kept out of every search), while the submarines' torpedoes can sink it.

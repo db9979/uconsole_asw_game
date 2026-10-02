@@ -762,6 +762,30 @@ def _mpa(game):
         datalink=bool(view["datalink"]), relayed=int(view["relayed"]))
 
 
+def _consort(game):
+    """The consort destroyer: commanded own-force datalink state and its
+    sonar's bearing lines (measurements), or None without one."""
+    view = game.consort_view()
+    if view is None:
+        return None
+    point = view["point"]
+    return dict(
+        callsign=view["callsign"], sunk=bool(view["sunk"]), datalink=bool(view["datalink"]),
+        x=_number(view["x"]), y=_number(view["y"]), course=_number(view["course"]),
+        speed_kn=_number(view["speed_kn"]), bearing=_number(view["bearing"]),
+        range_nm=_number(view["range_nm"]), mode=view["mode"], working=view["working"],
+        station=view["station"],
+        point_x=None if point is None else _number(point[0]),
+        point_y=None if point is None else _number(point[1]),
+        active=bool(view["active"]), weapons_free=bool(view["weapons_free"]),
+        asroc=int(view["asroc"]),
+        bearings=[dict(observer_x=_number(row["x"]), observer_y=_number(row["y"]),
+                       bearing=_number(row["bearing"]),
+                       uncertainty_deg=_number(row["uncertainty_deg"]),
+                       age_s=_age(game.sim_t, row["t"]))
+                  for row in view["bearings"]][:8])
+
+
 def _bridge_route(game):
     """The autopilot route: own commanded waypoints still ahead (own truth)."""
     route = game.route
@@ -1293,6 +1317,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                            game, rows, asset_refs, buoy_labels,
                                            asset_only=True)["asset"],
                                        mpa=_mpa(game),
+                                       consort=_consort(game),
                                        weapons=[row for group in _own_weapon_assets(
                                            game, asset_refs) for row in group])),
         "radio": _radio(game, rows, ref_by_track),

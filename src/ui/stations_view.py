@@ -79,7 +79,7 @@ from src.ui.stations.eloka import (  # noqa: F401
     eloka_track_at,
     draw_eloka_view)
 from src.ui.stations.radio import (  # noqa: F401
-    draw_radio_view, task_detail_lines)
+    draw_radio_view, hfdf_regions, task_detail_lines)
 from src.ui.stations.engine import (  # noqa: F401
     draw_engine_view)
 from src.ui.stations.helicopter import (  # noqa: F401
@@ -234,7 +234,14 @@ def station_hit_target(game, pos):
         cy = _station_content_top(rect, len(STATION_PAGES[Station.RADIO]))
         content_h = rect.bottom - cy - 34
         if page == 0:
-            if pygame.Rect(x, cy, width, content_h).collidepoint(pos):
+            regions = hfdf_regions(x, cy, width, content_h)
+            if regions["right"].collidepoint(pos):
+                return layout.tooltip_payload(
+                    "panel.hfdf_chart",
+                    message("radio.line.log_fix", log=len(game.hfdf_log),
+                            fixes=len(game.hfdf_fixes)),
+                    "radio.chart.tooltip", target_id="radio:chart")
+            if regions["left"].collidepoint(pos):
                 reports = game.hfdf_bearings()
                 if reports:
                     report = reports[min(game.radio_sel, len(reports) - 1)]

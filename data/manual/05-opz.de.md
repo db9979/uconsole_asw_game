@@ -6,7 +6,7 @@ Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser
 
 ## Anzeigen und Instrumente {#opz-displays}
 
-Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track; Seite 3 führt den Seefernaufklärer. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Q`/`E` wie der Zoom an anderen Stationen; `Bild Auf`/`Bild Ab` blättern), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
+Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track; Seite 3 führt den Seefernaufklärer; Seite 4 führt den Begleitzerstörer einer Gruppenjagd. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Q`/`E` wie der Zoom an anderen Stationen; `Bild Auf`/`Bild Ab` blättern), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
 
 ```text
  NATO-Rahmenfarben (Bedienervermerk, keine Wahrheit)
@@ -40,6 +40,17 @@ Seite 3 führt einen Seefernaufklärer (MPA) auf Abruf vom nächsten eigenen Flu
 - `D` wirft einen Torpedo auf den zugewiesenen Sonarkontakt. Es gelten dieselben Prüfungen wie beim Helikopter (aktueller, als U-Boot klassifizierter Kontakt, Einsatzregeln, unter Standard-ROE eine frische Ortung), und das Flugzeug muss höchstens 2 sm vom Datum entfernt sein.
 
 Alles, was das Flugzeug erfährt, erreicht das Schiff nur per Datenlink bis 250 sm. Seine Bojen melden nur, solange das Flugzeug höchstens 50 sm von ihnen entfernt ist; fliegt es weg oder landet es, verstummen sie für das Schiff. Die Seitenleiste zeigt Zustand, Peilung und Entfernung, Restzeit auf Station, Vorräte, verbleibende Einsätze und wie viele seiner Bojen übertragen werden.
+
+## Begleitzerstörer {#opz-consort}
+
+Seite 4 (Verband) führt das Begleitschiff einer Gruppenjagd: den Zerstörer LUETJENS (Rumpfsonar, 8 ASROC, in der Jagdgruppe 2), der in Fregatten-Szenario 11 (Suchgruppe) und U-Boot-Szenario 11 (Jagdgruppe) mit der Fregatte fährt. Andere Missionen haben kein Begleitschiff, und die Seite sagt das. Der Zerstörer ist eine eigene Einheit im Datenlink (bis 100 sm): Position, Kurs, Fahrt, Befehle und Vorräte werden als Wahrheit gezeigt und auf der OPZ-Karte als eigenes Symbol mit Rufzeichen und `DL` gezeichnet; was sein Sonar hört, erreicht die Fregatte nur als Messungen.
+
+- **Befehle:** `Y` selbständig, `F` Formation (jeder Druck schickt ihn auf den nächsten Platz 5 sm von der Fregatte: querab Steuerbord, voraus, querab Backbord, achteraus), `H` halten (4 kn auf seinem Kurs), `X` einen Punkt absuchen (er läuft mit 18 kn heran und kreist mit 10 kn in 4 sm Abstand um den Punkt, damit sein Sonar hört), `W` die geplottete Position des gewählten Tracks verfolgen (26 kn, dann ein 2-sm-Kreis mit Aktivsonar). Ein Klick in die Karte setzt den Punkt und macht aus Formation, Halten oder Selbständig ein Absuchen.
+- **Selbständig:** Er hält Formation, bis das eigene Lagebild der Fregatte einen Kontakt hat, den du als U-Boot klassifiziert oder zugewiesen hast und der einen Standort unter 10 Minuten hat; dann verfolgt er den frischesten mit Aktivsonar.
+- **Sonar:** Alle 10 s erscheinen seine Passivpeilungen auf Seite 4 als Linien vom Zerstörer aus. Sein Rumpfsonar hört ein U-Boot innerhalb 8 sm und nichts, solange er schneller als 15 kn läuft. Schneidet eine davon die eigene Passivpeilung der Fregatte auf denselben Kontakt mit 15° oder mehr und innerhalb 30 sm, erhält der Kontakt einen `CONSORT`-Standort (Unsicherheit aus beiden Peilfehlern und dem Schnittwinkel). `Shift+A` schaltet sein Aktivsonar: Alle 20 s ortet ein Ping jeden getauchten Kontakt innerhalb 5 sm mit Position und Tiefe (je näher, desto sicherer) als `CONSORT`-Standort; jedes U-Boot innerhalb 25 sm hört den Ping.
+- **Waffen:** `Shift+W` schaltet Waffen frei oder gesperrt (zu Beginn gesperrt). Frei schießt er höchstens alle 3 Minuten ein ASROC auf den Standort des selbständig verfolgten Kontakts, wenn dieser jünger als 2 Minuten ist und 1 bis 12 sm vom Zerstörer liegt. `Strg+Enter` befiehlt ein ASROC auf den Standort des gewählten Tracks (jünger als 2 Minuten); ohne Auswahl auf den selbständig verfolgten Kontakt. Es ist immer nur eines seiner ASROC in der Luft. Solange niemand die OPZ der Fregatte besetzt (die KI führt die Fregatte), können ihm auch die Jäger ein geortetes Datum für ein ASROC schicken.
+
+Wird der Zerstörer versenkt, melden das die Seite und das Ereignisprotokoll; die Mission geht weiter. Die OPZ im Browser hat dieselben Befehle in der Karte *Begleitzerstörer*, und ihre Karte zeigt den Zerstörer, seinen Punkt und seine Peillinien.
 
 ## Tasten {#opz-keys}
 
@@ -79,3 +90,4 @@ Ablauf Luftverteidigung (Flugkörper im Anflug):
 - Der Seefernaufklärer hat kein Tauchsonar und kein eigenes ESM; er kann nicht abgeschossen werden. MAD-Überflüge gehen nur über das Suchgebiet, nicht entlang eines Tracks.
 - Automatische Fusion nur bei eindeutiger Übereinstimmung von Meldungen verschiedener Sensoren mit mindestens einer Position; reine Peilungspaare und mehrdeutige Fälle warten auf den Bediener. Signaturen werden nur als Klassifizierungen des Bedieners verglichen (kein Abgleich akustischer oder Emitter-Fingerabdrücke), und AIS meldet keinen Schiffstyp.
 - Keine Link-gestützte Luftraumführung befreundeter Flugzeuge.
+- Der Begleitzerstörer lässt sich nicht von einer eigenen Station aus besetzen: Er hat keinen Helikopter, kein Schleppsonar und keine Torpedos, nimmt Befehle nur von der OPZ der Fregatte an, und seine Peilungen gehen nicht an Helikopter oder Seefernaufklärer. Eigene Torpedos suchen ihn nie auf (seine Datenlink-Position bleibt aus jeder Suche heraus), die Torpedos der U-Boote können ihn versenken.

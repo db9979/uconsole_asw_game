@@ -607,6 +607,17 @@ class EventMixin:
         if (e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEWHEEL)
                 and pointer_input.handle(self, e)):
             return
+        if (self.umpire_view_active() and not self.administration_open
+                and not self.game_over):
+            # The umpire screen works no station: only help, Remote Crew and
+            # quit (Esc) reach it; everything else stays with the crews.
+            if e.type == pygame.QUIT:
+                self._open_administration("quit")
+            elif e.type == pygame.KEYDOWN and e.key in (pygame.K_F1, pygame.K_F9,
+                                                        pygame.K_ESCAPE):
+                self._open_administration({pygame.K_F1: "help", pygame.K_F9: "commander",
+                                           pygame.K_ESCAPE: "quit"}[e.key])
+            return
         if (self.local_side == "uboot" and not self.in_menu
                 and not self.administration_open
                 and e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
@@ -626,8 +637,12 @@ class EventMixin:
                 if self.station is Station.OPZ:
                     canvas = self._window_to_canvas(getattr(e, "pos", None))
                     point = (opz_world_at(self, canvas, config.OPZ_STATION_RECT)
-                             if self.station_page == 2 and self.mpa.airborne else None)
-                    if point is not None:
+                             if (self.station_page == 2 and self.mpa.airborne)
+                             or (self.station_page == 3 and self.consort is not None)
+                             else None)
+                    if point is not None and self.station_page == 3:
+                        self._consort_feedback(self.set_consort_point(*point))
+                    elif point is not None:
                         self._mpa_order_feedback(self.set_mpa_waypoint(*point))
                     else:
                         self._pin_tooltip_at(getattr(e, "pos", None))
@@ -854,6 +869,9 @@ class EventMixin:
                     and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
                 if self.station is Station.WEAPONS:
                     self.launch_torpedo()
+                    return
+                if self.station is Station.OPZ and self.station_page == 3:
+                    self._consort_feedback(self.consort_fire())
                     return
                 if self.station is Station.OPZ:
                     self.launch_essm()
@@ -1098,6 +1116,11 @@ class EventMixin:
                          and self.station_page == 2 else None)
             if mpa_order is not None:
                 self._mpa_order_feedback(mpa_order())
+                return
+            consort_order = (self._consort_key_order(e) if self.station is Station.OPZ
+                             and self.station_page == 3 else None)
+            if consort_order is not None:
+                self._consort_feedback(consort_order())
                 return
             if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
                     and self.station is Station.RADIO:
@@ -1752,6 +1775,8 @@ class EventMixin:
                     self.menu_screen = "campaign"
                     self.menu_sel = 0
                     self.campaign_side = "boat" if self.local_side == "uboot" else "frigate"
+                    self._campaign_briefing = None
+                    self.campaign_hotspot_sel = 0
                 elif action == "load":
                     self._open_administration("load")
                 elif action == "mission_editor":
@@ -2224,6 +2249,31 @@ class EventMixin:
             return self.toggle_mpa_radar
         if e.key == pygame.K_d:
             return self.mpa_attack
+        return None
+
+    def _consort_key_order(self, e):
+        """OPZ page 4: the consort destroyer's order for a key, or None:
+        F formation station, W prosecute the selected track, X search here,
+        H hold, Y auto, Shift+A active sonar, Shift+W weapons free."""
+        mods = getattr(e, "mod", 0)
+        shift = bool(mods & pygame.KMOD_SHIFT)
+        orders = getattr(self, "consort", None)
+        if e.key == pygame.K_w and shift:
+            return lambda: self.set_consort_weapons(
+                not orders.weapons_free if orders is not None else True)
+        if e.key == pygame.K_a and shift:
+            return lambda: self.set_consort_active(
+                not orders.active if orders is not None else True)
+        if e.key == pygame.K_f:
+            return self.cycle_consort_station
+        if e.key == pygame.K_w:
+            return self.consort_point_to_selection
+        if e.key == pygame.K_x:
+            return lambda: self.set_consort_mode("search")
+        if e.key == pygame.K_h:
+            return lambda: self.set_consort_mode("hold")
+        if e.key == pygame.K_y:
+            return lambda: self.set_consort_mode("auto")
         return None
 
     def _eloka_jamming_key(self, e) -> None:

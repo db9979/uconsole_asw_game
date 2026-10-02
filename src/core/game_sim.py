@@ -161,7 +161,9 @@ class SimMixin:
             self._sonar_audio_sequence = -1
             return
         playing_boat = self.local_side == "uboot"
-        self.audio.local_effects = not playing_boat
+        # The umpire screen of a crew-versus-crew round plays nothing of either unit.
+        umpire = self.umpire_view_active()
+        self.audio.local_effects = not playing_boat and not umpire
         if playing_boat and self._opfor is None:
             self.claim_opfor_sub()
         # Operator adjustments follow wall time; hull and weapon motion do not.
@@ -200,7 +202,9 @@ class SimMixin:
             self.opz_map_view.clamp_center()
         if not self.game_over:
             audio_started = time.perf_counter() if self._perf_debug_enabled else None
-            if playing_boat:
+            if umpire:
+                self._stop_sonar_audio()
+            elif playing_boat:
                 # The local mixer plays the boat's own sonar room only.
                 if self._opfor is not None and self.station is Station.SONAR:
                     with self.sonar_perspective(self._opfor.station):
@@ -590,6 +594,7 @@ class SimMixin:
         for civilian in self.civilians:
             civilian.update(dt, getattr(civilian, "_tactical_observation", None),
                             self.world)
+        self._update_consort(dt)
         for w in self.warships:
             w.update(dt, getattr(w, "_tactical_observation", None), self.world,
                      asw_observation=getattr(w, "_asw_observation", None))
@@ -1011,10 +1016,12 @@ class SimMixin:
             if torpedo.launch_origin == "frigate":
                 torpedo.wire_tension_update(dt, self.ship.speed,
                                             self.ship.yaw_rate)
+            # The consort's position is on the datalink: every own search
+            # pattern is planned clear of it, so own seekers never take it.
             torpedo.update(dt, seeker_candidates=(
                 [s for s in self.subs if not s.sunk]
                 + [d for d in self.decoys if not d.dead]
-                + [w for w in self.warships if not w.sunk]
+                + [w for w in self.warships if not w.sunk and not w.commanded]
                 + [a for a in self.animals if not a.dead]
                 + [c for c in self.civilians if not c.sunk]), world=self.world,
                 collision_candidates=self.civilians)

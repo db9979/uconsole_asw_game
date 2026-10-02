@@ -7,7 +7,7 @@ import pygame
 import numpy as np
 
 from src.core import config
-from src.core.i18n import display_value, localized, localize
+from src.core.i18n import display_value, localized, localize, raw_text
 from src.core.station import Station
 from src.ui import layout
 from src.ui import observations
@@ -21,6 +21,12 @@ from src.ui.stations.opz import (_helo_dip_contact_line, helo_dip_contacts)
 
 # --- Helikopter-Deck --------------------------------------------------------
 
+# Status page: least height of the console body beside the fuel tank, and
+# the least height the deck-motion gauge needs to be drawn at all (px).
+STATUS_BODY_MIN_H = 140
+DECK_MIN_H = 80
+# Text size of the stores counts (torpedoes, buoys) on the status page.
+STORE_VALUE_SIZE = 20
 
 def helicopter_regions(game=None, station_rect=None, page=0) -> dict[str, pygame.Rect]:
     """Authoritative adaptive geometry shared by flight-deck draw and hit-test."""
@@ -34,20 +40,36 @@ def helicopter_regions(game=None, station_rect=None, page=0) -> dict[str, pygame
     available = max(1, bottom - top)
     empty = pygame.Rect(0, 0, 0, 0)
     if page == 0:
-        # Size the status card from its six real rows so large text grows it.
-        row_h = max(28, layout.font(16).get_linesize() + 6)
-        status_h = layout.font(16, True).get_linesize() + 16 + row_h * 6
-        status_h = min(status_h + 10, max(int(available * 0.45),
-                                          available - gap - 110))
-        resources_h = max(1, available - status_h - gap)
-        # The deck-motion gauge is a strip below the resources.
-        deck_h = min(max(96, resources_h // 3), max(1, resources_h - 150))
+        # The status console: a state lamp strip and six readout rows beside
+        # the fuel tank and the home rose; sized from the fonts so large text
+        # grows it.
+        title_h = layout.font(16, True).get_linesize() + 16
+        lamp_h = layout.line_pitch(14, 0) + 8
+        row_h = max(24, layout.font(15).get_linesize() + 4)
+        # Stores (two rows of two cells) and the systems lamps (two rows);
+        # the cells always keep their room, the lamps and the deck gauge
+        # only when the window has it.
+        cell_h = layout.font(14).get_linesize() + layout.font(STORE_VALUE_SIZE).get_linesize() + 10
+        cells_h = title_h + 2 * cell_h + 6 + 8
+        status_h = title_h + lamp_h + 8 + max(STATUS_BODY_MIN_H, row_h * 6) + 8
+        status_h = min(status_h, max(int(available * 0.4), available - gap - cells_h))
+        # Two lamp rows, else one (flight weather), else none, before the
+        # deck-motion gauge gives way.
+        for lamp_rows in (2, 1, 0):
+            resources_h = cells_h + lamp_rows * (lamp_h + 4) + 4
+            deck_h = available - status_h - resources_h - 2 * gap
+            if deck_h >= DECK_MIN_H:
+                break
+        if deck_h < DECK_MIN_H:
+            # No room for the deck-motion gauge (small window, large text).
+            deck_h = 0
+            resources_h = max(1, available - status_h - gap)
         return {
             "station": station,
             "status": pygame.Rect(x, top, width, status_h),
-            "resources": pygame.Rect(x, top + status_h + gap, width,
-                                     resources_h - deck_h - gap),
-            "deck": pygame.Rect(x, top + status_h + resources_h - deck_h + gap, width, deck_h),
+            "resources": pygame.Rect(x, top + status_h + gap, width, resources_h),
+            "deck": (pygame.Rect(x, top + status_h + resources_h + 2 * gap, width, deck_h)
+                     if deck_h else empty),
             "rules": empty,
         }
     else:
@@ -438,6 +460,208 @@ def _draw_deck_gauge(game, s, region) -> None:
                      (tx, track.bottom + 3, tw, label_h), color, size=14)
 
 
+def flight_weather(game):
+    """The ship's flight-weather decision (own instruments), if available."""
+    query = getattr(game, "helicopter_weather", None)
+    return query() if callable(query) else None
+
+
+def state_lamps(game, helo, weather) -> list:
+    """The state strip: hangar, deck (cleared to launch), airborne, dipping,
+    returning; exactly one is lit, LOST lights the airborne lamp red."""
+    state = helo.state
+    dip = getattr(helo, "dip_state", "STOWED")
+    damage = getattr(game, "damage", None)
+    deck_down = bool(damage is not None and damage.station_down("flightdeck"))
+    if state != "HANGAR":
+        deck = "off"
+    elif deck_down:
+        deck = "alarm"
+    else:
+        deck = "on" if weather is not None and weather["launch_safe"] else "caution"
+    airborne = state == "AUF"
+    return [
+        ("helo.console.state.hangar", "", "on" if state == "HANGAR" else "off"),
+        ("helo.console.state.deck", "", deck),
+        ("helo.console.state.airborne", "",
+         "alarm" if state == "VERLOREN" else "on" if airborne and dip == "STOWED" else "off"),
+        ("helo.console.state.dipping", "",
+         "on" if airborne and dip == "DEPLOYED" else
+         "caution" if airborne and dip in ("DEPLOYING", "RETRIEVING") else "off"),
+        ("helo.console.state.returning", "", "caution" if state == "ZURUECK" else "off"),
+    ]
+
+
+def fuel_level(helo) -> str:
+    if not helo.airborne:
+        return "alarm" if helo.state == "VERLOREN" else "on"
+    if helo.fuel_s <= config.HELO_FUEL_RESERVE_S:
+        return "alarm"
+    return "caution" if helo.fuel_s <= config.HELO_FUEL_RESERVE_S * 1.5 else "on"
+
+
+def home_polar(game, helo):
+    """(bearing, distance NM, minutes) from the helicopter back to the ship."""
+    dx, dy = game.ship.x - helo.x, game.ship.y - helo.y
+    distance = math.hypot(dx, dy)
+    bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
+    minutes = distance / max(1e-6, config.kn_to_nm_per_s(config.HELO_SPEED_KN)) / 60.0
+    return bearing, distance, minutes
+
+
+def _draw_status_console(game, s, regions, helo, state_label, state_color, distance) -> None:
+    """Flight status: state lamps, fuel tank, home rose and readouts."""
+    from src.ui import console
+    region = regions["status"]
+    sx, sy, sw, sh = layout.box(s, region, "panel.flight_status", border=state_color)
+    weather = flight_weather(game)
+    lamp_h = layout.line_pitch(14, 0) + 8
+    used = console.lamp_grid(s, (sx, sy, sw, lamp_h), state_lamps(game, helo, weather),
+                             5, size=14)
+    top = sy + used + 8
+    body_h = sy + sh - top
+    if body_h < 60:
+        return
+    # Fuel tank: in the hangar the aircraft stands refuelled.
+    tank_w = 84
+    full = helo.state == "HANGAR"
+    fraction = 1.0 if full else max(0.0, helo.fuel_s / config.HELO_FUEL_S)
+    minutes = (config.HELO_FUEL_S if full else helo.fuel_s) / 60.0
+    tank = pygame.Rect(sx, top, tank_w, body_h)
+    console.tank(s, tank, fraction, label="helo.console.fuel",
+                 text=message("helo.line.fuel", fuel=f"{minutes:.0f}"), level=fuel_level(helo))
+    row = layout.font(16).get_linesize()
+    tube_h = tank.h - 2 * row - 8
+    if tube_h >= 12:
+        # The reserve the helicopter turns home on.
+        ry = tank.y + row + 4 + tube_h - round(tube_h * config.HELO_FUEL_RESERVE_S
+                                                / config.HELO_FUEL_S)
+        pygame.draw.line(s, config.COLOR_WARN, (tank.centerx - 22, ry), (tank.centerx + 22, ry), 2)
+    # Home rose: the bearing back to the ship, the aircraft's course needle.
+    rose_size = max(0, min(body_h, 190, sw // 3))
+    rose = pygame.Rect(sx + tank_w + 6, top + (body_h - rose_size) // 2, rose_size, rose_size)
+    home = home_polar(game, helo) if helo.airborne else None
+    strobes = [(home[0], config.COLOR_OK, 3, 0, 0.0)] if home else []
+    console.bearing_rose(s, rose, strobes, course=helo.course if helo.airborne else None,
+                         title="helo:home")
+    # Readouts right of the rose.
+    tx = rose.right + 8
+    tw = sx + sw - tx
+    row_h = max(24, layout.font(15).get_linesize() + 4)
+    labels = ("ui.condition", "helo.console.endurance", "helo.console.bingo",
+              "helo.console.home", "helo.console.course", "helo.dip_sonar")
+    label_w = min(tw // 2, max(int(layout.font(15).size(localize(key))[0]) for key in labels) + 10)
+    dip_state = getattr(helo, "dip_state", "STOWED")
+    if helo.airborne:
+        return_s = distance / max(.001, config.kn_to_nm_per_s(config.HELO_SPEED_KN))
+        margin_s = helo.fuel_s - return_s - config.HELO_FUEL_RESERVE_S
+        endurance = message("helo.console.endurance_value", fuel=f"{helo.fuel_s / 60:.0f}",
+                            hover=f"{helo.fuel_s / helicopter_physics.HOVER_FUEL_FACTOR / 60:.0f}")
+        bingo = message("helo.console.bingo_value", margin=f"{margin_s / 60:+.0f}")
+        bingo_color = (config.COLOR_DANGER if margin_s < 0 else
+                       config.COLOR_WARN if margin_s < 300 else config.COLOR_OK)
+        home_text = message("helo.console.home_value", bearing=f"{home[0]:03.0f}",
+                            range=f"{home[1]:.1f}", minutes=f"{home[2]:.0f}")
+        course = message("helo.line.course", course=f"{helo.course:05.1f}")
+    else:
+        endurance = (message("helo.console.endurance_value",
+                             fuel=f"{config.HELO_FUEL_S / 60:.0f}",
+                             hover=f"{config.HELO_FUEL_S / helicopter_physics.HOVER_FUEL_FACTOR / 60:.0f}")
+                     if full else raw_text("--"))
+        bingo, bingo_color, home_text, course = raw_text("--"), config.COLOR_TEXT_DIM, \
+            state_label, raw_text("--")
+    dip = message("helo.console.dip_value", state=localize("enum.helo_dip." + dip_state),
+                  depth=f"{getattr(helo, 'dip_depth_m', 0.0):.0f}",
+                  target=f"{getattr(helo, 'dip_depth_target_m', config.HELO_DIP_DEPTH_DEFAULT_M):.0f}")
+    rows = ((labels[0], state_label, state_color), (labels[1], endurance, config.COLOR_TEXT),
+            (labels[2], bingo, bingo_color),
+            (labels[3], home_text, config.COLOR_TEXT if helo.airborne else config.COLOR_TEXT_DIM),
+            (labels[4], course, config.COLOR_TEXT),
+            (labels[5], dip, config.COLOR_OK if dip_state == "DEPLOYED" else
+             config.COLOR_WARN if dip_state != "STOWED" else config.COLOR_TEXT_DIM))
+    y = top + max(0, (body_h - row_h * len(rows)) // 2)
+    for label, value, color in rows:
+        if y + row_h > sy + sh:
+            break
+        layout.status_line(s, tx, y, tw, label, value, color=color, label_w=label_w, size=15)
+        y += row_h
+
+
+def _draw_stores_and_systems(game, s, region, helo) -> None:
+    """Stores aboard (pips) and the systems lamps: flight weather, deck
+    window, dipping weather, dome, ping, water entry and radar."""
+    from src.ui import console
+    if region.w < 60 or region.h < 40:
+        return
+    rx, ry, rw, rh = layout.box(s, region, "ui.resources_grid")
+    gap = 6
+    label_h = layout.font(14).get_linesize()
+    cell_h = label_h + layout.font(STORE_VALUE_SIZE).get_linesize() + 10
+    cell_w = (rw - gap) // 2
+    cells = (
+        ("helo.air_torpedoes", str(helo.torps), config.COLOR_WARN, (helo.torps, config.HELO_TORPS)),
+        ("helo.sonobuoys_ready", str(helo.buoys_left), config.COLOR_TEXT,
+         (helo.buoys_left, config.BUOY_COUNT)),
+        ("helo.sonobuoys_active", str(len(game.buoys)), config.COLOR_TEXT, None),
+        ("panel.datalink", "ui.active" if helo.airborne else "helo.standby",
+         config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM, None),
+    )
+    for index, (label, value, color, pips) in enumerate(cells):
+        cell = pygame.Rect(rx + index % 2 * (cell_w + gap), ry + index // 2 * (cell_h + gap),
+                           cell_w, cell_h)
+        if cell.bottom > ry + rh:
+            break
+        pygame.draw.rect(s, config.COLOR_PANEL_BG, cell)
+        pygame.draw.rect(s, config.COLOR_GRID, cell, 1)
+        layout.corner_brackets(s, cell)
+        layout.blit_line(s, label, (cell.x + 8, cell.y + 4, cell.w - 16, label_h),
+                         config.COLOR_TEXT_DIM, size=14)
+        value_h = layout.font(STORE_VALUE_SIZE).get_linesize()
+        value_w = min(cell.w // 2, max(40, layout.font(STORE_VALUE_SIZE).size(localize(value))[0] + 4))
+        layout.blit_line(s, value, (cell.x + 8, cell.y + 4 + label_h, value_w, value_h),
+                         color, size=STORE_VALUE_SIZE)
+        if pips is not None:
+            count, capacity = pips
+            size, pip_gap = 10, 6
+            px = cell.x + 16 + value_w
+            py = cell.y + 4 + label_h + (value_h - size) // 2
+            for pip in range(max(1, capacity)):
+                rect = pygame.Rect(px + pip * (size + pip_gap), py, size, size)
+                if rect.right > cell.right - 6:
+                    break
+                if pip < count:
+                    pygame.draw.rect(s, color, rect)
+                else:
+                    pygame.draw.rect(s, config.COLOR_GRID, rect, 1)
+    lamp_h = layout.line_pitch(14, 0) + 8
+    top = ry + 2 * (cell_h + gap) + 2
+    if top + lamp_h > ry + rh:
+        return
+    weather = flight_weather(game)
+    if weather is None:
+        launch = deck = dipping = ("", "off")
+    else:
+        status = weather["status"]
+        launch = (message("weather.flight." + status),
+                  "on" if status == "clear" else "caution" if status == "limited" else "alarm")
+        deck = (message("helo.console.deck_open" if weather["deck_safe"]
+                        else "helo.console.deck_wait"),
+                "on" if weather["deck_safe"] else "caution")
+        dipping = (message("weather.flight.dip_ok" if weather["dipping_safe"]
+                           else "weather.flight.dip_blocked"),
+                   "on" if weather["dipping_safe"] else "alarm")
+    console.lamp_grid(s, (rx, top, rw, lamp_h), (
+        ("helo.console.launch_weather", launch[0], launch[1]),
+        ("helo.console.deck_window", deck[0], deck[1]),
+        ("helo.console.dip_weather", dipping[0], dipping[1])), 3, size=14)
+    if top + 2 * lamp_h + 4 > ry + rh:
+        return
+    radar = getattr(game, "helo_radar_active", None)
+    console.lamp_grid(s, (rx, top + lamp_h + 4, rw, lamp_h), (
+        *_dip_lamps(game, helo),
+        ("helo.console.radar", "", "on" if callable(radar) and radar() else "off")), 4, size=14)
+
+
 @localized
 def draw_helicopter_view(game, tr=None) -> None:
     """Eigene Deckansicht fuer Status, Reichweite und Einsatzfreigaben."""
@@ -462,100 +686,9 @@ def draw_helicopter_view(game, tr=None) -> None:
                 (helo.y - game.ship.y) ** 2) ** 0.5 if helo.airborne else 0.0
 
     if page == 0:
-        status = layout.box(s, regions["status"], "panel.flight_status", border=state_color)
-        sx, sy, sw, _ = status
-
-        def _label_w(key: str, size: int, min_w: int) -> int:
-            face = layout.font(size)
-            return max(min_w, int(face.size(localize(key))[0]) + 12)
-
-        row_h = max(28, layout.font(16).get_linesize() + 6)
-        layout.status_line(s, sx, sy, sw, "ui.condition", state_label,
-                           color=state_color, label_w=_label_w("ui.condition", 16, 120), size=16)
-        fuel_color = (config.COLOR_DANGER if helo.airborne and helo.fuel_s <= config.HELO_FUEL_RESERVE_S else
-                      config.COLOR_WARN if helo.airborne and helo.fuel_s <= config.HELO_FUEL_RESERVE_S * 1.5 else
-                      config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM)
-        layout.status_line(s, sx, sy + row_h, sw, "ui.fuel_colon",
-                           message("helo.line.fuel", fuel=f"{helo.fuel_s / 60:4.0f}"),
-                           color=fuel_color, label_w=_label_w("ui.fuel_colon", 16, 90), size=16)
-        aircraft_bearing = math.degrees(math.atan2(
-            helo.x - game.ship.x, -(helo.y - game.ship.y))) % 360.0
-        true_bearing, relative_bearing = layout.bearing_pair(
-            aircraft_bearing, game.ship.course)
-        layout.status_line(s, sx, sy + row_h * 2, sw, "ui.ship_helo_range",
-                           message("bridge.line.range", range=f"{distance:4.1f}") if helo.airborne else state_label,
-                           label_w=_label_w("ui.ship_helo_range", 15, 150), size=15)
-        layout.status_line(s, sx, sy + row_h * 3, sw, "ui.ship_helo_bearing",
-                           message("helo.line.bearing_pair", true=f"{true_bearing:05.1f}", relative=f"{relative_bearing:05.1f}") if helo.airborne else "--",
-                           label_w=_label_w("ui.ship_helo_bearing", 15, 150), size=15)
-        layout.status_line(s, sx, sy + row_h * 4, sw, "ui.flight_course_true",
-                           message("helo.line.course", course=f"{helo.course:05.1f}") if helo.airborne else "--",
-                           label_w=_label_w("ui.flight_course_true", 15, 160), size=15)
-        dip_state = getattr(helo, "dip_state", "STOWED")
-        dip_depth = getattr(helo, "dip_depth_m", 0.0)
-        dip_target = getattr(helo, "dip_depth_target_m",
-                             config.HELO_DIP_DEPTH_DEFAULT_M)
-        dip_water = getattr(helo, "dip_water_depth_m", 0.0)
-        dip_cooldown = getattr(helo, "dip_ping_cooldown", 0.0)
-        layout.status_line(
-            s, sx, sy + row_h * 5, sw, "helo.dip_sonar",
-            message("helo.line.dip_status",
-                    state=localize("enum.helo_dip." + dip_state),
-                    depth=f"{dip_depth:.0f}/{dip_target:.0f}",
-                    water=f"{dip_water:.0f}", cooldown=f"{dip_cooldown:.0f}"),
-            color=(config.COLOR_OK if dip_state == "DEPLOYED" else
-                   config.COLOR_WARN if dip_state != "STOWED" else
-                   config.COLOR_TEXT_DIM), label_w=_label_w("helo.dip_sonar", 15, 120), size=15)
-
+        _draw_status_console(game, s, regions, helo, state_label, state_color, distance)
         _draw_deck_gauge(game, s, regions["deck"])
-        resources = layout.box(s, regions["resources"], "ui.resources_grid")
-        rx, ry, rw, rh = resources
-        cell_gap = 8
-        cell_w = (rw - cell_gap) // 2
-        cell_h = max(1, (rh - cell_gap) // 2)
-        # label, big value, colour, (count, capacity) for the pip row
-        resource_values = (
-            ("helo.air_torpedoes", str(helo.torps), config.COLOR_WARN,
-             (helo.torps, config.HELO_TORPS)),
-            ("helo.sonobuoys_ready", str(helo.buoys_left), config.COLOR_TEXT,
-             (helo.buoys_left, config.BUOY_COUNT)),
-            ("helo.sonobuoys_active", str(len(game.buoys)), config.COLOR_TEXT, None),
-            ("panel.datalink", "ui.active" if helo.airborne else "helo.standby",
-             config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM, None),
-        )
-        for index, (label, value, color, pips) in enumerate(resource_values):
-            cell = pygame.Rect(rx + index % 2 * (cell_w + cell_gap),
-                               ry + index // 2 * (cell_h + cell_gap),
-                               cell_w, cell_h)
-            pygame.draw.rect(s, config.COLOR_PANEL_BG, cell)
-            pygame.draw.rect(s, config.COLOR_GRID, cell, 1)
-            layout.corner_brackets(s, cell)
-            label_h = layout.font(14).get_linesize()
-            layout.blit_line(s, label,
-                             (cell.x + 10, cell.y + 6, cell.w - 20, label_h),
-                             config.COLOR_TEXT_DIM, size=14)
-            label_bottom = cell.y + 6 + label_h
-            big = 34 if len(localize(value)) <= 4 else 20
-            if cell.bottom - 4 - label_bottom < layout.font(big).get_linesize():
-                big = 16
-            value_h = layout.font(big).get_linesize()
-            value_y = max(label_bottom, cell.centery - value_h // 2)
-            layout.blit_line(s, value,
-                             (cell.x + 10, value_y, cell.w - 20, value_h),
-                             color, size=big, align="center")
-            if pips is not None and cell.bottom - 22 >= value_y + value_h:
-                count, capacity = pips
-                size, gap = 10, 6
-                capacity = max(1, capacity)
-                width = capacity * size + (capacity - 1) * gap
-                px = cell.centerx - width // 2
-                py = cell.bottom - size - 12
-                for pip in range(capacity):
-                    rect = pygame.Rect(px + pip * (size + gap), py, size, size)
-                    if pip < count:
-                        pygame.draw.rect(s, color, rect)
-                    else:
-                        pygame.draw.rect(s, config.COLOR_GRID, rect, 1)
+        _draw_stores_and_systems(game, s, regions["resources"], helo)
     elif page == 1:
         mission_box = layout.box(s, regions["rules"], "panel.rules")
         mx, my, mw, _ = mission_box

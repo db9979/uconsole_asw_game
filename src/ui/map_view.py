@@ -600,6 +600,7 @@ def draw_map_view(game, tr=None) -> None:
             color = {"PING": (90, 220, 220), "DIPPING": (120, 220, 190),
                      "TMA": config.COLOR_WARN, "MAD": (200, 160, 240),
                      "VISUAL": (230, 230, 200),
+                     "CONSORT": config.COLOR_FLIGHT,
                      "SONOBUOY": config.COLOR_CONTACT_ZIVIL}[fix["source"]]
             radius = _fix_marker_radius(fix, view)
             pygame.draw.circle(s, color, (px, py), radius, 1)

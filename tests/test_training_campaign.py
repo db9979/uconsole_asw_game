@@ -81,29 +81,35 @@ def test_training_menu_starts_the_chosen_lesson():
     assert game.training.lesson == "attack" and not game.in_menu
 
 
+def _first(state):
+    return state.theatre.ordered()[0]["id"]
+
+
 def test_campaign_results_standing_and_port():
     state = CampaignState(1234)
     assert state.mission_seed() % 128 == 1234 % 128
-    state.record(won=True, ship_sunk=False, score=900, torpedoes_left=3,
-                 damaged=["engine", "nowhere"], helo_lost=True, incident=False,
-                 tasks_done=1, tasks_failed=0)
+    assert state.record(_first(state), won=True, ship_sunk=False, score=900,
+                        torpedoes_left=3, damaged=["engine", "nowhere"], helo_lost=True,
+                        incident=False, tasks_done=1, tasks_failed=0)
     assert state.port and state.reputation == 50 + 15 + 3
     assert state.damaged == ["engine"] and state.torpedoes == 3
-    assert not state.can_sail()
+    assert not state.can_sail() and state.missions == 1
+    assert state.mission_seed() % 128 == 1234 % 128
     quick = copy.deepcopy(state)
-    assert quick.call_at_port("quick") and quick.leg == 1
+    assert quick.call_at_port("quick") and quick.can_sail()
     assert quick.damaged == ["engine"] and quick.helo_lost
-    assert state.call_at_port("refit") and state.torpedoes == campaign_model.resupply(63)
-    assert state.damaged == [] and not state.helo_lost
+    assert quick.torpedoes == 3 + campaign_model.resupply(68) // 2
+    assert state.call_at_port("refit") and state.torpedoes == campaign_model.resupply(68)
+    assert state.damaged == [] and not state.helo_lost and state.reputation == 63
     assert CampaignState.restore(state.serialize()).serialize() == state.serialize()
-    for key, value in (("leg", 9), ("reputation", 101), ("damaged", ["hull"]),
-                       ("status", "draw"), ("history", [])):
+    for key, value in (("leg", 1), ("reputation", 101), ("damaged", ["hull"]),
+                       ("status", "draw"), ("history", []), ("version", 1)):
         broken = dict(state.serialize(), **{key: value})
         assert not CampaignState.valid_state(broken)
     sunk = CampaignState(5)
-    sunk.record(won=False, ship_sunk=True, score=0, torpedoes_left=0, damaged=[],
-                helo_lost=False, incident=False, tasks_done=0, tasks_failed=0)
-    assert sunk.status == "lost" and not sunk.port
+    sunk.record(_first(sunk), won=False, ship_sunk=True, score=0, torpedoes_left=0,
+                damaged=[], helo_lost=False, incident=False, tasks_done=0, tasks_failed=0)
+    assert sunk.status == "lost" and not sunk.port and sunk.outcome == "sunk"
 
 
 def test_campaign_file_is_atomic_and_rejects_symlinks(tmp_path, monkeypatch):
@@ -128,17 +134,21 @@ def test_a_campaign_leg_carries_stock_damage_and_helicopter(tmp_path, monkeypatc
     assert game.new_campaign()
     state = game.campaign
     state.torpedoes, state.damaged, state.helo_lost = 3, ["sonar"], True
-    assert game.start_campaign_leg()
+    spot = state.theatre.ordered()[0]
+    assert game.start_campaign_leg(spot["id"])
+    assert game.scenario_key == spot["scenario"]
     assert game.torpedo_count == 3 and game.difficulty["torpedo_count"] == 3
     assert game.damage.compartments["sonar"].state == "BESCHAEDIGT"
     assert game.helo.state == "VERLOREN" and game.campaign_mission
     document = json.loads(json.dumps(game.save_state()))
     other = _menu_game()
-    assert other._load_save_data(document)          # a plain v21 mission save
+    assert other._load_save_data(document)          # a plain mission save
     assert not other.campaign_mission
     game._end_mission(True, "test")
     saved = campaign_model.load_campaign()
-    assert saved.port and saved.history[0]["result"] == "won"
+    assert saved.port and saved.history[0] == dict(scenario=spot["scenario"],
+                                                   result="won", score=game.score)
+    assert saved.theatre.hotspot(spot["id"]) is None and saved.theatre.lage > 50
     game.draw()
 
 
@@ -157,12 +167,22 @@ def test_campaign_menu_new_port_and_sail(tmp_path, monkeypatch):
     _key(game, pygame.K_ESCAPE)
     game.main_menu_sel = game.main_menu_index("campaign")
     _key(game, pygame.K_RETURN)
+    _key(game, pygame.K_DOWN)                        # the second hotspot
+    second = game.campaign.theatre.ordered()[1]
+    _key(game, pygame.K_RETURN)                      # its briefing
+    assert game._campaign_briefing == second["id"] and not game.campaign_mission
+    game.draw()
+    _key(game, pygame.K_ESCAPE)                      # back to the map
+    assert game._campaign_briefing is None and game.menu_screen == "campaign"
     _key(game, pygame.K_RETURN)
-    assert game.campaign_mission and game.scenario_key == campaign_model.LEGS[0]
+    _key(game, pygame.K_RETURN)                      # sail
+    assert game.campaign_mission and game.scenario_key == second["scenario"]
     game._end_mission(False, "test")
     _key(game, pygame.K_m)
     game.main_menu_sel = game.main_menu_index("campaign")
     _key(game, pygame.K_RETURN)
     game.draw()
+    _key(game, pygame.K_RETURN)                      # the port call comes first
+    assert game._campaign_briefing is None
     _key(game, pygame.K_2)
-    assert game.campaign.leg == 1 and not game.campaign.port
+    assert game.campaign.missions == 1 and not game.campaign.port

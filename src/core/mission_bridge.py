@@ -184,6 +184,7 @@ class MissionBridgeMixin:
         self.incidents = IncidentBoard(None)
         # The patrol aircraft flies from the airfield nearest the placed ship.
         self._reset_mpa()
+        self._reset_consort()
         self.feed.entries[-1].text = self._mission_started_notice()
         self.hq_msg(self._initial_threat_notice())
         self.in_menu = False
@@ -605,13 +606,14 @@ class MissionBridgeMixin:
             return raw_text(self.mission.name)
         keys = {"patrouille": "mission.patrol", "doppeljagd": "mission.double",
                 "konvoi": "mission.convoy", "nuklearer_abfang": "mission.intercept",
-                "durchbruch": "mission.breakthrough", "aufklaerung": "mission.recon",
+                "durchbruch": "mission.breakthrough", "jagdgruppe": "mission.breakthrough", "aufklaerung": "mission.recon",
                 "geleitzug": "mission.convoy_attack", "meerenge": "mission.strait",
                 "kampfschwimmer": "mission.swimmers", "versorger": "mission.escort",
                 "datum": "mission.datum", "fuehlung": "mission.trail",
                 "versorgung": "mission.ras", "seenot": "mission.rescue",
                 "duell": "mission.duel", "heimkehr": "mission.homecoming",
                 "abholung": "mission.pickup", "lauschposten": "mission.elint",
+                "suchgruppe": "mission.search_group",
                 "freifahrt": "mission.free", "freifahrt_uboot": "mission.free_boat",
                 "custom": "mission.custom"}
         name = message(keys[self.mission.type_key])

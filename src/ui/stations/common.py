@@ -1,6 +1,7 @@
 """Helpers shared by the station views: panels, page tabs, autocrew overview,
 observation geometry and state colours (verbatim from ``stations_view``)."""
 
+from contextlib import nullcontext as _no_scope
 import math
 
 import pygame
@@ -115,7 +116,7 @@ def _station_page_tab_rects(station_rect: pygame.Rect, n_pages: int) -> list:
 def draw_station_page_tabs(screen, station_rect, pages, current_page,
                            tr=None) -> list:
     """Render a row of clickable page tabs. Returns the tab rects."""
-    from src.core.i18n import display_value
+    from src.core.i18n import display_message, translation_scope
     tabs = _station_page_tab_rects(station_rect, len(pages))
     for i, (name, tab) in enumerate(zip(pages, tabs)):
         active = (i == current_page)
@@ -123,10 +124,12 @@ def draw_station_page_tabs(screen, station_rect, pages, current_page,
             pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, tab)
             pygame.draw.line(screen, config.COLOR_SONAR_RING,
                               tab.topleft, (tab.right - 1, tab.top), 2)
-        label = display_value("station_page", name, tr)
-        layout.blit_line(screen, label, tab,
-                         config.COLOR_TEXT if active else config.COLOR_TEXT_DIM,
-                         size=14, align="center")
+        # The page's catalog message (its short form fits narrow tabs), never
+        # its translated text again: "Navigation" is also a German value.
+        with translation_scope(tr) if tr is not None else _no_scope():
+            layout.blit_line(screen, display_message("station_page", name), tab,
+                             config.COLOR_TEXT if active else config.COLOR_TEXT_DIM,
+                             size=14, align="center")
     return tabs
 
 

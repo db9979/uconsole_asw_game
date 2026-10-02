@@ -33,6 +33,7 @@ from src.commander.v2.wire import (
     ROLES,
     LOOKOUT_ROLES,
     OPFOR_ROLES,
+    VOICE_ROLES,
     SONAR_AUDIO_FRAMES,
     SONAR_AUDIO_RATE,
     SONAR_AUDIO_RESUME_BLOCKS,
@@ -45,7 +46,6 @@ from src.commander.v2.wire import (
     STATE_PUSH_MAX_HZ,
     STATE_PUSH_PROTOCOL,
     STATE_PUSH_ROUTE,
-    STATIONS,
     VOICE_STREAM_ROUTE,
     _AUDIO_POLL_ROUTES,
     _CONNECTION_DEADLINE_S,
@@ -869,7 +869,7 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             station = session["active_station"]
             lease = session["leases"].get(station)
-            if (not owner._voice_enabled or station not in STATIONS or lease is None):
+            if (not owner._voice_enabled or station not in VOICE_ROLES or lease is None):
                 self.send_error(403)
                 return
             if digest in owner._voice_peers:
@@ -880,8 +880,7 @@ class _Handler(BaseHTTPRequestHandler):
             owner._voice_peers[digest] = peer
             peer.enqueue(1, _json_bytes({
                 "type": "ready", "station": station,
-                "talker": (None if owner._voice_talker is None
-                           else owner._voice_talker.station)}))
+                "talker": owner.voice_talker_for_locked(station)}))
         accept = base64.b64encode(hashlib.sha1(
             key.encode("ascii") + _WEBSOCKET_GUID).digest()).decode("ascii")
         self.send_response_only(101)
@@ -925,19 +924,11 @@ class _Handler(BaseHTTPRequestHandler):
                         if not owner._voice_valid_locked(peer):
                             return
                         if opcode == 1 and payload == b"down":
-                            if owner._voice_talker is None:
-                                owner._voice_talker = peer
-                                owner._voice_status_locked()
+                            owner.voice_press_locked(peer)
                         elif opcode == 1 and payload == b"up":
-                            if owner._voice_talker is peer:
-                                owner._voice_talker = None
-                                owner._voice_status_locked()
+                            owner.voice_release_locked(peer)
                         elif opcode == 2 and len(payload) == VOICE_PCM_BYTES:
-                            if owner._voice_talker is peer:
-                                frame = bytes((STATIONS.index(peer.station),)) + payload
-                                for other in owner._voice_peers.values():
-                                    if other is not peer:
-                                        other.enqueue(2, frame)
+                            owner.voice_relay_locked(peer, payload)
                         else:
                             return
                 # A TCP read can contain several valid frames. Bound only the
@@ -992,8 +983,8 @@ class _Handler(BaseHTTPRequestHandler):
                 body = {"enabled": owner._voice_enabled,
                         "station": station if station in session["leases"] else None,
                         "csrf": session["csrf"],
-                        "talker": (None if owner._voice_talker is None
-                                   else owner._voice_talker.station)}
+                        "talker": (owner.voice_talker_for_locked(station)
+                                   if station in VOICE_ROLES else None)}
             self._reply(200, body)
         elif self.path == SONAR_STREAM_ROUTE:
             self._sonar_websocket()

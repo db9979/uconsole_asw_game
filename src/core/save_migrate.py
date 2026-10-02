@@ -81,6 +81,11 @@ def _v45_to_v46(doc: dict) -> None:
                              since=None, points=0)
 
 
+def _v46_to_v47(doc: dict) -> None:
+    # The group hunt's consort destroyer (scenarios 21 and 22, which no older save runs).
+    doc["consort"] = None
+
+
 STEPS = {
     38: _v38_to_v39,
     39: _v39_to_v40,
@@ -90,6 +95,7 @@ STEPS = {
     43: _v43_to_v44,
     44: _v44_to_v45,
     45: _v45_to_v46,
+    46: _v46_to_v47,
 }
 
 

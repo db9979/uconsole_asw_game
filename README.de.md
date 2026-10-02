@@ -14,16 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.135**
+Aktuelle Version: **1.3.140**
 
-Version 1.3.135 bringt Freie Fahrt als letzten Eintrag beider Seiten: kein
-Zeitlimit, einfach fahren. Das Hauptquartier schickt laufend Funkaufträge (die
-Fregatte bekommt zusätzlich Sektorpatrouillen, das U-Boot Angriffs-, Landungs-,
-Versorgungs- und Aufklärungsbefehle), dazu kommen zufällige Begegnungen und
-Ereignisse: U-Boote, Handelsgruppen, Luftangriffe, KI-Jäger, Zwischenfälle auf
-See. Punkte sammeln sich, solange Schiff oder Boot schwimmt; Wetter und
-Uhrzeit wählt man wie gewohnt beim Start. Spielstände wechseln auf Format v46;
-Spielstände v38 bis v45 lassen sich weiter laden.
+Version 1.3.140 bringt fünf Neuerungen in einem Update. Zwei Crews können jetzt
+gegeneinander spielen: Fregatte gegen U-Boot aus der Lobby, mit einem
+Schiedsrichter-Bildschirm auf der uConsole (1.3.136). In den Gruppenjagden
+Suchgruppe und Jagdgruppe führt die Fregatte den Zerstörer LUETJENS von
+OPZ-Seite 4 aus (1.3.137, Spielstände v47). Die Kampagne wird zum Feldzug mit
+Brennpunkten auf einer Sektorkarte für beide Seiten (1.3.138). Die Szenarien
+11 bis 20 sind in voller Länge ausgeglichen (1.3.139). Die uConsole bekommt die
+Lotsenkarte mit Echolot im U-Boot, eine Hubschrauber-Konsole und eine
+Funkpeil-Karte im Funkraum (1.3.140). Spielstände v38 bis v46 lassen sich
+weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -6,7 +6,7 @@ Der Funkraum wickelt die Verbindung zum Hauptquartier und die Kurzwellenpeilung 
 
 ## Anzeigen und Instrumente {#radio-displays}
 
-Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr; Seite 3 listet die HQ-Aufträge.
+Seite 1 listet aktuelle HFDF-Signale mit der Peilrose links und die Kreuzpeilkarte mit dem Peilprotokoll rechts; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr; Seite 3 listet die HQ-Aufträge.
 
 ```text
  HFDF-SIGNALE               PEILPROTOKOLL
@@ -28,6 +28,8 @@ Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fern
 - Zum Missionsbeginn meldet das HQ die Bedrohung. Bei **grober** Aufklärung nur eine ungefähre Peilung und Entfernung einer Bedrohung, bei **genauer** Aufklärung zusätzlich jeden eingesetzten feindlichen Einheitentyp mit Anzahl (zum Beispiel "1x Altmetall (Diesel, älter), 2x Luftangriffswelle mit Seezielflugkörpern"), mit den Namen aus dem Einheitenanalysator (`F8`); Positionen bleiben unbestätigt. Patrouille hat immer genaue Aufklärung, Doppeljagd und Nuklearer Abfang grobe, bei der Freien Jagd wählen Sie im Schwierigkeits-Bildschirm (letzte Zeile, "HQ-Aufklärung").
 
 Seite 1 zeigt außerdem eine KW-Peilrose: Jedes aktuelle Signal ist ein Strahl, aufgefächert so breit wie sein Peilfehler.
+
+Die **Kreuzpeilkarte** daneben ist das Koppelblatt des Funkraums, Norden oben, mit Gitter und Küste: Jede protokollierte Peilung der letzten 5 Minuten ist eine Linie vom Ort, an dem das Schiff sie nahm (der Ursprung als kleiner Kreis), die aktuellen Auffassungen sind dünne Linien vom Schiff mit ihrem Fehlerfächer (die gewählte gelb), zwei protokollierte Peilungen desselben Signals, die sich schneiden, markieren den Schnittpunkt mit einer Raute, und jede Kreuzpeilung zeigt ihre Fehlerellipse mit Kennung und 1-Sigma-Fehler. Ältere Linien verblassen. Die Karte rahmt Schiff, alle Ursprünge und Fixe ein und zeigt ihre halbe Breite (mindestens ±20 sm); darunter stehen die neuesten Peilungen und Fixe. Sie zeigt nur, was der Funkraum gemessen und berechnet hat, nie den Sender selbst.
 
 ## HQ-Aufträge {#radio-tasks}
 

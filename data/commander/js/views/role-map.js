@@ -22,7 +22,13 @@ export function mapPayload(role) {
   if (role === "opz") {
     // Reports inside a fusion are drawn only while managing the picture.
     const fused = new Set(payload.fusions.flatMap((row) => row.members));
-    return {own: payload.own_assets.ship, observations: [...payload.observations.filter((row) => S.opzManage || !fused.has(row.ref)), ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : []), ...payload.own_assets.weapons], bearingLogs: [], fixes: []};
+    // The consort destroyer (own-force datalink truth), its search point and
+    // its sonar's bearing lines.
+    const consort = payload.own_assets.consort;
+    const consortAssets = consort && !consort.sunk ? [{ref: "consort", display: consort.callsign, x: consort.x, y: consort.y},
+      ...(consort.point_x !== null && ["search", "prosecute"].includes(consort.working)
+        ? [{x: consort.point_x, y: consort.point_y, waypoint: true, display: t("consort_point")}] : [])] : [];
+    return {own: payload.own_assets.ship, observations: [...payload.observations.filter((row) => S.opzManage || !fused.has(row.ref)), ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : []), ...consortAssets, ...payload.own_assets.weapons], bearingLogs: consort && !consort.sunk ? consort.bearings : [], fixes: []};
   }
   if (role === "radio") return {own: payload.navigation, observations: payload.tactical, assets: [], bearingLogs: payload.logged_bearings, fixes: payload.logged_fixes};
   if (isBoatCommand(role)) {

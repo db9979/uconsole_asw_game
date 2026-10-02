@@ -252,9 +252,10 @@ def _strait_goal(game):
 
 
 def distance_scale(game) -> float:
-    """Start distances of a boat mission: shorter in the short variant."""
+    """Start distances of a boat mission: shorter in the short variant; a
+    mission type may scale its full length too (``scale``)."""
     if not getattr(game, "short_mission", False):
-        return 1.0
+        return float((game.mission.spec or {}).get("scale", 1.0))
     return float(game.mission.spec.get("short_scale", config.SHORT_DISTANCE_SCALE))
 
 

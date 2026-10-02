@@ -46,6 +46,7 @@ from src.core.hq_reports import HqReports
 from src.weapons import rbu
 from src.core.crew import CrewState
 from src.air.mpa import PatrolAircraft
+from src.core.consort import ConsortOrders
 from src.air.sonobuoy import OWNERS as BUOY_OWNERS
 from src.enemies.endurance import SubmarineEndurance
 from src.sensors.esm import valid_esm_state
@@ -791,8 +792,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                        for key in contact_fields - {"kind"})
                 or not -1.0 <= contact["normal_x"] <= 1.0
                 or not -1.0 <= contact["normal_y"] <= 1.0
-                or not -1.0 <= contact["hull_longitudinal"] <= 1.0
-                or not -1.0 <= contact["hull_lateral"] <= 1.0))
+                # The hull fractions come out of float geometry and may
+                # overshoot the hull's end by rounding.
+                or not -1.0 - 1e-9 <= contact["hull_longitudinal"] <= 1.0 + 1e-9
+                or not -1.0 - 1e-9 <= contact["hull_lateral"] <= 1.0 + 1e-9))
             or any(abs(ship[key] - pose[index]) > 1e-9
                    for index, key in enumerate(("x", "y", "course")))):
         return False
@@ -1495,6 +1498,16 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     mpa = data.get("mpa")
     if not PatrolAircraft.valid_state(mpa, world_size):
         return False
+    # Save v47: the consort destroyer's orders; it must be a friendly warship.
+    consort = data.get("consort")
+    if not ConsortOrders.valid_state(consort, world_size, save_sim_t):
+        return False
+    if consort is not None and not any(
+            isinstance(row, dict) and row.get("id") == consort["warship_id"]
+            and isinstance(row.get("platform"), dict)
+            and row["platform"].get("side") == "friendly"
+            for row in data.get("warships", [])):
+        return False
     buoy_ids = set()
     for buoy in buoys:
         if (not isinstance(buoy, dict)
@@ -1912,7 +1925,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             if tma_seen is not None and not bounded(tma_seen, 0, 1e12):
                 return False
             published_fixes = contact.get("fixes")
-            if (not isinstance(published_fixes, list) or len(published_fixes) > 5
+            if (not isinstance(published_fixes, list) or len(published_fixes) > len(FIX_SOURCES)
                     or len({fix.get("source") for fix in published_fixes
                             if isinstance(fix, dict)}) != len(published_fixes)):
                 return False

@@ -12,17 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.153**
+Current release: **1.3.154**
 
-Release 1.3.153 makes missions more tense in eight steps. A close detonation
-shakes the screens (1.3.146), made-out ships show bow waves and wakes in the
-optics (1.3.147), and a small picture shows hits (1.3.148). A homing
-torpedo's seeker can be heard locking on (1.3.149). Noise discipline: crews
-fumble audibly, and the players' microphones show whether their voices could
-give them away (1.3.150). Enemy commanders have a character (1.3.151), the
-main menu has a daily mission (1.3.152), and the submarine can surface,
-run on its diesels with a bridge watch and crash dive (1.3.153). Saves stay
-v48; v38 to v47 saves still load.
+Release 1.3.154 redraws the damage-control pictures like a real damage-
+control board. The frigate is a side profile with decks, superstructure and
+masts, every compartment at its real height, the sea and waterline outside
+with draft marks, floodwater tilted by the trim, open holes with water
+rushing in, fitted patches and pumps discharging over the side, and a cross-
+section that lists with the ship. The submarine is a cutaway of its pressure
+hull with sail, fittings, water, fire, chlorine, leaks and round bulkhead
+doors, on the uConsole and in the browser. Saves stay v48; v38 to v47 saves
+still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

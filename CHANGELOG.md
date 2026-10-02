@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.154
+
+Release 1.3.154 redraws the damage-control pictures like a real damage-
+control board. The frigate is a side profile with decks, superstructure and
+masts, every compartment at its real height, the sea and waterline outside
+with draft marks, floodwater tilted by the trim, open holes with water
+rushing in, fitted patches and pumps discharging over the side, and a cross-
+section that lists with the ship. The submarine is a cutaway of its pressure
+hull with sail, fittings, water, fire, chlorine, leaks and round bulkhead
+doors, on the uConsole and in the browser. Saves stay v48; v38 to v47 saves
+still load.
+
 ## 1.3.153
 
 Release 1.3.153 lets the submarine surface. `Shift+H` (browser: Surface)

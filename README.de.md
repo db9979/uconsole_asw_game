@@ -14,18 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.153**
+Aktuelle Version: **1.3.154**
 
-Version 1.3.153 macht Einsätze in acht Schritten spannender. Eine nahe
-Detonation lässt die Bildschirme wackeln (1.3.146), erkannte Schiffe zeigen
-in den Optiken Bugwelle und Kielwasser (1.3.147), und ein kleines Bild zeigt
-Treffer (1.3.148). Man hört, wie der Suchkopf eines Torpedos aufschaltet
-(1.3.149). Geräuschdisziplin: Besatzungen patzen hörbar, und die Mikrofone
-der Spieler zeigen, ob ihre Stimmen sie verraten könnten (1.3.150).
-Gegnerische Kommandanten haben einen Charakter (1.3.151), das Hauptmenü hat
-einen Tageseinsatz (1.3.152), und das U-Boot kann auftauchen, mit Brückenwache
-auf den Dieseln laufen und alarmtauchen (1.3.153). Spielstände bleiben v48;
-v38 bis v47 lassen sich weiter laden.
+Version 1.3.154 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die
+Fregatte ist ein Seitenriss mit Decks, Aufbauten und Masten, jede Abteilung
+auf ihrer wirklichen Höhe, außen See und Wasserlinie mit Tiefgangsmarken,
+Leckwasser, das sich mit dem Trimm neigt, offene Lecks mit einströmendem
+Wasser, gesetzte Leckpflaster und Pumpen, die über Bord lenzen, und ein
+Querschnitt, der mit dem Schiff krängt. Das U-Boot ist ein Schnittbild des
+Druckkörpers mit Turm, Einbauten, Wasser, Brand, Chlorgas, Lecks und runden
+Schotttüren, auf der uConsole und im Browser. Spielstände bleiben v48; v38
+bis v47 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

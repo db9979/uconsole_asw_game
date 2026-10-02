@@ -924,8 +924,10 @@ async function run() {
   // wraps), so each click aims at the canvas where it is now.
   const clickDamagePlan = () => {
     const rect = damageMap.getBoundingClientRect();
+    const engine = JSON.parse(damageMap.dataset.hits || "[]").find((hit) => hit.key === "engine");
+    assert(engine, "damage profile has no engine room");
     damageMap.dispatchEvent(new MouseEvent("click", {bubbles: true,
-      clientX: rect.left + rect.width * .2, clientY: rect.top + rect.height * .5}));
+      clientX: rect.left + engine.x + engine.width / 2, clientY: rect.top + engine.y + engine.height / 2}));
   };
   clickDamagePlan();
   await until(() => commands.length === 7, "damage schematic did not assign selected team");
@@ -1056,11 +1058,11 @@ def _direct_fire_browser_states():
                                           window_open=True))))
     damage = dict(common, role="damage", damage=dict(
         compartments=[dict(key="engine", name="Engine", state="BESCHAEDIGT",
-                           flood=20.0, fire=10.0, repairable=True,
+                           flood=20.0, fire=10.0, leak="patched", inflow=0.0, repairable=True,
                            trend=dict(flood_rate=.1, fire_rate=-.2, repairable=True))],
         teams=[dict(team=1, compartment=None), dict(team=2, compartment="engine")],
         total=15.0, sunk=False,
-        stability=dict(list_deg=0.5, trim_deg=-0.2, counterflood_room=None,
+        stability=dict(list_deg=0.5, draft_m=7.5, trim_deg=-0.2, counterflood_room=None,
                        can_counterflood=True), crew=_projected_crew()))
     bridge = dict(common, role="bridge", bridge=dict(crew=_projected_crew(),
         navigation=navigation, tactical_summary=[], sightings=[], lookout=LOOKOUT,

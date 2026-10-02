@@ -16,7 +16,7 @@ import pygame
 
 from src.core import config, debrief_replay
 from src.core.i18n import localize, localized, message
-from src.ui import layout
+from src.ui import llm_text, layout
 
 PANEL = pygame.Rect(12, 12, 1256, 696)
 MAP = pygame.Rect(24, 64, 780, 556)
@@ -260,6 +260,17 @@ def _draw_side(game, s, recorder, frame) -> None:
     y += 32
     pygame.draw.line(s, config.COLOR_GRID, (SIDE.x + 8, y), (SIDE.right - 8, y))
     y += 8
+    if getattr(game, "debrief_report_open", False):
+        # The optional language model's after-action report (key B).
+        side = "uboot" if recorder.prefix != "debrief." else "frigate"
+        layout.blit_line(s, "debrief.report", (SIDE.x + 12, y, SIDE.w - 24, 24),
+                         config.COLOR_TEXT, size=17)
+        state = game.llm_report(side) if game.llm_active() or game.llm_report(side) else None
+        if state is not None:
+            state = dict(state, scroll=game.debrief_report_scroll)
+        llm_text.draw_state(s, (SIDE.x + 12, y + 28, SIDE.w - 24, SIDE.bottom - y - 36),
+                            state, size=15)
+        return
     layout.blit_line(s, "debrief.events", (SIDE.x + 12, y, SIDE.w - 24, 24),
                      config.COLOR_TEXT, size=17)
     y += 28

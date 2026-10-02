@@ -110,20 +110,22 @@ from src.core.game_bugreport import (BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES,
 from src.core.game_welcome import WelcomeMixin
 from src.core.game_lobby import LobbyMixin
 from src.core.game_update import UpdateNoticeMixin
+from src.core.game_llm import LlmMixin
+from src.core.game_advisor import AdvisorUiMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
            SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, MpaMixin, ConsortMixin, DebriefMixin,
            TrainingMixin, CustomMissionMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
-           LobbyMixin, UpdateNoticeMixin, ResilienceMixin):
+           LobbyMixin, UpdateNoticeMixin, ResilienceMixin, LlmMixin, AdvisorUiMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
                     "bottom_panel", "level", "live_traffic", "commander")
     # Second options page: game setup.  The local side is per launch and never
     # persisted (the frigate is always the default).
-    _OPTION_ROWS_SETUP = ("local_side", "graphics", "speech")
+    _OPTION_ROWS_SETUP = ("local_side", "graphics", "speech", "llm")
     _OPTION_PAGES = (_OPTION_ROWS, _OPTION_ROWS_SETUP)
 
     def __init__(self, seed: int = 42, difficulty: dict = None,
@@ -256,6 +258,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.commander_open = False
         self.live_traffic = LiveTrafficManager()
         self.connectivity = ConnectivityMonitor()
+        # Optional language model (off by default; src/core/game_llm.py).
+        self._init_llm()
+        self._init_advisor_ui()
         self.live_traffic_open = False
         self.live_traffic_sel = 0
         self.live_traffic_field: TextField | None = None
@@ -503,6 +508,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._reset_crew()
         # Post-mission debrief recording (transient, never saved).
         self._reset_debrief()
+        # The language model's mission state (advisor mark saved, rest transient).
+        if hasattr(self, "llm"):
+            self._reset_llm_mission()
         # A guided lesson's coach (set by start_training, never saved).
         self.training = None
         # Whether this mission is the current campaign leg (never saved).

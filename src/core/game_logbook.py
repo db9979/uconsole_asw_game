@@ -34,6 +34,8 @@ class LogbookMixin:
         self.logbook_result = None
         self.logbook_view = None
         self.logbook_side = "frigate"
+        self.logbook_panel = None
+        self.logbook_panel_scroll = 0
 
     def _logbook_side(self) -> str:
         return ("boat" if getattr(self, "local_side", "frigate") == "uboot"
@@ -71,7 +73,9 @@ class LogbookMixin:
             date=datetime.date.today().isoformat(), side=side, scenario=scenario,
             level=level, won=won, score=score,
             minutes=max(0, int(self.mission_time // 60)), shots=min(shots, 1000),
-            sunk=min(sunk, 100), earned=earned)
+            sunk=min(sunk, 100), earned=earned,
+            advisor=bool(getattr(self, "llm_advisor_used", False)),
+            experimental=bool(getattr(self, "llm_experimental", False)))
         if not logbook_model.save_logbook(book):
             self.flash(message("logbook.save_failed"), 4.0)
             return
@@ -94,12 +98,36 @@ class LogbookMixin:
 
     def open_logbook(self) -> None:
         self.logbook_view = logbook_model.load_logbook()
+        self.logbook_panel = None
         self.logbook_side = "boat" if getattr(self, "local_side", "frigate") == "uboot" \
             else "frigate"
         self.main_menu = False
         self.menu_screen = LOGBOOK_ENTRY
 
     def _handle_logbook_key(self, key) -> None:
+        panel = getattr(self, "logbook_panel", None)
+        if key == pygame.K_a:
+            # The language model's review of the service record.
+            if self.llm_review is None or self.llm_review.get("status") == "failed":
+                self.request_logbook_review()
+            self.logbook_panel = None if panel == "review" else "review"
+            self.logbook_panel_scroll = 0
+            return
+        if key == pygame.K_b:
+            # The newest after-action report of this side.
+            self.logbook_panel = None if panel == "report" else "report"
+            self.logbook_panel_scroll = 0
+            return
+        if panel is not None:
+            if key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+                step = 8 if key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN) else 1
+                if key in (pygame.K_UP, pygame.K_PAGEUP):
+                    step = -step
+                self.logbook_panel_scroll = max(0, self.logbook_panel_scroll + step)
+                return
+            if key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                self.logbook_panel = None
+                return
         if key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_TAB):
             self.logbook_side = "boat" if self.logbook_side == "frigate" else "frigate"
         elif key in (pygame.K_ESCAPE, pygame.K_q, pygame.K_BACKSPACE, pygame.K_RETURN):
@@ -153,15 +181,46 @@ class LogbookMixin:
         rows = [row for row in book.entries if row["side"] == side][-RECENT_ROWS:]
         for row in reversed(rows):
             y += 24
-            layout.blit_line(s, message(
+            text = message(
                 "logbook.row", date=raw_text(row["date"]),
                 scenario=self._scenario_label(row["scenario"]),
                 level=self.tr("level." + row["level"]),
                 result=self.tr("logbook.won" if row["won"] else "logbook.lost"),
-                score=row["score"], minutes=row["minutes"]),
+                score=row["score"], minutes=row["minutes"])
+            for mark in ("advisor", "experimental"):
+                if row.get(mark):
+                    text = message("logbook.row_mark", row=text,
+                                   mark=message("logbook.mark." + mark))
+            layout.blit_line(s, text,
                 (x, y, w, 24), config.COLOR_TEXT if row["won"] else config.COLOR_TEXT_DIM,
                 size=18)
         if not rows:
             layout.blit_line(s, "logbook.none", (x, y + 24, w, 24), config.COLOR_TEXT_DIM,
                              size=18)
         center(self.tr("logbook.hint"), 608, color=config.COLOR_TEXT_DIM, keys=("→", "Esc"))
+        self._draw_logbook_panel(book, side)
+
+    def _draw_logbook_panel(self, book, side: str) -> None:
+        """The language model's review (A) or the newest report (B)."""
+        panel = getattr(self, "logbook_panel", None)
+        if panel is None:
+            return
+        from src.ui import llm_text, overlay_style
+        rect = pygame.Rect(160, 170, 960, 420)
+        overlay_style.panel(self.screen, rect)
+        layout.blit_line(self.screen, "logbook.panel." + panel,
+                         (rect.x + 20, rect.y + 12, rect.w - 40, 26), config.COLOR_WARN, size=20)
+        if panel == "review":
+            state = self.llm_review if (self.llm_active() or self.llm_review) else None
+        else:
+            row = next((row for row in reversed(book.entries)
+                        if row["side"] == side and row.get("report")), None)
+            state = (dict(status="done", text=row["report"]) if row is not None
+                     else dict(status="done", text=self.tr("logbook.no_report")))
+        if state is not None:
+            state = dict(state, scroll=self.logbook_panel_scroll)
+        llm_text.draw_state(self.screen, (rect.x + 20, rect.y + 48, rect.w - 40, rect.h - 92),
+                            state, size=16)
+        layout.blit_line(self.screen, "logbook.panel_keys",
+                         (rect.x + 20, rect.bottom - 34, rect.w - 40, 22),
+                         config.COLOR_TEXT_DIM, size=14, align="center")

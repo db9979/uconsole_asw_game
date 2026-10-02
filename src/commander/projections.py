@@ -868,7 +868,11 @@ def _radio(game, rows, ref_by_track):
             logged.append(dict(ref=ref, bearing=_number(item.get("bearing")),
                                observer_x=_number(item.get("observer_x")),
                                observer_y=_number(item.get("observer_y")), age_s=age))
-    messages = [dict(stamp=str(stamp)[:32], text=str(localize(text, game.tr))[:512])
+    # The language model's wording replaces a line once it has arrived.
+    worded = getattr(game, "llm_radio_text", None)
+    messages = [dict(stamp=str(stamp)[:32],
+                     text=str((worded(stamp, text) if worded is not None else None)
+                              or localize(text, game.tr))[:512])
                 for stamp, text in game.messages[-40:]]
     return dict(observations=observations, logged_fixes=fixes,
                  logged_bearings=logged, messages=messages,
@@ -1743,11 +1747,19 @@ def _uboot_radio(game, boat):
              for row in reversed(radio.log)],
         vlf=progress["reception"] == "vlf",
         order=None if order is None else _uboot_radio_order(game, order),
+        # The open order worded by the optional language model (display only).
+        worded=_worded_order(game, order),
         orders_done=sum(1 for row in radio.orders if row["state"] == "done"),
         orders_failed=sum(1 for row in radio.orders if row["state"] == "failed"),
         buoy=buoy_antenna.status(boat.orders.buoy),
         buoy_payout=_number(boat.orders.buoy[0]),
         buoy_rx=progress["reception"] == "buoy")
+
+
+def _worded_order(game, order):
+    worded = getattr(game, "llm_boat_order_text", None)
+    text = worded(order) if worded is not None else None
+    return str(text)[:512] if text else None
 
 
 def _uboot_radio_order(game, order):

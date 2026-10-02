@@ -428,6 +428,7 @@ function renderRadio(radio, nav) {
   $("uboot-radio-status").textContent = radio.antenna ? "" : t("uboot_radio_need_antenna");
   metrics($("uboot-radio-report"), [["uboot_radio_report", radio.report ? radioReportText(radio.report, nav) : t("uboot_radio_no_report")],
     ["uboot_radio_order", radioOrderText(radio, nav)],
+    ...(radio.worded ? [["uboot_radio_worded", radio.worded]] : []),
     ["uboot_radio_orders", t("uboot_radio_orders_value", {done: radio.orders_done, failed: radio.orders_failed})]]);
   $("uboot-radio-log").replaceChildren(...(radio.log.length ? radio.log.map((row) => node("p", radioLogText(row), "uboot-log-line"))
     : [node("p", t("uboot_radio_log_empty"), "uboot-log-line")]));

@@ -559,6 +559,12 @@ class DrawMixin:
                 self.draw_options_overlay()
             elif self.live_traffic_open:
                 self.draw_live_traffic_overlay()
+            elif self.advisor_open:
+                from src.ui.advisor_view import draw_advisor_overlay
+                draw_advisor_overlay(self)
+            elif self.llm_open:
+                from src.ui.advisor_view import draw_llm_settings
+                draw_llm_settings(self)
             elif self.commander_open:
                 self.commander.draw(self)
         self.commander.draw_confirm(self)
@@ -1087,7 +1093,7 @@ class DrawMixin:
                      for index in range(max(len(page) for page in cls._OPTION_PAGES)))
 
     # Row rect index of each setup-page row (the side's help text sits between).
-    _SETUP_ROW_INDICES = (0, 6, 10)
+    _SETUP_ROW_INDICES = (0, 6, 10, 12)
 
     @classmethod
     def _option_row_hit_rects(cls, rows) -> tuple:
@@ -1223,8 +1229,17 @@ class DrawMixin:
                          config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
         layout.blit_block(self.screen, "option.speech.help" if self.speaker.available
                           else "option.speech.missing",
-                          row.x + 24, row.bottom + 6, row.w - 24, 64,
-                          config.COLOR_TEXT_DIM, size=18)
+                          row.x + 24, row.bottom + 4, row.w - 24, 36,
+                          config.COLOR_TEXT_DIM, size=16)
+        # The optional language model: opens its own settings page.
+        row = self._options_row_rects()[self._SETUP_ROW_INDICES[3]]
+        selected = self.options_sel == 3
+        if selected:
+            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
+        value = self.tr("option.llm", state=self.tr(
+            "common.on" if self.preferences.llm_enabled else "common.off"))
+        layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
+                         config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
         layout.blit_block(self.screen,
                           "commander.local.options_hint",
                           292, 650, 696, 46, config.COLOR_TEXT_DIM, size=18,
@@ -1470,6 +1485,7 @@ class DrawMixin:
                     self.lobby_tick(wall_dt)
                     self.update_tick()
                     self.recovery_tick(wall_dt)
+                    self.llm_tick()
                 except Exception as exc:  # noqa: BLE001 - fault policy
                     # A running mission falls back to its recovery
                     # snapshot (src/core/game_resilience.py).

@@ -10,9 +10,12 @@ from pathlib import Path
 
 from src.core.config import BOTTOM_PANEL_MODES, FPS_CHOICES, FPS_DEFAULT, LEVELS
 from src.core.i18n import SUPPORTED_LANGUAGES, detect_system_language
+from src.llm.client import (DEFAULT_MODEL as LLM_DEFAULT_MODEL,
+                            DEFAULT_URL as LLM_DEFAULT_URL, valid_model, valid_url)
 
 _MAX_CREDENTIAL_LEN = 256
 GRAPHICS_LEVELS = ("low", "normal", "full")
+LLM_COACH_LEVELS = ("off", "rare", "often")
 
 
 def _default_graphics() -> str:
@@ -57,6 +60,16 @@ class Preferences:
     live_adsb_enabled: bool = False
     aisstream_api_key: str = ""
     opensky_credentials: str = ""
+    # Optional language model (OpenAI-compatible chat endpoint, cloud or a
+    # server in the LAN). Off by default; the API key is never stored here
+    # (``src/llm/keystore.py``). Radio wording, coach and the experimental
+    # opponent advisor are its sub-switches.
+    llm_enabled: bool = False
+    llm_url: str = LLM_DEFAULT_URL
+    llm_model: str = LLM_DEFAULT_MODEL
+    llm_radio: bool = True
+    llm_coach: str = "off"
+    llm_opfor: bool = False
     # First-launch welcome page ("What do you want to play?") already shown.
     # True by default: only a launch without any settings.json shows it;
     # settings files written before the field existed count as onboarded.
@@ -95,7 +108,7 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     values: dict[str, object] = {"language": language}
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
                  "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "live_ais_enabled",
-                 "live_adsb_enabled", "onboarded"):
+                 "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)
     frame_rate = payload.get("frame_rate", defaults.frame_rate)
@@ -118,6 +131,12 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
         # Settings from before the levels: assistance meant the beginner.
         level = "beginner" if values["operator_assist"] == "training" else defaults.level
     values["level"] = level
+    url = payload.get("llm_url", defaults.llm_url)
+    values["llm_url"] = url if valid_url(url) else defaults.llm_url
+    model = payload.get("llm_model", defaults.llm_model)
+    values["llm_model"] = model if valid_model(model) else defaults.llm_model
+    coach = payload.get("llm_coach", defaults.llm_coach)
+    values["llm_coach"] = coach if coach in LLM_COACH_LEVELS else defaults.llm_coach
     for name in ("aisstream_api_key", "opensky_credentials"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value.strip()[:_MAX_CREDENTIAL_LEN] \

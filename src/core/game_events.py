@@ -73,7 +73,7 @@ class EventMixin:
     def administration_open(self) -> bool:
         return (self.help_open or self.nations_open or self.quit_confirm
                 or self.save_ui is not None or self.options_open or self.commander_open
-                or self.live_traffic_open)
+                or self.live_traffic_open or self.advisor_open or self.llm_open)
 
     def _clear_station_input(self) -> None:
         self.held.clear()
@@ -122,6 +122,11 @@ class EventMixin:
         self.commander_open = name == "commander"
         if self.commander_open:
             self.commander.prepare()
+        self.advisor_open = name == "advisor"
+        self.llm_open = name == "llm"
+        if self.llm_open:
+            self.llm_sel = 0
+            self.llm_field = self.llm_field_name = None
         self.live_traffic_open = name == "live_traffic"
         if self.live_traffic_open:
             self.live_traffic_sel = 0
@@ -173,7 +178,7 @@ class EventMixin:
                 if name == "local_side":
                     self._toggle_local_side()
                     return
-                if name in ("live_traffic", "commander"):
+                if name in ("live_traffic", "commander", "llm"):
                     self._open_administration(name)
                     return
                 if name == "language":
@@ -462,6 +467,7 @@ class EventMixin:
         fields = ("in_menu", "main_menu", "splash_active", "input_mode",
                   "help_open", "nations_open", "quit_confirm", "save_ui",
                   "options_open", "commander_open", "live_traffic_open",
+                  "advisor_open", "llm_open",
                   "simlog_view_open",
                   "autocrew_overview_open", "weather_station_open",
                   "running", "game_over")
@@ -688,6 +694,13 @@ class EventMixin:
             self.pinned_tooltip = None
             self._tooltip_anchor = None
             return
+        if self.advisor_open or self.llm_open:
+            # The language model's pages own text input (src/core/game_advisor.py).
+            if self.advisor_open:
+                self._handle_advisor_event(e)
+            else:
+                self._handle_llm_settings_event(e)
+            return
         if self.administration_open:
             if e.type == pygame.KEYDOWN:
                 if (self.live_traffic_field is not None
@@ -713,7 +726,7 @@ class EventMixin:
                             if rect.collidepoint(canvas):
                                 self.options_sel = index
                                 name = rows[index]
-                                if name in ("live_traffic", "commander"):
+                                if name in ("live_traffic", "commander", "llm"):
                                     self._open_administration(name)
                                 elif name == "local_side":
                                     self._toggle_local_side()
@@ -750,6 +763,10 @@ class EventMixin:
                     self._open_administration("commander")
                 else:
                     self._handle_menu_key(e.key)
+                return
+            if e.key == pygame.K_F7 and not self.game_over:
+                # The executive officer (optional language model), both sides.
+                self._open_administration("advisor")
                 return
             if self.local_side == "uboot" and not self._uboot_dispatch:
                 uboot_local.handle_key(self, e)

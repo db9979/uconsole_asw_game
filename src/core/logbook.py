@@ -44,6 +44,11 @@ SCENARIO_RE = re.compile(r"^[a-z0-9_]{1,40}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 ENTRY_FIELDS = frozenset({"date", "side", "scenario", "level", "won", "score", "minutes",
                           "shots", "sunk", "awards"})
+# Optional per entry (written only when set, so older builds still read the
+# book): the mission ran with the language-model advisor, ran the
+# experimental opponent advisor, and the model's after-action report.
+OPTIONAL_FIELDS = frozenset({"advisor", "experimental", "report"})
+REPORT_MAX = 2_000
 BOOK_FIELDS = frozenset({"version", "entries", "best", "awards"})
 
 
@@ -79,8 +84,18 @@ def _count(value, high) -> bool:
     return type(value) is int and 0 <= value <= high
 
 
+def _valid_optional(row) -> bool:
+    for name in ("advisor", "experimental"):
+        if name in row and row[name] is not True:
+            return False
+    report = row.get("report")
+    return report is None or (type(report) is str and 0 < len(report) <= REPORT_MAX
+                              and all(char.isprintable() or char == "\n" for char in report))
+
+
 def valid_entry(row) -> bool:
-    if not isinstance(row, dict) or set(row) != ENTRY_FIELDS:
+    if (not isinstance(row, dict) or not ENTRY_FIELDS <= set(row)
+            or not set(row) <= ENTRY_FIELDS | OPTIONAL_FIELDS or not _valid_optional(row)):
         return False
     return (isinstance(row["date"], str) and bool(DATE_RE.match(row["date"]))
             and row["side"] in SIDES
@@ -105,10 +120,17 @@ class Logbook:
         self.awards: dict[str, str] = {}
 
     def record(self, *, date: str, side: str, scenario: str, level: str, won: bool,
-               score: int, minutes: int, shots: int, sunk: int, earned: list) -> dict:
-        """File a mission; returns what is new (best score, awards)."""
+               score: int, minutes: int, shots: int, sunk: int, earned: list,
+               advisor: bool = False, experimental: bool = False) -> dict:
+        """File a mission; returns what is new (best score, awards).
+
+        A mission with the advisor or the experimental opponent is marked and
+        never sets a best score or earns an award."""
         key = f"{side}:{scenario}"
-        new_best = won and score > 0 and score > self.best.get(key, 0)
+        assisted = bool(advisor or experimental)
+        if assisted:
+            earned = []
+        new_best = not assisted and won and score > 0 and score > self.best.get(key, 0)
         if new_best:
             self.best[key] = int(score)
         fresh = [award for award in earned if f"{side}:{award}" not in self.awards]
@@ -117,9 +139,25 @@ class Logbook:
         entry = dict(date=date, side=side, scenario=scenario, level=level, won=bool(won),
                      score=int(score), minutes=int(minutes), shots=int(shots),
                      sunk=int(sunk), awards=list(fresh))
+        if advisor:
+            entry["advisor"] = True
+        if experimental:
+            entry["experimental"] = True
         self.entries.append(entry)
         del self.entries[:-MAX_ENTRIES]
         return dict(entry=entry, new_best=new_best, awards=fresh)
+
+    def attach_report(self, entry: dict, text: str) -> bool:
+        """Add the after-action report to the filed entry equal to ``entry``."""
+        text = str(text).strip()[:REPORT_MAX]
+        if not text:
+            return False
+        wanted = {key: value for key, value in entry.items() if key != "report"}
+        for row in reversed(self.entries):
+            if {key: value for key, value in row.items() if key != "report"} == wanted:
+                row["report"] = text
+                return True
+        return False
 
     def totals(self, side: str) -> tuple:
         """(missions, victories) of one side, over the kept entries."""

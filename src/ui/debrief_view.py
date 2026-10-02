@@ -32,6 +32,7 @@ EVENT_COLORS = {
     "own_damage": config.COLOR_DANGER, "ship_sunk": config.COLOR_DANGER,
     "missed": config.COLOR_CONTACT_MISSILE, "pinged": config.COLOR_WARN,
     "enemy_commander": config.COLOR_WARN,
+    "enemy_habits": config.COLOR_WARN,
     "mission_end": config.COLOR_TEXT,
 }
 OWN_COLOR = (90, 160, 255)
@@ -52,6 +53,9 @@ def event_text(event, prefix: str = "debrief.") -> str:
         params["source"] = localize("uboot.threat_page.kind." + str(params.get("source")))
     if event["kind"] == "enemy_commander":
         params["character"] = localize("commander.kind." + str(params.get("character")))
+    if event["kind"] == "enemy_habits":
+        params["habits"] = ", ".join(localize("habit." + name)
+                                     for name in str(params.get("habits", "")).split(",") if name)
     if event["kind"] == "mission_end":
         result = params.get("result")
         params["result"] = localize(

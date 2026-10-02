@@ -22,7 +22,7 @@ from src.core import commander_traits, config
 # Event kinds in display order of importance (the timeline colours them).
 EVENT_KINDS = ("first_contact", "first_fix", "classified", "own_shot", "enemy_shot",
                "sub_sunk", "own_damage", "ship_sunk", "missed", "pinged", "enemy_commander",
-               "mission_end")
+               "enemy_habits", "mission_end")
 
 
 class DebriefRecorder:

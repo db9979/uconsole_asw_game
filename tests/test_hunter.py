@@ -68,7 +68,11 @@ def test_without_observations_the_frigate_searches_regardless_of_the_boat():
         hunter.bridge(game, None)
         courses.append((round(game.ship.target_course, 6), game.ship.target_speed))
     assert courses[0] == courses[1]
-    assert courses[0][1] == hunter.SEARCH_KN
+    # The speed is the captain's own search plan (src/core/opfor_plans.py).
+    from src.core import opfor_plans
+    from src.llm import opponent
+    assert courses[0][1] == opponent.hunter_speed(game, opfor_plans.hunter_plan(game),
+                                                  hunter.SEARCH_KN)
 
 
 def test_an_hfdf_fix_sends_ship_helicopter_and_patrol_aircraft():

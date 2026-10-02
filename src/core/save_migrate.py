@@ -108,6 +108,12 @@ def _v48_to_v49(doc: dict) -> None:
     doc["llm"] = {"advisor_sides": [], "experimental": False, "opfor": None}
 
 
+def _v49_to_v50(doc: dict) -> None:
+    # The enemy's knowledge of the player's habits (1.3.166): nothing known,
+    # as in every mission before it.
+    doc["habits"] = {"side": "frigate", "known": []}
+
+
 STEPS = {
     38: _v38_to_v39,
     39: _v39_to_v40,
@@ -120,6 +126,7 @@ STEPS = {
     46: _v46_to_v47,
     47: _v47_to_v48,
     48: _v48_to_v49,
+    49: _v49_to_v50,
 }
 
 

@@ -223,9 +223,11 @@ class Sub:
         # A boat mission's leg (course, speed, depth) set every substep by
         # src/core/boat_ai.py for the AI's mission boat; never saved.
         self.mission_orders = None
-        # The experimental opponent's patrol leg (course, speed, depth),
-        # recomputed every substep from the saved plan (src/llm/opponent.py).
-        self.llm_orders = None
+        # The patrol leg (course, speed, depth) of the boat's plan, set every
+        # substep by src/core/boat_ai.py from its own picture
+        # (src/core/opfor_plans.py) or the experimental opponent's saved
+        # plan (src/llm/opponent.py); never saved.
+        self.plan_orders = None
         # Scenarios 8 to 10 (src/core/boat_missions.GUARDED_MODES): the boat
         # slips past a guard and answers a close ping; never saved either.
         self.mission_guarded = False
@@ -1118,8 +1120,8 @@ class Sub:
                 # The mission leg replaces the random patrol leg; the draws
                 # above still run, so the boat's stream stays in step.
                 self.target_course, self.speed, self.target_depth = self.mission_orders
-            elif self.llm_orders is not None:
-                self.target_course, self.speed, self.target_depth = self.llm_orders
+            elif self.plan_orders is not None:
+                self.target_course, self.speed, self.target_depth = self.plan_orders
             diff = config.angle_diff_deg(self.target_course, self.course)
             self.course = (self.course + config.clamp(
                 diff, -self.motion.turn_rate_deg_s * dt,

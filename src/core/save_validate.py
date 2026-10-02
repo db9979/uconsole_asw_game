@@ -51,7 +51,7 @@ from src.core.game_llm import valid_llm_state
 from src.air.sonobuoy import OWNERS as BUOY_OWNERS
 from src.enemies.endurance import SubmarineEndurance
 from src.sensors.esm import valid_esm_state
-from src.sensors.platform import validate_suite_state
+from src.sensors.platform import SONAR_SIGNAL_MAX, validate_suite_state
 from src.ship.damage import DamageModel
 from src.ship.ship import Ship
 from src.sonar.sonar import FIX_SOURCES, SONAR_ARRAY_MODES, SonarSystem, TowState
@@ -859,7 +859,6 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     groups = {"sub": ("subs",), "animal": ("animals",),
               "surface": ("civilians", "warships"), "decoy": ("decoys",),
               "enemy_torpedo": ("enemy_torpedoes",)}
-    max_ship_noise = Ship(0, 0, speed_kn=config.SHIP_SPEED_MAX_KN).noise_level()
     max_salvo = max(profile.asm_salvo[1]
                     for profile in runtime_catalog.surfaces.values())
     pending_missiles = 0
@@ -1290,7 +1289,9 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                                        for axis in ("x", "y"))
                                 or not bounded(observed["speed"], 0, 100)
                                 or not bounded(observed["course"], 0, 360)
-                                or not bounded(observed["noise"], 0, max_ship_noise)):
+                                # The remembered received signal, not the ship's
+                                # own noise figure (that stays below it).
+                                or not bounded(observed["noise"], 0, SONAR_SIGNAL_MAX)):
                             return False
                 for pending, width in (("pending_torpedoes", 9),
                                        ("pending_decoys", 2), ("pending_asm", 3)):

@@ -10,11 +10,11 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from commander_web import copy_assets, index_html, inject_probe
+from commander_web import RealTimeHost, copy_assets, index_html, inject_probe
 
 from src.commander import server
 from src.core.game import Game
-from test_commander_assets import Document, PREFIX, catalogs
+from test_commander_assets import PREFIX, catalogs
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -111,39 +111,47 @@ def test_observer_views_read_only_and_debriefs_in_the_browser(tmp_path, monkeypa
         PROBE.replace("__CODE__", json.dumps(console.pairing_code)).encode("utf-8"))
     console.server._http.assets["/observer-test-tick"] = ("text/plain; charset=utf-8", b"ok")
     console.bridge.allowed = True
+    # Real time, not a virtual-time budget: the timeline needs SimLog entries
+    # the live host writes every SIMLOG_INTERVAL_S of simulation, and virtual
+    # time ran ahead of a host loop slowed by a loaded runner ("timeline not
+    # rendered"). The page is read over DevTools and the run ends when the
+    # probe reports.
+    profile = tmp_path / "browser"
     process = subprocess.Popen([
         chromium, "--headless", "--no-sandbox", "--disable-gpu",
         "--disable-background-networking", "--no-first-run",
         "--no-default-browser-check", "--disable-dev-shm-usage",
-        f"--user-data-dir={tmp_path / 'browser'}", "--window-size=1920,1080",
-        "--virtual-time-budget=300000", "--dump-dom",
+        f"--user-data-dir={profile}", "--window-size=1920,1080",
+        "--force-device-scale-factor=1", "--remote-debugging-port=0",
         f"http://{console.address[0]}:{console.address[1]}/",
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    host = RealTimeHost(game, profile, period_s=.25)
+    root = {}
     started = time.monotonic()
     granted = False
     try:
         while process.poll() is None and time.monotonic() - started < 150:
+            root = host.dataset or root
+            if root.get("observerTest"):
+                break
             if not granted:
                 clients = console.server.client_statuses()
                 if clients:
                     assert console.server.set_client_grant(clients[0]["client_id"], "observer", True)
                     granted = True
             console.pump(game)
-            game.update(.05)
+            host.step()
             time.sleep(.02)
-        stdout, stderr = process.communicate(timeout=5)
     finally:
-        if process.poll() is None:
-            process.kill()
-            stdout, stderr = process.communicate(timeout=5)
+        host.close()
+        process.kill()
+        process.wait(timeout=5)
         console.stop()
         game.audio.shutdown()
-    root = next((attrs for tag, attrs in Document(stdout).elements if tag == "html"), {})
-    assert root.get("data-observer-test") == "passed", (
-        root.get("data-stage"), root.get("data-observer"), root.get("data-lobby"),
-        root.get("data-failure", stderr[-400:]))
+    assert root.get("observerTest") == "passed", (
+        root.get("stage"), root.get("observer"), root.get("lobby"), root.get("failure"))
     assert granted and console.server.observer_count() == 0     # revoked with the stop
-    assert int(root.get("data-ticks", "0")) >= 2
-    assert root.get("data-export-kind") == "u-jagd-debrief"
-    assert int(root.get("data-export-entries", "0")) >= 2
-    assert "read-only" in root.get("data-role-text", "").lower() or "observer" in root.get("data-role-text", "").lower()
+    assert int(root.get("ticks", "0")) >= 2
+    assert root.get("exportKind") == "u-jagd-debrief"
+    assert int(root.get("exportEntries", "0")) >= 2
+    assert "read-only" in root.get("roleText", "").lower() or "observer" in root.get("roleText", "").lower()

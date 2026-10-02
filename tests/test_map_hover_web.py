@@ -7,11 +7,11 @@ import subprocess
 import time
 
 import pytest
-from commander_web import copy_assets, index_html, inject_probe
+from commander_web import RealTimeHost, copy_assets, index_html, inject_probe
 
 from src.commander import server
 from src.core.game import Game
-from test_commander_assets import ASSETS, Document, PREFIX, catalogs
+from test_commander_assets import ASSETS, PREFIX, catalogs
 
 PROBE = r'''
 (() => {
@@ -33,18 +33,28 @@ PROBE = r'''
     await until(() => !$('operations').hidden && !$('station-bridge').hidden, 'bridge shown');
     const map = $('role-map');
     await until(() => map.clientWidth > 200 && map.clientHeight > 150, 'map size');
-    await sleep(800);
-    const rect = map.getBoundingClientRect();
-    const seen = new Set();
-    for (let y = 8; y < rect.height; y += 8) {
-      for (let x = 8; x < rect.width; x += 8) {
-        map.dispatchEvent(new PointerEvent('pointermove', {clientX: rect.left + x, clientY: rect.top + y,
-          pointerType: 'mouse', bubbles: true}));
-        const tip = $('map-tooltip');
-        if (!tip.hidden && tip.firstChild) seen.add(tip.firstChild.textContent);
+    // Sweep the pointer over the whole map; the own ship and positions are
+    // described once the host's picture has been drawn (a fixed pause raced
+    // the first state and chart on a loaded host).
+    const sweep = () => {
+      const rect = map.getBoundingClientRect();
+      const seen = new Set();
+      for (let y = 8; y < rect.height; y += 8) {
+        for (let x = 8; x < rect.width; x += 8) {
+          map.dispatchEvent(new PointerEvent('pointermove', {clientX: rect.left + x, clientY: rect.top + y,
+            pointerType: 'mouse', bubbles: true}));
+          const tip = $('map-tooltip');
+          if (!tip.hidden && tip.firstChild) seen.add(tip.firstChild.textContent);
+        }
       }
-    }
-    const lines = [...seen];
+      return [...seen];
+    };
+    let lines = [];
+    const described = () => {
+      lines = sweep();
+      return lines.includes(__OWN__) && lines.some((line) => line.startsWith(__POS__));
+    };
+    for (let index = 0; index < 60 && !described(); index++) await sleep(250);
     if (!lines.includes(__OWN__)) throw new Error('no own-ship tooltip: ' + lines.slice(0, 8).join(' | '));
     if (!lines.some((line) => line.startsWith(__POS__))) throw new Error('no position tooltip');
     map.dispatchEvent(new PointerEvent('pointerleave', {bubbles: true}));
@@ -88,27 +98,33 @@ def test_role_map_mouse_over_describes_own_ship_and_positions(tmp_path, monkeypa
         .replace("__OWN__", json.dumps(own_text))
         .replace("__POS__", json.dumps(position_prefix)).encode("utf-8"))
     console.bridge.allowed = True
+    # Real time, not a virtual-time budget: the map is drawn from the live
+    # host's state and chart. The page is read over DevTools and the run ends
+    # when the probe reports.
+    profile = tmp_path / "browser"
     process = subprocess.Popen([
         chromium, "--headless", "--no-sandbox", "--disable-gpu",
         "--disable-background-networking", "--no-first-run",
         "--no-default-browser-check", "--disable-dev-shm-usage",
-        f"--user-data-dir={tmp_path / 'browser'}", "--virtual-time-budget=60000",
-        f"--window-size={width},{height}", "--dump-dom",
+        f"--user-data-dir={profile}", "--remote-debugging-port=0",
+        f"--window-size={width},{height}", "--force-device-scale-factor=1",
         f"http://{console.address[0]}:{console.address[1]}/",
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    host = RealTimeHost(game, profile, period_s=.25)
+    root = {}
     started = time.monotonic()
     try:
-        while process.poll() is None and time.monotonic() - started < 90:
+        while process.poll() is None and time.monotonic() - started < 120:
+            root = host.dataset or root
+            if root.get("hoverTest"):
+                break
             console.pump(game)
-            game.update(.02)
+            host.step()
             time.sleep(.02)
-        stdout, stderr = process.communicate(timeout=5)
     finally:
-        if process.poll() is None:
-            process.kill()
-            stdout, stderr = process.communicate(timeout=5)
+        host.close()
+        process.kill()
+        process.wait(timeout=5)
         console.stop()
         game.audio.shutdown()
-    assert process.returncode == 0, stderr
-    root = next((attrs for tag, attrs in Document(stdout).elements if tag == "html"), {})
-    assert root.get("data-hover-test") == "passed", root.get("data-failure", stderr[-2000:])
+    assert root.get("hoverTest") == "passed", root.get("failure", root)

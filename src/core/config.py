@@ -1392,16 +1392,16 @@ MISSION_TYPES = {
         name="Suchgruppe", weight=0, subs=2,
         sub_types=["aip_modern", "ssn"],
         animals=(2, 3), civilians=(2, 3), asm=(0, 0), warships=(0, 0),
-        time_limit_s=10800, short_time_limit_s=2700, win="sink"),
-    # The breakthrough against frigate and destroyer: a quiet boat whose goal
-    # area lies a little nearer in the short variant (tuned with the fairness
-    # measurement).
+        time_limit_s=14400, short_time_limit_s=2700, spawn_nm=(8.0, 14.0), win="sink"),
+    # The breakthrough against frigate and destroyer: a quiet boat that starts
+    # close and whose goal lies just beyond the frigate's position, in both
+    # lengths (tuned with the fairness measurement).
     "jagdgruppe": dict(
         name="Jagdgruppe", weight=0, subs=1,
         sub_types=["aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
-        time_limit_s=18000, short_time_limit_s=3600,
-        short_spawn_nm=(4.0, 6.0), short_scale=0.15, win="breakthrough"),
+        time_limit_s=5400, short_time_limit_s=3600, spawn_nm=(4.0, 6.0),
+        scale=0.15, short_spawn_nm=(4.0, 6.0), short_scale=0.15, win="breakthrough"),
     # Free patrol (src/core/free_roam.py): no time limit, no short variant.
     # The frigate starts alone; encounters bring the submarines later.
     "freifahrt": dict(

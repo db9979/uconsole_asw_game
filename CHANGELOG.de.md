@@ -21,8 +21,10 @@ mit KI-gegen-KI-Partien über je sechs Seeds. Bei Fühlung halten muss die
 Fregatte jetzt 80 % der Zeit Kontakt halten, und ein verlorener Kontakt zählt
 früher. Im Duell beginnt das U-Boot 8 bis 12 sm entfernt, das Ziel von
 Angeschlagen heim liegt näher, und bei Seenot unter Bedrohung beginnt die
-Fregatte weiter von den Rettungsinseln entfernt. Die Kurzeinsätze bleiben
-unverändert. Spielstandformat v47 unverändert.
+Fregatte weiter von den Rettungsinseln entfernt. Die Suchgruppe dauert jetzt
+4 Stunden, das erste U-Boot beginnt 8 bis 14 sm entfernt, und in der
+Jagdgruppe beginnt das U-Boot 4 bis 6 sm entfernt, mit dem Ziel knapp hinter
+der Fregatte und 90 Minuten Zeitlimit. Die Kurzeinsätze bleiben unverändert. Spielstandformat v47 unverändert.
 
 ## 1.3.138
 

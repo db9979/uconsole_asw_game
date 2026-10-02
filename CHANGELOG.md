@@ -20,8 +20,10 @@ Release 1.3.139 balances scenarios 11 to 20 at full length, measured with
 AI-against-AI games on six seeds each. Trail now asks the frigate to hold
 contact for 80 % of the time, and a lost contact counts sooner. In the duel the
 submarine starts 8 to 12 NM out, the damaged homecoming's goal lies nearer, and
-in Rescue under threat the frigate starts farther from the rafts. The short
-variants are unchanged. Save format v47 unchanged.
+in Rescue under threat the frigate starts farther from the rafts. Search group
+now lasts 4 hours with the first submarine 8 to 14 NM out, and Hunter group
+starts the boat 4 to 6 NM out with its goal just beyond the frigate and a
+90-minute limit. The short variants are unchanged. Save format v47 unchanged.
 
 ## 1.3.138
 

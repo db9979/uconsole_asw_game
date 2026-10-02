@@ -18,6 +18,18 @@ fliegende Luftfahrzeuge stehen jetzt vor der See statt hinter den Wellen.
 An den Meldungen des Ausgucks ändert sich nichts. Spielstände bleiben v49;
 v38 bis v48 lassen sich weiter laden.
 
+## 1.3.161
+
+Version 1.3.161 hält die Beschriftungen der Seekarte auseinander. An der
+Waffenstation trägt das zugewiesene Ziel ein einziges Label mit dem
+Ping-Hinweis statt zwei übereinander, der Maßstab in der Kartenecke liegt
+nicht mehr auf der ersten Gitterzahl, Fahrtangaben von Flugzeugen und
+Kontakten bleiben im Kartenbild und weichen anderen Labels aus, und die
+Auftragszeile des U-Boots steht unter dem Maßstab. Das OPZ-Lagebild und die
+Kreuzpeilungskarte im Funkraum setzen ihre Labels genauso, und die
+Browserkarten halten ihre Labels von den Achsenzahlen fern. Spielstände
+bleiben v49; v38 bis v48 lassen sich weiter laden.
+
 ## 1.3.160
 
 Version 1.3.160 zeichnet die Leckwehr wie eine echte Leckwehrtafel. Die

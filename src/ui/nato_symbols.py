@@ -5,6 +5,7 @@ import math
 import pygame
 
 from src.core import config
+from src.ui import label_layout, layout
 
 
 AFFILIATION_COLORS = {
@@ -104,6 +105,18 @@ def draw_motion_vector(surface, center, course_deg, speed_kn, px_per_nm,
     end = (center[0] + length * math.sin(ang), center[1] - length * math.cos(ang))
     pygame.draw.line(surface, color, center, end, 2)
     if font is not None and speed_kn is not None:
-        surface.blit(font.render(f"{speed_kn:.0f}kn", True, color),
-                     (int(end[0]) + 4, int(end[1]) - 6))
+        text = f"{speed_kn:.0f}kn"
+        image = font.render(text, True, color)
+        # Past the vector tip, on the far side from its own line, never
+        # across another label or off the chart.
+        width, height = image.get_size()
+        ux, uy = math.sin(ang), -math.cos(ang)
+        x = end[0] + 4 if ux >= -0.2 else end[0] - 4 - width
+        y = end[1] - height / 2 + uy * (height / 2 + 2)
+        pos = (int(x), int(y))
+        rect = label_layout.free_rect(
+            (width, height), label_layout.around(pos, (width, height), 4),
+            surface.get_clip())
+        layout.record_text(text, rect, surface.get_clip(), image)
+        surface.blit(image, rect)
     return end

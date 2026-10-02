@@ -17,6 +17,18 @@ Low aircraft now stand in front of the sea instead of behind the waves.
 Nothing changes in what the lookout reports. Saves stay v49; v38 to v48
 saves still load.
 
+## 1.3.161
+
+Release 1.3.161 keeps chart labels from covering each other. On the
+weapons station the assigned target carries one label with the ping hint
+instead of two stacked ones, the scale line in the chart corner no longer
+sits on the first grid number, speed labels of aircraft and contacts stay
+inside the chart and step aside from other labels, and the submarine's
+orders line moved below the scale. The CIC scope and the radio room's
+cross-fix chart place their labels the same way, and the browser maps keep
+their labels off the axis numbers. Saves stay v49; v38 to v48 saves still
+load.
+
 ## 1.3.160
 
 Release 1.3.160 redraws the damage-control pictures like a real damage-

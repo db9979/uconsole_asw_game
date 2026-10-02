@@ -22,7 +22,8 @@ from src.core.station import Station
 from src.ui import (chart_trails, console, engagement, instruments, label_layout, layout, lines,
                     map_fx_view, nato_symbols, overlay_style, pointer, sferics)
 from src.ui.feedback import FeedEntry
-from src.ui.map_view import chart_background, draw_chart_frame, draw_chart_geography
+from src.ui.map_view import (chart_background, draw_chart_frame, draw_chart_geography,
+                             scale_rect)
 from src.ui.plot_view import draw_plot
 from src.ui.red_light import draw_lamp
 from src.ui.sonar_view import draw_sonar_view
@@ -404,12 +405,21 @@ def _draw_mission_goal(game, view) -> None:
            config.COLOR_OK, config.MAP_RECT, size=12)
 
 
+def _mission_line_rect(game, r):
+    """Box of the boat's orders line, just below the scale line (None
+    outside a boat mission)."""
+    from src.core import boat_missions
+    if boat_missions.mode(game) is None:
+        return None
+    return pygame.Rect(r[0] + 8, scale_rect(r).bottom + 2, min(560, r[2] - 16), 22)
+
+
 def _draw_mission_line(game, boat, r) -> None:
     """The boat's orders in one line over the chart's top edge."""
     from src.core import boat_missions
-    if boat_missions.mode(game) is None:
+    rect = _mission_line_rect(game, r)
+    if rect is None:
         return
-    rect = pygame.Rect(r[0] + 8, r[1] + 6, min(560, r[2] - 16), 22)
     pygame.draw.rect(game.screen, config.COLOR_OVERLAY_BG, rect)
     layout.blit_line(game.screen, boat_missions.objective(game, boat), rect.inflate(-8, 0),
                      config.COLOR_OK, size=15)
@@ -428,7 +438,8 @@ def draw_chart(game, boat) -> None:
     with layout.clip_to(s, r), label_layout.label_scope(r) as labels:
         bx, by = view.world_to_screen(boat.sub.x, boat.sub.y)
         labels.reserve((int(bx) - 12, int(by) - 12, 24, 24))
-        draw_chart_geography(game, geo_view(game, boat, view), r)
+        draw_chart_geography(game, geo_view(game, boat, view), r,
+                             top_band=_mission_line_rect(game, r))
         draw_plot(game.screen, game, view, r, layer=boat.plot, own=boat.sub)
         history = getattr(game, "chart_history", None)
         if history is not None:

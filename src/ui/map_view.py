@@ -10,6 +10,7 @@ import math
 import pygame
 
 from src.core import config
+from src.core.station import Station
 from src.core.i18n import (display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.ui.plot_view import draw_plot
@@ -333,11 +334,13 @@ def _map_label(surface, game, text, pos, color, chart, candidates=None,
         surface.blit(image, rendered)
 
 
-def draw_chart_geography(game, view, r) -> None:
+def draw_chart_geography(game, view, r, top_band=None) -> None:
     """Known geography of a chart: bathymetry, grid, land, airbases, hazards.
 
     Shared by the frigate map and the crewed submarine's chart; it reads only
-    the world's public chart data.  The caller clips to ``r``.
+    the world's public chart data.  The caller clips to ``r``; ``top_band``
+    is an extra box along the top edge (a mission line) that the axis
+    numbers and labels keep clear of, like the scale line.
     """
     s = game.screen
     w = game.world
@@ -409,10 +412,17 @@ def draw_chart_geography(game, view, r) -> None:
     gy1 = math.floor(min(w.size_nm, max(wt, wb)) / step + 1e-9)
     # Axis numbers: x along the bottom edge, y along the left edge. A number
     # that would run off the chart or into the other axis' corner is left out.
+    # The top band belongs to the scale line (:func:`draw_chart_frame`).
     face = game.font
     label_h = face.get_linesize()
     left_w = layout.text_width(face, "0000") + 6
     bottom_band = r[1] + r[3] - label_h - 2
+    reserved = [scale_rect(r)] + ([pygame.Rect(top_band)] if top_band is not None else [])
+    top_band = max(rect.bottom for rect in reserved) + 1
+    field = label_layout.active()
+    for rect in reserved if field is not None else ():
+        field.reserve(rect)
+    axis_labels = []
     with layout.clip_to(s, r):
         for k in range(gx0, gx1 + 1):
             g = k * step
@@ -421,15 +431,22 @@ def draw_chart_geography(game, view, r) -> None:
                 lines.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
                 image = layout.render_line(face, grid_label(g), config.COLOR_TEXT_DIM)
                 if int(x) + 3 >= r[0] + left_w and int(x) + 3 + image.get_width() <= r[0] + r[2] - 2:
-                    s.blit(image, (int(x) + 3, bottom_band))
+                    axis_labels.append((grid_label(g), image, (int(x) + 3, bottom_band)))
         for k in range(gy0, gy1 + 1):
             g = k * step
             _, y = view.world_to_screen(0, g)
             if r[1] <= y <= r[1] + r[3]:
                 lines.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
-                if int(y) + 3 + label_h <= bottom_band:
-                    s.blit(layout.render_line(face, grid_label(g), config.COLOR_TEXT_DIM),
-                           (r[0] + 3, int(y) + 3))
+                if top_band <= int(y) + 3 and int(y) + 3 + label_h <= bottom_band:
+                    axis_labels.append((grid_label(g), layout.render_line(
+                        face, grid_label(g), config.COLOR_TEXT_DIM), (r[0] + 3, int(y) + 3)))
+        for text, image, pos in axis_labels:
+            rect = image.get_rect(topleft=pos)
+            layout.record_text(text, rect, r, image)
+            s.blit(image, rect)
+            if field is not None:
+                # Contact labels step aside from the axis numbers.
+                field.reserve(image.get_bounding_rect().move(rect.topleft))
 
     # Land / Inseln. Legacy/fake coast providers retain their old API.
     landmasses = getattr(coast, "landmasses", None)
@@ -641,14 +658,19 @@ def draw_map_view(game, tr=None) -> None:
                     getattr(contact, "tma_speed", None),
                     view.scale, line_col, font=game.font, max_px=120)
             else:
+                # The weapons station's target carries the ping hint in one
+                # label (the overlay adds no second one at the same spot).
+                aimed = contact is game.target
+                hint = aimed and getattr(game, "station", None) is Station.WEAPONS
+                line_col = config.COLOR_DANGER if aimed else config.COLOR_WARN
                 ex = fx + 300 * math.sin(brg)
                 ey = fy - 300 * math.cos(brg)
-                lines.line(s, config.COLOR_WARN, (int(fx), int(fy)),
+                lines.line(s, line_col, (int(fx), int(fy)),
                                  (int(ex), int(ey)), 1)
                 _map_label(s, game, structured_message(
-                    "map.line.bearing_only",
+                    "weapons.line.bearing_only.short" if hint else "map.line.bearing_only",
                     contact=observations.contact_display_id(game, contact)),
-                    (int(fx) + 14, int(fy) - 20), config.COLOR_WARN, r)
+                    (int(fx) + 14, int(fy) - 20), line_col, r)
 
         # Manuell protokollierte HFDF-Messungen und daraus berechnete Fixes.
         for report in game.hfdf_log[-6:]:
@@ -727,8 +749,19 @@ def draw_map_view(game, tr=None) -> None:
             _map_label(s, game, raw_text("HSP-5"), (int(px) + 15, int(py) - 14),
                        col, r)
         draw_plot(s, game, view, r)
+    global _LAST_LABELS
+    _LAST_LABELS = labels
 
     draw_chart_frame(game, view, r, getattr(game, "map_follow", True))
+
+
+# Label field of the last frigate chart drawn: the weapons overlay continues
+# it so its target marks step aside from the chart's labels.
+_LAST_LABELS = None
+
+
+def last_label_field():
+    return _LAST_LABELS
 
 
 def daylight_stage(world) -> str:
@@ -787,6 +820,19 @@ def draw_weather_band(game, r) -> None:
         pygame.draw.rect(game.screen, config.COLOR_WARN, rect, 2)
 
 
+# The scale line's text size; the grid keeps its numbers out of its band.
+SCALE_TEXT_SIZE = 13
+
+
+def scale_rect(r) -> pygame.Rect:
+    """Box of the scale / follow line in the chart's top-left corner (the
+    longest German follow text fits; axis numbers and labels keep off it)."""
+    face = layout.font(SCALE_TEXT_SIZE)
+    width, height = layout.text_size(face, localize(structured_message(
+        "map.line.scale_follow", zoom="00.0")))
+    return pygame.Rect(r[0] + 4, r[1] + 4, min(r[2] - 8, width + 4), height + 2)
+
+
 def draw_chart_frame(game, view, r, following: bool) -> None:
     """Chart border and the scale / follow line."""
     s = game.screen
@@ -797,4 +843,4 @@ def draw_chart_frame(game, view, r, following: bool) -> None:
         s, structured_message("map.line.scale_follow" if following else "map.line.scale",
                               zoom=scale_label(zoom_nm)),
         (r[0] + 4, r[1] + 4, r[2] - 8, 20), config.COLOR_TEXT_DIM,
-        size=13)
+        size=SCALE_TEXT_SIZE)

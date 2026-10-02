@@ -11,7 +11,7 @@ import { queueVisualDraw } from "./role-visuals.js";
 import { schedule } from "../core/scheduler.js";
 import { stationActionAvailable } from "../state/availability.js";
 import { canvas, ctx } from "./canvases.js";
-import { labelField, placeText } from "./label-layout.js";
+import { labelField, placeText, reserveText } from "./label-layout.js";
 
 export function chartGeometry() {
   const width = canvas.clientWidth;
@@ -120,6 +120,10 @@ function drawChartFrame() {
   const rough = 110 / scale;
   const power = 10 ** Math.floor(Math.log10(rough));
   const step = [1, 2, 5, 10].find((n) => n * power >= rough) * power;
+  // One label field for the chart: axis numbers, radar ring ranges and the
+  // north mark are reserved, track and fix labels step aside from them.
+  const labels = labelField(width, height);
+  labels.reserve(width - 34, 8, 30, 42);
   ctx.lineWidth = 1;
   ctx.strokeStyle = "#233741";
   ctx.fillStyle = "#8ba4ad";
@@ -128,12 +132,15 @@ function drawChartFrame() {
     const px = point(x, 0)[0];
     ctx.moveTo(px, 0); ctx.lineTo(px, height);
     const label = number(x || 0, step < 1 ? 1 : 0);
-    if (px + 4 + ctx.measureText(label).width <= width - 4) ctx.fillText(label, px + 4, height - 9);
+    if (px + 4 + ctx.measureText(label).width <= width - 4) { ctx.fillText(label, px + 4, height - 9); reserveText(ctx, labels, label, px + 4, height - 9); }
   }
   for (let y = Math.ceil(top / step) * step; y < bottom; y += step) {
     const py = point(0, y)[1];
     ctx.moveTo(0, py); ctx.lineTo(width, py);
-    if (py >= fontSize + 5 && py < height - fontSize - 12) ctx.fillText(number(y || 0, step < 1 ? 1 : 0), 6, py - 5);
+    if (py >= fontSize + 5 && py < height - fontSize - 12) {
+      const label = number(y || 0, step < 1 ? 1 : 0);
+      ctx.fillText(label, 6, py - 5); reserveText(ctx, labels, label, 6, py - 5);
+    }
   }
   ctx.stroke();
   ctx.fillStyle = "#283c40";
@@ -170,8 +177,9 @@ function drawChartFrame() {
     ctx.globalAlpha = .9; ctx.fillStyle = "#8fbfb0"; ctx.textAlign = "left"; ctx.textBaseline = "top";
     for (const fraction of [.25, .5, .75, 1]) {
       const ringRange = radar.range_nm * fraction;
-      ctx.fillText(t("radar_ring", {range: number(ringRange, Number.isInteger(ringRange) ? 0 : 1)}),
-        ox + 4, oy - ringRange * scale + 2);
+      const ring = t("radar_ring", {range: number(ringRange, Number.isInteger(ringRange) ? 0 : 1)});
+      ctx.fillText(ring, ox + 4, oy - ringRange * scale + 2);
+      labels.reserve(ox + 4, oy - ringRange * scale + 2, ctx.measureText(ring).width, fontSize + 2);
     }
     ctx.restore();
     const displayedSweep = S.v2State?.phase === "live" ?
@@ -188,7 +196,6 @@ function drawChartFrame() {
   // Positioned tracks outside the view (plus their uncertainty ring) are
   // culled in world coordinates before any point transform.
   const cullMargin = 60 / scale;
-  const labels = labelField(width, height);
   if (ownPosition) labels.reserve(ox - 12, oy - 12, 24, 24);
   for (const track of S.snapshot.tracks) {
     if (finite(track.x) && finite(track.y)) {
@@ -269,7 +276,7 @@ function drawChartFrame() {
       ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.stroke();
     }
     ctx.restore();
-    ctx.fillStyle = palette().accent; ctx.fillText(t("ownship"), ox + 15, oy + 18);
+    ctx.fillStyle = palette().accent; placeText(ctx, labels, t("ownship"), ox + 15, oy + 18);
   }
   const helo = own.helo;
   if (hasPosition(helo) && ["AUF", "ZURUECK"].includes(helo.state)) {

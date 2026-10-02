@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.157
+## 1.3.159
 
-Release 1.3.157 replaces the start menu's fixed mission list with a scrolling
+Release 1.3.159 replaces the start menu's fixed mission list with a scrolling
 one. With twelve scenarios per side and the own-missions row, the last rows
 were drawn over the world and seed lines at the bottom of the screen.
 
@@ -28,6 +28,12 @@ were drawn over the world and seed lines at the bottom of the screen.
   missions than today, and fails on any overlapping or off-screen line.
 
 Saves stay v49; v38 to v48 saves still load.
+
+## 1.3.158
+
+- In the browser the executive officer's button now sits in the toolbar
+  beside the sound switch; next to the mission name the crowded header had
+  squeezed it into a column of single letters.
 
 ## 1.3.155
 

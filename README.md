@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.157**
+Current release: **1.3.159**
 
-Release 1.3.157 turns the start menu's mission list into a scrolling list. With
+Release 1.3.159 turns the start menu's mission list into a scrolling list. With
 twelve scenarios per side the list had grown into the world and seed lines
 below it. Now nine rows show at once in a panel with a scroll bar that follows
 the selection (Up/Down, wheel, PgUp/PgDn, Home/End), and the start of the

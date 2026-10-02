@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.157**
+Aktuelle Version: **1.3.159**
 
-Version 1.3.157 macht die Missionsauswahl im Startmenü zu einer rollenden Liste.
+Version 1.3.159 macht die Missionsauswahl im Startmenü zu einer rollenden Liste.
 Mit zwölf Szenarien je Seite war die Liste in die Welt- und Seed-Zeilen
 darunter gewachsen. Jetzt stehen neun Zeilen auf einmal in einem Feld mit
 Rollbalken, das der Auswahl folgt (Auf/Ab, Mausrad, Bild auf/ab, Pos1/Ende),

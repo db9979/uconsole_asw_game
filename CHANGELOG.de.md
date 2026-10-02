@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.157
+## 1.3.159
 
-Version 1.3.157 ersetzt die feste Missionsliste im Startmenü durch eine rollende.
+Version 1.3.159 ersetzt die feste Missionsliste im Startmenü durch eine rollende.
 Mit zwölf Szenarien je Seite und der Zeile für eigene Missionen lagen die
 letzten Zeilen über den Welt- und Seed-Zeilen am unteren Bildrand.
 
@@ -31,6 +31,12 @@ letzten Zeilen über den Welt- und Seed-Zeilen am unteren Bildrand.
   aus dem Bild laufenden Zeile fehl.
 
 Spielstände bleiben v49; Spielstände v38 bis v48 lassen sich weiter laden.
+
+## 1.3.158
+
+- Im Browser sitzt der Knopf des Ersten Offiziers jetzt in der Werkzeugleiste
+  neben dem Tonschalter; neben dem Missionsnamen hatte die volle Kopfzeile ihn
+  zu einer Säule aus einzelnen Buchstaben gequetscht.
 
 ## 1.3.155
 

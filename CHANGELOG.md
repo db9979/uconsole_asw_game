@@ -4,6 +4,23 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.155
+
+Release 1.3.155 makes the optional language model work with reasoning models
+such as Qwen3.
+
+- The game asks the server for answers without a thinking phase
+  (`enable_thinking` off, understood by vLLM and SGLang); a server that
+  refuses the switch is asked again without it, and from then on.
+- Answers sent as a list of content parts are read.
+- When only reasoning comes back, the connection test and the advisor say
+  "only reasoning, no answer" instead of "answer not usable". The test may
+  answer in up to 32 tokens.
+- The API key is typed as asterisks, and the options page uses the configured
+  key instead of reading the key file on every frame.
+
+Saves stay v49; v38 to v48 saves still load.
+
 ## 1.3.154
 
 Release 1.3.154 adds an optional language model over an OpenAI-compatible

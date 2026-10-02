@@ -1,7 +1,8 @@
 """A tiny OpenAI-compatible chat server for the language-model tests.
 
 It answers on 127.0.0.1 only; ``reply`` decides the answer text from the
-request body (a str, or a callable taking the parsed body).
+request body (a str, or a callable taking the parsed body that returns the
+text, a whole message dict, or an int HTTP status to refuse with).
 """
 
 from __future__ import annotations
@@ -40,8 +41,13 @@ class FakeLlmServer:
                     self.end_headers()
                     return
                 text = owner.reply(body) if callable(owner.reply) else owner.reply
-                payload = json.dumps({"choices": [{"message": {"role": "assistant",
-                                                               "content": text}}]})
+                if isinstance(text, int):
+                    self.send_response(text)
+                    self.end_headers()
+                    return
+                message = (text if isinstance(text, dict)
+                           else {"role": "assistant", "content": text})
+                payload = json.dumps({"choices": [{"message": message}]})
                 data = payload.encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")

@@ -14,17 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.154**
+Aktuelle Version: **1.3.155**
 
-Version 1.3.154 bringt ein optionales Sprachmodell über eine
-OpenAI-kompatible Schnittstelle (ein Server im LAN oder ein Cloud-Dienst). Es
-ist ab Werk aus, und das Spiel läuft genau wie ohne. Eingeschaltet formuliert
-es den Funkverkehr, schreibt einen Einsatzbericht und gibt dir einen Ersten
-Offizier (F7, auch im Browser) für Lagemeldungen, Fragen, bestätigte Befehle
-ohne Waffen, Klassifizierungshilfe und Einweisungen, dazu einen Coach, eine
-Bewertung des Dienstbuchs, einen Missionsgenerator in Editor und Web-Planer
-und einen experimentellen, ungewerteten Gegner (Spielstände v49).
-Spielstände v38 bis v48 lassen sich weiter laden.
+Version 1.3.155 macht das optionale Sprachmodell mit Denkmodellen nutzbar.
+Das Spiel bittet den Server um Antworten ohne Denkphase, liest auch Antworten
+in Teilen, und der Verbindungstest meldet jetzt, wenn nur Denkschritte
+zurückkamen. Der API-Schlüssel erscheint beim Tippen als Sternchen, und die
+Optionsseite liest die Schlüsseldatei nicht mehr bei jedem Bild. Spielstände
+bleiben v49; Spielstände v38 bis v48 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

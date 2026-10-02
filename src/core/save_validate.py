@@ -6,7 +6,6 @@ acceptance check a load must pass before a candidate restore begins;
 with.  Verbatim moves from ``game_save.py`` (plan 1.3, phase 2, step 1).
 """
 
-import json
 import math
 
 
@@ -15,13 +14,9 @@ from src.weapons import depth_charge
 from src.core.plot import PlotLayer
 from src.ship.route import Route
 from src.core.autocrew import AutocrewController
-from src.core.boat_esm import BoatESM
-from src.core.boat_radio import BoatRadio
-from src.core import opfor
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
 from src.sensors import lookout_id
-from src.sonar import equation as sonar_equation
 from src.physics import ship_dynamics
 from src.physics import torpedo_dyn
 from src.physics import missile as missile_physics
@@ -29,18 +24,14 @@ from src.ship import damage as damage_physics
 from src.world.ocean import OceanEnvironment
 from src.core.save_schema import (
     WEAPON_SETTINGS_FIELDS,
-    COMPARTMENT_FIELDS, COMPARTMENT_STATES, CREW_BATTERY_STATES, CREW_FEED_FIELDS,
-    CREW_FIELDS, CREW_ORDERS_FIELDS, CREW_SIGHTING_FIELDS, CREW_STATION_FIELDS,
-    CREW_TDC_FIELDS,
-    CREW_WIRE_FIELDS,
-    CREW_WIRE_STATES, DAMAGE_FIELDS, PING_INTERCEPTS_MAX, RADAR_BLIP_FIELDS,
+    COMPARTMENT_FIELDS, COMPARTMENT_STATES, DAMAGE_FIELDS, PING_INTERCEPTS_MAX, RADAR_BLIP_FIELDS,
     RADAR_MARKED_MAX, RADAR_MARKS_FIELDS, RNG_STREAMS, SAVE_ROOT_FIELDS, SHIP_FIELDS,
     SUB_CREW_FIELDS, WORLD_FIELDS)
 from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
-from src.core import baffles, boat_nav, buoy_antenna
+from src.core import baffles
 from src.core.incidents import IncidentBoard
 from src.core.hq_reports import HqReports
 from src.weapons import rbu
@@ -54,7 +45,7 @@ from src.sensors.esm import valid_esm_state
 from src.sensors.platform import validate_suite_state
 from src.ship.damage import DamageModel
 from src.ship.ship import Ship
-from src.sonar.sonar import FIX_SOURCES, SONAR_ARRAY_MODES, SonarSystem, TowState
+from src.sonar.sonar import SONAR_ARRAY_MODES
 from src.ui.stations_view import opz_ppi_rect
 from src.air import chaff as chaff_physics
 from src.air.flights import FlightManager
@@ -75,6 +66,10 @@ from src.weapons.air_defense import valid_air_defense_state
 from src.core.limits import (MAX_AIR_PICTURE_TRACKS, MAX_DECOYS, MAX_ENEMY_TORPEDOES,
                              MAX_SAVED_ASMS, MAX_SAVED_ENTITIES, MAX_SAVED_ESSMS,
                              MAX_SAVED_PLAYER_TORPEDOES)
+# Verbatim moves: the crew block and the sonar station checks.
+from src.core.save_validate_crew import _valid_crew_block  # noqa: F401
+from src.core.save_validate_sonar import valid_sonar_block
+
 
 
 
@@ -95,225 +90,6 @@ def _valid_difficulty_dict(value) -> bool:
         elif (type(amount) not in (int, float) or isinstance(amount, bool)
                 or not math.isfinite(amount) or not low <= amount <= high):
             return False
-    return True
-
-
-def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
-                      bounded, identity, finite_number, sim_t, emitter_keys) -> bool:
-    """Exact save v15 ``crew`` block: None, or the crewed boat's binding.
-
-    Every reference (boat, torpedoes, contacts) must point at an entity of
-    the same document; the boat's sonar station is validated with the same
-    rules as the frigate's.
-    """
-    from src.sonar.platforms import (OWNSHIP_TARGET_ID, OWN_TORPEDO_TARGET_BASE,
-                                     SCOPE_AIR_TARGET_ID, SCOPE_MPA_TARGET_ID)
-
-    crew = data.get("crew")
-    sub_rows = {row.get("id"): row for row in data.get("subs", ())
-                if isinstance(row, dict)}
-    manual_ids = {sub_id for sub_id, row in sub_rows.items()
-                  if row.get("manual") is True}
-    if crew is None:
-        return not manual_ids
-    if not isinstance(crew, dict) or set(crew) != CREW_FIELDS:
-        return False
-    sub_id = crew["sub_id"]
-    if (not identity(sub_id) or sub_id not in sub_rows
-            or manual_ids != {sub_id}):
-        return False
-    if (not CrewState.valid_state(crew["watch"])
-            or crew["watch"]["watch_t"] > data.get("sim_t", 0.0)):
-        return False
-    if not BoatRadio.valid_state(crew["radio"]):
-        return False
-    torpedo_ids = {row.get("id") for row in data.get("enemy_torpedoes", ())
-                   if isinstance(row, dict)}
-
-    def bearing_or_none(value) -> bool:
-        return value is None or (bounded(value, 0.0, 360.0) and value < 360.0)
-
-    orders = crew["orders"]
-    if not isinstance(orders, dict) or set(orders) != CREW_ORDERS_FIELDS:
-        return False
-    if (any(type(orders[key]) is not bool for key in (
-                "silent", "bottomed", "mast", "keel_warned", "obstacle_warned"))
-            or type(orders["alarm_seq"]) is not int
-            or not 0 <= orders["alarm_seq"] <= 10**9
-            or not bearing_or_none(orders["ping_bearing"])
-            or not bearing_or_none(orders["torpedo_bearing"])
-            or not bearing_or_none(orders["last_course"])
-            or not bearing_or_none(orders["pending_bearing"])
-            or not (orders["torpedo_depth"] is None
-                    or bounded(orders["torpedo_depth"], 0.0, 1000.0))
-            or orders["salvo"] not in (1, 2) or type(orders["salvo"]) is not int
-            or orders["battery_state"] not in CREW_BATTERY_STATES
-            or not baffles.valid_state(orders["baffle_clear"])
-            or not buoy_antenna.valid_state(orders["buoy"])
-            or orders["torpedo_pattern"] not in torpedo_dyn.BOAT_SEARCH_PATTERNS
-            or not bounded(orders["torpedo_enable_nm"], torpedo_dyn.ENABLE_RANGE_MIN_NM,
-                           torpedo_dyn.BOAT_ENABLE_DEFAULT_NM)
-            or not boat_nav.valid_state(orders["nav"])
-            or not Route.valid_state(orders["route"], config.WORLD_SIZE_NM)
-            or not (orders["obstacle_ahead_nm"] is None
-                    or bounded(orders["obstacle_ahead_nm"], 0.0, 10_000.0))):
-        return False
-    esm = orders["esm"]
-    if (not isinstance(esm, list) or len(esm) > 16
-            or any(not isinstance(row, list) or len(row) != 3
-                   or not bounded(row[0], 0.0, 360.0) or row[0] >= 360.0
-                   or not bounded(row[1], 0.0, 1e6) or not bounded(row[2], 0.0, 1e12)
-                   for row in esm)):
-        return False
-    own_torpedo_ids = {OWN_TORPEDO_TARGET_BASE + row.get("idx")
-                       for row in data.get("torpedoes_in_flight", ())
-                       if isinstance(row, dict) and type(row.get("idx")) is int}
-    if not (bounded(orders["scope_rel_deg"], 0.0, 360.0) and orders["scope_rel_deg"] < 360.0):
-        return False
-    sightings = orders["sightings"]
-    if not isinstance(sightings, list) or len(sightings) > config.UBOOT_SIGHTINGS_MAX:
-        return False
-    sighting_ids = (set(entity_ids) | {OWNSHIP_TARGET_ID, SCOPE_AIR_TARGET_ID,
-                                       SCOPE_MPA_TARGET_ID} | own_torpedo_ids)
-    refs = set()
-    for row in sightings:
-        if (not isinstance(row, dict) or set(row) != CREW_SIGHTING_FIELDS
-                or not isinstance(row["ref"], str) or not 1 <= len(row["ref"]) <= 16
-                or row["ref"] in refs
-                or type(row["target_id"]) is not int or row["target_id"] not in sighting_ids
-                or row["cls"] not in opfor.SIGHTING_CLASSES
-                or row["kind"] != opfor.SIGHTING_KINDS[row["cls"]]
-                or not bounded(row["bearing"], 0.0, 360.0) or row["bearing"] >= 360.0
-                or not bounded(row["span_deg"], 1e-3, 180.0)
-                or not bounded(row["aspect"], 0.0, 1.0)
-                or not bounded(row["quality"], 0.0, 1.0)
-                or not bounded(row["first_t"], 0.0, sim_t)
-                or not bounded(row["t"], row["first_t"], sim_t)
-                or (row["range_nm"] is None) != (row["range_sigma_nm"] is None)
-                or (row["range_nm"] is None) != (row["range_t"] is None)
-                or (row["range_nm"] is not None and (
-                    not bounded(row["range_nm"], 0.05, 40.0)
-                    or not bounded(row["range_sigma_nm"], 0.0, 100.0)
-                    or not bounded(row["range_t"], row["first_t"], sim_t)))):
-            return False
-        refs.add(row["ref"])
-    tdc = orders["tdc"]
-    if not isinstance(tdc, dict) or len(tdc) > config.UBOOT_TDC_TARGETS_MAX:
-        return False
-    for ref, entry in tdc.items():
-        if (not isinstance(ref, str) or not 1 <= len(ref) <= 16
-                or not isinstance(entry, dict) or set(entry) != CREW_TDC_FIELDS
-                or type(entry["target_id"]) is not int
-                or entry["target_id"] not in sighting_ids
-                or not isinstance(entry["marks"], list)
-                or not 1 <= len(entry["marks"]) <= config.UBOOT_TDC_MARKS_MAX):
-            return False
-        last_t = -1.0
-        for mark in entry["marks"]:
-            if (not isinstance(mark, list) or len(mark) != 3
-                    or not bounded(mark[0], 0.0, sim_t) or mark[0] <= last_t
-                    or not bounded(mark[1], -1e5, 1e5) or not bounded(mark[2], -1e5, 1e5)):
-                return False
-            last_t = mark[0]
-    # Save v26: the flood state of each tube of the crewed boat's battery.
-    battery = sub_rows[sub_id].get("asw_battery")
-    battery_tubes = battery.get("tubes") if isinstance(battery, dict) else None
-    tubes = orders["tubes"]
-    if (not isinstance(tubes, list)
-            or len(tubes) != (len(battery_tubes) if isinstance(battery_tubes, list) else 0)):
-        return False
-    for index, row in enumerate(tubes):
-        if (not isinstance(row, list) or len(row) != 2
-                or row[0] not in config.UBOOT_TUBE_STATES
-                or not bounded(row[1], 0.0, config.UBOOT_TUBE_FLOOD_S)
-                or (row[0] == "flooding") != (row[1] > 0.0)
-                or (row[0] != "dry" and (not isinstance(battery_tubes[index], dict)
-                                         or battery_tubes[index].get("loaded_weapon_key")
-                                         is None))):
-            return False
-    seen = orders["sightings_seen"]
-    if (not isinstance(seen, list) or len(seen) > 64
-            or any(not isinstance(item, str) or not 1 <= len(item) <= 16 for item in seen)
-            or seen != sorted(set(seen))):
-        return False
-    wires = orders["wires"]
-    if not isinstance(wires, dict) or len(wires) > 64:
-        return False
-    wire_ids = set()
-    for key, wire in wires.items():
-        if (not isinstance(key, str) or not key.isdigit() or str(int(key)) != key
-                or int(key) not in torpedo_ids
-                or not isinstance(wire, dict) or set(wire) != CREW_WIRE_FIELDS
-                or wire["state"] not in CREW_WIRE_STATES
-                or not bounded(wire["ship_out_nm"], 0.0, 1000.0)
-                or not bounded(wire["stress_s"], 0.0, 1e6)):
-            return False
-        wire_ids.add(int(key))
-    known = orders["known_torpedoes"]
-    if (not isinstance(known, list) or len(known) > 64
-            or any(not identity(item) or item not in torpedo_ids for item in known)
-            or known != sorted(set(known))):
-        return False
-    steer = orders["steer_torpedo"]
-    if steer is not None and (not identity(steer) or steer not in torpedo_ids):
-        return False
-    events = orders["events"]
-    if (not isinstance(events, list) or len(events) > 64
-            or any(not isinstance(event, list) or len(event) != 2
-                   or event[0] not in opfor.CrewOrders.EVENTS
-                   or not isinstance(event[1], dict) or len(event[1]) > 8
-                   or any(not isinstance(name, str) or len(name) > 32
-                          or not isinstance(value, str) or len(value) > 64
-                          for name, value in event[1].items())
-                   for event in events)):
-        return False
-    if (type(crew["command_page"]) is not int or not 0 <= crew["command_page"] < 8
-            or type(crew["chart_follow"]) is not bool
-            or not PlotLayer.valid_save(crew["plot"])
-            or not BoatESM.valid_save(crew["esm"], sim_t, emitter_keys)
-            or not bounded(crew["hold_s"], 0.0, config.UBOOT_RESTORE_HOLD_S)
-            or type(crew["feed_seq"]) is not int
-            or not 0 <= crew["feed_seq"] <= 10**9):
-        return False
-    feed = crew["feed"]
-    if not isinstance(feed, list) or len(feed) > opfor.OPFOR_FEED_MAX:
-        return False
-    last_seq = 0
-    for row in feed:
-        if (not isinstance(row, dict) or set(row) != CREW_FEED_FIELDS
-                or type(row["seq"]) is not int or not last_seq < row["seq"] <= crew["feed_seq"]
-                or not bounded(row["t"], 0.0, sim_t)
-                or not isinstance(row["stamp"], str) or len(row["stamp"]) > 32
-                or not isinstance(row["category"], str) or len(row["category"]) > 32
-                or not isinstance(row["text"], (str, dict))):
-            return False
-        try:
-            if len(json.dumps(row["text"], allow_nan=False)) > 2000:
-                return False
-        except (TypeError, ValueError):
-            return False
-        last_seq = row["seq"]
-    station = crew["station"]
-    if (not isinstance(station, dict) or set(station) != CREW_STATION_FIELDS
-            or station["mode"] not in SONAR_ARRAY_MODES
-            or not valid_sonar_controls(station["controls"])):
-        return False
-    allowed_ids = set(entity_ids) | {OWNSHIP_TARGET_ID} | own_torpedo_ids
-    if not valid_sonar(station["sonar"], allowed_ids):
-        return False
-    for key in ("selected_contact_id", "target_id"):
-        value = station[key]
-        if value is not None and (type(value) is not int or value < 0):
-            return False
-    raw_rng = station["rng"]
-    try:
-        if (not isinstance(raw_rng, list) or len(raw_rng) != 3
-                or not isinstance(raw_rng[1], list)):
-            return False
-        import random
-        random.Random().setstate((raw_rng[0], tuple(raw_rng[1]), raw_rng[2]))
-    except (TypeError, ValueError, OverflowError):
-        return False
     return True
 
 
@@ -1811,363 +1587,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
         if not finite_number(value) or not 0.0 <= value < limit:
             return False
     def valid_sonar(sonar, allowed_ids) -> bool:
-        if not isinstance(sonar, dict):
-            return False
-        for key in ("lofar", "lofar_times", "lofar_bearings",
-                    "broadband", "history_times", "echo_history",
-                    "pending_pings"):
-            if key in sonar and not isinstance(sonar[key], list):
-                return False
-        for key in ("lofar", "broadband"):
-            if any(not isinstance(row, list)
-                   or any(not finite_number(value) for value in row)
-                   for row in sonar.get(key, [])):
-                return False
-        for key in ("lofar_times", "lofar_bearings", "history_times"):
-            if any(not finite_number(value) for value in sonar.get(key, [])):
-                return False
-        if not bounded(sonar.get("bt_cooldown"), 0,
-                       config.SONAR_BT_COOLDOWN_S):
-            return False
-        # Variable-depth sonar (save v23): exact, typed and inside its envelope.
-        if (sonar.get("vds_state") not in {state.value for state in TowState}
-                or not bounded(sonar.get("vds_payout"), 0.0, 1.0)
-                or not bounded(sonar.get("vds_depth_m"), config.SONAR_VDS_DEPTH_MIN_M,
-                               config.SONAR_VDS_DEPTH_MAX_M)
-                or not bounded(sonar.get("vds_depth_target_m"), config.SONAR_VDS_DEPTH_MIN_M,
-                               config.SONAR_VDS_DEPTH_MAX_M)
-                or not bounded(sonar.get("vds_settle_s"), 0.0, config.SONAR_VDS_SETTLE_S)
-                or type(sonar.get("vds_handling_ok")) is not bool):
-            return False
-        bt_profile = sonar.get("bt_profile")
-        if bt_profile is not None:
-            bt_fields = {"t", "x", "y", "thermocline_m", "water_depth_m",
-                         "sea_state", "depths_m", "speeds_m_s", "cz_bands_nm"}
-            if not isinstance(bt_profile, dict) or set(bt_profile) != bt_fields:
-                return False
-            water_depth = bt_profile["water_depth_m"]
-            thermocline = bt_profile["thermocline_m"]
-            depths = bt_profile["depths_m"]
-            speeds = bt_profile["speeds_m_s"]
-            if (not bounded(bt_profile["t"], 0, save_sim_t)
-                    or not bounded(bt_profile["x"], -1_000_000, 1_000_000)
-                    or not bounded(bt_profile["y"], -1_000_000, 1_000_000)
-                    or not bounded(water_depth, 1, 10_000)
-                    or not bounded(thermocline, 0, water_depth)
-                    or not isinstance(bt_profile["sea_state"], int)
-                    or isinstance(bt_profile["sea_state"], bool)
-                    or not 0 <= bt_profile["sea_state"] <= 6
-                    or not isinstance(depths, list) or len(depths) != 21
-                    or not isinstance(speeds, list) or len(speeds) != 21
-                    or any(not finite_number(depth) for depth in depths)
-                    or any(not finite_number(speed) for speed in speeds)
-                    or not isinstance(bt_profile["cz_bands_nm"], list)
-                    or len(bt_profile["cz_bands_nm"]) > 4
-                    or any(not isinstance(band, list) or len(band) != 2
-                           or not bounded(band[0], 0.0, 200.0)
-                           or not bounded(band[1], 0.0, 200.0)
-                           or not band[0] < band[1]
-                           for band in bt_profile["cz_bands_nm"])):
-                return False
-            maximum = min(water_depth, config.SONAR_BT_MAX_DEPTH_M)
-            expected_depths = [maximum * index / 20 for index in range(21)]
-            if (any(abs(depth - expected) > 1e-9
-                    for depth, expected in zip(depths, expected_depths))
-                    or any(not 1400.0 <= speed <= 1600.0 for speed in speeds)):
-                return False
-        contacts = sonar.get("contacts", {})
-        if not isinstance(contacts, dict):
-            return False
-        contact_ids = [contact.get("contact_id")
-                       for contact in contacts.values()
-                       if isinstance(contact, dict)]
-        next_contact_id = sonar.get("next_id")
-        if (not identity(next_contact_id)
-                or any(not identity(contact_id) for contact_id in contact_ids)
-                or next_contact_id <= max(contact_ids, default=0)):
-            return False
-        for contact in contacts.values():
-            if not isinstance(contact, dict):
-                return False
-            if (type(contact.get("released_to_opz")) is not bool
-                    or type(contact.get("dip_released_to_opz", False)) is not bool
-                    or type(contact.get("helo_qualified", False)) is not bool
-                    or type(contact.get("buoy_released_to_opz", False)) is not bool
-                    or ((contact.get("ship_observer_x") is None)
-                        != (contact.get("ship_observer_y") is None))
-                    or (contact.get("ship_observer_x") is not None
-                        and (not bounded(contact["ship_observer_x"], -1_000_000, 1_000_000)
-                             or not bounded(contact["ship_observer_y"], -1_000_000, 1_000_000)))
-                    or contact.get("passive_source") not in (
-                        "SONAR-BRG", "SONAR-DIP-BRG")
-                    or not bounded(contact.get("observer_x"), -1_000_000, 1_000_000)
-                    or not bounded(contact.get("observer_y"), -1_000_000, 1_000_000)):
-                return False
-            buoy_reports = contact.get("buoy_reports", {})
-            report_fields = {"mode", "bearing", "bearing_uncertainty_deg",
-                             "quality", "measured_at", "observer_x", "observer_y",
-                             "range_nm", "x", "y"}
-            if (not isinstance(buoy_reports, dict)
-                    or len(buoy_reports) > config.BUOY_COUNT
-                    or any(type(key) is not str or not key.isdecimal()
-                           or int(key) not in buoy_ids
-                           or not isinstance(row, dict) or set(row) != report_fields
-                           or row["mode"] not in ("PASSIVE", "ACTIVE")
-                           or not bounded(row["bearing"], 0, 360)
-                           or row["bearing"] == 360
-                           or not bounded(row["bearing_uncertainty_deg"], 0, 180)
-                           or not bounded(row["quality"], 0, 1)
-                           or not bounded(row["measured_at"], 0, save_sim_t)
-                           or not bounded(row["observer_x"], -1_000_000, 1_000_000)
-                           or not bounded(row["observer_y"], -1_000_000, 1_000_000)
-                           or (row["mode"] == "PASSIVE" and any(
-                               row[field] is not None for field in ("range_nm", "x", "y")))
-                           or (row["mode"] == "ACTIVE" and any(
-                               not bounded(row[field], -1_000_000, 1_000_000)
-                               for field in ("x", "y")))
-                           or (row["mode"] == "ACTIVE" and not bounded(
-                               row["range_nm"], 0, config.BUOY_RANGE_NM + .25))
-                           for key, row in buoy_reports.items())):
-                return False
-            reports = contact.get("array_observations", {})
-            if not isinstance(reports, dict) or not set(reports) <= set(SONAR_ARRAY_MODES):
-                return False
-            for report in reports.values():
-                if (not isinstance(report, dict)
-                        or not {"bearing", "quality", "snr", "last_seen"} <= set(report)
-                        or not set(report) <= {"bearing", "quality", "snr", "last_seen", "uncertainty_deg"}
-                        or not bounded(report["bearing"], 0, 360) or report["bearing"] == 360
-                        or not bounded(report["quality"], 0, 1)
-                        or not bounded(report["snr"], -200, 200)
-                        or not bounded(report["last_seen"], 0, 1e12)
-                        or ("uncertainty_deg" in report
-                            and not bounded(report["uncertainty_deg"], .05, 180))):
-                    return False
-            tma_seen = contact.get("tma_seen")
-            if tma_seen is not None and not bounded(tma_seen, 0, 1e12):
-                return False
-            published_fixes = contact.get("fixes")
-            if (not isinstance(published_fixes, list) or len(published_fixes) > len(FIX_SOURCES)
-                    or len({fix.get("source") for fix in published_fixes
-                            if isinstance(fix, dict)}) != len(published_fixes)):
-                return False
-            for fix in published_fixes:
-                fields = {"source", "measured_at", "fixed_at", "x", "y",
-                          "uncertainty_nm", "depth_m", "depth_uncertainty_m",
-                          "quality"}
-                if (not isinstance(fix, dict) or set(fix) != fields
-                        or fix["source"] not in FIX_SOURCES
-                        or not bounded(fix["measured_at"], 0, save_sim_t)
-                        or not bounded(fix["fixed_at"], fix["measured_at"], save_sim_t)
-                        or not bounded(fix["x"], -1_000_000, 1_000_000)
-                        or not bounded(fix["y"], -1_000_000, 1_000_000)
-                        or not bounded(fix["uncertainty_nm"], 1e-9, 100)
-                        or not bounded(fix["quality"], 0, 1)
-                        or ((fix["depth_m"] is None)
-                            != (fix["depth_uncertainty_m"] is None))
-                        or (fix["depth_m"] is not None
-                            and (not bounded(fix["depth_m"], 0, 10_000)
-                                 or not bounded(fix["depth_uncertainty_m"],
-                                                1e-9, 10_000)))):
-                    return False
-            fixes = contact.get("buoy_fixes", [])
-            if (not isinstance(fixes, list) or len(fixes) > 80
-                    or any(not isinstance(row, (list, tuple)) or len(row) != 4
-                           or not bounded(row[0], 0, 1e12)
-                           or any(not bounded(v, -1_000_000, 1_000_000) for v in row[1:3])
-                           or not bounded(row[3], 0, 1) for row in fixes)):
-                return False
-            history = contact.get("raw_bearings", [])
-            if (not isinstance(history, list)
-                    or len(history) > config.BEARING_TRACK_MAX_PTS
-                    or any(not isinstance(row, (list, tuple)) or len(row) != 3
-                           or any(not finite_number(value) for value in row)
-                           or not 0.0 <= row[1] < 360.0
-                           or not 0.0 <= row[2] <= 180.0
-                           for row in history)):
-                return False
-            uncertainty = contact.get("bearing_uncertainty_deg")
-            if (uncertainty is not None
-                    and (not finite_number(uncertainty)
-                         or not 0.0 <= uncertainty <= 180.0)):
-                return False
-            # v13: the operator's catalog assignment is required (None = none).
-            if "player_profile" not in contact:
-                return False
-            profile = contact["player_profile"]
-            if profile is not None and (
-                    type(profile) is not str or profile not in (
-                        runtime_catalog or CATALOG).profile_systems):
-                return False
-            passive_bearing = contact.get("passive_bearing")
-            if (passive_bearing is not None
-                    and (not finite_number(passive_bearing)
-                         or not 0.0 <= passive_bearing < 360.0)):
-                return False
-            epoch = contact.get("passive_epoch")
-            if epoch is not None and (not isinstance(epoch, int)
-                                      or isinstance(epoch, bool) or epoch < 0):
-                return False
-            filter_t = contact.get("bearing_filter_t")
-            if (filter_t is not None
-                    and (not finite_number(filter_t) or filter_t < 0.0)):
-                return False
-            filter_rate = contact.get("bearing_filter_rate_deg_s", 0.0)
-            if (not finite_number(filter_rate)
-                    or abs(filter_rate) > config.SONAR_BEARING_RATE_MAX_DEG_S):
-                return False
-            filter_uncertainty = contact.get("bearing_filter_uncertainty_deg")
-            if (filter_uncertainty is not None
-                    and (not finite_number(filter_uncertainty)
-                         or not 0.05 <= filter_uncertainty <= 180.0)):
-                return False
-            if (filter_t is None and filter_rate != 0.0) \
-                    or (filter_t is not None
-                        and (passive_bearing is None
-                             or filter_uncertainty is None)):
-                return False
-            # W2: the helicopter's own independent dip-passive bearing track.
-            dip_bearing = contact.get("dip_bearing")
-            if (dip_bearing is not None
-                    and (not finite_number(dip_bearing)
-                         or not 0.0 <= dip_bearing < 360.0)):
-                return False
-            dip_uncertainty = contact.get("dip_bearing_uncertainty_deg")
-            if (dip_uncertainty is not None
-                    and (not finite_number(dip_uncertainty)
-                         or not 0.05 <= dip_uncertainty <= 180.0)):
-                return False
-            dip_last_seen = contact.get("dip_last_seen")
-            if dip_last_seen is not None and not bounded(
-                    dip_last_seen, 0, save_sim_t):
-                return False
-            if any(contact.get(name) is not None
-                   and not bounded(contact.get(name), -1_000_000, 1_000_000)
-                   for name in ("dip_observer_x", "dip_observer_y")):
-                return False
-            if dip_bearing is not None and (
-                    dip_uncertainty is None or dip_last_seen is None
-                    or contact.get("dip_observer_x") is None
-                    or contact.get("dip_observer_y") is None):
-                return False
-            ellipse = contact.get("tma_ellipse")
-            if ellipse is not None and (
-                    not isinstance(ellipse, list) or len(ellipse) != 3
-                    or not bounded(ellipse[0], 0.0, 1e6)
-                    or not bounded(ellipse[1], 0.0, ellipse[0] + 1e-9)
-                    or not bounded(ellipse[2], 0.0, 180.0)):
-                return False
-            if (contact.get("towed_side") not in ("STBD", "PORT")
-                    or type(contact.get("towed_ambiguous")) is not bool
-                    or type(contact.get("towed_resolved")) is not bool
-                    or (contact["towed_ambiguous"] and contact["towed_resolved"])
-                    or (contact["towed_ambiguous"] and (
-                        not bounded(contact.get("ambiguity_axis"), 0.0, 360.0)
-                        or not bounded(contact.get("mirror_bearing"), 0.0, 360.0)))
-                    or (contact.get("tonal_hz") is not None
-                        and not bounded(contact["tonal_hz"], 0.1, 20000.0))):
-                return False
-        echoes = sonar.get("echo_history", [])
-        if any(not isinstance(item, dict)
-               or not finite_number(item.get("t"))
-               or not finite_number(item.get("contact_id"))
-               or any(name in item and not finite_number(item[name])
-                      for name in ("bearing", "range_nm", "range_sigma_nm",
-                                   "depth_m", "depth_sigma_m", "snr_db"))
-               for item in echoes):
-            return False
-        tracks = sonar.get("tracks", {})
-        if not isinstance(tracks, dict):
-            return False
-        if any(not isinstance(points, list)
-               or len(points) > config.BEARING_TRACK_MAX_PTS
-               or any(not isinstance(point, dict)
-                       or any(not finite_number(point.get(name))
-                              for name in ("t", "bearing", "fx", "fy",
-                                           "fcourse"))
-                       or ("uncertainty_deg" in point
-                           and (not finite_number(point["uncertainty_deg"])
-                                or not 0.05 <= point["uncertainty_deg"] <= 180.0))
-                       or (point.get("freq_hz") is not None
-                           and not bounded(point["freq_hz"], 0.1, 20000.0))
-                       or not bounded(point.get("fspeed"), 0.0, 60.0)
-                       for point in points)
-               for points in tracks.values()):
-            return False
-        track_versions = sonar.get("track_versions", {})
-        tma_versions = sonar.get("tma_versions", {})
-        tma_next = sonar.get("tma_next", {})
-        if any(not isinstance(values, dict)
-               for values in (track_versions, tma_versions, tma_next)):
-            return False
-        if any(not isinstance(value, int) or isinstance(value, bool)
-               or not 0 <= value <= 1_000_000_000
-               for values in (track_versions, tma_versions)
-               for value in values.values()):
-            return False
-        if any(not finite_number(value) or value < 0.0
-               for value in tma_next.values()):
-            return False
-        try:
-            all_keys = (set(tracks) | set(track_versions)
-                        | set(tma_versions) | set(tma_next))
-            if any(not isinstance(key, str) or str(int(key)) != key
-                   for key in all_keys):
-                return False
-            gate_keys = ({int(key) for key in track_versions}
-                         | {int(key) for key in tma_versions}
-                         | {int(key) for key in tma_next})
-            track_keys = {int(key) for key in tracks}
-        except (TypeError, ValueError):
-            return False
-        if any(key < 0 for key in gate_keys | track_keys) \
-                or not gate_keys <= track_keys:
-            return False
-        if any(track_versions.get(key, len(points)) < len(points)
-               for key, points in tracks.items()):
-            return False
-        if any(value > track_versions.get(key, len(tracks[key]))
-               for key, value in tma_versions.items()):
-            return False
-        sim_t = data.get("sim_t", 0.0)
-        if (not finite_number(sim_t) or sim_t < 0.0
-                or any(value > sim_t + config.TMA_RESOLVE_EVERY_S
-                       for value in tma_next.values())
-                or any(contact.get("bearing_filter_t") is not None
-                       and contact["bearing_filter_t"] > sim_t
-                       for contact in contacts.values())):
-            return False
-        if sonar.get("ping_pulse") not in sonar_equation.PULSES:
-            return False
-        clutter = sonar.get("pending_clutter")
-        if (not isinstance(clutter, list)
-                or len(clutter) > SonarSystem.MAX_PENDING_CLUTTER
-                or any(not isinstance(item, dict)
-                       or set(item) != {"ready_at", "mode", "snapshot"}
-                       or item["mode"] not in SONAR_ARRAY_MODES + ("DIPPING",)
-                       or not SonarSystem.valid_ping_snapshot(item["snapshot"])
-                       or not bounded(item["ready_at"], 0, 1e12)
-                       or not item["snapshot"]["t"] <= sim_t
-                       or not 0 <= item["ready_at"] - item["snapshot"]["t"] <= 25000
-                       for item in clutter)):
-            return False
-        pending_pings = sonar.get("pending_pings", [])
-        # 25000 s covers two-way propagation across the 10000 NM snapshot bound.
-        if len(pending_pings) > SonarSystem.MAX_PENDING_PINGS or any(not isinstance(item, dict)
-               or set(item) != {"target_id", "sent_at", "ready_at", "range_factor", "mode", "snapshot"}
-               or not identity(item.get("target_id"))
-               or item["target_id"] not in allowed_ids
-               or any(not bounded(item.get(key, 0), 0, 1e12)
-                      for key in ("sent_at", "ready_at"))
-               or not bounded(item.get("range_factor", 1), 0, 100)
-                or item.get("mode", "BOW") not in SONAR_ARRAY_MODES + ("DIPPING",)
-               or item.get("sent_at", sim_t) > sim_t
-               or not 0 <= item.get("ready_at", sim_t) - item.get("sent_at", sim_t) <= 25000
-               or not SonarSystem.valid_ping_snapshot(item["snapshot"])
-               or not item["sent_at"] <= item["snapshot"]["t"] <= sim_t
-               for item in pending_pings):
-            return False
-        return True
+        return valid_sonar_block(
+            sonar, allowed_ids, data=data, runtime_catalog=runtime_catalog,
+            default_catalog=CATALOG, save_sim_t=save_sim_t, buoy_ids=buoy_ids,
+            finite_number=finite_number, bounded=bounded, identity=identity)
 
     if data.get("sonar_mode") not in SONAR_ARRAY_MODES:
         return False

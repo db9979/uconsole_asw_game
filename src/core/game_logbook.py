@@ -167,7 +167,7 @@ class LogbookMixin:
                       if key.startswith(side + ":")
                       and not daily.is_daily_key(key.partition(":")[2]))
         y = 240
-        for scenario, score in best[:7]:
+        for scenario, score in best[:6]:
             layout.blit_line(s, message("logbook.best_row", scenario=self._scenario_label(scenario),
                                         score=score), (x, y, 440, 24), config.COLOR_TEXT, size=18)
             y += 24
@@ -176,15 +176,15 @@ class LogbookMixin:
         # What the enemy learnt of this side's habits (L switches it).
         learns = bool(getattr(self.preferences, "enemy_learns", True))
         layout.blit_line(s, message("logbook.learns", state=self.tr(
-            "common.on" if learns else "common.off")), (x, 412, 440, 22),
+            "common.on" if learns else "common.off")), (x, 390, 440, 22),
             config.COLOR_TEXT_DIM, size=16)
         if learns:
             known = habits.known(book.entries, side)
-            text = (message("logbook.knows", habits=raw_text(", ".join(
+            text = (message("logbook.knows", habits=raw_text(" · ".join(
                 self.tr("habit." + habit) for habit in known))) if known
                 else "logbook.knows_none")
-            layout.blit_line(s, text, (x, 434, 440, 22),
-                             config.COLOR_WARN if known else config.COLOR_TEXT_DIM, size=16)
+            layout.blit_block(s, text, x, 412, 440, 48,
+                              config.COLOR_WARN if known else config.COLOR_TEXT_DIM, size=16)
         # Awards of this side, earned or still open.
         ax = x + 470
         layout.blit_line(s, "logbook.awards", (ax, 214, 450, 24), config.COLOR_TEXT_DIM, size=18)

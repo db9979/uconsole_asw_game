@@ -17,6 +17,7 @@ import pytest
 
 from src.core import config
 from src.core import game_custom, game_draw
+from src.core import habits as habit_model
 from src.core import logbook as logbook_model
 from src.core.game import Game
 from src.core.preferences import Preferences
@@ -94,15 +95,20 @@ def _pages(game: Game):
             game.menu_screen = "difficulty"
             game.menu_sel = sel
         yield f"difficulty-{sel}", difficulty
-    def full_logbook():
+    def full_logbook(side="frigate"):
         book = logbook_model.Logbook()
         for i, key in enumerate(config.SCENARIO_ORDER * 2):
-            book.record(date="2026-10-02", side=config.scenario_side(key), scenario=key,
+            book_side = "frigate" if config.scenario_side(key) == "frigate" else "boat"
+            # Every habit known (src/core/habits.py): the longest line.
+            book.record(date="2026-10-02", side=book_side, scenario=key,
                         level="realistic", won=i % 2 == 0, score=900 + i, minutes=95,
-                        shots=3, sunk=1, earned=[], advisor=i % 3 == 0)
+                        shots=3, sunk=1, earned=[], advisor=i % 3 == 0,
+                        habits=list(habit_model.HABITS[book_side]))
         game.logbook_view = book
+        game.logbook_side = side
         game.menu_screen = "logbook"
     yield "logbook-full", full_logbook
+    yield "logbook-full-boat", lambda: full_logbook("boat")
     for screen in ("side", "training", "logbook", "daily", "campaign"):
         def page(screen=screen):
             game.menu_screen = screen

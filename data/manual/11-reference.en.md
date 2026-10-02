@@ -247,6 +247,13 @@ When nobody sails the frigate (the uConsole plays the submarine, or a solo brows
 - Every computer submarine commander and the AI hunter frigate's captain has one of four characters, fixed by the seed: **daring** (attacks early, gives way briefly, rarely lies in wait), **fox** (lies in wait long and far, pings little), **cautious** (gives way long, holds fire, keeps its distance) and **hunter** (stubborn, runs a lost bearing down for long).
 - Each character changes existing tactics only by factors (attack rate, evasion time, lurking distance; the hunter's closing speed, ping interval, firing range and lead time); across the four they average out.
 - In about six of ten missions HQ hints at the character after 90 s (*Intelligence rates the enemy's commander ...*); the debrief names it.
+- **Own plans:** every free AI submarine and the AI hunter frigate pick a plan of their own, without any language model. A boat that hears the frigate closes in (daring, hunter), lies in wait under the layer (fox) or keeps its patrol (cautious); after a ping it goes deep and creeps or hovers listening under the layer; damaged or out of torpedoes it slips away. Without a datum the hunter frigate searches fast, quietly, in sprints with listening pauses or at normal speed, by its captain. Evasion, lying in wait and attacks keep priority.
+
+## The enemy learns {#ref-habits}
+
+- After every mission of 5 min or more the logbook notes coarse habits of the side played. Frigate: **early pings** (first ping before or up to 2 min after the first contact), **fast search** (a mean of 18 kn or more without a position), **long shots** (torpedoes at a mean of 5 NM or more). Submarine: **periscope depth** (a quarter of the time), **above the layer** (half of the time), **high speed** (a mean of 10 kn or more).
+- When more than half of the last five missions of a side (at least three) showed a habit, the enemy knows it in the next mission and adapts a little: against early pings the boats go under the layer as soon as they hear the frigate, and all go deep after a ping; against a fast search they lie in wait instead of closing; against long shots they creep deep instead of closing. Against a submarine often at periscope depth the hunter frigate searches in sprints, against one above the layer it pings more often, against high speed it searches quietly.
+- What the enemy knows is fixed at the start of the mission and saved. The debrief names it, the logbook page shows it per side. `L` on the logbook page switches the learning off and on. In the daily mission, lessons and two-crew play the enemy never learns.
 
 ## Shock, hit picture and seekers {#ref-shock}
 

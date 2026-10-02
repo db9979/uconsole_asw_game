@@ -207,8 +207,8 @@ def test_the_debrief_names_the_known_habits():
     event = next(event for event in game.frigate_debrief.events
                  if event["kind"] == "enemy_habits")
     with translation_scope(Translator("en").t):
-        assert event_text(event) == ("The enemy expected your habits: early pinging, "
-                                     "long-range shots")
+        assert event_text(event) == ("The enemy expected your habits: early pings, "
+                                     "long shots")
     with translation_scope(Translator("de").t):
         assert "frühes Pingen" in event_text(event)
 

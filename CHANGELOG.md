@@ -31,7 +31,9 @@ experimental opponent, with a connection test.
   mission and opens for checking.
 - An experimental opponent lets the model pick the AI side's plan from a
   fixed list every 3 minutes; such missions are marked and never scored, and
-  it never runs in the campaign, lessons or two-crew play.
+  it never runs in the campaign, lessons, the daily mission or two-crew play.
+- In the browser the submarine's seeker settings no longer jump back to the
+  old values for a moment after Apply.
 
 Saves are now v49 (the advisor marks and the experimental opponent's plan);
 v38 to v48 saves still load.

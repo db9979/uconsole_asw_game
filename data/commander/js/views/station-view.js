@@ -104,6 +104,7 @@ export function clearRoleState() {
   sonarHistory.context = null;
   for (const name of ["broadband", "lofar", "demon"]) sonarHistory[name].clear();
   S.stationDrafts.clear();
+  S.ubootSeekerSent = null;
   clearFireDrafts();
   S.stationRenderSignature = null;
   S.sonarVisualPage = defaultSonarPage();

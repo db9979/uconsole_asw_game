@@ -64,6 +64,8 @@ export const S = {
   // Bridge route mode: a chart click adds an autopilot waypoint.
   bridgeRouteMode: false,
   ubootRouteMode: false,
+  // The submarine's last sent seeker setting, held until a state shows it.
+  ubootSeekerSent: null,
   requestQueue: Promise.resolve(),
   activeRequest: null,
   languageRequest: 0,

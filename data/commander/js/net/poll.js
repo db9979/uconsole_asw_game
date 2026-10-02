@@ -123,6 +123,7 @@ export async function poll() {
         S.opzSuppressed.clear();
         S.opzManage = false;
         S.stationDrafts.clear();
+        S.ubootSeekerSent = null;
       }
       // Drafts and forms of the previous context are dropped by the views.
       emit("context:changed", worldChanged);

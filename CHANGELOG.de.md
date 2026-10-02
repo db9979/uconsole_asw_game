@@ -33,8 +33,10 @@ experimentellen Gegner ein, mit einem Verbindungstest.
   wie jede eigene Mission und öffnet sich zum Prüfen.
 - Ein experimenteller Gegner lässt das Modell alle 3 Minuten den Plan der
   KI-Seite aus einer festen Liste wählen; solche Missionen sind markiert und
-  nie gewertet, und in Kampagne, Lektionen und Spiel mit zwei Crews läuft er
-  nie.
+  nie gewertet, und in Kampagne, Lektionen, Tageseinsatz und Spiel mit zwei
+  Crews läuft er nie.
+- Im Browser springen die Suchkopf-Einstellungen des U-Boots nach Übernehmen
+  nicht mehr kurz auf die alten Werte zurück.
 
 Spielstände sind jetzt v49 (die Berater-Markierung und der Plan des
 experimentellen Gegners); Spielstände v38 bis v48 lassen sich weiter laden.

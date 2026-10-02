@@ -534,8 +534,16 @@ export function renderUbootStation(payload) {
     ["uboot_decoys", number(weapons.decoys, 0)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
   renderTubes(weapons.tubes);
-  // A sent seeker setting holds its controls until the host has applied it.
-  const seekerSent = S.pending?.body?.action === "uboot_torpedo_settings";
+  // A sent seeker setting holds its controls until a state shows it: the
+  // command's confirmation can arrive a few states before the setting does.
+  // A rejection, or many newer states without it, releases them.
+  const sent = S.ubootSeekerSent;
+  if (sent !== null && !S.pending && sent.ackSeq === null) sent.ackSeq = S.snapshot.seq;
+  const seekerShown = sent !== null && weapons.pattern === sent.pattern && weapons.enable_nm === sent.enable_nm;
+  const seekerDropped = sent !== null && sent.ackSeq !== null &&
+    (S.commandMessage?.status === "rejected" || S.snapshot.seq > sent.ackSeq + 20);
+  if (seekerShown || seekerDropped) S.ubootSeekerSent = null;
+  const seekerSent = S.ubootSeekerSent !== null;
   if (!seekerSent && !S.stationDrafts.has("uboot-seeker-pattern")) setControlValue($("uboot-seeker-pattern"), weapons.pattern);
   if (!seekerSent && !S.stationDrafts.has("uboot-seeker-enable")) setControlValue($("uboot-seeker-enable"), String(weapons.enable_nm));
   metrics($("uboot-alarms"), [

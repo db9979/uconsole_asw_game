@@ -56,6 +56,7 @@ TICKER_FADE_PX = 64
 from src.ui.stations_view import opz_ppi_rect
 from src.ui.mission_editor import MissionEditor
 from src.core.game_custom import CUSTOM_SCREEN
+from src.ui import menu_list
 from src.ui.simlog_view import draw_simlog_view
 from src.ui.weapons_view import draw_weapons_overlay, draw_weapons_panel
 # Shared display/help constants and helpers (re-exported for tests/tools).
@@ -65,6 +66,11 @@ from src.core.game_events import _ECO_REFRESH_EVENTS
 
 
 FRIGATE_TAB_W = 84
+# Widest centred menu line: long lines shrink, then end in "...".
+MENU_TEXT_W = config.SCREEN_W - 48
+# The free hunt's difficulty page: rows shown at once (the list scrolls).
+DIFFICULTY_ROWS = 14
+DIFFICULTY_TEXT_W = 900
 
 
 def frigate_station_tab_rects() -> list:
@@ -184,11 +190,23 @@ class DrawMixin:
         # The start screen's night hunt, dimmed, behind every menu page.
         draw_menu_backdrop(s, self._t)
 
-        def center(text: str, y: int, font=None, color=config.COLOR_TEXT, keys=None) -> None:
+        def center(text: str, y: int, font=None, color=config.COLOR_TEXT, keys=None,
+                   width: int = MENU_TEXT_W) -> None:
             f = font or self.menu_font
             text = localize(text)
-            surf = f.render(text, True, color)
-            s.blit(surf, surf.get_rect(center=(cx, y)))
+            if layout.text_width(f, text) > width:
+                # Long lines (large text, long sector names) shrink to the
+                # screen width instead of running off both edges.
+                size, bold = (34, True) if f is self.menu_font_big else (21, False)
+                while size > layout.MIN_OPERATIONAL_FONT \
+                        and layout.text_width(f, text) > width:
+                    size -= 1
+                    f = layout.font(size, bold)
+                text = layout.ellipsize(text, f, width)
+            surf = layout.render_line(f, text, color)
+            rect = surf.get_rect(center=(cx, y))
+            layout.record_text(text, rect, (cx - width // 2, rect.y, width, rect.h), surf)
+            s.blit(surf, rect)
             if keys:
                 # Each "a | b" part of a key hint is clickable.
                 pointer.add_text_keys(text, f, cx, y, keys)
@@ -254,30 +272,7 @@ class DrawMixin:
             side_key = ("menu.choose_scenario.uboot" if self.local_side == "uboot"
                         else "menu.choose_scenario.frigate")
             center(self.tr(side_key), 150, color=config.COLOR_TEXT_DIM)
-            scenario_names = config.SCENARIO_NAMES
-            current = (None if self.menu_sel == self.custom_row_sel()
-                       else self.scenario_menu_index())
-            step = 36                     # ten missions and the own-missions row
-            for row_i, key in enumerate(config.scenarios_for_side(self.local_side)):
-                i = config.SCENARIO_ORDER.index(key)
-                row(220 + row_i * step, 34, lambda i=i: setattr(self, "menu_sel", i))
-                sc = config.SCENARIOS[key]
-                marker = "► " if i == current else "  "
-                col = config.COLOR_TEXT if i == current \
-                    else config.COLOR_TEXT_DIM
-                lv = self.tr("menu.difficulty_fixed" if sc["difficulty"] is not None
-                             else "menu.difficulty_custom")
-                title = self.tr("scenario." + scenario_names[key] + ".title")
-                center(message("menu.scenario_choice", index=row_i + 1,
-                               marker=marker, title=title, level=lv),
-                       220 + row_i * step, color=col)
-            # The last row: the side's own missions from the Mission Editor.
-            row_i = len(config.scenarios_for_side(self.local_side))
-            custom = self.custom_row_sel()
-            row(220 + row_i * step, 34, lambda: setattr(self, "menu_sel", custom))
-            center(message("menu.custom.row", marker="► " if self.menu_sel == custom else "  "),
-                   220 + row_i * step, color=config.COLOR_TEXT if self.menu_sel == custom
-                   else config.COLOR_TEXT_DIM)
+            self._draw_scenario_list(center, row)
         elif self.menu_screen == CUSTOM_SCREEN:
             self._draw_custom_menu(center)
         elif self.menu_screen == "difficulty":
@@ -285,34 +280,35 @@ class DrawMixin:
                    150, color=config.COLOR_TEXT_DIM, keys=("Enter", "Esc"),
                    )
             row_h = 26
-            for i in range(len(config.DIFFICULTY_FIELD_ORDER) + 1):
+            count = len(config.DIFFICULTY_FIELD_ORDER) + 1
+            first = menu_list.first_row(count, self.menu_sel, DIFFICULTY_ROWS)
+            for i in range(first, min(count, first + DIFFICULTY_ROWS)):
                 # Left part lowers, right part raises, the middle selects.
-                y = 190 + i * row_h
+                y = 190 + (i - first) * row_h
                 for part, key in ((0, pygame.K_LEFT), (1, None), (2, pygame.K_RIGHT)):
                     pointer.add_action(
                         (cx - 360 + part * 240, y - row_h // 2, 240, row_h),
                         lambda _pos, i=i, key=key: self._click_menu_row(
                             lambda: setattr(self, "menu_sel", i), key))
-            for i, name in enumerate(config.DIFFICULTY_FIELD_ORDER):
-                kind, _low, _high, _step, _default = config.DIFFICULTY_FIELDS[name]
                 marker = "► " if i == self.menu_sel else "  "
                 col = config.COLOR_TEXT if i == self.menu_sel \
                     else config.COLOR_TEXT_DIM
-                value = self.menu_difficulty[name]
-                value_text = (str(value) if kind is int
-                             else f"{value:.3f}".rstrip("0").rstrip("."))
-                center(message("menu.difficulty_choice", marker=marker,
-                               label=self.tr("difficulty." + name),
-                               value=value_text),
-                       190 + i * row_h, color=col)
-            i = len(config.DIFFICULTY_FIELD_ORDER)
-            selected = i == self.menu_sel
-            center(message("menu.difficulty_choice",
-                           marker="► " if selected else "  ",
-                           label=self.tr("menu.hq_intel"),
-                           value=self.tr("menu.hq_intel." + self.hq_intel_mode_menu())),
-                   190 + i * row_h,
-                   color=config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM)
+                if i < count - 1:
+                    name = config.DIFFICULTY_FIELD_ORDER[i]
+                    kind, _low, _high, _step, _default = config.DIFFICULTY_FIELDS[name]
+                    value = self.menu_difficulty[name]
+                    label = self.tr("difficulty." + name)
+                    value_text = (str(value) if kind is int
+                                  else f"{value:.3f}".rstrip("0").rstrip("."))
+                else:
+                    # The last row (after the saved fields) is the HQ intel.
+                    label = self.tr("menu.hq_intel")
+                    value_text = self.tr("menu.hq_intel." + self.hq_intel_mode_menu())
+                center(message("menu.difficulty_choice", marker=marker, label=label,
+                               value=value_text), y, color=col, width=DIFFICULTY_TEXT_W)
+            menu_list.draw_scrollbar(s, (cx + DIFFICULTY_TEXT_W // 2 + 12, 190 - row_h // 2,
+                                         8, DIFFICULTY_ROWS * row_h),
+                                     first, DIFFICULTY_ROWS, count)
         else:  # briefing
             sc = config.SCENARIOS[self.scenario_key]
             scenario_key = config.SCENARIO_NAMES[self.scenario_key]
@@ -344,7 +340,7 @@ class DrawMixin:
             world_label = sector["name"]
             if self.world_mode == "real_fixed":
                 center(self.tr("menu.real_fixed_hint", sector=sector["id"]),
-                       config.SCREEN_H - 95, color=config.COLOR_TEXT_DIM)
+                       config.SCREEN_H - 92, color=config.COLOR_TEXT_DIM)
         else:
             world_label = self.tr("menu.fixed_chart")
         center(self.tr("menu.world_status", world=world_label, seed=self.seed),

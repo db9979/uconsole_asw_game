@@ -30,6 +30,14 @@ export function renderLampPanel(box, master, rows) {
     : cautions ? t("uboot_engine_master_caution", {count: cautions}) : t("uboot_engine_master_clear");
 }
 
+// A lamp with a control (the row's fifth entry: the id of the station's own
+// button or switch) works that control when clicked, as on the uConsole, so
+// the order takes the same path as the button itself.
+function pressLampControl(cell) {
+  const control = cell.dataset.control ? $(cell.dataset.control) : null;
+  if (control && !control.disabled) control.click();
+}
+
 // The lamps alone, without a master lamp (the sonar's listening console).
 export function renderLamps(box, rows) {
   const cells = keyed(box, rows.map((row) => row[0]), (key) => {
@@ -39,13 +47,32 @@ export function renderLamps(box, rows) {
     const led = node("span", undefined, "console-led");
     led.setAttribute("aria-hidden", "true");
     cell.append(led, node("span", undefined, "console-lamp-label"), node("span", undefined, "console-lamp-value"));
+    cell.addEventListener("click", () => pressLampControl(cell));
+    cell.addEventListener("keydown", (event) => {
+      if (!cell.dataset.control || (event.key !== "Enter" && event.key !== " ")) return;
+      event.preventDefault();
+      pressLampControl(cell);
+    });
     return cell;
   });
-  rows.forEach(([, label, level, value], index) => {
+  rows.forEach(([, label, level, value, control], index) => {
     const cell = cells[index];
     cell.dataset.level = level;
     cell.children[1].textContent = label;
     cell.children[2].textContent = value;
+    const target = control ? $(control) : null;
+    const live = Boolean(target && !target.disabled && !target.hidden);
+    if (live) {
+      if (cell.dataset.control !== control) {
+        cell.dataset.control = control;
+        cell.setAttribute("role", "button");
+        cell.tabIndex = 0;
+      }
+    } else if (cell.dataset.control) {
+      delete cell.dataset.control;
+      cell.setAttribute("role", "listitem");
+      cell.removeAttribute("tabindex");
+    }
   });
 }
 

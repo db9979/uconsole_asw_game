@@ -212,6 +212,7 @@ def draw_top_bar(game, boat) -> None:
                          config.COLOR_TEXT if active else config.COLOR_TEXT_DIM,
                          size=14, align="center")
         draw_lamp(s, rect, alarms.get(role), game._t)
+        pointer.add_hotspot(rect)       # uboot_local.handle_pointer takes the click
     sub = boat.sub if boat is not None else None
     text = message("uboot.top.status", scenario=raw_text(game.top_bar_scenario()),
                    time=game.world.format_time(),
@@ -1035,8 +1036,9 @@ def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
                       text=raw_text(f"{noise * 100:.0f} %"), label="uboot.dial.noise"))
     snorkel = bool(sub.snorkeling)
     lamps = [
-        ("uboot.mode.silent", "", "on" if boat.orders.silent else "off"),
-        ("uboot.mode.snorkel", "", "caution" if snorkel else "off"),
+        # Silent running and the snorkel switch with a click (A, N).
+        ("uboot.mode.silent", "", "on" if boat.orders.silent else "off", "A"),
+        ("uboot.mode.snorkel", "", "caution" if snorkel else "off", "N"),
         ("uboot.mode.bottom", "", "caution" if boat.orders.bottomed else "off"),
         ("engine.lamp.cavitation", "", "alarm" if sub.cavitating else "off"),
         ("uboot.label.blow", "common.yes" if sub.blow_available else "common.no",
@@ -1071,6 +1073,10 @@ def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
                                     speed=_fmt(speed, "{:.0f}")), rect,
                          config.COLOR_TEXT if current else config.COLOR_TEXT_DIM,
                          size=16, align="center")
+        # A click on a step orders that speed, as the speed dial does.
+        from src.core import pointer_input
+        pointer.add_action(rect, lambda _pos, value=float(speed): pointer_input.enter_value(
+            game, "uboot_speed", value))
 
 
 def _hours_text(seconds):
@@ -1324,9 +1330,12 @@ def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
     mast_h = layout.line_pitch(16, 16, bold=True) + first + 2 * row + 8
     mast = layout.box(s, (x, y, w, mast_h), "uboot.panel.mast", border=border)
     mx, my, mw, _ = mast
-    layout.blit_line(s, message("uboot.line.mast_up" if orders.mast else "uboot.line.mast_down",
-                                depth=_fmt(MAST_DEPTH_M)), (mx, my, mw, first),
+    mast_line = message("uboot.line.mast_up" if orders.mast else "uboot.line.mast_down",
+                        depth=_fmt(MAST_DEPTH_M))
+    layout.blit_line(s, mast_line, (mx, my, mw, first),
                      config.COLOR_WARN if orders.mast else config.COLOR_TEXT, size=17)
+    # The mast line is its switch (P raises or lowers it).
+    pointer.add_token_keys((mx, my, mw, first), mast_line, 17, (("Mast", "P"),))
     layout.blit_line(s, message("uboot.esm.mast_time", elapsed=_fmt(elapsed), limit=_fmt(limit))
                      if elapsed is not None else message("uboot.esm.mast_time_limit",
                                                         limit=_fmt(limit)),

@@ -12,7 +12,7 @@ import pygame
 
 from src.core import boat_threat, config
 from src.core.i18n import message
-from src.ui import layout, lines
+from src.ui import layout, lines, pointer
 
 KIND_COLORS = {"hull": config.COLOR_WARN, "dipping": config.COLOR_WARN,
                "buoy": config.COLOR_TEXT, "splash": config.COLOR_TEXT_DIM,
@@ -82,13 +82,14 @@ def draw_threat_page(s, game, boat, x, y, w, h) -> None:
     for index, text in enumerate(rows[:3]):
         layout.blit_line(s, text, (ax, ay + index * small, aw, small), config.COLOR_TEXT, size=15)
     if plan is not None:
-        layout.blit_line(s, message("uboot.threat_page.plan", course=f"{plan['course']:03.0f}",
-                                    speed=_fmt(plan["speed_kn"]), depth=_fmt(plan["depth_m"]),
-                                    source=message("uboot.threat_page.source." + plan["kind"])),
-                         (ax, ay + 3 * small + 4, aw, row), config.COLOR_WARN, size=16)
+        evade = message("uboot.threat_page.plan", course=f"{plan['course']:03.0f}",
+                        speed=_fmt(plan["speed_kn"]), depth=_fmt(plan["depth_m"]),
+                        source=message("uboot.threat_page.source." + plan["kind"]))
+        color = config.COLOR_WARN
     else:
-        layout.blit_line(s, "uboot.threat_page.no_plan", (ax, ay + 3 * small + 4, aw, row),
-                         config.COLOR_TEXT_DIM, size=16)
+        evade, color = "uboot.threat_page.no_plan", config.COLOR_TEXT_DIM
+    layout.blit_line(s, evade, (ax, ay + 3 * small + 4, aw, row), color, size=16)
+    pointer.add_token_keys((ax, ay + 3 * small + 4, aw, row), evade, 16, (("I:", "I"),))
     top += advice_h + 8
     listing_h = max(40, h - (top - y))
     listing = layout.box(s, (x, top, w, listing_h), "uboot.panel.intercepts")

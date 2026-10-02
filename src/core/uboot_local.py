@@ -437,6 +437,8 @@ def handle_pointer(game, event) -> None:
         if page is not None:
             current.command_page = page
             return
+        if game.station is Station.SONAR and _sonar_click(game, current, pos):
+            return
         game._uboot_chart_drag = uboot_view.chart_pointer(game, pos)
     elif (event.type == pygame.MOUSEBUTTONDOWN and event.button == 3
           and local_station(game) == "uboot_nav" and not station_remote(game)):
@@ -460,6 +462,36 @@ def handle_pointer(game, event) -> None:
         game._uboot_chart_drag = pointer
     elif event.type == pygame.MOUSEBUTTONUP:
         game._uboot_chart_drag = None
+
+
+def _sonar_click(game, current, pos) -> bool:
+    """The boat's sonar room takes the frigate sonar's safe clicks (page tabs,
+    contact rows, waterfall bearing, footer switches) on its own workstation;
+    the towed-array switch does not exist aboard."""
+    from src.ui.sonar_view import sonar_click_target
+    canvas = game._window_to_canvas(pos)
+    if canvas is None:
+        return False
+    previous = config.STATION_RECT
+    config.STATION_RECT = config.FULL_STATION_RECT
+    try:
+        with game.sonar_perspective(current.station):
+            target = sonar_click_target(game, canvas)
+    finally:
+        config.STATION_RECT = previous
+    if target is None or target.get("action") == "array":
+        return False
+    if station_remote(game):
+        game.flash(message("uboot.local.station_remote",
+                           station=message(f"station.{local_station(game)}")), 2.0)
+        return True
+    game._uboot_ui = True
+    try:
+        with game.sonar_perspective(current.station):
+            game._handle_sonar_click(target)
+    finally:
+        game._uboot_ui = False
+    return True
 
 
 # Order keys -> the Remote Crew action they are (its allowlist names the stations).

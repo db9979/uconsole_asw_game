@@ -12,17 +12,19 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.162**
+Current release: **1.3.163**
 
-Release 1.3.162 shows the frigate's own helicopter to the bridge. Whenever
-the bridge can see it, the helicopter model flies in the lookout's binoculars,
-the horizon strip, the Remote Crew binoculars card, the phone lookout and the
-hit picture at its true position and heading: it lifts off the flight deck
-astern, climbs away, hovers low over its dipping sonar and shows its position
-lights at night. The lookout scope marks it as "own helicopter", the
-panorama with a green tick and the list under the binoculars names it first.
-Low aircraft now stand in front of the sea instead of behind the waves.
-Nothing changes in what the lookout reports. Saves stay v49; v38 to v48
+Release 1.3.163 makes the stations work by mouse click. Status lamps, key
+hints in a station's text, page tabs, list rows and the readings in the
+bottom status line now react to a click on both sides: a lamp or hint
+presses its key (for example the ELOKA tone, the sonar peak hold, the
+helicopter's dipping sonar, the engine telegraph rows or the submarine's
+silent running), and a reading such as flooding or torpedoes opens the
+station that handles it. The submarine's sonar takes clicks for the first
+time, and the element under the mouse gets a thin frame. A click does
+exactly what its key does, with the same checks; the fire key stays
+clickable only at the weapons station. In Remote Crew, clicking a sonar,
+helicopter or engine lamp presses its button. Saves stay v49; v38 to v48
 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

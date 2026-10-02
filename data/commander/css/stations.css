@@ -202,6 +202,9 @@
 .console-lamp:not([data-level="off"]) .console-led { box-shadow: 0 0 .55rem var(--lamp), inset 0 0 0 1px var(--lamp); }
 .console-lamp:not([data-level="off"]) .console-lamp-label { color: var(--text); }
 .console-lamp[data-level="on"] .console-lamp-value { color: var(--live); }
+/* A lamp that works a control: a switch to click, framed under the pointer. */
+.console-lamp[data-control] { cursor: pointer; }
+.console-lamp[data-control]:hover, .console-lamp[data-control]:focus-visible { outline: 1px solid var(--text); outline-offset: 1px; }
 .console-lamp[data-level="caution"] .console-lamp-value { color: var(--caution); }
 .console-lamp[data-level="alarm"] .console-lamp-value { color: var(--alarm); }
 .console-lamp[data-level="alarm"] .console-led { animation: pulse .9s steps(1) infinite; }

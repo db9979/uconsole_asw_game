@@ -418,8 +418,11 @@ def route_lamp(boat):
 
 def draw_pilot_page(s, game, boat, x, y, w, h) -> None:
     """Navigation station, first page: readouts, pilot chart, echo sounder."""
+    # The ordered depth and the route are switches (D entry, W search route).
+    keys = {"uboot.pilot.lamp.depth": "D", "uboot.pilot.lamp.route": "W"}
     lamp_h = console.lamp_grid(s, (x, y, w, 3 * (layout.line_pitch(14, 0) + 8) + 8),
-                               pilot_lamps(game, boat), 2, size=14)
+                               [(*row, keys.get(row[0])) for row in pilot_lamps(game, boat)],
+                               2, size=14)
     top = y + lamp_h + 8
     rest = y + h - top
     if rest < 120:

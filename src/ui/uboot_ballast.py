@@ -12,7 +12,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import message
-from src.ui import layout, lines
+from src.ui import layout, lines, pointer
 
 
 def _fmt(value, pattern="{:.0f}"):
@@ -151,3 +151,5 @@ def draw_ballast_page(s, game, boat, x, y, w, h) -> None:
             break
         layout.status_line(s, tx, ty + index * 20, tw, label, value, color=color,
                            size=15, label_w=180)
+        if label == "uboot.ballast.label.auto":
+            pointer.add_key((tx, ty + index * 20, tw, 20), pygame.K_z)   # Z: trim automatic

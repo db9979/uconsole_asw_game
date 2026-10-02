@@ -9,7 +9,7 @@ import numpy as np
 from src.core import config
 from src.core.i18n import display_value, localized, localize, raw_text
 from src.core.station import Station
-from src.ui import layout
+from src.ui import layout, pointer
 from src.ui import observations
 from src.air import helicopter as helicopter_physics
 
@@ -167,7 +167,8 @@ def _dip_lamps(game, helo):
     ping = ("on" if helo.dip_ping_ready else
             "caution" if helo.dip_available else "off")
     water = ("on" if helo.airborne and helo.water_entry_clear(game.world) else "off")
-    return (("helo.lamp.dome", "", dome), ("helo.lamp.ping", "", ping),
+    # Dome and ping lamps are switches: Y lowers/raises, Shift+A pings.
+    return (("helo.lamp.dome", "", dome, "Y"), ("helo.lamp.ping", "", ping, "Shift+A"),
             ("helo.lamp.water", "", water))
 
 
@@ -256,6 +257,8 @@ def _draw_helicopter_acoustic_view(game, rect):
         layout.blit_line(screen, _HELO_ACOUSTIC_TABS[index], tab,
                          config.COLOR_TEXT if index == page else config.COLOR_TEXT_DIM,
                          size=14, align="center")
+        pointer.add_hotspot(tab)        # helicopter_acoustic_hit takes the click
+    pointer.add_hotspot(geo["back"])
     pygame.draw.rect(screen, (9, 30, 39), geo["back"])
     pygame.draw.rect(screen, config.COLOR_GRID, geo["back"], 1)
     layout.blit_line(screen, "helo.acoustic.deck", geo["back"],
@@ -285,7 +288,9 @@ def _draw_helicopter_acoustic_view(game, rect):
               "on" if game.helo_listen_bearing is not None else "off",
               "on" if game.helo_audition.audition_mode != "BROADBAND" else "off",
               "on" if audible else "off")
-    for item, box, level in zip(status, geo["statuses"], levels):
+    for item, box, level, key in zip(status, geo["statuses"], levels,
+                                     (None, None, None, "J")):
+        pointer.add_spec(box, key)      # the sound box switches like J
         pygame.draw.rect(screen, config.COLOR_PANEL_BG, box)
         pygame.draw.rect(screen, console.level_color(level) if level != "off"
                          else config.COLOR_SONAR_RING, box, 1)
@@ -651,7 +656,7 @@ def _draw_stores_and_systems(game, s, region, helo) -> None:
                            else "weather.flight.dip_blocked"),
                    "on" if weather["dipping_safe"] else "alarm")
     console.lamp_grid(s, (rx, top, rw, lamp_h), (
-        ("helo.console.launch_weather", launch[0], launch[1]),
+        ("helo.console.launch_weather", launch[0], launch[1], "H"),
         ("helo.console.deck_window", deck[0], deck[1]),
         ("helo.console.dip_weather", dipping[0], dipping[1])), 3, size=14)
     if top + 2 * lamp_h + 4 > ry + rh:
@@ -659,7 +664,8 @@ def _draw_stores_and_systems(game, s, region, helo) -> None:
     radar = getattr(game, "helo_radar_active", None)
     console.lamp_grid(s, (rx, top + lamp_h + 4, rw, lamp_h), (
         *_dip_lamps(game, helo),
-        ("helo.console.radar", "", "on" if callable(radar) and radar() else "off")), 4, size=14)
+        ("helo.console.radar", "", "on" if callable(radar) and radar() else "off", "Ctrl+R")),
+        4, size=14)
 
 
 @localized
@@ -724,15 +730,22 @@ def draw_helicopter_view(game, tr=None) -> None:
                   else config.COLOR_TEXT_DIM,
                   config.COLOR_OK if game.helo_radar_active() else config.COLOR_TEXT_DIM,
                   config.COLOR_WARN)
+        # The keys named in the rules are switches (full mouse control).
+        tokens = ((), (), (("H:", "H"),),
+                  (("Y", "Y"), ("U/V", "U/V"), ("Shift+A", "Shift+A")),
+                  (("B:", "B"), ("D:", "D")), (),
+                  (("Buoys:", "Shift+B"), ("Bojen:", "Shift+B"), ("MAD", "Shift+M")),
+                  (("Radar", "Ctrl+R"),), ())
         line_y = my
         line_h = max(30, layout.font(18).get_linesize() + 4)
-        for text, color in zip(rules, colors):
+        for text, color, keys in zip(rules, colors, tokens):
             remaining = max(0, regions["rules"].bottom - 8 - line_y)
             if remaining <= 0:
                 break
             block_h = min(remaining, line_h * (2 if text == rules[-1] else 1))
             layout.blit_block(s, text, mx, line_y, mw, block_h, color,
                               size=18, min_size=16)
+            pointer.add_token_keys((mx, line_y, mw, block_h), text, 18, keys, min_size=16)
             line_y += block_h + 4
     elif page == 2:
         plot = layout.box(s, regions["rules"], "helo.dip_sonar")
@@ -790,6 +803,8 @@ def draw_helicopter_view(game, tr=None) -> None:
                                 else "helo.source.dip")
         layout.blit_line(s, source_label, (px + 8, py + 4, int(pw * .55), 22),
                          config.COLOR_OK, size=16)
+        pointer.add_token_keys((px + 8, py + 4, int(pw * .55), 22), source_label, 16,
+                               (("(T/F/G)", "T/F/G"),))
         for contact in sorted(game.sonar.contacts.values(), key=lambda c: c.id):
             fixes = [fix for fix in contact.active_fixes(game.sim_t)
                      if fix["source"] == "DIPPING"]

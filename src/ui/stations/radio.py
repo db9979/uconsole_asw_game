@@ -8,7 +8,7 @@ import pygame
 from src.core import config
 from src.core.i18n import localized, message, raw_text
 from src.core.station import Station
-from src.ui import layout
+from src.ui import layout, pointer
 from src.ui import observations
 
 
@@ -83,6 +83,9 @@ def draw_radio_view(game, tr=None) -> None:
                     pygame.draw.rect(s, config.COLOR_WARN,
                                      (lx - 5, ly - 2, 3, row_h - 4))
                 age = report.age(game.sim_t)
+                # A click on a signal selects it, as ↑/↓ would.
+                pointer.add_action((lx - 5, ly - 2, lw + 10, row_h - 4),
+                                   lambda _pos, index=i: setattr(game, "radio_sel", index))
                 layout.blit_line(
                     s, message("radio.line.signal", prefix='>' if selected else ' ',
                                 label=game.hfdf_display_id(report),
@@ -164,6 +167,8 @@ def _draw_chart_and_log(game, s, inner) -> None:
     if not logged:
         layout.blit_line(s, "radio.log_empty", (gx, top, gw, row_h),
                          config.COLOR_TEXT_DIM, size=15)
+        pointer.add_token_keys((gx, top, gw, row_h), "radio.log_empty", 15,
+                               (("Enter", "Enter"),))
     for index, row in enumerate(reversed(logged)):
         age = max(0.0, game.sim_t - row["t"])
         layout.blit_line(s, message(
@@ -234,6 +239,7 @@ def _draw_report_status(game, s, rect) -> None:
     else:
         text, color = message("radio.report.status_ready"), config.COLOR_TEXT
     layout.blit_line(s, text, rect, color, size=15)
+    pointer.add_token_keys(rect, text, 15, (("K", "K"), ("H", "H")))
 
 
 def _draw_tasks(game, s, x, cy, w, box_h) -> None:
@@ -253,11 +259,15 @@ def _draw_tasks(game, s, x, cy, w, box_h) -> None:
                              config.COLOR_TEXT_DIM, size=16)
             layout.blit_line(s, "radio.task.ras_hint", (lx, ly + 62, lw, 24),
                              config.COLOR_TEXT_DIM, size=16)
+            pointer.add_token_keys((lx, ly + 62, lw, 24), "radio.task.ras_hint", 16,
+                                   (("R", "R"),))
         return
     selected_idx = min(max(0, game.task_sel), len(rows) - 1)
     row_h = 34
     for index, row in enumerate(rows[:max(1, (lh - 8) // row_h)]):
         selected = index == selected_idx
+        pointer.add_action((lx - 5, ly - 2, lw + 10, row_h - 4),
+                           lambda _pos, index=index: setattr(game, "task_sel", index))
         if selected:
             pygame.draw.rect(s, config.COLOR_SELECT_BG, (lx - 5, ly - 2, lw + 10, row_h - 4))
             pygame.draw.rect(s, config.COLOR_WARN, (lx - 5, ly - 2, 3, row_h - 4))

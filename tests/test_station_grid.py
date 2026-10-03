@@ -9,7 +9,7 @@ from src.core.station import Station
 from src.sensors.esm import ESMMeasurement
 from src.sonar.contact import Contact
 from src.ui import layout, pointer
-from src.ui.stations import eloka, radio
+from src.ui.stations import damage, eloka, radio
 from src.ui import weapons_view
 
 
@@ -104,4 +104,50 @@ def test_frigate_weapons_contact_cards_select_like_left_right():
     assert game.selected_contact is contacts[1]
     for target in pointer.targets():
         assert target.rect.right <= config.SCREEN_W
+    game.audio.shutdown()
+
+
+def test_damage_selection_page_has_compartment_and_team_cards():
+    game = _game()
+    game.station, game.station_page = Station.DAMAGE, 1
+    assert not _draw_checked(game)
+    with layout.bottom_panel_regions(game.bottom_panel_mode()):
+        station = pygame.Rect(config.FULL_STATION_RECT)
+    regions = damage.damage_regions(game, station, page=1)
+    assert regions["cards"].right < regions["detail"].x < regions["detail"].right < regions["teams"].x
+    cards = damage.damage_selection_cards(game, station)
+    assert [key for key, _rect in cards] == list(game.damage.compartments)
+    assigned = dict(game.damage.teams)
+    _click(game, cards[5][1].center)
+    assert game.dmg_cursor == 5
+    teams = damage.damage_team_cards(game, station)
+    _click(game, teams[2][1].center)
+    assert game.dmg_team == teams[2][0]
+    # Selecting never sends a team; Enter does.
+    assert game.damage.teams == assigned
+    game.audio.shutdown()
+
+
+def test_submarine_esm_row_click_selects_the_emitter():
+    from test_boat_esm import _mast_up_near_frigate
+    from test_uboot_scope import _local_boat
+    from src.core import uboot_local
+    from src.ui import uboot_view
+    game, boat = _local_boat()
+    _mast_up_near_frigate(game, boat, 8.0, bearing=90.0)
+    for _ in range(100):
+        game._update(0.1)
+    uboot_local.set_local_station(game, "uboot_esm")
+    boat.command_page = 0
+    with layout.capture_geometry() as boxes:
+        game.draw()
+    listing = next(pygame.Rect(row["rect"]) for row in boxes
+                   if row["title"] == "uboot.panel.esm")
+    rows = [target for target in pointer.targets("station")
+            if target.action is not None and listing.contains(target.rect)
+            and target.rect.h == 20]
+    assert len(rows) == len(boat.esm.ordered()) >= 1
+    last = boat.esm.ordered()[len(rows) - 1]
+    _click(game, rows[-1].rect.center)
+    assert uboot_view.esm_selection(boat)[1] is last
     game.audio.shutdown()

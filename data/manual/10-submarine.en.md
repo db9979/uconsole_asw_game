@@ -78,7 +78,7 @@ The engine room runs the telegraph, snorkel and charge rate, silent running, the
 
 ## Mast & ESM {#sub-esm}
 
-Mast & ESM raises the mast at periscope depth, listens for radars on the ESM rose, classifies the emitters, plots cross-fixes and looks through the periscope.
+Mast & ESM raises the mast at periscope depth, listens for radars on the ESM rose, classifies the emitters, plots cross-fixes and looks through the periscope. A click on a row of the emitter list selects that emitter, like ↑/↓.
 
 - **ESM (page 1):** with the mast up (`P`, only at periscope depth) the rose shows every radar heard with its bearing and level. `↑`/`↓` pick an emitter, `←`/`→` classify it from the library (an annotation, never the truth), `Enter` puts its cross-fix or bearing line into the submarine's plot. A main-beam hit means the radar may already see the mast.
 - **Periscope (page 2):** the same periscope as Command's page 3, without the shot.

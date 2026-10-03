@@ -1396,8 +1396,13 @@ def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
         live = esm.live(emitter, now)
         color = (config.COLOR_DANGER if emitter in threats else config.COLOR_WARN if live
                  else config.COLOR_TEXT_DIM)
+        row_rect = pygame.Rect(lx - 2, row_y, lw + 4, 20)
         if emitter is chosen:
-            pygame.draw.rect(s, config.COLOR_SONAR_RING, (lx - 2, row_y, lw + 4, 20), 1)
+            pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, row_rect, border_radius=3)
+            pygame.draw.rect(s, theme.c("focus"), row_rect, 1, border_radius=3)
+        # A click on the row selects the emitter, like the arrow keys.
+        pointer.add_action(row_rect, lambda _pos, number=boat_esm.emitter_number(
+            track.track_key): setattr(boat, "esm_selected", number))
         layout.blit_line(s, message(
             "uboot.esm.row", label=boat_esm.emitter_label(track.track_key),
             bearing=_fmt(track.bearing % 360.0, "{:03.0f}"),

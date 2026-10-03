@@ -78,7 +78,7 @@ Der Maschinenraum fährt Telegraph, Schnorchel und Laderate, Schleichfahrt, die 
 
 ## Mast & ESM {#sub-esm}
 
-Mast & ESM fährt den Mast an Sehrohrtiefe aus, hört auf der ESM-Rose nach Radaren, klassifiziert die Sender, plottet Kreuzpeilungen und schaut durchs Sehrohr.
+Mast & ESM fährt den Mast an Sehrohrtiefe aus, hört auf der ESM-Rose nach Radaren, klassifiziert die Sender, plottet Kreuzpeilungen und schaut durchs Sehrohr. Ein Klick auf eine Zeile der Senderliste wählt diesen Sender, wie ↑/↓.
 
 - **ESM (Seite 1):** mit ausgefahrenem Mast (`P`, nur auf Sehrohrtiefe) zeigt die Rose jedes gehörte Radar mit Peilung und Pegel. `↑`/`↓` wählen einen Sender, `←`/`→` klassifizieren ihn aus der Bibliothek (eine Anmerkung, nie die Wahrheit), `Enter` gibt seine Kreuzpeilung oder Peillinie in den Plot des U-Boots. Ein Hauptkeulentreffer heißt, dass das Radar den Mast womöglich schon sieht.
 - **Sehrohr (Seite 2):** dasselbe Sehrohr wie Seite 3 der Führung, ohne Schuss.

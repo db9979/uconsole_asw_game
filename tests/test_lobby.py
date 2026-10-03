@@ -310,11 +310,13 @@ def test_a_browser_pairing_into_the_lobby_is_seated_in_order(server):  # noqa: F
     # The uConsole plays the bridge: the crew starts at sonar, weapons, helicopter.
     assert [player["stations"] for player in server.lobby_players()] == [
         ["sonar"], ["weapons"], ["helicopter"]]
-    # A host-only uConsole on the boat: the first browser takes command.
+    # A host-only uConsole on the boat: the crew moves along, in pairing order
+    # from command on, and the next browser takes the next free station.
     server.publish_lobby({"mission": "s1_patrouille", "side": "uboot",
                           "host_station": None, "countdown_s": None})
     pair_v2(server)
-    assert server.lobby_players()[-1]["stations"] == ["uboot"]
+    assert [player["stations"] for player in server.lobby_players()] == [
+        ["uboot"], ["uboot_sonar"], ["uboot_weapons"], ["uboot_esm"]]
 
 
 def test_a_browser_pairing_without_a_lobby_gets_no_seat(server):  # noqa: F811

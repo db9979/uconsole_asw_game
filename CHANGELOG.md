@@ -23,7 +23,13 @@ resets only the chosen row (Shift+Backspace resets all), Shift+A at the
 submarine's Command pings on the uConsole too, and the real-sector choice
 moves from PgUp/PgDn to [ and ]. W, R and F no longer act unseen in the
 lobby, logbook and other menu pages. F1 shows the submarine's own global
-keys aboard, and the logbook lists its keys at the bottom. Saves are v50; v38 to v49
+keys aboard, and the logbook lists its keys at the bottom. Functions that needed a key now also take a click: a menu symbol in the top
+bar opens help, options, save, load, weather, plot, the crew automation,
+SimLog, the advisor, the analyser, Remote Crew, nations and quit, and every
+overlay has a close box; sonar, the CIC (target and escort pages) and the
+submarine's sonar and weapons stations get clickable key chips (classify,
+TMA, release, towed array, chaff, assign target, flood tube, decoy). Firing
+by click stays limited to the weapons station. Saves are v50; v38 to v49
 saves still load.
 
 ## 1.3.186

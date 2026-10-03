@@ -24,7 +24,14 @@ Auftrag an, Rück auf OPZ-Seite 5 setzt nur die gewählte Zeile zurück
 auf der uConsole, und die Wahl des echten Seegebiets wandert von Bild↑/↓ auf
 [ und ]. W, R und F wirken nicht mehr unsichtbar in Lobby, Einsatzbuch und
 anderen Menüseiten. F1 zeigt an Bord des U-Boots dessen eigene Globaltasten,
-und das Einsatzbuch nennt seine Tasten unten. Spielstände sind v50; v38
+und das Einsatzbuch nennt seine Tasten unten. Funktionen, die bisher eine Taste brauchten, gehen jetzt auch per Klick:
+Ein Menüsymbol in der Kopfleiste öffnet Hilfe, Optionen, Speichern, Laden,
+Wetter, Plot, die Crew-Automatik, SimLog, den Ersten Offizier, den Analysator,
+Remote Crew, Nationen und Beenden, und jedes Fenster hat ein
+Schließen-Kreuz; Sonar, OPZ (Ziel- und Begleiterseite) sowie Sonar und Waffen
+des U-Boots bekommen anklickbare Tastenchips (Klassifizieren, TMA, Freigabe,
+Schleppsonar, Düppel, Ziel zuweisen, Rohr fluten, Täuschkörper). Feuern per
+Klick bleibt auf die Waffenstation beschränkt. Spielstände sind v50; v38
 bis v49 lassen sich weiter laden.
 
 ## 1.3.186

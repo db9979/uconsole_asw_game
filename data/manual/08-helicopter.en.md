@@ -8,6 +8,10 @@ The HSP-5 "Sea Lynx" extends the frigate's reach: it flies to a datum at 120 kn,
 
 The station has four pages (`8` again cycles them); it opens on page 3.
 
+![Helicopter deck on the uConsole](figure:station-helicopter)
+
+![Helicopter deck in the Remote Crew browser](figure:web-helicopter-desktop)
+
 | Page | Content |
 |---|---|
 | 1 Status | Status console: state lamps, fuel, home bearing, stores, flight weather, deck motion |

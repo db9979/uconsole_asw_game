@@ -8,6 +8,10 @@ Der Funkraum wickelt die Verbindung zum Hauptquartier und die Kurzwellenpeilung 
 
 Seite 1 hat drei Spalten: die aktuellen HFDF-Signale als Karten links (ein Klick wählt eines wie `↑`/`↓`), die Kreuzpeilkarte in der Mitte und die Peilrose mit Peilprotokoll und Fixen rechts; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr; Seite 3 listet die HQ-Aufträge.
 
+![Funkraum auf der uConsole](figure:station-radio)
+
+![Funkraum im Remote-Crew-Browser](figure:web-radio-desktop)
+
 ```text
  HFDF-SIGNALE               PEILPROTOKOLL
  > HF-03  247.0  Alter 12 s  HF-03 247.0 von Pos A  t=12:04
@@ -37,7 +41,7 @@ Neben der Jagd funkt das HQ Aufträge an das Schiff: den ersten etwa 15 bis 25 M
 
 - **Seenotruf (SAR):** eine Rettungsinsel mit 2 bis 6 Personen, per EPIRB mit etwa 0,5 sm Fehler gemeldet, treibt mit Strom und Wind. Die Überlebenden halten je nach Wassertemperatur durch, von 40 Minuten in Wasser unter 8 °C bis 100 Minuten über 20 °C. Die Insel wird tagsüber auf 2 sm gesichtet (nachts 3 sm an ihrem Blitzlicht); dann schrumpft der Kreis in der Karte auf sie. Aufnehmen, indem das Schiff 4 Minuten lang innerhalb 0,25 sm mit höchstens 3 kn liegt, oder der Helikopter darüber schwebt (eine Minute je Person, nur wenn das Wetter Tauchsonar erlaubt). +600 Punkte, -400 bei Verlust.
 - **Handelsschiff identifizieren:** Das HQ nennt ein Handelsschiff innerhalb 60 sm und gibt seine Position mit etwa 2 sm Fehler. Es gilt als identifiziert, sobald der Ausguck seine Identifizierung gemeldet hat oder der Helikopter bei mindestens 1 sm Sicht auf 1 sm heranfliegt. Etwa ein Drittel wird als verdächtig eingestuft: Das HQ gibt dann ein U-Boot-Datum nahe dem Schiff durch. 40 Minuten.
-- **U-Boot-Datum:** ein Kreis mit 5 sm Radius aus einer Seefernaufklärer-Meldung; nicht hinter jedem Datum steckt ein U-Boot. 10 Minuten im Kreis mit Schiff oder Helikopter suchen. 50 Minuten. In den U-Boot-Missionen 8 und 9 gibt es diesen Auftrag nicht: Das HQ hat über dieses Boot keine Erkenntnisse.
+- **U-Boot-Datum:** ein Kreis mit 5 sm Radius aus einer Seefernaufklärer-Meldung; nicht hinter jedem Datum steckt ein U-Boot. 10 Minuten im Kreis mit Schiff oder Helikopter suchen. 50 Minuten. In den U-Boot-Missionen 8 und 9 gibt es diesen Auftrag nicht: Das HQ hat über dieses U-Boot keine Erkenntnisse.
 - **Versorgung auf See:** angeboten bei weniger als 70 % Kraftstoff oder nach verbrauchten Torpedos, ASROC oder Wasserbomben; `R` auf der Seite Aufträge (im Browser *Versorger anfordern*) fordert selbst einen an, wenn mindestens 5 % Kraftstoff oder irgendein Vorrat fehlt, höchstens alle 20 Minuten nach dem Ende der letzten Versorgung. Ein befreundeter Versorger erscheint 18 bis 28 sm entfernt mit 12 kn; sein Kurs und eine Koppellinie stehen in der Karte. Innerhalb 0,3 sm und höchstens 3 kn Fahrtunterschied halten: Kraftstoff fließt die ganze Zeit (eine volle Ladung in 15 Minuten), Torpedos, ASROC, Wasserbomben, Nixie-Täuschkörper sowie CIWS- und Geschützmunition kommen in fünf Ladungen, alle 3 Minuten eine, jede ein Anteil dessen, was noch fehlt. Wer vorher abdreht, behält, was schon übergeben ist. Die Seite Aufträge zeigt, was an Bord ist. VLS-Zellen werden auf See nicht nachgeladen. +100, keine Strafe.
 - **Radarstille (EMCON):** beide Radare innerhalb 90 s aus und 20 bis 30 Minuten still. +200, -250 wenn ein Radar strahlt.
 
@@ -63,7 +67,7 @@ Auf der Aufträge-Seite kann der Funkraum HQ selbst rufen, höchstens alle 10 Mi
 
 - `K` **Kontaktmeldung:** sendet die Position des frischesten georteten Kontakts (Ping-, TMA-, Bojen- oder fusionierter Fix, sonst ein KW-Peilfix bis 15 Minuten alt). HQ bestätigt sie im Fernschreiber und setzt den Seefernaufklärer darauf an, wenn er in der Luft ist. HQ sagt nie, ob dort wirklich ein U-Boot war: Jede Meldung, bei der ein feindliches U-Boot innerhalb 3 sm um den Fix stand, bringt am Missionsende 150 Punkte (höchstens drei).
 - `H` **Unterstützung anfordern:** HQ schickt den bereitstehenden Seefernaufklärer zum Schiff, wenn er verfügbar ist (auch bei ausgefallener OPZ), sonst meldet es, dass keine Unterstützung verfügbar ist.
-- Jeder Ruf sind 20 s KW-Sendung. Solange er auf Sendung ist, nimmt ein U-Boot mit ausgefahrener Antenne (der Mast des besetzten Boots, ein KI-Boot auf Sehrohrtiefe) eine KW-Peilung auf die Fregatte (+/-8 Grad bei Bodenwelle, +/-16 Grad bei Raumwelle): Das besetzte Boot erhält eine Meldung und einen Peilstrahl auf seiner Karte, ein KI-Boot merkt sich die Richtung. Reden mit HQ kostet Funkstille.
+- Jeder Ruf sind 20 s KW-Sendung. Solange er auf Sendung ist, nimmt ein U-Boot mit ausgefahrener Antenne (der Mast des besetzten Boots, ein KI-Boot auf Sehrohrtiefe) eine KW-Peilung auf die Fregatte (+/-8 Grad bei Bodenwelle, +/-16 Grad bei Raumwelle): Das besetzte U-Boot erhält eine Meldung und einen Peilstrahl auf seiner Karte, ein KI-Boot merkt sich die Richtung. Reden mit HQ kostet Funkstille.
 
 ## Tasten {#radio-keys}
 

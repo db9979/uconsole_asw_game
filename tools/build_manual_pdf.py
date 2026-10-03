@@ -67,7 +67,9 @@ figure { margin: 3mm 0 4mm 0; text-align: center; page-break-inside: avoid;
 figure img { max-width: 100%; max-height: 105mm; border: 0.5pt solid #999; }
 figcaption { font-size: 8.6pt; color: #333; margin-top: 1mm; font-style: italic; }
 """
-SCREENSHOTS = ROOT / "docs" / "screenshots"
+# Light (Tactical Day) captures from tools/capture_manual_figures.py: they
+# print with little ink.
+SCREENSHOTS = ROOT / "docs" / "manual" / "figures"
 
 
 def print_html(lang: str, date: str) -> str:

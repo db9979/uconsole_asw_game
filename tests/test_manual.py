@@ -316,7 +316,7 @@ def test_f1_on_the_submarine_side_shows_the_station_procedure_and_chapter():
 
 
 def test_every_manual_figure_has_a_screenshot_in_both_languages():
-    root = Path(__file__).resolve().parents[1] / "docs" / "screenshots"
+    root = Path(__file__).resolve().parents[1] / "docs" / "manual" / "figures"
     names = set()
     for chapter in manual.CHAPTERS:
         for lang in manual.LANGUAGES:
@@ -338,6 +338,6 @@ def test_figures_stay_out_of_the_reader_and_web_page_but_reach_markdown_and_pdf(
     assert "figure:" not in "\n".join(manual.text_lines(blocks, 120))
     assert "<img" not in manual.html_page("en")
     assert '<img src="file:///x/station-bridge.png"' in manual.html_page("en", "file:///x")
-    assert "](../screenshots/de-station-bridge.png)" in manual.markdown("de")
+    assert "](figures/de-station-bridge.png)" in manual.markdown("de")
     with pytest.raises(manual.ManualError):
         manual.parse("![caption](figure:Bad Name)", lambda key: key)

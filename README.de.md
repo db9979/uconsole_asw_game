@@ -20,7 +20,8 @@ Version 1.3.177 bringt Bilder ins Handbuch. Jede Station der Fregatte und
 des U-Boots ist jetzt auf der uConsole und im Remote-Crew-Browser zu sehen,
 dazu alle sechs Sonarseiten, Fernglas und Sehrohr bei Tag und Nacht,
 Hauptmenü, Szenarioauswahl, Einweisung, Optionen, die Editoren und die
-Kontaktanalyse; Markdown- und PDF-Handbuch zeigen sie, der Leser im Spiel
+Kontaktanalyse, alles im hellen Schema Taktik Tag, damit ein Ausdruck wenig
+Tinte braucht; Markdown- und PDF-Handbuch zeigen sie, der Leser im Spiel
 lässt sie weg. Das U-Boot-Kapitel nennt jetzt jede Stationsseite mit ihren
 Tasten. Die Schritte der ersten Patrouille passen wieder zum Hauptmenü, der
 Schnellstart sagt, welche Funktionen noch eine Taste brauchen, und „U-Boot“

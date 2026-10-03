@@ -11,7 +11,8 @@ Only a small Markdown subset is accepted (headings with explicit anchors,
 paragraphs, lists, pipe tables, fenced blocks, ``>`` notes, inline
 ``code``/``**strong**``, and screenshots as ``![caption](figure:<name>)`` on a
 line of their own); anything the parser does not understand stays plain text.
-Screenshots come from ``docs/screenshots`` (``figure_file``): the exported
+Screenshots come from ``docs/manual/figures`` (``figure_file``; captured in the
+light Tactical Day theme, which prints well, by ``tools/capture_manual_figures.py``): the exported
 Markdown and the PDF show the picture with its caption; the in-game reader and
 the Remote Crew page, which carry no screenshots, leave it out. The module is Pygame-free: the game wraps ``text_lines`` output and the
 commander server serves ``html_page`` output.
@@ -72,7 +73,7 @@ def chapter_filename(chapter: str, lang: str) -> str:
 
 
 def figure_file(name: str, lang: str) -> str:
-    """File name in ``docs/screenshots`` of figure ``name`` in ``lang``.
+    """File name in ``docs/manual/figures`` of figure ``name`` in ``lang``.
 
     ``web-<view>`` is a Remote Crew capture (``tools/capture_commander.py``,
     ``commander-v2-<lang>-<view>.png``); every other name is a uConsole
@@ -347,7 +348,7 @@ def figure_name(block: Block) -> str:
     return block.marker.split(":", 1)[1]
 
 
-def markdown(lang: str, figures: str = "../screenshots") -> str:
+def markdown(lang: str, figures: str = "figures") -> str:
     """Complete manual as Markdown with generated tables expanded.
 
     Screenshots link to ``figures`` (relative to ``docs/manual``).

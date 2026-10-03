@@ -10,7 +10,7 @@ Sie führen die U-Jagd-Fregatte F-217 und besetzen neun Stationen. Auftrag: fein
 
 ### Auftrag und Siegbedingungen
 
-![Einsatzbesprechung vor dem Start: Auftrag, Seegebiet, Kräfte und Siegbedingungen](../screenshots/de-mission-briefing.png)
+![Einsatzbesprechung vor dem Start: Auftrag, Seegebiet, Kräfte und Siegbedingungen](figures/de-mission-briefing.png)
 
 *Einsatzbesprechung vor dem Start: Auftrag, Seegebiet, Kräfte und Siegbedingungen*
 
@@ -24,19 +24,19 @@ Sie führen die U-Jagd-Fregatte F-217 und besetzen neun Stationen. Auftrag: fein
 
 Das Schiff ist in neun Stationen gegliedert. Die Tasten `1`-`9` wählen eine Station; erneutes Drücken der Nummer der aktiven Station blättert ihre Seiten.
 
-![Fregatten-Stationen auf der uConsole: Brücke, Sonar, Waffen und Schadensabwehr](../screenshots/de-stations-overview-1.png)
+![Fregatten-Stationen auf der uConsole: Brücke, Sonar, Waffen und Schadensabwehr](figures/de-stations-overview-1.png)
 
 *Fregatten-Stationen auf der uConsole: Brücke, Sonar, Waffen und Schadensabwehr*
 
-![Fregatten-Stationen auf der uConsole: OPZ, Funk, Antrieb und Heli](../screenshots/de-stations-overview-2.png)
+![Fregatten-Stationen auf der uConsole: OPZ, Funk, Antrieb und Heli](figures/de-stations-overview-2.png)
 
 *Fregatten-Stationen auf der uConsole: OPZ, Funk, Antrieb und Heli*
 
-![Fregatten-Station ELOKA auf der uConsole](../screenshots/de-stations-overview-3.png)
+![Fregatten-Station ELOKA auf der uConsole](figures/de-stations-overview-3.png)
 
 *Fregatten-Station ELOKA auf der uConsole*
 
-![U-Boot-Stationen auf der uConsole im Überblick](../screenshots/de-uboot-overview.png)
+![U-Boot-Stationen auf der uConsole im Überblick](figures/de-uboot-overview.png)
 
 *U-Boot-Stationen auf der uConsole im Überblick*
 
@@ -151,15 +151,15 @@ Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; 
 
 ### Hauptmenü, Speichern und Optionen
 
-![Hauptmenü](../screenshots/de-main-menu.png)
+![Hauptmenü](figures/de-main-menu.png)
 
 *Hauptmenü*
 
-![Szenarioauswahl, nach Seite sortiert](../screenshots/de-mission-scenario-selection.png)
+![Szenarioauswahl, nach Seite sortiert](figures/de-mission-scenario-selection.png)
 
 *Szenarioauswahl, nach Seite sortiert*
 
-![Optionen (F10)](../screenshots/de-options.png)
+![Optionen (F10)](figures/de-options.png)
 
 *Optionen (F10)*
 
@@ -186,7 +186,7 @@ Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; 
 
 Ein Handy kann als Ausguck auf der Brücke der Fregatte oder am Sehrohr des besetzten U-Boots Wache gehen. `F9` zeigt einen zweiten QR-Code, **Handy-Ausguck**, für die Adresse `https://<Adresse>:<Port+1>/lookout`. Scannen, die Zertifikatswarnung einmal bestätigen, den Wachposten wählen und den daneben angezeigten Kopplungscode eintippen (der Code steht nie im QR-Code). Er darf wie angezeigt eingegeben werden, mit oder ohne Leerzeichen und in jeder Schreibung; verwechselbare Zeichen wie O und 0, I, l und 1 oder S und 5 werden nach der Stelle gelesen. „Falscher Kopplungscode“ heißt genau das und zeigt den Code, den das Spiel bekommen hat; lehnt das Spiel die Adresse selbst ab, sagt die Seite das.
 
-![Fernglas und Sehrohr bei Tag und Nacht (links Fregatte, rechts U-Boot)](../screenshots/de-sight-overview.png)
+![Fernglas und Sehrohr bei Tag und Nacht (links Fregatte, rechts U-Boot)](figures/de-sight-overview.png)
 
 *Fernglas und Sehrohr bei Tag und Nacht (links Fregatte, rechts U-Boot)*
 
@@ -207,11 +207,11 @@ Die Brücke führt die Fregatte: Kurs, Fahrt und Position zu Küste, Kontakten u
 
 Die obere Leiste zeigt Station, Mission, Uhrzeit, Fahrt und Kurs; der Kartenkopf zeigt nur den Maßstab (dazu „folgen“, solange `K` dem eigenen Schiff folgt). Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt das Missionsbriefing; Seite 3 ist das Ausguck-Sichtfeld. Das Kartenwasser dunkelt mit der Uhr in drei Stufen ab (Tag, Dämmerung innerhalb einer Stunde um 05:30 und 19:30, Nacht), und Regen oder Sturm schraffiert die Karte mit gestrichelten Diagonalen (ein Sturm zusätzlich mit gelbem Rand); beides ist nur Anzeige, ebenso auf der Browserkarte. Optionen Seite 2 kann Karten- und Plotlinien glätten.
 
-![Brücke, Seite 1 (Navigation) auf der uConsole](../screenshots/de-station-bridge.png)
+![Brücke, Seite 1 (Navigation) auf der uConsole](figures/de-station-bridge.png)
 
 *Brücke, Seite 1 (Navigation) auf der uConsole*
 
-![Brücke im Remote-Crew-Browser](../screenshots/commander-v2-de-bridge-desktop.png)
+![Brücke im Remote-Crew-Browser](figures/commander-v2-de-bridge-desktop.png)
 
 *Brücke im Remote-Crew-Browser*
 
@@ -241,15 +241,15 @@ Die obere Leiste zeigt Station, Mission, Uhrzeit, Fahrt und Kurs; der Kartenkopf
 
 Der Brückenausguck (Augenhöhe 18 m, Fernglas 7x50) meldet seine Sichtungen im Ereignis-Feed als `AUSG`-Zeilen, zum Beispiel `Brücke/Ausguck: Fregatte (Admiral-Gorshkov-Fregatte) in 040°, 3.8 sm`. Die Remote-Crew-Brücke zeigt dieselben Meldungen unter „Ausguck-Meldungen“. Brückenseite 3 (Ausguck-Sichtfeld) zeigt die Sichtungen nordorientiert um das eigene Schiff mit der vom Ausguck gemessenen Peilung und Entfernung, nach Art eingefärbt (Oberwasser, U-Boot, Luftfahrzeug, Torpedo) und mit dem Erkannten beschriftet, daneben Sicht, Seegang, Tag/Nacht und die letzten Meldungen; `,` und `.` ändern den Radius (2 bis 30 sm). Über den Meldungen zeigt ein Horizontstreifen das Fernglas voraus (90° Sichtfeld, Skala rechtweisender Peilungen, mit der See bewegter Horizont, Licht der Stunde) mit den Umrissen der Ausguck-Sichtungen in gemessener Peilung und Entfernung; es ist derselbe Renderer wie das Sehrohr des U-Boots. Das Bild hat den Stil des Startbilds: tagsüber blauer Himmel, in der Dämmerung ein warmer Horizont, nachts Sterne und der Mond in seiner Phase in seiner Peilung mit seinem Glitzern auf dem Wasser; Wolken, Regen, Schnee und Nebel folgen der Wetterstation, und die Umrisse erscheinen in Stahl mit heller Kante, nachts mit beleuchteten Fenstern. Hat der Ausguck die Klasse eines Schiffs, U-Boots oder Luftfahrzeugs ausgemacht, erscheint es als sein 3D-Modell (das des Analysators), gedreht um den Lagewinkel, den er in 10°-Schritten schätzt, sobald es mindestens 16 Pixel lang ist; vorher, veraltet oder kleiner bleibt es eine flache Silhouette. Das Modell ist der echte Typ, den das Auge sieht (jeder Schiffs-, U-Boot- und Flugzeugtyp hat sein eigenes Modell, siehe Referenzkapitel), sodass sich der Typ auf Sicht bestimmen lässt; die Meldung des Ausgucks nennt nur, was er ausgemacht hat, und nur die Meldung geht an die OPZ. Jeder Umriss steht in der Peilung, die der Ausguck gemessen hat, und ein Schiff schwimmt mit seiner Wasserlinie so weit unter der Kimm, wie sein Auge in 18 m Höhe das Wasser in der gemessenen Entfernung sieht: etwa 1° darunter auf 0,5 sm, 0,4° auf 1 sm, ab etwa 9 sm auf der Kimm (Erdkrümmung); ein näheres Schiff steht vor einem ferneren. Der Lagewinkel zeigt, wie es liegt: Steuerbordseite mit dem Bug nach rechts, Backbordseite mit dem Bug nach links, Bug voraus, wenn es auf einen zuläuft. Von der Dämmerung bis zum Morgen und bei Sicht unter 2 sm führen neutrale Handels- und Fischereifahrzeuge ihre Positionslichter (Kriegsschiffe fahren abgeblendet): weiße Topplichter über die vorderen 225° (ab 50 m Länge zwei, das hintere höher, 6 sm), das grüne Steuerbord- oder rote Backbord-Seitenlicht (3 sm), beide, wenn das Schiff genau auf einen zuhält, und das weiße Hecklicht über die 135° achteraus (3 sm; unter 50 m Länge ein Topplicht mit 5 sm und die übrigen mit 2 sm), nie weiter als die Sicht. Fahrzeuge bei der Arbeit führen dazu ihre Rundumlichter: ein Trawler Grün über Weiß (ein Topplicht erst ab 50 m), ein Lotsenfahrzeug Weiß über Rot statt der Topplichter, ein Vermessungsschiff, Kabelleger oder Forschungsschiff als manövrierbehindertes Fahrzeug Rot, Weiß, Rot und ein Minenräumer drei grüne; ein Schlepper ohne Schleppzug zeigt gewöhnliche Lichter. Zivile Flugzeuge zeigen das rote linke und grüne rechte Flügelspitzenlicht und das weiße Hecklicht (3 sm) sowie ihre blitzenden roten Kollisionswarnlichter und weißen Blitzlichter (10 sm); Militärflugzeuge fliegen abgeblendet; die Silhouette zeigt dann mit dem Bug dorthin, wohin die Lichter weisen, und ein beleuchtetes Schiff wird an seinen Lichtern gesichtet, auch wo der dunkle Rumpf es nicht wird (die Klasse braucht weiter die Silhouette). Der Ausguck meldet die Lichter, die er sieht, mit seiner Deutung, zum Beispiel `Brücke/Ausguck: Lichter in 040°, 2.8 sm: zwei Topplichter, rotes Seitenlicht; zeigt Backbordseite`: beide Seitenlichter heißen, es hält auf uns zu (laut gemeldet), Grün allein seine Steuerbordseite, Rot allein seine Backbordseite, das Hecklicht allein, es läuft ab, und die Rundumlichter seine Arbeit (Fischer, Lotse im Dienst, manövrierbehindert, Minenräumer; Blitzlichter ein Luftfahrzeug). Die Lichter eines Kontakts meldet er erst wieder, wenn sich ihre Aussage ändert, höchstens alle 2 Minuten; die Remote-Crew-Brücke führt diese Meldungen mit den übrigen. Flugzeuge stehen in ihrem wahren Höhenwinkel über der Kimm, berechnet aus Flughöhe und Entfernung abzüglich der Erdkrümmung, und hängen hinter den Wolken im ruhigen Himmel, statt mit dem Seegang zu schwanken; ein hohes, nahes Flugzeug liegt über dem Bildfeld, bis man das Fernglas nach oben neigt. Ein Luftfahrzeug weniger als 1° über der Kimm (tief im Schwebeflug, nah am Schiff) steht dagegen auf der bewegten Kimm vor der See. Der eigene Hubschrauber ist in all diesen Bildern (Streifen, Fernglas, Remote-Crew-Karte, Handy-Ausguck und Trefferbild), sobald die Brücke ihn sehen kann: das Hubschraubermodell an seiner wahren Position, mit eigenem Kurs und eigener Länge (15,2 m), im Transit etwa 60 m hoch, beim MAD-Lauf 30 m und über dem Tauchsonar 15 m; beim Start hebt er vom Flugdeck achteraus ab und steigt innerhalb von 0,3 sm weg, nachts zeigt er seine Positionslichter. Er braucht dieselbe Sicht wie jedes Luftfahrzeug, wird nie gemeldet oder an die OPZ gegeben und ist im Hangar nicht zu sehen. Das Ausguck-Sichtgerät markiert ihn als „eigener Hubschrauber“ an seiner Position, das Panorama mit einem kurzen grünen Strich oben, und die Liste unter dem Fernglas nennt ihn zuerst. Die Remote-Crew-Brücke zeigt dasselbe Fernglas als Karte („Fernglas des Ausgucks“), geschwenkt nur in diesem Browser mit den Pfeiltasten (2°, 10°) und „Bug“. `B` nimmt das Fernglas groß über die Karte: ein 16°-Sichtfeld, das wie das Sehrohr des U-Boots mit `←` und `→` statt des Ruders (`Umschalt`: 20°-Schritte) oder per Klick in das Rundumbild darunter geschwenkt wird; das Rundumbild markiert jede Sichtung in ihrer gemessenen Peilung, der Bug liegt in der Mitte. Darunter stehen die Sichtungen, die der Sichtlinie nächste zuerst. Die kartierte Küste steht im Horizontstreifen und im Fernglas auf dem Horizont, so weit der Ausguck Land sieht (höchstens 20 sm, im Dunst verblassend), und das Rundumbild markiert sie an seinem Fuß; die Karte kennt keine Höhen, die Hügel sind mit 25 bis 70 m angenommen. Solange das Fernglas oben ist, neigen `↑`/`↓` es um 2° (`Umschalt`: 10°, von 20° nach unten bis 45° nach oben) statt den Maschinentelegrafen zu bedienen, `Q`/`E` zoomen (16°, 8° oder 4° Feld) und die `Leertaste` schaltet die Stabilisierung, die alle bis auf ein Achtel der Schiffsbewegung herausnimmt; die Zeile unter dem Bild zeigt Neigung und Feld, und die Remote-Crew-Karte hat dieselben Knöpfe für ihren eigenen Browser. Die See folgt dem Wind: gegen die See laufen die Kämme in langen Reihen auf einen zu, mit der See laufen ihre Rücken davon, quer dazu ziehen kurze Kämme seitlich durchs Bild, und das Schiff stampft in Gegen- oder Mitlaufsee und rollt in Dwarssee. Die Wellen füllen die ganze See in Perspektive, klein und dicht bis zur klaren Kimm, zum Auge hin länger und höher, und jede Reihe bewegt sich mit dem Seegang. Die eigene Fahrt zeigt sich im Wasser: in Fahrt strömen die Reihen voraus auf das Auge zu, achteraus von ihm fort und querab vom Bug zum Heck, schneller mit mehr Fahrt; achteraus läuft das Kielwasser als Band aus glatterem, hellerem Wasser mit Schaum zwischen den beiden Armen der Kelvin-Welle bis zum Horizont, und voraus wirft die Bugwelle ihre Gischt in den unteren Bildrand (das Fernglas nach unten neigen, um das weiße Wasser vom Steven abrollen zu sehen). `B` erneut führt zur Karte zurück; das Fernglas ist reine Anzeige und wird nicht gespeichert. Ein Kontakt wird beim Näherkommen in bis zu drei Stufen gemeldet, jede Stufe einmal:
 
-![Fernglas (B) bei Tag](../screenshots/de-frigate-binoculars-day.png)
+![Fernglas (B) bei Tag](figures/de-frigate-binoculars-day.png)
 
 *Fernglas (B) bei Tag*
 
-![Fernglas bei Nacht mit Positionslichtern](../screenshots/de-frigate-binoculars-night.png)
+![Fernglas bei Nacht mit Positionslichtern](figures/de-frigate-binoculars-night.png)
 
 *Fernglas bei Nacht mit Positionslichtern*
 
-![Ausguck-Fernglas im Remote-Crew-Browser](../screenshots/commander-v2-de-binoculars-day.png)
+![Ausguck-Fernglas im Remote-Crew-Browser](figures/commander-v2-de-binoculars-day.png)
 
 *Ausguck-Fernglas im Remote-Crew-Browser*
 
@@ -328,11 +328,11 @@ Die Sonarzentrale ist der Hauptsensor der U-Jagd. Sie horcht passiv mit Bugsonar
 
 Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert sie. Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpeilung und die Ping-Bereitschaft; ein Schlepp- oder Tiefensonar, das gerade aus- oder einfährt oder noch nicht bereit ist, erscheint auf jeder Seite gelb mit Kabellänge, Stabilität und PAUSE, wenn die Handhabung außerhalb der Grenzen liegt. Die eine Tastenzeile unten zeigt die vier Haupttasten der Seite mit ihren Werten; alle übrigen Tasten stehen in der F1-Hilfe. Auf BREITBAND ist die gelbe Linie die Hörpeilung und die grauen Linien die Grenzen des Hörstrahls; dunkel heißt leise, türkis laut.
 
-![Sonar auf der uConsole](../screenshots/de-station-sonar.png)
+![Sonar auf der uConsole](figures/de-station-sonar.png)
 
 *Sonar auf der uConsole*
 
-![Sonar im Remote-Crew-Browser](../screenshots/commander-v2-de-sonar-desktop.png)
+![Sonar im Remote-Crew-Browser](figures/commander-v2-de-sonar-desktop.png)
 
 *Sonar im Remote-Crew-Browser*
 
@@ -349,7 +349,7 @@ Die Horchkonsole unter den Detailzeilen ist wie ein Leitstand aufgebaut: Lampen 
 
 #### BROADBAND-Wasserfall
 
-![BREITBAND-Wasserfall](../screenshots/de-sonar-broadband.png)
+![BREITBAND-Wasserfall](figures/de-sonar-broadband.png)
 
 *BREITBAND-Wasserfall*
 
@@ -372,7 +372,7 @@ Neueste Daten stehen oben. Eine gerade senkrechte Spur ist ein Kontakt mit stehe
 
 Die x-Achse ist die Frequenz (0-300 Hz), die Zeit läuft nach unten. Die Klassen sind 1 Hz breit unter 40 Hz, 2 Hz bis 100 Hz und 5 Hz darüber. Alle 0,25 s kommt eine Zeile hinzu; 80 Zeilen bleiben stehen.
 
-![LOFAR-Seite](../screenshots/de-sonar-lofar.png)
+![LOFAR-Seite](figures/de-sonar-lofar.png)
 
 *LOFAR-Seite*
 
@@ -388,7 +388,7 @@ Die x-Achse ist die Frequenz (0-300 Hz), die Zeit läuft nach unten. Die Klassen
 
 DEMON demoduliert die Hüllkurve des Breitbandrauschens im Horchstrahl. Schraubenkavitation ist mit der **Blattfrequenz** moduliert = Wellenfrequenz x Blattzahl.
 
-![DEMON-Seite](../screenshots/de-sonar-demon.png)
+![DEMON-Seite](figures/de-sonar-demon.png)
 
 *DEMON-Seite*
 
@@ -406,15 +406,15 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 
 #### TMA, Umwelt und Aktiv
 
-![TMA-Seite](../screenshots/de-sonar-tma.png)
+![TMA-Seite](figures/de-sonar-tma.png)
 
 *TMA-Seite*
 
-![Umwelt-Seite mit Sensorfusion](../screenshots/de-sonar-environment-fusion.png)
+![Umwelt-Seite mit Sensorfusion](figures/de-sonar-environment-fusion.png)
 
 *Umwelt-Seite mit Sensorfusion*
 
-![Aktiv-Seite](../screenshots/de-sonar-active.png)
+![Aktiv-Seite](figures/de-sonar-active.png)
 
 *Aktiv-Seite*
 
@@ -542,11 +542,11 @@ Die Waffenzentrale macht aus einem Sonarkontakt eine Feuerlösung. Sie startet d
 
 Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt, die Torpedotiefe und die Bereitschaftszeile der Feuerleitung. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand, Helikopter-Zuladung und die Torpedo-Einstellzeile: gewählter Typ mit Restvorrat, Suchmuster, Sucheraktivierungspunkt und Salvengröße.
 
-![Waffen auf der uConsole](../screenshots/de-station-weapons.png)
+![Waffen auf der uConsole](figures/de-station-weapons.png)
 
 *Waffen auf der uConsole*
 
-![Waffen im Remote-Crew-Browser](../screenshots/commander-v2-de-weapons-desktop.png)
+![Waffen im Remote-Crew-Browser](figures/commander-v2-de-weapons-desktop.png)
 
 *Waffen im Remote-Crew-Browser*
 
@@ -662,15 +662,15 @@ Die Schadensabwehr hält das Schiff nach einem Treffer schwimmfähig und die Sta
 
 Seite 1 ist die Leckwehrtafel: ein Seitenriss des Schiffs, Bug rechts, mit Decks, Aufbauten und Masten, jede Abteilung nummeriert auf ihrer wirklichen Länge und Höhe, daneben ein Querschnitt, der mit dem Schiff krängt und die Rumpfräume an Backbord und Steuerbord zeigt. Außen steht die See bis zur Wasserlinie mit Tiefgangsmarken an Bug und Heck; in jeder Abteilung steht das Leckwasser auf seiner Höhe und neigt sich mit dem Trimm, ein Brand glüht und flackert mit Rauch unter der Decke, und eine zerstörte Abteilung ist schraffiert. Ein aufgerissenes Loch zeigt, wo der Rumpf offen ist, und Wasser strömt hinein, solange die Abteilung vollläuft; hat ein Trupp ein Leckpflaster gesetzt, liegt dort eine Platte, und ein lenzender Trupp pumpt Wasser über Bord. Tiefgang und Trimm stehen unter dem Seitenriss, die Krängung unter dem Querschnitt. Unter den Bildern trägt die Karte jeder Abteilung eine Zustands-LED, Flutung und Brand mit ihren LEDs sowie nummerierte Plaketten für die Trupps vor Ort; eine Legende erklärt die LEDs. Seite 2 zeigt Details je Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung); Seite 3 ist der Wachplan der Besatzung. Im Browser beginnt die Karte Schaden mit einer Warn- und Meldetafel (Brände, Wassereinbruch, ausgefallen, verschlechtert, Gesamtschaden, Krängung, Trimm, Gegenfluten, Trupps aktiv, Schiff gesunken) über demselben Seitenriss mit Querschnitt und Rundinstrumenten für Krängung, Trimm und Gesamtschaden; ein Klick auf eine Abteilung schickt den gewählten Trupp dorthin.
 
-![Schadensabwehr auf der uConsole](../screenshots/de-station-damage-control.png)
+![Schadensabwehr auf der uConsole](figures/de-station-damage-control.png)
 
 *Schadensabwehr auf der uConsole*
 
-![Schadensabwehr mit Wassereinbruch und Feuer nach einem Treffer](../screenshots/de-damage-control-alert.png)
+![Schadensabwehr mit Wassereinbruch und Feuer nach einem Treffer](figures/de-damage-control-alert.png)
 
 *Schadensabwehr mit Wassereinbruch und Feuer nach einem Treffer*
 
-![Schadensabwehr im Remote-Crew-Browser](../screenshots/commander-v2-de-damage-desktop.png)
+![Schadensabwehr im Remote-Crew-Browser](figures/commander-v2-de-damage-desktop.png)
 
 *Schadensabwehr im Remote-Crew-Browser*
 
@@ -758,11 +758,11 @@ Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser
 
 Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track; Seite 3 führt den Seefernaufklärer; Seite 4 führt den Begleitzerstörer einer Gruppenjagd; Seite 5 stellt die Kartenanzeige ein. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Q`/`E` wie der Zoom an anderen Stationen; `Bild Auf`/`Bild Ab` blättern), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
 
-![OPZ auf der uConsole](../screenshots/de-station-opz-cic.png)
+![OPZ auf der uConsole](figures/de-station-opz-cic.png)
 
 *OPZ auf der uConsole*
 
-![OPZ im Remote-Crew-Browser](../screenshots/commander-v2-de-opz-desktop.png)
+![OPZ im Remote-Crew-Browser](figures/commander-v2-de-opz-desktop.png)
 
 *OPZ im Remote-Crew-Browser*
 
@@ -913,11 +913,11 @@ Der Funkraum wickelt die Verbindung zum Hauptquartier und die Kurzwellenpeilung 
 
 Seite 1 listet aktuelle HFDF-Signale mit der Peilrose links und die Kreuzpeilkarte mit dem Peilprotokoll rechts; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr; Seite 3 listet die HQ-Aufträge.
 
-![Funkraum auf der uConsole](../screenshots/de-station-radio.png)
+![Funkraum auf der uConsole](figures/de-station-radio.png)
 
 *Funkraum auf der uConsole*
 
-![Funkraum im Remote-Crew-Browser](../screenshots/commander-v2-de-radio-desktop.png)
+![Funkraum im Remote-Crew-Browser](figures/commander-v2-de-radio-desktop.png)
 
 *Funkraum im Remote-Crew-Browser*
 
@@ -1020,15 +1020,15 @@ Der Maschinenraum stellt die Fahrstufe ein und verwaltet die akustische Signatur
 
 Der Maschinenraum ist ein Maschinenleitstand. Seite 1 zeigt den Maschinentelegraphen als Säule leuchtender Stufen, ein großes Fahrtinstrument (die befohlene Fahrt als gelbe Marke, die Schadensbegrenzung rot), Instrumente für Wellendrehzahl und Eigenlärm (Kavitationsbereich rot) und Lampen für Welle, Anlage, Kurs, Akustikmodus, Kavitation und Fahrtgrenze. Seite 2 **Systeme** hat eine Warn- und Meldetafel aus Statuslampen (dunkel, wenn aus, grün im Betrieb, gelb bei einer Warnung, rot bei einem Alarm) mit einer Sammellampe, die Alarme und Warnungen zählt, den Kraftstoffbunker als Tanksäule mit Vorrat, Verbrauch, Ausdauer und Reichweite, Instrumente für Rollen, Stampfen und Schlagseite und ein Bild der Schiffsabschnitte vom Bug zum Heck zwischen Steuerbord- und Backbordrumpf, jeder mit Wasserstand, Zustand, Wassereinbruch- und Brand-LEDs und den nummerierten Reparaturtrupps.
 
-![Antrieb auf der uConsole](../screenshots/de-station-engineering.png)
+![Antrieb auf der uConsole](figures/de-station-engineering.png)
 
 *Antrieb auf der uConsole*
 
-![Antrieb, Systemseite](../screenshots/de-engineering-systems.png)
+![Antrieb, Systemseite](figures/de-engineering-systems.png)
 
 *Antrieb, Systemseite*
 
-![Antrieb im Remote-Crew-Browser](../screenshots/commander-v2-de-engine-desktop.png)
+![Antrieb im Remote-Crew-Browser](figures/commander-v2-de-engine-desktop.png)
 
 *Antrieb im Remote-Crew-Browser*
 
@@ -1098,11 +1098,11 @@ Der HSP-5 „Sea Lynx" verlängert den Arm der Fregatte: er fliegt mit 120 kn zu
 
 Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 
-![Heli-Deck auf der uConsole](../screenshots/de-station-helicopter.png)
+![Heli-Deck auf der uConsole](figures/de-station-helicopter.png)
 
 *Heli-Deck auf der uConsole*
 
-![Heli-Deck im Remote-Crew-Browser](../screenshots/commander-v2-de-helicopter-desktop.png)
+![Heli-Deck im Remote-Crew-Browser](figures/commander-v2-de-helicopter-desktop.png)
 
 *Heli-Deck im Remote-Crew-Browser*
 
@@ -1210,11 +1210,11 @@ Die Elektronische Kampfführung (EloKa) horcht passiv auf Radarsender (ESM) und 
 
 Seite 1 listet die Erfassungen; Seite 2 zeigt die Belege für die gewählte Erfassung (Frequenz, PRF, Modulation, Kandidaten, Korrelation).
 
-![ELOKA auf der uConsole](../screenshots/de-station-eloka.png)
+![ELOKA auf der uConsole](figures/de-station-eloka.png)
 
 *ELOKA auf der uConsole*
 
-![ELOKA im Remote-Crew-Browser](../screenshots/commander-v2-de-eloka-desktop.png)
+![ELOKA im Remote-Crew-Browser](figures/commander-v2-de-eloka-desktop.png)
 
 *ELOKA im Remote-Crew-Browser*
 
@@ -1311,9 +1311,13 @@ Die Führung sieht das ganze U-Boot: Karte, Navigation, Waffen und Kontakte, das
 - **Bedrohung (Seite 4):** die jüngsten Pings, Torpedogeräusche und Radarauffassungen mit ihren Peilungen. `I` weicht dem jüngsten Alarm aus, `Strg+B` klärt die Hecklücke, `G` ruft Gefechtsstationen.
 - Im Browser pingt die Führung auch und nimmt ein BT; auf der uConsole macht das der Sonarraum (`2`, `Umschalt+A`).
 
-![U-Boot-Führung auf der uConsole](../screenshots/de-uboot-command.png)
+![U-Boot-Führung auf der uConsole](figures/de-uboot-command.png)
 
 *U-Boot-Führung auf der uConsole*
+
+![U-Boot-Führung im Remote-Crew-Browser](figures/commander-v2-de-uboot-desktop.png)
+
+*U-Boot-Führung im Remote-Crew-Browser*
 
 1. An Sehrohrtiefe mit eingefahrenem Mast übernehmen; vor dem Losfahren Bedrohungsseite und HQ-Befehl lesen.
 2. Sobald Fregatte, Sonar oder Hubschrauber zu hören sind: unter die Sprungschicht (J), langsam und Schleichfahrt (A).
@@ -1328,9 +1332,13 @@ Der Sonarraum des U-Boots arbeitet wie der der Fregatte, ohne Schleppsonar, OPZ-
 - Die sechs Seiten und ihre Tasten sind die des Fregattensonars (Kapitel 2): Breitband-Wasserfall, LOFAR-Linien, DEMON-Wellendrehzahl, TMA, Umwelt mit BT, aktive Pings mit `Umschalt+A`.
 - Das Rumpfsonar horcht in der eigenen Tiefe: über der Schicht hört es Überwasserschiffe gut, darunter ist es gegen sie abgeschirmt. Achteraus liegt die taube Hecklücke; deshalb ab und zu bei der Führung ein Klären der Hecklücke anfordern.
 
-![U-Boot-Sonar](../screenshots/de-uboot-sonar.png)
+![U-Boot-Sonar](figures/de-uboot-sonar.png)
 
 *U-Boot-Sonar*
+
+![U-Boot-Sonar im Remote-Crew-Browser](figures/commander-v2-de-uboot-sonar-desktop.png)
+
+*U-Boot-Sonar im Remote-Crew-Browser*
 
 1. Breitbandig rundum suchen; jeden neuen Kontakt nummerieren und seine Peilwanderung beobachten.
 2. Den stärksten Kontakt mit den Filtern abhören und an seinen Linien klassifizieren.
@@ -1346,9 +1354,13 @@ Die Waffenstation lädt und flutet die Rohre, stellt Lauftiefe und Fächer ein, 
 - **Feuerleitung:** `↑`/`↓` wählen einen Kontakt mit frischer Entfernung, `T` stellt die Lauftiefe, `Y` Einzelschuss oder Zweierfächer, `X` das Suchmuster und `,`/`.` den Scharfschaltpunkt; `Strg+Enter` schießt. `F` schießt ohne Kontakt auf eine eingegebene Peilung und Entfernung.
 - **Draht und Täuschkörper:** `W` lenkt den jüngsten drahtgelenkten Torpedo auf eine neue Peilung, `Umschalt+W` kappt den Draht; `V` stößt einen Täuschkörper aus.
 
-![U-Boot-Waffen](../screenshots/de-uboot-weapons.png)
+![U-Boot-Waffen](figures/de-uboot-weapons.png)
 
 *U-Boot-Waffen*
+
+![U-Boot-Waffen im Remote-Crew-Browser](figures/commander-v2-de-uboot-weapons-desktop.png)
+
+*U-Boot-Waffen im Remote-Crew-Browser*
 
 1. Rohre laden (M) und früh und langsam fluten (Strg+M); schnelles Fluten (Umschalt+M) ist laut.
 2. Vor dem Schuss Lauftiefe (T), Fächer (Y), Suchmuster (X) und Einschaltpunkt (, / .) einstellen.
@@ -1365,15 +1377,15 @@ Der Maschinenraum fährt Telegraph, Schnorchel und Laderate, Schleichfahrt, die 
 - **Zellen (Seite 3):** Regel- und Trimmzellen. `↑`/`↓` lenzen oder fluten die Regelzelle, `←`/`→` verschieben Trimmwasser, `Z` schaltet die Trimmautomatik; `Umschalt+B` ist das einmalige Notanblasen.
 - **Leckwehr (Seite 4):** die Abteilungen mit Wasser, Lecks, Feuer und Gas. `↑`/`↓` wählen eine Abteilung, `←`/`→` eine Aufgabe, `Enter` schickt Trupp 1 (`Umschalt+Enter` Trupp 2), `I` schließt oder öffnet ihre Schotten; `W`, `M` und `U` lösen die Wache ab, schicken den Sanitätstrupp und besetzen die am schwersten getroffene Station neu.
 
-![U-Boot-Maschine](../screenshots/de-uboot-engine.png)
+![U-Boot-Maschine](figures/de-uboot-engine.png)
 
 *U-Boot-Maschine*
 
-![U-Boot-Leckwehr (Maschine, Seite 4)](../screenshots/de-uboot-damage-control.png)
+![U-Boot-Leckwehr (Maschine, Seite 4)](figures/de-uboot-damage-control.png)
 
 *U-Boot-Leckwehr (Maschine, Seite 4)*
 
-![U-Boot-Maschine im Remote-Crew-Browser](../screenshots/commander-v2-de-uboot-engine-desktop.png)
+![U-Boot-Maschine im Remote-Crew-Browser](figures/commander-v2-de-uboot-engine-desktop.png)
 
 *U-Boot-Maschine im Remote-Crew-Browser*
 
@@ -1390,19 +1402,23 @@ Mast & ESM fährt den Mast an Sehrohrtiefe aus, hört auf der ESM-Rose nach Rada
 - **ESM (Seite 1):** mit ausgefahrenem Mast (`P`, nur auf Sehrohrtiefe) zeigt die Rose jedes gehörte Radar mit Peilung und Pegel. `↑`/`↓` wählen einen Sender, `←`/`→` klassifizieren ihn aus der Bibliothek (eine Anmerkung, nie die Wahrheit), `Enter` gibt seine Kreuzpeilung oder Peillinie in den Plot des U-Boots. Ein Hauptkeulentreffer heißt, dass das Radar den Mast womöglich schon sieht.
 - **Sehrohr (Seite 2):** dasselbe Sehrohr wie Seite 3 der Führung, ohne Schuss.
 
-![Mast/ESM](../screenshots/de-uboot-mast-esm.png)
+![Mast/ESM](figures/de-uboot-mast-esm.png)
 
 *Mast/ESM*
 
-![Sehrohr bei Tag](../screenshots/de-uboot-periscope-day.png)
+![Mast/ESM im Remote-Crew-Browser](figures/commander-v2-de-uboot-esm-desktop.png)
+
+*Mast/ESM im Remote-Crew-Browser*
+
+![Sehrohr bei Tag](figures/de-uboot-periscope-day.png)
 
 *Sehrohr bei Tag*
 
-![Sehrohr bei Nacht](../screenshots/de-uboot-periscope-night.png)
+![Sehrohr bei Nacht](figures/de-uboot-periscope-night.png)
 
 *Sehrohr bei Nacht*
 
-![Sehrohr im Remote-Crew-Browser](../screenshots/commander-v2-de-periscope-day.png)
+![Sehrohr im Remote-Crew-Browser](figures/commander-v2-de-periscope-day.png)
 
 *Sehrohr im Remote-Crew-Browser*
 
@@ -1420,9 +1436,13 @@ Die Navigation befiehlt Kurs und Tiefe, achtet auf Kiel und Untiefen auf Lotsenk
 - **Navigation (Seite 2):** die Lagekarte wie Seite 1 der Führung; ein Rechtsklick setzt einen Wegpunkt, `W` legt eine Zickzack- oder Quadratsuche, `Rück` löscht die Route.
 - **Bedrohung (Seite 3):** wie die Bedrohungsseite der Führung; `I` weicht aus, `Umschalt+G` legt das U-Boot in flachem Wasser auf Grund.
 
-![U-Boot-Navigation](../screenshots/de-uboot-navigation.png)
+![U-Boot-Navigation](figures/de-uboot-navigation.png)
 
 *U-Boot-Navigation*
+
+![U-Boot-Navigation im Remote-Crew-Browser](figures/commander-v2-de-uboot-nav-desktop.png)
+
+*U-Boot-Navigation im Remote-Crew-Browser*
 
 1. Vor jedem Kurs- oder Tiefenbefehl die Lotsenkarte prüfen: Kiel, Untiefen und Land voraus.
 2. Die Lampe Koppelort beobachten: getaucht wächst der Fehler; bei ruhiger Lage mit ausgefahrenem Mast einen GPS-Fix nehmen (20 s).
@@ -1437,9 +1457,13 @@ Der Funkraum schreibt die Sendungen des HQ mit, liest Befehle und Kontaktmeldung
 - Die Seite zeigt, wann die nächste Sendung des HQ kommt, ob eine Antenne oben ist (Mast `P` auf Sehrohrtiefe oder die Schleppbojenantenne `B` bis 60 m bei höchstens 6 kn), die Befehle und Kontaktmeldungen des HQ und das Protokoll.
 - `Enter` sendet eine Lagemeldung; dazu muss der Mast oben sein, und die Fregatte kann sie mit KW-Peilung orten.
 
-![U-Boot-Funkraum](../screenshots/de-uboot-radio.png)
+![U-Boot-Funkraum](figures/de-uboot-radio.png)
 
 *U-Boot-Funkraum*
+
+![U-Boot-Funkraum im Remote-Crew-Browser](figures/commander-v2-de-uboot-radio-desktop.png)
+
+*U-Boot-Funkraum im Remote-Crew-Browser*
 
 1. Die nächste HQ-Sendung notieren; sie mit Mast, Bojenantenne (B) oder VLF mitschreiben.
 2. HQ-Befehle und Kontaktmeldungen an den Kommandanten geben; ihre Peilungen gelten vom gekoppelten Ort.
@@ -1608,7 +1632,7 @@ U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint
 
 Eine zweite Crew kann den Gegner spielen. Das U-Boot hat sieben Stationen: Führung, Sonar, Waffen, Maschine, Mast & ESM, Navigation und Funkraum; ein Browser übernimmt sie wie die der Fregatte (`F9`). Solange eine davon besetzt ist, folgt das lebende feindliche U-Boot mit der kleinsten Nummer nur den Befehlen dieser Crew; werden die Rollen abgegeben oder vom Host entzogen, übernimmt die KI das U-Boot wieder dort, wo es gerade ist. Ein Spielstand bewahrt Befehle, Betriebsarten, Mast, Drähte, Plot, Alarmpeilungen, ESM-Bild und Funktagebuch der Crew; nach dem Laden fährt das U-Boot seine letzten Befehle weiter und wartet bis zu zehn Minuten darauf, dass seine Crew die Stationen erneut übernimmt (jede U-Boot-Station wird neu vergeben), bevor die KI es zurücknimmt. Ein Browser hält nur Rollen einer Seite (Fregatte oder U-Boot), nie beide; die Lobby fragt zuerst, welche Einheit er spielt. Im Solo-Modus hält der eine Browser alle neun Stationen der Fregatte oder mit **U-Boot spielen** in der Host-Leiste alle sieben Stationen des U-Boots (zurück mit **Fregatte spielen**). Der Host-Dialog **Neues Spiel** wählt auch die **Seite** (*Fregatte F-217* oder *U-Boot*); als U-Boot führen die **KI-Jäger** Fregatte, Hubschrauber und Seefernaufklärer.
 
-![Remote-Crew-Verwaltung (F9) auf der uConsole](../screenshots/de-commander-options.png)
+![Remote-Crew-Verwaltung (F9) auf der uConsole](figures/de-commander-options.png)
 
 *Remote-Crew-Verwaltung (F9) auf der uConsole*
 
@@ -1811,19 +1835,19 @@ Wenn niemand die Fregatte fährt (die uConsole spielt das U-Boot oder ein Solo-B
 
 ### Mission und Wertung
 
-![Missionseditor](../screenshots/de-mission-editor.png)
+![Missionseditor](figures/de-mission-editor.png)
 
 *Missionseditor*
 
-![Missionseditor, Einheitendetails](../screenshots/de-mission-editor-detail.png)
+![Missionseditor, Einheitendetails](figures/de-mission-editor-detail.png)
 
 *Missionseditor, Einheitendetails*
 
-![Einheiteneditor](../screenshots/de-unit-editor.png)
+![Einheiteneditor](figures/de-unit-editor.png)
 
 *Einheiteneditor*
 
-![Kontaktanalyse (F8)](../screenshots/de-contact-analyzer.png)
+![Kontaktanalyse (F8)](figures/de-contact-analyzer.png)
 
 *Kontaktanalyse (F8)*
 

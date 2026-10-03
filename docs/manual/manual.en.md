@@ -10,7 +10,7 @@ You command the ASW frigate F-217 and man nine stations. Your job: detect, track
 
 ### Mission and win conditions
 
-![Mission briefing before the start: task, area, forces and win conditions](../screenshots/mission-briefing.png)
+![Mission briefing before the start: task, area, forces and win conditions](figures/mission-briefing.png)
 
 *Mission briefing before the start: task, area, forces and win conditions*
 
@@ -24,19 +24,19 @@ You command the ASW frigate F-217 and man nine stations. Your job: detect, track
 
 The ship is split into nine stations. Keys `1`-`9` select a station; pressing the number of the current station again cycles its pages.
 
-![Frigate stations on the uConsole: Bridge, Sonar, Weapons and Damage control](../screenshots/stations-overview-1.png)
+![Frigate stations on the uConsole: Bridge, Sonar, Weapons and Damage control](figures/stations-overview-1.png)
 
 *Frigate stations on the uConsole: Bridge, Sonar, Weapons and Damage control*
 
-![Frigate stations on the uConsole: OPZ, Radio, Engine room and Helicopter](../screenshots/stations-overview-2.png)
+![Frigate stations on the uConsole: OPZ, Radio, Engine room and Helicopter](figures/stations-overview-2.png)
 
 *Frigate stations on the uConsole: OPZ, Radio, Engine room and Helicopter*
 
-![Frigate station ELOKA on the uConsole](../screenshots/stations-overview-3.png)
+![Frigate station ELOKA on the uConsole](figures/stations-overview-3.png)
 
 *Frigate station ELOKA on the uConsole*
 
-![Submarine stations on the uConsole at a glance](../screenshots/uboot-overview.png)
+![Submarine stations on the uConsole at a glance](figures/uboot-overview.png)
 
 *Submarine stations on the uConsole at a glance*
 
@@ -151,15 +151,15 @@ The bottom status ticker shows the newest event and key telemetry; `F11` opens t
 
 ### Main menu, saving and options
 
-![Main menu](../screenshots/main-menu.png)
+![Main menu](figures/main-menu.png)
 
 *Main menu*
 
-![Scenario selection, sorted by side](../screenshots/mission-scenario-selection.png)
+![Scenario selection, sorted by side](figures/mission-scenario-selection.png)
 
 *Scenario selection, sorted by side*
 
-![Options (F10)](../screenshots/options.png)
+![Options (F10)](figures/options.png)
 
 *Options (F10)*
 
@@ -186,7 +186,7 @@ The bottom status ticker shows the newest event and key telemetry; `F11` opens t
 
 A phone can stand the watch as the frigate's bridge lookout or on the crewed submarine's periscope. `F9` shows a second QR code, **Phone lookout**, for the address `https://<address>:<port+1>/lookout`. Scan it, accept the certificate warning once, choose the watch station, and type the pairing code shown next to it (the code is never in the QR code). Type it as shown, with or without the space and in any case; look-alikes such as O and 0, I, l and 1 or S and 5 are read by position. "Wrong pairing code" means exactly that and shows the code the game received; if the game refuses the address itself, the page says so.
 
-![Binoculars and periscope by day and at night (frigate left, submarine right)](../screenshots/sight-overview.png)
+![Binoculars and periscope by day and at night (frigate left, submarine right)](figures/sight-overview.png)
 
 *Binoculars and periscope by day and at night (frigate left, submarine right)*
 
@@ -207,11 +207,11 @@ The Bridge conns the frigate: course, speed and position relative to coast, cont
 
 The top bar shows the station, the mission, the clock, speed and course; the chart header shows only its scale (plus "follow" while `K` follows own ship). Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing; page 3 is the lookout scope. The chart water darkens with the clock in three steps (day, dusk within an hour of 05:30 and 19:30, night), and rain or a storm hatches the chart with dashed diagonals (a storm adds an amber border); both are display only, as on the browser chart. Options page 2 can anti-alias the chart and plot lines.
 
-![Bridge, page 1 (navigation) on the uConsole](../screenshots/station-bridge.png)
+![Bridge, page 1 (navigation) on the uConsole](figures/station-bridge.png)
 
 *Bridge, page 1 (navigation) on the uConsole*
 
-![Bridge in the Remote Crew browser](../screenshots/commander-v2-en-bridge-desktop.png)
+![Bridge in the Remote Crew browser](figures/commander-v2-en-bridge-desktop.png)
 
 *Bridge in the Remote Crew browser*
 
@@ -241,15 +241,15 @@ The top bar shows the station, the mission, the clock, speed and course; the cha
 
 The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the event feed as `AUSG` lines, for example `Bridge lookout: frigate (Admiral-Gorshkov-Fregatte) bearing 040°, 3.8 NM`. The Remote Crew bridge lists the same reports under "Lookout reports". Bridge page 3 (the lookout scope) shows the sightings north up around the own ship at the range and bearing the lookout measured, coloured by kind (surface, submarine, aircraft, torpedo) and labelled with what he made out, next to visibility, sea state, day/night and the latest reports; `,` and `.` change the scope radius (2 to 30 NM). Above the reports a horizon strip shows the binoculars toward the bow (90° field, true-bearing scale, the horizon moving with the sea, the light of the hour) with the outlines of the lookout's sightings at their measured bearing and range; it is the same renderer as the submarine's periscope. The picture has the start screen's look: by day a blue sky, at dusk a warm horizon, at night stars and the moon in its phase at its bearing with its glitter on the water; clouds, rain, snow and fog follow the weather station, and the silhouettes are drawn in steel with a lit rim, with lit windows at night. Once the lookout has made out the class of a ship, submarine or aircraft, it is drawn as its 3D model (the analyser's), turned by the angle on the bow he judges in 10° steps, as soon as it is at least 16 pixels long; before that, when stale or smaller it stays a flat silhouette. The model is the real type the eye sees (every ship, submarine and aircraft type has its own model, see the reference chapter), so the type can be told by sight; the lookout's report names only what he made out, and only the report goes to the OPZ. Every outline stands at the bearing the lookout measured, and a ship floats with her waterline as far below the horizon line as his eye 18 m up sees the water at the range he measured: about 1° below at 0.5 NM, 0.4° at 1 NM, on the line from about 9 NM (the curve of the Earth); a nearer ship stands in front of a farther one. The angle on the bow shows which way she lies: her starboard side with the bow to the right, her port side with the bow to the left, bow on when she heads at you. From dusk to dawn and in visibility under 2 NM neutral merchant ships and fishing vessels run their navigation lights (warships run darkened): white masthead lights over the forward 225° (two from 50 m length, the aft one higher, 6 NM), the green starboard or red port side light (3 NM), both when she heads straight at you, and the white stern light over the 135° astern (3 NM; under 50 m length one masthead light at 5 NM and the others at 2 NM), never beyond the visibility. Vessels at work add their all-round lights: a trawler green over white (a masthead light only from 50 m), a pilot vessel white over red instead of masthead lights, a survey ship, cable layer or research ship restricted in her ability to manoeuvre red, white, red, and a mine clearance vessel three green; a tug without a tow shows ordinary lights. Civil aircraft show the red left and green right wingtip light and the white tail light (3 NM) and their flashing red anti-collision beacons and white strobes (10 NM); military aircraft fly dark; the silhouette then points its bow the way the lights show, and a lit ship is sighted by its lights even where the dark hull is not (its class still needs the silhouette). The lookout calls out the lights he sees with his reading of them, for example `Bridge lookout: lights bearing 040°, 2.8 NM: two masthead lights, red side light; showing her port side`: both side lights mean she is heading for us (called aloud), green alone her starboard side, red alone her port side, the stern light alone that she is going away, and the all-round lights her work (fishing, pilot on duty, restricted in ability to manoeuvre, clearing mines; flashing lights an aircraft). He calls a contact's lights again only when what they tell changes, at most every 2 minutes; the Remote Crew bridge lists these calls with the other reports. Aircraft stand at their true elevation above the horizon, worked out from their height and range less the curve of the Earth, and hang in the still sky behind the clouds instead of riding the swell; an aircraft high and close is above the field until the binoculars are tilted up. An aircraft less than 1° above the horizon (hovering low, close aboard) stands on the moving horizon in front of the sea instead. The own helicopter is in every one of these pictures (strip, binoculars, the Remote Crew card, the phone lookout and the hit picture) whenever the bridge can see it: the helicopter model at its true position, its own heading and length (15.2 m), about 60 m up in transit, 30 m on a MAD run and 15 m over its dipping sonar; on launch it starts from the flight deck astern and climbs away within 0.3 NM, and at night its position lights show. It needs the same visibility as any aircraft, is never reported or sent to the OPZ, and is not seen in the hangar. The lookout scope marks it as "own helicopter" at its position, the panorama with a short green tick at the top, and the list under the binoculars names it first. The Remote Crew bridge shows the same binoculars as a card ("Lookout binoculars"), trained in that browser only with the arrow buttons (2°, 10°) and "Bow". `B` raises the binoculars large over the chart: a 16° field the operator trains with `←` and `→` instead of the rudder, as the submarine's periscope (`Shift`: 20° steps), or by clicking the all-round panorama below it, which marks every sighting at its measured bearing with the bow in the middle; the sightings are listed underneath, nearest the line of sight first. The charted coast stands on the horizon of the strip and the binoculars as far as the lookout can see land (at most 20 NM, fading into the haze), and the panorama marks it along its foot; the chart has no elevation, so the hills are an assumed 25 to 70 m. While the binoculars are up, `↑`/`↓` tilt them 2° (`Shift`: 10°, from 20° down to 45° up) instead of working the telegraph, `Q`/`E` zoom them (16°, 8° or 4° field) and `Space` switches the stabilizer, which takes out all but an eighth of the ship's motion; the line under the picture shows tilt and field, and the Remote Crew card has the same buttons for its own browser. The sea follows the wind: looking into it the crests come at you in long rows, looking down-sea their backs run away, across it short crests run sideways, and the ship pitches in a head or following sea and rolls in a beam sea. The waves fill the whole sea in perspective, small and close together out to a clean horizon, longer and higher toward the eye, and every row moves with the swell. The ship's own way shows in the water: underway the rows stream toward the eye looking ahead, away from it looking astern and from bow to stern looking abeam, faster with more speed; astern the wake runs as a band of smoother, lighter water with foam between the two arms of the Kelvin wave out toward the horizon, and ahead the bow wave throws its spray up into the lower edge of the picture (tilt the binoculars down to see the white water curl out from the stem). `B` again returns to the chart; the binoculars are display only and are not saved. A contact is reported in up to three steps as it closes, each step once:
 
-![Binoculars (B) by day](../screenshots/frigate-binoculars-day.png)
+![Binoculars (B) by day](figures/frigate-binoculars-day.png)
 
 *Binoculars (B) by day*
 
-![Binoculars at night with navigation lights](../screenshots/frigate-binoculars-night.png)
+![Binoculars at night with navigation lights](figures/frigate-binoculars-night.png)
 
 *Binoculars at night with navigation lights*
 
-![Lookout binoculars in the Remote Crew browser](../screenshots/commander-v2-en-binoculars-day.png)
+![Lookout binoculars in the Remote Crew browser](figures/commander-v2-en-binoculars-day.png)
 
 *Lookout binoculars in the Remote Crew browser*
 
@@ -328,11 +328,11 @@ The sonar room is the main ASW sensor. It listens passively on the hull-mounted 
 
 The station has six pages. `PgUp`/`PgDn` (or `2` again) cycles them. The listening post on the right shows the evidence source and age, the array, the listening bearing and the ping readiness; a towed or variable-depth array that is moving or not yet ready appears on every page in amber with payout, stability and PAUSE when handling is outside its limits. The single key row at the bottom shows the page's four main keys with their values; every other key is listed under F1. On BROADBAND the amber line is the listening bearing and the grey lines the beam limits; dark means quiet, turquoise loud.
 
-![Sonar on the uConsole](../screenshots/station-sonar.png)
+![Sonar on the uConsole](figures/station-sonar.png)
 
 *Sonar on the uConsole*
 
-![Sonar in the Remote Crew browser](../screenshots/commander-v2-en-sonar-desktop.png)
+![Sonar in the Remote Crew browser](figures/commander-v2-en-sonar-desktop.png)
 
 *Sonar in the Remote Crew browser*
 
@@ -349,7 +349,7 @@ The listening console below the detail rows works like a control desk: lamps sho
 
 #### BROADBAND waterfall
 
-![BROADBAND waterfall](../screenshots/sonar-broadband.png)
+![BROADBAND waterfall](figures/sonar-broadband.png)
 
 *BROADBAND waterfall*
 
@@ -371,7 +371,7 @@ Newest data is at the top. A straight vertical trace is a contact on a steady be
 
 The x axis is frequency (0-300 Hz), time runs downwards. Bins are 1 Hz below 40 Hz, 2 Hz up to 100 Hz and 5 Hz above. A new line is added every 0.25 s; 80 lines are kept.
 
-![LOFAR page](../screenshots/sonar-lofar.png)
+![LOFAR page](figures/sonar-lofar.png)
 
 *LOFAR page*
 
@@ -387,7 +387,7 @@ The x axis is frequency (0-300 Hz), time runs downwards. Bins are 1 Hz below 40 
 
 DEMON demodulates the broadband noise envelope of the listening beam. Propeller cavitation is modulated at the **blade rate** = shaft rate x number of blades.
 
-![DEMON page](../screenshots/sonar-demon.png)
+![DEMON page](figures/sonar-demon.png)
 
 *DEMON page*
 
@@ -405,15 +405,15 @@ The display shows measured modulation, not identity. After changing the bearing 
 
 #### TMA, environment and active
 
-![TMA page](../screenshots/sonar-tma.png)
+![TMA page](figures/sonar-tma.png)
 
 *TMA page*
 
-![Environment page with sensor fusion](../screenshots/sonar-environment-fusion.png)
+![Environment page with sensor fusion](figures/sonar-environment-fusion.png)
 
 *Environment page with sensor fusion*
 
-![Active sonar page](../screenshots/sonar-active.png)
+![Active sonar page](figures/sonar-active.png)
 
 *Active sonar page*
 
@@ -541,11 +541,11 @@ Weapons control turns a sonar contact into a firing solution. It launches the fr
 
 Page 1 (target) shows the chart with the selected contact, the torpedo depth and the fire-control readiness line. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state, helicopter stores and the torpedo setup line: selected type with its remaining stock, search pattern, seeker enable point and salvo size.
 
-![Weapons on the uConsole](../screenshots/station-weapons.png)
+![Weapons on the uConsole](figures/station-weapons.png)
 
 *Weapons on the uConsole*
 
-![Weapons in the Remote Crew browser](../screenshots/commander-v2-en-weapons-desktop.png)
+![Weapons in the Remote Crew browser](figures/commander-v2-en-weapons-desktop.png)
 
 *Weapons in the Remote Crew browser*
 
@@ -661,15 +661,15 @@ Damage control keeps the ship afloat and the stations working after a hit. Three
 
 Page 1 is the damage-control board: a side profile of the ship, bow to the right, with its decks, superstructure and masts, every compartment numbered at its real length and height, and beside it a cross-section that lists with the ship and holds the port and starboard hull voids. The sea stands outside up to the waterline with draft marks at bow and stern; floodwater stands at its level in each compartment and tilts with the trim, a fire glows and flickers with smoke under the deckhead, and a destroyed compartment is hatched. A torn hole shows where the hull is open and water rushes in as long as it floods; once a team has fitted a patch it shows as a plate, and a team pumping sends water over the side. Draft and trim are written under the profile, the list under the cross-section. Under the pictures each compartment's card carries a state LED, the flood and fire values with their LEDs and numbered badges for the teams on scene; a legend explains the LEDs. Page 2 lists details per compartment (flooding, fire, trend, teams on scene, heel); page 3 is the crew's watch bill. In the browser the Damage card opens with an annunciator panel (fires, flooding, lost, getting worse, total damage, list, trim, counter-flooding, teams busy, ship sunk) above the same side profile and cross-section, and gauges for list, trim and total damage; a click on a compartment sends the selected team there.
 
-![Damage control on the uConsole](../screenshots/station-damage-control.png)
+![Damage control on the uConsole](figures/station-damage-control.png)
 
 *Damage control on the uConsole*
 
-![Damage control with flooding and fire after a hit](../screenshots/damage-control-alert.png)
+![Damage control with flooding and fire after a hit](figures/damage-control-alert.png)
 
 *Damage control with flooding and fire after a hit*
 
-![Damage control in the Remote Crew browser](../screenshots/commander-v2-en-damage-desktop.png)
+![Damage control in the Remote Crew browser](figures/commander-v2-en-damage-desktop.png)
 
 *Damage control in the Remote Crew browser*
 
@@ -757,11 +757,11 @@ Operations (OPZ / CIC) builds the tactical picture above the water: surface and 
 
 Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track; page 3 commands the patrol aircraft; page 4 commands the consort destroyer of a group hunt; page 5 sets the chart display. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `Q`/`E` as the zoom keys elsewhere; `PgUp`/`PgDn` page), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
 
-![OPZ on the uConsole](../screenshots/station-opz-cic.png)
+![OPZ on the uConsole](figures/station-opz-cic.png)
 
 *OPZ on the uConsole*
 
-![OPZ in the Remote Crew browser](../screenshots/commander-v2-en-opz-desktop.png)
+![OPZ in the Remote Crew browser](figures/commander-v2-en-opz-desktop.png)
 
 *OPZ in the Remote Crew browser*
 
@@ -912,11 +912,11 @@ The radio room handles communications with HQ and HF direction finding (HFDF). H
 
 Page 1 lists current HFDF signals with the DF rose on the left and the cross-fix chart with the bearing log on the right; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
 
-![Radio room on the uConsole](../screenshots/station-radio.png)
+![Radio room on the uConsole](figures/station-radio.png)
 
 *Radio room on the uConsole*
 
-![Radio room in the Remote Crew browser](../screenshots/commander-v2-en-radio-desktop.png)
+![Radio room in the Remote Crew browser](figures/commander-v2-en-radio-desktop.png)
 
 *Radio room in the Remote Crew browser*
 
@@ -1019,15 +1019,15 @@ The engine room sets the propulsion order and manages the ship's acoustic signat
 
 The engine room is a machinery control console. Page 1 shows the engine telegraph as a column of lit steps, a large speed gauge (ordered speed as an amber mark, the damage speed limit in red), gauges for shaft RPM and own noise (cavitation zone in red) and lamps for shaft, plant, course, acoustic mode, cavitation and speed limit. Page 2 **Systems** has an annunciator panel of status lamps (dark when off, green while running, amber for a caution, red for an alarm) with a master lamp counting alarms and cautions, the fuel bunker as a tank column with stock, burn, endurance and range, gauges for roll, pitch and hull list, and a mimic of the ship's sections from bow to stern between the starboard and port hull, each with its water level, state, flooding and fire LEDs and the numbered repair teams at work.
 
-![Engine room on the uConsole](../screenshots/station-engineering.png)
+![Engine room on the uConsole](figures/station-engineering.png)
 
 *Engine room on the uConsole*
 
-![Engine room, systems page](../screenshots/engineering-systems.png)
+![Engine room, systems page](figures/engineering-systems.png)
 
 *Engine room, systems page*
 
-![Engine room in the Remote Crew browser](../screenshots/commander-v2-en-engine-desktop.png)
+![Engine room in the Remote Crew browser](figures/commander-v2-en-engine-desktop.png)
 
 *Engine room in the Remote Crew browser*
 
@@ -1097,11 +1097,11 @@ The HSP-5 "Sea Lynx" extends the frigate's reach: it flies to a datum at 120 kn,
 
 The station has four pages (`8` again cycles them); it opens on page 3.
 
-![Helicopter deck on the uConsole](../screenshots/station-helicopter.png)
+![Helicopter deck on the uConsole](figures/station-helicopter.png)
 
 *Helicopter deck on the uConsole*
 
-![Helicopter deck in the Remote Crew browser](../screenshots/commander-v2-en-helicopter-desktop.png)
+![Helicopter deck in the Remote Crew browser](figures/commander-v2-en-helicopter-desktop.png)
 
 *Helicopter deck in the Remote Crew browser*
 
@@ -1209,11 +1209,11 @@ Electronic warfare (EloKa) listens passively for radar emitters (ESM) and, when 
 
 Page 1 lists intercepts; page 2 shows the evidence for the selected intercept (frequency, PRF, modulation, candidates, correlation).
 
-![Electronic warfare on the uConsole](../screenshots/station-eloka.png)
+![Electronic warfare on the uConsole](figures/station-eloka.png)
 
 *Electronic warfare on the uConsole*
 
-![Electronic warfare in the Remote Crew browser](../screenshots/commander-v2-en-eloka-desktop.png)
+![Electronic warfare in the Remote Crew browser](figures/commander-v2-en-eloka-desktop.png)
 
 *Electronic warfare in the Remote Crew browser*
 
@@ -1310,9 +1310,13 @@ Command sees the whole submarine: chart, navigation, weapons and contacts, the p
 - **Threat (page 4):** the freshest pings, torpedo noises and radar intercepts with their bearings. `I` evades the freshest alarm, `Ctrl+B` clears the baffles, `G` calls action stations.
 - In the browser Command also pings and takes a BT; on the uConsole the sonar room does that (`2`, `Shift+A`).
 
-![Submarine command on the uConsole](../screenshots/uboot-command.png)
+![Submarine command on the uConsole](figures/uboot-command.png)
 
 *Submarine command on the uConsole*
+
+![Submarine command in the Remote Crew browser](figures/commander-v2-en-uboot-desktop.png)
+
+*Submarine command in the Remote Crew browser*
 
 1. Take over at periscope depth with the mast down; read the threat page and HQ's order before moving.
 2. Once the frigate, its sonar or a helicopter is heard: below the layer (J), slow and silent running (A).
@@ -1327,9 +1331,13 @@ The submarine's sonar room works like the frigate's, without towed array, OPZ re
 - The six pages and their keys are those of the frigate's sonar (chapter 2): broadband waterfall, LOFAR lines, DEMON shaft rate, TMA, environment with BT, active pings with `Shift+A`.
 - The hull sonar listens at the submarine's own depth: above the layer it hears surface ships well, below it it is shielded from them. Astern lies the deaf baffle sector, so ask Command for a baffle clearing now and then.
 
-![Submarine sonar](../screenshots/uboot-sonar.png)
+![Submarine sonar](figures/uboot-sonar.png)
 
 *Submarine sonar*
+
+![Submarine sonar in the Remote Crew browser](figures/commander-v2-en-uboot-sonar-desktop.png)
+
+*Submarine sonar in the Remote Crew browser*
 
 1. Search broadband all round; give every new contact a number and watch its bearing drift.
 2. Listen on the strongest contact with the filters and classify it by its lines.
@@ -1345,9 +1353,13 @@ Weapons loads and floods the tubes, sets run depth and salvo, fires at a selecte
 - **Fire control:** `↑`/`↓` pick a contact with a fresh range, `T` sets the run depth, `Y` single shot or two-torpedo spread, `X` the seeker pattern and `,`/`.` the enable point; `Ctrl+Enter` fires. `F` fires down an entered bearing and distance without a contact.
 - **Wire and decoy:** `W` steers the newest wired torpedo onto a new bearing, `Shift+W` cuts its wire; `V` launches a decoy.
 
-![Submarine weapons](../screenshots/uboot-weapons.png)
+![Submarine weapons](figures/uboot-weapons.png)
 
 *Submarine weapons*
+
+![Submarine weapons in the Remote Crew browser](figures/commander-v2-en-uboot-weapons-desktop.png)
+
+*Submarine weapons in the Remote Crew browser*
 
 1. Load tubes (M) and flood them early and slowly (Ctrl+M); fast flooding (Shift+M) is loud.
 2. Before the shot set run depth (T), salvo (Y), search pattern (X) and enable point (, / .).
@@ -1364,15 +1376,15 @@ The engine room runs the telegraph, snorkel and charge rate, silent running, the
 - **Tanks (page 3):** regulating and trim tanks. `↑`/`↓` pump out or flood the regulating tank, `←`/`→` move trim water, `Z` switches the automatic trim; `Shift+B` is the one emergency blow.
 - **Damage (page 4):** the compartments with water, leaks, fire and gas. `↑`/`↓` pick a compartment, `←`/`→` a task, `Enter` sends team 1 (`Shift+Enter` team 2), `I` shuts or opens its bulkheads; `W`, `M` and `U` relieve the watch, send the medical team and re-man the worst-hit station.
 
-![Submarine engine room](../screenshots/uboot-engine.png)
+![Submarine engine room](figures/uboot-engine.png)
 
 *Submarine engine room*
 
-![Submarine damage control (engine room, page 4)](../screenshots/uboot-damage-control.png)
+![Submarine damage control (engine room, page 4)](figures/uboot-damage-control.png)
 
 *Submarine damage control (engine room, page 4)*
 
-![Submarine engine room in the Remote Crew browser](../screenshots/commander-v2-en-uboot-engine-desktop.png)
+![Submarine engine room in the Remote Crew browser](figures/commander-v2-en-uboot-engine-desktop.png)
 
 *Submarine engine room in the Remote Crew browser*
 
@@ -1389,19 +1401,23 @@ Mast & ESM raises the mast at periscope depth, listens for radars on the ESM ros
 - **ESM (page 1):** with the mast up (`P`, only at periscope depth) the rose shows every radar heard with its bearing and level. `↑`/`↓` pick an emitter, `←`/`→` classify it from the library (an annotation, never the truth), `Enter` puts its cross-fix or bearing line into the submarine's plot. A main-beam hit means the radar may already see the mast.
 - **Periscope (page 2):** the same periscope as Command's page 3, without the shot.
 
-![Mast & ESM](../screenshots/uboot-mast-esm.png)
+![Mast & ESM](figures/uboot-mast-esm.png)
 
 *Mast & ESM*
 
-![Periscope by day](../screenshots/uboot-periscope-day.png)
+![Mast & ESM in the Remote Crew browser](figures/commander-v2-en-uboot-esm-desktop.png)
+
+*Mast & ESM in the Remote Crew browser*
+
+![Periscope by day](figures/uboot-periscope-day.png)
 
 *Periscope by day*
 
-![Periscope at night](../screenshots/uboot-periscope-night.png)
+![Periscope at night](figures/uboot-periscope-night.png)
 
 *Periscope at night*
 
-![Periscope in the Remote Crew browser](../screenshots/commander-v2-en-periscope-day.png)
+![Periscope in the Remote Crew browser](figures/commander-v2-en-periscope-day.png)
 
 *Periscope in the Remote Crew browser*
 
@@ -1419,9 +1435,13 @@ Navigation orders course and depth, watches keel and shoals on the pilot chart a
 - **Navigation (page 2):** the tactical chart as on Command's page 1; a right click adds a route waypoint, `W` lays a zigzag or expanding-square search, `Backspace` clears the route.
 - **Threat (page 3):** as Command's threat page; `I` evades, `Shift+G` lies on the bottom in shallow water.
 
-![Submarine navigation](../screenshots/uboot-navigation.png)
+![Submarine navigation](figures/uboot-navigation.png)
 
 *Submarine navigation*
+
+![Submarine navigation in the Remote Crew browser](figures/commander-v2-en-uboot-nav-desktop.png)
+
+*Submarine navigation in the Remote Crew browser*
 
 1. Before every course or depth order check the pilot chart: keel, shoals and land ahead.
 2. Watch the DR position lamp: dived the error grows; take a GPS fix with the mast up (20 s) when it is safe.
@@ -1436,9 +1456,13 @@ The radio room copies HQ's broadcasts, reads HQ's orders and contact reports and
 - The page shows when HQ's next broadcast comes, whether the antenna is up (mast `P` at periscope depth, or the towed buoy antenna `B` down to 60 m at 6 kn or less), HQ's orders and contact reports and the log.
 - `Enter` sends a situation report; it needs the mast up, and the frigate can take an HF bearing on it.
 
-![Submarine radio room](../screenshots/uboot-radio.png)
+![Submarine radio room](figures/uboot-radio.png)
 
 *Submarine radio room*
+
+![Submarine radio room in the Remote Crew browser](figures/commander-v2-en-uboot-radio-desktop.png)
+
+*Submarine radio room in the Remote Crew browser*
 
 1. Note the next HQ broadcast; copy it with the mast up, the buoy antenna (B) or VLF.
 2. Pass HQ's orders and contact reports to Command; their bearings are from the navigated position.
@@ -1607,7 +1631,7 @@ Submarine physics: the hull accelerates toward an ordered speed (no instant spri
 
 A second crew can play the enemy. The submarine has seven stations: Command, Sonar, Weapons, Engine room, Mast & ESM, Navigation and Radio room; a browser takes them like the frigate's (`F9`). As long as one of them is held, the living hostile submarine with the lowest number follows only that crew's orders; when the roles are released or the host revokes them, the AI takes the submarine back from where it is. A save keeps the crew's orders, modes, mast, wires, plot, alarm bearings, ESM picture and radio log; after a load the submarine runs its last orders and waits up to ten minutes for its crew to take the stations again (every submarine station is re-leased) before the AI takes it back. A browser holds roles of one side only (frigate or submarine), never both; the lobby first asks which unit it plays. In solo mode the one browser holds all nine frigate stations, or with **Play the submarine** in the host bar all seven submarine stations (and back with **Play the frigate**). The host's **New game** dialog picks the **Side** too (*Frigate F-217* or *Submarine*); as the submarine the frigate, its helicopter and the patrol aircraft are run by the **AI hunters**.
 
-![Remote Crew administration (F9) on the uConsole](../screenshots/commander-options.png)
+![Remote Crew administration (F9) on the uConsole](figures/commander-options.png)
 
 *Remote Crew administration (F9) on the uConsole*
 
@@ -1810,19 +1834,19 @@ When nobody sails the frigate (the uConsole plays the submarine, or a solo brows
 
 ### Mission and scoring
 
-![Mission editor](../screenshots/mission-editor.png)
+![Mission editor](figures/mission-editor.png)
 
 *Mission editor*
 
-![Mission editor, unit details](../screenshots/mission-editor-detail.png)
+![Mission editor, unit details](figures/mission-editor-detail.png)
 
 *Mission editor, unit details*
 
-![Unit editor](../screenshots/unit-editor.png)
+![Unit editor](figures/unit-editor.png)
 
 *Unit editor*
 
-![Contact analyser (F8)](../screenshots/contact-analyzer.png)
+![Contact analyser (F8)](figures/contact-analyzer.png)
 
 *Contact analyser (F8)*
 

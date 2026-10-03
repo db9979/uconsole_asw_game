@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.172**
+Current release: **1.3.173**
 
-Release 1.3.172 fills the Remote Crew operational log: every browser station
+Release 1.3.173 fills the Remote Crew operational log: every browser station
 now lists the same entries as F11 on the uConsole, newest first with time and
 category tag, the frigate's stations the frigate's log and the submarine's
 stations the boat log. Before, it showed only a few alerts and looked empty.

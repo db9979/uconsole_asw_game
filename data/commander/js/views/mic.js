@@ -7,11 +7,15 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { t } from "../core/format.js";
+import { request } from "../net/request.js";
 
 const SEND_MS = 500;
 let on = false, level = 0, failure = "", lastSent = 0;
 let limits = {safe: 5, loud: 11, max: 20};
 let crew = 0, quiet = false, shown = false;
+// The HTTPS listener's port (GET /api/v2/secure) while this page runs on
+// plain HTTP, where browsers refuse the microphone; null without one.
+let securePort = null, dismissed = "";
 
 function band(value) {
   return value <= limits.safe ? "quiet" : value <= limits.loud ? "near" : "far";
@@ -50,6 +54,54 @@ function render() {
   const text = quiet ? `${status} · ${t("mic_quiet_ordered")}` : status;
   $("mic-status").textContent = text;
   meter.title = text;
+  renderProblem();
+}
+
+// Why the microphone does not start stays readable until it is closed; on
+// plain HTTP it offers the switch to the HTTPS page.
+function renderProblem() {
+  const box = $("mic-problem");
+  if (!box) return;
+  const visible = shown && Boolean(failure) && failure !== dismissed;
+  box.hidden = !visible;
+  if (!visible) return;
+  const secure = failure === "mic_needs_https" && securePort !== null;
+  $("mic-problem-text").textContent = secure ? `${t(failure)} ${t("mic_secure_hint")}` : t(failure);
+  $("mic-secure").hidden = !secure;
+}
+
+function secureAddress() {
+  // Same host, the HTTPS listener's port and scheme.
+  const address = new URL("/", location.href);
+  address.protocol = "https:";
+  address.port = String(securePort);
+  return address.href;
+}
+
+async function switchToSecure() {
+  if (securePort === null) return;
+  const csrf = S.session?.csrf;
+  try {
+    // The stations are freed here so the HTTPS page can take them again.
+    if (csrf) await request("/logout", {method: "POST", csrf});
+  } catch (_) {
+    // The HTTPS page pairs on its own even when this logout is lost.
+  }
+  location.assign(secureAddress());
+}
+
+async function learnSecurePort() {
+  if (window.isSecureContext || location.protocol !== "http:") return;
+  try {
+    const response = await fetch("/api/v2/secure", {cache: "no-store", credentials: "same-origin",
+      redirect: "error", mode: "same-origin", headers: {Accept: "application/json"}});
+    const body = response.ok ? await response.json() : null;
+    const port = body?.port;
+    securePort = Number.isSafeInteger(port) && port >= 1 && port <= 65535 ? port : null;
+  } catch (_) {
+    securePort = null;
+  }
+  renderProblem();
 }
 
 function send(now) {
@@ -68,12 +120,18 @@ function send(now) {
 }
 
 export function wireMic() {
+  learnSecurePort();
+  $("mic-secure")?.addEventListener("click", switchToSecure);
+  $("mic-problem-close")?.addEventListener("click", () => { dismissed = failure; renderProblem(); });
   window.addEventListener("u-jagd-mic", (event) => {
     const detail = event.detail;
     if (!detail || typeof detail.on !== "boolean" || !Number.isSafeInteger(detail.level)) return;
     on = detail.on && shown;
     level = Math.max(0, Math.min(limits.max, detail.level));
-    failure = typeof detail.failure === "string" && /^mic_[a-z_]+$/.test(detail.failure) ? detail.failure : "";
+    const next = typeof detail.failure === "string" && /^mic_[a-z_]+$/.test(detail.failure) ? detail.failure : "";
+    // A new attempt shows its cause again even after the last was closed.
+    if (next && detail.attempt) dismissed = "";
+    failure = next;
     if (on && level > limits.safe) send(performance.now());
     render();
   });

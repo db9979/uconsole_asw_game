@@ -362,3 +362,13 @@ body.shock-dust::after {
 .mic-status { font-size: var(--font-xs); color: var(--text-dim); max-width: 16rem; }
 .mic-meter[data-band="far"] + .mic-status { color: var(--alarm); }
 .mic-meter[data-band="near"] + .mic-status { color: var(--caution); }
+/* A microphone that cannot start: the cause (and the switch to the HTTPS
+   page) drops below the header, which stays one line. */
+.mic-discipline { position: relative; }
+.mic-problem { position: absolute; top: calc(100% + .35rem); right: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem;
+  width: min(24rem, calc(100vw - 2rem)); padding: .45rem .55rem; background: var(--bg-2); border: 1px solid var(--caution);
+  border-radius: var(--radius); box-shadow: 0 .6rem 1.4rem -.4rem var(--shadow); }
+.mic-problem[hidden] { display: none; }
+.mic-problem p { flex: 1 1 100%; margin: 0; color: var(--caution); font-size: var(--font-sm); line-height: 1.35; }
+.mic-problem button { min-height: 2rem; font-size: var(--font-xs); }
+.mic-problem #mic-problem-close { margin-left: auto; min-width: 2rem; }

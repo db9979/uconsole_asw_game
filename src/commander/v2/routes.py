@@ -1010,6 +1010,13 @@ class _Handler(BaseHTTPRequestHandler):
             self._reply(200, body, content_type)
         elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
             self._reply(200, owner._translations[self.path[-2:]])
+        elif self.path == "/api/v2/secure":
+            # Noise discipline: browsers hand out the microphone only in a
+            # secure context, so a crew page on plain HTTP learns the port
+            # of the HTTPS listener (None without one) to switch over.
+            secure = owner.tls_address
+            self._reply(200, {"protocol": 2,
+                              "port": None if secure is None else int(secure[1])})
         elif self.path in ("/api/v2/session", "/api/v2/state",
                            "/api/v2/state?sonar=stream", "/api/v2/chart",
                            "/api/v2/results", "/api/v2/proposals",

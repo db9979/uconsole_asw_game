@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.172
+## 1.3.173
 
-Version 1.3.172 füllt das Einsatzprotokoll der Remote Crew. Es zeigte bisher
+Version 1.3.173 füllt das Einsatzprotokoll der Remote Crew. Es zeigte bisher
 nur wenige Browser-Alarme und wirkte deshalb leer; jetzt listet jede Station
 dieselben Einträge wie F11 auf der uConsole, das Neueste oben, mit Uhrzeit
 und Kategoriekürzel: die Stationen der Fregatte das Log der Fregatte, die
@@ -14,6 +14,21 @@ Stationen des U-Boots das Bootslog. Ein langes Protokoll scrollt in seiner
 Leiste und lässt der Karte ihren Platz. Auf der uConsole öffnet F11 jetzt
 auch auf der U-Boot-Seite das Bootslog. Spielstände sind v50; v38 bis v49
 lassen sich weiter laden.
+
+## 1.3.172
+
+Version 1.3.172 bringt das Mikrofon der Geräuschdisziplin zum Laufen. Auf der
+uConsole, unter Windows und auf dem Mac öffnete das Spiel das Gerät nie (die
+Tonbibliothek verlangt den Namen des Geräts), die Anzeige blieb dunkel. Jetzt
+öffnet es das Standardmikrofon des Systems, und wenn das nicht geht, sagt das
+Spiel warum: eine Meldung im Einsatz und Ursache mit Abhilfe auf Seite 2 der
+Optionen (kein Mikrofon, lässt sich nicht öffnen oder kein Ton, weil Windows
+oder macOS den Zugriff sperrt). Die Mac-App fragt nach dem Mikrofonzugriff,
+und die Windows- und Mac-Builds prüfen die Aufnahme vor der Veröffentlichung.
+Browser erlauben das Mikrofon nur auf einer sicheren Seite: Auf der normalen
+LAN-Seite sagt das jetzt ein Hinweis, und „HTTPS-Seite öffnen“ wechselt zur
+HTTPS-Adresse des Hosts, wo Sie sich mit demselben Code neu koppeln.
+Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.171
 

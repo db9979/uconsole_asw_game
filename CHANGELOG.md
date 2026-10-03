@@ -4,15 +4,29 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.172
+## 1.3.173
 
-Release 1.3.172 fills the Remote Crew operational log. It used to show only a
+Release 1.3.173 fills the Remote Crew operational log. It used to show only a
 few browser alerts and so looked empty; now every station lists the same
 entries as F11 on the uConsole, newest first, with time and category tag:
 the frigate's stations the frigate's log, the submarine's stations the boat
 log. A long log scrolls inside its drawer and leaves the chart its room. On
 the uConsole, F11 now opens the boat log on the submarine side too. Saves
 are v50; v38 to v49 saves still load.
+
+## 1.3.172
+
+Release 1.3.172 makes the microphone of noise discipline work. On the
+uConsole, Windows and the Mac the game never opened the device (the sound
+library wants the device's name), so the meter stayed dark. It now opens the
+system's default microphone, and when it cannot, the game says why: a status
+message in the mission and the cause with its remedy on Options page 2 (no
+microphone, cannot be opened, or no sound because Windows or macOS blocks the
+access). The Mac app asks for microphone access, and the Windows and Mac
+builds test the capture before release. Browsers allow the microphone only on
+a secure page: on the plain LAN page a box now says so and "Open HTTPS page"
+switches to the host's HTTPS address, where you pair again with the same code.
+Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.171
 

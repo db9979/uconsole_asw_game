@@ -237,7 +237,11 @@ export function simlogMarks(entries) {
   }
   return marks;
 }
-export function debriefAllowed() { return S.session?.observer === true || S.session?.host !== null; }
+// Both sides' debrief: an observer or the solo session (not the server-mode leader,
+// who crews one side like everyone else).
+export function debriefAllowed() {
+  return S.session?.observer === true || (S.session?.host != null && !S.session.host.leader);
+}
 function renderTimeline(entries) {
   const bar = $("simlog-timeline");
   $("simlog-export").hidden = !debriefAllowed();

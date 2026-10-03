@@ -36,7 +36,16 @@
 .lobby-room-status { min-height: 1.6rem; color: var(--caution); font-weight: 650; }
 .lobby-ready { justify-self: start; min-width: 12rem; min-height: 44px; }
 .lobby-ready[aria-pressed="true"] { border-color: var(--live); color: var(--live); }
-@media (max-width: 40rem) { .lobby-room-players li { grid-template-columns: 1fr; } }
+/* Server mode: the game leader's choices inside the lobby room. */
+.leader-form { display: grid; gap: .5rem; padding: .7rem .8rem; background: var(--bg-1); border: 1px solid var(--line); border-left: 3px solid var(--caution); border-radius: var(--radius); }
+.leader-form h3 { color: var(--caution); font-size: var(--font-md); margin: 0; }
+.leader-grid { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr); gap: .4rem .8rem; align-items: center; }
+.leader-grid label { color: var(--text-dim); font-size: var(--font-sm); }
+.leader-grid select { width: 100%; min-width: 0; }
+.leader-campaign { display: grid; gap: .3rem; }
+.leader-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.lobby-pass-lead { margin-left: .4rem; padding: .1rem .5rem; font-size: var(--font-sm); }
+@media (max-width: 40rem) { .lobby-room-players li { grid-template-columns: 1fr; } .leader-grid { grid-template-columns: 1fr; } }
 .side-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 12rem)); gap: .55rem; padding: 4px; }
 .side-choice button { min-height: 44px; }
 .station-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: .55rem; padding: 4px; }

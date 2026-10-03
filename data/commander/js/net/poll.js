@@ -35,6 +35,9 @@ export async function poll() {
       if (context !== S.generation) return;
       emit("session:metadata", metadata);
     }
+    // The server-mode leader runs the lobby without holding a station.
+    if (S.session.station === null && S.session.host?.leader) await pollHost(context);
+    if (context !== S.generation) return;
     if (S.session.station === null) {
       S.failures = 0;
       S.lastSuccess = performance.now();

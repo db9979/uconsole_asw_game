@@ -28,6 +28,10 @@ def main(argv=None) -> int:
     # Old name of --multiplayer, kept so existing shortcuts keep working.
     parser.add_argument("--remote-crew", dest="multiplayer", action="store_true",
                         help=argparse.SUPPRESS)
+    parser.add_argument("--server", action="store_true",
+                        help="server mode: the uConsole only serves the lobby and "
+                             "the first browser leads (mission, start, save); "
+                             "every station is played in a browser or by the AI")
     # Advanced: one paired browser operates every station and the game
     # controls (this launch only, never persisted); the game has no menu row.
     parser.add_argument("--solo-crew", action="store_true", help=argparse.SUPPRESS)
@@ -51,6 +55,8 @@ def main(argv=None) -> int:
         parser.error("--web-host excludes --multiplayer and --solo-crew")
     if args.multiplayer and args.solo_crew:
         parser.error("--multiplayer excludes --solo-crew")
+    if args.server and (args.multiplayer or args.solo_crew or args.web_host):
+        parser.error("--server excludes --multiplayer, --solo-crew and --web-host")
     if args.web_bind != "127.0.0.1" and not args.web_host:
         parser.error("--web-bind requires --web-host")
     if args.reset_web_host_password and not args.web_host:
@@ -114,13 +120,16 @@ def _start(args, argv=None) -> int:
     elif args.public_origin is not None:
         # Local game: Remote Crew (F9) also answers behind this HTTPS proxy.
         game.commander.public_origin = args.public_origin
-    if (args.solo_crew or args.multiplayer) and args.web_port != 8765:
+    if (args.solo_crew or args.multiplayer or args.server) and args.web_port != 8765:
         game.commander.port = args.web_port
     if args.solo_crew:
         game.commander.autostart_solo()
     elif args.multiplayer:
         # As the main-menu entry: the lobby starts Remote Crew in crew mode.
         game.open_lobby()
+    elif args.server:
+        # As the main-menu entry "Server": host-only lobby, a browser leads.
+        game.start_server_mode()
     check = getattr(game, "start_update_check", None)
     if check is not None and not args.web_host:
         # Only a notice: a newer release is installed when the player asks.

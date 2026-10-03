@@ -118,7 +118,8 @@ def test_server_publishes_lobby_and_ready_ticks(server):  # noqa: F811
                           "host_station": "bridge", "countdown_s": None})
     status, _, session = request(server, "/api/v2/session", cookie=cookie)
     assert session["lobby"]["players"] == [dict(name="Watch Officer", stations=[],
-                                                ready=False, observer=False, you=True)]
+                                                ready=False, observer=False, you=True,
+                                                leader=False, ordinal=0)]
     for invalid in ({"ready": 1}, {"ready": True, "extra": 0}, []):
         status, _, _ = request(server, "/api/v2/lobby/ready", "POST", invalid,
                                cookie=cookie, csrf=body["csrf"])

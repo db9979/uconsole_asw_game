@@ -16,6 +16,7 @@ import pygame
 from src.core import config
 from src.core.i18n import localize, message, raw_text
 from src.core.lobby import HOST_ONLY, ROWS, LobbyRoom, player_side, side_stations
+from src.core.game_server import SERVER_ENTRY
 from src.core.station import Station
 from src.ui import layout, pointer
 from src.ui.splash_view import draw_menu_panel
@@ -53,9 +54,11 @@ class LobbyMixin:
             server.lock_teams(self.versus_round)
 
     def umpire_view_active(self) -> bool:
-        """A host-only uConsole in a crew-versus-crew round shows no tactical
-        picture of either unit (both crews may see its screen)."""
-        return (self.versus_round and self.host_only and self.running
+        """A host-only uConsole in a crew-versus-crew round, or any round of
+        server mode, shows no tactical picture of either unit (both crews
+        may see its screen, and nobody works a station on it)."""
+        return ((self.versus_round or getattr(self, "server_mode", False))
+                and self.host_only and self.running
                 and not self.in_menu and not self.main_menu)
 
     def versus_outcome(self):
@@ -124,6 +127,7 @@ class LobbyMixin:
                                 for record in self.custom_menu_records()]
         self.local_side = side
         self.lobby.set_custom_missions(missions)
+        self.lobby.set_extra_missions(self.lobby_extra_missions())
 
     def close_lobby(self) -> None:
         """Back to the main menu; Remote Crew keeps running."""
@@ -134,7 +138,10 @@ class LobbyMixin:
         self._set_versus_round(False)
         self.main_menu = True
         self.menu_screen = "scenario"
-        self.main_menu_sel = self.main_menu_index(MULTIPLAYER_ENTRY)
+        self.main_menu_sel = self.main_menu_index(
+            SERVER_ENTRY if self.server_mode else MULTIPLAYER_ENTRY)
+        if self.server_mode:
+            self.leave_server_mode()
         self._publish_lobby(None)
 
     def lobby_players(self) -> list:
@@ -153,6 +160,7 @@ class LobbyMixin:
 
     def lobby_tick(self, wall_dt: float) -> None:
         """Publish the lobby to the crew and run the start countdown."""
+        self.sync_server_mode()
         if not self.lobby_active:
             self._publish_lobby(None)
             return
@@ -175,7 +183,14 @@ class LobbyMixin:
         # Against a second crew every browser keeps the unit it crews now.
         self._set_versus_round(room.versus == "crew")
         definition = self._lobby_custom_definition(room)
-        if definition is None:
+        if room.daily:
+            self._start_lobby_daily(room)
+        elif room.hotspot is not None:
+            if not self._start_lobby_campaign(room):
+                self.lobby_round = False
+                self.lobby_notice = "lobby.notice.campaign_failed"
+                return
+        elif definition is None:
             self._start_menu_mission()
         elif not self.start_custom_mission(definition):
             self.lobby_round = False
@@ -187,12 +202,31 @@ class LobbyMixin:
             self.autocrew.set_assist(True, self.sim_t)
         self._take_lobby_station(room.station)
 
+    def _lobby_mission_text(self, room):
+        """The lobby's mission line: own mission, daily mission, campaign
+        hotspot or scenario."""
+        if room.custom_name is not None:
+            return raw_text(room.custom_name)
+        title = message("scenario." + config.SCENARIO_NAMES[room.scenario_key] + ".title")
+        if room.daily:
+            return message("lobby.choice.daily", mission=title)
+        if room.hotspot is not None:
+            return message("lobby.choice.campaign", name=raw_text(room.hotspot_name or "?"),
+                           mission=title)
+        return title
+
     def _lobby_custom_definition(self, room):
         """The chosen own mission's definition, read now (None: a scenario)."""
         if room.custom_key is None:
             return None
-        record = next((record for record in self.custom_menu_records()
-                       if record.key == room.custom_key), None)
+        # The library of the lobby's side (a host-only uConsole sits on the
+        # frigate whatever side the crew sails).
+        side, self.local_side = self.local_side, room.side
+        try:
+            records = self.custom_menu_records()
+        finally:
+            self.local_side = side
+        record = next((record for record in records if record.key == room.custom_key), None)
         return None if record is None else record.data
 
     def _take_lobby_station(self, station: str) -> None:
@@ -269,7 +303,8 @@ class LobbyMixin:
         console = self.commander
         panel = pygame.Rect(40, 116, config.SCREEN_W - 80, 500)
         draw_menu_panel(s, panel, pygame.Rect(0, 0, 0, 0))
-        layout.blit_line(s, "lobby.title", (panel.x + 20, panel.y + 10, panel.w - 40, 34),
+        layout.blit_line(s, "lobby.server.title" if room.server else "lobby.title",
+                         (panel.x + 20, panel.y + 10, panel.w - 40, 34),
                          config.COLOR_WARN, size=26, align="center")
         # Left: how to join (address, code, QR codes).
         left = pygame.Rect(panel.x + 20, panel.y + 52, 360, panel.h - 80)
@@ -301,10 +336,9 @@ class LobbyMixin:
         # Right top: the host's choices.
         right = pygame.Rect(left.right + 30, left.y, panel.right - left.right - 50, left.h)
         values = (
-            message("lobby.row.mission", mission=(
-                raw_text(room.custom_name) if room.custom_name is not None else message(
-                    "scenario." + config.SCENARIO_NAMES[room.scenario_key] + ".title"))),
-            message("lobby.row.side", side=message(f"menu.side.{room.side}")),
+            message("lobby.row.mission", mission=self._lobby_mission_text(room)),
+            message("lobby.row.side_crew" if room.station == HOST_ONLY else "lobby.row.side",
+                    side=message(f"menu.side.{room.side}")),
             message("lobby.row.station", station=_station_name(room.station)),
             message("lobby.row.versus", versus=message(f"lobby.versus.{room.versus}")),
             message("menu.start_weather", value=message(f"menu.start_weather.{room.weather}")),
@@ -336,7 +370,9 @@ class LobbyMixin:
         rows = [(message("lobby.host_player"),
                  [] if room.station == HOST_ONLY else [room.station], True, False,
                  None if room.station == HOST_ONLY else room.side)]
-        rows += [(raw_text(player["name"]), player["stations"], player["ready"],
+        rows += [(message("lobby.player.leader", name=raw_text(player["name"]))
+                  if player.get("leader") else raw_text(player["name"]),
+                  player["stations"], player["ready"],
                   player["observer"], player_side(player["stations"])
                   if player["stations"] and not player["observer"] else None)
                  for player in players]
@@ -380,6 +416,12 @@ class LobbyMixin:
             layout.blit_line(s, self.lobby_notice,
                              (right.x, right.y + len(values) * row_h + 2, right.w, 26),
                              config.COLOR_WARN, size=18, align="center")
+        if room.server and room.countdown_s is None and not self.lobby_notice:
+            # Server mode: the leading browser picks and starts.
+            layout.blit_line(s, "lobby.server.leads" if any(
+                player.get("leader") for player in players) else "lobby.server.waiting",
+                (right.x, right.y + len(values) * row_h + 2, right.w, 26),
+                config.COLOR_TEXT_DIM, size=16, align="center")
         layout.blit_line(s, "lobby.hint", (panel.x + 20, panel.bottom - 26, panel.w - 40, 22),
                          config.COLOR_TEXT_DIM, size=15, align="center")
         pointer.add_text_keys(localize("lobby.hint"), layout.font(15), panel.centerx,

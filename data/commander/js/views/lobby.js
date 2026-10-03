@@ -13,6 +13,7 @@ import { queueDraw, releaseCanvas } from "./chart.js";
 import { renderDisabledReasons } from "./controls.js";
 import { clearFireDrafts, clearVisuals, node } from "./dom.js";
 import { renderHost, scenarioText } from "./host.js";
+import { isLeader, passLeadButton, renderLeader } from "./leader.js";
 import { queueLookoutDraw, renderLookoutStatus } from "./lookout.js";
 import { renderSnapshot } from "./render.js";
 import { syncOpzSweepAnimation } from "./role-map.js";
@@ -29,18 +30,19 @@ export function renderLobby() {
   const simlog = simlogActive();
   // While the host has the multiplayer lobby open the crew meets here, also
   // those who already hold a station.
-  const room = S.session.host === null && !simlog ? S.session.lobby : null;
+  // A solo session holds every station, so there is nothing to add or release;
+  // the server-mode leader is a crew member with the host surface beside it.
+  const solo = S.session.host !== null && !S.session.host.leader;
+  const room = !solo && !simlog ? S.session.lobby : null;
   $("pairing").hidden = true;
   $("lobby").hidden = simlog || assigned && !S.stationPickerOpen && room === null ||
-    S.session.host !== null && S.hostView?.phase === "menu";
+    solo && S.hostView?.phase === "menu";
   $("lobby-back").hidden = !assigned || room !== null;
-  // A solo session holds every station, so there is nothing to add or release.
-  const solo = S.session.host !== null;
   $("role-rail").hidden = !assigned || S.stationPickerOpen || solo;
   $("mobile-role").hidden = !assigned || S.stationPickerOpen;
   for (const id of ["mobile-add-station", "mobile-release-station"]) $(id).hidden = solo;
   const rolePublished = S.v2State?.role === S.session.station;
-  const hostMenu = S.session.host !== null && S.hostView?.phase === "menu";
+  const hostMenu = solo && S.hostView?.phase === "menu";
   $("operations").hidden = simlog || !assigned || S.stationPickerOpen || !rolePublished || hostMenu || room !== null;
   renderLobbyRoom(room);
   renderHandover();
@@ -123,15 +125,24 @@ export function renderLobby() {
   renderHost();
   renderDisabledReasons();
 }
+function lobbyMissionText(room) {
+  // An own mission from the Mission Editor shows its authored name.
+  if (room.mission_type === "custom" && room.mission_name !== null) return room.mission_name;
+  const title = t(scenarioText[room.mission] ?? "unknown");
+  if (room.mission_type === "daily") return t("lobby_choice_daily", {mission: title});
+  if (room.mission_type === "campaign") return t("lobby_choice_campaign", {name: room.mission_name ?? "?", mission: title});
+  return title;
+}
 function renderLobbyRoom(room) {
   $("lobby-room").hidden = room === null;
+  renderLeader(room);
   if (room === null) return;
-  // An own mission from the Mission Editor shows its authored name.
-  const mission = room.mission === "custom" && room.mission_name !== null ? room.mission_name
-    : t(scenarioText[room.mission] ?? "unknown");
-  $("lobby-room-mission").textContent = t("lobby_room_mission", {mission});
+  $("lobby-room-mission").textContent = t("lobby_room_mission", {mission: lobbyMissionText(room)});
   const side = t(`lobby_room_side_${room.side}`);
-  $("lobby-room-host").textContent = room.host_station === null ? t("lobby_room_host_only")
+  const leader = room.players.find((player) => player.leader) ?? null;
+  $("lobby-room-host").textContent = room.server ? (leader ? t("lobby_room_server", {name: leader.name, side})
+    : t("lobby_room_server_waiting", {side}))
+    : room.host_station === null ? t("lobby_room_host_only")
     : t("lobby_room_host", {side, station: t(`station_${room.host_station}`)});
   // Crew versus crew: two teams, the frigate's crew against the boat's.
   const versus = room.versus === "crew";
@@ -140,25 +151,35 @@ function renderLobbyRoom(room) {
   const team = (stations, observer) => observer || !stations.length ? ""
     : stations.some((station) => opforRoles.has(station)) ? "uboot" : "frigate";
   const hostStations = room.host_station === null ? [] : [room.host_station];
-  const rows = [[t("lobby_player_host"), hostStations, "lobby_player_ready", team(hostStations, false)],
-    ...room.players.map((player) => [player.you ? t("lobby_player_you", {name: player.name}) : player.name,
+  const leading = isLeader();
+  const label = (player) => {
+    const name = player.you ? t("lobby_player_you", {name: player.name}) : player.name;
+    return player.leader ? t("lobby_player_leader", {name}) : name;
+  };
+  const rows = [[t(room.server ? "lobby_player_server" : "lobby_player_host"), hostStations, "lobby_player_ready",
+    team(hostStations, false), null],
+    ...room.players.map((player) => [label(player),
       player.stations, player.observer ? "lobby_player_observer" : player.ready ? "lobby_player_ready" : "lobby_player_waiting",
-      team(player.stations, player.observer)])];
+      team(player.stations, player.observer), player])];
   const order = {frigate: 0, uboot: 1, "": 2};
   if (versus) rows.sort((a, b) => order[a[3]] - order[b[3]]);
-  $("lobby-room-players").replaceChildren(...rows.map(([name, stations, state, unit]) => {
+  $("lobby-room-players").replaceChildren(...rows.map(([name, stations, state, unit, player]) => {
     const item = node("li");
     item.dataset.state = state;
     if (versus && unit) item.dataset.team = unit;
+    const status = node("em", t(state));
+    // The leader may hand the lead to a crewmate (never to an observer).
+    if (leading && room.server && player && !player.you && !player.observer) status.append(" ", passLeadButton(player));
     item.append(node("strong", versus && unit ? t(`lobby_team_${unit}`, {name}) : name), node("span", stations.length
-      ? stations.map((station) => t(`station_${station}`)).join(", ") : t("lobby_player_none")), node("em", t(state)));
+      ? stations.map((station) => t(`station_${station}`)).join(", ") : t("lobby_player_none")), status);
     return item;
   }));
   const holding = stationNames.some((station) => S.session.stations[station].status === "mine");
   const observer = S.session.observer === true;
   $("lobby-room-status").textContent = room.countdown_s !== null
     ? t("lobby_countdown", {seconds: Math.max(1, Math.ceil(room.countdown_s))})
-    : S.lobbyRoomMessage ? t(S.lobbyRoomMessage) : !holding && !observer ? t("lobby_ready_need_station") : t("lobby_waiting_host");
+    : S.lobbyRoomMessage ? t(S.lobbyRoomMessage) : !holding && !observer ? t("lobby_ready_need_station")
+    : t(room.server ? (leading ? "lobby_leader_hint" : "lobby_waiting_leader") : "lobby_waiting_host");
   const ready = $("lobby-ready");
   ready.hidden = observer;
   ready.textContent = t(room.ready ? "lobby_unready" : "lobby_ready");
@@ -320,7 +341,7 @@ export function chooseSide(side) {
 }
 // Solo: the one browser plays the other unit; the server moves every station.
 export function switchSoloSide() {
-  if (S.session?.host === null || S.session?.station == null || S.stationMutation) return;
+  if (S.session?.host === null || S.session?.host?.leader || S.session?.station == null || S.stationMutation) return;
   const target = opforRoles.has(S.session.station) ? "bridge" : "uboot";
   mutateStation("/stations/request", { station: target });
 }

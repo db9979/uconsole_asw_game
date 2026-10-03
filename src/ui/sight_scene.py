@@ -407,11 +407,18 @@ def flow(key, t: float, rates: tuple) -> tuple:
     return values
 
 
-def _sea_y(view, bearing: float, distance_m: float, eye_m: float) -> float:
-    """Picture row of a point on the sea ``distance_m`` from the eye."""
+def waterline_drop_deg(distance_m: float, eye_m: float) -> float:
+    """How far below the sea horizon the eye sees a point on the water
+    ``distance_m`` away, degrees (0 at and beyond the horizon): close
+    aboard the water lies well below the horizon line."""
     below = math.degrees(math.atan2(eye_m, max(1.0, distance_m))
                          - math.sqrt(2.0 * eye_m / 7.3e6))
-    return view.base(view.x(bearing)) + max(0.0, below) * view.px_per_deg
+    return max(0.0, below)
+
+
+def _sea_y(view, bearing: float, distance_m: float, eye_m: float) -> float:
+    """Picture row of a point on the sea ``distance_m`` from the eye."""
+    return view.base(view.x(bearing)) + waterline_drop_deg(distance_m, eye_m) * view.px_per_deg
 
 
 def _sea_point(view, bearing: float, distance_m: float, eye_m: float) -> tuple:

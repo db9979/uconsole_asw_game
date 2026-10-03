@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.169**
+Aktuelle Version: **1.3.170**
 
-Version 1.3.169 bringt das Mikrofon der Geräuschdisziplin auf der uConsole,
+Version 1.3.170 bringt das Mikrofon der Geräuschdisziplin auf der uConsole,
 unter Windows, auf dem Mac und im Browser zum Laufen. Das Spiel öffnet jetzt
 das Standardmikrofon des Systems (vorher nie), und wenn das nicht geht, sagen
 eine Meldung und Seite 2 der Optionen warum und was zu tun ist, bis zur

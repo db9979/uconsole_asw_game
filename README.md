@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.169**
+Current release: **1.3.170**
 
-Release 1.3.169 makes the microphone of noise discipline work on the
+Release 1.3.170 makes the microphone of noise discipline work on the
 uConsole, Windows, the Mac and in the browser. The game now opens the
 system's default microphone (it never did before), and when it cannot, a
 status message and Options page 2 say why and what to do, down to the

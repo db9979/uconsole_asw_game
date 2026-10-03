@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.169
+## 1.3.170
 
-Version 1.3.169 bringt das Mikrofon der Geräuschdisziplin zum Laufen. Auf der
+Version 1.3.170 bringt das Mikrofon der Geräuschdisziplin zum Laufen. Auf der
 uConsole, unter Windows und auf dem Mac öffnete das Spiel das Gerät nie (die
 Tonbibliothek verlangt den Namen des Geräts), die Anzeige blieb dunkel. Jetzt
 öffnet es das Standardmikrofon des Systems, und wenn das nicht geht, sagt das
@@ -17,6 +17,19 @@ und die Windows- und Mac-Builds prüfen die Aufnahme vor der Veröffentlichung.
 Browser erlauben das Mikrofon nur auf einer sicheren Seite: Auf der normalen
 LAN-Seite sagt das jetzt ein Hinweis, und „HTTPS-Seite öffnen“ wechselt zur
 HTTPS-Adresse des Hosts, wo Sie sich mit demselben Code neu koppeln.
+Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
+## 1.3.169
+
+Version 1.3.169 zeigt andere Schiffe im Fernglas des Ausgucks, im
+Horizontstreifen, im Sehrohr, im Trefferbild, in den Remote-Crew-Karten und
+im Handy-Ausguck so, wie das Auge sie sieht. Ein Schiff in der Nähe schwimmt
+jetzt mit seiner Wasserlinie unter der Kimm, so weit, wie das Auge in der
+gemessenen Entfernung auf das Wasser hinabsieht (etwa 1° auf 0,5 sm aus den
+18 m der Brücke), statt wie ein fernes Schiff auf der Kimm zu sitzen, und
+ein näheres Schiff steht vor einem ferneren statt in Listenreihenfolge.
+Peilung und Lagewinkel wurden geprüft und stimmten schon: die
+Steuerbordseite zeigt den Bug rechts, die Backbordseite den Bug links.
 Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.168

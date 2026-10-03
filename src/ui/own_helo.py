@@ -50,7 +50,7 @@ def outline(game):
 def seen(game):
     """``(row, range_nm)`` of the own helicopter in the bridge's sight: its
     eyepiece row ``(bearing, span_deg, cls, stale,
-    lights, elevation_deg, aob_deg, model, way)`` as the bridge's eye sees
+    lights, elevation_deg, aob_deg, model, way, range_nm)`` as the bridge's eye sees
     it and its distance from the bridge, or None (in the hangar, lost,
     beyond what the eye reaches or behind land).  On launch and recovery it
     sits on the flight deck astern."""
@@ -89,5 +89,5 @@ def seen(game):
     elevation = visual_physics.elevation_deg(altitude, distance,
                                              visual_physics.LOOKOUT_EYE_HEIGHT_M)
     return ((bearing, max(1e-3, min(180.0, span)), "aircraft", False, lights,
-             max(-30.0, elevation), lookout_id.angle_on_bow(helo.course, bearing), None, None),
-            distance)
+             max(-30.0, elevation), lookout_id.angle_on_bow(helo.course, bearing), None, None,
+             distance), distance)

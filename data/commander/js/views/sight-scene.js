@@ -307,10 +307,21 @@ function flow(key, t, rates) {
   return values;
 }
 
+// How far below the sea horizon an eye ``eye`` metres up sees the water
+// ``distance`` metres away, degrees (0 at and beyond the horizon), as
+// sight_scene.waterline_drop_deg.
+export function waterlineDropDeg(distance, eye) {
+  return Math.max(0, (Math.atan2(eye, Math.max(1, distance)) - Math.sqrt(2 * eye / 7.3e6)) / RAD);
+}
+// An outline's range, NM; infinite when unknown (on the horizon, behind every ranged one).
+export function rowRange(row) {
+  const value = row.range_nm;
+  return Number.isFinite(value) && value > 0 ? value : Infinity;
+}
+
 // The picture row of a point on the sea ``distance`` metres from an eye ``eye`` metres up.
 function seaY(w, bearing, distance, eye) {
-  const below = (Math.atan2(eye, Math.max(1, distance)) - Math.sqrt(2 * eye / 7.3e6)) / RAD;
-  return w.base(w.x(bearing)) + Math.max(0, below) * w.pxPerDeg;
+  return w.base(w.x(bearing)) + waterlineDropDeg(distance, eye) * w.pxPerDeg;
 }
 const seaPoint = (w, bearing, distance, eye) => [w.x(bearing), seaY(w, bearing, distance, eye)];
 
@@ -655,7 +666,9 @@ function drawWindRose(g, height, colors, windFromDeg) {
 
 // One eyepiece picture.  ``v``: bearing (line of sight), fov_deg,
 // horizon_offset, horizon_tilt, visibility_nm, sea_state, sky, outlines
-// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg, model, way}]), the events the eye
+// ([{bearing, span_deg, cls, stale, lights, elevation_deg, aob_deg, model, way, range_nm}];
+// a ranged ship floats as far below the horizon as the eye ``eye_m`` (or the
+// way's, else the bridge lookout's 18 m) sees its waterline, nearer ones in front), the events the eye
 // sees happen (``events``, src/core/sight_events.py) and an optional window_deg crosshair;
 // no_scale hides the bearing scale, wind_rose_deg draws the weather
 // instrument's wind rose in the top left corner; way ({speed_kn, course_deg,
@@ -665,12 +678,13 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
   const sky = v.sky, colors = palette(sky, haze);
   const lit = sky.light < .45;
   const aloft = (row) => Number.isFinite(row.elevation_deg);
+  const eye = Number.isFinite(v.eye_m) ? v.eye_m : v.way?.eye_m ?? 18;
   const drawRows = (rows) => {
     for (const row of rows) {
       if (!w.visible(row.bearing, row.span_deg / 2)) continue;
       const cx = w.x(row.bearing), fade = row.stale ? .55 : haze * .6;
       // Aircraft hang in the still sky at their elevation, behind the clouds.
-      const base = !aloft(row) ? w.base(cx) : row.elevation_deg < LOW_AIR_DEG ? w.base(cx) - row.elevation_deg * w.pxPerDeg
+      const base = !aloft(row) ? w.base(cx) + waterlineDropDeg(rowRange(row) * 1852, eye) * w.pxPerDeg : row.elevation_deg < LOW_AIR_DEG ? w.base(cx) - row.elevation_deg * w.pxPerDeg
         : w.skyY - row.elevation_deg * w.pxPerDeg;
       const span = Math.min(width, Math.max(3, row.span_deg * w.pxPerDeg));
       if (!aloft(row) && !row.stale) drawShipWay(g, cx, base, span, row.aob_deg ?? null, row.way ?? null, t, mix(WAY_FOAM, colors.haze, haze * .6), colors.sea[0]);
@@ -686,7 +700,8 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
   drawSky(g, w, sky, colors, t, haze, airborne.length ? () => drawRows(airborne) : null);
   drawSea(g, w, sky, colors, v.sea_state, t, haze, v.way ?? null);
   foamGlow = colors.glow;
-  drawRows(v.outlines.filter((row) => !high(row)));
+  // Back to front: the farthest first, so a nearer ship hides a farther one.
+  drawRows(v.outlines.filter((row) => !high(row)).sort((a, b) => (rowRange(a) === rowRange(b) ? 0 : rowRange(b) - rowRange(a))));
   foamGlow = 0;
   if (Array.isArray(v.events) && v.events.length) drawSightEvents(g, w, colors, sky, v.events, haze, t);
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);

@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.169
+## 1.3.170
 
-Release 1.3.169 makes the microphone of noise discipline work. On the
+Release 1.3.170 makes the microphone of noise discipline work. On the
 uConsole, Windows and the Mac the game never opened the device (the sound
 library wants the device's name), so the meter stayed dark. It now opens the
 system's default microphone, and when it cannot, the game says why: a status
@@ -17,6 +17,19 @@ builds test the capture before release. Browsers allow the microphone only on
 a secure page: on the plain LAN page a box now says so and "Open HTTPS page"
 switches to the host's HTTPS address, where you pair again with the same code.
 Saves are v50; v38 to v49 saves still load.
+
+## 1.3.169
+
+Release 1.3.169 puts other ships where the eye sees them in the lookout's
+binoculars, the horizon strip, the periscope, the hit picture, the Remote
+Crew cards and the phone lookout. A ship close aboard now floats with her
+waterline below the horizon line, as far as the eye looks down to the water
+at the range the lookout measured (about 1° at 0.5 NM from the bridge's
+18 m), instead of sitting on the horizon like a distant one, and a nearer
+ship is drawn in front of a farther one instead of in list order. The
+bearing and the angle on the bow were checked and were already right: her
+starboard side shows with the bow to the right, her port side with the bow
+to the left. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.168
 

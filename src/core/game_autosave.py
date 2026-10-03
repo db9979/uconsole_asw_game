@@ -4,8 +4,9 @@ main menu loads it. ``Game`` mixin.
 
 The autosave is an ordinary exact-v48 save document beside the five slots and
 goes through the same strict loader. It never touches the simulation: the
-document is built and serialized on the main thread (the save dict shares
-lists with live state), only the compact bytes go to a background thread that
+document is built, serialized and checked against the loader's validator on
+the main thread (the save dict shares lists with live state; a document the
+loader would reject is not written), only the compact bytes go to a background thread that
 stages, ``fsync``s and atomically replaces the file. A finished mission (won,
 lost or sunk) deletes the autosave, so "Continue" never resumes a debrief.
 A crash writes nothing: the last periodic autosave stays.
@@ -13,7 +14,6 @@ A crash writes nothing: the last periodic autosave stays.
 
 from __future__ import annotations
 
-import json
 import os
 import tempfile
 import threading
@@ -106,9 +106,10 @@ class AutosaveMixin:
                 return False
             thread.join()
         try:
-            document = self.save_state()
-            payload = json.dumps(document, allow_nan=False,
-                                 separators=(",", ":")).encode("utf-8")
+            # Checked as the loader reads it: a rejected state (ValueError)
+            # never replaces the last good autosave or recovery point.
+            document, text = self.checked_save_document(separators=(",", ":"))
+            payload = text.encode("utf-8")
             # The same document is a fresh recovery point at no extra cost.
             take = getattr(self, "take_recovery_snapshot", None)
             if take is not None:

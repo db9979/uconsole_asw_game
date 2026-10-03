@@ -555,10 +555,9 @@ LOOKOUT_REPORTS_MAX = 24
 LOOKOUT_LIGHTS_REPORT_S = 120.0
 # An AI submarine at periscope depth that holds the frigate reports it to
 # its headquarters once per window, 20 s on HF (heard by the frigate's HF/DF);
-# only while its last contact is at most this old.
+# only while it holds a contact (dropped after SUB_EVADE_DURATION_S).
 SUB_REPORT_PERIOD_S = 1800.0
 SUB_REPORT_TX_S = 20.0
-SUB_REPORT_CONTACT_S = 600.0
 # Phone lookout (Remote Crew ``lookout``/``uboot_lookout``): a called sighting
 # is confirmed within this bearing, and a called range within this fraction
 # (at least the minimum) of the eye's own estimate.

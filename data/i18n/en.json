@@ -2026,6 +2026,7 @@
   "save.unreadable": "unreadable / damaged",
   "save.error": "Save error",
   "save.invalid": "Slot empty, damaged, or incompatible",
+  "save.self_check_failed": "state failed the save check, previous save kept",
   "save.select_hint": "1-5: select | Enter: confirm",
   "save.overwrite": "Overwrite slot? Enter: Yes | Esc: No",
   "save.replace": "Replace current mission? Enter: Yes | Esc: No",

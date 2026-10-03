@@ -666,12 +666,11 @@ class Sub:
         headquarters: one 20 s HF call at a stateless time in each window."""
         if (self.manual or self.sunk or self.state == "SINKING"
                 or self.depth > MAST_DEPTH_M
-                or self.memory["contact"] is None
-                or self.memory["contact_age"] > config.SUB_REPORT_CONTACT_S):
+                or self.memory["contact"] is None):
             return False
         window = math.floor(now / config.SUB_REPORT_PERIOD_S)
         start = window * config.SUB_REPORT_PERIOD_S + detrand.u01(
-            seed, "sub-contact-report", self.id, window) * (
+            seed, "sub-contact-report", int(self.sensor_seed), window) * (
                 config.SUB_REPORT_PERIOD_S - config.SUB_REPORT_TX_S)
         return start <= now < start + config.SUB_REPORT_TX_S
 

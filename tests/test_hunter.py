@@ -394,9 +394,10 @@ def test_an_ai_submarine_holding_the_frigate_reports_it_on_hf():
     sub.depth = 15.0
     on = [t * 5.0 for t in range(360) if sub.contact_report_on_air(game.seed, t * 5.0)]
     assert 1 <= len(on) <= 4 and on[-1] - on[0] < config.SUB_REPORT_TX_S
-    sub.memory["contact_age"] = config.SUB_REPORT_CONTACT_S + 1.0
+    held = sub.memory["contact"]
+    sub.memory["contact"] = None          # contact dropped: no report
     assert not sub.contact_report_on_air(game.seed, on[0])
-    sub.memory["contact_age"] = 30.0
+    sub.memory["contact"] = held
     # The frigate's HF/DF hears the call.
     sub.x, sub.y = game.ship.x + 20.0, game.ship.y
     game.world.land_blocks_line = lambda *args: False

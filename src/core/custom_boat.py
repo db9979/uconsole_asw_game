@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import math
 
+from src.core import boat_nav
 from src.core.i18n import message
 from src.core.mission_definition import mission_side
 
@@ -104,8 +105,9 @@ def check(game) -> bool:
     return True
 
 
-def objective(game, sub):
-    """The boat's mission line for a submarine custom mission (own truth only)."""
+def objective(game, boat):
+    """The boat's mission line for a submarine custom mission (own truth only:
+    bearing and range from the dead-reckoned position, ``boat_nav``)."""
     authored = definition(game)
     if authored is None:
         return None
@@ -115,7 +117,8 @@ def objective(game, sub):
     left_text = f"{int(left // 3600)}:{int(left % 3600 // 60):02d}"
     if kind == "reach":
         point = objective_spec["reach"]
-        dx, dy = float(point["x"]) - sub.x, float(point["y"]) - sub.y
+        bx, by = boat_nav.position(boat)
+        dx, dy = float(point["x"]) - bx, float(point["y"]) - by
         return message("uboot.objective.custom_reach",
                        bearing=f"{math.degrees(math.atan2(dx, -dy)) % 360.0:03.0f}",
                        range=f"{math.hypot(dx, dy):.1f}", left=left_text)

@@ -424,7 +424,7 @@ def patrol_attack(game, sub) -> bool:
     window = int(math.floor(game.sim_t / config.BOAT_AI_FIRE_EVERY_S))
     # A raid already decided waits for its tubes instead of rolling again.
     if (not sub.ai_fire_pending and detrand.u01(
-            game.seed, "sub-raid", int(sub.id), window) >= config.SUB_RAID_P):
+            game.seed, "sub-raid", int(sub.sensor_seed), window) >= config.SUB_RAID_P):
         return False
     ships = [ship for ship in game.civilians if not ship.sunk]
     fired = attack(game, sub, ships)
@@ -442,7 +442,7 @@ def scope_look(game, sub) -> float | None:
             or boat_missions.mode(game) != "recon" or boat(game) is not sub):
         return None
     cycle = config.BOAT_AI_SCOPE_CYCLE_S
-    phase = detrand.u01(game.seed, "sub-scope-phase", int(sub.id)) * cycle
+    phase = detrand.u01(game.seed, "sub-scope-phase", int(sub.sensor_seed)) * cycle
     into = (game.sim_t + phase) % cycle
     return into if into < config.BOAT_AI_SCOPE_LOOK_S else None
 

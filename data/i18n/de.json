@@ -2026,6 +2026,7 @@
   "save.unreadable": "nicht lesbar / beschädigt",
   "save.error": "Speicherfehler",
   "save.invalid": "Slot leer, beschädigt oder nicht kompatibel",
+  "save.self_check_failed": "Stand besteht die Speicherprüfung nicht, alter Spielstand bleibt",
   "save.select_hint": "1-5: Auswahl | Enter: bestätigen",
   "save.overwrite": "Slot überschreiben? Enter: Ja | Esc: Nein",
   "save.replace": "Aktuelle Mission ersetzen? Enter: Ja | Esc: Nein",

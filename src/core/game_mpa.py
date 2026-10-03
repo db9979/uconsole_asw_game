@@ -355,7 +355,7 @@ class MpaMixin:
             if slant > mad_physics.MAD_MAX_SLANT_M:
                 continue
             probability = mad_physics.detection_probability(slant)
-            if detrand.u01(self.seed, "mpa-mad", int(target.id), tick) >= probability:
+            if detrand.u01(self.seed, "mpa-mad", int(target.sensor_seed), tick) >= probability:
                 continue
             contact = self.sonar._get_contact(target)
             contact._fx, contact._fy = self.ship.x, self.ship.y
@@ -489,7 +489,7 @@ class MpaMixin:
                     config.SUB_RADAR_ALERT_NM,
                     config.radar_horizon_nm(altitude, config.SUB_MAST_HEIGHT_M))
                 for x, y, altitude in emitters)
-            if not heard or detrand.u01(self.seed, "sub-radar-alert", int(sub.id),
+            if not heard or detrand.u01(self.seed, "sub-radar-alert", int(sub.sensor_seed),
                                         tick) >= config.SUB_RADAR_ALERT_P:
                 continue
             sub.radar_hold_s = config.SUB_RADAR_HOLD_S
@@ -530,7 +530,7 @@ class MpaMixin:
                 continue
             sinr = radar_physics.sinr(distance, range_nm, rcs_factor=rcs,
                                       domain="surface", **conditions)
-            tag, key = tag_prefix + namespace, int(actor.id)
+            tag, key = tag_prefix + namespace, int(actor.sensor_seed)
             if detrand.u01(self.seed, tag, key, tick) >= radar_physics.pd_from_sinr(sinr):
                 continue
             bearing = (math.degrees(math.atan2(dx, -dy))

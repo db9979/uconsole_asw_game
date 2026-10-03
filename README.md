@@ -12,20 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.163**
+Current release: **1.3.168**
 
-Release 1.3.163 makes the stations work by mouse click. Status lamps, key
-hints in a station's text, page tabs, list rows and the readings in the
-bottom status line now react to a click on both sides: a lamp or hint
-presses its key (for example the ELOKA tone, the sonar peak hold, the
-helicopter's dipping sonar, the engine telegraph rows or the submarine's
-silent running), and a reading such as flooding or torpedoes opens the
-station that handles it. The submarine's sonar takes clicks for the first
-time, and the element under the mouse gets a thin frame. A click does
-exactly what its key does, with the same checks; the fire key stays
-clickable only at the weapons station. In Remote Crew, clicking a sonar,
-helicopter or engine lamp presses its button. Saves stay v49; v38 to v48
-saves still load.
+Release 1.3.168 brings U-Jagd to the Mac and makes the opponent smarter
+without any language model. Every release now carries a macOS app for Apple
+silicon and Intel Macs that updates itself like the Windows program. Every
+free AI submarine and the AI hunter frigate pick their own tactics from what
+they heard and their commander's character, and the enemy learns your habits
+from the logbook (an early ping, long shots, periscope depth, high speed) and
+adapts a little; the logbook page shows what it knows and L switches learning
+off. Saves that an AI boat's loud contact made unloadable load again, the
+nightly endurance test covers all scenarios, flaky tests are fixed and large
+modules are split. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -193,9 +191,43 @@ release and its `vX.Y.Z` git tag, so only the newest release and tag stay.
 To build locally on Windows: `python -m pip install -e ".[windows]"` and
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 
+## macOS app
+
+Download `U-Jagd-macOS-arm64.zip` (Apple silicon) or `U-Jagd-macOS-x86_64.zip`
+(Intel Mac) from the
+[latest release](https://github.com/db9979/uconsole_asw_game/releases/latest),
+unzip it and move `U-Jagd.app` to Applications (or any folder you can write
+to); no Python installation is needed. The app starts straight into the game
+like the Windows program. It is not signed with an Apple developer certificate
+or notarized, so the first start needs one extra step: right-click (or
+Control-click) the app, choose **Open** and confirm **Open** (on macOS 15 and
+later: open it once, then **System Settings > Privacy & Security > Open
+Anyway**), or remove the download quarantine in Terminal with
+`xattr -dr com.apple.quarantine /Applications/U-Jagd.app`. macOS may ask
+whether U-Jagd may find devices on the local network and accept incoming
+connections: allow both for Remote Crew. Keys are the same as on the other
+systems (`Ctrl`, not `Cmd`).
+
+**Update now** works as in the Windows program: the app downloads the zip for
+its processor, checks its size and SHA-256 digest, unpacks the new
+`U-Jagd.app` beside itself, closes, swaps the bundle (the old one is deleted
+only once the new one is in place) and opens the new version. An app run from
+the quarantined download folder or a folder you cannot write to opens the
+release page instead. Saves and settings live in `~/.u-jagd/` as on Linux; an
+update never touches them.
+
+The same workflow builds `U-Jagd.app` with PyInstaller
+(`packaging/macos/u-jagd-macos.spec`) natively for arm64 and x86_64 (pygame
+and NumPy publish no universal2 wheels), self-tests it, zips it with
+`ditto -c -k --keepParent` and, on `main`, a final job attaches both zips and
+the Windows program to the same release. To build locally on a Mac:
+`python -m pip install -e ".[macos]"` and
+`pyinstaller packaging/macos/u-jagd-macos.spec`.
+
 ## Requirements
 
-- Linux (or Windows with the packaged [Windows program](#windows-program))
+- Linux (or Windows or macOS with the packaged [Windows program](#windows-program)
+  or [macOS app](#macos-app))
 - Python 3.11 or newer
 - Pygame 2.6 or newer
 - NumPy 2.0 or newer

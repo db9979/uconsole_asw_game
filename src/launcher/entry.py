@@ -1,7 +1,7 @@
-"""Entry point of the packaged Windows program.
+"""Entry point of the packaged Windows and macOS programs.
 
-``U-Jagd-Windows.exe [ARGS]`` starts the game straight away with the normal
-command line of ``main.py``; everything else (multiplayer, side, station) is
+``U-Jagd-Windows.exe [ARGS]`` (macOS: ``U-Jagd.app/Contents/MacOS/U-Jagd``)
+starts the game straight away with the normal command line of ``main.py``; everything else (multiplayer, side, station) is
 chosen inside the game. A leading ``--game`` (the old starter's form) is
 accepted and ignored. ``--self-test REPORT`` and ``--update-self-test
 REPORT`` are the headless build checks used by the release workflow.
@@ -95,7 +95,14 @@ def update_self_test(report: str) -> int:
     from src.launcher import update
 
     executable = os.path.abspath(sys.executable)
-    update.launch_install(executable, f"{executable}.new", ("--self-test", report))
+    if sys.platform == "darwin":
+        # macOS: the workflow staged a copy as <app>.update/U-Jagd.app.
+        bundle = update.mac_bundle(executable)
+        if bundle is None:
+            return 1
+        update.launch_mac_install(bundle, ("--self-test", report))
+    else:
+        update.launch_install(executable, f"{executable}.new", ("--self-test", report))
     time.sleep(3)  # hold the file like a closing game window
     return 0
 
@@ -116,6 +123,8 @@ def _install_update(code: int) -> int:
 
     if not getattr(sys, "frozen", False):
         return code
+    if sys.platform == "darwin":
+        return _install_mac_update(code)
     executable = os.path.abspath(sys.executable)
     downloaded = f"{executable}.new"
     try:
@@ -125,6 +134,28 @@ def _install_update(code: int) -> int:
                 return code
             update.download(release, downloaded)
         update.launch_install(executable, downloaded, log=str(log_path()))
+    except update.UpdateError:
+        return code
+    return 0
+
+
+def _install_mac_update(code: int) -> int:
+    """macOS form of ``_install_update``: unpack the zip, swap the bundle."""
+    from src.core.version import APP_VERSION
+    from src.launcher import update
+
+    bundle = update.mac_bundle(sys.executable)
+    asset = update.mac_asset_name()
+    if bundle is None or asset is None:
+        return code
+    try:
+        if not os.path.isdir(bundle.staged_app):
+            release = update.check_latest(APP_VERSION, asset_name=asset)
+            if release is None:
+                return code
+            update.download(release, bundle.archive)
+            update.unpack_app(bundle.archive, bundle)
+        update.launch_mac_install(bundle, log=str(log_path()))
     except update.UpdateError:
         return code
     return 0

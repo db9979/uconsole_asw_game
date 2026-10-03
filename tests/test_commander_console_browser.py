@@ -10,14 +10,14 @@ import subprocess
 import time
 
 import pytest
-from commander_web import copy_assets, index_html, inject_probe
+from commander_web import RealTimeHost, copy_assets, index_html, inject_probe
 
 from src.commander import server as commander_transport
 from src.core import config
 from src.core.game import Game
 from src.sonar.sonar import Contact
 from src.core import manual
-from test_commander_assets import ASSETS, PREFIX, Document, catalogs
+from test_commander_assets import ASSETS, PREFIX, catalogs
 
 
 CONSOLE_SCRIPT = r"""
@@ -32,7 +32,7 @@ async function until(check, message, limit = 1500) {
     if (check()) return;
     await sleep(20);
   }
-  throw new Fail(message);
+  throw new Fail(typeof message === "function" ? message() : message);
 }
 const boatScenarios = ["s5_durchbruch", "s6_aufklaerung", "s7_geleitzug", "s8_meerenge",
   "s9_kampfschwimmer", "s10_versorger", "s17_duell", "s18_heimkehr", "s19_abholung",
@@ -121,7 +121,8 @@ async function run() {
   document.querySelector('#host-slot-list button[data-slot="3"]').click();
   assert($("host-status").dataset.status === "pending", "save command was not submitted");
   await until(() => $("host-status").dataset.status === "applied" &&
-    !$("host-save").disabled, "save result missing");
+    !$("host-save").disabled,
+    () => `save result missing (${$("host-status").dataset.status}: ${$("host-status").textContent}; save ${$("host-save").disabled ? "locked" : "free"})`);
 
   await until(() => !$("host-new").disabled, "new game locked");
   $("host-new").click();
@@ -156,10 +157,22 @@ async function run() {
   $("host-new-form").requestSubmit();
   await until(() => $("station-tab-uboot") && !$("station-tab-bridge"),
     "the submarine side was not taken", 3000);
-  // The side switch comes first and the new game after it: wait for the new
-  // mission, or the page could finish before the game was replaced.
+  // The side switch comes first and the new game after it: wait until the
+  // host reports a submarine scenario, or the page could finish before the
+  // game was replaced. (The mission line alone also changes with the side
+  // switch, while the frigate's mission still runs.)
+  let hostScenario = null;
+  for (let index = 0; index < 1200 && !scenarioIsBoat(hostScenario); index++) {
+    try {
+      const reply = await fetch("/api/v2/host", {cache: "no-store"});
+      if (reply.ok) hostScenario = (await reply.json()).scenario;
+    } catch (_) { /* the next try */ }
+    if (!scenarioIsBoat(hostScenario)) await sleep(50);
+  }
+  assert(scenarioIsBoat(hostScenario),
+    `the submarine mission did not start (${hostScenario}; ${$("host-status").textContent})`);
   await until(() => $("mission-name").textContent && $("mission-name").textContent !== missionBefore,
-    `the submarine mission did not start (${$("host-status").textContent})`, 6000);
+    `the submarine mission is not shown (${$("host-status").textContent})`, 3000);
   assert(scriptErrors.length === 0, `script errors: ${scriptErrors.join(" | ")}`);
 }
 
@@ -201,6 +214,11 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
     copy_assets(tmp_path, html)
     monkeypatch.setattr(commander_transport.resources, "files", lambda _package: tmp_path)
 
+    # Warm the sound-propagation tables of the opening world first: building
+    # them takes seconds on a loaded host, and a frame that long lets a
+    # command sent meanwhile expire (5 s) before the host drains it.
+    for _ in range(30):
+        game.update(.1)
     console.activate(game)
     assert console.address is not None and console.server.solo_mode is True
     script = CONSOLE_SCRIPT.replace("__CODE__", json.dumps(console.pairing_code))
@@ -208,36 +226,40 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
         "text/javascript; charset=utf-8", script.encode("utf-8"))
     console.bridge.allowed = True
 
+    # Real time, not a virtual-time budget: the page drives a live host whose
+    # new games and world generation take real seconds, while virtual time
+    # raced ahead of it whenever no request was pending, so the page's waits
+    # ran out on a loaded runner ("the submarine mission did not start
+    # (Waiting for the host...)"). The result is read over DevTools and the
+    # run ends as soon as the page reports.
+    profile = tmp_path / "console-browser"
     process = subprocess.Popen(
         [chromium, "--headless", "--no-sandbox", "--disable-gpu",
          "--disable-background-networking", "--no-first-run",
          "--no-default-browser-check", "--disable-dev-shm-usage",
-         f"--user-data-dir={tmp_path / 'console-browser'}", "--virtual-time-budget=300000",
-         "--window-size=1600,900", "--dump-dom",
+         f"--user-data-dir={profile}", "--remote-debugging-port=0",
+         "--window-size=1600,900", "--force-device-scale-factor=1",
          f"http://{console.address[0]}:{console.address[1]}/"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    host = RealTimeHost(game, profile, period_s=.25)
+    root = {}
     started = time.monotonic()
     try:
-        # Wall-clock budget: the page needs about 80 s on an idle four-core
-        # host; under a parallel test run (pytest-xdist) Chromium gets less
-        # CPU, so the pump keeps going for up to 300 s (the page's own
-        # virtual-time budget) before giving up.
         while process.poll() is None and time.monotonic() - started < 300:
+            root = host.dataset or root
+            if root.get("consoleTest"):
+                break
             console.pump(game)
-            game.update(.02)
+            host.step()
             time.sleep(.02)
-        stdout, stderr = process.communicate(timeout=5)
     finally:
-        if process.poll() is None:
-            process.kill()
-            stdout, stderr = process.communicate(timeout=5)
+        host.close()
+        process.kill()
+        process.wait(timeout=5)
         console.stop()
         game.audio.shutdown()
 
-    assert process.returncode == 0, stderr
-    root = next((attrs for tag, attrs in Document(stdout).elements if tag == "html"), {})
-    assert root.get("data-console-test") == "passed", root.get(
-        "data-failure", stdout[-4000:] + stderr[-2000:])
+    assert root.get("consoleTest") == "passed", root.get("failure", root)
     assert (saves / "slot3.json").is_file()
     # The last new game ran on the submarine side, whose list starts at the breakthrough.
     assert (game.seed, game.scenario_key, game.world_mode) == (4242, "s5_durchbruch", "procedural")

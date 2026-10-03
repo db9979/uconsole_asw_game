@@ -114,13 +114,14 @@ from src.core.game_lobby import LobbyMixin
 from src.core.game_update import UpdateNoticeMixin
 from src.core.game_llm import LlmMixin
 from src.core.game_advisor import AdvisorUiMixin
+from src.core.game_habits import HabitsMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
            SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, NoiseMixin, DailyMixin, MpaMixin, ConsortMixin, DebriefMixin,
            TrainingMixin, CustomMissionMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
-           LobbyMixin, UpdateNoticeMixin, ResilienceMixin, LlmMixin, AdvisorUiMixin):
+           LobbyMixin, UpdateNoticeMixin, ResilienceMixin, LlmMixin, AdvisorUiMixin, HabitsMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -510,6 +511,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._reset_crew()
         # Post-mission debrief recording (transient, never saved).
         self._reset_debrief()
+        # What the enemy learnt of the player's habits (decision saved as ``habits``).
+        self._reset_habits()
         # The language model's mission state (advisor mark saved, rest transient).
         if hasattr(self, "llm"):
             self._reset_llm_mission()

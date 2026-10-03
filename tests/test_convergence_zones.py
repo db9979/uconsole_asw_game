@@ -38,6 +38,30 @@ def test_convergence_zones_are_pure_bounded_and_order_independent():
     assert raytrace.convergence_zones_nm(depths, speeds, 12.0, 6.0, "sand", 10.0, 6.0) == []
 
 
+def test_cached_profiles_are_computed_from_their_key_alone(monkeypatch):
+    """Calls that share a cache key compute exactly the same thing, so the
+    result never depends on which of them came first (formerly the first
+    caller's unrounded inputs were cached for every later caller)."""
+    calls = []
+    real = raytrace.trace_table
+    monkeypatch.setattr(raytrace, "trace_table",
+                        lambda *args: calls.append(args) or real(*args))
+    depths, speeds = _profile()
+    # Two profiles a hair apart that round to the same key.
+    speeds, nudged = ([round(value, 2) + offset for value in speeds] for offset in (.002, -.002))
+    raytrace.clear_cache()
+    first = raytrace.convergence_zones_nm(depths, speeds, 3000.04, 6.04, "sand", 10.04, 6.04)
+    raytrace.clear_cache()
+    second = raytrace.convergence_zones_nm(depths, nudged, 2999.96, 5.96, "sand", 9.96, 5.96)
+    assert len(calls) == 2 and repr(calls[0]) == repr(calls[1]) and first == second
+    calls.clear()
+    raytrace._picture_cache.clear()
+    picture = raytrace.ray_picture(depths, speeds, 1600.04, 5.04, "sand", 10.2, 60.04)
+    raytrace._picture_cache.clear()
+    again = raytrace.ray_picture(depths, nudged, 1599.96, 4.96, "sand", 9.8, 59.96)
+    assert len(calls) == 2 and repr(calls[0]) == repr(calls[1]) and picture == again
+
+
 def test_bt_measurement_stores_derived_bands_that_save_and_validate():
     game = Game(seed=717, start_menu=False, audio_enabled=False)
     assert game.measure_sonar_bt() is True

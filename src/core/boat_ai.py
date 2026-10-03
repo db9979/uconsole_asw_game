@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import math
 
-from src.core import boat_missions, boat_radio, config, detrand
+from src.core import boat_missions, boat_radio, config, detrand, opfor_plans
 from src.physics import bioluminescence
 from src.llm import opponent
 from src.core.i18n import message
@@ -318,12 +318,16 @@ def steer(game) -> None:
     kind = boat_missions.mode(game)
     guarded = kind in boat_missions.GUARDED_MODES
     snap = kind in boat_missions.SNAP_MODES
-    # The experimental opponent's plan (optional language model, never scored).
+    # The experimental opponent's plan (optional language model, never scored)
+    # wins; otherwise each free boat picks its own plan (src/core/opfor_plans.py).
     plan = game.llm_opfor_plan("subs") if hasattr(game, "llm_opfor_plan") else None
+    if plan == "default":
+        plan = None
+    habits = () if plan is not None else opfor_plans.known_habits(game, "frigate")
     for sub in game.subs:
         sub.mission_orders = orders(game, sub) if sub is mission_boat else None
-        sub.llm_orders = (None if plan is None or sub is mission_boat or sub.side != "hostile"
-                          else opponent.sub_orders(game, sub, plan))
+        sub.plan_orders = (None if sub is mission_boat or sub.side != "hostile" or sub.manual
+                           else opponent.sub_orders(game, sub, plan or opfor_plans.sub_plan(sub, habits)))
         sub.mission_guarded = guarded and sub is mission_boat
         sub.mission_snap = snap and sub is mission_boat
         # Scenario 13 is peacetime: no AI boat fires.

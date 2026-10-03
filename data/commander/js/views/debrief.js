@@ -17,7 +17,7 @@ const FLASH_KINDS = new Set(["own_shot", "enemy_shot", "pinged", "sub_sunk", "sh
 const FLASH_WALL_S = 1.6;
 const EVENT_COLORS = {first_contact: "#f3cf79", first_fix: "#f3cf79", classified: "#f3cf79", own_shot: "#8fd6ff",
   enemy_shot: "#ff6a5c", sub_sunk: "#8fdfab", own_damage: "#ff6a5c", ship_sunk: "#ff6a5c", missed: "#c58cff",
-  pinged: "#f3cf79", enemy_commander: "#f3cf79", mission_end: "#e0ecef"};
+  pinged: "#f3cf79", enemy_commander: "#f3cf79", enemy_habits: "#f3cf79", mission_end: "#e0ecef"};
 const OWN = "#5aa0ff", HOSTILE = "#ff8080", KNOWN = "#f3cf79";
 const replay = {doc: null, t: 0, playing: false, speed: 10, wall: null, frame: 0};
 

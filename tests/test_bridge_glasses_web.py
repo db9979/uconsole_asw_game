@@ -9,11 +9,11 @@ import time
 from pathlib import Path
 
 import pytest
-from commander_web import copy_assets, index_html, inject_probe
+from commander_web import RealTimeHost, copy_assets, index_html, inject_probe
 
 from src.commander import server
 from src.core.game import Game
-from test_commander_assets import Document, PREFIX, catalogs
+from test_commander_assets import PREFIX, catalogs
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -27,7 +27,7 @@ PROBE = r'''
     for (let index = 0; index < limit; index++) {
       root.dataset.status = $('bridge-glasses-status')?.textContent || '';
       root.dataset.command = `${$('command-status')?.textContent || ''} | ${$('station-command-status')?.textContent || ''}`;
-      root.dataset.clock = `virtual=${Math.round(performance.now())} wall=${Date.now() - wallStart} connection=${$('connection')?.textContent} role=${document.body.dataset.remoteRole}`;
+      root.dataset.clock = `page=${Math.round(performance.now())} wall=${Date.now() - wallStart} connection=${$('connection')?.textContent} role=${document.body.dataset.remoteRole}`;
       if (check()) return;
       await sleep(20);
     }
@@ -48,7 +48,7 @@ PROBE = r'''
     $('pair-form').requestSubmit();
     await until(() => document.body.dataset.remoteRole === 'assigned' &&
       !$('station-bridge').hidden && !$('bridge-glasses-canvas').closest('[hidden]'), 'binoculars card',
-      200000);  // the grant waits on the host loop; virtual time runs ahead of it
+      6000);  // the grant waits on the host loop
     await until(() => status().includes('Line of sight'), () => `no line of sight: ${status()}`);
     const relative = () => (status().match(/bow (\d+)/) || [])[1];
     document.querySelector('[data-glasses-turn="10"]').click();
@@ -131,34 +131,42 @@ def test_bridge_binoculars_train_in_the_browser(tmp_path, monkeypatch):
     console.server._http.assets["/glasses-test.js"] = (
         "text/javascript; charset=utf-8",
         PROBE.replace("__CODE__", json.dumps(console.pairing_code)).encode("utf-8"))
+    # Real time, not a virtual-time budget: the station grant and the pictures
+    # come from the live host, and virtual time ran ahead of a host loop
+    # slowed by a loaded runner (CI: "binoculars card"). The page is read over
+    # DevTools and the run ends when the probe reports.
+    profile = tmp_path / "browser"
     process = subprocess.Popen([
         chromium, "--headless", "--no-sandbox", "--disable-gpu",
         "--disable-background-networking", "--no-first-run",
         "--no-default-browser-check", "--disable-dev-shm-usage",
-        f"--user-data-dir={tmp_path / 'browser'}", "--window-size=1600,1000",
-        "--virtual-time-budget=120000", "--dump-dom",
+        f"--user-data-dir={profile}", "--window-size=1600,1000",
+        "--force-device-scale-factor=1", "--remote-debugging-port=0",
         f"http://{console.address[0]}:{console.address[1]}/",
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    host = RealTimeHost(game, profile, period_s=.25)
+    root = {}
     started = time.monotonic()
     granted = False
     try:
-        while process.poll() is None and time.monotonic() - started < 120:
+        while process.poll() is None and time.monotonic() - started < 150:
+            root = host.dataset or root
+            if root.get("scopeTest"):
+                break
             if not granted:
                 clients = console.server.client_statuses()
                 if clients:
                     assert console.server.grant_station(clients[0]["client_id"], "bridge")
                     granted = True
             console.pump(game)
-            game.update(.02)
+            host.step()
             time.sleep(.02)
-        stdout, stderr = process.communicate(timeout=5)
     finally:
-        if process.poll() is None:
-            process.kill()
-            stdout, stderr = process.communicate(timeout=5)
+        host.close()
+        process.kill()
+        process.wait(timeout=5)
         console.stop()
         game.audio.shutdown()
-    root = next((attrs for tag, attrs in Document(stdout).elements if tag == "html"), {})
-    assert root.get("data-scope-test") == "passed", (
-        root.get("data-status"), root.get("data-console-error"), root.get("data-js-error"),
-        root.get("data-failure", stderr[-300:]))
+    assert root.get("scopeTest") == "passed", (
+        root.get("status"), root.get("clock"), root.get("consoleError"), root.get("jsError"),
+        root.get("failure"))

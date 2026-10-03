@@ -11,6 +11,7 @@ import os
 import socket
 import ssl
 import struct
+import sys
 import time
 
 import pygame
@@ -108,6 +109,8 @@ class CommanderConsole:
         networks = tuple(ipaddress.IPv4Network(net) for net in
                          ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"))
         try:
+            if not sys.platform.startswith("linux"):
+                raise ImportError("SIOCGIFADDR 0x8915 is Linux's")  # macOS, Windows
             import fcntl
 
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
@@ -121,10 +124,13 @@ class CommanderConsole:
                     except OSError:
                         continue
         except (ImportError, AttributeError, OSError):
-            # Without Linux ioctls (Windows) ask the routing table which local
-            # address reaches the network: a UDP connect to an IP literal sends
-            # nothing and resolves no name. Never fall back to wildcard binding
-            # or a potentially blocking hostname resolver.
+            pass
+        if len(hosts) == 1:
+            # Without Linux ioctls (Windows, macOS) or a private interface
+            # address, ask the routing table which local address reaches the
+            # network: a UDP connect to an IP literal sends nothing and
+            # resolves no name. Never fall back to wildcard binding or a
+            # potentially blocking hostname resolver.
             address = self._route_address()
             if address is not None and any(address in net for net in networks):
                 hosts.add(str(address))

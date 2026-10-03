@@ -223,6 +223,10 @@ def convergence_zones_nm(profile_depths_m, profile_m_s, water_depth_m: float,
     if cached is not None:
         _cz_cache.move_to_end(key)
         return [list(band) for band in cached]
+    # Computed from the quantized key alone, so the cache stays a pure function:
+    # a nearby call that shares the key never gets the first caller's result.
+    profile_depths_m, profile_m_s, water_depth_m, source_depth_m, sediment, wind_kn, \
+        receiver_depth_m = key
     bands: list = []
     bottom = max(float(water_depth_m), 5.0)
     if bottom >= 20.0:
@@ -288,14 +292,16 @@ def ray_picture(profile_depths_m, profile_m_s, water_depth_m: float,
     arguments, cached in a small bounded LRU."""
     depths = tuple(round(float(value), 1) for value in profile_depths_m)
     speeds = tuple(round(float(value), 2) for value in profile_m_s)
-    bottom = max(float(water_depth_m), 5.0)
-    source = min(max(float(source_depth_m), 0.5), bottom - 0.5)
-    key = (depths, speeds, round(bottom, 1), round(source, 1), sediment,
+    bottom = round(max(float(water_depth_m), 5.0), 1)
+    source = round(min(max(float(source_depth_m), 0.5), bottom - 0.5), 1)
+    key = (depths, speeds, bottom, source, sediment,
            round(float(wind_kn)), round(float(layer_m), 1))
     cached = _picture_cache.get(key)
     if cached is not None:
         _picture_cache.move_to_end(key)
         return cached
+    # Only the quantized key enters the result (a pure cache, see above).
+    wind_kn, layer_m = key[5], key[6]
     z_profile = np.asarray(depths, dtype=float)
     c_profile = np.asarray(speeds, dtype=float)
     if z_profile[-1] < bottom:

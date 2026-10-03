@@ -8,11 +8,11 @@ import time
 from pathlib import Path
 
 import pytest
-from commander_web import copy_assets, index_html, inject_probe
+from commander_web import RealTimeHost, copy_assets, index_html, inject_probe
 
 from src.commander import server
 from src.core.game import Game
-from test_commander_assets import Document, PREFIX, catalogs
+from test_commander_assets import PREFIX, catalogs
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -106,19 +106,30 @@ def test_route_dead_reckoning_and_seeker_in_the_browser(tmp_path, monkeypatch, r
         PROBE.replace("__CODE__", json.dumps(console.pairing_code))
         .replace("__ROLE__", role).encode("utf-8"))
     console.bridge.allowed = True
+    # Real time, not a virtual-time budget: the probe races a live host, and
+    # waiting for Chromium to burn a fixed virtual budget took about the whole
+    # wall-clock cap even on an idle machine, so a loaded runner ran out of time
+    # (subprocess.TimeoutExpired). The page's result is read over DevTools and
+    # the run ends as soon as the probe reports.
+    profile = tmp_path / "browser"
     process = subprocess.Popen([
         chromium, "--headless", "--no-sandbox", "--disable-gpu",
         "--disable-background-networking", "--no-first-run",
         "--no-default-browser-check", "--disable-dev-shm-usage",
-        f"--user-data-dir={tmp_path / 'browser'}", "--window-size=1600,1000",
-        "--virtual-time-budget=300000", "--dump-dom",
+        f"--user-data-dir={profile}", "--window-size=1600,1000",
+        "--force-device-scale-factor=1", "--remote-debugging-port=0",
         f"http://{console.address[0]}:{console.address[1]}/",
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    started = time.monotonic()
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    host = RealTimeHost(game, profile, period_s=.25)
+    root = {}
     granted = False
     boat = None
+    started = time.monotonic()
     try:
-        while process.poll() is None and time.monotonic() - started < 120:
+        while process.poll() is None and time.monotonic() - started < 180:
+            root = host.dataset or root
+            if root.get("navTest"):
+                break
             if not granted:
                 clients = console.server.client_statuses()
                 if clients:
@@ -130,18 +141,15 @@ def test_route_dead_reckoning_and_seeker_in_the_browser(tmp_path, monkeypatch, r
                 boat = game.opfor
                 boat.orders.nav[2] = max(boat.orders.nav[2], 1800.0)
             console.pump(game)
-            game.update(.02)
+            host.step()
             time.sleep(.02)
-        stdout, stderr = process.communicate(timeout=5)
     finally:
-        if process.poll() is None:
-            process.kill()
-            stdout, stderr = process.communicate(timeout=5)
+        host.close()
+        process.kill()
+        process.wait(timeout=5)
         console.stop()
         game.audio.shutdown()
-    root = next((attrs for tag, attrs in Document(stdout).elements if tag == "html"), {})
-    assert root.get("data-nav-test") == "passed", (
-        root.get("data-js-error"), root.get("data-failure", stderr[-300:]))
+    assert root.get("navTest") == "passed", (root.get("jsError"), root.get("failure"))
     orders = boat.orders
     if role == "uboot_nav":
         assert orders.route.kind == "zigzag" and orders.route.active

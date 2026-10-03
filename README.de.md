@@ -14,21 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.163**
+Aktuelle Version: **1.3.168**
 
-Version 1.3.163 macht die Stationen per Mausklick bedienbar.
-Statuslampen, Tastenhinweise im Text einer Station, Seitenreiter,
-Listenzeilen und die Werte in der unteren Statuszeile reagieren jetzt auf
-beiden Seiten auf einen Klick: Eine Lampe oder ein Hinweis drückt seine
-Taste (etwa den ELOKA-Ton, das Spitzenhalten des Sonars, das Tauchsonar des
-Hubschraubers, die Zeilen des Maschinentelegrafen oder die Schleichfahrt des
-U-Boots), und ein Wert wie Flutung oder Torpedos öffnet die Station, die ihn
-bearbeitet. Das Sonar des U-Boots nimmt erstmals Klicks an, und das Element
-unter der Maus bekommt einen dünnen Rahmen. Ein Klick tut genau das, was
-seine Taste tut, mit denselben Prüfungen; die Feuertaste bleibt nur an der
-Waffenstation anklickbar. In der Remote Crew drückt ein Klick auf eine
-Sonar-, Hubschrauber- oder Maschinenlampe ihren Knopf. Spielstände bleiben
-v49; v38 bis v48 lassen sich weiter laden.
+Version 1.3.168 bringt U-Jagd auf den Mac und macht den Gegner ohne
+Sprachmodell klüger. Jede Version enthält jetzt eine macOS-App für
+Apple-Silicon und Intel-Macs, die sich wie das Windows-Programm selbst
+aktualisiert. Jedes freie KI-U-Boot und die KI-Jagdfregatte wählen ihre
+Taktik selbst aus dem, was sie gehört haben, und dem Charakter ihres
+Kommandanten, und der Gegner lernt aus dem Logbuch Ihre Gewohnheiten (früher
+Ping, weite Schüsse, Sehrohrtiefe, hohe Fahrt) und stellt sich ein wenig
+darauf ein; die Logbuchseite zeigt, was er kennt, und L schaltet das Lernen
+aus. Spielstände, die der laute Kontakt eines KI-U-Boots unladbar machte,
+laden wieder, der nächtliche Dauertest deckt alle Szenarien ab, wacklige
+Tests sind behoben und große Module aufgeteilt. Spielstände sind v50; v38
+bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -207,9 +206,44 @@ gelöscht). Selbst bauen unter Windows:
 `python -m pip install -e ".[windows]"` und
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 
+## macOS-App
+
+Lade `U-Jagd-macOS-arm64.zip` (Apple Silicon) oder `U-Jagd-macOS-x86_64.zip`
+(Intel-Mac) aus dem
+[neuesten Release](https://github.com/db9979/uconsole_asw_game/releases/latest),
+entpacke es und ziehe `U-Jagd.app` in den Ordner Programme (oder einen anderen
+Ordner, in den du schreiben darfst); Python ist nicht nötig. Die App startet
+wie das Windows-Programm direkt ins Spiel. Sie ist nicht mit einem
+Apple-Entwicklerzertifikat signiert und nicht notarisiert, deshalb braucht der
+erste Start einen Schritt mehr: Rechtsklick (oder Control-Klick) auf die App,
+**Öffnen** wählen und **Öffnen** bestätigen (ab macOS 15: einmal öffnen, dann
+**Systemeinstellungen > Datenschutz & Sicherheit > Dennoch öffnen**), oder im
+Terminal die Download-Quarantäne entfernen mit
+`xattr -dr com.apple.quarantine /Applications/U-Jagd.app`. macOS fragt
+eventuell, ob U-Jagd Geräte im lokalen Netzwerk finden und eingehende
+Verbindungen annehmen darf: für Remote Crew beides erlauben. Die Tasten sind
+dieselben wie auf den anderen Systemen (`Ctrl`, nicht `Cmd`).
+
+**Jetzt updaten** arbeitet wie im Windows-Programm: Die App lädt das Zip für
+ihren Prozessor, prüft Größe und SHA-256-Prüfsumme, entpackt die neue
+`U-Jagd.app` neben sich, schließt sich, tauscht das Bundle aus (das alte wird
+erst gelöscht, wenn das neue an seinem Platz ist) und öffnet die neue Version.
+Eine App, die aus dem Download-Ordner in Quarantäne oder aus einem Ordner ohne
+Schreibrecht läuft, öffnet stattdessen die Release-Seite. Spielstände und
+Einstellungen liegen wie unter Linux in `~/.u-jagd/`; ein Update fasst sie nie an.
+
+Derselbe Workflow baut `U-Jagd.app` mit PyInstaller
+(`packaging/macos/u-jagd-macos.spec`) nativ für arm64 und x86_64 (pygame und
+NumPy veröffentlichen keine universal2-Wheels), testet sie selbst, packt sie
+mit `ditto -c -k --keepParent` und hängt auf `main` in einem letzten Job beide
+Zips und das Windows-Programm an dasselbe Release. Selbst bauen auf einem Mac:
+`python -m pip install -e ".[macos]"` und
+`pyinstaller packaging/macos/u-jagd-macos.spec`.
+
 ## Voraussetzungen
 
-- Linux (oder Windows mit dem fertigen [Windows-Programm](#windows-programm))
+- Linux (oder Windows oder macOS mit dem fertigen [Windows-Programm](#windows-programm)
+  oder der [macOS-App](#macos-app))
 - Python 3.11 oder neuer
 - Pygame 2.6 oder neuer
 - NumPy 2.0 oder neuer

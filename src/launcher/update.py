@@ -1,7 +1,7 @@
-"""Release lookup and self-update for the Windows starter.
+"""Release lookup and self-update for the Windows and macOS programs.
 
 Everything here is pure or takes its network opener as a parameter, so the
-update rules are testable without a network or Windows. Release metadata from
+update rules are testable without a network, Windows or a Mac. Release metadata from
 GitHub is treated as untrusted input: strict types, bounded sizes, HTTPS
 download URLs on GitHub only, and the asset's SHA-256 digest when GitHub
 publishes one.
@@ -13,7 +13,11 @@ from dataclasses import dataclass
 import hashlib
 import json
 import os
+import platform
 import re
+import shlex
+import shutil
+import stat
 import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
@@ -22,6 +26,11 @@ REPOSITORY = "db9979/uconsole_asw_game"
 LATEST_RELEASE_API = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
 RELEASES_PAGE = f"https://github.com/{REPOSITORY}/releases/latest"
 ASSET_NAME = "U-Jagd-Windows.exe"
+# macOS: one zipped app bundle per processor (pygame and NumPy publish no
+# universal2 wheels), made with ``ditto -c -k --keepParent U-Jagd.app``.
+MAC_APP_NAME = "U-Jagd.app"
+MAC_EXECUTABLE = "U-Jagd"
+MAC_ASSETS = {"arm64": "U-Jagd-macOS-arm64.zip", "x86_64": "U-Jagd-macOS-x86_64.zip"}
 MAX_METADATA_BYTES = 1 << 20
 MAX_ASSET_BYTES = 400 << 20
 _CHUNK = 1 << 16
@@ -63,8 +72,9 @@ def _https_github(url: object) -> bool:
             and parts.port is None and not parts.username and not parts.password)
 
 
-def select_release(payload: object, current: str) -> Release | None:
-    """The newer published Windows build in a ``releases/latest`` payload."""
+def select_release(payload: object, current: str,
+                   asset_name: str = ASSET_NAME) -> Release | None:
+    """The newer published build ``asset_name`` in a ``releases/latest`` payload."""
     if not isinstance(payload, dict) or payload.get("draft") or payload.get("prerelease"):
         return None
     version = parse_version(payload.get("tag_name"))
@@ -75,7 +85,7 @@ def select_release(payload: object, current: str) -> Release | None:
     if not isinstance(assets, list):
         return None
     for asset in assets[:64]:
-        if not isinstance(asset, dict) or asset.get("name") != ASSET_NAME:
+        if not isinstance(asset, dict) or asset.get("name") != asset_name:
             continue
         url, size = asset.get("browser_download_url"), asset.get("size")
         if not _https_github(url) or type(size) is not int or not 0 < size <= MAX_ASSET_BYTES:
@@ -99,7 +109,7 @@ def _read_bounded(response, limit: int) -> bytes:
 
 
 def check_latest(current: str, opener=urllib.request.urlopen,
-                 timeout: float = 10.0) -> Release | None:
+                 timeout: float = 10.0, asset_name: str = ASSET_NAME) -> Release | None:
     """Ask GitHub for the latest release; ``None`` when nothing newer exists."""
     request = urllib.request.Request(LATEST_RELEASE_API, headers={
         "Accept": "application/vnd.github+json",
@@ -113,7 +123,7 @@ def check_latest(current: str, opener=urllib.request.urlopen,
         raise UpdateError(str(exc)) from exc
     except (OSError, ValueError) as exc:
         raise UpdateError(str(exc)) from exc
-    return select_release(payload, current)
+    return select_release(payload, current, asset_name)
 
 
 def download(release: Release, destination: str, opener=urllib.request.urlopen,
@@ -238,6 +248,245 @@ def launch_install(executable: str, downloaded: str, args=(), log=None,
         ["cmd", "/c", script], creationflags=flags,
         env=clean_environment(os.environ), stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return script
+
+
+# --- macOS app bundle -------------------------------------------------------
+
+MAX_UNPACKED_BYTES = 1 << 30
+MAX_ZIP_ENTRIES = 20000
+MAX_LINK_CHARS = 1024
+
+
+def mac_asset_name(machine: str | None = None) -> str | None:
+    """The release zip for this Mac's processor (``None`` when unknown)."""
+    machine = platform.machine() if machine is None else machine
+    return MAC_ASSETS.get({"aarch64": "arm64", "amd64": "x86_64"}.get(machine, machine))
+
+
+@dataclass(frozen=True)
+class MacBundle:
+    """The running ``.app`` and the paths its update uses beside it.
+
+    ``archive`` is the downloaded zip, ``staging`` the folder the new bundle
+    is unpacked into, ``old`` where the running bundle is moved during the
+    swap. All of them sit next to the bundle (same volume, so each move is
+    one atomic ``rename``); none is inside ``~/.u-jagd``.
+    """
+
+    app: str
+
+    @property
+    def archive(self) -> str:
+        return f"{self.app}.update.zip"
+
+    @property
+    def staging(self) -> str:
+        return f"{self.app}.update"
+
+    @property
+    def staged_app(self) -> str:
+        return os.path.join(self.staging, MAC_APP_NAME)
+
+    @property
+    def old(self) -> str:
+        return f"{self.app}.old"
+
+
+def mac_bundle(executable: str) -> MacBundle | None:
+    """The bundle of ``.../Name.app/Contents/MacOS/<exe>``, else ``None``.
+
+    A bundle that macOS runs translocated (started from the quarantined
+    download: a read-only random path) cannot be replaced, nor can one in a
+    folder this user may not write; both get ``None`` (release page).
+    """
+    if type(executable) is not str or not executable or "\n" in executable:
+        return None
+    macos = os.path.dirname(os.path.abspath(executable))
+    contents = os.path.dirname(macos)
+    app = os.path.dirname(contents)
+    if (os.path.basename(macos) != "MacOS" or os.path.basename(contents) != "Contents"
+            or not app.endswith(".app") or "/AppTranslocation/" in app
+            or os.path.islink(app) or not os.access(os.path.dirname(app), os.W_OK)):
+        return None
+    return MacBundle(app)
+
+
+def _remove_tree(path: str) -> None:
+    if os.path.islink(path) or os.path.isfile(path):
+        os.remove(path)
+    elif os.path.isdir(path):
+        shutil.rmtree(path)
+
+
+def remove_mac_leftovers(bundle: MacBundle) -> None:
+    """Delete what an update that could not swap in left beside the bundle."""
+    for path in (bundle.archive, f"{bundle.archive}.part", bundle.staging,
+                 f"{bundle.staging}.part", bundle.old):
+        try:
+            _remove_tree(path)
+        except OSError:
+            pass
+
+
+def _member_parts(name: str) -> tuple[str, ...] | None:
+    """The parts of a zip member under ``U-Jagd.app``; ``None`` to skip it."""
+    parts = tuple(name.rstrip("/").split("/"))
+    if parts[0] == "__MACOSX" or parts[-1].startswith("._"):
+        return None  # AppleDouble metadata, never part of the bundle
+    if (name.startswith("/") or "\\" in name or "\0" in name or parts[0] != MAC_APP_NAME
+            or any(part in ("", ".", "..") for part in parts)):
+        raise UpdateError(f"unexpected path in the update: {name[:80]!r}")
+    return parts
+
+
+def _extract(archive: str, root: str) -> None:
+    import zipfile
+
+    with zipfile.ZipFile(archive) as zipped:
+        members = zipped.infolist()
+        if len(members) > MAX_ZIP_ENTRIES:
+            raise UpdateError("too many files in the update")
+        if sum(info.file_size for info in members) > MAX_UNPACKED_BYTES:
+            raise UpdateError("update too large")
+        real_root = os.path.realpath(root)
+        for info in members:
+            parts = _member_parts(info.filename)
+            if parts is None:
+                continue
+            target = os.path.join(root, *parts)
+            mode = info.external_attr >> 16
+            kind = stat.S_IFMT(mode)
+            is_dir = info.is_dir() or kind == stat.S_IFDIR
+            if os.path.lexists(target) and not (
+                    is_dir and os.path.isdir(target) and not os.path.islink(target)):
+                raise UpdateError(f"duplicate path in the update: {info.filename[:80]!r}")
+            parent = os.path.dirname(target)
+            os.makedirs(parent, mode=0o755, exist_ok=True)
+            if os.path.commonpath([real_root, os.path.realpath(parent)]) != real_root:
+                raise UpdateError("the update writes outside its folder")
+            if is_dir:
+                os.makedirs(target, mode=0o755, exist_ok=True)
+            elif kind == stat.S_IFLNK:
+                if info.file_size > MAX_LINK_CHARS:
+                    raise UpdateError("a link in the update is too long")
+                link = zipped.read(info).decode("utf-8")
+                lands = os.path.normpath(os.path.join(*parts[:-1], link)).split(os.sep)
+                if not link or link.startswith("/") or "\0" in link or lands[0] != MAC_APP_NAME:
+                    raise UpdateError("a link in the update points outside the app")
+                os.symlink(link, target)
+            elif kind in (0, stat.S_IFREG):
+                with zipped.open(info) as source, open(target, "xb") as handle:
+                    shutil.copyfileobj(source, handle, _CHUNK)
+                # Only the executable bits survive: never setuid, sticky or
+                # writable by others.
+                os.chmod(target, 0o755 if mode & 0o111 else 0o644)
+            else:
+                raise UpdateError("unsupported file type in the update")
+
+
+def unpack_app(archive: str, bundle: MacBundle) -> str:
+    """Unpack the downloaded zip to ``bundle.staged_app`` and check it.
+
+    The zip is untrusted beyond its checked digest: only members under
+    ``U-Jagd.app/``, no ``..`` or absolute paths, links that stay inside the
+    bundle, bounded size and count; modes are reduced to ``755``/``644``.
+    It is unpacked into ``<staging>.part`` and renamed into place only once
+    complete, so an interrupted unpack never looks finished.
+    """
+    partial = f"{bundle.staging}.part"
+    try:
+        for path in (partial, bundle.staging):
+            _remove_tree(path)
+        os.mkdir(partial, 0o755)
+        _extract(archive, partial)
+        app = os.path.join(partial, MAC_APP_NAME)
+        executable = os.path.join(app, "Contents", "MacOS", MAC_EXECUTABLE)
+        if (not os.path.isfile(os.path.join(app, "Contents", "Info.plist"))
+                or os.path.islink(executable) or not os.path.isfile(executable)
+                or not os.access(executable, os.X_OK)):
+            raise UpdateError("the update holds no U-Jagd.app")
+        os.replace(partial, bundle.staging)
+    except BaseException as exc:
+        try:
+            _remove_tree(partial)
+        except OSError:
+            pass
+        if isinstance(exc, Exception) and not isinstance(exc, UpdateError):
+            raise UpdateError(str(exc)) from exc
+        raise
+    return bundle.staged_app
+
+
+def mac_install_script(bundle: MacBundle, pid: int, args=(), log=None) -> str:
+    """A ``sh`` script that swaps the bundle once the game ``pid`` has quit.
+
+    The running bundle is renamed to ``.old`` first and the staged one into
+    its place; if that second rename fails the old bundle is renamed back.
+    The old bundle and the staging files are deleted only once the new
+    bundle is in place. Then the bundle (the new one, or the old one after a
+    failed swap, which is logged) is opened again and the script deletes
+    itself. Nothing in ``~/.u-jagd`` is touched.
+    """
+    if type(pid) is not int or pid <= 0:
+        raise UpdateError("invalid process id")
+    names = {"app": bundle.app, "staged": bundle.staged_app, "old": bundle.old,
+             "staging": bundle.staging, "archive": bundle.archive,
+             "log": log if log is not None else os.devnull}
+    for value in (*names.values(), *args):
+        if type(value) is not str or not value or "\n" in value or "\0" in value:
+            raise UpdateError("unsupported path")
+    tail = "".join(f" {shlex.quote(arg)}" for arg in args)
+    lines = ["#!/bin/sh"]
+    lines += [f"{key}={shlex.quote(value)}" for key, value in names.items()]
+    lines += [
+        "tries=0",
+        f"while kill -0 {pid} 2>/dev/null; do",
+        "  tries=$((tries + 1))",
+        f'  if [ "$tries" -ge {INSTALL_TRIES} ]; then',
+        '    echo "update failed: the game did not quit" >> "$log"',
+        '    rm -f "$0"',
+        "    exit 1",
+        "  fi",
+        "  sleep 1",
+        "done",
+        'rm -rf "$old"',
+        'if [ -e "$old" ]; then',
+        '  echo "update failed: $old could not be removed" >> "$log"',
+        'elif mv "$app" "$old"; then',
+        '  if mv "$staged" "$app"; then',
+        '    rm -rf "$old" "$staging" "$archive"',
+        "  else",
+        '    mv "$old" "$app" || echo "update failed: $old could not be moved back" >> "$log"',
+        '    echo "update failed: $staged could not replace $app" >> "$log"',
+        "  fi",
+        "else",
+        '  echo "update failed: $app could not be moved aside" >> "$log"',
+        "fi",
+        f'open -n "$app"{" --args" + tail if tail else ""}',
+        'rm -f "$0"',
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def launch_mac_install(bundle: MacBundle, args=(), log=None, popen=None,
+                       pid: int | None = None) -> str:
+    """Write the swap script and start it detached; the caller then exits."""
+    import subprocess
+    import tempfile
+
+    pid = os.getpid() if pid is None else pid
+    script = os.path.join(tempfile.gettempdir(), f"u-jagd-update-{pid}.sh")
+    try:
+        with open(script, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(mac_install_script(bundle, pid, args, log))
+        (popen or subprocess.Popen)(
+            ["/bin/sh", script], env=clean_environment(os.environ),
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL, close_fds=True, start_new_session=True)
+    except OSError as exc:
+        raise UpdateError(str(exc)) from exc
     return script
 
 

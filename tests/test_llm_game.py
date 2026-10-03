@@ -212,7 +212,7 @@ def test_experimental_opponent_picks_a_plan_marks_the_mission_and_is_saved():
         assert game.llm_opfor["plan"] == "deep_hide" and game.llm_experimental
         boat_ai.steer(game)
         hostile = [sub for sub in game.subs if sub.side == "hostile" and not sub.sunk]
-        assert hostile and all(sub.llm_orders is not None and sub.llm_orders[1] == 3.0
+        assert hostile and all(sub.plan_orders is not None and sub.plan_orders[1] == 3.0
                                for sub in hostile)
         state = json.loads(json.dumps(game.save_state()))
         other = _game(1)

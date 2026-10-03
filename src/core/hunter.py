@@ -26,7 +26,7 @@ from __future__ import annotations
 import math
 from functools import lru_cache
 
-from src.core import boat_missions, commander_traits, config, detrand
+from src.core import boat_missions, commander_traits, config, detrand, opfor_plans
 from src.core.autocrew import AutocrewController, _nearest_threat, station_key
 from src.core.station import Station
 from src.llm import opponent
@@ -667,7 +667,11 @@ def bridge(game, found) -> str:
             return _steer(game, *guard)
         if post is not None and math.hypot(post[0] - ship.x, post[1] - ship.y) > POST_STATION_NM:
             return _steer(game, _bearing(ship.x, ship.y, *post), SEARCH_KN)
-        return _steer(game, search_course(game), SEARCH_KN)
+        # Free search: the captain's own plan sets the speed
+        # (src/core/opfor_plans.py); the model's plan still wins in _steer.
+        return _steer(game, search_course(game),
+                      opponent.hunter_speed(game, opfor_plans.hunter_plan(
+                          game, opfor_plans.known_habits(game, "boat")), SEARCH_KN))
     side = 1.0 if math.floor(game.sim_t / CROSS_LEG_S) % 2 else -1.0
     if found["source"] == "lead":
         return _steer(game, _bearing(ship.x, ship.y, found["x"], found["y"]), LEAD_KN)

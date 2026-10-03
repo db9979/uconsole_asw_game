@@ -24,9 +24,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scenario: [s1_patrouille, s2_doppeljagd, s3_abfang, s4_zufall, s5_durchbruch,
-                   s6_aufklaerung, s7_geleitzug, s8_meerenge, s9_kampfschwimmer,
-                   s10_versorger]
+        # Every scenario of config.SCENARIO_ORDER (tests/test_soak.py checks it).
+        scenario: [s1_patrouille, s2_doppeljagd, s3_abfang, s4_zufall, s11_geleitschutz,
+                   s12_datum, s13_fuehlung, s14_hafenschutz, s15_versorgung, s16_seenot,
+                   s21_suchgruppe, s5_durchbruch, s6_aufklaerung, s7_geleitzug,
+                   s8_meerenge, s9_kampfschwimmer, s10_versorger, s17_duell,
+                   s18_heimkehr, s19_abholung, s20_lauschposten, s22_jagdgruppe,
+                   frei_fregatte, frei_uboot]
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +47,7 @@ jobs:
           python tools/soak_game.py --scenario ${{ matrix.scenario }}
           --minutes ${{ github.event.inputs.minutes || '60' }}
           --report soak-${{ matrix.scenario }}.md
+          --dump-dir refused-saves
 
       - name: Keep the report
         if: always()
@@ -51,6 +56,16 @@ jobs:
           name: soak-${{ matrix.scenario }}
           path: soak-${{ matrix.scenario }}.md
           if-no-files-found: ignore
+
+      # A save that did not load, kept for offline analysis (the report names it).
+      - name: Keep refused saves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: refused-saves-${{ matrix.scenario }}
+          path: refused-saves/
+          if-no-files-found: ignore
+          retention-days: 30
 
   report:
     needs: soak
@@ -72,6 +87,8 @@ jobs:
         run: |
           {
             echo "Nightly soak failed: $RUN_URL"
+            echo
+            echo "Saves that did not load are attached to the run as refused-saves-* artifacts."
             echo
             grep -l "FAIL" soak-*.md | xargs -r cat
           } > body.md

@@ -24,6 +24,9 @@ DOCTRINES = (
 )
 MAX_LOCAL_TRACKS = 64
 MAX_DATALINK_TRACKS = 64
+# A passive sonar observation's received signal (relative level) is at most
+# this; an AI boat remembers it as its contact's noise (saved, validated).
+SONAR_SIGNAL_MAX = 2.0
 
 
 def _candidate_acoustic_signature(candidate):
@@ -380,7 +383,7 @@ class PlatformSensorSuite:
             speed_kn=(getattr(candidate, "speed", None)
                       if profile.domain == "ais" else None),
             depth_m=depth, quality=quality,
-            signal=(config.clamp(received_signal, 0.0, 2.0)
+            signal=(config.clamp(received_signal, 0.0, SONAR_SIGNAL_MAX)
                     if profile.domain == "sonar" else quality),
             last_seen=now,
             bearing_uncertainty_deg=(bearing_sigma or None),
@@ -554,7 +557,7 @@ def snapshot_observation(owner, target, *, domain: str, now: float = 0.0,
     dx, dy = target.x - owner.x, target.y - owner.y
     distance = math.hypot(dx, dy)
     bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
-    signal = config.clamp(getattr(target, "noise_level", lambda: 1.0)(), 0.0, 2.0)
+    signal = config.clamp(getattr(target, "noise_level", lambda: 1.0)(), 0.0, SONAR_SIGNAL_MAX)
     return PlatformObservation(
         track_id="LEGACY", domain=domain, source=domain.upper(), bearing=bearing,
         observer_x=owner.x, observer_y=owner.y,

@@ -72,6 +72,9 @@ class Preferences:
     llm_radio: bool = True
     llm_coach: str = "off"
     llm_opfor: bool = False
+    # The enemy adapts to the player's habits from the logbook
+    # (``src/core/habits.py``); switched on the logbook page with L.
+    enemy_learns: bool = True
     # First-launch welcome page ("What do you want to play?") already shown.
     # True by default: only a launch without any settings.json shows it;
     # settings files written before the field existed count as onboarded.
@@ -110,7 +113,7 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     values: dict[str, object] = {"language": language}
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
                  "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "microphone", "live_ais_enabled",
-                 "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor"):
+                 "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor", "enemy_learns"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)
     frame_rate = payload.get("frame_rate", defaults.frame_rate)

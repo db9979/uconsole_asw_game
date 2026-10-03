@@ -26,6 +26,7 @@ import os
 import re
 
 from src.core import config
+from src.core.habits import ALL_HABITS
 
 FILE_NAME = "logbook.json"
 VERSION = 1
@@ -46,8 +47,9 @@ ENTRY_FIELDS = frozenset({"date", "side", "scenario", "level", "won", "score", "
                           "shots", "sunk", "awards"})
 # Optional per entry (written only when set, so older builds still read the
 # book): the mission ran with the language-model advisor, ran the
-# experimental opponent advisor, and the model's after-action report.
-OPTIONAL_FIELDS = frozenset({"advisor", "experimental", "report"})
+# experimental opponent advisor, the model's after-action report, and the
+# habits the mission showed (``src/core/habits.py``; the enemy learns them).
+OPTIONAL_FIELDS = frozenset({"advisor", "experimental", "report", "habits"})
 REPORT_MAX = 2_000
 BOOK_FIELDS = frozenset({"version", "entries", "best", "awards"})
 
@@ -88,6 +90,10 @@ def _valid_optional(row) -> bool:
     for name in ("advisor", "experimental"):
         if name in row and row[name] is not True:
             return False
+    shown = row.get("habits", [])
+    if (not isinstance(shown, list) or len(shown) != len(set(shown))
+            or any(habit not in ALL_HABITS for habit in shown)):
+        return False
     report = row.get("report")
     return report is None or (type(report) is str and 0 < len(report) <= REPORT_MAX
                               and all(char.isprintable() or char == "\n" for char in report))
@@ -121,7 +127,7 @@ class Logbook:
 
     def record(self, *, date: str, side: str, scenario: str, level: str, won: bool,
                score: int, minutes: int, shots: int, sunk: int, earned: list,
-               advisor: bool = False, experimental: bool = False) -> dict:
+               advisor: bool = False, experimental: bool = False, habits=None) -> dict:
         """File a mission; returns what is new (best score, awards).
 
         A mission with the advisor or the experimental opponent is marked and
@@ -143,6 +149,8 @@ class Logbook:
             entry["advisor"] = True
         if experimental:
             entry["experimental"] = True
+        if habits is not None:
+            entry["habits"] = [habit for habit in ALL_HABITS if habit in habits]
         self.entries.append(entry)
         del self.entries[:-MAX_ENTRIES]
         return dict(entry=entry, new_best=new_best, awards=fresh)

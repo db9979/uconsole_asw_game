@@ -13,7 +13,11 @@ too.
 Reported as failures: any exception (with traceback), a save that does not
 load or does not continue identically, and resident memory growing by more
 than ``--max-growth-mb`` after the first check.  The report is Markdown
-(``--report``); the exit code is 1 on any failure.
+(``--report``); the exit code is 1 on any failure.  A save that does not load
+is diagnosed (``diagnose_load``: the innermost check that refused it, an
+exception swallowed by the restore, or the first field the restored game
+writes differently) and, with ``--dump-dir``, kept as gzipped JSON so it can be
+loaded again offline.
 
     python tools/soak_game.py --minutes 10              # every scenario
     python tools/soak_game.py --scenario s8_meerenge --minutes 120
@@ -26,6 +30,7 @@ on the uConsole is out of its scope.
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import os
 import random
@@ -64,6 +69,112 @@ def rss_mb() -> float:
     except (OSError, ValueError, AttributeError):
         import resource
         return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e3
+
+
+def first_difference(left, right, path="$"):
+    """The JSON path of the first value two save trees disagree on, or None."""
+    if isinstance(left, dict) and isinstance(right, dict):
+        for key in sorted(set(left) | set(right)):
+            if key not in left or key not in right:
+                return f"{path}.{key} (only in {'restored' if key in left else 'saved'})"
+            found = first_difference(left[key], right[key], f"{path}.{key}")
+            if found:
+                return found
+        return None
+    if isinstance(left, (list, tuple)) and isinstance(right, (list, tuple)):
+        for index, (a, b) in enumerate(zip(left, right)):
+            found = first_difference(a, b, f"{path}[{index}]")
+            if found:
+                return found
+        if len(left) != len(right):
+            return f"{path} (length {len(right)} saved, {len(left)} restored)"
+        return None
+    if _same_save_value(left, right):
+        return None
+    return f"{path}: saved {_short(right)}, restored {_short(left)}"
+
+
+def _short(value) -> str:
+    text = json.dumps(value, allow_nan=True, default=repr)
+    return text if len(text) <= 120 else text[:117] + "..."
+
+
+def diagnose_load(document: dict) -> str:
+    """Why ``Game._load_save_data`` refuses a save, for the soak report.
+
+    Loads the save once more under a tracer and names the innermost function
+    of the game that first answered False (a validator), an exception the
+    restore swallowed, or, when the restore itself succeeded, the first field
+    the restored game saves differently.  Diagnosis only: it never changes how
+    the game loads.
+    """
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    src = os.path.join(root, "src") + os.sep
+    refusals, errors = [], []
+
+    def where(frame) -> str:
+        code = frame.f_code
+        return (f"{os.path.relpath(code.co_filename, root)}:{frame.f_lineno} "
+                f"in {code.co_name}()")
+
+    def tracer(frame, event, arg):
+        if not frame.f_code.co_filename.startswith(src):
+            return tracer
+        if event == "return" and arg is False and len(refusals) < 500_000:
+            # A generator's yield is a return event too: all(check(x) for x)
+            # links the function, its generator expression and the check.
+            refusals.append((id(frame), id(frame.f_back), where(frame)))
+        elif (event == "exception" and len(errors) < 3
+              and not issubclass(arg[0], (GeneratorExit, StopIteration))):
+            kind, value, _tb = arg
+            errors.append(f"{kind.__name__}: {value} at {where(frame)}")
+        return tracer
+
+    twin = Game(seed=1, start_menu=True, show_splash=False, audio_enabled=False,
+                language="en")
+    sys.settrace(tracer)
+    try:
+        loaded = twin._load_save_data(json.loads(json.dumps(document)))
+    finally:
+        sys.settrace(None)
+    if loaded:
+        return "loads on a second attempt (state-dependent refusal)"
+    lines = []
+    # Many helpers answer False on the way; the refusal is the chain of False
+    # answers that reached the loader: from the loader's own return, each
+    # step is the latest earlier False returned to that frame by a callee.
+    chain = []
+    index = len(refusals) - 1
+    while index >= 0:
+        frame_id, _caller, text = refusals[index]
+        chain.append(text)
+        index -= 1
+        while index >= 0 and refusals[index][1] != frame_id:
+            index -= 1
+    if chain:
+        shown = chain[::-1]
+        lines.append("refused by: " + " <- ".join(shown[:4])
+                     + (" <- ..." if len(shown) > 4 else ""))
+    lines += ["exception: " + text for text in errors]
+    # Refused by the loader itself: the restore raised or the restored game
+    # saves differently; name the first field it writes differently.
+    if len(chain) > 1:
+        return "\n".join(lines)
+    try:
+        from src.core.save_migrate import migrate
+        data = migrate(json.loads(json.dumps(document)))
+        probe = Game(seed=1, start_menu=True, show_splash=False, audio_enabled=False,
+                     language="en")
+        probe.runtime_catalog = probe._catalog_for_save(data)
+        probe._restore_state(data)
+        canonical = json.loads(json.dumps(probe.save_state(), allow_nan=True))
+        canonical["next_entity_ids"] = data["next_entity_ids"]
+        difference = first_difference(canonical, data)
+        if difference:
+            lines.append("restored game differs at " + difference)
+    except Exception as exc:  # noqa: BLE001 - diagnosis must not fail the soak
+        lines.append(f"restore raises {type(exc).__name__}: {exc}")
+    return "\n".join(lines) or "no reason found"
 
 
 def _comparable(game) -> dict:
@@ -131,6 +242,17 @@ class Soak:
         if len(self.failures) < 20:
             self.failures.append((kind, detail))
 
+    def dump(self, document: dict, game) -> str:
+        """Keep a refused save in ``--dump-dir``; the report names the file."""
+        if not self.args.dump_dir:
+            return ""
+        os.makedirs(self.args.dump_dir, exist_ok=True)
+        name = f"{self.scenario}-{self.side}-{self.seed}-t{game.sim_t:.0f}.json.gz"
+        path = os.path.join(self.args.dump_dir, name)
+        with gzip.open(path, "wt", encoding="utf-8") as stream:
+            json.dump(document, stream, allow_nan=False, sort_keys=True)
+        return f"\nsave kept as {name}"
+
     def mission_left(self, game) -> bool:
         return (not game.running or game.main_menu or game.in_menu
                 or game.editor is not None or game.game_over)
@@ -141,7 +263,8 @@ class Soak:
         twin = Game(seed=1, start_menu=True, show_splash=False, audio_enabled=False,
                     language="en")
         if not twin._load_save_data(document):
-            self.fail("save", f"t={game.sim_t:.0f}s: the save does not load")
+            self.fail("save", f"t={game.sim_t:.0f}s: the save does not load\n"
+                              + diagnose_load(document) + self.dump(document, game))
             return
         original = Game(seed=1, start_menu=True, show_splash=False,
                         audio_enabled=False, language="en")
@@ -208,6 +331,8 @@ def main(argv=None) -> int:
     parser.add_argument("--seed", type=int, default=None,
                         help="default: from the date, so each night differs")
     parser.add_argument("--report", default=None)
+    parser.add_argument("--dump-dir", default=None,
+                        help="keep every save that does not load here (gzipped JSON)")
     args = parser.parse_args(argv)
     scenarios = args.scenario or list(config.SCENARIO_ORDER)
     unknown = [key for key in scenarios if key not in config.SCENARIOS]

@@ -48,13 +48,21 @@ class DebriefMixin:
         if self._debrief_acc < config.DEBRIEF_EVENT_S:
             return
         self._debrief_acc = 0.0
+        self._observe_habits()
         for recorder in self._debrief_recorders():
             recorder.observe(self, self.mission_time)
             if recorder.due(self.mission_time):
                 recorder.add_frame(recorder.capture(self, self.mission_time))
 
     def _finish_debrief(self) -> None:
+        decided = getattr(self, "enemy_habits", None)
         for recorder in self._debrief_recorders():
+            # The habits the enemy knew, in the debrief of the side they belong to.
+            side = "boat" if isinstance(recorder, BoatDebriefRecorder) else "frigate"
+            if (decided is not None and decided["known"] and decided["side"] == side
+                    and not recorder._ended):
+                recorder.add_event(self.mission_time, "enemy_habits",
+                                   habits=",".join(decided["known"]))
             recorder.finish(self, self.mission_time)
 
     # --- the page -------------------------------------------------------------------

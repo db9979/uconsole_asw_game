@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.170
+## 1.3.171
 
-Release 1.3.170 makes the microphone of noise discipline work. On the
+Release 1.3.171 makes the microphone of noise discipline work. On the
 uConsole, Windows and the Mac the game never opened the device (the sound
 library wants the device's name), so the meter stayed dark. It now opens the
 system's default microphone, and when it cannot, the game says why: a status
@@ -17,6 +17,14 @@ builds test the capture before release. Browsers allow the microphone only on
 a secure page: on the plain LAN page a box now says so and "Open HTTPS page"
 switches to the host's HTTPS address, where you pair again with the same code.
 Saves are v50; v38 to v49 saves still load.
+
+## 1.3.170
+
+Release 1.3.170 quiets two sounds that came back every few seconds at every
+station. The frigate's bow no longer slams audibly into a
+heavy head sea (it did on nearly every wave, every 5 to 18 s). Deep down the
+submarine's hull creaked every 4 s at test depth; now it rests 12 to 28 s
+after each creak. Neither changes anything in the simulation. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.169
 

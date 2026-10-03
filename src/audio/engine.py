@@ -273,7 +273,7 @@ class AudioEngine:
     def play_effect(self, kind: str, pan: float | None = None) -> bool:
         """Play one bounded local combat/handling effect on the alert bus,
         placed left or right by ``pan`` (see ``synthesis.bearing_pan``)."""
-        atmosphere = kind in ("general_alarm", "hull_slam")
+        atmosphere = kind == "general_alarm"
         if kind not in {"torpedo_launch", "missile_launch", "gunfire",
                         "explosion", "water_entry", "telegraph", "thunder"} and not atmosphere:
             return False

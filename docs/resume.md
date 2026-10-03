@@ -1128,6 +1128,16 @@ Analyse lief auf dem Zielgeraet (CM5, 16 GB) mit dem neuen Lasttest.
   ohne GIL, ein `queue()` im Fenster bleibt auf dem leeren Kanal haengen; die
   Pumpe spielt den Block nach zwei Iterationen selbst ab) und `worker_restarts`
   (toter Sonar-Worker wird von `play_sonar` neu gestartet).
+- 1.3.189 (Dominik: Sonar-Ton auf der uConsole mehrmals verstummt, alles
+  andere lief; headless nicht nachgestellt): Waechter in der Pumpe und im
+  Spiel. `wedged` (Queue-Platz > 1 s belegt: Kanal gestoppt, Puffer fuellt
+  ihn neu; nach einer verspaeteten Pumpe wird neu gemessen),
+  `volume_restored` (Kanallautstaerke ausserhalb eines Einblendens nicht auf
+  der Verstaerkung), `pump_errors` (jede Ausnahme im Worker setzt den Strom
+  zurueck statt ihn zu beenden), `full_resets` (Warteschlange 3 s voll:
+  Strom neu); ein toter Worker wird auch bei voller Warteschlange neu
+  gestartet, ein Hoer-Cursor vor dem Empfaenger startet neu. Steht einer der
+  Zaehler im `audio_debug.log` des Geraets ueber null, war das die Ursache.
 - `tools/audio_soak.py host` (echter Mixer oder `--dummy-audio`, N Clients,
   Epoch-Sprung/Retune-Takt, `--profile`) und `client` (PC im WLAN). Ergebnis
   auf dem CM5 mit echtem Mixer, 9 Clients, 14 Epoch-Spruengen, 4 Retunes ueber

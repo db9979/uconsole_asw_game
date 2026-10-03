@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.189**
+Aktuelle Version: **1.3.190**
 
-Version 1.3.189 behebt zwei Fehler im Server-Modus des Browsers. Schaltet der
+Version 1.3.190 behebt zwei Fehler im Server-Modus des Browsers. Schaltet der
 Spielleiter in der Lobby die Einheit um, wechselt jetzt jeder Browser auf die
 Stationen dieser Einheit (gegen die KI); bisher blieb die Besatzung auf den
 Stationen der alten Einheit. Eine volle Kopfleiste quetscht „Station

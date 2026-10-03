@@ -8,6 +8,12 @@ Damage control keeps the ship afloat and the stations working after a hit. Three
 
 Page 1 is the damage-control board: a side profile of the ship, bow to the right, with its decks, superstructure and masts, every compartment numbered at its real length and height, and beside it a cross-section that lists with the ship and holds the port and starboard hull voids. The sea stands outside up to the waterline with draft marks at bow and stern; floodwater stands at its level in each compartment and tilts with the trim, a fire glows and flickers with smoke under the deckhead, and a destroyed compartment is hatched. A torn hole shows where the hull is open and water rushes in as long as it floods; once a team has fitted a patch it shows as a plate, and a team pumping sends water over the side. Draft and trim are written under the profile, the list under the cross-section. Under the pictures each compartment's card carries a state LED, the flood and fire values with their LEDs and numbered badges for the teams on scene; a legend explains the LEDs. Page 2 lists details per compartment (flooding, fire, trend, teams on scene, heel); page 3 is the crew's watch bill. In the browser the Damage card opens with an annunciator panel (fires, flooding, lost, getting worse, total damage, list, trim, counter-flooding, teams busy, ship sunk) above the same side profile and cross-section, and gauges for list, trim and total damage; a click on a compartment sends the selected team there.
 
+![Damage control on the uConsole](figure:station-damage-control)
+
+![Damage control with flooding and fire after a hit](figure:damage-control-alert)
+
+![Damage control in the Remote Crew browser](figure:web-damage-desktop)
+
 ```text
   bow                                                   stern
  +--------+--------+---------+-----+-------+--------+-----------+

@@ -59,7 +59,8 @@ def test_every_station_has_a_complete_chapter_with_generated_keys_and_procedure(
         assert f"keys:{chapter}" in markers and f"sop:{chapter}" in markers
         table = next(b for b in blocks if b.marker == f"keys:{chapter}")
         assert len(table.rows) == len(STATION_HELP[station][1])
-    quickstart = [b.marker for b in _blocks("quickstart", "en") if b.marker]
+    quickstart = [b.marker for b in _blocks("quickstart", "en")
+                  if b.marker and b.kind != "figure"]
     assert quickstart == ["keys:global", "keys:web"]
 
 
@@ -288,7 +289,7 @@ def test_the_submarine_chapter_carries_every_boat_station_procedure():
     for lang in manual.LANGUAGES:
         catalog = load_catalog(lang)
         blocks = _blocks("submarine", lang)
-        markers = [b.marker for b in blocks if b.marker]
+        markers = [b.marker for b in blocks if b.marker and b.kind != "figure"]
         assert markers == [f"sop:uboot_{slug}" for slug in UBOOT_SOP_SLUGS.values()]
         for station, keys in UBOOT_SOP.items():
             assert len(keys) == 5 and all(catalog.get(key) for key in keys), station
@@ -312,3 +313,31 @@ def test_f1_on_the_submarine_side_shows_the_station_procedure_and_chapter():
     text = " ".join(lines)
     assert "Standard procedure" in text
     assert Translator("en").t("help.sop.uboot.nav.2")[:30] in text
+
+
+def test_every_manual_figure_has_a_screenshot_in_both_languages():
+    root = Path(__file__).resolve().parents[1] / "docs" / "screenshots"
+    names = set()
+    for chapter in manual.CHAPTERS:
+        for lang in manual.LANGUAGES:
+            for block in _blocks(chapter, lang):
+                if block.kind == "figure":
+                    names.add(manual.figure_name(block))
+                    assert (root / manual.figure_file(manual.figure_name(block), lang)).is_file()
+    # Every frigate station and every submarine station is pictured.
+    assert {f"station-{s}" for s in ("bridge", "sonar", "weapons", "damage-control",
+                                     "opz-cic", "radio", "engineering", "helicopter",
+                                     "eloka")} <= names
+    assert {f"uboot-{s}" for s in ("command", "sonar", "weapons", "engine",
+                                   "mast-esm", "navigation", "radio")} <= names
+
+
+def test_figures_stay_out_of_the_reader_and_web_page_but_reach_markdown_and_pdf():
+    blocks = _blocks("bridge", "en")
+    assert any(b.kind == "figure" for b in blocks)
+    assert "figure:" not in "\n".join(manual.text_lines(blocks, 120))
+    assert "<img" not in manual.html_page("en")
+    assert '<img src="file:///x/station-bridge.png"' in manual.html_page("en", "file:///x")
+    assert "](../screenshots/de-station-bridge.png)" in manual.markdown("de")
+    with pytest.raises(manual.ManualError):
+        manual.parse("![caption](figure:Bad Name)", lambda key: key)

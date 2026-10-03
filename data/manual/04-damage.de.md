@@ -8,6 +8,12 @@ Die Schadensabwehr hält das Schiff nach einem Treffer schwimmfähig und die Sta
 
 Seite 1 ist die Leckwehrtafel: ein Seitenriss des Schiffs, Bug rechts, mit Decks, Aufbauten und Masten, jede Abteilung nummeriert auf ihrer wirklichen Länge und Höhe, daneben ein Querschnitt, der mit dem Schiff krängt und die Rumpfräume an Backbord und Steuerbord zeigt. Außen steht die See bis zur Wasserlinie mit Tiefgangsmarken an Bug und Heck; in jeder Abteilung steht das Leckwasser auf seiner Höhe und neigt sich mit dem Trimm, ein Brand glüht und flackert mit Rauch unter der Decke, und eine zerstörte Abteilung ist schraffiert. Ein aufgerissenes Loch zeigt, wo der Rumpf offen ist, und Wasser strömt hinein, solange die Abteilung vollläuft; hat ein Trupp ein Leckpflaster gesetzt, liegt dort eine Platte, und ein lenzender Trupp pumpt Wasser über Bord. Tiefgang und Trimm stehen unter dem Seitenriss, die Krängung unter dem Querschnitt. Unter den Bildern trägt die Karte jeder Abteilung eine Zustands-LED, Flutung und Brand mit ihren LEDs sowie nummerierte Plaketten für die Trupps vor Ort; eine Legende erklärt die LEDs. Seite 2 zeigt Details je Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung); Seite 3 ist der Wachplan der Besatzung. Im Browser beginnt die Karte Schaden mit einer Warn- und Meldetafel (Brände, Wassereinbruch, ausgefallen, verschlechtert, Gesamtschaden, Krängung, Trimm, Gegenfluten, Trupps aktiv, Schiff gesunken) über demselben Seitenriss mit Querschnitt und Rundinstrumenten für Krängung, Trimm und Gesamtschaden; ein Klick auf eine Abteilung schickt den gewählten Trupp dorthin.
 
+![Schadensabwehr auf der uConsole](figure:station-damage-control)
+
+![Schadensabwehr mit Wassereinbruch und Feuer nach einem Treffer](figure:damage-control-alert)
+
+![Schadensabwehr im Remote-Crew-Browser](figure:web-damage-desktop)
+
 ```text
   Bug                                                    Heck
  +--------+--------+---------+-----+-------+--------+-----------+

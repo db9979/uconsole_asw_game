@@ -8,6 +8,10 @@ Die Elektronische Kampfführung (EloKa) horcht passiv auf Radarsender (ESM) und 
 
 Seite 1 listet die Erfassungen; Seite 2 zeigt die Belege für die gewählte Erfassung (Frequenz, PRF, Modulation, Kandidaten, Korrelation).
 
+![ELOKA auf der uConsole](figure:station-eloka)
+
+![ELOKA im Remote-Crew-Browser](figure:web-eloka-desktop)
+
 ```text
  ERFASSUNGEN                      Status  Bedroh. Band
  > E-07  Pg 312  9,3 GHz  PRF 2,4k  NEU     HOCH    X

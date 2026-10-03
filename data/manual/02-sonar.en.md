@@ -8,6 +8,10 @@ The sonar room is the main ASW sensor. It listens passively on the hull-mounted 
 
 The station has six pages. `PgUp`/`PgDn` (or `2` again) cycles them. The listening post on the right shows the evidence source and age, the array, the listening bearing and the ping readiness; a towed or variable-depth array that is moving or not yet ready appears on every page in amber with payout, stability and PAUSE when handling is outside its limits. The single key row at the bottom shows the page's four main keys with their values; every other key is listed under F1. On BROADBAND the amber line is the listening bearing and the grey lines the beam limits; dark means quiet, turquoise loud.
 
+![Sonar on the uConsole](figure:station-sonar)
+
+![Sonar in the Remote Crew browser](figure:web-sonar-desktop)
+
 | Page | Shows | Use it for |
 |---|---|---|
 | BROADBAND | Bearing-time waterfall | Detecting contacts and following their bearing |
@@ -20,6 +24,8 @@ The station has six pages. `PgUp`/`PgDn` (or `2` again) cycles them. The listeni
 The listening console below the detail rows works like a control desk: lamps show ping ready (amber while a ping is out), audio and peak hold, and a north-up bearing rose shows the listening beam (amber), the baffles astern (red sector), own course and every published contact bearing. The contact list marks each contact with a lamp and a signal-to-noise bar. The Remote Crew browser shows the same rose beside its waterfalls.
 
 ### BROADBAND waterfall {#sonar-broadband}
+
+![BROADBAND waterfall](figure:sonar-broadband)
 
 ```text
  bearing  000      090      180      270      359
@@ -39,6 +45,8 @@ Newest data is at the top. A straight vertical trace is a contact on a steady be
 
 The x axis is frequency (0-300 Hz), time runs downwards. Bins are 1 Hz below 40 Hz, 2 Hz up to 100 Hz and 5 Hz above. A new line is added every 0.25 s; 80 lines are kept.
 
+![LOFAR page](figure:sonar-lofar)
+
 - Steady vertical lines are **tonals** (narrowband): generators, pumps, shaft lines. Several lines at integer multiples of one frequency are a harmonic family: put the white cursor on a line with `Z`/`X` (`Shift`: 10 Hz steps) and press `K` to mark it as fundamental; amber guides then show 2f, 3f and so on. `K` on the same frequency clears it.
 - Own ship produces a shaft line at about 10 + 1.9 x own speed Hz. `N` notches it out.
 - `Space` holds peaks so faint tonals stand out.
@@ -50,6 +58,8 @@ The x axis is frequency (0-300 Hz), time runs downwards. Bins are 1 Hz below 40 
 ### DEMON {#sonar-demon}
 
 DEMON demodulates the broadband noise envelope of the listening beam. Propeller cavitation is modulated at the **blade rate** = shaft rate x number of blades.
+
+![DEMON page](figure:sonar-demon)
 
 ```text
  level
@@ -64,6 +74,12 @@ DEMON demodulates the broadband noise envelope of the listening beam. Propeller 
 The display shows measured modulation, not identity. After changing the bearing listen for at least a few seconds before judging. Count blades yourself: move the cursor (`Z`/`X`, 0.5 Hz) onto the shaft line and press `K`, then onto the blade line and press `K` again; the rail shows blades = blade rate / shaft rate (with the deviation from a whole number) and the shaft RPM. A third `K` clears both marks. The **class library** under the marks lists the three catalogue classes that fit your marks best: shaft RPM against the class's RPM range, the blade count against its blade counts and your LOFAR fundamental (`K` on the LOFAR page) against its tonal band and machinery lines, each best in the middle of the range. With fewer than two marks it is only a hint. The contact analyser (`F8`) then lists the whole catalogue best fit first with the fit in percent. The library grades your marks, never the contact itself, and the classification stays your decision; the submarine's sonar room has the same library. At the Beginner realism level (`F10`) the sonar also labels modulation lines, proposes RPM for 3-7 blades and ranks catalogue candidates.
 
 ### TMA, environment and active {#sonar-tma-env}
+
+![TMA page](figure:sonar-tma)
+
+![Environment page with sensor fusion](figure:sonar-environment-fusion)
+
+![Active sonar page](figure:sonar-active)
 
 - **TMA** is yours. The page plots the bearings of the selected contact over time. Build a hypothesis: `Z`/`X` course (`Shift`: 1 degree), `Ctrl+Z`/`Ctrl+X` speed, `Q`/`Shift+Q` range on the newest bearing (`Ctrl`: 0.2 NM). The amber curve shows the bearings that hypothesis predicts, the dots at the foot the residuals (measured minus predicted). Good hypotheses leave residuals scattered around zero; a wrong course, speed or range leaves a trend. The rail shows the residual RMS, the systematic trend after averaging, the fit and the observability. Range is only observable after an own course change (at least 6 degrees, better 30-60): without one, `K` refuses. `K` accepts the hypothesis as the contact's TMA fix; it is dead-reckoned on its course and speed and ages out after 120 s, so refine and re-accept as bearings come in. Noisy bearings give a large range uncertainty even when the fit is good. TMA does not estimate depth. At the Beginner realism level (`F10`) an automatic solver proposal (it needs at least 4 bearings over 180 s) is drawn as a thin line and `Shift+K` copies it into the hypothesis. Sonobuoy bearings enter the track with the buoy as observer. `Shift+T` switches the TMA method: HYPOTHESIS (above), EKELUND (the range from the bearing rates of two own legs about one course change of 30 degrees or more, 90 s each; `Shift+K` copies it into the hypothesis, `K` then accepts as usual) or DOT STACK (residual rows at 0.6, 1.0 and 1.6 times the hypothesis range: the flat row is the range the bearings support).
 - **UMWELT / FUSION** shows the bathythermograph (`E`, 60 s cooldown): measured layer depth, sound-speed profile and convergence-zone bands, plus the HMS/TAS comparison. Bearings within 5 degrees confirm each other; 9 degrees or more apart are flagged as a possible ghost contact. The layer is not fixed: afternoon sun makes it shallower (about 8 m), strong wind mixes it deeper over hours, and internal waves move it a few metres. Repeat the BT after a few hours or a weather change. The measured profile is the real temperature-driven sound speed (Mackenzie equation), so it drops below the layer. Point the mouse at the profile to read the exact depth, the sound speed there and whether that depth lies above or below the layer (uConsole and web). In the web client the plot also labels the layer, the seabed and the sound-speed minimum.
@@ -84,7 +100,7 @@ The display shows measured modulation, not identity. After changing the bearing 
 - TAS depth 20-260 m (`U`/`V` in 10 m steps), limited to 260 m minus 4 m per knot of own speed. At 30 m or deeper and in the same layer as the target it gains another 25 %.
 - Above 20 kn with any cable out the array suffers a permanent FAULT.
 - The array heading lags the ship by about 45 s after a turn; its bearings are less reliable while it swings.
-- **Baffles:** the hull array (HMS) is deaf 30° either side of the own stern, so a boat right astern is heard only by the towed array or the VDS. The BROADBAND waterfall marks the baffle edges with dotted lines. Clear them from the Bridge with `Ctrl+B` (two minutes 60° to starboard, then back) or with any turn of your own. The same holds for the enemy: a submarine's hull sonar is deaf astern too, and an AI boat that finds itself close in the frigate's baffles after a ping follows the frigate there instead of running.
+- **Baffles:** the hull array (HMS) is deaf 30° either side of the own stern, so a submarine right astern is heard only by the towed array or the VDS. The BROADBAND waterfall marks the baffle edges with dotted lines. Clear them from the Bridge with `Ctrl+B` (two minutes 60° to starboard, then back) or with any turn of your own. The same holds for the enemy: a submarine's hull sonar is deaf astern too, and an AI submarine that finds itself close in the frigate's baffles after a ping follows the frigate there instead of running.
 - VDS (`Shift+Y` lowers or recovers it, `Shift+B` selects it): a body on a short cable, 20-300 m deep and limited to 300 m minus 8 m per knot. `U`/`V` move the depth of whichever array is selected. At 30 m or deeper in the target's layer it gains the same 25 % as the TAS. It is unambiguous, so a VDS bearing resolves the TAS side just like the hull sonar. Pinging on the VDS transmits from the body: below the layer the shadow-zone loss hits shallow targets instead of deep ones. Lowering and recovery pause outside 3-15 kn or above sea state 5; above 24 kn with the body out it is lost (FAULT).
 
 ```text

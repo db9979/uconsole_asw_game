@@ -8,6 +8,10 @@ Die Sonarzentrale ist der Hauptsensor der U-Jagd. Sie horcht passiv mit Bugsonar
 
 Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert sie. Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpeilung und die Ping-Bereitschaft; ein Schlepp- oder Tiefensonar, das gerade aus- oder einfährt oder noch nicht bereit ist, erscheint auf jeder Seite gelb mit Kabellänge, Stabilität und PAUSE, wenn die Handhabung außerhalb der Grenzen liegt. Die eine Tastenzeile unten zeigt die vier Haupttasten der Seite mit ihren Werten; alle übrigen Tasten stehen in der F1-Hilfe. Auf BREITBAND ist die gelbe Linie die Hörpeilung und die grauen Linien die Grenzen des Hörstrahls; dunkel heißt leise, türkis laut.
 
+![Sonar auf der uConsole](figure:station-sonar)
+
+![Sonar im Remote-Crew-Browser](figure:web-sonar-desktop)
+
 | Seite | Zeigt | Wofür |
 |---|---|---|
 | BROADBAND | Peilung-Zeit-Wasserfall | Kontakte entdecken und ihrer Peilung folgen |
@@ -20,6 +24,8 @@ Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert
 Die Horchkonsole unter den Detailzeilen ist wie ein Leitstand aufgebaut: Lampen zeigen Ping bereit (gelb, solange ein Ping läuft), Ton und Spitzenwert-Halten, und eine nordorientierte Peilrose zeigt die Horchrichtung (gelb), die toten Winkel achtern (roter Sektor), den eigenen Kurs und jede veröffentlichte Kontaktpeilung. Die Kontaktliste kennzeichnet jeden Kontakt mit einer Lampe und einem Balken für den Störabstand. Der Remote-Crew-Browser zeigt dieselbe Rose neben seinen Wasserfällen.
 
 ### BROADBAND-Wasserfall {#sonar-broadband}
+
+![BREITBAND-Wasserfall](figure:sonar-broadband)
 
 ```text
  Peilung  000      090      180      270      359
@@ -40,6 +46,8 @@ Neueste Daten stehen oben. Eine gerade senkrechte Spur ist ein Kontakt mit stehe
 
 Die x-Achse ist die Frequenz (0-300 Hz), die Zeit läuft nach unten. Die Klassen sind 1 Hz breit unter 40 Hz, 2 Hz bis 100 Hz und 5 Hz darüber. Alle 0,25 s kommt eine Zeile hinzu; 80 Zeilen bleiben stehen.
 
+![LOFAR-Seite](figure:sonar-lofar)
+
 - Stehende senkrechte Linien sind **Töne** (Schmalband): Generatoren, Pumpen, Wellenlinien. Mehrere Linien bei ganzzahligen Vielfachen einer Frequenz bilden eine Harmonischenfamilie: den weißen Cursor mit `Z`/`X` auf eine Linie setzen (`Umschalt`: 10-Hz-Schritte) und mit `K` als Grundton markieren; bernsteinfarbene Hilfslinien zeigen dann 2f, 3f usw. `K` auf derselben Frequenz löscht ihn.
 - Das eigene Schiff erzeugt eine Wellenlinie bei etwa 10 + 1,9 x eigene Fahrt Hz. `N` blendet sie per Notch aus.
 - `Leertaste` hält Spitzen, damit schwache Töne hervortreten.
@@ -51,6 +59,8 @@ Die x-Achse ist die Frequenz (0-300 Hz), die Zeit läuft nach unten. Die Klassen
 ### DEMON {#sonar-demon}
 
 DEMON demoduliert die Hüllkurve des Breitbandrauschens im Horchstrahl. Schraubenkavitation ist mit der **Blattfrequenz** moduliert = Wellenfrequenz x Blattzahl.
+
+![DEMON-Seite](figure:sonar-demon)
 
 ```text
  Pegel
@@ -65,6 +75,12 @@ DEMON demoduliert die Hüllkurve des Breitbandrauschens im Horchstrahl. Schraube
 Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsänderung einige Sekunden horchen, bevor Sie urteilen. Blätter selbst zählen: den Cursor (`Z`/`X`, 0,5 Hz) auf die Wellenlinie setzen und `K` drücken, dann auf die Blattlinie und erneut `K`; die Spalte zeigt Blätter = Blattfrequenz / Wellenfrequenz (mit der Abweichung von einer ganzen Zahl) und die Wellendrehzahl. Ein drittes `K` löscht beide Marken. Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am besten zu Ihren Marken passen: Wellendrehzahl gegen den Drehzahlbereich der Klasse, Blattzahl gegen ihre Blattzahlen und Ihre LOFAR-Grundlinie (`K` auf der LOFAR-Seite) gegen ihr Tonalband und ihre Maschinenlinien, jeweils am besten in der Mitte des Bereichs. Mit weniger als zwei Marken ist sie nur ein Hinweis. Der Kontaktanalysator (`F8`) listet dann den ganzen Katalog nach Passung mit der Passung in Prozent. Die Bibliothek bewertet Ihre Marken, nie den Kontakt selbst, und die Klassifizierung bleibt Ihre Entscheidung; der Sonarraum des U-Boots hat dieselbe Bibliothek. Auf der Realismusstufe Einsteiger (`F10`) beschriftet das Sonar zusätzlich Modulationslinien, schlägt Drehzahlen für 3-7 Blätter vor und rankt Katalogkandidaten.
 
 ### TMA, Umwelt und Aktiv {#sonar-tma-env}
+
+![TMA-Seite](figure:sonar-tma)
+
+![Umwelt-Seite mit Sensorfusion](figure:sonar-environment-fusion)
+
+![Aktiv-Seite](figure:sonar-active)
 
 - **TMA** machen Sie selbst. Die Seite zeichnet die Peilungen des gewählten Kontakts über der Zeit. Stellen Sie eine Hypothese auf: `Z`/`X` Kurs (`Umschalt`: 1 Grad), `Strg+Z`/`Strg+X` Fahrt, `Q`/`Umschalt+Q` Entfernung auf der neuesten Peilung (`Strg`: 0,2 sm). Die bernsteinfarbene Kurve zeigt die Peilungen, die diese Hypothese vorhersagt, die Punkte am Fuß die Residuen (gemessen minus vorhergesagt). Gute Hypothesen lassen die Residuen um null streuen; ein falscher Kurs, eine falsche Fahrt oder Entfernung hinterlässt einen Trend. Die Spalte zeigt RMS der Residuen, den systematischen Trend nach Mittelung, die Passung und die Beobachtbarkeit. Die Entfernung ist erst nach einer eigenen Kursänderung beobachtbar (mindestens 6 Grad, besser 30-60); ohne sie verweigert `K`. `K` übernimmt die Hypothese als TMA-Fix des Kontakts; er wird auf Kurs und Fahrt mitgekoppelt und veraltet nach 120 s, also verfeinern und erneut übernehmen, wenn Peilungen hinzukommen. Verrauschte Peilungen ergeben auch bei guter Passung eine große Entfernungsunsicherheit. Tiefe schätzt TMA nicht. Auf der Realismusstufe Einsteiger (`F10`) wird ein automatischer Solver-Vorschlag (er braucht mindestens 4 Peilungen über 180 s) als dünne Linie gezeichnet, und `Umschalt+K` kopiert ihn in die Hypothese. Sonobojen-Peilungen gehen mit der Boje als Beobachter in den Track ein. `Umschalt+T` wechselt die TMA-Methode: HYPOTHESE (oben), EKELUND (die Entfernung aus den Peilraten zweier eigener Schläge um eine Kursänderung von mindestens 30°, je 90 s; `Umschalt+K` übernimmt sie in die Hypothese, `K` nimmt dann wie üblich an) oder DOT-STACK (Residuenzeilen bei 0,6-, 1,0- und 1,6-facher Hypothesenentfernung: die flache Zeile ist die Entfernung, die die Peilungen stützen).
 - **UMWELT / FUSION** zeigt den Bathythermographen (`E`, 60 s Abklingzeit): gemessene Schichttiefe, Schallgeschwindigkeitsprofil und Konvergenzzonen, dazu den Vergleich HMS/TAS. Peilungen innerhalb 5 Grad bestätigen sich; ab 9 Grad Abweichung wird ein möglicher Geisterkontakt markiert. Die Schicht ist nicht fest: Nachmittagssonne macht sie flacher (etwa 8 m), starker Wind mischt sie über Stunden tiefer, und interne Wellen verschieben sie um einige Meter. Den BT nach einigen Stunden oder einem Wetterwechsel wiederholen. Das gemessene Profil ist die echte temperaturabhängige Schallgeschwindigkeit (Mackenzie-Gleichung) und fällt deshalb unterhalb der Schicht ab. Mit der Maus über dem Profil lesen Sie die genaue Tiefe, die dortige Schallgeschwindigkeit und ob die Tiefe über oder unter der Schicht liegt (uConsole und Web). Im Web-Client beschriftet die Grafik zusätzlich Schicht, Meeresgrund und das Schallgeschwindigkeitsminimum. Die Konvergenzzonen darin stammen aus dem gemessenen Profil selbst: aus der Strahlverfolgung dieses Profils über dem kartierten Bodentyp in der Tiefe des Arrays, sie ändern sich also mit Schicht, Tiefe und Boden (keine im Flachwasser).
@@ -85,7 +101,7 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 - TAS-Tiefe 20-260 m (`U`/`V` in 10-m-Schritten), begrenzt auf 260 m minus 4 m je Knoten eigener Fahrt. Ab 30 m Tiefe und in derselben Schicht wie das Ziel gewinnt es weitere 25 %.
 - Über 20 kn mit ausgebrachtem Kabel erleidet das Array einen dauerhaften FAULT.
 - Das Array folgt einer Kursänderung mit etwa 45 s Verzögerung; während es nachschwenkt, sind seine Peilungen weniger verlässlich.
-- **Toter Winkel (Baffles):** Das Bugsonar (HMS) ist 30° beiderseits des eigenen Hecks taub; ein Boot genau achteraus hört nur das Schleppsonar oder das VDS. Der BREITBAND-Wasserfall markiert die Grenzen des toten Winkels gepunktet. Klären Sie ihn von der Brücke mit `Strg+B` (zwei Minuten 60° nach Steuerbord, dann zurück) oder mit einer eigenen Kursänderung. Für den Gegner gilt dasselbe: Auch das Rumpfsonar eines U-Boots ist achtern taub, und ein KI-Boot, das sich nach einem Ping dicht im toten Winkel der Fregatte findet, folgt ihr dort, statt zu fliehen.
+- **Toter Winkel (Baffles):** Das Bugsonar (HMS) ist 30° beiderseits des eigenen Hecks taub; ein U-Boot genau achteraus hört nur das Schleppsonar oder das VDS. Der BREITBAND-Wasserfall markiert die Grenzen des toten Winkels gepunktet. Klären Sie ihn von der Brücke mit `Strg+B` (zwei Minuten 60° nach Steuerbord, dann zurück) oder mit einer eigenen Kursänderung. Für den Gegner gilt dasselbe: Auch das Rumpfsonar eines U-Boots ist achtern taub, und ein KI-Boot, das sich nach einem Ping dicht im toten Winkel der Fregatte findet, folgt ihr dort, statt zu fliehen.
 - VDS (`Umschalt+Y` fiert oder hievt ihn, `Umschalt+B` wählt ihn): ein Körper an kurzem Kabel, 20-300 m tief, begrenzt auf 300 m minus 8 m je Knoten. `U`/`V` verstellen die Tiefe des jeweils gewählten Arrays. Ab 30 m Tiefe in der Schicht des Ziels gewinnt er dieselben 25 % wie das TAS. Er peilt eindeutig, eine VDS-Peilung löst die TAS-Seite also wie das Bugsonar auf. Ein Ping auf dem VDS sendet aus dem Körper: unter der Sprungschicht trifft der Schattenzonenverlust flache statt tiefe Ziele. Fieren und Hieven pausieren außerhalb 3-15 kn oder über Seegang 5; über 24 kn mit ausgebrachtem Körper geht er verloren (FAULT).
 
 ```text

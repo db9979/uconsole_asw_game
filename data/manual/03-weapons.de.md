@@ -8,6 +8,10 @@ Die Waffenzentrale macht aus einem Sonarkontakt eine Feuerlösung. Sie startet d
 
 Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt, die Torpedotiefe und die Bereitschaftszeile der Feuerleitung. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand, Helikopter-Zuladung und die Torpedo-Einstellzeile: gewählter Typ mit Restvorrat, Suchmuster, Sucheraktivierungspunkt und Salvengröße.
 
+![Waffen auf der uConsole](figure:station-weapons)
+
+![Waffen im Remote-Crew-Browser](figure:web-weapons-desktop)
+
 Die Bereitschaftszeile wird von oben nach unten geprüft; die erste fehlgeschlagene Prüfung wird angezeigt:
 
 ```text

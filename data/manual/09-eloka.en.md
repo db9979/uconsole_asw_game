@@ -8,6 +8,10 @@ Electronic warfare (EloKa) listens passively for radar emitters (ESM) and, when 
 
 Page 1 lists intercepts; page 2 shows the evidence for the selected intercept (frequency, PRF, modulation, candidates, correlation).
 
+![Electronic warfare on the uConsole](figure:station-eloka)
+
+![Electronic warfare in the Remote Crew browser](figure:web-eloka-desktop)
+
 ```text
  INTERCEPTS                       status  threat  band
  > E-07  brg 312  9.3 GHz  PRF 2.4k  NEW     HIGH    X

@@ -8,6 +8,10 @@ The radio room handles communications with HQ and HF direction finding (HFDF). H
 
 Page 1 lists current HFDF signals with the DF rose on the left and the cross-fix chart with the bearing log on the right; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
 
+![Radio room on the uConsole](figure:station-radio)
+
+![Radio room in the Remote Crew browser](figure:web-radio-desktop)
+
 ```text
  HFDF SIGNALS               BEARING LOG
  > HF-03  247.0  age 12 s    HF-03 247.0 from pos A  t=12:04
@@ -37,7 +41,7 @@ Besides the hunt, HQ radios tasks to the ship: the first about 15 to 25 minutes 
 
 - **Distress call (SAR):** a life raft with 2 to 6 people, reported by EPIRB with about 0.5 NM error and drifting with current and wind. The survivors last according to the sea temperature, from 40 minutes in water below 8 °C to 100 minutes above 20 °C. The raft is sighted within 2 NM by day (3 NM at night by its strobe); then the circle on the chart shrinks onto it. Take them aboard by lying within 0.25 NM at 3 kn or less for 4 minutes, or let the helicopter hover overhead (one minute per person, only when the weather allows dipping). +600 points, -400 if they are lost.
 - **Identify merchant:** HQ names a merchant within 60 NM and gives its position with about 2 NM error. It counts as identified once the lookout has published its identification or the helicopter passes within 1 NM with at least 1 NM visibility. About a third are flagged as suspect: HQ then passes a submarine datum near the ship. 40 minutes.
-- **Submarine datum:** a circle of 5 NM radius from a maritime patrol report; not every datum has a submarine behind it. Search 10 minutes inside the circle with the ship or the helicopter. 50 minutes. Not offered in the submarine missions 8 and 9: HQ has no intelligence on that boat.
+- **Submarine datum:** a circle of 5 NM radius from a maritime patrol report; not every datum has a submarine behind it. Search 10 minutes inside the circle with the ship or the helicopter. 50 minutes. Not offered in the submarine missions 8 and 9: HQ has no intelligence on that submarine.
 - **Replenishment at sea:** offered when fuel is below 70 % or torpedoes, ASROC or depth charges have been used; `R` on the Tasks page (or the browser's *Request supply ship*) asks for one yourself when at least 5 % fuel or any store is missing, at most once every 20 minutes after the last one ended. A friendly supply ship appears 18 to 28 NM away at 12 kn; its course and a dead-reckoning line are plotted. Keep within 0.3 NM and within 3 kn of its speed: fuel flows the whole time (a full load in 15 minutes), and torpedoes, ASROC, depth charges, Nixie decoys and CIWS and gun rounds come over in five loads, one every 3 minutes, each a share of what is still missing. Breaking away keeps what came over. The Tasks page shows what is aboard. VLS cells are not reloaded at sea. Worth +100, no penalty.
 - **Radar silence (EMCON):** both radars off within 90 s and silent for 20 to 30 minutes. +200, -250 if a radar radiates.
 
@@ -63,7 +67,7 @@ On the Tasks page the radio room can call HQ itself, at most once every 10 minut
 
 - `K` **Contact report:** sends the position of the freshest located contact (ping, TMA, buoy or fused fix, else an HF/DF cross-fix up to 15 minutes old). HQ acknowledges it on the teletype and vectors the patrol aircraft to it when the aircraft is airborne. HQ never says whether a submarine was really there: each report that put a hostile submarine within 3 NM of the fix earns 150 points at the mission's end (at most three).
 - `H` **Request support:** HQ sends the on-call patrol aircraft toward the ship when it is available (even with the OPZ down), otherwise it says that no support is available.
-- Each call is 20 s of HF transmission. While it is on the air, a submarine with its antenna up (the crewed boat's raised mast, an AI boat at periscope depth) takes an HF/DF bearing on the frigate (+/-8 degrees for a ground wave, +/-16 degrees for a sky wave): the crewed boat gets a report and a bearing line on its chart, an AI boat remembers the direction. Talking to HQ costs silence.
+- Each call is 20 s of HF transmission. While it is on the air, a submarine with its antenna up (the crewed submarine's raised mast, an AI submarine at periscope depth) takes an HF/DF bearing on the frigate (+/-8 degrees for a ground wave, +/-16 degrees for a sky wave): the crewed submarine gets a report and a bearing line on its chart, an AI submarine remembers the direction. Talking to HQ costs silence.
 
 ## Keys {#radio-keys}
 

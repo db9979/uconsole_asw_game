@@ -509,10 +509,18 @@ class PicturesMixin:
         self._set_preference("opz_display", ())
         self.flash(message("opz.display.reset"), 1.5)
 
+    def reset_opz_display_option(self, key: str) -> None:
+        """Put one display setting back to its default (the others stay)."""
+        values = self.opz_display_settings()
+        values[key] = opz_display.DEFAULTS[key]
+        self._set_preference("opz_display", opz_display.to_pairs(values))
+        self.flash(message("opz.display.reset_option",
+                           option=message("opz.display.option." + key)), 1.5)
+
     def _opz_display_key(self, e) -> bool:
         """Keys of the OPZ's Display page: up/down pick a row, left/right
-        change it, Backspace restores the defaults (Enter keeps confirming
-        a live engagement)."""
+        change it, Backspace puts the row back to its default and
+        Shift+Backspace every row (Enter keeps confirming a live engagement)."""
         count = len(opz_display.KEYS)
         self.opz_display_sel = int(self.opz_display_sel) % count
         key = opz_display.KEYS[self.opz_display_sel]
@@ -521,8 +529,10 @@ class PicturesMixin:
                                     + (1 if e.key == pygame.K_DOWN else -1)) % count
         elif e.key in (pygame.K_LEFT, pygame.K_RIGHT):
             self.step_opz_display(key, 1 if e.key == pygame.K_RIGHT else -1)
-        elif e.key == pygame.K_BACKSPACE:
+        elif e.key == pygame.K_BACKSPACE and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
             self.reset_opz_display()
+        elif e.key == pygame.K_BACKSPACE:
+            self.reset_opz_display_option(key)
         else:
             return False
         return True

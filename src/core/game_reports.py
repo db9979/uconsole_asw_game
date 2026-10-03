@@ -117,7 +117,7 @@ class ReportsMixin:
                 hf_physics.SKY_WAVE_BEARING_FACTOR if mode == "SKY" else 1.0) \
                 * thunder.sferics_factor(self.world.thunderstorm())
             truth = math.degrees(math.atan2(self.ship.x - sub.x, -(self.ship.y - sub.y)))
-            noise = detrand.normal(self.seed, "frigate-hf", sub.id,
+            noise = detrand.normal(self.seed, "frigate-hf", int(sub.sensor_seed),
                                    int(self.sim_t * 10.0))
             bearing = (truth + config.clamp(noise, -1.7, 1.7) * error / 1.7) % 360.0
             if crewed:

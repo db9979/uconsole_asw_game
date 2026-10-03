@@ -16,6 +16,10 @@ Auf der uConsole wechseln `1` bis `7` die Stationen, dieselbe Zahl noch einmal (
 | 6 Navigation | Karte & Echolot, Navigation, Bedrohung |
 | 7 Funk | Funk |
 
+Tasten, die an jeder Station des U-Boots wirken (`F1` zeigt sie auf der uConsole zuerst):
+
+<!-- keys:uboot_global -->
+
 ## Führung {#sub-command}
 
 Die Führung sieht das ganze U-Boot: Karte, Navigation, Waffen und Kontakte, das Sehrohr und die Bedrohungsseite. Sie befiehlt Kurs, Fahrt und Tiefe, legt das U-Boot auf Grund, pingt, nimmt ein BT und weicht auf den frischesten Alarm aus.
@@ -24,7 +28,7 @@ Die Führung sieht das ganze U-Boot: Karte, Navigation, Waffen und Kontakte, das
 - **Waffen & Kontakte (Seite 2):** die Rohre und die Kontaktliste, wie die Waffenstation sie sieht, um den Angriff mitzuverfolgen.
 - **Sehrohr (Seite 3):** der Blick durch den Kopf auf Sehrohrtiefe mit ausgefahrenem Mast. `←`/`→` schwenken, `↑`/`↓` neigen, `Q`/`E` schalten schwache und starke Vergrößerung, `Leertaste` den Stabilisator; `Enter` nimmt eine Stadimeter-Entfernung der Sichtung unter dem Fadenkreuz, `Strg+Enter` schießt auf die Lösung des Angriffsrechners.
 - **Bedrohung (Seite 4):** die jüngsten Pings, Torpedogeräusche und Radarauffassungen mit ihren Peilungen. `I` weicht dem jüngsten Alarm aus, `Strg+B` klärt die Hecklücke, `G` ruft Gefechtsstationen.
-- Im Browser pingt die Führung auch und nimmt ein BT; auf der uConsole macht das der Sonarraum (`2`, `Umschalt+A`).
+- Die Führung pingt mit `Umschalt+A` auf der uConsole und im Browser. Das BT nimmt auf der uConsole der Sonarraum (`2`, `E`); im Browser kann es auch die Führung.
 
 ![U-Boot-Führung auf der uConsole](figure:uboot-command)
 
@@ -47,10 +51,10 @@ Der Sonarraum des U-Boots arbeitet wie der der Fregatte, ohne Schleppsonar, OPZ-
 
 ## Waffen {#sub-weapons}
 
-Die Waffenstation lädt und flutet die Rohre, stellt Lauftiefe und Fächer ein, schießt auf einen gewählten Kontakt oder eine eingegebene Peilung, lenkt die drahtgelenkten Torpedos und stößt Täuschkörper aus. Die Seite hat neben der Karte zwei Spalten: Kontaktkarten (ein Klick wählt einen Kontakt) über der Schusslage sowie die Feuerleitung über den Rohrlampen. Der Feuerleitkasten zeigt die Suchkopf-Einstellung der nächsten Schüsse; an der Waffenstation feuert ein Klick auf das rote Feuerfeld wie `Strg+Enter`.
+Die Waffenstation lädt und flutet die Rohre, stellt Lauftiefe und Fächer ein, schießt auf einen gewählten Kontakt oder eine eingegebene Peilung, lenkt die drahtgelenkten Torpedos und stößt Täuschkörper aus. Die Seite hat neben der Karte zwei Spalten: Kontaktkarten (ein Klick wählt einen Kontakt) über der Schusslage sowie die Feuerleitung über den Rohrlampen. Der Feuerleitkasten zeigt die Suchkopf-Einstellung der nächsten Schüsse; an der Waffenstation feuert ein Klick auf das rote Feuerfeld wie `Strg+Enter`. Unter den Voreinstellungen fluten Tastenchips das nächste trockene Rohr (`Shift+M`, leise `Strg+M`) und stoßen einen Täuschkörper aus (`V`), und ein Klick auf eine Rohrlampe lädt ein leeres Rohr (`M`) oder flutet ein trockenes (`Shift+M`).
 
 - **Rohre:** jedes Rohr ist leer, geladen (trocken) oder geflutet; nur ein geflutetes Rohr feuert. `M` lädt das nächste leere Rohr, `Strg+M` flutet das nächste geladene langsam (60 s, kaum hörbar), `Umschalt+M` schnell (20 s, laut).
-- **Feuerleitung:** `↑`/`↓` wählen einen Kontakt mit frischer Entfernung, `T` stellt die Lauftiefe, `Y` Einzelschuss oder Zweierfächer, `X` das Suchmuster und `,`/`.` den Scharfschaltpunkt; `Strg+Enter` schießt. `F` schießt ohne Kontakt auf eine eingegebene Peilung und Entfernung.
+- **Feuerleitung:** `↑`/`↓` wählen einen Kontakt mit frischer Entfernung, `T` stellt die Lauftiefe, `Y` Einzelschuss oder Zweierfächer, `X` das Suchmuster und `,`/`.` den Scharfschaltpunkt; `Strg+Enter` schießt. `F` schießt ohne Kontakt: Peilung eingeben und `Enter`, dann die Entfernung zum Datum (leer: 10 sm in Schussrichtung) und `Enter`, und `Strg+Enter` schießt; `Enter` allein schießt nie.
 - **Draht und Täuschkörper:** `W` lenkt den jüngsten drahtgelenkten Torpedo auf eine neue Peilung, `Umschalt+W` kappt den Draht; `V` stößt einen Täuschkörper aus.
 
 ![U-Boot-Waffen](figure:uboot-weapons)
@@ -80,7 +84,7 @@ Der Maschinenraum fährt Telegraph, Schnorchel und Laderate, Schleichfahrt, die 
 
 Mast & ESM fährt den Mast an Sehrohrtiefe aus, hört auf der ESM-Rose nach Radaren, klassifiziert die Sender, plottet Kreuzpeilungen und schaut durchs Sehrohr. Ein Klick auf eine Zeile der Senderliste wählt diesen Sender, wie ↑/↓.
 
-- **ESM (Seite 1):** mit ausgefahrenem Mast (`P`, nur auf Sehrohrtiefe) zeigt die Rose jedes gehörte Radar mit Peilung und Pegel. `↑`/`↓` wählen einen Sender, `←`/`→` klassifizieren ihn aus der Bibliothek (eine Anmerkung, nie die Wahrheit), `Enter` gibt seine Kreuzpeilung oder Peillinie in den Plot des U-Boots. Ein Hauptkeulentreffer heißt, dass das Radar den Mast womöglich schon sieht.
+- **ESM (Seite 1):** mit ausgefahrenem Mast (`P`, nur auf Sehrohrtiefe) zeigt die Rose jedes gehörte Radar mit Peilung und Pegel. `↑`/`↓` wählen einen Sender, `C` (oder `→`; `Umschalt+C` oder `←` zurück) klassifiziert ihn aus der Bibliothek (eine Anmerkung, nie die Wahrheit), `Enter` gibt seine Kreuzpeilung oder Peillinie in den Plot des U-Boots. Ein Hauptkeulentreffer heißt, dass das Radar den Mast womöglich schon sieht.
 - **Sehrohr (Seite 2):** dasselbe Sehrohr wie Seite 3 der Führung, ohne Schuss.
 
 ![Mast/ESM](figure:uboot-mast-esm)

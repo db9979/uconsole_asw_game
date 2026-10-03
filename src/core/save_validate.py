@@ -128,7 +128,19 @@ def catalog_for_save(data):
         raise ValueError("unsupported save version")
     return catalog_from_runtime_snapshot(data["catalog_snapshot"])
 
-def valid_save_document(data, runtime_catalog=None) -> bool:
+def opz_chart_size() -> tuple[int, int]:
+    """The OPZ chart's size on the canvas (font and text-scale dependent).
+
+    Computed on the main thread: it reads pygame fonts and the UI scale, so a
+    background check passes it to ``valid_save_document`` instead."""
+    chart = opz_ppi_rect(config.OPZ_STATION_RECT)
+    return int(chart.w), int(chart.h)
+
+
+def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
+    """Strict check of a parsed save document. With ``opz_chart`` (from
+    ``opz_chart_size()``) it is pure: no pygame, no live game or global
+    state, so it may run off the main thread."""
     def finite_number(value) -> bool:
         try:
             return (isinstance(value, (int, float))
@@ -221,9 +233,9 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                   if isinstance(coast_data, dict) else None)
     if not bounded(world_size, 1e-6, 1_000_000.0):
         return False
-    opz_chart = opz_ppi_rect(config.OPZ_STATION_RECT)
-    opz_min_scale = min(opz_chart.w, opz_chart.h) / world_size
-    opz_max_scale = max(opz_min_scale, min(opz_chart.w, opz_chart.h) / (
+    chart_w, chart_h = opz_chart if opz_chart is not None else opz_chart_size()
+    opz_min_scale = min(chart_w, chart_h) / world_size
+    opz_max_scale = max(opz_min_scale, min(chart_w, chart_h) / (
         2.0 * config.OPZ_MAP_MAX_ZOOM_RADIUS_NM)
     )
     if (not isinstance(ui, dict)

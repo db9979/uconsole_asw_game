@@ -213,8 +213,10 @@ def draw_top_bar(game, boat) -> None:
                    course=_fmt(sub.course % 360.0 if sub else None, "{:03.0f}"),
                    speed=_fmt(sub.speed if sub else None, "{:.1f}"),
                    depth=_fmt(sub.depth if sub else None))
-    from src.core.game_draw import draw_theme_switch
-    switch = draw_theme_switch(game)
+    from src.core.game_draw import draw_theme_switch, theme_switch_rect
+    from src.ui import game_menu
+    draw_theme_switch(game)
+    switch = game_menu.draw_button(game) or theme_switch_rect()
     left = tabs[-1].right + 12
     layout.blit_line(s, text, (left, 4, switch.x - left - 10, config.TOP_BAR_H - 8),
                      config.COLOR_TEXT, size=16, align="right")
@@ -877,6 +879,10 @@ def _pick_contact(boat, contact) -> None:
         boat.station.selected_contact = contact
 
 
+FIRE_KEYS = ((("Shift+M", "uboot.keys.flood"), ("V", "uboot.keys.decoy")),
+             (("help.key.ctrl_m", "uboot.keys.flood_quiet"),))
+
+
 def _draw_fire_column(s, game, boat, rect) -> None:
     sub = boat.sub
     battery = sub.weapon_battery
@@ -899,9 +905,14 @@ def _draw_fire_column(s, game, boat, rect) -> None:
         "uboot.local.fire_ready" if reason is None else f"uboot.reason.{reason}")),
         plate.inflate(-12, -6), theme.c("on_accent") if reason is None and not theme.is_light()
         else (255, 255, 255) if reason is None else config.COLOR_WARN, size=19, align="center")
-    if uboot_local.local_station(game) == "uboot_weapons":
+    weapons_station = uboot_local.local_station(game) == "uboot_weapons"
+    if weapons_station:
         # Fire by click only at the weapons station, as with the key.
         pointer.add_legend(plate, "help.key.uboot_fire")
+    # The torpedo room's orders as key chips at the foot of the box (full
+    # mouse control): flood a tube (loud or quiet) and the decoy.
+    keys_h = len(FIRE_KEYS) * 24 if weapons_station else 0
+    bottom = fy + fh - keys_h
     row = layout.line_pitch(16, 6)
     py = fy + 44
     decoys = (int(sub.countermeasure_store.remaining_total)
@@ -915,7 +926,7 @@ def _draw_fire_column(s, game, boat, rect) -> None:
              if reload_s else raw_text("--")),
             ("uboot.label.decoys", raw_text(f"{decoys}")),
             ("uboot.label.blow", message("common.yes" if sub.blow_available else "common.no"))):
-        if py + row > fy + fh:
+        if py + row > bottom:
             break
         layout.status_line(s, fx, py, fw, label, value, size=16, label_w=170)
         py += row
@@ -930,20 +941,26 @@ def _draw_fire_column(s, game, boat, rect) -> None:
             message("uboot.line.seeker",
                     pattern=display_value("torpedo_pattern", orders.torpedo_pattern),
                     enable=f"{orders.torpedo_enable_nm:.1f}")):
-        if py + 22 > fy + fh:
+        if py + 22 > bottom:
             break
         layout.blit_line(s, text, (fx, py + 2, fw, 20), config.COLOR_TEXT_DIM, size=14)
         py += 22
+    if keys_h:
+        for index, specs in enumerate(FIRE_KEYS):
+            _footer(s, (fx, bottom + index * 24 + 2, fw, 22), specs)
     if states:
         # The tube panel: one lamp per tube, lit when flooded and ready.
         tubes = layout.box(s, (rect.x, rect.y + fire_h + 10, rect.w, tubes_h),
                            "uboot.panel.tubes")
         levels = {"flooded": "on", "dry": "caution", "flooding": "caution",
                   "loading": "caution", "empty": "off"}
+        # At the weapons station a tube is a switch: an empty one loads (M),
+        # a dry one floods (Shift+M), as the keys order the next such tube.
+        keys = {"empty": "M", "dry": "Shift+M"} if weapons_station else {}
         console.lamp_grid(s, (tubes[0], tubes[1], tubes[2], tubes[3]), [
             (raw_text(str(index)),
              message(f"uboot.tube_state.{state}", seconds=_fmt(left, "{:.0f}")),
-             levels.get(state, "off"))
+             levels.get(state, "off"), keys.get(state))
             for index, (state, left) in enumerate(states, start=1)], columns, size=14)
 
 
@@ -984,7 +1001,7 @@ _FOOTERS = {
                                        ("N", "uboot.footer.snorkel"),
                                        ("help.key.uboot_blow", "uboot.footer.blow")),
     ("uboot_esm", "UBOOT_ESM"): (("P", "uboot.footer.mast"), ("↑/↓", "uboot.footer.esm_select"),
-                                 ("←/→", "uboot.footer.esm_classify"),
+                                 ("C", "uboot.footer.esm_classify"),
                                  ("help.key.enter", "uboot.footer.esm_plot")),
     ("uboot_engine", "UBOOT_SUPPLY"): (("R", "uboot.footer.charge_rate"),
                                        ("Shift+O", "uboot.footer.absorber"),

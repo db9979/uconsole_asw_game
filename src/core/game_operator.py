@@ -1194,6 +1194,32 @@ class OperatorMixin(WeaponOrdersMixin):
         self.helo.set_waypoint(x, y)
         return True
 
+    def helicopter_waypoint_to_selection(self):
+        """Waypoint on the selected contact's plotted position (W, as the
+        patrol aircraft's W); a bearing-only contact has no position."""
+        from src.ui import observations
+        contact = self.selected_contact
+        if contact is None or contact.target_id not in self.sonar.contacts:
+            return "no_contact"
+        x, y = observations.position(contact)
+        if x is None or y is None:
+            return "not_located"
+        size = float(self.world.size_nm)
+        return self.set_helicopter_waypoint(config.clamp(float(x), 0.0, size),
+                                            config.clamp(float(y), 0.0, size))
+
+    def _helo_waypoint_feedback(self, result) -> None:
+        if result is True:
+            bearing, distance = self._helo_waypoint_polar()
+            self.flash(message("runtime.helo.waypoint", bearing=f"{bearing:03.0f}",
+                               range=f"{distance:.0f}"), 1.5)
+        elif result == "no_contact":
+            self.flash(message("runtime.contact.none_selected"))
+        elif result == "not_located":
+            self.flash(message("mpa.refused.not_located"), 2.0)
+        else:
+            self.flash(message("runtime.helo.not_airborne"))
+
     def _helo_waypoint_polar(self) -> tuple[float, float]:
         if self.helo.waypoint_x is None or self.helo.waypoint_y is None:
             return self.ship.course, 2.0

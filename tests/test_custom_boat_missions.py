@@ -64,7 +64,7 @@ def test_a_boat_mission_binds_its_boat_and_is_won_by_holding_out():
     assert game.start_custom_mission(_boat_mission())
     boat = game.claim_opfor_sub()
     assert boat is not None and boat.sub is game.mission_entity("own")
-    text = localize(custom_boat.objective(game, boat.sub), Translator("en").t)
+    text = localize(custom_boat.objective(game, boat), Translator("en").t)
     assert text.startswith("Stay afloat")
     _run(game, 61.0)
     # Kept from the frigate's side: the boat holding out is a frigate loss.

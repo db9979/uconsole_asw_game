@@ -14,7 +14,7 @@ from src.core.game_shared import HELP_MANUAL_PAGE, HELP_PAGE_COUNT
 from src.nations.nations import reference_summary
 from src.ui import layout, theme
 from src.ui.editor_widgets import TextField
-from src.core.game_save import _read_save_document
+from src.core.game_save import SaveSelfCheckError, _read_save_document
 from src.core.preferences import GRAPHICS_LEVELS
 
 
@@ -174,6 +174,10 @@ class AdminKeysMixin:
                     elif not self.load_from_slot(self.save_slot):
                         self.flash(message("save.invalid"), 4.0)
                         return
+                except SaveSelfCheckError:
+                    self.flash(message("runtime.save.error",
+                                       error=message("save.self_check_failed")), 4.0)
+                    return
                 except (OSError, ValueError) as exc:
                     self.flash(message("runtime.save.error", error=str(exc)), 4.0)
                     return

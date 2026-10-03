@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.184
+
+Version 1.3.184 bringt die neuen Karten zur Schadensabwehr im Browser. Jede
+Karte eines Leckwehrtrupps nennt seine Abteilung in der Spielsprache (vorher
+standen dort interne Schlüssel) und zeigt, ob der Trupp bereitsteht, mit den
+restlichen Sekunden unterwegs ist oder vor Ort arbeitet, mit passendem
+Farbstreifen. Der Trupp für die nächste Zuweisung ist umrahmt, ein Klick auf
+eine Karte wählt ihn. Die Handbuchbilder sind im hellen Schema neu
+aufgenommen. Tasten bleiben gleich. Spielstände sind v50; v38 bis v49 laden
+weiter.
+
 ## 1.3.183
 
 Version 1.3.183 bringt Bilder ins Handbuch. Jede Station der Fregatte und

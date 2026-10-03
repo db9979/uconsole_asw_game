@@ -14,18 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.183**
+Aktuelle Version: **1.3.184**
 
-Version 1.3.183 bringt Bilder ins Handbuch. Jede Station der Fregatte und
-des U-Boots ist jetzt auf der uConsole und im Remote-Crew-Browser zu sehen,
-dazu alle sechs Sonarseiten, Fernglas und Sehrohr bei Tag und Nacht,
-Hauptmenü, Szenarioauswahl, Einweisung, Optionen, die Editoren und die
-Kontaktanalyse, alles im hellen Schema Taktik Tag, damit ein Ausdruck wenig
-Tinte braucht; Markdown- und PDF-Handbuch zeigen sie, der Leser im Spiel
-lässt sie weg. Das U-Boot-Kapitel nennt jetzt jede Stationsseite mit ihren
-Tasten. Die Schritte der ersten Patrouille passen wieder zum Hauptmenü, der
-Schnellstart sagt, welche Funktionen noch eine Taste brauchen, und „U-Boot“
-ersetzt „Boot“. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+Version 1.3.184 bringt die neuen Karten zur Schadensabwehr im Browser. Jede
+Karte eines Leckwehrtrupps nennt seine Abteilung in der Spielsprache (vorher
+standen dort interne Schlüssel) und zeigt, ob der Trupp bereitsteht, mit den
+restlichen Sekunden unterwegs ist oder vor Ort arbeitet, mit passendem
+Farbstreifen. Der Trupp für die nächste Zuweisung ist umrahmt, ein Klick auf
+eine Karte wählt ihn. Die Handbuchbilder sind im hellen Schema neu
+aufgenommen. Tasten bleiben gleich. Spielstände sind v50; v38 bis v49 laden
+weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

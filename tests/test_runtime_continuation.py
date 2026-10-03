@@ -389,7 +389,7 @@ def test_strict_write_failure_keeps_previous_file_and_removes_stage(game, tmp_pa
     (("civilians", 0, "orbit_direction"), 0),
     (("civilians", 0, "sunk_score_awarded"), True),
     (("subs", 0, "memory", "contact_age"), None),
-    (("subs", 0, "memory", "contact", "noise"), 1.2),
+    (("subs", 0, "memory", "contact", "noise"), 2.1),
     (("subs", 0, "memory", "last_ping_age"), -float("inf")),
 ])
 def test_malformed_runtime_states_and_refs_are_transactional(game, path, value):

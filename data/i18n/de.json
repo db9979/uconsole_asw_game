@@ -7493,5 +7493,10 @@
   "damage.panel.teams": "LECKWEHRTRUPPS",
   "damage.card.team_ready": "In Bereitschaft",
   "damage.card.team_en_route": "Unterwegs · {eta} s",
-  "damage.teams.hint": "Trupp anklicken, links eine Abteilung wählen, Enter schickt ihn los."
+  "damage.teams.hint": "Trupp anklicken, links eine Abteilung wählen, Enter schickt ihn los.",
+  "commander.web.damage_team_title": "Trupp {team}",
+  "commander.web.damage_team_free": "frei",
+  "commander.web.damage_team_ready": "In Bereitschaft",
+  "commander.web.damage_team_en_route": "Unterwegs · {seconds} s",
+  "commander.web.damage_team_on_scene": "Vor Ort"
 }

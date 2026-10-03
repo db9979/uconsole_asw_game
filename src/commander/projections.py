@@ -913,7 +913,9 @@ def _damage(game):
                                   for key, value in game.damage.compartment_trend(
                                       room.key).items()})
                     for room in game.damage.compartments.values()]
-    teams = [dict(team=team, compartment=game.damage.teams[team])
+    teams = [dict(team=team, compartment=game.damage.teams[team],
+                  transit_s=_number(max(0.0, float(game.damage.team_eta.get(team, 0.0)))
+                                    if game.damage.teams[team] is not None else 0.0))
              for team in sorted(game.damage.teams)]
     return dict(compartments=compartments, teams=teams, crew=_crew(game),
                 total=_number(game.damage.total), sunk=bool(game.damage.ship_sunk),

@@ -647,7 +647,7 @@ Operations (OPZ / CIC) builds the tactical picture above the water: surface and 
 
 ### Displays and instruments
 
-Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track; page 3 commands the patrol aircraft; page 4 commands the consort destroyer of a group hunt. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `Q`/`E` as the zoom keys elsewhere; `PgUp`/`PgDn` page), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
+Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track; page 3 commands the patrol aircraft; page 4 commands the consort destroyer of a group hunt; page 5 sets the chart display. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `Q`/`E` as the zoom keys elsewhere; `PgUp`/`PgDn` page), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
 
 ```text
  NATO frame colours (operator annotation, not truth)
@@ -693,6 +693,19 @@ Page 4 (Group) commands the consort of a group hunt: the destroyer LUETJENS (hul
 
 If the destroyer is sunk the page and the event log say so; the mission goes on. The browser's OPZ has the same orders in the card *Consort destroyer*, and its chart shows the destroyer, its point and its bearing lines.
 
+### Chart display
+
+Page 5 (Display) sets what the OPZ chart draws; it changes nothing in the simulation or the picture itself and is kept in the settings. `↑`/`↓` picks a row, `←`/`→` changes it (a click on a row moves it on), `Backspace` puts everything back to the default.
+
+- **Track trails:** off, 3, 6 or 12 minutes of earlier published positions behind each track (one point every 30 s, oldest faintest; they start anew after a load).
+- **Vectors:** the motion vector shows the distance run in 3, 6, 12 or 30 minutes.
+- **Labels:** full, short (six characters) or off.
+- **Bearing scale:** ticks every 10° and numbers every 30° on the outer radar ring, with a mark for the own course.
+- **Range rings**, **bearing lines** of bearing-only reports, **furthest-on** circles, **depths + grid** of the chart and the **radar afterglow** each switch on and off.
+- **CPA of selected:** for the selected track with a position, course and speed, both run on to the closest point of approach; a line joins the two points with distance and time (red under 2 NM). It uses only the track's reported motion, so it is only as good as that report.
+
+Two switches in the chart's top left turn the surface and air radar on and off on every page (the same as `R` and `Shift+R`, with the EMCON report to HQ); they glow while the radar transmits. The chips under the chart show which layers are on and switch them with a click on every page. The browser's OPZ has the radar switches and the same settings as buttons above its chart (kept for that browser tab only).
+
 ### Keys
 
 | Key | Action |
@@ -730,6 +743,8 @@ If the destroyer is sunk the page and the event log say so; the mission goes on.
 | `Shift+A` | OPZ page 4: consort's active sonar on/off |
 | `Shift+W` | OPZ page 4: consort's weapons free / tight |
 | `Ctrl+Enter` | OPZ page 4: one ASROC from the consort on the selected track (fix under 2 min) |
+| `↑/↓ ←/→` | Page 5 Display: pick a chart setting, change it |
+| `Backspace` | Page 5: all chart settings to default |
 
 ### Standard procedure
 

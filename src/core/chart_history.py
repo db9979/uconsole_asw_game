@@ -24,6 +24,10 @@ OWN_POINTS = 240
 TRACK_STEP_S = 60.0
 TRACK_POINTS = 12
 MAX_TRACKS = 48
+# The OPZ's picture (its own, fused track numbers): one point every 30 s,
+# twelve minutes kept, for the OPZ chart's trails.
+OPZ_STEP_S = 30.0
+OPZ_POINTS = 24
 # Bearing-only contacts: the last six bearings, one a minute.
 BEARING_POINTS = 6
 MAX_BEARING_CONTACTS = 32
@@ -38,8 +42,10 @@ class _Side:
         self.own: deque = deque(maxlen=OWN_POINTS)
         self.tracks: OrderedDict = OrderedDict()
         self.bearings: OrderedDict = OrderedDict()
+        self.opz: OrderedDict = OrderedDict()
         self.own_slot = -1
         self.track_slot = -1
+        self.opz_slot = -1
 
     def sample_own(self, t: float, x: float, y: float) -> None:
         slot = int(t // OWN_STEP_S)
@@ -53,6 +59,21 @@ class _Side:
             return False
         self.track_slot = slot
         return True
+
+    def due_opz(self, t: float) -> bool:
+        slot = int(t // OPZ_STEP_S)
+        if slot == self.opz_slot:
+            return False
+        self.opz_slot = slot
+        return True
+
+    def add_opz(self, t: float, key, x: float, y: float) -> None:
+        self._put(self.opz, key, (t, float(x), float(y)), OPZ_POINTS, MAX_TRACKS)
+
+    def opz_positions(self, key, now: float, minutes: float) -> tuple:
+        """Earlier OPZ positions of one track from the last ``minutes``."""
+        return tuple(row for row in self.opz.get(key, ())
+                     if now - row[0] <= minutes * 60.0 + 1e-6)
 
     @staticmethod
     def _put(table: OrderedDict, key, row, points: int, limit: int) -> None:
@@ -72,7 +93,7 @@ class _Side:
                   BEARING_POINTS, MAX_BEARING_CONTACTS)
 
     def forget(self, t: float) -> None:
-        for table in (self.tracks, self.bearings):
+        for table in (self.tracks, self.bearings, self.opz):
             for key in [k for k, rows in table.items() if t - rows[-1][0] > FORGET_S]:
                 del table[key]
 
@@ -121,6 +142,12 @@ class ChartHistory:
             return
         side = self.side("frigate")
         side.sample_own(t, ship.x, ship.y)
+        if side.due_opz(t):
+            opz_tracks = getattr(game, "opz_tracks", None)
+            for track in (opz_tracks() if callable(opz_tracks) else ()):
+                x, y = observations.position(track)
+                if x is not None and y is not None:
+                    side.add_opz(t, track.track_id, x, y)
         if not side.due(t):
             return
         radar_tracks = getattr(game, "radar_tracks", None)

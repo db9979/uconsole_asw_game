@@ -4,15 +4,31 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.171
+## 1.3.172
 
-Release 1.3.171 fills the Remote Crew operational log. It used to show only a
+Release 1.3.172 fills the Remote Crew operational log. It used to show only a
 few browser alerts and so looked empty; now every station lists the same
 entries as F11 on the uConsole, newest first, with time and category tag:
 the frigate's stations the frigate's log, the submarine's stations the boat
 log. A long log scrolls inside its drawer and leaves the chart its room. On
 the uConsole, F11 now opens the boat log on the submarine side too. Saves
 are v50; v38 to v49 saves still load.
+
+## 1.3.171
+
+Release 1.3.171 gives the OPZ a richer chart and a Display page full of
+settings. Page 5 (Display) sets track trails (off, 3, 6 or 12 minutes),
+vector length (3 to 30 minutes), full, short or no labels, a bearing scale
+with the own course on the outer radar ring, range rings, bearing lines,
+furthest-on circles, depths and grid, the radar afterglow and the selected
+track's closest point of approach with distance and time. Up/down picks a
+row, left/right changes it, Backspace restores the defaults, every row is
+clickable, chips under the chart switch the layers on every page, and two
+switches on the chart turn the surface and air radar on and off. The
+settings stay in settings.json. The browser OPZ has the same buttons above
+its chart and draws the same rings, bearing scale, trails and CPA. Display
+only: the simulation is unchanged. Saves are v50; v38 to v49 saves still
+load.
 
 ## 1.3.170
 

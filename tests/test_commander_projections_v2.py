@@ -120,7 +120,7 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
         "damage": {"compartments", "teams", "total", "sunk", "stability", "crew"},
         "opz": {"observations", "fusions", "suggestions", "radar", "source_classifications",
                  "radar_blips", "designated_target_ref", "own_assets", "defense",
-                 "asm_observations"},
+                 "asm_observations", "trails"},
         "radio": {"observations", "logged_fixes", "logged_bearings", "messages",
                   "station_down", "navigation", "tactical", "tasks", "can_request_ras",
                   "can_contact_report", "can_request_support"},

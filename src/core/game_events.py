@@ -734,6 +734,11 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     self.station, self.station_page,
                     1 if e.key == pygame.K_PAGEDOWN else -1)
                 return
+            # The OPZ's Display page: arrows, Enter and Backspace set the chart.
+            if (self.station is Station.OPZ and self.station_page == 4
+                    and not getattr(e, "mod", 0) & (pygame.KMOD_CTRL | pygame.KMOD_SHIFT)
+                    and self._opz_display_key(e)):
+                return
             # The raised binoculars take ↑/↓ (tilt), ←/→ (train), Q/E (zoom)
             # and Space (stabilizer) from the telegraph, the rudder and the
             # covered chart, exactly as the submarine's periscope.

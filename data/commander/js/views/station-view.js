@@ -43,6 +43,7 @@ export function renderStationView() {
     // in the markup; only the live-listening strip follows the acoustic panel.
     $("bridge-orders").hidden = active !== "bridge";
     $("opz-controls").hidden = active !== "opz";
+    $("opz-display-bar").hidden = active !== "opz";
     $("helicopter-dipping-controls").hidden = active !== "helicopter";
     if (active === "helicopter" && $("sonar-live-toggle").parentElement?.parentElement !== $("helicopter-buoy-console"))
       $("helicopter-buoy-console").prepend($("sonar-live-toggle").parentElement);

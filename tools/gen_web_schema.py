@@ -71,6 +71,11 @@ def render_block() -> str:
     lines.append("  };\n")
     lines.append("  const opzSuggestionFields = "
                  f"{_array(schema.OPZ_SUGGESTION_FIELDS)};\n")
+    lines.append("  const opzTrailFields = {\n")
+    lines.append(f"    row: {_array(schema.OPZ_TRAIL_FIELDS)},\n")
+    lines.append(f"    max: {schema.OPZ_TRAIL_MAX},\n")
+    lines.append(f"    points: {schema.OPZ_TRAIL_POINTS},\n")
+    lines.append("  };\n")
     lines.append("  const helicopterTacticalFields = "
                  f"{_array(schema.HELICOPTER_TACTICAL_FIELDS)};\n")
     lines.append("  const weatherFields = {\n")

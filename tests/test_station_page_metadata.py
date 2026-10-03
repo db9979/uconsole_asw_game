@@ -27,7 +27,8 @@ def test_page_metadata_covers_every_canonical_station():
     assert STATION_PAGES[Station.BRIDGE] == ("BRIDGE_NAV", "BRIDGE_MISSION", "BRIDGE_LOOKOUT")
     assert STATION_PAGES[Station.RADIO] == ("RADIO_HFDF", "RADIO_MESSAGES", "RADIO_TASKS")
     assert STATION_PAGES[Station.DAMAGE] == ("DAMAGE_PLAN", "DAMAGE_DETAIL", "DAMAGE_CREW")
-    assert STATION_PAGES[Station.OPZ] == ("OPZ_PICTURE", "OPZ_TARGET", "OPZ_MPA", "OPZ_GROUP")
+    assert STATION_PAGES[Station.OPZ] == ("OPZ_PICTURE", "OPZ_TARGET", "OPZ_MPA", "OPZ_GROUP",
+                                          "OPZ_DISPLAY")
     for station, pages in TWO_PAGE_STATIONS.items():
         assert STATION_PAGES[station] == pages
 
@@ -37,7 +38,8 @@ def test_page_metadata_covers_every_canonical_station():
         assert pages
         assert all(isinstance(page, str) and page for page in pages)
         assert len(pages) == (6 if station is Station.SONAR else
-                              4 if station in (Station.HELICOPTER, Station.OPZ) else
+                              5 if station is Station.OPZ else
+                              4 if station is Station.HELICOPTER else
                               3 if station in (Station.BRIDGE, Station.RADIO, Station.DAMAGE)
                               else 2)
 
@@ -78,15 +80,16 @@ def test_three_page_stations_wrap(station):
     assert station_page_step(station, 2, 1) == 0
 
 
-def test_opz_group_page_wraps():
+def test_opz_display_page_wraps():
     assert station_page_step(Station.OPZ, 2, 1) == 3
-    assert station_page_step(Station.OPZ, 3, 1) == 0
+    assert station_page_step(Station.OPZ, 3, 1) == 4
+    assert station_page_step(Station.OPZ, 4, 1) == 0
 
 
 def test_station_alias_uses_canonical_opz_metadata():
     assert Station.RADAR is Station.OPZ
     assert STATION_PAGES[Station.RADAR] == STATION_PAGES[Station.OPZ]
-    assert station_page_step(Station.RADAR, 3, 1) == 0
+    assert station_page_step(Station.RADAR, 4, 1) == 0
 
 
 def test_station_page_step_rejects_unknown_stations():

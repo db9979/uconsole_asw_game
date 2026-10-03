@@ -486,7 +486,10 @@ def grounding_contact_is_consistent(world, pose, hull, contact) -> bool:
     if contact.kind == "shallow":
         return (world.coast.has_bathymetry
                 and not world.on_land(contact.x_nm, contact.y_nm)
-                and world.physical_depth_m(contact.x_nm, contact.y_nm)
+                # Same measure as the detection above: the raw bathymetry,
+                # not the tide-adjusted depth (a rising tide must not make a
+                # saved grounding unloadable).
+                and world.coast.physical_depth_m(contact.x_nm, contact.y_nm)
                 <= hull.minimum_depth_m + 1e-6)
     return False
 

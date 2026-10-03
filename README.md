@@ -23,7 +23,8 @@ it, and a decoy's Doppler shift counts its speed in knots. The browser host page
 can grant the observer role and withdraw direct fire from the submarine's
 weapons station, the submarine's browser stations have their own short help
 and manual link, and four sonar and helicopter drop-downs no longer jump back
-while in use. Help texts were corrected (tasks page, OPZ zoom, debrief keys,
+while in use. A save made while the frigate sat on a shoal now loads again
+after the tide has risen. Help texts were corrected (tasks page, OPZ zoom, debrief keys,
 German wording, "submarine" instead of "boat"), and unused code went. Saves
 are v50; v38 to v49 saves still load.
 

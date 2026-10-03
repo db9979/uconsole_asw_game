@@ -16,6 +16,8 @@ seine Fahrt in Knoten. Die Host-Seite im Browser kann die Beobachterrolle
 vergeben und der Waffenstation des U-Boots das Direktfeuer entziehen, die
 Browser-Stationen des U-Boots haben eigene Kurzhilfen und Handbuch-Links, und
 vier Auswahllisten an Sonar und Heli springen beim Bedienen nicht mehr zurück.
+Ein Spielstand, gespeichert während die Fregatte auf einer Untiefe
+saß, lädt wieder, auch wenn die Flut inzwischen gestiegen ist.
 Hilfetexte wurden berichtigt (Seite Aufträge, OPZ-Zoom, Tasten der
 Nachbesprechung, deutsche Begriffe, „U-Boot“ statt „Boot“), und ungenutzter
 Code ist entfernt. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.

@@ -28,7 +28,7 @@ from src.ui import observations
 from src.ui import overlay_style, quality
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.shock_fx import ShockFx
-from src.ui import hit_inset, mic_meter
+from src.ui import game_menu, hit_inset, mic_meter
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -585,6 +585,9 @@ class DrawMixin:
             # Noise discipline: the microphone meter in the top bar.
             self.guarded_view("mic_meter", tuple(mic_meter.RECT), mic_meter.draw, self, s,
                               "uboot" if self.local_side == "uboot" else "frigate")
+        if self.game_menu_open:
+            with pointer.layer("popup"):
+                game_menu.draw_menu(self)
         with pointer.layer("overlay"):
             if self.quit_confirm:
                 self.draw_quit_overlay()
@@ -612,7 +615,7 @@ class DrawMixin:
         if (not self.in_menu and not self.splash_active and self.editor is None
                 and not self.simlog_view_open and not self._station_overlay_open
                 and self.tooltips_enabled and not eco
-                and self.local_side != "uboot"
+                and self.local_side != "uboot" and not self.game_menu_open
                 and not self.administration_open and not self.game_over):
             canvas = self._window_to_canvas(pygame.mouse.get_pos())
             payload = self.pinned_tooltip or self.tooltip_at(canvas)
@@ -719,7 +722,8 @@ class DrawMixin:
             draw_lamp(s, rect, alarms.get(station.name.lower()), self._t)
             pointer.add_key(rect, pygame.K_1 + index)
         self._top_status_right = tabs[-1].right
-        switch = draw_theme_switch(self)
+        draw_theme_switch(self)
+        switch = game_menu.draw_button(self) or theme_switch_rect()
         if self.msg and self._t < self.msg_until:
             return      # the flash banner stands in the status line's place
         txt = self.tr("top.status_short", scenario=self.top_bar_scenario(),
@@ -1003,10 +1007,11 @@ class DrawMixin:
         overlay_style.panel(s, (bx, by, bw, bh))
         help_title = self.tr("help.title", station=display_value(
             "station", self.station.name, self.tr).upper())
-        overlay_style.title(s, help_title, (bx + 18, by + 8, bw - 36, 40), size=30,
+        overlay_style.title(s, help_title, (bx + 18, by + 8, bw - 76, 40), size=30,
                             align="left")
-        # Mouse: the title steps the category, the wheel scrolls.
-        pointer.add_key((bx + 18, by + 8, bw - 36, 40), pygame.K_TAB)
+        # Mouse: the title steps the category, the wheel scrolls, [x] closes.
+        pointer.add_key((bx + 18, by + 8, bw - 76, 40), pygame.K_TAB)
+        game_menu.close_button(s, (bx, by, bw, bh))
         overlay_style.rule(s, bx + 18, by + 48, bw - 36)
         x = bx + 20
         w = bw - 40
@@ -1035,8 +1040,9 @@ class DrawMixin:
         bx = (config.SCREEN_W - bw) // 2
         by = (config.SCREEN_H - bh) // 2
         overlay_style.panel(s, (bx, by, bw, bh))
-        overlay_style.title(s, "panel.nations", (bx + 18, by + 8, bw - 36, 38), size=30,
+        overlay_style.title(s, "panel.nations", (bx + 18, by + 8, bw - 76, 38), size=30,
                             align="left")
+        game_menu.close_button(s, (bx, by, bw, bh))
         summary = getattr(self, "_nations_summary", None)
         if summary is None:
             summary = reference_summary(self.world.coast, self.runtime_catalog)
@@ -1082,7 +1088,8 @@ class DrawMixin:
         by = (config.SCREEN_H - bh) // 2
         overlay_style.panel(s, (bx, by, bw, bh))
         overlay_style.title(s, self.tr("save.title", mode=mode),
-                            (bx + 18, by + 12, bw - 36, 38), size=26)
+                            (bx + 52, by + 12, bw - 104, 38), size=26)
+        game_menu.close_button(s, (bx, by, bw, bh))
         overlay_style.rule(s, bx + 18, by + 54, bw - 36)
         ly = by + 70
         for slot in range(1, 6):
@@ -1226,6 +1233,7 @@ class DrawMixin:
         rect = pygame.Rect(260, 40, 760, 660)
         overlay_style.panel(self.screen, rect)
         overlay_style.title(self.screen, "option.title", (400, 64, 480, 48), size=32)
+        game_menu.close_button(self.screen, rect)
         for page, tab in enumerate(self._options_page_rects()):
             active = page == self.options_page
             if active:
@@ -1378,6 +1386,7 @@ class DrawMixin:
         rect = pygame.Rect(260, 40, 760, 660)
         overlay_style.panel(self.screen, rect)
         overlay_style.title(self.screen, "live_traffic.title", (292, 64, 696, 48), size=32)
+        game_menu.close_button(self.screen, rect)
         online = self.connectivity.online
         status_key = ("live_traffic.online" if online
                      else "live_traffic.offline" if online is False
@@ -1456,8 +1465,9 @@ class DrawMixin:
         rect = pygame.Rect(260, 185 - 20 * (len(choices) - 3),
                            760, 330 + 40 * (len(choices) - 3))
         overlay_style.panel(s, rect)
-        overlay_style.title(s, "quit.title", (rect.x + 20, rect.y + 20,
-                            rect.w - 40, 38), size=30)
+        overlay_style.title(s, "quit.title", (rect.x + 48, rect.y + 20,
+                            rect.w - 96, 38), size=30)
+        game_menu.close_button(s, rect)
         layout.blit_line(s, "quit.warning",
                          (rect.x + 20, rect.y + 74, rect.w - 40, 26),
                          overlay_style.accent_color(), size=16, align="center")

@@ -625,6 +625,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.autocrew = AutocrewController()
         self.autocrew_overview_open = False
         self.weather_station_open = False
+        # The top bar's game menu (src/ui/game_menu.py): display state only.
+        self.game_menu_open = False
         # F11 event history/telemetry overlay: display only, never an input
         # owner, so every station stays operable underneath it.
         self.feed_overlay_open = False

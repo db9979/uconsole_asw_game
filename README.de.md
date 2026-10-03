@@ -14,14 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.177**
+Aktuelle Version: **1.3.179**
 
-Version 1.3.177 bringt die neue Aufteilung in drei Spalten zu Sonar, OPZ
-und der Waffenseite des U-Boots: links Kontakt- oder Trackkarten (ein Klick
-wählt), in der Mitte die Hauptanzeige, rechts Bedienung und Status. An der
-Waffenstation des U-Boots feuert ein Klick auf das rote Feuerfeld wie
-Strg+Enter. Die Tasten bleiben gleich. Spielstände sind v50; v38 bis v49
-lassen sich weiter laden.
+Version 1.3.179 behebt zwei Klicks, die einen Programmfehler auslösten:
+den Dunkel/Hell-Schalter in der oberen Leiste (im Hauptmenü beendete er das
+Spiel, im Einsatz sprang das Spiel auf den letzten Sicherungspunkt zurück)
+und die Kontaktkarten auf der Waffenseite des U-Boots. Beide funktionieren
+jetzt (das Farbschema wechselt, die Karte wählt ihren Kontakt). Tasten bleiben gleich. Spielstände sind v50;
+v38 bis v49 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

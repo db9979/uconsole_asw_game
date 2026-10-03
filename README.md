@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.185**
+Current release: **1.3.186**
 
-Release 1.3.185 fixes the light theme behind the menus. The main menu and
+Release 1.3.186 fixes the light theme behind the menus. The main menu and
 every window opened over a mission (help, options, save and load, quit) now
 sit on a bright day scene with sun and light sea instead of the dark night
 picture, so the dark text stays easy to read. The night theme looks as

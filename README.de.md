@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.185**
+Aktuelle Version: **1.3.186**
 
-Version 1.3.185 behebt das helle Schema hinter den Menüs. Das Hauptmenü und
+Version 1.3.186 behebt das helle Schema hinter den Menüs. Das Hauptmenü und
 jedes Fenster über einem laufenden Einsatz (Hilfe, Optionen, Speichern und
 Laden, Beenden) liegen jetzt auf einer hellen Tagesszene mit Sonne und hellem
 Meer statt auf dem dunklen Nachtbild, so bleibt die dunkle Schrift gut

@@ -4,13 +4,25 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.185
+## 1.3.186
 
-Release 1.3.185 fixes the light theme behind the menus. The main menu and
+Release 1.3.186 fixes the light theme behind the menus. The main menu and
 every window opened over a mission (help, options, save and load, quit) now
 sit on a bright day scene with sun and light sea instead of the dark night
 picture, so the dark text stays easy to read. The night theme looks as
 before. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+
+## 1.3.185
+
+Release 1.3.185 keeps the Remote Crew host responsive. Loading, a new game,
+starting a mission and saving from the browser, as well as the web-host
+password check, no longer hold up every other browser while they run, so
+polls, sonar audio and voice keep flowing. Polling no longer re-reads each
+station's full picture. Failed logins and pairing attempts now count per
+address, so a stranger can no longer lock the host out of the web-host room,
+and that room no longer changes its code after their attempts. An observer
+switching views no longer interrupts the sonar operator's live audio. Keys
+are unchanged. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.184
 

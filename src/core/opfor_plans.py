@@ -23,8 +23,6 @@ from src.core import commander_traits
 
 # A ping this recent (s) still drives the boat deep.
 PINGED_S = 600.0
-# A bearing this fresh (s) counts as "the frigate is heard".
-HEARD_S = 300.0
 # From this damage (%) a boat that hears the frigate opens the range.
 DAMAGED_PCT = 40.0
 # A daring or stubborn hunter that has searched this long (s) without a
@@ -49,8 +47,9 @@ def sub_plan(sub, habits: tuple = ()) -> str:
     ``habits`` are the frigate player's habits the enemy knows."""
     memory = sub.memory
     kind = commander_traits.sub_kind(sub)
-    heard = (memory.get("contact_bearing") is not None
-             and memory.get("contact_age", float("inf")) <= HEARD_S)
+    # The frigate is heard while the boat keeps a bearing: it drops the bearing
+    # once its contact is SUB_EVADE_DURATION_S old (the age never gets older).
+    heard = memory.get("contact_bearing") is not None and "contact_age" in memory
     if heard and sub.damage >= DAMAGED_PCT:
         return "slip_away"
     if memory.get("last_ping_age", float("inf")) <= PINGED_S:

@@ -2,13 +2,19 @@
 ``AUTOSAVE_INTERVAL_S`` wall seconds and on a normal quit; "Continue" in the
 main menu loads it. ``Game`` mixin.
 
-The autosave is an ordinary exact-v48 save document beside the five slots and
+The autosave is an ordinary exact-v50 save document beside the five slots and
 goes through the same strict loader. It never touches the simulation: the
 document is built and serialized on the main thread (the save dict shares
-lists with live state), only the compact bytes go to a background thread that
-stages, ``fsync``s and atomically replaces the file. A finished mission (won,
+lists with live state); only the text goes to one background worker
+(``AutosaveWorker``) that checks it with the loader's pure validator and then
+stages, ``fsync``s and atomically replaces the file. A document the loader
+would reject is never written. The worker holds at most one pending job (a
+newer autosave replaces a queued older one); its outcomes come back to the
+main thread, which records faults and flashes. A quit waits for the worker; a
+mission end, a new mission and a load cancel the pending job and wait for the
+running one first, so no late write overtakes them. A finished mission (won,
 lost or sunk) deletes the autosave, so "Continue" never resumes a debrief.
-A crash writes nothing: the last periodic autosave stays.
+A crash writes the last recovery point through the same worker and waits.
 """
 
 from __future__ import annotations
@@ -17,12 +23,16 @@ import json
 import os
 import tempfile
 import threading
+from collections import deque
 
-from src.core import config
+from src.core import config, crashlog
 from src.core.i18n import message
+from src.core.save_validate import opz_chart_size
 
 CONTINUE_ENTRY = "continue"
 AUTOSAVE_FILE = "autosave.json"
+# Outcomes kept for the main thread (it reads them every frame).
+_RESULTS_MAX = 8
 
 
 def autosave_path() -> str:
@@ -47,12 +57,92 @@ def _write_atomically(path: str, payload: bytes) -> None:
             os.unlink(temporary)
 
 
+class AutosaveWorker:
+    """One daemon thread (alive only while there is work) that checks and
+    writes autosave texts.
+
+    At most one job waits; ``submit`` replaces a queued older one. The thread
+    only runs pure functions (``save_text_problem`` with a precomputed OPZ
+    chart size) and the file write: no pygame, no live game state. Outcomes
+    ``(sequence, ok, problem, check_failed)`` are collected for the main
+    thread by ``results``."""
+
+    def __init__(self):
+        self._cond = threading.Condition()
+        self._pending = None
+        self._busy = False
+        self._thread = None
+        self._sequence = 0
+        self._results = deque(maxlen=_RESULTS_MAX)
+
+    def submit(self, path: str, text: str, opz_chart) -> int:
+        with self._cond:
+            self._sequence += 1
+            self._pending = (self._sequence, path, text, opz_chart)
+            if self._thread is None:
+                # Started on demand; it ends itself once nothing is queued.
+                self._thread = threading.Thread(target=self._run, name="autosave",
+                                                daemon=True)
+                self._thread.start()
+            self._cond.notify_all()
+            return self._sequence
+
+    def cancel(self) -> bool:
+        """Drop the queued job (the running one finishes). True if one was."""
+        with self._cond:
+            dropped = self._pending is not None
+            self._pending = None
+            self._cond.notify_all()
+            return dropped
+
+    def wait(self) -> None:
+        """Block until no job is queued or running."""
+        with self._cond:
+            while self._pending is not None or self._busy:
+                self._cond.wait()
+
+    def idle(self) -> bool:
+        with self._cond:
+            return self._pending is None and not self._busy
+
+    def results(self) -> list:
+        with self._cond:
+            items = list(self._results)
+            self._results.clear()
+            return items
+
+    def _run(self) -> None:
+        from src.core.game_save import save_text_problem
+        while True:
+            with self._cond:
+                if self._pending is None:
+                    self._thread = None
+                    return
+                sequence, path, text, opz_chart = self._pending
+                self._pending = None
+                self._busy = True
+            problem, check_failed = None, False
+            try:
+                problem = save_text_problem(text, opz_chart)
+                check_failed = problem is not None
+                if problem is None:
+                    _write_atomically(path, text.encode("utf-8"))
+            except OSError as exc:
+                problem = f"autosave write failed: {exc!r}"
+            except Exception as exc:  # noqa: BLE001 - reported to the main thread
+                problem, check_failed = f"autosave check failed: {exc!r}", True
+            with self._cond:
+                self._results.append((sequence, problem is None, problem, check_failed))
+                self._busy = False
+                self._cond.notify_all()
+
+
 class AutosaveMixin:
     """Periodic autosave of the running mission and the menu's Continue entry."""
 
     def _init_autosave(self) -> None:
         self._autosave_elapsed_s = 0.0
-        self._autosave_thread = None
+        self._autosave_worker = AutosaveWorker()
         self._autosave_failed = False
         self.autosave_available = self._autosave_exists()
 
@@ -77,6 +167,7 @@ class AutosaveMixin:
 
     def autosave_tick(self, wall_dt: float) -> None:
         """Count wall time of a running mission; save when the interval is up."""
+        self._autosave_poll()
         if not self._mission_running_for_autosave():
             self._autosave_elapsed_s = 0.0
             return
@@ -92,23 +183,20 @@ class AutosaveMixin:
     def autosave(self, background: bool = False) -> bool:
         """Write the running mission to ``autosave.json``.
 
-        Returns False when there is nothing to save or the previous background
-        write is still running (it is never queued twice).
+        The document is built and serialized here (main thread); the check and
+        the write run on the worker. ``background=False`` waits for the worker
+        and returns whether this autosave was written; in the background it
+        returns True once queued (its outcome arrives through
+        ``autosave_tick``). False when there is nothing to save.
         """
         if (not self._mission_running_for_autosave() or self.game_over
                 or getattr(self, "_autosave_blocked", False)):
             # Blocked: the recovery snapshot already is the autosave and the
             # live state behind it failed (src/core/game_resilience.py).
             return False
-        thread = self._autosave_thread
-        if thread is not None and thread.is_alive():
-            if background:
-                return False
-            thread.join()
         try:
             document = self.save_state()
-            payload = json.dumps(document, allow_nan=False,
-                                 separators=(",", ":")).encode("utf-8")
+            text = json.dumps(document, allow_nan=False, separators=(",", ":"))
             # The same document is a fresh recovery point at no extra cost.
             take = getattr(self, "take_recovery_snapshot", None)
             if take is not None:
@@ -116,34 +204,53 @@ class AutosaveMixin:
         except (TypeError, ValueError, OverflowError, RecursionError):
             self._autosave_failed = True
             return False
-        path = autosave_path()
+        return self._submit_autosave_text(text, wait=not background)
 
-        def write() -> None:
-            try:
-                _write_atomically(path, payload)
+    def _submit_autosave_text(self, text: str, wait: bool) -> bool:
+        """Hand a serialized document to the worker; with ``wait`` block until
+        it is checked and written and return whether it was."""
+        sequence = self._autosave_worker.submit(autosave_path(), text, opz_chart_size())
+        if not wait:
+            return True
+        self._autosave_worker.wait()
+        outcomes = self._autosave_poll()
+        return any(item[0] == sequence and item[1] for item in outcomes)
+
+    def _autosave_poll(self, flash: bool = True) -> list:
+        """Main thread: take the worker's outcomes, record faults, flash."""
+        outcomes = self._autosave_worker.results()
+        for _sequence, ok, problem, check_failed in outcomes:
+            if ok:
                 self._autosave_failed = False
-            except OSError:
-                self._autosave_failed = True
+                self.autosave_available = True
+                continue
+            self._autosave_failed = True
+            if check_failed:
+                from src.core.game_save import SaveSelfCheckError
+                crashlog.record_fault(SaveSelfCheckError, SaveSelfCheckError(problem),
+                                      None, where="autosave")
+            if flash:
+                self.flash(message("autosave.failed"), 4.0)
+        if outcomes:
+            self.autosave_available = self.autosave_available or self._autosave_exists()
+        return outcomes
 
-        if background:
-            self._autosave_thread = threading.Thread(
-                target=write, name="autosave", daemon=True)
-            self._autosave_thread.start()
-        else:
-            write()
-        self.autosave_available = not self._autosave_failed or self._autosave_exists()
-        return True
+    def _settle_autosave(self) -> None:
+        """Before a mission end, a new mission or a load: drop the queued
+        autosave and wait for the running write, so none lands afterwards."""
+        self._autosave_worker.cancel()
+        self._autosave_worker.wait()
+        self._autosave_poll(flash=False)
 
     def wait_for_autosave(self) -> None:
-        thread = self._autosave_thread
-        if thread is not None and thread.is_alive():
-            thread.join()
+        self._autosave_worker.wait()
+        self._autosave_poll()
 
     def discard_autosave(self) -> None:
         """Remove the autosave (the mission ended); a missing file is fine."""
+        self._settle_autosave()
         if not self.autosave_available:
             return
-        self.wait_for_autosave()
         try:
             os.unlink(autosave_path())
         except FileNotFoundError:
@@ -153,7 +260,8 @@ class AutosaveMixin:
         self.autosave_available = False
 
     def autosave_on_exit(self) -> None:
-        """Normal quit: save the running mission so Continue can resume it."""
+        """Normal quit: save the running mission so Continue can resume it.
+        Returns only after the worker has finished (written or refused)."""
         try:
             self.autosave(background=False)
         except Exception:  # noqa: BLE001 - quitting must never fail over it
@@ -164,6 +272,7 @@ class AutosaveMixin:
     def continue_from_autosave(self) -> bool:
         """Load ``autosave.json``; on failure the file stays and a note shows."""
         from src.core.game_save import _read_save_document
+        self._settle_autosave()
         path = autosave_path()
         if not self._autosave_exists():
             self.autosave_available = False

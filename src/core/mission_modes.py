@@ -562,18 +562,22 @@ def _clock(seconds: float) -> str:
 
 
 def boat_objective(game, boat, kind):
-    """The crewed boat's own orders line (its own truth and orders only)."""
+    """The crewed boat's own orders line (its own truth and orders only):
+    bearings and ranges from the dead-reckoned position (``boat_nav``)."""
+    from src.core import boat_nav
     sub = boat.sub
+    bx, by = boat_nav.position(boat)
     if kind in ("homecoming", "pickup"):
         point = goal(game, kind)
-        dx, dy = point["x"] - sub.x, point["y"] - sub.y
+        dx, dy = point["x"] - bx, point["y"] - by
         params = dict(bearing=f"{math.degrees(math.atan2(dx, -dy)) % 360.0:03.0f}",
                       range=f"{math.hypot(dx, dy):.1f}")
         if kind == "homecoming":
             return message("uboot.objective.homecoming", **params)
         if _progress(game)["phase"] == 1:
             return message("uboot.objective.pickup_escape", **params)
-        if math.hypot(dx, dy) <= point["radius_nm"]:
+        if (boat_missions.in_lockout(game, sub)
+                or math.hypot(dx, dy) <= point["radius_nm"]):
             left = max(0.0, config.PICKUP_HOLD_S - _progress(game)["hold_s"])
             return message("uboot.objective.pickup_hold" if boat_missions.in_lockout(game, sub)
                            else "uboot.objective.pickup_zone", left=_clock(left),
@@ -589,7 +593,7 @@ def boat_objective(game, boat, kind):
                        kinds=elint_kinds(game), need=config.ELINT_EMITTERS)
     if kind == "datum":
         cx, cy = centre(game.world, game.scenario_key)
-        left = max(0.0, datum_radius(game) - math.hypot(sub.x - cx, sub.y - cy))
+        left = max(0.0, datum_radius(game) - math.hypot(bx - cx, by - cy))
         return message("uboot.objective.datum", range=f"{left:.1f}")
     if kind == "trail":
         return message("uboot.objective.trail")

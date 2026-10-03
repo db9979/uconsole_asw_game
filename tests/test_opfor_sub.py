@@ -680,7 +680,10 @@ def test_local_fire_asks_bearing_then_range_with_presets():
     key(pygame.K_f)
     type_number(f"{bearing:03d}")
     assert game.input_mode == "uboot_range"
-    type_number("6")
+    type_number("6")                 # Enter confirms the distance, it never fires
+    assert game.input_mode == "uboot_range" and not _crew_torpedoes(game, boat.sub)
+    key(pygame.K_RETURN, pygame.KMOD_CTRL)
+    assert game.input_mode is None
     for _ in range(4):
         game._update_sim(0.05)
     fired = _crew_torpedoes(game, boat.sub)

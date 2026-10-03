@@ -61,7 +61,7 @@ def test_every_station_has_a_complete_chapter_with_generated_keys_and_procedure(
         assert len(table.rows) == len(STATION_HELP[station][1])
     quickstart = [b.marker for b in _blocks("quickstart", "en")
                   if b.marker and b.kind != "figure"]
-    assert quickstart == ["keys:global", "keys:web"]
+    assert quickstart == ["keys:global", "keys:menu", "keys:web"]
 
 
 @pytest.mark.parametrize("lang", manual.LANGUAGES)
@@ -290,7 +290,8 @@ def test_the_submarine_chapter_carries_every_boat_station_procedure():
         catalog = load_catalog(lang)
         blocks = _blocks("submarine", lang)
         markers = [b.marker for b in blocks if b.marker and b.kind != "figure"]
-        assert markers == [f"sop:uboot_{slug}" for slug in UBOOT_SOP_SLUGS.values()]
+        assert markers == ["keys:uboot_global"] + [f"sop:uboot_{slug}"
+                                                   for slug in UBOOT_SOP_SLUGS.values()]
         for station, keys in UBOOT_SOP.items():
             assert len(keys) == 5 and all(catalog.get(key) for key in keys), station
             block = next(b for b in blocks if b.marker == f"sop:uboot_{UBOOT_SOP_SLUGS[station]}")

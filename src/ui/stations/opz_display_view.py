@@ -215,7 +215,7 @@ def draw_display_page(game, surface, x: int, y: int, w: int, bottom: int) -> Non
     values = game.opz_display_settings()
     count = len(opz_display.KEYS)
     selected = int(getattr(game, "opz_display_sel", 0)) % count
-    hint_h = 44
+    hint_h = 65
     row_h = max(20, min(28, (bottom - y - hint_h) // count))
     value_w = max(72, int(w * .38))
     for index, key in enumerate(opz_display.KEYS):
@@ -239,10 +239,11 @@ def draw_display_page(game, surface, x: int, y: int, w: int, bottom: int) -> Non
 
         pointer.add_action(row, pick)
         y += row_h
-    # Two short key lines, every key clickable.
+    # Three short key lines, every key clickable.
     for index, (key, tokens) in enumerate((
             ("opz.display.hint", (("↑/↓", "↑/↓"), ("←/→", "←/→"))),
-            ("opz.display.hint_reset", (("Backspace", "Backspace"),)))):
+            ("opz.display.hint_reset", (("Backspace", "Backspace"),)),
+            ("opz.display.hint_reset_all", (("Shift+Backspace", "Shift+Backspace"),)))):
         rect = (x, bottom - hint_h + 2 + index * 21, w, 20)
         layout.blit_line(surface, key, rect, config.COLOR_TEXT_DIM, size=13)
         pointer.add_token_keys(rect, localize(key), 13, tokens)

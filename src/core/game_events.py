@@ -41,6 +41,10 @@ from src.core.game_pointer import PointerMixin
 from src.core.game_station_keys import StationKeysMixin
 
 
+# Menu pages besides the main menu where W/R/F and [ / ] (world, seed,
+# fullscreen, real sector) act: the scenario setup of the next mission.
+WORLD_KEY_SCREENS = ("scenario", "difficulty", "briefing")
+
 # Input and window changes redraw an eco frame at once; pointer motion does not.
 _ECO_REFRESH_EVENTS = frozenset(
     getattr(pygame, name) for name in (
@@ -80,6 +84,37 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
         self._clear_station_input()
         self._stop_sonar_audio()
         self._frame_clock_reset = True
+
+    # Global functions shared by their key and the top bar's game menu
+    # (src/ui/game_menu.py): a menu row calls exactly what the key calls.
+
+    def toggle_station_autocrew(self) -> bool:
+        """F2: the autocrew of the station shown on or off."""
+        enabled = self.autocrew.toggle(self.station, self.sim_t)
+        self._clear_station_input()
+        self.flash(message("autocrew.toggled.on" if enabled
+                           else "autocrew.toggled.off",
+                           station=display_value(
+                               "station", self.station.name, self.tr)))
+        return enabled
+
+    def open_autocrew_overview(self) -> None:
+        """F3: the autocrew overview over the station."""
+        self._clear_station_input()
+        self.autocrew_overview_open = True
+
+    def open_weather_station(self) -> None:
+        """0: the weather and sonar analysis panel over the station."""
+        self._clear_station_input()
+        self.pinned_tooltip = None
+        self._tooltip_anchor = None
+        self.weather_station_open = True
+
+    def menu_toggle_plot(self) -> None:
+        """P from the game menu, with the key's checks."""
+        if self._local_station_input_locked() or self._plot_view() is None:
+            return
+        self.toggle_plot_mode()
 
     def _local_station_input_locked(self) -> bool:
         key = station_key(self.station)
@@ -175,6 +210,9 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             return
         if e.type == pygame.KEYDOWN and getattr(e, "repeat", False):
             return
+        if e.type == pygame.KEYDOWN and self.game_menu_open:
+            # Any key closes the top bar's game menu, then acts as usual.
+            self.game_menu_open = False
         if (e.type == pygame.KEYDOWN
                 and e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
                 and getattr(e, "mod", 0) & pygame.KMOD_ALT):
@@ -245,6 +283,9 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             if e.type == pygame.MOUSEWHEEL:
                 self._scroll_simlog_view(-e.y * 3)
                 return
+            if (e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP)
+                    and pointer_input.handle(self, e)):
+                return      # the view's close box presses Esc
             if e.type == pygame.KEYDOWN:
                 if e.key in (pygame.K_F4, pygame.K_ESCAPE):
                     self._close_simlog_view()
@@ -269,6 +310,10 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     return
                 return
             return
+        if ((self.autocrew_overview_open or self.weather_station_open)
+                and e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP)
+                and pointer_input.handle(self, e)):
+            return      # the panel's close box (or the top bar's menu) took the click
         if self.autocrew_overview_open:
             if e.type == pygame.QUIT:
                 self.autocrew_overview_open = False
@@ -487,22 +532,13 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 self.toggle_crew_assist()
                 return
             if e.key == pygame.K_F2:
-                enabled = self.autocrew.toggle(self.station, self.sim_t)
-                self._clear_station_input()
-                self.flash(message("autocrew.toggled.on" if enabled
-                                   else "autocrew.toggled.off",
-                                   station=display_value(
-                                       "station", self.station.name, self.tr)))
+                self.toggle_station_autocrew()
                 return
             if e.key == pygame.K_F3:
-                self._clear_station_input()
-                self.autocrew_overview_open = True
+                self.open_autocrew_overview()
                 return
             if e.key in (pygame.K_0, pygame.K_KP0):
-                self._clear_station_input()
-                self.pinned_tooltip = None
-                self._tooltip_anchor = None
-                self.weather_station_open = True
+                self.open_weather_station()
                 return
             if e.key == pygame.K_F4:
                 self._open_simlog_view()
@@ -736,7 +772,9 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 return
             # The OPZ's Display page: arrows, Enter and Backspace set the chart.
             if (self.station is Station.OPZ and self.station_page == 4
-                    and not getattr(e, "mod", 0) & (pygame.KMOD_CTRL | pygame.KMOD_SHIFT)
+                    and not getattr(e, "mod", 0) & pygame.KMOD_CTRL
+                    and (not getattr(e, "mod", 0) & pygame.KMOD_SHIFT
+                         or e.key == pygame.K_BACKSPACE)
                     and self._opz_display_key(e)):
                 return
             # The raised binoculars take ↑/↓ (tilt), ←/→ (train), Q/E (zoom)
@@ -829,7 +867,12 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 return
             if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
                     and self.station is Station.RADIO:
-                self.capture_hfdf()
+                # Enter confirms the page's entry: the selected task on the
+                # Tasks page (as A), the HF/DF bearing on the others.
+                if self.station_page == 2:
+                    self._task_accept_selected()
+                else:
+                    self.capture_hfdf()
                 return
             if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
                     and self.station is Station.OPZ:
@@ -920,6 +963,10 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 self._route_result(self.clear_route(), "runtime.route.cleared")
             elif e.key == pygame.K_w and self.station is Station.BRIDGE:
                 self._route_result(self.cycle_route_pattern())
+            elif (e.key == pygame.K_w and self.station is Station.HELICOPTER
+                  and not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL)):
+                # W: waypoint on the selected contact, as the patrol aircraft's W.
+                self._helo_waypoint_feedback(self.helicopter_waypoint_to_selection())
             elif e.key == pygame.K_DELETE and self.station is Station.OPZ:
                 self._toggle_opz_suppression()
             elif e.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
@@ -1435,16 +1482,30 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
 
     # --- M10–M16: Neue Stationen & Waffensysteme ---
 
+    def menu_world_keys_live(self) -> bool:
+        """W (world mode), R (seed), F (fullscreen) and [ / ] (real sector)
+        act only on the main menu (or the first-launch welcome in its place)
+        and on the scenario pages whose mission they set up; the lobby,
+        logbook, bug report and the other menu pages keep their own keys."""
+        return self.in_menu and (self.main_menu or self.welcome_active
+                                 or self.menu_screen in WORLD_KEY_SCREENS)
+
     def _handle_menu_key(self, key) -> None:
+        if self.menu_world_keys_live() and self._handle_menu_world_key(key):
+            return
+        self._handle_menu_page_key(key)
+
+    def _handle_menu_world_key(self, key) -> bool:
         if key == pygame.K_f:
             self.toggle_fullscreen()
-            return
+            return True
         if key == pygame.K_w:
             self.world_mode = {"procedural": "fixed", "fixed": "real_fixed",
                                "real_fixed": "procedural"}[self.world_mode]
-            return
-        if self.world_mode == "real_fixed" and key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
-            delta = -1 if key == pygame.K_PAGEUP else 1
+            return True
+        if self.world_mode == "real_fixed" and key in (pygame.K_LEFTBRACKET,
+                                                       pygame.K_RIGHTBRACKET):
+            delta = -1 if key == pygame.K_LEFTBRACKET else 1
             sector = (self.seed % 128 + delta) % 128
             candidate = self.seed - self.seed % 128 + sector
             if candidate == 0:
@@ -1452,10 +1513,13 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             elif candidate >= 1_000_000_000:
                 candidate -= 128
             self.seed = candidate
-            return
+            return True
         if key == pygame.K_r:
             self._reroll_menu_seed()
-            return
+            return True
+        return False
+
+    def _handle_menu_page_key(self, key) -> None:
         if self.welcome_active:
             self._handle_welcome_key(key)
             return

@@ -18,7 +18,8 @@ from src.core.i18n import (Translator, display_value, localized, localize,
                            message, raw_text, translation_scope)
 from src.core.game_noise import microphone_failure_key, microphone_state_key
 from src.core.preferences import save_preferences
-from src.core.help import get_global_help, get_help, get_sop, get_uboot_help, get_uboot_sop
+from src.core.help import (get_global_help, get_help, get_menu_help, get_sop,
+                           get_uboot_global_help, get_uboot_help, get_uboot_sop)
 from src.core import manual
 from src.core.station import Station
 from src.core import pointer_input, station_alarms, uboot_local
@@ -28,7 +29,7 @@ from src.ui import observations
 from src.ui import overlay_style, quality
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.shock_fx import ShockFx
-from src.ui import hit_inset, mic_meter
+from src.ui import game_menu, hit_inset, mic_meter
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -362,13 +363,16 @@ class DrawMixin:
                 color=config.COLOR_WARN if self.local_side == "uboot"
                 else config.COLOR_TEXT_DIM)
 
+        if not self.menu_world_keys_live():
+            # World, seed and fullscreen keys act on these two pages only.
+            return
         if self.world_mode in ("procedural", "real_fixed"):
             from src.world.real_coast import sector_for_seed
             sector, _ = sector_for_seed(self.seed)
             world_label = sector["name"]
             if self.world_mode == "real_fixed":
                 center(self.tr("menu.real_fixed_hint", sector=sector["id"]),
-                       config.SCREEN_H - 92, color=config.COLOR_TEXT_DIM)
+                       config.SCREEN_H - 92, color=config.COLOR_TEXT_DIM, keys=(None, "]"))
         else:
             world_label = self.tr("menu.fixed_chart")
         center(self.tr("menu.world_status", world=world_label, seed=self.seed),
@@ -585,6 +589,9 @@ class DrawMixin:
             # Noise discipline: the microphone meter in the top bar.
             self.guarded_view("mic_meter", tuple(mic_meter.RECT), mic_meter.draw, self, s,
                               "uboot" if self.local_side == "uboot" else "frigate")
+        if self.game_menu_open:
+            with pointer.layer("popup"):
+                game_menu.draw_menu(self)
         with pointer.layer("overlay"):
             if self.quit_confirm:
                 self.draw_quit_overlay()
@@ -612,7 +619,7 @@ class DrawMixin:
         if (not self.in_menu and not self.splash_active and self.editor is None
                 and not self.simlog_view_open and not self._station_overlay_open
                 and self.tooltips_enabled and not eco
-                and self.local_side != "uboot"
+                and self.local_side != "uboot" and not self.game_menu_open
                 and not self.administration_open and not self.game_over):
             canvas = self._window_to_canvas(pygame.mouse.get_pos())
             payload = self.pinned_tooltip or self.tooltip_at(canvas)
@@ -672,13 +679,18 @@ class DrawMixin:
                                               value=self.input_buffer),
                          (rect.x + 14, rect.y + 8, rect.w - 28, 26),
                          config.COLOR_TEXT, size=20)
-        layout.blit_line(self.screen, self.tr("input.hint"),
+        hint = "input.hint_fire" if self.input_mode == "uboot_range" else "input.hint"
+        layout.blit_line(self.screen, self.tr(hint),
                          (rect.x + 14, rect.y + 38, rect.w - 28, 22),
                          config.COLOR_TEXT_DIM, size=14)
         # A keypad under the entry: every key is a click (full mouse control).
         keys = ([(raw_text(str(digit)), pygame.K_0 + digit) for digit in range(10)]
                 + [(raw_text("."), pygame.K_PERIOD), (raw_text("⌫"), pygame.K_BACKSPACE),
                    ("help.key.enter", pygame.K_RETURN), (raw_text("Esc"), pygame.K_ESCAPE)])
+        # The firing range: the Enter cell is the fire key (Ctrl+Enter only fires).
+        fire_entry = self.input_mode == "uboot_range"
+        if fire_entry:
+            keys[-2] = ("help.key.uboot_fire", pygame.K_RETURN)
         narrow = (rect.w - 2 * 96) // (len(keys) - 2)
         with pointer.layer("input"):
             x = rect.x
@@ -690,7 +702,8 @@ class DrawMixin:
                 pygame.draw.rect(self.screen, config.COLOR_GRID, cell, 1)
                 layout.blit_line(self.screen, label, cell.inflate(-4, -6),
                                  config.COLOR_TEXT, size=16, align="center")
-                pointer.add_key(cell, key)
+                pointer.add_key(cell, key, pygame.KMOD_CTRL
+                                if fire_entry and key == pygame.K_RETURN else 0)
 
     @localized
     def top_bar_scenario(self) -> str:
@@ -719,7 +732,8 @@ class DrawMixin:
             draw_lamp(s, rect, alarms.get(station.name.lower()), self._t)
             pointer.add_key(rect, pygame.K_1 + index)
         self._top_status_right = tabs[-1].right
-        switch = draw_theme_switch(self)
+        draw_theme_switch(self)
+        switch = game_menu.draw_button(self) or theme_switch_rect()
         if self.msg and self._t < self.msg_until:
             return      # the flash banner stands in the status line's place
         txt = self.tr("top.status_short", scenario=self.top_bar_scenario(),
@@ -974,7 +988,11 @@ class DrawMixin:
                      + line.lstrip(" ") for line in manual.text_lines(blocks, width)]
             return lines, visible
         if self.help_page == 0:
-            title, bindings = get_global_help(self.tr)
+            # The keys that work here: the menu pages, the submarine or the frigate.
+            title, bindings = (get_menu_help(self.tr) if self.in_menu
+                               else get_uboot_global_help(self.tr)
+                               if self.local_side == "uboot"
+                               else get_global_help(self.tr))
             text = title + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in bindings)
         elif self.help_page == 1 and self.local_side == "uboot":
             from src.core import uboot_local
@@ -1003,10 +1021,11 @@ class DrawMixin:
         overlay_style.panel(s, (bx, by, bw, bh))
         help_title = self.tr("help.title", station=display_value(
             "station", self.station.name, self.tr).upper())
-        overlay_style.title(s, help_title, (bx + 18, by + 8, bw - 36, 40), size=30,
+        overlay_style.title(s, help_title, (bx + 18, by + 8, bw - 76, 40), size=30,
                             align="left")
-        # Mouse: the title steps the category, the wheel scrolls.
-        pointer.add_key((bx + 18, by + 8, bw - 36, 40), pygame.K_TAB)
+        # Mouse: the title steps the category, the wheel scrolls, [x] closes.
+        pointer.add_key((bx + 18, by + 8, bw - 76, 40), pygame.K_TAB)
+        game_menu.close_button(s, (bx, by, bw, bh))
         overlay_style.rule(s, bx + 18, by + 48, bw - 36)
         x = bx + 20
         w = bw - 40
@@ -1035,8 +1054,9 @@ class DrawMixin:
         bx = (config.SCREEN_W - bw) // 2
         by = (config.SCREEN_H - bh) // 2
         overlay_style.panel(s, (bx, by, bw, bh))
-        overlay_style.title(s, "panel.nations", (bx + 18, by + 8, bw - 36, 38), size=30,
+        overlay_style.title(s, "panel.nations", (bx + 18, by + 8, bw - 76, 38), size=30,
                             align="left")
+        game_menu.close_button(s, (bx, by, bw, bh))
         summary = getattr(self, "_nations_summary", None)
         if summary is None:
             summary = reference_summary(self.world.coast, self.runtime_catalog)
@@ -1082,7 +1102,8 @@ class DrawMixin:
         by = (config.SCREEN_H - bh) // 2
         overlay_style.panel(s, (bx, by, bw, bh))
         overlay_style.title(s, self.tr("save.title", mode=mode),
-                            (bx + 18, by + 12, bw - 36, 38), size=26)
+                            (bx + 52, by + 12, bw - 104, 38), size=26)
+        game_menu.close_button(s, (bx, by, bw, bh))
         overlay_style.rule(s, bx + 18, by + 54, bw - 36)
         ly = by + 70
         for slot in range(1, 6):
@@ -1226,6 +1247,7 @@ class DrawMixin:
         rect = pygame.Rect(260, 40, 760, 660)
         overlay_style.panel(self.screen, rect)
         overlay_style.title(self.screen, "option.title", (400, 64, 480, 48), size=32)
+        game_menu.close_button(self.screen, rect)
         for page, tab in enumerate(self._options_page_rects()):
             active = page == self.options_page
             if active:
@@ -1378,6 +1400,7 @@ class DrawMixin:
         rect = pygame.Rect(260, 40, 760, 660)
         overlay_style.panel(self.screen, rect)
         overlay_style.title(self.screen, "live_traffic.title", (292, 64, 696, 48), size=32)
+        game_menu.close_button(self.screen, rect)
         online = self.connectivity.online
         status_key = ("live_traffic.online" if online
                      else "live_traffic.offline" if online is False
@@ -1456,8 +1479,9 @@ class DrawMixin:
         rect = pygame.Rect(260, 185 - 20 * (len(choices) - 3),
                            760, 330 + 40 * (len(choices) - 3))
         overlay_style.panel(s, rect)
-        overlay_style.title(s, "quit.title", (rect.x + 20, rect.y + 20,
-                            rect.w - 40, 38), size=30)
+        overlay_style.title(s, "quit.title", (rect.x + 48, rect.y + 20,
+                            rect.w - 96, 38), size=30)
+        game_menu.close_button(s, rect)
         layout.blit_line(s, "quit.warning",
                          (rect.x + 20, rect.y + 74, rect.w - 40, 26),
                          overlay_style.accent_color(), size=16, align="center")

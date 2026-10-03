@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.174
+## 1.3.175
 
-Release 1.3.174 comes out of a review of the whole code. Weapon keys with
+Release 1.3.175 comes out of a review of the whole code. Weapon keys with
 Shift or Ctrl no longer fire by mistake: Shift+A (ping) no longer launches an
 ASROC and Ctrl+R (aircraft radar) no longer fires the rocket launcher at
 Weapons, and Shift+A on the submarine no longer switches silent running. A
@@ -18,6 +18,16 @@ and manual link, and four sonar and helicopter drop-downs no longer jump back
 while in use. A save made while the frigate sat on a shoal now loads again
 after the tide has risen. Help texts were corrected (tasks page, OPZ zoom, debrief keys,
 German wording, "submarine" instead of "boat"), and unused code went. Saves
+are v50; v38 to v49 saves still load.
+
+## 1.3.174
+
+Release 1.3.174 fills the Remote Crew operational log. It used to show only a
+few browser alerts and so looked empty; now every station lists the same
+entries as F11 on the uConsole, newest first, with time and category tag:
+the frigate's stations the frigate's log, the submarine's stations the boat
+log. A long log scrolls inside its drawer and leaves the chart its room. On
+the uConsole, F11 now opens the boat log on the submarine side too. Saves
 are v50; v38 to v49 saves still load.
 
 ## 1.3.173

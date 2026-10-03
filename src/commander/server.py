@@ -250,6 +250,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         self._init_advisor()
         self._v2_events = {}
         self._v2_private_events = {}
+        self._v2_events_fingerprint = None
         self._v2_simlogs = {}
         # id(entry) -> (entry, compact JSON bytes) of the last SimLog publication
         # (main thread only); holding the entry keeps its id from being reused.
@@ -1496,20 +1497,31 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         previous = 0
         for row in rows:
             if (type(row) is not dict
-                    or set(row) != {"seq", "kind", "severity", "message"}
+                    or set(row) != {"seq", "kind", "severity", "message", "stamp", "tag"}
                     or type(row["seq"]) is not int
                     or not previous < row["seq"] <= _SAFE_INTEGER_MAX
                     or type(row["kind"]) is not str or not 1 <= len(row["kind"]) <= 32
                     or row["severity"] not in ("info", "warning")
                     or type(row["message"]) is not str
-                    or not 1 <= len(row["message"]) <= 512):
+                    or not 1 <= len(row["message"]) <= 512
+                    or type(row["stamp"]) is not str or len(row["stamp"]) > 32
+                    or type(row["tag"]) is not str or len(row["tag"]) > 8):
                 return False
             previous = row["seq"]
         return True
 
     def publish_events_v2(self, *, world_session, world_epoch, latest_seq,
-                          events_by_role, private_events=()):
-        """Publish bounded role events plus proposal events for exact origins."""
+                          events_by_role, private_events=(), fingerprint=None):
+        """Publish bounded role events plus proposal events for exact origins.
+
+        A ``fingerprint`` equal to the last publication's (with no private
+        events and nothing cleared since) skips the unchanged documents.
+        """
+        if (fingerprint is not None and not private_events
+                and fingerprint == self._v2_events_fingerprint):
+            with self._lock:
+                if self._v2_events and not self._v2_private_events:
+                    return
         if (not _ref(world_session) or type(world_epoch) is not int
                 or not 0 <= world_epoch <= _SAFE_INTEGER_MAX
                 or type(latest_seq) is not int
@@ -1551,6 +1563,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                     "role": role, "latest_seq": latest_seq, "events": merged})
             self._v2_events = base
             self._v2_private_events = encoded_private
+            self._v2_events_fingerprint = fingerprint
 
     def publish_simlog_v2(self, *, world_session, world_epoch, entries_by_role):
         """Publish bounded host-granted histories including diagnostic truth."""

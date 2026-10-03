@@ -212,7 +212,8 @@ def _websocket_frame(payload, opcode=2):
 SIMLOG_MAX_BYTES = 2 * 1024 * 1024
 # The finished mission's debrief replay, one document per side.
 DEBRIEF_MAX_BYTES = 1024 * 1024
-EVENTS_MAX = 128
+# The mission log keeps as many entries as the uConsole's F11 log.
+EVENTS_MAX = 200
 SIMLOG_ENTRIES_MAX = 64
 
 

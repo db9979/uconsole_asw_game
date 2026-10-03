@@ -69,6 +69,14 @@
 .event-list li { display: grid; grid-template-columns: minmax(7rem, auto) minmax(0, 1fr); gap: .7rem; padding: .25rem .5rem; border-left: 2px solid var(--line); line-height: 1.4; }
 .event-list li:nth-child(odd) { background: var(--bg-2); }
 .event-list li.warning { border-left-color: var(--alarm); color: var(--text); }
+.event-list .event-meta { font-family: var(--font-mono); color: var(--text-dim); white-space: nowrap; }
+.event-list .event-text { overflow-wrap: anywhere; }
+/* Category colours as on the uConsole's F11 log. */
+.event-list li[data-category="funk"], .event-list li[data-category="radio"], .event-list li[data-category="opz"] { border-left-color: var(--blue); }
+.event-list li[data-category="sonar"] { border-left-color: var(--green); }
+.event-list li[data-category="waffen"] { border-left-color: var(--amber); }
+.event-list li[data-category="schaden"] { border-left-color: var(--red); }
+.event-list li[data-category="mission"], .event-list li[data-category="ausguck"] { border-left-color: var(--caution); }
 .event-list li.warning .event-meta { color: var(--alarm-2); }
 .event-meta { display: inline; margin: 0; color: var(--text-faint); font: var(--font-xs) var(--font-mono); white-space: nowrap; }
 .log-drawer footer, #log-drawer footer { display: flex; justify-content: space-between; gap: 1rem; padding: .35rem .5rem; color: var(--text-faint); font-size: var(--font-xs); }

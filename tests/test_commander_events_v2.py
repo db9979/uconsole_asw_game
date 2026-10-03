@@ -8,7 +8,7 @@ import time
 import pytest
 
 from src.commander.bridge import CommanderBridge
-from src.commander.server import CommanderServer, STATIONS
+from src.commander.server import EVENTS_MAX, CommanderServer, STATIONS
 from src.core.game import Game
 from src.sonar.sonar import Contact
 
@@ -117,7 +117,8 @@ def test_event_role_policy_and_context_are_exact(game, server):
         state = request(server, "/api/v2/state", cookie=cookie)[2]
         assert (body["session"], body["epoch"], body["role"]) == (
             state["session"], state["epoch"], role)
-        assert {row["kind"] for row in body["events"]} == expected[role]
+        alerts = {row["kind"] for row in body["events"]} & {"damage", "threat", "mission"}
+        assert alerts == expected[role]
         assert body["latest_seq"] >= max(row["seq"] for row in body["events"])
 
 
@@ -163,16 +164,74 @@ def test_events_are_bounded_detached_and_reset_with_world(game, server):
     bridge = CommanderBridge()
     bridge.pump(game, server, now=time.monotonic())
     cookie, _ = pair(server, "Bridge", "bridge")
-    for _ in range(140):
-        bridge._event("mission", "info", "commander.event.mission.won")
+    for _ in range(EVENTS_MAX + 12):
+        game.feed.add("08:00", "funk", "Log line")
     bridge.pump(game, server, now=time.monotonic() + .6)
     first = events(server, cookie)
-    assert len(first["events"]) == 128
+    assert len(first["events"]) == EVENTS_MAX
     assert first["latest_seq"] == first["events"][-1]["seq"]
-    assert first["events"][0]["seq"] == first["latest_seq"] - 127
+    assert first["events"][0]["seq"] == first["latest_seq"] - EVENTS_MAX + 1
     first["events"].clear()
-    assert len(events(server, cookie)["events"]) == 128
+    assert len(events(server, cookie)["events"]) == EVENTS_MAX
 
     game.reset(532)
     bridge.pump(game, server, now=time.monotonic() + 1.2)
     assert request(server, "/api/v2/events", cookie=cookie)[0] == 401
+
+
+def test_mission_log_matches_the_uconsole_f11_log_on_both_sides(game, server):
+    """Dominik: the web mission log stayed empty. Every station of a side now
+    gets that side's F11 log: the frigate's event feed or the boat log."""
+    from src.core.i18n import localize
+
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    frigate, _ = pair(server, "Bridge", "bridge")
+    boat, _ = pair(server, "Boat", "uboot")
+    bridge.pump(game, server, now=time.monotonic() + .3)
+    assert game.opfor is not None
+    game.feed.add("08:12", "sonar", "Frigate sonar line")
+    game.opfor.notice(game.sim_t, "navigation", "Boat navigation line", stamp="08:13")
+    bridge.pump(game, server, now=time.monotonic() + .6)
+
+    def log(cookie):
+        # No alert has fired yet: every row is a log line.
+        return events(server, cookie)["events"]
+
+    rows = log(frigate)
+    assert [row["message"] for row in rows] == [
+        str(localize(entry.text, game.tr)) for entry in game.feed.entries]
+    assert [(row["stamp"], row["tag"]) for row in rows] == [
+        (entry.stamp, entry.tag()) for entry in game.feed.entries]
+    assert rows[-1] == {"seq": rows[-1]["seq"], "kind": "sonar", "severity": "info",
+                        "message": "Frigate sonar line", "stamp": "08:12", "tag": "SONAR"}
+    boat_rows = log(boat)
+    assert [row["message"] for row in boat_rows] == [
+        str(localize(row["text"], game.tr)) for row in game.opfor.feed]
+    assert boat_rows[-1]["message"] == "Boat navigation line"
+    assert (boat_rows[-1]["stamp"], boat_rows[-1]["tag"]) == ("08:13", "NAV")
+    # Each side sees only its own log.
+    assert "Boat navigation line" not in {row["message"] for row in rows}
+    assert "Frigate sonar line" not in {row["message"] for row in boat_rows}
+
+    # New lines arrive once, numbered after the earlier ones.
+    seen = rows[-1]["seq"]
+    game.feed.add("08:14", "waffen", "Second line")
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+    bridge.pump(game, server, now=time.monotonic() + 1.8)
+    fresh = [row for row in log(frigate) if row["seq"] > seen]
+    assert [row["message"] for row in fresh] == ["Second line"]
+
+
+def test_unchanged_log_is_not_published_again(game, server):
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    cookie, _ = pair(server, "Bridge", "bridge")
+    bridge.pump(game, server, now=time.monotonic() + .6)
+    published = server._v2_events
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+    assert server._v2_events is published
+    game.feed.add("08:20", "funk", "Fresh line")
+    bridge.pump(game, server, now=time.monotonic() + 1.8)
+    assert server._v2_events is not published
+    assert events(server, cookie)["events"][-1]["message"] == "Fresh line"

@@ -185,8 +185,15 @@ def test_submarine_views_never_carry_frigate_truth():
             assert json.dumps(value) not in blob
         assert state["plot"]["objects"] == []
         assert state["audio"]["events"] == []
-    assert all(not rows for role, rows in server.events["events_by_role"].items()
-               if role in OPFOR_ROLES)
+    # The boat's stations get their own boat log (as F11 aboard), never the
+    # frigate's events or log lines.
+    from src.core.i18n import localize
+    boat_log = [str(localize(row["text"], game.tr)) for row in game.opfor.feed]
+    frigate_log = {str(localize(entry.text, game.tr)) for entry in game.feed.entries}
+    for role, rows in server.events["events_by_role"].items():
+        if role in OPFOR_ROLES:
+            assert [row["message"] for row in rows] == boat_log
+            assert not frigate_log & {row["message"] for row in rows}
 
 
 def test_submarine_sonar_commands_never_touch_the_frigate_sonar():

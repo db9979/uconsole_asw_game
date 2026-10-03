@@ -353,6 +353,11 @@ def handle_key(game, event) -> None:
         if key == pygame.K_F10:
             game._open_administration("options")
             return
+        if key == pygame.K_F11:
+            # The whole boat log over the station, as on the frigate.
+            game.feed_overlay_open = not game.feed_overlay_open
+            game.feed_overlay_scroll = 0
+            return
         if key == pygame.K_F2 and mods & pygame.KMOD_SHIFT:
             game.toggle_crew_assist()
             return
@@ -424,6 +429,12 @@ def handle_pointer(game, event) -> None:
         return
     from src.ui import uboot_view
     pos = getattr(event, "pos", None)
+    if event.type == pygame.MOUSEWHEEL and game.feed_overlay_open:
+        canvas = game._window_to_canvas(pos or pygame.mouse.get_pos())
+        if canvas is not None and game.feed_overlay_rect().collidepoint(canvas):
+            # Wheel up reads older log entries (F11), as on the frigate.
+            game.feed_overlay_scroll = max(0, game.feed_overlay_scroll + event.y * 3)
+            return
     if event.type == pygame.MOUSEWHEEL:
         pointer = uboot_view.chart_pointer(game, pos or pygame.mouse.get_pos())
         if pointer is not None:

@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.174**
+Current release: **1.3.175**
 
-Release 1.3.174 comes out of a review of the whole code. Weapon keys with
+Release 1.3.175 comes out of a review of the whole code. Weapon keys with
 Shift or Ctrl no longer fire by mistake: Shift+A (ping) no longer launches an
 ASROC and Ctrl+R (aircraft radar) no longer fires the rocket launcher at
 Weapons, and Shift+A on the submarine no longer switches silent running. A

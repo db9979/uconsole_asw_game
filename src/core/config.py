@@ -1266,6 +1266,8 @@ COLOR_TAB_ACTIVE = (18, 60, 62)    # active page tab / selected sonar row
 FEED_CATEGORIES = {
     "navigation": (COLOR_TEXT, "NAV"),
     "funk": (COLOR_ESM, "FUNK"),
+    # The crewed submarine's radio room logs as "radio".
+    "radio": (COLOR_ESM, "FUNK"),
     "sonar": (COLOR_OK, "SONAR"),
     "waffen": (COLOR_WARN, "WAF"),
     "opz": (COLOR_ESM, "OPZ"),

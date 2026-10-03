@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.169
+
+Release 1.3.169 puts other ships where the eye sees them in the lookout's
+binoculars, the horizon strip, the periscope, the hit picture, the Remote
+Crew cards and the phone lookout. A ship close aboard now floats with her
+waterline below the horizon line, as far as the eye looks down to the water
+at the range the lookout measured (about 1° at 0.5 NM from the bridge's
+18 m), instead of sitting on the horizon like a distant one, and a nearer
+ship is drawn in front of a farther one instead of in list order. The
+bearing and the angle on the bow were checked and were already right: her
+starboard side shows with the bow to the right, her port side with the bow
+to the left. Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.168
 
 Release 1.3.168 brings U-Jagd to the Mac. Every release now also carries a

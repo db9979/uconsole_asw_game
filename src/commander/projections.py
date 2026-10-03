@@ -304,8 +304,9 @@ def _outline_dicts(rows) -> list:
     return [dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                  stale=bool(stale), lights=_nav_lights(lights),
                  elevation_deg=_number(elevation), aob_deg=_number(aob),
-                 model=None if model is None else str(model), way=_number(way))
-            for bearing, span, cls, stale, lights, elevation, aob, model, way in rows]
+                 model=None if model is None else str(model), way=_number(way),
+                 range_nm=_number(range_nm))
+            for bearing, span, cls, stale, lights, elevation, aob, model, way, range_nm in rows]
 
 
 def _crew_noise(game, side):
@@ -332,7 +333,7 @@ def _hit_view(game, side):
     result = dict(mode=view["mode"], kind=view["kind"],
                   bearing=_number(view["bearing"] % 360.0), age_s=_number(view["age_s"]),
                   fov_deg=_number(hit_view.FOV_DEG), visibility_nm=None, sea_state=None,
-                  sky=None, outlines=[], events=[])
+                  sky=None, outlines=[], events=[], eye_m=None)
     if view["mode"] == "sight":
         weather = game.world.weather_values()
         if side == "uboot":
@@ -340,11 +341,13 @@ def _hit_view(game, side):
             boat = game.opfor
             outlines = scope_outlines(game, boat) if opfor.scope_available(boat) else []
             rows = sight_events.boat_rows(game, boat)
+            eye = opfor.eye_height_m(boat)
         else:
             from src.ui.stations.bridge import eye_outlines
             outlines = eye_outlines(game, game.lookout_sightings())
             rows = sight_events.frigate_rows(game)
-        result.update(visibility_nm=_number(weather["visibility_nm"]),
+            from src.sensors.visual import LOOKOUT_EYE_HEIGHT_M as eye
+        result.update(eye_m=_number(eye), visibility_nm=_number(weather["visibility_nm"]),
                       sea_state=_number(weather["sea_state"]), sky=_sky(game),
                       outlines=_outline_dicts(outlines[:12]),
                       events=_sight_events(rows, game.sim_t))
@@ -1564,8 +1567,10 @@ def _lookout_glasses(game):
                 outlines=[dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                                stale=bool(stale), lights=_nav_lights(lights),
                                elevation_deg=_number(elevation), aob_deg=_number(aob),
-                               model=None if model is None else str(model), way=_number(way))
-                          for bearing, span, cls, stale, lights, elevation, aob, model, way in
+                               model=None if model is None else str(model), way=_number(way),
+                               range_nm=_number(range_nm))
+                          for bearing, span, cls, stale, lights, elevation, aob, model, way,
+                          range_nm in
                           eye_outlines(game, game.lookout_sightings())[:16]],
                 events=_sight_events(sight_events.frigate_rows(game), game.sim_t))
 

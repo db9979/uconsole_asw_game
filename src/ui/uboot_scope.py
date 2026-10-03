@@ -31,12 +31,14 @@ def draw_silhouette(s, cls: str, cx: int, base_y: int, width: int, color) -> Non
 
 def scope_outlines(game, boat) -> list:
     """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg,
-    aob_deg, model, way)`` rows of the sightings (``lights``: the ``nav_lights`` code
+    aob_deg, model, way, range_nm)`` rows of the sightings (``lights``: the ``nav_lights`` code
     made out, if any; ``elevation_deg``: an aircraft's angle above the
     horizon; ``aob_deg``: the angle on the bow judged of a made-out
     silhouette, which turns its model; the span is then its full length;
     ``model``: the type the eye sees, when it has its own model; ``way``:
-    the white water of a made-out ship's way, 0..1)."""
+    the white water of a made-out ship's way, 0..1; ``range_nm``: the
+    stadimeter range taken, if any, which sets the waterline's drop below
+    the horizon)."""
     lights = getattr(boat.orders, "_lights", {})
     elevation = getattr(boat.orders, "_elevation", {})
     aspects = getattr(boat.orders, "_aspect", {})
@@ -51,7 +53,8 @@ def scope_outlines(game, boat) -> list:
                      "aircraft" if aloft is not None else row["cls"],
                      stale, None if stale else lights.get(row["ref"]), aloft, aob,
                      None if aob is None else models.get(row["ref"]),
-                     None if aob is None else ways.get(row["ref"])))
+                     None if aob is None else ways.get(row["ref"]),
+                     row.get("range_nm")))
     return rows
 
 

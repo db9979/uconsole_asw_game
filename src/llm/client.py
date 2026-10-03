@@ -23,6 +23,8 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 
+from src.core import https
+
 DEFAULT_URL = "http://localhost:11434/v1"
 DEFAULT_MODEL = "qwen2.5:7b"
 MAX_URL_LEN = 256
@@ -139,7 +141,7 @@ class LlmService:
     def __init__(self, config: LlmConfig | None = None, *, opener=None,
                  timeout_s: float = TIMEOUT_S, queue_max: int = QUEUE_MAX):
         self._config = config or LlmConfig()
-        self._opener = opener or urllib.request.urlopen
+        self._opener = opener or https.urlopen
         self._timeout = float(timeout_s)
         self._queue: queue.Queue = queue.Queue(maxsize=queue_max)
         self._lock = threading.Lock()

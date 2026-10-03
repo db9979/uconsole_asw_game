@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.173
+## 1.3.174
 
-Release 1.3.173 comes out of a review of the whole code. Weapon keys with
+Release 1.3.174 comes out of a review of the whole code. Weapon keys with
 Shift or Ctrl no longer fire by mistake: Shift+A (ping) no longer launches an
 ASROC and Ctrl+R (aircraft radar) no longer fires the rocket launcher at
 Weapons, and Shift+A on the submarine no longer switches silent running. A
@@ -18,6 +18,18 @@ and manual link, and four sonar and helicopter drop-downs no longer jump back
 while in use. Help texts were corrected (tasks page, OPZ zoom, debrief keys,
 German wording, "submarine" instead of "boat"), and unused code went. Saves
 are v50; v38 to v49 saves still load.
+
+## 1.3.173
+
+Release 1.3.173 fixes the update check of the macOS app. The app's
+built-in Python looked for root certificates in a folder that exists only on
+the build machine, so every HTTPS request failed verification and the start
+screen never offered a newer version. The Windows and macOS programs now
+carry their own root certificates (certifi) on top of the system's, which
+also helps the optional language model and live air traffic over HTTPS. If
+the update check fails, the start screen and the main menu now say so and
+why (no connection, certificate, or an error from GitHub), and U checks
+again. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.172
 

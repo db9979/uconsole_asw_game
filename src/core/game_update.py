@@ -45,6 +45,7 @@ SPLASH_NOTICE_RECT = (792, 26, 462, 282)
 MENU_NOTICE_RECT = (24, 148, 344, 412)
 PANEL_FILL = (4, 16, 20, 205)
 ACCENT = (236, 204, 128)
+ERROR_PANEL_H = 112
 
 
 def default_update_mode() -> str:
@@ -83,6 +84,8 @@ class UpdateNoticeMixin:
         self.update_mode = "browser"
         self.update_args: tuple = ()
         self.update_failed = False
+        # Why the last check failed (``update.failure_reason``), else None.
+        self.update_check_error = None
         self.update_exit_code = 0
         self._update_thread = None
         self._update_button = None
@@ -100,22 +103,46 @@ class UpdateNoticeMixin:
         if self.update_mode in ("windows", "macos"):
             remove_stale_download()
 
+        self._run_update_check()
+        return True
+
+    def _run_update_check(self) -> None:
+        self.update_check_error = None
+
         def work() -> None:
             try:
                 notice = update.fetch_notice(APP_VERSION)
-            except update.UpdateError:
-                return  # offline: no notice at all
+            except update.UpdateError as exc:
+                # Shown on the start screen and main menu; the detail goes to
+                # stderr (the server log of the windowed programs).
+                print(f"update check failed: {exc}", file=sys.stderr, flush=True)
+                self.update_check_error = update.failure_reason(exc)
+                return
             self.update_notice = notice  # one reference store, read by draw
 
         self._update_thread = threading.Thread(target=work, name="update-check", daemon=True)
         self._update_thread.start()
-        return True
+
+    def _update_screen(self) -> bool:
+        """The start screen or the bare main menu, where update news shows."""
+        return self.splash_active or (
+            self.in_menu and self.main_menu and self.editor is None
+            and not self.administration_open and not self.welcome_active)
 
     def update_notice_visible(self) -> bool:
-        return self.update_notice is not None and (
-            self.splash_active
-            or (self.in_menu and self.main_menu and self.editor is None
-                and not self.administration_open and not self.welcome_active))
+        return self.update_notice is not None and self._update_screen()
+
+    def update_error_visible(self) -> bool:
+        return (self.update_notice is None and self.update_check_error is not None
+                and self._update_screen())
+
+    def retry_update_check(self) -> bool:
+        """U after a failed check: ask GitHub again."""
+        if self.update_check_error is None or (
+                self._update_thread is not None and self._update_thread.is_alive()):
+            return False
+        self._run_update_check()
+        return True
 
     # --- action -------------------------------------------------------------
 
@@ -236,33 +263,62 @@ class UpdateNoticeMixin:
         self.running = False  # the script replaces the file once we have exited
 
     def handle_update_event(self, e) -> bool:
-        """Key U or a click on the button while the notice shows."""
-        if not self.update_notice_visible():
+        """Key U or a click on the button while the notice or a failure shows."""
+        if self.update_notice_visible():
+            action = self.request_update
+        elif self.update_error_visible():
+            action = self.retry_update_check
+        else:
             return False
         if e.type == pygame.KEYDOWN and e.key == pygame.K_u:
-            self.request_update()
+            action()
             return True
         if e.type == pygame.MOUSEBUTTONDOWN and getattr(e, "button", 0) == 1:
             canvas = self._window_to_canvas(getattr(e, "pos", None))
             if (canvas is not None and self._update_button is not None
                     and self._update_button.collidepoint(canvas)):
-                self.request_update()
+                action()
                 return True
         return False
 
     # --- drawing ------------------------------------------------------------
 
-    def draw_update_notice(self, surface, splash: bool) -> None:
-        notice = self.update_notice
-        self._update_button = None
-        if notice is None:
-            return
-        rect = pygame.Rect(SPLASH_NOTICE_RECT if splash else MENU_NOTICE_RECT)
+    def _draw_update_panel(self, surface, rect) -> None:
         panel = pygame.Surface(rect.size, pygame.SRCALPHA)
         panel.fill(PANEL_FILL)
         surface.blit(panel, rect)
         pygame.draw.rect(surface, ACCENT, rect, 1)
         layout.corner_brackets(surface, rect)
+
+    def draw_update_error(self, surface, splash: bool) -> None:
+        """A failed check: why, and U to ask again (1.3.173)."""
+        reason = self.update_check_error
+        if reason not in update.FAILURE_REASONS:
+            reason = "other"
+        base = pygame.Rect(SPLASH_NOTICE_RECT if splash else MENU_NOTICE_RECT)
+        rect = pygame.Rect(base.x, base.y, base.w, ERROR_PANEL_H)
+        self._draw_update_panel(surface, rect)
+        x, w = rect.x + 12, rect.w - 24
+        layout.blit_line(surface, "update.check_failed", (x, rect.y + 6, w, 20),
+                         config.COLOR_WARN, size=16)
+        layout.blit_block(surface, f"update.reason.{reason}", x, rect.y + 28, w, 46,
+                          config.COLOR_TEXT, size=13, min_size=11)
+        button = pygame.Rect(x, rect.bottom - 8 - 24, w, 24)
+        pygame.draw.rect(surface, (18, 60, 56), button, border_radius=4)
+        pygame.draw.rect(surface, ACCENT, button, 1, border_radius=4)
+        layout.blit_line(surface, "update.retry", button.inflate(-12, -4), ACCENT,
+                         size=14, align="center")
+        self._update_button = button
+
+    def draw_update_notice(self, surface, splash: bool) -> None:
+        notice = self.update_notice
+        self._update_button = None
+        if notice is None:
+            if self.update_check_error is not None:
+                self.draw_update_error(surface, splash)
+            return
+        rect = pygame.Rect(SPLASH_NOTICE_RECT if splash else MENU_NOTICE_RECT)
+        self._draw_update_panel(surface, rect)
         x, w = rect.x + 12, rect.w - 24
         y = rect.y + 8
         layout.blit_line(surface, message("update.available", version=notice.version),

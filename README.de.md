@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.173**
+Aktuelle Version: **1.3.174**
 
-Version 1.3.173 folgt aus einer Prüfung des ganzen Codes. Waffentasten mit
+Version 1.3.174 folgt aus einer Prüfung des ganzen Codes. Waffentasten mit
 Umschalt oder Strg feuern nicht mehr versehentlich: Umschalt+A (Ping) startet
 an der Waffenstation keinen ASROC mehr und Strg+R (Luftfahrzeug-Radar) feuert
 keinen Raketenwerfer mehr, und Umschalt+A schaltet auf dem U-Boot nicht mehr

@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.173
+## 1.3.174
 
-Version 1.3.173 folgt aus einer Prüfung des ganzen Codes. Waffentasten mit
+Version 1.3.174 folgt aus einer Prüfung des ganzen Codes. Waffentasten mit
 Umschalt oder Strg feuern nicht mehr versehentlich: Umschalt+A (Ping) startet
 an der Waffenstation keinen ASROC mehr und Strg+R (Luftfahrzeug-Radar) feuert
 keinen Raketenwerfer mehr, und Umschalt+A schaltet auf dem U-Boot nicht mehr
@@ -19,6 +19,19 @@ vier Auswahllisten an Sonar und Heli springen beim Bedienen nicht mehr zurück.
 Hilfetexte wurden berichtigt (Seite Aufträge, OPZ-Zoom, Tasten der
 Nachbesprechung, deutsche Begriffe, „U-Boot“ statt „Boot“), und ungenutzter
 Code ist entfernt. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
+## 1.3.173
+
+Version 1.3.173 repariert die Update-Prüfung der macOS-App. Ihr
+eingebautes Python suchte die Stammzertifikate in einem Ordner, den es nur auf
+dem Baurechner gibt, deshalb scheiterte jede HTTPS-Anfrage an der Prüfung und
+der Startbildschirm bot nie eine neuere Version an. Das Windows-Programm und
+die macOS-App bringen jetzt eigene Stammzertifikate (certifi) zusätzlich zu
+denen des Systems mit, was auch dem optionalen Sprachmodell und dem
+Live-Flugverkehr über HTTPS hilft. Schlägt die Update-Prüfung fehl, sagen
+Startbildschirm und Hauptmenü jetzt, dass und warum (keine Verbindung,
+Zertifikat oder ein Fehler von GitHub), und U prüft erneut. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.172
 

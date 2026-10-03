@@ -3,8 +3,9 @@
 ``U-Jagd-Windows.exe [ARGS]`` (macOS: ``U-Jagd.app/Contents/MacOS/U-Jagd``)
 starts the game straight away with the normal command line of ``main.py``; everything else (multiplayer, side, station) is
 chosen inside the game. A leading ``--game`` (the old starter's form) is
-accepted and ignored. ``--self-test REPORT`` and ``--update-self-test
-REPORT`` are the headless build checks used by the release workflow.
+accepted and ignored. ``--self-test REPORT``, ``--update-self-test REPORT``
+and ``--tls-self-test REPORT`` are the headless build checks used by the
+release workflow.
 """
 
 from __future__ import annotations
@@ -127,6 +128,45 @@ def update_self_test(report: str) -> int:
     return 0
 
 
+def tls_self_test(report: str) -> int:
+    """Open GitHub over HTTPS as the update check does (1.3.173).
+
+    The report names the extra root certificates and whether the plain
+    default context alone would have verified GitHub (on a Mac without the
+    building Python's certificate folder it does not: the bug before 1.3.173).
+    """
+    import json
+    import ssl
+    import traceback
+    import urllib.request
+
+    from src.core import https
+    from src.launcher import update
+
+    results = {"ca_files": list(https.ca_files()),
+               "certifi": https.certifi_file() is not None}
+
+    def fetch(context) -> bool | str:
+        request = urllib.request.Request(update.RELEASES_PAGE,
+                                         headers={"User-Agent": "u-jagd-selftest"})
+        try:
+            with urllib.request.urlopen(request, timeout=20, context=context) as response:
+                response.read(1024)
+                return True
+        except Exception as exc:  # noqa: BLE001 - recorded in the report
+            return f"{update.failure_reason(exc)}: {exc}"
+
+    try:
+        results["default_context"] = fetch(ssl.create_default_context())
+        results["game_context"] = fetch(https.ssl_context())
+    except Exception:  # noqa: BLE001 - the report carries the traceback
+        results["error"] = traceback.format_exc()
+    results["ok"] = results.get("game_context") is True and results["certifi"]
+    with open(report, "w", encoding="utf-8") as handle:
+        json.dump(results, handle, indent=2)
+    return 0 if results["ok"] else 1
+
+
 def _install_update(code: int) -> int:
     """The game quit with ``update.UPDATE_EXIT_CODE``: install the release.
 
@@ -202,6 +242,8 @@ def main(argv=None) -> int:
         return self_test(argv[1])
     if argv[:1] == ["--update-self-test"] and len(argv) == 2:
         return update_self_test(argv[1])
+    if argv[:1] == ["--tls-self-test"] and len(argv) == 2:
+        return tls_self_test(argv[1])
     if argv[:1] == ["--game"]:
         argv = argv[1:]
     return run_game(argv)

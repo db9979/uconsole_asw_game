@@ -372,3 +372,11 @@ body.shock-dust::after {
 .mic-problem p { flex: 1 1 100%; margin: 0; color: var(--caution); font-size: var(--font-sm); line-height: 1.35; }
 .mic-problem button { min-height: 2rem; font-size: var(--font-xs); }
 .mic-problem #mic-problem-close { margin-left: auto; min-width: 2rem; }
+/* Damage-control team cards: stripe by state, the picked team framed; a
+   click picks the team for the next assignment. */
+.station-row.team-card { cursor: pointer; }
+.station-row.team-card[data-state="ready"] { border-left-color: var(--muted); }
+.station-row.team-card[data-state="transit"] { border-left-color: var(--caution); }
+.station-row.team-card[data-state="scene"] { border-left-color: var(--live); }
+.station-row.team-card.selected { border-color: var(--focus); border-left-width: 3px; background: var(--live-bg); }
+.station-row.team-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }

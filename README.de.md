@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.184**
+Aktuelle Version: **1.3.185**
 
-Version 1.3.184 hält den Remote-Crew-Gastgeber reaktionsfähig. Laden, neues
+Version 1.3.185 hält den Remote-Crew-Gastgeber reaktionsfähig. Laden, neues
 Spiel, Einsatzstart und Speichern aus dem Browser sowie die Passwortprüfung
 des Web-Gastgebers halten die anderen Browser nicht mehr auf, Abfragen,
 Sonar-Audio und Sprechfunk laufen weiter. Abfragen lesen nicht mehr jedes Mal

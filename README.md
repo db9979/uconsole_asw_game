@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.184**
+Current release: **1.3.185**
 
-Release 1.3.184 keeps the Remote Crew host responsive. Loading, a new game,
+Release 1.3.185 keeps the Remote Crew host responsive. Loading, a new game,
 starting a mission and saving from the browser, as well as the web-host
 password check, no longer hold up every other browser while they run, so
 polls, sonar audio and voice keep flowing. Polling no longer re-reads each

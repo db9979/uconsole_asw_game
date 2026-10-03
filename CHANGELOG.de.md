@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.184
+## 1.3.185
 
-Version 1.3.184 hält den Remote-Crew-Gastgeber reaktionsfähig. Laden, neues
+Version 1.3.185 hält den Remote-Crew-Gastgeber reaktionsfähig. Laden, neues
 Spiel, Einsatzstart und Speichern aus dem Browser sowie die Passwortprüfung
 des Web-Gastgebers halten die anderen Browser nicht mehr auf, Abfragen,
 Sonar-Audio und Sprechfunk laufen weiter. Abfragen lesen nicht mehr jedes Mal
@@ -16,6 +16,17 @@ Web-Gastgeber-Raum also nicht mehr aussperren, und der Raum wechselt nach
 seinen Versuchen nicht mehr den Code. Ein Beobachter, der die Ansicht
 wechselt, unterbricht nicht mehr das Live-Audio des Sonarbedieners. Tasten
 bleiben gleich. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
+## 1.3.184
+
+Version 1.3.184 bringt die neuen Karten zur Schadensabwehr im Browser. Jede
+Karte eines Leckwehrtrupps nennt seine Abteilung in der Spielsprache (vorher
+standen dort interne Schlüssel) und zeigt, ob der Trupp bereitsteht, mit den
+restlichen Sekunden unterwegs ist oder vor Ort arbeitet, mit passendem
+Farbstreifen. Der Trupp für die nächste Zuweisung ist umrahmt, ein Klick auf
+eine Karte wählt ihn. Die Handbuchbilder sind im hellen Schema neu
+aufgenommen. Tasten bleiben gleich. Spielstände sind v50; v38 bis v49 laden
+weiter.
 
 ## 1.3.183
 

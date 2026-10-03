@@ -4,6 +4,16 @@
 
 Operations (OPZ / CIC) builds the tactical picture above the water: surface and air radar, AIS, released sonar and ESM bearings, manual fusion of reports, NATO affiliation and air defence. It hands designated tracks to Sonar and Weapons.
 
+## Pages {#opz-pages}
+
+| Page | Shows |
+|---|---|
+| 1 Picture | Full-height chart with every published track |
+| 2 Track details | Target page of the selected track: assign, chaff, missile track, ESSM |
+| 3 Patrol aircraft | Orders and state of the patrol aircraft |
+| 4 Group | Orders of the consort destroyer in a group hunt |
+| 5 Display | What the OPZ chart draws |
+
 ## Displays and instruments {#opz-displays}
 
 Every page has three columns: track cards on the left (a click selects a track), the chart in the middle and the page's panel on the right. Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track (its key chips assign the target with `M`, launch chaff with `G` and step the missile track with `←`/`→`; ESSM stays on `Ctrl+Enter`); page 3 commands the patrol aircraft; page 4 commands the consort destroyer of a group hunt; page 5 sets the chart display. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `Q`/`E` as the zoom keys elsewhere; `PgUp`/`PgDn` page), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
@@ -72,6 +82,16 @@ Two switches in the chart's top left turn the surface and air radar on and off o
 ## Keys {#opz-keys}
 
 <!-- keys:opz -->
+
+## Mouse {#opz-mouse}
+
+Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
+
+- A click on a track card selects the track.
+- The key chips on the target page assign the target (`M`), launch chaff (`G`) and step the missile track (`←`/`→`); ESSM fires only with `Ctrl+Enter`.
+- Page 3: a click on the chart sets the patrol aircraft's search area; page 4: a click sets the consort's point and its order keys in the panel are clickable.
+- Page 5: a click on a row moves it on; the layer chips under the chart and the two radar switches in its top left work on every page.
+- On the chart the wheel zooms, dragging pans (it ends `K` follow) and a click pins a tooltip.
 
 ## Standard procedure {#opz-sop}
 

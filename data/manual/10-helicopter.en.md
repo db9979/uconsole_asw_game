@@ -4,20 +4,22 @@
 
 The HSP-5 "Sea Lynx" extends the frigate's reach: it flies to a datum at 120 kn, drops sonobuoys, dips its own sonar and attacks with lightweight torpedoes, while the frigate stays quiet and out of torpedo range.
 
-## Displays and instruments {#helicopter-displays}
+## Pages {#helicopter-pages}
 
 The station has four pages (`8` again cycles them); it opens on page 3.
-
-![Helicopter deck on the uConsole](figure:station-helicopter)
-
-![Helicopter deck in the Remote Crew browser](figure:web-helicopter-desktop)
 
 | Page | Content |
 |---|---|
 | 1 Status | Status console: state lamps, fuel, home bearing, stores, flight weather, deck motion |
-| 2 Mission | Chart with waypoint, buoys, contacts |
+| 2 Mission rules | Waypoint bearing and range, fuel margin for the return, launch, dip and weapon keys, buoy pattern, MAD, radar, ROE |
 | 3 Sonar | Dipping sonar and buoy contacts, depth, source |
 | 4 Acoustic | Listening: BROADBAND / LOFAR / DEMON of the dipping sonar or a passive buoy |
+
+## Displays and instruments {#helicopter-displays}
+
+![Helicopter deck on the uConsole](figure:station-helicopter)
+
+![Helicopter deck in the Remote Crew browser](figure:web-helicopter-desktop)
 
 ```text
           frigate                           waypoint (1-30 NM)
@@ -39,7 +41,9 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 - **Crew's eyes:** while the helicopter flies its crew keeps a lookout too, with the bridge lookout's contrast model from its altitude (150 m, 20 m while dipping): it sees a raised periscope's or snorkel's feather at the same range as the lookout, independent of the radar and without radiating. The sighting goes to Operations every 2 s as a `HELO-EYE` track, at half the range as a submarine.
 - **Lightweight torpedo:** 2 per sortie, 55 kn, 12 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
 
-Page 1 is the helicopter's status console. A strip of state lamps lights where the aircraft is: HANGAR, DECK (green when it may launch now, amber while weather or deck motion hold it, red with the flight deck out of action), AIRBORNE (red when the aircraft is lost), DIPPING (amber while the dome goes down or comes up) and RETURN. Below it a fuel tank with the 20-minute reserve as an amber mark (in the hangar it stands refuelled), a rose with the bearing back to the ship and the aircraft's course needle, and readouts: state, endurance (and in the hover, which burns 1.3 times as fast), bingo (fuel left after the flight home and the reserve), bearing, distance and flight time back to the ship, flight course and the dipping sonar's state and depth. The resources show torpedoes and buoys aboard as pips, the buoys in the water and the datalink, then lamps for the flight weather (CLEAR, LIMITED or NO-GO), the deck window, the dipping weather, dome, ping, water entry and radar. The deck-motion gauge is at the foot; in a small window or with large text the lower lamp row and then the gauge give way.
+Page 1 is the helicopter's status console. A strip of state lamps lights where the aircraft is: HANGAR, DECK (green when it may launch now, amber while weather or deck motion hold it, red with the flight deck out of action), AIRBORNE (red when the aircraft is lost), DIPPING (amber while the dome goes down or comes up) and RETURN.
+
+Below it a fuel tank with the 20-minute reserve as an amber mark (in the hangar it stands refuelled), a rose with the bearing back to the ship and the aircraft's course needle, and readouts: state, endurance (and in the hover, which burns 1.3 times as fast), bingo (fuel left after the flight home and the reserve), bearing, distance and flight time back to the ship, flight course and the dipping sonar's state and depth. The resources show torpedoes and buoys aboard as pips, the buoys in the water and the datalink, then lamps for the flight weather (CLEAR, LIMITED or NO-GO), the deck window, the dipping weather, dome, ping, water entry and radar. The deck-motion gauge is at the foot; in a small window or with large text the lower lamp row and then the gauge give way.
 
 Page 3 shows the dipping sonar like a console: lamps for dome (green in the water, amber while lowering or raising), ping ready and water entry clear, a gauge of the cable in the water column down to the seabed, and a scope with the dipping and buoy bearings as wedges as wide as their error. Page 4 draws its waterfalls in the same phosphor colours as the ship's sonar.
 
@@ -48,6 +52,14 @@ Page 3 shows the dipping sonar like a console: lamps for dome (green in the wate
 <!-- keys:helicopter -->
 
 Keys marked "Acoustic" apply only on the acoustic page (page 4).
+
+## Mouse {#helicopter-mouse}
+
+Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
+
+- On page 2 the keys named in the rules (`H`, `Y`, `U`/`V`, `Shift+A`, `B`, `D`, `Shift+B`, `Shift+M`, `Ctrl+R`) are switches: a click presses them.
+- On the acoustic page a click on the source label switches the listening source.
+- On the chart the wheel zooms, dragging pans (it ends `K` follow) and a click pins a tooltip.
 
 ## Standard procedure {#helicopter-sop}
 

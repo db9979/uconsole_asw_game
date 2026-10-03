@@ -4,6 +4,13 @@
 
 Weapons control turns a sonar contact into a firing solution. It launches the frigate's wire-guided torpedoes and its own ASROC, drops depth charges, manages the helicopter's stores (buoys, lightweight torpedoes), streams the Nixie towed decoy and releases the AA gun.
 
+## Pages {#weapons-pages}
+
+| Page | Shows |
+|---|---|
+| 1 Targeting | Chart with the selected contact, contact cards, engagement stages, fire-control solution with torpedo depth, engagement sketch, tube lamps and readiness line |
+| 2 Ammunition | Tubes, reload timers, torpedo stock, Nixie, helicopter stores, torpedo setup line and the stores as tank columns |
+
 ## Displays and instruments {#weapons-displays}
 
 Page 1 (target) shows the chart with the selected contact; the panel has contact cards on the left (a click selects a contact as `←`/`→` would, `M` assigns it, the target has a red mark) above the engagement stages, and the fire-control solution with the torpedo depth, the engagement sketch, the tube lamps and the readiness line on the right. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state, helicopter stores and the torpedo setup line: selected type with its remaining stock, search pattern, seeker enable point and salvo size.
@@ -48,9 +55,27 @@ Torpedo run, seen from above:
 
 Both pages are laid out as a fire-control desk: on page 1 each tube has a lamp (green loaded, amber reloading, dark when empty) and the interlock chain (target, fix, ROE, weapon, flak) is a column of lamps that lights green stage by stage. Between the solution and the tube lamps an engagement sketch, north up around the own ship, draws the reach of the selected torpedo type as a dashed amber ring, the bearing to the target (dashed while it is bearing only) and, once a range is known, the estimated target position, the intercept point from the TMA course and speed and the torpedo run to it (green inside the reach, red beyond); the figure at the lower left is the radius of the sketch. It uses only the contact's observation, never the submarine itself; page 2 shows the remaining torpedoes, helicopter torpedoes, sonobuoys and RBU rockets as tank columns. The Remote Crew browser shows station, ROE and interlock as lamps and each tube as a column.
 
+## Rules of engagement {#weapons-roe}
+
+| ROE | Requirement |
+|---|---|
+| STD (start) | Current range (ping, TMA or buoy) and classification submarine or warship |
+| FREE | Classification only; without range the torpedo is aimed 10 NM down the bearing |
+
+HQ switches to FREE by radio after the first hostile submarine is sunk; the player cannot change ROE. A contact marked FRIEND or NEUTRAL in Operations, directly or through a fusion, can never be engaged.
+
 ## Keys {#weapons-keys}
 
 <!-- keys:weapons -->
+
+## Mouse {#weapons-mouse}
+
+Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
+
+- A click on a contact card selects that contact as `←`/`→` would; the assigned target has a red mark.
+- The fire key `Ctrl+Enter` can be clicked here, at the weapons station only.
+- The key hints beside the solution (launch, flak release) press their keys.
+- On the chart the wheel zooms, dragging pans (it ends `K` follow) and a click pins a tooltip.
 
 ## Standard procedure {#weapons-sop}
 
@@ -61,15 +86,6 @@ Combat situation:
 1. Enemy torpedo reported: stream the Nixie at once (`V`). It lasts 600 s on a 0.2 NM cable; one ready, a second after 60 s. It runs at 10 m at 15 kn, deeper and closer astern when you slow down, and its cable parts above 25 kn. In a turn the cable lags behind.
 2. Keep the counter-attack going: a fresh contact keeps the wire datum on the submarine.
 3. With the helicopter airborne, a lightweight torpedo (`D`) can reach a distant contact faster than the ship's torpedo.
-
-## Rules of engagement {#weapons-roe}
-
-| ROE | Requirement |
-|---|---|
-| STD (start) | Current range (ping, TMA or buoy) and classification submarine or warship |
-| FREE | Classification only; without range the torpedo is aimed 10 NM down the bearing |
-
-HQ switches to FREE by radio after the first hostile submarine is sunk; the player cannot change ROE. A contact marked FRIEND or NEUTRAL in Operations, directly or through a fusion, can never be engaged.
 
 ## Pro tips {#weapons-tips}
 

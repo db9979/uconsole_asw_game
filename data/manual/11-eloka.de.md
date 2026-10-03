@@ -4,6 +4,13 @@
 
 Die Elektronische Kampfführung (EloKa) horcht passiv auf Radarsender (ESM) und stört sie auf Befehl (ECM). ESM erfasst Radare bis etwa 150 sm, weit jenseits des eigenen Radars, ohne selbst zu senden. Sie liefert Peilungen und Senderparameter, die auf einen Plattformtyp hinweisen, und warnt, wenn ein Flugkörpersucher aufschaltet.
 
+## Seiten {#eloka-pages}
+
+| Seite | Zeigt |
+|---|---|
+| 1 Auffassungen | Auffassungskarten, Bedrohungsrose mit Filterzeile, die gewählte Auffassung, Lampen für ESM, Störsender, automatisches ECM und Ton |
+| 2 Evidenz | Volle Evidenz der gewählten Auffassung: Frequenz, PRF, Modulation, Kandidaten, Korrelation |
+
 ## Anzeigen und Instrumente {#eloka-displays}
 
 Beide Seiten zeigen die Erfassungen links als Karten (Kennung, Peilung, Frequenz und Band, Güte und Alter; der Streifen trägt die Bedrohungsfarbe; ein Klick wählt eine wie `↑`/`↓`). Seite 1 hat in der Mitte die Bedrohungsrose mit der Filterzeile und rechts die gewählte Erfassung (Signal-Fingerabdruck, Peilung, Radarart, Bedrohung, ECM, Zuordnung, beste Bibliothekskandidaten) über den Lampen für ESM, Störer, ECM-Automatik und Ton; Seite 2 zeigt alle Belege für die gewählte Erfassung (Frequenz, PRF, Modulation, Kandidaten, Korrelation).
@@ -33,14 +40,6 @@ Beide Seiten zeigen die Erfassungen links als Karten (Kennung, Peilung, Frequenz
 
 Neben der Liste der Auffassungen zeigt eine Peilrose jede Auffassung als Strahl in ihrer Bedrohungsfarbe, und Lampen zeigen ESM, Störer, ECM-Automatik und Ton.
 
-## Tasten {#eloka-keys}
-
-<!-- keys:eloka -->
-
-## Standardablauf {#eloka-sop}
-
-<!-- sop:eloka -->
-
 ## ECM-Techniken {#eloka-ecm}
 
 | Technik | Wirkung |
@@ -51,6 +50,20 @@ Neben der Liste der Auffassungen zeigt eine Peilrose jede Auffassung als Strahl 
 | Falschziele | Speist falsche Echos ein |
 
 Der Automatikmodus (`A`) wählt Ziele und Techniken und koppelt das Stören während eines Flugkörperangriffs mit Soft-Kill (Düppel).
+
+## Tasten {#eloka-keys}
+
+<!-- keys:eloka -->
+
+## Maus {#eloka-mouse}
+
+Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
+
+- Ein Klick auf eine Auffassungskarte wählt sie wie `↑`/`↓`.
+
+## Standardablauf {#eloka-sop}
+
+<!-- sop:eloka -->
 
 ## Tipps für Profis {#eloka-tips}
 

@@ -4,13 +4,9 @@
 
 Die Sonarzentrale ist der Hauptsensor der U-Jagd. Sie horcht passiv mit Bugsonar (HMS), Schleppsonar (TAS) und tiefenveränderlichem Sonar (VDS), analysiert Signaturen in LOFAR und DEMON, schätzt die Zielbewegung per TMA, misst das Schallprofil und sendet auf Befehl einen aktiven Ping. Sie klassifiziert Kontakte und gibt sie an OPZ und Waffenzentrale frei.
 
-## Anzeigen und Instrumente {#sonar-displays}
+## Seiten {#sonar-pages}
 
-Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert sie. Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpeilung und die Ping-Bereitschaft; ein Schlepp- oder Tiefensonar, das gerade aus- oder einfährt oder noch nicht bereit ist, erscheint auf jeder Seite gelb mit Kabellänge, Stabilität und PAUSE, wenn die Handhabung außerhalb der Grenzen liegt. Die eine Tastenzeile unten zeigt die vier Haupttasten der Seite mit ihren Werten; alle übrigen Tasten stehen in der F1-Hilfe. Auf BREITBAND ist die gelbe Linie die Hörpeilung und die grauen Linien die Grenzen des Hörstrahls; dunkel heißt leise, türkis laut.
-
-![Sonar auf der uConsole](figure:station-sonar)
-
-![Sonar im Remote-Crew-Browser](figure:web-sonar-desktop)
+Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert sie.
 
 | Seite | Zeigt | Wofür |
 |---|---|---|
@@ -21,7 +17,17 @@ Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert
 | UMWELT / FUSION | Schallprofil, Schicht, CZ, Array-Vergleich | TAS-Tiefe wählen, Geisterkontakte erkennen |
 | ACTIVE | Gespeicherte Echos mit Alter und Fehler | Entfernung und Tiefe aus Pings |
 
-Die Station hat drei Spalten: links Kontaktkarten, in der Mitte die Anzeige der Seite, rechts die Detailzeilen und die Horchkonsole. Die Horchkonsole unter den Detailzeilen ist wie ein Leitstand aufgebaut: Lampen zeigen Ping bereit (gelb, solange ein Ping läuft), Ton und Spitzenwert-Halten, und eine nordorientierte Peilrose zeigt die Horchrichtung (gelb), die toten Winkel achtern (roter Sektor), den eigenen Kurs und jede veröffentlichte Kontaktpeilung. Jede Kontaktkarte zeigt eine Lampe, die Peilung, die Klassifizierung und einen Balken für den Störabstand; ein Klick wählt den Kontakt. Maus: Die Tastenchips unter den Karten wirken auf den gewählten Kontakt wie ihre Tasten: `C` klassifizieren, `T` TMA, `G` Freigabe an die OPZ, `M` Ziel, und `Y`/`Shift+Y` bringen das Schleppsonar und das VDS aus oder holen sie ein (auf dem U-Boot nur `C`, `T` und `M`). Der Remote-Crew-Browser zeigt dieselbe Rose neben seinen Wasserfällen.
+## Anzeigen und Instrumente {#sonar-displays}
+
+Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpeilung und die Ping-Bereitschaft; ein Schlepp- oder Tiefensonar, das gerade aus- oder einfährt oder noch nicht bereit ist, erscheint auf jeder Seite gelb mit Kabellänge, Stabilität und PAUSE, wenn die Handhabung außerhalb der Grenzen liegt. Die eine Tastenzeile unten zeigt die vier Haupttasten der Seite mit ihren Werten; alle übrigen Tasten stehen in der F1-Hilfe. Auf BREITBAND ist die gelbe Linie die Hörpeilung und die grauen Linien die Grenzen des Hörstrahls; dunkel heißt leise, türkis laut.
+
+![Sonar auf der uConsole](figure:station-sonar)
+
+![Sonar im Remote-Crew-Browser](figure:web-sonar-desktop)
+
+Die Station hat drei Spalten: links Kontaktkarten, in der Mitte die Anzeige der Seite, rechts die Detailzeilen und die Horchkonsole. Die Horchkonsole unter den Detailzeilen ist wie ein Leitstand aufgebaut: Lampen zeigen Ping bereit (gelb, solange ein Ping läuft), Ton und Spitzenwert-Halten, und eine nordorientierte Peilrose zeigt die Horchrichtung (gelb), die toten Winkel achtern (roter Sektor), den eigenen Kurs und jede veröffentlichte Kontaktpeilung. Jede Kontaktkarte zeigt eine Lampe, die Peilung, die Klassifizierung und einen Balken für den Störabstand; ein Klick wählt den Kontakt.
+
+Maus: Die Tastenchips unter den Karten wirken auf den gewählten Kontakt wie ihre Tasten: `C` klassifizieren, `T` TMA, `G` Freigabe an die OPZ, `M` Ziel, und `Y`/`Shift+Y` bringen das Schleppsonar und das VDS aus oder holen sie ein (auf dem U-Boot nur `C`, `T` und `M`). Der Remote-Crew-Browser zeigt dieselbe Rose neben seinen Wasserfällen.
 
 ### BROADBAND-Wasserfall {#sonar-broadband}
 
@@ -72,7 +78,9 @@ DEMON demoduliert die Hüllkurve des Breitbandrauschens im Horchstrahl. Schraube
     Welle Blatt 2. Harmonische
 ```
 
-Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsänderung einige Sekunden horchen, bevor Sie urteilen. Blätter selbst zählen: den Cursor (`Z`/`X`, 0,5 Hz) auf die Wellenlinie setzen und `K` drücken, dann auf die Blattlinie und erneut `K`; die Spalte zeigt Blätter = Blattfrequenz / Wellenfrequenz (mit der Abweichung von einer ganzen Zahl) und die Wellendrehzahl. Ein drittes `K` löscht beide Marken. Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am besten zu Ihren Marken passen: Wellendrehzahl gegen den Drehzahlbereich der Klasse, Blattzahl gegen ihre Blattzahlen und Ihre LOFAR-Grundlinie (`K` auf der LOFAR-Seite) gegen ihr Tonalband und ihre Maschinenlinien, jeweils am besten in der Mitte des Bereichs. Mit weniger als zwei Marken ist sie nur ein Hinweis. Der Kontaktanalysator (`F8`) listet dann den ganzen Katalog nach Passung mit der Passung in Prozent. Die Bibliothek bewertet Ihre Marken, nie den Kontakt selbst, und die Klassifizierung bleibt Ihre Entscheidung; der Sonarraum des U-Boots hat dieselbe Bibliothek. Auf der Realismusstufe Einsteiger (`F10`) beschriftet das Sonar zusätzlich Modulationslinien, schlägt Drehzahlen für 3-7 Blätter vor und rankt Katalogkandidaten.
+Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsänderung einige Sekunden horchen, bevor Sie urteilen. Blätter selbst zählen: den Cursor (`Z`/`X`, 0,5 Hz) auf die Wellenlinie setzen und `K` drücken, dann auf die Blattlinie und erneut `K`; die Spalte zeigt Blätter = Blattfrequenz / Wellenfrequenz (mit der Abweichung von einer ganzen Zahl) und die Wellendrehzahl. Ein drittes `K` löscht beide Marken.
+
+Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am besten zu Ihren Marken passen: Wellendrehzahl gegen den Drehzahlbereich der Klasse, Blattzahl gegen ihre Blattzahlen und Ihre LOFAR-Grundlinie (`K` auf der LOFAR-Seite) gegen ihr Tonalband und ihre Maschinenlinien, jeweils am besten in der Mitte des Bereichs. Mit weniger als zwei Marken ist sie nur ein Hinweis. Der Kontaktanalysator (`F8`) listet dann den ganzen Katalog nach Passung mit der Passung in Prozent. Die Bibliothek bewertet Ihre Marken, nie den Kontakt selbst, und die Klassifizierung bleibt Ihre Entscheidung; der Sonarraum des U-Boots hat dieselbe Bibliothek. Auf der Realismusstufe Einsteiger (`F10`) beschriftet das Sonar zusätzlich Modulationslinien, schlägt Drehzahlen für 3-7 Blätter vor und rankt Katalogkandidaten.
 
 ### TMA, Umwelt und Aktiv {#sonar-tma-env}
 
@@ -101,7 +109,7 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 - TAS-Tiefe 20-260 m (`U`/`V` in 10-m-Schritten), begrenzt auf 260 m minus 4 m je Knoten eigener Fahrt. Ab 30 m Tiefe und in derselben Schicht wie das Ziel gewinnt es weitere 25 %.
 - Über 20 kn mit ausgebrachtem Kabel erleidet das Array einen dauerhaften FAULT.
 - Das Array folgt einer Kursänderung mit etwa 45 s Verzögerung; während es nachschwenkt, sind seine Peilungen weniger verlässlich.
-- **Toter Winkel (Baffles):** Das Bugsonar (HMS) ist 30° beiderseits des eigenen Hecks taub; ein U-Boot genau achteraus hört nur das Schleppsonar oder das VDS. Der BREITBAND-Wasserfall markiert die Grenzen des toten Winkels gepunktet. Klären Sie ihn von der Brücke mit `Strg+B` (zwei Minuten 60° nach Steuerbord, dann zurück) oder mit einer eigenen Kursänderung. Für den Gegner gilt dasselbe: Auch das Rumpfsonar eines U-Boots ist achtern taub, und ein KI-Boot, das sich nach einem Ping dicht im toten Winkel der Fregatte findet, folgt ihr dort, statt zu fliehen.
+- **Toter Winkel (Baffles):** Das Bugsonar (HMS) ist 30° beiderseits des eigenen Hecks taub; ein U-Boot genau achteraus hört nur das Schleppsonar oder das VDS. Der BREITBAND-Wasserfall markiert die Grenzen des toten Winkels gepunktet. Klären Sie ihn von der Brücke mit `Strg+B` (zwei Minuten 60° nach Steuerbord, dann zurück) oder mit einer eigenen Kursänderung. Für den Gegner gilt dasselbe: Auch das Rumpfsonar eines U-Boots ist achtern taub, und ein KI-U-Boot, das sich nach einem Ping dicht im toten Winkel der Fregatte findet, folgt ihr dort, statt zu fliehen.
 - VDS (`Umschalt+Y` fiert oder hievt ihn, `Umschalt+B` wählt ihn): ein Körper an kurzem Kabel, 20-300 m tief, begrenzt auf 300 m minus 8 m je Knoten. `U`/`V` verstellen die Tiefe des jeweils gewählten Arrays. Ab 30 m Tiefe in der Schicht des Ziels gewinnt er dieselben 25 % wie das TAS. Er peilt eindeutig, eine VDS-Peilung löst die TAS-Seite also wie das Bugsonar auf. Ein Ping auf dem VDS sendet aus dem Körper: unter der Sprungschicht trifft der Schattenzonenverlust flache statt tiefe Ziele. Fieren und Hieven pausieren außerhalb 3-15 kn oder über Seegang 5; über 24 kn mit ausgebrachtem Körper geht er verloren (FAULT).
 
 ```text
@@ -116,6 +124,15 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 ## Tasten {#sonar-keys}
 
 <!-- keys:sonar -->
+
+## Maus {#sonar-mouse}
+
+Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
+
+- Ein Klick auf eine Kontaktkarte wählt den Kontakt (auf der Seite ACTIVE wählt eine Echozeile dieses Echo).
+- Die Tastenchips unter den Karten wirken auf den gewählten Kontakt: `C` klassifizieren, `T` TMA, `G` Freigabe an die OPZ, `M` Ziel, `Y`/`Umschalt+Y` Schleppsonar und VDS ausbringen oder einholen.
+- Ein Klick auf den BROADBAND-Wasserfall richtet die Hörpeilung dorthin oder auf einen Kontakt, der höchstens eine halbe Keulenbreite vom Klick entfernt liegt.
+- Ein Klick auf einen Seitenreiter öffnet diese Seite.
 
 ## Standardablauf {#sonar-sop}
 

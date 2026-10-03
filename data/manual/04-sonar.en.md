@@ -4,13 +4,9 @@
 
 The sonar room is the main ASW sensor. It listens passively on the hull-mounted sonar (HMS), the towed array (TAS) and the variable-depth sonar (VDS), analyses signatures on LOFAR and DEMON, estimates target motion with TMA, measures the sound profile and, when ordered, transmits an active ping. It classifies contacts and releases them to Operations and Weapons.
 
-## Displays and instruments {#sonar-displays}
+## Pages {#sonar-pages}
 
-The station has six pages. `PgUp`/`PgDn` (or `2` again) cycles them. The listening post on the right shows the evidence source and age, the array, the listening bearing and the ping readiness; a towed or variable-depth array that is moving or not yet ready appears on every page in amber with payout, stability and PAUSE when handling is outside its limits. The single key row at the bottom shows the page's four main keys with their values; every other key is listed under F1. On BROADBAND the amber line is the listening bearing and the grey lines the beam limits; dark means quiet, turquoise loud.
-
-![Sonar on the uConsole](figure:station-sonar)
-
-![Sonar in the Remote Crew browser](figure:web-sonar-desktop)
+The station has six pages. `PgUp`/`PgDn` (or `2` again) cycles them.
 
 | Page | Shows | Use it for |
 |---|---|---|
@@ -21,7 +17,17 @@ The station has six pages. `PgUp`/`PgDn` (or `2` again) cycles them. The listeni
 | UMWELT / FUSION | Sound profile, layer, CZ, array comparison | Choosing TAS depth, spotting ghost contacts |
 | ACTIVE | Stored echoes with age and error | Range and depth from pings |
 
-The station has three columns: contact cards on the left, the page's display in the middle, the detail rows and listening console on the right. The listening console below the detail rows works like a control desk: lamps show ping ready (amber while a ping is out), audio and peak hold, and a north-up bearing rose shows the listening beam (amber), the baffles astern (red sector), own course and every published contact bearing. Each contact card shows a lamp, the bearing, the classification and a signal-to-noise bar; a click selects it. Mouse: the key chips under the cards act on the selected contact like their keys: `C` classify, `T` TMA, `G` release to the CIC, `M` target, and `Y`/`Shift+Y` stream or recover the towed array and the VDS (on the submarine only `C`, `T` and `M`). The Remote Crew browser shows the same rose beside its waterfalls.
+## Displays and instruments {#sonar-displays}
+
+The listening post on the right shows the evidence source and age, the array, the listening bearing and the ping readiness; a towed or variable-depth array that is moving or not yet ready appears on every page in amber with payout, stability and PAUSE when handling is outside its limits. The single key row at the bottom shows the page's four main keys with their values; every other key is listed under F1. On BROADBAND the amber line is the listening bearing and the grey lines the beam limits; dark means quiet, turquoise loud.
+
+![Sonar on the uConsole](figure:station-sonar)
+
+![Sonar in the Remote Crew browser](figure:web-sonar-desktop)
+
+The station has three columns: contact cards on the left, the page's display in the middle, the detail rows and listening console on the right. The listening console below the detail rows works like a control desk: lamps show ping ready (amber while a ping is out), audio and peak hold, and a north-up bearing rose shows the listening beam (amber), the baffles astern (red sector), own course and every published contact bearing. Each contact card shows a lamp, the bearing, the classification and a signal-to-noise bar; a click selects it.
+
+Mouse: the key chips under the cards act on the selected contact like their keys: `C` classify, `T` TMA, `G` release to the CIC, `M` target, and `Y`/`Shift+Y` stream or recover the towed array and the VDS (on the submarine only `C`, `T` and `M`). The Remote Crew browser shows the same rose beside its waterfalls.
 
 ### BROADBAND waterfall {#sonar-broadband}
 
@@ -71,7 +77,9 @@ DEMON demodulates the broadband noise envelope of the listening beam. Propeller 
     shaft blade 2nd harmonic
 ```
 
-The display shows measured modulation, not identity. After changing the bearing listen for at least a few seconds before judging. Count blades yourself: move the cursor (`Z`/`X`, 0.5 Hz) onto the shaft line and press `K`, then onto the blade line and press `K` again; the rail shows blades = blade rate / shaft rate (with the deviation from a whole number) and the shaft RPM. A third `K` clears both marks. The **class library** under the marks lists the three catalogue classes that fit your marks best: shaft RPM against the class's RPM range, the blade count against its blade counts and your LOFAR fundamental (`K` on the LOFAR page) against its tonal band and machinery lines, each best in the middle of the range. With fewer than two marks it is only a hint. The contact analyser (`F8`) then lists the whole catalogue best fit first with the fit in percent. The library grades your marks, never the contact itself, and the classification stays your decision; the submarine's sonar room has the same library. At the Beginner realism level (`F10`) the sonar also labels modulation lines, proposes RPM for 3-7 blades and ranks catalogue candidates.
+The display shows measured modulation, not identity. After changing the bearing listen for at least a few seconds before judging. Count blades yourself: move the cursor (`Z`/`X`, 0.5 Hz) onto the shaft line and press `K`, then onto the blade line and press `K` again; the rail shows blades = blade rate / shaft rate (with the deviation from a whole number) and the shaft RPM. A third `K` clears both marks.
+
+The **class library** under the marks lists the three catalogue classes that fit your marks best: shaft RPM against the class's RPM range, the blade count against its blade counts and your LOFAR fundamental (`K` on the LOFAR page) against its tonal band and machinery lines, each best in the middle of the range. With fewer than two marks it is only a hint. The contact analyser (`F8`) then lists the whole catalogue best fit first with the fit in percent. The library grades your marks, never the contact itself, and the classification stays your decision; the submarine's sonar room has the same library. At the Beginner realism level (`F10`) the sonar also labels modulation lines, proposes RPM for 3-7 blades and ranks catalogue candidates.
 
 ### TMA, environment and active {#sonar-tma-env}
 
@@ -115,6 +123,15 @@ The display shows measured modulation, not identity. After changing the bearing 
 ## Keys {#sonar-keys}
 
 <!-- keys:sonar -->
+
+## Mouse {#sonar-mouse}
+
+Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
+
+- A click on a contact card selects the contact (on the ACTIVE page an echo row selects that echo).
+- The key chips under the cards act on the selected contact: `C` classify, `T` TMA, `G` release to the CIC, `M` target, `Y`/`Shift+Y` stream or recover the towed array and the VDS.
+- A click on the BROADBAND waterfall steers the listening bearing there, or onto a contact within half a beam width of the click.
+- A click on a page tab opens that page.
 
 ## Standard procedure {#sonar-sop}
 

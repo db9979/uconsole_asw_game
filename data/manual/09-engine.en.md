@@ -4,6 +4,13 @@
 
 The engine room sets the propulsion order and manages the ship's acoustic signature. Speed is the most important trade-off in ASW: fast to reach a datum, slow and quiet to hear anything.
 
+## Pages {#engine-pages}
+
+| Page | Shows |
+|---|---|
+| 1 Telegraph & speed | Telegraph steps, speed gauge, shaft RPM and own-noise gauges, state lamps |
+| 2 Systems | Annunciator panel, fuel bunker, roll, pitch and list gauges, mimic of the ship's sections |
+
 ## Displays and instruments {#engine-displays}
 
 The engine room is a machinery control console. Page 1 shows the engine telegraph as a column of lit steps, a large speed gauge (ordered speed as an amber mark, the damage speed limit in red), gauges for shaft RPM and own noise (cavitation zone in red) and lamps for shaft, plant, course, acoustic mode, cavitation and speed limit. Page 2 **Systems** has an annunciator panel of status lamps (dark when off, green while running, amber for a caution, red for an alarm) with a master lamp counting alarms and cautions, the fuel bunker as a tank column with stock, burn, endurance and range, gauges for roll, pitch and hull list, and a mimic of the ship's sections from bow to stern between the starboard and port hull, each with its water level, state, flooding and fire LEDs and the numbered repair teams at work.
@@ -44,6 +51,12 @@ The engine room is a machinery control console. Page 1 shows the engine telegrap
 ## Keys {#engine-keys}
 
 <!-- keys:engine -->
+
+## Mouse {#engine-mouse}
+
+Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
+
+- Holding `+` or `-` in the key bar steps the telegraph; the lamps press their keys.
 
 ## Standard procedure {#engine-sop}
 

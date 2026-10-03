@@ -4,20 +4,22 @@
 
 Der HSP-5 „Sea Lynx" verlängert den Arm der Fregatte: er fliegt mit 120 kn zu einem Datum, wirft Sonarbojen, taucht sein eigenes Sonar und greift mit Leichttorpedos an, während die Fregatte leise und außerhalb der Torpedoreichweite bleibt.
 
-## Anzeigen und Instrumente {#helicopter-displays}
+## Seiten {#helicopter-pages}
 
 Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
-
-![Heli-Deck auf der uConsole](figure:station-helicopter)
-
-![Heli-Deck im Remote-Crew-Browser](figure:web-helicopter-desktop)
 
 | Seite | Inhalt |
 |---|---|
 | 1 Status | Statuskonsole: Zustandslampen, Kraftstoff, Peilung zum Schiff, Zuladung, Flugwetter, Deckbewegung |
-| 2 Mission | Karte mit Wegpunkt, Bojen, Kontakten |
+| 2 Einsatzregeln | Peilung und Abstand zum Wegpunkt, Treibstoffreserve für den Rückflug, Tasten für Start, Tauchen und Waffen, Bojenmuster, MAD, Radar, ROE |
 | 3 Sonar | Kontakte von Tauchsonar und Bojen, Tiefe, Quelle |
 | 4 Akustik | Abhören: BROADBAND / LOFAR / DEMON des Tauchsonars oder einer passiven Boje |
+
+## Anzeigen und Instrumente {#helicopter-displays}
+
+![Heli-Deck auf der uConsole](figure:station-helicopter)
+
+![Heli-Deck im Remote-Crew-Browser](figure:web-helicopter-desktop)
 
 ```text
          Fregatte                           Wegpunkt (1-30 sm)
@@ -39,7 +41,9 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 - **Augen der Besatzung:** Solange der Helikopter fliegt, hält auch seine Besatzung Ausguck, mit dem Kontrastmodell des Brückenausgucks aus der Flughöhe (150 m, beim Tauchen 20 m): die Schaumfahne eines ausgefahrenen Sehrohrs oder Schnorchels sieht sie auf dieselbe Entfernung wie der Ausguck, unabhängig vom Radar und ohne zu strahlen. Die Sichtung geht alle 2 s als `HELO-EYE`-Track an die OPZ, auf die halbe Entfernung als U-Boot.
 - **Leichttorpedo:** 2 je Einsatz, 55 kn, 12 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
 
-Seite 1 ist die Statuskonsole des Hubschraubers. Eine Leiste Zustandslampen zeigt, wo er ist: HANGAR, DECK (grün, wenn er jetzt starten darf, gelb, solange Wetter oder Deckbewegung ihn halten, rot bei ausgefallenem Flugdeck), FLUG (rot, wenn er verloren ist), SONAR (Tauchsonar im Wasser, gelb beim Fieren und Hieven) und RÜCKFLUG. Darunter ein Tank mit der 20-Minuten-Reserve als gelbe Marke (im Hangar steht er betankt), eine Rose mit der Peilung zurück zum Schiff und der Kursnadel des Hubschraubers sowie Anzeigen: Zustand, Flugzeit (und im Schwebeflug, der 1,3-mal so viel verbraucht), Bingo (Kraftstoff nach Heimflug und Reserve), Peilung, Entfernung und Flugzeit zurück zum Schiff, Flugkurs sowie Zustand und Tiefe des Tauchsonars. Die Einsatzmittel zeigen Torpedos und Bojen an Bord als Punkte, die Bojen im Wasser und den Datenlink, dann Lampen für das Flugwetter (CLEAR, LIMITED oder NO-GO), das Deckfenster, das Tauchwetter, Dom, Ping, Wassereintritt und Radar. Die Deckbewegungsanzeige steht ganz unten; in einem kleinen Fenster oder bei großer Schrift weichen erst die untere Lampenreihe und dann diese Anzeige.
+Seite 1 ist die Statuskonsole des Hubschraubers. Eine Leiste Zustandslampen zeigt, wo er ist: HANGAR, DECK (grün, wenn er jetzt starten darf, gelb, solange Wetter oder Deckbewegung ihn halten, rot bei ausgefallenem Flugdeck), FLUG (rot, wenn er verloren ist), SONAR (Tauchsonar im Wasser, gelb beim Fieren und Hieven) und RÜCKFLUG.
+
+Darunter ein Tank mit der 20-Minuten-Reserve als gelbe Marke (im Hangar steht er betankt), eine Rose mit der Peilung zurück zum Schiff und der Kursnadel des Hubschraubers sowie Anzeigen: Zustand, Flugzeit (und im Schwebeflug, der 1,3-mal so viel verbraucht), Bingo (Kraftstoff nach Heimflug und Reserve), Peilung, Entfernung und Flugzeit zurück zum Schiff, Flugkurs sowie Zustand und Tiefe des Tauchsonars. Die Einsatzmittel zeigen Torpedos und Bojen an Bord als Punkte, die Bojen im Wasser und den Datenlink, dann Lampen für das Flugwetter (CLEAR, LIMITED oder NO-GO), das Deckfenster, das Tauchwetter, Dom, Ping, Wassereintritt und Radar. Die Deckbewegungsanzeige steht ganz unten; in einem kleinen Fenster oder bei großer Schrift weichen erst die untere Lampenreihe und dann diese Anzeige.
 
 Seite 3 zeigt das Tauchsonar wie eine Konsole: Lampen für Dom (grün im Wasser, gelb beim Fieren oder Hieven), Ping bereit und Wassereintritt frei, eine Anzeige des Kabels in der Wassersäule bis zum Grund und ein Sichtgerät mit den Peilungen von Tauchsonar und Bojen als Keile so breit wie ihr Fehler. Seite 4 zeichnet ihre Wasserfälle in denselben Leuchtfarben wie das Sonar des Schiffs.
 
@@ -48,6 +52,14 @@ Seite 3 zeigt das Tauchsonar wie eine Konsole: Lampen für Dom (grün im Wasser,
 <!-- keys:helicopter -->
 
 Mit „Akustik" markierte Tasten gelten nur auf der Akustikseite (Seite 4).
+
+## Maus {#helicopter-mouse}
+
+Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
+
+- Auf Seite 2 sind die in den Regeln genannten Tasten (`H`, `Y`, `U`/`V`, `Umschalt+A`, `B`, `D`, `Umschalt+B`, `Umschalt+M`, `Strg+R`) Schalter: Ein Klick drückt sie.
+- Auf der Akustikseite schaltet ein Klick auf die Quellenangabe die Hörquelle um.
+- Auf der Karte zoomt das Mausrad, Ziehen verschiebt (und beendet das Folgen mit `K`) und ein Klick heftet eine Kurzinfo an.
 
 ## Standardablauf {#helicopter-sop}
 

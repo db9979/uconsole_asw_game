@@ -246,3 +246,31 @@ def draw_display_page(game, surface, x: int, y: int, w: int, bottom: int) -> Non
         rect = (x, bottom - hint_h + 2 + index * 21, w, 20)
         layout.blit_line(surface, key, rect, config.COLOR_TEXT_DIM, size=13)
         pointer.add_token_keys(rect, localize(key), 13, tokens)
+
+
+def radar_switch_rects(chart: pygame.Rect) -> list:
+    """``(domain, rect)`` of the two radar switches in the chart's top left."""
+    face = layout.font(12)
+    rects, x = [], chart.x + 6
+    for domain in ("surface", "air"):
+        width = max(layout.text_width(face, localize("opz.radar_switch." + domain + "." + state))
+                    for state in ("on", "off")) + 14
+        rects.append((domain, pygame.Rect(x, chart.y + 6, width, 22)))
+        x += width + 4
+    return rects
+
+
+def draw_radar_switches(game, surface, chart: pygame.Rect, live: bool) -> None:
+    """Surface and air radar on/off as two lit switches on the chart (R and
+    Shift+R; a click presses the same key, with its EMCON report)."""
+    for domain, rect in radar_switch_rects(chart):
+        on = bool(game.air_radar_on if domain == "air" else game.surface_radar_on)
+        lit = on and live
+        pygame.draw.rect(surface, config.COLOR_TAB_ACTIVE if lit else config.COLOR_PANEL_BG, rect)
+        pygame.draw.rect(surface, config.COLOR_OK if lit else config.COLOR_SONAR_RING, rect, 1)
+        pygame.draw.circle(surface, config.COLOR_OK if lit else config.COLOR_TEXT_DIM,
+                           (rect.x + 7, rect.centery), 3, 0 if lit else 1)
+        layout.blit_line(surface, "opz.radar_switch." + domain + (".on" if on else ".off"),
+                         (rect.x + 12, rect.y, rect.w - 14, rect.h),
+                         config.COLOR_TEXT if lit else config.COLOR_TEXT_DIM, size=12, align="center")
+        pointer.add_key(rect, pygame.K_r, pygame.KMOD_SHIFT if domain == "air" else 0)

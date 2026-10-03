@@ -63,7 +63,7 @@ Page 5 (Display) sets what the OPZ chart draws; it changes nothing in the simula
 - **Range rings**, **bearing lines** of bearing-only reports, **furthest-on** circles, **depths + grid** of the chart and the **radar afterglow** each switch on and off.
 - **CPA of selected:** for the selected track with a position, course and speed, both run on to the closest point of approach; a line joins the two points with distance and time (red under 2 NM). It uses only the track's reported motion, so it is only as good as that report.
 
-The chips under the chart show which layers are on and switch them with a click on every page. The browser's OPZ has the same settings as buttons above its chart (kept for that browser tab only).
+Two switches in the chart's top left turn the surface and air radar on and off on every page (the same as `R` and `Shift+R`, with the EMCON report to HQ); they glow while the radar transmits. The chips under the chart show which layers are on and switch them with a click on every page. The browser's OPZ has the radar switches and the same settings as buttons above its chart (kept for that browser tab only).
 
 ## Keys {#opz-keys}
 

@@ -5,6 +5,7 @@
 // tab (kept in memory, never sent to the host); the buttons are fixed in
 // index.html and only their text and pressed state change on a state push.
 import { $ } from "../core/base.js";
+import { S } from "../state/store.js";
 import { finite, hasPosition, t } from "../core/format.js";
 import { palette } from "../core/palette.js";
 import { placeText } from "./label-layout.js";
@@ -50,6 +51,15 @@ export function syncOpzDisplayBar(role = null) {
   const bar = $("opz-display-bar");
   if (!bar) return;
   if (role !== null) bar.hidden = role !== "opz";
+  // The two radar switches show the host's radar state (opz_set_radar).
+  const radar = S.v2State?.role === "opz" ? S.v2State.opz.radar : null;
+  for (const button of bar.querySelectorAll("button[data-opz-radar]")) {
+    const domain = button.dataset.opzRadar, on = Boolean(radar?.[domain]);
+    const text = `${t(`opz_radar_switch_${domain}`)} ${t(on ? "opz_display_value_on" : "opz_display_value_off")}`;
+    if (button.textContent !== text) button.textContent = text;
+    if (button.getAttribute("aria-pressed") !== String(on)) button.setAttribute("aria-pressed", String(on));
+    button.disabled = !radar?.live;
+  }
   for (const button of bar.querySelectorAll("button[data-opz-display]")) {
     const key = button.dataset.opzDisplay;
     if (key === "reset") continue;
@@ -168,10 +178,12 @@ export function drawOpzCpa(context, labels, own, row, point) {
   context.restore();
 }
 
-export function wireOpzDisplayBar() {
+export function wireOpzDisplayBar(sendRadar) {
   const bar = $("opz-display-bar");
   if (!bar) return;
   bar.addEventListener("click", (event) => {
+    const radar = event.target.closest("button[data-opz-radar]");
+    if (radar) { sendRadar(radar.dataset.opzRadar, radar.getAttribute("aria-pressed") !== "true"); return; }
     const button = event.target.closest("button[data-opz-display]");
     if (!button) return;
     if (button.dataset.opzDisplay === "reset") resetOpzDisplay();

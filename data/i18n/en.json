@@ -7436,5 +7436,11 @@
   "help.key.opz_display": "↑/↓ ←/→",
   "help.control.opz_display": "Page 5 Display: pick a chart setting, change it",
   "help.control.opz_display_reset": "Page 5: all chart settings to default",
-  "help.note.opz_display": "Page 5 sets trails, vectors, labels, bearing scale, rings, CPA and chart layers; the chips under the chart switch them by click. Display only."
+  "help.note.opz_display": "Page 5 sets trails, vectors, labels, bearing scale, rings, CPA and chart layers; the chips under the chart switch them by click. Display only.",
+  "opz.radar_switch.surface.on": "SURFACE RADAR ON",
+  "opz.radar_switch.surface.off": "SURFACE RADAR OFF",
+  "opz.radar_switch.air.on": "AIR RADAR ON",
+  "opz.radar_switch.air.off": "AIR RADAR OFF",
+  "commander.web.opz_radar_switch_surface": "Surface radar",
+  "commander.web.opz_radar_switch_air": "Air radar"
 }

@@ -7436,5 +7436,11 @@
   "help.key.opz_display": "↑/↓ ←/→",
   "help.control.opz_display": "Seite 5 Anzeige: Karteneinstellung wählen, ändern",
   "help.control.opz_display_reset": "Seite 5: alle Karteneinstellungen auf Standard",
-  "help.note.opz_display": "Seite 5 stellt Spuren, Vektoren, Beschriftung, Peilskala, Ringe, CPA und Kartenebenen ein; die Schalter unter der Karte schalten per Klick. Nur Anzeige."
+  "help.note.opz_display": "Seite 5 stellt Spuren, Vektoren, Beschriftung, Peilskala, Ringe, CPA und Kartenebenen ein; die Schalter unter der Karte schalten per Klick. Nur Anzeige.",
+  "opz.radar_switch.surface.on": "SEERADAR AN",
+  "opz.radar_switch.surface.off": "SEERADAR AUS",
+  "opz.radar_switch.air.on": "LUFTRADAR AN",
+  "opz.radar_switch.air.off": "LUFTRADAR AUS",
+  "commander.web.opz_radar_switch_surface": "Seeradar",
+  "commander.web.opz_radar_switch_air": "Luftradar"
 }

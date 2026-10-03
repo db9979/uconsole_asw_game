@@ -14,7 +14,8 @@ Entfernungsringe, Peilstrahlen, Unsicherheitskreise, Tiefen und Gitter, das
 Radar-Nachleuchten und den Punkt der nächsten Annäherung (CPA) des gewählten
 Tracks mit Abstand und Zeit ein. Auf/Ab wählt eine Zeile, Links/Rechts ändert
 sie, Backspace stellt den Standard wieder her, jede Zeile ist anklickbar, und
-Schalter unter der Karte schalten die Ebenen auf jeder Seite. Die
+Schalter unter der Karte schalten die Ebenen auf jeder Seite, und zwei
+Schalter auf der Karte schalten See- und Luftradar ein und aus. Die
 Einstellungen bleiben in settings.json. Die OPZ im Browser hat dieselben
 Knöpfe über ihrer Karte und zeichnet dieselben Ringe, Peilskala, Spuren und
 den CPA. Nur Anzeige: die Simulation bleibt unverändert. Spielstände sind

@@ -746,7 +746,10 @@ def draw_opz_view(game, tr=None) -> None:
     previous_clip = s.get_clip()
     s.set_clip(chart)
     # Chart labels step aside from each other (and from the speed labels).
-    with label_layout.label_scope(chart):
+    with label_layout.label_scope(chart) as chart_labels:
+        # The radar switches sit in the chart's top left; labels keep off.
+        for _domain, switch in opz_display_view.radar_switch_rects(chart):
+            chart_labels.reserve(switch)
         station_live = not game.damage.station_down("opz")
         radar_live = station_live and (game.surface_radar_on or game.air_radar_on)
         px_per_nm = view.scale
@@ -969,6 +972,7 @@ def draw_opz_view(game, tr=None) -> None:
         draw_plot(s, game, view, chart)
 
     s.set_clip(previous_clip)
+    opz_display_view.draw_radar_switches(game, s, chart, not game.damage.station_down("opz"))
     side_top = regions["sidebar"].y
     side_h = regions["sidebar"].h
     sb_box = layout.box(s, (regions["sidebar"].x + 4, side_top,

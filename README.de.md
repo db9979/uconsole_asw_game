@@ -21,7 +21,8 @@ Einstellungen: Spurverlauf, Vektorlänge, Beschriftung, eine Peilskala mit
 eigenem Kurs, Entfernungsringe, Peilstrahlen, Unsicherheitskreise, Tiefen und
 Gitter, das Radar-Nachleuchten und den Punkt der nächsten Annäherung (CPA)
 des gewählten Tracks mit Abstand und Zeit. Pfeiltasten oder ein Klick stellen
-alles ein, Schalter unter der Karte schalten die Ebenen auf jeder Seite, und
+alles ein, Schalter unter der Karte schalten die Ebenen auf jeder Seite, zwei Schalter
+auf der Karte schalten die Radare ein und aus, und
 die Einstellungen bleiben gespeichert. Die OPZ im Browser hat dieselben
 Knöpfe über ihrer Karte und zeichnet dieselben Ringe, Peilskala, Spuren und
 den CPA. Nur Anzeige: die Simulation bleibt unverändert. Spielstände sind

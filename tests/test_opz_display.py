@@ -200,3 +200,20 @@ def test_display_settings_never_touch_the_simulation():
     assert (plain.ship.x, plain.ship.y, plain.sim_t) == (styled.ship.x, styled.ship.y, styled.sim_t)
     assert ([t.track_id for t in plain.opz_tracks()]
             == [t.track_id for t in styled.opz_tracks()])
+
+
+def test_radar_switches_on_the_chart_press_r_and_shift_r():
+    game = _game("de")
+    pointer.reset()
+    game.draw()
+    with layout.bottom_panel_regions(game.bottom_panel_mode()):
+        chart = opz.opz_regions(config.OPZ_STATION_RECT)["chart"]
+    switches = [t for t in pointer.targets("station")
+                if t.key == pygame.K_r and chart.contains(t.rect)]
+    assert [t.mod for t in switches] == [0, pygame.KMOD_SHIFT]
+    surface, air = game.surface_radar_on, game.air_radar_on
+    for target in switches:
+        press(game, target.key, target.mod)
+    assert (game.surface_radar_on, game.air_radar_on) == (not surface, not air)
+    texts = [item["text"] for item in _texts(game)]
+    assert any("SEERADAR" in text for text in texts)

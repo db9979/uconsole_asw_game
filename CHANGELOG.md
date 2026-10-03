@@ -13,7 +13,8 @@ with the own course on the outer radar ring, range rings, bearing lines,
 furthest-on circles, depths and grid, the radar afterglow and the selected
 track's closest point of approach with distance and time. Up/down picks a
 row, left/right changes it, Backspace restores the defaults, every row is
-clickable, and chips under the chart switch the layers on every page. The
+clickable, chips under the chart switch the layers on every page, and two
+switches on the chart turn the surface and air radar on and off. The
 settings stay in settings.json. The browser OPZ has the same buttons above
 its chart and draws the same rings, bearing scale, trails and CPA. Display
 only: the simulation is unchanged. Saves are v50; v38 to v49 saves still

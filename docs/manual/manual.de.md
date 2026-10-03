@@ -705,7 +705,7 @@ Seite 5 (Anzeige) legt fest, was die OPZ-Karte zeichnet; sie ändert nichts an d
 - **Entfernungsringe**, **Peilstrahlen** reiner Peilmeldungen, **Unsicherheitskreise**, **Tiefen und Gitter** der Karte und das **Radar-Nachleuchten** lassen sich einzeln an- und ausschalten.
 - **CPA Auswahl:** Beim gewählten Track mit Position, Kurs und Fahrt laufen beide bis zum Punkt der nächsten Annäherung weiter; eine Linie verbindet die beiden Punkte mit Abstand und Zeit (rot unter 2 sm). Sie nutzt nur die gemeldete Bewegung des Tracks und ist deshalb nur so gut wie diese Meldung.
 
-Die Schalter unter der Karte zeigen auf jeder Seite, welche Ebenen an sind, und schalten sie per Klick. Die OPZ im Browser hat dieselben Einstellungen als Knöpfe über ihrer Karte (nur für diesen Browser-Tab gespeichert).
+Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luftradar ein und aus (wie `R` und `Shift+R`, mit der EMCON-Meldung an das Hauptquartier); sie leuchten, solange das Radar sendet. Die Schalter unter der Karte zeigen auf jeder Seite, welche Ebenen an sind, und schalten sie per Klick. Die OPZ im Browser hat die Radarschalter und dieselben Einstellungen als Knöpfe über ihrer Karte (nur für diesen Browser-Tab gespeichert).
 
 ### Tasten
 

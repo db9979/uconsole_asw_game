@@ -19,7 +19,8 @@ settings: track trails, vector length, labels, a bearing scale with the own
 course, range rings, bearing lines, furthest-on circles, depths and grid, the
 radar afterglow and the selected track's closest point of approach (CPA) with
 distance and time. Arrow keys or a click set each one, chips under the chart
-switch the layers on every page, and the settings are remembered. The browser
+switch the layers on every page, two switches on the chart turn the radars on
+and off, and the settings are remembered. The browser
 OPZ has the same buttons above its chart and draws the same rings, bearing
 scale, trails and CPA. Display only: the simulation is unchanged. Saves are
 v50; v38 to v49 saves still load.

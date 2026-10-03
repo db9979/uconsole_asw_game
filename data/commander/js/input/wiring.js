@@ -862,7 +862,7 @@ export function init() {
     Object.assign(roleMapViews[role], {x: S.chart?.size_nm / 2 || 250, y: S.chart?.size_nm / 2 || 250, zoom: 1, follow: false});
     queueVisualDraw();
   });
-  wireOpzDisplayBar();
+  wireOpzDisplayBar((domain, enabled) => sendStationAction("opz_set_radar", {domain, enabled}));
   $("opz-display-bar").addEventListener("opz-display-change", () => queueVisualDraw());
   $("plot-tool").addEventListener("change", () => { S.plotAnchor = null; queueVisualDraw(); });
   $("plot-clear").addEventListener("click", () => sendStationAction("plot_clear", {}));

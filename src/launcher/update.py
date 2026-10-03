@@ -17,10 +17,13 @@ import platform
 import re
 import shlex
 import shutil
+import ssl
 import stat
 import urllib.error
 import urllib.request
 from urllib.parse import urlsplit
+
+from src.core.https import ssl_context, urlopen  # noqa: F401 - re-exported
 
 REPOSITORY = "db9979/uconsole_asw_game"
 LATEST_RELEASE_API = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
@@ -42,6 +45,32 @@ _DOWNLOAD_HOSTS = frozenset({"github.com", "api.github.com",
 
 class UpdateError(RuntimeError):
     """A release could not be checked, downloaded or verified."""
+
+
+FAILURE_REASONS = ("tls", "offline", "http", "other")
+
+
+def failure_reason(exc: BaseException) -> str:
+    """Why a check failed, as a short key: tls, offline, http or other."""
+    seen = exc
+    for _ in range(6):
+        if isinstance(seen, ssl.SSLCertVerificationError) or (
+                isinstance(seen, ssl.SSLError) and "CERTIFICATE" in str(seen).upper()):
+            return "tls"
+        if isinstance(seen, urllib.error.HTTPError):
+            return "http"
+        if isinstance(seen, urllib.error.URLError):
+            seen = seen.reason if isinstance(seen.reason, BaseException) else None
+            if seen is None:
+                return "offline"
+            continue
+        if isinstance(seen, (TimeoutError, ConnectionError, OSError)):
+            return "offline"
+        nxt = seen.__cause__ or seen.__context__
+        if nxt is None:
+            break
+        seen = nxt
+    return "other"
 
 
 def parse_version(text: object) -> tuple[int, int, int] | None:
@@ -108,7 +137,7 @@ def _read_bounded(response, limit: int) -> bytes:
     return data
 
 
-def check_latest(current: str, opener=urllib.request.urlopen,
+def check_latest(current: str, opener=urlopen,
                  timeout: float = 10.0, asset_name: str = ASSET_NAME) -> Release | None:
     """Ask GitHub for the latest release; ``None`` when nothing newer exists."""
     request = urllib.request.Request(LATEST_RELEASE_API, headers={
@@ -126,7 +155,7 @@ def check_latest(current: str, opener=urllib.request.urlopen,
     return select_release(payload, current, asset_name)
 
 
-def download(release: Release, destination: str, opener=urllib.request.urlopen,
+def download(release: Release, destination: str, opener=urlopen,
              progress=None, timeout: float = 30.0) -> str:
     """Download and verify ``release`` to ``destination`` atomically."""
     staging = f"{destination}.part"
@@ -556,7 +585,7 @@ def _fetch_text(url: str, opener, timeout: float, agent: str) -> str:
         return ""
 
 
-def fetch_notice(current: str, opener=urllib.request.urlopen,
+def fetch_notice(current: str, opener=urlopen,
                  timeout: float = 8.0) -> Notice | None:
     """The newer latest release with its changelog entry, ``None`` if current.
 

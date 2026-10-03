@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.173
+## 1.3.174
 
-Version 1.3.173 füllt das Einsatzprotokoll der Remote Crew. Es zeigte bisher
+Version 1.3.174 füllt das Einsatzprotokoll der Remote Crew. Es zeigte bisher
 nur wenige Browser-Alarme und wirkte deshalb leer; jetzt listet jede Station
 dieselben Einträge wie F11 auf der uConsole, das Neueste oben, mit Uhrzeit
 und Kategoriekürzel: die Stationen der Fregatte das Log der Fregatte, die
@@ -14,6 +14,19 @@ Stationen des U-Boots das Bootslog. Ein langes Protokoll scrollt in seiner
 Leiste und lässt der Karte ihren Platz. Auf der uConsole öffnet F11 jetzt
 auch auf der U-Boot-Seite das Bootslog. Spielstände sind v50; v38 bis v49
 lassen sich weiter laden.
+
+## 1.3.173
+
+Version 1.3.173 repariert die Update-Prüfung der macOS-App. Ihr
+eingebautes Python suchte die Stammzertifikate in einem Ordner, den es nur auf
+dem Baurechner gibt, deshalb scheiterte jede HTTPS-Anfrage an der Prüfung und
+der Startbildschirm bot nie eine neuere Version an. Das Windows-Programm und
+die macOS-App bringen jetzt eigene Stammzertifikate (certifi) zusätzlich zu
+denen des Systems mit, was auch dem optionalen Sprachmodell und dem
+Live-Flugverkehr über HTTPS hilft. Schlägt die Update-Prüfung fehl, sagen
+Startbildschirm und Hauptmenü jetzt, dass und warum (keine Verbindung,
+Zertifikat oder ein Fehler von GitHub), und U prüft erneut. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.172
 

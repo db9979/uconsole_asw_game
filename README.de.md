@@ -14,20 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.168**
+Aktuelle Version: **1.3.169**
 
-Version 1.3.168 bringt U-Jagd auf den Mac und macht den Gegner ohne
-Sprachmodell klüger. Jede Version enthält jetzt eine macOS-App für
-Apple-Silicon und Intel-Macs, die sich wie das Windows-Programm selbst
-aktualisiert. Jedes freie KI-U-Boot und die KI-Jagdfregatte wählen ihre
-Taktik selbst aus dem, was sie gehört haben, und dem Charakter ihres
-Kommandanten, und der Gegner lernt aus dem Logbuch Ihre Gewohnheiten (früher
-Ping, weite Schüsse, Sehrohrtiefe, hohe Fahrt) und stellt sich ein wenig
-darauf ein; die Logbuchseite zeigt, was er kennt, und L schaltet das Lernen
-aus. Spielstände, die der laute Kontakt eines KI-U-Boots unladbar machte,
-laden wieder, der nächtliche Dauertest deckt alle Szenarien ab, wacklige
-Tests sind behoben und große Module aufgeteilt. Spielstände sind v50; v38
-bis v49 lassen sich weiter laden.
+Version 1.3.169 zeigt andere Schiffe in jedem Okular so, wie das Auge sie
+sieht (Fernglas, Horizontstreifen, Sehrohr, Trefferbild, Remote Crew und
+Handy-Ausguck): ein Schiff in der Nähe schwimmt mit seiner Wasserlinie unter
+der Kimm in der gemessenen Entfernung, statt auf der Kimm zu sitzen, und ein
+näheres Schiff steht vor einem ferneren. Peilung und Lagewinkel wurden
+geprüft und stimmten schon. Spielstände sind v50; v38 bis v49 lassen sich
+weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

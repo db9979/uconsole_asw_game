@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.169
+
+Version 1.3.169 zeigt andere Schiffe im Fernglas des Ausgucks, im
+Horizontstreifen, im Sehrohr, im Trefferbild, in den Remote-Crew-Karten und
+im Handy-Ausguck so, wie das Auge sie sieht. Ein Schiff in der Nähe schwimmt
+jetzt mit seiner Wasserlinie unter der Kimm, so weit, wie das Auge in der
+gemessenen Entfernung auf das Wasser hinabsieht (etwa 1° auf 0,5 sm aus den
+18 m der Brücke), statt wie ein fernes Schiff auf der Kimm zu sitzen, und
+ein näheres Schiff steht vor einem ferneren statt in Listenreihenfolge.
+Peilung und Lagewinkel wurden geprüft und stimmten schon: die
+Steuerbordseite zeigt den Bug rechts, die Backbordseite den Bug links.
+Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.168
 
 Version 1.3.168 bringt U-Jagd auf den Mac. Jede Version enthält jetzt auch

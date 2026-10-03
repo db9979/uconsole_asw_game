@@ -25,8 +25,8 @@ def _calls(game, side):
             for row in phone_lookout.calls(game, side)[:8]]
 
 
-def _outline(bearing, span, cls, stale, lights, elevation, aob, model, way, called,
-             range_nm=None):
+def _outline(bearing, span, cls, stale, lights, elevation, aob, model, way, range_nm,
+             called):
     return dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
                 stale=bool(stale), lights=projections._nav_lights(lights),
                 elevation_deg=_number(elevation), aob_deg=_number(aob),
@@ -71,7 +71,7 @@ def _boat(game, boat):
                          "aircraft" if row["kind"] == "FLG" and row["ref"] in elevation
                          else row["cls"], row["stale"], row["lights"],
                          elevation.get(row["ref"]) if row["kind"] == "FLG" else None,
-                         row["aob"], row["model"], row["way"], False, row["range_nm"])
+                         row["aob"], row["model"], row["way"], row["range_nm"], False)
                 for row in (dict(sighting, stale=not 0.0 <= now - sighting["t"] <= 1.0,
                                  lights=(None if now - sighting["t"] > 1.0 else
                                          boat.orders._lights.get(sighting["ref"])),

@@ -12,18 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.168**
+Current release: **1.3.169**
 
-Release 1.3.168 brings U-Jagd to the Mac and makes the opponent smarter
-without any language model. Every release now carries a macOS app for Apple
-silicon and Intel Macs that updates itself like the Windows program. Every
-free AI submarine and the AI hunter frigate pick their own tactics from what
-they heard and their commander's character, and the enemy learns your habits
-from the logbook (an early ping, long shots, periscope depth, high speed) and
-adapts a little; the logbook page shows what it knows and L switches learning
-off. Saves that an AI boat's loud contact made unloadable load again, the
-nightly endurance test covers all scenarios, flaky tests are fixed and large
-modules are split. Saves are v50; v38 to v49 saves still load.
+Release 1.3.169 puts other ships where the eye sees them in every eyepiece
+(binoculars, horizon strip, periscope, hit picture, Remote Crew and phone
+lookout): a ship close aboard floats with her waterline below the horizon
+line at the range the lookout measured instead of sitting on the horizon,
+and a nearer ship stands in front of a farther one. Bearing and angle on
+the bow were checked and were already right. Saves are v50; v38 to v49
+saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

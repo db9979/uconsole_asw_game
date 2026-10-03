@@ -4,6 +4,8 @@
 
 import pygame
 
+from src.ui import theme
+
 from src.core import config
 from src.core.i18n import localized, localize, raw_text
 from src.core.station import Station
@@ -141,7 +143,7 @@ def draw_damage_view(game, tr=None) -> None:
         layout.blit_line(s, message("damage.profile.draft",
                                     draft=f"{float(getattr(game.damage, 'draft_m', 7.5)):.1f}",
                                     trim=f"{game.damage.trim_deg():+.1f}"),
-                         (prof.x + 4, prof.bottom - 20, prof.w // 2, 20), (120, 190, 230), size=14)
+                         (prof.x + 4, prof.bottom - 20, prof.w // 2, 20), theme.c("info"), size=14)
         line_h = layout.font(16).get_linesize() + 2
         for i, (key, c) in enumerate(items):
             card = regions["compartments"][key]["callout"]
@@ -223,7 +225,7 @@ def _draw_callout(game, s, card, index, key, c, is_sel, line_h) -> None:
     """A lamp card: name, then state/flood/fire LEDs, values and the teams."""
     sc = _state_color(c.state)
     layout.record_geometry("callout", card, "damage.short." + key)
-    pygame.draw.rect(s, (10, 22, 23), card)
+    pygame.draw.rect(s, theme.c("raised"), card)
     pygame.draw.rect(s, config.COLOR_TEXT if is_sel else sc, card, 2 if is_sel else 1)
     label = message("damage.schematic.callout", number=f"{index + 1:02}",
                     name=localize("damage.short." + key))

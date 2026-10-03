@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { $, affiliations, isBoatCommand } from "../core/base.js";
 import { classificationText, enumText, finite, hasPosition, number, t, unit } from "../core/format.js";
-import { colors, palette } from "../core/palette.js";
+import { colors, palette, paletteAlpha, paletteRgb } from "../core/palette.js";
 import { drawNatoSymbol } from "../plot/symbols.js";
 import { maxRoleMapHits, roleMapViews } from "../state/shared.js";
 import { drawPlotLayer, releaseCanvas, renderPlotList, resizeCanvas } from "./chart.js";
@@ -127,7 +127,7 @@ export function drawChartHazards(context, hazards, point, width, height, pxPerNm
     addMapInfo(info, x, y, "hazard", hazard);
     context.save();
     context.lineWidth = 1.5;
-    context.strokeStyle = hazard.kind === "wreck" ? "#96b4c8" : "#dcbe78";
+    context.strokeStyle = hazard.kind === "wreck" ? palette().muted : palette().amber;
     context.beginPath();
     if (hazard.kind === "wreck") {
       context.moveTo(x - 8, y); context.lineTo(x + 8, y);
@@ -308,22 +308,23 @@ export function drawRoleMap(role) {
   const geo = S.chart.geography;
   if (geo?.depths.length && layer("chart")) {
     const size = geo.depths.length, cell = S.chart.size_nm / Math.max(1, size - 1);
+    const shallow = paletteRgb("shallow"), deepest = paletteRgb("deep");
     for (let y = 0; y < size - 1; y++) for (let x = 0; x < geo.depths[y].length - 1; x++) {
       const [px, py] = point(x * cell, y * cell);
       if (px > plot.width || py > plot.height || px + cell * scale < 0 || py + cell * scale < 0) continue;
       const deep = Math.max(0, Math.min(1, geo.depths[y][x] / 900));
-      plot.context.fillStyle = `rgb(${Math.round(16 - 9 * deep)} ${Math.round(45 - 24 * deep)} ${Math.round(58 - 30 * deep)})`;
+      plot.context.fillStyle = `rgb(${shallow.map((channel, index) => Math.round(channel + (deepest[index] - channel) * deep)).join(" ")})`;
       plot.context.fillRect(px, py, cell * scale + 1, cell * scale + 1);
     }
   }
   const step = viewState.zoom >= 8 ? 10 : viewState.zoom >= 3 ? 25 : 50;
-  plot.context.strokeStyle = "#243b46"; plot.context.fillStyle = "#829ba5";
+  plot.context.strokeStyle = palette().grid; plot.context.fillStyle = palette().label;
   for (let value = 0; value <= S.chart.size_nm && layer("chart"); value += step) {
     const [x, y] = point(value, value);
     if (x >= 0 && x <= plot.width) { plot.context.beginPath(); plot.context.moveTo(x, 0); plot.context.lineTo(x, plot.height); plot.context.stroke(); }
     if (y >= 0 && y <= plot.height) { plot.context.beginPath(); plot.context.moveTo(0, y); plot.context.lineTo(plot.width, y); plot.context.stroke(); }
   }
-  plot.context.strokeStyle = palette().line; plot.context.fillStyle = "#233d38";
+  plot.context.strokeStyle = palette().landEdge; plot.context.fillStyle = palette().land;
   for (const land of S.chart.landmasses) {
     plot.context.beginPath(); land.points.forEach(([x, y], index) => { const p = point(x, y); index ? plot.context.lineTo(...p) : plot.context.moveTo(...p); });
     plot.context.closePath(); plot.context.fill(); plot.context.stroke();
@@ -334,8 +335,8 @@ export function drawRoleMap(role) {
   const labels = labelField(plot.width, plot.height);
   labels.reserve(plot.width - 40, 4, 36, 18);
   plot.context.lineWidth = 3;
-  plot.context.strokeStyle = "#07151c";
-  plot.context.fillStyle = "#b5c8cf";
+  plot.context.strokeStyle = palette().halo;
+  plot.context.fillStyle = palette().text;
   for (let value = 0; value <= S.chart.size_nm && layer("chart"); value += step) {
     const [x, y] = point(value, value), text = String(value);
     if (x >= 0 && x + plot.context.measureText(text).width + 2 <= plot.width) {
@@ -419,7 +420,7 @@ export function drawRoleMap(role) {
       const angle = row.bearing * Math.PI / 180;
       if (finite(row.bearing_uncertainty_deg)) {
         const delta = row.bearing_uncertainty_deg * Math.PI / 180, length = Math.max(plot.width, plot.height);
-        plot.context.fillStyle = "rgb(243 197 119 / .08)"; plot.context.beginPath(); plot.context.moveTo(bx, by);
+        plot.context.fillStyle = paletteAlpha("amber", .08); plot.context.beginPath(); plot.context.moveTo(bx, by);
         plot.context.lineTo(bx + Math.sin(angle - delta) * length, by - Math.cos(angle - delta) * length);
         plot.context.lineTo(bx + Math.sin(angle + delta) * length, by - Math.cos(angle + delta) * length); plot.context.closePath(); plot.context.fill();
       }
@@ -476,10 +477,10 @@ export function drawRoleMap(role) {
     const selected = data.observations.find((row) => row.ref === S.selected);
     if (selected) drawOpzCpa(plot.context, labels, data.own, selected, framePoint);
     if (payload.radar.live && (payload.radar.surface || payload.radar.air)) {
-      for (const range of [payload.radar.surface_effective_range_nm, payload.radar.air_effective_range_nm]) if (finite(range)) { plot.context.strokeStyle = "#365d69"; plot.context.beginPath(); plot.context.arc(ox, oy, range * scale, 0, Math.PI * 2); plot.context.stroke(); }
+      for (const range of [payload.radar.surface_effective_range_nm, payload.radar.air_effective_range_nm]) if (finite(range)) { plot.context.strokeStyle = palette().lineStrong; plot.context.beginPath(); plot.context.arc(ox, oy, range * scale, 0, Math.PI * 2); plot.context.stroke(); }
     }
     const byRef = new Map(data.observations.map((row) => [row.ref, row]));
-    for (const fusion of payload.fusions) if (hasPosition(fusion)) for (const ref of fusion.members) { const member = byRef.get(ref); if (hasPosition(member)) { plot.context.strokeStyle = "#697f88"; plot.context.beginPath(); plot.context.moveTo(...point(fusion.x, fusion.y)); plot.context.lineTo(...point(member.x, member.y)); plot.context.stroke(); } }
+    for (const fusion of payload.fusions) if (hasPosition(fusion)) for (const ref of fusion.members) { const member = byRef.get(ref); if (hasPosition(member)) { plot.context.strokeStyle = palette().faint; plot.context.beginPath(); plot.context.moveTo(...point(fusion.x, fusion.y)); plot.context.lineTo(...point(member.x, member.y)); plot.context.stroke(); } }
   }
   drawPlotLayer(plot.context, framePoint, scale, plot.width, plot.height, null);
   renderPlotList();

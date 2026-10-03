@@ -4,6 +4,8 @@
 
 import pygame
 
+from src.ui import theme
+
 from src.core import config
 from src.core.i18n import localized, localize, raw_text
 from src.core.station import Station
@@ -49,7 +51,7 @@ def _draw_eloka_signal(surface, rect, track, now: float, channel=None) -> None:
     rect = pygame.Rect(rect)
     if rect.w < 80 or rect.h < 70:
         return
-    pygame.draw.rect(surface, (8, 18, 16), rect)
+    pygame.draw.rect(surface, theme.c("well"), rect)
     pygame.draw.rect(surface, config.COLOR_SONAR_RING, rect, 1)
     title_h = 24
     layout.blit_line(surface, "eloka.heading.signal_fingerprint",
@@ -60,9 +62,9 @@ def _draw_eloka_signal(surface, rect, track, now: float, channel=None) -> None:
     split = graph.y + graph.h // 2
     for fraction in (.25, .5, .75):
         x = graph.x + round(graph.w * fraction)
-        pygame.draw.line(surface, (24, 50, 44), (x, graph.y),
+        pygame.draw.line(surface, config.COLOR_GRID, (x, graph.y),
                          (x, graph.bottom), 1)
-    pygame.draw.line(surface, (36, 72, 62), (graph.x, split),
+    pygame.draw.line(surface, theme.c("line_strong"), (graph.x, split),
                      (graph.right, split), 1)
     fingerprint = animated_signal_fingerprint(
         track, now,

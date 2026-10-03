@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { $, damageStates, isBoatCommand, isSonar, opforRoles } from "../core/base.js";
 import { enumText, finite, number, stateText, t, unit } from "../core/format.js";
-import { palette } from "../core/palette.js";
+import { palette, paletteAlpha } from "../core/palette.js";
 import { syncPlotAnimation } from "../plot/clock.js";
 import { heatmap } from "../plot/heatmap.js";
 import { spectrum } from "../plot/spectrum.js";
@@ -75,7 +75,7 @@ function drawElokaVisual() {
 }
 // Annunciator lamp on the canvas: an LED, a label and a value in a framed tile.
 function canvasLamp(g, x, y, w, h, label, value, color) {
-  g.fillStyle = "rgba(8, 24, 28, .92)"; g.fillRect(x, y, w, h);
+  g.fillStyle = paletteAlpha("raised", .92); g.fillRect(x, y, w, h);
   g.strokeStyle = color; g.globalAlpha = .75; g.strokeRect(x + .5, y + .5, w - 1, h - 1); g.globalAlpha = 1;
   const r = Math.min(7, h / 4), cx = x + 12 + r, cy = y + h / 2;
   g.fillStyle = color; g.shadowColor = color; g.shadowBlur = 8;
@@ -100,7 +100,7 @@ function drawWeaponsVisual() {
   tubes.forEach((tube, index) => {
     const x = 10 + index * pitch, cw = pitch - 12, ready = tube.state === "ready";
     const color = ready ? p.accent : tube.state === "reloading" ? p.amber : p.muted;
-    g.fillStyle = "rgba(8, 24, 28, .92)"; g.fillRect(x, top, cw, height);
+    g.fillStyle = paletteAlpha("raised", .92); g.fillRect(x, top, cw, height);
     g.strokeStyle = p.line; g.strokeRect(x + .5, top + .5, cw - 1, height - 1);
     const fill = ready ? 1 : tube.state === "reloading" ? .35 : 0, inner = height - 46;
     g.fillStyle = color; g.globalAlpha = .55; g.fillRect(x + 4, top + 24 + inner * (1 - fill), cw - 8, inner * fill); g.globalAlpha = 1;

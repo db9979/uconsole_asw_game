@@ -23,6 +23,7 @@ import pygame
 from src.core import config
 from src.core.i18n import raw_text
 from src.ui import console, layout, lines
+from src.ui import theme
 
 # Metres: x forward of midships, z above the keel (frigate); y to starboard in
 # the cross-section looking forward. Rooms are convex polygons.
@@ -111,6 +112,7 @@ def _phase() -> float:
 
 
 def _cached(key, build):
+    key = (key, theme.revision())
     surface = _CACHE.get(key)
     if surface is None:
         if len(_CACHE) >= _CACHE_MAX:

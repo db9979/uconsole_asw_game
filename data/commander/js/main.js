@@ -5,6 +5,7 @@
 import "./state/store.js";
 import "./core/base.js";
 import "./core/palette.js";
+import "./core/theme.js";
 import "./state/shared.js";
 import "./net/host.js";
 import "./views/bridge-orders.js";

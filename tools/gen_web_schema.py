@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Render the browser schema's allowlists from the Python source of truth.
 
+It also writes the colour themes of ``src/ui/theme.py`` (``css_tokens()``)
+into the generated block of ``data/commander/css/tokens.css``.
+
 ``data/commander/js/state/schema.js`` keeps its hand-written validation
 logic; the role shapes and row field arrays between the ``GENERATED``
 markers are rendered from ``src/commander/v2/schema.py``.  ``--check``
@@ -26,7 +29,10 @@ from src.commander.v2 import schema  # noqa: E402
 SCHEMA_JS = ROOT / "data" / "commander" / "js" / "state" / "schema.js"
 PROFILES_JS = ROOT / "data" / "commander" / "js" / "views" / "silhouette-profiles.js"
 MODELS_JS = ROOT / "data" / "commander" / "js" / "views" / "unit-models.js"
+TOKENS_CSS = ROOT / "data" / "commander" / "css" / "tokens.css"
 VARIANT_GROUPS = ("naval", "civil", "subs")
+CSS_BEGIN = "/* BEGIN GENERATED THEME TOKENS (tools/gen_web_schema.py; do not edit by hand) */\n"
+CSS_END = "/* END GENERATED THEME TOKENS */\n"
 
 
 def variants_js(group: str):
@@ -208,6 +214,14 @@ def render(text: str) -> str:
     return text[:start] + render_block() + text[end:]
 
 
+def render_tokens(text: str) -> str:
+    """tokens.css with its generated block replaced by the theme tokens."""
+    from src.ui import theme
+    start = text.index(CSS_BEGIN) + len(CSS_BEGIN)
+    end = text.index(CSS_END, start)
+    return text[:start] + theme.css_tokens() + text[end:]
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true",
@@ -223,6 +237,12 @@ def main(argv=None) -> int:
     profiles_current = PROFILES_JS.read_text(encoding="utf-8") if PROFILES_JS.exists() else ""
     models = render_models()
     models_current = MODELS_JS.read_text(encoding="utf-8") if MODELS_JS.exists() else ""
+    tokens_current = TOKENS_CSS.read_text(encoding="utf-8")
+    try:
+        tokens = render_tokens(tokens_current)
+    except ValueError:
+        print("tokens.css: generated block markers missing", file=sys.stderr)
+        return 2
     if args.check:
         if rendered != current:
             print("schema.js: generated block out of date; run tools/gen_web_schema.py",
@@ -234,6 +254,10 @@ def main(argv=None) -> int:
             return 1
         if models != models_current:
             print("unit-models.js out of date; run tools/gen_web_schema.py",
+                  file=sys.stderr)
+            return 1
+        if tokens != tokens_current:
+            print("tokens.css: theme tokens out of date; run tools/gen_web_schema.py",
                   file=sys.stderr)
             return 1
         for group in VARIANT_GROUPS:
@@ -249,6 +273,9 @@ def main(argv=None) -> int:
     if models != models_current:
         MODELS_JS.write_text(models, encoding="utf-8", newline="\n")
         print(f"wrote {MODELS_JS.relative_to(ROOT)}")
+    if tokens != tokens_current:
+        TOKENS_CSS.write_text(tokens, encoding="utf-8", newline="\n")
+        print(f"wrote {TOKENS_CSS.relative_to(ROOT)}")
     for group in VARIANT_GROUPS:
         path, text = variants_js(group), render_variants(group)
         if not path.exists() or path.read_text(encoding="utf-8") != text:

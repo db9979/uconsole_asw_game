@@ -28,8 +28,9 @@ _PANELS_MAX = 12
 
 
 def high_contrast() -> bool:
-    """The high-contrast theme is active (its panel colour is pure dark grey)."""
-    return config.COLOR_PANEL_BG == (12, 12, 12)
+    """The high-contrast theme is active."""
+    from src.ui import theme
+    return theme.high_contrast()
 
 
 _DIM = {}
@@ -72,15 +73,16 @@ def _draw_backdrop(surface: pygame.Surface, t: float) -> None:
 
 
 def _fill(size) -> pygame.Surface:
-    surf = _PANELS.get(size)
+    key = (tuple(size), PANEL_FILL)
+    surf = _PANELS.get(key)
     if surf is None:
         surf = pygame.Surface(size, pygame.SRCALPHA)
         surf.fill(PANEL_FILL)
-        _PANELS[size] = surf
+        _PANELS[key] = surf
         while len(_PANELS) > _PANELS_MAX:
             _PANELS.popitem(last=False)
     else:
-        _PANELS.move_to_end(size)
+        _PANELS.move_to_end(key)
     return surf
 
 

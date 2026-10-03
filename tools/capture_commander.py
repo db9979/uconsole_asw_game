@@ -97,6 +97,15 @@ AUTOMATION = r"""
   const expectedLanguage = __LANGUAGE__;
   const expectedRole = __ROLE__;
   const scene = __SCENE__;
+  // The colour theme to show (a theme name only; the client reads it from
+  // the browser's storage like a player's own choice).
+  const theme = __THEME__;
+  if (theme) { try { localStorage.setItem("u-jagd-theme", theme); } catch (_) { errors++; } }
+  // A theme capture shows the theme itself, not the red light over it.
+  if (theme) addEventListener("DOMContentLoaded", () => {
+    const red = $("red-light");
+    if (red && red.checked) { red.checked = false; red.dispatchEvent(new Event("change")); }
+  });
   let pairing = false;
   let errors = 0;
   let positioned = false;
@@ -259,7 +268,7 @@ def _grant_capture(server, client_id: str, spec: Capture) -> None:
 def _capture_one(spec: Capture, temporary: Path, chromium: str, server,
                   game, bridge, pygame, production_index,
                   capture_clock,
-                  budget_ms: int):
+                  budget_ms: int, theme: str | None = None):
     index_type, production_html = production_index
     nonce = secrets.token_urlsafe(24)
     capture_name = f"Screenshot {nonce[:12]}"
@@ -270,7 +279,8 @@ def _capture_one(spec: Capture, temporary: Path, chromium: str, server,
                   .replace("__CAPTURE_NAME__", json.dumps(capture_name))
                   .replace("__LANGUAGE__", json.dumps(spec.language))
                   .replace("__ROLE__", json.dumps(spec.role))
-                  .replace("__SCENE__", json.dumps(spec.scene)))
+                  .replace("__SCENE__", json.dumps(spec.scene))
+                  .replace("__THEME__", json.dumps(theme)))
     # The automation is its own classic script, run before the module client.
     entry = b'<script type="module" src="./js/main.js"></script>'
     assert entry in production_html
@@ -414,7 +424,8 @@ def _engine_world(game, seed: int) -> None:
     run(30.0)
 
 
-def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000) -> None:
+def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000,
+                theme: str | None = None, only: tuple[str, ...] = ()) -> None:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     os.environ["SDL_AUDIODRIVER"] = "dummy"
     os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
@@ -439,7 +450,8 @@ def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000) -
             for language, sight in ((language, sight) for language in ("en", "de")
                                     for sight in (None, "engine", *hours)):
                 specs = [item for item in capture_specs()
-                         if item.language == language and item.sight == sight]
+                         if item.language == language and item.sight == sight
+                         and (not only or any(part in item.name for part in only))]
                 if not specs:
                     continue
                 game = Game(seed=seed, start_menu=False, show_splash=False,
@@ -470,7 +482,7 @@ def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000) -
                     for spec in specs:
                         image, report = _capture_one(
                             spec, temporary, chromium, server, game, bridge, pygame,
-                            production_index, capture_clock, budget_ms)
+                            production_index, capture_clock, budget_ms, theme)
                         staged.append((image, (spec.name, *spec.aliases), report))
                 finally:
                     http, listener = server._http, server._thread
@@ -510,6 +522,10 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=1234)
     parser.add_argument("--budget-ms", type=int, default=8000,
                         help="Chromium virtual-time budget per capture (2000..15000; default: 8000)")
+    parser.add_argument("--theme", choices=("night", "day", "contrast"), default=None,
+                        help="colour theme of the browser stations (default: the client's own, night)")
+    parser.add_argument("--only", action="append", default=[], metavar="TEXT",
+                        help="capture only the screenshots whose file name contains TEXT (repeatable)")
     args = parser.parse_args()
     chromium = (shutil.which("chromium") or shutil.which("chromium-browser")
                 or shutil.which("google-chrome"))
@@ -518,7 +534,8 @@ def main() -> int:
     if not 2000 <= args.budget_ms <= 15000:
         parser.error("--budget-ms must be between 2000 and 15000")
     try:
-        capture_all(args.output.resolve(), args.seed, chromium, args.budget_ms)
+        capture_all(args.output.resolve(), args.seed, chromium, args.budget_ms,
+                    args.theme, tuple(args.only))
     except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
         # Never print browser output, injected JavaScript, request bodies, or credentials.
         print(f"Commander capture failed: {type(error).__name__}", file=sys.stderr)

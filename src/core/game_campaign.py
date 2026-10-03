@@ -391,7 +391,7 @@ class CampaignMixin:
             y = ROW_TOP + index * ROW_H
             chosen = selected is not None and spot["id"] == selected["id"]
             if chosen:
-                pygame.draw.rect(s, (18, 60, 56), (x - 6, y, w + 12, ROW_H - 2))
+                pygame.draw.rect(s, config.COLOR_SELECT_BG, (x - 6, y, w + 12, ROW_H - 2))
             role = front.role(spot)
             pygame.draw.circle(s, ROLE_COLORS[role], (x + 8, y + ROW_H // 2 - 1), 5)
             layout.blit_line(s, message(

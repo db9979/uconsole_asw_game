@@ -14,23 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.175**
+Aktuelle Version: **1.3.176**
 
-Version 1.3.175 folgt aus einer Prüfung des ganzen Codes. Waffentasten mit
-Umschalt oder Strg feuern nicht mehr versehentlich: Umschalt+A (Ping) startet
-an der Waffenstation keinen ASROC mehr und Strg+R (Luftfahrzeug-Radar) feuert
-keinen Raketenwerfer mehr, und Umschalt+A schaltet auf dem U-Boot nicht mehr
-die Schleichfahrt. Ein lauerndes U-Boot hält jetzt auch gegen einen Nord- oder
-Südstrom, statt mit ihm zu treiben, und der Doppler eines Täuschkörpers rechnet
-seine Fahrt in Knoten. Die Host-Seite im Browser kann die Beobachterrolle
-vergeben und der Waffenstation des U-Boots das Direktfeuer entziehen, die
-Browser-Stationen des U-Boots haben eigene Kurzhilfen und Handbuch-Links, und
-vier Auswahllisten an Sonar und Heli springen beim Bedienen nicht mehr zurück.
-Ein Spielstand, gespeichert während die Fregatte auf einer Untiefe
-saß, lädt wieder, auch wenn die Flut inzwischen gestiegen ist.
-Hilfetexte wurden berichtigt (Seite Aufträge, OPZ-Zoom, Tasten der
-Nachbesprechung, deutsche Begriffe, „U-Boot“ statt „Boot“), und ungenutzter
-Code ist entfernt. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+Version 1.3.176 beginnt das neue Aussehen: ein Satz Farbbausteine für
+uConsole und Remote-Crew-Browser, mit Taktik Nacht (dunkel, Standard) und
+Taktik Tag (hell, der Wasserfall als LOFAR-Papierschrieb). Umschalten mit dem
+Schalter Dunkel/Hell in der oberen Leiste oder in den Optionen (F10) unter
+„Farbschema“, wo auch hoher Kontrast zur Wahl steht. Felder sind abgerundet
+mit farbiger Titelmarke, Reiter sind Pillen und Tastenhinweise Chips; Tasten
+und Aufteilung bleiben gleich. Spielstände sind v50; v38 bis v49 lassen sich
+weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

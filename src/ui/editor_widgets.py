@@ -21,17 +21,17 @@ IDENTITY_TR: Tr = lambda value, **_: value
 
 @dataclass(frozen=True)
 class EditorPalette:
-    background: tuple[int, int, int] = (8, 14, 17)
-    panel: tuple[int, int, int] = (14, 25, 29)
-    raised: tuple[int, int, int] = (23, 39, 43)
-    border: tuple[int, int, int] = (62, 125, 128)
-    text: tuple[int, int, int] = (200, 232, 214)
-    dim: tuple[int, int, int] = (116, 150, 142)
-    focus: tuple[int, int, int] = (232, 183, 74)
-    danger: tuple[int, int, int] = (224, 91, 79)
-    friendly: tuple[int, int, int] = (92, 174, 225)
-    hostile: tuple[int, int, int] = (224, 91, 79)
-    neutral: tuple[int, int, int] = (202, 198, 132)
+    background: tuple[int, int, int] = (11, 15, 25)
+    panel: tuple[int, int, int] = (17, 24, 39)
+    raised: tuple[int, int, int] = (26, 35, 51)
+    border: tuple[int, int, int] = (52, 80, 122)
+    text: tuple[int, int, int] = (229, 231, 235)
+    dim: tuple[int, int, int] = (139, 149, 167)
+    focus: tuple[int, int, int] = (245, 158, 11)
+    danger: tuple[int, int, int] = (239, 68, 68)
+    friendly: tuple[int, int, int] = (96, 165, 250)
+    hostile: tuple[int, int, int] = (248, 113, 113)
+    neutral: tuple[int, int, int] = (251, 191, 36)
 
 
 PALETTE = EditorPalette()

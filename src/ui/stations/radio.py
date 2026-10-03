@@ -115,7 +115,7 @@ def draw_radio_view(game, tr=None) -> None:
             if styled is not None:
                 txt = raw_text(styled)
             if row == len(msgs) - 1:
-                pygame.draw.rect(s, (20, 38, 27), (rx - 4, ry - 2, rw + 8, row_h - 2))
+                pygame.draw.rect(s, config.COLOR_SELECT_BG, (rx - 4, ry - 2, rw + 8, row_h - 2))
             layout.blit_line(s, stamp, (rx, ry, 90, 26), config.COLOR_OK, size=17)
             pygame.draw.line(s, config.COLOR_GRID, (rx + 94, ry), (rx + 94, ry + row_h - 5))
             layout.blit_block(s, txt, rx + 104, ry, rw - 104, row_h - 3,

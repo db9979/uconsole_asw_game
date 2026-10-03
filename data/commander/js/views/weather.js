@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { number, t, unit } from "../core/format.js";
-import { palette } from "../core/palette.js";
+import { palette, paletteAlpha } from "../core/palette.js";
 import { metrics, node } from "./dom.js";
 import { drawEmpty, visualContext } from "./visual-common.js";
 
@@ -157,13 +157,13 @@ export function drawWeatherProfile(p) {
   const sx = leftW + 6, sw = width - sx - 4;
   context.strokeStyle = colors.line;
   context.strokeRect(sx, top, sw, bottom - top);
-  context.fillStyle = "rgb(150 50 50 / .45)";
+  context.fillStyle = paletteAlpha("red", .3);
   p.shadow.forEach((row, column) => row.forEach((cell, index) => {
     if (!cell || p.depth_edges_m[index] > depthMax) return;
     const y0 = y(p.depth_edges_m[index]), y1 = y(Math.min(p.depth_edges_m[index + 1], depthMax));
     context.fillRect(sx + column * sw / p.shadow.length, y0, sw / p.shadow.length, Math.max(1, y1 - y0));
   }));
-  context.strokeStyle = "#5adc96";
+  context.strokeStyle = colors.green;
   for (const ray of p.rays) {
     context.beginPath();
     ray.forEach(([range, depth], index) => {
@@ -193,7 +193,7 @@ export function drawWeatherProfile(p) {
     const label = reading.text, labelWidth = context.measureText(label).width + 10;
     const lx = Math.min(width - labelWidth - 4, Math.max(4, (reading.x ?? leftW / 2) + 8));
     const ly = reading.y > top + 22 ? reading.y - 18 : reading.y + 6;
-    context.fillStyle = colors.panel || "#07151c"; context.fillRect(lx, ly, labelWidth, 16);
+    context.fillStyle = colors.panel; context.fillRect(lx, ly, labelWidth, 16);
     context.fillStyle = colors.accent; context.textAlign = "left";
     context.fillText(label, lx + 5, ly + 12);
   }

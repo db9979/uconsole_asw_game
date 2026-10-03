@@ -122,16 +122,10 @@ def draw_station_page_tabs(screen, station_rect, pages, current_page,
         active = (i == current_page)
         # The station's own hit test (station_page_tab_at) takes the click.
         pointer.add_hotspot(tab)
-        if active:
-            pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, tab)
-            pygame.draw.line(screen, config.COLOR_SONAR_RING,
-                              tab.topleft, (tab.right - 1, tab.top), 2)
         # The page's catalog message (its short form fits narrow tabs), never
         # its translated text again: "Navigation" is also a German value.
         with translation_scope(tr) if tr is not None else _no_scope():
-            layout.blit_line(screen, display_message("station_page", name), tab,
-                             config.COLOR_TEXT if active else config.COLOR_TEXT_DIM,
-                             size=14, align="center")
+            layout.tab(screen, tab, display_message("station_page", name), active)
     return tabs
 
 

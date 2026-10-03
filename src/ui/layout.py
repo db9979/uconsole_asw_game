@@ -428,34 +428,84 @@ def blit_block(screen, text: str, x: int, y: int, w: int, h: int,
             screen.blit(image, rendered)
 
 
-# The start screen's corner brackets on every panel (standard theme only; the
-# high-contrast theme keeps plain frames).
-BRACKET_COLOR = (62, 140, 128)
+# Panels of the station consoles (src/ui/theme.py tokens): rounded frames on
+# a soft shadow, a short accent stroke before the title. The corner brackets
+# of the older turquoise look are gone; ``corner_brackets`` stays a no-op so
+# views that still call it need no change. Module colours below are
+# reassigned by theme.set_theme.
+BRACKET_COLOR = (52, 80, 122)
 BRACKET_MAX_PX = 12
+PANEL_RADIUS = 5
+METER_TRACK = (6, 9, 18)
 
 
 def corner_brackets(screen, rect, border=None) -> None:
-    """Short phosphor angles in the corners of ``rect`` (display only)."""
-    if config.COLOR_PANEL_BG == (12, 12, 12):
-        return
-    x, y, w, h = rect
-    size = min(BRACKET_MAX_PX, w // 5, h // 4)
-    if size < 4:
-        return
-    color = BRACKET_COLOR if border in (None, config.COLOR_SONAR_RING) else border
-    right, bottom = x + w - 1, y + h - 1
-    for cx, cy, dx, dy in ((x, y, 1, 1), (right, y, -1, 1), (x, bottom, 1, -1),
-                           (right, bottom, -1, -1)):
-        pygame.draw.line(screen, color, (cx, cy), (cx + dx * size, cy), 2)
-        pygame.draw.line(screen, color, (cx, cy), (cx, cy + dy * size), 2)
+    """Former splash-style corner angles; the new panels need none."""
+    return None
 
 
-METER_TRACK = (18, 42, 39)
+def panel_frame(screen, rect, border=None, fill=None, shadow: bool = True) -> None:
+    """A rounded console panel: soft shadow, fill and a one-pixel rim."""
+    from src.ui import theme
+    rect = pygame.Rect(rect)
+    if rect.w < 4 or rect.h < 4:
+        return
+    radius = min(PANEL_RADIUS, rect.w // 4, rect.h // 4)
+    if shadow and not theme.high_contrast():
+        pygame.draw.rect(screen, theme.c("shadow"), rect.move(1, 2), border_radius=radius)
+    pygame.draw.rect(screen, fill or config.COLOR_PANEL_BG, rect, border_radius=radius)
+    if not theme.high_contrast() and rect.w > 2 * radius + 2:
+        pygame.draw.line(screen, theme.c("hilite"), (rect.x + radius, rect.y + 1),
+                         (rect.right - radius - 1, rect.y + 1))
+    pygame.draw.rect(screen, border or theme.c("line"), rect, 1, border_radius=radius)
+
+
+def title_mark(screen, x: int, y: int, h: int, color=None) -> None:
+    """The short accent stroke in front of a panel title."""
+    from src.ui import theme
+    pygame.draw.rect(screen, color or theme.c("accent"), (x, y, 3, max(4, h)),
+                     border_radius=1)
+
+
+def tab(screen, rect, label, active: bool, size: int = 14, color=None) -> None:
+    """A page/station tab: the active one a filled accent pill."""
+    from src.ui import theme
+    rect = pygame.Rect(rect)
+    record_geometry("tab", rect, str(label))
+    if active:
+        pygame.draw.rect(screen, theme.c("accent"), rect.inflate(-2, -2),
+                         border_radius=4)
+        text_color = theme.c("on_accent")
+    else:
+        text_color = color or config.COLOR_TEXT_DIM
+    blit_line(screen, label, rect, text_color if not (active and color) else color,
+              size=size, align="center")
+
+
+def theme_switch(screen, rect, light: bool) -> None:
+    """The top bar's dark/light switch: moon at the left, sun at the right."""
+    from src.ui import theme
+    rect = pygame.Rect(rect)
+    record_geometry("switch", rect, "theme")
+    radius = rect.h // 2
+    pygame.draw.rect(screen, theme.c("well"), rect, border_radius=radius)
+    pygame.draw.rect(screen, theme.c("line"), rect, 1, border_radius=radius)
+    knob = (rect.right - radius, rect.centery) if light else (rect.x + radius, rect.centery)
+    pygame.draw.circle(screen, theme.c("accent"), knob, radius - 2)
+    inner = theme.c("on_accent")
+    if light:
+        pygame.draw.circle(screen, inner, knob, max(2, radius // 3))
+    else:
+        pygame.draw.circle(screen, inner, (knob[0] + 2, knob[1] - 1), max(2, radius - 5))
+        pygame.draw.circle(screen, theme.c("accent"), (knob[0] + 4, knob[1] - 3),
+                           max(2, radius - 6))
+
+
 METER_MARKS = (0.25, 0.5, 0.75)
 
 
 def meter(screen, rect, fraction, color=None) -> None:
-    """The splash-style bar: dark track, quarter marks, bracket end caps.
+    """A rounded bar on a sunken track with quarter marks.
 
     ``fraction`` None (no such value, e.g. no battery) draws nothing at all,
     so an empty frame never pretends to be an empty store.
@@ -467,21 +517,17 @@ def meter(screen, rect, fraction, color=None) -> None:
         return
     record_geometry("meter", rect)
     value = max(0.0, min(1.0, float(fraction)))
-    pygame.draw.rect(screen, METER_TRACK, rect)
+    radius = min(3, rect.h // 2)
+    pygame.draw.rect(screen, METER_TRACK, rect, border_radius=radius)
     fill = rect.copy()
     fill.w = round(rect.w * value)
     if fill.w:
-        pygame.draw.rect(screen, color or config.COLOR_OK, fill)
+        pygame.draw.rect(screen, color or config.COLOR_OK, fill, border_radius=radius)
     for mark in METER_MARKS:
         mx = rect.x + round(rect.w * mark)
         pygame.draw.line(screen, config.COLOR_PANEL_BG if mx < fill.right else BRACKET_COLOR,
                          (mx, rect.y), (mx, rect.bottom - 1), 1)
-    cap = min(4, rect.w // 8)
-    for cx, dx in ((rect.x - 2, 1), (rect.right + 1, -1)):
-        pygame.draw.line(screen, BRACKET_COLOR, (cx, rect.y - 2), (cx, rect.bottom + 1), 1)
-        pygame.draw.line(screen, BRACKET_COLOR, (cx, rect.y - 2), (cx + dx * cap, rect.y - 2), 1)
-        pygame.draw.line(screen, BRACKET_COLOR, (cx, rect.bottom + 1),
-                         (cx + dx * cap, rect.bottom + 1), 1)
+    pygame.draw.rect(screen, BRACKET_COLOR, rect.inflate(2, 2), 1, border_radius=radius + 1)
 
 
 def gauge(screen, rect, fraction, *, label="", value="", color=None,
@@ -502,19 +548,34 @@ def gauge(screen, rect, fraction, *, label="", value="", color=None,
           fraction, color)
 
 
+def _semantic(color) -> bool:
+    """An alarm, caution or ready colour (kept as a panel rim)."""
+    return color is not None and tuple(color) in (
+        config.COLOR_WARN, config.COLOR_DANGER, config.COLOR_OK)
+
+
+def _box_rim(border):
+    """A box rim: semantic colours stay, any other emphasis becomes the
+    strong line token, no border the plain line."""
+    from src.ui import theme
+    if border is None or tuple(border) == config.COLOR_SONAR_RING:
+        return theme.c("line")
+    return tuple(border) if _semantic(border) else theme.c("line_strong")
+
+
 def box(screen, rect, title: str = "", border=None, fill=None,
         title_size: int = 16) -> tuple:
     """Zeichnet eine Box und liefert ihr garantiert inneres Rechteck."""
     x, y, w, h = rect
     record_geometry("box", rect, title)
-    border = border or config.COLOR_SONAR_RING
-    pygame.draw.rect(screen, fill or config.COLOR_PANEL_BG, rect)
-    pygame.draw.rect(screen, border, rect, 1)
-    corner_brackets(screen, rect, border)
+    rim = _box_rim(border)
+    panel_frame(screen, rect, rim, fill)
     top = y + 8
     if title:
         f = font(title_size, bold=True)
-        blit_block(screen, title, x + 10, top, w - 20, f.get_linesize() + 2,
+        title_mark(screen, x + 8, top + 3, f.get_linesize() - 6,
+                   rim if _semantic(border) else None)
+        blit_block(screen, title, x + 16, top, w - 26, f.get_linesize() + 2,
                    config.COLOR_TEXT, title_size, min_size=MIN_OPERATIONAL_FONT)
         top += f.get_linesize() + 8
     return x + 10, top, max(1, w - 20), max(1, y + h - top - 8)
@@ -582,14 +643,13 @@ def panel(screen, rect, title: str = "", title_size: int = 20) -> int:
     """Panel-Rahmen + optionaler Titel; liefert y unterhalb des Titels."""
     x, y, w, h = rect
     record_geometry("panel", rect, title)
-    pygame.draw.rect(screen, config.COLOR_PANEL_BG, (x, y, w, h))
-    pygame.draw.rect(screen, config.COLOR_SONAR_RING, (x, y, w, h), 1)
-    corner_brackets(screen, (x, y, w, h))
+    panel_frame(screen, (x, y, w, h))
     title = localize(title)
     if title:
         f, lines = fit_text(title, title_size, w - 28, 40, min_size=12)
+        title_mark(screen, x + 8, y + 12, _line_height(f) - 8)
         image = render_line(f, lines[0], config.COLOR_TEXT)
-        rendered = image.get_rect(topleft=(x + 14, y + 8))
+        rendered = image.get_rect(topleft=(x + 16, y + 8))
         record_text(lines[0], rendered, (x + 14, y + 8, w - 28, 40), image)
         screen.blit(image, rendered)
         return y + 8 + _line_height(f) + 8
@@ -620,8 +680,15 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
 def command_segment(screen, rect, key: str, description: str,
                     label: str = "", value: str = "", size: int = 12) -> None:
     """Draw one bounded command/status segment with stable semantic colors."""
+    from src.ui import theme
     rect = pygame.Rect(rect)
     face = font(size)
+    # The key is a small accent cap inside a raised chip (a click on the
+    # chip presses that key, see pointer.add_legend).
+    chip = rect.inflate(-3, -4)
+    if chip.w > 12 and chip.h > 8 and localize(key):
+        pygame.draw.rect(screen, theme.c("raised"), chip, border_radius=4)
+        pygame.draw.rect(screen, theme.c("line"), chip, 1, border_radius=4)
     parts = (
         (key, COMMAND_KEY_COLOR),
         (description, COMMAND_DESCRIPTION_COLOR),
@@ -629,6 +696,7 @@ def command_segment(screen, rect, key: str, description: str,
         (value, config.COLOR_TEXT),
     )
     x = rect.x + 6
+    top = rect.y + max(0, (rect.h - face.get_linesize()) // 2)
     with clip_to(screen, rect):
         for index, (text, color) in enumerate(parts):
             if not localize(text) or x >= rect.right - 4:
@@ -636,12 +704,16 @@ def command_segment(screen, rect, key: str, description: str,
             if index and x > rect.x + 6:
                 x += text_width(face, " ")
             shown = fit_line(text, face, rect.right - 4 - x)
+            if index == 0 and chip.h > 8:
+                cap = pygame.Rect(x - 3, chip.y + 2, text_width(face, shown) + 6,
+                                  chip.h - 4)
+                pygame.draw.rect(screen, theme.c("accent"), cap, border_radius=3)
+                color = theme.c("on_accent")
             image = render_line(face, shown, color)
-            rendered = image.get_rect(topleft=(x, rect.y + max(
-                0, (rect.h - face.get_linesize()) // 2)))
+            rendered = image.get_rect(topleft=(x, top))
             record_text(shown, rendered, rect, image)
             screen.blit(image, rendered)
-            x = rendered.right
+            x = rendered.right + (3 if index == 0 else 0)
 
 
 def tooltip_payload(title: str, *lines: str, target_id: str = "") -> dict:

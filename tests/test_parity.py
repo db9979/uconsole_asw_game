@@ -47,11 +47,22 @@ def test_web_styles_use_tokens_and_the_pygame_theme_covers_chrome():
     files = client_css_files()
     assert files[0].name == "tokens.css"
     tokens = files[0].read_text(encoding="utf-8")
-    root = tokens[:tokens.index("}")]
+    # The theme tokens are generated from src/ui/theme.TOKENS; the names the
+    # stylesheets use derive from them in one hand-written :root rule, with
+    # per-theme overrides for what a plain derivation cannot express.
+    begin = "/* BEGIN GENERATED THEME TOKENS (tools/gen_web_schema.py; do not edit by hand) */\n"
+    end = "/* END GENERATED THEME TOKENS */\n"
+    generated = tokens[tokens.index(begin) + len(begin):tokens.index(end)]
+    assert generated == theme.css_tokens()
+    rest = tokens[tokens.index(end) + len(end):]
+    root = rest[rest.index(":root {"):rest.index("}")]
     for token in ("--aff-unknown", "--aff-friend", "--aff-neutral", "--aff-hostile"):
-        assert token + ":" in root
+        assert token + ": var(--t-" in root
+    for token in ("--bg-0", "--bg-2", "--bg-3", "--line", "--line-strong", "--text", "--text-dim",
+                  "--text-faint", "--live", "--caution", "--alarm", "--info", "--scope", "--shadow"):
+        assert f"  {token}: var(--t-" in root, token
+    assert set(re.findall(r':root\[data-theme="(\w+)"\] \{', rest)) == {"day", "contrast"}
     # Every colour literal lives in the token file; the rest uses var(--...).
-    assert tokens.count("}") == 1
     commander = files[0].parents[1]
     for path in files[1:] + [commander / "admin.css", commander / "manual.css"]:
         assert not re.findall(r"#[0-9a-fA-F]{3,8}\b", path.read_text(encoding="utf-8")), path.name

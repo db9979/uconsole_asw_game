@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.176
+
+Version 1.3.176 beginnt das neue Aussehen. Alle Bildschirme nehmen ihre
+Farben jetzt aus einem gemeinsamen Satz Farbbausteine, den uConsole und
+Remote-Crew-Browser teilen, und es gibt zwei Schemata: Taktik Nacht (dunkel,
+Standard) und Taktik Tag (hell, der Sonar-Wasserfall als LOFAR-Papierschrieb
+mit dunkler Tinte). Umschalten mit dem kleinen Schalter Dunkel/Hell rechts in
+der oberen Leiste (anklicken) oder in den Optionen (F10) unter „Farbschema“,
+wo auch hoher Kontrast zur Wahl steht; die Wahl steht in den Einstellungen,
+nicht im Spielstand. Rotlicht erzwingt weiter das dunkle Schema und macht die Farben vorher grau, damit grüne Werte unter dem Rot lesbar bleiben. Felder sind
+jetzt abgerundet mit leichtem Schatten und farbiger Titelmarke, Seitenreiter
+sind Pillen und Tastenhinweise Chips. Tasten, Aufteilung und Spielstände
+bleiben gleich; Spielstände sind v50, v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.175
 
 Version 1.3.175 folgt aus einer Prüfung des ganzen Codes. Waffentasten mit

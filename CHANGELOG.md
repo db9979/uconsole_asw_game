@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.178
+## 1.3.180
 
-Release 1.3.178 brings pictures into the manual. Every station of the frigate
+Release 1.3.180 brings pictures into the manual. Every station of the frigate
 and the submarine now appears on the uConsole and in the Remote Crew browser,
 together with all six sonar pages, binoculars and periscope by day and at
 night, the main menu, scenario selection, briefing, options, the editors and
@@ -16,6 +16,15 @@ game leaves them out. The submarine chapter now lists every station page with
 its keys. The first-patrol steps match the main menu again, the quick start
 says which functions still need a key, and "submarine" replaces "boat". Saves
 are v50; v38 to v49 saves still load.
+
+## 1.3.179
+
+Release 1.3.179 fixes two clicks that raised a program error: the Dark/Light
+switch in the top bar (in the main menu it ended the game, in a mission it
+reset to the last recovery point) and the contact cards on the submarine's
+Weapons page. Both now work as intended (the theme flips, the card selects
+its contact).
+Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.177
 

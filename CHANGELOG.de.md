@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.178
+## 1.3.180
 
-Version 1.3.178 bringt Bilder ins Handbuch. Jede Station der Fregatte und
+Version 1.3.180 bringt Bilder ins Handbuch. Jede Station der Fregatte und
 des U-Boots ist jetzt auf der uConsole und im Remote-Crew-Browser zu sehen,
 dazu alle sechs Sonarseiten, Fernglas und Sehrohr bei Tag und Nacht,
 Hauptmenü, Szenarioauswahl, Einweisung, Optionen, die Editoren und die
@@ -16,6 +16,15 @@ lässt sie weg. Das U-Boot-Kapitel nennt jetzt jede Stationsseite mit ihren
 Tasten. Die Schritte der ersten Patrouille passen wieder zum Hauptmenü, der
 Schnellstart sagt, welche Funktionen noch eine Taste brauchen, und „U-Boot“
 ersetzt „Boot“. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
+## 1.3.179
+
+Version 1.3.179 behebt zwei Klicks, die einen Programmfehler auslösten:
+den Dunkel/Hell-Schalter in der oberen Leiste (im Hauptmenü beendete er das
+Spiel, im Einsatz sprang das Spiel auf den letzten Sicherungspunkt zurück)
+und die Kontaktkarten auf der Waffenseite des U-Boots. Beide funktionieren
+jetzt (das Farbschema wechselt, die Karte wählt ihren Kontakt). Tasten bleiben gleich. Spielstände sind v50;
+v38 bis v49 laden weiter.
 
 ## 1.3.177
 

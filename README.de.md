@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.178**
+Aktuelle Version: **1.3.180**
 
-Version 1.3.178 bringt Bilder ins Handbuch. Jede Station der Fregatte und
+Version 1.3.180 bringt Bilder ins Handbuch. Jede Station der Fregatte und
 des U-Boots ist jetzt auf der uConsole und im Remote-Crew-Browser zu sehen,
 dazu alle sechs Sonarseiten, Fernglas und Sehrohr bei Tag und Nacht,
 Hauptmenü, Szenarioauswahl, Einweisung, Optionen, die Editoren und die

@@ -868,7 +868,7 @@ def _draw_weapon_contacts(s, game, boat, rect) -> None:
                          (card.x + 8, card.y + 25, card.w - 16, 17),
                          config.COLOR_TEXT_DIM, size=13)
         if not remote:
-            pointer.add_action(card, lambda picked=contact: _pick_contact(boat, picked))
+            pointer.add_action(card, lambda _pos, picked=contact: _pick_contact(boat, picked))
 
 
 def _pick_contact(boat, contact) -> None:

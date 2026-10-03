@@ -235,6 +235,10 @@ class SimMixin:
                      if helicopter else self.station is Station.SONAR
                      and self.sonar_audio_enabled
                      and not self._sonar_down())
+        if listening and self._sonar_audio_sequence > receiver.sequence:
+            # The stream's cursor is ahead of this receiver (another receiver's
+            # numbering): it would wait for blocks that never come. Restart.
+            self._stop_sonar_audio()
         if not listening:
             self._stop_sonar_audio()
         else:
@@ -254,7 +258,7 @@ class SimMixin:
                             samples, block_id=sequence),
                         receiver.sample_rate, self.sonar_volume,
                         bearing_deg=0 if helicopter else self.sonar.listen_bearing,
-                        listener_bearing_deg=0 if helicopter else self.ship.course,
+                        listener_bearing_deg=0 if helicopter else self.sonar_observer.course,
                         buffered=True):
                     break
                 self._sonar_audio_sequence = sequence

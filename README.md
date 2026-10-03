@@ -12,33 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.188**
+Current release: **1.3.189**
 
-Release 1.3.188 makes runs and saves more dependable. Two games with the same
-seed now play out the same even when started one after the other without
-restarting the program (the patrol aircraft's radar and MAD, contact reports
-and submarine sightings no longer depend on internal numbering). Every save is
-checked before it is written, so a broken state can no longer overwrite the
-last good slot or the autosave; the periodic autosave does that check in the
-background so the game keeps running smoothly. The submarine's objective line
-now uses the dead-reckoned position instead of the true one. Unused thresholds
-are removed, and the manual now says AI submarines report contacts from the
-last 4 minutes. Keys follow the common scheme more closely: the submarine's F
-shot fires only with Ctrl+Enter (Enter confirms the range), C classifies on
-the submarine's ESM page, W sets the helicopter's waypoint on the selected
-contact, Enter accepts the selected task on the radio Tasks page, Backspace on
-CIC page 5 resets only the chosen row (Shift+Backspace resets all), Shift+A at
-the submarine's Command pings on the uConsole too, and the real-sector choice
-moves from PgUp/PgDn to [ and ]. W, R and F no longer act unseen in the lobby,
-logbook and other menu pages. F1 shows the submarine's own global keys aboard,
-and the logbook lists its keys at the bottom. Functions that needed a key now
-also take a click: a menu symbol in the top bar opens help, options, save,
-load, weather, plot, the crew automation, SimLog, the advisor, the analyser,
-Remote Crew, nations and quit, and every overlay has a close box; sonar, the
-CIC (target and escort pages) and the submarine's sonar and weapons stations
-get clickable key chips (classify, TMA, release, towed array, chaff, assign
-target, flood tube, decoy). Firing by click stays limited to the weapons
-station. Saves are v50; v38 to v49 saves still load.
+Release 1.3.189 keeps the local sonar audio from falling silent while every
+other sound plays on. The sonar playback now watches its own channel: a block
+that never leaves the queue, a channel volume left at zero after a fade, an
+error in the playback worker, a worker that stopped behind a full queue, or a
+listening position ahead of the receiver each restart the sonar stream within
+about a second, without switching audio off and on. On the submarine the
+sonar sound is now placed left or right against the submarine's own course
+instead of the frigate's. With `U_JAGD_AUDIO_DEBUG=1`, `audio_debug.log`
+counts every such recovery (`wedged`, `volume_restored`, `pump_errors`,
+`full_resets`). Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

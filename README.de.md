@@ -14,36 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.188**
+Aktuelle Version: **1.3.189**
 
-Version 1.3.188 macht Abläufe und Speichern verlässlicher. Zwei Spiele mit
-gleichem Seed laufen jetzt gleich ab, auch nacheinander ohne Neustart des
-Programms (Radar und MAD des Seefernaufklärers, Kontaktmeldungen und
-U-Boot-Sichtungen hängen nicht mehr an der internen Nummerierung). Jeder
-Spielstand wird vor dem Schreiben geprüft, ein kaputter Stand kann also den
-letzten guten Platz oder die Autosicherung nicht mehr überschreiben; die
-regelmäßige Autosicherung prüft im Hintergrund, damit das Spiel flüssig
-weiterläuft. Die Zielzeile des U-Boots nutzt jetzt den Koppelort statt der
-wahren Position. Ungenutzte Schwellen sind entfernt, und das Handbuch sagt
-jetzt, dass KI-U-Boote Kontakte der letzten 4 Minuten melden. Die Tasten
-folgen dem gemeinsamen Schema genauer: Der F-Schuss des U-Boots feuert nur mit
-Strg+Enter (Enter bestätigt die Entfernung), C klassifiziert auf der ESM-Seite
-des U-Boots, W legt den Wegpunkt des Hubschraubers auf den gewählten Kontakt,
-Enter nimmt auf der Funkseite Aufträge den gewählten Auftrag an, Rück auf
-OPZ-Seite 5 setzt nur die gewählte Zeile zurück (Umschalt+Rück alles),
-Umschalt+A pingt an der Führung des U-Boots jetzt auch auf der uConsole, und
-die Wahl des echten Seegebiets wandert von Bild↑/↓ auf [ und ]. W, R und F
-wirken nicht mehr unsichtbar in Lobby, Einsatzbuch und anderen Menüseiten. F1
-zeigt an Bord des U-Boots dessen eigene Globaltasten, und das Einsatzbuch
-nennt seine Tasten unten. Funktionen, die bisher eine Taste brauchten, gehen
-jetzt auch per Klick: Ein Menüsymbol in der Kopfleiste öffnet Hilfe, Optionen,
-Speichern, Laden, Wetter, Plot, die Crew-Automatik, SimLog, den Ersten
-Offizier, den Analysator, Remote Crew, Nationen und Beenden, und jedes Fenster
-hat ein Schließen-Kreuz; Sonar, OPZ (Ziel- und Begleiterseite) sowie Sonar und
-Waffen des U-Boots bekommen anklickbare Tastenchips (Klassifizieren, TMA,
-Freigabe, Schleppsonar, Düppel, Ziel zuweisen, Rohr fluten, Täuschkörper).
-Feuern per Klick bleibt auf die Waffenstation beschränkt. Spielstände sind
-v50; v38 bis v49 lassen sich weiter laden.
+Version 1.3.189 verhindert, dass der Sonar-Ton auf der uConsole verstummt,
+während alle anderen Geräusche weiterlaufen. Die Sonar-Wiedergabe überwacht
+jetzt ihren eigenen Kanal: Ein Block, der die Warteschlange nicht mehr
+verlässt, eine nach dem Einblenden auf null stehende Kanallautstärke, ein
+Fehler im Wiedergabe-Thread, ein hinter voller Warteschlange angehaltener
+Thread oder eine Hörposition vor dem Empfänger starten den Sonar-Ton nach
+spätestens etwa einer Sekunde neu, ohne Audio aus- und einzuschalten. Im
+U-Boot liegt der Sonar-Ton jetzt links oder rechts relativ zum eigenen Kurs
+des U-Boots statt zu dem der Fregatte. Mit `U_JAGD_AUDIO_DEBUG=1` zählt
+`audio_debug.log` jede solche Erholung (`wedged`, `volume_restored`,
+`pump_errors`, `full_resets`). Tasten bleiben gleich. Spielstände sind v50;
+v38 bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

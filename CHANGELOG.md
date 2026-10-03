@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.189
+
+Release 1.3.189 keeps the local sonar audio from falling silent while every
+other sound plays on. The sonar playback now watches its own channel: a block
+that never leaves the queue, a channel volume left at zero after a fade, an
+error in the playback worker, a worker that stopped behind a full queue, or a
+listening position ahead of the receiver each restart the sonar stream within
+about a second, without switching audio off and on. On the submarine the
+sonar sound is now placed left or right against the submarine's own course
+instead of the frigate's. With `U_JAGD_AUDIO_DEBUG=1`, `audio_debug.log`
+counts every such recovery (`wedged`, `volume_restored`, `pump_errors`,
+`full_resets`). Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.188
 
 Release 1.3.188 makes runs and saves more dependable. Two games with the same

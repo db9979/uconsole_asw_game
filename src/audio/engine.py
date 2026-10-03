@@ -52,6 +52,15 @@ class AudioEngine:
     # A pump iteration later than this counts as late: the mixer holds only
     # the current and one queued block, so a starved worker lets it run dry.
     SONAR_PUMP_LATE_S = 0.25
+    # Watchdog against a sonar channel that stays silent while every other
+    # sound plays: a 0.25 s block keeps the queue slot taken for at most about
+    # one block, and a fade-in lasts FADE_MS. Longer means the channel is
+    # wedged (or its volume stuck), and the pump restarts it.
+    SONAR_QUEUE_WEDGE_S = 1.0
+    SONAR_VOLUME_SETTLE_S = 0.2
+    # Buffered blocks refused because the queue is full for this long: the
+    # pump no longer drains it, so the stream restarts.
+    SONAR_FULL_WEDGE_S = 3.0
 
     # Post-limiter per-channel PCM ceilings, NOT input volume caps. The gains
     # keep all three reserved buses below full scale even at coincident peaks.
@@ -115,6 +124,15 @@ class AudioEngine:
         self.sonar_queue_stranded = 0
         self._sonar_stranded_candidate = None
         self.sonar_worker_restarts = 0
+        # Watchdog counters (audio_debug.log): wedged channel restarts, stuck
+        # channel volume restored, pump errors survived, full-buffer resets.
+        self.sonar_wedged = 0
+        self.sonar_volume_restored = 0
+        self.sonar_pump_errors = 0
+        self.sonar_full_resets = 0
+        self._sonar_queue_busy_since = None
+        self._sonar_fade_at = None
+        self._sonar_full_since = None
         self._sonar_hold_streak = 0
         self._sonar_buffer = deque()
         self._sonar_buffer_duration = 0.0
@@ -408,9 +426,22 @@ class AudioEngine:
         try:
             with self._sonar_lock:
                 if buffered:
+                    # Even a full queue restarts a dead worker: otherwise it
+                    # would never drain and every later block is refused.
+                    self._ensure_sonar_worker()
                     if self._sonar_buffer_duration + samples.size / sample_rate > self.SONAR_BUFFER_MAX_S + 1e-6:
                         self.sonar_dropped_blocks += 1
+                        now = time.monotonic()
+                        if self._sonar_full_since is None:
+                            self._sonar_full_since = now
+                        elif now - self._sonar_full_since >= self.SONAR_FULL_WEDGE_S:
+                            # Nothing left the queue for seconds: restart the
+                            # stream so this retried block starts it afresh.
+                            self.sonar_full_resets += 1
+                            self._hard_stop(self._sonar_channel)
+                            self._reset_sonar_stream()
                         return False
+                    self._sonar_full_since = None
                     out_rate = self._elastic_output_rate()
                 else:
                     if self._sonar_channel.get_queue() is not None:
@@ -478,19 +509,7 @@ class AudioEngine:
                                                signal.copy()))
                     self._sonar_tail_value = np.array(signal[-1], copy=True)
                     self._sonar_buffer_duration += count / self.sample_rate
-                    if (self._sonar_worker is not None
-                            and not self._sonar_worker.is_alive()):
-                        # A dead worker never feeds the mixer again: the
-                        # buffer fills and the sonar stays silent for good.
-                        self._sonar_worker = None
-                        self.sonar_worker_restarts += 1
-                    if self._sonar_worker is None:
-                        self._sonar_worker = threading.Thread(
-                            target=AudioEngine._pump_sonar,
-                            args=(weakref.ref(self), self._sonar_wake,
-                                  self._sonar_exit),
-                            name="u-jagd-sonar-audio", daemon=True)
-                        self._sonar_worker.start()
+                    self._ensure_sonar_worker()
                     self._sonar_wake.set()
             elif self._sonar_channel.get_busy():
                 self._sonar_channel.queue(sound)
@@ -519,6 +538,24 @@ class AudioEngine:
             return False
         return True
 
+    def _ensure_sonar_worker(self) -> None:
+        """Start the pump, or restart it when it died. Under the sonar lock."""
+        if self._sonar_exit.is_set():
+            return
+        if (self._sonar_worker is not None
+                and not self._sonar_worker.is_alive()):
+            # A dead worker never feeds the mixer again: the
+            # buffer fills and the sonar stays silent for good.
+            self._sonar_worker = None
+            self.sonar_worker_restarts += 1
+        if self._sonar_worker is None:
+            self._sonar_worker = threading.Thread(
+                target=AudioEngine._pump_sonar,
+                args=(weakref.ref(self), self._sonar_wake,
+                      self._sonar_exit),
+                name="u-jagd-sonar-audio", daemon=True)
+            self._sonar_worker.start()
+
     @staticmethod
     def _stop_orphaned_worker(exit_event, wake):
         exit_event.set()
@@ -538,8 +575,22 @@ class AudioEngine:
             engine = reference()
             if engine is None:
                 return
-            engine._pump_sonar_once()
+            try:
+                engine._pump_sonar_once()
+            except Exception:  # noqa: BLE001 - the pump must outlive any block
+                engine._recover_pump_error()
             del engine
+
+    def _recover_pump_error(self) -> None:
+        """An unexpected error in one pump iteration: restart the stream.
+
+        A worker that died here would leave the sonar silent while every
+        other sound plays on; the next blocks start a fresh stream instead.
+        """
+        with self._sonar_lock:
+            self.sonar_pump_errors += 1
+            self._hard_stop(self._sonar_channel)
+            self._reset_sonar_stream()
 
     def _elastic_output_rate(self) -> int:
         """Resampling output rate that steers the queue towards its target.
@@ -633,9 +684,22 @@ class AudioEngine:
                         self.sonar_pump_late += 1
                     self.sonar_pump_late_max_s = max(self.sonar_pump_late_max_s, gap)
                 self._sonar_pump_last_at = now
-                if (self._sonar_channel.get_queue() is not None
-                        and not self._release_stranded_queue()):
-                    return
+                self._restore_sonar_volume(now)
+                if self._sonar_channel.get_queue() is not None:
+                    if self._sonar_queue_busy_since is None or late:
+                        # A late pump cannot tell how long the slot was held.
+                        self._sonar_queue_busy_since = now
+                    elif now - self._sonar_queue_busy_since >= self.SONAR_QUEUE_WEDGE_S:
+                        # The slot never frees: the channel no longer plays
+                        # through its blocks. Stop it; the buffer refills it.
+                        self.sonar_wedged += 1
+                        self._hard_stop(self._sonar_channel)
+                        self._sonar_queue_busy_since = None
+                        self._sonar_stranded_candidate = None
+                    if (self._sonar_channel.get_queue() is not None
+                            and not self._release_stranded_queue()):
+                        return
+                self._sonar_queue_busy_since = None
                 self._sonar_stranded_candidate = None
                 if (self._sonar_last_fresh_at is not None
                         and not self._sonar_channel.get_busy()):
@@ -695,8 +759,30 @@ class AudioEngine:
                     self._sonar_channel.queue(sound)
                 else:
                     self._sonar_channel.play(sound, fade_ms=self.FADE_MS)
+                    self._sonar_fade_at = time.monotonic()
             except pygame.error:
                 self._latch_device_error()
+
+    def _restore_sonar_volume(self, now: float) -> None:
+        """Put a stuck sonar channel volume back to its gain.
+
+        A fade-in ramps the channel volume from zero; should the mixer keep
+        a ramp value after it (a fade cut short by a halt or a queued sound),
+        the sonar plays on inaudibly while every other bus is heard. Outside
+        a fade the channel volume must equal its gain. Under the sonar lock.
+        """
+        if (self._sonar_fade_at is not None
+                and now - self._sonar_fade_at < self.SONAR_VOLUME_SETTLE_S):
+            return
+        try:
+            volume = float(self._sonar_channel.get_volume())
+        except (TypeError, ValueError):
+            return
+        gain = self.CHANNEL_GAINS["sonar"]
+        # The mixer stores 0..128 steps: allow one step of rounding.
+        if abs(volume - gain) > 1.5 / 128:
+            self._sonar_channel.set_volume(gain)
+            self.sonar_volume_restored += 1
 
     def _release_stranded_queue(self) -> bool:
         """Recover a queued sound that an idle sonar channel will never play.
@@ -727,6 +813,7 @@ class AudioEngine:
         self.sonar_queue_stranded += 1
         self.sonar_channel_idle += 1
         self._sonar_channel.play(queued, fade_ms=self.FADE_MS)
+        self._sonar_fade_at = time.monotonic()
         return False
 
     def stop_sonar(self, *, immediate: bool = False) -> None:
@@ -803,6 +890,8 @@ class AudioEngine:
         self._sonar_hold_streak = 0
         self._sonar_pump_last_at = None
         self._sonar_stranded_candidate = None
+        self._sonar_queue_busy_since = None
+        self._sonar_full_since = None
 
     def stop(self) -> None:
         self.stop_sonar()
@@ -900,8 +989,11 @@ class AudioEngine:
                 "sonar_stale={ss} buffer_s={bs:.2f} rate_adj={ra:+.4f} "
                 "channel_idle={ci} channel_idle_late={cl} pump_late={pl} pump_late_max_ms={pm:.0f} "
                 "queue_stranded={qs} worker_restarts={wr} "
+                "wedged={wg} volume_restored={vr} pump_errors={pe} full_resets={fr} "
                 "input_gaps={ig} evictions={ev} rate={r} ch={c}\n").format(
             qs=self.sonar_queue_stranded, wr=self.sonar_worker_restarts,
+            wg=self.sonar_wedged, vr=self.sonar_volume_restored,
+            pe=self.sonar_pump_errors, fr=self.sonar_full_resets,
             sc=self.sonar_concealed_blocks, ra=self.sonar_rate_adjust,
             t=time.monotonic(), sd=self.sonar_dropped_blocks,
             sh=self.sonar_holds, ad=self.alert_dropped_events, ev=evictions,

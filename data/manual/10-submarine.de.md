@@ -28,6 +28,8 @@ Die Führung sieht das ganze U-Boot: Karte, Navigation, Waffen und Kontakte, das
 
 ![U-Boot-Führung auf der uConsole](figure:uboot-command)
 
+![U-Boot-Führung im Remote-Crew-Browser](figure:web-uboot-desktop)
+
 <!-- sop:uboot_command -->
 
 ## Sonar {#sub-sonar}
@@ -38,6 +40,8 @@ Der Sonarraum des U-Boots arbeitet wie der der Fregatte, ohne Schleppsonar, OPZ-
 - Das Rumpfsonar horcht in der eigenen Tiefe: über der Schicht hört es Überwasserschiffe gut, darunter ist es gegen sie abgeschirmt. Achteraus liegt die taube Hecklücke; deshalb ab und zu bei der Führung ein Klären der Hecklücke anfordern.
 
 ![U-Boot-Sonar](figure:uboot-sonar)
+
+![U-Boot-Sonar im Remote-Crew-Browser](figure:web-uboot-sonar-desktop)
 
 <!-- sop:uboot_sonar -->
 
@@ -50,6 +54,8 @@ Die Waffenstation lädt und flutet die Rohre, stellt Lauftiefe und Fächer ein, 
 - **Draht und Täuschkörper:** `W` lenkt den jüngsten drahtgelenkten Torpedo auf eine neue Peilung, `Umschalt+W` kappt den Draht; `V` stößt einen Täuschkörper aus.
 
 ![U-Boot-Waffen](figure:uboot-weapons)
+
+![U-Boot-Waffen im Remote-Crew-Browser](figure:web-uboot-weapons-desktop)
 
 <!-- sop:uboot_weapons -->
 
@@ -79,6 +85,8 @@ Mast & ESM fährt den Mast an Sehrohrtiefe aus, hört auf der ESM-Rose nach Rada
 
 ![Mast/ESM](figure:uboot-mast-esm)
 
+![Mast/ESM im Remote-Crew-Browser](figure:web-uboot-esm-desktop)
+
 ![Sehrohr bei Tag](figure:uboot-periscope-day)
 
 ![Sehrohr bei Nacht](figure:uboot-periscope-night)
@@ -97,6 +105,8 @@ Die Navigation befiehlt Kurs und Tiefe, achtet auf Kiel und Untiefen auf Lotsenk
 
 ![U-Boot-Navigation](figure:uboot-navigation)
 
+![U-Boot-Navigation im Remote-Crew-Browser](figure:web-uboot-nav-desktop)
+
 <!-- sop:uboot_nav -->
 
 ## Funkraum {#sub-radio}
@@ -107,6 +117,8 @@ Der Funkraum schreibt die Sendungen des HQ mit, liest Befehle und Kontaktmeldung
 - `Enter` sendet eine Lagemeldung; dazu muss der Mast oben sein, und die Fregatte kann sie mit KW-Peilung orten.
 
 ![U-Boot-Funkraum](figure:uboot-radio)
+
+![U-Boot-Funkraum im Remote-Crew-Browser](figure:web-uboot-radio-desktop)
 
 <!-- sop:uboot_radio -->
 

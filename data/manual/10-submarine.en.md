@@ -28,6 +28,8 @@ Command sees the whole submarine: chart, navigation, weapons and contacts, the p
 
 ![Submarine command on the uConsole](figure:uboot-command)
 
+![Submarine command in the Remote Crew browser](figure:web-uboot-desktop)
+
 <!-- sop:uboot_command -->
 
 ## Sonar {#sub-sonar}
@@ -38,6 +40,8 @@ The submarine's sonar room works like the frigate's, without towed array, OPZ re
 - The hull sonar listens at the submarine's own depth: above the layer it hears surface ships well, below it it is shielded from them. Astern lies the deaf baffle sector, so ask Command for a baffle clearing now and then.
 
 ![Submarine sonar](figure:uboot-sonar)
+
+![Submarine sonar in the Remote Crew browser](figure:web-uboot-sonar-desktop)
 
 <!-- sop:uboot_sonar -->
 
@@ -50,6 +54,8 @@ Weapons loads and floods the tubes, sets run depth and salvo, fires at a selecte
 - **Wire and decoy:** `W` steers the newest wired torpedo onto a new bearing, `Shift+W` cuts its wire; `V` launches a decoy.
 
 ![Submarine weapons](figure:uboot-weapons)
+
+![Submarine weapons in the Remote Crew browser](figure:web-uboot-weapons-desktop)
 
 <!-- sop:uboot_weapons -->
 
@@ -79,6 +85,8 @@ Mast & ESM raises the mast at periscope depth, listens for radars on the ESM ros
 
 ![Mast & ESM](figure:uboot-mast-esm)
 
+![Mast & ESM in the Remote Crew browser](figure:web-uboot-esm-desktop)
+
 ![Periscope by day](figure:uboot-periscope-day)
 
 ![Periscope at night](figure:uboot-periscope-night)
@@ -97,6 +105,8 @@ Navigation orders course and depth, watches keel and shoals on the pilot chart a
 
 ![Submarine navigation](figure:uboot-navigation)
 
+![Submarine navigation in the Remote Crew browser](figure:web-uboot-nav-desktop)
+
 <!-- sop:uboot_nav -->
 
 ## Radio room {#sub-radio}
@@ -107,6 +117,8 @@ The radio room copies HQ's broadcasts, reads HQ's orders and contact reports and
 - `Enter` sends a situation report; it needs the mast up, and the frigate can take an HF bearing on it.
 
 ![Submarine radio room](figure:uboot-radio)
+
+![Submarine radio room in the Remote Crew browser](figure:web-uboot-radio-desktop)
 
 <!-- sop:uboot_radio -->
 

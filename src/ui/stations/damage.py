@@ -28,6 +28,12 @@ from src.ui.stations.common import (
 # Lamp cards under the profile, stern to bow, then the hull voids.
 CARD_ORDER = ("flightdeck", "engine", "radio", "opz", "weapons",
               "bridge", "sonar", "hull_left", "hull_right")
+# Selection page of a wide station: compartment cards left, the selected
+# compartment in the middle, the repair teams right (px).
+DAMAGE_CARDS_W = 320
+DAMAGE_TEAMS_W = 300
+TEAM_CARD_H = 50
+TEAM_CARD_PITCH = 56
 
 
 def damage_regions(game=None, station_rect=None, page=0) -> dict:
@@ -45,9 +51,17 @@ def damage_regions(game=None, station_rect=None, page=0) -> dict:
     bottom = station.bottom - 58
     x0 = station.x + 16
     full_w = station.w - 32
+    cards = teams = pygame.Rect(0, 0, 0, 0)
     if page == 0:
         schematic = pygame.Rect(x0, top, full_w, max(1, bottom - top))
         detail = pygame.Rect(0, 0, 0, 0)
+    elif station.w >= 1000:
+        gap = 10
+        height = max(1, bottom - top)
+        cards = pygame.Rect(x0, top, DAMAGE_CARDS_W, height)
+        teams = pygame.Rect(x0 + full_w - DAMAGE_TEAMS_W, top, DAMAGE_TEAMS_W, height)
+        detail = pygame.Rect(cards.right + gap, top, teams.x - gap - cards.right - gap, height)
+        schematic = pygame.Rect(0, 0, 0, 0)
     else:
         detail_w = 760
         detail = pygame.Rect(station.centerx - detail_w // 2, top,
@@ -85,8 +99,31 @@ def damage_regions(game=None, station_rect=None, page=0) -> dict:
             compartments[key] = {"polygon": polygon, "callout": callout, "anchor": anchor}
         compartments = {key: compartments[key] for key, _ in COMPARTMENTS}
     return {"station": station, "schematic": schematic, "detail": detail,
-            "profile": profile, "section": section, "compartments": compartments,
+            "cards": cards, "teams": teams, "profile": profile, "section": section, "compartments": compartments,
             "footer": pygame.Rect(station.x + 16, station.bottom - 56, station.w - 32, 48)}
+
+
+def damage_selection_cards(game, station_rect=None) -> list:
+    """(compartment key, rect) of every card in the left column of the
+    selection page; empty on a narrow station."""
+    column = damage_regions(game, station_rect or config.FULL_STATION_RECT, page=1)["cards"]
+    if column.w <= 0:
+        return []
+    keys = list(game.damage.compartments)
+    pitch = max(1, (column.h - 42) // len(keys))
+    return [(key, pygame.Rect(column.x + 6, column.y + 36 + index * pitch,
+                              column.w - 12, pitch - 4))
+            for index, key in enumerate(keys)]
+
+
+def damage_team_cards(game, station_rect=None) -> list:
+    """(team number, rect) of the repair-team cards in the right column."""
+    column = damage_regions(game, station_rect or config.FULL_STATION_RECT, page=1)["teams"]
+    if column.w <= 0:
+        return []
+    return [(team, pygame.Rect(column.x + 6, column.y + 36 + index * TEAM_CARD_PITCH,
+                               column.w - 12, TEAM_CARD_H))
+            for index, team in enumerate(sorted(game.damage.teams))]
 
 
 def damage_compartment_at(game, pos, page=0):
@@ -151,6 +188,9 @@ def draw_damage_view(game, tr=None) -> None:
             pointer.add_hotspot(card)       # damage_compartment_at takes the click
         _draw_legend(s, pygame.Rect(plan.x, plan.bottom - 30, plan.w, 24))
     else:
+        if regions["cards"].w > 0:
+            _draw_selection_cards(game, s, regions["cards"], rect)
+            _draw_team_cards(game, s, regions["teams"], rect)
         detail = layout.box(s, regions["detail"],
                             "panel.selection_actions", border=_state_color(selected.state))
         dx, dy, dw, _ = detail
@@ -214,6 +254,89 @@ def draw_damage_view(game, tr=None) -> None:
         ("Backspace", "damage.footer.withdraw"),
     ))
 
+
+
+def _pick_compartment(game, key) -> None:
+    game.dmg_cursor = list(game.damage.compartments).index(key)
+
+
+def _pick_team(game, team) -> None:
+    game.dmg_team = team
+
+
+def _card_frame(s, card, chosen, stripe) -> None:
+    pygame.draw.rect(s, config.COLOR_TAB_ACTIVE if chosen else theme.c("raised"),
+                     card, border_radius=4)
+    pygame.draw.rect(s, theme.c("focus") if chosen else theme.c("line"),
+                     card, 2 if chosen else 1, border_radius=4)
+    pygame.draw.rect(s, stripe, (card.x + 3, card.y + 5, 3, card.h - 10))
+
+
+def _draw_selection_cards(game, s, column, station_rect) -> None:
+    """Left column of the selection page: one card per compartment (state
+    stripe, name, water and fire, teams on scene); a click selects it."""
+    layout.box(s, column, "damage.panel.compartments")
+    for index, (key, card) in enumerate(damage_selection_cards(game, station_rect)):
+        c = game.damage.compartments[key]
+        chosen = index == game.dmg_cursor
+        _card_frame(s, card, chosen, _state_color(c.state))
+        two_lines = card.h >= 42
+        name_w = card.w - 18 - (0 if two_lines else 104)
+        layout.blit_line(s, message("damage.schematic.callout", number=f"{index + 1:02}",
+                                    name=localize("damage.short." + key)),
+                         (card.x + 12, card.y + (3 if two_lines else (card.h - 19) // 2),
+                          name_w, 19), config.COLOR_TEXT, size=15)
+        teams = game.damage.teams_on(key)
+        if two_lines:
+            _draw_hazards(s, card.x + 12, card.y + 24, c)
+            if teams:
+                console.badges(s, card.right - 42, card.bottom - 23, teams)
+        else:
+            _draw_hazards(s, card.right - 104, card.y + (card.h - 19) // 2, c)
+        pointer.add_action(card, lambda _pos, picked=key: _pick_compartment(game, picked))
+
+
+def _draw_hazards(s, x, y, c) -> None:
+    """Water and fire of a compartment as two lamps with their percentages
+    (the lamp colours of the ship plan's legend)."""
+    for index, (level, value) in enumerate(
+            (("caution" if c.flood > 0 else "off", c.flood),
+             ("alarm" if c.fire > 0 else "off", c.fire))):
+        base = x + index * 52
+        console.led(s, (base + 5, y + 10), 5, level)
+        color = console.level_color(level) if level != "off" else config.COLOR_TEXT_DIM
+        layout.blit_line(s, raw_text(f"{value:.0f}%"), (base + 13, y, 38, 19), color, size=13)
+
+
+def _draw_team_cards(game, s, column, station_rect) -> None:
+    """Right column of the selection page: the three repair teams with their
+    destination and whether they are on the way or working; a click picks the
+    team that Enter sends."""
+    layout.box(s, column, "damage.panel.teams")
+    damage = game.damage
+    cards = damage_team_cards(game, station_rect)
+    for team, card in cards:
+        destination = damage.teams[team]
+        chosen = team == game.dmg_team
+        eta = float(damage.team_eta.get(team, 0.0))
+        if destination is None:
+            state, color = localize("damage.card.team_ready"), config.COLOR_TEXT_DIM
+        elif eta > 0.0:
+            state, color = message("damage.card.team_en_route", eta=f"{eta:.0f}"), config.COLOR_WARN
+        else:
+            state, color = localize("ui.on_scene"), config.COLOR_OK
+        _card_frame(s, card, chosen, color)
+        where = (_compartment_name(destination, damage.compartments[destination].name)
+                 if destination is not None else localize("damage.free"))
+        layout.blit_line(s, message("damage.team_destination", team=team, destination=where),
+                         (card.x + 12, card.y + 4, card.w - 20, 21), config.COLOR_TEXT, size=16)
+        layout.blit_line(s, state, (card.x + 12, card.y + 27, card.w - 20, 19), color, size=13)
+        pointer.add_action(card, lambda _pos, picked=team: _pick_team(game, picked))
+    if cards:
+        bottom = cards[-1][1].bottom + 12
+        layout.blit_block(s, "damage.teams.hint", column.x + 12, bottom, column.w - 24,
+                          max(1, column.bottom - bottom - 8), color=config.COLOR_TEXT_DIM,
+                          size=14, min_size=layout.MIN_OPERATIONAL_FONT)
 
 
 def _state_level(c) -> str:

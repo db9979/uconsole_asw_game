@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.182
+
+Release 1.3.182 brings the three-column layout to the damage-control
+selection page. Compartments sit as cards on the left with their state stripe,
+water and fire lamps and the teams on scene, the selected compartment's details
+in the middle and the three repair teams on the right with their destination
+and whether they are on the way, on scene or standing by. A click selects a
+compartment or a team; Enter still sends the team. On the submarine's Mast &
+ESM page a click on a row of the emitter list selects that emitter. Keys are
+unchanged. Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.180
 
 Release 1.3.180 brings the three-column layout to Electronic warfare, the

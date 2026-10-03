@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.185
+
+Version 1.3.185 hält den Remote-Crew-Gastgeber reaktionsfähig. Laden, neues
+Spiel, Einsatzstart und Speichern aus dem Browser sowie die Passwortprüfung
+des Web-Gastgebers halten die anderen Browser nicht mehr auf, Abfragen,
+Sonar-Audio und Sprechfunk laufen weiter. Abfragen lesen nicht mehr jedes Mal
+das ganze Lagebild einer Station neu. Fehlgeschlagene Anmeldungen und
+Kopplungsversuche zählen jetzt je Adresse, ein Fremder kann den Gastgeber im
+Web-Gastgeber-Raum also nicht mehr aussperren, und der Raum wechselt nach
+seinen Versuchen nicht mehr den Code. Ein Beobachter, der die Ansicht
+wechselt, unterbricht nicht mehr das Live-Audio des Sonarbedieners. Tasten
+bleiben gleich. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.184
 
 Version 1.3.184 bringt die neuen Karten zur Schadensabwehr im Browser. Jede

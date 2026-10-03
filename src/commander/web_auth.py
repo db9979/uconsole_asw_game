@@ -10,7 +10,63 @@ from pathlib import Path
 import secrets
 import stat
 import tempfile
+import threading
 import time
+from collections import deque
+
+
+class FailureLimiter:
+    """Failed attempts per source address in a sliding window, bounded.
+
+    One stranger's failures never lock out another address. The table holds at
+    most ``max_sources`` addresses; while it is full a source that is not in it
+    yet is refused (fail closed) until entries age out of the window, so many
+    addresses cannot wash out the record of one. Thread-safe on its own lock.
+    """
+
+    def __init__(self, limit=5, window_s=60.0, max_sources=256):
+        self.limit = limit
+        self.window_s = window_s
+        self.max_sources = max_sources
+        self._lock = threading.Lock()
+        self._failures: dict[str, deque] = {}
+
+    def _prune(self, now):
+        for source in tuple(self._failures):
+            times = self._failures[source]
+            while times and now - times[0] >= self.window_s:
+                times.popleft()
+            if not times:
+                del self._failures[source]
+
+    def allowed(self, source: str) -> bool:
+        with self._lock:
+            self._prune(time.monotonic())
+            times = self._failures.get(source)
+            if times is None:
+                return len(self._failures) < self.max_sources
+            return len(times) < self.limit
+
+    def record(self, source: str) -> int:
+        """Count one failure; returns that source's failures in the window."""
+        with self._lock:
+            now = time.monotonic()
+            self._prune(now)
+            times = self._failures.get(source)
+            if times is None:
+                if len(self._failures) >= self.max_sources:
+                    return self.limit
+                times = self._failures[source] = deque(maxlen=self.limit)
+            times.append(now)
+            return len(times)
+
+    def clear(self):
+        with self._lock:
+            self._failures.clear()
+
+    def __len__(self):
+        with self._lock:
+            return len(self._failures)
 
 
 class WebHostAuth:
@@ -18,7 +74,11 @@ class WebHostAuth:
         self.path = Path(path)
         self.setup_code = secrets.token_urlsafe(24)
         self.setup_deadline = time.monotonic() + 900
-        self.failures: list[float] = []
+        # Failed setup/login attempts per source address (routes._source_address).
+        self.failures = FailureLimiter()
+        # Guards the record and the setup secret. A login's slow scrypt runs
+        # outside it and always outside the server's global lock.
+        self._lock = threading.Lock()
         self.record = self._read()
 
     def _read(self):
@@ -44,44 +104,44 @@ class WebHostAuth:
     def configured(self):
         return self.record is not None
 
-    def _allowed(self):
-        now = time.monotonic()
-        self.failures = [value for value in self.failures if now - value < 60]
-        return len(self.failures) < 5
-
-    def _failure(self):
-        self.failures.append(time.monotonic())
-
-    def setup(self, code: str, password: str):
-        if self.configured or not self._allowed():
+    def setup(self, code: str, password: str, source: str = ""):
+        if self.configured or not self.failures.allowed(source):
             return False
-        if (time.monotonic() > self.setup_deadline or type(code) is not str
-                or not hmac.compare_digest(code, self.setup_code)):
-            self._failure()
-            return False
-        if type(password) is not str or not 12 <= len(password) <= 256:
-            return False
-        salt = secrets.token_bytes(16)
-        digest = hashlib.scrypt(password.encode("utf-8"), salt=salt,
-                                n=2**14, r=8, p=1, dklen=64)
-        record = {"version": 1, "salt": salt.hex(), "hash": digest.hex()}
-        self._write(record)
-        self.record = record
-        self.setup_code = ""
-        return True
+        # One-time flow: the auth lock (never the server lock) makes the
+        # check-and-set atomic against a second concurrent setup.
+        with self._lock:
+            if self.record is not None:
+                return False
+            if (time.monotonic() > self.setup_deadline or type(code) is not str
+                    or not self.setup_code
+                    or not hmac.compare_digest(code, self.setup_code)):
+                self.failures.record(source)
+                return False
+            if type(password) is not str or not 12 <= len(password) <= 256:
+                return False
+            salt = secrets.token_bytes(16)
+            digest = hashlib.scrypt(password.encode("utf-8"), salt=salt,
+                                    n=2**14, r=8, p=1, dklen=64)
+            record = {"version": 1, "salt": salt.hex(), "hash": digest.hex()}
+            self._write(record)
+            self.record = record
+            self.setup_code = ""
+            return True
 
-    def verify(self, password: str):
-        if not self.configured or not self._allowed():
+    def verify(self, password: str, source: str = ""):
+        with self._lock:
+            record = self.record
+        if record is None or not self.failures.allowed(source):
             return False
         if type(password) is not str or len(password) > 256:
-            self._failure()
+            self.failures.record(source)
             return False
         digest = hashlib.scrypt(password.encode("utf-8"),
-                                salt=bytes.fromhex(self.record["salt"]),
+                                salt=bytes.fromhex(record["salt"]),
                                 n=2**14, r=8, p=1, dklen=64)
-        ok = hmac.compare_digest(digest, bytes.fromhex(self.record["hash"]))
+        ok = hmac.compare_digest(digest, bytes.fromhex(record["hash"]))
         if not ok:
-            self._failure()
+            self.failures.record(source)
         return ok
 
     def reset_local(self):
@@ -92,9 +152,10 @@ class WebHostAuth:
             self.path.unlink()
         except FileNotFoundError:
             pass
-        self.record = None
-        self.setup_code = secrets.token_urlsafe(24)
-        self.setup_deadline = time.monotonic() + 900
+        with self._lock:
+            self.record = None
+            self.setup_code = secrets.token_urlsafe(24)
+            self.setup_deadline = time.monotonic() + 900
         self.failures.clear()
 
     def _write(self, record):

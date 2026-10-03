@@ -484,6 +484,26 @@ class _Handler(BaseHTTPRequestHandler):
             or self.headers.get("Origin") == owner.public_origin
             or self.headers.get("Host") in self.server.public_hosts)
 
+    def _source_address(self):
+        """The address failed logins and pairings are counted against.
+
+        The socket peer, unless ``--public-origin`` names a reverse proxy: then
+        the rightmost ``X-Forwarded-For`` entry, the one that proxy appended
+        (entries further left are client-supplied). A missing or malformed
+        header falls back to the peer, never to a shared bucket.
+        """
+        peer = str(self.client_address[0]) if self.client_address else ""
+        if self.server.owner.public_origin is None:
+            return peer
+        forwarded = self.headers.get("X-Forwarded-For")
+        if type(forwarded) is not str or len(forwarded) > 1024:
+            return peer
+        candidate = forwarded.rsplit(",", 1)[-1].strip()
+        try:
+            return "fwd:" + str(ipaddress.ip_address(candidate))
+        except ValueError:
+            return peer
+
     def _v2_cookie(self, token):
         # Secure only on the HTTPS path: a browser drops a Secure cookie that
         # arrives over the plain-HTTP LAN address.
@@ -1048,22 +1068,23 @@ class _Handler(BaseHTTPRequestHandler):
                         body = (owner._v2_proposals.get((digest, role))
                                 if role is not None else None)
                         if body is None and role is not None:
-                            state = json.loads(owner._v2_states[role].decode("ascii"))
+                            # The small head stored at publish time; the full
+                            # role state (up to 512 KiB) is never re-parsed.
+                            world, epoch = owner._v2_state_heads[role]
                             body = _json_bytes({"protocol": 2,
-                                "session": state["session"], "epoch": state["epoch"],
+                                "session": world, "epoch": epoch,
                                 "role": role, "target": None, "navigation": None})
                     elif session is not None and self.path == "/api/v2/events":
                         cached = (owner._v2_private_events.get(digest)
                                   if role is not None else None)
-                        if cached is not None and json.loads(
-                                cached.decode("ascii")).get("role") == role:
-                            body = cached
+                        if cached is not None and cached[0] == role:
+                            body = cached[1]
                         elif role is not None:
                             body = owner._v2_events.get(role)
                         if body is None and role is not None:
-                            state = json.loads(owner._v2_states[role].decode("ascii"))
+                            world, epoch = owner._v2_state_heads[role]
                             body = _json_bytes({"protocol": 2,
-                                "session": state["session"], "epoch": state["epoch"],
+                                "session": world, "epoch": epoch,
                                 "role": role, "latest_seq": 0, "events": []})
                     elif session is not None and self.path == "/api/v2/debrief":
                         # Only after the mission ends, and only the own side's.
@@ -1077,9 +1098,9 @@ class _Handler(BaseHTTPRequestHandler):
                         body = (owner._v2_simlogs.get(role) if role is not None
                                 and session["simlog"] else None)
                         if body is None and role is not None and session["simlog"]:
-                            state = json.loads(owner._v2_states[role].decode("ascii"))
+                            world, epoch = owner._v2_state_heads[role]
                             body = _json_bytes({"protocol": 2,
-                                "session": state["session"], "epoch": state["epoch"],
+                                "session": world, "epoch": epoch,
                                 "role": role, "entries": []})
             except (UnicodeEncodeError, ValueError):
                 self.send_error(400)
@@ -1114,38 +1135,48 @@ class _Handler(BaseHTTPRequestHandler):
         owner = self.server.owner
         status, response = 404, {"error": "not_found"}
         audio_reply = None
+        # The web host's password check (scrypt, 16 MiB and noticeable CPU)
+        # runs before the global lock: a stranger's login attempt must never
+        # stall the main thread or any stream. WebHostAuth has its own lock
+        # and counts failures per source address.
+        if owner.web_auth is not None and self.path == "/api/v2/web/setup":
+            if (type(body) is not dict or set(body) != {"code", "password"}
+                    or type(body["code"]) is not str
+                    or type(body["password"]) is not str):
+                status, response = 400, {"error": "invalid_request"}
+            elif owner.web_auth.configured:
+                status, response = 409, {"error": "already_configured"}
+            elif owner.web_auth.setup(body["code"], body["password"],
+                                      self._source_address()):
+                status, response = 200, {"status": "configured"}
+            else:
+                status, response = 403, {"error": "setup_failed"}
+            self._reply(status, response)
+            return
+        if owner.web_auth is not None and self.path == "/api/v2/web/login":
+            if (type(body) is not dict or set(body) != {"password"}
+                    or type(body["password"]) is not str):
+                self._reply(400, {"error": "invalid_request"})
+                return
+            if not owner.web_auth.verify(body["password"], self._source_address()):
+                self._reply(403, {"error": "invalid_credentials"})
+                return
+            with owner._lock:
+                owner._expire_locked()
+                old = owner._sessions_v2.pop(owner._web_host_digest, None)
+                if old is not None:
+                    owner._clear_session_authority_locked(old)
+                owner._web_admin_queue.clear()
+                owner._web_admin_inflight.clear()
+                owner._web_admin_seen.clear()
+                owner._web_admin_results.clear()
+                token, session = owner._new_session_locked("Host", web_host=True)
+                reply = self._session_v2_body(session, owner._sessions_v2, owner)
+            self._reply(200, reply, set_cookie=self._v2_cookie(token))
+            return
         with owner._lock:
             owner._expire_locked()
-            if owner.web_auth is not None and self.path == "/api/v2/web/setup":
-                if (type(body) is not dict or set(body) != {"code", "password"}
-                        or type(body["code"]) is not str
-                        or type(body["password"]) is not str):
-                    status, response = 400, {"error": "invalid_request"}
-                elif owner.web_auth.configured:
-                    status, response = 409, {"error": "already_configured"}
-                elif owner.web_auth.setup(body["code"], body["password"]):
-                    status, response = 200, {"status": "configured"}
-                else:
-                    status, response = 403, {"error": "setup_failed"}
-            elif owner.web_auth is not None and self.path == "/api/v2/web/login":
-                if (type(body) is not dict or set(body) != {"password"}
-                        or type(body["password"]) is not str):
-                    status, response = 400, {"error": "invalid_request"}
-                elif not owner.web_auth.verify(body["password"]):
-                    status, response = 403, {"error": "invalid_credentials"}
-                else:
-                    old = owner._sessions_v2.pop(owner._web_host_digest, None)
-                    if old is not None:
-                        owner._clear_session_authority_locked(old)
-                    owner._web_admin_queue.clear()
-                    owner._web_admin_inflight.clear()
-                    owner._web_admin_seen.clear()
-                    owner._web_admin_results.clear()
-                    token, session = owner._new_session_locked("Host", web_host=True)
-                    self._reply(200, self._session_v2_body(session, owner._sessions_v2, owner),
-                                set_cookie=self._v2_cookie(token))
-                    return
-            elif owner.web_auth is not None and self.path == "/api/v2/web/admin":
+            if owner.web_auth is not None and self.path == "/api/v2/web/admin":
                 try:
                     session, digest, presented = self._authenticated_v2_locked(renew=True)
                 except (UnicodeEncodeError, ValueError):
@@ -1223,7 +1254,7 @@ class _Handler(BaseHTTPRequestHandler):
             elif self.path == "/api/v2/pair":
                 if not owner._running:
                     status, response = 503, {"error": "unavailable"}
-                elif len(owner._pair_failures) >= 5:
+                elif not owner._pair_failures.allowed(self._source_address()):
                     status, response = 429, {"error": "pairing_rate_limited"}
                 elif (not isinstance(body, dict)
                       or body.keys() not in ({"code", "name"}, {"code", "name", "role"})
@@ -1241,9 +1272,7 @@ class _Handler(BaseHTTPRequestHandler):
                     elif not secrets.compare_digest(
                             body["code"].encode("utf-8", errors="surrogatepass"),
                             owner._code.encode("ascii")):
-                        owner._pair_failures.append(time.monotonic())
-                        if len(owner._pair_failures) == 5:
-                            owner._rotate_code_locked()
+                        owner._record_pair_failure_locked(self._source_address())
                         status, response = 403, {"error": "invalid_code"}
                     else:
                         token, session = owner._new_session_locked(

@@ -26,7 +26,10 @@ a = Analysis(
     [os.path.join(SPECPATH, "u_jagd_macos.py")],
     pathex=[root],
     datas=datas,
-    hiddenimports=collect_submodules("src") + ["main"],
+    # The microphone (noise discipline) imports SDL capture only when
+    # switched on: name it so the bundle always carries it.
+    hiddenimports=collect_submodules("src") + ["main", "pygame._sdl2.audio",
+                                               "pygame._sdl2.sdl2"],
     excludes=["pytest", "tkinter"],
     noarchive=False,
 )
@@ -60,6 +63,11 @@ app = BUNDLE(
         "LSApplicationCategoryType": "public.app-category.simulation-games",
         "LSMinimumSystemVersion": "11.0",
         "NSHighResolutionCapable": True,
+        # Without it macOS refuses (or ends) the app when the microphone
+        # of noise discipline opens; with it the system asks the player.
+        "NSMicrophoneUsageDescription":
+            "Noise discipline: only the loudness of your voice is measured, "
+            "nothing is recorded.",
         "NSLocalNetworkUsageDescription":
             "Remote Crew: browsers in your network join the game as crew stations.",
         "NSHumanReadableCopyright": "MIT License, Dominik Bornhäußer",

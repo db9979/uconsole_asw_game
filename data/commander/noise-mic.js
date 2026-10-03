@@ -16,7 +16,7 @@
     stream = null; analyser = null; level = 0;
     if (context) context.close().catch(() => {});
     context = null;
-    emit({on: false, level: 0, failure});
+    emit({on: false, level: 0, failure, attempt: Boolean(failure)});
   }
 
   function sample() {
@@ -34,7 +34,7 @@
   async function start() {
     if (starting || stream) return;
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-      emit({on: false, level: 0, failure: "mic_needs_https"});
+      emit({on: false, level: 0, failure: "mic_needs_https", attempt: true});
       return;
     }
     starting = true;
@@ -48,8 +48,11 @@
       context.createMediaStreamSource(stream).connect(analyser);
       timer = setInterval(sample, SAMPLE_MS);
       emit({on: true, level: 0, failure: ""});
-    } catch (_) {
-      stop("mic_denied");
+    } catch (error) {
+      // NotAllowedError: refused by the player or the browser settings;
+      // NotFoundError/NotReadableError: no input or one held by another app.
+      stop(error?.name === "NotFoundError" ? "mic_missing"
+        : error?.name === "NotReadableError" ? "mic_busy" : "mic_denied");
     } finally {
       starting = false;
     }

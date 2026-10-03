@@ -14,16 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.176**
+Aktuelle Version: **1.3.177**
 
-Version 1.3.176 beginnt das neue Aussehen: ein Satz Farbbausteine für
-uConsole und Remote-Crew-Browser, mit Taktik Nacht (dunkel, Standard) und
-Taktik Tag (hell, der Wasserfall als LOFAR-Papierschrieb). Umschalten mit dem
-Schalter Dunkel/Hell in der oberen Leiste oder in den Optionen (F10) unter
-„Farbschema“, wo auch hoher Kontrast zur Wahl steht. Felder sind abgerundet
-mit farbiger Titelmarke, Reiter sind Pillen und Tastenhinweise Chips; Tasten
-und Aufteilung bleiben gleich. Spielstände sind v50; v38 bis v49 lassen sich
-weiter laden.
+Version 1.3.177 bringt die neue Aufteilung in drei Spalten zu Sonar, OPZ
+und der Waffenseite des U-Boots: links Kontakt- oder Trackkarten (ein Klick
+wählt), in der Mitte die Hauptanzeige, rechts Bedienung und Status. An der
+Waffenstation des U-Boots feuert ein Klick auf das rote Feuerfeld wie
+Strg+Enter. Die Tasten bleiben gleich. Spielstände sind v50; v38 bis v49
+lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

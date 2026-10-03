@@ -170,8 +170,10 @@ def test_game_fuses_on_simulation_time_and_shows_the_sources(monkeypatch):
                for text in shown)
     game.station_page = 0
     shown.clear()
+    monkeypatch.setattr(config, "STATION_RECT", config.OPZ_STATION_RECT)
     draw_opz_view(game)
-    assert "RV" in shown
+    # The track card names its sources after the range: "x.x NM · RV".
+    assert any(str(text).endswith("\u00b7 RV") for text in shown), repr(shown)
 
     bridge, server = CommanderBridge(), Server()
     bridge.pump(game, server, now=10.0)

@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.177
+
+Release 1.3.177 brings the new three-column layout to Sonar, the CIC and the
+submarine's Weapons page. Sonar now lists its contacts as cards on the left
+(bearing, classification, signal-to-noise bar; a click selects one), shows
+the page's display in the middle and the listening post with its rose on the
+right. The CIC has track cards on the left on every page, the chart in the
+middle and the status panel on the right. The submarine's Weapons page shows
+contact cards above the engagement plot and fire control above the tube
+lamps; at the Weapons station a click on the red fire plate fires like
+Ctrl+Enter. Keys are unchanged; saves are v50 and v38 to v49 saves still
+load.
+
 ## 1.3.176
 
 Release 1.3.176 starts the new look. Every screen now draws from one set of

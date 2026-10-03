@@ -85,7 +85,7 @@ def test_pinned_snapshot_is_json_safe_and_restores_without_object_refs(game):
 
 @pytest.mark.parametrize("station,pos", [
     (Station.BRIDGE, (700, 150)),
-    (Station.SONAR, (100, 200)),
+    (Station.SONAR, (500, 300)),
     (Station.WEAPONS, (700, 150)),
     (Station.DAMAGE, (30, 120)),
     (Station.OPZ, (1100, 120)),
@@ -103,7 +103,7 @@ def test_every_station_has_meaningful_context(game, station, pos):
 
 @pytest.mark.parametrize("station,pos,english", [
     (Station.BRIDGE, (700, 150), "COURSE / RUDDER"),
-    (Station.SONAR, (100, 200), "BROADBAND BIN"),
+    (Station.SONAR, (500, 300), "BROADBAND BIN"),
     (Station.WEAPONS, (700, 150), "FIRE-CONTROL SOLUTION"),
     (Station.DAMAGE, (400, 300), "Flooding"),
     (Station.OPZ, (1100, 120), "OPERATIONS / CIC CONTROLS"),
@@ -165,7 +165,7 @@ def test_sonar_contact_tooltip_does_not_read_truth_attributes(monkeypatch):
     sonar = NS(active_contacts=lambda: [contact])
     fake = NS(sonar=sonar, sonar_page=0, selected_contact=contact,
               sim_t=100.0, station=Station.SONAR)
-    payload = sonar_view.sonar_hit_target(fake, (950, 400))
+    payload = sonar_view.sonar_hit_target(fake, (100, 120))
     assert payload["id"] == "sonar:contact:7"
 
 

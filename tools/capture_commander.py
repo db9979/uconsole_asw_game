@@ -36,6 +36,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ROLES = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
          "engine", "helicopter", "eloka")
 DESKTOP = (1920, 1080)
+HEADLESS_CHROME_PAD = 87
 MOBILE = (500, 844)
 
 
@@ -301,7 +302,10 @@ def _capture_one(spec: Capture, temporary: Path, chromium: str, server,
          "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1",
          f"--lang={'de-DE' if spec.language == 'de' else 'en-US'}",
          "--force-device-scale-factor=1", f"--user-data-dir={profile}",
-         f"--window-size={spec.width},{spec.height}",
+         # Headless Chromium keeps ~88 px of the window for browser chrome, so
+         # the page would end above the screenshot's foot; open it taller and
+         # crop to the requested size below.
+         f"--window-size={spec.width},{spec.height + HEADLESS_CHROME_PAD}",
          f"--virtual-time-budget={budget_ms}", f"--screenshot={image}",
          "--dump-dom", f"http://{host}:{port}{page_path}"],
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
@@ -352,8 +356,10 @@ def _capture_one(spec: Capture, temporary: Path, chromium: str, server,
                   f"viewport_width={int(report.get('width', 0))}, "
                   f"viewport_height={int(report.get('height', 0))}", file=sys.stderr)
             raise RuntimeError(f"{spec.name}: browser did not reach a healthy v2 capture state")
-        if pygame.image.load(image).get_size() != (spec.width, spec.height):
+        shot = pygame.image.load(image)
+        if shot.get_size() != (spec.width, spec.height + HEADLESS_CHROME_PAD):
             raise RuntimeError(f"{spec.name}: unexpected screenshot dimensions")
+        pygame.image.save(shot.subsurface((0, 0, spec.width, spec.height)).copy(), image)
         return image, report
     finally:
         if process.poll() is None:

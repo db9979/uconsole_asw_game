@@ -18,7 +18,7 @@ Der Sonarraum des U-Boots arbeitet wie der der Fregatte, ohne Schleppsonar, OPZ-
 
 ## Waffen {#sub-weapons}
 
-Die Waffenstation lädt und flutet die Rohre, stellt Lauftiefe und Fächer ein, schießt auf einen gewählten Kontakt oder eine eingegebene Peilung, lenkt die drahtgelenkten Torpedos und stößt Täuschkörper aus. Der Feuerleitkasten zeigt die Suchkopf-Einstellung der nächsten Schüsse.
+Die Waffenstation lädt und flutet die Rohre, stellt Lauftiefe und Fächer ein, schießt auf einen gewählten Kontakt oder eine eingegebene Peilung, lenkt die drahtgelenkten Torpedos und stößt Täuschkörper aus. Die Seite hat neben der Karte zwei Spalten: Kontaktkarten (ein Klick wählt einen Kontakt) über der Schusslage sowie die Feuerleitung über den Rohrlampen. Der Feuerleitkasten zeigt die Suchkopf-Einstellung der nächsten Schüsse; an der Waffenstation feuert ein Klick auf das rote Feuerfeld wie `Strg+Enter`.
 
 <!-- sop:uboot_weapons -->
 

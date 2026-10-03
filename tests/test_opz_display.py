@@ -159,18 +159,23 @@ def test_layers_switch_the_bearing_scale_labels_and_cpa():
     tracks = [t for t in game.opz_tracks() if opz_display_view.selected_cpa(game, t)]
     assert tracks, "the convoy should close on the frigate"
     game.opz_selected_track_id = tracks[0].track_id
-    texts = [item["text"] for item in _texts(game)]
+    traced = _texts(game)
+    texts = [item["text"] for item in traced]
     assert "030" in texts
     assert any(text.startswith("CPA ") for text in texts)
     labels = [t.label for t in game.opz_tracks()]
-    assert any(label in texts for label in labels)
+    chart = opz.opz_regions(config.OPZ_STATION_RECT)["chart"]
+    assert any(item["text"] in labels for item in traced if chart.contains(item["ink"]))
     game.preferences = Preferences(language="en", fullscreen=False, audio=False,
                                    opz_display=(("compass", "off"), ("cpa", "off"),
                                                 ("labels", "off"), ("rings", "off")))
-    texts = [item["text"] for item in _texts(game)]
+    traced = _texts(game)
+    texts = [item["text"] for item in traced]
     assert "030" not in texts
     assert not any(text.startswith("CPA ") for text in texts)
-    assert not any(label in texts for label in labels)
+    # The track cards keep their labels; the chart itself drops them.
+    chart_texts = [item["text"] for item in traced if chart.contains(item["ink"])]
+    assert not any(label in chart_texts for label in labels)
     assert not any(text.endswith(" NM") and text[0].isdigit() for text in texts)
 
 

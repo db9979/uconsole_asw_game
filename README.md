@@ -12,16 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.182**
+Current release: **1.3.183**
 
-Release 1.3.182 brings the three-column layout to the damage-control
-selection page. Compartments sit as cards on the left with their state stripe,
-water and fire lamps and the teams on scene, the selected compartment's details
-in the middle and the three repair teams on the right with their destination
-and whether they are on the way, on scene or standing by. A click selects a
-compartment or a team; Enter still sends the team. On the submarine's Mast &
-ESM page a click on a row of the emitter list selects that emitter. Keys are
-unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.183 brings pictures into the manual. Every station of the frigate
+and the submarine now appears on the uConsole and in the Remote Crew browser,
+together with all six sonar pages, binoculars and periscope by day and at
+night, the main menu, scenario selection, briefing, options, the editors and
+the contact analyser, all in the light Tactical Day theme so a print needs
+little ink; the Markdown and PDF manuals show them, the reader in the
+game leaves them out. The submarine chapter now lists every station page with
+its keys. The first-patrol steps match the main menu again, the quick start
+says which functions still need a key, and "submarine" replaces "boat". Saves
+are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.183
+
+Release 1.3.183 brings pictures into the manual. Every station of the frigate
+and the submarine now appears on the uConsole and in the Remote Crew browser,
+together with all six sonar pages, binoculars and periscope by day and at
+night, the main menu, scenario selection, briefing, options, the editors and
+the contact analyser, all in the light Tactical Day theme so a print needs
+little ink; the Markdown and PDF manuals show them, the reader in the
+game leaves them out. The submarine chapter now lists every station page with
+its keys. The first-patrol steps match the main menu again, the quick start
+says which functions still need a key, and "submarine" replaces "boat". Saves
+are v50; v38 to v49 saves still load.
+
 ## 1.3.182
 
 Release 1.3.182 brings the three-column layout to the damage-control

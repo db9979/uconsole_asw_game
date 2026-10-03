@@ -35,6 +35,8 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 ROLES = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
          "engine", "helicopter", "eloka")
+UBOOT_ROLES = ("uboot", "uboot_sonar", "uboot_weapons", "uboot_engine",
+               "uboot_esm", "uboot_nav", "uboot_radio")
 DESKTOP = (1920, 1080)
 HEADLESS_CHROME_PAD = 87
 MOBILE = (500, 844)
@@ -84,9 +86,12 @@ def capture_specs() -> tuple[Capture, ...]:
                 Capture(f"commander-v2-{language}-periscope-{sight}.png", language,
                         *DESKTOP, "uboot_esm", scene="periscope", sight=sight),
             ))
-        # The submarine's engine-room console (a crewed diesel boat snorkelling).
-        captures.append(Capture(f"commander-v2-{language}-uboot-engine-desktop.png",
-                                language, *DESKTOP, "uboot_engine", sight="engine"))
+        # The submarine's stations in one world (a crewed diesel boat
+        # snorkelling; the engine room shows its console).
+        for role in UBOOT_ROLES:
+            captures.append(Capture(
+                f"commander-v2-{language}-{role.replace('_', '-')}-desktop.png",
+                language, *DESKTOP, role, sight="engine"))
     return tuple(captures)
 
 
@@ -148,6 +153,9 @@ AUTOMATION = r"""
     if (["bridge", "weapons", "opz", "helicopter"].includes(role)) return $("role-map");
     if (role === "radio") return $("radio-df-scope");
     if (role === "uboot_engine") return $("uboot-engine-dials");
+    if (role === "uboot") return $("uboot-depth-canvas");
+    if (role === "uboot_nav") return $("uboot-sounder-canvas");
+    if (role === "uboot_esm") return $("uboot-esm-canvas");
     return $({sonar: "sonar-broadband", damage: "damage-schematic",
       engine: "engine-instruments", eloka: "eloka-scope"}[role]);
   }
@@ -205,7 +213,8 @@ AUTOMATION = r"""
       return;
     }
 
-    const section = $(`station-${expectedRole}`) || $("station-uboot");
+    const section = expectedRole === "uboot_sonar" ? $("station-sonar")
+      : $(`station-${expectedRole}`) || $("station-uboot");
     const selectedRole = document.querySelector(".station-tab[aria-selected='true']")?.dataset.station || "";
     const selectorCount = $("station-tabs").children.length;
     // An eyepiece card sizes and paints its canvas only once it is in view.
@@ -218,7 +227,9 @@ AUTOMATION = r"""
     // Sonar and the helicopter (which opens on its acoustic page) show
     // waterfalls painted on an animation clock that headless Chromium's
     // virtual time does not advance; their controls are checked below.
-    const isPainted = ["sonar", "helicopter"].includes(expectedRole) || painted(canvas);
+    // The submarine's weapons and radio room are lists and forms, no canvas.
+    const isPainted = ["sonar", "helicopter", "uboot_sonar", "uboot_weapons", "uboot_radio"]
+      .includes(expectedRole) || painted(canvas);
     const sonarControls = scene !== "sonar" || ["sonar-audition-mode", "sonar-listen-band", "sonar-listen-notch"]
       .every((id) => $(id).getClientRects().length) && $("sonar-audition-mode").value === "FILTERED";
     const radioMessage = scene !== "radio" || $("radio-messages").children.length >= 3;

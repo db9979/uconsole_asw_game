@@ -62,11 +62,19 @@ blockquote { border-left: 2pt solid #1b4d3e; margin: 2mm 0; padding: 0 0 0 3mm;
              color: #333; }
 ol, ul { padding-left: 6mm; }
 li { margin: 0.6mm 0; }
+figure { margin: 3mm 0 4mm 0; text-align: center; page-break-inside: avoid;
+         break-inside: avoid; }
+figure img { max-width: 100%; max-height: 105mm; border: 0.5pt solid #999; }
+figcaption { font-size: 8.6pt; color: #333; margin-top: 1mm; font-style: italic; }
 """
+# Light (Tactical Day) captures from tools/capture_manual_figures.py: they
+# print with little ink.
+SCREENSHOTS = ROOT / "docs" / "manual" / "figures"
 
 
 def print_html(lang: str, date: str) -> str:
-    page = manual.html_page(lang)
+    # Screenshots stay lossless PNG: the station text must stay readable.
+    page = manual.html_page(lang, SCREENSHOTS.as_uri())
     # The print stylesheet is self-contained: drop the web design-system links.
     page = re.sub(r'<link rel="stylesheet" href="/css/[a-z]+\.css">\n', "", page)
     page = page.replace('<link rel="stylesheet" href="/manual.css">',

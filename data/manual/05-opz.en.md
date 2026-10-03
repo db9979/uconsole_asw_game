@@ -8,6 +8,10 @@ Operations (OPZ / CIC) builds the tactical picture above the water: surface and 
 
 Every page has three columns: track cards on the left (a click selects a track), the chart in the middle and the page's panel on the right. Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track; page 3 commands the patrol aircraft; page 4 commands the consort destroyer of a group hunt; page 5 sets the chart display. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `Q`/`E` as the zoom keys elsewhere; `PgUp`/`PgDn` page), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
 
+![OPZ on the uConsole](figure:station-opz-cic)
+
+![OPZ in the Remote Crew browser](figure:web-opz-desktop)
+
 ```text
  NATO frame colours (operator annotation, not truth)
    yellow = UNKNOWN   blue = FRIEND   green = NEUTRAL   red = HOSTILE

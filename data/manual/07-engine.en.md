@@ -8,6 +8,12 @@ The engine room sets the propulsion order and manages the ship's acoustic signat
 
 The engine room is a machinery control console. Page 1 shows the engine telegraph as a column of lit steps, a large speed gauge (ordered speed as an amber mark, the damage speed limit in red), gauges for shaft RPM and own noise (cavitation zone in red) and lamps for shaft, plant, course, acoustic mode, cavitation and speed limit. Page 2 **Systems** has an annunciator panel of status lamps (dark when off, green while running, amber for a caution, red for an alarm) with a master lamp counting alarms and cautions, the fuel bunker as a tank column with stock, burn, endurance and range, gauges for roll, pitch and hull list, and a mimic of the ship's sections from bow to stern between the starboard and port hull, each with its water level, state, flooding and fire LEDs and the numbered repair teams at work.
 
+![Engine room on the uConsole](figure:station-engineering)
+
+![Engine room, systems page](figure:engineering-systems)
+
+![Engine room in the Remote Crew browser](figure:web-engine-desktop)
+
 ```text
  TELEGRAPH      kn     own noise
    FLANK        31     |##########|  cavitating

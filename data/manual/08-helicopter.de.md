@@ -8,6 +8,10 @@ Der HSP-5 „Sea Lynx" verlängert den Arm der Fregatte: er fliegt mit 120 kn zu
 
 Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 
+![Heli-Deck auf der uConsole](figure:station-helicopter)
+
+![Heli-Deck im Remote-Crew-Browser](figure:web-helicopter-desktop)
+
 | Seite | Inhalt |
 |---|---|
 | 1 Status | Statuskonsole: Zustandslampen, Kraftstoff, Peilung zum Schiff, Zuladung, Flugwetter, Deckbewegung |

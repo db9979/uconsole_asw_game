@@ -8,6 +8,12 @@ Der Maschinenraum stellt die Fahrstufe ein und verwaltet die akustische Signatur
 
 Der Maschinenraum ist ein Maschinenleitstand. Seite 1 zeigt den Maschinentelegraphen als Säule leuchtender Stufen, ein großes Fahrtinstrument (die befohlene Fahrt als gelbe Marke, die Schadensbegrenzung rot), Instrumente für Wellendrehzahl und Eigenlärm (Kavitationsbereich rot) und Lampen für Welle, Anlage, Kurs, Akustikmodus, Kavitation und Fahrtgrenze. Seite 2 **Systeme** hat eine Warn- und Meldetafel aus Statuslampen (dunkel, wenn aus, grün im Betrieb, gelb bei einer Warnung, rot bei einem Alarm) mit einer Sammellampe, die Alarme und Warnungen zählt, den Kraftstoffbunker als Tanksäule mit Vorrat, Verbrauch, Ausdauer und Reichweite, Instrumente für Rollen, Stampfen und Schlagseite und ein Bild der Schiffsabschnitte vom Bug zum Heck zwischen Steuerbord- und Backbordrumpf, jeder mit Wasserstand, Zustand, Wassereinbruch- und Brand-LEDs und den nummerierten Reparaturtrupps.
 
+![Antrieb auf der uConsole](figure:station-engineering)
+
+![Antrieb, Systemseite](figure:engineering-systems)
+
+![Antrieb im Remote-Crew-Browser](figure:web-engine-desktop)
+
 ```text
  TELEGRAPH      kn     Eigenlärm
    FLANK        31     |##########|  kavitiert

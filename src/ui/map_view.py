@@ -162,7 +162,6 @@ def map_hit_target(game, pos):
     contact = getattr(game, "selected_contact", None) or getattr(game, "target", None)
     if contact is not None:
         bearing = observations.bearing(contact, game.ship)
-        estimated_range = getattr(contact, "range_est", None)
         observed_x, observed_y = contact_position(contact, game.ship)
         if observed_x is not None and observed_y is not None:
             point = view.world_to_screen(observed_x, observed_y)
@@ -521,8 +520,6 @@ def draw_map_view(game, tr=None) -> None:
     r = config.MAP_RECT
     view = copy.copy(game.map_view)
     view.set_rect(r)
-    w = game.world
-    coast = w.coast
 
     # See-Hintergrund; bleibt auch ausserhalb der Weltgrenzen sichtbar.
     pygame.draw.rect(s, chart_background(game), r)

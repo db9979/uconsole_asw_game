@@ -90,7 +90,7 @@ def picture(game, boat) -> dict:
 
 def advice(game, boat, layer: str, noise: str) -> list[str]:
     """Short crew recommendations (catalog keys), most urgent first."""
-    sub, orders = boat.sub, boat.orders
+    orders = boat.orders
     keys = []
     source = alarm_source(boat)
     if source is not None and source[0] == "torpedo":

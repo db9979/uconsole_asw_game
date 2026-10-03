@@ -116,7 +116,6 @@ _STATION_VIEWS = {
 }
 
 
-
 # Telemetry readings and the station (number key) each belongs to, frigate
 # and submarine; a click on a reading opens that station.
 TELEMETRY_STATION = {
@@ -822,15 +821,6 @@ class DrawMixin:
                                                   rect.w - label_w, pitch),
                              colors[level], size=16)
 
-    def _ticker_telemetry_text(self, width: int | None = None, rows=None,
-                               keys=None) -> str:
-        """Compact telemetry for the ticker, most important readings first.
-
-        Readings that do not fit are left out whole (never clipped); the
-        F11 overlay always shows all of them.
-        """
-        return " \u00b7 ".join(text for _key, text in
-                                self._ticker_telemetry_parts(width, rows, keys))
 
     def _ticker_telemetry_parts(self, width: int | None = None, rows=None,
                                 keys=None) -> list:

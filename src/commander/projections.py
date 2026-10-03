@@ -18,8 +18,7 @@ from src.sonar import analysis_tools
 from src.ship.ship import NOISE_LEVEL_MAX
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
-from src.commander.server import (CHART_MAX_BYTES, OPFOR_ROLES, STATE_MAX_BYTES,
-                                  STATIONS)
+from src.commander.server import OPFOR_ROLES, STATE_MAX_BYTES, STATIONS
 from src.sensors.esm import (
     ESMCorrelationEvidence,
     ESM_BROADBAND_SENSOR_COUNT,
@@ -1751,7 +1750,7 @@ def _uboot_esm(game, boat):
     """The boat's own ESM picture: mast time and the crew's emitter list
     (measured parameters, own-position bearing history, crew cross-fix and
     library classification; never an emitter's identity or position)."""
-    esm, sub, now = boat.esm, boat.sub, game.sim_t
+    esm, now = boat.esm, game.sim_t
     sea = float(getattr(game.world, "effective_sea_state", game.world.sea_state))
     rain = config.clamp(float(getattr(game.world, "rain_intensity", 0.0)), 0.0, 1.0)
     mast_range = boat_esm.mast_radar_nm(sea, rain)

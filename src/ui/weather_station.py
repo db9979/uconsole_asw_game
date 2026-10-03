@@ -9,8 +9,6 @@ shadow zone, SOFAR axis and a few sound rays.
 
 from __future__ import annotations
 
-import math
-
 import pygame
 
 from src.core import config

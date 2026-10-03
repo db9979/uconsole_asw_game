@@ -1083,12 +1083,6 @@ def _hours_text(seconds):
     return f"{minutes // 60}:{minutes % 60:02d}"
 
 
-def _supply_bar(s, x, y, w, label, text, fraction, low, empty) -> None:
-    color = (config.COLOR_DANGER if fraction is not None and fraction <= empty else
-             config.COLOR_WARN if fraction is not None and fraction <= low else config.COLOR_OK)
-    layout.gauge(s, (x, y, w, 30), fraction, label=label, value=text, color=color, size=15)
-
-
 def _draw_supply_page(s, game, boat, x, y, w, h) -> None:
     """Engine room stores: energy balance, endurance dived by speed, diesel and air."""
     sub = boat.sub

@@ -22,6 +22,10 @@ import { activateTab } from "./lobby.js";
 import { queueVisualDraw, renderRoleVisuals } from "./role-visuals.js";
 import { canvas, lookoutCanvas } from "./canvases.js";
 
+// Each submarine station's section of the manual's submarine chapter.
+const SUB_MANUAL = {uboot: "sub-command", uboot_sonar: "sub-sonar", uboot_weapons: "sub-weapons",
+  uboot_engine: "sub-engine", uboot_esm: "sub-esm", uboot_nav: "sub-nav", uboot_radio: "sub-radio"};
+
 export function renderStationView() {
   const active = S.v2State?.role;
   document.body.classList.toggle("workstation-mode", Boolean(active));
@@ -35,7 +39,7 @@ export function renderStationView() {
   if (active) {
     $("workstation-guide-title").textContent = t(`station_${active}`);
     $("workstation-guide-body").textContent = t(`workstation_help_${active}`);
-    $("workstation-manual-link").href = `/manual-${S.language}#${opforRoles.has(active) ? "ref-opfor" : `station-${active}`}`;
+    $("workstation-manual-link").href = `/manual-${S.language}#${opforRoles.has(active) ? SUB_MANUAL[active] || "submarine" : `station-${active}`}`;
   }
   if (active) {
     const grid = $(`station-${panelRole(active)}`).querySelector(".station-grid");

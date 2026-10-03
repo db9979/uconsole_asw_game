@@ -24,11 +24,6 @@ def _fmt(value, pattern="{:.0f}"):
     return "--" if value is None or not math.isfinite(value) else pattern.format(value)
 
 
-def draw_silhouette(s, cls: str, cx: int, base_y: int, width: int, color) -> None:
-    """Kept for callers: the shared outline renderer."""
-    draw_outline(s, cls, cx, base_y, width, color)
-
-
 def scope_outlines(game, boat) -> list:
     """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg,
     aob_deg, model, way, range_nm)`` rows of the sightings (``lights``: the ``nav_lights`` code

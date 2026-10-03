@@ -44,7 +44,7 @@ Globale Tasten (alle Stationen):
 | `9` | Elektronische Kampfführung / ESM |
 | `Nummer der aktiven Station` | Erneut drücken, um die Seite dieser Station weiterzuschalten |
 | `Bild Auf / Ab` | Vorige / nächste Seite der Station (jede Station mit mehreren Seiten) |
-| `Strg+Enter` | Waffe abfeuern (nur diese Kombination feuert, an jeder Station und auf dem U-Boot) |
+| `Strg+Enter` | Torpedo oder Flugkörper abfeuern (Enter allein feuert nie; an der Waffenstation haben ASROC A, Wasserbomben Z, Raketenwerfer R und Lufttorpedo D eigene Tasten) |
 | `Pfeiltasten` | Stationsbezogene Auswahl oder Einstellung |
 | `+ / -` | Telegraph (an jeder Station verfügbar) |
 | `F1 / ?` | Hilfe (diese Anzeige) |
@@ -54,23 +54,23 @@ Globale Tasten (alle Stationen):
 | `0` | Wetter- & Sonar-Analyse |
 | `F7` | Erster Offizier (optionales Sprachmodell) |
 | `F8` | Taktischer Einheitenanalysator (Katalog, nur lesend) |
-| `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte) |
+| `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte, F auf der Karte: Einheiten oder ganze Welt einpassen) |
 | `F9` | Lokale Commander-LAN-Verwaltung öffnen |
 | `F10` | Optionen: Sprache, Vollbild, Audio, großer Text, Tooltips, Bildrate |
 | `F11` | Ereignislog und volle Telemetrie einblenden (Station bleibt bedienbar) |
 | `N` | Nationen & Einheiten; im Sonar: Notchfilter |
 | `S / L` | Speichern / Laden (Slots 1-5) |
 | `Alt+Enter` | Vollbild (alle Stationen) |
-| `Q / E oder Mausrad` | Kartenzoom nur auf Brücke, Waffen und Helikopter |
-| `Drag` | Karte verschieben (Brücke, Waffen und Helikopter) |
-| `K` | Kamera-Follow nur auf sichtbaren Karten (Drag schaltet es aus) |
+| `Q / E oder Mausrad` | Kartenzoom auf Brücke, Waffen, Helikopter und OPZ-Karte (dort stellen Q/E den Radarbereich) |
+| `Drag` | Karte verschieben (Brücke, Waffen, Helikopter und OPZ) |
+| `K` | Karte folgt nur auf sichtbaren Karten (Ziehen schaltet es aus) |
 | `Linksklick` | Angeklickte Taste, Lampe, Hinweis, Reiter, Scheibe oder Zeile |
 | `Rechtsklick` | Abbrechen wie Esc in Menüs und Eingaben |
 | `P` | Plotmodus auf Brücken-/Waffen-/Helo-Karte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (für alle Stationen, wird gespeichert) |
 | `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
-| `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×) |
+| `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×, Pos1/Ende Anfang/Ende, B Bericht des Sprachmodells, wenn eingeschaltet) |
 
 Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bedient; die Tastatur hilft bei der Navigation:
 
@@ -216,9 +216,9 @@ Das Ruder kann einer Route aus bis zu 8 Wegpunkten folgen. Auf der Navigationsse
 | `C` | Direkten Zielkurs eingeben (000-359) |
 | `V` | Direkte Zielgeschwindigkeit eingeben (0-31 kn) |
 | `+ / -` | Telegraph: Motorenbefehl (ASTERN-STOP-SLOW-HALF-FULL-FLANK) |
-| `Karte` | Mausrad: Zoom, Maus-Drag: Pan |
+| `Karte` | Mausrad: Zoom, Ziehen mit der Maus: verschieben |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
-| `K` | Kamera-Follow an/aus |
+| `K` | Karte folgt dem eigenen Schiff an/aus |
 | `, / .` | Ausguck-Seite: Radius kleiner / größer |
 | `B` | Ausguck-Seite: Fernglas über der Karte ein/aus |
 | `↑/↓ · ←/→ · Q/E · Space` | Fernglas oben (wie das Sehrohr): ↑/↓ neigen 2° (Umschalt: 10°) statt Maschinentelegraf, ←/→ schwenken 5° (Umschalt: 20°) statt Ruder, Q/E Zoom (16°, 8°, 4° Feld), Leertaste Stabilisierung |
@@ -405,7 +405,7 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 | `SPACE` | LOFAR Peak-Hold ein/aus |
 | `T` | TMA für ausgewählten Kontakt ein/aus |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
-| `G` | Gewählt Kontakt unabhängig von der Klassifikation an OPZ freigeben / zurückziehen |
+| `G` | Gewählten Kontakt unabhängig von der Klassifikation an OPZ freigeben / zurückziehen |
 | `M` | Ausgewählten Kontakt als Ziel setzen |
 
 ### Standardablauf
@@ -512,7 +512,7 @@ Beide Seiten sind wie ein Feuerleitpult aufgebaut: Auf Seite 1 hat jedes Rohr ei
 | `R` | U-Jagd-Raketensalve auf das Ziel (frische Entfernung, 0,4-3 sm) |
 | `Shift+R` | Raketen-Abwehrsalve in Richtung der Torpedowarnung |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
-| `K` | Kamera-Follow an/aus |
+| `K` | Karte folgt dem eigenen Schiff an/aus |
 | `F` | Flak-Feuerfreigabe umschalten (gesperrt = feuert nie auf Angreifer) |
 
 ### Standardablauf
@@ -730,7 +730,7 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 | `Backspace` | Alle markierten Meldungen abwählen |
 | `B` | Neuestes bloßes Radarecho als Track markieren (oder das Echo anklicken) |
 | `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
-| `K` | Kamera-Follow an/aus |
+| `K` | Karte folgt dem eigenen Schiff an/aus |
 | `H` | OPZ Seite 3: Seefernaufklärer anfordern / heimschicken (Tasten wie beim Helikopter) |
 | `W` | Suchgebiet auf die gewählte Spur (sonst eigenes Schiff); Klick in die Karte für einen Punkt |
 | `X / Shift+X` | Bojenmuster um das Suchgebiet wechseln / Shift bricht ab |
@@ -861,11 +861,11 @@ Auf der Aufträge-Seite kann der Funkraum HQ selbst rufen, höchstens alle 10 Mi
 | `Auf / Ab` | HFDF-Signal auswählen |
 | `Eingabe` | Peilung mit eigener Position protokollieren |
 | `Auf / Ab` | HQ-Auftrag wählen (Seite Aufträge) |
-| `A` | Gewählten Auftrag annehmen |
-| `D` | Gewählten Auftrag ablehnen |
-| `R` | Versorger bei der HQ anfordern |
-| `K` | Kontaktmeldung an HQ (der frischeste Fix; KW-Ruf, anpeilbar) |
-| `H` | Unterstützung bei HQ anfordern (der Seefernaufklärer; KW-Ruf, anpeilbar) |
+| `A` | Seite Aufträge: gewählten Auftrag annehmen |
+| `D` | Seite Aufträge: gewählten Auftrag ablehnen |
+| `R` | Seite Aufträge: Versorger beim HQ anfordern |
+| `K` | Seite Aufträge: Kontaktmeldung an HQ (der frischeste Fix; KW-Ruf, anpeilbar) |
+| `H` | Seite Aufträge: Unterstützung beim HQ anfordern (der Seefernaufklärer; KW-Ruf, anpeilbar) |
 
 ### Standardablauf
 
@@ -1015,7 +1015,7 @@ Seite 3 zeigt das Tauchsonar wie eine Konsole: Lampen für Dom (grün im Wasser,
 | `Shift+A` | Aktiven Ping vom abgesenkten Tauchsonar senden |
 | `Ctrl+Enter / D` | Leichttorpedo abwerfen |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
-| `K` | Kamera-Follow an/aus |
+| `K` | Karte folgt dem eigenen Schiff an/aus |
 | `Akustik: Bild Auf / Ab` | Akustikseite: Breitband / LOFAR / DEMON |
 | `Akustik: ← / →` | Hubschrauber-Horchpeilung -/+ 5 Grad |
 | `Akustik: R` | Horchpeilung auf automatisch zurücksetzen |
@@ -1421,8 +1421,8 @@ Die obere Leiste zeigt die sieben Stationen des U-Boots als Reiter: `1` Führung
 | `Shift+W` | Draht des neuesten Torpedos kappen (Waffen) |
 | `A` | Schleichfahrt ein/aus, höchstens 5 kn (Führung, Maschine) |
 | `Shift+G` | Auf Grund legen / abheben (Führung, Navigation) |
-| `Shift+H` | Auftauchen: an die Oberfläche, Brückenwache, Diesel an der Luft (Kommando, Navigation) |
-| `H` | Von der Oberfläche: Alarmtauchen, Flutventile auf, äußerste Kraft (Kommando, Navigation) |
+| `Shift+H` | Auftauchen: an die Oberfläche, Brückenwache, Diesel an der Luft (Führung, Navigation) |
+| `H` | Von der Oberfläche: Alarmtauchen, Flutventile auf, äußerste Kraft (Führung, Navigation) |
 | `N` | Schnorchel aus-/einfahren, Diesel laden auf Schnorcheltiefe (Maschine) |
 | `P` | Mast aus-/einfahren auf Sehrohrtiefe: ESM hört Radare, das Sehrohr sieht, die Funkantenne ist klar (Führung, Mast & ESM, Funkraum) |
 | `Pfeiltasten` | Seite Mast & ESM: Emitter wählen |
@@ -1447,8 +1447,8 @@ Die obere Leiste zeigt die sieben Stationen des U-Boots als Reiter: `1` Führung
 | `Eingabe` | Funkraum: Lagemeldung an die Führung senden (Mast auf Sehrohrtiefe ausgefahren; die Fregatte kann die KW-Sendung peilen) |
 | `B` | Funkraum: Bojenantenne ausbringen oder einholen (Rundspruch bis 60 m bei höchstens 6 kn; reißt über 10 kn ab) |
 | `W` | Maschine, Seite Leckwehr: Wache jetzt ablösen |
-| `M` | Maschine, Seite Schaden: Sanitätstrupp zur nächsten Station mit Verwundeten |
-| `U` | Maschine, Seite Schaden: Leute aus den Freiwachen zur am schwersten getroffenen Station |
+| `M` | Maschine, Seite Leckwehr: Sanitätstrupp zur nächsten Station mit Verwundeten |
+| `U` | Maschine, Seite Leckwehr: Leute aus den Freiwachen zur am schwersten getroffenen Station |
 | `G` | Gefechtsstationen an/aus (alle Wachen im Dienst, aufmerksam, aber ermüdend) |
 | `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist achtern taub) |
 | `Rechtsklick` | Routen-Wegpunkt auf der Karte setzen (Navigation) |

@@ -32,11 +32,6 @@ LEVEL = "normal"
 LOW_BACKDROP_FPS = 4.0
 
 
-def default_level() -> str:
-    """Windows PCs get the full level, the uConsole and others normal."""
-    return "full" if sys.platform == "win32" else "normal"
-
-
 def configure(level: str) -> str:
     """Set the active level (unknown values fall back to normal)."""
     from src.ui import lines

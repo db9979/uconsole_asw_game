@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from dataclasses import asdict, dataclass, is_dataclass
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any, Mapping
 from urllib.parse import urlsplit
 
 import pygame

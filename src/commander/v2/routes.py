@@ -57,7 +57,6 @@ from src.commander.v2.wire import (
     _V2_COMMAND_GLOBAL_LIMIT,
     _V2_COMMAND_MAX_AGE_S,
     _V2_COOKIE,
-    _V2_SESSION_LIMIT,
     _V2_SONAR_AUDIO_FIELDS,
     _WEBSOCKET_GUID,
     _audio_resume_cursor,
@@ -1162,7 +1161,7 @@ class _Handler(BaseHTTPRequestHandler):
                           or type(body["action"]) is not str
                           or body["action"] not in {
                               "assign", "revoke", "revoke_client", "command", "direct_fire",
-                              "sonar_audio", "simlog", "rotate_code", "accept_target",
+                              "sonar_audio", "simlog", "observer", "rotate_code", "accept_target",
                               "reject_target", "accept_navigation", "reject_navigation",
                               "shutdown"}
                           or type(body["client_id"]) is not str

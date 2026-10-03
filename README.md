@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.175**
+Current release: **1.3.176**
 
-Release 1.3.175 starts the new look: one set of colour tokens for the
+Release 1.3.176 starts the new look: one set of colour tokens for the
 uConsole and the Remote Crew browser, with Tactical Night (dark, default) and
 Tactical Day (light, the waterfall as a paper LOFARgram). Switch with the
 Dark/Light pill in the top bar or in Options (F10) under "Colour theme", which

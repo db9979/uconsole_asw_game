@@ -292,13 +292,6 @@ def active_echoes(sonar, now, window_s=ACTIVE_HISTORY_WINDOW_S):
     return result
 
 
-def _harmonic_candidates(sonar):
-    """Expose bounded receiver peaks as operator-selectable hypotheses."""
-    peaks = getattr(getattr(sonar, "receiver", None), "peaks", [])
-    return sorted({float(hz) for hz, _ in list(peaks)[:6]
-                   if np.isfinite(hz) and 0 < float(hz) <= config.LOFAR_FMAX_HZ})
-
-
 def _selected_harmonic(game):
     """The operator's fundamental (placed with the cursor), if any."""
     selected = getattr(game, "sonar_harmonic_hz", None)

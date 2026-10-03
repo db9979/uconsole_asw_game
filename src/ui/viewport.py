@@ -28,12 +28,6 @@ class Viewport:
     def rect(self) -> tuple:
         return self._rect
 
-    def fits_world(self) -> None:
-        """Zurück auf 'ganze Welt sichtbar'."""
-        x, y, w, h = self._rect
-        self.scale = min(w / self.world_size, h / self.world_size)
-        self.cx = self.world_size / 2.0
-        self.cy = self.world_size / 2.0
 
     # --- Transformationen ---
 

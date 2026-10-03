@@ -25,7 +25,11 @@ export const chosenTheme = () => chosen;
 export const effectiveTheme = () => chosen === "contrast" ? "contrast" : redLight ? "night" : chosen;
 function applyTheme() {
   const name = effectiveTheme(), root = document.documentElement;
-  if (root.dataset.theme === name) return;
+  // Under the red light the night tokens turn grey (tokens.css), so a green
+  // accent keeps its brightness under the red multiply instead of going black.
+  const red = redLight && name === "night";
+  if (root.dataset.theme === name && root.hasAttribute("data-red-light") === red) return;
+  root.toggleAttribute("data-red-light", red);
   root.dataset.theme = name;
   invalidatePalette();
   for (const listener of listeners) {

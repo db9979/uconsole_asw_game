@@ -90,6 +90,34 @@
   --t-land: #2D2D2D;
   --t-land-edge: #A0A0A0;
 }
+:root[data-theme="night"][data-red-light] {
+  --t-bg: #0F0F0F;
+  --t-panel: #181818;
+  --t-raised: #222222;
+  --t-well: #090909;
+  --t-line: #2F2F2F;
+  --t-line-strong: #4D4D4D;
+  --t-shadow: #070707;
+  --t-hilite: #292929;
+  --t-text: #E7E7E7;
+  --t-dim: #949494;
+  --t-faint: #606060;
+  --t-accent: #919191;
+  --t-on-accent: #101010;
+  --t-phosphor: #C0C0C0;
+  --t-caution: #F5F5F5;
+  --t-alarm: #EFEFEF;
+  --t-info: #9C9C9C;
+  --t-focus: #C0C0C0;
+  --t-friend: #9C9C9C;
+  --t-neutral: #ADADAD;
+  --t-hostile: #F8F8F8;
+  --t-unknown: #FBFBFB;
+  --t-select: #2E2E2E;
+  --t-water: #131313;
+  --t-land: #232323;
+  --t-land-edge: #5D5D5D;
+}
 /* END GENERATED THEME TOKENS */
 
 :root {

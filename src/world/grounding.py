@@ -41,6 +41,10 @@ class HullSpec:
 
 
 DEFAULT_HULL_SPEC = HullSpec()
+# Largest amount the ship's dynamic draft exceeds the static hull draft:
+# hydrostatic draft at full flooding (+0.7 m) and Barrass squat at 32 kn
+# (4.9 m), rounded up.
+DYNAMIC_DRAFT_ALLOWANCE_M = 6.0
 
 
 @dataclass(frozen=True)
@@ -486,8 +490,12 @@ def grounding_contact_is_consistent(world, pose, hull, contact) -> bool:
     if contact.kind == "shallow":
         return (world.coast.has_bathymetry
                 and not world.on_land(contact.x_nm, contact.y_nm)
-                and world.physical_depth_m(contact.x_nm, contact.y_nm)
-                <= hull.minimum_depth_m + 1e-6)
+                # Same measure as the detection: the raw bathymetry, not the
+                # tide-adjusted depth (a rising tide must not make a saved
+                # grounding unloadable). The ship detects with its dynamic
+                # draft (load and squat), which the saved static hull lacks.
+                and world.coast.physical_depth_m(contact.x_nm, contact.y_nm)
+                <= hull.minimum_depth_m + DYNAMIC_DRAFT_ALLOWANCE_M + 1e-6)
     return False
 
 

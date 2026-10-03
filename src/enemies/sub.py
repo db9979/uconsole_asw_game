@@ -160,7 +160,6 @@ class Sub:
         endurance_profile = runtime_catalog.endurances.get(f"endurance.{source.key}")
         self.endurance = (SubmarineEndurance(endurance_profile)
                           if endurance_profile is not None else None)
-        systems = runtime_catalog.profile_systems.get(source.key)
         # Every submarine now senses through its own sensor suite (passive
         # bearings, own TMA, ESM at periscope depth, hostile datalink).
         self.legacy_observation_model = False
@@ -1088,7 +1087,7 @@ class Sub:
             cu, cv = current(self.x, self.y) if current is not None else (0.0, 0.0)
             drift = math.hypot(cu, cv)
             if drift > 0.05:
-                self.target_course = math.degrees(math.atan2(-cu, cv)) % 360.0
+                self.target_course = math.degrees(math.atan2(-cu, -cv)) % 360.0
                 diff = config.angle_diff_deg(self.target_course, self.course)
                 self.course = (self.course + config.clamp(
                     diff, -self.motion.turn_rate_deg_s * dt,
@@ -1279,14 +1278,6 @@ class Sub:
     def noise_level(self) -> float:
         return 1.0 - self.quiet_factor()
 
-    def torpedo_notice_range_nm(self) -> float:
-        """Graduated passive notice of a running torpedo's own machinery
-        noise: short of the launch-transient alert (SUB_TORPEDO_ALERT_NM) and
-        beyond pure terminal homing range (TORP_HOME_RANGE_NM), scaled by the
-        sub's own noise the same way Ship.passive_sonar_range_nm penalises
-        self-noise - a sub running loud hears less of its surroundings."""
-        own_penalty = 1.0 - 0.8 * self.noise_level()
-        return config.TORP_RUNNING_NOISE_RANGE_NM * own_penalty
 
     def acoustic_signature(self) -> str:
         """M9: Hörbare Geräusch-Signatur für manuelle Klassifizierung.

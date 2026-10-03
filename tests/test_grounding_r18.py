@@ -416,3 +416,19 @@ def test_physical_api_is_acoustically_separate_and_controls_are_localized():
     game.station = Station.ENGINE
     game._joy_step(-1)
     assert not game.ship.astern and game.ship.order_idx == 0
+
+
+def test_shallow_contact_stays_consistent_when_the_tide_rises(monkeypatch):
+    """A save made on a shoal loads although the tide has risen since."""
+    world = _world(depths=[[100.0, 100.0, 100.0],
+                           [100.0, 5.0, 100.0],
+                           [100.0, 100.0, 100.0]])
+    hull = HullSpec(length_m=40.0, beam_m=10.0)
+    sweep = swept_grounding(world, (.2, 1.0, 90.0), (1.0, 1.0, 90.0), hull)
+    assert sweep.contact.kind == "shallow"
+    pose = (sweep.safe_x_nm, sweep.safe_y_nm, 90.0)
+    monkeypatch.setattr(world.ocean, "tide_m", lambda *args: 20.0)
+    assert world.physical_depth_m(sweep.contact.x_nm, sweep.contact.y_nm) \
+        > hull.minimum_depth_m
+
+    assert grounding_contact_is_consistent(world, pose, hull, sweep.contact)

@@ -956,7 +956,9 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     self.flash(message("runtime.helo.dip_ping_sent" if result is True
                                        else "runtime.helo.dip_ping_unavailable"))
                 elif self.station is Station.WEAPONS:
-                    self.fire_own_asroc()
+                    # Shift+A is the ping key elsewhere: it never launches.
+                    if not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
+                        self.fire_own_asroc()
                 elif self.station is Station.ELOKA:
                     self.set_ecm_auto(not self.ecm_jammer.auto_enabled)
                     self.flash(message("runtime.eloka.auto_on"
@@ -973,7 +975,9 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 elif self.station is Station.HELICOPTER and self.station_page == 3:
                     self.set_helicopter_listen_bearing(None)
                 elif self.station is Station.WEAPONS:
-                    if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    if getattr(e, "mod", 0) & pygame.KMOD_CTRL:
+                        pass  # Ctrl+R is the aircraft radar key; it never fires
+                    elif getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
                         self.fire_rbu_defence()
                     else:
                         self.fire_rbu()
@@ -1045,7 +1049,8 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                         self.deploy_buoys()
                 elif self.station is Station.OPZ:
                     self._mark_newest_blip()
-            elif e.key == pygame.K_z and self.station is Station.WEAPONS:
+            elif (e.key == pygame.K_z and self.station is Station.WEAPONS
+                  and not getattr(e, "mod", 0) & pygame.KMOD_CTRL):
                 self.drop_depth_charges()
             elif e.key == pygame.K_y and self.station is Station.WEAPONS:
                 self._cycle_torpedo_salvo()

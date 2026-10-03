@@ -237,6 +237,28 @@ _RGB = {name: {key: _rgb(value) for key, value in tokens.items()}
 _ACTIVE = "night"
 _REVISION = 0
 _APPLIED = False
+# Under the red light (a red multiply over the night theme) every themed
+# colour turns to its grey brightness: a multiply keeps only the red channel,
+# so a green accent would go almost black while its grey stays readable.
+_RED = False
+
+
+def _grey(value):
+    """``value``'s colours as greys that keep brightness under a red multiply."""
+    if isinstance(value, dict):
+        return {key: _grey(item) for key, item in value.items()}
+    if (isinstance(value, tuple) and len(value) in (3, 4)
+            and all(isinstance(part, int) for part in value)):
+        r, g, b = value[:3]
+        level = max(r, round(0.2126 * r + 0.7152 * g + 0.0722 * b))
+        return (level, level, level) + tuple(value[3:])
+    if isinstance(value, tuple):
+        return tuple(_grey(item) for item in value)
+    return value
+
+
+def red_light() -> bool:
+    return _RED
 
 
 def active() -> str:
@@ -257,7 +279,8 @@ def high_contrast() -> bool:
 
 def c(token: str) -> tuple:
     """An RGB colour of the active theme."""
-    return _RGB[_ACTIVE][token]
+    value = _RGB[_ACTIVE][token]
+    return _grey(value) if _RED else value
 
 
 def mix(a, b, amount: float) -> tuple:
@@ -273,13 +296,14 @@ def pick(night, day, contrast=None) -> tuple:
         return day
     if _ACTIVE == "contrast" and contrast is not None:
         return contrast
-    return night
+    return _grey(night) if _RED else night
 
 
 def phosphor(palette: str) -> tuple:
     """The waterfall trace colour of a sonar phosphor choice."""
     ramps = PHOSPHOR_PALETTES[_ACTIVE]
-    return ramps.get(palette, ramps["cyan"])
+    value = ramps.get(palette, ramps["cyan"])
+    return _grey(value) if _RED else value
 
 
 # Chart water tint by the clock's light (multiplies the water tokens; the
@@ -310,7 +334,7 @@ def theme_for(game) -> str:
     return chosen if chosen in SWITCH_THEMES else "night"
 
 
-def set_theme(name: str) -> str:
+def set_theme(name: str, red: bool = False) -> str:
     """Make ``name`` the active theme and reassign every colour global.
 
     Every consumer (config.COLOR_*, sonar_view's module colors,
@@ -319,23 +343,26 @@ def set_theme(name: str) -> str:
     to avoid a cycle: sonar_view/editor_widgets import layout, and layout
     calls this function.
     """
-    global _ACTIVE, _REVISION, _APPLIED
+    global _ACTIVE, _REVISION, _APPLIED, _RED
     if name not in THEMES:
         name = "night"
+    red = bool(red) and name == "night"
+    tone = _grey if red else (lambda value: value)
     from src.core import config
     from src.ui import editor_widgets, sonar_view
-    if (name == _ACTIVE and _APPLIED
-            and config.COLOR_TEXT == CONFIG_COLORS[name]["COLOR_TEXT"]):
+    if (name == _ACTIVE and _APPLIED and red == _RED
+            and config.COLOR_TEXT == tone(CONFIG_COLORS[name]["COLOR_TEXT"])):
         return name
     _ACTIVE = name
+    _RED = red
     _APPLIED = True
     _REVISION += 1
     for key, value in CONFIG_COLORS[name].items():
-        setattr(config, key, value)
+        setattr(config, key, tone(value))
     for key, value in SONAR_COLORS[name].items():
-        setattr(sonar_view, key, value)
-    sonar_view.PHOSPHOR_PALETTES = dict(PHOSPHOR_PALETTES[name])
-    editor_widgets.PALETTE = editor_widgets.EditorPalette(**EDITOR_PALETTES[name])
+        setattr(sonar_view, key, tone(value))
+    sonar_view.PHOSPHOR_PALETTES = tone(dict(PHOSPHOR_PALETTES[name]))
+    editor_widgets.PALETTE = editor_widgets.EditorPalette(**tone(EDITOR_PALETTES[name]))
     _apply_globals()
     return name
 
@@ -412,12 +439,15 @@ def _apply_globals() -> None:
             else:
                 index = THEMES.index(_ACTIVE)
                 value = spec[index] if index < len(spec) else spec[0]
+                if _RED:
+                    value = _grey(value)
             setattr(module, name, value)
 
 
 def configure_for(game=None) -> bool:
     """Apply the game's theme; True when it is the high-contrast one."""
-    return set_theme(theme_for(game)) == "contrast"
+    red = bool(getattr(game, "red_light_lit", False))
+    return set_theme(theme_for(game), red=red) == "contrast"
 
 
 def next_theme(current: str) -> str:
@@ -438,4 +468,11 @@ def css_tokens() -> str:
                   for key, value in TOKENS[name].items()]
         lines.append("}")
         blocks.append("\n".join(lines))
+    # The red light greys the night tokens (see _grey), last so it wins.
+    lines = [':root[data-theme="night"][data-red-light] {']
+    lines += ["  --t-{}: #{:02X}{:02X}{:02X};".format(key.replace("_", "-"),
+                                                      *_grey(_RGB["night"][key]))
+              for key in TOKENS["night"]]
+    lines.append("}")
+    blocks.append("\n".join(lines))
     return "\n".join(blocks) + "\n"

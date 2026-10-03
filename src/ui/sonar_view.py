@@ -21,7 +21,7 @@ from src.ui.sonar_data import (  # noqa: F401
     _circular_broadband, _linear_lofar, _lofar_frequencies,
     _process_lofar_rows, _waterfall_controls, _display_controls,
     spectrum_peaks, peak_label, place_peak_labels, _translator, _tow_status,
-    _vds_status, active_echoes, _harmonic_candidates, _selected_harmonic,
+    _vds_status, active_echoes, _selected_harmonic,
     _demon_evidence, _bearing_series, tma_observation_summary,
     tma_closing_rate_kn, _detail_evidence, _array_state_line, _ping_line,
     _console_lamps)

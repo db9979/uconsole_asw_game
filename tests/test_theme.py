@@ -108,3 +108,20 @@ def test_boxes_are_rounded_panels_with_an_accent_title_mark():
     assert surface.get_at((10, 10))[:3] == (0, 0, 0)
     assert surface.get_at((40, 60))[:3] == config.COLOR_PANEL_BG
     assert surface.get_at((19, 24))[:3] == theme.c("accent")
+
+
+def test_red_light_turns_the_night_colours_to_readable_greys():
+    game = SimpleNamespace(preferences=preferences.Preferences(theme="day"),
+                           red_light_lit=True)
+    theme.configure_for(game)
+    assert theme.active() == "night" and theme.red_light()
+    # The green accent keeps its brightness as grey instead of going black
+    # under the red multiply; reds stay bright.
+    accent = theme.c("accent")
+    assert accent[0] == accent[1] == accent[2] >= 120
+    assert config.COLOR_OK[0] == config.COLOR_OK[1] >= 120
+    assert theme.c("alarm")[0] >= 200
+    assert theme.pick((16, 185, 129), (0, 0, 0))[0] >= 120
+    game.red_light_lit = False
+    theme.configure_for(game)
+    assert not theme.red_light() and theme.active() == "day"

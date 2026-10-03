@@ -946,15 +946,6 @@ class SimMixin:
         return (config.clamp(forward / scale / half_length, -1.0, 1.0),
                 config.clamp(starboard / scale / half_beam, -1.0, 1.0))
 
-    def _incoming_hit_zone(self, torpedo) -> str:
-        """Naehert die getroffene Schiffszone aus der Angriffsrichtung an."""
-        source_bearing = (torpedo.course + 180.0) % 360.0
-        relative = config.angle_diff_deg(source_bearing, self.ship.course)
-        if abs(relative) <= 45.0:
-            return "bow"
-        if abs(relative) >= 135.0:
-            return "stern"
-        return "starboard" if relative > 0.0 else "port"
 
     def _sub_hears_torpedo(self, sub, torpedo, distance_nm: float) -> bool:
         """Passive sonar equation for a running torpedo heard by a boat.

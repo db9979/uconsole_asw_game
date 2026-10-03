@@ -343,7 +343,6 @@ def tubes_flooded(sub) -> int:
     return sum(state == "flooded" for state, _left in tube_states(sub))
 
 
-
 class CrewedBoat:
     """One crewed submarine: the boat, its sonar workstation and its feed."""
 
@@ -1155,9 +1154,3 @@ def send_ping(game, boat: CrewedBoat):
     return True
 
 
-def boat_is_alive(boat) -> bool:
-    return boat is not None and not boat.sub.sunk
-
-
-def contact_lost(game, contact) -> bool:
-    return not 0 <= game.sim_t - contact.last_seen < config.SONAR_CONTACT_LOST_S

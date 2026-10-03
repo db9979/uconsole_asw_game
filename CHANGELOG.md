@@ -4,18 +4,34 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.175
+## 1.3.176
 
-Release 1.3.175 starts the new look. Every screen now draws from one set of
+Release 1.3.176 starts the new look. Every screen now draws from one set of
 colour tokens shared by the uConsole and the Remote Crew browser, and there
 are two themes: Tactical Night (dark, the default) and Tactical Day (light,
 with the sonar waterfall as a paper LOFARgram in dark ink). Switch with the
 small Dark/Light pill at the right of the top bar (click it) or in Options
 (F10) under "Colour theme", which also offers high contrast; the choice is
-kept in the settings, not in saves. Red light still forces the dark theme.
+kept in the settings, not in saves. Red light still forces the dark theme, now with its colours turned to greys first so green values stay readable under the red.
 Panels are now rounded with a soft shadow and an accent title mark, page tabs
 are pills and key hints are chips. Keys, layout and saves are unchanged;
 saves are v50 and v38 to v49 saves still load.
+
+## 1.3.175
+
+Release 1.3.175 comes out of a review of the whole code. Weapon keys with
+Shift or Ctrl no longer fire by mistake: Shift+A (ping) no longer launches an
+ASROC and Ctrl+R (aircraft radar) no longer fires the rocket launcher at
+Weapons, and Shift+A on the submarine no longer switches silent running. A
+lurking submarine now stems a north or south current instead of drifting with
+it, and a decoy's Doppler shift counts its speed in knots. The browser host page
+can grant the observer role and withdraw direct fire from the submarine's
+weapons station, the submarine's browser stations have their own short help
+and manual link, and four sonar and helicopter drop-downs no longer jump back
+while in use. A save made while the frigate sat on a shoal now loads again
+after the tide has risen. Help texts were corrected (tasks page, OPZ zoom, debrief keys,
+German wording, "submarine" instead of "boat"), and unused code went. Saves
+are v50; v38 to v49 saves still load.
 
 ## 1.3.174
 

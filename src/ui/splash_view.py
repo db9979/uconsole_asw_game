@@ -45,6 +45,8 @@ PHOSPHOR_DIM = (62, 140, 128)
 PING = (70, 190, 190)
 GOLD = (236, 204, 128)
 WINDOW_LIGHT = (250, 205, 120)
+# The veil that dims the scene behind the main menu (set by the theme).
+MENU_VEIL = (2, 6, 10, 170)
 KEEL = [(0.035, 0.0), (0.05, -0.035), (0.13, -0.045), (0.93, -0.033), (0.985, 0.0)]
 
 _LAYERS = {}
@@ -64,7 +66,8 @@ def _gradient(size, top, bottom) -> pygame.Surface:
 
 def _static_layers(width: int, height: int) -> dict:
     """Sky, deep water, light shafts and sea floor, built once per size."""
-    key = (width, height)
+    from src.ui import theme
+    key = (width, height, theme.revision())
     layers = _LAYERS.get(key)
     if layers is not None:
         return layers
@@ -97,7 +100,7 @@ def _static_layers(width: int, height: int) -> dict:
     pygame.draw.polygon(water, (4, 15, 19), shifted)
     pygame.draw.lines(water, (18, 48, 50), False, shifted[1:-1], 1)
     dim = pygame.Surface((width, height), pygame.SRCALPHA)
-    dim.fill((2, 6, 10, 170))
+    dim.fill(MENU_VEIL)
     layers = dict(sky=sky, stars=stars, halo=halo, water=water, dim=dim)
     _LAYERS.clear()
     _LAYERS[key] = layers
@@ -150,7 +153,14 @@ def _helo_position(t: float) -> tuple:
 
 
 def _draw_sky(surface, layers, t: float) -> None:
+    from src.ui import theme
     surface.blit(layers["sky"], (0, 0))
+    if theme.is_light():
+        # By day: no stars, a pale sun where the moon stands at night.
+        sun = (1120, 86)
+        surface.blit(layers["halo"], (sun[0] - 90, sun[1] - 90))
+        pygame.draw.circle(surface, (255, 246, 214), sun, 24)
+        return
     for x, y, phase, speed, bright in layers["stars"]:
         glow = .55 + .45 * math.sin(t * speed + phase)
         level = int((150 if bright else 90) * glow) + 40
@@ -344,8 +354,10 @@ def draw_scene(surface: pygame.Surface, t: float) -> None:
 
 def draw_logo(surface, center_x: int, top: int) -> pygame.Rect:
     """Compact title with author and version, for the menus."""
+    from src.ui import theme
     title = _blit_text(surface, localize("splash.title"), (center_x, top), 50, PHOSPHOR,
-                       bold=True, anchor="midtop", glow=(14, 60, 52))
+                       bold=True, anchor="midtop",
+                       glow=None if theme.is_light() else (14, 60, 52))
     byline = localize(message("splash.menu_byline", author=AUTHOR, version=APP_VERSION))
     line = _blit_text(surface, byline, (center_x, title.bottom + 2), 16, GOLD,
                       anchor="midtop")
@@ -377,6 +389,7 @@ def draw_menu_backdrop(surface: pygame.Surface, t: float) -> None:
 @localized
 def draw_splash(surface: pygame.Surface, elapsed_s: float, tr=None) -> None:
     """Start screen: the scene, the title, the author and the version."""
+    from src.ui import theme
     width, height = surface.get_size()
     draw_scene(surface, elapsed_s)
     k = max(.15, min(1.0, elapsed_s / .8))
@@ -385,7 +398,7 @@ def draw_splash(surface: pygame.Surface, elapsed_s: float, tr=None) -> None:
         return tuple(int(c * k) for c in color)
 
     title = _blit_text(surface, localize("splash.title"), (60, 28), 84, tone(PHOSPHOR),
-                       bold=True, glow=tone((14, 60, 52)))
+                       bold=True, glow=None if theme.is_light() else tone((14, 60, 52)))
     sub = _blit_text(surface, localize("splash.subtitle"), (64, title.bottom), 20,
                      tone(PHOSPHOR_DIM))
     author = _blit_text(surface, localize(message("splash.author", author=AUTHOR)),
@@ -393,7 +406,7 @@ def draw_splash(surface: pygame.Surface, elapsed_s: float, tr=None) -> None:
     version = localize(message("splash.version", version=APP_VERSION))
     badge = _text(version, 16, tone(PHOSPHOR)).get_rect().inflate(20, 10)
     badge.topleft = (64, author.bottom + 8)
-    pygame.draw.rect(surface, (6, 22, 24), badge, border_radius=4)
+    pygame.draw.rect(surface, theme.pick((6, 22, 24), (255, 255, 255)), badge, border_radius=4)
     pygame.draw.rect(surface, tone(PHOSPHOR_DIM), badge, 1, border_radius=4)
     _blit_text(surface, version, badge.center, 16, tone(PHOSPHOR), anchor="center")
 

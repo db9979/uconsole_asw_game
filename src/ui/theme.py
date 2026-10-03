@@ -381,7 +381,25 @@ THEMED_GLOBALS = {
         "PANEL_RIM": "line_strong", "HIGHLIGHT": "select",
         "PHOSPHOR": ((0, 255, 135), (30, 58, 138)),
         "PHOSPHOR_DIM": ((16, 185, 129), (30, 58, 138)),
-        "GOLD": ((245, 158, 11), (180, 83, 9))},
+        "GOLD": ((245, 158, 11), (180, 83, 9)),
+        "BACKDROP_VEIL": ((2, 6, 10, 110), (243, 244, 246, 150))},
+    # The start-screen hunt behind the main menu and every overlay: a day
+    # scene under a light veil in the light theme, the night hunt otherwise.
+    "src.ui.splash_view": {
+        "SKY_TOP": ((3, 7, 16), (126, 170, 208)),
+        "SKY_HORIZON": ((20, 44, 62), (206, 224, 236)),
+        "SEA_TOP": ((10, 44, 58), (84, 134, 160)),
+        "SEA_DEEP": ((2, 9, 15), (30, 66, 90)),
+        "STEEL": ((19, 36, 46), (78, 90, 100)),
+        "STEEL_RIM": ((84, 150, 158), (38, 48, 58)),
+        "HULL_UNDERWATER": ((8, 26, 34), (44, 78, 98)),
+        "SUB_STEEL": ((7, 24, 30), (24, 44, 56)),
+        "SUB_RIM": ((46, 110, 116), (60, 100, 116)),
+        "PING": ((70, 190, 190), (200, 235, 240)),
+        "PHOSPHOR": ((150, 255, 205), (30, 58, 138)),
+        "PHOSPHOR_DIM": ((62, 140, 128), (55, 65, 81)),
+        "GOLD": ((236, 204, 128), (180, 83, 9)),
+        "MENU_VEIL": ((2, 6, 10, 170), (243, 244, 246, 185))},
     "src.ui.stations.helicopter": {"DECK_STEEL": ((70, 110, 118), (120, 140, 150)),
                                    "DECK_SEA": ((18, 60, 74), (170, 200, 222))},
     "src.ui.uboot_pilot": {

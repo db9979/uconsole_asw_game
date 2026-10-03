@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.186
+
+Version 1.3.186 behebt das helle Schema hinter den Menüs. Das Hauptmenü und
+jedes Fenster über einem laufenden Einsatz (Hilfe, Optionen, Speichern und
+Laden, Beenden) liegen jetzt auf einer hellen Tagesszene mit Sonne und hellem
+Meer statt auf dem dunklen Nachtbild, so bleibt die dunkle Schrift gut
+lesbar. Das Nachtschema sieht aus wie bisher. Tasten bleiben gleich.
+Spielstände sind v50; v38 bis v49 laden weiter.
+
 ## 1.3.185
 
 Version 1.3.185 hält den Remote-Crew-Gastgeber reaktionsfähig. Laden, neues

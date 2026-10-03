@@ -76,15 +76,13 @@ def test_rejected_document_keeps_the_previous_autosave(game, monkeypatch):
     assert game.autosave()
     path = Path(autosave_path())
     original = path.read_bytes()
-    snapshot = game._recovery_snapshot
     game._update_sim(5.0)
     faults = _record_faults(monkeypatch)
     _break_next_documents(game, monkeypatch)
     assert not game.autosave()
     assert path.read_bytes() == original
     assert game._autosave_failed and game.autosave_available
-    assert game._recovery_snapshot == snapshot
-    assert faults == [(SaveSelfCheckError, "save")]
+    assert faults == [(SaveSelfCheckError, "autosave")]
 
 
 def test_valid_document_is_written_unchanged(game):

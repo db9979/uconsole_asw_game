@@ -1586,6 +1586,7 @@
   "menu.daily": "Tageseinsatz",
   "autosave.loaded": "Autosave geladen: der Einsatz läuft weiter",
   "autosave.invalid": "Der Autosave lässt sich nicht laden",
+  "autosave.failed": "Autosave fehlgeschlagen: der vorige Autosave bleibt erhalten",
   "menu.procedural_world": "Prozedurale Welt",
   "menu.quit": "Beenden",
   "splash.title": "U-JAGD",

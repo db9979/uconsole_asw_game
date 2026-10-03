@@ -115,18 +115,15 @@ class ResilienceMixin:
 
     def write_recovery_autosave(self) -> bool:
         """Write the recovery snapshot as the autosave (crash or give-up)."""
-        from src.core.game_autosave import _write_atomically, autosave_path
-        from src.core.game_save import save_text_problem
         data = self.recovery_document()
         if data is None:
             return False
         try:
-            self.wait_for_autosave()
             text = json.dumps(data, allow_nan=False, separators=(",", ":"))
-            # A snapshot the loader would reject keeps the last good autosave.
-            if save_text_problem(text) is not None:
+            # Checked and written by the autosave worker (a snapshot the
+            # loader would reject keeps the last good autosave); waits for it.
+            if not self._submit_autosave_text(text, wait=True):
                 return False
-            _write_atomically(autosave_path(), text.encode("utf-8"))
         except Exception:  # noqa: BLE001 - the process is failing already
             return False
         self.autosave_available = True

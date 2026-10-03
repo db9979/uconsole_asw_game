@@ -91,14 +91,15 @@ class SaveSelfCheckError(ValueError):
     so the previous slot or autosave stays loadable."""
 
 
-def save_text_problem(text: str) -> str | None:
-    """Why the loader would reject this save JSON text, or None. Pure: the
-    size limit, version and the strict validator on a fresh parse."""
+def save_text_problem(text: str, opz_chart=None) -> str | None:
+    """Why the loader would reject this save JSON text, or None: the size
+    limit, version and the strict validator on a fresh parse. Pure (safe off
+    the main thread) when ``opz_chart`` comes from ``opz_chart_size()``."""
     try:
         if len(text.encode("utf-8")) > MAX_SAVE_DOCUMENT_BYTES:
             return "save document too large"
         parsed = json.loads(text)
-        if not valid_save_document(parsed, catalog_for_save(parsed)):
+        if not valid_save_document(parsed, catalog_for_save(parsed), opz_chart):
             return "save document failed its own validation"
     except (KeyError, TypeError, ValueError, OverflowError, RecursionError) as exc:
         return f"save document check failed: {exc!r}"
@@ -109,7 +110,7 @@ def save_text_problem(text: str) -> str | None:
 # ``game.py`` and the tests that import them from there.
 from src.core.save_validate import (  # noqa: F401
     _same_save_value, _same_save_value_strict, _valid_crew_block,
-    _valid_difficulty_dict, catalog_for_save, valid_save_document)
+    _valid_difficulty_dict, catalog_for_save, opz_chart_size, valid_save_document)
 
 
 class SaveMixin:
@@ -1847,6 +1848,8 @@ class SaveMixin:
         self._restore_training()
         # The load itself took wall time; it is not simulation time to catch up.
         self._frame_clock_reset = True
+        # No queued autosave of the replaced state may land after the load.
+        self._settle_autosave()
         return True
 
     # --- W4: Save-Slots 1-5 ---

@@ -393,6 +393,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         if getattr(self, "_autosave_armed", False):
             # A new mission replaces the one the autosave would continue.
             self.discard_autosave()
+        elif hasattr(self, "_autosave_worker"):
+            # No queued autosave of the old world may land after the reset.
+            self._settle_autosave()
         # The frigate's sonar workstation; ``game.sonar`` & co. delegate to it.
         self._frigate_sonar = SonarStation(kind="frigate")
         self._sonar_ctx = self._frigate_sonar

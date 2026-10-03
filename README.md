@@ -12,14 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.179**
+Current release: **1.3.180**
 
-Release 1.3.179 fixes two clicks that raised a program error: the Dark/Light
-switch in the top bar (in the main menu it ended the game, in a mission it
-reset to the last recovery point) and the contact cards on the submarine's
-Weapons page. Both now work as intended (the theme flips, the card selects
-its contact).
-Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.180 brings the three-column layout to Electronic warfare, the
+radio room and the frigate's Weapons page. EW shows its intercepts as cards on
+the left (a click selects one), the threat rose in the middle and the selected
+intercept with its signal and the ESM/jammer lamps on the right. The radio
+room has HF/DF signal cards on the left, the cross-fix chart in the middle and
+the DF rose with the bearing log on the right. The frigate's Weapons page lists
+its sonar contacts as cards above the engagement stages (a click selects one,
+M assigns it). Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

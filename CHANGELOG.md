@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.180
+
+Release 1.3.180 brings the three-column layout to Electronic warfare, the
+radio room and the frigate's Weapons page. EW shows its intercepts as cards on
+the left (a click selects one), the threat rose in the middle and the selected
+intercept with its signal and the ESM/jammer lamps on the right. The radio
+room has HF/DF signal cards on the left, the cross-fix chart in the middle and
+the DF rose with the bearing log on the right. The frigate's Weapons page lists
+its sonar contacts as cards above the engagement stages (a click selects one,
+M assigns it). Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.179
 
 Release 1.3.179 fixes two clicks that raised a program error: the Dark/Light

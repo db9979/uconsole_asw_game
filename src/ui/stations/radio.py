@@ -254,10 +254,10 @@ def _draw_side(game, s, column) -> None:
     top = gy + rose_h + 8
     logged = list(game.hfdf_log)[-HFDF_LOG_ROWS:]
     if not logged:
-        layout.blit_block(s, "radio.log_empty", gx, top, gw, 2 * row_h,
-                          color=config.COLOR_TEXT_DIM, size=14)
-        pointer.add_token_keys((gx, top, gw, row_h), "radio.log_empty", 14,
-                               (("Enter", "Enter"),))
+        hint = (gx, top, gw, max(2 * row_h, gy + gh - top))
+        layout.blit_block(s, "radio.log_empty", *hint, color=config.COLOR_TEXT_DIM, size=14)
+        pointer.add_token_keys(hint, "radio.log_empty", 14, (("Enter", "Enter"),),
+                               min_size=layout.MIN_OPERATIONAL_FONT)
         return
     for row in reversed(logged):
         age = max(0.0, game.sim_t - row["t"])

@@ -22,8 +22,8 @@ def _near_point(pos, point, radius):
             <= radius ** 2)
 
 
-ELOKA_CARDS_W = 272
-ELOKA_DETAILS_W = 300
+ELOKA_CARDS_W = 262
+ELOKA_DETAILS_W = 320
 ELOKA_CARD_H = 50
 ELOKA_CARD_PITCH = 54
 
@@ -60,6 +60,12 @@ def eloka_regions(station_rect=None, page=0) -> dict[str, pygame.Rect]:
         "details": details if page == 0 else empty,
         "evidence": rest if page == 1 else empty,
     }
+
+
+def short_key(track_key: str) -> str:
+    """A card-sized intercept key: "E0000000000000012" -> "E12"."""
+    head, digits = track_key[:1], track_key[1:]
+    return head + str(int(digits)) if digits.isdigit() else track_key
 
 
 def eloka_cards(game, station_rect=None, page=0) -> list:
@@ -242,7 +248,7 @@ def _draw_eloka_cards(game, surface, column, page) -> None:
         pygame.draw.rect(surface, _threat_color(game, track),
                          (rect.x + 3, rect.y + 5, 3, rect.h - 10))
         text = config.COLOR_TEXT if fresh or chosen else config.COLOR_TEXT_DIM
-        layout.blit_line(surface, raw_text(track.track_key), (rect.x + 12, rect.y + 3,
+        layout.blit_line(surface, raw_text(short_key(track.track_key)), (rect.x + 12, rect.y + 3,
                                                               rect.w - 96, 20),
                          text, size=15)
         layout.blit_line(surface, f"{track.bearing:05.1f}\u00b0",
@@ -280,7 +286,7 @@ def _draw_eloka_details(game, surface, column) -> None:
     _draw_eloka_signal(surface, (rx, ry, rw, signal_h), selected, game.sim_t, channel)
     analysis = game.eloka_display_analysis(selected)
     rows = (
-        ("eloka.field.intercept", raw_text(selected.track_key)),
+        ("eloka.field.intercept", raw_text(short_key(selected.track_key))),
         ("eloka.field.bearing", message("eloka.value.bearing",
                                          bearing=f"{selected.bearing:05.1f}",
                                          error=f"{selected.bearing_uncertainty_deg:.1f}")),
@@ -298,11 +304,14 @@ def _draw_eloka_details(game, surface, column) -> None:
     )
     y = ry + signal_h + 10
     step = max(25, layout.font(15).get_linesize() + 4)
+    # Labels as wide as the longest one needs, the values take the rest.
+    label_w = min(rw // 2, max(layout.text_width(layout.font(14), localize(label))
+                               for label, _value in rows) + 10)
     limit = column.bottom - 8 - lamps_h - 6
     for label, value in rows:
         if y + step > limit:
             break
-        layout.status_line(surface, rx, y, rw, label, value, label_w=118, size=15)
+        layout.status_line(surface, rx, y, rw, label, value, label_w=label_w, size=14)
         y += step
     # The best library candidates, as far as the column has room.
     y += 6
@@ -430,7 +439,7 @@ def draw_eloka_view(game, tr=None) -> None:
             channel = next((item for item in game.ecm_jammer.channels
                             if item.track_key == selected.track_key), None)
             values = (
-                ("eloka.field.intercept", selected.track_key),
+                ("eloka.field.intercept", raw_text(short_key(selected.track_key))),
                 ("eloka.field.release", localize(
                     "eloka.release.active" if game.eloka_annotation(selected.track_key)
                     else "eloka.release.private")),
@@ -479,7 +488,7 @@ def draw_eloka_view(game, tr=None) -> None:
             # inside one explicitly clipped content area instead.
             content = pygame.Rect(rx, ry, rw, max(1, box[1] + box[3] - ry - 8))
             gap = 14
-            details_w = max(270, int(rw * .54))
+            details_w = max(270, int(rw * .58))
             analysis_x = rx + details_w + gap
             analysis_w = max(1, rw - details_w - gap)
             detail_step = max(27, layout.font(16).get_linesize() + 5)
@@ -499,11 +508,14 @@ def draw_eloka_view(game, tr=None) -> None:
                     selected, game.sim_t, channel)
                 analysis_y += signal_h + 10
                 assist = game.operator_assist()
-                layout.blit_line(surface, "eloka.heading.candidates" if assist
-                                 else "eloka.heading.library",
-                                 (analysis_x, analysis_y, analysis_w, 24),
-                                 config.COLOR_TEXT, size=17)
-                analysis_y += 28
+                # The heading may wrap beside the cards column (large text).
+                heading = "eloka.heading.candidates" if assist else "eloka.heading.library"
+                heading_face, heading_lines = layout.fit_text(
+                    localize(heading), 17, analysis_w, 52, layout.MIN_OPERATIONAL_FONT)
+                heading_h = len(heading_lines) * layout.line_pitch(17, 0) + 4
+                layout.blit_block(surface, heading, analysis_x, analysis_y, analysis_w,
+                                  heading_h, config.COLOR_TEXT, size=17)
+                analysis_y += heading_h + 4
                 shown = game.eloka_display_candidates(selected)
                 for candidate in shown[:3]:
                     name = (game.eloka_emitter_name(candidate.emitter_key)
@@ -516,11 +528,13 @@ def draw_eloka_view(game, tr=None) -> None:
                         config.COLOR_TEXT_DIM, size=16)
                     analysis_y += 28
                 if not assist:
-                    layout.blit_line(surface, message(
-                        "eloka.library_hint", count=len(shown)),
-                        (analysis_x, analysis_y, analysis_w, 25),
-                        config.COLOR_TEXT_DIM, size=16)
-                    analysis_y += 28
+                    hint = message("eloka.library_hint", count=len(shown))
+                    _face, hint_lines = layout.fit_text(
+                        localize(hint), 16, analysis_w, 50, layout.MIN_OPERATIONAL_FONT)
+                    hint_h = len(hint_lines) * layout.line_pitch(16, 0) + 4
+                    layout.blit_block(surface, hint, analysis_x, analysis_y, analysis_w,
+                                      hint_h, config.COLOR_TEXT_DIM, size=16)
+                    analysis_y += hint_h + 4
                 analysis_y += 8
                 layout.blit_line(surface, "eloka.heading.correlations",
                                  (analysis_x, analysis_y, analysis_w, 24),

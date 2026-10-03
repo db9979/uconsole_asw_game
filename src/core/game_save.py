@@ -86,11 +86,31 @@ def _read_save_document(path):
     return json.loads(raw.decode("utf-8"))
 
 
+class SaveSelfCheckError(ValueError):
+    """A built save document the loader would reject: it is never written,
+    so the previous slot or autosave stays loadable."""
+
+
+def save_text_problem(text: str, opz_chart=None) -> str | None:
+    """Why the loader would reject this save JSON text, or None: the size
+    limit, version and the strict validator on a fresh parse. Pure (safe off
+    the main thread) when ``opz_chart`` comes from ``opz_chart_size()``."""
+    try:
+        if len(text.encode("utf-8")) > MAX_SAVE_DOCUMENT_BYTES:
+            return "save document too large"
+        parsed = json.loads(text)
+        if not valid_save_document(parsed, catalog_for_save(parsed), opz_chart):
+            return "save document failed its own validation"
+    except (KeyError, TypeError, ValueError, OverflowError, RecursionError) as exc:
+        return f"save document check failed: {exc!r}"
+    return None
+
+
 # ``_valid_difficulty_dict`` and the comparison helpers are re-exported for
 # ``game.py`` and the tests that import them from there.
 from src.core.save_validate import (  # noqa: F401
     _same_save_value, _same_save_value_strict, _valid_crew_block,
-    _valid_difficulty_dict, catalog_for_save, valid_save_document)
+    _valid_difficulty_dict, catalog_for_save, opz_chart_size, valid_save_document)
 
 
 class SaveMixin:
@@ -932,16 +952,33 @@ class SaveMixin:
             },
         }
 
+    def checked_save_document(self, **dump_options) -> tuple[dict, str]:
+        """Build the save document and its JSON text, and check the text the
+        way the loader reads it (size, version, strict validator) before
+        anything is written. Raises ``SaveSelfCheckError`` (recorded in the
+        crash log) for a document the loader would reject."""
+        document = self.save_state()
+        text = json.dumps(document, allow_nan=False, **dump_options)
+        problem = save_text_problem(text)
+        if problem is not None:
+            failure = SaveSelfCheckError(problem)
+            crashlog.record_fault(SaveSelfCheckError, failure, None, where="save")
+            raise failure
+        return document, text
+
     def save_game(self, path: str = None) -> str:
         import tempfile
         path = path or config.SAVE_PATH
+        # Checked before the old file is touched: a state the loader rejects
+        # must not replace the last good save.
+        _document, text = self.checked_save_document(indent=1)
         parent = os.path.dirname(os.path.abspath(path))
         os.makedirs(parent, exist_ok=True)
         temporary = None
         try:
             with tempfile.NamedTemporaryFile(mode="w", dir=parent, delete=False) as f:
                 temporary = f.name
-                json.dump(self.save_state(), f, indent=1, allow_nan=False)
+                f.write(text)
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(temporary, path)
@@ -1811,6 +1848,8 @@ class SaveMixin:
         self._restore_training()
         # The load itself took wall time; it is not simulation time to catch up.
         self._frame_clock_reset = True
+        # No queued autosave of the replaced state may land after the load.
+        self._settle_autosave()
         return True
 
     # --- W4: Save-Slots 1-5 ---

@@ -422,7 +422,7 @@ class BoatESM:
                 (seed * 7919 + int(signal.signal_id[1:9], 16)) & 0x7FFFFFFF, now, 5.0),
             line_of_sight=line_of_sight, dwell_s=config.UBOOT_ESM_SCAN_S,
             level_noise_for=lambda signal: detrand.normal(
-                game.seed, "boat-esm-level", sub.id, int(signal.signal_id[1:9], 16),
+                game.seed, "boat-esm-level", int(sub.sensor_seed), int(signal.signal_id[1:9], 16),
                 math.floor(now + 1e-6)))
 
     def _expire(self, now: float) -> None:

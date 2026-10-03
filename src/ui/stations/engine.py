@@ -6,7 +6,7 @@ import math
 import pygame
 
 from src.core import config
-from src.core.i18n import display_message, display_value, localized, localize, raw_text
+from src.core.i18n import display_message, display_value, localized, raw_text
 from src.core.station import Station
 from src.ship.ship import NOISE_LEVEL_MAX, PLANT_DIESEL_MAX_KN, Ship
 from src.ui import console, layout

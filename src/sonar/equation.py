@@ -291,14 +291,6 @@ SOUND_SPEED_M_S = 1500.0
 DOPPLER_FREE_KN = 0.5
 
 
-def range_resolution_m(pulse: str) -> float:
-    """Range resolution of a pulse: c T / 2 for CW, c / 2B for LFM."""
-    duration, bandwidth = PULSES[pulse]
-    if pulse == "CW":
-        return SOUND_SPEED_M_S * duration / 2.0
-    return SOUND_SPEED_M_S / (2.0 * bandwidth)
-
-
 def echo_merges_with_clutter(target_range_m: float, target_bearing_deg: float,
                              target_radial_kn: float, clutter_range_m: float,
                              clutter_bearing_deg: float, pulse: str,
@@ -400,6 +392,7 @@ def active_terms(*, distance_nm: float, target_ts_db: float, legacy_range_factor
 
 
 def range_resolution_m(pulse: str) -> float:
+    """Range resolution of a pulse: c T / 2 for CW, c / 2B for LFM."""
     tau, bandwidth = PULSES[pulse]
     if bandwidth > 1.0 / tau:
         return config.SOUND_SPEED_M_S / (2.0 * bandwidth)

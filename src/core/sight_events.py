@@ -171,7 +171,7 @@ def frigate_rows(game) -> list[dict]:
 
 def boat_rows(game, boat) -> list[dict]:
     """What the crewed boat's periscope can see happen (scope up only)."""
-    from src.core import config, opfor
+    from src.core import opfor
     events = getattr(game, "sight_events", None)
     if events is None or not opfor.scope_available(boat):
         return []

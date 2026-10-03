@@ -113,17 +113,6 @@ def _vline(pixels, x, y0, y1, color, thickness=1):
         _fill_col(pixels, x + offset, y0, y1, color)
 
 
-def _hatch(pixels, x0, x1, y0, y1, color, step=9):
-    """Sparse dot fill (roughly 1/step of the area) for shaded regions -
-    walked directly at `step` stride rather than visiting and rejecting every
-    pixel in the box."""
-    width, height = PRINT_SIZE
-    for y in range(max(0, y0), min(height - 1, y1) + 1):
-        start = x0 + ((-(x0 + y)) % step)
-        for x in range(start, x1 + 1, step):
-            _pixel(pixels, width, height, x, y, color)
-
-
 def _label(pixels, value, x, y, *, align="center", color=_LABEL, scale=FONT_SCALE):
     advance = 4 * scale
     label_width = len(value) * advance - scale

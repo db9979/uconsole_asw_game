@@ -12,15 +12,21 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.174**
+Current release: **1.3.175**
 
-Release 1.3.174 fills the Remote Crew operational log: every browser station
-now lists the same entries as F11 on the uConsole, newest first with time and
-category tag, the frigate's stations the frigate's log and the submarine's
-stations the boat log. Before, it showed only a few alerts and looked empty.
-A long log scrolls inside its drawer, and on the uConsole F11 now opens the
-boat log on the submarine side too. Saves are v50; v38 to v49 saves still
-load.
+Release 1.3.175 comes out of a review of the whole code. Weapon keys with
+Shift or Ctrl no longer fire by mistake: Shift+A (ping) no longer launches an
+ASROC and Ctrl+R (aircraft radar) no longer fires the rocket launcher at
+Weapons, and Shift+A on the submarine no longer switches silent running. A
+lurking submarine now stems a north or south current instead of drifting with
+it, and a decoy's Doppler shift counts its speed in knots. The browser host page
+can grant the observer role and withdraw direct fire from the submarine's
+weapons station, the submarine's browser stations have their own short help
+and manual link, and four sonar and helicopter drop-downs no longer jump back
+while in use. A save made while the frigate sat on a shoal now loads again
+after the tide has risen. Help texts were corrected (tasks page, OPZ zoom, debrief keys,
+German wording, "submarine" instead of "boat"), and unused code went. Saves
+are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

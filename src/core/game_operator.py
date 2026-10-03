@@ -640,24 +640,6 @@ class OperatorMixin(WeaponOrdersMixin):
         self.target = contact
         return True
 
-    def _feed_ping(self, tgt, contact) -> None:
-        """W1/W2: Ping-Echo-Feed inkl. Echolatenz (W3: Salzwasser-Schallfeld)."""
-        dist = tgt.distance_nm(self.ship)
-        mx, my = (self.ship.x + tgt.x) * .5, (self.ship.y + tgt.y) * .5
-        latenz = self.world.echo_delay_s(dist, mx, my)
-        klass = {"diesel_alt": "Diesel", "aip_modern": "AIP",
-                 "ssn": "Nuclear propulsion?"}.get(
-            getattr(tgt, "stype", None) and tgt.stype.key or "",
-            "unknown") if getattr(tgt, "stype", None) else \
-            ("Decoy?" if getattr(tgt, "kind", "") == "decoy"
-             else ("biological" if hasattr(tgt, "atype") else "vessel"))
-        self.feed.add(self.world.format_time(), "sonar",
-                      message("runtime.ping.feed", contact=tgt.id,
-                              bearing=f"{contact.bearing:4.0f}",
-                              range=f"{contact.range_est:4.1f}",
-                              latency=f"{latenz:3.1f}",
-                              speed=f"{self.world.mean_sound_speed_m_s(mx, my):.0f}",
-                              classification=klass))
 
     # --- Display (M8): Letterbox-Scaling + Vollbild ---
 

@@ -44,7 +44,7 @@ Global keys (all stations):
 | `9` | Electronic warfare / ESM |
 | `Active station number` | Press again to advance that station's page |
 | `Page Up / Down` | Previous / next page of the station (every station with several pages) |
-| `Ctrl+Enter` | Fire the weapon (only this combination fires, at every station and on the submarine) |
+| `Ctrl+Enter` | Fire the torpedo or missile (Enter alone never fires; at Weapons ASROC A, depth charges Z, rocket launcher R and air torpedo D have their own keys) |
 | `Arrow keys` | Station-specific selection or adjustment |
 | `+ / -` | Telegraph (available at every station) |
 | `F1 / ?` | Help (this display) |
@@ -54,15 +54,15 @@ Global keys (all stations):
 | `0` | Weather & sonar analysis panel |
 | `F7` | Executive officer (optional language model) |
 | `F8` | Tactical Unit Analyzer (read-only catalog) |
-| `F4` | Simulation log view (live; requires simlog option; M: map of all contacts) |
+| `F4` | Simulation log view (live; requires simlog option; M: map of all contacts, F on the map: fit units or world) |
 | `F9` | Open local Commander LAN administration |
 | `F10` | Options: language, fullscreen, audio, large text, tooltips, frame rate |
 | `F11` | Event log and full telemetry overlay (station stays live) |
 | `N` | Nations & units; in sonar: notch filter |
 | `S / L` | Save / load (slots 1-5) |
 | `Alt+Enter` | Fullscreen (all stations) |
-| `Q / E or mouse wheel` | Chart zoom only on bridge, weapons, and helicopter |
-| `Drag` | Pan chart (bridge, weapons, and helicopter) |
+| `Q / E or mouse wheel` | Chart zoom on bridge, weapons, helicopter and the OPZ chart (there Q/E set the radar range) |
+| `Drag` | Pan chart (bridge, weapons, helicopter and OPZ) |
 | `K` | Camera follow only on visible charts (drag disables it) |
 | `Left click` | Press the clicked key, lamp, hint, tab, dial or row |
 | `Right click` | Cancel like Esc in menus and entries |
@@ -70,7 +70,7 @@ Global keys (all stations):
 | `M R B C D · Enter · Bksp` | In plot mode: choose tool, place point with Enter or click (arrows move the cursor, Shift faster), delete the nearest object (Shift: all) |
 | `Esc` | Cancel input or open exit dialog |
 | `R / M` | After the mission ends: restart with the same seed / main menu |
-| `D` | After the mission ends: debrief with the truth beside what the crew knew (Space plays it back, Tab 10×/60×) |
+| `D` | After the mission ends: debrief with the truth beside what the crew knew (Space plays it back, Tab 10×/60×, Home/End start/end, B the language model's report when switched on) |
 
 In the Remote Crew browser (Commander, `F9`) stations are operated with buttons; the keyboard helps with navigation:
 
@@ -860,11 +860,11 @@ On the Tasks page the radio room can call HQ itself, at most once every 10 minut
 | `Up / Down` | Select HFDF signal |
 | `Enter` | Log bearing with own position |
 | `Up / Down` | Select HQ task (Tasks page) |
-| `A` | Accept the selected task |
-| `D` | Decline the selected task |
-| `R` | Request a supply ship from HQ |
-| `K` | Contact report to HQ (the freshest fix; HF call, can be DF'd) |
-| `H` | Request support from HQ (the patrol aircraft; HF call, can be DF'd) |
+| `A` | Tasks page: accept the selected task |
+| `D` | Tasks page: decline the selected task |
+| `R` | Tasks page: request a supply ship from HQ |
+| `K` | Tasks page: contact report to HQ (the freshest fix; HF call, can be DF'd) |
+| `H` | Tasks page: request support from HQ (the patrol aircraft; HF call, can be DF'd) |
 
 ### Standard procedure
 

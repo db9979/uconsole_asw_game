@@ -281,14 +281,6 @@ class RadarPictureMixin:
                 break
             self.ecm_jammer.deploy_jamming(track, self.sim_t, automatic=True)
 
-    def _emitter_profile(self, profile_key: str):
-        systems = self.runtime_catalog.profile_systems.get(profile_key)
-        if systems is None:
-            return None
-        return next((self.runtime_catalog.emitters[key]
-                     for key in sorted(systems.emitter_keys)
-                     if key in self.runtime_catalog.emitters
-                     and self.runtime_catalog.emitters[key].domain == "radar"), None)
 
     @staticmethod
     def _asm_radar_horizon_nm(asm) -> float:
@@ -374,35 +366,6 @@ class RadarPictureMixin:
             operational=not self.damage.station_down("opz"),
             burn_through_nm=asm.profile["jam_break_nm"])
 
-    def _esm_measurement(self, actor, bearing: float, distance: float,
-                         emitter, namespace: int) -> ESMMeasurement:
-        import random
-
-        seed = int(getattr(actor, "sensor_seed", 0)) + namespace
-        rng = random.Random(seed * 65537 + 0x45534D)
-        if emitter is None:
-            frequency = rng.uniform(2e9, 12e9)
-            prf = rng.uniform(200.0, 1500.0)
-            modulation = "unknown"
-        else:
-            frequency = rng.uniform(*emitter.frequency_band_hz)
-            prf = (rng.uniform(*emitter.prf_band_hz)
-                   if emitter.prf_band_hz is not None else None)
-            modulation = rng.choice(emitter.modulation_codes)
-        uncertainty = config.ESM_BEARING_ERR_DEG / math.sqrt(3.0)
-        noise = self._smooth_sensor_noise(seed * 1009, self.sim_t, 5.0)
-        return ESMMeasurement(
-            observer_x=self.ship.x,
-            observer_y=self.ship.y,
-            bearing=(bearing + noise * config.ESM_BEARING_ERR_DEG) % 360.0,
-            bearing_uncertainty_deg=uncertainty,
-            frequency_hz=frequency,
-            prf_hz=prf,
-            modulation_code=modulation,
-            quality=config.clamp(.9 - .45 * distance / config.ESM_RANGE_NM,
-                                 .35, .9),
-            observed_at=self.sim_t,
-        )
 
     def _update_esm_picture(self) -> None:
         """Publish passive intercepts independently from own-radar evidence."""

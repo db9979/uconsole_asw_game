@@ -12,7 +12,7 @@ import pygame
 from src.core import config
 from src.core.i18n import message, raw_text
 from src.enemies.damage_control import COMPARTMENTS, TASKS, capacity_kg
-from src.ui import console, damage_section, layout, pointer
+from src.ui import console, damage_section, layout
 
 
 

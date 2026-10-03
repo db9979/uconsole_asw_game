@@ -167,6 +167,12 @@ def test_host_setup_login_and_station_transfer(tmp_path):
         item = server.drain_web_admin()[0]
         assert item[0] == result["id"]
         assert server.drain_web_admin() == []
+        # The admin page's observer switch is an accepted host action.
+        status, _, observed = request(server, "/api/v2/web/admin", "POST", {
+            "action": "observer", "client_id": crew["client_id"], "station": "",
+            "value": True}, cookie=host_cookie, csrf=host_session["csrf"],
+            request_id="5f0c8f53-2a9e-4c6e-9d43-1b0b8f7e2c11")
+        assert status == 202 and server.drain_web_admin()[0][0] == observed["id"]
         assert server.grant_station(crew["client_id"], "sonar")
         server.finish_web_admin(result["id"], True)
         assert request(server, "/api/v2/web/admin", "POST", {

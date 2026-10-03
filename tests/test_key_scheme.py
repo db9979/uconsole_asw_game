@@ -147,3 +147,32 @@ def test_help_tables_name_the_unified_keys():
     assert boat["help.uboot.silent"] == "A"
     assert boat["help.uboot.decoy"] == keys(STATION_HELP[Station.WEAPONS][1])[
         "help.control.nixie"] == "V"
+
+
+def test_shift_a_and_ctrl_r_at_weapons_never_fire(monkeypatch):
+    # Shift+A is the ping key and Ctrl+R the aircraft radar key everywhere.
+    game = _frigate()
+    game.station = Station.WEAPONS
+    fired = []
+    for name in ("fire_own_asroc", "fire_rbu", "fire_rbu_defence", "drop_depth_charges"):
+        monkeypatch.setattr(game, name, lambda name=name: fired.append(name))
+    _key(game, pygame.K_a, pygame.KMOD_SHIFT)
+    _key(game, pygame.K_a, pygame.KMOD_CTRL)
+    _key(game, pygame.K_r, pygame.KMOD_CTRL)
+    _key(game, pygame.K_z, pygame.KMOD_CTRL)
+    assert fired == []
+    _key(game, pygame.K_a)
+    _key(game, pygame.K_r)
+    _key(game, pygame.K_r, pygame.KMOD_SHIFT)
+    _key(game, pygame.K_z)
+    assert fired == ["fire_own_asroc", "fire_rbu", "fire_rbu_defence", "drop_depth_charges"]
+
+
+def test_submarine_shift_a_never_toggles_silent_running():
+    game, boat = _local_boat()
+    uboot_local.set_local_station(game, "uboot")
+    before = boat.orders.silent
+    _key(game, pygame.K_a, pygame.KMOD_SHIFT)
+    assert boat.orders.silent == before
+    _key(game, pygame.K_a)
+    assert boat.orders.silent != before

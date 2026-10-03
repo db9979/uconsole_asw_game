@@ -14,7 +14,7 @@ import weakref
 import pygame
 
 from src.audio.receiver import AcousticReceiver
-from src.core import config, free_roam
+from src.core import config, crashlog, free_roam
 from src.core.plot import PlotLayer
 from src.core.autocrew import AutocrewController
 from src.core.i18n import message
@@ -1776,7 +1776,10 @@ class SaveMixin:
             if not _same_save_value(canonical, data):
                 return False
             restored = True
-        except Exception:
+        except Exception as exc:
+            # A restore bug must not look like a merely invalid save.
+            crashlog.record_fault(type(exc), exc, exc.__traceback__,
+                                  where="load")
             return False
         finally:
             groups = (("sub", candidate.subs), ("animal", candidate.animals),

@@ -4,6 +4,24 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.175
+
+Version 1.3.175 folgt aus einer Prüfung des ganzen Codes. Waffentasten mit
+Umschalt oder Strg feuern nicht mehr versehentlich: Umschalt+A (Ping) startet
+an der Waffenstation keinen ASROC mehr und Strg+R (Luftfahrzeug-Radar) feuert
+keinen Raketenwerfer mehr, und Umschalt+A schaltet auf dem U-Boot nicht mehr
+die Schleichfahrt. Ein lauerndes U-Boot hält jetzt auch gegen einen Nord- oder
+Südstrom, statt mit ihm zu treiben, und der Doppler eines Täuschkörpers rechnet
+seine Fahrt in Knoten. Die Host-Seite im Browser kann die Beobachterrolle
+vergeben und der Waffenstation des U-Boots das Direktfeuer entziehen, die
+Browser-Stationen des U-Boots haben eigene Kurzhilfen und Handbuch-Links, und
+vier Auswahllisten an Sonar und Heli springen beim Bedienen nicht mehr zurück.
+Ein Spielstand, gespeichert während die Fregatte auf einer Untiefe
+saß, lädt wieder, auch wenn die Flut inzwischen gestiegen ist.
+Hilfetexte wurden berichtigt (Seite Aufträge, OPZ-Zoom, Tasten der
+Nachbesprechung, deutsche Begriffe, „U-Boot“ statt „Boot“), und ungenutzter
+Code ist entfernt. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.174
 
 Version 1.3.174 füllt das Einsatzprotokoll der Remote Crew. Es zeigte bisher

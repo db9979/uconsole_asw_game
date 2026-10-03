@@ -99,7 +99,7 @@ export function renderHelicopterStation(payload) {
   if (S.helicopterAudioSource !== null && S.helicopterAudioSource !== payload.acoustic.source && S.sonarAudioEnabled)
     stopSonarAudio("sonar_live_waiting");
   S.helicopterAudioSource = payload.acoustic.source;
-  if (!S.stationDrafts.has("helicopter-buoy-mode")) $("helicopter-buoy-mode").value = asset.buoy_mode;
+  setControlValue($("helicopter-buoy-mode"), asset.buoy_mode);
   const listen = $("helicopter-listen-source");
   setOptions(listen, payload.acoustic.sources.map((source) => [source, source === "DIP" ? t("helicopter_dip_picture") : source]));
   setControlValue(listen, payload.acoustic.source);

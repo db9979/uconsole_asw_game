@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.187
+## 1.3.188
 
-Release 1.3.187 makes runs and saves more dependable. Two games with the same
+Release 1.3.188 makes runs and saves more dependable. Two games with the same
 seed now play out the same even when started one after the other without
 restarting the program (the patrol aircraft's radar and MAD, contact reports
 and submarine sightings no longer depend on internal numbering). Every save is
@@ -31,6 +31,19 @@ CIC (target and escort pages) and the submarine's sonar and weapons stations
 get clickable key chips (classify, TMA, release, towed array, chaff, assign
 target, flood tube, decoy). Firing by click stays limited to the weapons
 station. Saves are v50; v38 to v49 saves still load.
+
+## 1.3.187
+
+Release 1.3.187 adds a server mode: the uConsole only serves and everyone
+plays in the browser, on both units, alone or together. Choose "Server
+(browsers only)" in the main menu or start with `--server`. The uConsole then
+shows only the QR code, the join code and the crew, and during a mission an
+umpire screen. The first browser to join leads the game: in its lobby it picks
+the unit, the mission (scenario, daily mission, campaign hotspot or own
+mission), the opponent, weather, time of day and length, starts the mission
+for everyone, saves and loads, and brings everyone back to the lobby. The
+crew keeps its stations from one mission to the next, and the lead can be
+handed over. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.186
 

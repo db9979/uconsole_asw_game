@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.187
+## 1.3.188
 
-Version 1.3.187 macht Abläufe und Speichern verlässlicher. Zwei Spiele mit
+Version 1.3.188 macht Abläufe und Speichern verlässlicher. Zwei Spiele mit
 gleichem Seed laufen jetzt gleich ab, auch nacheinander ohne Neustart des
 Programms (Radar und MAD des Seefernaufklärers, Kontaktmeldungen und
 U-Boot-Sichtungen hängen nicht mehr an der internen Nummerierung). Jeder
@@ -34,6 +34,20 @@ Waffen des U-Boots bekommen anklickbare Tastenchips (Klassifizieren, TMA,
 Freigabe, Schleppsonar, Düppel, Ziel zuweisen, Rohr fluten, Täuschkörper).
 Feuern per Klick bleibt auf die Waffenstation beschränkt. Spielstände sind
 v50; v38 bis v49 lassen sich weiter laden.
+
+## 1.3.187
+
+Version 1.3.187 bringt einen Server-Modus: Die uConsole dient nur als
+Server, alle spielen im Browser, auf beiden Einheiten, allein oder gemeinsam.
+Dazu im Hauptmenü „Server (nur Browser)“ wählen oder mit `--server` starten.
+Die uConsole zeigt dann nur QR-Code, Beitrittscode und Besatzung, im Einsatz
+einen Schiedsrichter-Bildschirm. Der erste Browser, der beitritt, leitet das
+Spiel: In seiner Lobby wählt er Einheit, Einsatz (Szenario, Tagesmission,
+Brennpunkt der Kampagne oder eigene Mission), Gegner, Wetter, Tageszeit und
+Länge, startet den Einsatz für alle, speichert und lädt und holt alle zurück
+in die Lobby. Die Besatzung behält ihre Stationen von Einsatz zu Einsatz, die
+Leitung lässt sich abgeben. Tasten bleiben gleich. Spielstände sind v50; v38
+bis v49 lassen sich weiter laden.
 
 ## 1.3.186
 

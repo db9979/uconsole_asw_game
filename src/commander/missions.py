@@ -87,7 +87,7 @@ class MissionLibraryServerMixin:
 
     def enqueue_mission_op_locked(self, session, body) -> str:
         """"pending", or why not: "forbidden", "invalid", "queue_full"."""
-        if not session["solo_host"]:
+        if not self._host_surface(session):
             return "forbidden"
         if not valid_mission_op(body):
             return "invalid"
@@ -101,7 +101,8 @@ class MissionLibraryServerMixin:
         with self._lock:
             ops, self._mission_ops = list(self._mission_ops), deque()
             live = {(session["client_id"], session["ordinal"])
-                    for session in self._sessions_v2.values() if session["solo_host"]}
+                    for session in self._sessions_v2.values()
+                    if self._host_surface(session)}
         return [op for op in ops if (op.client_id, op.ordinal) in live]
 
     def publish_missions_v2(self, library: dict) -> None:
@@ -129,7 +130,7 @@ class MissionLibraryServerMixin:
 
     def mission_route_body_locked(self, session, path):
         """GET bodies of the library routes, None when not available."""
-        if not session["solo_host"]:
+        if not self._host_surface(session):
             return None
         if path == "/api/v2/missions":
             return self._v2_missions

@@ -53,14 +53,19 @@ export function forgetSession(message = "connection_unpaired") {
 // station, the countdown and every crew browser with its ready tick.
 function validLobby(lobby) {
   if (lobby === null) return true;
-  return exactKeys(lobby, ["mission", "mission_name", "side", "host_station", "versus", "countdown_s", "ready", "players"]) &&
+  return exactKeys(lobby, ["mission", "mission_name", "side", "host_station", "versus", "countdown_s", "ready", "players",
+    "mission_type", "weather", "time", "length", "server"]) &&
     ["ai", "crew"].includes(lobby.versus) &&
+    ["scenario", "custom", "daily", "campaign"].includes(lobby.mission_type) &&
+    [lobby.weather, lobby.time, lobby.length].every((value) => typeof value === "string" && value.length <= 16) &&
+    typeof lobby.server === "boolean" &&
     typeof lobby.mission === "string" && lobby.mission.length <= 32 &&
     (lobby.mission_name === null || typeof lobby.mission_name === "string" && lobby.mission_name.length <= 80) &&
     ["frigate", "uboot"].includes(lobby.side) && (lobby.host_station === null || sessionRoles.includes(lobby.host_station)) &&
     (lobby.countdown_s === null || finite(lobby.countdown_s) && lobby.countdown_s >= 0 && lobby.countdown_s <= 60) &&
     typeof lobby.ready === "boolean" && Array.isArray(lobby.players) && lobby.players.length <= 12 &&
-    lobby.players.every((player) => exactKeys(player, ["name", "stations", "ready", "observer", "you"]) &&
+    lobby.players.every((player) => exactKeys(player, ["name", "stations", "ready", "observer", "you", "leader", "ordinal"]) &&
+      typeof player.leader === "boolean" && Number.isSafeInteger(player.ordinal) && player.ordinal >= 0 &&
       typeof player.name === "string" && player.name.length >= 1 && player.name.length <= 32 &&
       Array.isArray(player.stations) && player.stations.length <= sessionRoles.length &&
       player.stations.every((station) => sessionRoles.includes(station)) &&
@@ -99,8 +104,9 @@ export function validateSession(value) {
       (value.grants.sonar_audio && !audioRoles.has(value.station)) ||
       typeof value.simlog !== "boolean" || value.grants.simlog !== value.simlog ||
       typeof value.observer !== "boolean" || (value.observer && (value.grants.command || value.host !== null || !value.simlog)) ||
-      (value.host !== null && (!exactKeys(value.host, ["generation"]) ||
-        !Number.isSafeInteger(value.host.generation) || value.host.generation < 0)) ||
+      (value.host !== null && (!exactKeys(value.host, ["generation", "leader"]) ||
+        !Number.isSafeInteger(value.host.generation) || value.host.generation < 0 ||
+        typeof value.host.leader !== "boolean")) ||
       value.active_station !== value.station || !validLobby(value.lobby) ||
       !value.stations || typeof value.stations !== "object" || Array.isArray(value.stations) ||
       Object.keys(value.stations).join(",") !== sessionRoles.join(",")) throw new Error("session");

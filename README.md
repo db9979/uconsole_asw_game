@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.187**
+Current release: **1.3.188**
 
-Release 1.3.187 makes runs and saves more dependable. Two games with the same
+Release 1.3.188 makes runs and saves more dependable. Two games with the same
 seed now play out the same even when started one after the other without
 restarting the program (the patrol aircraft's radar and MAD, contact reports
 and submarine sightings no longer depend on internal numbering). Every save is
@@ -302,7 +302,8 @@ example `u-jagd --windowed`.
 
 `python main.py --remote-crew` starts Remote Crew in crew mode on the first
 private LAN address at launch, as the F9 row would (`--solo-crew` does the same
-in solo mode; `--web-port` picks the port, default 8765). `--status-file PATH`
+in solo mode; `--server` opens the browser-only server mode, see the
+manual's quick start; `--web-port` picks the port, default 8765). `--status-file PATH`
 writes the Remote Crew address and join code as JSON to `PATH` whenever they
 change; the Windows starter reads it.
 

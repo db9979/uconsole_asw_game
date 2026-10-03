@@ -25,6 +25,12 @@ COUNTDOWN_S = 5.0
 # Station choice of a uConsole that only hosts: every station is played from
 # the browsers or by the AI.
 HOST_ONLY = "host"
+# Mission choices beside the side's scenarios: an own mission of the Mission
+# Editor (``own:<key>``), the day's daily mission and a hotspot of the side's
+# running campaign (``campaign:<id>``).
+OWN_PREFIX = "own:"
+DAILY = "daily"
+CAMPAIGN_PREFIX = "campaign:"
 
 
 def side_stations(side: str) -> tuple:
@@ -69,6 +75,15 @@ class LobbyRoom:
         # the chosen one, None for a built-in scenario.
         self.custom_missions: dict[str, tuple] = {side: () for side in SIDES}
         self.custom_key: str | None = None
+        # The day's daily mission and the campaign's open hotspots per side:
+        # {side: {"daily": scenario or None, "campaign": ((id, scenario,
+        # name), ...)}}, handed in by the game (``set_extra_missions``).
+        self.extra_missions: dict[str, dict] = {
+            side: {"daily": None, "campaign": ()} for side in SIDES}
+        self.daily = False
+        self.hotspot: int | None = None
+        # Server mode: the uConsole only hosts and a browser leads.
+        self.server = False
 
     @property
     def scenario_key(self) -> str:
@@ -80,10 +95,92 @@ class LobbyRoom:
         if self.custom_key not in {key for key, _name in self.custom_missions[self.side]}:
             self.custom_key = None
 
+    def set_extra_missions(self, extras: dict) -> None:
+        """The daily mission and campaign hotspots per side; a vanished
+        choice falls back to the scenario."""
+        self.extra_missions = {side: {
+            "daily": extras.get(side, {}).get("daily"),
+            "campaign": tuple(extras.get(side, {}).get("campaign", ())),
+        } for side in SIDES}
+        if self.choice not in self.options():
+            self.daily = False
+            self.hotspot = None
+            self.custom_key = None
+            self._fit_scenario()
+
     @property
     def custom_name(self) -> str | None:
         return next((name for key, name in self.custom_missions[self.side]
                      if key == self.custom_key), None)
+
+    @property
+    def hotspot_name(self) -> str | None:
+        return next((name for spot, _scenario, name
+                     in self.extra_missions[self.side]["campaign"]
+                     if spot == self.hotspot), None)
+
+    @property
+    def mission_type(self) -> str:
+        return ("custom" if self.custom_key is not None else "daily" if self.daily
+                else "campaign" if self.hotspot is not None else "scenario")
+
+    @property
+    def choice(self) -> str:
+        """The chosen mission as one id (see ``options``)."""
+        if self.custom_key is not None:
+            return OWN_PREFIX + self.custom_key
+        if self.daily:
+            return DAILY
+        if self.hotspot is not None:
+            return f"{CAMPAIGN_PREFIX}{self.hotspot}"
+        return self.scenario_key
+
+    def options(self) -> list:
+        """The side's mission choices in order: scenarios, the daily
+        mission, the campaign's hotspots, then the own missions."""
+        extra = self.extra_missions[self.side]
+        options = list(config.scenarios_for_side(self.side))
+        if extra["daily"] is not None:
+            options.append(DAILY)
+        options += [f"{CAMPAIGN_PREFIX}{spot}" for spot, _scenario, _name in extra["campaign"]]
+        options += [OWN_PREFIX + key for key, _name in self.custom_missions[self.side]]
+        return options
+
+    def set_choice(self, choice) -> bool:
+        """Pick one of ``options()``; False leaves the choice unchanged."""
+        if type(choice) is not str or choice not in self.options():
+            return False
+        extra = self.extra_missions[self.side]
+        self.custom_key = None
+        self.daily = False
+        self.hotspot = None
+        if choice.startswith(OWN_PREFIX):
+            self.custom_key = choice[len(OWN_PREFIX):]
+        elif choice == DAILY:
+            self.daily = True
+            self.scenario_index = config.SCENARIO_ORDER.index(extra["daily"])
+        elif choice.startswith(CAMPAIGN_PREFIX):
+            spot = int(choice[len(CAMPAIGN_PREFIX):])
+            self.hotspot = spot
+            scenario = next(scenario for candidate, scenario, _name in extra["campaign"]
+                            if candidate == spot)
+            self.scenario_index = config.SCENARIO_ORDER.index(scenario)
+        else:
+            self.scenario_index = config.SCENARIO_ORDER.index(choice)
+        return True
+
+    def set_side(self, side) -> bool:
+        if side not in SIDES:
+            return False
+        if side != self.side:
+            self.side = side
+            self.custom_key = None
+            self.daily = False
+            self.hotspot = None
+            self._fit_scenario()
+            if self.station != HOST_ONLY:
+                self.station = side_stations(self.side)[0]
+        return True
 
     def _fit_scenario(self) -> None:
         """Keep the mission one of the side's own (else that side's first)."""
@@ -103,21 +200,14 @@ class LobbyRoom:
         row = ROWS[self.row]
         if row == "mission":
             # Only the missions of the side the uConsole plays, then its own.
-            keys = config.scenarios_for_side(self.side)
-            options = [(key, None) for key in keys] + [
-                (self.scenario_key, key) for key, _name in self.custom_missions[self.side]]
-            pos = next((index for index, (scenario, custom) in enumerate(options)
-                        if custom == self.custom_key
-                        and (custom is not None or scenario == self.scenario_key)), 0)
-            scenario, self.custom_key = options[(pos + step) % len(options)]
-            self.scenario_index = config.SCENARIO_ORDER.index(scenario)
+            options = self.options()
+            pos = options.index(self.choice) if self.choice in options else 0
+            self.set_choice(options[(pos + step) % len(options)])
         elif row == "side":
-            self.side = SIDES[(SIDES.index(self.side) + 1) % len(SIDES)]
-            self.custom_key = None
-            self._fit_scenario()
-            if self.station != HOST_ONLY:
-                self.station = side_stations(self.side)[0]
+            self.set_side(SIDES[(SIDES.index(self.side) + 1) % len(SIDES)])
         elif row == "station":
+            if self.server:
+                return              # server mode: the uConsole only hosts
             stations = station_choices(self.side)
             self.station = stations[(stations.index(self.station) + step) % len(stations)]
         elif row == "versus":
@@ -188,10 +278,27 @@ class LobbyRoom:
         """The detached lobby block every crew browser sees."""
         return {
             "mission": "custom" if self.custom_key is not None else self.scenario_key,
-            "mission_name": self.custom_name,
+            # An own mission's authored name, or the campaign hotspot's name.
+            "mission_name": (self.custom_name if self.custom_key is not None
+                             else self.hotspot_name),
             "side": self.side,
             "host_station": None if self.station == HOST_ONLY else self.station,
             "versus": self.versus,
             "countdown_s": (None if self.countdown_s is None
                             else round(self.countdown_s, 1)),
+            "mission_type": self.mission_type,
+            "weather": self.weather,
+            "time": self.time,
+            "length": self.length,
+            "server": self.server,
         }
+
+    def set_start_choices(self, versus, weather, time, length) -> bool:
+        """The leader's other choices; all valid or nothing changes."""
+        if (versus not in VERSUS or weather not in config.START_WEATHER_CHOICES
+                or time not in config.START_TIME_CHOICES
+                or length not in config.START_LENGTH_CHOICES):
+            return False
+        self.versus, self.weather, self.time, self.length = versus, weather, time, length
+        self.force_armed = False
+        return True

@@ -459,6 +459,45 @@ def _mission_key_params(params):
     return not validate_user_key(params["key"])
 
 
+def _lobby_choice(value) -> bool:
+    """A lobby mission choice: a scenario, ``daily``, ``campaign:<id>`` or
+    ``own:<user key>`` (the game checks it against the side's options)."""
+    if type(value) is not str or not 1 <= len(value) <= 96:
+        return False
+    if value in SCENARIO_ORDER or value == "daily":
+        return True
+    if value.startswith("campaign:"):
+        digits = value[len("campaign:"):]
+        return digits.isdigit() and digits.isascii() and len(digits) <= 4
+    if value.startswith("own:"):
+        from src.data.validation import validate_user_key
+        return not validate_user_key(value[len("own:"):])
+    return False
+
+
+def _lobby_set_params(params):
+    """The server-mode leader's lobby choices, all at once."""
+    return (type(params) is dict
+            and set(params) == {"side", "choice", "versus", "weather", "time", "length"}
+            and params["side"] in ("frigate", "uboot")
+            and _lobby_choice(params["choice"])
+            and params["versus"] in ("ai", "crew")
+            and type(params["weather"]) is str and params["weather"] in START_WEATHER_CHOICES
+            and type(params["time"]) is str and params["time"] in START_TIME_CHOICES
+            and type(params["length"]) is str and params["length"] in START_LENGTH_CHOICES)
+
+
+def _lobby_campaign_params(params):
+    return (type(params) is dict and set(params) == {"side", "action"}
+            and params["side"] in ("frigate", "uboot")
+            and params["action"] in ("new", "refit", "quick"))
+
+
+def _ordinal_params(params):
+    return (type(params) is dict and set(params) == {"ordinal"}
+            and type(params["ordinal"]) is int and 0 <= params["ordinal"] <= 2 ** 53 - 1)
+
+
 def _new_game_params(params):
     required = {"scenario", "world_mode"}
     if (type(params) is not dict or not required <= set(params)
@@ -494,6 +533,7 @@ def _new_game_params(params):
 _HOST_ANY = frozenset({"live"})
 _HOST_REPLACING = frozenset({"live", "menu", "ended"})
 _HOST_STATIONS = frozenset({HOST_ROLE})
+_HOST_MENU = frozenset({"menu"})
 # The boat's own plot: its commander and navigator draw on it.
 _UBOOT_PLOT = ("uboot", "uboot_nav")
 
@@ -515,6 +555,15 @@ V2_ACTION_REGISTRY = {
         _HOST_STATIONS, _instructor_environment_params, phases=_HOST_ANY),
     "host_start_mission": V2Action(_HOST_STATIONS, _mission_key_params,
                                    phases=_HOST_REPLACING),
+    # Server mode: the leading browser runs the lobby (``game_server.py``).
+    "host_lobby_set": V2Action(_HOST_STATIONS, _lobby_set_params, phases=_HOST_MENU),
+    "host_lobby_start": V2Action(_HOST_STATIONS, _no_params, phases=_HOST_MENU),
+    "host_lobby_cancel": V2Action(_HOST_STATIONS, _no_params, phases=_HOST_MENU),
+    "host_lobby_campaign": V2Action(_HOST_STATIONS, _lobby_campaign_params,
+                                    phases=_HOST_MENU),
+    "host_end_mission": V2Action(_HOST_STATIONS, _no_params,
+                                 phases=frozenset({"live", "ended"})),
+    "host_pass_lead": V2Action(_HOST_STATIONS, _ordinal_params, phases=_HOST_REPLACING),
     "bridge_set_course": V2Action(frozenset({"bridge"}), _course_params),
     "bridge_set_speed": V2Action(frozenset({"bridge"}), _speed_params),
     # Autopilot route: waypoints on the chart, search patterns, clear.

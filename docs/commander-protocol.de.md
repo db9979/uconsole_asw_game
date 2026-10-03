@@ -441,6 +441,37 @@ wenn der Schlüssel fehlt oder nicht lesbar ist, `mission_rejected`, wenn die
 Laufzeit sie abweist). Der Browser wechselt vorher die Solo-Seite auf die Seite der
 Mission. Nichts davon gelangt in Spielstände oder Einstellungen.
 
+## Server-Modus und Spielleiter (Protokoll v2, additiv)
+
+Im Server-Modus (`--server` oder „Server (nur Browser)“ im Hauptmenü) spielt die
+uConsole keine Station, und die Lobby bleibt zwischen den Einsätzen offen. `host`
+im Sitzungskörper ist `{generation, leader}`: Die Solo-Sitzung trägt
+`leader: false`, der Spielleiter des Server-Modus `leader: true`, jede andere
+Sitzung `null`. Spielleiter ist der älteste gekoppelte Browser der Besatzung (nie
+ein Ausguck-Telefon, ein Beobachter oder der Platzhalter des Web-Gastgebers); fragt
+er eine Leasedauer lang nicht mehr ab und ist ein anderer Besatzungsbrowser da,
+geht die Leitung weiter. Gewinn oder Verlust der Leitung erhöht
+`host.generation`, ein zuvor vorbereiteter Host-Befehl scheitert dann sicher. Der
+Spielleiter nutzt dieselbe Host-Oberfläche wie eine Solo-Sitzung (`/api/v2/host`,
+die Bibliothek eigener Missionen, `host_save`, `host_load`); `host_new_game` und
+`host_start_mission` antworten `use_lobby`. Die Host-Ansicht bekommt `lobby` (null
+außerhalb der Lobby des Server-Modus): `{choice, side, versus, weather, time,
+length, countdown_s, confirm, daily, campaign}`, `daily` und `campaign` je Seite.
+Der Lobby-Block jeder Sitzung bekommt `mission_type`, `weather`, `time`, `length`,
+`server`, jeder Spieler `leader` und `ordinal`.
+
+Aktionen des Spielleiters: `host_lobby_set {side, choice, versus, weather, time,
+length}` (`choice` ist ein Szenarioschlüssel, `daily`, `campaign:<Brennpunkt>` oder
+`own:<Missionsschlüssel>`), `host_lobby_start {}` (der erste antwortet
+`lobby_confirm`, solange jemand nicht bereit ist), `host_lobby_cancel {}` und
+`host_lobby_campaign {side, action}` (`new`, `refit`, `quick`), alle nur in Phase
+`menu`; `host_end_mission {}` in `live` oder `ended`; `host_pass_lead {ordinal}` in
+jeder dieser Phasen. Weitere Gründe: `lobby_counting`, `lobby_invalid`,
+`campaign_unavailable`, `lead_unavailable`. Ein Weltwechsel im Server-Modus (oder in
+einer Lobby-Runde) behält jede Besatzungssitzung, jedes Cookie, jedes CSRF-Token und
+den Beitrittscode, verwirft alle wartenden Befehle und vergibt jede gehaltene Station
+unter neuer Generation neu (`crew_rebase`). Nichts davon wird gespeichert.
+
 ## Testumfang
 
 Transporttests decken echtes Loopback-Framing, Host/Origin, Kopplung/TTL/Rate-Limits,

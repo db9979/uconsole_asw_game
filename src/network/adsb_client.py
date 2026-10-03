@@ -20,6 +20,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from src.core import https
+
 STATES_URL = "https://opensky-network.org/api/states/all"
 TOKEN_URL = ("https://auth.opensky-network.org/auth/realms/opensky-network/"
              "protocol/openid-connect/token")
@@ -145,7 +147,7 @@ class OpenSkyClient:
         token = self._ensure_token()
         if token:
             request.add_header("Authorization", f"Bearer {token}")
-        with urllib.request.urlopen(request, timeout=_REQUEST_TIMEOUT_S) as response:
+        with https.urlopen(request, timeout=_REQUEST_TIMEOUT_S) as response:
             payload = json.loads(response.read().decode("utf-8"))
         return payload.get("states") or []
 
@@ -161,7 +163,7 @@ class OpenSkyClient:
             "client_secret": client_secret,
         }).encode("ascii")
         request = urllib.request.Request(TOKEN_URL, data=body, method="POST")
-        with urllib.request.urlopen(request, timeout=_REQUEST_TIMEOUT_S) as response:
+        with https.urlopen(request, timeout=_REQUEST_TIMEOUT_S) as response:
             payload = json.loads(response.read().decode("utf-8"))
         self._token = payload["access_token"]
         self._token_expires_at = time.time() + float(payload.get("expires_in", 1800))

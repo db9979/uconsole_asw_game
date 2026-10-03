@@ -14,17 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.172**
+Aktuelle Version: **1.3.173**
 
-Version 1.3.172 bringt das Mikrofon der Geräuschdisziplin auf der uConsole,
-unter Windows, auf dem Mac und im Browser zum Laufen. Das Spiel öffnet jetzt
-das Standardmikrofon des Systems (vorher nie), und wenn das nicht geht, sagen
-eine Meldung und Seite 2 der Optionen warum und was zu tun ist, bis zur
-Datenschutz-Einstellung von Windows oder macOS. Die Mac-App fragt nach dem
-Mikrofonzugriff. Browser erlauben das Mikrofon nur auf einer sicheren Seite,
-deshalb sagt das die normale LAN-Seite jetzt und bietet „HTTPS-Seite öffnen“
-an, wo Sie sich mit demselben Code neu koppeln. Spielstände sind v50; v38 bis
-v49 lassen sich weiter laden.
+Version 1.3.173 repariert die Update-Prüfung der macOS-App. Ihr
+eingebautes Python suchte die Stammzertifikate in einem Ordner, den es nur auf
+dem Baurechner gibt, deshalb scheiterte jede HTTPS-Anfrage an der Prüfung und
+der Startbildschirm bot nie eine neuere Version an. Das Windows-Programm und
+die macOS-App bringen jetzt eigene Stammzertifikate (certifi) zusätzlich zu
+denen des Systems mit, was auch dem optionalen Sprachmodell und dem
+Live-Flugverkehr über HTTPS hilft. Schlägt die Update-Prüfung fehl, sagen
+Startbildschirm und Hauptmenü jetzt, dass und warum (keine Verbindung,
+Zertifikat oder ein Fehler von GitHub), und U prüft erneut. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

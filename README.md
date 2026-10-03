@@ -12,18 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.171**
+Current release: **1.3.172**
 
-Release 1.3.171 gives the OPZ a richer chart and a Display page full of
-settings: track trails, vector length, labels, a bearing scale with the own
-course, range rings, bearing lines, furthest-on circles, depths and grid, the
-radar afterglow and the selected track's closest point of approach (CPA) with
-distance and time. Arrow keys or a click set each one, chips under the chart
-switch the layers on every page, two switches on the chart turn the radars on
-and off, and the settings are remembered. The browser
-OPZ has the same buttons above its chart and draws the same rings, bearing
-scale, trails and CPA. Display only: the simulation is unchanged. Saves are
-v50; v38 to v49 saves still load.
+Release 1.3.172 makes the microphone of noise discipline work on the
+uConsole, Windows, the Mac and in the browser. The game now opens the
+system's default microphone (it never did before), and when it cannot, a
+status message and Options page 2 say why and what to do, down to the
+Windows or macOS privacy setting. The Mac app asks for microphone access.
+Browsers only allow the microphone on a secure page, so the plain LAN page
+now says so and offers "Open HTTPS page", where you pair again with the same
+code. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -16,6 +16,7 @@ from src.core.debuglog import append_bounded_log
 from src.core.launch_signal import game_visible
 from src.core.i18n import (Translator, display_value, localized, localize,
                            message, raw_text, translation_scope)
+from src.core.game_noise import microphone_failure_key, microphone_state_key
 from src.core.preferences import save_preferences
 from src.core.help import get_global_help, get_help, get_sop, get_uboot_help, get_uboot_sop
 from src.core import manual
@@ -1324,9 +1325,12 @@ class DrawMixin:
         mic = self.__dict__.get("microphone")
         value = (self.tr("option.microphone") + ": "
                  + self.tr("common.on" if self.preferences.microphone else "common.off"))
-        if self.preferences.microphone and mic is not None and mic.tried and not mic.available:
-            value += " · " + self.tr("option.microphone.missing")
+        failure = (mic.failure if self.preferences.microphone and mic is not None
+                   else "")
+        if failure:
+            value += " · " + self.tr(microphone_state_key(failure))
         layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
+                         config.COLOR_WARN if failure else
                          config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
         # The optional language model: opens its own settings page.
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[4]]
@@ -1337,6 +1341,15 @@ class DrawMixin:
             "common.on" if self.preferences.llm_enabled else "common.off"))
         layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
                          config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
+        if failure:
+            # A switched-on microphone that does not work: its cause and
+            # remedy take the footer's place until it works.
+            layout.blit_block(self.screen,
+                              message(microphone_failure_key(failure),
+                                      detail=raw_text(mic.detail or "-")),
+                              292, 637, 696, 62, config.COLOR_WARN, size=16,
+                              align="center")
+            return
         layout.blit_block(self.screen,
                           "commander.local.options_hint",
                           292, 650, 696, 46, config.COLOR_TEXT_DIM, size=18,

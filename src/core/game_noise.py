@@ -11,6 +11,7 @@ talks too loud.  Reports remember only what they already said.
 from __future__ import annotations
 
 import math
+import sys
 
 from src.audio.microphone import Microphone
 from src.audio.synthesis import bearing_pan
@@ -21,6 +22,23 @@ from src.sensors import threat_cue
 SIDES = ("frigate", "uboot")
 VOICE_SOURCES = ("local", "remote")
 FRIGATE_KEY = 0
+
+
+def microphone_state_key(failure: str) -> str:
+    """Catalog key of the short state a failed microphone shows in its row."""
+    return f"option.microphone.state.{failure}"
+
+
+def microphone_failure_key(failure: str, platform: str | None = None) -> str:
+    """Catalog key of the cause and remedy (Options page 2); a silent device
+    names the privacy setting of the player's own system."""
+    platform = sys.platform if platform is None else platform
+    if failure == "silent":
+        if platform.startswith("win"):
+            return "option.microphone.failure.silent_windows"
+        if platform == "darwin":
+            return "option.microphone.failure.silent_macos"
+    return f"option.microphone.failure.{failure}"
 
 
 def platform_key(sub) -> int:
@@ -67,12 +85,16 @@ class NoiseMixin:
         if not wanted:
             if mic is not None and mic.device is not None:
                 mic.stop()
+            if mic is not None:
+                # The next mission opens the device afresh (one try each).
+                mic.tried = False
             self.__dict__["mic_level"] = 0
             return
         if mic is None:
             mic = self.__dict__["microphone"] = Microphone()
         if mic.device is None and not mic.tried:
             mic.start()
+        self._report_microphone(mic.check())
         fall = self.__dict__.get("mic_fall", 0.0) + max(0.0, wall_dt)
         held = self.__dict__.get("mic_level", 0)
         steps = int(fall / 0.1)
@@ -83,7 +105,18 @@ class NoiseMixin:
         if level > nd.VOICE_SAFE:
             self.set_crew_voice(side, level, "local")
 
+    def _report_microphone(self, failure: str) -> None:
+        """Say once per cause that the switched-on microphone does not work;
+        Options page 2 keeps the reason and the remedy on screen."""
+        if failure == self.__dict__.get("mic_reported", ""):
+            return
+        self.__dict__["mic_reported"] = failure
+        if failure:
+            self.flash(message("status.microphone_failed",
+                               state=message(microphone_state_key(failure))), 6.0)
+
     def close_microphone(self) -> None:
+        self.__dict__["mic_reported"] = ""
         mic = self.__dict__.pop("microphone", None)
         if mic is not None:
             mic.stop()

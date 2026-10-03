@@ -14,19 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.171**
+Aktuelle Version: **1.3.172**
 
-Version 1.3.171 gibt der OPZ eine reichere Karte und eine Anzeigeseite voller
-Einstellungen: Spurverlauf, Vektorlänge, Beschriftung, eine Peilskala mit
-eigenem Kurs, Entfernungsringe, Peilstrahlen, Unsicherheitskreise, Tiefen und
-Gitter, das Radar-Nachleuchten und den Punkt der nächsten Annäherung (CPA)
-des gewählten Tracks mit Abstand und Zeit. Pfeiltasten oder ein Klick stellen
-alles ein, Schalter unter der Karte schalten die Ebenen auf jeder Seite, zwei Schalter
-auf der Karte schalten die Radare ein und aus, und
-die Einstellungen bleiben gespeichert. Die OPZ im Browser hat dieselben
-Knöpfe über ihrer Karte und zeichnet dieselben Ringe, Peilskala, Spuren und
-den CPA. Nur Anzeige: die Simulation bleibt unverändert. Spielstände sind
-v50; v38 bis v49 lassen sich weiter laden.
+Version 1.3.172 bringt das Mikrofon der Geräuschdisziplin auf der uConsole,
+unter Windows, auf dem Mac und im Browser zum Laufen. Das Spiel öffnet jetzt
+das Standardmikrofon des Systems (vorher nie), und wenn das nicht geht, sagen
+eine Meldung und Seite 2 der Optionen warum und was zu tun ist, bis zur
+Datenschutz-Einstellung von Windows oder macOS. Die Mac-App fragt nach dem
+Mikrofonzugriff. Browser erlauben das Mikrofon nur auf einer sicheren Seite,
+deshalb sagt das die normale LAN-Seite jetzt und bietet „HTTPS-Seite öffnen“
+an, wo Sie sich mit demselben Code neu koppeln. Spielstände sind v50; v38 bis
+v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

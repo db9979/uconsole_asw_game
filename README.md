@@ -12,15 +12,20 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.190**
+Current release: **1.3.191**
 
-Release 1.3.190 fixes two things in the browser's server mode. When the game
-leader switches the unit in the lobby, every browser now moves to that unit's
-stations (against the AI); before, the crew stayed on the old unit's stations.
-A crowded top bar no longer squeezes "Add station" into a column of single
-letters: the button keeps its one-line label and the bar wraps onto a second
-row instead of running off the right edge. Keys are unchanged. Saves are v50;
-v38 to v49 saves still load.
+Release 1.3.191 reorganises the manual into 21 short chapters: a quick start
+under 1,500 words for both sides, then main menu, options, every frigate
+station with the same parts (purpose, pages, displays, keys, mouse, standard
+procedure, tips, not modelled), the submarine with one section per station,
+scenarios with tables for both sides, multiplayer and server mode, after the
+mission, tools, editors, language model, reference data and a glossary;
+outdated statements are corrected against the game. In the manual reader 0
+opens the quick start and 1 to 9 the stations. The README no longer describes
+the removed Windows starter window. Inside, long save and reset code is split
+into smaller parts, duplicate bearing and range helpers are merged and
+torpedoes without a datum never read a hidden target. Nothing changes in play.
+Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -143,7 +148,7 @@ views; needs an installed Chromium on `PATH`).
   same observation-led controls, and use separately granted direct fire.
   The browser console is a one-viewport combat-information-centre layout for
   large desktop monitors: status bar, central instrument and collapsible docks.
-  `python main.py --solo-crew` (or the F9 "Crew mode" row) lets one browser run
+  `python main.py --solo-crew` lets one browser run
   all nine stations plus save/load and new game while the
   uConsole stays the simulation server; see [Remote Crew setup](docs/commander-coop.md).
 - Conservative station Autocrew with local `F2` control and an `F3` overview.
@@ -157,18 +162,14 @@ views; needs an installed Chromium on `PATH`).
 
 Download `U-Jagd-Windows.exe` from the
 [latest release](https://github.com/db9979/uconsole_asw_game/releases/latest)
-and run it; no Python installation is needed. The starter window lets you
-choose crew mode (several browsers, one station each) or solo mode (one
-browser runs every station), whether this PC plays the submarine, window or
-full screen, sound and the port, and the **Language** box at the top switches
-the starter, the game and the crew browsers between English and Deutsch (saved
-in the settings); then **Start server** opens the game window
-with Remote Crew already listening on the PC's private LAN address. The
-starter shows the browser address, the join code and a QR code; station
-requests are approved in the game window (F9) as on the uConsole. Windows may
-ask once whether U-Jagd may use private networks: allow it, otherwise other
-devices cannot connect. **Stop server** ends the game (unsaved progress is
-lost), and the link at the bottom opens the "Buy me a coffee" page; the game log is kept in `%USERPROFILE%\.u-jagd\logs\server.log`.
+and run it; no Python installation is needed. It starts straight into the
+game window with the same command-line options as `main.py`; there is no
+separate starter window (on a Mac the app `U-Jagd.app` works the same way).
+**Multiplayer** in the main menu opens the lobby with Remote Crew on, and
+**Server (browsers only)** lets every player use a browser. Windows may ask
+once whether U-Jagd may use private networks: allow it, otherwise other
+devices cannot connect. The game log is kept in
+`%USERPROFILE%\.u-jagd\logs\server.log`.
 
 At every start the program asks GitHub whether a newer release exists; the
 game's start screen and main menu then show its changelog entry (and a warning
@@ -285,9 +286,7 @@ example `u-jagd --windowed`.
 `python main.py --remote-crew` starts Remote Crew in crew mode on the first
 private LAN address at launch, as the F9 row would (`--solo-crew` does the same
 in solo mode; `--server` opens the browser-only server mode, see the
-manual's quick start; `--web-port` picks the port, default 8765). `--status-file PATH`
-writes the Remote Crew address and join code as JSON to `PATH` whenever they
-change; the Windows starter reads it.
+manual's quick start; `--web-port` picks the port, default 8765).
 
 ## Starting a Game
 

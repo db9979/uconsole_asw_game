@@ -66,7 +66,8 @@ def add_key(rect, key: int, mod: int = 0) -> None:
 
 
 def add_action(rect, action: Callable) -> None:
-    """A click on ``rect`` calls ``action()`` (UI state only)."""
+    """A click on ``rect`` calls ``action(pos)`` with the canvas position
+    (UI state only)."""
     if len(_targets) < MAX_TARGETS:
         _targets.append(Target(pygame.Rect(rect), _layer[-1], action=action))
 

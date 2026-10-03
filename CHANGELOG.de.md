@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.179
+
+Version 1.3.179 behebt zwei Klicks, die einen Programmfehler auslösten:
+den Dunkel/Hell-Schalter in der oberen Leiste (im Hauptmenü beendete er das
+Spiel, im Einsatz sprang das Spiel auf den letzten Sicherungspunkt zurück)
+und die Kontaktkarten auf der Waffenseite des U-Boots. Beide funktionieren
+jetzt (das Farbschema wechselt, die Karte wählt ihren Kontakt). Tasten bleiben gleich. Spielstände sind v50;
+v38 bis v49 laden weiter.
+
 ## 1.3.177
 
 Version 1.3.177 bringt die neue Aufteilung in drei Spalten zu Sonar, OPZ und

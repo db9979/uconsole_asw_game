@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.179
+
+Release 1.3.179 fixes two clicks that raised a program error: the Dark/Light
+switch in the top bar (in the main menu it ended the game, in a mission it
+reset to the last recovery point) and the contact cards on the submarine's
+Weapons page. Both now work as intended (the theme flips, the card selects
+its contact).
+Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.177
 
 Release 1.3.177 brings the new three-column layout to Sonar, the CIC and the

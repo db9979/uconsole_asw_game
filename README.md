@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.177**
+Current release: **1.3.179**
 
-Release 1.3.177 brings the new three-column layout to Sonar, the CIC and
-the submarine's Weapons page: contact or track cards on the left (a click
-selects one), the main display in the middle, controls and status on the
-right. At the submarine's Weapons station a click on the red fire plate fires
-like Ctrl+Enter. Keys are unchanged. Saves are v50; v38 to v49 saves still
-load.
+Release 1.3.179 fixes two clicks that raised a program error: the Dark/Light
+switch in the top bar (in the main menu it ended the game, in a mission it
+reset to the last recovery point) and the contact cards on the submarine's
+Weapons page. Both now work as intended (the theme flips, the card selects
+its contact).
+Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

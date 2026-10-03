@@ -87,7 +87,7 @@ def draw_theme_switch(game) -> pygame.Rect:
     """Draw the dark/light switch (both sides); a click flips the theme."""
     rect = theme_switch_rect()
     layout.theme_switch(game.screen, rect, game.color_theme() == "day")
-    pointer.add_action(rect.inflate(6, 8), game.toggle_color_theme)
+    pointer.add_action(rect.inflate(6, 8), lambda _pos: game.toggle_color_theme())
     return rect
 
 

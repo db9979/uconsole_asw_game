@@ -199,6 +199,8 @@ def test_bathymetry_cache_invalidation_scales_and_bound(monkeypatch):
             # bathymetry key is even computed; patch the theme's source
             # dict instead, as if a real palette change took effect.
             monkeypatch.setitem(theme.CONFIG_COLORS_STANDARD, "COLOR_DEEP", (1, 2, 3))
+            # Re-apply even though the theme name is unchanged.
+            monkeypatch.setattr(theme, "_APPLIED", False)
         map_view.draw_map_view(game)
         assert calls
         assert map_view.draw_map_view._bathymetry_cache is not previous

@@ -4,13 +4,26 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.169
+## 1.3.170
 
-Release 1.3.169 quiets two sounds that came back every few seconds at every
+Release 1.3.170 quiets two sounds that came back every few seconds at every
 station. The frigate's bow no longer slams audibly into a
 heavy head sea (it did on nearly every wave, every 5 to 18 s). Deep down the
 submarine's hull creaked every 4 s at test depth; now it rests 12 to 28 s
 after each creak. Neither changes anything in the simulation. Saves are v50; v38 to v49 saves still load.
+
+## 1.3.169
+
+Release 1.3.169 puts other ships where the eye sees them in the lookout's
+binoculars, the horizon strip, the periscope, the hit picture, the Remote
+Crew cards and the phone lookout. A ship close aboard now floats with her
+waterline below the horizon line, as far as the eye looks down to the water
+at the range the lookout measured (about 1° at 0.5 NM from the bridge's
+18 m), instead of sitting on the horizon like a distant one, and a nearer
+ship is drawn in front of a farther one instead of in list order. The
+bearing and the angle on the bow were checked and were already right: her
+starboard side shows with the bow to the right, her port side with the bow
+to the left. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.168
 

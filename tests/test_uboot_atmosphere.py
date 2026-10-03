@@ -47,7 +47,7 @@ def test_the_hull_creaks_only_deep_down_and_deterministically():
 
 def test_the_hull_rests_between_creaks_even_at_test_depth():
     """At test depth every check would creak; a quiet spell after each creak
-    keeps it from ticking every 4 s at every station (1.3.169)."""
+    keeps it from ticking every 4 s at every station (1.3.170)."""
     game, _server, _bridge = _crewed(seed=63)
     boat = game.opfor
     game.world.depth_m = lambda x, y: 3000.0

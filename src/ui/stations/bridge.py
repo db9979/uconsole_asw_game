@@ -268,14 +268,15 @@ def own_way(game) -> dict:
 
 def lookout_outlines(game, sightings) -> list:
     """Detached ``(bearing, span_deg, cls, stale, lights, elevation_deg,
-    aob_deg, model, way)`` rows of the lookout's own tracks: the class from his report,
+    aob_deg, model, way, range_nm)`` rows of the lookout's own tracks: the class from his report,
     the size from the measured range, the navigation lights he makes out
     (``nav_lights`` code), an aircraft's angle above the horizon (``None``
     on the surface) and the angle on the bow he judges of a made-out
     silhouette (``None`` before; it turns the model) and the type his eye
     sees when it has its own model (the picture only; what he reports is
-    what he made out) and the white water of a made-out ship's way
-    (``lookout_id.way_level``, ``None`` before)."""
+    what he made out), the white water of a made-out ship's way
+    (``lookout_id.way_level``, ``None`` before) and his measured range (it
+    sets how far below the horizon the waterline lies)."""
     from src.sensors import lookout_id
     lit = getattr(game, "_lookout_lights", {})
     elevation = getattr(game, "_lookout_elevation", {})
@@ -303,7 +304,8 @@ def lookout_outlines(game, sightings) -> list:
                      None if aspect is None or stale else aspect[0],
                      None if aspect is None or stale or len(aspect) < 3 else aspect[2],
                      None if aspect is None or stale or len(aspect) < 4
-                     or track.kind not in ("SURFACE", "SUB") else aspect[3]))
+                     or track.kind not in ("SURFACE", "SUB") else aspect[3],
+                     float(track.range_nm)))
     return rows
 
 

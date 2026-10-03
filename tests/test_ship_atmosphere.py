@@ -1,4 +1,4 @@
-"""Shipboard atmosphere cues: alarm bells and the boat's fans (1.3.119; no bow slam since 1.3.169)."""
+"""Shipboard atmosphere cues: alarm bells and the boat's fans (1.3.119; no bow slam since 1.3.170)."""
 
 import re
 import sys
@@ -42,7 +42,7 @@ def test_action_stations_ring_the_general_alarm():
 
 
 def test_the_bow_never_slams_audibly():
-    """Dominik switched the bow slam off (1.3.169): a heavy head sea at speed
+    """Dominik switched the bow slam off (1.3.170): a heavy head sea at speed
     plays no sound, at no station and in no browser."""
     game = Game(seed=5, start_menu=False, audio_enabled=False)
     game.world.sea_state = 6

@@ -30,7 +30,7 @@ function drawLookout() {
   if (!width || !height) return;
   resizeCanvas(lookoutCanvas, lookoutCtx, width, height);
   const environment = S.snapshot.environment;
-  lookoutCtx.fillStyle = environment?.is_night === true ? palette().scopeBg : environment?.is_night === false ? "#102833" : palette().bg;
+  lookoutCtx.fillStyle = environment?.is_night === true ? palette().scopeBg : environment?.is_night === false ? palette().panel : palette().bg;
   lookoutCtx.fillRect(0, 0, width, height);
   const own = S.snapshot.ownship;
   if (!hasPosition(own)) return;
@@ -42,8 +42,8 @@ function drawLookout() {
   const compact = height < 120;
   const radius = Math.max(8, Math.min(width, height) / 2 - (compact ? 3 : Math.max(24, fontSize * 2.4)));
   const scale = radius / lookoutView.rangeNm;
-  lookoutCtx.strokeStyle = environment?.is_night === true ? "#294452" : "#496976";
-  lookoutCtx.fillStyle = environment?.is_night === true ? "#7895a0" : "#adc3c9";
+  lookoutCtx.strokeStyle = environment?.is_night === true ? palette().line : palette().lineStrong;
+  lookoutCtx.fillStyle = environment?.is_night === true ? palette().faint : palette().muted;
   for (const fraction of compact ? [.5, 1] : [.25, .5, .75, 1]) {
     const ringRadius = radius * fraction;
     lookoutCtx.beginPath();
@@ -100,7 +100,7 @@ function drawLookout() {
   lookoutCtx.save();
   lookoutCtx.translate(centerX, centerY);
   lookoutCtx.strokeStyle = palette().accent;
-  lookoutCtx.fillStyle = "#183e3c";
+  lookoutCtx.fillStyle = palette().raised;
   lookoutCtx.lineWidth = 2;
   if (finite(own.course)) {
     lookoutCtx.rotate(own.course * Math.PI / 180);
@@ -123,7 +123,7 @@ function drawLookout() {
   }
   lookoutCtx.restore();
   if (!compact) {
-    lookoutCtx.fillStyle = "#c6d6d9";
+    lookoutCtx.fillStyle = palette().text;
     lookoutCtx.fillText(t("north"), width - Math.max(18, lookoutCtx.measureText(t("north")).width + 6), fontSize + 5);
   }
 }

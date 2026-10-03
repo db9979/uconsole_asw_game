@@ -1,6 +1,7 @@
 import { S } from "../state/store.js";
 import { $, sideStations, stationKey, stationNames } from "../core/base.js";
 import { t } from "../core/format.js";
+import { setRedLightTheme } from "../core/theme.js";
 import { node } from "./dom.js";
 import { activateTab, chooseStation } from "./lobby.js";
 import { toggleWeatherStation } from "./weather.js";
@@ -68,6 +69,10 @@ export function renderStationAlarms() {
   const red = S.redLightAuto !== false && Boolean(S.v2State?.role) &&
     (danger || S.v2State?.environment?.is_night === true);
   document.body.classList.toggle("red-light", red);
+  // The red light (and the boat's red silent-running light, set by the
+  // station view just before) forces the night theme while it is lit, as on
+  // the uConsole: a red filter over a light page would glare.
+  setRedLightTheme(red || document.body.dataset.boatLight === "red");
   // Sferics: a thunderstorm crackles on the ESM and HF/DF receivers.
   const storm = Number(S.v2State?.environment?.storm) || 0;
   $("sferics").hidden = !(storm > 0 && SFERICS_STATIONS.has(S.v2State?.role));

@@ -12,15 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.174**
+Current release: **1.3.175**
 
-Release 1.3.174 fills the Remote Crew operational log: every browser station
-now lists the same entries as F11 on the uConsole, newest first with time and
-category tag, the frigate's stations the frigate's log and the submarine's
-stations the boat log. Before, it showed only a few alerts and looked empty.
-A long log scrolls inside its drawer, and on the uConsole F11 now opens the
-boat log on the submarine side too. Saves are v50; v38 to v49 saves still
-load.
+Release 1.3.175 starts the new look: one set of colour tokens for the
+uConsole and the Remote Crew browser, with Tactical Night (dark, default) and
+Tactical Day (light, the waterfall as a paper LOFARgram). Switch with the
+Dark/Light pill in the top bar or in Options (F10) under "Colour theme", which
+also offers high contrast. Panels are rounded with an accent title mark, tabs
+are pills and key hints chips; keys and layout are unchanged. Saves are v50;
+v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

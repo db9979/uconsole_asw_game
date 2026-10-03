@@ -124,7 +124,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
            LobbyMixin, UpdateNoticeMixin, ResilienceMixin, LlmMixin, AdvisorUiMixin, HabitsMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
-                    "simlog", "night_mode", "high_contrast", "frame_rate",
+                    "simlog", "night_mode", "theme", "frame_rate",
                     "bottom_panel", "level", "live_traffic", "commander")
     # Second options page: game setup.  The local side is per launch and never
     # persisted (the frigate is always the default).

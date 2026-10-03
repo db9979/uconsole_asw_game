@@ -1656,7 +1656,12 @@
   "option.red_light.off": "Off",
   "option.red_light.auto": "Automatic (night, alarm)",
   "option.red_light.on": "Always on",
-  "option.high_contrast": "High contrast / colorblind palette",
+  "option.theme": "Colour theme",
+  "option.theme.night": "Tactical Night (dark)",
+  "option.theme.day": "Tactical Day (light)",
+  "option.theme.contrast": "High contrast / colour-blind",
+  "status.theme_changed": "Colour theme: {theme}",
+  "top.theme_switch": "Dark/light",
   "option.frame_rate": "Frame rate: {fps} FPS",
   "option.bottom_panel": "Event log / telemetry",
   "option.bottom_panel.ticker": "status ticker (F11 opens the log)",
@@ -7462,5 +7467,10 @@
   "opz.radar_switch.air.on": "AIR RADAR ON",
   "opz.radar_switch.air.off": "AIR RADAR OFF",
   "commander.web.opz_radar_switch_surface": "Surface radar",
-  "commander.web.opz_radar_switch_air": "Air radar"
+  "commander.web.opz_radar_switch_air": "Air radar",
+  "commander.web.theme": "Colour theme",
+  "commander.web.theme_night": "Tactical Night (dark)",
+  "commander.web.theme_day": "Tactical Day (light)",
+  "commander.web.theme_contrast": "High contrast / colour-blind",
+  "commander.web.theme_switch": "Dark/light"
 }

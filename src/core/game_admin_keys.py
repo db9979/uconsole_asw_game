@@ -12,7 +12,7 @@ from src.core.i18n import message
 from src.core import manual
 from src.core.game_shared import HELP_MANUAL_PAGE, HELP_PAGE_COUNT
 from src.nations.nations import reference_summary
-from src.ui import layout
+from src.ui import layout, theme
 from src.ui.editor_widgets import TextField
 from src.core.game_save import _read_save_document
 from src.core.preferences import GRAPHICS_LEVELS
@@ -113,6 +113,10 @@ class AdminKeysMixin:
                         self.red_light_mode()]
                     self._set_preference("red_light_auto", following == "auto")
                     value = following == "on"
+                elif name == "theme":
+                    # Colour theme: night -> day -> high contrast -> night.
+                    self.set_color_theme(theme.next_theme(self.color_theme()))
+                    return
                 elif name == "graphics":
                     levels = GRAPHICS_LEVELS
                     step = -1 if key == pygame.K_LEFT else 1

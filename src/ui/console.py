@@ -13,6 +13,7 @@ import pygame
 from src.core import config
 from src.core.i18n import localize, raw_text
 from src.ui import layout, lines, pointer
+from src.ui import theme
 
 LEVELS = ("off", "on", "caution", "alarm")
 LED_OFF = (36, 58, 60)
@@ -263,7 +264,7 @@ def bearing_rose(screen, rect, strobes, *, course=None, title="") -> None:
         return
     cx, cy = rect.centerx, rect.centery
     layout.record_geometry("instrument", rect, str(title))
-    pygame.draw.circle(screen, (6, 13, 25), (cx, cy), radius)
+    pygame.draw.circle(screen, theme.c("well"), (cx, cy), radius)
     for fraction in (.33, .66):
         pygame.draw.circle(screen, config.COLOR_GRID, (cx, cy), round(radius * fraction), 1)
     for bearing, color, _width, spread, _inner in strobes:
@@ -271,7 +272,7 @@ def bearing_rose(screen, rect, strobes, *, course=None, title="") -> None:
             steps = max(2, int(spread))
             wedge = [(cx, cy)] + [_polar(cx, cy, radius, bearing - spread + 2 * spread * i / steps)
                                   for i in range(steps + 1)]
-            lines.polygon(screen, _mix((6, 13, 25), color, .22), wedge)
+            lines.polygon(screen, _mix(theme.c("well"), color, .22), wedge)
     pygame.draw.circle(screen, config.COLOR_SONAR_RING, (cx, cy), radius, 1)
     for step in range(0, 360, 10):
         major = step % 30 == 0

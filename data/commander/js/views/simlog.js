@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { $, phases } from "../core/base.js";
 import { authenticated, duration, enumText, finite, hasPosition, number, t } from "../core/format.js";
-import { palette } from "../core/palette.js";
+import { colors, palette } from "../core/palette.js";
 import { request } from "../net/request.js";
 import { drawSymbolOn } from "../plot/symbols.js";
 import { buildDisplayModel, contextKey } from "../state/display-model.js";
@@ -15,7 +15,6 @@ import { canvas, lookoutCanvas, simlogMapCanvas, simlogMapCtx } from "./canvases
   // Hidden view (#simlog): complete bounded simulation log, read-only.
 // Every entry carries its normal role context plus a detached full-truth
 // diagnostic snapshot, fully tabulated and plottable on the snapshot map.
-const simlogAffiliationColors = { FRIEND: "#81c5ff", NEUTRAL: "#8fdfab", HOSTILE: "#ff8080", UNKNOWN: "#f3cf79" };
 export function simlogActive() { return location.hash === "#simlog" && authenticated(); }
 export function applySimlogView() {
   const active = simlogActive();
@@ -40,13 +39,13 @@ function simlogMetricBlock(titleKey, entries) {
 function simlogMapItems(display) {
   const items = [];
   if (hasPosition(display.ownship)) {
-    items.push({ section: "ship", value: display.ownship, domain: "SURFACE", color: "#a1e7cc",
+    items.push({ section: "ship", value: display.ownship, domain: "SURFACE", color: palette().liveStrong,
       x: display.ownship.x, y: display.ownship.y, label: t("simlog_own") });
   }
   for (const track of display.tracks) {
     if (!hasPosition(track)) continue;
     items.push({ section: "track", value: track, domain: track.domain,
-      color: simlogAffiliationColors[track.affiliation] || simlogAffiliationColors.UNKNOWN,
+      color: colors[track.affiliation] || colors.UNKNOWN,
       x: track.x, y: track.y, label: track.label });
   }
   return items;
@@ -96,7 +95,7 @@ function drawSimlogMap() {
   const offsetX = (width - contentWidth) / 2;
   const offsetY = (height - contentHeight) / 2;
   const point = (x, y) => [offsetX + (x - bounds.left) * scale, offsetY + (y - bounds.top) * scale];
-  context.strokeStyle = "#233741";
+  context.strokeStyle = palette().grid;
   context.lineWidth = 1;
   context.beginPath();
   for (let index = 0; index <= 5; index += 1) {
@@ -107,8 +106,8 @@ function drawSimlogMap() {
   }
   context.stroke();
   if (S.chart && Array.isArray(S.chart.landmasses)) {
-    context.fillStyle = "#283c40";
-    context.strokeStyle = "#607e78";
+    context.fillStyle = palette().land;
+    context.strokeStyle = palette().landEdge;
     for (const land of S.chart.landmasses) {
       if (!land.points.length) continue;
       context.beginPath();
@@ -119,7 +118,7 @@ function drawSimlogMap() {
       context.closePath(); context.fill(); context.stroke();
     }
   }
-  context.strokeStyle = "#58707c";
+  context.strokeStyle = palette().lineStrong;
   context.setLineDash([5, 5]);
   context.strokeRect(offsetX, offsetY, contentWidth, contentHeight);
   context.setLineDash([]);
@@ -173,9 +172,9 @@ function drawSimlogMap() {
       occupied.push({ ...candidate, index: -1 });
     }
   });
-  context.fillStyle = "#c6d6d9";
+  context.fillStyle = palette().text;
   context.fillText(t("north"), width - 28, 20);
-  context.strokeStyle = "#c6d6d9";
+  context.strokeStyle = palette().text;
   context.beginPath(); context.moveTo(width - 22, 42); context.lineTo(width - 22, 25); context.lineTo(width - 27, 32); context.moveTo(width - 22, 25); context.lineTo(width - 17, 32); context.stroke();
 }
 export function closeSimlogMap() {

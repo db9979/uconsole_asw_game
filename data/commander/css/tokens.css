@@ -1,51 +1,158 @@
-:root {
+/* Colour themes. The --t-* tokens are generated from src/ui/theme.TOKENS
+   (the uConsole's theme manager), one rule per theme selected by
+   <html data-theme="night|day|contrast">; night is the default. Every name
+   below derives from them, so a theme switch restyles every station. */
+/* BEGIN GENERATED THEME TOKENS (tools/gen_web_schema.py; do not edit by hand) */
+:root, :root[data-theme="night"] {
   color-scheme: dark;
+  --t-bg: #0B0F19;
+  --t-panel: #111827;
+  --t-raised: #1A2333;
+  --t-well: #060912;
+  --t-line: #243045;
+  --t-line-strong: #34507A;
+  --t-shadow: #05070D;
+  --t-hilite: #1F2A3D;
+  --t-text: #E5E7EB;
+  --t-dim: #8B95A7;
+  --t-faint: #56607A;
+  --t-accent: #10B981;
+  --t-on-accent: #03140D;
+  --t-phosphor: #00FF87;
+  --t-caution: #F59E0B;
+  --t-alarm: #EF4444;
+  --t-info: #60A5FA;
+  --t-focus: #00FF87;
+  --t-friend: #60A5FA;
+  --t-neutral: #34D399;
+  --t-hostile: #F87171;
+  --t-unknown: #FBBF24;
+  --t-select: #11353A;
+  --t-water: #0A1424;
+  --t-land: #1B2433;
+  --t-land-edge: #4B5F80;
+}
+:root[data-theme="day"] {
+  color-scheme: light;
+  --t-bg: #F3F4F6;
+  --t-panel: #FFFFFF;
+  --t-raised: #F9FAFB;
+  --t-well: #EEF1F5;
+  --t-line: #D1D5DB;
+  --t-line-strong: #94A3B8;
+  --t-shadow: #C9CED6;
+  --t-hilite: #FFFFFF;
+  --t-text: #1F2937;
+  --t-dim: #4B5563;
+  --t-faint: #8A93A3;
+  --t-accent: #1E3A8A;
+  --t-on-accent: #FFFFFF;
+  --t-phosphor: #059669;
+  --t-caution: #B45309;
+  --t-alarm: #DC2626;
+  --t-info: #1D4ED8;
+  --t-focus: #1E3A8A;
+  --t-friend: #1D4ED8;
+  --t-neutral: #047857;
+  --t-hostile: #DC2626;
+  --t-unknown: #B45309;
+  --t-select: #DBE4F7;
+  --t-water: #E2EAF4;
+  --t-land: #E7E1D2;
+  --t-land-edge: #A8A08A;
+}
+:root[data-theme="contrast"] {
+  color-scheme: dark;
+  --t-bg: #000000;
+  --t-panel: #0C0C0C;
+  --t-raised: #232323;
+  --t-well: #000000;
+  --t-line: #A0A0A0;
+  --t-line-strong: #D2D2D2;
+  --t-shadow: #000000;
+  --t-hilite: #0C0C0C;
+  --t-text: #FFFFFF;
+  --t-dim: #D2D2D2;
+  --t-faint: #A0A0A0;
+  --t-accent: #0072B2;
+  --t-on-accent: #FFFFFF;
+  --t-phosphor: #56B4E9;
+  --t-caution: #E69F00;
+  --t-alarm: #D55E00;
+  --t-info: #56B4E9;
+  --t-focus: #E69F00;
+  --t-friend: #0072B2;
+  --t-neutral: #009E73;
+  --t-hostile: #D55E00;
+  --t-unknown: #F0E442;
+  --t-select: #282850;
+  --t-water: #000000;
+  --t-land: #2D2D2D;
+  --t-land-edge: #A0A0A0;
+}
+/* END GENERATED THEME TOKENS */
+
+:root {
   /* NATO affiliation colours, shared by lists, badges and canvas symbols
      (same values as the uConsole theme). */
-  --aff-unknown: #f3c577;
-  --aff-friend: #81c5ff;
-  --aff-neutral: #8fdfab;
-  --aff-hostile: #ff9090;
+  --aff-unknown: var(--t-unknown);
+  --aff-friend: var(--t-friend);
+  --aff-neutral: var(--t-neutral);
+  --aff-hostile: var(--t-hostile);
 
-  /* Surfaces: the start screen's night blue, darkest behind the instruments. */
-  --scope: #03070f;
-  --bg-0: #03080e;
-  --bg-1: #060e16;
-  --bg-2: #09151d;
-  --bg-3: #0e1f28;
-  --bg-4: #153038;
-  --line-faint: #0d1c22;
-  --line: #162e36;
-  --line-strong: #28605a;
+  /* Surfaces: darkest (night) or lightest (day) behind the instruments. */
+  --scope: var(--t-well);
+  --bg-0: var(--t-bg);
+  --bg-1: color-mix(in srgb, var(--t-bg) 50%, var(--t-panel));
+  --bg-2: var(--t-panel);
+  --bg-3: var(--t-raised);
+  --bg-4: color-mix(in srgb, var(--t-raised) 75%, var(--t-line-strong));
+  --line-faint: color-mix(in srgb, var(--t-line) 55%, var(--t-bg));
+  --line: var(--t-line);
+  --line-strong: var(--t-line-strong);
 
   /* Text: bright for live values, dim for labels, faint for legends/history. */
-  --text: #d6ece5;
-  --text-dim: #84a7a0;
-  --text-faint: #55726d;
+  --text: var(--t-text);
+  --text-dim: var(--t-dim);
+  --text-faint: var(--t-faint);
 
-  /* Signal colours. Live data is the start screen's turquoise phosphor,
-     attention amber, alarms red. */
-  --live: #6ee4c0;
-  --live-strong: #96ffcd;
-  --live-2: #5fdea8;
-  --caution: #f0b64a;
-  --alarm: #ff5b55;
-  --alarm-2: #ff8a3d;
+  /* Signal colours. Live data is the accent and phosphor, attention amber,
+     alarms red. */
+  --live: var(--t-accent);
+  --live-strong: var(--t-phosphor);
+  --live-2: var(--t-neutral);
+  --caution: var(--t-caution);
+  --alarm: var(--t-alarm);
+  --alarm-2: color-mix(in srgb, var(--t-alarm) 50%, var(--t-caution));
   --red-light: #ff3c3c;
-  --info: #7fb6ff;
-  --plot-ink: #ffa0e6;
-  --live-bg: #0a2a28;
-  --caution-bg: #2c2112;
-  --alarm-bg: #33110f;
-  --on-live: #03201a;
+  --info: var(--t-info);
+  --plot-ink: #f9a8d4;
+  --live-bg: color-mix(in srgb, var(--live) 16%, var(--t-bg));
+  --caution-bg: color-mix(in srgb, var(--t-caution) 16%, var(--t-bg));
+  --alarm-bg: color-mix(in srgb, var(--t-alarm) 18%, var(--t-bg));
+  --on-live: var(--t-on-accent);
   --on-alarm: #1a0605;
-  --shadow: #000000;
+  --shadow: var(--t-shadow);
+  --focus: var(--t-focus);
 
   /* Night scene of the start screen behind dialogs: sky, horizon, sea. */
-  --night-sky: #03070f;
-  --night-horizon: #142c3e;
-  --night-sea: #0a2c3a;
-  --night-deep: #02090f;
+  --night-sky: #060912;
+  --night-horizon: #13263a;
+  --night-sea: #0a2236;
+  --night-deep: #03070d;
+
+  /* Charts and scopes drawn on canvases (core/palette.js): water by depth,
+     land, grid and the waterfall's empty paper. */
+  --chart-water: var(--t-water);
+  --chart-shallow: #0e1e34;
+  --chart-deep: #070f1d;
+  --chart-grid: #1a2a44;
+  --chart-land: var(--t-land);
+  --chart-land-edge: var(--t-land-edge);
+  --chart-label: var(--t-dim);
+  --chart-halo: var(--t-well);
+  --chart-sweep: var(--t-phosphor);
+  --chart-rain: #aabec8;
 
   /* Names read by the canvas code (core/palette.js). */
   --bg: var(--bg-0);
@@ -81,4 +188,41 @@
   --z-menu: 30;
   --z-overlay: 40;
   --z-toast: 60;
+}
+
+/* Tactical Day: light glare-free greys, navy accent and dark ink. Live
+   values stay navy (green phosphor is too pale for small text on white). */
+:root[data-theme="day"] {
+  --bg-4: var(--t-select);
+  --live-strong: color-mix(in srgb, var(--t-accent) 82%, #000000);
+  --plot-ink: #be185d;
+  --on-alarm: #ffffff;
+  --night-sky: #dfe7f0;
+  --night-horizon: #cfdbe8;
+  --night-sea: #bccfe0;
+  --night-deep: #aec3d6;
+  --chart-shallow: #c8d8ec;
+  --chart-deep: #dee8f4;
+  --chart-grid: #becde1;
+  --chart-halo: #ffffff;
+  --chart-rain: #64748b;
+}
+
+/* High contrast / colour-blind (Okabe-Ito): black, white and strong hues. */
+:root[data-theme="contrast"] {
+  --bg-4: #3a3a3a;
+  --live: var(--t-phosphor);
+  --live-strong: var(--t-text);
+  --on-live: #000000;
+  --on-alarm: #000000;
+  --plot-ink: #ff78ff;
+  --night-sky: #000000;
+  --night-horizon: #101010;
+  --night-sea: #0a0a0a;
+  --night-deep: #000000;
+  --chart-shallow: #00415f;
+  --chart-deep: #001428;
+  --chart-grid: #464664;
+  --chart-halo: #000000;
+  --chart-rain: #d2d2d2;
 }

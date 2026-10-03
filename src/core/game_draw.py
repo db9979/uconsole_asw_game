@@ -74,6 +74,23 @@ DIFFICULTY_ROWS = 14
 DIFFICULTY_TEXT_W = 900
 
 
+THEME_SWITCH_W = 36
+
+
+def theme_switch_rect() -> pygame.Rect:
+    """The top bar's dark/light switch, right of the status line."""
+    return pygame.Rect(config.SCREEN_W - THEME_SWITCH_W - 6, 7, THEME_SWITCH_W,
+                       config.TOP_BAR_H - 14)
+
+
+def draw_theme_switch(game) -> pygame.Rect:
+    """Draw the dark/light switch (both sides); a click flips the theme."""
+    rect = theme_switch_rect()
+    layout.theme_switch(game.screen, rect, game.color_theme() == "day")
+    pointer.add_action(rect.inflate(6, 8), game.toggle_color_theme)
+    return rect
+
+
 def frigate_station_tab_rects() -> list:
     """Top-bar tab rectangles of the frigate's nine stations."""
     return [pygame.Rect(4 + index * (FRIGATE_TAB_W + 3), 3, FRIGATE_TAB_W,
@@ -465,7 +482,10 @@ class DrawMixin:
         light = getattr(self, "_red_light", None)
         if light is None:
             light = self._red_light = RedLight()
-        if light.step(target, self._t) > 0.0:
+        level = light.step(target, self._t)
+        # The red light draws over the night theme (src/ui/theme.theme_for).
+        self.red_light_lit = level > 0.0
+        if level > 0.0:
             s.blit(light.overlay(s.get_size()), (0, 0), special_flags=pygame.BLEND_MULT)
 
     def _draw(self) -> None:
@@ -694,27 +714,20 @@ class DrawMixin:
         alarms = self.station_alarm_levels()
         for index, (station, rect) in enumerate(zip(list(Station), tabs)):
             active = station is self.station
-            if active:
-                pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, rect)
-                pygame.draw.line(s, config.COLOR_SONAR_RING, rect.bottomleft,
-                                 (rect.right - 1, rect.bottom), 2)
-            if index:
-                pygame.draw.line(s, config.COLOR_GRID, (rect.x - 2, rect.y + 4),
-                                 (rect.x - 2, rect.bottom - 4), 1)
             label = message("top.tab", number=index + 1,
                             name=message(f"top.tab.{station.name.lower()}"))
-            layout.blit_line(s, label, rect, config.COLOR_TEXT if active
-                             else config.COLOR_TEXT_DIM, size=14, align="center")
+            layout.tab(s, rect, label, active)
             draw_lamp(s, rect, alarms.get(station.name.lower()), self._t)
             pointer.add_key(rect, pygame.K_1 + index)
         self._top_status_right = tabs[-1].right
+        switch = draw_theme_switch(self)
         if self.msg and self._t < self.msg_until:
             return      # the flash banner stands in the status line's place
         txt = self.tr("top.status_short", scenario=self.top_bar_scenario(),
                       time=self.world.format_time(), speed=f"{self.ship.speed:.1f}",
                       course=f"{self.ship.course % 360:03.0f}")
         left = tabs[-1].right + 12
-        layout.blit_line(s, txt, (left, 4, config.SCREEN_W - left - 10,
+        layout.blit_line(s, txt, (left, 4, switch.x - left - 10,
                                   config.TOP_BAR_H - 8),
                          config.COLOR_TEXT, size=16, align="right")
 
@@ -1248,8 +1261,8 @@ class DrawMixin:
             + self.tr("common.on" if self.preferences.simlog else "common.off"),
             self.tr("option.night_mode") + ": "
             + self.tr("option.red_light." + self.red_light_mode()),
-            self.tr("option.high_contrast") + ": "
-            + self.tr("common.on" if self.preferences.high_contrast else "common.off"),
+            self.tr("option.theme") + ": "
+            + self.tr("option.theme." + self.color_theme()),
             self.tr("option.frame_rate", fps=self.frame_rate()),
             self.tr("option.bottom_panel") + ": "
             + self.tr("option.bottom_panel." + self.bottom_panel_mode()),
@@ -1672,6 +1685,30 @@ class DrawMixin:
                 pass
         self.flash(message("event.fullscreen_on" if self.fullscreen
                            else "event.fullscreen_off"), 2.0)
+
+    def color_theme(self) -> str:
+        """The chosen colour theme: "night", "day" or "contrast"."""
+        if self.preferences.high_contrast:
+            return "contrast"
+        return self.preferences.theme if self.preferences.theme in ("night", "day") else "night"
+
+    def set_color_theme(self, name: str) -> None:
+        """Choose a colour theme (options row, top bar switch, display only)."""
+        from dataclasses import replace
+        contrast = name == "contrast"
+        chosen = name if name in ("night", "day") else self.preferences.theme
+        self.preferences = replace(self.preferences, high_contrast=contrast, theme=chosen)
+        self._apply_text_size()
+        self.flash(message("status.theme_changed",
+                           theme=message("option.theme." + name)), 2.0)
+        try:
+            save_preferences(self.preferences)
+        except OSError:
+            self.flash(message("status.preferences_error"), 3.0)
+
+    def toggle_color_theme(self) -> None:
+        """The top bar's switch: night <-> day (high contrast -> night)."""
+        self.set_color_theme("day" if self.color_theme() == "night" else "night")
 
     def _set_preference(self, name: str, value) -> None:
         from dataclasses import replace

@@ -50,7 +50,8 @@ function heatmapJob(spec, width, height, pixelsPerSecond, headroom) {
 }
 function heatmapRaster(id, spec, width, height, pixelsPerSecond, headroom) {
   let raster = heatmapRasters.get(id);
-  const settings = [width, height, headroom, spec.historyS, sonarDisplay.palette, sonarDisplay.black, sonarDisplay.contrast].join(":");
+  const settings = [width, height, headroom, spec.historyS, sonarDisplay.palette, sonarDisplay.black, sonarDisplay.contrast,
+    document.documentElement.dataset.theme].join(":");
   if (raster?.rows === spec.rows && raster.settings === settings) return raster;
   const job = heatmapJob(spec, width, height, pixelsPerSecond, headroom);
   const worker = heatmapWorker();
@@ -80,6 +81,12 @@ function heatmapRaster(id, spec, width, height, pixelsPerSecond, headroom) {
   raster.context.putImageData(raster.image, 0, 0);
   return raster;
 }
+// The empty paper of the waterfall: the ramp's lowest level as CSS colour.
+function paperColor(lut) {
+  const value = lut[0], little = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
+  const [r, g, b] = little ? [value & 255, (value >>> 8) & 255, (value >>> 16) & 255] : [value >>> 24, (value >>> 16) & 255, (value >>> 8) & 255];
+  return `rgb(${r}, ${g}, ${b})`;
+}
 function drawHeatmap(id, spec, wallNow) {
   const plot = visualContext(id);
   if (!plot) return null;
@@ -98,7 +105,7 @@ function drawHeatmap(id, spec, wallNow) {
   const context = area.context;
   context.save();
   context.beginPath(); context.rect(0, 0, area.width, area.height); context.clip();
-  context.fillStyle = "#030806"; context.fillRect(0, 0, area.width, area.height);
+  context.fillStyle = paperColor(heatmapPalette()); context.fillRect(0, 0, area.width, area.height);
   context.imageSmoothingEnabled = false;
   if (raster.canvas) context.drawImage(raster.canvas, 0, offset, area.width, (height + headroom) * scaleY);
   context.restore();

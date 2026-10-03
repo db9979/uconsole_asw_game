@@ -102,8 +102,13 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert "img-src 'self'" in csp
     assert "media-src 'none'" in csp
     assert "unsafe-inline" not in csp and "unsafe-eval" not in csp
+    # The colour theme's name is the one value kept in browser storage
+    # (core/theme.js, checked by its own test); nothing else touches it.
+    theme_js = re.sub(r"^export (?=(?:async )?function|const |let |class )", "",
+                      ASSETS.joinpath("js", "core", "theme.js").read_text(encoding="utf-8"), flags=re.M)
+    assert theme_js in js and js.count("localStorage") == theme_js.count("localStorage")
     for forbidden in ("innerHTML", "outerHTML", "insertAdjacentHTML", "localStorage", "sessionStorage", "indexedDB", "document.cookie", "Math.random", "getUserMedia", "eval(", "new Function", "https://", "http://"):
-        assert forbidden not in js
+        assert forbidden not in js.replace(theme_js, "")
     assert 'new window.WebSocket(`${scheme}//${location.host}/ws/v2/sonar`, "u-jagd-sonar-v2")' in js
     assert "socket.binaryType = \"arraybuffer\"" in js
     assert "@import" not in css
@@ -191,7 +196,9 @@ def test_v2_proposal_event_and_role_simlog_contracts_are_strict_and_role_scoped(
     assert 'sendStationAction("clear_target_proposal", {})' in js
     assert 'sendStationAction("propose_navigation", params)' in js
     assert 'event.severity === "warning"' in js
-    assert "localStorage" not in js and "sessionStorage" not in js
+    theme_js = re.sub(r"^export (?=(?:async )?function|const |let |class )", "",
+                      ASSETS.joinpath("js", "core", "theme.js").read_text(encoding="utf-8"), flags=re.M)
+    assert theme_js in js and "localStorage" not in js.replace(theme_js, "") and "sessionStorage" not in js
     assert 'location.hash === "#simlog"' in js and 'session?.simlog !== true' in js
 
 
@@ -1483,3 +1490,20 @@ def test_bug_report_link_in_settings_and_admin():
     assert f'id="bug-report-admin" href="{BUG_REPORT_URL}"' in admin
     stations = page.split('<main id="operations"', 1)[1].split("</main>", 1)[0]
     assert "bug-report-link" not in stations
+
+
+def test_theme_is_the_only_browser_storage_and_holds_only_a_theme_name():
+    """The colour theme persists per browser; credentials never do."""
+    theme_js = ASSETS.joinpath("js", "core", "theme.js").read_text(encoding="utf-8")
+    uses = re.findall(r"window\.localStorage\.(\w+)\(([^)]*)\)", theme_js)
+    assert sorted(uses) == [("getItem", "THEME_KEY"), ("setItem", "THEME_KEY, name")]
+    assert theme_js.count("localStorage") == 2
+    assert 'const THEME_KEY = "u-jagd-theme";' in theme_js
+    assert 'export const THEMES = ["night", "day", "contrast"];' in theme_js
+    # Every access is guarded: blocked or private storage falls back to night.
+    for name in ("storedTheme", "storeTheme"):
+        body = function_source(theme_js, name)
+        assert "try {" in body and "catch" in body
+    assert "THEMES.includes(value) ? value : \"night\"" in theme_js
+    chosen = function_source(theme_js, "chooseTheme")
+    assert "THEMES.includes(name) ? name : \"night\"" in chosen

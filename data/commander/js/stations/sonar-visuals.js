@@ -139,7 +139,7 @@ export function drawSonarVisuals() {
     tma = plotAxes(tma, maxAge, 360, " s", "°");
     contacts.forEach((track, index) => {
       const isSelected = track.ref === S.selected;
-      tma.context.strokeStyle = isSelected ? palette().accent : ["#7fb8a5", palette().amber, palette().blue, palette().red][index % 4];
+      tma.context.strokeStyle = isSelected ? palette().accent : [palette().green, palette().amber, palette().blue, palette().red][index % 4];
       tma.context.lineWidth = isSelected ? 3 : 1;
       tma.context.beginPath();
       track.bearings.forEach((point, pointIndex) => {

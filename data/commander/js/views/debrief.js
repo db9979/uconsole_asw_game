@@ -4,6 +4,7 @@ import { finite, t } from "../core/format.js";
 import { request } from "../net/request.js";
 import { boundedArray, exactKeys } from "../state/schema.js";
 import { resizeCanvas } from "./chart.js";
+import { colors, palette } from "../core/palette.js";
 import { node } from "./dom.js";
 import { advisorReport } from "./advisor.js";
 
@@ -15,10 +16,11 @@ import { advisorReport } from "./advisor.js";
 // they happened.  Mirrors src/core/debrief_replay.py and src/ui/debrief_view.py.
 const FLASH_KINDS = new Set(["own_shot", "enemy_shot", "pinged", "sub_sunk", "ship_sunk", "own_damage", "first_contact"]);
 const FLASH_WALL_S = 1.6;
-const EVENT_COLORS = {first_contact: "#f3cf79", first_fix: "#f3cf79", classified: "#f3cf79", own_shot: "#8fd6ff",
-  enemy_shot: "#ff6a5c", sub_sunk: "#8fdfab", own_damage: "#ff6a5c", ship_sunk: "#ff6a5c", missed: "#c58cff",
-  pinged: "#f3cf79", enemy_commander: "#f3cf79", enemy_habits: "#f3cf79", mission_end: "#e0ecef"};
-const OWN = "#5aa0ff", HOSTILE = "#ff8080", KNOWN = "#f3cf79";
+// Event colours by the palette's signal names (they follow the theme).
+const EVENT_TONES = {first_contact: "amber", first_fix: "amber", classified: "amber", own_shot: "blue",
+  enemy_shot: "red", sub_sunk: "green", own_damage: "red", ship_sunk: "red", missed: "plot",
+  pinged: "amber", enemy_commander: "amber", enemy_habits: "amber", mission_end: "text"};
+const eventColor = (type) => palette()[EVENT_TONES[type]];
 const replay = {doc: null, t: 0, playing: false, speed: 10, wall: null, frame: 0};
 
 function point(value) { return exactKeys(value, ["x", "y"]) && finite(value.x) && finite(value.y); }
@@ -44,7 +46,7 @@ export function validDebrief(value) {
     boundedArray(value.frames, 512) && value.frames.every(validFrame) &&
     value.frames.every((frame, index, frames) => index === 0 || frame.t >= frames[index - 1].t) &&
     boundedArray(value.events, 512) && value.events.every((event) => exactKeys(event, ["t", "type", "sub", "en", "de"]) &&
-      finite(event.t) && Object.hasOwn(EVENT_COLORS, event.type) && (event.sub === null || typeof event.sub === "string") &&
+      finite(event.t) && Object.hasOwn(EVENT_TONES, event.type) && (event.sub === null || typeof event.sub === "string") &&
       typeof event.en === "string" && typeof event.de === "string") &&
     Array.isArray(value.speeds) && value.speeds.length === 2 && value.speeds.every((speed) => Number.isInteger(speed) && speed > 0);
 }
@@ -98,7 +100,8 @@ function draw() {
   const width = Math.max(1, rect.width), height = Math.max(1, rect.height);
   const g = canvas.getContext("2d");
   resizeCanvas(canvas, g, width, height);
-  g.fillStyle = "#06121c";
+  const p = palette(), OWN = colors.FRIEND, HOSTILE = colors.HOSTILE, KNOWN = p.amber;
+  g.fillStyle = p.scopeBg;
   g.fillRect(0, 0, width, height);
   const box = replay.box ??= bounds(doc.frames);
   const scale = Math.min(width, height) / box.span;
@@ -132,7 +135,7 @@ function draw() {
   for (const sub of frame.subs) {
     if (!sub.hostile) continue;
     const [bx, by] = at(sub.x, sub.y);
-    g.strokeStyle = g.fillStyle = sub.sunk ? "#71858c" : HOSTILE;
+    g.strokeStyle = g.fillStyle = sub.sunk ? p.faint : HOSTILE;
     g.beginPath(); g.moveTo(bx, by - 8); g.lineTo(bx + 8, by); g.lineTo(bx, by + 8); g.lineTo(bx - 8, by); g.closePath(); g.stroke();
     g.fillText(`${sub.id} ${sub.depth} m`, bx + 10, by - 4);
   }
@@ -148,11 +151,11 @@ function draw() {
       g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx + length * Math.sin(angle), sy - length * Math.cos(angle)); g.stroke();
     }
   }
-  for (const [rows, color] of [[frame.own_weapons, "#8fd6ff"], [frame.enemy_weapons, "#ff6a5c"], [frame.buoys, "#8fdfab"]]) {
+  for (const [rows, color] of [[frame.own_weapons, p.blue], [frame.enemy_weapons, p.red], [frame.buoys, p.green]]) {
     g.fillStyle = color;
     for (const row of rows) { const [x, y] = at(row.x, row.y); g.beginPath(); g.arc(x, y, 3, 0, Math.PI * 2); g.fill(); }
   }
-  g.strokeStyle = doc.side === "frigate" ? OWN : "#ff6a5c";
+  g.strokeStyle = doc.side === "frigate" ? OWN : p.red;
   for (const row of frame.assets) { const [x, y] = at(row.x, row.y); g.strokeRect(x - 4, y - 4, 8, 8); }
   // Flashes: shots, pings, hits and sinkings where they happened.
   const window = FLASH_WALL_S * replay.speed;
@@ -163,7 +166,7 @@ function draw() {
     const sub = event.type === "sub_sunk" ? frame.subs.find((row) => row.id === event.sub) : null;
     const [fx, fy] = sub ? at(sub.x, sub.y) : [sx, sy];
     g.globalAlpha = 1 - k;
-    g.strokeStyle = g.fillStyle = EVENT_COLORS[event.type];
+    g.strokeStyle = g.fillStyle = eventColor(event.type);
     g.lineWidth = 2;
     g.beginPath(); g.arc(fx, fy, 8 + 34 * k, 0, Math.PI * 2); g.stroke();
     if (k < .25) { g.beginPath(); g.arc(fx, fy, 5, 0, Math.PI * 2); g.fill(); }
@@ -187,7 +190,7 @@ function renderControls(frame) {
   if (list.dataset.count !== String(doc.events.length) || list.dataset.lang !== S.language) {
     list.replaceChildren(...doc.events.map((event) => {
       const row = node("li", `${clock(event.t)} ${event[S.language === "de" ? "de" : "en"]}`);
-      row.style.setProperty("--event-color", EVENT_COLORS[event.type]);
+      row.style.setProperty("--event-color", eventColor(event.type));
       return row;
     }));
     list.dataset.count = String(doc.events.length);

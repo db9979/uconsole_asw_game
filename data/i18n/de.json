@@ -1656,7 +1656,12 @@
   "option.red_light.off": "Aus",
   "option.red_light.auto": "Automatisch (Nacht, Alarm)",
   "option.red_light.on": "Immer an",
-  "option.high_contrast": "Kontrastreiche/farbenblindfreundliche Palette",
+  "option.theme": "Farbschema",
+  "option.theme.night": "Taktik Nacht (dunkel)",
+  "option.theme.day": "Taktik Tag (hell)",
+  "option.theme.contrast": "Hoher Kontrast / farbenblind",
+  "status.theme_changed": "Farbschema: {theme}",
+  "top.theme_switch": "Dunkel/Hell",
   "option.frame_rate": "Bildrate: {fps} FPS",
   "option.bottom_panel": "Ereignislog / Telemetrie",
   "option.bottom_panel.ticker": "Statuszeile (F11 öffnet das Log)",
@@ -7462,5 +7467,10 @@
   "opz.radar_switch.air.on": "LUFTRADAR AN",
   "opz.radar_switch.air.off": "LUFTRADAR AUS",
   "commander.web.opz_radar_switch_surface": "Seeradar",
-  "commander.web.opz_radar_switch_air": "Luftradar"
+  "commander.web.opz_radar_switch_air": "Luftradar",
+  "commander.web.theme": "Farbschema",
+  "commander.web.theme_night": "Taktik Nacht (dunkel)",
+  "commander.web.theme_day": "Taktik Tag (hell)",
+  "commander.web.theme_contrast": "Hoher Kontrast / farbenblind",
+  "commander.web.theme_switch": "Dunkel/Hell"
 }

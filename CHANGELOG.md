@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.175
+
+Release 1.3.175 starts the new look. Every screen now draws from one set of
+colour tokens shared by the uConsole and the Remote Crew browser, and there
+are two themes: Tactical Night (dark, the default) and Tactical Day (light,
+with the sonar waterfall as a paper LOFARgram in dark ink). Switch with the
+small Dark/Light pill at the right of the top bar (click it) or in Options
+(F10) under "Colour theme", which also offers high contrast; the choice is
+kept in the settings, not in saves. Red light still forces the dark theme.
+Panels are now rounded with a soft shadow and an accent title mark, page tabs
+are pills and key hints are chips. Keys, layout and saves are unchanged;
+saves are v50 and v38 to v49 saves still load.
+
 ## 1.3.174
 
 Release 1.3.174 fills the Remote Crew operational log. It used to show only a

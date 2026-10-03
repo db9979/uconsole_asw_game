@@ -21,7 +21,8 @@ Submarine (the AI hunter frigate adapts):
 
 * ``mast_up``: often at periscope depth; the hunter sprints and drifts to
   cover the surface with its radar.
-* ``shallow``: mostly above the layer; the hunter pings more often.
+* ``shallow``: mostly above the layer; the hunter sprints and drifts too
+  (more pinging tipped the balance against the submarine, so it does not).
 * ``fast_transit``: running fast; the hunter searches slowly and listens.
 
 The known habits are decided once per mission (save ``habits``), so a loaded
@@ -48,7 +49,6 @@ MAST_SHARE = 0.25               # share of time at periscope depth or shallower
 SHALLOW_SHARE = 0.5             # share of time above the layer
 FAST_TRANSIT_KN = 10.0          # mean speed of the boat
 MIN_SAMPLES = 30                # samples (s) before a share or mean counts
-SHALLOW_PING_FACTOR = 0.75      # hunter ping interval against a shallow boat
 
 
 def valid_state(value) -> bool:

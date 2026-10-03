@@ -76,7 +76,7 @@ def hunter_plan(game, habits: tuple = ()) -> str:
     ``habits`` are the submarine player's habits the enemy knows."""
     if "fast_transit" in habits:
         return "quiet_search"
-    if "mast_up" in habits:
+    if "mast_up" in habits or "shallow" in habits:
         return "sprint_drift"
     plan = SEARCH_PLAN[commander_traits.hunter_kind(game.seed)]
     if plan == "fast_search" and game.sim_t >= LONG_SEARCH_S:

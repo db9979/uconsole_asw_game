@@ -26,7 +26,7 @@ from __future__ import annotations
 import math
 from functools import lru_cache
 
-from src.core import boat_missions, commander_traits, config, detrand, habits, opfor_plans
+from src.core import boat_missions, commander_traits, config, detrand, opfor_plans
 from src.core.autocrew import AutocrewController, _nearest_threat, station_key
 from src.core.station import Station
 from src.llm import opponent
@@ -693,9 +693,6 @@ def sonar(game) -> str:
     # Trailing in peacetime a ping costs nothing but noise: it pings more often.
     every = (TRAIL_PING_EVERY_S if boat_missions.mode(game) == "trail"
              else PING_EVERY_S * commander_traits.hunter_factor(game, "ping"))
-    if "shallow" in opfor_plans.known_habits(game, "boat"):
-        # The boat stays above the layer: the hull sonar's ping finds it.
-        every *= habits.SHALLOW_PING_FACTOR
     if (contacts and not game._contact_range_fresh(contacts[0])
             and _fresh(game, contacts[0], 30.0) and _window(game, every)
             and game.send_active_ping() is True):

@@ -26,7 +26,7 @@ Sprungschicht oder hohe Fahrt. Eine Gewohnheit, die in mehr als der Hälfte
 Ihrer letzten fünf Einsätze einer Seite (mindestens drei) auftrat, kennt der
 Gegner, und die KI stellt sich ein wenig darauf ein: U-Boote gehen früher
 unter die Schicht oder halten Abstand, die Jagdfregatte sucht langsam, sprintet
-und treibt oder pingt öfter. Die Nachbesprechung nennt, womit der Gegner
+und treibt. Die Nachbesprechung nennt, womit der Gegner
 gerechnet hat. Die Logbuchseite zeigt, was er kennt, und `L` schaltet das
 Lernen dort aus. In der Tagesmission, in Lektionen und im Spiel zweier
 Besatzungen ist es immer aus. Spielstände sind v50 (sie behalten die für den

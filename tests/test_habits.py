@@ -185,6 +185,7 @@ def test_the_hunter_search_plan_follows_its_captain_and_the_habits():
     assert plan == opfor_plans.SEARCH_PLAN[kind] or (plan == "sprint_drift"
                                                      and kind == "daring")
     assert opfor_plans.hunter_plan(game, ("mast_up",)) == "sprint_drift"
+    assert opfor_plans.hunter_plan(game, ("shallow",)) == "sprint_drift"
     assert opfor_plans.hunter_plan(game, ("fast_transit", "mast_up")) == "quiet_search"
 
 

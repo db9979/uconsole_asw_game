@@ -24,7 +24,7 @@ periscope depth, staying above the layer or high speed. A habit shown in
 more than half of your last five missions of a side (at least three) is
 known to the enemy, and the AI adapts a little: boats go under the layer
 sooner or keep their distance, the hunter frigate searches slowly, sprints
-and drifts or pings more often. The debrief names what the enemy expected.
+and drifts. The debrief names what the enemy expected.
 The logbook page shows what it knows, and `L` there switches learning off.
 It is always off in the daily mission, lessons and two-crew play. Saves are
 v50 (they keep the habits decided for the mission); v38 to v49 saves still

@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.170**
+Current release: **1.3.171**
 
-Release 1.3.170 gives the OPZ a richer chart and a Display page full of
+Release 1.3.171 gives the OPZ a richer chart and a Display page full of
 settings: track trails, vector length, labels, a bearing scale with the own
 course, range rings, bearing lines, furthest-on circles, depths and grid, the
 radar afterglow and the selected track's closest point of approach (CPA) with

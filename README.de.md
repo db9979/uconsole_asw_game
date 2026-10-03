@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.170**
+Aktuelle Version: **1.3.171**
 
-Version 1.3.170 gibt der OPZ eine reichere Karte und eine Anzeigeseite voller
+Version 1.3.171 gibt der OPZ eine reichere Karte und eine Anzeigeseite voller
 Einstellungen: Spurverlauf, Vektorlänge, Beschriftung, eine Peilskala mit
 eigenem Kurs, Entfernungsringe, Peilstrahlen, Unsicherheitskreise, Tiefen und
 Gitter, das Radar-Nachleuchten und den Punkt der nächsten Annäherung (CPA)

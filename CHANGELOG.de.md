@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.170
+## 1.3.171
 
-Version 1.3.170 gibt der OPZ eine reichere Karte und eine Anzeigeseite voller
+Version 1.3.171 gibt der OPZ eine reichere Karte und eine Anzeigeseite voller
 Einstellungen. Seite 5 (Anzeige) stellt den Spurverlauf (aus, 3, 6 oder 12
 Minuten), die Vektorlänge (3 bis 30 Minuten), volle, kurze oder keine
 Beschriftung, eine Peilskala mit eigenem Kurs am äußeren Radarring,
@@ -19,6 +19,14 @@ auf der Karte See- und Luftradar ein und aus. Die
 Einstellungen bleiben in settings.json. Die OPZ im Browser hat dieselben
 Knöpfe über ihrer Karte und zeichnet dieselben Ringe, Peilskala, Spuren und
 den CPA. Nur Anzeige: die Simulation bleibt unverändert. Spielstände sind
+
+## 1.3.170
+
+Version 1.3.170 beruhigt zwei Geräusche, die an jeder Station alle paar
+Sekunden wiederkamen. Der Bug der Fregatte schlägt bei schwerer See von vorn
+nicht mehr hörbar ein (bisher bei fast jeder Welle, alle 5 bis 18 s). Tief
+unten knarzte der Rumpf des U-Boots an der Testtiefe alle 4 s; jetzt ruht er
+nach jedem Knarzen 12 bis 28 s. Beides ändert nichts an der Simulation. Spielstände sind
 v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.169

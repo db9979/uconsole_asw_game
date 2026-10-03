@@ -168,6 +168,9 @@ def opz_hit_target(game, pos):
                 "tooltip.own_navigation",
                 target_id="opz:ownship")
         return None
+    for track, rect in opz_track_cards(game):
+        if rect.collidepoint(pos):
+            return _track_tooltip(game, track)
     if opz_regions()["sidebar"].collidepoint(pos):
         selected = game.selected_opz_track()
         if selected is not None:
@@ -180,29 +183,110 @@ def opz_hit_target(game, pos):
     return None
 
 
+# Track cards in the left column (UI grid, stage 3).
+OPZ_TRACKS_W = 250
+OPZ_SIDEBAR_W = 300
+OPZ_CARD_H = 44
+OPZ_CARD_PITCH = 48
+
+
 def opz_regions(station_rect=None) -> dict[str, pygame.Rect]:
     """Single OPZ geometry source for drawing and pointer ownership.
 
-    Both pages share the same rectangular chart; only the sidebar differs.
+    Three columns on every page: track cards on the left, the chart in the
+    middle, the page's sidebar on the right.
     """
     station = pygame.Rect(station_rect or config.STATION_RECT)
-    scope_w = int(station.w * .75)
     top = _station_content_top(station, 2)
-    map_rect = pygame.Rect(station.x + 8, top,
-                           scope_w - 16, station.bottom - top - 42)
+    height = station.bottom - top - 42
+    if station.w >= 1000:
+        tracks = pygame.Rect(station.x + 8, top, OPZ_TRACKS_W, height)
+        sidebar = pygame.Rect(station.right - 8 - OPZ_SIDEBAR_W, top,
+                              OPZ_SIDEBAR_W, height)
+        map_rect = pygame.Rect(tracks.right + 10, top,
+                               sidebar.x - 10 - tracks.right - 10, height)
+    else:
+        # A narrow panel (never the uConsole's OPZ): chart and sidebar only.
+        scope_w = int(station.w * .75)
+        tracks = pygame.Rect(station.x, top, 0, height)
+        map_rect = pygame.Rect(station.x + 8, top, scope_w - 16, height)
+        sidebar = pygame.Rect(station.x + scope_w, top, station.w - scope_w, height)
     chart = map_rect.copy()
-    sidebar = pygame.Rect(station.x + scope_w, top,
-                          station.right - station.x - scope_w,
-                          map_rect.h)
     button_y = sidebar.bottom - 80
     button_w = max(1, (sidebar.w - 24) // 2)
-    return {"map": map_rect, "chart": chart, "sidebar": sidebar,
+    return {"map": map_rect, "chart": chart, "sidebar": sidebar, "tracks": tracks,
             "classify": pygame.Rect(sidebar.x + 8, button_y, button_w, 28),
             "affiliate": pygame.Rect(sidebar.x + 16 + button_w, button_y,
                                      button_w, 28),
             "mark": pygame.Rect(sidebar.x + 8, button_y + 34, button_w, 28),
             "fusion": pygame.Rect(sidebar.x + 16 + button_w, button_y + 34,
                                   button_w, 28)}
+
+
+def opz_track_cards(game, station_rect=None) -> list:
+    """The visible track cards as (track, rect), the selected one in view."""
+    box = opz_regions(station_rect)["tracks"]
+    if box.w <= 0:
+        return []
+    tracks = (game.filtered_opz_tracks() if hasattr(game, "filtered_opz_tracks")
+              else game.opz_tracks())
+    top = box.y + 34
+    capacity = max(0, (box.bottom - 6 - top) // OPZ_CARD_PITCH)
+    selected_id = getattr(game, "opz_selected_track_id", None)
+    index = next((i for i, track in enumerate(tracks)
+                  if track.track_id == selected_id), 0)
+    start = max(0, min(index - capacity // 2, max(0, len(tracks) - capacity)))
+    return [(track, pygame.Rect(box.x + 6, top + row * OPZ_CARD_PITCH,
+                                box.w - 12, OPZ_CARD_H))
+            for row, track in enumerate(tracks[start:start + capacity])]
+
+
+def _draw_track_cards(game, s, box, selected_id) -> None:
+    """Left column: one card per CIC track (affiliation stripe, label,
+    bearing, range and the sensors behind it); a click selects it."""
+    if box.w <= 0:
+        return
+    layout.box(s, box, "")
+    contact_filter = getattr(game, "opz_contact_filter", "ALL")
+    heading = message("opz.tracks_heading_filtered",
+                      filter=display_value("contact_filter", contact_filter))
+    head = pygame.Rect(box.x + 10, box.y + 8, box.w - 20, 22)
+    layout.blit_line(s, heading, head, config.COLOR_TEXT, size=14)
+    pointer.add_token_keys(head, heading, 14, (("(Shift+F)", "Shift+F"),),
+                           min_size=layout.MIN_OPERATIONAL_FONT)
+    cards = opz_track_cards(game)
+    if not cards:
+        layout.blit_line(s, "opz.no_tracks", (box.x + 10, box.y + 36, box.w - 20, 22),
+                         config.COLOR_TEXT_DIM, size=14)
+    for track, rect in cards:
+        chosen = track.track_id == selected_id
+        affiliation = game.opz_affiliation(track.track_id)
+        domain = nato_symbols.domain_for_kind(track.kind)
+        color = nato_symbols.AFFILIATION_COLORS[affiliation]
+        pygame.draw.rect(s, config.COLOR_TAB_ACTIVE if chosen else theme.c("raised"),
+                         rect, border_radius=4)
+        pygame.draw.rect(s, theme.c("focus") if chosen else theme.c("line"),
+                         rect, 2 if chosen else 1, border_radius=4)
+        pygame.draw.rect(s, color, (rect.x + 3, rect.y + 5, 3, rect.h - 10))
+        mark = "*" if track.track_id in game.opz_fusion.marked else ""
+        layout.blit_line(s, f"{mark}{track.label}", (rect.x + 12, rect.y + 3, 92, 20),
+                         config.COLOR_TEXT, size=15)
+        layout.blit_line(s, message("opz.card.kind",
+                                    affiliation=structured_message(
+                                        "affil.code." + affiliation.lower()),
+                                    domain=structured_message(OPZ_DOMAIN_CODES[domain])),
+                         (rect.x + 104, rect.y + 4, 60, 18), color, size=13)
+        layout.blit_line(s, observations.format_bearing(track, game.ship) + "\u00b0",
+                         (rect.right - 76, rect.y + 2, 68, 21), config.COLOR_TEXT,
+                         size=17, align="right")
+        displayed_range = observations.range_nm(track, game.ship)
+        distance = (f"{displayed_range:.1f} NM" if displayed_range is not None else "-- NM")
+        tags = "".join(localize("opz.source_code." + group)
+                       for group in source_groups(track))
+        layout.blit_line(s, f"{distance} \u00b7 {tags}",
+                         (rect.x + 12, rect.y + 24, rect.w - 20, 17),
+                         config.COLOR_TEXT_DIM, size=13)
+        pointer.add_hotspot(rect)       # opz_action_at takes the click
 
 
 def opz_ppi_rect(station_rect=None) -> pygame.Rect:
@@ -285,6 +369,9 @@ def opz_action_at(game, pos, station_rect=None):
     for action in ("classify", "affiliate", "mark", "fusion"):
         if regions[action].collidepoint(pos):
             return action
+    for track, rect in opz_track_cards(game, station_rect):
+        if rect.collidepoint(pos):
+            return ("select", track.observation_id)
     chart = regions["chart"]
     if not chart.collidepoint(pos):
         return None
@@ -1038,50 +1125,11 @@ def draw_opz_view(game, tr=None) -> None:
         py += 30
         pygame.draw.line(s, config.COLOR_GRID, (x, py), (x + w, py))
         py += 8
-        contact_filter = getattr(game, "opz_contact_filter", "ALL")
-        heading = message("opz.tracks_heading_filtered",
-                          filter=display_value("contact_filter", contact_filter))
-        layout.blit_block(s, heading, x, py, w, 22, color=config.COLOR_TEXT, size=16)
-        pointer.add_token_keys((x, py, w, 22), heading, 16, (("(Shift+F)", "Shift+F"),),
-                               min_size=layout.MIN_OPERATIONAL_FONT)
-        py += 24
         content_bottom = regions["classify"].top - 7
         suggestions = (game.opz_suggestions()[:OPZ_SUGGESTION_ROWS]
                        if hasattr(game, "opz_suggestions") else ())
         if suggestions:
             content_bottom -= 24 * (len(suggestions) + 1)
-        max_rows = max(0, (content_bottom - py) // 28)
-        register_tracks = (game.filtered_opz_tracks()
-                           if hasattr(game, "filtered_opz_tracks")
-                           else cic_tracks)
-        selected_index = next((i for i, track in enumerate(register_tracks)
-                               if track["track_id"] == selected_id), 0)
-        start = max(0, min(selected_index - max_rows // 2,
-                           max(0, len(register_tracks) - max_rows)))
-        for track in register_tracks[start:start + max_rows]:
-            affiliation = game.opz_affiliation(track["track_id"])
-            domain = nato_symbols.domain_for_kind(track["kind"])
-            color = nato_symbols.AFFILIATION_COLORS[affiliation]
-            prefix = ">" if track["track_id"] == selected_id else " "
-            if track["track_id"] in game.opz_fusion.marked:
-                prefix = "*"
-            displayed_range = observations.range_nm(track, game.ship)
-            distance = f"{displayed_range:4.1f}" if displayed_range is not None else " -- "
-            pygame.draw.rect(s, OPZ_DOMAIN_COLORS[domain], (x, py + 5, 3, 14))
-            text = message("opz.line.track", prefix=prefix, track=f"{track['label']:<7}",
-                           affiliation=structured_message(
-                               "affil.code." + affiliation.lower()),
-                           domain=structured_message(OPZ_DOMAIN_CODES[domain]),
-                            bearing=observations.format_bearing(track, game.ship), distance=distance)
-            # Sensor tags (R radar, V lookout, A AIS ...): a fused contact
-            # shows every source behind it at a glance.
-            tags = "".join(localize("opz.source_code." + group)
-                           for group in source_groups(track))
-            tag_w = 12 + 8 * len(tags)
-            layout.blit_line(s, text, (x + 6, py, w - 6 - tag_w, 24), color, size=15)
-            layout.blit_line(s, tags, (x + w - tag_w, py + 2, tag_w, 22),
-                             config.COLOR_TEXT_DIM, size=13, align="right")
-            py += 28
         if suggestions:
             # Correlation suggestions: U confirms the top one, Shift+U drops it.
             py = content_bottom + 2
@@ -1191,8 +1239,9 @@ def draw_opz_view(game, tr=None) -> None:
                         ("mark", "opz.button.mark"),
                         ("fusion", "opz.button.fusion")):
         rect = regions[action]
-        pygame.draw.rect(s, config.COLOR_GRID, rect, 1)
-        layout.blit_line(s, key, rect, config.COLOR_TEXT_DIM, size=14,
+        pygame.draw.rect(s, theme.c("raised"), rect, border_radius=4)
+        pygame.draw.rect(s, theme.c("line_strong"), rect, 1, border_radius=4)
+        layout.blit_line(s, key, rect, config.COLOR_TEXT, size=14,
                          align="center")
         pointer.add_hotspot(rect)       # opz_action_at takes the click
 
@@ -1200,7 +1249,8 @@ def draw_opz_view(game, tr=None) -> None:
         f"[{scale:g}]" if scale == max_nm else f"{scale:g}"
         for scale in config.RADAR_RANGE_SCALES_NM)
     # The station footer row, like every other station's key legend.
-    footer_rect = pygame.Rect(station.x + 8, station.bottom - 28, scope_w - 16, 20)
+    _draw_track_cards(game, s, regions["tracks"], selected_id)
+    footer_rect = pygame.Rect(station.x + 8, station.bottom - 28, station.w - 16, 20)
     range_text_w = layout.text_width(
         layout.font(11), "Q/E " + localize("opz.footer.range") + f" {max_nm:g} NM  {scales}") + 24
     range_rect = pygame.Rect(footer_rect.x, footer_rect.y, range_text_w, footer_rect.h)

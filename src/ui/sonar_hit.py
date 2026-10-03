@@ -19,22 +19,19 @@ from src.ui.sonar_data import (
 
 
 def _panels(game, page):
+    """Three columns (UI grid, stage 3): contact cards on the left, the
+    page's main display in the middle, listening console and readouts on
+    the right, each the full body height."""
     station = pygame.Rect(config.STATION_RECT)
-    # Tightened top/bottom margins (was +73/-124): the larger operational
-    # font floor needs a few extra px in `details` so worst-case content
-    # (e.g. a fully evidenced TMA solution) never clips.
-    body = pygame.Rect(station.x + 12, station.y + 43,
-                       station.w - 24, station.h - 68)
-    rail_w = min(350, max(240, round(body.w * .28)))
-    main = pygame.Rect(body.x, body.y, body.w - rail_w - 12, body.h)
-    rail = pygame.Rect(main.right + 12, body.y, rail_w, body.h)
-    # Reserve three full contact rows on every page. Long interpretation notes
-    # belong in the bounded tooltip rather than displacing operational data.
-    contact_min_h = 33 + 3 * 43
-    details = pygame.Rect(rail.x, rail.y, rail.w,
-                          max(1, rail.h - contact_min_h - 8))
-    contacts = pygame.Rect(rail.x, details.bottom + 8, rail.w,
-                           rail.bottom - details.bottom - 8)
+    body = pygame.Rect(station.x + 10, station.y + 43,
+                       station.w - 20, station.h - 68)
+    gap = 10
+    contacts_w = min(272, max(220, round(body.w * .215)))
+    details_w = min(300, max(240, round(body.w * .24)))
+    contacts = pygame.Rect(body.x, body.y, contacts_w, body.h)
+    details = pygame.Rect(body.right - details_w, body.y, details_w, body.h)
+    main = pygame.Rect(contacts.right + gap, body.y,
+                       details.x - gap - contacts.right - gap, body.h)
     return main, details, contacts
 
 

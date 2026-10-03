@@ -47,7 +47,7 @@ The submarine's sonar room works like the frigate's, without towed array, OPZ re
 
 ## Weapons {#sub-weapons}
 
-Weapons loads and floods the tubes, sets run depth and salvo, fires at a selected contact or down an entered bearing, steers the wired torpedoes and launches decoys. The fire-control box shows the seeker setting of the next shots.
+Weapons loads and floods the tubes, sets run depth and salvo, fires at a selected contact or down an entered bearing, steers the wired torpedoes and launches decoys. The page has two columns beside the chart: contact cards (a click selects one) above the engagement plot, and fire control above the tube lamps. The fire-control box shows the seeker setting of the next shots; at the Weapons station a click on its red fire plate fires like `Ctrl+Enter`.
 
 - **Tubes:** each tube is empty, loaded (dry) or flooded; only a flooded tube fires. `M` loads the next empty tube, `Ctrl+M` floods the next loaded one slowly (60 s, hardly audible), `Shift+M` fast (20 s, loud).
 - **Fire control:** `↑`/`↓` pick a contact with a fresh range, `T` sets the run depth, `Y` single shot or two-torpedo spread, `X` the seeker pattern and `,`/`.` the enable point; `Ctrl+Enter` fires. `F` fires down an entered bearing and distance without a contact.

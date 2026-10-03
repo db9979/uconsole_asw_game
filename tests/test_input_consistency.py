@@ -12,7 +12,7 @@ from src.core.game import Game
 from src.core.help import get_global_help
 from src.core.i18n import Translator, load_catalog, pseudolocale
 from src.core.station import Station
-from src.ui import layout, map_view
+from src.ui import layout, map_view, pointer
 from src.ui.stations_view import damage_regions, opz_action_at, opz_ppi_rect
 
 
@@ -105,12 +105,21 @@ def test_opz_wheel_zooms_independent_map_even_before_draw(game, monkeypatch):
 def test_opz_pan_follow_and_radar_range_are_independent(game):
     game.station = Station.OPZ
     chart = opz_ppi_rect(config.OPZ_STATION_RECT)
+    # Draw the frame the player clicks on: clickable targets left over from
+    # an earlier test's frame must not take the press.
+    game.draw()
+
+    def bare(point):
+        target = pointer.hit(point, "station")
+        return (opz_action_at(game, point, config.OPZ_STATION_RECT) is None
+                and (target is None or target.hover_only))
+
     # Start the drag on bare chart: a track or blip under the press selects
     # it instead (which ones exist depends on process-global entity ids).
     start = next(point for point in (
         (chart.centerx + dx, chart.centery + dy)
         for dx in (120, -120, 80, -80, 40) for dy in (80, -80, 40, -40))
-        if opz_action_at(game, point, config.OPZ_STATION_RECT) is None)
+        if bare(point))
     end = (start[0] + 30, start[1] + 20)
     before_center = (game.opz_map_view.cx, game.opz_map_view.cy)
     event(game, pygame.MOUSEBUTTONDOWN, button=1, pos=start)

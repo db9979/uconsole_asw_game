@@ -279,7 +279,8 @@ def test_native_opz_uses_full_height_and_suppresses_bottom_panels(monkeypatch):
     assert calls == []
     regions = stations_view.opz_regions(config.OPZ_STATION_RECT)
     assert regions["map"].bottom > config.MAIN_BOTTOM
-    assert regions["sidebar"].right == config.SCREEN_W
+    assert regions["sidebar"].right == config.SCREEN_W - 8
+    assert regions["tracks"].x == 8 and regions["tracks"].right < regions["map"].x
 
 
 def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
@@ -406,7 +407,8 @@ def test_opz_ppi_hit_rect_is_bounded_at_1280x720(monkeypatch):
     regions = stations_view.opz_regions()
     ppi = regions["chart"]
     assert pygame.Rect(0, 0, 1280, 720).contains(ppi)
-    assert ppi.right <= int(config.STATION_RECT[2] * .75)
+    assert ppi.right < regions["sidebar"].x
+    assert regions["tracks"].right < ppi.x
     assert regions["map"].contains(ppi)
     assert regions["map"] == ppi
     assert regions["map"].bottom > config.MAIN_BOTTOM

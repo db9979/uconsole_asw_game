@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.177
+## 1.3.178
 
-Version 1.3.177 bringt Bilder ins Handbuch. Jede Station der Fregatte und
+Version 1.3.178 bringt Bilder ins Handbuch. Jede Station der Fregatte und
 des U-Boots ist jetzt auf der uConsole und im Remote-Crew-Browser zu sehen,
 dazu alle sechs Sonarseiten, Fernglas und Sehrohr bei Tag und Nacht,
 Hauptmenü, Szenarioauswahl, Einweisung, Optionen, die Editoren und die
@@ -16,6 +16,19 @@ lässt sie weg. Das U-Boot-Kapitel nennt jetzt jede Stationsseite mit ihren
 Tasten. Die Schritte der ersten Patrouille passen wieder zum Hauptmenü, der
 Schnellstart sagt, welche Funktionen noch eine Taste brauchen, und „U-Boot“
 ersetzt „Boot“. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
+## 1.3.177
+
+Version 1.3.177 bringt die neue Aufteilung in drei Spalten zu Sonar, OPZ und
+der Waffenseite des U-Boots. Das Sonar zeigt seine Kontakte links als Karten
+(Peilung, Klassifizierung, Balken für den Störabstand; ein Klick wählt einen
+Kontakt), in der Mitte die Anzeige der Seite und rechts den Hörposten mit
+seiner Rose. Die OPZ hat auf jeder Seite links Trackkarten, in der Mitte die
+Karte und rechts das Statusfeld. Die Waffenseite des U-Boots zeigt
+Kontaktkarten über der Schusslage und die Feuerleitung über den Rohrlampen;
+an der Waffenstation feuert ein Klick auf das rote Feuerfeld wie Strg+Enter.
+Die Tasten bleiben gleich; Spielstände sind v50, v38 bis v49 lassen sich
+weiter laden.
 
 ## 1.3.176
 

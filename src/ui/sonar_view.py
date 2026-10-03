@@ -15,7 +15,7 @@ from src.ui import pointer
 from src.ui import profile_cursor
 from src.ui import theme
 from src.ui.sonar_data import (  # noqa: F401
-    PAGES, ACTIVE_HISTORY_WINDOW_S, DEMON_DISPLAY_MAX_HZ, _sonar_observer,
+    PAGES, CARD_H, CARD_PITCH, ACTIVE_HISTORY_WINDOW_S, DEMON_DISPLAY_MAX_HZ, _sonar_observer,
     message, _observed_bearing, _bearing_line, _history_for_page,
     _visible_contacts, _visible_echoes, _list_rows, _array_readout,
     _circular_broadband, _linear_lofar, _lofar_frequencies,
@@ -1060,7 +1060,8 @@ def _draw_bearing_rose(game, rect):
     """North-up rose: own course, baffles, listening beam and contact bearings."""
     from src.ui import lines
     screen = game.screen
-    radius = min(rect.w, rect.h) // 2 - 14
+    # Room for the 090/270 labels beside the ring and 000/180 above/below.
+    radius = max(20, min(rect.w // 2 - 38, rect.h // 2 - 22))
     cx, cy = rect.centerx, rect.centery
     layout.record_geometry("instrument", rect, "sonar:rose")
 
@@ -1095,7 +1096,7 @@ def _draw_bearing_rose(game, rect):
                    polar(radius, step), 1)
     for step, label in ((0, "000"), (90, "090"), (180, "180"), (270, "270")):
         x, y = polar(radius + (9 if step in (0, 180) else 20), step)
-        _text(screen, label, (x - 16, y - 8, 32, 16), DIM, 11, "center")
+        _text(screen, label, (x - 16, y - 9, 32, 18), DIM, 12, "center")
     if course is not None:
         lines.line(screen, TEXT, (cx, cy), polar(radius * .45, float(course)), 2)
     selected = getattr(game, "selected_contact", None)
@@ -1127,9 +1128,12 @@ def _draw_contacts(game, rect):
             layout.record_geometry("sonar-contact", row_rect,
                                    f"sonar:contact:{contact.id}")
             pointer.add_hotspot(row_rect.clip(rect))
-            if contact is selected:
-                pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, row_rect)
-                pygame.draw.rect(screen, CYAN, (row_rect.x, y, 3, row_rect.h))
+            chosen = contact is selected
+            # A card: raised fill, the selected one framed in the focus colour.
+            pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE if chosen else theme.c("raised"),
+                             row_rect, border_radius=4)
+            pygame.draw.rect(screen, theme.c("focus") if chosen else theme.c("line"),
+                             row_rect, 2 if chosen else 1, border_radius=4)
             label = display_value("classification",
                                   getattr(contact, "player_class", None))
             profile = getattr(contact, "player_profile", None)
@@ -1139,33 +1143,31 @@ def _draw_contacts(game, rect):
             release = localize("sonar.release.short_released"
                                if getattr(contact, "released_to_opz", False)
                                else "sonar.release.short_private")
-            contact_line = (localize(message(
-                "sonar.line.contact",
-                contact=observations.contact_display_id(game, contact),
-                label=label)) + " " + release)
             age = max(0, getattr(game, "sim_t", 0) - getattr(contact, "last_seen", 0))
             from src.ui import console
-            console.led(screen, (rect.x + 17, y + 11), 5,
+            console.led(screen, (rect.x + 17, y + 12), 5,
                         "on" if age < 10 else "caution" if age < 60 else "off")
-            _text(screen, contact_line,
-                  (rect.x + 28, y + 2, rect.w - 119, 19), TEXT, 14)
-            snr = getattr(contact, "snr", None)
-            if snr is not None and math.isfinite(snr):
-                # SNR bar from -10 to +20 dB along the row's foot.
-                fill = max(0.0, min(1.0, (float(snr) + 10.0) / 30.0))
-                bar = pygame.Rect(rect.x + 28, y + 39, rect.w - 42, 2)
-                pygame.draw.rect(screen, layout.METER_TRACK, bar)
-                pygame.draw.rect(screen, config.COLOR_OK if snr >= 6 else AMBER,
-                                 (bar.x, bar.y, round(bar.w * fill), bar.h))
+            _text(screen, observations.contact_display_id(game, contact),
+                  (rect.x + 28, y + 3, rect.w - 130, 19), TEXT, 15)
             _text(screen, message("sonar.line.bearing_value",
                                   bearing=observations.format_bearing(
                                       contact, _sonar_observer(game))),
-                  (rect.right - 94, y + 2, 82, 19), CYAN, 13, "right")
+                  (rect.right - 104, y + 2, 92, 21), CYAN, 17, "right")
+            _text(screen, f"{label} {release}",
+                  (rect.x + 14, y + 22, rect.w - 26, 17), TEXT, 13)
             uncertainty = observations.bearing_uncertainty(contact)
             _text(screen, message("sonar.line.contact_quality", snr=f"{getattr(contact, 'snr', -99):+.1f}",
                                   confidence=f"{getattr(contact, 'confidence', 0):.0%}", age=f"{age:.0f}",
                                   uncertainty=f"{uncertainty:.1f}" if uncertainty is not None else "--"),
-                   (rect.x + 28, y + 21, rect.w - 42, 17), DIM, 12)
+                  (rect.x + 14, y + 38, rect.w - 26, 18), DIM, 12)
+            snr = getattr(contact, "snr", None)
+            if snr is not None and math.isfinite(snr):
+                # SNR bar from -10 to +20 dB along the card's foot.
+                fill = max(0.0, min(1.0, (float(snr) + 10.0) / 30.0))
+                bar = pygame.Rect(rect.x + 14, y + CARD_H - 5, rect.w - 32, 2)
+                pygame.draw.rect(screen, layout.METER_TRACK, bar)
+                pygame.draw.rect(screen, config.COLOR_OK if snr >= 6 else AMBER,
+                                 (bar.x, bar.y, round(bar.w * fill), bar.h))
 
 
 def _draw_echo_list(game, rect):
@@ -1185,6 +1187,8 @@ def _draw_echo_list(game, rect):
             layout.record_geometry("sonar-echo", row_rect,
                                    f"sonar:echo:{echo.get('contact_id', '')}")
             pointer.add_hotspot(row_rect.clip(rect))
+            pygame.draw.rect(screen, theme.c("raised"), row_rect, border_radius=4)
+            pygame.draw.rect(screen, theme.c("line"), row_rect, 1, border_radius=4)
             color = _echo_color(float(echo["age_s"]))
             _text(screen, message("sonar.line.echo_bearing", contact=echo.get('contact_id', '--'),
                                   bearing=f"{float(echo['bearing']) % 360:05.1f}"),

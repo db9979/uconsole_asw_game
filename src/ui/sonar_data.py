@@ -53,9 +53,14 @@ def _history_for_page(sonar, page):
             getattr(sonar, "lofar_times", []), config.LOFAR_HISTORY_COLS)
 
 
+# Contact cards in the left column: card height and pitch (UI grid).
+CARD_H = 62
+CARD_PITCH = 66
+
+
 def _visible_contacts(game, rect):
     contacts = sorted(game.sonar.active_contacts(), key=lambda item: item.id)
-    capacity = max(1, (rect.h - 33) // 43)
+    capacity = max(1, (rect.h - 33) // CARD_PITCH)
     selected = getattr(game, "selected_contact", None)
     index = next((i for i, item in enumerate(contacts) if item is selected), 0)
     start = max(0, min(index - capacity // 2, len(contacts) - capacity))
@@ -66,7 +71,7 @@ def _visible_echoes(game, rect):
     latest = {}
     for echo in active_echoes(game.sonar, getattr(game, "sim_t", 0.0)):
         latest[echo.get("contact_id")] = echo
-    capacity = max(1, (rect.h - 33) // 43)
+    capacity = max(1, (rect.h - 33) // CARD_PITCH)
     return list(reversed(list(latest.values())[-capacity:])), len(latest)
 
 
@@ -77,8 +82,8 @@ def _list_rows(game, rect, page):
     else:
         _, _, rows = _visible_contacts(game, rect)
         total = None
-    return [(item, pygame.Rect(rect.x + 5, rect.y + 32 + index * 43,
-                               rect.w - 10, 41))
+    return [(item, pygame.Rect(rect.x + 5, rect.y + 32 + index * CARD_PITCH,
+                               rect.w - 10, CARD_H))
             for index, item in enumerate(rows)], total
 
 

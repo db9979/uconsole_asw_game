@@ -21,7 +21,7 @@ The station has six pages. `PgUp`/`PgDn` (or `2` again) cycles them. The listeni
 | UMWELT / FUSION | Sound profile, layer, CZ, array comparison | Choosing TAS depth, spotting ghost contacts |
 | ACTIVE | Stored echoes with age and error | Range and depth from pings |
 
-The listening console below the detail rows works like a control desk: lamps show ping ready (amber while a ping is out), audio and peak hold, and a north-up bearing rose shows the listening beam (amber), the baffles astern (red sector), own course and every published contact bearing. The contact list marks each contact with a lamp and a signal-to-noise bar. The Remote Crew browser shows the same rose beside its waterfalls.
+The station has three columns: contact cards on the left, the page's display in the middle, the detail rows and listening console on the right. The listening console below the detail rows works like a control desk: lamps show ping ready (amber while a ping is out), audio and peak hold, and a north-up bearing rose shows the listening beam (amber), the baffles astern (red sector), own course and every published contact bearing. Each contact card shows a lamp, the bearing, the classification and a signal-to-noise bar; a click selects it. The Remote Crew browser shows the same rose beside its waterfalls.
 
 ### BROADBAND waterfall {#sonar-broadband}
 

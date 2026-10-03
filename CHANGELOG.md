@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.177
+## 1.3.178
 
-Release 1.3.177 brings pictures into the manual. Every station of the frigate
+Release 1.3.178 brings pictures into the manual. Every station of the frigate
 and the submarine now appears on the uConsole and in the Remote Crew browser,
 together with all six sonar pages, binoculars and periscope by day and at
 night, the main menu, scenario selection, briefing, options, the editors and
@@ -16,6 +16,19 @@ game leaves them out. The submarine chapter now lists every station page with
 its keys. The first-patrol steps match the main menu again, the quick start
 says which functions still need a key, and "submarine" replaces "boat". Saves
 are v50; v38 to v49 saves still load.
+
+## 1.3.177
+
+Release 1.3.177 brings the new three-column layout to Sonar, the CIC and the
+submarine's Weapons page. Sonar now lists its contacts as cards on the left
+(bearing, classification, signal-to-noise bar; a click selects one), shows
+the page's display in the middle and the listening post with its rose on the
+right. The CIC has track cards on the left on every page, the chart in the
+middle and the status panel on the right. The submarine's Weapons page shows
+contact cards above the engagement plot and fire control above the tube
+lamps; at the Weapons station a click on the red fire plate fires like
+Ctrl+Enter. Keys are unchanged; saves are v50 and v38 to v49 saves still
+load.
 
 ## 1.3.176
 

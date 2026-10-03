@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.177**
+Current release: **1.3.178**
 
-Release 1.3.177 brings pictures into the manual. Every station of the frigate
+Release 1.3.178 brings pictures into the manual. Every station of the frigate
 and the submarine now appears on the uConsole and in the Remote Crew browser,
 together with all six sonar pages, binoculars and periscope by day and at
 night, the main menu, scenario selection, briefing, options, the editors and

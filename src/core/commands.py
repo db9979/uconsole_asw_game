@@ -1,6 +1,6 @@
 """Shared station command metadata used by input and contextual hints."""
 
-from src.core.i18n import Translator, message
+from src.core.i18n import message
 from src.core.station import Station
 
 
@@ -31,25 +31,6 @@ STATION_PAGES = {
 
 # Compatibility export for callers that have not moved to station metadata yet.
 SONAR_PAGE_COUNT = len(STATION_PAGES[Station.SONAR])
-
-
-STATION_COMMAND_HINTS = {
-    Station.BRIDGE: "Links/Rechts Kurs | Auf/Ab Telegraph | C/V Direkt | Q/E Zoom | K Follow",
-    Station.SONAR: (
-        "Peilung Links/Rechts | Kontakt Auf/Ab | Shift+A Ping | Y TAS | M Ziel",
-        "control.hint.sonar_release",
-    ),
-    Station.WEAPONS: "control.hint.weapons",
-    Station.DAMAGE: "Links/Rechts Raum | Auf/Ab Team | Enter Zuweisen",
-    Station.OPZ: "control.hint.opz",
-    Station.RADIO: "Auf/Ab HFDF | Enter Protokoll",
-    Station.ENGINE: "Auf/Ab Telegraph | A Leise | V Fahrt",
-    Station.HELICOPTER: (
-        "control.hint.helicopter",
-        "control.hint.helicopter_dipping",
-    ),
-    Station.ELOKA: "control.hint.eloka",
-}
 
 
 def event_feed_heading(station: Station) -> str:
@@ -114,12 +95,3 @@ def toggle_vds(game, tr=None) -> bool:
     if feed is not None and world is not None:
         feed.add(world.format_time(), "sonar", notice)
     return result is True
-
-
-def station_command_hint(station: Station, tr=None) -> str:
-    """Translate command metadata, retaining the historical German default."""
-    text = STATION_COMMAND_HINTS.get(station, "")
-    translate = tr or Translator("de").t
-    if isinstance(text, tuple):
-        return " | ".join(translate(part) for part in text)
-    return translate(text)

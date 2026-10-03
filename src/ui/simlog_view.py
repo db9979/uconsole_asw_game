@@ -294,7 +294,9 @@ def draw_simlog_view(game) -> None:
            (16, 10))
     live_face = layout.font(13)
     live = live_face.render(tr("simlog.view.live_note"), True, config.COLOR_OK)
-    s.blit(live, (config.SCREEN_W - live.get_width() - 16, 14))
+    from src.ui import game_menu
+    close = game_menu.close_button(s, (0, 0, config.SCREEN_W, top.h - 8))   # F4 / Esc
+    s.blit(live, (close.x - live.get_width() - 12, 14))
     footer_h = 36
     body = pygame.Rect(12, top.bottom + 4, config.SCREEN_W - 24,
                        config.SCREEN_H - top.bottom - footer_h - 12)

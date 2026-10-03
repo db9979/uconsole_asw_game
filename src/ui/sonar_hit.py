@@ -51,6 +51,7 @@ def sonar_geometry(game, page=None):
     tabs = [pygame.Rect(tab_x + i * tab_w, station.y + 9, tab_w - 5, 27)
             for i in range(len(PAGES))]
     main, details, contacts = _panels(game, page)
+    contacts, contact_keys = _contact_key_rows(game, contacts)
     sonar = game.sonar
     on_off = lambda flag: localize("ui.on" if flag else "ui.off")
     array = ("SHIFT+B", "sonar.footer.array", "", _array_readout(game))
@@ -96,7 +97,37 @@ def sonar_geometry(game, page=None):
                            station.bottom - 22, width - 6, 19)
         footer.append(dict(rect=rect, action=action, text=spec, safe=True))
     return dict(station=station, tabs=tabs, main=main, details=details,
-                contacts=contacts, footer=footer)
+                contacts=contacts, footer=footer, contact_keys=contact_keys)
+
+
+# The selected contact's orders as key chips under the contact cards (full
+# mouse control): classify, TMA, release to the OPZ, target and the towed
+# arrays.  The submarine's sonar room has no OPZ and no towed arrays.
+CONTACT_KEYS_FRIGATE = ((("C", "sonar.keys.classify"), ("T", "sonar.keys.tma")),
+                        (("G", "sonar.keys.release"), ("M", "sonar.keys.target")),
+                        (("Y", "sonar.keys.tas"), ("Shift+Y", "sonar.keys.vds")))
+CONTACT_KEYS_BOAT = ((("C", "sonar.keys.classify"), ("T", "sonar.keys.tma")),
+                     (("M", "sonar.keys.target"),))
+CONTACT_KEY_ROW_H = 22
+CONTACT_KEY_GAP = 2
+
+
+def contact_key_specs(game):
+    return (CONTACT_KEYS_BOAT if getattr(game, "local_side", None) == "uboot"
+            else CONTACT_KEYS_FRIGATE)
+
+
+def _contact_key_rows(game, contacts):
+    """Split the contact column: the cards' panel above, chip rows below."""
+    specs = contact_key_specs(game)
+    height = len(specs) * (CONTACT_KEY_ROW_H + CONTACT_KEY_GAP)
+    panel = pygame.Rect(contacts.x, contacts.y, contacts.w, contacts.h - height - 4)
+    rows = []
+    y = panel.bottom + 4 + CONTACT_KEY_GAP
+    for row in specs:
+        rows.append((pygame.Rect(contacts.x, y, contacts.w, CONTACT_KEY_ROW_H), row))
+        y += CONTACT_KEY_ROW_H + CONTACT_KEY_GAP
+    return panel, rows
 
 
 def sonar_click_target(game, pos):

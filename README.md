@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.188**
+Current release: **1.3.189**
 
-Release 1.3.188 fixes two things in the browser's server mode. When the game
+Release 1.3.189 fixes two things in the browser's server mode. When the game
 leader switches the unit in the lobby, every browser now moves to that unit's
 stations (against the AI); before, the crew stayed on the old unit's stations.
 A crowded top bar no longer squeezes "Add station" into a column of single

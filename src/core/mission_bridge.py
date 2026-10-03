@@ -454,6 +454,8 @@ class MissionBridgeMixin:
         self.simlog_view_open = False
         self.autocrew_overview_open = False
         self.weather_station_open = False
+        # The top bar's game menu (src/ui/game_menu.py): display state only.
+        self.game_menu_open = False
         self.feed_overlay_open = False
         self.pinned_tooltip = None
         self._tooltip_anchor = None

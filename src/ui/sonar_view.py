@@ -1246,6 +1246,10 @@ def draw_sonar_view(game, tr=None) -> None:
             _draw_echo_list(game, contacts)
         else:
             _draw_contacts(game, contacts)
+        from src.ui.stations.common import _shortcut_footer
+        for rect, specs in geometry["contact_keys"]:
+            # Contact orders by click: each chip presses its key.
+            _shortcut_footer(screen, rect, specs)
         for segment in geometry["footer"]:
             rect = segment["rect"]
             layout.record_geometry("sonar-action", rect,

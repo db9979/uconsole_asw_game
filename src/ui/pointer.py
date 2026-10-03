@@ -132,6 +132,7 @@ _MODS = {"shift": pygame.KMOD_SHIFT, "umschalt": pygame.KMOD_SHIFT,
 _PAIRS = {"help.key.page_arrows": ("PgUp", "PgDn"), "help.key.page": ("PgUp", "PgDn"),
           "help.key.page_spaced": ("PgUp", "PgDn"), "help.key.enter": ("Enter",),
           "help.key.uboot_blow": ("Shift+B",), "help.key.uboot_fire": ("Ctrl+Enter",),
+          "help.key.ctrl_m": ("Ctrl+M",),
           "help.key.left_right": ("←", "→"), "help.key.up_down": ("↑", "↓"),
           "help.key.up_down_hold": ("↑", "↓")}
 

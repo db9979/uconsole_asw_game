@@ -30,6 +30,8 @@ def owner(game) -> str:
         return "end"
     if game.input_mode is not None:
         return "input"
+    if getattr(game, "game_menu_open", False):
+        return "popup"      # the top bar's game menu (src/ui/game_menu.py)
     return "station"
 
 
@@ -53,6 +55,8 @@ def handle(game, e) -> bool:
         game.handle_event(key_event(held[0], held[1], down=False))
         return True
     layer = owner(game)
+    if layer == "popup":
+        return _handle_popup(game, e)
     if e.type == pygame.MOUSEWHEEL:
         # Menus and dialogs: the wheel steps the selection or scrolls.
         if layer not in ("menu", "overlay") or not getattr(e, "y", 0):
@@ -85,6 +89,19 @@ def handle(game, e) -> bool:
     game.handle_event(key_event(target.key, target.mod))
     # Held like the key until the button is let go (steering, telegraph).
     game._pointer_held = (target.key, target.mod)
+    return True
+
+
+def _handle_popup(game, e) -> bool:
+    """The open game menu owns the pointer: a row runs its action, any other
+    click (or a right click) only closes the menu."""
+    if e.type == pygame.MOUSEBUTTONDOWN and getattr(e, "button", 0) == 1:
+        target = pointer.hit(game._window_to_canvas(getattr(e, "pos", None)), "popup")
+        if target is not None and target.action is not None:
+            target.action(game._window_to_canvas(e.pos))
+            return True
+    if e.type == pygame.MOUSEBUTTONDOWN:
+        game.game_menu_open = False
     return True
 
 

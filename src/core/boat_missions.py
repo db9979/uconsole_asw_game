@@ -591,7 +591,7 @@ def objective(game, boat):
     if boat.sub.sunk:
         return message("uboot.objective_lost")
     from src.core import custom_boat
-    custom = custom_boat.objective(game, boat.sub)
+    custom = custom_boat.objective(game, boat)
     if custom is not None:
         return custom
     if kind == "free_boat":
@@ -600,10 +600,15 @@ def objective(game, boat):
     if kind in mission_modes.MODES:
         return mission_modes.boat_objective(game, boat, kind)
     if kind in ("breakthrough", "strait", "swimmers"):
+        # Bearing and range from where the crew believes the boat is; the
+        # swimmers in the lock (adjudicated on the true position) are a fact.
+        from src.core import boat_nav
         point = goal(game)
-        dx, dy = point["x"] - boat.sub.x, point["y"] - boat.sub.y
+        bx, by = boat_nav.position(boat)
+        dx, dy = point["x"] - bx, point["y"] - by
         bearing = f"{math.degrees(math.atan2(dx, -dy)) % 360.0:03.0f}"
-        if kind == "swimmers" and math.hypot(dx, dy) <= point["radius_nm"]:
+        if kind == "swimmers" and (in_lockout(game, boat.sub)
+                                   or math.hypot(dx, dy) <= point["radius_nm"]):
             left = max(0.0, config.SWIMMER_HOLD_S - game.swimmer_hold_s)
             return message("uboot.objective.swimmers_hold" if in_lockout(game, boat.sub)
                            else "uboot.objective.swimmers_zone",

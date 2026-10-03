@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.188
+## 1.3.189
 
-Version 1.3.188 behebt zwei Fehler im Server-Modus des Browsers. Schaltet der
+Version 1.3.189 behebt zwei Fehler im Server-Modus des Browsers. Schaltet der
 Spielleiter in der Lobby die Einheit um, wechselt jetzt jeder Browser auf die
 Stationen dieser Einheit (gegen die KI); bisher blieb die Besatzung auf den
 Stationen der alten Einheit. Eine volle Kopfleiste quetscht „Station
@@ -14,6 +14,37 @@ hinzufügen“ nicht mehr zu einer Spalte einzelner Buchstaben: Der Knopf bleibt
 einzeilig, und die Leiste bricht in eine zweite Zeile um, statt rechts
 abgeschnitten zu werden. Tasten bleiben gleich. Spielstände sind v50; v38 bis
 v49 lassen sich weiter laden.
+
+## 1.3.188
+
+Version 1.3.188 macht Abläufe und Speichern verlässlicher. Zwei Spiele mit
+gleichem Seed laufen jetzt gleich ab, auch nacheinander ohne Neustart des
+Programms (Radar und MAD des Seefernaufklärers, Kontaktmeldungen und
+U-Boot-Sichtungen hängen nicht mehr an der internen Nummerierung). Jeder
+Spielstand wird vor dem Schreiben geprüft, ein kaputter Stand kann also den
+letzten guten Platz oder die Autosicherung nicht mehr überschreiben; die
+regelmäßige Autosicherung prüft im Hintergrund, damit das Spiel flüssig
+weiterläuft. Die Zielzeile des U-Boots nutzt jetzt den Koppelort statt der
+wahren Position. Ungenutzte Schwellen sind entfernt, und das Handbuch sagt
+jetzt, dass KI-U-Boote Kontakte der letzten 4 Minuten melden. Die Tasten
+folgen dem gemeinsamen Schema genauer: Der F-Schuss des U-Boots feuert nur mit
+Strg+Enter (Enter bestätigt die Entfernung), C klassifiziert auf der ESM-Seite
+des U-Boots, W legt den Wegpunkt des Hubschraubers auf den gewählten Kontakt,
+Enter nimmt auf der Funkseite Aufträge den gewählten Auftrag an, Rück auf
+OPZ-Seite 5 setzt nur die gewählte Zeile zurück (Umschalt+Rück alles),
+Umschalt+A pingt an der Führung des U-Boots jetzt auch auf der uConsole, und
+die Wahl des echten Seegebiets wandert von Bild↑/↓ auf [ und ]. W, R und F
+wirken nicht mehr unsichtbar in Lobby, Einsatzbuch und anderen Menüseiten. F1
+zeigt an Bord des U-Boots dessen eigene Globaltasten, und das Einsatzbuch
+nennt seine Tasten unten. Funktionen, die bisher eine Taste brauchten, gehen
+jetzt auch per Klick: Ein Menüsymbol in der Kopfleiste öffnet Hilfe, Optionen,
+Speichern, Laden, Wetter, Plot, die Crew-Automatik, SimLog, den Ersten
+Offizier, den Analysator, Remote Crew, Nationen und Beenden, und jedes Fenster
+hat ein Schließen-Kreuz; Sonar, OPZ (Ziel- und Begleiterseite) sowie Sonar und
+Waffen des U-Boots bekommen anklickbare Tastenchips (Klassifizieren, TMA,
+Freigabe, Schleppsonar, Düppel, Ziel zuweisen, Rohr fluten, Täuschkörper).
+Feuern per Klick bleibt auf die Waffenstation beschränkt. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.187
 

@@ -451,7 +451,7 @@ Weapons control turns a sonar contact into a firing solution. It launches the fr
 
 ### Displays and instruments
 
-Page 1 (target) shows the chart with the selected contact, the torpedo depth and the fire-control readiness line. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state, helicopter stores and the torpedo setup line: selected type with its remaining stock, search pattern, seeker enable point and salvo size.
+Page 1 (target) shows the chart with the selected contact; the panel has contact cards on the left (a click selects a contact as `←`/`→` would, `M` assigns it, the target has a red mark) above the engagement stages, and the fire-control solution with the torpedo depth, the engagement sketch, the tube lamps and the readiness line on the right. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state, helicopter stores and the torpedo setup line: selected type with its remaining stock, search pattern, seeker enable point and salvo size.
 
 The readiness line is checked top to bottom; the first failed check is shown:
 
@@ -794,7 +794,7 @@ The radio room handles communications with HQ and HF direction finding (HFDF). H
 
 ### Displays and instruments
 
-Page 1 lists current HFDF signals with the DF rose on the left and the cross-fix chart with the bearing log on the right; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
+Page 1 has three columns: the current HFDF signals as cards on the left (a click selects one as `↑`/`↓` would), the cross-fix chart in the middle and the DF rose with the bearing log and the fixes on the right; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
 
 ```text
  HFDF SIGNALS               BEARING LOG
@@ -1063,7 +1063,7 @@ Electronic warfare (EloKa) listens passively for radar emitters (ESM) and, when 
 
 ### Displays and instruments
 
-Page 1 lists intercepts; page 2 shows the evidence for the selected intercept (frequency, PRF, modulation, candidates, correlation).
+Both pages show the intercepts as cards on the left (key, bearing, frequency and band, quality and age; the stripe is the threat colour; a click selects one as `↑`/`↓` would). Page 1 has the threat rose with the filter line in the middle and the selected intercept on the right (signal fingerprint, bearing, radar type, threat, ECM, assignment, best library candidates) above the ESM, jammer, automatic ECM and tone lamps; page 2 shows the full evidence for the selected intercept (frequency, PRF, modulation, candidates, correlation).
 
 ```text
  INTERCEPTS                       status  threat  band

@@ -6,7 +6,7 @@ Weapons control turns a sonar contact into a firing solution. It launches the fr
 
 ## Displays and instruments {#weapons-displays}
 
-Page 1 (target) shows the chart with the selected contact, the torpedo depth and the fire-control readiness line. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state, helicopter stores and the torpedo setup line: selected type with its remaining stock, search pattern, seeker enable point and salvo size.
+Page 1 (target) shows the chart with the selected contact; the panel has contact cards on the left (a click selects a contact as `←`/`→` would, `M` assigns it, the target has a red mark) above the engagement stages, and the fire-control solution with the torpedo depth, the engagement sketch, the tube lamps and the readiness line on the right. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state, helicopter stores and the torpedo setup line: selected type with its remaining stock, search pattern, seeker enable point and salvo size.
 
 The readiness line is checked top to bottom; the first failed check is shown:
 

@@ -8,7 +8,7 @@ import pygame
 from src.core import config
 from src.core.i18n import localized, message, raw_text
 from src.core.station import Station
-from src.ui import layout, pointer
+from src.ui import layout, pointer, theme
 from src.ui import observations
 
 
@@ -38,10 +38,17 @@ def draw_radio_view(game, tr=None) -> None:
     w = r[2] - 28
     box_h = station_rect.bottom - cy - 34
 
-    if page == 0:
-        # Current intercepts and the DF rose left; the cross-fix chart with
-        # the operator's logged bearings and fixes right.
-        regions = hfdf_regions(x, cy, w, box_h)
+    regions = hfdf_regions(x, cy, w, box_h)
+    if page == 0 and regions["side"].w > 0:
+        # Signal cards left, the cross-fix chart in the middle, the DF rose
+        # with the logged bearings and fixes right.
+        _draw_signal_cards(game, s, regions["left"])
+        _draw_chart_and_log(game, s, layout.box(s, regions["right"], "panel.hfdf_chart"),
+                            log=False)
+        _draw_side(game, s, regions["side"])
+    elif page == 0:
+        # Narrow station: current intercepts and the DF rose left; the
+        # cross-fix chart with the logged bearings and fixes right.
         left = layout.box(s, regions["left"], "panel.hfdf")
         _draw_chart_and_log(game, s, layout.box(s, regions["right"], "panel.hfdf_chart"))
         lx, ly, lw, _ = left
@@ -139,19 +146,149 @@ HFDF_LEFT_SHARE = .4
 HFDF_LOG_ROWS = 4
 
 
+HFDF_CARDS_W = 272
+HFDF_SIDE_W = 300
+HFDF_CARD_H = 50
+HFDF_CARD_PITCH = 54
+
+
 def hfdf_regions(x, cy, w, box_h) -> dict:
-    """Page 1 geometry shared by drawing and the station tooltips."""
+    """Page 1 geometry shared by drawing and the station tooltips.
+
+    A wide station has three columns: the intercepted signals as cards
+    ("left"), the cross-fix chart ("right", the name kept for the tooltip
+    hit test) and the DF rose with the logged bearings and fixes ("side").
+    A narrow one keeps the old split without the side column.
+    """
+    if w >= 1000:
+        gap = 10
+        left = pygame.Rect(x, cy, HFDF_CARDS_W, box_h)
+        side = pygame.Rect(x + w - HFDF_SIDE_W, cy, HFDF_SIDE_W, box_h)
+        right = pygame.Rect(left.right + gap, cy, side.x - gap - left.right - gap, box_h)
+        return {"left": left, "right": right, "side": side}
     split = int(w * HFDF_LEFT_SHARE)
     return {"left": pygame.Rect(x, cy, split - 6, box_h),
-            "right": pygame.Rect(x + split + 6, cy, w - split - 6, box_h)}
+            "right": pygame.Rect(x + split + 6, cy, w - split - 6, box_h),
+            "side": pygame.Rect(0, 0, 0, 0)}
 
 
-def _draw_chart_and_log(game, s, inner) -> None:
+def hfdf_cards(game, column) -> list:
+    """(index, report, rect) for the signal cards in ``column``, scrolled so
+    the selected signal stays visible."""
+    reports = game.hfdf_bearings()
+    if not reports:
+        return []
+    capacity = max(1, (column.h - 36 - 30) // HFDF_CARD_PITCH)
+    selected = min(game.radio_sel, len(reports) - 1)
+    start = max(0, min(selected - capacity // 2, len(reports) - capacity))
+    return [(index, report, pygame.Rect(column.x + 6, column.y + 34
+                                        + (index - start) * HFDF_CARD_PITCH,
+                                        column.w - 12, HFDF_CARD_H))
+            for index, report in enumerate(reports[start:start + capacity], start)]
+
+
+def _draw_signal_cards(game, s, column) -> None:
+    """Left column of page 1: one card per intercepted signal (label,
+    bearing, error and age); a click selects it as ↑/↓ would."""
+    layout.box(s, column, "panel.hfdf")
+    cards = hfdf_cards(game, column)
+    if not cards:
+        layout.blit_block(s, "panel.no_transmission", column.x + 12, column.y + 36,
+                          column.w - 24, 48, color=config.COLOR_TEXT_DIM, size=15)
+    selected_idx = min(game.radio_sel, len(game.hfdf_bearings()) - 1)
+    for index, report, rect in cards:
+        chosen = index == selected_idx
+        age = report.age(game.sim_t)
+        text = config.COLOR_TEXT if age < 30 or chosen else config.COLOR_TEXT_DIM
+        pygame.draw.rect(s, config.COLOR_TAB_ACTIVE if chosen else theme.c("raised"),
+                         rect, border_radius=4)
+        pygame.draw.rect(s, theme.c("focus") if chosen else theme.c("line"),
+                         rect, 2 if chosen else 1, border_radius=4)
+        pygame.draw.rect(s, config.COLOR_WARN if chosen else config.COLOR_HFDF,
+                         (rect.x + 3, rect.y + 5, 3, rect.h - 10))
+        pointer.add_action(rect, lambda _pos, index=index: setattr(game, "radio_sel", index))
+        layout.blit_line(s, raw_text(game.hfdf_display_id(report)),
+                         (rect.x + 12, rect.y + 3, rect.w - 96, 20), text, size=15)
+        layout.blit_line(s, observations.format_bearing(report, game.ship) + "\u00b0",
+                         (rect.right - 84, rect.y + 2, 76, 21), text, size=17,
+                         align="right")
+        layout.blit_line(s, message("radio.card.signal",
+                                    error=f"{_hfdf_error_deg(report):.0f}",
+                                    age=f"{age:.0f}"),
+                         (rect.x + 12, rect.y + 26, rect.w - 20, 19),
+                         config.COLOR_TEXT_DIM, size=13)
+    if game.hfdf_log:
+        layout.blit_line(s, message("radio.line.log_fix", log=len(game.hfdf_log),
+                                    fixes=len(game.hfdf_fixes)),
+                         (column.x + 12, column.bottom - 30, column.w - 24, 22),
+                         config.COLOR_OK, size=14)
+
+
+def _draw_df_rose(game, s, rose) -> None:
+    """The DF rose: live bearings with their error wedge, logged ones dim."""
+    from src.ui import console
+    reports = game.hfdf_bearings()
+    selected_idx = min(game.radio_sel, len(reports) - 1) if reports else -1
+    strobes = [(float(row["bearing"]) % 360, config.COLOR_TEXT_DIM, 1, 0, .6)
+               for row in list(game.hfdf_log)[-6:]]
+    strobes += [(observations.bearing(report, game.ship), config.COLOR_WARN
+                 if i == selected_idx else config.COLOR_HFDF,
+                 3 if i == selected_idx else 2, _hfdf_error_deg(report), .25)
+                for i, report in enumerate(reports[:12])]
+    console.bearing_rose(s, rose, strobes, course=game.ship.course, title="radio:rose")
+    storm = game.world.thunderstorm()
+    if storm > 0.0:
+        from src.ui import sferics
+        sferics.draw_rose(s, rose.center, min(rose.w, rose.h) // 2 - 20, storm, game._t)
+        sferics.draw_label(s, (rose.x, rose.bottom, rose.w, 16), storm)
+
+
+def _draw_side(game, s, column) -> None:
+    """Right column of page 1: the DF rose, then the newest logged bearings
+    and fixes one per line."""
+    box = layout.box(s, column, "panel.hfdf_side")
+    gx, gy, gw, gh = box
+    row_h = max(22, layout.font(14).get_linesize() + 2)
+    rose_h = min(gw, max(150, gh - 2 * (HFDF_LOG_ROWS + 1) * row_h - 16))
+    _draw_df_rose(game, s, pygame.Rect(gx, gy, gw, rose_h))
+    top = gy + rose_h + 8
+    logged = list(game.hfdf_log)[-HFDF_LOG_ROWS:]
+    if not logged:
+        layout.blit_block(s, "radio.log_empty", gx, top, gw, 2 * row_h,
+                          color=config.COLOR_TEXT_DIM, size=14)
+        pointer.add_token_keys((gx, top, gw, row_h), "radio.log_empty", 14,
+                               (("Enter", "Enter"),))
+        return
+    for row in reversed(logged):
+        age = max(0.0, game.sim_t - row["t"])
+        layout.blit_line(s, message(
+            "radio.line.logged", label=raw_text(row["label"]),
+            bearing=f"{row['bearing'] % 360:05.1f}",
+            x=f"{row['observer_x']:.1f}", y=f"{row['observer_y']:.1f}",
+            age=f"{age:.0f}"),
+            (gx, top, gw, row_h),
+            config.COLOR_TEXT if age <= CHART_WINDOW_S else config.COLOR_TEXT_DIM, size=14)
+        top += row_h
+    top += 6
+    for fix in reversed(list(game.hfdf_fixes.values())[-HFDF_LOG_ROWS:]):
+        if top + row_h > gy + gh:
+            break
+        age = max(0.0, game.sim_t - fix["t"])
+        layout.blit_line(s, message(
+            "radio.line.fix", label=raw_text(fix["label"]),
+            sigma=f"{fix['sigma_nm']:.1f}", age=f"{age:.0f}"),
+            (gx, top, gw, row_h),
+            config.COLOR_OK if age <= CHART_WINDOW_S else config.COLOR_TEXT_DIM, size=14)
+        top += row_h
+
+
+def _draw_chart_and_log(game, s, inner, log=True) -> None:
     """The cross-fix chart, with the newest logged bearings (left) and the
-    fixes (right) in two columns below it."""
+    fixes (right) in two columns below it (``log``; a wide station shows
+    them in its side column instead)."""
     gx, gy, gw, gh = inner
     row_h = max(22, layout.font(15).get_linesize() + 2)
-    chart = pygame.Rect(gx, gy, gw, max(1, gh - HFDF_LOG_ROWS * row_h - 8))
+    chart = pygame.Rect(gx, gy, gw, max(1, gh - HFDF_LOG_ROWS * row_h - 8) if log else gh)
     reports = game.hfdf_bearings()
     selected = (game.hfdf_display_id(reports[min(game.radio_sel, len(reports) - 1)])
                 if reports else None)
@@ -160,6 +297,8 @@ def _draw_chart_and_log(game, s, inner) -> None:
         layout.blit_line(s, message("radio.chart.scale", range=f"{chart_half_nm(view):.0f}"),
                          (chart.x + 6, chart.bottom - 24, 180, layout.font(14).get_linesize()),
                          config.COLOR_TEXT_DIM, size=14)
+    if not log:
+        return
     top = chart.bottom + 8
     column = (gw - 12) // 2
     logged = list(game.hfdf_log)[-HFDF_LOG_ROWS:]

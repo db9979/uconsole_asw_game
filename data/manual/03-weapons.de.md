@@ -6,7 +6,7 @@ Die Waffenzentrale macht aus einem Sonarkontakt eine Feuerlösung. Sie startet d
 
 ## Anzeigen und Instrumente {#weapons-displays}
 
-Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt, die Torpedotiefe und die Bereitschaftszeile der Feuerleitung. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand, Helikopter-Zuladung und die Torpedo-Einstellzeile: gewählter Typ mit Restvorrat, Suchmuster, Sucheraktivierungspunkt und Salvengröße.
+Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt; das Panel hat links Kontaktkarten (ein Klick wählt einen Kontakt wie `←`/`→`, `M` weist ihn zu, das Ziel trägt eine rote Marke) über den Einsatzstufen und rechts die Feuerleitlösung mit Torpedotiefe, Schusslage, Rohrlampen und Bereitschaftszeile. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand, Helikopter-Zuladung und die Torpedo-Einstellzeile: gewählter Typ mit Restvorrat, Suchmuster, Sucheraktivierungspunkt und Salvengröße.
 
 Die Bereitschaftszeile wird von oben nach unten geprüft; die erste fehlgeschlagene Prüfung wird angezeigt:
 

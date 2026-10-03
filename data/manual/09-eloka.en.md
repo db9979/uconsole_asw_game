@@ -6,7 +6,7 @@ Electronic warfare (EloKa) listens passively for radar emitters (ESM) and, when 
 
 ## Displays and instruments {#eloka-displays}
 
-Page 1 lists intercepts; page 2 shows the evidence for the selected intercept (frequency, PRF, modulation, candidates, correlation).
+Both pages show the intercepts as cards on the left (key, bearing, frequency and band, quality and age; the stripe is the threat colour; a click selects one as `↑`/`↓` would). Page 1 has the threat rose with the filter line in the middle and the selected intercept on the right (signal fingerprint, bearing, radar type, threat, ECM, assignment, best library candidates) above the ESM, jammer, automatic ECM and tone lamps; page 2 shows the full evidence for the selected intercept (frequency, PRF, modulation, candidates, correlation).
 
 ```text
  INTERCEPTS                       status  threat  band

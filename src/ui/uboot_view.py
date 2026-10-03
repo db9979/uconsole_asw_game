@@ -856,7 +856,7 @@ def _draw_weapon_contacts(s, game, boat, rect) -> None:
                           else message("uboot.local.unclassified"))
         layout.blit_line(s, raw_text(f"K{contact.id:02d}"), (card.x + 8, card.y + 3, 44, 20),
                          config.COLOR_TEXT, size=15)
-        layout.blit_line(s, classification, (card.x + 52, card.y + 4, card.w - 132, 18),
+        layout.blit_line(s, classification, (card.x + 52, card.y + 4, card.w - 132, 19),
                          config.COLOR_WARN if is_selected else config.COLOR_TEXT_DIM, size=13)
         layout.blit_line(s, raw_text(_fmt(_contact_bearing(contact), "{:03.0f}") + "\u00b0"),
                          (card.right - 66, card.y + 2, 58, 21), config.COLOR_TEXT,
@@ -865,7 +865,7 @@ def _draw_weapon_contacts(s, game, boat, rect) -> None:
                                     range=_fmt(distance, "{:.1f}"),
                                     quality=_fmt(max(contact.quality, contact.confidence) * 100.0,
                                                  "{:.0f}")),
-                         (card.x + 8, card.y + 25, card.w - 16, 17),
+                         (card.x + 8, card.y + 25, card.w - 16, 19),
                          config.COLOR_TEXT_DIM, size=13)
         if not remote:
             pointer.add_action(card, lambda _pos, picked=contact: _pick_contact(boat, picked))

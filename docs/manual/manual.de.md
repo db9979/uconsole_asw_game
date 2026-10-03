@@ -452,7 +452,7 @@ Die Waffenzentrale macht aus einem Sonarkontakt eine Feuerlösung. Sie startet d
 
 ### Anzeigen und Instrumente
 
-Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt, die Torpedotiefe und die Bereitschaftszeile der Feuerleitung. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand, Helikopter-Zuladung und die Torpedo-Einstellzeile: gewählter Typ mit Restvorrat, Suchmuster, Sucheraktivierungspunkt und Salvengröße.
+Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt; das Panel hat links Kontaktkarten (ein Klick wählt einen Kontakt wie `←`/`→`, `M` weist ihn zu, das Ziel trägt eine rote Marke) über den Einsatzstufen und rechts die Feuerleitlösung mit Torpedotiefe, Schusslage, Rohrlampen und Bereitschaftszeile. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand, Helikopter-Zuladung und die Torpedo-Einstellzeile: gewählter Typ mit Restvorrat, Suchmuster, Sucheraktivierungspunkt und Salvengröße.
 
 Die Bereitschaftszeile wird von oben nach unten geprüft; die erste fehlgeschlagene Prüfung wird angezeigt:
 
@@ -795,7 +795,7 @@ Der Funkraum wickelt die Verbindung zum Hauptquartier und die Kurzwellenpeilung 
 
 ### Anzeigen und Instrumente
 
-Seite 1 listet aktuelle HFDF-Signale mit der Peilrose links und die Kreuzpeilkarte mit dem Peilprotokoll rechts; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr; Seite 3 listet die HQ-Aufträge.
+Seite 1 hat drei Spalten: die aktuellen HFDF-Signale als Karten links (ein Klick wählt eines wie `↑`/`↓`), die Kreuzpeilkarte in der Mitte und die Peilrose mit Peilprotokoll und Fixen rechts; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr; Seite 3 listet die HQ-Aufträge.
 
 ```text
  HFDF-SIGNALE               PEILPROTOKOLL
@@ -1064,7 +1064,7 @@ Die Elektronische Kampfführung (EloKa) horcht passiv auf Radarsender (ESM) und 
 
 ### Anzeigen und Instrumente
 
-Seite 1 listet die Erfassungen; Seite 2 zeigt die Belege für die gewählte Erfassung (Frequenz, PRF, Modulation, Kandidaten, Korrelation).
+Beide Seiten zeigen die Erfassungen links als Karten (Kennung, Peilung, Frequenz und Band, Güte und Alter; der Streifen trägt die Bedrohungsfarbe; ein Klick wählt eine wie `↑`/`↓`). Seite 1 hat in der Mitte die Bedrohungsrose mit der Filterzeile und rechts die gewählte Erfassung (Signal-Fingerabdruck, Peilung, Radarart, Bedrohung, ECM, Zuordnung, beste Bibliothekskandidaten) über den Lampen für ESM, Störer, ECM-Automatik und Ton; Seite 2 zeigt alle Belege für die gewählte Erfassung (Frequenz, PRF, Modulation, Kandidaten, Korrelation).
 
 ```text
  ERFASSUNGEN                      Status  Bedroh. Band

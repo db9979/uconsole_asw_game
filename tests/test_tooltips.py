@@ -86,7 +86,7 @@ def test_pinned_snapshot_is_json_safe_and_restores_without_object_refs(game):
 @pytest.mark.parametrize("station,pos", [
     (Station.BRIDGE, (700, 150)),
     (Station.SONAR, (500, 300)),
-    (Station.WEAPONS, (700, 150)),
+    (Station.WEAPONS, (1000, 300)),
     (Station.DAMAGE, (30, 120)),
     (Station.OPZ, (1100, 120)),
     (Station.RADIO, (30, 120)),
@@ -104,7 +104,7 @@ def test_every_station_has_meaningful_context(game, station, pos):
 @pytest.mark.parametrize("station,pos,english", [
     (Station.BRIDGE, (700, 150), "COURSE / RUDDER"),
     (Station.SONAR, (500, 300), "BROADBAND BIN"),
-    (Station.WEAPONS, (700, 150), "FIRE-CONTROL SOLUTION"),
+    (Station.WEAPONS, (1000, 300), "FIRE-CONTROL SOLUTION"),
     (Station.DAMAGE, (400, 300), "Flooding"),
     (Station.OPZ, (1100, 120), "OPERATIONS / CIC CONTROLS"),
     (Station.RADIO, (30, 120), "HFDF BEARINGS"),

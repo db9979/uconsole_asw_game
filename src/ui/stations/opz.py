@@ -275,7 +275,7 @@ def _draw_track_cards(game, s, box, selected_id) -> None:
                                     affiliation=structured_message(
                                         "affil.code." + affiliation.lower()),
                                     domain=structured_message(OPZ_DOMAIN_CODES[domain])),
-                         (rect.x + 104, rect.y + 4, 60, 18), color, size=13)
+                         (rect.x + 104, rect.y + 4, 60, 19), color, size=13)
         layout.blit_line(s, observations.format_bearing(track, game.ship) + "\u00b0",
                          (rect.right - 76, rect.y + 2, 68, 21), config.COLOR_TEXT,
                          size=17, align="right")
@@ -284,7 +284,7 @@ def _draw_track_cards(game, s, box, selected_id) -> None:
         tags = "".join(localize("opz.source_code." + group)
                        for group in source_groups(track))
         layout.blit_line(s, f"{distance} \u00b7 {tags}",
-                         (rect.x + 12, rect.y + 24, rect.w - 20, 17),
+                         (rect.x + 12, rect.y + 24, rect.w - 20, 19),
                          config.COLOR_TEXT_DIM, size=13)
         pointer.add_hotspot(rect)       # opz_action_at takes the click
 

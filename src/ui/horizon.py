@@ -30,6 +30,9 @@ STABILIZED_RESIDUAL = 0.12
 # over its dipping sonar, the own helicopter close aboard) is drawn against
 # the moving sea horizon in front of the sea, not hidden behind it.
 LOW_AIR_DEG = 1.0
+# The bridge lookout's eye over the sea (``visual.LOOKOUT_EYE_HEIGHT_M``),
+# the default eye of a picture whose own way names none.
+DEFAULT_EYE_M = 18.0
 # Charted coast on the horizon: rays per full circle, the observer's move that
 # re-casts them, the bounded cache, and the assumed coastal heights (m; the
 # chart has no elevation, so hills vary smoothly along the coast).
@@ -144,6 +147,13 @@ def _draw_land(s, rect, land, *, line_of_sight, fov_deg, horizon, tilt, night,
         column = (px, top, base)
 
 
+def row_range(row) -> float:
+    """An eyepiece row's range, NM (10th column); infinite when unknown, so
+    the row stands on the horizon and behind every ranged one."""
+    value = row[9] if len(row) > 9 else None
+    return math.inf if value is None or not math.isfinite(value) or value <= 0.0 else float(value)
+
+
 def relative_offset(bearing: float, line_of_sight: float) -> float:
     """Signed angle from the line of sight to ``bearing`` (-180..180)."""
     return (bearing - line_of_sight + 180.0) % 360.0 - 180.0
@@ -220,7 +230,7 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                  land=None, anim_t: float = 0.0, sky=None, sea_state: float = 2.0,
                  elevation_deg: float = 0.0, stabilized: bool = False,
                  optics_label=None, way=None, events=(), lens=None,
-                 eyepiece: str | None = None) -> None:
+                 eyepiece: str | None = None, eye_m: float | None = None) -> None:
     """The picture in the eyepiece or binoculars in the start screen's look:
     sky with stars, moon or sun and clouds, the sea in motion, the charted
     coast, the outlines within the field in steel with a lit rim, rain, snow
@@ -234,8 +244,14 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
     sinkings), drawn at the display time ``anim_t``; ``lens`` is the water
     on a periscope's glass (``sight_scene.lens_water``: cover, drops);
     ``eyepiece`` (``"binoculars"`` or ``"scope"``) rounds the field with
-    the optics' rim (not at the low graphics level)."""
+    the optics' rim (not at the low graphics level).  A ship whose row
+    carries a range (10th column, the observer's own estimate) floats that
+    far below the horizon as the eye ``eye_m`` metres up sees its
+    waterline (default the own way's ``eye_m``, else the bridge lookout's),
+    and nearer ships are drawn in front of farther ones."""
     rect = pygame.Rect(rect)
+    if eye_m is None:
+        eye_m = float((way or {}).get("eye_m", DEFAULT_EYE_M))
     sky = sky if sky is not None else sight_scene.plain_sky(night)
     offset, tilt = motion
     if stabilized:
@@ -263,7 +279,9 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                 # In the still sky at its elevation, behind the clouds.
                 base = int(view.alt_y(0.0, cx) - row[5] * px_per_deg)
             else:
-                base = horizon + int(math.tan(tilt) * (cx - rect.centerx))
+                # The waterline: close aboard well below the horizon line.
+                drop = sight_scene.waterline_drop_deg(row_range(row) * 1852.0, eye_m)
+                base = horizon + int(math.tan(tilt) * (cx - rect.centerx) + drop * px_per_deg)
             width = min(rect.w, max(3, int(span_deg * px_per_deg)))
             fade = 0.55 if stale else haze * 0.6
             aob = row[6] if len(row) > 6 else None
@@ -283,8 +301,10 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
     # or over its deck) stands in front of the sea with the ships.
     airborne = [row for row in outlines
                 if len(row) > 5 and row[5] is not None and row[5] >= LOW_AIR_DEG]
-    afloat = [row for row in outlines
-              if not (len(row) > 5 and row[5] is not None and row[5] >= LOW_AIR_DEG)]
+    # Back to front: the farthest first, so a nearer ship hides a farther one.
+    afloat = sorted((row for row in outlines
+                     if not (len(row) > 5 and row[5] is not None and row[5] >= LOW_AIR_DEG)),
+                    key=lambda row: -row_range(row))
     with layout.clip_to(s, rect):
         colors = sight_scene.draw_scene(
             s, view, sky, visibility_nm=visibility_nm, sea_state=sea_state, t=anim_t, way=way,

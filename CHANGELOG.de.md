@@ -4,22 +4,35 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.169
+## 1.3.170
 
-Version 1.3.169 gibt der OPZ eine reichere Karte und eine Anzeigeseite voller
+Version 1.3.170 gibt der OPZ eine reichere Karte und eine Anzeigeseite voller
 Einstellungen. Seite 5 (Anzeige) stellt den Spurverlauf (aus, 3, 6 oder 12
 Minuten), die Vektorlänge (3 bis 30 Minuten), volle, kurze oder keine
 Beschriftung, eine Peilskala mit eigenem Kurs am äußeren Radarring,
 Entfernungsringe, Peilstrahlen, Unsicherheitskreise, Tiefen und Gitter, das
 Radar-Nachleuchten und den Punkt der nächsten Annäherung (CPA) des gewählten
 Tracks mit Abstand und Zeit ein. Auf/Ab wählt eine Zeile, Links/Rechts ändert
-sie, Backspace stellt den Standard wieder her, jede Zeile ist anklickbar, und
-Schalter unter der Karte schalten die Ebenen auf jeder Seite, und zwei
-Schalter auf der Karte schalten See- und Luftradar ein und aus. Die
+sie, Backspace stellt den Standard wieder her, und jede Zeile ist anklickbar.
+Schalter unter der Karte schalten die Ebenen auf jeder Seite, zwei Schalter
+auf der Karte See- und Luftradar ein und aus. Die
 Einstellungen bleiben in settings.json. Die OPZ im Browser hat dieselben
 Knöpfe über ihrer Karte und zeichnet dieselben Ringe, Peilskala, Spuren und
 den CPA. Nur Anzeige: die Simulation bleibt unverändert. Spielstände sind
 v50; v38 bis v49 lassen sich weiter laden.
+
+## 1.3.169
+
+Version 1.3.169 zeigt andere Schiffe im Fernglas des Ausgucks, im
+Horizontstreifen, im Sehrohr, im Trefferbild, in den Remote-Crew-Karten und
+im Handy-Ausguck so, wie das Auge sie sieht. Ein Schiff in der Nähe schwimmt
+jetzt mit seiner Wasserlinie unter der Kimm, so weit, wie das Auge in der
+gemessenen Entfernung auf das Wasser hinabsieht (etwa 1° auf 0,5 sm aus den
+18 m der Brücke), statt wie ein fernes Schiff auf der Kimm zu sitzen, und
+ein näheres Schiff steht vor einem ferneren statt in Listenreihenfolge.
+Peilung und Lagewinkel wurden geprüft und stimmten schon: die
+Steuerbordseite zeigt den Bug rechts, die Backbordseite den Bug links.
+Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.168
 

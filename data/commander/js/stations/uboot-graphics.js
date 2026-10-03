@@ -339,7 +339,7 @@ function drawScopeFrame(id, scope) {
     way: {speed_kn: scope.speed_kn, course_deg: scope.course, eye_m: SCOPE_EYE_M, hull: false},
     lens: {raised_s: raisedS}, eyepiece: "scope",
     outlines: scope.sightings.map((row) => ({bearing: row.bearing, span_deg: fullSpan(row.span_deg, row.aob_deg), cls: row.cls,
-      stale: row.age_s === null || row.age_s > 1, lights: row.lights, elevation_deg: row.elevation_deg, aob_deg: row.aob_deg, model: row.model, way: row.way,
+      stale: row.age_s === null || row.age_s > 1, lights: row.lights, elevation_deg: row.elevation_deg, aob_deg: row.aob_deg, model: row.model, way: row.way, range_nm: row.range_nm,
       ...(Number.isFinite(row.elevation_deg) ? {cls: "aircraft"} : {})}))}, performance.now() / 1000, g.font);
   if (!finite(scope.bearing)) drawEmpty(plot);
   return true;

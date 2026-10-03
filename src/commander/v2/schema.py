@@ -93,9 +93,11 @@ LOOKOUT_GLASSES_FIELDS = ("course", "speed_kn", "fov_deg", "visibility_nm", "sea
 # code) or null; ``elevation_deg``: an aircraft's angle above the sea
 # horizon (null on the surface); ``aob_deg``: the angle on the bow judged
 # of a made-out silhouette (null before), which turns its 3D model;
-# ``way``: the white water of a made-out ship's way, 0..1 (null before).
+# ``way``: the white water of a made-out ship's way, 0..1 (null before);
+# ``range_nm``: the observer's own range estimate (null without one), which
+# sets how far below the horizon the waterline lies.
 LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "lights", "elevation_deg",
-                          "aob_deg", "model", "way")
+                          "aob_deg", "model", "way", "range_nm")
 SIGHT_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
 # What the eye sees happen (``src/core/sight_events.py``): water columns,
 # fireballs, fire and smoke, sinkings; bearing and range from the observer.
@@ -107,7 +109,7 @@ LOOKOUT_PHONE_FIELDS = ("side", "available", "manned", "course", "speed_kn", "re
                         "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset",
                         "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines",
                         "calls", "events")
-LOOKOUT_PHONE_OUTLINE_FIELDS = LOOKOUT_OUTLINE_FIELDS + ("called", "range_nm")
+LOOKOUT_PHONE_OUTLINE_FIELDS = LOOKOUT_OUTLINE_FIELDS + ("called",)
 LOOKOUT_CALL_FIELDS = ("seq", "age_s", "category", "bearing", "range_nm", "confirmed")
 LOOKOUT_CALL_CATEGORIES = ("contact", "ship", "warship", "merchant", "aircraft", "submarine",
                            "torpedo")

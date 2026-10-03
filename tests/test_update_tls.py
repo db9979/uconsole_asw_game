@@ -1,5 +1,5 @@
 """The update check over HTTPS in the packaged programs, and how a failed
-check shows (1.3.172: the macOS app never offered updates, because its
+check shows (1.3.173: the macOS app never offered updates, because its
 Python found no root certificates and every request failed verification)."""
 
 import ssl

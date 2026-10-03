@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.172
+## 1.3.173
 
-Release 1.3.172 fixes the update check of the macOS app. The app's
+Release 1.3.173 fixes the update check of the macOS app. The app's
 built-in Python looked for root certificates in a folder that exists only on
 the build machine, so every HTTPS request failed verification and the start
 screen never offered a newer version. The Windows and macOS programs now
@@ -15,6 +15,20 @@ also helps the optional language model and live air traffic over HTTPS. If
 the update check fails, the start screen and the main menu now say so and
 why (no connection, certificate, or an error from GitHub), and U checks
 again. Saves are v50; v38 to v49 saves still load.
+
+## 1.3.172
+
+Release 1.3.172 makes the microphone of noise discipline work. On the
+uConsole, Windows and the Mac the game never opened the device (the sound
+library wants the device's name), so the meter stayed dark. It now opens the
+system's default microphone, and when it cannot, the game says why: a status
+message in the mission and the cause with its remedy on Options page 2 (no
+microphone, cannot be opened, or no sound because Windows or macOS blocks the
+access). The Mac app asks for microphone access, and the Windows and Mac
+builds test the capture before release. Browsers allow the microphone only on
+a secure page: on the plain LAN page a box now says so and "Open HTTPS page"
+switches to the host's HTTPS address, where you pair again with the same code.
+Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.171
 

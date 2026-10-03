@@ -291,7 +291,7 @@ class UpdateNoticeMixin:
         layout.corner_brackets(surface, rect)
 
     def draw_update_error(self, surface, splash: bool) -> None:
-        """A failed check: why, and U to ask again (1.3.172)."""
+        """A failed check: why, and U to ask again (1.3.173)."""
         reason = self.update_check_error
         if reason not in update.FAILURE_REASONS:
             reason = "other"

@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.172**
+Current release: **1.3.173**
 
-Release 1.3.172 fixes the update check of the macOS app. The app's
+Release 1.3.173 fixes the update check of the macOS app. The app's
 built-in Python looked for root certificates in a folder that exists only on
 the build machine, so every HTTPS request failed verification and the start
 screen never offered a newer version. The Windows and macOS programs now

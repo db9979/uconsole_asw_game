@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.172
+## 1.3.173
 
-Version 1.3.172 repariert die Update-Prüfung der macOS-App. Ihr
+Version 1.3.173 repariert die Update-Prüfung der macOS-App. Ihr
 eingebautes Python suchte die Stammzertifikate in einem Ordner, den es nur auf
 dem Baurechner gibt, deshalb scheiterte jede HTTPS-Anfrage an der Prüfung und
 der Startbildschirm bot nie eine neuere Version an. Das Windows-Programm und
@@ -16,6 +16,21 @@ Live-Flugverkehr über HTTPS hilft. Schlägt die Update-Prüfung fehl, sagen
 Startbildschirm und Hauptmenü jetzt, dass und warum (keine Verbindung,
 Zertifikat oder ein Fehler von GitHub), und U prüft erneut. Spielstände sind
 v50; v38 bis v49 lassen sich weiter laden.
+
+## 1.3.172
+
+Version 1.3.172 bringt das Mikrofon der Geräuschdisziplin zum Laufen. Auf der
+uConsole, unter Windows und auf dem Mac öffnete das Spiel das Gerät nie (die
+Tonbibliothek verlangt den Namen des Geräts), die Anzeige blieb dunkel. Jetzt
+öffnet es das Standardmikrofon des Systems, und wenn das nicht geht, sagt das
+Spiel warum: eine Meldung im Einsatz und Ursache mit Abhilfe auf Seite 2 der
+Optionen (kein Mikrofon, lässt sich nicht öffnen oder kein Ton, weil Windows
+oder macOS den Zugriff sperrt). Die Mac-App fragt nach dem Mikrofonzugriff,
+und die Windows- und Mac-Builds prüfen die Aufnahme vor der Veröffentlichung.
+Browser erlauben das Mikrofon nur auf einer sicheren Seite: Auf der normalen
+LAN-Seite sagt das jetzt ein Hinweis, und „HTTPS-Seite öffnen“ wechselt zur
+HTTPS-Adresse des Hosts, wo Sie sich mit demselben Code neu koppeln.
+Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.171
 

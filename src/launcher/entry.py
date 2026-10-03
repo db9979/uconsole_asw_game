@@ -71,17 +71,37 @@ def self_test(report: str) -> int:
                                                 timeout=10) as response:
                         results[path] = response.status
                 results["code"] = bool(console.pairing_code)
+                results["microphone"] = _microphone_self_test()
             finally:
                 if game is not None:
                     game.commander.stop()
                 config.SAVE_DIR, config.SAVE_PATH = previous
-        code = 0 if all(results.get(p) == 200 for p in ("/", "/manual-en")) else 1
+        code = 0 if (all(results.get(p) == 200 for p in ("/", "/manual-en"))
+                     and results.get("microphone", {}).get("blocks", 0) > 0) else 1
     except Exception:  # noqa: BLE001 - the report carries the traceback
         results["error"] = traceback.format_exc()
     results["ok"] = code == 0
     with open(report, "w", encoding="utf-8") as handle:
         json.dump(results, handle, indent=2)
     return code
+
+
+def _microphone_self_test() -> dict:
+    """Open the noise-discipline capture (SDL's dummy input in CI) and count
+    the blocks it delivers: the bundle carries a working pygame._sdl2."""
+    import time
+
+    from src.audio.microphone import Microphone
+
+    mic = Microphone()
+    opened = mic.start()
+    deadline = time.monotonic() + 3.0
+    while opened and mic.blocks == 0 and time.monotonic() < deadline:
+        time.sleep(0.05)
+    result = {"opened": opened, "device": mic.name, "blocks": mic.blocks,
+              "failure": mic.failure, "detail": mic.detail}
+    mic.stop()
+    return result
 
 
 def update_self_test(report: str) -> int:
@@ -109,11 +129,11 @@ def update_self_test(report: str) -> int:
 
 
 def tls_self_test(report: str) -> int:
-    """Open GitHub over HTTPS as the update check does (1.3.172).
+    """Open GitHub over HTTPS as the update check does (1.3.173).
 
     The report names the extra root certificates and whether the plain
     default context alone would have verified GitHub (on a Mac without the
-    building Python's certificate folder it does not: the 1.3.171 bug).
+    building Python's certificate folder it does not: the bug before 1.3.173).
     """
     import json
     import ssl

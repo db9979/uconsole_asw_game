@@ -1,4 +1,4 @@
-"""HTTPS requests that verify certificates in the packaged programs too (1.3.172).
+"""HTTPS requests that verify certificates in the packaged programs too (1.3.173).
 
 The Python inside the macOS app looks for root certificates in the folder of
 the Python it was built with, which does not exist on a player's Mac: every

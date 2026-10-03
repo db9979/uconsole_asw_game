@@ -18,7 +18,10 @@ a = Analysis(
     [os.path.join(SPECPATH, "u_jagd_windows.py")],
     pathex=[root],
     datas=datas,
-    hiddenimports=collect_submodules("src") + ["main", "certifi"],
+    # The microphone (noise discipline) imports SDL capture only when
+    # switched on: name it so the bundle always carries it.
+    hiddenimports=collect_submodules("src") + ["main", "pygame._sdl2.audio",
+                                               "pygame._sdl2.sdl2", "certifi"],
     excludes=["pytest", "tkinter"],  # no Tk window any more
     noarchive=False,
 )

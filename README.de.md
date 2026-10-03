@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.172**
+Aktuelle Version: **1.3.173**
 
-Version 1.3.172 repariert die Update-Prüfung der macOS-App. Ihr
+Version 1.3.173 repariert die Update-Prüfung der macOS-App. Ihr
 eingebautes Python suchte die Stammzertifikate in einem Ordner, den es nur auf
 dem Baurechner gibt, deshalb scheiterte jede HTTPS-Anfrage an der Prüfung und
 der Startbildschirm bot nie eine neuere Version an. Das Windows-Programm und

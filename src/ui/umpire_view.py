@@ -37,7 +37,9 @@ def draw(game) -> None:
     s = game.screen
     overlay_rect = pygame.Rect(40, 60, config.SCREEN_W - 80, config.SCREEN_H - 120)
     draw_menu_panel(s, overlay_rect, pygame.Rect(0, 0, 0, 0))
-    layout.blit_line(s, "umpire.title", (overlay_rect.x + 20, overlay_rect.y + 12,
+    server = bool(getattr(game, "server_mode", False))
+    layout.blit_line(s, "umpire.server.title" if server else "umpire.title",
+                     (overlay_rect.x + 20, overlay_rect.y + 12,
                                          overlay_rect.w - 40, 34),
                      config.COLOR_WARN, size=26, align="center")
     layout.blit_line(s, message("umpire.mission", mission=game.mission_name_display()),
@@ -70,6 +72,24 @@ def draw(game) -> None:
         layout.blit_line(s, message("umpire.humans", count=str(humans)),
                          (x, y + 46 + len(STATIONS) * 28, column_w, 24),
                          config.COLOR_OK if humans else config.COLOR_WARN, size=16)
-    layout.blit_line(s, "umpire.hint", (overlay_rect.x + 20, overlay_rect.bottom - 30,
-                                        overlay_rect.w - 40, 22),
+    if server:
+        _draw_join_line(game, overlay_rect)
+    layout.blit_line(s, "umpire.server.hint" if server else "umpire.hint",
+                     (overlay_rect.x + 20, overlay_rect.bottom - 30, overlay_rect.w - 40, 22),
                      config.COLOR_TEXT_DIM, size=15, align="center")
+
+
+def _draw_join_line(game, overlay_rect) -> None:
+    """Server mode: how a late browser joins, and who leads."""
+    console = game.commander
+    address = getattr(console, "address", None)
+    code = console.pairing_code or "------"
+    leader = game.server_leader_name()
+    join = (message("umpire.server.join", address=f"http://{address[0]}:{address[1]}/",
+                    code=code[:3] + " " + code[3:])
+            if address is not None else message("lobby.starting"))
+    line = (message("umpire.server.join_leader", join=join, leader=raw_text(leader))
+            if leader is not None else join)
+    layout.blit_line(game.screen, line, (overlay_rect.x + 20, overlay_rect.bottom - 62,
+                                         overlay_rect.w - 40, 24),
+                     config.COLOR_TEXT, size=17, align="center")

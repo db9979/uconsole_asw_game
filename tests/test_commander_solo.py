@@ -90,7 +90,7 @@ def test_default_pairing_is_the_unchanged_crew_mode(server):
 
 def test_solo_pairing_leases_every_station_with_full_grants(server):
     cookie, session = solo_pair(server)
-    assert session["host"] == {"generation": 1}
+    assert session["host"] == {"generation": 1, "leader": False}
     assert session["active_station"] == session["station"] == "bridge"
     assert session["simlog"] is True and session["grants"]["simlog"] is True
     assert list(session["stations"]) == list(ROLES)
@@ -162,7 +162,7 @@ def test_solo_rebase_keeps_the_browser_paired_under_fresh_generations(server):
     assert server.pairing_code == code
     after = request(server, "/api/v2/session", cookie=cookie)[2]
     assert after["csrf"] == session["csrf"] and after["client_id"] == session["client_id"]
-    assert after["host"] == {"generation": 2}
+    assert after["host"] == {"generation": 2, "leader": False}
     assert after["active_station"] == "sonar"  # the tab the operator was on
     assert after["active_generation"] > session["active_generation"]
     for station in STATIONS:
@@ -477,7 +477,7 @@ def test_a_corrupt_slot_fails_the_load_and_leaves_the_live_game_unchanged(solo):
     world, sim = id(solo.game.world), solo.game.sim_t
     assert host(solo, "host_load", {"slot": 3}, "l1")["reasoncode"] == "no_save"
     assert id(solo.game.world) == world and solo.game.sim_t == sim
-    assert session_of(solo)["host"] == {"generation": 1}  # no rebase happened
+    assert session_of(solo)["host"] == {"generation": 1, "leader": False}  # no rebase happened
 
 
 def test_host_new_game_replaces_the_world_and_keeps_the_browser_paired(solo):
@@ -491,7 +491,7 @@ def test_host_new_game_replaces_the_world_and_keeps_the_browser_paired(solo):
     assert (solo.game.seed, solo.game.scenario_key, solo.game.world_mode,
             solo.game.difficulty) == (4242, "s4_zufall", "procedural", difficulty)
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic())
-    assert session_of(solo)["host"] == {"generation": 2}
+    assert session_of(solo)["host"] == {"generation": 2, "leader": False}
     assert host_view(solo)["scenario"] == "s4_zufall"
 
 

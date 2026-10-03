@@ -1018,6 +1018,12 @@ class CommanderBridge:
                     # The solo browser is the console: keep its session and
                     # re-lease every station under fresh generations.
                     server.solo_rebase()
+                elif (getattr(server, "server_mode", False) is True
+                      or getattr(game, "lobby_round", False) is True) and hasattr(
+                          server, "crew_rebase"):
+                    # A lobby round (or server mode) keeps its crew across
+                    # the new world: same sessions, stations leased again.
+                    server.crew_rebase()
                 else:
                     server.revoke()
                 self._session = secrets.token_urlsafe(24)
@@ -1278,6 +1284,7 @@ class CommanderBridge:
             charts["lookout"] = known_v2_chart
         server.publish_v2(states, charts)
         if ((getattr(server, "solo_mode", False) is True
+             or getattr(server, "server_mode", False) is True
              or getattr(server, "web_auth", None) is not None)
                 and hasattr(server, "publish_host_v2")):
             server.publish_host_v2(self._host_view(game, phase, now))
@@ -1297,7 +1304,8 @@ class CommanderBridge:
     def _pump_missions(self, server, now, game=None):
         """Own-mission library of the solo host: apply queued requests, publish
         the library when it changed and the editor catalog once."""
-        if (getattr(server, "solo_mode", False) is not True
+        if ((getattr(server, "solo_mode", False) is not True
+             and getattr(server, "server_mode", False) is not True)
                 or not hasattr(server, "take_mission_ops")):
             return
         for op in server.take_mission_ops():
@@ -1352,7 +1360,10 @@ class CommanderBridge:
                 for name, (kind, low, high, step, default)
                 in config.DIFFICULTY_FIELDS.items()],
             slots=[dict(row) for row in self._slots],
-            missions_revision=self._missions.revision)
+            missions_revision=self._missions.revision,
+            # Server mode: the leader's lobby choices (None outside the lobby).
+            lobby=(game.lobby_host_view() if hasattr(game, "lobby_host_view")
+                   else None))
 
     def _publish_sonar_audio(self, game, server, phase):
         """Copy only complete mixed receiver blocks on the main thread."""

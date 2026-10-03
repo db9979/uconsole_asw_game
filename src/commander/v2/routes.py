@@ -416,8 +416,10 @@ class _Handler(BaseHTTPRequestHandler):
             "grants": dict(active_grants, simlog=session["simlog"]),
             "presence": session["presence"],
             # Host command surface: only a solo session carries one.
-            "host": ({"generation": session["host_generation"]}
-                     if session["solo_host"] else None),
+            # Server mode: the leading crew browser carries it beside its stations.
+            "host": ({"generation": session["host_generation"],
+                      "leader": bool(session.get("leader"))}
+                     if session["solo_host"] or session.get("leader") else None),
             # The host's open multiplayer lobby (players, mission, countdown).
             "lobby": owner.lobby_body_locked(session) if owner is not None else None,
             # Crewmates asking for a station this session holds: the holder
@@ -1054,7 +1056,7 @@ class _Handler(BaseHTTPRequestHandler):
                         body = _json_bytes({"protocol": 2, "results": [
                             dict(result) for result in session["command_results"]]})
                     elif session is not None and self.path == "/api/v2/host":
-                        body = owner._v2_host if session["solo_host"] else None
+                        body = owner._v2_host if owner._host_surface(session) else None
                     elif session is not None and self.path in (
                             "/api/v2/state", "/api/v2/state?sonar=stream"):
                         body = (owner._v2_sonar_compact_state
@@ -1123,7 +1125,7 @@ class _Handler(BaseHTTPRequestHandler):
             if session is None:
                 self._v2_unauthorized(presented)
             elif body is None:
-                self.send_error(403 if not session["solo_host"] else 404)
+                self.send_error(403 if not owner._host_surface(session) else 404)
             else:
                 self._reply(200, body)
         else:
@@ -1527,7 +1529,7 @@ class _Handler(BaseHTTPRequestHandler):
                                 status, response = 202, {"status": "pending", "id": body["id"]}
                             else:
                                 status, response = 200, dict(previous[1])
-                        elif (not session["solo_host"] if body["station"] == HOST_ROLE
+                        elif (not owner._host_surface(session) if body["station"] == HOST_ROLE
                               else (body["station"] != session["active_station"]
                                     or body["station"] not in session["leases"]
                                     or not session["leases"][body["station"]]["grants"]["command"])):

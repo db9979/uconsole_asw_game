@@ -1478,6 +1478,8 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     self.open_daily()
                 elif action == "multiplayer":
                     self.open_lobby()
+                elif action == "server":
+                    self.start_server_mode()
                 elif action == "training":
                     self.main_menu = False
                     self.menu_screen = "training"

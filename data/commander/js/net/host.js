@@ -15,9 +15,35 @@ const hostResultText = {ok: "host_result_ok", phase_blocked: "host_result_phase_
   session_revoked: "host_result_session_revoked", stale_world_session: "host_result_stale",
   stale_world_epoch: "host_result_stale", stale_generation: "host_result_stale",
   role_revoked: "host_result_revoked", expired: "host_result_stale",
-  context_invalidated: "host_result_stale"};
+  context_invalidated: "host_result_stale", use_lobby: "host_result_use_lobby",
+  lobby_counting: "host_result_lobby_counting", lobby_invalid: "host_result_lobby_invalid",
+  lobby_confirm: "host_result_lobby_confirm", campaign_unavailable: "host_result_campaign_unavailable",
+  lead_unavailable: "host_result_lead_unavailable"};
+const SIDES = ["frigate", "uboot"];
+// A campaign of one side in the leader's lobby view.
+function validCampaign(value) {
+  return exactKeys(value, ["status", "port", "lage", "missions", "missions_max", "hotspots"]) &&
+    ["none", "active", "won", "lost", "draw"].includes(value.status) && typeof value.port === "boolean" &&
+    [value.lage, value.missions, value.missions_max].every((amount) => Number.isSafeInteger(amount) && amount >= 0 && amount <= 1000) &&
+    boundedArray(value.hotspots, 16) && value.hotspots.every((spot) =>
+      exactKeys(spot, ["id", "name", "scenario", "role"]) && Number.isSafeInteger(spot.id) && spot.id >= 0 && spot.id <= 9999 &&
+      typeof spot.name === "string" && spot.name.length <= 48 && typeof spot.scenario === "string" && spot.scenario.length <= 32 &&
+      typeof spot.role === "string" && spot.role.length <= 16);
+}
+// Server mode: the leader's lobby choices (null outside the lobby).
+function validLeaderLobby(value) {
+  if (value === null) return true;
+  return exactKeys(value, ["choice", "side", "versus", "weather", "time", "length", "countdown_s", "confirm", "daily", "campaign"]) &&
+    typeof value.choice === "string" && value.choice.length <= 96 && SIDES.includes(value.side) &&
+    ["ai", "crew"].includes(value.versus) &&
+    [value.weather, value.time, value.length].every((choice) => typeof choice === "string" && choice.length <= 16) &&
+    (value.countdown_s === null || Number.isFinite(value.countdown_s) && value.countdown_s >= 0 && value.countdown_s <= 60) &&
+    typeof value.confirm === "boolean" && exactKeys(value.daily, SIDES) &&
+    SIDES.every((side) => value.daily[side] === null || typeof value.daily[side] === "string" && value.daily[side].length <= 32) &&
+    exactKeys(value.campaign, SIDES) && SIDES.every((side) => validCampaign(value.campaign[side]));
+}
 function validateHost(value) {
-  const fields = ["epoch", "difficulty", "difficulty_fields", "missions_revision", "phase", "protocol", "scenario", "scenarios", "session", "slots", "world_mode"];
+  const fields = ["epoch", "difficulty", "difficulty_fields", "lobby", "missions_revision", "phase", "protocol", "scenario", "scenarios", "session", "slots", "world_mode"];
   if (!exactKeys(value, fields) || value.protocol !== 2 || typeof value.session !== "string" ||
       !Number.isSafeInteger(value.epoch) || value.epoch < 0 ||
       !Number.isSafeInteger(value.missions_revision) || value.missions_revision < 0 ||
@@ -37,6 +63,7 @@ function validateHost(value) {
       }) ||
       !boundedArray(value.scenarios, 128) || !value.scenarios.every((row) => exactKeys(row, ["key", "fixed", "side"]) &&
         typeof row.key === "string" && typeof row.fixed === "boolean" && ["frigate", "uboot"].includes(row.side)) ||
+      !validLeaderLobby(value.lobby) ||
       !boundedArray(value.slots, 8) || !value.slots.every((row) => exactKeys(row, ["slot", "saved", "modified"]) &&
         Number.isSafeInteger(row.slot) && row.slot >= 1 && typeof row.saved === "boolean" &&
         (row.modified === null || Number.isSafeInteger(row.modified)))) throw new Error("protocol");
@@ -90,8 +117,10 @@ export async function sendHostActionWhenReady(action, params, limitMs = 15000) {
   }
   await sendHostAction(action, params);
 }
+// The server-mode leader may hold no station: its lobby link counts.
+const hostLinked = () => S.connected || Boolean(S.session?.host?.leader) && S.linkState === "lobby";
 export async function sendHostAction(action, params) {
-  if (!S.session?.host || !S.hostView || S.hostPending || !S.connected) return;
+  if (!S.session?.host || !S.hostView || S.hostPending || !hostLinked()) return;
   let id;
   try { id = secureId(); } catch (_) {
     setHostMessage({key: "command_no_crypto", status: "rejected"});

@@ -25,6 +25,7 @@ from src.commander.web_auth import FailureLimiter, WebHostAuth
 from src.core.config import SHIP_SPEED_MAX_KN
 
 from src.commander.missions import MissionLibraryServerMixin
+from src.commander.server_mode import SERVER_REASONS, ServerModeServerMixin
 from src.commander.advisor_web import AdvisorServerMixin
 from src.commander.audio_streams import AudioStreamServerMixin
 from src.commander.station_leases import StationLeaseServerMixin
@@ -157,7 +158,8 @@ from src.commander.v2.routes import (  # noqa: F401
     _Handler)
 
 class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
-                      MissionLibraryServerMixin, AdvisorServerMixin):
+                      MissionLibraryServerMixin, AdvisorServerMixin,
+                      ServerModeServerMixin):
     """Thread-safe v2 publications and leased commands, with explicit lifecycle.
 
     ``address`` is available only while started. Command timestamps use
@@ -253,6 +255,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._init_missions()
         self._init_advisor()
+        self._init_server_mode()
         self._v2_events = {}
         self._v2_private_events = {}
         self._v2_events_fingerprint = None
@@ -744,6 +747,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         if self._web_host_digest not in self._sessions_v2:
             self._web_host_digest = None
         self._grant_waiting_requests_locked()
+        self._ensure_leader_locked()
 
     def _new_session_locked(self, name: str, *, web_host=False, lookout=None):
         token = secrets.token_urlsafe(32)
@@ -760,6 +764,9 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
             "simlog": False,
             "observer": False,
             "solo_host": False,
+            # Server mode: this crew browser leads (host commands beside
+            # its stations, ``server_mode.py``).
+            "leader": False,
             "web_host": web_host,
             # A phone lookout session (paired from /lookout): it only ever
             # holds a lookout role, also beside a solo session.
@@ -1110,7 +1117,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         if enabled:
             if session["observer"]:
                 return True
-            if session["solo_host"] or session["web_host"]:
+            if session["solo_host"] or session["web_host"] or session["leader"]:
                 return False
             others = sum(1 for candidate in self._sessions_v2.values()
                          if candidate["observer"] and candidate is not session)
@@ -1210,6 +1217,10 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
             "ready": session["ready"],
             "observer": session["observer"],
             "you": session is viewer,
+            # Server mode: the leading browser, and the ordinal a lead
+            # handover names (``host_pass_lead``).
+            "leader": bool(session.get("leader")),
+            "ordinal": session["ordinal"],
         } for session in sorted(self._sessions_v2.values(), key=lambda item: item["ordinal"])
             if not session["lookout_only"]]
 
@@ -1324,7 +1335,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
             is_host = envelope.role == HOST_ROLE
             if not _v2_command_valid(body) or spec is None:
                 reason = "invalid_schema"
-            elif ((not session["solo_host"] if is_host
+            elif ((not self._host_surface(session) if is_host
                    else envelope.role not in session["leases"])
                   or body["station"] != envelope.role):
                 reason = "role_revoked"
@@ -1389,7 +1400,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                         "no_mission", "mission_rejected",
                         "lookout_not_confirmed", "no_consort", "consort_lost",
                         "no_link", "stale_fix", "busy", "no_weapon", "no_track",
-                        *UBOOT_REASONS}
+                        *UBOOT_REASONS, *SERVER_REASONS}
                   else "action_rejected")
         with self._lock:
             return self._finish_v2_locked(

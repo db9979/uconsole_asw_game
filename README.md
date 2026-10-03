@@ -12,13 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.186**
+Current release: **1.3.187**
 
-Release 1.3.186 fixes the light theme behind the menus. The main menu and
-every window opened over a mission (help, options, save and load, quit) now
-sit on a bright day scene with sun and light sea instead of the dark night
-picture, so the dark text stays easy to read. The night theme looks as
-before. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.187 adds a server mode: the uConsole only serves and everyone
+plays in the browser, on both units, alone or together. Choose "Server
+(browsers only)" in the main menu or start with `--server`. The uConsole then
+shows only the QR code, the join code and the crew, and during a mission an
+umpire screen. The first browser to join leads the game: in its lobby it picks
+the unit, the mission (scenario, daily mission, campaign hotspot or own
+mission), the opponent, weather, time of day and length, starts the mission
+for everyone, saves and loads, and brings everyone back to the lobby. The
+crew keeps its stations from one mission to the next, and the lead can be
+handed over. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -282,7 +287,8 @@ example `u-jagd --windowed`.
 
 `python main.py --remote-crew` starts Remote Crew in crew mode on the first
 private LAN address at launch, as the F9 row would (`--solo-crew` does the same
-in solo mode; `--web-port` picks the port, default 8765). `--status-file PATH`
+in solo mode; `--server` opens the browser-only server mode, see the
+manual's quick start; `--web-port` picks the port, default 8765). `--status-file PATH`
 writes the Remote Crew address and join code as JSON to `PATH` whenever they
 change; the Windows starter reads it.
 

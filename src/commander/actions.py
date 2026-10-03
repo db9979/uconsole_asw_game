@@ -1075,10 +1075,16 @@ def _host_save(game, params):
 
 
 def _host_load(game, params):
-    return True if game.load_from_slot(params["slot"]) else "no_save"
+    if not game.load_from_slot(params["slot"]):
+        return "no_save"
+    if getattr(game, "server_mode", False):
+        game.server_loaded()
+    return True
 
 
 def _host_new_game(game, params):
+    if getattr(game, "server_mode", False):
+        return "use_lobby"          # server mode starts missions from the lobby
     if "weather" in params:
         game.start_weather = params["weather"]
     if "time" in params:
@@ -1091,6 +1097,8 @@ def _host_new_game(game, params):
 
 def _host_start_mission(game, params):
     """Start an own mission of the Mission Editor's library (solo host)."""
+    if getattr(game, "server_mode", False):
+        return "use_lobby"
     from src.core import config
     from src.data.user_content import default_store
     from src.data.validation import ContentValidationError
@@ -1132,6 +1140,22 @@ def _host_instructor_event(game, params):
     return True
 
 
+def _server_only(handler):
+    """A leader action exists only in server mode (``game_server.py``)."""
+    def apply(game, params):
+        if not getattr(game, "server_mode", False):
+            return "phase_blocked"
+        return handler(game, params)
+    return apply
+
+
+def _host_pass_lead(game, params):
+    server = getattr(game.commander, "server", None)
+    if server is None or not hasattr(server, "pass_leader"):
+        return "phase_blocked"
+    return True if server.pass_leader(params["ordinal"]) else "lead_unavailable"
+
+
 # Solo-only host surface: a closed table, never a dynamic method lookup. The
 # world-replacing actions are listed so the rest of the frame can fail closed.
 _HOST_ACTION_HANDLERS = {
@@ -1140,4 +1164,12 @@ _HOST_ACTION_HANDLERS = {
     "host_new_game": _host_new_game,
     "host_start_mission": _host_start_mission,
     "host_instructor_environment": _host_instructor_environment,
+    # The server-mode leader (``src/core/game_server.py``).
+    "host_lobby_set": _server_only(lambda game, params: game.server_lobby_set(params)),
+    "host_lobby_start": _server_only(lambda game, params: game.server_lobby_start()),
+    "host_lobby_cancel": _server_only(lambda game, params: game.server_lobby_cancel()),
+    "host_lobby_campaign": _server_only(
+        lambda game, params: game.server_campaign(params["side"], params["action"])),
+    "host_end_mission": _server_only(lambda game, params: game.server_end_mission()),
+    "host_pass_lead": _server_only(_host_pass_lead),
 }

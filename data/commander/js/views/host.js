@@ -39,19 +39,26 @@ export function hostUnavailableReason(control) {
 }
 export function renderHost() {
   const active = S.session?.host !== null && S.session !== null;
+  // The server-mode leader starts missions from the lobby: no new game, no
+  // side switch, but "back to the lobby" while a mission runs.
+  const leader = active && S.session.host.leader === true;
   $("host-bar").hidden = !active;
   $("web-admin-link").hidden = !active || !S.webHostAvailable;
   const menu = active && S.hostView?.phase === "menu";
-  $("host-screen").hidden = !menu || simlogActive();
+  $("host-screen").hidden = !menu || leader || simlogActive();
+  for (const id of ["host-new", "host-side"]) $(id).hidden = leader;
+  // Only a running or ended mission can be left for the lobby.
+  $("host-end").hidden = !leader || !["live", "ended"].includes(S.hostView?.phase);
   if (!active) {
     for (const id of ["host-save", "host-load", "host-new", "host-missions",
                       "host-instructor", "host-side", "host-screen-new", "host-screen-load",
-                      "host-new-start"]) $(id).disabled = true;
+                      "host-new-start", "host-end"]) $(id).disabled = true;
     for (const button of $("host-slot-list").querySelectorAll("button"))
       button.disabled = true;
     return;
   }
-  const ready = Boolean(S.hostView) && !S.hostPending && S.connected;
+  const ready = Boolean(S.hostView) && !S.hostPending &&
+    (S.connected || leader && S.linkState === "lobby");
   const any = ready && hostPhaseAllows("any");
   const replacing = ready && hostPhaseAllows("replacing");
   $("host-save").disabled = !any;
@@ -59,6 +66,7 @@ export function renderHost() {
   $("host-new").disabled = !replacing;
   $("host-missions").disabled = !ready;
   $("host-instructor").disabled = !any;
+  $("host-end").disabled = !ready || !["live", "ended"].includes(S.hostView.phase);
   const boat = opforRoles.has(S.session.station);
   $("host-side").textContent = t(boat ? "host_play_frigate" : "host_play_opfor");
   $("host-side").disabled = !ready || S.stationMutation;
@@ -70,7 +78,7 @@ export function renderHost() {
       !S.hostView.slots.find((row) => String(row.slot) === button.dataset.slot)?.saved);
   }
   const text = S.hostMessage ? t(S.hostMessage.key, S.hostMessage.values ?? {}) : "";
-  for (const id of ["host-status", "host-screen-status"]) {
+  for (const id of ["host-status", "host-screen-status", "leader-status"]) {
     $(id).textContent = text;
     $(id).dataset.status = S.hostMessage?.status ?? "";
   }
@@ -237,6 +245,8 @@ export function init() {
   for (const id of ["host-load", "host-screen-load"]) $(id).addEventListener("click", () => openSlotDialog("load"));
   for (const id of ["host-new", "host-screen-new"]) $(id).addEventListener("click", openNewGameDialog);
   $("host-side").addEventListener("click", switchSoloSide);
+  // The console may be resyncing its station right after the start: wait.
+  $("host-end").addEventListener("click", () => sendHostActionWhenReady("host_end_mission", {}));
   $("host-instructor").addEventListener("click", () => {
     if (!S.hostView) return;
     const dialog = $("instructor-dialog");

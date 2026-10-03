@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.169
+## 1.3.170
 
-Version 1.3.169 füllt das Einsatzprotokoll der Remote Crew. Es zeigte bisher
+Version 1.3.170 füllt das Einsatzprotokoll der Remote Crew. Es zeigte bisher
 nur wenige Browser-Alarme und wirkte deshalb leer; jetzt listet jede Station
 dieselben Einträge wie F11 auf der uConsole, das Neueste oben, mit Uhrzeit
 und Kategoriekürzel: die Stationen der Fregatte das Log der Fregatte, die
@@ -14,6 +14,19 @@ Stationen des U-Boots das Bootslog. Ein langes Protokoll scrollt in seiner
 Leiste und lässt der Karte ihren Platz. Auf der uConsole öffnet F11 jetzt
 auch auf der U-Boot-Seite das Bootslog. Spielstände sind v50; v38 bis v49
 lassen sich weiter laden.
+
+## 1.3.169
+
+Version 1.3.169 zeigt andere Schiffe im Fernglas des Ausgucks, im
+Horizontstreifen, im Sehrohr, im Trefferbild, in den Remote-Crew-Karten und
+im Handy-Ausguck so, wie das Auge sie sieht. Ein Schiff in der Nähe schwimmt
+jetzt mit seiner Wasserlinie unter der Kimm, so weit, wie das Auge in der
+gemessenen Entfernung auf das Wasser hinabsieht (etwa 1° auf 0,5 sm aus den
+18 m der Brücke), statt wie ein fernes Schiff auf der Kimm zu sitzen, und
+ein näheres Schiff steht vor einem ferneren statt in Listenreihenfolge.
+Peilung und Lagewinkel wurden geprüft und stimmten schon: die
+Steuerbordseite zeigt den Bug rechts, die Backbordseite den Bug links.
+Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.168
 

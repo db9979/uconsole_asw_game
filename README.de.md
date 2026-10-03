@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.169**
+Aktuelle Version: **1.3.170**
 
-Version 1.3.169 füllt das Einsatzprotokoll der Remote Crew: jede
+Version 1.3.170 füllt das Einsatzprotokoll der Remote Crew: jede
 Browser-Station listet jetzt dieselben Einträge wie F11 auf der uConsole, das
 Neueste oben mit Uhrzeit und Kategoriekürzel, die Stationen der Fregatte das
 Log der Fregatte und die Stationen des U-Boots das Bootslog. Bisher zeigte es

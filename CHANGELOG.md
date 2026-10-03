@@ -4,15 +4,28 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.169
+## 1.3.170
 
-Release 1.3.169 fills the Remote Crew operational log. It used to show only a
+Release 1.3.170 fills the Remote Crew operational log. It used to show only a
 few browser alerts and so looked empty; now every station lists the same
 entries as F11 on the uConsole, newest first, with time and category tag:
 the frigate's stations the frigate's log, the submarine's stations the boat
 log. A long log scrolls inside its drawer and leaves the chart its room. On
 the uConsole, F11 now opens the boat log on the submarine side too. Saves
 are v50; v38 to v49 saves still load.
+
+## 1.3.169
+
+Release 1.3.169 puts other ships where the eye sees them in the lookout's
+binoculars, the horizon strip, the periscope, the hit picture, the Remote
+Crew cards and the phone lookout. A ship close aboard now floats with her
+waterline below the horizon line, as far as the eye looks down to the water
+at the range the lookout measured (about 1° at 0.5 NM from the bridge's
+18 m), instead of sitting on the horizon like a distant one, and a nearer
+ship is drawn in front of a farther one instead of in list order. The
+bearing and the angle on the bow were checked and were already right: her
+starboard side shows with the bow to the right, her port side with the bow
+to the left. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.168
 

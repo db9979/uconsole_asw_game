@@ -4,6 +4,21 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.189
+
+Version 1.3.189 verhindert, dass der Sonar-Ton auf der uConsole verstummt,
+während alle anderen Geräusche weiterlaufen. Die Sonar-Wiedergabe überwacht
+jetzt ihren eigenen Kanal: Ein Block, der die Warteschlange nicht mehr
+verlässt, eine nach dem Einblenden auf null stehende Kanallautstärke, ein
+Fehler im Wiedergabe-Thread, ein hinter voller Warteschlange angehaltener
+Thread oder eine Hörposition vor dem Empfänger starten den Sonar-Ton nach
+spätestens etwa einer Sekunde neu, ohne Audio aus- und einzuschalten. Im
+U-Boot liegt der Sonar-Ton jetzt links oder rechts relativ zum eigenen Kurs
+des U-Boots statt zu dem der Fregatte. Mit `U_JAGD_AUDIO_DEBUG=1` zählt
+`audio_debug.log` jede solche Erholung (`wedged`, `volume_restored`,
+`pump_errors`, `full_resets`). Tasten bleiben gleich. Spielstände sind v50;
+v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.187
 
 Version 1.3.187 bringt einen Server-Modus: Die uConsole dient nur als

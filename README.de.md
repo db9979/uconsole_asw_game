@@ -14,19 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.187**
+Aktuelle Version: **1.3.189**
 
-Version 1.3.187 bringt einen Server-Modus: Die uConsole dient nur als
-Server, alle spielen im Browser, auf beiden Einheiten, allein oder gemeinsam.
-Dazu im Hauptmenü „Server (nur Browser)“ wählen oder mit `--server` starten.
-Die uConsole zeigt dann nur QR-Code, Beitrittscode und Besatzung, im Einsatz
-einen Schiedsrichter-Bildschirm. Der erste Browser, der beitritt, leitet das
-Spiel: In seiner Lobby wählt er Einheit, Einsatz (Szenario, Tagesmission,
-Brennpunkt der Kampagne oder eigene Mission), Gegner, Wetter, Tageszeit und
-Länge, startet den Einsatz für alle, speichert und lädt und holt alle zurück
-in die Lobby. Die Besatzung behält ihre Stationen von Einsatz zu Einsatz, die
-Leitung lässt sich abgeben. Tasten bleiben gleich. Spielstände sind v50; v38
-bis v49 lassen sich weiter laden.
+Version 1.3.189 verhindert, dass der Sonar-Ton auf der uConsole verstummt,
+während alle anderen Geräusche weiterlaufen. Die Sonar-Wiedergabe überwacht
+jetzt ihren eigenen Kanal: Ein Block, der die Warteschlange nicht mehr
+verlässt, eine nach dem Einblenden auf null stehende Kanallautstärke, ein
+Fehler im Wiedergabe-Thread, ein hinter voller Warteschlange angehaltener
+Thread oder eine Hörposition vor dem Empfänger starten den Sonar-Ton nach
+spätestens etwa einer Sekunde neu, ohne Audio aus- und einzuschalten. Im
+U-Boot liegt der Sonar-Ton jetzt links oder rechts relativ zum eigenen Kurs
+des U-Boots statt zu dem der Fregatte. Mit `U_JAGD_AUDIO_DEBUG=1` zählt
+`audio_debug.log` jede solche Erholung (`wedged`, `volume_restored`,
+`pump_errors`, `full_resets`). Tasten bleiben gleich. Spielstände sind v50;
+v38 bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -12,18 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.187**
+Current release: **1.3.189**
 
-Release 1.3.187 adds a server mode: the uConsole only serves and everyone
-plays in the browser, on both units, alone or together. Choose "Server
-(browsers only)" in the main menu or start with `--server`. The uConsole then
-shows only the QR code, the join code and the crew, and during a mission an
-umpire screen. The first browser to join leads the game: in its lobby it picks
-the unit, the mission (scenario, daily mission, campaign hotspot or own
-mission), the opponent, weather, time of day and length, starts the mission
-for everyone, saves and loads, and brings everyone back to the lobby. The
-crew keeps its stations from one mission to the next, and the lead can be
-handed over. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.189 keeps the local sonar audio from falling silent while every
+other sound plays on. The sonar playback now watches its own channel: a block
+that never leaves the queue, a channel volume left at zero after a fade, an
+error in the playback worker, a worker that stopped behind a full queue, or a
+listening position ahead of the receiver each restart the sonar stream within
+about a second, without switching audio off and on. On the submarine the
+sonar sound is now placed left or right against the submarine's own course
+instead of the frigate's. With `U_JAGD_AUDIO_DEBUG=1`, `audio_debug.log`
+counts every such recovery (`wedged`, `volume_restored`, `pump_errors`,
+`full_resets`). Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

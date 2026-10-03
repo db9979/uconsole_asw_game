@@ -7493,5 +7493,10 @@
   "damage.panel.teams": "REPAIR TEAMS",
   "damage.card.team_ready": "Standing by",
   "damage.card.team_en_route": "On the way · {eta} s",
-  "damage.teams.hint": "Click a team, pick a compartment on the left, then Enter sends it."
+  "damage.teams.hint": "Click a team, pick a compartment on the left, then Enter sends it.",
+  "commander.web.damage_team_title": "Team {team}",
+  "commander.web.damage_team_free": "free",
+  "commander.web.damage_team_ready": "Standing by",
+  "commander.web.damage_team_en_route": "On the way · {seconds} s",
+  "commander.web.damage_team_on_scene": "On scene"
 }

@@ -612,7 +612,7 @@ export function validateV2State(state) {
     rowsExact(payload.target_choices, 128, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"]);
   } else if (state.role === "damage") {
     if (!crewOk(payload.crew) || !boundedArray(payload.compartments, 16) || payload.compartments.some((row) => !exactKeys(row, ["key", "name", "state", "flood", "fire", "leak", "inflow", "repairable", "trend"]) || typeof row.repairable !== "boolean" || !["none", "open", "patched"].includes(row.leak) || !finite(row.inflow) || !exactKeys(row.trend, ["flood_rate", "fire_rate", "repairable"])) ||
-        !boundedArray(payload.teams, 16) || payload.teams.some((row) => !exactKeys(row, ["team", "compartment"])) ||
+        !boundedArray(payload.teams, 16) || payload.teams.some((row) => !exactKeys(row, ["team", "compartment", "transit_s"]) || !finite(row.transit_s) || row.transit_s < 0) ||
         !exactKeys(payload.stability, ["list_deg", "draft_m", "trim_deg", "counterflood_room", "can_counterflood"]) || !finite(payload.stability.draft_m) ||
         typeof payload.stability.can_counterflood !== "boolean") throw new Error("protocol");
   } else if (state.role === "opz") {

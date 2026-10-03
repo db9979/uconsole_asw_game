@@ -1057,7 +1057,7 @@ def _direct_fire_browser_states():
         own_assets=dict(ship=navigation, helicopter=helicopter_asset,
                         mpa=_projected_mpa(), consort=None, weapons=[
             dict(ref="opaque-torpedo-reference-one", x=251.0, y=249.0, depth_m=60.0,
-                 course=90.0, state="RUN")])))
+                 course=90.0, state="RUN")]), trails=[]))
     helicopter = dict(common, role="helicopter", helicopter=dict(
         asset=dict(helicopter_asset, buoy_mode="PASSIVE", pattern="single",
                    pattern_remaining=0, mad_mode=False, radar=True, radar_switch=True), waypoint=None,

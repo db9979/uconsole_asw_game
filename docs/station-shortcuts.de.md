@@ -1,4 +1,4 @@
-# U-Jagd 1.3.171 - Stations- und Tastenkürzel
+# U-Jagd 1.3.172 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -189,6 +189,8 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Shift+A` | OPZ-Seite 4: Aktivsonar des Begleiters an/aus |
 | `Shift+W` | OPZ-Seite 4: Waffen des Begleiters frei / gesperrt |
 | `Strg+Enter` | OPZ-Seite 4: ein ASROC des Begleiters auf den gewählten Track (Standort unter 2 min) |
+| `↑/↓ ←/→` | Seite 5 Anzeige: Karteneinstellung wählen, ändern |
+| `Backspace` | Seite 5: alle Karteneinstellungen auf Standard |
 
 ## 6 Funk
 

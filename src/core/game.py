@@ -775,6 +775,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.ais = AISReceiver(seed)
         self.opz_selected_track_id = None
         self.opz_contact_filter = "ALL"
+        # Selected row of the OPZ's Display page (display only, not saved).
+        self.opz_display_sel = 0
         self.opz_affiliations = {}
         # Operator-authored display identifiers are deliberately separate from
         # opaque observation IDs.  Every station renders these labels while

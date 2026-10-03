@@ -10,6 +10,7 @@ from pathlib import Path
 
 from src.core.config import BOTTOM_PANEL_MODES, FPS_CHOICES, FPS_DEFAULT, LEVELS
 from src.core.i18n import SUPPORTED_LANGUAGES, detect_system_language
+from src.core import opz_display
 from src.llm.client import (DEFAULT_MODEL as LLM_DEFAULT_MODEL,
                             DEFAULT_URL as LLM_DEFAULT_URL, valid_model, valid_url)
 
@@ -79,6 +80,9 @@ class Preferences:
     # True by default: only a launch without any settings.json shows it;
     # settings files written before the field existed count as onboarded.
     onboarded: bool = True
+    # OPZ chart display (``src/core/opz_display.py``): the settings that
+    # differ from the default as (key, value) pairs. Display only.
+    opz_display: tuple = ()
 
     @classmethod
     def defaults(cls) -> "Preferences":
@@ -142,6 +146,8 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     values["llm_model"] = model if valid_model(model) else defaults.llm_model
     coach = payload.get("llm_coach", defaults.llm_coach)
     values["llm_coach"] = coach if coach in LLM_COACH_LEVELS else defaults.llm_coach
+    values["opz_display"] = opz_display.to_pairs(
+        opz_display.normalize(payload.get("opz_display", ())))
     for name in ("aisstream_api_key", "opensky_credentials"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value.strip()[:_MAX_CREDENTIAL_LEN] \

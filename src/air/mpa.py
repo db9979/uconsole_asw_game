@@ -20,6 +20,8 @@ import math
 
 from src.air.sonobuoy import Sonobuoy
 from src.core import config
+from src.physics.geo import bearing_deg as _bearing
+from src.core.limits import finite_number as _number
 
 STATES = ("BASE", "TRANSIT", "STATION", "RTB")
 AIRBORNE = ("TRANSIT", "STATION", "RTB")
@@ -32,19 +34,10 @@ STATE_FIELDS = frozenset({
 MAX_PATTERN_POINTS = 4
 
 
-def _number(value) -> bool:
-    return (type(value) in (int, float) and not isinstance(value, bool)
-            and math.isfinite(value))
-
-
 def _steer(course: float, wanted: float, dt: float) -> float:
     delta = (wanted - course + 540.0) % 360.0 - 180.0
     limit = config.MPA_TURN_DEG_S * dt
     return (course + max(-limit, min(limit, delta))) % 360.0
-
-
-def _bearing(x0: float, y0: float, x1: float, y1: float) -> float:
-    return math.degrees(math.atan2(x1 - x0, -(y1 - y0))) % 360.0
 
 
 class PatrolAircraft:

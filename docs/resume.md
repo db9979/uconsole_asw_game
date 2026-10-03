@@ -1641,8 +1641,8 @@ Notizen Phase 1:
 
 ## Windows-Programm mit Auto-Update (2026-09-28, App 1.3.11)
 
-- `src/launcher/`: `app.py` Tk-Starter (startet dieselbe EXE mit `--game`, liest `--status-file`, zeigt URL/Code/QR aus `src/ui/qr.py`), `update.py` (`releases/latest`, Asset `U-Jagd-Windows.exe`, Größe + GitHub-`digest` sha256, `.cmd` tauscht die EXE nach Prozessende), `entry.py` (`--game`, `--self-test REPORT`).
-- Spiel: `--remote-crew` (Besatzungsmodus wie F9, `CommanderConsole.autostart`), `--status-file` (`publish_status`, nur bei Änderung), `prepare()` nimmt ohne `fcntl` die Routing-Adresse (UDP-connect an 192.0.2.1, kein Paket, kein DNS).
+- `src/launcher/`: ~~`app.py` Tk-Starter (startet dieselbe EXE mit `--game`, liest `--status-file`, zeigt URL/Code/QR aus `src/ui/qr.py`)~~ (seit 1.3.112 entfernt: kein Starterfenster mehr, `entry.main()` startet das Spiel direkt; siehe "Startoptionen und Windows-Programm ohne Starterfenster" unten), `update.py` (`releases/latest`, Asset `U-Jagd-Windows.exe`, Größe + GitHub-`digest` sha256, `.cmd` tauscht die EXE nach Prozessende), `entry.py` (`--game`, `--self-test REPORT`).
+- Spiel: `--remote-crew` (Besatzungsmodus wie F9, `CommanderConsole.autostart`; heute verborgener Alias), ~~`--status-file` (`publish_status`, nur bei Änderung)~~ (mit dem Starter entfernt), `prepare()` nimmt ohne `fcntl` die Routing-Adresse (UDP-connect an 192.0.2.1, kein Paket, kein DNS).
 - Build: `packaging/windows/u-jagd-windows.spec` (PyInstaller onefile, windowed), `.github/workflows/windows.yml` (jeder Push/PR: Build + Selbsttest auf windows-latest; main: Release `v<APP_VERSION>` anlegen falls fehlend, eigenes Asset nur hochladen falls fehlend). Nicht signiert (SmartScreen). Tests: `tests/test_windows_launcher.py`.
 
 ## README-Screenshots und Changelog (2026-09-28, App 1.3.12)

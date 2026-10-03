@@ -9,6 +9,7 @@ import random
 from src.core import config
 from src.data.catalog import CATALOG
 from src.weapons.torpedo import underwater_path_blocked
+from src.physics.geo import FrigateRelativeMixin
 
 
 class AnimalType:
@@ -29,7 +30,7 @@ ANIMAL_TYPES = {
 }
 
 
-class Animal:
+class Animal(FrigateRelativeMixin):
     """Tier: wandert langsam, erzeugt passive Sonarkontakte."""
 
     _next_id = 1000
@@ -137,11 +138,3 @@ class Animal:
             "fish_school": (120.0, 480.0),
             "jellyfish": (1200.0, 3600.0),
         }.get(self.atype.key, (300.0, 900.0))
-
-    def distance_nm(self, frigate) -> float:
-        return math.hypot(self.x - frigate.x, self.y - frigate.y)
-
-    def bearing_from_frigate(self, frigate) -> float:
-        dx = self.x - frigate.x
-        dy = self.y - frigate.y
-        return math.degrees(math.atan2(dx, -dy)) % 360.0

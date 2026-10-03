@@ -30,6 +30,7 @@ from src.core import boat_missions, commander_traits, config, detrand, opfor_pla
 from src.core.autocrew import AutocrewController, _nearest_threat, station_key
 from src.core.station import Station
 from src.llm import opponent
+from src.physics.geo import bearing_deg as _bearing
 
 CADENCE_S = 2.0
 SEARCH_KN = 10.0
@@ -137,10 +138,6 @@ def _sub_emitters(catalog) -> frozenset:
 
 def sub_emitters(game) -> frozenset:
     return _sub_emitters(game.runtime_catalog)
-
-
-def _bearing(x0, y0, x1, y1) -> float:
-    return math.degrees(math.atan2(x1 - x0, -(y1 - y0))) % 360.0
 
 
 def _off(a, b) -> float:

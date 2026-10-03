@@ -4,6 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.191
+
+Release 1.3.191 reorganises the manual into 21 short chapters: a quick start
+under 1,500 words for both sides, then main menu, options, every frigate
+station with the same parts (purpose, pages, displays, keys, mouse, standard
+procedure, tips, not modelled), the submarine with one section per station,
+scenarios with tables for both sides, multiplayer and server mode, after the
+mission, tools, editors, language model, reference data and a glossary;
+outdated statements are corrected against the game. In the manual reader 0
+opens the quick start and 1 to 9 the stations. The README no longer describes
+the removed Windows starter window. Inside, long save and reset code is split
+into smaller parts, duplicate bearing and range helpers are merged and
+torpedoes without a datum never read a hidden target. Nothing changes in play.
+Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.190
 
 Release 1.3.190 fixes two things in the browser's server mode. When the game

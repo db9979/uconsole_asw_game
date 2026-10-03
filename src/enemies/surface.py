@@ -27,11 +27,12 @@ from src.sensors.platform import (
     snapshot_observation,
 )
 from src.weapons.asw import WeaponBattery
+from src.physics.geo import FrigateRelativeMixin
 
 CATALOG = catalog.CATALOG
 
 
-class SurfaceShip:
+class SurfaceShip(FrigateRelativeMixin):
     """Ziviles Oberflächenschiff oder feindliches Kriegsschiff."""
 
     _next_id = 5000
@@ -485,14 +486,6 @@ class SurfaceShip:
                 "high_hz": sig.broadband[2]}
 
     # --- Geometrie ---
-
-    def distance_nm(self, frigate) -> float:
-        return math.hypot(self.x - frigate.x, self.y - frigate.y)
-
-    def bearing_from_frigate(self, frigate) -> float:
-        dx = self.x - frigate.x
-        dy = self.y - frigate.y
-        return math.degrees(math.atan2(dx, -dy)) % 360.0
 
     @property
     def sensor_domain(self) -> str:

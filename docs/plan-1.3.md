@@ -211,7 +211,10 @@ Annahmen:
   `sonar_controls` und `sonar` der Fregatte. Dafür werden die beiden
   Serialisierer aus `Game.save_state()`/`_restore_state()` in Funktionen
   `sonar_station_state(station)` und `restore_sonar_station(station, data)`
-  in `src/core/save_sonar.py` gezogen und von Fregatte und Boot genutzt.
+  gezogen und von Fregatte und Boot genutzt. (Umgesetzt als Methoden
+  `_sonar_system_state`/`_restore_sonar_system` in `src/core/game_save.py`;
+  die Prüfung liegt in `src/core/save_validate_sonar.py`. Ein Modul
+  `save_sonar.py` gibt es nicht.)
 - `Sub`-Zeile im `subs`-Block: zusätzlich `manual`, `order_course`,
   `order_speed`, `order_depth`, `last_bottom_m`, `manual_ping_pending` und
   jedes weitere Attribut, das `command_*`, `_steer_to_orders`,
@@ -286,8 +289,11 @@ volle Suite, `tools/smoke_full.py`, `tools/calibrate.py --check`,
 Schritte:
 
 1. `src/core/game_save.py`: `save_state`, `_restore_state`, Kandidatenprüfung,
-   atomares Schreiben, Slot-Funktionen. Zusammen mit `save_sonar.py` aus
-   Phase 1.
+   atomares Schreiben, Slot-Funktionen, dazu die Sonar-Serialisierer aus
+   Phase 1. Die Dokumentprüfung liegt in `src/core/save_validate.py` mit
+   `save_validate_crew.py`, `save_validate_sonar.py`,
+   `save_validate_entities.py`, `save_validate_weapons.py` und
+   `save_validate_common.py`.
 2. `src/core/game_sim.py`: `_update_sim()` und alles, was nur von dort
    aufgerufen wird (Entitätsupdates, Sweep-Kollision, Sensorgenerierung).
    Die Update-Reihenfolge wird als Modulkonstante `SIM_ORDER` dokumentiert und
@@ -303,9 +309,13 @@ Schritte:
    `helicopter.py`, `eloka.py`); `stations_view.py` bleibt Dispatcher mit
    Draw/Hit-Test-Einstieg. Draw- und Hit-Test-Geometrie bleiben im selben
    Modul.
-6. `src/commander/routes_v2.py` (HTTP-Routen), `src/commander/streams.py`
-   (Sonar- und Voice-WebSockets), `src/commander/sessions.py` (Cookies, CSRF,
-   Leases, Pairing), `server.py` nur Listener und Wiring.
+6. `src/commander/v2/routes.py` (HTTP-Routen und WebSockets, Cookies,
+   CSRF, Pairing), `src/commander/audio_streams.py` (Sonar- und
+   Voice-Streams), `src/commander/station_leases.py` (Stationsleases),
+   `src/commander/v2/wire.py`/`commands.py` (Konstanten, Framing,
+   Befehlsregister); `server.py` hält Sitzungen, Veröffentlichung und
+   Wiring. (Die ursprünglich geplanten Namen `routes_v2.py`, `streams.py`
+   und `sessions.py` gibt es nicht.)
 
 Abnahme: neuer Test `tests/test_module_size.py`: keine Datei unter `src/`
 über 2.500 Zeilen. Perf-Debug-Ausgabe (Phase 0) eines 120-s-Smoke-Laufs
@@ -383,7 +393,10 @@ Annahmen:
 
 - A5.1 `src/sonar/ai_tma.py` (pur): `solve(track_points, own_track) →
   Solution(x, y, course, speed, sigma_range_nm, sigma_course_deg, t)` über
-  `src/sonar/tma_lm.py`. Keine neue Mathematik.
+  `src/sonar/tma_lm.py`. Keine neue Mathematik. (Umgesetzt ohne eigenes
+  Modul: `solution_sigma_nm`/`solution_converged` und die Lösung des Bootes
+  liegen in `src/enemies/sub.py` über `src/sonar/tma.py`; Tests in
+  `tests/test_ai_tma.py`.)
 - A5.2 Schussbedingung: `sigma_range_nm / range_nm <= threshold` und Lösung
   jünger als 90 s. `threshold` aus einem neuen Schwierigkeitsfeld
   `enemy_solution_threshold` in `config.DIFFICULTY_FIELDS` (float, 0.05 bis
@@ -498,8 +511,9 @@ Annahmen:
   maximal 5. Eigener Kontaktstrom mit Arraykennung. Save: `sonar_controls`
   um `vds_depth`, `vds_state` erweitert.
 
-Tests (`tests/test_bottom_types.py`, `tests/test_tma_methods.py`,
-`tests/test_vds.py`): Verlust monoton nach Bodentyp; CZ nur nach BT;
+Tests (Bodentypen in `tests/test_ocean_environment.py`,
+`tests/test_raytrace.py` und `tests/test_sonar_equation.py`; dazu
+`tests/test_tma_methods.py`, `tests/test_vds.py`): Verlust monoton nach Bodentyp; CZ nur nach BT;
 Ekelund-Formel gegen Handrechnung; VDS-Kontakte im `SensorTrack`-Format;
 Kalibrierung; Round-Trip.
 

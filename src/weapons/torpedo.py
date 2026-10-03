@@ -5,6 +5,7 @@ import math
 from src.core import config
 from src.physics import torpedo_dyn
 from src.data.catalog import CATALOG
+from src.physics.geo import FrigateRelativeMixin
 
 
 def _required_torpedo_profile(key: str):
@@ -202,11 +203,6 @@ class Torpedo:
         frac = self.time_since_launch / config.TORP_SPOOLUP_S
         return config.TORP_SPOOLUP_MIN_FRAC + (1.0 - config.TORP_SPOOLUP_MIN_FRAC) * frac
 
-    def distance_to_target_nm(self) -> float:
-        if self.target is None or getattr(self.target, "sunk", False):
-            return float("inf")
-        return math.hypot(self.target.x - self.x, self.target.y - self.y)
-
     def guidance_distance_nm(self) -> float:
         """Operator-visible distance to the observed fire-control solution."""
         if self.guidance_x is None or self.guidance_y is None:
@@ -314,9 +310,9 @@ class Torpedo:
             # while descending to the search depth.
             self.terminal_active = True
         # Normal activation is based on the commanded datum, never hidden truth.
+        # Every launch passes a datum; without one the distance is infinite,
+        # so the weapon holds its course and its seeker stays off.
         seeker_active = self.guidance_distance_nm() <= self.enable_nm
-        if self.guidance_x is None or self.guidance_y is None:
-            seeker_active = self.distance_to_target_nm() <= self.enable_nm
         self.terminal_active = self.terminal_active or self.seeker_acquired or seeker_active
         if self.terminal_active and seeker_candidates is not None:
             candidate = self.evaluate_seeker_candidates(seeker_candidates, world)
@@ -527,7 +523,7 @@ class Torpedo:
         return math.hypot(ox + t * fx - sub.x, oy + t * fy - sub.y)
 
 
-class EnemyTorpedo:
+class EnemyTorpedo(FrigateRelativeMixin):
     """Feindlicher Torpedo (M5): Vorhaltkurs mit terminaler Eigenortung.
 
     Ab der Kontakt-DB auch passiv auffindbar: lautes Hochton-Kreischen,
@@ -743,14 +739,6 @@ class EnemyTorpedo:
                                        -(youngest[1] - self.y))) % 360.0
 
     # --- Duck-Type-Interface wie Sub/Animal (passives Sonar) ---
-
-    def distance_nm(self, ship) -> float:
-        return math.hypot(self.x - ship.x, self.y - ship.y)
-
-    def bearing_from_frigate(self, ship) -> float:
-        dx = self.x - ship.x
-        dy = self.y - ship.y
-        return math.degrees(math.atan2(dx, -dy)) % 360.0
 
     def quiet_factor(self) -> float:
         return config.ENEMY_TORP_QUIET

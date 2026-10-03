@@ -15,6 +15,7 @@ from src.sensors.platform import (
     PlatformSensorSuite,
     snapshot_observation,
 )
+from src.physics.geo import bearing_deg
 
 
 class Flight:
@@ -179,9 +180,7 @@ class Flight:
         return math.hypot(self.x - ship.x, self.y - ship.y)
 
     def bearing_to_frigate(self, ship) -> float:
-        dx = self.x - ship.x
-        dy = self.y - ship.y
-        return math.degrees(math.atan2(dx, -dy)) % 360.0
+        return bearing_deg(ship.x, ship.y, self.x, self.y)
 
     @property
     def ais_transmitting(self) -> bool:

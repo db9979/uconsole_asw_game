@@ -4,6 +4,22 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.191
+
+Version 1.3.191 ordnet das Handbuch in 21 kurze Kapitel: ein Schnellstart
+unter 1.500 Wörtern für beide Seiten, dann Hauptmenü, Optionen, jede
+Fregattenstation mit denselben Teilen (Zweck, Seiten, Anzeigen, Tasten, Maus,
+Standardablauf, Tipps, nicht modelliert), das U-Boot mit einem Abschnitt je
+Station, Szenarien mit Tabellen für beide Seiten, Mehrspieler und
+Server-Modus, nach dem Einsatz, Werkzeuge, Editoren, Sprachmodell,
+Referenzdaten und ein Glossar; veraltete Aussagen sind am Spiel berichtigt. Im
+Handbuch-Leser öffnet 0 den Schnellstart und 1 bis 9 die Stationen. Die README
+beschreibt nicht mehr das entfallene Windows-Starterfenster. Im Inneren ist
+langer Speicher- und Rücksetzcode in kleinere Teile zerlegt, doppelte
+Peilungs- und Abstandshelfer sind zusammengeführt, und Torpedos ohne Zielpunkt
+lesen nie ein verborgenes Ziel. Am Spiel ändert sich nichts. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.190
 
 Version 1.3.190 behebt zwei Fehler im Server-Modus des Browsers. Schaltet der

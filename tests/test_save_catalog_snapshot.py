@@ -7,7 +7,7 @@ import random
 import pytest
 
 import src.core.game as game_module
-from src.core import game_events, game_save, save_validate
+from src.core import game_events, game_reset, game_save, save_validate
 from src.air.flights import Flight
 from src.core.game import Game
 from src.data import catalog
@@ -122,6 +122,7 @@ def test_snapshot_remains_authoritative_after_packaged_defaults_change(monkeypat
     original = copy.deepcopy(state["catalog_snapshot"])
     changed_package = _changed_catalog(original)
     monkeypatch.setattr(game_module, "CATALOG", changed_package)
+    monkeypatch.setattr(game_reset, "CATALOG", changed_package)
     monkeypatch.setattr(save_validate, "CATALOG", changed_package)
     monkeypatch.setattr(game_events, "CATALOG", changed_package)
 
@@ -273,6 +274,7 @@ def test_changed_package_split_run_keeps_snapshot_continuation(monkeypatch):
     control.load_state(copy.deepcopy(state))
     changed_package = _changed_catalog(state["catalog_snapshot"])
     monkeypatch.setattr(game_module, "CATALOG", changed_package)
+    monkeypatch.setattr(game_reset, "CATALOG", changed_package)
     monkeypatch.setattr(save_validate, "CATALOG", changed_package)
     monkeypatch.setattr(game_events, "CATALOG", changed_package)
     restored = Game(seed=1, start_menu=False)

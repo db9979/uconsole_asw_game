@@ -199,7 +199,8 @@ class AdminKeysMixin:
                     % len(manual.CHAPTERS)
                 self.help_scroll = 0
             elif self.help_page == HELP_MANUAL_PAGE and pygame.K_0 <= key <= pygame.K_9:
-                self.help_manual_chapter = key - pygame.K_0
+                self.help_manual_chapter = manual.CHAPTERS.index(
+                    manual.DIGIT_CHAPTERS[key - pygame.K_0])
                 self.help_scroll = 0
             elif key == pygame.K_HOME:
                 self.help_scroll = 0

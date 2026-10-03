@@ -56,8 +56,10 @@ def test_every_sonar_page_keeps_main_panel_and_three_contact_rows(page):
         regions = sonar_view.sonar_geometry(game)
     finally:
         config.STATION_RECT = previous
-    assert regions["main"].w >= 850 and regions["main"].h >= 380
-    assert (regions["contacts"].h - 33) // 43 >= 3
+    # Three columns: contact cards, the page's display, the listening post.
+    assert regions["main"].w >= 640 and regions["main"].h >= 380
+    assert regions["contacts"].right < regions["main"].x < regions["details"].x
+    assert (regions["contacts"].h - 33) // sonar_view.CARD_PITCH >= 3
 
 
 def test_tabs_contacts_and_safe_actions_share_draw_hit_geometry(monkeypatch):

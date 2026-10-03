@@ -12,15 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.176**
+Current release: **1.3.177**
 
-Release 1.3.176 starts the new look: one set of colour tokens for the
-uConsole and the Remote Crew browser, with Tactical Night (dark, default) and
-Tactical Day (light, the waterfall as a paper LOFARgram). Switch with the
-Dark/Light pill in the top bar or in Options (F10) under "Colour theme", which
-also offers high contrast. Panels are rounded with an accent title mark, tabs
-are pills and key hints chips; keys and layout are unchanged. Saves are v50;
-v38 to v49 saves still load.
+Release 1.3.177 brings the new three-column layout to Sonar, the CIC and
+the submarine's Weapons page: contact or track cards on the left (a click
+selects one), the main display in the middle, controls and status on the
+right. At the submarine's Weapons station a click on the red fire plate fires
+like Ctrl+Enter. Keys are unchanged. Saves are v50; v38 to v49 saves still
+load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

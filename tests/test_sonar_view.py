@@ -74,11 +74,7 @@ def test_broadband_interpolation_is_circular_and_preserves_real_bins():
 
 def test_broadband_tooltip_snaps_to_two_degree_source_bin(game):
     game.sonar.broadband_history = [list(np.arange(180) / 180.0)]
-    station = pygame.Rect(config.STATION_RECT)
-    body = pygame.Rect(station.x + 12, station.y + 43,
-                       station.w - 24, station.h - 68)
-    rail_w = min(350, max(240, round(body.w * .28)))
-    main = pygame.Rect(body.x, body.y, body.w - rail_w - 12, body.h)
+    main = view.sonar_geometry(game, 0)["main"]
     plot = pygame.Rect(main.x + 57, main.y + 61, main.w - 83, main.h - 108)
     # Only the top sample is drawn; the remainder is empty padded history.
     payload = view.sonar_hit_target(game, (plot.right - 1, plot.top))
@@ -264,10 +260,12 @@ def test_station_layout_has_large_plot_and_readable_contact_window(game, monkeyp
     monkeypatch.setattr(view, "_draw_waterfall", lambda game, rect, page: panels.append(rect))
     monkeypatch.setattr(view, "_draw_contacts", lambda game, rect: contact_panels.append(rect))
     view.draw_sonar_view(game)
-    assert panels[0].w >= 850
+    # Three columns: contact cards left of the display.
+    assert panels[0].w >= 640
     assert panels[0].h >= 380
-    assert contact_panels[0].w == 350
-    assert (contact_panels[0].h - 33) // 43 >= 3
+    assert contact_panels[0].right < panels[0].x
+    assert contact_panels[0].w >= 220
+    assert (contact_panels[0].h - 33) // view.CARD_PITCH >= 3
 
 
 def test_station_header_has_no_status_chips_and_at_most_four_keys(game, monkeypatch):

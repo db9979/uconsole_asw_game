@@ -125,14 +125,33 @@ export function drawBoatDepth(id, payload) {
   }
   marks.push([cy, t("uboot_depth_mark_boat", {depth: number(nav.depth_m, 0)}), colors.accent]);
   marks.sort((a, b) => a[0] - b[0]);
+  // Spread the labels 15 px apart, then push them back up so the lowest
+  // (the seabed) stays inside the canvas.
+  const placed = [];
   let last = -Infinity;
-  for (const [my, text, color] of marks) {
-    const ly = Math.max(my, last + 15);
-    last = ly;
+  for (const [my] of marks) { last = Math.max(my, last + 15); placed.push(last); }
+  let limit = height - 8;
+  for (let index = placed.length - 1; index >= 0; index -= 1) {
+    placed[index] = Math.max(8, Math.min(placed[index], limit));
+    limit = placed[index] - 15;
+  }
+  marks.forEach(([my, text, color], index) => {
+    const ly = placed[index];
     g.strokeStyle = color; g.globalAlpha = .5; g.beginPath(); g.moveTo(right, my); g.lineTo(right + 8, ly); g.stroke(); g.globalAlpha = 1;
     label(g, text, right + 12, ly, color);
+  });
+  if (!finite(presets.layer)) {
+    // Inside the water column, wrapped to its width and clear of the seabed
+    // and of the label column on the right.
+    const maxWidth = right - left - 12, rows = [];
+    for (const word of t("uboot_depth_no_bt").split(" ")) {
+      const row = rows.length ? `${rows[rows.length - 1]} ${word}` : word;
+      if (rows.length && g.measureText(row).width <= maxWidth) rows[rows.length - 1] = row;
+      else rows.push(word);
+    }
+    const floor = Math.min(bottom_px, bottom !== null ? y(Math.min(bottom, scaleMax)) : bottom_px) - 10;
+    rows.forEach((row, index) => label(g, row, left + 6, floor - (rows.length - 1 - index) * 14, colors.muted));
   }
-  if (!finite(presets.layer)) label(g, t("uboot_depth_no_bt"), left + 6, bottom_px - 10, colors.muted);
 }
 
 // ESM and alarm rose: bow up is the boat's heading; intercepted radar

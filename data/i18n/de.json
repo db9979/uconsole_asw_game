@@ -7477,5 +7477,8 @@
   "commander.web.theme_night": "Taktik Nacht (dunkel)",
   "commander.web.theme_day": "Taktik Tag (hell)",
   "commander.web.theme_contrast": "Hoher Kontrast / farbenblind",
-  "commander.web.theme_switch": "Dunkel/Hell"
+  "commander.web.theme_switch": "Dunkel/Hell",
+  "opz.card.kind": "{affiliation} {domain}",
+  "opz.no_tracks": "Keine Tracks",
+  "uboot.card.range_quality": "{range} NM · Güte {quality}%"
 }

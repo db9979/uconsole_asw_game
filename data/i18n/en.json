@@ -7477,5 +7477,8 @@
   "commander.web.theme_night": "Tactical Night (dark)",
   "commander.web.theme_day": "Tactical Day (light)",
   "commander.web.theme_contrast": "High contrast / colour-blind",
-  "commander.web.theme_switch": "Dark/light"
+  "commander.web.theme_switch": "Dark/light",
+  "opz.card.kind": "{affiliation} {domain}",
+  "opz.no_tracks": "No tracks",
+  "uboot.card.range_quality": "{range} NM · Q {quality}%"
 }

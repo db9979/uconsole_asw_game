@@ -801,61 +801,143 @@ def _draw_boat_sketch(s, sub, contact, now, rect) -> None:
         target_speed_kn=target_speed, fresh=fresh)
 
 
+# The weapons page in two columns (UI grid, stage 3): contact cards and the
+# engagement sketch on the left, fire control and tubes on the right.
+WEAPONS_LEFT_W = 252
+CARD_H = 46
+CARD_PITCH = 50
+
+
 def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
     sub = boat.sub
+    left = pygame.Rect(x, y, WEAPONS_LEFT_W, h)
+    right = pygame.Rect(left.right + 10, y, w - WEAPONS_LEFT_W - 10, h)
+    _draw_weapon_contacts(s, game, boat, left)
+    _draw_fire_column(s, game, boat, right)
+
+
+def _draw_weapon_contacts(s, game, boat, rect) -> None:
+    """Contact cards (label, class, bearing, range, quality); a click picks
+    one like Up/Down. The engagement sketch of the chosen one fills the rest."""
+    sub = boat.sub
+    selected = boat.station.selected_contact
+    contacts = _contacts(boat)[:CONTACT_ROWS]
+    rows = max(1, min(len(contacts), 4))
+    list_h = 8 + layout.font(16, bold=True).get_linesize() + 8 + rows * CARD_PITCH + 6
+    if rect.h - list_h - 10 < SKETCH_MIN_H:
+        list_h = rect.h
+    listing = layout.box(s, (rect.x, rect.y, rect.w, list_h), "uboot.local.contacts")
+    lx, ly, lw, lh = listing
+    if list_h < rect.h:
+        _draw_boat_sketch(s, sub, selected, game.sim_t,
+                          (rect.x, rect.y + list_h + 10, rect.w, rect.h - list_h - 10))
+    if not contacts:
+        layout.blit_line(s, "uboot.local.no_contacts", (lx, ly, lw, 22),
+                         config.COLOR_TEXT_DIM, size=15)
+        return
+    visible = max(1, (lh + CARD_PITCH - CARD_H) // CARD_PITCH)
+    chosen = next((index for index, item in enumerate(contacts) if item is selected), 0)
+    first = max(0, min(chosen - visible + 1, len(contacts) - visible)) if chosen >= visible else 0
+    remote = uboot_local.station_remote(game)
+    for index, contact in enumerate(contacts[first:first + visible]):
+        card = pygame.Rect(lx - 4, ly + index * CARD_PITCH, lw + 8, CARD_H)
+        if card.bottom > ly + lh + 4:
+            break
+        is_selected = contact is selected
+        pygame.draw.rect(s, config.COLOR_TAB_ACTIVE if is_selected else theme.c("raised"),
+                         card, border_radius=4)
+        pygame.draw.rect(s, theme.c("focus") if is_selected else theme.c("line"),
+                         card, 2 if is_selected else 1, border_radius=4)
+        position = _contact_position(boat, contact, game.sim_t)
+        distance = (math.hypot(position[0] - sub.x, position[1] - sub.y)
+                    if position is not None else None)
+        classification = (display_value("classification", contact.player_class)
+                          if contact.player_class in config.PLAYER_CLASSES
+                          else message("uboot.local.unclassified"))
+        layout.blit_line(s, raw_text(f"K{contact.id:02d}"), (card.x + 8, card.y + 3, 44, 20),
+                         config.COLOR_TEXT, size=15)
+        layout.blit_line(s, classification, (card.x + 52, card.y + 4, card.w - 132, 18),
+                         config.COLOR_WARN if is_selected else config.COLOR_TEXT_DIM, size=13)
+        layout.blit_line(s, raw_text(_fmt(_contact_bearing(contact), "{:03.0f}") + "\u00b0"),
+                         (card.right - 66, card.y + 2, 58, 21), config.COLOR_TEXT,
+                         size=17, align="right")
+        layout.blit_line(s, message("uboot.card.range_quality",
+                                    range=_fmt(distance, "{:.1f}"),
+                                    quality=_fmt(max(contact.quality, contact.confidence) * 100.0,
+                                                 "{:.0f}")),
+                         (card.x + 8, card.y + 25, card.w - 16, 17),
+                         config.COLOR_TEXT_DIM, size=13)
+        if not remote:
+            pointer.add_action(card, lambda picked=contact: _pick_contact(boat, picked))
+
+
+def _pick_contact(boat, contact) -> None:
+    """A click on a contact card selects it, like Up/Down (UI state only)."""
+    if boat.station.sonar.contacts.get(contact.target_id) is contact:
+        boat.station.selected_contact = contact
+
+
+def _draw_fire_column(s, game, boat, rect) -> None:
+    sub = boat.sub
     battery = sub.weapon_battery
-    box_h = min(196, h // 2)
-    fire = layout.box(s, (x, y, w, box_h), "uboot.panel.fire_control",
+    states = opfor.tube_states(sub)
+    columns = 2
+    lamp_h = layout.line_pitch(14, 0) + 8
+    tubes_h = (math.ceil(len(states) / columns) * (lamp_h + 4) + 40) if states else 0
+    fire_h = rect.h - tubes_h - (10 if tubes_h else 0)
+    fire = layout.box(s, (rect.x, rect.y, rect.w, fire_h), "uboot.panel.fire_control",
                       border=config.COLOR_TEXT)
-    fx, fy, fw, _ = fire
+    fx, fy, fw, fh = fire
     reason = sub.fire_readiness()
+    # The fire state as a big plate; a click presses the fire key.
+    plate = pygame.Rect(fx, fy, fw, 34)
+    pygame.draw.rect(s, config.COLOR_DANGER if reason is None else theme.c("raised"),
+                     plate, border_radius=5)
+    pygame.draw.rect(s, config.COLOR_DANGER if reason is None else config.COLOR_WARN,
+                     plate, 1, border_radius=5)
     layout.blit_line(s, message("uboot.local.row.fire", state=message(
         "uboot.local.fire_ready" if reason is None else f"uboot.reason.{reason}")),
-        (fx, fy, fw, 30), config.COLOR_OK if reason is None else config.COLOR_WARN, size=24)
-    half = (fw - 10) // 2
-    layout.status_line(s, fx, fy + 36, half, "uboot.label.torpedoes",
-                       raw_text(f"{int(sub.torpedoes_left)}"), size=17, label_w=150)
-    layout.status_line(s, fx, fy + 62, half, "uboot.label.tubes_ready",
-                       raw_text(f"{opfor.tubes_flooded(sub)}"
-                                f"/{int(battery.mount_count) if battery else 0}"),
-                       size=17, label_w=150)
-    reload_s = battery.next_reload_s if battery is not None and battery.loading_count else None
-    layout.status_line(s, fx + half + 10, fy + 36, half, "uboot.label.reload",
-                       message("uboot.value.seconds", value=_fmt(reload_s))
-                       if reload_s else raw_text("--"), size=17, label_w=150)
+        plate.inflate(-12, -6), theme.c("on_accent") if reason is None and not theme.is_light()
+        else (255, 255, 255) if reason is None else config.COLOR_WARN, size=19, align="center")
+    if uboot_local.local_station(game) == "uboot_weapons":
+        # Fire by click only at the weapons station, as with the key.
+        pointer.add_legend(plate, "help.key.uboot_fire")
+    row = layout.line_pitch(16, 6)
+    py = fy + 44
     decoys = (int(sub.countermeasure_store.remaining_total)
               if sub.countermeasure_store is not None else 0)
-    layout.status_line(s, fx + half + 10, fy + 62, half, "uboot.label.decoys",
-                       raw_text(f"{decoys}"), size=17, label_w=150)
-    layout.status_line(s, fx, fy + 88, half, "uboot.label.blow",
-                       message("common.yes" if sub.blow_available else "common.no"),
-                       size=17, label_w=150)
+    reload_s = battery.next_reload_s if battery is not None and battery.loading_count else None
+    for label, value in (
+            ("uboot.label.torpedoes", raw_text(f"{int(sub.torpedoes_left)}")),
+            ("uboot.label.tubes_ready",
+             raw_text(f"{opfor.tubes_flooded(sub)}/{int(battery.mount_count) if battery else 0}")),
+            ("uboot.label.reload", message("uboot.value.seconds", value=_fmt(reload_s))
+             if reload_s else raw_text("--")),
+            ("uboot.label.decoys", raw_text(f"{decoys}")),
+            ("uboot.label.blow", message("common.yes" if sub.blow_available else "common.no"))):
+        if py + row > fy + fh:
+            break
+        layout.status_line(s, fx, py, fw, label, value, size=16, label_w=170)
+        py += row
     orders = boat.orders
     wired = sum(1 for wire in orders.wires.values() if wire.active)
-    layout.blit_line(s, message(
-        "uboot.line.fire_presets",
-        depth=_fmt(orders.torpedo_depth) if orders.torpedo_depth else message("uboot.value.auto_depth"),
-        salvo=orders.salvo, wires=wired),
-        (fx + half + 10, fy + 88, half, 20), config.COLOR_TEXT_DIM, size=15)
-    # The seeker settings of the next shots (X pattern, ", ." enable point).
-    layout.blit_line(s, message(
-        "uboot.line.seeker", pattern=display_value("torpedo_pattern", orders.torpedo_pattern),
-        enable=f"{orders.torpedo_enable_nm:.1f}"),
-        (fx, fy + 112, fw, 20), config.COLOR_TEXT_DIM, size=15)
-    busy = tube_line(sub, busy_only=True)
-    if busy is not None:
-        # Only tubes that are not ready; "tubes ready n/m" covers the rest.
-        layout.blit_line(s, message("uboot.line.tubes", tubes=busy),
-                         (fx, fy + 134, fw, 20), config.COLOR_WARN, size=15)
-    contacts_y = y + box_h + 10
-    states = opfor.tube_states(sub)
+    for text in (
+            message("uboot.line.fire_presets",
+                    depth=_fmt(orders.torpedo_depth) if orders.torpedo_depth
+                    else message("uboot.value.auto_depth"),
+                    salvo=orders.salvo, wires=wired),
+            # The seeker settings of the next shots (X pattern, ", ." enable point).
+            message("uboot.line.seeker",
+                    pattern=display_value("torpedo_pattern", orders.torpedo_pattern),
+                    enable=f"{orders.torpedo_enable_nm:.1f}")):
+        if py + 22 > fy + fh:
+            break
+        layout.blit_line(s, text, (fx, py + 2, fw, 20), config.COLOR_TEXT_DIM, size=14)
+        py += 22
     if states:
         # The tube panel: one lamp per tube, lit when flooded and ready.
-        from src.ui import console
-        columns = min(4, len(states))
-        lamp_h = layout.line_pitch(14, 0) + 8
-        panel_h = math.ceil(len(states) / columns) * (lamp_h + 4) + 40
-        tubes = layout.box(s, (x, contacts_y, w, panel_h), "uboot.panel.tubes")
+        tubes = layout.box(s, (rect.x, rect.y + fire_h + 10, rect.w, tubes_h),
+                           "uboot.panel.tubes")
         levels = {"flooded": "on", "dry": "caution", "flooding": "caution",
                   "loading": "caution", "empty": "off"}
         console.lamp_grid(s, (tubes[0], tubes[1], tubes[2], tubes[3]), [
@@ -863,55 +945,6 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
              message(f"uboot.tube_state.{state}", seconds=_fmt(left, "{:.0f}")),
              levels.get(state, "off"))
             for index, (state, left) in enumerate(states, start=1)], columns, size=14)
-        contacts_y += panel_h + 10
-    selected = boat.station.selected_contact
-    contacts = _contacts(boat)[:CONTACT_ROWS]
-    pitch = 24
-    # The contact list keeps what it needs (at least one row); the rest of
-    # the page is the engagement sketch of the chosen contact.
-    title_h = 8 + layout.font(16, bold=True).get_linesize() + 8
-    list_h = title_h + max(1, len(contacts)) * pitch + 8
-    sketch_h = y + h - contacts_y - min(list_h, SKETCH_LIST_MAX_H) - 10
-    if sketch_h >= SKETCH_MIN_H:
-        list_h = min(list_h, SKETCH_LIST_MAX_H)
-        _draw_boat_sketch(s, sub, selected, game.sim_t,
-                          (x, contacts_y + list_h + 10, w, sketch_h))
-    else:
-        list_h = y + h - contacts_y
-    listing = layout.box(s, (x, contacts_y, w, list_h), "uboot.local.contacts")
-    lx, ly, lw, lh = listing
-    rows = []
-    for contact in contacts:
-        position = _contact_position(boat, contact, game.sim_t)
-        distance = (math.hypot(position[0] - sub.x, position[1] - sub.y)
-                    if position is not None else None)
-        rows.append((contact is selected, message(
-            "uboot.local.contact_row", marker=">" if contact is selected else " ",
-            label=raw_text(f"K{contact.id:02d}"),
-            bearing=_fmt(_contact_bearing(contact), "{:03.0f}"),
-            range=_fmt(distance, "{:.1f}"),
-            quality=_fmt(max(contact.quality, contact.confidence) * 100.0, "{:.0f}"),
-            classification=display_value("classification", contact.player_class)
-            if contact.player_class in config.PLAYER_CLASSES
-            else message("uboot.local.unclassified"))))
-    if not rows:
-        layout.blit_line(s, "uboot.local.no_contacts", (lx, ly, lw, 22),
-                         config.COLOR_TEXT_DIM, size=16)
-        return
-    visible = max(1, lh // pitch)
-    first = 0
-    chosen = next((index for index, row in enumerate(rows) if row[0]), 0)
-    if chosen >= visible:
-        # Scroll so the chosen contact stays in view.
-        first = chosen - visible + 1
-    for index, (is_selected, text) in enumerate(rows[first:first + visible]):
-        row_y = ly + index * pitch
-        if row_y + pitch > ly + lh:
-            break
-        if is_selected:
-            pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, (lx - 4, row_y, lw + 8, pitch - 2))
-        layout.blit_line(s, text, (lx, row_y + 2, lw, pitch - 4),
-                         config.COLOR_WARN if is_selected else config.COLOR_TEXT, size=16)
 
 
 # Key legend of each station page (only keys that station may use).

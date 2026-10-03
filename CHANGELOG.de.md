@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.177
+
+Version 1.3.177 bringt die neue Aufteilung in drei Spalten zu Sonar, OPZ und
+der Waffenseite des U-Boots. Das Sonar zeigt seine Kontakte links als Karten
+(Peilung, Klassifizierung, Balken für den Störabstand; ein Klick wählt einen
+Kontakt), in der Mitte die Anzeige der Seite und rechts den Hörposten mit
+seiner Rose. Die OPZ hat auf jeder Seite links Trackkarten, in der Mitte die
+Karte und rechts das Statusfeld. Die Waffenseite des U-Boots zeigt
+Kontaktkarten über der Schusslage und die Feuerleitung über den Rohrlampen;
+an der Waffenstation feuert ein Klick auf das rote Feuerfeld wie Strg+Enter.
+Die Tasten bleiben gleich; Spielstände sind v50, v38 bis v49 lassen sich
+weiter laden.
+
 ## 1.3.176
 
 Version 1.3.176 beginnt das neue Aussehen. Alle Bildschirme nehmen ihre

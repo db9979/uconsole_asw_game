@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.186
+## 1.3.187
 
-Version 1.3.186 macht Abläufe und Speichern verlässlicher. Zwei Spiele mit
+Version 1.3.187 macht Abläufe und Speichern verlässlicher. Zwei Spiele mit
 gleichem Seed laufen jetzt gleich ab, auch nacheinander ohne Neustart des
 Programms (Radar und MAD des Seefernaufklärers, Kontaktmeldungen und
 U-Boot-Sichtungen hängen nicht mehr an der internen Nummerierung). Jeder
@@ -26,6 +26,15 @@ auf der uConsole, und die Wahl des echten Seegebiets wandert von Bild↑/↓ auf
 anderen Menüseiten. F1 zeigt an Bord des U-Boots dessen eigene Globaltasten,
 und das Einsatzbuch nennt seine Tasten unten. Spielstände sind v50; v38
 bis v49 lassen sich weiter laden.
+
+## 1.3.186
+
+Version 1.3.186 behebt das helle Schema hinter den Menüs. Das Hauptmenü und
+jedes Fenster über einem laufenden Einsatz (Hilfe, Optionen, Speichern und
+Laden, Beenden) liegen jetzt auf einer hellen Tagesszene mit Sonne und hellem
+Meer statt auf dem dunklen Nachtbild, so bleibt die dunkle Schrift gut
+lesbar. Das Nachtschema sieht aus wie bisher. Tasten bleiben gleich.
+Spielstände sind v50; v38 bis v49 laden weiter.
 
 ## 1.3.185
 

@@ -35,6 +35,8 @@ def high_contrast() -> bool:
 
 _DIM = {}
 BACKDROP_DIM_ALPHA = 110
+# The veil over the scene (dark at night, light by day; set by the theme).
+BACKDROP_VEIL = (2, 6, 10, BACKDROP_DIM_ALPHA)
 
 
 _BACKDROP_FRAME = {}
@@ -63,12 +65,13 @@ def backdrop(surface: pygame.Surface, t: float) -> None:
 def _draw_backdrop(surface: pygame.Surface, t: float) -> None:
     splash_view.draw_scene(surface, t)
     size = surface.get_size()
-    dim = _DIM.get(size)
+    key = (size, BACKDROP_VEIL)
+    dim = _DIM.get(key)
     if dim is None:
         _DIM.clear()
         dim = pygame.Surface(size, pygame.SRCALPHA)
-        dim.fill((2, 6, 10, BACKDROP_DIM_ALPHA))
-        _DIM[size] = dim
+        dim.fill(BACKDROP_VEIL)
+        _DIM[key] = dim
     surface.blit(dim, (0, 0))
 
 

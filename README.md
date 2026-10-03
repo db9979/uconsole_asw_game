@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.186**
+Current release: **1.3.187**
 
-Release 1.3.186 makes runs and saves more dependable. Two games with the
+Release 1.3.187 makes runs and saves more dependable. Two games with the
 same seed now play out the same even when started one after the other without
 restarting the program (the patrol aircraft's radar and MAD, contact reports
 and submarine sightings no longer depend on internal numbering). Every save

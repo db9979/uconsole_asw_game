@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.186**
+Aktuelle Version: **1.3.187**
 
-Version 1.3.186 macht Abläufe und Speichern verlässlicher. Zwei Spiele mit
+Version 1.3.187 macht Abläufe und Speichern verlässlicher. Zwei Spiele mit
 gleichem Seed laufen jetzt gleich ab, auch nacheinander ohne Neustart des
 Programms (Radar und MAD des Seefernaufklärers, Kontaktmeldungen und
 U-Boot-Sichtungen hängen nicht mehr an der internen Nummerierung). Jeder

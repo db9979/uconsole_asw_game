@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.186
+## 1.3.187
 
-Release 1.3.186 makes runs and saves more dependable. Two games with the
+Release 1.3.187 makes runs and saves more dependable. Two games with the
 same seed now play out the same even when started one after the other without
 restarting the program (the patrol aircraft's radar and MAD, contact reports
 and submarine sightings no longer depend on internal numbering). Every save
@@ -25,6 +25,14 @@ moves from PgUp/PgDn to [ and ]. W, R and F no longer act unseen in the
 lobby, logbook and other menu pages. F1 shows the submarine's own global
 keys aboard, and the logbook lists its keys at the bottom. Saves are v50; v38 to v49
 saves still load.
+
+## 1.3.186
+
+Release 1.3.186 fixes the light theme behind the menus. The main menu and
+every window opened over a mission (help, options, save and load, quit) now
+sit on a bright day scene with sun and light sea instead of the dark night
+picture, so the dark text stays easy to read. The night theme looks as
+before. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.185
 

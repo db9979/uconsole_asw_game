@@ -14,20 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.168**
+Aktuelle Version: **1.3.169**
 
-Version 1.3.168 bringt U-Jagd auf den Mac und macht den Gegner ohne
-Sprachmodell klüger. Jede Version enthält jetzt eine macOS-App für
-Apple-Silicon und Intel-Macs, die sich wie das Windows-Programm selbst
-aktualisiert. Jedes freie KI-U-Boot und die KI-Jagdfregatte wählen ihre
-Taktik selbst aus dem, was sie gehört haben, und dem Charakter ihres
-Kommandanten, und der Gegner lernt aus dem Logbuch Ihre Gewohnheiten (früher
-Ping, weite Schüsse, Sehrohrtiefe, hohe Fahrt) und stellt sich ein wenig
-darauf ein; die Logbuchseite zeigt, was er kennt, und L schaltet das Lernen
-aus. Spielstände, die der laute Kontakt eines KI-U-Boots unladbar machte,
-laden wieder, der nächtliche Dauertest deckt alle Szenarien ab, wacklige
-Tests sind behoben und große Module aufgeteilt. Spielstände sind v50; v38
-bis v49 lassen sich weiter laden.
+Version 1.3.169 beruhigt zwei Geräusche, die an jeder Station alle paar
+Sekunden wiederkamen. Bei schwerer See von vorn und Fahrt schlug der Bug der
+Fregatte bei fast jeder Welle ein, alle 5 bis 18 s; jetzt wartet nach einem
+Schlag der nächste 30 bis 90 s. Tief unten knarzte der Rumpf des U-Boots an
+der Testtiefe alle 4 s; jetzt ruht er nach jedem Knarzen 12 bis 28 s. Beides
+bleibt reines Geräusch und ändert nichts an der Simulation. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

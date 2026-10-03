@@ -443,6 +443,8 @@ UBOOT_TEST_DEPTH_WARN_FRACTION = 0.9
 UBOOT_CREAK_START = 0.6
 UBOOT_CREAK_TICK_S = 4.0
 UBOOT_CREAK_MIN_CHANCE = 0.1
+# After a creak the hull stays quiet this many checks (drawn each time).
+UBOOT_CREAK_GAP_TICKS = (3, 7)
 UBOOT_DETONATION_HEARD_NM = 30.0
 UBOOT_DETONATION_NEAR_NM = 2.0
 UBOOT_DETONATION_BEARING_SD_DEG = 3.0
@@ -1214,6 +1216,9 @@ HELO_RADAR_EMITTER = "emitter.own_asset.helicopter.radar"
 HULL_SLAM_PITCH_DEG = 3.5
 HULL_SLAM_MIN_KN = 8.0
 HULL_SLAM_SEA_STATE = 4
+# Not every wave: after a slam the next waits this long (s, drawn each time).
+HULL_SLAM_GAP_MIN_S = 30.0
+HULL_SLAM_GAP_MAX_S = 90.0
 AIRCREW_HOVER_EYE_M = 20.0        # a hovering (dipping) crew's eye height
 HELO_RADAR_ALTITUDE_M = 150.0      # transit altitude for the radar horizon
 HELO_RADAR_RANGE_NM = 40.0          # helicopter surface-search range, large ship

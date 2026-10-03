@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.169
+
+Version 1.3.169 beruhigt zwei Geräusche, die an jeder Station alle paar
+Sekunden wiederkamen. Bei schwerer See von vorn und Fahrt schlug der Bug der
+Fregatte bei fast jeder Welle ein, alle 5 bis 18 s; jetzt wartet nach einem
+Schlag der nächste 30 bis 90 s. Tief unten knarzte der Rumpf des U-Boots an
+der Testtiefe alle 4 s; jetzt ruht er nach jedem Knarzen 12 bis 28 s. Beides
+bleibt reines Geräusch und ändert nichts an der Simulation. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.168
 
 Version 1.3.168 bringt U-Jagd auf den Mac. Jede Version enthält jetzt auch

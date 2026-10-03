@@ -298,13 +298,22 @@ class SimMixin:
 
     def _hull_slam(self, previous_pitch: float) -> None:
         """A bow coming down hard into a head sea slams: a sound only (the
-        seakeeping model already carries the motion)."""
+        seakeeping model already carries the motion). Not every wave: after a
+        slam the next one waits HULL_SLAM_GAP_MIN_S to _MAX_S (stateless draw)."""
         pitch = self.ship.pitch
+        quiet_until = getattr(self, "_hull_slam_quiet_until", None)
+        if quiet_until is not None and quiet_until > self.sim_t + config.HULL_SLAM_GAP_MAX_S:
+            quiet_until = None                  # a new or loaded mission
         if (previous_pitch > -config.HULL_SLAM_PITCH_DEG >= pitch
                 and self.ship.speed >= config.HULL_SLAM_MIN_KN
                 and getattr(self.world, "effective_sea_state", self.world.sea_state)
-                >= config.HULL_SLAM_SEA_STATE):
+                >= config.HULL_SLAM_SEA_STATE
+                and (quiet_until is None or self.sim_t >= quiet_until)):
             self._emit_sound("hull_slam")
+            quiet_until = self.sim_t + detrand.uniform(
+                config.HULL_SLAM_GAP_MIN_S, config.HULL_SLAM_GAP_MAX_S,
+                self.seed, "hull-slam", int(self.sim_t * 10.0))
+        self._hull_slam_quiet_until = quiet_until
 
     def _sight_fire_level(self, ship):
         """The frigate's own fire for her smoke (0..1, worst compartment);

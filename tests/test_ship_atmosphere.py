@@ -61,6 +61,26 @@ def test_bow_slams_into_a_heavy_head_sea():
     calm.audio.shutdown()
 
 
+def test_the_bow_slams_now_and_then_not_on_every_wave():
+    """A heavy head sea used to slam the bow every 5 to 18 s at every
+    station; after a slam the next waits HULL_SLAM_GAP_MIN_S to _MAX_S."""
+    game = Game(seed=5, start_menu=False, audio_enabled=False)
+    game.world.sea_state = 6
+    game.world.refresh_weather()
+    game.ship.target_speed = 25.0
+    times = []
+    for _ in range(6000):
+        before = game._sound_event_seq
+        game._update_sim(0.1)
+        if any(row["kind"] == "hull_slam" and row["seq"] > before
+               for row in game._sound_events):
+            times.append(game.sim_t)
+    gaps = [b - a for a, b in zip(times, times[1:])]
+    assert len(times) >= 3
+    assert min(gaps) >= config.HULL_SLAM_GAP_MIN_S
+    game.audio.shutdown()
+
+
 def test_silent_running_runs_the_fans_down_and_up():
     game, _server, _bridge = _crewed()
     boat = game.opfor

@@ -33,39 +33,68 @@ from importlib import resources
 from types import MappingProxyType
 from urllib.parse import urlsplit
 
-# Verbatim moves; every name stays importable from here.
-from src.data.catalog_types import (  # noqa: F401
-    CIVIL_CATEGORIES, LEGACY_HOSTILE_SURFACE_KEYS, TargetSignature, SubProfile,
-    SurfaceProfile, AircraftProfile, AnimalProfile, TorpedoProfile,
-    DecoyProfile, ReferenceProfile, AcousticLine, MachineProfile,
-    EnduranceProfile, SensorProfile, EmitterProfile, WeaponProfile,
-    LauncherProfile, MagazineProfile, CountermeasureProfile, ProfileSystems,
-    CatalogSource, ProvenanceClaim)
-from src.data.catalog_schema import (  # noqa: F401
-    CONTACT_FIELDS, ACOUSTIC_FIELDS, ENTRY_OPTIONAL_FIELDS,
-    ACOUSTIC_OPTIONAL_FIELDS, DEFAULT_FACTIONS, ACOUSTIC_CATEGORIES,
-    CONTACT_FILENAMES, SOURCES_FILENAME, KEY_PATTERN, V2_DOCUMENT_FIELDS,
-    V2_OPTIONAL_DOCUMENT_FIELDS, PROFILE_SYSTEM_FIELDS, REFERENCE_FIELDS,
-    MACHINE_FIELDS, ENDURANCE_FIELDS, SENSOR_FIELDS, EMITTER_FIELDS,
-    LEGACY_EMITTER_FIELDS, WEAPON_FIELDS, LAUNCHER_FIELDS, MAGAZINE_FIELDS,
-    COUNTERMEASURE_FIELDS, SOURCE_FIELDS, CLAIM_FIELDS, HULL_TYPES,
-    PROPULSION_CODES, PROPULSOR_TYPES, SENSOR_DOMAINS, SENSOR_MODES,
-    MODULATION_CODES, RADAR_ROLES, RADAR_POWER_CLASSES,
-    OWN_ASSET_EMITTER_PREFIX, WEAPON_TYPES, TARGET_DOMAINS, SEEKER_TYPES,
-    GUIDANCE_TYPES, PAYLOAD_TYPES, LAUNCHER_TYPES, COUNTERMEASURE_TYPES,
-    MAX_CATALOG_DOCUMENT_BYTES, MAX_CATALOG_ENTRIES, RUNTIME_SNAPSHOT_VERSION,
-    RUNTIME_BINDINGS, _schema_object, _schema_number, _schema_text,
-    _schema_wiki_url, _schema_pair, _schema_lines, _schema_number_array,
-    _schema_acoustic, validate_contact_entry)
-from src.data.catalog_systems import (  # noqa: F401
-    _schema_key, _schema_nullable_text, _schema_nullable_number,
-    _schema_nullable_pair, _schema_string_array, _schema_key_array,
-    _nullable_pair, _nullable_broadband, _acoustic_lines, _reference_from_dict,
-    _machine_from_dict, _endurance_from_dict, _sensor_from_dict,
-    _emitter_from_dict, _weapon_from_dict, _launcher_from_dict,
-    _magazine_from_dict, _countermeasure_from_dict, _profile_systems_from_dict,
-    _v2_to_dict, _source_to_dict, _claim_to_dict, _unique_json_object,
-    _read_json, _schema_object_array, V2_REGISTRIES)
+# Verbatim moves: the types, schema and v2 systems live in their own
+# modules; the names imported through this facade are listed in __all__.
+from src.data.catalog_types import (CIVIL_CATEGORIES,
+                                    LEGACY_HOSTILE_SURFACE_KEYS,
+                                    TargetSignature, SubProfile,
+                                    SurfaceProfile, AircraftProfile,
+                                    AnimalProfile, TorpedoProfile,
+                                    DecoyProfile, EnduranceProfile,
+                                    EmitterProfile, CatalogSource,
+                                    ProvenanceClaim)
+from src.data.catalog_schema import (CONTACT_FIELDS, ACOUSTIC_FIELDS,
+                                     ENTRY_OPTIONAL_FIELDS,
+                                     ACOUSTIC_OPTIONAL_FIELDS,
+                                     CONTACT_FILENAMES, SOURCES_FILENAME,
+                                     V2_DOCUMENT_FIELDS,
+                                     V2_OPTIONAL_DOCUMENT_FIELDS,
+                                     LEGACY_EMITTER_FIELDS, SOURCE_FIELDS,
+                                     CLAIM_FIELDS, OWN_ASSET_EMITTER_PREFIX,
+                                     MAX_CATALOG_DOCUMENT_BYTES,
+                                     MAX_CATALOG_ENTRIES,
+                                     RUNTIME_SNAPSHOT_VERSION,
+                                     RUNTIME_BINDINGS, _schema_object,
+                                     _schema_text, validate_contact_entry)
+from src.data.catalog_systems import (_schema_key, _schema_nullable_text,
+                                      _schema_string_array, _schema_key_array,
+                                      _endurance_from_dict, _v2_to_dict,
+                                      _source_to_dict, _claim_to_dict,
+                                      _read_json, _schema_object_array,
+                                      V2_REGISTRIES)
+
+# The names other modules, tests and tools import through this facade
+# (the other imports above serve this module itself).
+__all__ = [
+    "ACOUSTIC_FIELDS",
+    "ACOUSTIC_OPTIONAL_FIELDS",
+    "CATALOG",
+    "CIVIL_CATEGORIES",
+    "CONTACTS_DIR",
+    "CONTACT_FIELDS",
+    "CONTACT_FILENAMES",
+    "ContactCatalog",
+    "ENTRY_OPTIONAL_FIELDS",
+    "EmitterProfile",
+    "EnduranceProfile",
+    "MAX_CATALOG_DOCUMENT_BYTES",
+    "MAX_CATALOG_ENTRIES",
+    "OWN_ASSET_EMITTER_PREFIX",
+    "RUNTIME_BINDINGS",
+    "SOURCES_FILENAME",
+    "TargetSignature",
+    "V2_REGISTRIES",
+    "build_catalog",
+    "catalog_from_runtime_snapshot",
+    "load_catalog",
+    "rank_signatures",
+    "validate_contact_entry",
+    "_endurance_from_dict",
+    "_load_catalog_from",
+    "_read_document",
+    "_read_json",
+    "_v2_to_dict",
+]
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CONTACTS_DIR = os.path.join(_ROOT, "data", "contacts")

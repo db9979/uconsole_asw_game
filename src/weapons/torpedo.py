@@ -203,11 +203,6 @@ class Torpedo:
         frac = self.time_since_launch / config.TORP_SPOOLUP_S
         return config.TORP_SPOOLUP_MIN_FRAC + (1.0 - config.TORP_SPOOLUP_MIN_FRAC) * frac
 
-    def distance_to_target_nm(self) -> float:
-        if self.target is None or getattr(self.target, "sunk", False):
-            return float("inf")
-        return math.hypot(self.target.x - self.x, self.target.y - self.y)
-
     def guidance_distance_nm(self) -> float:
         """Operator-visible distance to the observed fire-control solution."""
         if self.guidance_x is None or self.guidance_y is None:
@@ -315,9 +310,9 @@ class Torpedo:
             # while descending to the search depth.
             self.terminal_active = True
         # Normal activation is based on the commanded datum, never hidden truth.
+        # Every launch passes a datum; without one the distance is infinite,
+        # so the weapon holds its course and its seeker stays off.
         seeker_active = self.guidance_distance_nm() <= self.enable_nm
-        if self.guidance_x is None or self.guidance_y is None:
-            seeker_active = self.distance_to_target_nm() <= self.enable_nm
         self.terminal_active = self.terminal_active or self.seeker_acquired or seeker_active
         if self.terminal_active and seeker_candidates is not None:
             candidate = self.evaluate_seeker_candidates(seeker_candidates, world)

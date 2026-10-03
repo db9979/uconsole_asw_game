@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.190
+
+Release 1.3.190 fixes two things in the browser's server mode. When the game
+leader switches the unit in the lobby, every browser now moves to that unit's
+stations (against the AI); before, the crew stayed on the old unit's stations.
+A crowded top bar no longer squeezes "Add station" into a column of single
+letters: the button keeps its one-line label and the bar wraps onto a second
+row instead of running off the right edge. Keys are unchanged. Saves are v50;
+v38 to v49 saves still load.
+
 ## 1.3.189
 
 Release 1.3.189 keeps the local sonar audio from falling silent while every

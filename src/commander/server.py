@@ -1167,8 +1167,37 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                     session["ready"] = False
             # ``mission_name``: an own mission's authored name (else None).
             # ``versus``: "crew" when a second crew plays the other unit.
+            previous = self._lobby
             self._lobby = None if room is None else {"mission_name": None, "versus": "ai",
                                                      **dict(room)}
+            if (previous is not None and self._lobby is not None
+                    and self._lobby.get("versus") != "crew"
+                    and previous.get("side") != self._lobby.get("side")):
+                self._lobby_follow_side_locked()
+
+    def _lobby_follow_side_locked(self):
+        """Against the AI every crew browser sails the lobby's unit: when the
+        unit changes, a browser on the other unit's stations is moved to the
+        first free station of the new one (in pairing order)."""
+        side = "opfor" if self._lobby.get("side") == "uboot" else "frigate"
+        moved = False
+        for session in sorted(self._sessions_v2.values(), key=lambda item: item["ordinal"]):
+            if (session["observer"] or session["lookout_only"] or session.get("web_host")
+                    or session["solo_host"]):
+                continue
+            held = [station for station in session["leases"]
+                    if station not in LOOKOUT_ROLES and role_side(station) != side]
+            if not held:
+                continue
+            for station in held:
+                self._release_station_locked(session, station, "role_revoked")
+            session["requests"].clear()
+            session["ready"] = False
+            self._lobby_seat_locked(session)
+            moved = True
+        if moved:
+            self._state_push_sequence += 1
+            self._sonar_stream_condition.notify_all()
 
     def set_mic_level_locked(self, session, digest, level, now) -> bool:
         """One crew browser's microphone level (transport thread): only a

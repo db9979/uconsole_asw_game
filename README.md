@@ -12,18 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.189**
+Current release: **1.3.190**
 
-Release 1.3.189 keeps the local sonar audio from falling silent while every
-other sound plays on. The sonar playback now watches its own channel: a block
-that never leaves the queue, a channel volume left at zero after a fade, an
-error in the playback worker, a worker that stopped behind a full queue, or a
-listening position ahead of the receiver each restart the sonar stream within
-about a second, without switching audio off and on. On the submarine the
-sonar sound is now placed left or right against the submarine's own course
-instead of the frigate's. With `U_JAGD_AUDIO_DEBUG=1`, `audio_debug.log`
-counts every such recovery (`wedged`, `volume_restored`, `pump_errors`,
-`full_resets`). Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.190 fixes two things in the browser's server mode. When the game
+leader switches the unit in the lobby, every browser now moves to that unit's
+stations (against the AI); before, the crew stayed on the old unit's stations.
+A crowded top bar no longer squeezes "Add station" into a column of single
+letters: the button keeps its one-line label and the bar wraps onto a second
+row instead of running off the right edge. Keys are unchanged. Saves are v50;
+v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

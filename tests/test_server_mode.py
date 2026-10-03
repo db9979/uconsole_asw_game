@@ -327,3 +327,32 @@ def test_server_status_screen_shows_the_join_line(host, monkeypatch):
     assert "SERVER MODE" in texts
     assert any("Leader: Lead" in text and host.commander.pairing_code[:3] in text
                for text in texts)
+
+
+def test_the_crew_follows_the_side_the_leader_picks(host):
+    """Against the AI every browser sails the lobby's unit, both ways."""
+    frame(host)
+    leader, _ = join(host, "Lead")
+    crew, _ = join(host, "Crew")
+
+    def held(cookie):
+        stations = session_of(host, cookie)["stations"]
+        return sorted(name for name, record in stations.items() if record["status"] == "mine")
+
+    assert (held(leader), held(crew)) == (["bridge"], ["sonar"])
+    assert host_command(host, leader, "host_lobby_set",
+                        choices(side="uboot", choice="s6_aufklaerung"), "a")["status"] == "applied"
+    frame(host)
+    assert (held(leader), held(crew)) == (["uboot"], ["uboot_sonar"])
+    assert session_of(host, leader)["station"] == "uboot"
+    assert host_command(host, leader, "host_lobby_set", choices(), "b")["status"] == "applied"
+    frame(host)
+    assert (held(leader), held(crew)) == (["bridge"], ["sonar"])
+    # A second crew keeps each team where it is.
+    assert host_command(host, leader, "host_lobby_set", choices(versus="crew"),
+                        "c")["status"] == "applied"
+    assert host_command(host, leader, "host_lobby_set",
+                        choices(side="uboot", choice="s6_aufklaerung", versus="crew"),
+                        "d")["status"] == "applied"
+    frame(host)
+    assert (held(leader), held(crew)) == (["bridge"], ["sonar"])

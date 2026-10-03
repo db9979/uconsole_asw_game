@@ -14,20 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.189**
+Aktuelle Version: **1.3.190**
 
-Version 1.3.189 verhindert, dass der Sonar-Ton auf der uConsole verstummt,
-während alle anderen Geräusche weiterlaufen. Die Sonar-Wiedergabe überwacht
-jetzt ihren eigenen Kanal: Ein Block, der die Warteschlange nicht mehr
-verlässt, eine nach dem Einblenden auf null stehende Kanallautstärke, ein
-Fehler im Wiedergabe-Thread, ein hinter voller Warteschlange angehaltener
-Thread oder eine Hörposition vor dem Empfänger starten den Sonar-Ton nach
-spätestens etwa einer Sekunde neu, ohne Audio aus- und einzuschalten. Im
-U-Boot liegt der Sonar-Ton jetzt links oder rechts relativ zum eigenen Kurs
-des U-Boots statt zu dem der Fregatte. Mit `U_JAGD_AUDIO_DEBUG=1` zählt
-`audio_debug.log` jede solche Erholung (`wedged`, `volume_restored`,
-`pump_errors`, `full_resets`). Tasten bleiben gleich. Spielstände sind v50;
-v38 bis v49 lassen sich weiter laden.
+Version 1.3.190 behebt zwei Fehler im Server-Modus des Browsers. Schaltet der
+Spielleiter in der Lobby die Einheit um, wechselt jetzt jeder Browser auf die
+Stationen dieser Einheit (gegen die KI); bisher blieb die Besatzung auf den
+Stationen der alten Einheit. Eine volle Kopfleiste quetscht „Station
+hinzufügen“ nicht mehr zu einer Spalte einzelner Buchstaben: Der Knopf bleibt
+einzeilig, und die Leiste bricht in eine zweite Zeile um, statt rechts
+abgeschnitten zu werden. Tasten bleiben gleich. Spielstände sind v50; v38 bis
+v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

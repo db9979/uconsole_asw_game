@@ -5,7 +5,7 @@ scale, range rings, the selected track's closest point of approach and the
 chart layers).  They never change the simulation, observations or the
 score; they live in ``settings.json`` (``Preferences.opz_display``), never
 in a save.  The uConsole sets them on the OPZ's "Display" page, the browser
-OPZ with its own buttons above the chart (kept in the browser's storage).
+OPZ with its own buttons above the chart (kept in memory per tab).
 
 ``cpa`` is the plotting-table closest point of approach between the own
 ship (own truth) and an observed track's position and motion: it uses only

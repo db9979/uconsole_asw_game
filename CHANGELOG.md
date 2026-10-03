@@ -4,6 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.173
+
+Release 1.3.173 comes out of a review of the whole code. Weapon keys with
+Shift or Ctrl no longer fire by mistake: Shift+A (ping) no longer launches an
+ASROC and Ctrl+R (aircraft radar) no longer fires the rocket launcher at
+Weapons, and Shift+A on the submarine no longer switches silent running. A
+lurking submarine now stems a north or south current instead of drifting with
+it, and a decoy's Doppler shift counts its speed in knots. The browser host page
+can grant the observer role and withdraw direct fire from the submarine's
+weapons station, the submarine's browser stations have their own short help
+and manual link, and four sonar and helicopter drop-downs no longer jump back
+while in use. Help texts were corrected (tasks page, OPZ zoom, debrief keys,
+German wording, "submarine" instead of "boat"), and unused code went. Saves
+are v50; v38 to v49 saves still load.
+
 ## 1.3.172
 
 Release 1.3.172 makes the microphone of noise discipline work. On the

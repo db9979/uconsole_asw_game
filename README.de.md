@@ -14,17 +14,21 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.172**
+Aktuelle Version: **1.3.173**
 
-Version 1.3.172 bringt das Mikrofon der Geräuschdisziplin auf der uConsole,
-unter Windows, auf dem Mac und im Browser zum Laufen. Das Spiel öffnet jetzt
-das Standardmikrofon des Systems (vorher nie), und wenn das nicht geht, sagen
-eine Meldung und Seite 2 der Optionen warum und was zu tun ist, bis zur
-Datenschutz-Einstellung von Windows oder macOS. Die Mac-App fragt nach dem
-Mikrofonzugriff. Browser erlauben das Mikrofon nur auf einer sicheren Seite,
-deshalb sagt das die normale LAN-Seite jetzt und bietet „HTTPS-Seite öffnen“
-an, wo Sie sich mit demselben Code neu koppeln. Spielstände sind v50; v38 bis
-v49 lassen sich weiter laden.
+Version 1.3.173 folgt aus einer Prüfung des ganzen Codes. Waffentasten mit
+Umschalt oder Strg feuern nicht mehr versehentlich: Umschalt+A (Ping) startet
+an der Waffenstation keinen ASROC mehr und Strg+R (Luftfahrzeug-Radar) feuert
+keinen Raketenwerfer mehr, und Umschalt+A schaltet auf dem U-Boot nicht mehr
+die Schleichfahrt. Ein lauerndes U-Boot hält jetzt auch gegen einen Nord- oder
+Südstrom, statt mit ihm zu treiben, und der Doppler eines Täuschkörpers rechnet
+seine Fahrt in Knoten. Die Host-Seite im Browser kann die Beobachterrolle
+vergeben und der Waffenstation des U-Boots das Direktfeuer entziehen, die
+Browser-Stationen des U-Boots haben eigene Kurzhilfen und Handbuch-Links, und
+vier Auswahllisten an Sonar und Heli springen beim Bedienen nicht mehr zurück.
+Hilfetexte wurden berichtigt (Seite Aufträge, OPZ-Zoom, Tasten der
+Nachbesprechung, deutsche Begriffe, „U-Boot“ statt „Boot“), und ungenutzter
+Code ist entfernt. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

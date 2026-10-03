@@ -521,16 +521,3 @@ class IncidentsMixin:
             segments_cross(x1, y1, x2, y2, item["x"], item["y"], item["x2"], item["y2"])
             for item in board.active("net"))
 
-    def incident_view(self) -> list:
-        """Detached rows of the current incidents (the radio room's list)."""
-        rows = []
-        for item in reversed(self.incidents.items):
-            if not item["active"]:
-                continue
-            row = dict(id=item["id"], kind=item["kind"], label=self._incident_label(item),
-                       start_t=item["start_t"], end_t=item["end_t"],
-                       weather=item["weather"])
-            if item["kind"] == "net":
-                row.update(x=item["x"], y=item["y"], x2=item["x2"], y2=item["y2"])
-            rows.append(row)
-        return rows

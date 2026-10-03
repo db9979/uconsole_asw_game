@@ -796,10 +796,6 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
             return phones < len(LOOKOUT_ROLES)
         return len(self._sessions_v2) - phones < 1
 
-    def web_host_session(self):
-        with self._lock:
-            self._expire_locked()
-            return self._sessions_v2.get(self._web_host_digest)
 
     def _web_grant_available_locked(self, session):
         for station in STATIONS:

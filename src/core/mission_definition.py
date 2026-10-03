@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
 from src.data.validation import (ValidationIssue, enum, finite_number, integer,
-                                 issue, pair, sequence, text, unique,
+                                 issue, pair, text, unique,
                                  validate_user_key)
 
 

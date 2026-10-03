@@ -414,19 +414,6 @@ class DamageModel:
             return
         self.team_eta[team] = self._travel_s(self.team_position[team], destination)
 
-    def assign_team_cycle(self, team: int) -> str | None:
-        """Team auf das nächste (oder weitere) betroffene Kompartiment."""
-        cands = self.repair_candidates()
-        if not cands:
-            self._send(team, None)
-            return None
-        cur = self.teams.get(team)
-        if cur in cands:
-            nxt = cands[(cands.index(cur) + 1) % len(cands)]
-        else:
-            nxt = cands[0]
-        self._send(team, nxt)
-        return nxt
 
     def assign_team(self, team: int, destination: str) -> bool:
         """Assign explicitly without silently displacing another team."""

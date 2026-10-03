@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { enumText, finite, number, stateText, t, unit } from "../core/format.js";
-import { inUse, metrics, setOptions, sonarEntries, stationRows, yesNo } from "../views/dom.js";
+import { inUse, metrics, setControlValue, setOptions, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 import { renderLamps } from "../views/console-kit.js";
 
 // The listening console's annunciator lamps: what the operator has switched on.
@@ -57,9 +57,10 @@ export function renderSonarStation(payload) {
       ? settings.tools.library.map((row) => `${number(row.fit * 100, 0)}% ${row.name}`).join(" · ")
       : t("sonar_library_none")],
     ["sonar_assist", yesNo(settings.tools.assist)]]);
-  if (!S.stationDrafts.has("sonar-integration")) $("sonar-integration").value = String(settings.tools.integration_s);
-  if (!S.stationDrafts.has("sonar-demon-band")) $("sonar-demon-band").value = settings.tools.demon_band_hz.map((value) => number(value, 0).replace(/\D/g, "")).join("-");
-  if (!S.stationDrafts.has("sonar-heterodyne")) $("sonar-heterodyne").value = String(Math.round(settings.tools.heterodyne_hz));
+  // These drop-downs apply on change; a push only catches them up when not in use.
+  setControlValue($("sonar-integration"), String(settings.tools.integration_s));
+  setControlValue($("sonar-demon-band"), settings.tools.demon_band_hz.map((value) => number(value, 0).replace(/\D/g, "")).join("-"));
+  setControlValue($("sonar-heterodyne"), String(Math.round(settings.tools.heterodyne_hz)));
   $("sonar-vernier").checked = settings.tools.vernier;
   const live = !settings.station_down;
   if (!S.stationDrafts.has("sonar-array-mode")) $("sonar-array-mode").value = settings.mode;

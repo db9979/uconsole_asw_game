@@ -575,7 +575,7 @@ def _key_action(key, mods, station=None, page=None):
     if key == pygame.K_g:
         # G as on the frigate: action stations; Shift+G lies on the bottom.
         return "uboot_bottom" if mods & pygame.KMOD_SHIFT else "uboot_action_stations"
-    if key == pygame.K_a:
+    if key == pygame.K_a and not mods & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
         return "uboot_silent"            # A: silent running, the frigate's quiet mode
     if key == pygame.K_o and mods & pygame.KMOD_SHIFT:
         return "uboot_absorber"
@@ -800,7 +800,7 @@ def _command_key(game, current, key, mods) -> None:
     elif key == pygame.K_g:
         on = not current.orders.bottomed
         _mode_notice(game, "bottom", on, sub.command_bottom(on))
-    elif key == pygame.K_a:
+    elif action == "uboot_silent":       # plain A; Shift+A is the ping key
         on = not current.orders.silent
         _mode_notice(game, "silent", on, sub.command_silent(on))
     elif key == pygame.K_p:

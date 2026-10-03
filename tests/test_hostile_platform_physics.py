@@ -110,8 +110,10 @@ def test_pressure_hull_fatigue_and_crush_depth():
     assert sub.state == "SINKING"
 
 
-def test_lurking_boat_holds_station_against_the_current():
-    world = Ocean(current=(1.0, 0.0))
+@pytest.mark.parametrize("current", [(1.0, 0.0), (0.0, 1.0), (-0.7, -0.7)])
+def test_lurking_boat_holds_station_against_the_current(current):
+    # (east, north) knots: a north set used to be followed, not stemmed.
+    world = Ocean(current=current)
     sub = _sub()
     sub.state = "LAUER"
     sub.evac_left = 1e6

@@ -1,4 +1,4 @@
-# U-Jagd 1.3.172 - Stations- und Tastenkürzel
+# U-Jagd 1.3.173 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -15,7 +15,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `9` | Elektronische Kampfführung / ESM |
 | `Nummer der aktiven Station` | Erneut drücken, um die Seite dieser Station weiterzuschalten |
 | `Bild Auf / Ab` | Vorige / nächste Seite der Station (jede Station mit mehreren Seiten) |
-| `Strg+Enter` | Waffe abfeuern (nur diese Kombination feuert, an jeder Station und auf dem U-Boot) |
+| `Strg+Enter` | Torpedo oder Flugkörper abfeuern (Enter allein feuert nie; an der Waffenstation haben ASROC A, Wasserbomben Z, Raketenwerfer R und Lufttorpedo D eigene Tasten) |
 | `Pfeiltasten` | Stationsbezogene Auswahl oder Einstellung |
 | `+ / -` | Telegraph (an jeder Station verfügbar) |
 | `F1 / ?` | Hilfe (diese Anzeige) |
@@ -25,23 +25,23 @@ Berechtigungsprüfungen bleiben wirksam.
 | `0` | Wetter- & Sonar-Analyse |
 | `F7` | Erster Offizier (optionales Sprachmodell) |
 | `F8` | Taktischer Einheitenanalysator (Katalog, nur lesend) |
-| `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte) |
+| `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte, F auf der Karte: Einheiten oder ganze Welt einpassen) |
 | `F9` | Lokale Commander-LAN-Verwaltung öffnen |
 | `F10` | Optionen: Sprache, Vollbild, Audio, großer Text, Tooltips, Bildrate |
 | `F11` | Ereignislog und volle Telemetrie einblenden (Station bleibt bedienbar) |
 | `N` | Nationen & Einheiten; im Sonar: Notchfilter |
 | `S / L` | Speichern / Laden (Slots 1-5) |
 | `Alt+Enter` | Vollbild (alle Stationen) |
-| `Q / E oder Mausrad` | Kartenzoom nur auf Brücke, Waffen und Helikopter |
-| `Drag` | Karte verschieben (Brücke, Waffen und Helikopter) |
-| `K` | Kamera-Follow nur auf sichtbaren Karten (Drag schaltet es aus) |
+| `Q / E oder Mausrad` | Kartenzoom auf Brücke, Waffen, Helikopter und OPZ-Karte (dort stellen Q/E den Radarbereich) |
+| `Drag` | Karte verschieben (Brücke, Waffen, Helikopter und OPZ) |
+| `K` | Karte folgt nur auf sichtbaren Karten (Ziehen schaltet es aus) |
 | `Linksklick` | Angeklickte Taste, Lampe, Hinweis, Reiter, Scheibe oder Zeile |
 | `Rechtsklick` | Abbrechen wie Esc in Menüs und Eingaben |
 | `P` | Plotmodus auf Brücken-/Waffen-/Helo-Karte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (für alle Stationen, wird gespeichert) |
 | `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
-| `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×) |
+| `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×, Pos1/Ende Anfang/Ende, B Bericht des Sprachmodells, wenn eingeschaltet) |
 
 ## 1 Brücke
 
@@ -52,9 +52,9 @@ Berechtigungsprüfungen bleiben wirksam.
 | `C` | Direkten Zielkurs eingeben (000-359) |
 | `V` | Direkte Zielgeschwindigkeit eingeben (0-31 kn) |
 | `+ / -` | Telegraph: Motorenbefehl (ASTERN-STOP-SLOW-HALF-FULL-FLANK) |
-| `Karte` | Mausrad: Zoom, Maus-Drag: Pan |
+| `Karte` | Mausrad: Zoom, Ziehen mit der Maus: verschieben |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
-| `K` | Kamera-Follow an/aus |
+| `K` | Karte folgt dem eigenen Schiff an/aus |
 | `, / .` | Ausguck-Seite: Radius kleiner / größer |
 | `B` | Ausguck-Seite: Fernglas über der Karte ein/aus |
 | `↑/↓ · ←/→ · Q/E · Space` | Fernglas oben (wie das Sehrohr): ↑/↓ neigen 2° (Umschalt: 10°) statt Maschinentelegraf, ←/→ schwenken 5° (Umschalt: 20°) statt Ruder, Q/E Zoom (16°, 8°, 4° Feld), Leertaste Stabilisierung |
@@ -108,7 +108,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `SPACE` | LOFAR Peak-Hold ein/aus |
 | `T` | TMA für ausgewählten Kontakt ein/aus |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
-| `G` | Gewählt Kontakt unabhängig von der Klassifikation an OPZ freigeben / zurückziehen |
+| `G` | Gewählten Kontakt unabhängig von der Klassifikation an OPZ freigeben / zurückziehen |
 | `M` | Ausgewählten Kontakt als Ziel setzen |
 
 ## 3 Waffenzentrale
@@ -133,7 +133,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `R` | U-Jagd-Raketensalve auf das Ziel (frische Entfernung, 0,4-3 sm) |
 | `Shift+R` | Raketen-Abwehrsalve in Richtung der Torpedowarnung |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
-| `K` | Kamera-Follow an/aus |
+| `K` | Karte folgt dem eigenen Schiff an/aus |
 | `F` | Flak-Feuerfreigabe umschalten (gesperrt = feuert nie auf Angreifer) |
 
 ## 4 Schadensabwehr
@@ -175,7 +175,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Backspace` | Alle markierten Meldungen abwählen |
 | `B` | Neuestes bloßes Radarecho als Track markieren (oder das Echo anklicken) |
 | `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
-| `K` | Kamera-Follow an/aus |
+| `K` | Karte folgt dem eigenen Schiff an/aus |
 | `H` | OPZ Seite 3: Seefernaufklärer anfordern / heimschicken (Tasten wie beim Helikopter) |
 | `W` | Suchgebiet auf die gewählte Spur (sonst eigenes Schiff); Klick in die Karte für einen Punkt |
 | `X / Shift+X` | Bojenmuster um das Suchgebiet wechseln / Shift bricht ab |
@@ -199,11 +199,11 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Auf / Ab` | HFDF-Signal auswählen |
 | `Eingabe` | Peilung mit eigener Position protokollieren |
 | `Auf / Ab` | HQ-Auftrag wählen (Seite Aufträge) |
-| `A` | Gewählten Auftrag annehmen |
-| `D` | Gewählten Auftrag ablehnen |
-| `R` | Versorger bei der HQ anfordern |
-| `K` | Kontaktmeldung an HQ (der frischeste Fix; KW-Ruf, anpeilbar) |
-| `H` | Unterstützung bei HQ anfordern (der Seefernaufklärer; KW-Ruf, anpeilbar) |
+| `A` | Seite Aufträge: gewählten Auftrag annehmen |
+| `D` | Seite Aufträge: gewählten Auftrag ablehnen |
+| `R` | Seite Aufträge: Versorger beim HQ anfordern |
+| `K` | Seite Aufträge: Kontaktmeldung an HQ (der frischeste Fix; KW-Ruf, anpeilbar) |
+| `H` | Seite Aufträge: Unterstützung beim HQ anfordern (der Seefernaufklärer; KW-Ruf, anpeilbar) |
 
 ## 7 Maschinenraum
 
@@ -238,7 +238,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Shift+A` | Aktiven Ping vom abgesenkten Tauchsonar senden |
 | `Ctrl+Enter / D` | Leichttorpedo abwerfen |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
-| `K` | Kamera-Follow an/aus |
+| `K` | Karte folgt dem eigenen Schiff an/aus |
 | `Akustik: Bild Auf / Ab` | Akustikseite: Breitband / LOFAR / DEMON |
 | `Akustik: ← / →` | Hubschrauber-Horchpeilung -/+ 5 Grad |
 | `Akustik: R` | Horchpeilung auf automatisch zurücksetzen |

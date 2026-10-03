@@ -162,9 +162,10 @@ def doppler_factor(tgt, observer) -> float:
     if distance < 1e-6:
         return 1.0
     ux, uy = dx / distance, dy / distance
-    speed_t = getattr(tgt, "speed", None)
+    # A decoy keeps ``speed`` in NM/s and exposes knots as ``speed_kn``.
+    speed_t = getattr(tgt, "speed_kn", None)
     if speed_t is None:
-        speed_t = getattr(tgt, "speed_kn", 0.0)
+        speed_t = getattr(tgt, "speed", 0.0)
     course_t = math.radians(getattr(tgt, "course", 0.0))
     course_o = math.radians(getattr(observer, "course", 0.0))
     speed_o = getattr(observer, "speed", 0.0) or 0.0
@@ -1334,9 +1335,9 @@ class SonarSystem(ArrayHandlingMixin):
         to_observer = math.degrees(math.atan2(frigate.x - tgt.x,
                                               -(frigate.y - tgt.y))) % 360.0
         aspect = config.angle_diff_deg(to_observer, getattr(tgt, "course", 0.0))
-        speed = getattr(tgt, "speed", None)
+        speed = getattr(tgt, "speed_kn", None)  # knots, also for a decoy
         if speed is None:
-            speed = getattr(tgt, "speed_kn", 0.0)
+            speed = getattr(tgt, "speed", 0.0)
         radial = speed * math.cos(math.radians(aspect))
         mx, my = (frigate.x + tgt.x) * .5, (frigate.y + tgt.y) * .5
         return equation.active_terms(

@@ -111,7 +111,7 @@ def validate_air_defense_loadout(value):
     if not isinstance(duration, list) or len(duration) != 2:
         raise ValueError("air_defense.softkill.effect_duration_s: pair expected")
     low = _number(duration[0], .000001, 3600, "air_defense.softkill.duration")
-    high = _number(duration[1], low, 3600, "air_defense.softkill.duration")
+    _number(duration[1], low, 3600, "air_defense.softkill.duration")
     if softkill["effect_type"] not in ("chaff", "rf_softkill"):
         raise ValueError("air_defense.softkill.effect_type: invalid type")
     raider = _object(value["raider"], {
@@ -232,9 +232,9 @@ def valid_air_defense_state(value, *, vls_cells, ciws_ammo, ciws_cooldown_s,
             return False
         expected_cd = min(store["loading"], default=0.0)
         aa_profile = loadout["aa_gun"]
-        aa_ammo = _number(value["aa_ammo"], 0, aa_profile["ammo"],
+        _number(value["aa_ammo"], 0, aa_profile["ammo"],
                           "air_defense_state.aa_ammo", integer=True)
-        aa_cd = _number(value["aa_cooldown_s"], 0, aa_profile["cycle_s"],
+        _number(value["aa_cooldown_s"], 0, aa_profile["cycle_s"],
                         "air_defense_state.aa_cooldown_s")
         raiders = value["raiders"]
         if (not isinstance(raiders, list) or len(raiders) > MAX_RAIDERS

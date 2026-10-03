@@ -18,8 +18,7 @@ from src.ui.stations.common import (
     _panel,
     _shortcut_footer,
     _station_content_top,
-    draw_station_page_tabs,
-    message)
+    draw_station_page_tabs)
 
 
 # --- Funkraum (M13) --------------------------------------------------------

@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import socket
 import threading
-import time
-
 _PROBE_HOST = "1.1.1.1"
 _PROBE_PORT = 443
 _RECHECK_INTERVAL_S = 15.0

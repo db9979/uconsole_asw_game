@@ -253,16 +253,6 @@ def representative_frequency_hz(signature) -> float:
                key=lambda candidate: abs(candidate - midpoint))
 
 
-def passive_range_factor(result: PropagationResult, direct_range_nm: float) -> float:
-    """Convert modeled excess loss into a range multiplier without re-spreading."""
-    distance = _number("direct_range_nm", direct_range_nm, 0.0, MAX_RANGE_NM)
-    if result.best_path is None:
-        return 0.0
-    baseline_loss = 20.0 * math.log10(1.0 + distance)
-    excess_loss = max(0.0, result.best_path.loss_db - baseline_loss)
-    return 10.0 ** (-excess_loss / 20.0)
-
-
 # --- ray-traced transmission loss (physics upgrade, phase 4) -----------------
 
 RAY_REFERENCE_KEY = (5.0, 60.0, 13.0, 1000.0, "sand", 10.0)

@@ -5,7 +5,7 @@ import math
 
 from src.core import config
 from src.physics import ship_dynamics as dyn
-from src.world.grounding import DEFAULT_HULL_SPEC, HullSpec
+from src.world.grounding import DEFAULT_HULL_SPEC
 
 KN = dyn.KN
 
@@ -398,8 +398,6 @@ class Ship:
 
     # --- Status ---
 
-    def pos_nm(self) -> tuple:
-        return self.x, self.y
 
     @property
     def course_error_deg(self) -> float:

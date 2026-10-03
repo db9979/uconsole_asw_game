@@ -1226,41 +1226,41 @@ def scenarios_for_side(side: str) -> tuple:
 
 
 # Farben (CRT-Grün-Theme)
-COLOR_BG = (4, 9, 15)
+COLOR_BG = (11, 15, 25)
 # Gemeinsamer geografischer Hintergrund fuer Karte und PPI.
-COLOR_GEO_BG = (5, 18, 34)
-COLOR_GRID = (16, 36, 42)
-COLOR_GEO_GRID = (18, 49, 72)
-COLOR_TEXT = (150, 240, 205)
-COLOR_TEXT_DIM = (98, 160, 148)
-COLOR_WARN = (230, 190, 60)
-COLOR_DANGER = (230, 80, 70)
-COLOR_OK = (80, 212, 160)
-COLOR_SONAR_RING = (40, 96, 90)
-COLOR_CONTACT = (255, 255, 255)
-COLOR_CONTACT_ZIVIL = (90, 200, 120)
-COLOR_CONTACT_WARSHIP = (230, 120, 60)
-COLOR_CONTACT_UNBEST = (230, 200, 80)
-COLOR_CONTACT_UBOOT = (230, 90, 70)
-COLOR_CONTACT_BIO = (110, 200, 200)
-COLOR_LAND = (25, 43, 55)
-COLOR_LAND_EDGE = (76, 126, 153)
-COLOR_SHALLOW = (12, 43, 68)
-COLOR_DEEP = (4, 24, 48)
-COLOR_ESM = (140, 150, 220)
-COLOR_HFDF = (200, 140, 220)
-COLOR_FLIGHT = (220, 180, 90)
+COLOR_GEO_BG = (10, 20, 36)
+COLOR_GRID = (24, 34, 54)
+COLOR_GEO_GRID = (26, 42, 68)
+COLOR_TEXT = (229, 231, 235)
+COLOR_TEXT_DIM = (139, 149, 167)
+COLOR_WARN = (245, 158, 11)
+COLOR_DANGER = (239, 68, 68)
+COLOR_OK = (16, 185, 129)
+COLOR_SONAR_RING = (52, 80, 122)
+COLOR_CONTACT = (240, 244, 248)
+COLOR_CONTACT_ZIVIL = (52, 211, 153)
+COLOR_CONTACT_WARSHIP = (251, 146, 60)
+COLOR_CONTACT_UNBEST = (251, 191, 36)
+COLOR_CONTACT_UBOOT = (248, 113, 113)
+COLOR_CONTACT_BIO = (103, 232, 249)
+COLOR_LAND = (27, 36, 51)
+COLOR_LAND_EDGE = (75, 95, 128)
+COLOR_SHALLOW = (14, 30, 52)
+COLOR_DEEP = (7, 15, 29)
+COLOR_ESM = (165, 180, 252)
+COLOR_HFDF = (216, 180, 254)
+COLOR_FLIGHT = (252, 211, 77)
 # Operator plot layer (grease pencil): distinct from every contact colour.
-COLOR_PLOT = (255, 160, 230)
+COLOR_PLOT = (249, 168, 212)
 # W2: OPZ-Domänenfarbe für Flugkörper/Torpedo - eigene Farbe, da COLOR_DANGER
 # und COLOR_CONTACT_UBOOT (Unterwasser-Domäne) sonst fast ununterscheidbar sind.
-COLOR_CONTACT_MISSILE = (235, 70, 180)
-COLOR_FEED_BG = (5, 12, 18)       # event feed / telemetry / ticker ground
-COLOR_PANEL_BG = (8, 18, 25)      # top bar and panel boxes
-COLOR_OVERLAY_BG = (5, 14, 20)     # dialogs over a running mission
-COLOR_SELECT_BG = (18, 58, 56)     # selected list row
-COLOR_ALARM_BG = (10, 22, 28)      # bridge alarm bar
-COLOR_TAB_ACTIVE = (18, 60, 62)    # active page tab / selected sonar row
+COLOR_CONTACT_MISSILE = (236, 72, 153)
+COLOR_FEED_BG = (6, 9, 18)       # event feed / telemetry / ticker ground
+COLOR_PANEL_BG = (17, 24, 39)      # top bar and panel boxes
+COLOR_OVERLAY_BG = (12, 17, 29)     # dialogs over a running mission
+COLOR_SELECT_BG = (17, 53, 58)     # selected list row
+COLOR_ALARM_BG = (14, 19, 32)      # bridge alarm bar
+COLOR_TAB_ACTIVE = (16, 69, 64)    # active page tab / selected sonar row
 
 # W3: Feed-Kategorien (Farbe, Kürzel)
 FEED_CATEGORIES = {

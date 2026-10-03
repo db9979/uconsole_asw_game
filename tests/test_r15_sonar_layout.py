@@ -15,7 +15,7 @@ from src.core.game import Game, letterbox_layout
 from src.core.i18n import Translator, load_catalog, pseudolocale
 from src.core.station import Station
 from src.sonar.sonar import Contact
-from src.ui import layout, sonar_view
+from src.ui import layout, sonar_view, theme
 
 
 def press(game, key, **values):
@@ -249,5 +249,6 @@ def test_command_segment_uses_semantic_contrast(monkeypatch):
         original(text, antialias, color)))
     layout.command_segment(pygame.Surface((500, 40)), (0, 0, 500, 30),
                            "F", "FILTER", "BAND", "20-120 Hz")
-    assert colors == [layout.COMMAND_KEY_COLOR, layout.COMMAND_DESCRIPTION_COLOR,
+    # The key sits on an accent cap, so it takes the accent's ink.
+    assert colors == [theme.c("on_accent"), layout.COMMAND_DESCRIPTION_COLOR,
                       config.COLOR_TEXT_DIM, config.COLOR_TEXT]

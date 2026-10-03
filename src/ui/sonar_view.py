@@ -13,6 +13,7 @@ from src.ui import layout
 from src.ui import observations
 from src.ui import pointer
 from src.ui import profile_cursor
+from src.ui import theme
 from src.ui.sonar_data import (  # noqa: F401
     PAGES, ACTIVE_HISTORY_WINDOW_S, DEMON_DISPLAY_MAX_HZ, _sonar_observer,
     message, _observed_bearing, _bearing_line, _history_for_page,
@@ -29,17 +30,17 @@ from src.ui.sonar_hit import (  # noqa: F401
     sonar_hit_target, _active_geometry, _echo_point, _ascope_point, _tma_plot)
 
 
-NAVY = (6, 13, 25)
-PANEL = (10, 22, 37)
-GRID = (24, 49, 65)
-DIM = (119, 151, 169)
-TEXT = (211, 229, 233)
-CYAN = (79, 224, 202)
-AMBER = (244, 190, 97)
+NAVY = (6, 9, 18)
+PANEL = (17, 24, 39)
+GRID = (36, 48, 69)
+DIM = (139, 149, 167)
+TEXT = (229, 231, 235)
+CYAN = (52, 230, 160)
+AMBER = (245, 158, 11)
 PHOSPHOR_PALETTES = {
-    "green": (68, 255, 154),
+    "green": (0, 255, 135),
     "amber": (255, 184, 62),
-    "cyan": CYAN,
+    "cyan": (79, 224, 202),
 }
 _WATERFALL_CACHE = OrderedDict()
 _WATERFALL_CACHE_SCREEN = None
@@ -148,7 +149,7 @@ def _waterfall(game, page, rect):
                          id(source_rows[-1]) if len(source_rows) else None)
     display = _display_controls(game)[:3]
     key = (id(sonar), page, rect.size, getattr(receiver, "sequence", None),
-           controls, display, history_fraction, history_token)
+           controls, display, history_fraction, history_token, theme.revision())
     cached = _WATERFALL_CACHE.get(key)
     if cached is None:
         raw = np.asarray(rows, dtype=float)
@@ -361,7 +362,7 @@ def _draw_waterfall(game, panel, page):
                 for value in ((center - lobe_half) % 360,
                               (center + lobe_half) % 360):
                     lx = plot.x + round(value / 360 * (plot.w - 1))
-                    pygame.draw.line(screen, (139, 91, 71),
+                    pygame.draw.line(screen, theme.pick((139, 91, 71), (194, 120, 90)),
                                      (lx, plot.y), (lx, plot.bottom - 1), 1)
             # The hull array's baffles astern: dotted edges.
             observer = _sonar_observer(game)
@@ -755,20 +756,20 @@ def _draw_environment(game, panel):
     actual = float(tow.get("depth_m", config.SONAR_TOWED_DEPTH_M))
     target = float(tow.get("depth_target_m", actual))
     ay = plot.y + round(min(actual, max_depth) / max_depth * (plot.h - 1))
-    pygame.draw.line(screen, (120, 210, 170), (plot.x, ay), (plot.right - 1, ay), 1)
+    pygame.draw.line(screen, theme.pick((120, 210, 170), (4, 120, 87)), (plot.x, ay), (plot.right - 1, ay), 1)
     _text(screen, message("sonar.line.tow", state=display_message('tow', tow['state']),
                           payout=f"{tow['payout_percent']:.0f}", actual=f"{actual:.0f}",
                           target=f"{target:.0f}"),
-          (plot.right - 248, ay - 19, 240, 18), (120, 210, 170), 12, "right")
+          (plot.right - 248, ay - 19, 240, 18), theme.pick((120, 210, 170), (4, 120, 87)), 12, "right")
     vds = _vds_status(sonar)
     if vds is not None and vds["state"] != "STOWED":
         vds_actual = float(vds["depth_m"])
         vy = plot.y + round(min(vds_actual, max_depth) / max_depth * (plot.h - 1))
-        pygame.draw.line(screen, (210, 170, 120), (plot.x, vy), (plot.right - 1, vy), 1)
+        pygame.draw.line(screen, theme.pick((210, 170, 120), (161, 98, 7)), (plot.x, vy), (plot.right - 1, vy), 1)
         _text(screen, message("sonar.line.vds", state=display_message('tow', vds['state']),
                               payout=f"{vds['payout_percent']:.0f}", actual=f"{vds_actual:.0f}",
                               target=f"{float(vds['depth_target_m']):.0f}"),
-              (plot.x + 8, vy - 19, 240, 18), (210, 170, 120), 12)
+              (plot.x + 8, vy - 19, 240, 18), theme.pick((210, 170, 120), (161, 98, 7)), 12)
 
     y = plot.bottom + 29
     _text(screen, "sonar.array_comparison", (panel.x + 16, y, panel.w - 32, 20), CYAN, 14)
@@ -1079,11 +1080,12 @@ def _draw_bearing_rose(game, rect):
     if course is not None:
         astern = float(course) + 180.0
         sector(astern - config.SONAR_BAFFLE_HALF_DEG, astern + config.SONAR_BAFFLE_HALF_DEG,
-               0, radius, (40, 26, 30))
+               0, radius, theme.pick((52, 26, 34), (248, 215, 215), (60, 30, 30)))
     sonar = game.sonar
     bearing = float(getattr(sonar, "listen_bearing", 0.0)) % 360
     half = float(getattr(sonar, "beam_width_deg", 12.0)) / 2
-    sector(bearing - half, bearing + half, radius * .18, radius, (70, 58, 30))
+    sector(bearing - half, bearing + half, radius * .18, radius,
+           theme.pick((84, 62, 22), (250, 226, 190), (70, 58, 30)))
     lines.line(screen, AMBER, (cx, cy), polar(radius, bearing), 2)
     for ring in (.5, 1.0):
         pygame.draw.circle(screen, config.COLOR_SONAR_RING, (cx, cy), round(radius * ring), 1)
@@ -1212,19 +1214,17 @@ def draw_sonar_view(game, tr=None) -> None:
             # Tabs, list rows and footer keys: sonar_click_target takes the click.
             pointer.add_hotspot(tab)
             if i == page:
-                pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, tab)
-                pygame.draw.line(screen, CYAN, tab.bottomleft, (tab.right - 1, tab.bottom), 2)
+                pygame.draw.rect(screen, theme.c("accent"), tab.inflate(-2, -2),
+                                 border_radius=4)
             _text(screen, display_value("sonar_page", name, translate),
                   tab.move(6, 3).inflate(-12, 0),
-                   CYAN if i == page else DIM, 14)
+                   theme.c("on_accent") if i == page else DIM, 14)
         main, details, contacts = (geometry["main"], geometry["details"],
                                    geometry["contacts"])
         for role, rect in (("sonar-main", main), ("sonar-details", details),
                            ("sonar-contacts", contacts)):
             layout.record_geometry("region", rect, role)
-            pygame.draw.rect(screen, PANEL, rect)
-            pygame.draw.rect(screen, config.COLOR_SONAR_RING, rect, 1)
-            layout.corner_brackets(screen, rect)
+            layout.panel_frame(screen, rect, fill=PANEL)
         with layout.clip_to(screen, main):
             if page < 2:
                 _draw_waterfall(game, main, page)

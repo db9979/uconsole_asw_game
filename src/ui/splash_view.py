@@ -354,15 +354,17 @@ def draw_logo(surface, center_x: int, top: int) -> pygame.Rect:
 
 def draw_menu_panel(surface, rect, highlight) -> None:
     """Translucent console panel behind the main-menu entries."""
+    from src.ui import theme
     rect = pygame.Rect(rect)
-    panel = _LAYERS.get(("panel", rect.size))
+    fill = theme.pick((11, 15, 25, 170), (255, 255, 255, 236), (0, 0, 0, 230))
+    panel = _LAYERS.get(("panel", rect.size, fill))
     if panel is None:
         panel = pygame.Surface(rect.size, pygame.SRCALPHA)
-        panel.fill((4, 16, 20, 150))
-        _LAYERS[("panel", rect.size)] = panel
+        panel.fill(fill)
+        _LAYERS[("panel", rect.size, fill)] = panel
     surface.blit(panel, rect)
-    pygame.draw.rect(surface, (40, 96, 90), rect, 1)
-    pygame.draw.rect(surface, (18, 60, 56), highlight)
+    pygame.draw.rect(surface, theme.c("line_strong"), rect, 1, border_radius=5)
+    pygame.draw.rect(surface, theme.c("select"), highlight, border_radius=4)
 
 
 def draw_menu_backdrop(surface: pygame.Surface, t: float) -> None:

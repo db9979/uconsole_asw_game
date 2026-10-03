@@ -12,6 +12,8 @@ import math
 
 import pygame
 
+from src.ui import theme
+
 from src.core import config, hit_view, opfor, sight_events
 from src.core.i18n import message
 from src.ui import horizon, layout, sight_scene
@@ -63,10 +65,10 @@ def draw_sonar(s, rect, bearing: float, age_s: float) -> None:
                 pygame.draw.rect(s, color, (rect.x + c, y, 4, row_h))
     for off in (-30, -20, -10, 0, 10, 20, 30):
         x = rect.centerx + int(off * rect.w / SONAR_SPAN_DEG)
-        pygame.draw.line(s, (60, 120, 112), (x, rect.bottom - (8 if off else 14)), (x, rect.bottom), 1)
+        pygame.draw.line(s, theme.c("line_strong"), (x, rect.bottom - (8 if off else 14)), (x, rect.bottom), 1)
         if off % 20 == 0 or off == 0:
             label = f"{round(bearing + off) % 360:03d}"
-            layout.blit_line(s, label, (x - 16, rect.bottom - 26, 32, 12), (120, 180, 170),
+            layout.blit_line(s, label, (x - 16, rect.bottom - 26, 32, 12), theme.c("dim"),
                              size=11, align="center")
 
 

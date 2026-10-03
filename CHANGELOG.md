@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.176
+## 1.3.177
 
-Release 1.3.176 brings pictures into the manual. Every station of the frigate
+Release 1.3.177 brings pictures into the manual. Every station of the frigate
 and the submarine now appears on the uConsole and in the Remote Crew browser,
 together with all six sonar pages, binoculars and periscope by day and at
 night, the main menu, scenario selection, briefing, options, the editors and
@@ -15,6 +15,19 @@ game leaves them out. The submarine chapter now lists every station page with
 its keys. The first-patrol steps match the main menu again, the quick start
 says which functions still need a key, and "submarine" replaces "boat". Saves
 are v50; v38 to v49 saves still load.
+
+## 1.3.176
+
+Release 1.3.176 starts the new look. Every screen now draws from one set of
+colour tokens shared by the uConsole and the Remote Crew browser, and there
+are two themes: Tactical Night (dark, the default) and Tactical Day (light,
+with the sonar waterfall as a paper LOFARgram in dark ink). Switch with the
+small Dark/Light pill at the right of the top bar (click it) or in Options
+(F10) under "Colour theme", which also offers high contrast; the choice is
+kept in the settings, not in saves. Red light still forces the dark theme, now with its colours turned to greys first so green values stay readable under the red.
+Panels are now rounded with a soft shadow and an accent title mark, page tabs
+are pills and key hints are chips. Keys, layout and saves are unchanged;
+saves are v50 and v38 to v49 saves still load.
 
 ## 1.3.175
 

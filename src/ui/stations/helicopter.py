@@ -10,6 +10,7 @@ from src.core import config
 from src.core.i18n import display_value, localized, localize, raw_text
 from src.core.station import Station
 from src.ui import layout, pointer
+from src.ui import theme
 from src.ui import observations
 from src.air import helicopter as helicopter_physics
 
@@ -91,7 +92,7 @@ def _helicopter_waterfall(screen, rect, rows, *, receiver, amber=False):
     from src.ui import sonar_view
     pygame.draw.rect(screen, sonar_view.NAVY, rect)
     if rows and rect.w > 0 and rect.h > 0:
-        key = (receiver, receiver.sequence, rect.size, amber)
+        key = (receiver, receiver.sequence, rect.size, amber, theme.revision())
         scaled = _HELICOPTER_WATERFALL_CACHE.get(key)
         if scaled is None:
             values = np.clip(np.asarray(rows[-64:], dtype=np.float32), 0, 1)
@@ -108,8 +109,8 @@ def _helicopter_waterfall(screen, rect, rows, *, receiver, amber=False):
     for tick in range(1, 5):
         x = rect.x + tick * rect.w // 5
         y = rect.y + tick * rect.h // 5
-        pygame.draw.line(screen, (24, 55, 61), (x, rect.y), (x, rect.bottom - 1))
-        pygame.draw.line(screen, (24, 55, 61), (rect.x, y), (rect.right - 1, y))
+        pygame.draw.line(screen, config.COLOR_GRID, (x, rect.y), (x, rect.bottom - 1))
+        pygame.draw.line(screen, config.COLOR_GRID, (rect.x, y), (rect.right - 1, y))
     pygame.draw.rect(screen, config.COLOR_SONAR_RING, rect, 1)
     layout.corner_brackets(screen, rect)
 
@@ -118,7 +119,7 @@ def _helicopter_trace(screen, rect, values, color):
     from src.ui import console, sonar_view
     pygame.draw.rect(screen, sonar_view.NAVY, rect)
     for tick in range(1, 5):
-        pygame.draw.line(screen, (24, 55, 61),
+        pygame.draw.line(screen, config.COLOR_GRID,
                          (rect.x, rect.y + tick * rect.h // 5),
                          (rect.right - 1, rect.y + tick * rect.h // 5))
     if len(values) > 1:
@@ -251,7 +252,7 @@ def _draw_helicopter_acoustic_view(game, rect):
                      (rect.x + 14, rect.y + 10, 245, 27),
                      config.COLOR_TEXT, size=19)
     for index, tab in enumerate(geo["tabs"]):
-        pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE if index == page else (9, 30, 39), tab)
+        pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE if index == page else theme.c("raised"), tab)
         pygame.draw.rect(screen, config.COLOR_SONAR_RING if index == page
                          else config.COLOR_GRID, tab, 1)
         layout.blit_line(screen, _HELO_ACOUSTIC_TABS[index], tab,
@@ -259,7 +260,7 @@ def _draw_helicopter_acoustic_view(game, rect):
                          size=14, align="center")
         pointer.add_hotspot(tab)        # helicopter_acoustic_hit takes the click
     pointer.add_hotspot(geo["back"])
-    pygame.draw.rect(screen, (9, 30, 39), geo["back"])
+    pygame.draw.rect(screen, theme.c("raised"), geo["back"])
     pygame.draw.rect(screen, config.COLOR_GRID, geo["back"], 1)
     layout.blit_line(screen, "helo.acoustic.deck", geo["back"],
                      config.COLOR_TEXT_DIM, size=14, align="center")
@@ -374,7 +375,7 @@ def _draw_helicopter_acoustic_view(game, rect):
             break
         selected = contact is game.selected_contact
         row = pygame.Rect(rail.x + 8, y, rail.w - 16, 43)
-        pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE if selected else (12, 32, 40), row)
+        pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE if selected else theme.c("raised"), row)
         layout.blit_line(screen, message("helo.acoustic.contact",
             contact=contact.id, bearing=f"{observed:05.1f}"),
             (row.x + 7, row.y + 3, row.w - 14, 19), config.COLOR_TEXT, size=14)

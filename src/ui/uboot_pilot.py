@@ -19,6 +19,7 @@ from src.core.echo_sounder import WINDOW_S
 from src.core.i18n import message, raw_text
 from src.ship import route as route_model
 from src.ui import chart_symbols, console, layout, lines, nato_symbols, pointer
+from src.ui import theme
 from src.ui.map_view import _visible_landmasses, clip_polygon_to_rect
 from src.ui.viewport import Viewport
 
@@ -64,9 +65,11 @@ def clearance_level(clearance) -> str:
 
 # Water shades from the shallowest depth band to the deepest (chart style:
 # shallow water light, deep water dark), one per band of PILOT_CONTOURS_M.
-_BAND_SHADES = tuple(_shade for _shade in (
+# Reassigned with the colour theme (src/ui/theme.THEMED_GLOBALS): by day
+# the same order from a light shoal tint to the deep chart blue.
+_BAND_SHADES = (
     (46, 96, 128), (36, 82, 114), (28, 70, 102), (22, 58, 90), (16, 46, 78),
-    (11, 36, 66), (8, 28, 56), (5, 21, 46)))
+    (11, 36, 66), (8, 28, 56), (5, 21, 46))
 _LAND = (36, 56, 64)
 
 
@@ -87,7 +90,7 @@ def _band(depth):
 def _depth_picture(world, gx0, gy0, cols, rows, cell_nm, keel):
     """The chart's depth cells as one surface (cached per cell crossed)."""
     key = (id(world), world.size_nm, gx0, gy0, cols, rows, round(cell_nm, 6),
-           round(keel / 5.0))
+           round(keel / 5.0), theme.revision())
     surface = _PILOT_CACHE.get(key)
     if surface is not None:
         return surface

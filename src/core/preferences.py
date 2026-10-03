@@ -17,6 +17,7 @@ from src.llm.client import (DEFAULT_MODEL as LLM_DEFAULT_MODEL,
 _MAX_CREDENTIAL_LEN = 256
 GRAPHICS_LEVELS = ("low", "normal", "full")
 LLM_COACH_LEVELS = ("off", "rare", "often")
+THEME_CHOICES = ("night", "day")
 
 
 def _default_graphics() -> str:
@@ -36,6 +37,9 @@ class Preferences:
     # Red light by itself at night and on an alarm (night_mode keeps it on).
     red_light_auto: bool = True
     high_contrast: bool = False
+    # Colour theme (``src/ui/theme.py``): "night" (Tactical Night, default)
+    # or "day" (Tactical Day); high_contrast above overrides both.
+    theme: str = "night"
     # Graphics level (src/ui/quality.py): "low", "normal" (uConsole default)
     # or "full" (Windows default, adds anti-aliased chart lines).
     graphics: str = field(default_factory=_default_graphics)
@@ -126,6 +130,8 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     bottom_panel = payload.get("bottom_panel", defaults.bottom_panel)
     values["bottom_panel"] = (bottom_panel if bottom_panel in BOTTOM_PANEL_MODES
                               else defaults.bottom_panel)
+    theme = payload.get("theme", defaults.theme)
+    values["theme"] = theme if theme in THEME_CHOICES else defaults.theme
     assist = payload.get("operator_assist", defaults.operator_assist)
     values["operator_assist"] = (assist if assist in ("off", "training")
                                  else defaults.operator_assist)

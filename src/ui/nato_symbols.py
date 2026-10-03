@@ -8,12 +8,14 @@ from src.core import config
 from src.ui import label_layout, layout
 
 
+# Reassigned with the colour theme (src/ui/theme.THEMED_GLOBALS).
 AFFILIATION_COLORS = {
-    "UNKNOWN": (235, 205, 80),
-    "FRIEND": (90, 170, 255),
-    "NEUTRAL": (80, 210, 130),
-    "HOSTILE": (245, 90, 80),
+    "UNKNOWN": (251, 191, 36),
+    "FRIEND": (96, 165, 250),
+    "NEUTRAL": (52, 211, 153),
+    "HOSTILE": (248, 113, 113),
 }
+SELECT_RING = (235, 235, 220)
 
 DOMAIN_LABELS = {
     "UNKNOWN": "Unbekannt",
@@ -84,7 +86,7 @@ def draw_symbol(surface, center, affiliation: str, domain: str,
         pygame.draw.circle(surface, color, (x, y), 2, 1)
 
     if selected:
-        pygame.draw.circle(surface, (235, 235, 220), (x, y), half + 7, 1)
+        pygame.draw.circle(surface, SELECT_RING, (x, y), half + 7, 1)
     return color
 
 

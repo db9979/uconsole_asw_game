@@ -317,7 +317,7 @@ class LobbyMixin:
             selected = index == room.row
             rect = pygame.Rect(right.x, right.y + index * row_h, right.w, row_h - 3)
             if selected:
-                pygame.draw.rect(s, (18, 52, 58), rect)
+                pygame.draw.rect(s, config.COLOR_SELECT_BG, rect)
             layout.blit_line(s, message("menu.choice", marker="► " if selected else "  ",
                                         label=text), rect,
                              config.COLOR_WARN if selected else config.COLOR_TEXT, size=19)

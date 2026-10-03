@@ -116,8 +116,16 @@ body.red-light::after { opacity: 1; }
   min-width: 17rem; max-width: min(24rem, calc(100vw - 1.5rem)); padding: .7rem; background: var(--bg-2);
   border: 1px solid var(--line-strong); border-radius: var(--radius); box-shadow: 0 .8rem 2rem -.6rem var(--shadow);
 }
-.preferences .language, .preferences .volume { display: grid; gap: .25rem; color: var(--text-dim); font-size: var(--font-xs); }
+.preferences .language, .preferences .theme, .preferences .volume { display: grid; gap: .25rem; color: var(--text-dim); font-size: var(--font-xs); }
 .preferences select, .preferences input[type="range"] { width: 100%; }
+/* Theme switch: a moon/sun pill; the lit half is the theme in force. */
+.theme-switch { display: inline-flex; align-items: center; gap: .1rem; flex: 0 0 auto; min-height: 2rem; padding: .15rem .3rem; border-radius: 999px; }
+.theme-switch > span { position: relative; display: block; width: 1.35rem; height: 1.35rem; border-radius: 999px; color: var(--text-faint); }
+.theme-switch .theme-moon::before { content: ""; position: absolute; inset: .3rem; border-radius: 50%; box-shadow: inset -.22rem -.1rem 0 0 currentColor; }
+.theme-switch .theme-sun::before { content: ""; position: absolute; inset: .42rem; border-radius: 50%; background: currentColor;
+  box-shadow: 0 -.36rem 0 -.18rem currentColor, 0 .36rem 0 -.18rem currentColor, -.36rem 0 0 -.18rem currentColor, .36rem 0 0 -.18rem currentColor; }
+.theme-switch[aria-pressed="false"] .theme-moon, .theme-switch[aria-pressed="true"] .theme-sun { background: var(--live-bg); color: var(--live-strong); }
+.theme-switch[aria-pressed="true"] { background: var(--bg-3); border-color: var(--line-strong); color: inherit; }
 .voice-controls { display: flex; flex-wrap: wrap; gap: .35rem; }
 .voice-controls button { flex: 1 1 auto; touch-action: none; }
 .voice-controls #voice-ptt[aria-pressed="true"] { background: var(--caution); border-color: var(--caution); color: var(--bg-0); }

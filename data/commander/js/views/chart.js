@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { chartMatches, finite, hasPosition, number, t } from "../core/format.js";
-import { colors, palette } from "../core/palette.js";
+import { colors, isLightTheme, palette, paletteRgb } from "../core/palette.js";
 import { sendStationAction } from "../net/commands.js";
 import { drawSymbol } from "../plot/symbols.js";
 import { mapRoles, maxCanvasPixels, view } from "../state/shared.js";
@@ -53,7 +53,8 @@ export function resizeCanvas(element, context, width, height) {
 // uConsole (src/world/atmosphere.daylight_stage, src/ui/theme.WATER_TINT).
 const DAYLIGHT_START_H = 5.5, DAYLIGHT_END_H = 19.5, DUSK_HALF_WIDTH_H = 1;
 const WATER_TINT = {day: 1, dusk: .8, night: .6};
-const SEA_BASE = [12, 28, 38];
+// The day theme's light water only dims a little at night.
+const WATER_TINT_LIGHT = {day: 1, dusk: .97, night: .93};
 export function daylightStage(hour) {
   if (!finite(hour)) return "day";
   const h = ((hour % 24) + 24) % 24;
@@ -62,8 +63,8 @@ export function daylightStage(hour) {
   return "day";
 }
 export function seaColor(stage) {
-  const factor = WATER_TINT[stage] ?? 1;
-  return `rgb(${SEA_BASE.map((channel) => Math.round(channel * factor)).join(", ")})`;
+  const factor = (isLightTheme() ? WATER_TINT_LIGHT : WATER_TINT)[stage] ?? 1;
+  return `rgb(${paletteRgb("water").map((channel) => Math.round(channel * factor)).join(", ")})`;
 }
 // Rain and storm as a dashed diagonal hatch over the chart (display only,
 // from the published environment block).
@@ -77,7 +78,7 @@ export function drawWeatherBand(ctx, width, height, environment) {
   const spacing = Math.max(6, Math.round(46 + (18 - 46) * strength));
   ctx.save();
   ctx.globalAlpha = (28 + (70 - 28) * strength) / 255;
-  ctx.strokeStyle = storm ? "#f0b64a" : "#aabec8";
+  ctx.strokeStyle = storm ? palette().amber : palette().rain;
   ctx.lineWidth = 1;
   ctx.setLineDash([9, 7]);
   ctx.beginPath();
@@ -86,7 +87,7 @@ export function drawWeatherBand(ctx, width, height, environment) {
   }
   ctx.stroke();
   ctx.setLineDash([]);
-  if (storm) { ctx.globalAlpha = 1; ctx.strokeStyle = "#f0b64a"; ctx.lineWidth = 2; ctx.strokeRect(1, 1, width - 2, height - 2); }
+  if (storm) { ctx.globalAlpha = 1; ctx.strokeStyle = palette().amber; ctx.lineWidth = 2; ctx.strokeRect(1, 1, width - 2, height - 2); }
   ctx.restore();
 }
 
@@ -125,8 +126,8 @@ function drawChartFrame() {
   const labels = labelField(width, height);
   labels.reserve(width - 34, 8, 30, 42);
   ctx.lineWidth = 1;
-  ctx.strokeStyle = "#233741";
-  ctx.fillStyle = "#8ba4ad";
+  ctx.strokeStyle = palette().grid;
+  ctx.fillStyle = palette().label;
   ctx.beginPath();
   for (let x = Math.ceil(left / step) * step; x < right; x += step) {
     const px = point(x, 0)[0];
@@ -143,8 +144,8 @@ function drawChartFrame() {
     }
   }
   ctx.stroke();
-  ctx.fillStyle = "#283c40";
-  ctx.strokeStyle = "#607e78";
+  ctx.fillStyle = palette().land;
+  ctx.strokeStyle = palette().landEdge;
   for (const land of S.chart.landmasses) {
     // Cull in world coordinates before allocating/translating polygon vertices.
     if (!land.points.length || land.points.every(([x]) => x < left) || land.points.every(([x]) => x > right) ||
@@ -154,7 +155,7 @@ function drawChartFrame() {
     ctx.closePath(); ctx.fill(); ctx.stroke();
   }
   const [zeroX, zeroY] = point(0, 0);
-  ctx.strokeStyle = "#58707c";
+  ctx.strokeStyle = palette().lineStrong;
   ctx.setLineDash([5, 5]);
   ctx.strokeRect(zeroX, zeroY, S.chart.size_nm * scale, S.chart.size_nm * scale);
   ctx.setLineDash([]);
@@ -167,14 +168,14 @@ function drawChartFrame() {
   const rayLength = ownPosition ? Math.hypot(width, height) + Math.hypot(ox - width / 2, oy - height / 2) : null;
   const radar = S.v2State?.role === "opz" ? S.v2State.opz.radar : null;
   if (ownPosition && radar?.live && (radar.surface || radar.air)) {
-    ctx.strokeStyle = "#426b62";
+    ctx.strokeStyle = palette().lineStrong;
     ctx.globalAlpha = .55;
     for (const fraction of [.25, .5, .75, 1]) {
       ctx.beginPath(); ctx.arc(ox, oy, radar.range_nm * fraction * scale, 0, Math.PI * 2); ctx.stroke();
     }
     // Range labels at the top of each ring, beside the north axis.
     ctx.save();
-    ctx.globalAlpha = .9; ctx.fillStyle = "#8fbfb0"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+    ctx.globalAlpha = .9; ctx.fillStyle = palette().label; ctx.textAlign = "left"; ctx.textBaseline = "top";
     for (const fraction of [.25, .5, .75, 1]) {
       const ringRange = radar.range_nm * fraction;
       const ring = t("radar_ring", {range: number(ringRange, Number.isInteger(ringRange) ? 0 : 1)});
@@ -187,7 +188,7 @@ function drawChartFrame() {
     const sweep = displayedSweep * Math.PI / 180;
     const sweepDx = Math.sin(sweep), sweepDy = -Math.cos(sweep);
     const sweepLength = rayLengthToCanvasEdge(ox, oy, sweepDx, sweepDy, width, height);
-    ctx.strokeStyle = "#8de6c4";
+    ctx.strokeStyle = palette().sweep;
     ctx.beginPath(); ctx.moveTo(ox, oy);
     ctx.lineTo(ox + sweepDx * sweepLength, oy + sweepDy * sweepLength); ctx.stroke();
     ctx.globalAlpha = 1;
@@ -252,7 +253,7 @@ function drawChartFrame() {
       const [x, y] = point(fix.x, fix.y);
       const radius = Math.max(2, fix.uncertainty_nm * scale);
       if (x + radius < -60 || y + radius < -60 || x - radius > width + 60 || y - radius > height + 60) continue;
-      ctx.strokeStyle = fix.source === "PING" ? "#59d8dc" : fix.source === "TMA" ? palette().amber : "#83c99a";
+      ctx.strokeStyle = fix.source === "PING" ? palette().blue : fix.source === "TMA" ? palette().amber : palette().green;
       ctx.lineWidth = track.ref === S.selected ? 2 : 1;
       ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y); ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.stroke();
@@ -266,7 +267,7 @@ function drawChartFrame() {
     addMapInfo(S.chartInfo, ox, oy, "own", own);
     ctx.save();
     ctx.translate(ox, oy);
-    ctx.strokeStyle = palette().accent; ctx.fillStyle = "#183e3c"; ctx.lineWidth = 2;
+    ctx.strokeStyle = palette().accent; ctx.fillStyle = palette().raised; ctx.lineWidth = 2;
     ctx.beginPath();
     if (finite(own.course)) {
       ctx.rotate(own.course * Math.PI / 180);
@@ -287,8 +288,8 @@ function drawChartFrame() {
     }
   }
   if (S.v2State?.plot) drawPlotLayer(ctx, point, scale, width, height, null);
-  ctx.fillStyle = "#c6d6d9"; ctx.fillText(t("north"), width - 27, 25);
-  ctx.strokeStyle = "#c6d6d9"; ctx.lineWidth = 1;
+  ctx.fillStyle = palette().text; ctx.fillText(t("north"), width - 27, 25);
+  ctx.strokeStyle = palette().text; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(width - 23, 47); ctx.lineTo(width - 23, 31); ctx.lineTo(width - 27, 37); ctx.moveTo(width - 23, 31); ctx.lineTo(width - 19, 37); ctx.stroke();
   $("chart-scale").textContent = t("chart_scale", { distance: number(step, step < 1 ? 1 : 0) });
 }

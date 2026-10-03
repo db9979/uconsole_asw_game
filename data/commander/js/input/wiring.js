@@ -3,8 +3,9 @@ import { S } from "../state/store.js";
 import { renderSound } from "../audio/alerts.js";
 import { openSonarAudioSocket, renderSonarAudio, scheduleSonarAudioPoll, sonarAudioAuthorized, sonarFilterValues, sonarGainValue, stopSonarAudio, stopSpeech, syncGameAudio } from "../audio/audio.js";
 import { $, audioRoles, isSonar } from "../core/base.js";
-import { authenticated, finite, hasPosition, number, selectedTrack, t } from "../core/format.js";
+import { authenticated, chartMatches, finite, hasPosition, number, selectedTrack, t } from "../core/format.js";
 import { loadLanguage } from "../core/i18n.js";
+import { chooseTheme, chosenTheme, onThemeChange, toggleTheme } from "../core/theme.js";
 import { retryPendingCommand, sendStationAction } from "../net/commands.js";
 import { submitBridgeOrder } from "../views/bridge-orders.js";
 import { poll } from "../net/poll.js";
@@ -12,7 +13,7 @@ import { request } from "../net/request.js";
 import { forgetSession, setConnection } from "../net/session.js";
 import { stopSonarStream, syncSonarStream } from "../net/sonar-stream.js";
 import { plotArea } from "../plot/axes.js";
-import { syncPlotAnimation } from "../plot/clock.js";
+import { animatedPlots, syncPlotAnimation } from "../plot/clock.js";
 import { buildDisplayModel } from "../state/display-model.js";
 import { elokaFilters, lookoutView, mapRoles, roleMapViews, sonarDisplay, sonarScopeNames, tabNames, view, visualCanvasIds, wideScreen } from "../state/shared.js";
 import { syncWeatherAnimation } from "../stations/bridge.js";
@@ -36,6 +37,33 @@ import { stationActionAvailable } from "../state/availability.js";
 import { renderConnection } from "../views/status.js";
 import { canvas, lookoutCanvas, simlogMapCanvas } from "../views/canvases.js";
 import { normalizePairCode, wirePairCodeInput } from "../core/pairing-code.js";
+
+// The theme switch and the settings row show the chosen theme; the select is
+// only written when it differs, so an open menu is never disturbed.
+function renderThemeControls() {
+  const chosen = chosenTheme();
+  $("theme-switch").setAttribute("aria-pressed", String(chosen === "day"));
+  if ($("theme").value !== chosen) $("theme").value = chosen;
+}
+// A theme switch repaints at once: the stylesheet follows by itself, the
+// canvases redraw from the current state with the new palette (once per
+// task, however many switches happened in it).
+let themeRedrawQueued = false;
+function queueThemeRedraw() {
+  if (themeRedrawQueued) return;
+  themeRedrawQueued = true;
+  queueMicrotask(() => {
+    themeRedrawQueued = false;
+    if (S.snapshot && chartMatches(S.snapshot)) renderSnapshot();
+    renderContactAnalysis();
+    queueSimlogMapDraw();
+    const now = performance.now();
+    for (const [id, plot] of animatedPlots) {
+      const element = $(id);
+      if (plot.role === S.v2State?.role && element && !element.closest("[hidden]")) plot.draw(now);
+    }
+  });
+}
 
 const sonarFrequencyAt = (canvas, event, maximum) => {
   const bounds = canvas.getBoundingClientRect();
@@ -129,6 +157,10 @@ export function init() {
   });
   $("language").addEventListener("change", () => loadLanguage($("language").value === "de" ? "de" : "en"));
   $("language-switch").addEventListener("click", () => loadLanguage($("language-switch").dataset.language === "de" ? "de" : "en"));
+  $("theme-switch").addEventListener("click", () => { toggleTheme(); renderThemeControls(); });
+  $("theme").addEventListener("change", () => { chooseTheme($("theme").value); renderThemeControls(); });
+  renderThemeControls();
+  onThemeChange(queueThemeRedraw);
   for (const [id, key] of [["eloka-status-filter", "status"], ["eloka-threat-filter", "threat"], ["eloka-band-filter", "band"]]) {
     $(id).addEventListener("change", () => {
       elokaFilters[key] = $(id).value;

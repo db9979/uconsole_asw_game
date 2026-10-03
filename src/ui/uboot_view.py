@@ -15,6 +15,8 @@ import math
 
 import pygame
 
+from src.ui import theme
+
 from src.commander.server import OPFOR_ROLES
 from src.core import boat_esm, boat_nav, config, opfor, uboot_local
 from src.core.i18n import display_message, display_value, localize, message, raw_text
@@ -201,16 +203,8 @@ def draw_top_bar(game, boat) -> None:
     for index, (role, rect) in enumerate(zip(OPFOR_ROLES, tabs)):
         active = role == shown
         remote = bool(leased and leased(role))
-        if active:
-            pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, rect)
-            lines.line(s, config.COLOR_SONAR_RING, rect.bottomleft,
-                             (rect.right - 1, rect.bottom), 2)
-        if index:
-            lines.line(s, config.COLOR_GRID, (rect.x - 2, rect.y + 4), (rect.x - 2, rect.bottom - 4), 1)
         label = message("uboot.tab", number=index + 1, name=message(f"uboot.tab.{role}"))
-        layout.blit_line(s, label, rect, config.COLOR_WARN if remote else
-                         config.COLOR_TEXT if active else config.COLOR_TEXT_DIM,
-                         size=14, align="center")
+        layout.tab(s, rect, label, active, color=config.COLOR_WARN if remote else None)
         draw_lamp(s, rect, alarms.get(role), game._t)
         pointer.add_hotspot(rect)       # uboot_local.handle_pointer takes the click
     sub = boat.sub if boat is not None else None
@@ -219,13 +213,15 @@ def draw_top_bar(game, boat) -> None:
                    course=_fmt(sub.course % 360.0 if sub else None, "{:03.0f}"),
                    speed=_fmt(sub.speed if sub else None, "{:.1f}"),
                    depth=_fmt(sub.depth if sub else None))
+    from src.core.game_draw import draw_theme_switch
+    switch = draw_theme_switch(game)
     left = tabs[-1].right + 12
-    layout.blit_line(s, text, (left, 4, config.SCREEN_W - left - 10, config.TOP_BAR_H - 8),
+    layout.blit_line(s, text, (left, 4, switch.x - left - 10, config.TOP_BAR_H - 8),
                      config.COLOR_TEXT, size=16, align="right")
     rows = threat_rows(game, boat) if boat is not None and boat.sub is not None else []
     if rows and not any(fresh for _text, _level, fresh in rows):
         # Only stale warnings: a small marker left of the clock.
-        _draw_threat_marker(s, config.SCREEN_W - 10 - layout.font(16).size(
+        _draw_threat_marker(s, switch.x - 10 - layout.font(16).size(
             localize(text))[0] - 30, config.TOP_BAR_H // 2, len(rows))
 
 
@@ -596,8 +592,8 @@ def draw_depth_ladder(s, game, boat, rect) -> None:
     marks = []
     if layer is not None:
         ly = depth_y(layer)
-        _dashed_hline(s, (110, 200, 220), column.x, column.right, ly)
-        marks.append((ly, message("uboot.ladder.layer", depth=_fmt(layer)), (110, 200, 220)))
+        _dashed_hline(s, theme.pick((110, 200, 220), (14, 116, 144)), column.x, column.right, ly)
+        marks.append((ly, message("uboot.ladder.layer", depth=_fmt(layer)), theme.pick((110, 200, 220), (14, 116, 144))))
     sy = depth_y(safe)
     _dashed_hline(s, config.COLOR_DANGER, column.x, column.right, sy)
     _dashed_hline(s, config.COLOR_DANGER, column.x, column.right, sy + 1)

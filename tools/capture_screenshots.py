@@ -68,9 +68,15 @@ SONAR_PAGES = (
     "active",
 )
 
+# Colour theme of the captures (``--theme``; the README shows "night").
+THEME = "night"
+
+
 def _preferences(language: str) -> Preferences:
     return Preferences(language=language, fullscreen=False, audio=False,
-                        large_text=False, tooltips=True)
+                        large_text=False, tooltips=True,
+                        theme="day" if THEME == "day" else "night",
+                        high_contrast=THEME == "contrast")
 
 
 def _capture(game: Game) -> pygame.Surface:
@@ -355,7 +361,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=1234)
     parser.add_argument("--language", choices=("all", *LANGUAGES), default="all",
                         help="capture both languages or only one (default: all)")
+    parser.add_argument("--theme", choices=("night", "day", "contrast"), default="night",
+                        help="colour theme of the captures (default: night)")
     args = parser.parse_args(argv)
+    global THEME
+    THEME = args.theme
     languages = LANGUAGES if args.language == "all" else (args.language,)
     for path in capture_all(args.output, args.seed, languages):
         print(path.relative_to(ROOT) if path.is_relative_to(ROOT) else path)

@@ -99,22 +99,6 @@ def test_bridge_projection_carries_only_the_lookouts_outlines():
     json.dumps(block, allow_nan=False)
 
 
-def test_panels_carry_corner_brackets_except_in_high_contrast():
-    surface = pygame.Surface((200, 120))
-    try:
-        theme.configure_for(None)
-        surface.fill((0, 0, 0))
-        layout.box(surface, (10, 10, 180, 100))
-        assert surface.get_at((11, 11))[:3] == layout.BRACKET_COLOR
-        game = type("G", (), {"preferences": type("P", (), {"high_contrast": True})()})()
-        theme.configure_for(game)
-        surface.fill((0, 0, 0))
-        layout.box(surface, (10, 10, 180, 100))
-        assert surface.get_at((11, 11))[:3] != layout.BRACKET_COLOR
-    finally:
-        theme.configure_for(None)
-
-
 def test_web_silhouettes_are_generated_from_the_uconsole_profiles():
     import sys
     from pathlib import Path

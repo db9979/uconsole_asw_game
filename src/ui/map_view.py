@@ -607,13 +607,14 @@ def draw_map_view(game, tr=None) -> None:
                        (int(fx) + 12, int(fy) + 24), config.COLOR_DANGER, r)
         for e in game.essms:
             px, py = view.world_to_screen(e.x, e.y)
-            pygame.draw.circle(s, (220, 200, 90), (int(px), int(py)), 3)
+            pygame.draw.circle(s, theme.pick((220, 200, 90), (161, 98, 7)), (int(px), int(py)), 3)
 
         # Peilstrich + Ziel-Kreuz (ausgewählter Kontakt / Ziel)
         for contact, fix, (px, py) in active_fix_markers(game, view):
-            color = {"PING": (90, 220, 220), "DIPPING": (120, 220, 190),
-                     "TMA": config.COLOR_WARN, "MAD": (200, 160, 240),
-                     "VISUAL": (230, 230, 200),
+            color = {"PING": theme.pick((90, 220, 220), (14, 116, 144)),
+                     "DIPPING": theme.pick((120, 220, 190), (4, 120, 87)),
+                     "TMA": config.COLOR_WARN, "MAD": theme.pick((200, 160, 240), (126, 34, 206)),
+                     "VISUAL": theme.pick((230, 230, 200), (55, 65, 81)),
                      "CONSORT": config.COLOR_FLIGHT,
                      "SONOBUOY": config.COLOR_CONTACT_ZIVIL}[fix["source"]]
             radius = _fix_marker_radius(fix, view)

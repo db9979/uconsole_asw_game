@@ -100,7 +100,7 @@ export function drawOpzRings(context, labels, ox, oy, rangeNm, scale, course, wi
   context.save();
   context.lineWidth = 1;
   if (opzLayer("rings")) {
-    context.strokeStyle = "#28605a";
+    context.strokeStyle = palette().lineStrong;
     for (let ring = 1; ring <= 4; ring++) {
       context.beginPath(); context.arc(ox, oy, radius * ring / 4, 0, Math.PI * 2); context.stroke();
     }
@@ -118,7 +118,7 @@ export function drawOpzRings(context, labels, ox, oy, rangeNm, scale, course, wi
       const major = bearing % 30 === 0, inner = radius - (major ? 9 : 5);
       const x = ox + ux * radius, y = oy + uy * radius;
       if (x < 0 || y < 0 || x > width || y > height) continue;
-      context.strokeStyle = major ? palette().muted : "#28605a";
+      context.strokeStyle = major ? palette().muted : palette().lineStrong;
       context.beginPath(); context.moveTo(ox + ux * inner, oy + uy * inner); context.lineTo(x, y); context.stroke();
       if (major && radius >= 90) {
         context.fillStyle = palette().muted;

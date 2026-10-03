@@ -14,6 +14,7 @@ from src.core.station import Station
 from src.ui.plot_view import draw_plot
 from src.core import map_fx
 from src.ui import label_layout, layout, map_fx_view, pointer, quality
+from src.ui import theme
 from src.ui import chart_symbols
 from src.ui import nato_symbols
 from src.ui import observations
@@ -527,10 +528,10 @@ def _draw_radar_clutter(game, surface, center, radius: int) -> None:
         # Seegang: Nahbereichs-Clutter; Wetterzellen: Flaechenstoerung im Luftbild.
         if game.surface_radar_on and (not game.air_radar_on or rng.random() < .65):
             distance = radius * rng.random() ** 1.8
-            base = (70, 145, 95)
+            base = theme.pick((70, 145, 95), (4, 120, 87))
         else:
             distance = radius * math.sqrt(rng.random())
-            base = (90, 115, 105)
+            base = theme.pick((90, 115, 105), (100, 116, 139))
         rad = math.radians(bearing)
         px = int(cx + distance * math.sin(rad))
         py = int(cy - distance * math.cos(rad))
@@ -810,13 +811,13 @@ def draw_opz_view(game, tr=None) -> None:
                     glow = _radar_glow(game, bearing)
                     if glow > 0.0:
                         pygame.draw.line(
-                            s, _scale_color((75, 180, 105), .25 + .75 * glow),
+                            s, _scale_color(theme.pick((75, 180, 105), (4, 120, 87)), .25 + .75 * glow),
                             view.world_to_screen(*first), view.world_to_screen(*second), 2)
 
             if radar_live:
                 _draw_radar_clutter(game, s, (own_x, own_y), int(radar_radius))
                 ang = math.radians(game.radar_sweep_bearing())
-                pygame.draw.line(s, (70, 190, 130), (own_x, own_y),
+                pygame.draw.line(s, theme.pick((70, 190, 130), (4, 120, 87)), (own_x, own_y),
                                  (own_x + radar_radius * math.sin(ang),
                                   own_y - radar_radius * math.cos(ang)), 2)
             fx = getattr(game, "map_fx", None)
@@ -901,7 +902,7 @@ def draw_opz_view(game, tr=None) -> None:
             if not chart.collidepoint(px, py):
                 continue
             fade = 1.0 - (game.sim_t - blip["t"]) / config.RADAR_BLIP_LIFE_S
-            pygame.draw.circle(s, _scale_color((120, 255, 150), max(.2, fade)),
+            pygame.draw.circle(s, _scale_color(theme.pick((120, 255, 150), (5, 150, 105)), max(.2, fade)),
                                (int(px), int(py)), 3)
 
         # Gemeinsames Lagebild: Oberflaeche, Luft und Flugkoerper im selben Scope.
@@ -918,7 +919,7 @@ def draw_opz_view(game, tr=None) -> None:
             if track["source"].startswith("RADAR"):
                 glow = _radar_glow(game, observations.bearing(track, game.ship))
                 if glow > 0.0:
-                    pygame.draw.circle(s, _scale_color((120, 255, 150), glow),
+                    pygame.draw.circle(s, _scale_color(theme.pick((120, 255, 150), (5, 150, 105)), glow),
                                        (int(bx), int(by)), 3)
             affiliation = game.opz_affiliation(track["track_id"])
             domain = nato_symbols.domain_for_kind(track["kind"])

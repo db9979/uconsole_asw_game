@@ -223,6 +223,18 @@ menu the browser shows a start screen. Editors, options, network administration,
 quit and credentials stay host-only. With every station leased Autocrew is
 suspended for all of them.
 
+**Server mode.** "Server (browsers only)" in the main menu (or `python main.py
+--server`) makes the uConsole a pure server: it opens the lobby with Remote Crew on,
+plays no station and shows only how to join and who is aboard; during a mission it
+shows the umpire screen with the join line. The first crew browser that pairs is the
+game leader. Its lobby has the leader form: unit, mission (scenarios, daily mission,
+campaign hotspots with the port choices, own missions), opponent, weather, time of
+day and length, and **Start for everyone**. Alone it plays solo with the AI on every
+free station; with others every browser takes its own stations as in crew mode. In a
+mission the leader's host bar has Save, Load and **Back to the lobby**; the crew keeps
+its stations across every start, load and return. **Hand over the lead** beside a
+crewmate passes the lead; a leader that stays away passes it on by itself.
+
 **Crew versus crew.** In the lobby the row *Opponent* switches between *AI* and
 *second crew (frigate vs submarine)*. With a second crew every paired browser is
 seated on the unit with fewer people (the uConsole counts for its own unit; on a

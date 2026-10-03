@@ -242,6 +242,20 @@ scheitert geschlossen. Im Hauptmenü der uConsole zeigt der Browser einen Startb
 Editoren, Optionen, Netzwerkverwaltung, Beenden und Zugangsdaten bleiben Host-Sache.
 Sind alle Stationen geleast, ist die Autocrew für alle ausgesetzt.
 
+**Server-Modus.** „Server (nur Browser)“ im Hauptmenü (oder `python main.py
+--server`) macht die uConsole zum reinen Server: Sie öffnet die Lobby mit
+eingeschaltetem Remote Crew, spielt keine Station und zeigt nur, wie man beitritt und
+wer an Bord ist; im Einsatz zeigt sie den Schiedsrichter-Bildschirm mit der
+Beitrittszeile. Der erste Besatzungsbrowser, der koppelt, ist der Spielleiter. Seine
+Lobby hat das Spielleiter-Formular: Einheit, Einsatz (Szenarien, Tagesmission,
+Brennpunkte der Kampagne mit den Hafenentscheidungen, eigene Missionen), Gegner,
+Wetter, Tageszeit und Länge sowie **Für alle starten**. Allein spielt er solo, die KI
+besetzt jede freie Station; mit anderen nimmt jeder Browser wie im Besatzungsmodus
+seine Stationen. Im Einsatz hat die Host-Leiste des Spielleiters Speichern, Laden und
+**Zurück zur Lobby**; die Besatzung behält ihre Stationen über jeden Start, jedes
+Laden und jede Rückkehr. **Leitung abgeben** neben einem Crewmitglied gibt die Leitung
+weiter; bleibt der Spielleiter weg, geht sie von selbst weiter.
+
 **Crew gegen Crew.** In der Lobby schaltet die Zeile *Gegner* zwischen *KI* und
 *zweite Crew (Fregatte gegen U-Boot)* um. Mit zweiter Crew kommt jeder gekoppelte
 Browser in die Einheit mit weniger Leuten (die uConsole zählt für ihre eigene

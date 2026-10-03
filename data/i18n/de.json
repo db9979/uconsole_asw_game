@@ -7016,7 +7016,6 @@
   "commander.web.lobby_choice_campaign": "Kampagne, {name}: {mission}",
   "commander.web.lobby_room_server": "Server-Modus: Die uConsole ist nur Server. {name} leitet; die Besatzung fährt {side}.",
   "commander.web.lobby_room_server_waiting": "Server-Modus: Die uConsole ist nur Server. Der erste Browser, der beitritt, leitet; die Besatzung fährt {side}.",
-  "commander.web.lobby_player_server": "uConsole (Server)",
   "commander.web.lobby_player_leader": "{name} (Spielleiter)",
   "commander.web.lobby_pass_lead": "Leitung abgeben",
   "commander.web.lobby_leader_hint": "Du leitest: Wähle oben den Einsatz und starte ihn.",

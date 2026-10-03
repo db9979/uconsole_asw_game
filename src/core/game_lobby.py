@@ -367,7 +367,8 @@ class LobbyMixin:
         layout.blit_line(s, "lobby.crew.teams" if versus else "lobby.crew",
                          (right.x, top, right.w, 24), config.COLOR_TEXT_DIM, size=17)
         # (name, stations, ready, observer, unit or None)
-        rows = [(message("lobby.host_player"),
+        # A server-mode uConsole crews nothing, so it has no row of its own.
+        rows = [] if room.server else [(message("lobby.host_player"),
                  [] if room.station == HOST_ONLY else [room.station], True, False,
                  None if room.station == HOST_ONLY else room.side)]
         rows += [(message("lobby.player.leader", name=raw_text(player["name"]))

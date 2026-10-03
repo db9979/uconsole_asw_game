@@ -12,17 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.185**
+Current release: **1.3.186**
 
-Release 1.3.185 keeps the Remote Crew host responsive. Loading, a new game,
-starting a mission and saving from the browser, as well as the web-host
-password check, no longer hold up every other browser while they run, so
-polls, sonar audio and voice keep flowing. Polling no longer re-reads each
-station's full picture. Failed logins and pairing attempts now count per
-address, so a stranger can no longer lock the host out of the web-host room,
-and that room no longer changes its code after their attempts. An observer
-switching views no longer interrupts the sonar operator's live audio. Keys
-are unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.186 adds a server mode: the uConsole only serves and everyone
+plays in the browser, on both units, alone or together. Choose "Server
+(browsers only)" in the main menu or start with `--server`. The uConsole then
+shows only the QR code, the join code and the crew, and during a mission an
+umpire screen. The first browser to join leads the game: in its lobby it picks
+the unit, the mission (scenario, daily mission, campaign hotspot or own
+mission), the opponent, weather, time of day and length, starts the mission
+for everyone, saves and loads, and brings everyone back to the lobby. The
+crew keeps its stations from one mission to the next, and the lead can be
+handed over. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -286,7 +287,8 @@ example `u-jagd --windowed`.
 
 `python main.py --remote-crew` starts Remote Crew in crew mode on the first
 private LAN address at launch, as the F9 row would (`--solo-crew` does the same
-in solo mode; `--web-port` picks the port, default 8765). `--status-file PATH`
+in solo mode; `--server` opens the browser-only server mode, see the
+manual's quick start; `--web-port` picks the port, default 8765). `--status-file PATH`
 writes the Remote Crew address and join code as JSON to `PATH` whenever they
 change; the Windows starter reads it.
 

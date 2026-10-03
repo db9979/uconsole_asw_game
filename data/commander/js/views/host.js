@@ -47,7 +47,8 @@ export function renderHost() {
   const menu = active && S.hostView?.phase === "menu";
   $("host-screen").hidden = !menu || leader || simlogActive();
   for (const id of ["host-new", "host-side"]) $(id).hidden = leader;
-  $("host-end").hidden = !leader;
+  // Only a running or ended mission can be left for the lobby.
+  $("host-end").hidden = !leader || !["live", "ended"].includes(S.hostView?.phase);
   if (!active) {
     for (const id of ["host-save", "host-load", "host-new", "host-missions",
                       "host-instructor", "host-side", "host-screen-new", "host-screen-load",

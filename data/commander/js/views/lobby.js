@@ -38,7 +38,8 @@ export function renderLobby() {
   $("lobby").hidden = simlog || assigned && !S.stationPickerOpen && room === null ||
     solo && S.hostView?.phase === "menu";
   $("lobby-back").hidden = !assigned || room !== null;
-  $("role-rail").hidden = !assigned || S.stationPickerOpen || solo;
+  // The lobby room spans the whole width and has its own station cards.
+  $("role-rail").hidden = !assigned || S.stationPickerOpen || solo || room !== null;
   $("mobile-role").hidden = !assigned || S.stationPickerOpen;
   for (const id of ["mobile-add-station", "mobile-release-station"]) $(id).hidden = solo;
   const rolePublished = S.v2State?.role === S.session.station;
@@ -156,8 +157,9 @@ function renderLobbyRoom(room) {
     const name = player.you ? t("lobby_player_you", {name: player.name}) : player.name;
     return player.leader ? t("lobby_player_leader", {name}) : name;
   };
-  const rows = [[t(room.server ? "lobby_player_server" : "lobby_player_host"), hostStations, "lobby_player_ready",
-    team(hostStations, false), null],
+  // A server-mode uConsole crews nothing: the server line above says so.
+  const rows = [...room.server ? [] : [[t("lobby_player_host"), hostStations, "lobby_player_ready",
+    team(hostStations, false), null]],
     ...room.players.map((player) => [label(player),
       player.stations, player.observer ? "lobby_player_observer" : player.ready ? "lobby_player_ready" : "lobby_player_waiting",
       team(player.stations, player.observer), player])];

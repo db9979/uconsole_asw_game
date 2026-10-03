@@ -7016,7 +7016,6 @@
   "commander.web.lobby_choice_campaign": "Campaign, {name}: {mission}",
   "commander.web.lobby_room_server": "Server mode: the uConsole only serves. {name} leads; the crew sails the {side}.",
   "commander.web.lobby_room_server_waiting": "Server mode: the uConsole only serves. The first browser to join leads; the crew sails the {side}.",
-  "commander.web.lobby_player_server": "uConsole (server)",
   "commander.web.lobby_player_leader": "{name} (leader)",
   "commander.web.lobby_pass_lead": "Hand over the lead",
   "commander.web.lobby_leader_hint": "You lead: choose the mission above and start it.",

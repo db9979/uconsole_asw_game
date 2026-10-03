@@ -389,6 +389,35 @@ missing or unreadable, `mission_rejected` when the runtime refuses it). The brow
 switches the solo side to the mission's side first. Nothing here enters saves or
 settings.
 
+## Server Mode and the Game Leader (protocol v2, additive)
+
+In server mode (`--server` or the main menu's "Server (browsers only)") the
+uConsole plays no station and the lobby stays open between missions. The session
+body's `host` is `{generation, leader}`: the solo session carries `leader: false`,
+the server-mode game leader `leader: true`, any other session `null`. The leader is
+the oldest paired crew browser (never a phone lookout, an observer or the web-host
+placeholder); when it stops polling for a lease period and another crew browser is
+present, the lead passes on. Gaining or losing the lead advances
+`host.generation`, so a host command prepared before fails closed. The leader uses
+the same host surface as a solo session (`/api/v2/host`, the own-mission library,
+`host_save`, `host_load`); `host_new_game` and `host_start_mission` answer
+`use_lobby`. The host view adds `lobby` (null outside the server-mode lobby):
+`{choice, side, versus, weather, time, length, countdown_s, confirm, daily,
+campaign}`, with `daily` and `campaign` per side. The lobby block of every session
+adds `mission_type`, `weather`, `time`, `length`, `server`, and each player
+`leader` and `ordinal`.
+
+Leader actions: `host_lobby_set {side, choice, versus, weather, time, length}`
+(`choice` is a scenario key, `daily`, `campaign:<hotspot>` or `own:<mission key>`),
+`host_lobby_start {}` (the first answers `lobby_confirm` while a crewmate is not
+ready), `host_lobby_cancel {}` and `host_lobby_campaign {side, action}` (`new`,
+`refit`, `quick`), all only in phase `menu`; `host_end_mission {}` in `live` or
+`ended`; `host_pass_lead {ordinal}` in any of these. Further reasons:
+`lobby_counting`, `lobby_invalid`, `campaign_unavailable`, `lead_unavailable`.
+A world replacement in server mode (or of a lobby round) keeps every crew session,
+cookie, CSRF token and the join code, rejects all queued commands and re-leases each
+held station under a fresh generation (`crew_rebase`). Nothing here is saved.
+
 ## Test Scope
 
 Transport tests cover live loopback framing, Host/Origin, pairing/TTL/rate limits,

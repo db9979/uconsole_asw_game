@@ -14,18 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.185**
+Aktuelle Version: **1.3.186**
 
-Version 1.3.185 hält den Remote-Crew-Gastgeber reaktionsfähig. Laden, neues
-Spiel, Einsatzstart und Speichern aus dem Browser sowie die Passwortprüfung
-des Web-Gastgebers halten die anderen Browser nicht mehr auf, Abfragen,
-Sonar-Audio und Sprechfunk laufen weiter. Abfragen lesen nicht mehr jedes Mal
-das ganze Lagebild einer Station neu. Fehlgeschlagene Anmeldungen und
-Kopplungsversuche zählen jetzt je Adresse, ein Fremder kann den Gastgeber im
-Web-Gastgeber-Raum also nicht mehr aussperren, und der Raum wechselt nach
-seinen Versuchen nicht mehr den Code. Ein Beobachter, der die Ansicht
-wechselt, unterbricht nicht mehr das Live-Audio des Sonarbedieners. Tasten
-bleiben gleich. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+Version 1.3.186 bringt einen Server-Modus: Die uConsole dient nur als
+Server, alle spielen im Browser, auf beiden Einheiten, allein oder gemeinsam.
+Dazu im Hauptmenü „Server (nur Browser)“ wählen oder mit `--server` starten.
+Die uConsole zeigt dann nur QR-Code, Beitrittscode und Besatzung, im Einsatz
+einen Schiedsrichter-Bildschirm. Der erste Browser, der beitritt, leitet das
+Spiel: In seiner Lobby wählt er Einheit, Einsatz (Szenario, Tagesmission,
+Brennpunkt der Kampagne oder eigene Mission), Gegner, Wetter, Tageszeit und
+Länge, startet den Einsatz für alle, speichert und lädt und holt alle zurück
+in die Lobby. Die Besatzung behält ihre Stationen von Einsatz zu Einsatz, die
+Leitung lässt sich abgeben. Tasten bleiben gleich. Spielstände sind v50; v38
+bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -300,7 +301,8 @@ Einstiegspunkt als `u-jagd` verfügbar, beispielsweise `u-jagd --windowed`.
 
 `python main.py --remote-crew` startet Remote Crew beim Start im
 Besatzungsmodus auf der ersten privaten LAN-Adresse, wie es die F9-Zeile tun
-würde (`--solo-crew` entsprechend im Solomodus; `--web-port` wählt den Port,
+würde (`--solo-crew` entsprechend im Solomodus; `--server` öffnet den
+Server-Modus nur für Browser, siehe Schnellstart im Handbuch; `--web-port` wählt den Port,
 Standard 8765). `--status-file PFAD` schreibt Remote-Crew-Adresse und
 Beitrittscode als JSON nach `PFAD`, sobald sie sich ändern; der
 Windows-Starter liest diese Datei.

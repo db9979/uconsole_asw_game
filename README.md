@@ -12,18 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.171**
+Current release: **1.3.172**
 
-Release 1.3.171 gives the OPZ a richer chart and a Display page full of
-settings: track trails, vector length, labels, a bearing scale with the own
-course, range rings, bearing lines, furthest-on circles, depths and grid, the
-radar afterglow and the selected track's closest point of approach (CPA) with
-distance and time. Arrow keys or a click set each one, chips under the chart
-switch the layers on every page, two switches on the chart turn the radars on
-and off, and the settings are remembered. The browser
-OPZ has the same buttons above its chart and draws the same rings, bearing
-scale, trails and CPA. Display only: the simulation is unchanged. Saves are
-v50; v38 to v49 saves still load.
+Release 1.3.172 fixes the update check of the macOS app. The app's
+built-in Python looked for root certificates in a folder that exists only on
+the build machine, so every HTTPS request failed verification and the start
+screen never offered a newer version. The Windows and macOS programs now
+carry their own root certificates (certifi) on top of the system's, which
+also helps the optional language model and live air traffic over HTTPS. If
+the update check fails, the start screen and the main menu now say so and
+why (no connection, certificate, or an error from GitHub), and U checks
+again. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

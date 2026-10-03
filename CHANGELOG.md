@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.172
+
+Release 1.3.172 fixes the update check of the macOS app. The app's
+built-in Python looked for root certificates in a folder that exists only on
+the build machine, so every HTTPS request failed verification and the start
+screen never offered a newer version. The Windows and macOS programs now
+carry their own root certificates (certifi) on top of the system's, which
+also helps the optional language model and live air traffic over HTTPS. If
+the update check fails, the start screen and the main menu now say so and
+why (no connection, certificate, or an error from GitHub), and U checks
+again. Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.171
 
 Release 1.3.171 gives the OPZ a richer chart and a Display page full of

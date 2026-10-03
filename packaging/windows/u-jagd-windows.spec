@@ -18,7 +18,7 @@ a = Analysis(
     [os.path.join(SPECPATH, "u_jagd_windows.py")],
     pathex=[root],
     datas=datas,
-    hiddenimports=collect_submodules("src") + ["main"],
+    hiddenimports=collect_submodules("src") + ["main", "certifi"],
     excludes=["pytest", "tkinter"],  # no Tk window any more
     noarchive=False,
 )

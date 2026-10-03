@@ -14,18 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.171**
+Aktuelle Version: **1.3.172**
 
-Version 1.3.171 gibt der OPZ eine reichere Karte und eine Anzeigeseite voller
-Einstellungen: Spurverlauf, Vektorlänge, Beschriftung, eine Peilskala mit
-eigenem Kurs, Entfernungsringe, Peilstrahlen, Unsicherheitskreise, Tiefen und
-Gitter, das Radar-Nachleuchten und den Punkt der nächsten Annäherung (CPA)
-des gewählten Tracks mit Abstand und Zeit. Pfeiltasten oder ein Klick stellen
-alles ein, Schalter unter der Karte schalten die Ebenen auf jeder Seite, zwei Schalter
-auf der Karte schalten die Radare ein und aus, und
-die Einstellungen bleiben gespeichert. Die OPZ im Browser hat dieselben
-Knöpfe über ihrer Karte und zeichnet dieselben Ringe, Peilskala, Spuren und
-den CPA. Nur Anzeige: die Simulation bleibt unverändert. Spielstände sind
+Version 1.3.172 repariert die Update-Prüfung der macOS-App. Ihr
+eingebautes Python suchte die Stammzertifikate in einem Ordner, den es nur auf
+dem Baurechner gibt, deshalb scheiterte jede HTTPS-Anfrage an der Prüfung und
+der Startbildschirm bot nie eine neuere Version an. Das Windows-Programm und
+die macOS-App bringen jetzt eigene Stammzertifikate (certifi) zusätzlich zu
+denen des Systems mit, was auch dem optionalen Sprachmodell und dem
+Live-Flugverkehr über HTTPS hilft. Schlägt die Update-Prüfung fehl, sagen
+Startbildschirm und Hauptmenü jetzt, dass und warum (keine Verbindung,
+Zertifikat oder ein Fehler von GitHub), und U prüft erneut. Spielstände sind
 v50; v38 bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

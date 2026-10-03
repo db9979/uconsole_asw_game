@@ -30,6 +30,7 @@ from __future__ import annotations
 import math
 
 from src.core import config, detrand
+from src.physics.geo import bearing_deg as _bearing
 
 LANE_CATEGORIES = frozenset({"FRACHT", "TANKER", "PASSAGIER"})
 STEP_S = 10.0             # a lane ship decides every 10 s of simulation time
@@ -100,10 +101,6 @@ def destination(ship, seed: int, world):
     point = points[index]
     ship._lane_cache = (leg, world, point)
     return point
-
-
-def _bearing(x0: float, y0: float, x1: float, y1: float) -> float:
-    return math.degrees(math.atan2(x1 - x0, -(y1 - y0))) % 360.0
 
 
 def _leg_time(ship, point) -> float:

@@ -28,6 +28,7 @@ from src.weapons.asw import ConsumableStore, WeaponBattery
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.enemies.endurance import SubmarineEndurance
+from src.physics.geo import FrigateRelativeMixin
 
 CATALOG = catalog.CATALOG
 DECOY_PROFILE = CATALOG.get_decoy("decoy")
@@ -116,7 +117,7 @@ SUB_TYPES = {
 }
 
 
-class Sub:
+class Sub(FrigateRelativeMixin):
     """U-Boot mit einfacher KI: PATROLLE <-> EVADE (M2)."""
 
     _next_id = 1
@@ -1277,7 +1278,6 @@ class Sub:
     def noise_level(self) -> float:
         return 1.0 - self.quiet_factor()
 
-
     def acoustic_signature(self) -> str:
         """M9: Hörbare Geräusch-Signatur für manuelle Klassifizierung.
 
@@ -2007,15 +2007,6 @@ class Sub:
     def speed_for_state(self) -> float:
         """Fahrt bei Schaden: langsamer je nach Schadensgrad."""
         return self.motion.maximum_speed_kn * (1.0 - 0.25 * self.damage / 100.0)
-
-    def distance_nm(self, frigate) -> float:
-        return math.hypot(self.x - frigate.x, self.y - frigate.y)
-
-    def bearing_from_frigate(self, frigate) -> float:
-        """Nautische Peilung: 0° = Nord (nach oben), 90° = Ost, im Uhrzeigersinn."""
-        dx = self.x - frigate.x
-        dy = self.y - frigate.y
-        return math.degrees(math.atan2(dx, -dy)) % 360.0
 
     @property
     def sensor_domain(self) -> str:

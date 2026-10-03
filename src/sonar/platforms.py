@@ -18,12 +18,12 @@ update, exactly like every other sonar target.  They never leave the
 simulation: crews only ever see the resulting ``Contact`` measurements.
 """
 
-import math
 
 from src.core import config
 from src.data import fingerprint as fingerprint_mod
 from src.enemies.surface import SurfaceShip
 from src.physics import submarine as sub_physics
+from src.physics.geo import FrigateRelativeMixin
 
 # The frigate radiates like the catalogue's German CODOG frigate (F123).
 OWNSHIP_SIGNATURE_KEY = "warship_30"
@@ -41,11 +41,6 @@ OWNSHIP_CAVITATION_DB = 6.0
 OWNSHIP_QUIET_MODE_DB = 4.0
 # Fixed fingerprint seed: the frigate's tonal offsets never change.
 _OWNSHIP_FINGERPRINT_SEED = 0x5F123
-
-
-def _bearing(tgt, observer) -> float:
-    return math.degrees(math.atan2(tgt.x - observer.x,
-                                   -(tgt.y - observer.y))) % 360.0
 
 
 class SubSonarPlatform:
@@ -168,7 +163,7 @@ class OwnShipAcousticSource:
         return level
 
 
-class OwnTorpedoAcousticSource:
+class OwnTorpedoAcousticSource(FrigateRelativeMixin):
     """A running frigate torpedo as a radiating sonar target."""
 
     torpedo_class = "frigate"
@@ -217,9 +212,3 @@ class OwnTorpedoAcousticSource:
 
     def acoustic_signature(self) -> str:
         return "" if self.sunk else "mechanisch · hochfrequentes Kreischen (Torpedo?)"
-
-    def distance_nm(self, observer) -> float:
-        return math.hypot(self.x - observer.x, self.y - observer.y)
-
-    def bearing_from_frigate(self, observer) -> float:
-        return _bearing(self, observer)

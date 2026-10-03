@@ -4,13 +4,16 @@ Pure functions (no game state): ``valid_save_document`` is the single
 acceptance check a load must pass before a candidate restore begins;
 ``catalog_for_save`` resolves the runtime catalog a document was written
 with.  Verbatim moves from ``game_save.py`` (plan 1.3, phase 2, step 1).
+``valid_save_document`` runs one check per save block in a fixed order; the
+entity groups live in ``save_validate_entities``, the helicopter, buoys and
+weapons in flight in ``save_validate_weapons``, the crew and sonar blocks in
+``save_validate_crew``/``save_validate_sonar``.
 """
 
 import math
 
 
 from src.core import config
-from src.weapons import depth_charge
 from src.core.plot import PlotLayer
 from src.ship.route import Route
 from src.core.autocrew import AutocrewController
@@ -19,31 +22,22 @@ from src.sensors.ais import AISReceiver
 from src.sensors import lookout_id
 from src.physics import ship_dynamics
 from src.physics import torpedo_dyn
-from src.physics import missile as missile_physics
 from src.ship import damage as damage_physics
 from src.world.ocean import OceanEnvironment
 from src.core.save_schema import (
     WEAPON_SETTINGS_FIELDS,
     COMPARTMENT_FIELDS, COMPARTMENT_STATES, DAMAGE_FIELDS, PING_INTERCEPTS_MAX, RADAR_BLIP_FIELDS,
     RADAR_MARKED_MAX, RADAR_MARKS_FIELDS, RNG_STREAMS, SAVE_ROOT_FIELDS, SHIP_FIELDS,
-    SUB_CREW_FIELDS, WORLD_FIELDS)
+    WORLD_FIELDS)
 from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
-from src.enemies.ballast import BoatBallast
-from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
 from src.core import baffles
 from src.core.incidents import IncidentBoard
 from src.core.hq_reports import HqReports
 from src.weapons import rbu
 from src.core.crew import CrewState
-from src.air.mpa import PatrolAircraft
-from src.core.consort import ConsortOrders
-from src.core import habits
-from src.core.game_llm import valid_llm_state
-from src.air.sonobuoy import OWNERS as BUOY_OWNERS
-from src.enemies.endurance import SubmarineEndurance
 from src.sensors.esm import valid_esm_state
-from src.sensors.platform import SONAR_SIGNAL_MAX, validate_suite_state
+from src.sensors.platform import validate_suite_state
 from src.ship.damage import DamageModel
 from src.ship.ship import Ship
 from src.sonar.sonar import SONAR_ARRAY_MODES
@@ -54,19 +48,16 @@ from src.world.world import World
 from src.world.coastline import Coastline
 from src.world.grounding import (DEFAULT_HULL_SPEC, GroundingContact, HullSpec,
                                  grounding_contact_is_consistent)
-from src.weapons.torpedo import Torpedo
-from src.weapons.asw import (
-    ConsumableStore,
-    MAX_ASROCS,
-    WeaponBattery,
-    battery_matches_catalog,
-    consumable_matches_catalog,
-    valid_asw_state)
+from src.weapons.asw import valid_asw_state
 from src.weapons.air_defense import valid_air_defense_state
 
-from src.core.limits import (MAX_AIR_PICTURE_TRACKS, MAX_DECOYS, MAX_ENEMY_TORPEDOES,
-                             MAX_SAVED_ASMS, MAX_SAVED_ENTITIES, MAX_SAVED_ESSMS,
-                             MAX_SAVED_PLAYER_TORPEDOES)
+from src.core.limits import MAX_AIR_PICTURE_TRACKS
+from src.core.save_validate_common import (bounded, finite_number, finite_tree,
+                                           identity)
+from src.core.save_validate_entities import check_entities
+from src.core.save_validate_weapons import (
+    check_buoys_and_aircraft, check_essms, check_helo, check_missiles,
+    check_player_torpedoes)
 # Verbatim moves: the crew block and the sonar station checks.
 from src.core.save_validate_crew import _valid_crew_block  # noqa: F401
 from src.core.save_validate_sonar import valid_sonar_block
@@ -137,38 +128,35 @@ def opz_chart_size() -> tuple[int, int]:
     return int(chart.w), int(chart.h)
 
 
-def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
-    """Strict check of a parsed save document. With ``opz_chart`` (from
-    ``opz_chart_size()``) it is pure: no pygame, no live game or global
-    state, so it may run off the main thread."""
-    def finite_number(value) -> bool:
-        try:
-            return (isinstance(value, (int, float))
-                    and not isinstance(value, bool) and math.isfinite(value))
-        except OverflowError:
-            return False
-
-    def finite_tree(value, path=()) -> bool:
-        if len(path) > 100:
-            return False
-        if value is None or isinstance(value, (str, bool)):
-            return True
-        if isinstance(value, (int, float)):
-            return finite_number(value)
-        if isinstance(value, dict):
-            return all(isinstance(key, str) and finite_tree(item, path + (key,))
-                       for key, item in value.items())
-        if isinstance(value, (list, tuple)):
-            return all(finite_tree(item, path + (index,))
-                       for index, item in enumerate(value))
+def valid_sonar_controls(controls) -> bool:
+    control_fields = {"gain_db", "band_low_hz", "band_high_hz",
+                      "notch_enabled", "peak_hold", "focus_locked",
+                      "tma_enabled", "listen_bearing", "listen_filtered",
+                      "audition_mode", "sonar_page", "audio_enabled", "volume",
+                      "tma_method"}
+    if (not isinstance(controls, dict) or set(controls) != control_fields
+            or controls["tma_method"] not in ("hypothesis", "ekelund", "dotstack")
+            or controls["audition_mode"] not in (
+                "BROADBAND", "FILTERED", "HETERODYNE")
+            or controls["listen_filtered"] != (
+                controls["audition_mode"] == "FILTERED")
+            or any(type(controls[key]) is not bool for key in (
+                "notch_enabled", "peak_hold", "focus_locked", "tma_enabled",
+                "listen_filtered", "audio_enabled"))
+            or not bounded(controls["gain_db"], -12, 24)
+            or not bounded(controls["band_low_hz"], 0, config.LOFAR_FMAX_HZ)
+            or not bounded(controls["band_high_hz"], 0, config.LOFAR_FMAX_HZ)
+            or controls["band_low_hz"] > controls["band_high_hz"]
+            or not bounded(controls["listen_bearing"], 0, 360)
+            or controls["listen_bearing"] == 360
+            or type(controls["sonar_page"]) is not int
+            or not 0 <= controls["sonar_page"] < 6
+            or not bounded(controls["volume"], 0, 1)):
         return False
+    return True
 
-    def bounded(value, low=0.0, high=1_000_000.0) -> bool:
-        return finite_number(value) and low <= value <= high
 
-    def identity(value) -> bool:
-        return type(value) is int and 1 <= value <= 2**63 - 1
-
+def _check_preamble(data) -> bool:
     if not isinstance(data, dict):
         return False
     version = data.get("version")
@@ -188,35 +176,15 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
         return False
     if not AutocrewController.valid_state(data.get("autocrew"), data.get("sim_t")):
         return False
-    def valid_sonar_controls(controls) -> bool:
-        control_fields = {"gain_db", "band_low_hz", "band_high_hz",
-                          "notch_enabled", "peak_hold", "focus_locked",
-                          "tma_enabled", "listen_bearing", "listen_filtered",
-                          "audition_mode", "sonar_page", "audio_enabled", "volume",
-                          "tma_method"}
-        if (not isinstance(controls, dict) or set(controls) != control_fields
-                or controls["tma_method"] not in ("hypothesis", "ekelund", "dotstack")
-                or controls["audition_mode"] not in (
-                    "BROADBAND", "FILTERED", "HETERODYNE")
-                or controls["listen_filtered"] != (
-                    controls["audition_mode"] == "FILTERED")
-                or any(type(controls[key]) is not bool for key in (
-                    "notch_enabled", "peak_hold", "focus_locked", "tma_enabled",
-                    "listen_filtered", "audio_enabled"))
-                or not bounded(controls["gain_db"], -12, 24)
-                or not bounded(controls["band_low_hz"], 0, config.LOFAR_FMAX_HZ)
-                or not bounded(controls["band_high_hz"], 0, config.LOFAR_FMAX_HZ)
-                or controls["band_low_hz"] > controls["band_high_hz"]
-                or not bounded(controls["listen_bearing"], 0, 360)
-                or controls["listen_bearing"] == 360
-                or type(controls["sonar_page"]) is not int
-                or not 0 <= controls["sonar_page"] < 6
-                or not bounded(controls["volume"], 0, 1)):
-            return False
-        return True
-
     if not valid_sonar_controls(data.get("sonar_controls")):
         return False
+    return True
+
+
+def _check_frame(data, runtime_catalog, opz_chart):
+    """Platform state, sim time, finite tree, UI, catalog, ESM and the
+    torpedo inventory; False, or (platform_state_version, save_sim_t,
+    world_size, runtime_catalog, torpedo_inventory)."""
     platform_state_version = data.get("platform_state_version")
     if type(platform_state_version) is not int or platform_state_version != 1:
         return False
@@ -269,6 +237,13 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
             or not 0 <= torpedo_inventory["count"] <= torpedo_inventory["total"] <= 100
             or not bounded(torpedo_inventory["depth"], 0, 10000)):
         return False
+    return (platform_state_version, save_sim_t, world_size, runtime_catalog,
+            torpedo_inventory)
+
+
+def _check_mission_blocks(data, save_sim_t):
+    """Mission runtime and the per-version blocks; False, or
+    (runtime_mission, difficulty)."""
     # The mission's realism level; the difficulty values it already scaled
     # live in mission_runtime["difficulty"] (checked just below).
     if data.get("level") not in config.LEVELS:
@@ -367,6 +342,11 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
         return False
     if not _radar_marks_ok(data.get("radar_marks"), save_sim_t):
         return False
+    return runtime_mission, difficulty
+
+
+def _check_mission_stores(data, runtime_mission, difficulty, torpedo_inventory,
+                          runtime_catalog) -> bool:
     units = runtime_mission.get("units")
     if (not isinstance(units, dict) or len(units) > 512
             or any(not isinstance(key, str) or not 1 <= len(key) <= 64
@@ -404,13 +384,10 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
                 (raw_rng[0], tuple(raw_rng[1]), raw_rng[2]))
         except (TypeError, ValueError, OverflowError):
             return False
+    return True
 
-    def platform_speed_limit(profile_key, profile) -> float:
-        systems = runtime_catalog.profile_systems.get(profile_key)
-        if systems is not None and systems.machine_key is not None:
-            return runtime_catalog.machines[systems.machine_key].maximum_speed_kn
-        speed = profile.speed_kn
-        return speed[1] if isinstance(speed, tuple) else speed
+
+def _check_air_picture(data, runtime_catalog, save_sim_t) -> bool:
     air_rows = data.get("air_picture", [])
     required_track_fields = {
         "track_id", "kind", "target_id", "source", "bearing",
@@ -486,6 +463,10 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
                 or (uncertainty is not None
                     and not bounded(uncertainty, .05, 180))):
             return False
+    return True
+
+
+def _check_hfdf(data) -> bool:
     fixes = data.get("hfdf_fixes", {})
     reports = data.get("hfdf_log", [])
     if not isinstance(fixes, dict) or len(fixes) > 10000:
@@ -523,6 +504,12 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
                    or value not in config.NATO_AFFILIATIONS
                    for track_id, value in affiliations.items())):
         return False
+    return True
+
+
+def _check_ship(data):
+    """The frigate, its radars and grounding; False, or (hull, grounding,
+    pose, contact)."""
     ship = data.get("ship")
     if not isinstance(ship, dict) or set(ship) != SHIP_FIELDS:
         return False
@@ -595,6 +582,10 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
             or any(abs(ship[key] - pose[index]) > 1e-9
                    for index, key in enumerate(("x", "y", "course")))):
         return False
+    return hull, grounding, pose, contact
+
+
+def _check_damage(data) -> bool:
     team = data.get("dmg_team", 1)
     if type(team) is not int or not 1 <= team <= DamageModel.TEAM_COUNT:
         return False
@@ -644,537 +635,11 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
     if any(compartments[key]["counterflood"] > 0.0
            for key in compartments if key not in DamageModel.COUNTERFLOOD_ROOMS):
         return False
+    return True
 
-    groups = {"sub": ("subs",), "animal": ("animals",),
-              "surface": ("civilians", "warships"), "decoy": ("decoys",),
-              "enemy_torpedo": ("enemy_torpedoes",)}
-    max_salvo = max(profile.asm_salvo[1]
-                    for profile in runtime_catalog.surfaces.values())
-    pending_missiles = 0
-    pending_asrocs = 0
-    pending_enemy_torpedoes = 0
-    pending_decoys = 0
-    spent_asrocs = {}
-    # The frigate's own ASROC (no platform id) spends its own store.
-    own_stores = data.get("asw", {}).get("own_stores", {})
-    spent_asrocs[(None, depth_charge.OWN_ASROC_KEY)] = (
-        depth_charge.OWN_ASROC_STOCK - own_stores.get("asroc", depth_charge.OWN_ASROC_STOCK))
-    used_asrocs = {}
-    spent_decoys = {}
-    used_decoys = {}
-    spent_enemy_torpedoes = {}
-    used_enemy_torpedoes = {}
-    entity_ids, group_ids = set(), {}
-    for key, names in groups.items():
-        group_ids[key] = set()
-        for name in names:
-            entries = data.get(name, [])
-            if not isinstance(entries, list) or len(entries) > MAX_SAVED_ENTITIES:
-                return False
-            for entry in entries:
-                if not isinstance(entry, dict):
-                    return False
-                # Early civilian saves may not contain an ID.
-                entity_id = entry.get("id")
-                if entity_id is not None:
-                    if not identity(entity_id) or entity_id in entity_ids:
-                        return False
-                    entity_ids.add(entity_id)
-                    group_ids[key].add(entity_id)
-                elif name not in ("civilians", "warships", "decoys", "enemy_torpedoes"):
-                    return False
-                if any(not bounded(entry.get(axis), -1_000_000, 1_000_000)
-                       for axis in ("x", "y")):
-                    return False
-                if name == "subs":
-                    profile_key = entry.get("stype")
-                    profile = runtime_catalog.subs.get(profile_key)
-                    if profile is None:
-                        return False
-                elif name == "animals":
-                    profile_key = entry.get("atype")
-                    if profile_key not in runtime_catalog.animals:
-                        return False
-                elif name in ("civilians", "warships"):
-                    profile_key = entry.get("signature_key")
-                    profile = runtime_catalog.surfaces.get(profile_key)
-                    if profile is None:
-                        return False
-                elif name == "decoys":
-                    profile_key = entry.get("profile_key")
-                    decoy_profile = runtime_catalog.decoys.get(profile_key)
-                    if decoy_profile is None:
-                        return False
-                    source_id = entry.get("source_id")
-                    # A decoy a mission placed has no launching unit and lies
-                    # still; a launched one runs at its profile speed.
-                    placed = source_id is None
-                    if (
-                            set(entry) != {"id", "x", "y", "depth", "course",
-                                           "speed", "life", "sensor_seed",
-                                           "profile_key", "source_id"}
-                            or (not placed and (
-                                not identity(source_id)
-                                or (source_id not in group_ids["sub"]
-                                    and source_id not in group_ids["surface"])))
-                            or (placed and data.get("mission_runtime", {}).get(
-                                "custom_definition") is None)
-                            or not bounded(entry.get("depth"), 0, 10000)
-                            or not bounded(entry.get("course"), 0, 360)
-                            or entry.get("course") == 360
-                            or decoy_profile is None
-                            or entry.get("speed") != (
-                                0.0 if placed else config.kn_to_nm_per_s(
-                                    decoy_profile.speed_kn))
-                            or not bounded(entry.get("life"), .000001,
-                                           decoy_profile.life_s)
-                            or type(entry.get("sensor_seed")) is not int
-                            or not 0 <= entry["sensor_seed"] < 2**31):
-                        return False
-                    if source_id is not None:
-                        used_decoys[source_id] = used_decoys.get(source_id, 0) + 1
-                elif name == "enemy_torpedoes":
-                    if not {
-                            "profile_key", "guidance_x", "guidance_y",
-                            "terminal_active", "seeker_acquired",
-                            "seeker_target", "travel", "launch_platform_id",
-                            "launch_weapon_key", "pattern", "enable_nm",
-                            "search_phase", "turns_done", "search_course"} <= set(entry):
-                        return False
-                    # Save v48: the crew's search pattern and seeker enable point.
-                    search_course = entry["search_course"]
-                    if (entry["pattern"] not in torpedo_dyn.BOAT_SEARCH_PATTERNS
-                            or not bounded(entry["enable_nm"], torpedo_dyn.ENABLE_RANGE_MIN_NM,
-                                           torpedo_dyn.BOAT_ENABLE_DEFAULT_NM)
-                            or not bounded(entry["search_phase"], 0, 1_000_000)
-                            or not bounded(entry["turns_done"], 0, 1_000_000)
-                            or (search_course is not None
-                                and (not bounded(search_course, 0, 360)
-                                     or search_course == 360))):
-                        return False
-                    profile_key = entry.get("profile_key")
-                    profile = runtime_catalog.torpedoes.get(profile_key)
-                    if profile is None or profile.used_by != "enemy":
-                        return False
-                    gx, gy = entry.get("guidance_x"), entry.get("guidance_y")
-                    # A torpedo a mission placed has no launching boat and
-                    # no guidance datum: it runs on its course.
-                    placed_torpedo = (entry.get("launch_platform_id") is None
-                                      and entry.get("launch_weapon_key") is None
-                                      and data.get("mission_runtime", {}).get(
-                                          "custom_definition") is not None)
-                    if ((gx is None) != (gy is None)
-                            or (gx is None and not placed_torpedo)
-                            or (gx is not None and (
-                                not bounded(gx, -1_000_000, 1_000_000)
-                                or not bounded(gy, -1_000_000, 1_000_000)))
-                            or type(entry.get("terminal_active", False)) is not bool
-                            or type(entry.get("seeker_acquired", False)) is not bool
-                            or not bounded(entry.get("travel", 0), 0,
-                                           profile.range_nm if profile else 10000)):
-                        return False
-                    seeker = entry.get("seeker_target")
-                    nixie_ids = {row["seq"] for row in (
-                        data.get("asw", {}).get("nixies", [])
-                        if isinstance(data.get("asw"), dict) else [])}
-                    valid_seeker = (seeker is None or seeker == "ship"
-                                    or (isinstance(seeker, str)
-                                        and seeker.startswith("nixie:")
-                                        and seeker[6:].isdigit()
-                                        and int(seeker[6:]) in nixie_ids))
-                    acquired = entry.get("seeker_acquired", False)
-                    launch_platform_id = entry.get("launch_platform_id")
-                    launch_weapon_key = entry.get("launch_weapon_key")
-                    if placed_torpedo:
-                        pass
-                    elif (not identity(launch_platform_id)
-                            or launch_platform_id not in group_ids["sub"]
-                            or (launch_weapon_key is not None
-                                and (not isinstance(launch_weapon_key, str)
-                                     or runtime_catalog.weapons.get(
-                                         launch_weapon_key) is None
-                                     or runtime_catalog.weapons[
-                                         launch_weapon_key].weapon_type != "torpedo"
-                                     or runtime_catalog.weapons[
-                                         launch_weapon_key].runtime_profile_key
-                                         != profile_key))):
-                        return False
-                    if not placed_torpedo:
-                        launch_key = (launch_platform_id, launch_weapon_key)
-                        used_enemy_torpedoes[launch_key] = (
-                            used_enemy_torpedoes.get(launch_key, 0) + 1)
-                    if (not valid_seeker or acquired != (seeker is not None)
-                            or (acquired and not entry["terminal_active"])
-                            or not bounded(entry.get("course"), 0, 360)
-                            or entry.get("course") == 360
-                            or not bounded(entry.get("depth"), 0, 10000)
-                            or not identity(entry.get("idx"))):
-                        return False
-                if name in ("subs", "civilians", "warships"):
-                    if (not bounded(
-                            entry.get("speed"), 0,
-                            platform_speed_limit(profile_key, profile))):
-                        return False
-                    platform = entry.get("platform")
-                    if (platform_state_version == 1 and platform is None) \
-                            or (platform is not None and (
-                                profile_key is None
-                                or not validate_suite_state(
-                                    platform, runtime_catalog, profile_key,
-                                    save_sim_t))):
-                        return False
-                if name in ("civilians", "warships"):
-                    if type(entry.get("emitter", False)) is not bool:
-                        return False
-                    sensor_seed = entry.get("sensor_seed")
-                    if (type(sensor_seed) is not int
-                            or not 0 <= sensor_seed < 2**31):
-                        return False
-                    observed = entry.get("sensor_contact")
-                    if (observed is not None and (
-                            not isinstance(observed, (list, tuple)) or len(observed) != 2
-                            or any(not bounded(value, -1_000_000, 1_000_000) for value in observed))):
-                        return False
-                    if not bounded(entry.get("sensor_contact_age", config.RADAR_TRACK_STALE_S),
-                                   0, config.RADAR_TRACK_STALE_S):
-                        return False
-                    direction = entry.get("orbit_direction", 1)
-                    if type(direction) is not int or direction not in (-1, 1):
-                        return False
-                    awarded = entry.get("sunk_score_awarded", False)
-                    if type(awarded) is not bool or (awarded and not entry.get("sunk", False)):
-                        return False
-                    if (not bounded(entry.get("torpedo_evade_left"), 0.0,
-                                    config.WARSHIP_TORPEDO_EVADE_S)
-                            or not bounded(entry.get("torpedo_threat_bearing"),
-                                           0.0, 359.999999999)):
-                        return False
-                    if name == "warships":
-                        if not {
-                                "asroc_battery", "pending_asroc",
-                                "asw_last_seen"} <= set(entry):
-                            return False
-                        left = entry.get("countermeasures_left")
-                        if (type(left) is not int
-                                or not 0 <= left <= config.WARSHIP_TORPEDO_DECOYS):
-                            return False
-                        if entity_id is not None:
-                            spent_decoys[entity_id] = (
-                                config.WARSHIP_TORPEDO_DECOYS - left)
-                        battery = entry.get("asroc_battery")
-                        expected_battery = WeaponBattery.from_catalog(
-                            runtime_catalog, profile_key, "asroc")
-                        if ((battery is None) !=
-                                (expected_battery is None)):
-                            return False
-                        if battery is not None and not battery_matches_catalog(
-                                battery, runtime_catalog, profile_key, "asroc"):
-                            return False
-                        if battery is not None:
-                            restored_battery = WeaponBattery.restore(battery)
-                            if entity_id is None:
-                                return False
-                            for weapon_key in restored_battery.weapon_keys:
-                                capacity = sum(
-                                    item.capacity
-                                    for item in restored_battery.magazines.values()
-                                    if item.weapon_key == weapon_key)
-                                remaining = sum(
-                                    item.stowed
-                                    for item in restored_battery.magazines.values()
-                                    if item.weapon_key == weapon_key)
-                                remaining += sum(
-                                    tube.loaded_weapon_key == weapon_key
-                                    or tube.loading_weapon_key == weapon_key
-                                    for tube in restored_battery.tubes)
-                                spent_asrocs[(entity_id, weapon_key)] = (
-                                    capacity - remaining)
-                        last_seen = entry.get("asw_last_seen", -1.0)
-                        if (not finite_number(last_seen)
-                                or not -1.0 <= last_seen <= save_sim_t):
-                            return False
-                        pending_asroc = entry.get("pending_asroc", [])
-                        if (not isinstance(pending_asroc, list)
-                                or len(pending_asroc) > MAX_ASROCS
-                                or (battery is not None and
-                                    len(pending_asroc) >
-                                    WeaponBattery.restore(
-                                        battery).capacity_total -
-                                    WeaponBattery.restore(
-                                        battery).remaining_total)):
-                            return False
-                        for row in pending_asroc:
-                            if (not isinstance(row, dict)
-                                    or set(row) != {"x", "y", "datum_x",
-                                                   "datum_y", "weapon_key",
-                                                   "target_depth_m"}
-                                    or any(not bounded(row.get(field),
-                                                           -1_000_000, 1_000_000)
-                                           for field in ("x", "y", "datum_x",
-                                                         "datum_y"))
-                                    or not bounded(row.get("target_depth_m"),
-                                                   0, 10000)):
-                                return False
-                            weapon = runtime_catalog.weapons.get(
-                                row.get("weapon_key"))
-                            if (weapon is None or weapon.weapon_type != "asroc"
-                                    or battery is None
-                                    or row["weapon_key"] not in
-                                        battery["weapon_keys"]):
-                                return False
-                            key = (entity_id, row["weapon_key"])
-                            used_asrocs[key] = used_asrocs.get(key, 0) + 1
-                        pending_asrocs += len(pending_asroc)
-                        if pending_asrocs > MAX_ASROCS:
-                            return False
-                if name == "subs":
-                    if not {
-                            "asw_battery", "countermeasure_store",
-                            "endurance"} | SUB_CREW_FIELDS <= set(entry):
-                        return False
-                    if (type(entry["manual"]) is not bool
-                            or type(entry["manual_ping_pending"]) is not bool
-                            or not bounded(entry["order_course"], -360.0, 720.0)
-                            or not bounded(entry["order_speed"], 0.0, 100.0)
-                            or not bounded(entry["order_depth"], 0.0, 10_000.0)
-                            or not (entry["last_bottom_m"] is None
-                                    or bounded(entry["last_bottom_m"], 0.0, 20_000.0))):
-                        return False
-                    try:
-                        BoatBallast.restore(entry["ballast"])
-                        BoatDamageControl.restore(entry["damage_control"])
-                    except (TypeError, ValueError):
-                        return False
-                    if not bounded(entry.get("active_ping_cd"), 0.0,
-                                   config.SUB_ACTIVE_PING_COOLDOWN_S):
-                        return False
-                    if not bounded(entry.get("radar_hold_s"), 0.0, config.SUB_RADAR_HOLD_S):
-                        return False
-                    if (type(entry.get("blow_available")) is not bool
-                            or type(entry.get("emergency_ascent")) is not bool
-                            or (entry["emergency_ascent"]
-                                and entry["blow_available"])
-                            or not bounded(entry.get("transient_left"), 0.0, 60.0)
-                            or not bounded(entry.get("flood_noise_left"), 0.0, 60.0)
-                            or type(entry.get("flood_quiet")) is not bool
-                            or type(entry.get("flood_seq")) is not int
-                            or not 0 <= entry["flood_seq"] < config.SUB_FLOOD_SEQ_MAX
-                            or not bounded(entry.get("ai_tube_left"), -1.0,
-                                           config.UBOOT_TUBE_FLOOD_QUIET_S)
-                            or (entry["ai_tube_left"] < 0.0
-                                and entry["ai_tube_left"] != -1.0)
-                            or type(entry.get("ai_fire_pending")) is not bool
-                            or not bounded(entry.get("hull_fatigue"), 0.0, 1.0)
-                            or not bounded(entry.get("speed_order"), 0.0, 100.0)
-                            or not isinstance(entry.get("tma_track"), list)
-                            or len(entry["tma_track"]) > config.BEARING_TRACK_MAX_PTS
-                            or any(not isinstance(point, dict) or set(point) != {
-                                "t", "bearing", "fx", "fy", "fcourse",
-                                "uncertainty_deg", "fspeed"}
-                                   or not all(bounded(value, -1_000_000, 1e12)
-                                              for value in point.values())
-                                   or not 0.05 <= point["uncertainty_deg"] <= 180.0
-                                   for point in entry["tma_track"])
-                            or (entry.get("tma_track_id") is not None
-                                and (not isinstance(entry["tma_track_id"], str)
-                                     or len(entry["tma_track_id"]) > 64))
-                            or not bounded(entry.get("tma_next_t"), 0.0, 1e12)
-                            or not bounded(entry.get("torpedo_alarm_left"), -1.0, 15.0)):
-                        return False
-                    endurance_profile = runtime_catalog.endurances.get(
-                        f"endurance.{profile_key}")
-                    endurance_state = entry.get("endurance")
-                    if ((endurance_profile is None) != (endurance_state is None)):
-                        return False
-                    if endurance_profile is not None:
-                        try:
-                            SubmarineEndurance.restore(
-                                endurance_profile, endurance_state)
-                        except (TypeError, ValueError):
-                            return False
-                    torpedoes_left = entry.get("torpedoes_left")
-                    if (type(torpedoes_left) is not int
-                            or not 0 <= torpedoes_left <= 100):
-                        return False
-                    battery = entry.get("asw_battery")
-                    expected_battery = WeaponBattery.from_catalog(
-                        runtime_catalog, profile_key, "torpedo")
-                    if ((battery is None) !=
-                            (expected_battery is None)):
-                        return False
-                    if battery is not None and not battery_matches_catalog(
-                            battery, runtime_catalog, profile_key, "torpedo"):
-                        return False
-                    if battery is not None:
-                        restored_battery = WeaponBattery.restore(battery)
-                        for weapon_key in restored_battery.weapon_keys:
-                            capacity = sum(
-                                item.capacity for item in
-                                restored_battery.magazines.values()
-                                if item.weapon_key == weapon_key)
-                            remaining = sum(
-                                item.stowed for item in
-                                restored_battery.magazines.values()
-                                if item.weapon_key == weapon_key)
-                            remaining += sum(
-                                tube.loaded_weapon_key == weapon_key
-                                or tube.loading_weapon_key == weapon_key
-                                for tube in restored_battery.tubes)
-                            spent_enemy_torpedoes[(entity_id, weapon_key)] = (
-                                capacity - remaining)
-                    else:
-                        spent_enemy_torpedoes[(entity_id, None)] = max(
-                            0, profile.torpedoes - torpedoes_left)
-                    store = entry.get("countermeasure_store")
-                    expected_store = ConsumableStore.from_catalog(
-                        runtime_catalog, profile_key, "acoustic_decoy")
-                    if ((store is None) != (expected_store is None)):
-                        return False
-                    if store is not None and not consumable_matches_catalog(
-                            store, runtime_catalog, profile_key,
-                            "acoustic_decoy"):
-                        return False
-                    if store is not None:
-                        consumables = ConsumableStore.restore(store)
-                        spent_decoys[entity_id] = (
-                            consumables.capacity - consumables.remaining_total)
-                    battery = entry.get("asw_battery")
-                    store = entry.get("countermeasure_store")
-                    if (battery is not None
-                            and WeaponBattery.restore(battery).remaining_total
-                            != entry.get("torpedoes_left")):
-                        return False
-                    memory = entry.get("memory", {})
-                    if not isinstance(memory, dict):
-                        return False
-                    for age in ("last_ping_age", "last_torpedo_age"):
-                        value = memory.get(age)
-                        if value is not None and not bounded(value, 0, 1e12):
-                            return False
-                    if not bounded(memory.get("contact_age", config.SUB_EVADE_DURATION_S),
-                                   0, config.SUB_EVADE_DURATION_S):
-                        return False
-                    bearing = memory.get("contact_bearing")
-                    if bearing is not None and (not bounded(bearing, 0, 360) or bearing == 360):
-                        return False
-                    if not {"contact_sigma_nm", "contact_t", "contact_reopen_left"} <= set(memory):
-                        return False
-                    if (type(memory["contact_reopen_left"]) is not int
-                            or not 0 <= memory["contact_reopen_left"] <= 10):
-                        return False
-                    sigma = memory["contact_sigma_nm"]
-                    if sigma is not None and not bounded(sigma, 0, 10_000):
-                        return False
-                    contact_t = memory["contact_t"]
-                    if contact_t is not None and not bounded(contact_t, 0, 1e12):
-                        return False
-                    if not bounded(entry.get("solution_threshold"), 0.05, 0.40):
-                        return False
-                    observed = memory.get("contact")
-                    if observed is not None:
-                        if (not isinstance(observed, dict)
-                                or set(observed) != {"x", "y", "speed", "course", "noise"}
-                                or any(not bounded(observed[axis], -1_000_000, 1_000_000)
-                                       for axis in ("x", "y"))
-                                or not bounded(observed["speed"], 0, 100)
-                                or not bounded(observed["course"], 0, 360)
-                                # The remembered received signal, not the ship's
-                                # own noise figure (that stays below it).
-                                or not bounded(observed["noise"], 0, SONAR_SIGNAL_MAX)):
-                            return False
-                for pending, width in (("pending_torpedoes", 9),
-                                       ("pending_decoys", 2), ("pending_asm", 3)):
-                    rows = entry.get(pending, [])
-                    if (not isinstance(rows, list) or len(rows) > 10000
-                            or any(not isinstance(row, (list, tuple))
-                                   or len(row) != width
-                                   or (pending != "pending_torpedoes"
-                                       and any(not bounded(
-                                           v, -1_000_000, 1_000_000)
-                                               for v in row))
-                                   or (pending == "pending_asm" and not identity(row[2]))
-                                   for row in rows)):
-                        return False
-                    if pending == "pending_torpedoes" and rows:
-                        if (name != "subs" or len(rows) > 2
-                                or (battery is not None and len(rows) >
-                                    WeaponBattery.restore(
-                                        battery).capacity_total -
-                                    WeaponBattery.restore(
-                                        battery).remaining_total)):
-                            return False
-                        for row in rows:
-                            if (any(not bounded(value, -1_000_000, 1_000_000)
-                                    for value in row[:6])
-                                    or not isinstance(row[6], str)
-                                    or not identity(row[7])
-                                    or row[7] != entity_id):
-                                return False
-                            pending_profile = runtime_catalog.torpedoes.get(row[6])
-                            weapon_key = row[8]
-                            if (pending_profile is None
-                                    or pending_profile.used_by != "enemy"
-                                    or (battery is None) != (weapon_key is None)
-                                    or (weapon_key is not None and (
-                                        weapon_key not in battery["weapon_keys"]
-                                        or runtime_catalog.weapons[
-                                            weapon_key].runtime_profile_key
-                                            != row[6]))):
-                                return False
-                            key = (entity_id, weapon_key)
-                            used_enemy_torpedoes[key] = (
-                                used_enemy_torpedoes.get(key, 0) + 1)
-                        pending_enemy_torpedoes += len(rows)
-                        if (pending_enemy_torpedoes
-                                + len(data.get("enemy_torpedoes", []))
-                                > MAX_ENEMY_TORPEDOES):
-                            return False
-                    if pending == "pending_decoys" and rows:
-                        if name != "subs" or len(rows) > 1:
-                            return False
-                        if store is not None:
-                            consumables = ConsumableStore.restore(store)
-                            if len(rows) > consumables.capacity - \
-                                    consumables.remaining_total:
-                                return False
-                        used_decoys[entity_id] = (
-                            used_decoys.get(entity_id, 0) + len(rows))
-                        pending_decoys += len(rows)
-                        if (pending_decoys
-                                + len(data.get("decoys", [])) > MAX_DECOYS):
-                            return False
-                    if pending == "pending_asm" and rows:
-                        if name != "warships":
-                            return False
-                        profile_key = entry.get("signature_key")
-                        if profile_key is not None and not isinstance(profile_key, str):
-                            return False
-                        profile = runtime_catalog.surfaces.get(profile_key)
-                        low, high = profile.asm_salvo if profile is not None else (1, max_salvo)
-                        if any(not low <= row[2] <= high for row in rows):
-                            return False
-                        pending_missiles += sum(row[2] for row in rows)
-                        if pending_missiles > MAX_SAVED_ASMS:
-                            return False
-    if any(count > spent_enemy_torpedoes.get(key, 0)
-           for key, count in used_enemy_torpedoes.items()):
-        return False
-    for row in data["asw"]["asrocs"]:
-        key = (row["launch_platform_id"], row["weapon_key"])
-        used_asrocs[key] = used_asrocs.get(key, 0) + 1
-    if any(count > spent_asrocs.get(key, 0)
-           for key, count in used_asrocs.items()):
-        return False
-    if any(count > spent_decoys.get(source_id, 0)
-           for source_id, count in used_decoys.items()):
-        return False
-    if len(entity_ids) > MAX_SAVED_ENTITIES:
-        return False
-    next_ids = data.get("next_entity_ids", {})
-    if (not isinstance(next_ids, dict) or set(next_ids) != set(groups)
-            or any(not identity(value) or value <= max(group_ids[key], default=0)
-                   for key, value in next_ids.items())):
-        return False
+
+def _check_air_defense_state(data, runtime_catalog, platform_state_version,
+                             save_sim_t) -> bool:
     for key in ("asm_seq", "asm_spawned", "warship_asm_seq"):
         value = data.get(key, 0)
         if type(value) is not int or not 0 <= value <= 2**63 - 1:
@@ -1220,353 +685,10 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
                     profile is None or not validate_suite_state(
                         platform, runtime_catalog, profile.key, save_sim_t))):
             return False
-    helo = data.get("helo")
-    if not isinstance(helo, dict):
-        return False
-    if isinstance(helo, dict):
-        required_helo = {
-            "state", "x", "y", "course", "torps", "torpedo_profile_key",
-            "buoys_left", "fuel_s", "waypoint_x", "waypoint_y",
-            "dip_state", "dip_depth_m", "dip_depth_target_m",
-            "dip_water_depth_m", "dip_ping_cooldown", "hover_x", "hover_y",
-            "pattern", "pattern_queue", "mad_mode", "radar_on",
-        }
-        if set(helo) != required_helo:
-            return False
-        queue = helo["pattern_queue"]
-        if (helo["pattern"] not in ("single", "field", "barrier", "circle")
-                or type(helo["mad_mode"]) is not bool
-                or type(helo["radar_on"]) is not bool
-                or not isinstance(queue, list) or len(queue) > 8
-                or any(not isinstance(point, list) or len(point) != 2
-                       or not bounded(point[0], -1_000_000, 1_000_000)
-                       or not bounded(point[1], -1_000_000, 1_000_000)
-                       for point in queue)
-                or (helo["pattern"] == "single") != (not queue)
-                or (helo["mad_mode"] and helo["state"] != "AUF")):
-            return False
-        if ((helo["hover_x"] is None) != (helo["hover_y"] is None)
-                or (helo["hover_x"] is not None and (
-                    not bounded(helo["hover_x"], -1_000_000, 1_000_000)
-                    or not bounded(helo["hover_y"], -1_000_000, 1_000_000)))):
-            return False
-        if (helo.get("state") not in ("HANGAR", "AUF", "ZURUECK", "VERLOREN")
-                or not bounded(helo.get("x"), -1_000_000, 1_000_000)
-                or not bounded(helo.get("y"), -1_000_000, 1_000_000)
-                or not bounded(helo.get("course"), 0, 360)
-                or helo.get("course") == 360
-                or type(helo.get("torps")) is not int
-                or not 0 <= helo["torps"] <= config.HELO_TORPS
-                or type(helo.get("buoys_left")) is not int
-                or not 0 <= helo["buoys_left"] <= config.BUOY_COUNT
-                or not bounded(helo.get("fuel_s"), 0, config.HELO_FUEL_S)
-                or helo.get("dip_state") not in (
-                    "STOWED", "DEPLOYING", "DEPLOYED", "RETRIEVING")
-                or not bounded(helo.get("dip_depth_m"), 0,
-                               config.HELO_DIP_DEPTH_MAX_M)
-                or not bounded(helo.get("dip_depth_target_m"),
-                               config.HELO_DIP_DEPTH_MIN_M,
-                               config.HELO_DIP_DEPTH_MAX_M)
-                or not bounded(helo.get("dip_water_depth_m"), 0, 10000)
-                or not bounded(helo.get("dip_ping_cooldown"), 0,
-                               config.HELO_DIP_PING_COOLDOWN_S)
-                or (helo["dip_state"] == "STOWED"
-                    and (helo["dip_depth_m"] != 0
-                         or helo["dip_water_depth_m"] != 0))
-                or (helo["dip_state"] in ("DEPLOYING", "DEPLOYED")
-                    and helo["state"] != "AUF")
-                or (helo["dip_state"] != "STOWED"
-                    and (helo["dip_water_depth_m"]
-                         <= config.HELO_DIP_BOTTOM_CLEARANCE_M
-                         or helo["dip_depth_m"] > helo["dip_water_depth_m"]
-                         - config.HELO_DIP_BOTTOM_CLEARANCE_M
-                         or helo["dip_depth_target_m"]
-                         > helo["dip_water_depth_m"]
-                         - config.HELO_DIP_BOTTOM_CLEARANCE_M))
-                or (helo["dip_state"] == "DEPLOYED"
-                    and helo["dip_depth_m"] != helo["dip_depth_target_m"])
-                or (helo["state"] in ("HANGAR", "VERLOREN")
-                    and helo["dip_state"] != "STOWED")):
-            return False
-        wx, wy = helo.get("waypoint_x"), helo.get("waypoint_y")
-        if ((wx is None) != (wy is None)
-                or (wx is not None and (
-                    not bounded(wx, -1_000_000, 1_000_000)
-                    or not bounded(wy, -1_000_000, 1_000_000)))):
-            return False
-    if isinstance(helo, dict):
-        profile = runtime_catalog.torpedoes.get(helo.get("torpedo_profile_key"))
-        if profile is None or profile.used_by != "helo":
-            return False
-    buoys = data.get("buoys", [])
-    max_mpa_buoys = config.MPA_BUOYS * config.MPA_SORTIES
-    if (not isinstance(buoys, list)
-            or len(buoys) > config.BUOY_COUNT + max_mpa_buoys):
-        return False
-    # Save v21: the patrol aircraft (its stores bound its buoys and torpedoes).
-    mpa = data.get("mpa")
-    if not PatrolAircraft.valid_state(mpa, world_size):
-        return False
-    # Save v49: the language model's marks and the experimental opponent's plan.
-    if not valid_llm_state(data.get("llm")):
-        return False
-    # Save v50: the player's habits the enemy knows (None until decided).
-    if not habits.valid_state(data.get("habits")):
-        return False
-    # Save v47: the consort destroyer's orders; it must be a friendly warship.
-    consort = data.get("consort")
-    if not ConsortOrders.valid_state(consort, world_size, save_sim_t):
-        return False
-    if consort is not None and not any(
-            isinstance(row, dict) and row.get("id") == consort["warship_id"]
-            and isinstance(row.get("platform"), dict)
-            and row["platform"].get("side") == "friendly"
-            for row in data.get("warships", [])):
-        return False
-    buoy_ids = set()
-    for buoy in buoys:
-        if (not isinstance(buoy, dict)
-                or set(buoy) != {"x", "y", "seq", "battery_s", "mode",
-                                 "last_ping_epoch", "owner"}
-                or buoy["owner"] not in BUOY_OWNERS
-                or not bounded(buoy.get("x"), -1_000_000, 1_000_000)
-                or not bounded(buoy.get("y"), -1_000_000, 1_000_000)
-                or not identity(buoy.get("seq"))
-                or buoy["seq"] in buoy_ids
-                or not bounded(buoy.get("battery_s"), .000001,
-                               config.BUOY_BATTERY_S)
-                or buoy.get("mode", "PASSIVE") not in ("PASSIVE", "ACTIVE")
-                or type(buoy.get("last_ping_epoch", -1)) is not int
-                or not -1 <= buoy.get("last_ping_epoch", -1)
-                <= int(save_sim_t // config.BUOY_PING_COOLDOWN_S)):
-            return False
-        buoy_ids.add(buoy["seq"])
-    helo_buoys = sum(1 for buoy in buoys if buoy["owner"] == "HELO")
-    if (isinstance(helo, dict)
-            and helo_buoys > config.BUOY_COUNT - helo["buoys_left"]):
-        return False
-    if len(buoys) - helo_buoys > max_mpa_buoys:
-        return False
-    asms = data.get("asms", [])
-    torpedoes = data.get("torpedoes_in_flight", [])
-    essms = data.get("essms", [])
-    if (not isinstance(asms, list) or len(asms) > MAX_SAVED_ASMS
-            or not isinstance(torpedoes, list)
-            or len(torpedoes) > MAX_SAVED_PLAYER_TORPEDOES
-            or not isinstance(essms, list)
-            or len(essms) > MAX_SAVED_ESSMS
-            or any(not isinstance(row, dict)
-                   for rows in (asms, torpedoes, essms) for row in rows)):
-        return False
-    if len(asms) + pending_missiles > MAX_SAVED_ASMS:
-        return False
-    # Phase 8 torpedo physics state.
-    for row in torpedoes:
-        if (not bounded(row.get("energy_s"), 0.0, 1e6)
-                or not bounded(row.get("motor_fraction"), 0.0, 1.0)
-                or not bounded(row.get("depth_rate"), -20.0, 20.0)
-                or not bounded(row.get("wire_ship_out_nm"), 0.0, 1e4)
-                or not bounded(row.get("wire_stress_s"), 0.0, 1e6)
-                or not isinstance(row.get("rejected_ids"), list)
-                or len(row["rejected_ids"]) > 4
-                or any(not identity(item) for item in row["rejected_ids"])):
-            return False
-    for row in data.get("enemy_torpedoes", []):
-        if (not isinstance(row, dict)
-                or not bounded(row.get("energy_s"), 0.0, 1e6)
-                or not bounded(row.get("motor_fraction"), 0.0, 1.0)
-                or not bounded(row.get("depth_rate"), -20.0, 20.0)
-                or not bounded(row.get("target_depth"), 0.0, 10000.0)):
-            return False
-    asm_ids = set()
-    for asm in asms:
-        seq = asm.get("seq")
-        if not identity(seq) or seq in asm_ids:
-            return False
-        asm_ids.add(seq)
-        asm_profile = data["air_defense"]["loadout"]["asm"]
-        if (set(asm) != {"x", "y", "course", "seq", "profile_key", "state",
-                         "jammer", "age_s", "travel", "chaff_left", "broken",
-                         "speed_kn", "boosting", "altitude_m", "datum_x",
-                         "datum_y", "lock_s", "locked", "los_prev",
-                         "chaff_cloud"}
-                or not bounded(asm.get("speed_kn"), 0, asm_profile["speed_kn"])
-                or type(asm.get("boosting")) is not bool
-                or type(asm.get("locked")) is not bool
-                or not bounded(asm.get("altitude_m"), 0, 20_000)
-                or not bounded(asm.get("datum_x"), -1_000_000, 1_000_000)
-                or not bounded(asm.get("datum_y"), -1_000_000, 1_000_000)
-                or not bounded(asm.get("lock_s"), 0, 3600)
-                or (asm.get("los_prev") is not None
-                    and not bounded(asm.get("los_prev"), 0, 360))
-                or (asm.get("chaff_cloud") is not None
-                    and not identity(asm.get("chaff_cloud")))
-                or asm.get("profile_key") != asm_profile["key"]
-                or not bounded(asm.get("x"), -1_000_000, 1_000_000)
-                or not bounded(asm.get("y"), -1_000_000, 1_000_000)
-                or not bounded(asm.get("course"), 0, 360)
-                or asm.get("course") == 360
-                or asm.get("state", "LAUF") not in (
-                    "LAUF", "CHAFF", "ABGEFANGEN", "TREFFER", "VERLOREN")
-                or type(asm.get("jammer")) is not bool
-                or type(asm.get("broken")) is not bool
-                # Powered flight time: range at cruise plus the boost.
-                or not bounded(asm.get("age_s", 0), 0,
-                               missile_physics.flight_time_bound_s(
-                                   asm_profile["range_nm"],
-                                   asm_profile["speed_kn"]))
-                or not bounded(asm.get("travel", 0), 0, asm_profile["range_nm"])
-                or not bounded(asm.get("chaff_left"), -3600, 3600)):
-            return False
-    if "asm_seq" in data and data["asm_seq"] < max(asm_ids, default=0):
-        return False
-    for weapon in torpedoes + essms:
-        if any(not bounded(weapon.get(axis), -1_000_000, 1_000_000)
-               for axis in ("x", "y")):
-            return False
-        for flag in ("terminal_active", "seeker_acquired"):
-            if flag in weapon and type(weapon[flag]) is not bool:
-                return False
-        if ("guidance_x" in weapon) != ("guidance_y" in weapon):
-            return False
-        gx, gy = weapon.get("guidance_x"), weapon.get("guidance_y")
-        if (gx is None) != (gy is None) or (gx is not None and (
-                not bounded(gx, -1_000_000, 1_000_000)
-                or not bounded(gy, -1_000_000, 1_000_000))):
-            return False
-    active_origins = {"frigate": 0, "helo": 0, "asroc": 0, "mpa": 0}
-    for torpedo in torpedoes:
-        if torpedo.get("guidance_x") is None:
-            return False
-        target_id = torpedo.get("target_id")
-        if target_id is not None and (not identity(target_id)
-                or target_id not in entity_ids):
-            return False
-        profile_key = torpedo.get("profile_key")
-        profile = runtime_catalog.torpedoes.get(profile_key)
-        if profile is None or profile.used_by not in ("frigate", "helo"):
-            return False
-        distance = torpedo.get("range_nm", Torpedo.RANGE_NM)
-        if (not bounded(distance, .001, 10000)
-                or not identity(torpedo.get("idx"))
-                or not bounded(torpedo.get("speed_kn", Torpedo.SPEED_KN), 0, 10000)
-                or not bounded(torpedo.get("depth", 5), 0, 10000)
-                or not bounded(torpedo.get("target_depth", 5), 0, 10000)
-                or not bounded(torpedo.get("travel", 0), 0, distance)
-                or not bounded(torpedo.get("midcourse_timer", 0), 0, Torpedo.WIRE_BREAK_S)
-                or not {"search_phase", "midcourse", "pattern", "enable_nm",
-                        "turns_done"} <= set(torpedo)
-                or torpedo["pattern"] not in torpedo_dyn.SEARCH_PATTERNS
-                or not bounded(torpedo["enable_nm"], torpedo_dyn.ENABLE_RANGE_MIN_NM,
-                               torpedo_dyn.ENABLE_RANGE_MAX_NM)
-                or not bounded(torpedo["turns_done"], 0, 1e6)
-                or not bounded(torpedo.get("search_phase", 0), 0, 1e12)
-                or not bounded(torpedo.get("midcourse", torpedo.get("course")),
-                               0, 360)
-                or torpedo.get("midcourse", torpedo.get("course")) == 360
-                or torpedo.get("state", "RUN") not in ("RUN", "HIT", "SASE")):
-            return False
-        if torpedo.get("seeker_acquired", False) and target_id is None:
-            return False
-        origin = torpedo.get("launch_origin")
-        launch_platform_id = torpedo.get("launch_platform_id")
-        launch_weapon_key = torpedo.get("launch_weapon_key")
-        if (origin not in active_origins
-                or not {"launch_platform_id", "launch_weapon_key"}
-                <= set(torpedo)
-                or (origin == "asroc" and launch_weapon_key == depth_charge.OWN_ASROC_KEY
-                    and launch_platform_id is not None)
-                or (origin == "asroc" and launch_weapon_key != depth_charge.OWN_ASROC_KEY and (
-                    not identity(launch_platform_id)
-                    or not isinstance(launch_weapon_key, str)
-                    or runtime_catalog.weapons.get(launch_weapon_key) is None
-                    or runtime_catalog.weapons[
-                        launch_weapon_key].weapon_type != "asroc"))
-                or (origin != "asroc" and (
-                    launch_platform_id is not None
-                    or launch_weapon_key is not None))):
-            return False
-        loadout_weapons = data["asw"]["loadout"]["weapons"]
-        own_weapon = next((item for item in loadout_weapons
-                           if item["runtime_profile_key"] == profile_key), None)
-        if origin in ("frigate", "helo", "mpa") and (
-                origin != "frigate" or own_weapon is not None):
-            # Fregatte und Helo teilen sich denselben Custom-Difficulty-
-            # Treffwert (keine getrennten Level-Tabellen mehr).
-            expected_hit_distance = difficulty["kill_dist_nm"]
-            expected_hit_depth = difficulty["kill_depth_m"]
-        else:
-            expected_hit_distance = profile.hit_dist_nm
-            expected_hit_depth = Torpedo.KILL_DEPTH_M
-        if ((origin == "frigate" and profile.used_by != "frigate")
-                or (profile.used_by == "frigate" and own_weapon is None)
-                or torpedo.get("speed_kn") != profile.speed_kn
-                or distance != profile.range_nm
-                or torpedo.get("kill_dist_nm") != expected_hit_distance
-                or torpedo.get("kill_depth_m") != expected_hit_depth
-                or (origin in ("helo", "asroc", "mpa")
-                    and profile.used_by != "helo")
-                or (torpedo.get("seeker_acquired", False)
-                    and not torpedo.get("terminal_active", False))):
-            return False
-        active_origins[origin] += 1
-        if origin == "asroc":
-            key = (launch_platform_id, launch_weapon_key)
-            used_asrocs[key] = used_asrocs.get(key, 0) + 1
-    player_battery = WeaponBattery.restore(data["asw"]["player_battery"])
-    if active_origins["frigate"] > (
-            player_battery.capacity_total - player_battery.remaining_total):
-        return False
-    if (not isinstance(helo, dict)
-            or active_origins["helo"] > config.HELO_TORPS - helo["torps"]):
-        return False
-    if active_origins["mpa"] > config.MPA_TORPS * config.MPA_SORTIES:
-        return False
-    if any(count > spent_asrocs.get(key, 0)
-           for key, count in used_asrocs.items()):
-        return False
-    torpedo_seq = data.get("torpedo_seq", 0)
-    buoy_seq = data.get("buoy_seq", 0)
-    if (type(torpedo_seq) is not int or not 0 <= torpedo_seq <= 2**63 - 1
-            or type(buoy_seq) is not int or not 0 <= buoy_seq <= 2**63 - 1
-            or torpedo_seq < max(
-                (row["idx"] for row in torpedoes), default=0)
-            or buoy_seq < max(buoy_ids, default=0)):
-        return False
-    essm_ids = set()
-    for essm in essms:
-        target_id = essm.get("target_id")
-        track_id = essm.get("track_target_id")
-        sam_profile = data["air_defense"]["loadout"]["sam"]
-        if (set(essm) != {"x", "y", "course", "seq", "profile_key", "state",
-                          "travel", "guidance_x", "guidance_y",
-                          "track_target_id", "seeker_acquired", "target_id",
-                          "los_prev"}
-                or (essm.get("los_prev") is not None
-                    and not bounded(essm.get("los_prev"), 0, 360))
-                or essm.get("profile_key") != sam_profile["key"]
-                or (target_id is not None and (not identity(target_id)
-                                        or target_id not in asm_ids))
-                or not identity(essm.get("seq"))
-                or essm.get("seq") in essm_ids
-                or (track_id is not None and not identity(track_id))
-                or not bounded(essm.get("course"), 0, 360)
-                or essm.get("course") == 360
-                or not bounded(essm.get("travel", 0), 0, sam_profile["range_nm"])
-                or essm.get("state", "LAUF") not in ("LAUF", "HIT", "SASE")
-                or (essm.get("seeker_acquired", False)
-                    and target_id is None)
-                or essm.get("guidance_x") is None):
-            return False
-        essm_ids.add(essm["seq"])
-        if "asm_seq" in data and track_id is not None and track_id > data["asm_seq"]:
-            return False
-    if (data["air_defense"]["essm_seq"] < max(
-            (row["seq"] for row in essms), default=0)
-            or len(essms) > data["air_defense"]["loadout"]["vls"]["fire_channels"]
-            or len(essms) > data["air_defense"]["loadout"]["vls"][
-                "sam_loadout"] - data["vls_cells"]):
-        return False
+    return True
+
+
+def _check_world(data, hull, grounding, contact, pose) -> bool:
     world = data.get("world")
     if (not isinstance(world, dict) or set(world) != WORLD_FIELDS
             or world["mode"] not in ("fixed", "procedural", "real_fixed")
@@ -1603,16 +725,10 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
         value = schedulers.get(key, 0.0)
         if not finite_number(value) or not 0.0 <= value < limit:
             return False
-    def valid_sonar(sonar, allowed_ids) -> bool:
-        return valid_sonar_block(
-            sonar, allowed_ids, data=data, runtime_catalog=runtime_catalog,
-            default_catalog=CATALOG, save_sim_t=save_sim_t, buoy_ids=buoy_ids,
-            finite_number=finite_number, bounded=bounded, identity=identity)
+    return True
 
-    if data.get("sonar_mode") not in SONAR_ARRAY_MODES:
-        return False
-    if not valid_sonar(data.get("sonar"), entity_ids):
-        return False
+
+def _check_weapon_settings(data) -> bool:
     settings = data.get("weapon_settings")
     asw_block = data.get("asw")
     loadout = asw_block.get("loadout") if isinstance(asw_block, dict) else None
@@ -1627,6 +743,75 @@ def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
                            torpedo_dyn.ENABLE_RANGE_MAX_NM)
             or type(settings["salvo"]) is not int
             or settings["salvo"] not in torpedo_dyn.SALVO_SIZES):
+        return False
+    return True
+
+
+def valid_save_document(data, runtime_catalog=None, opz_chart=None) -> bool:
+    """Strict check of a parsed save document. With ``opz_chart`` (from
+    ``opz_chart_size()``) it is pure: no pygame, no live game or global
+    state, so it may run off the main thread."""
+    if not _check_preamble(data):
+        return False
+    frame = _check_frame(data, runtime_catalog, opz_chart)
+    if frame is False:
+        return False
+    (platform_state_version, save_sim_t, world_size, runtime_catalog,
+     torpedo_inventory) = frame
+    mission = _check_mission_blocks(data, save_sim_t)
+    if mission is False:
+        return False
+    runtime_mission, difficulty = mission
+    if not _check_mission_stores(data, runtime_mission, difficulty,
+                                 torpedo_inventory, runtime_catalog):
+        return False
+    if not _check_air_picture(data, runtime_catalog, save_sim_t):
+        return False
+    if not _check_hfdf(data):
+        return False
+    ship = _check_ship(data)
+    if ship is False:
+        return False
+    hull, grounding, pose, contact = ship
+    if not _check_damage(data):
+        return False
+    entities = check_entities(data, runtime_catalog, platform_state_version,
+                              save_sim_t)
+    if entities is False:
+        return False
+    entity_ids, pending_missiles, used_asrocs, spent_asrocs = entities
+    if not _check_air_defense_state(data, runtime_catalog,
+                                    platform_state_version, save_sim_t):
+        return False
+    helo = check_helo(data, runtime_catalog)
+    if helo is False:
+        return False
+    buoy_ids = check_buoys_and_aircraft(data, helo, world_size, save_sim_t)
+    if buoy_ids is False:
+        return False
+    missiles = check_missiles(data, pending_missiles)
+    if missiles is False:
+        return False
+    asms, torpedoes, essms, asm_ids = missiles
+    if not check_player_torpedoes(data, torpedoes, entity_ids, runtime_catalog,
+                                  difficulty, helo, used_asrocs, spent_asrocs,
+                                  buoy_ids):
+        return False
+    if not check_essms(data, essms, asm_ids):
+        return False
+    if not _check_world(data, hull, grounding, contact, pose):
+        return False
+    def valid_sonar(sonar, allowed_ids) -> bool:
+        return valid_sonar_block(
+            sonar, allowed_ids, data=data, runtime_catalog=runtime_catalog,
+            default_catalog=CATALOG, save_sim_t=save_sim_t, buoy_ids=buoy_ids,
+            finite_number=finite_number, bounded=bounded, identity=identity)
+
+    if data.get("sonar_mode") not in SONAR_ARRAY_MODES:
+        return False
+    if not valid_sonar(data.get("sonar"), entity_ids):
+        return False
+    if not _check_weapon_settings(data):
         return False
     if not _valid_crew_block(
             data, valid_sonar=valid_sonar,

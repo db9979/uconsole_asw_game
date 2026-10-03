@@ -42,6 +42,7 @@ stream.  Custom missions and lessons have no incidents.
 from __future__ import annotations
 
 import math
+from src.core.limits import finite_number as _number
 
 KINDS = ("net", "front", "dark", "whales", "overboard", "rudder", "valve", "gas")
 # Kinds that name an entity in ``target_id``.
@@ -58,11 +59,6 @@ ITEM_FIELDS = frozenset({
     "weather", "target_id", "plot_id", "boat_told", "fouled",
 })
 BOARD_FIELDS = frozenset({"version", "next_id", "next_t", "count", "items"})
-
-
-def _number(value) -> bool:
-    return (type(value) in (int, float) and not isinstance(value, bool)
-            and math.isfinite(value))
 
 
 def _time(value) -> bool:

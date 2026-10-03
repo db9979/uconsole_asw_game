@@ -24,6 +24,7 @@ This module holds the board (state, schema, bounds) and the pure geometry;
 from __future__ import annotations
 
 import math
+from src.core.limits import finite_number as _number
 
 KINDS = ("sar", "identify", "datum", "ras", "emcon", "patrol")
 STATES = ("offered", "active", "done", "failed", "declined")
@@ -47,11 +48,6 @@ TASK_FIELDS = frozenset({
     "points",
 })
 BOARD_FIELDS = frozenset({"version", "next_id", "next_offer_t", "offers", "tasks"})
-
-
-def _number(value) -> bool:
-    return (type(value) in (int, float) and not isinstance(value, bool)
-            and math.isfinite(value))
 
 
 def _time(value) -> bool:

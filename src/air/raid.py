@@ -20,6 +20,7 @@ import random
 from enum import Enum
 
 from src.core import config
+from src.physics.geo import FrigateRelativeMixin
 
 
 class RaidPhase(str, Enum):
@@ -47,7 +48,7 @@ def coordinated_turn_rate_deg_s(speed_kn: float, bank_deg: float = MAX_BANK_DEG)
     return math.degrees(G * math.tan(math.radians(bank_deg)) / speed)
 
 
-class Raider:
+class Raider(FrigateRelativeMixin):
     """Feindliches Angriffsflugzeug mit ASM-Salvenlast."""
 
     # Attacke: tangentialer Stand-off-Flug am Waffenbereich entlang.
@@ -77,15 +78,6 @@ class Raider:
         self.despawned = False
 
     # --- Simulation-interne Geometrie ---
-
-    def distance_nm(self, frigate) -> float:
-        return math.hypot(self.x - frigate.x, self.y - frigate.y)
-
-    def bearing_from_frigate(self, frigate) -> float:
-        """Peilung des Raiders von der Fregatte aus (Beobachtung/Sichtbild)."""
-        dx = self.x - frigate.x
-        dy = self.y - frigate.y
-        return math.degrees(math.atan2(dx, -dy)) % 360.0
 
     def course_to_frigate(self, frigate) -> float:
         """Steuerkurs vom Raider zur Fregatte (Umkehr der Peilung)."""

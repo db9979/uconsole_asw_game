@@ -39,6 +39,7 @@ import random
 
 from src.core import boat_nav, config, detrand
 from src.core.i18n import message, raw_text
+from src.physics.geo import bearing_deg as _bearing
 
 MODES = ("free", "free_boat")
 VERSION = 1
@@ -173,10 +174,6 @@ def incident_interval(game):
 
 
 # --- geometry -------------------------------------------------------------------------------
-
-def _bearing(x0, y0, x1, y1) -> float:
-    return math.degrees(math.atan2(x1 - x0, -(y1 - y0))) % 360.0
-
 
 def water_point(game, x, y, low, high, tag, index, min_depth=60.0):
     """A deterministic point ``low..high`` NM from ``x, y`` in water at least

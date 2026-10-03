@@ -18,6 +18,7 @@ from __future__ import annotations
 import math
 
 from src.core import commander_traits, config
+from src.physics.geo import bearing_deg as _bearing
 
 # Event kinds in display order of importance (the timeline colours them).
 EVENT_KINDS = ("first_contact", "first_fix", "classified", "own_shot", "enemy_shot",
@@ -166,10 +167,6 @@ class DebriefRecorder:
                     mean_error_nm=(sum(errors) / len(errors)) if errors else None,
                     missed=len(missed),
                     duration_t=self.frames[-1]["t"] if self.frames else 0.0)
-
-
-def _bearing(x0, y0, x1, y1) -> float:
-    return math.degrees(math.atan2(x1 - x0, -(y1 - y0))) % 360.0
 
 
 def _known_position(contact):

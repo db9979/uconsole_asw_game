@@ -21,6 +21,7 @@ from src.audio.receiver import AcousticReceiver, directional_gain
 from src.sonar.contact import (  # noqa: F401
     FIX_SOURCES, POINT_FIX_SOURCES, Contact, TowState)
 from src.sonar.arrays import ArrayHandlingMixin
+from src.physics.geo import bearing_deg
 
 
 def tgt_gone(tgt) -> bool:
@@ -95,8 +96,7 @@ class _WreckEcho:
         self.sensor_seed = int(detrand.bits(seed, "wreck-echo", index) & 0x7FFFFFFF)
 
     def bearing_from_frigate(self, frigate) -> float:
-        return math.degrees(math.atan2(self.x - frigate.x,
-                                       -(self.y - frigate.y))) % 360.0
+        return bearing_deg(frigate.x, frigate.y, self.x, self.y)
 
 
 class _RockEcho(_WreckEcho):
@@ -131,8 +131,7 @@ class _KnuckleEcho:
                                             "knuckle-echo", index) & 0x7FFFFFFF)
 
     def bearing_from_frigate(self, frigate) -> float:
-        return math.degrees(math.atan2(self.x - frigate.x,
-                                       -(self.y - frigate.y))) % 360.0
+        return bearing_deg(frigate.x, frigate.y, self.x, self.y)
 
 
 def _lambert_mu_db(world, x_nm: float, y_nm: float) -> float:

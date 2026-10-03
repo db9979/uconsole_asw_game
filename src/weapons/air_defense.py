@@ -9,6 +9,7 @@ from functools import lru_cache
 from importlib import resources
 
 from src.weapons.asw import ConsumableStore, valid_consumable_state
+from src.core.limits import finite_number as _is_finite
 
 
 AIR_DEFENSE_STATE_VERSION = 2
@@ -192,11 +193,6 @@ def _valid_raider_row(row, loadout):
             or not 0 <= attack_t <= 3600):
         return False
     return True
-
-
-def _is_finite(value):
-    return type(value) in (int, float) and not isinstance(value, bool) \
-        and math.isfinite(value)
 
 
 def bounded_range(value, low, high):

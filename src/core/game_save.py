@@ -997,8 +997,6 @@ class SaveMixin:
             raise ValueError("invalid save state")
 
     def _restore_state(self, data: dict) -> None:
-        import random
-
         def restore_entity(cls, *args, **kwargs):
             # Constructors allocate first. Account for these temporary IDs even
             # if a later constructor/restoration step fails.
@@ -1018,6 +1016,41 @@ class SaveMixin:
             entity.sensor_suite.restore(
                 state, self.runtime_catalog, profile_key, self.sim_t)
 
+        seed, rng = self._restore_world_and_ship(data)
+        self._restore_mission_state(data, seed)
+        self._restore_stores(data)
+        self._restore_damage(data, seed)
+        self._restore_sensor_pictures(data)
+        self._restore_helo_state(data, seed)
+        self._restore_subs(data, rng, restore_entity, restore_platform)
+        self._restore_animals(data, rng, restore_entity)
+        self._restore_surface_ships(data, rng, restore_entity, restore_platform)
+        # Save v49: the language model's marks and the experimental opponent's plan.
+        self.llm_restore(data["llm"])
+        # Save v50: the player's habits the enemy knows in this mission.
+        self.habits_restore(data["habits"])
+        # Save v47: the consort destroyer (one of the warships) and its orders.
+        self._reset_consort()
+        self.consort = ConsortOrders.restore(data["consort"])
+        if self.consort is not None:
+            self.consort_ship().commanded = True
+        self._restore_decoys(data, rng, restore_entity)
+        # Phase 2: laufende Entitaeten + Sensoren
+        by_id = ({s.id: s for s in self.subs}
+                  | {a.id: a for a in self.animals}
+                  | {d.id: d for d in self.decoys}
+                  | {c.id: c for c in self.civilians}
+                  | {w.id: w for w in self.warships})
+        self._restore_torpedoes(data, by_id, restore_entity)
+        self._restore_links_and_stations(data, by_id, restore_platform)
+        self._restore_rngs(data, rng)
+        self._restore_ui_focus(data)
+
+    # The blocks of ``_restore_state`` in its fixed order (verbatim moves).
+
+    def _restore_world_and_ship(self, data: dict):
+        """World, sonar, flights, ship and autocrew; returns (seed, rng)."""
+        import random
         seed = data["seed"]
         w = data["world"]
         coast_data = w["coast"]
@@ -1079,6 +1112,9 @@ class SaveMixin:
         self.weather_station_open = False
         # The top bar's game menu (src/ui/game_menu.py): display state only.
         self.game_menu_open = False
+        return seed, rng
+
+    def _restore_mission_state(self, data: dict, seed) -> None:
         runtime_mission = data["mission_runtime"]
         self.difficulty = {
             name: (int(runtime_mission["difficulty"][name]) if kind is int
@@ -1129,6 +1165,8 @@ class SaveMixin:
         self.sim_t = data["sim_t"]
         self.scenario_key = data["scenario_key"]
         self.level = data["level"]
+
+    def _restore_stores(self, data: dict) -> None:
         tp = data["torpedoes"]
         self.torpedo_total = tp["total"]
         self.torpedo_count = tp["count"]
@@ -1177,6 +1215,9 @@ class SaveMixin:
         self.enemy_torpedoes = []
         self.warships = []
         self.warship_anchor = None
+
+    def _restore_damage(self, data: dict, seed) -> None:
+        import random
         # Schadenszustand (Phase 2: repair_mult wiederherstellen)
         dmg = data["damage"]
         self.damage = DamageModel(random.Random(seed + 777),
@@ -1201,6 +1242,8 @@ class SaveMixin:
         self.damage.total = sum(c.flood for c in self.damage.compartments.values())
         self.damage.ship_sunk = (self.damage.capsized or self.damage.flood_mass_kg()
                                  >= damage_physics.RESERVE_BUOYANCY_KG)
+
+    def _restore_sensor_pictures(self, data: dict) -> None:
         # M10–M16
         self.sonar_mode = data["sonar_mode"]
         self.sonar_harmonic_hz = None
@@ -1268,6 +1311,9 @@ class SaveMixin:
         self._esm_acc = schedulers["esm"]
         self._radio_acc = schedulers["radio"]
         self._slow_acc = schedulers["slow"]
+
+    def _restore_helo_state(self, data: dict, seed) -> None:
+        import random
         self.torpedo_seq = data["torpedo_seq"]
         self.messages = [tuple(m) for m in data["messages"]]
         self._reset_lookout_reports()
@@ -1321,6 +1367,9 @@ class SaveMixin:
         self.helo.pattern_queue = [tuple(point) for point in hd["pattern_queue"]]
         self.helo.mad_mode = hd["mad_mode"]
         self.helo.radar_on = hd["radar_on"]
+
+    def _restore_subs(self, data: dict, rng, restore_entity,
+                      restore_platform) -> None:
         # U-Boote (Phase 2: vollstaendiger KI-Zustand)
         self.subs = []
         for sd in data["subs"]:
@@ -1410,6 +1459,8 @@ class SaveMixin:
                             SubmarineEndurance.restore(
                                 endurance_profile, sd["endurance"]))
             self.subs.append(s)
+
+    def _restore_animals(self, data: dict, rng, restore_entity) -> None:
         # Tiere
         self.animals = []
         for ad in data["animals"]:
@@ -1427,6 +1478,9 @@ class SaveMixin:
             a.target_depth = ad["target_depth"]
             a.sensor_seed = ad["sensor_seed"]
             self.animals.append(a)
+
+    def _restore_surface_ships(self, data: dict, rng, restore_entity,
+                               restore_platform) -> None:
         # Zivile
         self.civilians = []
         for cd in data["civilians"]:
@@ -1502,15 +1556,8 @@ class SaveMixin:
                 wd["fingerprint"])
             restore_platform(w, wd, w.signature_key)
             self.warships.append(w)
-        # Save v49: the language model's marks and the experimental opponent's plan.
-        self.llm_restore(data["llm"])
-        # Save v50: the player's habits the enemy knows in this mission.
-        self.habits_restore(data["habits"])
-        # Save v47: the consort destroyer (one of the warships) and its orders.
-        self._reset_consort()
-        self.consort = ConsortOrders.restore(data["consort"])
-        if self.consort is not None:
-            self.consort_ship().commanded = True
+
+    def _restore_decoys(self, data: dict, rng, restore_entity) -> None:
         # W2: Dekoys
         self.decoys = []
         for dd in data["decoys"]:
@@ -1527,12 +1574,8 @@ class SaveMixin:
             d.dead = False
             d.sensor_seed = dd["sensor_seed"]
             self.decoys.append(d)
-        # Phase 2: laufende Entitaeten + Sensoren
-        by_id = ({s.id: s for s in self.subs}
-                  | {a.id: a for a in self.animals}
-                  | {d.id: d for d in self.decoys}
-                  | {c.id: c for c in self.civilians}
-                  | {w.id: w for w in self.warships})
+
+    def _restore_torpedoes(self, data: dict, by_id, restore_entity) -> None:
         for td in data["torpedoes_in_flight"]:
             tgt = by_id.get(td.get("target_id"))
             torpedo_key = td["profile_key"]
@@ -1595,6 +1638,12 @@ class SaveMixin:
                  next((item for item in self.nixies
                        if seeker_target == f"nixie:{item.seq}"), None))
                 if self.enemy_torpedoes[-1].seeker_acquired else None)
+
+    def _restore_links_and_stations(self, data: dict, by_id,
+                                    restore_platform) -> None:
+        """Torpedo targets, missiles, buoys, flights, sonar, crew, weapon
+        settings and the torpedo cues (``serial`` keeps the last torpedo
+        of the target loop, as before)."""
         by_id.update((t.id, t) for t in self.enemy_torpedoes)
         for torpedo, td in zip(self.torpedoes, data["torpedoes_in_flight"]):
             torpedo.target = by_id.get(td.get("target_id"))
@@ -1684,6 +1733,8 @@ class SaveMixin:
         for cue in self.current_torpedo_cues():
             self._torpedo_cues_reported.setdefault(cue["owner"], set()).add(cue["report"])
             self.torpedo_cues.append(dict(cue, serial=id(torpedo)))
+
+    def _restore_rngs(self, data: dict, rng) -> None:
         # Phase 2: RNG-Zustaende (deterministischer Fortgang)
         rg = data["rngs"]
         self._restore_rng(rng, rg["world"])
@@ -1696,6 +1747,8 @@ class SaveMixin:
         self._restore_rng(self.flights.rng, rg["flight"])
         self._restore_rng(self.rng_asw, rg["asw"])
         self._restore_rng(self.rng_raid, rg["raid"])
+
+    def _restore_ui_focus(self, data: dict) -> None:
         # Zustand und sichtbarer Bedienfokus
         ui = data.get("ui", {})
         self.station = Station[ui["station"]]

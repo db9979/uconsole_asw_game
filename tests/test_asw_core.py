@@ -55,8 +55,10 @@ def test_ping_reaction_enters_evasive_state():
 
 def test_torpedo_swept_collision_hits_between_frames():
     target = Target(0.7, 0.0, depth=5.0)
+    # Every launch passes a datum; the seeker enables on it, never on truth.
     torpedo = Torpedo(0.0, 0.0, 90.0, 5.0, target, 1,
-                      kill_dist_nm=0.2, kill_depth_m=15.0)
+                      kill_dist_nm=0.2, kill_depth_m=15.0,
+                      guidance_x=0.7, guidance_y=0.0)
     # 45 kn legt in einer Minute 0,75 NM zurueck.
     torpedo.update(60.0)
     assert torpedo.state == "HIT"

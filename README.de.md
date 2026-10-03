@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.186**
+Aktuelle Version: **1.3.187**
 
-Version 1.3.186 bringt einen Server-Modus: Die uConsole dient nur als
+Version 1.3.187 bringt einen Server-Modus: Die uConsole dient nur als
 Server, alle spielen im Browser, auf beiden Einheiten, allein oder gemeinsam.
 Dazu im Hauptmenü „Server (nur Browser)“ wählen oder mit `--server` starten.
 Die uConsole zeigt dann nur QR-Code, Beitrittscode und Besatzung, im Einsatz

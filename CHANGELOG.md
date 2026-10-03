@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.186
+## 1.3.187
 
-Release 1.3.186 adds a server mode: the uConsole only serves and everyone
+Release 1.3.187 adds a server mode: the uConsole only serves and everyone
 plays in the browser, on both units, alone or together. Choose "Server
 (browsers only)" in the main menu or start with `--server`. The uConsole then
 shows only the QR code, the join code and the crew, and during a mission an
@@ -16,6 +16,14 @@ mission), the opponent, weather, time of day and length, starts the mission
 for everyone, saves and loads, and brings everyone back to the lobby. The
 crew keeps its stations from one mission to the next, and the lead can be
 handed over. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+
+## 1.3.186
+
+Release 1.3.186 fixes the light theme behind the menus. The main menu and
+every window opened over a mission (help, options, save and load, quit) now
+sit on a bright day scene with sun and light sea instead of the dark night
+picture, so the dark text stays easy to read. The night theme looks as
+before. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.185
 

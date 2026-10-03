@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.186**
+Current release: **1.3.187**
 
-Release 1.3.186 adds a server mode: the uConsole only serves and everyone
+Release 1.3.187 adds a server mode: the uConsole only serves and everyone
 plays in the browser, on both units, alone or together. Choose "Server
 (browsers only)" in the main menu or start with `--server`. The uConsole then
 shows only the QR code, the join code and the crew, and during a mission an

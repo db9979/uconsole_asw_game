@@ -4,6 +4,60 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.168
+
+Release 1.3.168 brings U-Jagd to the Mac. Every release now also carries a
+macOS app, `U-Jagd-macOS-arm64.zip` for Apple silicon and
+`U-Jagd-macOS-x86_64.zip` for Intel Macs, built and tested like the Windows
+program. "Update now" in the splash and main menu downloads the zip for the
+Mac's processor, checks its size and checksum, and swaps the app after the
+game quits; the old app is kept until the new one is in place. Remote Crew
+finds the Mac's network address too. The README explains the first start.
+Saves are v50; v38 to v49 saves still load.
+
+## 1.3.167
+
+Release 1.3.167 lets the enemy learn your habits. The logbook notes a few
+coarse habits of each finished mission: on the frigate an early first ping,
+a fast search or long torpedo shots, on the submarine a lot of time at
+periscope depth, staying above the layer or high speed. A habit shown in
+more than half of your last five missions of a side (at least three) is
+known to the enemy, and the AI adapts a little: boats go under the layer
+sooner or keep their distance, the hunter frigate searches slowly, sprints
+and drifts or pings more often. The debrief names what the enemy expected.
+The logbook page shows what it knows, and `L` there switches learning off.
+It is always off in the daily mission, lessons and two-crew play. Saves are
+v50 (they keep the habits decided for the mission); v38 to v49 saves still
+load.
+
+## 1.3.166
+
+Release 1.3.166 gives the built-in opponent its own tactics without any
+language model. Every free AI submarine picks a plan from what it heard
+itself and its commander's character: closing in, lying in wait under the
+layer, hiding deep after a ping or slipping away when damaged. The AI hunter
+frigate chooses its search the same way, from fast search to sprint and
+drift or a slow, quiet search. These are the plan lists of the experimental
+opponent, which still wins when it is switched on. Saves stay compatible.
+
+## 1.3.165
+
+Release 1.3.165 makes the test suite steadier and the code easier to work
+on. The browser tests that failed now and then wait for the page to really
+be ready, a host command after a side switch is no longer lost, and the
+sound ray cache no longer depends on the order of calls. Large source
+modules (sonar, the catalog, the scenario table, the game's event and
+operator code, the save checks) are split into smaller ones without
+changing behaviour.
+
+## 1.3.164
+
+Release 1.3.164 fixes saves that the game refused to load. An AI submarine
+that remembered a very loud contact wrote a value the save check did not
+allow, so some saves of long missions could not be loaded again; they load
+now. The nightly endurance test runs all scenarios of both sides, names the
+exact check that refused a save and keeps the refused save for inspection.
+
 ## 1.3.163
 
 Release 1.3.163 makes the stations work by mouse click. Status lamps, key

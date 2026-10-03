@@ -4,6 +4,66 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.168
+
+Version 1.3.168 bringt U-Jagd auf den Mac. Jede Version enthält jetzt auch
+eine macOS-App, `U-Jagd-macOS-arm64.zip` für Apple-Silicon und
+`U-Jagd-macOS-x86_64.zip` für Intel-Macs, gebaut und geprüft wie das
+Windows-Programm. „Jetzt updaten“ im Startbild und Hauptmenü lädt das Zip
+für den Prozessor des Macs, prüft Größe und Prüfsumme und tauscht die App
+nach dem Beenden aus; die alte App bleibt erhalten, bis die neue an ihrem
+Platz ist. Auch die Remote Crew findet die Netzwerkadresse des Macs. Die
+README erklärt den ersten Start. Spielstände sind v50; v38 bis v49 lassen
+sich weiter laden.
+
+## 1.3.167
+
+Version 1.3.167 lässt den Gegner Ihre Gewohnheiten lernen. Das Logbuch
+merkt sich zu jedem beendeten Einsatz ein paar grobe Gewohnheiten: auf der
+Fregatte einen frühen ersten Ping, eine schnelle Suche oder weite
+Torpedoschüsse, auf dem U-Boot viel Zeit auf Sehrohrtiefe, Fahrt über der
+Sprungschicht oder hohe Fahrt. Eine Gewohnheit, die in mehr als der Hälfte
+Ihrer letzten fünf Einsätze einer Seite (mindestens drei) auftrat, kennt der
+Gegner, und die KI stellt sich ein wenig darauf ein: U-Boote gehen früher
+unter die Schicht oder halten Abstand, die Jagdfregatte sucht langsam, sprintet
+und treibt oder pingt öfter. Die Nachbesprechung nennt, womit der Gegner
+gerechnet hat. Die Logbuchseite zeigt, was er kennt, und `L` schaltet das
+Lernen dort aus. In der Tagesmission, in Lektionen und im Spiel zweier
+Besatzungen ist es immer aus. Spielstände sind v50 (sie behalten die für den
+Einsatz festgelegten Gewohnheiten); v38 bis v49 lassen sich weiter laden.
+
+## 1.3.166
+
+Version 1.3.166 gibt dem eingebauten Gegner eigene Taktiken, ganz ohne
+Sprachmodell. Jedes freie KI-U-Boot wählt einen Plan aus dem, was es selbst
+gehört hat, und dem Charakter seines Kommandanten: heranschließen, unter der
+Schicht lauern, nach einem Ping tief verstecken oder beschädigt abtauchen
+und weglaufen. Die KI-Jagdfregatte wählt ihre Suche genauso, von der
+schnellen Suche über Sprint und Treiben bis zur langsamen, leisen Suche. Es
+sind die Planlisten des experimentellen Gegners, der weiterhin Vorrang hat,
+wenn er eingeschaltet ist. Spielstände bleiben kompatibel.
+
+## 1.3.165
+
+Version 1.3.165 macht die Tests verlässlicher und den Code leichter zu
+pflegen. Die Browser-Tests, die ab und zu fehlschlugen, warten jetzt, bis
+die Seite wirklich bereit ist, ein Befehl des Spielleiters nach einem
+Seitenwechsel geht nicht mehr verloren, und der Zwischenspeicher der
+Schallstrahlen hängt nicht mehr von der Reihenfolge der Aufrufe ab. Große
+Quellmodule (Sonar, Katalog, Szenariotabelle, Ereignis- und Bedienercode des
+Spiels, Spielstandprüfung) sind ohne Verhaltensänderung in kleinere
+aufgeteilt.
+
+## 1.3.164
+
+Version 1.3.164 behebt Spielstände, die das Spiel nicht laden wollte. Ein
+KI-U-Boot, das sich an einen sehr lauten Kontakt erinnerte, schrieb einen
+Wert, den die Spielstandprüfung nicht erlaubte, sodass sich manche
+Spielstände langer Einsätze nicht wieder laden ließen; sie laden jetzt. Der
+nächtliche Dauertest fährt alle Szenarien beider Seiten, nennt die genaue
+Prüfung, die einen Spielstand abgelehnt hat, und hebt den abgelehnten
+Spielstand zur Untersuchung auf.
+
 ## 1.3.163
 
 Version 1.3.163 macht die Stationen per Mausklick bedienbar.

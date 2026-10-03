@@ -14,21 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.163**
+Aktuelle Version: **1.3.168**
 
-Version 1.3.163 macht die Stationen per Mausklick bedienbar.
-Statuslampen, Tastenhinweise im Text einer Station, Seitenreiter,
-Listenzeilen und die Werte in der unteren Statuszeile reagieren jetzt auf
-beiden Seiten auf einen Klick: Eine Lampe oder ein Hinweis drückt seine
-Taste (etwa den ELOKA-Ton, das Spitzenhalten des Sonars, das Tauchsonar des
-Hubschraubers, die Zeilen des Maschinentelegrafen oder die Schleichfahrt des
-U-Boots), und ein Wert wie Flutung oder Torpedos öffnet die Station, die ihn
-bearbeitet. Das Sonar des U-Boots nimmt erstmals Klicks an, und das Element
-unter der Maus bekommt einen dünnen Rahmen. Ein Klick tut genau das, was
-seine Taste tut, mit denselben Prüfungen; die Feuertaste bleibt nur an der
-Waffenstation anklickbar. In der Remote Crew drückt ein Klick auf eine
-Sonar-, Hubschrauber- oder Maschinenlampe ihren Knopf. Spielstände bleiben
-v49; v38 bis v48 lassen sich weiter laden.
+Version 1.3.168 bringt U-Jagd auf den Mac und macht den Gegner ohne
+Sprachmodell klüger. Jede Version enthält jetzt eine macOS-App für
+Apple-Silicon und Intel-Macs, die sich wie das Windows-Programm selbst
+aktualisiert. Jedes freie KI-U-Boot und die KI-Jagdfregatte wählen ihre
+Taktik selbst aus dem, was sie gehört haben, und dem Charakter ihres
+Kommandanten, und der Gegner lernt aus dem Logbuch Ihre Gewohnheiten (früher
+Ping, weite Schüsse, Sehrohrtiefe, hohe Fahrt) und stellt sich ein wenig
+darauf ein; die Logbuchseite zeigt, was er kennt, und L schaltet das Lernen
+aus. Spielstände, die der laute Kontakt eines KI-U-Boots unladbar machte,
+laden wieder, der nächtliche Dauertest deckt alle Szenarien ab, wacklige
+Tests sind behoben und große Module aufgeteilt. Spielstände sind v50; v38
+bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

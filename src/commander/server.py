@@ -21,7 +21,7 @@ import time
 from urllib.parse import urlsplit
 
 from src.commander.assets import static_assets
-from src.commander.web_auth import WebHostAuth
+from src.commander.web_auth import FailureLimiter, WebHostAuth
 from src.core.config import SHIP_SPEED_MAX_KN
 
 from src.commander.missions import MissionLibraryServerMixin
@@ -200,7 +200,12 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         self._running = False
         self._code_index = None
         self._rotate_code_locked()
-        self._pair_failures = deque()
+        # Wrong pairing codes per source address (one stranger never locks out
+        # the crew) and, on the LAN listener only, all of them together: five
+        # within 60 s rotate the code there. The web-host room never rotates
+        # on anonymous failures (its code is handed out by the host).
+        self._pair_failures = FailureLimiter()
+        self._pair_code_failures = deque()
         self._sessions_v2 = {}
         self._solo = False
         self._next_v2_ordinal = 0
@@ -264,6 +269,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         self._v2_states = {role: _json_bytes(unpublished)
                            for role in (None, *ROLES)}
         self._v2_sonar_compact_state = self._v2_states["sonar"]
+        self._v2_state_heads = {role: ("unpublished", 0) for role in (None, *ROLES)}
         self._v2_charts = {role: _json_bytes(empty_chart)
                            for role in (None, *ROLES)}
         supplied = {} if contact_analysis_assets is None else contact_analysis_assets
@@ -439,6 +445,22 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
             self._expire_locked()
             return self._running and bool(self._sessions_v2)
 
+    def _record_pair_failure_locked(self, source):
+        """Count a wrong pairing code against its source address.
+
+        On the LAN listener five wrong codes in 60 s from anyone rotate the
+        code (brute-force guard, as before). The web-host room keeps its code:
+        rotating it on anonymous failures would let a stranger on the public
+        proxy invalidate the code the host has handed to the crew.
+        """
+        self._pair_failures.record(source)
+        if self.web_auth is not None:
+            return
+        self._pair_code_failures.append(time.monotonic())
+        if len(self._pair_code_failures) >= 5:
+            self._pair_code_failures.clear()
+            self._rotate_code_locked()
+
     def _rotate_code_locked(self):
         # Draw uniformly from the entire format space except the predecessor,
         # skipping its index instead of retrying a possible collision.
@@ -563,11 +585,16 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                      if candidate.session is session), None)
         if peer is not None:
             self._voice_disconnect_locked(peer)
-        if "sonar" in (session["active_station"], station):
+        # The audio ring belongs to the lease holder of its station. Only that
+        # session switching to or from it restarts the stream; an observer (or
+        # any session without the lease) looking at the station must never cut
+        # the real operator's live audio.
+        switched = (session["active_station"], station)
+        if "sonar" in switched and "sonar" in session["leases"]:
             self._clear_sonar_audio_locked()
-        if "helicopter" in (session["active_station"], station):
+        if "helicopter" in switched and "helicopter" in session["leases"]:
             self._clear_helicopter_audio_locked()
-        if "uboot_sonar" in (session["active_station"], station):
+        if "uboot_sonar" in switched and "uboot_sonar" in session["leases"]:
             self._clear_uboot_audio_locked()
         session["active_station"] = station
         session["active_generation"] += 1
@@ -703,8 +730,8 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
 
     def _expire_locked(self):
         now = time.monotonic()
-        while self._pair_failures and now - self._pair_failures[0] >= 60.0:
-            self._pair_failures.popleft()
+        while self._pair_code_failures and now - self._pair_code_failures[0] >= 60.0:
+            self._pair_code_failures.popleft()
         for digest, session in tuple(self._sessions_v2.items()):
             if now - session["last_get"] >= _V2_SESSION_IDLE_S:
                 self._clear_session_authority_locked(session)
@@ -980,6 +1007,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         with self._lock:
             self._revoke_locked(rotate_code=True)
             self._pair_failures.clear()
+            self._pair_code_failures.clear()
 
     @property
     def solo_mode(self) -> bool:
@@ -1014,6 +1042,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                 self._solo = enabled
                 self._revoke_locked(rotate_code=True)
                 self._pair_failures.clear()
+                self._pair_code_failures.clear()
 
     @staticmethod
     def _solo_grants(station):
@@ -1258,7 +1287,24 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
 
     def apply_command_v2(self, envelope, *, now, phase, world_session,
                          world_epoch, resource_revision, apply):
-        """Revalidate and complete one command atomically on the caller's thread."""
+        """Revalidate, apply and complete one command on the main thread.
+
+        Three steps. (1) Under the lock: revalidate the exact origin (client,
+        role, lease and active generation, grants, age, phase, world session,
+        epoch, revision). The envelope is already detached by
+        ``drain_commands_v2``, so it is claimed by this call alone. (2) Without
+        the lock: ``apply`` (a host load/new game/save can take seconds; every
+        transport thread keeps serving meanwhile). Only the main thread
+        mutates the world, phase, epoch and revision, and this is the main
+        thread, so nothing checked in (1) about the world can change before
+        ``apply`` runs. Transport threads may revoke a lease or grant during
+        ``apply``; that revocation is ordered after this command, exactly as if
+        it had arrived a moment later under the old single lock section
+        (stale queued commands are still rejected by the revocation itself).
+        (3) Under the lock again: record the result once. ``_finish_v2_locked``
+        refuses a second result for the same command id, so exactly-once
+        holds even if the session was revoked in between.
+        """
         if threading.current_thread() is not threading.main_thread():
             raise RuntimeError("v2 commands require the main thread")
         if type(envelope) is not V2CommandEnvelope or not callable(apply):
@@ -1272,6 +1318,9 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
             if (session is None or session.get("client_id") != envelope.client_id
                     or session.get("ordinal") != envelope.client_ordinal):
                 return False
+            entry = session["command_ids"].get(envelope.command_id)
+            if entry is None or entry[0] != envelope.body_bytes or entry[1] is not None:
+                return False  # already completed (or never accepted): never twice
             is_host = envelope.role == HOST_ROLE
             if not _v2_command_valid(body) or spec is None:
                 reason = "invalid_schema"
@@ -1313,32 +1362,36 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                 # Host controls are never revision-bound: they reference no resource.
                 reason = "revision_conflict"
             else:
-                try:
-                    applied = apply(body["action"], dict(body["params"]))
-                except Exception as exc:
-                    # Never log params/credentials/client addresses; type + action name only.
-                    _log.warning("command apply failed: %s (%s)",
-                                 body["action"], type(exc).__name__)
-                    applied = False
-                reason = ("ok" if applied is True or applied == "ok" else applied
-                          if type(applied) is str and applied in {
-                              "bridge_down", "sonar_down", "opz_down",
-                              "engine_down", "radio_down", "flightdeck_down",
-                               "invalid_value", "phase_blocked", "unknown_ref",
-                               "stale_ref", "source_owned", "fusion_rejected",
-                               "ineligible_track", "proposal_pending",
-                               "not_ready", "no_solution", "no_buoys",
-                               "water_required", "tas_fault", "invalid_target",
-                               "roe_blocked", "not_located", "not_classified",
-                               "salvo_limit", "empty", "no_tube",
-                               "weapons_down", "weapons_degraded", "out_of_range",
-                                "opz_degraded", "active_limit", "no_fuel",
-                                "weather_unsafe", "no_save", "save_failed",
-                                "no_mission", "mission_rejected",
-                                "lookout_not_confirmed", "no_consort", "consort_lost",
-                                "no_link", "stale_fix", "busy", "no_weapon", "no_track",
-                                *UBOOT_REASONS}
-                          else "action_rejected")
+                reason = None  # validated: apply below, outside the lock
+            if reason is not None:
+                return self._finish_v2_locked(session, envelope, "rejected", reason)
+        try:
+            applied = apply(body["action"], dict(body["params"]))
+        except Exception as exc:
+            # Never log params/credentials/client addresses; type + action name only.
+            _log.warning("command apply failed: %s (%s)",
+                         body["action"], type(exc).__name__)
+            applied = False
+        reason = ("ok" if applied is True or applied == "ok" else applied
+                  if type(applied) is str and applied in {
+                      "bridge_down", "sonar_down", "opz_down",
+                      "engine_down", "radio_down", "flightdeck_down",
+                       "invalid_value", "phase_blocked", "unknown_ref",
+                       "stale_ref", "source_owned", "fusion_rejected",
+                       "ineligible_track", "proposal_pending",
+                       "not_ready", "no_solution", "no_buoys",
+                       "water_required", "tas_fault", "invalid_target",
+                       "roe_blocked", "not_located", "not_classified",
+                       "salvo_limit", "empty", "no_tube",
+                       "weapons_down", "weapons_degraded", "out_of_range",
+                        "opz_degraded", "active_limit", "no_fuel",
+                        "weather_unsafe", "no_save", "save_failed",
+                        "no_mission", "mission_rejected",
+                        "lookout_not_confirmed", "no_consort", "consort_lost",
+                        "no_link", "stale_fix", "busy", "no_weapon", "no_track",
+                        *UBOOT_REASONS}
+                  else "action_rejected")
+        with self._lock:
             return self._finish_v2_locked(
                 session, envelope, "applied" if reason == "ok" else "rejected", reason)
 
@@ -1355,6 +1408,9 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                 or set(states) != expected or set(charts) != expected):
             raise ValueError("invalid v2 publication")
         encoded_states, encoded_charts = {}, {}
+        # (world session, epoch) per role, kept beside the encoded state so the
+        # proposal/event/SimLog polls never re-parse a state of up to 512 KiB.
+        heads = {}
         compact_sonar = None
         # Roles with identical visibility share one chart object, so it is
         # serialised once per publication instead of once per role.
@@ -1383,6 +1439,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
             if len(state_bytes) > STATE_MAX_BYTES or len(chart_bytes) > CHART_MAX_BYTES:
                 raise ValueError("v2 publication size limit exceeded")
             encoded_states[role], encoded_charts[role] = state_bytes, chart_bytes
+            heads[role] = (state["session"], state["epoch"])
             if (role == "sonar" and state.get("role") == "sonar"
                     and isinstance(state.get("sonar"), dict)
                     and isinstance(state["sonar"].get("visualization"), dict)):
@@ -1399,6 +1456,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                     dict(state, sonar=dict(state["sonar"], visualization=visual)))
         with self._lock:
             self._v2_states = encoded_states
+            self._v2_state_heads = heads
             self._v2_charts = encoded_charts
             self._v2_sonar_compact_state = compact_sonar or encoded_states["sonar"]
             self._sonar_stream_sequence += 1
@@ -1558,9 +1616,11 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                 role = session["active_station"]
                 merged = sorted(events_by_role[role] + rows,
                                 key=lambda row: row["seq"])[-EVENTS_MAX:]
-                encoded_private[digest] = _json_bytes({
+                # Stored with its role: the poll serves it only to that role
+                # without re-parsing the document.
+                encoded_private[digest] = (role, _json_bytes({
                     "protocol": 2, "session": world_session, "epoch": world_epoch,
-                    "role": role, "latest_seq": latest_seq, "events": merged})
+                    "role": role, "latest_seq": latest_seq, "events": merged}))
             self._v2_events = base
             self._v2_private_events = encoded_private
             self._v2_events_fingerprint = fingerprint

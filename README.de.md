@@ -14,14 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.179**
+Aktuelle Version: **1.3.180**
 
-Version 1.3.179 behebt zwei Klicks, die einen Programmfehler auslösten:
-den Dunkel/Hell-Schalter in der oberen Leiste (im Hauptmenü beendete er das
-Spiel, im Einsatz sprang das Spiel auf den letzten Sicherungspunkt zurück)
-und die Kontaktkarten auf der Waffenseite des U-Boots. Beide funktionieren
-jetzt (das Farbschema wechselt, die Karte wählt ihren Kontakt). Tasten bleiben gleich. Spielstände sind v50;
-v38 bis v49 laden weiter.
+Version 1.3.180 bringt die drei Spalten zu ELOKA, Funkraum und der
+Waffenseite der Fregatte. ELOKA zeigt die Auffassungen links als Karten (ein
+Klick wählt), in der Mitte die Bedrohungsrose und rechts die gewählte
+Auffassung mit Signal und den Lampen für ESM und Störer. Der Funkraum hat links
+die HF-Peilsignale als Karten, in der Mitte die Kreuzpeilkarte und rechts die
+Peilrose mit dem Peilprotokoll. Die Waffenseite der Fregatte zeigt ihre
+Sonarkontakte als Karten über den Einsatzstufen (ein Klick wählt, M weist zu).
+Tasten bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -6,7 +6,7 @@ Der Funkraum wickelt die Verbindung zum Hauptquartier und die Kurzwellenpeilung 
 
 ## Anzeigen und Instrumente {#radio-displays}
 
-Seite 1 listet aktuelle HFDF-Signale mit der Peilrose links und die Kreuzpeilkarte mit dem Peilprotokoll rechts; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr; Seite 3 listet die HQ-Aufträge.
+Seite 1 hat drei Spalten: die aktuellen HFDF-Signale als Karten links (ein Klick wählt eines wie `↑`/`↓`), die Kreuzpeilkarte in der Mitte und die Peilrose mit Peilprotokoll und Fixen rechts; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr; Seite 3 listet die HQ-Aufträge.
 
 ```text
  HFDF-SIGNALE               PEILPROTOKOLL

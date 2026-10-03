@@ -77,6 +77,7 @@ from src.ui.stations.eloka import (  # noqa: F401
     _eloka_visible_tracks,
     _draw_eloka_signal,
     eloka_track_at,
+    short_key,
     draw_eloka_view)
 from src.ui.stations.radio import (  # noqa: F401
     draw_radio_view, hfdf_regions, task_detail_lines)
@@ -124,7 +125,7 @@ def station_hit_target(game, pos):
         if inspected is not None:
             annotation = game.eloka_annotation_name(inspected.track_key)
             return layout.tooltip_payload(
-                message("eloka.tooltip.track_title", track=inspected.track_key),
+                message("eloka.tooltip.track_title", track=short_key(inspected.track_key)),
                 message("eloka.tooltip.bearing", bearing=f"{inspected.bearing:05.1f}",
                         error=f"{inspected.bearing_uncertainty_deg:.1f}"),
                 message("eloka.tooltip.fingerprint",

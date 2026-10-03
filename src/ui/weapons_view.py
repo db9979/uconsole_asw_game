@@ -7,7 +7,7 @@ import pygame
 from src.core import config
 from src.core.i18n import raw_text, display_value, localized, localize, message as structured_message
 from src.core.station import Station
-from src.ui import console, engagement, label_layout, layout, map_view, pointer
+from src.ui import console, engagement, label_layout, layout, map_view, pointer, theme
 from src.ui import nato_symbols
 from src.ui import observations
 
@@ -108,9 +108,14 @@ def weapons_regions(game, page=0) -> dict:
     left_w = int(w * .65)
     right_w = w - left_w - gap
     if page == 0:
+        # Contact cards above the engagement stages on the left, the
+        # fire-control solution on the right.
+        side_w = WEAPONS_SIDE_W
+        stages_h = min(h // 2, _stages_height())
         return {
-            "solution": pygame.Rect(x, top, left_w, h),
-            "stages": pygame.Rect(x + left_w + gap, top, right_w, h),
+            "contacts": pygame.Rect(x, top, side_w, h - stages_h - gap),
+            "stages": pygame.Rect(x, top + h - stages_h, side_w, stages_h),
+            "solution": pygame.Rect(x + side_w + gap, top, w - side_w - gap, h),
         }
     else:
         inv_h = max(1, int(h * .42))
@@ -121,6 +126,81 @@ def weapons_regions(game, page=0) -> dict:
             "controls": pygame.Rect(x + left_w + gap, top + inv_h + gap,
                                     right_w, lower_h),
         }
+
+
+WEAPONS_SIDE_W = 232
+CARD_H = 46
+CARD_PITCH = 50
+
+
+def _stages_height() -> int:
+    """Height of the engagement-stages box: five lamps and two key lines."""
+    lamp_h = layout.line_pitch(13, 0) + 10
+    title = 8 + layout.font(16, bold=True).get_linesize() + 8
+    return title + 5 * (lamp_h + 4) - 4 + 12 + 24 + 24 + 8
+
+
+def weapons_contacts(game) -> list:
+    """The contacts ←/→ steps through at this station, in the same order."""
+    sonar = getattr(game, "sonar", None)
+    if sonar is None:
+        return []
+    return sorted((c for c in sonar.contacts.values()
+                   if game.sim_t - c.last_seen < config.SONAR_CONTACT_LOST_S),
+                  key=lambda c: c.id)
+
+
+def weapons_contact_cards(game) -> list:
+    """(contact, rect) for each card the contacts box shows, scrolled so the
+    selected contact stays visible."""
+    box = weapons_regions(game, 0)["contacts"]
+    contacts = weapons_contacts(game)
+    capacity = max(1, (box.h - 36) // CARD_PITCH)
+    chosen = next((index for index, c in enumerate(contacts)
+                   if c is game.selected_contact), 0)
+    start = max(0, min(chosen - capacity // 2, len(contacts) - capacity))
+    return [(c, pygame.Rect(box.x + 6, box.y + 34 + index * CARD_PITCH, box.w - 12, CARD_H))
+            for index, c in enumerate(contacts[start:start + capacity])]
+
+
+def _pick_contact(game, contact) -> None:
+    """A click on a card selects its contact, as ←/→ would (M assigns it)."""
+    if contact in weapons_contacts(game):
+        game.selected_contact = contact
+        if game.sonar.focus_locked:
+            game.sonar.reset_listening_history()
+
+
+def _draw_contact_cards(s, game, box) -> None:
+    layout.box(s, box, "weapons.panel.contacts")
+    cards = weapons_contact_cards(game)
+    if not cards:
+        layout.blit_block(s, "weapons.no_contacts", box.x + 12, box.y + 36, box.w - 24, 44,
+                          config.COLOR_TEXT_DIM, size=14)
+    for c, rect in cards:
+        chosen = c is game.selected_contact
+        targeted = c is game.target
+        pygame.draw.rect(s, config.COLOR_TAB_ACTIVE if chosen else theme.c("raised"),
+                         rect, border_radius=4)
+        pygame.draw.rect(s, theme.c("focus") if chosen else theme.c("line"),
+                         rect, 2 if chosen else 1, border_radius=4)
+        if targeted:
+            pygame.draw.rect(s, config.COLOR_DANGER, (rect.x + 3, rect.y + 5, 3, rect.h - 10))
+        layout.blit_line(s, raw_text(observations.contact_display_id(game, c)),
+                         (rect.x + 10, rect.y + 3, 48, 20), config.COLOR_TEXT, size=15)
+        layout.blit_line(s, display_value("classification", getattr(c, "player_class", None)),
+                         (rect.x + 58, rect.y + 4, rect.w - 134, 19),
+                         config.COLOR_DANGER if targeted else config.COLOR_TEXT_DIM, size=13)
+        layout.blit_line(s, observations.format_bearing(c, game.ship) + "\u00b0",
+                         (rect.right - 72, rect.y + 2, 64, 21), config.COLOR_TEXT,
+                         size=17, align="right")
+        distance = _display_range(c, game.ship)
+        layout.blit_line(s, message("weapons.card.range_confidence",
+                                    range=f"{distance:.1f}" if distance is not None else "--",
+                                    confidence=f"{c.confidence:.0%}"),
+                         (rect.x + 10, rect.y + 25, rect.w - 18, 19),
+                         config.COLOR_TEXT_DIM, size=13)
+        pointer.add_action(rect, lambda _pos, picked=c: _pick_contact(game, picked))
 
 
 def _active_row_pitch() -> int:
@@ -151,6 +231,9 @@ def weapons_hit_target(game, pos):
     if page == 0:
         solution = regions["solution"]
         stages = regions["stages"]
+        if regions["contacts"].collidepoint(pos):
+            return layout.tooltip_payload("weapons.panel.contacts", "tooltip.adopt_contact",
+                                          target_id="weapons:contacts")
         if solution.collidepoint(pos):
             if target is None:
                 return layout.tooltip_payload("panel.fire_solution", "weapons.no_assigned_target",
@@ -327,6 +410,7 @@ def draw_weapons_panel(game, tr=None) -> None:
 
     if page == 0:
         regions = weapons_regions(game, 0)
+        _draw_contact_cards(s, game, regions["contacts"])
         solution = layout.box(s, regions["solution"], "panel.fire_solution",
                               border=config.COLOR_DANGER if c else config.COLOR_WARN)
         sx, sy, sw, _ = solution

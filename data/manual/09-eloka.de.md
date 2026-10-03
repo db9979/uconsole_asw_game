@@ -6,7 +6,7 @@ Die Elektronische Kampfführung (EloKa) horcht passiv auf Radarsender (ESM) und 
 
 ## Anzeigen und Instrumente {#eloka-displays}
 
-Seite 1 listet die Erfassungen; Seite 2 zeigt die Belege für die gewählte Erfassung (Frequenz, PRF, Modulation, Kandidaten, Korrelation).
+Beide Seiten zeigen die Erfassungen links als Karten (Kennung, Peilung, Frequenz und Band, Güte und Alter; der Streifen trägt die Bedrohungsfarbe; ein Klick wählt eine wie `↑`/`↓`). Seite 1 hat in der Mitte die Bedrohungsrose mit der Filterzeile und rechts die gewählte Erfassung (Signal-Fingerabdruck, Peilung, Radarart, Bedrohung, ECM, Zuordnung, beste Bibliothekskandidaten) über den Lampen für ESM, Störer, ECM-Automatik und Ton; Seite 2 zeigt alle Belege für die gewählte Erfassung (Frequenz, PRF, Modulation, Kandidaten, Korrelation).
 
 ![ELOKA auf der uConsole](figure:station-eloka)
 

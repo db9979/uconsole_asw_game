@@ -6,7 +6,7 @@ The radio room handles communications with HQ and HF direction finding (HFDF). H
 
 ## Displays and instruments {#radio-displays}
 
-Page 1 lists current HFDF signals with the DF rose on the left and the cross-fix chart with the bearing log on the right; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
+Page 1 has three columns: the current HFDF signals as cards on the left (a click selects one as `↑`/`↓` would), the cross-fix chart in the middle and the DF rose with the bearing log and the fixes on the right; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
 
 ![Radio room on the uConsole](figure:station-radio)
 

@@ -283,6 +283,8 @@ def draw_weather_station(game, tr=None) -> None:
     data = game.weather_station_data()
     r = config.STATION_RECT
     y = layout.panel(screen, r, "weather.title")
+    from src.ui import game_menu
+    game_menu.close_button(screen, r)            # 0 / Esc by mouse
     x, width = r[0] + 12, r[2] - 24
     top_h = 6 * LINE_H + 52
     left_w = int(width * 0.54)

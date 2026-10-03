@@ -27,6 +27,7 @@ from src.ui.stations.common import (
     _observation_bearing,
     _observation_position,
     _panel,
+    _shortcut_footer,
     _station_content_top,
     draw_station_page_tabs,
     message)
@@ -486,6 +487,19 @@ def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
     return py
 
 
+OPZ_TARGET_KEYS = ((("M", "opz.keys.designate"), ("G", "opz.keys.chaff")),
+                   (("←/→", "opz.keys.asm_track"),))
+
+# The consort's order hints: each key in them is a switch.  Ctrl+Enter (its
+# ASROC) is not: fire by click only at the weapons station.
+CONSORT_KEY_TOKENS = {
+    "opz.group.keys_orders": (("Y", "Y"), ("F", "F"), ("H", "H")),
+    "opz.group.keys_point": (("X", "X"), ("W", "W")),
+    "opz.group.keys_sensors": (("Shift+A", "Shift+A"),),
+    "opz.group.keys_weapons": (("Shift+W", "Shift+W"),),
+}
+
+
 def _draw_consort(game, s, chart, view, px_per_nm, page) -> None:
     """The consort destroyer is own-force datalink truth; on the group page
     also its search point and its sonar's bearing lines (measurements)."""
@@ -572,6 +586,7 @@ def _draw_consort_sidebar(game, s, x, py, w, bottom) -> int:
         if py + 22 > bottom:
             break
         layout.blit_line(s, key, (x, py, w, 22), config.COLOR_TEXT_DIM, size=14)
+        pointer.add_token_keys((x, py, w, 22), key, 14, CONSORT_KEY_TOKENS[key])
         py += 24
     return py
 
@@ -1210,6 +1225,12 @@ def draw_opz_view(game, tr=None) -> None:
                            size=16)
         py += 26
         content_bottom = regions["classify"].top - 7
+        # The target page's orders as key chips (full mouse control); the
+        # ESSM fire key stays a key: fire by click only at the weapons station.
+        keys_top = content_bottom - len(OPZ_TARGET_KEYS) * 24
+        for index, specs in enumerate(OPZ_TARGET_KEYS):
+            _shortcut_footer(s, (x, keys_top + index * 24 + 2, w, 22), specs)
+        content_bottom = keys_top - 4
         if asm_tracks:
             n = len(asm_tracks)
             visible_rows = max(0, min(3, (content_bottom - py) // 26))

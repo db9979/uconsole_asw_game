@@ -154,6 +154,8 @@ def draw_autocrew_overview(game, tr=None) -> None:
     """Render the host-only nine-station automation overview."""
     layout.configure_for(game)
     r, y = _panel(game, title="autocrew.overview.title")
+    from src.ui import game_menu
+    game_menu.close_button(game.screen, r)       # F3 / Esc by mouse
     x = r[0] + 14
     width = r[2] - 28
     gap = 12

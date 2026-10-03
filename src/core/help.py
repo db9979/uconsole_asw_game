@@ -35,6 +35,7 @@ _GLOBAL_HELP = (
         ("K", "help.global.map_follow"),
         ("help.key.mouse_click", "help.global.mouse_click"),
         ("help.key.mouse_right", "help.global.mouse_right"),
+        ("help.key.menu_icon", "help.global.menu_icon"),
         ("P", "help.global.plot"),
         ("help.key.plot_keys", "help.global.plot_keys"),
         ("Esc", "help.cancel"),
@@ -373,6 +374,7 @@ _UBOOT_HELP = (
         ("Backspace", "help.uboot.route_clear"),
         ("0", "help.uboot.weather"),
         ("S / L / F9", "help.uboot.admin"),
+        ("help.key.menu_icon", "help.global.menu_icon"),
     ],
 )
 

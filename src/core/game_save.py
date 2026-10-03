@@ -1077,6 +1077,8 @@ class SaveMixin:
         self.autocrew = AutocrewController.restore(data["autocrew"])
         self.autocrew_overview_open = False
         self.weather_station_open = False
+        # The top bar's game menu (src/ui/game_menu.py): display state only.
+        self.game_menu_open = False
         runtime_mission = data["mission_runtime"]
         self.difficulty = {
             name: (int(runtime_mission["difficulty"][name]) if kind is int

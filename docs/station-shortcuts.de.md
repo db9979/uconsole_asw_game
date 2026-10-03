@@ -1,4 +1,4 @@
-# U-Jagd 1.3.186 - Stations- und Tastenkürzel
+# U-Jagd 1.3.187 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -37,6 +37,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `K` | Karte folgt nur auf sichtbaren Karten (Ziehen schaltet es aus) |
 | `Linksklick` | Angeklickte Taste, Lampe, Hinweis, Reiter, Scheibe oder Zeile |
 | `Rechtsklick` | Abbrechen wie Esc in Menüs und Eingaben |
+| `Menü-Symbol (Kopfzeile)` | Spielmenü per Maus: Hilfe, Optionen, Speichern/Laden, Wetter, Plot, Autocrew, Beenden und mehr; jedes Overlay schließt mit seinem Schließfeld (wie Esc) |
 | `P` | Plotmodus auf Brücken-/Waffen-/Helo-Karte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (für alle Stationen, wird gespeichert) |
 | `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
@@ -304,7 +305,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `V` | Täuschkörper ausstoßen (Waffen) |
 | `M` | Nächstes leeres Torpedorohr laden (Waffen) |
 | `Shift+M` | Nächstes geladenes Rohr fluten (20 s) und Mündungsklappe öffnen; laut, die Fregatte kann es hören; nur ein geflutetes Rohr schießt (Waffen) |
-| `Ctrl+M` | Nächstes geladenes Rohr langsam fluten (60 s); die Fregatte hört es nur ganz nah (Waffen) |
+| `Strg+M` | Nächstes geladenes Rohr langsam fluten (60 s); die Fregatte hört es nur ganz nah (Waffen) |
 | `Umschalt+B` | Notanblasen, einmal (Führung, Maschine) |
 | `T` | Torpedo-Lauftiefe 5-300 m (Waffen) |
 | `Y` | Ein Torpedo oder Zweierfächer (Waffen) |
@@ -350,6 +351,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Backspace` | Route löschen (Navigation) |
 | `0` | Wetterseite des U-Boots (0 oder Esc schließt) |
 | `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
+| `Menü-Symbol (Kopfzeile)` | Spielmenü per Maus: Hilfe, Optionen, Speichern/Laden, Wetter, Plot, Autocrew, Beenden und mehr; jedes Overlay schließt mit seinem Schließfeld (wie Esc) |
 
 ## Menütasten (Hauptmenü und seine Seiten)
 
@@ -394,15 +396,15 @@ Berechtigungsprüfungen bleiben wirksam.
 | Taste / Eingabe | Funktion |
 |---|---|
 | `Numerische Eingabe` | Ziffern, Punkt oder Komma; Backspace; Enter bestätigt; Esc bricht ab. Mit der Maus über das eingeblendete Tastenfeld. |
-| `Maus` | Klick auf eine Taste der Tastenleiste drückt sie (gehalten wie die Taste); Reiter oben wechseln die Station; Klick auf Kurs-, Fahrt- oder Tiefenscheibe befiehlt den Wert; Statuslampen, Tastenhinweise, Seitenreiter, Listenzeilen und Werte der Statuszeile anklickbar (Rahmen unter der Maus; Strg+Enter nur an Station 3); Menü- und Dialogzeilen anklickbar; Mausrad blättert; Rechtsklick bricht ab wie Esc. |
+| `Maus` | Klick auf eine Taste der Tastenleiste drückt sie (gehalten wie die Taste); Reiter oben wechseln die Station; Klick auf Kurs-, Fahrt- oder Tiefenscheibe befiehlt den Wert; Statuslampen, Tastenhinweise, Seitenreiter, Listenzeilen und Werte der Statuszeile anklickbar (Rahmen unter der Maus; Strg+Enter nur an Station 3); Menü- und Dialogzeilen anklickbar; Mausrad blättert; Rechtsklick bricht ab wie Esc. Menü-Symbol in der Kopfzeile: Spielmenü (Hilfe, Optionen, Speichern/Laden, Wetter, Plot, Autocrew, Beenden u. a.); Schließfeld oben rechts in jedem Overlay wirkt wie Esc; Tastenchips für Sonar-Kontaktbefehle (C, T, G, M, Y), OPZ-Zielseite (M, G, ←/→), Begleiter-Befehle und U-Boot-Rohre/Täuschkörper (Shift+M, Strg+M, V). ESSM und ASROC des Begleiters nur per Strg+Enter. |
 | `Hilfe` | ←/→/Tab Kategorie; ↑/↓ zeilenweise; Bild↑/Bild↓ seitenweise; im Handbuch [ ] oder , . bzw. 0-9 Kapitel; F1/Esc schließen. |
 | `Speichern/Laden` | 1 bis 5 wählt Slot; Enter bestätigt; Esc zurück. |
 | `Beenden-Dialog` | ↑/↓ wählen, Enter bestätigen: zurück zum Spiel, speichern und beenden, zum Hauptmenü (ohne Speichern), ohne Speichern beenden; Esc/N schließt. |
 | `Missionsende` | R Neustart mit gleichem Seed (Editor-Mission startet sich selbst neu); M zum Hauptmenü; Esc Beenden-Dialog. |
 | `Commander-Vorschlag` | F6 annehmen; F7 ablehnen; F8 Vorschlagsart; Esc ausblenden. |
-| `SimLog` | ↑/↓, Bild↑/Bild↓, Home/End oder Mausrad; M Karte, F Karte einpassen; F4/Esc schließen. |
-| `Wetter/Analyse` | 0 oder Esc schließt das Analysefeld. |
-| `Autocrew-Übersicht` | F3 oder Esc schließt. |
+| `SimLog` | ↑/↓, Bild↑/Bild↓, Home/End oder Mausrad; M Karte, F Karte einpassen; F4/Esc oder Schließfeld schließen. |
+| `Wetter/Analyse` | 0, Esc oder das Schließfeld schließt das Analysefeld. |
+| `Autocrew-Übersicht` | F3, Esc oder das Schließfeld schließt. |
 
 ## Hinweise
 

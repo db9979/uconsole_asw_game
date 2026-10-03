@@ -330,7 +330,8 @@ def test_modal_overlays_show_the_start_screen_scene_instead_of_the_station():
         assert game._splash_backdrop_active()
         with layout.capture_geometry() as geometry:
             game.draw()
-        assert geometry == []
+        # Only the overlay's own close box; nothing of the station behind it.
+        assert [item["title"] for item in geometry] == ["close"]
     game.quit_confirm = False
     game.help_open = game.nations_open = game.options_open = False
     game.save_ui = None

@@ -4,6 +4,16 @@
 
 Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser- und Luftradar, AIS, freigegebene Sonar- und ESM-Peilungen, manuelle Fusion von Meldungen, NATO-Zugehörigkeit und Luftverteidigung. Sie übergibt bezeichnete Tracks an Sonar und Waffenzentrale.
 
+## Seiten {#opz-pages}
+
+| Seite | Zeigt |
+|---|---|
+| 1 Lagebild | Karte in voller Höhe mit allen veröffentlichten Tracks |
+| 2 Zieldetails | Zielseite des gewählten Tracks: zuweisen, Düppel, ASM-Track, ESSM |
+| 3 Seefernaufklärer | Befehle und Zustand des Seefernaufklärers |
+| 4 Verband | Befehle an den Begleitzerstörer einer Gruppenjagd |
+| 5 Anzeige | Was die OPZ-Karte zeichnet |
+
 ## Anzeigen und Instrumente {#opz-displays}
 
 Jede Seite hat drei Spalten: links Trackkarten (ein Klick wählt einen Track), in der Mitte die Karte, rechts das Feld der Seite. Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track (ihre Tastenchips weisen mit `M` das Ziel zu, werfen mit `G` Düppel und wählen mit `←`/`→` den ASM-Track; ESSM bleibt auf `Strg+Enter`); Seite 3 führt den Seefernaufklärer; Seite 4 führt den Begleitzerstörer einer Gruppenjagd; Seite 5 stellt die Kartenanzeige ein. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Q`/`E` wie der Zoom an anderen Stationen; `Bild Auf`/`Bild Ab` blättern), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
@@ -50,7 +60,7 @@ Alles, was das Flugzeug erfährt, erreicht das Schiff nur per Datenlink bis 250 
 Seite 4 (Verband) führt das Begleitschiff einer Gruppenjagd: den Zerstörer LUETJENS (Rumpfsonar, 8 ASROC, in der Jagdgruppe 2), der in Fregatten-Szenario 11 (Suchgruppe) und U-Boot-Szenario 11 (Jagdgruppe) mit der Fregatte fährt. Andere Missionen haben kein Begleitschiff, und die Seite sagt das. Der Zerstörer ist eine eigene Einheit im Datenlink (bis 100 sm): Position, Kurs, Fahrt, Befehle und Vorräte werden als Wahrheit gezeigt und auf der OPZ-Karte als eigenes Symbol mit Rufzeichen und `DL` gezeichnet; was sein Sonar hört, erreicht die Fregatte nur als Messungen.
 
 - **Befehle:** `Y` selbständig, `F` Formation (jeder Druck schickt ihn auf den nächsten Platz 5 sm von der Fregatte: querab Steuerbord, voraus, querab Backbord, achteraus), `H` halten (4 kn auf seinem Kurs), `X` einen Punkt absuchen (er läuft mit 18 kn heran und kreist mit 10 kn in 4 sm Abstand um den Punkt, damit sein Sonar hört), `W` die geplottete Position des gewählten Tracks verfolgen (26 kn, dann ein 2-sm-Kreis mit Aktivsonar). Ein Klick in die Karte setzt den Punkt und macht aus Formation, Halten oder Selbständig ein Absuchen. Jede Befehlstaste in den Hinweisen des Felds ist auch anklickbar; seine ASROC bleibt auf `Strg+Enter`.
-- **Selbständig:** Er hält Formation, bis das eigene Lagebild der Fregatte einen Kontakt hat, den du als U-Boot klassifiziert oder zugewiesen hast und der einen Standort unter 10 Minuten hat; dann verfolgt er den frischesten mit Aktivsonar.
+- **Selbständig:** Er hält Formation, bis das eigene Lagebild der Fregatte einen Kontakt hat, den Sie als U-Boot klassifiziert oder zugewiesen haben und der einen Standort unter 10 Minuten hat; dann verfolgt er den frischesten mit Aktivsonar.
 - **Sonar:** Alle 10 s erscheinen seine Passivpeilungen auf Seite 4 als Linien vom Zerstörer aus. Sein Rumpfsonar hört ein U-Boot innerhalb 8 sm und nichts, solange er schneller als 15 kn läuft. Schneidet eine davon die eigene Passivpeilung der Fregatte auf denselben Kontakt mit 15° oder mehr und innerhalb 30 sm, erhält der Kontakt einen `CONSORT`-Standort (Unsicherheit aus beiden Peilfehlern und dem Schnittwinkel). `Shift+A` schaltet sein Aktivsonar: Alle 20 s ortet ein Ping jeden getauchten Kontakt innerhalb 5 sm mit Position und Tiefe (je näher, desto sicherer) als `CONSORT`-Standort; jedes U-Boot innerhalb 25 sm hört den Ping.
 - **Waffen:** `Shift+W` schaltet Waffen frei oder gesperrt (zu Beginn gesperrt). Frei schießt er höchstens alle 3 Minuten ein ASROC auf den Standort des selbständig verfolgten Kontakts, wenn dieser jünger als 2 Minuten ist und 1 bis 12 sm vom Zerstörer liegt. `Strg+Enter` befiehlt ein ASROC auf den Standort des gewählten Tracks (jünger als 2 Minuten); ohne Auswahl auf den selbständig verfolgten Kontakt. Es ist immer nur eines seiner ASROC in der Luft. Solange niemand die OPZ der Fregatte besetzt (die KI führt die Fregatte), können ihm auch die Jäger ein geortetes Datum für ein ASROC schicken.
 
@@ -72,6 +82,16 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 ## Tasten {#opz-keys}
 
 <!-- keys:opz -->
+
+## Maus {#opz-mouse}
+
+Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
+
+- Ein Klick auf eine Trackkarte wählt den Track.
+- Die Tastenchips auf der Zielseite weisen das Ziel zu (`M`), werfen Düppel (`G`) und schalten den ASM-Track weiter (`←`/`→`); ESSM feuert nur mit `Strg+Enter`.
+- Seite 3: Ein Klick auf die Karte setzt das Suchgebiet des Seefernaufklärers; Seite 4: Ein Klick setzt den Punkt des Begleiters, und seine Befehlstasten im Feld sind anklickbar.
+- Seite 5: Ein Klick auf eine Zeile schaltet sie weiter; die Ebenen-Chips unter der Karte und die beiden Radarschalter oben links wirken auf jeder Seite.
+- Auf der Karte zoomt das Mausrad, Ziehen verschiebt (und beendet das Folgen mit `K`) und ein Klick heftet eine Kurzinfo an.
 
 ## Standardablauf {#opz-sop}
 

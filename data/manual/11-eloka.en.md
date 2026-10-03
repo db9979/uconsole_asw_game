@@ -4,6 +4,13 @@
 
 Electronic warfare (EloKa) listens passively for radar emitters (ESM) and, when ordered, jams them (ECM). ESM detects radars out to about 150 NM, far beyond own radar, without transmitting. It gives bearings and emitter parameters that point to a platform type - and warns when a missile seeker locks on.
 
+## Pages {#eloka-pages}
+
+| Page | Shows |
+|---|---|
+| 1 Intercepts | Intercept cards, threat rose with filter line, the selected intercept, ESM, jammer, automatic ECM and tone lamps |
+| 2 Evidence | Full evidence of the selected intercept: frequency, PRF, modulation, candidates, correlation |
+
 ## Displays and instruments {#eloka-displays}
 
 Both pages show the intercepts as cards on the left (key, bearing, frequency and band, quality and age; the stripe is the threat colour; a click selects one as `↑`/`↓` would). Page 1 has the threat rose with the filter line in the middle and the selected intercept on the right (signal fingerprint, bearing, radar type, threat, ECM, assignment, best library candidates) above the ESM, jammer, automatic ECM and tone lamps; page 2 shows the full evidence for the selected intercept (frequency, PRF, modulation, candidates, correlation).
@@ -33,14 +40,6 @@ Both pages show the intercepts as cards on the left (key, bearing, frequency and
 
 Beside the intercept list a bearing rose shows every intercept as a strobe in its threat colour, and lamps show ESM, jammer, automatic ECM and audio.
 
-## Keys {#eloka-keys}
-
-<!-- keys:eloka -->
-
-## Standard procedure {#eloka-sop}
-
-<!-- sop:eloka -->
-
 ## ECM techniques {#eloka-ecm}
 
 | Technique | Effect |
@@ -51,6 +50,20 @@ Beside the intercept list a bearing rose shows every intercept as a strobe in it
 | False targets | Injects false returns |
 
 Automatic mode (`A`) picks targets and techniques and couples jamming with soft-kill (chaff) during a missile attack.
+
+## Keys {#eloka-keys}
+
+<!-- keys:eloka -->
+
+## Mouse {#eloka-mouse}
+
+Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
+
+- A click on an intercept card selects it as `↑`/`↓` would.
+
+## Standard procedure {#eloka-sop}
+
+<!-- sop:eloka -->
 
 ## Pro tips {#eloka-tips}
 

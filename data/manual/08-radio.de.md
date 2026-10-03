@@ -4,6 +4,14 @@
 
 Der Funkraum wickelt die Verbindung zum Hauptquartier und die Kurzwellenpeilung (HFDF) ab. Das Hauptquartier sendet Befehle, Wetterberichte und ROE-Änderungen per Fernschreiber. HFDF peilt U-Boote, die auf Kurzwelle senden oder schnorcheln, bis 120 sm, weit jenseits der Sonarreichweite.
 
+## Seiten {#radio-pages}
+
+| Seite | Zeigt |
+|---|---|
+| 1 HF-Ortung | HFDF-Signalkarten, Kreuzpeilungskarte, Peilrose mit Peillog und Fixes |
+| 2 Meldungen | Fernschreiber mit dem Verkehr der Führung |
+| 3 Aufträge | HQ-Aufträge und die eigenen Rufe an HQ |
+
 ## Anzeigen und Instrumente {#radio-displays}
 
 Seite 1 hat drei Spalten: die aktuellen HFDF-Signale als Karten links (ein Klick wählt eines wie `↑`/`↓`), die Kreuzpeilkarte in der Mitte und die Peilrose mit Peilprotokoll und Fixen rechts; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr; Seite 3 listet die HQ-Aufträge.
@@ -67,11 +75,18 @@ Auf der Aufträge-Seite kann der Funkraum HQ selbst rufen, höchstens alle 10 Mi
 
 - `K` **Kontaktmeldung:** sendet die Position des frischesten georteten Kontakts (Ping-, TMA-, Bojen- oder fusionierter Fix, sonst ein KW-Peilfix bis 15 Minuten alt). HQ bestätigt sie im Fernschreiber und setzt den Seefernaufklärer darauf an, wenn er in der Luft ist. HQ sagt nie, ob dort wirklich ein U-Boot war: Jede Meldung, bei der ein feindliches U-Boot innerhalb 3 sm um den Fix stand, bringt am Missionsende 150 Punkte (höchstens drei).
 - `H` **Unterstützung anfordern:** HQ schickt den bereitstehenden Seefernaufklärer zum Schiff, wenn er verfügbar ist (auch bei ausgefallener OPZ), sonst meldet es, dass keine Unterstützung verfügbar ist.
-- Jeder Ruf sind 20 s KW-Sendung. Solange er auf Sendung ist, nimmt ein U-Boot mit ausgefahrener Antenne (der Mast des besetzten Boots, ein KI-Boot auf Sehrohrtiefe) eine KW-Peilung auf die Fregatte (+/-8 Grad bei Bodenwelle, +/-16 Grad bei Raumwelle): Das besetzte U-Boot erhält eine Meldung und einen Peilstrahl auf seiner Karte, ein KI-Boot merkt sich die Richtung. Reden mit HQ kostet Funkstille.
+- Jeder Ruf sind 20 s KW-Sendung. Solange er auf Sendung ist, nimmt ein U-Boot mit ausgefahrener Antenne (der Mast des besetzten U-Boots, ein KI-U-Boot auf Sehrohrtiefe) eine KW-Peilung auf die Fregatte (+/-8 Grad bei Bodenwelle, +/-16 Grad bei Raumwelle): Das besetzte U-Boot erhält eine Meldung und einen Peilstrahl auf seiner Karte, ein KI-U-Boot merkt sich die Richtung. Reden mit HQ kostet Funkstille.
 
 ## Tasten {#radio-keys}
 
 <!-- keys:radio -->
+
+## Maus {#radio-mouse}
+
+Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
+
+- Ein Klick auf eine Signalkarte wählt dieses Signal wie `↑`/`↓`.
+- Auf der Seite Aufträge wählt ein Klick auf eine Auftragszeile den Auftrag; die Tastenhinweise `K` (Kontaktmeldung), `H` (Unterstützung) und die eines Versorgungsauftrags drücken ihre Tasten.
 
 ## Standardablauf {#radio-sop}
 

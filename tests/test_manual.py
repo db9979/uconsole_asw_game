@@ -19,7 +19,7 @@ from src.core.i18n import Translator, load_catalog
 from src.core.station import Station
 
 ROOT = Path(__file__).parents[1]
-SECTIONS = ("purpose", "displays", "keys", "sop", "tips", "limits")
+SECTIONS = ("purpose", "pages", "displays", "keys", "mouse", "sop", "tips", "limits")
 
 
 def _blocks(chapter, lang):
@@ -59,9 +59,27 @@ def test_every_station_has_a_complete_chapter_with_generated_keys_and_procedure(
         assert f"keys:{chapter}" in markers and f"sop:{chapter}" in markers
         table = next(b for b in blocks if b.marker == f"keys:{chapter}")
         assert len(table.rows) == len(STATION_HELP[station][1])
-    quickstart = [b.marker for b in _blocks("quickstart", "en")
-                  if b.marker and b.kind != "figure"]
-    assert quickstart == ["keys:global", "keys:menu", "keys:web"]
+    # Each station chapter keeps one order: purpose, pages, displays, keys,
+    # mouse, standard procedure, tips, not modelled.
+    for chapter in manual.STATION_CHAPTERS.values():
+        anchors = [b.anchor for b in _blocks(chapter, "en") if b.kind == "heading"]
+        order = [anchors.index(f"{chapter}-{section}") for section in SECTIONS]
+        assert order == sorted(order), chapter
+
+    def markers(chapter):
+        return [b.marker for b in _blocks(chapter, "en") if b.marker and b.kind != "figure"]
+    assert markers("quickstart") == ["keys:global"]
+    assert markers("menu") == ["keys:menu"]
+    assert markers("multiplayer") == ["keys:web"]
+
+
+def test_quickstart_stays_short_and_names_both_sides():
+    prose = [b for b in _blocks("quickstart", "en") if not b.marker]
+    words = sum(len(manual.plain(" ".join([b.text, *b.items, *(" ".join(r) for r in b.rows)])).split())
+                for b in prose)
+    assert words <= 1500, words
+    anchors = [b.anchor for b in _blocks("quickstart", "en") if b.kind == "heading"]
+    assert {"qs-first-patrol", "qs-first-dive", "qs-controls"} <= set(anchors)
 
 
 @pytest.mark.parametrize("lang", manual.LANGUAGES)
@@ -291,7 +309,7 @@ def test_the_submarine_chapter_carries_every_boat_station_procedure():
         blocks = _blocks("submarine", lang)
         markers = [b.marker for b in blocks if b.marker and b.kind != "figure"]
         assert markers == ["keys:uboot_global"] + [f"sop:uboot_{slug}"
-                                                   for slug in UBOOT_SOP_SLUGS.values()]
+                                                   for slug in UBOOT_SOP_SLUGS.values()] + ["keys:uboot"]
         for station, keys in UBOOT_SOP.items():
             assert len(keys) == 5 and all(catalog.get(key) for key in keys), station
             block = next(b for b in blocks if b.marker == f"sop:uboot_{UBOOT_SOP_SLUGS[station]}")
@@ -342,3 +360,16 @@ def test_figures_stay_out_of_the_reader_and_web_page_but_reach_markdown_and_pdf(
     assert "](figures/de-station-bridge.png)" in manual.markdown("de")
     with pytest.raises(manual.ManualError):
         manual.parse("![caption](figure:Bad Name)", lambda key: key)
+
+
+def test_reader_digits_open_the_quickstart_and_the_station_chapters():
+    import pygame
+    from src.core.game import Game
+    from src.core.game_shared import HELP_MANUAL_PAGE
+    game = Game(seed=7, start_menu=False, audio_enabled=False, language="en")
+    game._open_administration("help")
+    game.help_page = HELP_MANUAL_PAGE
+    for digit, chapter in ((0, "quickstart"), (1, "bridge"), (3, "weapons"), (9, "eloka")):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_0 + digit, mod=0,
+                                             unicode=str(digit), scancode=0))
+        assert manual.CHAPTERS[game.help_manual_chapter] == chapter

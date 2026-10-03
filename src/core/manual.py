@@ -33,13 +33,17 @@ from src.core.i18n import Translator
 from src.core.station import Station
 
 LANGUAGES = ("en", "de")
-CHAPTERS = ("quickstart", "bridge", "sonar", "weapons", "damage", "opz", "radio",
-            "engine", "helicopter", "eloka", "submarine", "reference")
+CHAPTERS = ("quickstart", "menu", "options", "bridge", "sonar", "weapons", "damage", "opz",
+            "radio", "engine", "helicopter", "eloka", "submarine", "scenarios", "multiplayer",
+            "after", "tools", "editors", "llm", "reference", "glossary")
 STATION_CHAPTERS = {
     Station.BRIDGE: "bridge", Station.SONAR: "sonar", Station.WEAPONS: "weapons",
     Station.DAMAGE: "damage", Station.OPZ: "opz", Station.RADIO: "radio",
     Station.ENGINE: "engine", Station.HELICOPTER: "helicopter", Station.ELOKA: "eloka",
 }
+# The in-game reader's digit keys: 0 the quickstart, 1-9 the station chapters
+# in the order of the station keys.
+DIGIT_CHAPTERS = ("quickstart", *STATION_CHAPTERS.values())
 _CHAPTER_STATIONS = {chapter: station for station, chapter in STATION_CHAPTERS.items()}
 KEY_TABLES = ("global", "web", *STATION_CHAPTERS.values())
 

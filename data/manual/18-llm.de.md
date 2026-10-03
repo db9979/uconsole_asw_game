@@ -1,0 +1,24 @@
+# Sprachmodell (optional) {#language-model}
+
+## Einrichten {#ref-llm}
+
+Ein OpenAI-kompatibles Sprachmodell kann das Spiel reicher machen. Es ist ab Werk aus, und das Spiel läuft genau wie ohne: Jede Aufgabe fällt auf die eigenen Texte des Spiels zurück, wenn der Server aus, langsam oder nicht erreichbar ist.
+
+Eingeschaltet wird es unter `F10` Optionen, Seite 2, **Sprachmodell**: an/aus, die Serveradresse (zum Beispiel `http://localhost:11434/v1` für Ollama im LAN oder ein Cloud-Dienst), der Modellname, der API-Schlüssel, formulierter Funkverkehr, der Coach (aus, selten, oft) und der experimentelle Gegner; **Verbindung testen** schickt eine kurze Anfrage und zeigt die Antwortzeit. Der API-Schlüssel liegt in `~/.u-jagd/llm_key` (nur für dich lesbar) oder kommt aus der Umgebungsvariable `U_JAGD_LLM_KEY`; er gelangt nie in Einstellungen, Spielstände, Protokolle oder einen Browser.
+
+Das Modell läuft auf einem Server, nie auf der uConsole selbst. Der Schlüssel erscheint beim Tippen als Sternchen und danach nur mit seinen letzten Zeichen. Das Spiel bittet um Antworten ohne Denkphase (das verstehen Qwen3 unter vLLM oder SGLang; ein Server, der den Schalter ablehnt, wird ohne ihn gefragt). Schickt ein Denkmodell trotzdem nur seine Denkschritte, meldet der Test „nur Denkschritte, keine Antwort“: Schalte dann den Denkmodus am Server ab oder nimm ein Modell ohne.
+
+## Was es tut {#llm-jobs}
+
+- Funkverkehr: Jede Meldung der Führung und die Funkbefehle des besetzten U-Boots erscheinen zusätzlich wie echter Funkverkehr formuliert neben dem Original. Zahlen, Peilungen und Positionen bleiben wie gegeben; das Original bleibt maßgeblich.
+- Einsatzbericht: Am Missionsende schreibt das Modell für jede Seite einen kurzen Bericht aus der Aufzeichnung der Nachbesprechung (jetzt mit der Wahrheit). `B` in der Nachbesprechung zeigt ihn, der Browser zeigt ihn in der Wiedergabe der Nachbesprechung, und das Dienstbuch behält ihn bei der Mission (`B` dort).
+- Erster Offizier (`F7` im Einsatz, im Browser die Schaltfläche **IWO fragen**): Lagemeldung, eine getippte Frage (beantwortet aus dem eigenen Lagebild und dem Handbuch), ein getippter Befehl, Hilfe zur Klassifizierung des gewählten Kontakts und eine Einweisung für die eigene Station. `Links`/`Rechts` oder `1`-`5` wählen die Art, `Enter` sendet, `Hoch`/`Runter` blättern, `Esc` schließt. Der Offizier sieht nur das Lagebild der eigenen Seite, wie die eigenen Stationen.
+- Getippte Befehle: nur Kurs, Fahrt, Tiefe, Schleichfahrt und Gefechtsstationen, nie Waffen. Der Offizier schlägt die Stationsbefehle vor, und nichts wird gegeben, bevor Sie bestätigen (`Enter`; `Rücktaste` oder `Esc` verwirft). Im Browser gehen die Befehle nur von einer Station, die sie geben darf.
+- Coach: Mit eingeschaltetem Coach (selten oder oft) erscheint ab und zu ein kurzer Tipp aus dem eigenen Lagebild in der Meldezeile.
+- Dienstbuch: `A` lässt das Modell die Dienstzeit bewerten, `B` zeigt den neuesten Bericht. Eine Mission, in der Lagemeldungen, Fragen, Befehle, Klassifizierungshilfe oder der Coach genutzt wurden, ist „mit Berater“ markiert und bekommt keine Bestwertung und keine Auszeichnung; die Einweisung allein zählt nicht.
+- Missionsgenerator: `G` (Fregatte) oder `Umschalt+G` (U-Boot) in der Liste des Missionseditors und **Einsatz schreiben** im Missionsplaner des Browsers schreiben eine Mission aus wenigen Worten. Die Antwort durchläuft dieselbe Prüfung wie jede eigene Mission (unbekannte Felder fallen weg, eine feste 500-sm-Welt, Versenken-Ziele sind jedes platzierte feindliche U-Boot); bei Fehlern bekommt das Modell eine Chance zur Korrektur. Der Editor öffnet die Mission ungespeichert zum Prüfen (`Strg+S` speichert); der Planer legt sie als neue Mission ab und öffnet sie.
+- Experimenteller Gegner: Alle 3 min Einsatzzeit wählt das Modell aus dem eigenen Lagebild der KI-Seite einen Plan aus einer festen Liste: für die KI-U-Boote tief gehen und schleichen, heranschließen, absetzen oder still liegen (Ausweichen, Lauern und Angriffe behalten Vorrang); für die KI-Jäger Sprint und Drift, leise oder schnelle Suche. Es steuert, zielt und schießt nie selbst. Eine solche Mission ist im Dienstbuch „experimentell“ markiert, bekommt keine Bestwertung und keine Auszeichnung und ist nicht allein aus ihrem Seed wiederholbar (der gültige Plan wird gespeichert). In Kampagne, Lektionen und Spiel mit zwei Crews läuft er nie.
+
+## Nicht modelliert {#llm-limits}
+
+- Nicht modelliert: Sprachbefehle, ein Modell auf der uConsole selbst, Entscheidungen des Modells über Waffen oder Ziele und ein Modell, das während der Mission die verborgene Wahrheit sieht.

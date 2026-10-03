@@ -4,9 +4,23 @@
 
 Damage control keeps the ship afloat and the stations working after a hit. Three repair teams fight flooding and fire in nine compartments. Every compartment houses a station; a damaged compartment degrades it, a destroyed one disables it for the rest of the mission.
 
+## Pages {#damage-pages}
+
+| Page | Shows |
+|---|---|
+| 1 Ship plan | Damage-control board: side profile and cross-section with water, fire, holes and teams; a card per compartment |
+| 2 Selection & teams | Compartment cards, details of the selected compartment, the three repair teams |
+| 3 Crew | Watch bill: watches, fatigue, morale, performance and wounded |
+
 ## Displays and instruments {#damage-displays}
 
-Page 1 is the damage-control board: a side profile of the ship, bow to the right, with its decks, superstructure and masts, every compartment numbered at its real length and height, and beside it a cross-section that lists with the ship and holds the port and starboard hull voids. The sea stands outside up to the waterline with draft marks at bow and stern; floodwater stands at its level in each compartment and tilts with the trim, a fire glows and flickers with smoke under the deckhead, and a destroyed compartment is hatched. A torn hole shows where the hull is open and water rushes in as long as it floods; once a team has fitted a patch it shows as a plate, and a team pumping sends water over the side. Draft and trim are written under the profile, the list under the cross-section. Under the pictures each compartment's card carries a state LED, the flood and fire values with their LEDs and numbered badges for the teams on scene; a legend explains the LEDs. Page 2 has three columns: on the left a card per compartment with its state stripe, the water and fire LEDs and the teams on scene, in the middle the details of the selected compartment (flooding, fire, trend, teams on scene, heel), on the right the three repair teams with their destination and whether they are on the way (with the seconds left), on scene or standing by. A click on a compartment card selects it, a click on a team card picks the team, and Enter sends it; neither click sends a team by itself; page 3 is the crew's watch bill. In the browser the Damage card opens with an annunciator panel (fires, flooding, lost, getting worse, total damage, list, trim, counter-flooding, teams busy, ship sunk) above the same side profile and cross-section, and gauges for list, trim and total damage; a click on a compartment sends the selected team there. Each repair-team card names its compartment and says whether the team is standing by, on the way (seconds left) or on scene; a click on a card picks that team.
+Page 1 is the damage-control board: a side profile of the ship, bow to the right, with its decks, superstructure and masts, every compartment numbered at its real length and height, and beside it a cross-section that lists with the ship and holds the port and starboard hull voids.
+
+The sea stands outside up to the waterline with draft marks at bow and stern; floodwater stands at its level in each compartment and tilts with the trim, a fire glows and flickers with smoke under the deckhead, and a destroyed compartment is hatched. A torn hole shows where the hull is open and water rushes in as long as it floods; once a team has fitted a patch it shows as a plate, and a team pumping sends water over the side. Draft and trim are written under the profile, the list under the cross-section. Under the pictures each compartment's card carries a state LED, the flood and fire values with their LEDs and numbered badges for the teams on scene; a legend explains the LEDs.
+
+Page 2 has three columns: on the left a card per compartment with its state stripe, the water and fire LEDs and the teams on scene, in the middle the details of the selected compartment (flooding, fire, trend, teams on scene, heel), on the right the three repair teams with their destination and whether they are on the way (with the seconds left), on scene or standing by. A click on a compartment card selects it, a click on a team card picks the team, and Enter sends it; neither click sends a team by itself; page 3 is the crew's watch bill.
+
+In the browser the Damage card opens with an annunciator panel (fires, flooding, lost, getting worse, total damage, list, trim, counter-flooding, teams busy, ship sunk) above the same side profile and cross-section, and gauges for list, trim and total damage; a click on a compartment sends the selected team there. Each repair-team card names its compartment and says whether the team is standing by, on the way (seconds left) or on scene; a click on a card picks that team.
 
 ![Damage control on the uConsole](figure:station-damage-control)
 
@@ -55,6 +69,12 @@ Page 3 (Crew) shows the watch bill. The ship's company stands in three watches: 
 <!-- keys:damage -->
 
 On the uConsole the joystick buttons 1-3 assign team 1-3 directly to the selected compartment.
+
+## Mouse {#damage-mouse}
+
+Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
+
+- A click on a compartment card selects the compartment, a click on a team card picks the team; `Enter` sends it. Neither click sends a team by itself.
 
 ## Standard procedure {#damage-sop}
 

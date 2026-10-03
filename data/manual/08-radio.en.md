@@ -4,6 +4,14 @@
 
 The radio room handles communications with HQ and HF direction finding (HFDF). HQ sends orders, weather bulletins and ROE changes by teletype. HFDF takes bearings on submarines that transmit on HF or run a snorkel mast, out to 120 NM, far beyond sonar range.
 
+## Pages {#radio-pages}
+
+| Page | Shows |
+|---|---|
+| 1 HF direction finding | HFDF signal cards, cross-fix chart, DF rose with bearing log and fixes |
+| 2 Messages | Teletype with HQ traffic |
+| 3 Tasks | HQ tasks and the own calls to HQ |
+
 ## Displays and instruments {#radio-displays}
 
 Page 1 has three columns: the current HFDF signals as cards on the left (a click selects one as `↑`/`↓` would), the cross-fix chart in the middle and the DF rose with the bearing log and the fixes on the right; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
@@ -72,6 +80,13 @@ On the Tasks page the radio room can call HQ itself, at most once every 10 minut
 ## Keys {#radio-keys}
 
 <!-- keys:radio -->
+
+## Mouse {#radio-mouse}
+
+Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
+
+- A click on a signal card selects that signal as `↑`/`↓` would.
+- On the Tasks page a click on a task row selects the task; the key hints `K` (contact report), `H` (support) and those of a replenishment task press their keys.
 
 ## Standard procedure {#radio-sop}
 

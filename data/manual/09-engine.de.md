@@ -4,6 +4,13 @@
 
 Der Maschinenraum stellt die Fahrstufe ein und verwaltet die akustische Signatur des Schiffes. Fahrt ist der wichtigste Zielkonflikt der U-Jagd: schnell, um ein Datum zu erreichen, langsam und leise, um überhaupt etwas zu hören.
 
+## Seiten {#engine-pages}
+
+| Seite | Zeigt |
+|---|---|
+| 1 Telegraph & Fahrt | Telegrafenstufen, Fahrtanzeige, Wellendrehzahl und Eigengeräusch, Zustandslampen |
+| 2 Systeme | Meldetafel, Brennstoffbunker, Anzeigen für Rollen, Stampfen und Krängung, Schema der Schiffsabschnitte |
+
 ## Anzeigen und Instrumente {#engine-displays}
 
 Der Maschinenraum ist ein Maschinenleitstand. Seite 1 zeigt den Maschinentelegraphen als Säule leuchtender Stufen, ein großes Fahrtinstrument (die befohlene Fahrt als gelbe Marke, die Schadensbegrenzung rot), Instrumente für Wellendrehzahl und Eigenlärm (Kavitationsbereich rot) und Lampen für Welle, Anlage, Kurs, Akustikmodus, Kavitation und Fahrtgrenze. Seite 2 **Systeme** hat eine Warn- und Meldetafel aus Statuslampen (dunkel, wenn aus, grün im Betrieb, gelb bei einer Warnung, rot bei einem Alarm) mit einer Sammellampe, die Alarme und Warnungen zählt, den Kraftstoffbunker als Tanksäule mit Vorrat, Verbrauch, Ausdauer und Reichweite, Instrumente für Rollen, Stampfen und Schlagseite und ein Bild der Schiffsabschnitte vom Bug zum Heck zwischen Steuerbord- und Backbordrumpf, jeder mit Wasserstand, Zustand, Wassereinbruch- und Brand-LEDs und den nummerierten Reparaturtrupps.
@@ -44,6 +51,12 @@ Der Maschinenraum ist ein Maschinenleitstand. Seite 1 zeigt den Maschinentelegra
 ## Tasten {#engine-keys}
 
 <!-- keys:engine -->
+
+## Maus {#engine-mouse}
+
+Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
+
+- `+` oder `-` in der Tastenleiste gedrückt halten schaltet den Telegrafen; die Lampen drücken ihre Tasten.
 
 ## Standardablauf {#engine-sop}
 

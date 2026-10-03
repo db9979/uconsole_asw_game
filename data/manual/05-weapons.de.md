@@ -4,6 +4,13 @@
 
 Die Waffenzentrale macht aus einem Sonarkontakt eine Feuerlösung. Sie startet die drahtgelenkten Torpedos und das eigene ASROC der Fregatte, wirft Wasserbomben, verwaltet die Zuladung des Helikopters (Bojen, Leichttorpedos), bringt den geschleppten Täuschkörper Nixie aus und gibt das Flak-Geschütz frei.
 
+## Seiten {#weapons-pages}
+
+| Seite | Zeigt |
+|---|---|
+| 1 Zielung | Karte mit dem gewählten Kontakt, Kontaktkarten, Gefechtsstufen, Feuerleitlösung mit Torpedotiefe, Gefechtsskizze, Rohrlampen und Bereitschaftszeile |
+| 2 Munition | Rohre, Nachladezeiten, Torpedobestand, Nixie, Hubschraubermunition, Torpedo-Einstellzeile und die Bestände als Tanksäulen |
+
 ## Anzeigen und Instrumente {#weapons-displays}
 
 Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt; das Panel hat links Kontaktkarten (ein Klick wählt einen Kontakt wie `←`/`→`, `M` weist ihn zu, das Ziel trägt eine rote Marke) über den Einsatzstufen und rechts die Feuerleitlösung mit Torpedotiefe, Schusslage, Rohrlampen und Bereitschaftszeile. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand, Helikopter-Zuladung und die Torpedo-Einstellzeile: gewählter Typ mit Restvorrat, Suchmuster, Sucheraktivierungspunkt und Salvengröße.
@@ -44,13 +51,31 @@ Torpedolauf von oben:
 - Salvendoktrin SHOOT-LOOK-SHOOT: höchstens 2 eigene Torpedos gleichzeitig im Wasser.
 - ASROC (`A`): 4 Schuss pro Mission. Die Rakete fliegt mit 500 kn zur beobachteten Position des Ziels (1 bis 10 sm, aktuelle Entfernung nötig) und setzt dort den Leichttorpedo des Helikopters auf der voreingestellten Tiefe ab. Es gelten dieselben Zielprüfungen wie beim Torpedo, und es zählt gegen die Doktringrenze.
 - Wasserbomben (`Z`): 20 pro Mission, geworfen als Muster aus 5 (drei im Kielwasser 20, 80 und 140 m achteraus, zwei 70 m querab geworfen), danach 45 s Nachladen der Ablaufbahn. Das Schiff muss mindestens 10 kn laufen. Die Bomben sinken mit 3,5 m/s bis zur voreingestellten Tiefe (15-300 m) oder zum Grund; jede 90-kg-Ladung ist bis etwa 25 m tödlich und beschädigt noch bis etwa 100 m. U-Boote innerhalb von 5 sm hören die Detonation und weichen aus.
-- U-Jagd-Raketenwerfer (`R`, Typ RBU/Bofors): 36 Raketen pro Mission, abgefeuert in Salven zu 6, danach 60 s Nachladen. Eine Angriffssalve geht auf die beobachtete Position des zugewiesenen Ziels in 0,4 bis 3 sm (aktuelle Entfernung nötig, dieselben Zielprüfungen wie beim Torpedo): ein Schuss auf den Zielpunkt, fünf auf einem Ring von 80 m darum. Die Raketen fliegen mit 400 kn (etwa 9 s je sm), jede Ladung sinkt mit 11 m/s bis zur voreingestellten Tiefe (10-300 m) oder zum Grund; die 23-kg-Ladungen sind nur bis etwa 14 m tödlich und schaden bis 60 m, eine grobe oder alte Ortung verschwendet die Salve. **Abwehrsalve** (`Umschalt+R`): sechs Schuss in einer Linie 0,3 bis 0,8 sm hinaus in Peilung einer höchstens 5 s alten Torpedowarnung, Tiefe 15 m; eine Ladung, die innerhalb von 35 m eines laufenden Torpedos detoniert, zerstört ihn, und das Protokoll meldet, dass das Torpedogeräusch endet. Jedes U-Boot innerhalb von 3 sm hört die Raketen ins Wasser schlagen: ein KI-Boot weicht sofort aus, der Sonarraum des bemannten U-Boots meldet die Einschläge mit ihrer Peilung.
+- U-Jagd-Raketenwerfer (`R`, Typ RBU/Bofors): 36 Raketen pro Mission, abgefeuert in Salven zu 6, danach 60 s Nachladen. Eine Angriffssalve geht auf die beobachtete Position des zugewiesenen Ziels in 0,4 bis 3 sm (aktuelle Entfernung nötig, dieselben Zielprüfungen wie beim Torpedo): ein Schuss auf den Zielpunkt, fünf auf einem Ring von 80 m darum. Die Raketen fliegen mit 400 kn (etwa 9 s je sm), jede Ladung sinkt mit 11 m/s bis zur voreingestellten Tiefe (10-300 m) oder zum Grund; die 23-kg-Ladungen sind nur bis etwa 14 m tödlich und schaden bis 60 m, eine grobe oder alte Ortung verschwendet die Salve. **Abwehrsalve** (`Umschalt+R`): sechs Schuss in einer Linie 0,3 bis 0,8 sm hinaus in Peilung einer höchstens 5 s alten Torpedowarnung, Tiefe 15 m; eine Ladung, die innerhalb von 35 m eines laufenden Torpedos detoniert, zerstört ihn, und das Protokoll meldet, dass das Torpedogeräusch endet. Jedes U-Boot innerhalb von 3 sm hört die Raketen ins Wasser schlagen: ein KI-U-Boot weicht sofort aus, der Sonarraum des bemannten U-Boots meldet die Einschläge mit ihrer Peilung.
 
 Beide Seiten sind wie ein Feuerleitpult aufgebaut: Auf Seite 1 hat jedes Rohr eine Lampe (grün geladen, gelb im Nachladen, dunkel wenn leer), und die Sperrkette (Ziel, Fix, ROE, Waffe, Flak) ist eine Lampensäule, die Stufe für Stufe grün wird. Zwischen Lösung und Rohrlampen zeigt eine Schusslage, genordet um das eigene Schiff, die Reichweite des gewählten Torpedotyps als gestrichelten gelben Ring, die Peilung zum Ziel (gestrichelt, solange nur die Peilung bekannt ist) und, sobald eine Entfernung vorliegt, die geschätzte Zielposition, den Treffpunkt aus TMA-Kurs und -Fahrt und die Torpedolaufbahn dorthin (grün innerhalb der Reichweite, rot darüber hinaus); die Zahl links unten ist der Halbmesser der Skizze. Sie nutzt nur die Beobachtung des Kontakts, nie das U-Boot selbst; Seite 2 zeigt die restlichen Torpedos, Hubschraubertorpedos, Sonarbojen und RBU-Raketen als Tanksäulen. Der Remote-Crew-Browser zeigt Station, ROE und Sperre als Lampen und jedes Rohr als Säule.
+
+## Einsatzregeln {#weapons-roe}
+
+| ROE | Voraussetzung |
+|---|---|
+| STD (Start) | Aktuelle Entfernung (Ping, TMA oder Boje) und Klassifizierung U-Boot oder Kampfschiff |
+| FREI | Nur Klassifizierung; ohne Entfernung zielt der Torpedo 10 sm in Peilrichtung |
+
+Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Funk auf FREI; der Spieler kann die ROE nicht ändern. Ein in der OPZ als FREUND oder NEUTRAL markierter Kontakt, direkt oder über eine Fusion, kann nie bekämpft werden.
 
 ## Tasten {#weapons-keys}
 
 <!-- keys:weapons -->
+
+## Maus {#weapons-mouse}
+
+Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
+
+- Ein Klick auf eine Kontaktkarte wählt diesen Kontakt wie `←`/`→`; das zugewiesene Ziel trägt eine rote Marke.
+- Die Feuertaste `Strg+Enter` lässt sich hier anklicken, nur an der Waffenstation.
+- Die Tastenhinweise neben der Lösung (Abschuss, Flak-Freigabe) drücken ihre Tasten.
+- Auf der Karte zoomt das Mausrad, Ziehen verschiebt (und beendet das Folgen mit `K`) und ein Klick heftet eine Kurzinfo an.
 
 ## Standardablauf {#weapons-sop}
 
@@ -61,15 +86,6 @@ Gefechtslage:
 1. Feindtorpedo gemeldet: sofort Nixie ausbringen (`V`). Er hält 600 s an einem 0,2-sm-Kabel; einer bereit, ein zweiter nach 60 s. Bei 15 kn läuft er in 10 m Tiefe, bei langsamer Fahrt tiefer und näher achteraus, über 25 kn reißt das Kabel. In einer Wende läuft das Kabel hinterher.
 2. Den Gegenangriff fortsetzen: ein frischer Kontakt hält das Draht-Datum auf dem U-Boot.
 3. Ist der Helikopter in der Luft, erreicht ein Leichttorpedo (`D`) einen entfernten Kontakt schneller als der Schiffstorpedo.
-
-## Einsatzregeln {#weapons-roe}
-
-| ROE | Voraussetzung |
-|---|---|
-| STD (Start) | Aktuelle Entfernung (Ping, TMA oder Boje) und Klassifizierung U-Boot oder Kampfschiff |
-| FREI | Nur Klassifizierung; ohne Entfernung zielt der Torpedo 10 sm in Peilrichtung |
-
-Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Funk auf FREI; der Spieler kann die ROE nicht ändern. Ein in der OPZ als FREUND oder NEUTRAL markierter Kontakt, direkt oder über eine Fusion, kann nie bekämpft werden.
 
 ## Tipps für Profis {#weapons-tips}
 

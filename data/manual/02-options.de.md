@@ -1,0 +1,61 @@
+# Optionen {#options}
+
+`F10` (oder **Optionen** im Hauptmenü oder im Spielmenü) öffnet die Optionen. `Auf`/`Ab` wählen eine Zeile, `Enter`/`Links`/`Rechts` ändern sie, `Bild Auf`/`Bild Ab` oder `Tab` wechseln zwischen den beiden Seiten und `Esc` führt zurück. Die Einstellungen liegen in `~/.u-jagd/settings.json`; eine laufende Mission läuft hinter den Optionen weiter.
+
+![Optionen (F10)](figure:options)
+
+## Seite 1: Bild, Ton und Realismus {#options-page1}
+
+| Zeile | Auswahl |
+|---|---|
+| Sprache | Englisch, Deutsch |
+| Vollbild | an, aus (auch `Alt+Enter`) |
+| Audio | an, aus |
+| Große Schrift | an, aus |
+| Kurzinfos | an, aus: Erklärungen unter der Maus; ein Klick heftet eine an |
+| Simulationsprotokoll | an, aus: schaltet die Ansicht `F4` frei (Kapitel Werkzeuge) |
+| Rotlicht | Automatisch (Nacht, Alarm), Immer an, Aus |
+| Farbschema | Taktik Nacht, Taktik Tag, Hoher Kontrast / farbenblind |
+| Bildrate | 30 FPS (voreingestellt, spart Rechenleistung auf der uConsole) oder 60 FPS |
+| Ereignislog / Telemetrie | Statuszeile (voreingestellt, mehr Platz für die Station; `F11` öffnet das Log) oder feste Leiste |
+| Realismus | Einsteiger, Standard, Realistisch (unten) |
+| Echtzeit-Verkehr | öffnet die Seite AIS / ADS-B (unten) |
+| Commander / lokales Netz (F9) | öffnet die Remote-Crew-Seite (Kapitel Remote Crew) |
+
+- **Rotlicht:** **Automatisch** (Standard) schaltet die Bildschirme nachts und bei Torpedo-, Flugkörper- oder Feueralarm auf gedimmtes Rot, **Immer an** oder **Aus**. Der Browser hat denselben Schalter in seinen Einstellungen. Die Stationsreiter zeigen eine Alarmlampe: gelb stetig für eine Warnung (Wassereinbruch, ein Ping, eine beschädigte Maschine), rot blinkend für Gefahr (Torpedo, Flugkörper, Feuer).
+- **Farbschema:** **Taktik Nacht** (Standard: dunkle Flächen, Phosphorgrün, Bernstein und Rot), **Taktik Tag** (helle, entspiegelte Grautöne mit Marineblau und dunkler Schrift für Tageslicht; Wasserfall, LOFAR und DEMON zeichnen dann dunkle Spuren auf hellem Grund wie ein Schreiber) oder **Hoher Kontrast** (farbenblindfreundlich). Der Schalter rechts in der Kopfleiste wechselt per Klick zwischen Dunkel und Hell, an beiden Seiten. Leuchtet das Rotlicht, zeichnet die uConsole dunkel. Die Wahl liegt in `settings.json`, nie im Spielstand, und ändert nur das Bild. Der Browser hat einen eigenen Schalter.
+
+### Realismusstufe {#options-realism}
+
+Die Realismusstufe gilt für die nächste Mission:
+
+- **Einsteiger:** Bedienerassistenz an (automatische Linienbeschriftung, Blattfrequenz- und Katalog- oder Senderkandidaten); der Computergegner greift zögerlicher an, wartet auf eine bessere Schusslösung und klassifiziert und startet als Fregatte seinen Hubschrauber 1,5-mal langsamer. Punkte 75 %.
+- **Standard** (voreingestellt): Rohdaten und manuelle Analyse, der kalibrierte Gegner. Punkte 100 %.
+- **Realistisch:** keine Assistenz; der Gegner greift entschlossener an, schießt auf eine gröbere Lösung und reagiert als Fregatte 30 % schneller. Punkte 125 %.
+
+Die Stufe stimmt nur den Computergegner ab, nie einen Menschen auf der anderen Seite, und eine laufende Mission behält die Stufe, mit der sie begann (die Zeile sagt dann "ab der nächsten Mission"). Das Endpanel zeigt die Stufe mit ihrem Punktefaktor; Spielstände behalten sie.
+
+### Echtzeit-Verkehr {#options-traffic}
+
+Die Seite **Echtzeit-Verkehr** holt echte Schiffe (AIS Stream, braucht einen eigenen API-Schlüssel) und echte Flugzeuge (OpenSky ADS-B, wahlweise mit eigener OpenSky-Client-ID) in eine Mission, deren Welt ein reales Seegebiet ist. Sie braucht eine Internetverbindung; ohne sie sind die Zeilen ausgegraut. **API-Test** prüft beide Dienste. Platziert wird nur Verkehr bis etwa 150 sm um die Fregatte (höchstens 60 Schiffe und 40 Flugzeuge), und Schiffspositionen werden alle 2 bis 5 Minuten nachgeführt. Änderungen gelten sofort und werden gespeichert.
+
+## Seite 2: Spielaufbau {#options-page2}
+
+**uConsole spielt:** welche Seite der uConsole spielt, Fregatte (Standard) oder feindliches U-Boot; nur im Hauptmenü, nie gespeichert. Ein neues Spiel fragt ohnehin zuerst danach. Siehe Kapitel U-Boot.
+
+**Grafikstufe** (`Enter`/`Rechts` weiter, `Links` zurück): **Sparsam** skaliert mit einfachen Pixeln, lässt das Radar-Nachleuchten weg und beruhigt den Menühintergrund, um auf der uConsole Rechenzeit zu sparen; **Normal** (Standard der uConsole) zeigt alle Effekte; **Voll** (Standard unter Windows) glättet zusätzlich Peilstriche, Küste und Plot. In einem Fenster oder Vollbild größer als 1280 x 720 skalieren Normal und Voll das Bild scharf: ganzzahlige Faktoren wiederholen Pixel exakt, andere Größen (etwa 1920 x 1080) wiederholen Pixel bis zum nächsten ganzen Faktor und glätten dann herunter, sodass Schrift und dünne Linien gleichmäßig bleiben. Die Stufe ändert nur das Bild, nie die Simulation oder was eine Station anzeigt.
+
+Die **gesprochenen Crew-Meldungen** (standardmäßig aus): die Crew meldet Torpedo im Wasser, neuen Kontakt mit Peilung, Sinkgeräusche, Torpedo los, Treffer, Gefechtsstationen, Seefernaufklärer auf Station und das Missionsende laut, Peilungen Ziffer für Ziffer. Die uConsole spricht über ein installiertes `espeak-ng` (`sudo apt install espeak-ng`) und bleibt ohne es stumm; Remote-Crew-Browser haben einen eigenen Schalter unter Einstellungen (Sprachausgabe des Browsers, in dessen Sprache). Spielt die uConsole das U-Boot, meldet stattdessen dessen Crew (siehe Kapitel U-Boot).
+
+**Mikrofon** (aus als Vorgabe) lässt die Stimmen der Spieler für die Geräuschdisziplin zählen (unten). **Sprachmodell** öffnet die Einstellungen des optionalen Sprachmodells (Kapitel Sprachmodell).
+
+## Geräuschdisziplin und Mikrofon {#ref-noise}
+
+- Ab und zu lässt eine Besatzung ein Werkzeug fallen, schlägt ein Schott zu, stößt an einen Topf oder lässt eine Kette rasseln: ein kurzer metallischer Schlag für 3 s, der das eigene Geräusch erhöht. Eine frische Besatzung patzt etwa zweimal in der Stunde, eine müde oder entmutigte bis fünfmal so oft. Schleichfahrt (der Leisemodus der Fregatte, die Schleichfahrt des U-Boots oder das Liegen auf Grund) senkt das auf 30 %, dafür gehen Reparaturen und Nachladen dann nur mit 75 % voran.
+- Bis 4 sm hört der Gegner einen solchen Schlag in seiner Peilung (durch das eigene Maschinengeräusch weniger): Das Sonar der Fregatte meldet einen metallischen Transienten, der Horchraum des U-Boots einen Transienten. Die eigene Besatzung meldet ihr Missgeschick unter Schleichfahrt.
+
+**Mikrofon:** Auch die Stimmen der Spieler zählen. Auf der uConsole ist es die Option *Mikrofon* (aus als Vorgabe); im Browser der Knopf *Mikrofon an* neben dem Ton-Knopf (fragt nach dem Mikrofon). Browser geben das Mikrofon nur einer sicheren Seite: Auf der normalen LAN-Seite (`http://`) sagt das ein Hinweis, und *HTTPS-Seite öffnen* gibt Ihre Stationen frei und öffnet die HTTPS-Adresse des Hosts (Port + 1), wo Sie die Zertifikatswarnung einmal bestätigen und sich mit demselben Code neu koppeln.
+
+Geht das Mikrofon nicht, sagt das Spiel warum: eine Meldung im Einsatz und die Ursache auf Seite 2 der Optionen (kein Mikrofon, lässt sich nicht öffnen oder kein Ton, weil Windows oder macOS den Zugriff sperrt; dort den Mikrofonzugriff für Desktop-Apps oder für U-Jagd erlauben). Ein abgelehntes, fehlendes oder belegtes Mikrofon nennt der Browser im selben Hinweis.
+
+Eine Anzeige aus 20 Feldern zeigt den eigenen Pegel gegen die Schwellen: bis 5 leise (grün, ungehört), 6 bis 11 in der Nähe hörbar (gelb), ab 12 weit hörbar (rot, bei voller Lautstärke bis 2,5 sm). Das umrandete Feld ist die lauteste Stimme der Besatzung. Eine Stimme über der Schwelle erhöht das eigene Geräusch um bis zu 20 %; der Gegner hört Stimmen, und die eigene Besatzung wird zur Ruhe ermahnt, wenn es viel zu laut ist. Nur die Pegelzahl verlässt den Browser, nie Ton; sie gilt 1,5 s und wird nie gespeichert.

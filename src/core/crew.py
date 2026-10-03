@@ -23,9 +23,8 @@ Every step is deterministic (no random draws).
 
 from __future__ import annotations
 
-import math
-
 from src.core import config
+from src.core.limits import finite_number as _number
 
 WATCHES = 3
 VERSION = 1
@@ -47,11 +46,6 @@ MORALE_EVENTS = {
     "task_declined": -0.02,
     "watch_change": 0.0,
 }
-
-
-def _number(value) -> bool:
-    return (type(value) in (int, float) and not isinstance(value, bool)
-            and math.isfinite(value))
 
 
 class CrewState:

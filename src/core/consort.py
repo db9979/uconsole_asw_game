@@ -18,6 +18,7 @@ from __future__ import annotations
 import math
 
 from src.core import config, detrand
+from src.physics.geo import bearing_deg as bearing
 
 MODES = ("auto", "formation", "search", "prosecute", "hold")
 # Formation stations relative to the frigate's course: (bearing, key).
@@ -89,10 +90,6 @@ class ConsortOrders:
         orders.last_shot_s = float(state["last_shot_s"])
         orders.lost = state["lost"]
         return orders
-
-
-def bearing(x0, y0, x1, y1) -> float:
-    return math.degrees(math.atan2(x1 - x0, -(y1 - y0))) % 360.0
 
 
 def station_point(orders: ConsortOrders, frigate) -> tuple[float, float]:

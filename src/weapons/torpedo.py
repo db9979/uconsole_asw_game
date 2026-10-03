@@ -5,6 +5,7 @@ import math
 from src.core import config
 from src.physics import torpedo_dyn
 from src.data.catalog import CATALOG
+from src.physics.geo import FrigateRelativeMixin
 
 
 def _required_torpedo_profile(key: str):
@@ -527,7 +528,7 @@ class Torpedo:
         return math.hypot(ox + t * fx - sub.x, oy + t * fy - sub.y)
 
 
-class EnemyTorpedo:
+class EnemyTorpedo(FrigateRelativeMixin):
     """Feindlicher Torpedo (M5): Vorhaltkurs mit terminaler Eigenortung.
 
     Ab der Kontakt-DB auch passiv auffindbar: lautes Hochton-Kreischen,
@@ -743,14 +744,6 @@ class EnemyTorpedo:
                                        -(youngest[1] - self.y))) % 360.0
 
     # --- Duck-Type-Interface wie Sub/Animal (passives Sonar) ---
-
-    def distance_nm(self, ship) -> float:
-        return math.hypot(self.x - ship.x, self.y - ship.y)
-
-    def bearing_from_frigate(self, ship) -> float:
-        dx = self.x - ship.x
-        dy = self.y - ship.y
-        return math.degrees(math.atan2(dx, -dy)) % 360.0
 
     def quiet_factor(self) -> float:
         return config.ENEMY_TORP_QUIET

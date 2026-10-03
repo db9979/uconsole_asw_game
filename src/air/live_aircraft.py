@@ -11,6 +11,7 @@ import math
 import hashlib
 
 from src.core import config
+from src.physics.geo import FrigateRelativeMixin
 
 
 class _Fix:
@@ -26,7 +27,7 @@ class _Fix:
         self.t = t
 
 
-class LiveAircraft:
+class LiveAircraft(FrigateRelativeMixin):
     """Ein per ICAO24 identifizierter, realer Flugkontakt."""
 
     def __init__(self, icao24: str, callsign: str | None, seq: int,
@@ -95,14 +96,6 @@ class LiveAircraft:
             self.altitude_m = curr.altitude_m
             self.course = curr.course
         self.speed = curr.speed
-
-    def distance_nm(self, frigate) -> float:
-        return math.hypot(self.x - frigate.x, self.y - frigate.y)
-
-    def bearing_from_frigate(self, frigate) -> float:
-        dx = self.x - frigate.x
-        dy = self.y - frigate.y
-        return math.degrees(math.atan2(dx, -dy)) % 360.0
 
     @property
     def radar_emitting(self) -> bool:

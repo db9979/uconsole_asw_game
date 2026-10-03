@@ -30,7 +30,7 @@ The engine room runs the telegraph, snorkel and charge rate, silent running, the
 
 ## Mast & ESM {#sub-esm}
 
-Mast & ESM raises the mast at periscope depth, listens for radars on the ESM rose, classifies the emitters, plots cross-fixes and looks through the periscope.
+Mast & ESM raises the mast at periscope depth, listens for radars on the ESM rose, classifies the emitters, plots cross-fixes and looks through the periscope. A click on a row of the emitter list selects that emitter, like ↑/↓.
 
 <!-- sop:uboot_esm -->
 

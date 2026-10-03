@@ -7488,5 +7488,10 @@
   "commander.web.theme_switch": "Dark/light",
   "opz.card.kind": "{affiliation} {domain}",
   "opz.no_tracks": "No tracks",
-  "uboot.card.range_quality": "{range} NM · Q {quality}%"
+  "uboot.card.range_quality": "{range} NM · Q {quality}%",
+  "damage.panel.compartments": "COMPARTMENTS",
+  "damage.panel.teams": "REPAIR TEAMS",
+  "damage.card.team_ready": "Standing by",
+  "damage.card.team_en_route": "On the way · {eta} s",
+  "damage.teams.hint": "Click a team, pick a compartment on the left, then Enter sends it."
 }

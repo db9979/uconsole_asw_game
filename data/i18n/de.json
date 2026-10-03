@@ -7488,5 +7488,10 @@
   "commander.web.theme_switch": "Dunkel/Hell",
   "opz.card.kind": "{affiliation} {domain}",
   "opz.no_tracks": "Keine Tracks",
-  "uboot.card.range_quality": "{range} NM · Güte {quality}%"
+  "uboot.card.range_quality": "{range} NM · Güte {quality}%",
+  "damage.panel.compartments": "ABTEILUNGEN",
+  "damage.panel.teams": "LECKWEHRTRUPPS",
+  "damage.card.team_ready": "In Bereitschaft",
+  "damage.card.team_en_route": "Unterwegs · {eta} s",
+  "damage.teams.hint": "Trupp anklicken, links eine Abteilung wählen, Enter schickt ihn los."
 }

@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.182
+
+Version 1.3.182 bringt die drei Spalten zur Seite Auswahl & Teams der
+Schadensabwehr. Links stehen die Abteilungen als Karten mit Zustandsstreifen,
+Lampen für Wasser und Brand und den Trupps vor Ort, in der Mitte die Details
+der gewählten Abteilung und rechts die drei Leckwehrtrupps mit ihrem Ziel und
+ob sie unterwegs sind, vor Ort arbeiten oder bereitstehen. Ein Klick wählt eine
+Abteilung oder einen Trupp; Enter schickt den Trupp wie bisher los. Auf der
+Seite Mast & ESM des U-Boots wählt ein Klick auf eine Zeile der Senderliste
+diesen Sender. Tasten bleiben gleich. Spielstände sind v50; v38 bis v49 laden
+weiter.
+
 ## 1.3.180
 
 Version 1.3.180 bringt die drei Spalten zu ELOKA, Funkraum und der

@@ -12,16 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.180**
+Current release: **1.3.182**
 
-Release 1.3.180 brings the three-column layout to Electronic warfare, the
-radio room and the frigate's Weapons page. EW shows its intercepts as cards on
-the left (a click selects one), the threat rose in the middle and the selected
-intercept with its signal and the ESM/jammer lamps on the right. The radio
-room has HF/DF signal cards on the left, the cross-fix chart in the middle and
-the DF rose with the bearing log on the right. The frigate's Weapons page lists
-its sonar contacts as cards above the engagement stages (a click selects one,
-M assigns it). Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.182 brings the three-column layout to the damage-control
+selection page. Compartments sit as cards on the left with their state stripe,
+water and fire lamps and the teams on scene, the selected compartment's details
+in the middle and the three repair teams on the right with their destination
+and whether they are on the way, on scene or standing by. A click selects a
+compartment or a team; Enter still sends the team. On the submarine's Mast &
+ESM page a click on a row of the emitter list selects that emitter. Keys are
+unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

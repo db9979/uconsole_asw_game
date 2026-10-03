@@ -702,9 +702,15 @@ def update_creak(game, boat) -> None:
     if tick == boat._creak_tick:
         return
     boat._creak_tick = tick
+    low, high = config.UBOOT_CREAK_GAP_TICKS
+    quiet = getattr(boat, "_creak_quiet_until", None)
+    if quiet is not None and quiet - high <= tick < quiet:
+        return                                  # the hull just worked
     chance = creak_chance(sub.depth, sub.stype.max_depth_m)
     if chance > 0.0 and detrand.u01(sub.sensor_seed, "hull-creak", tick) < chance:
         boat_sound(game, boat, "hull_creak")
+        boat._creak_quiet_until = tick + low + int(
+            detrand.u01(sub.sensor_seed, "hull-creak-gap", tick) * (high - low + 1))
 
 
 def hear_seekers(game, boat) -> None:

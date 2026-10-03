@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.170
+## 1.3.171
 
-Version 1.3.170 füllt das Einsatzprotokoll der Remote Crew. Es zeigte bisher
+Version 1.3.171 füllt das Einsatzprotokoll der Remote Crew. Es zeigte bisher
 nur wenige Browser-Alarme und wirkte deshalb leer; jetzt listet jede Station
 dieselben Einträge wie F11 auf der uConsole, das Neueste oben, mit Uhrzeit
 und Kategoriekürzel: die Stationen der Fregatte das Log der Fregatte, die
@@ -14,6 +14,15 @@ Stationen des U-Boots das Bootslog. Ein langes Protokoll scrollt in seiner
 Leiste und lässt der Karte ihren Platz. Auf der uConsole öffnet F11 jetzt
 auch auf der U-Boot-Seite das Bootslog. Spielstände sind v50; v38 bis v49
 lassen sich weiter laden.
+
+## 1.3.170
+
+Version 1.3.170 beruhigt zwei Geräusche, die an jeder Station alle paar
+Sekunden wiederkamen. Der Bug der Fregatte schlägt bei schwerer See von vorn
+nicht mehr hörbar ein (bisher bei fast jeder Welle, alle 5 bis 18 s). Tief
+unten knarzte der Rumpf des U-Boots an der Testtiefe alle 4 s; jetzt ruht er
+nach jedem Knarzen 12 bis 28 s. Beides ändert nichts an der Simulation. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.169
 

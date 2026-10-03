@@ -35,7 +35,7 @@ def test_the_hull_creaks_only_deep_down_and_deterministically():
         game.world.depth_m = lambda x, y: 3000.0
         sub = boat.sub
         sub.depth = sub.target_depth = sub.order_depth = sub.stype.max_depth_m * 0.8
-        _run(game, 60)
+        _run(game, 120)
         heard.append(_cues(boat).count("hull_creak"))
     assert heard[0] == heard[1] >= 3
     game, _server, _bridge = _crewed(seed=61)
@@ -43,6 +43,29 @@ def test_the_hull_creaks_only_deep_down_and_deterministically():
     game.opfor.sub.order_depth = 30.0
     _run(game, 30)
     assert "hull_creak" not in _cues(game.opfor)
+
+
+def test_the_hull_rests_between_creaks_even_at_test_depth():
+    """At test depth every check would creak; a quiet spell after each creak
+    keeps it from ticking every 4 s at every station (1.3.170)."""
+    game, _server, _bridge = _crewed(seed=63)
+    boat = game.opfor
+    game.world.depth_m = lambda x, y: 3000.0
+    sub = boat.sub
+    sub.depth = sub.target_depth = sub.order_depth = sub.stype.max_depth_m
+    times = []
+    for _ in range(int(180 / 0.1)):
+        before = boat.sound_seq
+        game._update_sim(0.1)
+        sub.depth = sub.stype.max_depth_m
+        if any(row["kind"] == "hull_creak" and row["seq"] > before
+               for row in boat.sound_events):
+            times.append(game.sim_t)
+    low, high = config.UBOOT_CREAK_GAP_TICKS
+    gaps = [b - a for a, b in zip(times, times[1:])]
+    assert len(times) >= 5
+    assert min(gaps) >= low * config.UBOOT_CREAK_TICK_S - 0.2
+    assert max(gaps) <= high * config.UBOOT_CREAK_TICK_S + 0.2
 
 
 def test_the_boat_hears_detonations_near_and_far_with_a_bearing():

@@ -251,6 +251,28 @@ def _map_fx(game, side):
             for key in ("pings", "echoes", "splashes")}
 
 
+def _opz_trails(game, refs, ref_by_track):
+    """Earlier OPZ positions of the published picture reports (display aid
+    from the chart history: published positions only), newest last."""
+    history = getattr(game, "chart_history", None)
+    side = history.sides.get("frigate") if history is not None else None
+    if side is None:
+        return []
+    wanted = set(refs)
+    trails = []
+    for key, rows in side.opz.items():
+        ref = ref_by_track.get(key)
+        if ref is None or ref not in wanted or not rows:
+            continue
+        trails.append(dict(ref=ref, points=[
+            [_number(round(x, 3)), _number(round(y, 3)),
+             _number(round(max(0.0, game.sim_t - t), 1))]
+            for t, x, y in list(rows)[-web_schema.OPZ_TRAIL_POINTS:]]))
+        if len(trails) >= web_schema.OPZ_TRAIL_MAX:
+            break
+    return trails
+
+
 def _own_trail(game, side_key):
     """The own ship's (or boat's) recent track: own-platform truth only."""
     history = getattr(game, "chart_history", None)
@@ -1388,7 +1410,10 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                        mpa=_mpa(game),
                                        consort=_consort(game),
                                        weapons=[row for group in _own_weapon_assets(
-                                           game, asset_refs) for row in group])),
+                                           game, asset_refs) for row in group]),
+                      trails=_opz_trails(game, [row["ref"] for row in opz_observations]
+                                         + [row["ref"] for row in opz_fusions],
+                                         ref_by_track)),
         "radio": _radio(game, rows, ref_by_track),
         "engine": dict(propulsion=dict(course=_number(game.ship.course),
                     target_course=_number(game.ship.target_course),

@@ -4,6 +4,22 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.169
+
+Version 1.3.169 gibt der OPZ eine reichere Karte und eine Anzeigeseite voller
+Einstellungen. Seite 5 (Anzeige) stellt den Spurverlauf (aus, 3, 6 oder 12
+Minuten), die Vektorlänge (3 bis 30 Minuten), volle, kurze oder keine
+Beschriftung, eine Peilskala mit eigenem Kurs am äußeren Radarring,
+Entfernungsringe, Peilstrahlen, Unsicherheitskreise, Tiefen und Gitter, das
+Radar-Nachleuchten und den Punkt der nächsten Annäherung (CPA) des gewählten
+Tracks mit Abstand und Zeit ein. Auf/Ab wählt eine Zeile, Links/Rechts ändert
+sie, Backspace stellt den Standard wieder her, jede Zeile ist anklickbar, und
+Schalter unter der Karte schalten die Ebenen auf jeder Seite. Die
+Einstellungen bleiben in settings.json. Die OPZ im Browser hat dieselben
+Knöpfe über ihrer Karte und zeichnet dieselben Ringe, Peilskala, Spuren und
+den CPA. Nur Anzeige: die Simulation bleibt unverändert. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.168
 
 Version 1.3.168 bringt U-Jagd auf den Mac. Jede Version enthält jetzt auch

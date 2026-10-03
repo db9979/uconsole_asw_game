@@ -11,7 +11,7 @@ from dataclasses import replace
 
 import pygame
 
-from src.core import callouts, config
+from src.core import callouts, config, opz_display
 from src.core import plot as plot_geometry
 from src.core.i18n import display_value, message, raw_text
 from src.core.station import Station
@@ -494,6 +494,38 @@ class PicturesMixin:
             self._begin_numeric_input("plot_speed")
             return
         self._plot_flash_result(result)
+
+    # --- OPZ display settings (display only, kept in settings.json) -------
+
+    def opz_display_settings(self) -> dict:
+        return opz_display.normalize(getattr(self.preferences, "opz_display", ()))
+
+    def step_opz_display(self, key: str, delta: int = 1) -> None:
+        """Move one display setting on and keep it in the settings."""
+        values = opz_display.step(self.opz_display_settings(), key, delta)
+        self._set_preference("opz_display", opz_display.to_pairs(values))
+
+    def reset_opz_display(self) -> None:
+        self._set_preference("opz_display", ())
+        self.flash(message("opz.display.reset"), 1.5)
+
+    def _opz_display_key(self, e) -> bool:
+        """Keys of the OPZ's Display page: up/down pick a row, left/right
+        change it, Backspace restores the defaults (Enter keeps confirming
+        a live engagement)."""
+        count = len(opz_display.KEYS)
+        self.opz_display_sel = int(self.opz_display_sel) % count
+        key = opz_display.KEYS[self.opz_display_sel]
+        if e.key in (pygame.K_UP, pygame.K_DOWN):
+            self.opz_display_sel = (self.opz_display_sel
+                                    + (1 if e.key == pygame.K_DOWN else -1)) % count
+        elif e.key in (pygame.K_LEFT, pygame.K_RIGHT):
+            self.step_opz_display(key, 1 if e.key == pygame.K_RIGHT else -1)
+        elif e.key == pygame.K_BACKSPACE:
+            self.reset_opz_display()
+        else:
+            return False
+        return True
 
     def selected_opz_track(self):
         return next((track for track in self.opz_tracks()

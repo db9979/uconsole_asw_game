@@ -57,6 +57,11 @@ CONSORT_STATIONS = ("starboard", "ahead", "port", "astern")
 # the operator fuses them (``opz_create_fusion``) or dismisses them.
 OPZ_SUGGESTION_FIELDS = ("key", "refs", "bearing", "bearing_delta_deg", "distance_nm",
                          "course_delta_deg", "speed_delta_kn", "class_match")
+# Track trails of the OPZ picture (``src/core/chart_history.py``): earlier
+# published positions of a report, one every 30 s, each [x, y, age_s].
+OPZ_TRAIL_FIELDS = ("ref", "points")
+OPZ_TRAIL_MAX = 48
+OPZ_TRAIL_POINTS = 24
 RADIO_TASK_STATES = ("offered", "active", "done", "failed", "declined")
 
 # The common ``weather_station`` block: own-ship atmosphere (every role) and
@@ -184,7 +189,8 @@ ROLE_SHAPES = {
                 "active_assets"),
     "damage": ("compartments", "teams", "total", "sunk", "stability", "crew"),
     "opz": ("observations", "fusions", "suggestions", "radar", "defense", "asm_observations",
-            "source_classifications", "radar_blips", "designated_target_ref", "own_assets"),
+            "source_classifications", "radar_blips", "designated_target_ref", "own_assets",
+            "trails"),
     "radio": ("observations", "logged_fixes", "logged_bearings", "messages", "station_down",
               "navigation", "tactical", "tasks", "can_request_ras",
               "can_contact_report", "can_request_support"),

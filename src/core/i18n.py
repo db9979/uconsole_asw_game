@@ -155,6 +155,7 @@ DISPLAY_KEYS = {
         "OPZ_TARGET": "station.page.opz_target",
         "OPZ_MPA": "station.page.opz_mpa",
         "OPZ_GROUP": "station.page.opz_group",
+        "OPZ_DISPLAY": "station.page.opz_display",
         "RADIO_HFDF": "station.page.radio_hfdf",
         "RADIO_MESSAGES": "station.page.radio_messages",
         "RADIO_TASKS": "station.page.radio_tasks",

@@ -4,6 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.169
+
+Release 1.3.169 gives the OPZ a richer chart and a Display page full of
+settings. Page 5 (Display) sets track trails (off, 3, 6 or 12 minutes),
+vector length (3 to 30 minutes), full, short or no labels, a bearing scale
+with the own course on the outer radar ring, range rings, bearing lines,
+furthest-on circles, depths and grid, the radar afterglow and the selected
+track's closest point of approach with distance and time. Up/down picks a
+row, left/right changes it, Backspace restores the defaults, every row is
+clickable, and chips under the chart switch the layers on every page. The
+settings stay in settings.json. The browser OPZ has the same buttons above
+its chart and draws the same rings, bearing scale, trails and CPA. Display
+only: the simulation is unchanged. Saves are v50; v38 to v49 saves still
+load.
+
 ## 1.3.168
 
 Release 1.3.168 brings U-Jagd to the Mac. Every release now also carries a

@@ -12,18 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.168**
+Current release: **1.3.169**
 
-Release 1.3.168 brings U-Jagd to the Mac and makes the opponent smarter
-without any language model. Every release now carries a macOS app for Apple
-silicon and Intel Macs that updates itself like the Windows program. Every
-free AI submarine and the AI hunter frigate pick their own tactics from what
-they heard and their commander's character, and the enemy learns your habits
-from the logbook (an early ping, long shots, periscope depth, high speed) and
-adapts a little; the logbook page shows what it knows and L switches learning
-off. Saves that an AI boat's loud contact made unloadable load again, the
-nightly endurance test covers all scenarios, flaky tests are fixed and large
-modules are split. Saves are v50; v38 to v49 saves still load.
+Release 1.3.169 gives the OPZ a richer chart and a Display page full of
+settings: track trails, vector length, labels, a bearing scale with the own
+course, range rings, bearing lines, furthest-on circles, depths and grid, the
+radar afterglow and the selected track's closest point of approach (CPA) with
+distance and time. Arrow keys or a click set each one, chips under the chart
+switch the layers on every page, and the settings are remembered. The browser
+OPZ has the same buttons above its chart and draws the same rings, bearing
+scale, trails and CPA. Display only: the simulation is unchanged. Saves are
+v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

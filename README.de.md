@@ -14,20 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.168**
+Aktuelle Version: **1.3.169**
 
-Version 1.3.168 bringt U-Jagd auf den Mac und macht den Gegner ohne
-Sprachmodell klüger. Jede Version enthält jetzt eine macOS-App für
-Apple-Silicon und Intel-Macs, die sich wie das Windows-Programm selbst
-aktualisiert. Jedes freie KI-U-Boot und die KI-Jagdfregatte wählen ihre
-Taktik selbst aus dem, was sie gehört haben, und dem Charakter ihres
-Kommandanten, und der Gegner lernt aus dem Logbuch Ihre Gewohnheiten (früher
-Ping, weite Schüsse, Sehrohrtiefe, hohe Fahrt) und stellt sich ein wenig
-darauf ein; die Logbuchseite zeigt, was er kennt, und L schaltet das Lernen
-aus. Spielstände, die der laute Kontakt eines KI-U-Boots unladbar machte,
-laden wieder, der nächtliche Dauertest deckt alle Szenarien ab, wacklige
-Tests sind behoben und große Module aufgeteilt. Spielstände sind v50; v38
-bis v49 lassen sich weiter laden.
+Version 1.3.169 gibt der OPZ eine reichere Karte und eine Anzeigeseite voller
+Einstellungen: Spurverlauf, Vektorlänge, Beschriftung, eine Peilskala mit
+eigenem Kurs, Entfernungsringe, Peilstrahlen, Unsicherheitskreise, Tiefen und
+Gitter, das Radar-Nachleuchten und den Punkt der nächsten Annäherung (CPA)
+des gewählten Tracks mit Abstand und Zeit. Pfeiltasten oder ein Klick stellen
+alles ein, Schalter unter der Karte schalten die Ebenen auf jeder Seite, und
+die Einstellungen bleiben gespeichert. Die OPZ im Browser hat dieselben
+Knöpfe über ihrer Karte und zeichnet dieselben Ringe, Peilskala, Spuren und
+den CPA. Nur Anzeige: die Simulation bleibt unverändert. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -12,18 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.187**
+Current release: **1.3.188**
 
-Release 1.3.187 adds a server mode: the uConsole only serves and everyone
-plays in the browser, on both units, alone or together. Choose "Server
-(browsers only)" in the main menu or start with `--server`. The uConsole then
-shows only the QR code, the join code and the crew, and during a mission an
-umpire screen. The first browser to join leads the game: in its lobby it picks
-the unit, the mission (scenario, daily mission, campaign hotspot or own
-mission), the opponent, weather, time of day and length, starts the mission
-for everyone, saves and loads, and brings everyone back to the lobby. The
-crew keeps its stations from one mission to the next, and the lead can be
-handed over. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.188 fixes two things in the browser's server mode. When the game
+leader switches the unit in the lobby, every browser now moves to that unit's
+stations (against the AI); before, the crew stayed on the old unit's stations.
+A crowded top bar no longer squeezes "Add station" into a column of single
+letters: the button keeps its one-line label and the bar wraps onto a second
+row instead of running off the right edge. Keys are unchanged. Saves are v50;
+v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

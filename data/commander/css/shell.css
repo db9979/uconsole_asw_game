@@ -19,9 +19,12 @@
 
 /* ---- Status bar -------------------------------------------------------- */
 .statusbar {
-  display: flex; align-items: center; gap: .9rem; min-width: 0; min-height: var(--bar-h);
+  display: flex; align-items: center; gap: .3rem .9rem; min-width: 0; min-height: var(--bar-h);
   padding: .25rem .75rem; background: var(--bg-1); border-bottom: 1px solid var(--line);
 }
+/* With the host controls (solo session, server-mode leader) the bar may wrap
+   onto a second row instead of squeezing buttons or running off the edge. */
+.statusbar:has(> #host-bar:not([hidden])) { flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: .55rem; flex: 0 0 auto; min-width: 0; }
 .brand strong { font-size: var(--font-lg); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
 .brand strong span { font-weight: 400; color: var(--text-dim); letter-spacing: .04em; }
@@ -29,7 +32,8 @@
 .brand-mark { position: relative; flex: 0 0 auto; width: 1.1rem; height: 1.1rem; border: 1.5px solid var(--live); transform: rotate(45deg); }
 .brand-mark::after { content: ""; position: absolute; inset: .22rem; border-top: 2px solid var(--live); border-left: 2px solid var(--live); }
 
-.workstation-station { display: flex; align-items: center; gap: .3rem; flex: 0 1 auto; min-width: 0; }
+/* The tabs scroll; the add button never shrinks below its one-line label. */
+.workstation-station { display: flex; align-items: center; gap: .3rem; flex: 0 1 auto; min-width: min-content; }
 .station-tabs { display: flex; gap: .15rem; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .station-tabs::-webkit-scrollbar { display: none; }
 .station-tab {
@@ -50,7 +54,7 @@
 body::after { content: ""; position: fixed; inset: 0; z-index: 2147483000; pointer-events: none;
   background: var(--red-light); mix-blend-mode: multiply; opacity: 0; transition: opacity 1.5s ease; }
 body.red-light::after { opacity: 1; }
-#workstation-add-station { flex: 0 0 auto; min-height: 2rem; padding: .15rem .55rem; font-size: var(--font-xs); }
+#workstation-add-station { flex: 0 0 auto; white-space: nowrap; min-height: 2rem; padding: .15rem .55rem; font-size: var(--font-xs); }
 
 .status-mission { display: flex; align-items: center; gap: .5rem; flex: 1 1 8rem; min-width: 0; overflow: hidden; }
 .status-mission h1 { font-size: var(--font-md); font-weight: 600; letter-spacing: 0; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

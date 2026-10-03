@@ -14,19 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.187**
+Aktuelle Version: **1.3.188**
 
-Version 1.3.187 bringt einen Server-Modus: Die uConsole dient nur als
-Server, alle spielen im Browser, auf beiden Einheiten, allein oder gemeinsam.
-Dazu im Hauptmenü „Server (nur Browser)“ wählen oder mit `--server` starten.
-Die uConsole zeigt dann nur QR-Code, Beitrittscode und Besatzung, im Einsatz
-einen Schiedsrichter-Bildschirm. Der erste Browser, der beitritt, leitet das
-Spiel: In seiner Lobby wählt er Einheit, Einsatz (Szenario, Tagesmission,
-Brennpunkt der Kampagne oder eigene Mission), Gegner, Wetter, Tageszeit und
-Länge, startet den Einsatz für alle, speichert und lädt und holt alle zurück
-in die Lobby. Die Besatzung behält ihre Stationen von Einsatz zu Einsatz, die
-Leitung lässt sich abgeben. Tasten bleiben gleich. Spielstände sind v50; v38
-bis v49 lassen sich weiter laden.
+Version 1.3.188 behebt zwei Fehler im Server-Modus des Browsers. Schaltet der
+Spielleiter in der Lobby die Einheit um, wechselt jetzt jeder Browser auf die
+Stationen dieser Einheit (gegen die KI); bisher blieb die Besatzung auf den
+Stationen der alten Einheit. Eine volle Kopfleiste quetscht „Station
+hinzufügen“ nicht mehr zu einer Spalte einzelner Buchstaben: Der Knopf bleibt
+einzeilig, und die Leiste bricht in eine zweite Zeile um, statt rechts
+abgeschnitten zu werden. Tasten bleiben gleich. Spielstände sind v50; v38 bis
+v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

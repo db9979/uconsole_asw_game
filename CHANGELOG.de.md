@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.188
+
+Version 1.3.188 behebt zwei Fehler im Server-Modus des Browsers. Schaltet der
+Spielleiter in der Lobby die Einheit um, wechselt jetzt jeder Browser auf die
+Stationen dieser Einheit (gegen die KI); bisher blieb die Besatzung auf den
+Stationen der alten Einheit. Eine volle Kopfleiste quetscht „Station
+hinzufügen“ nicht mehr zu einer Spalte einzelner Buchstaben: Der Knopf bleibt
+einzeilig, und die Leiste bricht in eine zweite Zeile um, statt rechts
+abgeschnitten zu werden. Tasten bleiben gleich. Spielstände sind v50; v38 bis
+v49 lassen sich weiter laden.
+
 ## 1.3.187
 
 Version 1.3.187 bringt einen Server-Modus: Die uConsole dient nur als

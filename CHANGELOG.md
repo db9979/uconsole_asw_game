@@ -7,11 +7,10 @@ Every U-Jagd release, newest first. The [README](README.md) shows only the lates
 ## 1.3.169
 
 Release 1.3.169 quiets two sounds that came back every few seconds at every
-station. In a heavy head sea at speed the frigate's bow slammed on nearly
-every wave, every 5 to 18 s; now after a slam the next one waits 30 to 90 s.
-Deep down the submarine's hull creaked every 4 s at test depth; now it rests
-12 to 28 s after each creak. Both stay sound only and change nothing in the
-simulation. Saves are v50; v38 to v49 saves still load.
+station. The frigate's bow no longer slams audibly into a
+heavy head sea (it did on nearly every wave, every 5 to 18 s). Deep down the
+submarine's hull creaked every 4 s at test depth; now it rests 12 to 28 s
+after each creak. Neither changes anything in the simulation. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.168
 

@@ -1,4 +1,4 @@
-"""Shipboard atmosphere cues: alarm bells, hull slamming, the boat's fans (1.3.119)."""
+"""Shipboard atmosphere cues: alarm bells and the boat's fans (1.3.119; no bow slam since 1.3.169)."""
 
 import re
 import sys
@@ -41,43 +41,18 @@ def test_action_stations_ring_the_general_alarm():
     game.audio.shutdown()
 
 
-def test_bow_slams_into_a_heavy_head_sea():
-    game = Game(seed=5, start_menu=False, audio_enabled=False)
-    game.world.sea_state = 5
-    game.world.refresh_weather()
-    game.ship.target_speed = 20.0
-    for _ in range(1500):
-        game._update_sim(0.1)
-    assert "hull_slam" in _kinds(game) or any(
-        row["kind"] == "hull_slam" for row in game._sound_events)
-    game.audio.shutdown()
-    calm = Game(seed=5, start_menu=False, audio_enabled=False)
-    calm.world.sea_state = 1
-    calm.world.refresh_weather()
-    calm.ship.target_speed = 20.0
-    for _ in range(600):
-        calm._update_sim(0.1)
-        assert "hull_slam" not in _kinds(calm)
-    calm.audio.shutdown()
-
-
-def test_the_bow_slams_now_and_then_not_on_every_wave():
-    """A heavy head sea used to slam the bow every 5 to 18 s at every
-    station; after a slam the next waits HULL_SLAM_GAP_MIN_S to _MAX_S."""
+def test_the_bow_never_slams_audibly():
+    """Dominik switched the bow slam off (1.3.169): a heavy head sea at speed
+    plays no sound, at no station and in no browser."""
     game = Game(seed=5, start_menu=False, audio_enabled=False)
     game.world.sea_state = 6
     game.world.refresh_weather()
     game.ship.target_speed = 25.0
-    times = []
-    for _ in range(6000):
-        before = game._sound_event_seq
+    for _ in range(3000):
         game._update_sim(0.1)
-        if any(row["kind"] == "hull_slam" and row["seq"] > before
-               for row in game._sound_events):
-            times.append(game.sim_t)
-    gaps = [b - a for a, b in zip(times, times[1:])]
-    assert len(times) >= 3
-    assert min(gaps) >= config.HULL_SLAM_GAP_MIN_S
+        assert "hull_slam" not in _kinds(game)
+    assert "hull_slam" not in ATMOSPHERE_KINDS
+    assert game.audio.play_effect("hull_slam") is False
     game.audio.shutdown()
 
 

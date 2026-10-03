@@ -1,4 +1,4 @@
-"""Shipboard atmosphere cues: alarm bells, hull slamming, the boat's fans (1.3.119)."""
+"""Shipboard atmosphere cues: alarm bells and the boat's fans (1.3.119; no bow slam since 1.3.170)."""
 
 import re
 import sys
@@ -41,24 +41,19 @@ def test_action_stations_ring_the_general_alarm():
     game.audio.shutdown()
 
 
-def test_bow_slams_into_a_heavy_head_sea():
+def test_the_bow_never_slams_audibly():
+    """Dominik switched the bow slam off (1.3.170): a heavy head sea at speed
+    plays no sound, at no station and in no browser."""
     game = Game(seed=5, start_menu=False, audio_enabled=False)
-    game.world.sea_state = 5
+    game.world.sea_state = 6
     game.world.refresh_weather()
-    game.ship.target_speed = 20.0
-    for _ in range(1500):
+    game.ship.target_speed = 25.0
+    for _ in range(3000):
         game._update_sim(0.1)
-    assert "hull_slam" in _kinds(game) or any(
-        row["kind"] == "hull_slam" for row in game._sound_events)
+        assert "hull_slam" not in _kinds(game)
+    assert "hull_slam" not in ATMOSPHERE_KINDS
+    assert game.audio.play_effect("hull_slam") is False
     game.audio.shutdown()
-    calm = Game(seed=5, start_menu=False, audio_enabled=False)
-    calm.world.sea_state = 1
-    calm.world.refresh_weather()
-    calm.ship.target_speed = 20.0
-    for _ in range(600):
-        calm._update_sim(0.1)
-        assert "hull_slam" not in _kinds(calm)
-    calm.audio.shutdown()
 
 
 def test_silent_running_runs_the_fans_down_and_up():

@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.170
+
+Version 1.3.170 beruhigt zwei Geräusche, die an jeder Station alle paar
+Sekunden wiederkamen. Der Bug der Fregatte schlägt bei schwerer See von vorn
+nicht mehr hörbar ein (bisher bei fast jeder Welle, alle 5 bis 18 s). Tief
+unten knarzte der Rumpf des U-Boots an der Testtiefe alle 4 s; jetzt ruht er
+nach jedem Knarzen 12 bis 28 s. Beides ändert nichts an der Simulation. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.169
 
 Version 1.3.169 zeigt andere Schiffe im Fernglas des Ausgucks, im

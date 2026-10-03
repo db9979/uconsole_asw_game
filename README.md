@@ -12,15 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.169**
+Current release: **1.3.170**
 
-Release 1.3.169 puts other ships where the eye sees them in every eyepiece
-(binoculars, horizon strip, periscope, hit picture, Remote Crew and phone
-lookout): a ship close aboard floats with her waterline below the horizon
-line at the range the lookout measured instead of sitting on the horizon,
-and a nearer ship stands in front of a farther one. Bearing and angle on
-the bow were checked and were already right. Saves are v50; v38 to v49
-saves still load.
+Release 1.3.170 quiets two sounds that came back every few seconds at every
+station. The frigate's bow no longer slams audibly into a
+heavy head sea (it did on nearly every wave, every 5 to 18 s). Deep down the
+submarine's hull creaked every 4 s at test depth; now it rests 12 to 28 s
+after each creak. Neither changes anything in the simulation. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

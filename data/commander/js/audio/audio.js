@@ -52,9 +52,9 @@ function playGameEffect(kind, pan = null) {
     detonation_near: [60, 24, 1.6, .22, "sawtooth"], detonation_far: [42, 22, 2.4, .09, "triangle"],
     // Another platform's active ping: heard by the frigate, or on the hull.
     enemy_ping: [1300, 1300, .5, .08, "sine"], ping_heard: [1300, 1300, .6, .10, "sine"],
-    // Shipboard atmosphere: the general alarm bell, a bow slamming into a
-    // head sea, the boat's quiet bell and its fans running down or up.
-    general_alarm: [1180, 1180, 2.6, .07, "square"], hull_slam: [40, 26, 1.2, .20, "sawtooth"],
+    // Shipboard atmosphere: the general alarm bell, the boat's quiet bell
+    // and its fans running down or up.
+    general_alarm: [1180, 1180, 2.6, .07, "square"],
     alarm_bell: [1650, 1650, 1.2, .035, "square"],
     fans_down: [220, 40, 2.4, .05, "triangle"], fans_up: [40, 220, 2.4, .05, "triangle"],
     // Thunder after a close lightning strike (src/world/thunder.py).
@@ -76,7 +76,7 @@ function playGameEffect(kind, pan = null) {
   const now = S.audio.currentTime;
   oscillator.type = type;
   oscillator.frequency.setValueAtTime(startHz, now);
-  if (kind.startsWith("sonar_echo_lfm") || ["hull_creak", "hull_slam", "fans_down", "fans_up", "thunder"].includes(kind)) {
+  if (kind.startsWith("sonar_echo_lfm") || ["hull_creak", "fans_down", "fans_up", "thunder"].includes(kind)) {
     oscillator.frequency.linearRampToValueAtTime(endHz, now + duration);
   }
   else oscillator.frequency.setValueAtTime(endHz, now + duration);

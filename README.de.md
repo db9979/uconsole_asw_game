@@ -14,15 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.169**
+Aktuelle Version: **1.3.170**
 
-Version 1.3.169 zeigt andere Schiffe in jedem Okular so, wie das Auge sie
-sieht (Fernglas, Horizontstreifen, Sehrohr, Trefferbild, Remote Crew und
-Handy-Ausguck): ein Schiff in der Nähe schwimmt mit seiner Wasserlinie unter
-der Kimm in der gemessenen Entfernung, statt auf der Kimm zu sitzen, und ein
-näheres Schiff steht vor einem ferneren. Peilung und Lagewinkel wurden
-geprüft und stimmten schon. Spielstände sind v50; v38 bis v49 lassen sich
-weiter laden.
+Version 1.3.170 beruhigt zwei Geräusche, die an jeder Station alle paar
+Sekunden wiederkamen. Der Bug der Fregatte schlägt bei schwerer See von vorn
+nicht mehr hörbar ein (bisher bei fast jeder Welle, alle 5 bis 18 s). Tief
+unten knarzte der Rumpf des U-Boots an der Testtiefe alle 4 s; jetzt ruht er
+nach jedem Knarzen 12 bis 28 s. Beides ändert nichts an der Simulation. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

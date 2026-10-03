@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.170
+
+Release 1.3.170 quiets two sounds that came back every few seconds at every
+station. The frigate's bow no longer slams audibly into a
+heavy head sea (it did on nearly every wave, every 5 to 18 s). Deep down the
+submarine's hull creaked every 4 s at test depth; now it rests 12 to 28 s
+after each creak. Neither changes anything in the simulation. Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.169
 
 Release 1.3.169 puts other ships where the eye sees them in the lookout's

@@ -98,7 +98,7 @@ def test_display_page_keys_pick_change_and_reset():
     press(game, pygame.K_UP)
     press(game, pygame.K_UP)
     assert game.opz_display_sel == len(opz_display.KEYS) - 1
-    press(game, pygame.K_BACKSPACE)
+    press(game, pygame.K_BACKSPACE, pygame.KMOD_SHIFT)   # Shift: every row
     assert game.preferences.opz_display == ()
     # The page keys belong to this page only: on the picture ↑/↓ pick tracks.
     game.station_page = 0

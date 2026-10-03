@@ -984,7 +984,7 @@ _FOOTERS = {
                                        ("N", "uboot.footer.snorkel"),
                                        ("help.key.uboot_blow", "uboot.footer.blow")),
     ("uboot_esm", "UBOOT_ESM"): (("P", "uboot.footer.mast"), ("↑/↓", "uboot.footer.esm_select"),
-                                 ("←/→", "uboot.footer.esm_classify"),
+                                 ("C", "uboot.footer.esm_classify"),
                                  ("help.key.enter", "uboot.footer.esm_plot")),
     ("uboot_engine", "UBOOT_SUPPLY"): (("R", "uboot.footer.charge_rate"),
                                        ("Shift+O", "uboot.footer.absorber"),

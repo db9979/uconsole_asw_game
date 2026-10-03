@@ -41,6 +41,10 @@ from src.core.game_pointer import PointerMixin
 from src.core.game_station_keys import StationKeysMixin
 
 
+# Menu pages besides the main menu where W/R/F and [ / ] (world, seed,
+# fullscreen, real sector) act: the scenario setup of the next mission.
+WORLD_KEY_SCREENS = ("scenario", "difficulty", "briefing")
+
 # Input and window changes redraw an eco frame at once; pointer motion does not.
 _ECO_REFRESH_EVENTS = frozenset(
     getattr(pygame, name) for name in (
@@ -736,7 +740,9 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 return
             # The OPZ's Display page: arrows, Enter and Backspace set the chart.
             if (self.station is Station.OPZ and self.station_page == 4
-                    and not getattr(e, "mod", 0) & (pygame.KMOD_CTRL | pygame.KMOD_SHIFT)
+                    and not getattr(e, "mod", 0) & pygame.KMOD_CTRL
+                    and (not getattr(e, "mod", 0) & pygame.KMOD_SHIFT
+                         or e.key == pygame.K_BACKSPACE)
                     and self._opz_display_key(e)):
                 return
             # The raised binoculars take ↑/↓ (tilt), ←/→ (train), Q/E (zoom)
@@ -829,7 +835,12 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 return
             if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
                     and self.station is Station.RADIO:
-                self.capture_hfdf()
+                # Enter confirms the page's entry: the selected task on the
+                # Tasks page (as A), the HF/DF bearing on the others.
+                if self.station_page == 2:
+                    self._task_accept_selected()
+                else:
+                    self.capture_hfdf()
                 return
             if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
                     and self.station is Station.OPZ:
@@ -920,6 +931,10 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 self._route_result(self.clear_route(), "runtime.route.cleared")
             elif e.key == pygame.K_w and self.station is Station.BRIDGE:
                 self._route_result(self.cycle_route_pattern())
+            elif (e.key == pygame.K_w and self.station is Station.HELICOPTER
+                  and not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL)):
+                # W: waypoint on the selected contact, as the patrol aircraft's W.
+                self._helo_waypoint_feedback(self.helicopter_waypoint_to_selection())
             elif e.key == pygame.K_DELETE and self.station is Station.OPZ:
                 self._toggle_opz_suppression()
             elif e.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
@@ -1435,16 +1450,30 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
 
     # --- M10–M16: Neue Stationen & Waffensysteme ---
 
+    def menu_world_keys_live(self) -> bool:
+        """W (world mode), R (seed), F (fullscreen) and [ / ] (real sector)
+        act only on the main menu (or the first-launch welcome in its place)
+        and on the scenario pages whose mission they set up; the lobby,
+        logbook, bug report and the other menu pages keep their own keys."""
+        return self.in_menu and (self.main_menu or self.welcome_active
+                                 or self.menu_screen in WORLD_KEY_SCREENS)
+
     def _handle_menu_key(self, key) -> None:
+        if self.menu_world_keys_live() and self._handle_menu_world_key(key):
+            return
+        self._handle_menu_page_key(key)
+
+    def _handle_menu_world_key(self, key) -> bool:
         if key == pygame.K_f:
             self.toggle_fullscreen()
-            return
+            return True
         if key == pygame.K_w:
             self.world_mode = {"procedural": "fixed", "fixed": "real_fixed",
                                "real_fixed": "procedural"}[self.world_mode]
-            return
-        if self.world_mode == "real_fixed" and key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
-            delta = -1 if key == pygame.K_PAGEUP else 1
+            return True
+        if self.world_mode == "real_fixed" and key in (pygame.K_LEFTBRACKET,
+                                                       pygame.K_RIGHTBRACKET):
+            delta = -1 if key == pygame.K_LEFTBRACKET else 1
             sector = (self.seed % 128 + delta) % 128
             candidate = self.seed - self.seed % 128 + sector
             if candidate == 0:
@@ -1452,10 +1481,13 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             elif candidate >= 1_000_000_000:
                 candidate -= 128
             self.seed = candidate
-            return
+            return True
         if key == pygame.K_r:
             self._reroll_menu_seed()
-            return
+            return True
+        return False
+
+    def _handle_menu_page_key(self, key) -> None:
         if self.welcome_active:
             self._handle_welcome_key(key)
             return

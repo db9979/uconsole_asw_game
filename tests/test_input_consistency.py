@@ -7,9 +7,8 @@ import pygame
 import pytest
 
 from src.core import config
-from src.core.commands import station_command_hint
 from src.core.game import Game
-from src.core.help import get_global_help
+from src.core.help import get_global_help, get_help
 from src.core.i18n import Translator, load_catalog, pseudolocale
 from src.core.station import Station
 from src.ui import layout, map_view, pointer
@@ -284,11 +283,14 @@ def test_ctrl_enter_is_the_fire_key_and_guards(game, monkeypatch,
     assert len(calls) == 3
 
 
-def test_primary_weapon_hints_translate_and_do_not_expose_catalog_keys():
+def test_primary_weapon_help_names_ctrl_enter_and_no_catalog_keys():
+    # help.py is the single source of the station keys (no separate hint table).
     for station in (Station.WEAPONS, Station.OPZ, Station.HELICOPTER):
-        assert "Ctrl+Enter" in station_command_hint(station, Translator("en").t)
-        assert "Strg+Enter" in station_command_hint(station, Translator("de").t)
-        assert "Strg+Enter" in station_command_hint(station)
+        for lang in ("en", "de"):
+            _intro, keys, _notes, _tactics = get_help(station, Translator(lang).t)
+            assert any("Ctrl+Enter" in key or "Strg+Enter" in key for key, _action in keys)
+            assert not any(text.startswith(("help.", "control."))
+                           for row in keys for text in row)
 
 
 def test_commander_confirmation_input_precedence_and_station_isolation(game, monkeypatch):

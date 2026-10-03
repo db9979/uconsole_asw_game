@@ -16,6 +16,10 @@ On the uConsole `1` to `7` switch the stations and pressing the same number agai
 | 6 Navigation | Chart & sounder, Navigation, Threat |
 | 7 Radio room | Radio |
 
+Keys that work at every station of the submarine (`F1` on the uConsole shows them first):
+
+<!-- keys:uboot_global -->
+
 ## Command {#sub-command}
 
 Command sees the whole submarine: chart, navigation, weapons and contacts, the periscope and the threat page. It orders course, speed and depth, lies on the bottom, pings, takes a BT and evades on the freshest alarm.
@@ -24,7 +28,7 @@ Command sees the whole submarine: chart, navigation, weapons and contacts, the p
 - **Weapons & contacts (page 2):** the tubes and the contact list as the Weapons station sees them, to follow the attack.
 - **Periscope (page 3):** the view through the head at periscope depth with the mast up. `←`/`→` train it, `↑`/`↓` tilt it, `Q`/`E` switch low and high power, `Space` the stabilizer; `Enter` takes a stadimeter range of the sighting under the crosshair and `Ctrl+Enter` fires on the attack computer's solution.
 - **Threat (page 4):** the freshest pings, torpedo noises and radar intercepts with their bearings. `I` evades the freshest alarm, `Ctrl+B` clears the baffles, `G` calls action stations.
-- In the browser Command also pings and takes a BT; on the uConsole the sonar room does that (`2`, `Shift+A`).
+- Command pings with `Shift+A` on the uConsole and in the browser. The BT is taken by the sonar room on the uConsole (`2`, `E`); in the browser Command can take it too.
 
 ![Submarine command on the uConsole](figure:uboot-command)
 
@@ -50,7 +54,7 @@ The submarine's sonar room works like the frigate's, without towed array, OPZ re
 Weapons loads and floods the tubes, sets run depth and salvo, fires at a selected contact or down an entered bearing, steers the wired torpedoes and launches decoys. The page has two columns beside the chart: contact cards (a click selects one) above the engagement plot, and fire control above the tube lamps. The fire-control box shows the seeker setting of the next shots; at the Weapons station a click on its red fire plate fires like `Ctrl+Enter`.
 
 - **Tubes:** each tube is empty, loaded (dry) or flooded; only a flooded tube fires. `M` loads the next empty tube, `Ctrl+M` floods the next loaded one slowly (60 s, hardly audible), `Shift+M` fast (20 s, loud).
-- **Fire control:** `↑`/`↓` pick a contact with a fresh range, `T` sets the run depth, `Y` single shot or two-torpedo spread, `X` the seeker pattern and `,`/`.` the enable point; `Ctrl+Enter` fires. `F` fires down an entered bearing and distance without a contact.
+- **Fire control:** `↑`/`↓` pick a contact with a fresh range, `T` sets the run depth, `Y` single shot or two-torpedo spread, `X` the seeker pattern and `,`/`.` the enable point; `Ctrl+Enter` fires. `F` fires without a contact: type the bearing and `Enter`, then the distance to the datum (blank: 10 NM down the bearing) and `Enter`, and `Ctrl+Enter` fires; `Enter` alone never fires.
 - **Wire and decoy:** `W` steers the newest wired torpedo onto a new bearing, `Shift+W` cuts its wire; `V` launches a decoy.
 
 ![Submarine weapons](figure:uboot-weapons)
@@ -80,7 +84,7 @@ The engine room runs the telegraph, snorkel and charge rate, silent running, the
 
 Mast & ESM raises the mast at periscope depth, listens for radars on the ESM rose, classifies the emitters, plots cross-fixes and looks through the periscope. A click on a row of the emitter list selects that emitter, like ↑/↓.
 
-- **ESM (page 1):** with the mast up (`P`, only at periscope depth) the rose shows every radar heard with its bearing and level. `↑`/`↓` pick an emitter, `←`/`→` classify it from the library (an annotation, never the truth), `Enter` puts its cross-fix or bearing line into the submarine's plot. A main-beam hit means the radar may already see the mast.
+- **ESM (page 1):** with the mast up (`P`, only at periscope depth) the rose shows every radar heard with its bearing and level. `↑`/`↓` pick an emitter, `C` (or `→`; `Shift+C` or `←` back) classifies it from the library (an annotation, never the truth), `Enter` puts its cross-fix or bearing line into the submarine's plot. A main-beam hit means the radar may already see the mast.
 - **Periscope (page 2):** the same periscope as Command's page 3, without the shot.
 
 ![Mast & ESM](figure:uboot-mast-esm)

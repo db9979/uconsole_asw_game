@@ -58,7 +58,7 @@ Wird der Zerstörer versenkt, melden das die Seite und das Ereignisprotokoll; di
 
 ## Kartenanzeige {#opz-display}
 
-Seite 5 (Anzeige) legt fest, was die OPZ-Karte zeichnet; sie ändert nichts an der Simulation oder am Lagebild selbst und bleibt in den Einstellungen gespeichert. `↑`/`↓` wählt eine Zeile, `←`/`→` ändert sie (ein Klick auf eine Zeile schaltet weiter), `Backspace` stellt alles auf den Standard zurück.
+Seite 5 (Anzeige) legt fest, was die OPZ-Karte zeichnet; sie ändert nichts an der Simulation oder am Lagebild selbst und bleibt in den Einstellungen gespeichert. `↑`/`↓` wählt eine Zeile, `←`/`→` ändert sie (ein Klick auf eine Zeile schaltet weiter), `Backspace` stellt die gewählte Zeile auf den Standard zurück, `Shift+Backspace` alle Zeilen.
 
 - **Spurverlauf:** aus, 3, 6 oder 12 Minuten frühere veröffentlichte Positionen hinter jedem Track (ein Punkt alle 30 s, die ältesten am blassesten; nach dem Laden beginnt er neu).
 - **Vektoren:** der Bewegungsvektor zeigt die Strecke in 3, 6, 12 oder 30 Minuten.

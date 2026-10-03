@@ -14,11 +14,14 @@ import pygame
 
 from src.core import boat_campaign, boat_debrief, config, daily, habits
 from src.core import logbook as logbook_model
-from src.core.i18n import message, raw_text
-from src.ui import layout
+from src.core.i18n import localize, message, raw_text
+from src.ui import layout, pointer
 
 LOGBOOK_ENTRY = "logbook"
 RECENT_ROWS = 4
+# The footer's keys in the order "logbook.hint" names them (EN and DE).
+LOGBOOK_HINT_TOKENS = (("←/→", "←/→"), ("Tab", pygame.K_TAB), ("A:", pygame.K_a),
+                       ("B:", pygame.K_b), ("L:", pygame.K_l), ("Enter/Esc", "Enter/Esc"))
 
 
 def _events(recorder, kind: str) -> int:
@@ -221,7 +224,12 @@ class LogbookMixin:
         if not rows:
             layout.blit_line(s, "logbook.none", (x, y + 24, w, 24), config.COLOR_TEXT_DIM,
                              size=18)
-        center(self.tr("logbook.hint"), 604, color=config.COLOR_TEXT_DIM, keys=("→", "Esc"))
+        # Footer: every key of the page, each one clickable.
+        footer = (140, 594, 1000, 24)
+        layout.blit_line(s, "logbook.hint", footer, config.COLOR_TEXT_DIM, size=18,
+                         align="center")
+        pointer.add_token_keys(footer, localize("logbook.hint"), 18, LOGBOOK_HINT_TOKENS,
+                               align="center")
         self._draw_logbook_panel(book, side)
 
     def _draw_logbook_panel(self, book, side: str) -> None:

@@ -12,15 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.184**
+Current release: **1.3.185**
 
-Release 1.3.184 brings the new card layout to the browser's damage-control
-station. Each repair-team card names its compartment in the player's language
-(it showed internal keys before) and says whether the team is standing by, on
-the way with the seconds left or on scene, with a matching stripe. The team
-picked for the next assignment is framed, and a click on a card picks it. The
-manual pictures are retaken in the light theme. Keys are unchanged. Saves are
-v50; v38 to v49 saves still load.
+Release 1.3.185 fixes the light theme behind the menus. The main menu and
+every window opened over a mission (help, options, save and load, quit) now
+sit on a bright day scene with sun and light sea instead of the dark night
+picture, so the dark text stays easy to read. The night theme looks as
+before. Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -14,16 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.184**
+Aktuelle Version: **1.3.185**
 
-Version 1.3.184 bringt die neuen Karten zur Schadensabwehr im Browser. Jede
-Karte eines Leckwehrtrupps nennt seine Abteilung in der Spielsprache (vorher
-standen dort interne Schlüssel) und zeigt, ob der Trupp bereitsteht, mit den
-restlichen Sekunden unterwegs ist oder vor Ort arbeitet, mit passendem
-Farbstreifen. Der Trupp für die nächste Zuweisung ist umrahmt, ein Klick auf
-eine Karte wählt ihn. Die Handbuchbilder sind im hellen Schema neu
-aufgenommen. Tasten bleiben gleich. Spielstände sind v50; v38 bis v49 laden
-weiter.
+Version 1.3.185 behebt das helle Schema hinter den Menüs. Das Hauptmenü und
+jedes Fenster über einem laufenden Einsatz (Hilfe, Optionen, Speichern und
+Laden, Beenden) liegen jetzt auf einer hellen Tagesszene mit Sonne und hellem
+Meer statt auf dem dunklen Nachtbild, so bleibt die dunkle Schrift gut
+lesbar. Das Nachtschema sieht aus wie bisher. Tasten bleiben gleich.
+Spielstände sind v50; v38 bis v49 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -125,3 +125,26 @@ def test_red_light_turns_the_night_colours_to_readable_greys():
     game.red_light_lit = False
     theme.configure_for(game)
     assert not theme.red_light() and theme.active() == "day"
+
+
+def _mean_luma(surface, rect) -> float:
+    total = count = 0
+    for x in range(rect.left, rect.right, 9):
+        for y in range(rect.top, rect.bottom, 9):
+            r, g, b, *_ = surface.get_at((x, y))
+            total += .299 * r + .587 * g + .114 * b
+            count += 1
+    return total / count
+
+
+@pytest.mark.parametrize("name, light", [("night", False), ("day", True)])
+def test_menu_and_overlay_backdrops_follow_the_theme(name, light):
+    """The scene behind the main menu and every overlay is a light day scene
+    in the light theme (dark text sits on it), the dark night hunt otherwise."""
+    from src.ui import overlay_style, splash_view
+    theme.set_theme(name)
+    surface = pygame.Surface((1280, 720))
+    for draw in (splash_view.draw_menu_backdrop, overlay_style.backdrop):
+        draw(surface, 3.0)
+        luma = _mean_luma(surface, pygame.Rect(0, 0, 1280, 720))
+        assert (luma > 170) if light else (luma < 60), (name, draw.__name__, luma)

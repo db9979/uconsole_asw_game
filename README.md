@@ -12,18 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.183**
+Current release: **1.3.184**
 
-Release 1.3.183 brings pictures into the manual. Every station of the frigate
-and the submarine now appears on the uConsole and in the Remote Crew browser,
-together with all six sonar pages, binoculars and periscope by day and at
-night, the main menu, scenario selection, briefing, options, the editors and
-the contact analyser, all in the light Tactical Day theme so a print needs
-little ink; the Markdown and PDF manuals show them, the reader in the
-game leaves them out. The submarine chapter now lists every station page with
-its keys. The first-patrol steps match the main menu again, the quick start
-says which functions still need a key, and "submarine" replaces "boat". Saves
-are v50; v38 to v49 saves still load.
+Release 1.3.184 keeps the Remote Crew host responsive. Loading, a new game,
+starting a mission and saving from the browser, as well as the web-host
+password check, no longer hold up every other browser while they run, so
+polls, sonar audio and voice keep flowing. Polling no longer re-reads each
+station's full picture. Failed logins and pairing attempts now count per
+address, so a stranger can no longer lock the host out of the web-host room,
+and that room no longer changes its code after their attempts. An observer
+switching views no longer interrupts the sonar operator's live audio. Keys
+are unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

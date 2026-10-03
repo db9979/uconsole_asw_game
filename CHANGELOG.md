@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.184
+
+Release 1.3.184 keeps the Remote Crew host responsive. Loading, a new game,
+starting a mission and saving from the browser, as well as the web-host
+password check, no longer hold up every other browser while they run, so
+polls, sonar audio and voice keep flowing. Polling no longer re-reads each
+station's full picture. Failed logins and pairing attempts now count per
+address, so a stranger can no longer lock the host out of the web-host room,
+and that room no longer changes its code after their attempts. An observer
+switching views no longer interrupts the sonar operator's live audio. Keys
+are unchanged. Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.183
 
 Release 1.3.183 brings pictures into the manual. Every station of the frigate

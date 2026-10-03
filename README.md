@@ -12,17 +12,27 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.185**
+Current release: **1.3.186**
 
-Release 1.3.185 keeps the Remote Crew host responsive. Loading, a new game,
-starting a mission and saving from the browser, as well as the web-host
-password check, no longer hold up every other browser while they run, so
-polls, sonar audio and voice keep flowing. Polling no longer re-reads each
-station's full picture. Failed logins and pairing attempts now count per
-address, so a stranger can no longer lock the host out of the web-host room,
-and that room no longer changes its code after their attempts. An observer
-switching views no longer interrupts the sonar operator's live audio. Keys
-are unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.186 makes runs and saves more dependable. Two games with the
+same seed now play out the same even when started one after the other without
+restarting the program (the patrol aircraft's radar and MAD, contact reports
+and submarine sightings no longer depend on internal numbering). Every save
+is checked before it is written, so a broken state can no longer overwrite
+the last good slot or the autosave; the periodic autosave does that check in
+the background so the game keeps running smoothly. The submarine's objective
+line now uses the dead-reckoned position instead of the true one. Unused
+thresholds are removed, and the manual now says AI submarines report
+contacts from the last 4 minutes. Keys follow the common scheme more closely: the submarine's F shot fires only
+with Ctrl+Enter (Enter confirms the range), C classifies on the submarine's
+ESM page, W sets the helicopter's waypoint on the selected contact, Enter
+accepts the selected task on the radio Tasks page, Backspace on CIC page 5
+resets only the chosen row (Shift+Backspace resets all), Shift+A at the
+submarine's Command pings on the uConsole too, and the real-sector choice
+moves from PgUp/PgDn to [ and ]. W, R and F no longer act unseen in the
+lobby, logbook and other menu pages. F1 shows the submarine's own global
+keys aboard, and the logbook lists its keys at the bottom. Saves are v50; v38 to v49
+saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

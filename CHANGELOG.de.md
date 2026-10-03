@@ -4,6 +4,29 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.186
+
+Version 1.3.186 macht Abläufe und Speichern verlässlicher. Zwei Spiele mit
+gleichem Seed laufen jetzt gleich ab, auch nacheinander ohne Neustart des
+Programms (Radar und MAD des Seefernaufklärers, Kontaktmeldungen und
+U-Boot-Sichtungen hängen nicht mehr an der internen Nummerierung). Jeder
+Spielstand wird vor dem Schreiben geprüft, ein kaputter Stand kann also den
+letzten guten Platz oder die Autosicherung nicht mehr überschreiben; die
+regelmäßige Autosicherung prüft im Hintergrund, damit das Spiel flüssig
+weiterläuft. Die Zielzeile des U-Boots nutzt jetzt den Koppelort statt der
+wahren Position. Ungenutzte Schwellen sind entfernt, und das Handbuch sagt
+jetzt, dass KI-U-Boote Kontakte der letzten 4 Minuten melden. Die Tasten folgen dem gemeinsamen Schema genauer: Der F-Schuss des U-Boots
+feuert nur mit Strg+Enter (Enter bestätigt die Entfernung), C klassifiziert
+auf der ESM-Seite des U-Boots, W legt den Wegpunkt des Hubschraubers auf den
+gewählten Kontakt, Enter nimmt auf der Funkseite Aufträge den gewählten
+Auftrag an, Rück auf OPZ-Seite 5 setzt nur die gewählte Zeile zurück
+(Umschalt+Rück alles), Umschalt+A pingt an der Führung des U-Boots jetzt auch
+auf der uConsole, und die Wahl des echten Seegebiets wandert von Bild↑/↓ auf
+[ und ]. W, R und F wirken nicht mehr unsichtbar in Lobby, Einsatzbuch und
+anderen Menüseiten. F1 zeigt an Bord des U-Boots dessen eigene Globaltasten,
+und das Einsatzbuch nennt seine Tasten unten. Spielstände sind v50; v38
+bis v49 lassen sich weiter laden.
+
 ## 1.3.185
 
 Version 1.3.185 hält den Remote-Crew-Gastgeber reaktionsfähig. Laden, neues

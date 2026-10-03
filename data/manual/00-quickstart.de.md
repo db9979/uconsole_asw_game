@@ -38,7 +38,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 
 <!-- keys:web -->
 
-Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; `F11` blendet das volle Ereignislog und die Telemetrie über der Station ein, ohne sie anzuhalten oder ihr die Tasten zu nehmen. `F1` (oder `?`) öffnet jederzeit die Hilfe. Sie hat vier Kategorien: globale Tasten, aktuelle Station (Tasten und Standardablauf), Sensoren und Taktik sowie dieses Handbuch. Menüs und Dialoge über einer laufenden Mission (Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, `F9`, Missionsende) zeigen statt der Station die Nachtszene des Startbildschirms hinter einem Konsolen-Panel; die Mission läuft dahinter weiter.
+Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; `F11` blendet das volle Ereignislog und die Telemetrie über der Station ein, ohne sie anzuhalten oder ihr die Tasten zu nehmen (auf der U-Boot-Seite das Bootslog). Die Remote-Crew-Browser zeigen dasselbe Log, das Neueste oben, in ihrem Einsatzprotokoll (`L`): die Stationen der Fregatte das Log der Fregatte, die Stationen des U-Boots das Bootslog. `F1` (oder `?`) öffnet jederzeit die Hilfe. Sie hat vier Kategorien: globale Tasten, aktuelle Station (Tasten und Standardablauf), Sensoren und Taktik sowie dieses Handbuch. Menüs und Dialoge über einer laufenden Mission (Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, `F9`, Missionsende) zeigen statt der Station die Nachtszene des Startbildschirms hinter einem Konsolen-Panel; die Mission läuft dahinter weiter.
 
 ## Unterwasserakustik in fünf Minuten {#qs-acoustics}
 

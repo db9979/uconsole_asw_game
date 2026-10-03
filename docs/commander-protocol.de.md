@@ -251,7 +251,7 @@ unbegrenzte Renderwarteschlange noch Einflüsse auf die deterministische Simulat
 - Globale Befehlswarteschlange mit höchstens 64 und je Client höchstens acht
   Einträgen. Nach zwei Sekunden veraltete Befehle ergeben eine endgültige
   Ablehnung und verschwinden nicht stillschweigend.
-- Höchstens 256 projizierte Tracks, 128 Ereignisse und 64 SimLog-Einträge. Karte
+- Höchstens 256 projizierte Tracks, 200 Ereignisse und 64 SimLog-Einträge. Karte
   mit höchstens 20.000 Vertices und 1.024 Polygonen; zu
   große Karten werden ausdrücklich weggelassen, statt teilweise falsch dargestellt.
 
@@ -322,7 +322,12 @@ und den Grenzen des Schleichmodus. Keine Remote-Aktion kann direkt steuern.
 Air-/Missile-Sequenznamensräume können die Sonaridentität nicht als Alias verwenden.
 
 Schadensereignisse sind für Brücke und Schadensabwehr sichtbar, Bedrohungen für
-Brücke, OPZ und Waffen und Missionsereignisse für jede Rolle. Der Lebenszyklus
+Brücke, OPZ und Waffen und Missionsereignisse für jede Rolle. Das
+Einsatzprotokoll (das F11-Log der uConsole) geht an jede Station seiner Seite:
+der Ereignis-Feed der Fregatte an die Stationen der Fregatte, das Bootslog des
+bemannten U-Boots an die des U-Boots. Jede Ereigniszeile hat `seq`, `kind`,
+`severity`, `message`, `stamp` (die Weltzeit, etwa `08:12`) und `tag` (das
+Kategoriekürzel des Logs, etwa `FUNK`). Der Lebenszyklus
 eines Vorschlags ist nur für Ursprungssitzung und -rolle sichtbar. SimLog hält
 höchstens 64 frühere abgelöste Diagnose-Snapshots mit ihren
 Simulationszeitstempeln. Eine ausdrückliche Host-Freigabe legt über diesen

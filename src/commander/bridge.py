@@ -75,9 +75,10 @@ from src.audio.receiver import smooth_limit
 from src.sonar.sonar import SonarSystem
 from src.core import boat_campaign, boat_debrief, config, debrief_replay, opfor
 from src.sensors import lookout_id
+from src.commander.event_log import ALERT_TAGS, MissionLog
 from src.commander.lookout_projection import build_lookout_states
 from src.commander.mission_library import MissionLibrary, editor_catalog
-from src.commander.server import (HOST_ROLE, OPFOR_ROLES, ROLES, UBOOT_COMMAND_ROLES, SIMLOG_ENTRIES_MAX,
+from src.commander.server import (EVENTS_MAX, HOST_ROLE, OPFOR_ROLES, ROLES, UBOOT_COMMAND_ROLES, SIMLOG_ENTRIES_MAX,
                                   SIMLOG_MAX_BYTES, V2_ACTION_REGISTRY, _json_bytes)
 from src.commander.advisor_web import pump_advisor
 from src.commander.projections import (ROLE_NAMES, build_opfor_states,
@@ -306,6 +307,10 @@ class CommanderBridge:
         self._ids = OrderedDict()
         self._results = deque(maxlen=32)
         self._events = deque(maxlen=128)
+        # The mission log (F11 on the uConsole) for each side's stations.
+        self._log = MissionLog()
+        self._log_hidden = True
+        self._clock = "--:--"
         self._fingerprint = None
         self._gate = None
         self._damage = None
@@ -414,11 +419,15 @@ class CommanderBridge:
             # The crewed boat's own result (its side's view of the mission).
             "boat_mission": frozenset(OPFOR_ROLES),
         }.get(kind, frozenset())
-        self._event_seq += 1
-        self._events.append(dict(seq=self._event_seq, kind=kind,
+        self._events.append(dict(seq=self._next_event_seq(), kind=kind,
                                  severity=severity, message=key,
+                                 stamp=self._clock, tag=ALERT_TAGS.get(kind, "?"),
                                  _roles=roles, _authority=authority))
         self._dirty = True
+
+    def _next_event_seq(self) -> int:
+        self._event_seq += 1
+        return self._event_seq
 
     def _proposal_status(self, status, *, navigation=False):
         if navigation:
@@ -1025,6 +1034,7 @@ class CommanderBridge:
                 self._ids.clear()
                 self._results.clear()
                 self._events.clear()
+                self._log.clear()
                 self._proposal = self._proposal_contact = self._proposal_lease = None
                 self._navigation_proposal = self._navigation_lease = None
                 self._v2_simlog_seq = 0
@@ -1050,6 +1060,8 @@ class CommanderBridge:
         self._status.update(phase=phase, connected=connected,
                             commands_allowed=self.allowed is True and connected and phase == "live")
         redacted = game.in_menu or game.main_menu or game.splash_active
+        self._clock = str(game.world.format_time())[:32] or "--:--"
+        self._log_hidden = bool(redacted)
         self._publish_role_simlog(server, game, redacted)
         self._publish_debrief(server, game)
         self._pump_missions(server, now, game)
@@ -1148,6 +1160,8 @@ class CommanderBridge:
                 self._event("boat_mission", "info" if won else "warning",
                             "commander.event.mission." + ("won" if won else "lost"))
             self._boat_result_sent = boat_ended
+            if self._log.sync(game, self._next_event_seq):
+                self._dirty = True
         self._status.update(session=self._session, epoch=self._epoch,
                             revision=self._revision, seq=self._seq)
         if self._language != game.preferences.language:
@@ -1560,7 +1574,7 @@ class CommanderBridge:
         public = {role: [] for role in ROLES}
         private = []
         for stored in self._events:
-            row = {key: stored[key] for key in ("seq", "kind", "severity")}
+            row = {key: stored[key] for key in ("seq", "kind", "severity", "stamp", "tag")}
             row["message"] = game.tr(stored["message"])
             authority = stored["_authority"]
             if authority is not None:
@@ -1568,10 +1582,21 @@ class CommanderBridge:
             else:
                 for role in stored["_roles"]:
                     public[role].append(dict(row))
+        if not self._log_hidden:
+            # Each side's stations see their own side's log, merged in order.
+            for side, roles in (("frigate", ROLE_NAMES), ("uboot", OPFOR_ROLES)):
+                rows = self._log.rows(game, side)
+                if rows:
+                    for role in roles:
+                        public[role] = sorted(public[role] + rows,
+                                              key=lambda row: row["seq"])[-EVENTS_MAX:]
         server.publish_events_v2(
             world_session=self._session, world_epoch=self._epoch,
             latest_seq=self._event_seq, events_by_role=public,
-            private_events=private)
+            private_events=private,
+            fingerprint=(self._session, self._epoch, self._event_seq,
+                         self._log_hidden, game.preferences.language,
+                         tuple(stored["seq"] for stored in self._events)))
 
     def _decide(self, game, accepted):
         self._main_thread()

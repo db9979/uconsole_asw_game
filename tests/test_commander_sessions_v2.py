@@ -296,7 +296,8 @@ def test_revocation_clears_role_event_and_simlog_publications(server):
     server.publish_events_v2(
         world_session="published", world_epoch=0, latest_seq=1,
         events_by_role={role: [{"seq": 1, "kind": "mission",
-                               "severity": "warning", "message": "old"}]
+                               "severity": "warning", "message": "old",
+                               "stamp": "00:01", "tag": "MIS"}]
                         for role in transport.ROLES})
     server.publish_simlog_v2(
         world_session="published", world_epoch=0,

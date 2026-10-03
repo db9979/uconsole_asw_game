@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.169
+
+Release 1.3.169 fills the Remote Crew operational log. It used to show only a
+few browser alerts and so looked empty; now every station lists the same
+entries as F11 on the uConsole, newest first, with time and category tag:
+the frigate's stations the frigate's log, the submarine's stations the boat
+log. A long log scrolls inside its drawer and leaves the chart its room. On
+the uConsole, F11 now opens the boat log on the submarine side too. Saves
+are v50; v38 to v49 saves still load.
+
 ## 1.3.168
 
 Release 1.3.168 brings U-Jagd to the Mac. Every release now also carries a

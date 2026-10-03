@@ -791,6 +791,8 @@ class DrawMixin:
     def _blit_telemetry_rows(self, rect, short: bool, rows=None) -> None:
         face = layout.font(16)
         rows = observations.telemetry_rows(self) if rows is None else rows
+        if not rows:
+            return
         pitch = max(layout._line_height(face), rect.h // max(1, len(rows)))
         labels = [localize(observations.telemetry_label(key, short))
                   for key, *_rest in rows]
@@ -921,8 +923,10 @@ class DrawMixin:
         return pygame.Rect(0, config.SCREEN_H - 330, config.SCREEN_W, 330)
 
     @localized
-    def draw_feed_overlay(self) -> None:
-        """F11: full event history and telemetry over the station (display only)."""
+    def draw_feed_overlay(self, entries=None, telemetry=None) -> None:
+        """F11: full event history and telemetry over the station (display only).
+
+        The submarine side passes its boat log and readings."""
         s = self.screen
         rect = self.feed_overlay_rect()
         shade = pygame.Surface(rect.size, pygame.SRCALPHA)
@@ -933,7 +937,7 @@ class DrawMixin:
         feed = pygame.Rect(rect.x + 10, rect.y + 30, rect.w - tele_w - 30, rect.h - 40)
         tele = pygame.Rect(rect.right - tele_w - 10, rect.y + 30, tele_w, rect.h - 40)
         face = layout.font(16)
-        rows = self._feed_lines(feed.w, face)
+        rows = self._feed_lines(feed.w, face, entries)
         visible = max(1, feed.h // layout._line_height(face))
         self.feed_overlay_scroll = max(0, min(self.feed_overlay_scroll,
                                               len(rows) - visible))
@@ -947,7 +951,7 @@ class DrawMixin:
         pygame.draw.line(s, config.COLOR_SONAR_RING, (tele.x - 10, feed.y),
                          (tele.x - 10, feed.bottom), 1)
         self._blit_telemetry_rows(pygame.Rect(tele.x, tele.y, tele.w, 7 * 26),
-                                  short=False)
+                                  short=False, rows=telemetry)
         layout.blit_block(s, "feed.overlay.hint", tele.x, tele.bottom - 44, tele.w,
                           44, config.COLOR_TEXT_DIM, size=16)
 

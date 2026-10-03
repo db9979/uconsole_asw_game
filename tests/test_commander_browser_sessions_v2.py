@@ -1415,10 +1415,12 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                     if role == "sonar":
                         cls.sonar_event_polls += 1
                         rows = [{"seq": 1, "kind": "mission", "severity": "warning",
-                                 "message": "Baseline warning"}]
+                                 "message": "Baseline warning",
+                                 "stamp": "08:00", "tag": "MIS"}]
                         if cls.publish_warning:
                             rows.append({"seq": 2, "kind": "mission", "severity": "warning",
-                                         "message": "New warning"})
+                                         "message": "New warning",
+                                 "stamp": "08:00", "tag": "MIS"})
                     self.reply(200, {"protocol": 2, "session": state["session"],
                                      "epoch": state["epoch"], "role": role,
                                      "latest_seq": rows[-1]["seq"] if rows else 0,

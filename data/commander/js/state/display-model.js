@@ -124,19 +124,23 @@ export function validateProposals(value) {
       (value.navigation.speed_kn !== null && (!finite(value.navigation.speed_kn) || value.navigation.speed_kn < 0 || value.navigation.speed_kn > 31)) ||
       value.navigation.course === null && value.navigation.speed_kn === null)) throw new Error("proposals");
 }
+// The mission log: as many entries as the uConsole's F11 log keeps.
+export const EVENT_HISTORY_MAX = 200;
 export function validateEvents(value) {
   if (!exactKeys(value, ["protocol", "session", "epoch", "role", "latest_seq", "events"]) ||
       value.protocol !== 2 || typeof value.session !== "string" || !value.session || value.session.length > 64 ||
       !Number.isSafeInteger(value.epoch) || value.epoch < 0 || !stationNames.includes(value.role) ||
       !Number.isSafeInteger(value.latest_seq) || value.latest_seq < 0 ||
-      !boundedArray(value.events, 128)) throw new Error("events");
+      !boundedArray(value.events, EVENT_HISTORY_MAX)) throw new Error("events");
   let previous = 0;
   for (const event of value.events) {
-    if (!exactKeys(event, ["seq", "kind", "severity", "message"]) ||
+    if (!exactKeys(event, ["seq", "kind", "severity", "message", "stamp", "tag"]) ||
         !Number.isSafeInteger(event.seq) || event.seq <= previous || event.seq < 1 || event.seq > value.latest_seq ||
         typeof event.kind !== "string" || !event.kind || event.kind.length > 32 ||
         !["info", "warning"].includes(event.severity) ||
-        typeof event.message !== "string" || !event.message || event.message.length > 512) throw new Error("events");
+        typeof event.message !== "string" || !event.message || event.message.length > 512 ||
+        typeof event.stamp !== "string" || event.stamp.length > 32 ||
+        typeof event.tag !== "string" || event.tag.length > 8) throw new Error("events");
     previous = event.seq;
   }
 }
@@ -146,12 +150,12 @@ export function useEvents(value, state) {
   if (S.eventContext !== key || S.eventBaselinePending || document.hidden || !navigator.onLine) {
     S.eventContext = key;
     S.eventHighWater = value.latest_seq;
-    S.eventHistory = value.events.slice(-80);
+    S.eventHistory = value.events.slice(-EVENT_HISTORY_MAX);
     if (!document.hidden && navigator.onLine) S.eventBaselinePending = false;
   } else {
     const fresh = value.events.filter((event) => event.seq > S.eventHighWater);
     warning = fresh.some((event) => event.severity === "warning");
-    S.eventHistory = [...S.eventHistory, ...fresh].slice(-80);
+    S.eventHistory = [...S.eventHistory, ...fresh].slice(-EVENT_HISTORY_MAX);
     S.eventHighWater = Math.max(S.eventHighWater, value.latest_seq);
   }
   emit("events", warning);

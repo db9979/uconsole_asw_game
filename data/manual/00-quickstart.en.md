@@ -38,7 +38,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 <!-- keys:web -->
 
-The bottom status ticker shows the newest event and key telemetry; `F11` opens the full event log and telemetry over the station without stopping it or taking its keys. `F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual. Menus and dialogs over a running mission (help, options, save/load, quit, nations, `F9`, mission end) show the start screen's night scene behind a console panel instead of the station; the mission keeps running behind them.
+The bottom status ticker shows the newest event and key telemetry; `F11` opens the full event log and telemetry over the station without stopping it or taking its keys (on the submarine side the boat log). The Remote Crew browsers show the same log, newest first, in their operational log (`L`): the frigate's stations the frigate's log, the submarine's stations the boat log. `F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual. Menus and dialogs over a running mission (help, options, save/load, quit, nations, `F9`, mission end) show the start screen's night scene behind a console panel instead of the station; the mission keeps running behind them.
 
 ## Underwater acoustics in five minutes {#qs-acoustics}
 

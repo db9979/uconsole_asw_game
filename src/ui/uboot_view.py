@@ -1552,7 +1552,11 @@ def draw(game) -> None:
             config.STATION_RECT = config.STATION_PANEL_RECT
             with layout.clip_to(game.screen, config.STATION_RECT):
                 draw_command_panel(game, boat)
-        draw_bottom(game, boat)
+        if game.feed_overlay_open:
+            # F11: the whole boat log over the station, as on the frigate.
+            game.draw_feed_overlay(feed_entries(boat), telemetry_rows(game, boat))
+        else:
+            draw_bottom(game, boat)
         game.draw_navigation_input()
         silent_light(game.screen, boat)
         if game.game_over and getattr(game, "debrief_open", False):

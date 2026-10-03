@@ -214,7 +214,7 @@ unbounded queue or alter deterministic simulation order.
   duplicate-member/nonfinite-number/unknown-field rejection.
 - Global command queue at most 64 and per-client queue at most eight. Commands
   older than two seconds yield terminal rejection, not silent disappearance.
-- At most 256 projected tracks, 128 events and 64 SimLog entries. Chart at most
+- At most 256 projected tracks, 200 events and 64 SimLog entries. Chart at most
   20,000 vertices and 1,024 polygons; oversized charts are
   explicitly omitted rather than partially misrepresented.
 
@@ -276,8 +276,12 @@ directly steer. Air/missile
 sequence namespaces cannot alias sonar identity.
 
 Damage events are visible to Bridge and Damage Control, threats to Bridge, OPZ
-and Weapons, and mission events to every role. Proposal lifecycle events are
-visible only to the originating session and role. SimLog stores at most 64 prior
+and Weapons, and mission events to every role. The mission log (the uConsole's
+F11 log) goes to every station of its side: the frigate's event feed to the
+frigate's stations, the crewed submarine's boat log to the submarine's. Every
+event row is `seq`, `kind`, `severity`, `message`, `stamp` (the world clock,
+for example `08:12`) and `tag` (the log's category tag, for example `FUNK`).
+Proposal lifecycle events are visible only to the originating session and role. SimLog stores at most 64 prior
 detached diagnostic snapshots with their simulation timestamps. An explicit
 host grant exposes full simulation truth through this read-only endpoint;
 disabled or ungranted SimLog returns no history.

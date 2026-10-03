@@ -14,18 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.173**
+Aktuelle Version: **1.3.174**
 
-Version 1.3.173 repariert die Update-Prüfung der macOS-App. Ihr
-eingebautes Python suchte die Stammzertifikate in einem Ordner, den es nur auf
-dem Baurechner gibt, deshalb scheiterte jede HTTPS-Anfrage an der Prüfung und
-der Startbildschirm bot nie eine neuere Version an. Das Windows-Programm und
-die macOS-App bringen jetzt eigene Stammzertifikate (certifi) zusätzlich zu
-denen des Systems mit, was auch dem optionalen Sprachmodell und dem
-Live-Flugverkehr über HTTPS hilft. Schlägt die Update-Prüfung fehl, sagen
-Startbildschirm und Hauptmenü jetzt, dass und warum (keine Verbindung,
-Zertifikat oder ein Fehler von GitHub), und U prüft erneut. Spielstände sind
-v50; v38 bis v49 lassen sich weiter laden.
+Version 1.3.174 füllt das Einsatzprotokoll der Remote Crew: jede
+Browser-Station listet jetzt dieselben Einträge wie F11 auf der uConsole, das
+Neueste oben mit Uhrzeit und Kategoriekürzel, die Stationen der Fregatte das
+Log der Fregatte und die Stationen des U-Boots das Bootslog. Bisher zeigte es
+nur wenige Alarme und wirkte leer. Ein langes Protokoll scrollt in seiner
+Leiste, und auf der uConsole öffnet F11 jetzt auch auf der U-Boot-Seite das
+Bootslog. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

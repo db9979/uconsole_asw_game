@@ -3,6 +3,7 @@ import { $ } from "../core/base.js";
 import { on } from "../core/events.js";
 import { t } from "../core/format.js";
 import { ultraWide } from "../state/shared.js";
+import { eventMeta } from "./feeds.js";
 import { activateTab } from "./lobby.js";
 import { renderRoleVisuals } from "./role-visuals.js";
 
@@ -68,7 +69,7 @@ function hideAlert() {
 // until it ages out or the operator dismisses it.
 function renderAlerts(warning) {
   const newest = S.eventHistory.at(-1);
-  $("log-ticker").textContent = newest ? `${newest.seq} / ${newest.kind}  ${newest.message}` : t("no_events");
+  $("log-ticker").textContent = newest ? `${eventMeta(newest)}  ${newest.message}` : t("no_events");
   $("log-ticker").dataset.severity = newest?.severity ?? "";
   if (!warning) return;
   const alert = [...S.eventHistory].reverse().find((event) => event.severity === "warning");

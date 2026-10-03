@@ -242,7 +242,10 @@ body.workstation-mode .tablist { display: none; }
 .log-ticker { flex: 1; min-width: 0; color: var(--text-dim); font-size: var(--font-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .log-ticker[data-severity="warning"] { color: var(--caution); }
 .drawer[data-collapsed="true"] .dock-body { display: none; }
-.drawer[data-collapsed="false"] .dock-body { height: clamp(7rem, 22vh, 16rem); padding-top: 0; }
+/* A fixed height (not flex-grown), so a long log scrolls inside the list and
+   never pushes the chart away; the footer stays below it. */
+.drawer[data-collapsed="false"] .dock-body { flex: 0 0 auto; height: clamp(7rem, 22vh, 16rem); padding-top: 0; overflow: hidden; }
+.drawer .dock-body > .events-panel { flex: 1 1 auto; min-height: 0; }
 .drawer[data-collapsed="false"] .log-ticker { visibility: hidden; }
 .drawer[data-collapsed="false"] .dock-toggle::before { content: "\2304"; }
 
@@ -285,6 +288,9 @@ body.workstation-mode .tablist { display: none; }
   .cic-grid > .drawer { order: 5; }
   .dock, .dock-left .dock-body { overflow: visible; }
   .dock-body { overflow: visible; }
+  /* One scrolling column: the open log gets more room, its list still scrolls. */
+  .drawer[data-collapsed="false"] .dock-body { height: auto; }
+  .drawer .event-list { max-height: 60vh; }
   .dock[data-collapsed="true"] .dock-bar { flex-direction: row; height: auto; padding: .2rem .35rem .2rem .7rem; }
   .dock[data-collapsed="true"] .dock-title { writing-mode: horizontal-tb; transform: none; }
   .dock[data-collapsed="true"] .dock-toggle { order: 0; }

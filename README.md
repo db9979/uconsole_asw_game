@@ -12,17 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.173**
+Current release: **1.3.174**
 
-Release 1.3.173 fixes the update check of the macOS app. The app's
-built-in Python looked for root certificates in a folder that exists only on
-the build machine, so every HTTPS request failed verification and the start
-screen never offered a newer version. The Windows and macOS programs now
-carry their own root certificates (certifi) on top of the system's, which
-also helps the optional language model and live air traffic over HTTPS. If
-the update check fails, the start screen and the main menu now say so and
-why (no connection, certificate, or an error from GitHub), and U checks
-again. Saves are v50; v38 to v49 saves still load.
+Release 1.3.174 fills the Remote Crew operational log: every browser station
+now lists the same entries as F11 on the uConsole, newest first with time and
+category tag, the frigate's stations the frigate's log and the submarine's
+stations the boat log. Before, it showed only a few alerts and looked empty.
+A long log scrolls inside its drawer, and on the uConsole F11 now opens the
+boat log on the submarine side too. Saves are v50; v38 to v49 saves still
+load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

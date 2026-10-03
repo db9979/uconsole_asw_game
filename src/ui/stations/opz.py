@@ -18,6 +18,8 @@ from src.ui import chart_symbols
 from src.ui import nato_symbols
 from src.ui import observations
 from src.sensors.fusion import source_groups
+from src.core import opz_display
+from src.ui.stations import opz_display_view
 
 
 from src.ui.stations.common import (
@@ -610,8 +612,10 @@ def _ring_visible(center, radius, rect) -> bool:
     return far >= radius - 2
 
 
-def _opz_basemap_surface(game, map_rect: pygame.Rect, view) -> pygame.Surface:
-    """Build a bounded cached chart layer beneath the live OPZ radar picture."""
+def _opz_basemap_surface(game, map_rect: pygame.Rect, view,
+                         chart_layer: bool = True) -> pygame.Surface:
+    """Build a bounded cached chart layer beneath the live OPZ radar picture
+    (``chart_layer`` False leaves out the depth shading and the grid)."""
     world = game.world
     coast = getattr(world, "coast", None)
     world_size_nm = float(getattr(world, "size_nm", config.WORLD_SIZE_NM))
@@ -623,7 +627,7 @@ def _opz_basemap_surface(game, map_rect: pygame.Rect, view) -> pygame.Surface:
     key = (world, coast, map_rect.size, round(scale, 6), bucket_x, bucket_y,
            config.COLOR_GEO_BG, config.COLOR_GEO_GRID,
            config.COLOR_LAND, config.COLOR_LAND_EDGE,
-           config.COLOR_SHALLOW, config.COLOR_DEEP)
+           config.COLOR_SHALLOW, config.COLOR_DEEP, chart_layer)
     cached = getattr(_opz_basemap_surface, "_cache", None)
     if cached is not None and cached[0] == key:
         return cached[1]
@@ -634,7 +638,7 @@ def _opz_basemap_surface(game, map_rect: pygame.Rect, view) -> pygame.Surface:
     center_y = map_rect.h / 2.0
 
     depth_query = getattr(world, "depth_m", None)
-    if (coast is not None and getattr(coast, "has_bathymetry", False)
+    if (chart_layer and coast is not None and getattr(coast, "has_bathymetry", False)
             and callable(depth_query)):
         cell_px = 20
         for py in range(0, map_rect.h, cell_px):
@@ -658,13 +662,13 @@ def _opz_basemap_surface(game, map_rect: pygame.Rect, view) -> pygame.Surface:
     half_h_nm = map_rect.h / (2.0 * scale)
     first_x = math.ceil((bucket_x - half_w_nm) / step) * step
     first_y = math.ceil((bucket_y - half_h_nm) / step) * step
-    value = first_x
+    value = first_x if chart_layer else bucket_x + half_w_nm + step
     while value <= bucket_x + half_w_nm:
         px = int(center_x + (value - bucket_x) * scale)
         pygame.draw.line(layer, config.COLOR_GEO_GRID,
                          (px, 0), (px, map_rect.h), 1)
         value += step
-    value = first_y
+    value = first_y if chart_layer else bucket_y + half_h_nm + step
     while value <= bucket_y + half_h_nm:
         py = int(center_y + (value - bucket_y) * scale)
         pygame.draw.line(layer, config.COLOR_GEO_GRID,
@@ -732,13 +736,20 @@ def draw_opz_view(game, tr=None) -> None:
     chart = regions["chart"]
     view = _opz_view(game, chart)
     max_nm = _opz_radar_range_nm(game)
-    s.blit(_opz_basemap_surface(game, map_rect, view), map_rect)
+    shown = game.opz_display_settings()
+    layer = lambda key: opz_display.enabled(shown, key)  # noqa: E731
+    vector_min = opz_display.vector_minutes(shown)
+    vector_max_px = min(chart.size) * .45
+    s.blit(_opz_basemap_surface(game, map_rect, view, layer("chart")), map_rect)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, map_rect, 1)
     layout.corner_brackets(s, map_rect)
     previous_clip = s.get_clip()
     s.set_clip(chart)
     # Chart labels step aside from each other (and from the speed labels).
-    with label_layout.label_scope(chart):
+    with label_layout.label_scope(chart) as chart_labels:
+        # The radar switches sit in the chart's top left; labels keep off.
+        for _domain, switch in opz_display_view.radar_switch_rects(chart):
+            chart_labels.reserve(switch)
         station_live = not game.damage.station_down("opz")
         radar_live = station_live and (game.surface_radar_on or game.air_radar_on)
         px_per_nm = view.scale
@@ -749,12 +760,12 @@ def draw_opz_view(game, tr=None) -> None:
         coast_segments = (_contour_segments_in_circle(
             coast, game.ship.x, game.ship.y, max_nm) if coast is not None else [])
         with layout.clip_to(s, chart):
-            if radar_live and quality.afterglow():
+            if radar_live and quality.afterglow() and layer("afterglow"):
                 # Phosphor afterglow behind the beam, under everything else.
                 map_fx_view.draw_afterglow(s, own_x, own_y, radar_radius,
                                            game.radar_sweep_bearing(), config.COLOR_GEO_BG)
             # Radar presentation remains ship-centred and independent of the camera.
-            for ring_index in range(1, 5):
+            for ring_index in range(1, 5) if layer("rings") else ():
                 rr = radar_radius * ring_index / 4.0
                 if not _ring_visible((own_x, own_y), rr, chart):
                     continue
@@ -763,16 +774,16 @@ def draw_opz_view(game, tr=None) -> None:
             # Axis lines clipped to the chart (strong zoom gives huge radii).
             x0 = max(chart.left, own_x - radar_radius)
             x1 = min(chart.right, own_x + radar_radius)
-            if chart.top <= own_y <= chart.bottom and x0 < x1:
+            if layer("rings") and chart.top <= own_y <= chart.bottom and x0 < x1:
                 pygame.draw.line(s, config.COLOR_SONAR_RING,
                                  (int(x0), int(own_y)), (int(x1), int(own_y)), 1)
             y0 = max(chart.top, own_y - radar_radius)
             y1 = min(chart.bottom, own_y + radar_radius)
-            if chart.left <= own_x <= chart.right and y0 < y1:
+            if layer("rings") and chart.left <= own_x <= chart.right and y0 < y1:
                 pygame.draw.line(s, config.COLOR_SONAR_RING,
                                  (int(own_x), int(y0)), (int(own_x), int(y1)), 1)
             # Range labels at the top of each ring, beside the north axis.
-            for ring_index in range(1, 5):
+            for ring_index in range(1, 5) if layer("rings") else ():
                 rr = radar_radius * ring_index / 4.0
                 if not chart.top - 18 <= own_y - rr <= chart.bottom:
                     continue
@@ -781,6 +792,10 @@ def draw_opz_view(game, tr=None) -> None:
                                range=f"{max_nm * ring_index / 4.0:g}"),
                     (int(own_x) + 4, int(own_y - rr) + 1, 80, 18),
                     config.COLOR_TEXT_DIM, size=layout.MIN_OPERATIONAL_FONT)
+            if layer("compass") and _ring_visible((own_x, own_y), radar_radius, chart):
+                # Bearing scale on the outer ring with the own course mark.
+                opz_display_view.draw_compass(s, chart, (own_x, own_y), radar_radius,
+                                              game.ship.course)
 
             if station_live and game.surface_radar_on:
                 coast_range = min(max_nm, game.radar_effective_range("surface"))
@@ -811,7 +826,7 @@ def draw_opz_view(game, tr=None) -> None:
             nato_symbols.draw_symbol(s, (own_x, own_y), "FRIEND", "SURFACE", 18)
             nato_symbols.draw_motion_vector(
                 s, (own_x, own_y), game.ship.course, game.ship.speed,
-                px_per_nm, config.COLOR_TEXT, max_px=min(chart.size) * .3)
+                px_per_nm, config.COLOR_TEXT, minutes=vector_min, max_px=vector_max_px)
 
         # Own-force aircraft is datalink truth, not a radar/sensor track.
         helo = getattr(game, "helo", None)
@@ -849,7 +864,17 @@ def draw_opz_view(game, tr=None) -> None:
                       else game.radar_tracks())
         selected_id = game.opz_selected_track_id
         plotted = {}
-        for track in (t for t in cic_tracks if _observation_position(t)[0] is None):
+        # Track trails under the live symbols, in each track's colour.
+        trail_minutes = opz_display.trail_minutes(shown)
+        if trail_minutes > 0.0 and hasattr(game, "opz_tracks"):
+            opz_display_view.draw_trails(
+                game, s, chart, view,
+                [t for t in cic_tracks if _observation_position(t)[0] is not None],
+                trail_minutes,
+                {t.track_id: nato_symbols.AFFILIATION_COLORS[game.opz_affiliation(t.track_id)]
+                 for t in cic_tracks})
+        for track in (t for t in cic_tracks if layer("bearings")
+                      and _observation_position(t)[0] is None):
             ray = _opz_bearing_ray(game, track, chart, view)
             if ray is None:
                 continue
@@ -862,9 +887,12 @@ def draw_opz_view(game, tr=None) -> None:
             nato_symbols.draw_symbol(s, (sx, sy), affiliation, domain, 14,
                                      track["track_id"] == selected_id)
             nato_symbols.draw_motion_vector(s, (sx, sy), track.course, track.speed_kn,
-                                            px_per_nm, col, max_px=min(chart.size) * .3)
-            label_layout.blit_line(s, track["source"],
-                             (int(sx) - 22, int(sy) - 21, 66, 18), col, size=12)
+                                            px_per_nm, col, minutes=vector_min,
+                                            max_px=vector_max_px)
+            text = opz_display_view.track_label(shown, track["source"])
+            if text is not None:
+                label_layout.blit_line(s, text, (int(sx) - 22, int(sy) - 21, 66, 18),
+                                       col, size=12)
 
         # Unmarked mast/snorkel echoes: a bare afterglow dot, no symbol or label,
         # dimming with the time since the sweep painted it.
@@ -885,7 +913,7 @@ def draw_opz_view(game, tr=None) -> None:
             plotted[track.track_id] = (bx, by)
             # Furthest-on circle: how far the contact can have gone since its fix.
             reach = map_fx.furthest_on_nm(track["kind"], game.sim_t - track.last_seen)
-            if reach is not None:
+            if reach is not None and layer("uncertainty"):
                 map_fx_view.draw_furthest_on(s, bx, by, reach * px_per_nm, chart, config.COLOR_GEO_BG)
             if track["source"].startswith("RADAR"):
                 glow = _radar_glow(game, observations.bearing(track, game.ship))
@@ -898,9 +926,12 @@ def draw_opz_view(game, tr=None) -> None:
                 s, (bx, by), affiliation, domain, 16,
                 track["track_id"] == selected_id)
             nato_symbols.draw_motion_vector(s, (bx, by), track.course, track.speed_kn,
-                                            px_per_nm, col, max_px=min(chart.size) * .3)
-            label_layout.blit_line(s, track["label"],
-                              (int(bx) + 12, int(by) - 10, 118, 19), col, size=12)
+                                            px_per_nm, col, minutes=vector_min,
+                                            max_px=vector_max_px)
+            text = opz_display_view.track_label(shown, track["label"])
+            if text is not None:
+                label_layout.blit_line(s, text, (int(bx) + 12, int(by) - 10, 118, 19),
+                                       col, size=12)
 
         for fusion in (track for track in cic_tracks if track.source == "FUSION"):
             if fusion.track_id not in plotted:
@@ -909,6 +940,13 @@ def draw_opz_view(game, tr=None) -> None:
                 if member in plotted:
                     pygame.draw.line(s, config.COLOR_WARN, plotted[fusion.track_id],
                                      plotted[member], 1)
+
+        if layer("cpa") and hasattr(game, "selected_opz_track"):
+            # The selected track's closest point of approach (its own report).
+            selected_track = game.selected_opz_track()
+            if (selected_track is not None and selected_track.track_id in plotted
+                    and _observation_position(selected_track)[0] is not None):
+                opz_display_view.draw_cpa(game, s, chart, view, selected_track)
 
         # Die ESSM-Auswahl bleibt bewusst von der allgemeinen CIC-Auswahl getrennt.
         asm_tracks = game.asm_tracks()
@@ -934,11 +972,12 @@ def draw_opz_view(game, tr=None) -> None:
         draw_plot(s, game, view, chart)
 
     s.set_clip(previous_clip)
+    opz_display_view.draw_radar_switches(game, s, chart, not game.damage.station_down("opz"))
     side_top = regions["sidebar"].y
     side_h = regions["sidebar"].h
     sb_box = layout.box(s, (regions["sidebar"].x + 4, side_top,
                             regions["sidebar"].w - 8, side_h - 8),
-                        "panel.opz_status")
+                        "opz.display.heading" if page == 4 else "panel.opz_status")
     x = sb_box[0]
     py = sb_box[1]
     w = sb_box[2]
@@ -1062,6 +1101,8 @@ def draw_opz_view(game, tr=None) -> None:
         _draw_mpa_sidebar(game, s, x, py, w, regions["classify"].top - 7)
     elif page == 3:
         _draw_consort_sidebar(game, s, x, py, w, regions["classify"].top - 7)
+    elif page == 4:
+        opz_display_view.draw_display_page(game, s, x, py, w, regions["classify"].top - 7)
     else:
         selected = game.selected_opz_track()
         if selected is None:
@@ -1159,6 +1200,13 @@ def draw_opz_view(game, tr=None) -> None:
         for scale in config.RADAR_RANGE_SCALES_NM)
     # The station footer row, like every other station's key legend.
     footer_rect = pygame.Rect(station.x + 8, station.bottom - 28, scope_w - 16, 20)
-    layout.command_segment(s, footer_rect, "Q/E", "opz.footer.range", "",
+    range_text_w = layout.text_width(
+        layout.font(11), "Q/E " + localize("opz.footer.range") + f" {max_nm:g} NM  {scales}") + 24
+    range_rect = pygame.Rect(footer_rect.x, footer_rect.y, range_text_w, footer_rect.h)
+    layout.command_segment(s, range_rect, "Q/E", "opz.footer.range", "",
                            f"{max_nm:g} NM  {scales}", size=11)
-    pointer.add_legend(footer_rect, "Q/E")
+    pointer.add_legend(range_rect, "Q/E")
+    # Layer chips: what the chart draws now; a click moves one on.
+    opz_display_view.draw_chips(game, s, pygame.Rect(
+        range_rect.right + 8, footer_rect.y + 1,
+        footer_rect.right - range_rect.right - 8, footer_rect.h - 2))

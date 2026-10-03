@@ -148,7 +148,7 @@ export function validateV2State(state) {
     engine: ["propulsion", "machinery", "controls", "environment_effects", "compartments"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"],
     lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
-    opz: ["observations", "fusions", "suggestions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
+    opz: ["observations", "fusions", "suggestions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets", "trails"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical", "tasks", "can_request_ras", "can_contact_report", "can_request_support"],
     sonar: ["observations", "settings", "visualization"],
     uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
@@ -187,6 +187,11 @@ export function validateV2State(state) {
     stations: ["starboard", "ahead", "port", "astern"],
   };
   const opzSuggestionFields = ["key", "refs", "bearing", "bearing_delta_deg", "distance_nm", "course_delta_deg", "speed_delta_kn", "class_match"];
+  const opzTrailFields = {
+    row: ["ref", "points"],
+    max: 48,
+    points: 24,
+  };
   const helicopterTacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type", "classification", "released_to_opz"];
   const weatherFields = {
     atmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
@@ -637,6 +642,9 @@ export function validateV2State(state) {
           typeof row.classification !== "string" || !row.classification || row.classification.length > 128) ||
          new Set(payload.source_classifications.map((row) => row.ref)).size !== payload.source_classifications.length ||
          !exactKeys(payload.defense, ["vls", "ciws", "aa", "chaff_ready", "ciws_ready", "aa_ready", "ciws_released"]) || typeof payload.defense.ciws_released !== "boolean" ||
+         !boundedArray(payload.trails, opzTrailFields.max) || payload.trails.some((row) => !exactKeys(row, opzTrailFields.row) ||
+           !pictureRefs.has(row.ref) || !boundedArray(row.points, opzTrailFields.points) ||
+           row.points.some((point) => !Array.isArray(point) || point.length !== 3 || !point.every(finite) || point[2] < 0)) ||
          !boundedArray(payload.radar_blips, 16) || payload.radar_blips.some((row) => !exactKeys(row, ["ref", "x", "y", "age_s"]) ||
            typeof row.ref !== "string" || !/^blip-[0-9]{1,18}$/.test(row.ref) || [row.x, row.y, row.age_s].some((value) => !finite(value)))) throw new Error("protocol");
     tacticalRows(payload.asm_observations, 128);

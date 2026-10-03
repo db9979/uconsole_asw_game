@@ -27,6 +27,7 @@ import { changeLookoutRange, queueLookoutDraw, renderLookoutStatus, zoom } from 
 import { renderSnapshot } from "../views/render.js";
 import { hideMapTooltip, mapTooltipLines, nearestMapInfo, roleMapGeometry, showMapTooltip, stopOpzSweepAnimation, syncOpzSweepAnimation } from "../views/role-map.js";
 import { queueVisualDraw, renderRoleVisuals } from "../views/role-visuals.js";
+import { wireOpzDisplayBar } from "../views/opz-display.js";
 import { applySimlogView, closeSimlogMap, exportSimlog, loadSimlog, queueSimlogMapDraw } from "../views/simlog.js";
 import { renderTracks, selectTrack } from "../views/tracks.js";
 import { drawWeatherProfile, profileSpeedAt, toggleWeatherStation } from "../views/weather.js";
@@ -861,6 +862,8 @@ export function init() {
     Object.assign(roleMapViews[role], {x: S.chart?.size_nm / 2 || 250, y: S.chart?.size_nm / 2 || 250, zoom: 1, follow: false});
     queueVisualDraw();
   });
+  wireOpzDisplayBar((domain, enabled) => sendStationAction("opz_set_radar", {domain, enabled}));
+  $("opz-display-bar").addEventListener("opz-display-change", () => queueVisualDraw());
   $("plot-tool").addEventListener("change", () => { S.plotAnchor = null; queueVisualDraw(); });
   $("plot-clear").addEventListener("click", () => sendStationAction("plot_clear", {}));
   $("plot-track-bearing").addEventListener("click", plotTrackBearing);

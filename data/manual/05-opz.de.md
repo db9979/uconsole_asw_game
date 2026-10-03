@@ -6,7 +6,7 @@ Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser
 
 ## Anzeigen und Instrumente {#opz-displays}
 
-Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track; Seite 3 führt den Seefernaufklärer; Seite 4 führt den Begleitzerstörer einer Gruppenjagd. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Q`/`E` wie der Zoom an anderen Stationen; `Bild Auf`/`Bild Ab` blättern), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
+Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track; Seite 3 führt den Seefernaufklärer; Seite 4 führt den Begleitzerstörer einer Gruppenjagd; Seite 5 stellt die Kartenanzeige ein. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Q`/`E` wie der Zoom an anderen Stationen; `Bild Auf`/`Bild Ab` blättern), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
 
 ```text
  NATO-Rahmenfarben (Bedienervermerk, keine Wahrheit)
@@ -51,6 +51,19 @@ Seite 4 (Verband) führt das Begleitschiff einer Gruppenjagd: den Zerstörer LUE
 - **Waffen:** `Shift+W` schaltet Waffen frei oder gesperrt (zu Beginn gesperrt). Frei schießt er höchstens alle 3 Minuten ein ASROC auf den Standort des selbständig verfolgten Kontakts, wenn dieser jünger als 2 Minuten ist und 1 bis 12 sm vom Zerstörer liegt. `Strg+Enter` befiehlt ein ASROC auf den Standort des gewählten Tracks (jünger als 2 Minuten); ohne Auswahl auf den selbständig verfolgten Kontakt. Es ist immer nur eines seiner ASROC in der Luft. Solange niemand die OPZ der Fregatte besetzt (die KI führt die Fregatte), können ihm auch die Jäger ein geortetes Datum für ein ASROC schicken.
 
 Wird der Zerstörer versenkt, melden das die Seite und das Ereignisprotokoll; die Mission geht weiter. Die OPZ im Browser hat dieselben Befehle in der Karte *Begleitzerstörer*, und ihre Karte zeigt den Zerstörer, seinen Punkt und seine Peillinien.
+
+## Kartenanzeige {#opz-display}
+
+Seite 5 (Anzeige) legt fest, was die OPZ-Karte zeichnet; sie ändert nichts an der Simulation oder am Lagebild selbst und bleibt in den Einstellungen gespeichert. `↑`/`↓` wählt eine Zeile, `←`/`→` ändert sie (ein Klick auf eine Zeile schaltet weiter), `Backspace` stellt alles auf den Standard zurück.
+
+- **Spurverlauf:** aus, 3, 6 oder 12 Minuten frühere veröffentlichte Positionen hinter jedem Track (ein Punkt alle 30 s, die ältesten am blassesten; nach dem Laden beginnt er neu).
+- **Vektoren:** der Bewegungsvektor zeigt die Strecke in 3, 6, 12 oder 30 Minuten.
+- **Beschriftung:** voll, kurz (sechs Zeichen) oder aus.
+- **Peilskala:** Striche alle 10° und Zahlen alle 30° am äußeren Radarring, mit einer Marke für den eigenen Kurs.
+- **Entfernungsringe**, **Peilstrahlen** reiner Peilmeldungen, **Unsicherheitskreise**, **Tiefen und Gitter** der Karte und das **Radar-Nachleuchten** lassen sich einzeln an- und ausschalten.
+- **CPA Auswahl:** Beim gewählten Track mit Position, Kurs und Fahrt laufen beide bis zum Punkt der nächsten Annäherung weiter; eine Linie verbindet die beiden Punkte mit Abstand und Zeit (rot unter 2 sm). Sie nutzt nur die gemeldete Bewegung des Tracks und ist deshalb nur so gut wie diese Meldung.
+
+Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luftradar ein und aus (wie `R` und `Shift+R`, mit der EMCON-Meldung an das Hauptquartier); sie leuchten, solange das Radar sendet. Die Schalter unter der Karte zeigen auf jeder Seite, welche Ebenen an sind, und schalten sie per Klick. Die OPZ im Browser hat die Radarschalter und dieselben Einstellungen als Knöpfe über ihrer Karte (nur für diesen Browser-Tab gespeichert).
 
 ## Tasten {#opz-keys}
 

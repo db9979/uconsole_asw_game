@@ -11,6 +11,7 @@ import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { roleMapSweepCanvas, roleMapSweepCtx } from "./canvases.js";
 import { labelField, placeText, placeTip, reserveText } from "./label-layout.js";
 import { drawAfterglow, drawFurthestOn, drawMapFx, furthestOnNm, mapFxActive } from "./map-fx.js";
+import { drawOpzCpa, drawOpzRings, drawOpzTrails, opzLabel, opzLayer, opzVectorMinutes, syncOpzDisplayBar } from "./opz-display.js";
 
 export function mapPayload(role) {
   const payload = S.v2State[role];
@@ -275,7 +276,7 @@ function drawOpzSweepOverlay() {
   const reach = Math.max(radar.surface ? radar.surface_effective_range_nm : 0,
     radar.air ? radar.air_effective_range_nm : 0);
   const length = reach * geometry.scale;
-  drawAfterglow(roleMapSweepCtx, ox, oy, length, bearing);
+  if (opzLayer("afterglow")) drawAfterglow(roleMapSweepCtx, ox, oy, length, bearing);
   roleMapSweepCtx.strokeStyle = palette().accent;
   roleMapSweepCtx.lineWidth = 1.5;
   roleMapSweepCtx.beginPath();
@@ -289,6 +290,9 @@ export function drawRoleMap(role) {
   S.roleMapInfo = [];
   if (!plot || !S.chart) return;
   const payload = S.v2State[role], data = mapPayload(role), viewState = roleMapViews[role];
+  syncOpzDisplayBar(role);
+  // The OPZ's display settings (opz-display.js); other charts draw everything.
+  const opz = role === "opz", layer = (key) => !opz || opzLayer(key);
   plot.context.textAlign = "left";
   plot.context.textBaseline = "alphabetic";
   if (!viewState.initialized) { viewState.initialized = true; viewState.follow = true; viewState.zoom = role === "opz" ? S.chart.size_nm / (2 * payload.radar.range_nm) : 2; }
@@ -302,7 +306,7 @@ export function drawRoleMap(role) {
   const shift = data.geoShift;
   const point = shift ? (x, y) => framePoint(x - shift.x, y - shift.y) : framePoint;
   const geo = S.chart.geography;
-  if (geo?.depths.length) {
+  if (geo?.depths.length && layer("chart")) {
     const size = geo.depths.length, cell = S.chart.size_nm / Math.max(1, size - 1);
     for (let y = 0; y < size - 1; y++) for (let x = 0; x < geo.depths[y].length - 1; x++) {
       const [px, py] = point(x * cell, y * cell);
@@ -314,7 +318,7 @@ export function drawRoleMap(role) {
   }
   const step = viewState.zoom >= 8 ? 10 : viewState.zoom >= 3 ? 25 : 50;
   plot.context.strokeStyle = "#243b46"; plot.context.fillStyle = "#829ba5";
-  for (let value = 0; value <= S.chart.size_nm; value += step) {
+  for (let value = 0; value <= S.chart.size_nm && layer("chart"); value += step) {
     const [x, y] = point(value, value);
     if (x >= 0 && x <= plot.width) { plot.context.beginPath(); plot.context.moveTo(x, 0); plot.context.lineTo(x, plot.height); plot.context.stroke(); }
     if (y >= 0 && y <= plot.height) { plot.context.beginPath(); plot.context.moveTo(0, y); plot.context.lineTo(plot.width, y); plot.context.stroke(); }
@@ -332,7 +336,7 @@ export function drawRoleMap(role) {
   plot.context.lineWidth = 3;
   plot.context.strokeStyle = "#07151c";
   plot.context.fillStyle = "#b5c8cf";
-  for (let value = 0; value <= S.chart.size_nm; value += step) {
+  for (let value = 0; value <= S.chart.size_nm && layer("chart"); value += step) {
     const [x, y] = point(value, value), text = String(value);
     if (x >= 0 && x + plot.context.measureText(text).width + 2 <= plot.width) {
       plot.context.strokeText(text, x + 2, plot.height - 5);
@@ -358,6 +362,12 @@ export function drawRoleMap(role) {
     Math.abs(point(1, 0)[0] - point(0, 0)[0]), S.roleMapInfo);
   const [ox, oy] = hasPosition(data.own) ? framePoint(data.own.x, data.own.y) : [plot.width / 2, plot.height / 2];
   labels.reserve(ox - 12, oy - 12, 24, 24);
+  if (opz && hasPosition(data.own)) {
+    // Range rings, bearing scale and the trails under the live symbols.
+    drawOpzRings(plot.context, labels, ox, oy, payload.radar.range_nm, scale, data.own.course, plot.width, plot.height);
+    const byRef = new Map(data.observations.map((row) => [row.ref, row]));
+    drawOpzTrails(plot.context, payload.trails, (ref) => colors[byRef.get(ref)?.affiliation] || colors.UNKNOWN, framePoint);
+  }
   if (hasPosition(data.own)) {
     addRoleMapHit(null, ox, oy);
     addMapInfo(S.roleMapInfo, ox, oy, "own", data.own);
@@ -384,7 +394,7 @@ export function drawRoleMap(role) {
       addMapInfo(S.roleMapInfo, x, y, "track", row);
       if (finite(row.range_uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, row.range_uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
       // Furthest-on circle: how far the contact can have gone since its fix.
-      if (role === "opz") { const reach = furthestOnNm(row.domain, row.age_s); if (reach !== null) drawFurthestOn(plot.context, x, y, reach * scale); }
+      if (opz && layer("uncertainty")) { const reach = furthestOnNm(row.domain, row.age_s); if (reach !== null) drawFurthestOn(plot.context, x, y, reach * scale); }
       // Same NATO symbol as the chart and the uConsole: affiliation frame + domain glyph.
       const symbolColor = colors[row.affiliation] || colors.UNKNOWN;
       drawNatoSymbol(plot.context, x, y, row.affiliation, row.domain, symbolColor, 7);
@@ -393,13 +403,16 @@ export function drawRoleMap(role) {
       if (isSelected) { plot.context.beginPath(); plot.context.arc(x, y, 14, 0, Math.PI * 2); plot.context.stroke(); }
       plot.context.fillStyle = symbolColor;
       labels.reserve(x - 10, y - 10, 20, 20);
-      placeText(plot.context, labels, String(row.label || row.ref), x + 12, y - 10);
+      const label = opz ? opzLabel(row.label || row.ref) : String(row.label || row.ref);
+      if (label !== null) placeText(plot.context, labels, label, x + 12, y - 10);
       if (finite(row.course)) {
-        const angle = row.course * Math.PI / 180, tipX = x + Math.sin(angle) * 22, tipY = y - Math.cos(angle) * 22;
+        // The OPZ draws the distance run in the chosen minutes (as the uConsole).
+        const reach = opz && finite(row.speed_kn) ? Math.min(Math.max(10, row.speed_kn * opzVectorMinutes() / 60 * scale), Math.min(plot.width, plot.height) * .45) : 22;
+        const angle = row.course * Math.PI / 180, tipX = x + Math.sin(angle) * reach, tipY = y - Math.cos(angle) * reach;
         plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(tipX, tipY); plot.context.stroke();
         if (finite(row.speed_kn)) placeTip(plot.context, labels, unit(row.speed_kn, "kn", 0), tipX, tipY, Math.sin(angle), -Math.cos(angle));
       }
-    } else if (finite(row.bearing) && (hasPosition(data.own) ||
+    } else if (layer("bearings") && finite(row.bearing) && (hasPosition(data.own) ||
         finite(row.observer_x) && finite(row.observer_y))) {
       const [bx, by] = finite(row.observer_x) && finite(row.observer_y) ?
         framePoint(row.observer_x, row.observer_y) : [ox, oy];
@@ -459,7 +472,9 @@ export function drawRoleMap(role) {
       plot.context.globalAlpha = 1;
     }
   }
-  if (role === "opz" && hasPosition(data.own)) {
+  if (opz && hasPosition(data.own)) {
+    const selected = data.observations.find((row) => row.ref === S.selected);
+    if (selected) drawOpzCpa(plot.context, labels, data.own, selected, framePoint);
     if (payload.radar.live && (payload.radar.surface || payload.radar.air)) {
       for (const range of [payload.radar.surface_effective_range_nm, payload.radar.air_effective_range_nm]) if (finite(range)) { plot.context.strokeStyle = "#365d69"; plot.context.beginPath(); plot.context.arc(ox, oy, range * scale, 0, Math.PI * 2); plot.context.stroke(); }
     }

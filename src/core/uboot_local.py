@@ -294,8 +294,29 @@ def finish_input(game) -> bool:
     return True
 
 
-def handle_numeric_key(game, key) -> None:
+def _range_entry_valid(game) -> bool:
+    """Whether the firing range typed so far is blank or a valid distance."""
+    text = game.input_buffer.strip()
+    if not text:
+        return True
+    try:
+        number = float(text.replace(",", "."))
+    except ValueError:
+        return False
+    return 0.05 <= number <= 40.0
+
+
+def handle_numeric_key(game, key, mods: int = 0) -> None:
     if key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+        if game.input_mode == "uboot_range" and not mods & pygame.KMOD_CTRL:
+            # Enter never fires a weapon: it confirms the range, Ctrl+Enter shoots.
+            if not _range_entry_valid(game):
+                game.flash(message("event.invalid_input"), 2.0)
+                return
+            text = game.input_buffer.strip()
+            game.flash(message("uboot.local.fire_bearing_ready", range=text) if text
+                       else message("uboot.local.fire_bearing_ready_blank"), 60.0)
+            return
         finish_input(game)
         return
     if key == pygame.K_ESCAPE:
@@ -332,7 +353,7 @@ def handle_key(game, event) -> None:
     try:
         if game.input_mode is not None:
             if game.input_mode in UBOOT_INPUT_MODES:
-                handle_numeric_key(game, key)
+                handle_numeric_key(game, key, mods)
             elif current is not None:
                 with game.sonar_perspective(current.station):
                     game._handle_numeric_input(key)
@@ -575,9 +596,33 @@ _CREW_PAGE_ACTIONS = {pygame.K_w: "uboot_watch_change", pygame.K_m: "uboot_casua
                       pygame.K_u: "uboot_casualty_reassign"}
 
 
+# Letter keys that also have a Shift or a Ctrl variant aboard; every other
+# letter acts only without Shift and Ctrl (one key, one meaning).
+_SHIFT_LETTERS = frozenset({pygame.K_a, pygame.K_b, pygame.K_g, pygame.K_h, pygame.K_j,
+                            pygame.K_m, pygame.K_o, pygame.K_u, pygame.K_w})
+_CTRL_LETTERS = frozenset({pygame.K_b, pygame.K_m})
+
+
+def _modifiers_allowed(key, mods, page=None) -> bool:
+    """Whether a letter key with these modifiers is an order at all."""
+    if not pygame.K_a <= key <= pygame.K_z:
+        return True
+    if mods & pygame.KMOD_CTRL:
+        return key in _CTRL_LETTERS
+    if mods & pygame.KMOD_SHIFT:
+        return key in _SHIFT_LETTERS or (key == pygame.K_c and page == "UBOOT_ESM")
+    return True
+
+
 def _key_action(key, mods, station=None, page=None):
     """The Remote Crew action a key is at this station/page (its allowlist
     decides whether the station may give it), or None."""
+    if not _modifiers_allowed(key, mods, page):
+        return None
+    if page == "UBOOT_ESM" and key == pygame.K_c:
+        return "uboot_esm_classify"      # C classifies, as at the frigate's ESM
+    if key == pygame.K_a and mods & pygame.KMOD_SHIFT:
+        return "sonar_active_ping"       # Shift+A pings, as at every sonar
     if page == "UBOOT_DAMAGE" and key in _CREW_PAGE_ACTIONS:
         return _CREW_PAGE_ACTIONS[key]
     if (page == "UBOOT_RADIO" and key == pygame.K_b
@@ -612,6 +657,8 @@ def _command_key(game, current, key, mods) -> None:
     sub = current.sub
     from src.ui import uboot_view
     page = uboot_view.page_name(game, current)
+    if not _modifiers_allowed(key, mods, page):
+        return
     action = _key_action(key, mods, local_station(game), page)
     if action == "uboot_fire" and page == "UBOOT_SCOPE" and key in (pygame.K_RETURN,
                                                                      pygame.K_KP_ENTER):
@@ -642,10 +689,20 @@ def _command_key(game, current, key, mods) -> None:
             _fire_notice(game, attack_computer.fire_on_crosshair(game, current))
     elif page == "UBOOT_ESM" and key in (pygame.K_UP, pygame.K_DOWN):
         uboot_view.step_esm_selection(current, 1 if key == pygame.K_DOWN else -1)
-    elif page == "UBOOT_ESM" and key in (pygame.K_LEFT, pygame.K_RIGHT):
+    elif page == "UBOOT_ESM" and key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_c):
+        # C (Shift+C back) or ←/→ step the emitter's classification.
         if order_allowed(game, "uboot_esm_classify"):
+            forward = key == pygame.K_RIGHT or (key == pygame.K_c
+                                                and not mods & pygame.KMOD_SHIFT)
             _esm_notice(game, current, current.esm.cycle_classification(
-                game, _esm_number(current), 1 if key == pygame.K_RIGHT else -1), "classified")
+                game, _esm_number(current), 1 if forward else -1), "classified")
+    elif action == "sonar_active_ping":
+        # Command pings with the boat's own sonar (the browser's Command can too).
+        with game.sonar_perspective(current.station):
+            result = game.send_active_ping()
+        game.flash(message("runtime.ping.sent" if result is True
+                           else "runtime.sonar.down" if result == "sonar_down"
+                           else "uboot.local.ping_unavailable"), 1.5)
     elif page == "UBOOT_ESM" and key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
             and not mods & pygame.KMOD_CTRL:
         if order_allowed(game, "uboot_esm_plot"):

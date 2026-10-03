@@ -25,7 +25,6 @@ DIALOG_SECTION = ("Eingabe und Dialoge", (
     ("Speichern/Laden", "1 bis 5 wählt Slot; Enter bestätigt; Esc zurück."),
     ("Beenden-Dialog", "↑/↓ wählen, Enter bestätigen: zurück zum Spiel, speichern und beenden, zum Hauptmenü (ohne Speichern), ohne Speichern beenden; Esc/N schließt."),
     ("Missionsende", "R Neustart mit gleichem Seed (Editor-Mission startet sich selbst neu); M zum Hauptmenü; Esc Beenden-Dialog."),
-    ("Hauptmenü", "↑/↓ und Enter; W Weltmodus, R neuer Seed, Bild↑/Bild↓ Sektor (feste reale Welt), F Vollbild; Esc in der Szenarioauswahl zurück zum Hauptmenü."),
     ("Commander-Vorschlag", "F6 annehmen; F7 ablehnen; F8 Vorschlagsart; Esc ausblenden."),
     ("SimLog", "↑/↓, Bild↑/Bild↓, Home/End oder Mausrad; M Karte, F Karte einpassen; F4/Esc schließen."),
     ("Wetter/Analyse", "0 oder Esc schließt das Analysefeld."),
@@ -44,8 +43,10 @@ def build_sections() -> tuple:
     for station, chapter in manual.STATION_CHAPTERS.items():
         _, controls, _, _ = game_help.get_help(station, tr)
         sections.append((manual.chapter_title(chapter, "de"), tuple(controls)))
-    web_title, web_rows = game_help.get_web_help(tr)
-    sections.append((web_title, tuple(web_rows)))
+    for getter in (game_help.get_uboot_global_help, game_help.get_uboot_help,
+                   game_help.get_menu_help, game_help.get_web_help):
+        extra_title, extra_rows = getter(tr)
+        sections.append((extra_title.rstrip(":"), tuple(extra_rows)))
     sections.append(DIALOG_SECTION)
     return tuple(sections)
 

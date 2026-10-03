@@ -29,8 +29,8 @@ Berechtigungsprüfungen bleiben wirksam.
 | `F9` | Lokale Commander-LAN-Verwaltung öffnen |
 | `F10` | Optionen: Sprache, Vollbild, Audio, großer Text, Tooltips, Bildrate |
 | `F11` | Ereignislog und volle Telemetrie einblenden (Station bleibt bedienbar) |
-| `N` | Nationen & Einheiten; im Sonar: Notchfilter |
-| `S / L` | Speichern / Laden (Slots 1-5) |
+| `N` | Nationen & Einheiten (Sonar und Akustikseite des Helikopters: Notchfilter) |
+| `S / L (OPZ: L = Fusion)` | Speichern / Laden (Slots 1-5) |
 | `Alt+Enter` | Vollbild (alle Stationen) |
 | `Q / E oder Mausrad` | Kartenzoom auf Brücke, Waffen, Helikopter und OPZ-Karte (dort stellen Q/E den Radarbereich) |
 | `Drag` | Karte verschieben (Brücke, Waffen, Helikopter und OPZ) |
@@ -177,29 +177,30 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Karte folgt dem eigenen Schiff an/aus |
 | `H` | OPZ Seite 3: Seefernaufklärer anfordern / heimschicken (Tasten wie beim Helikopter) |
-| `W` | Suchgebiet auf die gewählte Spur (sonst eigenes Schiff); Klick in die Karte für einen Punkt |
-| `X / Shift+X` | Bojenmuster um das Suchgebiet wechseln / Shift bricht ab |
-| `B` | Eine Boje am Flugzeug werfen |
-| `Umschalt+B` | Bojenmodus des Flugzeugs PASSIV / AKTIV |
-| `Ctrl+R` | Seeraumradar des Flugzeugs ein/aus |
-| `Shift+M` | MAD-Anflüge des Flugzeugs über seinen Wegpunkt ein/aus (tief und langsamer, der Radarhorizont schrumpft) |
-| `D` | Torpedo auf den zugewiesenen Kontakt (Flugzeug höchstens 2 sm vom Datum) |
+| `W` | Seite 3: Suchgebiet auf die gewählte Spur (sonst eigenes Schiff); Klick in die Karte für einen Punkt |
+| `X / Shift+X` | Seite 3: Bojenmuster um das Suchgebiet wechseln / Shift bricht ab |
+| `B` | Seite 3: eine Boje am Flugzeug werfen |
+| `Umschalt+B` | Seite 3: Bojenmodus des Flugzeugs PASSIV / AKTIV |
+| `Ctrl+R` | Seite 3: Seeraumradar des Flugzeugs ein/aus |
+| `Shift+M` | Seite 3: MAD-Anflüge des Flugzeugs über seinen Wegpunkt ein/aus (tief und langsamer, der Radarhorizont schrumpft) |
+| `D` | Seite 3: Torpedo auf den zugewiesenen Kontakt (Flugzeug höchstens 2 sm vom Datum) |
 | `Y / F / H` | OPZ-Seite 4 (Gruppenjagd): Begleiter selbständig / nächster Formationsplatz / halten |
 | `X / W` | OPZ-Seite 4: Begleiter sucht hier / verfolgt den gewählten Track (oder Klick in die Karte) |
 | `Shift+A` | OPZ-Seite 4: Aktivsonar des Begleiters an/aus |
 | `Shift+W` | OPZ-Seite 4: Waffen des Begleiters frei / gesperrt |
 | `Strg+Enter` | OPZ-Seite 4: ein ASROC des Begleiters auf den gewählten Track (Standort unter 2 min) |
 | `↑/↓ ←/→` | Seite 5 Anzeige: Karteneinstellung wählen, ändern |
-| `Backspace` | Seite 5: alle Karteneinstellungen auf Standard |
+| `Backspace` | Seite 5: gewählte Karteneinstellung auf Standard |
+| `Shift+Backspace` | Seite 5: alle Karteneinstellungen auf Standard |
 
 ## 6 Funk
 
 | Taste / Eingabe | Funktion |
 |---|---|
 | `Auf / Ab` | HFDF-Signal auswählen |
-| `Eingabe` | Peilung mit eigener Position protokollieren |
+| `Eingabe` | Peilung mit eigener Position protokollieren (auf der Seite Aufträge nimmt Enter den Auftrag an) |
 | `Auf / Ab` | HQ-Auftrag wählen (Seite Aufträge) |
-| `A` | Seite Aufträge: gewählten Auftrag annehmen |
+| `A / Enter` | Seite Aufträge: gewählten Auftrag annehmen |
 | `D` | Seite Aufträge: gewählten Auftrag ablehnen |
 | `R` | Seite Aufträge: Versorger beim HQ anfordern |
 | `K` | Seite Aufträge: Kontaktmeldung an HQ (der frischeste Fix; KW-Ruf, anpeilbar) |
@@ -222,6 +223,7 @@ Berechtigungsprüfungen bleiben wirksam.
 |---|---|
 | `H` | HSP-5 starten / zurückrufen |
 | `Pfeiltasten` | Wegpunktpeilung und -entfernung einstellen |
+| `W` | Wegpunkt auf die Position des gewählten Kontakts (wie W beim Seefernaufklärer) |
 | `M` | Sonarkontakt als Ziel für Lufttorpedo setzen |
 | `B` | Eine Sonarboje an aktueller Position aussetzen |
 | `Umschalt+B` | Modus der nächsten Boje PASSIV / AKTIV |
@@ -261,7 +263,115 @@ Berechtigungsprüfungen bleiben wirksam.
 | `A` | Automatische ECM-Priorisierung und Softkill-Kopplung umschalten |
 | `J` | Lokalen ELOKA-Auffassungston umschalten |
 
-## Tasten im Remote-Crew-Browser:
+## Steuerung (alle U-Boot-Stationen)
+
+| Taste / Eingabe | Funktion |
+|---|---|
+| `Tab / Shift+Tab` | Nächste / vorherige Station |
+| `1 … 7` | Stationen: 1 Führung, 2 Sonar, 3 Waffen, 4 Maschine, 5 Mast & ESM, 6 Navigation, 7 Funkraum |
+| `Nummer der aktiven Station` | Erneut drücken, um die Seite dieser Station weiterzuschalten |
+| `Bild Auf / Ab` | Vorige / nächste Seite der Station (jede Station mit mehreren Seiten) |
+| `Strg+Enter` | Torpedo abfeuern (Waffen; Sehrohrseite: auf die Lösung des Angriffsrechners; F: nach Peilung und Entfernung). Enter allein feuert nie |
+| `Shift+A` | Aktiver Ping mit dem eigenen Sonar (Führung und Sonarraum) |
+| `F1 / ?` | Hilfe (diese Anzeige) |
+| `Shift+F2` | Crew-Hilfe: Die KI besetzt jede freie Station beider Einheiten |
+| `0` | Wetterseite des U-Boots (0 oder Esc schließt) |
+| `F7` | Erster Offizier (optionales Sprachmodell) |
+| `F9` | Lokale Commander-LAN-Verwaltung öffnen |
+| `F10` | Optionen: Sprache, Vollbild, Audio, großer Text, Tooltips, Bildrate |
+| `F11` | Ereignislog und volle Telemetrie einblenden (Station bleibt bedienbar) |
+| `S / L` | Speichern / Laden (Slots 1-5; nicht im Sonarraum) |
+| `Alt+Enter` | Vollbild (alle Stationen) |
+| `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
+| `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
+| `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×, Pos1/Ende Anfang/Ende, B Bericht des Sprachmodells, wenn eingeschaltet) |
+
+## U-Boot spielen (uConsole)
+
+| Taste / Eingabe | Funktion |
+|---|---|
+| `1 … 7 / Tab` | Stationen: 1 Führung, 2 Sonar, 3 Waffen, 4 Maschine, 5 Mast & ESM, 6 Navigation, 7 Funkraum; Tab weiter (oder Reiter anklicken) |
+| `C / V / D` | Kurs / Fahrt / Tiefe befehlen (Führung; Kurs und Tiefe auch Navigation, Fahrt auch Maschine) |
+| `U / J / H` | Tiefenstufen: Sehrohr- / Schnorcheltiefe (Umschalt), unter / über dem gemessenen Layer (Umschalt), tief (Führung, Navigation) |
+| `Bild auf/ab` | Führungsseiten: Navigation / Waffen & Kontakte / Sehrohr / Bedrohung (oder erneut 1); Seiten Navigation: Karte & Echolot / Navigation / Bedrohung (oder erneut 6); Seiten Mast & ESM: ESM / Sehrohr (oder erneut 5) |
+| `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm (Sehrohrseite: das Mausrad zoomt die Karte) |
+| `K` | Karte folgt dem U-Boot an/aus |
+| `Mausrad / Ziehen` | Karte zoomen / verschieben (Maus auf der Karte) |
+| `Linksklick` | Kurs zu einem Punkt der Lotsenkarte befehlen (Navigation, Karte & Echolot) |
+| `Pfeiltasten` | Eigenen Sonarkontakt wählen |
+| `Strg+Enter` | Torpedo auf den gewählten Kontakt schießen (Waffen) |
+| `F` | Auf eine eingegebene Peilung schießen: Peilung, Enter, Entfernung zum Datum (leer: keine), dann schießt Strg+Enter (Waffen) |
+| `V` | Täuschkörper ausstoßen (Waffen) |
+| `M` | Nächstes leeres Torpedorohr laden (Waffen) |
+| `Shift+M` | Nächstes geladenes Rohr fluten (20 s) und Mündungsklappe öffnen; laut, die Fregatte kann es hören; nur ein geflutetes Rohr schießt (Waffen) |
+| `Ctrl+M` | Nächstes geladenes Rohr langsam fluten (60 s); die Fregatte hört es nur ganz nah (Waffen) |
+| `Umschalt+B` | Notanblasen, einmal (Führung, Maschine) |
+| `T` | Torpedo-Lauftiefe 5-300 m (Waffen) |
+| `Y` | Ein Torpedo oder Zweierfächer (Waffen) |
+| `X` | Suchmuster des Suchers: gerade, Schlange, Kreis, Helix (Waffen) |
+| `, / .` | Sucheraktivierung -/+ (0,6 bis 3,0 sm vor dem Datum, Schritte 0,2 sm; Waffen) |
+| `W` | Neuesten Drahttorpedo lenken: Peilung, dann Entfernung (Waffen) |
+| `Shift+W` | Draht des neuesten Torpedos kappen (Waffen) |
+| `A` | Schleichfahrt ein/aus, höchstens 5 kn (Führung, Maschine) |
+| `Shift+A` | Aktiver Ping mit dem eigenen Sonar (Führung und Sonarraum) |
+| `Shift+G` | Auf Grund legen / abheben (Führung, Navigation) |
+| `Shift+H` | Auftauchen: an die Oberfläche, Brückenwache, Diesel an der Luft (Führung, Navigation) |
+| `H` | Von der Oberfläche: Alarmtauchen, Flutventile auf, äußerste Kraft (Führung, Navigation) |
+| `N` | Schnorchel aus-/einfahren, Diesel laden auf Schnorcheltiefe (Maschine) |
+| `P` | Mast aus-/einfahren auf Sehrohrtiefe: ESM hört Radare, das Sehrohr sieht, die Funkantenne ist klar (Führung, Mast & ESM, Funkraum) |
+| `Pfeiltasten` | Seite Mast & ESM: Emitter wählen |
+| `C / ← / →` | Seite Mast & ESM: Emitter aus der Bibliothek einstufen (C oder →: weiter, Shift+C oder ←: zurück; Annotation, keine Wahrheit) |
+| `Eingabe` | Seite Mast & ESM: Kreuzpeilung (oder Peillinie) in den Plot des U-Boots |
+| `← / →` | Sehrohrseite: Rohr 2° schwenken (Umschalt: 10°) (Führung, Mast & ESM) |
+| `↑/↓ · Q/E · Space` | Sehrohrseite (wie das Fernglas): ↑/↓ Kopf 2° neigen (Umschalt: 10°), Q/E kleine/große Vergrößerung (32°, 8° Feld), Leertaste Stabilisierung |
+| `Eingabe` | Sehrohrseite: Stadimeter-Entfernung der Sichtung unter dem Fadenkreuz (Führung, Mast & ESM) |
+| `Strg+Enter` | Sehrohrseite: Schuss nach der Lösung des Angriffsrechners für die Sichtung unter dem Fadenkreuz (Führung) |
+| `+ / -` | Fahrtstufe schneller / langsamer (Führung, Maschine) |
+| `Sonartasten` | Wie am Fregattensonar, ohne Schleppantenne, OPZ-Freigabe, Plot und Telegraph |
+| `R` | Maschine, Seite Vorräte: Laderate beim Schnorcheln wechseln (voll, halb, nur lüften) |
+| `Shift+O` | Maschine, Seite Vorräte: neuen CO2-Absorbersatz einsetzen |
+| `O` | Maschine, Seite Vorräte: O2-Kerze zünden |
+| `Pfeiltasten` | Maschine, Seite Zellen: Regelzelle fluten (ab) oder lenzen (auf) |
+| `← / →` | Maschine, Seite Zellen: Trimmwasser nach vorn (rechts) oder achtern (links) |
+| `Z` | Maschine: Trimmautomatik an/aus |
+| `Pfeiltasten` | Maschine, Seite Leckwehr: Abteilung wählen (auf/ab) und Aufgabe (links/rechts) |
+| `Eingabe` | Maschine, Seite Leckwehr: Trupp 1 (Umschalt: Trupp 2) mit der Aufgabe schicken |
+| `I` | Maschine, Seite Leckwehr: Schotten der Abteilung schließen oder öffnen |
+| `I` | Führung, Navigation: dem frischesten Ping- oder Torpedoalarm ausweichen (Kurs, Fahrt, Schicht, Schleichfahrt oder Täuschkörper) |
+| `Eingabe` | Funkraum: Lagemeldung an die Führung senden (Mast auf Sehrohrtiefe ausgefahren; die Fregatte kann die KW-Sendung peilen) |
+| `B` | Funkraum: Bojenantenne ausbringen oder einholen (Rundspruch bis 60 m bei höchstens 6 kn; reißt über 10 kn ab) |
+| `W` | Maschine, Seite Leckwehr: Wache jetzt ablösen |
+| `M` | Maschine, Seite Leckwehr: Sanitätstrupp zur nächsten Station mit Verwundeten |
+| `U` | Maschine, Seite Leckwehr: Leute aus den Freiwachen zur am schwersten getroffenen Station |
+| `G` | Gefechtsstationen an/aus (alle Wachen im Dienst, aufmerksam, aber ermüdend) |
+| `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist achtern taub) |
+| `Rechtsklick` | Routen-Wegpunkt auf der Karte setzen (Navigation) |
+| `W` | Route: Zickzack-Suche, wachsendes Quadrat, aus (Navigation) |
+| `Backspace` | Route löschen (Navigation) |
+| `0` | Wetterseite des U-Boots (0 oder Esc schließt) |
+| `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
+
+## Menütasten (Hauptmenü und seine Seiten)
+
+| Taste / Eingabe | Funktion |
+|---|---|
+| `Auf / Ab` | Zeile wählen |
+| `Eingabe` | Gewählte Zeile öffnen oder starten |
+| `Esc / Q` | Zurück (Hauptmenü: Beenden-Dialog) |
+| `Bild Auf / Ab` | Listen: eine Seite auf / ab |
+| `Home / End` | Listen: erste / letzte Zeile |
+| `W` | Hauptmenü und Szenarioseiten: Weltmodus (erzeugt / feste Karte / fester realer Sektor) |
+| `R` | Hauptmenü und Szenarioseiten: neuer Seed |
+| `[ / ]` | Hauptmenü und Szenarioseiten, fester realer Sektor: voriger / nächster Sektor |
+| `F` | Hauptmenü und Szenarioseiten: Vollbild / Fenster |
+| `← / → / Tab` | Einsatzbuch: Fregatte / U-Boot |
+| `A` | Einsatzbuch: Auswertung des Sprachmodells (wenn eingeschaltet) |
+| `B` | Einsatzbuch: der neueste Einsatzbericht |
+| `L` | Einsatzbuch: Gegner lernt deine Gewohnheiten an/aus |
+| `Enter / Esc` | Einsatzbuch: zurück ins Hauptmenü (Esc schließt erst eine offene Auswertung oder einen Bericht) |
+| `F1 / F9` | Hilfe / Remote-Crew-Verwaltung |
+
+## Tasten im Remote-Crew-Browser
 
 | Taste / Eingabe | Funktion |
 |---|---|
@@ -289,7 +399,6 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Speichern/Laden` | 1 bis 5 wählt Slot; Enter bestätigt; Esc zurück. |
 | `Beenden-Dialog` | ↑/↓ wählen, Enter bestätigen: zurück zum Spiel, speichern und beenden, zum Hauptmenü (ohne Speichern), ohne Speichern beenden; Esc/N schließt. |
 | `Missionsende` | R Neustart mit gleichem Seed (Editor-Mission startet sich selbst neu); M zum Hauptmenü; Esc Beenden-Dialog. |
-| `Hauptmenü` | ↑/↓ und Enter; W Weltmodus, R neuer Seed, Bild↑/Bild↓ Sektor (feste reale Welt), F Vollbild; Esc in der Szenarioauswahl zurück zum Hauptmenü. |
 | `Commander-Vorschlag` | F6 annehmen; F7 ablehnen; F8 Vorschlagsart; Esc ausblenden. |
 | `SimLog` | ↑/↓, Bild↑/Bild↓, Home/End oder Mausrad; M Karte, F Karte einpassen; F4/Esc schließen. |
 | `Wetter/Analyse` | 0 oder Esc schließt das Analysefeld. |

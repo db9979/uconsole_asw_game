@@ -28,7 +28,7 @@ _GLOBAL_HELP = (
         ("F10", "control.help.options"),
         ("F11", "help.global.feed_overlay"),
         ("N", "help.global.nations"),
-        ("S / L", "help.save_load"),
+        ("help.key.save_load_opz", "help.save_load"),
         ("Alt+Enter", "help.fullscreen"),
         ("help.key.mouse_zoom", "help.global.map_zoom"),
         ("Drag", "help.global.map_pan"),
@@ -156,7 +156,8 @@ STATION_HELP = {
           ("Shift+W", "help.control.consort_weapons"),
           ("Ctrl+Enter", "help.control.consort_fire"),
           ("help.key.opz_display", "help.control.opz_display"),
-          ("Backspace", "help.control.opz_display_reset")],
+          ("Backspace", "help.control.opz_display_reset_row"),
+          ("Shift+Backspace", "help.control.opz_display_reset")],
         ["help.note.radar", "help.note.ais_esm", "help.note.nato", "help.note.ciws",
          "help.note.jammer", "help.note.clutter", "help.note.chaff", "help.note.mpa",
          "help.note.consort", "help.note.opz_display"],
@@ -165,7 +166,7 @@ STATION_HELP = {
         "help.radio.intro",
         [("help.key.up_down", "help.control.hfdf"), ("Enter", "help.control.log_bearing"),
          ("help.key.up_down", "help.control.task_select"),
-         ("A", "help.control.task_accept"), ("D", "help.control.task_decline"),
+         ("A / Enter", "help.control.task_accept"), ("D", "help.control.task_decline"),
          ("R", "help.control.ras_request"), ("K", "help.control.contact_report"),
          ("H", "help.control.request_support")],
         ["help.note.hfdf", "help.note.teletype", "help.note.hfdf_map", "help.note.hfdf_chart",
@@ -182,6 +183,7 @@ STATION_HELP = {
     Station.HELICOPTER: _station(
         "help.helo.intro",
         [("H", "help.control.helo_toggle"), ("help.key.arrows", "help.control.waypoint"),
+          ("W", "help.control.helo_waypoint_contact"),
           ("M", "help.control.helo_target"), ("B", "help.control.drop_buoy"),
           ("Shift+B", "help.control.buoy_mode"),
           ("X", "help.control.buoy_pattern"), ("Shift+M", "help.control.mad"),
@@ -239,6 +241,53 @@ UBOOT_SOP_SLUGS = {"uboot": "command", "uboot_sonar": "sonar", "uboot_weapons": 
 UBOOT_SOP = {station: tuple(f"help.sop.uboot.{slug}.{step}" for step in range(1, 6))
              for station, slug in UBOOT_SOP_SLUGS.items()}
 
+# Global keys while the uConsole plays the submarine (``uboot_local.handle_key``):
+# only what works aboard (no F2/F3/F4/F8, N, P plot there).
+_UBOOT_GLOBAL_HELP = (
+    "help.uboot_global.title",
+    [
+        ("Tab / Shift+Tab", "help.next_station"),
+        ("1 … 7", "help.uboot_global.stations"),
+        ("help.key.station_number", "help.repeat_station"),
+        ("help.key.page_spaced", "help.global.pages"),
+        ("Ctrl+Enter", "help.uboot_global.fire"),
+        ("Shift+A", "help.uboot_global.ping"),
+        ("F1 / ?", "help.global.display"),
+        ("Shift+F2", "help.global.crew_assist"),
+        ("0", "help.uboot.weather"),
+        ("F7", "help.global.advisor"),
+        ("F9", "help.global.commander"),
+        ("F10", "control.help.options"),
+        ("F11", "help.global.feed_overlay"),
+        ("S / L", "help.uboot_global.save_load"),
+        ("Alt+Enter", "help.fullscreen"),
+        ("Esc", "help.cancel"),
+        ("R / M", "help.global.mission_end"), ("D", "help.global.debrief"),
+    ],
+)
+
+# Main menu pages (``GameEventsMixin._handle_menu_key`` and the pages' own handlers).
+_MENU_HELP = (
+    "help.menu.title",
+    [
+        ("help.key.up_down", "help.menu.select"),
+        ("Enter", "help.menu.enter"),
+        ("Esc / Q", "help.menu.back"),
+        ("help.key.page_spaced", "help.menu.page"),
+        ("Home / End", "help.menu.ends"),
+        ("W", "help.menu.world"),
+        ("R", "help.menu.seed"),
+        ("[ / ]", "help.menu.sector"),
+        ("F", "help.menu.fullscreen"),
+        ("← / → / Tab", "help.menu.logbook_side"),
+        ("A", "help.menu.logbook_review"),
+        ("B", "help.menu.logbook_report"),
+        ("L", "help.menu.logbook_learns"),
+        ("Enter / Esc", "help.menu.logbook_back"),
+        ("F1 / F9", "help.menu.admin"),
+    ],
+)
+
 # Remote Crew browser keys (``data/commander/js`` keydown handlers).
 _WEB_HELP = (
     "help.web.title",
@@ -287,13 +336,14 @@ _UBOOT_HELP = (
         ("W", "help.uboot.wire_steer"),
         ("Shift+W", "help.uboot.wire_cut"),
         ("A", "help.uboot.silent"),
+        ("Shift+A", "help.uboot_global.ping"),
         ("Shift+G", "help.uboot.bottom"),
         ("Shift+H", "help.uboot.surface"),
         ("H", "help.uboot.crash_dive"),
         ("N", "help.uboot.snorkel"),
         ("P", "help.uboot.mast"),
         ("help.key.arrows", "help.uboot.esm_select"),
-        ("help.key.left_right", "help.uboot.esm_classify"),
+        ("C / ← / →", "help.uboot.esm_classify"),
         ("help.key.enter", "help.uboot.esm_plot"),
         ("help.key.left_right", "help.uboot.scope_turn"),
         ("↑/↓ · Q/E · Space", "help.uboot.scope_optics"),
@@ -343,6 +393,20 @@ def _translate_help(data, tr):
 def get_global_help(tr=None) -> tuple:
     tr = tr or Translator("de").t
     title, controls = _GLOBAL_HELP
+    return tr(title), [(tr(key), tr(action)) for key, action in controls]
+
+
+def get_uboot_global_help(tr=None) -> tuple:
+    """Return the localized global keys of the local submarine side."""
+    tr = tr or Translator("de").t
+    title, controls = _UBOOT_GLOBAL_HELP
+    return tr(title), [(tr(key), tr(action)) for key, action in controls]
+
+
+def get_menu_help(tr=None) -> tuple:
+    """Return the localized keys of the main menu pages."""
+    tr = tr or Translator("de").t
+    title, controls = _MENU_HELP
     return tr(title), [(tr(key), tr(action)) for key, action in controls]
 
 

@@ -18,7 +18,8 @@ from src.core.i18n import (Translator, display_value, localized, localize,
                            message, raw_text, translation_scope)
 from src.core.game_noise import microphone_failure_key, microphone_state_key
 from src.core.preferences import save_preferences
-from src.core.help import get_global_help, get_help, get_sop, get_uboot_help, get_uboot_sop
+from src.core.help import (get_global_help, get_help, get_menu_help, get_sop,
+                           get_uboot_global_help, get_uboot_help, get_uboot_sop)
 from src.core import manual
 from src.core.station import Station
 from src.core import pointer_input, station_alarms, uboot_local
@@ -362,13 +363,16 @@ class DrawMixin:
                 color=config.COLOR_WARN if self.local_side == "uboot"
                 else config.COLOR_TEXT_DIM)
 
+        if not self.menu_world_keys_live():
+            # World, seed and fullscreen keys act on these two pages only.
+            return
         if self.world_mode in ("procedural", "real_fixed"):
             from src.world.real_coast import sector_for_seed
             sector, _ = sector_for_seed(self.seed)
             world_label = sector["name"]
             if self.world_mode == "real_fixed":
                 center(self.tr("menu.real_fixed_hint", sector=sector["id"]),
-                       config.SCREEN_H - 92, color=config.COLOR_TEXT_DIM)
+                       config.SCREEN_H - 92, color=config.COLOR_TEXT_DIM, keys=(None, "]"))
         else:
             world_label = self.tr("menu.fixed_chart")
         center(self.tr("menu.world_status", world=world_label, seed=self.seed),
@@ -672,13 +676,18 @@ class DrawMixin:
                                               value=self.input_buffer),
                          (rect.x + 14, rect.y + 8, rect.w - 28, 26),
                          config.COLOR_TEXT, size=20)
-        layout.blit_line(self.screen, self.tr("input.hint"),
+        hint = "input.hint_fire" if self.input_mode == "uboot_range" else "input.hint"
+        layout.blit_line(self.screen, self.tr(hint),
                          (rect.x + 14, rect.y + 38, rect.w - 28, 22),
                          config.COLOR_TEXT_DIM, size=14)
         # A keypad under the entry: every key is a click (full mouse control).
         keys = ([(raw_text(str(digit)), pygame.K_0 + digit) for digit in range(10)]
                 + [(raw_text("."), pygame.K_PERIOD), (raw_text("⌫"), pygame.K_BACKSPACE),
                    ("help.key.enter", pygame.K_RETURN), (raw_text("Esc"), pygame.K_ESCAPE)])
+        # The firing range: the Enter cell is the fire key (Ctrl+Enter only fires).
+        fire_entry = self.input_mode == "uboot_range"
+        if fire_entry:
+            keys[-2] = ("help.key.uboot_fire", pygame.K_RETURN)
         narrow = (rect.w - 2 * 96) // (len(keys) - 2)
         with pointer.layer("input"):
             x = rect.x
@@ -690,7 +699,8 @@ class DrawMixin:
                 pygame.draw.rect(self.screen, config.COLOR_GRID, cell, 1)
                 layout.blit_line(self.screen, label, cell.inflate(-4, -6),
                                  config.COLOR_TEXT, size=16, align="center")
-                pointer.add_key(cell, key)
+                pointer.add_key(cell, key, pygame.KMOD_CTRL
+                                if fire_entry and key == pygame.K_RETURN else 0)
 
     @localized
     def top_bar_scenario(self) -> str:
@@ -974,7 +984,11 @@ class DrawMixin:
                      + line.lstrip(" ") for line in manual.text_lines(blocks, width)]
             return lines, visible
         if self.help_page == 0:
-            title, bindings = get_global_help(self.tr)
+            # The keys that work here: the menu pages, the submarine or the frigate.
+            title, bindings = (get_menu_help(self.tr) if self.in_menu
+                               else get_uboot_global_help(self.tr)
+                               if self.local_side == "uboot"
+                               else get_global_help(self.tr))
             text = title + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in bindings)
         elif self.help_page == 1 and self.local_side == "uboot":
             from src.core import uboot_local

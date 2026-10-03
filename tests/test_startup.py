@@ -129,7 +129,9 @@ def test_fixed_real_sector_selection_and_seed_reroll(monkeypatch):
     game._handle_menu_key(pygame.K_w)
     game._handle_menu_key(pygame.K_w)
     assert game.world_mode == "real_fixed"
-    game._handle_menu_key(pygame.K_PAGEDOWN)
+    game._handle_menu_key(pygame.K_PAGEDOWN)      # Page keys scroll the list only
+    assert game.seed == 22
+    game._handle_menu_key(pygame.K_RIGHTBRACKET)
     assert game.seed % 128 == 23
     monkeypatch.setattr(random, "SystemRandom", lambda: type(
         "FixedRandom", (), {"randrange": lambda self, start, stop: start})())

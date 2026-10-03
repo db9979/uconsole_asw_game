@@ -58,7 +58,7 @@ If the destroyer is sunk the page and the event log say so; the mission goes on.
 
 ## Chart display {#opz-display}
 
-Page 5 (Display) sets what the OPZ chart draws; it changes nothing in the simulation or the picture itself and is kept in the settings. `↑`/`↓` picks a row, `←`/`→` changes it (a click on a row moves it on), `Backspace` puts everything back to the default.
+Page 5 (Display) sets what the OPZ chart draws; it changes nothing in the simulation or the picture itself and is kept in the settings. `↑`/`↓` picks a row, `←`/`→` changes it (a click on a row moves it on), `Backspace` puts the selected row back to its default, `Shift+Backspace` every row.
 
 - **Track trails:** off, 3, 6 or 12 minutes of earlier published positions behind each track (one point every 30 s, oldest faintest; they start anew after a load).
 - **Vectors:** the motion vector shows the distance run in 3, 6, 12 or 30 minutes.

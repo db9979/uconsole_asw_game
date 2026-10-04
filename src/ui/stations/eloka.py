@@ -24,8 +24,8 @@ def _near_point(pos, point, radius):
 
 ELOKA_CARDS_W = 262
 ELOKA_DETAILS_W = 320
-ELOKA_CARD_H = 50
-ELOKA_CARD_PITCH = 54
+ELOKA_CARD_H = 64
+ELOKA_CARD_PITCH = 68
 
 
 def eloka_regions(station_rect=None, page=0) -> dict[str, pygame.Rect]:
@@ -63,9 +63,13 @@ def eloka_regions(station_rect=None, page=0) -> dict[str, pygame.Rect]:
 
 
 def short_key(track_key: str) -> str:
-    """A card-sized intercept key: "E0000000000000012" -> "E12"."""
+    """A card-sized intercept key, the running number of the hexadecimal
+    key: "E000000000000001b" -> "E27" (as the submarine's ESM names them)."""
     head, digits = track_key[:1], track_key[1:]
-    return head + str(int(digits)) if digits.isdigit() else track_key
+    try:
+        return head + str(int(digits, 16))
+    except ValueError:
+        return track_key
 
 
 def eloka_cards(game, station_rect=None, page=0) -> list:
@@ -76,6 +80,9 @@ def eloka_cards(game, station_rect=None, page=0) -> list:
         return []
     tracks = game.eloka_listed_tracks()
     capacity = max(1, (column.h - 36) // ELOKA_CARD_PITCH)
+    if len(tracks) > capacity:
+        # A longer list scrolls with the selection; one row tells where.
+        capacity = max(1, (column.h - 36 - 20) // ELOKA_CARD_PITCH)
     selected = next((index for index, track in enumerate(tracks)
                      if track.track_key == game.eloka_selected_track_key), 0)
     start = max(0, min(selected - capacity // 2, max(0, len(tracks) - capacity)))
@@ -277,13 +284,17 @@ def _threat_color(game, track):
 
 
 def card_title(game, track) -> str:
-    """"E12", "E12 ×3" for a group of three, then the operator's
-    classification or the modulation: who the emitter may be at a glance."""
+    """"E12", or "E12 ×3" for a group of three intercepts."""
     size = game.eloka_group_size(track)
-    name = (game.eloka_annotation_name(track.track_key)
-            or localize("eloka.modulation." + track.modulation_code))
     return message("eloka.card.title_group" if size > 1 else "eloka.card.title",
-                   key=raw_text(short_key(track.track_key)), count=size, name=name)
+                   ref=raw_text(short_key(track.track_key)), count=size)
+
+
+def card_name(game, track) -> str:
+    """Who the emitter may be at a glance: the operator's classification,
+    else the measured modulation."""
+    return (game.eloka_annotation_name(track.track_key)
+            or localize("eloka.modulation." + track.modulation_code))
 
 
 def _draw_eloka_cards(game, surface, column, page) -> None:
@@ -298,6 +309,13 @@ def _draw_eloka_cards(game, surface, column, page) -> None:
     if not cards:
         layout.blit_block(surface, "eloka.state.empty", column.x + 12, column.y + 36,
                           column.w - 24, 48, color=config.COLOR_TEXT_DIM, size=15)
+    listed = game.eloka_listed_tracks()
+    if cards and len(cards) < len(listed):
+        first = next(index for index, item in enumerate(listed) if item is cards[0][0])
+        layout.blit_line(surface, message(
+            "eloka.cards.window", first=first + 1, last=first + len(cards),
+            total=len(listed)), (column.x + 8, cards[-1][1].bottom + 3, column.w - 16, 18),
+            config.COLOR_TEXT_DIM, size=13, align="center")
     for track, rect in cards:
         chosen = track.track_key == game.eloka_selected_track_key
         age = track.age(game.sim_t)
@@ -312,6 +330,10 @@ def _draw_eloka_cards(game, surface, column, page) -> None:
         layout.blit_line(surface, card_title(game, track), (rect.x + 12, rect.y + 3,
                                                             rect.w - 96, 20),
                          text, size=15)
+        layout.blit_line(surface, card_name(game, track),
+                         (rect.x + 12, rect.y + 24, rect.w - 20, 19),
+                         theme.c("accent") if game.eloka_annotation_name(track.track_key)
+                         else text, size=13)
         layout.blit_line(surface, f"{track.bearing:05.1f}\u00b0",
                          (rect.right - 84, rect.y + 2, 76, 21), text, size=17,
                          align="right")
@@ -322,7 +344,7 @@ def _draw_eloka_cards(game, surface, column, page) -> None:
             band=localize("eloka.band." + spectrum_band(track.frequency_hz).value)
             .split(" / ")[0],
             quality=f"{track.display_quality(game.sim_t):.0%}", age=f"{age:.0f}"),
-            (rect.x + 12, rect.y + 26, rect.w - 20, 19), config.COLOR_TEXT_DIM, size=13)
+            (rect.x + 12, rect.y + 43, rect.w - 20, 19), config.COLOR_TEXT_DIM, size=13)
 
 
 def group_text(game) -> str:
@@ -464,7 +486,7 @@ def draw_eloka_view(game, tr=None) -> None:
                     surface,
                     message("eloka.line.intercept",
                             prefix=">" if selected else " ",
-                            track=card_title(game, track),
+                            track=localize(card_title(game, track)),
                             bearing=f"{track.bearing:05.1f}",
                             frequency=f"{track.frequency_hz / 1e9:.3f}",
                             quality=f"{track.display_quality(game.sim_t):.0%}",

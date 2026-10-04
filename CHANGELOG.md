@@ -4,6 +4,22 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.200
+
+Release 1.3.200 makes the EW station easier to read. Intercepts of the same
+kind from one direction (same band and modulation, bearing within 6 degrees),
+such as the navigation radars of several merchants, are listed as one emitter
+"E27 ×3"; the arrow keys left and right step through the group, and Z lists
+every intercept on its own again. Intercepts are named by their running number
+(E27 instead of E000000000000001b) and show the classification or else the
+modulation, band and frequency instead of "unknown domain". Four switches
+above the bearing rose sort the list: status F (new: open, the emitters not
+yet classified), threat Shift+F, band Ctrl+F and grouping Z, as blue key chips
+on the uConsole and as a bar in the Remote Crew browser. The browser's rose
+draws one strobe per emitter, older ones shorter and fainter, and names the
+selected one. Display only, the ESM picture is unchanged. Saves are v50; v38
+to v49 saves still load.
+
 ## 1.3.199
 
 Release 1.3.199 explains every status lamp. Resting the mouse on a lamp or

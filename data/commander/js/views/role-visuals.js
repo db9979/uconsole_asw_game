@@ -5,7 +5,7 @@ import { palette, paletteAlpha } from "../core/palette.js";
 import { syncPlotAnimation } from "../plot/clock.js";
 import { heatmap } from "../plot/heatmap.js";
 import { spectrum } from "../plot/spectrum.js";
-import { filteredEloka, mapRoles, overviewPlotList, ultraWide, wideScreen } from "../state/shared.js";
+import { elokaShortLabel, groupedEloka, mapRoles, overviewPlotList, ultraWide, wideScreen } from "../state/shared.js";
 import { drawSonarVisuals } from "../stations/sonar-visuals.js";
 import { clearVisuals, node } from "./dom.js";
 import { drawRoleMap, syncOpzSweepAnimation } from "./role-map.js";
@@ -28,13 +28,32 @@ function drawDamageVisual() {
 function drawElokaVisual() {
   const plot = visualContext("eloka-scope"), payload = S.v2State.eloka;
   if (!plot) return;
-  const intercepts = filteredEloka(payload.intercepts);
+  const intercepts = groupedEloka(payload.intercepts, S.selected);
   const simNow = finite(S.v2State.clock?.sim) ? S.v2State.clock.sim : 0;
   const scopeWidth = plot.width * .43;
   const radius = Math.min(scopeWidth, plot.height) * .38, cx = scopeWidth / 2, cy = plot.height / 2;
   roseFace(plot.context, cx, cy, radius);
-  for (const row of intercepts) { const angle = row.bearing * Math.PI / 180; plot.context.save(); plot.context.globalAlpha = .2 + .8 * row.quality; plot.context.strokeStyle = palette().amber; plot.context.lineWidth = 2 + row.quality * 3; if (row.signal_state !== "LIVE") plot.context.setLineDash([5, 5]); plot.context.beginPath(); plot.context.moveTo(cx, cy); plot.context.lineTo(cx + Math.sin(angle) * radius, cy - Math.cos(angle) * radius); plot.context.stroke(); plot.context.restore(); }
-  const focused = intercepts[0];
+  const focused = intercepts.find((row) => row.ref === S.selected) ?? intercepts[0];
+  // One strobe per listed emitter: fresh ones full length, older ones
+  // shorter and fainter; a group is drawn a little bolder, the selected one
+  // in the text colour on top with its name at the rim.
+  for (const row of [...intercepts].sort((a, b) => Number(a === focused) - Number(b === focused))) {
+    const angle = row.bearing * Math.PI / 180, chosen = row === focused;
+    const fresh = Math.max(0, 1 - row.age_s / 300), length = radius * (.45 + .55 * fresh);
+    plot.context.save();
+    plot.context.globalAlpha = chosen ? 1 : .25 + .65 * fresh * row.quality;
+    plot.context.strokeStyle = chosen ? palette().text : palette().amber;
+    plot.context.lineWidth = chosen ? 3 : row.members.length > 1 ? 2.5 : 1.5;
+    if (row.signal_state !== "LIVE" && !chosen) plot.context.setLineDash([5, 5]);
+    plot.context.beginPath(); plot.context.moveTo(cx, cy);
+    plot.context.lineTo(cx + Math.sin(angle) * length, cy - Math.cos(angle) * length); plot.context.stroke();
+    if (chosen) {
+      plot.context.fillStyle = palette().text; plot.context.textAlign = Math.sin(angle) < 0 ? "right" : "left";
+      plot.context.fillText(elokaShortLabel(row.label) + (row.members.length > 1 ? ` \u00d7${row.members.length}` : ""),
+        cx + Math.sin(angle) * (length + 8), cy - Math.cos(angle) * (length + 8));
+    }
+    plot.context.restore();
+  }
   const gx = scopeWidth + 12, gy = 16, gw = plot.width - gx - 12, gh = plot.height - 32;
   plot.context.strokeStyle = palette().line; plot.context.lineWidth = 1; plot.context.strokeRect(gx, gy, gw, gh);
   plot.context.beginPath(); plot.context.moveTo(gx, gy + gh * .52); plot.context.lineTo(gx + gw, gy + gh * .52); plot.context.stroke();
@@ -60,7 +79,7 @@ function drawElokaVisual() {
       value *= focused.quality;
       const px = gx + 6 + x * (gw - 12), py = gy + gh * .76 - value * gh * .17; if (i) plot.context.lineTo(px, py); else plot.context.moveTo(px, py); }
     plot.context.stroke(); plot.context.fillStyle = palette().text; plot.context.textAlign = "left";
-    plot.context.fillText(`${focused.label} / ${focused.modulation}`, gx + 8, gy + 17, gw - 16);
+    plot.context.fillText(`${elokaShortLabel(focused.label)} / ${t(`eloka_modulation_${focused.modulation}`)}`, gx + 8, gy + 17, gw - 16);
     plot.context.fillStyle = focused.signal_state === "LIVE" ? palette().accent : palette().amber; plot.context.textAlign = "right";
     const signalLabel = focused.signal_state === "MEMORY" ? t("eloka_signal_memory", {age: number(focused.age_s, 0)}) : t(`eloka_signal_${focused.signal_state.toLowerCase()}`);
     plot.context.fillText(signalLabel, gx + gw - 8, gy + 17, gw / 2);
@@ -68,8 +87,8 @@ function drawElokaVisual() {
     plot.context.fillText(`${number(focused.frequency_hz / 1e9, 3)} GHz / ${number(focused.prf_hz, 0)} Hz`, gx + 8, gy + gh - 7, gw - 16);
   }
   if (!intercepts.length) drawEmpty(plot);
-  const equivalents = intercepts.map((row) => node("p", t("eloka_equivalent", {ref: row.label, bearing: number(row.bearing, 0), frequency: number(row.frequency_hz, 0), prf: number(row.prf_hz, 0), modulation: row.modulation, candidates: row.candidates.map((item) => item.name).join(", ") || t("station_none"), correlations: row.correlations.map((item) => item.ref).join(", ") || t("station_none")})));
-  if (focused) equivalents.push(node("p", t("eloka_signal_equivalent", {ref: focused.label, modulation: focused.modulation, frequency: number(focused.frequency_hz / 1e9, 3), prf: number(focused.prf_hz, 0)})));
+  const equivalents = intercepts.map((row) => node("p", t("eloka_equivalent", {ref: elokaShortLabel(row.label), bearing: number(row.bearing, 0), frequency: number(row.frequency_hz, 0), prf: number(row.prf_hz, 0), modulation: t(`eloka_modulation_${row.modulation}`), candidates: row.candidates.map((item) => item.name).join(", ") || t("station_none"), correlations: row.correlations.map((item) => item.ref).join(", ") || t("station_none")})));
+  if (focused) equivalents.push(node("p", t("eloka_signal_equivalent", {ref: elokaShortLabel(focused.label), modulation: t(`eloka_modulation_${focused.modulation}`), frequency: number(focused.frequency_hz / 1e9, 3), prf: number(focused.prf_hz, 0)})));
   $("eloka-scope-text").replaceChildren(...equivalents);
   if (!intercepts.length) $("eloka-scope-text").textContent = t("visual_empty");
 }

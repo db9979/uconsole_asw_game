@@ -12,19 +12,21 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.199**
+Current release: **1.3.200**
 
-Release 1.3.199 explains every status lamp. Resting the mouse on a lamp or
-indicator, such as the helicopter's LAUNCH NO-GO and DECK WAIT, a torpedo
-tube, the plant, the ESM receiver or the submarine's depth under the keel,
-opens a note that says why it shows that state, taken from the running game
-(deck motion and quiet time, weather limits, reload time, charted depth), and
-what to do about it. Every key a station can use is now a blue key chip you
-can click, also inside these notes. Both work on both sides, on the uConsole
-and in the Remote Crew browser. The CIC's four contact buttons say what they
-do (Classify, Change affiliation, Mark for fusion, Fuse / dissolve), centred
-beside their key chip. Keys are unchanged. Saves are v50; v38 to v49 saves
-still load.
+Release 1.3.200 makes the EW station easier to read. Intercepts of the same
+kind from one direction (same band and modulation, bearing within 6 degrees),
+such as the navigation radars of several merchants, are listed as one emitter
+"E27 ×3"; the arrow keys left and right step through the group, and Z lists
+every intercept on its own again. Intercepts are named by their running number
+(E27 instead of E000000000000001b) and show the classification or else the
+modulation, band and frequency instead of "unknown domain". Four switches
+above the bearing rose sort the list: status F (new: open, the emitters not
+yet classified), threat Shift+F, band Ctrl+F and grouping Z, as blue key chips
+on the uConsole and as a bar in the Remote Crew browser. The browser's rose
+draws one strobe per emitter, older ones shorter and fainter, and names the
+selected one. Display only, the ESM picture is unchanged. Saves are v50; v38
+to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

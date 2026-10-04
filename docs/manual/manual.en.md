@@ -1510,12 +1510,12 @@ Electronic warfare (EloKa) listens passively for radar emitters (ESM) and, when 
 
 | Page | Shows |
 |---|---|
-| 1 Intercepts | Intercept cards, threat rose with filter line, the selected intercept, ESM, jammer, automatic ECM and tone lamps |
+| 1 Intercepts | Intercept cards, threat rose with list switches, the selected intercept, ESM, jammer, automatic ECM and tone lamps |
 | 2 Evidence | Full evidence of the selected intercept: frequency, PRF, modulation, candidates, correlation |
 
 ### Displays and instruments
 
-Both pages show the intercepts as cards on the left (key, bearing, frequency and band, quality and age; the stripe is the threat colour; a click selects one as `↑`/`↓` would). Page 1 has the threat rose with the filter line in the middle and the selected intercept on the right (signal fingerprint, bearing, radar type, threat, ECM, assignment, best library candidates) above the ESM, jammer, automatic ECM and tone lamps; page 2 shows the full evidence for the selected intercept (frequency, PRF, modulation, candidates, correlation).
+Both pages show the intercepts as cards on the left (key with group size, classification or modulation, bearing, frequency and band, quality and age; the stripe is the threat colour; a click selects one as `↑`/`↓` would). Page 1 has the threat rose with the four list switches in the middle and the selected intercept on the right (signal fingerprint, bearing, radar type, threat, ECM, assignment, best library candidates) above the ESM, jammer, automatic ECM and tone lamps; page 2 shows the full evidence for the selected intercept (frequency, PRF, modulation, candidates, correlation).
 
 ![Electronic warfare on the uConsole](figures/station-eloka.png)
 
@@ -1544,7 +1544,20 @@ Both pages show the intercepts as cards on the left (key, bearing, frequency and
 - The emitter library includes the anti-ship missile seeker (9.0-9.5 GHz, PRF 1.8-3.2 kHz, pulse-Doppler). It radiates only in the last 18 NM and only once the sea-skimmer is above the radar horizon, and it matches an attack aircraft's fire-control radar just as well: the bearing trend and the air picture decide.
 - ESM runs from the operations compartment: a destroyed operations room disables it.
 
-Beside the intercept list a bearing rose shows every intercept as a strobe in its threat colour, and lamps show ESM, jammer, automatic ECM and audio.
+Beside the intercept list a bearing rose shows every listed emitter as a strobe in its threat colour (older ones shorter and fainter), and lamps show ESM, jammer, automatic ECM and audio.
+
+#### Sorting the list
+
+Many merchants and aircraft transmit with navigation radars, so four switches above the rose order the list (clickable; the browser has the same bar):
+
+| Switch | Key | Values |
+|---|---|---|
+| Status | `F` | operational (live, recent, classified or high threat), open (operational but not yet classified), live, memory, all |
+| Threat | `Shift+F` | all, low and above up to critical (assessed on the Beginner level only) |
+| Band | `Ctrl+F` | all, A/C, D, E/F, G/H, I/J, K |
+| Group | `Z` | on: intercepts of one kind (same band and modulation, frequency and PRF within the association gates, bearing within 6 degrees) appear as one entry "E27 ×3"; off: every intercept on its own |
+
+A group is a display aid, not an identification: it can merge several ships in one direction. `←`/`→` steps through its intercepts, the Group row on the right shows where you are ("2 of 4"). Classified and jammed intercepts always stand alone. Each card names the key (running number), the classification or else the modulation, then frequency, band, quality and age. Workflow: with status open, classify the not yet classified emitters one by one with `C`; classified ones leave that view.
 
 ### ECM techniques
 
@@ -1561,8 +1574,10 @@ Automatic mode (`A`) picks targets and techniques and couples jamming with soft-
 
 | Key | Action |
 |---|---|
-| `Up / Down` | Select a visible passive ESM intercept |
-| `F / Shift+F / Ctrl+F` | Cycle status / minimum-threat / frequency-band filters |
+| `Up / Down` | Select the next listed emitter (a group counts once) |
+| `← / →` | Step through the intercepts of the selected emitter group |
+| `F / Shift+F / Ctrl+F` | Cycle status (operational, open = not yet classified, live, memory, all) / minimum threat / frequency band |
+| `Z` | Group intercepts of one kind and bearing into one entry on/off |
 | `C` | Assign radar type and release current bearings to CIC; clearing the assignment withdraws release |
 | `E` | Engage / release the directional ECM channel for the selected intercept |
 | `Shift+E` | Cycle noise, RGPO, VGPO, or false-target ECM technique |
@@ -1574,6 +1589,7 @@ Automatic mode (`A`) picks targets and techniques and couples jamming with soft-
 Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
 
 - A click on an intercept card selects it as `↑`/`↓` would.
+- The four switches above the rose act like `F`, `Shift+F`, `Ctrl+F` and `Z`.
 
 ### Standard procedure
 

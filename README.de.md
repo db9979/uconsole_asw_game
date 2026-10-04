@@ -14,19 +14,21 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.199**
+Aktuelle Version: **1.3.200**
 
-Version 1.3.199 erklärt jede Statuslampe. Ruht die Maus auf einer Lampe oder
-Anzeige, etwa START NO-GO und DECK WARTEN des Hubschraubers, einem
-Torpedorohr, der Anlage, dem ESM-Empfänger oder dem Wasser unter dem Kiel des
-U-Boots, öffnet sich ein Hinweis, warum sie so steht, aus dem laufenden Spiel
-(Deckbewegung und Ruhezeit, Wettergrenzen, Nachladezeit, Kartentiefe), und was
-zu tun ist. Jede Taste, die eine Station nutzen kann, ist jetzt ein blauer
-Tastenchip zum Anklicken, auch in diesen Hinweisen. Beides gilt auf beiden
-Seiten, auf der uConsole und im Remote-Crew-Browser. Die vier Kontaktknöpfe
-der OPZ sagen, was sie tun (Klassifizieren, Zugehörigkeit wechseln, Für Fusion
-markieren, Fusionieren / auflösen), mittig neben ihrem Tastenchip. Tasten
-bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
+Version 1.3.200 macht die ELOKA übersichtlicher. Gleichartige Auffassungen
+aus einer Richtung (gleiches Band und gleiche Modulation, Peilung innerhalb
+6 Grad), etwa die Navigationsradare mehrerer Handelsschiffe, stehen als ein
+Sender „E27 ×3“ in der Liste; die Pfeiltasten links und rechts blättern durch
+die Gruppe, Z listet wieder jede Auffassung einzeln. Auffassungen heißen nach
+ihrer laufenden Nummer (E27 statt E000000000000001b) und zeigen die Einstufung
+oder sonst Modulation, Band und Frequenz statt „Unbekannte Domäne“. Vier
+Schalter über der Peilrose ordnen die Liste: Status F (neu: offen, die noch
+nicht eingestuften Sender), Bedrohung Shift+F, Band Strg+F und Bündeln Z, als
+blaue Tastenchips auf der uConsole und als Leiste im Remote-Crew-Browser. Die
+Rose im Browser zeichnet je Sender einen Strahl, ältere kürzer und blasser,
+und beschriftet den gewählten. Nur die Darstellung ändert sich, das ESM-Bild
+bleibt gleich. Spielstände sind v50; v38 bis v49 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

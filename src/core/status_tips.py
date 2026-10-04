@@ -144,9 +144,30 @@ def _launch_order_line(game, weather) -> dict | None:
         return message("tip.helo.airborne_recall")
     if game.damage.station_down("flightdeck"):
         return message("tip.helo.deck_down")
-    if not weather["launch_safe"]:
-        return message("tip.helo.launch_wait")
-    return message("tip.helo.launch_go")
+    return _hangar_reason(helo)
+
+
+def _hangar_reason(helo):
+    """In the hangar: the launch preparation or refuelling with its time
+    left, or what H does now (the station's own status reason)."""
+    from src.ui.stations.helicopter import helo_status_reason
+    reason = helo_status_reason(helo)
+    return message(reason) if isinstance(reason, str) else reason
+
+
+def _hangar_value(helo):
+    """The hangar lamp's value: preparation or refuelling with time left."""
+    from src.ui.stations.helicopter import _clock
+    if helo.preparing:
+        if helo.prep_s > 0.0:
+            return message("helo.prep.running", time=_clock(helo.prep_s))
+        if not helo.fuel_ready:
+            return message("helo.refuel.running", time=_clock(
+                helo.refuel_left_s(config.HELO_LAUNCH_MIN_FUEL_S)))
+        return message("helo.prep.ready")
+    if helo.refuelling:
+        return message("helo.refuel.running", time=_clock(helo.refuel_left_s()))
+    return ""
 
 
 def helicopter(game) -> dict:
@@ -253,18 +274,19 @@ def helicopter(game) -> dict:
     state = helo.state
     fuel_min = _f(max(0.0, helo.fuel_s) / 60.0)
     notes["state_hangar"] = note(
-        "helo.console.state.hangar", "",
-        message("tip.helo.state.hangar" if state == "HANGAR" else "tip.helo.state.out"))
+        "helo.console.state.hangar", _hangar_value(helo) if state == "HANGAR" else "",
+        message("tip.helo.state.hangar" if state == "HANGAR" else "tip.helo.state.out"),
+        _hangar_reason(helo) if state == "HANGAR" else None, keys=("H",))
     if state != "HANGAR":
         deck_lines = [message("tip.helo.state.deck_out")]
     elif deck_down:
         deck_lines = [message("tip.helo.deck_down")]
     elif weather["launch_safe"]:
-        deck_lines = [message("tip.helo.launch_go")]
+        deck_lines = [_hangar_reason(helo)]
     else:
         deck_lines = (over if status == "no_go" else []) + (
             [] if weather["deck_safe"] else _deck_lines(game, weather)[:1])
-        deck_lines.append(message("tip.helo.launch_wait"))
+        deck_lines.append(_hangar_reason(helo))
     notes["state_deck"] = note("helo.console.state.deck", "", *deck_lines, keys=("H", "C", "V"))
     notes["state_airborne"] = note(
         "helo.console.state.airborne", "",

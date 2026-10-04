@@ -7662,8 +7662,6 @@
   "tip.helo.lost": "The helicopter is lost.",
   "tip.helo.airborne_recall": "The helicopter is airborne: H calls it back.",
   "tip.helo.deck_down": "Flight deck out of action: no launch until it is repaired.",
-  "tip.helo.launch_wait": "No launch clearance yet: H launches as soon as weather and deck allow.",
-  "tip.helo.launch_go": "Cleared to launch: H launches the helicopter.",
   "tip.helo.deck.open": "Roll {roll}° and pitch {pitch}° inside the limits, quiet for {quiet} s.",
   "tip.helo.deck.quiet": "Deck inside its limits for {quiet} s; the window opens after {window} s.",
   "tip.helo.deck.do": "At the Bridge or Engine: less speed (V) and the sea a little off the bow (C) calm the deck.",

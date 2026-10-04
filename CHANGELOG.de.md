@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.203
+
+Version 1.3.203 lässt die Lampen des Hubschraubers die Startvorbereitung
+nennen. Ruht die Maus auf der Lampe HANGAR, DECK oder START, steht dort, wie
+lange die Startvorbereitung noch läuft, wie lange der Start noch auf Sprit
+wartet oder dass der Hubschrauber startbereit auf ein Deckfenster wartet, aus
+dem laufenden Spiel, und dass ein zweites H die Vorbereitung abbricht. Tasten
+bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
+
 ## 1.3.202
 
 Version 1.3.202 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.

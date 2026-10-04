@@ -7662,8 +7662,6 @@
   "tip.helo.lost": "Der Hubschrauber ist verloren.",
   "tip.helo.airborne_recall": "Der Hubschrauber ist in der Luft: H ruft ihn zurück.",
   "tip.helo.deck_down": "Flugdeck ausgefallen: kein Start bis zur Reparatur.",
-  "tip.helo.launch_wait": "Noch keine Startfreigabe: H startet, sobald Wetter und Deck es erlauben.",
-  "tip.helo.launch_go": "Startfreigabe: H startet den Hubschrauber.",
   "tip.helo.deck.open": "Rollen {roll}° und Stampfen {pitch}° in den Grenzen, ruhig seit {quiet} s.",
   "tip.helo.deck.quiet": "Deck seit {quiet} s in den Grenzen; das Fenster öffnet nach {window} s.",
   "tip.helo.deck.do": "An Brücke oder Antrieb: weniger Fahrt (V) und die See etwas seitlich vom Bug (C) beruhigen das Deck.",

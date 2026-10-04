@@ -12,25 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.202**
+Current release: **1.3.203**
 
-Release 1.3.202 makes the frigate's helicopter take time on deck. The launch
-order (`H`, or *Launch helicopter* in the browser) starts 5 minutes of
-preparation in the hangar, and the helicopter lifts off at the next launch
-window after that; `H` again stops it. After a landing it keeps the fuel it
-came back with and is refuelled on deck, 15 minutes from empty to full; a
-launch lifts off with the fuel aboard by then, never with less than 30
-minutes. The Helicopter station shows START PREP or REFUEL with the time left
-(uConsole and browser), and hovering over its status says what it waits for.
-The AI frigate waits the same way; its own delay before the order is halved,
-so both sides keep their chances. The bearing roses keep "090" and "270"
-clear of the text beside them, and the dipping sonar's depth gauge separates
-the air from the water below a bold waterline. The helicopter's speed vector
-shows its real speed over ground, and a click on the chart puts its waypoint
-exactly there; the helicopter stops on the point instead of 0.3 NM short. Plot
-objects off the chart get an arrow on the chart edge, and their labels sit
-side by side there instead of on top of each other. The own helicopter wears the NATO rotary-wing sign on every chart. Saves are v51; v38 to v50
-saves still load.
+Release 1.3.203 lets the helicopter's lamps name the launch preparation.
+Resting the mouse on the HANGAR, DECK or LAUNCH lamp now says how long the
+start preparation still runs, how much refuelling the launch still waits for,
+or that the helicopter is ready and waits for a deck window, taken from the
+running game, and that H again stops the preparation. Keys are unchanged.
+Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

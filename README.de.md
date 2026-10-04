@@ -14,25 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.202**
+Aktuelle Version: **1.3.203**
 
-Version 1.3.202 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
-Der Startbefehl (`H` oder *Helikopter starten* im Browser) beginnt 5 Minuten
-Vorbereitung im Hangar, danach hebt er im nächsten Startfenster ab; ein
-zweites `H` bricht sie ab. Nach einer Landung behält er den Kraftstoff, mit
-dem er zurückkam, und wird an Deck betankt, 15 Minuten von leer bis voll; ein
-Start hebt mit dem bis dahin getankten Kraftstoff ab, nie mit weniger als 30
-Minuten. Die Hubschrauberstation zeigt STARTVORBEREITUNG oder TANKEN mit der
-Restzeit (uConsole und Browser), und der Tooltip über dem Status nennt, worauf
-er wartet. Die KI-Fregatte wartet genauso; ihre eigene Wartezeit vor dem
-Befehl ist halbiert, damit beide Seiten ihre Chancen behalten. Die Peilrosen halten
-„090“ und „270“ vom Text daneben frei, und die Tiefenleiste des Tauchsonars
-trennt die Luft durch eine kräftige Wasserlinie vom Wasser. Der Fahrtstrich
-des Hubschraubers zeigt seine echte Geschwindigkeit über Grund, und ein Klick
-in die Karte legt seinen Wegpunkt genau dorthin; der Hubschrauber bleibt auf
-dem Punkt stehen statt 0,3 sm davor. Plot-Objekte außerhalb der Karte bekommen
-einen Pfeil am Kartenrand, und ihre Beschriftungen stehen dort nebeneinander
-statt übereinander. Der eigene Hubschrauber trägt auf allen Karten das NATO-Zeichen für Drehflügler. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
+Version 1.3.203 lässt die Lampen des Hubschraubers die Startvorbereitung
+nennen. Ruht die Maus auf der Lampe HANGAR, DECK oder START, steht dort, wie
+lange die Startvorbereitung noch läuft, wie lange der Start noch auf Sprit
+wartet oder dass der Hubschrauber startbereit auf ein Deckfenster wartet, aus
+dem laufenden Spiel, und dass ein zweites H die Vorbereitung abbricht. Tasten
+bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

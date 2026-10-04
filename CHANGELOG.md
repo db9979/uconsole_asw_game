@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.203
+
+Release 1.3.203 lets the helicopter's lamps name the launch preparation.
+Resting the mouse on the HANGAR, DECK or LAUNCH lamp now says how long the
+start preparation still runs, how much refuelling the launch still waits for,
+or that the helicopter is ready and waits for a deck window, taken from the
+running game, and that H again stops the preparation. Keys are unchanged.
+Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.202
 
 Release 1.3.202 makes the frigate's helicopter take time on deck. The launch

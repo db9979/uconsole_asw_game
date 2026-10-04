@@ -482,7 +482,7 @@ export function drawRoleMap(role) {
     const byRef = new Map(data.observations.map((row) => [row.ref, row]));
     for (const fusion of payload.fusions) if (hasPosition(fusion)) for (const ref of fusion.members) { const member = byRef.get(ref); if (hasPosition(member)) { plot.context.strokeStyle = palette().faint; plot.context.beginPath(); plot.context.moveTo(...point(fusion.x, fusion.y)); plot.context.lineTo(...point(member.x, member.y)); plot.context.stroke(); } }
   }
-  drawPlotLayer(plot.context, framePoint, scale, plot.width, plot.height, null);
+  drawPlotLayer(plot.context, framePoint, scale, plot.width, plot.height, null, labels);
   renderPlotList();
   $("role-map-scale").textContent = t("role_map_scale", {distance: number(S.chart.size_nm / viewState.zoom, 0)});
   plot.context.save(); plot.context.textAlign = "right"; plot.context.fillStyle = palette().text; plot.context.fillText("N ↑", plot.width - 10, 18); plot.context.restore();

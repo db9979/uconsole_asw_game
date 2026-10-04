@@ -684,7 +684,7 @@ Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am
 | `Q / Shift+Q (TMA)` | TMA-Seite: Hypothesenentfernung -/+ 1 sm (Strg 0,2 sm) |
 | `K / Shift+K (TMA)` | TMA-Seite: Hypothese als Fix übernehmen / Umschalt: Solver-Vorschlag kopieren (Training) |
 | `Shift+T (TMA)` | TMA-Methode: Hypothese/Residuen, Ekelund-Entfernung, Dot-Stack (Umschalt+K bei Ekelund: Entfernung übernehmen) |
-| `SPACE` | LOFAR Peak-Hold ein/aus |
+| `LEER` | LOFAR Peak-Hold ein/aus |
 | `T` | TMA für ausgewählten Kontakt ein/aus |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
 | `G` | Gewählten Kontakt unabhängig von der Klassifikation an OPZ freigeben / zurückziehen |
@@ -1631,7 +1631,7 @@ Ein Spielstand bewahrt Befehle, Betriebsarten, Mast, Drähte, Plot, Alarmpeilung
 
 Jedes neue Spiel fragt zuerst **Welche Einheit spielst du?**: *Fregatte F-217* oder *Feindliches U-Boot* (`Auf`/`Ab` oder `1`/`2`, `Enter`; die letzte Wahl ist vorausgewählt). Außerhalb einer Mission ändert auch Optionen (`F10`) Seite 2 **uConsole spielt** die Wahl, etwa vor dem Laden eines Spielstands. Mit dem U-Boot führt der uConsole das feindliche U-Boot statt der Fregatte. Die Fregatte wird dann über Remote Crew (`F9`) aus den Browsern besetzt; jede Fregattenstation, die kein Browser hält, besetzen die **KI-Jäger** (unten).
 
-Der uConsole zeigt nur das Lagebild des U-Boots; Banner, Ereignislog, Soundeffekte, Plot und Tooltips der Fregatte erscheinen nie, und Trackball- und Telegraphenbedienung der Fregatte sind gesperrt. Die Seite lässt sich nur außerhalb einer Mission wechseln; die Wahl gilt nur für diesen Programmstart und wird nie gespeichert, jeder Start beginnt also mit der Fregatte.
+Der uConsole zeigt nur das Lagebild des U-Boots; Banner, Ereignislog, Soundeffekte, Plot und Tooltips der Fregatte erscheinen nie (die Lampenhinweise des U-Boots schon), und Trackball- und Telegraphenbedienung der Fregatte sind gesperrt. Die Seite lässt sich nur außerhalb einer Mission wechseln; die Wahl gilt nur für diesen Programmstart und wird nie gespeichert, jeder Start beginnt also mit der Fregatte.
 
 Auf der uConsole wechseln `1` bis `7` die Stationen, dieselbe Zahl noch einmal (oder `Bild↑`/`Bild↓`) blättert die Seiten der Station. Jede Station hat unten eine Tastenleiste; ein Klick auf eine Taste dort, auf eine Lampe oder eine Skala wirkt wie die Taste. Die vollständige Tastentabelle steht am Ende dieses Kapitels; die Browser-Stationen haben dieselben Befehle als Schaltflächen.
 
@@ -2338,6 +2338,8 @@ Diese Hilfen wirken an jeder Station beider Einheiten. Keine von ihnen hält die
 Das Spiel läuft mit 1280x720 und ist für Tastatur und Trackball der uConsole ausgelegt. Vieles auf der uConsole lässt sich auch mit der Maus (oder den Tasten des Trackballs) spielen: Ein Klick auf eine Taste in der Tastenleiste einer Station drückt diese Taste (gedrückt halten hält die Taste, etwa zum Steuern oder für den Maschinentelegrafen), die nummerierten Reiter in der Kopfzeile wechseln die Station, ein Klick auf die Kurs-, Fahrt- oder Tiefenscheibe befiehlt diesen Wert, und eine Zahleneingabe zeigt ein Tastenfeld. Auch Statuslampen, Tastenhinweise im Text einer Station (etwa "`Y` absenken/einholen" oder der Radarzustand), Seitenreiter, Listenzeilen und die Werte in der unteren Statuszeile sind anklickbar: Eine Lampe oder ein Hinweis drückt seine Taste, ein Wert wie Flutung oder Torpedos öffnet die Station, die ihn bearbeitet. Das Element unter der Maus bekommt einen dünnen Rahmen. Ein Klick tut genau das, was seine Taste tut, mit denselben Prüfungen.
 
 Die Feuertaste `Strg+Enter` ist auf beiden Seiten nur an der Waffenstation (Station 3) anklickbar. Stationsbefehle, die nicht in der Tastenleiste stehen, haben eigene Tastenchips: Klassifizieren, TMA, Freigabe an die OPZ, Ziel und die Schleppsonare unter den Kontaktkarten des Sonars, Ziel zuweisen, Düppel und ASM-Track auf der Zielseite der OPZ, die Befehle an den Begleiter auf der Verbandsseite sowie Rohr fluten und Täuschkörper in der Feuerleitung des U-Boots (die Lampe eines trockenen Rohrs flutet es, die eines leeren lädt es). Flugkörper bleiben auf ihrer Taste: ESSM und die ASROC des Begleiters feuern nur mit `Strg+Enter`.
+
+Jede Taste, die eine Station nutzen kann, erscheint als blauer Tastenchip, nie als bloßer Text, und ein Klick auf den Chip drückt diese Taste. Ruht die Maus auf einer Statuslampe oder Anzeige (etwa START NO-GO, DECK WARTEN, einem Rohr, der Anlage oder dem ESM-Empfänger), öffnet sich ein Hinweis, der sagt, warum sie so steht, aus dem laufenden Spiel (Deckbewegung, Wettergrenzen, Nachladezeit, Wasser unter dem Kiel), und was zu tun ist, mit den Tasten als Chips. Die Hinweise gibt es auf beiden Seiten, auf der uConsole und im Remote-Crew-Browser.
 
 Menüzeilen, Dialogzeilen, Speicherplätze und die Hinweise darunter sind ebenfalls anklickbar; das Mausrad blättert durch Menüs und scrollt die Hilfe, und ein Rechtsklick bricht in Menüs, Dialogen, Eingaben und am Missionsende ab wie `Esc`. Auf Karten zoomt das Rad, Ziehen verschiebt und ein Klick heftet einen Tooltip an.
 

@@ -1,7 +1,9 @@
 import { $ } from "../core/base.js";
+import { S } from "../state/store.js";
 import { finite, number, t } from "../core/format.js";
 import { palette } from "../core/palette.js";
 import { node } from "./dom.js";
+import { setLampTip } from "./lamp-tip.js";
 import { visualContext } from "./visual-common.js";
 
 // Shared parts of the engine-room control consoles (frigate and submarine):
@@ -21,7 +23,8 @@ export function keyed(box, keys, make) {
   return [...box.children];
 }
 
-// Lamps are [key, label, level, value]; the master lamp counts alarms and cautions.
+// Lamps are [key, label, level, value, control, tip]; the master lamp counts
+// alarms and cautions. ``tip`` is the lamp's hover note (``lamp_tips``).
 export function renderLampPanel(box, master, rows) {
   renderLamps(box, rows);
   const alarms = rows.filter((row) => row[2] === "alarm").length, cautions = rows.filter((row) => row[2] === "caution").length;
@@ -55,9 +58,11 @@ export function renderLamps(box, rows) {
     });
     return cell;
   });
-  rows.forEach(([, label, level, value, control], index) => {
+  rows.forEach(([, label, level, value, control, tip], index) => {
     const cell = cells[index];
     cell.dataset.level = level;
+    setLampTip(cell, tip);
+    if (tip && !cell.hasAttribute("tabindex")) cell.tabIndex = 0;
     cell.children[1].textContent = label;
     cell.children[2].textContent = value;
     const target = control ? $(control) : null;
@@ -71,7 +76,7 @@ export function renderLamps(box, rows) {
     } else if (cell.dataset.control) {
       delete cell.dataset.control;
       cell.setAttribute("role", "listitem");
-      cell.removeAttribute("tabindex");
+      if (!tip) cell.removeAttribute("tabindex");
     }
   });
 }
@@ -168,4 +173,16 @@ export function drawDialPanel(canvasId, textId, makeSpecs) {
   if (!paintDials(canvasId)) return;
   const box = $(textId), tag = box.tagName === "UL" ? "li" : "p";
   box.replaceChildren(...specs.map((spec) => node(tag, `${spec.label}: ${spec.text}${spec.sub ? ` (${spec.sub})` : ""}`)));
+}
+
+// The hover note of lamp ``name`` in the current role state, if any.
+export function lampTip(name) {
+  const tips = S.v2State?.lamp_tips;
+  return tips && Object.prototype.hasOwnProperty.call(tips, name) ? tips[name] : undefined;
+}
+
+// A lamp drawn wholly from its note: label, value and level come from the host.
+export function noteLamp(key, name, control) {
+  const tip = lampTip(name);
+  return tip ? [key, tip.label, tip.level || "off", tip.value, control, tip] : null;
 }

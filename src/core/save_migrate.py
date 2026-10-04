@@ -120,12 +120,12 @@ _HELO_FUEL_S_V50 = 7200.0
 
 
 def _v50_to_v51(doc: dict) -> None:
-    # The helicopter's start preparation (1.3.199): none ordered, as the
+    # The helicopter's start preparation (1.3.200): none ordered, as the
     # older release launched at once.
     helo = doc.get("helo")
     if isinstance(helo, dict):
         helo.setdefault("prep_s", None)
-        # Refuelling on deck (1.3.199): the older release filled the tank
+        # Refuelling on deck (1.3.200): the older release filled the tank
         # at every launch, so a helicopter in the hangar stood full.
         if helo.get("state") == "HANGAR":
             helo["fuel_s"] = _HELO_FUEL_S_V50

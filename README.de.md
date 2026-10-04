@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.199**
+Aktuelle Version: **1.3.200**
 
-Version 1.3.199 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
+Version 1.3.200 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
 Der Startbefehl (`H` oder *Helikopter starten* im Browser) beginnt 5 Minuten
 Vorbereitung im Hangar, danach hebt er im nächsten Startfenster ab; ein
 zweites `H` bricht sie ab. Nach einer Landung behält er den Kraftstoff, mit

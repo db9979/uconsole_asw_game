@@ -4,7 +4,7 @@ import { $, heloStates } from "../core/base.js";
 import { finite, heloStateText, number, t, unit } from "../core/format.js";
 import { fillFireTargets, metrics, position, setControlValue, setOptions, stationRows, yesNo } from "../views/dom.js";
 import { palette, paletteAlpha } from "../core/palette.js";
-import { renderLamps } from "../views/console-kit.js";
+import { lampTip, noteLamp, renderLamps } from "../views/console-kit.js";
 import { visualContext } from "../views/visual-common.js";
 
 // The flight deck's motion (src/ui/stations/helicopter.py _draw_deck_gauge):
@@ -41,14 +41,24 @@ function renderHelicopterLamps(asset, ready) {
   const lamp = (key, ...rest) => [key, ...rest];
   const dome = {DEPLOYED: "on", DEPLOYING: "caution", RETRIEVING: "caution"}[asset.dip_state] || "off";
   renderLamps($("helicopter-lamps"), [
-    lamp("dome", t("helicopter_lamp_dome"), dome, unit(asset.dip_depth_m, "m", 0), "helicopter-dip-toggle"),
+    lamp("dome", t("helicopter_lamp_dome"), dome, unit(asset.dip_depth_m, "m", 0), "helicopter-dip-toggle", lampTip("dome")),
     lamp("ping", t("sonar_lamp_ping"), ready.can_dipping_ping ? "on" : dome === "on" ? "caution" : "off",
       ready.can_dipping_ping ? t("sonar_lamp_ready") : t("sonar_lamp_cooldown", {seconds: number(asset.dip_ping_cooldown_s, 0)}),
-      "helicopter-dip-ping"),
+      "helicopter-dip-ping", lampTip("ping")),
     lamp("weather", t("helicopter_lamp_weather"), ready.weather_dipping_safe ? "on" : "alarm",
-      t(ready.weather_dipping_safe ? "sonar_lamp_ok" : "helicopter_lamp_unsafe")),
-    lamp("hover", t("helicopter_lamp_hover"), asset.hovering ? "on" : "off", t(asset.hovering ? "sonar_lamp_on" : "sonar_lamp_off")),
+      t(ready.weather_dipping_safe ? "sonar_lamp_ok" : "helicopter_lamp_unsafe"), undefined, lampTip("dip")),
+    lamp("hover", t("helicopter_lamp_hover"), asset.hovering ? "on" : "off", t(asset.hovering ? "sonar_lamp_on" : "sonar_lamp_off"),
+      undefined, lampTip("state_dipping")),
   ]);
+}
+
+// Launch, deck window, dipping weather and radar as on the uConsole's
+// Einsatzmittel panel: drawn from the host's notes, each with its reason.
+function renderHelicopterStatusLamps() {
+  renderLamps($("helicopter-status-lamps"), [
+    noteLamp("launch", "launch", "helicopter-launch"), noteLamp("deck", "deck"),
+    noteLamp("dip", "dip"), noteLamp("radar", "radar", "helicopter-radar"),
+  ].filter(Boolean));
 }
 
 // North-up scope of the dipping sonar: range rings (outer 20 NM), 10 degree
@@ -140,6 +150,7 @@ export function renderHelicopterStation(payload) {
     ["helicopter_dip_below_layer", environment.below_thermocline === null ? t("station_none") : yesNo(environment.below_thermocline)]]);
   const ready = payload.readiness;
   drawDeckMotion(ready.deck_motion);
+  renderHelicopterStatusLamps();
   metrics($("helicopter-readiness"), [["flightdeck_down", yesNo(ready.flightdeck_down)],
     ["helicopter_can_launch", yesNo(ready.can_launch)], ["helicopter_can_return", yesNo(ready.can_return)],
     ["deck_state", ready.deck_state], ["helicopter_can_waypoint", yesNo(ready.can_set_waypoint)],

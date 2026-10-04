@@ -544,6 +544,10 @@ def draw_lookout_glasses(game) -> None:
     layout.blit_line(s, structured_message("bridge.line.glasses_hint"),
                      (frame.x + 10, panorama.bottom + 22, frame.w - 20, 20),
                      config.COLOR_TEXT_DIM, size=14)
+    pointer.add_token_keys((frame.x + 10, panorama.bottom + 22, frame.w - 20, 20),
+                           structured_message("bridge.line.glasses_hint"), 14,
+                           (("←/→", "←/→"), ("↑/↓", "↑/↓"), ("Q/E", "Q/E"),
+                            ("Space", "Space"), ("Leertaste", "Space"), ("B", "B")), screen=s)
     # The lookout's sightings, nearest the line of sight first.
     row_y = panorama.bottom + 48
     if helo is not None:

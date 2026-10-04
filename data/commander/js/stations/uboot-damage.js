@@ -1,7 +1,7 @@
 import { $ } from "../core/base.js";
 import { number, t, unit } from "../core/format.js";
 import { palette } from "../core/palette.js";
-import { dial, pct, renderLampPanel, signed } from "../views/console-kit.js";
+import { dial, lampTip, pct, renderLampPanel, signed } from "../views/console-kit.js";
 import { visualContext } from "../views/visual-common.js";
 import { drawBoatSection } from "./damage-section.js";
 
@@ -23,7 +23,8 @@ function lamps(payload) {
   const lost = count((row) => row.down), busy = dc.teams.filter((team) => team.task !== "idle").length;
   const wounded = hurt.wounded + hurt.serious, hp = pct(ballast.hp_air_bar, ballast.hp_air_max_bar);
   const rows = [];
-  const add = (key, label, level, value) => rows.push([key, label, level, value]);
+  const add = (key, label, level, value) => rows.push([key, label, level, value, undefined,
+    lampTip(`sys_${key}`) ?? lampTip(key === "cavitating" ? "cavitation" : key)]);
   add("power", t("uboot_dc_power"), dc.power ? "on" : "alarm", t(dc.power ? "uboot_dc_power_on" : "uboot_dc_power_off"));
   add("flooding", t("uboot_dc_lamp_water"), ballast.flooding_kg > 2000 ? "alarm" : ballast.flooding_kg > 0 ? "caution" : "off",
     unit(ballast.flooding_kg / 1000, "t", 1));

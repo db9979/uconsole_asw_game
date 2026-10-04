@@ -9,7 +9,7 @@ operator is about to give.
 
 import pygame
 
-from src.core import config
+from src.core import config, status_tips
 from src.core.i18n import message, raw_text
 from src.enemies.damage_control import COMPARTMENTS, TASKS, capacity_kg
 from src.ui import console, damage_section, layout
@@ -115,7 +115,9 @@ def draw_damage_page(s, game, boat, x, y, w, h) -> None:
                 "caution" if _alert(control, selected) else "on")
     layout.blit_line(s, f"uboot.compartment.{COMPARTMENTS[selected]}",
                      (tx + 20, ty, tw - 20, name_h), config.COLOR_TEXT, size=18)
-    console.lamp_grid(s, (tx, ty + name_h, tw, grid_h), rows, 3)
+    console.lamp_grid(s, (tx, ty + name_h, tw, grid_h), console.with_tips(rows, [
+        status_tips.lazy(lambda: status_tips.boat(game, boat), name) for name in (
+            "dc_water", "dc_leak", "dc_fire", "dc_gas", "dc_bulkhead", "dc_power")]), 3)
     teams_y = table_y + table_h + 8
     bx, by, bw, bh = layout.box(s, (x, teams_y, w, max(60, y + h - teams_y)),
                                 "uboot.panel.dc_teams",

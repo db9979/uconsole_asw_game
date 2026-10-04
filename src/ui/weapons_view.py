@@ -4,7 +4,7 @@ import math
 
 import pygame
 
-from src.core import config
+from src.core import config, status_tips
 from src.core.i18n import raw_text, display_value, localized, localize, message as structured_message
 from src.core.station import Station
 from src.ui import console, engagement, label_layout, layout, map_view, pointer, theme
@@ -478,8 +478,9 @@ def draw_weapons_panel(game, tr=None) -> None:
         lamp_h = layout.line_pitch(14, 0) + 8
         sketch_bottom = ready_y - 8
         if tubes and ready_y - lamp_h - 6 > sy:
-            console.lamp_grid(s, (sx, ready_y - lamp_h - 6, sw, lamp_h), tubes,
-                              len(tubes), size=14)
+            console.lamp_grid(s, (sx, ready_y - lamp_h - 6, sw, lamp_h), console.with_tips(
+                tubes, [status_tips.lazy(lambda: status_tips.weapons(game), f"tube_{index + 1}")
+                        for index in range(len(tubes))]), len(tubes), size=14)
             sketch_bottom = ready_y - lamp_h - 14
         if sketch_bottom - sy >= SKETCH_MIN_H:
             _draw_sketch(s, game, c, fresh_solution, (sx, sy + 4, sw, sketch_bottom - sy - 4))
@@ -503,16 +504,19 @@ def draw_weapons_panel(game, tr=None) -> None:
         # The interlock chain as annunciator lamps: lit when the stage is clear.
         lamp_h = layout.line_pitch(13, 0) + 10
         used = console.lamp_grid(s, (rx, ry, rw, len(stages) * (lamp_h + 4) - 4),
-                                 [(name, value, "on" if ok else "caution", key)
-                                  for (name, value, ok), key
-                                  in zip(stages, ("M", None, None, None, "F"))], 1, size=13)
+                                 [(name, value, "on" if ok else "caution", key,
+                                   status_tips.lazy(lambda: status_tips.weapons(game), tip))
+                                  for (name, value, ok), key, tip
+                                  in zip(stages, ("M", None, None, None, "F"),
+                                         ("target", "fix", "roe", "weapon", "flak"))],
+                                 1, size=13)
         layout.blit_line(s, "weapons.control.launch", (rx, ry + used + 12, rw, 24), readiness_color, size=14)
         layout.blit_line(s, "weapons.control.flak", (rx, ry + used + 36, rw, 24), config.COLOR_TEXT_DIM, size=13)
         # The key hints are switches too (Ctrl+Enter fires only here, at station 3).
         pointer.add_token_keys((rx, ry + used + 12, rw, 24), localize("weapons.control.launch"),
-                               14, (("Ctrl+Enter:", "Ctrl+Enter"), ("Strg+Enter:", "Ctrl+Enter")))
+                               14, (("Ctrl+Enter:", "Ctrl+Enter"), ("Strg+Enter:", "Ctrl+Enter")), screen=s)
         pointer.add_token_keys((rx, ry + used + 36, rw, 24), localize("weapons.control.flak"),
-                               13, (("F:", "F"),))
+                               13, (("F:", "F"),), screen=s)
 
     else:
         regions = weapons_regions(game, 1)
@@ -613,4 +617,4 @@ def draw_weapons_panel(game, tr=None) -> None:
             layout.blit_line(s, text, (cx, cy + 56 + offset * 26, cw, 24),
                              config.COLOR_TEXT_DIM, size=15)
             pointer.add_token_keys((cx, cy + 56 + offset * 26, cw, 24), localize(text),
-                                   15, tokens)
+                                   15, tokens, screen=s)

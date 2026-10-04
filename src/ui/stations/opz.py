@@ -213,15 +213,13 @@ def opz_regions(station_rect=None) -> dict[str, pygame.Rect]:
         map_rect = pygame.Rect(station.x + 8, top, scope_w - 16, height)
         sidebar = pygame.Rect(station.x + scope_w, top, station.w - scope_w, height)
     chart = map_rect.copy()
-    button_y = sidebar.bottom - 80
-    button_w = max(1, (sidebar.w - 24) // 2)
+    # One full-width row per action, so the words fit beside their key chip.
+    button_y = sidebar.bottom - 4 * 30 - 4
+    button_w = max(1, sidebar.w - 16)
+    rows = {name: pygame.Rect(sidebar.x + 8, button_y + index * 30, button_w, 26)
+            for index, name in enumerate(("classify", "affiliate", "mark", "fusion"))}
     return {"map": map_rect, "chart": chart, "sidebar": sidebar, "tracks": tracks,
-            "classify": pygame.Rect(sidebar.x + 8, button_y, button_w, 28),
-            "affiliate": pygame.Rect(sidebar.x + 16 + button_w, button_y,
-                                     button_w, 28),
-            "mark": pygame.Rect(sidebar.x + 8, button_y + 34, button_w, 28),
-            "fusion": pygame.Rect(sidebar.x + 16 + button_w, button_y + 34,
-                                  button_w, 28)}
+            **rows}
 
 
 def opz_track_cards(game, station_rect=None) -> list:
@@ -254,7 +252,7 @@ def _draw_track_cards(game, s, box, selected_id) -> None:
     head = pygame.Rect(box.x + 10, box.y + 8, box.w - 20, 22)
     layout.blit_line(s, heading, head, config.COLOR_TEXT, size=14)
     pointer.add_token_keys(head, heading, 14, (("(Shift+F)", "Shift+F"),),
-                           min_size=layout.MIN_OPERATIONAL_FONT)
+                           min_size=layout.MIN_OPERATIONAL_FONT, screen=s)
     cards = opz_track_cards(game)
     if not cards:
         layout.blit_line(s, "opz.no_tracks", (box.x + 10, box.y + 36, box.w - 20, 22),
@@ -482,7 +480,7 @@ def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
             break
         layout.blit_line(s, key, (x, py, w, 22), config.COLOR_TEXT_DIM, size=14)
         # Each key in the hint is a switch (full mouse control).
-        pointer.add_token_keys((x, py, w, 22), key, 14, tokens)
+        pointer.add_token_keys((x, py, w, 22), key, 14, tokens, screen=s)
         py += 24
     return py
 
@@ -586,7 +584,8 @@ def _draw_consort_sidebar(game, s, x, py, w, bottom) -> int:
         if py + 22 > bottom:
             break
         layout.blit_line(s, key, (x, py, w, 22), config.COLOR_TEXT_DIM, size=14)
-        pointer.add_token_keys((x, py, w, 22), key, 14, CONSORT_KEY_TOKENS[key])
+        pointer.add_token_keys((x, py, w, 22), key, 14, CONSORT_KEY_TOKENS[key],
+                               screen=s)
         py += 24
     return py
 
@@ -1154,6 +1153,8 @@ def draw_opz_view(game, tr=None) -> None:
             py = content_bottom + 2
             layout.blit_line(s, "opz.suggestions_heading", (x, py, w, 22),
                              config.COLOR_TEXT_DIM, size=14)
+            pointer.add_token_keys((x, py, w, 22), "opz.suggestions_heading", 14,
+                                   (("U", "U"), ("Shift+U", "Shift+U")), screen=s)
             py += 24
             for index, suggestion in enumerate(suggestions):
                 first, second = game.opz_suggestion_labels(suggestion)
@@ -1259,15 +1260,12 @@ def draw_opz_view(game, tr=None) -> None:
                       x, py, w, 24, color=col, size=15)
                 py += 26
 
-    for action, key in (("classify", "opz.button.classify"),
-                        ("affiliate", "opz.button.affiliation"),
-                        ("mark", "opz.button.mark"),
-                        ("fusion", "opz.button.fusion")):
+    for action, key, label in (("classify", "C", "opz.button.classify"),
+                               ("affiliate", "F", "opz.button.affiliation"),
+                               ("mark", "opz.button.mark_key", "opz.button.mark"),
+                               ("fusion", "L", "opz.button.fusion")):
         rect = regions[action]
-        pygame.draw.rect(s, theme.c("raised"), rect, border_radius=4)
-        pygame.draw.rect(s, theme.c("line_strong"), rect, 1, border_radius=4)
-        layout.blit_line(s, key, rect, config.COLOR_TEXT, size=14,
-                         align="center")
+        layout.key_button(s, rect, key, label, size=14)
         pointer.add_hotspot(rect)       # opz_action_at takes the click
 
     scales = " ".join(

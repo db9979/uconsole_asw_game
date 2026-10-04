@@ -2,7 +2,7 @@ import { S } from "../state/store.js";
 import { $, damageStates } from "../core/base.js";
 import { enumText, finite, number, t, unit } from "../core/format.js";
 import { node } from "../views/dom.js";
-import { drawDialPanel, keyed, pct, renderLampPanel, signed } from "../views/console-kit.js";
+import { drawDialPanel, keyed, lampTip, pct, renderLampPanel, signed } from "../views/console-kit.js";
 
 // The frigate's engine-room control console on the stage, like the
 // submarine's: an annunciator panel of status lamps, round gauges, the fuel
@@ -19,7 +19,10 @@ const stateLevel = (state) => state === "ZERSTOERT" ? "alarm" : state === "OK" ?
 function lamps(payload) {
   const p = payload.propulsion, m = payload.machinery, e = payload.environment_effects, c = payload.controls;
   const rows = [];
-  const add = (key, label, level, value, control) => rows.push([key, label, level, value, control]);
+  // Each lamp's hover note from the host (why it shows what it shows).
+  const notes = {auto: "plant", diesel: "plant", turbine: "plant", cavitating: "cavitation", teams: "repairs",
+    ship_fire: "fires_aboard", ship_flood: "flooded", tas: "sonar"};
+  const add = (key, label, level, value, control) => rows.push([key, label, level, value, control, lampTip(notes[key] || key)]);
   const turning = p.speed > .05 || p.telegraph !== "STOP";
   add("shaft", t("engine_lamp_shaft"), turning ? (p.telegraph === "ASTERN" ? "caution" : "on") : "off",
     t(`telegraph_${p.telegraph.toLowerCase()}`));

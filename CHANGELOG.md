@@ -4,6 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.192
+
+Release 1.3.192 fixes five gameplay faults from the code audit. The patrol
+aircraft no longer circles a buoy point for good: within 4 NM of the next
+point of a pattern ordered on the way out it slows to station speed so it can
+turn onto it. Speeding up only lifts the towed array; its ordered depth stays
+and is reached again when the ship slows down. A contact report broken off
+because the radio room fails earns nothing, and later calls never push the
+right reports out of the score. AI submarines keep the bearing of the
+frigate's HF calls like a sonar bearing of their own and act on it. On a free
+patrol, incidents stop adding ships and whales once the sea is full, a
+returning submarine forgets its old contact and attack, and only the frigate
+side pays for a sunk neutral submarine. Saves are v50; v38 to v49 saves still
+load.
+
 ## 1.3.191
 
 Release 1.3.191 reorganises the manual into 21 short chapters: a quick start

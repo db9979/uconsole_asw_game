@@ -94,6 +94,28 @@ def test_pattern_drops_along_the_planned_points():
     assert game.set_mpa_pattern("spiral") == "invalid_value"
 
 
+@pytest.mark.parametrize("kind", ["field", "barrier", "circle"])
+def test_pattern_ordered_in_transit_never_circles_a_point(kind):
+    """A pattern ordered on the way out is finished from any approach and
+    axis (at transit speed the turn circle was wider than the drop window)."""
+    from src.air import helicopter as helicopter_physics
+    for axis in range(0, 360, 15):
+        for approach in range(0, 360, 30):
+            wx = wy = 250.0
+            mpa = PatrolAircraft(wx + 40.0 * math.sin(math.radians(approach)),
+                                 wy - 40.0 * math.cos(math.radians(approach)))
+            assert mpa.launch(wx, wy, 0.0)
+            mpa.pattern_queue = helicopter_physics.plan_buoy_pattern(kind, wx, wy, axis, 16)
+            t = 0.0
+            while mpa.pattern_queue and t < 1800.0:
+                mpa.update(0.2, t)
+                t += 0.2
+                px, py = mpa.pattern_queue[0]
+                if math.hypot(mpa.x - px, mpa.y - py) <= config.MPA_DROP_POINT_NM:
+                    mpa.pattern_queue.pop(0)
+            assert not mpa.pattern_queue, (kind, axis, approach)
+
+
 def test_radar_reports_as_datalink_tracks():
     game = _game()
     ship = next(ship for ship in game.civilians if not ship.sunk)

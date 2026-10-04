@@ -160,3 +160,23 @@ def test_scan_decides_arrays_once_and_rejects_range_before_occlusion(monkeypatch
 
     assert len(status_calls) == 1
     assert blocked_calls == []
+
+
+def test_speed_lifts_the_array_but_keeps_the_ordered_depth():
+    sonar = SonarSystem(3)
+    ship = Ship(0, 0, course_deg=0, speed_kn=6)
+    assert sonar.toggle_tow(ship.speed)
+    sonar.update(config.SONAR_TOWED_DEPLOY_S + config.SONAR_TOWED_SETTLE_S, 600, ship, [], world())
+    ordered = sonar.adjust_towed_depth(config.SONAR_TOWED_DEPTH_MAX_M, ship.speed)
+    sonar.update(600, 1200, ship, [], world())
+    assert sonar.towed_depth_m == pytest.approx(ordered)
+    ship.speed = 12
+    limit = max(config.SONAR_TOWED_DEPTH_MIN_M, config.SONAR_TOWED_DEPTH_MAX_M
+                - ship.speed * config.SONAR_TOWED_SPEED_SHALLOW_M_PER_KN)
+    assert limit < ordered
+    sonar.update(600, 1800, ship, [], world())
+    assert sonar.towed_depth_m == pytest.approx(limit)
+    assert sonar.towed_depth_target_m == ordered
+    ship.speed = 6
+    sonar.update(600, 2400, ship, [], world())
+    assert sonar.towed_depth_m == pytest.approx(ordered)

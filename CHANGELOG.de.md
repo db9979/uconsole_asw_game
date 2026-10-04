@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.193
+## 1.3.194
 
-Version 1.3.193 berichtigt Daten und den Zünder des Feindtorpedos aus der
+Version 1.3.194 berichtigt Daten und den Zünder des Feindtorpedos aus der
 Codeprüfung. Trafalgar und Rubis sind jetzt Atom-U-Boote und Collins ein
 diesel-elektrisches; Improved-Kilo, Lada und Taigei haben keinen AIP mehr
 (Taigei dafür eine größere Lithium-Batterie); Virginia und Yasen sind nicht
@@ -18,6 +18,14 @@ Jedes Schiff hat jetzt seine echte Länge, die sein Echo und seine Wendigkeit
 bestimmt; die Triple-E gilt als Containerschiff, und das Flusskreuzfahrtschiff
 fährt nicht mehr auf offener See. Spielstände sind v50; v38 bis v49 lassen
 sich weiter laden.
+
+## 1.3.193
+
+Version 1.3.193 benennt die Anzeige des Ersten Offiziers um: Der Titel heißt
+jetzt nur „Erster Offizier“, und solange das optionale Sprachmodell an einer
+Antwort arbeitet, steht auf der uConsole und im Browser „Der Erste Offizier
+wertet die Lage aus ...“ statt „Das Sprachmodell schreibt ...“. Am Spiel
+ändert sich nichts. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
 
 ## 1.3.192
 

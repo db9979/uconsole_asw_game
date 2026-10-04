@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.193
+## 1.3.194
 
-Release 1.3.193 corrects data and the hostile torpedo's fuze from the code
+Release 1.3.194 corrects data and the hostile torpedo's fuze from the code
 audit. Trafalgar and Rubis are now nuclear submarines and Collins a
 diesel-electric one; Improved Kilo, Lada and Taigei no longer have AIP
 (Taigei has a larger lithium battery instead); Virginia and Yasen no longer
@@ -17,6 +17,14 @@ distance. The helicopter's and patrol aircraft's lightweight torpedo runs
 length, which sets its echo and how fast it turns; the Triple-E counts as a
 container ship and the river cruise ship no longer sails the open sea. Saves
 are v50; v38 to v49 saves still load.
+
+## 1.3.193
+
+Release 1.3.193 renames the executive officer's overlay: its title is now
+just "Executive officer", and while the optional language model works on an
+answer it reads "The executive officer is assessing the situation ..." on the
+uConsole and in the browser instead of "The language model is writing ...".
+Nothing changes in play. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.192
 

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.193**
+Aktuelle Version: **1.3.194**
 
-Version 1.3.193 berichtigt Daten und den Zünder des Feindtorpedos aus der
+Version 1.3.194 berichtigt Daten und den Zünder des Feindtorpedos aus der
 Codeprüfung. Trafalgar und Rubis sind jetzt Atom-U-Boote und Collins ein
 diesel-elektrisches; Improved-Kilo, Lada und Taigei haben keinen AIP mehr
 (Taigei dafür eine größere Lithium-Batterie); Virginia und Yasen sind nicht

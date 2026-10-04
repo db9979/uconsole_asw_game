@@ -258,3 +258,13 @@ def test_settings_page_masks_the_key_and_never_reads_the_key_file_per_frame(
     monkeypatch.setattr(widgets, "draw_text", lambda _s, text, *a, **k: shown.append(str(text)))
     advisor_view.draw_llm_settings(game)
     assert not any("secret" in text for text in shown)
+
+
+def test_executive_officer_waits_in_his_own_words():
+    from src.core.i18n import message
+    from src.ui import advisor_view
+    entry = {"kind": "situation", "question": "", "status": "pending", "answer": ""}
+    rows = [text for text, _color in advisor_view._entry_lines(None, entry)]
+    assert message("advisor.pending") in rows
+    assert message("llm.state.pending") not in rows
+    assert "(" not in message("advisor.title")

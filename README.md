@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.193**
+Current release: **1.3.194**
 
-Release 1.3.193 corrects data and the hostile torpedo's fuze from the code
+Release 1.3.194 corrects data and the hostile torpedo's fuze from the code
 audit. Trafalgar and Rubis are now nuclear submarines and Collins a
 diesel-electric one; Improved Kilo, Lada and Taigei no longer have AIP
 (Taigei has a larger lithium battery instead); Virginia and Yasen no longer

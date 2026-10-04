@@ -31,7 +31,10 @@ def _entry_lines(game, entry) -> list:
     head = message("advisor.asked", kind=kind) if not entry["question"] else message(
         "advisor.asked_text", kind=kind, text=raw_text(entry["question"]))
     rows.append((head, config.COLOR_TEXT_DIM))
-    state = llm_text.status_text(entry) if entry["status"] != "done" else None
+    if entry["status"] == "pending":
+        state = message("advisor.pending")
+    else:
+        state = llm_text.status_text(entry) if entry["status"] != "done" else None
     if state is not None:
         rows.append((state, config.COLOR_WARN))
         if entry["answer"]:

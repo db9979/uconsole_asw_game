@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.196**
+Current release: **1.3.197**
 
-Release 1.3.196 makes the hover tooltips follow the colour scheme. In the
+Release 1.3.197 makes the hover tooltips follow the colour scheme. In the
 light Tactical Day scheme a tooltip is now a light card with dark text instead
 of a dark box with barely readable lettering; Tactical Night and high contrast
 keep a dark box, and red light turns it grey. The damage-control pictures (the

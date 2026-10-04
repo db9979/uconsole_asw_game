@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import math
 
-from src.core import config, detrand
+from src.core import config, detrand, free_roam
 from src.core.i18n import message
 from src.weapons import rbu
 from src.weapons.rbu import RbuRound
@@ -175,6 +175,7 @@ class RbuMixin:
             if amount >= 1.0 and not self.world.sonar_path_blocked(
                     item.x, item.y, item.depth, sub.x, sub.y, sub.depth):
                 sub.hit(amount)
+                free_roam.charge_frigate_hit(self, sub)
             elif item.lead:
                 sub.alert_torpedo(source=(item.x, item.y))
         for torpedo in self.enemy_torpedoes:

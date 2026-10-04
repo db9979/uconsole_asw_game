@@ -297,7 +297,11 @@ class Sub(FrigateRelativeMixin):
 
     def forget(self) -> None:
         """A boat brought back as a new encounter starts with a clean slate:
-        no contact, solution, alarm or shots of its former patrol."""
+        no contact, solution, alarm or shots of its former patrol. It also
+        takes a new identity, so nothing the other side still holds on the
+        old one (contact, track, TMA, OPZ label) attaches to it."""
+        self.id = Sub._next_id
+        Sub._next_id += 1
         self.memory = self.fresh_memory()
         self.tma_track = BearingTrack()
         self.tma_track_id = None

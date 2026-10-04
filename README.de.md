@@ -14,23 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.203**
+Aktuelle Version: **1.3.204**
 
-Version 1.3.203 macht die Rettung von Schiffbrüchigen mit dem Hubschrauber
-zu einer klaren Bedienhandlung. Rettungsinseln im Wasser sind jetzt kleine
-Radarechos für das Schiffsradar, das Hubschrauberradar und den
-Seefernaufklärer (bei hohem Seegang schwerer zu sehen) und verbessern die
-gemeldete Position; die OPZ erfährt vom ersten Fix. Die
-Hubschrauberstation zeigt ein Rettungsfeld mit dem Zustand der Winde, den
-Personen an Bord (höchstens 6), der Insel mit Peilung und Abstand und einem
-kurzen Hinweis, was als Nächstes zu tun ist. Im Schwebeflug höchstens
-0,1 sm von einer Insel entfernt `Z` drücken (oder die Windenlampe bzw.
-*Rettungswinde* im Browser anklicken): Der Hubschrauber stellt sich über
-die Insel, holt bei zulässigem Wind eine Person pro Minute herauf und meldet
-jede Person, eine leere Insel und eine volle Kabine. Gerettet sind die
-Schiffbrüchigen erst, wenn der Hubschrauber auf dem Schiff landet; geht er
-verloren, sind sie es auch. Der Hubschrauber der KI-Fregatte nutzt dieselbe
-Winde. Spielstände sind v52; v38 bis v51 laden weiter.
+Version 1.3.204 lässt die Lampen des Hubschraubers die Startvorbereitung
+nennen. Ruht die Maus auf der Lampe HANGAR, DECK oder START, steht dort, wie
+lange die Startvorbereitung noch läuft, wie lange der Start noch auf Sprit
+wartet oder dass der Hubschrauber startbereit auf ein Deckfenster wartet, aus
+dem laufenden Spiel, und dass ein zweites H die Vorbereitung abbricht. Die
+macOS-App gibt es nur noch für Apple Silicon; ein Intel-Mac öffnet die
+Release-Seite, statt sich zu aktualisieren. Tasten bleiben gleich. Spielstände
+sind v52; v38 bis v51 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -204,8 +197,8 @@ gelöscht). Selbst bauen unter Windows:
 
 ## macOS-App
 
-Lade `U-Jagd-macOS-arm64.zip` (Apple Silicon) oder `U-Jagd-macOS-x86_64.zip`
-(Intel-Mac) aus dem
+Lade `U-Jagd-macOS-arm64.zip` (Apple Silicon; für Intel-Macs gibt es keinen
+Build) aus dem
 [neuesten Release](https://github.com/db9979/uconsole_asw_game/releases/latest),
 entpacke es und ziehe `U-Jagd.app` in den Ordner Programme (oder einen anderen
 Ordner, in den du schreiben darfst); Python ist nicht nötig. Die App startet
@@ -229,10 +222,10 @@ Schreibrecht läuft, öffnet stattdessen die Release-Seite. Spielstände und
 Einstellungen liegen wie unter Linux in `~/.u-jagd/`; ein Update fasst sie nie an.
 
 Derselbe Workflow baut `U-Jagd.app` mit PyInstaller
-(`packaging/macos/u-jagd-macos.spec`) nativ für arm64 und x86_64 (pygame und
+(`packaging/macos/u-jagd-macos.spec`) nativ für arm64 (pygame und
 NumPy veröffentlichen keine universal2-Wheels), testet sie selbst, packt sie
-mit `ditto -c -k --keepParent` und hängt auf `main` in einem letzten Job beide
-Zips und das Windows-Programm an dasselbe Release. Selbst bauen auf einem Mac:
+mit `ditto -c -k --keepParent` und hängt auf `main` in einem letzten Job das
+Zip und das Windows-Programm an dasselbe Release. Selbst bauen auf einem Mac:
 `python -m pip install -e ".[macos]"` und
 `pyinstaller packaging/macos/u-jagd-macos.spec`.
 

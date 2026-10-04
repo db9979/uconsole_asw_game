@@ -106,16 +106,15 @@ jobs:
 
   macos:
     name: macOS ${{ matrix.arch }}
-    # pygame and NumPy publish no universal2 wheels, so each processor gets
-    # its own bundle, built natively on its own runner.
+    # Apple silicon only (Dominik, 2026-10-04: no Intel build any more).
+    # pygame and NumPy publish no universal2 wheels, so the bundle is built
+    # natively on an arm64 runner.
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: arm64
             runner: macos-latest
-          - arch: x86_64
-            runner: macos-15-intel
     runs-on: ${{ matrix.runner }}
     # A hung self-test must not hold the release queue for the 6 h default.
     timeout-minutes: 30
@@ -261,14 +260,14 @@ jobs:
               echo
               echo "Windows: download U-Jagd-Windows.exe and run it; it offers later versions itself."
               echo
-              echo "macOS: download U-Jagd-macOS-arm64.zip (Apple silicon) or U-Jagd-macOS-x86_64.zip (Intel), unzip it, move U-Jagd.app to Applications and open it the first time with right-click > Open (the app is not notarized); it offers later versions itself."
+              echo "macOS (Apple silicon): download U-Jagd-macOS-arm64.zip, unzip it, move U-Jagd.app to Applications and open it the first time with right-click > Open (the app is not notarized); it offers later versions itself."
             } > release-notes.md
             gh release create "$tag" --target "$GITHUB_SHA" --title "U-Jagd $VERSION" \
               --notes-file release-notes.md \
               || gh release view "$tag" >/dev/null
           fi
           published=$(gh release view "$tag" --json assets --jq '.assets[].name')
-          for name in U-Jagd-Windows.exe U-Jagd-macOS-arm64.zip U-Jagd-macOS-x86_64.zip; do
+          for name in U-Jagd-Windows.exe U-Jagd-macOS-arm64.zip; do
             if printf '%s\n' "$published" | grep -qx "$name"; then
               echo "$name is already published for $tag; bump src/core/version.py for a new build."
             elif [ -f "release-assets/$name" ]; then

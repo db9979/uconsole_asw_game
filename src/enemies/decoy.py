@@ -9,13 +9,14 @@ import random
 from src.core import config
 from src.data.catalog import CATALOG
 from src.weapons.torpedo import underwater_path_blocked
+from src.physics.geo import FrigateRelativeMixin
 
 
 DECOY_SWEEP_FRACTION = 0.02
 DECOY_SWEEP_PERIOD_S = 30.0
 
 
-class Decoy:
+class Decoy(FrigateRelativeMixin):
     """Sonar-Objekt wie Sub/Animal (Duck-Typing), aber ohne KI-Fahrplan."""
 
     _next_id = 1000000  # Separate from surface contacts (which start at 5000).
@@ -111,11 +112,3 @@ class Decoy:
             return {}
         level, low, high = signature.broadband
         return {"level": level, "low_hz": low, "high_hz": high}
-
-    def distance_nm(self, frigate) -> float:
-        return math.hypot(self.x - frigate.x, self.y - frigate.y)
-
-    def bearing_from_frigate(self, frigate) -> float:
-        dx = self.x - frigate.x
-        dy = self.y - frigate.y
-        return math.degrees(math.atan2(dx, -dy)) % 360.0

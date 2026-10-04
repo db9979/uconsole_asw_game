@@ -14,16 +14,21 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.190**
+Aktuelle Version: **1.3.191**
 
-Version 1.3.190 behebt zwei Fehler im Server-Modus des Browsers. Schaltet der
-Spielleiter in der Lobby die Einheit um, wechselt jetzt jeder Browser auf die
-Stationen dieser Einheit (gegen die KI); bisher blieb die Besatzung auf den
-Stationen der alten Einheit. Eine volle Kopfleiste quetscht „Station
-hinzufügen“ nicht mehr zu einer Spalte einzelner Buchstaben: Der Knopf bleibt
-einzeilig, und die Leiste bricht in eine zweite Zeile um, statt rechts
-abgeschnitten zu werden. Tasten bleiben gleich. Spielstände sind v50; v38 bis
-v49 lassen sich weiter laden.
+Version 1.3.191 ordnet das Handbuch in 21 kurze Kapitel: ein Schnellstart
+unter 1.500 Wörtern für beide Seiten, dann Hauptmenü, Optionen, jede
+Fregattenstation mit denselben Teilen (Zweck, Seiten, Anzeigen, Tasten, Maus,
+Standardablauf, Tipps, nicht modelliert), das U-Boot mit einem Abschnitt je
+Station, Szenarien mit Tabellen für beide Seiten, Mehrspieler und
+Server-Modus, nach dem Einsatz, Werkzeuge, Editoren, Sprachmodell,
+Referenzdaten und ein Glossar; veraltete Aussagen sind am Spiel berichtigt. Im
+Handbuch-Leser öffnet 0 den Schnellstart und 1 bis 9 die Stationen. Die README
+beschreibt nicht mehr das entfallene Windows-Starterfenster. Im Inneren ist
+langer Speicher- und Rücksetzcode in kleinere Teile zerlegt, doppelte
+Peilungs- und Abstandshelfer sind zusammengeführt, und Torpedos ohne Zielpunkt
+lesen nie ein verborgenes Ziel. Am Spiel ändert sich nichts. Spielstände sind
+v50; v38 bis v49 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -149,8 +154,7 @@ Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py
   nutzen und mit einer getrennten Freigabe direkt Waffen einsetzen.
   Die Browserkonsole ist ein Gefechtszentrale-Layout auf einer Bildschirmseite
   für große Desktop-Monitore: Statusleiste, zentrales Instrument und
-  einklappbare Seitenleisten. `python main.py --solo-crew` (oder die F9-Zeile
-  „Crew-Modus“) lässt einen einzigen Browser alle neun Stationen samt
+  einklappbare Seitenleisten. `python main.py --solo-crew` lässt einen einzigen Browser alle neun Stationen samt
   Speichern/Laden und neuem Spiel bedienen, während die uConsole der
   Simulationsserver bleibt; siehe [Einrichtung von Remote Crew](docs/commander-coop.de.md).
 - Konservative stationsbezogene Autocrew mit `F2` und einer Übersicht mit `F3`.
@@ -165,20 +169,14 @@ Alle Bilder nach einem Update neu erzeugen: `python tools/capture_screenshots.py
 
 Lade `U-Jagd-Windows.exe` aus dem
 [neuesten Release](https://github.com/db9979/uconsole_asw_game/releases/latest)
-und starte es; Python ist nicht nötig. Im Starterfenster wählst du den
-Besatzungsmodus (mehrere Browser, je eine Station) oder den Solomodus (ein
-Browser bedient alle Stationen), ob dieser PC das U-Boot spielt, Fenster oder
-Vollbild, Ton und Port, und das Feld **Sprache** oben stellt Starter, Spiel
-und Besatzungs-Browser zwischen English und Deutsch um (in den Einstellungen
-gespeichert); **Server starten** öffnet dann das Spielfenster, und
-Remote Crew lauscht bereits auf der privaten LAN-Adresse des PCs. Der Starter
-zeigt Browser-Adresse, Beitrittscode und QR-Code; Stationsanfragen bestätigst
-du wie auf dem uConsole im Spielfenster (F9). Windows fragt eventuell einmal,
-ob U-Jagd private Netzwerke nutzen darf: zulassen, sonst können sich andere
-Geräte nicht verbinden. **Server stoppen** beendet das Spiel (nicht
-gespeicherter Fortschritt geht verloren), und der Link unten öffnet die
-"Buy me a coffee"-Seite; das Protokoll liegt in
-`%USERPROFILE%\.u-jagd\logs\server.log`.
+und starte es; Python ist nicht nötig. Es startet direkt ins Spielfenster und
+nimmt dieselben Kommandozeilenoptionen wie `main.py`; ein eigenes
+Starterfenster gibt es nicht (auf einem Mac arbeitet die App `U-Jagd.app`
+genauso). **Mehrspieler** im Hauptmenü öffnet die Lobby mit eingeschalteter
+Remote Crew, und **Server (nur Browser)** lässt alle im Browser spielen.
+Windows fragt eventuell einmal, ob U-Jagd private Netzwerke nutzen darf:
+zulassen, sonst können sich andere Geräte nicht verbinden. Das Protokoll liegt
+in `%USERPROFILE%\.u-jagd\logs\server.log`.
 
 Bei jedem Start fragt das Programm GitHub, ob es ein neueres Release gibt;
 Startbildschirm und Hauptmenü des Spiels zeigen dann dessen Eintrag aus dem
@@ -300,9 +298,7 @@ Einstiegspunkt als `u-jagd` verfügbar, beispielsweise `u-jagd --windowed`.
 Besatzungsmodus auf der ersten privaten LAN-Adresse, wie es die F9-Zeile tun
 würde (`--solo-crew` entsprechend im Solomodus; `--server` öffnet den
 Server-Modus nur für Browser, siehe Schnellstart im Handbuch; `--web-port` wählt den Port,
-Standard 8765). `--status-file PFAD` schreibt Remote-Crew-Adresse und
-Beitrittscode als JSON nach `PFAD`, sobald sie sich ändern; der
-Windows-Starter liest diese Datei.
+Standard 8765).
 
 ## Spiel starten
 

@@ -365,10 +365,16 @@ class Helicopter:
         if not self.water_entry_clear(world):
             return None
         self.torps -= 1
-        aim_x = target.x if guidance_x is None else guidance_x
-        aim_y = target.y if guidance_y is None else guidance_y
-        course = math.degrees(math.atan2(aim_x - self.x,
-                                         -(aim_y - self.y))) % 360.0
+        if guidance_x is None or guidance_y is None:
+            # Every caller passes the release datum. Without one the weapon
+            # runs unguided on the helicopter's heading; it never aims at
+            # the hidden target.
+            aim_x = aim_y = None
+            course = self.course
+        else:
+            aim_x, aim_y = guidance_x, guidance_y
+            course = math.degrees(math.atan2(aim_x - self.x,
+                                             -(aim_y - self.y))) % 360.0
         torpedo = Torpedo(self.x, self.y, course, target_depth_m, target, seq,
                           kill_dist_nm=(self.torpedo_profile.hit_dist_nm
                                         if kill_dist_nm is None else kill_dist_nm),

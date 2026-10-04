@@ -1,0 +1,78 @@
+# Werkzeuge {#tools}
+
+Diese Hilfen wirken an jeder Station beider Einheiten. Keine von ihnen hält die Simulation an.
+
+## Maus und Spielmenü {#tools-mouse}
+
+Das Spiel läuft mit 1280x720 und ist für Tastatur und Trackball der uConsole ausgelegt. Vieles auf der uConsole lässt sich auch mit der Maus (oder den Tasten des Trackballs) spielen: Ein Klick auf eine Taste in der Tastenleiste einer Station drückt diese Taste (gedrückt halten hält die Taste, etwa zum Steuern oder für den Maschinentelegrafen), die nummerierten Reiter in der Kopfzeile wechseln die Station, ein Klick auf die Kurs-, Fahrt- oder Tiefenscheibe befiehlt diesen Wert, und eine Zahleneingabe zeigt ein Tastenfeld. Auch Statuslampen, Tastenhinweise im Text einer Station (etwa "`Y` absenken/einholen" oder der Radarzustand), Seitenreiter, Listenzeilen und die Werte in der unteren Statuszeile sind anklickbar: Eine Lampe oder ein Hinweis drückt seine Taste, ein Wert wie Flutung oder Torpedos öffnet die Station, die ihn bearbeitet. Das Element unter der Maus bekommt einen dünnen Rahmen. Ein Klick tut genau das, was seine Taste tut, mit denselben Prüfungen.
+
+Die Feuertaste `Strg+Enter` ist auf beiden Seiten nur an der Waffenstation (Station 3) anklickbar. Stationsbefehle, die nicht in der Tastenleiste stehen, haben eigene Tastenchips: Klassifizieren, TMA, Freigabe an die OPZ, Ziel und die Schleppsonare unter den Kontaktkarten des Sonars, Ziel zuweisen, Düppel und ASM-Track auf der Zielseite der OPZ, die Befehle an den Begleiter auf der Verbandsseite sowie Rohr fluten und Täuschkörper in der Feuerleitung des U-Boots (die Lampe eines trockenen Rohrs flutet es, die eines leeren lädt es). Flugkörper bleiben auf ihrer Taste: ESSM und die ASROC des Begleiters feuern nur mit `Strg+Enter`.
+
+Menüzeilen, Dialogzeilen, Speicherplätze und die Hinweise darunter sind ebenfalls anklickbar; das Mausrad blättert durch Menüs und scrollt die Hilfe, und ein Rechtsklick bricht in Menüs, Dialogen, Eingaben und am Missionsende ab wie `Esc`. Auf Karten zoomt das Rad, Ziehen verschiebt und ein Klick heftet einen Tooltip an.
+
+Das Menü-Symbol in der Kopfzeile links vom Hell/Dunkel-Schalter öffnet auf beiden Seiten das Spielmenü: Hilfe, Optionen, Speichern und Laden, Wetterseite, Plot, Autocrew und Crew-Assistenz, Simulationsprotokoll, Erster Offizier, Einheitenanalysator, Remote Crew, Nationen und Beenden, jeweils mit ihrer Taste; ein Klick neben das Menü oder eine Taste schließt es. Jedes Overlay (Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Live-Verkehr, Wetterseite, Autocrew-Übersicht und Simulationsprotokoll) hat oben rechts ein Schließfeld, das wie `Esc` wirkt. `F1` listet alle Tasten der Station.
+
+## Hilfe (F1) und Ereignislog (F11) {#tools-help}
+
+`F1` (oder `?`) öffnet jederzeit die Hilfe. Sie hat vier Kategorien: globale Tasten, aktuelle Station (Tasten und Standardablauf), Sensoren und Taktik sowie dieses Handbuch. Menüs und Dialoge über einer laufenden Mission (Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, `F9`, Missionsende) zeigen statt der Station die Nachtszene des Startbildschirms hinter einem Konsolen-Panel; die Mission läuft dahinter weiter.
+
+Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; `F11` blendet das volle Ereignislog und die Telemetrie über der Station ein, ohne sie anzuhalten oder ihr die Tasten zu nehmen (auf der U-Boot-Seite das U-Boot-Log). Die Remote-Crew-Browser zeigen dasselbe Log, das Neueste oben, in ihrem Einsatzprotokoll (`L`): die Stationen der Fregatte das Log der Fregatte, die Stationen des U-Boots das U-Boot-Log.
+
+## Autocrew und Crew-Hilfe (F2, F3, Umschalt+F2) {#tools-autocrew}
+
+`F2` übergibt die aktuelle Station an die Autocrew; `F3` zeigt, welche Stationen automatisch laufen. Nutzen Sie das, um sich auf ein oder zwei Stationen zu konzentrieren. `Shift+F2` schaltet die Crew-Hilfe: Die KI besetzt jede Station beider Einheiten, die niemand hält, und die Station auf dem Bildschirm bleibt Ihre. Eine Mission aus der Mehrspieler-Lobby hat sie an, sobald ein Browser teilnimmt oder die uConsole nur Gastgeber ist; allein dort gestartet ist es ein Solospiel mit ausgeschalteter Crew-Hilfe.
+
+### Crew-Hilfe {#ref-crew-assist}
+
+`Shift+F2` (in einer Mission aus der Mehrspieler-Lobby an, sobald ein Browser teilnimmt oder die uConsole nur Gastgeber ist) lässt die KI jede Station besetzen, die niemand hält, auf der Fregatte und auf einem bemannten U-Boot, damit jeder Spieler bei einer Station bleiben kann. Eine Station, die ein Browser hält, und die, die die uConsole zeigt, bleiben bei ihrem Spieler; eine im Browser freigegebene Station („An KI übergeben“) geht sofort an die KI zurück. Die Hilfe wird mit der Mission gespeichert (Spielstand v41).
+
+- **Fregatte:** Die KI-Jäger oben bedienen Brücke, Sonar, Waffen und den Hubschrauber, die Autocrew die übrigen Stationen, auch gegen ein KI-U-Boot.
+- **U-Boot-Kommando:** weicht einem gehörten Torpedo oder Ping aus, folgt sonst dem Abschnitt der U-Boot-Mission oder läuft in einer Fregattenmission eine Fregatte an, die das eigene Sonar innerhalb von 12 sm geortet hat, und patrouilliert sonst mit 4 kn unter der Sprungschicht um den Startpunkt. Fällt die Batterie unter 35 % und jagt niemand das U-Boot, geht es auf Schnorcheltiefe.
+- **U-Boot-Waffen:** hält die Rohre geladen, flutet leise, sobald ein gehörtes Ziel eine Ortung innerhalb von 8 sm hat, und schießt einen Torpedo nach dem anderen auf eine Ortung innerhalb von 4 sm. Ziel ist ein Kontakt, dessen Signatur die Bibliothek nur von Kriegsschiffen kennt (beim Geleitzugangriff von Handelsschiffen).
+- **Maschinenraum:** schnorchelt ungejagt bis 95 % Ladung, hält den Trimm automatisch, beantwortet schlechte Luft mit Absorbern und Sauerstoffkerzen und schickt die zwei Leckteams dorthin, wo Feuer, Lecks oder Wasser am schlimmsten sind.
+- **Sonar und Mast:** Das Sonar hält den Fokus auf dem lautesten frischen Kontakt; der Mast fährt bei einem solchen Alarm ein. Navigation und Funkraum halten nur Wache.
+- **Der Befehl eines Spielers gilt:** Eine Station, die die KI besetzt, übersteuert nie, was ein Spieler an einer anderen Station befiehlt. Mit einem Spieler an der Navigation lässt die KI-Führung Kurs, Tiefe und Ausweichen in Ruhe, mit einem im Maschinenraum Fahrt und Schleichfahrt; mit einem an der Führung lässt der KI-Maschinenraum Trimm und Leckteams in Ruhe, und die KI-Maststation lässt einen an der Führung oder im Funkraum ausgefahrenen Mast auch bei Alarm oben. Solange ein Spieler an Mast oder Funkraum den Mast oben hält, hält die KI-Führung das U-Boot auf Sehrohrtiefe; erst mit eingefahrenem Mast taucht es wieder. Auf der Fregatte steuert die KI-Brücke nicht, solange ein Spieler im Maschinenraum sitzt, und KI-Waffen und Seefernaufklärer bestimmen kein neues Ziel über ein aktuelles Ziel, das ein Spieler an Sonar, OPZ oder Waffen gewählt hat. Ein am uConsole mit `Auf`/`Ab` gewählter Kontakt bleibt gewählt.
+
+## Wetter- & Sonar-Analyse (Taste 0) {#ref-weather-station}
+
+Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschirm (`0` oder `Esc` schließt es; die Simulation läuft weiter). Im Web-Client öffnet jede Station es mit `0` oder über das Arbeitsplatz-Menü. Über dem Meeresprofil zeigt die Maus Tiefe und Schallgeschwindigkeit, über dem Schallweg-Schnitt Entfernung, Tiefe und Schallgeschwindigkeit und ob der Punkt in einer Schattenzone oder Konvergenzzone liegt.
+
+- **Umwelt:** Uhrzeit, Tageslicht (Tag, bürgerliche oder nautische Dämmerung, Nacht), Mondphase, Wetter und Niederschlag, Sicht, Wind mit Böen und Beaufort, Seegang, Barometer mit 3-Stunden-Tendenz (steigend, stabil, fallend, rasch fallend), Luft- und Wassertemperatur, Wolkenuntergrenze und Vereisung. Rasch fallender Luftdruck unter etwa 1004 hPa löst eine Sturmwarnung aus. Das Wetter ändert sich höchstens um eine Seegangsstufe pro Stunde, deshalb bewegt sich das Barometer schneller als ein echtes.
+- **Wettereinflüsse:** Sonne (starke Sprungschicht), Wind (tiefere Deckschicht) und Regen oder Schnee (süßeres Oberflächenwasser, Regenrauschen) leuchten, solange sie wirken.
+- **Helikopter-Flugwetter:** CLEAR, LIMITED (innerhalb von 80 % eines Grenzwerts oder leichte Vereisung) oder NO-GO, mit Wind, Böen, Seitenwind, Sicht, Wolkenuntergrenze, Seegang, Rollen und Stampfen des Decks, Vereisung und ob Tauchsonar möglich ist.
+- **U-Boot (Stationen des bemannten U-Boots, Taste 0 auf der uConsole und im Web-Client):** statt Helikopter-Flugwetter, Wolkenuntergrenze und Vereisung zeigen die Stationen des U-Boots, was das Wetter mit dem U-Boot macht. *Mast im Radar:* die Entfernung, auf der ein Überwasser-Suchradar wie das der Fregatte einen ausgefahrenen Mast oder Schnorchelkopf erfasst (bei der Hälfte aller Umläufe), bei aktuellem Seegang und Regen, neben dem Wert bei ruhiger See; Seegangsecho verdeckt das kleine Echo, der Radarhorizont begrenzt es. *Mit dem Auge:* wie weit ein Ausguck das aufgetauchte U-Boot bei aktuellem Licht, Mond, Sicht und Seegang sichtet (5 sm an einem klaren, ruhigen Tag); ein ausgefahrener Mast auf Sehrohrtiefe wird mit dem Auge nie gesichtet. *Umgebungsrauschen:* Wind- und Regenrauschen über ruhiger See (Seegang 1) in den vier Sonarbändern (100, 400, 1600, 6400 Hz); es tarnt das U-Boot vor Passivsonar und dämpft ebenso das eigene Horchen. *Schnorchel:* höchstens 6 kn, +12 dB Abstrahlpegel und Diesellinien bei 50 und 100 Hz, die ein Sonar hören kann.
+- **Meeresprofil:** erscheint erst, wenn das Sonar einen Bathythermographen genommen hat (Sonar `E`): gemessene Schallgeschwindigkeit über der Tiefe, die Schicht, eine SOFAR-Achse falls vorhanden, neun Schallstrahlen vom Bugsonar bis 20 sm und die Schattenzone unter der Schicht (rot), in der das Bugsonar wenig hört. Nach 30 min oder 10 sm gilt die Messung als veraltet.
+
+## Karten-Plotwerkzeuge (Taste P) {#ref-plot}
+
+Die Besatzung führt einen gemeinsamen Fettstift-Plot. Alle Stationen und alle Remote-Crew-Browser sehen dieselbe Zeichnung, und sie wird mit dem Spiel gespeichert. Es ist die eigene Zeichnung der Besatzung: nichts darin stammt von einem Sensor, und sie verändert die Simulation nie.
+
+- **Öffnen:** `P` auf der Brücken-, Waffen- oder Helikopterkarte oder auf der OPZ-Karte drücken. Ein Cursor erscheint am Eigenschiff. Die Pfeiltasten bewegen ihn (Shift: schneller), oder auf die Karte klicken. `Enter` setzt einen Punkt, `Esc` bricht ein begonnenes Objekt ab und beendet danach den Plotmodus, `P` beendet ihn ebenfalls. Eine Hinweisleiste oben auf der Karte zeigt links das aktive Werkzeug und die Tasten, rechts Peilung und Abstand des Cursors vom Eigenschiff.
+- **Werkzeuge:** `M` Marke (ein Punkt); `R` Lineal (zwei Punkte, zeigt Peilung und Entfernung); `B` Peillinie vom Eigenschiff durch den Cursor (eigene Position und Zeit werden gespeichert, die Linie bleibt also dort, wo sie gelegt wurde); `C` Kreis (Mitte, dann ein Punkt auf dem Radius, höchstens 200 sm); `D` Koppellinie (Startpunkt, dann ein Punkt in Fahrtrichtung, dann die Fahrt 0-60 kn eingeben). Die Koppellinie wandert mit der Zeit weiter und zeigt ihren CPA zu Kurs und Fahrt des Eigenschiffs.
+- **Löschen:** `Rücktaste` löscht das Objekt, das dem Cursor am nächsten liegt. `Shift+Rücktaste` löscht den ganzen Plot.
+- **Bezeichnungen:** Objekte werden als M1, R2, B3 usw. nummeriert. Im Web-Client kann vor dem Zeichnen eine Bezeichnung eingegeben oder ein Objekt in der Liste unter der Karte umbenannt werden.
+- **Web-Client:** über der Karte ein Werkzeug wählen, dann einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken. „Trackpeilung plotten“ legt die gemessene Peilung des gewählten Tracks von dessen Beobachterposition an.
+- **Grenzen:** höchstens 64 Objekte und 24 Zeichen je Bezeichnung.
+
+Auf der U-Boot-Seite bedient `P` den Mast; der Plot des U-Boots wird im Browser gezeichnet (Kapitel U-Boot, Navigation).
+
+## Kartenverlauf und Beschriftungen {#ref-chart-history}
+
+Jede taktische Karte (Brücke, Waffen, Helikopter, OPZ, Karte und Plot des U-Boots und die Karten der Remote Crew) zeigt, wo etwas war, nicht nur, wo es ist:
+
+- **Eigene Kursspur:** eine schwache gepunktete Linie hinter dem eigenen Schiff oder U-Boot, ein Punkt alle 30 s Simulationszeit, die letzten 2 Stunden.
+- **Kontaktverlauf:** frühere Positionen eines Tracks als kleine Punkte, die mit dem Alter verblassen, einer pro Minute, die letzten 12 je Track.
+- **Peilverlauf:** Für einen reinen Peilkontakt behält die Karte die letzten 6 Peilungen; die früheren Peilungen des gewählten Kontakts werden gestrichelt von dort gezeichnet, wo sie genommen wurden, sodass ihr Schnitt zeigt, wo er sein kann.
+- **Beschriftungen:** Kartenbeschriftungen weichen aus, statt einander, das eigene Schiff oder ein Symbol zu verdecken: zuerst nach rechts, dann nach unten, oben und links; Beschriftungen von Peillinien gleiten an ihrer Linie entlang.
+
+Der Verlauf dient nur der Anzeige: Er entsteht aus dem, was die Sensoren gemeldet haben, wird nie gespeichert und vergisst einen Track 15 Minuten nach seiner letzten Meldung.
+
+## Simulationsprotokoll (F4) {#tools-simlog}
+
+`F4` öffnet das Simulationsprotokoll über der Station: eine laufende Liste des wahren Zustands der Welt (eigenes Schiff, U-Boote, Überwasserschiffe, Torpedos, Täuschkörper, Flugkörper, Luftfahrzeuge und Bojen). Es wirkt nur, wenn **Simulationsprotokoll** in den Optionen eingeschaltet ist, denn es zeigt, was keine Station weiß: Nutzen Sie es zum Studieren oder Fehlersuchen, nicht zum Spielen. `M` zeigt eine Karte aller Kontakte, `F` auf der Karte passt sie an die Einheiten oder die ganze Welt an. Im Browser kann der Host einem Crewmitglied das SimLog freigeben.
+
+## Analysator, Erster Offizier und Nationen {#tools-more}
+
+- `F8` öffnet den Taktischen Einheitenanalysator, einen nur lesenden Katalog aller Einheiten mit 3D-Modell, Schall- und Radarbildern (Kapitel Missions- und Einheiteneditor). Mit gewähltem Sonarkontakt weist `Enter` ihm das angezeigte Profil als Ihre Annotation zu (Kapitel 2 Sonar, Tipps für Profis).
+- `F7` öffnet den Ersten Offizier, wenn das optionale Sprachmodell eingeschaltet ist (Kapitel Sprachmodell).
+- `N` öffnet die Übersicht der Nationen und Einheiten (am Sonar und auf der Akustikseite des Hubschraubers ist `N` stattdessen das Notch-Filter).

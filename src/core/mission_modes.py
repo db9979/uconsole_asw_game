@@ -52,6 +52,7 @@ import random
 from src.core import boat_missions, config, detrand, mission_geo
 from src.core.i18n import message, raw_text
 from src.sensors.platform import MAST_DEPTH_M
+from src.physics.geo import bearing_deg as _bearing
 
 MODES = ("datum", "trail", "ras", "rescue", "duel", "homecoming", "pickup", "elint")
 # Missions whose objective is the frigate's: the time limit is the boat's.
@@ -91,10 +92,6 @@ def _progress(game) -> dict:
 
 
 # --- geometry --------------------------------------------------------------------------
-
-def _bearing(x0, y0, x1, y1) -> float:
-    return math.degrees(math.atan2(x1 - x0, -(y1 - y0))) % 360.0
-
 
 def _offset(x, y, angle_deg, distance):
     rad = math.radians(angle_deg)

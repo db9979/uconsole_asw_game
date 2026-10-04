@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import heapq
 import math
+from src.physics.geo import bearing_deg as bearing_to
 
 MAX_WAYPOINTS = 8
 ARRIVAL_NM = 0.3
@@ -219,10 +220,6 @@ def _grid_path(depth_at, x0, y0, x1, y1, min_depth_m, size_nm, pad):
         kept.append(nodes[low])
         i = low
     return kept
-
-
-def bearing_to(x0: float, y0: float, x1: float, y1: float) -> float:
-    return math.degrees(math.atan2(x1 - x0, -(y1 - y0))) % 360.0
 
 
 def _step(x: float, y: float, course: float, distance: float) -> tuple[float, float]:

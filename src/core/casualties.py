@@ -28,6 +28,7 @@ same; only the compartments differ.
 from __future__ import annotations
 
 import math
+from src.core.limits import finite_number as _number
 
 VERSION = 1
 STATIONS = ("sonar", "weapons", "damage")
@@ -55,11 +56,6 @@ BOAT_ROOMS = {"control": "sonar", "bow": "weapons"}   # everything else: damage
 STATE_FIELDS = frozenset({"version", "light", "serious", "exposure", "wounded",
                           "returned", "last_damage", "medic", "medic_order", "medic_s",
                           "reassigned", "reassign_t"})
-
-
-def _number(value) -> bool:
-    return (type(value) in (int, float) and not isinstance(value, bool)
-            and math.isfinite(value))
 
 
 def station_of(room: str, rooms: dict) -> str:

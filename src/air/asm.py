@@ -10,6 +10,7 @@ from src.air import chaff
 from src.physics import missile
 from src.weapons.air_defense import air_defense_loadout
 from src.weapons.torpedo import Torpedo
+from src.physics.geo import bearing_deg
 
 
 class ASM:
@@ -70,9 +71,7 @@ class ASM:
 
     def bearing_to_frigate(self, frigate) -> float:
         """Nautische Peilung der Rakete (0° = Nord)."""
-        dx = self.x - frigate.x
-        dy = self.y - frigate.y
-        return math.degrees(math.atan2(dx, -dy)) % 360.0
+        return bearing_deg(frigate.x, frigate.y, self.x, self.y)
 
     def jamming(self, frigate) -> bool:
         """Outside the profiled burn-through range, expose bearing-only HOJ."""

@@ -18,7 +18,7 @@ game mixin (``game_reports.py``) connects it to the world.
 
 from __future__ import annotations
 
-import math
+from src.core.limits import finite_number as _number
 
 VERSION = 1
 KINDS = ("contact", "support")
@@ -27,11 +27,6 @@ MAX_TIME_S = 1e9
 COORD_LIMIT_NM = 1_000.0
 LOG_FIELDS = frozenset({"t", "kind", "x", "y", "accurate"})
 STATE_FIELDS = frozenset({"version", "tx_kind", "tx_until", "next_t", "log"})
-
-
-def _number(value) -> bool:
-    return (type(value) in (int, float) and not isinstance(value, bool)
-            and math.isfinite(value))
 
 
 def _time(value) -> bool:

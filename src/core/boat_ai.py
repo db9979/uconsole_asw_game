@@ -39,6 +39,7 @@ from src.physics import bioluminescence
 from src.llm import opponent
 from src.core.i18n import message
 from src.sensors.platform import MAST_DEPTH_M, PlatformObservation
+from src.physics.geo import bearing_deg as _bearing
 
 CADENCE_S = 2.0
 PROBE_NM = 2.0                    # the leg looks this far ahead for land and shoals
@@ -54,10 +55,6 @@ def boat(game):
     if sub is None or sub.sunk or sub.manual or sub.state in ("SINKING", "SUNK"):
         return None
     return sub
-
-
-def _bearing(x0, y0, x1, y1) -> float:
-    return math.degrees(math.atan2(x1 - x0, -(y1 - y0))) % 360.0
 
 
 def _open(game, sub, course: float) -> bool:

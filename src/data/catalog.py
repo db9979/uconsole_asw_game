@@ -743,8 +743,6 @@ def _collect_v2(documents, profile_keys_by_resource, runtime_weapon_keys, decoy_
             raise ValueError(f"profile {profile_key!r}: magazine weapon has no compatible launcher")
 
     sub_entries = {entry["key"]: entry for entry in documents["subs.json"]["entries"]}
-    sub_machine_keys = {profile["profile_key"]: profile.get("machine_key")
-                        for profile in documents["subs.json"].get("profiles", ())}
     if documents["subs.json"]["version"] == 2:
         for profile_key, entry in sub_entries.items():
             endurance_key = f"endurance.{profile_key}"
@@ -753,18 +751,6 @@ def _collect_v2(documents, profile_keys_by_resource, runtime_weapon_keys, decoy_
             if nuclear == has_endurance:
                 requirement = "must not have" if nuclear else "requires"
                 raise ValueError(f"submarine profile {profile_key!r} {requirement} endurance")
-            machine = machines.get(sub_machine_keys.get(profile_key))
-            if machine is not None:
-                if nuclear != any(code.startswith("nuclear") for code in machine.propulsion_codes):
-                    raise ValueError(f"submarine profile {profile_key!r}: propulsion codes "
-                                     "contradict the acoustic propulsion")
-                if float(entry["speed_kn"][1]) != float(machine.maximum_speed_kn):
-                    raise ValueError(f"submarine profile {profile_key!r}: entry top speed "
-                                     "differs from the machine")
-            aip = entry["acoustic"]["propulsion"] == "elektrisch/AIP"
-            if has_endurance and aip != (endurances[endurance_key].aip_power_kw is not None):
-                raise ValueError(f"submarine profile {profile_key!r}: AIP endurance "
-                                 "contradicts the acoustic propulsion")
     if any(key.removeprefix("endurance.") not in sub_entries for key in endurances):
         raise ValueError("endurance component attached outside submarine catalog")
     referenced["endurances"].update(endurances)

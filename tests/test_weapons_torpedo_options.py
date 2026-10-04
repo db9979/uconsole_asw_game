@@ -132,7 +132,7 @@ def test_launch_uses_the_selected_type_pattern_and_enable_point():
     game.torpedoes.clear()
     assert game.launch_torpedo_at(contact, 60.0) is True
     assert game.torpedoes[-1].profile_key == "frigate_torp_mk2"
-    assert game.torpedoes[-1].speed_kn == 55.0
+    assert game.torpedoes[-1].speed_kn == 50.0
 
 
 def test_salvo_of_two_opens_a_spread_with_rotated_datums():

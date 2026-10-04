@@ -170,6 +170,9 @@ def test_valid_json_edits_survive_runtime_load_without_coercion_or_loss(contact_
     _edit(contact_dir, "subs.json", lambda d: d["entries"][0]["acoustic"].update(
         blades=[3, 7], broadband=[0.4, 20, 200], secondary_tonals=[[12, 0.2, 1]],
         rpm_range=[0, 0], tonal_band_hz=[0, 0]))
+    # The shipped boat's machine has to keep pace with its entry top speed.
+    _edit(contact_dir, "subs.json", lambda d: next(
+        m for m in d["machines"] if m["key"] == "machine.diesel_alt").update(maximum_speed_kn=13))
     _edit(contact_dir, "torpedoes.json", lambda d: d["entries"][0].update(range_nm=42))
     loaded = validate(contact_dir)
     sub = loaded.subs["diesel_alt"]

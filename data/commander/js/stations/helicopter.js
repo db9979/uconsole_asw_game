@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { stopSonarAudio } from "../audio/audio.js";
 import { $, heloStates } from "../core/base.js";
-import { enumText, finite, number, t, unit } from "../core/format.js";
+import { finite, heloStateText, number, t, unit } from "../core/format.js";
 import { fillFireTargets, metrics, position, setControlValue, setOptions, stationRows, yesNo } from "../views/dom.js";
 import { palette } from "../core/palette.js";
 import { renderLamps } from "../views/console-kit.js";
@@ -114,7 +114,7 @@ export function renderHelicopterStation(payload) {
   $("helicopter-acoustic-text").textContent = t("helicopter_acoustic_equivalent", {
     rows: payload.acoustic.history.length, bearings: payload.acoustic.broadband.length,
     bins: payload.acoustic.demon.length});
-  metrics($("helicopter-asset"), [["state", enumText(heloStates, asset.state)], ["airborne", yesNo(asset.airborne)],
+  metrics($("helicopter-asset"), [["state", heloStateText(heloStates, asset)], ["airborne", yesNo(asset.airborne)],
     ["position", position(asset)], ["course", unit(asset.course, "\u00b0", 0)], ["fuel", unit(asset.fuel_s, "s", 0)],
     ["torpedoes", number(asset.torpedoes, 0)], ["buoys", number(asset.buoys, 0)],
     ["helicopter_hovering", yesNo(asset.hovering)], ["helicopter_dip_state", asset.dip_state],
@@ -153,6 +153,10 @@ export function renderHelicopterStation(payload) {
     ["rtb_margin", unit(ready.rtb_margin_s, "s", 0)]]);
   $("helicopter-launch").dataset.ready = String(ready.can_launch);
   $("helicopter-return").dataset.ready = String(ready.can_return);
+  // During the start preparation the launch button shows its time left and
+  // the recall button stops it.
+  $("helicopter-launch").textContent = asset.prep_s !== null ? heloStateText(heloStates, asset) : t("helicopter_launch");
+  $("helicopter-return").textContent = t(asset.prep_s !== null ? "helicopter_prep_cancel" : "helicopter_return");
   $("helicopter-waypoint-submit").dataset.ready = String(ready.can_set_waypoint);
   $("helicopter-x").dataset.ready = String(ready.can_set_waypoint);
   $("helicopter-y").dataset.ready = String(ready.can_set_waypoint);

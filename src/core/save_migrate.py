@@ -114,6 +114,14 @@ def _v49_to_v50(doc: dict) -> None:
     doc["habits"] = {"side": "frigate", "known": []}
 
 
+def _v50_to_v51(doc: dict) -> None:
+    # The helicopter's start preparation (1.3.195): none ordered, as the
+    # older release launched at once.
+    helo = doc.get("helo")
+    if isinstance(helo, dict):
+        helo.setdefault("prep_s", None)
+
+
 STEPS = {
     38: _v38_to_v39,
     39: _v39_to_v40,
@@ -127,6 +135,7 @@ STEPS = {
     47: _v47_to_v48,
     48: _v48_to_v49,
     49: _v49_to_v50,
+    50: _v50_to_v51,
 }
 
 

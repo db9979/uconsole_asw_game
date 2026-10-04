@@ -48,15 +48,18 @@ def game():
     instance.audio.shutdown()
 
 
-def test_launch_waits_for_a_window_and_the_bridge_is_told(game):
+def test_prepared_launch_waits_for_a_deck_window(game):
     game.ship.deck_quiet_s = 1.0
     assert not game.helicopter_weather()["deck_safe"]
-    assert game.launch_helicopter() == "weather_unsafe"
-    game.toggle_helo()
-    assert game.helo.state == "HANGAR"
+    # Deck motion does not refuse the order: the hangar prepares meanwhile.
+    assert game.launch_helicopter() is True
+    game.helo.prep_s = 0.0
+    game._launch_prepared_helicopter()
+    assert game.helo.state == "HANGAR" and game.helo.prep_ready
     game.ship.deck_quiet_s = helicopter_physics.DECK_WINDOW_S
     if game.helicopter_weather()["launch_safe"]:
-        assert game.launch_helicopter() is True
+        game._launch_prepared_helicopter()
+        assert game.helo.state == "AUF" and game.helo.prep_s is None
 
 
 def test_deck_quiet_survives_save_and_reaches_the_web(game, tmp_path):

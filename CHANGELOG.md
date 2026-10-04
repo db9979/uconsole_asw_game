@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.195
+
+Release 1.3.195 gives the frigate's helicopter a start preparation. It is
+never ready at once any more: the launch order (`H`, or *Launch helicopter* in
+the browser) starts 5 minutes of preparation in the hangar, and the helicopter
+lifts off at the next launch window after that. The Helicopter station shows
+START PREP with the time left (uConsole and browser), `H` again stops it, and
+every launch after a landing needs the full preparation again. The AI frigate
+waits for it too; its own delay before the order is halved, so the balance
+stays where it was. The bearing roses keep their "090" and "270" clear of
+the text beside them. Saves are v51; v38 to v50 saves still load.
+
 ## 1.3.194
 
 Release 1.3.194 corrects data and the hostile torpedo's fuze from the code

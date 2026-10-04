@@ -863,6 +863,10 @@ TORP_CUE_HOLD_S = 60.0          # a cue stays on the alarm board this long
 ASM_CUE_SPEED_KN = 300.0
 ASM_CUE_ALTITUDE_M = 150.0
 HELO_FUEL_S = 7200.0
+# Start preparation in the hangar (pre-flight checks, fuel, weapons, crew
+# brief, unfolding the rotor): the helicopter lifts off this long after the
+# launch order, and again after every recovery.
+HELO_PREP_S = 300.0
 HELO_FUEL_RESERVE_S = 1200.0
 HELO_RETURN_DIST_NM = 0.3
 HELO_TORPS = 2                  # Leichttorpedos pro Start

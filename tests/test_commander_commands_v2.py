@@ -1100,6 +1100,9 @@ def test_helicopter_actions_validate_damage_state_and_explicit_waypoint(server):
         game.damage.compartments["flightdeck"].state = "OK"
         assert submit(game, bridge, server, cookie, session,
                       "helicopter_launch", {}, 1)["reasoncode"] == "ok"
+        # The order starts the hangar's start preparation; then it lifts off.
+        assert game.helo.state == "HANGAR" and game.helo.prep_s == config.HELO_PREP_S
+        game.helo.launch(game.ship)
         x = min(game.world.size_nm, game.ship.x + 3.0)
         y = min(game.world.size_nm, game.ship.y + 2.0)
         assert submit(game, bridge, server, cookie, session,

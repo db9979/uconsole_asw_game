@@ -1,6 +1,7 @@
 """M15: Hubschrauber HSP-5 (Sea Lynx) – Sonarbojen + Leichttorpedos.
 
-Zustände: HANGAR | AUF (Einsatz) | ZURUECK (Rückkehr).
+Zustände: HANGAR | AUF (Einsatz) | ZURUECK (Rückkehr).  A launch order
+first prepares the aircraft in the hangar for ``config.HELO_PREP_S``.
 Bewegung, Treibstoff und Zeitfenster verwenden dieselbe Simulationszeit.
 
 Flight physics: hovering (dipping) needs more power than cruise, so fuel
@@ -131,6 +132,28 @@ class Helicopter:
         # Surface-search radar switch: radiates while airborne with the
         # dipping sonar stowed (a submarine's ESM hears it); off runs silent.
         self.radar_on = True
+        # Start preparation: None when no launch is ordered, else the
+        # seconds left in the hangar (0: ready, waiting for the deck window).
+        self.prep_s = None
+
+    @property
+    def preparing(self) -> bool:
+        return self.state == "HANGAR" and self.prep_s is not None
+
+    @property
+    def prep_ready(self) -> bool:
+        return self.preparing and self.prep_s <= 0.0
+
+    def order_prep(self) -> None:
+        """Start the preparation (an order already running keeps its time)."""
+        if self.state == "HANGAR" and self.prep_s is None:
+            self.prep_s = config.HELO_PREP_S
+
+    def cancel_prep(self) -> bool:
+        if not self.preparing:
+            return False
+        self.prep_s = None
+        return True
 
     @property
     def speed_kn(self) -> float:
@@ -143,6 +166,7 @@ class Helicopter:
     def launch(self, frigate) -> None:
         """Start with the remaining finite mission loadout."""
         self.state = "AUF"
+        self.prep_s = None
         self.x = frigate.x
         self.y = frigate.y
         self.course = frigate.course
@@ -244,6 +268,8 @@ class Helicopter:
         """dt in Simulationssekunden. Haelt Patrouillen-Offset vor der
         Fregatte (AUF) bzw. fliegt zurück (ZURUECK)."""
         self.dip_ping_cooldown = max(0.0, self.dip_ping_cooldown - dt)
+        if self.preparing:
+            self.prep_s = max(0.0, self.prep_s - dt)
         if not self.airborne:
             return
         # fuel_factor: extra power for anti-/de-icing in icing conditions.

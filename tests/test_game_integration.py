@@ -259,7 +259,15 @@ def test_runtime_notices_are_structured_for_bt_listening_and_launches(monkeypatc
 
     game.helo.state = "HANGAR"
     game.toggle_helo()
-    assert game.msg["__u_jagd_i18n__"] == "runtime.helo.launch"
+    assert game.msg["__u_jagd_i18n__"] == "runtime.helo.prep"
+    game.helo.prep_s = 0.0
+    game.ship.deck_quiet_s = 60.0
+    game.ship.roll = game.ship.pitch = 0.0
+    if game.helicopter_weather()["launch_safe"]:
+        game._launch_prepared_helicopter()
+        assert game.msg["__u_jagd_i18n__"] == "runtime.helo.launch"
+    else:
+        game.helo.launch(game.ship)
 
     target = game.subs[0]
     contact = Contact(1, target.id, "ping", "sub")

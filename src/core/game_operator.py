@@ -1148,36 +1148,52 @@ class OperatorMixin(WeaponOrdersMixin):
         if self.helo.airborne:
             if self.return_helicopter() is True:
                 self.announce(message("runtime.helo.return"), "waffen")
+        elif self.helo.preparing:
+            if self.return_helicopter() is True:
+                self.announce(message("runtime.helo.prep_cancelled"), "waffen")
         else:
             result = self.launch_helicopter()
             if result == "flightdeck_down":
                 self.flash(message("runtime.helo.deck_down"))
                 return
             if result == "weather_unsafe":
-                flight = self.helicopter_weather()
-                if flight["status"] != "no_go" and not flight["deck_safe"]:
-                    # Only the deck moves too much: wait for the next lull.
-                    self.flash(message("runtime.helo.deck_motion"))
-                else:
-                    self.flash(message("runtime.helo.weather_unsafe"))
+                self.flash(message("runtime.helo.weather_unsafe"))
                 return
             if result is not True:
                 self.flash(message("runtime.helo.lost"))
                 return
-            self.announce(message("runtime.helo.launch", torpedoes=self.helo.torps,
-                                  buoys=self.helo.buoys_left), "waffen", 3.0)
+            self.announce(message("runtime.helo.prep",
+                                  minutes=f"{config.HELO_PREP_S / 60:.0f}"), "waffen", 3.0)
 
     def launch_helicopter(self):
+        """Order the launch: the deck prepares the helicopter in the hangar
+        for ``HELO_PREP_S``; it lifts off at the next deck window after that
+        (``_launch_prepared_helicopter``). An order already running stands."""
         if self.damage.station_down("flightdeck"):
             return "flightdeck_down"
-        if not self.helicopter_weather()["launch_safe"]:
-            return "weather_unsafe"
         if self.helo.state != "HANGAR":
             return "not_ready"
-        self.helo.launch(self.ship)
+        if self.helo.preparing:
+            return True
+        if self.helicopter_weather()["status"] == "no_go":
+            return "weather_unsafe"
+        self.helo.order_prep()
         return True
 
+    def _launch_prepared_helicopter(self) -> None:
+        """Lift off once prepared, with the flight deck up and the weather
+        and deck motion inside the launch limits; until then it waits."""
+        if (not self.helo.prep_ready or self.damage.station_down("flightdeck")
+                or not self.helicopter_weather()["launch_safe"]):
+            return
+        self.helo.launch(self.ship)
+        self.announce(message("runtime.helo.launch", torpedoes=self.helo.torps,
+                              buoys=self.helo.buoys_left), "waffen", 3.0)
+
     def return_helicopter(self):
+        """Recall the helicopter, or stop its start preparation."""
+        if self.helo.cancel_prep():
+            return True
         if not self.helo.airborne:
             return "not_ready"
         self.helo.order_return()

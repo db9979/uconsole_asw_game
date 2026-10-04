@@ -1012,7 +1012,10 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                  buoy_mode=game.helo_buoy_mode,
                  pattern=str(helo.pattern), pattern_remaining=len(helo.pattern_queue),
                  mad_mode=bool(helo.mad_mode), radar=bool(game.helo_radar_active()),
-                 radar_switch=bool(helo.radar_on))
+                 radar_switch=bool(helo.radar_on),
+                 # Start preparation: seconds left (0: ready, waiting for the
+                 # deck window), None without a launch order.
+                 prep_s=_number(helo.prep_s) if helo.preparing else None)
     if asset_only:
         for key in ("buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar",
                     "radar_switch"):
@@ -1175,10 +1178,10 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                  readiness=dict(
                      flightdeck_down=game.damage.station_down("flightdeck"),
                      deck_state=game.damage.station_state("flightdeck"),
-                      can_launch=helo.state == "HANGAR"
+                      can_launch=helo.state == "HANGAR" and not helo.preparing
                      and not game.damage.station_down("flightdeck")
-                     and flight_weather["launch_safe"],
-                    can_return=airborne,
+                     and flight_weather["status"] != "no_go",
+                    can_return=airborne or helo.preparing,
                      can_set_waypoint=helo.state != "VERLOREN",
                      can_deploy_buoy=airborne and helo.buoys_left > 0
                       and helo.water_entry_clear(game.world),

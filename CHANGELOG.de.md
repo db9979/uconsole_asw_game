@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.195
+
+Version 1.3.195 gibt dem Bordhubschrauber der Fregatte eine
+Startvorbereitung. Er steht nicht mehr sofort bereit: Der Startbefehl (`H`
+oder *Helikopter starten* im Browser) beginnt 5 Minuten Vorbereitung im
+Hangar, danach hebt er im nächsten Startfenster ab. Die Hubschrauberstation
+zeigt STARTVORBEREITUNG mit der Restzeit (uConsole und Browser), ein zweites
+`H` bricht sie ab, und jeder Start nach einer Landung braucht wieder die volle
+Vorbereitung. Auch die KI-Fregatte wartet sie ab; ihre eigene Wartezeit vor
+dem Befehl ist halbiert, damit das Gleichgewicht bleibt. Die Peilrosen halten ihr „090“ und „270“ vom
+Text daneben frei. Spielstände sind v51;
+v38 bis v50 lassen sich weiter laden.
+
 ## 1.3.194
 
 Version 1.3.194 berichtigt Daten und den Zünder des Feindtorpedos aus der

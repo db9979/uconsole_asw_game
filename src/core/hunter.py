@@ -83,7 +83,7 @@ LEAD_SONAR_S = 1200.0           # a lost submarine bearing is run down this long
 LEAD_CLEAR_NM = 3.0             # within this of HQ's reported position its lead is spent
 LEAD_MAX_NM = 60.0              # a bearing lead is run down no farther than this
 LEAD_KN = 14.0                  # speed down a lead: fast, still listening
-HELO_READY_MEAN_S = 600.0       # a datum waits this long on average for the helicopter to launch
+HELO_READY_MEAN_S = 300.0       # mean wait for the launch order (the start preparation, HELO_PREP_S, follows)
 _SUPPORT = (("sonar", Station.SONAR), ("radio", Station.RADIO),
             ("eloka", Station.ELOKA), ("damage", Station.DAMAGE),
             ("engine", Station.ENGINE), ("opz", Station.OPZ))
@@ -778,6 +778,8 @@ def helicopter(game, found) -> str:
             return "returning"
         return "monitoring"
     if helo.state == "HANGAR":
+        if helo.preparing:
+            return "monitoring"                     # the deck prepares the start
         tick = int(math.floor(game.sim_t / CADENCE_S))
         if (detrand.u01(game.seed, "hunter.helo", tick)
                 >= CADENCE_S / (HELO_READY_MEAN_S * _level_delay(game))):
@@ -830,6 +832,8 @@ def _rescue_flight(game, found):
         return None
     helo = game.helo
     if helo.state == "HANGAR":
+        if helo.preparing:
+            return "monitoring"                     # the deck prepares the start
         tick = int(math.floor(game.sim_t / CADENCE_S))
         if (detrand.u01(game.seed, "hunter.helo", tick)
                 >= CADENCE_S / (HELO_READY_MEAN_S * _level_delay(game))):

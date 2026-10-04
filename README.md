@@ -12,19 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.194**
+Current release: **1.3.195**
 
-Release 1.3.194 corrects data and the hostile torpedo's fuze from the code
-audit. Trafalgar and Rubis are now nuclear submarines and Collins a
-diesel-electric one; Improved Kilo, Lada and Taigei no longer have AIP
-(Taigei has a larger lithium battery instead); Virginia and Yasen no longer
-outrun their class. The hostile torpedo explodes only within about 90 m and
-near keel depth instead of 460 m abeam, and its damage still falls with
-distance. The helicopter's and patrol aircraft's lightweight torpedo runs
-45 kn for 6 NM, the frigate's Mk2 50 kn for 6 NM. Every ship now has its real
-length, which sets its echo and how fast it turns; the Triple-E counts as a
-container ship and the river cruise ship no longer sails the open sea. Saves
-are v50; v38 to v49 saves still load.
+Release 1.3.195 gives the frigate's helicopter a start preparation. It is
+never ready at once any more: the launch order (`H`, or *Launch helicopter* in
+the browser) starts 5 minutes of preparation in the hangar, and the helicopter
+lifts off at the next launch window after that. The Helicopter station shows
+START PREP with the time left (uConsole and browser), `H` again stops it, and
+every launch after a landing needs the full preparation again. The AI frigate
+waits for it too; its own delay before the order is halved, so the balance
+stays where it was. The bearing roses keep their "090" and "270" clear of
+the text beside them. Saves are v51; v38 to v50 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

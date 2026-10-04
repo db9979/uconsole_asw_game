@@ -472,6 +472,18 @@ def flight_weather(game):
     return query() if callable(query) else None
 
 
+def helo_state_text(helo):
+    """The helicopter's state for the status rows: in the hangar with a
+    launch ordered, the start preparation with its time left (m:ss), or
+    ready and waiting for the deck window."""
+    if not getattr(helo, "preparing", False):
+        return localize("enum.helo." + helo.state)
+    if helo.prep_s <= 0.0:
+        return localize(message("helo.prep.ready"))
+    left = int(math.ceil(helo.prep_s))
+    return localize(message("helo.prep.running", time=f"{left // 60}:{left % 60:02d}"))
+
+
 def state_lamps(game, helo, weather) -> list:
     """The state strip: hangar, deck (cleared to launch), airborne, dipping,
     returning; exactly one is lit, LOST lights the airborne lamp red."""
@@ -487,7 +499,8 @@ def state_lamps(game, helo, weather) -> list:
         deck = "on" if weather is not None and weather["launch_safe"] else "caution"
     airborne = state == "AUF"
     return [
-        ("helo.console.state.hangar", "", "on" if state == "HANGAR" else "off"),
+        ("helo.console.state.hangar", "",
+         "caution" if getattr(helo, "preparing", False) else "on" if state == "HANGAR" else "off"),
         ("helo.console.state.deck", "", deck),
         ("helo.console.state.airborne", "",
          "alarm" if state == "VERLOREN" else "on" if airborne and dip == "STOWED" else "off"),
@@ -545,7 +558,9 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
         pygame.draw.line(s, config.COLOR_WARN, (tank.centerx - 22, ry), (tank.centerx + 22, ry), 2)
     # Home rose: the bearing back to the ship, the aircraft's course needle.
     rose_size = max(0, min(body_h, 190, sw // 3))
-    rose = pygame.Rect(sx + tank_w + 6, top + (body_h - rose_size) // 2, rose_size, rose_size)
+    # Wider than tall: "270" and "090" stand beside the ring inside the rect.
+    rose = pygame.Rect(sx + tank_w + 6, top + (body_h - rose_size) // 2,
+                       rose_size + 2 * (layout.font(11).size("090")[0] - 14), rose_size)
     home = home_polar(game, helo) if helo.airborne else None
     strobes = [(home[0], config.COLOR_OK, 3, 0, 0.0)] if home else []
     console.bearing_rose(s, rose, strobes, course=helo.course if helo.airborne else None,
@@ -575,7 +590,7 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
                              hover=f"{config.HELO_FUEL_S / helicopter_physics.HOVER_FUEL_FACTOR / 60:.0f}")
                      if full else raw_text("--"))
         bingo, bingo_color, home_text, course = raw_text("--"), config.COLOR_TEXT_DIM, \
-            state_label, raw_text("--")
+            localize("enum.helo." + helo.state), raw_text("--")
     dip = message("helo.console.dip_value", state=localize("enum.helo_dip." + dip_state),
                   depth=f"{getattr(helo, 'dip_depth_m', 0.0):.0f}",
                   target=f"{getattr(helo, 'dip_depth_target_m', config.HELO_DIP_DEPTH_DEFAULT_M):.0f}")
@@ -685,9 +700,9 @@ def draw_helicopter_view(game, tr=None) -> None:
     draw_station_page_tabs(s, station, pages, page, tr)
     regions = helicopter_regions(game, station_rect=station, page=page)
     helo = game.helo
-    state_label = localize("enum.helo." + helo.state)
+    state_label = helo_state_text(helo)
     state_color = (config.COLOR_DANGER if helo.state == "VERLOREN" else
-                   config.COLOR_WARN if helo.state == "ZURUECK" else
+                   config.COLOR_WARN if helo.state == "ZURUECK" or helo.preparing else
                    config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM)
     distance = ((helo.x - game.ship.x) ** 2 +
                 (helo.y - game.ship.y) ** 2) ** 0.5 if helo.airborne else 0.0

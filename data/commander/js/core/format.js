@@ -21,6 +21,14 @@ export const stateText = (family, value) => {
   return S.catalog[prefix + key] ? t(key) : String(value);
 };
 export const enumText = (map, value) => t(map[value] || "unknown");
+// The helicopter's state: in the hangar with a launch ordered, the start
+// preparation with its time left, or ready and waiting for the deck window.
+export const heloStateText = (map, asset) => {
+  if (asset.prep_s === null || asset.prep_s === undefined) return enumText(map, asset.state);
+  if (asset.prep_s <= 0) return t("helo_prep_ready");
+  const left = Math.ceil(asset.prep_s);
+  return t("helo_prep", {time: `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`});
+};
 export const classificationText = (value) => Object.hasOwn(classes, value) ? enumText(classes, value) :
   typeof value === "string" && value ? value : t("unknown");
 export const affClass = (value) => `aff-${Object.hasOwn(affiliations, value) ? value.toLowerCase() : "unknown"}`;

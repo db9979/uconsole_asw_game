@@ -327,7 +327,8 @@ function disabledReason(control) {
   const helicopter = S.v2State?.helicopter;
   if (control.closest('[data-station-role="helicopter"]') && helicopter) {
     if (helicopter.readiness.flightdeck_down) return unavailable("reason_flightdeck_down");
-    if (["helicopter-return", "helicopter-buoy", "helicopter-dip-toggle", "helicopter-dip-depth", "helicopter-dip-depth-submit", "helicopter-dip-ping"].includes(control.id) && !helicopter.asset.airborne) return unavailable("reason_not_airborne");
+    if (["helicopter-return", "helicopter-buoy", "helicopter-dip-toggle", "helicopter-dip-depth", "helicopter-dip-depth-submit", "helicopter-dip-ping"].includes(control.id) && !helicopter.asset.airborne
+        && !(control.id === "helicopter-return" && helicopter.asset.prep_s !== null)) return unavailable("reason_not_airborne");
     if (control.id === "helicopter-buoy" && helicopter.asset.buoys <= 0) return unavailable("reason_no_buoys");
     if (control.id === "helicopter-dip-ping" && helicopter.asset.dip_ping_cooldown_s > 0) return unavailable("reason_cooldown", {seconds: number(helicopter.asset.dip_ping_cooldown_s, 0)});
   }

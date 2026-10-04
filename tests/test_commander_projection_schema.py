@@ -61,6 +61,7 @@ def _collect_states():
     sub = game.subs[0]
     sub.x, sub.y = game.ship.x + 25.0, game.ship.y
     game.launch_helicopter()
+    game.helo.launch(game.ship)                 # past the start preparation
     missile = ASM(game.ship.x + 12.0, game.ship.y, 270.0, 99, game.rng_asm,
                   game._air_defense_loadout["asm"], datum=(game.ship.x, game.ship.y))
     missile.jammer = False

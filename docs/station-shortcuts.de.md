@@ -1,4 +1,4 @@
-# U-Jagd 1.3.194 - Stations- und Tastenkürzel
+# U-Jagd 1.3.195 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -125,7 +125,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `X` | Suchmuster im Endanlauf: Schlange, Kreis, Helix |
 | `, / .` | Sucheraktivierung -/+ (0,6 bis 3,0 sm, Schritte 0,2 sm) |
 | `Y` | Salve: ein Torpedo oder zwei im Fächer +/-8° |
-| `H` | HSP-5 starten / zurückrufen |
+| `H` | HSP-5 starten (5 min Vorbereitung) / abbrechen / zurückrufen |
 | `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
 | `D` | Leichttorpedo vom HSP-5 |
 | `V` | Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen |
@@ -222,7 +222,7 @@ Berechtigungsprüfungen bleiben wirksam.
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `H` | HSP-5 starten / zurückrufen |
+| `H` | HSP-5 starten (5 min Vorbereitung) / abbrechen / zurückrufen |
 | `Pfeiltasten` | Wegpunktpeilung und -entfernung einstellen |
 | `W` | Wegpunkt auf die Position des gewählten Kontakts (wie W beim Seefernaufklärer) |
 | `M` | Sonarkontakt als Ziel für Lufttorpedo setzen |

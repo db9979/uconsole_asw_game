@@ -741,9 +741,16 @@ def draw_map_view(game, tr=None) -> None:
             px, py = view.world_to_screen(game.helo.x, game.helo.y)
             col = nato_symbols.draw_symbol(
                 s, (px, py), "FRIEND", "AIR", size=22)
-            nato_symbols.draw_motion_vector(
-                s, (px, py), game.helo.course, game.helo.SPEED_KN,
+            # Its speed over ground: no vector in the hover or holding over
+            # its waypoint, on the same time base as the ship's.
+            end = nato_symbols.draw_motion_vector(
+                s, (px, py), game.helo.course, getattr(game.helo, "ground_speed_kn", 0.0),
                 view.scale, col, max_px=120)
+            field = label_layout.active()
+            if field is not None:
+                field.reserve(pygame.Rect(int(px) - 11, int(py) - 11, 22, 22))
+            if end is not None:
+                label_layout.reserve_segment((px, py), end)
             _map_label(s, game, raw_text("HSP-5"), (int(px) + 15, int(py) - 14),
                        col, r)
         draw_plot(s, game, view, r)

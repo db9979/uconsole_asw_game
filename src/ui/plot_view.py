@@ -13,7 +13,7 @@ import pygame
 
 from src.core import config, plot
 from src.core.i18n import localize, message, raw_text
-from src.ui import layout, lines
+from src.ui import label_layout, layout, lines
 
 MARK_PX = 6
 DR_MINUTES = 30.0          # DR line drawn this far ahead of its current point
@@ -29,9 +29,16 @@ def _label(surface, game, text, pos, chart) -> None:
     width, height = face.size(shown)
     x = pos[0] + 8
     y = pos[1] - height - 2
-    if x + width > chart.right - 2:
-        x = max(chart.x + 2, pos[0] - width - 8)
-    y = min(max(y, chart.y + 2), chart.bottom - height - 2)
+    if label_layout.active() is not None:
+        # Inside a chart's label scope it steps aside from the labels,
+        # symbols and vectors drawn before it.
+        rect = label_layout.free_rect((width, height),
+                                      label_layout.around((x, y), (width, height), 8), chart)
+        x, y = rect.topleft
+    else:
+        if x + width > chart.right - 2:
+            x = max(chart.x + 2, pos[0] - width - 8)
+        y = min(max(y, chart.y + 2), chart.bottom - height - 2)
     image = face.render(shown, True, config.COLOR_PLOT)
     rect = image.get_rect(topleft=(int(x), int(y)))
     layout.record_text(shown, rect, chart)

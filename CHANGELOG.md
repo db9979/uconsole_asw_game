@@ -16,7 +16,9 @@ waits for it too; its own delay before the order is halved, so the balance
 stays where it was. The bearing roses keep their "090" and "270" clear of
 the text beside them, and the dipping sonar's depth gauge separates the air
 with the helicopter from the water below a bold waterline (uConsole and
-browser). Saves are v51; v38 to v50 saves still load.
+browser). The helicopter's speed vector on the charts shows its real speed
+over ground (none in the hover) on the ship's time base, and plot labels step
+aside from it and from "HSP-5". Saves are v51; v38 to v50 saves still load.
 
 ## 1.3.194
 

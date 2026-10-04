@@ -16,7 +16,9 @@ Vorbereitung. Auch die KI-Fregatte wartet sie ab; ihre eigene Wartezeit vor
 dem Befehl ist halbiert, damit das Gleichgewicht bleibt. Die Peilrosen halten ihr „090“ und „270“ vom
 Text daneben frei, und die Tiefenleiste des Tauchsonars trennt die Luft mit
 dem Hubschrauber durch eine kräftige Wasserlinie vom Wasser (uConsole und
-Browser). Spielstände sind v51;
+Browser). Der Fahrtstrich des Hubschraubers auf den Karten zeigt seine echte
+Geschwindigkeit über Grund (im Schwebeflug keinen) auf der Zeitbasis des
+Schiffs, und Plot-Beschriftungen weichen ihm und „HSP-5“ aus. Spielstände sind v51;
 v38 bis v50 lassen sich weiter laden.
 
 ## 1.3.194

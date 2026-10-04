@@ -67,6 +67,21 @@ class LabelField:
         return best
 
 
+def reserve_segment(start, end, width: int = 6, step: int = 16) -> None:
+    """Keep later labels of the active field off a drawn line (a motion
+    vector), as a chain of small boxes along it."""
+    field = active()
+    if field is None:
+        return
+    length = ((end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2) ** 0.5
+    pieces = max(1, int(length // step))
+    for index in range(pieces + 1):
+        t = index / pieces
+        x = start[0] + (end[0] - start[0]) * t
+        y = start[1] + (end[1] - start[1]) * t
+        field.reserve(pygame.Rect(int(x - width / 2), int(y - width / 2), width, width))
+
+
 def active() -> LabelField | None:
     return _ACTIVE[-1] if _ACTIVE else None
 

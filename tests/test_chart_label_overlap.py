@@ -170,3 +170,39 @@ def test_opz_chart_labels_do_not_overlap(language):
     overlaps = [(a["text"], b["text"]) for a, b in itertools.combinations(inside, 2)
                 if a["ink"].colliderect(b["ink"])]
     assert overlaps == []
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("station", [Station.BRIDGE, Station.HELICOPTER])
+@pytest.mark.parametrize("hover", [False, True])
+def test_helicopter_label_and_vector_clear_a_plot_circle(language, station, hover):
+    """Reported: "HSP-5" over a plot circle's "SAR 1 R 0.3 NM", the
+    helicopter's vector running through the text."""
+    game = _game(language)
+    game.station = station
+    game.station_page = 0
+    game.map_follow = True
+    game.map_view.scale = 160.0
+    helo = game.helo
+    helo.launch(game.ship)
+    helo.x, helo.y = game.ship.x + .4, game.ship.y + .3
+    helo.course = 90.0
+    helo.ground_speed_kn = 0.0 if hover else helo.SPEED_KN
+    assert game.plot.add(dict(kind="circle", x=helo.x, y=helo.y, radius_nm=.3,
+                              label="SAR 1", t=0.0)) == 1
+    assert game.plot.add(dict(kind="circle", x=helo.x - .4, y=helo.y - .5, radius_nm=1.5,
+                              label="SAR 2", t=0.0)) == 2
+    assert _problems(game) == []
+    if not hover:
+        # The vector line itself keeps clear of the labels too.
+        from src.ui import label_layout
+        with layout.capture_text() as traced:
+            game.draw()
+        view = game.map_view
+        px, py = view.world_to_screen(helo.x, helo.y)
+        texts = [item["ink"] for item in traced
+                 if "SAR 1" in item["text"] or item["text"] == "HSP-5"]
+        assert texts
+        for step in range(8, 60, 4):
+            point = (int(px + step), int(py))
+            assert not any(rect.collidepoint(point) for rect in texts), (step, texts)

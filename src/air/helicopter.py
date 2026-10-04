@@ -135,6 +135,9 @@ class Helicopter:
         # Start preparation: None when no launch is ordered, else the
         # seconds left in the hangar (0: ready, waiting for the deck window).
         self.prep_s = None
+        # Speed over the last step (display only, not saved): 0 in the
+        # hover, on the deck or holding over its waypoint.
+        self.ground_speed_kn = 0.0
 
     @property
     def preparing(self) -> bool:
@@ -268,6 +271,7 @@ class Helicopter:
         """dt in Simulationssekunden. Haelt Patrouillen-Offset vor der
         Fregatte (AUF) bzw. fliegt zurück (ZURUECK)."""
         self.dip_ping_cooldown = max(0.0, self.dip_ping_cooldown - dt)
+        self.ground_speed_kn = 0.0
         if self.preparing:
             self.prep_s = max(0.0, self.prep_s - dt)
         if not self.airborne:
@@ -318,6 +322,7 @@ class Helicopter:
             self.course = (self.course + config.clamp(
                 diff, -6.0 * dt, 6.0 * dt)) % 360.0
             step = config.kn_to_nm_per_s(self.speed_kn) * dt
+            self.ground_speed_kn = self.speed_kn
             self.x += step * math.sin(math.radians(self.course))
             self.y -= step * math.cos(math.radians(self.course))
 

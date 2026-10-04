@@ -143,3 +143,16 @@ def test_ai_hunter_waits_for_the_preparation(game):
     assert game.helo.preparing
     game._update_aviation(1.0)
     assert game.helo.state == "HANGAR"
+
+
+def test_ground_speed_is_zero_in_the_hover_and_cruise_in_transit(game):
+    helo = game.helo
+    helo.launch(game.ship)
+    helo.set_waypoint(game.ship.x + 10.0, game.ship.y)
+    helo.update(1.0, game.ship, game.world)
+    assert helo.ground_speed_kn == helo.SPEED_KN
+    helo.hover_x, helo.hover_y = helo.x, helo.y
+    helo.dip_state = "DEPLOYING"
+    helo.dip_water_depth_m = 500.0
+    helo.update(1.0, game.ship, game.world)
+    assert helo.ground_speed_kn == 0.0

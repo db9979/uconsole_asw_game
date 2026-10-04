@@ -86,12 +86,19 @@ def test_reverberation_depends_on_seabed_and_cw_doppler_rejects_it():
     assert equation.cw_doppler_rejection_db(20.0) > equation.cw_doppler_rejection_db(4.0)
 
 
-def test_lfm_improves_range_accuracy_and_noise_limited_gain():
+def test_lfm_improves_range_accuracy_and_rejects_reverberation_not_noise():
     assert equation.range_resolution_m("LFM") < equation.range_resolution_m("CW") / 50
     assert equation.range_sigma_m("CW", 20.0) < equation.range_sigma_m("CW", 5.0)
+    # Same length and level, same energy: against noise both pulses are equal.
     far_cw = _active(20.0)
     far_lfm = _active(20.0, pulse="LFM")
-    assert far_lfm.signal_excess_db > far_cw.signal_excess_db
+    assert far_lfm.signal_excess_db == pytest.approx(far_cw.signal_excess_db)
+    # Its 100 times smaller range cell cuts the reverberation by 20 dB, so a
+    # still target in shallow water stands out of the seabed return.
+    shallow = dict(water_depth_m=60.0, lambert_mu_db=SEDIMENTS["rock"][3])
+    cw, lfm = _active(4.0, **shallow), _active(4.0, pulse="LFM", **shallow)
+    assert lfm.reverberation_db == pytest.approx(cw.reverberation_db - 20.0, abs=0.01)
+    assert lfm.signal_excess_db > cw.signal_excess_db + 10.0
 
 
 def _game(seed=3301):
@@ -170,3 +177,16 @@ def test_npc_receiver_sensitivity_extends_passive_range():
     far = 68.0     # beyond the 40 NM x source-level reach, inside the 1.8x cap
     assert not heard(far, 0.0)
     assert heard(far, -6.0)
+
+
+def test_reference_absorption_credit_is_not_lost_in_the_path_bound():
+    common = dict(frequency_hz=1600.0, distance_nm=6.0, target_bonus=1.0,
+                  absorption_db_per_km=0.1, legacy_absorption_db=0.0,
+                  own_range_factor=1.0, array_range_factor=1.0, sea_state=1.0,
+                  rain=0.0, shipping_contacts=4)
+    # Without a ray path the excess is 0; the credit used to sit inside the
+    # 0 dB bound and was lost.
+    plain = equation.passive_terms(excess_path_loss_db=0.0, **common)
+    credited = equation.passive_terms(excess_path_loss_db=0.0,
+                                      reference_absorption_db=1.1, **common)
+    assert credited.signal_excess_db == pytest.approx(plain.signal_excess_db + 1.1)

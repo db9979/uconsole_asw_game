@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import math
 
-from src.core import config
+from src.core import config, free_roam
 from src.core.i18n import message
 from src.weapons import depth_charge
 from src.weapons.asw import ASROC, MAX_ASROCS
@@ -164,6 +164,7 @@ class AswWeaponsMixin:
             if amount >= 1.0 and not self.world.sonar_path_blocked(
                     charge.x, charge.y, charge.depth, sub.x, sub.y, sub.depth):
                 sub.hit(amount)
+                free_roam.charge_frigate_hit(self, sub)
             else:
                 sub.alert_torpedo(source=(charge.x, charge.y))
         self.sight_events.detonation(charge.x, charge.y, self.sim_t, "depth_charge",

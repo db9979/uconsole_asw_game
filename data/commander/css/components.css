@@ -351,14 +351,15 @@ body.shock-dust::after {
 .mic-discipline { display: inline-flex; align-items: center; gap: .3rem; }
 /* The header stays one line: the band reads from the meter's colour and title. */
 .mic-discipline > button { min-height: 2rem; padding: .15rem .55rem; font-size: var(--font-xs); }
-.mic-meter { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 5px; gap: 1px; height: 1.1rem; align-items: stretch; }
-.mic-meter i { border: 1px solid var(--line); background: transparent; }
-.mic-meter i[data-band="quiet"].lit { background: var(--live); }
-.mic-meter i[data-band="near"] { border-color: var(--caution); }
-.mic-meter i[data-band="near"].lit { background: var(--caution); }
-.mic-meter i[data-band="far"] { border-color: var(--alarm); }
-.mic-meter i[data-band="far"].lit { background: var(--alarm); }
-.mic-meter i.crew { outline: 2px solid var(--text); outline-offset: -1px; }
+/* LED segments on a dark track: unlit ones are dimmed, never empty outlines;
+   the tick under a segment is the crew's loudest held level. */
+.mic-meter { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 4px; gap: 1px; height: 1.1rem; padding: 2px; align-items: stretch;
+  background: var(--bg-0); border: 1px solid var(--line); border-radius: 2px; }
+.mic-meter i { position: relative; --seg: var(--live); background: color-mix(in srgb, var(--seg) 28%, transparent); }
+.mic-meter i[data-band="near"] { --seg: var(--caution); }
+.mic-meter i[data-band="far"] { --seg: var(--alarm); }
+.mic-meter i.lit { background: var(--seg); }
+.mic-meter i.crew::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -3px; border: 3px solid transparent; border-bottom-color: var(--text); border-top: 0; }
 .mic-status { font-size: var(--font-xs); color: var(--text-dim); max-width: 16rem; }
 .mic-meter[data-band="far"] + .mic-status { color: var(--alarm); }
 .mic-meter[data-band="near"] + .mic-status { color: var(--caution); }

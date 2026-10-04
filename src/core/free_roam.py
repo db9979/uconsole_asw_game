@@ -229,7 +229,6 @@ def update(game, dt: float) -> None:
     if not active(game) or game.game_over:
         return
     state = game.free_roam
-    _charge_neutrals(game, state)
     if game.sim_t < state["next_t"]:
         return
     index = state["count"]
@@ -327,6 +326,7 @@ def _sub_encounter(game, index: int, side: str) -> bool:
         sub = slot
         sub.x, sub.y = point
         sub.course = sub.target_course = course
+        _drop_frigate_picture(game, sub.id)
         sub.forget()
     sub.start_pos = (sub.x, sub.y)
     if side == "hostile":
@@ -334,6 +334,15 @@ def _sub_encounter(game, index: int, side: str) -> bool:
     else:
         _hq_threat(game, sub, "free.hq.neutral_sub")
     return True
+
+
+def _drop_frigate_picture(game, target_id: int) -> None:
+    """The frigate's leftovers on a boat's old identity go with it."""
+    station = game._frigate_sonar
+    sonar = station.sonar
+    for store in (sonar.contacts, sonar._tracks, sonar._tma_versions, sonar._tma_next,
+                  sonar.tma_proposals, station.tma_hypotheses):
+        store.pop(target_id, None)
 
 
 def _new_sub(game, index: int, side: str, point, course):
@@ -376,19 +385,22 @@ def _hq_threat(game, sub, key: str) -> None:
     game.announce(text, "funk", 5.0)
 
 
-def _charge_neutrals(game, state) -> None:
-    """A neutral submarine sunk costs the frigate ``FREE_NEUTRAL_SUNK`` once
-    (on the submarine's side the frigate's score is not the player's)."""
-    if not frigate_side(game):
+def charge_frigate_hit(game, sub) -> None:
+    """A neutral submarine the frigate's own weapons sent down costs the
+    frigate ``FREE_NEUTRAL_SUNK`` once. Groundings, collisions and the
+    hostile boat's shots cost nothing, and on the submarine's side the
+    frigate's score is not the player's."""
+    if not active(game) or not frigate_side(game):
         return
-    for sub in game.subs:
-        if (sub.side == "neutral" and sub.sunk and sub.id not in state["charged"]
-                and len(state["charged"]) < CHARGED_MAX):
-            state["charged"] = sorted(state["charged"] + [int(sub.id)])
-            game.score -= config.FREE_NEUTRAL_SUNK
-            text = message("free.neutral_sunk", points=f"{-config.FREE_NEUTRAL_SUNK:+d}")
-            game.hq_msg(text)
-            game.announce(text, "funk", 6.0)
+    state = game.free_roam
+    if (getattr(sub, "side", None) != "neutral" or sub.state not in ("SINKING", "SUNK")
+            or sub.id in state["charged"] or len(state["charged"]) >= CHARGED_MAX):
+        return
+    state["charged"] = sorted(state["charged"] + [int(sub.id)])
+    game.score -= config.FREE_NEUTRAL_SUNK
+    text = message("free.neutral_sunk", points=f"{-config.FREE_NEUTRAL_SUNK:+d}")
+    game.hq_msg(text)
+    game.announce(text, "funk", 6.0)
 
 
 # --- air raid -------------------------------------------------------------------------------

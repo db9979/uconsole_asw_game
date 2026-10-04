@@ -14,16 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.195**
+Aktuelle Version: **1.3.196**
 
-Version 1.3.195 hält die Mikrofonanzeige von der Statuszeile der Kopfleiste
-fern. Auf der uConsole steht die Anzeige jetzt zwischen Statuszeile und
-Menüknopf, und die Statuszeile weicht ihr aus: Ein langer Einsatzname wird
-gekürzt, Uhrzeit, Fahrt, Kurs und Tiefe bleiben ganz. Die Anzeige ist als
-LED-Leiste hinter einem Mikrofonzeichen gezeichnet; unbeleuchtete Felder sind
-abgedunkelt statt leerer Kästchen, die wie fehlende Buchstaben aussahen, und
-eine kleine Marke unter einem Feld zeigt die lauteste Stimme der Besatzung.
-Die Anzeige im Browser sieht genauso aus.
+Version 1.3.196 behebt die Meldung „Anzeige gestört“ beim starken
+Hineinzoomen in eine Karte. Mit der Grafikstufe „Voll“ konnte das geglättete
+Linienzeichnen keine Linien verarbeiten, die weit außerhalb der Karte enden,
+etwa einen Autopilot-Schlag zu einem fernen Wegpunkt bei stärkstem Zoom; die
+Karte zeigte dann die Fehlerbox statt des Lagebilds. Linien und Flächen werden
+jetzt vor dem Zeichnen auf den sichtbaren Kartenteil zugeschnitten, sodass
+jede Karte beider Seiten im nächsten und im weitesten Maßstab zeichnet.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.196
+
+Release 1.3.196 fixes the "display fault" box when zooming far into a chart.
+With the graphics level "Full", the smooth line drawing could not handle lines
+that end far outside the chart, such as an autopilot leg to a distant
+waypoint at the strongest zoom; the chart then showed the fault box instead
+of the map. Lines and areas are now cut to the visible chart before drawing,
+so every chart on both sides draws at its closest and widest zoom.
+
 ## 1.3.195
 
 Release 1.3.195 keeps the microphone meter off the top bar's status line. On

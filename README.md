@@ -12,15 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.195**
+Current release: **1.3.196**
 
-Release 1.3.195 keeps the microphone meter off the top bar's status line. On
-the uConsole the meter now sits between the status line and the menu button,
-and the status line gives way to it: a long mission title is shortened, while
-the clock, speed, course and depth stay whole. The meter is drawn as LED
-segments behind a microphone sign; unlit segments are dimmed instead of
-empty outlines that looked like missing letters, and a small mark below a
-segment shows the crew's loudest voice. The browser meter looks the same.
+Release 1.3.196 fixes the "display fault" box when zooming far into a chart.
+With the graphics level "Full", the smooth line drawing could not handle lines
+that end far outside the chart, such as an autopilot leg to a distant
+waypoint at the strongest zoom; the chart then showed the fault box instead
+of the map. Lines and areas are now cut to the visible chart before drawing,
+so every chart on both sides draws at its closest and widest zoom.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

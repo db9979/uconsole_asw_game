@@ -589,6 +589,18 @@ def blit_line(screen, text: str, rect, color, size: int = 14,
                min_size=min(size, max(MIN_OPERATIONAL_FONT, size - 4)), align=align)
 
 
+def shorten_to_fit(make, title: str, width: int, size: int = 16) -> str:
+    """``make(title)`` with ``title`` cut (with an ellipsis) until the line
+    fits ``width`` at ``size``, so a status line keeps its numbers whole."""
+    face = font(size)
+    text = make(title)
+    cut = len(title)
+    while face.size(text)[0] > width and cut > 1:
+        cut -= 1
+        text = make(title[:cut].rstrip() + "…")
+    return text
+
+
 def blit_lines(screen, lines, rect, color, size: int = 14,
                line_gap: int = 2) -> int:
     """Render a bounded list and return the number of visible lines."""

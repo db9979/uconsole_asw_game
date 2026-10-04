@@ -208,22 +208,26 @@ def draw_top_bar(game, boat) -> None:
         draw_lamp(s, rect, alarms.get(role), game._t)
         pointer.add_hotspot(rect)       # uboot_local.handle_pointer takes the click
     sub = boat.sub if boat is not None else None
-    text = message("uboot.top.status", scenario=raw_text(game.top_bar_scenario()),
-                   time=game.world.format_time(),
-                   course=_fmt(sub.course % 360.0 if sub else None, "{:03.0f}"),
-                   speed=_fmt(sub.speed if sub else None, "{:.1f}"),
-                   depth=_fmt(sub.depth if sub else None))
     from src.core.game_draw import draw_theme_switch, theme_switch_rect
-    from src.ui import game_menu
+    from src.ui import game_menu, mic_meter
     draw_theme_switch(game)
     switch = game_menu.draw_button(game) or theme_switch_rect()
     left = tabs[-1].right + 12
-    layout.blit_line(s, text, (left, 4, switch.x - left - 10, config.TOP_BAR_H - 8),
+    right = mic_meter.status_right(game, "uboot", switch.x - 10)
+    # A long mission title gives way; clock, course, speed and depth stay whole.
+    text = raw_text(layout.shorten_to_fit(
+        lambda title: localize(message(
+            "uboot.top.status", scenario=raw_text(title), time=game.world.format_time(),
+            course=_fmt(sub.course % 360.0 if sub else None, "{:03.0f}"),
+            speed=_fmt(sub.speed if sub else None, "{:.1f}"),
+            depth=_fmt(sub.depth if sub else None)), game.tr),
+        game.top_bar_scenario(), right - left))
+    layout.blit_line(s, text, (left, 4, right - left, config.TOP_BAR_H - 8),
                      config.COLOR_TEXT, size=16, align="right")
     rows = threat_rows(game, boat) if boat is not None and boat.sub is not None else []
     if rows and not any(fresh for _text, _level, fresh in rows):
         # Only stale warnings: a small marker left of the clock.
-        _draw_threat_marker(s, switch.x - 10 - layout.font(16).size(
+        _draw_threat_marker(s, right - layout.font(16).size(
             localize(text))[0] - 30, config.TOP_BAR_H // 2, len(rows))
 
 

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.195**
+Aktuelle Version: **1.3.196**
 
-Version 1.3.195 lässt die Hinweisfenster beim Überfahren mit der Maus dem
+Version 1.3.196 lässt die Hinweisfenster beim Überfahren mit der Maus dem
 Farbschema folgen. Im hellen Schema „Taktik Tag“ ist ein Hinweis jetzt eine
 helle Karte mit dunkler Schrift statt eines dunklen Kastens mit kaum lesbarer
 Schrift; „Taktik Nacht“ und hoher Kontrast behalten den dunklen Kasten, bei

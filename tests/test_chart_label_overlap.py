@@ -206,3 +206,50 @@ def test_helicopter_label_and_vector_clear_a_plot_circle(language, station, hove
         for step in range(8, 60, 4):
             point = (int(px + step), int(py))
             assert not any(rect.collidepoint(point) for rect in texts), (step, texts)
+
+
+def _off_chart_circles(game: Game, north_nm: float = 12.0) -> None:
+    """Reported: the SAR areas off the top of a deeply zoomed chart; their
+    labels were pinned to the same spot on the edge, one over the other."""
+    ship = game.ship
+    for index, (dx, dy, radius) in enumerate(((.3, 0.0, .3), (-.2, -.4, 1.5),
+                                              (.1, .3, .8)), start=1):
+        assert game.plot.add(dict(kind="circle", x=ship.x + dx, y=ship.y + dy - north_nm,
+                                  radius_nm=radius, label=f"SAR {index}", t=0.0)) == index
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("station", [Station.BRIDGE, Station.WEAPONS, Station.HELICOPTER])
+def test_off_chart_plot_labels_sit_beside_each_other_on_the_edge(language, station):
+    game = _game(language)
+    game.station = station
+    game.station_page = 0
+    game.map_follow = True
+    game.map_view.scale = 160.0
+    _off_chart_circles(game)
+    assert _problems(game) == []
+    with layout.capture_text() as traced:
+        game.draw()
+    chart = _chart(game)
+    shown = [item["text"] for item in traced
+             if "SAR" in item["text"] and chart.contains(item["ink"])]
+    assert len(shown) == 3, shown
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_off_chart_plot_labels_do_not_overlap_on_the_opz_chart(language):
+    from src.ui.stations import opz
+    game = _game(language)
+    game.station = Station.OPZ
+    game.station_page = 0
+    _off_chart_circles(game, north_nm=60.0)
+    game.opz_range_nm = float(min(config.RADAR_RANGE_SCALES_NM))
+    with layout.capture_text() as traced:
+        game.draw()
+    with layout.bottom_panel_regions(game.bottom_panel_mode()):
+        chart = pygame.Rect(opz.opz_regions(config.OPZ_STATION_RECT)["chart"])
+    inside = [item for item in traced if chart.collidepoint(item["ink"].center)]
+    assert len([item for item in inside if "SAR" in item["text"]]) == 3
+    overlaps = [(a["text"], b["text"]) for a, b in itertools.combinations(inside, 2)
+                if a["ink"].colliderect(b["ink"])]
+    assert overlaps == []

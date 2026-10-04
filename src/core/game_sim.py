@@ -970,10 +970,10 @@ class SimMixin:
             target_bonus=10.0 ** (torpedo.source_level_offset_db() / 20.0),
             excess_path_loss_db=(0.0 if excess is None else excess
                                  - sonar_propagation.ray_reference_excess_db(
-                                     config.TORP_RUNNING_NOISE_RANGE_NM, frequency))
-            # Absorption is part of the reference-range figure of merit too.
-            - absorption * config.TORP_RUNNING_NOISE_RANGE_NM * 1.852,
+                                     config.TORP_RUNNING_NOISE_RANGE_NM, frequency)),
             absorption_db_per_km=absorption,
+            # Absorption is part of the reference-range figure of merit too.
+            reference_absorption_db=absorption * config.TORP_RUNNING_NOISE_RANGE_NM * 1.852,
             legacy_absorption_db=0.0,
             own_range_factor=max(0.2, 1.0 - 0.8 * sub.noise_level()),
             array_range_factor=(config.TORP_RUNNING_NOISE_RANGE_NM
@@ -1035,6 +1035,8 @@ class SimMixin:
                 continue
             if torpedo.state != "HIT":
                 continue
+            if isinstance(torpedo.target, Sub):
+                free_roam.charge_frigate_hit(self, torpedo.target)
             self._emit_sound("explosion", at=(torpedo.x, torpedo.y))
             if not isinstance(torpedo.target, SurfaceShip):
                 self.sight_events.detonation(torpedo.x, torpedo.y, self.sim_t, "torpedo",

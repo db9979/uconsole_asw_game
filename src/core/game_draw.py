@@ -587,7 +587,7 @@ class DrawMixin:
             self.guarded_view("hit_view", tuple(hit_inset.RECT), hit_inset.draw, self, s,
                               "uboot" if self.local_side == "uboot" else "frigate")
             # Noise discipline: the microphone meter in the top bar.
-            self.guarded_view("mic_meter", tuple(mic_meter.RECT), mic_meter.draw, self, s,
+            self.guarded_view("mic_meter", tuple(mic_meter.rect(self)), mic_meter.draw, self, s,
                               "uboot" if self.local_side == "uboot" else "frigate")
         if self.game_menu_open:
             with pointer.layer("popup"):
@@ -736,11 +736,16 @@ class DrawMixin:
         switch = game_menu.draw_button(self) or theme_switch_rect()
         if self.msg and self._t < self.msg_until:
             return      # the flash banner stands in the status line's place
-        txt = self.tr("top.status_short", scenario=self.top_bar_scenario(),
-                      time=self.world.format_time(), speed=f"{self.ship.speed:.1f}",
-                      course=f"{self.ship.course % 360:03.0f}")
         left = tabs[-1].right + 12
-        layout.blit_line(s, txt, (left, 4, switch.x - left - 10,
+        right = mic_meter.status_right(self, "frigate", switch.x - 10)
+        # A long mission title gives way; clock, speed and course stay whole.
+        txt = layout.shorten_to_fit(
+            lambda title: self.tr("top.status_short", scenario=title,
+                                  time=self.world.format_time(),
+                                  speed=f"{self.ship.speed:.1f}",
+                                  course=f"{self.ship.course % 360:03.0f}"),
+            self.top_bar_scenario(), right - left)
+        layout.blit_line(s, txt, (left, 4, right - left,
                                   config.TOP_BAR_H - 8),
                          config.COLOR_TEXT, size=16, align="right")
 

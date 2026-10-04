@@ -4,23 +4,60 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.199
+
+Release 1.3.199 makes the frigate's helicopter take time on deck. The launch
+order (`H`, or *Launch helicopter* in the browser) starts 5 minutes of
+preparation in the hangar, and the helicopter lifts off at the next launch
+window after that; `H` again stops it. After a landing it keeps the fuel it
+came back with and is refuelled on deck, 15 minutes from empty to full; a
+launch lifts off with the fuel aboard by then, never with less than 30
+minutes. The Helicopter station shows START PREP or REFUEL with the time left
+(uConsole and browser), and hovering over its status says what it waits for.
+The AI frigate waits the same way; its own delay before the order is halved,
+so the balance stays where it was. The bearing roses keep "090" and "270"
+clear of the text beside them, and the dipping sonar's depth gauge separates
+the air from the water below a bold waterline. The helicopter's speed vector
+shows its real speed over ground, and a click on the chart puts its waypoint
+exactly there; the helicopter stops on the point instead of 0.3 NM short. Plot
+objects off the chart get an arrow on the chart edge, and their labels sit
+side by side there instead of on top of each other. Saves are v51; v38 to v50
+saves still load.
+
+## 1.3.197
+
+Release 1.3.197 makes the hover tooltips follow the colour scheme. In the
+light Tactical Day scheme a tooltip is now a light card with dark text instead
+of a dark box with barely readable lettering; Tactical Night and high contrast
+keep a dark box, and red light turns it grey. The damage-control pictures (the
+frigate's side view and cross-section, the submarine cutaway) become a light
+drawing board by day with floodwater, fire and teams still clear, on the
+uConsole and in the browser. The update notice in the main menu and the
+notice for a view that failed to draw follow the scheme too.
+Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+
+## 1.3.196
+
+Release 1.3.196 closes the last points of the code audit. The LFM ping no
+longer gains 20 dB against noise, which a pulse of the same energy as CW
+cannot; instead its fine range cell cuts the seabed reverberation by 20 dB, so
+it finds a slow or stationary submarine in shallow water, while in deep water
+both pulses reach equally far. A submarine now hears a running torpedo at its
+full reference range. On a free patrol a sunk neutral submarine costs the
+frigate only when its own torpedoes, depth charges or rockets sank it, and a
+submarine that comes back as a new encounter is a new contact. A hung build
+self-test no longer holds back new releases for hours. Saves are v50; v38 to
+v49 saves still load.
+
 ## 1.3.195
 
-Release 1.3.195 gives the frigate's helicopter a start preparation. It is
-never ready at once any more: the launch order (`H`, or *Launch helicopter* in
-the browser) starts 5 minutes of preparation in the hangar, and the helicopter
-lifts off at the next launch window after that. The Helicopter station shows
-START PREP with the time left (uConsole and browser), `H` again stops it, and
-every launch after a landing needs the full preparation again. The AI frigate
-waits for it too; its own delay before the order is halved, so the balance
-stays where it was. The bearing roses keep their "090" and "270" clear of
-the text beside them, and the dipping sonar's depth gauge separates the air
-with the helicopter from the water below a bold waterline (uConsole and
-browser). The helicopter's speed vector on the charts shows its real speed
-over ground (none in the hover) on the ship's time base, and plot labels step
-aside from it and from "HSP-5". A click anywhere on the chart puts the
-helicopter's waypoint exactly there, the chart marks it, and the helicopter
-slows down and stops on the point instead of 0.3 NM short. Saves are v51; v38 to v50 saves still load.
+Release 1.3.195 keeps the microphone meter off the top bar's status line. On
+the uConsole the meter now sits between the status line and the menu button,
+and the status line gives way to it: a long mission title is shortened, while
+the clock, speed, course and depth stay whole. The meter is drawn as LED
+segments behind a microphone sign; unlit segments are dimmed instead of
+empty outlines that looked like missing letters, and a small mark below a
+segment shows the crew's loudest voice. The browser meter looks the same.
 
 ## 1.3.194
 

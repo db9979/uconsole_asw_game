@@ -4,24 +4,63 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.199
+
+Version 1.3.199 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
+Der Startbefehl (`H` oder *Helikopter starten* im Browser) beginnt 5 Minuten
+Vorbereitung im Hangar, danach hebt er im nächsten Startfenster ab; ein
+zweites `H` bricht sie ab. Nach einer Landung behält er den Kraftstoff, mit
+dem er zurückkam, und wird an Deck betankt, 15 Minuten von leer bis voll; ein
+Start hebt mit dem bis dahin getankten Kraftstoff ab, nie mit weniger als 30
+Minuten. Die Hubschrauberstation zeigt STARTVORBEREITUNG oder TANKEN mit der
+Restzeit (uConsole und Browser), und der Tooltip über dem Status nennt, worauf
+er wartet. Die KI-Fregatte wartet genauso; ihre eigene Wartezeit vor dem
+Befehl ist halbiert, damit das Gleichgewicht bleibt. Die Peilrosen halten
+„090“ und „270“ vom Text daneben frei, und die Tiefenleiste des Tauchsonars
+trennt die Luft durch eine kräftige Wasserlinie vom Wasser. Der Fahrtstrich
+des Hubschraubers zeigt seine echte Geschwindigkeit über Grund, und ein Klick
+in die Karte legt seinen Wegpunkt genau dorthin; der Hubschrauber bleibt auf
+dem Punkt stehen statt 0,3 sm davor. Plot-Objekte außerhalb der Karte bekommen
+einen Pfeil am Kartenrand, und ihre Beschriftungen stehen dort nebeneinander
+statt übereinander. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
+
+## 1.3.197
+
+Version 1.3.197 lässt die Hinweisfenster beim Überfahren mit der Maus dem
+Farbschema folgen. Im hellen Schema „Taktik Tag“ ist ein Hinweis jetzt eine
+helle Karte mit dunkler Schrift statt eines dunklen Kastens mit kaum lesbarer
+Schrift; „Taktik Nacht“ und hoher Kontrast behalten den dunklen Kasten, bei
+Rotlicht wird er grau. Die Bilder der Leckwehr (Seitenriss
+und Querschnitt der Fregatte, Schnitt des U-Boots) werden bei Tag zu einer
+hellen Zeichnung, Wasser, Feuer und Trupps bleiben gut erkennbar, auf der
+uConsole und im Browser. Auch der Update-Hinweis im Hauptmenü und der Hinweis
+für eine nicht gezeichnete Ansicht folgen dem Schema. Tasten bleiben gleich.
+Spielstände sind v50; v38 bis v49 laden weiter.
+
+## 1.3.196
+
+Version 1.3.196 schließt die letzten Punkte der Codeprüfung. Der LFM-Ping
+gewinnt nicht mehr 20 dB gegen Rauschen, was ein Puls mit derselben Energie
+wie CW nicht kann; stattdessen senkt seine feine Entfernungszelle den Nachhall
+des Meeresbodens um 20 dB, sodass er ein langsames oder stehendes U-Boot im
+Flachwasser findet, während beide Pulse im tiefen Wasser gleich weit reichen.
+Ein U-Boot hört einen laufenden Torpedo jetzt auf seiner vollen
+Bezugsentfernung. Auf freier Fahrt kostet ein versenktes neutrales U-Boot die
+Fregatte nur, wenn ihre eigenen Torpedos, Wasserbomben oder Raketen es
+versenkt haben, und ein U-Boot, das als neue Begegnung zurückkehrt, ist ein
+neuer Kontakt. Ein hängender Selbsttest beim Bau hält neue Versionen nicht mehr
+stundenlang auf. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.195
 
-Version 1.3.195 gibt dem Bordhubschrauber der Fregatte eine
-Startvorbereitung. Er steht nicht mehr sofort bereit: Der Startbefehl (`H`
-oder *Helikopter starten* im Browser) beginnt 5 Minuten Vorbereitung im
-Hangar, danach hebt er im nächsten Startfenster ab. Die Hubschrauberstation
-zeigt STARTVORBEREITUNG mit der Restzeit (uConsole und Browser), ein zweites
-`H` bricht sie ab, und jeder Start nach einer Landung braucht wieder die volle
-Vorbereitung. Auch die KI-Fregatte wartet sie ab; ihre eigene Wartezeit vor
-dem Befehl ist halbiert, damit das Gleichgewicht bleibt. Die Peilrosen halten ihr „090“ und „270“ vom
-Text daneben frei, und die Tiefenleiste des Tauchsonars trennt die Luft mit
-dem Hubschrauber durch eine kräftige Wasserlinie vom Wasser (uConsole und
-Browser). Der Fahrtstrich des Hubschraubers auf den Karten zeigt seine echte
-Geschwindigkeit über Grund (im Schwebeflug keinen) auf der Zeitbasis des
-Schiffs, und Plot-Beschriftungen weichen ihm und „HSP-5“ aus. Ein Klick irgendwo in die Karte legt den Wegpunkt des
-Hubschraubers genau dorthin, die Karte zeigt ihn, und der Hubschrauber wird
-langsamer und bleibt auf dem Punkt stehen statt 0,3 sm davor. Spielstände sind v51;
-v38 bis v50 lassen sich weiter laden.
+Version 1.3.195 hält die Mikrofonanzeige von der Statuszeile der Kopfleiste
+fern. Auf der uConsole steht die Anzeige jetzt zwischen Statuszeile und
+Menüknopf, und die Statuszeile weicht ihr aus: Ein langer Einsatzname wird
+gekürzt, Uhrzeit, Fahrt, Kurs und Tiefe bleiben ganz. Die Anzeige ist als
+LED-Leiste hinter einem Mikrofonzeichen gezeichnet; unbeleuchtete Felder sind
+abgedunkelt statt leerer Kästchen, die wie fehlende Buchstaben aussahen, und
+eine kleine Marke unter einem Feld zeigt die lauteste Stimme der Besatzung.
+Die Anzeige im Browser sieht genauso aus.
 
 ## 1.3.194
 

@@ -589,6 +589,18 @@ def blit_line(screen, text: str, rect, color, size: int = 14,
                min_size=min(size, max(MIN_OPERATIONAL_FONT, size - 4)), align=align)
 
 
+def shorten_to_fit(make, title: str, width: int, size: int = 16) -> str:
+    """``make(title)`` with ``title`` cut (with an ellipsis) until the line
+    fits ``width`` at ``size``, so a status line keeps its numbers whole."""
+    face = font(size)
+    text = make(title)
+    cut = len(title)
+    while face.size(text)[0] > width and cut > 1:
+        cut -= 1
+        text = make(title[:cut].rstrip() + "…")
+    return text
+
+
 def blit_lines(screen, lines, rect, color, size: int = 14,
                line_gap: int = 2) -> int:
     """Render a bounded list and return the number of visible lines."""
@@ -794,11 +806,12 @@ def tooltip_rect(payload: dict, pointer, bounds=(0, 0, 1280, 720),
 def draw_tooltip(screen, payload: dict, pointer,
                  bounds=(0, 0, 1280, 720)) -> pygame.Rect | None:
     """Draw a high-contrast tooltip and return its bounded rectangle."""
+    from src.ui import theme
     payload = valid_tooltip(payload)
     if payload is None:
         return None
     rect, lines = tooltip_rect(payload, pointer, bounds)
-    pygame.draw.rect(screen, (5, 13, 10), rect)
+    pygame.draw.rect(screen, theme.c("raised"), rect)
     pygame.draw.rect(screen, config.COLOR_WARN, rect, 2)
     title_font = font(TOOLTIP_TITLE_SIZE, bold=True)
     body_font = font(TOOLTIP_BODY_SIZE)

@@ -48,12 +48,12 @@ def fault_signature(exc: BaseException) -> tuple:
 
 def draw_fault_box(surface, rect, tr) -> None:
     """Notice box for a view that failed to draw (display only)."""
-    from src.ui import layout
+    from src.ui import layout, theme
     rect = pygame.Rect(rect)
     box = pygame.Rect(0, 0, min(rect.w - 40, 620), 92)
     box.center = rect.center
     surface.fill(config.COLOR_BG, rect)
-    pygame.draw.rect(surface, (40, 18, 18), box)
+    pygame.draw.rect(surface, theme.pick((40, 18, 18), (254, 226, 226)), box)
     pygame.draw.rect(surface, config.COLOR_WARN, box, 2)
     layout.blit_block(surface, tr("resilience.view_fault.title"),
                      box.x + 12, box.y + 10, box.w - 24, 30, config.COLOR_WARN,

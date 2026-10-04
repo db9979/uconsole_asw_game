@@ -14,24 +14,25 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.195**
+Aktuelle Version: **1.3.199**
 
-Version 1.3.195 gibt dem Bordhubschrauber der Fregatte eine
-Startvorbereitung. Er steht nicht mehr sofort bereit: Der Startbefehl (`H`
-oder *Helikopter starten* im Browser) beginnt 5 Minuten Vorbereitung im
-Hangar, danach hebt er im nächsten Startfenster ab. Die Hubschrauberstation
-zeigt STARTVORBEREITUNG mit der Restzeit (uConsole und Browser), ein zweites
-`H` bricht sie ab, und jeder Start nach einer Landung braucht wieder die volle
-Vorbereitung. Auch die KI-Fregatte wartet sie ab; ihre eigene Wartezeit vor
-dem Befehl ist halbiert, damit das Gleichgewicht bleibt. Die Peilrosen halten ihr „090“ und „270“ vom
-Text daneben frei, und die Tiefenleiste des Tauchsonars trennt die Luft mit
-dem Hubschrauber durch eine kräftige Wasserlinie vom Wasser (uConsole und
-Browser). Der Fahrtstrich des Hubschraubers auf den Karten zeigt seine echte
-Geschwindigkeit über Grund (im Schwebeflug keinen) auf der Zeitbasis des
-Schiffs, und Plot-Beschriftungen weichen ihm und „HSP-5“ aus. Ein Klick irgendwo in die Karte legt den Wegpunkt des
-Hubschraubers genau dorthin, die Karte zeigt ihn, und der Hubschrauber wird
-langsamer und bleibt auf dem Punkt stehen statt 0,3 sm davor. Spielstände sind v51;
-v38 bis v50 lassen sich weiter laden.
+Version 1.3.199 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
+Der Startbefehl (`H` oder *Helikopter starten* im Browser) beginnt 5 Minuten
+Vorbereitung im Hangar, danach hebt er im nächsten Startfenster ab; ein
+zweites `H` bricht sie ab. Nach einer Landung behält er den Kraftstoff, mit
+dem er zurückkam, und wird an Deck betankt, 15 Minuten von leer bis voll; ein
+Start hebt mit dem bis dahin getankten Kraftstoff ab, nie mit weniger als 30
+Minuten. Die Hubschrauberstation zeigt STARTVORBEREITUNG oder TANKEN mit der
+Restzeit (uConsole und Browser), und der Tooltip über dem Status nennt, worauf
+er wartet. Die KI-Fregatte wartet genauso; ihre eigene Wartezeit vor dem
+Befehl ist halbiert, damit das Gleichgewicht bleibt. Die Peilrosen halten
+„090“ und „270“ vom Text daneben frei, und die Tiefenleiste des Tauchsonars
+trennt die Luft durch eine kräftige Wasserlinie vom Wasser. Der Fahrtstrich
+des Hubschraubers zeigt seine echte Geschwindigkeit über Grund, und ein Klick
+in die Karte legt seinen Wegpunkt genau dorthin; der Hubschrauber bleibt auf
+dem Punkt stehen statt 0,3 sm davor. Plot-Objekte außerhalb der Karte bekommen
+einen Pfeil am Kartenrand, und ihre Beschriftungen stehen dort nebeneinander
+statt übereinander. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

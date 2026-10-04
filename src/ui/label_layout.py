@@ -19,6 +19,8 @@ import pygame
 MAX_RECTS = 160
 # Gap kept between two labels, in pixels.
 GAP_PX = 2
+# Steps a label slides along each axis when no candidate is free.
+SLIDE_STEPS = 6
 
 _ACTIVE: list["LabelField"] = []
 
@@ -63,7 +65,27 @@ class LabelField:
                 best, best_cost = rect, cost
         if best is None:
             best = self._clamp(self.bounds.x, self.bounds.y, width, height)
+        elif best_cost:
+            best = self._slide(best, best_cost)
         self.reserve(best)
+        return best
+
+    def _slide(self, rect: pygame.Rect, cost: int) -> pygame.Rect:
+        """Step a colliding label away from its best spot, a label height
+        or width at a time.  Candidates around a point far off the chart all
+        clamp to the same spot on its edge; sliding along (and off) that edge
+        sets such edge labels beside each other instead of on top."""
+        step_y, step_x = rect.h + GAP_PX, rect.w + GAP_PX
+        best, best_cost = rect, cost
+        for k in range(1, SLIDE_STEPS + 1):
+            for dx, dy in ((0, k * step_y), (0, -k * step_y),
+                           (-k * step_x, 0), (k * step_x, 0)):
+                moved = self._clamp(rect.x + dx, rect.y + dy, rect.w, rect.h)
+                moved_cost = self._overlap(moved)
+                if moved_cost == 0:
+                    return moved
+                if moved_cost < best_cost:
+                    best, best_cost = moved, moved_cost
         return best
 
 

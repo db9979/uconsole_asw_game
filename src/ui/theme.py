@@ -386,6 +386,21 @@ THEMED_GLOBALS = {
         "BACKDROP_VEIL": ((2, 6, 10, 110), (243, 244, 246, 150))},
     # The start-screen hunt behind the main menu and every overlay: a day
     # scene under a light veil in the light theme, the night hunt otherwise.
+    # The damage-control pictures (section, profile, boat cutaway): a light
+    # drawing board by day; floodwater, fire and teams keep their colours.
+    "src.ui.damage_section": {
+        "HULL_FILL": ((40, 50, 56), (203, 213, 223)), "ROOM_FILL": ((22, 44, 48), (232, 237, 243)),
+        "STEEL": ((150, 168, 172), (51, 65, 85)), "STEEL_DIM": ((84, 100, 106), (148, 163, 184)),
+        "SEA": ((6, 30, 52), (219, 234, 254)), "SEA_LINE": ((90, 160, 200), (37, 99, 235)),
+        "WATER_TOP": ((132, 194, 223), (29, 78, 216)), "SPRAY": ((160, 214, 240), (59, 130, 246)),
+        "GAS": ((150, 190, 60), (101, 163, 13)), "MARK": ((210, 222, 220), (71, 85, 105)),
+        "KEEL": ((22, 40, 48), (148, 163, 184)), "INK": ((170, 186, 186), (71, 85, 105)),
+        "DOOR_FILL": ((10, 20, 24), (232, 237, 243)),
+        "BOAT_TINTS": ({"stern": (92, 86, 40), "engine": (96, 70, 36), "battery": (90, 46, 44),
+                        "quarters": (46, 84, 52), "control": (64, 66, 104), "bow": (96, 54, 48)},
+                       {"stern": (231, 223, 176), "engine": (236, 210, 173),
+                        "battery": (240, 200, 196), "quarters": (201, 227, 204),
+                        "control": (207, 210, 238), "bow": (239, 201, 193)})},
     "src.ui.splash_view": {
         "SKY_TOP": ((3, 7, 16), (126, 170, 208)),
         "SKY_HORIZON": ((20, 44, 62), (206, 224, 236)),

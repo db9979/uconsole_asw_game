@@ -184,7 +184,8 @@ def passive_terms(*, frequency_hz: float, distance_nm: float,
                   sea_state: float, rain: float, shipping_contacts: int,
                   sensitivity_db: float = 0.0,
                   hull_self_noise: bool = True,
-                  threshold_db: float = 0.0) -> PassiveTerms:
+                  threshold_db: float = 0.0,
+                  reference_absorption_db: float = 0.0) -> PassiveTerms:
     """Assemble the passive sonar equation for one band.
 
     ``target_bonus`` is the 1.0.0 source-level multiplier (louder target),
@@ -193,12 +194,16 @@ def passive_terms(*, frequency_hz: float, distance_nm: float,
     Francois-Garrison absorption replace the legacy fixed absorption.
     ``threshold_db`` is the operator's recognition differential above the
     calibrated 0 dB (a tired watch needs a stronger signal).
+    ``reference_absorption_db`` credits the absorption already contained in
+    a figure of merit anchored at a shorter reference range; it is applied
+    outside the path-excess bound so it is never lost there.
     """
     anchor = passive_figure_of_merit_offset(frequency_hz)
     source = anchor + 20.0 * math.log10(max(target_bonus, 1e-6))
     absorption = absorption_db_per_km * distance_nm * NM_M / 1000.0
     transmission = (spreading_loss_db(distance_nm) + max(
-        0.0, excess_path_loss_db - legacy_absorption_db) + absorption)
+        0.0, excess_path_loss_db - legacy_absorption_db) + absorption
+        - reference_absorption_db)
     ambient = ambient_noise_db(frequency_hz, sea_state, rain, shipping_contacts)
     directivity = 20.0 * math.log10(max(array_range_factor, 1e-6)) + sensitivity_db
     if hull_self_noise:
@@ -246,10 +251,10 @@ def reverberation_level_db(*, source_level_db: float, distance_nm: float,
                            water_depth_m: float, lambert_mu_db: float,
                            wind_kn: float) -> float:
     """Boundary + volume reverberation at the target range."""
-    tau, _bandwidth = PULSES[pulse]
     r = max(1.0, distance_nm * NM_M)
-    # Ensonified boundary patch: range extent c*tau/2 times cross-range r*theta.
-    area = (config.SOUND_SPEED_M_S * tau * 0.5) * r * math.radians(beamwidth_deg)
+    # Ensonified boundary patch: the pulse's range cell (c*tau/2 for CW,
+    # c/2B after pulse compression for LFM) times cross-range r*theta.
+    area = range_resolution_m(pulse) * r * math.radians(beamwidth_deg)
     grazing = math.degrees(math.atan2(max(1.0, water_depth_m), r))
     two_way = 2.0 * spreading_loss_db(distance_nm)
     bottom = (source_level_db - two_way + bottom_scattering_db(lambert_mu_db, grazing)
@@ -383,9 +388,11 @@ def active_terms(*, distance_nm: float, target_ts_db: float, legacy_range_factor
         source_level_db=source, distance_nm=distance_nm, pulse=pulse,
         beamwidth_deg=ACTIVE_BEAMWIDTH_DEG, water_depth_m=water_depth_m,
         lambert_mu_db=lambert_mu_db, wind_kn=wind_kn) - absorption - path_penalty
-    tau, bandwidth = PULSES[pulse]
-    gain = 10.0 * math.log10(max(1.0, tau * bandwidth))
-    gain += active_range_factor_db(1.0 / max(gain_factor, 1e-6))
+    # CW and LFM carry the same energy (same length and level), so a matched
+    # filter gives both the same signal-to-noise ratio; the LFM's
+    # time-bandwidth product only shrinks its range cell, and with it the
+    # reverberation (above).
+    gain = active_range_factor_db(1.0 / max(gain_factor, 1e-6))
     rejection = cw_doppler_rejection_db(radial_speed_kn) if pulse == "CW" else 0.0
     return ActiveTerms(source, two_way, target_ts_db, noise, reverb, gain,
                        rejection)

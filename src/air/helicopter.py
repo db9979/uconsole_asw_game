@@ -125,7 +125,9 @@ class Helicopter:
         self.course = 0.0
         self.torps = config.HELO_TORPS
         self.buoys_left = config.BUOY_COUNT
-        self.fuel_s = 0.0
+        # Fuel aboard in flight seconds: full at the start, kept after a
+        # recovery and refuelled on deck (``config.HELO_REFUEL_S``).
+        self.fuel_s = config.HELO_FUEL_S
         self.waypoint_x = None
         self.waypoint_y = None
         self.dip_state = "STOWED"
@@ -166,6 +168,28 @@ class Helicopter:
     def prep_ready(self) -> bool:
         return self.preparing and self.prep_s <= 0.0
 
+    @property
+    def refuelling(self) -> bool:
+        return self.state == "HANGAR" and self.fuel_s < config.HELO_FUEL_S
+
+    @property
+    def fuel_ready(self) -> bool:
+        """Enough fuel aboard to lift off."""
+        return self.fuel_s >= config.HELO_LAUNCH_MIN_FUEL_S
+
+    def refuel_left_s(self, target_s: float = None) -> float:
+        """Seconds of refuelling until ``target_s`` of fuel (default full)."""
+        target_s = config.HELO_FUEL_S if target_s is None else target_s
+        return max(0.0, target_s - self.fuel_s) * config.HELO_REFUEL_S / config.HELO_FUEL_S
+
+    def refuel_wait_s(self):
+        """The refuelling time the status shows: with a prepared launch
+        short of fuel, until the launch minimum; otherwise until full; None
+        when not refuelling."""
+        if self.prep_ready and not self.fuel_ready:
+            return self.refuel_left_s(config.HELO_LAUNCH_MIN_FUEL_S)
+        return self.refuel_left_s() if self.refuelling else None
+
     def order_prep(self) -> None:
         """Start the preparation (an order already running keeps its time)."""
         if self.state == "HANGAR" and self.prep_s is None:
@@ -186,14 +210,14 @@ class Helicopter:
         return self.state in ("AUF", "ZURUECK")
 
     def launch(self, frigate) -> None:
-        """Start with the remaining finite mission loadout."""
+        """Start with the remaining finite mission loadout and the fuel
+        aboard (refuelled on deck since the last recovery)."""
         self.state = "AUF"
         self.prep_s = None
         self.stop_hoist()
         self.x = frigate.x
         self.y = frigate.y
         self.course = frigate.course
-        self.fuel_s = config.HELO_FUEL_S
         self.dip_state = "STOWED"
         self.dip_depth_m = 0.0
         self.dip_water_depth_m = 0.0
@@ -297,6 +321,9 @@ class Helicopter:
         self.ground_speed_kn = 0.0
         if self.preparing:
             self.prep_s = max(0.0, self.prep_s - dt)
+        if self.refuelling:
+            self.fuel_s = min(config.HELO_FUEL_S,
+                              self.fuel_s + dt * config.HELO_FUEL_S / config.HELO_REFUEL_S)
         if not self.airborne:
             return
         # fuel_factor: extra power for anti-/de-icing in icing conditions.

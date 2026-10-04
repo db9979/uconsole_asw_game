@@ -110,24 +110,48 @@ def test_a_far_unheard_boat_comes_back_as_the_next_encounter():
     far.memory["contact_age"] = 0.0
     far.pending_torpedoes.append((far.x, far.y, 90.0))
     far.state = "EVADE"
+    old_id = far.id
+    # The frigate's own picture of it: a TMA hypothesis and an OPZ label.
+    game.tma_hypotheses[old_id] = object()
     count = len(game.subs)
     assert free_roam.encounter(game, 2, "sub") == "sub"
     assert len(game.subs) == count
     assert far.memory == far.fresh_memory()
     assert not far.pending_torpedoes and far.state == "PATROLLE"
+    # It comes back as a new contact: nothing kept on its old identity fits it.
+    assert far.id != old_id and far.id not in game.tma_hypotheses
+    assert old_id not in game.tma_hypotheses
+    assert far.id == max(sub.id for sub in game.subs)
     assert math.hypot(far.x - game.ship.x, far.y - game.ship.y) <= config.FREE_SUB_SPAWN_NM[1] + 0.1
 
 
 def test_sinking_a_neutral_submarine_costs_points_once():
+    from src.weapons.depth_charge import DepthCharge
     game = _frigate()
     free_roam.encounter(game, 0, "neutral_sub")
     neutral = next(sub for sub in game.subs if sub.side == "neutral")
     score = game.score
-    neutral.sunk = True
+    neutral.damage = 99.0
+    charge = DepthCharge(1, neutral.x, neutral.y, neutral.depth, depth=neutral.depth)
+    game._detonate_depth_charge(charge)
+    game._detonate_depth_charge(charge)
     free_roam.update(game, 0.1)
-    free_roam.update(game, 0.1)
+    assert neutral.state == "SINKING"
     assert game.score == score - config.FREE_NEUTRAL_SUNK
     assert game.free_roam["charged"] == [neutral.id]
+
+
+def test_a_neutral_submarine_lost_without_the_frigate_costs_nothing():
+    game = _frigate()
+    free_roam.encounter(game, 0, "neutral_sub")
+    neutral = next(sub for sub in game.subs if sub.side == "neutral")
+    score = game.score
+    # Run aground, rammed or hit by the hostile boat: not the frigate's doing.
+    neutral.hit(100.0)
+    neutral.state, neutral.sunk = "SUNK", True
+    for _ in range(3):
+        free_roam.update(game, 0.1)
+    assert game.score == score and game.free_roam["charged"] == []
 
 
 def test_encounters_follow_the_schedule_and_the_seed():

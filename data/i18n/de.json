@@ -2364,7 +2364,7 @@
   "help.control.torp_depth_input": "Torpedo-Lauftiefe eingeben (10-300 m), wie auf dem U-Boot",
   "help.control.target_select": "Sonarkontakt für Zielwahl wählen",
   "help.control.fire": "Torpedo abfeuern (ROE-Prüfung)",
-  "help.control.helo_toggle": "HSP-5 starten (5 min Vorbereitung) / abbrechen / zurückrufen",
+  "help.control.helo_toggle": "HSP-5 starten (5 min Vorbereitung, tankt an Deck) / abbrechen / zurückrufen",
   "help.control.buoy": "Sonarbojen aussetzen (HSP-5 in Luft)",
   "help.control.air_torp": "Leichttorpedo vom HSP-5",
   "help.control.nixie": "Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen",
@@ -3969,7 +3969,7 @@
   "help.sop.engine.3": "Für den Angriffsanlauf LEISE schalten (A, max. 12 kn).",
   "help.sop.engine.4": "Mit ausgebrachter TAS nie über 20 kn fahren.",
   "help.sop.engine.5": "Maschinenschäden beachten: Fahrtgrenzen 15 bzw. 8 kn.",
-  "help.sop.helo.1": "Wettergrenzen und Kraftstoff prüfen; Start früh befehlen (H): 5 min Vorbereitung.",
+  "help.sop.helo.1": "Wettergrenzen und Kraftstoff prüfen (nach einer Landung 15 min Tanken an Deck); Start früh befehlen (H): 5 min Vorbereitung.",
   "help.sop.helo.2": "Wegpunkt vor das vermutete Ziel legen (Pfeiltasten).",
   "help.sop.helo.3": "Passive Bojenlinie werfen (B); für Entfernung AKTIV wählen (Shift+B).",
   "help.sop.helo.4": "Schweben und tauchen (Y), Tiefe unter die Schicht (U/V), horchen oder pingen (Shift+A).",
@@ -7656,5 +7656,12 @@
   "commander.web.helicopter_rescue_phase_return": "Zurück zum Schiff: gerettet erst an Deck",
   "commander.web.helicopter_rescue_phase_deck": "An Deck: Überlebende gehen unter Deck",
   "commander.web.helicopter_rescue_raft": "{task}: {left} in der Insel, {bearing}° {range} sm",
-  "help.note.helo_rescue": "Rettung: zur Insel fliegen, Z bis 0,1 sm startet die Winde (1 Überlebender/min, Kabine 6). Gerettet erst, wenn HSP-5 wieder an Deck ist (H)."
+  "help.note.helo_rescue": "Rettung: zur Insel fliegen, Z bis 0,1 sm startet die Winde (1 Überlebender/min, Kabine 6). Gerettet erst, wenn HSP-5 wieder an Deck ist (H).",
+  "helo.refuel.running": "TANKEN {time}",
+  "helo.tooltip.prep_reason": "Startvorbereitung, Abheben in {time} (Sprit {fuel} von {full} min, wird dabei weiter getankt). Nochmals H bricht ab.",
+  "helo.tooltip.fuel_wait_reason": "Startbereit, tankt noch: {fuel} min an Bord, hebt bei {minimum} min ab, in {time}.",
+  "helo.tooltip.window_reason": "Startbereit und getankt, wartet auf ein Startfenster (Wetter und Deckbewegung).",
+  "helo.tooltip.refuel_reason": "Tankt an Deck: {fuel} von {full} min, voll in {time}. Ein Startbefehl hebt mit dem bis dahin getankten Sprit ab.",
+  "helo.tooltip.ready_reason": "Im Hangar, Tank voll. H befiehlt den Start (5 min Startvorbereitung).",
+  "commander.web.helo_refuel": "Tankt {time}"
 }

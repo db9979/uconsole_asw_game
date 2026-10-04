@@ -936,7 +936,7 @@ def draw_opz_view(game, tr=None) -> None:
         if helo is not None and helo.airborne:
             hx, hy = view.world_to_screen(helo.x, helo.y)
             if chart.collidepoint(hx, hy):
-                hcol = nato_symbols.draw_symbol(s, (hx, hy), "FRIEND", "AIR", 17)
+                hcol = nato_symbols.draw_symbol(s, (hx, hy), "FRIEND", "ROTARY", 17)
                 # Speed over ground on the own ship's time base (none in the hover).
                 end = nato_symbols.draw_motion_vector(
                     s, (hx, hy), helo.course, getattr(helo, "ground_speed_kn", 0.0),

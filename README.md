@@ -29,7 +29,7 @@ the air from the water below a bold waterline. The helicopter's speed vector
 shows its real speed over ground, and a click on the chart puts its waypoint
 exactly there; the helicopter stops on the point instead of 0.3 NM short. Plot
 objects off the chart get an arrow on the chart edge, and their labels sit
-side by side there instead of on top of each other. Saves are v51; v38 to v50
+side by side there instead of on top of each other. The own helicopter wears the NATO rotary-wing sign on every chart. Saves are v51; v38 to v50
 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

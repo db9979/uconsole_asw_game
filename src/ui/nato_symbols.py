@@ -63,6 +63,12 @@ def draw_symbol(surface, center, affiliation: str, domain: str,
     if domain == "AIR":
         pygame.draw.lines(surface, color, False,
                           [(x - 4, y + 3), (x, y - 3), (x + 4, y + 3)], 2)
+    elif domain == "ROTARY":
+        # Rotary wing (APP-6 / MIL-STD-2525 helicopter icon): a bow tie of
+        # two rotor blades meeting at the hub.
+        g = max(4, half - 2)
+        pygame.draw.polygon(surface, color, [(x - g, y - g // 2), (x, y), (x - g, y + g // 2)], 2)
+        pygame.draw.polygon(surface, color, [(x + g, y - g // 2), (x, y), (x + g, y + g // 2)], 2)
     elif domain == "MISSILE":
         pygame.draw.line(surface, color, (x, y + 4), (x, y - 4), 2)
         pygame.draw.lines(surface, color, False,

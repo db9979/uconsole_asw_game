@@ -32,7 +32,7 @@ des Hubschraubers zeigt seine echte Geschwindigkeit über Grund, und ein Klick
 in die Karte legt seinen Wegpunkt genau dorthin; der Hubschrauber bleibt auf
 dem Punkt stehen statt 0,3 sm davor. Plot-Objekte außerhalb der Karte bekommen
 einen Pfeil am Kartenrand, und ihre Beschriftungen stehen dort nebeneinander
-statt übereinander. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
+statt übereinander. Der eigene Hubschrauber trägt auf allen Karten das NATO-Zeichen für Drehflügler. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

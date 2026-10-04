@@ -337,6 +337,10 @@ def _draw_team_cards(game, s, column, station_rect) -> None:
         layout.blit_block(s, "damage.teams.hint", column.x + 12, bottom, column.w - 24,
                           max(1, column.bottom - bottom - 8), color=config.COLOR_TEXT_DIM,
                           size=14, min_size=layout.MIN_OPERATIONAL_FONT)
+        pointer.add_token_keys((column.x + 12, bottom, column.w - 24,
+                                max(1, column.bottom - bottom - 8)), "damage.teams.hint", 14,
+                               (("Enter", "Enter"),), min_size=layout.MIN_OPERATIONAL_FONT,
+                               screen=s)
 
 
 def _state_level(c) -> str:

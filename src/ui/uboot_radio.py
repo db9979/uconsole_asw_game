@@ -109,7 +109,7 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
                if mode == "vlf" else "uboot.radio.antenna_down")
     layout.blit_line(s, antenna, (bx, by, bw, row), config.COLOR_OK if up else config.COLOR_TEXT
                      if mode in ("vlf", "buoy") else config.COLOR_TEXT_DIM, size=16)
-    pointer.add_token_keys((bx, by, bw, row), antenna, 16, (("(P)", "P"),))
+    pointer.add_token_keys((bx, by, bw, row), antenna, 16, (("(P)", "P"),), screen=s)
     number = str(progress["broadcast"])
     if progress["copied"]:
         state = message("uboot.radio.broadcast_copied", number=number)
@@ -133,10 +133,10 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
     layout.blit_line(s, send, (bx, by + 2 * row + 12, bw, row), color, size=16)
     layout.meter(s, (bx + 2, by + 3 * row + 15, bw - 4, 6), progress["send"],
                  config.COLOR_WARN)
-    pointer.add_token_keys((bx, by + 3 * row + 24, bw, row), buoy_line(boat), 16,
-                           (("(B)", "B"),))
     layout.blit_line(s, buoy_line(boat), (bx, by + 3 * row + 24, bw, row),
                      config.COLOR_WARN if boat.orders.buoy[2] else config.COLOR_TEXT, size=16)
+    pointer.add_token_keys((bx, by + 3 * row + 24, bw, row), buoy_line(boat), 16,
+                           (("(B)", "B"),), screen=s)
     top = box[1] + box[3] + 8 + 8
     latest = radio.latest_report()
     report = layout.box(s, (x, top, w, _box_height(2 * row)), "uboot.panel.hq_report")

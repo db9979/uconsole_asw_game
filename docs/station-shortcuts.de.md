@@ -1,4 +1,4 @@
-# U-Jagd 1.3.198 - Stations- und Tastenkürzel
+# U-Jagd 1.3.199 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -106,7 +106,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Q / Shift+Q (TMA)` | TMA-Seite: Hypothesenentfernung -/+ 1 sm (Strg 0,2 sm) |
 | `K / Shift+K (TMA)` | TMA-Seite: Hypothese als Fix übernehmen / Umschalt: Solver-Vorschlag kopieren (Training) |
 | `Shift+T (TMA)` | TMA-Methode: Hypothese/Residuen, Ekelund-Entfernung, Dot-Stack (Umschalt+K bei Ekelund: Entfernung übernehmen) |
-| `SPACE` | LOFAR Peak-Hold ein/aus |
+| `LEER` | LOFAR Peak-Hold ein/aus |
 | `T` | TMA für ausgewählten Kontakt ein/aus |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
 | `G` | Gewählten Kontakt unabhängig von der Klassifikation an OPZ freigeben / zurückziehen |

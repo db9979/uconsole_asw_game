@@ -14,7 +14,7 @@ from types import SimpleNamespace
 
 import pygame
 
-from src.core import boat_nav, config
+from src.core import boat_nav, config, status_tips
 from src.core.echo_sounder import WINDOW_S
 from src.core.i18n import message, raw_text
 from src.ship import route as route_model
@@ -424,7 +424,10 @@ def draw_pilot_page(s, game, boat, x, y, w, h) -> None:
     # The ordered depth and the route are switches (D entry, W search route).
     keys = {"uboot.pilot.lamp.depth": "D", "uboot.pilot.lamp.route": "W"}
     lamp_h = console.lamp_grid(s, (x, y, w, 3 * (layout.line_pitch(14, 0) + 8) + 8),
-                               [(*row, keys.get(row[0])) for row in pilot_lamps(game, boat)],
+                               [(*row, keys.get(row[0]),
+                                 status_tips.lazy(lambda: status_tips.boat(game, boat), name))
+                                for row, name in zip(pilot_lamps(game, boat), (
+                                    "depth", "sounding", "keel", "ahead", "position", "route"))],
                                2, size=14)
     top = y + lamp_h + 8
     rest = y + h - top

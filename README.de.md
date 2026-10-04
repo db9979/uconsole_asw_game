@@ -14,15 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.198**
+Aktuelle Version: **1.3.199**
 
-Version 1.3.198 behebt die Meldung „Anzeige gestört“ beim starken
-Hineinzoomen in eine Karte. Mit der Grafikstufe „Voll“ konnte das geglättete
-Linienzeichnen keine Linien verarbeiten, die weit außerhalb der Karte enden,
-etwa einen Autopilot-Schlag zu einem fernen Wegpunkt bei stärkstem Zoom; die
-Karte zeigte dann die Fehlerbox statt des Lagebilds. Linien und Flächen werden
-jetzt vor dem Zeichnen auf den sichtbaren Kartenteil zugeschnitten, sodass
-jede Karte beider Seiten im nächsten und im weitesten Maßstab zeichnet.
+Version 1.3.199 erklärt jede Statuslampe. Ruht die Maus auf einer Lampe oder
+Anzeige, etwa START NO-GO und DECK WARTEN des Hubschraubers, einem
+Torpedorohr, der Anlage, dem ESM-Empfänger oder dem Wasser unter dem Kiel des
+U-Boots, öffnet sich ein Hinweis, warum sie so steht, aus dem laufenden Spiel
+(Deckbewegung und Ruhezeit, Wettergrenzen, Nachladezeit, Kartentiefe), und was
+zu tun ist. Jede Taste, die eine Station nutzen kann, ist jetzt ein blauer
+Tastenchip zum Anklicken, auch in diesen Hinweisen. Beides gilt auf beiden
+Seiten, auf der uConsole und im Remote-Crew-Browser. Die vier Kontaktknöpfe
+der OPZ sagen, was sie tun (Klassifizieren, Zugehörigkeit wechseln, Für Fusion
+markieren, Fusionieren / auflösen), mittig neben ihrem Tastenchip. Tasten
+bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

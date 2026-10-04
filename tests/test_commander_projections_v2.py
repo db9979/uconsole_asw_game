@@ -41,7 +41,7 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
     common = {"protocol", "version", "session", "epoch", "revision", "seq",
               "phase", "role", "chart_revision", "clock", "environment", "mission",
               "autocrew", "autocrew_overview", "audio", "weather_station", "plot", "alarms",
-              "hit_view", "crew_noise"}
+              "hit_view", "crew_noise", "lamp_tips"}
     assert set(server.v2_states) == {None, *ROLES}
     # Without a crewed submarine its roles are published redacted.
     assert all(server.v2_states[role] == server.v2_states[None]

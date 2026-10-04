@@ -1403,6 +1403,8 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 
 *Heli-Deck im Remote-Crew-Browser*
 
+Im Browser hat der Helikopter auf der Bühne drei Seiten: *Akustikanalyse* (BREITBAND, LOFAR und DEMON der Bojen und des Tauchsonars), *Tauchsonar* (das genordete Bild des Tauchsonars über die ganze Bühne, Ringe bei 5, 10, 15 und 20 sm, daneben Wassertiefe, Sprungschicht und die Werte jedes Kontakts) und *Taktische Karte* (die Karte über die ganze Bühne). `Bild auf`/`Bild ab`, nochmals die Stationsnummer `8` oder der Tastenchip neben den Reitern blättern zwischen ihnen.
+
 ```text
          Fregatte                           Wegpunkt (1-30 sm)
             *----------- 120 kn -------------->  H  Schweben + Tauchen
@@ -2292,6 +2294,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 | `Pfeiltasten (Karte)` | Fokussierte Karte verschieben |
 | `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
 | `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
+| `Bild auf/ab` | Helikopter: Akustikanalyse, Tauchsonar und Taktische Karte durchblättern (auch nochmals 8) |
 | `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
 | `, / .` | Kontaktliste (,) oder Stationsbereich (.) ein- oder ausklappen |
 | `L` | Einsatzprotokoll öffnen oder schließen |

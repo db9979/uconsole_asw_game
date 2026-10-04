@@ -12,19 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.199**
+Current release: **1.3.200**
 
-Release 1.3.199 explains every status lamp. Resting the mouse on a lamp or
-indicator, such as the helicopter's LAUNCH NO-GO and DECK WAIT, a torpedo
-tube, the plant, the ESM receiver or the submarine's depth under the keel,
-opens a note that says why it shows that state, taken from the running game
-(deck motion and quiet time, weather limits, reload time, charted depth), and
-what to do about it. Every key a station can use is now a blue key chip you
-can click, also inside these notes. Both work on both sides, on the uConsole
-and in the Remote Crew browser. The CIC's four contact buttons say what they
-do (Classify, Change affiliation, Mark for fusion, Fuse / dissolve), centred
-beside their key chip. Keys are unchanged. Saves are v50; v38 to v49 saves
-still load.
+Release 1.3.200 gives the helicopter's dipping sonar picture and chart more
+room in the Remote Crew browser. Both used to share one tab, so the chart was only a strip
+and the sonar picture small. Now the helicopter has three pages on the stage:
+Acoustic analysis, Dipping sonar (the scope over the whole stage, rings
+labelled 5, 10 and 15 NM, values beside it) and Tactical map (the chart over
+the whole stage). Page Up/Page Down, the station number 8 again or the blue
+key chip beside the tabs step through them, like the uConsole's pages. The
+uConsole is unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -10,7 +10,7 @@ from src.core import config
 from src.core.i18n import localized, localize, raw_text
 from src.core.station import Station
 from src.sensors.esm import animated_signal_fingerprint, spectrum_band
-from src.ui import layout, sferics
+from src.ui import layout, pointer, sferics
 
 
 from src.ui.stations.common import (_shortcut_footer, _srect, _station_content_top,
@@ -74,7 +74,7 @@ def eloka_cards(game, station_rect=None, page=0) -> list:
     column = eloka_regions(station_rect, page)["cards"]
     if column.w <= 0 or game.damage.station_down("opz"):
         return []
-    tracks = game.eloka_visible_tracks()
+    tracks = game.eloka_listed_tracks()
     capacity = max(1, (column.h - 36) // ELOKA_CARD_PITCH)
     selected = next((index for index, track in enumerate(tracks)
                      if track.track_key == game.eloka_selected_track_key), 0)
@@ -85,7 +85,7 @@ def eloka_cards(game, station_rect=None, page=0) -> list:
 
 
 def _eloka_visible_tracks(game) -> tuple:
-    tracks = game.eloka_visible_tracks()
+    tracks = game.eloka_listed_tracks()
     selected = next((index for index, track in enumerate(tracks)
                      if track.track_key == game.eloka_selected_track_key), 0)
     start = max(0, min(selected - 5, max(0, len(tracks) - 11)))
@@ -169,6 +169,48 @@ def _eloka_lamp_rows(game) -> tuple:
          "J"))
 
 
+ELOKA_CHIP_H = 24
+
+
+def filter_chips(game) -> tuple:
+    """``(key, label, value)`` of the four list switches: status, minimum
+    threat, band (F, Shift+F, Ctrl+F) and emitter grouping (Z)."""
+    return (
+        ("F", "eloka.chip.status",
+         localize("eloka.filter.status." + game.eloka_status_filter.lower())),
+        ("Shift+F", "eloka.chip.threat",
+         localize("eloka.filter.threat." + game.eloka_threat_filter.lower())),
+        ("Ctrl+F", "eloka.chip.band",
+         localize("eloka.filter.band." + game.eloka_band_filter.lower())),
+        ("Z", "eloka.chip.group", localize(
+            "ui.on" if getattr(game, "eloka_group_emitters", True) else "ui.off")),
+    )
+
+
+def filter_chip_rects(rect) -> list:
+    """Two rows of two chips at the top of ``rect``."""
+    rect = pygame.Rect(rect)
+    half = (rect.w - 6) // 2
+    return [pygame.Rect(rect.x + (index % 2) * (half + 6),
+                        rect.y + (index // 2) * (ELOKA_CHIP_H + 3), half, ELOKA_CHIP_H)
+            for index in range(4)]
+
+
+def _draw_filter_chips(game, surface, rect) -> int:
+    """The list switches as clickable key chips and the count below them;
+    returns the height used."""
+    rect = pygame.Rect(rect)
+    for (key, label, value), chip in zip(filter_chips(game), filter_chip_rects(rect)):
+        layout.command_segment(surface, chip, key, label, value=value, size=13)
+        pointer.add_legend(chip, key)
+    y = rect.y + 2 * (ELOKA_CHIP_H + 3)
+    layout.blit_line(surface, message(
+        "eloka.filter.count", emitters=len(game.eloka_visible_groups()),
+        visible=len(game.eloka_visible_tracks()), total=len(game.eloka_tracks())),
+        (rect.x, y, rect.w, 20), config.COLOR_TEXT_DIM, size=14)
+    return 2 * (ELOKA_CHIP_H + 3) + 22
+
+
 def _draw_eloka_rose(game, rect, tracks, lamps=True) -> None:
     """North-up threat rose: one strobe per intercept, longer when fresher,
     coloured by the operator's threat reading; own course as a short line."""
@@ -185,8 +227,10 @@ def _draw_eloka_rose(game, rect, tracks, lamps=True) -> None:
         color = getattr(config, _THREAT_COLORS.get(threat, "COLOR_OK"))
         quality = max(.2, min(1.0, float(track.display_quality(game.sim_t))))
         selected = track.track_key == game.eloka_selected_track_key
+        # One strobe per listed emitter; a group's strobe is drawn bolder.
+        grouped = game.eloka_group_size(track) > 1
         strobes.append((track.bearing, config.COLOR_TEXT if selected else color,
-                        3 if selected else 2, 0, 1 - .7 * quality))
+                        3 if selected or grouped else 2, 0, 1 - .7 * quality))
     rose = (pygame.Rect(rect.x, rect.y, rect.w, rect.h - 2 * lamp_h - 16) if lamps
             else pygame.Rect(rect))
     console.bearing_rose(surface, rose, strobes, course=getattr(game.ship, "course", None),
@@ -225,6 +269,16 @@ def _threat_color(game, track):
     return getattr(config, _THREAT_COLORS.get(threat, "COLOR_OK"))
 
 
+def card_title(game, track) -> str:
+    """"E12", "E12 ×3" for a group of three, then the operator's
+    classification or the modulation: who the emitter may be at a glance."""
+    size = game.eloka_group_size(track)
+    name = (game.eloka_annotation_name(track.track_key)
+            or localize("eloka.modulation." + track.modulation_code))
+    return message("eloka.card.title_group" if size > 1 else "eloka.card.title",
+                   key=raw_text(short_key(track.track_key)), count=size, name=name)
+
+
 def _draw_eloka_cards(game, surface, column, page) -> None:
     """Left column: one card per intercept (threat stripe, key, bearing,
     frequency and band, quality and age); a click selects it."""
@@ -248,8 +302,8 @@ def _draw_eloka_cards(game, surface, column, page) -> None:
         pygame.draw.rect(surface, _threat_color(game, track),
                          (rect.x + 3, rect.y + 5, 3, rect.h - 10))
         text = config.COLOR_TEXT if fresh or chosen else config.COLOR_TEXT_DIM
-        layout.blit_line(surface, raw_text(short_key(track.track_key)), (rect.x + 12, rect.y + 3,
-                                                              rect.w - 96, 20),
+        layout.blit_line(surface, card_title(game, track), (rect.x + 12, rect.y + 3,
+                                                            rect.w - 96, 20),
                          text, size=15)
         layout.blit_line(surface, f"{track.bearing:05.1f}\u00b0",
                          (rect.right - 84, rect.y + 2, 76, 21), text, size=17,
@@ -262,6 +316,17 @@ def _draw_eloka_cards(game, surface, column, page) -> None:
             .split(" / ")[0],
             quality=f"{track.display_quality(game.sim_t):.0%}", age=f"{age:.0f}"),
             (rect.x + 12, rect.y + 26, rect.w - 20, 19), config.COLOR_TEXT_DIM, size=13)
+
+
+def group_text(game) -> str:
+    """The selected intercept's place in its emitter group ("2 of 4,
+    ←/→") or that it stands alone."""
+    members = game.eloka_selected_group()
+    if len(members) < 2:
+        return localize("eloka.value.group_single")
+    index = next(i for i, item in enumerate(members)
+                 if item.track_key == game.eloka_selected_track_key)
+    return message("eloka.value.group", index=index + 1, count=len(members))
 
 
 def _draw_eloka_details(game, surface, column) -> None:
@@ -287,6 +352,7 @@ def _draw_eloka_details(game, surface, column) -> None:
     analysis = game.eloka_display_analysis(selected)
     rows = (
         ("eloka.field.intercept", raw_text(short_key(selected.track_key))),
+        ("eloka.field.group", group_text(game)),
         ("eloka.field.bearing", message("eloka.value.bearing",
                                          bearing=f"{selected.bearing:05.1f}",
                                          error=f"{selected.bearing_uncertainty_deg:.1f}")),
@@ -349,21 +415,12 @@ def draw_eloka_view(game, tr=None) -> None:
     if page == 0 and regions["cards"].w > 0:
         box = layout.box(surface, regions["picture"], "eloka.panel.picture")
         bx, by, bw, bh = box
+        used = 0
         if not game.damage.station_down("opz"):
-            layout.blit_line(surface, message(
-                "eloka.filter.summary", status=localize(
-                    "eloka.filter.status." + game.eloka_status_filter.lower()),
-                threat=localize(
-                    "eloka.filter.threat." + game.eloka_threat_filter.lower()),
-                band=localize("eloka.filter.band." + game.eloka_band_filter.lower())),
-                (bx, by, bw, 22), config.COLOR_TEXT_DIM, size=15)
-            layout.blit_line(surface, message(
-                "eloka.filter.count", visible=len(game.eloka_visible_tracks()),
-                total=len(game.eloka_tracks())),
-                (bx, by + 23, bw, 20), config.COLOR_TEXT_DIM, size=14)
-        rose = pygame.Rect(bx, by + 50, bw, bh - 50)
+            used = _draw_filter_chips(game, surface, (bx, by, bw, bh))
+        rose = pygame.Rect(bx, by + used + 4, bw, bh - used - 4)
         _draw_eloka_rose(game, rose, [] if game.damage.station_down("opz")
-                         else game.eloka_visible_tracks(), lamps=False)
+                         else game.eloka_listed_tracks(), lamps=False)
         _draw_eloka_details(game, surface, regions["details"])
     elif page == 0:
         box = layout.box(surface, regions["picture"], "eloka.panel.intercepts")
@@ -382,22 +439,9 @@ def draw_eloka_view(game, tr=None) -> None:
                               color=config.COLOR_DANGER, size=18)
         else:
             row_h = max(42, layout.font(18).get_linesize() + 14)
-            capacity = max(1, (box[3] - row_h - 76) // row_h)
+            capacity = max(1, (box[3] - row_h - 108) // row_h)
             tracks = _eloka_visible_tracks(game)[:capacity]
-            total = len(game.eloka_tracks())
-            visible = len(game.eloka_visible_tracks())
-            layout.blit_line(surface, message(
-                "eloka.filter.summary", status=localize(
-                    "eloka.filter.status." + game.eloka_status_filter.lower()),
-                threat=localize(
-                    "eloka.filter.threat." + game.eloka_threat_filter.lower()),
-                band=localize("eloka.filter.band." + game.eloka_band_filter.lower())),
-                (bx, by, bw, 22), config.COLOR_TEXT_DIM, size=15)
-            by += 23
-            layout.blit_line(surface, message(
-                "eloka.filter.count", visible=visible, total=total),
-                (bx, by, bw, 20), config.COLOR_TEXT_DIM, size=14)
-            by += 23
+            by += _draw_filter_chips(game, surface, (bx, by, bw, box[3]))
             if not tracks:
                 layout.blit_block(surface, "eloka.state.empty", bx, by, bw, 48,
                                   color=config.COLOR_TEXT_DIM, size=17)
@@ -413,7 +457,7 @@ def draw_eloka_view(game, tr=None) -> None:
                     surface,
                     message("eloka.line.intercept",
                             prefix=">" if selected else " ",
-                            track=track.track_key,
+                            track=card_title(game, track),
                             bearing=f"{track.bearing:05.1f}",
                             frequency=f"{track.frequency_hz / 1e9:.3f}",
                             quality=f"{track.display_quality(game.sim_t):.0%}",
@@ -558,6 +602,8 @@ def draw_eloka_view(game, tr=None) -> None:
                         analysis_y += 28
     _shortcut_footer(surface, (station.x + 14, station.bottom - 26, station.w - 28, 20), (
         ("↑/↓", "eloka.footer.select"),
+        ("←/→", "eloka.footer.member"),
+        ("Z", "eloka.footer.group"),
         ("E", "eloka.footer.jam"),
         ("A", "eloka.footer.ecm_auto"),
         ("J", message("eloka.footer.audio", audio=localize(

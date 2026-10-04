@@ -26,12 +26,15 @@ from src.sensors.fusion import (OPZObservation, live_members, source_classificat
                                 suggest_correlations, suggestion_key)
 from src.sensors.esm import (
     ESM_MAX_ANNOTATIONS,
+    ESM_STATUS_FILTERS,
     ESMCorrelationEvidence,
     ECM_TECHNIQUES,
     analyze_signal,
     correlate_observations,
     estimated_range_nm,
+    collapse_groups,
     filter_and_sort_tracks,
+    group_tracks,
     library_emitters,
     rank_emitters)
 from src.sonar.sonar import Contact
@@ -1008,6 +1011,46 @@ class PicturesMixin:
             jamming_keys=(channel.track_key
                           for channel in self.ecm_jammer.channels))
 
+    def eloka_group_map(self) -> dict:
+        """Intercept key -> its emitter group's anchor key (display only).
+        Classified and jammed intercepts stand alone."""
+        tracks = self.eloka_tracks()
+        jamming = tuple(sorted(channel.track_key for channel in self.ecm_jammer.channels))
+        key = (self.sim_t, self.esm_picture.track_seq,
+               tuple(track.track_key for track in tracks),
+               tuple(sorted(self.eloka_annotations)), jamming)
+        cached = getattr(self, "_eloka_group_cache", None)
+        if cached is not None and cached[0] == key:
+            return cached[1]
+        groups = group_tracks(tracks, solo_keys=set(self.eloka_annotations) | set(jamming))
+        self._eloka_group_cache = (key, groups)
+        return groups
+
+    def eloka_visible_groups(self) -> tuple:
+        """``(lead, members)`` per listed emitter: the filtered intercepts,
+        one entry per group while grouping is on (Z)."""
+        visible = self.eloka_visible_tracks()
+        groups = (self.eloka_group_map() if getattr(self, "eloka_group_emitters", True)
+                  else {})
+        return collapse_groups(visible, groups)
+
+    def eloka_listed_tracks(self) -> tuple:
+        """The selected group's intercept stands for its group in the list."""
+        selected = self.eloka_selected_track_key
+        return tuple(next((item for item in members if item.track_key == selected), lead)
+                     for lead, members in self.eloka_visible_groups())
+
+    def eloka_selected_group(self) -> tuple:
+        """The members of the selected intercept's group (itself alone when
+        ungrouped), in list order."""
+        selected = self.eloka_selected_track_key
+        return next((members for _lead, members in self.eloka_visible_groups()
+                     if any(item.track_key == selected for item in members)), ())
+
+    def eloka_group_size(self, track) -> int:
+        return next((len(members) for _lead, members in self.eloka_visible_groups()
+                     if any(item is track for item in members)), 1)
+
     def _reconcile_eloka_selection(self) -> None:
         visible = self.eloka_visible_tracks()
         keys = {track.track_key for track in visible}
@@ -1017,8 +1060,7 @@ class PicturesMixin:
 
     def _cycle_eloka_filter(self, kind: str) -> None:
         names = {
-            "status": ("eloka_status_filter",
-                       ("OPERATIONAL", "LIVE", "MEMORY", "ALL")),
+            "status": ("eloka_status_filter", ESM_STATUS_FILTERS),
             "threat": ("eloka_threat_filter",
                        ("ALL", "LOW", "MEDIUM", "HIGH", "CRITICAL")),
             "band": ("eloka_band_filter",
@@ -1029,22 +1071,41 @@ class PicturesMixin:
         setattr(self, attribute, values[(values.index(current) + 1) % len(values)])
         self._reconcile_eloka_selection()
 
+    def toggle_eloka_grouping(self) -> None:
+        """Z: show intercepts of one kind and bearing as one emitter, or
+        every intercept on its own."""
+        self.eloka_group_emitters = not getattr(self, "eloka_group_emitters", True)
+        self.flash(message("runtime.eloka.group_on" if self.eloka_group_emitters
+                           else "runtime.eloka.group_off"), 1.5)
+
     def selected_eloka_track(self):
         return next((track for track in self.eloka_tracks()
                      if track.track_key == self.eloka_selected_track_key), None)
 
     def _cycle_eloka_track(self, delta: int) -> None:
+        """↑/↓: the next listed emitter (a group's first member)."""
         if self.damage.station_down("opz"):
             return
-        tracks = self.eloka_visible_tracks()
-        if not tracks:
+        groups = self.eloka_visible_groups()
+        if not groups:
             self.eloka_selected_track_key = None
             return
-        keys = [track.track_key for track in tracks]
-        try:
-            index = keys.index(self.eloka_selected_track_key)
-        except ValueError:
+        index = next((position for position, (_lead, members) in enumerate(groups)
+                      if any(item.track_key == self.eloka_selected_track_key
+                             for item in members)), None)
+        if index is None:
             index = -1 if delta > 0 else 0
+        self.eloka_selected_track_key = groups[(index + delta) % len(groups)][0].track_key
+
+    def _cycle_eloka_member(self, delta: int) -> None:
+        """←/→: the next intercept inside the selected emitter group."""
+        if self.damage.station_down("opz"):
+            return
+        members = self.eloka_selected_group()
+        if len(members) < 2:
+            return
+        keys = [item.track_key for item in members]
+        index = keys.index(self.eloka_selected_track_key)
         self.eloka_selected_track_key = keys[(index + delta) % len(keys)]
 
     def eloka_candidates(self, track=None) -> tuple:

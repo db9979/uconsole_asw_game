@@ -24,6 +24,18 @@ def append_bounded_log(root, filename: str, line: str, max_bytes: int) -> None:
         os.makedirs(root, mode=0o700, exist_ok=True)
         if os.path.islink(root) or not os.path.isdir(root):
             return
+        if os.open not in os.supports_dir_fd:
+            # Windows: no directory descriptors (opening one raises), so the
+            # crash log was silently never written. Check the file itself.
+            path = os.path.join(root, filename)
+            if os.path.islink(path):
+                return
+            with open(path, "a", encoding="utf-8") as handle:
+                if handle.tell() >= max_bytes:
+                    handle.seek(0)
+                    handle.truncate()
+                handle.write(line)
+            return
         directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
         directory_flags |= getattr(os, "O_NOFOLLOW", 0)
         directory = os.open(root, directory_flags)

@@ -6,6 +6,7 @@ ASMs, HSP-5, Peilstrich des ausgewählten Kontakts + Ziel-Kreuz (TMA/Ping).
 
 import copy
 import math
+from collections import OrderedDict
 
 import pygame
 
@@ -787,6 +788,38 @@ WEATHER_HATCH_ALPHA = (28, 70)
 WEATHER_BAND_MIN_RAIN = 0.25
 
 
+_HATCH_CACHE: "OrderedDict[tuple, pygame.Surface]" = OrderedDict()
+_HATCH_CACHE_MAX = 4      # chart sizes x weather steps in use at one time
+
+
+def _hatch_layer(size, spacing: int, color) -> pygame.Surface:
+    """The dashed diagonal hatch for one chart size, spacing and colour.
+
+    The pattern never moves, so it is drawn once and reused (about 2,000
+    lines per chart in heavy rain were redrawn every frame before)."""
+    key = (tuple(size), spacing, tuple(color))
+    layer = _HATCH_CACHE.get(key)
+    if layer is not None:
+        _HATCH_CACHE.move_to_end(key)
+        return layer
+    w, h = size
+    layer = pygame.Surface(size, pygame.SRCALPHA)
+    dash, gap = 9, 7
+    length = int(math.hypot(h, h))
+    for start in range(-h, w, max(6, spacing)):
+        # Diagonal from the bottom-left, dashed.
+        for offset in range(0, length, dash + gap):
+            x0 = start + offset * 0.7071
+            y0 = h - offset * 0.7071
+            x1 = start + (offset + dash) * 0.7071
+            y1 = h - (offset + dash) * 0.7071
+            pygame.draw.line(layer, color, (x0, y0), (x1, y1), 1)
+    _HATCH_CACHE[key] = layer
+    while len(_HATCH_CACHE) > _HATCH_CACHE_MAX:
+        _HATCH_CACHE.popitem(last=False)
+    return layer
+
+
 def draw_weather_band(game, r) -> None:
     """Rain and storm over the chart as a dashed diagonal hatch (display
     only, from the world's public weather values; a storm adds a warning
@@ -801,24 +834,15 @@ def draw_weather_band(game, r) -> None:
     if rain < WEATHER_BAND_MIN_RAIN and not storm:
         return
     rect = pygame.Rect(r)
-    layer = pygame.Surface(rect.size, pygame.SRCALPHA)
     strength = config.clamp((rain - WEATHER_BAND_MIN_RAIN) / (1.0 - WEATHER_BAND_MIN_RAIN),
                             0.0, 1.0)
     spacing = int(WEATHER_HATCH_SPACING_PX[0]
                   + (WEATHER_HATCH_SPACING_PX[1] - WEATHER_HATCH_SPACING_PX[0]) * strength)
     alpha = int(WEATHER_HATCH_ALPHA[0] + (WEATHER_HATCH_ALPHA[1] - WEATHER_HATCH_ALPHA[0]) * strength)
-    color = (*config.COLOR_WARN, alpha) if storm else (170, 190, 200, alpha)
-    dash, gap = 9, 7
-    for start in range(-rect.h, rect.w, max(6, spacing)):
-        # Diagonal from the bottom-left, dashed.
-        length = int(math.hypot(rect.h, rect.h))
-        for offset in range(0, length, dash + gap):
-            x0 = start + offset * 0.7071
-            y0 = rect.h - offset * 0.7071
-            x1 = start + (offset + dash) * 0.7071
-            y1 = rect.h - (offset + dash) * 0.7071
-            pygame.draw.line(layer, color, (x0, y0), (x1, y1), 1)
-    game.screen.blit(layer, rect.topleft)
+    # Rain must show on the light day water too (it vanished there before).
+    rain_rgb = theme.pick((170, 190, 200), (30, 64, 120))
+    color = (*config.COLOR_WARN, alpha) if storm else (*rain_rgb, alpha)
+    game.screen.blit(_hatch_layer(rect.size, max(6, spacing), color), rect.topleft)
     if storm:
         pygame.draw.rect(game.screen, config.COLOR_WARN, rect, 2)
 

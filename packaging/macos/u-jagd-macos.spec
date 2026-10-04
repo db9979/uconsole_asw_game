@@ -2,9 +2,8 @@
 # a bundle) that starts the game straight away (src/launcher/entry.py).
 # Build on a Mac from the repository root:
 #   pyinstaller --noconfirm packaging/macos/u-jagd-macos.spec
-# The bundle is built for the processor of the building Python (arm64 or
-# x86_64): pygame and NumPy publish no universal2 wheels. It is ad-hoc
-# signed only (no Apple developer certificate).
+# The bundle is built for Apple silicon (arm64) only; there is no Intel
+# build. It is ad-hoc signed only (no Apple developer certificate).
 import os
 import re
 

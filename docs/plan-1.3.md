@@ -1,5 +1,9 @@
 # Umsetzungsplan 1.3 (Detailfassung, Stand 2026-09-26)
 
+> **Historisch.** Dies ist der Plan, nach dem 1.3.0 gebaut wurde. Er
+> beschreibt nicht den heutigen Stand; der steht in `src/core/version.py`,
+> den Changelogs und `docs/resume.md`.
+
 Ausgangspunkt: U-Jagd 1.2.0 auf `main` (Commit `4e04c89`), Save v14-only,
 Remote-Crew-Protokoll v2. Dieser Plan ist die Arbeitsvorlage für eine
 unbeaufsichtigte Umsetzung aller Phasen 0 bis 13 in einem Durchlauf. Er

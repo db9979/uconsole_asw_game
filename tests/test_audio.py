@@ -765,13 +765,15 @@ def test_cache_size_and_lru_avoid_resynthesis(mixer, monkeypatch):
     assert engine.play_ping(1000)
     assert len(engine._cache) == 2
     assert ("alert", "danger") not in engine._cache
+    # The finished alert sound was evicted, but its mono synthesis is still
+    # held (the repeated ping hit the sound cache), so only pan/limit rerun.
     assert engine.play_alert()
-    assert synthesize.call_count + chirps.call_count == 4
+    assert synthesize.call_count + chirps.call_count == 3
     engine = AudioEngine(cache_size=0)
     assert engine.play_ping()
     assert engine.play_ping()
     assert not engine._cache
-    assert synthesize.call_count + chirps.call_count == 6
+    assert synthesize.call_count + chirps.call_count == 5
 
 
 def test_sonar_mixer_error_is_safe(mixer):
@@ -1043,3 +1045,19 @@ def test_play_sonar_restarts_a_dead_sonar_worker(mixer):
     assert engine._sonar_worker.is_alive()
     assert engine.sonar_worker_restarts == 1
     engine.shutdown()
+
+
+def test_a_new_direction_repans_without_synthesizing_again(mixer):
+    # The mono signal does not depend on the pan; it was synthesized again
+    # (on the main thread) for every new direction of the same effect.
+    engine = AudioEngine(sample_rate=22050, channels=2)
+    calls = []
+
+    def synthesize():
+        calls.append(1)
+        return np.linspace(-0.5, 0.5, 2205)
+
+    for pan in (-1.0, -0.5, 0.0, 0.25, 0.75, 1.0):
+        assert engine._sound(synthesize, ("alert", "test"), pan=pan) is not None
+    assert len(calls) == 1
+    assert len(engine._mono_cache) <= engine._cache_size

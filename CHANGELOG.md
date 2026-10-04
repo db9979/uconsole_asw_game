@@ -4,6 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.205
+
+Release 1.3.205 fixes what a full code review found, without changing how
+the game plays. A damaged or hand-edited save is now refused instead of
+closing the game, and a failed load no longer changes the running mission.
+On the uConsole the game stutters less: the sound picture is recomputed
+faster, rain on the chart is drawn once instead of every frame and is now
+visible in the light scheme, status texts and tooltips reuse their rendered
+text, and a sound heard from a new direction is no longer synthesized
+again. In the browser, game sounds and callouts are no longer lost when the
+host opens a menu. The sonar waterfall's tooltip and time label now match
+the shortened history (Shift+H). A broken update download can be retried,
+and the Windows program writes its crash log again. Keys are unchanged.
+Saves are v52; v38 to v51 saves still load.
+
 ## 1.3.204
 
 Release 1.3.204 lets the helicopter's lamps name the launch preparation.

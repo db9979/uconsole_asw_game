@@ -12,15 +12,20 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.204**
+Current release: **1.3.205**
 
-Release 1.3.204 lets the helicopter's lamps name the launch preparation.
-Resting the mouse on the HANGAR, DECK or LAUNCH lamp now says how long the
-start preparation still runs, how much refuelling the launch still waits for,
-or that the helicopter is ready and waits for a deck window, taken from the
-running game, and that H again stops the preparation. The macOS app is now
-built for Apple silicon only; an Intel Mac opens the release page instead of
-updating. Keys are unchanged. Saves are v52; v38 to v51 saves still load.
+Release 1.3.205 fixes what a full code review found, without changing how
+the game plays. A damaged or hand-edited save is now refused instead of
+closing the game, and a failed load no longer changes the running mission.
+On the uConsole the game stutters less: the sound picture is recomputed
+faster, rain on the chart is drawn once instead of every frame and is now
+visible in the light scheme, status texts and tooltips reuse their rendered
+text, and a sound heard from a new direction is no longer synthesized
+again. In the browser, game sounds and callouts are no longer lost when the
+host opens a menu. The sonar waterfall's tooltip and time label now match
+the shortened history (Shift+H). A broken update download can be retried,
+and the Windows program writes its crash log again. Keys are unchanged.
+Saves are v52; v38 to v51 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -201,8 +206,7 @@ whether U-Jagd may find devices on the local network and accept incoming
 connections: allow both for Remote Crew. Keys are the same as on the other
 systems (`Ctrl`, not `Cmd`).
 
-**Update now** works as in the Windows program: the app downloads the zip for
-its processor, checks its size and SHA-256 digest, unpacks the new
+**Update now** works as in the Windows program: the app downloads the new zip, checks its size and SHA-256 digest, unpacks the new
 `U-Jagd.app` beside itself, closes, swaps the bundle (the old one is deleted
 only once the new one is in place) and opens the new version. An app run from
 the quarantined download folder or a folder you cannot write to opens the

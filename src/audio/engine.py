@@ -81,6 +81,9 @@ class AudioEngine:
         self.fatal_error = False
         self._cache_size = max(0, cache_size)
         self._cache: OrderedDict[tuple, pygame.mixer.Sound] = OrderedDict()
+        # Mono synthesis per effect key without the pan: a new direction only
+        # re-pans and re-limits (under 1 ms) instead of synthesizing again.
+        self._mono_cache: OrderedDict[tuple, np.ndarray] = OrderedDict()
         self._sonar_channel = None
         self._ping_channel = None
         self._alert_channel = None
@@ -220,6 +223,7 @@ class AudioEngine:
                key: tuple, pan: float | None = None) -> pygame.mixer.Sound | None:
         if not self.enabled or not self.available:
             return None
+        mono_key = key
         if pan is not None:
             pan = float(np.clip(pan, -1.0, 1.0))
             key = key + (("pan", round(pan, 3)),)
@@ -227,7 +231,15 @@ class AudioEngine:
         if cached is not None:
             self._cache.move_to_end(key)
             return cached
-        sound = self._make_sound(synthesize(), key[0], pan)
+        samples = self._mono_cache.get(mono_key)
+        if samples is None:
+            samples = np.asarray(synthesize())
+            self._mono_cache[mono_key] = samples
+            while len(self._mono_cache) > self._cache_size:
+                self._mono_cache.popitem(last=False)
+        else:
+            self._mono_cache.move_to_end(mono_key)
+        sound = self._make_sound(samples, key[0], pan)
         self._cache[key] = sound
         while len(self._cache) > self._cache_size:
             self._cache.popitem(last=False)
@@ -1030,4 +1042,5 @@ class AudioEngine:
         self.stop_preview()
         self._reset_sonar_stream()
         self._cache.clear()
+        self._mono_cache.clear()
         self.available = False

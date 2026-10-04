@@ -1,6 +1,6 @@
-import re
 """Headless instrument tests using observations, never world targets."""
 
+import re
 from types import SimpleNamespace as NS
 
 import numpy as np
@@ -462,3 +462,21 @@ def test_lofar_and_demon_strips_print_peak_frequencies(game, monkeypatch):
     game.sonar.receiver.demon_spectrum[24] = .6          # 25 Hz bin
     view._draw_demon(game, pygame.Rect(0, 0, 890, 386))
     assert {"12.0", "25.0"} <= {text for text, _ in drawn}
+
+
+@pytest.mark.parametrize("fraction", [1.0, 0.5, 0.25])
+def test_waterfall_tooltip_reads_the_row_the_display_history_draws(game, fraction):
+    # Shift+H shows only the newest part of the history over the full plot;
+    # the tooltip used to map the pointer over the whole history instead.
+    rows = config.LOFAR_HISTORY_COLS
+    game.sonar.broadband_history = [[0.3] * 180 for _ in range(rows)]
+    game.sonar.history_times = [float(t) for t in range(rows)]
+    game.sonar_display_history = fraction
+    main = view.sonar_geometry(game, 0)["main"]
+    plot = pygame.Rect(main.x + 57, main.y + 61, main.w - 83, main.h - 108)
+    payload = view.sonar_hit_target(game, (plot.centerx, plot.centery))
+    shown = [float(m) for line in payload["lines"]
+             for m in re.findall(r"time (\d+\.\d) ?s", line)]
+    visible = max(1, round(rows * fraction))
+    expected = rows - 1 - int((plot.centery - plot.y) * visible / plot.h)
+    assert shown and shown[0] == float(expected)

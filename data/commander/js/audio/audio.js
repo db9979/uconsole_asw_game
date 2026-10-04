@@ -141,7 +141,10 @@ export function syncGameAudio() {
   // The general sound control plays bounded one-shot events only. Live sonar
   // remains an explicit, separately authorized station function.
   const stateAudio = S.v2State?.audio;
-  const context = S.v2State ? `${S.v2State.session}:${S.v2State.epoch}` : null;
+  // World session and role, not the epoch: the host's local input advances
+  // the epoch (cues then were lost), and the two sides number their events
+  // separately (a side or view switch must start a fresh high-water mark).
+  const context = S.v2State ? `${S.v2State.session}:${S.v2State.role}` : null;
   const events = Array.isArray(stateAudio?.events) ? stateAudio.events : [];
   const latest = events.length ? events.at(-1).seq : 0;
   syncCallouts(context);

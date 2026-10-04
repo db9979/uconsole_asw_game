@@ -102,6 +102,10 @@ WATER_TOP = (132, 194, 223)
 SPRAY = (160, 214, 240)
 GAS = (150, 190, 60)
 SMOKE = (70, 72, 76)
+MARK = (210, 222, 220)
+KEEL = (22, 40, 48)
+INK = (170, 186, 186)
+DOOR_FILL = (10, 20, 24)
 _CACHE: dict = {}
 _CACHE_MAX = 6
 
@@ -217,7 +221,7 @@ def _static_profile(rect) -> pygame.Surface:
     # Draft marks on stem and stern every two metres.
     for x, z in FRIGATE["draft_marks"]:
         mx, my = profile.point(x, z)
-        lines.line(surface, (210, 222, 220), (mx - 3, my), (mx + 3, my), 1)
+        lines.line(surface, MARK, (mx - 3, my), (mx + 3, my), 1)
     lines.lines(surface, STEEL, True, hull, 2)
     return surface
 
@@ -533,7 +537,7 @@ def _static_boat(size) -> pygame.Surface:
     lines.line(surface, STEEL_DIM, (outer[1][0], deck_y + 2), (outer[2][0], deck_y + 2), 1)
     keel = pygame.Rect(cells[2].x, hull.bottom + 2, cells[3].right - cells[2].x,
                        max(2, outer[6][1] - hull.bottom - 3))
-    pygame.draw.rect(surface, (22, 40, 48), keel)
+    pygame.draw.rect(surface, KEEL, keel)
     lines.lines(surface, STEEL_DIM, True, (keel.topleft, keel.topright,
                                            keel.bottomright, keel.bottomleft), 1)
     top = tower[1][1]
@@ -561,7 +565,7 @@ def _static_boat(size) -> pygame.Surface:
     stern_room, engine, battery, quarters, control, bow = cells
     floor = hull.bottom - hull.h // 3              # deck plates over the bilge
     lines.line(surface, STEEL_DIM, (hull.x + 4, floor), (hull.right - 4, floor), 1)
-    ink = (170, 186, 186)
+    ink = INK
     for room in (stern_room, bow):                  # torpedo tubes
         tube_h = max(2, hull.h // 9)
         for k in (0, 1):
@@ -665,7 +669,7 @@ def draw_boat_section(s, rect, control, capacity, trim_deg=0.0, selected=None) -
         b = control.compartments[model_order.index(order[position])]
         x, y = cells[position].x, hull.centery - hull.h // 8
         shut = a.closed or b.closed
-        pygame.draw.circle(s, (10, 20, 24), (x, y), radius)
+        pygame.draw.circle(s, DOOR_FILL, (x, y), radius)
         pygame.draw.circle(s, config.COLOR_OK if shut else STEEL_DIM, (x, y), radius, 2)
         if shut:
             lines.line(s, config.COLOR_OK, (x - radius + 2, y), (x + radius - 2, y), 2)

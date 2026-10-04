@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.197**
+Current release: **1.3.198**
 
-Release 1.3.197 fixes the "display fault" box when zooming far into a chart.
+Release 1.3.198 fixes the "display fault" box when zooming far into a chart.
 With the graphics level "Full", the smooth line drawing could not handle lines
 that end far outside the chart, such as an autopilot leg to a distant
 waypoint at the strongest zoom; the chart then showed the fault box instead

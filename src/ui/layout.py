@@ -806,11 +806,12 @@ def tooltip_rect(payload: dict, pointer, bounds=(0, 0, 1280, 720),
 def draw_tooltip(screen, payload: dict, pointer,
                  bounds=(0, 0, 1280, 720)) -> pygame.Rect | None:
     """Draw a high-contrast tooltip and return its bounded rectangle."""
+    from src.ui import theme
     payload = valid_tooltip(payload)
     if payload is None:
         return None
     rect, lines = tooltip_rect(payload, pointer, bounds)
-    pygame.draw.rect(screen, (5, 13, 10), rect)
+    pygame.draw.rect(screen, theme.c("raised"), rect)
     pygame.draw.rect(screen, config.COLOR_WARN, rect, 2)
     title_font = font(TOOLTIP_TITLE_SIZE, bold=True)
     body_font = font(TOOLTIP_BODY_SIZE)

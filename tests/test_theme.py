@@ -148,3 +148,44 @@ def test_menu_and_overlay_backdrops_follow_the_theme(name, light):
         draw(surface, 3.0)
         luma = _mean_luma(surface, pygame.Rect(0, 0, 1280, 720))
         assert (luma > 170) if light else (luma < 60), (name, draw.__name__, luma)
+
+
+@pytest.mark.parametrize("name, light", [("night", False), ("day", True),
+                                         ("contrast", False)])
+def test_tooltip_box_follows_the_theme(name, light):
+    """The hover tooltip is a light card with dark text in the day theme
+    and keeps its dark box in the night and high-contrast themes."""
+    theme.set_theme(name)
+    surface = pygame.Surface((640, 360))
+    surface.fill(config.COLOR_BG)
+    payload = layout.tooltip_payload("Seite DEMON", "Sichere Seitenauswahl.")
+    rect = layout.draw_tooltip(surface, payload, (40, 40), (0, 0, 640, 360))
+    inside = pygame.Rect(rect.right - 12, rect.bottom - 8, 4, 4)
+    luma = _mean_luma(surface, inside)
+    assert (luma > 200) if light else (luma < 60), (name, luma)
+    assert config.COLOR_TEXT != surface.get_at(inside.topleft)[:3]
+
+
+def test_tooltip_box_turns_grey_under_red_light():
+    game = SimpleNamespace(preferences=preferences.Preferences(theme="day"),
+                           red_light_lit=True)
+    theme.configure_for(game)
+    fill = theme.c("raised")
+    assert fill[0] == fill[1] == fill[2]
+
+
+@pytest.mark.parametrize("name, light", [("night", False), ("day", True)])
+def test_damage_pictures_follow_the_theme(name, light):
+    """The frigate profile and the boat cutaway are a light drawing board by
+    day (hull and sea), the dark board at night."""
+    from src.ui import damage_section
+    theme.set_theme(name)
+    boat = damage_section._static_boat((600, 160))
+    hull = pygame.Rect(260, 60, 80, 40)            # inside the pressure hull
+    luma = _mean_luma(boat, hull)
+    assert (luma > 170) if light else (luma < 90), (name, luma)
+    for colour in (damage_section.SEA, damage_section.HULL_FILL, damage_section.ROOM_FILL):
+        level = .299 * colour[0] + .587 * colour[1] + .114 * colour[2]
+        assert (level > 170) if light else (level < 90), (name, colour)
+    assert damage_section.BOAT_TINTS["battery"] == theme.pick(
+        (90, 46, 44), (240, 200, 196))

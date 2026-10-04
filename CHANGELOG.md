@@ -4,14 +4,26 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.197
+## 1.3.198
 
-Release 1.3.197 fixes the "display fault" box when zooming far into a chart.
+Release 1.3.198 fixes the "display fault" box when zooming far into a chart.
 With the graphics level "Full", the smooth line drawing could not handle lines
 that end far outside the chart, such as an autopilot leg to a distant
 waypoint at the strongest zoom; the chart then showed the fault box instead
 of the map. Lines and areas are now cut to the visible chart before drawing,
 so every chart on both sides draws at its closest and widest zoom.
+
+## 1.3.197
+
+Release 1.3.197 makes the hover tooltips follow the colour scheme. In the
+light Tactical Day scheme a tooltip is now a light card with dark text instead
+of a dark box with barely readable lettering; Tactical Night and high contrast
+keep a dark box, and red light turns it grey. The damage-control pictures (the
+frigate's side view and cross-section, the submarine cutaway) become a light
+drawing board by day with floodwater, fire and teams still clear, on the
+uConsole and in the browser. The update notice in the main menu and the
+notice for a view that failed to draw follow the scheme too.
+Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.196
 

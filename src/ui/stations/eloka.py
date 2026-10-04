@@ -6,7 +6,7 @@ import pygame
 
 from src.ui import theme
 
-from src.core import config
+from src.core import config, status_tips
 from src.core.i18n import localized, localize, raw_text
 from src.core.station import Station
 from src.sensors.esm import animated_signal_fingerprint, spectrum_band
@@ -157,7 +157,14 @@ _THREAT_COLORS = {"critical": "COLOR_DANGER", "high": "COLOR_DANGER",
                   "medium": "COLOR_WARN"}
 
 
-def _eloka_lamp_rows(game) -> tuple:
+def _eloka_lamp_rows(game) -> list:
+    from src.ui import console
+    return console.with_tips(_eloka_lamp_states(game), [
+        status_tips.lazy(lambda: status_tips.eloka(game), name)
+        for name in ("esm", "jammer", "auto", "tone")])
+
+
+def _eloka_lamp_states(game) -> tuple:
     jamming = bool(getattr(game.ecm_jammer, "channels", ()))
     down = game.damage.station_down("opz")
     return (
@@ -578,6 +585,9 @@ def draw_eloka_view(game, tr=None) -> None:
                     hint_h = len(hint_lines) * layout.line_pitch(16, 0) + 4
                     layout.blit_block(surface, hint, analysis_x, analysis_y, analysis_w,
                                       hint_h, config.COLOR_TEXT_DIM, size=16)
+                    pointer.add_token_keys((analysis_x, analysis_y, analysis_w, hint_h), hint,
+                                           16, (("C", "C"),),
+                                           min_size=layout.MIN_OPERATIONAL_FONT, screen=surface)
                     analysis_y += hint_h + 4
                 analysis_y += 8
                 layout.blit_line(surface, "eloka.heading.correlations",

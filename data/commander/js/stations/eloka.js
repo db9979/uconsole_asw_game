@@ -2,9 +2,14 @@ import { $ } from "../core/base.js";
 import { number, t, unit } from "../core/format.js";
 import { filteredEloka } from "../state/shared.js";
 import { actionButton, metrics, node, stationRows, yesNo } from "../views/dom.js";
+import { noteLamp, renderLamps } from "../views/console-kit.js";
+
+const ELOKA_LAMPS = Object.freeze("esm jammer auto tone".split(" "));
 
 export function renderElokaStation(payload) {
   const intercepts = filteredEloka(payload.intercepts);
+  // Receiver, jammer, automatic ECM and tone, each with the host's reason.
+  renderLamps($("eloka-lamps"), ELOKA_LAMPS.map((name) => noteLamp(name, name)).filter(Boolean));
   metrics($("eloka-hardware"), [["df_sensors", number(payload.hardware.df_sensors, 0)],
     ["broadband_sensors", number(payload.hardware.broadband_sensors, 0)],
     ["ecm_channels", number(payload.hardware.ecm_channels, 0)],

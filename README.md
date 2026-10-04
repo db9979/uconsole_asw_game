@@ -12,14 +12,19 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.198**
+Current release: **1.3.199**
 
-Release 1.3.198 fixes the "display fault" box when zooming far into a chart.
-With the graphics level "Full", the smooth line drawing could not handle lines
-that end far outside the chart, such as an autopilot leg to a distant
-waypoint at the strongest zoom; the chart then showed the fault box instead
-of the map. Lines and areas are now cut to the visible chart before drawing,
-so every chart on both sides draws at its closest and widest zoom.
+Release 1.3.199 explains every status lamp. Resting the mouse on a lamp or
+indicator, such as the helicopter's LAUNCH NO-GO and DECK WAIT, a torpedo
+tube, the plant, the ESM receiver or the submarine's depth under the keel,
+opens a note that says why it shows that state, taken from the running game
+(deck motion and quiet time, weather limits, reload time, charted depth), and
+what to do about it. Every key a station can use is now a blue key chip you
+can click, also inside these notes. Both work on both sides, on the uConsole
+and in the Remote Crew browser. The CIC's four contact buttons say what they
+do (Classify, Change affiliation, Mark for fusion, Fuse / dissolve), centred
+beside their key chip. Keys are unchanged. Saves are v50; v38 to v49 saves
+still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

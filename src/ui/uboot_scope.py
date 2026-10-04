@@ -154,7 +154,7 @@ def draw_scope_page(s, game, boat, x, y, w, h) -> None:
                           view.w - 24, 48, config.COLOR_TEXT_DIM, size=18, align="center")
         pointer.add_token_keys((view.x + 12, view.y + view.h // 2 - 24, view.w - 24, 48),
                                "uboot.line.scope_mast_down", 18, (("P", "P"),),
-                               align="center", min_size=layout.MIN_OPERATIONAL_FONT)
+                               align="center", min_size=layout.MIN_OPERATIONAL_FONT, screen=s)
     info_y = y + box_h + 8
     line_of_sight = opfor.scope_bearing(boat)
     layout.blit_line(s, message("uboot.line.scope_bearing", bearing=f"{line_of_sight:03.0f}",
@@ -170,7 +170,9 @@ def draw_scope_page(s, game, boat, x, y, w, h) -> None:
     text, color = tdc_line(game, boat)
     layout.blit_line(s, text, (x, info_y + 48, w, 20), color, size=15)
     # Enter marks the crosshair sighting; Ctrl+Enter fires only at station 3.
-    pointer.add_token_keys((x, info_y + 48, w, 20), text, 15, (("Enter", "Enter"),))
+    pointer.add_token_keys((x, info_y + 48, w, 20), text, 15,
+                           (("Enter", "Enter"), ("Ctrl+Enter", None), ("Strg+Enter", None)),
+                           screen=s)
     list_y = info_y + 72
     list_h = y + h - list_y
     if list_h < 40:
@@ -183,7 +185,7 @@ def draw_scope_page(s, game, boat, x, y, w, h) -> None:
                          (lx, ly, lw, 22), config.COLOR_TEXT_DIM, size=16)
         if not available:
             pointer.add_token_keys((lx, ly, lw, 22), "uboot.line.scope_mast_down", 16,
-                                   (("P", "P"),))
+                                   (("P", "P"),), screen=s)
         return
     for index, (text, color) in enumerate(rows):
         row_y = ly + index * 22

@@ -271,7 +271,8 @@ def test_station_layout_has_large_plot_and_readable_contact_window(game, monkeyp
 def test_station_header_has_no_status_chips_and_at_most_four_keys(game, monkeypatch):
     drawn = []
     monkeypatch.setattr(view, "_text", lambda screen, text, rect, color=view.TEXT,
-                        size=14, align="left": drawn.append((view.localize(text), pygame.Rect(rect), size)))
+                        size=14, align="left", keys=None:
+                        drawn.append((view.localize(text), pygame.Rect(rect), size)))
 
     for page in range(len(view.PAGES)):
         drawn.clear()

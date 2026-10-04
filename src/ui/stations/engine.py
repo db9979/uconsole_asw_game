@@ -5,7 +5,7 @@ import math
 
 import pygame
 
-from src.core import config
+from src.core import config, status_tips
 from src.core.i18n import display_message, display_value, localized, raw_text
 from src.core.station import Station
 from src.ship.ship import NOISE_LEVEL_MAX, PLANT_DIESEL_MAX_KN, Ship
@@ -60,6 +60,12 @@ def draw_engine_view(game, tr=None) -> None:
 SECTIONS = ("sonar", "bridge", "weapons", "opz", "radio", "engine", "flightdeck")
 
 
+def _tips(game, *names) -> list:
+    """Hover notes of the named lamps (``status_tips.engine``), worked out
+    only while the pointer is over one."""
+    return [status_tips.lazy(lambda: status_tips.engine(game), name) for name in names]
+
+
 def _state_level(state: str) -> str:
     return "alarm" if state == "ZERSTOERT" else "on" if state == "OK" else "caution"
 
@@ -100,7 +106,11 @@ def _draw_orders(s, game, ship, rect) -> None:
         level = ("caution" if i == 0 else "on") if selected else "off"
         console.lamp(s, (ox, oy, ow, step_h), display_message("telegraph", name),
                      message("bridge.line.speed", speed=f"{sp:4.1f}"), level, size=18,
-                     key=lambda _pos, row=i: _telegraph_click(game, row))
+                     key=lambda _pos, row=i: _telegraph_click(game, row),
+                     tip=lambda name=name, sp=sp, selected=selected: status_tips.payload(
+                         status_tips.note(display_message("telegraph", name), "", message(
+                             "tip.engine.telegraph.on" if selected else "tip.engine.telegraph.off",
+                             speed=f"{abs(sp):.1f}"), keys=("↑/↓", "V"))))
         oy += step_h + 4
 
 
@@ -146,7 +156,9 @@ def _draw_propulsion(s, game, ship, rect) -> None:
     half = (pw - 8) // 2
     console.dial(s, (px, py, half, dial_h), **speed_dial)
     console.dial_row(s, (px + half + 8, py, pw - half - 8, dial_h), side_dials)
-    console.lamp_grid(s, (px, py + dial_h + 12, pw, lamp_h), rows, 2, gap=6)
+    console.lamp_grid(s, (px, py + dial_h + 12, pw, lamp_h), console.with_tips(
+        rows, _tips(game, "shaft", "plant", "course", "quiet", "cavitation", "speed_cap")),
+        2, gap=6)
 
 
 def _fuel_fraction(ship) -> float:
@@ -167,7 +179,9 @@ def _system_lamps(game, ship) -> list:
     plant_cap = min(cap, PLANT_DIESEL_MAX_KN) if plant == "DIESEL" else cap
     sea = getattr(game.world, "effective_sea_state", game.world.sea_state)
     rows = []
+    names = []
     if machinery is not None:
+        names += ["machinery", "flooding", "fire"]
         rows += [
             ("engine.lamp.machinery", STATE_LABEL[machinery.state], _state_level(machinery.state)),
             ("engine.lamp.flooding", raw_text(f"{machinery.flood:.0f} %"),
@@ -205,7 +219,9 @@ def _system_lamps(game, ship) -> list:
                  if available else "engine.tas_unavailable",
                  "on" if available and sonar_range > 10 else "caution"))
     rows.append(("panel.sea_state", raw_text(f"{sea:.1f}"), "caution" if sea >= 5 else "on"))
-    return rows
+    names += ["repairs", "speed_cap", "plant", "fuel", "fires_aboard", "flooded", "list",
+              "grounded", "quiet", "sonar", "sea"]
+    return console.with_tips(rows, _tips(game, *names))
 
 
 def _draw_systems(s, game, ship, rect) -> None:
@@ -292,7 +308,8 @@ def _draw_sections(s, game, rect) -> None:
         level = ("alarm" if room.fire > 0 or room.state == "ZERSTOERT"
                  else "caution" if room.flood > 0 or room.state != "OK" else "on")
         value = raw_text(f"{room.flood:.0f} %") if room.flood > 0 else STATE_LABEL[room.state]
-        console.lamp(s, (sx + 26, top, sw - 26, strip_h), f"engine.room.{key}", value, level)
+        console.lamp(s, (sx + 26, top, sw - 26, strip_h), f"engine.room.{key}", value, level,
+                     tip=_tips(game, key)[0])
     keys = [key for key in SECTIONS if key in compartments]
     if not keys:
         return

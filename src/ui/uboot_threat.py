@@ -89,7 +89,8 @@ def draw_threat_page(s, game, boat, x, y, w, h) -> None:
     else:
         evade, color = "uboot.threat_page.no_plan", config.COLOR_TEXT_DIM
     layout.blit_line(s, evade, (ax, ay + 3 * small + 4, aw, row), color, size=16)
-    pointer.add_token_keys((ax, ay + 3 * small + 4, aw, row), evade, 16, (("I:", "I"),))
+    pointer.add_token_keys((ax, ay + 3 * small + 4, aw, row), evade, 16, (("I:", "I"),),
+                           screen=s)
     top += advice_h + 8
     listing_h = max(40, h - (top - y))
     listing = layout.box(s, (x, top, w, listing_h), "uboot.panel.intercepts")

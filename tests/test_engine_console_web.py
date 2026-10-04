@@ -47,6 +47,14 @@ PROBE = r'''
     if (lamp('fuel')?.dataset.level !== 'on') throw new Error(`fuel lamp: ${lamp('fuel')?.dataset.level}`);
     if (lamp('grounded').dataset.level !== 'off') throw new Error('grounded lamp lit');
     if ($('engine-master').dataset.state !== 'alarm') throw new Error(`master: ${$('engine-master').dataset.state}`);
+    root.dataset.stage = 'lamp-tip';
+    // Hovering a lamp says why it is lit, from the host's lamp_tips.
+    lamp('fire').dispatchEvent(new MouseEvent('mouseenter'));
+    await until(() => $('lamp-tip') && !$('lamp-tip').hidden && $('lamp-tip').querySelector('strong')?.textContent,
+      'no lamp note on hover');
+    root.dataset.lampTip = $('lamp-tip').textContent.slice(0, 200);
+    lamp('fire').dispatchEvent(new MouseEvent('mouseleave'));
+    if (!$('lamp-tip').hidden) throw new Error('lamp note stays after leaving');
     root.dataset.stage = 'mimic';
     const rooms = [...$('engine-compartments').children];
     if (rooms.length !== 9) throw new Error(`rooms: ${rooms.length}`);
@@ -146,3 +154,4 @@ def test_frigate_engine_console_shows_lamps_gauges_fuel_and_sections(tmp_path, m
         root.get("data-stage"), root.get("data-js-error"), root.get("data-failure", stderr[-300:]))
     assert damaged
     assert int(root.get("data-lamps", "0")) >= 16
+    assert "fire" in root.get("data-lamp-tip", "").lower()

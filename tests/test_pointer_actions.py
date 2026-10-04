@@ -368,3 +368,35 @@ def test_boat_tube_and_decoy_chips_only_at_the_weapons_station(window):
         # V there is the speed order of the key bar, never the decoy.
         assert all(t.rect.y > config.SCREEN_H - 60 for t in _targets("station", pygame.K_v))
     game.audio.shutdown()
+
+
+def test_key_names_in_prose_become_key_caps():
+    assert pointer.key_cap_text("H:") == (0, 1)
+    assert pointer.key_cap_text("(Shift+F)") == (1, 8)
+    assert pointer.key_cap_text("Strg+Enter:") == (0, 10)
+    assert pointer.key_cap_text("Pfeile:") == (0, 6)
+    assert pointer.key_cap_text("Auf/Ab:") == (0, 6)
+    # A word that only stands for a key stays plain text (still clickable).
+    assert pointer.key_cap_text("Mast") is None
+    assert pointer.key_cap_text("Buoys:") is None
+
+
+def test_helicopter_rules_draw_their_keys_as_clickable_caps():
+    """Keys in the helicopter's rules (H, Y, U/V, Shift+A, B, D) are drawn
+    as the accent key caps of the footer chips, and a click presses them."""
+    from src.ui import theme
+    game = Game(seed=11, start_menu=False, show_splash=False, fullscreen=False,
+                audio_enabled=False)
+    game.station = Station.HELICOPTER
+    game.station_page = 1
+    pointer.reset()
+    game.draw()
+    accent = theme.c("accent")
+    caps = [target for target in pointer._targets
+            if target.key in (pygame.K_y, pygame.K_b, pygame.K_d) and not target.mod]
+    assert {target.key for target in caps} == {pygame.K_y, pygame.K_b, pygame.K_d}
+    for target in caps:
+        rect = target.rect
+        pixels = [game.screen.get_at((x, rect.centery))[:3]
+                  for x in range(rect.x + 3, min(rect.right, rect.x + 14))]
+        assert accent in pixels, (target, pixels)

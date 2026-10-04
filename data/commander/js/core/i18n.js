@@ -1,6 +1,7 @@
 import { S } from "../state/store.js";
 import { renderSound } from "../audio/alerts.js";
 import { $, prefix } from "./base.js";
+import { markKeys } from "./key-caps.js";
 import { chartMatches, t } from "./format.js";
 import { request } from "../net/request.js";
 import { renderContactAnalysis } from "../views/analyzer.js";
@@ -25,6 +26,7 @@ export async function loadLanguage(nextLanguage) {
       detail: {language: S.language, translations}
     }));
     for (const element of document.querySelectorAll("[data-i18n]")) element.textContent = t(element.dataset.i18n);
+    for (const element of document.querySelectorAll("[data-i18n-keys]")) markKeys(element, element.dataset.i18nKeys.split("|"));
     for (const element of document.querySelectorAll("[data-i18n-aria]")) element.setAttribute("aria-label", t(element.dataset.i18nAria));
     for (const element of document.querySelectorAll("[data-i18n-placeholder]")) element.placeholder = t(element.dataset.i18nPlaceholder);
     // The visible switch names the other language, in that language.
@@ -49,3 +51,5 @@ export async function loadLanguage(nextLanguage) {
     if (serial === S.languageRequest) $("language").disabled = $("language-switch").disabled = false;
   }
 }
+
+export { markKeys };

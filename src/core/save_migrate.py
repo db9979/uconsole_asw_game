@@ -122,6 +122,20 @@ def _v50_to_v51(doc: dict) -> None:
         helo.setdefault("prep_s", None)
 
 
+def _v51_to_v52(doc: dict) -> None:
+    # The helicopter's rescue hoist (1.3.196): not running, and no survivor
+    # in the cabin of any raft, as the older release had none.
+    helo = doc.get("helo")
+    if isinstance(helo, dict):
+        helo.update(hoist=False, hoist_s=0.0)
+    board = doc.get("tasking")
+    if isinstance(board, dict) and board.get("version") == 1:
+        board["version"] = 2
+        for task in board.get("tasks") or ():
+            if isinstance(task, dict):
+                task["aboard"] = 0
+
+
 STEPS = {
     38: _v38_to_v39,
     39: _v39_to_v40,
@@ -136,6 +150,7 @@ STEPS = {
     48: _v48_to_v49,
     49: _v49_to_v50,
     50: _v50_to_v51,
+    51: _v51_to_v52,
 }
 
 

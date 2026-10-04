@@ -311,7 +311,7 @@ def _add_task(game, kind: str, **fields):
                 deadline_t=None, ended_t=None, course=None, speed_kn=None,
                 report_t=game.sim_t, name=None, persons=0, target_id=None,
                 true_x=None, true_y=None, progress=0.0, sighted=False,
-                plot_id=None, verdict=None, points=0)
+                plot_id=None, verdict=None, points=0, aboard=0)
     task = game.tasking.add({**base, **fields})
     if game.accept_task(task["id"]) is not True:
         task["state"] = "active"
@@ -813,7 +813,9 @@ def _ras_station(game, tx, ty, course, speed_kn):
 def rescue_point(game, flyer: bool = False):
     """The reported position of the raft the ship (nearest to it) or the
     helicopter (the other one, only while two are left) makes for, or None."""
-    rows = [task for task in mission_tasks(game, "sar") if task["state"] == "active"]
+    from src.core.game_rescue import persons_left
+    rows = [task for task in mission_tasks(game, "sar")
+            if task["state"] == "active" and persons_left(task) > 0]
     if not rows or (flyer and len(rows) < 2):
         return None
     ship = game.ship

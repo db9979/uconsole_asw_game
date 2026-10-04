@@ -1031,6 +1031,8 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                         self.fire_rbu_defence()
                     else:
                         self.fire_rbu()
+            elif e.key == pygame.K_z and self.station is Station.HELICOPTER:
+                self.toggle_helicopter_hoist()
             elif e.key == pygame.K_m:
                 if self.station in (Station.SONAR, Station.WEAPONS,
                                     Station.HELICOPTER):

@@ -993,6 +993,25 @@ def _radio_tasks(game, station_down):
     return tasks
 
 
+def _acoustic_series(values, maximum):
+    """A display series rounded to 5 decimals (as the ship's sonar pages):
+    the helicopter's histories otherwise fill the state's byte budget."""
+    return [round(value, 5) for value in _series(values, maximum)]
+
+
+def _helicopter_rescue(game):
+    """The rescue hoist panel (reported raft positions, own cabin), or None."""
+    status = game.helo_rescue_status()
+    if status is None:
+        return None
+    return dict(phase=status["phase"], hoist=bool(status["hoist"]),
+                aboard=int(status["aboard"]), capacity=int(status["capacity"]),
+                lift=_number(status["lift"]),
+                raft=None if status["raft"] is None else str(status["raft"])[:32],
+                left=status["left"], range_nm=_number(status["range_nm"]),
+                bearing=_number(status["bearing"]))
+
+
 def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                 sonar_refs=None, asset_only=False):
     helo = game.helo
@@ -1158,18 +1177,19 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                                   sorted(game.buoys, key=lambda item: item.seq))],
                               bin_frequencies_hz=[config.lofar_bin_freq(i)
                                                   for i in range(config.LOFAR_BINS)],
-                              spectrum=_series(game.helo_receiver.spectrum,
-                                               config.LOFAR_BINS),
-                              history=[_series(row, config.LOFAR_BINS)
+                              spectrum=_acoustic_series(game.helo_receiver.spectrum,
+                                                        config.LOFAR_BINS),
+                              history=[_acoustic_series(row, config.LOFAR_BINS)
                                        for row in game.helo_spectra[-64:]],
-                              broadband=_series(game.helo_receiver.broadband, 180),
-                              broadband_history=[_series(row, 180)
+                              broadband=_acoustic_series(game.helo_receiver.broadband, 180),
+                              broadband_history=[_acoustic_series(row, 180)
                                                  for row in game.helo_broadband_history[-64:]],
-                              demon=_series(game.helo_receiver.demon_spectrum, 80),
-                              demon_history=[_series(row, 80)
+                              demon=_acoustic_series(game.helo_receiver.demon_spectrum, 80),
+                              demon_history=[_acoustic_series(row, 80)
                                              for row in game.helo_demon_history[-64:]]),
                 dip_environment=dip_environment,
                 dip_observations=dip_observations,
+                rescue=_helicopter_rescue(game),
                 navigation=_own_navigation(game), tactical=[
                     _observation(row, _HELICOPTER_TACTICAL_FIELDS)
                     for row in tactical[:_MAP_ROWS_MAX]],

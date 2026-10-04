@@ -199,7 +199,7 @@ ROLE_SHAPES = {
     "engine": ("propulsion", "machinery", "controls", "environment_effects", "compartments"),
     "helicopter": ("asset", "waypoint", "buoys", "buoy_observations", "acoustic",
                    "navigation", "tactical", "target_choices", "readiness",
-                   "dip_observations", "dip_environment"),
+                   "dip_observations", "dip_environment", "rescue"),
     "eloka": ("intercepts", "station_down", "status", "hardware"),
     **{role: _UBOOT_COMMAND_SHAPE for role in OPFOR_ROLES if role != "uboot_sonar"},
     "uboot_sonar": ("observations", "settings", "visualization"),

@@ -149,6 +149,14 @@ class Helicopter:
         # Speed over the last step (display only, not saved): 0 in the
         # hover, on the deck or holding over its waypoint.
         self.ground_speed_kn = 0.0
+        # Rescue hoist: ordered (the pilot holds over the raft) and the
+        # seconds into the current lift (``game_tasking`` runs it).
+        self.hoist = False
+        self.hoist_s = 0.0
+
+    def stop_hoist(self) -> None:
+        self.hoist = False
+        self.hoist_s = 0.0
 
     @property
     def preparing(self) -> bool:
@@ -181,6 +189,7 @@ class Helicopter:
         """Start with the remaining finite mission loadout."""
         self.state = "AUF"
         self.prep_s = None
+        self.stop_hoist()
         self.x = frigate.x
         self.y = frigate.y
         self.course = frigate.course
@@ -199,6 +208,7 @@ class Helicopter:
     def order_return(self) -> None:
         if self.airborne:
             self.state = "ZURUECK"
+            self.stop_hoist()
             if self.dip_state != "STOWED":
                 self.dip_state = "RETRIEVING"
 
@@ -235,6 +245,8 @@ class Helicopter:
     def set_dipping(self, deployed: bool, world) -> bool:
         if not self.airborne or self.state != "AUF":
             return False
+        if deployed and self.hoist:
+            return False                # the winch is busy with the rescue
         if deployed:
             if self.dip_state in ("DEPLOYING", "DEPLOYED"):
                 return True
@@ -289,17 +301,19 @@ class Helicopter:
             return
         # fuel_factor: extra power for anti-/de-icing in icing conditions.
         self.fuel_s = max(0.0, self.fuel_s - dt * max(1.0, fuel_factor) * (
-            HOVER_FUEL_FACTOR if self.hovering else 1.0))
+            HOVER_FUEL_FACTOR if self.hovering or self.hoist else 1.0))
         self._update_dipping(dt, world)
         home_dist = math.hypot(frigate.x - self.x, frigate.y - self.y)
         return_time = home_dist / config.kn_to_nm_per_s(self.SPEED_KN)
         if (self.state == "AUF"
                 and self.fuel_s <= return_time + config.HELO_FUEL_RESERVE_S):
             self.state = "ZURUECK"
+            self.stop_hoist()
             if self.dip_state != "STOWED":
                 self.dip_state = "RETRIEVING"
         if self.fuel_s <= 0.0:
             self.state = "VERLOREN"
+            self.stop_hoist()
             self.dip_state = "STOWED"
             self.mad_mode = False
             self.pattern_queue = []

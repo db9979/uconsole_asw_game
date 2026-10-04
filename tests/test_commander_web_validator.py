@@ -137,3 +137,27 @@ def test_a_bridge_route_passes_the_browser_validator():
         range(route["index"] + 1, 9))
     report = _validate([row for row in rows if row["role"] == "bridge"])
     assert report["failures"] == []
+
+
+def test_a_helicopter_rescue_passes_the_browser_validator():
+    rows = []
+    game = Game(seed=4101, start_menu=False, audio_enabled=False, language="en")
+    game.tasking.next_offer_t = 1e9
+    task = game._offer_task("sar")
+    game.accept_task(task["id"])
+    game.helo.launch(game.ship)
+    game.helo.x, game.helo.y = task["true_x"], task["true_y"]
+    game.helo.set_waypoint(game.helo.x, game.helo.y)
+    server, bridge = Server(), CommanderBridge()
+    bridge.pump(game, server, now=1.0)
+    _collect("rescue-ready", server, rows)
+    game.order_helicopter_hoist(True)
+    task["aboard"], task["progress"] = 1, 1.0 / task["persons"]
+    game.helo.hoist_s = 20.0
+    bridge.pump(game, server, now=2.0)
+    _collect("rescue-lifting", server, rows)
+    helo_rows = [row for row in rows if row["role"] == "helicopter"]
+    assert len(helo_rows) == 2
+    assert helo_rows[-1]["state"]["helicopter"]["rescue"]["aboard"] == 1
+    report = _validate(helo_rows)
+    assert report["failures"] == []

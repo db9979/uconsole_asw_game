@@ -30,7 +30,7 @@ KINDS = ("sar", "identify", "datum", "ras", "emcon", "patrol")
 STATES = ("offered", "active", "done", "failed", "declined")
 OPEN_STATES = ("offered", "active")
 VERDICTS = ("clear", "suspect")
-VERSION = 1
+VERSION = 2
 MAX_TASKS = 8
 MAX_NAME = 24
 COORD_LIMIT_NM = 1_000.0
@@ -45,7 +45,7 @@ TASK_FIELDS = frozenset({
     "id", "kind", "state", "offered_t", "respond_by_t", "deadline_t", "ended_t",
     "x", "y", "radius_nm", "course", "speed_kn", "report_t", "name", "persons",
     "target_id", "true_x", "true_y", "progress", "sighted", "plot_id", "verdict",
-    "points",
+    "points", "aboard",
 })
 BOARD_FIELDS = frozenset({"version", "next_id", "next_offer_t", "offers", "tasks"})
 
@@ -103,6 +103,10 @@ def valid_task(row) -> bool:
     if row["verdict"] is not None and row["verdict"] not in VERDICTS:
         return False
     if type(row["points"]) is not int or not -MAX_POINTS <= row["points"] <= MAX_POINTS:
+        return False
+    # Survivors of this raft in the helicopter's cabin (not yet on deck).
+    if (type(row["aboard"]) is not int or not 0 <= row["aboard"] <= row["persons"]
+            or (row["aboard"] and (row["kind"] != "sar" or row["state"] != "active"))):
         return False
     # State-dependent shape: an open task has not ended, a closed one has.
     if (row["state"] in OPEN_STATES) != (row["ended_t"] is None):

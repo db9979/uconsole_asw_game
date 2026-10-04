@@ -701,7 +701,8 @@ class SaveMixin:
                            pattern_queue=[list(point) for point in self.helo.pattern_queue],
                            mad_mode=self.helo.mad_mode,
                            radar_on=self.helo.radar_on,
-                           prep_s=self.helo.prep_s),
+                           prep_s=self.helo.prep_s,
+                           hoist=self.helo.hoist, hoist_s=self.helo.hoist_s),
             "subs": [dict(id=s.id, x=s.x, y=s.y, depth=s.depth, course=s.course,
                            state=s.state, speed=s.speed, damage=s.damage,
                            torpedoes_left=s.torpedoes_left, heard_ping=s.heard_ping,
@@ -1369,6 +1370,8 @@ class SaveMixin:
         self.helo.mad_mode = hd["mad_mode"]
         self.helo.radar_on = hd["radar_on"]
         self.helo.prep_s = None if hd["prep_s"] is None else float(hd["prep_s"])
+        self.helo.hoist = hd["hoist"]
+        self.helo.hoist_s = float(hd["hoist_s"])
 
     def _restore_subs(self, data: dict, rng, restore_entity,
                       restore_platform) -> None:

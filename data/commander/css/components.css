@@ -150,6 +150,12 @@ body.workstation-mode .chart-panel { display: none; }
 /* Controls grid inside cards. */
 .station-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: .45rem; align-items: end; }
 .station-controls > h3 { grid-column: 1 / -1; }
+/* Helicopter rescue hoist card: cabin, phase, the current lift and the raft. */
+.helicopter-rescue p { margin: .15rem 0; font-size: var(--font-sm); }
+.helicopter-rescue .rescue-cabin { color: var(--live-strong); }
+.helicopter-rescue [data-phase="weather"], .helicopter-rescue [data-phase="return"] { color: var(--caution); }
+.helicopter-rescue progress { width: 100%; accent-color: var(--live); }
+.helicopter-rescue button { width: 100%; margin-top: .3rem; }
 .station-controls select, .station-controls button, .station-controls input:not([type="checkbox"]) { width: 100%; }
 .control-page { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: .45rem; align-items: end; padding-top: .3rem; }
 .control-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; min-width: 0; }

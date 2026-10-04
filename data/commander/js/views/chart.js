@@ -283,8 +283,8 @@ function drawChartFrame() {
   if (hasPosition(helo) && ["AUF", "ZURUECK"].includes(helo.state)) {
     const [hx, hy] = point(helo.x, helo.y);
     if (hx > -30 && hy > -30 && hx < width + 30 && hy < height + 30) {
-      drawSymbol(hx, hy, "AIR", palette().accent, 8);
-      ctx.fillStyle = palette().accent; placeText(ctx, labels, t("helicopter"), hx + 15, hy + 5);
+      drawSymbol(hx, hy, "ROTARY", colors.FRIEND || palette().blue, 8, "FRIEND");
+      ctx.fillStyle = colors.FRIEND || palette().blue; placeText(ctx, labels, t("helicopter"), hx + 15, hy + 5);
     }
   }
   if (S.v2State?.plot) drawPlotLayer(ctx, point, scale, width, height, null, labels);

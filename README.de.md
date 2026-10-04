@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.200**
+Aktuelle Version: **1.3.201**
 
-Version 1.3.200 macht die Rettung von Schiffbrüchigen mit dem Hubschrauber
+Version 1.3.201 macht die Rettung von Schiffbrüchigen mit dem Hubschrauber
 zu einer klaren Bedienhandlung. Rettungsinseln im Wasser sind jetzt kleine
 Radarechos für das Schiffsradar, das Hubschrauberradar und den
 Seefernaufklärer (bei hohem Seegang schwerer zu sehen) und verbessern die

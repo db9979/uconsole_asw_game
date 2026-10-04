@@ -539,5 +539,5 @@ def test_own_airborne_helicopter_is_direct_friend_air_datalink_not_track(monkeyp
     stations_view.draw_opz_view(game)
 
     assert [(affiliation, domain) for affiliation, domain, _ in symbols] == [
-        ("FRIEND", "SURFACE"), ("FRIEND", "AIR")]
+        ("FRIEND", "SURFACE"), ("FRIEND", "ROTARY")]
     assert sensor_tracks == []

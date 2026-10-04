@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.200
+## 1.3.201
 
-Version 1.3.200 macht die Rettung von Schiffbrüchigen mit dem Hubschrauber
+Version 1.3.201 macht die Rettung von Schiffbrüchigen mit dem Hubschrauber
 zu einer klaren Bedienhandlung. Rettungsinseln im Wasser sind jetzt kleine
 Radarechos für das Schiffsradar, das Hubschrauberradar und den
 Seefernaufklärer (bei hohem Seegang schwerer zu sehen) und verbessern die
@@ -22,9 +22,9 @@ Schiffbrüchigen erst, wenn der Hubschrauber auf dem Schiff landet; geht er
 verloren, sind sie es auch. Der Hubschrauber der KI-Fregatte nutzt dieselbe
 Winde. Spielstände sind v52; v38 bis v51 laden weiter.
 
-## 1.3.199
+## 1.3.200
 
-Version 1.3.199 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
+Version 1.3.200 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
 Der Startbefehl (`H` oder *Helikopter starten* im Browser) beginnt 5 Minuten
 Vorbereitung im Hangar, danach hebt er im nächsten Startfenster ab; ein
 zweites `H` bricht sie ab. Nach einer Landung behält er den Kraftstoff, mit
@@ -40,7 +40,21 @@ des Hubschraubers zeigt seine echte Geschwindigkeit über Grund, und ein Klick
 in die Karte legt seinen Wegpunkt genau dorthin; der Hubschrauber bleibt auf
 dem Punkt stehen statt 0,3 sm davor. Plot-Objekte außerhalb der Karte bekommen
 einen Pfeil am Kartenrand, und ihre Beschriftungen stehen dort nebeneinander
-statt übereinander. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
+statt übereinander. Der eigene Hubschrauber trägt auf allen Karten das NATO-Zeichen für Drehflügler. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
+
+## 1.3.199
+
+Version 1.3.199 erklärt jede Statuslampe. Ruht die Maus auf einer Lampe oder
+Anzeige, etwa START NO-GO und DECK WARTEN des Hubschraubers, einem
+Torpedorohr, der Anlage, dem ESM-Empfänger oder dem Wasser unter dem Kiel des
+U-Boots, öffnet sich ein Hinweis, warum sie so steht, aus dem laufenden Spiel
+(Deckbewegung und Ruhezeit, Wettergrenzen, Nachladezeit, Kartentiefe), und was
+zu tun ist. Jede Taste, die eine Station nutzen kann, ist jetzt ein blauer
+Tastenchip zum Anklicken, auch in diesen Hinweisen. Beides gilt auf beiden
+Seiten, auf der uConsole und im Remote-Crew-Browser. Die vier Kontaktknöpfe
+der OPZ sagen, was sie tun (Klassifizieren, Zugehörigkeit wechseln, Für Fusion
+markieren, Fusionieren / auflösen), mittig neben ihrem Tastenchip. Tasten
+bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
 
 ## 1.3.198
 

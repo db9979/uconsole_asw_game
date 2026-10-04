@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.200**
+Current release: **1.3.201**
 
-Release 1.3.200 makes the rescue of survivors with the helicopter a clear
+Release 1.3.201 makes the rescue of survivors with the helicopter a clear
 operator action. Life rafts in the water are now small radar echoes for the
 ship's radar, the helicopter's radar and the patrol aircraft (harder to see
 in high seas) and sharpen the reported position; the OPZ hears about the

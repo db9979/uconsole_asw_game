@@ -2,7 +2,7 @@ import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { enumText, finite, number, stateText, t, unit } from "../core/format.js";
 import { inUse, metrics, setControlValue, setOptions, sonarEntries, stationRows, yesNo } from "../views/dom.js";
-import { renderLamps } from "../views/console-kit.js";
+import { lampTip, renderLamps } from "../views/console-kit.js";
 
 // The listening console's annunciator lamps: what the operator has switched on.
 function renderSonarLamps(settings) {
@@ -13,12 +13,12 @@ function renderSonarLamps(settings) {
     lamp("station", t("sonar_lamp_station"), down ? "alarm" : "on", t(down ? "sonar_lamp_down" : "sonar_lamp_ok")),
     lamp("ping", t("sonar_lamp_ping"), settings.ping.ready ? "on" : "caution",
       settings.ping.ready ? t("sonar_lamp_ready") : t("sonar_lamp_cooldown", {seconds: number(settings.ping.cooldown_s, 0)}),
-      "sonar-ping"),
+      "sonar-ping", lampTip("ping")),
     lamp("track", t("sonar_lamp_track"), ...onOff(Boolean(settings.focus_ref))),
-    lamp("audio", t("sonar_lamp_audio"), ...onOff(settings.audio_enabled)),
+    lamp("audio", t("sonar_lamp_audio"), ...onOff(settings.audio_enabled), undefined, lampTip("audio")),
     lamp("notch", t("sonar_lamp_notch"), ...onOff(settings.notch), "sonar-notch"),
     lamp("peak", t("sonar_lamp_peak"), settings.peak_hold ? "caution" : "off", t(settings.peak_hold ? "sonar_lamp_on" : "sonar_lamp_off"),
-      "sonar-peak"),
+      "sonar-peak", lampTip("peak")),
   ]);
 }
 

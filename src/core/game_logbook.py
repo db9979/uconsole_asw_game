@@ -229,7 +229,7 @@ class LogbookMixin:
         layout.blit_line(s, "logbook.hint", footer, config.COLOR_TEXT_DIM, size=18,
                          align="center")
         pointer.add_token_keys(footer, localize("logbook.hint"), 18, LOGBOOK_HINT_TOKENS,
-                               align="center")
+                               align="center", screen=s)
         self._draw_logbook_panel(book, side)
 
     def _draw_logbook_panel(self, book, side: str) -> None:

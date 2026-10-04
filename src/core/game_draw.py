@@ -619,7 +619,7 @@ class DrawMixin:
         if (not self.in_menu and not self.splash_active and self.editor is None
                 and not self.simlog_view_open and not self._station_overlay_open
                 and self.tooltips_enabled and not eco
-                and self.local_side != "uboot" and not self.game_menu_open
+                and not self.game_menu_open
                 and not self.administration_open and not self.game_over):
             canvas = self._window_to_canvas(pygame.mouse.get_pos())
             payload = self.pinned_tooltip or self.tooltip_at(canvas)
@@ -902,6 +902,7 @@ class DrawMixin:
             with layout.clip_to(s, area):
                 layout.record_text(value, rendered, area, image)
                 s.blit(image, rendered)
+            return rendered
 
         strip_text(telemetry, tele_rect, colors[level], right=True)
         # A click on a reading opens its station (full mouse control).
@@ -912,8 +913,11 @@ class DrawMixin:
         hint = localize(hint_key) if hint_key else ""
         hint_w = face.size(hint)[0] + 12 if hint else 0
         if hint:
-            strip_text(hint, pygame.Rect(rect.x + 6, rect.y, hint_w, rect.h),
-                       config.COLOR_TEXT_DIM)
+            shown = strip_text(hint, pygame.Rect(rect.x + 8, rect.y, hint_w, rect.h),
+                               config.COLOR_TEXT_DIM)
+            # The leading key ("F11") is a blue key cap like every station key.
+            layout.key_cap(s, face, hint.split(" ", 1)[0], shown.topleft,
+                           face.get_linesize(), clip=rect)
         feed_rect = pygame.Rect(rect.x + 6 + hint_w, rect.y + 2,
                                 tele_rect.x - 12 - (rect.x + 6 + hint_w), rect.h - 2)
         if hint:

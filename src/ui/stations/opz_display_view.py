@@ -246,7 +246,7 @@ def draw_display_page(game, surface, x: int, y: int, w: int, bottom: int) -> Non
             ("opz.display.hint_reset_all", (("Shift+Backspace", "Shift+Backspace"),)))):
         rect = (x, bottom - hint_h + 2 + index * 21, w, 20)
         layout.blit_line(surface, key, rect, config.COLOR_TEXT_DIM, size=13)
-        pointer.add_token_keys(rect, localize(key), 13, tokens)
+        pointer.add_token_keys(rect, localize(key), 13, tokens, screen=surface)
 
 
 def radar_switch_rects(chart: pygame.Rect) -> list:

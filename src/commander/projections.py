@@ -10,7 +10,7 @@ import math
 import weakref
 
 from src.core import attack_computer, boat_esm, chart_history, boat_missions, boat_threat, config, opfor, plot
-from src.core import boat_nav, buoy_antenna, sight_events, station_alarms
+from src.core import boat_nav, buoy_antenna, sight_events, station_alarms, status_tips
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.enemies.damage_control import COMPARTMENTS, capacity_kg
@@ -104,6 +104,12 @@ _TMA_CONTACTS_MAX = 32
 _TMA_POINTS_MAX = 24
 _ECHOES_MAX = 40
 _MAP_ROWS_MAX = 128
+
+
+def _waterfall_row(values, maximum):
+    """One waterfall row rounded to 1/1000: the browser paints at most 256
+    shades, and full floats would push the helicopter state past its limit."""
+    return [round(value, 3) for value in _series(values, maximum)]
 
 
 def _series(values, maximum, stride=1):
@@ -993,12 +999,6 @@ def _radio_tasks(game, station_down):
     return tasks
 
 
-def _acoustic_series(values, maximum):
-    """A display series rounded to 5 decimals (as the ship's sonar pages):
-    the helicopter's histories otherwise fill the state's byte budget."""
-    return [round(value, 5) for value in _series(values, maximum)]
-
-
 def _helicopter_rescue(game):
     """The rescue hoist panel (reported raft positions, own cabin), or None."""
     status = game.helo_rescue_status()
@@ -1180,15 +1180,15 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                                   sorted(game.buoys, key=lambda item: item.seq))],
                               bin_frequencies_hz=[config.lofar_bin_freq(i)
                                                   for i in range(config.LOFAR_BINS)],
-                              spectrum=_acoustic_series(game.helo_receiver.spectrum,
-                                                        config.LOFAR_BINS),
-                              history=[_acoustic_series(row, config.LOFAR_BINS)
+                              spectrum=_series(game.helo_receiver.spectrum,
+                                               config.LOFAR_BINS),
+                              history=[_waterfall_row(row, config.LOFAR_BINS)
                                        for row in game.helo_spectra[-64:]],
-                              broadband=_acoustic_series(game.helo_receiver.broadband, 180),
-                              broadband_history=[_acoustic_series(row, 180)
+                              broadband=_series(game.helo_receiver.broadband, 180),
+                              broadband_history=[_waterfall_row(row, 180)
                                                  for row in game.helo_broadband_history[-64:]],
-                              demon=_acoustic_series(game.helo_receiver.demon_spectrum, 80),
-                              demon_history=[_acoustic_series(row, 80)
+                              demon=_series(game.helo_receiver.demon_spectrum, 80),
+                              demon_history=[_waterfall_row(row, 80)
                                              for row in game.helo_demon_history[-64:]]),
                 dip_environment=dip_environment,
                 dip_observations=dip_observations,
@@ -1518,6 +1518,8 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
         # own-crew configuration only, identical for every role.
         state["autocrew_overview"] = overview
         state[role] = operational[role]
+        # Why each of the station's lamps shows what it shows (own state).
+        state["lamp_tips"] = status_tips.for_role(game, role, game.tr)
         result[role] = state
     return result
 
@@ -2030,6 +2032,7 @@ def build_opfor_states(game, status, boat, rows, target_ref, focus_ref, sonar_re
         return {}
     result = {}
     command = None
+    boat_tips = None
     for role in OPFOR_ROLES:
         state = _opfor_common(game, status, role, boat)
         if role != "uboot_sonar":
@@ -2041,5 +2044,12 @@ def build_opfor_states(game, status, boat, rows, target_ref, focus_ref, sonar_re
         else:
             with game.sonar_perspective(boat.station):
                 state[role] = _sonar(game, rows, focus_ref, target_ref, sonar_refs)
+        # The command stations share one set of notes on their own boat.
+        if role == "uboot_sonar" or boat_tips is None:
+            with game.sonar_perspective(boat.station):
+                tips = status_tips.for_role(game, role, game.tr, boat)
+            if role != "uboot_sonar":
+                boat_tips = tips
+        state["lamp_tips"] = tips if role == "uboot_sonar" else boat_tips
         result[role] = state
     return result

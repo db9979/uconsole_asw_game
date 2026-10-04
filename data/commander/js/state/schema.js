@@ -96,6 +96,16 @@ function validWeatherStation(ws, boat, fields) {
     boundedArray(p.shadow, 32) && p.shadow.every((row) => boundedArray(row, 32) && row.length === p.depth_edges_m.length - 1 && row.every((cell) => typeof cell === "boolean")) &&
     (p.dip_relative_to_layer === null || ["above", "below"].includes(p.dip_relative_to_layer));
 }
+// Hover notes of the station's lamps: why each shows what it shows.
+function lampTipsOk(tips) {
+  const text = (value, max) => typeof value === "string" && value.length <= max;
+  return !!tips && typeof tips === "object" && !Array.isArray(tips) && Object.keys(tips).length <= 80 &&
+    Object.entries(tips).every(([key, tip]) => /^[a-z0-9_]{1,32}$/.test(key) &&
+      exactKeys(tip, ["title", "label", "value", "level", "lines", "keys"]) && text(tip.title, 120) &&
+      text(tip.label, 60) && text(tip.value, 60) && ["", "off", "on", "caution", "alarm"].includes(tip.level) &&
+      boundedArray(tip.lines, 8) && tip.lines.every((line) => text(line, 240)) &&
+      boundedArray(tip.keys, 8) && tip.keys.every((key) => text(key, 16)));
+}
 export function validateV2State(state) {
   const status = ["protocol", "version", "session", "epoch", "revision", "seq", "phase", "role", "chart_revision"];
   if (!state || state.protocol !== 2 || typeof state.version !== "string" ||
@@ -106,7 +116,7 @@ export function validateV2State(state) {
     if (!exactKeys(state, status)) throw new Error("protocol");
     return;
   }
-  const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station", "plot", "alarms", "hit_view", "crew_noise"];
+  const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station", "plot", "alarms", "hit_view", "crew_noise", "lamp_tips"];
   if (!sessionRoles.includes(state.role) || state.role !== S.session?.station ||
       !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "world"]) ||
       !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm", "storm"]) ||
@@ -123,7 +133,7 @@ export function validateV2State(state) {
       !boundedArray(state.autocrew_overview, 9) || state.autocrew_overview.some((row) => !exactKeys(row, ["station", "enabled", "status"]) ||
         !stationNames.includes(row.station) || typeof row.enabled !== "boolean" ||
         !["off", "active", "suspended_remote", "suspended_local", "blocked_damage"].includes(row.status)) ||
-      !exactKeys(state.mission, ["name", "objective", "remaining_s"]) ||
+      !exactKeys(state.mission, ["name", "objective", "remaining_s"]) || !lampTipsOk(state.lamp_tips) ||
       !boundedArray(state.alarms, 9) || state.alarms.some((row) => !exactKeys(row, ["station", "level"]) ||
         !stationNames.includes(row.station) || !["warn", "danger"].includes(row.level)) ||
       !exactKeys(state.audio, ["events", "callouts"]) ||

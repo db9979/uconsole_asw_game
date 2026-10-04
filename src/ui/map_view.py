@@ -704,7 +704,7 @@ def draw_map_view(game, tr=None) -> None:
             px, py = view.world_to_screen(game.helo.x, game.helo.y)
             _draw_helo_waypoint(s, game, view, (px, py), r)
             col = nato_symbols.draw_symbol(
-                s, (px, py), "FRIEND", "AIR", size=22)
+                s, (px, py), "FRIEND", "ROTARY", size=22)
             # Its speed over ground: no vector in the hover or holding over
             # its waypoint, on the same time base as the ship's.
             reach = 120

@@ -47,14 +47,17 @@ def master_level(levels) -> str:
     return "alarm" if "alarm" in levels else "caution" if "caution" in levels else "on"
 
 
-def lamp(screen, rect, label, value, level: str, size: int = 16, key=None) -> None:
+def lamp(screen, rect, label, value, level: str, size: int = 16, key=None,
+         tip=None) -> None:
     """One annunciator tile: LED, label and its value on one row.
 
     ``key`` makes the tile a switch: a click presses that key (a legend
-    label such as ``"Shift+A"``, see ``pointer.add_spec``)."""
+    label such as ``"Shift+A"``, see ``pointer.add_spec``).  ``tip`` is its
+    hover note (why it shows what it shows, see ``pointer.add_tip``)."""
     rect = pygame.Rect(rect)
     layout.record_geometry("lamp", rect, str(label))
     pointer.add_spec(rect, key)
+    pointer.add_tip(rect, tip)
     color = level_color(level)
     fill = config.COLOR_PANEL_BG if level in ("off", "on") else _mix(config.COLOR_PANEL_BG, color, .16)
     pygame.draw.rect(screen, fill, rect)
@@ -79,8 +82,16 @@ def lamp(screen, rect, label, value, level: str, size: int = 16, key=None) -> No
                          align="right")
 
 
+def with_tips(rows, tips) -> list:
+    """``rows`` of ``lamp_grid`` with a hover note each (``tips`` aligned,
+    None for none); a row without a key gets an empty one."""
+    return [(*row[:3], row[3] if len(row) > 3 else None, tip)
+            for row, tip in zip(rows, tuple(tips) + (None,) * len(rows))]
+
+
 def lamp_grid(screen, rect, rows, columns: int, gap: int = 4, size: int = 16) -> int:
-    """Lay ``rows`` of (label, value, level) out as tiles; return the height used."""
+    """Lay ``rows`` of (label, value, level[, key[, tip]]) out as tiles;
+    return the height used."""
     rect = pygame.Rect(rect)
     if not rows:
         return 0
@@ -88,10 +99,11 @@ def lamp_grid(screen, rect, rows, columns: int, gap: int = 4, size: int = 16) ->
     count = math.ceil(len(rows) / columns)
     tile_h = max(layout.line_pitch(size, 0) + 8, min(40, (rect.h - gap * (count - 1)) // count))
     tile_w = (rect.w - gap * (columns - 1)) // columns
-    for index, (label, value, level, *key) in enumerate(rows):
+    for index, (label, value, level, *extra) in enumerate(rows):
         col, line = index % columns, index // columns
         lamp(screen, (rect.x + col * (tile_w + gap), rect.y + line * (tile_h + gap),
-                      tile_w, tile_h), label, value, level, size, key[0] if key else None)
+                      tile_w, tile_h), label, value, level, size,
+             extra[0] if extra else None, extra[1] if len(extra) > 1 else None)
     return count * tile_h + (count - 1) * gap
 
 

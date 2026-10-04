@@ -1380,7 +1380,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         assigned_fields = status_fields | {"clock", "environment", "mission",
                                            "autocrew", "autocrew_overview", "audio",
                                            "weather_station", "plot", "alarms",
-                                           "hit_view", "crew_noise"}
+                                           "hit_view", "crew_noise", "lamp_tips"}
         if (not isinstance(states, dict) or not isinstance(charts, dict)
                 or set(states) != expected or set(charts) != expected):
             raise ValueError("invalid v2 publication")

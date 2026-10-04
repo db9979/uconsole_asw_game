@@ -728,14 +728,73 @@ def command_segment(screen, rect, key: str, description: str,
             x = rendered.right + (3 if index == 0 else 0)
 
 
-def tooltip_payload(title: str, *lines: str, target_id: str = "") -> dict:
-    """Return an object-free tooltip value safe to retain or serialize."""
-    return {
+def key_button(screen, rect, key: str, label: str, size: int = 14,
+               min_size: int = 11) -> None:
+    """A raised button whose key is a blue cap left of its label, the pair
+    centred in ``rect``; the text shrinks to ``min_size`` before it is cut."""
+    from src.ui import theme
+    rect = pygame.Rect(rect)
+    pygame.draw.rect(screen, theme.c("raised"), rect, border_radius=4)
+    pygame.draw.rect(screen, theme.c("line_strong"), rect, 1, border_radius=4)
+    key_text, label_text = localize(key), localize(label)
+    room = rect.w - 16
+    for face_size in range(size, min_size - 1, -1):
+        face = font(face_size)
+        key_w, gap = text_width(face, key_text) + 8, 6
+        if key_w + gap + text_width(face, label_text) <= room:
+            break
+    label_text = fit_line(label_text, face, max(0, room - key_w - gap))
+    total = key_w + gap + text_width(face, label_text)
+    x = rect.x + (rect.w - total) // 2
+    pitch = face.get_linesize()
+    top = rect.y + (rect.h - pitch) // 2
+    cap = pygame.Rect(x, top - 1, key_w, pitch + 2)
+    with clip_to(screen, rect):
+        pygame.draw.rect(screen, theme.c("accent"), cap, border_radius=3)
+        image = render_line(face, key_text, theme.c("on_accent"))
+        placed = image.get_rect(center=cap.center)
+        record_text(key_text, placed, rect, image)
+        screen.blit(image, placed)
+        image = render_line(face, label_text, config.COLOR_TEXT)
+        placed = image.get_rect(midleft=(cap.right + gap, cap.centery))
+        record_text(label_text, placed, rect, image)
+        screen.blit(image, placed)
+
+
+def key_cap(screen, face, text: str, topleft, pitch: int, clip=None) -> pygame.Rect:
+    """Draw ``text`` (a key name inside a line just drawn at ``topleft``) as
+    the blue key cap of :func:`command_segment`: accent fill, light glyphs."""
+    from src.ui import theme
+    x, y = topleft
+    cap = pygame.Rect(x - 2, y, text_width(face, text) + 4, max(4, pitch))
+    target = cap.clip(pygame.Rect(clip)) if clip is not None else cap
+    if target.w <= 2 or target.h <= 2:
+        return target
+    with clip_to(screen, target):
+        pygame.draw.rect(screen, theme.c("accent"), cap, border_radius=3)
+        # Same top-left as the glyphs of the line underneath, so they match.
+        screen.blit(render_line(face, text, theme.c("on_accent")), (x, y))
+    return target
+
+
+TOOLTIP_KEYS_MAX = 8
+
+
+def tooltip_payload(title: str, *lines: str, target_id: str = "", keys=()) -> dict:
+    """Return an object-free tooltip value safe to retain or serialize.
+
+    ``keys`` names the key tokens (``"H"``, ``"Shift+A"``) the lines
+    mention; they are drawn as the stations' blue key caps."""
+    payload = {
         "id": str(target_id),
         "title": localize(title),
         "lines": [localize(line) for line in lines
                   if line is not None and str(line)],
     }
+    keys = [str(key)[:16] for key in tuple(keys)[:TOOLTIP_KEYS_MAX] if str(key)]
+    if keys:
+        payload["keys"] = keys
+    return payload
 
 
 def valid_tooltip(value) -> dict | None:
@@ -748,8 +807,11 @@ def valid_tooltip(value) -> dict | None:
     retained = lines[:12]
     if len(lines) > 12:
         retained[-1] = "... (more omitted)"
+    keys = value.get("keys", [])
+    if not isinstance(keys, list) or not all(isinstance(key, str) for key in keys):
+        keys = []
     return tooltip_payload(value["title"], *retained,
-                           target_id=value.get("id", ""))
+                           target_id=value.get("id", ""), keys=keys)
 
 
 def tooltip_rect(payload: dict, pointer, bounds=(0, 0, 1280, 720),
@@ -817,6 +879,8 @@ def draw_tooltip(screen, payload: dict, pointer,
     body_font = font(TOOLTIP_BODY_SIZE)
     title_lines = wrap_text(payload["title"], title_font, rect.w - 24) or [""]
     title_count = min(len(title_lines), len(lines))
+    from src.ui import pointer
+    keys = tuple((key, None) for key in payload.get("keys", ()))
     title_h = _line_height(title_font)
     body_h = _line_height(body_font)
     with clip_to(screen, rect.inflate(-10, -8)):
@@ -829,6 +893,9 @@ def draw_tooltip(screen, payload: dict, pointer,
                  + (index - title_count) * body_h)
             screen.blit(face.render(line, True, color),
                         (rect.x + 12, y))
+            for key in keys if not is_title else ():
+                pointer.line_keys(screen, face, line, rect.x + 12, y, (key,),
+                                  rect.inflate(-10, -8))
     return rect
 
 

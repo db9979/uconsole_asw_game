@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.200
+## 1.3.201
 
-Release 1.3.200 makes the rescue of survivors with the helicopter a clear
+Release 1.3.201 makes the rescue of survivors with the helicopter a clear
 operator action. Life rafts in the water are now small radar echoes for the
 ship's radar, the helicopter's radar and the patrol aircraft (harder to see
 in high seas) and sharpen the reported position; the OPZ hears about the
@@ -20,9 +20,9 @@ as rescued only when the helicopter lands on the ship; if it is lost, they
 are lost with it. The AI frigate's helicopter uses the same hoist. Saves are
 v52; v38 to v51 saves still load.
 
-## 1.3.199
+## 1.3.200
 
-Release 1.3.199 makes the frigate's helicopter take time on deck. The launch
+Release 1.3.200 makes the frigate's helicopter take time on deck. The launch
 order (`H`, or *Launch helicopter* in the browser) starts 5 minutes of
 preparation in the hangar, and the helicopter lifts off at the next launch
 window after that; `H` again stops it. After a landing it keeps the fuel it
@@ -37,8 +37,22 @@ the air from the water below a bold waterline. The helicopter's speed vector
 shows its real speed over ground, and a click on the chart puts its waypoint
 exactly there; the helicopter stops on the point instead of 0.3 NM short. Plot
 objects off the chart get an arrow on the chart edge, and their labels sit
-side by side there instead of on top of each other. Saves are v51; v38 to v50
+side by side there instead of on top of each other. The own helicopter wears the NATO rotary-wing sign on every chart. Saves are v51; v38 to v50
 saves still load.
+
+## 1.3.199
+
+Release 1.3.199 explains every status lamp. Resting the mouse on a lamp or
+indicator, such as the helicopter's LAUNCH NO-GO and DECK WAIT, a torpedo
+tube, the plant, the ESM receiver or the submarine's depth under the keel,
+opens a note that says why it shows that state, taken from the running game
+(deck motion and quiet time, weather limits, reload time, charted depth), and
+what to do about it. Every key a station can use is now a blue key chip you
+can click, also inside these notes. Both work on both sides, on the uConsole
+and in the Remote Crew browser. The CIC's four contact buttons say what they
+do (Classify, Change affiliation, Mark for fusion, Fuse / dissolve), centred
+beside their key chip. Keys are unchanged. Saves are v50; v38 to v49 saves
+still load.
 
 ## 1.3.198
 

@@ -99,6 +99,7 @@ def build_lookout_states(game, status, boat, redacted):
     frigate = projections._common(game, status, "lookout")
     frigate["autocrew"] = dict(enabled=False, status="off")
     frigate["autocrew_overview"] = []
+    frigate["lamp_tips"] = {}  # the phone has no status lamps
     frigate["lookout"] = _frigate(game)
     states = {"lookout": frigate}
     if boat is None:
@@ -106,5 +107,6 @@ def build_lookout_states(game, status, boat, redacted):
     else:
         state = projections._opfor_common(game, status, "uboot_lookout", boat)
         state["uboot_lookout"] = _boat(game, boat)
+        state["lamp_tips"] = {}
         states["uboot_lookout"] = state
     return states

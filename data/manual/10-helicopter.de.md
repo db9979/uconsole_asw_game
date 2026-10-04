@@ -21,6 +21,8 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 
 ![Heli-Deck im Remote-Crew-Browser](figure:web-helicopter-desktop)
 
+Im Browser hat der Helikopter auf der Bühne drei Seiten: *Akustikanalyse* (BREITBAND, LOFAR und DEMON der Bojen und des Tauchsonars), *Tauchsonar* (das genordete Bild des Tauchsonars über die ganze Bühne, Ringe bei 5, 10, 15 und 20 sm, daneben Wassertiefe, Sprungschicht und die Werte jedes Kontakts) und *Taktische Karte* (die Karte über die ganze Bühne). `Bild auf`/`Bild ab`, nochmals die Stationsnummer `8` oder der Tastenchip neben den Reitern blättern zwischen ihnen.
+
 ```text
          Fregatte                           Wegpunkt (1-30 sm)
             *----------- 120 kn -------------->  H  Schweben + Tauchen

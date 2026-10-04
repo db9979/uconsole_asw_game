@@ -1046,6 +1046,8 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     self._cycle_selected_contact(-1)
                 elif self.station in (Station.OPZ, Station.RADAR):
                     self._cycle_asm_track(-1)
+                elif self.station is Station.ELOKA:
+                    self._cycle_eloka_member(-1)
                 elif self.station is Station.DAMAGE:
                     n = len(self.damage.compartments)
                     self.dmg_cursor = (self.dmg_cursor - 1) % n
@@ -1062,6 +1064,8 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     self._cycle_selected_contact(1)
                 elif self.station in (Station.OPZ, Station.RADAR):
                     self._cycle_asm_track(1)
+                elif self.station is Station.ELOKA:
+                    self._cycle_eloka_member(1)
                 elif self.station is Station.DAMAGE:
                     n = len(self.damage.compartments)
                     self.dmg_cursor = (self.dmg_cursor + 1) % n
@@ -1101,6 +1105,8 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                         self.deploy_buoys()
                 elif self.station is Station.OPZ:
                     self._mark_newest_blip()
+            elif e.key == pygame.K_z and self.station is Station.ELOKA:
+                self.toggle_eloka_grouping()
             elif (e.key == pygame.K_z and self.station is Station.WEAPONS
                   and not getattr(e, "mod", 0) & pygame.KMOD_CTRL):
                 self.drop_depth_charges()

@@ -12,14 +12,24 @@ export const ESCALATE_AFTER_FAILURES = 10;
 // the action-locking gate they drive are untouched.
 export const NOTICE_AFTER_FAILURES = 2;
 // Purely client-local presentation state; never sent to the host or saved.
-export const elokaFilters = {status: "OPERATIONAL", threat: "ALL", band: "ALL"};
+export const elokaFilters = {status: "OPERATIONAL", threat: "ALL", band: "ALL", group: true};
+// The values each list switch steps through (the uConsole's F, Shift+F,
+// Ctrl+F and Z cycle the same lists).
+export const ELOKA_FILTER_VALUES = {status: ["OPERATIONAL", "OPEN", "LIVE", "MEMORY", "ALL"],
+  threat: ["ALL", "LOW", "MEDIUM", "HIGH", "CRITICAL"],
+  band: ["ALL", "a_c", "d", "e_f", "g_h", "i_j", "k"], group: [true, false]};
+export function stepElokaFilter(key) {
+  const values = ELOKA_FILTER_VALUES[key];
+  elokaFilters[key] = values[(values.indexOf(elokaFilters[key]) + 1) % values.length];
+}
 const elokaThreatRank = {unknown: 0, low: 1, medium: 2, high: 3, critical: 4};
 const elokaSignalRank = {LIVE: 0, RECENT: 1, MEMORY: 2, UNCONFIRMED: 3};
 export function filteredEloka(intercepts) {
   const minimum = elokaFilters.threat === "ALL" ? -1 : elokaThreatRank[elokaFilters.threat.toLowerCase()];
   return intercepts.filter((row) => {
     if (row.jamming) return true;
-    if (elokaFilters.status === "OPERATIONAL" && !row.operational) return false;
+    if (["OPERATIONAL", "OPEN"].includes(elokaFilters.status) && !row.operational) return false;
+    if (elokaFilters.status === "OPEN" && row.annotation) return false;
     if (["LIVE", "MEMORY"].includes(elokaFilters.status) && row.signal_state !== elokaFilters.status) return false;
     if ((elokaThreatRank[row.threat] ?? 0) < minimum) return false;
     return elokaFilters.band === "ALL" || row.frequency_band === elokaFilters.band;
@@ -27,6 +37,28 @@ export function filteredEloka(intercepts) {
     (elokaThreatRank[b.threat] ?? 0) - (elokaThreatRank[a.threat] ?? 0) ||
     (elokaSignalRank[a.signal_state] ?? 9) - (elokaSignalRank[b.signal_state] ?? 9) ||
     b.quality - a.quality || a.age_s - b.age_s || a.label.localeCompare(b.label));
+}
+// One entry per emitter group (the host's ``group`` anchor, shared with the
+// uConsole list) while grouping is on; the selected intercept stands for its
+// group. Each entry carries its members in list order.
+export function groupedEloka(intercepts, selectedRef = null) {
+  const rows = filteredEloka(intercepts);
+  const order = [], members = new Map();
+  for (const row of rows) {
+    const key = elokaFilters.group ? row.group : row.ref;
+    if (!members.has(key)) { order.push(key); members.set(key, []); }
+    members.get(key).push(row);
+  }
+  return order.map((key) => {
+    const group = members.get(key);
+    const lead = group.find((row) => row.ref === selectedRef) ?? group[0];
+    return {...lead, members: group.map((row) => row.ref)};
+  });
+}
+// "E000000000000001b" -> "E27": the running number, as on the uConsole.
+export function elokaShortLabel(label) {
+  const match = /^E([0-9a-f]{16})$/.exec(label);
+  return match ? `E${Number.parseInt(match[1], 16)}` : label;
 }
 // Last accepted state per station. A station switch inside one world shows
 // the target's cached picture at once (marked stale, commands disabled) until
@@ -62,7 +94,7 @@ export const visualCanvasIds = ["role-map", "role-map-sweep", "sonar-broadband",
   "sonar-band-low", "sonar-band-mid", "sonar-band-high", "sonar-demon", "sonar-demon-spectrum",
   "sonar-tma-plot", "sonar-environment", "sonar-active", "sonar-a-scan", "damage-schematic",
   "engine-instruments", "eloka-scope", "weapons-system", "helicopter-broadband-canvas",
-  "helicopter-lofar-canvas", "helicopter-demon-canvas", "uboot-engine-dials"];
+  "helicopter-lofar-canvas", "helicopter-demon-canvas", "helicopter-dip-canvas", "uboot-engine-dials"];
 // The radio room has no chart: its instrument is the HF/DF scope.
 export const mapRoles = new Set(["bridge", "weapons", "opz", "helicopter", "uboot", "uboot_weapons", "uboot_nav", "uboot_esm",
   "uboot_radio"]);

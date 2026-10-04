@@ -74,14 +74,27 @@ export function renderTracks() {
     const symbol = node("span", undefined, `domain-symbol ${domainClass(track.domain)}`);
     symbol.setAttribute("aria-hidden", "true");
     const body = node("span");
-    body.append(node("span", track.label, "track-name"), node("span", `${enumText(domains, track.domain)} / ${enumText(affiliations, track.affiliation)}`, "track-info"));
-    body.append(node("span", `${unit(track.bearing, "\u00b0", 0)} / ${unit(track.range_nm, "NM")} / ${unit(track.age_s, "s", 0)}`, "track-info"));
+    if (track.eloka) {
+      // A radar intercept: what was measured, not a domain nobody knows.
+      const signal = track.eloka;
+      body.append(node("span", track.label, "track-name"),
+        node("span", signal.annotation || t(`eloka_modulation_${signal.modulation}`), signal.annotation ? "track-info track-classified" : "track-info"),
+        node("span", t("eloka_track_signal", {frequency: number(signal.frequency_hz / 1e9, 3),
+          band: signal.frequency_band.toUpperCase().replace("_", "/")}), "track-info"),
+        node("span", t("eloka_track_bearing", {bearing: number(track.bearing, 0), age: number(track.age_s, 0),
+          state: t(`eloka_signal_state_${signal.signal_state.toLowerCase()}`)}), "track-info"));
+    } else {
+      body.append(node("span", track.label, "track-name"), node("span", `${enumText(domains, track.domain)} / ${enumText(affiliations, track.affiliation)}`, "track-info"));
+      body.append(node("span", `${unit(track.bearing, "\u00b0", 0)} / ${unit(track.range_nm, "NM")} / ${unit(track.age_s, "s", 0)}`, "track-info"));
+    }
     const flags = [];
     if (track.ref === S.selected) flags.push(t("selected"));
     if (["sonar", "helicopter"].includes(S.session?.station))
       flags.push(t(track.released_to_opz ? "opz_release_active" : "opz_release_private"));
-    if (S.session?.station === "eloka")
+    if (S.session?.station === "eloka") {
+      if (track.eloka?.members.length > 1) flags.push(t("eloka_group_flag", {count: number(track.eloka.members.length, 0)}));
       flags.push(t(track.eloka_annotated ? "opz_release_active" : "opz_release_private"));
+    }
     if (S.opzMarked.has(track.ref)) flags.push(t("opz_marked"));
     if (S.opzSuppressed.has(track.ref)) flags.push(t("opz_suppressed"));
     if (flags.length) body.append(node("span", flags.join(" / "), "track-flags"));

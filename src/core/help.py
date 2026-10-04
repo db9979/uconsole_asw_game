@@ -215,7 +215,9 @@ STATION_HELP = {
     Station.ELOKA: _station(
         "help.eloka.intro",
         [("help.key.up_down", "help.control.eloka_select"),
+         ("help.key.left_right", "help.control.eloka_member"),
          ("F / Shift+F / Ctrl+F", "help.control.eloka_filters"),
+         ("Z", "help.control.eloka_group"),
          ("C", "help.control.eloka_annotation"),
          ("E", "help.control.eloka_jamming"),
          ("Shift+E", "help.control.eloka_technique"),
@@ -304,6 +306,7 @@ _WEB_HELP = (
         ("help.key.web_map_pan", "help.web.map_pan"),
         ("help.key.web_map_hover", "help.web.map_hover"),
         ("0", "help.web.weather_station"),
+        ("help.key.page", "help.web.helicopter_pages"),
         ("help.key.web_plot", "help.web.plot"),
         (", / .", "help.web.docks"),
         ("L", "help.web.log"),

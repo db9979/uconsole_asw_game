@@ -21,6 +21,8 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 
 ![Helicopter deck in the Remote Crew browser](figure:web-helicopter-desktop)
 
+The browser's stage has three pages for the helicopter: *Acoustic analysis* (BROADBAND, LOFAR and DEMON of the buoys and the dipping sonar), *Dipping sonar* (the dipping sonar's north-up scope over the whole stage, rings at 5, 10, 15 and 20 NM, with water depth, layer and each contact's values beside it) and *Tactical map* (the chart over the whole stage). `Page Up`/`Page Down`, the station number `8` again or the key chip beside the tabs step through them.
+
 ```text
           frigate                           waypoint (1-30 NM)
             *----------- 120 kn -------------->  H  hover + dip

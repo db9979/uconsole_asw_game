@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.200**
+Current release: **1.3.201**
 
-Release 1.3.200 makes the EW station easier to read. Intercepts of the same
+Release 1.3.201 makes the EW station easier to read. Intercepts of the same
 kind from one direction (same band and modulation, bearing within 6 degrees),
 such as the navigation radars of several merchants, are listed as one emitter
 "E27 ×3"; the arrow keys left and right step through the group, and Z lists

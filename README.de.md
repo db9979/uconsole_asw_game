@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.200**
+Aktuelle Version: **1.3.201**
 
-Version 1.3.200 macht die ELOKA übersichtlicher. Gleichartige Auffassungen
+Version 1.3.201 macht die ELOKA übersichtlicher. Gleichartige Auffassungen
 aus einer Richtung (gleiches Band und gleiche Modulation, Peilung innerhalb
 6 Grad), etwa die Navigationsradare mehrerer Handelsschiffe, stehen als ein
 Sender „E27 ×3“ in der Liste; die Pfeiltasten links und rechts blättern durch

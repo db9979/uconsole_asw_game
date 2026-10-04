@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.200
+## 1.3.201
 
-Version 1.3.200 macht die ELOKA übersichtlicher. Gleichartige Auffassungen
+Version 1.3.201 macht die ELOKA übersichtlicher. Gleichartige Auffassungen
 aus einer Richtung (gleiches Band und gleiche Modulation, Peilung innerhalb
 6 Grad), etwa die Navigationsradare mehrerer Handelsschiffe, stehen als ein
 Sender „E27 ×3“ in der Liste; die Pfeiltasten links und rechts blättern durch
@@ -19,6 +19,18 @@ blaue Tastenchips auf der uConsole und als Leiste im Remote-Crew-Browser. Die
 Rose im Browser zeichnet je Sender einen Strahl, ältere kürzer und blasser,
 und beschriftet den gewählten. Nur die Darstellung ändert sich, das ESM-Bild
 bleibt gleich. Spielstände sind v50; v38 bis v49 laden weiter.
+
+## 1.3.200
+
+Version 1.3.200 gibt dem Tauchsonar und der Karte des Hubschraubers im
+Remote-Crew-Browser Platz. Beide teilten sich bisher einen Reiter, sodass die
+Karte nur ein Streifen und das Sonarbild klein war. Jetzt hat der Hubschrauber
+auf der Bühne drei Seiten: Akustikanalyse, Tauchsonar (das Bild über die ganze
+Bühne, Ringe mit 5, 10 und 15 sm beschriftet, die Werte daneben) und Taktische
+Karte (die Karte über die ganze Bühne). Bild auf/ab, nochmals die
+Stationsnummer 8 oder der blaue Tastenchip neben den Reitern blättern zwischen
+ihnen, wie die Seiten der uConsole. Die uConsole bleibt gleich. Spielstände
+sind v50; v38 bis v49 laden weiter.
 
 ## 1.3.199
 

@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.200
+## 1.3.201
 
-Release 1.3.200 makes the EW station easier to read. Intercepts of the same
+Release 1.3.201 makes the EW station easier to read. Intercepts of the same
 kind from one direction (same band and modulation, bearing within 6 degrees),
 such as the navigation radars of several merchants, are listed as one emitter
 "E27 ×3"; the arrow keys left and right step through the group, and Z lists
@@ -19,6 +19,17 @@ on the uConsole and as a bar in the Remote Crew browser. The browser's rose
 draws one strobe per emitter, older ones shorter and fainter, and names the
 selected one. Display only, the ESM picture is unchanged. Saves are v50; v38
 to v49 saves still load.
+
+## 1.3.200
+
+Release 1.3.200 gives the helicopter's dipping sonar picture and chart more
+room in the Remote Crew browser. Both used to share one tab, so the chart was only a strip
+and the sonar picture small. Now the helicopter has three pages on the stage:
+Acoustic analysis, Dipping sonar (the scope over the whole stage, rings
+labelled 5, 10 and 15 NM, values beside it) and Tactical map (the chart over
+the whole stage). Page Up/Page Down, the station number 8 again or the blue
+key chip beside the tabs step through them, like the uConsole's pages. The
+uConsole is unchanged. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.199
 

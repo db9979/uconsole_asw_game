@@ -1402,6 +1402,8 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 
 *Helicopter deck in the Remote Crew browser*
 
+The browser's stage has three pages for the helicopter: *Acoustic analysis* (BROADBAND, LOFAR and DEMON of the buoys and the dipping sonar), *Dipping sonar* (the dipping sonar's north-up scope over the whole stage, rings at 5, 10, 15 and 20 NM, with water depth, layer and each contact's values beside it) and *Tactical map* (the chart over the whole stage). `Page Up`/`Page Down`, the station number `8` again or the key chip beside the tabs step through them.
+
 ```text
           frigate                           waypoint (1-30 NM)
             *----------- 120 kn -------------->  H  hover + dip
@@ -2307,6 +2309,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 | `Arrow keys (chart)` | Pan focused chart |
 | `Mouse over map` | Details of the track, own ship, asset, wreck or chart position under the cursor |
 | `0` | Open or close the weather & sonar analysis |
+| `Page Up/Down` | Helicopter: step through Acoustic analysis, Dipping sonar and Tactical map (8 again also steps) |
 | `Plot tool + click` | Draw on the shared plot: pick a tool above the map, click once (mark, bearing line) or twice (ruler, circle, DR line) |
 | `, / .` | Collapse or expand the contact list (,) or the station panel (.) |
 | `L` | Open or close the operational log |

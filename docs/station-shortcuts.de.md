@@ -1,4 +1,4 @@
-# U-Jagd 1.3.200 - Stations- und Tastenkürzel
+# U-Jagd 1.3.201 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -388,6 +388,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Pfeiltasten (Karte)` | Fokussierte Karte verschieben |
 | `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
 | `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
+| `Bild auf/ab` | Helikopter: Akustikanalyse, Tauchsonar und Taktische Karte durchblättern (auch nochmals 8) |
 | `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
 | `, / .` | Kontaktliste (,) oder Stationsbereich (.) ein- oder ausklappen |
 | `L` | Einsatzprotokoll öffnen oder schließen |

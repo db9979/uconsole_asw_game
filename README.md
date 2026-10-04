@@ -12,16 +12,21 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.200**
+Current release: **1.3.201**
 
-Release 1.3.200 gives the helicopter's dipping sonar picture and chart more
-room in the Remote Crew browser. Both used to share one tab, so the chart was only a strip
-and the sonar picture small. Now the helicopter has three pages on the stage:
-Acoustic analysis, Dipping sonar (the scope over the whole stage, rings
-labelled 5, 10 and 15 NM, values beside it) and Tactical map (the chart over
-the whole stage). Page Up/Page Down, the station number 8 again or the blue
-key chip beside the tabs step through them, like the uConsole's pages. The
-uConsole is unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.201 makes the EW station easier to read. Intercepts of the same
+kind from one direction (same band and modulation, bearing within 6 degrees),
+such as the navigation radars of several merchants, are listed as one emitter
+"E27 ×3"; the arrow keys left and right step through the group, and Z lists
+every intercept on its own again. Intercepts are named by their running number
+(E27 instead of E000000000000001b) and show the classification or else the
+modulation, band and frequency instead of "unknown domain". Four switches
+above the bearing rose sort the list: status F (new: open, the emitters not
+yet classified), threat Shift+F, band Ctrl+F and grouping Z, as blue key chips
+on the uConsole and as a bar in the Remote Crew browser. The browser's rose
+draws one strobe per emitter, older ones shorter and fainter, and names the
+selected one. Display only, the ESM picture is unchanged. Saves are v50; v38
+to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -1228,6 +1228,9 @@ def _eloka(game, rows, esm_refs, candidate_refs):
         evidence.append(item)
         evidence_refs[row["ref"]] = True
     intercepts = []
+    # The emitter group of every intercept (display policy shared with the
+    # uConsole list): the anchor's public ref; the browser bundles by it.
+    groups = game.eloka_group_map()
     for track in game.eloka_tracks():
         age = _age(game.sim_t, track.last_seen)
         if age is None or age > game.esm_picture.stale_s:
@@ -1260,7 +1263,9 @@ def _eloka(game, rows, esm_refs, candidate_refs):
                     position_available=observed.x is not None)))
             if len(correlations) == 8:
                 break
+        anchor = groups.get(track.track_key, track.track_key)
         intercepts.append(dict(ref=esm_refs[track.track_key], label=track.track_key,
+            group=esm_refs.get(anchor, esm_refs[track.track_key]),
             bearing=_number(track.bearing),
             bearing_uncertainty_deg=_number(track.bearing_uncertainty_deg),
             frequency_hz=_number(track.frequency_hz), prf_hz=_number(track.prf_hz),

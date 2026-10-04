@@ -1,4 +1,4 @@
-# U-Jagd 1.3.200 - Stations- und Tastenkürzel
+# U-Jagd 1.3.201 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -99,7 +99,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Shift+Q` | LOFAR-Nonius: 20 Hz in nativen 0,5 Hz |
 | `Shift+N` | Notch auf der Cursorfrequenz |
 | `Shift+F` | DEMON-Trägerband 200-800 / 400-1400 / 1000-2000 Hz |
-| `Ctrl+F` | Überlagerungsversatz 400/700/1000/1200 Hz |
+| `Strg+F` | Überlagerungsversatz 400/700/1000/1200 Hz |
 | `X / Shift+X (BB)` | Breitband/Fusion: TAS-Seite des gewählten Kontakts wechseln / Umschalt: bestätigen |
 | `Z / X (TMA)` | TMA-Seite: Hypothesenkurs -/+ 5 Grad (Umschalt 1 Grad) |
 | `Ctrl+Z / Ctrl+X (TMA)` | TMA-Seite: Hypothesenfahrt -/+ 1 kn |
@@ -256,8 +256,10 @@ Berechtigungsprüfungen bleiben wirksam.
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `Auf / Ab` | Sichtbare passive ESM-Auffassung wählen |
-| `F / Shift+F / Ctrl+F` | Status-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
+| `Auf / Ab` | Nächsten gelisteten Sender wählen (eine Gruppe zählt einmal) |
+| `← / →` | Durch die Auffassungen der gewählten Sendergruppe blättern |
+| `F / Shift+F / Ctrl+F` | Status (operativ, offen = noch nicht eingestuft, live, Speicher, alle) / Mindestbedrohung / Frequenzband wechseln |
+| `Z` | Gleichartige Auffassungen einer Richtung zu einem Eintrag bündeln an/aus |
 | `C` | Radarart zuordnen und aktuelle Peilungen an OPZ freigeben; Zuordnung löschen zieht die Freigabe zurück |
 | `E` | Gerichteten ECM-Kanal für die gewählte Auffassung aktivieren / freigeben |
 | `Shift+E` | ECM-Verfahren Noise, RGPO, VGPO oder Falschziele wechseln |

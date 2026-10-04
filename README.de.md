@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.196**
+Aktuelle Version: **1.3.197**
 
-Version 1.3.196 behebt die Meldung „Anzeige gestört“ beim starken
+Version 1.3.197 behebt die Meldung „Anzeige gestört“ beim starken
 Hineinzoomen in eine Karte. Mit der Grafikstufe „Voll“ konnte das geglättete
 Linienzeichnen keine Linien verarbeiten, die weit außerhalb der Karte enden,
 etwa einen Autopilot-Schlag zu einem fernen Wegpunkt bei stärkstem Zoom; die

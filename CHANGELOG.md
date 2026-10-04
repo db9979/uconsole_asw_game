@@ -4,14 +4,27 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.196
+## 1.3.197
 
-Release 1.3.196 fixes the "display fault" box when zooming far into a chart.
+Release 1.3.197 fixes the "display fault" box when zooming far into a chart.
 With the graphics level "Full", the smooth line drawing could not handle lines
 that end far outside the chart, such as an autopilot leg to a distant
 waypoint at the strongest zoom; the chart then showed the fault box instead
 of the map. Lines and areas are now cut to the visible chart before drawing,
 so every chart on both sides draws at its closest and widest zoom.
+
+## 1.3.196
+
+Release 1.3.196 closes the last points of the code audit. The LFM ping no
+longer gains 20 dB against noise, which a pulse of the same energy as CW
+cannot; instead its fine range cell cuts the seabed reverberation by 20 dB, so
+it finds a slow or stationary submarine in shallow water, while in deep water
+both pulses reach equally far. A submarine now hears a running torpedo at its
+full reference range. On a free patrol a sunk neutral submarine costs the
+frigate only when its own torpedoes, depth charges or rockets sank it, and a
+submarine that comes back as a new encounter is a new contact. A hung build
+self-test no longer holds back new releases for hours. Saves are v50; v38 to
+v49 saves still load.
 
 ## 1.3.195
 

@@ -12,17 +12,19 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.197**
+Current release: **1.3.198**
 
-Release 1.3.197 makes the hover tooltips follow the colour scheme. In the
-light Tactical Day scheme a tooltip is now a light card with dark text instead
-of a dark box with barely readable lettering; Tactical Night and high contrast
-keep a dark box, and red light turns it grey. The damage-control pictures (the
-frigate's side view and cross-section, the submarine cutaway) become a light
-drawing board by day with floodwater, fire and teams still clear, on the
-uConsole and in the browser. The update notice in the main menu and the
-notice for a view that failed to draw follow the scheme too.
-Keys are unchanged. Saves are v50; v38 to v49 saves still load.
+Release 1.3.198 explains every status lamp. Resting the mouse on a lamp or
+indicator, such as the helicopter's LAUNCH NO-GO and DECK WAIT, a torpedo
+tube, the plant, the ESM receiver or the submarine's depth under the keel,
+opens a note that says why it shows that state, taken from the running game
+(deck motion and quiet time, weather limits, reload time, charted depth), and
+what to do about it. Every key a station can use is now a blue key chip you
+can click, also inside these notes. Both work on both sides, on the uConsole
+and in the Remote Crew browser. The CIC's four contact buttons say what they
+do (Classify, Change affiliation, Mark for fusion, Fuse / dissolve), centred
+beside their key chip. Keys are unchanged. Saves are v50; v38 to v49 saves
+still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

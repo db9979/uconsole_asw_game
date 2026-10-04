@@ -6,7 +6,7 @@ import math
 import pygame
 import numpy as np
 
-from src.core import config
+from src.core import config, status_tips
 from src.core.i18n import display_value, localized, localize, raw_text
 from src.core.station import Station
 from src.ui import layout, pointer
@@ -472,6 +472,14 @@ def flight_weather(game):
     return query() if callable(query) else None
 
 
+def _tips(game, *names) -> list:
+    """Hover notes of the named lamps (``status_tips.helicopter``), worked
+    out only while the pointer is over one."""
+    if not callable(getattr(game, "helicopter_weather", None)):
+        return [None] * len(names)
+    return [status_tips.lazy(lambda: status_tips.helicopter(game), name) for name in names]
+
+
 def state_lamps(game, helo, weather) -> list:
     """The state strip: hangar, deck (cleared to launch), airborne, dipping,
     returning; exactly one is lit, LOST lights the airborne lamp red."""
@@ -522,8 +530,10 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
     sx, sy, sw, sh = layout.box(s, region, "panel.flight_status", border=state_color)
     weather = flight_weather(game)
     lamp_h = layout.line_pitch(14, 0) + 8
-    used = console.lamp_grid(s, (sx, sy, sw, lamp_h), state_lamps(game, helo, weather),
-                             5, size=14)
+    used = console.lamp_grid(s, (sx, sy, sw, lamp_h), console.with_tips(
+        state_lamps(game, helo, weather), _tips(game, "state_hangar", "state_deck",
+                                               "state_airborne", "state_dipping",
+                                               "state_returning")), 5, size=14)
     top = sy + used + 8
     body_h = sy + sh - top
     if body_h < 60:
@@ -656,17 +666,18 @@ def _draw_stores_and_systems(game, s, region, helo) -> None:
         dipping = (message("weather.flight.dip_ok" if weather["dipping_safe"]
                            else "weather.flight.dip_blocked"),
                    "on" if weather["dipping_safe"] else "alarm")
-    console.lamp_grid(s, (rx, top, rw, lamp_h), (
+    console.lamp_grid(s, (rx, top, rw, lamp_h), console.with_tips((
         ("helo.console.launch_weather", launch[0], launch[1], "H"),
         ("helo.console.deck_window", deck[0], deck[1]),
-        ("helo.console.dip_weather", dipping[0], dipping[1])), 3, size=14)
+        ("helo.console.dip_weather", dipping[0], dipping[1])),
+        _tips(game, "launch", "deck", "dip")), 3, size=14)
     if top + 2 * lamp_h + 4 > ry + rh:
         return
     radar = getattr(game, "helo_radar_active", None)
-    console.lamp_grid(s, (rx, top + lamp_h + 4, rw, lamp_h), (
+    console.lamp_grid(s, (rx, top + lamp_h + 4, rw, lamp_h), console.with_tips((
         *_dip_lamps(game, helo),
         ("helo.console.radar", "", "on" if callable(radar) and radar() else "off", "Ctrl+R")),
-        4, size=14)
+        _tips(game, "dome", "ping", "water", "radar")), 4, size=14)
 
 
 @localized
@@ -732,9 +743,11 @@ def draw_helicopter_view(game, tr=None) -> None:
                   config.COLOR_OK if game.helo_radar_active() else config.COLOR_TEXT_DIM,
                   config.COLOR_WARN)
         # The keys named in the rules are switches (full mouse control).
-        tokens = ((), (), (("H:", "H"),),
+        tokens = ((), (("Q/E", "Q/E"),),
+                  (("H:", "H"), ("Arrows:", None), ("Pfeile:", None)),
                   (("Y", "Y"), ("U/V", "U/V"), ("Shift+A", "Shift+A")),
-                  (("B:", "B"), ("D:", "D")), (),
+                  (("B:", "B"), ("D:", "D")),
+                  (("Shift+↑/↓", None), ("G", "G")),
                   (("Buoys:", "Shift+B"), ("Bojen:", "Shift+B"), ("MAD", "Shift+M")),
                   (("Radar", "Ctrl+R"),), ())
         line_y = my
@@ -746,7 +759,8 @@ def draw_helicopter_view(game, tr=None) -> None:
             block_h = min(remaining, line_h * (2 if text == rules[-1] else 1))
             layout.blit_block(s, text, mx, line_y, mw, block_h, color,
                               size=18, min_size=16)
-            pointer.add_token_keys((mx, line_y, mw, block_h), text, 18, keys, min_size=16)
+            pointer.add_token_keys((mx, line_y, mw, block_h), text, 18, keys, min_size=16,
+                                   screen=s)
             line_y += block_h + 4
     elif page == 2:
         plot = layout.box(s, regions["rules"], "helo.dip_sonar")
@@ -754,7 +768,8 @@ def draw_helicopter_view(game, tr=None) -> None:
         from src.ui import console
         lamp_h = layout.line_pitch(14, 0) + 8
         lamps = pygame.Rect(int(px + 8), py + 30, max(1, int(pw * .56)), lamp_h)
-        console.lamp_grid(s, lamps, _dip_lamps(game, helo), 3, size=14)
+        console.lamp_grid(s, lamps, console.with_tips(
+            _dip_lamps(game, helo), _tips(game, "dome", "ping", "water")), 3, size=14)
         center_x = px + min(pw * .34, ph * .42)
         radius = int(min(pw * .28, ph * .42, (py + ph - 90 - lamps.bottom - 24) / 2))
         center_y = lamps.bottom + 24 + radius
@@ -805,7 +820,7 @@ def draw_helicopter_view(game, tr=None) -> None:
         layout.blit_line(s, source_label, (px + 8, py + 4, int(pw * .55), 22),
                          config.COLOR_OK, size=16)
         pointer.add_token_keys((px + 8, py + 4, int(pw * .55), 22), source_label, 16,
-                               (("(T/F/G)", "T/F/G"),))
+                               (("(T/F/G)", "T/F/G"),), screen=s)
         for contact in sorted(game.sonar.contacts.values(), key=lambda c: c.id):
             fixes = [fix for fix in contact.active_fixes(game.sim_t)
                      if fix["source"] == "DIPPING"]

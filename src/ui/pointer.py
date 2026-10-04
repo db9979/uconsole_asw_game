@@ -40,11 +40,16 @@ class Target:
 
 _targets: list[Target] = []
 _layer = ["station"]
+# Hover notes of status lamps: (rect, layer, payload or a function making
+# it), rebuilt every frame like the targets.
+MAX_TIPS = 128
+_tips: list[tuple] = []
 
 
 def reset() -> None:
     """Start a new frame (called before drawing)."""
     _targets.clear()
+    _tips.clear()
     del _layer[1:]
     _layer[0] = "station"
 
@@ -76,6 +81,24 @@ def add_hotspot(rect) -> None:
     """``rect`` is clickable through the station's own hit test: hover only."""
     if len(_targets) < MAX_TARGETS:
         _targets.append(Target(pygame.Rect(rect), _layer[-1], hover_only=True))
+
+
+def add_tip(rect, tip) -> None:
+    """Hovering ``rect`` shows ``tip``: a tooltip payload
+    (``layout.tooltip_payload``) or a function returning one, called only
+    while the pointer is over it."""
+    if tip is not None and len(_tips) < MAX_TIPS:
+        _tips.append((pygame.Rect(rect), _layer[-1], tip))
+
+
+def tip_at(pos, layer_name: str = "station"):
+    """The payload of the topmost lamp note under ``pos``, or None."""
+    if pos is None:
+        return None
+    for rect, name, tip in reversed(_tips):
+        if name == layer_name and rect.collidepoint(pos):
+            return tip() if callable(tip) else tip
+    return None
 
 
 def add_spec(rect, spec) -> None:
@@ -257,14 +280,10 @@ def add_line_keys(rect, text: str, size: int, keys, separator: str | None = None
 _SEPARATORS = (" | ", " · ", "  ", " / ")
 
 
-def token_spans(text: str, tokens) -> list:
-    """``(start, end, spec)`` of each key token found in ``text``, in order.
-
-    A token (``"H:"``, ``"Shift+A"``, ``"U/V"``) counts only as a whole word;
-    its part runs to the next token or the next separator (`` | ``, `` · ``,
-    two spaces), whichever comes first.  Tokens not found are skipped, so
-    one token list serves English and German.
-    """
+def token_matches(text: str, tokens) -> list:
+    """``(start, token_end, end, spec)`` of each key token found in ``text``:
+    where the token itself ends and where its part ends (see
+    :func:`token_spans`)."""
     import re
     found = []
     cursor = 0
@@ -275,27 +294,69 @@ def token_spans(text: str, tokens) -> list:
         match = pattern.search(text, cursor)
         if match is None:
             continue
-        found.append((match.start(), spec))
+        found.append((match.start(), match.end(), spec))
         cursor = match.end()
     spans = []
-    for index, (start, spec) in enumerate(found):
+    for index, (start, token_end, spec) in enumerate(found):
         end = found[index + 1][0] if index + 1 < len(found) else len(text)
         for separator in _SEPARATORS[:3]:
             cut = text.find(separator, start + 1)
             if 0 <= cut < end:
                 end = cut
-        spans.append((start, len(text[:end].rstrip()), spec))
+        spans.append((start, token_end, len(text[:end].rstrip()), spec))
     return spans
 
 
+def token_spans(text: str, tokens) -> list:
+    """``(start, end, spec)`` of each key token found in ``text``, in order.
+
+    A token (``"H:"``, ``"Shift+A"``, ``"U/V"``) counts only as a whole word;
+    its part runs to the next token or the next separator (`` | ``, `` · ``,
+    two spaces), whichever comes first.  Tokens not found are skipped, so
+    one token list serves English and German.
+    """
+    return [(start, end, spec) for start, _token_end, end, spec
+            in token_matches(text, tokens)]
+
+
+# Words that name a key (drawn as a key cap); any other token word, such as
+# "Mast", stays plain text that is only clickable.
+_KEY_WORDS = {"enter", "eingabe", "esc", "tab", "space", "leertaste", "backspace",
+              "pos1", "home", "end", "ende", "arrows", "pfeile", "pfeiltasten",
+              "bild", "pgup", "pgdn", "auf", "up", "down", "umsch"}
+
+
+def key_cap_text(token: str) -> tuple[int, int] | None:
+    """The part of ``token`` drawn as a key cap, as ``(start, end)``
+    offsets (``"(Shift+F)"`` -> ``Shift+F``, ``"H:"`` -> ``H``), or None
+    for a word that is not a key name."""
+    start, end = 0, len(token)
+    while start < end and token[start] in "([":
+        start += 1
+    while end > start and token[end - 1] in ":)].,/":
+        end -= 1
+    core = token[start:end]
+    if not core:
+        return None
+    words = core.replace("+", " ").replace("/", " ").split()
+    if all(len(word) <= 2 or word.lower() in _KEY_WORDS
+           or word.lower() in ("shift", "umschalt", "ctrl", "strg", "alt", "fn")
+           or (word[:1] in "Ff" and word[1:].isdigit())
+           for word in words):
+        return start, end
+    return None
+
+
 def add_token_keys(rect, text, size: int, tokens, align: str = "left",
-                   min_size: int | None = None) -> None:
+                   min_size: int | None = None, screen=None) -> None:
     """Register the key tokens of a hint drawn by ``layout.blit_line`` (or
     ``blit_block`` with its ``min_size``) in ``rect``: the same fitting, so
     a shrunk, wrapped or shortened line keeps its parts where they are drawn.
 
     ``text`` is what was drawn (catalog key, message or text); ``tokens``
-    holds ``(token, spec)`` pairs, see :func:`token_spans`.
+    holds ``(token, spec)`` pairs, see :func:`token_spans`.  With ``screen``
+    each token that names a key is also drawn as the stations' blue key cap
+    over the text just drawn, so a key in prose looks like the footer chips.
     """
     from src.ui import layout
     x, y, w, h = pygame.Rect(rect)
@@ -315,9 +376,26 @@ def add_token_keys(rect, text, size: int, tokens, align: str = "left",
         width = layout.text_width(face, line)
         left = (x if align == "left" else x + w - width if align == "right"
                 else x + max(0, (w - width) // 2))
-        for start, end, spec in token_spans(line, tokens):
-            x0 = left + layout.text_width(face, line[:start])
-            x1 = left + layout.text_width(face, line[:end])
-            area = pygame.Rect(x0 - 3, y + index * pitch, x1 - x0 + 6, pitch).clip(bounds)
-            if area.w > 4 and area.h > 4:
-                add_spec(area, spec)
+        line_keys(screen, face, line, left, y + index * pitch, tokens, bounds)
+
+
+def line_keys(screen, face, line: str, left: int, top: int, tokens, bounds=None) -> None:
+    """Register (and with ``screen`` draw as key caps) the key tokens of one
+    line already drawn with ``face`` at ``(left, top)``."""
+    from src.ui import layout
+    pitch = layout._line_height(face)
+    if bounds is None:
+        bounds = pygame.Rect(left - 3, top, layout.text_width(face, line) + 6, pitch)
+    bounds = pygame.Rect(bounds)
+    for start, token_end, end, spec in token_matches(line, tuple(tokens)):
+        x0 = left + layout.text_width(face, line[:start])
+        x1 = left + layout.text_width(face, line[:end])
+        area = pygame.Rect(x0 - 3, top, x1 - x0 + 6, pitch).clip(bounds)
+        if area.w > 4 and area.h > 4:
+            add_spec(area, spec)
+        if screen is not None:
+            cap = key_cap_text(line[start:token_end])
+            if cap is not None:
+                layout.key_cap(screen, face, line[start + cap[0]:start + cap[1]],
+                               (left + layout.text_width(face, line[:start + cap[0]]), top),
+                               pitch, bounds)

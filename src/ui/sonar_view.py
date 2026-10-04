@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 import pygame
 
-from src.core import config
+from src.core import config, status_tips
 from src.core.i18n import display_message, display_value, localized, localize
 from src.sonar import analysis_tools, class_library, tma_operator
 from src.ui import layout
@@ -46,12 +46,27 @@ _WATERFALL_CACHE = OrderedDict()
 _WATERFALL_CACHE_SCREEN = None
 
 
-def _text(screen, text, rect, color=TEXT, size=14, align="left"):
-    """One readable line, ellipsized rather than shrunk into microtext."""
+# Hints that name keys: the keys are drawn as key caps and are clickable.
+HINT_KEYS = {
+    "sonar.deploy_bt": (("E:", "E"),),
+    "sonar.measure_profile": (("E:", "E"),),
+    "sonar.tas_depth_control": (("U/V:", "U/V"),),
+    "sonar.active_ping_control": (("Shift+A:", "Shift+A"), ("Umschalt+A:", "Shift+A")),
+    "sonar.catalog_manual_hint": (("K", "K"), ("F8", "F8")),
+}
+SHIFT_T_KEYS = (("(Shift+T)", "Shift+T"), ("(Umschalt+T)", "Shift+T"))
+SHIFT_K_KEYS = (("Shift+K", "Shift+K"), ("Umschalt+K", "Shift+K"))
+
+
+def _text(screen, text, rect, color=TEXT, size=14, align="left", keys=None):
+    """One readable line, ellipsized rather than shrunk into microtext; the
+    key tokens of a hint (``keys``, or :data:`HINT_KEYS` by catalog key)
+    become key caps."""
     rect = pygame.Rect(rect)
     if rect.w <= 0 or rect.h <= 0:
         return
     font = layout.font(size)
+    key = text
     text = layout.fit_line(text, font, rect.w)
     x = rect.x
     if align == "right":
@@ -63,6 +78,10 @@ def _text(screen, text, rect, color=TEXT, size=14, align="left"):
         rendered = image.get_rect(topleft=(x, rect.y))
         layout.record_text(text, rendered, rect, image)
         screen.blit(image, rendered)
+    if keys is None and isinstance(key, str):
+        keys = HINT_KEYS.get(key)
+    if keys:
+        pointer.line_keys(screen, font, text, x, rect.y, keys, rect)
 
 
 def waterfall_surface(rows, width, height, gain_db=0.0, *, black_level=0.0,
@@ -601,7 +620,7 @@ def _draw_tma(game, panel):
     method = getattr(game, "tma_method", "hypothesis")
     _text(screen, message("sonar.tma_method_line",
                           method=display_message("tma_method", method)),
-          (panel.x + 16, panel.y + 37, panel.w - 32, 20), AMBER, 12)
+          (panel.x + 16, panel.y + 37, panel.w - 32, 20), AMBER, 12, keys=SHIFT_T_KEYS)
     if len(points):
         with layout.clip_to(screen, plot):
             if len(xy) > 1:
@@ -618,7 +637,7 @@ def _draw_tma(game, panel):
             _text(screen, (message("sonar.ekelund_line", range=f"{estimate[0]:.1f}",
                                    error=f"{estimate[1]:.1f}") if estimate is not None
                            else "sonar.ekelund_pending"),
-                  (plot.x + 8, plot.y + 30, plot.w - 16, 20), AMBER, 13)
+                  (plot.x + 8, plot.y + 30, plot.w - 16, 20), AMBER, 13, keys=SHIFT_K_KEYS)
         _text(screen, message("sonar.line.observations", count=len(points),
                               duration=f"{times[-1] - times[0]:.1f}"),
                (plot.x, plot.bottom + 24, plot.w - 145, 18), DIM, 12)
@@ -1049,7 +1068,9 @@ def _draw_listening_console(game, rect, page):
     if rect.h < lamp_h + 8 or rect.w < 120:
         return
     console.lamp_grid(screen, (rect.x + 10, rect.y, rect.w - 20, lamp_h),
-                      _console_lamps(game), 3, size=14)
+                      console.with_tips(_console_lamps(game), [
+                          status_tips.payload(notes[name]) for notes in (status_tips.sonar(game),)
+                          for name in ("ping", "audio", "peak")]), 3, size=14)
     rose = pygame.Rect(rect.x + 10, rect.y + lamp_h + 8, rect.w - 20,
                        rect.bottom - rect.y - lamp_h - 16)
     if page != 5 and min(rose.w, rose.h) >= 96:

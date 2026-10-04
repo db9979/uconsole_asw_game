@@ -2,6 +2,16 @@ import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { number, stateText, unit } from "../core/format.js";
 import { fillFireTargets, inUse, metrics, position, stationRows, weaponTargetEntries, yesNo } from "../views/dom.js";
+import { noteLamp, renderLamps } from "../views/console-kit.js";
+
+// The interlock chain and the tubes as lamps, drawn from the host's notes
+// (each says why it is lit or blocked, as on the uConsole).
+function renderWeaponLamps(tubeCount) {
+  renderLamps($("weapons-interlock-lamps"), [noteLamp("target", "target"), noteLamp("fix", "fix"),
+    noteLamp("roe", "roe"), noteLamp("weapon", "weapon", "weapons-fire-torpedo"), noteLamp("flak", "flak")].filter(Boolean));
+  renderLamps($("weapons-tube-lamps"), Array.from({length: Math.min(8, tubeCount)},
+    (_, index) => noteLamp(`tube_${index + 1}`, `tube_${index + 1}`)).filter(Boolean));
+}
 
 function renderTorpedoSettings(settings) {
   const typeSelect = $("weapons-torpedo-type");
@@ -34,6 +44,7 @@ export function renderWeaponsStation(payload) {
   stationRows($("weapons-target"), payload.designated_target ? [payload.designated_target] : [], weaponTargetEntries, "station_no_target");
   stationRows($("weapons-tubes"), payload.tubes, (row) => [["weapons_tube", number(row.tube, 0)],
     ["state", stateText("tube_state", row.state)], ["reload", unit(row.reload_s, "s", 0)]]);
+  renderWeaponLamps(payload.tubes.length);
   fillFireTargets("weapons-fire-target", payload.target_choices);
   if (!S.stationDrafts.has("weapons-fire-depth")) $("weapons-fire-depth").value = String(payload.depth_m);
   renderTorpedoSettings(payload.settings);

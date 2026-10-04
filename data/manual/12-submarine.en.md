@@ -28,7 +28,7 @@ A save keeps the crew's orders, modes, mast, wires, plot, alarm bearings, ESM pi
 
 Every new game first asks **Which unit do you play?**: *Frigate F-217* or *Hostile submarine* (`Up`/`Down` or `1`/`2`, `Enter`; the last choice is preselected). Outside a mission, Options (`F10`) page 2 **uConsole plays** changes it as well, for example before loading a game. With the submarine the uConsole commands the hostile submarine instead of the frigate. The frigate is then crewed from the browsers through Remote Crew (`F9`); every frigate station no browser holds is crewed by the **AI hunters** (below).
 
-The uConsole shows only the submarine's own picture; the frigate's banners, event log, sound cues, plot and tooltips never appear, and its trackball and telegraph controls are disabled. The side can only be changed outside a mission; it lasts for this launch and is never saved, so every launch starts with the frigate.
+The uConsole shows only the submarine's own picture; the frigate's banners, event log, sound cues, plot and tooltips never appear (the submarine's own lamp notes do), and its trackball and telegraph controls are disabled. The side can only be changed outside a mission; it lasts for this launch and is never saved, so every launch starts with the frigate.
 
 On the uConsole `1` to `7` switch the stations and pressing the same number again (or `Page Up`/`Page Down`) turns the station's pages. Every station has a key bar at the bottom; a click on a key there, on a lamp or on a dial does the same as the key. The full key table is at the end of this chapter; the browser stations have the same orders as buttons.
 

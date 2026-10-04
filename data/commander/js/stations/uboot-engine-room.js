@@ -2,7 +2,7 @@ import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { finite, number, t, unit } from "../core/format.js";
 import { node } from "../views/dom.js";
-import { drawDialPanel, keyed, pct, renderLampPanel, signed } from "../views/console-kit.js";
+import { drawDialPanel, keyed, lampTip, pct, renderLampPanel, signed } from "../views/console-kit.js";
 import { palette } from "../core/palette.js";
 import { visualContext } from "../views/visual-common.js";
 import { drawBoatSection } from "./damage-section.js";
@@ -21,7 +21,9 @@ function lamps(payload) {
   const ballast = payload.ballast, dc = payload.damage_control, air = plant.air;
   const nuclear = plant.propulsion === "nuclear";
   const rows = [];
-  const add = (key, label, level, value) => rows.push([key, label, level, value]);
+  // Each lamp carries the host's note on why it shows what it shows.
+  const add = (key, label, level, value) => rows.push([key, label, level, value, undefined,
+    lampTip(`sys_${key}`) ?? lampTip(key === "cavitating" ? "cavitation" : key)]);
   // Propulsion.
   add("motor", t(nuclear ? "uboot_lamp_reactor" : "uboot_lamp_motor"), nav.speed > .05 ? "on" : "off", unit(nav.speed, "kn"));
   add("silent", t("uboot_chip_silent"), status.silent ? (status.quiet ? "on" : "caution") : "off", onOff(status.silent));

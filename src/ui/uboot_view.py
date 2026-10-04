@@ -18,7 +18,7 @@ import pygame
 from src.ui import theme
 
 from src.commander.server import OPFOR_ROLES
-from src.core import boat_esm, boat_nav, config, opfor, uboot_local
+from src.core import boat_esm, boat_nav, config, opfor, status_tips, uboot_local
 from src.core.i18n import display_message, display_value, localize, message, raw_text
 from src.core.station import Station
 from src.ui import (chart_trails, console, engagement, instruments, label_layout, layout, lines,
@@ -909,6 +909,7 @@ def _draw_fire_column(s, game, boat, rect) -> None:
         "uboot.local.fire_ready" if reason is None else f"uboot.reason.{reason}")),
         plate.inflate(-12, -6), theme.c("on_accent") if reason is None and not theme.is_light()
         else (255, 255, 255) if reason is None else config.COLOR_WARN, size=19, align="center")
+    pointer.add_tip(plate, status_tips.lazy(lambda: status_tips.boat(game, boat), "fire"))
     weapons_station = uboot_local.local_station(game) == "uboot_weapons"
     if weapons_station:
         # Fire by click only at the weapons station, as with the key.
@@ -964,7 +965,8 @@ def _draw_fire_column(s, game, boat, rect) -> None:
         console.lamp_grid(s, (tubes[0], tubes[1], tubes[2], tubes[3]), [
             (raw_text(str(index)),
              message(f"uboot.tube_state.{state}", seconds=_fmt(left, "{:.0f}")),
-             levels.get(state, "off"), keys.get(state))
+             levels.get(state, "off"), keys.get(state),
+             status_tips.lazy(lambda: status_tips.boat(game, boat), f"tube_{index}"))
             for index, (state, left) in enumerate(states, start=1)], columns, size=14)
 
 
@@ -1098,7 +1100,9 @@ def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
     ]
     lamp_h = 2 * 32 + 4
     console.dial_row(s, (px, py, pw, max(60, ph - lamp_h - 8)), specs)
-    console.lamp_grid(s, (px, py + ph - lamp_h, pw, lamp_h), lamps, 3)
+    console.lamp_grid(s, (px, py + ph - lamp_h, pw, lamp_h), console.with_tips(lamps, [
+        status_tips.lazy(lambda: status_tips.boat(game, boat), name) for name in (
+            "silent", "snorkel", "bottom", "cavitation", "blow", "plant")]), 3)
     tele_y = y + box_h + 10
     ladder_y = tele_y + 80
     if y + h - ladder_y >= 90:
@@ -1379,7 +1383,8 @@ def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
     layout.blit_line(s, mast_line, (mx, my, mw, first),
                      config.COLOR_WARN if orders.mast else config.COLOR_TEXT, size=17)
     # The mast line is its switch (P raises or lowers it).
-    pointer.add_token_keys((mx, my, mw, first), mast_line, 17, (("Mast", "P"),))
+    pointer.add_token_keys((mx, my, mw, first), mast_line, 17, (("Mast", "P"), ("P)", "P")),
+                           screen=s)
     layout.blit_line(s, message("uboot.esm.mast_time", elapsed=_fmt(elapsed), limit=_fmt(limit))
                      if elapsed is not None else message("uboot.esm.mast_time_limit",
                                                         limit=_fmt(limit)),

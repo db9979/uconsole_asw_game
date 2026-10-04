@@ -9,7 +9,7 @@ from src.core import config
 from src.core.commands import MAP_STATIONS
 from src.core.station import Station
 from src.core.game_shared import letterbox_layout
-from src.ui import layout
+from src.ui import layout, pointer
 from src.ui.map_view import map_hit_target
 from src.ui.sonar_view import sonar_hit_target
 from src.ui.stations_view import station_hit_target
@@ -69,6 +69,10 @@ class PointerMixin:
         if (not self.tooltips_enabled or canvas_pos is None or self.in_menu
                 or self.game_over or self.administration_open):
             return None
+        # A status lamp's own note (why it shows what it shows) comes first.
+        lamp_tip = layout.valid_tooltip(pointer.tip_at(canvas_pos))
+        if lamp_tip is not None or getattr(self, "local_side", "frigate") == "uboot":
+            return lamp_tip
         previous = config.STATION_RECT
         config.STATION_RECT = (config.STATION_PANEL_RECT
                                if self._map_station_visible() else

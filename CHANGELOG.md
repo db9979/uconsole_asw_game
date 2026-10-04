@@ -4,6 +4,20 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.198
+
+Release 1.3.198 explains every status lamp. Resting the mouse on a lamp or
+indicator, such as the helicopter's LAUNCH NO-GO and DECK WAIT, a torpedo
+tube, the plant, the ESM receiver or the submarine's depth under the keel,
+opens a note that says why it shows that state, taken from the running game
+(deck motion and quiet time, weather limits, reload time, charted depth), and
+what to do about it. Every key a station can use is now a blue key chip you
+can click, also inside these notes. Both work on both sides, on the uConsole
+and in the Remote Crew browser. The CIC's four contact buttons say what they
+do (Classify, Change affiliation, Mark for fusion, Fuse / dissolve), centred
+beside their key chip. Keys are unchanged. Saves are v50; v38 to v49 saves
+still load.
+
 ## 1.3.197
 
 Release 1.3.197 makes the hover tooltips follow the colour scheme. In the

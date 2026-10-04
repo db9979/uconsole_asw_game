@@ -257,7 +257,7 @@ def _draw_side(game, s, column) -> None:
         hint = (gx, top, gw, max(2 * row_h, gy + gh - top))
         layout.blit_block(s, "radio.log_empty", *hint, color=config.COLOR_TEXT_DIM, size=14)
         pointer.add_token_keys(hint, "radio.log_empty", 14, (("Enter", "Enter"),),
-                               min_size=layout.MIN_OPERATIONAL_FONT)
+                               min_size=layout.MIN_OPERATIONAL_FONT, screen=s)
         return
     for row in reversed(logged):
         age = max(0.0, game.sim_t - row["t"])
@@ -306,7 +306,7 @@ def _draw_chart_and_log(game, s, inner, log=True) -> None:
         layout.blit_line(s, "radio.log_empty", (gx, top, gw, row_h),
                          config.COLOR_TEXT_DIM, size=15)
         pointer.add_token_keys((gx, top, gw, row_h), "radio.log_empty", 15,
-                               (("Enter", "Enter"),))
+                               (("Enter", "Enter"),), screen=s)
     for index, row in enumerate(reversed(logged)):
         age = max(0.0, game.sim_t - row["t"])
         layout.blit_line(s, message(
@@ -377,7 +377,7 @@ def _draw_report_status(game, s, rect) -> None:
     else:
         text, color = message("radio.report.status_ready"), config.COLOR_TEXT
     layout.blit_line(s, text, rect, color, size=15)
-    pointer.add_token_keys(rect, text, 15, (("K", "K"), ("H", "H")))
+    pointer.add_token_keys(rect, text, 15, (("K", "K"), ("H", "H")), screen=s)
 
 
 def _draw_tasks(game, s, x, cy, w, box_h) -> None:
@@ -398,7 +398,7 @@ def _draw_tasks(game, s, x, cy, w, box_h) -> None:
             layout.blit_line(s, "radio.task.ras_hint", (lx, ly + 62, lw, 24),
                              config.COLOR_TEXT_DIM, size=16)
             pointer.add_token_keys((lx, ly + 62, lw, 24), "radio.task.ras_hint", 16,
-                                   (("R", "R"),))
+                                   (("R", "R"),), screen=s)
         return
     selected_idx = min(max(0, game.task_sel), len(rows) - 1)
     row_h = 34
@@ -424,4 +424,8 @@ def _draw_tasks(game, s, x, cy, w, box_h) -> None:
         if ry + 24 > right[1] + rh:
             break
         layout.blit_line(s, text, (rx, ry, rw, 24), config.COLOR_TEXT, size=16)
+        if text == lines[-1] and rows[selected_idx]["state"] == "offered":
+            # "A accepts, D declines": both keys are caps and switches.
+            pointer.add_token_keys((rx, ry, rw, 24), text, 16, (("A", "A"), ("D", "D")),
+                                   screen=s)
         ry += 28

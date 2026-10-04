@@ -14,7 +14,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import message, raw_text
-from src.ui import console, label_layout, layout, lines, nato_symbols
+from src.ui import console, label_layout, layout, lines, nato_symbols, pointer
 from src.ui.map_view import _visible_landmasses, clip_polygon_to_rect, grid_step_nm
 from src.ui.viewport import Viewport
 
@@ -213,5 +213,7 @@ def draw_hfdf_chart(s, game, rect, selected_label=None) -> Viewport | None:
             layout.blit_line(s, "radio.chart.empty",
                              (rect.x + 10, rect.y + 6, rect.w - 40, 22),
                              config.COLOR_TEXT_DIM, size=15)
+            pointer.add_token_keys((rect.x + 10, rect.y + 6, rect.w - 40, 22),
+                                   "radio.chart.empty", 15, (("Enter", "Enter"),), screen=s)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, rect, 1)
     return view

@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.198
+
+Version 1.3.198 erklärt jede Statuslampe. Ruht die Maus auf einer Lampe oder
+Anzeige, etwa START NO-GO und DECK WARTEN des Hubschraubers, einem
+Torpedorohr, der Anlage, dem ESM-Empfänger oder dem Wasser unter dem Kiel des
+U-Boots, öffnet sich ein Hinweis, warum sie so steht, aus dem laufenden Spiel
+(Deckbewegung und Ruhezeit, Wettergrenzen, Nachladezeit, Kartentiefe), und was
+zu tun ist. Jede Taste, die eine Station nutzen kann, ist jetzt ein blauer
+Tastenchip zum Anklicken, auch in diesen Hinweisen. Beides gilt auf beiden
+Seiten, auf der uConsole und im Remote-Crew-Browser. Die vier Kontaktknöpfe
+der OPZ sagen, was sie tun (Klassifizieren, Zugehörigkeit wechseln, Für Fusion
+markieren, Fusionieren / auflösen), mittig neben ihrem Tastenchip. Tasten
+bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
+
 ## 1.3.197
 
 Version 1.3.197 lässt die Hinweisfenster beim Überfahren mit der Maus dem

@@ -18,6 +18,12 @@ export function drawNatoSymbol(context, x, y, affiliation, domain, color, size) 
   context.lineWidth = 1.6; context.beginPath();
   if (domain === "AIR") {
     context.moveTo(x - glyph, y + glyph * .7); context.lineTo(x, y - glyph * .7); context.lineTo(x + glyph, y + glyph * .7);
+  } else if (domain === "ROTARY") {
+    // Rotary wing (APP-6 / MIL-STD-2525 helicopter icon): a bow tie of two
+    // rotor blades meeting at the hub, as on the uConsole.
+    const g = Math.max(4, half - 2);
+    context.moveTo(x - g, y - g / 2); context.lineTo(x, y); context.lineTo(x - g, y + g / 2); context.closePath();
+    context.moveTo(x + g, y - g / 2); context.lineTo(x, y); context.lineTo(x + g, y + g / 2); context.closePath();
   } else if (domain === "MISSILE") {
     context.moveTo(x, y + glyph); context.lineTo(x, y - glyph); context.moveTo(x - glyph * .7, y - glyph * .2);
     context.lineTo(x, y - glyph); context.lineTo(x + glyph * .7, y - glyph * .2);

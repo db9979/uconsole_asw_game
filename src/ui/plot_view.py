@@ -13,9 +13,10 @@ import pygame
 
 from src.core import config, plot
 from src.core.i18n import localize, message, raw_text
-from src.ui import layout, lines
+from src.ui import label_layout, layout, lines
 
 MARK_PX = 6
+EDGE_INSET_PX = 10       # off-chart objects get an edge arrow this far in
 DR_MINUTES = 30.0          # DR line drawn this far ahead of its current point
 TOOL_KEYS = {"mark": "plot.tool.mark", "ruler": "plot.tool.ruler",
              "bearing": "plot.tool.bearing", "circle": "plot.tool.circle",
@@ -29,13 +30,51 @@ def _label(surface, game, text, pos, chart) -> None:
     width, height = face.size(shown)
     x = pos[0] + 8
     y = pos[1] - height - 2
-    if x + width > chart.right - 2:
-        x = max(chart.x + 2, pos[0] - width - 8)
-    y = min(max(y, chart.y + 2), chart.bottom - height - 2)
+    if label_layout.active() is not None:
+        # Inside a chart's label scope it steps aside from the labels,
+        # symbols and vectors drawn before it.
+        rect = label_layout.free_rect((width, height),
+                                      label_layout.around((x, y), (width, height), 8), chart)
+        x, y = rect.topleft
+    else:
+        if x + width > chart.right - 2:
+            x = max(chart.x + 2, pos[0] - width - 8)
+        y = min(max(y, chart.y + 2), chart.bottom - height - 2)
     image = face.render(shown, True, config.COLOR_PLOT)
     rect = image.get_rect(topleft=(int(x), int(y)))
     layout.record_text(shown, rect, chart)
     surface.blit(image, rect)
+
+
+def edge_anchor(chart, point, inset: int = None):
+    """Where the ray from the chart's centre to an off-chart ``point``
+    crosses the chart edge (pulled ``inset`` pixels in), and its unit
+    direction."""
+    inset = EDGE_INSET_PX if inset is None else inset
+    cx, cy = chart.centerx, chart.centery
+    dx, dy = point[0] - cx, point[1] - cy
+    length = math.hypot(dx, dy)
+    if length < 1e-9:
+        return (cx, cy), (0.0, -1.0)
+    half_w = max(1.0, chart.w / 2.0 - inset)
+    half_h = max(1.0, chart.h / 2.0 - inset)
+    t = min(half_w / abs(dx) if dx else math.inf, half_h / abs(dy) if dy else math.inf)
+    return (cx + dx * t, cy + dy * t), (dx / length, dy / length)
+
+
+def _edge_mark(surface, chart, point, color):
+    """Arrow on the chart edge towards an off-chart plot object; returns the
+    arrow's position for its label."""
+    (ex, ey), (ux, uy) = edge_anchor(chart, point)
+    tip = (ex + ux * 5, ey + uy * 5)
+    back = (ex - ux * 5, ey - uy * 5)
+    side = (-uy * 5, ux * 5)
+    pygame.draw.polygon(surface, color, [tip, (back[0] + side[0], back[1] + side[1]),
+                                         (back[0] - side[0], back[1] - side[1])])
+    field = label_layout.active()
+    if field is not None:
+        field.reserve(pygame.Rect(int(ex) - 7, int(ey) - 7, 14, 14))
+    return ex, ey
 
 
 def _edge_point(view, x, y, bearing, chart):
@@ -124,6 +163,10 @@ def draw_plot(surface, game, view, chart, layer=None, own=None) -> None:
                 pygame.draw.rect(surface, color, (int(cur[0]) - 4, int(cur[1]) - 4, 8, 8), 1)
                 pygame.draw.circle(surface, color, (int(px), int(py)), 3, 1)
                 anchor = cur
+            if not chart.inflate(-2 * EDGE_INSET_PX, -2 * EDGE_INSET_PX).collidepoint(anchor):
+                # Off the chart: an arrow on its edge points the way, and the
+                # label sits beside the arrow (stepping aside from others).
+                anchor = _edge_mark(surface, chart, anchor, color)
             _label(surface, game, object_text(game, item, own), anchor, chart)
         if getattr(game, "plot_mode", False) and not boat_layer:
             _draw_cursor(surface, game, view, chart)

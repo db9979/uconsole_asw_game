@@ -702,11 +702,25 @@ def draw_map_view(game, tr=None) -> None:
         # HSP-5 zuletzt: beim Start an gleicher Position bleibt es ueber dem Schiff.
         if game.helo.airborne:
             px, py = view.world_to_screen(game.helo.x, game.helo.y)
+            _draw_helo_waypoint(s, game, view, (px, py), r)
             col = nato_symbols.draw_symbol(
-                s, (px, py), "FRIEND", "AIR", size=22)
-            nato_symbols.draw_motion_vector(
-                s, (px, py), game.helo.course, game.helo.SPEED_KN,
-                view.scale, col, max_px=120)
+                s, (px, py), "FRIEND", "ROTARY", size=22)
+            # Its speed over ground: no vector in the hover or holding over
+            # its waypoint, on the same time base as the ship's.
+            reach = 120
+            if (game.helo.state == "AUF" and game.helo.waypoint_x is not None
+                    and game.helo.waypoint_y is not None):
+                # It stops on its waypoint: the vector ends there at the latest.
+                wx, wy = view.world_to_screen(game.helo.waypoint_x, game.helo.waypoint_y)
+                reach = min(reach, math.hypot(wx - px, wy - py))
+            end = nato_symbols.draw_motion_vector(
+                s, (px, py), game.helo.course, getattr(game.helo, "ground_speed_kn", 0.0),
+                view.scale, col, max_px=reach)
+            field = label_layout.active()
+            if field is not None:
+                field.reserve(pygame.Rect(int(px) - 11, int(py) - 11, 22, 22))
+            if end is not None:
+                label_layout.reserve_segment((px, py), end)
             _map_label(s, game, raw_text("HSP-5"), (int(px) + 15, int(py) - 14),
                        col, r)
         draw_plot(s, game, view, r)
@@ -714,6 +728,34 @@ def draw_map_view(game, tr=None) -> None:
     _LAST_LABELS = labels
 
     draw_chart_frame(game, view, r, getattr(game, "map_follow", True))
+
+
+def _draw_helo_waypoint(s, game, view, helo_px, chart) -> None:
+    """The helicopter's ordered waypoint (own asset): a dashed track from
+    the helicopter to a ringed cross exactly on the point, with its label."""
+    helo = game.helo
+    if (getattr(helo, "state", "AUF") != "AUF" or getattr(helo, "waypoint_x", None) is None
+            or getattr(helo, "waypoint_y", None) is None):
+        return
+    wx, wy = view.world_to_screen(helo.waypoint_x, helo.waypoint_y)
+    color = config.COLOR_WARN
+    length = math.hypot(wx - helo_px[0], wy - helo_px[1])
+    if length > 14:
+        ux, uy = (wx - helo_px[0]) / length, (wy - helo_px[1]) / length
+        for offset in range(12, int(length) - 8, 10):
+            a = (helo_px[0] + ux * offset, helo_px[1] + uy * offset)
+            b = (helo_px[0] + ux * min(offset + 5, length - 8),
+                 helo_px[1] + uy * min(offset + 5, length - 8))
+            lines.line(s, color, a, b, 1)
+    cx, cy = int(round(wx)), int(round(wy))
+    pygame.draw.circle(s, color, (cx, cy), 7, 1)
+    lines.line(s, color, (cx - 4, cy), (cx + 4, cy), 1)
+    lines.line(s, color, (cx, cy - 4), (cx, cy + 4), 1)
+    field = label_layout.active()
+    if field is not None:
+        field.reserve(pygame.Rect(cx - 8, cy - 8, 16, 16))
+    _map_label(s, game, message("map.helo_waypoint"), (cx + 10, cy - 18), color, chart,
+               size=12)
 
 
 # Label field of the last frigate chart drawn: the weapons overlay continues

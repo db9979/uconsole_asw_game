@@ -636,6 +636,7 @@ class SimMixin:
                              self.ship.deck_quiet_s, self.ship.roll, self.ship.pitch),
                          fuel_factor=(config.HELO_ICING_FUEL_FACTOR
                                       if icing != "none" else 1.0))
+        self._launch_prepared_helicopter()
         self._fly_buoy_pattern()
         self._update_helo_radar(dt)
         self._update_mpa(dt)

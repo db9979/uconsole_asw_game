@@ -817,7 +817,7 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 | `X` | Terminal search pattern: snake, circle, helix |
 | `, / .` | Seeker enable point -/+ (0.6 to 3.0 NM, 0.2 NM steps) |
 | `Y` | Salvo: one torpedo or two in a +/-8 deg spread |
-| `H` | Launch / recall HSP-5 |
+| `H` | Launch HSP-5 (5 min preparation, refuels on deck) / stop / recall |
 | `B` | Deploy sonobuoys (HSP-5 airborne) |
 | `D` | Lightweight torpedo from HSP-5 |
 | `V` | Stream one finite towed acoustic decoy |
@@ -1004,7 +1004,7 @@ Operations (OPZ / CIC) builds the tactical picture above the water: surface and 
 
 ### Displays and instruments
 
-Every page has three columns: track cards on the left (a click selects a track), the chart in the middle and the page's panel on the right. Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track (its key chips assign the target with `M`, launch chaff with `G` and step the missile track with `←`/`→`; ESSM stays on `Ctrl+Enter`); page 3 commands the patrol aircraft; page 4 commands the consort destroyer of a group hunt; page 5 sets the chart display. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `Q`/`E` as the zoom keys elsewhere; `PgUp`/`PgDn` page), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
+Every page has three columns: track cards on the left (a click selects a track), the chart in the middle and the page's panel on the right. Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track (its key chips assign the target with `M`, launch chaff with `G` and step the missile track with `←`/`→`; ESSM stays on `Ctrl+Enter`); page 3 commands the patrol aircraft; page 4 commands the consort destroyer of a group hunt; page 5 sets the chart display. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `Q`/`E` as the zoom keys elsewhere; `PgUp`/`PgDn` page), independent of the chart zoom (wheel, down to 0.25 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick; the helicopter wears the NATO rotary-wing sign (a bow tie of two rotor blades) inside the friendly frame, on the uConsole and in the browser.
 
 ![OPZ on the uConsole](figures/station-opz-cic.png)
 
@@ -1415,6 +1415,8 @@ The browser's stage has three pages for the helicopter: *Acoustic analysis* (BRO
 ```
 
 - **Fuel:** 2 hours in forward flight; hovering (dipping) burns 1.3 times as fast. The helicopter returns automatically when only the 20-minute reserve remains. Running dry before landing loses the aircraft. In the hover the wind pushes it slightly downwind of its hover point.
+- **Start preparation:** the helicopter is never ready at once. `H` (browser: *Launch helicopter*) starts 5 minutes of preparation in the hangar (checks, fuel, weapons, crew brief); the state reads START PREP with the time left and the HANGAR lamp turns amber. Then it lifts off at the next launch window; until one comes the state reads READY, WAITING. `H` again (browser: *Stop start preparation*) stops the preparation. After every landing the next launch needs the full preparation again, so order it early. The AI frigate waits for it too.
+- **Refuelling:** the tank is full at the start of a mission. After a landing the helicopter keeps the fuel it came back with and is refuelled on deck: 15 minutes from empty to full (8 minutes of flight per minute on deck). The state reads REFUEL with the time to a full tank and the HANGAR lamp turns amber. A launch order does not wait for a full tank: the helicopter lifts off after its preparation with the fuel aboard by then, but never with less than 30 minutes (the reserve plus 10 minutes); short of that it reads REFUEL with the time to that minimum. Torpedoes and buoys are not reloaded: the stores aboard are the whole mission's load. The AI frigate refuels the same way.
 - **Launch limits:** wind up to 32 kn, crosswind up to 22 kn, visibility at least 2 NM, sea state 5 or less, working flight deck, gusts up to 40 kn, cloud ceiling at least 300 ft, no severe icing, and a deck-motion window: roll within 8 degrees and pitch within 3.5 degrees for a quiet period of at least 6 s. Light icing costs 20 % more fuel; the weather & sonar analysis (`0`) shows CLEAR, LIMITED or NO-GO. Landing also waits for such a window. Page 1 shows the **deck motion** beside the stores: the stern seen from aft rolling against the horizon, a pitch bar with its limits and a bar that fills during the quiet period (green: window open, amber: inside the limits but not yet quiet long enough, red: outside). Running into the sea at speed pitches harder (the ship meets the waves faster), with the sea abeam it rolls; slowing down and taking the sea a little off the bow gives the most windows, at the cost of time on the hunt.
 - **Dipping sonar:** depth 15-300 m (default 75 m, at least 10 m above the seabed), passive 18 NM with +/-2 degrees, active ping 14 NM with 30 s cooldown. Dipping needs wind up to 30 kn, visibility of 1 NM and no icing.
 - **Sonobuoys:** 5 per sortie, 8 NM range, 60 min battery; they drift with the current and a little with the wind. PASSIVE buoys give bearings (like DIFAR); ACTIVE buoys give range and bearing every 30 s (like DICASS).
@@ -1424,17 +1426,17 @@ The browser's stage has three pages for the helicopter: *Acoustic analysis* (BRO
 - **Crew's eyes:** while the helicopter flies its crew keeps a lookout too, with the bridge lookout's contrast model from its altitude (150 m, 20 m while dipping): it sees a raised periscope's or snorkel's feather at the same range as the lookout, independent of the radar and without radiating. The sighting goes to Operations every 2 s as a `HELO-EYE` track, at half the range as a submarine.
 - **Lightweight torpedo:** 2 per sortie, 45 kn, 6 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
 
-Page 1 is the helicopter's status console. A strip of state lamps lights where the aircraft is: HANGAR, DECK (green when it may launch now, amber while weather or deck motion hold it, red with the flight deck out of action), AIRBORNE (red when the aircraft is lost), DIPPING (amber while the dome goes down or comes up) and RETURN.
+Page 1 is the helicopter's status console. A strip of state lamps lights where the aircraft is: HANGAR (amber during the start preparation and while refuelling), DECK (green when it may launch now, amber while weather or deck motion hold it, red with the flight deck out of action), AIRBORNE (red when the aircraft is lost), DIPPING (amber while the dome goes down or comes up) and RETURN.
 
-Below it a fuel tank with the 20-minute reserve as an amber mark (in the hangar it stands refuelled), a rose with the bearing back to the ship and the aircraft's course needle, and readouts: state, endurance (and in the hover, which burns 1.3 times as fast), bingo (fuel left after the flight home and the reserve), bearing, distance and flight time back to the ship, flight course and the dipping sonar's state and depth. The resources show torpedoes and buoys aboard as pips, the buoys in the water and the datalink, then lamps for the flight weather (CLEAR, LIMITED or NO-GO), the deck window, the dipping weather, dome, ping, water entry and radar. The deck-motion gauge is at the foot; in a small window or with large text the lower lamp row and then the gauge give way.
+Below it a fuel tank with the 20-minute reserve as an amber mark (in the hangar it fills while refuelling; hovering the pointer over the status explains what the helicopter is waiting for), a rose with the bearing back to the ship and the aircraft's course needle, and readouts: state, endurance (and in the hover, which burns 1.3 times as fast), bingo (fuel left after the flight home and the reserve), bearing, distance and flight time back to the ship, flight course and the dipping sonar's state and depth. The resources show torpedoes and buoys aboard as pips, the buoys in the water and the datalink, then lamps for the flight weather (CLEAR, LIMITED or NO-GO), the deck window, the dipping weather, dome, ping, water entry and radar. The deck-motion gauge is at the foot; in a small window or with large text the lower lamp row and then the gauge give way.
 
-Page 3 shows the dipping sonar like a console: lamps for dome (green in the water, amber while lowering or raising), ping ready and water entry clear, a gauge of the cable in the water column down to the seabed, and a scope with the dipping and buoy bearings as wedges as wide as their error. Page 4 draws its waterfalls in the same phosphor colours as the ship's sonar.
+Page 3 shows the dipping sonar like a console: lamps for dome (green in the water, amber while lowering or raising), ping ready and water entry clear, a side view of the dip (grey air with the helicopter on top, a bold blue waterline, then the water darker with depth, the layer as an amber line and the dome on its cable; the browser draws it beside the dip scope), and a scope with the dipping and buoy bearings as wedges as wide as their error. Page 4 draws its waterfalls in the same phosphor colours as the ship's sonar.
 
 ### Keys
 
 | Key | Action |
 |---|---|
-| `H` | Launch / recall HSP-5 |
+| `H` | Launch HSP-5 (5 min preparation, refuels on deck) / stop / recall |
 | `Arrow keys` | Adjust waypoint bearing and range |
 | `W` | Waypoint on the selected contact's position (as the patrol aircraft's W) |
 | `M` | Set sonar contact as air-torpedo target |
@@ -1476,7 +1478,7 @@ Every key in the key bar at the foot of the station can be clicked; holding the 
 
 ### Standard procedure
 
-1. Check weather limits and fuel; launch HSP-5 (H).
+1. Check weather limits and fuel (15 min refuelling on deck after a landing); order the launch early (H): 5 min preparation.
 2. Place the waypoint ahead of the suspected target (arrow keys).
 3. Drop a passive buoy line (B); switch ACTIVE (Shift+B) for range.
 4. Hover and dip (Y), set depth below the layer (U/V), listen or ping (Shift+A).
@@ -1492,7 +1494,7 @@ Attack sequence:
 
 - Put the dipping sonar below the layer to hear deep submarines. The dip gauge shows the layer at the helicopter only once the lowered dome has passed through it; before that it shows only the charted water depth.
 - Lay buoys ahead of the target's estimated track, not on top of the last datum.
-- `F` confirms a helicopter contact; `G` releases it to Operations as at the sonar; `Shift+↑`/`Shift+↓` select the next dipping-sonar contact; `W` puts the waypoint on the selected contact's position (as the patrol aircraft's `W`; a bearing-only contact has none).
+- `F` confirms a helicopter contact; `G` releases it to Operations as at the sonar; `Shift+↑`/`Shift+↓` select the next dipping-sonar contact; `W` puts the waypoint on the selected contact's position (as the patrol aircraft's `W`; a bearing-only contact has none). A click on the chart (uConsole and browser, also on a symbol or label, only a sonar contact selects that contact) puts the waypoint exactly on that point; the chart marks it as HSP-5 WP with a dashed track from the helicopter. The helicopter slows down on the approach and stops on the point (within about 20 m); the arrow keys still move the waypoint in 15-degree and 1 NM steps from the ship.
 - On the acoustic page, `T` switches the listening source between the dip and each passive buoy.
 - Recall the helicopter in time (`H`): landing needs a working flight deck, and stores are not replenished between sorties.
 
@@ -2399,7 +2401,7 @@ The crew keeps one shared grease-pencil plot. Every station and every Remote Cre
 - **Opening it:** press `P` on the Bridge, Weapons or Helicopter map or on the OPZ chart. A cursor appears on own ship. Arrow keys move it (Shift: faster), or click on the chart. `Enter` sets a point, `Esc` cancels a started object and then ends plot mode, and `P` also ends it. A hint bar at the top of the chart shows the active tool and keys on the left and the cursor's bearing and distance from own ship on the right.
 - **Tools:** `M` mark (one point); `R` ruler (two points, shows bearing and distance); `B` bearing line from own ship through the cursor (own position and time are stored, so the line stays where it was laid); `C` circle (centre, then a point on the radius, at most 200 NM); `D` dead-reckoning line (start point, then a point in the direction of travel, then type the speed 0-60 kn). The DR line moves on with time and shows its CPA to own ship's present course and speed.
 - **Erasing:** `Backspace` deletes the object nearest the cursor. `Shift+Backspace` clears the whole plot.
-- **Labels:** objects are numbered M1, R2, B3 and so on. In the web client you can type a label before drawing or rename an object in the list under the map.
+- **Labels:** objects are numbered M1, R2, B3 and so on. In the web client you can type a label before drawing or rename an object in the list under the map. An object outside the visible chart shows a small arrow on the chart edge pointing towards it, with its label beside the arrow; several such labels sit next to each other, never on top.
 - **Web client:** choose a tool above the map, then click once (mark, bearing line) or twice (ruler, circle, DR line). "Plot track bearing" lays the selected track's measured bearing from its observer position.
 - **Limits:** at most 64 objects and 24 characters per label.
 

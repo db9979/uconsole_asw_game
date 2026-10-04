@@ -18,6 +18,7 @@ from src.ui import theme
 LEVELS = ("off", "on", "caution", "alarm")
 LED_OFF = (36, 58, 60)
 WATER = (40, 110, 160)
+AIR = (30, 38, 52)       # the air above a water column (helicopter's dip gauge)
 
 
 def level_color(level: str):
@@ -271,7 +272,10 @@ def bearing_rose(screen, rect, strobes, *, course=None, title="") -> None:
     spread_deg, inner) with ``inner`` the strobe's start as a radius fraction
     and ``spread_deg`` a dim wedge for the bearing's error (0: none)."""
     rect = pygame.Rect(rect)
-    radius = min(rect.w, rect.h) // 2 - 20
+    # The cardinal labels sit outside the ring but inside ``rect``, so the
+    # text beside a rose never meets "090" or "270".
+    label_w, row = layout.font(11).size("090")[0], layout.font(11).get_linesize()
+    radius = min(rect.w // 2 - max(20, label_w + 6), rect.h // 2 - max(20, row + 4))
     if radius < 30:
         return
     cx, cy = rect.centerx, rect.centery
@@ -290,10 +294,11 @@ def bearing_rose(screen, rect, strobes, *, course=None, title="") -> None:
         major = step % 30 == 0
         lines.line(screen, config.COLOR_TEXT_DIM if major else config.COLOR_SONAR_RING,
                    _polar(cx, cy, radius - (7 if major else 3), step), _polar(cx, cy, radius, step), 1)
-    row = layout.font(11).get_linesize()
     for step, label in ((0, "000"), (90, "090"), (180, "180"), (270, "270")):
-        x, y = _polar(cx, cy, radius + (10 if step in (0, 180) else 20), step)
-        layout.blit_line(screen, raw_text(label), (x - 16, y - row // 2, 32, row),
+        x, y = _polar(cx, cy, radius + (row // 2 + 3 if step in (0, 180) else label_w // 2 + 4),
+                      step)
+        layout.blit_line(screen, raw_text(label), (x - label_w // 2 - 1, y - row // 2,
+                                                   label_w + 2, row),
                          config.COLOR_TEXT_DIM, size=11, align="center")
     if course is not None and math.isfinite(course):
         lines.line(screen, config.COLOR_TEXT, (cx, cy), _polar(cx, cy, radius * .3, course), 2)

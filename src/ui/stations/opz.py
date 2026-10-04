@@ -935,9 +935,13 @@ def draw_opz_view(game, tr=None) -> None:
         if helo is not None and helo.airborne:
             hx, hy = view.world_to_screen(helo.x, helo.y)
             if chart.collidepoint(hx, hy):
-                hcol = nato_symbols.draw_symbol(s, (hx, hy), "FRIEND", "AIR", 17)
-                nato_symbols.draw_motion_vector(s, (hx, hy), helo.course, helo.SPEED_KN,
-                                                px_per_nm, hcol, max_px=min(chart.size) * .3)
+                hcol = nato_symbols.draw_symbol(s, (hx, hy), "FRIEND", "ROTARY", 17)
+                # Speed over ground on the own ship's time base (none in the hover).
+                end = nato_symbols.draw_motion_vector(
+                    s, (hx, hy), helo.course, getattr(helo, "ground_speed_kn", 0.0),
+                    px_per_nm, hcol, minutes=vector_min, max_px=min(chart.size) * .3)
+                if end is not None:
+                    label_layout.reserve_segment((hx, hy), end)
                 label_layout.blit_line(s, "HSP-5 DL",
                                  (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12)
         _draw_mpa(game, s, chart, view, px_per_nm, page)

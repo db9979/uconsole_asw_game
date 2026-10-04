@@ -3,6 +3,7 @@
 // canvas geometry: the result depends only on call order and text widths.
 const MAX_RECTS = 160;
 const GAP = 2;
+const SLIDE_STEPS = 6;
 
 export function labelField(width, height) {
   const rects = [];
@@ -19,6 +20,20 @@ export function labelField(width, height) {
     }
     return total;
   };
+  // Candidates around a point far off the chart all clamp to one spot on
+  // its edge; sliding a label height or width at a time sets such edge
+  // labels beside each other instead of on top.
+  const slide = (r, cost) => {
+    let best = r, bestCost = cost;
+    for (let k = 1; k <= SLIDE_STEPS; k += 1) {
+      for (const [dx, dy] of [[0, k * (r.h + GAP)], [0, -k * (r.h + GAP)], [-k * (r.w + GAP), 0], [k * (r.w + GAP), 0]]) {
+        const moved = clamp(r.x + dx, r.y + dy, r.w, r.h), movedCost = overlap(moved);
+        if (movedCost === 0) return moved;
+        if (movedCost < bestCost) { best = moved; bestCost = movedCost; }
+      }
+    }
+    return best;
+  };
   const reserve = (x, y, w, h) => { if (rects.length < MAX_RECTS) rects.push({ x, y, w, h }); };
   return {
     reserve,
@@ -30,7 +45,8 @@ export function labelField(width, height) {
         if (cost === 0) { best = r; break; }
         if (cost < bestCost) { best = r; bestCost = cost; }
       }
-      best ||= clamp(0, 0, w, h);
+      if (!best) best = clamp(0, 0, w, h);
+      else if (bestCost > 0) best = slide(best, bestCost);
       reserve(best.x, best.y, best.w, best.h);
       return best;
     },
@@ -68,4 +84,14 @@ export function placeTip(context, field, text, tipX, tipY, ux, uy) {
 export function reserveText(context, field, text, x, y) {
   const size = parseFloat(context.font) || 12;
   field.reserve(x, y - size, context.measureText(text).width, size + 2);
+}
+
+// Where the ray from the chart's centre to an off-chart point crosses the
+// chart edge (pulled ``inset`` pixels in), and its unit direction.
+export function edgeAnchor(width, height, x, y, inset = 10) {
+  const cx = width / 2, cy = height / 2, dx = x - cx, dy = y - cy, length = Math.hypot(dx, dy);
+  if (length < 1e-9) return [cx, cy, 0, -1];
+  const halfW = Math.max(1, cx - inset), halfH = Math.max(1, cy - inset);
+  const k = Math.min(dx ? halfW / Math.abs(dx) : Infinity, dy ? halfH / Math.abs(dy) : Infinity);
+  return [cx + dx * k, cy + dy * k, dx / length, dy / length];
 }

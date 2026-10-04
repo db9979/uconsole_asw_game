@@ -12,21 +12,25 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.201**
+Current release: **1.3.202**
 
-Release 1.3.201 makes the EW station easier to read. Intercepts of the same
-kind from one direction (same band and modulation, bearing within 6 degrees),
-such as the navigation radars of several merchants, are listed as one emitter
-"E27 ×3"; the arrow keys left and right step through the group, and Z lists
-every intercept on its own again. Intercepts are named by their running number
-(E27 instead of E000000000000001b) and show the classification or else the
-modulation, band and frequency instead of "unknown domain". Four switches
-above the bearing rose sort the list: status F (new: open, the emitters not
-yet classified), threat Shift+F, band Ctrl+F and grouping Z, as blue key chips
-on the uConsole and as a bar in the Remote Crew browser. The browser's rose
-draws one strobe per emitter, older ones shorter and fainter, and names the
-selected one. Display only, the ESM picture is unchanged. Saves are v50; v38
-to v49 saves still load.
+Release 1.3.202 makes the frigate's helicopter take time on deck. The launch
+order (`H`, or *Launch helicopter* in the browser) starts 5 minutes of
+preparation in the hangar, and the helicopter lifts off at the next launch
+window after that; `H` again stops it. After a landing it keeps the fuel it
+came back with and is refuelled on deck, 15 minutes from empty to full; a
+launch lifts off with the fuel aboard by then, never with less than 30
+minutes. The Helicopter station shows START PREP or REFUEL with the time left
+(uConsole and browser), and hovering over its status says what it waits for.
+The AI frigate waits the same way; its own delay before the order is halved,
+so both sides keep their chances. The bearing roses keep "090" and "270"
+clear of the text beside them, and the dipping sonar's depth gauge separates
+the air from the water below a bold waterline. The helicopter's speed vector
+shows its real speed over ground, and a click on the chart puts its waypoint
+exactly there; the helicopter stops on the point instead of 0.3 NM short. Plot
+objects off the chart get an arrow on the chart edge, and their labels sit
+side by side there instead of on top of each other. The own helicopter wears the NATO rotary-wing sign on every chart. Saves are v51; v38 to v50
+saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

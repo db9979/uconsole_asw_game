@@ -271,6 +271,8 @@ export function validateV2State(state) {
   };
   // The patrol aircraft: position and waypoint only while airborne.
   const nullableFinite = (value) => value === null || finite(value);
+  // The helicopter's start preparation: seconds left, or null without an order.
+  const prepOk = (value) => value === null || (finite(value) && value >= 0 && value <= 3600);
   const mpaOk = (mpa) => exactKeys(mpa, mpaFields.row) && mpaFields.states.includes(mpa.state) &&
     typeof mpa.airborne === "boolean" && typeof mpa.radar === "boolean" && typeof mpa.mad === "boolean" &&
     typeof mpa.datalink === "boolean" &&
@@ -663,7 +665,8 @@ export function validateV2State(state) {
         !consortOk(payload.own_assets.consort) ||
         !boundedArray(payload.own_assets.weapons, 104) || payload.own_assets.weapons.some((row) => !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state"])) ||
         !exactKeys(payload.own_assets.ship, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
-        !exactKeys(payload.own_assets.helicopter, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s"])) throw new Error("protocol");
+        !exactKeys(payload.own_assets.helicopter, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "prep_s", "refuel_s"]) ||
+        !prepOk(payload.own_assets.helicopter.prep_s) || !prepOk(payload.own_assets.helicopter.refuel_s)) throw new Error("protocol");
   } else if (state.role === "radio") {
     rowsExact(payload.observations, 256, [...radioFields, "frequency_khz", "propagation", "can_capture"]);
     if (payload.observations.some((row) => (row.frequency_khz !== null && (!finite(row.frequency_khz) || row.frequency_khz <= 0)) ||
@@ -698,7 +701,7 @@ export function validateV2State(state) {
         payload.controls.orders.join(",") !== "ASTERN,STOP,SLOW,HALF,FULL,FLANK" ||
         !exactKeys(payload.environment_effects, ["sea_state", "roll", "pitch", "tas_available", "tas_performance"])) throw new Error("protocol");
   } else if (state.role === "helicopter") {
-    if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar", "radar_switch"]) ||
+    if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar", "radar_switch", "prep_s", "refuel_s"]) || !prepOk(payload.asset.prep_s) || !prepOk(payload.asset.refuel_s) ||
         !["single", "field", "barrier", "circle"].includes(payload.asset.pattern) || typeof payload.asset.mad_mode !== "boolean" ||
         typeof payload.asset.radar !== "boolean" || typeof payload.asset.radar_switch !== "boolean" ||
         (payload.waypoint !== null && !exactKeys(payload.waypoint, ["x", "y"])) ||

@@ -1,6 +1,7 @@
 """M15: Hubschrauber HSP-5 (Sea Lynx) – Sonarbojen + Leichttorpedos.
 
-Zustände: HANGAR | AUF (Einsatz) | ZURUECK (Rückkehr).
+Zustände: HANGAR | AUF (Einsatz) | ZURUECK (Rückkehr).  A launch order
+first prepares the aircraft in the hangar for ``config.HELO_PREP_S``.
 Bewegung, Treibstoff und Zeitfenster verwenden dieselbe Simulationszeit.
 
 Flight physics: hovering (dipping) needs more power than cruise, so fuel
@@ -66,6 +67,17 @@ def deck_window_open(quiet_s: float, roll_deg: float = 0.0, pitch_deg: float = 0
     return deck_within_limits(roll_deg, pitch_deg) and quiet_s >= DECK_WINDOW_S - 1e-6
 
 
+# Flying to a waypoint: cruise, then an approach that slows down so the
+# helicopter stops on the point (within WAYPOINT_ARRIVAL_NM, about 20 m)
+# instead of turning away 0.3 NM short. Cruise turns at 6 deg/s; slower,
+# it turns faster, up to a hover turn.
+WAYPOINT_ARRIVAL_NM = 0.01
+APPROACH_TIME_S = 30.0
+APPROACH_MIN_KN = 5.0
+TURN_RATE_DEG_S = 6.0
+TURN_RATE_MAX_DEG_S = 45.0
+
+
 # Plan 1.3 phase 6: sonobuoy patterns (a queue of drop points the helicopter
 # flies one after the other with the ordinary single drop) and the MAD run.
 BUOY_PATTERNS = ("single", "field", "barrier", "circle")
@@ -113,7 +125,9 @@ class Helicopter:
         self.course = 0.0
         self.torps = config.HELO_TORPS
         self.buoys_left = config.BUOY_COUNT
-        self.fuel_s = 0.0
+        # Fuel aboard in flight seconds: full at the start, kept after a
+        # recovery and refuelled on deck (``config.HELO_REFUEL_S``).
+        self.fuel_s = config.HELO_FUEL_S
         self.waypoint_x = None
         self.waypoint_y = None
         self.dip_state = "STOWED"
@@ -131,6 +145,53 @@ class Helicopter:
         # Surface-search radar switch: radiates while airborne with the
         # dipping sonar stowed (a submarine's ESM hears it); off runs silent.
         self.radar_on = True
+        # Start preparation: None when no launch is ordered, else the
+        # seconds left in the hangar (0: ready, waiting for the deck window).
+        self.prep_s = None
+        # Speed over the last step (display only, not saved): 0 in the
+        # hover, on the deck or holding over its waypoint.
+        self.ground_speed_kn = 0.0
+
+    @property
+    def preparing(self) -> bool:
+        return self.state == "HANGAR" and self.prep_s is not None
+
+    @property
+    def prep_ready(self) -> bool:
+        return self.preparing and self.prep_s <= 0.0
+
+    @property
+    def refuelling(self) -> bool:
+        return self.state == "HANGAR" and self.fuel_s < config.HELO_FUEL_S
+
+    @property
+    def fuel_ready(self) -> bool:
+        """Enough fuel aboard to lift off."""
+        return self.fuel_s >= config.HELO_LAUNCH_MIN_FUEL_S
+
+    def refuel_left_s(self, target_s: float = None) -> float:
+        """Seconds of refuelling until ``target_s`` of fuel (default full)."""
+        target_s = config.HELO_FUEL_S if target_s is None else target_s
+        return max(0.0, target_s - self.fuel_s) * config.HELO_REFUEL_S / config.HELO_FUEL_S
+
+    def refuel_wait_s(self):
+        """The refuelling time the status shows: with a prepared launch
+        short of fuel, until the launch minimum; otherwise until full; None
+        when not refuelling."""
+        if self.prep_ready and not self.fuel_ready:
+            return self.refuel_left_s(config.HELO_LAUNCH_MIN_FUEL_S)
+        return self.refuel_left_s() if self.refuelling else None
+
+    def order_prep(self) -> None:
+        """Start the preparation (an order already running keeps its time)."""
+        if self.state == "HANGAR" and self.prep_s is None:
+            self.prep_s = config.HELO_PREP_S
+
+    def cancel_prep(self) -> bool:
+        if not self.preparing:
+            return False
+        self.prep_s = None
+        return True
 
     @property
     def speed_kn(self) -> float:
@@ -141,12 +202,13 @@ class Helicopter:
         return self.state in ("AUF", "ZURUECK")
 
     def launch(self, frigate) -> None:
-        """Start with the remaining finite mission loadout."""
+        """Start with the remaining finite mission loadout and the fuel
+        aboard (refuelled on deck since the last recovery)."""
         self.state = "AUF"
+        self.prep_s = None
         self.x = frigate.x
         self.y = frigate.y
         self.course = frigate.course
-        self.fuel_s = config.HELO_FUEL_S
         self.dip_state = "STOWED"
         self.dip_depth_m = 0.0
         self.dip_water_depth_m = 0.0
@@ -244,6 +306,12 @@ class Helicopter:
         """dt in Simulationssekunden. Haelt Patrouillen-Offset vor der
         Fregatte (AUF) bzw. fliegt zurück (ZURUECK)."""
         self.dip_ping_cooldown = max(0.0, self.dip_ping_cooldown - dt)
+        self.ground_speed_kn = 0.0
+        if self.preparing:
+            self.prep_s = max(0.0, self.prep_s - dt)
+        if self.refuelling:
+            self.fuel_s = min(config.HELO_FUEL_S,
+                              self.fuel_s + dt * config.HELO_FUEL_S / config.HELO_REFUEL_S)
         if not self.airborne:
             return
         # fuel_factor: extra power for anti-/de-icing in icing conditions.
@@ -286,12 +354,20 @@ class Helicopter:
 
         dx = target_x - self.x
         dy = target_y - self.y
-        if math.hypot(dx, dy) > 0.3:
+        distance = math.hypot(dx, dy)
+        if distance > WAYPOINT_ARRIVAL_NM:
+            # Cruise until the approach, then slow down onto the point (a
+            # helicopter can come to a hover): the turn rate rises as the
+            # speed falls, so it settles on the waypoint instead of circling.
+            speed = min(self.speed_kn, max(APPROACH_MIN_KN,
+                                           distance * 3600.0 / APPROACH_TIME_S))
+            turn = min(TURN_RATE_MAX_DEG_S, TURN_RATE_DEG_S * self.speed_kn / speed)
             desired = math.degrees(math.atan2(dx, -dy)) % 360.0
             diff = config.angle_diff_deg(desired, self.course)
             self.course = (self.course + config.clamp(
-                diff, -6.0 * dt, 6.0 * dt)) % 360.0
-            step = config.kn_to_nm_per_s(self.speed_kn) * dt
+                diff, -turn * dt, turn * dt)) % 360.0
+            step = min(config.kn_to_nm_per_s(speed) * dt, distance)
+            self.ground_speed_kn = speed
             self.x += step * math.sin(math.radians(self.course))
             self.y -= step * math.cos(math.radians(self.course))
 

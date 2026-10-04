@@ -472,6 +472,49 @@ def flight_weather(game):
     return query() if callable(query) else None
 
 
+def _clock(seconds: float) -> str:
+    left = int(math.ceil(max(0.0, seconds)))
+    return f"{left // 60}:{left % 60:02d}"
+
+
+def helo_state_text(helo):
+    """The helicopter's state for the status rows: in the hangar with a
+    launch ordered, the start preparation with its time left (m:ss), then
+    the refuelling to the launch minimum, or ready and waiting for the deck
+    window; without an order, the refuelling to a full tank."""
+    if getattr(helo, "preparing", False):
+        if helo.prep_s > 0.0:
+            return localize(message("helo.prep.running", time=_clock(helo.prep_s)))
+        if not helo.fuel_ready:
+            return localize(message("helo.refuel.running", time=_clock(
+                helo.refuel_left_s(config.HELO_LAUNCH_MIN_FUEL_S))))
+        return localize(message("helo.prep.ready"))
+    if getattr(helo, "refuelling", False):
+        return localize(message("helo.refuel.running", time=_clock(helo.refuel_left_s())))
+    return localize("enum.helo." + helo.state)
+
+
+def helo_status_reason(helo):
+    """Why the helicopter in the hangar is not yet in the air (tooltip line),
+    or None."""
+    if helo.state != "HANGAR":
+        return None
+    fuel = f"{helo.fuel_s / 60:.0f}"
+    full = f"{config.HELO_FUEL_S / 60:.0f}"
+    if getattr(helo, "preparing", False):
+        if helo.prep_s > 0.0:
+            return message("helo.tooltip.prep_reason", time=_clock(helo.prep_s), fuel=fuel, full=full)
+        if not helo.fuel_ready:
+            return message("helo.tooltip.fuel_wait_reason", fuel=fuel,
+                           minimum=f"{config.HELO_LAUNCH_MIN_FUEL_S / 60:.0f}",
+                           time=_clock(helo.refuel_left_s(config.HELO_LAUNCH_MIN_FUEL_S)))
+        return "helo.tooltip.window_reason"
+    if getattr(helo, "refuelling", False):
+        return message("helo.tooltip.refuel_reason", fuel=fuel, full=full,
+                       time=_clock(helo.refuel_left_s()))
+    return "helo.tooltip.ready_reason"
+
+
 def _tips(game, *names) -> list:
     """Hover notes of the named lamps (``status_tips.helicopter``), worked
     out only while the pointer is over one."""
@@ -495,7 +538,9 @@ def state_lamps(game, helo, weather) -> list:
         deck = "on" if weather is not None and weather["launch_safe"] else "caution"
     airborne = state == "AUF"
     return [
-        ("helo.console.state.hangar", "", "on" if state == "HANGAR" else "off"),
+        ("helo.console.state.hangar", "",
+         "caution" if getattr(helo, "preparing", False) or getattr(helo, "refuelling", False)
+         else "on" if state == "HANGAR" else "off"),
         ("helo.console.state.deck", "", deck),
         ("helo.console.state.airborne", "",
          "alarm" if state == "VERLOREN" else "on" if airborne and dip == "STOWED" else "off"),
@@ -538,11 +583,11 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
     body_h = sy + sh - top
     if body_h < 60:
         return
-    # Fuel tank: in the hangar the aircraft stands refuelled.
+    # Fuel tank: the fuel aboard (in the hangar it fills while refuelling).
     tank_w = 84
-    full = helo.state == "HANGAR"
-    fraction = 1.0 if full else max(0.0, helo.fuel_s / config.HELO_FUEL_S)
-    minutes = (config.HELO_FUEL_S if full else helo.fuel_s) / 60.0
+    hangar = helo.state == "HANGAR"
+    fraction = max(0.0, helo.fuel_s / config.HELO_FUEL_S)
+    minutes = helo.fuel_s / 60.0
     tank = pygame.Rect(sx, top, tank_w, body_h)
     console.tank(s, tank, fraction, label="helo.console.fuel",
                  text=message("helo.line.fuel", fuel=f"{minutes:.0f}"), level=fuel_level(helo))
@@ -554,8 +599,20 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
                                                 / config.HELO_FUEL_S)
         pygame.draw.line(s, config.COLOR_WARN, (tank.centerx - 22, ry), (tank.centerx + 22, ry), 2)
     # Home rose: the bearing back to the ship, the aircraft's course needle.
-    rose_size = max(0, min(body_h, 190, sw // 3))
-    rose = pygame.Rect(sx + tank_w + 6, top + (body_h - rose_size) // 2, rose_size, rose_size)
+    # It gives way first so the readouts beside it keep their full text
+    # (large text): labels plus the widest value, the endurance line.
+    label_keys = ("ui.condition", "helo.console.endurance", "helo.console.bingo",
+                  "helo.console.home", "helo.console.course", "helo.dip_sonar")
+    readout_font = layout.font(15)
+    readout_need = (max(int(readout_font.size(localize(key))[0]) for key in label_keys) + 10
+                    + int(readout_font.size(localize(message(
+                        "helo.console.endurance_value", fuel="120", hover="92")))[0]) + 6)
+    rose_extra = 2 * (layout.font(11).size("090")[0] - 14)
+    rose_size = max(0, min(body_h, 190, sw // 3,
+                           sw - tank_w - 6 - rose_extra - 8 - readout_need))
+    # Wider than tall: "270" and "090" stand beside the ring inside the rect.
+    rose = pygame.Rect(sx + tank_w + 6, top + (body_h - rose_size) // 2,
+                       rose_size + rose_extra, rose_size)
     home = home_polar(game, helo) if helo.airborne else None
     strobes = [(home[0], config.COLOR_OK, 3, 0, 0.0)] if home else []
     console.bearing_rose(s, rose, strobes, course=helo.course if helo.airborne else None,
@@ -564,8 +621,7 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
     tx = rose.right + 8
     tw = sx + sw - tx
     row_h = max(24, layout.font(15).get_linesize() + 4)
-    labels = ("ui.condition", "helo.console.endurance", "helo.console.bingo",
-              "helo.console.home", "helo.console.course", "helo.dip_sonar")
+    labels = label_keys
     label_w = min(tw // 2, max(int(layout.font(15).size(localize(key))[0]) for key in labels) + 10)
     dip_state = getattr(helo, "dip_state", "STOWED")
     if helo.airborne:
@@ -581,11 +637,11 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
         course = message("helo.line.course", course=f"{helo.course:05.1f}")
     else:
         endurance = (message("helo.console.endurance_value",
-                             fuel=f"{config.HELO_FUEL_S / 60:.0f}",
-                             hover=f"{config.HELO_FUEL_S / helicopter_physics.HOVER_FUEL_FACTOR / 60:.0f}")
-                     if full else raw_text("--"))
+                             fuel=f"{helo.fuel_s / 60:.0f}",
+                             hover=f"{helo.fuel_s / helicopter_physics.HOVER_FUEL_FACTOR / 60:.0f}")
+                     if hangar else raw_text("--"))
         bingo, bingo_color, home_text, course = raw_text("--"), config.COLOR_TEXT_DIM, \
-            state_label, raw_text("--")
+            localize("enum.helo." + helo.state), raw_text("--")
     dip = message("helo.console.dip_value", state=localize("enum.helo_dip." + dip_state),
                   depth=f"{getattr(helo, 'dip_depth_m', 0.0):.0f}",
                   target=f"{getattr(helo, 'dip_depth_target_m', config.HELO_DIP_DEPTH_DEFAULT_M):.0f}")
@@ -680,6 +736,39 @@ def _draw_stores_and_systems(game, s, region, helo) -> None:
         _tips(game, "dome", "ping", "water", "radar")), 4, size=14)
 
 
+def _draw_dip_column(s, column, helo, gauge_max, thermocline) -> None:
+    """The dipping sonar's side view: the air with the helicopter on top,
+    the waterline, then the water column (darker with depth) with the layer
+    and the dome on its cable from the helicopter."""
+    from src.ui import console
+    air_h = max(16, column.h // 5)
+    air = pygame.Rect(column.x, column.y, column.w, air_h)
+    water = pygame.Rect(column.x, air.bottom, column.w, column.bottom - air.bottom)
+    pygame.draw.rect(s, console.AIR, air)
+    for band in range(4):
+        top = water.y + water.h * band // 4
+        pygame.draw.rect(s, console._mix(config.COLOR_PANEL_BG, console.WATER, .45 + band * .14),
+                         (water.x, top, water.w, water.h * (band + 1) // 4 - water.h * band // 4))
+    pygame.draw.rect(s, layout.BRACKET_COLOR, column, 1)
+    # The waterline: a bold line with a wave crest either side of the column.
+    pygame.draw.line(s, console.WATER, (column.x - 4, water.y), (column.right + 3, water.y), 3)
+    cx = column.centerx
+    airborne = helo.airborne
+    if airborne:
+        # The helicopter in the hover (or passing) at the top of the air.
+        hy = air.y + 5
+        pygame.draw.polygon(s, config.COLOR_TEXT, [(cx - 7, hy), (cx + 7, hy), (cx, hy + 6)])
+        pygame.draw.line(s, config.COLOR_TEXT, (cx - 10, air.y + 2), (cx + 10, air.y + 2), 1)
+    if thermocline is not None and thermocline <= gauge_max:
+        layer_y = water.y + int(water.h * thermocline / gauge_max)
+        pygame.draw.line(s, config.COLOR_WARN, (column.x - 5, layer_y), (column.x + 27, layer_y), 2)
+    if airborne and helo.dip_state != "STOWED":
+        dome_y = water.y + int(water.h * min(1.0, helo.dip_depth_m / gauge_max))
+        # The cable from the helicopter through the air down to the dome.
+        pygame.draw.line(s, config.COLOR_TEXT_DIM, (cx, air.y + 11), (cx, dome_y), 1)
+        pygame.draw.circle(s, config.COLOR_OK, (cx, dome_y), 5)
+
+
 @localized
 def draw_helicopter_view(game, tr=None) -> None:
     """Eigene Deckansicht fuer Status, Reichweite und Einsatzfreigaben."""
@@ -696,9 +785,10 @@ def draw_helicopter_view(game, tr=None) -> None:
     draw_station_page_tabs(s, station, pages, page, tr)
     regions = helicopter_regions(game, station_rect=station, page=page)
     helo = game.helo
-    state_label = localize("enum.helo." + helo.state)
+    state_label = helo_state_text(helo)
     state_color = (config.COLOR_DANGER if helo.state == "VERLOREN" else
-                   config.COLOR_WARN if helo.state == "ZURUECK" else
+                   config.COLOR_WARN if helo.state == "ZURUECK" or getattr(helo, "preparing", False)
+                   or getattr(helo, "refuelling", False) else
                    config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM)
     distance = ((helo.x - game.ship.x) ** 2 +
                 (helo.y - game.ship.y) ** 2) ** 0.5 if helo.airborne else 0.0
@@ -784,24 +874,8 @@ def draw_helicopter_view(game, tr=None) -> None:
         thermocline = (layer if layer is not None and helo.dip_depth_m >= layer
                        else None)
         gauge_max = max(50.0, depth_limit)
-        column = pygame.Rect(gauge_x, gauge_y, 22, gauge_h)
-        # The water column: darker with depth, the limit as a floor line.
-        for band in range(4):
-            top = column.y + column.h * band // 4
-            pygame.draw.rect(s, console._mix(config.COLOR_PANEL_BG, console.WATER, .45 - band * .09),
-                             (column.x, top, column.w, column.h * (band + 1) // 4 - column.h * band // 4))
-        pygame.draw.line(s, console.WATER, column.topleft, (column.right - 1, column.y), 2)
-        pygame.draw.rect(s, layout.BRACKET_COLOR, column, 1)
-        if thermocline is not None and thermocline <= gauge_max:
-            layer_y = gauge_y + int(gauge_h * thermocline / gauge_max)
-            pygame.draw.line(s, config.COLOR_WARN,
-                             (gauge_x - 5, layer_y), (gauge_x + 27, layer_y), 2)
-        if helo.dip_state != "STOWED":
-            dome_y = gauge_y + int(gauge_h * min(1.0, helo.dip_depth_m / gauge_max))
-            # The cable from the surface to the dome.
-            pygame.draw.line(s, config.COLOR_TEXT_DIM, (gauge_x + 11, gauge_y),
-                             (gauge_x + 11, dome_y), 1)
-            pygame.draw.circle(s, config.COLOR_OK, (gauge_x + 11, dome_y), 5)
+        _draw_dip_column(s, pygame.Rect(gauge_x, gauge_y, 22, gauge_h), helo,
+                         gauge_max, thermocline)
         gauge_text_x = gauge_x + 34
         gauge_text_w = max(1, int(px + pw - gauge_text_x))
         for index, label in enumerate((

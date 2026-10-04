@@ -13,6 +13,7 @@ from src.core.game import Game
 from src.core.game_autosave import autosave_path
 from src.core.game_save import SaveSelfCheckError
 from src.core.i18n import message
+from src.core.version import SAVE_VERSION
 
 
 @pytest.fixture
@@ -88,7 +89,7 @@ def test_rejected_document_keeps_the_previous_autosave(game, monkeypatch):
 def test_valid_document_is_written_unchanged(game):
     document, text = game.checked_save_document(indent=1)
     path = Path(game.save_game(str(Path(config.SAVE_DIR) / "check.json")))
-    assert path.read_text() == text and document["version"] == 50
+    assert path.read_text() == text and document["version"] == SAVE_VERSION
 
 
 def test_rejected_recovery_snapshot_keeps_the_previous_autosave(game):

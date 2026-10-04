@@ -21,6 +21,23 @@ export const stateText = (family, value) => {
   return S.catalog[prefix + key] ? t(key) : String(value);
 };
 export const enumText = (map, value) => t(map[value] || "unknown");
+// The helicopter's state: in the hangar with a launch ordered, the start
+// preparation with its time left, or ready and waiting for the deck window.
+const clockText = (seconds) => {
+  const left = Math.ceil(Math.max(0, seconds));
+  return `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+};
+// The helicopter's state as the uConsole shows it: start preparation, then
+// refuelling to the launch minimum, or ready; without an order, refuelling.
+export const heloStateText = (map, asset) => {
+  const refuel = asset.refuel_s === null || asset.refuel_s === undefined ? null : asset.refuel_s;
+  if (asset.prep_s !== null && asset.prep_s !== undefined) {
+    if (asset.prep_s > 0) return t("helo_prep", {time: clockText(asset.prep_s)});
+    return refuel !== null ? t("helo_refuel", {time: clockText(refuel)}) : t("helo_prep_ready");
+  }
+  if (refuel !== null) return t("helo_refuel", {time: clockText(refuel)});
+  return enumText(map, asset.state);
+};
 export const classificationText = (value) => Object.hasOwn(classes, value) ? enumText(classes, value) :
   typeof value === "string" && value ? value : t("unknown");
 export const affClass = (value) => `aff-${Object.hasOwn(affiliations, value) ? value.toLowerCase() : "unknown"}`;

@@ -11,7 +11,7 @@ import { queueVisualDraw } from "./role-visuals.js";
 import { schedule } from "../core/scheduler.js";
 import { stationActionAvailable } from "../state/availability.js";
 import { canvas, ctx } from "./canvases.js";
-import { labelField, placeText, reserveText } from "./label-layout.js";
+import { edgeAnchor, labelField, placeText, reserveText } from "./label-layout.js";
 
 export function chartGeometry() {
   const width = canvas.clientWidth;
@@ -283,11 +283,11 @@ function drawChartFrame() {
   if (hasPosition(helo) && ["AUF", "ZURUECK"].includes(helo.state)) {
     const [hx, hy] = point(helo.x, helo.y);
     if (hx > -30 && hy > -30 && hx < width + 30 && hy < height + 30) {
-      drawSymbol(hx, hy, "AIR", palette().accent, 8);
-      ctx.fillStyle = palette().accent; placeText(ctx, labels, t("helicopter"), hx + 15, hy + 5);
+      drawSymbol(hx, hy, "ROTARY", colors.FRIEND || palette().blue, 8, "FRIEND");
+      ctx.fillStyle = colors.FRIEND || palette().blue; placeText(ctx, labels, t("helicopter"), hx + 15, hy + 5);
     }
   }
-  if (S.v2State?.plot) drawPlotLayer(ctx, point, scale, width, height, null);
+  if (S.v2State?.plot) drawPlotLayer(ctx, point, scale, width, height, null, labels);
   ctx.fillStyle = palette().text; ctx.fillText(t("north"), width - 27, 25);
   ctx.strokeStyle = palette().text; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(width - 23, 47); ctx.lineTo(width - 23, 31); ctx.lineTo(width - 27, 37); ctx.moveTo(width - 23, 31); ctx.lineTo(width - 19, 37); ctx.stroke();
@@ -372,7 +372,7 @@ export function renderPlotList() {
     return row;
   }));
 }
-export function drawPlotLayer(context, point, scale, width, height, info) {
+export function drawPlotLayer(context, point, scale, width, height, info, labels = null) {
   const objects = S.v2State?.plot?.objects || [];
   const far = 2 * Math.hypot(width, height) / Math.max(scale, 1e-6);
   context.save();
@@ -414,7 +414,19 @@ export function drawPlotLayer(context, point, scale, width, height, info) {
       [lx, ly] = [nx, ny];
     }
     context.stroke();
-    context.fillText(plotText(item), lx + 8, ly - 6);
+    if (!(lx > 10 && ly > 10 && lx < width - 10 && ly < height - 10)) {
+      // Off the chart: an arrow on its edge points the way, the label beside it.
+      const [ex, ey, ux, uy] = edgeAnchor(width, height, lx, ly);
+      context.beginPath();
+      context.moveTo(ex + ux * 5, ey + uy * 5);
+      context.lineTo(ex - ux * 5 - uy * 5, ey - uy * 5 + ux * 5);
+      context.lineTo(ex - ux * 5 + uy * 5, ey - uy * 5 - ux * 5);
+      context.closePath(); context.fill();
+      if (labels) labels.reserve(ex - 7, ey - 7, 14, 14);
+      [lx, ly] = [ex, ey];
+    }
+    if (labels) placeText(context, labels, plotText(item), lx + 8, ly - 6);
+    else context.fillText(plotText(item), lx + 8, ly - 6);
     if (info) addMapInfo(info, lx, ly, "plot", item);
   }
   const anchor = S.plotAnchor && S.plotAnchor.role === S.v2State?.role ? S.plotAnchor : null;

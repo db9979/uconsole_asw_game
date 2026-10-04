@@ -1,6 +1,6 @@
 import { $, heloStates } from "../core/base.js";
 import { S } from "../state/store.js";
-import { enumText, number, t, unit } from "../core/format.js";
+import { heloStateText, number, t, unit } from "../core/format.js";
 import { actionButton, fillFireTargets, metrics, patchChildren, position, stationRows, tacticalEntries, yesNo } from "../views/dom.js";
 
 export function renderOpzStation(payload) {
@@ -46,7 +46,7 @@ export function renderOpzStation(payload) {
       ["course", unit(asset.course, "\u00b0", 0)], ["speed", unit(asset.speed, "kn")],
       ["ordered_course", unit(asset.target_course, "\u00b0", 0)], ["ordered_speed", unit(asset.target_speed, "kn")],
       ["rudder_angle", unit(asset.rudder_angle, "\u00b0")], ["yaw_rate", unit(asset.yaw_rate, "\u00b0/s")]] :
-      [["reference", asset.name], ["state", enumText(heloStates, asset.state)], ["airborne", yesNo(asset.airborne)],
+      [["reference", asset.name], ["state", heloStateText(heloStates, asset)], ["airborne", yesNo(asset.airborne)],
         ["position", position(asset)], ["course", unit(asset.course, "\u00b0", 0)], ["fuel", unit(asset.fuel_s, "s", 0)],
         ["torpedoes", number(asset.torpedoes, 0)], ["buoys", number(asset.buoys, 0)]]);
   renderMpa(payload.own_assets.mpa);

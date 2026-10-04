@@ -1,5 +1,7 @@
 """Chart labels step aside instead of covering each other."""
 
+import itertools
+
 import pygame
 
 from src.ui import label_layout
@@ -55,3 +57,47 @@ def test_map_label_uses_the_active_scope():
         _map_label(surface, game, "K06", (101, 100), (255, 255, 255), (0, 0, 400, 300))
     assert len(field.rects) == 2
     assert not field.rects[0].colliderect(field.rects[1])
+
+
+def test_labels_of_points_far_off_the_chart_sit_beside_each_other():
+    """Every candidate of a point far above the chart clamps to the same spot
+    on the top edge; the labels slide apart instead of stacking."""
+    field = label_layout.LabelField((0, 0, 600, 400))
+    rects = [field.place((110, 16), label_layout.around((300 + dx, -900), (110, 16)))
+             for dx in (0, 8, -5, 3)]
+    for a, b in itertools.combinations(rects, 2):
+        assert not a.colliderect(b), (a, b)
+    assert all(pygame.Rect(0, 0, 600, 400).contains(rect) for rect in rects)
+
+
+def test_web_twin_slides_edge_labels_apart_too():
+    import json
+    import shutil
+    import subprocess
+    from pathlib import Path
+    node = shutil.which("node")
+    if node is None:
+        import pytest
+        pytest.skip("node not installed")
+    module = (Path(__file__).resolve().parents[1] / "data/commander/js/views/label-layout.js").as_uri()
+    script = (f"import {{ labelField, around, edgeAnchor }} from {json.dumps(module)};"
+              "const f = labelField(600, 400); const out = [];"
+              "for (const dx of [0, 8, -5, 3]) out.push(f.place(110, 16, around(300 + dx, -900, 110, 16)));"
+              "console.log(JSON.stringify({out, edge: edgeAnchor(600, 400, 300, -900)}));")
+    result = subprocess.run([node, "--input-type=module", "-e", script],
+                            capture_output=True, text=True, check=True, timeout=30)
+    data = json.loads(result.stdout)
+    rects = [pygame.Rect(r["x"], r["y"], r["w"], r["h"]) for r in data["out"]]
+    for a, b in itertools.combinations(rects, 2):
+        assert not a.colliderect(b), (a, b)
+    ex, ey, ux, uy = data["edge"]
+    assert (round(ex), round(ey)) == (300, 10) and (ux, uy) == (0, -1)
+
+
+def test_edge_anchor_puts_off_chart_points_on_the_edge():
+    from src.ui import plot_view
+    chart = pygame.Rect(100, 50, 600, 400)
+    (x, y), (ux, uy) = plot_view.edge_anchor(chart, (400, -5000))
+    assert (round(x), round(y)) == (400, 60) and (round(ux), round(uy)) == (0, -1)
+    (x, y), _ = plot_view.edge_anchor(chart, (9000, 250))
+    assert (round(x), round(y)) == (690, 250)

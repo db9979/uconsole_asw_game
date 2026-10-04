@@ -818,7 +818,7 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 | `X` | Suchmuster im Endanlauf: Schlange, Kreis, Helix |
 | `, / .` | Sucheraktivierung -/+ (0,6 bis 3,0 sm, Schritte 0,2 sm) |
 | `Y` | Salve: ein Torpedo oder zwei im Fächer +/-8° |
-| `H` | HSP-5 starten / zurückrufen |
+| `H` | HSP-5 starten (5 min Vorbereitung, tankt an Deck) / abbrechen / zurückrufen |
 | `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
 | `D` | Leichttorpedo vom HSP-5 |
 | `V` | Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen |
@@ -1005,7 +1005,7 @@ Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser
 
 ### Anzeigen und Instrumente
 
-Jede Seite hat drei Spalten: links Trackkarten (ein Klick wählt einen Track), in der Mitte die Karte, rechts das Feld der Seite. Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track (ihre Tastenchips weisen mit `M` das Ziel zu, werfen mit `G` Düppel und wählen mit `←`/`→` den ASM-Track; ESSM bleibt auf `Strg+Enter`); Seite 3 führt den Seefernaufklärer; Seite 4 führt den Begleitzerstörer einer Gruppenjagd; Seite 5 stellt die Kartenanzeige ein. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Q`/`E` wie der Zoom an anderen Stationen; `Bild Auf`/`Bild Ab` blättern), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
+Jede Seite hat drei Spalten: links Trackkarten (ein Klick wählt einen Track), in der Mitte die Karte, rechts das Feld der Seite. Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track (ihre Tastenchips weisen mit `M` das Ziel zu, werfen mit `G` Düppel und wählen mit `←`/`→` den ASM-Track; ESSM bleibt auf `Strg+Enter`); Seite 3 führt den Seefernaufklärer; Seite 4 führt den Begleitzerstörer einer Gruppenjagd; Seite 5 stellt die Kartenanzeige ein. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Q`/`E` wie der Zoom an anderen Stationen; `Bild Auf`/`Bild Ab` blättern), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich; der Helikopter trägt im Freund-Rahmen das NATO-Zeichen für Drehflügler (eine Fliege aus zwei Rotorblättern), auf der uConsole und im Browser.
 
 ![OPZ auf der uConsole](figures/de-station-opz-cic.png)
 
@@ -1416,6 +1416,8 @@ Im Browser hat der Helikopter auf der Bühne drei Seiten: *Akustikanalyse* (BREI
 ```
 
 - **Kraftstoff:** 2 Stunden im Vorwärtsflug; im Schwebeflug (Tauchsonar) verbraucht er 1,3-mal so schnell. Der Helikopter kehrt automatisch zurück, wenn nur noch die 20-Minuten-Reserve bleibt. Leerfliegen vor der Landung kostet die Maschine. Im Schwebeflug drückt ihn der Wind etwas von seinem Schwebepunkt nach Lee.
+- **Startvorbereitung:** Der Hubschrauber steht nie sofort bereit. `H` (Browser: *Helikopter starten*) beginnt 5 Minuten Startvorbereitung im Hangar (Checks, Treibstoff, Waffen, Besatzungseinweisung); der Zustand zeigt STARTVORBEREITUNG mit der Restzeit, die HANGAR-Lampe leuchtet gelb. Danach hebt er im nächsten Startfenster ab; bis dahin zeigt der Zustand STARTBEREIT, WARTET. Ein zweites `H` (Browser: *Startvorbereitung abbrechen*) bricht die Vorbereitung ab. Nach jeder Landung braucht der nächste Start wieder die volle Vorbereitung, also früh befehlen. Auch die KI-Fregatte wartet sie ab.
+- **Tanken:** Zu Missionsbeginn ist der Tank voll. Nach einer Landung behält der Hubschrauber den Kraftstoff, mit dem er zurückkam, und wird an Deck betankt: 15 Minuten von leer bis voll (8 Minuten Flugzeit je Minute an Deck). Der Zustand zeigt TANKEN mit der Zeit bis zum vollen Tank, die HANGAR-Lampe leuchtet gelb. Ein Startbefehl wartet nicht auf den vollen Tank: Der Hubschrauber hebt nach der Vorbereitung mit dem bis dahin getankten Kraftstoff ab, aber nie mit weniger als 30 Minuten (Reserve plus 10 Minuten); fehlt so viel, zeigt er TANKEN mit der Zeit bis zu diesem Minimum. Torpedos und Bojen werden nicht nachgeladen: Was an Bord ist, ist die Ladung der ganzen Mission. Die KI-Fregatte tankt genauso.
 - **Startgrenzen:** Wind bis 32 kn, Seitenwind bis 22 kn, Sicht mindestens 2 sm, Seegang höchstens 5, einsatzbereites Flugdeck, Böen bis 40 kn, Wolkenuntergrenze mindestens 300 ft, keine starke Vereisung und ein ruhiges Deckfenster: Rollen höchstens 8 Grad und Stampfen höchstens 3,5 Grad für eine ruhige Phase von mindestens 6 s. Leichte Vereisung kostet 20 % mehr Treibstoff; die Wetter- & Sonar-Analyse (`0`) zeigt CLEAR, LIMITED oder NO-GO. Auch die Landung wartet auf ein solches Fenster. Seite 1 zeigt neben den Einsatzmitteln die **Deckbewegung**: das Heck von achtern gesehen, wie es gegen den Horizont rollt, einen Stampfbalken mit seinen Grenzen und einen Balken, der sich während der ruhigen Phase füllt (grün: Fenster offen, gelb: innerhalb der Grenzen, aber noch nicht lange genug ruhig, rot: außerhalb). Mit Fahrt gegen die See stampft das Schiff stärker (es trifft die Wellen schneller), mit der See von querab rollt es; weniger Fahrt und die See etwas seitlich vom Bug geben die meisten Fenster, das kostet aber Zeit bei der Jagd.
 - **Tauchsonar:** Tiefe 15-300 m (Standard 75 m, mindestens 10 m über Grund), passiv 18 sm mit +/-2 Grad, aktiver Ping 14 sm mit 30 s Abklingzeit. Tauchen braucht Wind bis 30 kn, 1 sm Sicht und keine Vereisung.
 - **Sonarbojen:** 5 je Einsatz, 8 sm Reichweite, 60 min Batterie; sie treiben mit der Strömung und etwas mit dem Wind. PASSIV-Bojen liefern Peilungen (wie DIFAR); AKTIV-Bojen liefern Entfernung und Peilung alle 30 s (wie DICASS).
@@ -1425,17 +1427,17 @@ Im Browser hat der Helikopter auf der Bühne drei Seiten: *Akustikanalyse* (BREI
 - **Augen der Besatzung:** Solange der Helikopter fliegt, hält auch seine Besatzung Ausguck, mit dem Kontrastmodell des Brückenausgucks aus der Flughöhe (150 m, beim Tauchen 20 m): die Schaumfahne eines ausgefahrenen Sehrohrs oder Schnorchels sieht sie auf dieselbe Entfernung wie der Ausguck, unabhängig vom Radar und ohne zu strahlen. Die Sichtung geht alle 2 s als `HELO-EYE`-Track an die OPZ, auf die halbe Entfernung als U-Boot.
 - **Leichttorpedo:** 2 je Einsatz, 45 kn, 6 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
 
-Seite 1 ist die Statuskonsole des Hubschraubers. Eine Leiste Zustandslampen zeigt, wo er ist: HANGAR, DECK (grün, wenn er jetzt starten darf, gelb, solange Wetter oder Deckbewegung ihn halten, rot bei ausgefallenem Flugdeck), FLUG (rot, wenn er verloren ist), SONAR (Tauchsonar im Wasser, gelb beim Fieren und Hieven) und RÜCKFLUG.
+Seite 1 ist die Statuskonsole des Hubschraubers. Eine Leiste Zustandslampen zeigt, wo er ist: HANGAR (gelb während der Startvorbereitung und beim Tanken), DECK (grün, wenn er jetzt starten darf, gelb, solange Wetter oder Deckbewegung ihn halten, rot bei ausgefallenem Flugdeck), FLUG (rot, wenn er verloren ist), SONAR (Tauchsonar im Wasser, gelb beim Fieren und Hieven) und RÜCKFLUG.
 
-Darunter ein Tank mit der 20-Minuten-Reserve als gelbe Marke (im Hangar steht er betankt), eine Rose mit der Peilung zurück zum Schiff und der Kursnadel des Hubschraubers sowie Anzeigen: Zustand, Flugzeit (und im Schwebeflug, der 1,3-mal so viel verbraucht), Bingo (Kraftstoff nach Heimflug und Reserve), Peilung, Entfernung und Flugzeit zurück zum Schiff, Flugkurs sowie Zustand und Tiefe des Tauchsonars. Die Einsatzmittel zeigen Torpedos und Bojen an Bord als Punkte, die Bojen im Wasser und den Datenlink, dann Lampen für das Flugwetter (CLEAR, LIMITED oder NO-GO), das Deckfenster, das Tauchwetter, Dom, Ping, Wassereintritt und Radar. Die Deckbewegungsanzeige steht ganz unten; in einem kleinen Fenster oder bei großer Schrift weichen erst die untere Lampenreihe und dann diese Anzeige.
+Darunter ein Tank mit der 20-Minuten-Reserve als gelbe Marke (im Hangar füllt er sich beim Tanken; der Tooltip über dem Status nennt, worauf der Hubschrauber wartet), eine Rose mit der Peilung zurück zum Schiff und der Kursnadel des Hubschraubers sowie Anzeigen: Zustand, Flugzeit (und im Schwebeflug, der 1,3-mal so viel verbraucht), Bingo (Kraftstoff nach Heimflug und Reserve), Peilung, Entfernung und Flugzeit zurück zum Schiff, Flugkurs sowie Zustand und Tiefe des Tauchsonars. Die Einsatzmittel zeigen Torpedos und Bojen an Bord als Punkte, die Bojen im Wasser und den Datenlink, dann Lampen für das Flugwetter (CLEAR, LIMITED oder NO-GO), das Deckfenster, das Tauchwetter, Dom, Ping, Wassereintritt und Radar. Die Deckbewegungsanzeige steht ganz unten; in einem kleinen Fenster oder bei großer Schrift weichen erst die untere Lampenreihe und dann diese Anzeige.
 
-Seite 3 zeigt das Tauchsonar wie eine Konsole: Lampen für Dom (grün im Wasser, gelb beim Fieren oder Hieven), Ping bereit und Wassereintritt frei, eine Anzeige des Kabels in der Wassersäule bis zum Grund und ein Sichtgerät mit den Peilungen von Tauchsonar und Bojen als Keile so breit wie ihr Fehler. Seite 4 zeichnet ihre Wasserfälle in denselben Leuchtfarben wie das Sonar des Schiffs.
+Seite 3 zeigt das Tauchsonar wie eine Konsole: Lampen für Dom (grün im Wasser, gelb beim Fieren oder Hieven), Ping bereit und Wassereintritt frei, eine Seitenansicht des Tauchens (graue Luft mit dem Hubschrauber oben, eine kräftige blaue Wasserlinie, darunter das mit der Tiefe dunklere Wasser, die Sprungschicht als gelbe Linie und der Dom an seinem Kabel; der Browser zeichnet sie neben dem Tauchsonar-Sichtgerät) und ein Sichtgerät mit den Peilungen von Tauchsonar und Bojen als Keile so breit wie ihr Fehler. Seite 4 zeichnet ihre Wasserfälle in denselben Leuchtfarben wie das Sonar des Schiffs.
 
 ### Tasten
 
 | Taste | Funktion |
 |---|---|
-| `H` | HSP-5 starten / zurückrufen |
+| `H` | HSP-5 starten (5 min Vorbereitung, tankt an Deck) / abbrechen / zurückrufen |
 | `Pfeiltasten` | Wegpunktpeilung und -entfernung einstellen |
 | `W` | Wegpunkt auf die Position des gewählten Kontakts (wie W beim Seefernaufklärer) |
 | `M` | Sonarkontakt als Ziel für Lufttorpedo setzen |
@@ -1477,7 +1479,7 @@ Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrü
 
 ### Standardablauf
 
-1. Wettergrenzen und Kraftstoff prüfen; HSP-5 starten (H).
+1. Wettergrenzen und Kraftstoff prüfen (nach einer Landung 15 min Tanken an Deck); Start früh befehlen (H): 5 min Vorbereitung.
 2. Wegpunkt vor das vermutete Ziel legen (Pfeiltasten).
 3. Passive Bojenlinie werfen (B); für Entfernung AKTIV wählen (Shift+B).
 4. Schweben und tauchen (Y), Tiefe unter die Schicht (U/V), horchen oder pingen (Shift+A).
@@ -1493,7 +1495,7 @@ Angriffsablauf:
 
 - Das Tauchsonar unter die Schicht legen, um tiefe U-Boote zu hören. Die Tauchanzeige zeigt die Schicht am Helikopter erst, wenn der abgesenkte Dom sie durchfahren hat; vorher nur die Kartentiefe.
 - Bojen vor den geschätzten Zielkurs legen, nicht auf das letzte Datum.
-- `F` bestätigt einen Helikopterkontakt; `G` gibt ihn wie am Sonar an die OPZ frei; `Shift+↑`/`Shift+↓` wählen den nächsten Tauchsonarkontakt; `W` legt den Wegpunkt auf die Position des gewählten Kontakts (wie `W` beim Seefernaufklärer; ein reiner Peilkontakt hat keine).
+- `F` bestätigt einen Helikopterkontakt; `G` gibt ihn wie am Sonar an die OPZ frei; `Shift+↑`/`Shift+↓` wählen den nächsten Tauchsonarkontakt; `W` legt den Wegpunkt auf die Position des gewählten Kontakts (wie `W` beim Seefernaufklärer; ein reiner Peilkontakt hat keine). Ein Klick in die Karte (uConsole und Browser, auch auf ein Symbol oder eine Beschriftung, nur ein Sonarkontakt wählt diesen Kontakt) legt den Wegpunkt genau auf diesen Punkt; die Karte zeigt ihn als HSP-5 WP mit einer gestrichelten Linie vom Hubschrauber. Der Hubschrauber wird im Anflug langsamer und bleibt auf dem Punkt stehen (auf etwa 20 m); die Pfeiltasten verschieben den Wegpunkt weiter in Schritten von 15 Grad und 1 sm vom Schiff aus.
 - Auf der Akustikseite schaltet `T` die Horchquelle zwischen Tauchsonar und jeder passiven Boje.
 - Den Helikopter rechtzeitig zurückrufen (`H`): die Landung braucht ein einsatzbereites Flugdeck, und die Zuladung wird zwischen Einsätzen nicht ergänzt.
 
@@ -2400,7 +2402,7 @@ Die Besatzung führt einen gemeinsamen Fettstift-Plot. Alle Stationen und alle R
 - **Öffnen:** `P` auf der Brücken-, Waffen- oder Helikopterkarte oder auf der OPZ-Karte drücken. Ein Cursor erscheint am Eigenschiff. Die Pfeiltasten bewegen ihn (Shift: schneller), oder auf die Karte klicken. `Enter` setzt einen Punkt, `Esc` bricht ein begonnenes Objekt ab und beendet danach den Plotmodus, `P` beendet ihn ebenfalls. Eine Hinweisleiste oben auf der Karte zeigt links das aktive Werkzeug und die Tasten, rechts Peilung und Abstand des Cursors vom Eigenschiff.
 - **Werkzeuge:** `M` Marke (ein Punkt); `R` Lineal (zwei Punkte, zeigt Peilung und Entfernung); `B` Peillinie vom Eigenschiff durch den Cursor (eigene Position und Zeit werden gespeichert, die Linie bleibt also dort, wo sie gelegt wurde); `C` Kreis (Mitte, dann ein Punkt auf dem Radius, höchstens 200 sm); `D` Koppellinie (Startpunkt, dann ein Punkt in Fahrtrichtung, dann die Fahrt 0-60 kn eingeben). Die Koppellinie wandert mit der Zeit weiter und zeigt ihren CPA zu Kurs und Fahrt des Eigenschiffs.
 - **Löschen:** `Rücktaste` löscht das Objekt, das dem Cursor am nächsten liegt. `Shift+Rücktaste` löscht den ganzen Plot.
-- **Bezeichnungen:** Objekte werden als M1, R2, B3 usw. nummeriert. Im Web-Client kann vor dem Zeichnen eine Bezeichnung eingegeben oder ein Objekt in der Liste unter der Karte umbenannt werden.
+- **Bezeichnungen:** Objekte werden als M1, R2, B3 usw. nummeriert. Im Web-Client kann vor dem Zeichnen eine Bezeichnung eingegeben oder ein Objekt in der Liste unter der Karte umbenannt werden. Ein Objekt außerhalb des sichtbaren Kartenausschnitts zeigt am Kartenrand einen kleinen Pfeil in seine Richtung, seine Bezeichnung steht neben dem Pfeil; mehrere solche Bezeichnungen stehen nebeneinander, nie übereinander.
 - **Web-Client:** über der Karte ein Werkzeug wählen, dann einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken. „Trackpeilung plotten“ legt die gemessene Peilung des gewählten Tracks von dessen Beobachterposition an.
 - **Grenzen:** höchstens 64 Objekte und 24 Zeichen je Bezeichnung.
 

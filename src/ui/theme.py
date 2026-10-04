@@ -375,7 +375,8 @@ THEMED_GLOBALS = {
     "src.ui.layout": {"BRACKET_COLOR": "line_strong", "METER_TRACK": "well",
                       "COMMAND_KEY_COLOR": "accent", "COMMAND_DESCRIPTION_COLOR": "text"},
     "src.ui.console": {"LED_OFF": ((44, 56, 76), (203, 210, 220), (60, 60, 60)),
-                       "WATER": ((40, 110, 160), (59, 130, 200))},
+                       "WATER": ((40, 110, 160), (59, 130, 200)),
+                       "AIR": ((30, 38, 52), (238, 241, 245), (0, 0, 0))},
     "src.ui.overlay_style": {
         "PANEL_FILL": ((11, 15, 25, 232), (255, 255, 255, 240), (0, 0, 0, 255)),
         "PANEL_RIM": "line_strong", "HIGHLIGHT": "select",

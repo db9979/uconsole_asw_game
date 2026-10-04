@@ -38,7 +38,9 @@ def map_game(*, helo_airborne=False, coast=None):
         ship=SimpleNamespace(
             x=250.0, y=250.0, course=0.0, target_course=0.0, speed=0.0),
         helo=SimpleNamespace(
-            airborne=helo_airborne, x=250.0, y=250.0, course=90.0, SPEED_KN=0.0),
+            airborne=helo_airborne, state="AUF" if helo_airborne else "HANGAR",
+            x=250.0, y=250.0, course=90.0, SPEED_KN=0.0, ground_speed_kn=0.0,
+            waypoint_x=None, waypoint_y=None),
         font=pygame.font.Font(None, 18),
         torpedoes=[],
         buoys=[],
@@ -85,5 +87,24 @@ def test_airborne_helo_uses_readable_friend_air_symbol_above_ship(monkeypatch):
     map_view.draw_map_view(game)
 
     center = tuple(map(int, game.map_view.world_to_screen(250.0, 250.0)))
-    assert calls == [((320.0, 285.0), "FRIEND", "AIR", 22)]
+    assert calls == [((320.0, 285.0), "FRIEND", "ROTARY", 22)]
     assert game.screen.get_at(center)[:3] == nato_symbols.AFFILIATION_COLORS["FRIEND"]
+
+
+def test_rotary_wing_glyph_differs_from_fixed_wing():
+    """The own helicopter wears the NATO rotary-wing glyph (a bow tie), not
+    the fixed-wing chevron."""
+    surfaces = {}
+    for domain in ("AIR", "ROTARY"):
+        surface = pygame.Surface((40, 40))
+        surface.fill((0, 0, 0))
+        nato_symbols.draw_symbol(surface, (20, 20), "FRIEND", domain, 22)
+        surfaces[domain] = pygame.image.tobytes(surface, "RGB")
+    assert surfaces["AIR"] != surfaces["ROTARY"]
+    surface = pygame.Surface((40, 40))
+    surface.fill((0, 0, 0))
+    color = nato_symbols.draw_symbol(surface, (20, 20), "FRIEND", "ROTARY", 22)
+    # Both rotor blades left and right of the hub are drawn.
+    assert surface.get_at((11, 20))[:3] == color[:3]
+    assert surface.get_at((29, 20))[:3] == color[:3]
+    assert surface.get_at((20, 20))[:3] == color[:3]

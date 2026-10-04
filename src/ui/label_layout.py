@@ -19,6 +19,8 @@ import pygame
 MAX_RECTS = 160
 # Gap kept between two labels, in pixels.
 GAP_PX = 2
+# Steps a label slides along each axis when no candidate is free.
+SLIDE_STEPS = 6
 
 _ACTIVE: list["LabelField"] = []
 
@@ -63,8 +65,43 @@ class LabelField:
                 best, best_cost = rect, cost
         if best is None:
             best = self._clamp(self.bounds.x, self.bounds.y, width, height)
+        elif best_cost:
+            best = self._slide(best, best_cost)
         self.reserve(best)
         return best
+
+    def _slide(self, rect: pygame.Rect, cost: int) -> pygame.Rect:
+        """Step a colliding label away from its best spot, a label height
+        or width at a time.  Candidates around a point far off the chart all
+        clamp to the same spot on its edge; sliding along (and off) that edge
+        sets such edge labels beside each other instead of on top."""
+        step_y, step_x = rect.h + GAP_PX, rect.w + GAP_PX
+        best, best_cost = rect, cost
+        for k in range(1, SLIDE_STEPS + 1):
+            for dx, dy in ((0, k * step_y), (0, -k * step_y),
+                           (-k * step_x, 0), (k * step_x, 0)):
+                moved = self._clamp(rect.x + dx, rect.y + dy, rect.w, rect.h)
+                moved_cost = self._overlap(moved)
+                if moved_cost == 0:
+                    return moved
+                if moved_cost < best_cost:
+                    best, best_cost = moved, moved_cost
+        return best
+
+
+def reserve_segment(start, end, width: int = 6, step: int = 16) -> None:
+    """Keep later labels of the active field off a drawn line (a motion
+    vector), as a chain of small boxes along it."""
+    field = active()
+    if field is None:
+        return
+    length = ((end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2) ** 0.5
+    pieces = max(1, int(length // step))
+    for index in range(pieces + 1):
+        t = index / pieces
+        x = start[0] + (end[0] - start[0]) * t
+        y = start[1] + (end[1] - start[1]) * t
+        field.reserve(pygame.Rect(int(x - width / 2), int(y - width / 2), width, width))
 
 
 def active() -> LabelField | None:

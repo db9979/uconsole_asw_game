@@ -599,9 +599,12 @@ def draw_weapons_panel(game, tr=None) -> None:
         layout.blit_line(s, message("weapons.depth_roe", depth=f"{game.torpedo_depth:.0f}", roe=game.roe),
                          (cx, cy, cw, 24), config.COLOR_TEXT, size=16)
         helo = game.helo
-        hstate = localize("enum.helo." + helo.state)
+        from src.ui.stations.helicopter import helo_state_text
+        hstate = helo_state_text(helo)
         layout.status_line(s, cx, cy + 28, cw, "HSP-5", hstate,
                            color=config.COLOR_DANGER if helo.state == "VERLOREN" else
+                           config.COLOR_WARN if getattr(helo, "preparing", False)
+                           or getattr(helo, "refuelling", False) else
                            config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM,
                            label_w=80, size=16)
         for offset, (text, tokens) in enumerate((

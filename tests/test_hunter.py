@@ -88,12 +88,17 @@ def test_an_hfdf_fix_sends_ship_helicopter_and_patrol_aircraft():
     hunter.bridge(game, found)
     assert abs(game.ship.target_course - 90.0) < 1.0
     assert game.ship.target_speed == hunter.TRANSIT_KN
-    # The deck needs HELO_READY_MEAN_S on average to ready the helicopter.
+    # The deck needs HELO_READY_MEAN_S on average to order the launch, then
+    # the start preparation (HELO_PREP_S) before the helicopter lifts off.
     for tick in range(1000):
         game.sim_t = tick * hunter.CADENCE_S
-        if hunter.helicopter(game, found) == "launched":
+        hunter.helicopter(game, found)
+        game.ship.roll = game.ship.pitch = 0.0
+        game.ship.deck_quiet_s = 60.0
+        game._update_aviation(hunter.CADENCE_S)
+        if game.helo.airborne:
             break
-    assert game.helo.airborne and game.sim_t > 0.0
+    assert game.helo.airborne and game.sim_t >= config.HELO_PREP_S
     assert hunter.helicopter(game, found) == "moving"
     assert (game.helo.waypoint_x, game.helo.waypoint_y) == (x, y)
     assert hunter.mpa(game, found) == "requested"

@@ -29,7 +29,7 @@ export function mapPayload(role) {
     const consortAssets = consort && !consort.sunk ? [{ref: "consort", display: consort.callsign, x: consort.x, y: consort.y},
       ...(consort.point_x !== null && ["search", "prosecute"].includes(consort.working)
         ? [{x: consort.point_x, y: consort.point_y, waypoint: true, display: t("consort_point")}] : [])] : [];
-    return {own: payload.own_assets.ship, observations: [...payload.observations.filter((row) => S.opzManage || !fused.has(row.ref)), ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : []), ...consortAssets, ...payload.own_assets.weapons], bearingLogs: consort && !consort.sunk ? consort.bearings : [], fixes: []};
+    return {own: payload.own_assets.ship, observations: [...payload.observations.filter((row) => S.opzManage || !fused.has(row.ref)), ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [{...payload.own_assets.helicopter, rotary: true}] : []), ...consortAssets, ...payload.own_assets.weapons], bearingLogs: consort && !consort.sunk ? consort.bearings : [], fixes: []};
   }
   if (role === "radio") return {own: payload.navigation, observations: payload.tactical, assets: [], bearingLogs: payload.logged_bearings, fixes: payload.logged_fixes};
   if (isBoatCommand(role)) {
@@ -61,7 +61,7 @@ export function mapPayload(role) {
         display: t("bridge_route_point", {number: index + 1})}))};
   }
   return {own: payload.navigation, observations: payload.tactical,
-    assets: [payload.asset, ...payload.buoys.map((buoy) => ({...buoy, display: buoy.label})),
+    assets: [{...payload.asset, rotary: true}, ...payload.buoys.map((buoy) => ({...buoy, display: buoy.label})),
       ...(payload.waypoint ? [{...payload.waypoint, waypoint: true}] : [])], bearingLogs: [], fixes: []};
 }
 // The host sweep turns at a constant rate in sim time, so every sample fixes
@@ -459,7 +459,9 @@ export function drawRoleMap(role) {
         (item.ellipse.axis - 90) * Math.PI / 180, 0, Math.PI * 2);
       plot.context.stroke();
     } else if (finite(item.uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, item.uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
-    plot.context.strokeRect(x - 4, y - 4, 8, 8);
+    // The own helicopter: NATO friend frame with the rotary-wing glyph.
+    if (item.rotary) { plot.context.strokeStyle = colors.FRIEND || palette().blue; drawNatoSymbol(plot.context, x, y, "FRIEND", "ROTARY", plot.context.strokeStyle, 7); labels.reserve(x - 11, y - 11, 22, 22); }
+    else plot.context.strokeRect(x - 4, y - 4, 8, 8);
     plot.context.fillStyle = plot.context.strokeStyle; placeText(plot.context, labels, String(item.waypoint ? item.display || t("station_waypoint") : item.display || item.ref || t("helicopter")), x + 6, y + 12);
   }
   if (role === "opz") {
@@ -482,7 +484,7 @@ export function drawRoleMap(role) {
     const byRef = new Map(data.observations.map((row) => [row.ref, row]));
     for (const fusion of payload.fusions) if (hasPosition(fusion)) for (const ref of fusion.members) { const member = byRef.get(ref); if (hasPosition(member)) { plot.context.strokeStyle = palette().faint; plot.context.beginPath(); plot.context.moveTo(...point(fusion.x, fusion.y)); plot.context.lineTo(...point(member.x, member.y)); plot.context.stroke(); } }
   }
-  drawPlotLayer(plot.context, framePoint, scale, plot.width, plot.height, null);
+  drawPlotLayer(plot.context, framePoint, scale, plot.width, plot.height, null, labels);
   renderPlotList();
   $("role-map-scale").textContent = t("role_map_scale", {distance: number(S.chart.size_nm / viewState.zoom, 0)});
   plot.context.save(); plot.context.textAlign = "right"; plot.context.fillStyle = palette().text; plot.context.fillText("N ↑", plot.width - 10, 18); plot.context.restore();

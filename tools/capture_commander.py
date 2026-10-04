@@ -390,6 +390,7 @@ def _workstation_world(game) -> None:
     # Two minutes on watch, so the sonar waterfalls carry a history; the
     # helicopter flies out and dips (its receiver runs while its deck is shown).
     game.launch_helicopter()
+    game.helo.prep_s = 0.0          # the capture skips the 5-minute start preparation
     game.set_helicopter_waypoint(game.ship.x + 5.9, game.ship.y - 1.0)
     shown = game.station
     from src.core.station import Station

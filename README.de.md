@@ -14,21 +14,25 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.201**
+Aktuelle Version: **1.3.202**
 
-Version 1.3.201 macht die ELOKA übersichtlicher. Gleichartige Auffassungen
-aus einer Richtung (gleiches Band und gleiche Modulation, Peilung innerhalb
-6 Grad), etwa die Navigationsradare mehrerer Handelsschiffe, stehen als ein
-Sender „E27 ×3“ in der Liste; die Pfeiltasten links und rechts blättern durch
-die Gruppe, Z listet wieder jede Auffassung einzeln. Auffassungen heißen nach
-ihrer laufenden Nummer (E27 statt E000000000000001b) und zeigen die Einstufung
-oder sonst Modulation, Band und Frequenz statt „Unbekannte Domäne“. Vier
-Schalter über der Peilrose ordnen die Liste: Status F (neu: offen, die noch
-nicht eingestuften Sender), Bedrohung Shift+F, Band Strg+F und Bündeln Z, als
-blaue Tastenchips auf der uConsole und als Leiste im Remote-Crew-Browser. Die
-Rose im Browser zeichnet je Sender einen Strahl, ältere kürzer und blasser,
-und beschriftet den gewählten. Nur die Darstellung ändert sich, das ESM-Bild
-bleibt gleich. Spielstände sind v50; v38 bis v49 laden weiter.
+Version 1.3.202 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
+Der Startbefehl (`H` oder *Helikopter starten* im Browser) beginnt 5 Minuten
+Vorbereitung im Hangar, danach hebt er im nächsten Startfenster ab; ein
+zweites `H` bricht sie ab. Nach einer Landung behält er den Kraftstoff, mit
+dem er zurückkam, und wird an Deck betankt, 15 Minuten von leer bis voll; ein
+Start hebt mit dem bis dahin getankten Kraftstoff ab, nie mit weniger als 30
+Minuten. Die Hubschrauberstation zeigt STARTVORBEREITUNG oder TANKEN mit der
+Restzeit (uConsole und Browser), und der Tooltip über dem Status nennt, worauf
+er wartet. Die KI-Fregatte wartet genauso; ihre eigene Wartezeit vor dem
+Befehl ist halbiert, damit beide Seiten ihre Chancen behalten. Die Peilrosen halten
+„090“ und „270“ vom Text daneben frei, und die Tiefenleiste des Tauchsonars
+trennt die Luft durch eine kräftige Wasserlinie vom Wasser. Der Fahrtstrich
+des Hubschraubers zeigt seine echte Geschwindigkeit über Grund, und ein Klick
+in die Karte legt seinen Wegpunkt genau dorthin; der Hubschrauber bleibt auf
+dem Punkt stehen statt 0,3 sm davor. Plot-Objekte außerhalb der Karte bekommen
+einen Pfeil am Kartenrand, und ihre Beschriftungen stehen dort nebeneinander
+statt übereinander. Der eigene Hubschrauber trägt auf allen Karten das NATO-Zeichen für Drehflügler. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

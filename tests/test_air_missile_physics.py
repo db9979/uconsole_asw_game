@@ -210,10 +210,14 @@ def test_deck_motion_limits_block_launch():
     assert not deck_within_limits(0.0, DECK_PITCH_LIMIT_DEG + .5)
     game = Game(seed=1204, start_menu=False, audio_enabled=False)
     game.ship.pitch = DECK_PITCH_LIMIT_DEG + 1.0
-    assert game.launch_helicopter() == "weather_unsafe"
+    assert game.launch_helicopter() is True          # the start preparation runs
+    game.helo.prep_s = 0.0
+    game._launch_prepared_helicopter()
+    assert game.helo.state == "HANGAR"
     game.ship.pitch = 0.0
     if game.helicopter_weather()["launch_safe"]:
-        assert game.launch_helicopter() is True
+        game._launch_prepared_helicopter()
+        assert game.helo.state == "AUF"
 
 
 def test_sonobuoys_drift_with_current_and_windage():

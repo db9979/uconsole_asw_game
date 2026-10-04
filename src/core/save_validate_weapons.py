@@ -30,7 +30,7 @@ def check_helo(data, runtime_catalog):
             "buoys_left", "fuel_s", "waypoint_x", "waypoint_y",
             "dip_state", "dip_depth_m", "dip_depth_target_m",
             "dip_water_depth_m", "dip_ping_cooldown", "hover_x", "hover_y",
-            "pattern", "pattern_queue", "mad_mode", "radar_on",
+            "pattern", "pattern_queue", "mad_mode", "radar_on", "prep_s",
         }
         if set(helo) != required_helo:
             return False
@@ -38,6 +38,9 @@ def check_helo(data, runtime_catalog):
         if (helo["pattern"] not in ("single", "field", "barrier", "circle")
                 or type(helo["mad_mode"]) is not bool
                 or type(helo["radar_on"]) is not bool
+                or (helo["prep_s"] is not None
+                    and (not bounded(helo["prep_s"], 0, config.HELO_PREP_S)
+                         or helo["state"] != "HANGAR"))
                 or not isinstance(queue, list) or len(queue) > 8
                 or any(not isinstance(point, list) or len(point) != 2
                        or not bounded(point[0], -1_000_000, 1_000_000)

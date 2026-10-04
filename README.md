@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.200**
+Current release: **1.3.202**
 
-Release 1.3.200 makes the frigate's helicopter take time on deck. The launch
+Release 1.3.202 makes the frigate's helicopter take time on deck. The launch
 order (`H`, or *Launch helicopter* in the browser) starts 5 minutes of
 preparation in the hangar, and the helicopter lifts off at the next launch
 window after that; `H` again stops it. After a landing it keeps the fuel it

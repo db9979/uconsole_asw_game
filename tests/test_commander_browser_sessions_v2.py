@@ -263,7 +263,7 @@ const visualDraws = new Set();
 const visualCanvasIds = new Set(["role-map", "sonar-broadband", "sonar-lofar", "sonar-demon",
   "sonar-tma-plot", "sonar-environment", "sonar-active", "damage-schematic",
   "engine-instruments", "eloka-scope", "radio-df-scope", "weapons-system", "helicopter-lofar-canvas",
-  "helicopter-broadband-canvas", "helicopter-demon-canvas"]);
+  "helicopter-broadband-canvas", "helicopter-demon-canvas", "helicopter-dip-canvas"]);
 for (const method of ["fillRect", "stroke", "arc"]) {
   const native = CanvasRenderingContext2D.prototype[method];
   CanvasRenderingContext2D.prototype[method] = function(...args) {
@@ -493,6 +493,11 @@ async function run() {
             `Helicopter ${plot} view is too small or not drawn: ${plotCanvas.getBoundingClientRect().height}px, drawn=${visualDraws.has(plotCanvas.id)}`);
         }
         document.querySelector('[data-helicopter-plot-tab="lofar"]').click();
+        document.getElementById("helicopter-visual-dip").click();
+        const dipCanvas = document.getElementById("helicopter-dip-canvas");
+        await until(() => dipCanvas.getBoundingClientRect().height >= 300 &&
+          dipCanvas.getBoundingClientRect().width >= 300 && visualDraws.has(dipCanvas.id),
+          () => `Helicopter dipping sonar picture is too small or not drawn: ${dipCanvas.getBoundingClientRect().width}x${dipCanvas.getBoundingClientRect().height}px, drawn=${visualDraws.has(dipCanvas.id)}`);
         document.getElementById("helicopter-visual-map").click();
         for (let attempt = 0; attempt < 20 && document.getElementById("role-map").getBoundingClientRect().height < 120; attempt++)
           await sleep(20);
@@ -913,13 +918,19 @@ async function run() {
   await until(() => !$test("station-helicopter").hidden && !$test("helicopter-fire-target").disabled, "Helicopter release view missing");
   assert(!$test("helicopter-buoy-console").hidden && $test("helicopter-dip-display").hidden,
     "Helicopter acoustic analysis is not the primary workstation view");
-  $test("helicopter-visual-map").click();
+  // The dipping-sonar picture and the tactical map are pages of their own;
+  // Page Down steps from the acoustic page to the dipping sonar, then the map.
+  document.dispatchEvent(new KeyboardEvent("keydown", {key: "PageDown", bubbles: true}));
   const dipDisplay = $test("helicopter-dip-display");
   const dipRect = dipDisplay.getBoundingClientRect();
   assert(!dipDisplay.hidden && dipDisplay.parentElement === $test("role-visuals") &&
-    dipRect.width > 100 && dipRect.height > 100 &&
-    dipRect.top < $test("map-visual").getBoundingClientRect().top,
-    "Helicopter map view does not show the dipping sonar picture");
+    dipRect.width > 100 && dipRect.height > 100 && $test("map-visual").hidden &&
+    $test("helicopter-visual-dip").getAttribute("aria-selected") === "true",
+    "Page Down does not open the dipping sonar page on its own");
+  $test("helicopter-visual-next").click();
+  assert(dipDisplay.hidden && !$test("map-visual").hidden &&
+    $test("helicopter-visual-map").getAttribute("aria-selected") === "true",
+    "The page key chip does not step from the dipping sonar to the map");
   await until(() => $test("role-map-follow").textContent.includes("helicopter") ||
     $test("role-map-follow").textContent.includes("Hubschrauber"),
     "Helicopter map does not identify its follow target");

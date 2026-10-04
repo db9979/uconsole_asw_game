@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.200
+## 1.3.202
 
-Release 1.3.200 makes the frigate's helicopter take time on deck. The launch
+Release 1.3.202 makes the frigate's helicopter take time on deck. The launch
 order (`H`, or *Launch helicopter* in the browser) starts 5 minutes of
 preparation in the hangar, and the helicopter lifts off at the next launch
 window after that; `H` again stops it. After a landing it keeps the fuel it
@@ -23,6 +23,17 @@ exactly there; the helicopter stops on the point instead of 0.3 NM short. Plot
 objects off the chart get an arrow on the chart edge, and their labels sit
 side by side there instead of on top of each other. The own helicopter wears the NATO rotary-wing sign on every chart. Saves are v51; v38 to v50
 saves still load.
+
+## 1.3.200
+
+Release 1.3.200 gives the helicopter's dipping sonar picture and chart more
+room in the Remote Crew browser. Both used to share one tab, so the chart was only a strip
+and the sonar picture small. Now the helicopter has three pages on the stage:
+Acoustic analysis, Dipping sonar (the scope over the whole stage, rings
+labelled 5, 10 and 15 NM, values beside it) and Tactical map (the chart over
+the whole stage). Page Up/Page Down, the station number 8 again or the blue
+key chip beside the tabs step through them, like the uConsole's pages. The
+uConsole is unchanged. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.199
 

@@ -12,6 +12,7 @@ import { drawRoleMap, syncOpzSweepAnimation } from "./role-map.js";
 import { drawEmpty, roseFace, visualContext } from "./visual-common.js";
 import { schedule } from "../core/scheduler.js";
 import { drawRadioVisual } from "../stations/radio.js";
+import { drawHelicopterDip } from "../stations/helicopter.js";
 import { drawUbootEngineDials, renderUbootEngineConsole } from "../stations/uboot-engine-room.js";
 import { drawEngineDials, renderEngineConsole } from "../stations/engine-room.js";
 import { drawShipPlan, renderDamageLamps } from "../stations/damage-plan.js";
@@ -142,7 +143,7 @@ function drawRoleVisuals() {
   const role = S.v2State?.role;
   if (!role || $("role-visuals").hidden) return;
   if (mapRoles.has(role) && $("map-visual").hidden === false) drawRoleMap(role);
-  if (role === "helicopter") drawHelicopterAcoustic();
+  if (role === "helicopter") { drawHelicopterAcoustic(); drawHelicopterDip(S.v2State.helicopter?.dip_observations ?? []); }
   if (isSonar(role)) drawSonarVisuals();
   if (role === "damage") drawDamageVisual();
   if (role === "engine") { renderEngineConsole(S.v2State.engine); drawEngineDials(); }
@@ -154,6 +155,18 @@ function drawRoleVisuals() {
 export function queueVisualDraw() {
   schedule("role-visuals", () => { drawRoleVisuals(); syncPlotAnimation(); });
 }
+// The helicopter's pages on the stage, in the order Page Down steps through
+// them: acoustic analysis, dipping sonar picture, tactical map.
+export const HELICOPTER_PAGES = ["acoustic", "dip", "map"];
+export function showHelicopterPage(mode) {
+  if (!HELICOPTER_PAGES.includes(mode)) return;
+  S.helicopterVisualPage = mode;
+  renderRoleVisuals("helicopter");
+}
+export function stepHelicopterPage(step) {
+  const index = Math.max(0, HELICOPTER_PAGES.indexOf(S.helicopterVisualPage));
+  showHelicopterPage(HELICOPTER_PAGES[(index + step + HELICOPTER_PAGES.length) % HELICOPTER_PAGES.length]);
+}
 export function renderRoleVisuals(role) {
   $("role-visuals").hidden = !role;
   // Very wide screens show the helicopter's acoustic console and map side by side.
@@ -161,9 +174,11 @@ export function renderRoleVisuals(role) {
   $("role-visuals").dataset.split = split ? "on" : "off";
   $("helicopter-visual-tabs").hidden = role !== "helicopter" || split;
   $("helicopter-buoy-console").hidden = role !== "helicopter" || (!split && S.helicopterVisualPage !== "acoustic");
-  $("helicopter-dip-display").hidden = role !== "helicopter" || split || S.helicopterVisualPage !== "map";
-  for (const mode of ["acoustic", "map"])
-    $(`helicopter-visual-${mode}`).setAttribute("aria-selected", String(S.helicopterVisualPage === mode));
+  $("helicopter-dip-display").hidden = role !== "helicopter" || split || S.helicopterVisualPage !== "dip";
+  for (const mode of HELICOPTER_PAGES) {
+    const tab = $(`helicopter-visual-${mode}`), on = S.helicopterVisualPage === mode;
+    tab.setAttribute("aria-selected", String(on)); tab.tabIndex = on ? 0 : -1;
+  }
   for (const plot of ["broadband", "lofar", "demon"]) {
     $(`helicopter-plot-${plot}`).hidden = S.helicopterPlot !== plot;
     $(`helicopter-acoustic-plot-tabs`).querySelector(`[data-helicopter-plot-tab="${plot}"]`)

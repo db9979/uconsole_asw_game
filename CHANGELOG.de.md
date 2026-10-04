@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.200
+## 1.3.202
 
-Version 1.3.200 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
+Version 1.3.202 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
 Der Startbefehl (`H` oder *Helikopter starten* im Browser) beginnt 5 Minuten
 Vorbereitung im Hangar, danach hebt er im nächsten Startfenster ab; ein
 zweites `H` bricht sie ab. Nach einer Landung behält er den Kraftstoff, mit
@@ -23,6 +23,18 @@ in die Karte legt seinen Wegpunkt genau dorthin; der Hubschrauber bleibt auf
 dem Punkt stehen statt 0,3 sm davor. Plot-Objekte außerhalb der Karte bekommen
 einen Pfeil am Kartenrand, und ihre Beschriftungen stehen dort nebeneinander
 statt übereinander. Der eigene Hubschrauber trägt auf allen Karten das NATO-Zeichen für Drehflügler. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
+
+## 1.3.200
+
+Version 1.3.200 gibt dem Tauchsonar und der Karte des Hubschraubers im
+Remote-Crew-Browser Platz. Beide teilten sich bisher einen Reiter, sodass die
+Karte nur ein Streifen und das Sonarbild klein war. Jetzt hat der Hubschrauber
+auf der Bühne drei Seiten: Akustikanalyse, Tauchsonar (das Bild über die ganze
+Bühne, Ringe mit 5, 10 und 15 sm beschriftet, die Werte daneben) und Taktische
+Karte (die Karte über die ganze Bühne). Bild auf/ab, nochmals die
+Stationsnummer 8 oder der blaue Tastenchip neben den Reitern blättern zwischen
+ihnen, wie die Seiten der uConsole. Die uConsole bleibt gleich. Spielstände
+sind v50; v38 bis v49 laden weiter.
 
 ## 1.3.199
 

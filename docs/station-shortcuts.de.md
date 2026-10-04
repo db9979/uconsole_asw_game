@@ -386,6 +386,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Pfeiltasten (Karte)` | Fokussierte Karte verschieben |
 | `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
 | `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
+| `Bild auf/ab` | Helikopter: Akustikanalyse, Tauchsonar und Taktische Karte durchblättern (auch nochmals 8) |
 | `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
 | `, / .` | Kontaktliste (,) oder Stationsbereich (.) ein- oder ausklappen |
 | `L` | Einsatzprotokoll öffnen oder schließen |

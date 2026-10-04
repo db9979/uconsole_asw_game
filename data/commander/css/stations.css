@@ -30,7 +30,8 @@
   text-transform: uppercase; letter-spacing: .08em;
 }
 .visual-tabs button[aria-selected="true"], .helicopter-visual-tabs button[aria-selected="true"] { color: var(--live-strong); border-bottom-color: var(--live); background: var(--bg-2); }
-.helicopter-visual-tabs { display: flex; gap: .2rem; flex: 0 0 auto; margin-bottom: .3rem; }
+.helicopter-visual-tabs { display: flex; align-items: center; gap: .2rem; flex: 0 0 auto; margin-bottom: .3rem; }
+.helicopter-visual-tabs button.helicopter-page-key { margin-left: auto; border: 1px solid var(--line); border-radius: var(--radius); text-transform: none; letter-spacing: 0; }
 .plot-tools { flex: 0 0 auto; padding-bottom: .25rem; }
 .plot-tools > summary { cursor: pointer; color: var(--plot); font-size: var(--font-xs); min-height: 1.5rem; }
 .plot-toolbar { align-items: center; }
@@ -78,8 +79,11 @@
 .damage-console > #damage-schematic { flex: 1 1 20rem; min-height: 20rem; }
 
 /* Helicopter: dip picture and buoy console on the stage. */
-#helicopter-dip-display:not([hidden]) { flex: 1 1 40%; min-height: 0; overflow-y: auto; }
-#helicopter-dip-canvas { display: block; width: 100%; max-width: 560px; height: auto; margin: .35rem auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--scope); }
+#helicopter-dip-display:not([hidden]) { display: grid; flex: 1; grid-template-columns: minmax(0, 1fr) minmax(16rem, 30%); gap: .6rem; min-height: 0; }
+.helicopter-dip-scope { display: flex; min-width: 0; min-height: 0; }
+.helicopter-dip-scope > #helicopter-dip-canvas { flex: 1; height: auto; min-height: 16rem; }
+.helicopter-dip-side { display: flex; flex-direction: column; gap: .4rem; min-height: 0; overflow-y: auto; }
+.helicopter-dip-side .detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .helicopter-acoustic-visual:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; gap: .3rem; }
 .helicopter-acoustic-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .55rem; font-size: var(--font-xs); }
 .helicopter-acoustic-controls select { flex: 1; min-width: 8rem; }
@@ -335,6 +339,8 @@ body[data-sonar-scope][data-remote-role="assigned"] .cic-grid { grid-template-co
   .helicopter-acoustic-workspace { display: flex; flex-direction: column; }
   .helicopter-acoustic-plots { min-height: 16rem; }
   .role-visuals[data-split="on"] { display: flex; }
+  #helicopter-dip-display:not([hidden]) { display: flex; flex-direction: column; }
+  .helicopter-dip-scope { flex: none; aspect-ratio: 1; max-height: 28rem; }
 }
 
 /* Sonar listening console: annunciator lamps and a north-up bearing rose

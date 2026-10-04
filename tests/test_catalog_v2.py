@@ -205,7 +205,8 @@ def test_packaged_migration_versions_counts_and_provenance():
     assert len(catalog.CATALOG.magazines) == 51
     assert len(catalog.CATALOG.countermeasures) == 51
     assert len(catalog.CATALOG.sources) == 14
-    assert len(catalog.CATALOG.provenance_claims) == 475
+    # 1.3.193: ship lengths filled in (78 claims), submarine propulsion fixed.
+    assert len(catalog.CATALOG.provenance_claims) == 554
     assert len(catalog.CATALOG.subs) + len(catalog.CATALOG.surfaces) \
         + len(catalog.CATALOG.aircraft) + len(catalog.CATALOG.animals) \
         + len(catalog.CATALOG.torpedoes) + len(catalog.CATALOG.decoys) == 115 + 4
@@ -239,8 +240,9 @@ def test_r10_batch1_keeps_legacy_entries_and_spawn_selection_stable():
     assert tuple(entry["key"] for entry in entries) == ALL_SUBMARINE_KEYS
     encoded = json.dumps(
         entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    # 1.3.193: Trafalgar/Rubis nuclear, Collins diesel (only spawn weight 0 entries).
     assert hashlib.sha256(encoded).hexdigest() == \
-        "12d9d2366a5351ff3ab24e70ad8cb9b11dda9f9e796d10e617cfca1aa4f23280"
+        "9c7871213e417b5355b8c541dce33e3bb26c1b29ea2f01be9ab5e65c89da334d"
     # Non-Russian submarine classes now spawn_weight 0 (Russia-hostile-pool
     # migration): the weighted pool draws only the Russian classes plus the
     # three generic legacy archetypes.
@@ -340,14 +342,16 @@ def test_r10_batch3_keeps_civilian_entries_and_spawn_selection_stable():
     assert tuple(entry["key"] for entry in entries) == CIVILIANS_FILE_KEYS
     encoded = json.dumps(
         entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    # 1.3.193: Triple-E is a container ship; the river cruise ship no
+    # longer spawns at sea, which shifts the draws below.
     assert hashlib.sha256(encoded).hexdigest() == \
-        "cf142f149c3a5ac2cbbdb0adffc2f4da77e69a10d6f909dae09c1cd45a7bdfbb"
+        "a244194f93cc98c928be47326f1801ebed026665e11c9dce47f9871908cfd68b"
     assert [catalog.CATALOG.pick_surface(random.Random(seed)).key
             for seed in range(20)] == [
-        "warship_11", "tanker_11", "warship_19", "passenger_04", "passenger_04",
-        "aux_03", "warship_07", "passenger_10", "passenger_03", "cargo_06",
-        "cargo_14", "cargo_05", "cargo_07", "passenger_05", "tanker_09",
-        "warship_20", "passenger_13", "cargo_11", "tanker_14", "aux_08",
+        "warship_11", "tanker_11", "warship_19", "passenger_04", "passenger_03",
+        "aux_04", "warship_07", "passenger_10", "passenger_03", "cargo_07",
+        "cargo_15", "cargo_06", "cargo_08", "passenger_05", "tanker_09",
+        "warship_20", "passenger_14", "cargo_11", "tanker_14", "aux_08",
     ]
 
 
@@ -424,8 +428,9 @@ def test_r10_batch5_migrates_only_applicable_components_in_legacy_order():
 def test_r10_batch5_keeps_entries_and_animal_selection_stable():
     expected_hashes = {
         "animals.json": "cadf35eb577b40c7c8423d34efe1508649af243dace298db692b745fb6b2f013",
-        # 1.3.60: the hostile torpedo runs 40 kn for 20 NM.
-        "torpedoes.json": "0288a7ad18dc3439a8486da0c63e63c367235b85624ea2ecfeba05e7328d33e3",
+        # 1.3.60: the hostile torpedo runs 40 kn for 20 NM; 1.3.193: it fuzes
+        # within 0.05 NM, lightweight torpedoes 45/50 kn for 6 NM.
+        "torpedoes.json": "7b80156c4991a84966ccf7a17c95dabd0668c7c8c7e379f07cd392fb9b2c7148",
         "decoys.json": "ff0670aca47965e350a64a3b41a9912316e20bb73888888a58b4fe59e8b04c9a",
         "acoustics.json": "7ce16f23502f8ddf140e96d6b105117a1ac83eccd2a5e2a2f5c33fc3f947eb01",
     }
@@ -563,7 +568,7 @@ def test_r4_legacy_runtime_profiles_remain_unchanged_and_new_data_is_conservativ
     assert (cargo.speed_kn, cargo.acoustic.rpm_range,
             cargo.acoustic.cavitation_tendency) == ((12.0, 20.0), (114.0, 514.0), 0.78)
     nimitz = catalog.CATALOG.references["reference.warship_28"]
-    assert nimitz.length_m is None
+    assert nimitz.length_m == 332.8
 
 
 def test_mixed_v1_v2_catalog_loads_immutable_registries_and_reconstructs_exactly(tmp_path):
@@ -770,3 +775,22 @@ def test_catalog_documents_have_byte_and_entry_limits(tmp_path):
     (tmp_path / "subs.json").write_text(json.dumps(document), encoding="utf-8")
     with pytest.raises(ValueError, match="bounded non-empty"):
         catalog._load_catalog_from(tmp_path)
+
+
+def test_submarine_propulsion_matches_the_real_classes():
+    """Trafalgar and Rubis are nuclear, Collins diesel-electric; Improved
+    Kilo, Lada and Taigei carry no AIP; every boat's machine tops out at its
+    entry speed (the validator in catalog.py holds this for every edit)."""
+    subs = catalog.CATALOG.subs
+    nuclear = {key for key, profile in subs.items()
+               if profile.acoustic.propulsion == "elektrisch/Kernantrieb"}
+    assert {"sub_07", "sub_08"} <= nuclear and "sub_18" not in nuclear
+    for key in ("sub_12", "sub_13", "sub_20"):
+        assert subs[key].acoustic.propulsion == "Diesel-elektrisch"
+        assert catalog.CATALOG.endurances[f"endurance.{key}"].aip_power_kw is None
+    for key, profile in subs.items():
+        machine = catalog.CATALOG.machines[catalog.CATALOG.profile_systems[key].machine_key]
+        assert machine.maximum_speed_kn == profile.speed_kn[1], key
+        assert (key in nuclear) == any(code.startswith("nuclear")
+                                       for code in machine.propulsion_codes), key
+        assert (key in nuclear) == (f"endurance.{key}" not in catalog.CATALOG.endurances), key

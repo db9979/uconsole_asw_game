@@ -4772,7 +4772,7 @@
   "help.control.torp_pattern": "Suchmuster im Endanlauf: Schlange, Kreis, Helix",
   "help.control.torp_enable": "Sucheraktivierung -/+ (0,6 bis 3,0 sm, Schritte 0,2 sm)",
   "help.control.torp_salvo": "Salve: ein Torpedo oder zwei im Fächer +/-8°",
-  "help.note.torp_types": "Mk1: 45 kn, 12 sm, drahtgelenkt. Mk2: 55 kn, aber 8 sm. Der Vorrat ist 2:1 geteilt; die Typwahl lädt ein Rohr damit um.",
+  "help.note.torp_types": "Mk1: 45 kn, 12 sm, drahtgelenkt. Mk2: 50 kn, aber 6 sm. Der Vorrat ist 2:1 geteilt; die Typwahl lädt ein Rohr damit um.",
   "runtime.torpedo.type": "Torpedotyp: {name}",
   "runtime.torpedo.type_empty": "Kein Torpedo dieses Typs mehr",
   "runtime.torpedo.pattern": "Suchmuster: {pattern}",

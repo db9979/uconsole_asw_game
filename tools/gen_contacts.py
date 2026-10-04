@@ -181,12 +181,40 @@ def _validate_provenance_coverage(cat):
               f"incomplete field coverage (missing={missing[:8]}, extra={extra[:8]})")
 
 
+def _validate_submarine_consistency(subs):
+    """Shipped boats must agree with their own machine and endurance.
+
+    Only the packaged data is held to this; the runtime loader stays lenient
+    so catalog snapshots in older saves and user edits still load.
+    """
+    machines = {machine["key"]: machine for machine in subs.get("machines", ())}
+    endurances = {item["key"]: item for item in subs.get("endurances", ())}
+    machine_of = {profile["profile_key"]: profile.get("machine_key")
+                  for profile in subs.get("profiles", ())}
+    for entry in subs["entries"]:
+        key = entry["key"]
+        propulsion = entry["acoustic"]["propulsion"]
+        nuclear = propulsion == "elektrisch/Kernantrieb"
+        machine = machines.get(machine_of.get(key))
+        if machine is not None:
+            codes = machine.get("propulsion_codes", ())
+            if nuclear != any(code.startswith("nuclear") for code in codes):
+                _fail("subs.json", f"{key}: propulsion codes contradict the acoustic propulsion")
+            if float(entry["speed_kn"][1]) != float(machine["maximum_speed_kn"]):
+                _fail("subs.json", f"{key}: entry top speed differs from the machine")
+        endurance = endurances.get(f"endurance.{key}")
+        aip = propulsion == "elektrisch/AIP"
+        if endurance is not None and aip != (endurance.get("aip_power_kw") is not None):
+            _fail("subs.json", f"{key}: AIP endurance contradicts the acoustic propulsion")
+
+
 def validate(base_dir):
     base_dir = Path(base_dir)
     documents = _read_documents(base_dir)
     library_keys = [entry["key"] for entry in documents["acoustics.json"]["entries"]]
 
     loaded = catalog._load_catalog_from(base_dir)
+    _validate_submarine_consistency(documents["subs.json"])
     runtime = _runtime_documents(loaded, library_keys)
     for filename, document in documents.items():
         if runtime[filename]["entries"] != document["entries"]:

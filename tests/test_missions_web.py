@@ -114,6 +114,14 @@ def test_solo_host_plans_saves_and_starts_an_own_mission(tmp_path, monkeypatch, 
             game.update(.02)
             time.sleep(.02)
         stdout, stderr = process.communicate(timeout=5)
+        # The browser may exit right after its start request was queued;
+        # apply what reached the host before judging the result.
+        settle = time.monotonic()
+        while (game.custom_mission_definition is None
+               and time.monotonic() - settle < 3):
+            console.pump(game)
+            game.update(.02)
+            time.sleep(.02)
     finally:
         if process.poll() is None:
             process.kill()

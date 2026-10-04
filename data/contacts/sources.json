@@ -421,12 +421,22 @@
       "resource": "civilians.json",
       "profile_key": "warship_28",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm"
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_28",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "subs.json",
@@ -559,11 +569,21 @@
       "resource": "civilians.json",
       "profile_key": "cargo_05",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn"
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_05",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1177,7 +1197,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_03",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1185,6 +1204,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_03",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1209,7 +1239,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_04",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1217,6 +1246,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_04",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1241,7 +1281,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_05",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1249,6 +1288,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_05",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1273,7 +1323,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_06",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1281,6 +1330,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_06",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1305,7 +1365,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_07",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1313,6 +1372,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_07",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1337,7 +1407,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_08",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1345,6 +1414,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_08",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1369,7 +1449,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_09",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1377,6 +1456,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_09",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1401,7 +1491,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_10",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1409,6 +1498,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_10",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1433,7 +1533,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_11",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1441,6 +1540,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_11",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1465,7 +1575,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_12",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1473,6 +1582,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_12",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1497,7 +1617,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_13",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1505,6 +1624,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_13",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1529,7 +1659,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_14",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1537,6 +1666,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_14",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1561,7 +1701,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_15",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1569,6 +1708,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_15",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1593,7 +1743,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_16",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1601,6 +1750,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_16",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1625,7 +1785,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_17",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1633,6 +1792,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_17",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1657,7 +1827,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_18",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1665,6 +1834,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_18",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1689,7 +1869,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_19",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1697,6 +1876,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_19",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1721,7 +1911,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_20",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1729,6 +1918,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_20",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -1753,7 +1953,6 @@
       "resource": "civilians.json",
       "profile_key": "warship_21",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1761,6 +1960,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_21",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "warships.json",
@@ -1785,7 +1995,6 @@
       "resource": "warships.json",
       "profile_key": "warship_22",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1793,6 +2002,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_22",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "warships.json",
@@ -1817,7 +2037,6 @@
       "resource": "warships.json",
       "profile_key": "warship_23",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1825,6 +2044,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_23",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "warships.json",
@@ -1849,7 +2079,6 @@
       "resource": "warships.json",
       "profile_key": "warship_24",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -1857,6 +2086,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_24",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -5397,7 +5637,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_01",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -5411,6 +5650,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_01",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -5458,7 +5708,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_02",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -5472,6 +5721,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_02",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -5519,7 +5779,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_03",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -5533,6 +5792,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_03",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -5580,7 +5850,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_04",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -5594,6 +5863,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_04",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -5641,7 +5921,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_05",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -5655,6 +5934,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_05",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -5702,7 +5992,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_06",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -5716,6 +6005,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_06",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -5763,7 +6063,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_07",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -5777,6 +6076,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_07",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -5824,7 +6134,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_08",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -5838,6 +6147,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_08",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -5885,7 +6205,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_09",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -5899,6 +6218,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_09",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -5946,7 +6276,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_10",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -5960,6 +6289,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_10",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6007,7 +6347,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_11",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6021,6 +6360,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_11",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6068,7 +6418,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_12",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6082,6 +6431,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_12",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6129,7 +6489,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_13",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6143,6 +6502,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_13",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6190,7 +6560,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_14",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6204,6 +6573,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_14",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6251,7 +6631,6 @@
       "resource": "civilians.json",
       "profile_key": "tanker_15",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6265,6 +6644,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "tanker_15",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6312,7 +6702,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_01",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6326,6 +6715,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_01",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6373,7 +6773,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_02",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6387,6 +6786,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_02",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6434,7 +6844,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_03",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6448,6 +6857,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_03",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6495,7 +6915,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_04",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6509,6 +6928,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_04",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6556,7 +6986,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_05",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6570,6 +6999,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_05",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6617,7 +7057,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_06",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6631,6 +7070,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_06",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6678,7 +7128,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_07",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6692,6 +7141,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_07",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6739,7 +7199,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_08",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6753,6 +7212,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_08",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6800,7 +7270,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_09",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6814,6 +7283,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_09",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6861,7 +7341,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_10",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6875,6 +7354,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_10",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6922,7 +7412,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_11",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6936,6 +7425,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_11",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -6983,7 +7483,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_12",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -6997,6 +7496,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_12",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7044,7 +7554,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_13",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7058,6 +7567,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_13",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7105,7 +7625,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_14",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7119,6 +7638,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_14",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7166,7 +7696,6 @@
       "resource": "civilians.json",
       "profile_key": "passenger_15",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7180,6 +7709,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "passenger_15",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7227,7 +7767,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_01",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7241,6 +7780,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_01",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7288,7 +7838,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_02",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7302,6 +7851,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_02",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7349,7 +7909,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_03",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7363,6 +7922,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_03",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7410,7 +7980,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_04",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7424,6 +7993,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_04",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7471,7 +8051,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_06",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7485,6 +8064,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_06",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7532,7 +8122,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_07",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7546,6 +8135,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_07",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7593,7 +8193,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_08",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7607,6 +8206,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_08",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7654,7 +8264,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_09",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7668,6 +8277,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_09",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7715,7 +8335,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_10",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7729,6 +8348,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_10",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7776,7 +8406,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_11",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7790,6 +8419,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_11",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7837,7 +8477,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_12",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7851,6 +8490,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_12",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7898,7 +8548,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_13",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7912,6 +8561,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_13",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -7959,7 +8619,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_14",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -7973,6 +8632,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_14",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8020,7 +8690,6 @@
       "resource": "civilians.json",
       "profile_key": "cargo_15",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8034,6 +8703,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "cargo_15",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8081,7 +8761,6 @@
       "resource": "civilians.json",
       "profile_key": "aux_01",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8095,6 +8774,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "aux_01",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8142,7 +8832,6 @@
       "resource": "civilians.json",
       "profile_key": "aux_02",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8156,6 +8845,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "aux_02",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8203,7 +8903,6 @@
       "resource": "civilians.json",
       "profile_key": "aux_03",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8217,6 +8916,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "aux_03",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8264,7 +8974,6 @@
       "resource": "civilians.json",
       "profile_key": "aux_04",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8278,6 +8987,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "aux_04",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8325,7 +9045,6 @@
       "resource": "civilians.json",
       "profile_key": "aux_05",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8339,6 +9058,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "aux_05",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8386,7 +9116,6 @@
       "resource": "civilians.json",
       "profile_key": "aux_06",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8400,6 +9129,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "aux_06",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8447,7 +9187,6 @@
       "resource": "civilians.json",
       "profile_key": "aux_07",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8461,6 +9200,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "aux_07",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8508,7 +9258,6 @@
       "resource": "civilians.json",
       "profile_key": "aux_08",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8522,6 +9271,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "aux_08",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8569,7 +9329,6 @@
       "resource": "civilians.json",
       "profile_key": "aux_09",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8583,6 +9342,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "aux_09",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "civilians.json",
@@ -8630,7 +9400,6 @@
       "resource": "civilians.json",
       "profile_key": "aux_10",
       "field_paths": [
-        "/reference/length_m",
         "/machine/quiet_speed_kn",
         "/machine/motor_rpm",
         "/machine/shaft_rpm",
@@ -8644,6 +9413,17 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "aux_10",
+      "field_paths": [
+        "/reference/length_m"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     },
     {
       "resource": "aircraft.json",
@@ -9085,17 +9865,17 @@
     },
     {
       "resource": "subs.json",
-      "profile_key": "sub_07",
+      "profile_key": "sub_18",
       "field_paths": [
-        "/endurances/endurance.sub_07/battery_capacity_kwh",
-        "/endurances/endurance.sub_07/hotel_load_kw",
-        "/endurances/endurance.sub_07/propulsion_max_kw",
-        "/endurances/endurance.sub_07/propulsion_exponent",
-        "/endurances/endurance.sub_07/generator_power_kw",
-        "/endurances/endurance.sub_07/reserve_start_fraction",
-        "/endurances/endurance.sub_07/reserve_stop_fraction",
-        "/endurances/endurance.sub_07/snorkel_depth_m",
-        "/endurances/endurance.sub_07/radio_duration_s"
+        "/endurances/endurance.sub_18/battery_capacity_kwh",
+        "/endurances/endurance.sub_18/hotel_load_kw",
+        "/endurances/endurance.sub_18/propulsion_max_kw",
+        "/endurances/endurance.sub_18/propulsion_exponent",
+        "/endurances/endurance.sub_18/generator_power_kw",
+        "/endurances/endurance.sub_18/reserve_start_fraction",
+        "/endurances/endurance.sub_18/reserve_stop_fraction",
+        "/endurances/endurance.sub_18/snorkel_depth_m",
+        "/endurances/endurance.sub_18/radio_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -9104,39 +9884,10 @@
     },
     {
       "resource": "subs.json",
-      "profile_key": "sub_07",
+      "profile_key": "sub_18",
       "field_paths": [
-        "/endurances/endurance.sub_07/aip_power_kw",
-        "/endurances/endurance.sub_07/aip_energy_kwh"
-      ],
-      "status": "unknown",
-      "source_ids": []
-    },
-    {
-      "resource": "subs.json",
-      "profile_key": "sub_08",
-      "field_paths": [
-        "/endurances/endurance.sub_08/battery_capacity_kwh",
-        "/endurances/endurance.sub_08/hotel_load_kw",
-        "/endurances/endurance.sub_08/propulsion_max_kw",
-        "/endurances/endurance.sub_08/propulsion_exponent",
-        "/endurances/endurance.sub_08/generator_power_kw",
-        "/endurances/endurance.sub_08/reserve_start_fraction",
-        "/endurances/endurance.sub_08/reserve_stop_fraction",
-        "/endurances/endurance.sub_08/snorkel_depth_m",
-        "/endurances/endurance.sub_08/radio_duration_s"
-      ],
-      "status": "game_assumption",
-      "source_ids": [
-        "u-jagd.game-model"
-      ]
-    },
-    {
-      "resource": "subs.json",
-      "profile_key": "sub_08",
-      "field_paths": [
-        "/endurances/endurance.sub_08/aip_power_kw",
-        "/endurances/endurance.sub_08/aip_energy_kwh"
+        "/endurances/endurance.sub_18/aip_power_kw",
+        "/endurances/endurance.sub_18/aip_energy_kwh"
       ],
       "status": "unknown",
       "source_ids": []
@@ -9200,8 +9951,6 @@
         "/endurances/endurance.sub_12/propulsion_max_kw",
         "/endurances/endurance.sub_12/propulsion_exponent",
         "/endurances/endurance.sub_12/generator_power_kw",
-        "/endurances/endurance.sub_12/aip_power_kw",
-        "/endurances/endurance.sub_12/aip_energy_kwh",
         "/endurances/endurance.sub_12/reserve_start_fraction",
         "/endurances/endurance.sub_12/reserve_stop_fraction",
         "/endurances/endurance.sub_12/snorkel_depth_m",
@@ -9214,6 +9963,16 @@
     },
     {
       "resource": "subs.json",
+      "profile_key": "sub_12",
+      "field_paths": [
+        "/endurances/endurance.sub_12/aip_power_kw",
+        "/endurances/endurance.sub_12/aip_energy_kwh"
+      ],
+      "status": "unknown",
+      "source_ids": []
+    },
+    {
+      "resource": "subs.json",
       "profile_key": "sub_13",
       "field_paths": [
         "/endurances/endurance.sub_13/battery_capacity_kwh",
@@ -9221,8 +9980,6 @@
         "/endurances/endurance.sub_13/propulsion_max_kw",
         "/endurances/endurance.sub_13/propulsion_exponent",
         "/endurances/endurance.sub_13/generator_power_kw",
-        "/endurances/endurance.sub_13/aip_power_kw",
-        "/endurances/endurance.sub_13/aip_energy_kwh",
         "/endurances/endurance.sub_13/reserve_start_fraction",
         "/endurances/endurance.sub_13/reserve_stop_fraction",
         "/endurances/endurance.sub_13/snorkel_depth_m",
@@ -9232,6 +9989,16 @@
       "source_ids": [
         "u-jagd.game-model"
       ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_13",
+      "field_paths": [
+        "/endurances/endurance.sub_13/aip_power_kw",
+        "/endurances/endurance.sub_13/aip_energy_kwh"
+      ],
+      "status": "unknown",
+      "source_ids": []
     },
     {
       "resource": "subs.json",
@@ -9263,8 +10030,6 @@
         "/endurances/endurance.sub_20/propulsion_max_kw",
         "/endurances/endurance.sub_20/propulsion_exponent",
         "/endurances/endurance.sub_20/generator_power_kw",
-        "/endurances/endurance.sub_20/aip_power_kw",
-        "/endurances/endurance.sub_20/aip_energy_kwh",
         "/endurances/endurance.sub_20/reserve_start_fraction",
         "/endurances/endurance.sub_20/reserve_stop_fraction",
         "/endurances/endurance.sub_20/snorkel_depth_m",
@@ -9274,6 +10039,16 @@
       "source_ids": [
         "u-jagd.game-model"
       ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_20",
+      "field_paths": [
+        "/endurances/endurance.sub_20/aip_power_kw",
+        "/endurances/endurance.sub_20/aip_energy_kwh"
+      ],
+      "status": "unknown",
+      "source_ids": []
     },
     {
       "resource": "aircraft.json",

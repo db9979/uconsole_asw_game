@@ -278,8 +278,8 @@
       "filename": "sub_07-cruise.png",
       "width": 320,
       "height": 180,
-      "bytes": 13230,
-      "sha256": "332610b8f5a9f8a4c63754d423beff87a2877ccd7ceaeac7ab8823743315de25"
+      "bytes": 11521,
+      "sha256": "657be37c77df012533e924962eb37d0c37ca7d41dd63644c7c06b72563488831"
     },
     {
       "profile_key": "sub_07",
@@ -288,8 +288,8 @@
       "filename": "sub_07-high.png",
       "width": 320,
       "height": 180,
-      "bytes": 15786,
-      "sha256": "e2560c7dc61769bd061aadeb731bcde5763d26a6546dced9281a560ca8065523"
+      "bytes": 13355,
+      "sha256": "c54500ba8ec6372c63d62c1f9056a5e71f15aee0ad4ccdc0a2a558e2b41dc205"
     },
     {
       "profile_key": "sub_07",
@@ -308,8 +308,8 @@
       "filename": "sub_08-cruise.png",
       "width": 320,
       "height": 180,
-      "bytes": 13230,
-      "sha256": "332610b8f5a9f8a4c63754d423beff87a2877ccd7ceaeac7ab8823743315de25"
+      "bytes": 11521,
+      "sha256": "657be37c77df012533e924962eb37d0c37ca7d41dd63644c7c06b72563488831"
     },
     {
       "profile_key": "sub_08",
@@ -318,8 +318,8 @@
       "filename": "sub_08-high.png",
       "width": 320,
       "height": 180,
-      "bytes": 15786,
-      "sha256": "e2560c7dc61769bd061aadeb731bcde5763d26a6546dced9281a560ca8065523"
+      "bytes": 13355,
+      "sha256": "c54500ba8ec6372c63d62c1f9056a5e71f15aee0ad4ccdc0a2a558e2b41dc205"
     },
     {
       "profile_key": "sub_08",
@@ -608,8 +608,8 @@
       "filename": "sub_18-cruise.png",
       "width": 320,
       "height": 180,
-      "bytes": 11521,
-      "sha256": "657be37c77df012533e924962eb37d0c37ca7d41dd63644c7c06b72563488831"
+      "bytes": 13230,
+      "sha256": "332610b8f5a9f8a4c63754d423beff87a2877ccd7ceaeac7ab8823743315de25"
     },
     {
       "profile_key": "sub_18",
@@ -618,8 +618,8 @@
       "filename": "sub_18-high.png",
       "width": 320,
       "height": 180,
-      "bytes": 13355,
-      "sha256": "c54500ba8ec6372c63d62c1f9056a5e71f15aee0ad4ccdc0a2a558e2b41dc205"
+      "bytes": 15786,
+      "sha256": "e2560c7dc61769bd061aadeb731bcde5763d26a6546dced9281a560ca8065523"
     },
     {
       "profile_key": "sub_18",

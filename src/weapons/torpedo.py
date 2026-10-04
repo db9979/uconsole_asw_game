@@ -694,7 +694,7 @@ class EnemyTorpedo(FrigateRelativeMixin):
                                    self.x, self.y, self.depth):
             self.state = "SASE"
         elif (target is not None
-              and Torpedo._swept_dist(self, target, ox, oy) <= self.kill_dist_nm
+              and self._slant_nm(target, ox, oy) <= self.kill_dist_nm
               and not underwater_path_blocked(world, self.x, self.y, self.depth,
                                                target.x, target.y,
                                                getattr(target, "depth", 5.0))):
@@ -710,6 +710,13 @@ class EnemyTorpedo(FrigateRelativeMixin):
                     target.state = "SASE"
         elif self.motor_fraction < torpedo_dyn.COAST_SINK_FRACTION:
             self.state = "SASE"
+
+    def _slant_nm(self, target, ox: float, oy: float) -> float:
+        """Closest approach over this step in three dimensions: the fuze
+        needs the target near in depth too (a surface ship sits at its keel)."""
+        across = Torpedo._swept_dist(self, target, ox, oy)
+        below = (self.depth - getattr(target, "depth", 5.0)) / 1852.0
+        return math.hypot(across, below)
 
     TURN_DEG_PER_S = 6.0
 

@@ -782,7 +782,7 @@ Torpedolauf von oben:
                     alle 0,5 s)                   Kandidaten an
 ```
 
-- Zwei Torpedotypen teilen sich die zwei Rohre (60 s Nachladen). Mk1: 45 kn, 12 sm, drahtgelenkt. Mk2: 55 kn, aber nur 8 sm. Der Szenariovorrat (Standard 6) ist 2:1 auf Mk1 und Mk2 verteilt; `W` wählt den Typ, und hält kein Rohr ihn, entlädt ein Rohr und lädt ihn nach (60 s).
+- Zwei Torpedotypen teilen sich die zwei Rohre (60 s Nachladen). Mk1: 45 kn, 12 sm, drahtgelenkt. Mk2: 50 kn, aber nur 6 sm. Der Szenariovorrat (Standard 6) ist 2:1 auf Mk1 und Mk2 verteilt; `W` wählt den Typ, und hält kein Rohr ihn, entlädt ein Rohr und lädt ihn nach (60 s).
 - Suchmuster (`X`): die Schlange (+/-15° um den Datumskurs, Standard), ein Kreis von 0,4 sm um den Aktivierungspunkt oder eine Helix, die sich von 0,15 sm um 0,15 sm je Umlauf bis 1 sm öffnet. Das Muster läuft erst, wenn der Sucher aktiv ist und noch nicht erfasst hat.
 - Sucheraktivierungspunkt (`,` / `.`): 0,6 bis 3,0 sm vor dem Datum in Schritten von 0,2 sm (Standard 1,2 sm). Frühe Aktivierung findet ein Ziel, das sich vom Datum entfernt hat; späte Aktivierung hält die Waffe länger still.
 - Salve (`Y`): ein Torpedo oder zwei im Fächer von +/-8° mit eigenen, um das Schiff gedrehten Datums; ein Fächer braucht zwei geladene Rohre des gewählten Typs und zählt gegen die Doktringrenze.
@@ -1421,7 +1421,7 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 - **MAD-Anflug:** mit `Umschalt+M` und eingeholtem Tauchsonar geht der Helikopter auf 30 m und 90 kn. Ein getauchter Rumpf innerhalb von etwa 400 m Schrägdistanz wird je Sensortakt mit einem zustandslosen Zufallszug erfasst (sicher innerhalb 250 m) und als MAD-Positionsfix ohne Tiefe oder Kurs gemeldet; er zählt für die Entfernungsprüfung der Waffen und, sobald der Helikopter seinen Kontakt freigibt, für die OPZ.
 - **Seeraumradar:** sucht, solange der Helikopter fliegt und das Tauchsonar eingeholt ist (Statuszeile auf Seite 2). Aus 150 m sieht es Schiffe bis 40 sm, aufgetauchte U-Boote sowie ausgefahrene Schnorchel oder Sehrohre innerhalb seines Radarhorizonts (etwa 30 sm). Ein Mast ist klein: bei ruhiger See zeigt er sich auf etwa 10 sm, bei Seegang 3 auf 3-5 sm, bei Seegang 5 verschwindet er im Seegangsecho. Jeder Kontakt geht als `RADAR-HELO`-Track mit dem Helikopter als Beobachter an die OPZ, ein Blick alle 2 s. Das ESM eines besetzten U-Boots hört das Radar und kann seine Besatzung warnen. `Strg+R` (wie beim Seefernaufklärer; Browser: *Radar ausschalten*/*einschalten*) schaltet das Radar aus und wieder ein; ausgeschaltet sieht es nichts und strahlt nicht, und es bleibt aus (gespeichert), bis es wieder eingeschaltet wird. Ein KI-U-Boot mit ausgefahrenem Mast oder Schnorchel hört ein Flugzeugradar innerhalb von 40 sm (im Radarhorizont seines Masts) bei vier von fünf Blicken im 5-s-Takt, geht 40 m unter Schnorcheltiefe und schiebt das Schnorcheln 15 Minuten auf, solange seine Batterie mehr als 5 % hält; ein strahlender Helikopter drückt Schnorchler also weg, ein stiller kann sie an der Oberfläche erwischen.
 - **Augen der Besatzung:** Solange der Helikopter fliegt, hält auch seine Besatzung Ausguck, mit dem Kontrastmodell des Brückenausgucks aus der Flughöhe (150 m, beim Tauchen 20 m): die Schaumfahne eines ausgefahrenen Sehrohrs oder Schnorchels sieht sie auf dieselbe Entfernung wie der Ausguck, unabhängig vom Radar und ohne zu strahlen. Die Sichtung geht alle 2 s als `HELO-EYE`-Track an die OPZ, auf die halbe Entfernung als U-Boot.
-- **Leichttorpedo:** 2 je Einsatz, 55 kn, 12 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
+- **Leichttorpedo:** 2 je Einsatz, 45 kn, 6 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
 
 Seite 1 ist die Statuskonsole des Hubschraubers. Eine Leiste Zustandslampen zeigt, wo er ist: HANGAR, DECK (grün, wenn er jetzt starten darf, gelb, solange Wetter oder Deckbewegung ihn halten, rot bei ausgefallenem Flugdeck), FLUG (rot, wenn er verloren ist), SONAR (Tauchsonar im Wasser, gelb beim Fieren und Hieven) und RÜCKFLUG.
 
@@ -2509,8 +2509,8 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | System | Daten |
 |---|---|
 | Fregattentorpedo | 45 kn, 12 sm (Batterie), drahtgelenkt (Schiff <= 20 kn, <= 1,5 Grad/s, 5 sm Spule), 2 Rohre, 60 s Nachladen, Tiefe 10-300 m, Annäherungszünder |
-| Helikoptertorpedo | 55 kn, 12 sm, 2 je Einsatz, ohne Draht |
-| Feindtorpedo | 40 kn, 20 sm, zielsuchend ab 3 sm; schneller als die Fregatte, bloßes Ablaufen hilft selten; ein KI-U-Boot greift eine geortete Fregatte innerhalb 10 sm auch bei leiser Fahrt an |
+| Helikoptertorpedo | 45 kn, 6 sm, 2 je Einsatz, ohne Draht |
+| Feindtorpedo | 40 kn, 20 sm, zielsuchend ab 3 sm, detoniert innerhalb etwa 90 m (unter einem Schiff auf Kieltiefe), Schaden sinkt mit dem Abstand; schneller als die Fregatte, bloßes Ablaufen hilft selten; ein KI-U-Boot greift eine geortete Fregatte innerhalb 10 sm auch bei leiser Fahrt an |
 | Nixie-Schlepptäuschkörper | 2 je Mission, 600 s, 0,2-sm-Kabel (10 m bei 15 kn, langsamer tiefer, reißt über 25 kn), 60 s Nachladen |
 | ESSM | 6 Flugkörper, 30 sm, 2 Feuerkanäle |
 | CIWS | 1,5 sm, 180 Schuss, braucht Freigabe; 115 Grad/s Schwenken, eigenes Folgeradar innerhalb 3 sm |

@@ -508,7 +508,7 @@
     {
       "key": "tanker_10",
       "name": "Maersk-Triple-E",
-      "category": "TANKER",
+      "category": "FRACHT",
       "hostile": false,
       "speed_kn": [
         10.0,
@@ -549,7 +549,7 @@
           129.25
         ],
         "cavitation_tendency": 0.6799999999999999,
-        "category": "TANKER",
+        "category": "FRACHT",
         "secondary_tonals": [],
         "broadband": [
           0.45,
@@ -1611,7 +1611,7 @@
       ],
       "asm_cooldown_s": 0.0,
       "loiter_nm": 0.0,
-      "spawn_weight": 1.0,
+      "spawn_weight": 0.0,
       "acoustic": {
         "label": "River-Cruise-Schiff",
         "propulsion": "Mehrfachdiesel/Getriebe",
@@ -6087,277 +6087,277 @@
     {
       "key": "reference.tanker_01",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 210.0
     },
     {
       "key": "reference.tanker_02",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 227.4
     },
     {
       "key": "reference.tanker_03",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 200.9
     },
     {
       "key": "reference.tanker_04",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 173.7
     },
     {
       "key": "reference.tanker_05",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 196.5
     },
     {
       "key": "reference.tanker_06",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 183.0
     },
     {
       "key": "reference.tanker_07",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 193.0
     },
     {
       "key": "reference.tanker_08",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 146.6
     },
     {
       "key": "reference.tanker_09",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 229.8
     },
     {
       "key": "reference.tanker_10",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 399.2
     },
     {
       "key": "reference.tanker_11",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 330.0
     },
     {
       "key": "reference.tanker_12",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 245.0
     },
     {
       "key": "reference.tanker_13",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 275.0
     },
     {
       "key": "reference.tanker_14",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 345.0
     },
     {
       "key": "reference.tanker_15",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 280.0
     },
     {
       "key": "reference.passenger_01",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 345.0
     },
     {
       "key": "reference.passenger_02",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 361.8
     },
     {
       "key": "reference.passenger_03",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 364.75
     },
     {
       "key": "reference.passenger_04",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 341.8
     },
     {
       "key": "reference.passenger_05",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 337.0
     },
     {
       "key": "reference.passenger_06",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 339.0
     },
     {
       "key": "reference.passenger_07",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 316.0
     },
     {
       "key": "reference.passenger_08",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 223.7
     },
     {
       "key": "reference.passenger_09",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 240.0
     },
     {
       "key": "reference.passenger_10",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 200.0
     },
     {
       "key": "reference.passenger_11",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 140.0
     },
     {
       "key": "reference.passenger_12",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 130.0
     },
     {
       "key": "reference.passenger_13",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 135.0
     },
     {
       "key": "reference.passenger_14",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 112.0
     },
     {
       "key": "reference.passenger_15",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 190.0
     },
     {
       "key": "reference.cargo_01",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 397.0
     },
     {
       "key": "reference.cargo_02",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 399.9
     },
     {
       "key": "reference.cargo_03",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 366.0
     },
     {
       "key": "reference.cargo_04",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 140.0
     },
     {
       "key": "reference.cargo_05",
       "hull_type": "container_ship",
-      "length_m": null
+      "length_m": 294.0
     },
     {
       "key": "reference.cargo_06",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 190.0
     },
     {
       "key": "reference.cargo_07",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 200.0
     },
     {
       "key": "reference.cargo_08",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 200.0
     },
     {
       "key": "reference.cargo_09",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 150.0
     },
     {
       "key": "reference.cargo_10",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 290.0
     },
     {
       "key": "reference.cargo_11",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 150.0
     },
     {
       "key": "reference.cargo_12",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 120.0
     },
     {
       "key": "reference.cargo_13",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 170.0
     },
     {
       "key": "reference.cargo_14",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 140.0
     },
     {
       "key": "reference.cargo_15",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 90.0
     },
     {
       "key": "reference.aux_01",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 54.0
     },
     {
       "key": "reference.aux_02",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 32.0
     },
     {
       "key": "reference.aux_03",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 27.9
     },
     {
       "key": "reference.aux_04",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 116.0
     },
     {
       "key": "reference.aux_05",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 140.0
     },
     {
       "key": "reference.aux_06",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 85.0
     },
     {
       "key": "reference.aux_07",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 60.0
     },
     {
       "key": "reference.aux_08",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 75.0
     },
     {
       "key": "reference.aux_09",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 75.0
     },
     {
       "key": "reference.aux_10",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 20.0
     },
     {
       "key": "reference.warship_01",
@@ -6372,97 +6372,97 @@
     {
       "key": "reference.warship_03",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 190.0
     },
     {
       "key": "reference.warship_04",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 152.4
     },
     {
       "key": "reference.warship_05",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 133.0
     },
     {
       "key": "reference.warship_06",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 149.9
     },
     {
       "key": "reference.warship_07",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 143.0
     },
     {
       "key": "reference.warship_08",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 149.5
     },
     {
       "key": "reference.warship_09",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 143.0
     },
     {
       "key": "reference.warship_10",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 149.5
     },
     {
       "key": "reference.warship_11",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 144.2
     },
     {
       "key": "reference.warship_12",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 152.87
     },
     {
       "key": "reference.warship_13",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 142.0
     },
     {
       "key": "reference.warship_14",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 125.0
     },
     {
       "key": "reference.warship_15",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 72.7
     },
     {
       "key": "reference.warship_16",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 138.7
     },
     {
       "key": "reference.warship_17",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 134.0
     },
     {
       "key": "reference.warship_18",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 166.0
     },
     {
       "key": "reference.warship_19",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 132.5
     },
     {
       "key": "reference.warship_20",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 165.0
     },
     {
       "key": "reference.warship_21",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 150.5
     },
     {
       "key": "reference.warship_25",
@@ -6482,7 +6482,7 @@
     {
       "key": "reference.warship_28",
       "hull_type": "aircraft_carrier",
-      "length_m": null
+      "length_m": 332.8
     }
   ],
   "machines": [

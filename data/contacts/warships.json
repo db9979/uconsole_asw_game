@@ -365,17 +365,17 @@
     {
       "key": "reference.warship_22",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 252.0
     },
     {
       "key": "reference.warship_23",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 163.0
     },
     {
       "key": "reference.warship_24",
       "hull_type": "unknown",
-      "length_m": null
+      "length_m": 135.0
     }
   ],
   "machines": [

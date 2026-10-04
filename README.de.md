@@ -14,13 +14,20 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.193**
+Aktuelle Version: **1.3.194**
 
-Version 1.3.193 benennt die Anzeige des Ersten Offiziers um: Der Titel heißt
-jetzt nur „Erster Offizier“, und solange das optionale Sprachmodell an einer
-Antwort arbeitet, steht auf der uConsole und im Browser „Der Erste Offizier
-wertet die Lage aus ...“ statt „Das Sprachmodell schreibt ...“. Am Spiel
-ändert sich nichts. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+Version 1.3.194 berichtigt Daten und den Zünder des Feindtorpedos aus der
+Codeprüfung. Trafalgar und Rubis sind jetzt Atom-U-Boote und Collins ein
+diesel-elektrisches; Improved-Kilo, Lada und Taigei haben keinen AIP mehr
+(Taigei dafür eine größere Lithium-Batterie); Virginia und Yasen sind nicht
+mehr schneller als ihre Klasse. Der Feindtorpedo detoniert erst innerhalb
+etwa 90 m und nahe Kieltiefe statt schon 460 m querab, und sein Schaden sinkt
+weiter mit dem Abstand. Der Leichttorpedo von Hubschrauber und
+Seefernaufklärer läuft 45 kn über 6 sm, der Mk2 der Fregatte 50 kn über 6 sm.
+Jedes Schiff hat jetzt seine echte Länge, die sein Echo und seine Wendigkeit
+bestimmt; die Triple-E gilt als Containerschiff, und das Flusskreuzfahrtschiff
+fährt nicht mehr auf offener See. Spielstände sind v50; v38 bis v49 lassen
+sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

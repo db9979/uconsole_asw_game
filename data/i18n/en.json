@@ -4772,7 +4772,7 @@
   "help.control.torp_pattern": "Terminal search pattern: snake, circle, helix",
   "help.control.torp_enable": "Seeker enable point -/+ (0.6 to 3.0 NM, 0.2 NM steps)",
   "help.control.torp_salvo": "Salvo: one torpedo or two in a +/-8 deg spread",
-  "help.note.torp_types": "Mk1: 45 kn, 12 NM, wire-guided. Mk2: 55 kn but 8 NM. The stock is split 2:1; selecting a type reloads one tube with it.",
+  "help.note.torp_types": "Mk1: 45 kn, 12 NM, wire-guided. Mk2: 50 kn but 6 NM. The stock is split 2:1; selecting a type reloads one tube with it.",
   "runtime.torpedo.type": "Torpedo type: {name}",
   "runtime.torpedo.type_empty": "No torpedo of that type left",
   "runtime.torpedo.pattern": "Search pattern: {pattern}",

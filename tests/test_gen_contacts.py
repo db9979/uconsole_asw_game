@@ -56,3 +56,21 @@ def test_validator_rejects_invalid_data(tmp_path, filename, mutate, message):
     with pytest.raises(ValueError, match=message):
         validate(tmp_path)
     assert check(tmp_path) == 1
+
+
+@pytest.mark.parametrize(("mutate", "message"), [
+    (lambda d: d["entries"][0].update(speed_kn=[4, 30]), "top speed differs"),
+    (lambda d: d["entries"][0]["acoustic"].update(propulsion="elektrisch/AIP"),
+     "AIP endurance contradicts"),
+])
+def test_validator_holds_shipped_boats_to_their_machine(tmp_path, mutate, message):
+    from src.data import catalog
+    _copy_catalog(tmp_path)
+    path = tmp_path / "subs.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    mutate(data)
+    path.write_text(json.dumps(data), encoding="utf-8")
+    # The runtime loader stays lenient for save snapshots and user edits.
+    catalog._load_catalog_from(tmp_path)
+    with pytest.raises(ValueError, match=message):
+        validate(tmp_path)

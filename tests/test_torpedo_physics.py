@@ -89,6 +89,22 @@ def test_enemy_torpedo_rises_to_keel_depth_when_homing():
     assert torpedo.target_depth < 10.0 and torpedo.depth < 40.0
 
 
+def test_enemy_torpedo_fuzes_only_close_aboard_and_near_keel_depth():
+    # Passing 300 m abeam no longer counts as a hit (was 0.25 NM).
+    ship = Ship(100.0, 100.0)
+    torpedo = EnemyTorpedo(100.0 + 300.0 / 1852.0, 100.5, 0.0, 5.0, 1)
+    ox, oy = torpedo.x, torpedo.y
+    torpedo.y -= 1.0
+    assert torpedo._slant_nm(ship, ox, oy) * 1852.0 == pytest.approx(300.0, abs=1.0)
+    assert torpedo._slant_nm(ship, ox, oy) > torpedo.kill_dist_nm
+    # Right under the keel it fuzes; 200 m deeper it does not.
+    torpedo.x = 100.0
+    assert torpedo._slant_nm(ship, ox - 300.0 / 1852.0, oy) <= torpedo.kill_dist_nm
+    torpedo.depth = 205.0
+    assert torpedo._slant_nm(ship, ox - 300.0 / 1852.0, oy) > torpedo.kill_dist_nm
+    assert torpedo.kill_dist_nm * 1852.0 < 100.0
+
+
 def test_enemy_torpedo_follows_the_wake():
     ship = Ship(100.0, 100.0, course_deg=90.0, speed_kn=20.0)
     ship.target_speed = 20.0

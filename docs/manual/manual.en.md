@@ -1427,7 +1427,7 @@ Page 1 is the helicopter's status console. A strip of state lamps lights where t
 
 Below it a fuel tank with the 20-minute reserve as an amber mark (in the hangar it stands refuelled), a rose with the bearing back to the ship and the aircraft's course needle, and readouts: state, endurance (and in the hover, which burns 1.3 times as fast), bingo (fuel left after the flight home and the reserve), bearing, distance and flight time back to the ship, flight course and the dipping sonar's state and depth. The resources show torpedoes and buoys aboard as pips, the buoys in the water and the datalink, then lamps for the flight weather (CLEAR, LIMITED or NO-GO), the deck window, the dipping weather, dome, ping, water entry and radar. The deck-motion gauge is at the foot; in a small window or with large text the lower lamp row and then the gauge give way.
 
-Page 3 shows the dipping sonar like a console: lamps for dome (green in the water, amber while lowering or raising), ping ready and water entry clear, a gauge of the cable in the water column down to the seabed, and a scope with the dipping and buoy bearings as wedges as wide as their error. Page 4 draws its waterfalls in the same phosphor colours as the ship's sonar.
+Page 3 shows the dipping sonar like a console: lamps for dome (green in the water, amber while lowering or raising), ping ready and water entry clear, a side view of the dip (grey air with the helicopter on top, a bold blue waterline, then the water darker with depth, the layer as an amber line and the dome on its cable; the browser draws it beside the dip scope), and a scope with the dipping and buoy bearings as wedges as wide as their error. Page 4 draws its waterfalls in the same phosphor colours as the ship's sonar.
 
 ### Keys
 

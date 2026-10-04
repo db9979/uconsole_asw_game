@@ -14,7 +14,9 @@ START PREP with the time left (uConsole and browser), `H` again stops it, and
 every launch after a landing needs the full preparation again. The AI frigate
 waits for it too; its own delay before the order is halved, so the balance
 stays where it was. The bearing roses keep their "090" and "270" clear of
-the text beside them. Saves are v51; v38 to v50 saves still load.
+the text beside them, and the dipping sonar's depth gauge separates the air
+with the helicopter from the water below a bold waterline (uConsole and
+browser). Saves are v51; v38 to v50 saves still load.
 
 ## 1.3.194
 

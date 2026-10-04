@@ -18,6 +18,7 @@ from src.ui import theme
 LEVELS = ("off", "on", "caution", "alarm")
 LED_OFF = (36, 58, 60)
 WATER = (40, 110, 160)
+AIR = (30, 38, 52)       # the air above a water column (helicopter's dip gauge)
 
 
 def level_color(level: str):

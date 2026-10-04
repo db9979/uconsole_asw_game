@@ -684,6 +684,39 @@ def _draw_stores_and_systems(game, s, region, helo) -> None:
         4, size=14)
 
 
+def _draw_dip_column(s, column, helo, gauge_max, thermocline) -> None:
+    """The dipping sonar's side view: the air with the helicopter on top,
+    the waterline, then the water column (darker with depth) with the layer
+    and the dome on its cable from the helicopter."""
+    from src.ui import console
+    air_h = max(16, column.h // 5)
+    air = pygame.Rect(column.x, column.y, column.w, air_h)
+    water = pygame.Rect(column.x, air.bottom, column.w, column.bottom - air.bottom)
+    pygame.draw.rect(s, console.AIR, air)
+    for band in range(4):
+        top = water.y + water.h * band // 4
+        pygame.draw.rect(s, console._mix(config.COLOR_PANEL_BG, console.WATER, .45 + band * .14),
+                         (water.x, top, water.w, water.h * (band + 1) // 4 - water.h * band // 4))
+    pygame.draw.rect(s, layout.BRACKET_COLOR, column, 1)
+    # The waterline: a bold line with a wave crest either side of the column.
+    pygame.draw.line(s, console.WATER, (column.x - 4, water.y), (column.right + 3, water.y), 3)
+    cx = column.centerx
+    airborne = helo.airborne
+    if airborne:
+        # The helicopter in the hover (or passing) at the top of the air.
+        hy = air.y + 5
+        pygame.draw.polygon(s, config.COLOR_TEXT, [(cx - 7, hy), (cx + 7, hy), (cx, hy + 6)])
+        pygame.draw.line(s, config.COLOR_TEXT, (cx - 10, air.y + 2), (cx + 10, air.y + 2), 1)
+    if thermocline is not None and thermocline <= gauge_max:
+        layer_y = water.y + int(water.h * thermocline / gauge_max)
+        pygame.draw.line(s, config.COLOR_WARN, (column.x - 5, layer_y), (column.x + 27, layer_y), 2)
+    if airborne and helo.dip_state != "STOWED":
+        dome_y = water.y + int(water.h * min(1.0, helo.dip_depth_m / gauge_max))
+        # The cable from the helicopter through the air down to the dome.
+        pygame.draw.line(s, config.COLOR_TEXT_DIM, (cx, air.y + 11), (cx, dome_y), 1)
+        pygame.draw.circle(s, config.COLOR_OK, (cx, dome_y), 5)
+
+
 @localized
 def draw_helicopter_view(game, tr=None) -> None:
     """Eigene Deckansicht fuer Status, Reichweite und Einsatzfreigaben."""
@@ -784,24 +817,8 @@ def draw_helicopter_view(game, tr=None) -> None:
         thermocline = (layer if layer is not None and helo.dip_depth_m >= layer
                        else None)
         gauge_max = max(50.0, depth_limit)
-        column = pygame.Rect(gauge_x, gauge_y, 22, gauge_h)
-        # The water column: darker with depth, the limit as a floor line.
-        for band in range(4):
-            top = column.y + column.h * band // 4
-            pygame.draw.rect(s, console._mix(config.COLOR_PANEL_BG, console.WATER, .45 - band * .09),
-                             (column.x, top, column.w, column.h * (band + 1) // 4 - column.h * band // 4))
-        pygame.draw.line(s, console.WATER, column.topleft, (column.right - 1, column.y), 2)
-        pygame.draw.rect(s, layout.BRACKET_COLOR, column, 1)
-        if thermocline is not None and thermocline <= gauge_max:
-            layer_y = gauge_y + int(gauge_h * thermocline / gauge_max)
-            pygame.draw.line(s, config.COLOR_WARN,
-                             (gauge_x - 5, layer_y), (gauge_x + 27, layer_y), 2)
-        if helo.dip_state != "STOWED":
-            dome_y = gauge_y + int(gauge_h * min(1.0, helo.dip_depth_m / gauge_max))
-            # The cable from the surface to the dome.
-            pygame.draw.line(s, config.COLOR_TEXT_DIM, (gauge_x + 11, gauge_y),
-                             (gauge_x + 11, dome_y), 1)
-            pygame.draw.circle(s, config.COLOR_OK, (gauge_x + 11, dome_y), 5)
+        _draw_dip_column(s, pygame.Rect(gauge_x, gauge_y, 22, gauge_h), helo,
+                         gauge_max, thermocline)
         gauge_text_x = gauge_x + 34
         gauge_text_w = max(1, int(px + pw - gauge_text_x))
         for index, label in enumerate((

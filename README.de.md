@@ -24,7 +24,9 @@ zeigt STARTVORBEREITUNG mit der Restzeit (uConsole und Browser), ein zweites
 `H` bricht sie ab, und jeder Start nach einer Landung braucht wieder die volle
 Vorbereitung. Auch die KI-Fregatte wartet sie ab; ihre eigene Wartezeit vor
 dem Befehl ist halbiert, damit das Gleichgewicht bleibt. Die Peilrosen halten ihr „090“ und „270“ vom
-Text daneben frei. Spielstände sind v51;
+Text daneben frei, und die Tiefenleiste des Tauchsonars trennt die Luft mit
+dem Hubschrauber durch eine kräftige Wasserlinie vom Wasser (uConsole und
+Browser). Spielstände sind v51;
 v38 bis v50 lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

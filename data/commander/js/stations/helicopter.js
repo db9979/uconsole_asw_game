@@ -3,7 +3,7 @@ import { stopSonarAudio } from "../audio/audio.js";
 import { $, heloStates } from "../core/base.js";
 import { finite, heloStateText, number, t, unit } from "../core/format.js";
 import { fillFireTargets, metrics, position, setControlValue, setOptions, stationRows, yesNo } from "../views/dom.js";
-import { palette } from "../core/palette.js";
+import { palette, paletteAlpha } from "../core/palette.js";
 import { renderLamps } from "../views/console-kit.js";
 import { visualContext } from "../views/visual-common.js";
 
@@ -198,18 +198,48 @@ export function renderHelicopterStation(payload) {
     ["fix_age", unit(row.fix_age_s, "s", 0)],
     ["opz_release_status", t(row.released_to_opz ? "opz_release_active" : "opz_release_private")]],
     "helicopter_dip_empty");
-  drawHelicopterDip(payload.dip_observations);
+  drawHelicopterDip(payload.dip_observations, asset, payload.dip_environment);
   renderHelicopterLamps(asset, ready);
   const scope = visualContext("helicopter-dip-rose");
   if (scope) drawDipScope(scope.context, scope.width, scope.height, payload.dip_observations, payload.buoy_observations, palette());
 }
-function drawHelicopterDip(rows) {
+// The dipping sonar's side view beside the scope (src/ui/stations/helicopter.py
+// _draw_dip_column): air with the helicopter on top, the waterline, the water
+// darker with depth, the layer in amber and the dome on its cable.
+function drawDipColumn(ctx, x, y, w, h, asset, environment, colors) {
+  const airH = Math.max(18, Math.round(h / 5)), waterY = y + airH, waterH = h - airH;
+  const gaugeMax = Math.max(50, environment.depth_limit_m || 0), cx = x + w / 2;
+  ctx.fillStyle = paletteAlpha("muted", .22); ctx.fillRect(x, y, w, airH);
+  const gradient = ctx.createLinearGradient(0, waterY, 0, y + h);
+  gradient.addColorStop(0, paletteAlpha("blue", .35)); gradient.addColorStop(1, paletteAlpha("blue", .8));
+  ctx.fillStyle = gradient; ctx.fillRect(x, waterY, w, waterH);
+  ctx.strokeStyle = colors.lineStrong; ctx.lineWidth = 1; ctx.strokeRect(x + .5, y + .5, w - 1, h - 1);
+  ctx.strokeStyle = colors.blue; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x - 5, waterY); ctx.lineTo(x + w + 5, waterY); ctx.stroke();
+  if (asset.airborne) {
+    ctx.fillStyle = colors.text;
+    ctx.beginPath(); ctx.moveTo(cx - 8, y + 5); ctx.lineTo(cx + 8, y + 5); ctx.lineTo(cx, y + 12); ctx.closePath(); ctx.fill();
+  }
+  if (finite(environment.thermocline_m) && environment.thermocline_m <= gaugeMax) {
+    const layerY = waterY + waterH * environment.thermocline_m / gaugeMax;
+    ctx.strokeStyle = colors.amber; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x - 6, layerY); ctx.lineTo(x + w + 6, layerY); ctx.stroke();
+  }
+  if (asset.airborne && asset.dip_state !== "STOWED") {
+    const domeY = waterY + waterH * Math.min(1, asset.dip_depth_m / gaugeMax);
+    ctx.strokeStyle = colors.muted; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, y + 12); ctx.lineTo(cx, domeY); ctx.stroke();
+    ctx.fillStyle = colors.accent; ctx.beginPath(); ctx.arc(cx, domeY, 5, 0, Math.PI * 2); ctx.fill();
+  }
+}
+function drawHelicopterDip(rows, asset, environment) {
   const canvas = $("helicopter-dip-canvas"), ctx = canvas.getContext("2d");
   if (!ctx) return;
   const {width: w, height: h} = canvas, colors = palette();
   ctx.fillStyle = colors.scopeBg; ctx.fillRect(0, 0, w, h);
   ctx.font = "13px ui-monospace, monospace";
-  drawDipScope(ctx, w, h - 16, rows, [], colors);
+  drawDipScope(ctx, w - 70, h - 16, rows, [], colors);
+  drawDipColumn(ctx, w - 52, 14, 26, h - 44, asset, environment, colors);
   ctx.fillStyle = colors.muted; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText(t("helicopter_dip_scale"), 12, h - 8);
 }

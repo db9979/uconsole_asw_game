@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.196
+
+Version 1.3.196 schließt die letzten Punkte der Codeprüfung. Der LFM-Ping
+gewinnt nicht mehr 20 dB gegen Rauschen, was ein Puls mit derselben Energie
+wie CW nicht kann; stattdessen senkt seine feine Entfernungszelle den Nachhall
+des Meeresbodens um 20 dB, sodass er ein langsames oder stehendes U-Boot im
+Flachwasser findet, während beide Pulse im tiefen Wasser gleich weit reichen.
+Ein U-Boot hört einen laufenden Torpedo jetzt auf seiner vollen
+Bezugsentfernung. Auf freier Fahrt kostet ein versenktes neutrales U-Boot die
+Fregatte nur, wenn ihre eigenen Torpedos, Wasserbomben oder Raketen es
+versenkt haben, und ein U-Boot, das als neue Begegnung zurückkehrt, ist ein
+neuer Kontakt. Ein hängender Selbsttest beim Bau hält neue Versionen nicht mehr
+stundenlang auf. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.195
 
 Version 1.3.195 hält die Mikrofonanzeige von der Statuszeile der Kopfleiste

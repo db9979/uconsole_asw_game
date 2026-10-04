@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.196
+
+Release 1.3.196 closes the last points of the code audit. The LFM ping no
+longer gains 20 dB against noise, which a pulse of the same energy as CW
+cannot; instead its fine range cell cuts the seabed reverberation by 20 dB, so
+it finds a slow or stationary submarine in shallow water, while in deep water
+both pulses reach equally far. A submarine now hears a running torpedo at its
+full reference range. On a free patrol a sunk neutral submarine costs the
+frigate only when its own torpedoes, depth charges or rockets sank it, and a
+submarine that comes back as a new encounter is a new contact. A hung build
+self-test no longer holds back new releases for hours. Saves are v50; v38 to
+v49 saves still load.
+
 ## 1.3.195
 
 Release 1.3.195 keeps the microphone meter off the top bar's status line. On

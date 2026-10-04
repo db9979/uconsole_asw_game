@@ -14,18 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.197**
+Aktuelle Version: **1.3.198**
 
-Version 1.3.197 lässt die Hinweisfenster beim Überfahren mit der Maus dem
-Farbschema folgen. Im hellen Schema „Taktik Tag“ ist ein Hinweis jetzt eine
-helle Karte mit dunkler Schrift statt eines dunklen Kastens mit kaum lesbarer
-Schrift; „Taktik Nacht“ und hoher Kontrast behalten den dunklen Kasten, bei
-Rotlicht wird er grau. Die Bilder der Leckwehr (Seitenriss
-und Querschnitt der Fregatte, Schnitt des U-Boots) werden bei Tag zu einer
-hellen Zeichnung, Wasser, Feuer und Trupps bleiben gut erkennbar, auf der
-uConsole und im Browser. Auch der Update-Hinweis im Hauptmenü und der Hinweis
-für eine nicht gezeichnete Ansicht folgen dem Schema. Tasten bleiben gleich.
-Spielstände sind v50; v38 bis v49 laden weiter.
+Version 1.3.198 behebt die Meldung „Anzeige gestört“ beim starken
+Hineinzoomen in eine Karte. Mit der Grafikstufe „Voll“ konnte das geglättete
+Linienzeichnen keine Linien verarbeiten, die weit außerhalb der Karte enden,
+etwa einen Autopilot-Schlag zu einem fernen Wegpunkt bei stärkstem Zoom; die
+Karte zeigte dann die Fehlerbox statt des Lagebilds. Linien und Flächen werden
+jetzt vor dem Zeichnen auf den sichtbaren Kartenteil zugeschnitten, sodass
+jede Karte beider Seiten im nächsten und im weitesten Maßstab zeichnet.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

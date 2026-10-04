@@ -67,6 +67,17 @@ def deck_window_open(quiet_s: float, roll_deg: float = 0.0, pitch_deg: float = 0
     return deck_within_limits(roll_deg, pitch_deg) and quiet_s >= DECK_WINDOW_S - 1e-6
 
 
+# Flying to a waypoint: cruise, then an approach that slows down so the
+# helicopter stops on the point (within WAYPOINT_ARRIVAL_NM, about 20 m)
+# instead of turning away 0.3 NM short. Cruise turns at 6 deg/s; slower,
+# it turns faster, up to a hover turn.
+WAYPOINT_ARRIVAL_NM = 0.01
+APPROACH_TIME_S = 30.0
+APPROACH_MIN_KN = 5.0
+TURN_RATE_DEG_S = 6.0
+TURN_RATE_MAX_DEG_S = 45.0
+
+
 # Plan 1.3 phase 6: sonobuoy patterns (a queue of drop points the helicopter
 # flies one after the other with the ordinary single drop) and the MAD run.
 BUOY_PATTERNS = ("single", "field", "barrier", "circle")
@@ -316,13 +327,20 @@ class Helicopter:
 
         dx = target_x - self.x
         dy = target_y - self.y
-        if math.hypot(dx, dy) > 0.3:
+        distance = math.hypot(dx, dy)
+        if distance > WAYPOINT_ARRIVAL_NM:
+            # Cruise until the approach, then slow down onto the point (a
+            # helicopter can come to a hover): the turn rate rises as the
+            # speed falls, so it settles on the waypoint instead of circling.
+            speed = min(self.speed_kn, max(APPROACH_MIN_KN,
+                                           distance * 3600.0 / APPROACH_TIME_S))
+            turn = min(TURN_RATE_MAX_DEG_S, TURN_RATE_DEG_S * self.speed_kn / speed)
             desired = math.degrees(math.atan2(dx, -dy)) % 360.0
             diff = config.angle_diff_deg(desired, self.course)
             self.course = (self.course + config.clamp(
-                diff, -6.0 * dt, 6.0 * dt)) % 360.0
-            step = config.kn_to_nm_per_s(self.speed_kn) * dt
-            self.ground_speed_kn = self.speed_kn
+                diff, -turn * dt, turn * dt)) % 360.0
+            step = min(config.kn_to_nm_per_s(speed) * dt, distance)
+            self.ground_speed_kn = speed
             self.x += step * math.sin(math.radians(self.course))
             self.y -= step * math.cos(math.radians(self.course))
 

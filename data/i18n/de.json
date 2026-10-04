@@ -7612,5 +7612,6 @@
   "helo.prep.ready": "STARTBEREIT, WARTET",
   "commander.web.helo_prep": "Startvorbereitung {time}",
   "commander.web.helo_prep_ready": "Startbereit, wartet auf ein Startfenster (Wetter und Deck)",
-  "commander.web.helicopter_prep_cancel": "Startvorbereitung abbrechen"
+  "commander.web.helicopter_prep_cancel": "Startvorbereitung abbrechen",
+  "map.helo_waypoint": "HSP-5 WP"
 }

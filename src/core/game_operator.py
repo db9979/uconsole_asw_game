@@ -1228,7 +1228,7 @@ class OperatorMixin(WeaponOrdersMixin):
         if result is True:
             bearing, distance = self._helo_waypoint_polar()
             self.flash(message("runtime.helo.waypoint", bearing=f"{bearing:03.0f}",
-                               range=f"{distance:.0f}"), 1.5)
+                               range=f"{distance:.1f}"), 1.5)
         elif result == "no_contact":
             self.flash(message("runtime.contact.none_selected"))
         elif result == "not_located":
@@ -1252,7 +1252,7 @@ class OperatorMixin(WeaponOrdersMixin):
             self.ship.x + distance * math.sin(math.radians(bearing)),
             self.ship.y - distance * math.cos(math.radians(bearing)))
         self.flash(message("runtime.helo.waypoint", bearing=f"{bearing:03.0f}",
-                           range=f"{distance:.0f}"), 1.5)
+                           range=f"{distance:.1f}"), 1.5)
 
     def deploy_buoys(self) -> None:
         result = self.deploy_helicopter_buoy()

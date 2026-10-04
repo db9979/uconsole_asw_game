@@ -957,7 +957,7 @@ export function init() {
         const worldY = state.y + (y - rect.height / 2) / geometry.scale;
         if (finite(worldX) && finite(worldY) && worldX >= 0 && worldX <= 1000 && worldY >= 0 && worldY <= 1000)
           sendStationAction("bridge_route_add", {x: worldX, y: worldY});
-      } else if (!hits.length && gesture.role === "helicopter" && stationActionAvailable() &&
+      } else if (!contact && gesture.role === "helicopter" && stationActionAvailable() &&
                  S.v2State.helicopter.readiness.can_set_waypoint) {
         const geometry = roleMapGeometry(gesture.role);
         const state = roleMapViews[gesture.role];

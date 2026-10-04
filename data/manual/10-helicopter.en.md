@@ -76,7 +76,7 @@ Attack sequence:
 
 - Put the dipping sonar below the layer to hear deep submarines. The dip gauge shows the layer at the helicopter only once the lowered dome has passed through it; before that it shows only the charted water depth.
 - Lay buoys ahead of the target's estimated track, not on top of the last datum.
-- `F` confirms a helicopter contact; `G` releases it to Operations as at the sonar; `Shift+↑`/`Shift+↓` select the next dipping-sonar contact; `W` puts the waypoint on the selected contact's position (as the patrol aircraft's `W`; a bearing-only contact has none).
+- `F` confirms a helicopter contact; `G` releases it to Operations as at the sonar; `Shift+↑`/`Shift+↓` select the next dipping-sonar contact; `W` puts the waypoint on the selected contact's position (as the patrol aircraft's `W`; a bearing-only contact has none). A click on the chart (uConsole and browser, also on a symbol or label, only a sonar contact selects that contact) puts the waypoint exactly on that point; the chart marks it as HSP-5 WP with a dashed track from the helicopter. The helicopter slows down on the approach and stops on the point (within about 20 m); the arrow keys still move the waypoint in 15-degree and 1 NM steps from the ship.
 - On the acoustic page, `T` switches the listening source between the dip and each passive buoy.
 - Recall the helicopter in time (`H`): landing needs a working flight deck, and stores are not replenished between sorties.
 

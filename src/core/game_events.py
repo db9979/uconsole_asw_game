@@ -394,14 +394,17 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                         self.selected_contact = contact
                         self._pin_tooltip_at(getattr(e, "pos", None))
                 elif (self.station is Station.HELICOPTER and canvas is not None
-                      and hit_id.startswith("chart:")):
+                      and (hit_id.startswith("chart:") or hit_id.startswith("map:"))
+                      and pygame.Rect(config.MAP_RECT).collidepoint(canvas)):
+                    # Any point of the chart (also on a symbol or label):
+                    # the waypoint goes exactly where the click is.
                     self.map_view.set_rect(config.MAP_RECT)
                     x_nm, y_nm = self.map_view.screen_to_world(*canvas)
                     if self.set_helicopter_waypoint(x_nm, y_nm) is True:
                         bearing, distance = self._helo_waypoint_polar()
                         self.flash(message("runtime.helo.waypoint",
                                            bearing=f"{bearing:03.0f}",
-                                           range=f"{distance:.0f}"), 1.5)
+                                           range=f"{distance:.1f}"), 1.5)
                 else:
                     self._pin_tooltip_at(getattr(e, "pos", None))
             self._map_drag = None

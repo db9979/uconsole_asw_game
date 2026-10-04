@@ -156,3 +156,38 @@ def test_ground_speed_is_zero_in_the_hover_and_cruise_in_transit(game):
     helo.dip_water_depth_m = 500.0
     helo.update(1.0, game.ship, game.world)
     assert helo.ground_speed_kn == 0.0
+
+
+@pytest.mark.parametrize("scale", [4.0, 20.0, 160.0])
+def test_a_chart_click_puts_the_waypoint_exactly_there_and_the_helicopter_stops_on_it(scale):
+    import math
+    import pygame
+    from src.core.station import Station
+    game = Game(seed=31, start_menu=False, audio_enabled=False, language="en")
+    try:
+        game.helo.launch(game.ship)
+        game.station = Station.HELICOPTER
+        game.station_page = 0
+        game.map_follow = True
+        game.map_view.scale = scale
+        game.draw()
+        from src.ui import layout
+        with layout.bottom_panel_regions(game.bottom_panel_mode()):
+            chart = pygame.Rect(config.MAP_RECT)
+            click = (chart.x + int(chart.w * .3), chart.y + int(chart.h * .7))
+            game.map_view.set_rect(config.MAP_RECT)
+            expected = game.map_view.screen_to_world(*click)
+        window = game._canvas_to_window(click) if hasattr(game, "_canvas_to_window") else click
+        game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=window, button=1))
+        game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONUP, pos=window, button=1))
+        assert game.helo.waypoint_x == pytest.approx(expected[0], abs=1e-9)
+        assert game.helo.waypoint_y == pytest.approx(expected[1], abs=1e-9)
+        # Within reach: the helicopter flies there and stops on the point.
+        helo = game.helo
+        helo.set_waypoint(helo.x + 3.0, helo.y - 2.0)
+        for _ in range(4000):
+            helo.update(0.1, game.ship, game.world)
+        assert math.hypot(helo.x - helo.waypoint_x, helo.y - helo.waypoint_y) < 0.015
+        assert helo.ground_speed_kn == 0.0
+    finally:
+        game.audio.shutdown()

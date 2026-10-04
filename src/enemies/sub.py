@@ -263,7 +263,24 @@ class Sub(FrigateRelativeMixin):
         self.countermeasure_store = ConsumableStore.from_catalog(
             runtime_catalog, source.key, "acoustic_decoy")
         # Taktisches Gedaechtnis: nur Ereignisse, die das Boot wahrnimmt.
-        self.memory = {
+        self.memory = self.fresh_memory()
+        self.decision_reason = "Patrouille"
+        # Crew control (transient, never saved): while ``manual`` the AI state
+        # machine is bypassed and the boat follows only the crew's orders.
+        self.manual = False
+        # Transient crew settings of a crewed boat (``opfor.CrewOrders``);
+        # None for the AI. Never saved, like the crew binding itself.
+        self.crew = None
+        self.last_bottom_m = None
+        self.order_course = self.course
+        self.order_speed = self.speed
+        self.order_depth = self.target_depth
+        self._manual_ping_pending = False
+
+    @staticmethod
+    def fresh_memory() -> dict:
+        """The tactical memory of a boat that has heard nothing yet."""
+        return {
             "last_ping_age": float("inf"),
             "last_torpedo_age": float("inf"),
             "contact_bearing": None,
@@ -277,18 +294,19 @@ class Sub(FrigateRelativeMixin):
             # the target's manoeuvre broke the previous one (0 = none).
             "contact_reopen_left": 0,
         }
+
+    def forget(self) -> None:
+        """A boat brought back as a new encounter starts with a clean slate:
+        no contact, solution, alarm or shots of its former patrol."""
+        self.memory = self.fresh_memory()
+        self.tma_track = BearingTrack()
+        self.tma_track_id = None
+        self.pending_torpedoes.clear()
+        self.pending_decoys.clear()
+        self.torpedo_alerted = False
+        self.heard_ping = False
+        self.state = "PATROLLE"
         self.decision_reason = "Patrouille"
-        # Crew control (transient, never saved): while ``manual`` the AI state
-        # machine is bypassed and the boat follows only the crew's orders.
-        self.manual = False
-        # Transient crew settings of a crewed boat (``opfor.CrewOrders``);
-        # None for the AI. Never saved, like the crew binding itself.
-        self.crew = None
-        self.last_bottom_m = None
-        self.order_course = self.course
-        self.order_speed = self.speed
-        self.order_depth = self.target_depth
-        self._manual_ping_pending = False
 
     # --- Ereignisse ---
 

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.192**
+Aktuelle Version: **1.3.193**
 
-Version 1.3.192 benennt die Anzeige des Ersten Offiziers um: Der Titel heißt
+Version 1.3.193 benennt die Anzeige des Ersten Offiziers um: Der Titel heißt
 jetzt nur „Erster Offizier“, und solange das optionale Sprachmodell an einer
 Antwort arbeitet, steht auf der uConsole und im Browser „Der Erste Offizier
 wertet die Lage aus ...“ statt „Das Sprachmodell schreibt ...“. Am Spiel

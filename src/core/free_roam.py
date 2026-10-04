@@ -46,7 +46,8 @@ VERSION = 1
 FIELDS = frozenset({"version", "next_t", "count", "log", "points", "charged"})
 LOG_FIELDS = frozenset({"t", "kind"})
 LOG_KINDS = ("sub", "neutral_sub", "raid", "merchants", "hunt")
-CHARGED_MAX = 32
+MAX_SUBS = 48                      # submarines in the world, sunk ones included
+CHARGED_MAX = MAX_SUBS
 MAX_TIME_S = 1e9
 MAX_POINTS = 10_000_000
 MAX_CIVILIANS = 64                 # never more ships than this in the world
@@ -301,7 +302,7 @@ def _sub_slot(game, side: str):
     """True: a new boat fits; a far, unheard boat to reuse; False: none."""
     alive = _subs(game, side)
     cap = config.FREE_MAX_HOSTILE if side == "hostile" else config.FREE_MAX_NEUTRAL
-    if len(alive) < cap and len(game.subs) < 48:
+    if len(alive) < cap and len(game.subs) < MAX_SUBS:
         return True
     for sub in alive:
         if _far(game, sub.x, sub.y) and not _heard_lately(game, sub):
@@ -326,6 +327,7 @@ def _sub_encounter(game, index: int, side: str) -> bool:
         sub = slot
         sub.x, sub.y = point
         sub.course = sub.target_course = course
+        sub.forget()
     sub.start_pos = (sub.x, sub.y)
     if side == "hostile":
         _hq_threat(game, sub, "free.hq.sub")
@@ -375,7 +377,10 @@ def _hq_threat(game, sub, key: str) -> None:
 
 
 def _charge_neutrals(game, state) -> None:
-    """A neutral submarine sunk costs ``FREE_NEUTRAL_SUNK`` once."""
+    """A neutral submarine sunk costs the frigate ``FREE_NEUTRAL_SUNK`` once
+    (on the submarine's side the frigate's score is not the player's)."""
+    if not frigate_side(game):
+        return
     for sub in game.subs:
         if (sub.side == "neutral" and sub.sunk and sub.id not in state["charged"]
                 and len(state["charged"]) < CHARGED_MAX):

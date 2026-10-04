@@ -81,9 +81,18 @@ class PatrolAircraft:
     def speed_kn(self) -> float:
         if self.mad_run:
             return config.MPA_MAD_KN
-        if self.state == "STATION":
+        if self.state == "STATION" or self._pattern_run():
             return config.MPA_STATION_KN
         return config.MPA_TRANSIT_KN if self.airborne else 0.0
+
+    def _pattern_run(self) -> bool:
+        """Close to the next buoy point: slow to station speed, whose turn
+        circle fits inside the drop window (at transit speed it does not, and
+        the aircraft could circle a point for good)."""
+        if self.state != "TRANSIT" or not self.pattern_queue:
+            return False
+        px, py = self.pattern_queue[0]
+        return math.hypot(px - self.x, py - self.y) <= config.MPA_PATTERN_SLOW_NM
 
     def available(self, sim_t: float) -> bool:
         return (self.state == "BASE" and sim_t >= self.ready_t

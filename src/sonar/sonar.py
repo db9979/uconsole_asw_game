@@ -806,10 +806,12 @@ class SonarSystem(ArrayHandlingMixin):
             depth_limit = max(config.SONAR_TOWED_DEPTH_MIN_M,
                               config.SONAR_TOWED_DEPTH_MAX_M
                               - frigate.speed * config.SONAR_TOWED_SPEED_SHALLOW_M_PER_KN)
-            self.towed_depth_target_m = min(self.towed_depth_target_m, depth_limit)
+            # Speed lifts the array; the ordered depth stays and is reached
+            # again once the ship slows down.
+            target = min(self.towed_depth_target_m, depth_limit)
             depth_step = config.SONAR_TOWED_DEPTH_RATE_M_S * dt
             self.towed_depth_m += config.clamp(
-                self.towed_depth_target_m - self.towed_depth_m, -depth_step, depth_step)
+                target - self.towed_depth_m, -depth_step, depth_step)
         self._process_pending_pings(t)
         if self._ping_anim_timer > 0:
             self._ping_anim_timer = max(0.0, self._ping_anim_timer - dt)

@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.192**
+Current release: **1.3.193**
 
-Release 1.3.192 renames the executive officer's overlay: its title is now
+Release 1.3.193 renames the executive officer's overlay: its title is now
 just "Executive officer", and while the optional language model works on an
 answer it reads "The executive officer is assessing the situation ..." on the
 uConsole and in the browser instead of "The language model is writing ...".

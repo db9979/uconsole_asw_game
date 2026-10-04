@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.198**
+Aktuelle Version: **1.3.199**
 
-Version 1.3.198 erklärt jede Statuslampe. Ruht die Maus auf einer Lampe oder
+Version 1.3.199 erklärt jede Statuslampe. Ruht die Maus auf einer Lampe oder
 Anzeige, etwa START NO-GO und DECK WARTEN des Hubschraubers, einem
 Torpedorohr, der Anlage, dem ESM-Empfänger oder dem Wasser unter dem Kiel des
 U-Boots, öffnet sich ein Hinweis, warum sie so steht, aus dem laufenden Spiel

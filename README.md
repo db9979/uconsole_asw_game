@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.198**
+Current release: **1.3.199**
 
-Release 1.3.198 explains every status lamp. Resting the mouse on a lamp or
+Release 1.3.199 explains every status lamp. Resting the mouse on a lamp or
 indicator, such as the helicopter's LAUNCH NO-GO and DECK WAIT, a torpedo
 tube, the plant, the ESM receiver or the submarine's depth under the keel,
 opens a note that says why it shows that state, taken from the running game

@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.198
+## 1.3.199
 
-Release 1.3.198 explains every status lamp. Resting the mouse on a lamp or
+Release 1.3.199 explains every status lamp. Resting the mouse on a lamp or
 indicator, such as the helicopter's LAUNCH NO-GO and DECK WAIT, a torpedo
 tube, the plant, the ESM receiver or the submarine's depth under the keel,
 opens a note that says why it shows that state, taken from the running game
@@ -17,6 +17,15 @@ and in the Remote Crew browser. The CIC's four contact buttons say what they
 do (Classify, Change affiliation, Mark for fusion, Fuse / dissolve), centred
 beside their key chip. Keys are unchanged. Saves are v50; v38 to v49 saves
 still load.
+
+## 1.3.198
+
+Release 1.3.198 fixes the "display fault" box when zooming far into a chart.
+With the graphics level "Full", the smooth line drawing could not handle lines
+that end far outside the chart, such as an autopilot leg to a distant
+waypoint at the strongest zoom; the chart then showed the fault box instead
+of the map. Lines and areas are now cut to the visible chart before drawing,
+so every chart on both sides draws at its closest and widest zoom.
 
 ## 1.3.197
 

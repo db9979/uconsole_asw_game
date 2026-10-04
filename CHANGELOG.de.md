@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.198
+## 1.3.199
 
-Version 1.3.198 erklärt jede Statuslampe. Ruht die Maus auf einer Lampe oder
+Version 1.3.199 erklärt jede Statuslampe. Ruht die Maus auf einer Lampe oder
 Anzeige, etwa START NO-GO und DECK WARTEN des Hubschraubers, einem
 Torpedorohr, der Anlage, dem ESM-Empfänger oder dem Wasser unter dem Kiel des
 U-Boots, öffnet sich ein Hinweis, warum sie so steht, aus dem laufenden Spiel
@@ -17,6 +17,16 @@ Seiten, auf der uConsole und im Remote-Crew-Browser. Die vier Kontaktknöpfe
 der OPZ sagen, was sie tun (Klassifizieren, Zugehörigkeit wechseln, Für Fusion
 markieren, Fusionieren / auflösen), mittig neben ihrem Tastenchip. Tasten
 bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
+
+## 1.3.198
+
+Version 1.3.198 behebt die Meldung „Anzeige gestört“ beim starken
+Hineinzoomen in eine Karte. Mit der Grafikstufe „Voll“ konnte das geglättete
+Linienzeichnen keine Linien verarbeiten, die weit außerhalb der Karte enden,
+etwa einen Autopilot-Schlag zu einem fernen Wegpunkt bei stärkstem Zoom; die
+Karte zeigte dann die Fehlerbox statt des Lagebilds. Linien und Flächen werden
+jetzt vor dem Zeichnen auf den sichtbaren Kartenteil zugeschnitten, sodass
+jede Karte beider Seiten im nächsten und im weitesten Maßstab zeichnet.
 
 ## 1.3.197
 

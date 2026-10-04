@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.195
+
+Release 1.3.195 keeps the microphone meter off the top bar's status line. On
+the uConsole the meter now sits between the status line and the menu button,
+and the status line gives way to it: a long mission title is shortened, while
+the clock, speed, course and depth stay whole. The meter is drawn as LED
+segments behind a microphone sign; unlit segments are dimmed instead of
+empty outlines that looked like missing letters, and a small mark below a
+segment shows the crew's loudest voice. The browser meter looks the same.
+
 ## 1.3.194
 
 Release 1.3.194 corrects data and the hostile torpedo's fuze from the code

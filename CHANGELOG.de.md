@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.195
+
+Version 1.3.195 hält die Mikrofonanzeige von der Statuszeile der Kopfleiste
+fern. Auf der uConsole steht die Anzeige jetzt zwischen Statuszeile und
+Menüknopf, und die Statuszeile weicht ihr aus: Ein langer Einsatzname wird
+gekürzt, Uhrzeit, Fahrt, Kurs und Tiefe bleiben ganz. Die Anzeige ist als
+LED-Leiste hinter einem Mikrofonzeichen gezeichnet; unbeleuchtete Felder sind
+abgedunkelt statt leerer Kästchen, die wie fehlende Buchstaben aussahen, und
+eine kleine Marke unter einem Feld zeigt die lauteste Stimme der Besatzung.
+Die Anzeige im Browser sieht genauso aus.
+
 ## 1.3.194
 
 Version 1.3.194 berichtigt Daten und den Zünder des Feindtorpedos aus der

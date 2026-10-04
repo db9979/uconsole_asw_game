@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.192
+
+Release 1.3.192 renames the executive officer's overlay: its title is now
+just "Executive officer", and while the optional language model works on an
+answer it reads "The executive officer is assessing the situation ..." on the
+uConsole and in the browser instead of "The language model is writing ...".
+Nothing changes in play. Saves are v50; v38 to v49 saves still load.
+
 ## 1.3.191
 
 Release 1.3.191 reorganises the manual into 21 short chapters: a quick start

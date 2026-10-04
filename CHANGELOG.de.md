@@ -4,6 +4,14 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.192
+
+Version 1.3.192 benennt die Anzeige des Ersten Offiziers um: Der Titel heißt
+jetzt nur „Erster Offizier“, und solange das optionale Sprachmodell an einer
+Antwort arbeitet, steht auf der uConsole und im Browser „Der Erste Offizier
+wertet die Lage aus ...“ statt „Das Sprachmodell schreibt ...“. Am Spiel
+ändert sich nichts. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.191
 
 Version 1.3.191 ordnet das Handbuch in 21 kurze Kapitel: ein Schnellstart

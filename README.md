@@ -12,20 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.191**
+Current release: **1.3.192**
 
-Release 1.3.191 reorganises the manual into 21 short chapters: a quick start
-under 1,500 words for both sides, then main menu, options, every frigate
-station with the same parts (purpose, pages, displays, keys, mouse, standard
-procedure, tips, not modelled), the submarine with one section per station,
-scenarios with tables for both sides, multiplayer and server mode, after the
-mission, tools, editors, language model, reference data and a glossary;
-outdated statements are corrected against the game. In the manual reader 0
-opens the quick start and 1 to 9 the stations. The README no longer describes
-the removed Windows starter window. Inside, long save and reset code is split
-into smaller parts, duplicate bearing and range helpers are merged and
-torpedoes without a datum never read a hidden target. Nothing changes in play.
-Saves are v50; v38 to v49 saves still load.
+Release 1.3.192 renames the executive officer's overlay: its title is now
+just "Executive officer", and while the optional language model works on an
+answer it reads "The executive officer is assessing the situation ..." on the
+uConsole and in the browser instead of "The language model is writing ...".
+Nothing changes in play. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -1015,7 +1015,10 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                  radar_switch=bool(helo.radar_on),
                  # Start preparation: seconds left (0: ready, waiting for the
                  # deck window), None without a launch order.
-                 prep_s=_number(helo.prep_s) if helo.preparing else None)
+                 prep_s=_number(helo.prep_s) if helo.preparing else None,
+                 # Refuelling on deck: seconds to the launch minimum (prepared
+                 # launch short of fuel) or to full, None when not refuelling.
+                 refuel_s=None if helo.refuel_wait_s() is None else _number(helo.refuel_wait_s()))
     if asset_only:
         for key in ("buoy_mode", "pattern", "pattern_remaining", "mad_mode", "radar",
                     "radar_switch"):

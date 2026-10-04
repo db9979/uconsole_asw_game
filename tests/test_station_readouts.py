@@ -7,7 +7,7 @@ import pytest
 
 from src.core import config
 from src.core.game import Game
-from src.core.i18n import Translator
+from src.core.i18n import Translator, translation_scope
 from src.core.station import Station
 from src.sonar.sonar import Contact
 from src.ui import layout, nato_symbols, stations_view, weapons_view
@@ -133,7 +133,11 @@ def test_non_airborne_helo_has_no_fictitious_navigation_or_rtb(game, monkeypatch
     game.station_page = 1
     with layout.capture_text() as text:
         weapons_view.draw_weapons_panel(game, tr=Translator("en").t)
-    assert Translator("en").t("enum.helo." + state) in "\n".join(i["text"] for i in text)
+    # In the hangar with an empty tank it reads REFUEL with the time left.
+    with translation_scope(Translator("en")):
+        shown = stations_view.helo_state_text(game.helo)
+    assert shown in "\n".join(i["text"] for i in text)
+    assert shown.startswith("REFUEL ") == (state == "HANGAR")
 
 
 def test_bridge_bearing_only_asm_is_still_a_threat(game, monkeypatch):

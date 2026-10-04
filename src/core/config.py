@@ -868,6 +868,12 @@ HELO_FUEL_S = 7200.0
 # launch order, and again after every recovery.
 HELO_PREP_S = 300.0
 HELO_FUEL_RESERVE_S = 1200.0
+# Refuelling on deck after a recovery (pressure refuelling, about 15 min from
+# empty to full): the tank fills at HELO_FUEL_S / HELO_REFUEL_S per second.
+# A prepared launch lifts off with the fuel aboard by then, but never below
+# HELO_LAUNCH_MIN_FUEL_S (the reserve plus 10 minutes on station).
+HELO_REFUEL_S = 900.0
+HELO_LAUNCH_MIN_FUEL_S = HELO_FUEL_RESERVE_S + 600.0
 HELO_RETURN_DIST_NM = 0.3
 HELO_TORPS = 2                  # Leichttorpedos pro Start
 HELO_DIP_DEPTH_MIN_M = 15.0

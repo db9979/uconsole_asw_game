@@ -1181,9 +1181,11 @@ class OperatorMixin(WeaponOrdersMixin):
         return True
 
     def _launch_prepared_helicopter(self) -> None:
-        """Lift off once prepared, with the flight deck up and the weather
-        and deck motion inside the launch limits; until then it waits."""
-        if (not self.helo.prep_ready or self.damage.station_down("flightdeck")
+        """Lift off once prepared and fuelled to the launch minimum, with the
+        flight deck up and the weather and deck motion inside the launch
+        limits; until then it waits (and keeps refuelling)."""
+        if (not self.helo.prep_ready or not self.helo.fuel_ready
+                or self.damage.station_down("flightdeck")
                 or not self.helicopter_weather()["launch_safe"]):
             return
         self.helo.launch(self.ship)

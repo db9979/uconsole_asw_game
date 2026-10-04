@@ -2364,7 +2364,7 @@
   "help.control.torp_depth_input": "Enter torpedo run depth (10-300 m), as on the submarine",
   "help.control.target_select": "Select sonar contact for targeting",
   "help.control.fire": "Launch torpedo (ROE check)",
-  "help.control.helo_toggle": "Launch HSP-5 (5 min preparation) / stop / recall",
+  "help.control.helo_toggle": "Launch HSP-5 (5 min preparation, refuels on deck) / stop / recall",
   "help.control.buoy": "Deploy sonobuoys (HSP-5 airborne)",
   "help.control.air_torp": "Lightweight torpedo from HSP-5",
   "help.control.nixie": "Stream one finite towed acoustic decoy",
@@ -3969,7 +3969,7 @@
   "help.sop.engine.3": "Switch QUIET (A) for the attack approach (max 12 kn).",
   "help.sop.engine.4": "Never exceed 20 kn with the TAS streamed.",
   "help.sop.engine.5": "Watch machinery damage: speed limits of 15 or 8 kn apply.",
-  "help.sop.helo.1": "Check weather limits and fuel; order the launch early (H): 5 min preparation.",
+  "help.sop.helo.1": "Check weather limits and fuel (15 min refuelling on deck after a landing); order the launch early (H): 5 min preparation.",
   "help.sop.helo.2": "Place the waypoint ahead of the suspected target (arrow keys).",
   "help.sop.helo.3": "Drop a passive buoy line (B); switch ACTIVE (Shift+B) for range.",
   "help.sop.helo.4": "Hover and dip (Y), set depth below the layer (U/V), listen or ping (Shift+A).",
@@ -7613,5 +7613,12 @@
   "commander.web.helo_prep": "Start preparation {time}",
   "commander.web.helo_prep_ready": "Ready, waiting for a launch window (weather and deck)",
   "commander.web.helicopter_prep_cancel": "Stop start preparation",
-  "map.helo_waypoint": "HSP-5 WP"
+  "map.helo_waypoint": "HSP-5 WP",
+  "helo.refuel.running": "REFUEL {time}",
+  "helo.tooltip.prep_reason": "Start preparation, lifts off in {time} (fuel {fuel} of {full} min, refuelling meanwhile). H again stops it.",
+  "helo.tooltip.fuel_wait_reason": "Prepared, still refuelling: {fuel} min aboard, lifts off at {minimum} min in {time}.",
+  "helo.tooltip.window_reason": "Prepared and fuelled, waiting for a launch window (weather and deck motion).",
+  "helo.tooltip.refuel_reason": "Refuelling on deck: {fuel} of {full} min, full in {time}. A launch order lifts off with the fuel aboard by then.",
+  "helo.tooltip.ready_reason": "In the hangar, tank full. H orders the launch (5 min start preparation).",
+  "commander.web.helo_refuel": "Refuelling {time}"
 }

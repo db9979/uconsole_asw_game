@@ -1044,7 +1044,7 @@ def _direct_fire_browser_states():
         state="AUF", airborne=True, x=251.0, y=249.0, course=30.0,
         fuel_s=900.0, torpedoes=1, buoys=2, hovering=False,
         dip_state="STOWED", dip_depth_m=0.0, dip_depth_target_m=20.0,
-        dip_water_depth_m=200.0, dip_ping_ready=False, dip_ping_cooldown_s=0.0, prep_s=None)
+        dip_water_depth_m=200.0, dip_ping_ready=False, dip_ping_cooldown_s=0.0, prep_s=None, refuel_s=None)
     opz = dict(common, role="opz", opz=dict(
         observations=[asm_row], fusions=[], suggestions=[],
         radar=dict(surface=True, air=True, range_nm=40, live=True,

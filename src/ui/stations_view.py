@@ -85,6 +85,8 @@ from src.ui.stations.engine import (  # noqa: F401
     draw_engine_view)
 from src.ui.stations.helicopter import (  # noqa: F401
     helicopter_regions,
+    helo_state_text,
+    helo_status_reason,
     _HELICOPTER_WATERFALL_CACHE,
     _helicopter_waterfall,
     _helicopter_trace,
@@ -293,7 +295,8 @@ def station_hit_target(game, pos):
                     helo.x - game.ship.x, -(helo.y - game.ship.y))) % 360.0
                 return layout.tooltip_payload(
                     "helo.tooltip.status_title",
-                    message("helo.tooltip.state_fuel", state=localize('enum.helo.' + helo.state), fuel=f"{helo.fuel_s / 60:.0f}"),
+                    message("helo.tooltip.state_fuel", state=helo_state_text(helo), fuel=f"{helo.fuel_s / 60:.0f}"),
+                    helo_status_reason(helo),
                     message("helo.tooltip.course_range", course=f"{helo.course:05.1f}", range=f"{distance:.1f}") if helo.airborne else "helo.navigation_unavailable",
                     message("map.tooltip.ship_air_bearing", bearing=layout.format_bearing_pair(
                         bearing, game.ship.course)) if helo.airborne else None,

@@ -472,16 +472,47 @@ def flight_weather(game):
     return query() if callable(query) else None
 
 
+def _clock(seconds: float) -> str:
+    left = int(math.ceil(max(0.0, seconds)))
+    return f"{left // 60}:{left % 60:02d}"
+
+
 def helo_state_text(helo):
     """The helicopter's state for the status rows: in the hangar with a
-    launch ordered, the start preparation with its time left (m:ss), or
-    ready and waiting for the deck window."""
-    if not getattr(helo, "preparing", False):
-        return localize("enum.helo." + helo.state)
-    if helo.prep_s <= 0.0:
+    launch ordered, the start preparation with its time left (m:ss), then
+    the refuelling to the launch minimum, or ready and waiting for the deck
+    window; without an order, the refuelling to a full tank."""
+    if getattr(helo, "preparing", False):
+        if helo.prep_s > 0.0:
+            return localize(message("helo.prep.running", time=_clock(helo.prep_s)))
+        if not helo.fuel_ready:
+            return localize(message("helo.refuel.running", time=_clock(
+                helo.refuel_left_s(config.HELO_LAUNCH_MIN_FUEL_S))))
         return localize(message("helo.prep.ready"))
-    left = int(math.ceil(helo.prep_s))
-    return localize(message("helo.prep.running", time=f"{left // 60}:{left % 60:02d}"))
+    if getattr(helo, "refuelling", False):
+        return localize(message("helo.refuel.running", time=_clock(helo.refuel_left_s())))
+    return localize("enum.helo." + helo.state)
+
+
+def helo_status_reason(helo):
+    """Why the helicopter in the hangar is not yet in the air (tooltip line),
+    or None."""
+    if helo.state != "HANGAR":
+        return None
+    fuel = f"{helo.fuel_s / 60:.0f}"
+    full = f"{config.HELO_FUEL_S / 60:.0f}"
+    if getattr(helo, "preparing", False):
+        if helo.prep_s > 0.0:
+            return message("helo.tooltip.prep_reason", time=_clock(helo.prep_s), fuel=fuel, full=full)
+        if not helo.fuel_ready:
+            return message("helo.tooltip.fuel_wait_reason", fuel=fuel,
+                           minimum=f"{config.HELO_LAUNCH_MIN_FUEL_S / 60:.0f}",
+                           time=_clock(helo.refuel_left_s(config.HELO_LAUNCH_MIN_FUEL_S)))
+        return "helo.tooltip.window_reason"
+    if getattr(helo, "refuelling", False):
+        return message("helo.tooltip.refuel_reason", fuel=fuel, full=full,
+                       time=_clock(helo.refuel_left_s()))
+    return "helo.tooltip.ready_reason"
 
 
 def state_lamps(game, helo, weather) -> list:
@@ -500,7 +531,8 @@ def state_lamps(game, helo, weather) -> list:
     airborne = state == "AUF"
     return [
         ("helo.console.state.hangar", "",
-         "caution" if getattr(helo, "preparing", False) else "on" if state == "HANGAR" else "off"),
+         "caution" if getattr(helo, "preparing", False) or getattr(helo, "refuelling", False)
+         else "on" if state == "HANGAR" else "off"),
         ("helo.console.state.deck", "", deck),
         ("helo.console.state.airborne", "",
          "alarm" if state == "VERLOREN" else "on" if airborne and dip == "STOWED" else "off"),
@@ -541,11 +573,11 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
     body_h = sy + sh - top
     if body_h < 60:
         return
-    # Fuel tank: in the hangar the aircraft stands refuelled.
+    # Fuel tank: the fuel aboard (in the hangar it fills while refuelling).
     tank_w = 84
-    full = helo.state == "HANGAR"
-    fraction = 1.0 if full else max(0.0, helo.fuel_s / config.HELO_FUEL_S)
-    minutes = (config.HELO_FUEL_S if full else helo.fuel_s) / 60.0
+    hangar = helo.state == "HANGAR"
+    fraction = max(0.0, helo.fuel_s / config.HELO_FUEL_S)
+    minutes = helo.fuel_s / 60.0
     tank = pygame.Rect(sx, top, tank_w, body_h)
     console.tank(s, tank, fraction, label="helo.console.fuel",
                  text=message("helo.line.fuel", fuel=f"{minutes:.0f}"), level=fuel_level(helo))
@@ -586,9 +618,9 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
         course = message("helo.line.course", course=f"{helo.course:05.1f}")
     else:
         endurance = (message("helo.console.endurance_value",
-                             fuel=f"{config.HELO_FUEL_S / 60:.0f}",
-                             hover=f"{config.HELO_FUEL_S / helicopter_physics.HOVER_FUEL_FACTOR / 60:.0f}")
-                     if full else raw_text("--"))
+                             fuel=f"{helo.fuel_s / 60:.0f}",
+                             hover=f"{helo.fuel_s / helicopter_physics.HOVER_FUEL_FACTOR / 60:.0f}")
+                     if hangar else raw_text("--"))
         bingo, bingo_color, home_text, course = raw_text("--"), config.COLOR_TEXT_DIM, \
             localize("enum.helo." + helo.state), raw_text("--")
     dip = message("helo.console.dip_value", state=localize("enum.helo_dip." + dip_state),
@@ -735,7 +767,7 @@ def draw_helicopter_view(game, tr=None) -> None:
     helo = game.helo
     state_label = helo_state_text(helo)
     state_color = (config.COLOR_DANGER if helo.state == "VERLOREN" else
-                   config.COLOR_WARN if helo.state == "ZURUECK" or helo.preparing else
+                   config.COLOR_WARN if helo.state == "ZURUECK" or helo.preparing or helo.refuelling else
                    config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM)
     distance = ((helo.x - game.ship.x) ** 2 +
                 (helo.y - game.ship.y) ** 2) ** 0.5 if helo.airborne else 0.0

@@ -599,7 +599,7 @@ def draw_weapons_panel(game, tr=None) -> None:
         hstate = helo_state_text(helo)
         layout.status_line(s, cx, cy + 28, cw, "HSP-5", hstate,
                            color=config.COLOR_DANGER if helo.state == "VERLOREN" else
-                           config.COLOR_WARN if helo.preparing else
+                           config.COLOR_WARN if helo.preparing or helo.refuelling else
                            config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM,
                            label_w=80, size=16)
         for offset, (text, tokens) in enumerate((

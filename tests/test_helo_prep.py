@@ -191,3 +191,94 @@ def test_a_chart_click_puts_the_waypoint_exactly_there_and_the_helicopter_stops_
         assert helo.ground_speed_kn == 0.0
     finally:
         game.audio.shutdown()
+
+
+def test_a_recovered_helicopter_refuels_on_deck_at_the_real_rate(game):
+    """Reported: after landing the tank was full at once."""
+    helo = game.helo
+    assert helo.fuel_s == config.HELO_FUEL_S and not helo.refuelling
+    helo.launch(game.ship)
+    helo.fuel_s = 1500.0
+    helo.order_return()
+    helo.x, helo.y = game.ship.x, game.ship.y
+    _calm(game)
+    game._update_aviation(0.1)
+    assert helo.state == "HANGAR" and helo.refuelling and helo.fuel_s < 1500.0
+    rate = config.HELO_FUEL_S / config.HELO_REFUEL_S
+    start = helo.fuel_s
+    for _ in range(60):
+        game._update_aviation(1.0)
+    assert helo.fuel_s == pytest.approx(start + 60.0 * rate)
+    assert helo.refuel_wait_s() == pytest.approx((config.HELO_FUEL_S - helo.fuel_s) / rate)
+    from src.ui.stations.helicopter import helo_state_text, helo_status_reason
+    assert helo_state_text(helo).startswith("REFUEL ")
+    from src.core.i18n import localize
+    assert localize(helo_status_reason(helo)).startswith("Refuelling on deck")
+    for _ in range(int(config.HELO_REFUEL_S) + 5):
+        game._update_aviation(1.0)
+    assert helo.fuel_s == config.HELO_FUEL_S and not helo.refuelling
+
+
+def test_a_launch_lifts_off_with_the_fuel_aboard_but_not_below_the_minimum(game):
+    if not game.helicopter_weather()["launch_safe"]:
+        pytest.skip("seed without flight weather")
+    helo = game.helo
+    rate = config.HELO_FUEL_S / config.HELO_REFUEL_S
+    # From an empty tank the 5-minute preparation alone refuels past the
+    # launch minimum: it lifts off on time with what it has by then.
+    helo.fuel_s = 0.0
+    assert config.HELO_PREP_S * rate >= config.HELO_LAUNCH_MIN_FUEL_S
+    assert game.launch_helicopter() is True
+    for _ in range(int(config.HELO_PREP_S)):
+        _calm(game)
+        game._update_aviation(1.0)
+    assert helo.state == "AUF"
+    assert helo.fuel_s == pytest.approx(config.HELO_PREP_S * rate, abs=2 * rate)
+    # A prepared helicopter short of fuel (landed again with the order
+    # standing) waits on deck until the minimum is aboard.
+    helo.state = "HANGAR"
+    helo.fuel_s = 0.0
+    helo.prep_s = 0.0
+    from src.ui.stations.helicopter import helo_state_text
+    assert helo_state_text(helo).startswith("REFUEL ")
+    assert helo.refuel_wait_s() == pytest.approx(config.HELO_LAUNCH_MIN_FUEL_S / rate)
+    elapsed = 0.0
+    while helo.state == "HANGAR" and elapsed < 400.0:
+        _calm(game)
+        game._update_aviation(1.0)
+        elapsed += 1.0
+    assert helo.state == "AUF"
+    assert elapsed == pytest.approx(config.HELO_LAUNCH_MIN_FUEL_S / rate, abs=1.0)
+
+
+def test_a_launch_with_enough_fuel_does_not_wait_for_a_full_tank(game):
+    if not game.helicopter_weather()["launch_safe"]:
+        pytest.skip("seed without flight weather")
+    helo = game.helo
+    helo.fuel_s = 4000.0
+    assert game.launch_helicopter() is True
+    for _ in range(int(config.HELO_PREP_S)):
+        _calm(game)
+        game._update_aviation(1.0)
+    assert helo.state == "AUF"
+    expected = 4000.0 + config.HELO_PREP_S * config.HELO_FUEL_S / config.HELO_REFUEL_S
+    assert helo.fuel_s == pytest.approx(min(config.HELO_FUEL_S, expected), abs=5.0)
+
+
+def test_web_projection_shows_the_refuelling(game):
+    from src.commander import projections
+    view = projections._helicopter(game, [], {}, {})
+    assert view["asset"]["refuel_s"] is None
+    game.helo.fuel_s = config.HELO_FUEL_S / 2
+    view = projections._helicopter(game, [], {}, {})
+    assert view["asset"]["refuel_s"] == pytest.approx(config.HELO_REFUEL_S / 2)
+
+
+def test_v50_saves_lift_a_hangar_helicopter_to_a_full_tank():
+    from src.core import save_migrate
+    doc = {"helo": {"state": "HANGAR", "fuel_s": 300.0}}
+    save_migrate._v50_to_v51(doc)
+    assert doc["helo"] == {"state": "HANGAR", "fuel_s": 7200.0, "prep_s": None}
+    doc = {"helo": {"state": "AUF", "fuel_s": 300.0}}
+    save_migrate._v50_to_v51(doc)
+    assert doc["helo"]["fuel_s"] == 300.0

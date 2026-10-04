@@ -41,7 +41,7 @@ Torpedolauf von oben:
                     alle 0,5 s)                   Kandidaten an
 ```
 
-- Zwei Torpedotypen teilen sich die zwei Rohre (60 s Nachladen). Mk1: 45 kn, 12 sm, drahtgelenkt. Mk2: 55 kn, aber nur 8 sm. Der Szenariovorrat (Standard 6) ist 2:1 auf Mk1 und Mk2 verteilt; `W` wählt den Typ, und hält kein Rohr ihn, entlädt ein Rohr und lädt ihn nach (60 s).
+- Zwei Torpedotypen teilen sich die zwei Rohre (60 s Nachladen). Mk1: 45 kn, 12 sm, drahtgelenkt. Mk2: 50 kn, aber nur 6 sm. Der Szenariovorrat (Standard 6) ist 2:1 auf Mk1 und Mk2 verteilt; `W` wählt den Typ, und hält kein Rohr ihn, entlädt ein Rohr und lädt ihn nach (60 s).
 - Suchmuster (`X`): die Schlange (+/-15° um den Datumskurs, Standard), ein Kreis von 0,4 sm um den Aktivierungspunkt oder eine Helix, die sich von 0,15 sm um 0,15 sm je Umlauf bis 1 sm öffnet. Das Muster läuft erst, wenn der Sucher aktiv ist und noch nicht erfasst hat.
 - Sucheraktivierungspunkt (`,` / `.`): 0,6 bis 3,0 sm vor dem Datum in Schritten von 0,2 sm (Standard 1,2 sm). Frühe Aktivierung findet ein Ziel, das sich vom Datum entfernt hat; späte Aktivierung hält die Waffe länger still.
 - Salve (`Y`): ein Torpedo oder zwei im Fächer von +/-8° mit eigenen, um das Schiff gedrehten Datums; ein Fächer braucht zwei geladene Rohre des gewählten Typs und zählt gegen die Doktringrenze.

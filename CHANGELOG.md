@@ -4,6 +4,20 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.193
+
+Release 1.3.193 corrects data and the hostile torpedo's fuze from the code
+audit. Trafalgar and Rubis are now nuclear submarines and Collins a
+diesel-electric one; Improved Kilo, Lada and Taigei no longer have AIP
+(Taigei has a larger lithium battery instead); Virginia and Yasen no longer
+outrun their class. The hostile torpedo explodes only within about 90 m and
+near keel depth instead of 460 m abeam, and its damage still falls with
+distance. The helicopter's and patrol aircraft's lightweight torpedo runs
+45 kn for 6 NM, the frigate's Mk2 50 kn for 6 NM. Every ship now has its real
+length, which sets its echo and how fast it turns; the Triple-E counts as a
+container ship and the river cruise ship no longer sails the open sea. Saves
+are v50; v38 to v49 saves still load.
+
 ## 1.3.192
 
 Release 1.3.192 fixes five gameplay faults from the code audit. The patrol

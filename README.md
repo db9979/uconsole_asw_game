@@ -12,20 +12,19 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.192**
+Current release: **1.3.193**
 
-Release 1.3.192 fixes five gameplay faults from the code audit. The patrol
-aircraft no longer circles a buoy point for good: within 4 NM of the next
-point of a pattern ordered on the way out it slows to station speed so it can
-turn onto it. Speeding up only lifts the towed array; its ordered depth stays
-and is reached again when the ship slows down. A contact report broken off
-because the radio room fails earns nothing, and later calls never push the
-right reports out of the score. AI submarines keep the bearing of the
-frigate's HF calls like a sonar bearing of their own and act on it. On a free
-patrol, incidents stop adding ships and whales once the sea is full, a
-returning submarine forgets its old contact and attack, and only the frigate
-side pays for a sunk neutral submarine. Saves are v50; v38 to v49 saves still
-load.
+Release 1.3.193 corrects data and the hostile torpedo's fuze from the code
+audit. Trafalgar and Rubis are now nuclear submarines and Collins a
+diesel-electric one; Improved Kilo, Lada and Taigei no longer have AIP
+(Taigei has a larger lithium battery instead); Virginia and Yasen no longer
+outrun their class. The hostile torpedo explodes only within about 90 m and
+near keel depth instead of 460 m abeam, and its damage still falls with
+distance. The helicopter's and patrol aircraft's lightweight torpedo runs
+45 kn for 6 NM, the frigate's Mk2 50 kn for 6 NM. Every ship now has its real
+length, which sets its echo and how fast it turns; the Triple-E counts as a
+container ship and the river cruise ship no longer sails the open sea. Saves
+are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

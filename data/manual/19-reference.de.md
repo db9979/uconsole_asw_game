@@ -32,8 +32,8 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | System | Daten |
 |---|---|
 | Fregattentorpedo | 45 kn, 12 sm (Batterie), drahtgelenkt (Schiff <= 20 kn, <= 1,5 Grad/s, 5 sm Spule), 2 Rohre, 60 s Nachladen, Tiefe 10-300 m, Annäherungszünder |
-| Helikoptertorpedo | 55 kn, 12 sm, 2 je Einsatz, ohne Draht |
-| Feindtorpedo | 40 kn, 20 sm, zielsuchend ab 3 sm; schneller als die Fregatte, bloßes Ablaufen hilft selten; ein KI-U-Boot greift eine geortete Fregatte innerhalb 10 sm auch bei leiser Fahrt an |
+| Helikoptertorpedo | 45 kn, 6 sm, 2 je Einsatz, ohne Draht |
+| Feindtorpedo | 40 kn, 20 sm, zielsuchend ab 3 sm, detoniert innerhalb etwa 90 m (unter einem Schiff auf Kieltiefe), Schaden sinkt mit dem Abstand; schneller als die Fregatte, bloßes Ablaufen hilft selten; ein KI-U-Boot greift eine geortete Fregatte innerhalb 10 sm auch bei leiser Fahrt an |
 | Nixie-Schlepptäuschkörper | 2 je Mission, 600 s, 0,2-sm-Kabel (10 m bei 15 kn, langsamer tiefer, reißt über 25 kn), 60 s Nachladen |
 | ESSM | 6 Flugkörper, 30 sm, 2 Feuerkanäle |
 | CIWS | 1,5 sm, 180 Schuss, braucht Freigabe; 115 Grad/s Schwenken, eigenes Folgeradar innerhalb 3 sm |

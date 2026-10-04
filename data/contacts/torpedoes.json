@@ -13,8 +13,8 @@
       "key": "helo_torp",
       "name": "Leichttorpedo (HSP-5)",
       "used_by": "helo",
-      "speed_kn": 55.0,
-      "range_nm": 12.0,
+      "speed_kn": 45.0,
+      "range_nm": 6.0,
       "hit_dist_nm": 0.135
     },
     {
@@ -23,7 +23,7 @@
       "used_by": "enemy",
       "speed_kn": 40.0,
       "range_nm": 20.0,
-      "hit_dist_nm": 0.25,
+      "hit_dist_nm": 0.05,
       "acoustic": {
         "label": "Feindtorpedo",
         "propulsion": "Torpedorantrieb",
@@ -51,8 +51,8 @@
       "key": "frigate_torp_mk2",
       "name": "Leichttorpedo Mk2 (Fregatte)",
       "used_by": "frigate",
-      "speed_kn": 55.0,
-      "range_nm": 8.0,
+      "speed_kn": 50.0,
+      "range_nm": 6.0,
       "hit_dist_nm": 0.12
     }
   ],
@@ -140,8 +140,8 @@
     },
     {
       "key": "machine.helo_torp",
-      "cruise_speed_kn": 55.0,
-      "maximum_speed_kn": 55.0,
+      "cruise_speed_kn": 45.0,
+      "maximum_speed_kn": 45.0,
       "quiet_speed_kn": null,
       "propulsion_codes": [
         "other"
@@ -182,8 +182,8 @@
     },
     {
       "key": "machine.frigate_torp_mk2",
-      "cruise_speed_kn": 55.0,
-      "maximum_speed_kn": 55.0,
+      "cruise_speed_kn": 50.0,
+      "maximum_speed_kn": 50.0,
       "quiet_speed_kn": null,
       "propulsion_codes": [
         "other"

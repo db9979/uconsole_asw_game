@@ -347,76 +347,76 @@
       "key": "sub_07",
       "name": "Trafalgar-Klasse",
       "speed_kn": [
-        8.0,
-        12.0
+        14.0,
+        18.0
       ],
-      "max_depth_m": 200.0,
+      "max_depth_m": 400.0,
       "torpedoes": 4,
       "quiet": 0.82,
       "aggression": 0.6,
       "spawn_weight": 0.0,
       "acoustic": {
         "label": "Trafalgar-Klasse",
-        "propulsion": "Diesel-elektrisch",
+        "propulsion": "elektrisch/Kernantrieb",
         "blades": [
-          4,
-          5
+          5,
+          7
         ],
         "rpm_range": [
-          90.0,
-          220.0
+          120.0,
+          360.0
         ],
         "tonal_band_hz": [
-          8.0,
-          22.0
+          12.0,
+          40.0
         ],
-        "cavitation_tendency": 0.65,
+        "cavitation_tendency": 0.2,
         "category": "U_BOOT",
         "secondary_tonals": [],
         "broadband": [
-          0.4,
+          0.15,
           30.0,
           250.0
         ],
-        "signature_text": "Diesel-Propeller, deutlich h\u00f6rbar"
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
       }
     },
     {
       "key": "sub_08",
       "name": "Rubis-Klasse",
       "speed_kn": [
-        8.0,
-        12.0
+        14.0,
+        18.0
       ],
-      "max_depth_m": 200.0,
+      "max_depth_m": 400.0,
       "torpedoes": 4,
       "quiet": 0.8,
       "aggression": 0.6,
       "spawn_weight": 0.0,
       "acoustic": {
         "label": "Rubis-Klasse",
-        "propulsion": "Diesel-elektrisch",
+        "propulsion": "elektrisch/Kernantrieb",
         "blades": [
-          4,
-          5
+          5,
+          7
         ],
         "rpm_range": [
-          90.0,
-          220.0
+          120.0,
+          360.0
         ],
         "tonal_band_hz": [
-          8.0,
-          22.0
+          12.0,
+          40.0
         ],
-        "cavitation_tendency": 0.65,
+        "cavitation_tendency": 0.2,
         "category": "U_BOOT",
         "secondary_tonals": [],
         "broadband": [
-          0.4,
+          0.15,
           30.0,
           250.0
         ],
-        "signature_text": "Diesel-Propeller, deutlich h\u00f6rbar"
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
       }
     },
     {
@@ -549,7 +549,7 @@
       "spawn_weight": 0.5,
       "acoustic": {
         "label": "Improved-Kilo",
-        "propulsion": "elektrisch/AIP",
+        "propulsion": "Diesel-elektrisch",
         "blades": [
           5,
           7
@@ -570,7 +570,7 @@
           25.0,
           180.0
         ],
-        "signature_text": "leise, elektrischer Antrieb"
+        "signature_text": "leise, diesel-elektrisch"
       },
       "wiki_url": "https://de.wikipedia.org/wiki/Kilo-Klasse",
       "default_faction": "FEIND"
@@ -589,7 +589,7 @@
       "spawn_weight": 0.5,
       "acoustic": {
         "label": "Lada-Klasse",
-        "propulsion": "elektrisch/AIP",
+        "propulsion": "Diesel-elektrisch",
         "blades": [
           5,
           7
@@ -610,7 +610,7 @@
           25.0,
           180.0
         ],
-        "signature_text": "leise, elektrischer Antrieb"
+        "signature_text": "leise, diesel-elektrisch"
       },
       "wiki_url": "https://de.wikipedia.org/wiki/Lada-Klasse",
       "default_faction": "FEIND"
@@ -779,38 +779,38 @@
       "key": "sub_18",
       "name": "Collins-Klasse",
       "speed_kn": [
-        14.0,
-        18.0
+        8.0,
+        12.0
       ],
-      "max_depth_m": 400.0,
+      "max_depth_m": 200.0,
       "torpedoes": 8,
       "quiet": 0.92,
       "aggression": 0.9,
       "spawn_weight": 0.0,
       "acoustic": {
         "label": "Collins-Klasse",
-        "propulsion": "elektrisch/Kernantrieb",
+        "propulsion": "Diesel-elektrisch",
         "blades": [
-          5,
-          7
+          4,
+          5
         ],
         "rpm_range": [
-          120.0,
-          360.0
+          90.0,
+          220.0
         ],
         "tonal_band_hz": [
-          12.0,
-          40.0
+          8.0,
+          22.0
         ],
-        "cavitation_tendency": 0.2,
+        "cavitation_tendency": 0.65,
         "category": "U_BOOT",
         "secondary_tonals": [],
         "broadband": [
-          0.15,
+          0.4,
           30.0,
           250.0
         ],
-        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+        "signature_text": "Diesel-Propeller, deutlich h\u00f6rbar"
       }
     },
     {
@@ -865,7 +865,7 @@
       "spawn_weight": 0.0,
       "acoustic": {
         "label": "Taigei-Klasse",
-        "propulsion": "elektrisch/AIP",
+        "propulsion": "Diesel-elektrisch",
         "blades": [
           5,
           7
@@ -886,7 +886,7 @@
           25.0,
           180.0
         ],
-        "signature_text": "leise, elektrischer Antrieb"
+        "signature_text": "leise, diesel-elektrisch"
       }
     }
   ],
@@ -1747,7 +1747,7 @@
     {
       "key": "machine.sub_03",
       "cruise_speed_kn": 12,
-      "maximum_speed_kn": 35,
+      "maximum_speed_kn": 18.0,
       "quiet_speed_kn": 12,
       "propulsion_codes": [
         "nuclear_steam"
@@ -1967,50 +1967,49 @@
     {
       "key": "machine.sub_07",
       "cruise_speed_kn": 8,
-      "maximum_speed_kn": 12,
+      "maximum_speed_kn": 18,
       "quiet_speed_kn": null,
       "propulsion_codes": [
-        "diesel",
-        "electric"
+        "nuclear_steam"
       ],
       "motor_rpm": null,
       "shaft_rpm": [
-        90,
-        220
+        120,
+        360
       ],
       "propulsor_type": "unknown",
       "blade_count": null,
       "cruise_lines": [
         [
-          8,
+          12,
           1.0,
-          1.5
+          1.2
         ],
         [
-          16,
+          24,
           0.5,
-          1.2
+          1.0
         ]
       ],
       "high_speed_lines": [
         [
-          22,
+          40,
           1.0,
-          2.0
+          1.8
         ],
         [
-          44,
+          80,
           0.5,
-          1.5
+          1.4
         ]
       ],
       "cruise_broadband": [
-        0.4,
+        0.15,
         30,
         250
       ],
       "high_speed_broadband": [
-        0.65,
+        0.3,
         30,
         250
       ]
@@ -2018,50 +2017,49 @@
     {
       "key": "machine.sub_08",
       "cruise_speed_kn": 8,
-      "maximum_speed_kn": 12,
+      "maximum_speed_kn": 18,
       "quiet_speed_kn": null,
       "propulsion_codes": [
-        "diesel",
-        "electric"
+        "nuclear_steam"
       ],
       "motor_rpm": null,
       "shaft_rpm": [
-        90,
-        220
+        120,
+        360
       ],
       "propulsor_type": "unknown",
       "blade_count": null,
       "cruise_lines": [
         [
-          8,
+          12,
           1.0,
-          1.5
+          1.2
         ],
         [
-          16,
+          24,
           0.5,
-          1.2
+          1.0
         ]
       ],
       "high_speed_lines": [
         [
-          22,
+          40,
           1.0,
-          2.0
+          1.8
         ],
         [
-          44,
+          80,
           0.5,
-          1.5
+          1.4
         ]
       ],
       "cruise_broadband": [
-        0.4,
+        0.15,
         30,
         250
       ],
       "high_speed_broadband": [
-        0.65,
+        0.3,
         30,
         250
       ]
@@ -2223,6 +2221,7 @@
       "maximum_speed_kn": 13,
       "quiet_speed_kn": null,
       "propulsion_codes": [
+        "diesel",
         "electric"
       ],
       "motor_rpm": null,
@@ -2273,6 +2272,7 @@
       "maximum_speed_kn": 13,
       "quiet_speed_kn": null,
       "propulsion_codes": [
+        "diesel",
         "electric"
       ],
       "motor_rpm": null,
@@ -2320,7 +2320,7 @@
     {
       "key": "machine.sub_14",
       "cruise_speed_kn": 14,
-      "maximum_speed_kn": 30,
+      "maximum_speed_kn": 18.0,
       "quiet_speed_kn": 14,
       "propulsion_codes": [
         "nuclear_steam"
@@ -2540,49 +2540,50 @@
     {
       "key": "machine.sub_18",
       "cruise_speed_kn": 8,
-      "maximum_speed_kn": 18,
+      "maximum_speed_kn": 12,
       "quiet_speed_kn": null,
       "propulsion_codes": [
-        "nuclear_steam"
+        "diesel",
+        "electric"
       ],
       "motor_rpm": null,
       "shaft_rpm": [
-        120,
-        360
+        90,
+        220
       ],
       "propulsor_type": "unknown",
       "blade_count": null,
       "cruise_lines": [
         [
-          12,
+          8,
           1.0,
-          1.2
+          1.5
         ],
         [
-          24,
+          16,
           0.5,
-          1.0
+          1.2
         ]
       ],
       "high_speed_lines": [
         [
-          40,
+          22,
           1.0,
-          1.8
+          2.0
         ],
         [
-          80,
+          44,
           0.5,
-          1.4
+          1.5
         ]
       ],
       "cruise_broadband": [
-        0.15,
+        0.4,
         30,
         250
       ],
       "high_speed_broadband": [
-        0.3,
+        0.65,
         30,
         250
       ]
@@ -2643,6 +2644,7 @@
       "maximum_speed_kn": 13,
       "quiet_speed_kn": null,
       "propulsion_codes": [
+        "diesel",
         "electric"
       ],
       "motor_rpm": null,
@@ -2746,34 +2748,6 @@
       "radio_duration_s": 30
     },
     {
-      "key": "endurance.sub_07",
-      "battery_capacity_kwh": 4000,
-      "hotel_load_kw": 120,
-      "propulsion_max_kw": 1600,
-      "propulsion_exponent": 3,
-      "generator_power_kw": 1000,
-      "aip_power_kw": null,
-      "aip_energy_kwh": null,
-      "reserve_start_fraction": 0.2,
-      "reserve_stop_fraction": 0.8,
-      "snorkel_depth_m": 8,
-      "radio_duration_s": 30
-    },
-    {
-      "key": "endurance.sub_08",
-      "battery_capacity_kwh": 4000,
-      "hotel_load_kw": 120,
-      "propulsion_max_kw": 1600,
-      "propulsion_exponent": 3,
-      "generator_power_kw": 1000,
-      "aip_power_kw": null,
-      "aip_energy_kwh": null,
-      "reserve_start_fraction": 0.2,
-      "reserve_stop_fraction": 0.8,
-      "snorkel_depth_m": 8,
-      "radio_duration_s": 30
-    },
-    {
       "key": "endurance.sub_10",
       "battery_capacity_kwh": 5000,
       "hotel_load_kw": 100,
@@ -2808,8 +2782,8 @@
       "propulsion_max_kw": 1400,
       "propulsion_exponent": 3,
       "generator_power_kw": 900,
-      "aip_power_kw": 250,
-      "aip_energy_kwh": 10000,
+      "aip_power_kw": null,
+      "aip_energy_kwh": null,
       "reserve_start_fraction": 0.2,
       "reserve_stop_fraction": 0.8,
       "snorkel_depth_m": 8,
@@ -2822,8 +2796,22 @@
       "propulsion_max_kw": 1400,
       "propulsion_exponent": 3,
       "generator_power_kw": 900,
-      "aip_power_kw": 250,
-      "aip_energy_kwh": 10000,
+      "aip_power_kw": null,
+      "aip_energy_kwh": null,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_18",
+      "battery_capacity_kwh": 4000,
+      "hotel_load_kw": 120,
+      "propulsion_max_kw": 1600,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 1000,
+      "aip_power_kw": null,
+      "aip_energy_kwh": null,
       "reserve_start_fraction": 0.2,
       "reserve_stop_fraction": 0.8,
       "snorkel_depth_m": 8,
@@ -2845,13 +2833,13 @@
     },
     {
       "key": "endurance.sub_20",
-      "battery_capacity_kwh": 5000,
+      "battery_capacity_kwh": 10000,
       "hotel_load_kw": 100,
       "propulsion_max_kw": 1400,
       "propulsion_exponent": 3,
       "generator_power_kw": 900,
-      "aip_power_kw": 250,
-      "aip_energy_kwh": 10000,
+      "aip_power_kw": null,
+      "aip_energy_kwh": null,
       "reserve_start_fraction": 0.2,
       "reserve_stop_fraction": 0.8,
       "snorkel_depth_m": 8,

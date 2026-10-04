@@ -781,7 +781,7 @@ Torpedo run, seen from above:
                      every 0.5 s)                     candidate
 ```
 
-- Two torpedo types share the two tubes (60 s reload). Mk1: 45 kn, 12 NM, wire-guided. Mk2: 55 kn but only 8 NM. The scenario stock (default 6) is split 2:1 between Mk1 and Mk2; `W` selects the type, and if no tube holds it a tube unloads and reloads with it (60 s).
+- Two torpedo types share the two tubes (60 s reload). Mk1: 45 kn, 12 NM, wire-guided. Mk2: 50 kn but only 6 NM. The scenario stock (default 6) is split 2:1 between Mk1 and Mk2; `W` selects the type, and if no tube holds it a tube unloads and reloads with it (60 s).
 - Search pattern (`X`): the snake (+/-15 deg about the datum course, default), a circle of 0.4 NM about the enable point, or a helix that opens from 0.15 NM by 0.15 NM per turn to 1 NM. The pattern runs only once the seeker is enabled and has not acquired.
 - Seeker enable point (`,` / `.`): 0.6 to 3.0 NM from the datum in 0.2 NM steps (default 1.2 NM). Earlier enable finds a target that has moved off the datum; later enable keeps the weapon quiet longer.
 - Salvo (`Y`): one torpedo, or two in a +/-8 deg spread with their own datums turned about the ship; a spread needs two loaded tubes of the selected type and counts against the doctrine limit.
@@ -1420,7 +1420,7 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 - **MAD run:** with `Shift+M` and the dipping sonar stowed the helicopter descends to 30 m and slows to 90 kn. A submerged hull within about 400 m slant range is detected on a stateless draw per sensor tick (sure inside 250 m) and reported as a MAD position fix without depth or course; it feeds the weapons' range check and, once the helicopter releases its contact, Operations.
 - **Surface-search radar:** searches whenever the helicopter is airborne with the dipping sonar stowed (status line on page 2). From 150 m it sees ships out to 40 NM, surfaced submarines and raised snorkels or periscopes inside its radar horizon (about 30 NM). A mast is small: in calm water it shows at about 10 NM, in sea state 3 at 3-5 NM, and in sea state 5 the clutter hides it. Every contact goes to Operations as a `RADAR-HELO` track with the helicopter as observer, one look every 2 s. A crewed submarine's ESM hears the radar and can warn its crew. `Ctrl+R` (as the patrol aircraft's; browser: *Switch radar off*/*on*) switches the radar off and on again; switched off it neither sees nor radiates, and it stays off (saved) until switched on. An AI submarine with its mast or snorkel raised hears an aircraft radar within 40 NM (inside the radar horizon to its mast) on four of five 5-s looks, goes 40 m below snorkel depth and puts off snorkeling for 15 minutes while its battery holds more than 5 %; so a radiating helicopter drives snorkelers down, a silent one may catch them at the surface.
 - **Crew's eyes:** while the helicopter flies its crew keeps a lookout too, with the bridge lookout's contrast model from its altitude (150 m, 20 m while dipping): it sees a raised periscope's or snorkel's feather at the same range as the lookout, independent of the radar and without radiating. The sighting goes to Operations every 2 s as a `HELO-EYE` track, at half the range as a submarine.
-- **Lightweight torpedo:** 2 per sortie, 55 kn, 12 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
+- **Lightweight torpedo:** 2 per sortie, 45 kn, 6 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
 
 Page 1 is the helicopter's status console. A strip of state lamps lights where the aircraft is: HANGAR, DECK (green when it may launch now, amber while weather or deck motion hold it, red with the flight deck out of action), AIRBORNE (red when the aircraft is lost), DIPPING (amber while the dome goes down or comes up) and RETURN.
 
@@ -2508,8 +2508,8 @@ All values are the defaults of the current game version. Custom difficulty and m
 | System | Data |
 |---|---|
 | Frigate torpedo | 45 kn, 12 NM (battery), wire-guided (ship <= 20 kn, <= 1.5 deg/s, 5 NM spool), 2 tubes, 60 s reload, depth 10-300 m, proximity fuze |
-| Helicopter torpedo | 55 kn, 12 NM, 2 per sortie, no wire |
-| Hostile torpedo | 40 kn, 20 NM, homes from 3 NM; faster than the frigate, so outrunning it alone rarely works; an AI submarine attacks a located frigate within 10 NM even when she runs quiet |
+| Helicopter torpedo | 45 kn, 6 NM, 2 per sortie, no wire |
+| Hostile torpedo | 40 kn, 20 NM, homes from 3 NM, explodes within about 90 m (at keel depth under a ship), damage falls with distance; faster than the frigate, so outrunning it alone rarely works; an AI submarine attacks a located frigate within 10 NM even when she runs quiet |
 | Nixie towed decoy | 2 per mission, 600 s, 0.2 NM cable (10 m at 15 kn, deeper when slower, parts above 25 kn), 60 s reload |
 | ESSM | 6 missiles, 30 NM, 2 fire channels |
 | CIWS | 1.5 NM, 180 rounds, needs release; 115 deg/s slew, own track radar inside 3 NM |

@@ -175,6 +175,10 @@ def test_remote_opz_projection_confirm_and_dismiss():
         assert set(row["refs"]) <= {item["ref"] for item in picture["observations"]}
         assert row["key"] == "+".join(row["refs"])
         encoded = json.dumps(picture["suggestions"])
+        # Opaque refs are random text and may contain "O-" or "8800" by
+        # chance; look for internal ids only outside them.
+        for ref in row["refs"]:
+            encoded = encoded.replace(ref, "")
         assert "8800" not in encoded and "O-" not in encoded
         action = V2_ACTION_REGISTRY["opz_dismiss_suggestion"]
         assert action.stations == frozenset({"opz"})

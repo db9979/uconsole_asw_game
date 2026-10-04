@@ -113,6 +113,8 @@ class RadarPictureMixin:
                     label=f"S-{w.id}",
                     bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
         self._update_mast_echoes(surface_live, swept_deg, error_scale)
+        if surface_live:
+            self._ship_radar_rafts(swept_deg)
         for f in self.flights.flights:
             dist = f.distance_nm(self.ship)
             bearing = f.bearing_to_frigate(self.ship)

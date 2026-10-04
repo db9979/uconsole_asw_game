@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.203**
+Current release: **1.3.204**
 
-Release 1.3.203 lets the helicopter's lamps name the launch preparation.
+Release 1.3.204 lets the helicopter's lamps name the launch preparation.
 Resting the mouse on the HANGAR, DECK or LAUNCH lamp now says how long the
 start preparation still runs, how much refuelling the launch still waits for,
 or that the helicopter is ready and waits for a deck window, taken from the
 running game, and that H again stops the preparation. Keys are unchanged.
-Saves are v50; v38 to v49 saves still load.
+Saves are v52; v38 to v51 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

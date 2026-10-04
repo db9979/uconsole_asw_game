@@ -13,6 +13,7 @@ from src.core import boat_missions, commander_traits, config, detrand, free_roam
 from src.core import tasking
 from src.core.i18n import message, raw_text
 from src.core.tasking import TaskBoard
+from src.core.game_rescue import persons_left
 from src.enemies.civilian import CivilianShip
 from src.sensors import lookout_id
 from src.weapons import depth_charge
@@ -190,6 +191,7 @@ class TaskingMixin:
         board = getattr(self, "tasking", None)
         if board is None or self.game_over:
             return
+        self._update_helo_hoist(dt)
         for task in list(board.open_tasks()):
             if task["state"] == "offered":
                 if task["kind"] == "sar":
@@ -232,7 +234,7 @@ class TaskingMixin:
                     deadline_t=None, ended_t=None, course=None, speed_kn=None,
                     report_t=self.sim_t, name=None, persons=0, target_id=None,
                     true_x=None, true_y=None, progress=0.0, sighted=False,
-                    plot_id=None, verdict=None, points=0)
+                    plot_id=None, verdict=None, points=0, aboard=0)
         task = board.add({**base, **task})
         self.task_sel = 0
         key = "task.offer." + kind
@@ -417,6 +419,14 @@ class TaskingMixin:
 
     def _progress_task_sar(self, task, dt: float) -> None:
         self._drift_raft(task, dt)
+        if persons_left(task) == 0:
+            # Everybody out of the water: done once the helicopter's cabin
+            # is empty again (back on deck, ``game_rescue``).
+            if task["aboard"] == 0:
+                self._close_task(task, "done")
+            return
+        if self.sim_t >= task["deadline_t"]:
+            task["aboard"] = 0
         if self._task_expired(task):
             return
         rx, ry = task["true_x"], task["true_y"]
@@ -440,15 +450,11 @@ class TaskingMixin:
         elif min(ship_d, helo_d) <= 2.0 * config.TASK_SAR_SIGHT_DAY_NM:
             # Kept in sight: the chart position follows the raft.
             task["x"], task["y"] = rx, ry
-        rate = 0.0
+        # The ship alongside takes the raft's crew over the side; the
+        # helicopter lifts them one by one on order (``game_rescue``).
         if ship_d <= config.TASK_SAR_SHIP_NM and self.ship.speed <= config.TASK_SAR_SHIP_KN:
-            rate += 1.0 / config.TASK_SAR_SHIP_S
-        if (helo_d <= config.TASK_SAR_HELO_NM
-                and self.helicopter_weather()["dipping_safe"]):
-            rate += 1.0 / (config.TASK_SAR_HELO_S_PER_PERSON * task["persons"])
-        if rate > 0.0:
-            task["progress"] = min(1.0, task["progress"] + rate * dt)
-            if task["progress"] >= 1.0:
+            task["progress"] = min(1.0, task["progress"] + dt / config.TASK_SAR_SHIP_S)
+            if task["progress"] >= 1.0 and task["aboard"] == 0:
                 self._close_task(task, "done")
 
     def _progress_task_identify(self, task, dt: float) -> None:

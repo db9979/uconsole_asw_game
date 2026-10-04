@@ -109,6 +109,26 @@ function drawDipScope(g, w, h, rows, buoys, colors) {
   g.fillStyle = colors.accent; g.beginPath(); g.arc(cx, cy, 3, 0, Math.PI * 2); g.fill();
 }
 
+// The rescue hoist card: shown while a raft waits or survivors are in the cabin.
+function renderHelicopterRescue(rescue) {
+  const card = $("helicopter-rescue");
+  card.hidden = rescue === null;
+  if (rescue === null) return;
+  $("helicopter-rescue-cabin").textContent = t("helicopter_rescue_cabin", {aboard: rescue.aboard, capacity: rescue.capacity});
+  $("helicopter-rescue-phase").textContent = t(`helicopter_rescue_phase_${rescue.phase}`);
+  $("helicopter-rescue-phase").dataset.phase = rescue.phase;
+  const lift = $("helicopter-rescue-lift");
+  lift.hidden = rescue.phase !== "lifting";
+  lift.value = rescue.lift ?? 0;
+  $("helicopter-rescue-raft").textContent = rescue.raft === null ? "" : t("helicopter_rescue_raft", {
+    task: rescue.raft, left: rescue.left, bearing: number(rescue.bearing, 0).padStart(3, "0"),
+    range: number(rescue.range_nm, 2)});
+  const hoist = $("helicopter-hoist");
+  hoist.textContent = t(rescue.hoist ? "helicopter_hoist_stop" : "helicopter_hoist_start");
+  hoist.setAttribute("aria-pressed", String(rescue.hoist));
+  hoist.dataset.ready = String(rescue.hoist || rescue.phase === "ready");
+}
+
 export function renderHelicopterStation(payload) {
   const asset = payload.asset;
   if (S.helicopterAudioSource !== null && S.helicopterAudioSource !== payload.acoustic.source && S.sonarAudioEnabled)
@@ -156,6 +176,7 @@ export function renderHelicopterStation(payload) {
   const ready = payload.readiness;
   drawDeckMotion(ready.deck_motion);
   renderHelicopterStatusLamps();
+  renderHelicopterRescue(payload.rescue);
   metrics($("helicopter-readiness"), [["flightdeck_down", yesNo(ready.flightdeck_down)],
     ["helicopter_can_launch", yesNo(ready.can_launch)], ["helicopter_can_return", yesNo(ready.can_return)],
     ["deck_state", ready.deck_state], ["helicopter_can_waypoint", yesNo(ready.can_set_waypoint)],

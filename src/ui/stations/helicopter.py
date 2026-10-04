@@ -769,6 +769,55 @@ def _draw_dip_column(s, column, helo, gauge_max, thermocline) -> None:
         pygame.draw.circle(s, config.COLOR_OK, (cx, dome_y), 5)
 
 
+# Rescue panel phases and their lamp level (``game.helo_rescue_status``).
+RESCUE_LEVELS = {"search": "off", "ready": "caution", "approach": "caution",
+                 "lifting": "on", "weather": "alarm", "return": "caution", "deck": "off"}
+
+
+def rescue_hint(status):
+    """The rescue panel's line under the lamps: what to do next."""
+    phase = status["phase"]
+    params = dict(task=raw_text(status["raft"] or "-"),
+                  left=status["left"] if status["left"] is not None else 0,
+                  bearing=(f"{status['bearing']:03.0f}" if status["bearing"] is not None
+                           else "---"),
+                  range=(f"{status['range_nm']:.2f}" if status["range_nm"] is not None
+                         else "--"),
+                  lift=f"{100 * status['lift']:.0f}")
+    return message("helo.rescue.hint." + phase, **params)
+
+
+def _draw_rescue_panel(game, s, region, status) -> None:
+    """The rescue hoist: the winch switch (Z), the cabin and the next step,
+    with the current lift as a bar."""
+    from src.ui import console
+    if region.w < 60 or region.h < 60:
+        return
+    rx, ry, rw, rh = layout.box(s, region, "helo.rescue.title")
+    lamp_h = layout.line_pitch(14, 0) + 8
+    level = RESCUE_LEVELS[status["phase"]]
+    console.lamp_grid(s, (rx, ry, rw, lamp_h), (
+        ("helo.rescue.winch", message("helo.rescue.phase." + status["phase"]), level, "Z"),
+        ("helo.rescue.cabin", message("helo.rescue.cabin_value", aboard=status["aboard"],
+                                      capacity=status["capacity"]),
+         "caution" if status["aboard"] >= status["capacity"] else
+         "on" if status["aboard"] else "off")), 2, size=14)
+    top = ry + lamp_h + 6
+    row = layout.font(14).get_linesize()
+    if top + row > ry + rh:
+        return
+    if status["phase"] == "lifting":
+        bar = pygame.Rect(rx, top + row // 2 - 3, max(1, rw // 4), 6)
+        pygame.draw.rect(s, config.COLOR_GRID, bar, 1)
+        pygame.draw.rect(s, config.COLOR_OK, (bar.x, bar.y, round(bar.w * status["lift"]), bar.h))
+        text_x = bar.right + 8
+    else:
+        text_x = rx
+    layout.blit_line(s, rescue_hint(status), (text_x, top, rx + rw - text_x, row),
+                     config.COLOR_WARN if level in ("caution", "alarm") else config.COLOR_TEXT,
+                     size=14)
+
+
 @localized
 def draw_helicopter_view(game, tr=None) -> None:
     """Eigene Deckansicht fuer Status, Reichweite und Einsatzfreigaben."""
@@ -795,8 +844,16 @@ def draw_helicopter_view(game, tr=None) -> None:
 
     if page == 0:
         _draw_status_console(game, s, regions, helo, state_label, state_color, distance)
-        _draw_deck_gauge(game, s, regions["deck"])
-        _draw_stores_and_systems(game, s, regions["resources"], helo)
+        rescue = game.helo_rescue_status() if helo.airborne else None
+        if rescue is None:
+            _draw_deck_gauge(game, s, regions["deck"])
+            _draw_stores_and_systems(game, s, regions["resources"], helo)
+        elif regions["deck"].h:
+            # Airborne on a rescue: the hoist takes the deck gauge's place.
+            _draw_rescue_panel(game, s, regions["deck"], rescue)
+            _draw_stores_and_systems(game, s, regions["resources"], helo)
+        else:
+            _draw_rescue_panel(game, s, regions["resources"], rescue)
     elif page == 1:
         mission_box = layout.box(s, regions["rules"], "panel.rules")
         mx, my, mw, _ = mission_box

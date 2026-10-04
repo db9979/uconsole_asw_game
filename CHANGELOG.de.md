@@ -4,14 +4,32 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.203
+## 1.3.204
 
-Version 1.3.203 lässt die Lampen des Hubschraubers die Startvorbereitung
+Version 1.3.204 lässt die Lampen des Hubschraubers die Startvorbereitung
 nennen. Ruht die Maus auf der Lampe HANGAR, DECK oder START, steht dort, wie
 lange die Startvorbereitung noch läuft, wie lange der Start noch auf Sprit
 wartet oder dass der Hubschrauber startbereit auf ein Deckfenster wartet, aus
 dem laufenden Spiel, und dass ein zweites H die Vorbereitung abbricht. Tasten
-bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
+bleiben gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+
+## 1.3.203
+
+Version 1.3.203 macht die Rettung von Schiffbrüchigen mit dem Hubschrauber
+zu einer klaren Bedienhandlung. Rettungsinseln im Wasser sind jetzt kleine
+Radarechos für das Schiffsradar, das Hubschrauberradar und den
+Seefernaufklärer (bei hohem Seegang schwerer zu sehen) und verbessern die
+gemeldete Position; die OPZ erfährt vom ersten Fix. Die
+Hubschrauberstation zeigt ein Rettungsfeld mit dem Zustand der Winde, den
+Personen an Bord (höchstens 6), der Insel mit Peilung und Abstand und einem
+kurzen Hinweis, was als Nächstes zu tun ist. Im Schwebeflug höchstens
+0,1 sm von einer Insel entfernt `Z` drücken (oder die Windenlampe bzw.
+*Rettungswinde* im Browser anklicken): Der Hubschrauber stellt sich über
+die Insel, holt bei zulässigem Wind eine Person pro Minute herauf und meldet
+jede Person, eine leere Insel und eine volle Kabine. Gerettet sind die
+Schiffbrüchigen erst, wenn der Hubschrauber auf dem Schiff landet; geht er
+verloren, sind sie es auch. Der Hubschrauber der KI-Fregatte nutzt dieselbe
+Winde. Spielstände sind v52; v38 bis v51 laden weiter.
 
 ## 1.3.202
 

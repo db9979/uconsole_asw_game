@@ -128,7 +128,7 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
                    "compartments"},
         "helicopter": {"asset", "waypoint", "buoys", "buoy_observations", "acoustic", "readiness", "navigation",
                        "tactical", "target_choices", "dip_observations",
-                       "dip_environment"},
+                       "dip_environment", "rescue"},
         "eloka": {"intercepts", "station_down", "status", "hardware"},
     }
     encoded = json.dumps(list(server.v2_states.values()), sort_keys=True)

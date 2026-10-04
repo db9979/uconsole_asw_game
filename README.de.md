@@ -14,14 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.203**
+Aktuelle Version: **1.3.204**
 
-Version 1.3.203 lässt die Lampen des Hubschraubers die Startvorbereitung
+Version 1.3.204 lässt die Lampen des Hubschraubers die Startvorbereitung
 nennen. Ruht die Maus auf der Lampe HANGAR, DECK oder START, steht dort, wie
 lange die Startvorbereitung noch läuft, wie lange der Start noch auf Sprit
 wartet oder dass der Hubschrauber startbereit auf ein Deckfenster wartet, aus
 dem laufenden Spiel, und dass ein zweites H die Vorbereitung abbricht. Tasten
-bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
+bleiben gleich. Spielstände sind v52; v38 bis v51 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

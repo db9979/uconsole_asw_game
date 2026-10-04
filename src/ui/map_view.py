@@ -251,46 +251,9 @@ def clip_polygon_to_rect(points, rect, margin: float = _CLIP_MARGIN_PX) -> list:
     Polygons already inside the grown rect are returned unchanged, so the
     normal zoom levels keep their exact outline; at strong zoom the huge
     off-screen coordinates are cut away before drawing."""
-    left = rect[0] - margin
-    top = rect[1] - margin
-    right = rect[0] + rect[2] + margin
-    bottom = rect[1] + rect[3] + margin
-    pts = list(points)
-    if all(left <= x <= right and top <= y <= bottom for x, y in pts):
-        return pts
-    for edge in range(4):
-        if not pts:
-            break
-        out = []
-        prev = pts[-1]
-        for cur in pts:
-            inside_cur = _clip_inside(cur, edge, left, top, right, bottom)
-            inside_prev = _clip_inside(prev, edge, left, top, right, bottom)
-            if inside_cur:
-                if not inside_prev:
-                    out.append(_clip_cross(prev, cur, edge, left, top, right, bottom))
-                out.append(cur)
-            elif inside_prev:
-                out.append(_clip_cross(prev, cur, edge, left, top, right, bottom))
-            prev = cur
-        pts = out
-    return pts
-
-
-def _clip_inside(point, edge, left, top, right, bottom) -> bool:
-    x, y = point
-    return (x >= left, y >= top, x <= right, y <= bottom)[edge]
-
-
-def _clip_cross(a, b, edge, left, top, right, bottom):
-    (x0, y0), (x1, y1) = a, b
-    if edge in (0, 2):
-        bound = left if edge == 0 else right
-        t = (bound - x0) / (x1 - x0)
-        return bound, y0 + (y1 - y0) * t
-    bound = top if edge == 1 else bottom
-    t = (bound - y0) / (y1 - y0)
-    return x0 + (x1 - x0) * t, bound
+    return lines.clip_polygon(points, (rect[0] - margin, rect[1] - margin,
+                                       rect[0] + rect[2] + margin,
+                                       rect[1] + rect[3] + margin))
 
 
 def _visible_landmasses(coast, view, rect):
@@ -771,7 +734,8 @@ def _draw_helo_waypoint(s, game, view, helo_px, chart) -> None:
     """The helicopter's ordered waypoint (own asset): a dashed track from
     the helicopter to a ringed cross exactly on the point, with its label."""
     helo = game.helo
-    if helo.state != "AUF" or helo.waypoint_x is None or helo.waypoint_y is None:
+    if (getattr(helo, "state", "AUF") != "AUF" or getattr(helo, "waypoint_x", None) is None
+            or getattr(helo, "waypoint_y", None) is None):
         return
     wx, wy = view.world_to_screen(helo.waypoint_x, helo.waypoint_y)
     color = config.COLOR_WARN

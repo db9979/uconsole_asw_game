@@ -40,6 +40,15 @@ objects off the chart get an arrow on the chart edge, and their labels sit
 side by side there instead of on top of each other. Saves are v51; v38 to v50
 saves still load.
 
+## 1.3.198
+
+Release 1.3.198 fixes the "display fault" box when zooming far into a chart.
+With the graphics level "Full", the smooth line drawing could not handle lines
+that end far outside the chart, such as an autopilot leg to a distant
+waypoint at the strongest zoom; the chart then showed the fault box instead
+of the map. Lines and areas are now cut to the visible chart before drawing,
+so every chart on both sides draws at its closest and widest zoom.
+
 ## 1.3.197
 
 Release 1.3.197 makes the hover tooltips follow the colour scheme. In the

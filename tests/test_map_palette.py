@@ -38,7 +38,9 @@ def map_game(*, helo_airborne=False, coast=None):
         ship=SimpleNamespace(
             x=250.0, y=250.0, course=0.0, target_course=0.0, speed=0.0),
         helo=SimpleNamespace(
-            airborne=helo_airborne, x=250.0, y=250.0, course=90.0, SPEED_KN=0.0),
+            airborne=helo_airborne, state="AUF" if helo_airborne else "HANGAR",
+            x=250.0, y=250.0, course=90.0, SPEED_KN=0.0, ground_speed_kn=0.0,
+            waypoint_x=None, waypoint_y=None),
         font=pygame.font.Font(None, 18),
         torpedoes=[],
         buoys=[],

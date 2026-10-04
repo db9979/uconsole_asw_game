@@ -14,16 +14,22 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.204**
+Aktuelle Version: **1.3.205**
 
-Version 1.3.204 lässt die Lampen des Hubschraubers die Startvorbereitung
-nennen. Ruht die Maus auf der Lampe HANGAR, DECK oder START, steht dort, wie
-lange die Startvorbereitung noch läuft, wie lange der Start noch auf Sprit
-wartet oder dass der Hubschrauber startbereit auf ein Deckfenster wartet, aus
-dem laufenden Spiel, und dass ein zweites H die Vorbereitung abbricht. Die
-macOS-App gibt es nur noch für Apple Silicon; ein Intel-Mac öffnet die
-Release-Seite, statt sich zu aktualisieren. Tasten bleiben gleich. Spielstände
-sind v52; v38 bis v51 laden weiter.
+Version 1.3.205 behebt, was eine vollständige Code-Prüfung gefunden hat,
+ohne das Spiel zu verändern. Ein beschädigter oder von Hand bearbeiteter
+Spielstand wird jetzt abgewiesen, statt das Spiel zu beenden, und ein
+fehlgeschlagenes Laden verändert die laufende Mission nicht mehr. Auf der
+uConsole ruckelt es weniger: das Schallbild wird schneller berechnet, Regen
+auf der Karte wird einmal statt in jedem Bild gezeichnet und ist im hellen
+Farbschema jetzt sichtbar, Statuszeilen und Tooltips verwenden ihren
+gezeichneten Text wieder, und ein Geräusch aus einer neuen Richtung wird
+nicht neu erzeugt. Im Browser gehen Spielgeräusche und Durchsagen nicht mehr
+verloren, wenn der Host ein Menü öffnet. Tooltip und Zeitangabe des
+Sonar-Wasserfalls passen jetzt zum verkürzten Verlauf (Shift+H). Ein
+abgebrochener Update-Download lässt sich erneut starten, und das
+Windows-Programm schreibt sein Absturzprotokoll wieder. Tasten bleiben
+gleich. Spielstände sind v52; v38 bis v51 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -213,8 +219,7 @@ eventuell, ob U-Jagd Geräte im lokalen Netzwerk finden und eingehende
 Verbindungen annehmen darf: für Remote Crew beides erlauben. Die Tasten sind
 dieselben wie auf den anderen Systemen (`Ctrl`, nicht `Cmd`).
 
-**Jetzt updaten** arbeitet wie im Windows-Programm: Die App lädt das Zip für
-ihren Prozessor, prüft Größe und SHA-256-Prüfsumme, entpackt die neue
+**Jetzt updaten** arbeitet wie im Windows-Programm: Die App lädt das neue Zip, prüft Größe und SHA-256-Prüfsumme, entpackt die neue
 `U-Jagd.app` neben sich, schließt sich, tauscht das Bundle aus (das alte wird
 erst gelöscht, wenn das neue an seinem Platz ist) und öffnet die neue Version.
 Eine App, die aus dem Download-Ordner in Quarantäne oder aus einem Ordner ohne

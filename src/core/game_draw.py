@@ -911,7 +911,7 @@ class DrawMixin:
                                               for key, _text in parts],
                               separator=" \u00b7 ", align="right")
         hint = localize(hint_key) if hint_key else ""
-        hint_w = face.size(hint)[0] + 12 if hint else 0
+        hint_w = layout.text_width(face, hint) + 12 if hint else 0
         if hint:
             shown = strip_text(hint, pygame.Rect(rect.x + 8, rect.y, hint_w, rect.h),
                                config.COLOR_TEXT_DIM)
@@ -929,12 +929,12 @@ class DrawMixin:
             return
         entry = latest[0]
         text = f"[{entry.stamp}] {entry.tag()} {localize(entry.text)}"
-        width = face.size(text)[0]
+        width = layout.text_width(face, text)
         feed_rect = pygame.Rect(feed_rect.x, rect.y, feed_rect.w, rect.h)
         if width <= feed_rect.w:
             strip_text(text, feed_rect, entry.color())
             return
-        surface = face.render(text, True, entry.color())
+        surface = layout.render_line(face, text, entry.color())
         text_y = feed_rect.y + (feed_rect.h - surface.get_height()) // 2
         with layout.clip_to(s, feed_rect):
             # Marquee instead of an ellipsis: the full line stays readable.

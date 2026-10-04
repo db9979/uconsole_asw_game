@@ -232,6 +232,27 @@ def test_windows_download_failure_can_be_retried(monkeypatch):
     assert game.update_failed and game.update_progress is None and game.running
 
 
+def test_a_broken_download_can_be_retried(monkeypatch):
+    # A connection cut mid-file raises http.client.IncompleteRead, not an
+    # UpdateError; the download must still end as failed, not hang at its
+    # percentage for the rest of the launch.
+    import http.client
+
+    def cut(current):
+        raise http.client.IncompleteRead(b"partial", 100)
+
+    monkeypatch.setattr(update, "check_latest", cut)
+    game = _game(show_splash=False)
+    game.update_notice = _notice()
+    game.update_mode = "windows"
+    game.request_update()
+    for _ in range(100):
+        if game.update_failed:
+            break
+        time.sleep(0.02)
+    assert game.update_failed and game.update_progress is None and game.running
+
+
 def test_u_on_splash_hands_over_to_the_starter():
     game = _game(show_splash=True)
     game.update_notice = _notice()

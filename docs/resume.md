@@ -1,9 +1,11 @@
 # Wiederaufnahme
 
-## Aktueller Stand (2026-09-29)
+## Aktueller Stand (2026-10-04)
 
-U-Jagd steht bei der Version aus `src/core/version.py` (1.3.x), Spielstände
-sind exakt v31 (`SAVE_VERSION`), Remote Crew spricht Protokoll v2. Jede
+U-Jagd steht bei der Version aus `src/core/version.py` (1.3.x). Geschrieben
+werden Spielstände im Format aus `SAVE_VERSION`; ältere ab
+`save_migrate.MIGRATE_FROM` werden beim Laden angehoben. Remote Crew spricht
+Protokoll v2. Jede
 Änderung erhöht die Patch-Version und bekommt einen Eintrag oben in
 `CHANGELOG.md` und `CHANGELOG.de.md`; das README zeigt nur die neueste
 Version. Die Arbeit läuft über Pull Requests auf GitHub; der Verlauf steht in

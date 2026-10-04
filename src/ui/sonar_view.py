@@ -349,6 +349,8 @@ def _draw_waterfall(game, panel, page):
     _text(screen, "sonar.new", (panel.x + 8, plot.y, 45, 18), CYAN, 12)
     _text(screen, "sonar.old", (panel.x + 8, plot.bottom - 18, 45, 18), DIM, 12)
     _, times, _ = _history_for_page(sonar, page)
+    # Only the rows the plot shows (Shift+H display history).
+    times = times[-len(processed):] if len(processed) else times[:0]
     timing = (message("sonar.line.history_timed", newest=f"{times[-1]:.1f}",
                       oldest=f"{times[0]:.1f}", rows=len(processed)) if len(times) else
               message("sonar.line.history_untimed", rows=len(processed)))

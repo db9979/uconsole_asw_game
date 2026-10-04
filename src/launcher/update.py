@@ -29,8 +29,8 @@ REPOSITORY = "db9979/uconsole_asw_game"
 LATEST_RELEASE_API = f"https://api.github.com/repos/{REPOSITORY}/releases/latest"
 RELEASES_PAGE = f"https://github.com/{REPOSITORY}/releases/latest"
 ASSET_NAME = "U-Jagd-Windows.exe"
-# macOS: one zipped app bundle per processor (pygame and NumPy publish no
-# universal2 wheels), made with ``ditto -c -k --keepParent U-Jagd.app``.
+# macOS: one zipped app bundle for Apple silicon, made with
+# ``ditto -c -k --keepParent U-Jagd.app``.
 MAC_APP_NAME = "U-Jagd.app"
 MAC_EXECUTABLE = "U-Jagd"
 # Apple silicon only; an Intel Mac gets no zip and opens the release page.

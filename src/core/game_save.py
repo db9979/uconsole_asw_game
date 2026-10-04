@@ -1065,6 +1065,10 @@ class SaveMixin:
         self.world.weather_override = w["weather_override"]
         self.world.ocean.restore(w["ocean"])
         self.seed = seed
+        # Own raid stream: the load candidate is a shallow copy of the live
+        # game, so restoring into a shared Random would change the live
+        # stream even when the load fails later.
+        self.rng_raid = random.Random(seed + 40424)
         self.sonar = SonarSystem(
             seed=seed, acoustic_profiles=self.runtime_catalog.acoustic_profiles)
         self.sonar_harmonic_hz = None
@@ -1822,8 +1826,10 @@ class SaveMixin:
     def _load_save_data(self, data: dict) -> bool:
         # An older format (from MIGRATE_FROM on) is lifted to the current one
         # first; the strict validation below then decides as for any save.
-        data = migrate_save(data)
+        # Hostile JSON: neither a migration step nor the validator may raise
+        # out of a load (a crash in the main menu has no recovery point).
         try:
+            data = migrate_save(data)
             if (not isinstance(data, dict)
                     or type(data.get("time_scale_idx")) is not int
                     or not 0 <= data["time_scale_idx"] < 6):
@@ -1839,9 +1845,10 @@ class SaveMixin:
                 data["time_scale_idx"] = 0
                 if isinstance(data["ui"], dict) and "paused" in data["ui"]:
                     data["ui"]["paused"] = False
-        except (KeyError, TypeError, ValueError, OverflowError, RecursionError):
-            return False
-        if not self._valid_save_document(data, runtime_catalog):
+            if not self._valid_save_document(data, runtime_catalog):
+                return False
+        except (KeyError, TypeError, ValueError, AttributeError, IndexError,
+                OverflowError, RecursionError):
             return False
         if self._sonar_ctx is not self._frigate_sonar:
             raise RuntimeError("load inside a sonar perspective")

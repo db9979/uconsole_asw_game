@@ -595,7 +595,7 @@ def shorten_to_fit(make, title: str, width: int, size: int = 16) -> str:
     face = font(size)
     text = make(title)
     cut = len(title)
-    while face.size(text)[0] > width and cut > 1:
+    while text_width(face, text) > width and cut > 1:
         cut -= 1
         text = make(title[:cut].rstrip() + "…")
     return text
@@ -826,8 +826,8 @@ def tooltip_rect(payload: dict, pointer, bounds=(0, 0, 1280, 720),
     available = max(1, min(max_width, safe.w))
     title = str(payload.get("title", ""))
     body = [str(line) for line in payload.get("lines", [])]
-    natural = max([title_font.size(title)[0]] +
-                  [body_font.size(line)[0] for line in body] + [0]) + 24
+    natural = max([text_width(title_font, title)] +
+                  [text_width(body_font, line) for line in body] + [0]) + 24
     width = max(min(180, available), min(available, natural))
     title_lines = wrap_text(title, title_font, width - 24) or [""]
     body_lines = []
@@ -891,8 +891,7 @@ def draw_tooltip(screen, payload: dict, pointer,
             y = (rect.y + 8 + index * title_h if is_title else
                  rect.y + 8 + title_count * title_h
                  + (index - title_count) * body_h)
-            screen.blit(face.render(line, True, color),
-                        (rect.x + 12, y))
+            screen.blit(render_line(face, line, color), (rect.x + 12, y))
             for key in keys if not is_title else ():
                 pointer.line_keys(screen, face, line, rect.x + 12, y, (key,),
                                   rect.inflate(-10, -8))

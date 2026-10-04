@@ -227,8 +227,8 @@ def draw_top_bar(game, boat) -> None:
     rows = threat_rows(game, boat) if boat is not None and boat.sub is not None else []
     if rows and not any(fresh for _text, _level, fresh in rows):
         # Only stale warnings: a small marker left of the clock.
-        _draw_threat_marker(s, right - layout.font(16).size(
-            localize(text))[0] - 30, config.TOP_BAR_H // 2, len(rows))
+        _draw_threat_marker(s, right - layout.text_width(
+            layout.font(16), localize(text)) - 30, config.TOP_BAR_H // 2, len(rows))
 
 
 def _draw_threat_marker(s, x, cy, count) -> None:

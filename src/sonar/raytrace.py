@@ -128,11 +128,18 @@ def trace_table(source_depth_m: float, profile_depths_m, profile_m_s,
             direction = np.where(hit_bottom, -1.0, direction)
             grazing_deg = np.degrees(np.arcsin(np.clip(sin_t, 0.0, 1.0)))
             key = np.round(grazing_deg, 1)
-            loss = np.array([sediment_loss_cache.setdefault(
-                (sediment, float(value)), rayleigh_bottom_loss_db(sediment, float(value)))
-                for value in key])
+            # Only the rays that hit pay the bottom loss, each grazing angle
+            # (0.1 deg steps) is computed once per table.
+            loss = np.zeros(RAYS)
+            for index in np.flatnonzero(hit_bottom):
+                value = float(key[index])
+                cached = sediment_loss_cache.get(value)
+                if cached is None:
+                    cached = sediment_loss_cache[value] = rayleigh_bottom_loss_db(
+                        sediment, value)
+                loss[index] = cached
             for band_index in range(len(BANDS_HZ)):
-                losses[band_index] += np.where(hit_bottom, loss, 0.0)
+                losses[band_index] += loss
             bounces += hit_bottom
         z = np.clip(z, 0.0, bottom)
         alive &= bounces <= MAX_BOUNCES

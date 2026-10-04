@@ -15,7 +15,8 @@ from src.ui.sonar_data import (
     PAGES, DEMON_DISPLAY_MAX_HZ, _sonar_observer, message, _observed_bearing,
     _bearing_line, _history_for_page, _list_rows, _array_readout,
     _circular_broadband, _linear_lofar, _process_lofar_rows,
-    _waterfall_controls, active_echoes, _selected_harmonic, _bearing_series)
+    _waterfall_controls, active_echoes, _selected_harmonic, _bearing_series,
+    _display_controls)
 
 
 def _panels(game, page):
@@ -258,6 +259,10 @@ def sonar_hit_target(game, pos):
         axis = (pos[0] - plot.x) / max(1, plot.w - 1)
         rows, times, history_rows = _history_for_page(sonar, page)
         live = page == 1 and not len(rows)
+        if not live:
+            # The same window the waterfall draws (Shift+H display history).
+            visible = max(1, round(history_rows * _display_controls(game)[3]))
+            rows, times, history_rows = rows[-visible:], times[-visible:], visible
         if live:
             spectrum = getattr(getattr(sonar, "receiver", None), "spectrum", [])
             rows = [spectrum] if len(spectrum) else []

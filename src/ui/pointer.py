@@ -222,15 +222,16 @@ def add_text_keys(text: str, face, center_x: int, center_y: int, keys,
     ``keys`` holds one entry per part: a key code, ``(key, mod)``, a legend
     label such as ``"Enter"``, or None for a part that is text only.
     """
+    from src.ui import layout
     if separator is None:
         separator = " | " if " | " in text else " · "
     parts = text.split(separator)
-    total = face.size(text)[0]
+    total = layout.text_width(face, text)
     height = face.get_linesize()
     x = center_x - total // 2
-    sep_w = face.size(separator)[0]
+    sep_w = layout.text_width(face, separator)
     for part, key in zip(parts, keys):
-        width = face.size(part)[0]
+        width = layout.text_width(face, part)
         rect = pygame.Rect(x - 4, center_y - height // 2 - 2, width + 8, height + 4)
         if isinstance(key, str):
             found = legend_keys(key)
@@ -260,16 +261,16 @@ def add_line_keys(rect, text: str, size: int, keys, separator: str | None = None
         separator = " | " if " | " in text else " · "
     face = layout.font(size)
     parts = text.split(separator)
-    total = max(1, face.size(text)[0])
+    total = max(1, layout.text_width(face, text))
     scale = min(1.0, rect.w / total)
     shown = total * scale
     x = (rect.x if align == "left" else rect.right - shown if align == "right"
          else rect.centerx - shown / 2)
-    sep_w = face.size(separator)[0] * scale
+    sep_w = layout.text_width(face, separator) * scale
     height = min(rect.h, face.get_linesize() + 4)
     top = rect.y + max(0, (rect.h - height) // 2)
     for part, spec in zip(parts, keys):
-        width = face.size(part)[0] * scale
+        width = layout.text_width(face, part) * scale
         area = pygame.Rect(round(x) - 3, top, round(width) + 6, height).clip(
             rect.inflate(6, 0))
         if area.w > 4:

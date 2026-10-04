@@ -206,7 +206,7 @@ class UpdateNoticeMixin:
                     self.update_progress = None
                     return
                 update.download(release, target, progress=progress)
-            except update.UpdateError:
+            except Exception:  # any failure (an IncompleteRead too) ends this try
                 self.update_failed = True
                 self.update_progress = None
                 return
@@ -239,7 +239,7 @@ class UpdateNoticeMixin:
                     return
                 update.download(release, bundle.archive, progress=progress)
                 update.unpack_app(bundle.archive, bundle)
-            except update.UpdateError:
+            except Exception:  # any failure (an IncompleteRead too) ends this try
                 update.remove_mac_leftovers(bundle)
                 self.update_failed = True
                 self.update_progress = None

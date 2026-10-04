@@ -4,6 +4,23 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.205
+
+Version 1.3.205 behebt, was eine vollständige Code-Prüfung gefunden hat,
+ohne das Spiel zu verändern. Ein beschädigter oder von Hand bearbeiteter
+Spielstand wird jetzt abgewiesen, statt das Spiel zu beenden, und ein
+fehlgeschlagenes Laden verändert die laufende Mission nicht mehr. Auf der
+uConsole ruckelt es weniger: das Schallbild wird schneller berechnet, Regen
+auf der Karte wird einmal statt in jedem Bild gezeichnet und ist im hellen
+Farbschema jetzt sichtbar, Statuszeilen und Tooltips verwenden ihren
+gezeichneten Text wieder, und ein Geräusch aus einer neuen Richtung wird
+nicht neu erzeugt. Im Browser gehen Spielgeräusche und Durchsagen nicht mehr
+verloren, wenn der Host ein Menü öffnet. Tooltip und Zeitangabe des
+Sonar-Wasserfalls passen jetzt zum verkürzten Verlauf (Shift+H). Ein
+abgebrochener Update-Download lässt sich erneut starten, und das
+Windows-Programm schreibt sein Absturzprotokoll wieder. Tasten bleiben
+gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+
 ## 1.3.204
 
 Version 1.3.204 lässt die Lampen des Hubschraubers die Startvorbereitung

@@ -63,7 +63,7 @@ def _release_zip(path, extra=(), executable=True):
 
 def test_each_processor_has_its_own_release_zip():
     assert update.mac_asset_name("arm64") == "U-Jagd-macOS-arm64.zip"
-    assert update.mac_asset_name("x86_64") == "U-Jagd-macOS-x86_64.zip"
+    assert update.mac_asset_name("x86_64") is None  # no Intel build
     assert update.mac_asset_name("ppc") is None
     payload = {"tag_name": "v9.9.9", "draft": False, "prerelease": False,
                "assets": [{"name": update.ASSET_NAME, "size": 4,
@@ -397,11 +397,11 @@ def test_the_update_exit_code_swaps_the_mac_bundle(monkeypatch, tmp_path):
     assert Path(bundle.staged_app).is_dir()
 
 
-def test_workflow_builds_both_mac_zips_and_publishes_from_one_job():
+def test_workflow_builds_the_apple_silicon_zip_and_publishes_from_one_job():
     workflow = (ROOT / ".github" / "workflows" / "windows.yml").read_text(encoding="utf-8")
     jobs = workflow.split("\njobs:\n", 1)[1]
     mac = jobs.split("\n  macos:\n", 1)[1].split("\n  publish:\n", 1)[0]
-    assert "arch: arm64" in mac and "arch: x86_64" in mac
+    assert "arch: arm64" in mac and "x86_64" not in mac
     assert "pyinstaller --noconfirm packaging/macos/u-jagd-macos.spec" in mac
     assert 'ditto -c -k --norsrc --noextattr --keepParent dist/U-Jagd.app "dist/$ZIP"' in mac
     assert "ZIP: U-Jagd-macOS-${{ matrix.arch }}.zip" in mac

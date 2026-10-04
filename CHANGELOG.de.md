@@ -10,8 +10,10 @@ Version 1.3.204 lässt die Lampen des Hubschraubers die Startvorbereitung
 nennen. Ruht die Maus auf der Lampe HANGAR, DECK oder START, steht dort, wie
 lange die Startvorbereitung noch läuft, wie lange der Start noch auf Sprit
 wartet oder dass der Hubschrauber startbereit auf ein Deckfenster wartet, aus
-dem laufenden Spiel, und dass ein zweites H die Vorbereitung abbricht. Tasten
-bleiben gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+dem laufenden Spiel, und dass ein zweites H die Vorbereitung abbricht. Die
+macOS-App gibt es nur noch für Apple Silicon; ein Intel-Mac öffnet die
+Release-Seite, statt sich zu aktualisieren. Tasten bleiben gleich. Spielstände
+sind v52; v38 bis v51 laden weiter.
 
 ## 1.3.203
 

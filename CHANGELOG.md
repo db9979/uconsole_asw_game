@@ -10,8 +10,9 @@ Release 1.3.204 lets the helicopter's lamps name the launch preparation.
 Resting the mouse on the HANGAR, DECK or LAUNCH lamp now says how long the
 start preparation still runs, how much refuelling the launch still waits for,
 or that the helicopter is ready and waits for a deck window, taken from the
-running game, and that H again stops the preparation. Keys are unchanged.
-Saves are v52; v38 to v51 saves still load.
+running game, and that H again stops the preparation. The macOS app is now
+built for Apple silicon only; an Intel Mac opens the release page instead of
+updating. Keys are unchanged. Saves are v52; v38 to v51 saves still load.
 
 ## 1.3.203
 

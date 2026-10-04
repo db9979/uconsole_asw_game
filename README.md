@@ -18,8 +18,9 @@ Release 1.3.204 lets the helicopter's lamps name the launch preparation.
 Resting the mouse on the HANGAR, DECK or LAUNCH lamp now says how long the
 start preparation still runs, how much refuelling the launch still waits for,
 or that the helicopter is ready and waits for a deck window, taken from the
-running game, and that H again stops the preparation. Keys are unchanged.
-Saves are v52; v38 to v51 saves still load.
+running game, and that H again stops the preparation. The macOS app is now
+built for Apple silicon only; an Intel Mac opens the release page instead of
+updating. Keys are unchanged. Saves are v52; v38 to v51 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -185,8 +186,8 @@ To build locally on Windows: `python -m pip install -e ".[windows]"` and
 
 ## macOS app
 
-Download `U-Jagd-macOS-arm64.zip` (Apple silicon) or `U-Jagd-macOS-x86_64.zip`
-(Intel Mac) from the
+Download `U-Jagd-macOS-arm64.zip` (Apple silicon; there is no build for Intel
+Macs) from the
 [latest release](https://github.com/db9979/uconsole_asw_game/releases/latest),
 unzip it and move `U-Jagd.app` to Applications (or any folder you can write
 to); no Python installation is needed. The app starts straight into the game
@@ -209,9 +210,9 @@ release page instead. Saves and settings live in `~/.u-jagd/` as on Linux; an
 update never touches them.
 
 The same workflow builds `U-Jagd.app` with PyInstaller
-(`packaging/macos/u-jagd-macos.spec`) natively for arm64 and x86_64 (pygame
+(`packaging/macos/u-jagd-macos.spec`) natively for arm64 (pygame
 and NumPy publish no universal2 wheels), self-tests it, zips it with
-`ditto -c -k --keepParent` and, on `main`, a final job attaches both zips and
+`ditto -c -k --keepParent` and, on `main`, a final job attaches the zip and
 the Windows program to the same release. To build locally on a Mac:
 `python -m pip install -e ".[macos]"` and
 `pyinstaller packaging/macos/u-jagd-macos.spec`.

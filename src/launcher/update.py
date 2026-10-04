@@ -33,7 +33,8 @@ ASSET_NAME = "U-Jagd-Windows.exe"
 # universal2 wheels), made with ``ditto -c -k --keepParent U-Jagd.app``.
 MAC_APP_NAME = "U-Jagd.app"
 MAC_EXECUTABLE = "U-Jagd"
-MAC_ASSETS = {"arm64": "U-Jagd-macOS-arm64.zip", "x86_64": "U-Jagd-macOS-x86_64.zip"}
+# Apple silicon only; an Intel Mac gets no zip and opens the release page.
+MAC_ASSETS = {"arm64": "U-Jagd-macOS-arm64.zip"}
 MAX_METADATA_BYTES = 1 << 20
 MAX_ASSET_BYTES = 400 << 20
 _CHUNK = 1 << 16

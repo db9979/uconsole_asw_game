@@ -24,6 +24,16 @@ dem Punkt stehen statt 0,3 sm davor. Plot-Objekte außerhalb der Karte bekommen
 einen Pfeil am Kartenrand, und ihre Beschriftungen stehen dort nebeneinander
 statt übereinander. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
 
+## 1.3.198
+
+Version 1.3.198 behebt die Meldung „Anzeige gestört“ beim starken
+Hineinzoomen in eine Karte. Mit der Grafikstufe „Voll“ konnte das geglättete
+Linienzeichnen keine Linien verarbeiten, die weit außerhalb der Karte enden,
+etwa einen Autopilot-Schlag zu einem fernen Wegpunkt bei stärkstem Zoom; die
+Karte zeigte dann die Fehlerbox statt des Lagebilds. Linien und Flächen werden
+jetzt vor dem Zeichnen auf den sichtbaren Kartenteil zugeschnitten, sodass
+jede Karte beider Seiten im nächsten und im weitesten Maßstab zeichnet.
+
 ## 1.3.197
 
 Version 1.3.197 lässt die Hinweisfenster beim Überfahren mit der Maus dem

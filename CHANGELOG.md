@@ -4,6 +4,22 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.200
+
+Release 1.3.200 makes the rescue of survivors with the helicopter a clear
+operator action. Life rafts in the water are now small radar echoes for the
+ship's radar, the helicopter's radar and the patrol aircraft (harder to see
+in high seas) and sharpen the reported position; the OPZ hears about the
+first fix. The Helicopter station shows a rescue panel with the winch state,
+the people in the cabin (at most 6), the raft and its bearing and range, and
+a short hint what to do next. Hover within 0.1 NM of a raft and press `Z`
+(or click the winch lamp, or *Rescue hoist* in the browser): the helicopter
+steadies over the raft, lifts one person per minute while the wind allows it
+and announces every person, an empty raft and a full cabin. Survivors count
+as rescued only when the helicopter lands on the ship; if it is lost, they
+are lost with it. The AI frigate's helicopter uses the same hoist. Saves are
+v52; v38 to v51 saves still load.
+
 ## 1.3.199
 
 Release 1.3.199 makes the frigate's helicopter take time on deck. The launch

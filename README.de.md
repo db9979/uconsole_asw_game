@@ -14,25 +14,23 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.199**
+Aktuelle Version: **1.3.200**
 
-Version 1.3.199 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
-Der Startbefehl (`H` oder *Helikopter starten* im Browser) beginnt 5 Minuten
-Vorbereitung im Hangar, danach hebt er im nächsten Startfenster ab; ein
-zweites `H` bricht sie ab. Nach einer Landung behält er den Kraftstoff, mit
-dem er zurückkam, und wird an Deck betankt, 15 Minuten von leer bis voll; ein
-Start hebt mit dem bis dahin getankten Kraftstoff ab, nie mit weniger als 30
-Minuten. Die Hubschrauberstation zeigt STARTVORBEREITUNG oder TANKEN mit der
-Restzeit (uConsole und Browser), und der Tooltip über dem Status nennt, worauf
-er wartet. Die KI-Fregatte wartet genauso; ihre eigene Wartezeit vor dem
-Befehl ist halbiert, damit das Gleichgewicht bleibt. Die Peilrosen halten
-„090“ und „270“ vom Text daneben frei, und die Tiefenleiste des Tauchsonars
-trennt die Luft durch eine kräftige Wasserlinie vom Wasser. Der Fahrtstrich
-des Hubschraubers zeigt seine echte Geschwindigkeit über Grund, und ein Klick
-in die Karte legt seinen Wegpunkt genau dorthin; der Hubschrauber bleibt auf
-dem Punkt stehen statt 0,3 sm davor. Plot-Objekte außerhalb der Karte bekommen
-einen Pfeil am Kartenrand, und ihre Beschriftungen stehen dort nebeneinander
-statt übereinander. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
+Version 1.3.200 macht die Rettung von Schiffbrüchigen mit dem Hubschrauber
+zu einer klaren Bedienhandlung. Rettungsinseln im Wasser sind jetzt kleine
+Radarechos für das Schiffsradar, das Hubschrauberradar und den
+Seefernaufklärer (bei hohem Seegang schwerer zu sehen) und verbessern die
+gemeldete Position; die OPZ erfährt vom ersten Fix. Die
+Hubschrauberstation zeigt ein Rettungsfeld mit dem Zustand der Winde, den
+Personen an Bord (höchstens 6), der Insel mit Peilung und Abstand und einem
+kurzen Hinweis, was als Nächstes zu tun ist. Im Schwebeflug höchstens
+0,1 sm von einer Insel entfernt `Z` drücken (oder die Windenlampe bzw.
+*Rettungswinde* im Browser anklicken): Der Hubschrauber stellt sich über
+die Insel, holt bei zulässigem Wind eine Person pro Minute herauf und meldet
+jede Person, eine leere Insel und eine volle Kabine. Gerettet sind die
+Schiffbrüchigen erst, wenn der Hubschrauber auf dem Schiff landet; geht er
+verloren, sind sie es auch. Der Hubschrauber der KI-Fregatte nutzt dieselbe
+Winde. Spielstände sind v52; v38 bis v51 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

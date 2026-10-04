@@ -12,25 +12,21 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.199**
+Current release: **1.3.200**
 
-Release 1.3.199 makes the frigate's helicopter take time on deck. The launch
-order (`H`, or *Launch helicopter* in the browser) starts 5 minutes of
-preparation in the hangar, and the helicopter lifts off at the next launch
-window after that; `H` again stops it. After a landing it keeps the fuel it
-came back with and is refuelled on deck, 15 minutes from empty to full; a
-launch lifts off with the fuel aboard by then, never with less than 30
-minutes. The Helicopter station shows START PREP or REFUEL with the time left
-(uConsole and browser), and hovering over its status says what it waits for.
-The AI frigate waits the same way; its own delay before the order is halved,
-so the balance stays where it was. The bearing roses keep "090" and "270"
-clear of the text beside them, and the dipping sonar's depth gauge separates
-the air from the water below a bold waterline. The helicopter's speed vector
-shows its real speed over ground, and a click on the chart puts its waypoint
-exactly there; the helicopter stops on the point instead of 0.3 NM short. Plot
-objects off the chart get an arrow on the chart edge, and their labels sit
-side by side there instead of on top of each other. Saves are v51; v38 to v50
-saves still load.
+Release 1.3.200 makes the rescue of survivors with the helicopter a clear
+operator action. Life rafts in the water are now small radar echoes for the
+ship's radar, the helicopter's radar and the patrol aircraft (harder to see
+in high seas) and sharpen the reported position; the OPZ hears about the
+first fix. The Helicopter station shows a rescue panel with the winch state,
+the people in the cabin (at most 6), the raft and its bearing and range, and
+a short hint what to do next. Hover within 0.1 NM of a raft and press `Z`
+(or click the winch lamp, or *Rescue hoist* in the browser): the helicopter
+steadies over the raft, lifts one person per minute while the wind allows it
+and announces every person, an empty raft and a full cabin. Survivors count
+as rescued only when the helicopter lands on the ship; if it is lost, they
+are lost with it. The AI frigate's helicopter uses the same hoist. Saves are
+v52; v38 to v51 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

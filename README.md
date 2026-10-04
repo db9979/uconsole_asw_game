@@ -12,15 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.195**
+Current release: **1.3.196**
 
-Release 1.3.195 keeps the microphone meter off the top bar's status line. On
-the uConsole the meter now sits between the status line and the menu button,
-and the status line gives way to it: a long mission title is shortened, while
-the clock, speed, course and depth stay whole. The meter is drawn as LED
-segments behind a microphone sign; unlit segments are dimmed instead of
-empty outlines that looked like missing letters, and a small mark below a
-segment shows the crew's loudest voice. The browser meter looks the same.
+Release 1.3.196 closes the last points of the code audit. The LFM ping no
+longer gains 20 dB against noise, which a pulse of the same energy as CW
+cannot; instead its fine range cell cuts the seabed reverberation by 20 dB, so
+it finds a slow or stationary submarine in shallow water, while in deep water
+both pulses reach equally far. A submarine now hears a running torpedo at its
+full reference range. On a free patrol a sunk neutral submarine costs the
+frigate only when its own torpedoes, depth charges or rockets sank it, and a
+submarine that comes back as a new encounter is a new contact. A hung build
+self-test no longer holds back new releases for hours. Saves are v50; v38 to
+v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -23,7 +23,7 @@ launch lifts off with the fuel aboard by then, never with less than 30
 minutes. The Helicopter station shows START PREP or REFUEL with the time left
 (uConsole and browser), and hovering over its status says what it waits for.
 The AI frigate waits the same way; its own delay before the order is halved,
-so the balance stays where it was. The bearing roses keep "090" and "270"
+so both sides keep their chances. The bearing roses keep "090" and "270"
 clear of the text beside them, and the dipping sonar's depth gauge separates
 the air from the water below a bold waterline. The helicopter's speed vector
 shows its real speed over ground, and a click on the chart puts its waypoint

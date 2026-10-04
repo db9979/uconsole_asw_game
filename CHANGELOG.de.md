@@ -15,7 +15,7 @@ Start hebt mit dem bis dahin getankten Kraftstoff ab, nie mit weniger als 30
 Minuten. Die Hubschrauberstation zeigt STARTVORBEREITUNG oder TANKEN mit der
 Restzeit (uConsole und Browser), und der Tooltip über dem Status nennt, worauf
 er wartet. Die KI-Fregatte wartet genauso; ihre eigene Wartezeit vor dem
-Befehl ist halbiert, damit das Gleichgewicht bleibt. Die Peilrosen halten
+Befehl ist halbiert, damit beide Seiten ihre Chancen behalten. Die Peilrosen halten
 „090“ und „270“ vom Text daneben frei, und die Tiefenleiste des Tauchsonars
 trennt die Luft durch eine kräftige Wasserlinie vom Wasser. Der Fahrtstrich
 des Hubschraubers zeigt seine echte Geschwindigkeit über Grund, und ein Klick

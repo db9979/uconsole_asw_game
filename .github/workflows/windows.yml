@@ -22,6 +22,8 @@ jobs:
   build:
     name: Windows
     runs-on: windows-latest
+    # A hung self-test must not hold the release queue for the 6 h default.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -115,6 +117,8 @@ jobs:
           - arch: x86_64
             runner: macos-15-intel
     runs-on: ${{ matrix.runner }}
+    # A hung self-test must not hold the release queue for the 6 h default.
+    timeout-minutes: 30
     env:
       ZIP: U-Jagd-macOS-${{ matrix.arch }}.zip
     steps:
@@ -187,6 +191,7 @@ jobs:
         run: ditto -c -k --norsrc --noextattr --keepParent dist/U-Jagd.app "dist/$ZIP"
 
       - name: Self-test the zip as the updater unpacks it
+        timeout-minutes: 10
         # The in-game update unpacks the zip with Python (src/launcher/update.py),
         # not with ditto: the unpacked bundle (links, modes, ad-hoc signature)
         # must still run.

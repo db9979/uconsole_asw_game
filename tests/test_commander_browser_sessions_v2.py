@@ -1078,6 +1078,7 @@ def _direct_fire_browser_states():
         dip_environment=dict(water_depth_m=200.0, thermocline_m=60.0,
                              depth_limit_m=190.0, bottom_clearance_m=None,
                              winch_rate_m_s=2.5, below_thermocline=None),
+        rescue=None,
         readiness=dict(flightdeck_down=False, deck_state="OK", can_launch=False,
                         can_return=True, can_set_waypoint=True, can_deploy_buoy=True,
                          can_pattern=True, can_mad=True,

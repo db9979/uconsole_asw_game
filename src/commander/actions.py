@@ -462,6 +462,10 @@ def _helicopter_set_radar(game, params, _bindings):
     return game.set_helicopter_radar(params["enabled"])
 
 
+def _helicopter_set_hoist(game, params, _bindings):
+    return game.order_helicopter_hoist(params["enabled"])
+
+
 def _helicopter_set_buoy_mode(game, params, _bindings):
     return game.set_helicopter_buoy_mode(params["mode"])
 
@@ -1027,6 +1031,7 @@ _V2_ACTION_HANDLERS = {
     "helicopter_set_pattern": _helicopter_set_pattern,
     "helicopter_set_mad": _helicopter_set_mad,
     "helicopter_set_radar": _helicopter_set_radar,
+    "helicopter_set_hoist": _helicopter_set_hoist,
     "helicopter_set_buoy_mode": _helicopter_set_buoy_mode,
     "helicopter_set_listen_source": _helicopter_set_listen_source,
     "helicopter_set_listen_bearing": _helicopter_set_listen_bearing,

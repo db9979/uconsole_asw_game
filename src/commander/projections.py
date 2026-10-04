@@ -999,6 +999,19 @@ def _radio_tasks(game, station_down):
     return tasks
 
 
+def _helicopter_rescue(game):
+    """The rescue hoist panel (reported raft positions, own cabin), or None."""
+    status = game.helo_rescue_status()
+    if status is None:
+        return None
+    return dict(phase=status["phase"], hoist=bool(status["hoist"]),
+                aboard=int(status["aboard"]), capacity=int(status["capacity"]),
+                lift=_number(status["lift"]),
+                raft=None if status["raft"] is None else str(status["raft"])[:32],
+                left=status["left"], range_nm=_number(status["range_nm"]),
+                bearing=_number(status["bearing"]))
+
+
 def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                 sonar_refs=None, asset_only=False):
     helo = game.helo
@@ -1179,6 +1192,7 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                                              for row in game.helo_demon_history[-64:]]),
                 dip_environment=dip_environment,
                 dip_observations=dip_observations,
+                rescue=_helicopter_rescue(game),
                 navigation=_own_navigation(game), tactical=[
                     _observation(row, _HELICOPTER_TACTICAL_FIELDS)
                     for row in tactical[:_MAP_ROWS_MAX]],

@@ -156,7 +156,7 @@ export function validateV2State(state) {
     damage: ["compartments", "teams", "total", "sunk", "stability", "crew"],
     eloka: ["intercepts", "station_down", "status", "hardware"],
     engine: ["propulsion", "machinery", "controls", "environment_effects", "compartments"],
-    helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"],
+    helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment", "rescue"],
     lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
     opz: ["observations", "fusions", "suggestions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets", "trails"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical", "tasks", "can_request_ras", "can_contact_report", "can_request_support"],
@@ -740,6 +740,15 @@ export function validateV2State(state) {
         Object.entries(payload.dip_environment).some(([key, value]) => value !== null &&
           (key === "below_thermocline" ? typeof value !== "boolean" : !finite(value))) ||
         payload.dip_environment.winch_rate_m_s <= 0) throw new Error("protocol");
+    if (payload.rescue !== null && (!exactKeys(payload.rescue, ["phase", "hoist", "aboard", "capacity", "lift", "raft", "left", "range_nm", "bearing"]) ||
+        !["search", "ready", "approach", "lifting", "weather", "return", "deck"].includes(payload.rescue.phase) ||
+        typeof payload.rescue.hoist !== "boolean" ||
+        ![payload.rescue.aboard, payload.rescue.capacity].every((value) => Number.isSafeInteger(value) && value >= 0 && value <= 20) ||
+        !finite(payload.rescue.lift) || payload.rescue.lift < 0 || payload.rescue.lift > 1 ||
+        !(payload.rescue.raft === null || typeof payload.rescue.raft === "string" && payload.rescue.raft.length <= 32) ||
+        !(payload.rescue.left === null || Number.isSafeInteger(payload.rescue.left) && payload.rescue.left >= 0 && payload.rescue.left <= 20) ||
+        !(payload.rescue.range_nm === null || finite(payload.rescue.range_nm) && payload.rescue.range_nm >= 0) ||
+        !(payload.rescue.bearing === null || finite(payload.rescue.bearing) && payload.rescue.bearing >= 0 && payload.rescue.bearing < 360))) throw new Error("protocol");
     rowsExact(payload.target_choices, 128, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"]);
   } else if (state.role === "eloka") {
     if (!boundedArray(payload.intercepts, 64) || payload.intercepts.some((row) => !exactKeys(row, ["ref", "label", "group", "bearing", "bearing_uncertainty_deg", "frequency_hz", "frequency_band", "prf_hz", "modulation", "quality", "age_s", "radar_type", "threat", "signal_state", "operational", "ambiguous", "synthetic_assumption", "auto_jamming", "jamming", "jamming_effectiveness", "jamming_technique", "ecm_power_draw", "is_locked_on", "hoj_risk", "annotation", "candidates", "correlations", "signal_db", "range_estimate_nm", "scan_period_s"]) ||

@@ -55,6 +55,9 @@ export function renderStationView() {
       $("sonar-visual").prepend($("sonar-live-toggle").parentElement);
     const controls = grid.querySelector(":scope > .station-controls");
     if (controls && grid.firstElementChild !== controls) grid.prepend(controls);
+    // The rescue hoist card (shown only during a rescue) leads the helicopter's dock.
+    const rescue = grid.querySelector(":scope > .helicopter-rescue");
+    if (rescue && grid.firstElementChild !== rescue) grid.prepend(rescue);
     const fire = grid.querySelector(":scope > .direct-fire-controls");
     if (active === "weapons" && fire && grid.firstElementChild !== fire) grid.prepend(fire);
   } else {

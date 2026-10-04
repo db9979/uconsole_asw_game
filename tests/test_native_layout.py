@@ -219,6 +219,7 @@ def test_helicopter_status_rendered_rows_are_inside_card(monkeypatch):
                 course=275.0, torps=2, buoys_left=6),
         ship=NS(x=0.0, y=0.0, course=25.0), buoys=[],
         _helo_waypoint_polar=lambda: (80.0, 12.0),
+        helo_rescue_status=lambda: None,
     )
     status = stations_view.helicopter_regions(game, page=0)["status"]
 

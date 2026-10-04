@@ -65,6 +65,7 @@ from src.core.game_draw import (DrawMixin)
 from src.core.game_operator import (OperatorMixin)
 from src.core.game_pictures import (PicturesMixin)
 from src.core.game_tasking import TaskingMixin
+from src.core.game_rescue import RescueMixin
 from src.core.game_incidents import IncidentsMixin
 from src.core.game_crew import CrewMixin
 from src.core.game_noise import NoiseMixin
@@ -93,7 +94,7 @@ from src.core.game_reset import ResetMixin
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
-           SaveMixin, TaskingMixin, IncidentsMixin, CrewMixin, NoiseMixin, DailyMixin, MpaMixin, ConsortMixin, DebriefMixin,
+           SaveMixin, TaskingMixin, RescueMixin, IncidentsMixin, CrewMixin, NoiseMixin, DailyMixin, MpaMixin, ConsortMixin, DebriefMixin,
            TrainingMixin, CustomMissionMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
            LobbyMixin, ServerModeMixin, UpdateNoticeMixin, ResilienceMixin, LlmMixin, AdvisorUiMixin, HabitsMixin,
            ResetMixin):

@@ -31,6 +31,7 @@ def check_helo(data, runtime_catalog):
             "dip_state", "dip_depth_m", "dip_depth_target_m",
             "dip_water_depth_m", "dip_ping_cooldown", "hover_x", "hover_y",
             "pattern", "pattern_queue", "mad_mode", "radar_on", "prep_s",
+            "hoist", "hoist_s",
         }
         if set(helo) != required_helo:
             return False
@@ -38,6 +39,9 @@ def check_helo(data, runtime_catalog):
         if (helo["pattern"] not in ("single", "field", "barrier", "circle")
                 or type(helo["mad_mode"]) is not bool
                 or type(helo["radar_on"]) is not bool
+                or type(helo["hoist"]) is not bool
+                or not bounded(helo["hoist_s"], 0, config.TASK_SAR_HELO_S_PER_PERSON)
+                or (helo["hoist"] and helo["state"] != "AUF")
                 or (helo["prep_s"] is not None
                     and (not bounded(helo["prep_s"], 0, config.HELO_PREP_S)
                          or helo["state"] != "HANGAR"))

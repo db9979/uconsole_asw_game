@@ -545,3 +545,5 @@ class MpaMixin:
                 bearing=bearing, range_nm=measured, observer_x=observer_x,
                 observer_y=observer_y, course=None, quality=.6, now=self.sim_t,
                 label=track_id, bearing_uncertainty_deg=config.MPA_RADAR_BEARING_ERR_DEG)
+        self._aircraft_radar_rafts(observer_x, observer_y, altitude_m, range_nm,
+                                   conditions, tag_prefix, tick)

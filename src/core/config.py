@@ -1111,8 +1111,19 @@ TASK_SAR_LEEWAY = 0.03             # raft windage, fraction of the wind
 TASK_SAR_SHIP_NM = 0.25            # alongside: this close ...
 TASK_SAR_SHIP_KN = 3.0             # ... at or below this speed
 TASK_SAR_SHIP_S = 240.0            # to take the survivors aboard
-TASK_SAR_HELO_NM = 0.3             # helicopter overhead the raft
+# The helicopter's rescue hoist: ordered within TASK_SAR_HOIST_ORDER_NM of
+# a raft, the pilot then holds over it (within TASK_SAR_HOIST_OVERHEAD_NM)
+# and the winch lifts one survivor per cycle into a cabin of limited room;
+# the survivors count as rescued once the helicopter is back on deck.
+TASK_SAR_HOIST_ORDER_NM = 0.1
+TASK_SAR_HOIST_OVERHEAD_NM = 0.02
 TASK_SAR_HELO_S_PER_PERSON = 60.0  # one hoist cycle per survivor
+TASK_SAR_HELO_CAPACITY = 6         # survivors in the Sea Lynx cabin
+# A raft is a small radar target (canopy and radar reflector, about 1 m
+# high): a fraction of a ship's cross-section, lost in sea clutter early.
+TASK_SAR_RAFT_RCS = 0.005
+TASK_SAR_RAFT_HEIGHT_M = 1.0
+TASK_SAR_RADAR_ERR_NM = 0.05       # spread of one radar fix on the chart
 TASK_SAR_SIGHT_DAY_NM = 2.0        # raft in sight (daylight)
 TASK_SAR_SIGHT_NIGHT_NM = 3.0      # strobe light at night
 TASK_IDENTIFY_REPORT_SIGMA_NM = 2.0

@@ -692,6 +692,7 @@ V2_ACTION_REGISTRY = {
                                        _enum_params("kind", ("single", "field", "barrier", "circle"))),
     "helicopter_set_mad": V2Action(frozenset({"helicopter"}), _bool_params("enabled")),
     "helicopter_set_radar": V2Action(frozenset({"helicopter"}), _bool_params("enabled")),
+    "helicopter_set_hoist": V2Action(frozenset({"helicopter"}), _bool_params("enabled")),
     "helicopter_set_buoy_mode": V2Action(frozenset({"helicopter"}),
         _enum_params("mode", ("PASSIVE", "ACTIVE"))),
     "helicopter_set_listen_source": V2Action(frozenset({"helicopter"}),

@@ -827,10 +827,15 @@ def _rescue_flight(game, found):
     from src.core import mission_modes
     if boat_missions.mode(game) != "rescue":
         return None
+    helo = game.helo
+    if helo.state == "AUF" and helo.hoist:
+        return "rescue"                             # the winch is at work
+    if helo.state == "AUF" and game.helo_survivors() > 0:
+        game.return_helicopter()                    # survivors to the ship
+        return "rescue"
     raft = mission_modes.rescue_point(game, flyer=True)
     if raft is None:
         return None
-    helo = game.helo
     if helo.state == "HANGAR":
         if helo.preparing:
             return "monitoring"                     # the deck prepares the start
@@ -847,14 +852,14 @@ def _rescue_flight(game, found):
         return "moving"
     if helo.dip_state != "STOWED":
         return "monitoring"
-    # It stops 0.3 NM short of a waypoint: aim past the raft until overhead.
-    gap = math.hypot(raft[0] - helo.x, raft[1] - helo.y)
-    aim = raft
-    if gap > 0.15:
-        aim = (raft[0] + 0.3 * (raft[0] - helo.x) / gap, raft[1] + 0.3 * (raft[1] - helo.y) / gap)
+    # Over the raft's plotted position the crew orders the hoist; the
+    # winchman then cons the pilot over the raft itself.
+    if (math.hypot(raft[0] - helo.x, raft[1] - helo.y) <= 0.5 * config.TASK_SAR_HOIST_ORDER_NM
+            and game.order_helicopter_hoist(True) is True):
+        return "rescue"
     waypoint = (helo.waypoint_x, helo.waypoint_y)
-    if None in waypoint or math.hypot(waypoint[0] - aim[0], waypoint[1] - aim[1]) > 0.1:
-        game.set_helicopter_waypoint(float(aim[0]), float(aim[1]))
+    if None in waypoint or math.hypot(waypoint[0] - raft[0], waypoint[1] - raft[1]) > 0.02:
+        game.set_helicopter_waypoint(float(raft[0]), float(raft[1]))
     return "rescue"
 
 

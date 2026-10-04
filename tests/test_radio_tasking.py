@@ -117,17 +117,16 @@ def test_sar_too_fast_does_not_count_and_the_survival_time_runs_out():
     assert task["points"] == config.SCORE_TASK["sar"][1]
 
 
-def test_sar_helicopter_hoists_the_survivors():
+def test_sar_helicopter_overhead_without_a_hoist_order_lifts_nobody():
     game = _game()
     task = game._offer_task("sar")
     game.accept_task(task["id"])
     game.helo.launch(game.ship)
-    needed = config.TASK_SAR_HELO_S_PER_PERSON * task["persons"]
-    for _ in range(int(needed / 0.5) + 4):
+    for _ in range(int(config.TASK_SAR_HELO_S_PER_PERSON * task["persons"] / 0.5) + 4):
         game.helo.x, game.helo.y = task["true_x"], task["true_y"]
         game.sim_t += 0.5
         game._update_tasking(0.5)
-    assert task["state"] == "done"
+    assert task["state"] == "active" and task["progress"] == 0.0
 
 
 def test_raft_drifts_with_current_and_wind():

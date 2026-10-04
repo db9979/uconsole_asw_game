@@ -14,19 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.196**
+Aktuelle Version: **1.3.197**
 
-Version 1.3.196 schließt die letzten Punkte der Codeprüfung. Der LFM-Ping
-gewinnt nicht mehr 20 dB gegen Rauschen, was ein Puls mit derselben Energie
-wie CW nicht kann; stattdessen senkt seine feine Entfernungszelle den Nachhall
-des Meeresbodens um 20 dB, sodass er ein langsames oder stehendes U-Boot im
-Flachwasser findet, während beide Pulse im tiefen Wasser gleich weit reichen.
-Ein U-Boot hört einen laufenden Torpedo jetzt auf seiner vollen
-Bezugsentfernung. Auf freier Fahrt kostet ein versenktes neutrales U-Boot die
-Fregatte nur, wenn ihre eigenen Torpedos, Wasserbomben oder Raketen es
-versenkt haben, und ein U-Boot, das als neue Begegnung zurückkehrt, ist ein
-neuer Kontakt. Ein hängender Selbsttest beim Bau hält neue Versionen nicht mehr
-stundenlang auf. Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+Version 1.3.197 lässt die Hinweisfenster beim Überfahren mit der Maus dem
+Farbschema folgen. Im hellen Schema „Taktik Tag“ ist ein Hinweis jetzt eine
+helle Karte mit dunkler Schrift statt eines dunklen Kastens mit kaum lesbarer
+Schrift; „Taktik Nacht“ und hoher Kontrast behalten den dunklen Kasten, bei
+Rotlicht wird er grau. Die Bilder der Leckwehr (Seitenriss
+und Querschnitt der Fregatte, Schnitt des U-Boots) werden bei Tag zu einer
+hellen Zeichnung, Wasser, Feuer und Trupps bleiben gut erkennbar, auf der
+uConsole und im Browser. Auch der Update-Hinweis im Hauptmenü und der Hinweis
+für eine nicht gezeichnete Ansicht folgen dem Schema. Tasten bleiben gleich.
+Spielstände sind v50; v38 bis v49 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

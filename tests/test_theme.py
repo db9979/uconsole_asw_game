@@ -148,3 +148,27 @@ def test_menu_and_overlay_backdrops_follow_the_theme(name, light):
         draw(surface, 3.0)
         luma = _mean_luma(surface, pygame.Rect(0, 0, 1280, 720))
         assert (luma > 170) if light else (luma < 60), (name, draw.__name__, luma)
+
+
+@pytest.mark.parametrize("name, light", [("night", False), ("day", True),
+                                         ("contrast", False)])
+def test_tooltip_box_follows_the_theme(name, light):
+    """The hover tooltip is a light card with dark text in the day theme
+    and keeps its dark box in the night and high-contrast themes."""
+    theme.set_theme(name)
+    surface = pygame.Surface((640, 360))
+    surface.fill(config.COLOR_BG)
+    payload = layout.tooltip_payload("Seite DEMON", "Sichere Seitenauswahl.")
+    rect = layout.draw_tooltip(surface, payload, (40, 40), (0, 0, 640, 360))
+    inside = pygame.Rect(rect.right - 12, rect.bottom - 8, 4, 4)
+    luma = _mean_luma(surface, inside)
+    assert (luma > 200) if light else (luma < 60), (name, luma)
+    assert config.COLOR_TEXT != surface.get_at(inside.topleft)[:3]
+
+
+def test_tooltip_box_turns_grey_under_red_light():
+    game = SimpleNamespace(preferences=preferences.Preferences(theme="day"),
+                           red_light_lit=True)
+    theme.configure_for(game)
+    fill = theme.c("raised")
+    assert fill[0] == fill[1] == fill[2]

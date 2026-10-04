@@ -12,19 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.194**
+Current release: **1.3.195**
 
-Release 1.3.194 corrects data and the hostile torpedo's fuze from the code
-audit. Trafalgar and Rubis are now nuclear submarines and Collins a
-diesel-electric one; Improved Kilo, Lada and Taigei no longer have AIP
-(Taigei has a larger lithium battery instead); Virginia and Yasen no longer
-outrun their class. The hostile torpedo explodes only within about 90 m and
-near keel depth instead of 460 m abeam, and its damage still falls with
-distance. The helicopter's and patrol aircraft's lightweight torpedo runs
-45 kn for 6 NM, the frigate's Mk2 50 kn for 6 NM. Every ship now has its real
-length, which sets its echo and how fast it turns; the Triple-E counts as a
-container ship and the river cruise ship no longer sails the open sea. Saves
-are v50; v38 to v49 saves still load.
+Release 1.3.195 makes the hover tooltips follow the colour scheme. In the
+light Tactical Day scheme a tooltip is now a light card with dark text instead
+of a dark box with barely readable lettering; Tactical Night and high contrast
+keep a dark box, and red light turns it grey. The update notice in the main
+menu and the notice for a view that failed to draw follow the scheme too.
+Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

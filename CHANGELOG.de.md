@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.195
+
+Version 1.3.195 lässt die Hinweisfenster beim Überfahren mit der Maus dem
+Farbschema folgen. Im hellen Schema „Taktik Tag“ ist ein Hinweis jetzt eine
+helle Karte mit dunkler Schrift statt eines dunklen Kastens mit kaum lesbarer
+Schrift; „Taktik Nacht“ und hoher Kontrast behalten den dunklen Kasten, bei
+Rotlicht wird er grau. Auch der Update-Hinweis im Hauptmenü und der Hinweis
+für eine nicht gezeichnete Ansicht folgen dem Schema. Tasten bleiben gleich.
+Spielstände sind v50; v38 bis v49 laden weiter.
+
 ## 1.3.194
 
 Version 1.3.194 berichtigt Daten und den Zünder des Feindtorpedos aus der

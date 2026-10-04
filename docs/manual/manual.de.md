@@ -677,7 +677,7 @@ Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am
 | `Shift+Q` | LOFAR-Nonius: 20 Hz in nativen 0,5 Hz |
 | `Shift+N` | Notch auf der Cursorfrequenz |
 | `Shift+F` | DEMON-Trägerband 200-800 / 400-1400 / 1000-2000 Hz |
-| `Ctrl+F` | Überlagerungsversatz 400/700/1000/1200 Hz |
+| `Strg+F` | Überlagerungsversatz 400/700/1000/1200 Hz |
 | `X / Shift+X (BB)` | Breitband/Fusion: TAS-Seite des gewählten Kontakts wechseln / Umschalt: bestätigen |
 | `Z / X (TMA)` | TMA-Seite: Hypothesenkurs -/+ 5 Grad (Umschalt 1 Grad) |
 | `Ctrl+Z / Ctrl+X (TMA)` | TMA-Seite: Hypothesenfahrt -/+ 1 kn |
@@ -1515,12 +1515,12 @@ Die Elektronische Kampfführung (EloKa) horcht passiv auf Radarsender (ESM) und 
 
 | Seite | Zeigt |
 |---|---|
-| 1 Auffassungen | Auffassungskarten, Bedrohungsrose mit Filterzeile, die gewählte Auffassung, Lampen für ESM, Störsender, automatisches ECM und Ton |
+| 1 Auffassungen | Auffassungskarten, Bedrohungsrose mit Listenschaltern, die gewählte Auffassung, Lampen für ESM, Störsender, automatisches ECM und Ton |
 | 2 Evidenz | Volle Evidenz der gewählten Auffassung: Frequenz, PRF, Modulation, Kandidaten, Korrelation |
 
 ### Anzeigen und Instrumente
 
-Beide Seiten zeigen die Erfassungen links als Karten (Kennung, Peilung, Frequenz und Band, Güte und Alter; der Streifen trägt die Bedrohungsfarbe; ein Klick wählt eine wie `↑`/`↓`). Seite 1 hat in der Mitte die Bedrohungsrose mit der Filterzeile und rechts die gewählte Erfassung (Signal-Fingerabdruck, Peilung, Radarart, Bedrohung, ECM, Zuordnung, beste Bibliothekskandidaten) über den Lampen für ESM, Störer, ECM-Automatik und Ton; Seite 2 zeigt alle Belege für die gewählte Erfassung (Frequenz, PRF, Modulation, Kandidaten, Korrelation).
+Beide Seiten zeigen die Erfassungen links als Karten (Kennung mit Gruppengröße, Einstufung oder Modulation, Peilung, Frequenz und Band, Güte und Alter; der Streifen trägt die Bedrohungsfarbe; ein Klick wählt eine wie `↑`/`↓`). Seite 1 hat in der Mitte die Bedrohungsrose mit den vier Listenschaltern und rechts die gewählte Erfassung (Signal-Fingerabdruck, Peilung, Radarart, Bedrohung, ECM, Zuordnung, beste Bibliothekskandidaten) über den Lampen für ESM, Störer, ECM-Automatik und Ton; Seite 2 zeigt alle Belege für die gewählte Erfassung (Frequenz, PRF, Modulation, Kandidaten, Korrelation).
 
 ![ELOKA auf der uConsole](figures/de-station-eloka.png)
 
@@ -1549,7 +1549,20 @@ Beide Seiten zeigen die Erfassungen links als Karten (Kennung, Peilung, Frequenz
 - Die Senderbibliothek enthält den Suchkopf des Seezielflugkörpers (9,0-9,5 GHz, PRF 1,8-3,2 kHz, Puls-Doppler). Er sendet nur auf den letzten 18 sm und erst, wenn der Tiefflieger über dem Radarhorizont ist, und er passt ebenso gut zum Feuerleitradar eines Angriffsflugzeugs: Peilungsverlauf und Luftlage entscheiden.
 - ESM läuft aus der OPZ-Abteilung: eine zerstörte OPZ legt es lahm.
 
-Neben der Liste der Auffassungen zeigt eine Peilrose jede Auffassung als Strahl in ihrer Bedrohungsfarbe, und Lampen zeigen ESM, Störer, ECM-Automatik und Ton.
+Neben der Liste der Auffassungen zeigt eine Peilrose jeden gelisteten Sender als Strahl in seiner Bedrohungsfarbe (ältere kürzer und blasser), und Lampen zeigen ESM, Störer, ECM-Automatik und Ton.
+
+#### Liste ordnen
+
+Viele Handelsschiffe und Flugzeuge senden mit Navigationsradaren; die Liste lässt sich deshalb mit vier Schaltern über der Rose ordnen (anklickbar, im Browser dieselbe Leiste):
+
+| Schalter | Taste | Werte |
+|---|---|---|
+| Status | `F` | operativ (live, kürzlich, eingestuft oder Bedrohung hoch), offen (operativ, aber noch nicht eingestuft), live, Speicher, alle |
+| Bedrohung | `Shift+F` | alle, niedrig und höher bis kritisch (nur auf der Stufe Einsteiger bewertet) |
+| Band | `Ctrl+F` | alle, A/C, D, E/F, G/H, I/J, K |
+| Bündeln | `Z` | an: gleichartige Auffassungen (gleiches Band, gleiche Modulation, Frequenz und PRF wie bei der Zuordnung, Peilung innerhalb 6 Grad) erscheinen als ein Eintrag „E27 ×3“; aus: jede Auffassung einzeln |
+
+Eine Gruppe ist eine Darstellungshilfe, keine Identifizierung: sie kann mehrere Schiffe in einer Richtung zusammenfassen. `←`/`→` blättert durch ihre Auffassungen, die Zeile Gruppe auf der rechten Seite zeigt die Stelle („2 von 4“). Eingestufte und gestörte Auffassungen stehen immer einzeln. Jede Karte nennt die Kennung (laufende Nummer), die Einstufung oder sonst die Modulation, darunter Frequenz, Band, Güte und Alter. Arbeitsweise: mit Status offen die noch nicht eingestuften Sender einen nach dem anderen mit `C` einstufen; eingestufte verschwinden aus dieser Ansicht.
 
 ### ECM-Techniken
 
@@ -1566,8 +1579,10 @@ Der Automatikmodus (`A`) wählt Ziele und Techniken und koppelt das Stören wäh
 
 | Taste | Funktion |
 |---|---|
-| `Auf / Ab` | Sichtbare passive ESM-Auffassung wählen |
-| `F / Shift+F / Ctrl+F` | Status-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
+| `Auf / Ab` | Nächsten gelisteten Sender wählen (eine Gruppe zählt einmal) |
+| `← / →` | Durch die Auffassungen der gewählten Sendergruppe blättern |
+| `F / Shift+F / Ctrl+F` | Status (operativ, offen = noch nicht eingestuft, live, Speicher, alle) / Mindestbedrohung / Frequenzband wechseln |
+| `Z` | Gleichartige Auffassungen einer Richtung zu einem Eintrag bündeln an/aus |
 | `C` | Radarart zuordnen und aktuelle Peilungen an OPZ freigeben; Zuordnung löschen zieht die Freigabe zurück |
 | `E` | Gerichteten ECM-Kanal für die gewählte Auffassung aktivieren / freigeben |
 | `Shift+E` | ECM-Verfahren Noise, RGPO, VGPO oder Falschziele wechseln |
@@ -1579,6 +1594,7 @@ Der Automatikmodus (`A`) wählt Ziele und Techniken und koppelt das Stören wäh
 Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
 
 - Ein Klick auf eine Auffassungskarte wählt sie wie `↑`/`↓`.
+- Die vier Schalter über der Rose schalten wie `F`, `Shift+F`, `Ctrl+F` und `Z`.
 
 ### Standardablauf
 

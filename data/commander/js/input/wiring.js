@@ -161,16 +161,6 @@ export function init() {
   $("theme").addEventListener("change", () => { chooseTheme($("theme").value); renderThemeControls(); });
   renderThemeControls();
   onThemeChange(queueThemeRedraw);
-  for (const [id, key] of [["eloka-status-filter", "status"], ["eloka-threat-filter", "threat"], ["eloka-band-filter", "band"]]) {
-    $(id).addEventListener("change", () => {
-      elokaFilters[key] = $(id).value;
-      if (S.v2State?.role === "eloka") {
-        S.snapshot = buildDisplayModel(S.v2State);
-        if (!selectedTrack()) S.selected = null;
-        renderSnapshot();
-      }
-    });
-  }
   $("volume").addEventListener("input", () => {
     if (S.sonarAudioGain) S.sonarAudioGain.gain.value = sonarGainValue();
     syncGameAudio();

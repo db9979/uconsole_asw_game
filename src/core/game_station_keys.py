@@ -59,6 +59,8 @@ class StationKeysMixin:
             self._cycle_asm_track(delta)
         elif self.station is Station.HELICOPTER:
             self._adjust_helo_waypoint(bearing_delta=float(delta * 15))
+        elif self.station is Station.ELOKA:
+            self._cycle_eloka_member(delta)
 
     def _sonar_cursor_key(self, e) -> None:
         """Z/X move the frequency cursor; Shift: 10 Hz; Ctrl on LOFAR sets

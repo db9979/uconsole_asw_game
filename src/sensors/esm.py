@@ -89,7 +89,11 @@ ESM_SIGNAL_DB_RANGE = (-60.0, 200.0)
 ESM_LIVE_SCAN_CAP_S = 7.5
 THREAT_ORDER = {"unknown": 0, "low": 1, "medium": 2, "high": 3,
                 "critical": 4}
-ESM_STATUS_FILTERS = ("OPERATIONAL", "LIVE", "MEMORY", "ALL")
+# OPEN: the operational intercepts the operator has not classified yet.
+ESM_STATUS_FILTERS = ("OPERATIONAL", "OPEN", "LIVE", "MEMORY", "ALL")
+# Intercepts this close in bearing with the same signal kind are shown as one
+# emitter group (display only; every intercept stays in the picture).
+ESM_GROUP_BEARING_DEG = 6.0
 ESM_THREAT_FILTERS = ("ALL", "LOW", "MEDIUM", "HIGH", "CRITICAL")
 ESM_BAND_FILTERS = ("ALL", "A_C", "D", "E_F", "G_H", "I_J", "K")
 
@@ -287,7 +291,9 @@ def filter_and_sort_tracks(tracks, now: float, analyze, *,
         if jammed:
             rows.append((track, threat, state, True))
             continue
-        if status == "OPERATIONAL" and not operational:
+        if status in ("OPERATIONAL", "OPEN") and not operational:
+            continue
+        if status == "OPEN" and annotated:
             continue
         if status in ("LIVE", "MEMORY") and state != status:
             continue
@@ -300,6 +306,67 @@ def filter_and_sort_tracks(tracks, now: float, analyze, *,
         not row[3], -THREAT_ORDER.get(row[1], 0), state_order[row[2]],
         -row[0].display_quality(now), row[0].age(now), row[0].track_key))
     return tuple(row[0] for row in rows)
+
+
+def same_signal_kind(anchor: ESMTrack, track: ESMTrack) -> bool:
+    """Do two intercepts look alike: one band, compatible modulation,
+    frequency and PRF within the association gates and close in bearing?
+
+    Uses only measured parameters, never emitter truth."""
+    if spectrum_band(anchor.frequency_hz) is not spectrum_band(track.frequency_hz):
+        return False
+    if (anchor.modulation_code != "unknown" and track.modulation_code != "unknown"
+            and anchor.modulation_code != track.modulation_code):
+        return False
+    gate = max(ESM_GROUP_BEARING_DEG, 2.0 * math.hypot(
+        anchor.bearing_uncertainty_deg, track.bearing_uncertainty_deg))
+    if _angle_difference(anchor.bearing, track.bearing) > gate:
+        return False
+    agile = "frequency_agile" in (anchor.modulation_code, track.modulation_code)
+    frequency_scale = max(500_000_000.0 if agile else 50_000_000.0,
+                          anchor.frequency_hz * (0.75 if agile else 0.08))
+    if abs(anchor.frequency_hz - track.frequency_hz) > frequency_scale:
+        return False
+    if anchor.prf_hz is not None and track.prf_hz is not None:
+        prf_scale = max(50.0, anchor.prf_hz * (0.75 if agile else 0.25))
+        if abs(anchor.prf_hz - track.prf_hz) > prf_scale:
+            return False
+    return True
+
+
+def group_tracks(tracks, *, solo_keys=()) -> dict[str, str]:
+    """Map every intercept key to the key of its emitter group's anchor.
+
+    Intercepts are taken in key order (oldest first), so a group keeps its
+    anchor from frame to frame; each joins the first anchor of the same
+    signal kind.  Classified or jammed intercepts (``solo_keys``) are the
+    operator's own work and always stand alone.  Display policy only."""
+    solo = set(solo_keys)
+    anchors, groups = [], {}
+    for track in sorted(tracks, key=lambda item: item.track_key):
+        key = track.track_key
+        if key not in solo:
+            anchor = next((item for item in anchors
+                           if same_signal_kind(item, track)), None)
+            if anchor is not None:
+                groups[key] = anchor.track_key
+                continue
+            anchors.append(track)
+        groups[key] = key
+    return groups
+
+
+def collapse_groups(tracks, groups) -> tuple:
+    """``(lead, members)`` per emitter group, in the order of ``tracks``: the
+    first listed member leads, the members keep the list order."""
+    order, members = [], {}
+    for track in tracks:
+        anchor = groups.get(track.track_key, track.track_key)
+        if anchor not in members:
+            order.append(anchor)
+            members[anchor] = []
+        members[anchor].append(track)
+    return tuple((members[anchor][0], tuple(members[anchor])) for anchor in order)
 
 
 @dataclass(frozen=True, slots=True)

@@ -3,7 +3,7 @@ import { emit } from "../core/events.js";
 import { isBoatCommand, isSonar, stationNames } from "../core/base.js";
 import { finite } from "../core/format.js";
 import { boundedArray, exactKeys, validateV2State } from "./schema.js";
-import { filteredEloka } from "./shared.js";
+import { elokaShortLabel, groupedEloka } from "./shared.js";
 
 export function buildDisplayModel(state) {
   const emptyOwn = {x: null, y: null, course: null, speed: null, target_course: null, target_speed: null, damage: [], inventory: {}, helo: {}};
@@ -37,7 +37,10 @@ export function buildDisplayModel(state) {
   if (state.role === "radio") { Object.assign(ownship, payload.navigation); observations = payload.tactical; }
   if (state.role === "engine") { ownship.speed = payload.propulsion.speed; ownship.target_speed = payload.propulsion.target_speed; }
   if (state.role === "helicopter") { Object.assign(ownship, payload.navigation); ownship.helo = payload.asset; observations = payload.tactical; }
-  if (state.role === "eloka") observations = filteredEloka(payload.intercepts);
+  if (state.role === "eloka") observations = groupedEloka(payload.intercepts, S.selected).map((row) => ({...row,
+    label: row.members.length > 1 ? `${elokaShortLabel(row.label)} \u00d7${row.members.length}` : elokaShortLabel(row.label),
+    eloka: {members: row.members, modulation: row.modulation, frequency_hz: row.frequency_hz,
+      frequency_band: row.frequency_band, annotation: row.annotation, signal_state: row.signal_state}}));
   const tracks = observations.map((row) => ({ref: row.ref, label: row.label || row.ref,
     domain: row.domain || "UNKNOWN", source: row.source || (state.role === "eloka" ? "ESM" : "HFDF"),
     affiliation: row.affiliation || "UNKNOWN", classification: row.classification ?? null,
@@ -49,7 +52,8 @@ export function buildDisplayModel(state) {
     quality: row.quality ?? null, age_s: row.age_s ?? null, fix_age_s: row.fix_age_s ?? null,
     bearing_uncertainty_deg: row.bearing_uncertainty_deg ?? null,
     range_uncertainty_nm: row.range_uncertainty_nm ?? null, fixes: row.fixes || [],
-    members: row.members || [],
+    members: state.role === "eloka" ? [] : row.members || [],
+    eloka: row.eloka ?? null,
     can_classify: isSonar(state.role) || state.role === "helicopter" || (state.role === "opz" &&
       (row.source.startsWith("RADAR") || row.source.startsWith("SONAR") ||
        ["HOJ", "FUSION"].includes(row.source))),

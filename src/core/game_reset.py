@@ -469,6 +469,9 @@ class ResetMixin:
         self.eloka_status_filter = "OPERATIONAL"
         self.eloka_threat_filter = "ALL"
         self.eloka_band_filter = "ALL"
+        # Intercepts of one signal kind and bearing shown as one emitter (Z).
+        self.eloka_group_emitters = True
+        self._eloka_group_cache = None
         self.eloka_annotations = {}
         self.radio_picture = TrackPicture(300.0)
         self.radio_sel = 0

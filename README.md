@@ -12,19 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.194**
+Current release: **1.3.195**
 
-Release 1.3.194 corrects data and the hostile torpedo's fuze from the code
-audit. Trafalgar and Rubis are now nuclear submarines and Collins a
-diesel-electric one; Improved Kilo, Lada and Taigei no longer have AIP
-(Taigei has a larger lithium battery instead); Virginia and Yasen no longer
-outrun their class. The hostile torpedo explodes only within about 90 m and
-near keel depth instead of 460 m abeam, and its damage still falls with
-distance. The helicopter's and patrol aircraft's lightweight torpedo runs
-45 kn for 6 NM, the frigate's Mk2 50 kn for 6 NM. Every ship now has its real
-length, which sets its echo and how fast it turns; the Triple-E counts as a
-container ship and the river cruise ship no longer sails the open sea. Saves
-are v50; v38 to v49 saves still load.
+Release 1.3.195 keeps the microphone meter off the top bar's status line. On
+the uConsole the meter now sits between the status line and the menu button,
+and the status line gives way to it: a long mission title is shortened, while
+the clock, speed, course and depth stay whole. The meter is drawn as LED
+segments behind a microphone sign; unlit segments are dimmed instead of
+empty outlines that looked like missing letters, and a small mark below a
+segment shows the crew's loudest voice. The browser meter looks the same.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

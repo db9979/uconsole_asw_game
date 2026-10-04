@@ -70,6 +70,11 @@ function drawDipScope(g, w, h, rows, buoys, colors) {
   g.fillStyle = colors.bg; g.beginPath(); g.arc(cx, cy, radius, 0, Math.PI * 2); g.fill();
   g.lineWidth = 1; g.strokeStyle = colors.line;
   for (const scale of [.25, .5, .75, 1]) { g.beginPath(); g.arc(cx, cy, radius * scale, 0, Math.PI * 2); g.stroke(); }
+  // A large scope (the dipping-sonar page) names its inner rings: 5, 10, 15 NM.
+  if (radius >= 120) {
+    g.fillStyle = colors.muted; g.textAlign = "left"; g.textBaseline = "bottom";
+    for (const scale of [.25, .5, .75]) g.fillText(number(20 * scale, 0), ...at(radius * scale + 3, 45));
+  }
   for (let step = 0; step < 360; step += 10) {
     const major = step % 30 === 0;
     g.strokeStyle = major ? colors.muted : colors.line;
@@ -210,12 +215,10 @@ export function renderHelicopterStation(payload) {
   const scope = visualContext("helicopter-dip-rose");
   if (scope) drawDipScope(scope.context, scope.width, scope.height, payload.dip_observations, payload.buoy_observations, palette());
 }
-function drawHelicopterDip(rows) {
-  const canvas = $("helicopter-dip-canvas"), ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  const {width: w, height: h} = canvas, colors = palette();
-  ctx.fillStyle = colors.scopeBg; ctx.fillRect(0, 0, w, h);
-  ctx.font = "13px ui-monospace, monospace";
+export function drawHelicopterDip(rows) {
+  const plot = visualContext("helicopter-dip-canvas");
+  if (!plot) return;
+  const {context: ctx, width: w, height: h} = plot, colors = palette();
   drawDipScope(ctx, w, h - 16, rows, [], colors);
   ctx.fillStyle = colors.muted; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillText(t("helicopter_dip_scale"), 12, h - 8);

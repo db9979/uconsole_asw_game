@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.200
+
+Version 1.3.200 gibt dem Tauchsonar und der Karte des Hubschraubers im
+Remote-Crew-Browser Platz. Beide teilten sich bisher einen Reiter, sodass die
+Karte nur ein Streifen und das Sonarbild klein war. Jetzt hat der Hubschrauber
+auf der Bühne drei Seiten: Akustikanalyse, Tauchsonar (das Bild über die ganze
+Bühne, Ringe mit 5, 10 und 15 sm beschriftet, die Werte daneben) und Taktische
+Karte (die Karte über die ganze Bühne). Bild auf/ab, nochmals die
+Stationsnummer 8 oder der blaue Tastenchip neben den Reitern blättern zwischen
+ihnen, wie die Seiten der uConsole. Die uConsole bleibt gleich. Spielstände
+sind v50; v38 bis v49 laden weiter.
+
 ## 1.3.199
 
 Version 1.3.199 erklärt jede Statuslampe. Ruht die Maus auf einer Lampe oder

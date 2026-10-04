@@ -302,6 +302,7 @@ _WEB_HELP = (
         ("help.key.web_map_pan", "help.web.map_pan"),
         ("help.key.web_map_hover", "help.web.map_hover"),
         ("0", "help.web.weather_station"),
+        ("help.key.page", "help.web.helicopter_pages"),
         ("help.key.web_plot", "help.web.plot"),
         (", / .", "help.web.docks"),
         ("L", "help.web.log"),

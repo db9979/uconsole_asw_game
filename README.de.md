@@ -14,19 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.199**
+Aktuelle Version: **1.3.200**
 
-Version 1.3.199 erklärt jede Statuslampe. Ruht die Maus auf einer Lampe oder
-Anzeige, etwa START NO-GO und DECK WARTEN des Hubschraubers, einem
-Torpedorohr, der Anlage, dem ESM-Empfänger oder dem Wasser unter dem Kiel des
-U-Boots, öffnet sich ein Hinweis, warum sie so steht, aus dem laufenden Spiel
-(Deckbewegung und Ruhezeit, Wettergrenzen, Nachladezeit, Kartentiefe), und was
-zu tun ist. Jede Taste, die eine Station nutzen kann, ist jetzt ein blauer
-Tastenchip zum Anklicken, auch in diesen Hinweisen. Beides gilt auf beiden
-Seiten, auf der uConsole und im Remote-Crew-Browser. Die vier Kontaktknöpfe
-der OPZ sagen, was sie tun (Klassifizieren, Zugehörigkeit wechseln, Für Fusion
-markieren, Fusionieren / auflösen), mittig neben ihrem Tastenchip. Tasten
-bleiben gleich. Spielstände sind v50; v38 bis v49 laden weiter.
+Version 1.3.200 gibt dem Tauchsonar und der Karte des Hubschraubers im
+Remote-Crew-Browser Platz. Beide teilten sich bisher einen Reiter, sodass die
+Karte nur ein Streifen und das Sonarbild klein war. Jetzt hat der Hubschrauber
+auf der Bühne drei Seiten: Akustikanalyse, Tauchsonar (das Bild über die ganze
+Bühne, Ringe mit 5, 10 und 15 sm beschriftet, die Werte daneben) und Taktische
+Karte (die Karte über die ganze Bühne). Bild auf/ab, nochmals die
+Stationsnummer 8 oder der blaue Tastenchip neben den Reitern blättern zwischen
+ihnen, wie die Seiten der uConsole. Die uConsole bleibt gleich. Spielstände
+sind v50; v38 bis v49 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

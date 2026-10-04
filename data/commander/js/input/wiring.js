@@ -2,7 +2,7 @@ import { renderStationAlarms } from "../views/station-tabs.js";
 import { S } from "../state/store.js";
 import { renderSound } from "../audio/alerts.js";
 import { openSonarAudioSocket, renderSonarAudio, scheduleSonarAudioPoll, sonarAudioAuthorized, sonarFilterValues, sonarGainValue, stopSonarAudio, stopSpeech, syncGameAudio } from "../audio/audio.js";
-import { $, audioRoles, isSonar } from "../core/base.js";
+import { $, audioRoles, isSonar, stationKey } from "../core/base.js";
 import { authenticated, chartMatches, finite, hasPosition, number, selectedTrack, t } from "../core/format.js";
 import { loadLanguage } from "../core/i18n.js";
 import { chooseTheme, chosenTheme, onThemeChange, toggleTheme } from "../core/theme.js";
@@ -27,7 +27,7 @@ import { acceptSession, activateTab, chooseSide, chooseStation, decideHandover, 
 import { changeLookoutRange, queueLookoutDraw, renderLookoutStatus, zoom } from "../views/lookout.js";
 import { renderSnapshot } from "../views/render.js";
 import { hideMapTooltip, mapTooltipLines, nearestMapInfo, roleMapGeometry, showMapTooltip, stopOpzSweepAnimation, syncOpzSweepAnimation } from "../views/role-map.js";
-import { queueVisualDraw, renderRoleVisuals } from "../views/role-visuals.js";
+import { HELICOPTER_PAGES, queueVisualDraw, renderRoleVisuals, showHelicopterPage, stepHelicopterPage } from "../views/role-visuals.js";
 import { wireOpzDisplayBar } from "../views/opz-display.js";
 import { applySimlogView, closeSimlogMap, exportSimlog, loadSimlog, queueSimlogMapDraw } from "../views/simlog.js";
 import { renderTracks, selectTrack } from "../views/tracks.js";
@@ -679,11 +679,22 @@ export function init() {
     {enabled: !S.v2State?.helicopter?.asset.mad_mode}));
   $("helicopter-radar").addEventListener("click", () => sendStationAction("helicopter_set_radar",
     {enabled: !S.v2State?.helicopter?.asset.radar_switch}));
-  for (const mode of ["acoustic", "map"]) $(
-    `helicopter-visual-${mode}`).addEventListener("click", () => {
-      S.helicopterVisualPage = mode;
-      renderRoleVisuals("helicopter");
-    });
+  for (const mode of HELICOPTER_PAGES) $(
+    `helicopter-visual-${mode}`).addEventListener("click", () => showHelicopterPage(mode));
+  $("helicopter-visual-next").addEventListener("click", () => stepHelicopterPage(1));
+  // Page Up / Page Down (and the station's own number again) step through
+  // the helicopter's pages, as at every station with pages on the uConsole.
+  document.addEventListener("keydown", (event) => {
+    if (S.v2State?.role !== "helicopter" || $("helicopter-visual-tabs").hidden || event.ctrlKey ||
+        event.altKey || event.metaKey || event.isComposing || event.repeat || $("operations").hidden) return;
+    const target = event.target;
+    if (target instanceof Element && (target.closest("input, select, textarea, dialog[open]") || target.isContentEditable)) return;
+    const step = event.key === "PageDown" ? 1 : event.key === "PageUp" ? -1 :
+      event.key === String(stationKey("helicopter")) ? 1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    stepHelicopterPage(step);
+  });
   for (const button of $("helicopter-acoustic-plot-tabs").querySelectorAll("button"))
     button.addEventListener("click", () => {
       S.helicopterPlot = button.dataset.helicopterPlotTab;

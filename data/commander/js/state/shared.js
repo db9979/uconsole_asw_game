@@ -62,7 +62,7 @@ export const visualCanvasIds = ["role-map", "role-map-sweep", "sonar-broadband",
   "sonar-band-low", "sonar-band-mid", "sonar-band-high", "sonar-demon", "sonar-demon-spectrum",
   "sonar-tma-plot", "sonar-environment", "sonar-active", "sonar-a-scan", "damage-schematic",
   "engine-instruments", "eloka-scope", "weapons-system", "helicopter-broadband-canvas",
-  "helicopter-lofar-canvas", "helicopter-demon-canvas", "uboot-engine-dials"];
+  "helicopter-lofar-canvas", "helicopter-demon-canvas", "helicopter-dip-canvas", "uboot-engine-dials"];
 // The radio room has no chart: its instrument is the HF/DF scope.
 export const mapRoles = new Set(["bridge", "weapons", "opz", "helicopter", "uboot", "uboot_weapons", "uboot_nav", "uboot_esm",
   "uboot_radio"]);

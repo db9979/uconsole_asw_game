@@ -35,7 +35,7 @@ from src.core import save_migrate
 from src.core.version import APP_VERSION, SAVE_VERSION
 from src.launcher import update
 from src.launcher.update import UPDATE_EXIT_CODE
-from src.ui import layout
+from src.ui import layout, theme
 
 UPDATE_MODES = ("windows", "macos", "starter", "uconsole", "browser")
 ROOT = Path(__file__).resolve().parents[2]
@@ -44,6 +44,10 @@ UPDATER = ROOT / "packaging" / "uconsole" / "u_jagd_updater.py"
 SPLASH_NOTICE_RECT = (792, 26, 462, 282)
 MENU_NOTICE_RECT = (24, 148, 344, 412)
 PANEL_FILL = (4, 16, 20, 205)
+PANEL_FILL_DAY = (255, 255, 255, 235)
+ACCENT_DAY = (180, 83, 9)
+BUTTON_FILL = (18, 60, 56)
+BUTTON_FILL_DAY = (254, 243, 199)
 ACCENT = (236, 204, 128)
 ERROR_PANEL_H = 112
 
@@ -285,9 +289,9 @@ class UpdateNoticeMixin:
 
     def _draw_update_panel(self, surface, rect) -> None:
         panel = pygame.Surface(rect.size, pygame.SRCALPHA)
-        panel.fill(PANEL_FILL)
+        panel.fill(theme.pick(PANEL_FILL, PANEL_FILL_DAY))
         surface.blit(panel, rect)
-        pygame.draw.rect(surface, ACCENT, rect, 1)
+        pygame.draw.rect(surface, theme.pick(ACCENT, ACCENT_DAY), rect, 1)
         layout.corner_brackets(surface, rect)
 
     def draw_update_error(self, surface, splash: bool) -> None:
@@ -304,9 +308,10 @@ class UpdateNoticeMixin:
         layout.blit_block(surface, f"update.reason.{reason}", x, rect.y + 28, w, 46,
                           config.COLOR_TEXT, size=13, min_size=11)
         button = pygame.Rect(x, rect.bottom - 8 - 24, w, 24)
-        pygame.draw.rect(surface, (18, 60, 56), button, border_radius=4)
-        pygame.draw.rect(surface, ACCENT, button, 1, border_radius=4)
-        layout.blit_line(surface, "update.retry", button.inflate(-12, -4), ACCENT,
+        pygame.draw.rect(surface, theme.pick(BUTTON_FILL, BUTTON_FILL_DAY), button, border_radius=4)
+        pygame.draw.rect(surface, theme.pick(ACCENT, ACCENT_DAY), button, 1, border_radius=4)
+        layout.blit_line(surface, "update.retry", button.inflate(-12, -4),
+                         theme.pick(ACCENT, ACCENT_DAY),
                          size=14, align="center")
         self._update_button = button
 
@@ -322,7 +327,7 @@ class UpdateNoticeMixin:
         x, w = rect.x + 12, rect.w - 24
         y = rect.y + 8
         layout.blit_line(surface, message("update.available", version=notice.version),
-                         (x, y, w, 26), ACCENT, size=20)
+                         (x, y, w, 26), theme.pick(ACCENT, ACCENT_DAY), size=20)
         y += 26
         layout.blit_line(surface, message("update.installed", version=APP_VERSION),
                          (x, y, w, 20), config.COLOR_TEXT_DIM, size=14)
@@ -342,8 +347,8 @@ class UpdateNoticeMixin:
                               config.COLOR_WARN, size=14, min_size=12)
             y += warn_h
         button = pygame.Rect(x, rect.bottom - 10 - button_h, w, button_h)
-        pygame.draw.rect(surface, (18, 60, 56), button, border_radius=4)
-        pygame.draw.rect(surface, ACCENT, button, 1, border_radius=4)
+        pygame.draw.rect(surface, theme.pick(BUTTON_FILL, BUTTON_FILL_DAY), button, border_radius=4)
+        pygame.draw.rect(surface, theme.pick(ACCENT, ACCENT_DAY), button, 1, border_radius=4)
         if self.update_failed:
             label = "update.failed"
         elif self.update_progress is not None:
@@ -352,6 +357,6 @@ class UpdateNoticeMixin:
             label = "update.button_browser"
         else:
             label = "update.button"
-        layout.blit_line(surface, label, button.inflate(-12, -6), ACCENT, size=18,
+        layout.blit_line(surface, label, button.inflate(-12, -6), theme.pick(ACCENT, ACCENT_DAY), size=18,
                          align="center")
         self._update_button = button

@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.198
+## 1.3.199
 
-Version 1.3.198 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
+Version 1.3.199 lässt den Bordhubschrauber der Fregatte Zeit an Deck brauchen.
 Der Startbefehl (`H` oder *Helikopter starten* im Browser) beginnt 5 Minuten
 Vorbereitung im Hangar, danach hebt er im nächsten Startfenster ab; ein
 zweites `H` bricht sie ab. Nach einer Landung behält er den Kraftstoff, mit
@@ -23,6 +23,19 @@ in die Karte legt seinen Wegpunkt genau dorthin; der Hubschrauber bleibt auf
 dem Punkt stehen statt 0,3 sm davor. Plot-Objekte außerhalb der Karte bekommen
 einen Pfeil am Kartenrand, und ihre Beschriftungen stehen dort nebeneinander
 statt übereinander. Spielstände sind v51; v38 bis v50 lassen sich weiter laden.
+
+## 1.3.197
+
+Version 1.3.197 lässt die Hinweisfenster beim Überfahren mit der Maus dem
+Farbschema folgen. Im hellen Schema „Taktik Tag“ ist ein Hinweis jetzt eine
+helle Karte mit dunkler Schrift statt eines dunklen Kastens mit kaum lesbarer
+Schrift; „Taktik Nacht“ und hoher Kontrast behalten den dunklen Kasten, bei
+Rotlicht wird er grau. Die Bilder der Leckwehr (Seitenriss
+und Querschnitt der Fregatte, Schnitt des U-Boots) werden bei Tag zu einer
+hellen Zeichnung, Wasser, Feuer und Trupps bleiben gut erkennbar, auf der
+uConsole und im Browser. Auch der Update-Hinweis im Hauptmenü und der Hinweis
+für eine nicht gezeichnete Ansicht folgen dem Schema. Tasten bleiben gleich.
+Spielstände sind v50; v38 bis v49 laden weiter.
 
 ## 1.3.196
 

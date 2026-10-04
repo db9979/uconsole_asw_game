@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.198
+## 1.3.199
 
-Release 1.3.198 makes the frigate's helicopter take time on deck. The launch
+Release 1.3.199 makes the frigate's helicopter take time on deck. The launch
 order (`H`, or *Launch helicopter* in the browser) starts 5 minutes of
 preparation in the hangar, and the helicopter lifts off at the next launch
 window after that; `H` again stops it. After a landing it keeps the fuel it
@@ -23,6 +23,18 @@ exactly there; the helicopter stops on the point instead of 0.3 NM short. Plot
 objects off the chart get an arrow on the chart edge, and their labels sit
 side by side there instead of on top of each other. Saves are v51; v38 to v50
 saves still load.
+
+## 1.3.197
+
+Release 1.3.197 makes the hover tooltips follow the colour scheme. In the
+light Tactical Day scheme a tooltip is now a light card with dark text instead
+of a dark box with barely readable lettering; Tactical Night and high contrast
+keep a dark box, and red light turns it grey. The damage-control pictures (the
+frigate's side view and cross-section, the submarine cutaway) become a light
+drawing board by day with floodwater, fire and teams still clear, on the
+uConsole and in the browser. The update notice in the main menu and the
+notice for a view that failed to draw follow the scheme too.
+Keys are unchanged. Saves are v50; v38 to v49 saves still load.
 
 ## 1.3.196
 

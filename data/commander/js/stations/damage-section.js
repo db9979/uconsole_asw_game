@@ -11,10 +11,26 @@
 export const GEOMETRY = {"frigate":{"x_range":[-76.0,77.0],"z_range":[-2.5,41.0],"hull":[[-74.0,4.0],[-74.0,10.0],[-20.0,10.0],[40.0,10.5],[62.0,12.0],[75.0,14.5],[73.0,9.0],[70.0,4.0],[66.0,0.8],[60.0,0.0],[-55.0,0.0],[-66.0,2.0],[-72.0,3.0]],"dome":[[62.0,0.5],[66.0,-1.0],[72.0,-0.2],[74.0,2.5],[70.0,3.5]],"blocks":[[[-50.0,10.0],[-50.0,17.0],[-30.0,17.0],[-28.0,22.0],[-14.0,22.0],[-12.0,17.0],[-4.0,17.0],[-4.0,10.0]],[[-26.0,22.0],[-24.0,27.0],[-17.0,27.0],[-16.0,22.0]],[[-22.7,27.0],[-23.0,28.8],[-21.8,30.6],[-19.2,30.6],[-18.0,28.8],[-18.3,27.0]],[[10.0,10.3],[10.0,19.0],[14.0,19.0],[14.0,23.0],[33.0,23.0],[36.0,19.0],[40.0,16.0],[41.0,10.5]],[[14.0,23.0],[16.0,33.0],[20.0,36.0],[23.0,33.0],[24.0,23.0]],[[46.0,11.1],[47.0,13.2],[53.0,13.2],[54.0,11.4]],[[36.5,17.6],[36.5,19.4],[39.0,19.4],[39.0,17.6]],[[-44.0,17.0],[-44.0,18.8],[-40.0,18.8],[-40.0,17.0]],[[-2.0,12.4],[-1.0,11.2],[8.0,11.2],[9.0,12.4]],[[-68.0,1.5],[-68.0,-1.8],[-63.0,-1.8],[-63.0,1.2]]],"lines":[[[19.5,36.0],[19.5,40.5]],[[53.0,12.6],[61.0,13.2]],[[4.0,10.3],[4.0,30.0]],[[1.5,26.0],[6.5,26.0]],[[-60.0,0.0],[-60.0,-1.6]],[[-61.2,-0.8],[-58.8,-0.8]],[[25.0,22.0],[32.5,22.0]]],"draft_marks":[[-74.6,4.0],[-74.6,6.0],[-74.6,8.0],[-74.6,10.0],[70.4,4.0],[71.6,6.0],[72.8,8.0],[73.8,10.0]],"decks":[[[-72.0,6.0],[70.0,6.0]],[[-64.0,2.5],[66.0,2.5]],[[-50.0,13.5],[-4.0,13.5]],[[10.0,13.5],[41.0,13.5]],[[10.0,16.5],[38.0,16.5]],[[14.0,19.5],[34.0,19.5]],[[-30.0,0.5],[-30.0,10.0]],[[-14.0,0.5],[-14.0,10.0]],[[-56.0,0.5],[-56.0,10.0]],[[-6.0,0.5],[-6.0,10.0]],[[40.0,0.5],[40.0,10.5]],[[56.0,0.5],[56.0,11.5]]],"rooms":{"sonar":[[56.0,0.5],[64.0,0.5],[68.0,3.0],[68.0,6.0],[56.0,6.0]],"bridge":[[24.0,19.6],[32.0,19.6],[32.0,22.6],[24.0,22.6]],"weapons":[[40.0,1.0],[56.0,1.0],[56.0,7.5],[40.0,7.5]],"opz":[[16.0,4.0],[40.0,4.0],[40.0,8.0],[16.0,8.0]],"radio":[[12.0,10.8],[24.0,10.8],[24.0,16.2],[12.0,16.2]],"engine":[[-38.0,0.5],[-6.0,0.5],[-6.0,7.5],[-38.0,7.5]],"flightdeck":[[-48.0,10.2],[-32.0,10.2],[-32.0,16.6],[-48.0,16.6]]},"section":{"y_range":[-10.5,10.5],"z_range":[-1.0,13.0],"shell":[[-8.3,10.4],[-8.3,3.2],[-6.6,0.9],[-3.6,0.0],[3.6,0.0],[6.6,0.9],[8.3,3.2],[8.3,10.4]],"rooms":{"hull_left":[[-8.3,3.4],[-8.3,6.5],[-5.0,6.5],[-5.0,0.4],[-6.4,1.0]],"hull_right":[[8.3,3.4],[6.4,1.0],[5.0,0.4],[5.0,6.5],[8.3,6.5]]}}},"boat":{"order":["stern","engine","battery","quarters","control","bow"],"share":[0.14,0.2,0.17,0.15,0.18,0.16]}};
 /* geometry:end */
 
-const HULL = "#283238", ROOM = "#162c30", STEEL = "#96a8ac", STEEL_DIM = "#54646a";
-const SEA = "#061e34", SEA_LINE = "#5aa0c8", WATER = "rgba(40, 110, 160, .72)", WATER_TOP = "#84c2df";
-const SPRAY = "#a0d6f0", GAS = "rgba(150, 190, 60, .32)";
-const TINTS = {stern: "#5c5628", engine: "#604624", battery: "#5a2e2c", quarters: "#2e5434", control: "#404268", bow: "#603630"};
+import { isLightTheme } from "../core/palette.js";
+
+// Night board and the light day board; floodwater, fire and teams keep their colours.
+const BOARDS = {
+  night: {HULL: "#283238", ROOM: "#162c30", STEEL: "#96a8ac", STEEL_DIM: "#54646a", SEA: "#061e34",
+    SEA_LINE: "#5aa0c8", WATER_TOP: "#84c2df", SPRAY: "#a0d6f0", GAS: "rgba(150, 190, 60, .32)",
+    MARK: "#d2dedc", INK: "#aabaaa", DOOR: "#0a1418",
+    TINTS: {stern: "#5c5628", engine: "#604624", battery: "#5a2e2c", quarters: "#2e5434", control: "#404268", bow: "#603630"}},
+  day: {HULL: "#cbd5df", ROOM: "#e8edf3", STEEL: "#334155", STEEL_DIM: "#94a3b8", SEA: "#dbeafe",
+    SEA_LINE: "#2563eb", WATER_TOP: "#1d4ed8", SPRAY: "#3b82f6", GAS: "rgba(101, 163, 13, .35)",
+    MARK: "#475569", INK: "#475569", DOOR: "#e8edf3",
+    TINTS: {stern: "#e7dfb0", engine: "#ecd2ad", battery: "#f0c8c4", quarters: "#c9e3cc", control: "#cfd2ee", bow: "#efc9c1"}},
+};
+const WATER = "rgba(40, 110, 160, .72)";
+let HULL, ROOM, STEEL, STEEL_DIM, SEA, SEA_LINE, WATER_TOP, SPRAY, GAS, MARK, INK, DOOR, TINTS;
+
+function usePalette() {
+  ({HULL, ROOM, STEEL, STEEL_DIM, SEA, SEA_LINE, WATER_TOP, SPRAY, GAS, MARK, INK, DOOR, TINTS} =
+    BOARDS[isLightTheme() ? "day" : "night"]);
+}
 
 const phase = () => (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
 
@@ -123,6 +139,7 @@ function roomEdge(room, selected, colors) {
 
 // The side profile; returns hit boxes {key, x, y, width, height}.
 export function drawFrigateProfile(g, box, payload, colors, selectedTeam) {
+  usePalette();
   const frigate = GEOMETRY.frigate, view = profileView(box), stability = payload.stability;
   const draft = stability.draft_m, trim = stability.trim_deg, tan = Math.tan(trim * Math.PI / 180);
   const byKey = new Map(payload.compartments.map((room) => [room.key, room]));
@@ -137,7 +154,7 @@ export function drawFrigateProfile(g, box, payload, colors, selectedTeam) {
   for (const [a, b] of frigate.decks) { g.beginPath(); g.moveTo(...view.point(...a)); g.lineTo(...view.point(...b)); g.stroke(); }
   g.strokeStyle = STEEL; g.lineWidth = 2;
   for (const [a, b] of frigate.lines) { g.beginPath(); g.moveTo(...view.point(...a)); g.lineTo(...view.point(...b)); g.stroke(); }
-  g.lineWidth = 1; g.strokeStyle = "#d2dedc";
+  g.lineWidth = 1; g.strokeStyle = MARK;
   for (const [x, z] of frigate.draft_marks) { const [mx, my] = view.point(x, z); g.beginPath(); g.moveTo(mx - 3, my); g.lineTo(mx + 3, my); g.stroke(); }
   g.strokeStyle = SEA_LINE; g.beginPath(); g.moveTo(...sea[0]); g.lineTo(...sea[1]); g.stroke();
   const hits = [];
@@ -181,6 +198,7 @@ export function drawFrigateProfile(g, box, payload, colors, selectedTeam) {
 
 // The listing cross-section with both hull voids; returns their hit boxes.
 export function drawFrigateSection(g, box, payload, colors, selectedTeam) {
+  usePalette();
   const geo = GEOMETRY.frigate.section, stability = payload.stability;
   const view = sectionView(box, stability.list_deg, stability.draft_m);
   const byKey = new Map(payload.compartments.map((room) => [room.key, room]));
@@ -249,6 +267,7 @@ function boatCells(box) {
 // The submarine's cutaway; ``rooms`` in the damage model's order (bow
 // first). Returns the cells by room name.
 export function drawBoatSection(g, box, rooms, teams, trimDeg, colors) {
+  usePalette();
   const {hull, outer, tower, pressure, cells} = boatCells(box), order = GEOMETRY.boat.order;
   const byName = new Map(rooms.map((room) => [room.name, room]));
   const tan = Math.tan(Math.max(-20, Math.min(20, trimDeg)) * Math.PI / 180) * 1.5, t = phase();
@@ -260,7 +279,7 @@ export function drawBoatSection(g, box, rooms, teams, trimDeg, colors) {
   for (const [share, height] of [[.25, 1], [.45, .8], [.7, .6]]) { const mx = tower[1][0] + span * share; g.beginPath(); g.moveTo(mx, top); g.lineTo(mx, box.y + (top - box.y) * (1 - height)); g.stroke(); }
   g.lineWidth = 1;
   g.save(); path(g, pressure); g.fillStyle = ROOM; g.fill(); g.clip();
-  const ink = "#aabaaa", floor = hull.y + hull.height * 2 / 3, byCell = {};
+  const ink = INK, floor = hull.y + hull.height * 2 / 3, byCell = {};
   order.forEach((name, position) => {
     const cell = cells[position], room = byName.get(name);
     byCell[name] = cell;
@@ -312,7 +331,7 @@ export function drawBoatSection(g, box, rooms, teams, trimDeg, colors) {
   for (let position = 1; position < cells.length; position++) {
     const a = byName.get(order[position - 1]), b = byName.get(order[position]);
     const shut = Boolean(a?.closed || b?.closed), x = cells[position].x, y = hull.y + hull.height / 2 - hull.height / 8;
-    g.fillStyle = "#0a1418"; g.beginPath(); g.arc(x, y, radius, 0, Math.PI * 2); g.fill();
+    g.fillStyle = DOOR; g.beginPath(); g.arc(x, y, radius, 0, Math.PI * 2); g.fill();
     g.strokeStyle = shut ? colors.accent : STEEL_DIM; g.lineWidth = 2; g.stroke();
     if (shut) { g.beginPath(); g.moveTo(x - radius + 2, y); g.lineTo(x + radius - 2, y); g.moveTo(x, y - radius + 2); g.lineTo(x, y + radius - 2); g.stroke(); }
   }

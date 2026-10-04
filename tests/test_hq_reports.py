@@ -126,6 +126,49 @@ def test_a_deep_boat_hears_nothing_and_an_ai_boat_at_periscope_depth_remembers()
     assert abs(config.angle_diff_deg(sub.memory["contact_bearing"], 270.0)) <= 20.0
 
 
+def test_the_ai_boat_keeps_the_call_bearing_and_acts_on_it():
+    game = _game()
+    sub = game.subs[0]
+    # Too far to hear the frigate itself, close enough for the HF ground wave.
+    sub.x, sub.y = game.ship.x + 30.0, game.ship.y
+    sub.depth = 10.0
+    sub.memory["contact"] = None
+    sub.memory["contact_bearing"] = None
+    sub.memory["contact_age"] = config.SUB_EVADE_DURATION_S
+    assert game.request_support() is True
+    heard = sub.memory["contact_bearing"]
+    assert heard is not None
+    # The next step does not wipe it as an old contact.
+    game._update_sim(0.25)
+    assert sub.memory["contact_bearing"] == heard
+    assert sub.memory["contact_age"] < config.SUB_EVADE_DURATION_S
+
+
+def test_a_call_cut_off_never_scores_and_later_calls_keep_the_points():
+    game = _game()
+    sub = game.subs[0]
+    _locate(game, sub.x, sub.y)
+    assert game.send_contact_report() is True
+    game.damage.station_down = lambda station: station == "radio"
+    game.sim_t = game.hq_reports.tx_until
+    game._update_hq_reports()
+    assert not game.hq_reports.transmitting
+    assert game._score_hq_reports() == 0
+    # Right reports are never pushed out of the log by later calls.
+    reports = HqReports()
+    t = 0.0
+    for _ in range(config.CONTACT_REPORT_SCORED):
+        reports.start("contact", t, 1.0, 1.0, x=1.0, y=1.0, accurate=True)
+        reports.finish()
+        t += 10.0
+    for _ in range(20):
+        reports.start("support", t, 1.0, 1.0)
+        reports.finish()
+        t += 10.0
+    assert reports.accurate_reports() == config.CONTACT_REPORT_SCORED
+    assert HqReports.valid_state(reports.serialize())
+
+
 def test_keys_and_remote_actions():
     game = _game()
     game.station = Station.RADIO

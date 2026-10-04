@@ -106,7 +106,7 @@ Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am
 | Pingreichweite | 1,0 x | 0,8 x | 1,1 x, aus der Tiefe des Körpers |
 | Handhabung | immer bereit | ausbringen 360 s, einholen 480 s, nur bei 3-12 kn, 30 s Beruhigung | fieren 120 s, hieven 120 s, nur bei 3-15 kn und Seegang bis 5, 20 s Beruhigung |
 
-- TAS-Tiefe 20-260 m (`U`/`V` in 10-m-Schritten), begrenzt auf 260 m minus 4 m je Knoten eigener Fahrt. Ab 30 m Tiefe und in derselben Schicht wie das Ziel gewinnt es weitere 25 %.
+- TAS-Tiefe 20-260 m (`U`/`V` in 10-m-Schritten), begrenzt auf 260 m minus 4 m je Knoten eigener Fahrt. Mehr Fahrt hebt das Array auf diese Grenze; die befohlene Tiefe bleibt und wird wieder erreicht, wenn das Schiff langsamer wird. Ab 30 m Tiefe und in derselben Schicht wie das Ziel gewinnt es weitere 25 %.
 - Über 20 kn mit ausgebrachtem Kabel erleidet das Array einen dauerhaften FAULT.
 - Das Array folgt einer Kursänderung mit etwa 45 s Verzögerung; während es nachschwenkt, sind seine Peilungen weniger verlässlich.
 - **Toter Winkel (Baffles):** Das Bugsonar (HMS) ist 30° beiderseits des eigenen Hecks taub; ein U-Boot genau achteraus hört nur das Schleppsonar oder das VDS. Der BREITBAND-Wasserfall markiert die Grenzen des toten Winkels gepunktet. Klären Sie ihn von der Brücke mit `Strg+B` (zwei Minuten 60° nach Steuerbord, dann zurück) oder mit einer eigenen Kursänderung. Für den Gegner gilt dasselbe: Auch das Rumpfsonar eines U-Boots ist achtern taub, und ein KI-U-Boot, das sich nach einem Ping dicht im toten Winkel der Fregatte findet, folgt ihr dort, statt zu fliehen.

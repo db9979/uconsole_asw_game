@@ -1066,6 +1066,10 @@ INCIDENT_DARK_S = 7200.0
 INCIDENT_WHALES_RANGE_NM = (3.0, 6.0)
 INCIDENT_WHALES_COUNT = (2, 4)
 INCIDENT_WHALES_S = 3600.0
+# Incidents add no more ships or animals beyond these (a long free patrol
+# would otherwise fill the world; its merchants stop at 64).
+INCIDENT_CIVILIANS_MAX = 56
+INCIDENT_ANIMALS_MAX = 40
 # Emergencies aboard: a man overboard survives this long in the water; the
 # ship picks him up within this distance at no more than this speed, the
 # helicopter hovering within it.
@@ -1163,6 +1167,7 @@ MPA_TURNAROUND_S = 1800.0           # on the ground between sorties
 MPA_SORTIES = 2                     # per mission
 MPA_ARRIVE_NM = 2.0                 # beyond the 1 NM turn radius at 200 kn
 MPA_DROP_POINT_NM = 1.2             # buoy run: released to land on the planned point
+MPA_PATTERN_SLOW_NM = 4.0           # buoy run: station speed this close to the next point
 MPA_ORBIT_NM = 3.0
 MPA_BUOYS = 16
 MPA_TORPS = 2

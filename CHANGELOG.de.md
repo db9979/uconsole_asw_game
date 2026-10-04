@@ -4,6 +4,22 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.192
+
+Version 1.3.192 behebt fünf Spielfehler aus der Codeprüfung. Der
+Seefernaufklärer kreist nicht mehr endlos um einen Bojenpunkt: Ab 4 sm vor dem
+nächsten Punkt eines auf dem Hinflug befohlenen Musters fliegt er mit
+Stationsfahrt, damit er auf ihn eindrehen kann. Mehr Fahrt hebt das
+Schleppsonar nur an; die befohlene Tiefe bleibt und wird wieder erreicht, wenn
+das Schiff langsamer wird. Eine Kontaktmeldung, die abbricht, weil der
+Funkraum ausfällt, bringt keine Punkte, und spätere Rufe verdrängen treffende
+Meldungen nicht mehr aus der Wertung. KI-U-Boote behalten die Peilung der
+KW-Rufe der Fregatte wie eine eigene Sonarpeilung und handeln danach. In der
+Freien Fahrt bringen Vorfälle keine weiteren Schiffe und Wale mehr, wenn die
+See voll ist, ein zurückkehrendes U-Boot vergisst seinen alten Kontakt und
+Angriff, und nur die Fregattenseite zahlt für ein versenktes neutrales U-Boot.
+Spielstände sind v50; v38 bis v49 lassen sich weiter laden.
+
 ## 1.3.191
 
 Version 1.3.191 ordnet das Handbuch in 21 kurze Kapitel: ein Schnellstart

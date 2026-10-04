@@ -128,15 +128,17 @@ class ReportsMixin:
                               layer=boat.plot, x2=sub.x + 30.0 * math.sin(rad),
                               y2=sub.y - 30.0 * math.cos(rad))
             elif sub.memory.get("contact") is None:
-                # An AI boat learns where the call came from.
+                # An AI boat learns where the call came from and keeps the
+                # bearing as long as one from its own sonar.
                 sub.memory["contact_bearing"] = bearing
+                sub.memory["contact_age"] = 0.0
 
     def _update_hq_reports(self) -> None:
         reports = self.hq_reports
         if not reports.transmitting or self.sim_t < reports.tx_until:
             return
         if self.damage.station_down("radio"):
-            reports.finish()
+            reports.cut()
             self.hq_msg(message("radio.report.cut"))
             return
         row = reports.finish()

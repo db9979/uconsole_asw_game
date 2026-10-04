@@ -105,9 +105,16 @@ def test_a_far_unheard_boat_comes_back_as_the_next_encounter():
     far = game.subs[0]
     far.x, far.y = game.ship.x + config.FREE_RECYCLE_NM + 5.0, game.ship.y
     game.sonar.contacts.pop(far.id, None)
+    # What it knew and planned on its last patrol goes with it.
+    far.memory["contact_bearing"] = 90.0
+    far.memory["contact_age"] = 0.0
+    far.pending_torpedoes.append((far.x, far.y, 90.0))
+    far.state = "EVADE"
     count = len(game.subs)
     assert free_roam.encounter(game, 2, "sub") == "sub"
     assert len(game.subs) == count
+    assert far.memory == far.fresh_memory()
+    assert not far.pending_torpedoes and far.state == "PATROLLE"
     assert math.hypot(far.x - game.ship.x, far.y - game.ship.y) <= config.FREE_SUB_SPAWN_NM[1] + 0.1
 
 

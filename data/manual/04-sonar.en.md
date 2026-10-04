@@ -105,7 +105,7 @@ The **class library** under the marks lists the three catalogue classes that fit
 | Ping range | 1.0 x | 0.8 x | 1.1 x, from the body's depth |
 | Handling | always ready | stream 360 s, recover 480 s, only at 3-12 kn, 30 s settle | lower 120 s, recover 120 s, only at 3-15 kn and sea state 5 or less, 20 s settle |
 
-- TAS depth 20-260 m (`U`/`V` in 10 m steps), limited to 260 m minus 4 m per knot of own speed. At 30 m or deeper and in the same layer as the target it gains another 25 %.
+- TAS depth 20-260 m (`U`/`V` in 10 m steps), limited to 260 m minus 4 m per knot of own speed. Speeding up lifts the array to that limit; the ordered depth stays and is reached again when the ship slows down. At 30 m or deeper and in the same layer as the target it gains another 25 %.
 - Above 20 kn with any cable out the array suffers a permanent FAULT.
 - The array heading lags the ship by about 45 s after a turn; its bearings are less reliable while it swings.
 - **Baffles:** the hull array (HMS) is deaf 30° either side of the own stern, so a submarine right astern is heard only by the towed array or the VDS. The BROADBAND waterfall marks the baffle edges with dotted lines. Clear them from the Bridge with `Ctrl+B` (two minutes 60° to starboard, then back) or with any turn of your own. The same holds for the enemy: a submarine's hull sonar is deaf astern too, and an AI submarine that finds itself close in the frigate's baffles after a ping follows the frigate there instead of running.

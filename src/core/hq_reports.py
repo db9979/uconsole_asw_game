@@ -18,6 +18,7 @@ game mixin (``game_reports.py``) connects it to the world.
 
 from __future__ import annotations
 
+from src.core import config
 from src.core.limits import finite_number as _number
 
 VERSION = 1
@@ -70,8 +71,24 @@ class HqReports:
         self.tx_until = float(now) + tx_s
         self.next_t = float(now) + interval_s
         self.log.append(row)
-        del self.log[:-MAX_LOG]
+        self._prune()
         return row
+
+    def _prune(self) -> None:
+        """Drop the oldest calls beyond MAX_LOG, but keep the right contact
+        reports that score (a later call must not cost their points)."""
+        scored = {id(row) for row in [row for row in self.log if row["kind"] == "contact"
+                                      and row["accurate"]][:config.CONTACT_REPORT_SCORED]}
+        while len(self.log) > MAX_LOG:
+            drop = next(index for index, row in enumerate(self.log) if id(row) not in scored)
+            del self.log[drop]
+
+    def cut(self) -> None:
+        """The call on the air broke off: HQ never got it, so it never scores."""
+        kind, self.tx_kind = self.tx_kind, None
+        row = next((row for row in reversed(self.log) if row["kind"] == kind), None)
+        if row is not None and row["kind"] == "contact":
+            row["accurate"] = False
 
     def finish(self):
         """End the call on the air; returns the finished log row."""

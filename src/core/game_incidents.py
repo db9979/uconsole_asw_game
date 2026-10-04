@@ -108,10 +108,12 @@ class IncidentsMixin:
         return self.world.weather_override is None and not self.incidents.active("front")
 
     def _incident_candidate_dark(self) -> bool:
-        return bool(self._dark_profiles())
+        return (bool(self._dark_profiles())
+                and len(self.civilians) < config.INCIDENT_CIVILIANS_MAX)
 
     def _incident_candidate_whales(self) -> bool:
-        return "whale" in self.runtime_catalog.animals
+        return ("whale" in self.runtime_catalog.animals
+                and len(self.animals) < config.INCIDENT_ANIMALS_MAX)
 
     def _dark_profiles(self) -> list:
         return sorted(key for key, profile in self.runtime_catalog.surfaces.items()

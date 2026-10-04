@@ -134,6 +134,18 @@ def test_whales_come_as_a_pod():
     assert all(math.hypot(a.x - item["x"], a.y - item["y"]) < 1.0 for a in added)
 
 
+def test_incidents_stop_adding_ships_and_whales_to_a_full_sea():
+    game = _game(5107)
+    while len(game.civilians) < config.INCIDENT_CIVILIANS_MAX:
+        game.civilians.append(game.civilians[0])
+    while len(game.animals) < config.INCIDENT_ANIMALS_MAX:
+        game.animals.append(game.animals[0] if game.animals else game.civilians[0])
+    ships, animals = len(game.civilians), len(game.animals)
+    assert game._start_incident("dark") is None
+    assert game._start_incident("whales") is None
+    assert (len(game.civilians), len(game.animals)) == (ships, animals)
+
+
 def test_incidents_round_trip_and_bad_rows_are_rejected():
     game = _game(5107)
     game.world.set_weather_override(None)

@@ -771,7 +771,8 @@ def _draw_helo_waypoint(s, game, view, helo_px, chart) -> None:
     """The helicopter's ordered waypoint (own asset): a dashed track from
     the helicopter to a ringed cross exactly on the point, with its label."""
     helo = game.helo
-    if helo.state != "AUF" or helo.waypoint_x is None or helo.waypoint_y is None:
+    if (getattr(helo, "state", "AUF") != "AUF" or getattr(helo, "waypoint_x", None) is None
+            or getattr(helo, "waypoint_y", None) is None):
         return
     wx, wy = view.world_to_screen(helo.waypoint_x, helo.waypoint_y)
     color = config.COLOR_WARN

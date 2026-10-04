@@ -589,10 +589,20 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
                                                 / config.HELO_FUEL_S)
         pygame.draw.line(s, config.COLOR_WARN, (tank.centerx - 22, ry), (tank.centerx + 22, ry), 2)
     # Home rose: the bearing back to the ship, the aircraft's course needle.
-    rose_size = max(0, min(body_h, 190, sw // 3))
+    # It gives way first so the readouts beside it keep their full text
+    # (large text): labels plus the widest value, the endurance line.
+    label_keys = ("ui.condition", "helo.console.endurance", "helo.console.bingo",
+                  "helo.console.home", "helo.console.course", "helo.dip_sonar")
+    readout_font = layout.font(15)
+    readout_need = (max(int(readout_font.size(localize(key))[0]) for key in label_keys) + 10
+                    + int(readout_font.size(localize(message(
+                        "helo.console.endurance_value", fuel="120", hover="92")))[0]) + 6)
+    rose_extra = 2 * (layout.font(11).size("090")[0] - 14)
+    rose_size = max(0, min(body_h, 190, sw // 3,
+                           sw - tank_w - 6 - rose_extra - 8 - readout_need))
     # Wider than tall: "270" and "090" stand beside the ring inside the rect.
     rose = pygame.Rect(sx + tank_w + 6, top + (body_h - rose_size) // 2,
-                       rose_size + 2 * (layout.font(11).size("090")[0] - 14), rose_size)
+                       rose_size + rose_extra, rose_size)
     home = home_polar(game, helo) if helo.airborne else None
     strobes = [(home[0], config.COLOR_OK, 3, 0, 0.0)] if home else []
     console.bearing_rose(s, rose, strobes, course=helo.course if helo.airborne else None,
@@ -601,8 +611,7 @@ def _draw_status_console(game, s, regions, helo, state_label, state_color, dista
     tx = rose.right + 8
     tw = sx + sw - tx
     row_h = max(24, layout.font(15).get_linesize() + 4)
-    labels = ("ui.condition", "helo.console.endurance", "helo.console.bingo",
-              "helo.console.home", "helo.console.course", "helo.dip_sonar")
+    labels = label_keys
     label_w = min(tw // 2, max(int(layout.font(15).size(localize(key))[0]) for key in labels) + 10)
     dip_state = getattr(helo, "dip_state", "STOWED")
     if helo.airborne:
@@ -767,7 +776,8 @@ def draw_helicopter_view(game, tr=None) -> None:
     helo = game.helo
     state_label = helo_state_text(helo)
     state_color = (config.COLOR_DANGER if helo.state == "VERLOREN" else
-                   config.COLOR_WARN if helo.state == "ZURUECK" or helo.preparing or helo.refuelling else
+                   config.COLOR_WARN if helo.state == "ZURUECK" or getattr(helo, "preparing", False)
+                   or getattr(helo, "refuelling", False) else
                    config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM)
     distance = ((helo.x - game.ship.x) ** 2 +
                 (helo.y - game.ship.y) ** 2) ** 0.5 if helo.airborne else 0.0

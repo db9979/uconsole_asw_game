@@ -19,7 +19,7 @@ import pygame
 from src.commander.access_point import HotspotController
 from src.commander.bridge import CommanderBridge
 from src.commander.admission import StationAdmission
-from src.commander.server import (CommanderServer, DIRECT_FIRE_ROLES, ROLES,
+from src.commander.server import (CommanderServer, web_catalog, DIRECT_FIRE_ROLES, ROLES,
                                   SONAR_AUDIO_ROLES, STATIONS)
 from src.core import config, manual
 from src.core.i18n import load_catalog, message, raw_text, translation_scope
@@ -657,8 +657,7 @@ class CommanderConsole:
     def _prepare_transport(self):
         if self._translations is None:
             self._translations = {
-                lang: {key: value for key, value in load_catalog(lang).items()
-                       if key.startswith("commander.web.")}
+                lang: web_catalog(load_catalog(lang))
                 for lang in ("en", "de")}
         if self._contact_analysis_assets is None:
             self._contact_analysis_assets = load_contact_analysis_assets()

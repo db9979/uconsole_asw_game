@@ -2278,6 +2278,8 @@ Eine freie Station wird sofort mit allen ihren Rechten übernommen (auch Direktf
 
 Die Crew-Seiten öffnen in der gespeicherten Sprache des Hosts (`F10`-Optionen auf der uConsole); der Knopf English/Deutsch in der Statusleiste des Browsers stellt nur diesen Browser um. Die Crew-Seite ist für Chrome oder Chromium (auch Edge) auf einem Desktop-PC gebaut; ein anderer Browser zeigt über dem Kopplungscode einen Hinweis, und eine Seite, die dort nicht starten kann, sagt das, statt endlos zu laden. Nach einem Update des Hosts lädt sich eine offene Browserseite einmal selbst neu und läuft so immer mit dem passenden Web-Client.
 
+Eine Browserstation hat drei Spalten: links die Kontaktliste, in der Mitte die Anzeige, rechts den Stationsbereich mit dem Kontaktdetail darunter. Damit die Bedienung ohne Scrollen Platz hat, klappt eine leere Kontaktliste zur schmalen Leiste und das Kontaktdetail zur Titelzeile zusammen, solange kein Kontakt gewählt ist; beides öffnet sich wieder, sobald es etwas zu zeigen gibt, und bleibt so, wie Sie es von Hand umgeschaltet haben. Die Missionsübersicht steht als eine Zeile **Auftrag** oben im Stationsbereich und klappt mit einem Klick auf. Ein Wert, für den noch nichts gemeldet ist, steht als grauer Strich; der Mauszeiger darüber nennt den Grund. Auf dem Handy liegen Sprache, Ton, Mikrofon, Einstellungen und Werkzeuge hinter dem Knopf ☰.
+
 ### Crew-Modus, Solo-Modus und Web-Host
 
 Remote Crew läuft normalerweise im **Crew-Modus**: Jeder Browser hält die Stationen, die der Host ihm gibt, und die KI oder die uConsole besetzt den Rest. Mit `--solo-crew` gestartet, läuft es nur für diesen Start im **Solo-Modus**: Ein gekoppelter Browser hält alle Stationen seiner Einheit und darf auch die Host-Befehle Speichern, Laden und Neues Spiel sowie die Bibliothek der eigenen Missionen nutzen (Kapitel Missions- und Einheiteneditor). Editoren, Optionen, Beenden und die Netzwerkeinstellungen bleiben auf der uConsole, und in keinem Modus gibt es eine Pause.
@@ -2303,7 +2305,7 @@ Solange ein Handy den Ausguck der Brücke hält, meldet der Ausguck Schiffe, Flu
 
 ### Browser-Tasten
 
-Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bedient; die Tastatur hilft bei der Navigation:
+Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen oder mit denselben Tasten wie auf der uConsole bedient; jedes Bedienelement mit Taste zeigt sie als blaue Tastenkappe hinter der Beschriftung, und solange der Cursor in einem Feld steht, wirkt keine Taste. Tasten für Befehle und Feuer drücken nur das passende Bedienelement und durchlaufen dieselben Prüfungen wie ein Klick:
 
 | Taste | Funktion |
 |---|---|
@@ -2313,10 +2315,17 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 | `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |
 | `Home / End` | Erster / letzter Eintrag der fokussierten Liste |
 | `+ / - · Q / E` | Fokussierte Karte zoomen (Q / E wie auf der uConsole); Pos1 passt die Ansicht ein |
+| `K` | Karte folgt dem eigenen Schiff an oder aus |
+| `C / V / D · T` | Kurs, Fahrt, Tiefe, Torpedo-Lauftiefe: der Cursor springt ins Feld, Enter sendet (Brücke, Maschine, U-Boot) |
+| `Shift+A · J` | Aktiver Ping · Live-Sonarton an oder aus (Sonar, U-Boot-Führung, Tauchsonar des Helikopters) |
+| `Strg+Enter` | Schuss scharf machen (Waffen, OPZ, Helikopter, U-Boot-Waffen); der Feuerdialog fragt noch einmal |
+| `R / Shift+R` | OPZ: Seeziel- / Luftraumradar an oder aus; Q / E ändern den Radar-Anzeigebereich |
+| `H · B · Ctrl+R · Shift+M` | Helikopter: starten oder zurückrufen, Boje werfen, Flugzeugradar, MAD |
+| `A · V · Ctrl+B` | Schleichfahrt (Maschine) · Täuschkörper (U-Boot-Waffen) · toten Winkel klären (Brücke, U-Boot-Führung) |
 | `Pfeiltasten (Karte)` | Fokussierte Karte verschieben |
 | `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
 | `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
-| `Bild auf/ab` | Helikopter: Akustikanalyse, Tauchsonar und Taktische Karte durchblättern (auch nochmals 8) |
+| `Bild auf/ab` | Seiten durchblättern: Helikopter Akustikanalyse, Tauchsonar und Taktische Karte (auch nochmals 8), Sonarseiten |
 | `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
 | `, / .` | Kontaktliste (,) oder Stationsbereich (.) ein- oder ausklappen |
 | `L` | Einsatzprotokoll öffnen oder schließen |

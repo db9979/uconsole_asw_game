@@ -42,7 +42,7 @@ export function renderWeaponsStation(payload) {
     ["ciws_ready", yesNo(readiness.ciws_ready)], ["aa_ready", yesNo(readiness.aa_ready)],
     ["state", stateText("battery_state", readiness.state)], ["interlock", readiness.interlock], ["reload", unit(readiness.reload_s, "s", 0)]]);
   stationRows($("weapons-target"), payload.designated_target ? [payload.designated_target] : [], weaponTargetEntries, "station_no_target");
-  stationRows($("weapons-tubes"), payload.tubes, (row) => [["weapons_tube", number(row.tube, 0)],
+  stationRows($("weapons-tubes"), payload.tubes, (row) => [["weapons_tube", number(row.tube + 1, 0)],
     ["state", stateText("tube_state", row.state)], ["reload", unit(row.reload_s, "s", 0)]]);
   renderWeaponLamps(payload.tubes.length);
   fillFireTargets("weapons-fire-target", payload.target_choices);

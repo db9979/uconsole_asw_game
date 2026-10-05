@@ -82,8 +82,16 @@
 .log-drawer footer, #log-drawer footer { display: flex; justify-content: space-between; gap: 1rem; padding: .35rem .5rem; color: var(--text-faint); font-size: var(--font-xs); }
 
 /* Mission card (station dock). */
-.mission-card { display: grid; gap: .3rem; }
-.mission-card .panel-heading { margin-bottom: .1rem; }
+/* The mission overview is one line ("Orders: …"); details open on click. */
+.mission-card { padding-block: .3rem; }
+.mission-card > summary { display: flex; align-items: baseline; gap: .5rem; min-width: 0; cursor: pointer; list-style: none; font-size: var(--font-sm); }
+.mission-card > summary::-webkit-details-marker { display: none; }
+.mission-card > summary::after { content: "\25B8"; margin-left: auto; color: var(--muted); }
+.mission-card[open] > summary::after { content: "\25BE"; }
+.mission-card-label { flex: none; color: var(--accent); font-weight: 600; }
+#objective { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mission-card[open] #objective { white-space: normal; }
+.mission-card .session { margin-top: .3rem; }
 #objective { color: var(--text); font-size: var(--font-sm); }
 .session { display: grid; gap: .15rem; color: var(--text-dim); font-size: var(--font-xs); }
 .session p:empty { display: none; }
@@ -259,6 +267,16 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 .uboot-scope-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 6rem), 1fr)); gap: .3rem; margin-bottom: .5rem; }
 .uboot-scope-controls button { min-height: 2.5rem; }
 .uboot-log-line { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: .5rem; padding: .15rem 0; border-bottom: 1px solid var(--line); font-size: var(--font-sm); }
+/* The torpedo room's tubes as cards side by side: state colour on the left edge. */
+body #uboot-tubes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr)); gap: .4rem; }
+.uboot-tube { display: flex; flex-direction: column; gap: .3rem; margin: 0; padding: .35rem .5rem; border: 1px solid var(--line);
+  border-left: 3px solid var(--muted); border-radius: 4px; font-size: var(--font-sm); }
+.uboot-tube[data-state="flooded"] { border-left-color: var(--live); }
+.uboot-tube[data-state="dry"] { border-left-color: var(--live-2); }
+.uboot-tube[data-state="loading"], .uboot-tube[data-state="flooding"] { border-left-color: var(--caution); }
+.uboot-tube > button { width: 100%; }
+/* A line of plain text (no time column) uses the full width. */
+.uboot-log-line.uboot-log-text { display: block; }
 .uboot-log-age { color: var(--text-dim); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 /* Engine room: energy and stores (bars, balance, endurance, air). */
 .uboot-grid[data-role="uboot_engine"] .uboot-supply-card { grid-column: 1 / -1; }
@@ -393,6 +411,17 @@ kbd.key-cap {
   display: inline-block; padding: 0 .3em; border-radius: 3px; color: var(--t-on-accent); background: var(--t-accent);
   font: inherit; font-family: var(--font-mono); line-height: 1.25;
 }
+
+/* No value published yet: a quiet dash instead of a sentence in the value font. */
+dd[data-empty="true"] { color: var(--muted); font-weight: 400; }
+
+/* A control's key from the uConsole scheme, as the same blue cap after its label. */
+[data-keycap]::after {
+  content: attr(data-keycap); display: inline-block; margin-left: .45em; padding: 0 .3em; border-radius: 3px;
+  color: var(--t-on-accent); background: var(--t-accent); font-family: var(--font-mono); font-size: .82em;
+  font-weight: 600; line-height: 1.3; white-space: nowrap; vertical-align: 1px;
+}
+[role="tablist"][data-keycap]::after { align-self: center; margin-left: auto; }
 
 /* Hover note of a status lamp: why it shows what it shows (keys as caps). */
 .lamp-tip { position: absolute; z-index: 60; max-width: 24rem; padding: .45rem .6rem;

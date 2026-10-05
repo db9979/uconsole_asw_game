@@ -44,6 +44,8 @@ A free station is taken at once with all of its rights (including direct fire an
 
 The crew pages open in the host's saved language (`F10` options on the uConsole); the English/Deutsch button in the browser's status bar switches that browser alone. The crew page is built for Chrome or Chromium (also Edge) on a desktop PC; another browser shows a hint above the pairing code, and a page that cannot start there says so instead of loading forever. After a host update an open browser page reloads itself once, so it always runs the web client that matches the host.
 
+A browser station has three columns: the contact list on the left, the display in the middle, the station panel on the right with the contact detail below it. To give the controls room without scrolling, an empty contact list folds to a narrow rail and the contact detail to its title bar while no contact is chosen; both open again as soon as there is something to show, and keep any state you set by hand. The mission overview is one **Orders** line at the top of the station panel and opens with a click. A value with nothing reported yet shows as a grey dash; hovering it gives the reason. On a phone, language, sound, microphone, settings and tools sit behind the ☰ button.
+
 ## Crew mode, solo mode and the web host {#mp-modes}
 
 Remote Crew normally runs in **crew mode**: each browser holds the stations the host grants it, and the AI or the uConsole crews the rest. Started with `--solo-crew`, it runs in **solo mode** for that launch only: one paired browser holds every station of its unit and may also use the host commands save, load and new game and the own-mission library (chapter Mission and unit editor). Editors, options, quit and the network settings stay on the uConsole, and there is no pause in either mode.
@@ -67,6 +69,6 @@ While a phone holds the bridge lookout, the lookout no longer reports ships, air
 
 ## Browser keys {#mp-keys}
 
-In the Remote Crew browser (Commander, `F9`) stations are operated with buttons; the keyboard helps with navigation:
+In the Remote Crew browser (Commander, `F9`) stations are operated with buttons or with the same keys as on the uConsole; every control with a key shows it as a blue key cap after its label, and a key never acts while the cursor is in a field. Keys that send an order or fire only press the matching control, so they pass the same checks as a click:
 
 <!-- keys:web -->

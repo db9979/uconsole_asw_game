@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.209
+## 1.3.210
 
-Release 1.3.209 fixes physics and weapon faults the code review found.
+Release 1.3.210 fixes physics and weapon faults the code review found.
 In sea state 5 and above the frigate now gets under way from a standstill
 (it used to stay at 0 kn). A submarine that changes its depth order mid-dive
 no longer jumps to the new depth. The helicopter's MAD looks once per
@@ -17,6 +17,21 @@ and no longer streams one above that speed. An enemy torpedo now loses its
 lock when the target is out of its seeker's reach, hears the frigate louder
 the faster it runs, and keeps its search pattern while the wire is held.
 Keys are unchanged. Saves are v52; v38 to v51 saves still load.
+
+## 1.3.209
+
+Release 1.3.209 makes the browser stations show more without scrolling. In
+the browser the stations use the same keys as on the uConsole (for example
+C/V/D for course, speed and depth, Shift+A to ping, Ctrl+Enter to fire), and
+every key is shown as a blue key cap on its button. The empty contact detail
+and an empty contact list fold away, the mission overview is one "Orders"
+line, and empty values show a grey dash. On the submarine the radio log and
+the tubes are readable again and the tubes are shown as cards. The frigate's
+weapons station numbers its tubes from 1 and shows the firing chain step by
+step. Country names on the chart are shown once per country, in German or
+English, also on the uConsole. On a phone the top bar folds into a ☰ menu.
+Keys on the uConsole are unchanged. Saves are v52; v38 to v51 saves still
+load.
 
 ## 1.3.208
 

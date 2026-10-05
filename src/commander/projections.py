@@ -776,6 +776,22 @@ def _own_weapon_assets(game, asset_refs):
     return torpedoes, asrocs, nixies
 
 
+# The fire-control check order of ``torpedo_readiness`` as the steps of the
+# firing chain the browser draws (target, release, solution, tube, fire):
+# the first failing check names the step that holds the shot.
+_FIRE_STAGES = (("KEIN ZIEL", "target"), ("ZUGEHOERIGKEIT", "release"),
+                ("WAFFEN GESPERRT", "release"), ("KEINE ENTFERNUNG", "solution"),
+                ("NICHT ALS", "solution"), ("KEINE TORPEDOS", "tube"),
+                ("KEIN ROHR", "tube"), ("SALVENLIMIT", "tube"),
+                ("WAFFENZENTRALE", "station"))
+
+
+def _fire_stage(interlock) -> str:
+    text = str(interlock)
+    return next((stage for marker, stage in _FIRE_STAGES if marker in text),
+                "fire" if text == "FEUER FREI" else "station")
+
+
 def _weapons(game, rows, target_ref, asset_refs, direct_refs):
     tactical = [row for row in rows if row.get("_opz")
                 and row["ref"] == target_ref][:_MAP_ROWS_MAX]
@@ -804,6 +820,7 @@ def _weapons(game, rows, target_ref, asset_refs, direct_refs):
                                 aa_ready=game.aa_cooldown_s <= 0,
                                 state="unavailable" if battery is None else "available",
                                 interlock=str(localize(interlock, game.tr))[:256],
+                                stage=_fire_stage(interlock),
                                 reload_s=None if battery is None else _number(
                                     battery.next_reload_s)),
                  designated_target=designated,

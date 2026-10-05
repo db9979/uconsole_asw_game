@@ -61,8 +61,16 @@ def seeker_level_db(weapon, candidate) -> float:
     level = getattr(candidate, "acoustic_level_db", None)
     if level is None:
         quiet = getattr(candidate, "quiet_factor", None)
-        level = (20.0 * math.log10(1.0 + 0.8 * (1.0 - quiet()))
-                 if callable(quiet) else 0.0)
+        noise = getattr(candidate, "noise_level", None)
+        if callable(quiet):
+            level = 20.0 * math.log10(1.0 + 0.8 * (1.0 - quiet()))
+        elif callable(noise):
+            # A hull that publishes only its radiated noise (the frigate):
+            # speed, quiet running and the plant now change what it sounds
+            # like to a seeker (it was a constant 0 dB before).
+            level = 20.0 * math.log10(1.0 + 0.8 * config.clamp(noise(), 0.0, 1.0))
+        else:
+            level = 0.0
         offset = getattr(candidate, "source_level_offset_db", None)
         if callable(offset):
             level += offset()
@@ -71,7 +79,8 @@ def seeker_level_db(weapon, candidate) -> float:
     if depth is not None:
         level -= abs(depth - weapon.depth) / 10.0
     speed = getattr(candidate, "speed_kn", None)
-    if speed is None and hasattr(candidate, "stype"):
+    if speed is None and (hasattr(candidate, "stype")
+                          or callable(getattr(candidate, "noise_level", None))):
         speed = getattr(candidate, "speed", None)
     if speed is not None and speed < SEEKER_DOPPLER_MIN_KN:
         level -= SEEKER_NO_DOPPLER_DB
@@ -640,6 +649,12 @@ class EnemyTorpedo(FrigateRelativeMixin):
             if candidate is not None:
                 self._seeker_target = candidate
                 self.seeker_acquired = True
+            elif self.seeker_acquired:
+                # The held target left the seeker's range or is masked: the
+                # lock is lost (as for own torpedoes), so a knuckle, the wake
+                # or the search pattern take over again.
+                self.seeker_acquired = False
+                self._seeker_target = None
         target = self._seeker_target
         fraction = self.speed_fraction()
         desired = None

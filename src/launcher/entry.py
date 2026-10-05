@@ -30,6 +30,9 @@ def _ensure_streams():
     sys.stderr = sys.stderr or stream
 
 
+SELF_TEST_WATCHDOG_S = 180.0
+
+
 def self_test(report: str) -> int:
     """Start a mission headless, serve Remote Crew on loopback, fetch pages."""
     import json
@@ -39,6 +42,13 @@ def self_test(report: str) -> int:
 
     os.environ["SDL_VIDEODRIVER"] = "dummy"
     os.environ["SDL_AUDIODRIVER"] = "dummy"
+    try:
+        # A hung check (seen on the macOS runners) prints every thread's
+        # stack and exits instead of running into the step's time limit.
+        import faulthandler
+        faulthandler.dump_traceback_later(SELF_TEST_WATCHDOG_S, exit=True)
+    except (ImportError, RuntimeError, ValueError, AttributeError):
+        pass
     results = {}
     code = 1
     try:
@@ -81,6 +91,11 @@ def self_test(report: str) -> int:
     except Exception:  # noqa: BLE001 - the report carries the traceback
         results["error"] = traceback.format_exc()
     results["ok"] = code == 0
+    try:
+        import faulthandler
+        faulthandler.cancel_dump_traceback_later()
+    except (ImportError, RuntimeError, AttributeError):
+        pass
     with open(report, "w", encoding="utf-8") as handle:
         json.dump(results, handle, indent=2)
     return code

@@ -110,7 +110,7 @@ Every key in the key bar at the foot of the station can be clicked; holding the 
 
 Combat situation:
 
-1. Torpedo reported: FLANK immediately, turn to put the torpedo bearing astern or on the beam.
+1. Torpedo reported: speed up to 24 kn at once (not FLANK: the Nixie's tow cable parts above 25 kn), turn to put the torpedo bearing astern or on the beam.
 2. Order the Nixie at Weapons (`V`); keep turning so the torpedo sees the decoy first.
 3. Once clear, reduce speed below 15 kn so sonar can reacquire; never above 20 kn with the towed array out.
 

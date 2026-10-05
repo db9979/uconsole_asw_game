@@ -58,7 +58,7 @@ Global keys (all stations):
 5. Classify with `C`, enable TMA with `T`, then turn the ship 30-60 degrees on the Bridge and hold the new leg for a few minutes.
 6. When TMA or a ping gives range: release the contact to Operations (`G`), make it the target (`M`).
 7. Weapons (`3`): set torpedo depth to the pinged target depth, fire with `Ctrl+Enter`.
-8. Watch the sonar for an incoming torpedo; if one appears, go FLANK, turn away and stream the Nixie (`V` at Weapons).
+8. Watch the sonar for an incoming torpedo; if one appears, run at 24 kn (not FLANK: the Nixie's tow cable parts above 25 kn), turn away and stream the Nixie (`V` at Weapons).
 
 ## Your first dive (submarine) {#qs-first-dive}
 

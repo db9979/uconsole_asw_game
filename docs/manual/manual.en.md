@@ -105,7 +105,7 @@ Global keys (all stations):
 5. Classify with `C`, enable TMA with `T`, then turn the ship 30-60 degrees on the Bridge and hold the new leg for a few minutes.
 6. When TMA or a ping gives range: release the contact to Operations (`G`), make it the target (`M`).
 7. Weapons (`3`): set torpedo depth to the pinged target depth, fire with `Ctrl+Enter`.
-8. Watch the sonar for an incoming torpedo; if one appears, go FLANK, turn away and stream the Nixie (`V` at Weapons).
+8. Watch the sonar for an incoming torpedo; if one appears, run at 24 kn (not FLANK: the Nixie's tow cable parts above 25 kn), turn away and stream the Nixie (`V` at Weapons).
 
 ### Your first dive (submarine)
 
@@ -478,11 +478,11 @@ Every key in the key bar at the foot of the station can be clicked; holding the 
 2. Transit at FULL, then slow to SLOW or 4-6 kn before the search area.
 3. Search: steady legs of 3-5 min, then turn 30-60 degrees so TMA gains range.
 4. Keep clear of the coast and shallow water; watch the chart depth.
-5. Torpedo inbound: FLANK, turn away beam-on, order Nixie at Weapons.
+5. Torpedo inbound: 24 kn (Nixie cable parts above 25), turn away beam-on, order Nixie at Weapons.
 
 Combat situation:
 
-1. Torpedo reported: FLANK immediately, turn to put the torpedo bearing astern or on the beam.
+1. Torpedo reported: speed up to 24 kn at once (not FLANK: the Nixie's tow cable parts above 25 kn), turn to put the torpedo bearing astern or on the beam.
 2. Order the Nixie at Weapons (`V`); keep turning so the torpedo sees the decoy first.
 3. Once clear, reduce speed below 15 kn so sonar can reacquire; never above 20 kn with the towed array out.
 
@@ -787,7 +787,7 @@ Torpedo run, seen from above:
 - Salvo (`Y`): one torpedo, or two in a +/-8 deg spread with their own datums turned about the ship; a spread needs two loaded tubes of the selected type and counts against the doctrine limit.
 - Preset depth 10-300 m (default 60 m): hold `↑`/`↓` or type it after `T`, as on the submarine. A wrong depth is a miss: take depth from a ping, not from TMA.
 - The wire updates the datum from the contact's observed position. Without updates it becomes STALE after 3 s and BROKEN after 12 s; the torpedo then continues to the last datum.
-- The seeker homes on the nearest candidate: that can be a decoy, a whale or a merchant ship. A civilian hit ends the mission.
+- The seeker homes on the loudest candidate (a held lock is kept unless another is 6 dB louder): that can be a decoy, a whale or a merchant ship. A civilian hit ends the mission.
 - Salvo doctrine SHOOT-LOOK-SHOOT: at most 2 own torpedoes running.
 - ASROC (`A`): 4 rounds per mission. The rocket flies at 500 kn to the target's observed position (1 to 10 NM, current range needed) and drops the helicopter's lightweight torpedo there, set to the preset depth. It needs the same target checks as the torpedo and counts against the doctrine limit.
 - Depth charges (`Z`): 20 per mission, dropped as a pattern of 5 (three along the wake 20, 80 and 140 m astern, two thrown 70 m abeam), then 45 s to reload the rack. The ship must make at least 10 kn. The charges sink at 3.5 m/s to the preset depth (15-300 m) or the seabed; each 90 kg charge is lethal within about 25 m and still damages out to about 100 m. Submarines within 5 NM hear the detonation and evade.

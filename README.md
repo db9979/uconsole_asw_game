@@ -10,17 +10,19 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.210**
+Current release: **1.3.211**
 
-Release 1.3.210 shows the charts in real geographic coordinates. On a real
-sea area the chart grid now shows meridians and parallels in degrees and
-minutes, finer as you zoom in (5 degrees down to 0.1 minute), the chart's top
-left shows own position such as 53°19.9'N 007°00.9'E (on the submarine its
-dead-reckoning position), and the pointer's tooltip gives the position under
-it, on the uConsole and in the browser alike. The grid numbers now stay
-readable over land. Ranges, rings and the scale stay in NM and the game plays
-as before; the stylized fixed chart keeps its NM grid. Keys are unchanged.
-Saves are v52; v38 to v51 saves still load.
+Release 1.3.211 fixes physics and weapon faults the code review found.
+In sea state 5 and above the frigate now gets under way from a standstill
+(it used to stay at 0 kn). A submarine that changes its depth order mid-dive
+no longer jumps to the new depth. The helicopter's MAD looks once per
+second, so its chance of a contact no longer depends on the frame rate. The
+crew assist now runs from a torpedo at 24 kn instead of flank speed while a
+Nixie is out or aboard, because the Nixie's tow cable parts above 25 kn,
+and no longer streams one above that speed. An enemy torpedo now loses its
+lock when the target is out of its seeker's reach, hears the frigate louder
+the faster it runs, and keeps its search pattern while the wire is held.
+Keys are unchanged. Saves are v52; v38 to v51 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

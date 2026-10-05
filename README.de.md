@@ -10,17 +10,20 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.210**
+Aktuelle Version: **1.3.211**
 
-Version 1.3.210 zeigt die Karten in echten geografischen Koordinaten. In
-einem echten Seegebiet zeigt das Kartengitter jetzt Längen- und Breitengrade
-in Grad und Minuten, beim Hineinzoomen feiner (5 Grad bis 0,1 Minute), oben
-links steht die eigene Position wie 53°19,9'N 007°00,9'E (auf dem U-Boot der
-gekoppelte Ort), und der Tooltip des Mauszeigers nennt die Position darunter,
-auf der uConsole wie im Browser. Die Gitterzahlen bleiben jetzt auch über
-Land lesbar. Entfernungen, Ringe und Maßstab bleiben in sm, das Spiel spielt
-sich wie bisher; die stilisierte feste Karte behält ihr sm-Gitter. Tasten
-bleiben gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+Version 1.3.211 behebt Fehler in Physik und Waffen, die die Code-Prüfung
+gefunden hat. Ab Seegang 5 kommt die Fregatte aus dem Stand wieder in Fahrt
+(sie blieb bei 0 kn stehen). Ein U-Boot, das seinen Tiefenbefehl mitten im
+Tauchen ändert, springt nicht mehr auf die neue Tiefe. Das MAD des
+Hubschraubers misst einmal pro Sekunde, die Kontaktchance hängt also nicht
+mehr von der Bildrate ab. Die Crew-Hilfe flieht vor einem Torpedo mit 24 kn
+statt AK, solange ein Nixie ausgesetzt oder an Bord ist, weil dessen
+Schleppkabel über 25 kn reißt, und setzt darüber keinen mehr aus. Ein
+feindlicher Torpedo verliert seine Erfassung, wenn das Ziel außer
+Reichweite seines Suchkopfs ist, hört die Fregatte lauter, je schneller sie
+fährt, und behält sein Suchmuster, solange der Draht hält. Tasten bleiben
+gleich. Spielstände sind v52; v38 bis v51 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

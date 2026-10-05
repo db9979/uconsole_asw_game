@@ -230,7 +230,7 @@ jobs:
       always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
       && (needs.build.result == 'success' || needs.build.result == 'failure')
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 110
     steps:
       - uses: actions/checkout@v4
 
@@ -239,8 +239,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Poll the "Tests" workflow run of this push (tests.yml); publish only
-          # on success. Gives up after about 80 minutes.
-          for attempt in $(seq 1 160); do
+          # on success. Gives up after about 100 minutes.
+          for attempt in $(seq 1 200); do
             run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/tests.yml/runs?head_sha=$GITHUB_SHA&event=push&per_page=1" \
                   --jq '.workflow_runs[0] | "\(.status) \(.conclusion)"' || true)
             echo "Tests run: ${run:-not started}"

@@ -457,7 +457,7 @@ Die Remote-Crew-Brücke hat eine Karte „Autopilot-Route“: „Wegpunkte auf d
 | `G` | Gefechtsstationen an/aus |
 | `W` | Autopilot: Zickzack-Suche, wachsendes Quadrat, aus |
 | `Rechtsklick` | Autopilot-Wegpunkt auf der Karte setzen |
-| `Backspace` | Autopilot-Route löschen |
+| `Rücktaste` | Autopilot-Route löschen |
 | `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist 30° beiderseits des Hecks taub) |
 
 Auf der Brücke steuert der Trackball das Ruder. `C` (Kurs) und `V` (Fahrt) öffnen die direkte Zahleneingabe, wie `C`/`V`/`D` auf dem U-Boot; die Simulation läuft währenddessen weiter. `Enter` bestätigt, `Esc` bricht ab.
@@ -950,7 +950,7 @@ Seite 3 (Besatzung) zeigt den Wachplan. Die Besatzung geht in drei Wachen: eine 
 | `<- / ->` | Kompartiment wählen |
 | `Auf / Ab` | Team 1-3 auswählen (ohne Zuweisung) |
 | `Eingabe` | Gewähltes Team dem gewählten Kompartiment zuweisen |
-| `Backspace` | Gewähltes Team zurückziehen |
+| `Rücktaste` | Gewähltes Team zurückziehen |
 | `C` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
 | `W` | Wache jetzt ablösen (Seite Besatzung) |
 | `G` | Gefechtsstationen an/aus (Seite Besatzung) |
@@ -1092,7 +1092,7 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 | `R` | Seeraumradar an/aus (EMCON) |
 | `Shift+R` | Luftraumradar an/aus (EMCON) |
 | `I` | CIWS-Feuerfreigabe umschalten (gesperrt = feuert nie auf anfliegende ASM) |
-| `Backspace` | Alle markierten Meldungen abwählen |
+| `Rücktaste` | Alle markierten Meldungen abwählen |
 | `B` | Neuestes bloßes Radarecho als Track markieren (oder das Echo anklicken) |
 | `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Karte folgt dem eigenen Schiff an/aus |
@@ -1110,7 +1110,7 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 | `Shift+W` | OPZ-Seite 4: Waffen des Begleiters frei / gesperrt |
 | `Strg+Enter` | OPZ-Seite 4: ein ASROC des Begleiters auf den gewählten Track (Standort unter 2 min) |
 | `↑/↓ ←/→` | Seite 5 Anzeige: Karteneinstellung wählen, ändern |
-| `Backspace` | Seite 5: gewählte Karteneinstellung auf Standard |
+| `Rücktaste` | Seite 5: gewählte Karteneinstellung auf Standard |
 | `Shift+Backspace` | Seite 5: alle Karteneinstellungen auf Standard |
 
 ### Maus
@@ -2088,7 +2088,7 @@ Alle Tasten des U-Boots auf der uConsole (`F1` an einer U-Boot-Station zeigt die
 | `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist achtern taub) |
 | `Rechtsklick` | Routen-Wegpunkt auf der Karte setzen (Navigation) |
 | `W` | Route: Zickzack-Suche, wachsendes Quadrat, aus (Navigation) |
-| `Backspace` | Route löschen (Navigation) |
+| `Rücktaste` | Route löschen (Navigation) |
 | `0` | Wetterseite des U-Boots (0 oder Esc schließt) |
 | `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
 | `Menü-Symbol (Kopfzeile)` | Spielmenü per Maus: Hilfe, Optionen, Speichern/Laden, Wetter, Plot, Autocrew, Beenden und mehr; jedes Overlay schließt mit seinem Schließfeld (wie Esc) |
@@ -2375,7 +2375,7 @@ Jede Taste, die eine Station nutzen kann, erscheint als blauer Tastenchip, nie a
 
 Menüzeilen, Dialogzeilen, Speicherplätze und die Hinweise darunter sind ebenfalls anklickbar; das Mausrad blättert durch Menüs und scrollt die Hilfe, und ein Rechtsklick bricht in Menüs, Dialogen, Eingaben und am Missionsende ab wie `Esc`. Auf Karten zoomt das Rad, Ziehen verschiebt und ein Klick heftet einen Tooltip an.
 
-Das Menü-Symbol in der Kopfzeile links vom Hell/Dunkel-Schalter öffnet auf beiden Seiten das Spielmenü: Hilfe, Optionen, Speichern und Laden, Wetterseite, Plot, Autocrew und Crew-Assistenz, Simulationsprotokoll, Erster Offizier, Einheitenanalysator, Remote Crew, Nationen und Beenden, jeweils mit ihrer Taste; ein Klick neben das Menü oder eine Taste schließt es. Jedes Overlay (Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Live-Verkehr, Wetterseite, Autocrew-Übersicht und Simulationsprotokoll) hat oben rechts ein Schließfeld, das wie `Esc` wirkt. `F1` listet alle Tasten der Station.
+Das Menü-Symbol in der Kopfzeile links vom Hell/Dunkel-Schalter öffnet auf beiden Seiten das Spielmenü: Hilfe, Optionen, Speichern und Laden, Wetterseite, Plot, Autocrew und Crew-Assistenz, Simulationsprotokoll, Erster Offizier, Einheitenanalysator, Remote Crew, Nationen und Beenden, jeweils mit ihrer Taste; ein Klick neben das Menü oder eine Taste schließt es. Jedes Overlay (Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Live-Verkehr, Wetterseite, Autocrew-Übersicht, Simulationsprotokoll, Erster Offizier und Sprachmodell-Einstellungen) hat oben rechts ein Schließfeld, das wie `Esc` wirkt. `F1` listet alle Tasten der Station.
 
 ### Hilfe (F1) und Ereignislog (F11)
 
@@ -2500,7 +2500,7 @@ Das Modell läuft auf einem Server, nie auf der uConsole selbst. Der Schlüssel 
 
 - Funkverkehr: Jede Meldung der Führung und die Funkbefehle des besetzten U-Boots erscheinen zusätzlich wie echter Funkverkehr formuliert neben dem Original. Zahlen, Peilungen und Positionen bleiben wie gegeben; das Original bleibt maßgeblich.
 - Einsatzbericht: Am Missionsende schreibt das Modell für jede Seite einen kurzen Bericht aus der Aufzeichnung der Nachbesprechung (jetzt mit der Wahrheit). `B` in der Nachbesprechung zeigt ihn, der Browser zeigt ihn in der Wiedergabe der Nachbesprechung, und das Dienstbuch behält ihn bei der Mission (`B` dort).
-- Erster Offizier (`F7` im Einsatz, im Browser die Schaltfläche **IWO fragen**): Lagemeldung, eine getippte Frage (beantwortet aus dem eigenen Lagebild und dem Handbuch), ein getippter Befehl, Hilfe zur Klassifizierung des gewählten Kontakts und eine Einweisung für die eigene Station. `Links`/`Rechts` oder `1`-`5` wählen die Art, `Enter` sendet, `Hoch`/`Runter` blättern, `Esc` schließt. Der Offizier sieht nur das Lagebild der eigenen Seite, wie die eigenen Stationen.
+- Erster Offizier (`F7` im Einsatz, im Browser die Schaltfläche **IWO fragen**): Lagemeldung, eine getippte Frage (beantwortet aus dem eigenen Lagebild und dem Handbuch), ein getippter Befehl, Hilfe zur Klassifizierung des gewählten Kontakts und eine Einweisung für die eigene Station. `Links`/`Rechts` oder `1`-`5` wählen die Art, `Enter` sendet, `Hoch`/`Runter` blättern, `Esc` schließt. Mit der Maus wählt ein Klick auf einen Reiter die Art, die Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen Befehl, blättern und schließen, das Mausrad blättert, und solange das Modell aus ist, öffnet ein Knopf seine Einstellungen; auf der Einstellungsseite ändert ein Klick auf eine Zeile sie wie `Enter`. Der Offizier sieht nur das Lagebild der eigenen Seite, wie die eigenen Stationen.
 - Getippte Befehle: nur Kurs, Fahrt, Tiefe, Schleichfahrt und Gefechtsstationen, nie Waffen. Der Offizier schlägt die Stationsbefehle vor, und nichts wird gegeben, bevor Sie bestätigen (`Enter`; `Rücktaste` oder `Esc` verwirft). Im Browser gehen die Befehle nur von einer Station, die sie geben darf.
 - Coach: Mit eingeschaltetem Coach (selten oder oft) erscheint ab und zu ein kurzer Tipp aus dem eigenen Lagebild in der Meldezeile.
 - Dienstbuch: `A` lässt das Modell die Dienstzeit bewerten, `B` zeigt den neuesten Bericht. Eine Mission, in der Lagemeldungen, Fragen, Befehle, Klassifizierungshilfe oder der Coach genutzt wurden, ist „mit Berater“ markiert und bekommt keine Bestwertung und keine Auszeichnung; die Einweisung allein zählt nicht.

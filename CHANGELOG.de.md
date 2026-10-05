@@ -4,6 +4,22 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.224
+
+Version 1.3.224 macht den Ersten Offizier (`F7`) und die Einstellungen
+des Sprachmodells auf dem uConsole und in den Desktop-Apps vollständig mit
+der Maus bedienbar. Ein Klick auf einen Reiter wählt die Art der Anfrage;
+blaue Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen
+getippten Befehl, blättern älter und neuer und schließen die Seite; das
+Mausrad blättert; oben rechts sitzt ein Schließfeld, und kein Klick
+erreicht die Station dahinter. Solange das Modell aus ist, öffnet ein
+Knopf seine Einstellungen, in denen ein Klick auf eine Zeile sie wie Enter
+ändert und Tastenknöpfe ein Feld speichern oder abbrechen. Auf/Ab blättern
+das Protokoll jetzt ab dem ersten Schritt und auch, während ein Befehl auf
+Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
+bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52
+laden weiter.
+
 ## 1.3.218
 
 Version 1.3.218 lässt einen Klick auf eine Sonar-Kontaktkarte diesen

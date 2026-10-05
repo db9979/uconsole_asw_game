@@ -12,7 +12,7 @@ Jede Taste, die eine Station nutzen kann, erscheint als blauer Tastenchip, nie a
 
 Menüzeilen, Dialogzeilen, Speicherplätze und die Hinweise darunter sind ebenfalls anklickbar; das Mausrad blättert durch Menüs und scrollt die Hilfe, und ein Rechtsklick bricht in Menüs, Dialogen, Eingaben und am Missionsende ab wie `Esc`. Auf Karten zoomt das Rad, Ziehen verschiebt und ein Klick heftet einen Tooltip an.
 
-Das Menü-Symbol in der Kopfzeile links vom Hell/Dunkel-Schalter öffnet auf beiden Seiten das Spielmenü: Hilfe, Optionen, Speichern und Laden, Wetterseite, Plot, Autocrew und Crew-Assistenz, Simulationsprotokoll, Erster Offizier, Einheitenanalysator, Remote Crew, Nationen und Beenden, jeweils mit ihrer Taste; ein Klick neben das Menü oder eine Taste schließt es. Jedes Overlay (Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Live-Verkehr, Wetterseite, Autocrew-Übersicht und Simulationsprotokoll) hat oben rechts ein Schließfeld, das wie `Esc` wirkt. `F1` listet alle Tasten der Station.
+Das Menü-Symbol in der Kopfzeile links vom Hell/Dunkel-Schalter öffnet auf beiden Seiten das Spielmenü: Hilfe, Optionen, Speichern und Laden, Wetterseite, Plot, Autocrew und Crew-Assistenz, Simulationsprotokoll, Erster Offizier, Einheitenanalysator, Remote Crew, Nationen und Beenden, jeweils mit ihrer Taste; ein Klick neben das Menü oder eine Taste schließt es. Jedes Overlay (Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Live-Verkehr, Wetterseite, Autocrew-Übersicht, Simulationsprotokoll, Erster Offizier und Sprachmodell-Einstellungen) hat oben rechts ein Schließfeld, das wie `Esc` wirkt. `F1` listet alle Tasten der Station.
 
 ## Hilfe (F1) und Ereignislog (F11) {#tools-help}
 

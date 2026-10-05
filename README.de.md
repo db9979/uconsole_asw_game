@@ -10,17 +10,21 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.218**
+Aktuelle Version: **1.3.224**
 
-Version 1.3.218 lässt einen Klick auf eine Sonar-Kontaktkarte diesen
-Kontakt sofort abhören. Der Klick wählt den Kontakt und richtet die
-Hörpeilung auf ihn, wie Auf/Ab und danach Enter, so dass Wasserfall,
-Analyseseiten und Ton sofort zu ihm wechseln; ein Kontakt, der länger als
-2 s nicht gehört wurde, wird nur gewählt. Das gilt an der Sonarstation der
-Fregatte und im Sonarraum des U-Boots auf der uConsole und in den Desktop-Apps
-; im Browser tat ein Klick auf einen Sonarkontakt das schon. Tasten
-und Spielablauf bleiben gleich. Spielstände sind v53; v38 bis v52 werden
-weiter geladen.
+Version 1.3.224 macht den Ersten Offizier (`F7`) und die Einstellungen
+des Sprachmodells auf dem uConsole und in den Desktop-Apps vollständig mit
+der Maus bedienbar. Ein Klick auf einen Reiter wählt die Art der Anfrage;
+blaue Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen
+getippten Befehl, blättern älter und neuer und schließen die Seite; das
+Mausrad blättert; oben rechts sitzt ein Schließfeld, und kein Klick
+erreicht die Station dahinter. Solange das Modell aus ist, öffnet ein
+Knopf seine Einstellungen, in denen ein Klick auf eine Zeile sie wie Enter
+ändert und Tastenknöpfe ein Feld speichern oder abbrechen. Auf/Ab blättern
+das Protokoll jetzt ab dem ersten Schritt und auch, während ein Befehl auf
+Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
+bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52
+laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

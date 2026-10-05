@@ -10,16 +10,19 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.218**
+Current release: **1.3.224**
 
-Release 1.3.218 makes a click on a sonar contact card listen to that
-contact at once. The click selects the contact and trains the listening
-beam on it, like Up/Down followed by Enter, so the waterfall, the analysis
-pages and the sound switch to it straight away; a contact not heard for
-more than 2 s is only selected. This holds at the frigate's sonar station
-and in the submarine's sonar room on the uConsole and the desktop apps; in
-the browser a click on a sonar contact already did this. Keys and gameplay
-are unchanged. Saves are v53; v38 to v52 saves still load.
+Release 1.3.224 makes the executive officer (`F7`) and the language
+model settings fully mouse-operable on the uConsole and the desktop apps.
+A click on a tab picks the kind of request; blue key buttons under the log
+send, give or discard a typed order, scroll older and newer and close the
+page; the wheel scrolls; a close box sits in the top right corner and no
+click reaches the station behind. While the model is off a button opens
+its settings, where a click on a row changes it like Enter and key
+buttons save or cancel a field. Up/Down now scroll the log from the first
+step and also while an order waits for confirmation. The browser's
+executive officer already worked by mouse. Gameplay is unchanged. Saves
+are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

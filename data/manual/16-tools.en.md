@@ -12,7 +12,7 @@ Every key a station can use is shown as a blue key chip, never as plain text, an
 
 Menu rows, dialog rows, save slots and the hints under them are clickable too; the wheel moves through menus and scrolls the help, and a right click cancels like `Esc` in menus, dialogs, entries and at the mission end. On charts the wheel zooms, dragging pans and a click pins a tooltip.
 
-The menu icon in the top bar, left of the dark/light switch, opens the game menu on both sides: help, options, save and load, the weather panel, the plot, the autocrew and crew assist, the simulation log, the executive officer, the unit analyzer, Remote Crew, nations and quit, each marked with its key; a click beside the menu or any key closes it. Every overlay (help, options, save/load, quit, nations, live traffic, the weather panel, the autocrew overview and the simulation log) has a close box in its top right corner that acts like `Esc`. `F1` lists every key of the station.
+The menu icon in the top bar, left of the dark/light switch, opens the game menu on both sides: help, options, save and load, the weather panel, the plot, the autocrew and crew assist, the simulation log, the executive officer, the unit analyzer, Remote Crew, nations and quit, each marked with its key; a click beside the menu or any key closes it. Every overlay (help, options, save/load, quit, nations, live traffic, the weather panel, the autocrew overview, the simulation log, the executive officer and the language model settings) has a close box in its top right corner that acts like `Esc`. `F1` lists every key of the station.
 
 ## Help (F1) and event log (F11) {#tools-help}
 

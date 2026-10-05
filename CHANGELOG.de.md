@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.215
+## 1.3.221
 
-Version 1.3.215 macht das Veröffentlichen sicherer. Eine neue Version
+Version 1.3.221 macht das Veröffentlichen sicherer. Eine neue Version
 erscheint erst, wenn alle Tests auf ihr bestanden sind, so kommt ein
 fehlerhafter Stand nie ins Update-Angebot. Scheitert der Windows-Bau,
 bekommen uConsole und Mac das Update trotzdem, und für Windows bleibt die
@@ -14,6 +14,18 @@ bekommen uConsole und Mac das Update trotzdem, und für Windows bleibt die
 SHA-256-Prüfsumme angeboten. Die Tests laufen jetzt auch unter Windows und
 mit Python 3.13. Spiel und Tasten bleiben gleich. Spielstände sind v53;
 v38 bis v52 laden weiter.
+
+## 1.3.218
+
+Version 1.3.218 lässt einen Klick auf eine Sonar-Kontaktkarte diesen
+Kontakt sofort abhören. Der Klick wählt den Kontakt und richtet die
+Hörpeilung auf ihn, wie Auf/Ab und danach Enter, so dass Wasserfall,
+Analyseseiten und Ton sofort zu ihm wechseln; ein Kontakt, der länger als
+2 s nicht gehört wurde, wird nur gewählt. Das gilt an der Sonarstation der
+Fregatte und im Sonarraum des U-Boots auf der uConsole und in den Desktop-Apps
+; im Browser tat ein Klick auf einen Sonarkontakt das schon. Tasten
+und Spielablauf bleiben gleich. Spielstände sind v53; v38 bis v52 werden
+weiter geladen.
 
 ## 1.3.214
 

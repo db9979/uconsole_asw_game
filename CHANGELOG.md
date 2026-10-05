@@ -4,15 +4,26 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.215
+## 1.3.221
 
-Release 1.3.215 makes the release process safer. A new version is only
+Release 1.3.221 makes the release process safer. A new version is only
 published after all tests have passed on it, so a broken build never
 reaches the update offer. If the Windows build fails, the uConsole and the
 Mac still get the update, and the older release stays for Windows. Updates
 for Windows and macOS are only offered with a SHA-256 checksum. The tests
 now also run on Windows and on Python 3.13. Gameplay and keys are
 unchanged. Saves are v53; v38 to v52 saves still load.
+
+## 1.3.218
+
+Release 1.3.218 makes a click on a sonar contact card listen to that
+contact at once. The click selects the contact and trains the listening
+beam on it, like Up/Down followed by Enter, so the waterfall, the analysis
+pages and the sound switch to it straight away; a contact not heard for
+more than 2 s is only selected. This holds at the frigate's sonar station
+and in the submarine's sonar room on the uConsole and the desktop apps; in
+the browser a click on a sonar contact already did this. Keys and gameplay
+are unchanged. Saves are v53; v38 to v52 saves still load.
 
 ## 1.3.214
 

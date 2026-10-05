@@ -671,7 +671,12 @@ class OperatorMixin(WeaponOrdersMixin):
                 if self.set_sonar_focus(contact) is not True:
                     return False
             else:
+                # A click on a contact row picks it and trains the listening
+                # beam on it at once (Up/Down then Enter); a contact heard
+                # too long ago is only picked.
                 self.selected_contact = contact
+                if self.set_sonar_focus(contact) is True:
+                    self.flash(message("runtime.listen.follow", contact=contact.id))
         elif action == "listen_bearing":
             value = target.get("value")
             if (type(value) not in (int, float) or not math.isfinite(value)

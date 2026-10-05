@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.215**
+Current release: **1.3.221**
 
-Release 1.3.215 makes the release process safer. A new version is only
+Release 1.3.221 makes the release process safer. A new version is only
 published after all tests have passed on it, so a broken build never
 reaches the update offer. If the Windows build fails, the uConsole and the
 Mac still get the update, and the older release stays for Windows. Updates

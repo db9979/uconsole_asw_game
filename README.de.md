@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.215**
+Aktuelle Version: **1.3.221**
 
-Version 1.3.215 macht das Veröffentlichen sicherer. Eine neue Version
+Version 1.3.221 macht das Veröffentlichen sicherer. Eine neue Version
 erscheint erst, wenn alle Tests auf ihr bestanden sind, so kommt ein
 fehlerhafter Stand nie ins Update-Angebot. Scheitert der Windows-Bau,
 bekommen uConsole und Mac das Update trotzdem, und für Windows bleibt die

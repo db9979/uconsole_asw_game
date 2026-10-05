@@ -336,3 +336,37 @@ def test_environment_and_fusion_state_survive_save_load(game):
     loaded = restored.sonar.contacts[contact.target_id]
     assert loaded.array_observations == contact.array_observations
     assert loaded.fusion_status == "NUR BOW"
+
+
+def test_contact_row_click_selects_and_trains_the_beam_on_it(game):
+    """A click on a contact card picks it and listens to it at once (Up/Down
+    then Enter), so the waterfall and the sound switch to that contact."""
+    from src.ui import layout
+    first, second = game.subs[0], game.civilians[0]
+    for entity, bearing in ((first, 40.0), (second, 200.0)):
+        contact = game.sonar._get_contact(entity)
+        contact.bearing = bearing
+        contact.last_seen = game.sim_t
+    game.sonar.set_listen_bearing(120)
+    with layout.capture_geometry() as drawn:
+        game.draw()
+    rows = {item["title"]: item["rect"] for item in drawn
+            if item["kind"] == "sonar-contact"}
+    picked = game.sonar.contacts[second.id]
+    rect = rows[f"sonar:contact:{picked.id}"]
+    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=rect.center))
+    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONUP, button=1, pos=rect.center))
+    assert game.selected_contact is picked
+    assert game.sonar.focus_locked
+    assert game.sonar.listen_bearing == pytest.approx(200.0)
+
+
+def test_contact_row_click_on_a_stale_contact_only_selects_it(game):
+    contact = game.sonar._get_contact(game.subs[0])
+    contact.bearing = 72.0
+    contact.last_seen = game.sim_t
+    game.sim_t += 5.0
+    game.sonar.set_listen_bearing(120)
+    assert game._handle_sonar_click({"action": "contact", "value": contact.id, "safe": True})
+    assert game.selected_contact is contact
+    assert not game.sonar.focus_locked and game.sonar.listen_bearing == 120

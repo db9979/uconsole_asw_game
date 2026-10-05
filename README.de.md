@@ -14,22 +14,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.205**
+Aktuelle Version: **1.3.206**
 
-Version 1.3.205 behebt, was eine vollständige Code-Prüfung gefunden hat,
-ohne das Spiel zu verändern. Ein beschädigter oder von Hand bearbeiteter
-Spielstand wird jetzt abgewiesen, statt das Spiel zu beenden, und ein
-fehlgeschlagenes Laden verändert die laufende Mission nicht mehr. Auf der
-uConsole ruckelt es weniger: das Schallbild wird schneller berechnet, Regen
-auf der Karte wird einmal statt in jedem Bild gezeichnet und ist im hellen
-Farbschema jetzt sichtbar, Statuszeilen und Tooltips verwenden ihren
-gezeichneten Text wieder, und ein Geräusch aus einer neuen Richtung wird
-nicht neu erzeugt. Im Browser gehen Spielgeräusche und Durchsagen nicht mehr
-verloren, wenn der Host ein Menü öffnet. Tooltip und Zeitangabe des
-Sonar-Wasserfalls passen jetzt zum verkürzten Verlauf (Shift+H). Ein
-abgebrochener Update-Download lässt sich erneut starten, und das
-Windows-Programm schreibt sein Absturzprotokoll wieder. Tasten bleiben
-gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+Version 1.3.206 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
+mit echten Flugzeugen (OpenSky ADS-B) fliegt jetzt höchstens 5 davon statt
+40, eine mit echten Schiffen (AIS) höchstens 15 statt 60, zufällig gewählt
+und behalten, bis jeder Kontakt das Gebiet verlässt, damit Kontakte nicht
+auftauchen und wieder verschwinden. Bei Dutzenden Live-Kontakten lief der
+eine Spiel-Thread voll, und das Spiel ruckelte, obwohl der Prozessor nur
+etwa ein Drittel Last zeigte. Das OPZ-Lagebild wird
+außerdem nur noch einmal pro Bild statt mehrmals berechnet, und ein Schwall
+Live-AIS-Meldungen wird auf mehrere Bilder verteilt. Remote-Crew-Browser
+sehen dieselben fünf Flugzeuge. Die Tasten bleiben gleich. Spielstände sind
+v52; v38- bis v51-Stände werden weiter geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

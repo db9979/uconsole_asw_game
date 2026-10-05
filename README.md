@@ -12,19 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.205**
+Current release: **1.3.206**
 
-Release 1.3.205 fixes what a full code review found, without changing how
-the game plays. A damaged or hand-edited save is now refused instead of
-closing the game, and a failed load no longer changes the running mission.
-On the uConsole the game stutters less: the sound picture is recomputed
-faster, rain on the chart is drawn once instead of every frame and is now
-visible in the light scheme, status texts and tooltips reuse their rendered
-text, and a sound heard from a new direction is no longer synthesized
-again. In the browser, game sounds and callouts are no longer lost when the
-host opens a menu. The sonar waterfall's tooltip and time label now match
-the shortened history (Shift+H). A broken update download can be retried,
-and the Windows program writes its crash log again. Keys are unchanged.
+Release 1.3.206 keeps the uConsole smooth with live traffic. A mission with
+real aircraft (OpenSky ADS-B) now flies at most 5 of them instead of 40, and
+one with real ships (AIS) at most 15 instead of 60, picked at random and
+kept until each leaves the area, so contacts do not flicker in and out. With
+dozens of live contacts the single game thread was saturated and the game
+stuttered although the processor showed only about a third of its load. The OPZ picture is also built once per frame instead of
+several times, and a burst of live AIS reports is spread over several
+frames. Remote Crew browsers see the same five aircraft. Keys are unchanged.
 Saves are v52; v38 to v51 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

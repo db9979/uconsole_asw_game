@@ -22,8 +22,8 @@ def _game(seed=1201):
 def test_save_is_v47_older_documents_are_rejected_from_v38_on_lifted():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (52, "u-jagd-save-v52")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (52, "u-jagd-save-v52")
+    assert (state["version"], state["save_schema"]) == (53, "u-jagd-save-v53")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (53, "u-jagd-save-v53")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)

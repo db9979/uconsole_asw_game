@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.213
+
+Version 1.3.213 lässt ein feindliches U-Boot vor der Waffe ausweichen, die
+es hört. Bisher drehte es von der Peilung der Fregatte weg, auch wenn
+Torpedo, Wasserbombe oder Rakete von anderswo kamen, etwa vom Hubschrauber.
+Jetzt dreht es von der Peilung der Waffe selbst weg und nur dann von der
+Fregatte, wenn es keine gehört hat. Tasten bleiben gleich.
+Spielstände sind v53; v38 bis v52 laden weiter.
+
 ## 1.3.212
 
 Version 1.3.212 behebt Fehler in der Sonar-Akustik, die die Code-Prüfung

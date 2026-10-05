@@ -275,3 +275,38 @@ def test_remote_radio_projection_carries_reports_not_truth():
     text = json.dumps(payload)
     assert str(task["true_x"]) not in text and "true_x" not in text
     assert math.isfinite(row["bearing"]) and row["respond_s"] > 0.0
+
+
+def test_a_new_offer_is_called_out_on_the_bridge():
+    game = _game()
+    task = game._offer_task("datum")
+    assert task is not None
+    assert [row["key"] for row in game.callouts.detached()][-1] == "task"
+
+
+def test_the_radio_autocrew_answers_a_waiting_offer_without_penalty():
+    from src.core.autocrew import AutocrewController
+    game = _game()
+    game.autocrew.set_assist(True, game.sim_t)
+    score = game.score
+    task = game._offer_task("datum")
+    # The operator gets the first two minutes to answer himself.
+    _slow(game, config.AUTOCREW_TASK_WAIT_S - 1.0)
+    AutocrewController._radio(game)
+    assert task["state"] == "offered"
+    _slow(game, 2.0)
+    AutocrewController._radio(game)
+    assert task["state"] == "declined" and task["points"] == 0
+    assert game.score == score
+    assert any("task.crew_declined" in json.dumps(text) for _, text in game.messages)
+    # A replenishment costs nothing if missed: the crew takes it.
+    ras = game._offer_task("ras", requested=True)
+    _slow(game, config.AUTOCREW_TASK_WAIT_S + 1.0)
+    AutocrewController._radio(game)
+    assert ras["state"] == "active"
+    # The whole controller does it too, through its radio cadence.
+    later = game._offer_task("patrol")
+    if later is not None:
+        _slow(game, config.AUTOCREW_TASK_WAIT_S + 6.0)
+        game.autocrew.update(game)
+        assert later["state"] == "declined" and game.score == score

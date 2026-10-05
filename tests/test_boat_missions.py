@@ -8,7 +8,7 @@ from pathlib import Path
 
 from src.core import boat_debrief, boat_missions, config, opfor
 from src.core.game import Game
-from src.core.i18n import localize
+from src.core.i18n import localize, message
 from src.commander import projections
 from src.sensors.platform import MAST_DEPTH_M
 from src.sonar.platforms import OWNSHIP_TARGET_ID
@@ -71,6 +71,21 @@ def test_reaching_the_goal_wins_the_breakthrough_for_the_boat():
     assert _reason(game) == "end.reason.boat_broke_through"
     assert boat_debrief.outcome(game, boat) == "broke_through"
     assert uboot_view.end_text(game, boat) == "uboot.end.broke_through"
+
+
+def test_the_boat_end_panel_says_why_and_the_score(monkeypatch):
+    game, boat = _boat_game("s5_durchbruch")
+    game.mission_time = game.mission.time_limit_s
+    game._check_mission_end()
+    assert game.mission_result == "SIEG"
+    shown = []
+    real = layout.blit_line
+    monkeypatch.setattr(layout, "blit_line", lambda s, text, *args, **kw: (
+        shown.append(localize(text)), real(s, text, *args, **kw))[1])
+    uboot_view.draw_end_panel(game, boat)
+    assert shown[0] == "uboot.end.over"
+    assert localize(message("end.reason.boat_stopped")) in shown
+    assert localize(game.logbook_end_line()) in shown
 
 
 def test_holding_the_boat_off_wins_for_the_frigate():

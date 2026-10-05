@@ -1101,6 +1101,9 @@ TASK_INTERVAL_S = (1500.0, 2700.0)
 TASK_MAX_OFFERS = 6
 TASK_MAX_OPEN = 2
 TASK_RESPONSE_S = 300.0            # accept or decline inside this window
+# The radio autocrew answers a task left this long: it accepts the
+# replenishment (nothing to lose) and declines the rest without penalty.
+AUTOCREW_TASK_WAIT_S = 120.0
 TASK_DURATION_S = {"identify": 2400.0, "datum": 3000.0, "ras": 3600.0, "patrol": 3600.0}
 TASK_EMCON_S = (1200.0, 1800.0)    # ordered radar silence
 TASK_EMCON_GRACE_S = 90.0          # time to switch the radars off

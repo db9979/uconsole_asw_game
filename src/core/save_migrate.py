@@ -145,6 +145,14 @@ def _v51_to_v52(doc: dict) -> None:
                 task["aboard"] = 0
 
 
+def _v52_to_v53(doc: dict) -> None:
+    # The torpedo bearing an AI submarine runs from (1.3.213): none heard,
+    # so it evades from the frigate's bearing as the older release did.
+    for sub in doc.get("subs") or ():
+        if isinstance(sub, dict):
+            sub["torpedo_threat_bearing"] = None
+
+
 STEPS = {
     38: _v38_to_v39,
     39: _v39_to_v40,
@@ -160,6 +168,7 @@ STEPS = {
     49: _v49_to_v50,
     50: _v50_to_v51,
     51: _v51_to_v52,
+    52: _v52_to_v53,
 }
 
 

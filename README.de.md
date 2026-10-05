@@ -10,20 +10,14 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.212**
+Aktuelle Version: **1.3.213**
 
-Version 1.3.212 behebt Fehler in der Sonar-Akustik, die die Code-Prüfung
-gefunden hat. Die Strahlverfolgung hält Schallstrahlen nicht mehr in ihrer
-Umkehrtiefe fest; Schattenzonen und Konvergenzzonen entstehen also dort, wo
-die Schallgeschwindigkeit sie hinlegt, und im Flachwasser endet ein Strahl
-nicht mehr nach 12 Reflexionen. Der Nachhall des Aktivsonars auf kurze
-Entfernung in tiefem Wasser folgt jetzt dem echten Streifwinkel und zählt
-den Meeresboden erst, wenn das Echo ihn erreichen kann. Die eigene Linie der
-Fregatte im LOFAR ist jetzt die Blattfrequenz aus der Wellendrehzahl (etwa
-9,7 Hz bei 20 kn), und DEMON zeigt neben einer Blattlinie die Wellenlinie
-und die doppelte Linie, sodass sich die Blätter eines Kontakts zählen
-lassen. Tasten bleiben gleich. Spielstände sind v52; v38 bis v51 laden
-weiter.
+Version 1.3.213 lässt ein feindliches U-Boot vor der Waffe ausweichen, die
+es hört. Bisher drehte es von der Peilung der Fregatte weg, auch wenn
+Torpedo, Wasserbombe oder Rakete von anderswo kamen, etwa vom Hubschrauber.
+Jetzt dreht es von der Peilung der Waffe selbst weg und nur dann von der
+Fregatte, wenn es keine gehört hat. Tasten bleiben gleich.
+Spielstände sind v53; v38 bis v52 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

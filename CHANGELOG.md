@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.213
+
+Release 1.3.213 makes an enemy submarine evade from the weapon it hears.
+It used to turn away from the frigate's bearing even when the torpedo,
+depth charge or rocket came from somewhere else, such as the helicopter.
+Now it turns away from the bearing of the weapon itself, and falls back to
+the frigate's bearing only when it has heard none. Keys are unchanged. Saves are v53; v38
+to v52 saves still load.
+
 ## 1.3.212
 
 Release 1.3.212 fixes sonar acoustics the code review found. The ray

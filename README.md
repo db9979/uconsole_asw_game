@@ -10,18 +10,14 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.212**
+Current release: **1.3.213**
 
-Release 1.3.212 fixes sonar acoustics the code review found. The ray
-tracer no longer traps sound rays at their turning depth, so shadow zones
-and convergence zones form where the sound speed puts them, and shallow
-water no longer cuts a ray off after 12 bounces. Active sonar reverberation
-at short range in deep water now follows the real grazing angle and only
-counts the seabed once the echo can reach it. The frigate's own line on the
-LOFAR is now the blade-rate line from the shaft revolutions (about 9.7 Hz at
-20 kn), and DEMON shows the shaft line and the double line beside a blade
-line, so the blades of a contact can be counted. Keys are unchanged. Saves
-are v52; v38 to v51 saves still load.
+Release 1.3.213 makes an enemy submarine evade from the weapon it hears.
+It used to turn away from the frigate's bearing even when the torpedo,
+depth charge or rocket came from somewhere else, such as the helicopter.
+Now it turns away from the bearing of the weapon itself, and falls back to
+the frigate's bearing only when it has heard none. Keys are unchanged. Saves are v53; v38
+to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

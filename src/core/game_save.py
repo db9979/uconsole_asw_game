@@ -731,6 +731,7 @@ class SaveMixin:
                            tma_track_id=s.tma_track_id,
                            tma_next_t=s.tma_next_t,
                            torpedo_alarm_left=s.torpedo_alarm_left,
+                           torpedo_threat_bearing=s.torpedo_threat_bearing,
                            blow_available=s.blow_available,
                            emergency_ascent=s.emergency_ascent,
                            transient_left=s.transient_left,
@@ -1427,6 +1428,7 @@ class SaveMixin:
             s.tma_track_id = sd["tma_track_id"]
             s.tma_next_t = sd["tma_next_t"]
             s.torpedo_alarm_left = sd["torpedo_alarm_left"]
+            s.torpedo_threat_bearing = sd["torpedo_threat_bearing"]
             s._last_actual_speed = s.speed
             s.blow_available = sd["blow_available"]
             s.emergency_ascent = sd["emergency_ascent"]

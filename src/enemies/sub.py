@@ -197,6 +197,9 @@ class Sub(FrigateRelativeMixin):
         self.tma_track_id = None
         self.tma_next_t = 0.0
         self.torpedo_alarm_left = -1.0
+        # Bearing of the torpedo (or ASW weapon) the AI last heard; the boat
+        # runs from it, not from the frigate, while the alarm is fresh.
+        self.torpedo_threat_bearing = None
         self.emergency_ascent = False
         self.transient_left = 0.0
         # Tube flooding / outer door: a short transient the frigate's sonar
@@ -386,6 +389,9 @@ class Sub(FrigateRelativeMixin):
             if bearing is not None:
                 self.crew.intercept("torpedo", bearing, None)
             return
+        if source is not None:
+            self.torpedo_threat_bearing = math.degrees(math.atan2(
+                source[0] - self.x, -(source[1] - self.y))) % 360.0
         if self.state == "EVADE" or self.torpedo_alarm_left == 0.0:
             # Already evading, or the recognition time has elapsed.
             self._react_to_torpedo()
@@ -1073,6 +1079,11 @@ class Sub(FrigateRelativeMixin):
             self._advance_depth(self.target_depth,
                                 self.motion.depth_rate_m_s * 3.0, dt)
             bearing = self.memory["contact_bearing"]
+            if (self.torpedo_threat_bearing is not None
+                    and self.memory["last_torpedo_age"] <= config.SUB_EVADE_DURATION_S):
+                # A torpedo, ASROC or charge rarely comes from the frigate's
+                # bearing: run from the weapon that was heard.
+                bearing = self.torpedo_threat_bearing
             target_course = (self.course if bearing is None else
                              (bearing + 180.0 + self.evade_offset) % 360.0)
             if self._mission_pressing_on():

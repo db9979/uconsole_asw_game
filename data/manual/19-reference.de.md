@@ -88,7 +88,7 @@ Was See und Wetter bewirken und was die Bildschirme davon zeigen:
 | AIP (modern) | 0,85 | 250 m | 5 |
 | Nuklear-Jagd-U-Boot | 0,92 | 400 m | 8 |
 
-U-Boote weichen nach einem gehörten Ping oder Torpedo 240 s aus, können einen Täuschkörper ausstoßen, lauern, schnorcheln (durch HFDF und ESM erfassbar) und pingen gelegentlich aus 15 sm oder weniger. In der Nähe der Fregatte kann ein U-Boot stattdessen zu einem kartierten Wrack innerhalb von 8 sm schleichen und sich 15-30 Minuten still daneben auf Grund legen.
+U-Boote weichen nach einem gehörten Ping oder Torpedo 240 s aus (weg von der Peilung des gehörten Torpedos, der Rakete oder Wasserbombe, sonst weg von der Fregatte), können einen Täuschkörper ausstoßen, lauern, schnorcheln (durch HFDF und ESM erfassbar) und pingen gelegentlich aus 15 sm oder weniger. In der Nähe der Fregatte kann ein U-Boot stattdessen zu einem kartierten Wrack innerhalb von 8 sm schleichen und sich 15-30 Minuten still daneben auf Grund legen.
 
 Ein U-Boot mit ausgefahrenem Mast oder Schnorchel, das ein Flugzeugradar (Helikopter oder Seefernaufklärer) hört, geht auf Tiefe und schiebt das Schnorcheln 15 Minuten auf. In den Fregattenszenarien (1 bis 4) torpediert ein Patrouillen-U-Boot, das 10 Minuten keinen Ping und keinen Torpedo gehört hat, mehr als 2 Torpedos behält und mehr als 10 sm von der Fregatte entfernt ist, ein Handelsschiff innerhalb von 4 sm bei etwa einem von sieben seiner minütlichen Schussfenster; jedes verlorene Handelsschiff kostet 300 Punkte.
 

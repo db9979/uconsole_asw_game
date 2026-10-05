@@ -505,7 +505,10 @@ def _check_sub_entry(entry, profile_key, profile, entity_id, runtime_catalog,
                 and (not isinstance(entry["tma_track_id"], str)
                      or len(entry["tma_track_id"]) > 64))
             or not bounded(entry.get("tma_next_t"), 0.0, 1e12)
-            or not bounded(entry.get("torpedo_alarm_left"), -1.0, 15.0)):
+            or not bounded(entry.get("torpedo_alarm_left"), -1.0, 15.0)
+            or "torpedo_threat_bearing" not in entry
+            or not (entry["torpedo_threat_bearing"] is None
+                    or bounded(entry["torpedo_threat_bearing"], 0.0, 360.0))):
         return False
     endurance_profile = runtime_catalog.endurances.get(
         f"endurance.{profile_key}")

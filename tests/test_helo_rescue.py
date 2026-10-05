@@ -184,7 +184,7 @@ def test_v51_documents_gain_an_idle_hoist_and_empty_cabins():
            "helo": {"prep_s": None},
            "tasking": {"version": 1, "tasks": [{"id": 1}]}}
     lifted = save_migrate.migrate(doc)
-    assert lifted["version"] == 52
+    assert lifted["version"] == save_migrate.SAVE_VERSION
     assert lifted["helo"]["hoist"] is False and lifted["helo"]["hoist_s"] == 0.0
     assert lifted["tasking"]["version"] == 2
     assert lifted["tasking"]["tasks"][0]["aboard"] == 0

@@ -12,6 +12,7 @@ from src.ui import layout, pointer, theme
 from src.ui import observations
 
 
+from src.world import geo
 from src.ui.stations.radio_chart import CHART_WINDOW_S, chart_half_nm, draw_hfdf_chart
 from src.ui.stations.common import (
     _hfdf_error_deg,
@@ -261,10 +262,9 @@ def _draw_side(game, s, column) -> None:
         return
     for row in reversed(logged):
         age = max(0.0, game.sim_t - row["t"])
-        layout.blit_line(s, message(
-            "radio.line.logged", label=raw_text(row["label"]),
-            bearing=f"{row['bearing'] % 360:05.1f}",
-            x=f"{row['observer_x']:.1f}", y=f"{row['observer_y']:.1f}",
+        layout.blit_line(s, geo.position_text(
+            "radio.line.logged", game.world, row["observer_x"], row["observer_y"],
+            label=raw_text(row["label"]), bearing=f"{row['bearing'] % 360:05.1f}",
             age=f"{age:.0f}"),
             (gx, top, gw, row_h),
             config.COLOR_TEXT if age <= CHART_WINDOW_S else config.COLOR_TEXT_DIM, size=14)
@@ -309,10 +309,9 @@ def _draw_chart_and_log(game, s, inner, log=True) -> None:
                                (("Enter", "Enter"),), screen=s)
     for index, row in enumerate(reversed(logged)):
         age = max(0.0, game.sim_t - row["t"])
-        layout.blit_line(s, message(
-            "radio.line.logged", label=raw_text(row["label"]),
-            bearing=f"{row['bearing'] % 360:05.1f}",
-            x=f"{row['observer_x']:.1f}", y=f"{row['observer_y']:.1f}",
+        layout.blit_line(s, geo.position_text(
+            "radio.line.logged", game.world, row["observer_x"], row["observer_y"],
+            label=raw_text(row["label"]), bearing=f"{row['bearing'] % 360:05.1f}",
             age=f"{age:.0f}"),
             (gx, top + index * row_h, column, row_h),
             config.COLOR_TEXT if age <= CHART_WINDOW_S else config.COLOR_TEXT_DIM, size=15)
@@ -344,9 +343,10 @@ def task_detail_lines(game, row) -> list:
     """The selected task's order and its state, one line each."""
     lines = [message("radio.task.brief." + row["kind"],
                      name=raw_text(row["name"] or "-"), persons=row["persons"])]
-    lines.append(message("radio.task.position", x=f"{row['x']:.1f}", y=f"{row['y']:.1f}",
-                         bearing=f"{row['bearing']:03.0f}", range=f"{row['range_nm']:.1f}",
-                         radius=f"{row['radius_nm']:.1f}"))
+    lines.append(geo.position_text("radio.task.position", game.world, row["x"], row["y"],
+                                   bearing=f"{row['bearing']:03.0f}",
+                                   range=f"{row['range_nm']:.1f}",
+                                   radius=f"{row['radius_nm']:.1f}"))
     if row["course"] is not None:
         lines.append(message("radio.task.motion", course=f"{row['course']:03.0f}",
                              speed=f"{row['speed_kn']:.0f}"))

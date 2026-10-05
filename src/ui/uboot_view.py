@@ -16,6 +16,7 @@ import math
 import pygame
 
 from src.ui import theme
+from src.world.geo import position_text
 
 from src.commander.server import OPFOR_ROLES
 from src.core import boat_esm, boat_nav, config, opfor, status_tips, uboot_local
@@ -1451,8 +1452,8 @@ def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
         (message("uboot.esm.label.level"), message(
             "uboot.esm.level", level=_fmt(track.signal_db), trend=_esm_trend_text(chosen, now),
             range=_fmt(esm.range_estimate_nm(game, chosen), "{:.1f}"))),
-        (message("uboot.esm.label.fix"), message(
-            "uboot.esm.fix", x=f"{fix['x']:.1f}", y=f"{fix['y']:.1f}",
+        (message("uboot.esm.label.fix"), position_text(
+            "uboot.esm.fix", game.world, fix["x"], fix["y"],
             major=f"{fix['major_nm']:.1f}", minor=f"{fix['minor_nm']:.1f}",
             lines=fix["lines"]) if fix is not None else message("uboot.esm.no_fix")),
         (message("uboot.esm.label.class"), _esm_class_text(game, boat, chosen)),

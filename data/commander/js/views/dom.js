@@ -1,6 +1,7 @@
 import { S } from "../state/store.js";
 import { $, affiliations, domains } from "../core/base.js";
 import { classificationText, enumText, number, t, unit } from "../core/format.js";
+import { formatPosition } from "../core/geo.js";
 import { sendStationAction } from "../net/commands.js";
 import { animatedPlots, syncPlotAnimation } from "../plot/clock.js";
 import { spectrumStates } from "../plot/spectrum.js";
@@ -41,7 +42,9 @@ export function metrics(element, entries) {
   while (element.children.length > entries.length) element.lastChild.remove();
 }
 export const yesNo = (value) => typeof value === "boolean" ? t(value ? "yes" : "no") : t("unavailable");
-export const position = (value) => `${unit(value?.x, "NM")} / ${unit(value?.y, "NM")}`;
+// Degrees and minutes on a real sea area, else the chart's NM.
+export const position = (value) => formatPosition(value?.x, value?.y)
+  ?? `${unit(value?.x, "NM")} / ${unit(value?.y, "NM")}`;
 const rawFields = (value) => Object.entries(value || {}).map(([key, item]) =>
   `${key}: ${Array.isArray(item) ? item.join(", ") : String(item ?? t("unavailable"))}`).join(" / ");
 export function actionButton(labelKey, action, params, ready = true, values = {}) {

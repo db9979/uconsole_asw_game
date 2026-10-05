@@ -10,6 +10,7 @@ map (world mode ``fixed``) has no real place and keeps the NM grid.
 
 import math
 
+from src.core.i18n import message
 from src.world.projection import NM_PER_DEGREE, nm_to_lonlat
 
 # Graticule spacings in arc minutes, smallest first.
@@ -153,3 +154,42 @@ def format_position(world, x_nm, y_nm, decimals=1, decimal_sep=","):
     lon, lat = lonlat
     return (f"{format_lat(lat, decimals, decimal_sep)} "
             f"{format_lon(lon, decimals, decimal_sep)}")
+
+
+def position_message(world, x_nm, y_nm):
+    """A position as a localizable message (``geo.position``: the decimal
+    mark follows the reader's language), or None without a real sea area."""
+    lonlat = to_lonlat(world, x_nm, y_nm)
+    if lonlat is None:
+        return None
+    lon, lat = lonlat
+    lat_d, lat_m = _split(lat, 1)
+    lon_d, lon_m = _split(lon, 1)
+    lat_whole, lat_tenth = divmod(int(round(lat_m * 10)), 10)
+    lon_whole, lon_tenth = divmod(int(round(lon_m * 10)), 10)
+    return message("geo.position",
+                   lat_d=f"{lat_d:02d}", lat_m=f"{lat_whole:02d}", lat_t=str(lat_tenth),
+                   ns="N" if lat >= 0 else "S",
+                   lon_d=f"{lon_d:03d}", lon_m=f"{lon_whole:02d}", lon_t=str(lon_tenth),
+                   ew="E" if lon >= 0 else "W")
+
+
+
+def position_fields(world, x_nm, y_nm) -> dict:
+    """Text fields naming a position: ``position`` in degrees and minutes on
+    a real sea area, else ``x``/``y`` in NM (the stylized fixed chart)."""
+    position = position_message(world, x_nm, y_nm)
+    if position is None:
+        return dict(x=f"{x_nm:.1f}", y=f"{y_nm:.1f}")
+    return dict(position=position)
+
+
+def position_key(key, fields) -> str:
+    """The catalog key for ``fields``: ``<key>.geo`` takes ``{position}``."""
+    return key + ".geo" if "position" in fields else key
+
+
+def position_text(key, world, x_nm, y_nm, **params):
+    """A localizable message naming a position (see ``position_fields``)."""
+    fields = position_fields(world, x_nm, y_nm)
+    return message(position_key(key, fields), **params, **fields)

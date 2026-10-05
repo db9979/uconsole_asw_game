@@ -351,13 +351,33 @@ def measure_torpedo() -> dict:
 
 
 def measure_sub() -> dict:
+    """The reference submarine of the golden record, built from the catalog.
+
+    It used to be whatever the default mission drew; since the patrol always
+    brings its old diesel (1.3), the AIP boat is built here directly, with
+    the same profile, difficulty and defaults the mission would give it.
+    """
+    import random
+
+    from src.enemies.sub import Sub
+
     out = {}
     game = _game()
-    for sub in sorted(game.subs, key=lambda s: s.stype.key)[:1]:
-        out[f"sub.max_speed_kn.{sub.stype.key}"] = _metric(
-            sub.stype.speed_kn, "equilibrium")
-        out[f"sub.quiet.{sub.stype.key}.patrol"] = _metric(
-            sub.quiet_factor(), "equilibrium")
+    catalog = game.runtime_catalog
+    key = "aip_modern"
+    sub = Sub(game.ship.x + 20.0, game.ship.y, depth_m=60.0, course_deg=0.0,
+              stype_key=key, rng=random.Random(4242),
+              quiet_mult=game.difficulty["quiet_mult"],
+              attack_mult=game.difficulty["enemy_attack_mult"],
+              attack_cooldown_s=game.difficulty["enemy_cooldown_s"],
+              solution_threshold=game.difficulty["enemy_solution_threshold"],
+              profile=catalog.subs[key],
+              decoy_profile=catalog.decoys[catalog.runtime_bindings["submarine_decoy"]],
+              enemy_torpedo_profile=catalog.torpedoes[
+                  catalog.runtime_bindings["enemy_torpedo"]],
+              side="hostile", runtime_catalog=catalog, asw_rng=game.rng_asw)
+    out[f"sub.max_speed_kn.{key}"] = _metric(sub.stype.speed_kn, "equilibrium")
+    out[f"sub.quiet.{key}.patrol"] = _metric(sub.quiet_factor(), "equilibrium")
     return out
 
 

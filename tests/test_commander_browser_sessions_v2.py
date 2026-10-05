@@ -1041,7 +1041,7 @@ def _direct_fire_browser_states():
                        chaff_ready=True, nixies=2, asroc=4, depth_charges=20, rbu=36),
         readiness=dict(station_down=False, roe="FREE", ciws_ready=True,
                        rbu_ready=True, torpedo_warning=False,
-                       aa_ready=True, state="available", interlock="clear",
+                       aa_ready=True, state="available", interlock="clear", stage="fire",
                        reload_s=0.0), designated_target=None,
         navigation=navigation, tactical=[], target_choices=[weapon_row], depth_m=90.0,
         tubes=[dict(tube=1, state="ready", reload_s=0.0)], own_weapons=[],

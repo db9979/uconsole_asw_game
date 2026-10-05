@@ -31,6 +31,7 @@
       <p id="connection" class="connection" role="status" aria-live="polite"></p>
       <div id="host-bar" class="host-bar" role="group" data-i18n-aria="host_bar" hidden><a id="web-admin-link" href="/admin" data-i18n="admin_room" hidden></a><button id="host-save" type="button" data-i18n="host_save"></button><button id="host-load" type="button" data-i18n="host_load"></button><button id="host-new" type="button" data-i18n="host_new"></button><button id="host-missions" type="button" data-i18n="host_missions"></button><button id="host-instructor" type="button" data-i18n="instructor_open"></button><button id="host-side" type="button"></button><button id="host-end" type="button" data-i18n="host_end_mission" hidden></button><span id="host-status" class="host-status" role="status" aria-live="polite"></span></div>
       <div class="status-actions">
+        <button id="status-more" class="status-more" type="button" aria-expanded="false" aria-controls="statusbar" data-i18n-aria="status_more"><span aria-hidden="true">☰</span></button>
         <button id="language-switch" type="button" lang="de" data-i18n-aria="language_switch"></button>
         <button id="theme-switch" class="theme-switch" type="button" aria-pressed="false" data-i18n-aria="theme_switch"><span class="theme-moon" aria-hidden="true"></span><span class="theme-sun" aria-hidden="true"></span></button>
         <button id="advisor-open" type="button" hidden data-i18n="advisor_open"></button>
@@ -199,11 +200,10 @@
             <aside id="dock-right" class="dock dock-right" data-dock="right" aria-labelledby="dock-right-title">
               <div class="dock-bar"><h2 id="dock-right-title" class="dock-title" data-i18n="dock_station"></h2><button type="button" class="dock-toggle" data-dock-toggle="right" aria-controls="dock-right-body" aria-expanded="true" data-i18n-aria="dock_toggle_station"></button></div>
               <div id="dock-right-body" class="dock-body">
-              <section id="mission-card" class="panel mission-card" aria-labelledby="mission-card-title">
-              <div class="panel-heading"><h2 id="mission-card-title" data-i18n="mission"></h2></div>
-              <p id="objective"></p>
+              <details id="mission-card" class="panel mission-card">
+              <summary data-i18n-aria="mission"><span id="mission-card-title" class="mission-card-label" data-i18n="mission_orders"></span><span id="objective"></span></summary>
               <div class="session"><p id="command-permission"></p><p id="autocrew-status"></p><p id="autocrew-overview"></p></div>
-            </section>
+            </details>
               <article id="helicopter-dipping-controls" class="station-card-view station-controls" hidden><h3 data-i18n="helicopter_dip_title"></h3><button id="helicopter-dip-toggle" type="button" data-i18n="helicopter_dip_deploy"></button><button id="helicopter-dip-ping" type="button" data-i18n="helicopter_dip_ping"></button><form id="helicopter-dip-depth-form" class="control-form"><label for="helicopter-dip-depth" data-i18n="helicopter_dip_depth"></label><input id="helicopter-dip-depth" type="number" min="15" max="300" step="any" inputmode="decimal" autocomplete="off" required><button id="helicopter-dip-depth-submit" type="submit" data-i18n="helicopter_dip_set_depth"></button></form></article>
               <section id="bridge-orders" class="panel bridge-orders" aria-labelledby="bridge-orders-title" hidden>
         <div class="bridge-order-heading"><div><p class="eyebrow" data-i18n="bridge_orders_eyebrow"></p><h2 id="bridge-orders-title" data-i18n="bridge_orders_title"></h2></div><p data-i18n="bridge_orders_note"></p></div>

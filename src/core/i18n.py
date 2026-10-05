@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import locale
 import os
+import re
 from collections.abc import Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -390,6 +391,26 @@ def get_translator(language: str | None = None) -> Translator:
 def message(key: str, **params: object) -> dict[str, object]:
     """Return a JSON-safe localizable message for feeds, flashes, and saves."""
     return {_MESSAGE_KEY: str(key), "params": dict(params)}
+
+
+_COUNTRY_KEYS: frozenset | None = None
+
+
+def country_key(name: object) -> str:
+    """Catalog key of a real country name from the coastline data
+    (``country.<lowercase_slug>``); the browser uses the same slug."""
+    return "country." + re.sub(r"[^a-z0-9]+", "_", str(name).lower()).strip("_")
+
+
+def country_name(name: object) -> dict[str, object]:
+    """A chart's country name as a localizable message; an invented legacy
+    region name stays verbatim."""
+    global _COUNTRY_KEYS
+    if _COUNTRY_KEYS is None:
+        _COUNTRY_KEYS = frozenset(key for key in load_catalog(DEFAULT_LANGUAGE)
+                                  if key.startswith("country."))
+    key = country_key(name)
+    return message(key) if key in _COUNTRY_KEYS else raw_text(name)
 
 
 class RawText(dict):

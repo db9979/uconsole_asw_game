@@ -94,6 +94,17 @@ __all__ = [
     "_sonar_stream_payload",
 ]
 
+def web_catalog(catalog) -> dict:
+    """The browser's catalog: every ``commander.web.*`` key plus the chart's
+    country names (``country.<slug>`` served as ``commander.web.country_<slug>``)."""
+    out = {key: value for key, value in catalog.items()
+           if isinstance(key, str) and key.startswith("commander.web.") and isinstance(value, str)}
+    out.update({"commander.web.country_" + key[len("country."):]: value
+                for key, value in catalog.items()
+                if isinstance(key, str) and key.startswith("country.") and isinstance(value, str)})
+    return out
+
+
 class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                       MissionLibraryServerMixin, AdvisorServerMixin,
                       ServerModeServerMixin):
@@ -250,9 +261,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
                                                     page.encode("utf-8"))
         translations = translations or {}
         self._translations = {
-            lang: _json_bytes({key: value for key, value in translations.get(lang, {}).items()
-                               if isinstance(key, str) and key.startswith("commander.web.")
-                               and isinstance(value, str)})
+            lang: _json_bytes(web_catalog(translations.get(lang, {})))
             for lang in ("en", "de")
         }
         # The host's saved language: the pages open in it until a browser

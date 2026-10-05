@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.208
+## 1.3.209
 
-Release 1.3.208 shows the charts in real geographic coordinates. On a real
+Release 1.3.209 shows the charts in real geographic coordinates. On a real
 sea area the chart grid now shows meridians and parallels in degrees and
 minutes, finer as you zoom in (5 degrees down to 0.1 minute), the chart's top
 left shows own position such as 53°19.9'N 007°00.9'E (on the submarine its
@@ -15,6 +15,19 @@ it, on the uConsole and in the browser alike. The grid numbers now stay
 readable over land. Ranges, rings and the scale stay in NM and the game plays
 as before; the stylized fixed chart keeps its NM grid. Keys are unchanged.
 Saves are v52; v38 to v51 saves still load.
+
+## 1.3.208
+
+Release 1.3.208 keeps the uConsole smooth with live traffic. A mission with
+real aircraft (OpenSky ADS-B) now flies at most 5 of them instead of 40, and
+one with real ships (AIS) at most 15 instead of 60, picked at random and
+kept until each leaves the area, so contacts do not flicker in and out. With
+dozens of live contacts the single game thread was saturated and the game
+stuttered although the processor showed only about a third of its load. The
+OPZ picture is also built once per frame instead of several times, and a
+burst of live AIS reports is spread over several frames. Remote Crew
+browsers see the same contacts. Keys are unchanged. Saves are v52; v38 to
+v51 saves still load.
 
 ## 1.3.207
 

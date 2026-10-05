@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.208**
+Aktuelle Version: **1.3.209**
 
-Version 1.3.208 zeigt die Karten in echten geografischen Koordinaten. In
+Version 1.3.209 zeigt die Karten in echten geografischen Koordinaten. In
 einem echten Seegebiet zeigt das Kartengitter jetzt Längen- und Breitengrade
 in Grad und Minuten, beim Hineinzoomen feiner (5 Grad bis 0,1 Minute), oben
 links steht die eigene Position wie 53°19,9'N 007°00,9'E (auf dem U-Boot der

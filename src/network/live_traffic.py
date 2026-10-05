@@ -10,6 +10,7 @@ aktualisiert - ausschliesslich im Hauptthread.
 
 from __future__ import annotations
 
+import hashlib
 import math
 import queue
 import random
@@ -37,14 +38,24 @@ _AIS_APPLY_MAX_S = 300.0
 _SHIP_RELEVANCE_NM = 150.0        # deckt auch die maximale ESM-Reichweite ab
 _SHIP_RELEASE_NM = 190.0          # Hysterese: erst spaeter wieder entfernen
 _SHIP_STALE_S = 900.0             # 15 min ohne jeden AIS-Report -> vergessen
-_MAX_LIVE_SHIPS = 60
+# Each live ship is a full simulated hull (steering, sonar, radar, AIS);
+# 60 of them made the uConsole's game thread stutter. A ship keeps its slot
+# until it goes stale or drifts out of range.
+_MAX_LIVE_SHIPS = 15
 _MAX_AIS_METADATA = 2048
 _AIS_MIN_MOVING_SOG_KN = 0.1      # AIS-Aufloesung: 0.0 kn bedeutet Stillstand
+# Reports applied per frame; a burst (a full queue after a stall) is spread
+# over the next frames instead of costing one long frame.
+_AIS_REPORTS_PER_FRAME = 64
 
 _AIRCRAFT_RELEVANCE_NM = 150.0
 _AIRCRAFT_RELEASE_NM = 200.0
 _AIRCRAFT_STALE_S = 450.0         # mehrere verpasste ~180s-Polls -> vergessen
-_MAX_LIVE_AIRCRAFT = 40
+# Every live aircraft is a full radar/ESM/lookout/OPZ contact; dozens of
+# them made the uConsole's single game thread stutter. Only a few are flown,
+# picked at random but stable (see `_aircraft_pick_key`): an aircraft keeps
+# its slot until it leaves, so contacts never flicker in and out.
+_MAX_LIVE_AIRCRAFT = 5
 _ADSB_QUERY_MARGIN_NM = 25.0
 _ADSB_REBIND_NM = 25.0
 
@@ -109,6 +120,7 @@ class LiveTrafficManager:
         self._center: tuple[float, float] | None = None
         self._size_nm: float = 0.0
         self._adsb_anchor: tuple[float, float] | None = None
+        self._pick_salt = b""
 
     # --- Lebenszyklus ---------------------------------------------------
 
@@ -127,6 +139,9 @@ class LiveTrafficManager:
         self.aircraft.clear()
         self._center = None
         self._adsb_anchor = None
+        # Live traffic is wall-clock network data outside the deterministic
+        # simulation; a fresh salt per mission picks other aircraft each time.
+        self._pick_salt = random.getrandbits(128).to_bytes(16, "big")
         metadata = getattr(world.coast, "metadata", None)
         center = metadata.get("center") if metadata else None
         if center is None:
@@ -268,7 +283,7 @@ class LiveTrafficManager:
         client = self.ais_client
         if client is None:
             return
-        while True:
+        for _ in range(_AIS_REPORTS_PER_FRAME):
             try:
                 report = client.reports.get_nowait()
             except queue.Empty:
@@ -406,6 +421,7 @@ class LiveTrafficManager:
                 break
         if states is None:
             return
+        candidates = []
         for state in states:
             # OpenSky states[i] Layout: [icao24, callsign, origin_country,
             # time_position, last_contact, lon, lat, baro_altitude,
@@ -424,22 +440,34 @@ class LiveTrafficManager:
             heading = float(heading) if heading is not None else 0.0
             speed_kn = float(velocity_ms) * 1.9438445 if velocity_ms is not None else 0.0
             existing = self.aircraft.get(icao24)
-            if existing is None:
-                if (len(self.aircraft) >= _MAX_LIVE_AIRCRAFT
-                        or math.hypot(x - game.ship.x, y - game.ship.y)
-                        > _AIRCRAFT_RELEVANCE_NM):
-                    continue
-                # Geteilter Zaehler mit FlightManager: reale und simulierte
-                # Fluege sind ueber die Track-ID (A-<seq>) nicht
-                # unterscheidbar, siehe FlightManager.next_seq(). Ein
-                # bereits vergebener Seq fuer dieselbe ICAO24 wird
-                # wiederverwendet (siehe `_aircraft_seq`-Kommentar oben).
-                seq = self._aircraft_seq.get(icao24)
-                if seq is None:
-                    seq = game.flights.next_seq()
-                    self._aircraft_seq[icao24] = seq
-                self.aircraft[icao24] = LiveAircraft(
-                    icao24, state[1], seq, x, y, altitude_m,
-                    heading, speed_kn, snapshot_t)
-            else:
+            if existing is not None:
                 existing.push_fix(x, y, altitude_m, heading, speed_kn, snapshot_t)
+            elif (math.hypot(x - game.ship.x, y - game.ship.y)
+                    <= _AIRCRAFT_RELEVANCE_NM):
+                candidates.append((self._aircraft_pick_key(icao24), icao24,
+                                   state[1], x, y, altitude_m, heading, speed_kn))
+        # Free slots go to a random but stable choice of the new candidates,
+        # never to whichever the feed happened to list first.
+        candidates.sort()
+        for _key, icao24, callsign, x, y, altitude_m, heading, speed_kn in candidates:
+            if len(self.aircraft) >= _MAX_LIVE_AIRCRAFT:
+                break
+            if icao24 in self.aircraft:
+                continue  # listed twice in one snapshot
+            # Geteilter Zaehler mit FlightManager: reale und simulierte
+            # Fluege sind ueber die Track-ID (A-<seq>) nicht
+            # unterscheidbar, siehe FlightManager.next_seq(). Ein
+            # bereits vergebener Seq fuer dieselbe ICAO24 wird
+            # wiederverwendet (siehe `_aircraft_seq`-Kommentar oben).
+            seq = self._aircraft_seq.get(icao24)
+            if seq is None:
+                seq = game.flights.next_seq()
+                self._aircraft_seq[icao24] = seq
+            self.aircraft[icao24] = LiveAircraft(
+                icao24, callsign, seq, x, y, altitude_m,
+                heading, speed_kn, snapshot_t)
+
+    def _aircraft_pick_key(self, icao24: str) -> bytes:
+        """Stable pseudo-random rank of an aircraft for this mission."""
+        return hashlib.blake2s(str(icao24).lower().encode("utf-8", "replace"),
+                               digest_size=8, key=self._pick_salt).digest()

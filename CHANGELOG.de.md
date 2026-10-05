@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.208
+## 1.3.209
 
-Version 1.3.208 zeigt die Karten in echten geografischen Koordinaten. In
+Version 1.3.209 zeigt die Karten in echten geografischen Koordinaten. In
 einem echten Seegebiet zeigt das Kartengitter jetzt Längen- und Breitengrade
 in Grad und Minuten, beim Hineinzoomen feiner (5 Grad bis 0,1 Minute), oben
 links steht die eigene Position wie 53°19,9'N 007°00,9'E (auf dem U-Boot der
@@ -15,6 +15,20 @@ auf der uConsole wie im Browser. Die Gitterzahlen bleiben jetzt auch über
 Land lesbar. Entfernungen, Ringe und Maßstab bleiben in sm, das Spiel spielt
 sich wie bisher; die stilisierte feste Karte behält ihr sm-Gitter. Tasten
 bleiben gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+
+## 1.3.208
+
+Version 1.3.208 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
+mit echten Flugzeugen (OpenSky ADS-B) fliegt jetzt höchstens 5 davon statt
+40, eine mit echten Schiffen (AIS) höchstens 15 statt 60, zufällig gewählt
+und behalten, bis jeder Kontakt das Gebiet verlässt, damit Kontakte nicht
+auftauchen und wieder verschwinden. Bei Dutzenden Live-Kontakten lief der
+eine Spiel-Thread voll, und das Spiel ruckelte, obwohl der Prozessor nur
+etwa ein Drittel Last zeigte. Das OPZ-Lagebild wird außerdem nur noch
+einmal pro Bild statt mehrmals berechnet, und ein Schwall Live-AIS-Meldungen
+wird auf mehrere Bilder verteilt. Remote-Crew-Browser sehen dieselben
+Kontakte. Die Tasten bleiben gleich. Spielstände sind v52; v38- bis
+v51-Stände werden weiter geladen.
 
 ## 1.3.207
 

@@ -343,6 +343,15 @@ class PicturesMixin:
 
     def opz_tracks(self) -> list:
         """Host-visible OPZ reports, with local suppression applied."""
+        memo = getattr(self, "_opz_draw_memo", None)
+        if memo is not None:
+            # One frame's drawing asks several times; nothing changes between.
+            if "tracks" not in memo:
+                memo["tracks"] = self._opz_tracks_now()
+            return list(memo["tracks"])
+        return self._opz_tracks_now()
+
+    def _opz_tracks_now(self) -> list:
         observations = self.opz_source_observations()
         visible = self.opz_fusion.visible(observations, self.sim_t,
                                           self.air_picture.stale_s)
@@ -594,6 +603,22 @@ class PicturesMixin:
                 contacts.append(bound)
         return contacts
 
+    def _opz_binding_for_source(self, source_track_id):
+        """First OPZ report bound to a source track id. The reverse index is
+        rebuilt only when the bindings change; a linear scan per call made
+        every drawn track cost a pass over all tracks."""
+        bindings = self._opz_source_bindings
+        cached = getattr(self, "_opz_binding_index", None)
+        if cached is None or cached[0] is not bindings or cached[1] != len(bindings):
+            index = {}
+            for key, source in bindings.items():
+                source_id = getattr(source, "track_id", None)
+                if source_id is not None:
+                    index.setdefault(source_id, key)
+            cached = (bindings, len(bindings), index)
+            self._opz_binding_index = cached
+        return cached[2].get(source_track_id)
+
     def opz_affiliation(self, track_id: str) -> str:
         if track_id not in self.opz_affiliations:
             source_key = getattr(self._opz_source_bindings.get(track_id),
@@ -606,8 +631,7 @@ class PicturesMixin:
             if source_key in self.opz_affiliations:
                 track_id = source_key
             else:
-                opaque = next((key for key, source in self._opz_source_bindings.items()
-                               if getattr(source, "track_id", None) == track_id), None)
+                opaque = self._opz_binding_for_source(track_id)
                 if opaque is not None:
                     track_id = opaque
         if (track_id not in self.opz_affiliations

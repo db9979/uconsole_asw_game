@@ -249,21 +249,32 @@ def bottom_scattering_db(lambert_mu_db: float, grazing_deg: float) -> float:
 def reverberation_level_db(*, source_level_db: float, distance_nm: float,
                            pulse: str, beamwidth_deg: float,
                            water_depth_m: float, lambert_mu_db: float,
-                           wind_kn: float) -> float:
-    """Boundary + volume reverberation at the target range."""
+                           wind_kn: float, sensor_depth_m: float = 7.0) -> float:
+    """Boundary + volume reverberation at the target range.
+
+    The surface patch is seen at the grazing angle the sensor's own depth
+    gives; the seabed returns only once the range gate (slant range ``r``)
+    has reached it, at the grazing angle of the water below the sensor."""
     r = max(1.0, distance_nm * NM_M)
     # Ensonified boundary patch: the pulse's range cell (c*tau/2 for CW,
     # c/2B after pulse compression for LFM) times cross-range r*theta.
-    area = range_resolution_m(pulse) * r * math.radians(beamwidth_deg)
-    grazing = math.degrees(math.atan2(max(1.0, water_depth_m), r))
+    cell = range_resolution_m(pulse)
+    beam = math.radians(beamwidth_deg)
+    area = cell * r * beam
     two_way = 2.0 * spreading_loss_db(distance_nm)
-    bottom = (source_level_db - two_way + bottom_scattering_db(lambert_mu_db, grazing)
-              + 10.0 * math.log10(area))
-    surface = (source_level_db - two_way + surface_scattering_db(wind_kn, grazing)
-               + 10.0 * math.log10(area))
-    volume = (source_level_db - two_way + VOLUME_SCATTERING_DB
-              + 10.0 * math.log10(area * max(1.0, min(water_depth_m, 500.0))))
-    return _db_sum(bottom, surface, volume)
+    surface_graze = math.degrees(math.asin(min(1.0, max(0.5, sensor_depth_m) / r)))
+    levels = [source_level_db - two_way + surface_scattering_db(wind_kn, surface_graze)
+              + 10.0 * math.log10(area)]
+    height = max(1.0, water_depth_m - sensor_depth_m)
+    if r > height:
+        graze = math.degrees(math.asin(height / r))
+        patch = min(cell / max(math.cos(math.radians(graze)), 0.05) * r * beam,
+                    math.pi * r * r)
+        levels.append(source_level_db - two_way
+                      + bottom_scattering_db(lambert_mu_db, graze) + 10.0 * math.log10(patch))
+    levels.append(source_level_db - two_way + VOLUME_SCATTERING_DB
+                  + 10.0 * math.log10(area * max(1.0, min(water_depth_m, 500.0))))
+    return _db_sum(*levels)
 
 
 @dataclass(frozen=True, slots=True)
@@ -368,7 +379,8 @@ def active_terms(*, distance_nm: float, target_ts_db: float, legacy_range_factor
                  lambert_mu_db: float, wind_kn: float,
                  absorption_db_per_km: float,
                  radial_speed_kn: float = 0.0,
-                 gain_factor: float = 1.0) -> ActiveTerms:
+                 gain_factor: float = 1.0,
+                 sensor_depth_m: float = 7.0) -> ActiveTerms:
     """Active sonar equation for one echo.
 
     ``legacy_range_factor`` is the below-layer transmission loss of the
@@ -387,7 +399,8 @@ def active_terms(*, distance_nm: float, target_ts_db: float, legacy_range_factor
     reverb = reverberation_level_db(
         source_level_db=source, distance_nm=distance_nm, pulse=pulse,
         beamwidth_deg=ACTIVE_BEAMWIDTH_DEG, water_depth_m=water_depth_m,
-        lambert_mu_db=lambert_mu_db, wind_kn=wind_kn) - absorption - path_penalty
+        lambert_mu_db=lambert_mu_db, wind_kn=wind_kn,
+        sensor_depth_m=sensor_depth_m) - absorption - path_penalty
     # CW and LFM carry the same energy (same length and level), so a matched
     # filter gives both the same signal-to-noise ratio; the LFM's
     # time-bandwidth product only shrinks its range cell, and with it the

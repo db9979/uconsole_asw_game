@@ -17,6 +17,7 @@ from src.sonar.sonar import Contact, SonarSystem, TowState
 from src.sonar.tma import BearingTrack, solve_tma
 from src.ui import layout, sonar_view as view
 from src.core.i18n import localize
+from src.physics import ship_dynamics
 
 
 def solution(pos=(3.0, -4.0), quality=.8):
@@ -360,8 +361,11 @@ def test_notch_gain_matches_scalar_vector_and_audition_controls():
     sonar = SonarSystem()
     sonar.gain_db, sonar.notch_enabled, sonar.listen_filtered = 12, True, True
     column = [.2] * config.LOFAR_BINS
-    scalar = sonar.process_lofar_column(column, NS(speed=0))
-    vector = view._process_lofar_rows(np.asarray([column]), (12, 0, 300, True, 0))[0]
+    # 20 kn: the blade-rate line (about 9.7 Hz) notches the 10 Hz test tone.
+    line_hz = ship_dynamics.own_blade_line_hz(20)
+    sonar._own_line_hz = line_hz
+    scalar = sonar.process_lofar_column(column, NS(speed=20))
+    vector = view._process_lofar_rows(np.asarray([column]), (12, 0, 300, True, 20))[0]
     np.testing.assert_allclose(scalar, vector)
     index = min(range(len(column)), key=lambda i: abs(config.lofar_bin_freq(i) - 10))
     assert scalar[index] == pytest.approx(.2 * 10 ** (12 / 20) * .15)
@@ -385,7 +389,7 @@ def test_lofar_scalar_vector_parity_includes_band_edges_and_clipping(gain_db, no
     frequencies = np.asarray([config.lofar_bin_freq(i) for i in range(config.LOFAR_BINS)])
     gain = 10 ** (gain_db / 20)
     in_band = (frequencies >= 25) & (frequencies <= 240)
-    notched = in_band & (abs(frequencies - (10 + 1.9 * 8)) < 5)
+    notched = in_band & (abs(frequencies - ship_dynamics.own_blade_line_hz(8)) < 5)
     expected_notch = np.clip(rows[:, notched] * gain * (.15 if notch else 1), 0, 1)
     np.testing.assert_array_equal(scalar, vector)
     np.testing.assert_array_equal(vector[:, notched], expected_notch)

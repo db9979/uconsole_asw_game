@@ -54,7 +54,7 @@ The x axis is frequency (0-300 Hz), time runs downwards. Bins are 1 Hz below 40 
 ![LOFAR page](figure:sonar-lofar)
 
 - Steady vertical lines are **tonals** (narrowband): generators, pumps, shaft lines. Several lines at integer multiples of one frequency are a harmonic family: put the white cursor on a line with `Z`/`X` (`Shift`: 10 Hz steps) and press `K` to mark it as fundamental; amber guides then show 2f, 3f and so on. `K` on the same frequency clears it.
-- Own ship produces a shaft line at about 10 + 1.9 x own speed Hz. `N` notches it out.
+- Own ship produces a blade-rate line at shaft RPM / 60 x 5 propeller blades: about 3.9 Hz at 8 kn, 9.7 Hz at 20 kn and 15 Hz at 31 kn. `N` notches it out (±5 Hz).
 - `Space` holds peaks so faint tonals stand out.
 - The spectrum strip above the waterfall prints the frequency over every prominent line (interpolated between bins; with `Space` the held envelope). Where values would overlap, the stronger line keeps its label. The Remote Crew browser labels its spectra the same way.
 - `F` selects the analysed band: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz. `Ctrl+Z` / `Ctrl+X` set the low / high band edge at the cursor for any band-, low- or high-pass; `Shift+N` puts an extra notch on the cursor frequency.

@@ -15,6 +15,7 @@ from src.ui import map_view, sonar_view, stations_view, theme
 from src.ui.viewport import Viewport
 from src.world.coastline import Coastline
 from src.world.world import World
+from src.physics import ship_dynamics
 
 
 def test_map_culls_landmass_bounds_before_point_transforms():
@@ -67,7 +68,7 @@ def test_lofar_new_sequence_avoids_serialization_and_preserves_pixels():
     controls = (6.0, 25.0, 240.0, True, 8.0)
     frequencies = [config.lofar_bin_freq(index) for index in range(rows.shape[1])]
     gain = 10.0 ** (controls[0] / 20.0)
-    shaft = 10.0 + 1.9 * controls[4]
+    shaft = ship_dynamics.own_blade_line_hz(controls[4])
     # Notch attenuation and gain both precede display clipping. The old
     # reference incorrectly bypassed gain for notched bins.
     reference = np.asarray([

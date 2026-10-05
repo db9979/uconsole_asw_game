@@ -9,6 +9,7 @@ import pytest
 
 from src.audio.engine import AudioEngine
 from src.audio.receiver import AcousticReceiver, beam_pattern_gain
+from src.physics import ship_dynamics
 
 
 def update(receiver, sources=(), bearing=0, **kwargs):
@@ -102,7 +103,7 @@ def test_own_shaft_changing_speed_uses_integrated_phase():
     phase, old_amp = 0, 0
     for speed in (11.3, 19.8, 4.7, 0):
         update(receiver, own_speed=speed)
-        freq = 10 + 1.9 * speed
+        freq = ship_dynamics.own_blade_line_hz(speed)
         amp = .08 * min(speed / 20, 1) * .25
         envelope = np.full(1024, amp)
         envelope[:20] = np.linspace(old_amp, amp, 20)

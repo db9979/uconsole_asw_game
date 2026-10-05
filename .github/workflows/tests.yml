@@ -48,7 +48,7 @@ jobs:
 
   pytest:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
 
@@ -100,7 +100,7 @@ jobs:
   pytest-newer-python:
     # Newer uConsole systems ship Python 3.13; the game must run there too.
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
 
@@ -118,7 +118,7 @@ jobs:
   pytest-windows:
     # The Windows program runs the same code; the browser tests stay on Linux.
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from enum import Enum
+from functools import lru_cache
 from typing import Callable
 
 from src.core import config
@@ -115,15 +116,27 @@ def synthetic_sound_speed_m_s(depth_m: float, thermocline_m: float) -> float:
             + .012 * max(0.0, depth - thermo))
 
 
+def _speed(depth: float, thermo: float) -> float:
+    """``synthetic_sound_speed_m_s`` without validation, for depths and a
+    thermocline already validated as finite floats (identical arithmetic)."""
+    return 1504.0 - .018 * min(depth, thermo) + .012 * max(0.0, depth - thermo)
+
+
 def synthetic_sound_speed_profile(thermocline_m: float,
                                   water_depth_m: float) -> SoundSpeedProfile:
     """Sample the canonical 21-point, at-most-400 m synthetic profile."""
     water_depth = _number("water_depth_m", water_depth_m, 1.0, 10_000.0)
     thermo = _number("thermocline_m", thermocline_m, 0.0, water_depth)
+    return _cached_profile(thermo, water_depth)
+
+
+@lru_cache(maxsize=512)
+def _cached_profile(thermo: float, water_depth: float) -> SoundSpeedProfile:
+    """Pure, bounded: the immutable profile of validated float arguments."""
     maximum = min(water_depth, PROFILE_MAX_DEPTH_M)
     step = maximum / (PROFILE_SAMPLES - 1)
     depths = tuple(step * index for index in range(PROFILE_SAMPLES))
-    speeds = tuple(synthetic_sound_speed_m_s(depth, thermo) for depth in depths)
+    speeds = tuple(_speed(depth, thermo) for depth in depths)
     return SoundSpeedProfile(thermo, water_depth, depths, speeds)
 
 
@@ -135,10 +148,11 @@ def _segment(start: AcousticPoint, end: AcousticPoint,
     distance_nm = math.hypot(horizontal_nm, vertical_nm)
     middle_depth = (start.depth_m + end.depth_m) * .5
     # Simpson integration retains profile dependence without an iterative ray solver.
+    thermo = profile.thermocline_m
     reciprocal_speed = (
-        1.0 / synthetic_sound_speed_m_s(start.depth_m, profile.thermocline_m)
-        + 4.0 / synthetic_sound_speed_m_s(middle_depth, profile.thermocline_m)
-        + 1.0 / synthetic_sound_speed_m_s(end.depth_m, profile.thermocline_m)
+        1.0 / _speed(start.depth_m, thermo)
+        + 4.0 / _speed(middle_depth, thermo)
+        + 1.0 / _speed(end.depth_m, thermo)
     ) / 6.0
     blocked = False if terrain_blocked is None else bool(terrain_blocked(
         start.x_nm, start.y_nm, start.depth_m,
@@ -301,6 +315,18 @@ def ray_anchor_db() -> float:
     return _ray_anchor_db
 
 
+def _sensor_depth_key(sensor_depth_m: float) -> float:
+    from src.sonar.raytrace import quantize
+
+    return quantize(sensor_depth_m, 10.0 if sensor_depth_m > 30.0 else 5.0) or 5.0
+
+
+def _water_depth_key(depth: float) -> float:
+    from src.sonar.raytrace import quantize
+
+    return quantize(depth, 25.0 if depth < 1000.0 else 100.0) or 25.0
+
+
 def ray_environment_key(world, sensor_depth_m: float, mid_x: float,
                         mid_y: float) -> tuple | None:
     """Quantized environment at the path midpoint (None without an ocean)."""
@@ -310,27 +336,114 @@ def ray_environment_key(world, sensor_depth_m: float, mid_x: float,
     if ocean is None:
         return None
     depth = max(10.0, float(world.depth_m(mid_x, mid_y)))
-    return (quantize(sensor_depth_m, 10.0 if sensor_depth_m > 30.0 else 5.0) or 5.0,
+    return (_sensor_depth_key(sensor_depth_m),
             max(10.0, quantize(world.thermocline_depth_m(mid_x, mid_y), 10.0)),
             quantize(ocean.sea_surface_temperature_c(getattr(world, "hour", 12.0)), 1.0),
-            quantize(depth, 25.0 if depth < 1000.0 else 100.0) or 25.0,
+            _water_depth_key(depth),
             world.seabed_at(mid_x, mid_y),
             quantize(float(getattr(world, "wind_speed_kn", 10.0)), 5.0))
 
 
+# Prefetch (src/sonar/raytrace.py): a path asks ahead for the table of its
+# midpoint RAY_PREFETCH_LEAD_S from now, and for the sensor depth, mixed
+# layer or wind on the far side of a rounding step it has come close to.
+RAY_PREFETCH_LEAD_S = 90.0
+RAY_PREFETCH_EDGE = 0.15      # fraction of a step from the rounding boundary
+
+
+def path_drift_nm(sensor, target, lead_s: float = RAY_PREFETCH_LEAD_S) -> tuple:
+    """How far the midpoint of a sensor-target path moves in ``lead_s`` at
+    the present courses and speeds (objects without them stand still)."""
+    dx = dy = 0.0
+    for body in (sensor, target):
+        speed = getattr(body, "speed", 0.0)
+        course = getattr(body, "course", 0.0)
+        if not isinstance(speed, (int, float)) or not isinstance(course, (int, float)):
+            continue
+        run = config.kn_to_nm_per_s(float(speed)) * lead_s * .5
+        dx += run * math.sin(math.radians(course))
+        dy -= run * math.cos(math.radians(course))
+    return dx, dy
+
+
+def _edge_neighbour(value: float, step: float) -> float | None:
+    """The neighbouring step's value when ``value`` lies within
+    ``RAY_PREFETCH_EDGE`` of a step of the boundary rounding switches at."""
+    position = value / step
+    fraction = position - math.floor(position)
+    if abs(fraction - .5) > RAY_PREFETCH_EDGE:
+        return None
+    return (math.floor(position) + (1.0 if fraction < .5 else 0.0)) * step
+
+
+def predicted_ray_keys(world, sensor_depth_m: float, mid_x: float, mid_y: float,
+                       key: tuple, drift_nm=None) -> list:
+    """Keys a path will likely need next (a cache hint, never a result)."""
+    keys = []
+    if drift_nm is not None and (drift_nm[0] or drift_nm[1]):
+        moved = ray_environment_key(world, sensor_depth_m, mid_x + drift_nm[0],
+                                    mid_y + drift_nm[1])
+        if moved is not None and moved != key:
+            keys.append(moved)
+    sensor = _edge_neighbour(float(sensor_depth_m),
+                             10.0 if sensor_depth_m > 30.0 else 5.0)
+    if sensor is not None and (sensor or 5.0) != key[0]:
+        keys.append((sensor or 5.0,) + key[1:])
+    thermo = _edge_neighbour(float(world.thermocline_depth_m(mid_x, mid_y)), 10.0)
+    if thermo is not None and max(10.0, thermo) != key[1]:
+        keys.append((key[0], max(10.0, thermo)) + key[2:])
+    wind = _edge_neighbour(float(getattr(world, "wind_speed_kn", 10.0)), 5.0)
+    if wind is not None and wind != key[5]:
+        keys.append(key[:5] + (wind,))
+    return keys
+
+
+def _prefetch_ray_tables(world, sensor_depth_m: float, mid_x: float, mid_y: float,
+                         key: tuple, drift_nm) -> None:
+    from src.sonar import raytrace
+
+    if not raytrace.PREFETCH_ENABLED:
+        return
+    try:
+        keys = predicted_ray_keys(world, sensor_depth_m, mid_x, mid_y, key, drift_nm)
+    except Exception:  # noqa: BLE001 - a cache hint must never stop the game
+        return
+    if keys:
+        raytrace.prefetch(keys, _profile_from_key)
+
+
+def prefetch_ray_tables(world, pairs) -> int:
+    """Queue the tables of ``pairs`` = (sensor x, y, depth, target x, y)
+    for the background builder (mission start).  Returns the keys queued."""
+    from src.sonar import raytrace
+
+    if not raytrace.PREFETCH_ENABLED:
+        return 0
+    keys = {RAY_REFERENCE_KEY: None}
+    for sensor_x, sensor_y, depth, target_x, target_y in pairs:
+        key = ray_environment_key(world, depth, (sensor_x + target_x) * .5,
+                                  (sensor_y + target_y) * .5)
+        if key is not None:
+            keys[key] = None
+    return raytrace.prefetch(keys, _profile_from_key)
+
+
 def ray_excess_db(world, sensor_x: float, sensor_y: float, sensor_depth_m: float,
                   target_x: float, target_y: float, target_depth_m: float,
-                  frequency_hz: float) -> float | None:
+                  frequency_hz: float, drift_nm=None) -> float | None:
     """Ray-traced loss beyond spherical spreading, relative to the anchor.
 
     Reciprocity: the own sensor is the ray source, the target the receiver,
-    so one cached table serves every target seen by that sensor."""
+    so one cached table serves every target seen by that sensor.
+    ``drift_nm`` (see ``path_drift_nm``) only lets the table the path will
+    need next be prepared ahead; it never changes the result."""
     from src.sonar import raytrace
 
     mid_x, mid_y = (sensor_x + target_x) * .5, (sensor_y + target_y) * .5
     key = ray_environment_key(world, sensor_depth_m, mid_x, mid_y)
     if key is None:
         return None
+    _prefetch_ray_tables(world, sensor_depth_m, mid_x, mid_y, key, drift_nm)
     table = raytrace.cached_table(key, _profile_from_key)
     distance = math.hypot(target_x - sensor_x, target_y - sensor_y)
     tl = raytrace.lookup_tl_db(table, frequency_hz, distance,

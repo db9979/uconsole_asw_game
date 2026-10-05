@@ -343,6 +343,7 @@ def test_frigate_callouts_are_unchanged():
         "runtime.mission.lost": "lost",
         "crew.action_stations_on": "action_stations",
         "mpa.on_station": "mpa_on_station",
+        "runtime.task.offered": "task",
     }
     assert callouts._PREFIX == (("runtime.torpedo_cue.", "torpedo"),)
 

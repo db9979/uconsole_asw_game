@@ -36,6 +36,7 @@ from src.sensors import threat_cue
 from src.ui import unit_variants
 from src.sonar import equation as sonar_equation
 from src.sonar import propagation as sonar_propagation
+from src.sonar import raytrace
 from src.physics import torpedo_dyn
 from src.physics import ship_dynamics
 from src.weapons import ciws as ciws_physics
@@ -111,6 +112,36 @@ class SimMixin:
                 0.5 + 0.5 * self.damage.capability("sonar"))
         return 1.0
 
+    # Mission start: ray tables of the paths the first sensor passes will
+    # trace, queued to be traced ahead (src/sonar/raytrace.py).
+    RAY_PREFETCH_START_NM = 40.0
+
+    def _prefetch_start_ray_tables(self) -> int:
+        """Queue the first ray tables of a new mission (a cache hint only)."""
+        from src.sonar.sonar import hull_array_depth_m
+
+        try:
+            sonar = self.sonar
+            depths = {hull_array_depth_m(self.ship), float(sonar.towed_depth_m),
+                      float(sonar.vds_depth_m)}
+            reach = self.RAY_PREFETCH_START_NM
+            pairs = []
+            for target in self._sonar_targets():
+                if math.hypot(target.x - self.ship.x, target.y - self.ship.y) <= reach:
+                    pairs.extend((self.ship.x, self.ship.y, depth, target.x, target.y)
+                                 for depth in sorted(depths))
+            listeners = [target for target in [self.ship, *self.civilians, *self.warships]
+                         if not getattr(target, "sunk", False)]
+            for sub in self.subs:
+                if sub.sunk:
+                    continue
+                pairs.extend((sub.x, sub.y, getattr(sub, "depth", 5.0), other.x, other.y)
+                             for other in listeners
+                             if math.hypot(other.x - sub.x, other.y - sub.y) <= reach)
+            return sonar_propagation.prefetch_ray_tables(self.world, pairs)
+        except Exception:  # noqa: BLE001 - a cache hint must never stop a start
+            return 0
+
     def _sonar_targets(self) -> list:
         """Akustisch auffassbare Ziele: Boote, Tiere, Dekoys, Zivilverkehr,
         feindliche Schiffe und laufende Feindtorpedos."""
@@ -167,6 +198,8 @@ class SimMixin:
             self._frame_clock_reset = True
             self.audio.stop()
             self._sonar_audio_sequence = -1
+            # The prepared mission's first ray tables while the menu idles.
+            raytrace.service(config.RAY_PREFETCH_MENU_BUDGET_S)
             return
         playing_boat = self.local_side == "uboot"
         # The umpire screen of a crew-versus-crew round plays nothing of either unit.
@@ -226,6 +259,9 @@ class SimMixin:
         else:
             self.audio.stop()
             self._sonar_audio_sequence = -1
+        # Ray tables the sensors will need soon, a slice per frame (never a
+        # result: the tables are pure functions of their keys).
+        raytrace.service(config.RAY_PREFETCH_FRAME_BUDGET_S)
 
     def _update_audio(self, dt: float) -> None:
         """Stream opt-in sonar; there is no continuous own-ship ambience."""
@@ -969,7 +1005,8 @@ class SimMixin:
         frequency = torpedo_dyn.RUNNING_NOISE_BAND_HZ
         excess = sonar_propagation.ray_excess_db(
             self.world, sub.x, sub.y, max(sub.depth, 1.0), torpedo.x, torpedo.y,
-            max(torpedo.depth, 1.0), frequency)
+            max(torpedo.depth, 1.0), frequency,
+            drift_nm=sonar_propagation.path_drift_nm(sub, torpedo))
         absorption = sonar_equation.francois_garrison_db_per_km(frequency)
         terms = sonar_equation.passive_terms(
             frequency_hz=frequency, distance_nm=max(distance_nm, 0.01),

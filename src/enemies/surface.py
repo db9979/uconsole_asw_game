@@ -333,10 +333,15 @@ class SurfaceShip(FrigateRelativeMixin):
 
     def _steer(self, dt: float, max_rate: float, world=None) -> None:
         # Safety owns the final steering order, after tactical/route orders.
-        if world is not None:
+        lookahead = max(1.0, self.speed / 6.0)
+        open_water = getattr(getattr(world, "coast", None), "open_water_near", None)
+        if world is not None and not (
+                # Far from every coast the straight-ahead probe is certainly
+                # clear: the probes below would change nothing.
+                open_water is not None and getattr(world, "land_blocks_line", None)
+                is not None and open_water(self.x, self.y, lookahead)):
             land = getattr(world, "on_land", lambda x, y: False)
             blocked = getattr(world, "land_blocks_line", lambda x0, y0, x1, y1: land(x1, y1))
-            lookahead = max(1.0, self.speed / 6.0)
             for offset in (0.0, 60.0, 120.0, 180.0):
                 course = (self.course + self.orbit_direction * offset) % 360.0
                 x = self.x + lookahead * math.sin(math.radians(course))

@@ -15,7 +15,7 @@ from src.nations.nations import reference_summary
 from src.ui import layout, theme
 from src.ui.editor_widgets import TextField
 from src.core.game_save import SaveSelfCheckError, _read_save_document
-from src.core.preferences import GRAPHICS_LEVELS
+from dataclasses import replace
 
 
 class AdminKeysMixin:
@@ -118,11 +118,13 @@ class AdminKeysMixin:
                     self.set_color_theme(theme.next_theme(self.color_theme()))
                     return
                 elif name == "graphics":
-                    levels = GRAPHICS_LEVELS
+                    # Level and automatic economy in one cycle.
+                    choices = self.GRAPHICS_CHOICES
                     step = -1 if key == pygame.K_LEFT else 1
-                    current = (self.preferences.graphics
-                               if self.preferences.graphics in levels else "normal")
-                    value = levels[(levels.index(current) + step) % len(levels)]
+                    value, auto = choices[(choices.index(self._graphics_choice()) + step)
+                                          % len(choices)]
+                    if auto != self.preferences.graphics_auto and value != "low":
+                        self.preferences = replace(self.preferences, graphics_auto=auto)
                 elif name == "bottom_panel":
                     choices = layout.BOTTOM_PANEL_MODES
                     value = choices[(choices.index(self.bottom_panel_mode()) + 1)
@@ -151,6 +153,8 @@ class AdminKeysMixin:
                 else:
                     self.running = False
         elif self.save_ui is not None:
+            if self.slot_save_running():
+                return          # the menu closes (or quits) once it is written
             if key == pygame.K_ESCAPE:
                 if self.save_confirm:
                     self.save_confirm = False
@@ -168,9 +172,10 @@ class AdminKeysMixin:
                     return
                 try:
                     if self.save_ui == "save":
-                        self.save_to_slot(self.save_slot)
-                        if self.quit_after_save:
-                            self.running = False
+                        # Written by the save worker; ``_finish_slot_save``
+                        # closes the menu (or quits) after it succeeded.
+                        self.begin_save_to_slot(self.save_slot, self.quit_after_save)
+                        return
                     elif not self.load_from_slot(self.save_slot):
                         self.flash(message("save.invalid"), 4.0)
                         return

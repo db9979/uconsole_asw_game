@@ -11,6 +11,7 @@ import math
 
 from src.core import config, crashlog
 from src.core.i18n import message, raw_text
+from src.sonar import raytrace
 from src.core.mission_definition import (_stable_seed, mission_side,
                                          reference_sector_index, static_preview,
                                          validate_mission)
@@ -409,12 +410,21 @@ class MissionBridgeMixin:
                       f"seed {self.seed}, side {self.local_side}")
         if not reuse:
             self.reset(self.seed, self.scenario_key)
+            self._prewarm_ray_tables()
             return
         self._clear_controls()
         self.audio.stop()
         self.msg = ""
         self.msg_until = 0.0
         self._t = 0.0
+        self._prewarm_ray_tables()
+
+    def _prewarm_ray_tables(self) -> None:
+        """Finish the new mission's first ray tables with its start (the
+        menu began them while it idled), not in its first sensor pass.
+        Only the interactive game waits (``config.RAY_PREWARM_ON_START``)."""
+        if config.RAY_PREWARM_ON_START:
+            raytrace.prefetch_idle(config.RAY_PREWARM_MAX_S)
 
     def _reroll_menu_seed(self) -> None:
         """Choose a menu seed uniformly without repeating the current value."""

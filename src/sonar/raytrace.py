@@ -13,11 +13,24 @@ profile instead of being prescribed.
 Tables are pure functions of a quantized environment key and are cached in
 a bounded LRU; a table costs one vectorized trace (48 rays x 370 range
 steps) and is rebuilt only when the quantized environment changes.
+
+A table the simulation is about to need can be requested ahead with
+``prefetch``; ``service`` (called once per frame on the game thread) hands
+it to a helper process (``raytrace_worker``) on another core, or, where no
+helper can run, traces it a few range steps at a time within a small
+wall-time budget, and puts it into the same cache.  ``cached_table`` stays
+exact: a key needed right now is taken from the cache, waited for while the
+helper traces it, finished at once if it is half built, or built at once.
+As a table is a pure function of its key, where, when and in how many
+slices it was built never changes a result; prefetching only moves the work
+off the frame that needs it.
 """
 
 from __future__ import annotations
 
 import math
+import os
+import time
 from collections import OrderedDict
 
 import numpy as np
@@ -42,6 +55,19 @@ SHADOW_TL_DB = 200.0
 
 _cache: "OrderedDict[tuple, np.ndarray]" = OrderedDict()
 build_count = 0
+# Prefetch (see the module docstring): requested keys, newest last, and the
+# one table being traced in slices.
+PREFETCH_QUEUE_MAX = 24
+PREFETCH_ENABLED = os.environ.get("U_JAGD_RAY_PREFETCH", "1") != "0"
+WORKER_ENABLED = os.environ.get("U_JAGD_RAY_WORKER", "1") != "0"
+_queued: "OrderedDict[tuple, object]" = OrderedDict()
+_active: list = []            # [key, generator] while a table is in slices
+_worker = None                # raytrace_worker.TraceWorker once started
+_worker_failed = False
+# Statistics (diagnostics and tests): builds the caller had to make at once
+# because nothing had prepared the key, and builds finished by ``service``.
+inline_builds = 0
+prefetch_builds = 0
 
 
 def _surface_loss_db(grazing_rad: np.ndarray, wind_kn: float,
@@ -89,6 +115,19 @@ def _refract_step(z, direction, xi, sin_t, cos_t, step_m, speed_at):
 def trace_table(source_depth_m: float, profile_depths_m, profile_m_s,
                 water_depth_m: float, sediment: str, wind_kn: float) -> np.ndarray:
     """Return TL[band, range_bin, depth_bin] in dB (without absorption)."""
+    steps = _trace_steps(source_depth_m, profile_depths_m, profile_m_s,
+                         water_depth_m, sediment, wind_kn)
+    while True:
+        try:
+            next(steps)
+        except StopIteration as done:
+            return done.value
+
+
+def _trace_steps(source_depth_m: float, profile_depths_m, profile_m_s,
+                 water_depth_m: float, sediment: str, wind_kn: float):
+    """``trace_table`` as a generator: yields after every range step and
+    returns the table (identical arithmetic, so it can run in slices)."""
     global build_count
     build_count += 1
     depths = np.asarray(profile_depths_m, dtype=float)
@@ -164,28 +203,183 @@ def trace_table(source_depth_m: float, profile_depths_m, profile_m_s,
             ray_power = np.where(alive, flux * 10.0 ** (-losses[band_index] / 10.0),
                                  0.0)
             intensity[band_index, step] = ray_power @ weights
+        yield step
     with np.errstate(divide="ignore"):
         table = -10.0 * np.log10(np.maximum(intensity, 10.0 ** (-SHADOW_TL_DB / 10.0)))
     return table
+
+
+def _store(key: tuple, table: np.ndarray) -> None:
+    table.setflags(write=False)
+    _cache[key] = table
+    _cache.move_to_end(key)
+    while len(_cache) > CACHE_SIZE:
+        _cache.popitem(last=False)
+
+
+def _steps_for(key: tuple, profile_builder):
+    depths, speeds = profile_builder(key)
+    return _trace_steps(key[0], depths, speeds, key[3], key[4], key[5])
+
+
+def _finish(steps) -> np.ndarray:
+    while True:
+        try:
+            next(steps)
+        except StopIteration as done:
+            return done.value
+
+
+def _helper():
+    """The running helper process, started on first use (None: slices)."""
+    global _worker, _worker_failed
+    if _worker is not None and not _worker.alive:
+        _collect()
+        _worker, _worker_failed = None, True
+    if _worker is None and not _worker_failed and WORKER_ENABLED:
+        from src.sonar.raytrace_worker import TraceWorker
+
+        _worker = TraceWorker.start()
+        _worker_failed = _worker is None
+        if _worker is not None:
+            import atexit
+
+            atexit.register(_worker.close)
+    return _worker
+
+
+def _collect() -> int:
+    """Store the tables the helper has finished."""
+    global prefetch_builds
+    if _worker is None:
+        return 0
+    finished = 0
+    for key, table in _worker.poll():
+        if table is not None and key not in _cache:
+            prefetch_builds += 1
+            _store(key, table)
+            finished += 1
+    return finished
 
 
 def cached_table(key: tuple, profile_builder) -> np.ndarray:
     """TL table for a quantized environment ``key``.
 
     The result is a pure function of the key, so the cache only saves time:
-    save/load, evaluation order or an empty cache never change results.
-    ``key`` = (sensor depth, mixed-layer depth, SST, water depth, sediment,
-    wind); ``profile_builder(key)`` returns (depths, speeds)."""
+    save/load, evaluation order, prefetching or an empty cache never change
+    results.  ``key`` = (sensor depth, mixed-layer depth, SST, water depth,
+    sediment, wind); ``profile_builder(key)`` returns (depths, speeds)."""
+    global inline_builds, prefetch_builds
     table = _cache.get(key)
     if table is not None:
         _cache.move_to_end(key)
         return table
-    depths, speeds = profile_builder(key)
-    table = trace_table(key[0], depths, speeds, key[3], key[4], key[5])
-    _cache[key] = table
-    while len(_cache) > CACHE_SIZE:
-        _cache.popitem(last=False)
+    if _worker is not None and key in _worker.in_flight:
+        # The helper is tracing exactly this key: wait for it.
+        table = _worker.wait(key)
+        _collect()
+        if table is not None:
+            prefetch_builds += 1
+            _store(key, table)
+            return table
+    if _active and _active[0] == key:
+        # Half built by ``service``: finish it now.
+        steps = _active[1]
+        _active.clear()
+        prefetch_builds += 1
+    else:
+        _queued.pop(key, None)
+        steps = _steps_for(key, profile_builder)
+        inline_builds += 1
+    table = _finish(steps)
+    _store(key, table)
     return table
+
+
+def prefetch(keys, profile_builder) -> int:
+    """Request ``keys`` (not cached yet) for ``service`` to build ahead.
+
+    Returns how many were newly queued.  Bounded: the oldest requests give
+    way to newer ones.  Never builds and never changes a result."""
+    if not PREFETCH_ENABLED:
+        return 0
+    queued = 0
+    for key in keys:
+        if (key in _cache or (_active and _active[0] == key)
+                or (_worker is not None and key in _worker.in_flight)):
+            continue
+        if key in _queued:
+            _queued.move_to_end(key)
+            continue
+        _queued[key] = profile_builder
+        queued += 1
+        while len(_queued) > PREFETCH_QUEUE_MAX:
+            _queued.popitem(last=False)
+    return queued
+
+
+def pending_prefetch() -> int:
+    """Requested tables not built yet (in flight or in slices included)."""
+    return (len(_queued) + bool(_active)
+            + (len(_worker.in_flight) if _worker is not None else 0))
+
+
+def service(budget_s: float) -> int:
+    """Advance the requested tables (game thread, once per frame); returns
+    the tables finished.  With the helper process this only collects and
+    submits; without it, tables are traced in range-step slices for up to
+    ``budget_s`` of wall time.  Wall time decides only how soon a table is
+    ready, never what it contains."""
+    global prefetch_builds
+    if not PREFETCH_ENABLED or not (_queued or _active or _worker is not None):
+        return 0
+    finished = _collect()
+    helper = _helper() if (_queued or _active) else _worker
+    if helper is not None and not _active:
+        while _queued and len(helper.in_flight) < helper.MAX_IN_FLIGHT:
+            key, builder = _queued.popitem(last=True)          # newest first
+            if key in _cache:
+                continue
+            depths, speeds = builder(key)
+            if not helper.submit(key, key[0], depths, speeds, key[3], key[4], key[5]):
+                _queued[key] = builder
+                break
+        return finished
+    deadline = time.perf_counter() + max(0.0, budget_s)
+    while True:
+        if not _active:
+            while _queued:
+                key, builder = _queued.popitem(last=True)    # newest first
+                if key not in _cache:
+                    _active[:] = [key, _steps_for(key, builder)]
+                    break
+            if not _active:
+                return finished
+        key, steps = _active
+        try:
+            while time.perf_counter() < deadline:
+                next(steps)
+            return finished
+        except StopIteration as done:
+            _active.clear()
+            prefetch_builds += 1
+            _store(key, done.value)
+            finished += 1
+        except Exception:  # noqa: BLE001 - a hint only; a caller builds it itself
+            _active.clear()
+
+
+def prefetch_idle(timeout_s: float = 60.0) -> bool:
+    """Run ``service`` until every requested table is built (tools, tests
+    and a mission started without a menu)."""
+    deadline = time.monotonic() + timeout_s
+    while pending_prefetch():
+        if time.monotonic() >= deadline:
+            return False
+        service(0.05)
+        if _worker is not None and _worker.in_flight:
+            time.sleep(0.002)
+    return True
 
 
 def lookup_tl_db(table: np.ndarray, band_hz: float, range_nm: float,
@@ -209,10 +403,12 @@ def lookup_tl_db(table: np.ndarray, band_hz: float, range_nm: float,
 
 
 def clear_cache() -> None:
-    global build_count
+    global build_count, inline_builds, prefetch_builds
+    _queued.clear()
+    _active.clear()
     _cache.clear()
     _cz_cache.clear()
-    build_count = 0
+    build_count = inline_builds = prefetch_builds = 0
 
 
 # Convergence zones (plan 1.3, phase 7): ranges beyond CZ_SCAN_MIN_NM where

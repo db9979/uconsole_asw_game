@@ -201,8 +201,8 @@ def measure_sonar() -> dict:
     game.sonar.tow_payout = 1.0
     game.sonar._tow_settle_s = config.SONAR_TOWED_SETTLE_S
     game.sonar.towed_depth_m = 150.0
-    subs = sorted(game.subs, key=lambda s: s.stype.key)
-    target = subs[0]
+    # The golden reference boat, not whichever boat the mission drew.
+    target = _reference_sub(game)
     target.speed = min(target.stype.speed_kn, 6.0)
     for sea in (1, 4):
         _set_sea(game.world, sea)
@@ -350,14 +350,49 @@ def measure_torpedo() -> dict:
 # Submarine
 
 
+# Pose of the boat the default mission drew for the golden record.
+REFERENCE_SUB_COURSE = 140.494967523381
+REFERENCE_SUB_SENSOR_SEED = 1378635661
+
+
+def _reference_sub(game):
+    """The reference submarine of the golden record, built from the catalog.
+
+    It used to be whatever the default mission drew; since the patrol always
+    brings its old diesel (1.3), the AIP boat is built here directly, with
+    the same profile, difficulty and defaults the mission would give it, and
+    the course and sensor seed the drawn boat had (the active ranges depend
+    on its aspect).
+    """
+    import random
+
+    from src.enemies.sub import Sub
+
+    catalog = game.runtime_catalog
+    key = "aip_modern"
+    sub = Sub(game.ship.x + 20.0, game.ship.y, depth_m=60.0,
+              course_deg=REFERENCE_SUB_COURSE,
+               stype_key=key, rng=random.Random(4242),
+               quiet_mult=game.difficulty["quiet_mult"],
+               attack_mult=game.difficulty["enemy_attack_mult"],
+               attack_cooldown_s=game.difficulty["enemy_cooldown_s"],
+               solution_threshold=game.difficulty["enemy_solution_threshold"],
+               profile=catalog.subs[key],
+               decoy_profile=catalog.decoys[catalog.runtime_bindings["submarine_decoy"]],
+               enemy_torpedo_profile=catalog.torpedoes[
+                   catalog.runtime_bindings["enemy_torpedo"]],
+               side="hostile", runtime_catalog=catalog, asw_rng=game.rng_asw)
+    sub.sensor_seed = REFERENCE_SUB_SENSOR_SEED
+    return sub
+
+
 def measure_sub() -> dict:
     out = {}
     game = _game()
-    for sub in sorted(game.subs, key=lambda s: s.stype.key)[:1]:
-        out[f"sub.max_speed_kn.{sub.stype.key}"] = _metric(
-            sub.stype.speed_kn, "equilibrium")
-        out[f"sub.quiet.{sub.stype.key}.patrol"] = _metric(
-            sub.quiet_factor(), "equilibrium")
+    sub = _reference_sub(game)
+    key = sub.stype.key
+    out[f"sub.max_speed_kn.{key}"] = _metric(sub.stype.speed_kn, "equilibrium")
+    out[f"sub.quiet.{key}.patrol"] = _metric(sub.quiet_factor(), "equilibrium")
     return out
 
 

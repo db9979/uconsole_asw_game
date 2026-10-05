@@ -19,6 +19,19 @@ the campaign map, the submarine's threat and radio pages, the lookout
 page, the weather station and the simulation log. Keys are unchanged.
 Saves are v53; v38 to v52 saves still load.
 
+## 1.3.222
+
+Release 1.3.222 fixes how missions end and are scored. Submarine
+victories in "Damaged homecoming", "Agent pick-up", "Listening post" and a
+shaken-off trail now count as wins with their points, and the submarine's
+end panel says why the mission ended and shows the score like the
+frigate's. "Patrol" always brings the old diesel submarine its brief
+promises. A torpedoed merchant sends a distress call, and its 300-point
+penalty applies only if your sonar heard the attacker shortly before. The
+bridge calls out new HQ tasks, and the AI radio crew answers tasks you
+leave open. Several smaller text and browser display fixes. Keys are
+unchanged. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.221
 
 Release 1.3.221 makes the release process safer. A new version is only

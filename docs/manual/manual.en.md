@@ -1213,7 +1213,7 @@ The **cross-fix chart** beside it is the radio room's plotting sheet, north up, 
 
 ### HQ tasks
 
-Besides the hunt, HQ radios tasks to the ship: the first about 15 to 25 minutes into a built-in mission, then one every 25 to 45 minutes, at most six per mission and two open at a time (on a free patrol every 10 to 20 minutes without a cap, with the sector patrol as a sixth kind; see the reference chapter). Custom missions get none. Each offer arrives on the teletype and on page 3 (Tasks). Answer it within 5 minutes with `A` or `Enter` (accept) or `D` (decline); no answer counts as declined. A destroyed radio room cannot answer. On a real sea area HQ, incident reports, the task page, logged bearings and the submarine's ESM fix give positions in degrees and minutes (`54°21.4'N 010°08.2'E`), always with bearing and range from the ship where HQ gives them; on the stylized fixed chart they stay in NM.
+Besides the hunt, HQ radios tasks to the ship: the first about 15 to 25 minutes into a built-in mission, then one every 25 to 45 minutes, at most six per mission and two open at a time (on a free patrol every 10 to 20 minutes without a cap, with the sector patrol as a sixth kind; see the reference chapter). Custom missions get none. Each offer arrives on the teletype and on page 3 (Tasks). Answer it within 5 minutes with `A` or `Enter` (accept) or `D` (decline); no answer counts as declined. The bridge calls out every new offer aloud with a short radio tone. When the AI crew mans the radio room (crew assist or its autocrew), it answers an offer left for 2 minutes: it accepts a replenishment and declines every other task without a penalty, since it cannot steer the ship to it. A destroyed radio room cannot answer. On a real sea area HQ, incident reports, the task page, logged bearings and the submarine's ESM fix give positions in degrees and minutes (`54°21.4'N 010°08.2'E`), always with bearing and range from the ship where HQ gives them; on the stylized fixed chart they stay in NM.
 
 - **Distress call (SAR):** a life raft with 2 to 6 people, reported by EPIRB with about 0.5 NM error and drifting with current and wind. The survivors last according to the sea temperature, from 40 minutes in water below 8 °C to 100 minutes above 20 °C. The raft is sighted within 2 NM by day (3 NM at night by its strobe), and it is a small radar echo for the ship's and the helicopter's radar (a few miles in a calm sea, far less in a rough one); then the circle on the chart shrinks onto it. Take them aboard by lying within 0.25 NM at 3 kn or less for 4 minutes, or with the helicopter's rescue hoist (`Z` within 0.1 NM: one minute per person, 6 in the cabin, only when the weather allows dipping); the helicopter's survivors count once it is back on deck (chapter Helicopter deck). +600 points, -400 if they are lost.
 - **Identify merchant:** HQ names a merchant within 60 NM and gives its position with about 2 NM error. It counts as identified once the lookout has published its identification or the helicopter passes within 1 NM with at least 1 NM visibility. About a third are flagged as suspect: HQ then passes a submarine datum near the ship. 40 minutes.
@@ -2137,6 +2137,8 @@ Each side has twelve scenarios, counted from 1 in its own list: `1`-`9` and `0` 
 | 11 | Search group | Both submarines sunk | Time limit / frigate sunk | 45 min |
 | 12 | Free patrol | No victory: collect points as long as the frigate stays afloat | Frigate sunk / civilian loss | none |
 
+The patrol (1) always brings an old diesel submarine; in about half of the starts enemy aircraft also attack the frigate with anti-ship missiles. The free hunt (4) draws diesel, AIP or nuclear submarines at random.
+
 ### Submarine scenarios
 
 | No. | Scenario | Submarine wins | Frigate wins | Short |
@@ -2350,7 +2352,7 @@ Beside the chart it lists the time of the first contact, first fix and classific
 
 **Logbook** (main menu): every finished mission (never a lesson) for the side the uConsole played, with date, mission, realism level, result, score and minutes; the best score per mission and five awards per side: first victory, one shot one kill (the enemy sunk with a single weapon), unscathed (no damage), never fired at, and realist (a victory on the Realistic level).
 
-The frigate files its mission score; the submarine counts its outcome (sinking the frigate 1500, sinking the convoy 1200, breakthrough or report 1000, escape 800, surviving 600) plus up to 500 for an undamaged submarine and 100 per torpedo left, times the level's factor.
+The frigate files its mission score; the submarine counts its outcome (sinking the frigate 1500, the supply ship 1300, the convoy 1200, swimmers landed or agents picked up 1100, breakthrough, strait, report, home port or listening post 1000, escape or trail shaken off 800, surviving 600) plus up to 500 for an undamaged submarine and 100 per torpedo left, times the level's factor.
 
 `Left`/`Right` or `Tab` switch frigate and submarine, `A` the language model's review, `B` the newest report, `L` the enemy's learning, `Enter` or `Esc` back; the footer names these keys and a click on one presses it. The end panel names the score, a new best and new awards. The logbook is `~/.u-jagd/logbook.json` (the newest 200 missions), never part of a save.
 
@@ -2537,7 +2539,7 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Air radar | 100 NM (50 % per sweep) | aircraft and missiles; jammers burn through close in |
 | ESM | 150 NM (main beam) | +/-3 deg bearing; level and range estimate |
 | HFDF | 120 NM ground wave at 15 MHz (about 95-150 NM by frequency) | +/-8 deg bearing (sky wave +/-16) |
-| Lookout | 12 NM surface, 5 NM surfaced sub, 20 NM air, 20 NM land | x0.25 (new moon) to x0.45 (full moon) at night; fog and sea state reduce; class at 2, type at 3.2 resolved cycles over relative size (tanker about 7/5 NM, frigate 5/4 NM, speedboat 3/2 NM by clear day) |
+| Lookout | 12 NM surface, 5 NM surfaced submarine, 20 NM air, 20 NM land | x0.25 (new moon) to x0.45 (full moon) at night; fog and sea state reduce; class at 2, type at 3.2 resolved cycles over relative size (tanker about 7/5 NM, frigate 5/4 NM, speedboat 3/2 NM by clear day) |
 
 ### Weapons and countermeasures
 
@@ -2602,7 +2604,7 @@ What the sea and the weather do, and what the screens show of it:
 
 Submarines evade for 240 s after hearing a ping or a torpedo (away from the bearing of the torpedo, rocket or charge they heard, else away from the frigate), may launch a decoy, lie in wait, snorkel (detectable by HFDF and ESM) and sometimes ping from 15 NM or less. Near the frigate a submarine may instead creep to a charted wreck within 8 NM and lie still on the bottom beside it for 15-30 minutes.
 
-A submarine with its mast or snorkel raised that hears an aircraft radar (helicopter or patrol aircraft) goes deep and holds off snorkeling for 15 minutes. In the frigate scenarios (1 to 4) a patrol submarine that has heard no ping or torpedo for 10 minutes, keeps more than 2 torpedoes and is more than 10 NM from the frigate torpedoes a merchant passing within 4 NM on about one in seven of its once-a-minute fire windows; each merchant lost costs 300 points.
+A submarine with its mast or snorkel raised that hears an aircraft radar (helicopter or patrol aircraft) goes deep and holds off snorkeling for 15 minutes. In the frigate scenarios (1 to 4) a patrol submarine that has heard no ping or torpedo for 10 minutes, keeps more than 2 torpedoes and is more than 10 NM from the frigate torpedoes a merchant passing within 4 NM on about one in seven of its once-a-minute fire windows. The merchant's distress call gives its rough bearing (nearest 10°) and range (whole NM) from the frigate; each merchant lost costs 300 points, but only when the frigate's sonar heard the attacking submarine in the 10 minutes before.
 
 Submarine physics: the hull accelerates toward an ordered speed (no instant sprints); hydroplanes need speed (below about 4 kn depth changes are slow); radiated noise rises about 12 dB per doubling of speed and jumps when the screw cavitates, and the cavitation speed rises with depth; a torpedo launch makes an 8 s transient; a badly flooded submarine blows ballast once and rises fast and loud; operating below test depth fatigues the hull, and 1.5 x test depth crushes it; a lurking submarine holds its position against the current.
 
@@ -2633,9 +2635,11 @@ Surface ships lose top speed in heavy seas (small ships more).
 | Frigate: no civilian losses | 500 |
 | Frigate: time bonus | up to 500 |
 | Submarine: frigate sunk | 1500 |
+| Submarine: supply ship sunk | 1300 |
 | Submarine: convoy sunk | 1200 |
-| Submarine: breakthrough or report | 1000 |
-| Submarine: escape | 800 |
+| Submarine: swimmers landed or agents picked up | 1100 |
+| Submarine: breakthrough, strait passed, report, home port reached or listening post reported | 1000 |
+| Submarine: escape or trail shaken off | 800 |
 | Submarine: survived | 600 |
 | Submarine: undamaged | up to 500 |
 | Submarine: torpedo left | 100 each |

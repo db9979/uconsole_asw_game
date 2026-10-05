@@ -379,6 +379,18 @@ class AutocrewController:
 
     @staticmethod
     def _radio(game):
+        board = getattr(game, "tasking", None)
+        for task in (board.open_tasks() if board is not None else ()):
+            if (task["state"] != "offered"
+                    or game.sim_t - task["offered_t"] < config.AUTOCREW_TASK_WAIT_S):
+                continue
+            # The crew cannot steer the ship to a task: it takes the
+            # replenishment (no penalty if missed) and declines the rest free.
+            result = (game.accept_task(task["id"]) if task["kind"] == "ras"
+                      else game.decline_task(task["id"], by_crew=True))
+            if result is True:
+                # The feed says what was answered; the saved action set stays.
+                return "monitoring"
         for report in sorted(game.hfdf_bearings(), key=game.hfdf_display_id):
             if report.age(game.sim_t) > config.RADAR_TRACK_STALE_S:
                 continue

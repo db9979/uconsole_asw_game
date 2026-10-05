@@ -10,22 +10,16 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.214**
+Current release: **1.3.218**
 
-Release 1.3.214 draws finer coastlines and gives positions in degrees and
-minutes in the radio traffic too. The 128 real sea areas now come from
-Natural Earth at 1:10m instead of 1:50m: bays, fjords, islands and
-headlands are drawn down to about 0.05 NM, so the coast on the chart is
-much closer to a real chart (the map package grows to about 3 MB). On a
-real sea area HQ's task offers and reports, incident warnings, the task
-page, logged HF/DF bearings and the submarine's ESM fix now name positions
-like 54°21.4'N 010°08.2'E, still with bearing and range where HQ gives
-them, on the uConsole and in the browser. A patrol start that the finer
-coast would put in a narrow bay moves out to open water, and a submarine
-no longer sticks to the seabed at high tide. Measured fairness is
-unchanged (AI against AI 14 to 15 of 36 frigate wins, crewed submarine
-16 of 24). Keys are unchanged. Saves are v53; v38 to v52 saves still
-load, and a saved mission keeps the coast it started with.
+Release 1.3.218 makes a click on a sonar contact card listen to that
+contact at once. The click selects the contact and trains the listening
+beam on it, like Up/Down followed by Enter, so the waterfall, the analysis
+pages and the sound switch to it straight away; a contact not heard for
+more than 2 s is only selected. This holds at the frigate's sonar station
+and in the submarine's sonar room on the uConsole and the desktop apps; in
+the browser a click on a sonar contact already did this. Keys and gameplay
+are unchanged. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

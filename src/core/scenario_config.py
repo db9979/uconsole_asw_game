@@ -63,8 +63,10 @@ FREE_ATTACK_SIGMA_NM = 1.5
 MISSION_TYPES = {
     "patrouille": dict(
         name="Patrouille", weight=40, subs=1,
-        # Scenario 1's brief promises an old diesel boat (Free Hunt stays random).
-        sub_types=["diesel_alt"],
+        # The brief promises an old diesel boat, so the draw below is fixed to
+        # it (Free Hunt stays random). The pool stays as it was so the
+        # mission's random stream keeps its order (saves, determinism).
+        sub_types=["diesel_alt", "aip_modern", "ssn"], sub_type_fixed="diesel_alt",
         animals=(2, 4), civilians=(2, 3), asm=(0, 1), warships=(0, 1),
         time_limit_s=10800, short_time_limit_s=1800, win="sink"),
     "doppeljagd": dict(

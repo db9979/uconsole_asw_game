@@ -27,6 +27,11 @@ class Mission:
             self.sub_count = self.spec["subs"]
             self.sub_types = [rng.choice(self.spec["sub_types"])
                               for _ in range(self.sub_count)]
+            fixed = self.spec.get("sub_type_fixed")
+            if fixed is not None:
+                # The scenario's briefing names one class: the draw above
+                # still runs, so the stream order is unchanged.
+                self.sub_types = [fixed] * self.sub_count
             self.animal_count = rng.randint(*self.spec["animals"])
             self.civilian_count = rng.randint(*self.spec["civilians"])
             self.asm_count = rng.randint(*self.spec["asm"])  # M16

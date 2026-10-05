@@ -414,7 +414,7 @@ def _mission_line_rect(game, r):
     from src.core import boat_missions
     if boat_missions.mode(game) is None:
         return None
-    return pygame.Rect(r[0] + 8, scale_rect(r).bottom + 2, min(560, r[2] - 16), 22)
+    return pygame.Rect(r[0] + 8, scale_rect(r, game).bottom + 2, min(560, r[2] - 16), 22)
 
 
 def _draw_mission_line(game, boat, r) -> None:
@@ -456,7 +456,8 @@ def draw_chart(game, boat) -> None:
             map_fx_view.draw_fx(s, fx.rows(("boat", boat.sub.id), game.sim_t),
                                 view.world_to_screen, view.scale, r, chart_background(game))
         _draw_chart_overlays(game, boat, view, r)
-    draw_chart_frame(game, view, r, boat.chart_follow)
+    # The crew's own position is the navigator's (dead reckoning), not truth.
+    draw_chart_frame(game, view, r, boat.chart_follow, position=boat_nav.position(boat))
     _draw_mission_line(game, boat, r)
 
 

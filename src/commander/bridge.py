@@ -548,7 +548,13 @@ class CommanderBridge:
                                disclaimer="commander.chart.omitted" if omitted
                                else "commander.chart.disclaimer")
             self._chart_world = id(game.world)
-            self._chart_geography = dict(labels=[], airbases=[], depths=[], hazards=[])
+            # A real sea area's chart reference (public chart data): the web
+            # charts draw degrees and minutes from it, as the uConsole does.
+            from src.world import geo
+            center = geo.chart_center(game.world)
+            self._chart_geography = dict(
+                labels=[], airbases=[], depths=[], hazards=[],
+                center=None if center is None else dict(lat=center[1], lon=center[0]))
             # Charted wrecks and underwater rocks are public chart content.
             charted = getattr(game.world, "charted_hazards", None)
             for hazard in islice(charted() if charted is not None else (), 64):

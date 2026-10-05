@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.208
+## 1.3.209
 
-Release 1.3.208 fixes physics and weapon faults the code review found.
+Release 1.3.209 fixes physics and weapon faults the code review found.
 In sea state 5 and above the frigate now gets under way from a standstill
 (it used to stay at 0 kn). A submarine that changes its depth order mid-dive
 no longer jumps to the new depth. The helicopter's MAD looks once per
@@ -17,6 +17,19 @@ and no longer streams one above that speed. An enemy torpedo now loses its
 lock when the target is out of its seeker's reach, hears the frigate louder
 the faster it runs, and keeps its search pattern while the wire is held.
 Keys are unchanged. Saves are v52; v38 to v51 saves still load.
+
+## 1.3.208
+
+Release 1.3.208 keeps the uConsole smooth with live traffic. A mission with
+real aircraft (OpenSky ADS-B) now flies at most 5 of them instead of 40, and
+one with real ships (AIS) at most 15 instead of 60, picked at random and
+kept until each leaves the area, so contacts do not flicker in and out. With
+dozens of live contacts the single game thread was saturated and the game
+stuttered although the processor showed only about a third of its load. The
+OPZ picture is also built once per frame instead of several times, and a
+burst of live AIS reports is spread over several frames. Remote Crew
+browsers see the same contacts. Keys are unchanged. Saves are v52; v38 to
+v51 saves still load.
 
 ## 1.3.207
 

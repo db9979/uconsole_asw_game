@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.208
+## 1.3.209
 
-Version 1.3.208 behebt Fehler in Physik und Waffen, die die Code-Prüfung
+Version 1.3.209 behebt Fehler in Physik und Waffen, die die Code-Prüfung
 gefunden hat. Ab Seegang 5 kommt die Fregatte aus dem Stand wieder in Fahrt
 (sie blieb bei 0 kn stehen). Ein U-Boot, das seinen Tiefenbefehl mitten im
 Tauchen ändert, springt nicht mehr auf die neue Tiefe. Das MAD des
@@ -18,6 +18,20 @@ feindlicher Torpedo verliert seine Erfassung, wenn das Ziel außer
 Reichweite seines Suchkopfs ist, hört die Fregatte lauter, je schneller sie
 fährt, und behält sein Suchmuster, solange der Draht hält. Tasten bleiben
 gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+
+## 1.3.208
+
+Version 1.3.208 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
+mit echten Flugzeugen (OpenSky ADS-B) fliegt jetzt höchstens 5 davon statt
+40, eine mit echten Schiffen (AIS) höchstens 15 statt 60, zufällig gewählt
+und behalten, bis jeder Kontakt das Gebiet verlässt, damit Kontakte nicht
+auftauchen und wieder verschwinden. Bei Dutzenden Live-Kontakten lief der
+eine Spiel-Thread voll, und das Spiel ruckelte, obwohl der Prozessor nur
+etwa ein Drittel Last zeigte. Das OPZ-Lagebild wird außerdem nur noch
+einmal pro Bild statt mehrmals berechnet, und ein Schwall Live-AIS-Meldungen
+wird auf mehrere Bilder verteilt. Remote-Crew-Browser sehen dieselben
+Kontakte. Die Tasten bleiben gleich. Spielstände sind v52; v38- bis
+v51-Stände werden weiter geladen.
 
 ## 1.3.207
 

@@ -4,6 +4,13 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.206
+
+Release 1.3.206 rewrites the README: it is much shorter, drops outdated
+details and points to the manual and the changelog for everything else. The
+game itself is unchanged. Keys are unchanged. Saves are v52; v38 to v51
+saves still load.
+
 ## 1.3.205
 
 Release 1.3.205 fixes what a full code review found, without changing how

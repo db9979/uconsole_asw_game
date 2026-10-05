@@ -4,6 +4,14 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.206
+
+Version 1.3.206 schreibt die README neu: sie ist viel kürzer, lässt
+veraltete Einzelheiten weg und verweist für alles Weitere auf das Handbuch
+und das Änderungsprotokoll. Das Spiel selbst ist unverändert. Die Tasten
+sind unverändert. Spielstände sind v52; Spielstände v38 bis v51 laden
+weiterhin.
+
 ## 1.3.205
 
 Version 1.3.205 behebt, was eine vollständige Code-Prüfung gefunden hat,

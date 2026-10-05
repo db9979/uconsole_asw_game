@@ -442,7 +442,12 @@ class DrawMixin:
         # process-wide default translator.
         with layout.bottom_panel_regions(self.bottom_panel_mode()), \
                 translation_scope(self.tr):
-            self._draw()
+            # Drawing never changes the OPZ picture: compute it once a frame.
+            self._opz_draw_memo = {}
+            try:
+                self._draw()
+            finally:
+                self._opz_draw_memo = None
 
     def _splash_backdrop_active(self) -> bool:
         """A modal overlay or the mission's end panel replaces the station."""

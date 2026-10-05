@@ -1,4 +1,4 @@
-"""Host side of the 1.3.208 browser layout: chart country names, the fire chain."""
+"""Host side of the 1.3.209 browser layout: chart country names, the fire chain."""
 from pathlib import Path
 
 from src.commander.bridge import _polygon_area

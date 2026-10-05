@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.208
+## 1.3.209
 
-Version 1.3.208 lässt die Browser-Stationen mehr ohne Scrollen zeigen. Im
+Version 1.3.209 lässt die Browser-Stationen mehr ohne Scrollen zeigen. Im
 Browser haben die Stationen dieselben Tasten wie auf dem uConsole (zum
 Beispiel C/V/D für Kurs, Fahrt und Tiefe, Umschalt+A für den Ping,
 Strg+Enter zum Feuern), und jede Taste steht als blaue Tastenkappe auf ihrer
@@ -18,6 +18,20 @@ ihre Rohre ab 1 und zeigt die Feuerkette Schritt für Schritt. Ländernamen auf
 der Karte stehen einmal je Land, auf Deutsch oder Englisch, auch auf dem
 uConsole. Auf dem Handy klappt die obere Leiste in ein ☰-Menü. Die Tasten auf
 dem uConsole sind unverändert. Spielstände sind v52; Spielstände v38 bis v51
+
+## 1.3.208
+
+Version 1.3.208 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
+mit echten Flugzeugen (OpenSky ADS-B) fliegt jetzt höchstens 5 davon statt
+40, eine mit echten Schiffen (AIS) höchstens 15 statt 60, zufällig gewählt
+und behalten, bis jeder Kontakt das Gebiet verlässt, damit Kontakte nicht
+auftauchen und wieder verschwinden. Bei Dutzenden Live-Kontakten lief der
+eine Spiel-Thread voll, und das Spiel ruckelte, obwohl der Prozessor nur
+etwa ein Drittel Last zeigte. Das OPZ-Lagebild wird außerdem nur noch
+einmal pro Bild statt mehrmals berechnet, und ein Schwall Live-AIS-Meldungen
+wird auf mehrere Bilder verteilt. Remote-Crew-Browser sehen dieselben
+Kontakte. Die Tasten bleiben gleich. Spielstände sind v52; v38- bis
+v51-Stände werden weiter geladen.
 
 ## 1.3.207
 

@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.208**
+Aktuelle Version: **1.3.209**
 
-Version 1.3.208 lässt die Browser-Stationen mehr ohne Scrollen zeigen. Im
+Version 1.3.209 lässt die Browser-Stationen mehr ohne Scrollen zeigen. Im
 Browser haben die Stationen dieselben Tasten wie auf dem uConsole (zum
 Beispiel C/V/D für Kurs, Fahrt und Tiefe, Umschalt+A für den Ping,
 Strg+Enter zum Feuern), und jede Taste steht als blaue Tastenkappe auf ihrer

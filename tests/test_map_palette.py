@@ -87,7 +87,10 @@ def test_airborne_helo_uses_readable_friend_air_symbol_above_ship(monkeypatch):
     map_view.draw_map_view(game)
 
     center = tuple(map(int, game.map_view.world_to_screen(250.0, 250.0)))
-    assert calls == [((320.0, 285.0), "FRIEND", "ROTARY", 22)]
+    # The own frigate wears its APP-6 own-unit frame too (B5); the helicopter
+    # is the one rotary-wing symbol.
+    assert [call for call in calls if call[2] == "ROTARY"] == [((320.0, 285.0), "FRIEND", "ROTARY", 22)]
+    assert [call[1:] for call in calls if call[2] != "ROTARY"] == [("FRIEND", "SURFACE", 16)]
     assert game.screen.get_at(center)[:3] == nato_symbols.AFFILIATION_COLORS["FRIEND"]
 
 

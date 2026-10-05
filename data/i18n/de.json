@@ -6743,6 +6743,7 @@
   "top.tab.opz": "OPZ",
   "top.tab.radio": "FUNK",
   "top.tab.engine": "MASCHINE",
+  "top.tab.engine.short": "MASCH.",
   "top.tab.helicopter": "HELI",
   "top.tab.eloka": "ELOKA",
   "top.status_short": "{scenario} · {time} · {speed} kn · {course}°",

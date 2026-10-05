@@ -39,7 +39,7 @@ def test_full_weapon_solution_and_readiness_fit(game, monkeypatch, language, lar
     regions = weapons_view.weapons_regions(game)
     solution = [item for item in text if regions["solution"].contains(item["bounds"])]
     rendered = "\n".join(item["text"] for item in solution)
-    assert "6.0 NM" in rendered
+    assert ("6.0 sm" if language == "de" else "6.0 NM") in rendered
     assert translator.t("map.source.buoy") in rendered
     assert "PING" not in rendered
     assert "145.0" in rendered and "7.0 kn" in rendered and "72%" in rendered

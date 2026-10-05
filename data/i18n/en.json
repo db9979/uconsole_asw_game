@@ -6743,6 +6743,7 @@
   "top.tab.opz": "CIC",
   "top.tab.radio": "RADIO",
   "top.tab.engine": "ENGINE",
+  "top.tab.engine.short": "ENG.",
   "top.tab.helicopter": "HELO",
   "top.tab.eloka": "EW",
   "top.status_short": "{scenario} · {time} · {speed} kn · {course}°",

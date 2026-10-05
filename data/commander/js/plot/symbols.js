@@ -3,27 +3,6 @@ import { ctx } from "../views/canvases.js";
 // APP-6 frame dimension of each glyph domain (as src/ui/nato_symbols.py).
 const FRAME_DIMENSION = {AIR: "air", ROTARY: "air", MISSILE: "air", SUBSURFACE: "subsurface", UNDERWATER_WEAPON: "subsurface"};
 
-// The APP-6 frame: friend circle, hostile diamond, neutral square, cut to the
-// upper half (air, open below) or the lower half (subsurface, open above);
-// unknown affiliation: no frame, only the domain glyph (colour marks it).
-function drawFrame(context, x, y, affiliation, dimension, half, height) {
-  const air = dimension === "air", sub = dimension === "subsurface";
-  if (affiliation === "FRIEND") {
-    const radius = half + 2;
-    if (air) context.arc(x, y, radius, Math.PI, Math.PI * 2);
-    else if (sub) context.arc(x, y, radius, 0, Math.PI);
-    else context.arc(x, y, radius, 0, Math.PI * 2);
-  } else if (affiliation === "HOSTILE") {
-    if (air) { context.moveTo(x - half, y + 2); context.lineTo(x, y - height); context.lineTo(x + half, y + 2); }
-    else if (sub) { context.moveTo(x - half, y - 2); context.lineTo(x, y + height); context.lineTo(x + half, y - 2); }
-    else { context.moveTo(x, y - height); context.lineTo(x + half, y); context.lineTo(x, y + height); context.lineTo(x - half, y); context.closePath(); }
-  } else if (affiliation === "NEUTRAL") {
-    if (air) { context.moveTo(x - half, y + 3); context.lineTo(x - half, y - height); context.lineTo(x + half, y - height); context.lineTo(x + half, y + 3); }
-    else if (sub) { context.moveTo(x - half, y - 3); context.lineTo(x - half, y + height); context.lineTo(x + half, y + height); context.lineTo(x + half, y - 3); }
-    else context.rect(x - half, y - height, half * 2, height * 2);
-  }
-}
-
 // NATO-style symbol, same geometry as the uConsole (src/ui/nato_symbols.py):
 // the frame shows the operator's affiliation in the unit's dimension, the
 // glyph the domain.
@@ -57,6 +36,27 @@ export function drawNatoSymbol(context, x, y, affiliation, domain, color, size) 
     context.arc(x, y, Math.max(1.5, glyph * .4), 0, Math.PI * 2);
   }
   context.stroke();
+}
+
+// The APP-6 frame: friend circle, hostile diamond, neutral square, cut to the
+// upper half (air, open below) or the lower half (subsurface, open above);
+// unknown affiliation: no frame, only the domain glyph (colour marks it).
+function drawFrame(context, x, y, affiliation, dimension, half, height) {
+  const air = dimension === "air", sub = dimension === "subsurface";
+  if (affiliation === "FRIEND") {
+    const radius = half + 2;
+    if (air) context.arc(x, y, radius, Math.PI, Math.PI * 2);
+    else if (sub) context.arc(x, y, radius, 0, Math.PI);
+    else context.arc(x, y, radius, 0, Math.PI * 2);
+  } else if (affiliation === "HOSTILE") {
+    if (air) { context.moveTo(x - half, y + 2); context.lineTo(x, y - height); context.lineTo(x + half, y + 2); }
+    else if (sub) { context.moveTo(x - half, y - 2); context.lineTo(x, y + height); context.lineTo(x + half, y - 2); }
+    else { context.moveTo(x, y - height); context.lineTo(x + half, y); context.lineTo(x, y + height); context.lineTo(x - half, y); context.closePath(); }
+  } else if (affiliation === "NEUTRAL") {
+    if (air) { context.moveTo(x - half, y + 3); context.lineTo(x - half, y - height); context.lineTo(x + half, y - height); context.lineTo(x + half, y + 3); }
+    else if (sub) { context.moveTo(x - half, y - 3); context.lineTo(x - half, y + height); context.lineTo(x + half, y + height); context.lineTo(x + half, y - 3); }
+    else context.rect(x - half, y - height, half * 2, height * 2);
+  }
 }
 export function drawSymbolOn(context, x, y, domain, color, size, affiliation = "UNKNOWN") {
   drawNatoSymbol(context, x, y, affiliation, domain, color, size);

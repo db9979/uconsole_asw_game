@@ -10,6 +10,8 @@ import pytest
 
 from commander_web import ASSET_DIR, page_dataset
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 # The page script runs under the listener's own Content-Security-Policy, so a
 # worker the policy would refuse fails this test instead of silently falling back.
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; "

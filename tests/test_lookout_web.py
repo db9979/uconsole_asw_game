@@ -15,6 +15,8 @@ from src.core.game import Game
 from src.enemies.surface import SurfaceShip
 from test_commander_assets import ASSETS, Document, PREFIX, catalogs
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 PROBE = r'''
 (() => {
   const $ = (id) => document.getElementById(id);

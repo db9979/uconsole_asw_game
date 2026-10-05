@@ -10,6 +10,8 @@ import pytest
 from commander_web import module_source
 from test_commander_assets import Document
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 
 SCRIPT = r"""
 let clock = 0;

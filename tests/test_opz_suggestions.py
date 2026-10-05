@@ -23,6 +23,8 @@ from src.ui.stations_view import draw_opz_view
 from test_commander_bridge import Server
 from test_commander_projection_schema import _validator_page
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 
 def report(key, source, bearing, *, x=None, y=None, unc=None, kind="UNKNOWN",
            seen=100.0, observer=None):

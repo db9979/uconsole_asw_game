@@ -13,6 +13,8 @@ from test_commander_assets import ASSETS, PREFIX, Document, catalogs
 from test_commander_browser_sessions_v2 import (SESSION_ROLES, STATIONS, _direct_fire_browser_states,
                                                 _station_record)
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 
 SIMLOG_BROWSER = r"""
 "use strict";

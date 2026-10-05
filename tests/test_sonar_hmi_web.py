@@ -11,6 +11,8 @@ from src.commander import bridge, server
 from src.core.game import Game
 from test_commander_assets import ASSETS, Document, PREFIX, catalogs
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 

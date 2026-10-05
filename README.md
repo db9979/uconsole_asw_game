@@ -10,14 +10,15 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.213**
+Current release: **1.3.215**
 
-Release 1.3.213 makes an enemy submarine evade from the weapon it hears.
-It used to turn away from the frigate's bearing even when the torpedo,
-depth charge or rocket came from somewhere else, such as the helicopter.
-Now it turns away from the bearing of the weapon itself, and falls back to
-the frigate's bearing only when it has heard none. Keys are unchanged. Saves are v53; v38
-to v52 saves still load.
+Release 1.3.215 makes the release process safer. A new version is only
+published after all tests have passed on it, so a broken build never
+reaches the update offer. If the Windows build fails, the uConsole and the
+Mac still get the update, and the older release stays for Windows. Updates
+for Windows and macOS are only offered with a SHA-256 checksum. The tests
+now also run on Windows and on Python 3.13. Gameplay and keys are
+unchanged. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

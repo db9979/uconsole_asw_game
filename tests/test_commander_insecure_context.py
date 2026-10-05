@@ -16,6 +16,8 @@ import pytest
 
 from commander_web import client_js
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 ASSETS = Path("data/commander")
 
 

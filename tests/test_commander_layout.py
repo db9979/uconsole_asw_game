@@ -20,6 +20,8 @@ from src.ui import layout
 from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_analysis,
                                    browser_state, catalogs)
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 
 LOBBY_LAYOUT = r"""
 const $ = (id) => document.getElementById(id);

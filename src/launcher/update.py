@@ -120,13 +120,14 @@ def select_release(payload: object, current: str,
         url, size = asset.get("browser_download_url"), asset.get("size")
         if not _https_github(url) or type(size) is not int or not 0 < size <= MAX_ASSET_BYTES:
             return None
+        # GitHub publishes a SHA-256 for every release asset; a file without
+        # one is never offered, so a download is always checked.
         digest = asset.get("digest")
         match = _DIGEST.fullmatch(digest) if type(digest) is str else None
-        if digest is not None and match is None:
+        if match is None:
             return None
         page = payload.get("html_url")
-        return Release(".".join(map(str, version)), url, size,
-                       match.group(1) if match else None,
+        return Release(".".join(map(str, version)), url, size, match.group(1),
                        page if _https_github(page) else RELEASES_PAGE)
     return None
 

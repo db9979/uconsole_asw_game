@@ -13,6 +13,8 @@ from src.core import config, manual
 from src.core.game import Game
 from test_commander_assets import PREFIX, Document, catalogs
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 
 def _translations():
     en, de = catalogs()

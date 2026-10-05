@@ -20,6 +20,8 @@ from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_ana
                                    browser_state, catalogs)
 from commander_fixtures import CREW_NOISE, PLOT, WEATHER_STATION
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 
 
 # The bridge lookout's binoculars (clear night, nothing in sight).

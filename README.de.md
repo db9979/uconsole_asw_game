@@ -10,14 +10,16 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.213**
+Aktuelle Version: **1.3.215**
 
-Version 1.3.213 lässt ein feindliches U-Boot vor der Waffe ausweichen, die
-es hört. Bisher drehte es von der Peilung der Fregatte weg, auch wenn
-Torpedo, Wasserbombe oder Rakete von anderswo kamen, etwa vom Hubschrauber.
-Jetzt dreht es von der Peilung der Waffe selbst weg und nur dann von der
-Fregatte, wenn es keine gehört hat. Tasten bleiben gleich.
-Spielstände sind v53; v38 bis v52 laden weiter.
+Version 1.3.215 macht das Veröffentlichen sicherer. Eine neue Version
+erscheint erst, wenn alle Tests auf ihr bestanden sind, so kommt ein
+fehlerhafter Stand nie ins Update-Angebot. Scheitert der Windows-Bau,
+bekommen uConsole und Mac das Update trotzdem, und für Windows bleibt die
+ältere Version stehen. Updates für Windows und macOS werden nur noch mit
+SHA-256-Prüfsumme angeboten. Die Tests laufen jetzt auch unter Windows und
+mit Python 3.13. Spiel und Tasten bleiben gleich. Spielstände sind v53;
+v38 bis v52 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

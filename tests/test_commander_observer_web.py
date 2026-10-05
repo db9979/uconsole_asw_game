@@ -16,6 +16,8 @@ from src.commander import server
 from src.core.game import Game
 from test_commander_assets import PREFIX, catalogs
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 

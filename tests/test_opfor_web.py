@@ -13,6 +13,8 @@ from src.commander import server
 from src.core.game import Game
 from test_commander_assets import ASSETS, PREFIX, catalogs
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 
 PROBE = r'''
 (() => {

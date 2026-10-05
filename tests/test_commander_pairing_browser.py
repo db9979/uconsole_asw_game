@@ -22,6 +22,8 @@ from src.core.game import Game
 from test_commander_assets import ASSETS, PREFIX, Document, catalogs
 from test_phone_lookout_web import sloppy_code
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 FIREFOX = "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
 
 PAIR_SCRIPT = r"""

@@ -19,6 +19,8 @@ from src.sonar.sonar import Contact
 from src.core import manual
 from test_commander_assets import ASSETS, PREFIX, catalogs
 
+pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
+
 
 CONSOLE_SCRIPT = r"""
 (() => {

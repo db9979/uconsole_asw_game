@@ -105,8 +105,8 @@
   "value": 16.6571
  },
  "sonar.passive_nm.TOWED.sea4.own6.d30": {
-  "phase": 4,
-  "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty. In ~800 m of water over sand bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double; the shadow zone remains at short range and in deep water.",
-  "value": 24.435873
+  "phase": "1.3.214",
+  "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty; in ~800 m of water bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double (24.4 NM). 1.3.214: the real sea areas come from Natural Earth 1:10m. The synthetic chart depth follows the distance to the coast, so the calibration spot of seed 4242 (same place) lies over a seabed that varies by about 20 m more along the ray; with the bottom bounces of 1.3.212 this range becomes 21.4 NM. Every other metric stays in tolerance.",
+  "value": 21.3757
  }
 }

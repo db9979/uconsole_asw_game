@@ -4,19 +4,27 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.206
+## 1.3.207
 
-Version 1.3.206 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
+Version 1.3.207 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
 mit echten Flugzeugen (OpenSky ADS-B) fliegt jetzt höchstens 5 davon statt
 40, eine mit echten Schiffen (AIS) höchstens 15 statt 60, zufällig gewählt
 und behalten, bis jeder Kontakt das Gebiet verlässt, damit Kontakte nicht
 auftauchen und wieder verschwinden. Bei Dutzenden Live-Kontakten lief der
 eine Spiel-Thread voll, und das Spiel ruckelte, obwohl der Prozessor nur
-etwa ein Drittel Last zeigte. Das OPZ-Lagebild wird
-außerdem nur noch einmal pro Bild statt mehrmals berechnet, und ein Schwall
-Live-AIS-Meldungen wird auf mehrere Bilder verteilt. Remote-Crew-Browser
-sehen dieselben fünf Flugzeuge. Die Tasten bleiben gleich. Spielstände sind
-v52; v38- bis v51-Stände werden weiter geladen.
+etwa ein Drittel Last zeigte. Das OPZ-Lagebild wird außerdem nur noch
+einmal pro Bild statt mehrmals berechnet, und ein Schwall Live-AIS-Meldungen
+wird auf mehrere Bilder verteilt. Remote-Crew-Browser sehen dieselben
+Kontakte. Die Tasten bleiben gleich. Spielstände sind v52; v38- bis
+v51-Stände werden weiter geladen.
+
+## 1.3.206
+
+Version 1.3.206 schreibt die README neu: sie ist viel kürzer, lässt
+veraltete Einzelheiten weg und verweist für alles Weitere auf das Handbuch
+und das Änderungsprotokoll. Das Spiel selbst ist unverändert. Die Tasten
+sind unverändert. Spielstände sind v52; Spielstände v38 bis v51 laden
+weiterhin.
 
 ## 1.3.205
 

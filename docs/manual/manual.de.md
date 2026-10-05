@@ -316,7 +316,7 @@ Die Stufe stimmt nur den Computergegner ab, nie einen Menschen auf der anderen S
 
 #### Echtzeit-Verkehr
 
-Die Seite **Echtzeit-Verkehr** holt echte Schiffe (AIS Stream, braucht einen eigenen API-Schlüssel) und echte Flugzeuge (OpenSky ADS-B, wahlweise mit eigener OpenSky-Client-ID) in eine Mission, deren Welt ein reales Seegebiet ist. Sie braucht eine Internetverbindung; ohne sie sind die Zeilen ausgegraut. **API-Test** prüft beide Dienste. Platziert wird nur Verkehr bis etwa 150 sm um die Fregatte (höchstens 60 Schiffe und 5 Flugzeuge, zufällig gewählt; ein gewähltes Flugzeug bleibt, bis es das Gebiet verlässt), und Schiffspositionen werden alle 2 bis 5 Minuten nachgeführt. Änderungen gelten sofort und werden gespeichert.
+Die Seite **Echtzeit-Verkehr** holt echte Schiffe (AIS Stream, braucht einen eigenen API-Schlüssel) und echte Flugzeuge (OpenSky ADS-B, wahlweise mit eigener OpenSky-Client-ID) in eine Mission, deren Welt ein reales Seegebiet ist. Sie braucht eine Internetverbindung; ohne sie sind die Zeilen ausgegraut. **API-Test** prüft beide Dienste. Platziert wird nur Verkehr bis etwa 150 sm um die Fregatte (höchstens 15 Schiffe und 5 Flugzeuge, zufällig gewählt; ein gewählter Kontakt bleibt, bis es das Gebiet verlässt), und Schiffspositionen werden alle 2 bis 5 Minuten nachgeführt. Änderungen gelten sofort und werden gespeichert.
 
 ### Seite 2: Spielaufbau
 

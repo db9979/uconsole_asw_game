@@ -316,7 +316,7 @@ The level only tunes the computer opponent, never a human on the other side, and
 
 #### Real-world traffic
 
-The page **Real-world traffic** brings real ships (AIS Stream, needs your own API key) and real aircraft (OpenSky ADS-B, optionally with your OpenSky client ID) into a mission whose world is a real sea area. It needs an internet connection; without one the rows are greyed out. **API test** checks both services. Only traffic within about 150 NM of the frigate is placed (at most 60 ships and 5 aircraft, picked at random; a picked aircraft stays until it leaves the area), and ship positions are updated every 2 to 5 minutes. Changes apply at once and are saved.
+The page **Real-world traffic** brings real ships (AIS Stream, needs your own API key) and real aircraft (OpenSky ADS-B, optionally with your OpenSky client ID) into a mission whose world is a real sea area. It needs an internet connection; without one the rows are greyed out. **API test** checks both services. Only traffic within about 150 NM of the frigate is placed (at most 15 ships and 5 aircraft, picked at random; a picked contact stays until it leaves the area), and ship positions are updated every 2 to 5 minutes. Changes apply at once and are saved.
 
 ### Page 2: game setup
 

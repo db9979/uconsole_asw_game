@@ -22,6 +22,7 @@ from src.core.boat_radio import BoatRadio
 from src.core.crew import CrewState
 from src.core.echo_sounder import EchoSounder
 from src.core.i18n import message
+from src.world import geo
 from src.core.plot import PlotLayer
 from src.physics import bioluminescence, torpedo_dyn
 from src.sensors import lookout_id
@@ -882,7 +883,7 @@ def update_crew(game, boat: CrewedBoat, dt: float = 0.0) -> None:
         if "compartment" in values:
             values = dict(values, compartment=message(
                 f"uboot.compartment.{values['compartment']}"))
-        boat.notice(game.sim_t, CrewOrders.EVENTS[key], message(f"uboot.event.{key}", **values),
+        boat.notice(game.sim_t, CrewOrders.EVENTS[key], message(geo.position_key(f"uboot.event.{key}", values), **values),
                     stamp=game.world.format_time())
 
 

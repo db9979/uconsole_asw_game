@@ -1,4 +1,5 @@
 import math
+import math
 import queue
 import time
 from types import SimpleNamespace
@@ -590,6 +591,20 @@ def test_live_traffic_test_row_is_reachable_via_navigation(game, monkeypatch):
 
 
 def _spawn_live_ship_near_ownship(game, mmsi=211123456, dx_nm=-1.0):
+    # The frigate in open water, so the live ship's report is at sea too.
+    world = game.world
+    if any(world.depth_m(game.ship.x + dx, game.ship.y + dy) < 30.0
+           for dx in (-2.0, 0.0, 2.0) for dy in (-2.0, 0.0, 2.0)):
+        for radius in range(2, 80, 2):
+            spot = next(((game.ship.x + radius * math.sin(math.radians(b)),
+                          game.ship.y - radius * math.cos(math.radians(b)))
+                         for b in range(0, 360, 20)
+                         if all(world.depth_m(game.ship.x + radius * math.sin(math.radians(b)) + dx,
+                                              game.ship.y - radius * math.cos(math.radians(b)) + dy) >= 30.0
+                                for dx in (-2.0, 0.0, 2.0) for dy in (-2.0, 0.0, 2.0))), None)
+            if spot is not None:
+                game.ship.x, game.ship.y = spot
+                break
     center_lon, center_lat = game.live_traffic._center
     lon, lat = nm_to_lonlat(
         game.ship.x + dx_nm, game.ship.y, center_lon, center_lat,

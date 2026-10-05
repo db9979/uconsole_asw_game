@@ -13,6 +13,7 @@ import math
 from src.core import boat_radio, config, detrand
 from src.core.hq_reports import HqReports
 from src.core.i18n import message
+from src.world import geo
 from src.sensors import hfdf as hf_physics
 from src.sensors.platform import MAST_DEPTH_M
 from src.world import thunder
@@ -145,8 +146,8 @@ class ReportsMixin:
         if row is None:
             return
         if row["kind"] == "contact":
-            self.hq_msg(message("radio.report.contact_ack",
-                                x=f"{row['x']:.1f}", y=f"{row['y']:.1f}"))
+            self.hq_msg(geo.position_text("radio.report.contact_ack", self.world,
+                                          row["x"], row["y"]))
             mpa = self.mpa
             if mpa.state in ("TRANSIT", "STATION"):
                 mpa.set_waypoint(row["x"], row["y"])

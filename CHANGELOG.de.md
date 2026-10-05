@@ -4,6 +4,24 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.214
+
+Version 1.3.214 zeichnet feinere Küsten und nennt Positionen auch im
+Funkverkehr in Grad und Minuten. Die 128 echten Seegebiete kommen jetzt aus
+Natural Earth im Maßstab 1:10m statt 1:50m: Buchten, Fjorde, Inseln und
+Landzungen sind bis auf etwa 0,05 sm genau, die Küste in der Karte gleicht
+damit viel mehr einer echten Seekarte (das Kartenpaket wächst auf etwa
+3 MB). In einem echten Seegebiet nennen HQ-Aufträge und -Meldungen,
+Vorfallwarnungen, die Auftragsseite, protokollierte KW-Peilungen und der
+ESM-Fix des U-Boots Positionen wie 54°21,4'N 010°08,2'E, weiter mit Peilung
+und Abstand, wo das HQ sie angibt, auf der uConsole wie im Browser. Ein
+Patrouillenstart, den die feinere Küste in eine enge Bucht legen würde,
+rückt ins offene Wasser, und ein U-Boot bleibt bei Hochwasser nicht mehr am
+Grund hängen. Die gemessene Fairness bleibt gleich (KI gegen KI 14 bzw. 15
+von 36 Siegen der Fregatte, besetztes U-Boot 16 von 24). Tasten bleiben
+gleich. Spielstände sind v53; v38 bis v52 laden weiter, und eine
+gespeicherte Mission behält die Küste, mit der sie begann.
+
 ## 1.3.213
 
 Version 1.3.213 lässt ein feindliches U-Boot vor der Waffe ausweichen, die

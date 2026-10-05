@@ -98,3 +98,31 @@ def test_the_crewed_boat_chart_shows_its_navigated_position():
     navigated = geo.format_position(game.world, *boat_nav.position(boat), 1, ".")
     true = geo.format_position(game.world, boat.sub.x, boat.sub.y, 1, ".")
     assert navigated in texts and navigated != true
+
+
+def test_position_message_follows_the_reader_language():
+    from src.core.i18n import Translator, localize
+    world = World(seed=40)
+    position = geo.position_message(world, 250.0, 250.0)
+    lon, lat = geo.to_lonlat(world, 250.0, 250.0)
+    assert localize(position, Translator("en").t) == geo.format_position(world, 250.0, 250.0, 1, ".")
+    assert localize(position, Translator("de").t) == geo.format_position(world, 250.0, 250.0, 1, ",")
+    fixed = World(seed=40, coast=Coastline.load())
+    assert geo.position_message(fixed, 1, 1) is None
+    assert geo.position_fields(fixed, 12.34, 5.0) == dict(x="12.3", y="5.0")
+    assert geo.position_key("task.offer.datum", geo.position_fields(fixed, 1, 1)) == "task.offer.datum"
+    text = geo.position_text("radio.report.contact_ack", world, 250.0, 250.0)
+    assert localize(text, Translator("en").t).endswith(geo.format_position(world, 250.0, 250.0, 1, "."))
+
+
+def test_hq_task_offer_names_its_position_in_degrees_and_minutes():
+    import json
+    from src.core.i18n import Translator, localize
+    game = _game("de")
+    game.tasking.next_offer_t = 1e9
+    game._offer_task("datum")
+    (task,) = game.tasking.tasks
+    offers = [text for _, text in game.messages if "task.offer." in json.dumps(text)]
+    assert offers and offers[-1]["__u_jagd_i18n__"].endswith(".geo")
+    wanted = geo.format_position(game.world, task["x"], task["y"], 1, ",")
+    assert wanted in localize(offers[-1], Translator("de").t)

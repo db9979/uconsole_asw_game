@@ -12,6 +12,7 @@ import math
 from src.core import boat_missions, commander_traits, config, detrand, free_roam, hunter
 from src.core import tasking
 from src.core.i18n import message, raw_text
+from src.world import geo
 from src.core.tasking import TaskBoard
 from src.core.game_rescue import persons_left
 from src.enemies.civilian import CivilianShip
@@ -107,7 +108,7 @@ class TaskingMixin:
 
     def _task_position_params(self, x: float, y: float) -> dict:
         bearing, distance = self._task_bearing_range(x, y)
-        return dict(x=f"{x:.1f}", y=f"{y:.1f}", bearing=f"{bearing:03.0f}",
+        return dict(geo.position_fields(self.world, x, y), bearing=f"{bearing:03.0f}",
                     range=f"{distance:.1f}")
 
     # --- the radio room's answer ---------------------------------------------
@@ -237,8 +238,10 @@ class TaskingMixin:
                     plot_id=None, verdict=None, points=0, aboard=0)
         task = board.add({**base, **task})
         self.task_sel = 0
-        key = "task.offer." + kind
         params = self._task_position_params(task["x"], task["y"])
+        key = "task.offer." + kind
+        if kind != "emcon":     # radio silence names no position
+            key = geo.position_key(key, params)
         if kind == "sar":
             params["persons"] = task["persons"]
             params["minutes"] = f"{(task['deadline_t'] - self.sim_t) / 60.0:.0f}"
@@ -492,9 +495,9 @@ class TaskingMixin:
         sigma = config.TASK_SUSPECT_SIGMA_NM
         x = sub.x + sigma * detrand.normal(self.seed, "task-id-sx", index)
         y = sub.y + sigma * detrand.normal(self.seed, "task-id-sy", index)
-        self._task_notice("task.verdict.suspect", task, 6.0,
-                          **self._task_position_params(x, y),
-                          sigma=f"{2.0 * sigma:.0f}")
+        fields = self._task_position_params(x, y)
+        self._task_notice(geo.position_key("task.verdict.suspect", fields), task, 6.0,
+                          **fields, sigma=f"{2.0 * sigma:.0f}")
 
     def _civilian_by_id(self, entity_id):
         return next((ship for ship in self.civilians if ship.id == entity_id), None)

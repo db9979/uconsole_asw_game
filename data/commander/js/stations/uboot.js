@@ -1,6 +1,7 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { duration, number, stateText, t, unit } from "../core/format.js";
+import { formatPosition } from "../core/geo.js";
 import { actionButton, fillFireTargets, inUse, metrics, node, patchChildren, setControlValue, setOptions, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 import { renderCrew } from "../views/crew.js";
 import { drawBoatBallast, drawBoatDepth, drawBoatEsm, drawBoatScope, drawBoatSounder } from "./uboot-graphics.js";
@@ -311,8 +312,13 @@ const bearingText = (value) => `${number(value, 0).padStart(3, "0")}\u00b0`;
 const esmSelected = (esm) => esm.emitters.find((row) => row.number === S.ubootEsmSelected) || null;
 const trendText = (row) => row.trend === null ? "\u2013"
   : `${t(`uboot_esm_trend_${row.trend}`)} ${number(row.trend_db_min, 1)}`;
-const fixText = (fix) => fix === null ? "\u2013" : t("uboot_esm_fix_value",
-  {x: number(fix.x, 1), y: number(fix.y, 1), major: number(fix.major_nm, 1), minor: number(fix.minor_nm, 1)});
+const fixText = (fix) => {
+  if (fix === null) return "\u2013";
+  const size = {major: number(fix.major_nm, 1), minor: number(fix.minor_nm, 1)};
+  const where = formatPosition(fix.x, fix.y);
+  return where === null ? t("uboot_esm_fix_value", {x: number(fix.x, 1), y: number(fix.y, 1), ...size})
+    : t("uboot_esm_fix_geo", {position: where, ...size});
+};
 function renderEsm(esm, status) {
   const over = esm.mast_up && esm.mast_s > esm.mast_time_s;
   const mast = $("uboot-esm-mast");

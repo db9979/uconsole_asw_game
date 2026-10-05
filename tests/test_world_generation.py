@@ -44,9 +44,12 @@ def test_distant_coast_strips_are_excluded_without_losing_airbases():
         cleaned, _ = sector_for_seed(seed)
         removed += len(source["landmasses"]) - len(cleaned["landmasses"])
         coast = Coastline.generate(seed)
+        # A base lies on its land, or (a shore or seaplane base against the
+        # 1:10m coast's ~200 m accuracy) at most 0.25 NM off it.
         assert all(coast.landmass_at(base["x"], base["y"]) is not None
+                   or coast._distance_to_coast(base["x"], base["y"]) <= 0.25
                    for base in coast.airbases)
-    assert removed == 37
+    assert removed == 42
 
 
 def test_current_vec_is_deterministic_bounded_and_varies_with_position():

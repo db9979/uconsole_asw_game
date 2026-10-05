@@ -221,7 +221,11 @@ def test_sightings_and_scope_survive_a_save_and_bad_rows_are_rejected(tmp_path):
     boat = game.opfor
     _clear(game)
     _scope_up(boat)
-    _place_frigate(game, boat, 2.5, bearing=(boat.sub.course + 20.0) % 360.0)
+    # The first bearing with open water between boat and frigate.
+    for offset in range(20, 380, 10):
+        _place_frigate(game, boat, 2.5, bearing=(boat.sub.course + offset) % 360.0)
+        if not game.world.land_blocks_line(boat.sub.x, boat.sub.y, game.ship.x, game.ship.y):
+            break
     opfor.update_sightings(game, boat)
     row = boat.orders.sightings[0]
     opfor.set_scope_relative(boat, (row["bearing"] - boat.sub.course) % 360.0)

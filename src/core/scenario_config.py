@@ -63,7 +63,10 @@ FREE_ATTACK_SIGMA_NM = 1.5
 MISSION_TYPES = {
     "patrouille": dict(
         name="Patrouille", weight=40, subs=1,
-        sub_types=["diesel_alt", "aip_modern", "ssn"],
+        # The brief promises an old diesel boat, so the draw below is fixed to
+        # it (Free Hunt stays random). The pool stays as it was so the
+        # mission's random stream keeps its order (saves, determinism).
+        sub_types=["diesel_alt", "aip_modern", "ssn"], sub_type_fixed="diesel_alt",
         animals=(2, 4), civilians=(2, 3), asm=(0, 1), warships=(0, 1),
         time_limit_s=10800, short_time_limit_s=1800, win="sink"),
     "doppeljagd": dict(
@@ -279,6 +282,8 @@ SUB_RAID_QUIET_S = 600.0
 SUB_RAID_FRIGATE_NM = 10.0
 SUB_RAID_KEEP_TORPEDOES = 2
 SCORE_MERCHANT_LOST = 300
+# ... but only when the frigate's sonar heard the attacker this recently.
+MERCHANT_BLAME_S = 600.0
 BOAT_AI_PREFLOOD_MARGIN_NM = 3.0   # quiet tube flooding starts this far outside
 # A hunted or closely watched boat creeps: this slow once the frigate is
 # within BOAT_AI_THREAT_NM (its own contact) or for BOAT_AI_HUNTED_S after a
@@ -428,8 +433,9 @@ SCENARIOS = {
         ship_start=(300.0, 380.0), ship_course=300.0,
         # Kein Seename hier: Welt/Seed sind im Menü frei wählbar (W/R), die
         # tatsächliche Karte kann von jeder Namensnennung abweichen.
-        briefing=("Auftrag: Zugewiesenen Einsatzsektor überwachen. Ein alter Diesel- "
-                  "Jäger wurde im westlichen Sektor gemeldet. Ziel: Identifizieren, "
+        briefing=("Auftrag: Zugewiesenen Einsatzsektor überwachen. Ein altes Diesel-"
+                  "U-Boot wurde im westlichen Sektor gemeldet; feindliche Flugzeuge "
+                  "können mit Seezielflugkörpern angreifen. Ziel: Identifizieren, "
                   "klassifizieren und versenken – ohne zivile Verluste."),
         win_text="Ziel-U-Boot versenkt",
         lose_text="Ziel entkommt / Zeitlimit / Fregatte gesunken / ziviler Verlust",

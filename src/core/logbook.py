@@ -35,8 +35,9 @@ SIDES = ("frigate", "boat")
 AWARDS = ("first", "one_shot", "unscathed", "untouched", "realist")
 # The submarine's outcome points (``boat_debrief.outcome``); losses count 0.
 BOAT_OUTCOME_POINTS = {"won": 1500, "supply_sunk": 1300, "convoy_sunk": 1200,
-                       "landed": 1100, "broke_through": 1000, "passed": 1000,
-                       "reported": 1000, "objective": 1000, "escaped": 800,
+                       "landed": 1100, "picked_up": 1100, "broke_through": 1000,
+                       "passed": 1000, "reported": 1000, "home": 1000, "elint": 1000,
+                       "objective": 1000, "escaped": 800, "shaken": 800,
                        "survived": 600}
 BOAT_UNDAMAGED_BONUS = 500           # less 5 points per percent of damage
 BOAT_TORPEDO_BONUS = 100             # per torpedo left on a victory

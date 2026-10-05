@@ -136,7 +136,8 @@ STEPS = {
         ("training.step.designate", lambda g, c: g.target is not None),
         ("training.step.go_weapons", lambda g, c: g.station is Station.WEAPONS),
         ("training.step.fire", lambda g, c: bool(g.torpedoes)),
-        ("training.step.hit", lambda g, c: g.game_over),
+        # Only a won lesson counts as hit; a lost one never logs this step.
+        ("training.step.hit", lambda g, c: g.game_over and g.mission_result == "SIEG"),
     ),
     "helo": (
         ("training.step.go_helo", lambda g, c: g.station is Station.HELICOPTER),

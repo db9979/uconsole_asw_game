@@ -32,8 +32,26 @@ class DailyMixin:
         self.menu_screen = DAILY_ENTRY
         self.menu_sel = 1 if getattr(self, "local_side", "frigate") == "uboot" else 0
 
+    # The menu's own choices the daily mission sets for itself; restored when
+    # the player returns to the main menu, so the next normal mission runs in
+    # the world the player chose.
+    _MENU_CHOICES = ("world_mode", "start_weather", "start_time", "start_length")
+
+    def remember_menu_choice(self) -> None:
+        if getattr(self, "_daily_menu_choice", None) is None:
+            self._daily_menu_choice = {name: getattr(self, name, None)
+                                       for name in self._MENU_CHOICES}
+
+    def restore_menu_choice(self) -> None:
+        choice = getattr(self, "_daily_menu_choice", None)
+        self._daily_menu_choice = None
+        for name, value in (choice or {}).items():
+            if value is not None:
+                setattr(self, name, value)
+
     def start_daily(self, side: str) -> None:
         day = daily.today()
+        self.remember_menu_choice()
         self.local_side = side
         self.seed = daily.seed_for(day, side)
         self.scenario_key = daily.scenario_for(day, side)

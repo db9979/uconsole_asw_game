@@ -4,6 +4,7 @@ merchants in the frigate missions (save v32)."""
 
 import json
 import math
+from types import SimpleNamespace
 
 import pygame
 import pytest
@@ -232,8 +233,32 @@ def test_raids_stay_out_of_boat_missions_and_hunted_boats(monkeypatch):
 
 def test_a_merchant_lost_in_a_frigate_mission_costs_score():
     game = _game(7607)
+    sub = next(boat for boat in game.subs if boat.side == "hostile")
     merchant = game.civilians[0]
     score = game.score
-    boat_missions.merchant_struck(game, merchant)
+    # The frigate's sonar heard the attacker lately: it could have stopped it.
+    game.sonar.contacts[sub.id] = SimpleNamespace(last_seen=game.sim_t - 60.0)
+    boat_missions.merchant_struck(game, merchant, sub.id)
     assert merchant.sunk
     assert game.score == score - config.SCORE_MERCHANT_LOST
+
+
+def test_a_merchant_lost_to_an_unheard_boat_is_a_distress_call_without_penalty():
+    game = _game(7607)
+    sub = next(boat for boat in game.subs if boat.side == "hostile")
+    game.sonar.contacts.pop(sub.id, None)
+    merchant = game.civilians[0]
+    merchant.x, merchant.y = game.ship.x + 10.4, game.ship.y + 0.3
+    score = game.score
+    boat_missions.merchant_struck(game, merchant, sub.id)
+    assert merchant.sunk and game.score == score
+    calls = [entry.text for entry in game.feed.entries if isinstance(entry.text, dict)
+             and entry.text.get("__u_jagd_i18n__", "").startswith("runtime.merchant")]
+    assert calls == [{"__u_jagd_i18n__": "runtime.merchant_distress",
+                      "params": {"bearing": "090", "range": "10"}}]
+    # Heard too long ago counts as not held either.
+    other = game.civilians[1]
+    game.sonar.contacts[sub.id] = SimpleNamespace(
+        last_seen=game.sim_t - config.MERCHANT_BLAME_S - 1.0)
+    boat_missions.merchant_struck(game, other, sub.id)
+    assert other.sunk and game.score == score

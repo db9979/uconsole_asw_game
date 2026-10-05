@@ -21,7 +21,7 @@ from src.weapons.asw import (
     consumable_matches_catalog)
 from src.core.limits import (MAX_DECOYS, MAX_ENEMY_TORPEDOES, MAX_SAVED_ASMS,
                              MAX_SAVED_ENTITIES)
-from src.core.save_validate_common import bounded, finite_number, identity
+from src.core.save_validate_common import bounded, finite_number, identity, point
 
 
 def check_entities(data, runtime_catalog, platform_state_version, save_sim_t):
@@ -457,6 +457,8 @@ def _check_sub_entry(entry, profile_key, profile, entity_id, runtime_catalog,
     if not {
             "asw_battery", "countermeasure_store",
             "endurance"} | SUB_CREW_FIELDS <= set(entry):
+        return False
+    if not point(entry.get("start_pos")):
         return False
     if (type(entry["manual"]) is not bool
             or type(entry["manual_ping_pending"]) is not bool

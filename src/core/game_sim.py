@@ -568,7 +568,11 @@ class SimMixin:
         self._apply_incident_effects()
         # The AI mission boat's leg for this substep (before it moves).
         boat_ai.steer(self)
+        # The AI boats pick their side of the layer from the hunter's sensor.
+        vds_depth = (float(self.sonar.vds_depth_m) if self.sonar._vds_available()
+                     else None)
         for sub in self.subs:
+            sub.hunter_vds_depth_m = vds_depth
             was_sunk = sub.sunk
             course_before = sub.course
             sub.update(dt, getattr(sub, "_tactical_observation", None), self.world)

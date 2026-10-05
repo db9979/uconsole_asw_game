@@ -337,7 +337,10 @@ class PlatformSensorSuite:
                     sensitivity_db=config.clamp(
                         NPC_REFERENCE_SENSITIVITY_DB - profile.sensitivity_db,
                         -12.0, 12.0) if profile.sensitivity_db is not None else 0.0)
-                excess = terms.signal_excess_db
+                # Fading of the path (stateless, see equation.fading_db).
+                excess = terms.signal_excess_db + equation.fading_db(
+                    self.sensor_seed, _stable_int(profile.key) & 0xFFFFFFFF,
+                    _stable_int(_candidate_token(candidate)) & 0xFFFFFFFF, now)
                 if excess <= 0.0:
                     return
                 received_signal = config.clamp(

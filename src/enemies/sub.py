@@ -200,6 +200,9 @@ class Sub(FrigateRelativeMixin):
         # Bearing of the torpedo (or ASW weapon) the AI last heard; the boat
         # runs from it, not from the frigate, while the alarm is fresh.
         self.torpedo_threat_bearing = None
+        # The hunter's variable-depth sonar depth while streamed (else None):
+        # set by the game before every update, derived, never saved.
+        self.hunter_vds_depth_m = None
         self.emergency_ascent = False
         self.transient_left = 0.0
         # Tube flooding / outer door: a short transient the frigate's sonar
@@ -362,15 +365,43 @@ class Sub(FrigateRelativeMixin):
             # A mission boat keeps to its orders under a faint, distant ping:
             # that sonar cannot hold it at this range.
             return
-        if not self.sunk and self.state != "SINKING":
-            self.state = "EVADE"
-            # A daring commander gives way briefly, a cautious one long.
-            self.evac_left = config.SUB_EVADE_DURATION_S * commander_traits.sub_factor(
-                self, "evade")
-            self.heard_ping = True
+        if self.sunk or self.state == "SINKING":
+            return
+        away = None
+        if source is not None:
+            # The intercept gives the pinger's bearing: that is the threat.
+            away = (math.degrees(math.atan2(source[0] - self.x, -(source[1] - self.y)))
+                    + 180.0) % 360.0
+        if (source is not None and self.state != "EVADE"
+                and self.ping_level_db(source, kind) < self.ping_evade_level_db()):
+            # A faint, distant ping cannot hold the boat: running would only
+            # make it loud. It goes deep and slow (the patrol plans after a
+            # ping) and creeps on, stern to the pinger.
             self.memory["last_ping_age"] = 0.0
-            self.evade_offset = self.rng.uniform(-30.0, 30.0)
-            self.decision_reason = "Aktives Sonar gehoert: Ausweichen"
+            self.target_course = away
+            self.decision_reason = "Ferner Ping: tief und leise"
+            return
+        self.state = "EVADE"
+        # A daring commander gives way briefly, a cautious one long.
+        self.evac_left = config.SUB_EVADE_DURATION_S * commander_traits.sub_factor(
+            self, "evade")
+        self.heard_ping = True
+        self.memory["last_ping_age"] = 0.0
+        self.evade_offset = self.rng.uniform(-30.0, 30.0)
+        if away is not None:
+            # Run from the pinger, not on the old course (which may lead
+            # toward it); EVADE steers this course without a fresher bearing.
+            self.target_course = (away + self.evade_offset) % 360.0
+        self.decision_reason = "Aktives Sonar gehoert: Ausweichen"
+
+    def ping_evade_level_db(self) -> float:
+        """Received ping level from which an AI boat runs instead of creeping
+        away quietly; a boat already lying still or hiding deep holds out longer."""
+        level = config.SUB_PING_EVADE_DB
+        quiet = self.state in ("LAUER", "WRACK") or (
+            self.plan_orders is not None
+            and self.plan_orders[1] <= config.SUB_PING_QUIET_PLAN_KN)
+        return level + (config.SUB_PING_QUIET_MARGIN_DB if quiet else 0.0)
 
     def reaction_delay_s(self) -> float:
         """Crew recognition time for a torpedo alarm (per boat, lognormal)."""
@@ -781,12 +812,30 @@ class Sub(FrigateRelativeMixin):
                 and self.memory["last_torpedo_age"] > config.SUB_EVADE_DURATION_S)
 
     def evade_depth(self, thermo: float, safe_depth: float) -> float:
-        """Below the layer, away from a ping; the reconnaissance boat within
-        sighting range still comes up for its periscope look, since a ping
-        alone does not keep it down (a torpedo in the water does)."""
+        """The far side of the layer from the hunter's best sensor: below it,
+        unless the hunter streams its variable-depth sonar below the layer,
+        then above it (when the layer is deep enough to hide over).  The
+        reconnaissance boat within sighting range still comes up for its
+        periscope look, since a ping alone does not keep it down (a torpedo
+        in the water does)."""
         if self._mission_pressing_on() and self.mission_orders[2] <= MAST_DEPTH_M:
             return self.mission_orders[2]
+        vds = self.hunter_vds_depth_m
+        above = thermo - config.SUB_ABOVE_LAYER_MARGIN_M
+        if vds is not None and vds > thermo and above >= config.SUB_ABOVE_LAYER_MIN_M:
+            return min(above, safe_depth)
         return min(thermo + 40.0, safe_depth)
+
+    def _torpedo_evasion_phase(self):
+        """"beam" right after a torpedo was heard, then "creep" while the
+        alarm lasts; None without a fresh torpedo bearing (all derived from
+        the saved alarm age)."""
+        if (self.torpedo_threat_bearing is None
+                or self.memory["last_torpedo_age"] > config.SUB_EVADE_DURATION_S):
+            return None
+        if self.memory["last_torpedo_age"] <= config.SUB_TORPEDO_BEAM_S:
+            return "beam"
+        return "creep"
 
     def cavitation_onset_kn(self) -> float:
         acoustic = self.stype.acoustic
@@ -888,6 +937,7 @@ class Sub(FrigateRelativeMixin):
 
     def _update_inner(self, dt: float, observation, world) -> None:
         start_speed = self._actual_speed
+        start_course = self.course
         self.transient_left = max(0.0, self.transient_left - dt)
         self.flood_noise_left = max(0.0, self.flood_noise_left - dt)
         if not self.manual and self.ai_tube_left > 0.0:
@@ -1079,13 +1129,26 @@ class Sub(FrigateRelativeMixin):
             self._advance_depth(self.target_depth,
                                 self.motion.depth_rate_m_s * 3.0, dt)
             bearing = self.memory["contact_bearing"]
-            if (self.torpedo_threat_bearing is not None
-                    and self.memory["last_torpedo_age"] <= config.SUB_EVADE_DURATION_S):
+            if (bearing is not None
+                    and self.memory["last_ping_age"] < self.memory["contact_age"]):
+                # The ping is fresher than the contact: run from the pinger
+                # (often a buoy or the helicopter, not the frigate heard),
+                # whose course hear_ping set.
+                bearing = None
+            torpedo_phase = self._torpedo_evasion_phase()
+            if torpedo_phase is not None:
                 # A torpedo, ASROC or charge rarely comes from the frigate's
-                # bearing: run from the weapon that was heard.
+                # bearing: evade the weapon that was heard.
                 bearing = self.torpedo_threat_bearing
-            target_course = (self.course if bearing is None else
-                             (bearing + 180.0 + self.evade_offset) % 360.0)
+            if torpedo_phase == "beam":
+                # First put it on the beam (the smaller turn): the seeker
+                # must turn hard and its bearing rate is greatest.
+                target_course = min(
+                    ((bearing + 90.0) % 360.0, (bearing - 90.0) % 360.0),
+                    key=lambda value: abs(config.angle_diff_deg(value, self.course)))
+            else:
+                target_course = (self.target_course if bearing is None else
+                                 (bearing + 180.0 + self.evade_offset) % 360.0)
             if self._mission_pressing_on():
                 # A ping alone does not turn a mission boat back: it keeps
                 # its leg, deep and slow, and gives way only to a torpedo.
@@ -1106,6 +1169,10 @@ class Sub(FrigateRelativeMixin):
                 # A mission boat slips away from a ping quietly below the
                 # layer; only a torpedo in the water makes it run.
                 self.speed = min(self.speed_for_state(), config.BOAT_AI_EVADE_KN)
+            elif torpedo_phase == "creep":
+                # Decoy out and the weapon beamed: slow to a creep and slip
+                # away quietly while the seeker works on the decoy.
+                self.speed = min(self.speed_for_state(), config.SUB_TORPEDO_CREEP_KN)
             else:
                 self.speed = max(self.speed, min(self.speed_for_state(),
                                                  max(10.0, self.stype.speed_kn * .9)))
@@ -1178,7 +1245,11 @@ class Sub(FrigateRelativeMixin):
         # limit (propeller thrust against drag and mass), faster when slowing.
         ordered = config.clamp(self.speed, 0.0, self.motion.maximum_speed_kn)
         accel = self.motion.acceleration_kn_s * dt
-        self.speed = start_speed + config.clamp(ordered - start_speed,
+        # A turn bleeds speed (induced drag); the order itself stands.
+        held = ordered * (sub_physics.turn_speed_factor(
+            config.angle_diff_deg(self.course, start_course) / dt, start_speed)
+            if dt > 0.0 else 1.0)
+        self.speed = start_speed + config.clamp(held - start_speed,
                                                 -2.0 * accel, accel)
         self.speed_order = ordered
         self._surged = True

@@ -457,7 +457,7 @@ Die Remote-Crew-Brücke hat eine Karte „Autopilot-Route“: „Wegpunkte auf d
 | `G` | Gefechtsstationen an/aus |
 | `W` | Autopilot: Zickzack-Suche, wachsendes Quadrat, aus |
 | `Rechtsklick` | Autopilot-Wegpunkt auf der Karte setzen |
-| `Rücktaste` | Autopilot-Route löschen |
+| `Backspace` | Autopilot-Route löschen |
 | `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist 30° beiderseits des Hecks taub) |
 
 Auf der Brücke steuert der Trackball das Ruder. `C` (Kurs) und `V` (Fahrt) öffnen die direkte Zahleneingabe, wie `C`/`V`/`D` auf dem U-Boot; die Simulation läuft währenddessen weiter. `Enter` bestätigt, `Esc` bricht ab.
@@ -950,7 +950,7 @@ Seite 3 (Besatzung) zeigt den Wachplan. Die Besatzung geht in drei Wachen: eine 
 | `<- / ->` | Kompartiment wählen |
 | `Auf / Ab` | Team 1-3 auswählen (ohne Zuweisung) |
 | `Eingabe` | Gewähltes Team dem gewählten Kompartiment zuweisen |
-| `Rücktaste` | Gewähltes Team zurückziehen |
+| `Backspace` | Gewähltes Team zurückziehen |
 | `C` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
 | `W` | Wache jetzt ablösen (Seite Besatzung) |
 | `G` | Gefechtsstationen an/aus (Seite Besatzung) |
@@ -1092,7 +1092,7 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 | `R` | Seeraumradar an/aus (EMCON) |
 | `Shift+R` | Luftraumradar an/aus (EMCON) |
 | `I` | CIWS-Feuerfreigabe umschalten (gesperrt = feuert nie auf anfliegende ASM) |
-| `Rücktaste` | Alle markierten Meldungen abwählen |
+| `Backspace` | Alle markierten Meldungen abwählen |
 | `B` | Neuestes bloßes Radarecho als Track markieren (oder das Echo anklicken) |
 | `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Karte folgt dem eigenen Schiff an/aus |
@@ -1110,7 +1110,7 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 | `Shift+W` | OPZ-Seite 4: Waffen des Begleiters frei / gesperrt |
 | `Strg+Enter` | OPZ-Seite 4: ein ASROC des Begleiters auf den gewählten Track (Standort unter 2 min) |
 | `↑/↓ ←/→` | Seite 5 Anzeige: Karteneinstellung wählen, ändern |
-| `Rücktaste` | Seite 5: gewählte Karteneinstellung auf Standard |
+| `Backspace` | Seite 5: gewählte Karteneinstellung auf Standard |
 | `Shift+Backspace` | Seite 5: alle Karteneinstellungen auf Standard |
 
 ### Maus
@@ -2088,7 +2088,7 @@ Alle Tasten des U-Boots auf der uConsole (`F1` an einer U-Boot-Station zeigt die
 | `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist achtern taub) |
 | `Rechtsklick` | Routen-Wegpunkt auf der Karte setzen (Navigation) |
 | `W` | Route: Zickzack-Suche, wachsendes Quadrat, aus (Navigation) |
-| `Rücktaste` | Route löschen (Navigation) |
+| `Backspace` | Route löschen (Navigation) |
 | `0` | Wetterseite des U-Boots (0 oder Esc schließt) |
 | `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
 | `Menü-Symbol (Kopfzeile)` | Spielmenü per Maus: Hilfe, Optionen, Speichern/Laden, Wetter, Plot, Autocrew, Beenden und mehr; jedes Overlay schließt mit seinem Schließfeld (wie Esc) |

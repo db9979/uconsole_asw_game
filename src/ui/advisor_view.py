@@ -131,7 +131,7 @@ def draw_advisor_overlay(game) -> None:
     if game.advisor_open_proposal() is not None:
         layout.blit_line(s, "advisor.confirm_hint", FIELD, config.COLOR_WARN, size=17)
         first = (("Enter", "advisor.button.yes", pygame.K_RETURN),
-                 ("advisor.key.backspace", "advisor.button.no", pygame.K_BACKSPACE))
+                 ("Backspace", "advisor.button.no", pygame.K_BACKSPACE))
     elif mode in ("question", "order"):
         game.advisor_field.draw(s, FIELD, focused=True)
         first = (("Enter", "advisor.button.send", pygame.K_RETURN),)
@@ -169,7 +169,7 @@ def _buttons(s, specs, y: int = BUTTONS_Y) -> None:
             layout.blit_line(s, label, rect.inflate(-12, -4), config.COLOR_TEXT, size=15,
                              align="center")
         else:
-            layout.key_button(s, rect, cap if cap.startswith(("help.", "advisor."))
+            layout.key_button(s, rect, cap if cap.startswith("help.")
                               else raw_text(cap), label, size=15)
         pointer.add_spec(rect, spec)
 

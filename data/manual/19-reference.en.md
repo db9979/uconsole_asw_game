@@ -121,9 +121,11 @@ Surface ships lose top speed in heavy seas (small ships more).
 | Frigate: no civilian losses | 500 |
 | Frigate: time bonus | up to 500 |
 | Submarine: frigate sunk | 1500 |
+| Submarine: supply ship sunk | 1300 |
 | Submarine: convoy sunk | 1200 |
-| Submarine: breakthrough or report | 1000 |
-| Submarine: escape | 800 |
+| Submarine: swimmers landed or agents picked up | 1100 |
+| Submarine: breakthrough, strait passed, report, home port reached or listening post reported | 1000 |
+| Submarine: escape or trail shaken off | 800 |
 | Submarine: survived | 600 |
 | Submarine: undamaged | up to 500 |
 | Submarine: torpedo left | 100 each |

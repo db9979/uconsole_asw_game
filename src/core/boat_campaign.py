@@ -43,7 +43,8 @@ TORPEDOES_MAX = 40                # above any boat's load; ``None`` is a full lo
 DAMAGE_CARRY_MAX = 60             # hull damage (%) a boat can sail with
 # The boat's side of ``boat_debrief.outcome``: the missions it won.
 WINS = ("won", "broke_through", "reported", "convoy_sunk", "passed", "landed",
-        "supply_sunk", "escaped", "survived", "objective")
+        "supply_sunk", "escaped", "home", "picked_up", "elint", "shaken",
+        "survived", "objective")
 # Outcomes that cost the enemy a ship (besides the frigate, outcome "won").
 ENEMY_SHIP_SUNK = ("convoy_sunk", "supply_sunk")
 

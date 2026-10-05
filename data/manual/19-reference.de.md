@@ -121,9 +121,11 @@ U-Boote orten wie Sie: passive Peilungen aus dem eigenen Sonar, eine Entfernung 
 | Fregatte: keine zivilen Verluste | 500 |
 | Fregatte: Zeitbonus | bis 500 |
 | U-Boot: Fregatte versenkt | 1500 |
+| U-Boot: Versorger versenkt | 1300 |
 | U-Boot: Geleitzug versenkt | 1200 |
-| U-Boot: Durchbruch oder Meldung | 1000 |
-| U-Boot: Entkommen | 800 |
+| U-Boot: Kampfschwimmer abgesetzt oder Agenten abgeholt | 1100 |
+| U-Boot: Durchbruch, Meerenge passiert, Meldung, Heimathafen erreicht oder Lauschposten gemeldet | 1000 |
+| U-Boot: Entkommen oder Fühlung abgeschüttelt | 800 |
 | U-Boot: Überlebt | 600 |
 | U-Boot: unbeschädigt | bis 500 |
 | U-Boot: verbliebener Torpedo | je 100 |

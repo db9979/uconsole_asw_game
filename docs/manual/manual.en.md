@@ -2350,7 +2350,7 @@ Beside the chart it lists the time of the first contact, first fix and classific
 
 **Logbook** (main menu): every finished mission (never a lesson) for the side the uConsole played, with date, mission, realism level, result, score and minutes; the best score per mission and five awards per side: first victory, one shot one kill (the enemy sunk with a single weapon), unscathed (no damage), never fired at, and realist (a victory on the Realistic level).
 
-The frigate files its mission score; the submarine counts its outcome (sinking the frigate 1500, sinking the convoy 1200, breakthrough or report 1000, escape 800, surviving 600) plus up to 500 for an undamaged submarine and 100 per torpedo left, times the level's factor.
+The frigate files its mission score; the submarine counts its outcome (sinking the frigate 1500, the supply ship 1300, the convoy 1200, swimmers landed or agents picked up 1100, breakthrough, strait, report, home port or listening post 1000, escape or trail shaken off 800, surviving 600) plus up to 500 for an undamaged submarine and 100 per torpedo left, times the level's factor.
 
 `Left`/`Right` or `Tab` switch frigate and submarine, `A` the language model's review, `B` the newest report, `L` the enemy's learning, `Enter` or `Esc` back; the footer names these keys and a click on one presses it. The end panel names the score, a new best and new awards. The logbook is `~/.u-jagd/logbook.json` (the newest 200 missions), never part of a save.
 
@@ -2633,9 +2633,11 @@ Surface ships lose top speed in heavy seas (small ships more).
 | Frigate: no civilian losses | 500 |
 | Frigate: time bonus | up to 500 |
 | Submarine: frigate sunk | 1500 |
+| Submarine: supply ship sunk | 1300 |
 | Submarine: convoy sunk | 1200 |
-| Submarine: breakthrough or report | 1000 |
-| Submarine: escape | 800 |
+| Submarine: swimmers landed or agents picked up | 1100 |
+| Submarine: breakthrough, strait passed, report, home port reached or listening post reported | 1000 |
+| Submarine: escape or trail shaken off | 800 |
 | Submarine: survived | 600 |
 | Submarine: undamaged | up to 500 |
 | Submarine: torpedo left | 100 each |

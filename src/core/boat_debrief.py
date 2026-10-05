@@ -23,8 +23,8 @@ TRACKED_MIN_S = 60.0
 
 def outcome(game, boat) -> str:
     """The mission from the boat's side: won, broke_through, reported,
-    convoy_sunk, passed, landed, supply_sunk, escaped, survived, objective,
-    trained, lost, over."""
+    convoy_sunk, passed, landed, supply_sunk, escaped, home, picked_up, elint,
+    shaken, survived, objective, trained, lost, over."""
     sub = boat.sub if boat is not None else None
     if sub is not None and (sub.sunk or sub.state == "SINKING"):
         return "lost"

@@ -66,7 +66,7 @@ Seine im Katalog eingebettete, reproduzierbare Provenienz lautet exakt:
 
 | Quelle | Stand und Rechte | Fixierung |
 |---|---|---|
-| Natural Earth | `Natural Earth 1:50m Admin 0 Countries v5.1.1`; Public Domain | Commit `9380cca83db5f9aef52d5e762765100745f84b27`; SHA-256 `3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb`; <https://github.com/nvkelso/natural-earth-vector> |
+| Natural Earth | `Natural Earth 1:10m Admin 0 Countries v5.1.1`; Public Domain | Commit `9380cca83db5f9aef52d5e762765100745f84b27`; SHA-256 `239eec57ac17f100a11e2536cffc56752c318b50ae765b0918ff7aab4ce8f255` (`geojson/ne_10m_admin_0_countries.geojson`); <https://github.com/nvkelso/natural-earth-vector> |
 | Wikidata | `Wikidata airbase (Q695850) coordinate query snapshot`; CC0 1.0; abgerufen am `2026-09-06` | SHA-256 `f7126b7680afe9dcbb76ee8212ac82175e5b8e586f8fb3fafe57a071a8a6ffa9`; Abfrage: `?item wdt:P31/wdt:P279* wd:Q695850; wdt:P625 ?coord; optional P17` |
 
 Die Build-Transformation lädt äußere Länderpolygone und englische bzw.
@@ -80,6 +80,18 @@ vier plausibel küstennahen Stützpunkten ausgewählt; eine 5-Grad-Zellenauswahl
 begrenzt regionale Häufung. Pro Sektor bleiben höchstens zwölf stabil sortierte
 Stützpunkteinträge. Das Ergebnis sind genau 128 vorvalidierte Sektoren; der Seed
 wählt einen Katalogeintrag.
+
+Seit 1.3.210 werden die Sektoren in zwei Schritten erzeugt (`build`, dann
+`refine`). `build` wählt Sektoren, Mittelpunkte und Stützpunkte wie oben aus
+`Natural Earth 1:50m Admin 0 Countries v5.1.1` (gleicher Commit, SHA-256
+`3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb`); dieser
+Zwischenkatalog hat SHA-256
+`595b70d6b9290bfcb10a500f7d1be2162b6b5337fc7e7f0f6932dfe7bd8c6979` und liegt
+als `data/coastlines/real_sectors.json.gz` von 1.3.205 in der Git-Historie.
+`refine` behält Kennungen, Mittelpunkte, Stützpunkte und Reihenfolge und
+zeichnet das Land jedes Sektors aus der 1:10m-Ausgabe neu (gleiche
+Projektion und gleicher Zuschnitt, Douglas-Peucker-Vereinfachung mit
+0,05 NM Toleranz); Ländernamen und Sektornamen werden daraus neu bestimmt.
 
 Geografische, Länder- und Militärstützpunktnamen sowie die Stützpunktkoordinaten
 stammen aus diesen Quellen. Die Gameplay-Rollen `friendly`, `hostile`, `neutral`

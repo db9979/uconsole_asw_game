@@ -1197,9 +1197,14 @@ class Sub(FrigateRelativeMixin):
             cu, cv = current(self.x, self.y)
             nx += config.kn_to_nm_per_s(cu) * motion_dt
             ny -= config.kn_to_nm_per_s(cv) * motion_dt
+        # The seabed check runs on the chart (datum); the boat's depth is
+        # below the actual surface, so the tide is taken off it first.
+        tide_at = getattr(world, "tide_m", lambda x, y: 0.0)
         if (world.on_land(nx, ny) or underwater_path_blocked(
-                world, self.x, self.y, old_depth + self._bottom_clearance_m() - 1e-6,
-                nx, ny, self.depth + self._bottom_clearance_m() - 1e-6)):
+                world, self.x, self.y,
+                old_depth - tide_at(self.x, self.y) + self._bottom_clearance_m() - 1e-6,
+                nx, ny,
+                self.depth - tide_at(nx, ny) + self._bottom_clearance_m() - 1e-6)):
             if self.manual:
                 # A crewed boat stops short of the obstacle instead of
                 # veering: the crew must choose a new course.  Only a boat

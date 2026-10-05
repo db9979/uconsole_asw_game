@@ -227,10 +227,13 @@ def test_land_in_sight_is_reported_once_per_sighting():
         game.ship.x, game.ship.y = _coast_offset(game, 7.0)
         game._update_lookout_land()
         land = [row for row in game.lookout_reports if row["code"] == "LAND"]
-        assert len(land) == 1 and land[0]["range_nm"] == pytest.approx(7.0, abs=0.6)
+        # One report per landmass in sight (islands each count once).
+        sightings = len(land)
+        assert sightings >= 1
+        assert min(row["range_nm"] for row in land) == pytest.approx(7.0, abs=0.6)
         game.sim_t += config.LOOKOUT_LAND_CHECK_S
         game._update_lookout_land()
-        assert len([row for row in game.lookout_reports if row["code"] == "LAND"]) == 1
+        assert len([row for row in game.lookout_reports if row["code"] == "LAND"]) == sightings
         # Fog: the coast drops out of sight, and is reported again when it lifts.
         endpoints = (game.world._weather_start, game.world._weather_target)
         for endpoint in endpoints:
@@ -241,7 +244,7 @@ def test_land_in_sight_is_reported_once_per_sighting():
             endpoint["visibility_nm"] = config.WEATHER_VISIBILITY_MAX_NM
         game.sim_t += config.LOOKOUT_LAND_CHECK_S
         game._update_lookout_land()
-        assert len([row for row in game.lookout_reports if row["code"] == "LAND"]) == 2
+        assert len([row for row in game.lookout_reports if row["code"] == "LAND"]) == 2 * sightings
         assert "land in sight" in localize(game.lookout_report_text(land[0]), game.tr)
     finally:
         game.audio.shutdown()

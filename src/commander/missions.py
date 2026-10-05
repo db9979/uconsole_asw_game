@@ -25,7 +25,7 @@ MISSION_UPLOAD_MAX_BYTES = 1024 * 1024 + 4096
 # Library publication bound (all missions with their referenced user units).
 MISSIONS_MAX_BYTES = 3 * 1024 * 1024
 EDITOR_CATALOG_MAX_BYTES = 512 * 1024
-SECTOR_MAX_BYTES = 64 * 1024
+SECTOR_MAX_BYTES = 192 * 1024  # 1:10m coast of the largest sector ~105 KB
 MISSION_OPS_PENDING_MAX = 4
 MISSION_OPS = ("save", "import", "delete", "generate")
 GENERATE_REQUEST_MAX = 500

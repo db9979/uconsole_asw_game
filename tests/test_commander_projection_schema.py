@@ -26,8 +26,6 @@ from src.core.game import Game
 from src.sonar.sonar import Contact
 from src.weapons.torpedo import EnemyTorpedo
 
-pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
-
 sys.path.insert(0, str(Path(__file__).parent))
 from test_commander_bridge import Server  # noqa: E402
 from commander_web import module_source  # noqa: E402

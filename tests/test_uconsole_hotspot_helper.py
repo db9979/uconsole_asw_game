@@ -11,6 +11,10 @@ import sys
 import pytest
 import xml.etree.ElementTree as ET
 
+if os.name != "posix":
+    # The uConsole helpers (fcntl, root checks, executable bits) are Linux-only.
+    pytest.skip("uConsole (Linux) only", allow_module_level=True)
+
 
 ROOT = Path(__file__).parents[1]
 HELPER = ROOT / "packaging/uconsole/u-jagd-hotspot-helper"

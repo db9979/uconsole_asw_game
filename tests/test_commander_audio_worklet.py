@@ -9,8 +9,6 @@ import pytest
 
 from test_commander_assets import ASSETS, Document
 
-pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
-
 
 def test_audio_worklet_is_elastic_conceals_marks_stale_and_recovers(tmp_path):
     chromium = shutil.which("chromium") or shutil.which("chromium-browser")

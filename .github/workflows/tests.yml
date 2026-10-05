@@ -72,8 +72,8 @@ jobs:
 
       - name: pytest (browser tests)
         # The Chromium probes race a live host or run under virtual time;
-        # two workers keep the runner from starving either side. A module
-        # joins this job with "pytestmark = pytest.mark.browser".
+        # two workers keep the runner from starving either side. conftest.py
+        # marks every module that drives Chromium as "browser".
         run: python -m pytest -q -n 2 -m browser
 
   pytest-newer-python:

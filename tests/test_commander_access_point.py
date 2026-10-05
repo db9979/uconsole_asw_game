@@ -4,9 +4,15 @@ import json
 import sys
 import time
 
+import os
+
 import pytest
 
 from src.commander.access_point import HotspotController, HotspotDetails
+
+if os.name != "posix":
+    # The uConsole helpers (fcntl, root checks, executable bits) are Linux-only.
+    pytest.skip("uConsole (Linux) only", allow_module_level=True)
 
 
 def command(payload, *, wait=True, delay=0.0):

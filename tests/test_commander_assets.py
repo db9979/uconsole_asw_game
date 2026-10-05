@@ -18,8 +18,6 @@ from src.core.version import APP_VERSION
 from src.core.bugreport import ISSUE_TEMPLATE, NEW_ISSUE_URL
 from src.ui.support import SUPPORT_URL
 
-pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
-
 BUG_REPORT_URL = f"{NEW_ISSUE_URL}?template={ISSUE_TEMPLATE}"
 from src.data.contact_analysis import project_contact_catalog
 

@@ -13,8 +13,6 @@ from commander_web import WEB_ROUTES
 
 from src.core.i18n import load_catalog
 
-pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
-
 
 def test_admin_setup_shell_in_chromium():
     chromium = shutil.which("chromium") or shutil.which("chromium-browser")

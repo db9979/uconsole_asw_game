@@ -17,8 +17,6 @@ from src.core.game import Game
 from src.sensors.platform import MAST_DEPTH_M
 from test_commander_assets import Document, PREFIX, catalogs
 
-pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
-
 sys.path.insert(0, str(Path(__file__).parent))
 
 

@@ -16,8 +16,6 @@ from src.commander.server import CommanderServer
 from src.commander.web_auth import WebHostAuth
 from src.core.i18n import load_catalog
 
-pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
-
 
 def test_voice_relay_requires_host_option_and_active_station(tmp_path):
     translations = {language: {key: value for key, value in load_catalog(language).items()

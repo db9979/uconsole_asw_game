@@ -13,8 +13,6 @@ from src.ui import sonar_view
 from commander_web import module_source
 from test_commander_assets import Document
 
-pytestmark = pytest.mark.browser  # drives headless Chromium (CI browser job)
-
 
 def _cases():
     rng = np.random.default_rng(7)

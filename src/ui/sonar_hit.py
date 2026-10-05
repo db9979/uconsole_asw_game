@@ -42,6 +42,7 @@ def _waterfall_plot(panel, page):
                        panel.bottom - 47 - top)
 
 
+@localized
 def sonar_geometry(game, page=None):
     """Return the canonical rectangles used by both sonar draw and hit paths."""
     layout.configure_for(game)
@@ -55,7 +56,7 @@ def sonar_geometry(game, page=None):
     contacts, contact_keys = _contact_key_rows(game, contacts)
     sonar = game.sonar
     on_off = lambda flag: localize("ui.on" if flag else "ui.off")
-    array = ("SHIFT+B", "sonar.footer.array", "", _array_readout(game))
+    array = ("Shift+B", "sonar.footer.array", "", _array_readout(game))
     gain = ("I/O", "sonar.footer.gain", "", f"{getattr(sonar, 'gain_db', 0):+.0f} dB")
     band = ("F/D", "sonar.footer.band_filter", "",
             f"{getattr(sonar, 'band_low_hz', 0):.0f}-{getattr(sonar, 'band_high_hz', 300):.0f} Hz")
@@ -92,14 +93,107 @@ def sonar_geometry(game, page=None):
             (("^Z/^X", "sonar.footer.tma_speed", "", f"{hypothesis.speed_kn:.1f} kn"), "cursor"),
             (("Q", "sonar.footer.tma_range", "",
               f"{hypothesis.range_nm:.1f} {nm_unit()}"), "cursor"))
-    footer = []
-    width = (station.w - 28) // len(specs)
-    for index, (spec, action) in enumerate(specs):
-        rect = pygame.Rect(station.x + 14 + index * width,
-                           station.bottom - 22, width - 4, 19)
-        footer.append(dict(rect=rect, action=action, text=spec, safe=True))
+    # Every other sonar key as a chip behind the "+ more" chip at the right:
+    # footer page 0 holds the four main switches, the next pages the rest.
+    from src.ui.stations.common import footer_needs, _FOOTER_MORE
+    more_w = footer_needs((("+", _FOOTER_MORE),))[0]
+    row_w = station.w - 28 - more_w - 4
+    pages = footer_key_pages(sonar_footer_keys(game, page, {a for _s, a in specs}), row_w)
+    side = "uboot" if getattr(game, "local_side", None) == "uboot" else "frigate"
+    footer_page = SONAR_FOOTER_PAGE.get(side, 0) % (len(pages) + 1)
+    footer, footer_keys = [], None
+    if footer_page == 0:
+        width = row_w // len(specs)
+        for index, (spec, action) in enumerate(specs):
+            rect = pygame.Rect(station.x + 14 + index * width,
+                               station.bottom - 22, width - 4, 19)
+            footer.append(dict(rect=rect, action=action, text=spec, safe=True))
+    else:
+        # The key bar lifts itself two pixels: this lands it on the same row.
+        footer_keys = (pygame.Rect(station.x + 14, station.bottom - 20, row_w - 4, 19),
+                       pages[footer_page - 1])
+    footer_more = pygame.Rect(station.right - 14 - more_w, station.bottom - 22, more_w, 19)
     return dict(station=station, tabs=tabs, main=main, details=details,
-                contacts=contacts, footer=footer, contact_keys=contact_keys)
+                contacts=contacts, footer=footer, contact_keys=contact_keys,
+                footer_keys=footer_keys, footer_more=footer_more,
+                footer_side=side, footer_pages=len(pages) + 1)
+
+
+# Which footer page the sonar shows, per side (UI state only, never saved).
+SONAR_FOOTER_PAGE: dict = {}
+
+# (key, label, main switch that already carries it, pages, frigate only).
+_ALL = (0, 1, 2, 3, 4, 5)
+SONAR_FOOTER_KEYS = (
+    ("Shift+B", "sonar.footer.array", "array", _ALL, True),
+    ("I/O", "sonar.footer.gain", "gain", _ALL, False),
+    ("SPACE", "sonar.footer.peak", "peak", _ALL, False),
+    ("J", "sonar.footer.audio", "audio", _ALL, False),
+    ("Shift+A", "sonar.footer.ping", None, _ALL, False),
+    ("W", "sonar.footer.pulse", None, _ALL, False),
+    ("E", "sonar.footer.bt", None, _ALL, False),
+    ("R", "sonar.footer.input", None, _ALL, False),
+    ("←/→", "sonar.footer.bearing", None, _ALL, False),
+    ("↑/↓", "sonar.footer.contact", None, _ALL, False),
+    ("Enter", "sonar.footer.track", None, _ALL, False),
+    ("A/B/H", "sonar.footer.listen", None, _ALL, False),
+    (", / .", "sonar.footer.volume", None, _ALL, False),
+    ("Ctrl+F", "sonar.footer.heterodyne", None, _ALL, False),
+    ("D", "sonar.footer.filter", "band_filter", _ALL, False),
+    ("F", "sonar.footer.band", "band_filter", _ALL, False),
+    ("N", "sonar.footer.notch", "notch", _ALL, False),
+    ("Ctrl+Z/Ctrl+X", "sonar.footer.edges", None, (1,), False),
+    ("Shift+Q", "sonar.footer.vernier", None, (1,), False),
+    ("Shift+N", "sonar.footer.own_notch", None, (1,), False),
+    ("Shift+F", "sonar.footer.demon_band", None, (2,), False),
+    ("Shift+K", "sonar.footer.tma_proposal", None, (3,), False),
+    ("Shift+Q", "sonar.footer.tma_range_up", None, (3,), False),
+    ("Shift+T", "sonar.footer.tma_method", None, (3,), False),
+    ("X/Shift+X", "sonar.footer.tas_side", None, (0, 4), True),
+    ("U/V", "sonar.footer.tow_depth", None, _ALL, True),
+    ("Shift+I/Shift+O", "sonar.footer.contrast", None, _ALL, False),
+    ("Ctrl+I/Ctrl+O", "sonar.footer.black", None, _ALL, False),
+    ("Shift+C", "sonar.footer.palette", None, _ALL, False),
+    ("Shift+H", "sonar.footer.history", None, _ALL, False),
+)
+
+
+def sonar_footer_keys(game, page, main_actions):
+    """The sonar keys of ``page`` not on its four main switches; the
+    submarine's sonar room has no towed arrays."""
+    boat = getattr(game, "local_side", None) == "uboot"
+    return tuple((key, label) for key, label, covered, pages, frigate in SONAR_FOOTER_KEYS
+                 if page in pages and covered not in main_actions
+                 and not (frigate and boat))
+
+
+def footer_key_pages(specs, width):
+    """Split key chips into rows that each fit ``width`` whole, as evenly
+    filled as the fewest rows allow (no last row with a single chip)."""
+    from src.ui.stations.common import footer_needs
+    needs = footer_needs(specs)
+
+    def split(limit):
+        pages, row, used = [], [], 0
+        for spec, need in zip(specs, needs):
+            if row and used + need > limit:
+                pages.append(tuple(row))
+                row, used = [], 0
+            row.append(spec)
+            used += need
+        if row:
+            pages.append(tuple(row))
+        return pages
+
+    fewest = len(split(width))
+    low, high = max(needs, default=0), width
+    while low < high:
+        middle = (low + high) // 2
+        if len(split(middle)) <= fewest:
+            high = middle
+        else:
+            low = middle + 1
+    return split(high)
 
 
 # The selected contact's orders as key chips under the contact cards (full

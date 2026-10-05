@@ -1271,7 +1271,8 @@ def draw_sonar_view(game, tr=None) -> None:
             _draw_echo_list(game, contacts)
         else:
             _draw_contacts(game, contacts)
-        from src.ui.stations.common import _shortcut_footer
+        from src.ui.stations.common import _shortcut_footer, _FOOTER_MORE
+        from src.ui.sonar_hit import SONAR_FOOTER_PAGE
         for rect, specs in geometry["contact_keys"]:
             # Contact orders by click: each chip presses its key.
             _shortcut_footer(screen, rect, specs)
@@ -1285,3 +1286,14 @@ def draw_sonar_view(game, tr=None) -> None:
             pygame.draw.rect(screen, PANEL, rect)
             pygame.draw.line(screen, GRID, rect.topright, rect.bottomright)
             layout.command_segment(screen, rect, *segment["text"], size=11)
+        if geometry["footer_keys"] is not None:
+            # The rest of the sonar keys, one chip each (a click presses it).
+            _shortcut_footer(screen, *geometry["footer_keys"])
+        more = geometry["footer_more"]
+        layout.record_geometry("sonar-more", more, "sonar:footer:more")
+        layout.command_segment(screen, more, "+", _FOOTER_MORE, size=11, center=True)
+        side, count = geometry["footer_side"], geometry["footer_pages"]
+
+        def next_page(_pos=None, side=side, count=count):
+            SONAR_FOOTER_PAGE[side] = (SONAR_FOOTER_PAGE.get(side, 0) % count + 1) % count
+        pointer.add_action(more, next_page)

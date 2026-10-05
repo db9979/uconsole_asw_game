@@ -83,6 +83,14 @@ def footer_page(specs, needs, width, more_w, offset):
     return shown, True
 
 
+def footer_needs(specs) -> list:
+    """Width each ``(key, description)`` chip of a key bar needs."""
+    face = layout.font(11)
+    from src.core.i18n import key_label
+    return [layout.text_width(face, f"{key_label(key)} {localize(description)}") + 16
+            for key, description in specs]
+
+
 def _shortcut_footer(screen, rect, specs) -> None:
     """Draw a persistent, single-row legend of a station's key shortcuts.
 
@@ -98,11 +106,8 @@ def _shortcut_footer(screen, rect, specs) -> None:
         return
     # Segments share the row by the width their text needs, so a long key
     # (Backspace) never gets cut while a short one wastes space.
-    face = layout.font(11)
-    from src.core.i18n import key_label
-    needs = [layout.text_width(face, f"{key_label(key)} {localize(description)}") + 16
-             for key, description in specs]
-    more_w = layout.text_width(face, f"+ {localize(_FOOTER_MORE)}") + 16
+    needs = footer_needs(specs)
+    more_w = footer_needs((("+", _FOOTER_MORE),))[0]
     slot = (rect.x, rect.y, rect.w, len(specs))
     offset = _FOOTER_OFFSET.get(slot, 0)
     if offset >= len(specs):

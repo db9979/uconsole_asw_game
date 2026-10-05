@@ -50,3 +50,11 @@ export const chartMatches = (state) => Boolean(state && S.chart) && S.chartSessi
   (S.chartRole === state.role || (S.chartRole !== null && state.role !== null)) &&
   S.chart.revision === state.chart_revision;
 export const authenticated = () => S.session !== null;
+
+// A chart country name from the coastline data in the page's language (the
+// catalog's country_<slug>); an invented region name stays as it is.
+export function countryName(name) {
+  const slug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  const key = `country_${slug}`;
+  return Object.hasOwn(S.catalog, `${prefix}${key}`) ? t(key) : String(name);
+}

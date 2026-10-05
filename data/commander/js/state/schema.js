@@ -614,7 +614,8 @@ export function validateV2State(state) {
         !payload.settings.choices.every((row) => exactKeys(row, ["key", "name", "stock", "loaded"])) ||
         !["snake", "circle", "helix"].includes(payload.settings.pattern) || ![1, 2].includes(payload.settings.salvo) ||
         !exactKeys(payload.inventory, ["torpedoes", "vls", "ciws", "aa", "chaff_ready", "nixies", "asroc", "depth_charges", "rbu"]) ||
-        !exactKeys(payload.readiness, ["station_down", "roe", "ciws_ready", "rbu_ready", "torpedo_warning", "aa_ready", "state", "interlock", "reload_s"]) ||
+        !exactKeys(payload.readiness, ["station_down", "roe", "ciws_ready", "rbu_ready", "torpedo_warning", "aa_ready", "state", "interlock", "stage", "reload_s"]) ||
+        !["target", "release", "solution", "tube", "station", "fire"].includes(payload.readiness.stage) ||
         (payload.designated_target !== null && !exactKeys(payload.designated_target, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"])) ||
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
         !boundedArray(payload.tubes, 16) || payload.tubes.some((row) => !exactKeys(row, ["tube", "state", "reload_s"])) ||

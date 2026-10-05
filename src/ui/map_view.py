@@ -12,7 +12,7 @@ import pygame
 
 from src.core import config
 from src.core.station import Station
-from src.core.i18n import (display_value, localized, localize, raw_text,
+from src.core.i18n import (country_name, display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.ui.plot_view import draw_plot
 from src.ui import chart_symbols, chart_trails, label_layout, layout, lines, map_fx_view, theme
@@ -431,7 +431,7 @@ def draw_chart_geography(game, view, r, top_band=None) -> None:
         px, py = view.world_to_screen(*land.centroid)
         if _in_rect(px, py, r, 18.0):
             shown_countries.add(land.name)
-            layout.blit_line(s, land.name.upper(),
+            layout.blit_line(s, raw_text(localize(country_name(land.name)).upper()),
                              (int(px) - 70, int(py) - 9, 140, 18),
                              config.COLOR_LAND_EDGE, size=12,
                              align="center")

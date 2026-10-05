@@ -4,6 +4,21 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.209
+
+Version 1.3.209 lässt die Browser-Stationen mehr ohne Scrollen zeigen. Im
+Browser haben die Stationen dieselben Tasten wie auf dem uConsole (zum
+Beispiel C/V/D für Kurs, Fahrt und Tiefe, Umschalt+A für den Ping,
+Strg+Enter zum Feuern), und jede Taste steht als blaue Tastenkappe auf ihrer
+Schaltfläche. Die leere Kontaktdetail-Spalte und eine leere Kontaktliste
+klappen weg, die Missionsübersicht ist eine Zeile "Auftrag", und leere Werte
+zeigen einen grauen Strich. Auf dem U-Boot sind Funklog und Rohre wieder
+lesbar, die Rohre erscheinen als Karten. Die Waffenstation der Fregatte zählt
+ihre Rohre ab 1 und zeigt die Feuerkette Schritt für Schritt. Ländernamen auf
+der Karte stehen einmal je Land, auf Deutsch oder Englisch, auch auf dem
+uConsole. Auf dem Handy klappt die obere Leiste in ein ☰-Menü. Die Tasten auf
+dem uConsole sind unverändert. Spielstände sind v52; Spielstände v38 bis v51
+
 ## 1.3.208
 
 Version 1.3.208 hält die uConsole bei Live-Verkehr flüssig. Eine Mission

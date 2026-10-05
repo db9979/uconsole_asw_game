@@ -25,13 +25,14 @@ function showStationCards(role) {
 // The torpedo room: each tube's state, with its load or flood order.
 function renderTubes(tubes) {
   patchChildren($("uboot-tubes"), (tubes.length ? tubes.map((row, index) => {
-    const line = node("p", undefined, "uboot-log-line");
+    const line = node("p", undefined, "uboot-tube");
+    line.dataset.state = row.state;
     line.append(node("span", t(`uboot_tube_${row.state}`, {tube: index + 1, seconds: number(row.seconds, 0)})));
     if (row.state === "empty") line.append(actionButton("uboot_tube_load", "uboot_tube_load", {tube: index}));
     if (row.state === "dry") line.append(actionButton("uboot_tube_flood", "uboot_tube_flood", {tube: index}),
       actionButton("uboot_tube_flood_quiet", "uboot_tube_flood_quiet", {tube: index}));
     return line;
-  }) : [node("p", t("station_none"), "uboot-log-line")]));
+  }) : [node("p", t("station_none"), "uboot-log-line uboot-log-text")]));
 }
 
 // The boat log as compact lines, newest first.
@@ -40,7 +41,7 @@ function renderLog(feed) {
     const line = node("p", undefined, "uboot-log-line");
     line.append(node("span", t("uboot_log_age", {age: number(row.age_s ?? 0, 0)}), "uboot-log-age"), node("span", row.message));
     return line;
-  }) : [node("p", t("station_none"), "uboot-log-line")]));
+  }) : [node("p", t("station_none"), "uboot-log-line uboot-log-text")]));
 }
 
 // Large readouts: actual value, the order under it, and a level for colour.
@@ -431,8 +432,8 @@ function renderRadio(radio, nav) {
     ["uboot_radio_order", radioOrderText(radio, nav)],
     ...(radio.worded ? [["uboot_radio_worded", radio.worded]] : []),
     ["uboot_radio_orders", t("uboot_radio_orders_value", {done: radio.orders_done, failed: radio.orders_failed})]]);
-  $("uboot-radio-log").replaceChildren(...(radio.log.length ? radio.log.map((row) => node("p", radioLogText(row), "uboot-log-line"))
-    : [node("p", t("uboot_radio_log_empty"), "uboot-log-line")]));
+  $("uboot-radio-log").replaceChildren(...(radio.log.length ? radio.log.map((row) => node("p", radioLogText(row), "uboot-log-line uboot-log-text"))
+    : [node("p", t("uboot_radio_log_empty"), "uboot-log-line uboot-log-text")]));
 }
 
 // The least water under the keel over the sounder's window.
@@ -478,8 +479,8 @@ function renderThreat(threat) {
       : t("uboot_threat_clock_value", {bearing: number(threat.clock.bearing, 0), tti: number(threat.clock.tti_s, 0)})]]);
   $("uboot-threat-warning").hidden = !threat.echo_likely && counts.torpedo === 0;
   $("uboot-threat-warning").textContent = counts.torpedo ? t("uboot_threat_torpedo_warning") : t("uboot_threat_echo_warning");
-  const advice = threat.advice.map((key) => node("p", t(key.replaceAll(".", "_")), "uboot-log-line"));
-  $("uboot-threat-advice").replaceChildren(...(advice.length ? advice : [node("p", t("uboot_advice_none"), "uboot-log-line")]));
+  const advice = threat.advice.map((key) => node("p", t(key.replaceAll(".", "_")), "uboot-log-line uboot-log-text"));
+  $("uboot-threat-advice").replaceChildren(...(advice.length ? advice : [node("p", t("uboot_advice_none"), "uboot-log-line uboot-log-text")]));
   const plan = threat.plan;
   $("uboot-evade").dataset.ready = String(plan !== null);
   $("uboot-evade-plan").textContent = plan === null ? t("uboot_evade_no_plan")
@@ -493,7 +494,7 @@ function renderThreat(threat) {
         : t("uboot_threat_row", {kind: t(`uboot_threat_kind_${row.type}`), bearing: number(row.bearing, 0),
           level: number(row.level_db, 0)})));
     return line;
-  }) : [node("p", t("station_none"), "uboot-log-line")]));
+  }) : [node("p", t("station_none"), "uboot-log-line uboot-log-text")]));
 }
 
 export function renderUbootStation(payload) {

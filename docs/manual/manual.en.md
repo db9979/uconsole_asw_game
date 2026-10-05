@@ -2277,6 +2277,8 @@ A free station is taken at once with all of its rights (including direct fire an
 
 The crew pages open in the host's saved language (`F10` options on the uConsole); the English/Deutsch button in the browser's status bar switches that browser alone. The crew page is built for Chrome or Chromium (also Edge) on a desktop PC; another browser shows a hint above the pairing code, and a page that cannot start there says so instead of loading forever. After a host update an open browser page reloads itself once, so it always runs the web client that matches the host.
 
+A browser station has three columns: the contact list on the left, the display in the middle, the station panel on the right with the contact detail below it. To give the controls room without scrolling, an empty contact list folds to a narrow rail and the contact detail to its title bar while no contact is chosen; both open again as soon as there is something to show, and keep any state you set by hand. The mission overview is one **Orders** line at the top of the station panel and opens with a click. A value with nothing reported yet shows as a grey dash; hovering it gives the reason. On a phone, language, sound, microphone, settings and tools sit behind the ☰ button.
+
 ### Crew mode, solo mode and the web host
 
 Remote Crew normally runs in **crew mode**: each browser holds the stations the host grants it, and the AI or the uConsole crews the rest. Started with `--solo-crew`, it runs in **solo mode** for that launch only: one paired browser holds every station of its unit and may also use the host commands save, load and new game and the own-mission library (chapter Mission and unit editor). Editors, options, quit and the network settings stay on the uConsole, and there is no pause in either mode.
@@ -2302,7 +2304,7 @@ While a phone holds the bridge lookout, the lookout no longer reports ships, air
 
 ### Browser keys
 
-In the Remote Crew browser (Commander, `F9`) stations are operated with buttons; the keyboard helps with navigation:
+In the Remote Crew browser (Commander, `F9`) stations are operated with buttons or with the same keys as on the uConsole; every control with a key shows it as a blue key cap after its label, and a key never acts while the cursor is in a field. Keys that send an order or fire only press the matching control, so they pass the same checks as a click:
 
 | Key | Action |
 |---|---|
@@ -2312,10 +2314,17 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 | `Arrow keys` | Move within focused tab bar, track list or chart |
 | `Home / End` | First / last entry of the focused list |
 | `+ / - · Q / E` | Zoom focused chart (Q / E as on the uConsole); Home fits the view |
+| `K` | Chart follows the own ship on or off |
+| `C / V / D · T` | Course, speed, depth, torpedo running depth: the cursor jumps to the field, Enter sends (bridge, engine, submarine) |
+| `Shift+A · J` | Active ping · live sonar audio on or off (sonar, submarine command, helicopter dipping sonar) |
+| `Ctrl+Enter` | Arm the shot (weapons, OPZ, helicopter, submarine weapons); the fire dialog asks once more |
+| `R / Shift+R` | OPZ: surface / air radar on or off; Q / E change the radar display range |
+| `H · B · Ctrl+R · Shift+M` | Helicopter: launch or recall, drop buoy, aircraft radar, MAD |
+| `A · V · Ctrl+B` | Silent running (engine) · decoy (submarine weapons) · clear baffles (bridge, submarine command) |
 | `Arrow keys (chart)` | Pan focused chart |
 | `Mouse over map` | Details of the track, own ship, asset, wreck or chart position under the cursor |
 | `0` | Open or close the weather & sonar analysis |
-| `Page Up/Down` | Helicopter: step through Acoustic analysis, Dipping sonar and Tactical map (8 again also steps) |
+| `Page Up/Down` | Step through the pages: helicopter Acoustic analysis, Dipping sonar and Tactical map (8 again also steps), sonar pages |
 | `Plot tool + click` | Draw on the shared plot: pick a tool above the map, click once (mark, bearing line) or twice (ruler, circle, DR line) |
 | `, / .` | Collapse or expand the contact list (,) or the station panel (.) |
 | `L` | Open or close the operational log |

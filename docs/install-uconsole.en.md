@@ -208,8 +208,10 @@ Permanently through NetworkManager: create
 on that Wi-Fi.
 
 **Security:** HTTP is unencrypted. Use only a trusted LAN. No Internet hosting,
-wildcard binding, CDN, remote ROE/time/save controls, or hidden entity data are
-exposed. See [Remote Crew setup](commander-coop.md) and
+wildcard binding, CDN, time controls or hidden entity data are exposed. Saving,
+loading and starting missions stay on the uConsole, except in solo mode
+(`--solo-crew`), where the one paired browser may also save and load slots 1-5,
+start a new game and use the own-mission library. See [Remote Crew setup](commander-coop.md) and
 [protocol/security](commander-protocol.md).
 
 ## 5. Optionally install as a package
@@ -225,10 +227,11 @@ Launching directly with `python main.py` remains the simplest approach for a Git
 checkout. Contact and coastline data are included in the package configuration.
 
 In the game, `Esc` opens the quit dialog or closes the current input or
-administrative view. `Q`/`E` zoom only on the Bridge, Weapons, and Helicopter
-stations. At OPZ, the wheel zooms its independent chart down to a 5 NM radius,
-dragging pans, and `K` toggles follow; Page Up/Down changes only the ship-centred
-radar range. The event feed is shared across stations and retains operational
+administrative view. `Q`/`E` zoom the chart on the Bridge, Weapons and
+Helicopter stations and on the submarine's chart; at OPZ they step the
+ship-centred radar range instead. Page Up/Down page through every station that
+has several pages. On every chart the mouse wheel zooms, dragging pans and `K`
+toggles follow. The event feed is shared across stations and retains operational
 reports, completed orders, and alerts; transient input and selection hints stay
 in the status banner. Feed and telemetry remain active but are hidden at OPZ.
 The full context-sensitive key map is available under

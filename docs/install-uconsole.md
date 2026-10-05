@@ -217,9 +217,12 @@ Dauerhaft über NetworkManager: eine Datei
 Browser-PCs im selben WLAN.
 
 **Sicherheit:** HTTP ist unverschlüsselt. Nur in einem vertrauenswürdigen LAN
-verwenden. Internet-Hosting, Wildcard-Bindung, CDN, entfernte
-ROE-/Zeit-/Speichersteuerung oder verborgene Entitätsdaten werden nicht
-angeboten. Siehe [Remote-Crew-Einrichtung](commander-coop.md) und
+verwenden. Internet-Hosting, Wildcard-Bindung, CDN, Zeitsteuerung oder
+verborgene Entitätsdaten werden nicht angeboten. Speichern, Laden und
+Missionsstart bleiben auf der uConsole, außer im Solomodus (`--solo-crew`): Dort
+darf der eine gekoppelte Browser auch die Speicherplätze 1-5 speichern und
+laden, ein neues Spiel starten und die Bibliothek eigener Missionen nutzen.
+Siehe [Remote-Crew-Einrichtung](commander-coop.md) und
 [Protokoll/Sicherheit](commander-protocol.md).
 
 ## 5. Optional als Paket installieren
@@ -235,10 +238,11 @@ Der direkte Start mit `python main.py` bleibt für einen Git-Checkout der
 einfachste Weg. Kontakt- und Küstendaten sind in der Paketkonfiguration enthalten.
 
 Im Spiel öffnet `Esc` den Beenden-Dialog beziehungsweise schließt die laufende
-Eingabe oder Verwaltungsansicht. `Q`/`E` zoomen ausschließlich auf Brücke,
-Waffen- und Helikopterstation. In der OPZ zoomt das Mausrad die unabhängige
-Karte bis 5 NM Radius, Ziehen verschiebt sie und `K` schaltet Follow; Bild↑/Bild↓
-ändert ausschließlich den schiffszentrierten Radarbereich. Der Ereignis-Feed ist stationsübergreifend und
+Eingabe oder Verwaltungsansicht. `Q`/`E` zoomen die Karte auf Brücke, Waffen-
+und Helikopterstation und auf der Karte des U-Boots; in der OPZ schalten sie
+stattdessen den schiffszentrierten Radarbereich. Bild↑/Bild↓ blättern auf jeder
+Station mit mehreren Seiten. Auf jeder Karte zoomt das Mausrad, Ziehen
+verschiebt sie und `K` schaltet Folgen. Der Ereignis-Feed ist stationsübergreifend und
 bewahrt operative Meldungen, abgeschlossene Befehle und Alarme auf; kurzlebige
 Eingabe- und Auswahlhinweise bleiben im Statusbanner. Feed und Telemetrie sind
 in der OPZ ausgeblendet, laufen aber weiter. Die vollständige

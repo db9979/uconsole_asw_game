@@ -1,4 +1,34 @@
-# Simulation Realism Gaps — Closure Record (U-Jagd 1.1.0, save v12)
+# Simulation Realism Gaps — Current Gaps and the 1.1.0 Closure Record
+
+The first section lists the realism gaps that are open in the current release
+(U-Jagd 1.3.213, save v53). Everything after it is the **historical closure
+record of the 1.1.0 physics upgrade (save v12)**: it is kept as a record of
+how each gap was closed and is not updated release by release, except where a
+row was plainly wrong (marked "since 1.3"). The player-facing, authoritative
+list of what is not modelled is the "Not modelled" section at the end of each
+manual chapter (`data/manual/`, rendered to `docs/manual/`).
+
+## Current gaps (1.3.213, save v53)
+
+Open simulation gaps that affect play. Items marked *planned* are in the
+improvement plan of 2026-10-05 (package 6, "tactical depth") and need a
+fairness measurement before and after.
+
+| Area | Gap | Note |
+|---|---|---|
+| Torpedo seekers | A seeker acquires anything inside an all-round bubble (1.2 NM own torpedoes, 3.0 NM hostile ones) instead of a forward cone with a signal-excess threshold, so a torpedo can lock on a target behind it. | planned (T2); evasion courses, decoys and search patterns gain weight with it |
+| AI submarine evasion | A ping heard far off makes the AI submarine run fast and loud without using the ping's bearing as a threat bearing; it does not choose the side of the layer by the hunter's sensor (VDS) and does not take a torpedo on the beam. | planned (T1, T3) |
+| Own-ship hydrodynamics | Hard turns cost no speed. | planned (T4), with a calibration deviation |
+| Detection threshold | Contacts appear and vanish at a hard detection edge; there is no fading in and out near the limit. | planned (T5, stateless via `detrand`) |
+| Sonar environment | No flow noise for the active sonar, no snapping shrimp in warm shallow water. | later |
+| AI tactics | No counter-fire down the bearing of a heard launch transient; AI submarines do not attack the consort destroyer on purpose (their torpedoes can still sink it). | later |
+| Hostile submarine damage | AI submarines keep one lumped damage value (noise, top speed, progressive flooding, emergency blow, hull fatigue); only the crewed submarine has compartments (below). | by design |
+| Crewed submarine damage control | Six compartments and two teams; no separate pressure and outer hull, no smoke or heat spreading, no oxygen-consuming fires. | manual chapter 12 |
+| Frigate damage control | Counter-flooding only between the two hull sides; the wounded are counted per station and never die. | manual chapter 6 |
+| Aircraft | The patrol aircraft cannot be shot down; one helicopter; no air-to-air combat. | manual chapters 7, 10 |
+| Electronic warfare | No COMINT; no decoy launchers besides chaff; the submarine's ESM hears no other submarine's radar and no missile seeker. | manual chapters 11, 12 |
+
+## The 1.1.0 closure record (historical)
 
 This document began as the realism gap analysis for U-Jagd 0.2.2 (2026-07-15)
 and was carried forward to 1.0.0. The 1.1.0 physics upgrade closed every gap
@@ -58,7 +88,7 @@ listed with their reason at the end.
 |---|---|---|
 | Hydrodynamic resistance | `src/physics/ship_dynamics.py`: resistance R = k v^2 (k from installed power and propulsive efficiency) plus added resistance in waves (Hs^2 B^2/L); thrust from a linear K_T(J) propeller; exact Riccati integration so any step size gives the same speed. | 2 (236d23b) |
 | Propeller/shaft physics | Shaft revolutions from the propeller (steady rpm proportional to speed), a propulsion control programme limiting load-up, reverse-pitch braking, and cavitation from the cavitation number sigma at the screw depth (calibrated to 15 kn in calm water; earlier when pitching lifts the stern). | 2 (236d23b) |
-| Rudder effectiveness vs speed | `speed_factor = clamp((speed/10)^2, 0, 1.5)` — already quadratic (dynamic-pressure-like), not linear. `ship.py:139`. | pre-1.1 (2026-09) |
+| Rudder effectiveness vs speed | Superseded by the Nomoto model below: the rudder slews toward the order (`SHIP_RUDDER_RATE_DEG_PER_S`) and the yaw rate follows K (V/L) delta in `Ship.update` (`src/ship/ship.py`), so rudder authority grows with speed and a stopped ship does not turn. (The 1.0.0 `speed_factor` this row once cited no longer exists.) | pre-1.1 (2026-09), 2 (236d23b) |
 | Turn radius | First-order Nomoto steering r = K (V/L) delta with T proportional to L/V, calibrated to 1.2 deg/s at FULL; turning circle about 0.4 NM at all speeds. | 2 (236d23b) |
 | Trim / sink at speed | Hydrostatic draft from displacement (fuel burnt, floodwater), Barrass squat in shallow water feeding swept grounding, dynamic trim by the stern ~ Fn^2. | 2 (236d23b) |
 | Sea-state effect on motion | Added resistance in waves; 1-DOF roll and pitch oscillators driven by an 8-component Pierson-Moskowitz wave slope relative to the wave direction, turn heel, damage list and speed-dependent fin stabilizer damping. | 2 (236d23b) |
@@ -83,7 +113,7 @@ listed with their reason at the end.
 | No active sonar use by subs | `Sub._maybe_active_ping` (aggressive boats, fresh contact, cooldown saved since Phase 0); the ping is heard by the frigate. | pre-1.1 (1.0.0) |
 | No ESM/ESB use by subs | All submarines use their `PlatformSensorSuite` (legacy snapshot gate removed); ESM works only with the mast up (<= 18 m); range from their own passive TMA with TMA legs (saved track). | 7 (8e6b1d3) |
 | No ASW coordination | Hostile red-group datalink shares tracks; a submerged boat only exchanges at mast depth or while snorkelling/transmitting, which makes the latency physical. | 7 (8e6b1d3) |
-| Damage model is scalar | Shock-factor hits, progressive flooding while holed, emergency blow, fatigue; damage throttles speed and raises noise. Subs keep a lumped damage value by design (no player-visible compartments). | 6 (8f79700), 10 (9d8e15c) |
+| Damage model is scalar | Shock-factor hits, progressive flooding while holed, emergency blow, fatigue; damage throttles speed and raises noise. AI submarines keep this lumped damage value by design. Since 1.3 the crewed submarine has six compartments with leaks, fires, chlorine gas, bulkheads and two damage-control teams (`src/enemies/damage_control.py`, saved as `damage_control`). | 6 (8f79700), 10 (9d8e15c), 1.3 |
 
 ## 3. Enemy Surface Ships — `src/enemies/surface.py`
 
@@ -205,8 +235,11 @@ listed with their reason at the end.
 | GPS spoofing | Not relevant to the modelled sensors and weapons (inertial/radar guidance). |
 | Lookout searchlight and smoke | No player control for them; visibility, contrast, size, horizon and moonlight are modelled. |
 | Aircraft engine failure | Aircraft are threats/traffic, not player-flown airframes. |
-| Compartments inside hostile submarines | Hostile boats keep a lumped damage value with progressive flooding, emergency blow and hull fatigue; their internal layout is never observable. |
-| Counter-flooding orders | Heel is corrected by repair and rudder; the stability model is complete without a manual ballast order. |
+| Compartments inside AI submarines | AI submarines keep a lumped damage value with progressive flooding, emergency blow and hull fatigue; their internal layout is never observable. (Since 1.3 the crewed submarine has compartments; see the Enemy Submarines table.) |
+
+Counter-flooding, listed here as out of scope in 1.1.0, exists since 1.3:
+Damage control's `C` floods the high hull side against a list of 5 degrees or
+more (`src/ship/damage.py`, manual chapter 6).
 
 Real-world geography, seabed and weather used by the world are synthetic or
 generalised (see `THIRD_PARTY_NOTICES.md` and the manual's disclaimers); the

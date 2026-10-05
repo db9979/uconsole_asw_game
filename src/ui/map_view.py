@@ -16,7 +16,7 @@ from src.core.i18n import (country_name, display_value, localized, localize, raw
                             message as structured_message)
 from src.ui.plot_view import draw_plot
 from src.ui import chart_symbols, chart_trails, label_layout, layout, lines, map_fx_view, theme
-from src.world import atmosphere
+from src.world import atmosphere, geo
 from src.ui import nato_symbols
 from src.ui import observations
 
@@ -83,15 +83,9 @@ def map_hit_target(game, pos):
     if not (0.0 <= x_nm <= game.world.size_nm and
             0.0 <= y_nm <= game.world.size_nm):
         return None
-    metadata = getattr(game.world.coast, "metadata", None) or {}
-    center = metadata.get("center")
-    if isinstance(center, (list, tuple)) and len(center) == 2:
-        from src.world.projection import nm_to_lonlat
-        lon, lat = nm_to_lonlat(x_nm, y_nm, center[0], center[1],
-                                game.world.size_nm)
-        coordinate = message("map.tooltip.coordinate_geo", latitude=f"{abs(lat):.4f}",
-                             ns="N" if lat >= 0 else "S", longitude=f"{abs(lon):.4f}",
-                             ew="E" if lon >= 0 else "W")
+    position = geo.format_position(game.world, x_nm, y_nm, 1, geo.decimal_sep(game))
+    if position is not None:
+        coordinate = message("map.tooltip.coordinate_geo", position=position)
     else:
         coordinate = message("map.tooltip.coordinate_local", x=f"{x_nm:.2f}", y=f"{y_nm:.2f}")
     depth = float(game.world.depth_m(x_nm, y_nm))
@@ -380,36 +374,42 @@ def draw_chart_geography(game, view, r, top_band=None) -> None:
     label_h = face.get_linesize()
     left_w = layout.text_width(face, "0000") + 6
     bottom_band = r[1] + r[3] - label_h - 2
-    reserved = [scale_rect(r)] + ([pygame.Rect(top_band)] if top_band is not None else [])
+    reserved = [scale_rect(r, game)] + ([pygame.Rect(top_band)] if top_band is not None else [])
     top_band = max(rect.bottom for rect in reserved) + 1
     field = label_layout.active()
     for rect in reserved if field is not None else ():
         field.reserve(rect)
     axis_labels = []
+    # A real sea area: meridians and parallels in degrees and minutes
+    # instead of the NM grid (display only, src/world/geo.py).
+    columns = [(k * step, grid_label(k * step)) for k in range(gx0, gx1 + 1)]
+    rows = [(k * step, grid_label(k * step)) for k in range(gy0, gy1 + 1)]
+    graticule = geo.graticule(w, max(0.0, min(wl, wr)), min(w.size_nm, max(wl, wr)),
+                              max(0.0, min(wt, wb)), min(w.size_nm, max(wt, wb)),
+                              view.scale)
+    if graticule is not None:
+        meridians, parallels, lon_step, lat_step = graticule
+        sep = geo.decimal_sep(game)
+        columns = [(x_nm, geo.axis_label(lon, lon_step, False, sep))
+                   for x_nm, lon in meridians]
+        rows = [(y_nm, geo.axis_label(lat, lat_step, True, sep))
+                for y_nm, lat in parallels]
+        left_w = max([layout.text_width(face, text) for _, text in rows] + [0]) + 6
     with layout.clip_to(s, r):
-        for k in range(gx0, gx1 + 1):
-            g = k * step
+        for g, text in columns:
             x, _ = view.world_to_screen(g, 0)
             if r[0] <= x <= r[0] + r[2]:
                 lines.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
-                image = layout.render_line(face, grid_label(g), config.COLOR_TEXT_DIM)
+                image = layout.render_line(face, text, config.COLOR_TEXT_DIM)
                 if int(x) + 3 >= r[0] + left_w and int(x) + 3 + image.get_width() <= r[0] + r[2] - 2:
-                    axis_labels.append((grid_label(g), image, (int(x) + 3, bottom_band)))
-        for k in range(gy0, gy1 + 1):
-            g = k * step
+                    axis_labels.append((text, image, (int(x) + 3, bottom_band)))
+        for g, text in rows:
             _, y = view.world_to_screen(0, g)
             if r[1] <= y <= r[1] + r[3]:
                 lines.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
                 if top_band <= int(y) + 3 and int(y) + 3 + label_h <= bottom_band:
-                    axis_labels.append((grid_label(g), layout.render_line(
-                        face, grid_label(g), config.COLOR_TEXT_DIM), (r[0] + 3, int(y) + 3)))
-        for text, image, pos in axis_labels:
-            rect = image.get_rect(topleft=pos)
-            layout.record_text(text, rect, r, image)
-            s.blit(image, rect)
-            if field is not None:
-                # Contact labels step aside from the axis numbers.
-                field.reserve(image.get_bounding_rect().move(rect.topleft))
+                    axis_labels.append((text, layout.render_line(
+                        face, text, config.COLOR_TEXT_DIM), (r[0] + 3, int(y) + 3)))
 
     # Land / Inseln. Legacy/fake coast providers retain their old API.
     landmasses = getattr(coast, "landmasses", None)
@@ -424,6 +424,15 @@ def draw_chart_geography(game, view, r, top_band=None) -> None:
             continue
         lines.polygon(s, config.COLOR_LAND, poly)
         lines.polygon(s, config.COLOR_LAND_EDGE, poly, 1)
+    # Axis numbers on top of the land, so a coast never hides them.
+    with layout.clip_to(s, r):
+        for text, image, pos in axis_labels:
+            rect = image.get_rect(topleft=pos)
+            layout.record_text(text, rect, r, image)
+            s.blit(image, rect)
+            if field is not None:
+                # Contact labels step aside from the axis numbers.
+                field.reserve(image.get_bounding_rect().move(rect.topleft))
     shown_countries = set()
     for land in visible_land or ():
         if land.name in shown_countries:
@@ -728,7 +737,8 @@ def draw_map_view(game, tr=None) -> None:
     global _LAST_LABELS
     _LAST_LABELS = labels
 
-    draw_chart_frame(game, view, r, getattr(game, "map_follow", True))
+    draw_chart_frame(game, view, r, getattr(game, "map_follow", True),
+                     position=(game.ship.x, game.ship.y))
 
 
 def _draw_helo_waypoint(s, game, view, helo_px, chart) -> None:
@@ -851,17 +861,26 @@ def draw_weather_band(game, r) -> None:
 SCALE_TEXT_SIZE = 13
 
 
-def scale_rect(r) -> pygame.Rect:
+# A position line's widest text (two-digit minutes, one decimal).
+_POSITION_SAMPLE = "00°00,0'N 000°00,0'W"
+
+
+def scale_rect(r, game=None) -> pygame.Rect:
     """Box of the scale / follow line in the chart's top-left corner (the
-    longest German follow text fits; axis numbers and labels keep off it)."""
+    longest German follow text fits; axis numbers and labels keep off it).
+    On a real sea area it also holds the own position line below."""
     face = layout.font(SCALE_TEXT_SIZE)
     width, height = layout.text_size(face, localize(structured_message(
         "map.line.scale_follow", zoom="00.0")))
+    if game is not None and geo.chart_center(game.world) is not None:
+        width = max(width, layout.text_width(face, _POSITION_SAMPLE))
+        height = height * 2 + 2
     return pygame.Rect(r[0] + 4, r[1] + 4, min(r[2] - 8, width + 4), height + 2)
 
 
-def draw_chart_frame(game, view, r, following: bool) -> None:
-    """Chart border and the scale / follow line."""
+def draw_chart_frame(game, view, r, following: bool, position=None) -> None:
+    """Chart border, the scale / follow line and, on a real sea area, the
+    own position (``position``: chart NM as the crew knows it) below it."""
     s = game.screen
     pygame.draw.rect(s, config.COLOR_GEO_GRID, r, 1)
     # Only the scale (and follow while on); the sector name is in the briefing.
@@ -871,3 +890,10 @@ def draw_chart_frame(game, view, r, following: bool) -> None:
                               zoom=scale_label(zoom_nm)),
         (r[0] + 4, r[1] + 4, r[2] - 8, 20), config.COLOR_TEXT_DIM,
         size=SCALE_TEXT_SIZE)
+    text = (geo.format_position(game.world, position[0], position[1], 1,
+                                geo.decimal_sep(game))
+            if position is not None else None)
+    if text is not None:
+        line_h = layout.font(SCALE_TEXT_SIZE).get_linesize()
+        layout.blit_line(s, raw_text(text), (r[0] + 4, r[1] + 6 + line_h, r[2] - 8, 20),
+                         config.COLOR_TEXT, size=SCALE_TEXT_SIZE)

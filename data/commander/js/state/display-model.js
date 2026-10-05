@@ -100,7 +100,9 @@ export function validateChart(data, state) {
         land.points.some((point) => !Array.isArray(point) || point.length !== 2 || !point.every(finite)))) throw new Error("chart");
   if (data.geography !== undefined) {
     const geo = data.geography;
-    if (!exactKeys(geo, ["labels", "airbases", "depths", "hazards"]) ||
+    if (!exactKeys(geo, ["labels", "airbases", "depths", "hazards", "center"]) ||
+        (geo.center !== null && (!exactKeys(geo.center, ["lat", "lon"]) || !finite(geo.center.lat) ||
+          !finite(geo.center.lon) || Math.abs(geo.center.lat) > 89 || Math.abs(geo.center.lon) > 180)) ||
         !Array.isArray(geo.hazards) || geo.hazards.length > 64 || geo.hazards.some((row) =>
           !exactKeys(row, ["kind", "x", "y", "top_depth_m", "length_m"]) || !["wreck", "rock"].includes(row.kind) ||
           ![row.x, row.y, row.top_depth_m, row.length_m].every(finite)) ||

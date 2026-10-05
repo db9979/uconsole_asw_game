@@ -7,6 +7,7 @@ import { maxRoleMapHits, roleMapViews } from "../state/shared.js";
 import { drawPlotLayer, releaseCanvas, renderPlotList, resizeCanvas } from "./chart.js";
 import { node, position } from "./dom.js";
 import { visualContext } from "./visual-common.js";
+import { axisLabel, formatPosition, graticule } from "../core/geo.js";
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { roleMapSweepCanvas, roleMapSweepCtx } from "./canvases.js";
 import { labelField, placeText, placeTip, reserveText } from "./label-layout.js";
@@ -208,7 +209,7 @@ export function mapTooltipLines(hit, worldX, worldY, own) {
   }
   if (!finite(worldX) || !finite(worldY) || !S.chart || worldX < 0 || worldY < 0 ||
       worldX > S.chart.size_nm || worldY > S.chart.size_nm) return lines;
-  lines.push(t("map_tip_position", {x: number(worldX, 1), y: number(worldY, 1)}));
+  lines.push(formatPosition(worldX, worldY) ?? t("map_tip_position", {x: number(worldX, 1), y: number(worldY, 1)}));
   const depth = chartDepthAt(worldX, worldY);
   if (depth !== null) lines.push(depth <= 0 ? t("map_tip_land") : t("map_tip_chart_depth", {depth: number(depth, 0)}));
   if (own && finite(own.x) && finite(own.y)) {
@@ -318,10 +319,27 @@ export function drawRoleMap(role) {
     }
   }
   const step = viewState.zoom >= 8 ? 10 : viewState.zoom >= 3 ? 25 : 50;
+  // Grid lines: on a real sea area meridians and parallels in degrees and
+  // minutes (as the uConsole), else the NM grid.
+  const gridColumns = [], gridRows = [];
+  for (let value = 0; value <= S.chart.size_nm; value += step) { gridColumns.push([value, String(value)]); gridRows.push([value, String(value)]); }
+  const [originX, originY] = point(0, 0);
+  const worldAt = (px, py) => [(px - originX) / scale, (py - originY) / scale];
+  const [boxLeft, boxTop] = worldAt(0, 0), [boxRight, boxBottom] = worldAt(plot.width, plot.height);
+  const geoGrid = graticule(Math.max(0, boxLeft), Math.min(S.chart.size_nm, boxRight),
+    Math.max(0, boxTop), Math.min(S.chart.size_nm, boxBottom), scale);
+  if (geoGrid) {
+    gridColumns.length = 0; gridRows.length = 0;
+    for (const row of geoGrid.meridians) gridColumns.push([row.x, axisLabel(row.lon, geoGrid.lonStep, false)]);
+    for (const row of geoGrid.parallels) gridRows.push([row.y, axisLabel(row.lat, geoGrid.latStep, true)]);
+  }
   plot.context.strokeStyle = palette().grid; plot.context.fillStyle = palette().label;
-  for (let value = 0; value <= S.chart.size_nm && layer("chart"); value += step) {
-    const [x, y] = point(value, value);
+  for (const [value] of layer("chart") ? gridColumns : []) {
+    const [x] = point(value, 0);
     if (x >= 0 && x <= plot.width) { plot.context.beginPath(); plot.context.moveTo(x, 0); plot.context.lineTo(x, plot.height); plot.context.stroke(); }
+  }
+  for (const [value] of layer("chart") ? gridRows : []) {
+    const [, y] = point(0, value);
     if (y >= 0 && y <= plot.height) { plot.context.beginPath(); plot.context.moveTo(0, y); plot.context.lineTo(plot.width, y); plot.context.stroke(); }
   }
   plot.context.strokeStyle = palette().landEdge; plot.context.fillStyle = palette().land;
@@ -337,14 +355,26 @@ export function drawRoleMap(role) {
   plot.context.lineWidth = 3;
   plot.context.strokeStyle = palette().halo;
   plot.context.fillStyle = palette().text;
-  for (let value = 0; value <= S.chart.size_nm && layer("chart"); value += step) {
-    const [x, y] = point(value, value), text = String(value);
-    if (x >= 0 && x + plot.context.measureText(text).width + 2 <= plot.width) {
+  // Own position (as the crew knows it: the boat's dead reckoning) in the
+  // top-left corner on a real sea area.
+  const ownShift = data.geoShift || {x: 0, y: 0};
+  const ownText = hasPosition(data.own) ? formatPosition(data.own.x + ownShift.x, data.own.y + ownShift.y) : null;
+  if (ownText) {
+    plot.context.strokeText(ownText, 4, 14); plot.context.fillText(ownText, 4, 14);
+    reserveText(plot.context, labels, ownText, 4, 14);
+  }
+  const leftWidth = Math.max(0, ...gridRows.map(([, text]) => plot.context.measureText(text).width)) + 8;
+  for (const [value, text] of layer("chart") ? gridColumns : []) {
+    const [x] = point(value, 0);
+    if (x >= leftWidth && x + plot.context.measureText(text).width + 2 <= plot.width) {
       plot.context.strokeText(text, x + 2, plot.height - 5);
       plot.context.fillText(text, x + 2, plot.height - 5);
       reserveText(plot.context, labels, text, x + 2, plot.height - 5);
     }
-    if (y >= 10 && y <= plot.height - 20) {
+  }
+  for (const [value, text] of layer("chart") ? gridRows : []) {
+    const [, y] = point(0, value);
+    if (y >= (ownText ? 30 : 10) && y <= plot.height - 20) {
       const baseline = y + 4;
       plot.context.strokeText(text, 4, baseline);
       plot.context.fillText(text, 4, baseline);

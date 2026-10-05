@@ -49,14 +49,15 @@ PROBE = r'''
       }
       return [...seen];
     };
+    const isPosition = (line) => line.startsWith(__POS__) || /^\d{2}°\d{2}[.,]\d'[NS] \d{3}°\d{2}[.,]\d'[EW]$/.test(line);
     let lines = [];
     const described = () => {
       lines = sweep();
-      return lines.includes(__OWN__) && lines.some((line) => line.startsWith(__POS__));
+      return lines.includes(__OWN__) && lines.some(isPosition);
     };
     for (let index = 0; index < 60 && !described(); index++) await sleep(250);
     if (!lines.includes(__OWN__)) throw new Error('no own-ship tooltip: ' + lines.slice(0, 8).join(' | '));
-    if (!lines.some((line) => line.startsWith(__POS__))) throw new Error('no position tooltip');
+    if (!lines.some(isPosition)) throw new Error('no position tooltip');
     map.dispatchEvent(new PointerEvent('pointerleave', {bubbles: true}));
     if (!$('map-tooltip').hidden) throw new Error('tooltip stays after leaving the map');
   }

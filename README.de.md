@@ -10,21 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.209**
+Aktuelle Version: **1.3.210**
 
-Version 1.3.209 lässt die Browser-Stationen mehr ohne Scrollen zeigen. Im
-Browser haben die Stationen dieselben Tasten wie auf dem uConsole (zum
-Beispiel C/V/D für Kurs, Fahrt und Tiefe, Umschalt+A für den Ping,
-Strg+Enter zum Feuern), und jede Taste steht als blaue Tastenkappe auf ihrer
-Schaltfläche. Die leere Kontaktdetail-Spalte und eine leere Kontaktliste
-klappen weg, die Missionsübersicht ist eine Zeile "Auftrag", und leere Werte
-zeigen einen grauen Strich. Auf dem U-Boot sind Funklog und Rohre wieder
-lesbar, die Rohre erscheinen als Karten. Die Waffenstation der Fregatte zählt
-ihre Rohre ab 1 und zeigt die Feuerkette Schritt für Schritt. Ländernamen auf
-der Karte stehen einmal je Land, auf Deutsch oder Englisch, auch auf dem
-uConsole. Auf dem Handy klappt die obere Leiste in ein ☰-Menü. Die Tasten auf
-dem uConsole sind unverändert. Spielstände sind v52; Spielstände v38 bis v51
-laden weiterhin.
+Version 1.3.210 zeigt die Karten in echten geografischen Koordinaten. In
+einem echten Seegebiet zeigt das Kartengitter jetzt Längen- und Breitengrade
+in Grad und Minuten, beim Hineinzoomen feiner (5 Grad bis 0,1 Minute), oben
+links steht die eigene Position wie 53°19,9'N 007°00,9'E (auf dem U-Boot der
+gekoppelte Ort), und der Tooltip des Mauszeigers nennt die Position darunter,
+auf der uConsole wie im Browser. Die Gitterzahlen bleiben jetzt auch über
+Land lesbar. Entfernungen, Ringe und Maßstab bleiben in sm, das Spiel spielt
+sich wie bisher; die stilisierte feste Karte behält ihr sm-Gitter. Tasten
+bleiben gleich. Spielstände sind v52; v38 bis v51 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

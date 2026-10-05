@@ -351,7 +351,7 @@ def test_opz_track_id_change_is_shared_by_every_station_projection(published):
 def test_known_chart_geography_is_bounded_detached_and_host_authored(published):
     game, _, server = published
     geography = server.v2_charts["bridge"]["geography"]
-    assert set(geography) == {"labels", "airbases", "depths", "hazards"}
+    assert set(geography) == {"labels", "airbases", "depths", "hazards", "center"}
     assert len(geography["labels"]) <= 128 and len(geography["airbases"]) <= 128
     assert len(geography["depths"]) <= 64
     # Charted wrecks and rocks are published as chart content.

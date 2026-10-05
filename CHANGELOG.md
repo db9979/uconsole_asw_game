@@ -19,6 +19,16 @@ Without the service the game plays exactly as before; browsers keep their own
 voice for crew reports. The settings pages are now mouse-operable. Saves are
 v53; v38 to v52 saves still load.
 
+## 1.3.221
+
+Release 1.3.221 makes the release process safer. A new version is only
+published after all tests have passed on it, so a broken build never
+reaches the update offer. If the Windows build fails, the uConsole and the
+Mac still get the update, and the older release stays for Windows. Updates
+for Windows and macOS are only offered with a SHA-256 checksum. The tests
+now also run on Windows and on Python 3.13. Gameplay and keys are
+unchanged. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.218
 
 Release 1.3.218 makes a click on a sonar contact card listen to that

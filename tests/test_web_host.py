@@ -216,12 +216,13 @@ def test_host_password_file_is_private_and_reset_is_local(tmp_path):
     auth = WebHostAuth(path)
     assert not auth.setup("wrong", "a long private password")
     assert auth.setup(auth.setup_code, "a long private password")
-    assert path.stat().st_mode & 0o077 == 0
     assert WebHostAuth(path).verify("a long private password")
-    os.chmod(path, 0o644)
-    with pytest.raises(ValueError):
-        WebHostAuth(path)
-    os.chmod(path, 0o600)
+    if os.name == "posix":          # Windows has no POSIX file modes
+        assert path.stat().st_mode & 0o077 == 0
+        os.chmod(path, 0o644)
+        with pytest.raises(ValueError):
+            WebHostAuth(path)
+        os.chmod(path, 0o600)
     auth.reset_local()
     assert not path.exists() and not auth.configured
 

@@ -87,8 +87,15 @@ def _with_host_language(page: bytes, language: str) -> bytes:
 
 
 class _HTTPServer(HTTPServer):
-    allow_reuse_address = True
+    # On Windows SO_REUSEADDR lets a second program bind the same port and
+    # take over the listener; there the port is held exclusively instead.
+    allow_reuse_address = not hasattr(socket, "SO_EXCLUSIVEADDRUSE")
     request_queue_size = _CONNECTION_SLOT_LIMIT
+
+    def server_bind(self):
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
     def __init__(self, address, owner, assets, tls=None):
         self.owner = owner

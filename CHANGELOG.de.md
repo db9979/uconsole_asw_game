@@ -21,6 +21,17 @@ Ohne den Dienst läuft das Spiel genau wie bisher; Browser behalten ihre eigene
 Stimme für Crew-Meldungen. Die Einstellungsseiten lassen sich jetzt mit der
 Maus bedienen. Spielstände sind v53; v38 bis v52 werden weiter geladen.
 
+## 1.3.221
+
+Version 1.3.221 macht das Veröffentlichen sicherer. Eine neue Version
+erscheint erst, wenn alle Tests auf ihr bestanden sind, so kommt ein
+fehlerhafter Stand nie ins Update-Angebot. Scheitert der Windows-Bau,
+bekommen uConsole und Mac das Update trotzdem, und für Windows bleibt die
+ältere Version stehen. Updates für Windows und macOS werden nur noch mit
+SHA-256-Prüfsumme angeboten. Die Tests laufen jetzt auch unter Windows und
+mit Python 3.13. Spiel und Tasten bleiben gleich. Spielstände sind v53;
+v38 bis v52 laden weiter.
+
 ## 1.3.218
 
 Version 1.3.218 lässt einen Klick auf eine Sonar-Kontaktkarte diesen

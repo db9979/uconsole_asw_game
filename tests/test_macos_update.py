@@ -67,8 +67,10 @@ def test_each_processor_has_its_own_release_zip():
     assert update.mac_asset_name("ppc") is None
     payload = {"tag_name": "v9.9.9", "draft": False, "prerelease": False,
                "assets": [{"name": update.ASSET_NAME, "size": 4,
+                           "digest": "sha256:" + "b" * 64,
                            "browser_download_url": ZIP_URL.replace(".zip", ".exe")},
                           {"name": "U-Jagd-macOS-arm64.zip", "size": 9,
+                           "digest": "sha256:" + "c" * 64,
                            "browser_download_url": ZIP_URL}]}
     release = update.select_release(payload, "1.3.9", "U-Jagd-macOS-arm64.zip")
     assert release.url == ZIP_URL and release.size == 9
@@ -80,6 +82,7 @@ def test_each_processor_has_its_own_release_zip():
 def test_check_latest_asks_for_the_mac_asset():
     payload = {"tag_name": "v9.9.9", "draft": False, "prerelease": False,
                "assets": [{"name": "U-Jagd-macOS-x86_64.zip", "size": 9,
+                           "digest": "sha256:" + "d" * 64,
                            "browser_download_url": ZIP_URL}]}
 
     class _Response(io.BytesIO):

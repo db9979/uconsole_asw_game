@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  actions: read     # the publish job waits for the "Tests" run of its commit
 
 concurrency:
   group: windows-${{ github.ref }}
@@ -219,16 +220,38 @@ jobs:
   publish:
     name: Publish release
     # One job creates the release and uploads every asset, so the builds never
-    # race. It needs the Windows build; a failed macOS build does not hold
-    # back the Windows release (its zip stays missing until the failed job is
-    # re-run, which re-runs this job and adds it).
+    # race. It publishes only after the "Tests" workflow passed on the same
+    # commit: a red main never reaches the updaters. A failed Windows or macOS
+    # build does not hold back the release (the uConsole updater needs only
+    # the tag); the missing file stays missing until the failed job is re-run,
+    # which re-runs this job and adds it.
     needs: [build, macos]
     if: >-
-      always() && needs.build.result == 'success'
-      && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      && (needs.build.result == 'success' || needs.build.result == 'failure')
     runs-on: ubuntu-latest
+    timeout-minutes: 110
     steps:
       - uses: actions/checkout@v4
+
+      - name: Wait for the tests of this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Poll the "Tests" workflow run of this push (tests.yml); publish only
+          # on success. Gives up after about 100 minutes.
+          for attempt in $(seq 1 200); do
+            run=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/tests.yml/runs?head_sha=$GITHUB_SHA&event=push&per_page=1" \
+                  --jq '.workflow_runs[0] | "\(.status) \(.conclusion)"' || true)
+            echo "Tests run: ${run:-not started}"
+            case "$run" in
+              "completed success") exit 0 ;;
+              completed*) echo "::error::Tests failed on $GITHUB_SHA; no release."; exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo "::error::Tests did not finish in time; no release."
+          exit 1
 
       - uses: actions/setup-python@v5
         with:
@@ -239,6 +262,9 @@ jobs:
         run: echo "version=$(python -c 'from src.core.version import APP_VERSION; print(APP_VERSION)')" >> "$GITHUB_OUTPUT"
 
       - uses: actions/download-artifact@v4
+        # Nothing to download when both builds failed; the release then
+        # carries only the tag for the uConsole updater.
+        continue-on-error: true
         with:
           pattern: U-Jagd-*-${{ steps.version.outputs.version }}
           path: release-assets
@@ -253,6 +279,7 @@ jobs:
           # the uConsole package): create it if missing, then add each asset
           # unless it is already there. Never replace a published asset.
           tag="v$VERSION"
+          mkdir -p release-assets
           ls -l release-assets
           if ! gh release view "$tag" >/dev/null 2>&1; then
             # Release text: this version's CHANGELOG.md entry plus the install hints.
@@ -285,7 +312,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          gh release view "v$VERSION" --json assets --jq '.assets[].name' | grep -qx "U-Jagd-Windows.exe"
+          # Keep the older releases while this one lacks the Windows program:
+          # Windows players would otherwise have no release to update from.
+          if ! gh release view "v$VERSION" --json assets --jq '.assets[].name' | grep -qx "U-Jagd-Windows.exe"; then
+            echo "::warning::v$VERSION has no U-Jagd-Windows.exe yet; older releases kept."
+            exit 0
+          fi
           gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' \
             | python tools/prune_releases.py "$VERSION" \
             | while read -r old; do

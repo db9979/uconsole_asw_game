@@ -31,7 +31,7 @@ Repository = "https://github.com/db9979/uconsole_asw_game"
 Issues = "https://github.com/db9979/uconsole_asw_game/issues"
 
 [project.optional-dependencies]
-dev = ["build>=1", "pytest>=8", "pytest-xdist>=3"]
+dev = ["build>=1", "pytest>=8", "pytest-xdist>=3", "pytest-timeout>=2"]
 windows = ["pyinstaller>=6.10,<7", "certifi>=2024.2.2"]
 macos = ["pyinstaller>=6.10,<7", "certifi>=2024.2.2"]
 
@@ -69,6 +69,9 @@ testpaths = ["tests"]
 # process gets its own SDL dummy drivers and save/settings directory from
 # conftest.py, and the loopback test servers bind ephemeral ports.
 addopts = "-n auto --dist loadgroup"
+# A hung test fails after 15 minutes instead of holding CI to its job limit;
+# tests that need longer say so with @pytest.mark.timeout.
+timeout = 900
 markers = [
     "browser: drives headless Chromium (skipped when it is not installed)",
     "xdist_group: pytest-xdist scheduling group (browser tests share two)",

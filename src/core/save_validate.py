@@ -53,7 +53,7 @@ from src.weapons.air_defense import valid_air_defense_state
 
 from src.core.limits import MAX_AIR_PICTURE_TRACKS
 from src.core.save_validate_common import (bounded, finite_number, finite_tree,
-                                           identity)
+                                           identity, point)
 from src.core.save_validate_entities import check_entities
 from src.core.save_validate_weapons import (
     check_buoys_and_aircraft, check_essms, check_helo, check_missiles,
@@ -61,6 +61,9 @@ from src.core.save_validate_weapons import (
 # Verbatim moves: the crew block and the sonar station checks.
 from src.core.save_validate_crew import _valid_crew_block  # noqa: F401
 from src.core.save_validate_sonar import valid_sonar_block
+
+# A flight's saved route: a transit has at most a via point, a patrol four legs.
+FLIGHT_WAYPOINTS_MAX = 16
 
 
 
@@ -673,6 +676,17 @@ def _check_air_defense_state(data, runtime_catalog, platform_state_version,
                 or not bounded(flight.get("sensor_age", config.RADAR_TRACK_STALE_S),
                                0, config.RADAR_TRACK_STALE_S)
                 or (bearing is not None and (not bounded(bearing, 0, 360) or bearing == 360))):
+            return False
+        waypoints = flight.get("waypoints")
+        index = flight.get("waypoint_idx", 0)
+        if waypoints is not None and (
+                not isinstance(waypoints, list) or len(waypoints) > FLIGHT_WAYPOINTS_MAX
+                or not all(point(row) for row in waypoints)):
+            return False
+        # A patrol (no destination) cycles through its legs; a transit may
+        # have passed its last waypoint.
+        if waypoints and (type(index) is not int or not 0 <= index <= len(waypoints)
+                          or (flight.get("dest_id") is None and index == len(waypoints))):
             return False
         profile = runtime_catalog.aircraft.get(flight.get("akey"))
         if profile is None or profile.kind != flight.get("kind"):

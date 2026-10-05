@@ -79,7 +79,7 @@ export const calloutKinds = new Set(["torpedo", "contact", "breakup", "torpedo_a
   "action_stations", "mpa_on_station", "ping", "dipping", "buoy_ping", "splash", "evade", "mast_threat", "leak", "fire",
   "detonation_near", "detonation", "broadcast", "broadcast_report", "sighting_warship", "sighting_merchant",
   "sighting_aircraft", "sighting_torpedo", "sighting_unknown", "test_depth_near", "test_depth_over", "hull_damage",
-  "bridge_aircraft", "crash_dive",
+  "bridge_aircraft", "crash_dive", "task",
   "lookout_contact", "lookout_ship", "lookout_warship", "lookout_merchant", "lookout_aircraft", "lookout_submarine", "lookout_torpedo"]);
 export const calloutsWithBearing = new Set(["torpedo", "contact", "breakup", "ping", "dipping", "buoy_ping", "splash",
   "detonation_near", "detonation", "sighting_warship", "sighting_merchant", "sighting_aircraft", "sighting_torpedo",

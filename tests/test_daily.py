@@ -77,6 +77,23 @@ def test_the_page_starts_the_days_mission_and_files_its_best(monkeypatch):
     game.draw_menu()
 
 
+def test_the_daily_mission_hands_back_the_players_world_choice(monkeypatch):
+    monkeypatch.setattr(daily, "today", lambda: DAY)
+    game = Game(seed=5, start_menu=True, audio_enabled=False, language="en")
+    game.world_mode = "fixed" if daily.WORLD_MODE != "fixed" else "procedural"
+    chosen = game.world_mode
+    game.start_weather, game.start_length = "storm", "short"
+    game.start_daily("frigate")
+    assert game.world_mode == daily.WORLD_MODE and game.start_length == "normal"
+    game._return_to_main_menu()
+    assert game.world_mode == chosen
+    assert (game.start_weather, game.start_length) == ("storm", "short")
+    # A later normal return leaves the choice alone.
+    game.world_mode = "real_fixed"
+    game._return_to_main_menu()
+    assert game.world_mode == "real_fixed"
+
+
 def test_another_seed_is_no_daily_mission(monkeypatch):
     monkeypatch.setattr(daily, "today", lambda: DAY)
     game = Game(seed=5, start_menu=False, audio_enabled=False, language="en")

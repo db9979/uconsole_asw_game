@@ -10,16 +10,19 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.221**
+Aktuelle Version: **1.3.222**
 
-Version 1.3.221 macht das Veröffentlichen sicherer. Eine neue Version
-erscheint erst, wenn alle Tests auf ihr bestanden sind, so kommt ein
-fehlerhafter Stand nie ins Update-Angebot. Scheitert der Windows-Bau,
-bekommen uConsole und Mac das Update trotzdem, und für Windows bleibt die
-ältere Version stehen. Updates für Windows und macOS werden nur noch mit
-SHA-256-Prüfsumme angeboten. Die Tests laufen jetzt auch unter Windows und
-mit Python 3.13. Spiel und Tasten bleiben gleich. Spielstände sind v53;
-v38 bis v52 laden weiter.
+Version 1.3.222 korrigiert, wie Einsätze enden und gewertet werden.
+U-Boot-Siege in „Angeschlagen heim“, „Agenten abholen“, „Lauschposten“
+und eine abgeschüttelte Fühlung zählen jetzt als Sieg mit ihren Punkten,
+und die Endanzeige des U-Boots nennt den Grund des Einsatzendes und zeigt
+die Punkte wie die der Fregatte. „Patrouille“ bringt immer das alte
+Diesel-U-Boot aus der Einweisung. Ein torpediertes Handelsschiff funkt
+einen Notruf, und die 300 Punkte Abzug gibt es nur, wenn dein Sonar den
+Angreifer kurz davor gehört hat. Die Brücke ruft neue HQ-Aufträge aus,
+und die KI-Funkcrew beantwortet liegen gelassene Aufträge. Dazu kleinere
+Text- und Browseranzeige-Korrekturen. Die Tasten bleiben gleich.
+Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

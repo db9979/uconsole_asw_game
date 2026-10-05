@@ -55,6 +55,18 @@ def test_sonar_lesson_steps_through_and_ends_as_won(monkeypatch):
     assert coach.done and game.game_over and game.mission_result == "SIEG"
 
 
+def test_a_lost_attack_lesson_never_reports_the_hit_step_done():
+    game = _menu_game()
+    game.start_training("attack")
+    coach = game.training
+    coach.step = len(coach.steps) - 1                # waiting for the hit
+    game._end_mission(False, "test")
+    game._update_training()
+    assert coach.step == len(coach.steps) - 1 and not coach.done
+    assert not any("training.step_done" in json.dumps(entry.text)
+                   for entry in game.feed.entries)
+
+
 def test_a_loaded_lesson_gets_its_coach_back_and_r_restarts_it():
     game = _menu_game()
     game.start_training("tma")

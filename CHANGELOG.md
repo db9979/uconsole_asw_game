@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.206
+## 1.3.207
 
-Release 1.3.206 fixes physics and weapon faults the code review found.
+Release 1.3.207 fixes physics and weapon faults the code review found.
 In sea state 5 and above the frigate now gets under way from a standstill
 (it used to stay at 0 kn). A submarine that changes its depth order mid-dive
 no longer jumps to the new depth. The helicopter's MAD looks once per
@@ -17,6 +17,13 @@ and no longer streams one above that speed. An enemy torpedo now loses its
 lock when the target is out of its seeker's reach, hears the frigate louder
 the faster it runs, and keeps its search pattern while the wire is held.
 Keys are unchanged. Saves are v52; v38 to v51 saves still load.
+
+## 1.3.206
+
+Release 1.3.206 rewrites the README: it is much shorter, drops outdated
+details and points to the manual and the changelog for everything else. The
+game itself is unchanged. Keys are unchanged. Saves are v52; v38 to v51
+saves still load.
 
 ## 1.3.205
 

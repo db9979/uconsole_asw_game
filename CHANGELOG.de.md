@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.206
+## 1.3.207
 
-Version 1.3.206 behebt Fehler in Physik und Waffen, die die Code-Prüfung
+Version 1.3.207 behebt Fehler in Physik und Waffen, die die Code-Prüfung
 gefunden hat. Ab Seegang 5 kommt die Fregatte aus dem Stand wieder in Fahrt
 (sie blieb bei 0 kn stehen). Ein U-Boot, das seinen Tiefenbefehl mitten im
 Tauchen ändert, springt nicht mehr auf die neue Tiefe. Das MAD des
@@ -18,6 +18,14 @@ feindlicher Torpedo verliert seine Erfassung, wenn das Ziel außer
 Reichweite seines Suchkopfs ist, hört die Fregatte lauter, je schneller sie
 fährt, und behält sein Suchmuster, solange der Draht hält. Tasten bleiben
 gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+
+## 1.3.206
+
+Version 1.3.206 schreibt die README neu: sie ist viel kürzer, lässt
+veraltete Einzelheiten weg und verweist für alles Weitere auf das Handbuch
+und das Änderungsprotokoll. Das Spiel selbst ist unverändert. Die Tasten
+sind unverändert. Spielstände sind v52; Spielstände v38 bis v51 laden
+weiterhin.
 
 ## 1.3.205
 

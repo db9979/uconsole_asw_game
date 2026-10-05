@@ -1,5 +1,6 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
+import { on } from "../core/events.js";
 
 // The uConsole's key scheme in the browser: the same function has the same
 // key at every station of both sides. Each binding presses a visible control
@@ -71,20 +72,34 @@ function usable(element) {
 // The element that carries the cap: a value field's submit button, a
 // checkbox's label, a list's own label; otherwise the control itself.
 function capHost(element) {
-  if (element.matches("input[type=checkbox], select")) return document.querySelector(`label[for="${element.id}"]`) ?? element;
+  // A checkbox cannot show a cap of its own (replaced element): use its label.
+  if (element.matches("input[type=checkbox], select")) {
+    return element.closest("label") ?? document.querySelector(`label[for="${element.id}"]`) ?? element;
+  }
   if (element.matches("input")) return element.form?.querySelector("button[type=submit]") ?? element;
   return element;
 }
 
-export function markStationKeys() {
+// Caps of the held station only: several stations share one control (the
+// helicopter's live sonar button is the sonar's), and a cap must name a key
+// that works here.
+const marked = new Set();
+
+export function markStationKeys(role = S.v2State?.role) {
+  for (const host of marked) delete host.dataset.keycap;
+  marked.clear();
   const seen = new Map();
-  for (const [, key, targets, how] of STATION_KEYS) for (const selector of targets) {
+  for (const [roles, key, targets, how] of STATION_KEYS) for (const selector of targets) {
+    if (!roles.includes(role)) continue;
     const element = document.querySelector(selector);
     if (!element) continue;
     const host = how?.startsWith("step") && !element.matches("select") ? element : capHost(element);
     seen.set(host, [...(seen.get(host) ?? []), keyLabel(key)]);
   }
-  for (const [host, caps] of seen) host.dataset.keycap = [...new Set(caps)].join(" / ");
+  for (const [host, caps] of seen) {
+    host.dataset.keycap = [...new Set(caps)].join(" / ");
+    marked.add(host);
+  }
 }
 
 function step(element, delta) {
@@ -114,7 +129,8 @@ export function bindingFor(role, event) {
 
 export function init() {
   markStationKeys();
-  window.addEventListener("u-jagd-language", () => queueMicrotask(markStationKeys));
+  window.addEventListener("u-jagd-language", () => queueMicrotask(() => markStationKeys()));
+  on("layout:station", (station) => markStationKeys(station));
   document.addEventListener("keydown", (event) => {
     const role = S.v2State?.role;
     if (!role || S.session?.station !== role || event.altKey || event.metaKey || event.isComposing ||

@@ -13,7 +13,7 @@ def test_station_keys_press_the_matching_control(tmp_path):
     probe = r"""
 import { S } from "./js/state/store.js";
 import { $ } from "./js/core/base.js";
-import { init, keyLabel } from "./js/input/station-keys.js";
+import { init, keyLabel, markStationKeys } from "./js/input/station-keys.js";
 import { metrics } from "./js/views/dom.js";
 import { countryName } from "./js/core/format.js";
 const out = {};
@@ -27,6 +27,14 @@ show($("operations")); show($("bridge-course")); show($("role-map-zoom-in"));
 init();
 out.cap_course = $("bridge-course-submit").dataset.keycap;
 out.cap_zoom = $("role-map-zoom-in").dataset.keycap;
+// Only the held station's keys carry caps.
+out.cap_radar_bridge = $("opz-radar-surface").closest("label").dataset.keycap ?? null;
+markStationKeys("opz");
+// A checkbox shows its key on its enclosing label, never on the box itself.
+out.cap_radar = $("opz-radar-surface").closest("label").dataset.keycap;
+out.cap_on_box = $("opz-radar-surface").dataset.keycap ?? null;
+out.cap_course_opz = $("bridge-course-submit").dataset.keycap ?? null;
+markStationKeys("bridge");
 out.label_fire = keyLabel("Ctrl+Enter", "de");
 out.label_page = keyLabel("PageDown", "en");
 document.body.dispatchEvent(new KeyboardEvent("keydown", {key: "c", bubbles: true}));
@@ -56,7 +64,7 @@ document.documentElement.dataset.result = JSON.stringify(out);
     root = run_module_probe(tmp_path, probe)
     assert "data-result" in root, root.get("data-failure")
     assert json.loads(root["data-result"]) == {
-        "cap_course": "C", "cap_zoom": "E", "label_fire": "Strg+Enter", "label_page": "PgDn",
+        "cap_course": "C", "cap_zoom": "E", "cap_radar": "R", "cap_on_box": None, "cap_radar_bridge": None, "cap_course_opz": None, "label_fire": "Strg+Enter", "label_page": "PgDn",
         "course_focused": True, "speed_after_typing": False, "zoomed": 1, "depth_focused": False,
         "empty_text": "—", "empty_flag": "true", "value_text": "300 °", "value_flag": None,
         "country": "Dänemark", "region": "Britannia"}

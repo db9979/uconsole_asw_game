@@ -118,6 +118,11 @@ def test_browser_asks_the_executive_officer_and_gives_a_confirmed_order(tmp_path
                 game.llm_tick()
                 time.sleep(.02)
             stdout, stderr = process.communicate(timeout=5)
+            # The order the browser gave last may still wait in the command
+            # queue when Chromium exits; the host applies it on its next pumps.
+            for _ in range(10):
+                console.pump(game)
+                game.update(.02)
         finally:
             if process.poll() is None:
                 process.kill()

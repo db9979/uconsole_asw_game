@@ -6362,6 +6362,7 @@
   "uboot.objective.convoy_attack": "{target} der {total} Handelsschiffe des Geleitzugs versenken ({sunk} versenkt)",
   "uboot.end.convoy_sunk": "GELEITZUG GETROFFEN - SIEG",
   "runtime.merchant_torpedoed": "Torpedodetonation im Geleitzug: ein Handelsschiff ist getroffen",
+  "runtime.merchant_distress": "Notruf: ein Handelsschiff torpediert, Peilung etwa {bearing}°, etwa {range} sm",
   "commander.web.scenario_s7_geleitzug": "Geleitzug",
   "scenario.strait.title": "Meerengen-Sperre",
   "scenario.strait.brief": "U-Boot-Mission. Die Fregatte sperrt eine Meerenge: die engste Durchfahrt zwischen Land oder Flachwasser nahe ihrem Gebiet oder, wo die Karte keine hat, eine erklärte Sperrlinie über offenes Wasser. Handelsschiffe passieren sie in beide Richtungen. Das U-Boot startet etwa 12 sm vor der Sperre und muss ein Zielgebiet etwa 6 sm dahinter erreichen; sein Auftrag nennt Peilung und Entfernung. Die Fregatte muss es aufhalten: das U-Boot versenken oder die Meerenge bis zum Zeitlimit (4 Stunden) halten.",

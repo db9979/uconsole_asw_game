@@ -6362,6 +6362,7 @@
   "uboot.objective.convoy_attack": "Sink {target} of the convoy's {total} merchants ({sunk} sunk)",
   "uboot.end.convoy_sunk": "CONVOY HIT - VICTORY",
   "runtime.merchant_torpedoed": "Torpedo explosion in the convoy: a merchant is hit",
+  "runtime.merchant_distress": "Distress call: a merchant ship torpedoed, bearing about {bearing}°, about {range} NM",
   "commander.web.scenario_s7_geleitzug": "Convoy attack",
   "scenario.strait.title": "Strait blockade",
   "scenario.strait.brief": "Submarine mission. The frigate holds a strait: the narrowest passage between land or shoal water near its area, or a declared barrier line across open water where the chart has none. Merchants pass through it both ways. The submarine starts about 12 NM before the gate and must reach a goal area about 6 NM beyond it; its orders give bearing and range. The frigate must stop it: sink the submarine or hold the strait until the time limit (4 hours).",

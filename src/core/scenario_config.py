@@ -280,6 +280,8 @@ SUB_RAID_QUIET_S = 600.0
 SUB_RAID_FRIGATE_NM = 10.0
 SUB_RAID_KEEP_TORPEDOES = 2
 SCORE_MERCHANT_LOST = 300
+# ... but only when the frigate's sonar heard the attacker this recently.
+MERCHANT_BLAME_S = 600.0
 BOAT_AI_PREFLOOD_MARGIN_NM = 3.0   # quiet tube flooding starts this far outside
 # A hunted or closely watched boat creeps: this slow once the frigate is
 # within BOAT_AI_THREAT_NM (its own contact) or for BOAT_AI_HUNTED_S after a

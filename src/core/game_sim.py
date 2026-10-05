@@ -886,7 +886,8 @@ class SimMixin:
                                             else ()))
         for torpedo in self.enemy_torpedoes:
             if torpedo.state == "STRUCK":
-                boat_missions.merchant_struck(self, torpedo.struck)
+                boat_missions.merchant_struck(self, torpedo.struck,
+                                              torpedo.launch_platform_id)
         for torpedo in self.enemy_torpedoes:
             if torpedo.state == "HIT":
                 distance_m = max(1.0, math.hypot(torpedo.x - self.ship.x,

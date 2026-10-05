@@ -1533,23 +1533,39 @@ _END_WINS = ("uboot.end.won", "uboot.end.escaped", "uboot.end.survived",
              "uboot.end.elint", "uboot.end.shaken", "uboot.end.objective")
 
 
+def _end_lines(game) -> list:
+    """The end panel's lines under the title: why the mission ended, then the
+    crew-versus-crew result, the campaign standing and the logbook score."""
+    lines = []
+    reason = getattr(game, "result_reason", None)
+    if reason:
+        lines.append((localize(reason), config.COLOR_TEXT))
+    for getter, color in (("versus_end_line", config.COLOR_WARN),
+                          ("campaign_end_line", config.COLOR_WARN),
+                          ("logbook_end_line", config.COLOR_OK)):
+        line = getattr(game, getter, lambda: None)()
+        if line is not None:
+            lines.append((line, color))
+    return lines
+
+
 def draw_end_panel(game, boat) -> None:
     s = game.screen
-    campaign = game.campaign_end_line()
-    extra = 36 if campaign is not None else 0
-    rect = pygame.Rect(340, 250, 600, 150 + extra)
+    lines = _end_lines(game)
+    rect = pygame.Rect(250, 250, 780, 132 + 30 * len(lines))
     overlay_style.panel(s, rect)
     key = end_text(game, boat)
     layout.blit_line(s, key, (rect.x + 16, rect.y + 20, rect.w - 32, 40),
                      config.COLOR_OK if key in _END_WINS else config.COLOR_WARN,
                      size=28, align="center")
-    if campaign is not None:
-        # A boat campaign leg: the standing and what comes next.
-        layout.blit_line(s, campaign, (rect.x + 16, rect.y + 72, rect.w - 32, 28),
-                         config.COLOR_WARN, size=16, align="center")
+    y = rect.y + 70
+    for text, color in lines:
+        layout.blit_line(s, text, (rect.x + 16, y, rect.w - 32, 26), color, size=16,
+                         align="center")
+        y += 30
     # The keys as a clickable legend, like the station footers.
     with pointer.layer("end"):
-        _footer(s, (rect.x + 16, rect.y + 96 + extra, rect.w - 32, 22),
+        _footer(s, (rect.x + 16, y + 24, rect.w - 32, 22),
                 (("D", "end.key.debrief"), ("R", "end.key.restart"), ("M", "end.key.menu")))
 
 

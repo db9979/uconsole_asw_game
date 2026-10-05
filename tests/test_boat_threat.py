@@ -191,8 +191,16 @@ def test_boat_outcome_and_debrief():
     assert boat_debrief.outcome(game, boat) == "won"
     game.damage.ship_sunk = False
     game.result_reason = {"__u_jagd_i18n__": "end.reason.sub_escaped",
-                          "params": {"contact": str(boat.sub.id)}}
+                          "params": {"contact": "K07"}}
+    # Another submarine escaped: the boat is still near its start.
+    assert boat_debrief.outcome(game, boat) == "over"
+    home = (boat.sub.x, boat.sub.y)
+    boat.sub.x += config.MISSION_ESCAPE_RADIUS_NM + 1.0
     assert boat_debrief.outcome(game, boat) == "escaped"
+    game.result_reason = {"__u_jagd_i18n__": "end.reason.sub_escaped_unseen",
+                          "params": {}}
+    assert boat_debrief.outcome(game, boat) == "escaped"
+    boat.sub.x, boat.sub.y = home
     game.result_reason = None
     boat.sub.sunk = True
     assert boat_debrief.outcome(game, boat) == "lost"
@@ -343,6 +351,7 @@ def test_frigate_callouts_are_unchanged():
         "runtime.mission.lost": "lost",
         "crew.action_stations_on": "action_stations",
         "mpa.on_station": "mpa_on_station",
+        "runtime.task.offered": "task",
     }
     assert callouts._PREFIX == (("runtime.torpedo_cue.", "torpedo"),)
 

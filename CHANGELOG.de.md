@@ -20,6 +20,20 @@ Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
 bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52
 laden weiter.
 
+## 1.3.222
+
+Version 1.3.222 korrigiert, wie Einsätze enden und gewertet werden.
+U-Boot-Siege in „Angeschlagen heim“, „Agenten abholen“, „Lauschposten“
+und eine abgeschüttelte Fühlung zählen jetzt als Sieg mit ihren Punkten,
+und die Endanzeige des U-Boots nennt den Grund des Einsatzendes und zeigt
+die Punkte wie die der Fregatte. „Patrouille“ bringt immer das alte
+Diesel-U-Boot aus der Einweisung. Ein torpediertes Handelsschiff funkt
+einen Notruf, und die 300 Punkte Abzug gibt es nur, wenn dein Sonar den
+Angreifer kurz davor gehört hat. Die Brücke ruft neue HQ-Aufträge aus,
+und die KI-Funkcrew beantwortet liegen gelassene Aufträge. Dazu kleinere
+Text- und Browseranzeige-Korrekturen. Die Tasten bleiben gleich.
+Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
+
 ## 1.3.221
 
 Version 1.3.221 macht das Veröffentlichen sicherer. Eine neue Version

@@ -14,6 +14,11 @@ export const duration = (seconds) => {
 export const timeOfDay = (hours) => finite(hours)
   ? `${String(Math.floor(hours) % 24).padStart(2, "0")}:${String(Math.floor(hours * 60) % 60).padStart(2, "0")}` : t("unavailable");
 export const unit = (value, symbol, digits = 1) => finite(value) ? `${number(value, digits)} ${symbol}` : t("unavailable");
+// A radio frequency in the unit an operator reads it in (0.5 GHz, 2.4 MHz).
+const compact = (value) => value.toLocaleString(S.language, { maximumFractionDigits: 2 });
+export const frequency = (hz) => !finite(hz) ? t("unavailable")
+  : hz >= 1e8 ? `${compact(hz / 1e9)} GHz` : hz >= 1e5 ? `${compact(hz / 1e6)} MHz`
+  : hz >= 1e3 ? `${compact(hz / 1e3)} kHz` : `${compact(hz)} Hz`;
 // An internal state name as catalog text ("<family>_<value>"), else as sent.
 export const stateText = (family, value) => {
   if (value === null || value === undefined || value === "") return t("unavailable");

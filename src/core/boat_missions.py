@@ -504,8 +504,27 @@ def convoy_sunk(game) -> int:
     return sum(1 for ship in convoy(game) if ship.sunk)
 
 
-def merchant_struck(game, ship) -> None:
-    """A crewed boat's torpedo hit a merchant: book the warhead, report it."""
+def distress_call(game, ship) -> dict:
+    """A torpedoed merchant's distress call as the frigate's radio hears it:
+    its rough bearing (nearest 10 degrees) and range (whole miles)."""
+    dx, dy = ship.x - game.ship.x, ship.y - game.ship.y
+    bearing = round(math.degrees(math.atan2(dx, -dy)) / 10.0) * 10 % 360
+    return message("runtime.merchant_distress", bearing=f"{bearing:03d}",
+                   range=f"{max(1, round(math.hypot(dx, dy)))}")
+
+
+def attacker_held(game, attacker_id) -> bool:
+    """The frigate's sonar picture heard the attacking boat within
+    ``MERCHANT_BLAME_S``: only then could it have stopped the attack."""
+    if attacker_id is None:
+        return False
+    contact = game.sonar.contacts.get(attacker_id)
+    return (contact is not None
+            and 0.0 <= game.sim_t - contact.last_seen <= config.MERCHANT_BLAME_S)
+
+
+def merchant_struck(game, ship, attacker_id=None) -> None:
+    """A submarine's torpedo hit a merchant: book the warhead, report it."""
     if ship is None or ship.sunk:
         return
     escort = mode(game) in ("escort", "ras") and ship is supply(game)
@@ -513,14 +532,15 @@ def merchant_struck(game, ship) -> None:
     game.sight_events.ship_hit(ship, game.sim_t)
     game._emit_sound("explosion", at=(ship.x, ship.y))
     game.feed.add(game.world.format_time(), "schaden",
-                  message("runtime.supply_torpedoed" if escort
-                          else "runtime.merchant_torpedoed"))
+                  message("runtime.supply_torpedoed") if escort
+                  else message("runtime.merchant_torpedoed") if ship in convoy(game)
+                  else distress_call(game, ship))
     if ship.sunk:
         game._report_breakup_noise(ship.x, ship.y, 0.0, ship.id)
         from src.core import free_roam
         free_roam.merchant_sunk(game, ship)
-        if mode(game) is None:
-            # A frigate mission: the shipping it protects was lost.
+        if mode(game) is None and attacker_held(game, attacker_id):
+            # A frigate mission: shipping lost to a boat the frigate held.
             game.score -= config.SCORE_MERCHANT_LOST
 
 

@@ -33,5 +33,10 @@ def finite_tree(value, path=()) -> bool:
 def bounded(value, low=0.0, high=1_000_000.0) -> bool:
     return finite_number(value) and low <= value <= high
 
+def point(value, limit=1_000_000.0) -> bool:
+    """An ``(x, y)`` pair of finite numbers within +/-``limit``."""
+    return (isinstance(value, (list, tuple)) and len(value) == 2
+            and all(bounded(item, -limit, limit) for item in value))
+
 def identity(value) -> bool:
     return type(value) is int and 1 <= value <= 2**63 - 1

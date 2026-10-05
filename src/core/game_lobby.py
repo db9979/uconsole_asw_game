@@ -77,9 +77,9 @@ class LobbyMixin:
         outcome = self.versus_outcome()
         if outcome is None:
             return None
-        frigate, boat = (message("lobby.versus.won" if won else "lobby.versus.lost")
-                         for won in outcome)
-        return message("lobby.versus.result", frigate=frigate, boat=boat)
+        frigate, submarine = (message("lobby.versus.won" if won else "lobby.versus.lost")
+                              for won in outcome)
+        return message("lobby.versus.result", frigate=frigate, submarine=submarine)
 
     @property
     def crew_assist(self) -> bool:

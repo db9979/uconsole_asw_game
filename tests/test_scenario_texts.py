@@ -33,3 +33,17 @@ def test_menu_goal_and_loss_lines_are_translated():
         for field in wanted:
             for catalog in catalogs:
                 assert f"scenario.{name}.{field}" in catalog, (scenario, field)
+
+
+def test_patrol_always_brings_the_old_diesel_its_brief_promises():
+    from src.core.mission import Mission
+    for seed in range(200):
+        assert Mission(seed, "patrouille").sub_types == ["diesel_alt"]
+    # Free Hunt still draws every type.
+    drawn = {kind for seed in range(200)
+             for kind in Mission(seed, None, config.DEFAULT_DIFFICULTY).sub_types}
+    assert drawn == {"diesel_alt", "aip_modern", "ssn"}
+    for language, word in (("en", "anti-ship missiles"), ("de", "Seezielflugkörpern")):
+        catalog = json.loads((ROOT / "data" / "i18n" / f"{language}.json")
+                             .read_text(encoding="utf-8"))
+        assert word in catalog["scenario.patrol.brief"]

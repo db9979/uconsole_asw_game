@@ -732,3 +732,80 @@ def test_live_ais_ship_is_heard_by_passive_sonar(game, monkeypatch):
     for _ in range(40):
         game.update(.05)
     assert ship.id in game.sonar.contacts
+
+
+def _adsb_state(icao24, lon=8.0, lat=54.0):
+    return [icao24, icao24.upper(), "DE", None, None, lon, lat, 3000.0,
+            False, 200.0, 90.0, 0.0]
+
+
+def test_only_five_live_aircraft_are_flown():
+    """Dozens of live aircraft made the uConsole stutter: at most five fly."""
+    assert live_traffic_module._MAX_LIVE_AIRCRAFT == 5
+    manager = LiveTrafficManager()
+    game = _fake_game()
+    manager.configure(game, _fake_world(), Preferences())
+    manager.adsb_client = SimpleNamespace(snapshots=queue.Queue())
+    states = [_adsb_state(f"near{i:02d}") for i in range(30)]
+    manager.adsb_client.snapshots.put((time.time(), states))
+    manager._drain_adsb(game)
+    assert len(manager.aircraft) == 5
+
+
+def test_live_aircraft_choice_is_random_but_stable():
+    """The pick does not follow the feed's order, and a later snapshot in
+    another order keeps the same aircraft (no flicker); a freed slot goes
+    to the next aircraft of the same stable choice."""
+    manager = LiveTrafficManager()
+    game = _fake_game()
+    manager.configure(game, _fake_world(), Preferences())
+    manager.adsb_client = SimpleNamespace(snapshots=queue.Queue())
+    states = [_adsb_state(f"near{i:02d}") for i in range(30)]
+    manager.adsb_client.snapshots.put((time.time(), states))
+    manager._drain_adsb(game)
+    chosen = set(manager.aircraft)
+    ranked = sorted((state[0] for state in states), key=manager._aircraft_pick_key)
+    assert chosen == set(ranked[:5])
+
+    manager.adsb_client.snapshots.put((time.time() + 1.0, list(reversed(states))))
+    manager._drain_adsb(game)
+    assert set(manager.aircraft) == chosen
+
+    manager.aircraft.pop(ranked[0])
+    manager.adsb_client.snapshots.put((time.time() + 2.0, states))
+    manager._drain_adsb(game)
+    # Still in the feed and still best ranked: it comes back.
+    assert set(manager.aircraft) == chosen
+    # Gone from the feed: the sixth of the choice takes its slot.
+    manager.aircraft.pop(ranked[0])
+    manager.adsb_client.snapshots.put(
+        (time.time() + 3.0, [state for state in states if state[0] != ranked[0]]))
+    manager._drain_adsb(game)
+    assert set(manager.aircraft) == set(ranked[1:6])
+
+
+def test_ais_burst_is_spread_over_frames():
+    manager = LiveTrafficManager()
+    game = _fake_game()
+    manager.configure(game, _fake_world(), Preferences())
+    manager.ais_client = SimpleNamespace(reports=queue.Queue())
+    total = live_traffic_module._AIS_REPORTS_PER_FRAME + 10
+    for mmsi in range(total):
+        manager.ais_client.reports.put({"mmsi": 1000 + mmsi})
+    manager._drain_ais(game)
+    assert manager.ais_client.reports.qsize() == 10
+    manager._drain_ais(game)
+    assert manager.ais_client.reports.empty()
+
+
+def test_only_fifteen_live_ships_are_simulated():
+    assert live_traffic_module._MAX_LIVE_SHIPS == 15
+    manager = LiveTrafficManager()
+    game = _fake_game()
+    manager.configure(game, _fake_world(), Preferences())
+    for mmsi in range(30):
+        manager._apply_ais_report(game, 5000 + mmsi, {
+            "mmsi": 5000 + mmsi, "lat": 54.0 + mmsi * 0.01, "lon": 8.0,
+            "cog": 0.0, "sog": 10.0})
+    assert len(manager._ships) == 15
+    assert len(game.civilians) == 15

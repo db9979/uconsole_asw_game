@@ -10,17 +10,19 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.207**
+Aktuelle Version: **1.3.208**
 
-Version 1.3.207 lässt die Beschriftungen der OPZ-Karte an ihrem Platz, wenn
-weit herausgezoomt ist. Die Zahlen der Peilskala um die Radarringe stehen
-jetzt immer bei ihrer Peilung, statt den Entfernungsangaben auszuweichen;
-000 steht wieder oben und 180 unten. Liegen die Ringe eng beieinander, ist
-nur jeder zweite Ring beschriftet, die Entfernung des äußeren Rings steht
-neben der 000, und eine Entfernungsangabe, die eine Peilzahl verdecken
-würde, entfällt. Die OPZ-Karte der Remote Crew im Browser macht es genauso.
-Die Tasten sind unverändert. Spielstände sind v52; Spielstände v38 bis v51
-laden weiterhin.
+Version 1.3.208 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
+mit echten Flugzeugen (OpenSky ADS-B) fliegt jetzt höchstens 5 davon statt
+40, eine mit echten Schiffen (AIS) höchstens 15 statt 60, zufällig gewählt
+und behalten, bis jeder Kontakt das Gebiet verlässt, damit Kontakte nicht
+auftauchen und wieder verschwinden. Bei Dutzenden Live-Kontakten lief der
+eine Spiel-Thread voll, und das Spiel ruckelte, obwohl der Prozessor nur
+etwa ein Drittel Last zeigte. Das OPZ-Lagebild wird außerdem nur noch
+einmal pro Bild statt mehrmals berechnet, und ein Schwall Live-AIS-Meldungen
+wird auf mehrere Bilder verteilt. Remote-Crew-Browser sehen dieselben
+Kontakte. Die Tasten bleiben gleich. Spielstände sind v52; v38- bis
+v51-Stände werden weiter geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -25,7 +25,7 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Air radar | 100 NM (50 % per sweep) | aircraft and missiles; jammers burn through close in |
 | ESM | 150 NM (main beam) | +/-3 deg bearing; level and range estimate |
 | HFDF | 120 NM ground wave at 15 MHz (about 95-150 NM by frequency) | +/-8 deg bearing (sky wave +/-16) |
-| Lookout | 12 NM surface, 5 NM surfaced sub, 20 NM air, 20 NM land | x0.25 (new moon) to x0.45 (full moon) at night; fog and sea state reduce; class at 2, type at 3.2 resolved cycles over relative size (tanker about 7/5 NM, frigate 5/4 NM, speedboat 3/2 NM by clear day) |
+| Lookout | 12 NM surface, 5 NM surfaced submarine, 20 NM air, 20 NM land | x0.25 (new moon) to x0.45 (full moon) at night; fog and sea state reduce; class at 2, type at 3.2 resolved cycles over relative size (tanker about 7/5 NM, frigate 5/4 NM, speedboat 3/2 NM by clear day) |
 
 ## Weapons and countermeasures {#ref-weapons}
 

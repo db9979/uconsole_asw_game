@@ -1,5 +1,5 @@
 import { $ } from "../core/base.js";
-import { number, t, unit } from "../core/format.js";
+import { frequency, number, t, unit } from "../core/format.js";
 import { elokaShortLabel, filteredEloka } from "../state/shared.js";
 import { actionButton, metrics, node, stationRows, yesNo } from "../views/dom.js";
 import { syncElokaFilterBar } from "./eloka-filters.js";
@@ -15,12 +15,12 @@ export function renderElokaStation(payload) {
   metrics($("eloka-hardware"), [["df_sensors", number(payload.hardware.df_sensors, 0)],
     ["broadband_sensors", number(payload.hardware.broadband_sensors, 0)],
     ["ecm_channels", number(payload.hardware.ecm_channels, 0)],
-    ["frequency", `${unit(payload.hardware.frequency_min_hz, "Hz", 0)} - ${unit(payload.hardware.frequency_max_hz, "Hz", 0)}`],
+    ["frequency", `${frequency(payload.hardware.frequency_min_hz)} - ${frequency(payload.hardware.frequency_max_hz)}`],
     ["reaction_time", unit(payload.hardware.reaction_s * 1000000, "\u00b5s", 1)]]);
   $("eloka-filter-count").textContent = t("eloka_filter_count", {visible: intercepts.length, total: payload.intercepts.length});
   stationRows($("eloka-intercepts"), intercepts, (row) => [["reference", elokaShortLabel(row.label)],
     ["bearing", unit(row.bearing, "\u00b0", 0)], ["bearing_uncertainty", unit(row.bearing_uncertainty_deg, "\u00b0")],
-    ["frequency", unit(row.frequency_hz, "Hz", 0)], ["frequency_band", row.frequency_band.toUpperCase().replace("_", "/")], ["prf", unit(row.prf_hz, "Hz", 0)],
+    ["frequency", frequency(row.frequency_hz)], ["frequency_band", row.frequency_band.toUpperCase().replace("_", "/")], ["prf", unit(row.prf_hz, "Hz", 0)],
     ["modulation", t(`eloka_modulation_${row.modulation}`)], ["quality", number(row.quality, 2)], ["age", unit(row.age_s, "s", 0)],
     ["signal_level", unit(row.signal_db, "dB", 0)], ["range_estimate", row.range_estimate_nm === null ? t("station_none") : unit(row.range_estimate_nm, "NM", 0)],
     ["scan_period", row.scan_period_s === null ? t("station_none") : unit(row.scan_period_s, "s", 1)],

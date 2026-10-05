@@ -1550,8 +1550,7 @@ class SimMixin:
             for sub in targets:
                 if not sub.sunk and \
                         self._torus_dist(sub.x, sub.y, *sub.start_pos) > config.MISSION_ESCAPE_RADIUS_NM:
-                    self._end_mission(False, message("end.reason.sub_escaped",
-                                                     contact=sub.id))
+                    self._end_mission(False, self._escaped_reason(sub))
                     return
             if all(sub.sunk for sub in targets):
                 self._end_mission(True, message("end.reason.targets_sunk"))
@@ -1562,6 +1561,16 @@ class SimMixin:
         else:
             if self.mission_time >= m.time_limit_s:
                 self._end_mission(True, message("end.reason.convoy_survived"))
+
+    def _escaped_reason(self, sub):
+        """The end reason of an escaped target: the label the frigate's own
+        sonar picture gave it, or a neutral text when it was never heard."""
+        with self.sonar_perspective(self._frigate_sonar):
+            contact = self.sonar.contacts.get(sub.id)
+            if contact is None:
+                return message("end.reason.sub_escaped_unseen")
+            return message("end.reason.sub_escaped",
+                           contact=raw_text(self.contact_display_id(contact)))
 
     def _end_mission(self, win: bool, reason: object) -> None:
         self.mission_result = "SIEG" if win else "VERLOREN"

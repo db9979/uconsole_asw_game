@@ -44,3 +44,19 @@ def test_versus_outcome_counts_home_as_boat_win(monkeypatch):
     mixin = next(cls for cls in vars(game_lobby).values()
                  if isinstance(cls, type) and hasattr(cls, "versus_outcome"))
     assert mixin.versus_outcome(game) == (False, True)
+
+
+def test_an_escaped_target_is_named_by_the_frigates_own_label():
+    from src.core.game import Game
+    from src.core.i18n import localize
+    from src.sonar.sonar import Contact
+    game = Game(seed=5, start_menu=False, audio_enabled=False, language="en")
+    game.reset(5, "s1_patrouille")
+    sub = next(item for item in game.subs if item.side == "hostile")
+    game.sonar.contacts.pop(sub.id, None)
+    reason = game._escaped_reason(sub)
+    assert reason["__u_jagd_i18n__"] == "end.reason.sub_escaped_unseen"
+    contact = Contact(7, sub.id, "passiv", "sub")
+    game.sonar.contacts[sub.id] = contact
+    text = localize(game._escaped_reason(sub))
+    assert "K07" in text and str(sub.id) not in text.replace("K07", "")

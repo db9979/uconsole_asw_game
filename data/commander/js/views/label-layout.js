@@ -37,6 +37,8 @@ export function labelField(width, height) {
   const reserve = (x, y, w, h) => { if (rects.length < MAX_RECTS) rects.push({ x, y, w, h }); };
   return {
     reserve,
+    // Whether a box keeps clear of every label placed so far.
+    isFree: (x, y, w, h) => overlap({ x, y, w, h }) === 0,
     // candidates: top-left points; returns the chosen box {x, y, w, h}.
     place(w, h, candidates) {
       let best = null, bestCost = Infinity;
@@ -78,6 +80,17 @@ export function placeTip(context, field, text, tipX, tipY, ux, uy) {
   const x = ux >= -.2 ? tipX + 4 : tipX - 4 - w, y = tipY - h / 2 + uy * (h / 2 + 2);
   const box = field.place(w, h, around(x, y, w, h, 4));
   context.fillText(text, box.x, box.y + h);
+}
+
+// A label that belongs to one exact place (a bearing scale number, a range
+// ring's distance): drawn at baseline x, y and never moved; later labels keep
+// off it. With skipIfTaken a label whose place is already held is left out.
+export function fixedText(context, field, text, x, y, skipIfTaken = false) {
+  const size = parseFloat(context.font) || 12, w = context.measureText(text).width;
+  if (skipIfTaken && !field.isFree(x, y - size, w, size + 2)) return false;
+  field.reserve(x, y - size, w, size + 2);
+  context.fillText(text, x, y);
+  return true;
 }
 
 // Keep later labels off text drawn at a fixed place (baseline x, y).

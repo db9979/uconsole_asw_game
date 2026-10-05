@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.207
+
+Release 1.3.207 keeps the OPZ chart's labels in place when you zoom far out.
+The numbers of the bearing scale around the radar rings now always sit at
+their own bearing instead of stepping aside from the range labels, so 000
+is at the top and 180 at the bottom again. When the rings are close
+together only every second ring is labelled, the outer ring's distance
+sits beside the 000, and a range label that would cover a bearing number
+is left out. The Remote Crew OPZ map in the browser does the same. Keys
+are unchanged. Saves are v52; v38 to v51 saves still load.
+
 ## 1.3.206
 
 Release 1.3.206 rewrites the README: it is much shorter, drops outdated

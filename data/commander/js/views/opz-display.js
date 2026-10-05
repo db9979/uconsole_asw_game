@@ -8,7 +8,7 @@ import { $ } from "../core/base.js";
 import { S } from "../state/store.js";
 import { finite, hasPosition, t } from "../core/format.js";
 import { palette } from "../core/palette.js";
-import { placeText } from "./label-layout.js";
+import { fixedText, placeText } from "./label-layout.js";
 
 export const OPZ_DISPLAY_OPTIONS = [
   ["trails", ["off", "3", "6", "12"], "6"],
@@ -27,6 +27,8 @@ let settings = defaults();
 const CPA_HORIZON_MIN = 120;
 const CPA_MIN_RELATIVE_KN = 0.5;
 const CPA_DANGER_NM = 2;
+// Rings closer than this (px) label only every second ring.
+const RANGE_LABEL_H = 13;
 
 export const opzDisplay = () => settings;
 export const opzLayer = (key) => settings[key] !== "off";
@@ -104,12 +106,6 @@ export function drawOpzRings(context, labels, ox, oy, rangeNm, scale, course, wi
     for (let ring = 1; ring <= 4; ring++) {
       context.beginPath(); context.arc(ox, oy, radius * ring / 4, 0, Math.PI * 2); context.stroke();
     }
-    context.fillStyle = palette().muted;
-    context.font = "11px sans-serif";
-    for (let ring = 1; ring <= 4; ring++) {
-      const y = oy - radius * ring / 4;
-      if (y > 12 && y < height - 4) placeText(context, labels, `${+(rangeNm * ring / 4).toFixed(1)} NM`, ox + 4, y + 12);
-    }
   }
   if (opzLayer("compass") && radius >= 24) {
     context.font = "11px sans-serif";
@@ -124,7 +120,10 @@ export function drawOpzRings(context, labels, ox, oy, rangeNm, scale, course, wi
         context.fillStyle = palette().muted;
         const text = String(bearing).padStart(3, "0"), depth = 22;
         const w = context.measureText(text).width;
-        placeText(context, labels, text, ox + ux * (radius - depth) - w / 2, oy + uy * (radius - depth) + 4);
+        const tx = ox + ux * (radius - depth) - w / 2, ty = oy + uy * (radius - depth) + 4;
+        // Scale numbers stay at their bearing; one pushed aside would read
+        // as a different bearing.
+        if (tx >= 0 && ty >= 11 && tx + w <= width && ty <= height) fixedText(context, labels, text, tx, ty);
       }
     }
     if (finite(course)) {
@@ -133,6 +132,21 @@ export function drawOpzRings(context, labels, ox, oy, rangeNm, scale, course, wi
       context.fillStyle = palette().text;
       context.beginPath(); context.moveTo(ox + ux * (radius - 12), oy + uy * (radius - 12));
       context.lineTo(bx + px, by + py); context.lineTo(bx - px, by - py); context.closePath(); context.fill();
+    }
+  }
+  if (opzLayer("rings")) {
+    // Distances at the top of the rings at fixed places: only every second
+    // (or only the outer) ring when they are close, the outer one right of
+    // the scale's "000", and one whose place a scale number holds is left out.
+    context.fillStyle = palette().muted;
+    context.font = "11px sans-serif";
+    let stride = 1;
+    while (stride < 4 && radius * stride / 4 < RANGE_LABEL_H) stride *= 2;
+    const numbers = opzLayer("compass") && radius >= 90;
+    for (let ring = stride; ring <= 4; ring += stride) {
+      const y = oy - radius * ring / 4;
+      const x = ring === 4 && numbers ? ox + context.measureText("000").width / 2 + 4 : ox + 4;
+      if (y > 12 && y < height - 4) fixedText(context, labels, `${+(rangeNm * ring / 4).toFixed(1)} NM`, x, y + 12, true);
     }
   }
   context.restore();

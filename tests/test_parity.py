@@ -34,7 +34,9 @@ def test_local_radio_lists_logged_bearings_and_fixes():
     with layout.capture_text() as text:
         game.draw()
     shown = " ".join(entry["text"] for entry in text)
-    assert "H-ABC123" in shown and "045.0" in shown and "2.5" in shown
+    # On a real sea area the logged bearing is whole degrees beside the
+    # position in degrees and minutes, else tenths beside the NM position.
+    assert "H-ABC123" in shown and "045" in shown and "2.5" in shown
 
 
 def test_web_styles_use_tokens_and_the_pygame_theme_covers_chrome():

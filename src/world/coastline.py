@@ -12,6 +12,7 @@ import os
 import random
 
 from src.core import config
+from src.world.coast_index import EdgeIndex, nearest_distance
 
 _DEFAULT_PATH = os.path.join(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))), "data", "coastlines",
@@ -134,20 +135,42 @@ class Landmass:
         xs = [point[0] for point in points]
         ys = [point[1] for point in points]
         self.bounds = (min(xs), min(ys), max(xs), max(ys))
+        self._index = None
+
+    @property
+    def index(self) -> EdgeIndex:
+        """Cell index of the coast edges (built on first use)."""
+        if self._index is None:
+            self._index = EdgeIndex(self.points)
+        return self._index
+
+    def edge(self, index: int) -> tuple:
+        points = self.points
+        return points[index], points[(index + 1) % len(points)]
 
     def contains(self, x: float, y: float) -> bool:
         left, top, right, bottom = self.bounds
         if x < left or x > right or y < top or y > bottom:
             return False
-        return _point_in_poly(x, y, self.points)
+        # Ray cast over the edges of the point's row only (same parity).
+        inside = False
+        points = self.points
+        n = len(points)
+        for i in self.index.row_edges(y):
+            x1, y1 = points[i]
+            x2, y2 = points[(i + 1) % n]
+            if ((y1 > y) != (y2 > y)):
+                xt = x1 + (y - y1) / (y2 - y1) * (x2 - x1)
+                if x < xt:
+                    inside = not inside
+        return inside
 
     def contains_strict(self, x: float, y: float) -> bool:
         """Interior test which does not classify an exact coastline touch as land."""
         if not self.contains(x, y):
             return False
-        for index, first in enumerate(self.points):
-            second = self.points[(index + 1) % len(self.points)]
-            if _distance_to_segment(x, y, first, second) <= _GEOMETRY_EPSILON:
+        for index in self.index.box_edges(x, y, x, y):
+            if _distance_to_segment(x, y, *self.edge(index)) <= _GEOMETRY_EPSILON:
                 return False
         return True
 
@@ -348,9 +371,12 @@ class Coastline:
     def _distance_to_coast(self, x: float, y: float) -> float:
         nearest = self.world_size_nm
         for landmass in self.landmasses:
-            for index, first in enumerate(landmass.points):
-                second = landmass.points[(index + 1) % len(landmass.points)]
-                nearest = min(nearest, _distance_to_segment(x, y, first, second))
+            left, top, right, bottom = landmass.bounds
+            if math.hypot(max(left - x, 0.0, x - right),
+                          max(top - y, 0.0, y - bottom)) > nearest:
+                continue
+            nearest = nearest_distance(landmass.index, landmass.points, x, y,
+                                       nearest, _distance_to_segment)
         return nearest
 
     def _generate_bathymetry(self, rng: random.Random) -> dict:
@@ -486,8 +512,8 @@ class Coastline:
                     or left > path_bounds[2] or top > path_bounds[3]):
                 continue
             cuts = [(0.0, None), (1.0, None)]
-            for index, edge_first in enumerate(landmass.points):
-                edge_second = landmass.points[(index + 1) % len(landmass.points)]
+            for index in landmass.index.segment_edges(first, second):
+                edge_first, edge_second = landmass.edge(index)
                 for t in _segment_intersection_parameters(
                         first, second, edge_first, edge_second):
                     cuts.append((t, (edge_first, edge_second)))
@@ -563,8 +589,8 @@ class Coastline:
                 return True
 
             cuts = [0.0, 1.0]
-            for index, edge_first in enumerate(landmass.points):
-                edge_second = landmass.points[(index + 1) % len(landmass.points)]
+            for index in landmass.index.segment_edges(first, second):
+                edge_first, edge_second = landmass.edge(index)
                 cuts.extend(_segment_intersection_parameters(
                     first, second, edge_first, edge_second))
             cuts.sort()
@@ -744,8 +770,13 @@ class Coastline:
             points = landmass.points
             if len(points) < 2:
                 continue
-            for index, first in enumerate(points):
-                second = points[(index + 1) % len(points)]
+            left, top, right, bottom = landmass.bounds
+            if (right < cx - radius or left > cx + radius
+                    or bottom < cy - radius or top > cy + radius):
+                continue
+            for index in landmass.index.box_edges(cx - radius, cy - radius,
+                                                  cx + radius, cy + radius):
+                first, second = landmass.edge(index)
                 x1, y1 = float(first[0]), float(first[1])
                 x2, y2 = float(second[0]), float(second[1])
                 dx, dy = x2 - x1, y2 - y1

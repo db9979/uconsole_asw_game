@@ -14,6 +14,23 @@ for Windows and macOS are only offered with a SHA-256 checksum. The tests
 now also run on Windows and on Python 3.13. Gameplay and keys are
 unchanged. Saves are v53; v38 to v52 saves still load.
 
+## 1.3.214
+
+Release 1.3.214 draws finer coastlines and gives positions in degrees and
+minutes in the radio traffic too. The 128 real sea areas now come from
+Natural Earth at 1:10m instead of 1:50m: bays, fjords, islands and
+headlands are drawn down to about 0.05 NM, so the coast on the chart is
+much closer to a real chart (the map package grows to about 3 MB). On a
+real sea area HQ's task offers and reports, incident warnings, the task
+page, logged HF/DF bearings and the submarine's ESM fix now name positions
+like 54°21.4'N 010°08.2'E, still with bearing and range where HQ gives
+them, on the uConsole and in the browser. A patrol start that the finer
+coast would put in a narrow bay moves out to open water, and a submarine
+no longer sticks to the seabed at high tide. Measured fairness is
+unchanged (AI against AI 14 to 15 of 36 frigate wins, crewed submarine
+16 of 24). Keys are unchanged. Saves are v53; v38 to v52 saves still
+load, and a saved mission keeps the coast it started with.
+
 ## 1.3.213
 
 Release 1.3.213 makes an enemy submarine evade from the weapon it hears.

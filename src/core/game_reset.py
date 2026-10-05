@@ -127,6 +127,9 @@ class ResetMixin:
             # (src/core/mission_geo.py, src/core/mission_modes.py).
             start, course = placed[:2], placed[2]
         sx, sy = self.world.nearest_safe_hull(start[0], start[1], course)
+        if placed is None:
+            # A patrol start that the real coast puts in a loch moves out.
+            sx, sy = self.world.open_water_start(sx, sy, course)
         self.ship = Ship(x_nm=sx, y_nm=sy, course_deg=course)
         self.live_traffic.configure(self, self.world, self.preferences)
         self.sonar = SonarSystem(

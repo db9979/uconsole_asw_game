@@ -11,6 +11,7 @@ import math
 
 from src.core import config, detrand, free_roam
 from src.core.i18n import message
+from src.world import geo
 from src.core.incidents import (KINDS, WEATHER, IncidentBoard, segment_distance_nm,
                                  segments_cross)
 from src.enemies.animal import Animal
@@ -84,7 +85,7 @@ class IncidentsMixin:
 
     def _incident_params(self, x: float, y: float) -> dict:
         bearing = math.degrees(math.atan2(x - self.ship.x, -(y - self.ship.y))) % 360.0
-        return dict(x=f"{x:.1f}", y=f"{y:.1f}", bearing=f"{bearing:03.0f}",
+        return dict(geo.position_fields(self.world, x, y), bearing=f"{bearing:03.0f}",
                     range=f"{math.hypot(x - self.ship.x, y - self.ship.y):.1f}")
 
     def _end_incident(self, item, key: str | None = None) -> None:
@@ -140,11 +141,12 @@ class IncidentsMixin:
 
     def _announce_incident_net(self, item) -> None:
         cx, cy = (item["x"] + item["x2"]) / 2.0, (item["y"] + item["y2"]) / 2.0
-        self.hq_msg(message("runtime.incident.net", incident=self._incident_label(item),
+        fields = self._incident_params(cx, cy)
+        self.hq_msg(message(geo.position_key("runtime.incident.net", fields),
+                            incident=self._incident_label(item),
                             length=f"{config.INCIDENT_NET_LENGTH_NM:.1f}",
                             depth=f"{config.INCIDENT_NET_DEPTH_M:.0f}",
-                            minutes=f"{config.INCIDENT_NET_S / 60.0:.0f}",
-                            **self._incident_params(cx, cy)))
+                            minutes=f"{config.INCIDENT_NET_S / 60.0:.0f}", **fields))
         self.announce(message("runtime.incident.net_short",
                               incident=self._incident_label(item)), "funk", 5.0)
         result = self.plot_add("ruler", item["x"], item["y"], self._incident_label(item),
@@ -249,8 +251,9 @@ class IncidentsMixin:
         index = item["id"]
         x = item["x"] + sigma * detrand.normal(self.seed, "incident-dark-ex", index)
         y = item["y"] + sigma * detrand.normal(self.seed, "incident-dark-ey", index)
-        self.hq_msg(message("runtime.incident.dark", incident=self._incident_label(item),
-                            **self._incident_params(x, y)))
+        fields = self._incident_params(x, y)
+        self.hq_msg(message(geo.position_key("runtime.incident.dark", fields),
+                            incident=self._incident_label(item), **fields))
         ship = next((row for row in self.civilians if row.id == item["target_id"]), None)
         if (ship is not None and self.tasking.enabled
                 and len(self.tasking.open_tasks()) < config.TASK_MAX_OPEN):
@@ -283,8 +286,9 @@ class IncidentsMixin:
         return dict(x=cx, y=cy, end_t=self.sim_t + config.INCIDENT_WHALES_S)
 
     def _announce_incident_whales(self, item) -> None:
-        self.hq_msg(message("runtime.incident.whales", incident=self._incident_label(item),
-                            **self._incident_params(item["x"], item["y"])))
+        fields = self._incident_params(item["x"], item["y"])
+        self.hq_msg(message(geo.position_key("runtime.incident.whales", fields),
+                            incident=self._incident_label(item), **fields))
 
     def _progress_incident_whales(self, item) -> None:
         if self.sim_t >= item["end_t"]:
@@ -304,9 +308,9 @@ class IncidentsMixin:
                     end_t=self.sim_t + config.INCIDENT_OVERBOARD_S)
 
     def _announce_incident_overboard(self, item) -> None:
-        self.announce(message(
-            "runtime.incident.overboard", incident=self._incident_label(item),
-            x=f"{item['x']:.1f}", y=f"{item['y']:.1f}",
+        self.announce(geo.position_text(
+            "runtime.incident.overboard", self.world, item["x"], item["y"],
+            incident=self._incident_label(item),
             minutes=f"{config.INCIDENT_OVERBOARD_S / 60.0:.0f}",
             speed=f"{config.INCIDENT_OVERBOARD_PICKUP_KN:.0f}",
             pickup=f"{config.INCIDENT_OVERBOARD_PICKUP_NM:.1f}"), "bruecke", 6.0)
@@ -504,9 +508,9 @@ class IncidentsMixin:
             label = self._incident_label(item)
             if item["kind"] == "net":
                 cx, cy = (item["x"] + item["x2"]) / 2.0, (item["y"] + item["y2"]) / 2.0
-                boat.orders.event("incident_net", incident=label, x=f"{cx:.1f}",
-                                  y=f"{cy:.1f}",
-                                  depth=f"{config.INCIDENT_NET_DEPTH_M:.0f}")
+                boat.orders.event("incident_net", incident=label,
+                                  depth=f"{config.INCIDENT_NET_DEPTH_M:.0f}",
+                                  **geo.position_fields(self.world, cx, cy))
                 self.plot_add("ruler", item["x"], item["y"], label, layer=boat.plot,
                               x2=item["x2"], y2=item["y2"])
             elif item["kind"] == "front":
@@ -514,7 +518,7 @@ class IncidentsMixin:
                                   weather=message("weather.kind." + item["weather"]))
             else:
                 boat.orders.event("incident_whales", incident=label,
-                                  x=f"{item['x']:.1f}", y=f"{item['y']:.1f}")
+                                  **geo.position_fields(self.world, item["x"], item["y"]))
 
     def net_ahead(self, x1: float, y1: float, x2: float, y2: float) -> bool:
         """Whether a leg crosses a reported drift net (the chart's knowledge)."""

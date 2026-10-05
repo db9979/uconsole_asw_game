@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 """Build the checked-in 128-sector runtime catalog without GIS dependencies.
 
-Inputs are a pinned Natural Earth countries GeoJSON and a saved Wikidata SPARQL
-JSON result. Network access is deliberately outside this reproducible step.
+Two pinned, offline steps (network access is deliberately outside them):
+
+``build``: a pinned Natural Earth 1:50m countries GeoJSON and a saved Wikidata
+SPARQL JSON result select the 128 sectors (centres, countries, airbases).
+
+``refine``: that 1:50m catalog (pinned by its SHA-256; it is the catalog of
+1.3.205 in git history) and the pinned Natural Earth 1:10m countries GeoJSON
+of the same commit redraw every sector's land at the finer scale. Sector
+order, ids, centres, names, countries and airbases stay exactly as selected,
+so seeds keep their sea area; only the coast becomes finer.
 """
 
 import argparse
@@ -23,6 +31,12 @@ SIZE = 500.0
 COUNT = 128
 NE_SHA256 = "3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb"
 WD_SHA256 = "f7126b7680afe9dcbb76ee8212ac82175e5b8e586f8fb3fafe57a071a8a6ffa9"
+NE10_SHA256 = "239eec57ac17f100a11e2536cffc56752c318b50ae765b0918ff7aab4ce8f255"
+CATALOG50_SHA256 = "595b70d6b9290bfcb10a500f7d1be2162b6b5337fc7e7f0f6932dfe7bd8c6979"
+NE_COMMIT = "9380cca83db5f9aef52d5e762765100745f84b27"
+# Douglas-Peucker tolerance of the 1:10m land (NM): about 90 m, far below
+# the source's own accuracy, so the coast keeps its shape with fewer points.
+REFINE_TOLERANCE_NM = 0.05
 
 
 def sha256(path):
@@ -148,7 +162,33 @@ def load_bases(path):
     return list({base["id"]: base for base in bases}.values())
 
 
-def geometry_for(center_lon, center_lat, polygons):
+def simplify_ring(points, tolerance):
+    """Douglas-Peucker on a closed ring (iterative, deterministic)."""
+    count = len(points)
+    if count < 4:
+        return list(points)
+    first = points[0]
+    far = max(range(count), key=lambda index: (
+        (points[index][0] - first[0]) ** 2 + (points[index][1] - first[1]) ** 2, -index))
+    keep = [False] * count
+    keep[0] = keep[far] = True
+    pending = [(0, far), (far, count)]
+    while pending:
+        start, end = pending.pop()
+        a, c = points[start], points[end % count]
+        best, chosen = -1.0, None
+        for index in range(start + 1, end):
+            distance = distance_to_segment(points[index][0], points[index][1], a, c)
+            if distance > best:
+                best, chosen = distance, index
+        if chosen is not None and best > tolerance:
+            keep[chosen] = True
+            pending.append((start, chosen))
+            pending.append((chosen, end))
+    return [point for point, kept in zip(points, keep) if kept]
+
+
+def geometry_for(center_lon, center_lat, polygons, tolerance=None):
     landmasses = []
     for country, exterior in polygons:
         projected = [lonlat_to_nm(lon, lat, center_lon, center_lat, SIZE)
@@ -157,6 +197,8 @@ def geometry_for(center_lon, center_lat, polygons):
                 or max(p[1] for p in projected) < 0 or min(p[1] for p in projected) > SIZE):
             continue
         clipped = clip_polygon(projected)
+        if tolerance is not None:
+            clipped = simplify_ring(clipped, tolerance)
         area = abs(sum(clipped[i][0] * clipped[(i + 1) % len(clipped)][1]
                        - clipped[(i + 1) % len(clipped)][0] * clipped[i][1]
                        for i in range(len(clipped))) / 2.0) if len(clipped) >= 3 else 0.0
@@ -272,31 +314,67 @@ def build(polygons, bases):
     return sectors
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("natural_earth")
-    parser.add_argument("wikidata_airbases")
-    parser.add_argument("output")
-    args = parser.parse_args()
-    if sha256(args.natural_earth) != NE_SHA256 or sha256(args.wikidata_airbases) != WD_SHA256:
-        raise SystemExit("input checksum mismatch; refusing an unpinned build")
-    catalog = {
-        "schema": 1,
-        "provenance": {
-            "natural_earth": {"dataset": "Natural Earth 1:50m Admin 0 Countries v5.1.1",
-                "license": "Public Domain", "commit": "9380cca83db5f9aef52d5e762765100745f84b27",
-                "sha256": NE_SHA256, "url": "https://github.com/nvkelso/natural-earth-vector"},
-            "airbases": {"dataset": "Wikidata airbase (Q695850) coordinate query snapshot",
-                "license": "CC0 1.0", "retrieved": "2026-09-06", "sha256": WD_SHA256,
-                "query": "?item wdt:P31/wdt:P279* wd:Q695850; wdt:P625 ?coord; optional P17"},
-            "projection": "local equirectangular at sector center; 60 NM per latitude degree",
-        },
-        "sectors": build(load_land(args.natural_earth), load_bases(args.wikidata_airbases)),
+def refine(catalog, polygons):
+    """The 1:50m catalog's sectors with their land redrawn from 1:10m."""
+    sectors = []
+    for sector in catalog["sectors"]:
+        center = sector["center"]
+        landmasses = geometry_for(center["longitude"], center["latitude"],
+                                  polygons, REFINE_TOLERANCE_NM)
+        if not landmasses:
+            raise RuntimeError(f"{sector['id']} lost its land")
+        countries = sorted({land["nation"] for land in landmasses})
+        sectors.append(dict(sector, landmasses=landmasses, countries=countries,
+                            name=" / ".join(countries[:3]) + " coastal waters"))
+    return sectors
+
+
+def _provenance(dataset, sha):
+    return {
+        "natural_earth": {"dataset": dataset,
+            "license": "Public Domain", "commit": NE_COMMIT,
+            "sha256": sha, "url": "https://github.com/nvkelso/natural-earth-vector"},
+        "airbases": {"dataset": "Wikidata airbase (Q695850) coordinate query snapshot",
+            "license": "CC0 1.0", "retrieved": "2026-09-06", "sha256": WD_SHA256,
+            "query": "?item wdt:P31/wdt:P279* wd:Q695850; wdt:P625 ?coord; optional P17"},
+        "projection": "local equirectangular at sector center; 60 NM per latitude degree",
     }
+
+
+def _write(catalog, output):
     payload = json.dumps(catalog, ensure_ascii=True, separators=(",", ":"), sort_keys=True).encode()
-    with open(args.output, "wb") as target:
+    with open(output, "wb") as target:
         with gzip.GzipFile(filename="", mode="wb", fileobj=target, mtime=0) as packed:
             packed.write(payload)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    commands = parser.add_subparsers(dest="command", required=True)
+    build_args = commands.add_parser("build", help="select sectors from 1:50m and Wikidata")
+    build_args.add_argument("natural_earth")
+    build_args.add_argument("wikidata_airbases")
+    build_args.add_argument("output")
+    refine_args = commands.add_parser("refine", help="redraw the land from 1:10m")
+    refine_args.add_argument("catalog_50m")
+    refine_args.add_argument("natural_earth_10m")
+    refine_args.add_argument("output")
+    args = parser.parse_args()
+    if args.command == "build":
+        if sha256(args.natural_earth) != NE_SHA256 or sha256(args.wikidata_airbases) != WD_SHA256:
+            raise SystemExit("input checksum mismatch; refusing an unpinned build")
+        _write({"schema": 1,
+                "provenance": _provenance("Natural Earth 1:50m Admin 0 Countries v5.1.1", NE_SHA256),
+                "sectors": build(load_land(args.natural_earth),
+                                 load_bases(args.wikidata_airbases))}, args.output)
+        return
+    if sha256(args.catalog_50m) != CATALOG50_SHA256 or sha256(args.natural_earth_10m) != NE10_SHA256:
+        raise SystemExit("input checksum mismatch; refusing an unpinned build")
+    with gzip.open(args.catalog_50m, "rt", encoding="utf-8") as source:
+        catalog = json.load(source)
+    _write({"schema": 1,
+            "provenance": _provenance("Natural Earth 1:10m Admin 0 Countries v5.1.1", NE10_SHA256),
+            "sectors": refine(catalog, load_land(args.natural_earth_10m))}, args.output)
 
 
 if __name__ == "__main__":

@@ -303,6 +303,31 @@ class World:
             radius += 1.0
         raise ValueError("no hull-safe start found")
 
+    def _open_bearings(self, x_nm: float, y_nm: float, reach_nm: float = 5.0) -> int:
+        """How many of eight bearings run ``reach_nm`` without land."""
+        return sum(1 for index in range(8) if not self.land_blocks_line(
+            x_nm, y_nm, x_nm + reach_nm * math.sin(math.radians(index * 45.0)),
+            y_nm - reach_nm * math.cos(math.radians(index * 45.0))))
+
+    def open_water_start(self, x_nm: float, y_nm: float, course_deg: float,
+                         hull=DEFAULT_HULL_SPEC) -> tuple[float, float]:
+        """A start clear of a loch or a fjord: a hull-safe start with at most
+        three open bearings moves to the nearest safe spot with six or more
+        (deterministic, no randomness); otherwise it stays."""
+        if self._open_bearings(x_nm, y_nm) > 3:
+            return x_nm, y_nm
+        for step in range(1, 21):
+            radius = 2.0 * step
+            for index in range(24):
+                angle = math.radians(index * 15.0)
+                px = x_nm + radius * math.sin(angle)
+                py = y_nm - radius * math.cos(angle)
+                if (0.0 <= px <= self.size_nm and 0.0 <= py <= self.size_nm
+                        and self.hull_is_safe(px, py, course_deg, hull)
+                        and self._open_bearings(px, py) >= 6):
+                    return px, py
+        return x_nm, y_nm
+
     def thermocline_depth_m(self, x_nm: float, y_nm: float) -> float:
         """Mixed-layer depth now: seasonal base, diurnal heating, wind
         mixing and internal waves; capped above the bottom."""

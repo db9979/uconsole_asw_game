@@ -16,7 +16,29 @@ from src.ship.route import Route
 def _game(seed=31):
     game = Game(seed=seed, start_menu=False, audio_enabled=False, language="en")
     game.station = Station.BRIDGE
+    _to_open_water(game)
     return game
+
+
+def _to_open_water(game, clear_nm=9.0):
+    """Put the ship where the chart is deep for ``clear_nm`` all round, so
+    the route tests do not depend on the start's coast (deterministic)."""
+    ship, world = game.ship, game.world
+
+    def open_around(x, y):
+        return all(world.charted_depth_m(x + r * math.sin(math.radians(b)),
+                                         y - r * math.cos(math.radians(b))) > 40.0
+                   for r in (0.0, clear_nm / 3, 2 * clear_nm / 3, clear_nm)
+                   for b in range(0, 360, 15))
+
+    for radius in range(0, 120, 3):
+        for bearing in range(0, 360, 20):
+            x = ship.x + radius * math.sin(math.radians(bearing))
+            y = ship.y - radius * math.cos(math.radians(bearing))
+            if open_around(x, y):
+                ship.x, ship.y = x, y
+                return
+    raise AssertionError("no open water near the start")
 
 
 def _run(game, seconds, dt=0.5):
@@ -62,7 +84,7 @@ def test_the_ship_follows_the_route_and_a_helm_order_cancels_it():
     game = _game()
     ship = game.ship
     game.order_speed(15.0)
-    # North-west is open water at this start (east is land, see below).
+    # North-west is open water (the ship is moved clear of the coast).
     target = (ship.x - 2.1, ship.y - 2.1)
     assert game.add_route_waypoint(*target) == "ok"
     _run(game, 30.0)
@@ -108,8 +130,9 @@ def test_bridge_keys_cycle_patterns_and_clear():
 def test_right_click_on_the_chart_adds_a_waypoint():
     game = _game()
     rect = pygame.Rect(config.MAP_RECT)
+    # A short click east of the ship stays inside the open water around it.
     game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=3,
-                                         pos=(rect.centerx + 40, rect.centery)))
+                                         pos=(rect.centerx + 8, rect.centery)))
     assert game.route.active and len(game.route.points) == 1
     game.draw()
 
@@ -188,11 +211,10 @@ def _legs_clear(game):
 
 
 def _open_water_game():
-    """The ship in open water west of this start's coast, with a synthetic
-    chart island 2.5 NM east of it (radius 0.6 NM) for the planner."""
+    """The ship in open water, with a synthetic chart island 2.5 NM east of
+    it (radius 0.6 NM) for the planner."""
     game = _game()
     ship = game.ship
-    ship.x, ship.y = ship.x - 6.0, ship.y - 3.0
     ship.course = ship.target_course = 90.0
     assert game.world.hull_is_safe(ship.x, ship.y, ship.course, ship.hull_spec)
     cx, cy = ship.x + 2.5, ship.y

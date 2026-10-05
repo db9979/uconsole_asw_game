@@ -627,7 +627,9 @@ class DrawMixin:
                 and not self.game_menu_open
                 and not self.administration_open and not self.game_over):
             canvas = self._window_to_canvas(pygame.mouse.get_pos())
-            payload = self.pinned_tooltip or self.tooltip_at(canvas)
+            payload = self.pinned_tooltip or (
+                None if pointer.blocked(canvas, pointer_input.owner(self))
+                else self.tooltip_at(canvas))
             anchor = self._tooltip_anchor if self.pinned_tooltip else canvas
             if payload is not None and anchor is not None:
                 layout.draw_tooltip(s, payload, anchor,
@@ -961,10 +963,13 @@ class DrawMixin:
         The submarine side passes its boat log and readings."""
         s = self.screen
         rect = self.feed_overlay_rect()
-        shade = pygame.Surface(rect.size, pygame.SRCALPHA)
-        shade.fill((*config.COLOR_FEED_BG, 238))
-        s.blit(shade, rect.topleft)
+        # Opaque: the station underneath must not show through the text.
+        pygame.draw.rect(s, config.COLOR_FEED_BG, rect)
         pygame.draw.rect(s, config.COLOR_WARN, rect, 1)
+        # The panel takes every click on it (nothing reaches the station
+        # behind); its close box toggles the log off like F11.
+        pointer.add_blocker(rect)
+        close = game_menu.close_button(s, rect, pygame.K_F11)
         tele_w = 360
         feed = pygame.Rect(rect.x + 10, rect.y + 30, rect.w - tele_w - 30, rect.h - 40)
         tele = pygame.Rect(rect.right - tele_w - 10, rect.y + 30, tele_w, rect.h - 40)
@@ -977,7 +982,8 @@ class DrawMixin:
                                     shown=min(len(rows), visible), total=len(rows)),
                          (rect.x + 10, rect.y + 5, feed.w, 22), config.COLOR_WARN,
                          size=16)
-        layout.blit_line(s, "panel.telemetry", (tele.x, rect.y + 5, tele.w, 22),
+        layout.blit_line(s, "panel.telemetry",
+                         (tele.x, rect.y + 5, close.x - 8 - tele.x, 22),
                          config.COLOR_WARN, size=16)
         self._blit_feed_rows(feed, rows, self.feed_overlay_scroll)
         pygame.draw.line(s, config.COLOR_SONAR_RING, (tele.x - 10, feed.y),

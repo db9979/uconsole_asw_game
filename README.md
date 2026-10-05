@@ -10,22 +10,21 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.214**
+Current release: **1.3.217**
 
-Release 1.3.214 draws finer coastlines and gives positions in degrees and
-minutes in the radio traffic too. The 128 real sea areas now come from
-Natural Earth at 1:10m instead of 1:50m: bays, fjords, islands and
-headlands are drawn down to about 0.05 NM, so the coast on the chart is
-much closer to a real chart (the map package grows to about 3 MB). On a
-real sea area HQ's task offers and reports, incident warnings, the task
-page, logged HF/DF bearings and the submarine's ESM fix now name positions
-like 54°21.4'N 010°08.2'E, still with bearing and range where HQ gives
-them, on the uConsole and in the browser. A patrol start that the finer
-coast would put in a narrow bay moves out to open water, and a submarine
-no longer sticks to the seabed at high tide. Measured fairness is
-unchanged (AI against AI 14 to 15 of 36 frigate wins, crewed submarine
-16 of 24). Keys are unchanged. Saves are v53; v38 to v52 saves still
-load, and a saved mission keeps the coast it started with.
+Release 1.3.217 makes the event log (F11) readable in every colour scheme
+and lets the mouse close it. In the light "Tactical Day" scheme the log
+used to keep the night colours, so many lines were pale grey or pale blue
+on white, and the station showed through the panel. The log now uses the
+chosen scheme's colours, covers the station fully and has a close cross at
+the top right. A click on the log no longer reaches the station behind it. In the browser
+the dimmed area around an open sheet (Guide, Contacts, Lookout)
+now takes the click and closes the sheet instead of pressing a control
+behind it.
+The same scheme fix applies to the debrief timeline, the campaign map, the
+submarine's threat and radio pages, the lookout page, the weather station
+and the simulation log. Keys are unchanged. Saves are v53; v38 to v52
+saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

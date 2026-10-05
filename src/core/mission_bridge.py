@@ -464,6 +464,8 @@ class MissionBridgeMixin:
         self._sonar_audio_sequence = -1
         self._prepared_menu_mission = None
         self._frame_clock_reset = True
+        # A daily mission hands the menu back the player's own world choice.
+        self.restore_menu_choice()
         self.in_menu = True
         self.main_menu = True
         self.main_menu_sel = 0

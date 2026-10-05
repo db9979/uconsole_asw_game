@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
-import { $ } from "../core/base.js";
-import { number, t, unit } from "../core/format.js";
+import { $, damageStates } from "../core/base.js";
+import { enumText, number, t, unit } from "../core/format.js";
 import { metrics, node, yesNo } from "../views/dom.js";
 
 export function renderEngineStation(payload) {
@@ -13,7 +13,7 @@ export function renderEngineStation(payload) {
     ["engine_fuel_capacity", unit(propulsion.fuel_capacity_kg / 1000, "t")], ["engine_fuel_burn", unit(propulsion.fuel_burn_kg_h, "kg/h", 0)],
     ["engine_endurance", unit(propulsion.fuel_endurance_h, "h", 0)], ["engine_range", unit(propulsion.fuel_range_nm, "NM", 0)]]);
   const machinery = payload.machinery;
-  metrics($("engine-machinery"), [["station_state", machinery.station_state], ["speed_cap", unit(machinery.speed_cap, "kn")],
+  metrics($("engine-machinery"), [["station_state", enumText(damageStates, machinery.station_state)], ["speed_cap", unit(machinery.speed_cap, "kn")],
     ["effective_speed_cap", unit(machinery.effective_speed_cap, "kn")], ["flood", unit(machinery.flood, "%")],
     ["fire", unit(machinery.fire, "%")], ["engine_repair_teams", machinery.repair_teams.join(", ") || t("station_none")],
     ["engine_flood_trend", unit(machinery.repair_trend.flood_rate, "%/s")],

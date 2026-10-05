@@ -150,7 +150,7 @@ export function renderHelicopterStation(payload) {
     rows: payload.acoustic.history.length, bearings: payload.acoustic.broadband.length,
     bins: payload.acoustic.demon.length});
   metrics($("helicopter-asset"), [["state", heloStateText(heloStates, asset)], ["airborne", yesNo(asset.airborne)],
-    ["position", position(asset)], ["course", unit(asset.course, "\u00b0", 0)], ["fuel", unit(asset.fuel_s, "s", 0)],
+    ["position", position(asset)], ["course", unit(asset.course, "\u00b0", 0)], ["fuel", unit(finite(asset.fuel_s) ? asset.fuel_s / 60 : asset.fuel_s, "min", 0)],
     ["torpedoes", number(asset.torpedoes, 0)], ["buoys", number(asset.buoys, 0)],
     ["helicopter_hovering", yesNo(asset.hovering)], ["helicopter_dip_state", asset.dip_state],
     ["helicopter_dip_depth", unit(asset.dip_depth_m, "m", 0)],

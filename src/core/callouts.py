@@ -27,7 +27,7 @@ KEYS = ("torpedo", "contact", "breakup", "torpedo_away", "hit", "won", "lost",
         "evade", "mast_threat", "leak", "fire", "detonation_near", "detonation",
         "broadcast", "broadcast_report", "sighting_warship", "sighting_merchant",
         "sighting_aircraft", "sighting_torpedo", "sighting_unknown", "test_depth_near",
-        "test_depth_over", "hull_damage", "bridge_aircraft", "crash_dive",
+        "test_depth_over", "hull_damage", "bridge_aircraft", "crash_dive", "task",
         # The phone lookout's and periscope's own calls (src/core/phone_lookout.py).
         "lookout_contact", "lookout_ship", "lookout_warship", "lookout_merchant",
         "lookout_aircraft", "lookout_submarine", "lookout_torpedo")
@@ -45,6 +45,7 @@ _EXACT = {
     "runtime.mission.lost": "lost",
     "crew.action_stations_on": "action_stations",
     "mpa.on_station": "mpa_on_station",
+    "runtime.task.offered": "task",
 }
 _PREFIX = (("runtime.torpedo_cue.", "torpedo"),)
 # The crewed boat's own feed (CrewedBoat.notice): its sonar room and crew.

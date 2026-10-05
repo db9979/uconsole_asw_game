@@ -90,7 +90,7 @@ Was See und Wetter bewirken und was die Bildschirme davon zeigen:
 
 U-Boote weichen nach einem gehörten Ping oder Torpedo 240 s aus (weg von der Peilung des gehörten Torpedos, der Rakete oder Wasserbombe, sonst weg von der Fregatte), können einen Täuschkörper ausstoßen, lauern, schnorcheln (durch HFDF und ESM erfassbar) und pingen gelegentlich aus 15 sm oder weniger. In der Nähe der Fregatte kann ein U-Boot stattdessen zu einem kartierten Wrack innerhalb von 8 sm schleichen und sich 15-30 Minuten still daneben auf Grund legen.
 
-Ein U-Boot mit ausgefahrenem Mast oder Schnorchel, das ein Flugzeugradar (Helikopter oder Seefernaufklärer) hört, geht auf Tiefe und schiebt das Schnorcheln 15 Minuten auf. In den Fregattenszenarien (1 bis 4) torpediert ein Patrouillen-U-Boot, das 10 Minuten keinen Ping und keinen Torpedo gehört hat, mehr als 2 Torpedos behält und mehr als 10 sm von der Fregatte entfernt ist, ein Handelsschiff innerhalb von 4 sm bei etwa einem von sieben seiner minütlichen Schussfenster; jedes verlorene Handelsschiff kostet 300 Punkte.
+Ein U-Boot mit ausgefahrenem Mast oder Schnorchel, das ein Flugzeugradar (Helikopter oder Seefernaufklärer) hört, geht auf Tiefe und schiebt das Schnorcheln 15 Minuten auf. In den Fregattenszenarien (1 bis 4) torpediert ein Patrouillen-U-Boot, das 10 Minuten keinen Ping und keinen Torpedo gehört hat, mehr als 2 Torpedos behält und mehr als 10 sm von der Fregatte entfernt ist, ein Handelsschiff innerhalb von 4 sm bei etwa einem von sieben seiner minütlichen Schussfenster. Der Notruf des Handelsschiffs nennt seine ungefähre Peilung (auf 10° gerundet) und Entfernung (ganze sm) von der Fregatte; jedes verlorene Handelsschiff kostet 300 Punkte, aber nur, wenn das Sonar der Fregatte das angreifende U-Boot in den 10 Minuten davor gehört hat.
 
 U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint); Tiefenruder brauchen Fahrt (unter etwa 4 kn ändert sich die Tiefe nur langsam); das abgestrahlte Geräusch steigt je Verdopplung der Fahrt um etwa 12 dB und springt, wenn die Schraube kavitiert, wobei die Kavitationsfahrt mit der Tiefe steigt; ein Torpedoausstoß erzeugt 8 s lang ein Transientengeräusch; ein stark geflutetes U-Boot bläst einmal an und steigt schnell und laut auf; unter der Testtiefe ermüdet der Druckkörper, bei 1,5-facher Testtiefe wird er zerdrückt; ein lauerndes U-Boot hält seine Position gegen die Strömung.
 
@@ -121,9 +121,11 @@ U-Boote orten wie Sie: passive Peilungen aus dem eigenen Sonar, eine Entfernung 
 | Fregatte: keine zivilen Verluste | 500 |
 | Fregatte: Zeitbonus | bis 500 |
 | U-Boot: Fregatte versenkt | 1500 |
+| U-Boot: Versorger versenkt | 1300 |
 | U-Boot: Geleitzug versenkt | 1200 |
-| U-Boot: Durchbruch oder Meldung | 1000 |
-| U-Boot: Entkommen | 800 |
+| U-Boot: Kampfschwimmer abgesetzt oder Agenten abgeholt | 1100 |
+| U-Boot: Durchbruch, Meerenge passiert, Meldung, Heimathafen erreicht oder Lauschposten gemeldet | 1000 |
+| U-Boot: Entkommen oder Fühlung abgeschüttelt | 800 |
 | U-Boot: Überlebt | 600 |
 | U-Boot: unbeschädigt | bis 500 |
 | U-Boot: verbliebener Torpedo | je 100 |

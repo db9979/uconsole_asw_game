@@ -133,7 +133,9 @@ class TaskingMixin:
         self._task_notice("task.accepted." + task["kind"], task, 4.0)
         return True
 
-    def decline_task(self, task_id):
+    def decline_task(self, task_id, by_crew: bool = False):
+        """Decline an offered task; ``by_crew``: the radio autocrew declines
+        for an operator who is busy elsewhere, without a penalty."""
         task = self.tasking.get(task_id)
         if task is None:
             return "stale_ref"
@@ -141,7 +143,10 @@ class TaskingMixin:
             return "not_ready"
         if self.damage.station_down("radio"):
             return "radio_down"
-        self._close_task(task, "declined")
+        if by_crew:
+            self._close_task(task, "declined", notice="task.crew_declined", points=0)
+        else:
+            self._close_task(task, "declined")
         return True
 
     def _task_accept_selected(self) -> None:
@@ -156,8 +161,10 @@ class TaskingMixin:
         if result is not True:
             self.flash(message("runtime.task." + result), 2.0)
 
-    def _close_task(self, task, state: str, notice: str | None = None) -> None:
-        points = config.SCORE_TASK[task["kind"]][("done", "failed", "declined").index(state)]
+    def _close_task(self, task, state: str, notice: str | None = None,
+                    points: int | None = None) -> None:
+        if points is None:
+            points = config.SCORE_TASK[task["kind"]][("done", "failed", "declined").index(state)]
         task["state"] = state
         task["ended_t"] = self.sim_t
         task["points"] = points
@@ -254,8 +261,10 @@ class TaskingMixin:
                        name=raw_text(task["name"] or "-"), **params)
         self.hq_msg(text)
         if not requested:
+            # Said aloud on the bridge (callouts.py) with a short radio tone.
             self.announce(message("runtime.task.offered", task=self._task_label(task)),
                           "funk", 5.0)
+            self.audio.play_alert("task")
         if kind == "sar":
             self._emit_sound("alarm")
         return task

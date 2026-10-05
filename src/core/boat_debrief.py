@@ -23,8 +23,8 @@ TRACKED_MIN_S = 60.0
 
 def outcome(game, boat) -> str:
     """The mission from the boat's side: won, broke_through, reported,
-    convoy_sunk, passed, landed, supply_sunk, escaped, survived, objective,
-    trained, lost, over."""
+    convoy_sunk, passed, landed, supply_sunk, escaped, home, picked_up, elint,
+    shaken, survived, objective, trained, lost, over."""
     sub = boat.sub if boat is not None else None
     if sub is not None and (sub.sunk or sub.state == "SINKING"):
         return "lost"
@@ -51,8 +51,10 @@ def outcome(game, boat) -> str:
     extra = mission_modes.outcome(game, key)
     if extra is not None:
         return extra
-    if key == "end.reason.sub_escaped" and sub is not None and \
-            str(reason.get("params", {}).get("contact")) == str(sub.id):
+    if key in ("end.reason.sub_escaped", "end.reason.sub_escaped_unseen") \
+            and sub is not None and game._torus_dist(
+                sub.x, sub.y, *sub.start_pos) > config.MISSION_ESCAPE_RADIUS_NM:
+        # The boat itself is the one that got away.
         return "escaped"
     from src.core import custom_boat
     if custom_boat.definition(game) is not None:

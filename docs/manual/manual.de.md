@@ -1214,7 +1214,7 @@ Die **Kreuzpeilkarte** daneben ist das Koppelblatt des Funkraums, Norden oben, m
 
 ### HQ-Aufträge
 
-Neben der Jagd funkt das HQ Aufträge an das Schiff: den ersten etwa 15 bis 25 Minuten nach Beginn einer eingebauten Mission, danach einen alle 25 bis 45 Minuten, höchstens sechs je Mission und zwei gleichzeitig offen (auf freier Fahrt alle 10 bis 20 Minuten ohne Obergrenze, mit dem Überwachen eines Seegebiets als sechster Art; siehe Kapitel Referenz). Eigene Missionen erhalten keine. Jedes Angebot kommt über den Fernschreiber und auf Seite 3 (Aufträge). Innerhalb von 5 Minuten mit `A` oder `Enter` (annehmen) oder `D` (ablehnen) antworten; keine Antwort gilt als Ablehnung. Ein zerstörter Funkraum kann nicht antworten. Auf einem echten Seegebiet nennen HQ, Vorfallmeldungen, die Auftragsseite, protokollierte Peilungen und der ESM-Fix des U-Boots Positionen in Grad und Minuten (`54°21,4'N 010°08,2'E`), dazu wie bisher Peilung und Abstand vom Schiff, wo das HQ sie angibt; auf der stilisierten festen Karte bleiben sie in sm.
+Neben der Jagd funkt das HQ Aufträge an das Schiff: den ersten etwa 15 bis 25 Minuten nach Beginn einer eingebauten Mission, danach einen alle 25 bis 45 Minuten, höchstens sechs je Mission und zwei gleichzeitig offen (auf freier Fahrt alle 10 bis 20 Minuten ohne Obergrenze, mit dem Überwachen eines Seegebiets als sechster Art; siehe Kapitel Referenz). Eigene Missionen erhalten keine. Jedes Angebot kommt über den Fernschreiber und auf Seite 3 (Aufträge). Innerhalb von 5 Minuten mit `A` oder `Enter` (annehmen) oder `D` (ablehnen) antworten; keine Antwort gilt als Ablehnung. Die Brücke ruft jedes neue Angebot laut aus, mit einem kurzen Funkton. Besetzt die KI-Crew den Funkraum (Crew-Hilfe oder Autocrew), beantwortet sie ein Angebot, das 2 Minuten liegen blieb: Eine Versorgung auf See nimmt sie an, jeden anderen Auftrag lehnt sie ohne Abzug ab, weil sie das Schiff nicht dorthin steuern kann. Ein zerstörter Funkraum kann nicht antworten. Auf einem echten Seegebiet nennen HQ, Vorfallmeldungen, die Auftragsseite, protokollierte Peilungen und der ESM-Fix des U-Boots Positionen in Grad und Minuten (`54°21,4'N 010°08,2'E`), dazu wie bisher Peilung und Abstand vom Schiff, wo das HQ sie angibt; auf der stilisierten festen Karte bleiben sie in sm.
 
 - **Seenotruf (SAR):** eine Rettungsinsel mit 2 bis 6 Personen, per EPIRB mit etwa 0,5 sm Fehler gemeldet, treibt mit Strom und Wind. Die Überlebenden halten je nach Wassertemperatur durch, von 40 Minuten in Wasser unter 8 °C bis 100 Minuten über 20 °C. Die Insel wird tagsüber auf 2 sm gesichtet (nachts 3 sm an ihrem Blitzlicht) und ist für das Radar von Schiff und Hubschrauber ein kleines Echo (bei ruhiger See einige Meilen, bei rauer See weit weniger); dann schrumpft der Kreis in der Karte auf sie. Aufnehmen, indem das Schiff 4 Minuten lang innerhalb 0,25 sm mit höchstens 3 kn liegt, oder mit der Rettungswinde des Hubschraubers (`Z` innerhalb 0,1 sm: eine Minute je Person, 6 in der Kabine, nur wenn das Wetter Tauchsonar erlaubt); die Überlebenden im Hubschrauber zählen, sobald er wieder an Deck ist (Kapitel Helikopterdeck). +600 Punkte, -400 bei Verlust.
 - **Handelsschiff identifizieren:** Das HQ nennt ein Handelsschiff innerhalb 60 sm und gibt seine Position mit etwa 2 sm Fehler. Es gilt als identifiziert, sobald der Ausguck seine Identifizierung gemeldet hat oder der Helikopter bei mindestens 1 sm Sicht auf 1 sm heranfliegt. Etwa ein Drittel wird als verdächtig eingestuft: Das HQ gibt dann ein U-Boot-Datum nahe dem Schiff durch. 40 Minuten.
@@ -2138,6 +2138,8 @@ Jede Seite hat zwölf Szenarien, in ihrer eigenen Liste ab 1 gezählt: `1`-`9` u
 | 11 | Suchgruppe | Beide U-Boote versenkt | Zeitlimit / Fregatte gesunken | 45 min |
 | 12 | Freie Fahrt | Kein Sieg: Punkte sammeln, solange die Fregatte schwimmt | Fregatte gesunken / ziviler Verlust | keine |
 
+Die Patrouille (1) bringt immer ein altes Diesel-U-Boot; in etwa der Hälfte der Starts greifen dazu feindliche Flugzeuge die Fregatte mit Seezielflugkörpern an. Die freie Jagd (4) zieht Diesel-, AIP- oder Atom-U-Boote zufällig.
+
 ### U-Boot-Szenarien
 
 | Nr. | Szenario | U-Boot gewinnt | Fregatte gewinnt | Kurz |
@@ -2351,7 +2353,7 @@ Daneben stehen die Zeit des ersten Kontakts, der ersten Ortung und der Klassifiz
 
 **Einsatzbuch** (Hauptmenü): jede beendete Mission (nie eine Lektion) der Seite, die die uConsole gespielt hat, mit Datum, Mission, Realismusstufe, Ergebnis, Punkten und Minuten; der Bestwert je Mission und fünf Auszeichnungen je Seite: erster Sieg, ein Schuss ein Treffer (der Gegner mit einer einzigen Waffe versenkt), ohne Kratzer (kein Schaden), nie beschossen und Realist (ein Sieg auf der Stufe Realistisch).
 
-Die Fregatte trägt ihre Missionspunkte ein; das U-Boot zählt sein Ergebnis (Fregatte versenkt 1500, Geleitzug versenkt 1200, Durchbruch oder Meldung 1000, Entkommen 800, Überleben 600) plus bis zu 500 für ein unbeschädigtes U-Boot und 100 je übrigem Torpedo, mal dem Faktor der Stufe.
+Die Fregatte trägt ihre Missionspunkte ein; das U-Boot zählt sein Ergebnis (Fregatte versenkt 1500, Versorger 1300, Geleitzug 1200, Kampfschwimmer abgesetzt oder Agenten abgeholt 1100, Durchbruch, Meerenge, Meldung, Heimathafen oder Lauschposten 1000, Entkommen oder Fühlung abgeschüttelt 800, Überleben 600) plus bis zu 500 für ein unbeschädigtes U-Boot und 100 je übrigem Torpedo, mal dem Faktor der Stufe.
 
 `Links`/`Rechts` oder `Tab` wechseln Fregatte und U-Boot, `A` die Auswertung des Sprachmodells, `B` den neuesten Bericht, `L` das Lernen des Gegners, `Enter` oder `Esc` zurück; die Fußzeile nennt diese Tasten, ein Klick darauf drückt sie. Das Endpanel nennt die Punkte, einen neuen Bestwert und neue Auszeichnungen. Das Einsatzbuch ist `~/.u-jagd/logbook.json` (die neuesten 200 Missionen), nie Teil eines Spielstands.
 
@@ -2603,7 +2605,7 @@ Was See und Wetter bewirken und was die Bildschirme davon zeigen:
 
 U-Boote weichen nach einem gehörten Ping oder Torpedo 240 s aus (weg von der Peilung des gehörten Torpedos, der Rakete oder Wasserbombe, sonst weg von der Fregatte), können einen Täuschkörper ausstoßen, lauern, schnorcheln (durch HFDF und ESM erfassbar) und pingen gelegentlich aus 15 sm oder weniger. In der Nähe der Fregatte kann ein U-Boot stattdessen zu einem kartierten Wrack innerhalb von 8 sm schleichen und sich 15-30 Minuten still daneben auf Grund legen.
 
-Ein U-Boot mit ausgefahrenem Mast oder Schnorchel, das ein Flugzeugradar (Helikopter oder Seefernaufklärer) hört, geht auf Tiefe und schiebt das Schnorcheln 15 Minuten auf. In den Fregattenszenarien (1 bis 4) torpediert ein Patrouillen-U-Boot, das 10 Minuten keinen Ping und keinen Torpedo gehört hat, mehr als 2 Torpedos behält und mehr als 10 sm von der Fregatte entfernt ist, ein Handelsschiff innerhalb von 4 sm bei etwa einem von sieben seiner minütlichen Schussfenster; jedes verlorene Handelsschiff kostet 300 Punkte.
+Ein U-Boot mit ausgefahrenem Mast oder Schnorchel, das ein Flugzeugradar (Helikopter oder Seefernaufklärer) hört, geht auf Tiefe und schiebt das Schnorcheln 15 Minuten auf. In den Fregattenszenarien (1 bis 4) torpediert ein Patrouillen-U-Boot, das 10 Minuten keinen Ping und keinen Torpedo gehört hat, mehr als 2 Torpedos behält und mehr als 10 sm von der Fregatte entfernt ist, ein Handelsschiff innerhalb von 4 sm bei etwa einem von sieben seiner minütlichen Schussfenster. Der Notruf des Handelsschiffs nennt seine ungefähre Peilung (auf 10° gerundet) und Entfernung (ganze sm) von der Fregatte; jedes verlorene Handelsschiff kostet 300 Punkte, aber nur, wenn das Sonar der Fregatte das angreifende U-Boot in den 10 Minuten davor gehört hat.
 
 U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint); Tiefenruder brauchen Fahrt (unter etwa 4 kn ändert sich die Tiefe nur langsam); das abgestrahlte Geräusch steigt je Verdopplung der Fahrt um etwa 12 dB und springt, wenn die Schraube kavitiert, wobei die Kavitationsfahrt mit der Tiefe steigt; ein Torpedoausstoß erzeugt 8 s lang ein Transientengeräusch; ein stark geflutetes U-Boot bläst einmal an und steigt schnell und laut auf; unter der Testtiefe ermüdet der Druckkörper, bei 1,5-facher Testtiefe wird er zerdrückt; ein lauerndes U-Boot hält seine Position gegen die Strömung.
 
@@ -2634,9 +2636,11 @@ U-Boote orten wie Sie: passive Peilungen aus dem eigenen Sonar, eine Entfernung 
 | Fregatte: keine zivilen Verluste | 500 |
 | Fregatte: Zeitbonus | bis 500 |
 | U-Boot: Fregatte versenkt | 1500 |
+| U-Boot: Versorger versenkt | 1300 |
 | U-Boot: Geleitzug versenkt | 1200 |
-| U-Boot: Durchbruch oder Meldung | 1000 |
-| U-Boot: Entkommen | 800 |
+| U-Boot: Kampfschwimmer abgesetzt oder Agenten abgeholt | 1100 |
+| U-Boot: Durchbruch, Meerenge passiert, Meldung, Heimathafen erreicht oder Lauschposten gemeldet | 1000 |
+| U-Boot: Entkommen oder Fühlung abgeschüttelt | 800 |
 | U-Boot: Überlebt | 600 |
 | U-Boot: unbeschädigt | bis 500 |
 | U-Boot: verbliebener Torpedo | je 100 |

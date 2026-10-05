@@ -189,6 +189,7 @@ class ServerModeMixin:
 
     def _start_lobby_daily(self, room) -> None:
         day = daily.today()
+        self.remember_menu_choice()
         self.seed = daily.seed_for(day, room.side)
         self.scenario_key = daily.scenario_for(day, room.side)
         self.world_mode = daily.WORLD_MODE

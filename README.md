@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.216**
+Current release: **1.3.219**
 
-Release 1.3.216 puts latitude and longitude on every chart of every
+Release 1.3.219 puts latitude and longitude on every chart of every
 station. Until now only the Bridge chart and the charts beside the
 submarine's stations showed the graticule; on the uConsole the OPZ
 (CIC) plot, the radio room's cross-fix chart and the submarine's pilot

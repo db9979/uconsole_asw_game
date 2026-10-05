@@ -25,7 +25,7 @@ The listening post on the right shows the evidence source and age, the array, th
 
 ![Sonar in the Remote Crew browser](figure:web-sonar-desktop)
 
-The station has three columns: contact cards on the left, the page's display in the middle, the detail rows and listening console on the right. The listening console below the detail rows works like a control desk: lamps show ping ready (amber while a ping is out), audio and peak hold, and a north-up bearing rose shows the listening beam (amber), the baffles astern (red sector), own course and every published contact bearing. Each contact card shows a lamp, the bearing, the classification and a signal-to-noise bar; a click selects it.
+The station has three columns: contact cards on the left, the page's display in the middle, the detail rows and listening console on the right. The listening console below the detail rows works like a control desk: lamps show ping ready (amber while a ping is out), audio and peak hold, and a north-up bearing rose shows the listening beam (amber), the baffles astern (red sector), own course and every published contact bearing. Each contact card shows a lamp, the bearing, the classification and a signal-to-noise bar; a click selects it and listens to it.
 
 Mouse: the key chips under the cards act on the selected contact like their keys: `C` classify, `T` TMA, `G` release to the CIC, `M` target, and `Y`/`Shift+Y` stream or recover the towed array and the VDS (on the submarine only `C`, `T` and `M`). The Remote Crew browser shows the same rose beside its waterfalls.
 
@@ -128,7 +128,7 @@ The **class library** under the marks lists the three catalogue classes that fit
 
 Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
 
-- A click on a contact card selects the contact (on the ACTIVE page an echo row selects that echo).
+- A click on a contact card selects the contact and trains the listening bearing on it, like `Up`/`Down` followed by `Enter`: waterfall, analysis and sound follow that contact at once (on the ACTIVE page the same holds for an echo row). A contact not heard for more than 2 s is only selected.
 - The key chips under the cards act on the selected contact: `C` classify, `T` TMA, `G` release to the CIC, `M` target, `Y`/`Shift+Y` stream or recover the towed array and the VDS.
 - A click on the BROADBAND waterfall steers the listening bearing there, or onto a contact within half a beam width of the click.
 - A click on a page tab opens that page.

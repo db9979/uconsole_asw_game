@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.216
+## 1.3.219
 
-Version 1.3.216 zeigt Breite und Länge auf jeder Karte jeder Station.
+Version 1.3.219 zeigt Breite und Länge auf jeder Karte jeder Station.
 Bisher hatten nur die Brückenkarte und die Karten neben den Stationen des
 U-Boots das Gradnetz; auf der uConsole zeigten das Lagebild der OPZ, die
 Kreuzpeilkarte des Funkraums und die Lotsenkarte des U-Boots noch ihr
@@ -18,6 +18,18 @@ Entfernungsringen, Peilskala und anderen Beschriftungen frei. Die Karten
 im Browser hatten das Gradnetz schon. Die stilisierte feste Karte behält
 ihr sm-Gitter. Spielablauf, Tasten und Spielstände bleiben gleich (v53;
 v38 bis v52 laden weiter).
+
+## 1.3.218
+
+Version 1.3.218 lässt einen Klick auf eine Sonar-Kontaktkarte diesen
+Kontakt sofort abhören. Der Klick wählt den Kontakt und richtet die
+Hörpeilung auf ihn, wie Auf/Ab und danach Enter, so dass Wasserfall,
+Analyseseiten und Ton sofort zu ihm wechseln; ein Kontakt, der länger als
+2 s nicht gehört wurde, wird nur gewählt. Das gilt an der Sonarstation der
+Fregatte und im Sonarraum des U-Boots auf der uConsole und in den Desktop-Apps
+; im Browser tat ein Klick auf einen Sonarkontakt das schon. Tasten
+und Spielablauf bleiben gleich. Spielstände sind v53; v38 bis v52 werden
+weiter geladen.
 
 ## 1.3.214
 

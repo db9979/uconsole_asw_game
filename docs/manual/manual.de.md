@@ -535,7 +535,7 @@ Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpei
 
 *Sonar im Remote-Crew-Browser*
 
-Die Station hat drei Spalten: links Kontaktkarten, in der Mitte die Anzeige der Seite, rechts die Detailzeilen und die Horchkonsole. Die Horchkonsole unter den Detailzeilen ist wie ein Leitstand aufgebaut: Lampen zeigen Ping bereit (gelb, solange ein Ping läuft), Ton und Spitzenwert-Halten, und eine nordorientierte Peilrose zeigt die Horchrichtung (gelb), die toten Winkel achtern (roter Sektor), den eigenen Kurs und jede veröffentlichte Kontaktpeilung. Jede Kontaktkarte zeigt eine Lampe, die Peilung, die Klassifizierung und einen Balken für den Störabstand; ein Klick wählt den Kontakt.
+Die Station hat drei Spalten: links Kontaktkarten, in der Mitte die Anzeige der Seite, rechts die Detailzeilen und die Horchkonsole. Die Horchkonsole unter den Detailzeilen ist wie ein Leitstand aufgebaut: Lampen zeigen Ping bereit (gelb, solange ein Ping läuft), Ton und Spitzenwert-Halten, und eine nordorientierte Peilrose zeigt die Horchrichtung (gelb), die toten Winkel achtern (roter Sektor), den eigenen Kurs und jede veröffentlichte Kontaktpeilung. Jede Kontaktkarte zeigt eine Lampe, die Peilung, die Klassifizierung und einen Balken für den Störabstand; ein Klick wählt den Kontakt und richtet das Horchen auf ihn.
 
 Maus: Die Tastenchips unter den Karten wirken auf den gewählten Kontakt wie ihre Tasten: `C` klassifizieren, `T` TMA, `G` Freigabe an die OPZ, `M` Ziel, und `Y`/`Shift+Y` bringen das Schleppsonar und das VDS aus oder holen sie ein (auf dem U-Boot nur `C`, `T` und `M`). Der Remote-Crew-Browser zeigt dieselbe Rose neben seinen Wasserfällen.
 
@@ -694,7 +694,7 @@ Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am
 
 Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
 
-- Ein Klick auf eine Kontaktkarte wählt den Kontakt (auf der Seite ACTIVE wählt eine Echozeile dieses Echo).
+- Ein Klick auf eine Kontaktkarte wählt den Kontakt und richtet die Hörpeilung auf ihn, wie `Auf`/`Ab` und danach `Enter`: Wasserfall, Analyse und Ton folgen sofort diesem Kontakt (auf der Seite ACTIVE gilt das für die Echozeile). Ein Kontakt, der länger als 2 s nicht gehört wurde, wird nur gewählt.
 - Die Tastenchips unter den Karten wirken auf den gewählten Kontakt: `C` klassifizieren, `T` TMA, `G` Freigabe an die OPZ, `M` Ziel, `Y`/`Umschalt+Y` Schleppsonar und VDS ausbringen oder einholen.
 - Ein Klick auf den BROADBAND-Wasserfall richtet die Hörpeilung dorthin oder auf einen Kontakt, der höchstens eine halbe Keulenbreite vom Klick entfernt liegt.
 - Ein Klick auf einen Seitenreiter öffnet diese Seite.

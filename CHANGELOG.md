@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.207
+## 1.3.208
 
-Release 1.3.207 shows the charts in real geographic coordinates. On a real
+Release 1.3.208 shows the charts in real geographic coordinates. On a real
 sea area the chart grid now shows meridians and parallels in degrees and
 minutes, finer as you zoom in (5 degrees down to 0.1 minute), the chart's top
 left shows own position such as 53°19.9'N 007°00.9'E (on the submarine its
@@ -15,6 +15,17 @@ it, on the uConsole and in the browser alike. The grid numbers now stay
 readable over land. Ranges, rings and the scale stay in NM and the game plays
 as before; the stylized fixed chart keeps its NM grid. Keys are unchanged.
 Saves are v52; v38 to v51 saves still load.
+
+## 1.3.207
+
+Release 1.3.207 keeps the OPZ chart's labels in place when you zoom far out.
+The numbers of the bearing scale around the radar rings now always sit at
+their own bearing instead of stepping aside from the range labels, so 000
+is at the top and 180 at the bottom again. When the rings are close
+together only every second ring is labelled, the outer ring's distance
+sits beside the 000, and a range label that would cover a bearing number
+is left out. The Remote Crew OPZ map in the browser does the same. Keys
+are unchanged. Saves are v52; v38 to v51 saves still load.
 
 ## 1.3.206
 

@@ -73,7 +73,7 @@ Page 5 (Display) sets what the OPZ chart draws; it changes nothing in the simula
 - **Track trails:** off, 3, 6 or 12 minutes of earlier published positions behind each track (one point every 30 s, oldest faintest; they start anew after a load).
 - **Vectors:** the motion vector shows the distance run in 3, 6, 12 or 30 minutes.
 - **Labels:** full, short (six characters) or off.
-- **Bearing scale:** ticks every 10° and numbers every 30° on the outer radar ring, with a mark for the own course.
+- **Bearing scale:** ticks every 10° and numbers every 30° on the outer radar ring, with a mark for the own course. The numbers always stand at their bearing; when the chart is zoomed far out the rings carry their distance only every second ring, and a distance that would cover a bearing number is left out.
 - **Range rings**, **bearing lines** of bearing-only reports, **furthest-on** circles, **depths + grid** of the chart and the **radar afterglow** each switch on and off.
 - **CPA of selected:** for the selected track with a position, course and speed, both run on to the closest point of approach; a line joins the two points with distance and time (red under 2 NM). It uses only the track's reported motion, so it is only as good as that report.
 

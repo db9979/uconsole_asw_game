@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.207**
+Current release: **1.3.208**
 
-Release 1.3.207 shows the charts in real geographic coordinates. On a real
+Release 1.3.208 shows the charts in real geographic coordinates. On a real
 sea area the chart grid now shows meridians and parallels in degrees and
 minutes, finer as you zoom in (5 degrees down to 0.1 minute), the chart's top
 left shows own position such as 53°19.9'N 007°00.9'E (on the submarine its

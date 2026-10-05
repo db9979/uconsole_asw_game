@@ -173,6 +173,51 @@ def test_opz_chart_labels_do_not_overlap(language):
 
 
 @pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("theme", ["day", "night"])
+def test_opz_bearing_scale_numbers_stay_at_their_bearing(language, theme):
+    """Reported zoomed far out: "000" left of the ring, "030" outside it,
+    "180" by the centre, because the scale numbers stepped aside from the
+    "40 NM" ring label like movable labels. Every number now sits at its
+    bearing and no ring or scale label covers another at any ring size."""
+    import math
+    from src.ui.stations import opz, opz_display_view
+    prefs = Preferences(language=language, fullscreen=False, audio=False,
+                        large_text=False, tooltips=False, theme=theme)
+    game = Game(seed=1234, start_menu=False, show_splash=False,
+                audio_enabled=False, preferences=prefs)
+    game.msg_until = 0.0
+    game.station = Station.OPZ
+    game.station_page = 0
+    game.surface_radar_on = True
+    game.set_opz_range(40.0)
+    game.draw()
+    with layout.bottom_panel_regions(game.bottom_panel_mode()):
+        chart = pygame.Rect(opz.opz_regions(config.OPZ_STATION_RECT)["chart"])
+    for radius in (40, 60, 70, 90, 95, 110, 130, 160, 200):
+        game.opz_map_view.scale = radius / 40.0
+        with layout.capture_text() as traced:
+            game.draw()
+        view = opz._opz_view(game, chart)
+        cx, cy = view.world_to_screen(game.ship.x, game.ship.y)
+        scale = [item for item in traced if chart.collidepoint(item["ink"].center)
+                 and (item["text"].endswith(" NM") or (
+                     len(item["text"]) == 3 and item["text"].isdigit()))]
+        numbers = {item["text"]: item for item in scale if not item["text"].endswith("NM")}
+        if opz_display_view.compass_numbers_shown(radius):
+            assert len(numbers) == 12, (radius, sorted(numbers))
+        for text, item in numbers.items():
+            bearing = math.radians(int(text))
+            dx, dy = item["ink"].centerx - cx, item["ink"].centery - cy
+            assert abs(math.hypot(dx, dy) - (radius - 20)) < 8, (radius, text, item["ink"])
+            assert abs(dx - math.sin(bearing) * math.hypot(dx, dy)) < 8, (radius, text)
+            assert abs(dy + math.cos(bearing) * math.hypot(dx, dy)) < 8, (radius, text)
+        assert any(item["text"].startswith("40") for item in scale), radius
+        overlaps = [(a["text"], b["text"]) for a, b in itertools.combinations(scale, 2)
+                    if a["ink"].colliderect(b["ink"])]
+        assert overlaps == [], (radius, overlaps)
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
 @pytest.mark.parametrize("station", [Station.BRIDGE, Station.HELICOPTER])
 @pytest.mark.parametrize("hover", [False, True])
 def test_helicopter_label_and_vector_clear_a_plot_circle(language, station, hover):

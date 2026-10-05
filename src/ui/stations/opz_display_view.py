@@ -22,6 +22,8 @@ COMPASS_TICK_PX = 5
 COMPASS_MAJOR_PX = 9
 # Below this ring radius the scale would be a blur: drawn without numbers.
 COMPASS_NUMBERS_MIN_PX = 90
+# Height of a range ring's distance label.
+RANGE_LABEL_H = 18
 # A CPA closer than this is drawn in the danger colour.
 CPA_DANGER_NM = 2.0
 CHIP_SIZE = 11
@@ -33,13 +35,38 @@ def _mix(color, background, weight: float):
     return tuple(int(round(b + (c - b) * weight)) for c, b in zip(color[:3], background[:3]))
 
 
+def compass_numbers_shown(radius: float) -> bool:
+    """Whether the bearing scale on a ring of ``radius`` carries numbers."""
+    return radius >= COMPASS_NUMBERS_MIN_PX
+
+
+def range_label_stride(radius: float, rings: int = 4) -> int:
+    """Every how many range rings carry their distance: rings closer than a
+    line of text label only every second (or only the outer) ring, so the
+    labels never have to be pushed aside."""
+    height = max(RANGE_LABEL_H, layout.font(layout.MIN_OPERATIONAL_FONT).get_linesize())
+    stride = 1
+    while stride < rings and radius * stride / rings < height + 2:
+        stride *= 2
+    return stride
+
+
+def range_label_x(center_x: float, radius: float, ring_index: int, rings: int = 4) -> int:
+    """Left edge of a range ring's distance label beside the north axis; the
+    outer ring's label moves right of the scale's "000" when that is shown."""
+    if ring_index == rings and compass_numbers_shown(radius):
+        face = layout.font(layout.MIN_OPERATIONAL_FONT)
+        return int(center_x + (layout.text_width(face, "000") + 2) / 2 + 4)
+    return int(center_x) + 4
+
+
 def draw_compass(surface, chart: pygame.Rect, center, radius: float, course: float) -> None:
     """Bearing scale on the outer radar ring and the own course mark."""
     if radius < 24:
         return
     cx, cy = center
     color = config.COLOR_SONAR_RING
-    numbers = radius >= COMPASS_NUMBERS_MIN_PX
+    numbers = compass_numbers_shown(radius)
     for bearing in range(0, 360, 10):
         rad = math.radians(bearing)
         ux, uy = math.sin(rad), -math.cos(rad)
@@ -57,10 +84,14 @@ def draw_compass(surface, chart: pygame.Rect, center, radius: float, course: flo
             width = layout.text_width(face, text) + 2
             height = face.get_linesize()
             depth = COMPASS_MAJOR_PX + 4 + height * .6
-            tx = cx + ux * (radius - depth) - width / 2
-            ty = cy + uy * (radius - depth) - height / 2
-            label_layout.blit_line(surface, text, (int(tx), int(ty), width, height),
-                                   config.COLOR_TEXT_DIM, size=layout.MIN_OPERATIONAL_FONT)
+            box = pygame.Rect(int(cx + ux * (radius - depth) - width / 2),
+                              int(cy + uy * (radius - depth) - height / 2), width, height)
+            if not chart.contains(box):
+                continue
+            # Scale numbers stay at their bearing: a number pushed aside by
+            # another label would read as a different bearing.
+            label_layout.blit_fixed(surface, text, box, config.COLOR_TEXT_DIM,
+                                    size=layout.MIN_OPERATIONAL_FONT)
     # Own course: a small filled wedge pointing inward from the ring.
     rad = math.radians(course)
     ux, uy = math.sin(rad), -math.cos(rad)

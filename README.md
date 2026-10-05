@@ -10,12 +10,20 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.206**
+Current release: **1.3.207**
 
-Release 1.3.206 rewrites this README: it is much shorter, drops outdated
-details and points to the manual and the changelog for everything else. The
-game itself is unchanged. Keys are unchanged. Saves are v52; v38 to v51
-saves still load.
+Release 1.3.207 makes the browser stations show more without scrolling. In
+the browser the stations use the same keys as on the uConsole (for example
+C/V/D for course, speed and depth, Shift+A to ping, Ctrl+Enter to fire), and
+every key is shown as a blue key cap on its button. The empty contact detail
+and an empty contact list fold away, the mission overview is one "Orders"
+line, and empty values show a grey dash. On the submarine the radio log and
+the tubes are readable again and the tubes are shown as cards. The frigate's
+weapons station numbers its tubes from 1 and shows the firing chain step by
+step. Country names on the chart are shown once per country, in German or
+English, also on the uConsole. On a phone the top bar folds into a ☰ menu.
+Keys on the uConsole are unchanged. Saves are v52; v38 to v51 saves still
+load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

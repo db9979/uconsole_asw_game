@@ -10,13 +10,21 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.206**
+Aktuelle Version: **1.3.207**
 
-Version 1.3.206 schreibt diese README neu: sie ist viel kürzer, lässt
-veraltete Einzelheiten weg und verweist für alles Weitere auf das Handbuch
-und das Änderungsprotokoll. Das Spiel selbst ist unverändert. Die Tasten
-sind unverändert. Spielstände sind v52; Spielstände v38 bis v51 laden
-weiterhin.
+Version 1.3.207 lässt die Browser-Stationen mehr ohne Scrollen zeigen. Im
+Browser haben die Stationen dieselben Tasten wie auf dem uConsole (zum
+Beispiel C/V/D für Kurs, Fahrt und Tiefe, Umschalt+A für den Ping,
+Strg+Enter zum Feuern), und jede Taste steht als blaue Tastenkappe auf ihrer
+Schaltfläche. Die leere Kontaktdetail-Spalte und eine leere Kontaktliste
+klappen weg, die Missionsübersicht ist eine Zeile "Auftrag", und leere Werte
+zeigen einen grauen Strich. Auf dem U-Boot sind Funklog und Rohre wieder
+lesbar, die Rohre erscheinen als Karten. Die Waffenstation der Fregatte zählt
+ihre Rohre ab 1 und zeigt die Feuerkette Schritt für Schritt. Ländernamen auf
+der Karte stehen einmal je Land, auf Deutsch oder Englisch, auch auf dem
+uConsole. Auf dem Handy klappt die obere Leiste in ein ☰-Menü. Die Tasten auf
+dem uConsole sind unverändert. Spielstände sind v52; Spielstände v38 bis v51
+laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

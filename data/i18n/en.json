@@ -2192,7 +2192,7 @@
   "difficulty.air_raid_freq_mult": "Air raid frequency",
   "difficulty.time_limit_s": "Time limit (s)",
   "scenario.patrol.title": "Patrol",
-  "scenario.patrol.brief": "Mission: Monitor the assigned operational sector. An old diesel hunter was reported in the western sector. Objective: identify, classify, and sink it without civilian losses.",
+  "scenario.patrol.brief": "Mission: Monitor the assigned operational sector. An old diesel submarine was reported in the western sector; enemy aircraft may attack with anti-ship missiles. Objective: identify, classify, and sink it without civilian losses.",
   "scenario.patrol.win": "Target submarine sunk",
   "scenario.patrol.lose": "Target escapes / time limit / frigate sunk / civilian loss",
   "scenario.double.title": "Double hunt",

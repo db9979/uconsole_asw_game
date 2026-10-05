@@ -19,6 +19,8 @@ Jede Seite hat zwölf Szenarien, in ihrer eigenen Liste ab 1 gezählt: `1`-`9` u
 | 11 | Suchgruppe | Beide U-Boote versenkt | Zeitlimit / Fregatte gesunken | 45 min |
 | 12 | Freie Fahrt | Kein Sieg: Punkte sammeln, solange die Fregatte schwimmt | Fregatte gesunken / ziviler Verlust | keine |
 
+Die Patrouille (1) bringt immer ein altes Diesel-U-Boot; in etwa der Hälfte der Starts greifen dazu feindliche Flugzeuge die Fregatte mit Seezielflugkörpern an. Die freie Jagd (4) zieht Diesel-, AIP- oder Atom-U-Boote zufällig.
+
 ## U-Boot-Szenarien {#scen-submarine}
 
 | Nr. | Szenario | U-Boot gewinnt | Fregatte gewinnt | Kurz |

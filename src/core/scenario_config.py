@@ -63,7 +63,8 @@ FREE_ATTACK_SIGMA_NM = 1.5
 MISSION_TYPES = {
     "patrouille": dict(
         name="Patrouille", weight=40, subs=1,
-        sub_types=["diesel_alt", "aip_modern", "ssn"],
+        # Scenario 1's brief promises an old diesel boat (Free Hunt stays random).
+        sub_types=["diesel_alt"],
         animals=(2, 4), civilians=(2, 3), asm=(0, 1), warships=(0, 1),
         time_limit_s=10800, short_time_limit_s=1800, win="sink"),
     "doppeljagd": dict(
@@ -428,8 +429,9 @@ SCENARIOS = {
         ship_start=(300.0, 380.0), ship_course=300.0,
         # Kein Seename hier: Welt/Seed sind im Menü frei wählbar (W/R), die
         # tatsächliche Karte kann von jeder Namensnennung abweichen.
-        briefing=("Auftrag: Zugewiesenen Einsatzsektor überwachen. Ein alter Diesel- "
-                  "Jäger wurde im westlichen Sektor gemeldet. Ziel: Identifizieren, "
+        briefing=("Auftrag: Zugewiesenen Einsatzsektor überwachen. Ein altes Diesel-"
+                  "U-Boot wurde im westlichen Sektor gemeldet; feindliche Flugzeuge "
+                  "können mit Seezielflugkörpern angreifen. Ziel: Identifizieren, "
                   "klassifizieren und versenken – ohne zivile Verluste."),
         win_text="Ziel-U-Boot versenkt",
         lose_text="Ziel entkommt / Zeitlimit / Fregatte gesunken / ziviler Verlust",

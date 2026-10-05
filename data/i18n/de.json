@@ -2192,7 +2192,7 @@
   "difficulty.air_raid_freq_mult": "Luftangriffs-Häufigkeit",
   "difficulty.time_limit_s": "Zeitlimit (s)",
   "scenario.patrol.title": "Patrouille",
-  "scenario.patrol.brief": "Auftrag: Zugewiesenen Einsatzsektor überwachen. Ein alter Diesel-Jäger wurde im westlichen Sektor gemeldet. Ziel: Identifizieren, klassifizieren und versenken - ohne zivile Verluste.",
+  "scenario.patrol.brief": "Auftrag: Zugewiesenen Einsatzsektor überwachen. Ein altes Diesel-U-Boot wurde im westlichen Sektor gemeldet; feindliche Flugzeuge können mit Seezielflugkörpern angreifen. Ziel: Identifizieren, klassifizieren und versenken - ohne zivile Verluste.",
   "scenario.patrol.win": "Ziel-U-Boot versenkt",
   "scenario.patrol.lose": "Ziel entkommt / Zeitlimit / Fregatte gesunken / ziviler Verlust",
   "scenario.double.title": "Doppeljagd",

@@ -2137,6 +2137,8 @@ Each side has twelve scenarios, counted from 1 in its own list: `1`-`9` and `0` 
 | 11 | Search group | Both submarines sunk | Time limit / frigate sunk | 45 min |
 | 12 | Free patrol | No victory: collect points as long as the frigate stays afloat | Frigate sunk / civilian loss | none |
 
+The patrol (1) always brings an old diesel submarine; in about half of the starts enemy aircraft also attack the frigate with anti-ship missiles. The free hunt (4) draws diesel, AIP or nuclear submarines at random.
+
 ### Submarine scenarios
 
 | No. | Scenario | Submarine wins | Frigate wins | Short |

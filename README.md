@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.207**
+Current release: **1.3.208**
 
-Release 1.3.207 fixes physics and weapon faults the code review found.
+Release 1.3.208 fixes physics and weapon faults the code review found.
 In sea state 5 and above the frigate now gets under way from a standstill
 (it used to stay at 0 kn). A submarine that changes its depth order mid-dive
 no longer jumps to the new depth. The helicopter's MAD looks once per

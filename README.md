@@ -12,20 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.205**
+Current release: **1.3.206**
 
-Release 1.3.205 fixes what a full code review found, without changing how
-the game plays. A damaged or hand-edited save is now refused instead of
-closing the game, and a failed load no longer changes the running mission.
-On the uConsole the game stutters less: the sound picture is recomputed
-faster, rain on the chart is drawn once instead of every frame and is now
-visible in the light scheme, status texts and tooltips reuse their rendered
-text, and a sound heard from a new direction is no longer synthesized
-again. In the browser, game sounds and callouts are no longer lost when the
-host opens a menu. The sonar waterfall's tooltip and time label now match
-the shortened history (Shift+H). A broken update download can be retried,
-and the Windows program writes its crash log again. Keys are unchanged.
-Saves are v52; v38 to v51 saves still load.
+Release 1.3.206 keeps the OPZ chart's labels in place when you zoom far out.
+The numbers of the bearing scale around the radar rings now always sit at
+their own bearing instead of stepping aside from the range labels, so 000
+is at the top and 180 at the bottom again. When the rings are close
+together only every second ring is labelled, the outer ring's distance
+sits beside the 000, and a range label that would cover a bearing number
+is left out. The Remote Crew OPZ map in the browser does the same. Keys
+are unchanged. Saves are v52; v38 to v51 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

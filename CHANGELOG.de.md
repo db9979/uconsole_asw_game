@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.206
+
+Version 1.3.206 lässt die Beschriftungen der OPZ-Karte an ihrem Platz, wenn
+weit herausgezoomt ist. Die Zahlen der Peilskala um die Radarringe stehen
+jetzt immer bei ihrer Peilung, statt den Entfernungsangaben auszuweichen;
+000 steht wieder oben und 180 unten. Liegen die Ringe eng beieinander, ist
+nur jeder zweite Ring beschriftet, die Entfernung des äußeren Rings steht
+neben der 000, und eine Entfernungsangabe, die eine Peilzahl verdecken
+würde, entfällt. Die OPZ-Karte der Remote Crew im Browser macht es genauso.
+Die Tasten bleiben gleich. Spielstände sind v52; Spielstände v38 bis v51
+lassen sich weiter laden.
+
 ## 1.3.205
 
 Version 1.3.205 behebt, was eine vollständige Code-Prüfung gefunden hat,

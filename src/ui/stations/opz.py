@@ -884,20 +884,26 @@ def draw_opz_view(game, tr=None) -> None:
             if layer("rings") and chart.left <= own_x <= chart.right and y0 < y1:
                 pygame.draw.line(s, config.COLOR_SONAR_RING,
                                  (int(own_x), int(y0)), (int(own_x), int(y1)), 1)
-            # Range labels at the top of each ring, beside the north axis.
-            for ring_index in range(1, 5) if layer("rings") else ():
-                rr = radar_radius * ring_index / 4.0
-                if not chart.top - 18 <= own_y - rr <= chart.bottom:
-                    continue
-                label_layout.blit_line(
-                    s, message("map.tooltip.range_value",
-                               range=f"{max_nm * ring_index / 4.0:g}"),
-                    (int(own_x) + 4, int(own_y - rr) + 1, 80, 18),
-                    config.COLOR_TEXT_DIM, size=layout.MIN_OPERATIONAL_FONT)
             if layer("compass") and _ring_visible((own_x, own_y), radar_radius, chart):
                 # Bearing scale on the outer ring with the own course mark.
                 opz_display_view.draw_compass(s, chart, (own_x, own_y), radar_radius,
                                               game.ship.course)
+            # Range labels at the top of each ring, beside the north axis,
+            # at fixed places (only every second ring when they are close; a
+            # label whose place a scale number holds is left out).
+            stride = opz_display_view.range_label_stride(radar_radius)
+            for ring_index in range(stride, 5, stride) if layer("rings") else ():
+                rr = radar_radius * ring_index / 4.0
+                if not chart.top - 18 <= own_y - rr <= chart.bottom:
+                    continue
+                label_layout.blit_fixed(
+                    s, message("map.tooltip.range_value",
+                               range=f"{max_nm * ring_index / 4.0:g}"),
+                    (opz_display_view.range_label_x(
+                        own_x, radar_radius if layer("compass") else 0.0, ring_index),
+                     int(own_y - rr) + 1, 80, opz_display_view.RANGE_LABEL_H),
+                    config.COLOR_TEXT_DIM, size=layout.MIN_OPERATIONAL_FONT,
+                    skip_if_taken=True)
 
             if station_live and game.surface_radar_on:
                 coast_range = min(max_nm, game.radar_effective_range("surface"))

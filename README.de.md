@@ -14,22 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.205**
+Aktuelle Version: **1.3.206**
 
-Version 1.3.205 behebt, was eine vollständige Code-Prüfung gefunden hat,
-ohne das Spiel zu verändern. Ein beschädigter oder von Hand bearbeiteter
-Spielstand wird jetzt abgewiesen, statt das Spiel zu beenden, und ein
-fehlgeschlagenes Laden verändert die laufende Mission nicht mehr. Auf der
-uConsole ruckelt es weniger: das Schallbild wird schneller berechnet, Regen
-auf der Karte wird einmal statt in jedem Bild gezeichnet und ist im hellen
-Farbschema jetzt sichtbar, Statuszeilen und Tooltips verwenden ihren
-gezeichneten Text wieder, und ein Geräusch aus einer neuen Richtung wird
-nicht neu erzeugt. Im Browser gehen Spielgeräusche und Durchsagen nicht mehr
-verloren, wenn der Host ein Menü öffnet. Tooltip und Zeitangabe des
-Sonar-Wasserfalls passen jetzt zum verkürzten Verlauf (Shift+H). Ein
-abgebrochener Update-Download lässt sich erneut starten, und das
-Windows-Programm schreibt sein Absturzprotokoll wieder. Tasten bleiben
-gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+Version 1.3.206 lässt die Beschriftungen der OPZ-Karte an ihrem Platz, wenn
+weit herausgezoomt ist. Die Zahlen der Peilskala um die Radarringe stehen
+jetzt immer bei ihrer Peilung, statt den Entfernungsangaben auszuweichen;
+000 steht wieder oben und 180 unten. Liegen die Ringe eng beieinander, ist
+nur jeder zweite Ring beschriftet, die Entfernung des äußeren Rings steht
+neben der 000, und eine Entfernungsangabe, die eine Peilzahl verdecken
+würde, entfällt. Die OPZ-Karte der Remote Crew im Browser macht es genauso.
+Die Tasten bleiben gleich. Spielstände sind v52; Spielstände v38 bis v51
+lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

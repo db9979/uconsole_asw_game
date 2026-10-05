@@ -65,7 +65,8 @@ def seeker_detects(weapon, candidate, distance_nm: float, kind: str,
     if distance_nm > torpedo_dyn.SEEKER_MAX_NM[kind]:
         return False
     gap = abs(getattr(candidate, "depth", weapon.depth) - weapon.depth)
-    if gap > torpedo_dyn.SEEKER_DEPTH_GATE_M:
+    # The depth gate limits acquisition; a held target is tracked in depth.
+    if not held and gap > torpedo_dyn.SEEKER_DEPTH_GATE_M:
         return False
     if distance_nm > 0.02:
         bearing = math.degrees(math.atan2(candidate.x - weapon.x,

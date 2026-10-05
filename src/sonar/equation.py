@@ -435,7 +435,7 @@ def equivalent_range_nm(distance_nm: float, signal_excess_db: float) -> float:
 # correlated over tens of seconds, so a contact near the detection edge comes
 # and goes instead of switching on at a hard range.  Stateless: the fade is
 # a pure function of (seed, observer, source, time) via ``detrand``.
-FADING_SIGMA_DB = 4.0
+FADING_SIGMA_DB = 3.0
 FADING_EPOCH_S = 40.0
 FADING_LIMIT_DB = 2.5 * FADING_SIGMA_DB
 

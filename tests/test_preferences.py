@@ -6,6 +6,7 @@ from src.core.preferences import (Preferences, default_preferences_path,
 
 def test_required_default_preferences_path(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))   # Path.home() on Windows
     # conftest isolates the session; the wrapped function is the real one.
     real = getattr(default_preferences_path, "__wrapped__", default_preferences_path)
     assert real() == tmp_path / ".u-jagd" / "settings.json"
@@ -150,3 +151,10 @@ def test_frame_rate_round_trip_and_invalid_values(tmp_path):
         path.write_text(json.dumps({"language": "en", "frame_rate": bad}),
                         encoding="utf-8")
         assert load_preferences(path).frame_rate == 30
+
+
+def test_windows_default_graphics_keeps_the_line_switch_in_step(monkeypatch):
+    from src.core import preferences as preferences_module
+    monkeypatch.setattr(preferences_module, "_default_graphics", lambda: "full")
+    fresh = preferences_module.Preferences()
+    assert fresh.graphics == "full" and fresh.aa_lines is True

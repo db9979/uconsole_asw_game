@@ -7512,7 +7512,7 @@
   "commander.web.advisor_order_applied": "Order sent.",
   "commander.web.advisor_order_discarded": "Order discarded.",
   "commander.web.advisor_order_done": "Executive officer: {count} order(s) given.",
-  "commander.web.advisor_order_partial": "Executive officer: {count} order(s) given; the others belong to another station.",
+  "commander.web.advisor_order_partial": "Executive officer: {count} order(s) given; the others belong to another station or were not carried out.",
   "commander.web.advisor_report_pending": "The language model is writing the after-action report ...",
   "commander.web.debrief_report": "After-action report (language model)",
   "commander.web.missions_generate_label": "Describe a mission (language model, optional)",

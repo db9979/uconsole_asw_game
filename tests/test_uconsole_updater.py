@@ -11,6 +11,10 @@ import time
 
 import pytest
 
+if os.name != "posix":
+    # The uConsole helpers (fcntl, root checks, executable bits) are Linux-only.
+    pytest.skip("uConsole (Linux) only", allow_module_level=True)
+
 ROOT = Path(__file__).parents[1]
 UPDATER = ROOT / "packaging/uconsole/u_jagd_updater.py"
 LAUNCH = ROOT / "packaging/uconsole/u-jagd-launch"

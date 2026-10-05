@@ -15,7 +15,8 @@ ASSET_URL = ("https://github.com/db9979/uconsole_asw_game/releases/download/"
 
 
 def _payload(tag="v9.9.9", **asset):
-    entry = {"name": update.ASSET_NAME, "browser_download_url": ASSET_URL, "size": 4}
+    entry = {"name": update.ASSET_NAME, "browser_download_url": ASSET_URL, "size": 4,
+             "digest": "sha256:" + "a" * 64}
     entry.update(asset)
     return {"tag_name": tag, "draft": False, "prerelease": False,
             "html_url": "https://github.com/db9979/uconsole_asw_game/releases/tag/v9.9.9",
@@ -51,7 +52,8 @@ def test_only_a_newer_published_windows_asset_is_offered():
                     {"browser_download_url": "https://evil.example/x.exe"},
                     {"browser_download_url": "https://user@github.com/x.exe"},
                     {"size": 0}, {"size": update.MAX_ASSET_BYTES + 1}, {"size": "4"},
-                    {"digest": "md5:abc"}, {"digest": "sha256:XYZ"}):
+                    {"digest": "md5:abc"}, {"digest": "sha256:XYZ"},
+                    {"digest": None}):
         assert update.select_release(_payload(**hostile), "1.3.9") is None
     assert update.select_release([], "1.3.9") is None
 
@@ -347,6 +349,12 @@ def test_workflow_removes_older_releases_and_their_tags():
 
     workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows"
                 / "windows.yml").read_text(encoding="utf-8")
+    publish = workflow.split("\n  publish:\n", 1)[1]
+    # A red main is never published: the job waits for this commit's tests.
+    wait = publish.split("- name: Wait for the tests of this commit", 1)[1]
+    assert "actions/workflows/tests.yml/runs?head_sha=$GITHUB_SHA" in wait
+    assert '"completed success") exit 0' in wait
+    assert publish.index("Wait for the tests") < publish.index("gh release create")
     step = workflow.split("- name: Remove older releases and tags", 1)[1]
     assert "releases?per_page=100" in step and 'gh release delete "$old"' in step
     assert "tags?per_page=100" in step

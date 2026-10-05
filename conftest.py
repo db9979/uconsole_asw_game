@@ -85,4 +85,7 @@ def isolated_saves(tmp_path, monkeypatch):
     monkeypatch.setattr(
         preferences_module, "default_preferences_path",
         lambda: saves / "settings.json")
+    # The default graphics level follows the platform ("full" on Windows);
+    # tests run against the uConsole default on every runner.
+    monkeypatch.setattr(preferences_module, "_default_graphics", lambda: "normal")
     return saves

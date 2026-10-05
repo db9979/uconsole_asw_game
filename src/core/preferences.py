@@ -42,10 +42,11 @@ class Preferences:
     theme: str = "night"
     # Graphics level (src/ui/quality.py): "low", "normal" (uConsole default)
     # or "full" (Windows default, adds anti-aliased chart lines).
-    graphics: str = field(default_factory=_default_graphics)
+    graphics: str = field(default_factory=lambda: _default_graphics())
     # Legacy switch of the anti-aliased lines, kept in step with "full" so an
-    # older build reading this file sees the same choice.
-    aa_lines: bool = False
+    # older build reading this file sees the same choice (also by default:
+    # on Windows a fresh "full" reloads as aa_lines True).
+    aa_lines: bool = field(default_factory=lambda: _default_graphics() == "full")
     # Spoken crew reports through an installed espeak-ng (silent without).
     speech: bool = False
     # Noise discipline: the uConsole's own microphone (level only, opt-in).

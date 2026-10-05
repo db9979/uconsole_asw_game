@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.206
+
+Version 1.3.206 zeigt die Karten in echten geografischen Koordinaten. In
+einem echten Seegebiet zeigt das Kartengitter jetzt Längen- und Breitengrade
+in Grad und Minuten, beim Hineinzoomen feiner (5 Grad bis 0,1 Minute), oben
+links steht die eigene Position wie 53°19,9'N 007°00,9'E (auf dem U-Boot der
+gekoppelte Ort), und der Tooltip des Mauszeigers nennt die Position darunter,
+auf der uConsole wie im Browser. Die Gitterzahlen bleiben jetzt auch über
+Land lesbar. Entfernungen, Ringe und Maßstab bleiben in sm, das Spiel spielt
+sich wie bisher; die stilisierte feste Karte behält ihr sm-Gitter. Tasten
+bleiben gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+
 ## 1.3.205
 
 Version 1.3.205 behebt, was eine vollständige Code-Prüfung gefunden hat,

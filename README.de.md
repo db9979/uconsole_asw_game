@@ -14,22 +14,17 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.205**
+Aktuelle Version: **1.3.206**
 
-Version 1.3.205 behebt, was eine vollständige Code-Prüfung gefunden hat,
-ohne das Spiel zu verändern. Ein beschädigter oder von Hand bearbeiteter
-Spielstand wird jetzt abgewiesen, statt das Spiel zu beenden, und ein
-fehlgeschlagenes Laden verändert die laufende Mission nicht mehr. Auf der
-uConsole ruckelt es weniger: das Schallbild wird schneller berechnet, Regen
-auf der Karte wird einmal statt in jedem Bild gezeichnet und ist im hellen
-Farbschema jetzt sichtbar, Statuszeilen und Tooltips verwenden ihren
-gezeichneten Text wieder, und ein Geräusch aus einer neuen Richtung wird
-nicht neu erzeugt. Im Browser gehen Spielgeräusche und Durchsagen nicht mehr
-verloren, wenn der Host ein Menü öffnet. Tooltip und Zeitangabe des
-Sonar-Wasserfalls passen jetzt zum verkürzten Verlauf (Shift+H). Ein
-abgebrochener Update-Download lässt sich erneut starten, und das
-Windows-Programm schreibt sein Absturzprotokoll wieder. Tasten bleiben
-gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+Version 1.3.206 zeigt die Karten in echten geografischen Koordinaten. In
+einem echten Seegebiet zeigt das Kartengitter jetzt Längen- und Breitengrade
+in Grad und Minuten, beim Hineinzoomen feiner (5 Grad bis 0,1 Minute), oben
+links steht die eigene Position wie 53°19,9'N 007°00,9'E (auf dem U-Boot der
+gekoppelte Ort), und der Tooltip des Mauszeigers nennt die Position darunter,
+auf der uConsole wie im Browser. Die Gitterzahlen bleiben jetzt auch über
+Land lesbar. Entfernungen, Ringe und Maßstab bleiben in sm, das Spiel spielt
+sich wie bisher; die stilisierte feste Karte behält ihr sm-Gitter. Tasten
+bleiben gleich. Spielstände sind v52; v38 bis v51 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

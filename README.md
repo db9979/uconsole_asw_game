@@ -12,19 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.205**
+Current release: **1.3.206**
 
-Release 1.3.205 fixes what a full code review found, without changing how
-the game plays. A damaged or hand-edited save is now refused instead of
-closing the game, and a failed load no longer changes the running mission.
-On the uConsole the game stutters less: the sound picture is recomputed
-faster, rain on the chart is drawn once instead of every frame and is now
-visible in the light scheme, status texts and tooltips reuse their rendered
-text, and a sound heard from a new direction is no longer synthesized
-again. In the browser, game sounds and callouts are no longer lost when the
-host opens a menu. The sonar waterfall's tooltip and time label now match
-the shortened history (Shift+H). A broken update download can be retried,
-and the Windows program writes its crash log again. Keys are unchanged.
+Release 1.3.206 shows the charts in real geographic coordinates. On a real
+sea area the chart grid now shows meridians and parallels in degrees and
+minutes, finer as you zoom in (5 degrees down to 0.1 minute), the chart's top
+left shows own position such as 53°19.9'N 007°00.9'E (on the submarine its
+dead-reckoning position), and the pointer's tooltip gives the position under
+it, on the uConsole and in the browser alike. The grid numbers now stay
+readable over land. Ranges, rings and the scale stay in NM and the game plays
+as before; the stylized fixed chart keeps its NM grid. Keys are unchanged.
 Saves are v52; v38 to v51 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

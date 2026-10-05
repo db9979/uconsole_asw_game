@@ -52,7 +52,7 @@ export const STATION_KEYS = [
   [["uboot_weapons"], "T", ["#uboot-fire-depth"], "focus"],
 ];
 
-const GERMAN = {Ctrl: "Strg", PageUp: "Bild↑", PageDown: "Bild↓", Home: "Pos1"};
+const GERMAN = {Ctrl: "Strg", Shift: "Umschalt", Enter: "Eingabe", Backspace: "Rücktaste", PageUp: "Bild↑", PageDown: "Bild↓", Home: "Pos1"};
 const ENGLISH = {PageUp: "PgUp", PageDown: "PgDn"};
 
 export function keyLabel(key, language = S.language) {

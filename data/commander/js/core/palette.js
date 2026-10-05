@@ -63,3 +63,19 @@ export function themeName() {
   return name === "day" || name === "contrast" ? name : "night";
 }
 export const isLightTheme = () => themeName() === "day";
+// A drawing's own accent colour in the high-contrast theme: dark tones go
+// nearly black, light ones nearly white, the hue saturated so the few
+// remaining colours stay apart (src/ui/theme._contrast).
+export function contrastRgb(rgb) {
+  const mean = (rgb[0] + rgb[1] + rgb[2]) / 3;
+  const spread = rgb.map((part) => Math.max(0, Math.min(255, Math.round(mean + (part - mean) * 1.6))));
+  const luminance = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
+  const scale = luminance < 0.3 ? 0.5 : 235 / Math.max(1, Math.max(...spread));
+  return spread.map((part) => Math.max(0, Math.min(255, Math.round(part * scale))));
+}
+// The same for a "#rrggbb" string.
+export function contrastHex(hex) {
+  const value = hex.replace("#", "");
+  const rgb = [0, 2, 4].map((index) => parseInt(value.slice(index, index + 2), 16));
+  return `#${contrastRgb(rgb).map((part) => part.toString(16).padStart(2, "0")).join("")}`;
+}

@@ -69,6 +69,8 @@ def draw_advisor_overlay(game) -> None:
     overlay_style.panel(s, PANEL)
     overlay_style.title(s, "advisor.title", (PANEL.x + 32, PANEL.y + 12, PANEL.w - 64, 40),
                         size=28)
+    from src.ui import game_menu
+    game_menu.close_button(s, PANEL)            # F7 / Esc by mouse
     for index, rect in enumerate(tab_rects(5)):
         active = index == game.advisor_mode
         if active:
@@ -137,6 +139,8 @@ def draw_llm_settings(game) -> None:
     prefs = game.preferences
     overlay_style.panel(s, PANEL)
     overlay_style.title(s, "llm.title", (PANEL.x + 32, PANEL.y + 12, PANEL.w - 64, 40), size=28)
+    from src.ui import game_menu
+    game_menu.close_button(s, PANEL)            # Esc by mouse
     layout.blit_line(s, "llm.subtitle", (PANEL.x + 32, PANEL.y + 56, PANEL.w - 64, 24),
                      config.COLOR_TEXT_DIM, size=15, align="center")
     from src.core.game_advisor import LLM_ROWS

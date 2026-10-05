@@ -639,7 +639,8 @@ def draw_depth_ladder(s, game, boat, rect) -> None:
         if placed and label_y < placed[-1] + pitch:
             label_y = placed[-1] + pitch
         placed.append(label_y)
-    limit = y + h - pitch
+    # Three pixels clear of the panel's bottom frame (the deepest label).
+    limit = y + h - pitch - 3
     for index in range(len(placed) - 1, -1, -1):
         placed[index] = min(placed[index], limit)
         limit = placed[index] - pitch
@@ -909,8 +910,8 @@ def _draw_fire_column(s, game, boat, rect) -> None:
                      plate, 1, border_radius=5)
     layout.blit_line(s, message("uboot.local.row.fire", state=message(
         "uboot.local.fire_ready" if reason is None else f"uboot.reason.{reason}")),
-        plate.inflate(-12, -6), theme.c("on_accent") if reason is None and not theme.is_light()
-        else (255, 255, 255) if reason is None else config.COLOR_WARN, size=19, align="center")
+        plate.inflate(-12, -6), theme.c("on_accent") if reason is None
+        else config.COLOR_WARN, size=19, align="center")
     pointer.add_tip(plate, status_tips.lazy(lambda: status_tips.boat(game, boat), "fire"))
     weapons_station = uboot_local.local_station(game) == "uboot_weapons"
     if weapons_station:
@@ -1024,6 +1025,29 @@ _FOOTERS = {
                                        ("W", "uboot.footer.watch")),
 }
 
+# The page's further keys, behind the footer's "more" chip (a click on a
+# chip presses its key; the station's allowlist still decides).
+_FOOTER_MORE = {
+    ("uboot", "UBOOT_NAV"): (("Shift+H", "uboot.footer.surface"),
+                             ("H", "uboot.footer.crash_dive"),
+                             ("G", "damage.footer.action_stations"),
+                             ("Ctrl+B", "bridge.footer.baffles"),
+                             ("K", "footer.follow")),
+    ("uboot_weapons", "UBOOT_WEAPONS"): (("F", "uboot.footer.fire_bearing"),
+                                         ("V", "uboot.footer.decoy"),
+                                         ("Shift+M", "uboot.footer.tube_flood"),
+                                         ("Ctrl+M", "uboot.footer.tube_flood_quiet"),
+                                         ("T", "weapons.footer.run_depth"),
+                                         ("Y", "weapons.footer.salvo"),
+                                         ("X", "weapons.footer.pattern"),
+                                         (", / .", "weapons.footer.seeker"),
+                                         ("Shift+W", "uboot.footer.wire_cut")),
+    ("uboot_nav", "UBOOT_PILOT"): (("Backspace", "bridge.footer.route_clear"),
+                                   ("Ctrl+B", "bridge.footer.baffles")),
+    ("uboot_engine", "UBOOT_DAMAGE"): (("M", "damage.footer.medic"),
+                                       ("U", "damage.footer.reassign")),
+}
+
 
 def draw_command_panel(game, boat) -> None:
     s = game.screen
@@ -1060,7 +1084,8 @@ def draw_command_panel(game, boat) -> None:
     specs = tuple(
         (key, "uboot.footer.mast_down" if text == "uboot.footer.mast" and boat.orders.mast
          else "uboot.footer.snorkel_down" if text == "uboot.footer.snorkel" and boat.sub.snorkeling
-         else text) for key, text in _FOOTERS[(station, name)])
+         else text) for key, text in (_FOOTERS[(station, name)]
+                                      + _FOOTER_MORE.get((station, name), ())))
     _footer(s, (x, station_rect.bottom - 26, w, 20), specs)
 
 

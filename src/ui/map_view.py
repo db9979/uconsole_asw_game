@@ -12,7 +12,7 @@ import pygame
 
 from src.core import config
 from src.core.station import Station
-from src.core.i18n import (country_name, display_value, localized, localize, raw_text,
+from src.core.i18n import (nm_unit, country_name, display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.ui.plot_view import draw_plot
 from src.ui import chart_symbols, chart_trails, label_layout, layout, lines, map_fx_view, theme
@@ -177,7 +177,7 @@ def map_hit_target(game, pos):
             distance = (message("map.tooltip.range_value", range=f"{float(displayed_range):.1f}")
                         if displayed_range is not None else "ui.bearing_only")
             sigma = getattr(contact, "range_sigma_nm", None)
-            uncertainty = (f"+/-{float(sigma):.2f} NM" if sigma is not None else "--")
+            uncertainty = (f"+/-{float(sigma):.2f} {nm_unit()}" if sigma is not None else "--")
             return layout.tooltip_payload(
                 message("map.tooltip.sonar_title",
                         contact=observations.contact_display_id(game, contact)),
@@ -691,9 +691,8 @@ def draw_map_view(game, tr=None) -> None:
                            config.COLOR_WARN, r, size=12)
                 previous = point
 
-        # Fregatte: Pfeil in Kursrichtung
+        # Fregatte: APP-6-Symbol mit Kursstrich
         px, py = view.world_to_screen(game.ship.x, game.ship.y)
-        ang = math.radians(game.ship.course - 90.0)
         target_ang = math.radians(game.ship.target_course - 90.0)
         target_ex = int(px + 42 * math.cos(target_ang))
         target_ey = int(py + 42 * math.sin(target_ang))
@@ -702,10 +701,8 @@ def draw_map_view(game, tr=None) -> None:
         _map_label(s, game, structured_message("map.target_course",
                                                course=f"{game.ship.target_course:03.0f}"),
                    (int(px) + 8, int(py) + 10), config.COLOR_TEXT_DIM, r, size=12)
-        L = 14
-        lines.line(s, config.COLOR_TEXT, (int(px), int(py)),
-                         (int(px + L * math.cos(ang)), int(py + L * math.sin(ang))), 3)
-        pygame.draw.circle(s, config.COLOR_TEXT, (int(px), int(py)), 4)
+        # The own frigate: APP-6 friendly surface frame and its heading.
+        nato_symbols.draw_own_ship(s, (int(px), int(py)), game.ship.course, 16)
         nato_symbols.draw_motion_vector(s, (px, py), game.ship.course, game.ship.speed,
                                         view.scale, config.COLOR_OK, max_px=120)
 

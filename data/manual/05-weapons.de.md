@@ -28,7 +28,7 @@ Die Bereitschaftszeile wird von oben nach unten geprüft; die erste fehlgeschlag
  BLOCKIERT: NICHT KLASSIFIZIERT  als U-Boot/Kampfschiff (Sonar C)
  BLOCKIERT: KEINE TORPEDOS / KEIN ROHR BEREIT / SALVENLIMIT
  BLOCKIERT: WAFFENZENTRALE GESTOERT
- FEUER FREI                      -> Strg+Enter
+ FEUER FREI                      -> Strg+Eingabe
 ```
 
 Torpedolauf von oben:
@@ -73,7 +73,7 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
 
 - Ein Klick auf eine Kontaktkarte wählt diesen Kontakt wie `←`/`→`; das zugewiesene Ziel trägt eine rote Marke.
-- Die Feuertaste `Strg+Enter` lässt sich hier anklicken, nur an der Waffenstation.
+- Die Feuertaste `Strg+Eingabe` lässt sich hier anklicken, nur an der Waffenstation. Sie feuert die gewählte Waffe: `D`, `A`, `Z`, `R` und `Umschalt+R` wählen nur den Lufttorpedo, ASROC, das Wasserbombenmuster, die Raketensalve oder die Abwehrsalve; die gewählte Waffe leuchtet auf Seite 2 und steht in der Feuerzeile. Dieselbe Waffe noch einmal gewählt, gilt wieder der Torpedo.
 - Die Tastenhinweise neben der Lösung (Abschuss, Flak-Freigabe) drücken ihre Tasten.
 - Auf der Karte zoomt das Mausrad, Ziehen verschiebt (und beendet das Folgen mit `K`) und ein Klick heftet eine Kurzinfo an.
 

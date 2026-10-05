@@ -6,10 +6,10 @@ import math
 import pygame
 
 from src.core import config, status_tips
-from src.core.i18n import display_message, display_value, localized, raw_text
+from src.core.i18n import nm_unit, display_message, display_value, localized, raw_text
 from src.core.station import Station
 from src.ship.ship import NOISE_LEVEL_MAX, PLANT_DIESEL_MAX_KN, Ship
-from src.ui import console, layout
+from src.ui import console, layout, pointer
 
 
 from src.ui.stations.common import (
@@ -52,6 +52,7 @@ def draw_engine_view(game, tr=None) -> None:
         ("A", "engine.footer.quiet"),
         ("C", "engine.footer.set_course"),
         ("V", "engine.footer.set_speed"),
+        ("G", "engine.footer.plant"),
     ))
 
 
@@ -239,6 +240,8 @@ def _draw_systems(s, game, ship, rect) -> None:
     alarms = sum(1 for row in rows if row[2] == "alarm")
     cautions = sum(1 for row in rows if row[2] == "caution")
     console.led(s, (ann.right - 232, ann.y + 8 + title_h // 2 - 4), 6, master)
+    pointer.add_tip((ann.right - 240, ann.y + 2, 236, title_h), status_tips.payload(
+        status_tips.engine_master(alarms, cautions)))
     layout.blit_line(s, message("engine.line.master", alarms=str(alarms), cautions=str(cautions)),
                      (ann.right - 220, ann.y + 6, 210, title_h - 4),
                      console.level_color(master) if master != "on" else config.COLOR_TEXT_DIM,
@@ -266,7 +269,8 @@ def _draw_fuel(s, ship, rect) -> None:
         ("engine.readout.stock", raw_text(f"{ship.fuel_kg / 1000.0:.1f} t")),
         ("engine.readout.burn", raw_text(f"{ship.fuel_burn_kg_h():.0f} kg/h")),
         ("engine.readout.endurance", raw_text(f"{endurance:.0f} h" if endurance is not None else "--")),
-        ("engine.readout.range", raw_text(f"{distance:.0f} NM" if distance is not None else "--")),
+        ("engine.readout.range",
+         raw_text(f"{distance:.0f} {nm_unit()}" if distance is not None else "--")),
     )
     rx, rw = fx + tank_w + 8, fw - tank_w - 8
     row = layout.font(16).get_linesize()

@@ -12,7 +12,7 @@ import pygame
 from src.core import config, status_tips
 from src.core.i18n import message, raw_text
 from src.enemies.damage_control import COMPARTMENTS, TASKS, capacity_kg
-from src.ui import console, damage_section, layout
+from src.ui import console, damage_section, layout, pointer
 
 
 
@@ -110,9 +110,12 @@ def draw_damage_page(s, game, boat, x, y, w, h) -> None:
     table_h = layout.line_pitch(16, 16, bold=True) + name_h + grid_h + 8
     tx, ty, tw, _th = layout.box(s, (x, table_y, w, table_h), "uboot.panel.dc_status",
                                  border=_alert(control, selected) or config.COLOR_TEXT)
-    console.led(s, (tx + 7, ty + name_h // 2), 6,
-                "alarm" if _alert(control, selected) == config.COLOR_DANGER else
-                "caution" if _alert(control, selected) else "on")
+    room_level = ("alarm" if _alert(control, selected) == config.COLOR_DANGER else
+                  "caution" if _alert(control, selected) else "on")
+    console.led(s, (tx + 7, ty + name_h // 2), 6, room_level)
+    pointer.add_tip((tx, ty, tw, name_h), lambda: status_tips.payload(
+        status_tips.boat_compartment(control, selected, room_level,
+                                     f"uboot.compartment.{COMPARTMENTS[selected]}")))
     layout.blit_line(s, f"uboot.compartment.{COMPARTMENTS[selected]}",
                      (tx + 20, ty, tw - 20, name_h), config.COLOR_TEXT, size=18)
     console.lamp_grid(s, (tx, ty + name_h, tw, grid_h), console.with_tips(rows, [

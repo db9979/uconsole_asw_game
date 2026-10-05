@@ -1,6 +1,6 @@
 """Catalog-keyed, context-sensitive help for all nine stations."""
 
-from src.core.i18n import Translator
+from src.core.i18n import Translator, key_label
 from src.core.station import Station
 
 
@@ -196,7 +196,7 @@ STATION_HELP = {
           ("Shift+↑ / ↓", "help.control.helo_contact_select"),
           ("Y", "help.control.dip_toggle"), ("U / V", "help.control.dip_depth"),
           ("Shift+A", "help.control.dip_ping"),
-          ("Ctrl+Enter / D", "help.control.drop_torp"), ("Q / E", "help.control.zoom"),
+          ("Ctrl+Enter", "help.control.drop_torp"), ("Q / E", "help.control.zoom"),
          ("K", "help.control.follow"),
           ("help.key.p3_pages", "help.control.helo_acoustic_pages"),
           ("help.key.p3_bearing", "help.control.helo_listen_bearing"),
@@ -395,33 +395,33 @@ def get_uboot_help(tr=None) -> tuple:
     """Return the localized key table of the local submarine side."""
     tr = tr or Translator("de").t
     title, controls = _UBOOT_HELP
-    return tr(title), [(tr(key), tr(action)) for key, action in controls]
+    return tr(title), [(key_label(tr(key), tr), tr(action)) for key, action in controls]
 
 
 def _translate_help(data, tr):
     intro, controls, notes, tactics = data
-    return (tr(intro), [(tr(key), tr(action)) for key, action in controls],
+    return (tr(intro), [(key_label(tr(key), tr), tr(action)) for key, action in controls],
             [tr(text) for text in notes], [tr(text) for text in tactics])
 
 
 def get_global_help(tr=None) -> tuple:
     tr = tr or Translator("de").t
     title, controls = _GLOBAL_HELP
-    return tr(title), [(tr(key), tr(action)) for key, action in controls]
+    return tr(title), [(key_label(tr(key), tr), tr(action)) for key, action in controls]
 
 
 def get_uboot_global_help(tr=None) -> tuple:
     """Return the localized global keys of the local submarine side."""
     tr = tr or Translator("de").t
     title, controls = _UBOOT_GLOBAL_HELP
-    return tr(title), [(tr(key), tr(action)) for key, action in controls]
+    return tr(title), [(key_label(tr(key), tr), tr(action)) for key, action in controls]
 
 
 def get_menu_help(tr=None) -> tuple:
     """Return the localized keys of the main menu pages."""
     tr = tr or Translator("de").t
     title, controls = _MENU_HELP
-    return tr(title), [(tr(key), tr(action)) for key, action in controls]
+    return tr(title), [(key_label(tr(key), tr), tr(action)) for key, action in controls]
 
 
 # Compatibility for callers that display the historical German default.
@@ -451,4 +451,4 @@ def get_web_help(tr=None) -> tuple:
     """Return the localized Remote Crew browser key table."""
     tr = tr or Translator("de").t
     title, controls = _WEB_HELP
-    return tr(title), [(tr(key), tr(action)) for key, action in controls]
+    return tr(title), [(key_label(tr(key), tr), tr(action)) for key, action in controls]

@@ -268,6 +268,16 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     attrs["rel"] = ((canvas[0] - previous[0], canvas[1] - previous[1])
                                     if previous is not None else (0, 0))
                 e = pygame.event.Event(e.type, attrs)
+                close = getattr(self.editor, "close_rect", None)
+                if (e.type == pygame.MOUSEBUTTONDOWN and getattr(e, "button", 0) == 1
+                        and close is not None and close.collidepoint(canvas)
+                        and getattr(self.editor, "mode", "browser") == "browser"):
+                    # The editor's close box: the same as Esc.
+                    self.editor = None
+                    self.audio.stop_preview()
+                    if self.in_menu:
+                        self.main_menu = True
+                    return
             self.editor.handle_event(e)
             return
         if self.simlog_view_open:
@@ -607,10 +617,14 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             if (e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
                     and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
                 if self.station is Station.WEAPONS:
-                    self.launch_torpedo()
+                    self.fire_selected_weapon()
                     return
                 if self.station is Station.OPZ and self.station_page == 3:
                     self._consort_feedback(self.consort_fire())
+                    return
+                if (self.station is Station.OPZ and self.station_page == 2
+                        and self.opz_weapon == "mpa_torpedo"):
+                    self._mpa_order_feedback(self.mpa_attack())
                     return
                 if self.station is Station.OPZ:
                     self.launch_essm()
@@ -1006,9 +1020,9 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     self.flash(message("runtime.helo.dip_ping_sent" if result is True
                                        else "runtime.helo.dip_ping_unavailable"))
                 elif self.station is Station.WEAPONS:
-                    # Shift+A is the ping key elsewhere: it never launches.
+                    # A only chooses ASROC; Ctrl+Enter fires (Shift+A pings elsewhere).
                     if not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
-                        self.fire_own_asroc()
+                        self.select_weapon("asroc")
                 elif self.station is Station.ELOKA:
                     self.set_ecm_auto(not self.ecm_jammer.auto_enabled)
                     self.flash(message("runtime.eloka.auto_on"
@@ -1028,9 +1042,9 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     if getattr(e, "mod", 0) & pygame.KMOD_CTRL:
                         pass  # Ctrl+R is the aircraft radar key; it never fires
                     elif getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                        self.fire_rbu_defence()
+                        self.select_weapon("rbu_defence")
                     else:
-                        self.fire_rbu()
+                        self.select_weapon("rbu")
             elif e.key == pygame.K_z and self.station is Station.HELICOPTER:
                 self.toggle_helicopter_hoist()
             elif e.key == pygame.K_m:
@@ -1109,7 +1123,7 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 self.toggle_eloka_grouping()
             elif (e.key == pygame.K_z and self.station is Station.WEAPONS
                   and not getattr(e, "mod", 0) & pygame.KMOD_CTRL):
-                self.drop_depth_charges()
+                self.select_weapon("depth_charges")
             elif e.key == pygame.K_y and self.station is Station.WEAPONS:
                 self._cycle_torpedo_salvo()
             elif e.key == pygame.K_g and self.station is Station.ENGINE:
@@ -1145,8 +1159,12 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                         modes = ("BROADBAND", "FILTERED", "HETERODYNE")
                         self.set_helicopter_audio_mode(modes[
                             (modes.index(self.helo_audition.audition_mode) + 1) % len(modes)])
-                    else:
-                        self.launch_helo_torpedo()
+                    elif self.station is Station.WEAPONS:
+                        if not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
+                            self.select_weapon("air_torpedo")
+                    elif not getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                        # The helicopter's torpedo drops on Ctrl+Enter only.
+                        self.flash(message("runtime.weapon.fire_key"), 2.0)
             elif e.key == pygame.K_v and self.station is Station.WEAPONS:
                 self.deploy_nixie()
             elif e.key in (pygame.K_u, pygame.K_v) \

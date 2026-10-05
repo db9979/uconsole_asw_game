@@ -44,7 +44,17 @@ def localized(tip: dict, translator=None) -> dict:
             "value": str(localize(tip["value"], translator))[:60] if tip["value"] else "",
             "level": tip["level"] if tip["level"] in LEVELS else "",
             "lines": [str(localize(line, translator))[:240] for line in tip["lines"][:8]],
-            "keys": [str(key)[:16] for key in tip.get("keys", ())[:8]]}
+            "keys": _language_keys(tip.get("keys", ()), translator)}
+
+
+def _language_keys(keys, translator=None) -> list:
+    """The note's key tokens, with their German spellings in German."""
+    from src.core.i18n import active_language, german_key_label
+    keys = [str(key) for key in keys]
+    if active_language(translator) == "de":
+        keys = list(dict.fromkeys(spelling for key in keys
+                                  for spelling in (german_key_label(key), key)))
+    return [key[:16] for key in keys[:8]]
 
 
 def payload(tip: dict) -> dict:
@@ -788,6 +798,200 @@ def boat_systems(game, crew) -> dict:
     return notes
 
 
+# --- Lamps that only had a colour (rescue, acoustics, contacts, rooms) -------------
+
+
+def helicopter_rescue(status: dict) -> dict:
+    """Notes of the rescue hoist's two lamps (``game.helo_rescue_status()``)."""
+    phase = status["phase"]
+    full = status["aboard"] >= status["capacity"]
+    return {
+        "winch": note("helo.rescue.winch", message("helo.rescue.phase." + phase),
+                      message("tip.helo.rescue." + phase),
+                      keys=("Z", "H", "W")),
+        "cabin": note("helo.rescue.cabin", message(
+            "helo.rescue.cabin_value", aboard=status["aboard"], capacity=status["capacity"]),
+            message("tip.helo.rescue.cabin_full" if full else "tip.helo.rescue.cabin",
+                    aboard=status["aboard"], capacity=status["capacity"]),
+            keys=("H",)),
+    }
+
+
+def helicopter_acoustic(game) -> dict:
+    """Notes of the helicopter's acoustic page status boxes."""
+    ready = game.helicopter_audio_ready()
+    audio = game.audio.availability_status()
+    audible = bool(ready and game.helo_audio_enabled and audio["global_enabled"]
+                   and audio["device_available"])
+    if audible:
+        sound = "tip.helo.acoustic.audio.on"
+    elif not game.helo_audio_enabled:
+        sound = "tip.helo.acoustic.audio.off"
+    elif not ready:
+        sound = "tip.helo.acoustic.audio.dry"
+    else:
+        sound = "tip.helo.acoustic.audio.device"
+    filtered = game.helo_audition.audition_mode != "BROADBAND"
+    return {
+        "source": note("helo.acoustic.tip.source", "", message(
+            "tip.helo.acoustic.ready" if ready else "tip.helo.acoustic.dry"),
+            keys=("Y", "T")),
+        "bearing": note("helo.acoustic.tip.bearing", "", message(
+            "tip.helo.acoustic.bearing.auto" if game.helo_listen_bearing is None
+            else "tip.helo.acoustic.bearing.set"), keys=("←/→", "R")),
+        "filter": note("helo.acoustic.tip.filter", "", message(
+            "tip.helo.acoustic.filter.on" if filtered else "tip.helo.acoustic.filter.off"),
+            keys=("Shift+D", "Shift+F")),
+        "audio": note("helo.acoustic.tip.audio", "", message(sound), keys=("J",)),
+    }
+
+
+def contact_age(age_s: float) -> dict:
+    """The freshness lamp of a sonar contact card (green, amber, dark)."""
+    state = "fresh" if age_s < 10 else "fading" if age_s < 60 else "stale"
+    return note("tip.sonar.contact_age.title", message("tip.sonar.contact_age." + state + ".value"),
+                message("tip.sonar.contact_age." + state, age=_f(age_s)),
+                keys=("Shift+A", "T") if state != "fresh" else ())
+
+
+def engine_master(alarms: int, cautions: int) -> dict:
+    """The engine room's master lamp: how many lamps are red or amber."""
+    state = "alarm" if alarms else "caution" if cautions else "clear"
+    return note("engine.panel.annunciator", "", message(
+        "tip.engine.master." + state, alarms=alarms, cautions=cautions),
+        message("tip.engine.master.do") if state != "clear" else None, keys=("4",))
+
+
+def damage_room(room, name) -> dict:
+    """A frigate compartment's lamps: state, water and fire, and the order."""
+    state = {"OK": "ok", "BESCHAEDIGT": "damaged", "FLUTEND": "flooding",
+             "ZERSTOERT": "destroyed"}.get(room.state, "ok")
+    lines = [message("tip.damage.room." + state, flood=_f(room.flood), fire=_f(room.fire))]
+    if room.fire > 0 or room.flood > 0 or room.state != "OK":
+        lines.append(message("tip.damage.room.do"))
+    return note(name, message("damage." + {"ok": "ok", "damaged": "damaged",
+                                           "flooding": "flooding",
+                                           "destroyed": "destroyed"}[state]),
+                *lines, keys=("←/→", "↑/↓", "Enter"))
+
+
+def boat_compartment(control, index: int, level: str, name: str) -> dict:
+    """The crewed submarine's picked compartment: its overall lamp."""
+    room = control.compartments[index]
+    lines = [message("tip.uboot.dc.room." + level, water=_f(room.water_kg / 1000.0, 1),
+                     leak=_f(room.leak * 100.0), fire=_f(room.fire * 100.0))]
+    if level != "on":
+        lines.append(message("tip.uboot.dc.room.do"))
+    return note(name, "", *lines, keys=("↑/↓", "Enter", "I"))
+
+
+def _on(flag) -> str:
+    return "on" if flag else "off"
+
+
+def bridge(game) -> dict:
+    """The bridge's lamps (browser): course, speed, route, baffles, crew."""
+    ship = game.ship
+    error = abs((ship.course - ship.target_course + 180) % 360 - 180)
+    lag = abs(ship.speed - ship.target_speed)
+    route = getattr(game, "route", None)
+    routed = bool(route is not None and route.active)
+    action = bool(game.crew_watch.action_stations)
+    baffles = getattr(game, "baffle_clear", None) is not None
+    return {
+        "course": note("ui.course", raw_text(f"{ship.course:03.0f}°"), message(
+            "tip.engine.course.on" if error < 1 else "tip.engine.course.turning",
+            course=f"{ship.course:03.0f}", target=f"{ship.target_course:03.0f}", error=_f(error)),
+            message("tip.engine.course_do"), keys=("C", "←/→"),
+            level="on" if error < 1 else "caution"),
+        "speed": note("ui.speed", raw_text(f"{ship.speed:.1f} kn"), message(
+            "tip.engine.shaft", speed=_f(ship.speed, 1), order=_f(ship.target_speed, 1)),
+            message("tip.engine.shaft_do"), keys=("V", "+ / -"),
+            level="on" if lag < .5 else "caution"),
+        "route": note("tip.bridge.route", message("common.on" if routed else "common.off"),
+                      message("tip.bridge.route.on" if routed else "tip.bridge.route.off"),
+                      keys=("W", "Backspace"), level=_on(routed)),
+        "baffles": note("tip.bridge.baffles", message("common.on" if baffles else "common.off"),
+                        message("tip.bridge.baffles.on" if baffles else "tip.bridge.baffles.off"),
+                        keys=("Ctrl+B",), level="caution" if baffles else "off"),
+        "action": note("commander.web.crew_action_stations",
+                       message("common.on" if action else "common.off"),
+                       message("tip.bridge.action.on" if action else "tip.bridge.action.off"),
+                       keys=("G",), level="caution" if action else "off"),
+    }
+
+
+def opz(game) -> dict:
+    """The CIC's lamps (browser): radars, CIWS release, ESSM, chaff."""
+    live = not game.damage.station_down("opz")
+    cells = int(getattr(game, "vls_cells", 0))
+    chaff_wait = float(getattr(game, "chaff_cd", 0.0))
+    return {
+        "radar_surface": note("commander.web.opz_surface_radar",
+                              message("common.on" if game.surface_radar_on else "common.off"),
+                              message("tip.opz.radar.on" if game.surface_radar_on and live
+                                      else "tip.opz.radar.down" if not live
+                                      else "tip.opz.radar.off"),
+                              keys=("R",), level=("alarm" if not live else
+                                                  _on(game.surface_radar_on))),
+        "radar_air": note("commander.web.opz_air_radar",
+                          message("common.on" if game.air_radar_on else "common.off"),
+                          message("tip.opz.radar.on" if game.air_radar_on and live
+                                  else "tip.opz.radar.down" if not live
+                                  else "tip.opz.radar.off"),
+                          keys=("Shift+R",), level=("alarm" if not live else
+                                                    _on(game.air_radar_on))),
+        "ciws": note("commander.web.opz_ciws_release",
+                     message("panel.authorized" if game.ciws_authorized else "panel.blocked"),
+                     message("tip.opz.ciws.on" if game.ciws_authorized else "tip.opz.ciws.off"),
+                     keys=("I",), level="on" if game.ciws_authorized else "caution"),
+        "essm": note("tip.opz.essm", raw_text(str(cells)), message(
+            "tip.opz.essm.ready" if cells else "tip.opz.essm.empty", cells=cells),
+            keys=("Ctrl+Enter",), level="on" if cells else "alarm"),
+        "chaff": note("commander.web.chaff", message(
+            "tip.opz.chaff.value.wait" if chaff_wait > 0 else "tip.opz.chaff.value.ready"),
+            message("tip.opz.chaff.wait" if chaff_wait > 0 else "tip.opz.chaff.ready",
+                    seconds=_f(chaff_wait)), keys=("G",),
+            level="caution" if chaff_wait > 0 else "on"),
+    }
+
+
+def radio(game) -> dict:
+    """The radio room's lamps (browser): the room, HF/DF, HQ tasks and calls."""
+    down = game.damage.station_down("radio")
+    open_tasks = len(game.tasking.open_tasks())
+    reports = game.hq_reports
+    wait = max(0.0, reports.next_t - game.sim_t)
+    calls = ("busy" if reports.transmitting else "wait" if wait > 0 else "ready")
+    return {
+        "room": note("commander.web.uboot_radio_title", message(
+            "tip.radio.room.down.value" if down else "tip.radio.room.ok.value"),
+            message("tip.radio.room.down" if down else "tip.radio.room.ok"),
+            level="alarm" if down else "on"),
+        "hfdf": note("commander.web.source_hfdf", raw_text(str(len(game.hfdf_log))),
+                     message("tip.radio.hfdf", count=len(game.hfdf_log)),
+                     keys=("↑/↓", "Enter"), level=_on(game.hfdf_log)),
+        "tasks": note("tip.radio.tasks", raw_text(str(open_tasks)), message(
+            "tip.radio.tasks.open" if open_tasks else "tip.radio.tasks.none", count=open_tasks),
+            keys=("A", "D") if open_tasks else (), level="caution" if open_tasks else "off"),
+        "calls": note("tip.radio.calls", message("tip.radio.calls." + calls + ".value"),
+                      message("tip.radio.calls." + calls, seconds=_f(wait)),
+                      keys=("K", "H") if calls == "ready" else (),
+                      level={"busy": "caution", "wait": "off", "ready": "on"}[calls]),
+    }
+
+
+def damage(game) -> dict:
+    """The damage-control lamps (browser): one per compartment."""
+    notes = {}
+    for key, room in game.damage.compartments.items():
+        tip = damage_room(room, "damage.short." + key)
+        tip["level"] = ("alarm" if room.state in ("ZERSTOERT", "FLUTEND") or room.fire > 0
+                        else "caution" if room.state != "OK" or room.flood > 0 else "on")
+        notes["room_" + key] = tip
+    return notes
+
+
 # --- Remote Crew ------------------------------------------------------------------
 
 LAMP_TIPS_MAX = 80
@@ -798,6 +1002,10 @@ _ROLE_NOTES = {
     "eloka": eloka,
     "sonar": sonar,
     "uboot_sonar": sonar,
+    "bridge": bridge,
+    "opz": opz,
+    "radio": radio,
+    "damage": damage,
 }
 
 

@@ -16,6 +16,9 @@ const wide = matchMedia("(min-width: 1600px)");
 const tall = matchMedia("(min-width: 1600px) and (min-height: 1300px)");
 const ALERT_S = 20;
 let layoutStation;
+// Docks the operator opened or closed by hand keep that choice for the
+// station; the others follow the picture (see autoDocks).
+const manualDocks = new Set();
 let alertTimer = null;
 let shownAlertSeq = null;
 
@@ -38,11 +41,26 @@ function applyDefaults(station) {
   // Tall desktop monitors have room for the operational log as well.
   const defaults = {left: wide.matches, right: true, detail: true, log: tall.matches};
   if (station === "sonar" || station === "uboot_sonar") defaults.detail = wide.matches;
+  manualDocks.clear();
   for (const name of DOCKS) setDock(name, defaults[name]);
+  autoDocks();
 }
 
 export function toggleDock(name) {
+  manualDocks.add(name);
   setDock(name, $("cic-grid").dataset[name] !== "open");
+}
+
+// Room for the station's controls: an empty contact list folds to its rail
+// and the contact detail folds to its title bar while no contact is chosen;
+// both open again as soon as there is something to show.
+export function autoDocks() {
+  if (!layoutStation || $("cic-grid").dataset.tracks === "false") return;
+  const grid = $("cic-grid");
+  const hasTracks = Boolean(S.snapshot?.tracks?.length);
+  if (!manualDocks.has("left") && wide.matches && (grid.dataset.left === "open") !== hasTracks) setDock("left", hasTracks);
+  const chosen = Boolean(S.selected);
+  if (!manualDocks.has("detail") && (grid.dataset.detail === "open") !== chosen) setDock("detail", chosen);
 }
 
 function isTyping(target) {
@@ -89,6 +107,11 @@ export function init() {
   for (const button of document.querySelectorAll("[data-overlay-close]"))
     button.addEventListener("click", () => activateTab("operations"));
   $("alert-dismiss").addEventListener("click", hideAlert);
+  $("status-more").addEventListener("click", () => {
+    const open = $("statusbar").dataset.more !== "open";
+    $("statusbar").dataset.more = open ? "open" : "closed";
+    $("status-more").setAttribute("aria-expanded", String(open));
+  });
   on("layout:station", (station) => {
     if (station === layoutStation) return;
     layoutStation = station;

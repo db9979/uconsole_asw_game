@@ -30,9 +30,13 @@ export function metrics(element, entries) {
   entries.forEach(([key, value], index) => {
     let group = element.children[index];
     if (!group) { group = node("div"); group.append(node("dt"), node("dd")); element.append(group); }
-    const label = t(key), text = String(value ?? "");
+    const label = t(key), raw = String(value ?? ""), none = raw === t("station_none");
+    // Nothing published yet reads as a quiet dash; the sentence stays the hover note.
+    const text = none ? "\u2014" : raw, cell = group.lastChild;
     if (group.firstChild.textContent !== label) group.firstChild.textContent = label;
-    if (group.lastChild.textContent !== text) group.lastChild.textContent = text;
+    if (cell.textContent !== text) cell.textContent = text;
+    if (none) { cell.dataset.empty = "true"; cell.title = raw; }
+    else if (cell.dataset.empty) { delete cell.dataset.empty; cell.removeAttribute("title"); }
   });
   while (element.children.length > entries.length) element.lastChild.remove();
 }

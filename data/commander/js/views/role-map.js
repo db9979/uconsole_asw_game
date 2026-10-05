@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { $, affiliations, isBoatCommand } from "../core/base.js";
-import { classificationText, enumText, finite, hasPosition, number, t, unit } from "../core/format.js";
+import { classificationText, countryName, enumText, finite, hasPosition, number, t, unit } from "../core/format.js";
 import { colors, palette, paletteAlpha, paletteRgb } from "../core/palette.js";
 import { drawNatoSymbol } from "../plot/symbols.js";
 import { maxRoleMapHits, roleMapViews } from "../state/shared.js";
@@ -383,7 +383,16 @@ export function drawRoleMap(role) {
   }
   plot.context.lineWidth = 1;
   plot.context.fillStyle = palette().muted;
-  for (const label of [...(geo?.labels || []), ...(geo?.airbases || [])]) {
+  // Each country once, at its largest piece in view (the host sends the
+  // pieces largest first), in the page's language and in capitals as on the uConsole.
+  const named = new Set();
+  for (const label of geo?.labels || []) {
+    const [x, y] = point(label.x, label.y);
+    if (named.has(label.name) || x < 0 || x > plot.width || y < 0 || y > plot.height) continue;
+    named.add(label.name);
+    placeText(plot.context, labels, countryName(label.name).toLocaleUpperCase(S.language), x + 5, y - 5);
+  }
+  for (const label of geo?.airbases || []) {
     const [x, y] = point(label.x, label.y);
     if (x >= 0 && x <= plot.width && y >= 0 && y <= plot.height) placeText(plot.context, labels, label.name, x + 5, y - 5);
   }

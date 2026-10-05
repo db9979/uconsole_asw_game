@@ -114,23 +114,46 @@ function drawWeaponsVisual() {
     [t("weapons_lamp_interlock"), blocked ? readiness.interlock : readiness.state, blocked ? p.amber : p.accent]];
   const lampW = (w - 20 - 2 * 10) / 3;
   stages.forEach(([label, value, color], index) => canvasLamp(g, 10 + index * (lampW + 10), 12, lampW, 46, label, value, color));
-  // Tubes as columns: full when loaded, the reload counts down in the column.
-  const tubes = payload.tubes, top = 76, height = Math.max(60, plot.height - top - 12);
-  const pitch = Math.min(90, (w - 20) / Math.max(1, tubes.length));
+  // Tubes as cards in a row (numbered from 1 as on the uConsole): a lamp, the
+  // state and the reload as a bar along the bottom edge.
+  const tubes = payload.tubes, top = 72, cardH = 58, gap = 10;
+  const cardW = Math.min(220, (w - 20 - gap * Math.max(0, tubes.length - 1)) / Math.max(1, tubes.length));
   tubes.forEach((tube, index) => {
-    const x = 10 + index * pitch, cw = pitch - 12, ready = tube.state === "ready";
-    const color = ready ? p.accent : tube.state === "reloading" ? p.amber : p.muted;
-    g.fillStyle = paletteAlpha("raised", .92); g.fillRect(x, top, cw, height);
-    g.strokeStyle = p.line; g.strokeRect(x + .5, top + .5, cw - 1, height - 1);
-    const fill = ready ? 1 : tube.state === "reloading" ? .35 : 0, inner = height - 46;
-    g.fillStyle = color; g.globalAlpha = .55; g.fillRect(x + 4, top + 24 + inner * (1 - fill), cw - 8, inner * fill); g.globalAlpha = 1;
-    g.fillStyle = color; g.shadowColor = color; g.shadowBlur = 8;
-    g.beginPath(); g.arc(x + cw / 2, top + 12, 5, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
-    g.textAlign = "center"; g.fillStyle = p.text;
-    g.fillText(`${t("weapons_tube")} ${number(tube.tube, 0)}`, x + cw / 2, top + height - 8, cw - 4);
-    if (!ready && finite(tube.reload_s)) g.fillText(unit(tube.reload_s, "s", 0), x + cw / 2, top + 24 + inner / 2, cw - 4);
+    const x = 10 + index * (cardW + gap), ready = tube.state === "ready", reloading = tube.state === "reloading";
+    const color = ready ? p.accent : reloading ? p.amber : p.muted;
+    g.fillStyle = paletteAlpha("raised", .92); g.fillRect(x, top, cardW, cardH);
+    g.strokeStyle = p.line; g.strokeRect(x + .5, top + .5, cardW - 1, cardH - 1);
+    g.fillStyle = color; g.fillRect(x, top, 4, cardH);
+    g.shadowColor = color; g.shadowBlur = 8; g.beginPath(); g.arc(x + 20, top + 19, 5, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
+    g.textAlign = "left"; g.fillStyle = p.text;
+    g.fillText(`${t("weapons_tube")} ${number(tube.tube + 1, 0)}`, x + 32, top + 23, cardW - 40);
+    g.fillStyle = color;
+    const state = reloading && finite(tube.reload_s) ? `${stateText("tube_state", tube.state)} ${unit(tube.reload_s, "s", 0)}` : stateText("tube_state", tube.state);
+    g.fillText(state, x + 32, top + 41, cardW - 40);
+    const fill = ready ? 1 : reloading ? .35 : 0;
+    g.fillStyle = p.line; g.fillRect(x + 10, top + cardH - 8, cardW - 20, 3);
+    g.fillStyle = color; g.fillRect(x + 10, top + cardH - 8, (cardW - 20) * fill, 3);
   });
-  $("weapons-system-text").textContent = t("weapons_equivalent", {state: readiness.state, interlock: readiness.interlock, tubes: tubes.map((tube) => `${tube.tube}:${tube.state}/${number(tube.reload_s, 0)}s`).join(", ") || t("station_none"), nixies: number(payload.inventory.nixies, 0), active: payload.active_assets.length});
+  // The firing chain in the order the fire control checks it; the step that
+  // holds the shot is marked and the line below says what is missing.
+  const chain = ["target", "release", "solution", "tube", "fire"];
+  const held = readiness.stage === "station" ? chain.length - 1 : chain.indexOf(readiness.stage);
+  const chainTop = top + cardH + 22, stepW = (w - 20) / chain.length;
+  chain.forEach((stage, index) => {
+    const x = 10 + index * stepW, done = index < held || readiness.stage === "fire", holding = index === held && readiness.stage !== "fire";
+    const color = done ? p.accent : holding ? p.amber : p.muted;
+    g.strokeStyle = color; g.lineWidth = holding ? 2 : 1;
+    g.strokeRect(x + .5, chainTop + .5, stepW - 22, 30); g.lineWidth = 1;
+    g.fillStyle = color; g.textAlign = "center";
+    g.fillText(`${done ? "\u2713" : holding ? "!" : "\u25CB"} ${t(`weapons_chain_${stage}`)}`, x + (stepW - 22) / 2, chainTop + 20, stepW - 30);
+    if (index < chain.length - 1) { g.fillStyle = p.muted; g.fillText("\u203A", x + stepW - 11, chainTop + 20); }
+  });
+  g.textAlign = "left";
+  g.fillStyle = readiness.stage === "fire" ? p.accent : p.amber;
+  g.fillText(readiness.stage === "fire" ? t("weapons_chain_ready") : readiness.interlock, 12, chainTop + 52, w - 24);
+  g.fillStyle = p.muted;
+  g.fillText(t(`weapons_chain_hint_${readiness.stage}`), 12, chainTop + 72, w - 24);
+  $("weapons-system-text").textContent = t("weapons_equivalent", {state: readiness.state, interlock: readiness.interlock, tubes: tubes.map((tube) => `${tube.tube + 1}:${tube.state}/${number(tube.reload_s, 0)}s`).join(", ") || t("station_none"), nixies: number(payload.inventory.nixies, 0), active: payload.active_assets.length});
 }
 function visualStationDown(role) {
   const payload = S.v2State?.[role];

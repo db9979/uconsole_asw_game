@@ -467,7 +467,7 @@ def test_native_status_semantic_sentinels_and_exact_subschemas(published):
     assert weapons["designated_target"] is None
     assert weapons["depth_m"] == game.torpedo_depth
     assert set(weapons["readiness"]) == {"station_down", "roe", "ciws_ready",
-        "rbu_ready", "torpedo_warning", "aa_ready", "state", "interlock", "reload_s"}
+        "rbu_ready", "torpedo_warning", "aa_ready", "state", "interlock", "stage", "reload_s"}
     assert all(set(row) == {"tube", "state", "reload_s"}
                for row in weapons["tubes"])
     assert set(server.v2_states["opz"]["opz"]["radar"]) == {

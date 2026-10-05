@@ -7,6 +7,7 @@ import { queueDraw } from "./chart.js";
 import { renderActionState } from "./controls.js";
 import { actionButton, metrics, node } from "./dom.js";
 import { queueVisualDraw } from "./role-visuals.js";
+import { autoDocks } from "./layout.js";
 import { stationActionAvailable } from "../state/availability.js";
 
 // The listening focus the host will hold once this client's own focus command
@@ -103,6 +104,7 @@ export function renderTracks() {
     if (list.children[index] !== button) list.insertBefore(button, list.children[index] || null);
   });
   if (!visibleTracks.length) list.replaceChildren(node("p", t(S.snapshot.tracks.length ? "contact_filter_empty" : "no_contacts"), "empty"));
+  autoDocks();
   $("track-count").textContent = term ? `${number(visibleTracks.length, 0)} / ${number(S.snapshot.tracks.length, 0)}` : number(S.snapshot.tracks.length, 0);
 }
 export function renderDetail(resetDraft = false) {
@@ -110,6 +112,7 @@ export function renderDetail(resetDraft = false) {
   $("classification-form").hidden = !["sonar", "uboot_sonar", "helicopter", "opz"].includes(S.session?.station);
   $("affiliation-form").hidden = S.session?.station !== "opz";
   $("no-selection").hidden = Boolean(track);
+  autoDocks();
   $("track-detail").hidden = !track;
   if (track) {
     let stationActions = document.getElementById("selection-station-actions");

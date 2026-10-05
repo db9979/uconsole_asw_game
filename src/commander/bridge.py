@@ -133,6 +133,13 @@ def sonar_pcm_s16le(samples) -> bytes:
     return np.rint(limited.astype(np.float64) * 32767.0).astype("<i2").tobytes()
 
 
+def _polygon_area(points) -> float:
+    """Shoelace area of a landmass outline (its size order only)."""
+    pts = list(points or ())
+    return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1)
+                   in zip(pts, pts[1:] + pts[:1]))) / 2.0
+
+
 class CommanderBridge:
     def __init__(self):
         self._server = None
@@ -562,11 +569,14 @@ class CommanderBridge:
                     kind=hazard.kind, x=_number(hazard.x_nm), y=_number(hazard.y_nm),
                     top_depth_m=_number(hazard.top_depth_m),
                     length_m=_number(hazard.length_m)))
-            for land in islice(game.world.coast.landmasses, 128):
-                if getattr(land, "name", None) and hasattr(land, "centroid"):
-                    x, y = land.centroid
-                    self._chart_geography["labels"].append(dict(
-                        name=str(land.name)[:96], x=_number(x), y=_number(y)))
+            # Largest landmass first: the browser names each country once,
+            # at its largest piece in view (as the uConsole chart does).
+            named = [land for land in islice(game.world.coast.landmasses, 128)
+                     if getattr(land, "name", None) and hasattr(land, "centroid")]
+            for land in sorted(named, key=lambda item: -_polygon_area(item.points)):
+                x, y = land.centroid
+                self._chart_geography["labels"].append(dict(
+                    name=str(land.name)[:96], x=_number(x), y=_number(y)))
             for base in islice(getattr(game.world.coast, "airbases", ()), 128):
                 if _number(base.get("x")) is not None and _number(base.get("y")) is not None:
                     self._chart_geography["airbases"].append(dict(

@@ -1,4 +1,4 @@
-# U-Jagd 1.3.209 - Stations- und Tastenkürzel
+# U-Jagd 1.3.210 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -386,10 +386,17 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |
 | `Home / End` | Erster / letzter Eintrag der fokussierten Liste |
 | `+ / - · Q / E` | Fokussierte Karte zoomen (Q / E wie auf der uConsole); Pos1 passt die Ansicht ein |
+| `K` | Karte folgt dem eigenen Schiff an oder aus |
+| `C / V / D · T` | Kurs, Fahrt, Tiefe, Torpedo-Lauftiefe: der Cursor springt ins Feld, Enter sendet (Brücke, Maschine, U-Boot) |
+| `Shift+A · J` | Aktiver Ping · Live-Sonarton an oder aus (Sonar, U-Boot-Führung, Tauchsonar des Helikopters) |
+| `Strg+Enter` | Schuss scharf machen (Waffen, OPZ, Helikopter, U-Boot-Waffen); der Feuerdialog fragt noch einmal |
+| `R / Shift+R` | OPZ: Seeziel- / Luftraumradar an oder aus; Q / E ändern den Radar-Anzeigebereich |
+| `H · B · Ctrl+R · Shift+M` | Helikopter: starten oder zurückrufen, Boje werfen, Flugzeugradar, MAD |
+| `A · V · Ctrl+B` | Schleichfahrt (Maschine) · Täuschkörper (U-Boot-Waffen) · toten Winkel klären (Brücke, U-Boot-Führung) |
 | `Pfeiltasten (Karte)` | Fokussierte Karte verschieben |
 | `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
 | `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
-| `Bild auf/ab` | Helikopter: Akustikanalyse, Tauchsonar und Taktische Karte durchblättern (auch nochmals 8) |
+| `Bild auf/ab` | Seiten durchblättern: Helikopter Akustikanalyse, Tauchsonar und Taktische Karte (auch nochmals 8), Sonarseiten |
 | `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
 | `, / .` | Kontaktliste (,) oder Stationsbereich (.) ein- oder ausklappen |
 | `L` | Einsatzprotokoll öffnen oder schließen |

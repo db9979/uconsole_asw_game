@@ -307,4 +307,14 @@ body.workstation-mode .tablist { display: none; }
   .dock[data-collapsed="true"] .dock-title { writing-mode: horizontal-tb; transform: none; }
   .dock[data-collapsed="true"] .dock-toggle { order: 0; }
 }
+/* Phones: the bar keeps the brand, the theme, the explain key and a menu
+   button; language, sound, microphone, settings and tools open with it. */
+.status-more { display: none; }
+@media (max-width: 640px) {
+  .status-more { display: inline-flex; align-items: center; justify-content: center; min-width: 2.4rem; font-size: 1.1rem; }
+  .status-actions { flex: 1 1 auto; flex-wrap: wrap; justify-content: flex-end; row-gap: .35rem; margin-left: auto; }
+  .statusbar:not([data-more="open"]) .status-actions > :not(.status-more, .theme-switch, #disabled-control-explain) { display: none; }
+  .statusbar[data-more="open"] .status-actions { flex-basis: 100%; order: 9; }
+  .statusbar[data-more="open"] .status-more { order: -1; }
+}
 .bootstrap-hint { flex-basis: 100%; max-width: 46ch; margin: 0; color: var(--alarm); text-align: center; }

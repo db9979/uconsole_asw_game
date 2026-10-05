@@ -46,6 +46,9 @@ class Preferences:
     # Legacy switch of the anti-aliased lines, kept in step with "full" so an
     # older build reading this file sees the same choice.
     aa_lines: bool = False
+    # Automatic economy: a picture slower than about 14 frames a second for a
+    # few seconds drops to the "low" level by itself (display only).
+    graphics_auto: bool = True
     # Spoken crew reports through an installed espeak-ng (silent without).
     speech: bool = False
     # Noise discipline: the uConsole's own microphone (level only, opt-in).
@@ -121,7 +124,8 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     values: dict[str, object] = {"language": language}
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
                  "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "microphone", "live_ais_enabled",
-                 "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor", "enemy_learns"):
+                 "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor", "enemy_learns",
+                 "graphics_auto"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)
     frame_rate = payload.get("frame_rate", defaults.frame_rate)

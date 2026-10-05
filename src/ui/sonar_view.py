@@ -19,6 +19,7 @@ from src.ui.sonar_data import (  # noqa: F401
     message, _observed_bearing, _bearing_line, _history_for_page,
     _visible_contacts, _visible_echoes, _list_rows, _array_readout,
     _circular_broadband, _linear_lofar, _lofar_frequencies,
+    circular_broadband_rows, linear_lofar_rows,
     _process_lofar_rows, _waterfall_controls, _display_controls,
     spectrum_peaks, peak_label, place_peak_labels, _translator, _tow_status,
     _vds_status, active_echoes, _selected_harmonic,
@@ -178,10 +179,9 @@ def _waterfall(game, page, rect):
             # Operator integration: each row averages its last N seconds.
             raw = analysis_tools.integrate_rows(raw, controls[6])
             processed = _process_lofar_rows(raw, controls, process is not None)
-            processed = np.asarray([_linear_lofar(row, rect.w) for row in processed])
+            processed = linear_lofar_rows(processed, rect.w)
         elif page == 0 and len(rows):
-            processed = np.asarray([_circular_broadband(row, rect.w)
-                                    for row in raw])
+            processed = circular_broadband_rows(raw, rect.w)
         # Fixed time scale from the first sample: empty history stays below it.
         bitmap = processed
         if (not live_fallback and len(processed)
@@ -215,10 +215,12 @@ def _grid(screen, rect, xmax, unit):
 def _trace(screen, rect, values, color=CYAN):
     if len(values) < 2:
         return
-    values = np.clip(np.nan_to_num(values), 0, 1)
-    points = [(rect.x + round(i * (rect.w - 1) / (len(values) - 1)),
-               rect.bottom - 1 - round(float(v) * (rect.h - 1)))
-              for i, v in enumerate(values)]
+    values = np.clip(np.nan_to_num(np.asarray(values, dtype=float)), 0, 1)
+    count = len(values)
+    # np.rint rounds half to even like round(): the same points, vectorised.
+    xs = rect.x + np.rint(np.arange(count) * (rect.w - 1) / (count - 1))
+    ys = rect.bottom - 1 - np.rint(values * (rect.h - 1))
+    points = np.column_stack((xs, ys)).astype(np.int64).tolist()
     with layout.clip_to(screen, rect):
         pygame.draw.lines(screen, color, False, points, 1)
 

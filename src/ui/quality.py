@@ -8,6 +8,10 @@ The ``graphics`` preference picks one of three levels:
 * ``full``: like ``normal`` plus anti-aliased chart lines; the default on
   Windows.
 
+With ``graphics_auto`` (default on) a picture that stays below
+``AUTO_LOW_FPS`` for a few seconds drops to ``low`` by itself until the
+player picks a level again (the ECO lamp in the top bar says so).
+
 Nothing here changes what a station shows as information: tracks, rings,
 datums and sight events stay at every level.
 
@@ -26,19 +30,83 @@ import sys
 import pygame
 
 LEVELS = ("low", "normal", "full")
-LEVEL = "normal"
+LEVEL = "normal"            # the level drawn now
+CHOSEN = "normal"           # the level of the settings
+# Automatic economy: True while a slow picture made the game draw at the low
+# level by itself (``FrameWatch``); the ECO lamp in the top bar shows it.
+AUTO_LOW = False
 
 # Backdrop frame rate at the low level (frames per second of wall time).
 LOW_BACKDROP_FPS = 4.0
 
+# Automatic economy: below this many frames a second for AUTO_LOW_HOLD_S of
+# wall time (measured in whole windows of AUTO_LOW_WINDOW_S) the picture
+# drops to the low level.  A frame longer than AUTO_LOW_HITCH_S (loading a
+# mission or a save) is not counted and starts the measurement again.
+AUTO_LOW_FPS = 14.0
+AUTO_LOW_HOLD_S = 5.0
+AUTO_LOW_WINDOW_S = 1.0
+AUTO_LOW_HITCH_S = 1.0
 
-def configure(level: str) -> str:
-    """Set the active level (unknown values fall back to normal)."""
+
+def _apply() -> str:
     from src.ui import lines
     global LEVEL
-    LEVEL = level if level in LEVELS else "normal"
+    LEVEL = "low" if AUTO_LOW else CHOSEN
     lines.ENABLED = LEVEL == "full"
     return LEVEL
+
+
+def configure(level: str) -> str:
+    """Set the chosen level (unknown values fall back to normal); the
+    automatic economy keeps the low level drawn until it is reset."""
+    global CHOSEN
+    CHOSEN = level if level in LEVELS else "normal"
+    return _apply()
+
+
+def set_auto_low(active: bool) -> str:
+    """Switch the automatic economy on or off (display only)."""
+    global AUTO_LOW
+    AUTO_LOW = bool(active)
+    return _apply()
+
+
+class FrameWatch:
+    """Wall-time frame-rate watch for the automatic economy.
+
+    ``feed`` takes each frame's wall time and returns True once the frame
+    rate stayed below ``AUTO_LOW_FPS`` for ``AUTO_LOW_HOLD_S``.  Display
+    only: it never reads or changes the simulation.
+    """
+
+    def __init__(self) -> None:
+        self.reset()
+
+    def reset(self) -> None:
+        self._window_s = 0.0
+        self._frames = 0
+        self._slow_s = 0.0
+
+    def feed(self, wall_dt: float) -> bool:
+        try:
+            wall_dt = float(wall_dt)
+        except (TypeError, ValueError, OverflowError):
+            return False
+        if not math.isfinite(wall_dt) or wall_dt <= 0.0:
+            return False
+        if wall_dt > AUTO_LOW_HITCH_S:
+            self.reset()
+            return False
+        self._window_s += wall_dt
+        self._frames += 1
+        if self._window_s < AUTO_LOW_WINDOW_S:
+            return False
+        fps = self._frames / self._window_s
+        self._slow_s = self._slow_s + self._window_s if fps < AUTO_LOW_FPS else 0.0
+        self._window_s = 0.0
+        self._frames = 0
+        return self._slow_s >= AUTO_LOW_HOLD_S
 
 
 def afterglow() -> bool:
@@ -53,19 +121,24 @@ def backdrop_time(t: float) -> float:
 
 
 _SCRATCH: dict = {}
+_OUTPUT: dict = {}           # plain pixel scaling
+_OUTPUT_SMOOTH: dict = {}    # sharp (smooth) scaling
 
 
-def _scratch(size, like: pygame.Surface) -> pygame.Surface:
-    surface = _SCRATCH.get(size)
+def _scratch(size, like: pygame.Surface, store: dict = _SCRATCH) -> pygame.Surface:
+    surface = store.get(size)
     if surface is None or surface.get_bitsize() != like.get_bitsize():
-        _SCRATCH.clear()          # one window size at a time
+        store.clear()             # one window size at a time
         surface = pygame.Surface(size, 0, like)
-        _SCRATCH[size] = surface
+        store[size] = surface
     return surface
 
 
 def scale_canvas(canvas: pygame.Surface, size, level: str | None = None) -> pygame.Surface:
-    """The canvas scaled to ``size`` for the window."""
+    """The canvas scaled to ``size`` for the window.
+
+    The result is a kept surface: valid until the next call that scales the
+    same way (the frame blits it at once)."""
     level = LEVEL if level is None else level
     width, height = int(size[0]), int(size[1])
     cw, ch = canvas.get_size()
@@ -73,14 +146,17 @@ def scale_canvas(canvas: pygame.Surface, size, level: str | None = None) -> pyga
         return canvas
     factor = min(width / cw, height / ch)
     whole = round(factor)
-    if level == "low" or (abs(factor - whole) < 1e-9 and whole >= 1
-                          and (width, height) == (cw * whole, ch * whole)):
-        return pygame.transform.scale(canvas, (width, height))
-    if canvas.get_bitsize() not in (24, 32):
-        return pygame.transform.scale(canvas, (width, height))
+    # Scaled into kept surfaces: a desktop window would otherwise allocate
+    # (and free) a full-screen surface every frame. Same pixels.
+    if (level == "low" or canvas.get_bitsize() not in (24, 32)
+            or (abs(factor - whole) < 1e-9 and whole >= 1
+                and (width, height) == (cw * whole, ch * whole))):
+        return pygame.transform.scale(canvas, (width, height),
+                                      _scratch((width, height), canvas, _OUTPUT))
+    output = _scratch((width, height), canvas, _OUTPUT_SMOOTH)
     up = max(1, math.ceil(factor))
     source = canvas
     if up > 1:
         source = _scratch((cw * up, ch * up), canvas)
         pygame.transform.scale(canvas, source.get_size(), source)
-    return pygame.transform.smoothscale(source, (width, height))
+    return pygame.transform.smoothscale(source, (width, height), output)

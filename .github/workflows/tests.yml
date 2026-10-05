@@ -70,6 +70,27 @@ jobs:
       - name: pytest
         run: python -m pytest -q -m "not browser"
 
+  pytest-browser:
+    # Its own job, so the Chromium tests run beside the main suite.
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Put Chromium on PATH
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          ln -s "$(command -v google-chrome)" "$RUNNER_TEMP/bin/chromium"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
       - name: pytest (browser tests)
         # The Chromium probes race a live host or run under virtual time;
         # two workers keep the runner from starving either side. conftest.py

@@ -6,6 +6,7 @@ import math
 
 from src.core import config
 from src.core.station import Station
+from src.weapons.asw import NIXIE_MAX_TOW_KN
 
 
 AUTOCREW_STATIONS = (
@@ -39,6 +40,14 @@ _ACTIONS = frozenset({
 })
 
 
+def evade_speed_kn(game, kind: str = "torpedo") -> float:
+    """Speed to run from a threat: flank, but from a torpedo below the speed
+    at which a Nixie's tow cable parts while one is out or one is aboard."""
+    if kind == "torpedo" and (game.nixies or game.nixie_store.remaining_total > 0):
+        return min(config.SHIP_SPEED_MAX_KN, NIXIE_MAX_TOW_KN - 1.0)
+    return config.SHIP_SPEED_MAX_KN
+
+
 def _nearest_threat(game):
     """Return the nearest inbound ASM or torpedo threat as {bearing, range_nm}.
 
@@ -46,11 +55,11 @@ def _nearest_threat(game):
     real crew could already see, never world truth. Mirrors the range-then-id
     tie-break `_opz` already uses for ASM tracks.
     """
-    items = [(track.range_nm, track.track_id, track.bearing)
+    items = [(track.range_nm, track.track_id, track.bearing, "asm")
              for track in game.asm_tracks()]
     # Torpedo threats are intercepts audible now or contacts the operator
     # classified TORPEDO; the entity type is never consulted.
-    items += [(None, f"T{index:03d}", warning["bearing"])
+    items += [(None, f"T{index:03d}", warning["bearing"], "torpedo")
               for index, warning in enumerate(game.torpedo_warnings(held=False))
               if warning["age_s"] <= 2.0
               and warning["source"] != "flood"]
@@ -59,9 +68,9 @@ def _nearest_threat(game):
     # `_id` is a str on both branches above so the tie-break stays orderable
     # even when an ASM track (str track_id) and a torpedo contact (int id)
     # tie on range at the same time.
-    range_nm, _id, bearing = min(
+    range_nm, _id, bearing, kind = min(
         items, key=lambda item: (float("inf") if item[0] is None else item[0], item[1]))
-    return {"bearing": bearing, "range_nm": range_nm}
+    return {"bearing": bearing, "range_nm": range_nm, "kind": kind}
 
 
 def station_key(station) -> str:
@@ -222,8 +231,9 @@ class AutocrewController:
                                   % 360.0) - 180.0)
                 if course_off > 5.0 and game.order_course(candidate) == "ok":
                     changed = True
-            if (game.ship.target_speed < config.SHIP_SPEED_MAX_KN - 0.5
-                    and game.order_speed(config.SHIP_SPEED_MAX_KN) == "ok"):
+            evade_kn = evade_speed_kn(game, threat["kind"])
+            if (abs(game.ship.target_speed - evade_kn) > 0.5
+                    and game.order_speed(evade_kn) == "ok"):
                 changed = True
             return "evading" if changed else "monitoring"
 
@@ -291,7 +301,8 @@ class AutocrewController:
     def _weapons(game):
         observed = any(warning["age_s"] <= 2.0 and warning["source"] != "flood"
                        for warning in game.torpedo_warnings(held=False))
-        if observed and not game.nixies and game.nixie_store.ready > 0:
+        if (observed and not game.nixies and game.nixie_store.ready > 0
+                and game.ship.speed <= NIXIE_MAX_TOW_KN):
             if game.deploy_nixie_result() is True:
                 return "countermeasure"
         if game.damage.station_down("weapons"):

@@ -679,7 +679,13 @@ class SimMixin:
         helo = self.helo
         if not helo.mad_mode or not helo.airborne or helo.hovering:
             return
-        tick = int(self.sim_t / max(dt, 1e-6))
+        # One magnetometer look per MAD_LOOK_S of simulation time, as for the
+        # patrol aircraft: the chance per second must not depend on the frame
+        # rate (one draw per substep did, and keyed ticks by the substep).
+        look = mad_physics.MAD_LOOK_S
+        tick = math.floor((self.sim_t + 1e-9) / look)
+        if tick == math.floor((self.sim_t - dt + 1e-9) / look):
+            return
         for target in targets:
             if (getattr(target, "sensor_domain", None) != "subsurface"
                     or getattr(target, "sunk", False)):

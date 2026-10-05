@@ -29,6 +29,7 @@ from functools import lru_cache
 from src.core import boat_missions, commander_traits, config, detrand, opfor_plans
 from src.core.autocrew import AutocrewController, _nearest_threat, station_key
 from src.core.station import Station
+from src.weapons.asw import NIXIE_MAX_TOW_KN
 from src.llm import opponent
 from src.physics.geo import bearing_deg as _bearing
 
@@ -717,7 +718,8 @@ def fire_range_nm(game) -> float:
 def weapons(game, found) -> str:
     observed = any(warning["age_s"] <= 2.0 and warning["source"] != "flood"
                    for warning in game.torpedo_warnings(held=False))
-    if observed and not game.nixies and game.nixie_store.ready > 0:
+    if (observed and not game.nixies and game.nixie_store.ready > 0
+            and game.ship.speed <= NIXIE_MAX_TOW_KN):
         if game.deploy_nixie_result() is True:
             return "countermeasure"
     if observed and game.rbu_defence_bearing() is not None and game.fire_rbu_defence() == "ok":

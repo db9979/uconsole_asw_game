@@ -17,6 +17,7 @@ MAD_SURE_PROBABILITY = 0.9
 MAD_FIX_UNCERTAINTY_NM = 0.3
 MAD_FIX_QUALITY = 0.7
 MAD_SPEED_KN = 90.0          # the run is flown slow and low
+MAD_LOOK_S = 1.0             # one look per hull and second, whatever the frame rate
 
 
 def slant_m(horizontal_nm: float, depth_m: float,

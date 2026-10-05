@@ -110,7 +110,7 @@ Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrü
 
 Gefechtslage:
 
-1. Torpedo gemeldet: sofort FLANK, so drehen, dass die Torpedopeilung achteraus oder querab liegt.
+1. Torpedo gemeldet: sofort auf 24 kn gehen (nicht FLANK: das Schleppkabel des Nixie reißt über 25 kn), so drehen, dass die Torpedopeilung achteraus oder querab liegt.
 2. Nixie in der Waffenzentrale befehlen (`V`); weiter drehen, damit der Torpedo zuerst den Täuschkörper sieht.
 3. Nach der Abwehr unter 15 kn gehen, damit das Sonar wieder erfasst; mit ausgebrachtem Schleppsonar nie über 20 kn.
 

@@ -12,20 +12,19 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.205**
+Current release: **1.3.206**
 
-Release 1.3.205 fixes what a full code review found, without changing how
-the game plays. A damaged or hand-edited save is now refused instead of
-closing the game, and a failed load no longer changes the running mission.
-On the uConsole the game stutters less: the sound picture is recomputed
-faster, rain on the chart is drawn once instead of every frame and is now
-visible in the light scheme, status texts and tooltips reuse their rendered
-text, and a sound heard from a new direction is no longer synthesized
-again. In the browser, game sounds and callouts are no longer lost when the
-host opens a menu. The sonar waterfall's tooltip and time label now match
-the shortened history (Shift+H). A broken update download can be retried,
-and the Windows program writes its crash log again. Keys are unchanged.
-Saves are v52; v38 to v51 saves still load.
+Release 1.3.206 fixes physics and weapon faults the code review found.
+In sea state 5 and above the frigate now gets under way from a standstill
+(it used to stay at 0 kn). A submarine that changes its depth order mid-dive
+no longer jumps to the new depth. The helicopter's MAD looks once per
+second, so its chance of a contact no longer depends on the frame rate. The
+crew assist now runs from a torpedo at 24 kn instead of flank speed while a
+Nixie is out or aboard, because the Nixie's tow cable parts above 25 kn,
+and no longer streams one above that speed. An enemy torpedo now loses its
+lock when the target is out of its seeker's reach, hears the frigate louder
+the faster it runs, and keeps its search pattern while the wire is held.
+Keys are unchanged. Saves are v52; v38 to v51 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

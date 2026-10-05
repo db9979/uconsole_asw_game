@@ -105,7 +105,7 @@ Globale Tasten (alle Stationen):
 5. Mit `C` klassifizieren, mit `T` TMA einschalten, dann auf der Brücke 30-60 Grad drehen und den neuen Schlag einige Minuten halten.
 6. Sobald TMA oder Ping eine Entfernung liefern: Kontakt an die OPZ freigeben (`G`) und als Ziel setzen (`M`).
 7. Waffen (`3`): Torpedotiefe auf die gepingte Zieltiefe stellen, mit `Strg+Enter` feuern.
-8. Sonar auf anlaufende Torpedos beobachten; kommt einer, FLANK, abdrehen und Nixie ausbringen (`V` in der Waffenzentrale).
+8. Sonar auf anlaufende Torpedos beobachten; kommt einer, mit 24 kn laufen (nicht FLANK: das Schleppkabel des Nixie reißt über 25 kn), abdrehen und Nixie ausbringen (`V` in der Waffenzentrale).
 
 ### Die erste Tauchfahrt (U-Boot)
 
@@ -478,11 +478,11 @@ Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrü
 2. Transit mit FULL, vor dem Suchgebiet auf SLOW oder 4-6 kn gehen.
 3. Suche: ruhige Schläge von 3-5 min, dann 30-60 Grad drehen, damit TMA Entfernung gewinnt.
 4. Abstand zu Küste und Flachwasser halten; Kartentiefe beachten.
-5. Torpedo im Anlauf: FLANK, querab abdrehen, Nixie an der Waffenzentrale.
+5. Torpedo im Anlauf: 24 kn (Nixie-Kabel reißt über 25), querab abdrehen, Nixie an der Waffenzentrale.
 
 Gefechtslage:
 
-1. Torpedo gemeldet: sofort FLANK, so drehen, dass die Torpedopeilung achteraus oder querab liegt.
+1. Torpedo gemeldet: sofort auf 24 kn gehen (nicht FLANK: das Schleppkabel des Nixie reißt über 25 kn), so drehen, dass die Torpedopeilung achteraus oder querab liegt.
 2. Nixie in der Waffenzentrale befehlen (`V`); weiter drehen, damit der Torpedo zuerst den Täuschkörper sieht.
 3. Nach der Abwehr unter 15 kn gehen, damit das Sonar wieder erfasst; mit ausgebrachtem Schleppsonar nie über 20 kn.
 
@@ -788,7 +788,7 @@ Torpedolauf von oben:
 - Salve (`Y`): ein Torpedo oder zwei im Fächer von +/-8° mit eigenen, um das Schiff gedrehten Datums; ein Fächer braucht zwei geladene Rohre des gewählten Typs und zählt gegen die Doktringrenze.
 - Voreingestellte Tiefe 10-300 m (Standard 60 m): `↑`/`↓` halten oder nach `T` eintippen, wie auf dem U-Boot. Falsche Tiefe bedeutet Fehlschuss: Tiefe aus dem Ping nehmen, nicht aus der TMA.
 - Der Draht aktualisiert das Datum aus der beobachteten Kontaktposition. Ohne Updates wird er nach 3 s STALE und nach 12 s BROKEN; der Torpedo läuft dann zum letzten Datum weiter.
-- Der Sucher steuert den nächsten Kandidaten an: das kann ein Täuschkörper, ein Wal oder ein Handelsschiff sein. Ein ziviler Treffer beendet die Mission.
+- Der Sucher steuert den lautesten Kandidaten an (eine bestehende Aufschaltung bleibt, solange kein anderer 6 dB lauter ist): das kann ein Täuschkörper, ein Wal oder ein Handelsschiff sein. Ein ziviler Treffer beendet die Mission.
 - Salvendoktrin SHOOT-LOOK-SHOOT: höchstens 2 eigene Torpedos gleichzeitig im Wasser.
 - ASROC (`A`): 4 Schuss pro Mission. Die Rakete fliegt mit 500 kn zur beobachteten Position des Ziels (1 bis 10 sm, aktuelle Entfernung nötig) und setzt dort den Leichttorpedo des Helikopters auf der voreingestellten Tiefe ab. Es gelten dieselben Zielprüfungen wie beim Torpedo, und es zählt gegen die Doktringrenze.
 - Wasserbomben (`Z`): 20 pro Mission, geworfen als Muster aus 5 (drei im Kielwasser 20, 80 und 140 m achteraus, zwei 70 m querab geworfen), danach 45 s Nachladen der Ablaufbahn. Das Schiff muss mindestens 10 kn laufen. Die Bomben sinken mit 3,5 m/s bis zur voreingestellten Tiefe (15-300 m) oder zum Grund; jede 90-kg-Ladung ist bis etwa 25 m tödlich und beschädigt noch bis etwa 100 m. U-Boote innerhalb von 5 sm hören die Detonation und weichen aus.

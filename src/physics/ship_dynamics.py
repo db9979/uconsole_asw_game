@@ -183,10 +183,15 @@ def _exp_linear_step(v0: float, alpha: float, beta: float, dt: float) -> float:
 
 
 def _exp_linear_time_to(v0: float, v1: float, alpha: float, beta: float) -> float:
+    """Time until dv/dt = alpha + beta v reaches ``v1``; inf if it never does."""
     if abs(beta) < 1e-15:
-        return (v1 - v0) / alpha if alpha > 0.0 else float("inf")
-    ratio = (v1 + alpha / beta) / (v0 + alpha / beta)
-    return math.log(ratio) / beta if ratio > 0.0 else float("inf")
+        t = (v1 - v0) / alpha if alpha != 0.0 else float("inf")
+    else:
+        ratio = (v1 + alpha / beta) / (v0 + alpha / beta)
+        t = math.log(ratio) / beta if ratio > 0.0 else float("inf")
+    # A negative time means v1 lies behind the motion (or beyond an unstable
+    # equilibrium): it is not reached, never jumped to.
+    return t if t >= 0.0 else float("inf")
 
 
 def surge_step(model: HullModel, v0: float, target: float, mass_kg: float,
@@ -209,7 +214,11 @@ def surge_step(model: HullModel, v0: float, target: float, mass_kg: float,
     mass_eff = model.effective_mass_kg(mass_kg)
     n_target = model.steady_rps(target)
     c = model.rpm_per_mps / 60.0
-    delta = model.load_up_rps
+    # The control programme's load-up margin also covers the added resistance
+    # in a seaway, so the calm-water acceleration margin K*delta0^2 is kept
+    # (without it the ship could not get under way from rest in heavy seas).
+    delta = math.sqrt(model.load_up_rps ** 2
+                      + max(0.0, extra_resistance) / model.thrust_k)
     remaining = dt
     v = max(0.0, v0)
     governed = False

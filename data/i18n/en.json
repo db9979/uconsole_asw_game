@@ -3982,7 +3982,7 @@
   "help.sop.bridge.2": "Transit at FULL, then slow to SLOW or 4-6 kn before the search area.",
   "help.sop.bridge.3": "Search: steady legs of 3-5 min, then turn 30-60 degrees so TMA gains range.",
   "help.sop.bridge.4": "Keep clear of the coast and shallow water; watch the chart depth.",
-  "help.sop.bridge.5": "Torpedo inbound: FLANK, turn away beam-on, order Nixie at Weapons.",
+  "help.sop.bridge.5": "Torpedo inbound: 24 kn (Nixie cable parts above 25), turn away beam-on, order Nixie at Weapons.",
   "help.sop.sonar.1": "Go slow (4-8 kn) and select HMS; stream the TAS at 3-12 kn (Y) and lower the VDS below the layer at 3-15 kn (Shift+Y).",
   "help.sop.sonar.2": "Search BROADBAND for bearing traces; confirm tonals on LOFAR (N notch).",
   "help.sop.sonar.3": "Select the contact (Up/Down), lock focus (Enter), check DEMON.",

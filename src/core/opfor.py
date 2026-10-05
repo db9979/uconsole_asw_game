@@ -551,7 +551,10 @@ def update_wires(game, boat, dt: float) -> None:
             orders.event("wire_broken")
             continue
         if (torpedo.seeker_acquired or torpedo.guidance_x is None
-                or torpedo.guidance_y is None):
+                or torpedo.guidance_y is None
+                or (torpedo.terminal_active and torpedo.pattern != "straight")):
+            # Seeker on with a search pattern set: the pattern steers, not
+            # the wire (the wire held it circling on the datum before).
             continue
         # The wire turns the torpedo onto its (possibly updated) datum.
         desired = math.degrees(math.atan2(torpedo.guidance_x - torpedo.x,

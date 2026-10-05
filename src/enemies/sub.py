@@ -837,8 +837,10 @@ class Sub(FrigateRelativeMixin):
         new_rate = self.depth_rate_mps + config.clamp(
             desired_rate - self.depth_rate_mps, -accel, accel)
         step = (self.depth_rate_mps + new_rate) / 2.0 * dt
-        if (step >= 0.0 and self.depth + step >= target_depth) or \
-           (step <= 0.0 and self.depth + step <= target_depth):
+        gap = target_depth - self.depth
+        # Settle only when moving toward the order and reaching it this step:
+        # a reversed order first brakes the vertical motion, never teleports.
+        if gap == 0.0 or (step * gap > 0.0 and abs(step) >= abs(gap)):
             self.depth = target_depth
             self.depth_rate_mps = 0.0
         else:

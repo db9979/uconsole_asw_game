@@ -58,7 +58,7 @@ Globale Tasten (alle Stationen):
 5. Mit `C` klassifizieren, mit `T` TMA einschalten, dann auf der Brücke 30-60 Grad drehen und den neuen Schlag einige Minuten halten.
 6. Sobald TMA oder Ping eine Entfernung liefern: Kontakt an die OPZ freigeben (`G`) und als Ziel setzen (`M`).
 7. Waffen (`3`): Torpedotiefe auf die gepingte Zieltiefe stellen, mit `Strg+Enter` feuern.
-8. Sonar auf anlaufende Torpedos beobachten; kommt einer, FLANK, abdrehen und Nixie ausbringen (`V` in der Waffenzentrale).
+8. Sonar auf anlaufende Torpedos beobachten; kommt einer, mit 24 kn laufen (nicht FLANK: das Schleppkabel des Nixie reißt über 25 kn), abdrehen und Nixie ausbringen (`V` in der Waffenzentrale).
 
 ## Die erste Tauchfahrt (U-Boot) {#qs-first-dive}
 

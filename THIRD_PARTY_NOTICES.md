@@ -81,7 +81,7 @@ begrenzt regionale Häufung. Pro Sektor bleiben höchstens zwölf stabil sortier
 Stützpunkteinträge. Das Ergebnis sind genau 128 vorvalidierte Sektoren; der Seed
 wählt einen Katalogeintrag.
 
-Seit 1.3.210 werden die Sektoren in zwei Schritten erzeugt (`build`, dann
+Seit 1.3.214 werden die Sektoren in zwei Schritten erzeugt (`build`, dann
 `refine`). `build` wählt Sektoren, Mittelpunkte und Stützpunkte wie oben aus
 `Natural Earth 1:50m Admin 0 Countries v5.1.1` (gleicher Commit, SHA-256
 `3e458fc036ad0a66411f2c1e6cac49c5d7bfb81cb1123bc513b22511a2b7fdeb`); dieser

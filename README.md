@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.220**
+Current release: **1.3.229**
 
-Release 1.3.220 makes the event log (F11) readable in every colour scheme
+Release 1.3.229 makes the event log (F11) readable in every colour scheme
 and lets the mouse close it. In the light "Tactical Day" scheme the log
 used to keep the night colours, so many lines were pale grey or pale blue
 on white, and the station showed through the panel. The log now uses the

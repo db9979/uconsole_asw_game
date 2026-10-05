@@ -7500,7 +7500,7 @@
   "commander.web.advisor_order_applied": "Befehl gegeben.",
   "commander.web.advisor_order_discarded": "Befehl verworfen.",
   "commander.web.advisor_order_done": "Erster Offizier: {count} Befehl(e) gegeben.",
-  "commander.web.advisor_order_partial": "Erster Offizier: {count} Befehl(e) gegeben; die anderen gehören zu einer anderen Station.",
+  "commander.web.advisor_order_partial": "Erster Offizier: {count} Befehl(e) gegeben; die anderen gehören zu einer anderen Station oder wurden nicht ausgeführt.",
   "commander.web.advisor_report_pending": "Das Sprachmodell schreibt den Einsatzbericht ...",
   "commander.web.debrief_report": "Einsatzbericht (Sprachmodell)",
   "commander.web.missions_generate_label": "Einsatz beschreiben (Sprachmodell, optional)",

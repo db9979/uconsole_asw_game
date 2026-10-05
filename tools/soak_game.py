@@ -37,6 +37,7 @@ import random
 import sys
 import time
 import traceback
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
@@ -67,7 +68,10 @@ def rss_mb() -> float:
             pages = int(stream.read().split()[1])
         return pages * os.sysconf("SC_PAGE_SIZE") / 1e6
     except (OSError, ValueError, AttributeError):
-        import resource
+        try:
+            import resource
+        except ImportError:          # Windows: no resource module
+            return 0.0
         return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e3
 
 
@@ -114,7 +118,7 @@ def diagnose_load(document: dict) -> str:
 
     def where(frame) -> str:
         code = frame.f_code
-        return (f"{os.path.relpath(code.co_filename, root)}:{frame.f_lineno} "
+        return (f"{Path(os.path.relpath(code.co_filename, root)).as_posix()}:{frame.f_lineno} "
                 f"in {code.co_name}()")
 
     def tracer(frame, event, arg):

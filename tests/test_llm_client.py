@@ -100,8 +100,8 @@ def test_key_file_is_private(isolated_saves, monkeypatch):
     assert keystore.load_key() == ""
     assert keystore.save_key("  sk-abc123456789 ")
     assert keystore.load_key() == "sk-abc123456789"
-    mode = stat.S_IMODE(os.stat(keystore.key_path()).st_mode)
-    assert mode == 0o600
+    if os.name == "posix":          # Windows has no POSIX file modes
+        assert stat.S_IMODE(os.stat(keystore.key_path()).st_mode) == 0o600
     monkeypatch.setenv(keystore.ENV_NAME, "env-key-value")
     assert keystore.load_key() == "env-key-value"
     monkeypatch.delenv(keystore.ENV_NAME)

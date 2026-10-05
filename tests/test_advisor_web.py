@@ -57,6 +57,25 @@ PROBE = r'''
     give.click();
     await until(() => $('advisor-status').textContent.length > 0 &&
       $('advisor-log').textContent.length > 0 && !$('advisor-log').querySelector('button'), 'order given', 3000);
+    // "Given" only means sent: wait until the host applied it to the ship.
+    let ordered = null;
+    for (let index = 0; index < 300 && ordered !== 120; index++) {
+      try {
+        const state = await (await fetch('/api/v2/state', {credentials: 'same-origin'})).json();
+        const find = (value) => {
+          if (!value || typeof value !== 'object') return null;
+          if (typeof value.target_course === 'number') return value.target_course;
+          for (const item of Object.values(value)) { const hit = find(item); if (hit !== null) return hit; }
+          return null;
+        };
+        ordered = find(state);
+        if (ordered !== null) ordered = Math.round(ordered);
+      } catch (_) {}
+      if (ordered !== 120) await sleep(100);
+    }
+    if (ordered !== 120)
+      throw new Error(`order not applied: target course ${ordered}, status "${$('advisor-status').textContent}", ` +
+        `command "${$('command-status').textContent}" (${$('command-status').dataset.status})`);
   }
   run().then(() => document.documentElement.dataset.advisorTest = 'passed', (error) => {
     document.documentElement.dataset.advisorTest = 'failed';
@@ -112,7 +131,7 @@ def test_browser_asks_the_executive_officer_and_gives_a_confirmed_order(tmp_path
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         started = time.monotonic()
         try:
-            while process.poll() is None and time.monotonic() - started < 90:
+            while process.poll() is None and time.monotonic() - started < 140:
                 console.pump(game)
                 game.update(.02)
                 game.llm_tick()

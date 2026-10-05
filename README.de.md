@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.220**
+Aktuelle Version: **1.3.229**
 
-Version 1.3.220 macht das Ereignislog (F11) in jedem Farbschema lesbar und
+Version 1.3.229 macht das Ereignislog (F11) in jedem Farbschema lesbar und
 lässt es mit der Maus schließen. Im hellen Schema „Taktik Tag“ behielt das
 Log die Farben der Nacht, viele Zeilen waren blassgrau oder hellblau auf
 Weiß, und die Station schien durch. Jetzt nimmt das Log die Farben des

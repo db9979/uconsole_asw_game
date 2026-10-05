@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.220
+## 1.3.229
 
-Release 1.3.220 makes the event log (F11) readable in every colour scheme
+Release 1.3.229 makes the event log (F11) readable in every colour scheme
 and lets the mouse close it. In the light "Tactical Day" scheme the log
 used to keep the night colours, so many lines were pale grey or pale blue
 on white, and the station showed through the panel. The log now uses the
@@ -18,6 +18,16 @@ control behind it. The same scheme fix applies to the debrief timeline,
 the campaign map, the submarine's threat and radio pages, the lookout
 page, the weather station and the simulation log. Keys are unchanged.
 Saves are v53; v38 to v52 saves still load.
+
+## 1.3.221
+
+Release 1.3.221 makes the release process safer. A new version is only
+published after all tests have passed on it, so a broken build never
+reaches the update offer. If the Windows build fails, the uConsole and the
+Mac still get the update, and the older release stays for Windows. Updates
+for Windows and macOS are only offered with a SHA-256 checksum. The tests
+now also run on Windows and on Python 3.13. Gameplay and keys are
+unchanged. Saves are v53; v38 to v52 saves still load.
 
 ## 1.3.218
 

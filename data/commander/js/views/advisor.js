@@ -3,6 +3,7 @@ import { $ } from "../core/base.js";
 import { t } from "../core/format.js";
 import { request } from "../net/request.js";
 import { sendStationAction } from "../net/commands.js";
+import { stationActionAvailable } from "../state/availability.js";
 import { boundedArray, exactKeys } from "../state/schema.js";
 import { node } from "./dom.js";
 
@@ -88,19 +89,29 @@ function entryNode(entry) {
 }
 
 // One command at a time: the pipeline holds one pending command per client.
-async function waitIdle(limitMs) {
+async function waitFor(check, limitMs) {
   const until = performance.now() + limitMs;
-  while (S.pending && performance.now() < until) await new Promise((resolve) => setTimeout(resolve, 150));
-  return !S.pending;
+  while (!check() && performance.now() < until) await new Promise((resolve) => setTimeout(resolve, 150));
+  return check();
+}
+// A command counts as given only once the host applied it; one the host
+// dropped (the world stepped on while it waited) is sent again.
+async function sendApplied(command) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (!(await waitFor(stationActionAvailable, 8000))) return false;
+    await sendStationAction(command.action, {...command.params});
+    if (!(await waitFor(() => !S.pending, 8000))) return false;
+    if (S.commandMessage?.status === "applied") return true;
+  }
+  return false;
 }
 async function giveOrder(entry) {
   advisor.applied.add(entry.seq);
   render();
   let given = 0, skipped = 0;
   for (const command of entry.proposal) {
-    if (!command.stations.includes(S.session?.station) || !(await waitIdle(8000))) { skipped += 1; continue; }
-    await sendStationAction(command.action, {...command.params});
-    given += 1;
+    if (command.stations.includes(S.session?.station) && await sendApplied(command)) given += 1;
+    else skipped += 1;
   }
   advisor.message = t(skipped ? "advisor_order_partial" : "advisor_order_done", {count: given});
   render();

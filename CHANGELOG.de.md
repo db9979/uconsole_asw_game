@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.220
+## 1.3.229
 
-Version 1.3.220 macht das Ereignislog (F11) in jedem Farbschema lesbar und
+Version 1.3.229 macht das Ereignislog (F11) in jedem Farbschema lesbar und
 lässt es mit der Maus schließen. Im hellen Schema „Taktik Tag“ behielt das
 Log die Farben der Nacht, viele Zeilen waren blassgrau oder hellblau auf
 Weiß, und die Station schien durch. Jetzt nimmt das Log die Farben des
@@ -19,6 +19,17 @@ Zeitleiste der Nachbesprechung, die Feldzugskarte, die Bedrohungs- und
 Funkseite des U-Boots, die Ausguckseite, die Wetterstation und das
 Simulationsprotokoll. Tasten bleiben gleich. Spielstände sind v53; v38 bis
 v52 laden weiter.
+
+## 1.3.221
+
+Version 1.3.221 macht das Veröffentlichen sicherer. Eine neue Version
+erscheint erst, wenn alle Tests auf ihr bestanden sind, so kommt ein
+fehlerhafter Stand nie ins Update-Angebot. Scheitert der Windows-Bau,
+bekommen uConsole und Mac das Update trotzdem, und für Windows bleibt die
+ältere Version stehen. Updates für Windows und macOS werden nur noch mit
+SHA-256-Prüfsumme angeboten. Die Tests laufen jetzt auch unter Windows und
+mit Python 3.13. Spiel und Tasten bleiben gleich. Spielstände sind v53;
+v38 bis v52 laden weiter.
 
 ## 1.3.218
 

@@ -262,10 +262,7 @@ def _draw_side(game, s, column) -> None:
         return
     for row in reversed(logged):
         age = max(0.0, game.sim_t - row["t"])
-        layout.blit_line(s, geo.position_text(
-            "radio.line.logged", game.world, row["observer_x"], row["observer_y"],
-            label=raw_text(row["label"]), bearing=f"{row['bearing'] % 360:05.1f}",
-            age=f"{age:.0f}"),
+        layout.blit_line(s, _logged_line(game, row, age),
             (gx, top, gw, row_h),
             config.COLOR_TEXT if age <= CHART_WINDOW_S else config.COLOR_TEXT_DIM, size=14)
         top += row_h
@@ -280,6 +277,19 @@ def _draw_side(game, s, column) -> None:
             (gx, top, gw, row_h),
             config.COLOR_OK if age <= CHART_WINDOW_S else config.COLOR_TEXT_DIM, size=14)
         top += row_h
+
+
+def _logged_line(game, row, age):
+    """One logged bearing: where the ship took it (whole minutes on a real
+    sea area, so the line fits the log column) and how long ago."""
+    fields = geo.position_fields(game.world, row["observer_x"], row["observer_y"], 0)
+    # Degrees and minutes need the room of the bearing's tenth.
+    bearing = row["bearing"] % 360
+    return message(geo.position_key("radio.line.logged", fields),
+                   label=raw_text(row["label"]), age=f"{age:.0f}",
+                   bearing=(f"{round(bearing) % 360:03d}" if "position" in fields
+                            else f"{bearing:05.1f}"),
+                   **fields)
 
 
 def _draw_chart_and_log(game, s, inner, log=True) -> None:
@@ -309,10 +319,7 @@ def _draw_chart_and_log(game, s, inner, log=True) -> None:
                                (("Enter", "Enter"),), screen=s)
     for index, row in enumerate(reversed(logged)):
         age = max(0.0, game.sim_t - row["t"])
-        layout.blit_line(s, geo.position_text(
-            "radio.line.logged", game.world, row["observer_x"], row["observer_y"],
-            label=raw_text(row["label"]), bearing=f"{row['bearing'] % 360:05.1f}",
-            age=f"{age:.0f}"),
+        layout.blit_line(s, _logged_line(game, row, age),
             (gx, top + index * row_h, column, row_h),
             config.COLOR_TEXT if age <= CHART_WINDOW_S else config.COLOR_TEXT_DIM, size=15)
     fixes = list(game.hfdf_fixes.values())[-HFDF_LOG_ROWS:]

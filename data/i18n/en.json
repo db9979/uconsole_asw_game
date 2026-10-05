@@ -1981,7 +1981,7 @@
   "panel.hfdf_log": "LOGGED BEARINGS / FIXES",
   "radio.log_empty": "Enter logs the selected bearing",
   "radio.line.logged": "{label} {bearing}° from {x}/{y} NM, {age}s",
-  "radio.line.logged.geo": "{label} {bearing}° from {position}, {age}s",
+  "radio.line.logged.geo": "{label} {bearing}° {position} {age}s",
   "radio.line.logged.short": "{label} {bearing}° @{x}/{y} {age}s",
   "radio.line.fix": "Fix {label}: 1 sigma {sigma} NM, {age}s",
   "panel.no_threat": "NO IMMEDIATE THREAT",
@@ -8035,6 +8035,10 @@
   "country.uruguay": "Uruguay",
   "country.venezuela": "Venezuela",
   "country.vietnam": "Vietnam",
+  "country.akrotiri_sovereign_base_area": "Akrotiri",
+  "country.cyprus_no_mans_area": "Cyprus buffer zone",
+  "country.dhekelia_sovereign_base_area": "Dhekelia",
+  "country.spratly_islands": "Spratly Islands",
   "help.web.map_follow": "Chart follows the own ship on or off",
   "help.web.orders": "Course, speed, depth, torpedo running depth: the cursor jumps to the field, Enter sends (bridge, engine, submarine)",
   "help.web.sonar": "Active ping · live sonar audio on or off (sonar, submarine command, helicopter dipping sonar)",
@@ -8042,5 +8046,6 @@
   "help.web.opz_radar": "OPZ: surface / air radar on or off; Q / E change the radar display range",
   "help.web.helicopter": "Helicopter: launch or recall, drop buoy, aircraft radar, MAD",
   "help.web.boat_misc": "Silent running (engine) · decoy (submarine weapons) · clear baffles (bridge, submarine command)",
-  "geo.position": "{lat_d}°{lat_m}.{lat_t}'{ns} {lon_d}°{lon_m}.{lon_t}'{ew}"
+  "geo.position": "{lat_d}°{lat_m}.{lat_t}'{ns} {lon_d}°{lon_m}.{lon_t}'{ew}",
+  "geo.position.whole": "{lat_d}°{lat_m}'{ns} {lon_d}°{lon_m}'{ew}"
 }

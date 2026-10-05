@@ -1981,7 +1981,7 @@
   "panel.hfdf_log": "PROTOKOLLIERTE PEILUNGEN / FIXE",
   "radio.log_empty": "Enter protokolliert die gewählte Peilung",
   "radio.line.logged": "{label} {bearing}° von {x}/{y} sm, {age}s",
-  "radio.line.logged.geo": "{label} {bearing}° von {position}, {age}s",
+  "radio.line.logged.geo": "{label} {bearing}° {position} {age}s",
   "radio.line.logged.short": "{label} {bearing}° @{x}/{y} {age}s",
   "radio.line.fix": "Fix {label}: 1 Sigma {sigma} sm, {age}s",
   "panel.no_threat": "KEINE AKUTE BEDROHUNG",
@@ -8035,6 +8035,10 @@
   "country.uruguay": "Uruguay",
   "country.venezuela": "Venezuela",
   "country.vietnam": "Vietnam",
+  "country.akrotiri_sovereign_base_area": "Akrotiri",
+  "country.cyprus_no_mans_area": "Pufferzone Zypern",
+  "country.dhekelia_sovereign_base_area": "Dhekelia",
+  "country.spratly_islands": "Spratly-Inseln",
   "help.web.map_follow": "Karte folgt dem eigenen Schiff an oder aus",
   "help.web.orders": "Kurs, Fahrt, Tiefe, Torpedo-Lauftiefe: der Cursor springt ins Feld, Enter sendet (Brücke, Maschine, U-Boot)",
   "help.web.sonar": "Aktiver Ping · Live-Sonarton an oder aus (Sonar, U-Boot-Führung, Tauchsonar des Helikopters)",
@@ -8042,5 +8046,6 @@
   "help.web.opz_radar": "OPZ: Seeziel- / Luftraumradar an oder aus; Q / E ändern den Radar-Anzeigebereich",
   "help.web.helicopter": "Helikopter: starten oder zurückrufen, Boje werfen, Flugzeugradar, MAD",
   "help.web.boat_misc": "Schleichfahrt (Maschine) · Täuschkörper (U-Boot-Waffen) · toten Winkel klären (Brücke, U-Boot-Führung)",
-  "geo.position": "{lat_d}°{lat_m},{lat_t}'{ns} {lon_d}°{lon_m},{lon_t}'{ew}"
+  "geo.position": "{lat_d}°{lat_m},{lat_t}'{ns} {lon_d}°{lon_m},{lon_t}'{ew}",
+  "geo.position.whole": "{lat_d}°{lat_m}'{ns} {lon_d}°{lon_m}'{ew}"
 }

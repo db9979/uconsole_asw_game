@@ -4,20 +4,33 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.217
+## 1.3.220
 
-Version 1.3.217 macht das Ereignislog (F11) in jedem Farbschema lesbar und
+Version 1.3.220 macht das Ereignislog (F11) in jedem Farbschema lesbar und
 lässt es mit der Maus schließen. Im hellen Schema „Taktik Tag“ behielt das
 Log die Farben der Nacht, viele Zeilen waren blassgrau oder hellblau auf
 Weiß, und die Station schien durch. Jetzt nimmt das Log die Farben des
 gewählten Schemas, deckt die Station ganz ab und hat oben rechts ein
 Schließen-Kreuz. Ein Klick auf das Log erreicht die Station dahinter nicht
 mehr. Im Browser nimmt die abgedunkelte Fläche um ein offenes Blatt
-(Anleitung, Kontakte, Ausguck) den Klick und schließt das Blatt,
-statt ein Bedienelement dahinter auszulösen. Dieselbe Korrektur gilt für die Zeitleiste der Nachbesprechung, die
-Feldzugskarte, die Bedrohungs- und Funkseite des U-Boots, die Ausguckseite,
-die Wetterstation und das Simulationsprotokoll. Tasten bleiben gleich.
-Spielstände sind v53; v38 bis v52 laden weiter.
+(Anleitung, Kontakte, Ausguck) den Klick und schließt das Blatt, statt ein
+Bedienelement dahinter auszulösen. Dieselbe Korrektur gilt für die
+Zeitleiste der Nachbesprechung, die Feldzugskarte, die Bedrohungs- und
+Funkseite des U-Boots, die Ausguckseite, die Wetterstation und das
+Simulationsprotokoll. Tasten bleiben gleich. Spielstände sind v53; v38 bis
+v52 laden weiter.
+
+## 1.3.218
+
+Version 1.3.218 lässt einen Klick auf eine Sonar-Kontaktkarte diesen
+Kontakt sofort abhören. Der Klick wählt den Kontakt und richtet die
+Hörpeilung auf ihn, wie Auf/Ab und danach Enter, so dass Wasserfall,
+Analyseseiten und Ton sofort zu ihm wechseln; ein Kontakt, der länger als
+2 s nicht gehört wurde, wird nur gewählt. Das gilt an der Sonarstation der
+Fregatte und im Sonarraum des U-Boots auf der uConsole und in den Desktop-Apps
+; im Browser tat ein Klick auf einen Sonarkontakt das schon. Tasten
+und Spielablauf bleiben gleich. Spielstände sind v53; v38 bis v52 werden
+weiter geladen.
 
 ## 1.3.214
 

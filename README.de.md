@@ -10,20 +10,21 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.217**
+Aktuelle Version: **1.3.220**
 
-Version 1.3.217 macht das Ereignislog (F11) in jedem Farbschema lesbar und
+Version 1.3.220 macht das Ereignislog (F11) in jedem Farbschema lesbar und
 lässt es mit der Maus schließen. Im hellen Schema „Taktik Tag“ behielt das
 Log die Farben der Nacht, viele Zeilen waren blassgrau oder hellblau auf
 Weiß, und die Station schien durch. Jetzt nimmt das Log die Farben des
 gewählten Schemas, deckt die Station ganz ab und hat oben rechts ein
 Schließen-Kreuz. Ein Klick auf das Log erreicht die Station dahinter nicht
 mehr. Im Browser nimmt die abgedunkelte Fläche um ein offenes Blatt
-(Anleitung, Kontakte, Ausguck) den Klick und schließt das Blatt,
-statt ein Bedienelement dahinter auszulösen. Dieselbe Korrektur gilt für die Zeitleiste der Nachbesprechung, die
-Feldzugskarte, die Bedrohungs- und Funkseite des U-Boots, die Ausguckseite,
-die Wetterstation und das Simulationsprotokoll. Tasten bleiben gleich.
-Spielstände sind v53; v38 bis v52 laden weiter.
+(Anleitung, Kontakte, Ausguck) den Klick und schließt das Blatt, statt ein
+Bedienelement dahinter auszulösen. Dieselbe Korrektur gilt für die
+Zeitleiste der Nachbesprechung, die Feldzugskarte, die Bedrohungs- und
+Funkseite des U-Boots, die Ausguckseite, die Wetterstation und das
+Simulationsprotokoll. Tasten bleiben gleich. Spielstände sind v53; v38 bis
+v52 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

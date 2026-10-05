@@ -44,14 +44,34 @@ _layer = ["station"]
 # it), rebuilt every frame like the targets.
 MAX_TIPS = 128
 _tips: list[tuple] = []
+# Wheel regions: (rect, layer, up key token, down key token), rebuilt per frame.
+_scrolls: list[tuple] = []
 
 
 def reset() -> None:
     """Start a new frame (called before drawing)."""
     _targets.clear()
     _tips.clear()
+    _scrolls.clear()
     del _layer[1:]
     _layer[0] = "station"
+
+
+def add_scroll(rect, up=None, down=None) -> None:
+    """The mouse wheel over ``rect`` presses ``up``/``down`` (key tokens, as
+    in a footer legend): a long list scrolls where it is shown."""
+    if len(_scrolls) < MAX_TARGETS:
+        _scrolls.append((pygame.Rect(rect), _layer[-1], up or "↑", down or "↓"))
+
+
+def scroll_at(pos, layer_name: str = "station"):
+    """``(up_key, down_key)`` of the topmost scroll region under ``pos``."""
+    if pos is None:
+        return None
+    for rect, name, up, down in reversed(_scrolls):
+        if name == layer_name and rect.collidepoint(pos):
+            return up, down
+    return None
 
 
 @contextmanager

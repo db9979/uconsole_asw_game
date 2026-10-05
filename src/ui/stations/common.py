@@ -99,8 +99,8 @@ def _shortcut_footer(screen, rect, specs) -> None:
     # Segments share the row by the width their text needs, so a long key
     # (Backspace) never gets cut while a short one wastes space.
     face = layout.font(11)
-    from src.core.i18n import key_label, raw_text
-    needs = [layout.text_width(face, f"{raw_text(key_label(key))} {localize(description)}") + 16
+    from src.core.i18n import key_label
+    needs = [layout.text_width(face, f"{key_label(key)} {localize(description)}") + 16
              for key, description in specs]
     more_w = layout.text_width(face, f"+ {localize(_FOOTER_MORE)}") + 16
     slot = (rect.x, rect.y, rect.w, len(specs))
@@ -132,6 +132,19 @@ def _shortcut_footer(screen, rect, specs) -> None:
         def page(_pos=None, slot=slot, step_to=step_to):
             _FOOTER_OFFSET[slot] = step_to
         pointer.add_action(segment, page)
+
+
+def list_window(screen, rect, first: int, shown: int, total: int,
+                up="↑", down="↓") -> None:
+    """One row under a scrolling list: which part of it is on show, and that
+    the arrows (or the wheel over the list) move it. Nothing when it all fits."""
+    rect = pygame.Rect(rect)
+    pointer.add_scroll(rect.inflate(0, 400).move(0, -200), up, down)
+    if shown >= total or shown <= 0 or rect.w <= 0:
+        return
+    layout.blit_line(screen, message("list.window", first=first + 1,
+                                     last=first + shown, total=total),
+                     rect, config.COLOR_TEXT_DIM, size=13, align="center")
 
 
 PAGE_TAB_H = 26

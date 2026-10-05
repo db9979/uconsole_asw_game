@@ -7,7 +7,7 @@ import numpy as np
 import pygame
 
 from src.core import config, status_tips
-from src.core.i18n import display_message, display_value, localized, localize
+from src.core.i18n import nm_unit, display_message, display_value, localized, localize
 from src.sonar import analysis_tools, class_library, tma_operator
 from src.ui import layout
 from src.ui import observations
@@ -713,7 +713,7 @@ def _draw_tma_dot_stack(game, contact, points, plot, times, start, end):
                             plot.w, row_h - 4)
         pygame.draw.line(screen, GRID, (strip.x, strip.centery),
                          (strip.right - 1, strip.centery))
-        _text(screen, f"{range_nm:.1f} NM", (strip.x + 4, strip.y, 90, 16), DIM, 11)
+        _text(screen, f"{range_nm:.1f} {nm_unit()}", (strip.x + 4, strip.y, 90, 16), DIM, 11)
         for point_index, residual in enumerate(residuals):
             x = plot.x + round((float(times[point_index]) - start) / max(1e-9, end - start)
                                * (plot.w - 1))

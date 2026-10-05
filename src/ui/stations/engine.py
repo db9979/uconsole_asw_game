@@ -6,7 +6,7 @@ import math
 import pygame
 
 from src.core import config, status_tips
-from src.core.i18n import display_message, display_value, localized, raw_text
+from src.core.i18n import nm_unit, display_message, display_value, localized, raw_text
 from src.core.station import Station
 from src.ship.ship import NOISE_LEVEL_MAX, PLANT_DIESEL_MAX_KN, Ship
 from src.ui import console, layout, pointer
@@ -269,7 +269,8 @@ def _draw_fuel(s, ship, rect) -> None:
         ("engine.readout.stock", raw_text(f"{ship.fuel_kg / 1000.0:.1f} t")),
         ("engine.readout.burn", raw_text(f"{ship.fuel_burn_kg_h():.0f} kg/h")),
         ("engine.readout.endurance", raw_text(f"{endurance:.0f} h" if endurance is not None else "--")),
-        ("engine.readout.range", raw_text(f"{distance:.0f} NM" if distance is not None else "--")),
+        ("engine.readout.range",
+         raw_text(f"{distance:.0f} {nm_unit()}" if distance is not None else "--")),
     )
     rx, rw = fx + tank_w + 8, fw - tank_w - 8
     row = layout.font(16).get_linesize()

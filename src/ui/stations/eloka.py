@@ -13,7 +13,7 @@ from src.sensors.esm import animated_signal_fingerprint, spectrum_band
 from src.ui import layout, pointer, sferics
 
 
-from src.ui.stations.common import (_shortcut_footer, _srect, _station_content_top,
+from src.ui.stations.common import (list_window, _shortcut_footer, _srect, _station_content_top,
                                     draw_station_page_tabs, message)
 
 
@@ -312,10 +312,8 @@ def _draw_eloka_cards(game, surface, column, page) -> None:
     listed = game.eloka_listed_tracks()
     if cards and len(cards) < len(listed):
         first = next(index for index, item in enumerate(listed) if item is cards[0][0])
-        layout.blit_line(surface, message(
-            "eloka.cards.window", first=first + 1, last=first + len(cards),
-            total=len(listed)), (column.x + 8, cards[-1][1].bottom + 3, column.w - 16, 18),
-            config.COLOR_TEXT_DIM, size=13, align="center")
+        list_window(surface, (column.x + 8, cards[-1][1].bottom + 3, column.w - 16, 18),
+                    first, len(cards), len(listed))
     for track, rect in cards:
         chosen = track.track_key == game.eloka_selected_track_key
         age = track.age(game.sim_t)

@@ -253,15 +253,15 @@ def _hole(s, center, radius, patched) -> None:
     r = max(3, int(radius))
     if patched:
         plate = pygame.Rect(cx - r - 2, cy - r - 2, 2 * r + 4, 2 * r + 4)
-        pygame.draw.rect(s, (96, 104, 108), plate)
-        pygame.draw.rect(s, (160, 170, 172), plate, 1)
+        pygame.draw.rect(s, STEEL_DIM, plate)
+        pygame.draw.rect(s, STEEL, plate, 1)
         for bx, by in (plate.topleft, plate.topright, plate.bottomleft, plate.bottomright):
-            pygame.draw.circle(s, (200, 205, 205), (bx + (2 if bx == plate.x else -3),
+            pygame.draw.circle(s, MARK, (bx + (2 if bx == plate.x else -3),
                                                     by + (2 if by == plate.y else -3)), 1)
         return
     jag = [(cx + r * math.cos(k * math.pi / 4) * (1.0 if k % 2 else .55),
             cy + r * math.sin(k * math.pi / 4) * (1.0 if k % 2 else .55)) for k in range(8)]
-    pygame.draw.polygon(s, (4, 8, 10), jag)
+    pygame.draw.polygon(s, KEEL, jag)
     pygame.draw.polygon(s, config.COLOR_DANGER, jag, 1)
 
 
@@ -299,14 +299,14 @@ def _water(layer, bounds, level_left, level_right) -> None:
         y = (level_left + (level_right - level_left) * step / 8 - bounds.y
              + 1.2 * math.sin(t * 2.2 + step * .9))
         top.append((x, y))
-    pygame.draw.polygon(layer, (40, 110, 160, 175), top + [(w, h + 2), (0, h + 2)])
+    pygame.draw.polygon(layer, (*console.WATER, 175), top + [(w, h + 2), (0, h + 2)])
     pygame.draw.lines(layer, (*WATER_TOP, 255), False, top, 2)
 
 
 def _hatching(layer, bounds) -> None:
     w, h = bounds.size
     for x in range(-h, w, 9):
-        pygame.draw.line(layer, (225, 78, 70, 200), (x, h), (x + h, 0), 1)
+        pygame.draw.line(layer, (*config.COLOR_DANGER, 200), (x, h), (x + h, 0), 1)
 
 
 def _inflow(damage, key) -> float:
@@ -640,7 +640,7 @@ def draw_boat_section(s, rect, control, capacity, trim_deg=0.0, selected=None) -
                 y = (level - (x - box.centerx) * tan_trim
                      + 1.0 * math.sin(t * 2.0 + step + index))
                 top.append((x, y))
-            pygame.draw.polygon(layer, (40, 110, 160, 190),
+            pygame.draw.polygon(layer, (*console.WATER, 190),
                                 top + [(box.right, box.bottom + 2), (box.x, box.bottom + 2)])
             pygame.draw.lines(layer, (*WATER_TOP, 255), False, top, 2)
         if control.down(name):

@@ -277,6 +277,8 @@ def _draw_selection_cards(game, s, column, station_rect) -> None:
     """Left column of the selection page: one card per compartment (state
     stripe, name, water and fire, teams on scene); a click selects it."""
     layout.box(s, column, "damage.panel.compartments")
+    # The wheel over the column steps the compartment, as the arrows do.
+    pointer.add_scroll(column, "←", "→")
     for index, (key, card) in enumerate(damage_selection_cards(game, station_rect)):
         c = game.damage.compartments[key]
         chosen = index == game.dmg_cursor
@@ -321,6 +323,7 @@ def _draw_team_cards(game, s, column, station_rect) -> None:
     destination and whether they are on the way or working; a click picks the
     team that Enter sends."""
     layout.box(s, column, "damage.panel.teams")
+    pointer.add_scroll(column, "↑", "↓")
     damage = game.damage
     cards = damage_team_cards(game, station_rect)
     for team, card in cards:

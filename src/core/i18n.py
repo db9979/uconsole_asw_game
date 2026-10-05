@@ -538,6 +538,11 @@ def key_label(text: object, tr=None) -> str:
     return german_key_label(shown) if active_language(tr) == "de" else shown
 
 
+def nm_unit(tr=None) -> str:
+    """The nautical mile's symbol in the current language ("sm" in German)."""
+    return "sm" if active_language(tr) == "de" else "NM"
+
+
 def localize(value: object, tr=None) -> str:
     """Translate display text in the current draw scope."""
     if _is_raw_text(value):

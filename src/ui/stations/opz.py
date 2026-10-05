@@ -8,7 +8,7 @@ import copy
 import pygame
 
 from src.core import config
-from src.core.i18n import (display_value, localized, localize, raw_text,
+from src.core.i18n import (nm_unit, display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.core.station import Station
 from src.ui.plot_view import draw_plot
@@ -24,6 +24,7 @@ from src.ui.stations import opz_display_view
 
 
 from src.ui.stations.common import (
+    list_window,
     _observation_bearing,
     _observation_position,
     _panel,
@@ -254,6 +255,13 @@ def _draw_track_cards(game, s, box, selected_id) -> None:
     pointer.add_token_keys(head, heading, 14, (("(Shift+F)", "Shift+F"),),
                            min_size=layout.MIN_OPERATIONAL_FONT, screen=s)
     cards = opz_track_cards(game)
+    tracks = (game.filtered_opz_tracks() if hasattr(game, "filtered_opz_tracks")
+              else game.opz_tracks())
+    if cards:
+        first = next((index for index, track in enumerate(tracks)
+                      if track is cards[0][0]), 0)
+        list_window(s, (box.x + 8, cards[-1][1].bottom + 2, box.w - 16, 17),
+                    first, len(cards), len(tracks))
     if not cards:
         layout.blit_line(s, "opz.no_tracks", (box.x + 10, box.y + 36, box.w - 20, 22),
                          config.COLOR_TEXT_DIM, size=14)
@@ -279,7 +287,8 @@ def _draw_track_cards(game, s, box, selected_id) -> None:
                          (rect.right - 76, rect.y + 2, 68, 21), config.COLOR_TEXT,
                          size=17, align="right")
         displayed_range = observations.range_nm(track, game.ship)
-        distance = (f"{displayed_range:.1f} NM" if displayed_range is not None else "-- NM")
+        distance = (f"{displayed_range:.1f} {nm_unit()}" if displayed_range is not None
+                    else f"-- {nm_unit()}")
         tags = "".join(localize("opz.source_code." + group)
                        for group in source_groups(track))
         layout.blit_line(s, f"{distance} \u00b7 {tags}",

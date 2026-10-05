@@ -638,7 +638,8 @@ def draw_depth_ladder(s, game, boat, rect) -> None:
         if placed and label_y < placed[-1] + pitch:
             label_y = placed[-1] + pitch
         placed.append(label_y)
-    limit = y + h - pitch
+    # Three pixels clear of the panel's bottom frame (the deepest label).
+    limit = y + h - pitch - 3
     for index in range(len(placed) - 1, -1, -1):
         placed[index] = min(placed[index], limit)
         limit = placed[index] - pitch
@@ -908,8 +909,8 @@ def _draw_fire_column(s, game, boat, rect) -> None:
                      plate, 1, border_radius=5)
     layout.blit_line(s, message("uboot.local.row.fire", state=message(
         "uboot.local.fire_ready" if reason is None else f"uboot.reason.{reason}")),
-        plate.inflate(-12, -6), theme.c("on_accent") if reason is None and not theme.is_light()
-        else (255, 255, 255) if reason is None else config.COLOR_WARN, size=19, align="center")
+        plate.inflate(-12, -6), theme.c("on_accent") if reason is None
+        else config.COLOR_WARN, size=19, align="center")
     pointer.add_tip(plate, status_tips.lazy(lambda: status_tips.boat(game, boat), "fire"))
     weapons_station = uboot_local.local_station(game) == "uboot_weapons"
     if weapons_station:

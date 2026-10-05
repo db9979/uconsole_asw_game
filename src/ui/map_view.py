@@ -12,7 +12,7 @@ import pygame
 
 from src.core import config
 from src.core.station import Station
-from src.core.i18n import (country_name, display_value, localized, localize, raw_text,
+from src.core.i18n import (nm_unit, country_name, display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.ui.plot_view import draw_plot
 from src.ui import chart_symbols, chart_trails, label_layout, layout, lines, map_fx_view, theme
@@ -177,7 +177,7 @@ def map_hit_target(game, pos):
             distance = (message("map.tooltip.range_value", range=f"{float(displayed_range):.1f}")
                         if displayed_range is not None else "ui.bearing_only")
             sigma = getattr(contact, "range_sigma_nm", None)
-            uncertainty = (f"+/-{float(sigma):.2f} NM" if sigma is not None else "--")
+            uncertainty = (f"+/-{float(sigma):.2f} {nm_unit()}" if sigma is not None else "--")
             return layout.tooltip_payload(
                 message("map.tooltip.sonar_title",
                         contact=observations.contact_display_id(game, contact)),

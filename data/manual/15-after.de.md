@@ -10,7 +10,7 @@ Nachbesprechung: Nach Missionsende öffnet `D` im Endfenster die Nachbesprechung
 
 Daneben stehen die Zeit des ersten Kontakts, der ersten Ortung und der Klassifizierung, abgefeuerte Waffen und versenkte U-Boote, der mittlere Fehler der Ortungen und alle Ereignisse; eine "verpasste Chance" ist ein feindliches U-Boot, das mindestens 5 min lang höchstens 4 sm entfernt war, ohne dass es einen Kontakt gab, mit dem Hinweis über oder unter der Sprungschicht.
 
-`Links`/`Rechts` blättern (Shift: 1 min), `Auf`/`Ab` oder `Bild auf`/`Bild ab` springen zwischen Ereignissen, ein Klick in die Zeitleiste springt dorthin, `Leertaste` spielt sie ab (`Tab`: 10× oder 60×), `D` oder `Esc` kehrt zurück. Aufgezeichnet wird alle 10 s (bei langen Missionen gröber); die Nachbesprechung ist während der Mission nie sichtbar und wird nicht gespeichert: nach dem Laden deckt sie die Mission ab dem Laden ab.
+`Links`/`Rechts` blättern (Umschalt: 1 min), `Auf`/`Ab` oder `Bild auf`/`Bild ab` springen zwischen Ereignissen, ein Klick in die Zeitleiste springt dorthin, `Leertaste` spielt sie ab (`Tab`: 10× oder 60×), `D` oder `Esc` kehrt zurück. Aufgezeichnet wird alle 10 s (bei langen Missionen gröber); die Nachbesprechung ist während der Mission nie sichtbar und wird nicht gespeichert: nach dem Laden deckt sie die Mission ab dem Laden ab.
 
 - **Nachbesprechung als Zeitraffer:** nach der Mission spielt `Leertaste` die Nachbesprechung ab, `Tab` wechselt zwischen 10× und 60×; die Wege wachsen, Schüsse, Pings, Treffer und Untergänge blitzen dort auf, wo sie geschahen. Im Browser zeigt die Schaltfläche **Nachbesprechung abspielen** (neben dem Missionsstand, erst nach dem Ende) dieselbe Wiedergabe für die eigene Seite.
 
@@ -20,7 +20,7 @@ Daneben stehen die Zeit des ersten Kontakts, der ersten Ortung und der Klassifiz
 
 Die Fregatte trägt ihre Missionspunkte ein; das U-Boot zählt sein Ergebnis (Fregatte versenkt 1500, Geleitzug versenkt 1200, Durchbruch oder Meldung 1000, Entkommen 800, Überleben 600) plus bis zu 500 für ein unbeschädigtes U-Boot und 100 je übrigem Torpedo, mal dem Faktor der Stufe.
 
-`Links`/`Rechts` oder `Tab` wechseln Fregatte und U-Boot, `A` die Auswertung des Sprachmodells, `B` den neuesten Bericht, `L` das Lernen des Gegners, `Enter` oder `Esc` zurück; die Fußzeile nennt diese Tasten, ein Klick darauf drückt sie. Das Endpanel nennt die Punkte, einen neuen Bestwert und neue Auszeichnungen. Das Einsatzbuch ist `~/.u-jagd/logbook.json` (die neuesten 200 Missionen), nie Teil eines Spielstands.
+`Links`/`Rechts` oder `Tab` wechseln Fregatte und U-Boot, `A` die Auswertung des Sprachmodells, `B` den neuesten Bericht, `L` das Lernen des Gegners, `Eingabe` oder `Esc` zurück; die Fußzeile nennt diese Tasten, ein Klick darauf drückt sie. Das Endpanel nennt die Punkte, einen neuen Bestwert und neue Auszeichnungen. Das Einsatzbuch ist `~/.u-jagd/logbook.json` (die neuesten 200 Missionen), nie Teil eines Spielstands.
 
 ## Der Gegner lernt mit {#ref-habits}
 

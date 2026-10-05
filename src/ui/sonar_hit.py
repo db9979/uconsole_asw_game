@@ -7,7 +7,7 @@ import numpy as np
 import pygame
 
 from src.core import config
-from src.core.i18n import (
+from src.core.i18n import (nm_unit,
     display_value, localized, localize, message as structured_message)
 from src.ui import layout
 from src.ui import observations
@@ -90,7 +90,8 @@ def sonar_geometry(game, page=None):
               "--" if evaluation is None else f"{evaluation['fit']:.0%}"), "tma_accept"),
             (("Z/X", "sonar.footer.tma_course", "", f"{hypothesis.course:05.1f}\u00b0"), "cursor"),
             (("^Z/^X", "sonar.footer.tma_speed", "", f"{hypothesis.speed_kn:.1f} kn"), "cursor"),
-            (("Q", "sonar.footer.tma_range", "", f"{hypothesis.range_nm:.1f} NM"), "cursor"))
+            (("Q", "sonar.footer.tma_range", "",
+              f"{hypothesis.range_nm:.1f} {nm_unit()}"), "cursor"))
     footer = []
     width = (station.w - 28) // len(specs)
     for index, (spec, action) in enumerate(specs):

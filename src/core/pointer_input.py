@@ -58,6 +58,18 @@ def handle(game, e) -> bool:
     if layer == "popup":
         return _handle_popup(game, e)
     if e.type == pygame.MOUSEWHEEL:
+        if layer == "station" and getattr(e, "y", 0):
+            # A station's long list scrolls under the pointer.
+            region = pointer.scroll_at(game._window_to_canvas(pygame.mouse.get_pos()),
+                                       "station")
+            if region is None:
+                return False
+            keys = pointer.legend_keys(region[0] if e.y > 0 else region[1])
+            if not keys:
+                return False
+            for _ in range(min(3, abs(int(e.y)))):
+                game.handle_event(key_event(*keys[0]))
+            return True
         # Menus and dialogs: the wheel steps the selection or scrolls.
         if layer not in ("menu", "overlay") or not getattr(e, "y", 0):
             return False

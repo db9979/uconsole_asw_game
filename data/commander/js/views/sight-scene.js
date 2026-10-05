@@ -7,6 +7,7 @@
 import { drawInScene } from "./model-view.js";
 import { DETAIL_MIN_PX, FOAM, NAV_LIGHT, PROFILES } from "./silhouette-profiles.js";
 import { drawSightEvents } from "./sight-events.js";
+import { palette } from "../core/palette.js";
 
 const SKY_NIGHT = [[3, 7, 16], [20, 44, 62]], SKY_DAY = [[34, 88, 118], [138, 176, 182]], SKY_DUSK = [[24, 30, 60], [204, 128, 78]];
 const SEA_NIGHT = [[10, 44, 58], [2, 9, 15]], SEA_DAY = [[24, 78, 92], [6, 34, 46]], SEA_DUSK = [[44, 50, 66], [8, 14, 26]];
@@ -15,7 +16,8 @@ const HAZE_DAY = [150, 160, 165], HAZE_NIGHT = [34, 44, 50];
 const MOON = [214, 222, 206], MOON_DARK = [26, 34, 42], SUN_DAY = [255, 244, 210], SUN_DUSK = [255, 178, 96];
 const STEEL_NIGHT = [19, 36, 46], STEEL_DAY = [44, 56, 64], RIM_NIGHT = [84, 150, 158], RIM_DAY = [170, 196, 200];
 const WINDOW_LIGHT = [250, 205, 120], FRAME = [40, 96, 90], WIND_ARROW = [120, 214, 180];
-const SCALE = "rgb(170, 232, 208)", CROSSHAIR = "rgb(120, 214, 180)";
+// The scale and the crosshair are instrument furniture, not the scene: theme tokens.
+const SCALE = () => palette().live, CROSSHAIR = () => palette().accent;
 const STABILIZED_RESIDUAL = .12;   // src/ui/horizon.py
 // Below this elevation an aircraft stands on the moving sea horizon in front of the sea (LOW_AIR_DEG).
 const LOW_AIR_DEG = 1;
@@ -717,17 +719,17 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
     if (Math.abs(off) > v.fov_deg / 2) continue;
     const tx = (off + v.fov_deg / 2) * w.pxPerDeg, major = ((tick % labelStep) + labelStep) % labelStep === 0;
     if (!major && tick % 10 && 5 * w.pxPerDeg < 6) continue;
-    line(g, [tx, 0], [tx, major ? 10 : 5], SCALE);
-    if (major && height >= 40) { g.fillStyle = SCALE; g.fillText(String(((tick % 360) + 360) % 360).padStart(3, "0"), tx, 12); }
+    line(g, [tx, 0], [tx, major ? 10 : 5], SCALE());
+    if (major && height >= 40) { g.fillStyle = SCALE(); g.fillText(String(((tick % 360) + 360) % 360).padStart(3, "0"), tx, 12); }
   }
   if (Number.isFinite(v.window_deg)) {
     const window = v.window_deg * w.pxPerDeg, cx = width / 2, cy = height / 2;
-    line(g, [cx, 26], [cx, height], CROSSHAIR);
-    line(g, [cx - window, cy], [cx + window, cy], CROSSHAIR);
-    for (const mark of [-1, 1]) line(g, [cx + mark * window, cy - 4], [cx + mark * window, cy + 4], CROSSHAIR);
+    line(g, [cx, 26], [cx, height], CROSSHAIR());
+    line(g, [cx - window, cy], [cx + window, cy], CROSSHAIR());
+    for (const mark of [-1, 1]) line(g, [cx + mark * window, cy - 4], [cx + mark * window, cy + 4], CROSSHAIR());
   }
   if (height >= 60) {
-    g.fillStyle = CROSSHAIR; g.textBaseline = "bottom";
+    g.fillStyle = CROSSHAIR(); g.textBaseline = "bottom";
     if (v.stabilized && v.stab_label) { g.textAlign = "left"; g.fillText(v.stab_label, 10, height - 8); }
     if (v.optics_label) { g.textAlign = "right"; g.fillText(v.optics_label, width - 10, height - 8); }
   }

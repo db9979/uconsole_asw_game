@@ -63,7 +63,7 @@ Global keys (all stations):
 | `9` | Electronic warfare / ESM |
 | `Active station number` | Press again to advance that station's page |
 | `Page Up / Down` | Previous / next page of the station (every station with several pages) |
-| `Ctrl+Enter` | Fire the torpedo or missile (Enter alone never fires; at Weapons ASROC A, depth charges Z, rocket launcher R and air torpedo D have their own keys) |
+| `Ctrl+Enter` | Fire the chosen weapon: the only fire key (Enter alone never fires; at Weapons D, A, Z, R and Shift+R only choose air torpedo, ASROC, depth charges and rockets) |
 | `Arrow keys` | Station-specific selection or adjustment |
 | `+ / -` | Telegraph (available at every station) |
 | `F1 / ?` | Help (this display) |
@@ -812,19 +812,19 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 | `Hold Up / Down` | Torpedo depth (10-300 m) |
 | `T` | Enter torpedo run depth (10-300 m), as on the submarine |
 | `<- / ->` | Select sonar contact for targeting |
-| `Ctrl+Enter` | Launch torpedo (ROE check) |
+| `Ctrl+Enter` | Fire the chosen weapon (the torpedo unless D/A/Z/R chose another; ROE check) |
 | `W` | Torpedo type (tubes swap over; W cycles Mk1/Mk2) |
 | `X` | Terminal search pattern: snake, circle, helix |
 | `, / .` | Seeker enable point -/+ (0.6 to 3.0 NM, 0.2 NM steps) |
 | `Y` | Salvo: one torpedo or two in a +/-8 deg spread |
 | `H` | Launch HSP-5 (5 min preparation, refuels on deck) / stop / recall |
 | `B` | Deploy sonobuoys (HSP-5 airborne) |
-| `D` | Lightweight torpedo from HSP-5 |
+| `D` | Choose the HSP-5 lightweight torpedo (again: ship torpedo) |
 | `V` | Stream one finite towed acoustic decoy |
-| `A` | ASROC at the designated contact (range 1-10 NM) |
-| `Z` | Depth-charge pattern over the stern |
-| `R` | ASW rocket salvo at the target (fresh range fix, 0.4-3 NM) |
-| `Shift+R` | Rocket defence salvo along the torpedo warning |
+| `A` | Choose ASROC at the designated contact (range 1-10 NM) |
+| `Z` | Choose the depth-charge pattern over the stern |
+| `R` | Choose the ASW rocket salvo at the target (fresh range fix, 0.4-3 NM) |
+| `Shift+R` | Choose the rocket defence salvo along the torpedo warning |
 | `Q / E` | Zoom chart in steps, 500 to 0.5 NM |
 | `K` | Camera follow on/off |
 | `F` | Toggle AA gun fire release (withheld = never fires on raiders) |
@@ -834,7 +834,7 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
 
 - A click on a contact card selects that contact as `←`/`→` would; the assigned target has a red mark.
-- The fire key `Ctrl+Enter` can be clicked here, at the weapons station only.
+- The fire key `Ctrl+Enter` can be clicked here, at the weapons station only. It fires the chosen weapon: `D`, `A`, `Z`, `R` and `Shift+R` only choose the air torpedo, ASROC, the depth-charge pattern, the rocket salvo or the rocket defence salvo, and the chosen one is lit on page 2 and named in the fire line. Choosing the same weapon again goes back to the torpedo.
 - The key hints beside the solution (launch, flak release) press their keys.
 - On the chart the wheel zooms, dragging pans (it ends `K` follow) and a click pins a tooltip.
 
@@ -1086,13 +1086,13 @@ Two switches in the chart's top left turn the surface and air radar on and off o
 | `M` | Pass CIC track to sonar/weapons |
 | `Q / E` | Radar range 10/20/40/80/120 NM (Q wider, E closer) |
 | `<- / ->` | Select ASM track |
-| `Ctrl+Enter` | Launch ESSM (VLS cell) |
+| `Ctrl+Enter` | Pages 1-2: launch ESSM (VLS cell); page 3: fire the chosen weapon |
 | `G` | Deploy chaff (8 NM cone, cooldown) |
 | `R` | Surface-search radar on/off (EMCON) |
 | `Shift+R` | Air-search radar on/off (EMCON) |
 | `I` | Toggle CIWS fire release (withheld = never fires on inbound ASMs) |
-| `Backspace` | Clear all marked reports |
-| `B` | Mark the newest bare radar blip as a track (or click the blip) |
+| `Backspace` | Pages 1-2: clear all marked reports |
+| `B` | Pages 1-2: mark the newest bare radar blip as a track (or click the blip) |
 | `Enter` | Confirm attack after classifying a real contact hostile |
 | `K` | Camera follow on/off |
 | `H` | OPZ page 3: request the patrol aircraft / send it home (keys as the helicopter) |
@@ -1102,7 +1102,7 @@ Two switches in the chart's top left turn the surface and air radar on and off o
 | `Shift+B` | Page 3: aircraft buoy mode PASSIVE / ACTIVE |
 | `Ctrl+R` | Page 3: aircraft surface-search radar on/off |
 | `Shift+M` | Page 3: aircraft MAD passes over its waypoint on/off (low and slower, radar horizon shrinks) |
-| `D` | Page 3: torpedo on the designated contact (aircraft within 2 NM of the datum) |
+| `D` | Page 3: choose the aircraft's torpedo on the designated contact, Ctrl+Enter drops it (aircraft within 2 NM of the datum; again: ESSM) |
 | `Y / F / H` | OPZ page 4 (group hunt): consort auto / next formation station / hold |
 | `X / W` | OPZ page 4: consort searches here / prosecutes the selected track (or click the chart) |
 | `Shift+A` | OPZ page 4: consort's active sonar on/off |
@@ -1249,7 +1249,7 @@ On the Tasks page the radio room can call HQ itself, at most once every 10 minut
 
 | Key | Action |
 |---|---|
-| `Up / Down` | Select HFDF signal |
+| `Up / Down` | Pages 1-2: select HFDF signal |
 | `Enter` | Log bearing with own position (on the Tasks page Enter accepts the task) |
 | `Up / Down` | Select HQ task (Tasks page) |
 | `A / Enter` | Tasks page: accept the selected task |
@@ -1456,7 +1456,7 @@ Page 3 shows the dipping sonar like a console: lamps for dome (green in the wate
 | `Y` | Lower / retrieve helicopter dipping sonar |
 | `U / V` | Raise / lower dipping-sonar target depth |
 | `Shift+A` | Transmit active ping from deployed dipping sonar |
-| `Ctrl+Enter / D` | Drop lightweight torpedo |
+| `Ctrl+Enter` | Drop lightweight torpedo |
 | `Q / E` | Zoom chart in steps, 500 to 0.5 NM |
 | `K` | Camera follow on/off |
 | `Acoustic: Page Up / Down` | Acoustic page: Broadband / LOFAR / DEMON |
@@ -1492,7 +1492,7 @@ Attack sequence:
 
 1. Localise with two passive buoys or an active buoy/dip ping until the contact has a fresh position.
 2. Classify it as submarine (`C`) and set it as target (`M`).
-3. Fly to the datum; drop the torpedo (`Ctrl+Enter` or `D`). Keep contact for a second drop if needed.
+3. Fly to the datum; drop the torpedo (`Ctrl+Enter`; `D` at the weapons station chooses the air torpedo for it). Keep contact for a second drop if needed.
 
 ### Pro tips
 
@@ -2370,7 +2370,7 @@ The game runs at 1280x720 and is designed for the uConsole keyboard and trackbal
 
 The fire key `Ctrl+Enter` is clickable only at the weapons station (station 3) on both sides. Station orders that are not in the key bar have key chips of their own: classify, TMA, release to the CIC, target and the towed arrays under the sonar's contact cards, assign target, chaff and the missile track on the CIC's target page, the consort's orders on its group page, and flooding a tube and the decoy in the submarine's fire control (a dry tube's lamp floods it, an empty one's loads it). Missiles stay on their key: ESSM and the consort's ASROC are fired only with `Ctrl+Enter`.
 
-Every key a station can use is shown as a blue key chip, never as plain text, and a click on the chip presses that key. Resting the mouse on a status lamp or indicator (for example LAUNCH NO-GO, DECK WAIT, a tube, the plant or the ESM receiver) opens a note that says why it is in its state, taken from the running game (deck motion, weather limits, reload time, depth under the keel), and what to do about it, with the keys as chips. The notes appear on both sides, on the uConsole and in the Remote Crew browser.
+Every key a station page can use is shown as a blue key chip, never as plain text, and a click on the chip presses that key. The key bar at the foot of a page carries them all: when there are more than fit the row, a `+` chip at its right end pages through the rest. A long list (CIC tracks, HFDF signals, ESM emitters, compartments and teams) scrolls with the mouse wheel over it and says which part of it is on show. Resting the mouse on a status lamp or indicator (for example LAUNCH NO-GO, DECK WAIT, a tube, the plant or the ESM receiver) opens a note that says why it is in its state, taken from the running game (deck motion, weather limits, reload time, depth under the keel), and what to do about it, with the keys as chips. The notes appear on both sides, on the uConsole and in the Remote Crew browser.
 
 Menu rows, dialog rows, save slots and the hints under them are clickable too; the wheel moves through menus and scrolls the help, and a right click cancels like `Esc` in menus, dialogs, entries and at the mission end. On charts the wheel zooms, dragging pans and a click pins a tooltip.
 

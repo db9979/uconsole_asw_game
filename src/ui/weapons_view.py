@@ -5,7 +5,7 @@ import math
 import pygame
 
 from src.core import config, status_tips
-from src.core.i18n import raw_text, display_value, localized, localize, message as structured_message
+from src.core.i18n import nm_unit, raw_text, display_value, localized, localize, message as structured_message
 from src.core.station import Station
 from src.ui import console, engagement, label_layout, layout, map_view, pointer, theme
 from src.ui import nato_symbols
@@ -480,7 +480,8 @@ def draw_weapons_panel(game, tr=None) -> None:
         else:
             displayed_range = _display_range(c, getattr(game, "ship", None)) \
                 if getattr(game, "ship", None) is not None else c.range_est
-            dist = f"{displayed_range:6.1f} NM" if displayed_range is not None else "     --"
+            dist = (f"{displayed_range:6.1f} {nm_unit()}" if displayed_range is not None
+                    else "     --")
             lines = [
                 (message("weapons.line.contact",
                          contact=observations.contact_display_id(game, c),
@@ -494,7 +495,7 @@ def draw_weapons_panel(game, tr=None) -> None:
                       .get(c.range_source, "FIX") if displayed_range is not None
                       else localize("ui.bearing_only"))
             age = observations.observation_age(c, game.sim_t)
-            sigma = (f"+/- {c.range_sigma_nm:.2f} NM" if c.range_sigma_nm is not None
+            sigma = (f"+/- {c.range_sigma_nm:.2f} {nm_unit()}" if c.range_sigma_nm is not None
                      else localize("weapons.no_range_solution"))
             lines += [
                 (message("weapons.line.solution", source=source, sigma=sigma), config.COLOR_OK if fresh_solution else config.COLOR_WARN, 14),
@@ -640,7 +641,7 @@ def draw_weapons_panel(game, tr=None) -> None:
                                   - ay - 30) // pitch))
         for t in game.torpedoes[:capacity]:
             d = t.guidance_distance_nm()
-            d_txt = f"{d:.1f} NM" if d != float("inf") else "--"
+            d_txt = f"{d:.1f} {nm_unit()}" if d != float("inf") else "--"
             mode = display_value("weapon_mode",
                                   "SUCHER" if t.seeker_acquired else "DRAHT")
             remaining = max(0.0, t.range_nm - t.travel)

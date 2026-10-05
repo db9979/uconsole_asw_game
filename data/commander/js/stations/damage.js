@@ -40,7 +40,7 @@ function markTeams(list, teams, selector) {
 }
 
 export function renderDamageStation(payload) {
-  renderNoteLamps($("damage-lamps"));
+  renderNoteLamps($("damage-note-lamps"));
   metrics($("damage-summary"), [["damage_total", unit(payload.total, "%")], ["sunk", yesNo(payload.sunk)]]);
   renderCrew($("damage-crew"), $("damage-crew-actions"), payload.crew,
     {actionStations: "crew_action_stations", watchChange: "crew_watch_change",

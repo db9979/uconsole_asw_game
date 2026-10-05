@@ -7,7 +7,7 @@ import pygame
 import numpy as np
 
 from src.core import config, status_tips
-from src.core.i18n import display_value, localized, localize, raw_text
+from src.core.i18n import nm_unit, display_value, localized, localize, raw_text
 from src.core.station import Station
 from src.ui import layout, pointer
 from src.ui import theme
@@ -1010,7 +1010,7 @@ def draw_helicopter_view(game, tr=None) -> None:
                     continue
                 lines.append(message("helo.buoy_report_line", buoy=f"SB{seq:02d}",
                                      contact=label, bearing=f"{row['bearing']:05.1f}",
-                                     range=(f"{row['range_nm']:.1f} NM"
+                                     range=(f"{row['range_nm']:.1f} {nm_unit()}"
                                             if row["range_nm"] is not None else "--"),
                                      age=f"{game.sim_t - row['measured_at']:.0f}"))
                 if (getattr(game, "helo_sensor_source", "DIP") == "BUOY"

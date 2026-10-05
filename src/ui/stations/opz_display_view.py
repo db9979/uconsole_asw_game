@@ -89,9 +89,10 @@ def draw_compass(surface, chart: pygame.Rect, center, radius: float, course: flo
             if not chart.contains(box):
                 continue
             # Scale numbers stay at their bearing: a number pushed aside by
-            # another label would read as a different bearing.
+            # another label would read as a different bearing, so one whose
+            # place the position line holds is left out.
             label_layout.blit_fixed(surface, text, box, config.COLOR_TEXT_DIM,
-                                    size=layout.MIN_OPERATIONAL_FONT)
+                                    size=layout.MIN_OPERATIONAL_FONT, skip_if_taken=True)
     # Own course: a small filled wedge pointing inward from the ring.
     rad = math.radians(course)
     ux, uy = math.sin(rad), -math.cos(rad)

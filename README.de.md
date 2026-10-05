@@ -10,23 +10,20 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.214**
+Aktuelle Version: **1.3.216**
 
-Version 1.3.214 zeichnet feinere Küsten und nennt Positionen auch im
-Funkverkehr in Grad und Minuten. Die 128 echten Seegebiete kommen jetzt aus
-Natural Earth im Maßstab 1:10m statt 1:50m: Buchten, Fjorde, Inseln und
-Landzungen sind bis auf etwa 0,05 sm genau, die Küste in der Karte gleicht
-damit viel mehr einer echten Seekarte (das Kartenpaket wächst auf etwa
-3 MB). In einem echten Seegebiet nennen HQ-Aufträge und -Meldungen,
-Vorfallwarnungen, die Auftragsseite, protokollierte KW-Peilungen und der
-ESM-Fix des U-Boots Positionen wie 54°21,4'N 010°08,2'E, weiter mit Peilung
-und Abstand, wo das HQ sie angibt, auf der uConsole wie im Browser. Ein
-Patrouillenstart, den die feinere Küste in eine enge Bucht legen würde,
-rückt ins offene Wasser, und ein U-Boot bleibt bei Hochwasser nicht mehr am
-Grund hängen. Die gemessene Fairness bleibt gleich (KI gegen KI 14 bzw. 15
-von 36 Siegen der Fregatte, besetztes U-Boot 16 von 24). Tasten bleiben
-gleich. Spielstände sind v53; v38 bis v52 laden weiter, und eine
-gespeicherte Mission behält die Küste, mit der sie begann.
+Version 1.3.216 zeigt Breite und Länge auf jeder Karte jeder Station.
+Bisher hatten nur die Brückenkarte und die Karten neben den Stationen des
+U-Boots das Gradnetz; auf der uConsole zeigten das Lagebild der OPZ, die
+Kreuzpeilkarte des Funkraums und die Lotsenkarte des U-Boots noch ihr
+einfaches sm-Gitter. In einem echten Seegebiet zeichnen sie jetzt
+Meridiane und Breitenkreise in Grad und Minuten mit ihren Zahlen am Rand
+und nennen die eigene Position wie 54°21,4'N 010°08,2'E (die Lotsenkarte
+des U-Boots den gekoppelten Ort); die Zahlen halten sich von
+Entfernungsringen, Peilskala und anderen Beschriftungen frei. Die Karten
+im Browser hatten das Gradnetz schon. Die stilisierte feste Karte behält
+ihr sm-Gitter. Spielablauf, Tasten und Spielstände bleiben gleich (v53;
+v38 bis v52 laden weiter).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

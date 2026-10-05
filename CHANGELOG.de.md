@@ -4,6 +4,21 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.216
+
+Version 1.3.216 zeigt Breite und Länge auf jeder Karte jeder Station.
+Bisher hatten nur die Brückenkarte und die Karten neben den Stationen des
+U-Boots das Gradnetz; auf der uConsole zeigten das Lagebild der OPZ, die
+Kreuzpeilkarte des Funkraums und die Lotsenkarte des U-Boots noch ihr
+einfaches sm-Gitter. In einem echten Seegebiet zeichnen sie jetzt
+Meridiane und Breitenkreise in Grad und Minuten mit ihren Zahlen am Rand
+und nennen die eigene Position wie 54°21,4'N 010°08,2'E (die Lotsenkarte
+des U-Boots den gekoppelten Ort); die Zahlen halten sich von
+Entfernungsringen, Peilskala und anderen Beschriftungen frei. Die Karten
+im Browser hatten das Gradnetz schon. Die stilisierte feste Karte behält
+ihr sm-Gitter. Spielablauf, Tasten und Spielstände bleiben gleich (v53;
+v38 bis v52 laden weiter).
+
 ## 1.3.214
 
 Version 1.3.214 zeichnet feinere Küsten und nennt Positionen auch im

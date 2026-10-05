@@ -18,7 +18,7 @@ from src.core import boat_nav, config, status_tips
 from src.core.echo_sounder import WINDOW_S
 from src.core.i18n import message, raw_text
 from src.ship import route as route_model
-from src.ui import chart_symbols, console, layout, lines, nato_symbols, pointer
+from src.ui import chart_symbols, console, geo_grid, label_layout, layout, lines, nato_symbols, pointer
 from src.ui import theme
 from src.ui.map_view import _visible_landmasses, clip_polygon_to_rect
 from src.ui.viewport import Viewport
@@ -187,6 +187,10 @@ def draw_pilot_chart(s, game, boat, rect) -> None:
         hazards = getattr(world, "charted_hazards", None)
         if hazards is not None:
             chart_symbols.draw_hazards(s, hazards(), view.world_to_screen, tuple(rect), view.scale)
+        # A real sea area: meridians and parallels in the crew's frame.
+        graticule = geo_grid.screen_graticule(game, view, rect)
+        if graticule is not None:
+            geo_grid.draw_lines(s, rect, *graticule)
         bx, by = view.world_to_screen(own.x, own.y)
         # Range rings every 2 NM with their distance.
         ring_row = layout.font(12).get_linesize()
@@ -234,9 +238,21 @@ def draw_pilot_chart(s, game, boat, rect) -> None:
         lines.line(s, config.COLOR_OK, (bx, by),
                    (bx + 22 * math.sin(heading), by - 22 * math.cos(heading)), 2)
         nato_symbols.draw_symbol(s, (bx, by), "FRIEND", "SUBSURFACE", 18)
-        layout.blit_line(s, "uboot.pilot.north",
-                         (rect.right - 26, rect.y + 4, 20, layout.font(14).get_linesize()),
+        north = (rect.right - 26, rect.y + 4, 20, layout.font(14).get_linesize())
+        layout.blit_line(s, "uboot.pilot.north", north,
                          config.COLOR_TEXT_DIM, size=14, align="center")
+        if graticule is not None:
+            # The dead-reckoned position top left, the graticule's numbers
+            # along the edges (clear of the boat, its rings' numbers and N).
+            with label_layout.label_scope(rect) as labels:
+                labels.reserve(north)
+                labels.reserve((bx - 14, by - 14, 28, 28))
+                for ring_nm in range(2, int(PILOT_RANGE_NM * 2) + 1, 2):
+                    radius = int(ring_nm * view.scale)
+                    labels.reserve((int(bx) + 3, int(by) - radius, 28, ring_row))
+                box = geo_grid.draw_position(s, game, rect, own.x, own.y, corner="topleft")
+                geo_grid.draw_labels(s, rect, *graticule,
+                                     top_clear=(box.bottom - rect.y + 2) if box else 0)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, rect, 1)
     # A click on the chart orders the course to that point (as typed with C).
     from src.core import pointer_input

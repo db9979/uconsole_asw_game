@@ -298,3 +298,52 @@ def test_off_chart_plot_labels_do_not_overlap_on_the_opz_chart(language):
     overlaps = [(a["text"], b["text"]) for a, b in itertools.combinations(inside, 2)
                 if a["ink"].colliderect(b["ink"])]
     assert overlaps == []
+
+
+def _rect_overlaps(traced, rect):
+    inside = [item for item in traced if rect.collidepoint(item["ink"].center)]
+    problems = [f"off chart: {item['text']!r}" for item in inside if not rect.contains(item["ink"])]
+    problems += [f"overlap: {a['text']!r} / {b['text']!r}"
+                 for a, b in itertools.combinations(inside, 2) if a["ink"].colliderect(b["ink"])]
+    return inside, problems
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("crowded", [False, True])
+def test_radio_cross_fix_chart_degree_labels_do_not_overlap(language, crowded):
+    """The cross-fix chart's graticule numbers, position line, scale and fix
+    labels keep clear of each other (uConsole size, empty and with fixes)."""
+    from src.ui.stations.radio_chart import draw_hfdf_chart
+    game = _game(language)
+    game.msg_until = 0.0
+    if crowded:
+        ship = game.ship
+        game.hfdf_log = [dict(track_id="H-1", label="H-ABC123", bearing=40.0 + 3 * index,
+                              observer_x=ship.x - 2.0 * index, observer_y=ship.y + index,
+                              t=game.sim_t) for index in range(3)]
+        game.hfdf_fixes = {"H-1": dict(label="H-ABC123", x=ship.x + 6.0, y=ship.y - 8.0,
+                                       sigma_nm=1.2, covariance_nm2=None, t=game.sim_t)}
+    rect = pygame.Rect(306, 135, 640, 520)
+    layout.configure_for(game)
+    with layout.capture_text() as traced:
+        draw_hfdf_chart(game.screen, game, rect)
+    inside, problems = _rect_overlaps(traced, rect)
+    assert any(text["text"].endswith(("'N", "°N")) for text in inside)
+    assert problems == []
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_boat_pilot_chart_degree_labels_do_not_overlap(language):
+    from src.ui.uboot_pilot import draw_pilot_chart
+    game = _game(language)
+    game.local_side = "uboot"
+    game.update(.1)
+    game.msg_until = 0.0
+    boat = uboot_local.boat(game)
+    rect = pygame.Rect(664, 282, 592, 192)
+    layout.configure_for(game)
+    with layout.capture_text() as traced:
+        draw_pilot_chart(game.screen, game, boat, rect)
+    inside, problems = _rect_overlaps(traced, rect)
+    assert any(text["text"].endswith(("'E", "°E")) for text in inside)
+    assert problems == []

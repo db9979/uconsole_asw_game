@@ -13,7 +13,7 @@ from src.ui import observations
 
 
 from src.world import geo
-from src.ui.stations.radio_chart import CHART_WINDOW_S, chart_half_nm, draw_hfdf_chart
+from src.ui.stations.radio_chart import CHART_WINDOW_S, draw_hfdf_chart
 from src.ui.stations.common import (
     _hfdf_error_deg,
     _panel,
@@ -302,11 +302,7 @@ def _draw_chart_and_log(game, s, inner, log=True) -> None:
     reports = game.hfdf_bearings()
     selected = (game.hfdf_display_id(reports[min(game.radio_sel, len(reports) - 1)])
                 if reports else None)
-    view = draw_hfdf_chart(s, game, chart, selected)
-    if view is not None:
-        layout.blit_line(s, message("radio.chart.scale", range=f"{chart_half_nm(view):.0f}"),
-                         (chart.x + 6, chart.bottom - 24, 180, layout.font(14).get_linesize()),
-                         config.COLOR_TEXT_DIM, size=14)
+    draw_hfdf_chart(s, game, chart, selected)
     if not log:
         return
     top = chart.bottom + 8

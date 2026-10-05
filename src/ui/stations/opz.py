@@ -13,7 +13,7 @@ from src.core.i18n import (display_value, localized, localize, raw_text,
 from src.core.station import Station
 from src.ui.plot_view import draw_plot
 from src.core import map_fx
-from src.ui import label_layout, layout, map_fx_view, pointer, quality
+from src.ui import geo_grid, label_layout, layout, map_fx_view, pointer, quality
 from src.ui import theme
 from src.ui import chart_symbols
 from src.ui import nato_symbols
@@ -714,6 +714,22 @@ def _ring_visible(center, radius, rect) -> bool:
     return far >= radius - 2
 
 
+class _LayerView:
+    """The basemap layer's camera: chart NM to layer pixels and back."""
+
+    def __init__(self, cx, cy, scale, size):
+        self.cx, self.cy, self.scale = cx, cy, scale
+        self.half_w, self.half_h = size[0] / 2.0, size[1] / 2.0
+
+    def world_to_screen(self, x, y):
+        return (self.half_w + (x - self.cx) * self.scale,
+                self.half_h + (y - self.cy) * self.scale)
+
+    def screen_to_world(self, px, py):
+        return (self.cx + (px - self.half_w) / self.scale,
+                self.cy + (py - self.half_h) / self.scale)
+
+
 def _opz_basemap_surface(game, map_rect: pygame.Rect, view,
                          chart_layer: bool = True) -> pygame.Surface:
     """Build a bounded cached chart layer beneath the live OPZ radar picture
@@ -762,16 +778,24 @@ def _opz_basemap_surface(game, map_rect: pygame.Rect, view,
     step = next((value for limit, value in _OPZ_GRID_STEPS if visible_radius <= limit), 40)
     half_w_nm = map_rect.w / (2.0 * scale)
     half_h_nm = map_rect.h / (2.0 * scale)
-    first_x = math.ceil((bucket_x - half_w_nm) / step) * step
-    first_y = math.ceil((bucket_y - half_h_nm) / step) * step
-    value = first_x if chart_layer else bucket_x + half_w_nm + step
-    while value <= bucket_x + half_w_nm:
+    # A real sea area: meridians and parallels instead of the NM grid (the
+    # degree/minute numbers are drawn over the live picture).
+    graticule = (geo_grid.screen_graticule(game, _LayerView(bucket_x, bucket_y, scale, map_rect.size),
+                                           (0, 0, map_rect.w, map_rect.h))
+                 if chart_layer else None)
+    if graticule is not None:
+        geo_grid.draw_lines(layer, (0, 0, map_rect.w, map_rect.h), *graticule)
+        step = None
+    first_x = math.ceil((bucket_x - half_w_nm) / step) * step if step else 0.0
+    first_y = math.ceil((bucket_y - half_h_nm) / step) * step if step else 0.0
+    value = first_x if chart_layer and step else bucket_x + half_w_nm + (step or 1.0)
+    while step and value <= bucket_x + half_w_nm:
         px = int(center_x + (value - bucket_x) * scale)
         pygame.draw.line(layer, config.COLOR_GEO_GRID,
                          (px, 0), (px, map_rect.h), 1)
         value += step
-    value = first_y if chart_layer else bucket_y + half_h_nm + step
-    while value <= bucket_y + half_h_nm:
+    value = first_y if chart_layer and step else bucket_y + half_h_nm + (step or 1.0)
+    while step and value <= bucket_y + half_h_nm:
         py = int(center_y + (value - bucket_y) * scale)
         pygame.draw.line(layer, config.COLOR_GEO_GRID,
                          (0, py), (map_rect.w, py), 1)
@@ -852,6 +876,10 @@ def draw_opz_view(game, tr=None) -> None:
         # The radar switches sit in the chart's top left; labels keep off.
         for _domain, switch in opz_display_view.radar_switch_rects(chart):
             chart_labels.reserve(switch)
+        # A real sea area: the own position in degrees and minutes in the
+        # top right corner, the graticule's numbers along the edges.
+        if layer("chart"):
+            geo_grid.draw_position(s, game, chart, game.ship.x, game.ship.y)
         station_live = not game.damage.station_down("opz")
         radar_live = station_live and (game.surface_radar_on or game.air_radar_on)
         px_per_nm = view.scale
@@ -904,6 +932,11 @@ def draw_opz_view(game, tr=None) -> None:
                      int(own_y - rr) + 1, 80, opz_display_view.RANGE_LABEL_H),
                     config.COLOR_TEXT_DIM, size=layout.MIN_OPERATIONAL_FONT,
                     skip_if_taken=True)
+            graticule = geo_grid.screen_graticule(game, view, chart) if layer("chart") else None
+            if graticule is not None:
+                switches = opz_display_view.radar_switch_rects(chart)
+                geo_grid.draw_labels(s, chart, *graticule,
+                                     top_clear=max(rect.bottom for _d, rect in switches) - chart.y + 2)
 
             if station_live and game.surface_radar_on:
                 coast_range = min(max_nm, game.radar_effective_range("surface"))

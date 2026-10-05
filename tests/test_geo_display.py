@@ -126,3 +126,67 @@ def test_hq_task_offer_names_its_position_in_degrees_and_minutes():
     assert offers and offers[-1]["__u_jagd_i18n__"].endswith(".geo")
     wanted = geo.format_position(game.world, task["x"], task["y"], 1, ",")
     assert wanted in localize(offers[-1], Translator("de").t)
+
+
+def _traced(game):
+    from src.ui import layout
+    with layout.capture_text() as traced:
+        game.draw()
+    return traced
+
+
+def _geo_labels(items, rect):
+    return [item for item in items
+            if rect.contains(item["ink"]) and item["text"].endswith(("'N", "°N", "'E", "°E"))]
+
+
+def test_the_opz_plot_shows_position_and_degree_grid_without_overlap():
+    import pygame
+    from src.core.station import Station
+    from src.core import config
+    from src.ui.stations.opz import opz_regions
+    for scale in (None, 3.0, 12.0):
+        game = _game("de")
+        game.station = Station.OPZ
+        if scale is not None:
+            game.opz_map_view.scale = scale
+        traced = _traced(game)
+        position = geo.format_position(game.world, game.ship.x, game.ship.y, 1, ",")
+        chart = pygame.Rect(opz_regions(config.OPZ_STATION_RECT)["chart"])
+        assert any(item["text"] == position and chart.contains(item["ink"]) for item in traced)
+        labels = _geo_labels(traced, chart)
+        assert any(item["text"].endswith(("'N", "°N")) for item in labels if item["text"] != position)
+        assert any(item["text"].endswith(("'E", "°E")) for item in labels if item["text"] != position)
+        inside = [item for item in traced if chart.contains(item["ink"])]
+        for index, first in enumerate(inside):
+            for second in inside[index + 1:]:
+                assert not first["ink"].colliderect(second["ink"]), (first["text"], second["text"])
+
+
+def test_the_radio_cross_fix_chart_shows_position_and_degree_grid():
+    from src.core.station import Station
+    game = _game("en")
+    game.station = Station.RADIO
+    game.station_page = 0
+    texts = _drawn_texts(game)
+    assert geo.format_position(game.world, game.ship.x, game.ship.y, 1, ".") in texts
+    assert any(text.endswith(("'N", "°N")) for text in texts)
+    assert any(text.endswith(("'E", "°E")) for text in texts)
+
+
+def test_the_boat_pilot_chart_shows_its_navigated_position_and_grid():
+    from src.core import boat_nav, uboot_local
+    from src.ui import uboot_pilot
+    game = _game("de")
+    game.local_side = "uboot"
+    game.update(0.1)
+    boat = uboot_local.boat(game)
+    boat.orders.nav[0] += 1.0
+    uboot_local.set_local_station(game, "uboot_nav")
+    texts = _drawn_texts(game)
+    navigated = geo.format_position(game.world, *boat_nav.position(boat), 1, ",")
+    # Once on the big chart, once on the pilot chart.
+    assert texts.count(navigated) == 2
+    columns, rows = uboot_pilot.geo_grid.screen_graticule(
+        game, uboot_pilot.pilot_view(game, boat.sub, (0, 0, 600, 200)), (0, 0, 600, 200))
+    assert columns and rows

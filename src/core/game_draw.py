@@ -986,6 +986,7 @@ class DrawMixin:
                                   short=False, rows=telemetry)
         layout.blit_block(s, "feed.overlay.hint", tele.x, tele.bottom - 44, tele.w,
                           44, config.COLOR_TEXT_DIM, size=16)
+        game_menu.close_button(s, rect, pygame.K_F11)       # F11 by mouse
 
     def _help_lines(self) -> tuple[list[str], int]:
         """Wrap before scrolling so every line remains reachable at either size."""

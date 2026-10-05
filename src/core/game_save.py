@@ -1292,6 +1292,8 @@ class SaveMixin:
         self.opz_affiliations = dict(data["opz_affiliations"])
         self.opz_track_labels = {}
         self.opz_selected_track_id = None
+        self.weapon_select = "torpedo"
+        self.opz_weapon = "essm"
         self.opz_fusion.clear()
         self._opz_source_bindings = {}
         self.esm_picture = ESMPicture()

@@ -9,7 +9,7 @@ from src.core import config, status_tips
 from src.core.i18n import display_message, display_value, localized, raw_text
 from src.core.station import Station
 from src.ship.ship import NOISE_LEVEL_MAX, PLANT_DIESEL_MAX_KN, Ship
-from src.ui import console, layout
+from src.ui import console, layout, pointer
 
 
 from src.ui.stations.common import (
@@ -239,6 +239,8 @@ def _draw_systems(s, game, ship, rect) -> None:
     alarms = sum(1 for row in rows if row[2] == "alarm")
     cautions = sum(1 for row in rows if row[2] == "caution")
     console.led(s, (ann.right - 232, ann.y + 8 + title_h // 2 - 4), 6, master)
+    pointer.add_tip((ann.right - 240, ann.y + 2, 236, title_h), status_tips.payload(
+        status_tips.engine_master(alarms, cautions)))
     layout.blit_line(s, message("engine.line.master", alarms=str(alarms), cautions=str(cautions)),
                      (ann.right - 220, ann.y + 6, 210, title_h - 4),
                      console.level_color(master) if master != "on" else config.COLOR_TEXT_DIM,

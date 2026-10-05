@@ -691,9 +691,8 @@ def draw_map_view(game, tr=None) -> None:
                            config.COLOR_WARN, r, size=12)
                 previous = point
 
-        # Fregatte: Pfeil in Kursrichtung
+        # Fregatte: APP-6-Symbol mit Kursstrich
         px, py = view.world_to_screen(game.ship.x, game.ship.y)
-        ang = math.radians(game.ship.course - 90.0)
         target_ang = math.radians(game.ship.target_course - 90.0)
         target_ex = int(px + 42 * math.cos(target_ang))
         target_ey = int(py + 42 * math.sin(target_ang))
@@ -702,10 +701,8 @@ def draw_map_view(game, tr=None) -> None:
         _map_label(s, game, structured_message("map.target_course",
                                                course=f"{game.ship.target_course:03.0f}"),
                    (int(px) + 8, int(py) + 10), config.COLOR_TEXT_DIM, r, size=12)
-        L = 14
-        lines.line(s, config.COLOR_TEXT, (int(px), int(py)),
-                         (int(px + L * math.cos(ang)), int(py + L * math.sin(ang))), 3)
-        pygame.draw.circle(s, config.COLOR_TEXT, (int(px), int(py)), 4)
+        # The own frigate: APP-6 friendly surface frame and its heading.
+        nato_symbols.draw_own_ship(s, (int(px), int(py)), game.ship.course, 16)
         nato_symbols.draw_motion_vector(s, (px, py), game.ship.course, game.ship.speed,
                                         view.scale, config.COLOR_OK, max_px=120)
 

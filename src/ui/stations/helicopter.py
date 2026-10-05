@@ -289,9 +289,11 @@ def _draw_helicopter_acoustic_view(game, rect):
               "on" if game.helo_listen_bearing is not None else "off",
               "on" if game.helo_audition.audition_mode != "BROADBAND" else "off",
               "on" if audible else "off")
-    for item, box, level, key in zip(status, geo["statuses"], levels,
-                                     (None, None, None, "J")):
+    for item, box, level, key, name in zip(status, geo["statuses"], levels,
+                                           (None, None, None, "J"),
+                                           ("source", "bearing", "filter", "audio")):
         pointer.add_spec(box, key)      # the sound box switches like J
+        pointer.add_tip(box, status_tips.lazy(lambda: status_tips.helicopter_acoustic(game), name))
         pygame.draw.rect(screen, config.COLOR_PANEL_BG, box)
         pygame.draw.rect(screen, console.level_color(level) if level != "off"
                          else config.COLOR_SONAR_RING, box, 1)
@@ -796,12 +798,15 @@ def _draw_rescue_panel(game, s, region, status) -> None:
     rx, ry, rw, rh = layout.box(s, region, "helo.rescue.title")
     lamp_h = layout.line_pitch(14, 0) + 8
     level = RESCUE_LEVELS[status["phase"]]
+    tips = status_tips.helicopter_rescue(status)
     console.lamp_grid(s, (rx, ry, rw, lamp_h), (
-        ("helo.rescue.winch", message("helo.rescue.phase." + status["phase"]), level, "Z"),
+        ("helo.rescue.winch", message("helo.rescue.phase." + status["phase"]), level, "Z",
+         status_tips.payload(tips["winch"])),
         ("helo.rescue.cabin", message("helo.rescue.cabin_value", aboard=status["aboard"],
                                       capacity=status["capacity"]),
          "caution" if status["aboard"] >= status["capacity"] else
-         "on" if status["aboard"] else "off")), 2, size=14)
+         "on" if status["aboard"] else "off", None, status_tips.payload(tips["cabin"]))),
+        2, size=14)
     top = ry + lamp_h + 6
     row = layout.font(14).get_linesize()
     if top + row > ry + rh:
@@ -893,7 +898,7 @@ def draw_helicopter_view(game, tr=None) -> None:
         tokens = ((), (("Q/E", "Q/E"),),
                   (("H:", "H"), ("Arrows:", None), ("Pfeile:", None)),
                   (("Y", "Y"), ("U/V", "U/V"), ("Shift+A", "Shift+A")),
-                  (("B:", "B"), ("D:", "D")),
+                  (("B:", "B"), ("Ctrl+Enter:", None)),
                   (("Shift+↑/↓", None), ("G", "G")),
                   (("Buoys:", "Shift+B"), ("Bojen:", "Shift+B"), ("MAD", "Shift+M")),
                   (("Radar", "Ctrl+R"),), ())

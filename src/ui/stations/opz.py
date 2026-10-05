@@ -475,13 +475,24 @@ def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
             ("opz.mpa.keys_area", (("W", "W"),)),
             ("opz.mpa.keys_buoys", (("X", "X"), ("B", "B"), ("Shift+B", "Shift+B"))),
             ("opz.mpa.keys_weapons", (("Ctrl+R", "Ctrl+R"), ("Strg+R", "Ctrl+R"),
-                                      ("Shift+M", "Shift+M"), ("D", "D")))):
+                                      ("Shift+M", "Shift+M"), ("D", "D"),
+                                      ("(Ctrl+Enter)", None)))):
         if py + 22 > bottom:
             break
         layout.blit_line(s, key, (x, py, w, 22), config.COLOR_TEXT_DIM, size=14)
         # Each key in the hint is a switch (full mouse control).
         pointer.add_token_keys((x, py, w, 22), key, 14, tokens, screen=s)
         py += 24
+    if py + 26 <= bottom:
+        # What Ctrl+Enter fires on this page: D chooses the aircraft's torpedo.
+        chosen = getattr(game, "opz_weapon", "essm")
+        chip = pygame.Rect(x, py + 2, w, 22)
+        layout.key_button(s, chip, "D", message(
+            "weapons.control.launch_selected",
+            weapon=message("weapons.select." + chosen + ".short")),
+            size=14, min_size=11, active=chosen == "mpa_torpedo")
+        pointer.add_key(chip, pygame.K_d)
+        py += 28
     return py
 
 
@@ -931,7 +942,7 @@ def draw_opz_view(game, tr=None) -> None:
             if fx is not None:
                 map_fx_view.draw_fx(s, fx.rows("frigate", game.sim_t), view.world_to_screen,
                                     px_per_nm, chart, config.COLOR_GEO_BG)
-            nato_symbols.draw_symbol(s, (own_x, own_y), "FRIEND", "SURFACE", 18)
+            nato_symbols.draw_own_ship(s, (own_x, own_y), game.ship.course, 18)
             nato_symbols.draw_motion_vector(
                 s, (own_x, own_y), game.ship.course, game.ship.speed,
                 px_per_nm, config.COLOR_TEXT, minutes=vector_min, max_px=vector_max_px)

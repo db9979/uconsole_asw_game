@@ -1170,6 +1170,8 @@ def _draw_contacts(game, rect):
             from src.ui import console
             console.led(screen, (rect.x + 17, y + 12), 5,
                         "on" if age < 10 else "caution" if age < 60 else "off")
+            pointer.add_tip((rect.x + 10, y + 4, 16, 16), lambda age=age: status_tips.payload(
+                status_tips.contact_age(age)))
             _text(screen, observations.contact_display_id(game, contact),
                   (rect.x + 28, y + 3, rect.w - 130, 19), TEXT, 15)
             _text(screen, message("sonar.line.bearing_value",

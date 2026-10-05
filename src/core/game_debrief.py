@@ -165,7 +165,11 @@ class DebriefMixin:
             self._jump_debrief_event(1)
 
     def _handle_debrief_click(self, canvas) -> None:
-        from src.ui.debrief_view import replay_button_at, timeline_index_at
+        from src.ui import game_menu
+        from src.ui.debrief_view import PANEL, replay_button_at, timeline_index_at
+        if canvas is not None and game_menu.close_rect(PANEL).collidepoint(canvas):
+            self.close_debrief()
+            return
         button = replay_button_at(canvas)
         if button == "play":
             self.toggle_debrief_replay()

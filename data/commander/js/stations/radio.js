@@ -5,12 +5,14 @@ import { palette } from "../core/palette.js";
 import { actionButton, node, patchChildren, position, stationRows } from "../views/dom.js";
 import { selectTrack } from "../views/tracks.js";
 import { drawEmpty, visualContext } from "../views/visual-common.js";
+import { renderNoteLamps } from "../views/console-kit.js";
 
 // The radio room: HF/DF receiver channels, the bearing scope and the message
 // teletype. Everything shown is the operator's own published observation.
 const S_METER_SEGMENTS = 10;
 
 export function renderRadioStation(payload) {
+  renderNoteLamps($("radio-lamps"));
   renderChannels(payload);
   renderTeletype(payload);
   renderTasks(payload);

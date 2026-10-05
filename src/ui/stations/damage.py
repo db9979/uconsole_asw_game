@@ -6,7 +6,7 @@ import pygame
 
 from src.ui import theme
 
-from src.core import config
+from src.core import config, status_tips
 from src.core.i18n import localized, localize, raw_text
 from src.core.station import Station
 from src.ship.damage import COMPARTMENTS
@@ -287,6 +287,7 @@ def _draw_selection_cards(game, s, column, station_rect) -> None:
                          (card.x + 12, card.y + (3 if two_lines else (card.h - 19) // 2),
                           name_w, 19), config.COLOR_TEXT, size=15)
         teams = game.damage.teams_on(key)
+        _room_tip(card, key, c)
         if two_lines:
             _draw_hazards(s, card.x + 12, card.y + 24, c)
             if teams:
@@ -294,6 +295,12 @@ def _draw_selection_cards(game, s, column, station_rect) -> None:
         else:
             _draw_hazards(s, card.right - 104, card.y + (card.h - 19) // 2, c)
         pointer.add_action(card, lambda _pos, picked=key: _pick_compartment(game, picked))
+
+
+def _room_tip(rect, key, c) -> None:
+    """Hovering a compartment's lamps tells its state and the order."""
+    pointer.add_tip(rect, lambda: status_tips.payload(
+        status_tips.damage_room(c, "damage.short." + key)))
 
 
 def _draw_hazards(s, x, y, c) -> None:
@@ -357,6 +364,7 @@ def _draw_callout(game, s, card, index, key, c, is_sel, line_h) -> None:
     label = message("damage.schematic.callout", number=f"{index + 1:02}",
                     name=localize("damage.short." + key))
     lx = card.x + 20
+    _room_tip(card, key, c)
     console.led(s, (card.x + 10, card.y + 3 + line_h // 2), 5, _state_level(c))
     layout.blit_line(s, label, (lx, card.y + 3, card.w - 26, line_h),
                      config.COLOR_TEXT, size=16)
@@ -390,6 +398,8 @@ def _draw_legend(s, rect) -> None:
     width = rect.w // len(items)
     for index, (level, key) in enumerate(items):
         x = rect.x + index * width
+        pointer.add_tip((x, rect.y, width, rect.h), status_tips.payload(status_tips.note(
+            key, "", "tip." + key)))
         if level is None:
             console.badges(s, x + 10, rect.centery - 10, (1,))
         else:

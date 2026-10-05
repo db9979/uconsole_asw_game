@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.207**
+Current release: **1.3.208**
 
-Release 1.3.207 keeps the uConsole smooth with live traffic. A mission with
+Release 1.3.208 keeps the uConsole smooth with live traffic. A mission with
 real aircraft (OpenSky ADS-B) now flies at most 5 of them instead of 40, and
 one with real ships (AIS) at most 15 instead of 60, picked at random and
 kept until each leaves the area, so contacts do not flicker in and out. With

@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.207
+## 1.3.208
 
-Version 1.3.207 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
+Version 1.3.208 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
 mit echten Flugzeugen (OpenSky ADS-B) fliegt jetzt höchstens 5 davon statt
 40, eine mit echten Schiffen (AIS) höchstens 15 statt 60, zufällig gewählt
 und behalten, bis jeder Kontakt das Gebiet verlässt, damit Kontakte nicht
@@ -17,6 +17,18 @@ einmal pro Bild statt mehrmals berechnet, und ein Schwall Live-AIS-Meldungen
 wird auf mehrere Bilder verteilt. Remote-Crew-Browser sehen dieselben
 Kontakte. Die Tasten bleiben gleich. Spielstände sind v52; v38- bis
 v51-Stände werden weiter geladen.
+
+## 1.3.207
+
+Version 1.3.207 lässt die Beschriftungen der OPZ-Karte an ihrem Platz, wenn
+weit herausgezoomt ist. Die Zahlen der Peilskala um die Radarringe stehen
+jetzt immer bei ihrer Peilung, statt den Entfernungsangaben auszuweichen;
+000 steht wieder oben und 180 unten. Liegen die Ringe eng beieinander, ist
+nur jeder zweite Ring beschriftet, die Entfernung des äußeren Rings steht
+neben der 000, und eine Entfernungsangabe, die eine Peilzahl verdecken
+würde, entfällt. Die OPZ-Karte der Remote Crew im Browser macht es genauso.
+Die Tasten sind unverändert. Spielstände sind v52; Spielstände v38 bis v51
+laden weiterhin.
 
 ## 1.3.206
 

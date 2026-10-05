@@ -37,6 +37,10 @@ class LabelField:
         if len(self.rects) < MAX_RECTS:
             self.rects.append(pygame.Rect(rect))
 
+    def is_free(self, rect) -> bool:
+        """Whether ``rect`` keeps clear of every label placed so far."""
+        return self._overlap(pygame.Rect(rect)) == 0
+
     def _clamp(self, x: float, y: float, width: int, height: int) -> pygame.Rect:
         b = self.bounds
         x = min(max(int(x), b.x + 2), max(b.x + 2, b.right - width - 2))
@@ -158,6 +162,27 @@ def along(origin, bearing_unit, distances, size, offset=(6, -8)) -> list[tuple[i
         points.append((int(px) + offset[0], int(py) + offset[1]))
         points.append((int(px) - int(size[0]) - offset[0], int(py) + offset[1]))
     return points
+
+
+def blit_fixed(surface, text, rect, color, size: int = 12,
+               skip_if_taken: bool = False) -> bool:
+    """A chart label that belongs to one exact place (a number of the
+    bearing scale, a range ring's distance): drawn where asked and never
+    moved; inside a label scope later labels keep off it.  With
+    ``skip_if_taken`` a label whose place another label already holds is
+    left out (a moved label would point at the wrong place); returns
+    whether it was drawn."""
+    from src.core.i18n import localize
+    from src.ui import layout
+    x, y, w, h = (int(value) for value in rect)
+    field = active()
+    if field is not None:
+        width = min(w, layout.text_width(layout.font(size), localize(text)) + 2)
+        if skip_if_taken and not field.is_free((x, y, width, h)):
+            return False
+        field.reserve((x, y, width, h))
+    layout.blit_line(surface, text, (x, y, w, h), color, size=size)
+    return True
 
 
 def blit_line(surface, text, rect, color, size: int = 12) -> None:

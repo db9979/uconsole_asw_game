@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.207**
+Aktuelle Version: **1.3.208**
 
-Version 1.3.207 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
+Version 1.3.208 hält die uConsole bei Live-Verkehr flüssig. Eine Mission
 mit echten Flugzeugen (OpenSky ADS-B) fliegt jetzt höchstens 5 davon statt
 40, eine mit echten Schiffen (AIS) höchstens 15 statt 60, zufällig gewählt
 und behalten, bis jeder Kontakt das Gebiet verlässt, damit Kontakte nicht

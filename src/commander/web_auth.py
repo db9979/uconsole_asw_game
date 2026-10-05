@@ -84,7 +84,10 @@ class WebHostAuth:
     def _read(self):
         if self.path.is_symlink() or self.path.parent.is_symlink():
             raise ValueError("symlinked web host credential path")
-        if self.path.exists() and stat.S_IMODE(self.path.stat().st_mode) & 0o077:
+        # POSIX modes only; Windows reports 0o666 for every file and guards
+        # the user profile with its own access lists.
+        if (os.name == "posix" and self.path.exists()
+                and stat.S_IMODE(self.path.stat().st_mode) & 0o077):
             raise ValueError("web host credential file is accessible by other users")
         try:
             with self.path.open("r", encoding="ascii") as stream:
@@ -165,7 +168,10 @@ class WebHostAuth:
         fd, temporary = tempfile.mkstemp(prefix=".web-host.", suffix=".tmp",
                                          dir=self.path.parent)
         try:
-            os.fchmod(fd, 0o600)
+            # Windows has no POSIX modes (and no os.fchmod before 3.13); the
+            # file then inherits the private user profile's permissions.
+            if hasattr(os, "fchmod"):
+                os.fchmod(fd, 0o600)
             with os.fdopen(fd, "w", encoding="ascii") as stream:
                 json.dump(record, stream, sort_keys=True, allow_nan=False)
                 stream.write("\n")

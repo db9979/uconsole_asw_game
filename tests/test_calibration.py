@@ -18,11 +18,23 @@ def _tool():
     return module
 
 
-def test_golden_calibration_holds_within_tolerance():
+def test_every_golden_metric_belongs_to_a_section():
     tool = _tool()
     golden = tool.load_json(tool.GOLDEN_PATH, None)
     assert golden is not None and golden["metrics"]
-    problems = tool.compare(tool.measure_all(), golden,
+    for key in golden["metrics"]:
+        assert tool.section_of(key) in tool.SECTIONS, key
+
+
+# One test per section, so the parallel runner spreads the long measurement.
+@pytest.mark.parametrize("section", ["ship", "sonar", "radar", "torpedo", "sub",
+                                     "damage", "air"])
+def test_golden_calibration_holds_within_tolerance(section):
+    tool = _tool()
+    assert section in tool.SECTIONS
+    golden = tool.golden_for_sections(tool.load_json(tool.GOLDEN_PATH, None), [section])
+    assert golden["metrics"]
+    problems = tool.compare(tool.measure_all([section]), golden,
                             tool.load_json(tool.DEVIATIONS_PATH, {}))
     assert problems == []
 

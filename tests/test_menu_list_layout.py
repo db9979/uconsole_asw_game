@@ -206,7 +206,7 @@ def test_browser_new_game_list_names_every_scenario_and_has_room_for_more():
 @pytest.mark.parametrize("language,large", [("en", False), ("de", False),
                                             ("en", True), ("de", True)])
 def test_language_model_settings_pages_never_overlap(language, large):
-    """Options page 2, Language model: both its pages (model and voice),
+    """Options page 2, Language model: all its pages (model, voice, sound),
     with the longest values (the shared key, a failed voice test)."""
     import dataclasses
     game = _game(language, large)
@@ -214,12 +214,12 @@ def test_language_model_settings_pages_never_overlap(language, large):
         game.preferences, tts_enabled=True, llm_enabled=True,
         tts_url="https://speech.example-provider.internal.example.com/v1",
         llm_url="https://speech.example-provider.internal.example.com/v1",
-        tts_voice="shimmer", llm_coach="often")
+        tts_voice="shimmer", llm_coach="often", tts_seed=2147483647, tts_temperature=1.95)
     game._voice_key_source = "shared"
     from src.ui.advisor_view import PANEL, draw_llm_settings
     game._open_administration("llm")
     problems = []
-    for page in (0, 1):
+    for page in (0, 1, 2):
         game.set_llm_page(page)
         for test in (None, dict(status="failed", error="rate_limit")):
             game.voice_test = test

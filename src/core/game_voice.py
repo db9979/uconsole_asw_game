@@ -19,6 +19,7 @@ from collections import deque
 
 from src.core.i18n import localize, message
 from src.llm import keystore
+from src.llm import voice as voice_model
 from src.llm.voice import PRESET_VOICES, VoiceConfig, VoiceService
 
 VOICE_QUEUE_MAX = 16
@@ -66,7 +67,10 @@ class VoiceMixin:
             source = "shared" if key else "none"
         self._voice_key_source = source
         return VoiceConfig(enabled=bool(prefs.tts_enabled), base_url=prefs.tts_url,
-                           model=prefs.tts_model, voice=prefs.tts_voice, api_key=key)
+                           model=prefs.tts_model, voice=prefs.tts_voice, api_key=key,
+                           temperature=float(prefs.tts_temperature),
+                           top_p=float(prefs.tts_top_p), seed=int(prefs.tts_seed),
+                           clean=bool(prefs.tts_clean))
 
     def configure_voice(self) -> None:
         self.voice.configure(self._voice_config(), rate=self._voice_rate())
@@ -163,6 +167,17 @@ class VoiceMixin:
             index = 0
         self.set_voice_preference("tts_voice",
                                   PRESET_VOICES[(index + step) % len(PRESET_VOICES)])
+
+    def step_voice_number(self, name: str, step: int) -> None:
+        """Left/Right on temperature, top_p or seed."""
+        prefs = self.preferences
+        if name == "tts_seed":
+            value = max(-1, min(voice_model.SEED_MAX, int(prefs.tts_seed) + step))
+        else:
+            low, high = (voice_model.TEMPERATURE_RANGE if name == "tts_temperature"
+                         else voice_model.TOP_P_RANGE)
+            value = round(min(high, max(low, getattr(prefs, name) + 0.05 * step)), 2)
+        self.set_voice_preference(name, value)
 
     def start_voice_test(self) -> bool:
         """Say one sample sentence and show how long the service took."""

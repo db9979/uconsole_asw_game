@@ -23,11 +23,15 @@ LLM_ROWS = ("llm_enabled", "llm_url", "llm_model", "llm_key", "llm_radio", "llm_
             "llm_opfor", "test")
 VOICE_ROWS = ("tts_enabled", "tts_url", "tts_model", "tts_voice", "tts_key", "tts_xo",
               "tts_crew", "tts_test")
-LLM_PAGES = (LLM_ROWS, VOICE_ROWS)
+# How the voice sounds: sampling of speech models that take it, clean-up.
+TUNE_ROWS = ("tts_temperature", "tts_top_p", "tts_seed", "tts_clean", "tts_test")
+LLM_PAGES = (LLM_ROWS, VOICE_ROWS, TUNE_ROWS)
+NUMBER_ROWS = {"tts_temperature": float, "tts_top_p": float, "tts_seed": int}
 TEXT_ROWS = {"llm_url": llm_client.MAX_URL_LEN, "llm_model": llm_client.MAX_MODEL_LEN,
              "llm_key": keystore.MAX_KEY_LEN, "tts_url": llm_client.MAX_URL_LEN,
              "tts_model": llm_client.MAX_MODEL_LEN, "tts_voice": voice_client.MAX_VOICE_LEN,
-             "tts_key": keystore.MAX_KEY_LEN}
+             "tts_key": keystore.MAX_KEY_LEN, "tts_temperature": 6, "tts_top_p": 6,
+             "tts_seed": 10}
 KEY_ROWS = ("llm_key", "tts_key")
 
 
@@ -148,19 +152,20 @@ class AdvisorUiMixin:
         return LLM_PAGES[self.llm_page % len(LLM_PAGES)]
 
     def set_llm_page(self, page: int) -> None:
-        """Language model (0) or its voice (1)."""
+        """Language model (0), its voice (1) or how the voice sounds (2)."""
         self.llm_page = page % len(LLM_PAGES)
         self.llm_sel = 0
         self.llm_field = self.llm_field_name = None
 
     def click_llm_row(self, index: int) -> None:
-        """A click on a settings row: select it and change it like Right."""
+        """A click on a settings row: select it and change it like Right (a
+        number opens its field)."""
         rows = self.llm_rows()
         if not 0 <= index < len(rows) or self.llm_field_name == rows[index]:
             return
         self.llm_field = self.llm_field_name = None
         self.llm_sel = index
-        self._activate_llm_row(rows[index], 1)
+        self._activate_llm_row(rows[index], 0 if rows[index] in NUMBER_ROWS else 1)
 
     def _activate_llm_row(self, name: str, step: int) -> None:
         """Enter (step 0) or Left/Right (-1/+1) on one settings row."""
@@ -170,8 +175,10 @@ class AdvisorUiMixin:
             self.start_voice_test()
         elif name == "tts_voice" and step:
             self.cycle_voice(step)
+        elif name in NUMBER_ROWS and step:
+            self.step_voice_number(name, step)
         elif name in TEXT_ROWS:
-            value = "" if name in KEY_ROWS else getattr(self.preferences, name)
+            value = "" if name in KEY_ROWS else str(getattr(self.preferences, name))
             self.llm_field = TextField(value=value, maximum=TEXT_ROWS[name],
                                        secret=name in KEY_ROWS)
             self.llm_field_name = name
@@ -193,6 +200,19 @@ class AdvisorUiMixin:
             saved = self.save_llm_key(value) if name == "llm_key" else self.save_voice_key(value)
             if not saved:
                 self.flash(message("llm.key_failed"), 3.0)
+            return
+        if name in NUMBER_ROWS:
+            try:
+                number = NUMBER_ROWS[name](value.replace(",", "."))
+            except ValueError:
+                number = None
+            valid = {"tts_temperature": voice_client.valid_temperature,
+                     "tts_top_p": voice_client.valid_top_p,
+                     "tts_seed": voice_client.valid_seed}[name]
+            if number is None or not valid(number):
+                self.flash(message("llm.invalid." + name), 3.0)
+                return
+            self.set_voice_preference(name, round(number, 2) if name != "tts_seed" else number)
             return
         valid = {"llm_url": llm_client.valid_url, "tts_url": llm_client.valid_url,
                  "tts_voice": voice_client.valid_voice}.get(name, llm_client.valid_model)

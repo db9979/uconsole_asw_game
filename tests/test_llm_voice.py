@@ -391,3 +391,101 @@ def test_voice_has_its_own_reserved_channel_beside_the_sonar(monkeypatch):
     assert engine.voice_busy()
     engine.stop_voice()
     assert channels[4].stop.called
+
+
+# -- how the voice sounds (temperature, top_p, seed, clean-up) -----------------------
+
+@pytest.mark.parametrize("text,said", [
+    ("**Lage:** ruhig 😀 haha. *lacht* Kontakt Peilung 270.",
+     "Lage: ruhig. Kontakt Peilung 270."),
+    ("- Punkt eins\n- [Handbuch](http://x/y) LOL!", "Punkt eins Handbuch"),
+    ("Hahaha, gut gemacht 👍🏽! (seufzt) [Pause]", "gut gemacht!"),
+    ("Die Hohe See. Kurs 270... hehe", "Die Hohe See. Kurs 270..."),
+])
+def test_text_is_cleaned_before_speaking(text, said):
+    assert voice.clean_for_speech(text) == said
+
+
+def test_clean_up_can_be_switched_off():
+    assert voice.speakable("**Ja** 😀 haha", clean=False) == "**Ja** 😀 haha"
+
+
+def test_sampling_reaches_services_that_take_it():
+    with FakeSpeechServer() as server:
+        config = voice.VoiceConfig(enabled=True, base_url=server.url, model="qwen-tts",
+                                   voice="Chelsie", temperature=0.6, top_p=0.8, seed=7)
+        request = voice.VoiceService(config).say("Kontakt.", "de", "xo")
+        assert request.wait(10) and request.ok
+        body = server.requests[0]
+        assert (body["temperature"], body["top_p"], body["seed"]) == (0.6, 0.8, 7)
+        random = dataclasses.replace(config, seed=-1)
+        service = voice.VoiceService(random)
+        assert service.say("Kontakt zwei.", "de", "xo").wait(10)
+        assert "seed" not in server.requests[-1]
+
+
+def test_a_service_refusing_sampling_is_asked_without_it_first():
+    def reply(body):
+        return 422 if "temperature" in body else None
+    with FakeSpeechServer(reply) as server:
+        request = _service(server).say("Kontakt.", "en", "xo")
+        assert request.wait(10) and request.ok
+        assert "temperature" not in server.requests[-1]
+        assert "instructions" in server.requests[-1]
+
+
+def test_openai_never_gets_sampling_fields():
+    sent = []
+
+    class Answer:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self, _limit):
+            return _wav(TONE)
+
+    def opener(request, timeout):
+        sent.append(json.loads(request.data))
+        return Answer()
+    config = voice.VoiceConfig(enabled=True, seed=5)
+    request = voice.VoiceService(config, opener=opener).say("Contact.", "en", "xo")
+    assert request.wait(10) and request.ok
+    assert not {"temperature", "top_p", "seed"} & set(sent[0])
+
+
+def test_sound_settings_are_kept_and_checked(tmp_path):
+    prefs = dataclasses.replace(Preferences(), tts_temperature=0.55, tts_top_p=0.9,
+                                tts_seed=1234, tts_clean=False)
+    loaded = load_preferences(save_preferences(prefs, tmp_path / "settings.json"))
+    assert (loaded.tts_temperature, loaded.tts_top_p, loaded.tts_seed, loaded.tts_clean) \
+        == (0.55, 0.9, 1234, False)
+    path = tmp_path / "bad.json"
+    path.write_text(json.dumps({"tts_temperature": 9, "tts_top_p": 0, "tts_seed": True}))
+    loaded = load_preferences(path)
+    assert (loaded.tts_temperature, loaded.tts_top_p, loaded.tts_seed) == (0.9, 1.0, -1)
+
+
+def test_sound_page_steps_and_types_numbers(isolated_saves):
+    from src.core.game_advisor import TUNE_ROWS
+    game = _game()
+    game._open_administration("llm")
+    game.set_llm_page(2)
+    game.llm_sel = TUNE_ROWS.index("tts_temperature")
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT, mod=0, unicode=""))
+    assert game.preferences.tts_temperature == 0.85
+    game.click_llm_row(TUNE_ROWS.index("tts_seed"))
+    assert game.llm_field_name == "tts_seed"
+    game.llm_field.value = "42"
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, mod=0,
+                                         unicode="\r"))
+    assert game.preferences.tts_seed == 42 and game.voice.config.seed == 42
+    game.click_llm_row(TUNE_ROWS.index("tts_top_p"))
+    game.llm_field.value = "nan"
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, mod=0,
+                                         unicode="\r"))
+    assert game.preferences.tts_top_p == 1.0
+    game.click_llm_row(TUNE_ROWS.index("tts_clean"))
+    assert not game.preferences.tts_clean and not game.voice.config.clean

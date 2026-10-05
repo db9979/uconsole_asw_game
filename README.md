@@ -15,7 +15,8 @@ Current release: **1.3.225**
 Release 1.3.225 gives the optional language model a voice. Under Options,
 page 2, Language model, a second page "Voice" takes an OpenAI-compatible
 speech service (address, speech model, voice and API key; preset OpenAI
-gpt-4o-mini-tts). With it the executive officer speaks his answers and the
+gpt-4o-mini-tts), and a third page "Sound" sets temperature, top_p and seed
+for services that take them (Qwen-TTS) and cleans the text before speaking. With it the executive officer speaks his answers and the
 coach's tips, and the spoken crew reports use the same natural voice instead
 of espeak-ng, each with its own switch. The voice plays on its own audio
 channel beside the sonar tone, and its key is kept in ~/.u-jagd/tts_key (or

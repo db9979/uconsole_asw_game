@@ -131,10 +131,21 @@ def settings_row_rects() -> tuple:
                              PANEL.w - 120, 54) for index in range(8))
 
 
+TAB_W = 170
+
+
 def page_tab_rects() -> tuple:
-    """The settings' two page tabs (language model, voice) beside the title."""
-    return (pygame.Rect(PANEL.x + 24, PANEL.y + 14, 190, 34),
-            pygame.Rect(PANEL.right - 24 - 190 - 48, PANEL.y + 14, 190, 34))
+    """The settings' page tabs (language model; voice, how it sounds)
+    left and right of the title."""
+    right = PANEL.right - 24 - 48
+    return (pygame.Rect(PANEL.x + 24, PANEL.y + 14, TAB_W, 34),
+            pygame.Rect(right - 2 * TAB_W - 8, PANEL.y + 14, TAB_W, 34),
+            pygame.Rect(right - TAB_W, PANEL.y + 14, TAB_W, 34))
+
+
+def _title_rect() -> pygame.Rect:
+    tabs = page_tab_rects()
+    return pygame.Rect(tabs[0].right + 8, PANEL.y + 12, tabs[1].x - tabs[0].right - 16, 40)
 
 
 def _on_off(value):
@@ -173,6 +184,11 @@ def _voice_values(game) -> dict:
         "tts_xo": _on_off(prefs.tts_xo),
         "tts_crew": _on_off(prefs.tts_crew),
         "tts_test": _voice_test_text(game),
+        "tts_temperature": raw_text(f"{prefs.tts_temperature:.2f}"),
+        "tts_top_p": raw_text(f"{prefs.tts_top_p:.2f}"),
+        "tts_seed": message("voice.seed_random") if prefs.tts_seed < 0
+        else raw_text(str(prefs.tts_seed)),
+        "tts_clean": _on_off(prefs.tts_clean),
     }
 
 
@@ -184,8 +200,8 @@ def draw_llm_settings(game) -> None:
     s = game.screen
     page = game.llm_page % len(LLM_PAGES)
     overlay_style.panel(s, PANEL)
-    overlay_style.title(s, ("llm.title", "voice.title")[page],
-                        (PANEL.x + 240, PANEL.y + 12, PANEL.w - 528, 40), size=28)
+    overlay_style.title(s, ("llm.title", "voice.title", "voice.tune_title")[page],
+                        _title_rect(), size=26)
     game_menu.close_button(s, PANEL)
     for index, rect in enumerate(page_tab_rects()):
         active = index == page
@@ -193,11 +209,12 @@ def draw_llm_settings(game) -> None:
             overlay_style.highlight(s, rect)
         pygame.draw.rect(s, config.COLOR_TEXT_DIM, rect, 1)
         layout.blit_line(s, message("llm.page", number=index + 1,
-                                    name=message(("llm.page.model", "llm.page.voice")[index])),
+                                    name=message(("llm.page.model", "llm.page.voice",
+                                                  "llm.page.tune")[index])),
                          rect.inflate(-8, -4), overlay_style.text_color(active),
                          size=16, align="center")
         pointer.add_action(rect, lambda _pos, index=index: game.set_llm_page(index))
-    layout.blit_line(s, ("llm.subtitle", "voice.subtitle")[page],
+    layout.blit_line(s, ("llm.subtitle", "voice.subtitle", "voice.tune_subtitle")[page],
                      (PANEL.x + 32, PANEL.y + 56, PANEL.w - 64, 24),
                      config.COLOR_TEXT_DIM, size=15, align="center")
     rows = LLM_PAGES[page]

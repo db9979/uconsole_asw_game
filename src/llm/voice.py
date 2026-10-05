@@ -17,11 +17,13 @@ in the ``Authorization`` header and never appears in errors, logs or repr.
 from __future__ import annotations
 
 import json
+import math
 import re
 import struct
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections import OrderedDict, deque
 from dataclasses import dataclass, field
@@ -39,6 +41,17 @@ DEFAULT_VOICE = "onyx"
 PRESET_VOICES = ("alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx",
                  "sage", "shimmer", "verse")
 MAX_VOICE_LEN = 64
+# Sampling of speech models that take it (Qwen-TTS and similar servers):
+# lower temperature = calmer, steadier; lower top_p = fewer outliers; a
+# fixed seed keeps the delivery alike across sentences (-1 = random).
+DEFAULT_TEMPERATURE = 0.9
+DEFAULT_TOP_P = 1.0
+DEFAULT_SEED = -1
+TEMPERATURE_RANGE = (0.0, 2.0)
+TOP_P_RANGE = (0.05, 1.0)
+SEED_MAX = 2 ** 31 - 1
+# OpenAI's own speech endpoint knows no sampling fields: never sent there.
+_NO_SAMPLING_HOSTS = frozenset(("api.openai.com",))
 MAX_INPUT_CHARS = 700
 MAX_AUDIO_BYTES = 12 * 1024 * 1024
 MAX_AUDIO_S = 90.0
@@ -73,9 +86,64 @@ def valid_voice(voice) -> bool:
             and voice == voice.strip() and _CONTROL.search(voice) is None)
 
 
-def speakable(text, limit: int = MAX_INPUT_CHARS) -> str:
-    """One paragraph of plain text, cut at a sentence end when too long."""
-    text = " ".join(clean_text(text, 4 * limit).split())
+def _number(value) -> bool:
+    return type(value) in (int, float) and math.isfinite(value)
+
+
+def valid_temperature(value) -> bool:
+    return _number(value) and TEMPERATURE_RANGE[0] <= value <= TEMPERATURE_RANGE[1]
+
+
+def valid_top_p(value) -> bool:
+    return _number(value) and TOP_P_RANGE[0] <= value <= TOP_P_RANGE[1]
+
+
+def valid_seed(value) -> bool:
+    return type(value) is int and -1 <= value <= SEED_MAX
+
+
+_LINK = re.compile(r"\[([^\]\n]{1,200})\]\([^)\s]{1,500}\)")
+_BOLD = re.compile(r"(\*\*|__)(.+?)\1", re.DOTALL)
+_ACTION = re.compile(r"(?<![\w*])\*[^*\n]{1,60}\*(?![\w*])|\[[^\]\n]{0,60}\]")
+_STAGE = re.compile(r"\((?:[^()\n]{0,40}?)(?:laugh|lach|chuckl|kicher|giggl|sigh|seufz|smil|"
+                    r"läch|grins|grin|cough|hust|pause)[^()\n]{0,40}\)", re.IGNORECASE)
+_LAUGH = re.compile(r"\b(?:(h[aei])\1+h?|lol|lmao|rofl|xd)\b!*", re.IGNORECASE)
+_EMOJI = re.compile("[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U00002B00-\U00002BFF"
+                    "\U0001F1E6-\U0001F1FF\uFE0E\uFE0F\u200D\u20E3]")
+_BULLET = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+", re.MULTILINE)
+
+
+def clean_for_speech(text) -> str:
+    """Only what a person would say: no emojis, Markdown, links, laughter
+    ("haha", "lol") or stage directions (*laughs*, (seufzt), [pause])."""
+    if type(text) is not str:
+        return ""
+    text = _LINK.sub(r"\1", text)
+    text = _BOLD.sub(r"\2", text)
+    text = _ACTION.sub(" ", text)
+    text = _STAGE.sub(" ", text)
+    text = _LAUGH.sub(" ", text)
+    text = _EMOJI.sub("", text)
+    text = _BULLET.sub("", text)
+    text = clean_text(text, 8 * MAX_INPUT_CHARS)
+    text = " ".join(text.split())
+    # Punctuation left alone by a removed word.
+    text = re.sub(r"\s+([,.!?;:])", r"\1", text)
+    text = re.sub(r"[,;:]+(?=[,.!?;:])", "", text)
+    text = re.sub(r"([.!?])[,;:]+", r"\1", text)
+    text = re.sub(r"(?<!\.)\.\.(?!\.)|(?<=[!?])\.+", lambda m: "." if m.group() == ".." else "",
+                  text)
+    return re.sub(r"^[,.;:!?\s]+", "", text)
+
+
+def speakable(text, limit: int = MAX_INPUT_CHARS, clean: bool = True) -> str:
+    """One paragraph of text, cut at a sentence end when too long; with
+    ``clean`` only the words (``clean_for_speech``)."""
+    if clean:
+        text = clean_for_speech(text)
+    else:
+        text = _CONTROL.sub(" ", text) if type(text) is str else ""
+    text = " ".join(text.split())
     if len(text) <= limit:
         return text
     cut = text[:limit]
@@ -90,11 +158,22 @@ class VoiceConfig:
     model: str = DEFAULT_MODEL
     voice: str = DEFAULT_VOICE
     api_key: str = field(default="", repr=False)
+    temperature: float = DEFAULT_TEMPERATURE
+    top_p: float = DEFAULT_TOP_P
+    seed: int = DEFAULT_SEED
+    clean: bool = True
 
     @property
     def usable(self) -> bool:
         return (self.enabled and valid_url(self.base_url) and valid_model(self.model)
-                and valid_voice(self.voice))
+                and valid_voice(self.voice) and valid_temperature(self.temperature)
+                and valid_top_p(self.top_p) and valid_seed(self.seed))
+
+    @property
+    def sound(self) -> tuple:
+        """Everything that changes how a sentence sounds (the cache key)."""
+        return (self.base_url, self.model, self.voice, self.temperature, self.top_p,
+                self.seed)
 
 
 class VoiceRequest:
@@ -232,8 +311,9 @@ class VoiceService:
         self.answered = 0
         self.failed = 0
         self.last_error = None
-        # Ask with a speaking style until a server refuses the field.
+        # Ask with a speaking style and sampling until a server refuses them.
         self._instructions = True
+        self._sampling = True
 
     # -- configuration -------------------------------------------------------
 
@@ -249,8 +329,8 @@ class VoiceService:
         with self._lock:
             if (config.base_url, config.model) != (self._config.base_url, self._config.model):
                 self._instructions = True
-            if (config.base_url, config.model, config.voice) != (
-                    self._config.base_url, self._config.model, self._config.voice):
+                self._sampling = True
+            if config.sound != self._config.sound:
                 self._cache.clear()
             if rate is not None and int(rate) != self._rate:
                 self._rate = int(rate)
@@ -269,7 +349,7 @@ class VoiceService:
         (a full crew queue drops its oldest report instead)."""
         if not self.active or role not in ROLES:
             return None
-        text = speakable(text)
+        text = speakable(text, clean=self._config.clean)
         if not text:
             return None
         request = VoiceRequest(role, text, language if language in _LANGUAGE else "en")
@@ -376,6 +456,12 @@ class VoiceService:
         if self._instructions:
             body["instructions"] = (_STYLE.get(request.role, _STYLE["xo"])
                                     + _LANGUAGE.get(request.language, ""))
+        sampling = self._sampling and _host(config.base_url) not in _NO_SAMPLING_HOSTS
+        if sampling:
+            body["temperature"] = float(config.temperature)
+            body["top_p"] = float(config.top_p)
+            if config.seed >= 0:
+                body["seed"] = int(config.seed)
         url = config.base_url.rstrip("/") + "/audio/speech"
         headers = {"Content-Type": "application/json", "Accept": "audio/wav",
                    "User-Agent": "u-jagd"}
@@ -391,6 +477,11 @@ class VoiceService:
                 raise _VoiceError("auth") from None
             if exc.code == 429:
                 raise _VoiceError("rate_limit") from None
+            if sampling and exc.code in (400, 422):
+                # A server that does not know a field: first without sampling,
+                # then without the speaking style.
+                self._sampling = False
+                return self._post(config, request)
             if self._instructions and exc.code in (400, 422):
                 self._instructions = False
                 return self._post(config, request)
@@ -406,6 +497,13 @@ class VoiceService:
         if len(raw) > MAX_AUDIO_BYTES:
             raise _VoiceError("bad_reply")
         return raw
+
+
+def _host(url: str) -> str:
+    try:
+        return (urllib.parse.urlsplit(url).hostname or "").lower()
+    except ValueError:
+        return ""
 
 
 class _VoiceError(Exception):

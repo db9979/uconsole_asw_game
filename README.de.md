@@ -15,7 +15,9 @@ Aktuelle Version: **1.3.225**
 Version 1.3.225 gibt dem optionalen Sprachmodell eine Stimme. Unter
 Optionen, Seite 2, Sprachmodell nimmt eine zweite Seite „Stimme“ einen
 OpenAI-kompatiblen Sprachdienst auf (Adresse, Sprechmodell, Stimme und
-API-Schlüssel; voreingestellt OpenAI gpt-4o-mini-tts). Damit spricht der Erste
+API-Schlüssel; voreingestellt OpenAI gpt-4o-mini-tts), und eine dritte Seite
+„Klang“ stellt Temperature, top_p und Seed für Dienste ein, die sie annehmen
+(Qwen-TTS), und bereinigt den Text vor dem Sprechen. Damit spricht der Erste
 Offizier seine Antworten und die Tipps des Coachs, und die gesprochenen
 Crew-Meldungen kommen mit derselben natürlichen Stimme statt über espeak-ng,
 beides einzeln schaltbar. Die Stimme spielt auf einem eigenen Tonkanal neben

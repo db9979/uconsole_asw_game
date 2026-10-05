@@ -44,3 +44,31 @@ def test_a_contact_noise_above_the_signal_limit_is_still_refused():
     sub.memory["contact"] = dict(x=sub.x + 3.0, y=sub.y, speed=15.0, course=269.0,
                                  noise=SONAR_SIGNAL_MAX + 0.5)
     assert not _reloads(game)
+
+
+def _loads(document) -> bool:
+    twin = Game(seed=1, start_menu=True, show_splash=False, audio_enabled=False,
+                language="en")
+    return twin._load_save_data(json.loads(json.dumps(document)))
+
+
+def test_broken_flight_waypoints_and_sub_start_are_refused():
+    # Found by fuzzing: these loaded and crashed the simulation later.
+    game = _game()
+    document = json.loads(json.dumps(game.save_state(), allow_nan=False))
+    assert document["flights"]["items"] and document["subs"]
+    assert _loads(document)
+    for bad in ([[1.0]], [["a", "b"]], [[1.0, 2.0, 3.0]], "xy", [[1e300, 0.0]],
+                [[0.0, 0.0]] * 17):
+        broken = json.loads(json.dumps(document))
+        broken["flights"]["items"][0]["waypoints"] = bad
+        assert not _loads(broken), bad
+    broken = json.loads(json.dumps(document))
+    flight = broken["flights"]["items"][0]
+    flight["waypoints"] = [[1.0, 2.0], [3.0, 4.0]]
+    flight["waypoint_idx"] = 5
+    assert not _loads(broken)
+    for bad in (None, [1.0], ["a", 2.0], [1.0, 2.0, 3.0], 7):
+        broken = json.loads(json.dumps(document))
+        broken["subs"][0]["start_pos"] = bad
+        assert not _loads(broken), bad

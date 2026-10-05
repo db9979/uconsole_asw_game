@@ -15,6 +15,7 @@ from src.core.i18n import (
     display_message, display_value, localize, message as structured_message)
 from src.ui import layout
 from src.ui import observations
+from src.physics import ship_dynamics
 
 
 PAGES = ("BROADBAND", "LOFAR", "DEMON", "TMA", "UMWELT/FUSION", "ACTIVE")
@@ -138,7 +139,7 @@ def _process_lofar_rows(raw, controls, apply_filters=True):
     in_band = (frequencies >= band_low) & (frequencies <= band_high)
     processed[:, ~in_band] = 0.0
     if notch_enabled:
-        shaft = 10.0 + 1.9 * ship_speed
+        shaft = ship_dynamics.own_blade_line_hz(ship_speed)
         notch = in_band & (np.abs(frequencies - shaft) < 5.0)
         processed[:, notch] = np.clip(raw[:, notch] * gain * 0.15, 0.0, 1.0)
     if operator_notch is not None:

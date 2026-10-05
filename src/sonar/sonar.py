@@ -22,6 +22,7 @@ from src.sonar.contact import (  # noqa: F401
     FIX_SOURCES, POINT_FIX_SOURCES, Contact, TowState)
 from src.sonar.arrays import ArrayHandlingMixin
 from src.physics.geo import bearing_deg
+from src.physics import ship_dynamics
 
 
 def tgt_gone(tgt) -> bool:
@@ -301,7 +302,7 @@ class SonarSystem(ArrayHandlingMixin):
         self.peak_spectrum = []
         self._listen_target_id = None
         self._receiver_mode = "BOW"
-        self._own_line_hz = 10.0
+        self._own_line_hz = ship_dynamics.own_blade_line_hz(0.0)
         self.towed_depth_m = config.SONAR_TOWED_DEPTH_M
         self.towed_depth_target_m = config.SONAR_TOWED_DEPTH_M
         # Distant-shipping noise input (civilian contacts nearby, set by the
@@ -837,7 +838,7 @@ class SonarSystem(ArrayHandlingMixin):
         self._lofar_timer += dt
         sample_due = self._lofar_timer + 1e-9 >= self.receiver.block_s
         sources = []
-        self._own_line_hz = 10.0 + 1.9 * frigate.speed
+        self._own_line_hz = ship_dynamics.own_blade_line_hz(frigate.speed)
         if mode != self._receiver_mode:
             self._receiver_mode = mode
             self.beam_width_deg = beam_width_deg(mode)
@@ -999,6 +1000,9 @@ class SonarSystem(ArrayHandlingMixin):
                           "seed": getattr(tgt, "sensor_seed", tgt.id),
                           "spectral_gains": spectral_by_mode.get(
                               mode, ((100.0, 1.0),))}
+                blades = getattr(getattr(tgt, "fingerprint", None), "blades", None)
+                if type(blades) is int:
+                    source["blades"] = blades
                 if isinstance(broadband, dict) and broadband.get("level", 0) > 0:
                     source["broadband"] = broadband
                 sources.append(source)
@@ -1354,7 +1358,8 @@ class SonarSystem(ArrayHandlingMixin):
             wind_kn=float(getattr(world, "wind_speed_kn", 10.0)),
             absorption_db_per_km=equation.francois_garrison_db_per_km(
                 equation.ACTIVE_FREQUENCY_HZ, _surface_temperature(world)),
-            radial_speed_kn=radial)
+            radial_speed_kn=radial,
+            sensor_depth_m=self.sensor_depth_m(mode, frigate))
 
     def _active_range_nm(self, tgt, world, range_factor: float, mode: str,
                          frigate=None) -> float:
@@ -1368,7 +1373,7 @@ class SonarSystem(ArrayHandlingMixin):
     def process_lofar_column(self, column, frigate) -> list:
         """Apply operator gain and frequency controls to one LOFAR column."""
         gain = 10.0 ** (self.gain_db / 20.0)
-        shaft = 10.0 + 1.9 * frigate.speed
+        shaft = ship_dynamics.own_blade_line_hz(frigate.speed)
         result = []
         for index, value in enumerate(column):
             freq = config.lofar_bin_freq(index)

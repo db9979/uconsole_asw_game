@@ -5,6 +5,7 @@ import pytest
 
 from src.audio.receiver import AcousticReceiver, smooth_limit
 from src.core import config
+from src.physics import ship_dynamics
 from src.data.catalog import CATALOG
 
 
@@ -189,7 +190,8 @@ def test_noise_only_not_identified_even_at_high_noise_and_speed():
     for i in range(80):
         receiver.update([], 0, 30, 1, 9, 30)
         assert receiver.demon_analysis is None
-    assert any(abs(freq - 67) <= .5 for freq, _ in receiver.peaks)
+    shaft_hz = ship_dynamics.own_blade_line_hz(30)
+    assert any(abs(freq - shaft_hz) <= .5 for freq, _ in receiver.peaks)
     assert run([]).peaks == []
 
 

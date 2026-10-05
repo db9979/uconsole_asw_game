@@ -373,6 +373,16 @@ def calibrate(data: dict | None = None) -> HullModel:
 
 HULL = calibrate()
 
+# The frigate's propeller: its blade-rate line (shaft rate x blades) is the
+# own-ship line on LOFAR and the one the notch filter removes.
+OWN_PROPELLER_BLADES = 5
+
+
+def own_blade_line_hz(speed_kn: float) -> float:
+    """Own blade-rate line (Hz) at steady speed: the shaft RPM of the
+    fixed-pitch propeller (about 5.8 rpm per knot) times the blades."""
+    return HULL.steady_rps(max(0.0, speed_kn) * KN) * OWN_PROPELLER_BLADES
+
 
 # --- seakeeping --------------------------------------------------------------
 

@@ -1,8 +1,10 @@
 """Synthetic beam audio and sample-derived spectra; no target classification.
 
 The first line, if narrow and in 2..80 Hz, illustratively modulates a 700 Hz
-carrier. This is NOT a measurement of true propeller blades. The same rule
-applies to every source, and DEMON measures only the resulting mixed audio.
+carrier. A source that names its propeller's blade count (``blades``) also
+modulates it at the shaft rate (line / blades) and at twice the line, the
+harmonics a cavitating propeller's pulse train makes. The same rule applies
+to every source, and DEMON measures only the resulting mixed audio.
 
 Broadband: sources may carry a "broadband" dict {level, low_hz, high_hz}
 (target-internal band energy). Every source receives an independent,
@@ -337,7 +339,7 @@ class AcousticReceiver:
         noise_rms = math.hypot(ambient_rms, own_rms * own_gain)
         audio = self._rng.normal(0, noise_rms, self._time.size)
         engine_amp = 0.08 * min(speed / 20, 1) * (0.25 + own)
-        shaft_hz = 10 + 1.9 * speed
+        shaft_hz = ship_dynamics.own_blade_line_hz(speed)
         shaft, self._shaft_state = self._components(
             {0: (shaft_hz, engine_amp, 0.0)}, self._shaft_state)
         audio += shaft
@@ -380,8 +382,11 @@ class AcousticReceiver:
             occurrence = occurrences.get(source_seed, 0)
             occurrences[source_seed] = occurrence + 1
             curve = self._spectral_curve(source.get("spectral_gains"))
+            blades = source.get("blades")
+            blades = blades if type(blades) is int and 2 <= blades <= 12 else 0
             entries[(source_seed, occurrence)] = (level, direction, phase, lines,
-                                                   bb_level, bb_low, bb_high, curve)
+                                                   bb_level, bb_low, bb_high, curve,
+                                                   blades)
 
         block_index = round(self.elapsed / self.block_s)
         next_states = {}
@@ -390,8 +395,8 @@ class AcousticReceiver:
             old_direction, previous, bb_ola, old_bb = self._source_states.get(
                 key, (0, {}, None, None))
             old_curve = self._spectral_states.get(key, ((100.0, 1.0),))
-            level, direction, phase, lines, bb_level, bb_low, bb_high, curve = entries.get(
-                key, (0, old_direction, 0, (), 0, 0, 0, old_curve))
+            (level, direction, phase, lines, bb_level, bb_low, bb_high, curve,
+             blades) = entries.get(key, (0, old_direction, 0, (), 0, 0, 0, old_curve, 0))
             desired = {}
             for index, line in enumerate(lines[:self.MAX_LINES]):
                 if not isinstance(line, (list, tuple)) or len(line) != 3:
@@ -418,6 +423,16 @@ class AcousticReceiver:
                                                   2 * phase + np.pi / 2)
                     desired[index, "am_high"] = (700 + freq, .035 * level * amp * carrier_gain,
                                                    4 * phase - np.pi / 2)
+                    # Shaft rate (a third of the depth) and the blade line's
+                    # second harmonic (half the depth) as further sidebands.
+                    modulations = ((("shaft", freq / blades, 1.0 / 3.0),
+                                    ("double", 2.0 * freq, 0.5)) if blades else ())
+                    for name, rate, depth in modulations:
+                        side = .035 * depth * level * amp * carrier_gain
+                        desired[index, name + "_low"] = (700 - rate, side,
+                                                         5 * phase + np.pi / 4)
+                        desired[index, name + "_high"] = (700 + rate, side,
+                                                          6 * phase - np.pi / 4)
             source_audio, state = self._components(desired, previous)
             if bb_level > 0:
                 source_seed = key[0]

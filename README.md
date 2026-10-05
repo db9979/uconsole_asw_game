@@ -10,19 +10,18 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.211**
+Current release: **1.3.212**
 
-Release 1.3.211 fixes physics and weapon faults the code review found.
-In sea state 5 and above the frigate now gets under way from a standstill
-(it used to stay at 0 kn). A submarine that changes its depth order mid-dive
-no longer jumps to the new depth. The helicopter's MAD looks once per
-second, so its chance of a contact no longer depends on the frame rate. The
-crew assist now runs from a torpedo at 24 kn instead of flank speed while a
-Nixie is out or aboard, because the Nixie's tow cable parts above 25 kn,
-and no longer streams one above that speed. An enemy torpedo now loses its
-lock when the target is out of its seeker's reach, hears the frigate louder
-the faster it runs, and keeps its search pattern while the wire is held.
-Keys are unchanged. Saves are v52; v38 to v51 saves still load.
+Release 1.3.212 fixes sonar acoustics the code review found. The ray
+tracer no longer traps sound rays at their turning depth, so shadow zones
+and convergence zones form where the sound speed puts them, and shallow
+water no longer cuts a ray off after 12 bounces. Active sonar reverberation
+at short range in deep water now follows the real grazing angle and only
+counts the seabed once the echo can reach it. The frigate's own line on the
+LOFAR is now the blade-rate line from the shaft revolutions (about 9.7 Hz at
+20 kn), and DEMON shows the shaft line and the double line beside a blade
+line, so the blades of a contact can be counted. Keys are unchanged. Saves
+are v52; v38 to v51 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

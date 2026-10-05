@@ -28,7 +28,9 @@ BANDS_HZ = (100.0, 400.0, 1600.0, 6400.0)
 NM_M = 1852.0
 FAN_DEG = 20.0
 RAYS = 48
-MAX_BOUNCES = 12
+# Accumulated reflection loss (dB, every band) beyond which a ray carries
+# nothing useful any more and is dropped.
+FADED_LOSS_DB = 60.0
 MAX_RANGE_NM = 80.0
 RANGE_STEP_M = 400.0
 FINE_BINS = 16            # upper water column (to 400 m)
@@ -72,6 +74,18 @@ def _profile_speed(depths: np.ndarray, speeds: np.ndarray,
     return np.interp(z, depths, speeds)
 
 
+def _refract_step(z, direction, xi, sin_t, cos_t, step_m, speed_at):
+    """Advance every ray one range step.
+
+    A ray that would enter water where Snell's invariant has no real angle
+    (cos > 1) has passed its turning depth: it keeps its last depth and
+    reverses once, so it refracts back instead of oscillating around that
+    depth for the rest of the range."""
+    moved = z + direction * step_m * sin_t / np.maximum(cos_t, 1e-3)
+    past = xi * speed_at(moved) > 1.0
+    return np.where(past, z, moved), np.where(past, -direction, direction)
+
+
 def trace_table(source_depth_m: float, profile_depths_m, profile_m_s,
                 water_depth_m: float, sediment: str, wind_kn: float) -> np.ndarray:
     """Return TL[band, range_bin, depth_bin] in dB (without absorption)."""
@@ -94,7 +108,6 @@ def trace_table(source_depth_m: float, profile_depths_m, profile_m_s,
     direction[direction == 0] = 1.0
     energy = np.cos(angles) * d_theta            # 2D fan energy weights
     losses = np.zeros((len(BANDS_HZ), RAYS))
-    bounces = np.zeros(RAYS, dtype=int)
     alive = np.ones(RAYS, dtype=bool)
     n_range = int(MAX_RANGE_NM * NM_M / RANGE_STEP_M)
     bin_edges = depth_edges(bottom)
@@ -106,13 +119,9 @@ def trace_table(source_depth_m: float, profile_depths_m, profile_m_s,
         r = (step + 1) * RANGE_STEP_M
         c = _profile_speed(depths, speeds, z)
         cos_t = np.clip(xi * c, 0.0, 1.0)
-        sin_t = np.sqrt(np.maximum(0.0, 1.0 - cos_t * cos_t))
-        # Turning point: the ray becomes horizontal and reverses.
-        turning = cos_t >= 0.999999
-        direction = np.where(turning, -direction, direction)
-        sin_t = np.where(turning, 1e-3, sin_t)
-        dz = direction * RANGE_STEP_M * sin_t / np.maximum(cos_t, 1e-3)
-        z = z + dz
+        sin_t = np.maximum(np.sqrt(np.maximum(0.0, 1.0 - cos_t * cos_t)), 1e-3)
+        z, direction = _refract_step(z, direction, xi, sin_t, cos_t, RANGE_STEP_M,
+                                     lambda depth: _profile_speed(depths, speeds, depth))
         hit_surface = z < 0.0
         hit_bottom = z > bottom
         if hit_surface.any():
@@ -122,7 +131,6 @@ def trace_table(source_depth_m: float, profile_depths_m, profile_m_s,
             for band_index, frequency in enumerate(BANDS_HZ):
                 losses[band_index] += np.where(
                     hit_surface, _surface_loss_db(grazing, wind_kn, frequency), 0.0)
-            bounces += hit_surface
         if hit_bottom.any():
             z = np.where(hit_bottom, 2.0 * bottom - z, z)
             direction = np.where(hit_bottom, -1.0, direction)
@@ -140,9 +148,10 @@ def trace_table(source_depth_m: float, profile_depths_m, profile_m_s,
                 loss[index] = cached
             for band_index in range(len(BANDS_HZ)):
                 losses[band_index] += loss
-            bounces += hit_bottom
         z = np.clip(z, 0.0, bottom)
-        alive &= bounces <= MAX_BOUNCES
+        # A ray fades through its reflection losses, not by a count of
+        # bounces (a count cut every surface duct and shallow-water path).
+        alive &= losses.min(axis=0) < FADED_LOSS_DB
         # Incoherent flux into depth bins with a Gaussian beam footprint;
         # each ray's energy is shared over the bins and divided by bin height.
         width = max(widths[0], 0.5 * r * d_theta)
@@ -327,11 +336,9 @@ def ray_picture(profile_depths_m, profile_m_s, water_depth_m: float,
         r = (step + 1) * PICTURE_STEP_M
         c = np.interp(z, z_profile, c_profile)
         cos_t = np.clip(xi * c, 0.0, 1.0)
-        sin_t = np.sqrt(np.maximum(0.0, 1.0 - cos_t * cos_t))
-        turning = cos_t >= 0.999999
-        direction = np.where(turning, -direction, direction)
-        sin_t = np.where(turning, 1e-3, sin_t)
-        z = z + direction * PICTURE_STEP_M * sin_t / np.maximum(cos_t, 1e-3)
+        sin_t = np.maximum(np.sqrt(np.maximum(0.0, 1.0 - cos_t * cos_t)), 1e-3)
+        z, direction = _refract_step(z, direction, xi, sin_t, cos_t, PICTURE_STEP_M,
+                                     lambda depth: np.interp(depth, z_profile, c_profile))
         surface, seabed = z < 0.0, z > bottom
         z = np.where(surface, -z, z)
         direction = np.where(surface, 1.0, direction)

@@ -7,6 +7,7 @@ from src.core import config
 from src.enemies.sub import Sub
 from src.ship.ship import Ship
 from src.sonar.sonar import SonarSystem, TowState, snr_db
+from src.physics import ship_dynamics
 
 
 def world():
@@ -67,7 +68,7 @@ def test_hms_and_tas_own_noise_lobes_but_shaft_tonal_stays_frequency_based():
     assert sonar.receiver.own_noise_lobe["bearing"] == pytest.approx(220)
     tonal = sonar.receiver.ownship_tonals[0]
     assert tonal["label"] == "OWN SHAFT"
-    expected_hz = 10 + 1.9 * ship.speed
+    expected_hz = ship_dynamics.own_blade_line_hz(ship.speed)
     assert tonal["frequency_hz"] == pytest.approx(expected_hz)
 
     ship.course = 140

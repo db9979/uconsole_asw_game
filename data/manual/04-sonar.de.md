@@ -55,7 +55,7 @@ Die x-Achse ist die Frequenz (0-300 Hz), die Zeit läuft nach unten. Die Klassen
 ![LOFAR-Seite](figure:sonar-lofar)
 
 - Stehende senkrechte Linien sind **Töne** (Schmalband): Generatoren, Pumpen, Wellenlinien. Mehrere Linien bei ganzzahligen Vielfachen einer Frequenz bilden eine Harmonischenfamilie: den weißen Cursor mit `Z`/`X` auf eine Linie setzen (`Umschalt`: 10-Hz-Schritte) und mit `K` als Grundton markieren; bernsteinfarbene Hilfslinien zeigen dann 2f, 3f usw. `K` auf derselben Frequenz löscht ihn.
-- Das eigene Schiff erzeugt eine Wellenlinie bei etwa 10 + 1,9 x eigene Fahrt Hz. `N` blendet sie per Notch aus.
+- Das eigene Schiff erzeugt eine Blattlinie bei Wellendrehzahl / 60 x 5 Propellerblätter: etwa 3,9 Hz bei 8 kn, 9,7 Hz bei 20 kn und 15 Hz bei 31 kn. `N` blendet sie per Notch aus (±5 Hz).
 - `Leertaste` hält Spitzen, damit schwache Töne hervortreten.
 - Der Spektrumstreifen über dem Wasserfall schreibt die Frequenz über jede deutliche Linie (zwischen den Klassen interpoliert; mit `Leertaste` die gehaltene Hüllkurve). Wo sich Werte überdecken würden, behält die stärkere Linie ihre Beschriftung. Der Remote-Crew-Browser beschriftet seine Spektren genauso.
 - `F` wählt das Analyseband: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz. `Strg+Z` / `Strg+X` setzen die untere / obere Bandkante auf den Cursor für jeden Band-, Tief- oder Hochpass; `Umschalt+N` legt einen zusätzlichen Notch auf die Cursorfrequenz.

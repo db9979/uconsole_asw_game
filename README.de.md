@@ -10,20 +10,20 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.211**
+Aktuelle Version: **1.3.212**
 
-Version 1.3.211 behebt Fehler in Physik und Waffen, die die Code-Prüfung
-gefunden hat. Ab Seegang 5 kommt die Fregatte aus dem Stand wieder in Fahrt
-(sie blieb bei 0 kn stehen). Ein U-Boot, das seinen Tiefenbefehl mitten im
-Tauchen ändert, springt nicht mehr auf die neue Tiefe. Das MAD des
-Hubschraubers misst einmal pro Sekunde, die Kontaktchance hängt also nicht
-mehr von der Bildrate ab. Die Crew-Hilfe flieht vor einem Torpedo mit 24 kn
-statt AK, solange ein Nixie ausgesetzt oder an Bord ist, weil dessen
-Schleppkabel über 25 kn reißt, und setzt darüber keinen mehr aus. Ein
-feindlicher Torpedo verliert seine Erfassung, wenn das Ziel außer
-Reichweite seines Suchkopfs ist, hört die Fregatte lauter, je schneller sie
-fährt, und behält sein Suchmuster, solange der Draht hält. Tasten bleiben
-gleich. Spielstände sind v52; v38 bis v51 laden weiter.
+Version 1.3.212 behebt Fehler in der Sonar-Akustik, die die Code-Prüfung
+gefunden hat. Die Strahlverfolgung hält Schallstrahlen nicht mehr in ihrer
+Umkehrtiefe fest; Schattenzonen und Konvergenzzonen entstehen also dort, wo
+die Schallgeschwindigkeit sie hinlegt, und im Flachwasser endet ein Strahl
+nicht mehr nach 12 Reflexionen. Der Nachhall des Aktivsonars auf kurze
+Entfernung in tiefem Wasser folgt jetzt dem echten Streifwinkel und zählt
+den Meeresboden erst, wenn das Echo ihn erreichen kann. Die eigene Linie der
+Fregatte im LOFAR ist jetzt die Blattfrequenz aus der Wellendrehzahl (etwa
+9,7 Hz bei 20 kn), und DEMON zeigt neben einer Blattlinie die Wellenlinie
+und die doppelte Linie, sodass sich die Blätter eines Kontakts zählen
+lassen. Tasten bleiben gleich. Spielstände sind v52; v38 bis v51 laden
+weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -31,6 +31,7 @@ from src.sensors.esm import (
     spectrum_band,
 )
 from src.sensors.fusion import live_members
+from src.physics import ship_dynamics
 
 
 ROLE_NAMES = STATIONS
@@ -504,7 +505,7 @@ def _sonar_visualization(game, rows, sonar_refs):
     # own-shaft notch follows the observer's speed continuously, so the key
     # holds the set of notched bins, which only changes when a bin enters or
     # leaves the window: exact results, no recompute while accelerating.
-    shaft = 10.0 + 1.9 * observer.speed
+    shaft = ship_dynamics.own_blade_line_hz(observer.speed)
     notched = (tuple(index for index in range(config.LOFAR_BINS)
                      if abs(config.lofar_bin_freq(index) - shaft) < 5.0)
                if sonar.notch_enabled else ())

@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.212
+
+Release 1.3.212 fixes sonar acoustics the code review found. The ray
+tracer no longer traps sound rays at their turning depth, so shadow zones
+and convergence zones form where the sound speed puts them, and shallow
+water no longer cuts a ray off after 12 bounces. Active sonar reverberation
+at short range in deep water now follows the real grazing angle and only
+counts the seabed once the echo can reach it. The frigate's own line on the
+LOFAR is now the blade-rate line from the shaft revolutions (about 9.7 Hz at
+20 kn), and DEMON shows the shaft line and the double line beside a blade
+line, so the blades of a contact can be counted. Keys are unchanged. Saves
+are v52; v38 to v51 saves still load.
+
 ## 1.3.211
 
 Release 1.3.211 fixes physics and weapon faults the code review found.

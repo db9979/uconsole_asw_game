@@ -3035,7 +3035,7 @@
   "station.quiet": "LEISE",
   "station.normal": "NORMAL",
   "helo.standby": "STANDBY",
-  "map.tooltip.coordinate_geo": "{latitude} {ns} / {longitude} {ew}",
+  "map.tooltip.coordinate_geo": "{position}",
   "map.tooltip.coordinate_local": "Lokal X {x} NM / Y {y} NM",
   "map.tooltip.water_depth": "Wassertiefe etwa {depth} m",
   "map.tooltip.track_title": "{track} / {label}",

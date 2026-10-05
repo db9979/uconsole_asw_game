@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.210**
+Aktuelle Version: **1.3.211**
 
-Version 1.3.210 behebt Fehler in Physik und Waffen, die die Code-Prüfung
+Version 1.3.211 behebt Fehler in Physik und Waffen, die die Code-Prüfung
 gefunden hat. Ab Seegang 5 kommt die Fregatte aus dem Stand wieder in Fahrt
 (sie blieb bei 0 kn stehen). Ein U-Boot, das seinen Tiefenbefehl mitten im
 Tauchen ändert, springt nicht mehr auf die neue Tiefe. Das MAD des

@@ -12,6 +12,7 @@ import { schedule } from "../core/scheduler.js";
 import { stationActionAvailable } from "../state/availability.js";
 import { canvas, ctx } from "./canvases.js";
 import { edgeAnchor, labelField, placeText, reserveText } from "./label-layout.js";
+import { axisLabel, formatPosition, graticule } from "../core/geo.js";
 
 export function chartGeometry() {
   const width = canvas.clientWidth;
@@ -128,18 +129,32 @@ function drawChartFrame() {
   ctx.lineWidth = 1;
   ctx.strokeStyle = palette().grid;
   ctx.fillStyle = palette().label;
+  // Grid: on a real sea area meridians and parallels in degrees and minutes
+  // (as the uConsole), else the NM grid.
+  const columns = [], rows = [];
+  const geoGrid = graticule(Math.max(0, left), Math.min(S.chart.size_nm, right),
+    Math.max(0, top), Math.min(S.chart.size_nm, bottom), scale);
+  if (geoGrid) {
+    for (const row of geoGrid.meridians) columns.push([row.x, axisLabel(row.lon, geoGrid.lonStep, false)]);
+    for (const row of geoGrid.parallels) rows.push([row.y, axisLabel(row.lat, geoGrid.latStep, true)]);
+  } else {
+    for (let x = Math.ceil(left / step) * step; x < right; x += step) columns.push([x, number(x || 0, step < 1 ? 1 : 0)]);
+    for (let y = Math.ceil(top / step) * step; y < bottom; y += step) rows.push([y, number(y || 0, step < 1 ? 1 : 0)]);
+  }
+  // Own position in the top-left corner on a real sea area.
+  const ownText = hasPosition(own) ? formatPosition(own.x, own.y) : null;
+  if (ownText) { ctx.fillText(ownText, 6, fontSize + 4); reserveText(ctx, labels, ownText, 6, fontSize + 4); }
+  const leftWidth = Math.max(0, ...rows.map(([, label]) => ctx.measureText(label).width)) + 10;
   ctx.beginPath();
-  for (let x = Math.ceil(left / step) * step; x < right; x += step) {
+  for (const [x, label] of columns) {
     const px = point(x, 0)[0];
     ctx.moveTo(px, 0); ctx.lineTo(px, height);
-    const label = number(x || 0, step < 1 ? 1 : 0);
-    if (px + 4 + ctx.measureText(label).width <= width - 4) { ctx.fillText(label, px + 4, height - 9); reserveText(ctx, labels, label, px + 4, height - 9); }
+    if (px >= leftWidth && px + 4 + ctx.measureText(label).width <= width - 4) { ctx.fillText(label, px + 4, height - 9); reserveText(ctx, labels, label, px + 4, height - 9); }
   }
-  for (let y = Math.ceil(top / step) * step; y < bottom; y += step) {
+  for (const [y, label] of rows) {
     const py = point(0, y)[1];
     ctx.moveTo(0, py); ctx.lineTo(width, py);
-    if (py >= fontSize + 5 && py < height - fontSize - 12) {
-      const label = number(y || 0, step < 1 ? 1 : 0);
+    if (py >= (ownText ? 2 * fontSize + 10 : fontSize + 5) && py < height - fontSize - 12) {
       ctx.fillText(label, 6, py - 5); reserveText(ctx, labels, label, 6, py - 5);
     }
   }

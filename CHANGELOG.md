@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.219
+## 1.3.228
 
-Release 1.3.219 puts latitude and longitude on every chart of every
+Release 1.3.228 puts latitude and longitude on every chart of every
 station. Until now only the Bridge chart and the charts beside the
 submarine's stations showed the graticule; on the uConsole the OPZ
 (CIC) plot, the radio room's cross-fix chart and the submarine's pilot
@@ -18,6 +18,16 @@ clear of range rings, bearing scale and other labels. The browser's
 charts already showed the graticule. The stylized fixed chart keeps its
 NM grid. Gameplay, keys and saves are unchanged (v53; v38 to v52 saves
 still load).
+
+## 1.3.221
+
+Release 1.3.221 makes the release process safer. A new version is only
+published after all tests have passed on it, so a broken build never
+reaches the update offer. If the Windows build fails, the uConsole and the
+Mac still get the update, and the older release stays for Windows. Updates
+for Windows and macOS are only offered with a SHA-256 checksum. The tests
+now also run on Windows and on Python 3.13. Gameplay and keys are
+unchanged. Saves are v53; v38 to v52 saves still load.
 
 ## 1.3.218
 

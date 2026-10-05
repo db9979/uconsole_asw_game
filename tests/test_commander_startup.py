@@ -153,7 +153,10 @@ def test_late_failed_load_preserves_preparation_and_pairing(game, paired_menu, m
     assert request(server, "/api/v2/session", cookie=cookie)[2][
         "station_generation"] == assigned["station_generation"]
     game.commander.pump(game)
-    assert bridge.status == before
+    # "seq" counts publications; a slow runner may republish after 0.5 s.
+    def without_seq(status):
+        return {key: value for key, value in status.items() if key != "seq"}
+    assert without_seq(bridge.status) == without_seq(before)
     for _ in range(4):  # New game, frigate, patrol, start.
         key(game, pygame.K_RETURN)
     game.commander.pump(game)

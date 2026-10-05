@@ -471,6 +471,19 @@ def measure_all(sections=None) -> dict:
     return dict(sorted(metrics.items()))
 
 
+def section_of(key: str) -> str:
+    """The ``SECTIONS`` name that measures the metric ``key``."""
+    prefix = key.split(".", 1)[0]
+    return "radar" if prefix == "lookout" else prefix
+
+
+def golden_for_sections(golden: dict, sections) -> dict:
+    """``golden`` reduced to the metrics measured by ``sections``."""
+    wanted = set(sections)
+    return {"metrics": {key: value for key, value in golden["metrics"].items()
+                        if section_of(key) in wanted}}
+
+
 def load_json(path: str, default):
     if not os.path.exists(path):
         return default
@@ -531,10 +544,7 @@ def main(argv=None) -> int:
         print("no golden file; run --record first", file=sys.stderr)
         return 2
     if args.section:
-        golden = {"metrics": {key: value for key, value in golden["metrics"].items()
-                              if key.split(".", 1)[0] in {
-                                  "lookout" if s == "radar" else s
-                                  for s in args.section} | set(args.section)}}
+        golden = golden_for_sections(golden, args.section)
     problems = compare(measured, golden, load_json(DEVIATIONS_PATH, {}))
     for line in problems:
         print(line)

@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.219
+## 1.3.228
 
-Version 1.3.219 zeigt Breite und Länge auf jeder Karte jeder Station.
+Version 1.3.228 zeigt Breite und Länge auf jeder Karte jeder Station.
 Bisher hatten nur die Brückenkarte und die Karten neben den Stationen des
 U-Boots das Gradnetz; auf der uConsole zeigten das Lagebild der OPZ, die
 Kreuzpeilkarte des Funkraums und die Lotsenkarte des U-Boots noch ihr
@@ -18,6 +18,17 @@ Entfernungsringen, Peilskala und anderen Beschriftungen frei. Die Karten
 im Browser hatten das Gradnetz schon. Die stilisierte feste Karte behält
 ihr sm-Gitter. Spielablauf, Tasten und Spielstände bleiben gleich (v53;
 v38 bis v52 laden weiter).
+
+## 1.3.221
+
+Version 1.3.221 macht das Veröffentlichen sicherer. Eine neue Version
+erscheint erst, wenn alle Tests auf ihr bestanden sind, so kommt ein
+fehlerhafter Stand nie ins Update-Angebot. Scheitert der Windows-Bau,
+bekommen uConsole und Mac das Update trotzdem, und für Windows bleibt die
+ältere Version stehen. Updates für Windows und macOS werden nur noch mit
+SHA-256-Prüfsumme angeboten. Die Tests laufen jetzt auch unter Windows und
+mit Python 3.13. Spiel und Tasten bleiben gleich. Spielstände sind v53;
+v38 bis v52 laden weiter.
 
 ## 1.3.218
 

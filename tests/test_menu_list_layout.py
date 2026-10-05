@@ -201,3 +201,40 @@ def test_browser_new_game_list_names_every_scenario_and_has_room_for_more():
     net = (root / "data/commander/js/net/host.js").read_text(encoding="utf-8")
     bound = int(re.search(r"boundedArray\(value\.scenarios, (\d+)\)", net).group(1))
     assert bound >= 4 * len(config.SCENARIO_ORDER)
+
+
+@pytest.mark.parametrize("language,large", [("en", False), ("de", False),
+                                            ("en", True), ("de", True)])
+def test_language_model_settings_pages_never_overlap(language, large):
+    """Options page 2, Language model: both its pages (model and voice),
+    with the longest values (the shared key, a failed voice test)."""
+    import dataclasses
+    game = _game(language, large)
+    game.preferences = dataclasses.replace(
+        game.preferences, tts_enabled=True, llm_enabled=True,
+        tts_url="https://speech.example-provider.internal.example.com/v1",
+        llm_url="https://speech.example-provider.internal.example.com/v1",
+        tts_voice="shimmer", llm_coach="often")
+    game._voice_key_source = "shared"
+    from src.ui.advisor_view import PANEL, draw_llm_settings
+    game._open_administration("llm")
+    problems = []
+    for page in (0, 1):
+        game.set_llm_page(page)
+        for test in (None, dict(status="failed", error="rate_limit")):
+            game.voice_test = test
+            game.llm_test = test
+            for sel in (0, 7):
+                game.llm_sel = sel
+                game._t = 5.0
+                with layout.capture_text() as traced:
+                    draw_llm_settings(game)
+                for item in traced:
+                    if not PANEL.contains(item["ink"]):
+                        problems.append(f"page {page}: outside the panel {item['text']!r}")
+                for a, b in itertools.combinations(traced, 2):
+                    if a["ink"].colliderect(b["ink"]):
+                        problems.append(f"page {page} sel {sel}: overlap {a['text']!r} "
+                                        f"{a['ink']} / {b['text']!r} {b['ink']}")
+    pygame.quit()
+    assert not problems, "\n".join(problems[:40])

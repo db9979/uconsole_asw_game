@@ -10,16 +10,19 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.218**
+Current release: **1.3.225**
 
-Release 1.3.218 makes a click on a sonar contact card listen to that
-contact at once. The click selects the contact and trains the listening
-beam on it, like Up/Down followed by Enter, so the waterfall, the analysis
-pages and the sound switch to it straight away; a contact not heard for
-more than 2 s is only selected. This holds at the frigate's sonar station
-and in the submarine's sonar room on the uConsole and the desktop apps; in
-the browser a click on a sonar contact already did this. Keys and gameplay
-are unchanged. Saves are v53; v38 to v52 saves still load.
+Release 1.3.225 gives the optional language model a voice. Under Options,
+page 2, Language model, a second page "Voice" takes an OpenAI-compatible
+speech service (address, speech model, voice and API key; preset OpenAI
+gpt-4o-mini-tts). With it the executive officer speaks his answers and the
+coach's tips, and the spoken crew reports use the same natural voice instead
+of espeak-ng, each with its own switch. The voice plays on its own audio
+channel beside the sonar tone, and its key is kept in ~/.u-jagd/tts_key (or
+the language model's key on the same server), never in settings or saves.
+Without the service the game plays exactly as before; browsers keep their own
+voice for crew reports. The settings pages are now mouse-operable. Saves are
+v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

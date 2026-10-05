@@ -1699,7 +1699,8 @@ class PicturesMixin:
         })
 
     def _pump_speech(self) -> None:
-        """Say the local side's new crew reports aloud (option on, espeak found).
+        """Say the local side's new crew reports aloud (option on, espeak found
+        or the speech service set up; game_voice.py).
 
         Wall clock only: the speaker polls its process and never blocks.
         """
@@ -1709,16 +1710,22 @@ class PicturesMixin:
         rows = log.rows
         if not rows or rows[-1]["seq"] <= log.spoken:
             self.speaker.pump()
+            self._pump_voice()
             return
         fresh = [row for row in rows if row["seq"] > log.spoken]
         log.spoken = rows[-1]["seq"]
-        if (self.preferences.speech and self.speaker.available
+        if (self.preferences.speech and (self.speaker.available or (
+                self.voice_ready() and self.preferences.tts_crew))
                 and (log is self.callouts) == (getattr(self, "local_side", "frigate")
                                                == "frigate")):
             for row in fresh:
-                self.speaker.say(callouts.spoken_text(row, self.tr),
-                                 self.preferences.language)
+                text = callouts.spoken_text(row, self.tr)
+                # The natural voice of the speech service when it is set up,
+                # else (and when it fails) espeak-ng.
+                if not self.voice_say(text, "crew"):
+                    self.speaker.say(text, self.preferences.language)
         self.speaker.pump()
+        self._pump_voice()
 
     def _record_simlog_state(self, dt: float) -> None:
         """Periodischer Zustandssnapshot des kompletten Simulationshintergrunds.

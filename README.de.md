@@ -10,17 +10,20 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.218**
+Aktuelle Version: **1.3.225**
 
-Version 1.3.218 lässt einen Klick auf eine Sonar-Kontaktkarte diesen
-Kontakt sofort abhören. Der Klick wählt den Kontakt und richtet die
-Hörpeilung auf ihn, wie Auf/Ab und danach Enter, so dass Wasserfall,
-Analyseseiten und Ton sofort zu ihm wechseln; ein Kontakt, der länger als
-2 s nicht gehört wurde, wird nur gewählt. Das gilt an der Sonarstation der
-Fregatte und im Sonarraum des U-Boots auf der uConsole und in den Desktop-Apps
-; im Browser tat ein Klick auf einen Sonarkontakt das schon. Tasten
-und Spielablauf bleiben gleich. Spielstände sind v53; v38 bis v52 werden
-weiter geladen.
+Version 1.3.225 gibt dem optionalen Sprachmodell eine Stimme. Unter
+Optionen, Seite 2, Sprachmodell nimmt eine zweite Seite „Stimme“ einen
+OpenAI-kompatiblen Sprachdienst auf (Adresse, Sprechmodell, Stimme und
+API-Schlüssel; voreingestellt OpenAI gpt-4o-mini-tts). Damit spricht der Erste
+Offizier seine Antworten und die Tipps des Coachs, und die gesprochenen
+Crew-Meldungen kommen mit derselben natürlichen Stimme statt über espeak-ng,
+beides einzeln schaltbar. Die Stimme spielt auf einem eigenen Tonkanal neben
+dem Sonarton, und ihr Schlüssel liegt in ~/.u-jagd/tts_key (oder es gilt der
+des Sprachmodells beim selben Server), nie in Einstellungen oder Spielständen.
+Ohne den Dienst läuft das Spiel genau wie bisher; Browser behalten ihre eigene
+Stimme für Crew-Meldungen. Die Einstellungsseiten lassen sich jetzt mit der
+Maus bedienen. Spielstände sind v53; v38 bis v52 werden weiter geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -41,6 +41,7 @@ class AdminKeysMixin:
         self.llm_open = name == "llm"
         if self.llm_open:
             self.llm_sel = 0
+            self.llm_page = 0
             self.llm_field = self.llm_field_name = None
         self.live_traffic_open = name == "live_traffic"
         if self.live_traffic_open:

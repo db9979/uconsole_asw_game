@@ -1356,7 +1356,9 @@ class DrawMixin:
                  + self.tr("common.on" if self.preferences.speech else "common.off"))
         layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
                          config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
-        layout.blit_block(self.screen, "option.speech.help" if self.speaker.available
+        layout.blit_block(self.screen, "option.speech.voice" if (
+                              self.voice_ready() and self.preferences.tts_crew)
+                          else "option.speech.help" if self.speaker.available
                           else "option.speech.missing",
                           row.x + 24, row.bottom + 4, row.w - 24, 36,
                           config.COLOR_TEXT_DIM, size=16)

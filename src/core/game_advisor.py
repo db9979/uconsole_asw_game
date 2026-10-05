@@ -2,7 +2,7 @@
 
 ``F7`` opens the executive officer (situation report, question, typed order,
 classification help, station briefing); options page 2 opens the model's
-settings.  Both are administrative overlays: they own input while open and
+settings, with a second page for its voice (``src/core/game_voice.py``).  Both are administrative overlays: they own input while open and
 the simulation keeps running behind them.  Drawing lives in
 ``src/ui/advisor_view.py``.
 """
@@ -13,6 +13,7 @@ import pygame
 
 from src.core.i18n import message
 from src.llm import advisor as advisor_model, client as llm_client, keystore
+from src.llm import voice as voice_client
 from src.core.preferences import LLM_COACH_LEVELS as LLM_COACH_CYCLE
 from src.ui.editor_widgets import TextField
 
@@ -20,8 +21,14 @@ ADVISOR_MODES = ("situation", "question", "order", "classify", "briefing")
 TEXT_MODES = ("question", "order")
 LLM_ROWS = ("llm_enabled", "llm_url", "llm_model", "llm_key", "llm_radio", "llm_coach",
             "llm_opfor", "test")
+VOICE_ROWS = ("tts_enabled", "tts_url", "tts_model", "tts_voice", "tts_key", "tts_xo",
+              "tts_crew", "tts_test")
+LLM_PAGES = (LLM_ROWS, VOICE_ROWS)
 TEXT_ROWS = {"llm_url": llm_client.MAX_URL_LEN, "llm_model": llm_client.MAX_MODEL_LEN,
-             "llm_key": keystore.MAX_KEY_LEN}
+             "llm_key": keystore.MAX_KEY_LEN, "tts_url": llm_client.MAX_URL_LEN,
+             "tts_model": llm_client.MAX_MODEL_LEN, "tts_voice": voice_client.MAX_VOICE_LEN,
+             "tts_key": keystore.MAX_KEY_LEN}
+KEY_ROWS = ("llm_key", "tts_key")
 
 
 class AdvisorUiMixin:
@@ -32,6 +39,7 @@ class AdvisorUiMixin:
         self.advisor_scroll = None
         self.llm_open = False
         self.llm_sel = 0
+        self.llm_page = 0
         self.llm_field = None
         self.llm_field_name = None
 
@@ -123,37 +131,75 @@ class AdvisorUiMixin:
         if key == pygame.K_ESCAPE:
             self.llm_open = False
             return
+        if key in (pygame.K_TAB, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+            self.set_llm_page(self.llm_page + (-1 if key == pygame.K_PAGEUP else 1))
+            return
+        rows = self.llm_rows()
         if key in (pygame.K_UP, pygame.K_DOWN):
-            self.llm_sel = (self.llm_sel + (1 if key == pygame.K_DOWN else -1)) % len(LLM_ROWS)
+            self.llm_sel = (self.llm_sel + (1 if key == pygame.K_DOWN else -1)) % len(rows)
             return
         if key not in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN, pygame.K_KP_ENTER):
             return
-        name = LLM_ROWS[self.llm_sel]
+        self._activate_llm_row(rows[self.llm_sel % len(rows)],
+                               -1 if key == pygame.K_LEFT else 1 if key == pygame.K_RIGHT
+                               else 0)
+
+    def llm_rows(self) -> tuple:
+        return LLM_PAGES[self.llm_page % len(LLM_PAGES)]
+
+    def set_llm_page(self, page: int) -> None:
+        """Language model (0) or its voice (1)."""
+        self.llm_page = page % len(LLM_PAGES)
+        self.llm_sel = 0
+        self.llm_field = self.llm_field_name = None
+
+    def click_llm_row(self, index: int) -> None:
+        """A click on a settings row: select it and change it like Right."""
+        rows = self.llm_rows()
+        if not 0 <= index < len(rows) or self.llm_field_name == rows[index]:
+            return
+        self.llm_field = self.llm_field_name = None
+        self.llm_sel = index
+        self._activate_llm_row(rows[index], 1)
+
+    def _activate_llm_row(self, name: str, step: int) -> None:
+        """Enter (step 0) or Left/Right (-1/+1) on one settings row."""
         if name == "test":
             self.start_llm_test()
+        elif name == "tts_test":
+            self.start_voice_test()
+        elif name == "tts_voice" and step:
+            self.cycle_voice(step)
         elif name in TEXT_ROWS:
-            value = "" if name == "llm_key" else getattr(self.preferences, name)
+            value = "" if name in KEY_ROWS else getattr(self.preferences, name)
             self.llm_field = TextField(value=value, maximum=TEXT_ROWS[name],
-                                       secret=name == "llm_key")
+                                       secret=name in KEY_ROWS)
             self.llm_field_name = name
         elif name == "llm_coach":
             cycle = LLM_COACH_CYCLE
-            step = -1 if key == pygame.K_LEFT else 1
+            step = -1 if step < 0 else 1
             current = self.preferences.llm_coach
             index = cycle.index(current) if current in cycle else 0
             self.set_llm_preference(name, cycle[(index + step) % len(cycle)])
+        elif name.startswith("tts_"):
+            self.set_voice_preference(name, not getattr(self.preferences, name))
         else:
             self.set_llm_preference(name, not getattr(self.preferences, name))
 
     def _commit_llm_field(self) -> None:
         name, value = self.llm_field_name, self.llm_field.value.strip()
         self.llm_field = self.llm_field_name = None
-        if name == "llm_key":
-            if not self.save_llm_key(value):
+        if name in KEY_ROWS:
+            saved = self.save_llm_key(value) if name == "llm_key" else self.save_voice_key(value)
+            if not saved:
                 self.flash(message("llm.key_failed"), 3.0)
             return
-        valid = llm_client.valid_url if name == "llm_url" else llm_client.valid_model
+        valid = {"llm_url": llm_client.valid_url, "tts_url": llm_client.valid_url,
+                 "tts_voice": voice_client.valid_voice}.get(name, llm_client.valid_model)
         if not valid(value):
             self.flash(message("llm.invalid." + name), 3.0)
             return
-        self.set_llm_preference(name, value)
+        if name.startswith("tts_"):
+            self.set_voice_preference(name, value)
+        else:
+            self.set_llm_preference(name, value)

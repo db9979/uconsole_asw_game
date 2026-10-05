@@ -13,6 +13,9 @@ from src.core.i18n import SUPPORTED_LANGUAGES, detect_system_language
 from src.core import opz_display
 from src.llm.client import (DEFAULT_MODEL as LLM_DEFAULT_MODEL,
                             DEFAULT_URL as LLM_DEFAULT_URL, valid_model, valid_url)
+from src.llm.voice import (DEFAULT_MODEL as VOICE_DEFAULT_MODEL,
+                           DEFAULT_URL as VOICE_DEFAULT_URL,
+                           DEFAULT_VOICE as VOICE_DEFAULT_VOICE, valid_voice)
 
 _MAX_CREDENTIAL_LEN = 256
 GRAPHICS_LEVELS = ("low", "normal", "full")
@@ -77,6 +80,15 @@ class Preferences:
     llm_radio: bool = True
     llm_coach: str = "off"
     llm_opfor: bool = False
+    # Its optional voice (OpenAI-compatible speech endpoint, src/llm/voice.py):
+    # off by default; the key lives beside the model's (``tts_key``). The
+    # executive officer speaks his answers, the crew its reports.
+    tts_enabled: bool = False
+    tts_url: str = VOICE_DEFAULT_URL
+    tts_model: str = VOICE_DEFAULT_MODEL
+    tts_voice: str = VOICE_DEFAULT_VOICE
+    tts_xo: bool = True
+    tts_crew: bool = True
     # The enemy adapts to the player's habits from the logbook
     # (``src/core/habits.py``); switched on the logbook page with L.
     enemy_learns: bool = True
@@ -121,7 +133,8 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     values: dict[str, object] = {"language": language}
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
                  "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "microphone", "live_ais_enabled",
-                 "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor", "enemy_learns"):
+                 "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor", "enemy_learns",
+                 "tts_enabled", "tts_xo", "tts_crew"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)
     frame_rate = payload.get("frame_rate", defaults.frame_rate)
@@ -150,6 +163,12 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     values["llm_url"] = url if valid_url(url) else defaults.llm_url
     model = payload.get("llm_model", defaults.llm_model)
     values["llm_model"] = model if valid_model(model) else defaults.llm_model
+    url = payload.get("tts_url", defaults.tts_url)
+    values["tts_url"] = url if valid_url(url) else defaults.tts_url
+    model = payload.get("tts_model", defaults.tts_model)
+    values["tts_model"] = model if valid_model(model) else defaults.tts_model
+    voice = payload.get("tts_voice", defaults.tts_voice)
+    values["tts_voice"] = voice if valid_voice(voice) else defaults.tts_voice
     coach = payload.get("llm_coach", defaults.llm_coach)
     values["llm_coach"] = coach if coach in LLM_COACH_LEVELS else defaults.llm_coach
     values["opz_display"] = opz_display.to_pairs(

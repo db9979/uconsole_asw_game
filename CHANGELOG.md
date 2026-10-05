@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.207
+## 1.3.208
 
-Release 1.3.207 makes the browser stations show more without scrolling. In
+Release 1.3.208 makes the browser stations show more without scrolling. In
 the browser the stations use the same keys as on the uConsole (for example
 C/V/D for course, speed and depth, Shift+A to ping, Ctrl+Enter to fire), and
 every key is shown as a blue key cap on its button. The empty contact detail
@@ -18,6 +18,17 @@ step. Country names on the chart are shown once per country, in German or
 English, also on the uConsole. On a phone the top bar folds into a ☰ menu.
 Keys on the uConsole are unchanged. Saves are v52; v38 to v51 saves still
 load.
+
+## 1.3.207
+
+Release 1.3.207 keeps the OPZ chart's labels in place when you zoom far out.
+The numbers of the bearing scale around the radar rings now always sit at
+their own bearing instead of stepping aside from the range labels, so 000
+is at the top and 180 at the bottom again. When the rings are close
+together only every second ring is labelled, the outer ring's distance
+sits beside the 000, and a range label that would cover a bearing number
+is left out. The Remote Crew OPZ map in the browser does the same. Keys
+are unchanged. Saves are v52; v38 to v51 saves still load.
 
 ## 1.3.206
 

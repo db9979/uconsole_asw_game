@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.207**
+Current release: **1.3.208**
 
-Release 1.3.207 makes the browser stations show more without scrolling. In
+Release 1.3.208 makes the browser stations show more without scrolling. In
 the browser the stations use the same keys as on the uConsole (for example
 C/V/D for course, speed and depth, Shift+A to ping, Ctrl+Enter to fire), and
 every key is shown as a blue key cap on its button. The empty contact detail

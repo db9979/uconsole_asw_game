@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.206
+## 1.3.207
 
-Release 1.3.206 shows the charts in real geographic coordinates. On a real
+Release 1.3.207 shows the charts in real geographic coordinates. On a real
 sea area the chart grid now shows meridians and parallels in degrees and
 minutes, finer as you zoom in (5 degrees down to 0.1 minute), the chart's top
 left shows own position such as 53°19.9'N 007°00.9'E (on the submarine its
@@ -15,6 +15,13 @@ it, on the uConsole and in the browser alike. The grid numbers now stay
 readable over land. Ranges, rings and the scale stay in NM and the game plays
 as before; the stylized fixed chart keeps its NM grid. Keys are unchanged.
 Saves are v52; v38 to v51 saves still load.
+
+## 1.3.206
+
+Release 1.3.206 rewrites the README: it is much shorter, drops outdated
+details and points to the manual and the changelog for everything else. The
+game itself is unchanged. Keys are unchanged. Saves are v52; v38 to v51
+saves still load.
 
 ## 1.3.205
 

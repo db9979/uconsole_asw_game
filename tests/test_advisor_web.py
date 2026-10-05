@@ -74,7 +74,8 @@ PROBE = r'''
       if (ordered !== 120) await sleep(100);
     }
     if (ordered !== 120)
-      throw new Error(`order not applied: target course ${ordered}, status "${$('advisor-status').textContent}"`);
+      throw new Error(`order not applied: target course ${ordered}, status "${$('advisor-status').textContent}", ` +
+        `command "${$('command-status').textContent}" (${$('command-status').dataset.status})`);
   }
   run().then(() => document.documentElement.dataset.advisorTest = 'passed', (error) => {
     document.documentElement.dataset.advisorTest = 'failed';

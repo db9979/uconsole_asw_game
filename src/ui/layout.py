@@ -690,8 +690,10 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
 
 
 def command_segment(screen, rect, key: str, description: str,
-                    label: str = "", value: str = "", size: int = 12) -> None:
-    """Draw one bounded command/status segment with stable semantic colors."""
+                    label: str = "", value: str = "", size: int = 12,
+                    center: bool = False) -> None:
+    """Draw one bounded command/status segment with stable semantic colors;
+    ``center`` centres the text in the segment when it has room."""
     from src.ui import theme
     rect = pygame.Rect(rect)
     face = font(size)
@@ -709,12 +711,18 @@ def command_segment(screen, rect, key: str, description: str,
         (value, config.COLOR_TEXT),
     )
     x = rect.x + 6
+    if center:
+        shown_parts = [localize(text) for text, _color in parts if localize(text)]
+        total = (sum(text_width(face, text) for text in shown_parts)
+                 + text_width(face, " ") * max(0, len(shown_parts) - 1) + 3)
+        x = max(x, rect.x + (rect.w - total) // 2)
+    left = x
     top = rect.y + max(0, (rect.h - face.get_linesize()) // 2)
     with clip_to(screen, rect):
         for index, (text, color) in enumerate(parts):
             if not localize(text) or x >= rect.right - 4:
                 continue
-            if index and x > rect.x + 6:
+            if index and x > left:
                 x += text_width(face, " ")
             shown = fit_line(text, face, rect.right - 4 - x)
             if index == 0 and chip.h > 8:

@@ -1023,6 +1023,29 @@ _FOOTERS = {
                                        ("W", "uboot.footer.watch")),
 }
 
+# The page's further keys, behind the footer's "more" chip (a click on a
+# chip presses its key; the station's allowlist still decides).
+_FOOTER_MORE = {
+    ("uboot", "UBOOT_NAV"): (("Shift+H", "uboot.footer.surface"),
+                             ("H", "uboot.footer.crash_dive"),
+                             ("G", "damage.footer.action_stations"),
+                             ("Ctrl+B", "bridge.footer.baffles"),
+                             ("K", "footer.follow")),
+    ("uboot_weapons", "UBOOT_WEAPONS"): (("F", "uboot.footer.fire_bearing"),
+                                         ("V", "uboot.footer.decoy"),
+                                         ("Shift+M", "uboot.footer.tube_flood"),
+                                         ("Ctrl+M", "uboot.footer.tube_flood_quiet"),
+                                         ("T", "weapons.footer.run_depth"),
+                                         ("Y", "weapons.footer.salvo"),
+                                         ("X", "weapons.footer.pattern"),
+                                         (", / .", "weapons.footer.seeker"),
+                                         ("Shift+W", "uboot.footer.wire_cut")),
+    ("uboot_nav", "UBOOT_PILOT"): (("Backspace", "bridge.footer.route_clear"),
+                                   ("Ctrl+B", "bridge.footer.baffles")),
+    ("uboot_engine", "UBOOT_DAMAGE"): (("M", "damage.footer.medic"),
+                                       ("U", "damage.footer.reassign")),
+}
+
 
 def draw_command_panel(game, boat) -> None:
     s = game.screen
@@ -1059,7 +1082,8 @@ def draw_command_panel(game, boat) -> None:
     specs = tuple(
         (key, "uboot.footer.mast_down" if text == "uboot.footer.mast" and boat.orders.mast
          else "uboot.footer.snorkel_down" if text == "uboot.footer.snorkel" and boat.sub.snorkeling
-         else text) for key, text in _FOOTERS[(station, name)])
+         else text) for key, text in (_FOOTERS[(station, name)]
+                                      + _FOOTER_MORE.get((station, name), ())))
     _footer(s, (x, station_rect.bottom - 26, w, 20), specs)
 
 

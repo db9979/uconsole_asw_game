@@ -497,7 +497,8 @@ def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
 
 
 OPZ_TARGET_KEYS = ((("M", "opz.keys.designate"), ("G", "opz.keys.chaff")),
-                   (("←/→", "opz.keys.asm_track"),))
+                   (("←/→", "opz.keys.asm_track"), ("I", "opz.keys.ciws")),
+                   (("R", "opz.keys.surface_radar"), ("Shift+R", "opz.keys.air_radar")))
 
 # The consort's order hints: each key in them is a switch.  Ctrl+Enter (its
 # ASROC) is not: fire by click only at the weapons station.
@@ -1157,6 +1158,11 @@ def draw_opz_view(game, tr=None) -> None:
                             label_w=label_w, size=15,
                             color=(config.COLOR_OK if game.ciws_authorized
                                    else config.COLOR_WARN))
+        # The release switch as a key chip at the row's end (I).
+        chip_h = layout.font(15).get_linesize() + 4
+        chip_w = layout.text_width(layout.font(11), "I") + 22
+        layout.command_segment(s, (x + w - chip_w, py - 2, chip_w, chip_h), "I", "",
+                               size=11, center=True)
         py += 30
         pygame.draw.line(s, config.COLOR_GRID, (x, py), (x + w, py))
         py += 8

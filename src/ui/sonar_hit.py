@@ -95,7 +95,7 @@ def sonar_geometry(game, page=None):
     width = (station.w - 28) // len(specs)
     for index, (spec, action) in enumerate(specs):
         rect = pygame.Rect(station.x + 14 + index * width,
-                           station.bottom - 22, width - 6, 19)
+                           station.bottom - 22, width - 4, 19)
         footer.append(dict(rect=rect, action=action, text=spec, safe=True))
     return dict(station=station, tabs=tabs, main=main, details=details,
                 contacts=contacts, footer=footer, contact_keys=contact_keys)

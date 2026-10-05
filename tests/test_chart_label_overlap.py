@@ -114,7 +114,7 @@ def test_weapons_target_is_labelled_once(language):
     labels = [item["text"] for item in traced
               if chart.collidepoint(item["ink"].center) and "K02" in item["text"]]
     assert len(labels) == 1, labels
-    assert "Shift+A" in labels[0]
+    assert ("Umschalt+A" if language == "de" else "Shift+A") in labels[0]
 
 
 def test_scale_line_keeps_grid_numbers_out_of_its_band():

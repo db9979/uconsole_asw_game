@@ -52,6 +52,7 @@ def draw_engine_view(game, tr=None) -> None:
         ("A", "engine.footer.quiet"),
         ("C", "engine.footer.set_course"),
         ("V", "engine.footer.set_speed"),
+        ("G", "engine.footer.plant"),
     ))
 
 

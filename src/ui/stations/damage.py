@@ -252,6 +252,7 @@ def draw_damage_view(game, tr=None) -> None:
         ("↑/↓", "damage.footer.team"),
         ("Enter", "damage.footer.assign"),
         ("Backspace", "damage.footer.withdraw"),
+        ("C", "damage.footer.counterflood"),
     ))
 
 

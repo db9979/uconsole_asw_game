@@ -636,7 +636,10 @@ def draw_eloka_view(game, tr=None) -> None:
         ("↑/↓", "eloka.footer.select"),
         ("←/→", "eloka.footer.member"),
         ("Z", "eloka.footer.group"),
+        ("F", "eloka.footer.status"),
+        ("C", "eloka.footer.assign"),
         ("E", "eloka.footer.jam"),
+        ("Shift+E", "eloka.footer.technique"),
         ("A", "eloka.footer.ecm_auto"),
         ("J", message("eloka.footer.audio", audio=localize(
             "ui.on" if getattr(game, "eloka_audio_enabled", True) else "ui.off"))),

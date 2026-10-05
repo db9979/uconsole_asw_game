@@ -1037,3 +1037,21 @@ def draw_helicopter_view(game, tr=None) -> None:
                              config.COLOR_TEXT, size=15)
     else:
         _draw_helicopter_acoustic_view(game, regions["rules"])
+    if page < len(HELICOPTER_FOOTER):
+        # The page's keys as chips under the panels (a click presses the key).
+        _shortcut_footer(s, (station.x + 14, station.bottom - 26, station.w - 28, 20),
+                         HELICOPTER_FOOTER[page])
+
+
+# Per page; Ctrl+Enter (the air torpedo) stays a key: fire by click only at
+# the weapons station.
+HELICOPTER_FOOTER = (
+    (("H", "helo.footer.launch"), ("Z", "helo.footer.hoist"),
+     ("Ctrl+R", "helo.footer.radar"), ("Q/E", "footer.zoom"), ("K", "footer.follow")),
+    (("W", "helo.footer.wp_contact"), ("M", "helo.footer.target"),
+     ("X", "helo.footer.pattern"), ("Shift+B", "helo.footer.buoy_mode"),
+     ("Shift+M", "helo.footer.mad"), ("Ctrl+R", "helo.footer.radar")),
+    (("Y", "helo.footer.dip"), ("U/V", "helo.footer.dip_depth"),
+     ("Shift+A", "helo.footer.ping"), ("Shift+↓", "helo.footer.dip_contact"),
+     ("C", "helo.footer.classify"), ("G", "helo.footer.release")),
+)

@@ -337,6 +337,15 @@ WEAPON_CHOICE_KEYS = (("torpedo", "", "weapons.select.torpedo.short"),
                       ("rbu_defence", "Shift+R", "weapons.select.rbu_defence.short"))
 
 
+# Narrow chips (two columns): the shortest name that is still unambiguous.
+WEAPON_CHIP_LABELS = {"torpedo": "weapons.chip.torpedo",
+                      "air_torpedo": "weapons.chip.air_torpedo",
+                      "asroc": "weapons.select.asroc.short",
+                      "depth_charges": "weapons.select.depth_charges.short",
+                      "rbu": "weapons.select.rbu.short",
+                      "rbu_defence": "weapons.chip.rbu_defence"}
+
+
 def selected_launch_text(game):
     """The fire line: Ctrl+Enter and the weapon it fires now."""
     kind = getattr(game, "weapon_select", "torpedo")
@@ -354,6 +363,7 @@ def draw_weapon_choice(s, game, rect) -> None:
                      config.COLOR_TEXT, size=13)
     pointer.add_token_keys((rect.x, rect.y, rect.w, 20), localize(selected_launch_text(game)),
                            13, (("Ctrl+Enter:", "Ctrl+Enter"),), screen=s)
+    # Two columns leave half the width: the chips then use the shorter label.
     columns = 1 if rect.h - 22 >= len(WEAPON_CHOICE_KEYS) * 18 else 2
     rows = -(-len(WEAPON_CHOICE_KEYS) // columns)
     pitch = max(17, min(26, (rect.h - 22) // rows))
@@ -365,8 +375,8 @@ def draw_weapon_choice(s, game, rect) -> None:
                            column - 4, pitch - 2)
         if chip.bottom > rect.bottom:
             break
-        layout.key_button(s, chip, key, label, size=13, min_size=10,
-                          active=kind == chosen)
+        layout.key_button(s, chip, key, WEAPON_CHIP_LABELS[kind] if columns > 1 else label,
+                          size=13, min_size=10, active=kind == chosen)
         if key:
             pointer.add_legend(chip, key)
         else:
@@ -558,7 +568,7 @@ def draw_weapons_panel(game, tr=None) -> None:
         # Ctrl+Enter fires the chosen weapon (D/A/Z/R/Shift+R only choose).
         launch = localize(selected_launch_text(game))
         layout.blit_line(s, launch, (rx, ry + used + 12, rw, 24),
-                         readiness_color if game.weapon_select == "torpedo"
+                         readiness_color if getattr(game, "weapon_select", "torpedo") == "torpedo"
                          else config.COLOR_TEXT, size=14)
         layout.blit_line(s, "weapons.control.flak", (rx, ry + used + 36, rw, 24), config.COLOR_TEXT_DIM, size=13)
         # The key hints are switches too (Ctrl+Enter fires only here, at station 3).
@@ -658,11 +668,24 @@ def draw_weapons_panel(game, tr=None) -> None:
                            label_w=80, size=16)
         for offset, (text, tokens) in enumerate((
                 ("weapons.control.depth_compact", (("Up/Dn:", "↑/↓"), ("Auf/Ab:", "↑/↓"))),
-                ("weapons.control.helo", (("H:", "H"),)),
-                ("weapons.control.buoy_nixie", (("B:", "B"), ("V:", "V"))))):
+                ("weapons.control.helo", (("H:", "H"),)))):
             layout.blit_line(s, text, (cx, cy + 56 + offset * 26, cw, 24),
                              config.COLOR_TEXT_DIM, size=15)
             pointer.add_token_keys((cx, cy + 56 + offset * 26, cw, 24), localize(text),
                                    15, tokens, screen=s)
-        draw_weapon_choice(s, game, (cx, cy + 56 + 3 * 26 + 2, cw,
-                                     regions["controls"].bottom - 8 - (cy + 56 + 3 * 26 + 2)))
+        draw_weapon_choice(s, game, (cx, cy + 56 + 2 * 26 + 2, cw,
+                                     regions["controls"].bottom - 8 - (cy + 56 + 2 * 26 + 2)))
+    # Every key of the page as a chip under the panels (a click presses it).
+    from src.ui.stations.common import _shortcut_footer
+    _shortcut_footer(s, (station.x + 14, station.bottom - 26, station.w - 28, 20),
+                     WEAPONS_FOOTER[page] if page < len(WEAPONS_FOOTER) else ())
+
+
+WEAPONS_FOOTER = (
+    (("M", "weapons.footer.target"), ("←/→", "weapons.footer.contact"),
+     ("↑/↓", "weapons.footer.depth"), ("T", "weapons.footer.run_depth"),
+     ("W", "weapons.footer.type"), ("X", "weapons.footer.pattern"),
+     ("Y", "weapons.footer.salvo"), (", / .", "weapons.footer.seeker")),
+    (("B", "weapons.footer.buoy"), ("V", "weapons.footer.decoy"),
+     ("F", "weapons.footer.flak"), ("Q/E", "footer.zoom"), ("K", "footer.follow")),
+)

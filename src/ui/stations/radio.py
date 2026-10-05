@@ -134,6 +134,8 @@ def draw_radio_view(game, tr=None) -> None:
         ("A", "radio.footer.accept"),
         ("D", "radio.footer.decline"),
         ("R", "radio.footer.ras"),
+        ("K", "radio.footer.report"),
+        ("H", "radio.footer.support"),
     ) if page == 2 else (
         ("↑/↓", "radio.footer.select"),
         ("Enter", "radio.footer.log"),

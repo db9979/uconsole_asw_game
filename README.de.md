@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.272**
+Aktuelle Version: **1.3.273**
 
-Version 1.3.272 macht die Overlays per Maus bedienbar. Die Rückfragen vor
+Version 1.3.273 macht die Overlays per Maus bedienbar. Die Rückfragen vor
 dem Überschreiben eines Platzes, dem Laden und dem Beenden beantwortet ein
 Klick auf ihre Tastenchips. Im Handbuch (F1) blättern die Schaltflächen
 **[ Kapitel zurück** und **] Kapitel vor** die Kapitel, und jede Taste in

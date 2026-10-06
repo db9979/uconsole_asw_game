@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.272
+## 1.3.273
 
-Release 1.3.272 makes the overlays work by mouse. The questions before
+Release 1.3.273 makes the overlays work by mouse. The questions before
 saving over a slot, loading or quitting answer by clicking their key chips.
 In the manual (F1) the buttons **[ Previous chapter** and **] Next chapter**
 turn the chapters, and every key in its hint line is a chip. The
@@ -17,9 +17,9 @@ covers the chart's position readout. In the Tactical Unit Analyzer (F8)
 two buttons assign the browsed profile to the selected contact or clear
 it. Saves are v53; v38 to v52 saves still load.
 
-## 1.3.268
+## 1.3.272
 
-Release 1.3.268 makes the menus work by mouse. In the options a click on a
+Release 1.3.272 makes the menus work by mouse. In the options a click on a
 row changes it like `Enter`, and new **<** and **>** buttons step a value
 back or on; every key in the hint line is a clickable chip. The real-world
 traffic page switches services and opens its fields by click, a click

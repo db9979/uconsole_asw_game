@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.272**
+Current release: **1.3.273**
 
-Release 1.3.272 makes the overlays work by mouse. The questions before
+Release 1.3.273 makes the overlays work by mouse. The questions before
 saving over a slot, loading or quitting answer by clicking their key chips.
 In the manual (F1) the buttons **[ Previous chapter** and **] Next chapter**
 turn the chapters, and every key in its hint line is a chip. The

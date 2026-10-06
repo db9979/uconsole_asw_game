@@ -10,21 +10,16 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.264**
+Aktuelle Version: **1.3.269**
 
-Version 1.3.264 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
-schauen jetzt in einem Kegel von etwa 45 Grad zu jeder Seite und in einem
-Tiefenfenster nach vorn, schalten nach Signalstärke gegen ihr Eigengeräusch
-auf, suchen langsam und leise und sprinten erst nach der Aufschaltung.
-KI-U-Boote reagieren auf einen Ping nach seiner Lautstärke: ein leiser
-schickt sie tief und langsam, ein naher lässt sie vom Pinger weglaufen. Sie
-weichen einem Torpedo aus, indem sie ihn querab nehmen, einen Täuschkörper
-ausstoßen und davonschleichen, und verstecken sich auf der Seite der
-Sprungschicht abseits eines ausgebrachten Tiefensonars. Harte Kurven kosten
-jetzt Fahrt, passive Kontakte an der Erfassungsgrenze schwinden und kommen
-wieder, und beim Geleitzugangriff warnt die Fregatte ihre Frachter, von denen
-etwa jeder dritte vor einem gehörten Torpedo abdreht. Spielstände sind v53;
-v38- bis v52-Spielstände lassen sich weiter laden.
+Version 1.3.269 gibt jeder gesprochenen Meldung ein klares Ende. Jede
+Meldung, die die Stimme liest, endet mit einem Punkt, auch nach einem
+Doppelpunkt oder Auslassungszeichen, und danach folgen 0,6 s Stille, bevor
+die nächste beginnt. Logmeldungen gehen dafür wieder einzeln an den
+Sprachdienst, denn ein Sprachmodell macht zwischen zusammen geschickten
+Meldungen nur eine kurze Satzpause. Antworten des Ersten Offiziers bleiben
+am Stück. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
+v52 laden weiter).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

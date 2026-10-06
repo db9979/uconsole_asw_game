@@ -14,9 +14,9 @@ from src.world.real_coast import sector_for_seed
 
 
 def test_release_version_and_exact_splash_text():
-    assert APP_VERSION == "1.3.269"
+    assert APP_VERSION == "1.3.276"
     assert SPLASH_TEXT == (
-        "Anti Sub Marine Warfare on uConsole by Dominik Bornhäußer Version 1.3.269"
+        "Anti Sub Marine Warfare on uConsole by Dominik Bornhäußer Version 1.3.276"
     )
 
 
@@ -99,13 +99,14 @@ def test_splash_plays_one_ping_per_wave_cycle(monkeypatch):
     assert len(calls) == 4
 
 
-def test_splash_waits_for_keypress_and_ignores_mouse_click():
+def test_splash_waits_for_a_key_or_left_click():
     game = Game(seed=19, start_menu=True, show_splash=True)
     game._t = game.splash_started_at + 30.0
 
     game.update(.01)
-    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1))
     assert game.splash_active is True
+    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=3))
+    assert game.splash_active is True          # only the left button closes it
 
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE))
     assert game.splash_active is False

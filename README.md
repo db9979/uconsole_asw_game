@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.269**
+Current release: **1.3.276**
 
-Release 1.3.269 gives every spoken report a clear end. Each report the
+Release 1.3.276 gives every spoken report a clear end. Each report the
 voice reads ends with a full stop, also after a colon or an ellipsis, and
 0.6 s of silence follows it before the next one starts. Log entries go to
 the speech service one by one again, because a speech model leaves only a

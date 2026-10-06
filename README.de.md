@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.269**
+Aktuelle Version: **1.3.276**
 
-Version 1.3.269 gibt jeder gesprochenen Meldung ein klares Ende. Jede
+Version 1.3.276 gibt jeder gesprochenen Meldung ein klares Ende. Jede
 Meldung, die die Stimme liest, endet mit einem Punkt, auch nach einem
 Doppelpunkt oder Auslassungszeichen, und danach folgen 0,6 s Stille, bevor
 die nächste beginnt. Logmeldungen gehen dafür wieder einzeln an den

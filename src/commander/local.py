@@ -24,7 +24,7 @@ from src.commander.server import (CommanderServer, web_catalog, DIRECT_FIRE_ROLE
 from src.core import config, manual
 from src.core.i18n import load_catalog, message, raw_text, translation_scope
 from src.data.contact_analysis import load_contact_analysis_assets
-from src.ui import layout, overlay_style, qr
+from src.ui import layout, overlay_style, pointer, qr
 
 
 # Seconds between an accepted admin "end game" and the process quitting.
@@ -914,7 +914,13 @@ class CommanderConsole:
             if rect.collidepoint(canvas):
                 # Select first, then confirm. A stray click cannot accept a proposal.
                 if self.selection == index:
-                    self.activate(game)
+                    # Host and port step back from the row's left third.
+                    back = (self.rows()[index] in ("host", "port")
+                            and canvas[0] < rect.x + rect.w // 3)
+                    if back:
+                        self.activate(game, -1)
+                    else:
+                        self.activate(game)
                 else:
                     self.selection = index
                 return
@@ -1064,6 +1070,7 @@ class CommanderConsole:
                     "> " if index == self.selection else "  "),
                     label=message(text) if isinstance(text, str) else text), rect,
                     config.COLOR_WARN if index == self.selection else config.COLOR_TEXT, size=20)
+                pointer.add_hotspot(rect)       # clickable: the hover frame shows it
             warning = ("commander.local.hotspot.warning" if self.network_mode == "hotspot"
                        else "commander.local.warning")
             layout.blit_block(screen, warning, 124, 542, 1032, 54,

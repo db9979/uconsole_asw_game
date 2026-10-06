@@ -4,15 +4,27 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.269
+## 1.3.276
 
-Release 1.3.269 gives every spoken report a clear end. Each report the
+Release 1.3.276 gives every spoken report a clear end. Each report the
 voice reads ends with a full stop, also after a colon or an ellipsis, and
 0.6 s of silence follows it before the next one starts. Log entries go to
 the speech service one by one again, because a speech model leaves only a
 short sentence pause between entries sent together. Answers of the
 executive officer stay in one piece. Keys and saves are unchanged (v53;
 v38 to v52 saves still load).
+
+## 1.3.272
+
+Release 1.3.272 makes the menus work by mouse. In the options a click on a
+row changes it like `Enter`, and new **<** and **>** buttons step a value
+back or on; every key in the hint line is a clickable chip. The real-world
+traffic page switches services and opens its fields by click, a click
+closes the start screen, lobby rows step back from their left third and
+on elsewhere, the Remote Crew page steps host and port back the same way,
+the Remote Crew admission window has a close cross, and the update
+notice closes with its cross until the next launch. Saves are v53;
+v38 to v52 saves still load.
 
 ## 1.3.266
 

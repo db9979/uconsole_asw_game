@@ -10,16 +10,17 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.259**
+Current release: **1.3.266**
 
-Release 1.3.259 lets you ask the executive officer by voice from every
-station: hold Shift+Space, speak and let go (or tap once to start and again
-to send), on the uConsole, the submarine and in the browser. A speech-input
-service of your choice (OpenAI-compatible, set up under Options, Language
-model, tab 5 Speech input, off by default) turns the question into text; the
-answer shows in a bubble over the station and the voice says it. The new AI
-button in the top bar opens the chat directly. The talk key only asks and
-never gives orders. Saves are v53; v38 to v52 saves still load.
+Release 1.3.266 closes the first gaps in mouse control. A click into the
+executive officer's or the language model's window no longer reaches the
+station behind it. In the Mission and Unit Editors a second click on a row
+opens the field. At the sonar the cursor on LOFAR and DEMON and the TMA
+hypothesis (course, speed, range) now move by clicking their chips, the
+helicopter's waypoint chips steer it, the submarine's status line opens
+the log like `F11`, and the submarine sonar no longer shows a key on its
+array readout. A new test makes sure every key chip on every station can
+be clicked. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

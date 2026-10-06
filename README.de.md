@@ -10,17 +10,18 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.259**
+Aktuelle Version: **1.3.266**
 
-Version 1.3.259 lässt dich den Ersten Offizier an jeder Station per Sprache
-fragen: Umschalt+Leertaste halten, sprechen und loslassen (oder einmal
-tippen zum Starten und noch einmal zum Senden), auf der uConsole, im U-Boot
-und im Browser. Ein Erkennungsdienst deiner Wahl (OpenAI-kompatibel,
-einzurichten unter Optionen, Sprachmodell, Reiter 5 Spracheingabe, ab Werk
-aus) macht aus der Frage Text; die Antwort erscheint in einer Sprechblase
-über der Station und die Stimme spricht sie. Der neue KI-Knopf in der
-oberen Leiste öffnet den Chat direkt. Die Sprechtaste fragt nur und gibt
-nie Befehle. Spielstände sind v53; v38 bis v52 laden weiter.
+Version 1.3.266 schließt die ersten Lücken in der Maussteuerung. Ein Klick
+ins Fenster des Ersten Offiziers oder des Sprachmodells erreicht die
+Station dahinter nicht mehr. Im Missions- und Einheiten-Editor öffnet ein
+zweiter Klick auf eine Zeile das Feld. Am Sonar lassen sich der Cursor auf
+LOFAR und DEMON und die TMA-Hypothese (Kurs, Fahrt, Entfernung) jetzt per
+Klick auf ihre Chips verstellen, die Wegpunkt-Chips des Helis steuern ihn,
+die Statuszeile des U-Boots öffnet das Log wie `F11`, und das U-Boot-Sonar
+zeigt an seiner Array-Anzeige keine Taste mehr. Ein neuer Test sorgt dafür,
+dass jeder Tastenchip an jeder Station klickbar ist. Spielstände sind v53;
+v38- bis v52-Stände werden weiter geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

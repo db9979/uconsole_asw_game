@@ -494,7 +494,7 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             # Their key buttons, tabs and rows took any click above
             # (src/ui/advisor_view.py); the rest never reaches the station behind.
             if e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEWHEEL):
-                return
+                return True
             if self.advisor_open:
                 self._handle_advisor_event(e)
             else:

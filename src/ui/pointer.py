@@ -277,9 +277,8 @@ def add_text_keys(text: str, face, center_x: int, center_y: int, keys,
         width = layout.text_width(face, part)
         rect = pygame.Rect(x - 4, center_y - height // 2 - 2, width + 8, height + 4)
         if isinstance(key, str):
-            found = legend_keys(key)
-            if found:
-                add_key(rect, *found[0])
+            # "[ / ]" splits the part: left half the first key, right the second.
+            add_legend(rect, key)
         elif isinstance(key, tuple):
             add_key(rect, *key)
         elif key is not None:

@@ -141,3 +141,22 @@ def test_order_is_sent_confirmed_and_scrolled_by_mouse():
         assert entry["applied"], (entry, game.msg)
         assert round(game.ship.target_course) == 120
         game.audio.shutdown()
+
+
+def test_clicks_on_the_overlay_never_switch_the_page_of_the_station_behind():
+    """Page tabs are hit-tested by the station itself (no pointer target):
+    a click over the open overlay must not reach that hit test either."""
+    game = _game()
+    for station in (Station.RADIO, Station.OPZ, Station.DAMAGE, Station.ENGINE):
+        game.station, game.station_page = station, 0
+        for name in ("advisor", "llm"):
+            game._open_administration(name)
+            game.draw()
+            for x in range(20, 1280, 40):
+                for y in (60, 80, 100, 400, 650):
+                    _click(game, (x, y))
+                    if not (game.advisor_open or game.llm_open):
+                        game._open_administration(name)
+            assert (game.station, game.station_page) == (station, 0), (station, name)
+            game._open_administration("")
+    game.audio.shutdown()

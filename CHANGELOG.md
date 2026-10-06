@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.246
+
+Release 1.3.246 makes the language model's voice sound calm and even.
+The executive officer, the crew and the log now speak with one steady
+style that asks the speech service not to laugh, sigh or change mood, so
+voice and tone no longer jump between sentences. A log entry is said in
+one piece instead of sentence by sentence, units and short forms are said
+in full (12 kn as "twelve knots", NM as "nautical miles", ° as "degrees",
+brg as "bearing", positions in degrees and minutes north and east), and
+seed -1 now draws one seed per launch instead of a new one for every
+sentence. Keys and saves are unchanged (v53; v38 to v52 saves still
+load).
+
 ## 1.3.243
 
 Release 1.3.243 lets the language model's voice read the log aloud.

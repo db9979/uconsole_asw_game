@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import math
 import re
+import secrets
 import struct
 import threading
 import time
@@ -45,7 +46,9 @@ PRESET_VOICES = ("alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "on
 MAX_VOICE_LEN = 64
 # Sampling of speech models that take it (Qwen-TTS and similar servers):
 # lower temperature = calmer, steadier; lower top_p = fewer outliers; a
-# fixed seed keeps the delivery alike across sentences (-1 = random).
+# fixed seed keeps the delivery alike across sentences (-1 = random: one
+# seed drawn per launch, so the voice still stays alike from sentence to
+# sentence within a session).
 DEFAULT_TEMPERATURE = 0.9
 DEFAULT_TOP_P = 1.0
 DEFAULT_SEED = -1
@@ -77,16 +80,13 @@ ERRORS = ("disabled", "network", "timeout", "auth", "rate_limit", "server", "bad
           "busy", "no_audio")
 
 # How the voice should sound (models that take ``instructions``; a server
-# that refuses the field is asked without it).
-_STYLE = {
-    "crew": "Speak as a naval watch officer calling a report over a warship's internal "
-            "net: short, clear and urgent but controlled.",
-    "xo": "Speak as a calm, experienced executive officer reporting to the captain on a "
-          "warship: measured, clear and concise.",
-    "test": "Speak as a calm, experienced executive officer on a warship.",
-    "log": "Speak as a naval watch officer reading a log entry aloud over a warship's "
-           "internal net: brief, clear and calm.",
-}
+# that refuses the field is asked without it).  One style for every role:
+# the crew's calls, the officer's answers and the log are one speaker, so
+# voice and mood never jump from one sentence to the next.
+_STYLE_ALL = ("Speak as a calm, experienced naval officer reporting on a warship's internal "
+              "net: steady, clear and neutral, the same voice, pace and tone throughout. "
+              "Never laugh, chuckle, sigh, whisper or add sounds; no emotional changes.")
+_STYLE = {role: _STYLE_ALL for role in ("crew", "xo", "test", "log")}
 _LANGUAGE = {"de": " The text is German; use natural German pronunciation.",
              "en": " The text is English."}
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
@@ -140,6 +140,47 @@ def spell_digits(text, digits, point: str) -> str:
         return " " + " ".join(words) + " "
 
     text = re.sub(r" {2,}", " ", _NUMBER.sub(spell, text))
+    return re.sub(r" ([,.!?;:])", r"\1", text).strip()
+
+
+# Units and short forms the log writes, said in full ("12 kn" is "12
+# Knoten"): ``words`` maps these names to the listener's language.
+WORD_NAMES = ("knots", "nautical_miles", "metres_per_second", "metres", "kilometres",
+              "seconds", "minutes", "hours", "hertz", "kilohertz", "decibels", "percent",
+              "degrees", "arc_minutes", "north", "south", "east", "west", "bearing",
+              "range", "about")
+_POSITION = re.compile(r"(\d+)\s?°\s?(\d+(?:[.,]\d+)?)\s?'\s?([NSEWO])(?![\w])")
+_HEMISPHERE = {"N": "north", "S": "south", "E": "east", "O": "east", "W": "west"}
+# After a number: unit -> word name (longest first, so "kHz" before "Hz").
+_UNITS = (("m/s", "metres_per_second"), ("kHz", "kilohertz"), ("Hz", "hertz"),
+          ("dB", "decibels"), ("kn", "knots"), ("kts", "knots"), ("sm", "nautical_miles"),
+          ("NM", "nautical_miles"), ("nm", "nautical_miles"), ("km", "kilometres"),
+          ("min", "minutes"), ("m", "metres"), ("s", "seconds"), ("h", "hours"))
+_UNIT = re.compile(r"(\d)\s?(" + "|".join(re.escape(unit) for unit, _ in _UNITS)
+                   + r")(?![\w/])")
+_UNIT_WORD = dict(_UNITS)
+_SHORT = {"Rtg": "bearing", "Brg": "bearing", "brg": "bearing", "Dst": "range"}
+_SHORT_WORD = re.compile(r"(?<![\w])(" + "|".join(_SHORT) + r")\.?(?![\w])")
+
+
+def spoken_words(text, words) -> str:
+    """Abbreviations said in full: units after a number, positions
+    (54°21,4'N), degrees, percent, "Rtg"/"brg" and "~" (``words`` maps
+    ``WORD_NAMES`` to the listener's words)."""
+    if type(text) is not str:
+        return ""
+
+    def word(name):
+        return f" {words.get(name, '')} "
+
+    text = _POSITION.sub(lambda m: f"{m.group(1)}{word('degrees')}{m.group(2)}"
+                         f"{word('arc_minutes')}{word(_HEMISPHERE[m.group(3)])}", text)
+    text = _UNIT.sub(lambda m: m.group(1) + word(_UNIT_WORD[m.group(2)]), text)
+    text = re.sub(r"\s?°", lambda _m: word("degrees"), text)
+    text = re.sub(r"\s?%", lambda _m: word("percent"), text)
+    text = re.sub(r"~\s?", lambda _m: word("about"), text)
+    text = _SHORT_WORD.sub(lambda m: word(_SHORT[m.group(1)]), text)
+    text = re.sub(r" {2,}", " ", text)
     return re.sub(r" ([,.!?;:])", r"\1", text).strip()
 
 
@@ -489,6 +530,9 @@ class VoiceService:
         # Ask with a speaking style and sampling until a server refuses them.
         self._instructions = True
         self._sampling = True
+        # Seed -1 ("random"): drawn once per launch, never per sentence, so
+        # the delivery does not jump (wall-side only, never the simulation).
+        self._session_seed = secrets.randbelow(SEED_MAX) + 1
 
     # -- configuration -------------------------------------------------------
 
@@ -676,8 +720,7 @@ class VoiceService:
         if sampling:
             body["temperature"] = float(config.temperature)
             body["top_p"] = float(config.top_p)
-            if config.seed >= 0:
-                body["seed"] = int(config.seed)
+            body["seed"] = int(config.seed) if config.seed >= 0 else self._session_seed
         url = config.base_url.rstrip("/") + "/audio/speech"
         headers = {"Content-Type": "application/json", "Accept": "audio/wav",
                    "User-Agent": "u-jagd"}

@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.246
+
+Version 1.3.246 lässt die Stimme des Sprachmodells ruhig und gleichmäßig
+klingen. Erster Offizier, Crew und Log sprechen jetzt in einem festen Ton,
+der den Sprachdienst bittet, nicht zu lachen, zu seufzen oder die
+Stimmung zu wechseln; Stimme und Ton springen nicht mehr von Satz zu
+Satz. Ein Logeintrag wird am Stück gesprochen statt Satz für Satz,
+Einheiten und Abkürzungen werden ausgesprochen (12 kn als „zwölf
+Knoten“, sm als „Seemeilen“, ° als „Grad“, Rtg als „Richtung“,
+Positionen in Grad und Minuten Nord und Ost), und Seed -1 zieht jetzt
+einen Seed pro Start statt für jeden Satz einen neuen. Tasten und
+Spielstände bleiben gleich (v53; Spielstände v38 bis v52 laden weiter).
+
 ## 1.3.243
 
 Version 1.3.243 lässt die Stimme des Sprachmodells das Log vorlesen.

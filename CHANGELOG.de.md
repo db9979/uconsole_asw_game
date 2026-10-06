@@ -14,6 +14,17 @@ die Wahl in ihren Einstellungen. Im Browser tun der Knopf Namen über der
 Karte und Alt+N dasselbe für diesen Browser-Tab. Spielstände sind v53;
 Spielstände v38 bis v52 laden weiterhin.
 
+## 1.3.276
+
+Version 1.3.276 gibt jeder gesprochenen Meldung ein klares Ende. Jede
+Meldung, die die Stimme liest, endet mit einem Punkt, auch nach einem
+Doppelpunkt oder Auslassungszeichen, und danach folgen 0,6 s Stille, bevor
+die nächste beginnt. Logmeldungen gehen dafür wieder einzeln an den
+Sprachdienst, denn ein Sprachmodell macht zwischen zusammen geschickten
+Meldungen nur eine kurze Satzpause. Antworten des Ersten Offiziers bleiben
+am Stück. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
+v52 laden weiter).
+
 ## 1.3.275
 
 Version 1.3.275 lässt die Karten im Browser so weit hineinzoomen wie
@@ -1529,7 +1540,6 @@ Schotten, Funkkanäle und Aufträge, Befehle an Besatzung und Seefernaufklärer)
 bleiben stehen, sodass ein Klick nicht mehr verloren geht, wenn mitten im Klick
 eine Aktualisierung eintrifft. Spielstände bleiben im Format v41.
 
-
 ## 1.3.121
 
 Notfälle an Bord ergänzen die Ereignisse auf See. Auf der Fregatte kann ein
@@ -1593,7 +1603,6 @@ HF/DF-Peilungen streuen. Bei schwerer See startet und landet der Hubschrauber
 nur in einer ruhigen Phase; eine Deckbewegungsanzeige zeigt sie, und weniger
 Fahrt hilft. Spielstände haben jetzt das Format v41; ältere Spielstände laden
 nicht.
-
 
 ## 1.3.116
 

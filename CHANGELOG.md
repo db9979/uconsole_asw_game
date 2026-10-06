@@ -14,6 +14,16 @@ choice in its settings. In the browser the Names button above the chart and
 Alt+N do the same for that browser tab. Saves are v53; v38 to v52 saves
 still load.
 
+## 1.3.276
+
+Release 1.3.276 gives every spoken report a clear end. Each report the
+voice reads ends with a full stop, also after a colon or an ellipsis, and
+0.6 s of silence follows it before the next one starts. Log entries go to
+the speech service one by one again, because a speech model leaves only a
+short sentence pause between entries sent together. Answers of the
+executive officer stay in one piece. Keys and saves are unchanged (v53;
+v38 to v52 saves still load).
+
 ## 1.3.275
 
 Release 1.3.275 lets the browser charts zoom in as far as the uConsole's.
@@ -1426,7 +1436,6 @@ it is left. Buttons in updating lists (ESM emitters, tubes, bulkheads, radio
 channels and tasks, crew and patrol-aircraft orders) stay in place, so a click
 is no longer lost when an update lands mid-click. Saves stay format v41.
 
-
 ## 1.3.121
 
 Emergencies aboard join the incidents at sea. A man can go overboard from the
@@ -1486,7 +1495,6 @@ heavier rain and sferics that crackle on ESM and spread HF/DF bearings. In a
 heavy sea the helicopter launches and lands only in a quiet period; a deck-
 motion gauge shows it, and slowing down helps. Saves are now format v41; older
 saves do not load.
-
 
 ## 1.3.116
 

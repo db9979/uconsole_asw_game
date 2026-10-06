@@ -256,7 +256,7 @@ def test_the_submarine_reads_its_own_log_not_the_frigates():
         assert game.log_voice_count("funk") == 1
 
 
-def test_a_burst_is_read_in_order_joined_and_counts_all():
+def test_a_burst_is_read_in_order_one_by_one_and_counts_all():
     game = _game()
     _Mixer(game)
     game.preferences = dataclasses.replace(game.preferences, tts_enabled=True,
@@ -278,11 +278,9 @@ def test_a_burst_is_read_in_order_joined_and_counts_all():
     for _round in range(40):
         game._voice_queue.clear()           # said: the next ones go out
         game._pump_log_voice()
-    # Waiting entries share a request, each closed like a sentence, all in
-    # order, and no request is longer than the service takes.
-    assert len(queued) < 40
-    assert " ".join(queued) == " ".join(f"Weapons entry {n}." for n in range(40))
-    assert all(len(game._voice_text(text)) <= voice.MAX_INPUT_CHARS for text in queued)
+    # Every entry is its own request (a pause follows each), closed with a
+    # full stop, all of them in order.
+    assert queued == [f"Weapons entry {n}." for n in range(40)]
     assert game.log_voice_count("waffen") == 40
 
 
@@ -370,3 +368,54 @@ def test_spoken_letters_never_rename_a_key_chip():
     german = Translator("de")
     for key in ("Z", "A", "D", "R", "2", "minus"):
         assert german.display(key) == key
+
+
+@pytest.mark.parametrize("text,said", [
+    ("Kontakt K1 neu", "Kontakt K1 neu."),
+    ("Sonar meldet:", "Sonar meldet."),
+    ("Warte …", "Warte."),
+    ("Kurs 270, ", "Kurs 270."),
+    ("Torpedo im Wasser!", "Torpedo im Wasser!"),
+    ("Fahrt (12 kn)", "Fahrt (12 kn)."),
+    ("Schon zu Ende.", "Schon zu Ende."),
+    ("  ", ""),
+])
+def test_every_report_ends_with_a_full_stop(text, said):
+    assert voice.close_sentence(text) == said
+
+
+def test_a_report_sent_to_the_service_ends_with_a_full_stop():
+    game = _game()
+    _Mixer(game)
+    game.preferences = dataclasses.replace(game.preferences, tts_enabled=True,
+                                           tts_url="http://127.0.0.1:9/v1", tts_model="tts")
+    game.configure_voice()
+    sent = []
+    game.voice.say = lambda text, language, role: sent.append(text) or voice.VoiceRequest(
+        role, text, language)
+    assert game.voice_say("Contact K1 bearing 270", "crew")
+    assert sent[-1].endswith(".") and not sent[-1].endswith("..")
+
+
+def test_reports_are_parted_by_a_short_silence(monkeypatch):
+    from src.core import game_voice
+    game = _game()
+    mixer = _Mixer(game)
+    game.preferences = dataclasses.replace(game.preferences, tts_enabled=True,
+                                           tts_url="http://127.0.0.1:9/v1", tts_model="tts")
+    game.configure_voice()
+    clock = [100.0]
+    monkeypatch.setattr(game_voice.time, "monotonic", lambda: clock[0])
+    first, second = (voice.VoiceRequest("log", text, "en") for text in ("One.", "Two."))
+    for request in (first, second):
+        request.created = clock[0]
+        request._finish("done", pcm=np.ones(100, np.int16))
+        game._voice_queue.append(request)
+    game._pump_voice()
+    assert len(mixer.played) == 1
+    game._pump_voice()                      # the first one has ended
+    game._pump_voice()
+    assert len(mixer.played) == 1           # silence before the next report
+    clock[0] += game_voice.VOICE_GAP_S + 0.01
+    game._pump_voice()
+    assert len(mixer.played) == 2

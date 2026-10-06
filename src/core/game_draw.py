@@ -29,7 +29,7 @@ from src.ui import observations
 from src.ui import overlay_style, quality
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.shock_fx import ShockFx
-from src.ui import eco_lamp, game_menu, hit_inset, log_voice_view, mic_meter
+from src.ui import eco_lamp, game_menu, hit_inset, log_voice_view, mic_meter, talk_view
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -597,6 +597,9 @@ class DrawMixin:
                               "uboot" if self.local_side == "uboot" else "frigate")
             # Automatic economy: the ECO lamp beside it.
             self.guarded_view("eco_lamp", tuple(eco_lamp.rect(self)), eco_lamp.draw, self, s)
+            # The talk key's bubble: question and answer over the station.
+            self.guarded_view("talk", tuple(talk_view.bubble_rect(0)), talk_view.draw_bubble,
+                              self, s)
         if self.game_menu_open:
             with pointer.layer("popup"):
                 game_menu.draw_menu(self)
@@ -744,11 +747,13 @@ class DrawMixin:
         self._top_status_right = tabs[-1].right
         draw_theme_switch(self)
         switch = game_menu.draw_button(self) or theme_switch_rect()
+        right = eco_lamp.status_right(
+            self, mic_meter.status_right(self, "frigate", switch.x - 10))
+        # The talk key's KI button (src/ui/talk_view.py), left of the lamps.
+        right = talk_view.draw_button(self, s, right)
         if self.msg and self._t < self.msg_until:
             return      # the flash banner stands in the status line's place
         left = tabs[-1].right + 12
-        right = eco_lamp.status_right(
-            self, mic_meter.status_right(self, "frigate", switch.x - 10))
         # A long mission title gives way; clock, speed and course stay whole.
         txt = layout.shorten_to_fit(
             lambda title: self.tr("top.status_short", scenario=title,

@@ -22,6 +22,7 @@ _GLOBAL_HELP = (
         ("F3", "help.global.autocrew_overview"),
         ("0", "help.global.weather_station"),
         ("F7", "help.global.advisor"),
+        ("Shift+Space", "help.global.talk"),
         ("F8", "help.global.analyzer"),
         ("F4", "help.global.simlog_view"),
         ("F9", "help.global.commander"),
@@ -262,6 +263,7 @@ _UBOOT_GLOBAL_HELP = (
         ("Shift+F2", "help.global.crew_assist"),
         ("0", "help.uboot.weather"),
         ("F7", "help.global.advisor"),
+        ("Shift+Space", "help.global.talk"),
         ("F9", "help.global.commander"),
         ("F10", "control.help.options"),
         ("F11", "help.global.feed_overlay"),
@@ -321,6 +323,7 @@ _WEB_HELP = (
         ("help.key.web_plot", "help.web.plot"),
         ("Alt+, / Alt+.", "help.web.docks"),
         ("Alt+L", "help.web.log"),
+        ("Shift+Space", "help.global.talk"),
         ("Esc", "help.web.overlay_close"),
     ],
 )

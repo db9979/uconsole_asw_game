@@ -31,6 +31,20 @@ An OpenAI-compatible speech service (`/audio/speech`) gives the executive office
 - The voice plays on its own audio channel and never cuts the sonar tone; requests and decoding run beside the game, so a slow service never stalls a frame. Every answer is sent in one piece, and log entries waiting together go as one request, because a speech model starts every request with a slightly different voice; whatever has arrived plays as one sound so nothing stumbles. Audio that a service streams (OpenAI does) is played while it still arrives; the wait for the first sound is up to the service. With the game sound off nothing is spoken.
 - Remote Crew browsers keep their own voice for the crew's calls (Settings, the browser's speech synthesis); the executive officer's answers in a browser are shown, not spoken.
 
+## Talk key and speech input {#llm-talk}
+
+Ask the executive officer by voice at any station, on both sides and in the browser: hold `Shift+Space`, speak the question and let go. A short tap starts the recording and the next press sends it, so the key need not be held. The question goes to an OpenAI-compatible transcription service (`/audio/transcriptions`, for example `whisper-1` or a Qwen3 speech server in the LAN), and the recognised text reaches the executive officer as an ordinary question, answered from your own picture and the manual. The answer shows in a bubble at the top of the station for 30 s (its cross closes it, **Speak** asks again, **Chat** or **Full answer** opens `F7`), stays in the `F7` log and is spoken by the voice when that is on. While the language model is on, the **AI** button in the top bar opens the chat directly, ready for a typed question; in `F7` the blue **Shift+Space Speak** button records while it is held, like the key.
+
+![The executive officer's answer to a spoken question, over the bridge](figure:talk-bubble)
+
+![Options, Language model, page 5 Speech input](figure:llm-speech-input)
+
+- Set it up under `F10` Options, page 2, **Language model**, page **5 Speech input**: on/off (off by default), the server address (preset `https://api.openai.com/v1`), the recognition model (preset `whisper-1`), the API key and **Test connection**, which sends one second of a quiet tone and shows the answer time. The service is told the game's language, German or English; a server that refuses the field is asked without it.
+- The key lives in `~/.u-jagd/stt_key` or comes from `U_JAGD_STT_KEY`. Left empty, the voice's or the language model's key is used when its address names the same server. It never enters the settings, saves, logs or a browser.
+- The talk key only asks: it never gives an order, and a spoken question is never heard by the enemy (the noise discipline ignores the microphone while it records). A recording ends after 30 s (20 s in a browser); a recording that is too short or silent is not sent. Nothing is stored: the audio is only held in memory until it was sent.
+- In a browser station the **Speak** button beside **Send** and `Shift+Space` record with the browser's microphone, which needs the HTTPS page (as for the noise discipline); the recording goes to the host, which turns it into text with its own speech input and its own key.
+- Focus loss drops a recording that is still running.
+
 ## Not modelled {#llm-limits}
 
-- Not modelled: voice commands, spoken answers of the executive officer or log entries read aloud in a browser, a model on the uConsole itself, model decisions about weapons or targets, and a model that sees hidden truth during a mission.
+- Not modelled: voice commands (the talk key only asks questions), speech recognition on the uConsole itself, spoken answers of the executive officer or log entries read aloud in a browser, a model on the uConsole itself, model decisions about weapons or targets, and a model that sees hidden truth during a mission.

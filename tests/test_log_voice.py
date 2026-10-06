@@ -184,10 +184,12 @@ def test_settings_page_four_by_key_and_mouse(isolated_saves):
         advisor_view.draw_llm_settings(game)
     pointer.hit(tab.center, "overlay").action(tab.center)
     assert game.llm_page == 3
-    # Four tabs and the title never touch.
+    # The five tabs and the close box never touch.
+    from src.ui import game_menu
     tabs = advisor_view.page_tab_rects()
-    title = advisor_view._title_rect()
-    for a, b in itertools.combinations(list(tabs) + [title], 2):
+    close = game_menu.close_rect(advisor_view.PANEL)
+    assert len(tabs) == 5
+    for a, b in itertools.combinations(list(tabs) + [close], 2):
         assert not a.colliderect(b)
 
 

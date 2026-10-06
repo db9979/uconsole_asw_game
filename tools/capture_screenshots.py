@@ -132,6 +132,42 @@ def _sight_game(seed: int, language: str, hour: float) -> Game:
     return game
 
 
+_TALK_SAMPLE = {
+    "en": ("Where is K1 and is it closing?",
+           "K1 bears 045, about 8 nautical miles off, course 210 at 12 knots by TMA. "
+           "The bearing drifts slowly left, so it is closing. Hold course and ready a torpedo."),
+    "de": ("Wo steht K1 und kommt er näher?",
+           "K1 peilt 045, etwa 8 Seemeilen, nach TMA Kurs 210 mit 12 Knoten. Die Peilung "
+           "wandert langsam nach links, er kommt also näher. Kurs halten und einen Torpedo "
+           "klarmachen."),
+}
+
+
+def _capture_talk(game: Game, output_dir: Path, language: str, written: list) -> None:
+    saved = game.preferences
+    game.preferences = replace(saved, llm_enabled=True, llm_url="http://192.0.2.1:11434/v1",
+                               stt_enabled=True, stt_url="http://192.0.2.1:31001/v1")
+    game.configure_llm()
+    game.configure_stt()
+    question, answer = _TALK_SAMPLE[language]
+    entry = dict(seq=1, kind="question", question=question, answer=answer, status="done",
+                 error=None, proposal=None, applied=False)
+    import time as wall
+    game.talk_bubble = dict(question=question, entry=entry, error=None,
+                            until=wall.monotonic() + 3600)
+    game.station = Station.BRIDGE
+    game.msg = ""
+    _capture_to(game, output_dir, language, "talk-bubble.png", written)
+    game.talk_bubble = None
+    game._open_administration("llm")
+    game.set_llm_page(4)
+    _capture_to(game, output_dir, language, "llm-speech-input.png", written)
+    game._open_administration("")
+    game.preferences = saved
+    game.configure_llm()
+    game.configure_stt()
+
+
 def capture_all(output_dir: Path, seed: int = 1234,
                 languages: tuple[str, ...] = LANGUAGES) -> list[Path]:
     """Capture localized native views without accessing real user storage."""
@@ -289,6 +325,10 @@ def capture_all(output_dir: Path, seed: int = 1234,
                 _capture_to(game, output_dir, language,
                             "commander-options.png", written)
                 game._open_administration("")
+
+                # The talk key: the answer bubble over the bridge and the
+                # speech input's settings page (no server is asked).
+                _capture_talk(game, output_dir, language, written)
 
                 _set_capture_language(boat, language)
                 boat.msg = ""

@@ -201,6 +201,7 @@ def page_dataset(profile: Path) -> dict | None:
     import json
     import urllib.request
 
+    from websockets.exceptions import WebSocketException
     from websockets.sync.client import connect
 
     try:
@@ -215,7 +216,8 @@ def page_dataset(profile: Path) -> dict | None:
                 message = json.loads(devtools.recv(timeout=2))
                 if message.get("id") == 1:
                     return json.loads(message["result"]["result"]["value"])
-    except (OSError, ValueError, KeyError, StopIteration, TimeoutError):
+    except (OSError, ValueError, KeyError, StopIteration, TimeoutError, WebSocketException):
+        # A busy browser may drop the DevTools socket; the next read retries.
         return None
 
 

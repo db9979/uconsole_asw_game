@@ -37,7 +37,11 @@ PROBE = r'''
     document.querySelector("#station-cards [data-station='weapons'] button").click();
     await until(() => document.body.dataset.remoteRole === 'assigned', 'weapons not taken');
     root.dataset.stage = 'holding';
-    await until(() => !$('handover-band').hidden, 'no handover prompt', 6000);
+    // The prompt shows while this browser still holds the station; losing
+    // it first (lease lapsed, station granted elsewhere) is its own failure.
+    await until(() => !$('handover-band').hidden || document.body.dataset.remoteRole !== 'assigned',
+      'no handover prompt', 3000);
+    if ($('handover-band').hidden) throw new Error('weapons lost before the prompt');
     const item = $('handover-list').querySelector('li');
     root.dataset.prompt = item.querySelector('p').textContent;
     const buttons = [...item.querySelectorAll('button')];
@@ -52,13 +56,13 @@ PROBE = r'''
     // request still in flight on a slow runner may have replaced or
     // disabled the one read above.
     const handedOver = () => $('handover-band').hidden && document.body.dataset.remoteRole === 'lobby';
-    for (let attempt = 0; attempt < 30 && !handedOver(); attempt++) {
+    for (let attempt = 0; attempt < 15 && !handedOver(); attempt++) {
       const live = [...$('handover-list').querySelectorAll('button')]
         .find((button) => button.dataset.accept === 'true');
       if (live && !live.disabled) live.click();
       for (let index = 0; index < 100 && !handedOver(); index++) await sleep(20);
     }
-    await until(handedOver, 'station not handed over');
+    await until(handedOver, 'station not handed over', 500);
     root.dataset.occupancy = document.querySelector("#station-cards [data-station='weapons']").className;
   }
   run().then(() => { root.dataset.handoverTest = 'passed'; }, (error) => {
@@ -101,6 +105,10 @@ def test_holder_sees_request_and_hands_station_over(tmp_path, monkeypatch):
     console._manual_pages = {}
     copy_assets(tmp_path, inject_probe(index_html(), "handover-test.js"))
     monkeypatch.setattr(server.resources, "files", lambda _package: tmp_path)
+    # The handover is under test, not the 15 s presence lease: a browser
+    # starved on a loaded runner must not lose the station before the asker's
+    # request reaches it (lease expiry has its own tests).
+    monkeypatch.setattr(server, "_V2_STATION_LEASE_S", 600.0)
     console.activate(game)
     console.server._http.assets["/handover-test.js"] = (
         "text/javascript; charset=utf-8",
@@ -119,7 +127,8 @@ def test_holder_sees_request_and_hands_station_over(tmp_path, monkeypatch):
     asker = None
     root = {}
     # A slow runner may reach the holding stage late; give the request its
-    # own time after it is sent instead of one budget from launch.
+    # own time after it is sent instead of one budget from launch. That time
+    # outlasts every wait in the probe, so a failure reports its own cause.
     deadline = time.monotonic() + 90
     try:
         while process.poll() is None and time.monotonic() < deadline:
@@ -135,7 +144,7 @@ def test_holder_sees_request_and_hands_station_over(tmp_path, monkeypatch):
                                          {"station": "weapons"}, cookie, paired["csrf"])
                 assert status == 200 and asked["requested_station"] == "weapons"
                 asker = paired["client_id"]
-                deadline = max(deadline, time.monotonic() + 60)
+                deadline = max(deadline, time.monotonic() + 150)
             console.pump(game)
             host.step()
             time.sleep(.02)
@@ -146,7 +155,9 @@ def test_holder_sees_request_and_hands_station_over(tmp_path, monkeypatch):
         process.wait(timeout=5)
         console.stop()
         game.audio.shutdown()
-    assert root.get("handoverTest") == "passed", (root.get("stage"), root.get("failure"))
+    assert root.get("handoverTest") == "passed", (root, {
+        name: (status["stations"]["weapons"]["leased"], status["stations"]["weapons"]["requested"])
+        for name, status in statuses.items()})
     assert root["bandBefore"] == "true"
     assert root["prompt"] == "Asker asks for Weapons"
     assert root["buttons"] == "button:Hand over|button:Keep station"

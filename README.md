@@ -10,18 +10,15 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.254**
+Current release: **1.3.255**
 
-Release 1.3.254 reads the log aloud completely and in order, and makes the
-voice sound more German. Every log entry is now read, one after the other
-in the log's order, instead of keeping only the newest of a burst and
-dropping entries that waited longer than 15 s. The speaking instruction to
-the speech service is written in the game's language, because an English
-instruction pulled models such as Qwen-TTS towards an English accent on
-German text. Counts like "1x" are said as "one times", abbreviations such
-as CIWS are spelled, and a spelled number no longer leaves a gap before a
-closing bracket. Keys and saves are unchanged (v53; v38 to v52 saves still
-load).
+Release 1.3.255 makes the release checks more reliable, so new versions
+are no longer held back. A browser check of the station handover now
+reports why it fails instead of timing out silently. The game itself
+plays as in 1.3.254: the voice reads every log entry in order with a
+German speaking instruction, daily short missions, training progress and
+one line on the end panels saying what decided the mission. Saves are
+v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

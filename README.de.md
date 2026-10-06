@@ -10,19 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.243**
+Aktuelle Version: **1.3.247**
 
-Version 1.3.243 lässt die Stimme des Sprachmodells das Log vorlesen.
-Ist ein Sprachdienst eingerichtet, werden die Einträge im Log der
-eigenen Seite (`F11`) gesprochen, sobald sie kommen, nach den Antworten
-des Ersten Offiziers und den Crew-Rufen; ein Eintrag, der länger als 15
-Sekunden wartet, fällt weg, statt verspätet zu kommen, und was die Crew
-schon ausruft, wird nicht doppelt vorgelesen. Jede Station des Logs lässt
-sich einzeln stummschalten: auf der neuen Seite 4 „Meldungen“ der
-Sprachmodell-Einstellungen (Optionen, Seite 2), die auch die Meldungen
-jeder Station der letzten 5 Minuten zählt, oder mit den Knöpfen je
-Station unten im `F11`-Log. Tasten und Spielstände bleiben gleich (v53;
-Spielstände v38 bis v52 laden weiter).
+Version 1.3.247 zeigt jeden Kontakt auf der Brückenkarte nur noch einmal.
+Ein Schiff, das Radar und Ausguck sahen, erschien bisher doppelt, jede
+Meldung mit eigenem Symbol, eigener Beschriftung und eigenem
+Fahrtvektor, weil die Brücke die rohen Sensormeldungen zeichnete und nur
+die OPZ sie fusioniert zeigte. Brückenkarte, ihre Spuren und Tooltips
+sowie Karte und Liste der Remote-Crew-Brücke zeigen jetzt den
+fusionierten Track der OPZ, mit dem AIS-Namen des Schiffs, sobald er
+bekannt ist. Tasten und Spielstände bleiben gleich (v53; Spielstände v38
+bis v52 laden weiter).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

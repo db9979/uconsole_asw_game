@@ -10,18 +10,15 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.243**
+Current release: **1.3.247**
 
-Release 1.3.243 lets the language model's voice read the log aloud.
-Once a speech service is set up, the entries of the own side's log
-(`F11`) are spoken as they come, after the executive officer's answers
-and the crew's calls; an entry that waits longer than 15 seconds is
-dropped instead of said late, and what the crew already calls out is not
-read twice. Every station of the log can be muted on its own: on the new
-page 4 "Reports" of the language model settings (options page 2), which
-also counts each station's entries of the last 5 minutes, or with the
-per-station buttons along the bottom of the `F11` log. Keys and saves are
-unchanged (v53; v38 to v52 saves still load).
+Release 1.3.247 draws every contact once on the Bridge chart. A ship
+seen by radar and by the lookout used to appear twice, each report with
+its own symbol, label and speed vector, because the Bridge drew the raw
+sensor reports while only the CIC showed them fused. The Bridge chart, its
+trails and tooltips, and the Remote Crew bridge's chart and list now show
+the CIC's fused track instead, with the ship's AIS name once it is known.
+Keys and saves are unchanged (v53; v38 to v52 saves still load).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

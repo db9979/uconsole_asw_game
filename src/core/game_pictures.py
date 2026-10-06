@@ -80,6 +80,54 @@ class PicturesMixin:
                 visual=t.label if t.source == "LOOKOUT" else None))
         return tracks
 
+    def chart_tracks(self) -> list:
+        """The picture as the Bridge chart draws it: one track per contact.
+
+        Reports the OPZ has fused (automatically or by hand) stand behind
+        their fusion, as on the OPZ chart, so a ship seen by radar and by the
+        lookout is drawn once. ``members`` names the picture tracks a fused
+        row stands for (their chart trails are drawn once, too)."""
+        memo = getattr(self, "_opz_draw_memo", None)
+        if memo is not None:
+            if "chart" not in memo:
+                memo["chart"] = self._chart_tracks_now()
+            return list(memo["chart"])
+        return self._chart_tracks_now()
+
+    def _chart_tracks_now(self) -> list:
+        tracks = self.radar_tracks()
+        by_observation = {self._opz_observation_id("picture", track["track_id"]): track
+                          for track in tracks}
+        fused_rows, absorbed = [], set()
+        for fusion in self.opz_published_observations():
+            if fusion.source != "FUSION":
+                continue
+            members = [by_observation[key] for key in fusion.members
+                       if key in by_observation and by_observation[key]["track_id"]
+                       not in absorbed]
+            if not members:
+                continue
+            absorbed.update(track["track_id"] for track in members)
+            # The best positioned member lends its kind and stands in for a
+            # fusion without a position of its own.
+            lead = max(members, key=lambda track: (track["x"] is not None,
+                                                    track["quality"]))
+            x, y = (fusion.x, fusion.y) if fusion.x is not None else (lead["x"], lead["y"])
+            course = fusion.course if fusion.course is not None else lead["course"]
+            speed = fusion.speed_kn if fusion.speed_kn is not None else lead["speed_kn"]
+            fused_rows.append(dict(
+                lead, track_id=fusion.observation_id, source="FUSION",
+                bearing=fusion.bearing, x=x, y=y, course=course, speed_kn=speed,
+                quality=fusion.display_quality(self.sim_t, self.air_picture.stale_s),
+                label=fusion.label, age=fusion.age(self.sim_t),
+                position_seen=fusion.position_seen or lead["position_seen"],
+                visual=next((track["visual"] for track in members
+                             if track.get("visual")), None),
+                members=tuple(track["track_id"] for track in members),
+                lead=lead["track_id"]))
+        return [track for track in tracks
+                if track["track_id"] not in absorbed] + fused_rows
+
     def _opz_observation_id(self, namespace: str, identity: object) -> str:
         return "O-" + self._observation_key("opz-" + namespace, identity)
 

@@ -11,10 +11,19 @@ side's after-action report.
 A typed order comes back as a proposal of ordinary station commands; the
 browser sends them itself after the player confirms, through the normal
 command pipeline with all of its checks.  Nothing here is saved.
+
+The talk key of a browser station (``Shift+Space``) records a question in
+the browser and posts it to ``POST /api/v2/advisor/speech`` as 16 kHz mono
+16-bit PCM (base64, at most ``SPEECH_MAX_S``); the host turns it into text
+with its own speech input (``src/core/game_talk.py``) and asks the same
+executive officer.  The audio is checked here, queued detached and dropped
+once it was sent; the speech service's key never leaves the host.
 """
 
 from __future__ import annotations
 
+import base64
+import binascii
 from collections import deque
 
 from src.commander.v2.wire import LOOKOUT_ROLES, OPFOR_ROLES, _json_bytes
@@ -24,6 +33,13 @@ TEXT_KINDS = ("question", "order")
 QUEUE_MAX = 8
 TEXT_MAX = 300
 VIEW_MAX_BYTES = 64 * 1024
+# A spoken question from a browser: 16 kHz mono 16-bit PCM, base64.
+SPEECH_ROUTE = "/api/v2/advisor/speech"
+SPEECH_RATE = 16000
+SPEECH_MAX_S = 20
+SPEECH_MAX_PCM = SPEECH_RATE * 2 * SPEECH_MAX_S
+SPEECH_MAX_CHARS = (SPEECH_MAX_PCM + 2) // 3 * 4
+SPEECH_MAX_BYTES = SPEECH_MAX_CHARS + 64
 
 
 def valid_advisor_body(body) -> bool:
@@ -37,20 +53,44 @@ def valid_advisor_body(body) -> bool:
     return text == ""
 
 
+def speech_pcm(body):
+    """The PCM bytes of a valid speech body, or None."""
+    if type(body) is not dict or set(body) != {"audio"} or type(body["audio"]) is not str:
+        return None
+    text = body["audio"]
+    if not 0 < len(text) <= SPEECH_MAX_CHARS or not text.isascii():
+        return None
+    try:
+        pcm = base64.b64decode(text, validate=True)
+    except (binascii.Error, ValueError):
+        return None
+    if not pcm or len(pcm) % 2 or len(pcm) > SPEECH_MAX_PCM:
+        return None
+    return pcm
+
+
+def pcm_samples(pcm: bytes):
+    """16-bit little-endian PCM as float32 samples in -1..1."""
+    import numpy as np
+    return np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768.0
+
+
 def side_of_role(role: str) -> str:
     return "uboot" if role in OPFOR_ROLES else "frigate"
 
 
 class AdvisorRequest:
-    __slots__ = ("asker", "client_id", "ordinal", "role", "kind", "text")
+    __slots__ = ("asker", "client_id", "ordinal", "role", "kind", "text", "audio")
 
-    def __init__(self, asker, client_id, ordinal, role, kind, text):
+    def __init__(self, asker, client_id, ordinal, role, kind, text, audio=None):
         self.asker = asker
         self.client_id = client_id
         self.ordinal = ordinal
         self.role = role
         self.kind = kind
         self.text = text
+        # A spoken question's PCM bytes ("speech" only).
+        self.audio = audio
 
 
 def asker_of(session) -> str:
@@ -63,6 +103,7 @@ class AdvisorServerMixin:
     def _init_advisor(self):
         self._advisor_requests = deque()
         self._advisor_available = False
+        self._advisor_talk = False
         self._advisor_logs = {}
         self._advisor_reasons = {}
         self._advisor_reports = {}
@@ -73,20 +114,27 @@ class AdvisorServerMixin:
         self._advisor_reasons = {}
         self._advisor_reports = {}
 
-    def enqueue_advisor_locked(self, session, body) -> str:
-        """"pending", or why not: "forbidden", "invalid", "busy", "queue_full"."""
+    def enqueue_advisor_locked(self, session, body, *, speech: bool = False) -> str:
+        """"pending", or why not: "forbidden", "invalid", "busy", "queue_full".
+        With ``speech`` the body is a recorded question (``speech_pcm``)."""
         role = session["active_station"]
         if role is None or session.get("observer") or role in LOOKOUT_ROLES:
             return "forbidden"
-        if not valid_advisor_body(body):
+        pcm = speech_pcm(body) if speech else None
+        if (pcm is None) if speech else not valid_advisor_body(body):
             return "invalid"
         asker = asker_of(session)
         if any(item.asker == asker for item in self._advisor_requests):
             return "busy"
         if len(self._advisor_requests) >= QUEUE_MAX:
             return "queue_full"
-        self._advisor_requests.append(AdvisorRequest(
-            asker, session["client_id"], session["ordinal"], role, body["kind"], body["text"]))
+        if speech:
+            item = AdvisorRequest(asker, session["client_id"], session["ordinal"], role,
+                                  "speech", "", pcm)
+        else:
+            item = AdvisorRequest(asker, session["client_id"], session["ordinal"], role,
+                                  body["kind"], body["text"])
+        self._advisor_requests.append(item)
         return "pending"
 
     def take_advisor_requests(self) -> list:
@@ -97,9 +145,11 @@ class AdvisorServerMixin:
                     for session in self._sessions_v2.values()}
         return [item for item in items if (item.client_id, item.ordinal, item.role) in live]
 
-    def publish_advisor(self, available: bool, logs: dict, reasons: dict, reports: dict) -> None:
+    def publish_advisor(self, available: bool, logs: dict, reasons: dict, reports: dict,
+                        talk: bool = False) -> None:
         with self._lock:
             self._advisor_available = bool(available)
+            self._advisor_talk = bool(available and talk)
             self._advisor_logs = logs
             self._advisor_reasons = reasons
             self._advisor_reports = reports
@@ -112,8 +162,11 @@ class AdvisorServerMixin:
         log = self._advisor_logs.get(asker, [])
         body = _json_bytes({
             "protocol": 2, "available": self._advisor_available,
+            # The host's speech input is on: the talk key works here too.
+            "talk": self._advisor_talk,
             "pending": any(item.asker == asker for item in self._advisor_requests)
-            or any(row["status"] == "pending" for row in log),
+            or any(row["status"] == "pending" for row in log)
+            or self._advisor_reasons.get(asker) == "transcribing",
             "reason": self._advisor_reasons.get(asker),
             "log": log, "report": self._advisor_reports.get(side_of_role(role))})
         return body if len(body) <= VIEW_MAX_BYTES else None
@@ -142,9 +195,19 @@ def pump_advisor(server, game, published: dict) -> None:
         return
     reasons = dict(published.get("reasons", {}))
     for item in server.take_advisor_requests():
-        result = game.advisor_ask(item.kind, item.text, asker=item.asker,
-                                  side=side_of_role(item.role), station=item.role)
+        if item.kind == "speech":
+            # Transcribed by the host's speech input, then asked
+            # (src/core/game_talk.py); "transcribing" until then.
+            result = (game.talk_submit_web(item.asker, pcm_samples(item.audio),
+                                           side_of_role(item.role), item.role)
+                      if hasattr(game, "talk_submit_web") else "stt_off")
+        else:
+            result = game.advisor_ask(item.kind, item.text, asker=item.asker,
+                                      side=side_of_role(item.role), station=item.role)
         reasons[item.asker] = result if isinstance(result, str) else None
+    if hasattr(game, "talk_web_updates"):
+        for asker, reason in game.talk_web_updates():
+            reasons[asker] = reason
     reports = {}
     if game.game_over:
         for side in ("frigate", "uboot"):
@@ -152,11 +215,13 @@ def pump_advisor(server, game, published: dict) -> None:
             if state is not None:
                 reports[side] = dict(status=state["status"], text=state.get("text", ""),
                                      error=state.get("error"))
-    key = (game.llm_active(), game.advisor.version, tuple(sorted(reasons.items())),
+    talk = bool(getattr(getattr(game, "stt", None), "active", False))
+    key = (game.llm_active(), talk, game.advisor.version,
+           tuple(sorted((asker, reason or "") for asker, reason in reasons.items())),
            tuple(sorted((side, row["status"]) for side, row in reports.items())))
     if published.get("key") == key:
         return
     logs = {asker: [web_entry(entry) for entry in rows]
             for asker, rows in game.advisor.logs.items() if asker.startswith("web:")}
-    server.publish_advisor(game.llm_active(), logs, reasons, reports)
+    server.publish_advisor(game.llm_active(), logs, reasons, reports, talk)
     published.update(key=key, reasons=reasons)

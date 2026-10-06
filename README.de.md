@@ -10,17 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.258**
+Aktuelle Version: **1.3.259**
 
-Version 1.3.258 hält die Stimme gleichmäßig und klar. Jede Antwort des
-Ersten Offiziers geht jetzt am Stück an den Sprachdienst statt Satz für
-Satz, und Logmeldungen, die zusammen warten, werden als eine Anfrage
-vorgelesen, denn ein Sprachmodell beginnt jede Anfrage mit leicht anderer
-Stimme. Was schon angekommen ist, spielt als ein Stück, so stolpert die
-Stimme auf einer ausgelasteten uConsole nicht mehr und verschluckt keine
-Silben. Einzelne Buchstaben werden beim Namen genannt: Kontakt K1 heißt
-„Ka eins“, K2 „Ka zwei“, HQ „Ha Ku“, und die Stimme sagt „zwei“ statt „zwo“. Tasten und Spielstände bleiben gleich (v53;
-Spielstände v38 bis v52 laden weiter).
+Version 1.3.259 lässt dich den Ersten Offizier an jeder Station per Sprache
+fragen: Umschalt+Leertaste halten, sprechen und loslassen (oder einmal
+tippen zum Starten und noch einmal zum Senden), auf der uConsole, im U-Boot
+und im Browser. Ein Erkennungsdienst deiner Wahl (OpenAI-kompatibel,
+einzurichten unter Optionen, Sprachmodell, Reiter 5 Spracheingabe, ab Werk
+aus) macht aus der Frage Text; die Antwort erscheint in einer Sprechblase
+über der Station und die Stimme spricht sie. Der neue KI-Knopf in der
+oberen Leiste öffnet den Chat direkt. Die Sprechtaste fragt nur und gibt
+nie Befehle. Spielstände sind v53; v38 bis v52 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

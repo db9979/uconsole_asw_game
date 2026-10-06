@@ -176,7 +176,7 @@ SUB_TORPEDO_BEAM_S = 60.0
 # The escorted convoy's emergency turn away from a torpedo the frigate hears.
 BOAT_CONVOY_TORPEDO_TURN_DEG = 60.0
 # Share of the convoy's merchants that get the escort's warning in time.
-BOAT_CONVOY_TORPEDO_TURN_P = 0.5
+BOAT_CONVOY_TORPEDO_TURN_P = 0.35
 SUB_TORPEDO_CREEP_KN = 4.0
 # Above the layer (away from a deep variable-depth sonar): this far above it,
 # and only where that is at least this deep.

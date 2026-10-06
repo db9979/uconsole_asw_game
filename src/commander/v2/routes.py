@@ -27,6 +27,7 @@ from src.commander.v2.commands import (
     _v2_command_valid)
 from src.commander.missions import MISSION_UPLOAD_MAX_BYTES
 from src.commander.advisor_web import VOICE_ROUTE as ADVISOR_VOICE_ROUTE
+from src.commander.advisor_web import SPEECH_MAX_BYTES, SPEECH_ROUTE
 from src.commander.v2.wire import (
     station_grants,
     AUDIO_SOCKET_TIMEOUT_S,
@@ -368,7 +369,10 @@ class _Handler(BaseHTTPRequestHandler):
         length = int(length)
         # Only a mission upload (solo host, checked in _post) may be larger.
         if length > (MISSION_UPLOAD_MAX_BYTES if self.command == "POST"
-                     and self.path == "/api/v2/missions" else 4096):
+                     and self.path == "/api/v2/missions" else
+                     # A spoken question to the executive officer.
+                     SPEECH_MAX_BYTES if self.command == "POST"
+                     and self.path == SPEECH_ROUTE else 4096):
             self.send_error(413)
             return
         if self.command == "GET":
@@ -1318,7 +1322,7 @@ class _Handler(BaseHTTPRequestHandler):
                         self._reply(200, self._session_v2_body(session, owner._sessions_v2, owner),
                                     set_cookie=self._v2_cookie(token))
                         return
-            elif self.path == "/api/v2/advisor":
+            elif self.path in ("/api/v2/advisor", SPEECH_ROUTE):
                 try:
                     session, _, presented = self._authenticated_v2_locked(renew=True)
                 except (UnicodeEncodeError, ValueError):
@@ -1333,7 +1337,8 @@ class _Handler(BaseHTTPRequestHandler):
                             session["csrf"].encode("ascii"))):
                         status, response = 403, {"error": "forbidden"}
                     else:
-                        result = owner.enqueue_advisor_locked(session, body)
+                        result = owner.enqueue_advisor_locked(
+                            session, body, speech=self.path == SPEECH_ROUTE)
                         status, response = {
                             "pending": (202, {"status": "pending"}),
                             "forbidden": (403, {"error": "forbidden"}),

@@ -16,9 +16,10 @@ Release 1.3.262 lets the executive officer speak in the browser too. When
 the host has a voice set up, an answer asked from a browser station is now
 spoken there by the same voice as on the uConsole: the host fetches the
 audio from its speech service and only the browser that asked plays it, so
-the service and its key never leave the host. This also works when the
-host runs as a browser-only server without a speaker. **Speak answers** in
-the officer's window switches it off for one browser. Keys and saves are
+the service and its key never leave the host. Answers to questions asked
+with the talk key are spoken the same way. This also works when the host
+runs as a browser-only server without a speaker. **Speak answers** in the
+officer's window switches it off for one browser. Keys and saves are
 unchanged (v53; v38 to v52 saves still load).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

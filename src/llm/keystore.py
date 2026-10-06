@@ -2,7 +2,8 @@
 
 The key comes from the environment variable ``U_JAGD_LLM_KEY`` or from the
 file ``~/.u-jagd/llm_key`` (owner read/write only); the speech service's key
-likewise from ``U_JAGD_TTS_KEY`` or ``~/.u-jagd/tts_key``.  It never enters a save,
+likewise from ``U_JAGD_TTS_KEY`` or ``~/.u-jagd/tts_key``, and the speech
+input's from ``U_JAGD_STT_KEY`` or ``~/.u-jagd/stt_key``.  It never enters a save,
 the settings, a log, a bug report or a browser.  A server in the LAN usually
 needs no key at all.
 """
@@ -21,6 +22,9 @@ FILE_NAME = "llm_key"
 # The speech service's own key (``src/llm/voice.py``), kept the same way.
 VOICE_ENV_NAME = "U_JAGD_TTS_KEY"
 VOICE_FILE_NAME = "tts_key"
+# The speech input's own key (``src/llm/stt.py``).
+STT_ENV_NAME = "U_JAGD_STT_KEY"
+STT_FILE_NAME = "stt_key"
 MAX_KEY_LEN = 512
 
 

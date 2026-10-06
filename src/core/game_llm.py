@@ -88,6 +88,7 @@ class LlmMixin:
         self._llm_opfor_request = None
         self._llm_opfor_next = None
         self._llm_opfor_side = None
+        self._reset_talk()
 
     # -- the per-frame pump (wall time, outside the simulation) ----------------
 
@@ -108,6 +109,8 @@ class LlmMixin:
         self._poll_mission_generator()
         self._llm_opfor_tick()
         self._coach_tick()
+        # The talk key: speech input and its question (game_talk.py).
+        self.talk_tick()
 
     # -- save (v49) ------------------------------------------------------------
 
@@ -431,9 +434,11 @@ class LlmMixin:
         self.configure_llm()
         if name == "llm_url":
             self.configure_voice()      # it may share the model's key
+            self.configure_stt()
 
     def save_llm_key(self, value: str) -> bool:
         ok = keystore.save_key(value)
         self.configure_llm()
         self.configure_voice()
+        self.configure_stt()
         return ok

@@ -29,14 +29,17 @@ TUNE_ROWS = ("tts_temperature", "tts_top_p", "tts_seed", "tts_clean", "tts_test"
 # The stations' log entries read aloud: the master switch, then one row per
 # station of the log (``config.LOG_VOICE_GROUPS``).
 LOG_ROWS = ("tts_log",) + tuple(f"tts_log_{group}" for group in config.LOG_VOICE_GROUPS)
-LLM_PAGES = (LLM_ROWS, VOICE_ROWS, TUNE_ROWS, LOG_ROWS)
+# The speech input of the talk key (``src/core/game_talk.py``).
+STT_ROWS = ("stt_enabled", "stt_url", "stt_model", "stt_key", "stt_test")
+LLM_PAGES = (LLM_ROWS, VOICE_ROWS, TUNE_ROWS, LOG_ROWS, STT_ROWS)
 NUMBER_ROWS = {"tts_temperature": float, "tts_top_p": float, "tts_seed": int}
 TEXT_ROWS = {"llm_url": llm_client.MAX_URL_LEN, "llm_model": llm_client.MAX_MODEL_LEN,
              "llm_key": keystore.MAX_KEY_LEN, "tts_url": llm_client.MAX_URL_LEN,
              "tts_model": llm_client.MAX_MODEL_LEN, "tts_voice": voice_client.MAX_VOICE_LEN,
              "tts_key": keystore.MAX_KEY_LEN, "tts_temperature": 6, "tts_top_p": 6,
-             "tts_seed": 10}
-KEY_ROWS = ("llm_key", "tts_key")
+             "tts_seed": 10, "stt_url": llm_client.MAX_URL_LEN,
+             "stt_model": llm_client.MAX_MODEL_LEN, "stt_key": keystore.MAX_KEY_LEN}
+KEY_ROWS = ("llm_key", "tts_key", "stt_key")
 
 
 class AdvisorUiMixin:
@@ -168,8 +171,8 @@ class AdvisorUiMixin:
         return LLM_PAGES[self.llm_page % len(LLM_PAGES)]
 
     def set_llm_page(self, page: int) -> None:
-        """Language model (0), its voice (1), how the voice sounds (2) or
-        the log entries it reads aloud (3)."""
+        """Language model (0), its voice (1), how the voice sounds (2), the
+        log entries it reads aloud (3) or the speech input (4)."""
         self.llm_page = page % len(LLM_PAGES)
         self.llm_sel = 0
         self.llm_field = self.llm_field_name = None
@@ -190,6 +193,8 @@ class AdvisorUiMixin:
             self.start_llm_test()
         elif name == "tts_test":
             self.start_voice_test()
+        elif name == "stt_test":
+            self.start_stt_test()
         elif name == "tts_voice" and step:
             self.cycle_voice(step)
         elif name in NUMBER_ROWS and step:
@@ -207,6 +212,8 @@ class AdvisorUiMixin:
             self.set_llm_preference(name, cycle[(index + step) % len(cycle)])
         elif name.startswith("tts_"):
             self.set_voice_preference(name, not getattr(self.preferences, name))
+        elif name.startswith("stt_"):
+            self.set_stt_preference(name, not getattr(self.preferences, name))
         else:
             self.set_llm_preference(name, not getattr(self.preferences, name))
 
@@ -214,7 +221,9 @@ class AdvisorUiMixin:
         name, value = self.llm_field_name, self.llm_field.value.strip()
         self.llm_field = self.llm_field_name = None
         if name in KEY_ROWS:
-            saved = self.save_llm_key(value) if name == "llm_key" else self.save_voice_key(value)
+            saved = (self.save_llm_key(value) if name == "llm_key"
+                     else self.save_stt_key(value) if name == "stt_key"
+                     else self.save_voice_key(value))
             if not saved:
                 self.flash(message("llm.key_failed"), 3.0)
             return
@@ -232,11 +241,14 @@ class AdvisorUiMixin:
             self.set_voice_preference(name, round(number, 2) if name != "tts_seed" else number)
             return
         valid = {"llm_url": llm_client.valid_url, "tts_url": llm_client.valid_url,
+                 "stt_url": llm_client.valid_url,
                  "tts_voice": voice_client.valid_voice}.get(name, llm_client.valid_model)
         if not valid(value):
             self.flash(message("llm.invalid." + name), 3.0)
             return
-        if name.startswith("tts_"):
+        if name.startswith("stt_"):
+            self.set_stt_preference(name, value)
+        elif name.startswith("tts_"):
             self.set_voice_preference(name, value)
         else:
             self.set_llm_preference(name, value)

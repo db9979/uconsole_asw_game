@@ -6,15 +6,28 @@ Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt 
 
 ## 1.3.262
 
-Version 1.3.262 lässt den Ersten Offizier auch im Browser sprechen. Hat
-der Host eine Stimme eingerichtet, wird eine Antwort, die an einer
-Browser-Station erfragt wurde, jetzt dort mit derselben Stimme wie auf der
-uConsole gesprochen: Der Host holt den Ton bei seinem Sprachdienst, und
-nur der Browser, der gefragt hat, spielt ihn ab, Dienst und Schlüssel
-verlassen den Host also nie. Das klappt auch, wenn der Host als Server nur
-für Browser ohne Lautsprecher läuft. **Antworten vorlesen** im Fenster des
-Offiziers schaltet es für einen Browser ab. Tasten und Spielstände bleiben
-gleich (v53; Spielstände v38 bis v52 laden weiter).
+Version 1.3.262 lässt den Ersten Offizier auch im Browser sprechen. Hat der Host
+eine Stimme eingerichtet, wird eine Antwort, die an einer Browser-Station
+erfragt wurde, jetzt dort mit derselben Stimme wie auf der uConsole
+gesprochen: Der Host holt den Ton bei seinem Sprachdienst, und nur der
+Browser, der gefragt hat, spielt ihn ab, Dienst und Schlüssel verlassen
+den Host also nie. Antworten auf Fragen per Sprechtaste werden genauso
+gesprochen. Das klappt auch, wenn der Host als Server nur für Browser ohne
+Lautsprecher läuft. **Antworten vorlesen** im Fenster des Offiziers
+schaltet es für einen Browser ab. Tasten und Spielstände bleiben gleich
+(v53; Spielstände v38 bis v52 laden weiter).
+
+## 1.3.259
+
+Version 1.3.259 lässt dich den Ersten Offizier an jeder Station per Sprache
+fragen: Umschalt+Leertaste halten, sprechen und loslassen (oder einmal
+tippen zum Starten und noch einmal zum Senden), auf der uConsole, im U-Boot
+und im Browser. Ein Erkennungsdienst deiner Wahl (OpenAI-kompatibel,
+einzurichten unter Optionen, Sprachmodell, Reiter 5 Spracheingabe, ab Werk
+aus) macht aus der Frage Text; die Antwort erscheint in einer Sprechblase
+über der Station und die Stimme spricht sie. Der neue KI-Knopf in der
+oberen Leiste öffnet den Chat direkt. Die Sprechtaste fragt nur und gibt
+nie Befehle. Spielstände sind v53; v38 bis v52 laden weiter.
 
 ## 1.3.258
 

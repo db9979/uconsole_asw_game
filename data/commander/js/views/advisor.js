@@ -6,6 +6,7 @@ import { sendStationAction } from "../net/commands.js";
 import { stationActionAvailable } from "../state/availability.js";
 import { boundedArray, exactKeys } from "../state/schema.js";
 import { node } from "./dom.js";
+import { keyLabel } from "../input/station-keys.js";
 
 // ---- Executive officer (optional language model) -----------------------------
 // Mirrors src/core/game_advisor.py: situation report, question, typed order,
@@ -48,8 +49,9 @@ function validReport(value) {
     (value.error === null || typeof value.error === "string");
 }
 export function validAdvisor(value) {
-  return exactKeys(value, ["protocol", "available", "voice", "pending", "reason", "log", "report"]) && value.protocol === 2 &&
-    typeof value.available === "boolean" && typeof value.voice === "boolean" && typeof value.pending === "boolean" &&
+  return exactKeys(value, ["protocol", "available", "voice", "talk", "pending", "reason", "log", "report"]) && value.protocol === 2 &&
+    typeof value.available === "boolean" && typeof value.voice === "boolean" && typeof value.talk === "boolean" &&
+    typeof value.pending === "boolean" &&
     (value.reason === null || typeof value.reason === "string") &&
     boundedArray(value.log, 12) && value.log.every(validEntry) && validReport(value.report);
 }
@@ -143,8 +145,16 @@ function render() {
   $("advisor-send").textContent = t(textMode ? "advisor_send" : `advisor_send_${advisor.mode}`);
   const off = doc !== null && !doc.available;
   $("advisor-send").disabled = off || doc?.pending === true;
+  const talkButton = $("advisor-talk");
+  talkButton.hidden = !(doc?.talk === true);
+  talkButton.textContent = t(talk.recording ? "advisor_talk_send" : "advisor_talk");
+  talkButton.setAttribute("aria-pressed", String(talk.recording));
+  talkButton.title = t("advisor_talk_hint");
+  const cap = keyLabel("Shift+Space");
+  if (talkButton.dataset.keycap !== cap) talkButton.dataset.keycap = cap;
   let status = advisor.message || "";
-  if (off) status = t("advisor_unavailable");
+  if (talk.recording) status = t("advisor_listening", {seconds: Math.round((performance.now() - talk.started) / 1000)});
+  else if (off) status = t("advisor_unavailable");
   else if (doc?.reason) status = t(`advisor_reason_${doc.reason}`) || doc.reason;
   else if (doc?.pending) status = t("advisor_pending");
   $("advisor-status").textContent = status;
@@ -250,6 +260,83 @@ async function send() {
   poll();
 }
 
+// ---- The talk key (Shift+Space, as on the uConsole) ------------------------------
+// Held: the question is recorded in /noise-mic.js (the one place that opens the
+// microphone) and posted to /api/v2/advisor/speech; the host's speech input
+// turns it into text and the executive officer answers it like a typed
+// question. A short tap starts the recording and the next press sends it.
+const TAP_MS = 350;
+const talk = {recording: false, started: 0, pressedAt: null, timer: null};
+
+function talkReady() {
+  return advisor.doc?.available === true && advisor.doc?.talk === true && isEligible();
+}
+function talkPress() {
+  if (talk.recording) {
+    if (talk.pressedAt === null) talkStop();
+    return;
+  }
+  if (!talkReady()) return;
+  if (!$("advisor-dialog").open) { advisor.mode = "question"; open(); }
+  // The key press is the gesture a browser needs before it plays the answer.
+  if (voiceOn()) audioContext();
+  talk.recording = true;
+  talk.started = performance.now();
+  talk.pressedAt = talk.started;
+  advisor.message = null;
+  window.dispatchEvent(new CustomEvent("u-jagd-talk-start"));
+  clearInterval(talk.timer);
+  talk.timer = setInterval(render, 500);
+  render();
+}
+function talkRelease() {
+  if (talk.pressedAt === null) return;
+  const held = performance.now() - talk.pressedAt;
+  talk.pressedAt = null;
+  if (held >= TAP_MS) talkStop();
+}
+function talkStop() {
+  talk.recording = false;
+  talk.pressedAt = null;
+  clearInterval(talk.timer);
+  talk.timer = null;
+  window.dispatchEvent(new CustomEvent("u-jagd-talk-stop"));
+  render();
+}
+function talkCancel() {
+  if (!talk.recording) return;
+  talk.recording = false;
+  talk.pressedAt = null;
+  clearInterval(talk.timer);
+  talk.timer = null;
+  window.dispatchEvent(new CustomEvent("u-jagd-talk-cancel"));
+}
+async function talkSend(audio) {
+  if (!audio) { advisor.message = t("advisor_reason_stt_too_short"); render(); return; }
+  advisor.voiceUntil = performance.now() + VOICE_WAIT_MS;
+  try {
+    await request("/advisor/speech", {method: "POST", body: {audio}, expected: 202, csrf: S.session?.csrf});
+  } catch (error) {
+    advisor.message = t(error.status === 429 ? "advisor_reason_llm_busy" : "advisor_rejected");
+  }
+  poll();
+}
+function onTalkEvent(event) {
+  const detail = event.detail;
+  if (!detail || typeof detail.state !== "string") return;
+  if (detail.state === "done" && typeof detail.audio === "string") talkSend(detail.audio);
+  else if (detail.state === "failed" && typeof detail.failure === "string" && /^mic_[a-z_]+$/.test(detail.failure)) {
+    talk.recording = false;
+    talk.pressedAt = null;
+    clearInterval(talk.timer);
+    advisor.message = t("advisor_mic_failed", {reason: t(detail.failure)});
+    render();
+  }
+}
+function isTalkKey(event) {
+  return event.code === "Space" && event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey;
+}
+
 // The after-action report of the own side, for the debrief dialog.
 export async function advisorReport() {
   try {
@@ -278,15 +365,19 @@ async function checkAvailable() {
     if (validAdvisor(value)) { advisor.doc = value; settleHeard(value.log); renderAdvisorButton(); }
   } catch (_) { /* stays as it was */ }
 }
-export function renderAdvisorButton() {
+function isEligible() {
   const role = S.v2State?.role;
-  const eligible = Boolean(role) && S.v2State?.phase === "live" && S.session?.grants?.command === true &&
+  return Boolean(role) && S.v2State?.phase === "live" && S.session?.grants?.command === true &&
     !["lookout", "uboot_lookout"].includes(role);
+}
+export function renderAdvisorButton() {
+  const eligible = isEligible();
   const world = `${S.v2State?.session}:${S.v2State?.epoch}`;
   if (eligible && !$("advisor-dialog").open && !S.pending && S.hostPending == null &&
       (world !== checkedWorld || performance.now() - lastCheck > CHECK_MS)) checkAvailable();
   const show = eligible && advisor.doc?.available === true;
   $("advisor-open").hidden = !show;
+  if (!eligible) talkCancel();
   if (!eligible && $("advisor-dialog").open) $("advisor-dialog").close();
 }
 function open() {
@@ -313,6 +404,30 @@ export function init() {
     if (event.key === "Enter") { event.preventDefault(); send(); }
   });
   $("advisor-voice").addEventListener("change", () => { if (!voiceOn()) stopVoice(); });
+  // The talk button: held like the key; Enter or Space on it toggles.
+  const talkButton = $("advisor-talk");
+  talkButton.addEventListener("pointerdown", (event) => { event.preventDefault(); talkPress(); });
+  talkButton.addEventListener("pointerup", talkRelease);
+  talkButton.addEventListener("pointercancel", talkRelease);
+  talkButton.addEventListener("click", (event) => {
+    if (event.detail !== 0) return;     // a pointer press was handled above
+    if (talk.recording) talkStop(); else { talkPress(); talk.pressedAt = null; }
+  });
+  window.addEventListener("u-jagd-talk", onTalkEvent);
+  // Before the station keys (capture): Shift+Space never reaches a station.
+  window.addEventListener("keydown", (event) => {
+    if (!isTalkKey(event)) return;
+    if (!talkReady() && !talk.recording) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (!event.repeat) talkPress();
+  }, true);
+  window.addEventListener("keyup", (event) => {
+    if (talk.pressedAt === null || !(event.code === "Space" || event.key === "Shift")) return;
+    event.preventDefault();
+    talkRelease();
+  }, true);
+  window.addEventListener("blur", talkCancel);
   $("advisor-dialog").addEventListener("close", () => {
     clearTimeout(advisor.timer);
     advisor.timer = null;

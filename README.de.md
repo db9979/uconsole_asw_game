@@ -12,15 +12,16 @@ Netz besetzen.
 
 Aktuelle Version: **1.3.262**
 
-Version 1.3.262 lässt den Ersten Offizier auch im Browser sprechen. Hat
-der Host eine Stimme eingerichtet, wird eine Antwort, die an einer
-Browser-Station erfragt wurde, jetzt dort mit derselben Stimme wie auf der
-uConsole gesprochen: Der Host holt den Ton bei seinem Sprachdienst, und
-nur der Browser, der gefragt hat, spielt ihn ab, Dienst und Schlüssel
-verlassen den Host also nie. Das klappt auch, wenn der Host als Server nur
-für Browser ohne Lautsprecher läuft. **Antworten vorlesen** im Fenster des
-Offiziers schaltet es für einen Browser ab. Tasten und Spielstände bleiben
-gleich (v53; Spielstände v38 bis v52 laden weiter).
+Version 1.3.262 lässt den Ersten Offizier auch im Browser sprechen. Hat der Host
+eine Stimme eingerichtet, wird eine Antwort, die an einer Browser-Station
+erfragt wurde, jetzt dort mit derselben Stimme wie auf der uConsole
+gesprochen: Der Host holt den Ton bei seinem Sprachdienst, und nur der
+Browser, der gefragt hat, spielt ihn ab, Dienst und Schlüssel verlassen
+den Host also nie. Antworten auf Fragen per Sprechtaste werden genauso
+gesprochen. Das klappt auch, wenn der Host als Server nur für Browser ohne
+Lautsprecher läuft. **Antworten vorlesen** im Fenster des Offiziers
+schaltet es für einen Browser ab. Tasten und Spielstände bleiben gleich
+(v53; Spielstände v38 bis v52 laden weiter).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

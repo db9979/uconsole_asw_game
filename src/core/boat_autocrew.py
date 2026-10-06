@@ -22,7 +22,8 @@ one the uConsole shows while it plays the boat, is left alone.
   contact), so the sonar room runs its TMA on it; a contact picked on the
   uConsole stays picked unless it is a target that fell silent,
   and accept the automatic TMA solution on that target as its fix once it
-  is good enough (``ACCEPT_MIN_QUALITY``, again every ``ACCEPT_EVERY_S``),
+  is good enough (``ACCEPT_MIN_QUALITY``, a warship ``ACCEPT_WARSHIP_QUALITY``,
+  again every ``ACCEPT_EVERY_S``),
   as an operator does with K: the fix lets the weapons fire.
 - Mast/ESM: lower the mast when an alarm comes in.
 - Navigation and radio room: watch only.
@@ -59,8 +60,11 @@ PATROL_LEG_S = 900.0
 FIX_MAX_AGE_S = 120.0
 EVADE_AGAIN_S = 60.0
 # The sonar room accepts the automatic TMA solution on a target this good,
-# and renews the fix this often while it holds no ping or visual fix.
+# and renews the fix this often while it holds no ping or visual fix. A
+# warship manoeuvres while it hunts, so a weaker solution on it collapses
+# the range and wastes the shot: it needs a better one (tools/fairness.py).
 ACCEPT_MIN_QUALITY = config.TMA_RANGE_MIN_QUALITY
+ACCEPT_WARSHIP_QUALITY = 0.5
 ACCEPT_EVERY_S = 30.0
 ROLES = ("uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm",
          "uboot_nav", "uboot_radio")
@@ -105,17 +109,25 @@ def _fresh(game, contact, age_s=FIX_MAX_AGE_S) -> bool:
     return 0.0 <= game.sim_t - contact.last_seen <= age_s
 
 
-def targets(game, boat) -> list:
-    """Fresh contacts the crew would shoot at, nearest known fix first."""
+WARSHIPS = frozenset({"KAMPFSCHIFF"})
+
+
+def _target_categories(game) -> frozenset:
+    """The ship categories the crew shoots at in this mission."""
     kind = boat_missions.mode(game)
     if kind == "free_boat":
         # A free patrol attacks merchants only on HQ's order to sink one.
         from src.core import free_roam
         order = free_roam.active_order(game)
         kind = "convoy_attack" if order is not None and order["kind"] == "attack" else None
-    categories = (frozenset({"TANKER", "FRACHT", "PASSAGIER"}) if kind == "convoy_attack"
-                  else frozenset({"TANKER"}) if kind in ("escort", "ras")
-                  else frozenset({"KAMPFSCHIFF"}))
+    return (frozenset({"TANKER", "FRACHT", "PASSAGIER"}) if kind == "convoy_attack"
+            else frozenset({"TANKER"}) if kind in ("escort", "ras")
+            else WARSHIPS)
+
+
+def targets(game, boat) -> list:
+    """Fresh contacts the crew would shoot at, nearest known fix first."""
+    categories = _target_categories(game)
     phrases = _signatures(game.runtime_catalog, categories)
     rows = [contact for contact in boat.station.sonar.contacts.values()
             if _fresh(game, contact, 10.0)
@@ -288,7 +300,9 @@ def _accept_solution(game, boat, contact) -> bool:
     if contact.tma_seen is not None and 0.0 <= game.sim_t - contact.tma_seen < ACCEPT_EVERY_S:
         return False
     solution = boat.station.sonar.tma_proposals.get(contact.target_id)
-    if solution is None or solution.quality < ACCEPT_MIN_QUALITY:
+    least = (ACCEPT_WARSHIP_QUALITY if _target_categories(game) == WARSHIPS
+             else ACCEPT_MIN_QUALITY)
+    if solution is None or solution.quality < least:
         return False
     contact.accept_operator_tma(solution.pos, solution.course, solution.speed,
                                 solution.quality, game.sim_t)

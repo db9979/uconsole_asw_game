@@ -278,3 +278,18 @@ def test_the_ai_sonar_takes_a_good_tma_solution_on_a_target_as_its_fix(monkeypat
     assert boat_autocrew.sonar(game, boat) == "monitoring" and len(taken) == 1
     target.tma_seen, target.range_source = None, "ping"
     assert boat_autocrew.sonar(game, boat) == "monitoring" and len(taken) == 1
+
+
+def test_a_warship_needs_a_better_tma_solution_than_a_merchant(monkeypatch):
+    from types import SimpleNamespace
+    game, boat = _assisted_boat("uboot_weapons")
+    taken = []
+    contact = SimpleNamespace(target_id=-905, range_source=None, tma_seen=None,
+                              accept_operator_tma=lambda *args: taken.append(args))
+    middling = (boat_autocrew.ACCEPT_MIN_QUALITY + boat_autocrew.ACCEPT_WARSHIP_QUALITY) / 2
+    boat.station.sonar.tma_proposals[contact.target_id] = SimpleNamespace(
+        pos=(0.0, 0.0), course=0.0, speed=5.0, quality=middling)
+    monkeypatch.setattr(boat_autocrew, "_target_categories", lambda game: boat_autocrew.WARSHIPS)
+    assert not boat_autocrew._accept_solution(game, boat, contact) and not taken
+    monkeypatch.setattr(boat_autocrew, "_target_categories", lambda game: frozenset({"FRACHT"}))
+    assert boat_autocrew._accept_solution(game, boat, contact) and len(taken) == 1

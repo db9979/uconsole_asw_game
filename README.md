@@ -10,20 +10,20 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.229**
+Current release: **1.3.231**
 
-Release 1.3.229 makes the event log (F11) readable in every colour scheme
-and lets the mouse close it. In the light "Tactical Day" scheme the log
-used to keep the night colours, so many lines were pale grey or pale blue
-on white, and the station showed through the panel. The log now uses the
-chosen scheme's colours, covers the station fully and has a close cross at
-the top right. A click on the log no longer reaches the station behind it.
-In the browser the dimmed area around an open sheet (Guide, Contacts,
-Lookout) now takes the click and closes the sheet instead of pressing a
-control behind it. The same scheme fix applies to the debrief timeline,
-the campaign map, the submarine's threat and radio pages, the lookout
-page, the weather station and the simulation log. Keys are unchanged.
-Saves are v53; v38 to v52 saves still load.
+Release 1.3.231 gives the optional language model a voice. Under Options,
+page 2, Language model, a second page "Voice" takes an OpenAI-compatible
+speech service (address, speech model, voice and API key; preset OpenAI
+gpt-4o-mini-tts), and a third page "Sound" sets temperature, top_p and seed
+for services that take them (Qwen-TTS) and cleans the text before speaking. With it the executive officer speaks his answers and the
+coach's tips, and the spoken crew reports use the same natural voice instead
+of espeak-ng, each with its own switch. The voice plays on its own audio
+channel beside the sonar tone, and its key is kept in ~/.u-jagd/tts_key (or
+the language model's key on the same server), never in settings or saves.
+Without the service the game plays exactly as before; browsers keep their own
+voice for crew reports. The settings pages are now mouse-operable. Saves are
+v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

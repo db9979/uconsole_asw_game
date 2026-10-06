@@ -82,6 +82,7 @@ class ResetMixin:
         self.callouts.clear()
         self.callouts.spoken = self.callouts.seq
         self.speaker.stop()
+        self.voice_stop()
         self._ping_pulses.clear()
         self._ping_intercepts.clear()
         self._sonar_audio_sequence = -1

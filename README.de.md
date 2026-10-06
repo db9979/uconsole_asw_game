@@ -10,21 +10,22 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.229**
+Aktuelle Version: **1.3.231**
 
-Version 1.3.229 macht das Ereignislog (F11) in jedem Farbschema lesbar und
-lässt es mit der Maus schließen. Im hellen Schema „Taktik Tag“ behielt das
-Log die Farben der Nacht, viele Zeilen waren blassgrau oder hellblau auf
-Weiß, und die Station schien durch. Jetzt nimmt das Log die Farben des
-gewählten Schemas, deckt die Station ganz ab und hat oben rechts ein
-Schließen-Kreuz. Ein Klick auf das Log erreicht die Station dahinter nicht
-mehr. Im Browser nimmt die abgedunkelte Fläche um ein offenes Blatt
-(Anleitung, Kontakte, Ausguck) den Klick und schließt das Blatt, statt ein
-Bedienelement dahinter auszulösen. Dieselbe Korrektur gilt für die
-Zeitleiste der Nachbesprechung, die Feldzugskarte, die Bedrohungs- und
-Funkseite des U-Boots, die Ausguckseite, die Wetterstation und das
-Simulationsprotokoll. Tasten bleiben gleich. Spielstände sind v53; v38 bis
-v52 laden weiter.
+Version 1.3.231 gibt dem optionalen Sprachmodell eine Stimme. Unter
+Optionen, Seite 2, Sprachmodell nimmt eine zweite Seite „Stimme“ einen
+OpenAI-kompatiblen Sprachdienst auf (Adresse, Sprechmodell, Stimme und
+API-Schlüssel; voreingestellt OpenAI gpt-4o-mini-tts), und eine dritte Seite
+„Klang“ stellt Temperature, top_p und Seed für Dienste ein, die sie annehmen
+(Qwen-TTS), und bereinigt den Text vor dem Sprechen. Damit spricht der Erste
+Offizier seine Antworten und die Tipps des Coachs, und die gesprochenen
+Crew-Meldungen kommen mit derselben natürlichen Stimme statt über espeak-ng,
+beides einzeln schaltbar. Die Stimme spielt auf einem eigenen Tonkanal neben
+dem Sonarton, und ihr Schlüssel liegt in ~/.u-jagd/tts_key (oder es gilt der
+des Sprachmodells beim selben Server), nie in Einstellungen oder Spielständen.
+Ohne den Dienst läuft das Spiel genau wie bisher; Browser behalten ihre eigene
+Stimme für Crew-Meldungen. Die Einstellungsseiten lassen sich jetzt mit der
+Maus bedienen. Spielstände sind v53; v38 bis v52 werden weiter geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

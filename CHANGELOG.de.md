@@ -16,6 +16,19 @@ Schleichfahrt und Gefechtsstationen, nie Waffen, und eine Browser-Station
 gibt nur die Befehle ihrer eigenen Station. Spielstände sind v53; v38 bis
 v52 laden weiter.
 
+## 1.3.266
+
+Version 1.3.266 schließt die ersten Lücken in der Maussteuerung. Ein Klick
+ins Fenster des Ersten Offiziers oder des Sprachmodells erreicht die
+Station dahinter nicht mehr. Im Missions- und Einheiten-Editor öffnet ein
+zweiter Klick auf eine Zeile das Feld. Am Sonar lassen sich der Cursor auf
+LOFAR und DEMON und die TMA-Hypothese (Kurs, Fahrt, Entfernung) jetzt per
+Klick auf ihre Chips verstellen, die Wegpunkt-Chips des Helis steuern ihn,
+die Statuszeile des U-Boots öffnet das Log wie `F11`, und das U-Boot-Sonar
+zeigt an seiner Array-Anzeige keine Taste mehr. Ein neuer Test sorgt dafür,
+dass jeder Tastenchip an jeder Station klickbar ist. Spielstände sind v53;
+v38- bis v52-Stände werden weiter geladen.
+
 ## 1.3.264
 
 Version 1.3.264 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe

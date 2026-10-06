@@ -12,7 +12,7 @@ Eigene Missionen starten aus dem Missionseditor (`F5` in dessen Browser). Die La
 
 Im Einheiteneditor gespeicherte Profile lassen sich wie eingebaute platzieren und wirken in dieser Mission (Fahrtbereich, Tiefe, Torpedozahl, Verhalten, Akustik); ein eigenes U-Boot übernimmt Sensoren, Rohre, Täuschkörper und seine Batterie-, Diesel- oder AIP-Anlage vom eingebauten U-Boot seines Antriebs. Torpedos der Fregatte und des Helikopters, fehlende Benutzerprofile und andere Weltgrößen werden beim Start abgewiesen.
 
-Im Editor-Reiter Welt öffnet `Eingabe` auf Art oder Referenz eine Auswahlliste (`Hoch`/`Runter`, `Bild auf`/`Bild ab`, `Eingabe` übernimmt, `Esc` bricht ab); Referenz listet die 128 Sektoren mit ihren Ländern, und die Wahl eines Sektors macht die Welt zu einer 500-sm-Referenzwelt. Der Reiter Vorschau zeichnet dann die Küste dieses Sektors.
+Ein Feld öffnet sich mit `Eingabe` oder einem zweiten Klick auf seine Zeile (der erste Klick wählt sie). Im Editor-Reiter Welt öffnet `Eingabe` auf Art oder Referenz eine Auswahlliste (`Hoch`/`Runter`, `Bild auf`/`Bild ab`, `Eingabe` übernimmt, `Esc` bricht ab); Referenz listet die 128 Sektoren mit ihren Ländern, und die Wahl eines Sektors macht die Welt zu einer 500-sm-Referenzwelt. Der Reiter Vorschau zeichnet dann die Küste dieses Sektors.
 
 ## Eigene Missionen und Weitergabe {#ed-share}
 

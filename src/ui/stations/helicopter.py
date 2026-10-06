@@ -896,7 +896,7 @@ def draw_helicopter_view(game, tr=None) -> None:
                   config.COLOR_WARN)
         # The keys named in the rules are switches (full mouse control).
         tokens = ((), (("Q/E", "Q/E"),),
-                  (("H:", "H"), ("Arrows:", None), ("Pfeile:", None)),
+                  (("H:", "H"), ("←/→", "←/→"), ("↑/↓", "↑/↓")),
                   (("Y", "Y"), ("U/V", "U/V"), ("Shift+A", "Shift+A")),
                   (("B:", "B"), ("Ctrl+Enter:", None)),
                   (("Shift+↑/↓", None), ("G", "G")),

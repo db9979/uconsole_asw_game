@@ -4,6 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.229
+
+Release 1.3.229 makes the event log (F11) readable in every colour scheme
+and lets the mouse close it. In the light "Tactical Day" scheme the log
+used to keep the night colours, so many lines were pale grey or pale blue
+on white, and the station showed through the panel. The log now uses the
+chosen scheme's colours, covers the station fully and has a close cross at
+the top right. A click on the log no longer reaches the station behind it.
+In the browser the dimmed area around an open sheet (Guide, Contacts,
+Lookout) now takes the click and closes the sheet instead of pressing a
+control behind it. The same scheme fix applies to the debrief timeline,
+the campaign map, the submarine's threat and radio pages, the lookout
+page, the weather station and the simulation log. Keys are unchanged.
+Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.223
 
 Release 1.3.223 makes play on the uConsole smoother. Sonar sound tables

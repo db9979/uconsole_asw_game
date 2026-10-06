@@ -24,8 +24,13 @@ MAP_RECT = (60, 172, 380, 380)
 PANEL_RECT = (478, 166, 754, 414)
 PANEL_X, PANEL_W = 490, 730
 ROW_TOP, ROW_H = 300, 28
-ROLE_COLORS = {"patrol": config.COLOR_OK, "strike": config.COLOR_DANGER,
-               "defence": config.COLOR_WARN, "decisive": config.COLOR_CONTACT}
+# ``config.COLOR_*`` names, looked up when drawn (the colour scheme can change).
+ROLE_COLORS = {"patrol": "COLOR_OK", "strike": "COLOR_DANGER",
+               "defence": "COLOR_WARN", "decisive": "COLOR_CONTACT"}
+
+
+def role_color(role: str) -> tuple:
+    return getattr(config, ROLE_COLORS[role])
 
 
 def _lage_color(lage: int):
@@ -349,7 +354,7 @@ class CampaignMixin:
         selected = self._selected_hotspot(state)
         for index, spot in enumerate(state.theatre.ordered()):
             px, py = x0 + round(spot["x"] * scale), y0 + round(spot["y"] * scale)
-            color = ROLE_COLORS[state.theatre.role(spot)]
+            color = role_color(state.theatre.role(spot))
             chosen = selected is not None and spot["id"] == selected["id"]
             pygame.draw.circle(s, color, (px, py), 7 if chosen else 5)
             pygame.draw.circle(s, color, (px, py), 13 if chosen else 9, 1)
@@ -393,7 +398,7 @@ class CampaignMixin:
             if chosen:
                 pygame.draw.rect(s, config.COLOR_SELECT_BG, (x - 6, y, w + 12, ROW_H - 2))
             role = front.role(spot)
-            pygame.draw.circle(s, ROLE_COLORS[role], (x + 8, y + ROW_H // 2 - 1), 5)
+            pygame.draw.circle(s, role_color(role), (x + 8, y + ROW_H // 2 - 1), 5)
             layout.blit_line(s, message(
                 "campaign.hotspot_row", name=raw_text(front.name(spot)),
                 scenario=message("scenario." + config.SCENARIO_NAMES[spot["scenario"]]

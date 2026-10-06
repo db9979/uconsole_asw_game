@@ -10,18 +10,20 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.223**
+Current release: **1.3.229**
 
-Release 1.3.223 makes play on the uConsole smoother. Sonar sound tables
-are prepared ahead in the background, so starting a mission or entering a
-new sea area no longer stutters, and the sonar, waterfall, ELOKA list and
-event feed draw with less effort. Saving to a slot is written in the
-background and no longer freezes the picture; the save menu closes only
-once the file is safely on disk. New automatic economy: if the picture
-stays below 14 frames a second for 5 seconds, the game switches to the
-Economy graphics level by itself and shows an amber ECO lamp in the top
-bar (Options, page 2, Graphics switches it off). The simulation itself is
-unchanged. Keys are unchanged. Saves are v53; v38 to v52 saves still load.
+Release 1.3.229 makes the event log (F11) readable in every colour scheme
+and lets the mouse close it. In the light "Tactical Day" scheme the log
+used to keep the night colours, so many lines were pale grey or pale blue
+on white, and the station showed through the panel. The log now uses the
+chosen scheme's colours, covers the station fully and has a close cross at
+the top right. A click on the log no longer reaches the station behind it.
+In the browser the dimmed area around an open sheet (Guide, Contacts,
+Lookout) now takes the click and closes the sheet instead of pressing a
+control behind it. The same scheme fix applies to the debrief timeline,
+the campaign map, the submarine's threat and radio pages, the lookout
+page, the weather station and the simulation log. Keys are unchanged.
+Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

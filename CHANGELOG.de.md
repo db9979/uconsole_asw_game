@@ -4,6 +4,22 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.229
+
+Version 1.3.229 macht das Ereignislog (F11) in jedem Farbschema lesbar und
+lässt es mit der Maus schließen. Im hellen Schema „Taktik Tag“ behielt das
+Log die Farben der Nacht, viele Zeilen waren blassgrau oder hellblau auf
+Weiß, und die Station schien durch. Jetzt nimmt das Log die Farben des
+gewählten Schemas, deckt die Station ganz ab und hat oben rechts ein
+Schließen-Kreuz. Ein Klick auf das Log erreicht die Station dahinter nicht
+mehr. Im Browser nimmt die abgedunkelte Fläche um ein offenes Blatt
+(Anleitung, Kontakte, Ausguck) den Klick und schließt das Blatt, statt ein
+Bedienelement dahinter auszulösen. Dieselbe Korrektur gilt für die
+Zeitleiste der Nachbesprechung, die Feldzugskarte, die Bedrohungs- und
+Funkseite des U-Boots, die Ausguckseite, die Wetterstation und das
+Simulationsprotokoll. Tasten bleiben gleich. Spielstände sind v53; v38 bis
+v52 laden weiter.
+
 ## 1.3.223
 
 Version 1.3.223 macht das Spiel auf dem uConsole ruhiger. Sonar-

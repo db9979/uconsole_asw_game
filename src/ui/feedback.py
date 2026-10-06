@@ -17,8 +17,9 @@ class FeedEntry:
         self.text = text
 
     def color(self) -> tuple:
-        return config.FEED_CATEGORIES.get(self.category,
-                                          (config.COLOR_TEXT, "?"))[0]
+        name = config.FEED_CATEGORIES.get(self.category, ("COLOR_TEXT", "?"))[0]
+        # Resolved now, not at import: the colour scheme may have changed.
+        return getattr(config, name)
 
     def tag(self) -> str:
         return config.FEED_CATEGORIES.get(self.category,

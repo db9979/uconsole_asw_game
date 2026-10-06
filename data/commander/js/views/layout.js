@@ -106,6 +106,13 @@ export function init() {
     button.addEventListener("click", () => toggleDock(button.dataset.dockToggle));
   for (const button of document.querySelectorAll("[data-overlay-close]"))
     button.addEventListener("click", () => activateTab("operations"));
+  // A click on the dimmed CIC around an open sheet (the body's backdrop)
+  // closes the sheet; it never reaches the station behind.
+  document.body.addEventListener("click", (event) => {
+    if (event.target === document.body && document.body.classList.contains("workstation-mode")
+        && document.querySelector(".tab-panel:not(#panel-operations):not([hidden])"))
+      activateTab("operations");
+  });
   $("alert-dismiss").addEventListener("click", hideAlert);
   $("status-more").addEventListener("click", () => {
     const open = $("statusbar").dataset.more !== "open";

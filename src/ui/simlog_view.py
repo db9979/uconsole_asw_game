@@ -23,12 +23,13 @@ DIM = "dim"
 ACCENT = "accent"
 DANGER = "danger"
 
+# ``config.COLOR_*`` names, looked up when drawn (the colour scheme can change).
 _COLORS = {
-    SECTION: config.COLOR_WARN,
-    ROW: config.COLOR_TEXT,
-    DIM: config.COLOR_TEXT_DIM,
-    ACCENT: config.COLOR_OK,
-    DANGER: config.COLOR_DANGER,
+    SECTION: "COLOR_WARN",
+    ROW: "COLOR_TEXT",
+    DIM: "COLOR_TEXT_DIM",
+    ACCENT: "COLOR_OK",
+    DANGER: "COLOR_DANGER",
 }
 
 
@@ -318,7 +319,7 @@ def draw_simlog_view(game) -> None:
                 if not text:
                     continue
                 y = body.y + index * line_h
-                color = _COLORS.get(kind, config.COLOR_TEXT)
+                color = getattr(config, _COLORS.get(kind, "COLOR_TEXT"))
                 image = layout.font(15, bold=kind == SECTION).render(
                     text, True, color)
                 s.blit(image, (body.x, y))

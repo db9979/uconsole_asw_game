@@ -15,12 +15,19 @@ import { node } from "./dom.js";
 // confirms, one after the other, through the normal command pipeline and
 // only from a station allowed to give them.  Without the model the button
 // stays hidden and nothing here runs.
+// With the host's voice set up an answer is spoken here too: its entry
+// carries voice: true and the audio (16-bit mono PCM) is fetched from
+// /api/v2/advisor/voice; the speech service and its key stay on the host.
 const MODES = ["situation", "question", "order", "classify", "briefing"];
 const TEXT_MODES = new Set(["question", "order"]);
 const STATUSES = new Set(["pending", "done", "failed"]);
 const TEXT_MAX = 300;
 const POLL_MS = 1500;
-const advisor = {mode: "situation", doc: null, timer: null, applied: new Set(), discarded: new Set(), message: null};
+const advisor = {mode: "situation", doc: null, timer: null, applied: new Set(), discarded: new Set(), message: null,
+  spoken: new Set(), heard: null, voiceUntil: 0};
+// How long the log is still polled for an answer's voice after the dialog closed.
+const VOICE_WAIT_MS = 120000;
+const VOICE_MAX_BYTES = 16 * 1024 * 1024;
 
 function validCommand(row) {
   return exactKeys(row, ["type", "value", "action", "params", "stations"]) && typeof row.type === "string" &&
@@ -29,7 +36,8 @@ function validCommand(row) {
     boundedArray(row.stations, 32) && row.stations.every((name) => typeof name === "string");
 }
 function validEntry(row) {
-  return exactKeys(row, ["seq", "kind", "question", "answer", "status", "error", "proposal"]) &&
+  return exactKeys(row, ["seq", "kind", "question", "answer", "status", "error", "proposal", "voice"]) &&
+    typeof row.voice === "boolean" &&
     Number.isInteger(row.seq) && typeof row.kind === "string" && typeof row.question === "string" &&
     typeof row.answer === "string" && STATUSES.has(row.status) && (row.error === null || typeof row.error === "string") &&
     (row.proposal === null || boundedArray(row.proposal, 4) && row.proposal.every(validCommand));
@@ -40,8 +48,8 @@ function validReport(value) {
     (value.error === null || typeof value.error === "string");
 }
 export function validAdvisor(value) {
-  return exactKeys(value, ["protocol", "available", "pending", "reason", "log", "report"]) && value.protocol === 2 &&
-    typeof value.available === "boolean" && typeof value.pending === "boolean" &&
+  return exactKeys(value, ["protocol", "available", "voice", "pending", "reason", "log", "report"]) && value.protocol === 2 &&
+    typeof value.available === "boolean" && typeof value.voice === "boolean" && typeof value.pending === "boolean" &&
     (value.reason === null || typeof value.reason === "string") &&
     boundedArray(value.log, 12) && value.log.every(validEntry) && validReport(value.report);
 }
@@ -140,6 +148,8 @@ function render() {
   else if (doc?.reason) status = t(`advisor_reason_${doc.reason}`) || doc.reason;
   else if (doc?.pending) status = t("advisor_pending");
   $("advisor-status").textContent = status;
+  // The switch shows only when the host speaks the answers at all.
+  $("advisor-voice").closest("label").hidden = doc?.voice !== true;
   const log = $("advisor-log");
   const key = JSON.stringify([doc?.log ?? [], [...advisor.applied], [...advisor.discarded], S.language, S.session?.station]);
   if (log.dataset.key !== key) {
@@ -149,16 +159,75 @@ function render() {
   }
 }
 
+// ---- The officer's voice ------------------------------------------------------
+function voiceOn() { return $("advisor-voice")?.checked !== false; }
+async function audioContext() {
+  const Audio = window.AudioContext || window.webkitAudioContext;
+  if (!Audio) return null;
+  if (!S.audio) S.audio = new Audio();
+  if (S.audio.state !== "running") await S.audio.resume().catch(() => {});
+  return S.audio.state === "running" ? S.audio : null;
+}
+// Answers already in the log when it was first read are not said again.
+function settleHeard(log) {
+  if (advisor.heard === null) advisor.heard = log.reduce((top, entry) => Math.max(top, entry.seq), 0);
+}
+function awaitingVoice(log) {
+  return voiceOn() && advisor.doc?.voice === true && log.some((entry) => entry.seq > advisor.heard && entry.status === "done" &&
+    !advisor.spoken.has(entry.seq) && !entry.voice);
+}
+// One answer after the other, each as one sound (the voice never jumps).
+let voiceChain = Promise.resolve();
+let voiceSource = null;
+function stopVoice() {
+  try { voiceSource?.stop(); } catch (_) { /* already ended */ }
+  voiceSource = null;
+}
+async function playVoice(seq) {
+  const response = await fetch(`/api/v2/advisor/voice?seq=${seq}`, {
+    cache: "no-store", credentials: "same-origin", redirect: "error", mode: "same-origin"});
+  const rate = Number(response.headers.get("X-U-Jagd-Sample-Rate"));
+  if (response.status !== 200 || response.headers.get("X-U-Jagd-PCM") !== "s16le" ||
+      !(rate >= 8000 && rate <= 48000)) return;
+  const raw = await response.arrayBuffer();
+  if (raw.byteLength < 2 || raw.byteLength > VOICE_MAX_BYTES || !voiceOn()) return;
+  const context = await audioContext();
+  if (!context) return;
+  const samples = new Int16Array(raw, 0, raw.byteLength >> 1);
+  const buffer = context.createBuffer(1, samples.length, rate);
+  const channel = buffer.getChannelData(0);
+  for (let index = 0; index < samples.length; index++) channel[index] = samples[index] / 32768;
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  source.connect(context.destination);
+  voiceSource = source;
+  await new Promise((resolve) => { source.onended = resolve; source.start(); });
+  source.disconnect();
+  if (voiceSource === source) voiceSource = null;
+}
+function speakNew(log) {
+  settleHeard(log);
+  for (const entry of log) {
+    if (entry.seq <= advisor.heard || !entry.voice || advisor.spoken.has(entry.seq)) continue;
+    advisor.spoken.add(entry.seq);
+    if (voiceOn()) voiceChain = voiceChain.then(() => playVoice(entry.seq)).catch(() => {});
+  }
+}
+
 async function poll() {
   clearTimeout(advisor.timer);
   advisor.timer = null;
-  if (!$("advisor-dialog").open) return;
+  const open = $("advisor-dialog").open;
+  if (!open && performance.now() > advisor.voiceUntil) return;
   try {
     const value = await request("/advisor");
-    if (validAdvisor(value)) advisor.doc = value;
+    if (validAdvisor(value)) { advisor.doc = value; speakNew(value.log); }
   } catch (_) { /* keep the last view; the next poll retries */ }
   render();
-  if ($("advisor-dialog").open) advisor.timer = setTimeout(poll, POLL_MS);
+  // After the dialog closed the log is still read while a spoken answer is due.
+  const due = advisor.doc !== null && awaitingVoice(advisor.doc.log);
+  if ($("advisor-dialog").open || due && performance.now() <= advisor.voiceUntil)
+    advisor.timer = setTimeout(poll, POLL_MS);
 }
 
 async function send() {
@@ -169,6 +238,9 @@ async function send() {
     return;
   }
   advisor.message = null;
+  // The click is the gesture a browser needs before it plays the answer.
+  if (voiceOn()) audioContext();
+  advisor.voiceUntil = performance.now() + VOICE_WAIT_MS;
   try {
     await request("/advisor", {method: "POST", body: {kind: advisor.mode, text}, expected: 202, csrf: S.session?.csrf});
     if (TEXT_MODES.has(advisor.mode)) $("advisor-text").value = "";
@@ -203,7 +275,7 @@ async function checkAvailable() {
   checkedWorld = `${S.v2State?.session}:${S.v2State?.epoch}`;
   try {
     const value = await request("/advisor");
-    if (validAdvisor(value)) { advisor.doc = value; renderAdvisorButton(); }
+    if (validAdvisor(value)) { advisor.doc = value; settleHeard(value.log); renderAdvisorButton(); }
   } catch (_) { /* stays as it was */ }
 }
 export function renderAdvisorButton() {
@@ -240,9 +312,12 @@ export function init() {
   $("advisor-text").addEventListener("keydown", (event) => {
     if (event.key === "Enter") { event.preventDefault(); send(); }
   });
+  $("advisor-voice").addEventListener("change", () => { if (!voiceOn()) stopVoice(); });
   $("advisor-dialog").addEventListener("close", () => {
     clearTimeout(advisor.timer);
     advisor.timer = null;
     $("advisor-dialog").hidden = true;
+    // A spoken answer still on its way keeps the log read a little longer.
+    if (advisor.doc !== null && awaitingVoice(advisor.doc.log)) advisor.timer = setTimeout(poll, POLL_MS);
   });
 }

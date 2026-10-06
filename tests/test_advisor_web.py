@@ -16,6 +16,7 @@ from src.commander import server
 from src.core.game import Game
 from test_commander_assets import Document, PREFIX, catalogs
 from llm_fake import FakeLlmServer
+from test_llm_voice import FakeSpeechServer
 
 PROBE = r'''
 (() => {
@@ -29,6 +30,13 @@ PROBE = r'''
     throw new Error(message);
   }
   const errors = [];
+  // The officer's spoken answer: count the sounds started and their length.
+  window.__voice = [];
+  const start = AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start = function (...args) {
+    window.__voice.push(this.buffer ? this.buffer.duration : 0);
+    return start.apply(this, args);
+  };
   window.addEventListener('error', (event) => errors.push(String(event.message)));
   window.addEventListener('unhandledrejection', (event) => errors.push(String(event.reason)));
   async function run() {
@@ -45,6 +53,10 @@ PROBE = r'''
     await until(() => dialog.open, 'dialog');
     $('advisor-send').click();
     await until(() => $('advisor-log').textContent.includes('All quiet'), 'situation answer', 3000);
+    // The host's voice says the answer here too (fetched from the host).
+    if ($('advisor-voice').closest('label').hidden) throw new Error('voice switch hidden');
+    await until(() => window.__voice.length === 1, 'spoken answer', 3000);
+    if (!(window.__voice[0] > 0.1)) throw new Error(`voice too short: ${window.__voice[0]}`);
     dialog.querySelector('[data-advisor-mode="order"]').click();
     await until(() => !$('advisor-text').hidden, 'order field');
     $('advisor-text').value = 'come to 120';
@@ -97,11 +109,14 @@ def test_browser_asks_the_executive_officer_and_gives_a_confirmed_order(tmp_path
     if not chromium:
         pytest.skip("Optional browser contract: no Chromium")
     en, de = catalogs()
-    with FakeLlmServer(_reply) as llm:
+    with FakeLlmServer(_reply) as llm, FakeSpeechServer() as speech:
         game = Game(seed=4243, start_menu=False, audio_enabled=False, language="en")
         game.preferences = dataclasses.replace(game.preferences, llm_enabled=True,
-                                               llm_url=llm.url, llm_model="m")
+                                               llm_url=llm.url, llm_model="m",
+                                               tts_enabled=True, tts_url=speech.url,
+                                               tts_model="tts")
         game.configure_llm()
+        game.configure_voice()
         console = game.commander
         console.solo = True
         console.port = 0
@@ -125,6 +140,7 @@ def test_browser_asks_the_executive_officer_and_gives_a_confirmed_order(tmp_path
             chromium, "--headless", "--no-sandbox", "--disable-gpu",
             "--disable-background-networking", "--no-first-run",
             "--no-default-browser-check", "--disable-dev-shm-usage",
+            "--autoplay-policy=no-user-gesture-required",
             f"--user-data-dir={tmp_path / 'browser'}", "--virtual-time-budget=150000",
             "--window-size=1600,1000", "--dump-dom",
             f"http://{console.address[0]}:{console.address[1]}/",
@@ -148,3 +164,5 @@ def test_browser_asks_the_executive_officer_and_gives_a_confirmed_order(tmp_path
     assert root.get("data-advisor-test") == "passed", root.get("data-failure", stderr[-2000:])
     assert round(game.ship.target_course) == 120
     assert "frigate" in game.llm_advisor_sides
+    # The speech service was asked by the host only; its key never left it.
+    assert any(row["input"].startswith("All quiet") for row in speech.requests)

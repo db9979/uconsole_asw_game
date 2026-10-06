@@ -19,6 +19,12 @@ queue never drops one.  Entries the crew already calls out are not read
 twice.
 Without the service (off, no key, offline, no audio) the crew keeps its
 espeak-ng voice and the game behaves exactly as before.
+
+A browser station's executive officer speaks too: the host asks the same
+service for the answer (the key never leaves the host, also without a
+speaker of its own, as "Server (nur Browser)") and keeps the finished
+audio for that browser alone (``web_voice_clips``), which fetches it at
+``GET /api/v2/advisor/voice`` (``src/commander/advisor_web.py``).
 """
 
 from __future__ import annotations
@@ -26,7 +32,9 @@ from __future__ import annotations
 import datetime
 import time
 import urllib.parse
-from collections import deque
+from collections import OrderedDict, deque
+
+import numpy as np
 
 import numpy as np
 
@@ -49,6 +57,9 @@ LOG_IN_FLIGHT = 2
 # Log entries per station counted over this many wall seconds (settings page).
 LOG_COUNT_S = 300.0
 LOG_COUNT_MAX = 256
+# Spoken answers kept for the browsers (newest first out), and their bytes.
+WEB_VOICE_CLIPS = 8
+WEB_VOICE_BYTES = 24 * 1024 * 1024
 
 
 def log_group(category) -> str | None:
@@ -81,6 +92,11 @@ class VoiceMixin:
         self._log_voice_mark = 0
         self._log_voice_seen: deque = deque(maxlen=LOG_COUNT_MAX)
         self._log_voice_backlog: deque = deque(maxlen=LOG_BACKLOG_MAX)
+        # Browser askers' answers: requests on their way, finished clips
+        # ((asker, seq) -> int16 mono bytes at ``web_voice_rate``).
+        self._web_voice_pending: list = []
+        self.web_voice_clips: OrderedDict = OrderedDict()
+        self.web_voice_rate = self._voice_rate()
 
     def _voice_rate(self) -> int:
         return int(getattr(self.audio, "sample_rate", 22050) or 22050)
@@ -156,12 +172,59 @@ class VoiceMixin:
         return voice_model.spell_digits(text, digits, self.tr("voice.digit_point"))
 
     def voice_advisor_entry(self, entry) -> None:
-        """Speak a finished answer the uConsole's own executive officer gave."""
+        """Speak a finished answer the executive officer gave: on the
+        uConsole's own speaker, or as audio for the browser that asked."""
         if entry.get("status") != "done" or not entry.get("answer"):
             return
-        if not any(row is entry for row in self.advisor.logs.get("local", ())):
+        if any(row is entry for row in self.advisor.logs.get("local", ())):
+            self.voice_say(entry["answer"], "xo")
             return
-        self.voice_say(entry["answer"], "xo")
+        asker = next((name for name, rows in self.advisor.logs.items()
+                      if name.startswith("web:") and any(row is entry for row in rows)), None)
+        if asker is not None:
+            self.voice_web_answer(asker, entry["seq"], entry["answer"])
+
+    def voice_web_answer(self, asker: str, seq: int, answer) -> bool:
+        """Ask the service to say a browser asker's answer (host side only:
+        the browser fetches the audio, never the service or its key)."""
+        if not self.voice.active or not self.preferences.tts_xo:
+            return False
+        text = voice_model.speakable(self._voice_text(answer), clean=self.voice.config.clean)
+        request = self.voice.say(text, self.llm_language(), "xo") if text else None
+        if request is None:
+            return False
+        self._web_voice_pending.append((asker, int(seq), request))
+        return True
+
+    def _pump_web_voice(self) -> None:
+        """Keep the browsers' finished answers (wall time, every frame)."""
+        if not hasattr(self, "voice") or not self._web_voice_pending:
+            return
+        waiting = []
+        for asker, seq, request in self._web_voice_pending:
+            if not request.finished:
+                waiting.append((asker, seq, request))
+                continue
+            if request.ok and request.pcm is not None and len(request.pcm):
+                self._keep_web_voice((asker, seq), request.pcm)
+        self._web_voice_pending = waiting
+
+    def _keep_web_voice(self, key, pcm) -> None:
+        clips = self.web_voice_clips
+        rate = self.voice.rate
+        if rate != self.web_voice_rate:
+            # Clips of another rate cannot share the browsers' header.
+            clips.clear()
+            self.web_voice_rate = rate
+        clips[key] = np.asarray(pcm, dtype="<i2").tobytes()
+        clips.move_to_end(key)
+        while clips and (len(clips) > WEB_VOICE_CLIPS
+                         or sum(len(clip) for clip in clips.values()) > WEB_VOICE_BYTES):
+            clips.popitem(last=False)
+
+    def web_voice_stop(self) -> None:
+        self._web_voice_pending = []
+        self.web_voice_clips.clear()
 
     def voice_stop(self) -> None:
         voice = getattr(self, "voice", None)
@@ -170,6 +233,7 @@ class VoiceMixin:
         voice.clear()
         self._voice_queue.clear()
         self._log_voice_backlog.clear()
+        self.web_voice_stop()
         self._voice_playing = None
         self.audio.stop_voice()
 

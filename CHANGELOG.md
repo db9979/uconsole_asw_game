@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.277
+## 1.3.280
 
-Release 1.3.277 lets you give orders by voice. Say an order with the talk
+Release 1.3.280 lets you give orders by voice. Say an order with the talk
 key, such as "all ahead full", "come right to 090" or "make depth 80
 metres", and it is carried out at once on the uConsole, the submarine and
 in the browser; the executive officer reports only what was really set.
@@ -15,6 +15,19 @@ kept its speed. Only course, speed, depth, quiet or silent running and
 action stations can be ordered by voice, never weapons, and a browser
 station gives only its own station's orders. Saves are v53; v38 to v52
 saves still load.
+
+## 1.3.278
+
+Release 1.3.278 makes the overlays work by mouse. The questions before
+saving over a slot, loading or quitting answer by clicking their key chips.
+In the manual (F1) the buttons **[ Previous chapter** and **] Next chapter**
+turn the chapters, and every key in its hint line is a chip. The
+simulation log (F4) and the debrief have a footer of key chips; the wheel
+steps the debrief's events. Plot mode has a toolbar at the foot of the
+chart with a chip for every tool and action, so its hint line no longer
+covers the chart's position readout. In the Tactical Unit Analyzer (F8)
+two buttons assign the browsed profile to the selected contact or clear
+it. Saves are v53; v38 to v52 saves still load.
 
 ## 1.3.276
 

@@ -140,7 +140,24 @@ def draw_debrief(game) -> None:
     _draw_map(game, s, recorder, index, frame)
     _draw_side(game, s, recorder, frame)
     _draw_timeline(s, recorder, frame)
-    layout.blit_line(s, "debrief.keys", (24, 670, 1232, 26), config.COLOR_TEXT_DIM, size=16)
+    _draw_footer(s)
+
+
+# The footer's chips press their keys on a click (a click on the timeline
+# still picks a frame, the wheel steps events or scrolls the report).
+FOOTER = (("Space", "debrief.bar.replay"), ("Tab", "debrief.bar.speed"),
+          ("←/→", "debrief.bar.frame"), ("↑/↓", "debrief.bar.event"),
+          ("Home/End", "debrief.bar.ends"), ("B", "debrief.bar.report"),
+          ("Esc", "debrief.bar.back"))
+
+
+def _draw_footer(s) -> None:
+    from src.ui import pointer
+    width = (PANEL.w - 24) // len(FOOTER)
+    for index, (key, description) in enumerate(FOOTER):
+        segment = pygame.Rect(PANEL.x + 12 + index * width, 668, width, 30)
+        layout.command_segment(s, segment, key, description, size=14, center=True)
+        pointer.add_legend(segment, key)
 
 
 def replay_button_at(pos):

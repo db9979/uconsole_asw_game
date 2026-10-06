@@ -582,7 +582,8 @@ class DrawMixin:
                 self.draw_training_hint()
                 if self.game_over and self.debrief_open:
                     from src.ui.debrief_view import draw_debrief
-                    draw_debrief(self)
+                    with pointer.layer("end"):      # the page owns the mouse
+                        draw_debrief(self)
                 elif self.game_over:
                     self.draw_end_panel()
             finally:
@@ -1054,10 +1055,20 @@ class DrawMixin:
         overlay_style.panel(s, (bx, by, bw, bh))
         help_title = self.tr("help.title", station=display_value(
             "station", self.station.name, self.tr).upper())
-        overlay_style.title(s, help_title, (bx + 18, by + 8, bw - 76, 40), size=30,
+        manual_page = self.help_page == HELP_MANUAL_PAGE
+        title_w = bw - 76 - (2 * 190 + 10 if manual_page else 0)
+        overlay_style.title(s, help_title, (bx + 18, by + 8, title_w, 40), size=30,
                             align="left")
         # Mouse: the title steps the category, the wheel scrolls, [x] closes.
-        pointer.add_key((bx + 18, by + 8, bw - 76, 40), pygame.K_TAB)
+        pointer.add_key((bx + 18, by + 8, title_w, 40), pygame.K_TAB)
+        if manual_page:
+            # The manual's chapter buttons, as [ and ].
+            for index, (key, code, label) in enumerate((
+                    ("[", pygame.K_LEFTBRACKET, "help.manual.prev"),
+                    ("]", pygame.K_RIGHTBRACKET, "help.manual.next"))):
+                button = pygame.Rect(bx + 18 + title_w + 10 + index * 190, by + 14, 180, 30)
+                layout.key_button(s, button, key, label, size=16)
+                pointer.add_key(button, code)
         game_menu.close_button(s, (bx, by, bw, bh))
         overlay_style.rule(s, bx + 18, by + 48, bw - 36)
         x = bx + 20
@@ -1079,6 +1090,10 @@ class DrawMixin:
         layout.blit_block(s, body, x, y, w, 500, config.COLOR_TEXT, size=18, min_size=18)
         layout.blit_block(s, hint, x, by + bh - 62, w, 54, overlay_style.accent_color(),
                           size=16)
+        # Every key in the hint is a key chip.
+        pointer.add_token_keys((x, by + bh - 62, w, 54), hint, 16,
+                               self._MANUAL_HINT_KEYS if self.help_page == HELP_MANUAL_PAGE
+                               else self._HELP_HINT_KEYS, screen=s)
 
     @localized
     def draw_nations_overlay(self) -> None:
@@ -1134,8 +1149,10 @@ class DrawMixin:
         bx = (config.SCREEN_W - bw) // 2
         by = (config.SCREEN_H - bh) // 2
         overlay_style.panel(s, (bx, by, bw, bh))
-        overlay_style.title(s, self.tr("save.title", mode=mode),
-                            (bx + 52, by + 12, bw - 104, 38), size=26)
+        title = self.tr("save.title", mode=mode)
+        overlay_style.title(s, title, (bx + 52, by + 12, bw - 104, 38), size=26)
+        pointer.add_token_keys((bx + 52, by + 12, bw - 104, 38), title, 26,
+                               self._CONFIRM_HINT_KEYS, align="center", screen=s)
         game_menu.close_button(s, (bx, by, bw, bh))
         overlay_style.rule(s, bx + 18, by + 54, bw - 36)
         ly = by + 70
@@ -1157,11 +1174,12 @@ class DrawMixin:
         elif self.save_confirm:
             hint = ("save.overwrite" if self.save_ui == "save"
                     else "save.replace")
-        layout.blit_line(s, hint, (bx + 18, by + bh - 54, bw - 36, 34),
+        hint_rect = (bx + 18, by + bh - 54, bw - 36, 34)
+        layout.blit_line(s, hint, hint_rect,
                          overlay_style.accent_color(), size=18, align="center")
-        if hint == "save.live":
-            pointer.add_text_keys(localize(hint), layout.font(18), bx + bw // 2,
-                                  by + bh - 37, ("Esc", None))
+        # Yes (Enter) and No (Esc) are key chips.
+        pointer.add_token_keys(hint_rect, hint, 18, self._CONFIRM_HINT_KEYS,
+                               align="center", screen=s)
 
     def _click_save_slot(self, slot: int) -> None:
         """A click on a slot picks it; a second click on it confirms."""
@@ -1310,6 +1328,21 @@ class DrawMixin:
                           align="center")
         pointer.add_token_keys((292, top, 696, 46), "commander.local.options_hint", 18,
                                self._OPTIONS_HINT_KEYS, align="center", screen=self.screen)
+
+    # The keys of the F1 hint lines, in the order the texts name them.
+    _HELP_HINT_KEYS = (("Left/Right/Tab:", "←/→"), ("Links/Rechts/Tab:", "←/→"),
+                       ("Up/Down,", "↑/↓"), ("Auf/Ab,", "↑/↓"),
+                       ("PageUp/PageDown:", "PgUp/PgDn"), ("BildAuf/BildAb:", "PgUp/PgDn"),
+                       ("F1/Esc:", "Esc"))
+    _MANUAL_HINT_KEYS = (
+                         ("Up/Down,", "↑/↓"), ("Auf/Ab,", "↑/↓"),
+                         ("PageUp/PageDown:", "PgUp/PgDn"), ("BildAuf/BildAb:", "PgUp/PgDn"),
+                         ("Left/Right/Tab:", "←/→"), ("Links/Rechts/Tab:", "←/→"),
+                         ("F1/Esc:", "Esc"))
+
+    # The keys of the save/load and quit questions' hint lines.
+    _CONFIRM_HINT_KEYS = (("Up/Down:", "↑/↓"), ("Auf/Ab:", "↑/↓"),
+                          ("Enter:", "Enter"), ("Eingabe:", "Enter"), ("Esc:", "Esc"))
 
     _OPTIONS_HINT_KEYS = (("Up/Down:", "↑/↓"), ("Auf/Ab:", "↑/↓"),
                           ("Enter/Left/Right:", "Enter"),
@@ -1583,9 +1616,11 @@ class DrawMixin:
             pointer.add_action((rect.x + 14, rect.y + 120 + index * 40, rect.w - 28, 36),
                                lambda _pos, index=index: self._click_menu_row(
                                    lambda: setattr(self, "quit_selection", index)))
-        layout.blit_line(s, "control.quit_hint",
-                         (rect.x + 20, rect.bottom - 44, rect.w - 40, 28),
+        hint_rect = (rect.x + 20, rect.bottom - 44, rect.w - 40, 28)
+        layout.blit_line(s, "control.quit_hint", hint_rect,
                          config.COLOR_TEXT_DIM, size=18, align="center")
+        pointer.add_token_keys(hint_rect, "control.quit_hint", 18, self._CONFIRM_HINT_KEYS,
+                               align="center", screen=s)
 
     # --- Main loop ---
 

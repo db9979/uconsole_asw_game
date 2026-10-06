@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.277**
+Current release: **1.3.280**
 
-Release 1.3.277 lets you give orders by voice. Say an order with the talk
+Release 1.3.280 lets you give orders by voice. Say an order with the talk
 key, such as "all ahead full", "come right to 090" or "make depth 80
 metres", and it is carried out at once on the uConsole, the submarine and
 in the browser; the executive officer reports only what was really set.

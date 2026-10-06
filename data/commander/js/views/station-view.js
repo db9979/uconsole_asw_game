@@ -66,6 +66,8 @@ export function renderStationView() {
     $("helicopter-dipping-controls").hidden = true;
   }
   $("cic-grid").dataset.tracks = String(!active || trackRoles.has(active));
+  // Wide screens give the control-heavy docks two columns (stations.css).
+  $("cic-grid").dataset.station = active ?? "";
   // The radio room keeps the contact detail (opened from a receiver channel).
   // The boat's stations: the chart plus a wide station dock, no contact docks.
   $("cic-grid").dataset.layout = active === "radio" ? "radio" : isBoatCommand(active) ? "boat" : "";

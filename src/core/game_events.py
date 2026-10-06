@@ -19,7 +19,7 @@ from src.network.ais_client import test_connection as ais_test_connection
 from src.core.station import Station
 from src.core.game_shared import SONAR_BAND_PRESETS
 from src.core import pointer_input, training, uboot_local
-from src.sonar import analysis_tools
+from src.sonar import analysis_tools, equation
 from src.data.catalog import CATALOG
 from src.data.user_content import default_store
 from src.ui import layout, menu_list
@@ -659,9 +659,9 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                         self.sonar_page, 1 if e.key == pygame.K_PAGEDOWN else -1)
                     return
                 if e.key == pygame.K_w:
-                    pulse = self.sonar.cycle_pulse()
-                    self.flash(message("runtime.sonar.pulse",
-                                       pulse=message(f"sonar.pulse.{pulse.lower()}")))
+                    pulses = tuple(equation.PULSES)
+                    self.set_sonar_pulse(pulses[(pulses.index(self.sonar.ping_pulse) + 1)
+                                                % len(pulses)])
                     return
                 if e.key == pygame.K_e:
                     if self.measure_sonar_bt() is True:

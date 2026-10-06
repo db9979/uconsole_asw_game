@@ -819,6 +819,16 @@ class OperatorMixin(WeaponOrdersMixin):
         else:
             self.flash(message("runtime.tma.not_ready"), 2.0)
 
+    def set_sonar_pulse(self, pulse: str):
+        """Choose the active pulse (CW or LFM) of the held sonar (key W)."""
+        from src.sonar import equation
+        if type(pulse) is not str or pulse not in equation.PULSES:
+            return "invalid_value"
+        self.sonar.ping_pulse = pulse
+        self.flash(message("runtime.sonar.pulse",
+                           pulse=message(f"sonar.pulse.{pulse.lower()}")))
+        return True
+
     def set_tma_method(self, method: str):
         if type(method) is not str or method not in tma_operator.TMA_METHODS:
             return "invalid_value"

@@ -40,8 +40,8 @@ export function renderSonarStation(payload) {
     ["sonar_tow_depth", unit(settings.tow.depth_m, "m", 0)],
     ["sonar_vds_state", stateText("tow_state", settings.vds.state)], ["sonar_vds_payout", unit(settings.vds.payout * 100, "%", 0)],
     ["sonar_vds_depth", unit(settings.vds.depth_m, "m", 0)],
-    ["sonar_bt_ready", yesNo(settings.bt.ready)], ["sonar_ping_ready", yesNo(settings.ping.ready)],
-    ["sonar_tma", yesNo(settings.tma_enabled)], ["sonar_audition_mode", enumText({BROADBAND: "sonar_audition_broadband", FILTERED: "sonar_audition_filtered", HETERODYNE: "sonar_audition_heterodyne"}, auditionMode)], ["sonar_gain", unit(settings.gain_db, "dB")],
+    ["sonar_bt_ready", yesNo(settings.bt.ready)], ["sonar_ping_ready", yesNo(settings.ping.ready)], ["sonar_pulse", t(`sonar_pulse_${settings.ping.pulse.toLowerCase()}`)],
+    ["sonar_tma", yesNo(settings.tma_enabled)], ["sonar_tma_method", t(`sonar_tma_method_${settings.tma_method}`)], ["sonar_audition_mode", enumText({BROADBAND: "sonar_audition_broadband", FILTERED: "sonar_audition_filtered", HETERODYNE: "sonar_audition_heterodyne"}, auditionMode)], ["sonar_gain", unit(settings.gain_db, "dB")],
     ["sonar_band", settings.band_preset || settings.band_hz.map((value) => number(value, 0)).join("-")],
     ["sonar_notch", yesNo(settings.notch)], ["sonar_peak_hold", yesNo(settings.peak_hold)],
     ["sonar_harmonic", unit(settings.harmonic_hz, "Hz")], ["sonar_audio", yesNo(settings.audio_enabled)],
@@ -59,6 +59,8 @@ export function renderSonarStation(payload) {
     ["sonar_assist", yesNo(settings.tools.assist)]]);
   // These drop-downs apply on change; a push only catches them up when not in use.
   setControlValue($("sonar-integration"), String(settings.tools.integration_s));
+  setControlValue($("sonar-pulse"), settings.ping.pulse);
+  setControlValue($("sonar-tma-method"), settings.tma_method);
   setControlValue($("sonar-demon-band"), settings.tools.demon_band_hz.map((value) => number(value, 0).replace(/\D/g, "")).join("-"));
   setControlValue($("sonar-heterodyne"), String(Math.round(settings.tools.heterodyne_hz)));
   $("sonar-vernier").checked = settings.tools.vernier;

@@ -636,6 +636,8 @@ def test_fusion_schema_rejects_duplicate_refs_and_action_role_mismatch(server):
     ("sonar", "sonar_measure_bt", {}),
     ("sonar", "sonar_active_ping", {}),
     ("sonar", "sonar_set_tma_enabled", {"enabled": False}),
+    ("sonar", "sonar_set_pulse", {"pulse": "LFM"}),
+    ("uboot_sonar", "sonar_set_tma_method", {"method": "dotstack"}),
     ("sonar", "sonar_set_gain", {"gain_db": -12}),
     ("sonar", "sonar_set_audition_mode", {"mode": "FILTERED"}),
     ("sonar", "sonar_set_band_preset", {"preset": "SHAFT"}),
@@ -1018,6 +1020,8 @@ def test_sonar_authoritative_controls_use_explicit_values_and_refs(server):
             ("sonar_set_array_mode", {"mode": "TOWED"}),
             ("sonar_set_tas", {"deployed": True}),
             ("sonar_set_tma_enabled", {"enabled": False}),
+            ("sonar_set_pulse", {"pulse": "LFM"}),
+            ("sonar_set_tma_method", {"method": "ekelund"}),
             ("sonar_set_gain", {"gain_db": 9.0}),
             ("sonar_set_audition_mode", {"mode": "FILTERED"}),
             ("sonar_set_band_preset", {"preset": "SHAFT"}),
@@ -1033,6 +1037,8 @@ def test_sonar_authoritative_controls_use_explicit_values_and_refs(server):
         assert game.sonar_mode == "TOWED"
         assert game.sonar.tow_state == TowState.DEPLOYING
         assert not game.sonar.tma_enabled and game.sonar.gain_db == 9.0
+        # W1: LFM and the TMA method from the browser, as with W / Shift+T.
+        assert game.sonar.ping_pulse == "LFM" and game.tma_method == "ekelund"
         assert game.sonar.audition_mode == "FILTERED"
         assert (game.sonar.band_low_hz, game.sonar.band_high_hz) == (8.0, 55.0)
         assert game.sonar.notch_enabled and game.sonar.peak_hold

@@ -11,6 +11,20 @@ does: digit by digit. The executive officer, the coach, the crew reports and
 the voice test now say 431 as "four three one" and 0.9 as "zero point
 niner" (in German "vier drei eins", "null Komma neun"), whether or not the
 text is cleaned before speaking. Keys are unchanged. Saves are v53; v38 to
+
+## 1.3.234
+
+Release 1.3.234 brings the browser in step with the uConsole. The sonar
+page chooses the active pulse (CW or LFM, W) and the TMA method (Shift+T).
+Browser keys now follow the uConsole at every station of both sides:
+plus and minus step the telegraph (now also on the Bridge), radio, damage control and
+ELOKA have their keys, and every bound control shows its key as a blue
+chip. The side docks and the log moved to Alt+, Alt+. and Alt+L, and [ ]
+no longer step stations. The radio room shows whether an own call to HQ is
+on the air, waiting or ready, and a new HF/DF chart draws bearings, cross
+fixes and error ellipses. Station docks put the controls before the read
+tables, which fold away, and use two columns on wide screens. The solo
+browser opens the logbook and the training lessons. Saves are v53; v38 to
 v52 saves still load.
 
 ## 1.3.233

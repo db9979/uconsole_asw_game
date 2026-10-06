@@ -1,4 +1,4 @@
-# U-Jagd 1.3.233 - Stations- und Tastenkürzel
+# U-Jagd 1.3.234 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -380,26 +380,28 @@ Berechtigungsprüfungen bleiben wirksam.
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `1-9` | Eine eigene Station öffnen (U-Boot-Crew: 1-7) |
-| `[ / ]` | Vorherige / nächste eigene Station |
+| `1-9` | Eine eigene Station öffnen (U-Boot-Crew: 1-7); dieselbe Nummer nochmals blättert die Seite um |
 | `?` | Leitfaden und Stationshilfe öffnen |
 | `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |
 | `Pos1 / Ende` | Erster / letzter Eintrag der fokussierten Liste |
-| `+ / - · Q / E` | Fokussierte Karte zoomen (Q / E wie auf der uConsole); Pos1 passt die Ansicht ein |
+| `Q / E` | Karte oder Ausguck zoomen (wie auf der uConsole); Pos1 passt die Ansicht ein |
 | `K` | Karte folgt dem eigenen Schiff an oder aus |
+| `+ / -` | Maschinentelegraph eine Stufe höher / tiefer (Brücke, Maschine, U-Boot-Führung und -Maschine) |
 | `C / V / D · T` | Kurs, Fahrt, Tiefe, Torpedo-Lauftiefe: der Cursor springt ins Feld, Eingabe sendet (Brücke, Maschine, U-Boot) |
 | `Umschalt+A · J` | Aktiver Ping · Live-Sonarton an oder aus (Sonar, U-Boot-Führung, Tauchsonar des Helikopters) |
+| `W · Umschalt+T` | Sonar: Aktivpuls CW / LFM · TMA-Methode (Hypothese, Ekelund, Dot-Stack) |
 | `Strg+Eingabe` | Schuss scharf machen (Waffen, OPZ, Helikopter, U-Boot-Waffen); der Feuerdialog fragt noch einmal |
 | `R / Umschalt+R` | OPZ: Seeziel- / Luftraumradar an oder aus; Q / E ändern den Radar-Anzeigebereich |
 | `H · B · Strg+R · Umschalt+M` | Helikopter: starten oder zurückrufen, Boje werfen, Flugzeugradar, MAD |
 | `A · V · Strg+B` | Schleichfahrt (Maschine) · Täuschkörper (U-Boot-Waffen) · toten Winkel klären (Brücke, U-Boot-Führung) |
+| `Stationsbuchstaben` | Jede weitere Stationstaste ist die der uConsole (Funk K / H / R / A / D, Leckwehr C / G / W / M / U, ELOKA E / Umschalt+E / A / C, Waffen W / X / Y / D / A / Z / R, ...); jede steht als blaue Tastenkappe auf ihrem Bedienelement |
 | `Pfeiltasten (Karte)` | Fokussierte Karte verschieben |
 | `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
 | `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
 | `Bild auf/ab` | Seiten durchblättern: Helikopter Akustikanalyse, Tauchsonar und Taktische Karte (auch nochmals 8), Sonarseiten |
 | `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
-| `, / .` | Kontaktliste (,) oder Stationsbereich (.) ein- oder ausklappen |
-| `L` | Einsatzprotokoll öffnen oder schließen |
+| `Alt+, / Alt+.` | Kontaktliste (Alt+,) oder Stationsbereich (Alt+.) ein- oder ausklappen |
+| `Alt+L` | Einsatzprotokoll öffnen oder schließen |
 | `Esc` | Leitfaden, Ausguck oder Kontaktbibliothek schließen und zur Station zurück |
 
 ## Eingabe und Dialoge

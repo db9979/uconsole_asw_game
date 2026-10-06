@@ -16,6 +16,7 @@ die Statuszeile des U-Boots öffnet das Log wie `F11`, und das U-Boot-Sonar
 zeigt an seiner Array-Anzeige keine Taste mehr. Ein neuer Test sorgt dafür,
 dass jeder Tastenchip an jeder Station klickbar ist. Spielstände sind v53;
 v38- bis v52-Stände werden weiter geladen.
+
 ## 1.3.264
 
 Version 1.3.264 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe

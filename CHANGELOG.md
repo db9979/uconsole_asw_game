@@ -15,6 +15,7 @@ helicopter's waypoint chips steer it, the submarine's status line opens
 the log like `F11`, and the submarine sonar no longer shows a key on its
 array readout. A new test makes sure every key chip on every station can
 be clicked. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.264
 
 Release 1.3.264 makes the underwater fight more realistic. Torpedo seekers

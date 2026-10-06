@@ -10,18 +10,18 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.243**
+Current release: **1.3.246**
 
-Release 1.3.243 lets the language model's voice read the log aloud.
-Once a speech service is set up, the entries of the own side's log
-(`F11`) are spoken as they come, after the executive officer's answers
-and the crew's calls; an entry that waits longer than 15 seconds is
-dropped instead of said late, and what the crew already calls out is not
-read twice. Every station of the log can be muted on its own: on the new
-page 4 "Reports" of the language model settings (options page 2), which
-also counts each station's entries of the last 5 minutes, or with the
-per-station buttons along the bottom of the `F11` log. Keys and saves are
-unchanged (v53; v38 to v52 saves still load).
+Release 1.3.246 makes the language model's voice sound calm and even.
+The executive officer, the crew and the log now speak with one steady
+style that asks the speech service not to laugh, sigh or change mood, so
+voice and tone no longer jump between sentences. A log entry is said in
+one piece instead of sentence by sentence, units and short forms are said
+in full (12 kn as "twelve knots", NM as "nautical miles", ° as "degrees",
+brg as "bearing", positions in degrees and minutes north and east), and
+seed -1 now draws one seed per launch instead of a new one for every
+sentence. Keys and saves are unchanged (v53; v38 to v52 saves still
+load).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

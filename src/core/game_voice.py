@@ -121,7 +121,11 @@ class VoiceMixin:
             return False
         text = voice_model.speakable(self._voice_text(text), clean=self.voice.config.clean)
         queued = False
-        for chunk in voice_model.sentence_chunks(text, limit=voice_model.QUEUE_MAX):
+        # A log entry or a crew call is said in one piece, like one sentence;
+        # only the officer's longer answers start with their first sentence.
+        chunks = ([text] if role in ("log", "crew") and text
+                  else voice_model.sentence_chunks(text, limit=voice_model.QUEUE_MAX))
+        for chunk in chunks:
             request = self.voice.say(chunk, self.llm_language(), role)
             if request is None:
                 break
@@ -130,8 +134,12 @@ class VoiceMixin:
         return queued
 
     def _voice_text(self, text) -> str:
-        """Numbers digit by digit in the game's language ("vier drei eins")."""
+        """Numbers digit by digit in the game's language ("vier drei eins"),
+        units and short forms said in full ("Knoten", "Seemeilen")."""
         digits = [self.tr(f"{CALLOUT_PREFIX}digit_{digit}") for digit in range(10)]
+        # Units and short forms in full first ("12 kn" -> "12 Knoten").
+        words = {name: self.tr(f"voice.word.{name}") for name in voice_model.WORD_NAMES}
+        text = voice_model.spoken_words(text, words)
         return voice_model.spell_digits(text, digits, self.tr("voice.digit_point"))
 
     def voice_advisor_entry(self, entry) -> None:

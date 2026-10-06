@@ -269,3 +269,41 @@ def test_a_burst_keeps_its_newest_entries_and_counts_all():
     assert [text for text, _role in queued] == [f"Weapons entry {n}." for n in range(10 - LOG_BURST, 10)]
     assert {role for _text, role in queued} == {"log"}
     assert game.log_voice_count("waffen") == 10
+
+
+def _words(language):
+    catalog = json.loads((__import__("pathlib").Path("data/i18n") / f"{language}.json")
+                         .read_text(encoding="utf-8"))
+    return {name: catalog[f"voice.word.{name}"] for name in voice.WORD_NAMES}
+
+
+@pytest.mark.parametrize("language,text,said", [
+    ("de", "Kontakt neu: Rtg 163° Dst ~4.2 sm", "Kontakt neu: Richtung 163 Grad Abstand etwa 4.2 Seemeilen"),
+    ("de", "Fahrt 12 kn, Tiefe 45 m, 1500 m/s, 3 s", "Fahrt 12 Knoten, Tiefe 45 Meter, 1500 Meter pro Sekunde, 3 Sekunden"),
+    ("de", "Ort 54°21,4'N 010°08,2'E", "Ort 54 Grad 21,4 Minuten Nord 010 Grad 08,2 Minuten Ost"),
+    ("en", "Contact brg 219° ~3.1 NM, 8 kn, 38 %", "Contact bearing 219 degrees about 3.1 nautical miles, 8 knots, 38 percent"),
+    ("en", "Ping 3.5 kHz 120 dB after 5 min", "Ping 3.5 kilohertz 120 decibels after 5 minutes"),
+    ("de", "Mission: Alle U-Boote versenken", "Mission: Alle U-Boote versenken"),
+])
+def test_units_and_short_forms_are_said_in_full(language, text, said):
+    assert voice.spoken_words(text, _words(language)) == said
+
+
+def test_every_role_speaks_with_one_calm_style_and_one_seed():
+    assert len(set(voice._STYLE.values())) == 1
+    assert "laugh" in voice._STYLE["log"]
+    service = voice.VoiceService()
+    assert 1 <= service._session_seed <= voice.SEED_MAX
+
+
+def test_a_long_log_entry_is_one_request():
+    with FakeSpeechServer() as speech:
+        game = _game()
+        mixer = _Mixer(game)
+        _voice_on(game, speech)
+        game._pump_speech()
+        entry = "Funk: HQ meldet Kontakt. Peilung unsicher. Suche fortsetzen. " * 3
+        _log(game, "funk", entry)
+        assert _pump(game, lambda: mixer.played and game._voice_playing is None)
+        assert len(speech.requests) == 1
+        assert speech.requests[0]["input"] == " ".join(entry.split())

@@ -13,7 +13,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import display_value, localize
-from src.ui import layout, simlog_map
+from src.ui import layout, pointer, simlog_map
 
 
 EVENT_TAIL = 80
@@ -305,8 +305,8 @@ def draw_simlog_view(game) -> None:
         with layout.clip_to(s, body):
             simlog_map.draw_map(game, tr, game._simlog_state_data(), body,
                                 game.simlog_map_fit)
-        hints = (f"{tr('simlog.view.close_hint')}   "
-                 f"{tr('simlog.view.map_hint')}")
+        hints = (("Esc", "simlog.footer.close"), ("M", "simlog.footer.list"),
+                 ("F", "simlog.footer.fit"))
     else:
         lines = _build_lines(game, tr)
         visible = max(1, body.height // line_h)
@@ -323,8 +323,13 @@ def draw_simlog_view(game) -> None:
                 image = layout.font(15, bold=kind == SECTION).render(
                     text, True, color)
                 s.blit(image, (body.x, y))
-        hints = (f"{tr('simlog.view.close_hint')}   "
-                 f"{tr('simlog.view.scroll_hint')}   "
-                 f"{tr('simlog.view.map_toggle_hint')}")
-    hint = layout.font(13).render(hints, True, config.COLOR_TEXT_DIM)
-    s.blit(hint, (16, config.SCREEN_H - footer_h + 8))
+        hints = (("Esc", "simlog.footer.close"), ("M", "simlog.footer.map"),
+                 ("↑/↓", "simlog.footer.line"), ("PgUp/PgDn", "simlog.footer.page"),
+                 ("Home/End", "simlog.footer.ends"))
+    # The footer's chips press their keys on a click, as at the stations.
+    x = 12
+    for key, description in hints:
+        segment = pygame.Rect(x, config.SCREEN_H - footer_h + 2, 230, footer_h - 6)
+        layout.command_segment(s, segment, key, tr(description), size=13, center=True)
+        pointer.add_legend(segment, key)
+        x += segment.w + 6

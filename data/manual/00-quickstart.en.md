@@ -39,7 +39,7 @@ The submarine has seven stations on the keys `1`-`7` (see chapter Submarine). `F
 - **Stations:** `1`-`9` (submarine `1`-`7`), `Tab`/`Shift+Tab` or a click on a tab in the top bar.
 - **Pages:** press the station's number again, `PgUp`/`PgDn`, or click a page tab.
 - **Fire:** `Ctrl+Enter` fires torpedoes and missiles. `Enter` alone never fires.
-- **Help:** `F1` (or `?`) lists every key of the current station, its standard procedure and this manual. `Esc` cancels an entry or opens the quit dialog.
+- **Help:** `F1` (or `?`) lists every key of the current station, its standard procedure and this manual; in the manual the buttons **[ Previous chapter** and **] Next chapter** turn the chapters, and every key in the hint line is a clickable chip. `Esc` cancels an entry or opens the quit dialog.
 - **Trackball:** horizontal steers on the Bridge, vertical steps the station's main selection elsewhere.
 - **Mouse:** a click on a key in the station's key bar, a lamp, a hint, a tab, a dial or a list row does exactly what its key does, with the same checks. The menu icon in the top bar opens the game menu (help, options, save, load, quit). On charts the wheel zooms and dragging pans (details in chapter Tools).
 

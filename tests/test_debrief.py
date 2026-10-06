@@ -189,3 +189,32 @@ def test_bridge_publishes_the_replay_only_after_the_end():
     bridge.pump(game, server, now=11.0)
     documents = server.debriefs["documents"]
     assert set(documents) == {"frigate"} and documents["frigate"]["frames"]
+
+
+def test_footer_chips_and_the_wheel_work_by_mouse(monkeypatch):
+    from src.ui import pointer
+    monkeypatch.setattr(pygame.display, "get_window_size", lambda: (1280, 720))
+    game = _game()
+    for _ in range(60):
+        game.update(0.5)
+    game._end_mission(False, "test")
+    _key(game, pygame.K_d)
+    _key(game, pygame.K_HOME)
+
+    def press(key):
+        game.draw()
+        target = next(t for t in pointer.targets() if t.key == key and t.rect.y >= 660)
+        for kind in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
+            game.handle_event(pygame.event.Event(kind, button=1, pos=target.rect.center))
+
+    press(pygame.K_SPACE)
+    assert game.debrief_replay.playing
+    press(pygame.K_TAB)
+    assert game.debrief_replay.speed == 60
+    press(pygame.K_SPACE)
+    game.handle_event(pygame.event.Event(pygame.MOUSEWHEEL, x=0, y=-1))
+    assert game.debrief_index > 0                # the wheel steps to the next event
+    press(pygame.K_b)
+    assert game.debrief_report_open
+    press(pygame.K_ESCAPE)
+    assert not game.debrief_open and not game.quit_confirm

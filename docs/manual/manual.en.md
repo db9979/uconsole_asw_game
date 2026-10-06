@@ -49,7 +49,7 @@ The submarine has seven stations on the keys `1`-`7` (see chapter Submarine). `F
 - **Stations:** `1`-`9` (submarine `1`-`7`), `Tab`/`Shift+Tab` or a click on a tab in the top bar.
 - **Pages:** press the station's number again, `PgUp`/`PgDn`, or click a page tab.
 - **Fire:** `Ctrl+Enter` fires torpedoes and missiles. `Enter` alone never fires.
-- **Help:** `F1` (or `?`) lists every key of the current station, its standard procedure and this manual. `Esc` cancels an entry or opens the quit dialog.
+- **Help:** `F1` (or `?`) lists every key of the current station, its standard procedure and this manual; in the manual the buttons **[ Previous chapter** and **] Next chapter** turn the chapters, and every key in the hint line is a clickable chip. `Esc` cancels an entry or opens the quit dialog.
 - **Trackball:** horizontal steers on the Bridge, vertical steps the station's main selection elsewhere.
 - **Mouse:** a click on a key in the station's key bar, a lamp, a hint, a tab, a dial or a list row does exactly what its key does, with the same checks. The menu icon in the top bar opens the game menu (help, options, save, load, quit). On charts the wheel zooms and dragging pans (details in chapter Tools).
 
@@ -229,7 +229,7 @@ In lessons 1, 2 and 4 the submarine is neutral and never attacks; lesson 3 is a 
 
 ### Saving, loading and autosave
 
-`S` saves, `L` loads (slots 1-5). Saves are exact and deterministic: a loaded game continues identically. The file is written in the background while the mission runs on; the save menu closes (or the game quits after **Save and exit**) only once it is safely on disk. A save of an older release (save format v38, release 1.3.98, or newer) still loads: it is brought up to the current format on loading, slots and autosave alike.
+`S` saves, `L` loads (slots 1-5). Saves are exact and deterministic: a loaded game continues identically. The file is written in the background while the mission runs on; the save menu closes (or the game quits after **Save and exit**) only once it is safely on disk. The question before overwriting a slot or replacing the mission is answered by clicking its `Enter` (yes) or `Esc` (no) chip. A save of an older release (save format v38, release 1.3.98, or newer) still loads: it is brought up to the current format on loading, slots and autosave alike.
 
 **Autosave:** a running mission is saved every 5 minutes and when you quit or leave it for the main menu, to `~/.u-jagd/autosave.json` beside the five slots. The main menu then starts with **Continue mission**, which resumes it exactly; after a crash it holds the last recovery point, at most one minute old. A mission that ends (won, lost or ship sunk) and any new mission delete the autosave. The web host (`--web-host`) does not autosave.
 
@@ -2372,7 +2372,7 @@ Debrief: after the mission ends, `D` on the end panel opens the debrief. It repl
 
 Beside the chart it lists the time of the first contact, first fix and classification, weapons fired and submarines sunk, the mean error of the crew's fixes, and every event; a "missed chance" is a hostile submarine within 4 NM for at least 5 min without any contact, marked above or below the layer.
 
-`Left`/`Right` step (Shift: 1 min), `Up`/`Down` or `PgUp`/`PgDn` jump between events, a click on the timeline jumps there, `Space` plays it back (`Tab`: 10x or 60x), `D` or `Esc` returns. The debrief is recorded every 10 s (coarser on long missions), is never shown during a mission and is not saved: after a load it covers the mission from the load onwards.
+`Left`/`Right` step (Shift: 1 min), `Up`/`Down` or `PgUp`/`PgDn` jump between events, a click on the timeline jumps there, `Space` plays it back (`Tab`: 10x or 60x), `D` or `Esc` returns. The chips in the footer press these keys by click, and the mouse wheel steps between events (or scrolls the report while it is open). The debrief is recorded every 10 s (coarser on long missions), is never shown during a mission and is not saved: after a load it covers the mission from the load onwards.
 
 - **Debrief replay:** after the mission `Space` plays the debrief back and `Tab` switches between 10x and 60x; the tracks grow and shots, pings, hits and sinkings flash where they happened. The browser's **Play debrief** button (next to the mission state, only after the end) shows the same replay for its own side.
 
@@ -2443,7 +2443,7 @@ Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes
 
 The crew keeps one shared grease-pencil plot. Every station and every Remote Crew browser sees the same drawing, and it is saved with the game. It is the crew's own drawing: nothing in it comes from a sensor, and it never changes the simulation.
 
-- **Opening it:** press `P` on the Bridge, Weapons or Helicopter map or on the OPZ chart. A cursor appears on own ship. Arrow keys move it (Shift: faster), or click on the chart. `Enter` sets a point, `Esc` cancels a started object and then ends plot mode, and `P` also ends it. A hint bar at the top of the chart shows the active tool and keys on the left and the cursor's bearing and distance from own ship on the right.
+- **Opening it:** press `P` on the Bridge, Weapons or Helicopter map or on the OPZ chart. A cursor appears on own ship. Arrow keys move it (Shift: faster), or click on the chart. `Enter` sets a point, `Esc` cancels a started object and then ends plot mode, and `P` also ends it. A toolbar at the foot of the chart holds a chip for every tool (the active one framed) and for `Enter` point, `Backspace` delete, `Shift+Backspace` all and `Esc` end; a click on a chip presses its key. On its right it shows the cursor's bearing and distance from own ship.
 - **Tools:** `M` mark (one point); `R` ruler (two points, shows bearing and distance); `B` bearing line from own ship through the cursor (own position and time are stored, so the line stays where it was laid); `C` circle (centre, then a point on the radius, at most 200 NM); `D` dead-reckoning line (start point, then a point in the direction of travel, then type the speed 0-60 kn). The DR line moves on with time and shows its CPA to own ship's present course and speed.
 - **Erasing:** `Backspace` deletes the object nearest the cursor. `Shift+Backspace` clears the whole plot.
 - **Labels:** objects are numbered M1, R2, B3 and so on. In the web client you can type a label before drawing or rename an object in the list under the map. An object outside the visible chart shows a small arrow on the chart edge pointing towards it, with its label beside the arrow; several such labels sit next to each other, never on top.
@@ -2465,11 +2465,11 @@ The history is display only: it is built from what the sensors reported, is neve
 
 ### Simulation log (F4)
 
-`F4` opens the simulation log over the station: a live list of the true state of the world (own ship, submarines, surface vessels, torpedoes, decoys, missiles, aircraft and buoys). It works only when **Simulation log** is switched on in the options, because it shows what no station knows: use it to study or debug the simulation, not to play. `M` shows a map of all contacts, and `F` on the map fits it to the units or the whole world. In the browser the host can grant the SimLog to a crew member.
+`F4` opens the simulation log over the station: a live list of the true state of the world (own ship, submarines, surface vessels, torpedoes, decoys, missiles, aircraft and buoys). It works only when **Simulation log** is switched on in the options, because it shows what no station knows: use it to study or debug the simulation, not to play. `M` shows a map of all contacts, and `F` on the map fits it to the units or the whole world; the chips in the footer do the same by click. In the browser the host can grant the SimLog to a crew member.
 
 ### Analyser, executive officer and nations
 
-- `F8` opens the Tactical Unit Analyzer, a read-only catalogue of every unit with its 3D model, sound and radar images (chapter Mission and unit editor). With a sonar contact selected, `Enter` assigns the browsed profile to it as your annotation (chapter 2 Sonar, Pro tips).
+- `F8` opens the Tactical Unit Analyzer, a read-only catalogue of every unit with its 3D model, sound and radar images (chapter Mission and unit editor). With a sonar contact selected, `Enter` (or the button **assign to** under the list) assigns the browsed profile to it as your annotation and `Shift+Enter` (button **clear**) removes it (chapter 2 Sonar, Pro tips).
 - `F7` opens the executive officer when the optional language model is switched on (chapter Language model).
 - `N` opens the overview of nations and units (at the sonar and on the helicopter's acoustic page `N` is the notch filter instead).
 

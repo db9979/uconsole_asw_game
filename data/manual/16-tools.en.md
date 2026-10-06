@@ -49,7 +49,7 @@ Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes
 
 The crew keeps one shared grease-pencil plot. Every station and every Remote Crew browser sees the same drawing, and it is saved with the game. It is the crew's own drawing: nothing in it comes from a sensor, and it never changes the simulation.
 
-- **Opening it:** press `P` on the Bridge, Weapons or Helicopter map or on the OPZ chart. A cursor appears on own ship. Arrow keys move it (Shift: faster), or click on the chart. `Enter` sets a point, `Esc` cancels a started object and then ends plot mode, and `P` also ends it. A hint bar at the top of the chart shows the active tool and keys on the left and the cursor's bearing and distance from own ship on the right.
+- **Opening it:** press `P` on the Bridge, Weapons or Helicopter map or on the OPZ chart. A cursor appears on own ship. Arrow keys move it (Shift: faster), or click on the chart. `Enter` sets a point, `Esc` cancels a started object and then ends plot mode, and `P` also ends it. A toolbar at the foot of the chart holds a chip for every tool (the active one framed) and for `Enter` point, `Backspace` delete, `Shift+Backspace` all and `Esc` end; a click on a chip presses its key. On its right it shows the cursor's bearing and distance from own ship.
 - **Tools:** `M` mark (one point); `R` ruler (two points, shows bearing and distance); `B` bearing line from own ship through the cursor (own position and time are stored, so the line stays where it was laid); `C` circle (centre, then a point on the radius, at most 200 NM); `D` dead-reckoning line (start point, then a point in the direction of travel, then type the speed 0-60 kn). The DR line moves on with time and shows its CPA to own ship's present course and speed.
 - **Erasing:** `Backspace` deletes the object nearest the cursor. `Shift+Backspace` clears the whole plot.
 - **Labels:** objects are numbered M1, R2, B3 and so on. In the web client you can type a label before drawing or rename an object in the list under the map. An object outside the visible chart shows a small arrow on the chart edge pointing towards it, with its label beside the arrow; several such labels sit next to each other, never on top.
@@ -71,10 +71,10 @@ The history is display only: it is built from what the sensors reported, is neve
 
 ## Simulation log (F4) {#tools-simlog}
 
-`F4` opens the simulation log over the station: a live list of the true state of the world (own ship, submarines, surface vessels, torpedoes, decoys, missiles, aircraft and buoys). It works only when **Simulation log** is switched on in the options, because it shows what no station knows: use it to study or debug the simulation, not to play. `M` shows a map of all contacts, and `F` on the map fits it to the units or the whole world. In the browser the host can grant the SimLog to a crew member.
+`F4` opens the simulation log over the station: a live list of the true state of the world (own ship, submarines, surface vessels, torpedoes, decoys, missiles, aircraft and buoys). It works only when **Simulation log** is switched on in the options, because it shows what no station knows: use it to study or debug the simulation, not to play. `M` shows a map of all contacts, and `F` on the map fits it to the units or the whole world; the chips in the footer do the same by click. In the browser the host can grant the SimLog to a crew member.
 
 ## Analyser, executive officer and nations {#tools-more}
 
-- `F8` opens the Tactical Unit Analyzer, a read-only catalogue of every unit with its 3D model, sound and radar images (chapter Mission and unit editor). With a sonar contact selected, `Enter` assigns the browsed profile to it as your annotation (chapter 2 Sonar, Pro tips).
+- `F8` opens the Tactical Unit Analyzer, a read-only catalogue of every unit with its 3D model, sound and radar images (chapter Mission and unit editor). With a sonar contact selected, `Enter` (or the button **assign to** under the list) assigns the browsed profile to it as your annotation and `Shift+Enter` (button **clear**) removes it (chapter 2 Sonar, Pro tips).
 - `F7` opens the executive officer when the optional language model is switched on (chapter Language model).
 - `N` opens the overview of nations and units (at the sonar and on the helicopter's acoustic page `N` is the notch filter instead).

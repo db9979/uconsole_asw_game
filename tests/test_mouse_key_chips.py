@@ -182,3 +182,33 @@ def test_submarine_status_line_opens_the_log_like_f11(monkeypatch):
         assert game.feed_overlay_open
     finally:
         game.audio.shutdown()
+
+
+@pytest.mark.parametrize("language", ("en", "de"))
+def test_every_key_chip_on_the_overlays_is_clickable(caps, language):
+    import dataclasses
+    from src.core.game_shared import HELP_MANUAL_PAGE
+    game = Game(seed=31, start_menu=False, audio_enabled=False, language=language)
+    try:
+        dead = []
+        for name, open_it in (
+                ("help", lambda: game._open_administration("help")),
+                ("manual", lambda: setattr(game, "help_page", HELP_MANUAL_PAGE)),
+                ("save", lambda: (game._open_administration("save"),
+                                  setattr(game, "save_confirm", True))),
+                ("load", lambda: (game._open_administration("load"),
+                                  setattr(game, "save_confirm", True))),
+                ("quit", lambda: game._open_administration("quit")),
+                ("options", lambda: game._open_administration("options")),
+                ("simlog", lambda: (game._open_administration(None),
+                                    setattr(game, "preferences", dataclasses.replace(
+                                        game.preferences, simlog=True)),
+                                    game._open_simlog_view())),
+                ("simlog map", lambda: setattr(game, "simlog_view_map", True)),
+                ("plot", lambda: (game._close_simlog_view(), game.toggle_plot_mode()))):
+            open_it()
+            dead += _dead_caps(game, caps, name)
+        assert not dead
+    finally:
+        game.commander.stop()
+        game.audio.shutdown()

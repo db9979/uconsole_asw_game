@@ -14,9 +14,14 @@ from src.core import boat_threat, config
 from src.core.i18n import message
 from src.ui import layout, lines, pointer
 
-KIND_COLORS = {"hull": config.COLOR_WARN, "dipping": config.COLOR_WARN,
-               "buoy": config.COLOR_TEXT, "splash": config.COLOR_TEXT_DIM,
-               "torpedo": config.COLOR_DANGER}
+# ``config.COLOR_*`` names, looked up when drawn (the colour scheme can change).
+KIND_COLORS = {"hull": "COLOR_WARN", "dipping": "COLOR_WARN",
+               "buoy": "COLOR_TEXT", "splash": "COLOR_TEXT_DIM",
+               "torpedo": "COLOR_DANGER"}
+
+
+def kind_color(kind: str) -> tuple:
+    return getattr(config, KIND_COLORS[kind])
 # Intercept bearing lines on the chart stay this long (s).
 CHART_LINE_S = 120.0
 
@@ -106,7 +111,7 @@ def draw_threat_page(s, game, boat, x, y, w, h) -> None:
         text = (message("uboot.threat_page.row_bearing", **values) if item["level_db"] is None
                 else message("uboot.threat_page.row", level=_fmt(item["level_db"]), **values))
         layout.blit_line(s, text,
-                         (lx, ly + index * line, lw, line), KIND_COLORS[item["kind"]], size=14)
+                         (lx, ly + index * line, lw, line), kind_color(item["kind"]), size=14)
 
 
 def draw_intercept_lines(game, boat, view, bx, by) -> None:
@@ -118,7 +123,7 @@ def draw_intercept_lines(game, boat, view, bx, by) -> None:
         if not 0.0 <= age <= CHART_LINE_S:
             continue
         rad = math.radians(row["bearing"])
-        color = KIND_COLORS[row["kind"]]
+        color = kind_color(row["kind"])
         for start in range(20, 300, 24):
             x0, y0 = bx + start * math.sin(rad), by - start * math.cos(rad)
             x1, y1 = bx + (start + 12) * math.sin(rad), by - (start + 12) * math.cos(rad)

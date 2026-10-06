@@ -16,7 +16,11 @@ from src.core.boat_radio import antenna_up, reception
 from src.core.i18n import message, raw_text
 from src.ui import layout, lines, pointer
 
-REPORT_COLOR = config.COLOR_WARN
+
+
+def report_color() -> tuple:
+    """Contact reports: the scheme's caution colour, looked up when drawn."""
+    return config.COLOR_WARN
 # A contact report is drawn on the chart until it is this old (s).
 CHART_REPORT_S = 3600.0
 
@@ -146,7 +150,7 @@ def draw_radio_page(s, game, boat, x, y, w, h) -> None:
                          config.COLOR_TEXT_DIM, size=16)
     else:
         for index, text in enumerate(report_lines(game, boat, latest["report"])):
-            layout.blit_line(s, text, (rx, ry + index * row, rw, row), REPORT_COLOR, size=16)
+            layout.blit_line(s, text, (rx, ry + index * row, rw, row), report_color(), size=16)
     top = report[1] + report[3] + 8 + 8
     orders = layout.box(s, (x, top, w, _box_height(row)), "uboot.panel.hq_order")
     ox, oy, ow, _ = orders
@@ -202,9 +206,9 @@ def draw_report_chart(game, boat, view) -> None:
     s = game.screen
     px, py = view.world_to_screen(report["x"], report["y"])
     radius = max(6, int(report["radius_nm"] * view.scale))
-    pygame.draw.circle(s, REPORT_COLOR, (int(px), int(py)), radius, 1)
+    pygame.draw.circle(s, report_color(), (int(px), int(py)), radius, 1)
     rad = math.radians(report["course"])
-    lines.line(s, REPORT_COLOR, (int(px), int(py)),
+    lines.line(s, report_color(), (int(px), int(py)),
                (int(px + 24 * math.sin(rad)), int(py - 24 * math.cos(rad))), 2)
     _map_label(s, game, message("uboot.radio.chart_label", age=f"{age / 60.0:.0f}"),
-               (int(px) + 8, int(py) - radius - 20), REPORT_COLOR, config.MAP_RECT, size=12)
+               (int(px) + 8, int(py) - radius - 20), report_color(), config.MAP_RECT, size=12)

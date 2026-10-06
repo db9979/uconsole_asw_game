@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.228
+## 1.3.232
 
-Release 1.3.228 puts latitude and longitude on every chart of every
+Release 1.3.232 puts latitude and longitude on every chart of every
 station. Until now only the Bridge chart and the charts beside the
 submarine's stations showed the graticule; on the uConsole the OPZ
 (CIC) plot, the radio room's cross-fix chart and the submarine's pilot
@@ -18,6 +18,21 @@ clear of range rings, bearing scale and other labels. The browser's
 charts already showed the graticule. The stylized fixed chart keeps its
 NM grid. Gameplay, keys and saves are unchanged (v53; v38 to v52 saves
 still load).
+
+## 1.3.229
+
+Release 1.3.229 makes the event log (F11) readable in every colour scheme
+and lets the mouse close it. In the light "Tactical Day" scheme the log
+used to keep the night colours, so many lines were pale grey or pale blue
+on white, and the station showed through the panel. The log now uses the
+chosen scheme's colours, covers the station fully and has a close cross at
+the top right. A click on the log no longer reaches the station behind it.
+In the browser the dimmed area around an open sheet (Guide, Contacts,
+Lookout) now takes the click and closes the sheet instead of pressing a
+control behind it. The same scheme fix applies to the debrief timeline,
+the campaign map, the submarine's threat and radio pages, the lookout
+page, the weather station and the simulation log. Keys are unchanged.
+Saves are v53; v38 to v52 saves still load.
 
 ## 1.3.223
 

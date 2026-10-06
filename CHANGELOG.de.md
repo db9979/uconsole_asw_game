@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.228
+## 1.3.232
 
-Version 1.3.228 zeigt Breite und Länge auf jeder Karte jeder Station.
+Version 1.3.232 zeigt Breite und Länge auf jeder Karte jeder Station.
 Bisher hatten nur die Brückenkarte und die Karten neben den Stationen des
 U-Boots das Gradnetz; auf der uConsole zeigten das Lagebild der OPZ, die
 Kreuzpeilkarte des Funkraums und die Lotsenkarte des U-Boots noch ihr
@@ -18,6 +18,22 @@ Entfernungsringen, Peilskala und anderen Beschriftungen frei. Die Karten
 im Browser hatten das Gradnetz schon. Die stilisierte feste Karte behält
 ihr sm-Gitter. Spielablauf, Tasten und Spielstände bleiben gleich (v53;
 v38 bis v52 laden weiter).
+
+## 1.3.229
+
+Version 1.3.229 macht das Ereignislog (F11) in jedem Farbschema lesbar und
+lässt es mit der Maus schließen. Im hellen Schema „Taktik Tag“ behielt das
+Log die Farben der Nacht, viele Zeilen waren blassgrau oder hellblau auf
+Weiß, und die Station schien durch. Jetzt nimmt das Log die Farben des
+gewählten Schemas, deckt die Station ganz ab und hat oben rechts ein
+Schließen-Kreuz. Ein Klick auf das Log erreicht die Station dahinter nicht
+mehr. Im Browser nimmt die abgedunkelte Fläche um ein offenes Blatt
+(Anleitung, Kontakte, Ausguck) den Klick und schließt das Blatt, statt ein
+Bedienelement dahinter auszulösen. Dieselbe Korrektur gilt für die
+Zeitleiste der Nachbesprechung, die Feldzugskarte, die Bedrohungs- und
+Funkseite des U-Boots, die Ausguckseite, die Wetterstation und das
+Simulationsprotokoll. Tasten bleiben gleich. Spielstände sind v53; v38 bis
+v52 laden weiter.
 
 ## 1.3.223
 

@@ -49,13 +49,14 @@ OPZ_DOMAIN_CODES = {
 # Correlation suggestions listed above the sidebar buttons (the browser lists
 # all of them, at most config.OPZ_SUGGEST_MAX).
 OPZ_SUGGESTION_ROWS = 2
+# ``config.COLOR_*`` names, looked up when drawn (the colour scheme can change).
 OPZ_DOMAIN_COLORS = {
-    "UNKNOWN": config.COLOR_TEXT_DIM,
-    "SURFACE": config.COLOR_CONTACT_ZIVIL,
-    "SUBSURFACE": config.COLOR_CONTACT_UBOOT,
-    "AIR": config.COLOR_FLIGHT,
-    "MISSILE": config.COLOR_CONTACT_MISSILE,
-    "UNDERWATER_WEAPON": config.COLOR_CONTACT_MISSILE,
+    "UNKNOWN": "COLOR_TEXT_DIM",
+    "SURFACE": "COLOR_CONTACT_ZIVIL",
+    "SUBSURFACE": "COLOR_CONTACT_UBOOT",
+    "AIR": "COLOR_FLIGHT",
+    "MISSILE": "COLOR_CONTACT_MISSILE",
+    "UNDERWATER_WEAPON": "COLOR_CONTACT_MISSILE",
 }
 
 

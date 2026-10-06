@@ -86,7 +86,7 @@ Globale Tasten (alle Stationen):
 | `Linksklick` | Angeklickte Taste, Lampe, Hinweis, Reiter, Scheibe oder Zeile |
 | `Rechtsklick` | Abbrechen wie Esc in Menüs und Eingaben |
 | `Menü-Symbol (Kopfzeile)` | Spielmenü per Maus: Hilfe, Optionen, Speichern/Laden, Wetter, Plot, Autocrew, Beenden und mehr; jedes Overlay schließt mit seinem Schließfeld (wie Esc) |
-| `P` | Plotmodus auf Brücken-/Waffen-/Helo-Karte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (für alle Stationen, wird gespeichert) |
+| `Pe` | Plotmodus auf Brücken-/Waffen-/Helo-Karte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (für alle Stationen, wird gespeichert) |
 | `M R B C D · Eingabe · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Eingabe oder Klick setzen (Pfeile bewegen den Cursor, Umschalt schneller), nächstes Objekt löschen (Umschalt: alle) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
@@ -268,14 +268,14 @@ Menütasten (Hauptmenü und seine Seiten; `F1` in einem Menü zeigt sie):
 | `Esc / Q` | Zurück (Hauptmenü: Beenden-Dialog) |
 | `Bild Auf / Ab` | Listen: eine Seite auf / ab |
 | `Home / End` | Listen: erste / letzte Zeile |
-| `W` | Hauptmenü und Szenarioseiten: Weltmodus (erzeugt / feste Karte / fester realer Sektor) |
+| `We` | Hauptmenü und Szenarioseiten: Weltmodus (erzeugt / feste Karte / fester realer Sektor) |
 | `R` | Hauptmenü und Szenarioseiten: neuer Seed |
 | `[ / ]` | Hauptmenü und Szenarioseiten, fester realer Sektor: voriger / nächster Sektor |
 | `F` | Hauptmenü und Szenarioseiten: Vollbild / Fenster |
 | `← / → / Tab` | Einsatzbuch: Fregatte / U-Boot |
 | `A` | Einsatzbuch: Auswertung des Sprachmodells (wenn eingeschaltet) |
 | `B` | Einsatzbuch: der neueste Einsatzbericht |
-| `L` | Einsatzbuch: Gegner lernt deine Gewohnheiten an/aus |
+| `El` | Einsatzbuch: Gegner lernt deine Gewohnheiten an/aus |
 | `Enter / Esc` | Einsatzbuch: zurück ins Hauptmenü (Esc schließt erst eine offene Auswertung oder einen Bericht) |
 | `F1 / F9` | Hilfe / Remote-Crew-Verwaltung |
 
@@ -451,7 +451,7 @@ Die Remote-Crew-Brücke hat eine Karte „Autopilot-Route“: „Wegpunkte auf d
 |---|---|
 | `<- / ->` | Ruder: Zielkurs ändern |
 | `Auf / Ab` | Telegraph hoch / runter |
-| `C` | Direkten Zielkurs eingeben (000-359) |
+| `Ze` | Direkten Zielkurs eingeben (000-359) |
 | `V` | Direkte Zielgeschwindigkeit eingeben (0-31 kn) |
 | `+ / -` | Telegraph: Motorenbefehl (ASTERN-STOP-SLOW-HALF-FULL-FLANK) |
 | `Karte` | Mausrad: Zoom, Ziehen mit der Maus: verschieben |
@@ -460,8 +460,8 @@ Die Remote-Crew-Brücke hat eine Karte „Autopilot-Route“: „Wegpunkte auf d
 | `, / .` | Ausguck-Seite: Radius kleiner / größer |
 | `B` | Ausguck-Seite: Fernglas über der Karte ein/aus |
 | `↑/↓ · ←/→ · Q/E · Space` | Fernglas oben (wie das Sehrohr): ↑/↓ neigen 2° (Umschalt: 10°) statt Maschinentelegraf, ←/→ schwenken 5° (Umschalt: 20°) statt Ruder, Q/E Zoom (16°, 8°, 4° Feld), Leertaste Stabilisierung |
-| `G` | Gefechtsstationen an/aus |
-| `W` | Autopilot: Zickzack-Suche, wachsendes Quadrat, aus |
+| `Ge` | Gefechtsstationen an/aus |
+| `We` | Autopilot: Zickzack-Suche, wachsendes Quadrat, aus |
 | `Rechtsklick` | Autopilot-Wegpunkt auf der Karte setzen |
 | `Backspace` | Autopilot-Route löschen |
 | `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist 30° beiderseits des Hecks taub) |
@@ -660,7 +660,7 @@ Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am
 | `Bild Auf / Ab` | Broadband / LOFAR / DEMON / TMA / Umwelt / ACTIVE |
 | `2` | 2 erneut drücken, um die Sonarseite weiterzuschalten |
 | `E` | Bathythermograph: lokales Schallprofil messen |
-| `W` | Aktivpuls CW / LFM |
+| `We` | Aktivpuls CW / LFM |
 | `U / V` | Solltiefe des gewählten Arrays (TAS oder VDS) um 10 m heben / senken |
 | `R` | Hörpeilung direkt: 000 bis 359.9 Grad rechtweisend |
 | `<- / ->` | Peilung +/-0.5 Grad; Umschalt: 5, Strg: 0.1 |
@@ -679,7 +679,7 @@ Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am
 | `K` | Linie am Cursor markieren (LOFAR-Grundton, DEMON Welle/Blatt) |
 | `Z / X` | LOFAR/DEMON-Frequenzcursor (Umschalt: 10 Hz) |
 | `Ctrl+Z / Ctrl+X` | Bandpass untere / obere Kante am Cursor |
-| `Q` | Integrationszeit 2 (FFT)/8/16/64 s |
+| `Ku` | Integrationszeit 2 (FFT)/8/16/64 s |
 | `Shift+Q` | LOFAR-Nonius: 20 Hz in nativen 0,5 Hz |
 | `Shift+N` | Notch auf der Cursorfrequenz |
 | `Shift+F` | DEMON-Trägerband 200-800 / 400-1400 / 1000-2000 Hz |
@@ -691,9 +691,9 @@ Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am
 | `K / Shift+K (TMA)` | TMA-Seite: Hypothese als Fix übernehmen / Umschalt: Solver-Vorschlag kopieren (Training) |
 | `Shift+T (TMA)` | TMA-Methode: Hypothese/Residuen, Ekelund-Entfernung, Dot-Stack (Umschalt+K bei Ekelund: Entfernung übernehmen) |
 | `LEER` | LOFAR Peak-Hold ein/aus |
-| `T` | TMA für ausgewählten Kontakt ein/aus |
-| `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
-| `G` | Gewählten Kontakt unabhängig von der Klassifikation an OPZ freigeben / zurückziehen |
+| `Te` | TMA für ausgewählten Kontakt ein/aus |
+| `Ze` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
+| `Ge` | Gewählten Kontakt unabhängig von der Klassifikation an OPZ freigeben / zurückziehen |
 | `M` | Ausgewählten Kontakt als Ziel setzen |
 
 ### Maus
@@ -817,10 +817,10 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 |---|---|
 | `M` | Ziel setzen (aus Sonarkontakten) |
 | `Auf / Ab halten` | Torpedotiefe (10-300 m) |
-| `T` | Torpedo-Lauftiefe eingeben (10-300 m), wie auf dem U-Boot |
+| `Te` | Torpedo-Lauftiefe eingeben (10-300 m), wie auf dem U-Boot |
 | `<- / ->` | Sonarkontakt für Zielwahl wählen |
 | `Strg+Eingabe` | Gewählte Waffe abfeuern (Torpedo, solange D/A/Z/R nichts anderes gewählt haben; ROE-Prüfung) |
-| `W` | Torpedotyp (Rohre laden um; W wechselt Mk1/Mk2) |
+| `We` | Torpedotyp (Rohre laden um; W wechselt Mk1/Mk2) |
 | `X` | Suchmuster im Endanlauf: Schlange, Kreis, Helix |
 | `, / .` | Sucheraktivierung -/+ (0,6 bis 3,0 sm, Schritte 0,2 sm) |
 | `Y` | Salve: ein Torpedo oder zwei im Fächer +/-8° |
@@ -829,7 +829,7 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 | `D` | Leichttorpedo vom HSP-5 wählen (nochmals: Schiffstorpedo) |
 | `V` | Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen |
 | `A` | ASROC auf den zugewiesenen Kontakt wählen (1-10 sm) |
-| `Z` | Wasserbombenmuster über das Heck wählen |
+| `Zett` | Wasserbombenmuster über das Heck wählen |
 | `R` | U-Jagd-Raketensalve auf das Ziel wählen (frische Entfernung, 0,4-3 sm) |
 | `Shift+R` | Raketen-Abwehrsalve in Richtung der Torpedowarnung wählen |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
@@ -957,9 +957,9 @@ Seite 3 (Besatzung) zeigt den Wachplan. Die Besatzung geht in drei Wachen: eine 
 | `Auf / Ab` | Team 1-3 auswählen (ohne Zuweisung) |
 | `Eingabe` | Gewähltes Team dem gewählten Kompartiment zuweisen |
 | `Backspace` | Gewähltes Team zurückziehen |
-| `C` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
-| `W` | Wache jetzt ablösen (Seite Besatzung) |
-| `G` | Gefechtsstationen an/aus (Seite Besatzung) |
+| `Ze` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
+| `We` | Wache jetzt ablösen (Seite Besatzung) |
+| `Ge` | Gefechtsstationen an/aus (Seite Besatzung) |
 | `M` | Sanitätstrupp zur nächsten Station mit Verwundeten (Seite Besatzung) |
 | `U` | Leute aus den Freiwachen zur am schwersten getroffenen Station (Seite Besatzung) |
 | `1-9` | Immer Station wechseln, keine Teamzuweisung |
@@ -1083,7 +1083,7 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 | Taste | Funktion |
 |---|---|
 | `Auf / Ab` | CIC-Track wählen |
-| `C` | OPZ-eigene Radar-/HOJ-Meldungen oder manuelle Fusion klassifizieren |
+| `Ze` | OPZ-eigene Radar-/HOJ-Meldungen oder manuelle Fusion klassifizieren |
 | `F` | NATO-Zugehörigkeit setzen |
 | `Shift+F` | OPZ-Kontaktdomainfilter wechseln |
 | `J` | Gemeinsame bedienersichtbare Track-ID eingeben |
@@ -1094,7 +1094,7 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 | `Q / E` | Radarbereich 10/20/40/80/120 sm (Q weiter, E näher) |
 | `<- / ->` | ASM-Track wählen |
 | `Strg+Eingabe` | Seiten 1-2: ESSM starten (VLS-Zelle); Seite 3: die gewählte Waffe feuern |
-| `G` | Chaff abwerfen (8 sm-Kegel, Kühlzeit) |
+| `Ge` | Chaff abwerfen (8 sm-Kegel, Kühlzeit) |
 | `R` | Seeraumradar an/aus (EMCON) |
 | `Shift+R` | Luftraumradar an/aus (EMCON) |
 | `I` | CIWS-Feuerfreigabe umschalten (gesperrt = feuert nie auf anfliegende ASM) |
@@ -1103,7 +1103,7 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 | `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Karte folgt dem eigenen Schiff an/aus |
 | `H` | OPZ Seite 3: Seefernaufklärer anfordern / heimschicken (Tasten wie beim Helikopter) |
-| `W` | Seite 3: Suchgebiet auf die gewählte Spur (sonst eigenes Schiff); Klick in die Karte für einen Punkt |
+| `We` | Seite 3: Suchgebiet auf die gewählte Spur (sonst eigenes Schiff); Klick in die Karte für einen Punkt |
 | `X / Shift+X` | Seite 3: Bojenmuster um das Suchgebiet wechseln / Umschalt bricht ab |
 | `B` | Seite 3: eine Boje am Flugzeug werfen |
 | `Umschalt+B` | Seite 3: Bojenmodus des Flugzeugs PASSIV / AKTIV |
@@ -1354,8 +1354,8 @@ Der Maschinenraum ist ein Maschinenleitstand. Seite 1 zeigt den Maschinentelegra
 | `+ / -` | Motorenbefehl (Telegraph) |
 | `Auf / Ab` | Telegraph hoch / runter |
 | `A` | Akustikmodus LEISE/NORMAL |
-| `G` | Antriebsanlage: AUTO, DIESEL (18 kn, -4 dB) oder TURBINE (+3 dB, +25 % Brennstoff) |
-| `C` | Direkten Zielkurs eingeben (000-359) |
+| `Ge` | Antriebsanlage: AUTO, DIESEL (18 kn, -4 dB) oder TURBINE (+3 dB, +25 % Brennstoff) |
+| `Ze` | Direkten Zielkurs eingeben (000-359) |
 | `V` | Direkte Zielgeschwindigkeit eingeben (0-31 kn) |
 
 ### Maus
@@ -1447,18 +1447,18 @@ Seite 3 zeigt das Tauchsonar wie eine Konsole: Lampen für Dom (grün im Wasser,
 |---|---|
 | `H` | HSP-5 starten (5 min Vorbereitung, tankt an Deck) / abbrechen / zurückrufen |
 | `Pfeiltasten` | Wegpunktpeilung und -entfernung einstellen |
-| `W` | Wegpunkt auf die Position des gewählten Kontakts (wie W beim Seefernaufklärer) |
+| `We` | Wegpunkt auf die Position des gewählten Kontakts (wie W beim Seefernaufklärer) |
 | `M` | Sonarkontakt als Ziel für Lufttorpedo setzen |
 | `B` | Eine Sonarboje an aktueller Position aussetzen |
 | `Umschalt+B` | Modus der nächsten Boje PASSIV / AKTIV |
 | `X` | Bojenmuster: einzeln, 2x2-Feld, Sperre quer zur Wegpunktpeilung, Kreis (X erneut: nächstes; einzeln löscht) |
 | `Shift+M` | MAD-Anflug ein/aus: tief und langsam, Tauchsonar eingeholt |
 | `Ctrl+R` | Suchradar ein/aus (aus: das ESM eines U-Boots hört es nicht, es findet aber auch keine Masten) |
-| `Z` | Rettungswinde über einer Insel (bis 0,1 sm) an/aus |
-| `T` | Sensorquelle: Tauchsonar / Sonarbojen |
+| `Zett` | Rettungswinde über einer Insel (bis 0,1 sm) an/aus |
+| `Te` | Sensorquelle: Tauchsonar / Sonarbojen |
 | `F` | Gewählten Hubschrauberkontakt bestätigen / aufheben |
-| `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
-| `G` | Gewählten Kontakt an die OPZ freigeben oder zurückziehen (wie am Sonar) |
+| `Ze` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
+| `Ge` | Gewählten Kontakt an die OPZ freigeben oder zurückziehen (wie am Sonar) |
 | `Shift+↑ / ↓` | Nächsten Tauchsonarkontakt wählen (Pfeile allein steuern den Wegpunkt) |
 | `Y` | Hubschrauber-Tauchsonar absenken / einholen |
 | `U / V` | Solltiefe des Tauchsonars heben / senken |
@@ -1592,8 +1592,8 @@ Der Automatikmodus (`A`) wählt Ziele und Techniken und koppelt das Stören wäh
 | `Auf / Ab` | Nächsten gelisteten Sender wählen (eine Gruppe zählt einmal) |
 | `← / →` | Durch die Auffassungen der gewählten Sendergruppe blättern |
 | `F / Shift+F / Ctrl+F` | Status (operativ, offen = noch nicht eingestuft, live, Speicher, alle) / Mindestbedrohung / Frequenzband wechseln |
-| `Z` | Gleichartige Auffassungen einer Richtung zu einem Eintrag bündeln an/aus |
-| `C` | Radarart zuordnen und aktuelle Peilungen an OPZ freigeben; Zuordnung löschen zieht die Freigabe zurück |
+| `Zett` | Gleichartige Auffassungen einer Richtung zu einem Eintrag bündeln an/aus |
+| `Ze` | Radarart zuordnen und aktuelle Peilungen an OPZ freigeben; Zuordnung löschen zieht die Freigabe zurück |
 | `E` | Gerichteten ECM-Kanal für die gewählte Auffassung aktivieren / freigeben |
 | `Shift+E` | ECM-Verfahren Noise, RGPO, VGPO oder Falschziele wechseln |
 | `A` | Automatische ECM-Priorisierung und Softkill-Kopplung umschalten |
@@ -2054,11 +2054,11 @@ Alle Tasten des U-Boots auf der uConsole (`F1` an einer U-Boot-Station zeigt die
 | `Shift+M` | Nächstes geladenes Rohr fluten (20 s) und Mündungsklappe öffnen; laut, die Fregatte kann es hören; nur ein geflutetes Rohr schießt (Waffen) |
 | `Strg+M` | Nächstes geladenes Rohr langsam fluten (60 s); die Fregatte hört es nur ganz nah (Waffen) |
 | `Umschalt+B` | Notanblasen, einmal (Führung, Maschine) |
-| `T` | Torpedo-Lauftiefe 5-300 m (Waffen) |
+| `Te` | Torpedo-Lauftiefe 5-300 m (Waffen) |
 | `Y` | Ein Torpedo oder Zweierfächer (Waffen) |
 | `X` | Suchmuster des Suchers: gerade, Schlange, Kreis, Helix (Waffen) |
 | `, / .` | Sucheraktivierung -/+ (0,6 bis 3,0 sm vor dem Datum, Schritte 0,2 sm; Waffen) |
-| `W` | Neuesten Drahttorpedo lenken: Peilung, dann Entfernung (Waffen) |
+| `We` | Neuesten Drahttorpedo lenken: Peilung, dann Entfernung (Waffen) |
 | `Shift+W` | Draht des neuesten Torpedos kappen (Waffen) |
 | `A` | Schleichfahrt ein/aus, höchstens 5 kn (Führung, Maschine) |
 | `Shift+A` | Aktiver Ping mit dem eigenen Sonar (Führung und Sonarraum) |
@@ -2066,7 +2066,7 @@ Alle Tasten des U-Boots auf der uConsole (`F1` an einer U-Boot-Station zeigt die
 | `Shift+H` | Auftauchen: an die Oberfläche, Brückenwache, Diesel an der Luft (Führung, Navigation) |
 | `H` | Von der Oberfläche: Alarmtauchen, Flutventile auf, äußerste Kraft (Führung, Navigation) |
 | `N` | Schnorchel aus-/einfahren, Diesel laden auf Schnorcheltiefe (Maschine) |
-| `P` | Mast aus-/einfahren auf Sehrohrtiefe: ESM hört Radare, das Sehrohr sieht, die Funkantenne ist klar (Führung, Mast & ESM, Funkraum) |
+| `Pe` | Mast aus-/einfahren auf Sehrohrtiefe: ESM hört Radare, das Sehrohr sieht, die Funkantenne ist klar (Führung, Mast & ESM, Funkraum) |
 | `Pfeiltasten` | Seite Mast & ESM: Emitter wählen |
 | `C / ← / →` | Seite Mast & ESM: Emitter aus der Bibliothek einstufen (C oder →: weiter, Umschalt+C oder ←: zurück; Annotation, keine Wahrheit) |
 | `Eingabe` | Seite Mast & ESM: Kreuzpeilung (oder Peillinie) in den Plot des U-Boots |
@@ -2081,20 +2081,20 @@ Alle Tasten des U-Boots auf der uConsole (`F1` an einer U-Boot-Station zeigt die
 | `O` | Maschine, Seite Vorräte: O2-Kerze zünden |
 | `Pfeiltasten` | Maschine, Seite Zellen: Regelzelle fluten (ab) oder lenzen (auf) |
 | `← / →` | Maschine, Seite Zellen: Trimmwasser nach vorn (rechts) oder achtern (links) |
-| `Z` | Maschine: Trimmautomatik an/aus |
+| `Zett` | Maschine: Trimmautomatik an/aus |
 | `Pfeiltasten` | Maschine, Seite Leckwehr: Abteilung wählen (auf/ab) und Aufgabe (links/rechts) |
 | `Eingabe` | Maschine, Seite Leckwehr: Trupp 1 (Umschalt: Trupp 2) mit der Aufgabe schicken |
 | `I` | Maschine, Seite Leckwehr: Schotten der Abteilung schließen oder öffnen |
 | `I` | Führung, Navigation: dem frischesten Ping- oder Torpedoalarm ausweichen (Kurs, Fahrt, Schicht, Schleichfahrt oder Täuschkörper) |
 | `Eingabe` | Funkraum: Lagemeldung an die Führung senden (Mast auf Sehrohrtiefe ausgefahren; die Fregatte kann die KW-Sendung peilen) |
 | `B` | Funkraum: Bojenantenne ausbringen oder einholen (Rundspruch bis 60 m bei höchstens 6 kn; reißt über 10 kn ab) |
-| `W` | Maschine, Seite Leckwehr: Wache jetzt ablösen |
+| `We` | Maschine, Seite Leckwehr: Wache jetzt ablösen |
 | `M` | Maschine, Seite Leckwehr: Sanitätstrupp zur nächsten Station mit Verwundeten |
 | `U` | Maschine, Seite Leckwehr: Leute aus den Freiwachen zur am schwersten getroffenen Station |
-| `G` | Gefechtsstationen an/aus (alle Wachen im Dienst, aufmerksam, aber ermüdend) |
+| `Ge` | Gefechtsstationen an/aus (alle Wachen im Dienst, aufmerksam, aber ermüdend) |
 | `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist achtern taub) |
 | `Rechtsklick` | Routen-Wegpunkt auf der Karte setzen (Navigation) |
-| `W` | Route: Zickzack-Suche, wachsendes Quadrat, aus (Navigation) |
+| `We` | Route: Zickzack-Suche, wachsendes Quadrat, aus (Navigation) |
 | `Backspace` | Route löschen (Navigation) |
 | `0` | Wetterseite des U-Boots (0 oder Esc schließt) |
 | `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
@@ -2536,11 +2536,11 @@ Das Modell läuft auf einem Server, nie auf der uConsole selbst. Der Schlüssel 
 Ein OpenAI-kompatibler Sprachdienst (`/audio/speech`) gibt dem Ersten Offizier und der Crew eine natürliche Stimme. Er ist ab Werk aus; ohne ihn spricht die Crew weiter über `espeak-ng`, und sonst ändert sich nichts. Eingerichtet wird er unter `F10` Optionen, Seite 2, **Sprachmodell**, Seite **2 Stimme** (`Tab` oder `Bild auf`/`Bild ab` wechselt, ein Klick auf den Reiter auch): an/aus, die Serveradresse (voreingestellt `https://api.openai.com/v1`), das Sprechmodell (voreingestellt `gpt-4o-mini-tts`; `tts-1` geht auch), die Stimme (`Links`/`Rechts` wechselt durch die OpenAI-Stimmen, `Eingabe` tippt einen anderen Namen), der API-Schlüssel, **Erster Offizier spricht**, **Crew-Meldungen mit dieser Stimme** und **Stimme testen**, das einen Probesatz spricht und die Dauer zeigt.
 
 - Seite **3 Klang**: **Temperature** (niedriger = ruhiger und gleichmäßiger, höher = lebhafter; Qwen-Standard 0,9), **top_p** (niedriger = weniger Ausreißer; Qwen-Standard 1,0), **Seed** (eine feste Zahl hält den Vortrag über alle Sätze gleich; -1 = zufällig, einmal pro Start gezogen, sodass die Stimme in einer Sitzung gleich bleibt) und **Text vor dem Sprechen bereinigen** (ab Werk an: Emojis, Markdown, Links, „haha“ und Regieanweisungen wie *lacht* fallen weg). `Links`/`Rechts` ändern die Zahlen schrittweise, `Eingabe` oder ein Klick tippt eine. Temperature, top_p und Seed gehen nur an Dienste, die sie annehmen, etwa einen Qwen-TTS-Server hinter der OpenAI-kompatiblen Adresse; OpenAIs eigener Dienst bekommt sie nie, und ein Server, der sie ablehnt, wird ohne sie gefragt.
-- Erster Offizier: Seine Antworten (Lagemeldung, Frage, getippter Befehl, Klassifizierungshilfe, Einweisung) und die Tipps des Coachs werden auf der uConsole gesprochen, sobald sie eintreffen. Zahlen werden immer Ziffer für Ziffer gesprochen wie auf Wache (431 als „vier drei eins“, 0,9 als „null Komma neun“), Einheiten und Abkürzungen ausgeschrieben (kn als „Knoten“, sm als „Seemeilen“, ° als „Grad“, Rtg als „Richtung“, 54°21,4'N als „fünf vier Grad zwo eins Komma vier Minuten Nord“). Auch Temperaturen und Zeichen werden ausgesprochen: −2 °C als „minus zwo Grad Celsius“, 0–360 als „null bis drei sechs null“, ± als „plus minus“; kurze Großbuchstaben-Kürzel wie HQ werden buchstabiert, Wörter in Großschrift normal gesprochen, und Zeichen wie |, ·, / oder Pfeile werden zu einer kurzen Pause. Die Stimme spricht fest in der Spielsprache, Deutsch oder Englisch; Sprachdienste, die ein Feld für die Sprache kennen (etwa Qwen-TTS), bekommen sie zusätzlich mitgeschickt, und die Sprechanweisung an den Dienst ist selbst in der Spielsprache geschrieben (eine englische Anweisung zieht manche Modelle zu englischem Akzent), damit kein Satzanfang in einer anderen Sprache oder mit fremdem Akzent beginnt. Erster Offizier, Crew und Log sprechen in einem ruhigen, gleichmäßigen Ton, ohne Lachen oder Seufzen. Lange Antworten enden nach etwa 700 Zeichen an einem Satzende.
+- Erster Offizier: Seine Antworten (Lagemeldung, Frage, getippter Befehl, Klassifizierungshilfe, Einweisung) und die Tipps des Coachs werden auf der uConsole gesprochen, sobald sie eintreffen. Zahlen werden immer Ziffer für Ziffer gesprochen wie auf Wache (431 als „vier drei eins“, 0,9 als „null Komma neun“), Einheiten und Abkürzungen ausgeschrieben (kn als „Knoten“, sm als „Seemeilen“, ° als „Grad“, Rtg als „Richtung“, 54°21,4'N als „fünf vier Grad zwo eins Komma vier Minuten Nord“). Auch Temperaturen und Zeichen werden ausgesprochen: −2 °C als „minus zwo Grad Celsius“, 0–360 als „null bis drei sechs null“, ± als „plus minus“; kurze Großbuchstaben-Kürzel wie HQ werden buchstabiert und einzelne Buchstaben beim Namen genannt (K1 als „Ka eins“, HQ als „Ha Ku“), Wörter in Großschrift normal gesprochen, und Zeichen wie |, ·, / oder Pfeile werden zu einer kurzen Pause. Die Stimme spricht fest in der Spielsprache, Deutsch oder Englisch; Sprachdienste, die ein Feld für die Sprache kennen (etwa Qwen-TTS), bekommen sie zusätzlich mitgeschickt, und die Sprechanweisung an den Dienst ist selbst in der Spielsprache geschrieben (eine englische Anweisung zieht manche Modelle zu englischem Akzent), damit kein Satzanfang in einer anderen Sprache oder mit fremdem Akzent beginnt. Erster Offizier, Crew und Log sprechen in einem ruhigen, gleichmäßigen Ton, ohne Lachen oder Seufzen. Lange Antworten enden nach etwa 700 Zeichen an einem Satzende.
 - Crew: Mit eingeschalteten **gesprochenen Crew-Meldungen** (Optionen, Seite 2) spricht die Crew mit derselben Stimme statt mit `espeak-ng`; eine Meldung, die der Dienst nicht liefern kann, spricht `espeak-ng`. Meldungen, die älter als 20 s sind, fallen weg, statt verspätet zu kommen.
 - Log: Seite **4 Meldungen** liest das Log (`F11`) der eigenen Seite vor: **Logmeldungen vorlesen** (ab Werk an, sobald die Stimme eingerichtet ist) und ein Schalter je Station des Logs: Brücke und Navigation (NAV), Funk (FUNK; auf dem U-Boot sein Funkraum), Sonar, Waffen (WAF), OPZ, Schaden und Leckwehr (SCH), Ausguck (AUSG), Mission (MIS) sowie Wetter und Welt (WET). Unter jeder Station zählt die Seite ihre Meldungen der letzten 5 Minuten, so fällt eine Station, die zu viel meldet, gleich auf; solange die Stimme vorliest, hat die untere Zeile des `F11`-Logs je Station einen Knopf („SONAR An“), den ein Klick stumm oder wieder laut schaltet. Jeder Eintrag wird am Stück gesprochen wie ein Satz. Logmeldungen kommen nach den Antworten des Ersten Offiziers und den Crew-Rufen; jede Meldung wird vorgelesen, eine nach der anderen in der Reihenfolge des Logs (erst bei mehr als 48 wartenden fällt die älteste weg), und was die Crew schon ausruft, wird nicht noch einmal vorgelesen. Zahlen kommen wie alles, was die Stimme sagt, Ziffer für Ziffer.
 - Der Schlüssel liegt in `~/.u-jagd/tts_key` oder kommt aus `U_JAGD_TTS_KEY`. Bleibt er leer, gilt der Schlüssel des Sprachmodells, wenn beide Adressen denselben Server nennen. Wie dieser gelangt er nie in Einstellungen, Spielstände, Protokolle oder einen Browser.
-- Die Stimme spielt auf einem eigenen Tonkanal und schneidet nie den Sonarton ab; Anfragen und Dekodieren laufen neben dem Spiel, ein langsamer Dienst hält also kein Bild an. Eine lange Antwort geht Satz für Satz hinaus, sodass der erste Satz schon spielt, während der Rest noch erzeugt wird, und Ton, den ein Dienst streamt (OpenAI tut das), spielt schon, während er noch ankommt; wie lange es bis zum ersten Ton dauert, liegt am Dienst. Mit ausgeschaltetem Spielton wird nichts gesprochen.
+- Die Stimme spielt auf einem eigenen Tonkanal und schneidet nie den Sonarton ab; Anfragen und Dekodieren laufen neben dem Spiel, ein langsamer Dienst hält also kein Bild an. Jede Antwort geht am Stück hinaus, und Logmeldungen, die zusammen warten, gehen gemeinsam als eine Anfrage, denn ein Sprachmodell beginnt jede Anfrage mit leicht anderer Stimme; was schon angekommen ist, spielt als ein Stück, damit nichts stockt. Ton, den ein Dienst streamt (OpenAI tut das), spielt schon, während er noch ankommt; wie lange es bis zum ersten Ton dauert, liegt am Dienst. Mit ausgeschaltetem Spielton wird nichts gesprochen.
 - Remote-Crew-Browser behalten ihre eigene Stimme für die Crew-Meldungen (Einstellungen, Sprachausgabe des Browsers); die Antworten des Ersten Offiziers zeigt ein Browser an, spricht sie aber nicht.
 
 ### Nicht modelliert

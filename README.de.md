@@ -10,16 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.255**
+Aktuelle Version: **1.3.258**
 
-Version 1.3.255 macht die Prüfungen vor einem Release zuverlässiger,
-damit neue Versionen nicht mehr ausbleiben. Eine Browser-Prüfung der
-Stationsübergabe nennt jetzt den Grund, wenn sie scheitert, statt still
-abzulaufen. Das Spiel selbst ist wie in 1.3.254: Die Stimme liest jede
-Logmeldung der Reihe nach mit deutscher Sprechanweisung vor, dazu
-tägliche Kurzeinsätze, Ausbildungsfortschritt und eine Zeile auf den
-Endtafeln, was den Einsatz entschieden hat. Spielstände sind v53; v38
-bis v52 laden weiter.
+Version 1.3.258 hält die Stimme gleichmäßig und klar. Jede Antwort des
+Ersten Offiziers geht jetzt am Stück an den Sprachdienst statt Satz für
+Satz, und Logmeldungen, die zusammen warten, werden als eine Anfrage
+vorgelesen, denn ein Sprachmodell beginnt jede Anfrage mit leicht anderer
+Stimme. Was schon angekommen ist, spielt als ein Stück, so stolpert die
+Stimme auf einer ausgelasteten uConsole nicht mehr und verschluckt keine
+Silben. Einzelne Buchstaben werden beim Namen genannt: Kontakt K1 heißt
+„Ka eins“, HQ „Ha Ku“. Tasten und Spielstände bleiben gleich (v53;
+Spielstände v38 bis v52 laden weiter).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

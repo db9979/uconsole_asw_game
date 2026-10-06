@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.258
+
+Release 1.3.258 keeps the voice even and clear. Every answer of the
+executive officer now goes to the speech service in one piece instead of
+sentence by sentence, and log entries waiting together are read as one
+request, because a speech model starts every request with a slightly
+different voice. Audio that has already arrived plays as one sound, so a
+busy uConsole no longer makes the voice stumble or swallow syllables.
+Single letters are said by name: contact K1 is "Ka eins" in German, HQ is
+"Ha Ku". Keys and saves are unchanged (v53; v38 to v52 saves still load).
+
 ## 1.3.255
 
 Release 1.3.255 makes the release checks more reliable, so new versions

@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.258
+
+Version 1.3.258 hält die Stimme gleichmäßig und klar. Jede Antwort des
+Ersten Offiziers geht jetzt am Stück an den Sprachdienst statt Satz für
+Satz, und Logmeldungen, die zusammen warten, werden als eine Anfrage
+vorgelesen, denn ein Sprachmodell beginnt jede Anfrage mit leicht anderer
+Stimme. Was schon angekommen ist, spielt als ein Stück, so stolpert die
+Stimme auf einer ausgelasteten uConsole nicht mehr und verschluckt keine
+Silben. Einzelne Buchstaben werden beim Namen genannt: Kontakt K1 heißt
+„Ka eins“, HQ „Ha Ku“. Tasten und Spielstände bleiben gleich (v53;
+Spielstände v38 bis v52 laden weiter).
+
 ## 1.3.255
 
 Version 1.3.255 macht die Prüfungen vor einem Release zuverlässiger,

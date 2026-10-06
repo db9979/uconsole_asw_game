@@ -196,6 +196,13 @@ _CAPITALS = re.compile(r"(?<![\w])[A-ZÄÖÜ]{2,}(?![\w])")
 _VOWELS = frozenset("AEIOUYÄÖÜ")
 
 
+# Single capital letters (a contact "K1", a spelled "H Q") said by their
+# name in the listener's language ("Ka eins", "Ha Ku"); not the "U" of
+# "U-Boot".
+LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+_LETTER = re.compile(r"(?<![\w-])([A-Z])(?![\w-])|(?<![\w-])([A-Z])(?=\d)")
+
+
 def _capitals(match) -> str:
     word = match.group()
     vowels = sum(char in _VOWELS for char in word)
@@ -234,6 +241,9 @@ def spoken_words(text, words) -> str:
     text = _DROP.sub(" ", text)
     text = re.sub(r"…|\.{3,}", ".", text)
     text = _CAPITALS.sub(_capitals, text)
+    text = _LETTER.sub(lambda m: words.get("letter_" + (m.group(1) or m.group(2)),
+                                           m.group(1) or m.group(2))
+                       + ("" if m.group(1) else " "), text)
     text = re.sub(r" {2,}", " ", text)
     text = re.sub(r" ([,.!?;:])", r"\1", text)
     # Pauses left next to other punctuation or at either end.
@@ -241,25 +251,6 @@ def spoken_words(text, words) -> str:
     text = re.sub(r",\s*([.!?;:])", r"\1", text)
     text = re.sub(r"([.!?;:])\s*,", r"\1", text)
     return text.strip(" ,")
-
-
-_SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
-
-
-def sentence_chunks(text, first: int = 1, size: int = 240, limit: int = 4) -> list[str]:
-    """Split an answer for faster speech: the first ``first`` sentence(s)
-    alone, so the voice starts early, then pieces of whole sentences up to
-    about ``size`` characters; at most ``limit`` pieces."""
-    if type(text) is not str:
-        return []
-    sentences = [part for part in _SENTENCE_END.split(" ".join(text.split())) if part]
-    chunks = [" ".join(sentences[:first])] if sentences else []
-    for sentence in sentences[first:]:
-        if len(chunks) < limit and (len(chunks) == 1 or len(chunks[-1]) + len(sentence) >= size):
-            chunks.append(sentence)
-        else:
-            chunks[-1] = chunks[-1] + " " + sentence
-    return [chunk for chunk in chunks if chunk]
 
 
 def clean_for_speech(text) -> str:

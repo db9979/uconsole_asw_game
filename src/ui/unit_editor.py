@@ -19,7 +19,7 @@ from src.data.validation import (ContentValidationError, ValidationIssue, enum,
                                  finite_number, integer, issue, mapping, pair, text,
                                  unique, validate_user_key, localized_error,
                                  localized_issue)
-from src.ui import editor_widgets as widgets
+from src.ui import editor_widgets as widgets, game_menu
 from src.ui import unit_models
 
 
@@ -688,6 +688,14 @@ class UnitEditor:
                     return True
                 if event.key == pygame.K_i and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
                     self._begin_path("import"); return True
+                if (event.key == pygame.K_g and getattr(event, "mod", 0) & pygame.KMOD_CTRL
+                        and self.selected is not None):
+                    # Open the selected profile and start the Wikipedia import.
+                    self.open_selected()
+                    if (self.current is not None and self.current.data.get("profile_kind")
+                            in ("sub", "surface", "aircraft")):
+                        self._begin_wiki_import()
+                    return True
                 # Real navigation keys move the list; everything else typed
                 # here (including bare letters, unlike the old "N" shortcut
                 # above) goes straight into the live search filter, matching
@@ -986,25 +994,47 @@ class UnitEditor:
                                   (detail.x, detail.bottom - 29, detail.width, 25),
                                   color=widgets.PALETTE.danger if problems else widgets.PALETTE.focus,
                                   size=13)
-        if self.mode == "browser":
-            hints = ("editor.filter_hint", "editor.select_hint", "editor.open_hint",
-                     "editor.new_hint", "editor.remove_hint",
-                     "editor.import_hint", "editor.wiki_import_hint", "editor.esc_browser")
-        elif self.mode == "kind":
-            hints = ("editor.select_hint", "editor.create_hint", "editor.cancel_short_hint")
-        elif self.mode == "wiki_import":
-            hints = (("editor.wiki_apply_hint", "editor.cancel_short_hint") if self.wiki_result is not None
-                     else ("editor.wiki_fetch_hint", "editor.cancel_short_hint"))
-        else:
-            hints = ("editor.field_hint", "editor.edit_hint", "editor.save_hint",
-                     "editor.bundle_hint", "editor.wiki_hint", "editor.wiki_import_hint",
-                     "editor.cancel_hint")
+        hints = self._footer_items()
         widgets.draw_footer(surface, footer, hints, tr=self.tr)
         if self.path_action:
-            box = pygame.Rect(max(20, bounds.width // 6), bounds.height // 2 - 55,
-                              max(1, bounds.width * 2 // 3), 110)
+            box = pygame.Rect(max(20, bounds.width // 6), bounds.height // 2 - 70,
+                              max(1, bounds.width * 2 // 3), 140)
             inner = widgets.panel(surface, box, "editor.bundle_path", tr=self.tr)
             self.path_input.draw(surface, pygame.Rect(inner.x, inner.y + 5, inner.width, 34), focused=True)
+            widgets.confirm_buttons(surface, (inner.x, inner.y + 46, inner.width, 28),
+                                    (("Enter", "editor.bar.ok"), ("Esc", "editor.bar.cancel")),
+                                    tr=self.tr)
+        self.close_rect = None
+        if not self.path_action:
+            # The page's close box: Esc (back to the list, or out of the editor).
+            self.close_rect = game_menu.close_button(surface, (0, 4, bounds.width - 4, 40))
         if self.status:
-            widgets.draw_text(surface, raw_text(self.status), (bounds.width // 2, 18, bounds.width // 2 - 20, 30),
+            widgets.draw_text(surface, raw_text(self.status), (bounds.width // 2, 18, bounds.width // 2 - 70, 30),
                               color=widgets.PALETTE.focus, align="right")
+
+    def _footer_items(self) -> tuple:
+        """The key chips at the foot of the page for the current mode."""
+        if self.path_action:
+            return (("Enter", "editor.bar.ok"), ("Esc", "editor.bar.cancel"))
+        if self._delete_pending:
+            return (("Enter", "editor.bar.delete_yes"), ("Esc", "editor.bar.no"))
+        if self.mode == "browser":
+            return (("↑/↓", "editor.bar.select"), ("Enter", "editor.bar.open"),
+                    ("Ctrl+N", "editor.bar.new"), ("Del", "editor.bar.remove"),
+                    ("Ctrl+I", "editor.bar.import"), ("Ctrl+G", "editor.bar.wiki_import"),
+                    ("Backspace", "editor.bar.filter"), ("Esc", "editor.bar.close"))
+        if self.mode == "kind":
+            return (("↑/↓", "editor.bar.select"), ("Enter", "editor.bar.create"),
+                    ("Esc", "editor.bar.cancel"))
+        if self.mode == "wiki_import":
+            return (("Enter", "editor.bar.wiki_apply" if self.wiki_result is not None
+                     else "editor.bar.wiki_fetch"), ("Esc", "editor.bar.cancel"))
+        if self.fields.editing:
+            return (("Enter", "editor.bar.apply"), ("Esc", "editor.bar.cancel"),
+                    ("Ctrl+S", "editor.bar.save"))
+        wiki = ((("Ctrl+G", "editor.bar.wiki_import"),) if self.current is not None
+                and self.current.data.get("profile_kind") in ("sub", "surface", "aircraft") else ())
+        return ((("↑/↓", "editor.bar.field"), ("Enter", "editor.bar.edit"),
+                 ("Ctrl+S", "editor.bar.save"), ("Ctrl+E", "editor.bar.export"),
+                 ("Ctrl+I", "editor.bar.import"), ("Ctrl+W", "editor.bar.wiki"))
+                + wiki + (("Esc", "editor.bar.back"),))

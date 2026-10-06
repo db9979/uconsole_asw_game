@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.280
+## 1.3.281
 
-Version 1.3.280 bringt die restlichen Stationsbedienungen auf die Maus.
+Version 1.3.281 bringt die restlichen Stationsbedienungen auf die Maus.
 ESSM auf der Zielseite der OPZ, der Torpedo des Seefernaufklärers, die
 ASROC des Begleiters und der Lufttorpedo des Hubschraubers haben je einen
 Feuerknopf, der erst beim zweiten Klick innerhalb von 3 s feuert; der erste

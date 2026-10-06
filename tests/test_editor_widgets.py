@@ -55,6 +55,19 @@ def test_fieldlist_click_with_float_pointer_selects_integer_row():
     assert fields.selected_row is not None  # would raise on a float index
 
 
+def test_fieldlist_second_click_on_a_row_opens_it_for_editing():
+    """Pygame's button events carry no double-click count: a click picks
+    the row, a second click on the same row opens it as Enter does."""
+    fields = FieldList()
+    fields.set_rows([FieldRow(f"field.{i}", str(i), str(i), lambda value: None)
+                    for i in range(5)])
+    rect = pygame.Rect(0, 0, 200, 200)
+    fields.handle_event(_click((20.0, 70.0)), rect, row_height=28)
+    assert fields.selected == 2 and not fields.editing
+    fields.handle_event(_click((20.0, 70.0)), rect, row_height=28)
+    assert fields.editing
+
+
 def _key(char):
     return pygame.event.Event(pygame.KEYDOWN, key=ord(char), unicode=char, mod=0)
 

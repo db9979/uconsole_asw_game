@@ -285,8 +285,7 @@ def telemetry_rows(game, boat) -> list:
 
 def draw_bottom(game, boat) -> None:
     game.draw_bottom_panel(feed_entries(boat), telemetry_rows(game, boat),
-                           heading="uboot.local.log", ticker_keys=TELEMETRY_TICKER_KEYS,
-                           ticker_hint="")
+                           heading="uboot.local.log", ticker_keys=TELEMETRY_TICKER_KEYS)
 
 
 # --- chart ---------------------------------------------------------------------

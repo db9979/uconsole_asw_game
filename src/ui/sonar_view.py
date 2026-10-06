@@ -58,6 +58,10 @@ HINT_KEYS = {
 SHIFT_T_KEYS = (("(Shift+T)", "Shift+T"), ("(Umschalt+T)", "Shift+T"))
 SHIFT_K_KEYS = (("Shift+K", "Shift+K"), ("Umschalt+K", "Shift+K"))
 
+# Footer spellings of the cursor and TMA hypothesis keys as legends a click
+# can press (``pointer.legend_keys``).
+_CURSOR_KEYS = {"^Z/^X": "Ctrl+Z/Ctrl+X"}
+
 
 def _text(screen, text, rect, color=TEXT, size=14, align="left", keys=None):
     """One readable line, ellipsized rather than shrunk into microtext; the
@@ -1282,12 +1286,22 @@ def draw_sonar_view(game, tr=None) -> None:
             rect = segment["rect"]
             layout.record_geometry("sonar-action", rect,
                                    f"sonar:action:{segment['action']}")
-            if segment["action"] != "cursor" and not (     # a readout, not a switch
-                    segment["action"] == "array" and getattr(game, "local_side", None) == "uboot"):
+            if segment["action"] == "cursor":
+                # Cursor and TMA hypothesis: the chip presses its keys (left
+                # half the first, right half the second), as the keyboard does.
+                pointer.add_legend(rect, _CURSOR_KEYS.get(segment["text"][0],
+                                                          segment["text"][0]))
+            elif not (segment["action"] == "array"     # the boat's array: a readout
+                      and getattr(game, "local_side", None) == "uboot"):
                 pointer.add_hotspot(rect)
             pygame.draw.rect(screen, PANEL, rect)
             pygame.draw.line(screen, GRID, rect.topright, rect.bottomright)
-            layout.command_segment(screen, rect, *segment["text"], size=11)
+            if (segment["action"] == "array"
+                    and getattr(game, "local_side", None) == "uboot"):
+                # Shift+B blows ballast aboard: the boat's array is no key.
+                layout.command_segment(screen, rect, "", *segment["text"][1:], size=11)
+            else:
+                layout.command_segment(screen, rect, *segment["text"], size=11)
         if geometry["footer_keys"] is not None:
             # The rest of the sonar keys, one chip each (a click presses it).
             _shortcut_footer(screen, *geometry["footer_keys"])

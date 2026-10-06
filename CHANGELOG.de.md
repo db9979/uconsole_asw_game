@@ -4,6 +4,22 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.252
+
+Version 1.3.252 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
+schauen jetzt in einem Kegel von etwa 45 Grad zu jeder Seite und in einem
+Tiefenfenster nach vorn, schalten nach Signalstärke gegen ihr Eigengeräusch
+auf, suchen langsam und leise und sprinten erst nach der Aufschaltung.
+KI-U-Boote reagieren auf einen Ping nach seiner Lautstärke: ein leiser
+schickt sie tief und langsam, ein naher lässt sie vom Pinger weglaufen. Sie
+weichen einem Torpedo aus, indem sie ihn querab nehmen, einen Täuschkörper
+ausstoßen und davonschleichen, und verstecken sich auf der Seite der
+Sprungschicht abseits eines ausgebrachten Tiefensonars. Harte Kurven kosten
+jetzt Fahrt, passive Kontakte an der Erfassungsgrenze schwinden und kommen
+wieder, und beim Geleitzugangriff warnt die Fregatte ihre Frachter, von denen
+etwa jeder zweite vor einem gehörten Torpedo abdreht. Spielstände sind v53;
+v38- bis v52-Spielstände lassen sich weiter laden.
+
 ## 1.3.251
 
 Version 1.3.251 bringt neue Inhalte und mehr Komfort. Der Tageseinsatz ist

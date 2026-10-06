@@ -10,19 +10,20 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.251**
+Current release: **1.3.252**
 
-Release 1.3.251 adds new content and comfort. The daily mission is now a
-short mission picked from the date for each side, and the game remembers
-the mission length you chose; new players start on short missions.
-Training sits second in the main menu, ticks finished lessons, selects the
-next one, and N on the end panel starts it. Three new frigate lessons
-cover air defence against an inbound missile, ESM against a merchant's
-radar and torpedo defence with the Nixie. When the crew assist runs the
-U-boat, it now takes a good TMA solution as its fix and attacks with it.
-Both end panels say in one line what decided the mission, and the logbook
-shows a ribbon for each scenario won, also in the browser. Saves are v53;
-v38 to v52 saves still load.
+Release 1.3.252 makes the underwater fight more realistic. Torpedo seekers
+now look ahead in a cone of about 45 degrees to each side and within a depth
+window, lock on by signal strength against their own noise, search slowly
+and quietly and sprint only once they hold a target. AI submarines react to
+a ping by its loudness: a faint one sends them deep and slow, a close one
+makes them run from the pinger. They evade a torpedo by putting it on the
+beam, dropping a decoy and creeping away, and they hide on the side of the
+layer away from a streamed variable-depth sonar. Hard turns now cost speed,
+passive contacts near the detection limit fade in and out, and in the
+convoy attack the escort warns its merchants, about every second one of
+which turns away from a torpedo it hears. Saves are v53; v38 to v52 saves
+still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

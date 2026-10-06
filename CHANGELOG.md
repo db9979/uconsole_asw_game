@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.237
+## 1.3.238
 
-Release 1.3.237 puts latitude and longitude on every chart of every
+Release 1.3.238 puts latitude and longitude on every chart of every
 station. Until now only the Bridge chart and the charts beside the
 submarine's stations showed the graticule; on the uConsole the OPZ
 (CIC) plot, the radio room's cross-fix chart and the submarine's pilot
@@ -18,6 +18,15 @@ clear of range rings, bearing scale and other labels. The browser's
 charts already showed the graticule. The stylized fixed chart keeps its
 NM grid. Gameplay, keys and saves are unchanged (v53; v38 to v52 saves
 still load).
+
+## 1.3.235
+
+Release 1.3.235 fixes a hang when the own microphone stops. Switching
+the noise-discipline microphone off, ending a mission or quitting could
+freeze the game while a capture block was being read; the macOS build's
+self-test hung there. The device now closes without waiting on the game,
+on the uConsole, Windows and macOS alike. Saves are v53; v38 to v52 saves
+still load.
 
 ## 1.3.234
 

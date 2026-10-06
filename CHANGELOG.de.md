@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.237
+## 1.3.238
 
-Version 1.3.237 zeigt Breite und Länge auf jeder Karte jeder Station.
+Version 1.3.238 zeigt Breite und Länge auf jeder Karte jeder Station.
 Bisher hatten nur die Brückenkarte und die Karten neben den Stationen des
 U-Boots das Gradnetz; auf der uConsole zeigten das Lagebild der OPZ, die
 Kreuzpeilkarte des Funkraums und die Lotsenkarte des U-Boots noch ihr
@@ -18,6 +18,16 @@ Entfernungsringen, Peilskala und anderen Beschriftungen frei. Die Karten
 im Browser hatten das Gradnetz schon. Die stilisierte feste Karte behält
 ihr sm-Gitter. Spielablauf, Tasten und Spielstände bleiben gleich (v53;
 v38 bis v52 laden weiter).
+
+## 1.3.235
+
+Version 1.3.235 behebt einen Hänger beim Stoppen des eigenen Mikrofons.
+Das Abschalten des Mikrofons für die Geräuschdisziplin, das Ende eines
+Einsatzes oder das Beenden konnte das Spiel einfrieren, während gerade ein
+Aufnahmeblock gelesen wurde; der Selbsttest des macOS-Builds blieb dort
+hängen. Das Gerät schließt jetzt, ohne auf das Spiel zu warten, auf der
+uConsole, unter Windows und unter macOS. Spielstände sind v53;
+Spielstände v38 bis v52 laden weiterhin.
 
 ## 1.3.234
 

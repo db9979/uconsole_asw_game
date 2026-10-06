@@ -320,7 +320,7 @@ def test_talking_never_changes_the_simulation(clock):
 
 @pytest.mark.parametrize("language", ["en", "de"])
 @pytest.mark.parametrize("side", ["frigate", "uboot"])
-def test_button_and_bubble_fit_and_take_the_mouse(clock, language, side):
+def test_button_and_bubble_fit_and_take_the_mouse(clock, language, side, tmp_path):
     with FakeLlmServer("Ja.") as llm, FakeSttServer() as speech:
         game = _game()
         game._set_preference("language", language)
@@ -347,7 +347,7 @@ def test_button_and_bubble_fit_and_take_the_mouse(clock, language, side):
                      if item["text"] == game.tr("talk.state.answer"))
         inside = [item for item in traced[start:] if panel.colliderect(item["ink"])]
         assert len(inside) >= talk_view.MAX_LINES, "bubble drew no text"
-        pygame.image.save(game.screen, f"/tmp/talk-bubble-{side}-{language}.png")
+        pygame.image.save(game.screen, str(tmp_path / f"talk-bubble-{side}-{language}.png"))
         problems = [f"{a['text']!r} / {b['text']!r}"
                     for a, b in itertools.combinations(inside, 2)
                     if a["ink"].colliderect(b["ink"])]

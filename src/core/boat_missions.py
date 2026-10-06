@@ -368,10 +368,41 @@ def update(game, dt: float) -> None:
         mission_modes.update(game, kind, dt)
     elif kind == "escort":
         _zigzag(game)
+    elif kind == "convoy_attack":
+        _convoy_torpedo_turn(game)
     elif kind == "swimmers":
         _hold(game, dt)
     elif kind == "strait":
         _shuttle(game)
+
+
+def _convoy_torpedo_turn(game) -> None:
+    """The escort warns its convoy of a torpedo it hears: a merchant that gets
+    the signal (``BOAT_CONVOY_TORPEDO_TURN_P``) makes an emergency turn of
+    ``BOAT_CONVOY_TORPEDO_TURN_DEG`` away from the intercept bearing (from the frigate's own torpedo warnings, never the
+    weapon itself) while the warning lasts, then comes back to the convoy's
+    course and speed (stateless; the evasion timer is saved with each ship)."""
+    if game.damage.ship_sunk:
+        warnings = []
+    else:
+        warnings = game.torpedo_warnings(held=False)
+    course = float(config.SCENARIOS[game.scenario_key]["ship_course"])
+    for index, ship in enumerate(convoy(game), start=1):
+        if ship.sunk:
+            continue
+        # Not every merchant gets the signal in time: a stateless draw per
+        # ship and ten minutes (longer than a torpedo runs) decides who turns.
+        heard = (detrand.u01(game.seed, "convoy-torpedo-turn", index,
+                             int(game.sim_t // 600.0))
+                 < config.BOAT_CONVOY_TORPEDO_TURN_P)
+        if warnings and heard and ship._torpedo_evade_left <= 0.0:
+            side = -1.0 if config.angle_diff_deg(warnings[0]["bearing"], course) > 0.0 else 1.0
+            away = (course + side * config.BOAT_CONVOY_TORPEDO_TURN_DEG) % 360.0
+            # alert_torpedo steers the reciprocal of the threat bearing.
+            ship.alert_torpedo((away + 180.0) % 360.0)
+        elif ship._torpedo_evade_left <= 0.0:
+            ship.target_course = course
+            ship.target_speed = min(config.BOAT_CONVOY_SPEED_KN, ship.speed_cap_kn)
 
 
 def _shuttle(game) -> None:

@@ -7609,6 +7609,7 @@
   "voice.help.tts_top_p": "Niedriger = weniger Ausreißer (Qwen-Standard 1,0). Links/Rechts ±0,05",
   "voice.help.tts_seed": "Feste Zahl = gleicher Vortrag über alle Sätze; -1 = zufällig. Eingabe: tippen",
   "voice.help.tts_clean": "Entfernt Emojis, Markdown, „haha“ und *lacht* vor dem Sprechen.",
+  "voice.digit_point": "Komma",
   "voice.seed_random": "-1 (zufällig)",
   "llm.invalid.tts_temperature": "Temperature muss zwischen 0 und 2 liegen.",
   "llm.invalid.tts_top_p": "top_p muss zwischen 0,05 und 1 liegen.",

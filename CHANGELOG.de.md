@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.236
+## 1.3.242
 
-Version 1.3.236 macht den Ersten Offizier (`F7`) und die Einstellungen
+Version 1.3.242 macht den Ersten Offizier (`F7`) und die Einstellungen
 des Sprachmodells auf dem uConsole und in den Desktop-Apps vollständig mit
 der Maus bedienbar. Ein Klick auf einen Reiter wählt die Art der Anfrage;
 blaue Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen
@@ -20,6 +20,19 @@ das Protokoll jetzt ab dem ersten Schritt und auch, während ein Befehl auf
 Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
 bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52
 laden weiter.
+
+## 1.3.237
+
+Version 1.3.237 lässt die optionale Stimme Zahlen sprechen wie auf Wache:
+Ziffer für Ziffer. Erster Offizier, Coach, Crew-Meldungen und der
+Stimmtest sagen 431 jetzt als „vier drei eins“ und 0,9 als „null Komma
+neun“ (auf Englisch „four three one“, „zero point niner“), ob der Text vor
+dem Sprechen bereinigt wird oder nicht. Die Stimme setzt auch früher
+ein: Eine lange Antwort geht Satz für Satz hinaus, der erste Satz spielt
+schon, während der Rest noch erzeugt wird, und Ton, den ein Dienst streamt
+(OpenAI tut das), spielt schon während der Übertragung. Die Tasten bleiben
+gleich.
+Spielstände sind v53; v38 bis v52 werden weiter geladen.
 
 ## 1.3.235
 

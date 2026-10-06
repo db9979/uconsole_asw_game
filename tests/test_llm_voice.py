@@ -40,9 +40,12 @@ TONE = np.sin(np.linspace(0, 200 * np.pi, 24000)).astype(np.float32) * 0.5
 class FakeSpeechServer:
     """Answers ``/v1/audio/speech`` with a WAV (or an int status)."""
 
-    def __init__(self, reply=None, delay_s=0.0):
+    def __init__(self, reply=None, delay_s=0.0, hold=None):
         self.reply = reply
         self.delay_s = delay_s
+        # An Event: the answer's first half is sent at once, the rest only
+        # once it is set (a streaming server still speaking).
+        self.hold = hold
         self.requests: list[dict] = []
         self.headers: list[dict] = []
         owner = self
@@ -69,6 +72,12 @@ class FakeSpeechServer:
                 self.send_header("Content-Type", "audio/wav")
                 self.send_header("Content-Length", str(len(answer)))
                 self.end_headers()
+                if owner.hold is not None:
+                    half = len(answer) // 2
+                    self.wfile.write(answer[:half])
+                    self.wfile.flush()
+                    owner.hold.wait(10)
+                    answer = answer[half:]
                 self.wfile.write(answer)
 
         self._server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
@@ -117,6 +126,43 @@ def test_anything_else_is_refused(raw):
         voice.parse_wav(raw)
 
 
+@pytest.mark.parametrize("text,said", [
+    ("Peilung 431, Entfernung 0,9 sm.", "Peilung vier drei eins, Entfernung null Komma neun sm."),
+    ("Kurs 270!", "Kurs zwo sieben null!"),
+    ("F7 drücken", "F sieben drücken"),
+    ("Keine Zahl.", "Keine Zahl."),
+], ids=["bearing_and_decimal", "punctuation", "inside_a_word", "none"])
+def test_numbers_are_spoken_digit_by_digit(text, said):
+    digits = "null eins zwo drei vier fünf sechs sieben acht neun".split()
+    assert voice.spell_digits(text, digits, "Komma") == said
+
+
+def test_wav_is_decoded_while_it_arrives_without_seams():
+    raw = _wav(TONE, streaming=True)
+    whole, rate = voice.parse_wav(raw)
+    stream, resample, out = voice.WavStream(), None, []
+    for start in range(0, len(raw), 777):           # odd block sizes
+        samples = stream.feed(raw[start:start + 777])
+        if stream.fmt is not None and resample is None:
+            resample = voice.Resampler(stream.rate, 22050)
+        if resample is not None:
+            out.append(resample.feed(samples))
+    stream.close()
+    pieces = np.concatenate(out)
+    positions = np.arange(len(pieces)) * (rate / 22050)
+    assert abs(len(pieces) - 22050) <= 1
+    assert np.allclose(pieces, np.interp(positions, np.arange(len(whole)), whole), atol=1e-5)
+
+
+def test_sentences_are_split_so_the_voice_starts_early():
+    text = "Lage ruhig. Kontakt in vier drei eins. " + "Weiter beobachten. " * 30
+    chunks = voice.sentence_chunks(text, limit=4)
+    assert chunks[0] == "Lage ruhig." and len(chunks) <= 4
+    assert " ".join(chunks) == " ".join(text.split())
+    assert voice.sentence_chunks("Ein Satz") == ["Ein Satz"]
+    assert voice.sentence_chunks("") == []
+
+
 def test_clip_is_resampled_to_the_mixer_and_levelled():
     pcm = voice.to_pcm(TONE, 24000, 22050)
     assert pcm.dtype == np.int16 and abs(len(pcm) - 22050) <= 1
@@ -152,6 +198,21 @@ def test_service_speaks_with_style_key_and_wav():
         assert "German" in body["instructions"]
         assert server.headers[0]["Authorization"] == "Bearer sk-voice-secret-1234"
         assert "secret" not in repr(service.config)
+
+
+def test_streamed_audio_is_handed_on_before_the_answer_ends():
+    hold = threading.Event()
+    with FakeSpeechServer(hold=hold) as server:
+        request = _service(server).say("Officer answer.", "en", "xo")
+        end = time.monotonic() + 10
+        while not request.pieces and time.monotonic() < end:
+            time.sleep(0.01)
+        assert request.pieces and request.status == "streaming" and not request.finished
+        assert request.latency_s is not None
+        hold.set()
+        assert request.wait(10) and request.ok
+        assert abs(len(request.pcm) - 22050) <= 1
+        assert sum(len(piece) for piece in request.pieces) == len(request.pcm)
 
 
 def test_server_without_instructions_is_asked_again_without():
@@ -282,8 +343,9 @@ def test_off_by_default_the_crew_keeps_espeak(monkeypatch):
 
 
 def test_executive_officer_speaks_his_answer():
-    with FakeLlmServer("Lage ruhig, kein Kontakt.") as llm, FakeSpeechServer() as speech:
+    with FakeLlmServer("Lage ruhig, Kontakt in 431.") as llm, FakeSpeechServer() as speech:
         game = _game()
+        game._set_preference("language", "de")
         mixer = _Mixer(game)
         game.preferences = dataclasses.replace(game.preferences, llm_enabled=True,
                                                llm_url=llm.url, llm_model="m")
@@ -291,13 +353,34 @@ def test_executive_officer_speaks_his_answer():
         _voice_on(game, speech)
         assert isinstance(game.advisor_ask("situation"), dict)
         assert _pump(game, lambda: mixer.played)
-        assert speech.requests[0]["input"] == "Lage ruhig, kein Kontakt."
+        # Numbers digit by digit, the way the watch speaks them.
+        assert speech.requests[0]["input"] == "Lage ruhig, Kontakt in vier drei eins."
         # Switched off: the next answer stays silent.
         game.set_voice_preference("tts_xo", False)
         assert isinstance(game.advisor_ask("situation"), dict)
         _pump(game, lambda: game.advisor.log("local")[-1]["status"] == "done")
         _pump(game, lambda: False, timeout=0.3)
         assert len(speech.requests) == 1
+
+
+def test_a_long_answer_is_said_sentence_by_sentence_in_order():
+    answer = "Lage ruhig. " + "Kontakt wird weiter beobachtet. " * 12
+    with FakeLlmServer(answer) as llm, FakeSpeechServer(delay_s=0.1) as speech:
+        game = _game()
+        mixer = _Mixer(game)
+        game.preferences = dataclasses.replace(game.preferences, llm_enabled=True,
+                                               llm_url=llm.url, llm_model="m")
+        game.configure_llm()
+        _voice_on(game, speech)
+        assert isinstance(game.advisor_ask("situation"), dict)
+        # The first sentence plays while the rest is still being made.
+        assert _pump(game, lambda: mixer.played)
+        assert speech.requests[0]["input"] == "Lage ruhig."
+        assert len(speech.requests) < 3
+        assert _pump(game, lambda: len(speech.requests) >= 3 and not game._voice_queue
+                     and game._voice_playing is None)
+        said = " ".join(body["input"] for body in speech.requests)
+        assert said == " ".join(answer.split())
 
 
 def test_crew_reports_use_the_voice_and_fall_back_to_espeak(monkeypatch):
@@ -310,13 +393,14 @@ def test_crew_reports_use_the_voice_and_fall_back_to_espeak(monkeypatch):
         game.preferences = dataclasses.replace(game.preferences, speech=True)
         _voice_on(game, speech)
         game.callouts.add(message("crew.action_stations_on"))
-        assert _pump(game, lambda: mixer.played)
+        assert _pump(game, lambda: mixer.played and game._voice_playing is None)
         assert not said and len(speech.requests) == 1
+        pieces = len(mixer.played)
         speech.reply = 500
         game.callouts.add(message("crew.action_stations_on"))
         game.voice._cache.clear()
         assert _pump(game, lambda: said)
-        assert len(mixer.played) == 1
+        assert len(mixer.played) == pieces
 
 
 def test_voice_never_changes_the_simulation():
@@ -390,6 +474,11 @@ def test_voice_has_its_own_reserved_channel_beside_the_sonar(monkeypatch):
     assert made[0].shape == (100, 2)
     channels[4].get_busy.return_value = True
     assert engine.voice_busy()
+    # The next piece waits behind the playing one, one at a time.
+    assert engine.queue_voice(np.zeros(50, dtype=np.int16))
+    assert channels[4].queue.called and made[-1].shape == (50, 2)
+    channels[4].get_queue.return_value = Mock()
+    assert not engine.queue_voice(np.zeros(50, dtype=np.int16))
     engine.stop_voice()
     assert channels[4].stop.called
 

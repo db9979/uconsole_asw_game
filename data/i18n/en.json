@@ -7609,6 +7609,7 @@
   "voice.help.tts_top_p": "Lower = fewer outliers (Qwen default 1.0). Left/Right ±0.05",
   "voice.help.tts_seed": "Fixed number = same delivery across sentences; -1 = random. Enter: type",
   "voice.help.tts_clean": "Removes emojis, Markdown, \"haha\" and *laughs* before speaking.",
+  "voice.digit_point": "point",
   "voice.seed_random": "-1 (random)",
   "llm.invalid.tts_temperature": "Temperature must be between 0 and 2.",
   "llm.invalid.tts_top_p": "top_p must be between 0.05 and 1.",

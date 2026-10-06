@@ -58,6 +58,25 @@ def smooth_limit(samples, knee: float = 0.75,
     return np.copysign(limited, signal).astype(np.float32)
 
 
+_CURVE_ARRAYS: "OrderedDict[tuple, tuple]" = OrderedDict()
+
+
+def _curve_arrays(curve):
+    """(x, y) arrays of a gain curve, memoised in a bounded LRU (pure)."""
+    arrays = _CURVE_ARRAYS.get(curve)
+    if arrays is not None:
+        _CURVE_ARRAYS.move_to_end(curve)
+        return arrays
+    x = np.asarray([point[0] for point in curve])
+    y = np.asarray([point[1] for point in curve])
+    x.setflags(write=False)
+    y.setflags(write=False)
+    arrays = _CURVE_ARRAYS[curve] = (x, y)
+    while len(_CURVE_ARRAYS) > 256:
+        _CURVE_ARRAYS.popitem(last=False)
+    return arrays
+
+
 def _finite(value, default=0.0):
     try:
         value = float(value)
@@ -140,6 +159,12 @@ class AcousticReceiver:
         widths = np.where(centers < 40, 1, np.where(centers < 100, 2, 5))
         self._bin_starts = np.searchsorted(self._frequencies, centers - widths / 2)
         self._band_cache = OrderedDict()
+        self._curve_masks = OrderedDict()
+        # Analysis constants of the fixed two-second history (pure).
+        self._low_bins = self._frequencies <= 300
+        self._demon_bins = np.flatnonzero((self._frequencies >= 1)
+                                          & (self._frequencies <= 80))
+        self._windows = {}
         self.evicted_blocks = 0
         self.reset()
 
@@ -256,9 +281,22 @@ class AcousticReceiver:
 
     @staticmethod
     def _curve_gain(curve: tuple[tuple[float, float], ...], frequencies):
-        x = np.asarray([point[0] for point in curve])
-        y = np.asarray([point[1] for point in curve])
+        x, y = _curve_arrays(curve)
         return np.interp(frequencies, x, y, left=y[0], right=y[-1])
+
+    def _curve_mask(self, curve: tuple[tuple[float, float], ...]) -> np.ndarray:
+        """``_curve_gain`` over the block FFT grid, memoised per curve (a
+        bounded LRU of read-only arrays; identical values, fewer interps)."""
+        mask = self._curve_masks.get(curve)
+        if mask is not None:
+            self._curve_masks.move_to_end(curve)
+            return mask
+        mask = self._curve_gain(curve, self._block_freqs)
+        mask.setflags(write=False)
+        self._curve_masks[curve] = mask
+        while len(self._curve_masks) > self.BAND_CACHE_SIZE:
+            self._curve_masks.popitem(last=False)
+        return mask
 
     def _frame_audio(self, frame: np.ndarray, mask: np.ndarray,
                      window: np.ndarray) -> np.ndarray:
@@ -444,9 +482,8 @@ class AcousticReceiver:
                                                                self._time.size)
                 # OLA preserves the boundary while this bounded per-frame blend
                 # prevents abrupt spectral coloration as path geometry changes.
-                frequencies = self._block_freqs
-                target_mask = self._curve_gain(curve, frequencies)
-                previous_mask = self._curve_gain(old_curve, frequencies)
+                target_mask = self._curve_mask(curve)
+                previous_mask = self._curve_mask(old_curve)
                 base_mask = self._band_mask(bb_low, bb_high)
                 mask = base_mask * (
                     .5 * previous_mask + .5 * target_mask)
@@ -519,6 +556,18 @@ class AcousticReceiver:
         self._blocks.append((self.sequence, self.samples))
         self._analyze(data)
 
+    def _window(self, size: int):
+        """Hann window of ``size`` samples and its amplitude scale (bounded:
+        the history fills in whole blocks, so few sizes ever occur)."""
+        cached = self._windows.get(size)
+        if cached is None:
+            if len(self._windows) >= 16:
+                self._windows.clear()
+            window = np.hanning(size)
+            window.setflags(write=False)
+            cached = self._windows[size] = (window, 2 / window.sum())
+        return cached
+
     def _analyze(self, data):
         """Analyze raw beam samples, with no access to source descriptors."""
         self.demon_analysis = None
@@ -529,10 +578,9 @@ class AcousticReceiver:
             self.spectrum = [0.0] * config.LOFAR_BINS
             return
         data = data - data.mean()
-        window = np.hanning(data.size)
-        scale = 2 / window.sum()
+        window, scale = self._window(data.size)
         amplitudes = np.abs(np.fft.rfft(data * window, n=self._history.size)) * scale
-        low = amplitudes[self._frequencies <= 300]
+        low = amplitudes[self._low_bins]
         self.spectrum = np.clip(np.maximum.reduceat(low, self._bin_starts) / .25, 0, 1).tolist()
         self.native_spectrum = np.clip(low[:601] / .25, 0, 1)
         if data.size < self.sample_rate:
@@ -556,7 +604,7 @@ class AcousticReceiver:
         envelope_mean = float(envelope.mean())
         modulation = np.abs(np.fft.rfft((envelope - envelope_mean) * window,
                                       n=self._history.size)) * scale
-        band_indices = np.flatnonzero((self._frequencies >= 1) & (self._frequencies <= 80))
+        band_indices = self._demon_bins
         band = modulation[band_indices]
         self.demon_spectrum = np.clip(np.interp(np.arange(1, 81),
                                                 self._frequencies, modulation) / .10, 0, 1).tolist()

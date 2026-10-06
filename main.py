@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from src.core import config
 from src.core.crashlog import run_logged
 from src.core.game import Game
 from src.core.preferences import load_preferences
@@ -97,6 +98,9 @@ def _start(args, argv=None) -> int:
     preferences = load_preferences()
     seed = args.seed if args.seed is not None else random.SystemRandom().randrange(
         1, 1_000_000_000)
+    # The interactive game finishes a mission's first ray tables with its
+    # start instead of in its first sensor pass (src/sonar/raytrace.py).
+    config.RAY_PREWARM_ON_START = True
     game = Game(seed=seed, start_menu=True,
                 preferences=preferences,
                 fullscreen=preferences.fullscreen and not args.windowed and not args.web_host,

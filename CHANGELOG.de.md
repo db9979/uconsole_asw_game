@@ -14,6 +14,16 @@ Browser-Clients, die Windows-EXE und die macOS-App; Pygame, NumPy,
 Kartendaten und Schriften behalten ihre eigenen Lizenzen. Das Spielgeschehen
 bleibt gleich. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
 
+## 1.3.235
+
+Version 1.3.235 behebt einen Hänger beim Stoppen des eigenen Mikrofons.
+Das Abschalten des Mikrofons für die Geräuschdisziplin, das Ende eines
+Einsatzes oder das Beenden konnte das Spiel einfrieren, während gerade ein
+Aufnahmeblock gelesen wurde; der Selbsttest des macOS-Builds blieb dort
+hängen. Das Gerät schließt jetzt, ohne auf das Spiel zu warten, auf der
+uConsole, unter Windows und unter macOS. Spielstände sind v53;
+Spielstände v38 bis v52 laden weiterhin.
+
 ## 1.3.234
 
 Version 1.3.234 bringt den Browser auf den Stand der uConsole. Die

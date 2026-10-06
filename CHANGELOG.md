@@ -13,6 +13,15 @@ covers the code, the browser clients, the Windows EXE and the macOS app;
 Pygame, NumPy, map data and fonts keep their own licenses. Gameplay is
 unchanged. Saves are v53; v38 to v52 saves still load.
 
+## 1.3.235
+
+Release 1.3.235 fixes a hang when the own microphone stops. Switching
+the noise-discipline microphone off, ending a mission or quitting could
+freeze the game while a capture block was being read; the macOS build's
+self-test hung there. The device now closes without waiting on the game,
+on the uConsole, Windows and macOS alike. Saves are v53; v38 to v52 saves
+still load.
+
 ## 1.3.234
 
 Release 1.3.234 brings the browser in step with the uConsole. The sonar

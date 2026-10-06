@@ -10,19 +10,22 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.233**
+Aktuelle Version: **1.3.234**
 
-Version 1.3.233 bringt die Bedienung unter einheitliche Regeln.
-Strg+Eingabe ist jetzt die einzige Taste, die eine Waffe auslöst: An der
-Waffenstation wählen D, A, Z, R und Umschalt+R nur die Waffe, die dann
-leuchtet und in der Feuerzeile steht. Jede Taste einer Stationsseite steht
-als blauer Chip in ihrer Tastenleiste und wird per Klick gedrückt; ein
-+-Chip blättert durch den Rest (auch durch alle Sonartasten beider
-Seiten). Lange Listen blättern mit dem Mausrad, Overlays schließen über
-ein Schließkreuz, und Hinweise erklären weitere Lampen. Eigene Einheiten
-tragen auf jeder Karte den passenden NATO-Rahmen, hoher Kontrast erreicht
-jede Zeichnung, und deutsche Texte nutzen deutsche Tastennamen und „sm“.
-Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
+Version 1.3.234 bringt den Browser auf den Stand der uConsole. Die
+Sonarseite wählt den aktiven Impuls (CW oder LFM, W) und das TMA-Verfahren
+(Umschalt+T). Die Browser-Tasten folgen jetzt an jeder Station beider
+Seiten der uConsole: + und - stellen den Maschinentelegrafen (jetzt auch
+auf der Brücke), Funkraum, Leckwehr und ELOKA haben ihre Tasten, und jedes
+belegte Bedienelement zeigt seine Taste als blauen Chip. Seitenleisten und
+Protokoll liegen jetzt auf Alt+, Alt+. und Alt+L, und [ ] schalten keine
+Stationen mehr um. Der Funkraum zeigt, ob ein eigener Ruf an die Führung
+auf Sendung ist, wartet oder bereit ist, und eine neue KW-Peilkarte
+zeichnet Peilungen, Kreuzpeilungen und Fehlerellipsen. Die Stationsleisten
+stellen die Bedienelemente vor die Lesetabellen, die sich einklappen
+lassen, und nutzen auf breiten Bildschirmen zwei Spalten. Der Solo-Browser
+öffnet das Einsatzbuch und die Ausbildung. Spielstände sind v53;
+Spielstände v38 bis v52 laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

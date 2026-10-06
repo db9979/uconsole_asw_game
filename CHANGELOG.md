@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.273
+## 1.3.278
 
-Release 1.3.273 makes the overlays work by mouse. The questions before
+Release 1.3.278 makes the overlays work by mouse. The questions before
 saving over a slot, loading or quitting answer by clicking their key chips.
 In the manual (F1) the buttons **[ Previous chapter** and **] Next chapter**
 turn the chapters, and every key in its hint line is a chip. The
@@ -16,6 +16,17 @@ chart with a chip for every tool and action, so its hint line no longer
 covers the chart's position readout. In the Tactical Unit Analyzer (F8)
 two buttons assign the browsed profile to the selected contact or clear
 it. Saves are v53; v38 to v52 saves still load.
+
+## 1.3.275
+
+Release 1.3.275 lets the browser charts zoom in as far as the uConsole's.
+Every chart of a Remote Crew station, on the frigate and the submarine,
+now goes from the whole sea area down to 0.5 NM across the shorter side
+(before it stopped at about 16 NM) with Q/E, the mouse wheel, which zooms
+about the pointer, or a two-finger pinch on a touch screen. The grid of
+degrees and minutes, or of sea miles on the fixed chart, gets finer down
+to a tenth as you zoom in, and the view width above the chart shows
+decimals. Saves are v53; v38 to v52 saves still load.
 
 ## 1.3.272
 

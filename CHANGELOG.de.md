@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.273
+## 1.3.278
 
-Version 1.3.273 macht die Overlays per Maus bedienbar. Die Rückfragen vor
+Version 1.3.278 macht die Overlays per Maus bedienbar. Die Rückfragen vor
 dem Überschreiben eines Platzes, dem Laden und dem Beenden beantwortet ein
 Klick auf ihre Tastenchips. Im Handbuch (F1) blättern die Schaltflächen
 **[ Kapitel zurück** und **] Kapitel vor** die Kapitel, und jede Taste in
@@ -18,6 +18,18 @@ jede Aktion, sodass seine Hinweiszeile die Positionsanzeige der Karte nicht
 mehr verdeckt. Im Taktischen Einheitenanalysator (F8) ordnen zwei
 Schaltflächen das angezeigte Profil dem gewählten Kontakt zu oder löschen
 es. Spielstände sind v53; v38- bis v52-Stände werden weiter geladen.
+
+## 1.3.275
+
+Version 1.3.275 lässt die Karten im Browser so weit hineinzoomen wie
+auf der uConsole. Jede Karte einer Remote-Crew-Station, auf der Fregatte
+und im U-Boot, geht jetzt vom ganzen Seegebiet bis auf 0,5 sm über die
+kürzere Seite (bisher war bei etwa 16 sm Schluss), mit Q/E, dem Mausrad,
+das um den Mauszeiger zoomt, oder mit zwei Fingern auf dem Touchscreen.
+Das Gitter in Grad und Minuten, auf der festen Karte in Seemeilen, wird
+beim Hineinzoomen bis auf Zehntel feiner, und die Ansichtsbreite über der
+Karte zeigt Nachkommastellen. Spielstände sind v53; v38 bis v52 laden
+weiterhin.
 
 ## 1.3.272
 

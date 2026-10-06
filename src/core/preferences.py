@@ -18,6 +18,7 @@ from src.llm import voice as voice_model
 from src.llm.voice import (DEFAULT_MODEL as VOICE_DEFAULT_MODEL,
                            DEFAULT_URL as VOICE_DEFAULT_URL,
                            DEFAULT_VOICE as VOICE_DEFAULT_VOICE, valid_voice)
+from src.llm.stt import DEFAULT_MODEL as STT_DEFAULT_MODEL, DEFAULT_URL as STT_DEFAULT_URL
 
 _MAX_CREDENTIAL_LEN = 256
 _MAX_LESSONS = 32
@@ -114,6 +115,12 @@ class Preferences:
     tts_top_p: float = voice_model.DEFAULT_TOP_P
     tts_seed: int = voice_model.DEFAULT_SEED
     tts_clean: bool = True
+    # Its optional speech input (OpenAI-compatible transcription endpoint,
+    # src/llm/stt.py): off by default; the key lives beside the others
+    # (``stt_key``). The talk key asks the executive officer by voice.
+    stt_enabled: bool = False
+    stt_url: str = STT_DEFAULT_URL
+    stt_model: str = STT_DEFAULT_MODEL
     # The enemy adapts to the player's habits from the logbook
     # (``src/core/habits.py``); switched on the logbook page with L.
     enemy_learns: bool = True
@@ -166,7 +173,7 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
                  "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "microphone", "live_ais_enabled",
                  "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor", "enemy_learns",
-                 "tts_enabled", "tts_xo", "tts_crew", "tts_clean", "tts_log",
+                 "tts_enabled", "tts_xo", "tts_crew", "tts_clean", "tts_log", "stt_enabled",
                  *(f"tts_log_{group}" for group in LOG_VOICE_GROUPS),
                  "graphics_auto"):
         value = payload.get(name, getattr(defaults, name))
@@ -209,6 +216,10 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     values["tts_url"] = url if valid_url(url) else defaults.tts_url
     model = payload.get("tts_model", defaults.tts_model)
     values["tts_model"] = model if valid_model(model) else defaults.tts_model
+    url = payload.get("stt_url", defaults.stt_url)
+    values["stt_url"] = url if valid_url(url) else defaults.stt_url
+    model = payload.get("stt_model", defaults.stt_model)
+    values["stt_model"] = model if valid_model(model) else defaults.stt_model
     voice = payload.get("tts_voice", defaults.tts_voice)
     values["tts_voice"] = voice if valid_voice(voice) else defaults.tts_voice
     for name, valid in (("tts_temperature", voice_model.valid_temperature),

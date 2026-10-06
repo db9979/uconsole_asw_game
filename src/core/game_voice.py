@@ -343,12 +343,16 @@ class VoiceMixin:
     def set_voice_preference(self, name: str, value) -> None:
         self._set_preference(name, value)
         self.configure_voice()
+        if name == "tts_url" and hasattr(self, "configure_stt"):
+            self.configure_stt()        # the speech input may share its key
         if name == "tts_enabled" and not value:
             self.voice_stop()
 
     def save_voice_key(self, value: str) -> bool:
         ok = keystore.save_key(value, keystore.VOICE_FILE_NAME)
         self.configure_voice()
+        if hasattr(self, "configure_stt"):
+            self.configure_stt()
         return ok
 
     def cycle_voice(self, step: int) -> None:

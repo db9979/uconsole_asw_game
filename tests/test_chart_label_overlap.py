@@ -12,6 +12,7 @@ the chart, in English and German (frigate also with large text).
 from __future__ import annotations
 
 import itertools
+import math
 
 import pygame
 import pytest
@@ -348,3 +349,92 @@ def test_boat_pilot_chart_degree_labels_do_not_overlap(language):
     inside, problems = _rect_overlaps(traced, rect)
     assert any(text["text"].endswith(("'E", "°E")) for text in inside)
     assert problems == []
+
+
+@pytest.fixture(scope="module")
+def convoy_box():
+    """The convoy of the bug report 2026-10-06: four ships in a box around
+    the frigate, all on her course, the chart zoomed to about 6 nm."""
+    game = _game("de")
+    assert game.start_new_game("s7_geleitzug", "real_fixed", seed=2)
+    game.surface_radar_on = True
+    for _ in range(300):
+        game.update(.1)
+    return game
+
+
+def _draw_with_vectors(game, monkeypatch):
+    from src.ui import nato_symbols
+    segments = []
+    original = nato_symbols.draw_motion_vector
+
+    def record(surface, center, *args, **kwargs):
+        end = original(surface, center, *args, **kwargs)
+        if end is not None:
+            segments.append(((center[0], center[1]), end))
+        return end
+
+    monkeypatch.setattr(nato_symbols, "draw_motion_vector", record)
+    with layout.capture_text() as traced:
+        game.draw()
+    return traced, segments
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("station", [Station.BRIDGE, Station.WEAPONS, Station.OPZ])
+def test_track_names_never_lie_across_a_motion_vector(convoy_box, language, station,
+                                                      monkeypatch):
+    """Bug report 2026-10-06: the course line of every ship ran right
+    through its name. Names sit abeam of the course, clear of every vector."""
+    from src.core.i18n import Translator
+    game = convoy_box
+    game.translator = Translator(language)
+    game.tr = game.translator.t
+    game.station, game.station_page = station, 0
+    game.map_view.scale = 117.0
+    game.opz_map_view.scale = 90.0
+    game.opz_map_view.cx, game.opz_map_view.cy = game.ship.x, game.ship.y
+    game.msg_until = 0.0
+    traced, segments = _draw_with_vectors(game, monkeypatch)
+    names = [str(track["label"]) for track in game.chart_tracks()]
+    labels = [item for item in traced
+              if any(item["text"].startswith(name) for name in names)]
+    assert len(labels) >= 4, [item["text"] for item in traced]
+    assert len(segments) >= 4
+    for item in labels:
+        for start, end in segments:
+            assert not item["ink"].clipline(start, end), (item["text"], item["ink"], start, end)
+
+
+def test_track_names_stay_put_from_frame_to_frame():
+    """Bug report 2026-10-06: names and speeds jumped about between frames.
+    Over a minute of the convoy no label leaves its ship's side."""
+    game = _game("de")
+    assert game.start_new_game("s7_geleitzug", "real_fixed", seed=2)
+    game.surface_radar_on = True
+    game.station = Station.WEAPONS
+    previous, moves, seen = {}, [], 0
+    for _ in range(60):
+        for _ in range(10):
+            game.update(.1)
+        game.map_view.scale = 117.0
+        game.msg_until = 0.0
+        with layout.capture_text() as traced:
+            game.draw()
+        tracks = {str(track["label"]): track for track in game.chart_tracks()
+                  if track["x"] is not None}
+        current = {}
+        for item in traced:
+            name = item["text"].split(" ")[0]
+            if name in tracks:
+                px, py = game.map_view.world_to_screen(tracks[name]["x"], tracks[name]["y"])
+                current[name] = (item["ink"].centerx - px, item["ink"].centery - py)
+        for name, offset in current.items():
+            if name in previous:
+                seen += 1
+                if math.hypot(offset[0] - previous[name][0],
+                              offset[1] - previous[name][1]) > 12:
+                    moves.append((name, previous[name], offset))
+        previous = current
+    assert seen > 100
+    assert moves == []

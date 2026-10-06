@@ -22,7 +22,8 @@ from src.sensors import nav_lights
 from src.world import atmosphere as atmosphere_physics
 from src.world import ocean as ocean_physics
 from src.sonar import raytrace as sonar_raytrace
-from src.sensors.fusion import (OPZObservation, live_members, source_classification,
+from src.sensors.fusion import (OPZObservation, chart_family, live_members,
+                                merge_chart_reports, source_classification,
                                 suggest_correlations, suggestion_key)
 from src.sensors.esm import (
     ESM_MAX_ANNOTATIONS,
@@ -98,10 +99,14 @@ class PicturesMixin:
         tracks = self.radar_tracks()
         by_observation = {self._opz_observation_id("picture", track["track_id"]): track
                           for track in tracks}
-        fused_rows, absorbed = [], set()
+        fused_rows, absorbed, families = [], set(), {}
+        sources = None
         for fusion in self.opz_published_observations():
             if fusion.source != "FUSION":
                 continue
+            if sources is None:
+                sources = {item.observation_id: item.source
+                           for item in self.opz_source_observations()}
             members = [by_observation[key] for key in fusion.members
                        if key in by_observation and by_observation[key]["track_id"]
                        not in absorbed]
@@ -125,8 +130,46 @@ class PicturesMixin:
                              if track.get("visual")), None),
                 members=tuple(track["track_id"] for track in members),
                 lead=lead["track_id"]))
-        return [track for track in tracks
+            families[fusion.observation_id] = {
+                chart_family(sources.get(key, "")) for key in fusion.members}
+        rows = [track for track in tracks
                 if track["track_id"] not in absorbed] + fused_rows
+        return self._chart_merge(rows, families)
+
+    def _chart_merge(self, rows: list, families: dict) -> list:
+        """Reports of different sensors right on top of each other that the
+        OPZ has not fused yet are drawn as one contact
+        (``fusion.merge_chart_reports``); the lead report keeps the row and
+        lists the others as members, so their trails are hidden too."""
+        items = [dict(key=row["track_id"],
+                      families=families.get(row["track_id"], {chart_family(row["source"])}),
+                      domain=row["kind"], x=row["x"], y=row["y"],
+                      range_nm=math.hypot(row["x"] - self.ship.x, row["y"] - self.ship.y),
+                      fused=row["source"] == "FUSION", quality=row.get("quality"))
+                 for row in rows if row.get("x") is not None and row.get("y") is not None]
+        joined = merge_chart_reports(items)
+        if not joined:
+            return rows
+        by_id = {row["track_id"]: row for row in rows}
+        merged = {}
+        for key, lead in joined.items():
+            merged.setdefault(lead, []).append(key)
+        result = []
+        for row in rows:
+            if row["track_id"] in joined:
+                continue
+            extra = merged.get(row["track_id"])
+            if extra:
+                own = row.get("members") or (row["track_id"],)
+                hidden = tuple(member for key in sorted(extra)
+                               for member in (by_id[key].get("members") or (key,)))
+                row = dict(row, members=tuple(own) + hidden,
+                           lead=row.get("lead", row["track_id"]),
+                           visual=row.get("visual") or next(
+                               (by_id[key].get("visual") for key in sorted(extra)
+                                if by_id[key].get("visual")), None))
+            result.append(row)
+        return result
 
     def _opz_observation_id(self, namespace: str, identity: object) -> str:
         return "O-" + self._observation_key("opz-" + namespace, identity)

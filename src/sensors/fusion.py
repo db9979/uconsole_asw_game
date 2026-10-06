@@ -174,8 +174,16 @@ class OPZFusionPicture:
         sy = sum(math.cos(math.radians(item.bearing)) * weight
                  for item, weight in zip(members, weights))
         bearing = math.degrees(math.atan2(sx, sy)) % 360.0
-        # Course and speed: quality-weighted over the members that report them.
-        steered = [(item, weight) for item, weight in zip(members, weights)
+        # Course and speed: quality-weighted over the members that report
+        # them; a ship's own AIS course and speed over ground (satellite
+        # navigation) stand alone, before the first noisy radar or lookout
+        # estimates can swing the fused motion around.
+        moving = list(zip(members, weights))
+        broadcast = [(item, weight) for item, weight in moving
+                     if item.source == "AIS" and item.course is not None]
+        if broadcast:
+            moving = broadcast
+        steered = [(item, weight) for item, weight in moving
                    if item.course is not None]
         course = None
         if steered:
@@ -183,7 +191,7 @@ class OPZFusionPicture:
             cy = sum(math.cos(math.radians(item.course)) * weight for item, weight in steered)
             if math.hypot(cx, cy) > 1e-9:
                 course = math.degrees(math.atan2(cx, cy)) % 360.0
-        timed = [(item, weight) for item, weight in zip(members, weights)
+        timed = [(item, weight) for item, weight in moving
                  if item.speed_kn is not None]
         speed = (sum(item.speed_kn * weight for item, weight in timed)
                  / sum(weight for _, weight in timed)) if timed else None
@@ -587,3 +595,84 @@ def auto_fusion_plan(observations, own_x: float, own_y: float, now: float, *,
                                for report in (*first[2], *second[2])))
         plan.append((target, members))
     return tuple(plan)
+
+
+def chart_family(source: str) -> str:
+    """The sensor family a chart report comes from (its source when the
+    report is relayed from another platform)."""
+    if source.startswith("RADAR"):
+        return "RADAR"
+    if source == "LOOKOUT":
+        return "VISUAL"
+    if source.startswith("SONAR"):
+        return "SONAR"
+    return source
+
+
+def _chart_domains_agree(first: str, second: str) -> bool:
+    surface = ("SURFACE", "AIS")
+    return (first == second or "UNKNOWN" in (first, second)
+            or (first in surface and second in surface))
+
+
+def merge_chart_reports(items) -> dict:
+    """Reports a chart draws as one contact although the OPZ has not fused
+    them (yet): a ship the radar and the lookout both report right on top
+    of each other while their first motion estimates still disagree.
+
+    ``items`` are dicts with ``key``, ``families`` (sensor families the
+    report or fusion stands for), ``domain``, ``x``, ``y``, ``range_nm``
+    (from the own ship), ``fused`` and ``quality``. Two reports are one
+    contact when they lie inside ``CHART_SAME_CONTACT_NM`` (plus
+    ``CHART_SAME_CONTACT_RANGE_SHARE`` of the range), share no sensor
+    family (two radar echoes stay two ships), agree in domain, and neither
+    has a second such neighbour from the other's family (two ships close
+    together stay apart). Fusions and better reports lead. Display only and
+    pure: returns ``{joined key: lead key}``."""
+    order = sorted(items, key=lambda item: (not item["fused"], -float(item["quality"] or 0.0),
+                                            str(item["key"])))
+    rank = {item["key"]: index for index, item in enumerate(order)}
+
+    def near(first, second) -> float | None:
+        if first["families"] & second["families"] or not _chart_domains_agree(
+                first["domain"], second["domain"]):
+            return None
+        gate = config.CHART_SAME_CONTACT_NM + config.CHART_SAME_CONTACT_RANGE_SHARE * max(
+            float(first["range_nm"] or 0.0), float(second["range_nm"] or 0.0))
+        distance = math.hypot(first["x"] - second["x"], first["y"] - second["y"])
+        return distance if distance <= gate else None
+
+    neighbours = {item["key"]: [] for item in order}
+    edges = []
+    for index, first in enumerate(order):
+        for second in order[index + 1:]:
+            distance = near(first, second)
+            if distance is not None:
+                neighbours[first["key"]].append(second)
+                neighbours[second["key"]].append(first)
+                edges.append((distance, first, second))
+
+    def unique(item, partner) -> bool:
+        return not any(other["key"] != partner["key"]
+                       and other["families"] & partner["families"]
+                       for other in neighbours[item["key"]])
+
+    group = {item["key"]: item["key"] for item in order}
+    families = {item["key"]: set(item["families"]) for item in order}
+
+    def root(key):
+        while group[key] != key:
+            key = group[key]
+        return key
+
+    for _distance, first, second in sorted(edges, key=lambda edge: (
+            edge[0], rank[edge[1]["key"]], rank[edge[2]["key"]])):
+        if not (unique(first, second) and unique(second, first)):
+            continue
+        a, b = root(first["key"]), root(second["key"])
+        if a == b or families[a] & families[b]:
+            continue
+        lead, other = (a, b) if rank[a] < rank[b] else (b, a)
+        group[other] = lead
+        families[lead] |= families.pop(other)
+    return {key: root(key) for key in group if root(key) != key}

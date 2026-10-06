@@ -10,19 +10,17 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.251**
+Current release: **1.3.253**
 
-Release 1.3.251 adds new content and comfort. The daily mission is now a
-short mission picked from the date for each side, and the game remembers
-the mission length you chose; new players start on short missions.
-Training sits second in the main menu, ticks finished lessons, selects the
-next one, and N on the end panel starts it. Three new frigate lessons
-cover air defence against an inbound missile, ESM against a merchant's
-radar and torpedo defence with the Nixie. When the crew assist runs the
-U-boat, it now takes a good TMA solution as its fix and attacks with it.
-Both end panels say in one line what decided the mission, and the logbook
-shows a ribbon for each scenario won, also in the browser. Saves are v53;
-v38 to v52 saves still load.
+Release 1.3.253 tidies the chart labels. A ship's name no longer lies
+under its own course line: it stands abeam of the course, together with
+its speed (MV KURELA 8kn), clear of motion vectors, trails and other names,
+and keeps its place instead of jumping from frame to frame. A ship seen by
+radar and the lookout appears once on the Bridge and Weapons charts even
+before the CIC has fused the two reports, and a fused ship with AIS takes
+its course and speed from the AIS, so its vector no longer swings about.
+This holds on the uConsole and in the browser. Saves are v53; v38 to v52
+saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

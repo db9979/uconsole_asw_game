@@ -10,20 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.251**
+Aktuelle Version: **1.3.253**
 
-Version 1.3.251 bringt neue Inhalte und mehr Komfort. Der Tageseinsatz ist
-jetzt ein Kurzeinsatz, je Seite nach dem Datum gewählt, und das Spiel
-merkt sich die gewählte Einsatzlänge; neue Spieler beginnen mit
-Kurzeinsätzen. Die Ausbildung steht an zweiter Stelle im Hauptmenü, hakt
-abgeschlossene Lektionen ab, wählt die nächste vor, und N auf der Endtafel
-startet sie. Drei neue Fregatten-Lektionen üben die Luftabwehr gegen einen
-anfliegenden Flugkörper, ESM an einem Frachterradar und die Torpedoabwehr
-mit dem Nixie. Führt die Crew-Unterstützung das U-Boot, übernimmt sie
-jetzt eine gute TMA-Lösung als Ortung und greift damit an. Beide
-Endtafeln nennen in einer Zeile, was den Einsatz entschieden hat, und das
-Einsatzbuch zeigt ein Band je gewonnenem Szenario, auch im Browser.
-Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+Version 1.3.253 räumt die Kartenbeschriftung auf. Der Name eines Schiffs
+liegt nicht mehr unter seiner eigenen Kurslinie: Er steht querab vom Kurs,
+zusammen mit der Fahrt (MV KURELA 8kn), frei von Bewegungsvektoren, Spuren
+und anderen Namen, und behält seinen Platz, statt von Bild zu Bild zu
+springen. Ein Schiff, das Radar und Ausguck sehen, erscheint auf Brücken-
+und Waffenkarte einmal, auch bevor die OPZ beide Meldungen fusioniert hat,
+und ein fusioniertes Schiff mit AIS nimmt Kurs und Fahrt aus dem AIS, sodass
+sein Vektor nicht mehr hin und her schwenkt. Das gilt auf der uConsole und
+im Browser. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

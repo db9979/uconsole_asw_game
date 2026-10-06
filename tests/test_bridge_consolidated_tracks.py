@@ -112,3 +112,44 @@ def test_browser_bridge_lists_each_ship_once(convoy):
     # The lookout's sighting stays with the fused row.
     assert any(row["source"] == "FUSION" and row["visual_class"] is not None
                for row in rows)
+
+
+def test_unfused_radar_and_lookout_reports_of_one_ship_chart_once():
+    """Bug report 2026-10-06 ("doppelte Anzeige"): before the OPZ fused
+    them (their first motion estimates still disagree), a radar and a
+    lookout report of the same convoy ship showed as two labelled tracks
+    with two vectors. The chart draws them as one contact; two ships a
+    cable apart seen by the same sensor stay two."""
+    from src.sensors.fusion import merge_chart_reports
+
+    def item(key, family, x, y, quality=.8, fused=False, domain="SURFACE"):
+        return dict(key=key, families={family}, domain=domain, x=x, y=y,
+                    range_nm=1.4, fused=fused, quality=quality)
+
+    joined = merge_chart_reports([
+        item("L-1", "VISUAL", 1.00, 1.00, .6), item("S-1", "RADAR", 1.05, 0.98, .9),
+        item("L-2", "VISUAL", -1.0, 1.0), item("S-2", "RADAR", -1.03, 1.02, .9),
+        item("S-3", "RADAR", 3.0, 3.0), item("S-4", "RADAR", 3.1, 3.0),
+        item("L-5", "VISUAL", 5.0, 5.0, domain="AIR"), item("S-5", "RADAR", 5.0, 5.0)])
+    # The better report leads; same-sensor echoes and other domains stay apart.
+    assert joined == {"L-1": "S-1", "L-2": "S-2"}
+    # Two radar echoes equally close leave a lookout report alone (ambiguous).
+    assert merge_chart_reports([item("S-6", "RADAR", 0, 0), item("S-7", "RADAR", .15, 0),
+                                item("L-6", "VISUAL", .07, 0)]) == {}
+
+
+def test_bridge_chart_draws_an_unfused_report_pair_once():
+    game = Game(seed=3, start_menu=False, audio_enabled=False)
+    ship = game.ship
+    rows = [dict(kind="SURFACE", track_id="L-1", target_id=0, source="LOOKOUT",
+                 x=ship.x + 1.0, y=ship.y - 1.0, course=245.0, speed_kn=186.0,
+                 label="805A5F", quality=.6, visual="x"),
+            dict(kind="SURFACE", track_id="S-1", target_id=0, source="RADAR-S",
+                 x=ship.x + 1.03, y=ship.y - 0.98, course=90.0, speed_kn=8.0,
+                 label="6A8DB5", quality=.9, visual=None)]
+    game.radar_tracks = lambda: [dict(row) for row in rows]
+    charted = [t for t in game.chart_tracks() if t["x"] is not None]
+    assert [t["track_id"] for t in charted] == ["S-1"]
+    assert charted[0]["members"] == ("S-1", "L-1") and charted[0]["lead"] == "S-1"
+    assert charted[0]["visual"] == "x"
+    assert map_view.fused_trail_keys(charted) == frozenset({("track", "L-1")})

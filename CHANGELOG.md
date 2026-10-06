@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.257
+
+Release 1.3.257 tidies the chart labels. A ship's name no longer lies
+under its own course line: it stands abeam of the course, together with
+its speed (MV KURELA 8kn), clear of motion vectors, trails and other names,
+and keeps its place instead of jumping from frame to frame. A ship seen by
+radar and the lookout appears once on the Bridge and Weapons charts even
+before the CIC has fused the two reports, and a fused ship with AIS takes
+its course and speed from the AIS, so its vector no longer swings about.
+This holds on the uConsole and in the browser. Saves are v53; v38 to v52
+saves still load.
+
 ## 1.3.255
 
 Release 1.3.255 makes the release checks more reliable, so new versions

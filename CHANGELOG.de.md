@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.257
+
+Version 1.3.257 räumt die Kartenbeschriftung auf. Der Name eines Schiffs
+liegt nicht mehr unter seiner eigenen Kurslinie: Er steht querab vom Kurs,
+zusammen mit der Fahrt (MV KURELA 8kn), frei von Bewegungsvektoren, Spuren
+und anderen Namen, und behält seinen Platz, statt von Bild zu Bild zu
+springen. Ein Schiff, das Radar und Ausguck sehen, erscheint auf Brücken-
+und Waffenkarte einmal, auch bevor die OPZ beide Meldungen fusioniert hat,
+und ein fusioniertes Schiff mit AIS nimmt Kurs und Fahrt aus dem AIS, sodass
+sein Vektor nicht mehr hin und her schwenkt. Das gilt auf der uConsole und
+im Browser. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+
 ## 1.3.255
 
 Version 1.3.255 macht die Prüfungen vor einem Release zuverlässiger,

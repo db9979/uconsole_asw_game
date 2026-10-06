@@ -305,9 +305,11 @@ def _contact_position(boat, contact, now):
     return (contact.observed_x, contact.observed_y) if fresh else None
 
 
-def _label(surface, game, text, pos, color, chart, candidates=None, size=None) -> None:
+def _label(surface, game, text, pos, color, chart, candidates=None, size=None,
+           key=None) -> None:
     from src.ui.map_view import _map_label
-    _map_label(surface, game, text, pos, color, chart, candidates=candidates, size=size)
+    _map_label(surface, game, text, pos, color, chart, candidates=candidates, size=size,
+               key=key)
 
 
 def _own_torpedoes(game, sub):
@@ -336,11 +338,17 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
             domain = _CLASS_DOMAIN.get(contact.player_class, "UNKNOWN")
             nato_symbols.draw_symbol(s, (px, py), "UNKNOWN", domain, 16,
                                      selected=is_selected)
+            label_layout.reserve_box((int(px) - 9, int(py) - 9, 18, 18))
+            course = None
             if contact.range_source == "tma":
+                course = contact.tma_course
                 nato_symbols.draw_motion_vector(
                     s, (px, py), contact.tma_course, contact.tma_speed, view.scale,
-                    color, font=game.font, max_px=120)
-            _label(s, game, label, (int(px) + 11, int(py) - 20), color, r)
+                    color, font=game.font, max_px=120, key=("boat-speed", contact.id))
+            _label(s, game, label, (int(px) + 11, int(py) - 20), color, r,
+                   candidates=lambda size, point=(px, py), course=course:
+                   label_layout.beside(point, size, course),
+                   key=("boat", contact.id))
             continue
         bearing = _contact_bearing(contact)
         if bearing is None:
@@ -439,7 +447,7 @@ def draw_chart(game, boat) -> None:
         pygame.draw.rect(s, config.COLOR_GEO_GRID, r, 1)
         return
     view = chart_view(game, boat)
-    with layout.clip_to(s, r), label_layout.label_scope(r) as labels:
+    with layout.clip_to(s, r), label_layout.label_scope(r, deferred=True) as labels:
         bx, by = view.world_to_screen(boat.sub.x, boat.sub.y)
         labels.reserve((int(bx) - 12, int(by) - 12, 24, 24))
         draw_chart_geography(game, geo_view(game, boat, view), r,

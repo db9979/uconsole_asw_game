@@ -13,7 +13,7 @@ import math
 import pygame
 
 from src.core import config
-from src.ui import lines
+from src.ui import label_layout, lines
 
 # How far a past bearing line reaches on screen (pixels).
 BEARING_LINE_PX = 240
@@ -47,6 +47,7 @@ def draw_own_trail(surface, points, view, rect, color, background, current=None)
         if previous is not None and (visible or _inside(rect, *previous)):
             lines.line(surface, faint, (int(previous[0]), int(previous[1])),
                        (int(px), int(py)), 1)
+            label_layout.reserve_segment(previous, (px, py), 3)
         previous = (px, py)
     for px, py in screen[:-1]:
         if _inside(rect, px, py):
@@ -58,12 +59,18 @@ def draw_track_history(surface, rows, view, rect, color, background) -> None:
     rect = pygame.Rect(rect)
     rows = list(rows)
     count = len(rows)
+    previous = None
     for index, row in enumerate(rows[:-1] if count > 1 else ()):
         px, py = view.world_to_screen(row[1], row[2])
         if not _inside(rect, px, py):
+            previous = None
             continue
         weight = 0.25 + 0.55 * (index + 1) / count
         pygame.draw.circle(surface, _mix(color, background, weight), (int(px), int(py)), 2)
+        # Labels keep off the dotted trail as off a line through its dots.
+        if previous is not None:
+            label_layout.reserve_segment(previous, (px, py), 4)
+        previous = (px, py)
 
 
 def draw_bearing_history(surface, rows, view, rect, color, background) -> None:

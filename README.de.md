@@ -10,17 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.281**
+Aktuelle Version: **1.3.282**
 
-Version 1.3.281 bringt die restlichen Stationsbedienungen auf die Maus.
-ESSM auf der Zielseite der OPZ, der Torpedo des Seefernaufklärers, die
-ASROC des Begleiters und der Lufttorpedo des Hubschraubers haben je einen
-Feuerknopf, der erst beim zweiten Klick innerhalb von 3 s feuert; der erste
-Klick macht ihn scharf. Die OPZ-Tastenchips J, H, Umschalt+L, Entf und K
-(Folgen) wirken per Klick. Ein Klick in die LOFAR- oder DEMON-Anzeige des
-Sonars setzt den Cursor auf diese Frequenz, der Chip GAIN senkt oder hebt
-die Verstärkung mit seinen Hälften, und ein Klick auf eine Zeile des
-Tauchsonars wählt diesen Kontakt. Spielstände sind v53; v38 bis v52 laden
+Version 1.3.282 macht den Missions- und den Einheiten-Editor per Maus
+bedienbar. Ihre Fußleisten sind Reihen blauer Tastenchips, die wie die
+Tasten wirken, und jeder Dialog hat Schaltflächen: der Pfaddialog OK und
+Abbrechen, der Austauschdialog ein Schließkreuz sowie Ordner, Pfad und
+Importieren (oder Überschreiben), die Löschfrage Ja und Nein. Beide
+Editoren schließen mit dem Kreuz oben rechts. Esc und F5 schließen den
+Editor nicht mehr und starten keine Mission, solange einer seiner Dialoge
+offen ist. Im Einheiten-Editor öffnet Strg+G das gewählte Profil und
+startet den Wikipedia-Import. Spielstände sind v53; v38 bis v52 laden
 weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

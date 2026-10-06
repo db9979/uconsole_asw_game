@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.274**
+Aktuelle Version: **1.3.278**
 
-Version 1.3.274 bringt die restlichen Stationsbedienungen auf die Maus.
+Version 1.3.278 bringt die restlichen Stationsbedienungen auf die Maus.
 ESSM auf der Zielseite der OPZ, der Torpedo des Seefernaufklärers, die
 ASROC des Begleiters und der Lufttorpedo des Hubschraubers haben je einen
 Feuerknopf, der erst beim zweiten Klick innerhalb von 3 s feuert; der erste

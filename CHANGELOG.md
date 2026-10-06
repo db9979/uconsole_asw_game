@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.274
+## 1.3.278
 
-Release 1.3.274 brings the remaining station controls to the mouse. ESSM
+Release 1.3.278 brings the remaining station controls to the mouse. ESSM
 on the OPZ target page, the patrol aircraft's torpedo, the consort's ASROC
 and the helicopter's air torpedo each have a fire button that fires only on
 a second click within 3 s; the first click arms it. The OPZ key chips J, H,

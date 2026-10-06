@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.278
+## 1.3.280
 
-Version 1.3.278 bringt die restlichen Stationsbedienungen auf die Maus.
+Version 1.3.280 bringt die restlichen Stationsbedienungen auf die Maus.
 ESSM auf der Zielseite der OPZ, der Torpedo des Seefernaufklärers, die
 ASROC des Begleiters und der Lufttorpedo des Hubschraubers haben je einen
 Feuerknopf, der erst beim zweiten Klick innerhalb von 3 s feuert; der erste
@@ -17,9 +17,9 @@ die Verstärkung mit seinen Hälften, und ein Klick auf eine Zeile des
 Tauchsonars wählt diesen Kontakt. Spielstände sind v53; v38 bis v52 laden
 weiterhin.
 
-## 1.3.273
+## 1.3.278
 
-Version 1.3.273 macht die Overlays per Maus bedienbar. Die Rückfragen vor
+Version 1.3.278 macht die Overlays per Maus bedienbar. Die Rückfragen vor
 dem Überschreiben eines Platzes, dem Laden und dem Beenden beantwortet ein
 Klick auf ihre Tastenchips. Im Handbuch (F1) blättern die Schaltflächen
 **[ Kapitel zurück** und **] Kapitel vor** die Kapitel, und jede Taste in
@@ -31,6 +31,29 @@ jede Aktion, sodass seine Hinweiszeile die Positionsanzeige der Karte nicht
 mehr verdeckt. Im Taktischen Einheitenanalysator (F8) ordnen zwei
 Schaltflächen das angezeigte Profil dem gewählten Kontakt zu oder löschen
 es. Spielstände sind v53; v38- bis v52-Stände werden weiter geladen.
+## 1.3.276
+
+Version 1.3.276 gibt jeder gesprochenen Meldung ein klares Ende. Jede
+Meldung, die die Stimme liest, endet mit einem Punkt, auch nach einem
+Doppelpunkt oder Auslassungszeichen, und danach folgen 0,6 s Stille, bevor
+die nächste beginnt. Logmeldungen gehen dafür wieder einzeln an den
+Sprachdienst, denn ein Sprachmodell macht zwischen zusammen geschickten
+Meldungen nur eine kurze Satzpause. Antworten des Ersten Offiziers bleiben
+am Stück. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
+v52 laden weiter).
+
+
+## 1.3.275
+
+Version 1.3.275 lässt die Karten im Browser so weit hineinzoomen wie
+auf der uConsole. Jede Karte einer Remote-Crew-Station, auf der Fregatte
+und im U-Boot, geht jetzt vom ganzen Seegebiet bis auf 0,5 sm über die
+kürzere Seite (bisher war bei etwa 16 sm Schluss), mit Q/E, dem Mausrad,
+das um den Mauszeiger zoomt, oder mit zwei Fingern auf dem Touchscreen.
+Das Gitter in Grad und Minuten, auf der festen Karte in Seemeilen, wird
+beim Hineinzoomen bis auf Zehntel feiner, und die Ansichtsbreite über der
+Karte zeigt Nachkommastellen. Spielstände sind v53; v38 bis v52 laden
+weiterhin.
 
 ## 1.3.272
 

@@ -29,6 +29,16 @@ PROBE = r'''
   window.addEventListener('error', (event) => errors.push(String(event.message)));
   window.addEventListener('unhandledrejection', (event) => errors.push(String(event.reason)));
   const overflow = (element) => element.scrollWidth > element.clientWidth + 1;
+  // The start order must reach the host before the probe reports, or the
+  // browser may exit with the request still unsent.
+  let startAnswered = false;
+  const realFetch = window.fetch.bind(window);
+  window.fetch = (url, options = {}) => {
+    const reply = realFetch(url, options);
+    if (String(options.body || '').includes('host_start_mission'))
+      reply.then(() => { startAnswered = true; }, () => {});
+    return reply;
+  };
   async function run() {
     await until(() => !$('shell').hidden, 'translations');
     $('name').value = 'Planner'; $('code').value = __CODE__;
@@ -62,6 +72,7 @@ PROBE = r'''
     if (start.disabled) throw new Error('start disabled');
     start.click();
     await until(() => !dialog.open, 'dialog closes on start', 1500);
+    await until(() => startAnswered, 'start order answered', 1500);
   }
   run().then(() => document.documentElement.dataset.missionsTest = 'passed', (error) => {
     document.documentElement.dataset.missionsTest = 'failed';

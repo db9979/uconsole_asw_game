@@ -276,6 +276,21 @@ def clean_for_speech(text) -> str:
     return re.sub(r"^[,.;:!?\s]+", "", text)
 
 
+_OPEN_END = re.compile(r"[\s,;:\u2013\u2014\-\u2026.]+$")
+
+
+def close_sentence(text) -> str:
+    """``text`` ended like a sentence, with a full stop unless it ends in
+    "!" or "?": a report then ends with the model's sentence pause."""
+    text = text.strip() if type(text) is str else ""
+    if not text or text[-1] in "!?":
+        return text
+    if text[-1] in ")]\"\u201c\u201d\u00bb\u00ab'":
+        return text + "."
+    body = _OPEN_END.sub("", text)
+    return body + "." if body else ""
+
+
 def speakable(text, limit: int = MAX_INPUT_CHARS, clean: bool = True) -> str:
     """One paragraph of text, cut at a sentence end when too long; with
     ``clean`` only the words (``clean_for_speech``)."""

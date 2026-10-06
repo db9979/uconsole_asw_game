@@ -7,9 +7,10 @@ Requests run on the service's worker; this mixin only collects the pieces
 of audio that have arrived, once per frame (wall time, outside the
 simulation), and queues them on the audio engine's own voice channel, so
 the sonar tone is never cut and a streaming service is heard while it still
-speaks.  Every report goes to the service in one piece, and log entries
-waiting together are joined into one: a speech model starts each request
-afresh, so a new request mid-answer audibly changes the speaker's tone.
+speaks.  Every report goes to the service in one piece (a speech model
+starts each request afresh, so a new request mid-answer audibly changes
+the speaker's tone), ends with a full stop, and a short silence
+(``VOICE_GAP_S``) follows it, so one report never runs into the next.
 The local side's log entries (the event feed, F11) are read aloud too,
 behind the officer: each station of the log can be muted on its own
 (options page 2, page 4 "Log reports", and the F11 log's buttons).  Every
@@ -43,6 +44,8 @@ from src.llm import voice as voice_model
 from src.llm.voice import PRESET_VOICES, VoiceConfig, VoiceService
 
 VOICE_QUEUE_MAX = 16
+# Silence between two reports (wall seconds), so one never runs into the next.
+VOICE_GAP_S = 0.6
 # Failures after which a crew report is said by espeak-ng instead.
 _FALLBACK_ERRORS = frozenset(("network", "timeout", "auth", "rate_limit", "server",
                               "bad_reply", "no_audio"))
@@ -67,9 +70,8 @@ def log_group(category) -> str | None:
 
 
 def _sentence(text: str) -> str:
-    """A log entry closed like a sentence, so joined entries keep a pause."""
-    text = text.strip()
-    return text if not text or text[-1] in ".!?…:" else text + "."
+    """A log entry closed like a sentence (a full stop as its end)."""
+    return voice_model.close_sentence(text)
 
 
 def _host(url: str) -> str:
@@ -85,6 +87,8 @@ class VoiceMixin:
         self._voice_queue: deque = deque(maxlen=VOICE_QUEUE_MAX)
         self.voice_test = None
         self._voice_playing = None
+        # A short silence after each report before the next one starts.
+        self._voice_quiet_until = 0.0
         # Which log is being read and how far (display state, never saved).
         self._log_voice_source = None
         self._log_voice_mark = 0
@@ -147,7 +151,10 @@ class VoiceMixin:
             return False
         if role == "xo" and not self.preferences.tts_xo:
             return False
-        text = voice_model.speakable(self._voice_text(text), clean=self.voice.config.clean)
+        # Every report ends with a full stop: the model then closes it with
+        # its sentence pause instead of running on.
+        text = voice_model.close_sentence(
+            voice_model.speakable(self._voice_text(text), clean=self.voice.config.clean))
         if not text:
             return False
         # One request for the whole report: the model would start every
@@ -246,11 +253,14 @@ class VoiceMixin:
             self._feed_voice(playing)
             if playing.finished and not playing.pieces and not self.audio.voice_busy():
                 self._voice_playing = None
+                self._voice_quiet_until = time.monotonic() + VOICE_GAP_S
             return
         queue = self._voice_queue
         if not queue:
             return
         now = time.monotonic()
+        if now < self._voice_quiet_until:
+            return
         kept = []
         for request in queue:
             if request.status in ("failed", "dropped"):
@@ -388,16 +398,10 @@ class VoiceMixin:
         if playing is not None and playing.role == "log":
             in_flight += 1
         while backlog and in_flight < LOG_IN_FLIGHT:
-            # The entries waiting together go as one request (one even
-            # voice), up to the length one request may have.
-            text = _sentence(backlog.popleft())
-            while backlog:
-                joined = text + " " + _sentence(backlog[0])
-                if len(self._voice_text(joined)) > voice_model.MAX_INPUT_CHARS:
-                    break               # spoken in full, never cut
-                text = joined
-                backlog.popleft()
-            if self.voice_say(text, "log"):
+            # Each entry is its own request, closed with a full stop, and
+            # VOICE_GAP_S of silence follows it: a speech model leaves only
+            # its short sentence pause between entries sent together.
+            if self.voice_say(_sentence(backlog.popleft()), "log"):
                 in_flight += 1
 
     # -- settings -----------------------------------------------------------------

@@ -18,6 +18,12 @@ _DEFAULT_PATH = os.path.join(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))), "data", "coastlines",
     "region.json")
 _OCCLUSION_CACHE_LIMIT = 1024
+# Open-water shortcut for steering probes (``Coastline.open_water_near``):
+# cells of this size whose square grown by the reach (plus slack) touches no
+# landmass bounding box and no sector edge.
+_CLEAR_CELL_NM = 5.0
+_CLEAR_REACH_NM = 8.0
+_CLEAR_SLACK_NM = 0.01
 _GEOMETRY_EPSILON = 1e-9
 _MAX_SNAPSHOT_LANDMASSES = 4096
 _MAX_SNAPSHOT_POINTS = 200_000
@@ -606,6 +612,50 @@ class Coastline:
                         first[0] + dx * middle, first[1] + dy * middle):
                     return True
         return False
+
+    def _clear_grid(self):
+        """Cells (``_CLEAR_CELL_NM``) whose square grown by ``_CLEAR_REACH_NM``
+        touches no landmass bounding box and stays inside the sector; built
+        once per landmass list (pure, bounded by the sector size)."""
+        token = (id(self.landmasses), len(self.landmasses), self.world_size_nm)
+        cached = getattr(self, "_clear_cache", None)
+        if cached is not None and cached[0] == token:
+            return cached[1]
+        size = float(self.world_size_nm)
+        count = max(1, int(math.ceil(size / _CLEAR_CELL_NM)))
+        reach = _CLEAR_REACH_NM + _CLEAR_SLACK_NM
+        clear = [[True] * count for _ in range(count)]
+        for row in range(count):
+            for column in range(count):
+                left = column * _CLEAR_CELL_NM - reach
+                top = row * _CLEAR_CELL_NM - reach
+                right = (column + 1) * _CLEAR_CELL_NM + reach
+                bottom = (row + 1) * _CLEAR_CELL_NM + reach
+                if left < 0.0 or top < 0.0 or right > size or bottom > size:
+                    clear[row][column] = False
+        for landmass in self.landmasses:
+            b_left, b_top, b_right, b_bottom = landmass.bounds
+            first_column = max(0, int((b_left - reach) // _CLEAR_CELL_NM))
+            last_column = min(count - 1, int((b_right + reach) // _CLEAR_CELL_NM))
+            first_row = max(0, int((b_top - reach) // _CLEAR_CELL_NM))
+            last_row = min(count - 1, int((b_bottom + reach) // _CLEAR_CELL_NM))
+            for row in range(first_row, last_row + 1):
+                for column in range(first_column, last_column + 1):
+                    clear[row][column] = False
+        self._clear_cache = (token, clear)
+        return clear
+
+    def open_water_near(self, x: float, y: float, reach_nm: float) -> bool:
+        """True only when every line from (x, y) no longer than ``reach_nm``
+        is certainly clear of mapped land and inside the sector, so
+        ``land_blocks_line`` would answer False for it. False means "ask
+        ``land_blocks_line``", never "blocked". A conservative shortcut for
+        steering probes far from any coast."""
+        if not (reach_nm <= _CLEAR_REACH_NM and 0.0 <= x < self.world_size_nm
+                and 0.0 <= y < self.world_size_nm):
+            return False
+        clear = self._clear_grid()
+        return clear[int(y // _CLEAR_CELL_NM)][int(x // _CLEAR_CELL_NM)]
 
     def land_blocks_line(self, x1: float, y1: float,
                          x2: float, y2: float) -> bool:

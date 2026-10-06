@@ -122,6 +122,59 @@ def _linear_lofar(row, width):
                      frequencies, row)
 
 
+@lru_cache(maxsize=16)
+def _interp_plan(xp_key: tuple, width: int, low: float, high: float):
+    """How ``np.interp`` maps ``xp_key`` onto ``width`` points over
+    [low, high]: per point the left sample, its offset, the sample spacing,
+    and which points take a sample exactly or clamp (bounded, read-only)."""
+    xp = np.asarray(xp_key, dtype=float)
+    x = np.linspace(low, high, width)
+    last = len(xp) - 1
+    index = np.clip(np.searchsorted(xp, x, side="right") - 1, 0, last)
+    inner = np.minimum(index, last - 1)
+    offset = x - xp[inner]
+    spacing = xp[inner + 1] - xp[inner]
+    exact = (x == xp[index]) | (index == last)
+    plan = (inner, offset, spacing, exact, index, x < xp[0], x > xp[-1])
+    for array in plan:
+        array.setflags(write=False)
+    return plan
+
+
+def _interp_rows(rows: np.ndarray, plan) -> np.ndarray:
+    """``np.interp`` of every row with the same arithmetic (bit-identical):
+    ``slope * (x - xp[j]) + f[j]``, exact samples and clamped ends."""
+    inner, offset, spacing, exact, index, below, above = plan
+    left = rows[:, inner]
+    out = (rows[:, inner + 1] - left) / spacing * offset + left
+    out[:, exact] = rows[:, index[exact]]
+    out[:, below] = rows[:, :1]
+    out[:, above] = rows[:, -1:]
+    return out
+
+
+def circular_broadband_rows(raw, width):
+    """``_circular_broadband`` of every row of a history at once."""
+    raw = np.asarray(raw, dtype=float)
+    width = max(1, int(width))
+    if raw.ndim != 2 or raw.shape[1] == 0:
+        return np.asarray([_circular_broadband(row, width) for row in raw])
+    wrapped = np.concatenate((raw, raw[:, :1]), axis=1)
+    return _interp_rows(wrapped, _interp_plan(
+        tuple(range(raw.shape[1] + 1)), width, 0.0, float(raw.shape[1])))
+
+
+def linear_lofar_rows(raw, width):
+    """``_linear_lofar`` of every row of a history at once."""
+    raw = np.asarray(raw, dtype=float)
+    if raw.ndim != 2 or raw.shape[1] < 2:
+        return np.asarray([_linear_lofar(row, width) for row in raw])
+    frequencies = _lofar_frequencies(raw.shape[1])
+    return _interp_rows(raw, _interp_plan(
+        tuple(float(value) for value in frequencies), int(width), 0.0,
+        float(config.LOFAR_FMAX_HZ)))
+
+
 @lru_cache(maxsize=8)
 def _lofar_frequencies(size):
     return np.asarray([config.lofar_bin_freq(i) for i in range(size)])

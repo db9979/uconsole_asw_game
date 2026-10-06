@@ -188,6 +188,7 @@ def test_save_selection_and_overwrite_require_confirmation(game):
     press(game, pygame.K_2)
     assert not path.exists()
     press(game, pygame.K_RETURN)
+    game.wait_for_autosave()
     original = path.read_bytes()
     game.score += 1
     press(game, pygame.K_s)
@@ -195,6 +196,7 @@ def test_save_selection_and_overwrite_require_confirmation(game):
     press(game, pygame.K_RETURN)
     assert game.save_confirm and path.read_bytes() == original
     press(game, pygame.K_RETURN)
+    game.wait_for_autosave()
     assert json.loads(path.read_text())["score"] == game.score
 
 
@@ -213,6 +215,7 @@ def test_quit_save_failure_keeps_mission_and_original_file(game, monkeypatch):
     press(game, pygame.K_1)
     press(game, pygame.K_RETURN)
     press(game, pygame.K_RETURN)
+    game.wait_for_autosave()
     assert game.running and game.save_ui == "save"
     assert path.read_bytes() == original
     assert list(Path(config.SAVE_DIR).iterdir()) == [path]
@@ -225,6 +228,10 @@ def test_save_and_quit_only_after_success(game):
     press(game, pygame.K_3)
     assert game.running
     press(game, pygame.K_RETURN)
+    # Written on the save worker: the game quits only once it succeeded.
+    assert game.running and game.slot_save_running()
+    press(game, pygame.K_ESCAPE)            # the running save owns the menu
+    game.wait_for_autosave()
     assert not game.running
     assert (Path(config.SAVE_DIR) / "slot3.json").exists()
 

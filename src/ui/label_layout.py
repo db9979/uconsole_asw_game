@@ -35,6 +35,8 @@ MAX_LINES = 320
 LINE_COST = 6
 # Spots remembered for keyed labels (a label keeps its spot next frame).
 MEMORY_MAX = 512
+# A candidate this close to last frame's spot is the same spot.
+NEAR_PX = 8
 _MEMORY: OrderedDict = OrderedDict()
 
 _ACTIVE: list["LabelField"] = []
@@ -104,9 +106,11 @@ class LabelField:
         best, best_cost, chosen = None, None, None
         order = list(range(len(candidates)))
         last = _MEMORY.get(key) if key is not None else None
-        if last is not None and last < len(order):
-            order.remove(last)
-            order.insert(0, last)
+        if last is not None:
+            first = _remembered(last, candidates, width, height)
+            if first is not None:
+                order.remove(first)
+                order.insert(0, first)
         for index in order:
             x, y = candidates[index]
             rect = self._clamp(x, y, width, height)
@@ -117,7 +121,7 @@ class LabelField:
             if best_cost is None or cost < best_cost:
                 best, best_cost, chosen = rect, cost, index
         if key is not None and chosen is not None:
-            _MEMORY[key] = chosen
+            _MEMORY[key] = (chosen, best.centerx, best.centery)
             _MEMORY.move_to_end(key)
             while len(_MEMORY) > MEMORY_MAX:
                 _MEMORY.popitem(last=False)
@@ -145,6 +149,24 @@ class LabelField:
                 if moved_cost < best_cost:
                     best, best_cost = moved, moved_cost
         return best
+
+
+def _remembered(last, candidates, width: int, height: int) -> int | None:
+    """The candidate to try first for a keyed label: the one whose box lies
+    where the label sat last frame (its symbol moves a few pixels at most),
+    else the same candidate as last time.  The spot counts, not the index:
+    a contact's course estimate may swing round, which turns the
+    course-relative candidates about and would flip the label across its
+    symbol (the convoy label jumping from above to below, 2026-10-06)."""
+    index, cx, cy = last
+    best, best_d = None, NEAR_PX
+    for i, (x, y) in enumerate(candidates):
+        d = math.hypot(x + width / 2 - cx, y + height / 2 - cy)
+        if d <= best_d:
+            best, best_d = i, d
+    if best is not None:
+        return best
+    return index if index < len(candidates) else None
 
 
 def reserve_segment(start, end, width: int = 4) -> None:

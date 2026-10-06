@@ -4,15 +4,27 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.274
+## 1.3.279
 
-Version 1.3.274 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
+Version 1.3.279 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
 oder der blaue Chip Namen in der Kartenecke blendet Namen und Fahrt aller
 Kontakte auf allen Karten an jeder Station beider Seiten aus und wieder ein;
 Symbole, Kursvektoren und der Tooltip bleiben, und die uConsole merkt sich
 die Wahl in ihren Einstellungen. Im Browser tun der Knopf Namen über der
 Karte und Alt+N dasselbe für diesen Browser-Tab. Spielstände sind v53;
 Spielstände v38 bis v52 laden weiterhin.
+
+## 1.3.275
+
+Version 1.3.275 lässt die Karten im Browser so weit hineinzoomen wie
+auf der uConsole. Jede Karte einer Remote-Crew-Station, auf der Fregatte
+und im U-Boot, geht jetzt vom ganzen Seegebiet bis auf 0,5 sm über die
+kürzere Seite (bisher war bei etwa 16 sm Schluss), mit Q/E, dem Mausrad,
+das um den Mauszeiger zoomt, oder mit zwei Fingern auf dem Touchscreen.
+Das Gitter in Grad und Minuten, auf der festen Karte in Seemeilen, wird
+beim Hineinzoomen bis auf Zehntel feiner, und die Ansichtsbreite über der
+Karte zeigt Nachkommastellen. Spielstände sind v53; v38 bis v52 laden
+weiterhin.
 
 ## 1.3.272
 

@@ -2293,7 +2293,7 @@ Eine freie Station wird sofort mit allen ihren Rechten übernommen (auch Direktf
 
 Die Crew-Seiten öffnen in der gespeicherten Sprache des Hosts (`F10`-Optionen auf der uConsole); der Knopf English/Deutsch in der Statusleiste des Browsers stellt nur diesen Browser um. Die Crew-Seite ist für Chrome oder Chromium (auch Edge) auf einem Desktop-PC gebaut; ein anderer Browser zeigt über dem Kopplungscode einen Hinweis, und eine Seite, die dort nicht starten kann, sagt das, statt endlos zu laden. Nach einem Update des Hosts lädt sich eine offene Browserseite einmal selbst neu und läuft so immer mit dem passenden Web-Client.
 
-Eine Browserstation hat drei Spalten: links die Kontaktliste, in der Mitte die Anzeige, rechts den Stationsbereich mit dem Kontaktdetail darunter. Damit die Bedienung ohne Scrollen Platz hat, klappt eine leere Kontaktliste zur schmalen Leiste und das Kontaktdetail zur Titelzeile zusammen, solange kein Kontakt gewählt ist; beides öffnet sich wieder, sobald es etwas zu zeigen gibt, und bleibt so, wie Sie es von Hand umgeschaltet haben. Die Missionsübersicht steht als eine Zeile **Auftrag** oben im Stationsbereich und klappt mit einem Klick auf. Ein Wert, für den noch nichts gemeldet ist, steht als grauer Strich; der Mauszeiger darüber nennt den Grund. Auf dem Handy liegen Sprache, Ton, Mikrofon, Einstellungen und Werkzeuge hinter dem Knopf ☰.
+Eine Browserstation hat drei Spalten: links die Kontaktliste, in der Mitte die Anzeige, rechts den Stationsbereich mit dem Kontaktdetail darunter. Damit die Bedienung ohne Scrollen Platz hat, klappt eine leere Kontaktliste zur schmalen Leiste und das Kontaktdetail zur Titelzeile zusammen, solange kein Kontakt gewählt ist; beides öffnet sich wieder, sobald es etwas zu zeigen gibt, und bleibt so, wie Sie es von Hand umgeschaltet haben. Jede Karte einer Browserstation zoomt so weit wie die der uConsole: `Q`/`E`, das Mausrad (um den Mauszeiger) oder zwei Finger auf dem Touchscreen gehen vom ganzen Seegebiet bis auf 0,5 sm über die kürzere Seite, das Gitter wird dabei bis 0,1 sm bzw. 0,1' feiner; die Zeile über der Karte nennt die sichtbare Breite. Die Missionsübersicht steht als eine Zeile **Auftrag** oben im Stationsbereich und klappt mit einem Klick auf. Ein Wert, für den noch nichts gemeldet ist, steht als grauer Strich; der Mauszeiger darüber nennt den Grund. Auf dem Handy liegen Sprache, Ton, Mikrofon, Einstellungen und Werkzeuge hinter dem Knopf ☰.
 
 ### Crew-Modus, Solo-Modus und Web-Host
 
@@ -2328,7 +2328,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen ode
 | `?` | Leitfaden und Stationshilfe öffnen |
 | `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |
 | `Home / End` | Erster / letzter Eintrag der fokussierten Liste |
-| `Q / E` | Karte oder Ausguck zoomen (wie auf der uConsole); Pos1 passt die Ansicht ein |
+| `Q / E` | Karte (bis 0,5 sm, wie auf der uConsole) oder Ausguck zoomen; Pos1 passt die Ansicht ein |
 | `K` | Karte folgt dem eigenen Schiff an oder aus |
 | `Alt+N` | Namen und Fahrt der Kontakte auf allen Karten an/aus (Symbole und Tooltips bleiben) |
 | `+ / -` | Maschinentelegraph eine Stufe höher / tiefer (Brücke, Maschine, U-Boot-Führung und -Maschine) |

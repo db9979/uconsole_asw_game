@@ -5,6 +5,7 @@ import { openSonarAudioSocket, renderSonarAudio, scheduleSonarAudioPoll, sonarAu
 import { $, audioRoles, isSonar, stationKey } from "../core/base.js";
 const TELEGRAPH_ORDERS = ["ASTERN", "STOP", "SLOW", "HALF", "FULL", "FLANK"];
 import { authenticated, chartMatches, finite, hasPosition, number, selectedTrack, t } from "../core/format.js";
+import { clampMapZoom, wirePinch } from "../core/map-zoom.js";
 import { loadLanguage } from "../core/i18n.js";
 import { chooseTheme, chosenTheme, onThemeChange, toggleTheme } from "../core/theme.js";
 import { retryPendingCommand, sendStationAction } from "../net/commands.js";
@@ -118,10 +119,19 @@ const updateSonarAudioFilters = () => {
   if (S.sonarAudioHighpass && S.audio) S.sonarAudioHighpass.frequency.setTargetAtTime(high, S.audio.currentTime, .02);
   if (S.sonarAudioLowpass && S.audio) S.sonarAudioLowpass.frequency.setTargetAtTime(low, S.audio.currentTime, .02);
 };
-const changeRoleMapZoom = (factor) => {
+// Zoom about a canvas point (the cursor or the pinch midpoint) when the chart
+// is not following the own ship; else about the centre, which is the ship.
+const changeRoleMapZoom = (factor, px = null, py = null) => {
   const role = S.v2State?.role;
-  if (!mapRoles.has(role)) return;
-  roleMapViews[role].zoom = Math.max(.5, Math.min(32, roleMapViews[role].zoom * factor));
+  if (!mapRoles.has(role) || !S.chart) return;
+  const state = roleMapViews[role], before = roleMapGeometry(role);
+  const newZoom = clampMapZoom(state.zoom * factor, S.chart.size_nm);
+  if (before && !state.follow && px !== null && py !== null) {
+    const rect = $("role-map").getBoundingClientRect();
+    state.x += (px - rect.width / 2) / before.scale * (1 - state.zoom / newZoom);
+    state.y += (py - rect.height / 2) / before.scale * (1 - state.zoom / newZoom);
+  }
+  state.zoom = newZoom;
   queueVisualDraw();
 };
 
@@ -927,7 +937,12 @@ export function init() {
     event.preventDefault();
     toggleContactNames();
   });
-  $("role-map").addEventListener("wheel", (event) => { event.preventDefault(); changeRoleMapZoom(event.deltaY < 0 ? 1.15 : 1 / 1.15); }, {passive: false});
+  $("role-map").addEventListener("wheel", (event) => {
+    event.preventDefault();
+    const rect = $("role-map").getBoundingClientRect();
+    changeRoleMapZoom(event.deltaY < 0 ? 1.15 : 1 / 1.15, event.clientX - rect.left, event.clientY - rect.top);
+  }, {passive: false});
+  const roleMapPinching = wirePinch($("role-map"), changeRoleMapZoom);
   $("role-map").addEventListener("pointerdown", (event) => {
     const role = S.v2State?.role;
     if (!mapRoles.has(role) || !event.isPrimary || event.button !== 0) return;
@@ -937,10 +952,15 @@ export function init() {
   });
   $("role-map").addEventListener("pointermove", (event) => {
     if (!S.roleMapDrag || S.roleMapDrag.id !== event.pointerId || S.roleMapDrag.role !== S.v2State?.role) return;
+    const state = roleMapViews[S.roleMapDrag.role];
+    if (roleMapPinching()) {
+      // Two fingers zoom; the drag starts again from here once one lifts.
+      Object.assign(S.roleMapDrag, {x: event.clientX, y: event.clientY, worldX: state.x, worldY: state.y, moved: true});
+      return;
+    }
     const dx = event.clientX - S.roleMapDrag.x, dy = event.clientY - S.roleMapDrag.y;
     if (Math.hypot(dx, dy) > 5) S.roleMapDrag.moved = true;
     if (!S.roleMapDrag.moved) return;
-    const state = roleMapViews[S.roleMapDrag.role];
     state.follow = false;
     const scale = Math.min($("role-map").clientWidth, $("role-map").clientHeight) / S.chart.size_nm * state.zoom;
     state.x = S.roleMapDrag.worldX - dx / scale;
@@ -1073,6 +1093,7 @@ export function init() {
     const rect = canvas.getBoundingClientRect();
     zoom(event.deltaY < 0 ? 1.15 : 1 / 1.15, event.clientX - rect.left, event.clientY - rect.top);
   }, { passive: false });
+  const chartPinching = wirePinch(canvas, zoom);
   canvas.addEventListener("pointerdown", (event) => {
     if (!S.snapshot || !S.chart || !event.isPrimary || event.button !== 0) return;
     canvas.focus();
@@ -1081,6 +1102,10 @@ export function init() {
   });
   canvas.addEventListener("pointermove", (event) => {
     if (!S.drag || S.drag.id !== event.pointerId) return;
+    if (chartPinching()) {
+      Object.assign(S.drag, { x: event.clientX, y: event.clientY, worldX: view.x, worldY: view.y, moved: true });
+      return;
+    }
     const dx = event.clientX - S.drag.x;
     const dy = event.clientY - S.drag.y;
     if (Math.hypot(dx, dy) > 5) S.drag.moved = true;

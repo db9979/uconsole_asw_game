@@ -4,14 +4,26 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.274
+## 1.3.279
 
-Release 1.3.274 lets you hide the contact names on the charts. Alt+N, or
+Release 1.3.279 lets you hide the contact names on the charts. Alt+N, or
 the blue Names chip in the chart's corner, hides the names and speeds of all
 contacts on every chart at every station of both sides and shows them again;
 symbols, course vectors and the tooltip stay, and the uConsole keeps the
 choice in its settings. In the browser the Names button above the chart and
 Alt+N do the same for that browser tab. Saves are v53; v38 to v52 saves
+still load.
+
+## 1.3.275
+
+Release 1.3.275 lets the browser charts zoom in as far as the uConsole's.
+Every chart of a Remote Crew station, on the frigate and the submarine,
+now goes from the whole sea area down to 0.5 NM across the shorter side
+(before it stopped at about 16 NM) with Q/E, the mouse wheel, which zooms
+about the pointer, or a two-finger pinch on a touch screen. The grid of
+degrees and minutes, or of sea miles on the fixed chart, gets finer down
+to a tenth as you zoom in, and the view width above the chart shows
+decimals. Saves are v53; v38 to v52 saves still load.
 
 ## 1.3.272
 

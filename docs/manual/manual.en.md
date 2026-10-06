@@ -2292,7 +2292,7 @@ A free station is taken at once with all of its rights (including direct fire an
 
 The crew pages open in the host's saved language (`F10` options on the uConsole); the English/Deutsch button in the browser's status bar switches that browser alone. The crew page is built for Chrome or Chromium (also Edge) on a desktop PC; another browser shows a hint above the pairing code, and a page that cannot start there says so instead of loading forever. After a host update an open browser page reloads itself once, so it always runs the web client that matches the host.
 
-A browser station has three columns: the contact list on the left, the display in the middle, the station panel on the right with the contact detail below it. To give the controls room without scrolling, an empty contact list folds to a narrow rail and the contact detail to its title bar while no contact is chosen; both open again as soon as there is something to show, and keep any state you set by hand. The mission overview is one **Orders** line at the top of the station panel and opens with a click. A value with nothing reported yet shows as a grey dash; hovering it gives the reason. On a phone, language, sound, microphone, settings and tools sit behind the ☰ button.
+A browser station has three columns: the contact list on the left, the display in the middle, the station panel on the right with the contact detail below it. To give the controls room without scrolling, an empty contact list folds to a narrow rail and the contact detail to its title bar while no contact is chosen; both open again as soon as there is something to show, and keep any state you set by hand. Every chart of a browser station zooms as far as the uConsole's: `Q`/`E`, the wheel (about the pointer) or a two-finger pinch go from the whole sea area down to 0.5 NM across the shorter side, the grid getting finer down to 0.1 NM or 0.1'; the line above the chart gives the width in view. The mission overview is one **Orders** line at the top of the station panel and opens with a click. A value with nothing reported yet shows as a grey dash; hovering it gives the reason. On a phone, language, sound, microphone, settings and tools sit behind the ☰ button.
 
 ### Crew mode, solo mode and the web host
 
@@ -2327,7 +2327,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons 
 | `?` | Open guide and station help |
 | `Arrow keys` | Move within focused tab bar, track list or chart |
 | `Home / End` | First / last entry of the focused list |
-| `Q / E` | Zoom the chart or the lookout's view (as on the uConsole); Home fits the view |
+| `Q / E` | Zoom the chart (down to 0.5 NM, as on the uConsole) or the lookout's view; Home fits the view |
 | `K` | Chart follows the own ship on or off |
 | `Alt+N` | Contact names and speeds on every chart on/off (symbols and tooltips stay) |
 | `+ / -` | Engine telegraph one step up / down (bridge, engine room, submarine command and engine) |

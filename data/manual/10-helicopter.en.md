@@ -66,6 +66,8 @@ Every key in the key bar at the foot of the station can be clicked; holding the 
 - On page 2 the keys named in the rules (`H`, `Y`, `U`/`V`, `Shift+A`, `B`, `D`, `Shift+B`, `Shift+M`, `Ctrl+R`) are switches: a click presses them.
 - On page 1 the winch lamp of the rescue hoist panel is a switch for `Z`.
 - On the acoustic page a click on the source label switches the listening source.
+- On page 2 the torpedo button fires the air torpedo only on a second click within 3 s (the first arms it), like `Ctrl+Enter`.
+- On page 3 a click on a contact line of the dipping sonar selects that contact, like `Shift+↑`/`Shift+↓`.
 - On the chart the wheel zooms, dragging pans (it ends `K` follow) and a click pins a tooltip.
 
 ## Standard procedure {#helicopter-sop}

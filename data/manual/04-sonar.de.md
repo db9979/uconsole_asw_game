@@ -135,6 +135,8 @@ Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrü
 - Die Tastenchips unter den Karten wirken auf den gewählten Kontakt: `C` klassifizieren, `T` TMA, `G` Freigabe an die OPZ, `M` Ziel, `Y`/`Umschalt+Y` Schleppsonar und VDS ausbringen oder einholen.
 - Ein Klick auf den BROADBAND-Wasserfall richtet die Hörpeilung dorthin oder auf einen Kontakt, der höchstens eine halbe Keulenbreite vom Klick entfernt liegt.
 - Ein Klick auf einen Seitenreiter öffnet diese Seite.
+- Ein Klick in die LOFAR- oder DEMON-Anzeige setzt den weißen Cursor auf diese Frequenz, wie `Z`/`X`.
+- Die linke Hälfte des Chips GAIN senkt die Verstärkung wie `I`, die rechte hebt sie wie `O`.
 
 ## Standardablauf {#sonar-sop}
 

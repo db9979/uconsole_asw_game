@@ -139,6 +139,37 @@ def _shortcut_footer(screen, rect, specs) -> None:
         pointer.add_action(segment, page)
 
 
+# Fire by click outside the weapons station needs a second click: the first
+# arms the button for FIRE_CONFIRM_S wall seconds, the second presses
+# Ctrl+Enter, which passes the same checks as the key.
+FIRE_CONFIRM_S = 3.0
+
+
+def fire_armed(game, fire_id: str) -> bool:
+    armed = getattr(game, "_fire_armed", None)
+    return (armed is not None and armed[0] == fire_id
+            and 0.0 <= game._t - armed[1] < FIRE_CONFIRM_S)
+
+
+def fire_click(game, fire_id: str) -> None:
+    if not fire_armed(game, fire_id):
+        game._fire_armed = (fire_id, game._t)
+        return
+    game._fire_armed = None
+    for kind in (pygame.KEYDOWN, pygame.KEYUP):
+        game.handle_event(pygame.event.Event(kind, key=pygame.K_RETURN,
+                                             mod=pygame.KMOD_CTRL, unicode="\r",
+                                             scancode=0))
+
+
+def fire_button(game, screen, rect, label, fire_id: str) -> None:
+    """A Ctrl+Enter button that fires on a confirming second click."""
+    armed = fire_armed(game, fire_id)
+    layout.key_button(screen, rect, "Ctrl+Enter", "fire.confirm" if armed else label,
+                      size=14, min_size=11, active=armed)
+    pointer.add_action(rect, lambda _pos: fire_click(game, fire_id))
+
+
 def list_window(screen, rect, first: int, shown: int, total: int,
                 up="↑", down="↓") -> None:
     """One row under a scrolling list: which part of it is on show, and that

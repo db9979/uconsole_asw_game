@@ -628,6 +628,12 @@ OPZ_SUGGEST_AIS_MAX_AGE_S = 600.0
 # sensor family on either side. Anything less clear stays a suggestion.
 OPZ_AUTO_FUSE_INTERVAL_S = 1.0
 OPZ_AUTO_FUSE_SCORE_MAX = 0.35
+# Charts (Bridge, Weapons, Helicopter, browser Bridge) draw reports of
+# different sensors lying this close together as one contact even before
+# the OPZ fused them (``fusion.merge_chart_reports``; display only): base
+# distance plus a share of the range from the own ship.
+CHART_SAME_CONTACT_NM = 0.2
+CHART_SAME_CONTACT_RANGE_SHARE = 0.06
 # AIS reports in the OPZ: satellite-navigation positions, so a small bearing
 # uncertainty and a high report quality.
 AIS_OPZ_QUALITY = 0.95

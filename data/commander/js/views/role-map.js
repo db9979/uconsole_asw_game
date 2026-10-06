@@ -10,7 +10,7 @@ import { visualContext } from "./visual-common.js";
 import { axisLabel, formatPosition, graticule } from "../core/geo.js";
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { roleMapSweepCanvas, roleMapSweepCtx } from "./canvases.js";
-import { labelField, placeText, placeTip, reserveText } from "./label-layout.js";
+import { labelField, placeBeside, placeText, reserveText } from "./label-layout.js";
 import { drawAfterglow, drawFurthestOn, drawMapFx, furthestOnNm, mapFxActive } from "./map-fx.js";
 import { drawOpzCpa, drawOpzRings, drawOpzTrails, opzLabel, opzLayer, opzVectorMinutes, syncOpzDisplayBar } from "./opz-display.js";
 
@@ -406,7 +406,7 @@ export function drawRoleMap(role) {
     // Range rings, bearing scale and the trails under the live symbols.
     drawOpzRings(plot.context, labels, ox, oy, payload.radar.range_nm, scale, data.own.course, plot.width, plot.height);
     const byRef = new Map(data.observations.map((row) => [row.ref, row]));
-    drawOpzTrails(plot.context, payload.trails, (ref) => colors[byRef.get(ref)?.affiliation] || colors.UNKNOWN, framePoint);
+    drawOpzTrails(plot.context, payload.trails, (ref) => colors[byRef.get(ref)?.affiliation] || colors.UNKNOWN, framePoint, labels);
   }
   if (hasPosition(data.own)) {
     addRoleMapHit(null, ox, oy);
@@ -427,6 +427,7 @@ export function drawRoleMap(role) {
     }
     plot.context.restore();
   }
+  const pendingLabels = [];
   for (const row of data.observations) {
     const isSelected = row.ref === S.selected;
     plot.context.strokeStyle = isSelected ? palette().accent : colors[row.affiliation] || colors.UNKNOWN;
@@ -446,15 +447,19 @@ export function drawRoleMap(role) {
       if (isSelected) { plot.context.beginPath(); plot.context.arc(x, y, 14, 0, Math.PI * 2); plot.context.stroke(); }
       plot.context.fillStyle = symbolColor;
       labels.reserve(x - 10, y - 10, 20, 20);
-      const label = opz ? opzLabel(row.label || row.ref) : String(row.label || row.ref);
-      if (label !== null) placeText(plot.context, labels, label, x + 12, y - 10);
       if (finite(row.course)) {
         // The OPZ draws the distance run in the chosen minutes (as the uConsole).
         const reach = opz && finite(row.speed_kn) ? Math.min(Math.max(10, row.speed_kn * opzVectorMinutes() / 60 * scale), Math.min(plot.width, plot.height) * .45) : 22;
         const angle = row.course * Math.PI / 180, tipX = x + Math.sin(angle) * reach, tipY = y - Math.cos(angle) * reach;
         plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(tipX, tipY); plot.context.stroke();
-        if (finite(row.speed_kn)) placeTip(plot.context, labels, unit(row.speed_kn, "kn", 0), tipX, tipY, Math.sin(angle), -Math.cos(angle));
+        labels.reserveLine(x, y, tipX, tipY);
       }
+      // Name and speed in one label abeam of the course, placed once every
+      // symbol and vector is drawn, on the same spot redraw after redraw.
+      const label = opz ? opzLabel(row.label || row.ref) : String(row.label || row.ref);
+      const speed = finite(row.course) && finite(row.speed_kn) ? unit(row.speed_kn, "kn", 0) : null;
+      const text = [label, speed].filter((part) => part !== null).join(" ");
+      if (text) pendingLabels.push(() => { plot.context.fillStyle = symbolColor; placeBeside(plot.context, labels, text, x, y, finite(row.course) ? row.course : null, `${role}:${row.ref}`); });
     } else if (layer("bearings") && finite(row.bearing) && (hasPosition(data.own) ||
         finite(row.observer_x) && finite(row.observer_y))) {
       const [bx, by] = finite(row.observer_x) && finite(row.observer_y) ?
@@ -470,6 +475,7 @@ export function drawRoleMap(role) {
       plot.context.lineTo(bx + Math.sin(angle) * Math.max(plot.width, plot.height), by - Math.cos(angle) * Math.max(plot.width, plot.height)); plot.context.stroke(); plot.context.setLineDash([]);
     }
   }
+  for (const draw of pendingLabels) draw();
   plot.context.lineWidth = 1;
   for (const log of data.bearingLogs) {
     const [x, y] = framePoint(log.observer_x, log.observer_y), angle = log.bearing * Math.PI / 180;

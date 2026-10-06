@@ -30,7 +30,7 @@ from src.sensors.esm import (
     track_is_operational,
     spectrum_band,
 )
-from src.sensors.fusion import live_members
+from src.sensors.fusion import chart_family, live_members, merge_chart_reports
 from src.physics import ship_dynamics
 
 
@@ -1384,8 +1384,27 @@ def _bridge_tactical(rows, opz_fusions):
         if row.get("visual_class") is None and sighted is not None:
             row.update(visual_class=sighted["visual_class"],
                        visual_type=sighted["visual_type"])
+        row["_families"] = {chart_family(by_ref.get(ref, {}).get("source", ""))
+                            for ref in fusion["members"]}
         result.append(row)
-    return result
+    # Reports of different sensors right on top of each other that the OPZ
+    # has not fused yet stay one contact, as on the uConsole chart.
+    items = [dict(key=row["ref"], families=row.get("_families") or {chart_family(row["source"])},
+                  domain=row["domain"], x=row["x"], y=row["y"], range_nm=row.get("range_nm"),
+                  fused=row["source"] == "FUSION", quality=row.get("quality"))
+             for row in result if row.get("x") is not None and row.get("y") is not None]
+    joined = merge_chart_reports(items)
+    merged = []
+    for row in result:
+        if row["ref"] in joined:
+            continue
+        row.pop("_families", None)
+        for key in sorted(ref for ref, lead in joined.items() if lead == row["ref"]):
+            other = next(item for item in result if item["ref"] == key)
+            if row.get("visual_class") is None and other.get("visual_class") is not None:
+                row.update(visual_class=other["visual_class"], visual_type=other["visual_type"])
+        merged.append(row)
+    return merged
 
 
 def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,

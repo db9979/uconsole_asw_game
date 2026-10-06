@@ -147,9 +147,10 @@ def draw_heading(surface, center, heading_deg, size: int, color, length: int | N
 
 def draw_motion_vector(surface, center, course_deg, speed_kn, px_per_nm,
                         color, minutes=config.MOTION_VECTOR_WINDOW_MIN,
-                        max_px=None, font=None):
+                        max_px=None, font=None, key=None):
     """Vektor von center in Kursrichtung, Laenge proportional zur in
-    `minutes` zurueckgelegten Distanz. Ohne Speed nur ein kurzer Heading-Tick."""
+    `minutes` zurueckgelegten Distanz. Ohne Speed nur ein kurzer Heading-Tick.
+    In a chart's label scope the line keeps later labels off it."""
     if course_deg is None:
         return None
     ang = math.radians(course_deg)
@@ -161,19 +162,25 @@ def draw_motion_vector(surface, center, course_deg, speed_kn, px_per_nm,
         length = 10.0  # Kurs bekannt, Speed noch nicht aufgeloest
     end = (center[0] + length * math.sin(ang), center[1] - length * math.cos(ang))
     pygame.draw.line(surface, color, center, end, 2)
+    label_layout.reserve_segment(center, end)
     if font is not None and speed_kn is not None:
         text = f"{speed_kn:.0f}kn"
-        image = font.render(text, True, color)
-        # Past the vector tip, on the far side from its own line, never
-        # across another label or off the chart.
-        width, height = image.get_size()
-        ux, uy = math.sin(ang), -math.cos(ang)
-        x = end[0] + 4 if ux >= -0.2 else end[0] - 4 - width
-        y = end[1] - height / 2 + uy * (height / 2 + 2)
-        pos = (int(x), int(y))
-        rect = label_layout.free_rect(
-            (width, height), label_layout.around(pos, (width, height), 4),
-            surface.get_clip())
-        layout.record_text(text, rect, surface.get_clip(), image)
-        surface.blit(image, rect)
+        clip = surface.get_clip()
+
+        def draw_speed() -> None:
+            image = font.render(text, True, color)
+            # Past the vector tip, on the far side from its own line, never
+            # across another label or off the chart.
+            width, height = image.get_size()
+            ux, uy = math.sin(ang), -math.cos(ang)
+            x = end[0] + 4 if ux >= -0.2 else end[0] - 4 - width
+            y = end[1] - height / 2 + uy * (height / 2 + 2)
+            pos = (int(x), int(y))
+            rect = label_layout.free_rect(
+                (width, height), label_layout.around(pos, (width, height), 4),
+                clip, key)
+            layout.record_text(text, rect, clip, image)
+            surface.blit(image, rect)
+
+        label_layout.later(draw_speed)
     return end

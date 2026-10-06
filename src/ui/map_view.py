@@ -278,32 +278,48 @@ def _visible_landmasses(coast, view, rect):
 
 
 def _map_label(surface, game, text, pos, color, chart, candidates=None,
-               size=None) -> None:
+               size=None, key=None) -> None:
     """Label beside a chart symbol, flipped left/down so it is never cut off.
 
     Inside a :func:`label_layout.label_scope` the label also steps aside
-    from labels placed before it (``candidates`` overrides the default
-    positions around ``pos``)."""
-    shown = localize(text)
-    face = layout.font(size) if size else game.font
-    width, height = layout.text_size(face, shown)
-    chart = pygame.Rect(chart)
-    field = label_layout.active()
-    if field is not None:
-        if callable(candidates):
-            candidates = candidates((width, height))
-        x, y = field.place((width, height), candidates
-                           or label_layout.around(pos, (width, height))).topleft
-    else:
-        x, y = pos
-        if x + width > chart.right - 2:
-            x = max(chart.x + 2, pos[0] - width - 24)
-        y = min(max(y, chart.y + 2), chart.bottom - height - 2)
-    with layout.clip_to(surface, chart):
-        image = layout.render_line(face, shown, color)
-        rendered = image.get_rect(topleft=(int(x), int(y)))
-        layout.record_text(shown, rendered, chart, image)
-        surface.blit(image, rendered)
+    from labels, symbols and lines placed before it (``candidates``
+    overrides the default positions around ``pos``; a callable gets the
+    label's size) and, in a deferred scope, is placed after the chart's
+    symbols and lines; a ``key`` keeps it on last frame's spot."""
+    def draw() -> None:
+        shown = localize(text)
+        face = layout.font(size) if size else game.font
+        width, height = layout.text_size(face, shown)
+        box = pygame.Rect(chart)
+        field = label_layout.active()
+        if field is not None:
+            options = candidates((width, height)) if callable(candidates) else candidates
+            x, y = field.place((width, height), options
+                               or label_layout.around(pos, (width, height)), key).topleft
+        else:
+            x, y = pos
+            if x + width > box.right - 2:
+                x = max(box.x + 2, pos[0] - width - 24)
+            y = min(max(y, box.y + 2), box.bottom - height - 2)
+        with layout.clip_to(surface, box):
+            image = layout.render_line(face, shown, color)
+            rendered = image.get_rect(topleft=(int(x), int(y)))
+            layout.record_text(shown, rendered, box, image)
+            surface.blit(image, rendered)
+
+    label_layout.later(draw)
+
+
+def _track_label(surface, game, track, point, color, chart, chart_key: str) -> None:
+    """A positioned track's name with its speed, abeam of its course: clear
+    of its own motion vector and trail, on the same spot frame after frame."""
+    speed = track.get("speed_kn")
+    text = str(track["label"])
+    if speed is not None and track.get("course") is not None:
+        text = f"{text} {speed:.0f}kn"
+    _map_label(surface, game, raw_text(text), point, color, chart,
+               candidates=lambda size: label_layout.beside(point, size, track.get("course")),
+               key=(chart_key, track["track_id"]))
 
 
 def draw_chart_geography(game, view, r, top_band=None) -> None:
@@ -511,7 +527,7 @@ def draw_map_view(game, tr=None) -> None:
 
     # See-Hintergrund; bleibt auch ausserhalb der Weltgrenzen sichtbar.
     pygame.draw.rect(s, chart_background(game), r)
-    with layout.clip_to(s, r), label_layout.label_scope(r) as labels:
+    with layout.clip_to(s, r), label_layout.label_scope(r, deferred=True) as labels:
         # Own ship first: no label may cover it.
         ox, oy = view.world_to_screen(game.ship.x, game.ship.y)
         labels.reserve((int(ox) - 10, int(oy) - 10, 20, 20))
@@ -542,10 +558,10 @@ def draw_map_view(game, tr=None) -> None:
             affiliation = game.opz_affiliation(track["track_id"])
             col = nato_symbols.draw_symbol(
                 s, (px, py), affiliation, "SURFACE", 14)
-            _map_label(s, game, raw_text(track["label"]), (int(px) + 7, int(py) - 18),
-                       col, r)
+            labels.reserve((int(px) - 8, int(py) - 8, 16, 16))
             nato_symbols.draw_motion_vector(s, (px, py), track["course"], track["speed_kn"],
-                                            view.scale, col, font=game.font, max_px=120)
+                                            view.scale, col, max_px=120)
+            _track_label(s, game, track, (px, py), col, r, "map")
 
         for track in (t for t in tracks if t["kind"] == "FLG"
                       and observed_position(t)[0] is not None):
@@ -554,10 +570,10 @@ def draw_map_view(game, tr=None) -> None:
                 continue
             affiliation = game.opz_affiliation(track["track_id"])
             col = nato_symbols.draw_symbol(s, (px, py), affiliation, "AIR", 14)
-            _map_label(s, game, raw_text(track["label"]), (int(px) + 9, int(py) - 14),
-                       col, r)
+            labels.reserve((int(px) - 8, int(py) - 8, 16, 16))
             nato_symbols.draw_motion_vector(s, (px, py), track["course"], track["speed_kn"],
-                                            view.scale, col, font=game.font, max_px=120)
+                                            view.scale, col, max_px=120)
+            _track_label(s, game, track, (px, py), col, r, "map")
 
         # Eigene Torpedos
         for t in game.torpedoes:
@@ -581,10 +597,10 @@ def draw_map_view(game, tr=None) -> None:
             affiliation = game.opz_affiliation(track["track_id"])
             col = nato_symbols.draw_symbol(
                 s, (px, py), affiliation, "MISSILE", 14)
-            _map_label(s, game, raw_text(track["label"]), (int(px) + 10, int(py) - 12),
-                       col, r)
+            labels.reserve((int(px) - 8, int(py) - 8, 16, 16))
             nato_symbols.draw_motion_vector(s, (px, py), track["course"], track["speed_kn"],
-                                            view.scale, col, font=game.font, max_px=120)
+                                            view.scale, col, max_px=120)
+            _track_label(s, game, track, (px, py), col, r, "map")
         fx, fy = view.world_to_screen(game.ship.x, game.ship.y)
         for track in (t for t in tracks if t["kind"] == "ASM"
                       and observed_position(t)[0] is None):
@@ -592,6 +608,7 @@ def draw_map_view(game, tr=None) -> None:
             ex, ey = fx + 300 * math.sin(rad), fy - 300 * math.cos(rad)
             lines.line(s, config.COLOR_DANGER, (int(fx), int(fy)),
                              (int(ex), int(ey)), 1)
+            label_layout.reserve_segment((fx, fy), (ex, ey), 2)
             _map_label(s, game, raw_text(track["source"] + " " + track["label"]),
                        (int(fx) + 12, int(fy) + 24), config.COLOR_DANGER, r)
         for e in game.essms:
@@ -627,6 +644,7 @@ def draw_map_view(game, tr=None) -> None:
                 line_col = config.COLOR_DANGER if contact is game.target \
                     else config.COLOR_WARN
                 lines.line(s, line_col, (int(fx), int(fy)), (int(tx), int(ty)), 1)
+                label_layout.reserve_segment((fx, fy), (tx, ty), 2)
                 if contact.range_sigma_nm:
                     sigma_px = max(3, int(contact.range_sigma_nm * view.scale))
                     pygame.draw.circle(s, line_col, (int(tx), int(ty)), sigma_px, 1)
@@ -654,6 +672,7 @@ def draw_map_view(game, tr=None) -> None:
                 ey = fy - 300 * math.cos(brg)
                 lines.line(s, line_col, (int(fx), int(fy)),
                                  (int(ex), int(ey)), 1)
+                label_layout.reserve_segment((fx, fy), (ex, ey), 2)
                 _map_label(s, game, structured_message(
                     "weapons.line.bearing_only.short" if hint else "map.line.bearing_only",
                     contact=observations.contact_display_id(game, contact)),
@@ -668,6 +687,7 @@ def draw_map_view(game, tr=None) -> None:
             ex, ey = ox + 260 * math.sin(brg), oy - 260 * math.cos(brg)
             lines.line(s, config.COLOR_ESM, (int(ox), int(oy)),
                              (int(ex), int(ey)), 1)
+            label_layout.reserve_segment((ox, oy), (ex, ey), 2)
         for fix in game.hfdf_fixes.values():
             age = max(0.0, game.sim_t - fix["t"])
             if age > 300.0:
@@ -701,6 +721,7 @@ def draw_map_view(game, tr=None) -> None:
                 point = view.world_to_screen(wx, wy)
                 lines.line(s, config.COLOR_WARN, (int(previous[0]), int(previous[1])),
                            (int(point[0]), int(point[1])), 1)
+                label_layout.reserve_segment(previous, point, 2)
                 pygame.draw.circle(s, config.COLOR_WARN, (int(point[0]), int(point[1])), 5, 1)
                 _map_label(s, game, message("map.route_waypoint", number=number),
                            (int(point[0]) + 7, int(point[1]) - 18),
@@ -714,6 +735,7 @@ def draw_map_view(game, tr=None) -> None:
         target_ey = int(py + 42 * math.sin(target_ang))
         lines.line(s, config.COLOR_TEXT_DIM, (int(px), int(py)),
                          (target_ex, target_ey), 1)
+        label_layout.reserve_segment((px, py), (target_ex, target_ey), 2)
         _map_label(s, game, structured_message("map.target_course",
                                                course=f"{game.ship.target_course:03.0f}"),
                    (int(px) + 8, int(py) + 10), config.COLOR_TEXT_DIM, r, size=12)
@@ -742,8 +764,6 @@ def draw_map_view(game, tr=None) -> None:
             field = label_layout.active()
             if field is not None:
                 field.reserve(pygame.Rect(int(px) - 11, int(py) - 11, 22, 22))
-            if end is not None:
-                label_layout.reserve_segment((px, py), end)
             _map_label(s, game, raw_text("HSP-5"), (int(px) + 15, int(py) - 14),
                        col, r)
         draw_plot(s, game, view, r)

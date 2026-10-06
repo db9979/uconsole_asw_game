@@ -153,7 +153,7 @@ export function drawOpzRings(context, labels, ox, oy, rangeNm, scale, course, wi
 }
 
 // Earlier published positions of each report, oldest faintest.
-export function drawOpzTrails(context, trails, colorOf, point) {
+export function drawOpzTrails(context, trails, colorOf, point, labels = null) {
   const minutes = opzTrailMinutes();
   if (!minutes || !Array.isArray(trails)) return;
   context.save();
@@ -164,7 +164,11 @@ export function drawOpzTrails(context, trails, colorOf, point) {
     rows.forEach(([x, y], index) => {
       const [px, py] = point(x, y), weight = .2 + .6 * (index + 1) / rows.length;
       context.globalAlpha = weight * .45;
-      if (index) { const [qx, qy] = point(rows[index - 1][0], rows[index - 1][1]); context.beginPath(); context.moveTo(qx, qy); context.lineTo(px, py); context.stroke(); }
+      if (index) {
+        const [qx, qy] = point(rows[index - 1][0], rows[index - 1][1]);
+        context.beginPath(); context.moveTo(qx, qy); context.lineTo(px, py); context.stroke();
+        if (labels) labels.reserveLine(qx, qy, px, py);
+      }
       context.globalAlpha = weight;
       context.beginPath(); context.arc(px, py, 2, 0, Math.PI * 2); context.fill();
     });

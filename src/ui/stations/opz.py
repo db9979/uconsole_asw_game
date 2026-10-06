@@ -433,7 +433,9 @@ def _draw_mpa(game, s, chart, view, px_per_nm, page) -> None:
     col = nato_symbols.draw_symbol(s, (mx, my), "FRIEND", "AIR", 17)
     nato_symbols.draw_motion_vector(s, (mx, my), mpa.course, mpa.speed_kn,
                                     px_per_nm, col, max_px=min(chart.size) * .3)
-    label_layout.blit_line(s, "MPA DL", (int(mx) + 13, int(my) - 10, 94, 19), col, size=12)
+    label_layout.reserve_box((int(mx) - 9, int(my) - 9, 18, 18))
+    label_layout.blit_line(s, "MPA DL", (int(mx) + 13, int(my) - 10, 94, 19), col, size=12,
+                           center=(mx, my), course=mpa.course, key=("opz", "mpa"))
 
 
 def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
@@ -553,8 +555,11 @@ def _draw_consort(game, s, chart, view, px_per_nm, page) -> None:
     nato_symbols.draw_motion_vector(s, (cx, cy), consort_view["course"],
                                     consort_view["speed_kn"], px_per_nm, col,
                                     max_px=min(chart.size) * .3)
+    label_layout.reserve_box((int(cx) - 9, int(cy) - 9, 18, 18))
     label_layout.blit_line(s, raw_text(consort_view["callsign"] + " DL"),
-                     (int(cx) + 13, int(cy) + 8, 110, 19), col, size=12)
+                           (int(cx) + 13, int(cy) + 8, 110, 19), col, size=12,
+                           center=(cx, cy), course=consort_view["course"],
+                           key=("opz", "consort"))
 
 
 def _draw_consort_sidebar(game, s, x, py, w, bottom) -> int:
@@ -893,8 +898,9 @@ def draw_opz_view(game, tr=None) -> None:
     layout.corner_brackets(s, map_rect)
     previous_clip = s.get_clip()
     s.set_clip(chart)
-    # Chart labels step aside from each other (and from the speed labels).
-    with label_layout.label_scope(chart) as chart_labels:
+    # Chart labels step aside from each other, the symbols and the lines;
+    # they are placed once every symbol and line is drawn.
+    with label_layout.label_scope(chart, deferred=True) as chart_labels:
         # The radar switches sit in the chart's top left; labels keep off.
         for _domain, switch in opz_display_view.radar_switch_rects(chart):
             chart_labels.reserve(switch)
@@ -998,13 +1004,14 @@ def draw_opz_view(game, tr=None) -> None:
             if chart.collidepoint(hx, hy):
                 hcol = nato_symbols.draw_symbol(s, (hx, hy), "FRIEND", "ROTARY", 17)
                 # Speed over ground on the own ship's time base (none in the hover).
-                end = nato_symbols.draw_motion_vector(
+                nato_symbols.draw_motion_vector(
                     s, (hx, hy), helo.course, getattr(helo, "ground_speed_kn", 0.0),
                     px_per_nm, hcol, minutes=vector_min, max_px=min(chart.size) * .3)
-                if end is not None:
-                    label_layout.reserve_segment((hx, hy), end)
+                label_layout.reserve_box((int(hx) - 9, int(hy) - 9, 18, 18))
                 label_layout.blit_line(s, "HSP-5 DL",
-                                 (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12)
+                                       (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12,
+                                       center=(hx, hy), course=helo.course,
+                                       key=("opz", "helo"))
         _draw_mpa(game, s, chart, view, px_per_nm, page)
         _draw_consort(game, s, chart, view, px_per_nm, page)
         # Own weapons are commanded own assets (wire/datalink), not sensor tracks:
@@ -1050,6 +1057,8 @@ def draw_opz_view(game, tr=None) -> None:
             domain = nato_symbols.domain_for_kind(track["kind"])
             col = nato_symbols.AFFILIATION_COLORS[affiliation]
             pygame.draw.line(s, col, start, (sx, sy), 1)
+            label_layout.reserve_segment(start, (sx, sy), 2)
+            label_layout.reserve_box((int(sx) - 8, int(sy) - 8, 16, 16))
             plotted[track.track_id] = (sx, sy)
             nato_symbols.draw_symbol(s, (sx, sy), affiliation, domain, 14,
                                      track["track_id"] == selected_id)
@@ -1059,7 +1068,8 @@ def draw_opz_view(game, tr=None) -> None:
             text = opz_display_view.track_label(shown, track["source"])
             if text is not None:
                 label_layout.blit_line(s, text, (int(sx) - 22, int(sy) - 21, 66, 18),
-                                       col, size=12)
+                                       col, size=12, center=(sx, sy), course=track.course,
+                                       key=("opz", track.track_id))
 
         # Unmarked mast/snorkel echoes: a bare afterglow dot, no symbol or label,
         # dimming with the time since the sweep painted it.
@@ -1092,13 +1102,15 @@ def draw_opz_view(game, tr=None) -> None:
             col = nato_symbols.draw_symbol(
                 s, (bx, by), affiliation, domain, 16,
                 track["track_id"] == selected_id)
+            label_layout.reserve_box((int(bx) - 9, int(by) - 9, 18, 18))
             nato_symbols.draw_motion_vector(s, (bx, by), track.course, track.speed_kn,
                                             px_per_nm, col, minutes=vector_min,
                                             max_px=vector_max_px)
             text = opz_display_view.track_label(shown, track["label"])
             if text is not None:
                 label_layout.blit_line(s, text, (int(bx) + 12, int(by) - 10, 118, 19),
-                                       col, size=12)
+                                       col, size=12, center=(bx, by), course=track.course,
+                                       key=("opz", track.track_id))
 
         for fusion in (track for track in cic_tracks if track.source == "FUSION"):
             if fusion.track_id not in plotted:

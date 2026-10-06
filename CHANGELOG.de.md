@@ -16,6 +16,17 @@ Schleichfahrt und Gefechtsstationen, nie Waffen, und eine Browser-Station
 gibt nur die Befehle ihrer eigenen Station. Spielstände sind v53; v38 bis
 v52 laden weiter.
 
+## 1.3.276
+
+Version 1.3.276 gibt jeder gesprochenen Meldung ein klares Ende. Jede
+Meldung, die die Stimme liest, endet mit einem Punkt, auch nach einem
+Doppelpunkt oder Auslassungszeichen, und danach folgen 0,6 s Stille, bevor
+die nächste beginnt. Logmeldungen gehen dafür wieder einzeln an den
+Sprachdienst, denn ein Sprachmodell macht zwischen zusammen geschickten
+Meldungen nur eine kurze Satzpause. Antworten des Ersten Offiziers bleiben
+am Stück. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
+v52 laden weiter).
+
 ## 1.3.275
 
 Version 1.3.275 lässt die Karten im Browser so weit hineinzoomen wie

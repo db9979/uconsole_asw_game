@@ -16,6 +16,16 @@ action stations can be ordered by voice, never weapons, and a browser
 station gives only its own station's orders. Saves are v53; v38 to v52
 saves still load.
 
+## 1.3.276
+
+Release 1.3.276 gives every spoken report a clear end. Each report the
+voice reads ends with a full stop, also after a colon or an ellipsis, and
+0.6 s of silence follows it before the next one starts. Log entries go to
+the speech service one by one again, because a speech model leaves only a
+short sentence pause between entries sent together. Answers of the
+executive officer stay in one piece. Keys and saves are unchanged (v53;
+v38 to v52 saves still load).
+
 ## 1.3.275
 
 Release 1.3.275 lets the browser charts zoom in as far as the uConsole's.

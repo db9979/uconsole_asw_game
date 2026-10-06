@@ -17,7 +17,7 @@ from src.core import config
 from src.core.game import Game
 from src.sonar.sonar import Contact
 from src.core import manual
-from test_commander_assets import ASSETS, PREFIX, catalogs
+from test_commander_assets import ASSETS, catalogs
 
 
 CONSOLE_SCRIPT = r"""
@@ -61,6 +61,24 @@ async function run() {
   assert(!$("host-bar").hidden && !$("role-rail").hidden === false, "host bar or role rail state");
   fits("bridge");
 
+  // The service record and the training lessons, as on the uConsole's main menu.
+  await until(() => !$("host-logbook").disabled, "logbook button stays disabled");
+  $("host-logbook").click();
+  await until(() => $("logbook-dialog").open, "logbook dialog did not open");
+  assert($("logbook-title").textContent.length > 3 && $("logbook-totals").textContent.length > 3,
+    "logbook dialog is empty");
+  assert($("logbook-awards").children.length === 5, "logbook lists the five awards");
+  $("logbook-side-boat").click();
+  assert($("logbook-side-boat").getAttribute("aria-pressed") === "true", "logbook side switch");
+  $("logbook-close").click();
+  assert(!$("logbook-dialog").open, "logbook dialog did not close");
+  assert(!$("host-training").hidden && !$("host-training").disabled, "training button");
+  $("host-training").click();
+  await until(() => $("training-dialog").open, "training dialog did not open");
+  assert($("training-list").querySelectorAll("button:not(:disabled)").length === 6, "six lessons");
+  $("training-cancel").click();
+  assert(!$("training-dialog").open, "training dialog did not close");
+
   // The operator's picture survives a station switch: returning to a station
   // already visited repaints from its cache without blanking the console, and the
   // map zoom and a half-typed sonar order are still there. (The very first visit
@@ -92,17 +110,21 @@ async function run() {
   assert(blanked === 0, "the console was blanked during a station switch");
   fits("bridge again");
 
-  // Hotkeys: a digit selects that station, [ and ] step through the held ones.
+  // Hotkeys: a digit selects that station, as on the uConsole ([ and ] are
+  // the uConsole's own station keys and do not step stations here).
   blanked = 0;
   document.dispatchEvent(new KeyboardEvent("keydown", {key: "2", bubbles: true}));
   await until(() => showing("sonar"), "hotkey 2 did not select sonar");
   assert(blanked === 0, "the console was blanked returning to a visited station");
   assert($("sonar-bearing").value === "77", "sonar draft was lost on station switch");
-  document.dispatchEvent(new KeyboardEvent("keydown", {key: "]", bubbles: true}));
-  await until(() => showing("weapons"), "] did not step to weapons");
-  blanked = 0;
+  document.dispatchEvent(new KeyboardEvent("keydown", {key: "3", bubbles: true}));
+  await until(() => showing("weapons"), "hotkey 3 did not select weapons");
   document.dispatchEvent(new KeyboardEvent("keydown", {key: "[", bubbles: true}));
-  await until(() => showing("sonar"), "[ did not step back to sonar");
+  await sleep(200);
+  assert(showing("weapons"), "[ still steps stations");
+  blanked = 0;
+  document.dispatchEvent(new KeyboardEvent("keydown", {key: "2", bubbles: true}));
+  await until(() => showing("sonar"), "hotkey 2 did not return to sonar");
   $("sonar-bearing").dispatchEvent(new KeyboardEvent("keydown", {key: "4", bubbles: true}));
   await sleep(300);
   assert(active() === "sonar", "a digit typed into a field switched station");
@@ -203,8 +225,9 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
     console.solo = True
     console.port = 0
     console._translations = {
-        "en": {key: value for key, value in en.items() if key.startswith(PREFIX)},
-        "de": {key: value for key, value in de.items() if key.startswith(PREFIX)},
+        # As served: the browser keys plus the game texts it shows (logbook).
+        "en": commander_transport.web_catalog(en),
+        "de": commander_transport.web_catalog(de),
     }
     console._contact_analysis_assets = {}
     # Pre-rendered like the assets: resources.files is redirected below.

@@ -11,7 +11,9 @@ import { renderRoleVisuals } from "./role-visuals.js";
 // log ticker. Dock state is per viewer and kept in memory only: a reload
 // starts from the station defaults again (no browser storage by design).
 const DOCKS = ["left", "right", "detail", "log"];
-const DOCK_KEYS = {",": "left", ".": "right", "l": "log", "L": "log"};
+// Alt+, / Alt+. / Alt+L: the bare keys are the uConsole's (seeker enable
+// range, volume, lookout range; OPZ fusion), so the docks take Alt.
+export const DOCK_KEYS = {Comma: "left", Period: "right", KeyL: "log"};
 const wide = matchMedia("(min-width: 1600px)");
 const tall = matchMedia("(min-width: 1600px) and (min-height: 1300px)");
 const ALERT_S = 20;
@@ -135,14 +137,14 @@ export function init() {
   wide.addEventListener("change", () => applyDefaults(layoutStation));
   ultraWide.addEventListener("change", () => { if (S.v2State?.role) renderRoleVisuals(S.v2State.role); });
   document.addEventListener("keydown", (event) => {
-    if (!S.session?.station || event.ctrlKey || event.altKey || event.metaKey || event.isComposing ||
+    if (!S.session?.station || event.ctrlKey || event.metaKey || event.isComposing ||
         event.repeat || $("operations").hidden || isTyping(event.target)) return;
-    if (event.key === "Escape" && S.activeTab !== "operations") {
+    if (event.key === "Escape" && !event.altKey && S.activeTab !== "operations") {
       event.preventDefault();
       activateTab("operations");
       return;
     }
-    const dock = DOCK_KEYS[event.key];
+    const dock = event.altKey && !event.shiftKey ? DOCK_KEYS[event.code] : undefined;
     if (!dock || !document.body.classList.contains("workstation-mode")) return;
     event.preventDefault();
     toggleDock(dock);

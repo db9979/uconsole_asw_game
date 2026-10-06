@@ -78,12 +78,6 @@ export function renderStationAlarms() {
   $("sferics").hidden = !(storm > 0 && SFERICS_STATIONS.has(S.v2State?.role));
 }
 const SFERICS_STATIONS = new Set(["eloka", "radio", "uboot_esm", "uboot_radio"]);
-function stepStation(delta) {
-  const held = stationNames.filter((station) => S.session?.stations[station].status === "mine");
-  if (held.length < 2) return;
-  const index = held.indexOf(S.activatingStation ?? S.session.station);
-  chooseStation(held[(index + delta + held.length) % held.length]);
-}
 
 export function init() {
   document.addEventListener("keydown", (event) => {
@@ -102,9 +96,6 @@ export function init() {
       const held = stationNames.find((name) => S.session.stations[name].status === "mine");
       const station = sideStations(held ?? "bridge")[Number(event.key) - 1];
       if (station && S.session.stations[station].status === "mine") { event.preventDefault(); chooseStation(station); }
-    } else if (event.key === "[" || event.key === "]") {
-      event.preventDefault();
-      stepStation(event.key === "]" ? 1 : -1);
     } else if (event.key === "?") {
       event.preventDefault();
       activateTab("guide");

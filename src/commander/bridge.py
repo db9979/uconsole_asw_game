@@ -73,8 +73,9 @@ import numpy as np
 
 from src.audio.receiver import smooth_limit
 from src.sonar.sonar import SonarSystem
-from src.core import boat_campaign, boat_debrief, config, debrief_replay, opfor
+from src.core import boat_campaign, boat_debrief, config, debrief_replay, logbook, opfor
 from src.sensors import lookout_id
+from src.commander import host_records
 from src.commander.event_log import ALERT_TAGS, MissionLog
 from src.commander.lookout_projection import build_lookout_states
 from src.commander.mission_library import MissionLibrary, editor_catalog
@@ -203,6 +204,10 @@ class CommanderBridge:
         self._last_publish = None
         self._slots = None
         self._slots_at = None
+        # The service record of the host view (host_records.py), re-read
+        # only when the logbook file changed.
+        self._logbook_stamp = False
+        self._logbook = None
         # Own-mission library of the solo host (src/commander/mission_library.py).
         self._missions = MissionLibrary()
         self._missions_published = None
@@ -1217,9 +1222,15 @@ class CommanderBridge:
 
     def _host_view(self, game, phase, now):
         """Detached solo host view: clock, phase, scenario choices and save slots."""
+        learns = bool(getattr(getattr(game, "preferences", None), "enemy_learns", True))
         if self._slots is None or self._slots_at is None or now - self._slots_at >= 2.0:
             self._slots = self._slot_rows()
             self._slots_at = now
+            stamp = host_records.logbook_stamp()
+            if stamp != self._logbook_stamp or self._logbook is None or \
+                    self._logbook["learns"] != learns:
+                self._logbook_stamp = stamp
+                self._logbook = host_records.logbook_view(logbook.load_logbook(), learns)
         return dict(
             protocol=2, session=self._session, epoch=self._epoch, phase=phase,
             world_mode=game.world_mode, scenario=game.scenario_key,
@@ -1236,7 +1247,9 @@ class CommanderBridge:
             missions_revision=self._missions.revision,
             # Server mode: the leader's lobby choices (None outside the lobby).
             lobby=(game.lobby_host_view() if hasattr(game, "lobby_host_view")
-                   else None))
+                   else None),
+            # The service record and the training lessons (W5).
+            logbook=self._logbook, lessons=host_records.lessons_view())
 
     def _publish_sonar_audio(self, game, server, phase):
         """Copy only complete mixed receiver blocks on the main thread."""

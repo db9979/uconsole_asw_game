@@ -56,7 +56,11 @@ def advisor(language: str, side: str, kind: str, facts: str, question: str = "",
         "situation": ("Give a short situation report like a watch officer to the captain: "
                       "3 to 5 sentences, most urgent first, then what to check next."),
         "question": ("Answer the captain's question in at most 6 sentences. If the "
-                     "answer is not in the facts or in the manual excerpts, say so."),
+                     "answer is not in the facts or in the manual excerpts, say so. You "
+                     "cannot carry out orders and nothing you say is done: if the captain "
+                     "gives an order instead of asking, never repeat it back as done or "
+                     "about to be done; say that it was not carried out and that orders "
+                     "are given at the station or as a typed order he confirms."),
         "classify": ("Help the operator classify the selected contact: explain what the "
                      "measured features and the class library ranking suggest, name at most "
                      "three candidate classes with the reason and what to measure next. "

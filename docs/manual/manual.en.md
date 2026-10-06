@@ -2336,6 +2336,17 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons 
 | `Alt+L` | Open or close the operational log |
 | `Esc` | Close the guide, lookout or contact library and return to the station |
 
+### Not in the browser
+
+The browser follows the uConsole station by station. The solo browser also has the main menu's **Logbook** (service record, best scores, awards and what the enemy has learnt, for the frigate and the submarine) and **Training** (the six lessons; a submarine lesson first switches the browser to the submarine). What the browser does not have yet:
+
+- **Training in server mode:** the server-mode lobby starts missions only; lessons start from a solo browser or on the uConsole.
+- **Logbook page extras:** switching "enemy learns" on or off (`L`), the language model's review of the service record and the after-action report stay on the uConsole's logbook page; the browser shows the record read-only.
+- **Damage control:** choosing a compartment with `←`/`→` has no key; pick it in the compartment list.
+- **Helicopter:** the keys of the acoustic pages that only exist on the uConsole's helicopter display have no browser counterpart.
+- **Station stepping:** `Tab` does not step through the stations; use the station's number (`1`-`9`), and the same number again turns its page.
+- **Host-only functions:** options, editors on the uConsole, quitting, network administration and credentials stay on the uConsole by design.
+
 ## After the mission
 
 ### End panel

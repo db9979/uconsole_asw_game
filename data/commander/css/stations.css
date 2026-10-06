@@ -318,6 +318,17 @@ body.workstation-mode .station-list > .station-row + .station-row { margin-top: 
    2560 px and 4K monitors, one on a 1920 px screen). */
 body.workstation-mode .station-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); align-content: start; }
 body.workstation-mode .station-grid > .station-controls, body.workstation-mode .station-grid > .direct-fire-controls { grid-column: 1 / -1; }
+/* Read tables fold under their heading (card-fold.js). */
+.card-fold { display: inline-flex; align-items: center; gap: .3rem; min-height: max(1.75rem, 26px); min-width: max(1.75rem, 26px); padding: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; cursor: pointer; }
+.card-fold::before { content: "\25BE"; color: var(--text-dim); }
+.card-fold[aria-expanded="false"]::before { content: "\25B8"; }
+.card-fold:hover, .card-fold:focus-visible { color: var(--live-strong); }
+.card-readout[data-folded="true"] > :not(h3) { display: none; }
+/* From 1800 px the control-heavy docks (OPZ, weapons, engine, sonar) get
+   wide enough for two card columns, so more fits without scrolling. */
+@media (min-width: 1800px) and (max-width: 2399px) {
+  .cic-grid:is([data-station="opz"], [data-station="weapons"], [data-station="engine"], [data-station="sonar"]):not([data-right="closed"]) { --right: clamp(32rem, 31vw, 40rem); }
+}
 
 /* A just-switched station shows its cached picture; dim it only if the fresh
    state takes noticeably long, so a normal switch does not flicker. */

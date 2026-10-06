@@ -69,6 +69,7 @@ async function run() {
       const bounds = control.getBoundingClientRect();
       return bounds.width >= 24 && bounds.height >= 24;
     }),
+    small: [...sonarControls, ...sonarToggles].filter((c) => c.getBoundingClientRect().width < 24 || c.getBoundingClientRect().height < 24).map((c) => [c.id || c.className, c.getBoundingClientRect().width, c.getBoundingClientRect().height]),
     labels: ["sonar-control-page", "sonar-bearing", "sonar-array-mode", "sonar-depth",
       "sonar-gain", "sonar-band", "sonar-harmonic-input"].every((id) =>
       document.querySelector(`label[for="${id}"]`)?.control === $(id)),
@@ -405,7 +406,7 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     assert report["bridge"]["controls"] and report["bridge"]["labels"]
     assert report["bridge"]["bounds"][0] >= -1
     assert report["bridge"]["bounds"][2] <= css_width + 1
-    assert report["sonar"]["controls"] and report["sonar"]["labels"]
+    assert report["sonar"]["controls"] and report["sonar"]["labels"], report["sonar"]
     assert report["sonar"]["bounds"][0] >= -1
     assert report["sonar"]["bounds"][2] <= css_width + 1
     assert report["weapons"]["controls"] and report["weapons"]["labels"]

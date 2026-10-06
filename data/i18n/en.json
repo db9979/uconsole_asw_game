@@ -734,7 +734,6 @@
   "commander.web.station_readiness": "Readiness",
   "commander.web.station_designated_target": "Designated target",
   "commander.web.station_own_weapons": "Own weapons in the water",
-  "commander.web.weapons_tubes": "Torpedo tubes",
   "commander.web.weapons_tube": "Tube",
   "commander.web.weapons_lamp_station": "Station",
   "commander.web.weapons_lamp_roe": "ROE",

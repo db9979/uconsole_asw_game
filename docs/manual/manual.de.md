@@ -2337,6 +2337,17 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen ode
 | `Alt+L` | Einsatzprotokoll öffnen oder schließen |
 | `Esc` | Leitfaden, Ausguck oder Kontaktbibliothek schließen und zur Station zurück |
 
+### Nicht im Browser
+
+Der Browser folgt der uConsole Station für Station. Der Solo-Browser hat außerdem das **Einsatzbuch** des Hauptmenüs (Dienstzeit, Bestwerte, Auszeichnungen und was der Gegner gelernt hat, für Fregatte und U-Boot) und die **Ausbildung** (die sechs Lektionen; eine U-Boot-Lektion wechselt den Browser zuerst auf das U-Boot). Was der Browser noch nicht hat:
+
+- **Ausbildung im Servermodus:** die Lobby des Servermodus startet nur Einsätze; Lektionen starten aus einem Solo-Browser oder auf der uConsole.
+- **Zusätze der Einsatzbuch-Seite:** "Gegner lernt mit" ein- und ausschalten (`L`), die Auswertung der Dienstzeit durch das Sprachmodell und der Gefechtsbericht bleiben auf der Einsatzbuch-Seite der uConsole; der Browser zeigt die Dienstzeit nur zum Lesen.
+- **Leckwehr:** die Wahl einer Abteilung mit `←`/`→` hat keine Taste; die Abteilung in der Abteilungsliste wählen.
+- **Hubschrauber:** die Tasten der Akustikseiten, die es nur auf der Hubschrauberanzeige der uConsole gibt, haben im Browser kein Gegenstück.
+- **Stationen durchschalten:** `Tab` schaltet nicht durch die Stationen; die Nummer der Station (`1`-`9`) wählen, dieselbe Nummer noch einmal blättert ihre Seite um.
+- **Nur am Host:** Optionen, die Editoren auf der uConsole, Beenden, Netzverwaltung und Zugangsdaten bleiben absichtlich auf der uConsole.
+
 ## Nach dem Einsatz
 
 ### Endtafel

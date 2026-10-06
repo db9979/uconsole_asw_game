@@ -346,6 +346,12 @@ def test_off_by_default_the_crew_keeps_espeak(monkeypatch):
     assert said and game.voice.sent == 0 and not game._voice_queue
 
 
+def test_the_german_voice_says_zwei_and_letters_by_name():
+    game = _game()
+    game._set_preference("language", "de")
+    assert game._voice_text("Kontakt K2 in 270") == "Kontakt Ka zwei in zwei sieben null"
+
+
 def test_executive_officer_speaks_his_answer():
     with FakeLlmServer("Lage ruhig, Kontakt in 431.") as llm, FakeSpeechServer() as speech:
         game = _game()

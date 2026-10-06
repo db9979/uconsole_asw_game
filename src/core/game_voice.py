@@ -31,7 +31,6 @@ from collections import deque
 import numpy as np
 
 from src.core import callouts, config
-from src.core.callouts import PREFIX as CALLOUT_PREFIX
 from src.core.i18n import localize, message
 from src.llm import keystore
 from src.llm import voice as voice_model
@@ -148,7 +147,7 @@ class VoiceMixin:
     def _voice_text(self, text) -> str:
         """Numbers digit by digit in the game's language ("vier drei eins"),
         units and short forms said in full ("Knoten", "Seemeilen")."""
-        digits = [self.tr(f"{CALLOUT_PREFIX}digit_{digit}") for digit in range(10)]
+        digits = [self.tr(f"voice.digit_{digit}") for digit in range(10)]
         # Units and short forms in full first ("12 kn" -> "12 Knoten").
         words = {name: self.tr(f"voice.word.{name}") for name in voice_model.WORD_NAMES}
         words.update((f"letter_{letter}", self.tr(f"voice.letter.{letter.lower()}"))

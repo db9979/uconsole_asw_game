@@ -13,7 +13,7 @@ vorgelesen, denn ein Sprachmodell beginnt jede Anfrage mit leicht anderer
 Stimme. Was schon angekommen ist, spielt als ein Stück, so stolpert die
 Stimme auf einer ausgelasteten uConsole nicht mehr und verschluckt keine
 Silben. Einzelne Buchstaben werden beim Namen genannt: Kontakt K1 heißt
-„Ka eins“, HQ „Ha Ku“. Tasten und Spielstände bleiben gleich (v53;
+„Ka eins“, K2 „Ka zwei“, HQ „Ha Ku“, und die Stimme sagt „zwei“ statt „zwo“. Tasten und Spielstände bleiben gleich (v53;
 Spielstände v38 bis v52 laden weiter).
 
 ## 1.3.255

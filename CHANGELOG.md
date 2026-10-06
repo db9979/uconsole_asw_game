@@ -13,7 +13,7 @@ request, because a speech model starts every request with a slightly
 different voice. Audio that has already arrived plays as one sound, so a
 busy uConsole no longer makes the voice stumble or swallow syllables.
 Single letters are said by name: contact K1 is "Ka eins" in German, HQ is
-"Ha Ku". Keys and saves are unchanged (v53; v38 to v52 saves still load).
+"Ha Ku", and the German voice says "zwei" instead of "zwo". Keys and saves are unchanged (v53; v38 to v52 saves still load).
 
 ## 1.3.255
 

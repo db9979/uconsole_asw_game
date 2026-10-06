@@ -10,20 +10,14 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.234**
+Current release: **1.3.235**
 
-Release 1.3.234 brings the browser in step with the uConsole. The sonar
-page chooses the active pulse (CW or LFM, W) and the TMA method (Shift+T).
-Browser keys now follow the uConsole at every station of both sides:
-plus and minus step the telegraph (now also on the Bridge), radio, damage control and
-ELOKA have their keys, and every bound control shows its key as a blue
-chip. The side docks and the log moved to Alt+, Alt+. and Alt+L, and [ ]
-no longer step stations. The radio room shows whether an own call to HQ is
-on the air, waiting or ready, and a new HF/DF chart draws bearings, cross
-fixes and error ellipses. Station docks put the controls before the read
-tables, which fold away, and use two columns on wide screens. The solo
-browser opens the logbook and the training lessons. Saves are v53; v38 to
-v52 saves still load.
+Release 1.3.235 fixes a hang when the own microphone stops. Switching
+the noise-discipline microphone off, ending a mission or quitting could
+freeze the game while a capture block was being read; the macOS build's
+self-test hung there. The device now closes without waiting on the game,
+on the uConsole, Windows and macOS alike. Saves are v53; v38 to v52 saves
+still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

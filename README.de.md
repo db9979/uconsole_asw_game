@@ -10,20 +10,19 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.251**
+Aktuelle Version: **1.3.254**
 
-Version 1.3.251 bringt neue Inhalte und mehr Komfort. Der Tageseinsatz ist
-jetzt ein Kurzeinsatz, je Seite nach dem Datum gewählt, und das Spiel
-merkt sich die gewählte Einsatzlänge; neue Spieler beginnen mit
-Kurzeinsätzen. Die Ausbildung steht an zweiter Stelle im Hauptmenü, hakt
-abgeschlossene Lektionen ab, wählt die nächste vor, und N auf der Endtafel
-startet sie. Drei neue Fregatten-Lektionen üben die Luftabwehr gegen einen
-anfliegenden Flugkörper, ESM an einem Frachterradar und die Torpedoabwehr
-mit dem Nixie. Führt die Crew-Unterstützung das U-Boot, übernimmt sie
-jetzt eine gute TMA-Lösung als Ortung und greift damit an. Beide
-Endtafeln nennen in einer Zeile, was den Einsatz entschieden hat, und das
-Einsatzbuch zeigt ein Band je gewonnenem Szenario, auch im Browser.
-Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+Version 1.3.254 liest das Log vollständig und der Reihe nach vor und lässt
+die Stimme deutscher klingen. Jede Logmeldung wird jetzt vorgelesen, eine
+nach der anderen in der Reihenfolge des Logs, statt von vielen Meldungen
+auf einmal nur die neuesten zu behalten und Meldungen wegzuwerfen, die
+länger als 15 s warteten. Die Sprechanweisung an den Sprachdienst ist in
+der Spielsprache geschrieben, weil eine englische Anweisung Modelle wie
+Qwen-TTS bei deutschem Text zu englischem Akzent gezogen hat. Mengen wie
+„1x“ werden als „eins mal“ gesprochen, Kürzel wie CIWS buchstabiert, und
+eine gesprochene Zahl lässt keine Lücke mehr vor einer schließenden
+Klammer. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
+v52 laden weiter).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

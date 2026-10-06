@@ -10,17 +10,20 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.237**
+Current release: **1.3.238**
 
-Release 1.3.237 makes the optional voice speak numbers the way a watch
-does: digit by digit. The executive officer, the coach, the crew reports and
-the voice test now say 431 as "four three one" and 0.9 as "zero point
-niner" (in German "vier drei eins", "null Komma neun"), whether or not the
-text is cleaned before speaking. The voice also starts sooner: a long
-answer is sent sentence by sentence, so the first sentence plays while the
-rest is still being made, and audio a service streams (OpenAI does) plays
-while it still arrives. Keys are unchanged. Saves are v53; v38 to
-v52 saves still load.
+Release 1.3.238 puts latitude and longitude on every chart of every
+station. Until now only the Bridge chart and the charts beside the
+submarine's stations showed the graticule; on the uConsole the OPZ
+(CIC) plot, the radio room's cross-fix chart and the submarine's pilot
+chart still had their plain NM grid. On a real sea area they now draw
+meridians and parallels in degrees and minutes with their numbers along
+the edges and give the own position like 54°21.4'N 010°08.2'E (the
+submarine's pilot chart its dead-reckoned position); the numbers keep
+clear of range rings, bearing scale and other labels. The browser's
+charts already showed the graticule. The stylized fixed chart keeps its
+NM grid. Gameplay, keys and saves are unchanged (v53; v38 to v52 saves
+still load).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

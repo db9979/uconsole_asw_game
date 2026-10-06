@@ -552,8 +552,16 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             # The debrief page owns input until it is closed (Esc or D).
             if e.type == pygame.KEYDOWN:
                 self._handle_debrief_key(e.key, getattr(e, "mod", 0))
+            elif (e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP)
+                  and pointer_input.handle(self, e)):
+                pass        # a footer chip pressed its key
             elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
                 self._handle_debrief_click(self._window_to_canvas(getattr(e, "pos", None)))
+            elif e.type == pygame.MOUSEWHEEL and getattr(e, "y", 0):
+                # The wheel scrolls the report while it is open, else steps events.
+                key = pygame.K_UP if e.y > 0 else pygame.K_DOWN
+                for _ in range(min(3, abs(int(e.y)))):
+                    self._handle_debrief_key(key)
             return True
         return False
 

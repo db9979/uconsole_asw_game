@@ -39,7 +39,7 @@ Das U-Boot hat sieben Stationen auf den Tasten `1`-`7` (siehe Kapitel U-Boot). `
 - **Stationen:** `1`-`9` (U-Boot `1`-`7`), `Tab`/`Umschalt+Tab` oder ein Klick auf einen Reiter in der Kopfzeile.
 - **Seiten:** die Nummer der Station nochmals drücken, `Bild Auf`/`Bild Ab` oder einen Seitenreiter anklicken.
 - **Feuern:** `Strg+Eingabe` feuert Torpedos und Flugkörper. `Eingabe` allein feuert nie.
-- **Hilfe:** `F1` (oder `?`) listet alle Tasten der aktuellen Station, ihren Standardablauf und dieses Handbuch. `Esc` bricht eine Eingabe ab oder öffnet den Beenden-Dialog.
+- **Hilfe:** `F1` (oder `?`) listet alle Tasten der aktuellen Station, ihren Standardablauf und dieses Handbuch; im Handbuch blättern die Schaltflächen **[ Kapitel zurück** und **] Kapitel vor** die Kapitel, und jede Taste in der Hinweiszeile ist ein klickbarer Chip. `Esc` bricht eine Eingabe ab oder öffnet den Beenden-Dialog.
 - **Trackball:** horizontal steuert er auf der Brücke, vertikal schaltet er sonst die Hauptauswahl der Station.
 - **Maus:** Ein Klick auf eine Taste in der Tastenleiste der Station, eine Lampe, einen Hinweis, einen Reiter, eine Scheibe oder eine Listenzeile tut genau das, was seine Taste tut, mit denselben Prüfungen. Das Menü-Symbol in der Kopfzeile öffnet das Spielmenü (Hilfe, Optionen, Speichern, Laden, Beenden). Auf Karten zoomt das Mausrad, Ziehen verschiebt (Einzelheiten im Kapitel Werkzeuge).
 

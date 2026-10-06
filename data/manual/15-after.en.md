@@ -10,7 +10,7 @@ Debrief: after the mission ends, `D` on the end panel opens the debrief. It repl
 
 Beside the chart it lists the time of the first contact, first fix and classification, weapons fired and submarines sunk, the mean error of the crew's fixes, and every event; a "missed chance" is a hostile submarine within 4 NM for at least 5 min without any contact, marked above or below the layer.
 
-`Left`/`Right` step (Shift: 1 min), `Up`/`Down` or `PgUp`/`PgDn` jump between events, a click on the timeline jumps there, `Space` plays it back (`Tab`: 10x or 60x), `D` or `Esc` returns. The debrief is recorded every 10 s (coarser on long missions), is never shown during a mission and is not saved: after a load it covers the mission from the load onwards.
+`Left`/`Right` step (Shift: 1 min), `Up`/`Down` or `PgUp`/`PgDn` jump between events, a click on the timeline jumps there, `Space` plays it back (`Tab`: 10x or 60x), `D` or `Esc` returns. The chips in the footer press these keys by click, and the mouse wheel steps between events (or scrolls the report while it is open). The debrief is recorded every 10 s (coarser on long missions), is never shown during a mission and is not saved: after a load it covers the mission from the load onwards.
 
 - **Debrief replay:** after the mission `Space` plays the debrief back and `Tab` switches between 10x and 60x; the tracks grow and shots, pings, hits and sinkings flash where they happened. The browser's **Play debrief** button (next to the mission state, only after the end) shows the same replay for its own side.
 

@@ -4,6 +4,21 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.272
+
+Version 1.3.272 macht die Overlays per Maus bedienbar. Die Rückfragen vor
+dem Überschreiben eines Platzes, dem Laden und dem Beenden beantwortet ein
+Klick auf ihre Tastenchips. Im Handbuch (F1) blättern die Schaltflächen
+**[ Kapitel zurück** und **] Kapitel vor** die Kapitel, und jede Taste in
+seiner Hinweiszeile ist ein Chip. Das Simulationsprotokoll (F4) und die
+Nachbesprechung haben eine Fußleiste aus Tastenchips; das Mausrad springt
+zwischen den Ereignissen der Nachbesprechung. Der Plotmodus hat eine
+Werkzeugleiste am unteren Kartenrand mit einem Chip für jedes Werkzeug und
+jede Aktion, sodass seine Hinweiszeile die Positionsanzeige der Karte nicht
+mehr verdeckt. Im Taktischen Einheitenanalysator (F8) ordnen zwei
+Schaltflächen das angezeigte Profil dem gewählten Kontakt zu oder löschen
+es. Spielstände sind v53; v38- bis v52-Stände werden weiter geladen.
+
 ## 1.3.268
 
 Version 1.3.268 macht die Menüs per Maus bedienbar. In den Optionen ändert

@@ -10,18 +10,20 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.268**
+Aktuelle Version: **1.3.272**
 
-Version 1.3.268 macht die Menüs per Maus bedienbar. In den Optionen ändert
-ein Klick auf eine Zeile sie wie `Eingabe`, und neue Schaltflächen **<** und
-**>** stellen einen Wert zurück oder weiter; jede Taste in der Hinweiszeile
-ist ein klickbarer Chip. Die Seite Echtzeit-Verkehr schaltet Dienste per
-Klick und öffnet ihre Felder, ein Klick schließt den Startbildschirm,
-Lobby-Zeilen stellen per Klick ins linke Drittel zurück und sonst weiter,
-die Remote-Crew-Seite stellt Host und Port genauso zurück, und das
-Zulassungsfenster der Remote Crew und der Update-Hinweis haben ein
-Schließkreuz; der Hinweis bleibt dann bis zum nächsten Start zu. Spielstände sind
-v53; v38- bis v52-Stände werden weiter geladen.
+Version 1.3.272 macht die Overlays per Maus bedienbar. Die Rückfragen vor
+dem Überschreiben eines Platzes, dem Laden und dem Beenden beantwortet ein
+Klick auf ihre Tastenchips. Im Handbuch (F1) blättern die Schaltflächen
+**[ Kapitel zurück** und **] Kapitel vor** die Kapitel, und jede Taste in
+seiner Hinweiszeile ist ein Chip. Das Simulationsprotokoll (F4) und die
+Nachbesprechung haben eine Fußleiste aus Tastenchips; das Mausrad springt
+zwischen den Ereignissen der Nachbesprechung. Der Plotmodus hat eine
+Werkzeugleiste am unteren Kartenrand mit einem Chip für jedes Werkzeug und
+jede Aktion, sodass seine Hinweiszeile die Positionsanzeige der Karte nicht
+mehr verdeckt. Im Taktischen Einheitenanalysator (F8) ordnen zwei
+Schaltflächen das angezeigte Profil dem gewählten Kontakt zu oder löschen
+es. Spielstände sind v53; v38- bis v52-Stände werden weiter geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

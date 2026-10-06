@@ -77,7 +77,7 @@ In lessons 1, 2 and 4 the submarine is neutral and never attacks; lesson 3 is a 
 
 ## Saving, loading and autosave {#menu-save}
 
-`S` saves, `L` loads (slots 1-5). Saves are exact and deterministic: a loaded game continues identically. The file is written in the background while the mission runs on; the save menu closes (or the game quits after **Save and exit**) only once it is safely on disk. A save of an older release (save format v38, release 1.3.98, or newer) still loads: it is brought up to the current format on loading, slots and autosave alike.
+`S` saves, `L` loads (slots 1-5). Saves are exact and deterministic: a loaded game continues identically. The file is written in the background while the mission runs on; the save menu closes (or the game quits after **Save and exit**) only once it is safely on disk. The question before overwriting a slot or replacing the mission is answered by clicking its `Enter` (yes) or `Esc` (no) chip. A save of an older release (save format v38, release 1.3.98, or newer) still loads: it is brought up to the current format on loading, slots and autosave alike.
 
 **Autosave:** a running mission is saved every 5 minutes and when you quit or leave it for the main menu, to `~/.u-jagd/autosave.json` beside the five slots. The main menu then starts with **Continue mission**, which resumes it exactly; after a crash it holds the last recovery point, at most one minute old. A mission that ends (won, lost or ship sunk) and any new mission delete the autosave. The web host (`--web-host`) does not autosave.
 

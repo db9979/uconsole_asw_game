@@ -10,17 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.257**
+Aktuelle Version: **1.3.258**
 
-Version 1.3.257 räumt die Kartenbeschriftung auf. Der Name eines Schiffs
-liegt nicht mehr unter seiner eigenen Kurslinie: Er steht querab vom Kurs,
-zusammen mit der Fahrt (MV KURELA 8kn), frei von Bewegungsvektoren, Spuren
-und anderen Namen, und behält seinen Platz, statt von Bild zu Bild zu
-springen. Ein Schiff, das Radar und Ausguck sehen, erscheint auf Brücken-
-und Waffenkarte einmal, auch bevor die OPZ beide Meldungen fusioniert hat,
-und ein fusioniertes Schiff mit AIS nimmt Kurs und Fahrt aus dem AIS, sodass
-sein Vektor nicht mehr hin und her schwenkt. Das gilt auf der uConsole und
-im Browser. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+Version 1.3.258 hält die Stimme gleichmäßig und klar. Jede Antwort des
+Ersten Offiziers geht jetzt am Stück an den Sprachdienst statt Satz für
+Satz, und Logmeldungen, die zusammen warten, werden als eine Anfrage
+vorgelesen, denn ein Sprachmodell beginnt jede Anfrage mit leicht anderer
+Stimme. Was schon angekommen ist, spielt als ein Stück, so stolpert die
+Stimme auf einer ausgelasteten uConsole nicht mehr und verschluckt keine
+Silben. Einzelne Buchstaben werden beim Namen genannt: Kontakt K1 heißt
+„Ka eins“, K2 „Ka zwei“, HQ „Ha Ku“, und die Stimme sagt „zwei“ statt „zwo“. Tasten und Spielstände bleiben gleich (v53;
+Spielstände v38 bis v52 laden weiter).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

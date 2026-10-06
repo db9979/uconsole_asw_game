@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.225**
+Aktuelle Version: **1.3.231**
 
-Version 1.3.225 gibt dem optionalen Sprachmodell eine Stimme. Unter
+Version 1.3.231 gibt dem optionalen Sprachmodell eine Stimme. Unter
 Optionen, Seite 2, Sprachmodell nimmt eine zweite Seite „Stimme“ einen
 OpenAI-kompatiblen Sprachdienst auf (Adresse, Sprechmodell, Stimme und
 API-Schlüssel; voreingestellt OpenAI gpt-4o-mini-tts), und eine dritte Seite

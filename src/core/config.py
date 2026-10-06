@@ -1300,19 +1300,21 @@ COLOR_SELECT_BG = (17, 53, 58)     # selected list row
 COLOR_ALARM_BG = (14, 19, 32)      # bridge alarm bar
 COLOR_TAB_ACTIVE = (16, 69, 64)    # active page tab / selected sonar row
 
-# W3: Feed-Kategorien (Farbe, Kürzel)
+# W3: Feed-Kategorien (Farbe, Kürzel). The colour is the name of a
+# ``COLOR_*`` global, looked up when drawn, so the log follows the colour
+# scheme chosen now (``theme.set_theme`` reassigns those globals).
 FEED_CATEGORIES = {
-    "navigation": (COLOR_TEXT, "NAV"),
-    "funk": (COLOR_ESM, "FUNK"),
+    "navigation": ("COLOR_TEXT", "NAV"),
+    "funk": ("COLOR_ESM", "FUNK"),
     # The crewed submarine's radio room logs as "radio".
-    "radio": (COLOR_ESM, "FUNK"),
-    "sonar": (COLOR_OK, "SONAR"),
-    "waffen": (COLOR_WARN, "WAF"),
-    "opz": (COLOR_ESM, "OPZ"),
-    "schaden": (COLOR_DANGER, "SCH"),
-    "mission": (COLOR_CONTACT, "MIS"),
-    "welt": (COLOR_TEXT_DIM, "WET"),
-    "ausguck": (COLOR_CONTACT, "AUSG"),
+    "radio": ("COLOR_ESM", "FUNK"),
+    "sonar": ("COLOR_OK", "SONAR"),
+    "waffen": ("COLOR_WARN", "WAF"),
+    "opz": ("COLOR_ESM", "OPZ"),
+    "schaden": ("COLOR_DANGER", "SCH"),
+    "mission": ("COLOR_CONTACT", "MIS"),
+    "welt": ("COLOR_TEXT_DIM", "WET"),
+    "ausguck": ("COLOR_CONTACT", "AUSG"),
 }
 FEED_MAX_ENTRIES = 200
 

@@ -70,6 +70,9 @@ def handle(game, e) -> bool:
     if e.type != pygame.MOUSEBUTTONDOWN:
         return False
     button = getattr(e, "button", 0)
+    canvas = game._window_to_canvas(getattr(e, "pos", None))
+    if button != 1 and pointer.blocked(canvas, layer):
+        return True       # a panel over the station (F11 log) keeps every click
     if button == 3:
         if layer == "station":
             return False
@@ -77,7 +80,6 @@ def handle(game, e) -> bool:
         return True
     if button != 1:
         return False
-    canvas = game._window_to_canvas(getattr(e, "pos", None))
     if layer == "station" and _over_crew_message(game, canvas):
         return False      # the crew message box lies above every station target
     target = pointer.hit(canvas, layer)

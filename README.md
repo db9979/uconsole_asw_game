@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.225**
+Current release: **1.3.231**
 
-Release 1.3.225 gives the optional language model a voice. Under Options,
+Release 1.3.231 gives the optional language model a voice. Under Options,
 page 2, Language model, a second page "Voice" takes an OpenAI-compatible
 speech service (address, speech model, voice and API key; preset OpenAI
 gpt-4o-mini-tts), and a third page "Sound" sets temperature, top_p and seed

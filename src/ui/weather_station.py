@@ -31,8 +31,10 @@ def _fmt(value, digits: int = 0) -> str:
     return "--" if value is None else f"{value:.{digits}f}"
 
 
-def _line(screen, text, x, y, w, color=config.COLOR_TEXT, size=TEXT):
-    layout.blit_line(screen, text, (x, y, w, LINE_H), color, size=size)
+def _line(screen, text, x, y, w, color=None, size=TEXT):
+    # The default is read now: the colour scheme may have changed.
+    layout.blit_line(screen, text, (x, y, w, LINE_H),
+                     config.COLOR_TEXT if color is None else color, size=size)
 
 
 def _environment(screen, rect, data) -> None:

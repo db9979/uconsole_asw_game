@@ -232,12 +232,17 @@ def draw_bridge_view(game, tr=None) -> None:
 
 
 
+# ``config.COLOR_*`` names, looked up when drawn (the colour scheme can change).
 _LOOKOUT_KIND_COLORS = {
-    "SURFACE": config.COLOR_CONTACT_ZIVIL,
-    "SUB": config.COLOR_CONTACT_UBOOT,
-    "FLG": config.COLOR_FLIGHT,
-    "TORP": config.COLOR_CONTACT_MISSILE,
+    "SURFACE": "COLOR_CONTACT_ZIVIL",
+    "SUB": "COLOR_CONTACT_UBOOT",
+    "FLG": "COLOR_FLIGHT",
+    "TORP": "COLOR_CONTACT_MISSILE",
 }
+
+
+def _lookout_kind_color(kind) -> tuple:
+    return getattr(config, _LOOKOUT_KIND_COLORS.get(kind, "COLOR_TEXT_DIM"))
 
 
 def _lookout_scope_rect(area: pygame.Rect) -> pygame.Rect:
@@ -377,11 +382,11 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
         if math.hypot(dx, dy) > range_nm:
             angle = math.radians(track.bearing or 0.0)
             px, py = cx + math.sin(angle) * radius, cy - math.cos(angle) * radius
-            pygame.draw.circle(s, _LOOKOUT_KIND_COLORS.get(track.kind, config.COLOR_TEXT_DIM),
+            pygame.draw.circle(s, _lookout_kind_color(track.kind),
                                (int(px), int(py)), 3, 1)
             continue
         px, py = int(cx + dx * scale), int(cy + dy * scale)
-        color = _LOOKOUT_KIND_COLORS.get(track.kind, config.COLOR_TEXT_DIM)
+        color = _lookout_kind_color(track.kind)
         pygame.draw.circle(s, color, (px, py), 5)
         what = game.lookout_visual_what(track.label)
         if what is not None:
@@ -526,7 +531,7 @@ def draw_lookout_glasses(game) -> None:
         if track.bearing is None:
             continue
         px = _panorama_x(panorama, track.bearing % 360.0, course)
-        color = _LOOKOUT_KIND_COLORS.get(track.kind, config.COLOR_TEXT_DIM)
+        color = _lookout_kind_color(track.kind)
         pygame.draw.line(s, color, (px, panorama.y + 12), (px, panorama.bottom - 12), 3)
     helo = own_helo.seen(game)
     if helo is not None:

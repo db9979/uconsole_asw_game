@@ -7823,6 +7823,7 @@
   "commander.web.advisor_title": "Erster Offizier",
   "commander.web.advisor_modes": "Art der Anfrage",
   "commander.web.advisor_text": "Frage oder Befehl",
+  "commander.web.advisor_voice": "Antworten vorlesen (Stimme des Hosts)",
   "commander.web.advisor_note": "Lage, Fragen, Befehle und Klassifizierungshilfe kennzeichnen den Einsatz im Dienstbuch \"mit Berater\" (keine Bestwertung). Der Offizier sieht nur das Lagebild der eigenen Seite und schießt nie.",
   "commander.web.advisor_mode_situation": "Lage",
   "commander.web.advisor_mode_question": "Frage",

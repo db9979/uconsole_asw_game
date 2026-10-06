@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.261
+## 1.3.263
 
-Release 1.3.261 lets the browser charts zoom in as far as the uConsole's.
+Release 1.3.263 lets the browser charts zoom in as far as the uConsole's.
 Every chart of a Remote Crew station, on the frigate and the submarine,
 now goes from the whole sea area down to 0.5 NM across the shorter side
 (before it stopped at about 16 NM) with Q/E, the mouse wheel, which zooms
@@ -14,6 +14,18 @@ about the pointer, or a two-finger pinch on a touch screen. The grid of
 degrees and minutes, or of sea miles on the fixed chart, gets finer down
 to a tenth as you zoom in, and the view width above the chart shows
 decimals. Saves are v53; v38 to v52 saves still load.
+
+## 1.3.262
+
+Release 1.3.262 lets the executive officer speak in the browser too. When
+the host has a voice set up, an answer asked from a browser station is now
+spoken there by the same voice as on the uConsole: the host fetches the
+audio from its speech service and only the browser that asked plays it, so
+the service and its key never leave the host. Answers to questions asked
+with the talk key are spoken the same way. This also works when the host
+runs as a browser-only server without a speaker. **Speak answers** in the
+officer's window switches it off for one browser. Keys and saves are
+unchanged (v53; v38 to v52 saves still load).
 
 ## 1.3.259
 

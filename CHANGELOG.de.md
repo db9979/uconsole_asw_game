@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.261
+## 1.3.263
 
-Version 1.3.261 lässt die Karten im Browser so weit hineinzoomen wie
+Version 1.3.263 lässt die Karten im Browser so weit hineinzoomen wie
 auf der uConsole. Jede Karte einer Remote-Crew-Station, auf der Fregatte
 und im U-Boot, geht jetzt vom ganzen Seegebiet bis auf 0,5 sm über die
 kürzere Seite (bisher war bei etwa 16 sm Schluss), mit Q/E, dem Mausrad,
@@ -15,6 +15,19 @@ Das Gitter in Grad und Minuten, auf der festen Karte in Seemeilen, wird
 beim Hineinzoomen bis auf Zehntel feiner, und die Ansichtsbreite über der
 Karte zeigt Nachkommastellen. Spielstände sind v53; v38 bis v52 laden
 weiterhin.
+
+## 1.3.262
+
+Version 1.3.262 lässt den Ersten Offizier auch im Browser sprechen. Hat der Host
+eine Stimme eingerichtet, wird eine Antwort, die an einer Browser-Station
+erfragt wurde, jetzt dort mit derselben Stimme wie auf der uConsole
+gesprochen: Der Host holt den Ton bei seinem Sprachdienst, und nur der
+Browser, der gefragt hat, spielt ihn ab, Dienst und Schlüssel verlassen
+den Host also nie. Antworten auf Fragen per Sprechtaste werden genauso
+gesprochen. Das klappt auch, wenn der Host als Server nur für Browser ohne
+Lautsprecher läuft. **Antworten vorlesen** im Fenster des Offiziers
+schaltet es für einen Browser ab. Tasten und Spielstände bleiben gleich
+(v53; Spielstände v38 bis v52 laden weiter).
 
 ## 1.3.259
 

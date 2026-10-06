@@ -7823,6 +7823,7 @@
   "commander.web.advisor_title": "Executive officer",
   "commander.web.advisor_modes": "Kind of request",
   "commander.web.advisor_text": "Question or order",
+  "commander.web.advisor_voice": "Speak answers (the host's voice)",
   "commander.web.advisor_note": "Situation, questions, orders and classification help mark the mission \"with advisor\" in the logbook (no best score). The officer sees only your own side's picture and never fires.",
   "commander.web.advisor_mode_situation": "Situation",
   "commander.web.advisor_mode_question": "Question",

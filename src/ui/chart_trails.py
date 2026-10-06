@@ -88,13 +88,16 @@ def draw_bearing_history(surface, rows, view, rect, color, background) -> None:
 
 
 def draw_side(surface, side, view, rect, background, own_now=None,
-              selected_bearing_key=None, track_color=None) -> None:
+              selected_bearing_key=None, track_color=None,
+              hidden_keys=frozenset()) -> None:
     """Everything of one chart's history below the live symbols."""
     if side is None:
         return
     draw_own_trail(surface, side.own, view, rect, config.COLOR_OK, background, own_now)
     color = track_color or config.COLOR_TEXT_DIM
-    for rows in side.tracks.values():
+    for key, rows in side.tracks.items():
+        if key in hidden_keys:
+            continue
         draw_track_history(surface, rows, view, rect, color, background)
     if selected_bearing_key is not None:
         draw_bearing_history(surface, side.bearing_history(selected_bearing_key), view, rect,

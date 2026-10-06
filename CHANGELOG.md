@@ -17,6 +17,16 @@ services with a language field (such as Qwen-TTS) are sent it, so a
 sentence no longer starts in another language or accent. Keys and saves
 are unchanged (v53; v38 to v52 saves still load).
 
+## 1.3.247
+
+Release 1.3.247 draws every contact once on the Bridge chart. A ship
+seen by radar and by the lookout used to appear twice, each report with
+its own symbol, label and speed vector, because the Bridge drew the raw
+sensor reports while only the CIC showed them fused. The Bridge chart, its
+trails and tooltips, and the Remote Crew bridge's chart and list now show
+the CIC's fused track instead, with the ship's AIS name once it is known.
+Keys and saves are unchanged (v53; v38 to v52 saves still load).
+
 ## 1.3.246
 
 Release 1.3.246 makes the language model's voice sound calm and even.

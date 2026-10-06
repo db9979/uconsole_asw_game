@@ -67,6 +67,21 @@ def active_fix_markers(game, view):
     return markers
 
 
+def chart_tracks(game) -> list:
+    """One track per contact (``Game.chart_tracks``); a stand-in game
+    without an OPZ picture draws its raw tracks."""
+    tracks = getattr(game, "chart_tracks", None)
+    return tracks() if callable(tracks) else game.radar_tracks()
+
+
+def fused_trail_keys(tracks) -> frozenset:
+    """Trails of fused reports other than each fusion's lead: a fused
+    contact keeps one trail, like its one symbol."""
+    return frozenset(("track", member) for track in tracks
+                     for member in track.get("members", ())
+                     if member != track.get("lead"))
+
+
 def _fix_marker_radius(fix, view):
     return max(3, int(fix["uncertainty_nm"] * view.scale))
 
@@ -110,7 +125,7 @@ def map_hit_target(game, pos):
                     uncertainty=f"{fix['uncertainty_nm']:.2f}"), depth,
             *chart_lines,
             target_id=f"map:sonar:{contact.id}:fix:{fix['source'].lower()}")
-    tracks = game.radar_tracks()
+    tracks = chart_tracks(game)
     for track in reversed(tracks):
         observed_x, observed_y = observed_position(track)
         if observed_x is None or observed_y is None:
@@ -502,19 +517,20 @@ def draw_map_view(game, tr=None) -> None:
         labels.reserve((int(ox) - 10, int(oy) - 10, 20, 20))
         draw_chart_geography(game, view, r)
         _draw_guard_area(game, view, r)
+        # One track per contact: reports the OPZ fused stand behind their fusion.
+        tracks = chart_tracks(game)
         history = getattr(game, "chart_history", None)
         if history is not None:
             chosen = game.selected_contact or game.target
             chart_trails.draw_side(
                 s, history.sides.get("frigate"), view, r, chart_background(game),
                 own_now=(game.ship.x, game.ship.y),
-                selected_bearing_key=getattr(chosen, "id", None))
+                selected_bearing_key=getattr(chosen, "id", None),
+                hidden_keys=fused_trail_keys(tracks))
         fx = getattr(game, "map_fx", None)
         if fx is not None:
             map_fx_view.draw_fx(s, fx.rows("frigate", game.sim_t), view.world_to_screen,
                                 view.scale, r, chart_background(game))
-
-        tracks = game.radar_tracks()
 
         # Das Lagebild zeigt nur Sensortracks mit gemessener Position.
         for track in (t for t in tracks if t["kind"] in ("SURFACE", "AIS")

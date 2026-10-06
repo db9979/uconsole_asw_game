@@ -19,6 +19,18 @@ damit kein Satz mehr in einer anderen Sprache oder mit fremdem Akzent
 beginnt. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
 v52 laden weiter).
 
+## 1.3.247
+
+Version 1.3.247 zeigt jeden Kontakt auf der Brückenkarte nur noch einmal.
+Ein Schiff, das Radar und Ausguck sahen, erschien bisher doppelt, jede
+Meldung mit eigenem Symbol, eigener Beschriftung und eigenem
+Fahrtvektor, weil die Brücke die rohen Sensormeldungen zeichnete und nur
+die OPZ sie fusioniert zeigte. Brückenkarte, ihre Spuren und Tooltips
+sowie Karte und Liste der Remote-Crew-Brücke zeigen jetzt den
+fusionierten Track der OPZ, mit dem AIS-Namen des Schiffs, sobald er
+bekannt ist. Tasten und Spielstände bleiben gleich (v53; Spielstände v38
+bis v52 laden weiter).
+
 ## 1.3.246
 
 Version 1.3.246 lässt die Stimme des Sprachmodells ruhig und gleichmäßig

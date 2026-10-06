@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.232
+## 1.3.237
 
-Version 1.3.232 zeigt Breite und Länge auf jeder Karte jeder Station.
+Version 1.3.237 zeigt Breite und Länge auf jeder Karte jeder Station.
 Bisher hatten nur die Brückenkarte und die Karten neben den Stationen des
 U-Boots das Gradnetz; auf der uConsole zeigten das Lagebild der OPZ, die
 Kreuzpeilkarte des Funkraums und die Lotsenkarte des U-Boots noch ihr
@@ -18,6 +18,20 @@ Entfernungsringen, Peilskala und anderen Beschriftungen frei. Die Karten
 im Browser hatten das Gradnetz schon. Die stilisierte feste Karte behält
 ihr sm-Gitter. Spielablauf, Tasten und Spielstände bleiben gleich (v53;
 v38 bis v52 laden weiter).
+
+## 1.3.233
+
+Version 1.3.233 bringt die Bedienung unter einheitliche Regeln.
+Strg+Eingabe ist jetzt die einzige Taste, die eine Waffe auslöst: An der
+Waffenstation wählen D, A, Z, R und Umschalt+R nur die Waffe, die dann
+leuchtet und in der Feuerzeile steht. Jede Taste einer Stationsseite steht
+als blauer Chip in ihrer Tastenleiste und wird per Klick gedrückt; ein
++-Chip blättert durch den Rest (auch durch alle Sonartasten beider
+Seiten). Lange Listen blättern mit dem Mausrad, Overlays schließen über
+ein Schließkreuz, und Hinweise erklären weitere Lampen. Eigene Einheiten
+tragen auf jeder Karte den passenden NATO-Rahmen, hoher Kontrast erreicht
+jede Zeichnung, und deutsche Texte nutzen deutsche Tastennamen und „sm“.
+Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
 
 ## 1.3.231
 

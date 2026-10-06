@@ -323,7 +323,8 @@ class StationKeysMixin:
 
     def _mpa_key_order(self, e):
         """OPZ page 3: the patrol aircraft's order for a key, on the same keys
-        as the helicopter (H, W, X, B, Shift+B, Shift+M, Ctrl+R, D), or None."""
+        as the helicopter (H, W, X, B, Shift+B, Shift+M, Ctrl+R; D chooses the
+        torpedo for Ctrl+Enter), or None."""
         mods = getattr(e, "mod", 0)
         shift, ctrl = bool(mods & pygame.KMOD_SHIFT), bool(mods & pygame.KMOD_CTRL)
         if e.key == pygame.K_h:
@@ -339,8 +340,9 @@ class StationKeysMixin:
             return self.toggle_mpa_mad
         if e.key == pygame.K_r and ctrl:
             return self.toggle_mpa_radar
-        if e.key == pygame.K_d:
-            return self.mpa_attack
+        if e.key == pygame.K_d and not (shift or ctrl):
+            # D chooses the aircraft's torpedo; Ctrl+Enter drops it.
+            return lambda: self.select_opz_weapon("mpa_torpedo")
         return None
 
     def _consort_key_order(self, e):

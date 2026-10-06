@@ -47,8 +47,8 @@ Viele Handelsschiffe und Flugzeuge senden mit Navigationsradaren; die Liste läs
 | Schalter | Taste | Werte |
 |---|---|---|
 | Status | `F` | operativ (live, kürzlich, eingestuft oder Bedrohung hoch), offen (operativ, aber noch nicht eingestuft), live, Speicher, alle |
-| Bedrohung | `Shift+F` | alle, niedrig und höher bis kritisch (nur auf der Stufe Einsteiger bewertet) |
-| Band | `Ctrl+F` | alle, A/C, D, E/F, G/H, I/J, K |
+| Bedrohung | `Umschalt+F` | alle, niedrig und höher bis kritisch (nur auf der Stufe Einsteiger bewertet) |
+| Band | `Strg+F` | alle, A/C, D, E/F, G/H, I/J, K |
 | Bündeln | `Z` | an: gleichartige Auffassungen (gleiches Band, gleiche Modulation, Frequenz und PRF wie bei der Zuordnung, Peilung innerhalb 6 Grad) erscheinen als ein Eintrag „E27 ×3“; aus: jede Auffassung einzeln |
 
 Eine Gruppe ist eine Darstellungshilfe, keine Identifizierung: sie kann mehrere Schiffe in einer Richtung zusammenfassen. `←`/`→` blättert durch ihre Auffassungen, die Zeile Gruppe auf der rechten Seite zeigt die Stelle („2 von 4“). Eingestufte und gestörte Auffassungen stehen immer einzeln. Jede Karte nennt die Kennung (laufende Nummer), die Einstufung oder sonst die Modulation, darunter Frequenz, Band, Güte und Alter. Arbeitsweise: mit Status offen die noch nicht eingestuften Sender einen nach dem anderen mit `C` einstufen; eingestufte verschwinden aus dieser Ansicht.
@@ -73,7 +73,7 @@ Der Automatikmodus (`A`) wählt Ziele und Techniken und koppelt das Stören wäh
 Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
 
 - Ein Klick auf eine Auffassungskarte wählt sie wie `↑`/`↓`.
-- Die vier Schalter über der Rose schalten wie `F`, `Shift+F`, `Ctrl+F` und `Z`.
+- Die vier Schalter über der Rose schalten wie `F`, `Umschalt+F`, `Strg+F` und `Z`.
 
 ## Standardablauf {#eloka-sop}
 

@@ -15,6 +15,7 @@ from src.ui import observations
 from src.world import geo
 from src.ui.stations.radio_chart import CHART_WINDOW_S, draw_hfdf_chart
 from src.ui.stations.common import (
+    list_window,
     _hfdf_error_deg,
     _panel,
     _shortcut_footer,
@@ -82,6 +83,8 @@ def draw_radio_view(game, tr=None) -> None:
             selected_idx = min(game.radio_sel, len(reports) - 1)
             start = max(0, min(selected_idx - capacity // 2,
                                len(reports) - capacity))
+            list_window(s, (lx - 5, ly + capacity * row_h - 2, lw + 10, 16),
+                        start, min(capacity, len(reports) - start), len(reports))
             for i, report in enumerate(reports[start:start + capacity], start):
                 selected = i == selected_idx
                 if selected:
@@ -135,6 +138,8 @@ def draw_radio_view(game, tr=None) -> None:
         ("A", "radio.footer.accept"),
         ("D", "radio.footer.decline"),
         ("R", "radio.footer.ras"),
+        ("K", "radio.footer.report"),
+        ("H", "radio.footer.support"),
     ) if page == 2 else (
         ("↑/↓", "radio.footer.select"),
         ("Enter", "radio.footer.log"),

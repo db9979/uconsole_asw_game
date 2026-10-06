@@ -234,6 +234,18 @@ def draw_chips(game, surface, rect: pygame.Rect) -> None:
                          config.COLOR_TEXT if on else config.COLOR_TEXT_DIM,
                          size=CHIP_SIZE, align="center")
         pointer.add_action(chip, lambda _pos, key=key: game.step_opz_display(key, 1))
+        # The short chip says what it switches, and what it is set to now.
+        pointer.add_tip(chip, _chip_tip(game, key))
+
+
+def _chip_tip(game, key: str):
+    """The chip's hover note: its full name, its setting and what a click does."""
+    from src.core import status_tips
+    values = game.opz_display_settings()
+    tip = status_tips.note(f"commander.web.opz_display_{key}",
+                           _value_text(key, values[key]),
+                           "opz.chip.tip_click")
+    return lambda: status_tips.payload(tip)
 
 
 def _value_text(key: str, value: str) -> str:

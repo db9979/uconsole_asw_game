@@ -228,6 +228,12 @@ def draw_bridge_view(game, tr=None) -> None:
         ("↑/↓", "bridge.footer.telegraph"),
         ("C", "bridge.footer.set_course"),
         ("V", "bridge.footer.set_speed"),
+        ("G", "damage.footer.action_stations"),
+        ("W", "bridge.footer.autopilot"),
+        ("Backspace", "bridge.footer.route_clear"),
+        ("Ctrl+B", "bridge.footer.baffles"),
+        ("Q/E", "footer.zoom"),
+        ("K", "footer.follow"),
     ))
 
 

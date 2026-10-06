@@ -181,6 +181,13 @@ export function lampTip(name) {
   return tips && Object.prototype.hasOwnProperty.call(tips, name) ? tips[name] : undefined;
 }
 
+// Every note of the role state as a lamp (stations whose lamps all come from
+// the host: bridge, CIC, radio room, damage control).
+export function renderNoteLamps(box) {
+  const tips = S.v2State?.lamp_tips || {};
+  renderLamps(box, Object.keys(tips).map((name) => noteLamp(name, name)).filter(Boolean));
+}
+
 // A lamp drawn wholly from its note: label, value and level come from the host.
 export function noteLamp(key, name, control) {
   const tip = lampTip(name);

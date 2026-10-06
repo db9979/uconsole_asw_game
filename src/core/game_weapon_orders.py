@@ -534,6 +534,52 @@ class WeaponOrdersMixin:
         sizes = torpedo_dyn.SALVO_SIZES
         self.set_torpedo_salvo(sizes[(sizes.index(self.torpedo_salvo) + 1) % len(sizes)])
 
+    # Ctrl+Enter is the only fire key: D/A/Z/R/Shift+R at Weapons and D on
+    # OPZ page 3 only choose what it fires (operator focus, never saved).
+    WEAPON_CHOICES = ("torpedo", "air_torpedo", "asroc", "depth_charges", "rbu",
+                      "rbu_defence")
+    OPZ_WEAPON_CHOICES = ("essm", "mpa_torpedo")
+
+    def select_weapon(self, kind: str) -> str:
+        """Choose the Weapons station's fire key weapon; the chosen one
+        again goes back to the ship's torpedo."""
+        if kind not in self.WEAPON_CHOICES:
+            return self.weapon_select
+        if kind == getattr(self, "weapon_select", "torpedo"):
+            kind = "torpedo"
+        self.weapon_select = kind
+        self.flash(message("runtime.weapon.selected",
+                           weapon=message("weapons.select." + kind)), 2.0)
+        return kind
+
+    def fire_selected_weapon(self):
+        """Ctrl+Enter at Weapons: fire the chosen weapon through its own
+        order (same checks as every other caller)."""
+        kind = getattr(self, "weapon_select", "torpedo")
+        if kind == "air_torpedo":
+            return self.launch_helo_torpedo()
+        if kind == "asroc":
+            return self.fire_own_asroc()
+        if kind == "depth_charges":
+            return self.drop_depth_charges()
+        if kind == "rbu":
+            return self.fire_rbu()
+        if kind == "rbu_defence":
+            return self.fire_rbu_defence()
+        return self.launch_torpedo()
+
+    def select_opz_weapon(self, kind: str) -> str:
+        """OPZ page 3: D chooses the patrol aircraft's torpedo for Ctrl+Enter
+        (again: back to ESSM)."""
+        if kind not in self.OPZ_WEAPON_CHOICES:
+            return self.opz_weapon
+        if kind == getattr(self, "opz_weapon", "essm"):
+            kind = "essm"
+        self.opz_weapon = kind
+        self.flash(message("runtime.weapon.selected",
+                           weapon=message("weapons.select." + kind)), 2.0)
+        return True
+
     def launch_torpedo(self) -> None:
         if (self.target is None
                 or self.sim_t - self.target.last_seen >= config.SONAR_CONTACT_LOST_S):

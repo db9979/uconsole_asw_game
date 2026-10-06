@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.232
+## 1.3.237
 
-Release 1.3.232 puts latitude and longitude on every chart of every
+Release 1.3.237 puts latitude and longitude on every chart of every
 station. Until now only the Bridge chart and the charts beside the
 submarine's stations showed the graticule; on the uConsole the OPZ
 (CIC) plot, the radio room's cross-fix chart and the submarine's pilot
@@ -18,6 +18,19 @@ clear of range rings, bearing scale and other labels. The browser's
 charts already showed the graticule. The stylized fixed chart keeps its
 NM grid. Gameplay, keys and saves are unchanged (v53; v38 to v52 saves
 still load).
+
+## 1.3.233
+
+Release 1.3.233 makes the controls follow one set of rules. Ctrl+Enter is
+now the only key that fires a weapon: at Weapons, D, A, Z, R and Shift+R
+only choose the weapon, which is lit and named in the fire line. Every key
+a station page can use stands in its key bar as a blue chip that presses
+the key when clicked, with a + chip paging through the rest (also through
+all sonar keys on both sides). Long lists scroll with the mouse wheel,
+overlays close with a close box, and hover notes explain more lamps. Own
+units wear the proper NATO frame on every chart, high contrast reaches
+every drawing, and German texts use German key names and "sm". Saves are
+v53; v38 to v52 saves still load.
 
 ## 1.3.231
 

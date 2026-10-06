@@ -92,7 +92,7 @@ Die Remote-Crew-Brücke hat eine Karte „Autopilot-Route“: „Wegpunkte auf d
 
 <!-- keys:bridge -->
 
-Auf der Brücke steuert der Trackball das Ruder. `C` (Kurs) und `V` (Fahrt) öffnen die direkte Zahleneingabe, wie `C`/`V`/`D` auf dem U-Boot; die Simulation läuft währenddessen weiter. `Enter` bestätigt, `Esc` bricht ab.
+Auf der Brücke steuert der Trackball das Ruder. `C` (Kurs) und `V` (Fahrt) öffnen die direkte Zahleneingabe, wie `C`/`V`/`D` auf dem U-Boot; die Simulation läuft währenddessen weiter. `Eingabe` bestätigt, `Esc` bricht ab.
 
 ## Maus {#bridge-mouse}
 

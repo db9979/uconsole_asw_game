@@ -434,8 +434,11 @@ class ContactAnalyzer:
                               audio_rect, color=widgets.PALETTE.dim,
                               size=12, align="center")
         widgets.draw_text(surface, self.tr("analyzer.read_only"),
-                          (bounds.width - 430, 18, 410, 34), color=widgets.PALETTE.focus,
+                          (bounds.width - 430, 18, 370, 34), color=widgets.PALETTE.focus,
                           size=13, bold=True, align="right")
+        # The close box (F8 / Esc by mouse); the game takes its click.
+        from src.ui import game_menu
+        self.close_rect = game_menu.draw_close_box(surface, (0, 12, bounds.width - 4, 40))
         footer = pygame.Rect(0, bounds.height - 42, bounds.width, 42)
         # In-game assignment adds one hint line above the footer.
         assign_h = 28 if self.on_assign is not None else 0

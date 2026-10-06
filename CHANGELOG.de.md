@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.239
+## 1.3.237
 
-Version 1.3.239 lässt die optionale Stimme Zahlen sprechen wie auf Wache:
+Version 1.3.237 lässt die optionale Stimme Zahlen sprechen wie auf Wache:
 Ziffer für Ziffer. Erster Offizier, Coach, Crew-Meldungen und der
 Stimmtest sagen 431 jetzt als „vier drei eins“ und 0,9 als „null Komma
 neun“ (auf Englisch „four three one“, „zero point niner“), ob der Text vor

@@ -60,6 +60,9 @@ export function renderBridgeStation(payload) {
   renderNoteLamps($("bridge-lamps"));
   const navigation = payload.navigation;
   renderCrew($("bridge-crew"), $("bridge-crew-actions"), payload.crew, {actionStations: "crew_action_stations"});
+  const telegraph = payload.orders.telegraph;
+  $("bridge-telegraph-state").textContent = t(`telegraph_${telegraph.toLowerCase()}`);
+
   metrics($("bridge-navigation"), [["position", position(navigation)], ["course", unit(navigation.course, "\u00b0", 0)],
     ["speed", unit(navigation.speed, "kn")], ["ordered_course", unit(navigation.target_course, "\u00b0", 0)],
     ["ordered_speed", unit(navigation.target_speed, "kn")], ["rudder_angle", unit(navigation.rudder_angle, "\u00b0")],

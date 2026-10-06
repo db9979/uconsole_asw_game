@@ -11,6 +11,7 @@ import { renderDebriefButton } from "./debrief.js";
 import { renderAdvisorButton } from "./advisor.js";
 import { flushSonarFocus, renderDetail, renderTracks } from "./tracks.js";
 import { renderWeatherStation } from "./weather.js";
+import { markStationKeys } from "../input/station-keys.js";
 
 export function renderSnapshot(resetDraft = false) {
   renderWeatherStation();
@@ -48,4 +49,5 @@ export function renderSnapshot(resetDraft = false) {
   renderLookoutStatus();
   queueLookoutDraw();
   flushSonarFocus();
+  markStationKeys();
 }

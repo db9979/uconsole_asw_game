@@ -297,7 +297,7 @@ function disabledReason(control) {
   if (["release-station", "mobile-release-station", "mobile-station"].includes(control.id)) {
     return unavailable("reason_station_change_pending");
   }
-  if (control.closest("#host-bar, #host-screen, #host-slot-dialog, #host-new-dialog")) return hostUnavailableReason(control);
+  if (control.closest("#host-bar, #host-screen, #host-slot-dialog, #host-new-dialog, #training-dialog")) return hostUnavailableReason(control);
   if (control.id === "follow") return unavailable("reason_position_unavailable");
   if (control.id === "sonar-live-toggle") return unavailable("reason_sonar_audio_grant");
   const shared = stationUnavailableReason();

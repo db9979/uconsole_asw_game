@@ -7,7 +7,7 @@ import json
 import math
 import unicodedata
 
-from src.core import plot
+from src.core import plot, training
 from src.core.config import (NATO_AFFILIATIONS, PLAYER_CLASSES,
                              RADAR_RANGE_SCALES_NM, SHIP_SPEED_MAX_KN,
                              HELO_DIP_DEPTH_MIN_M, HELO_DIP_DEPTH_MAX_M,
@@ -555,6 +555,9 @@ V2_ACTION_REGISTRY = {
         _HOST_STATIONS, _instructor_environment_params, phases=_HOST_ANY),
     "host_start_mission": V2Action(_HOST_STATIONS, _mission_key_params,
                                    phases=_HOST_REPLACING),
+    # A training lesson of the main menu's "Training" page (solo only).
+    "host_start_training": V2Action(_HOST_STATIONS, _enum_params("lesson", training.LESSONS),
+                                    phases=_HOST_REPLACING),
     # Server mode: the leading browser runs the lobby (``game_server.py``).
     "host_lobby_set": V2Action(_HOST_STATIONS, _lobby_set_params, phases=_HOST_MENU),
     "host_lobby_start": V2Action(_HOST_STATIONS, _no_params, phases=_HOST_MENU),
@@ -602,7 +605,8 @@ V2_ACTION_REGISTRY = {
     "opz_set_ciws": V2Action(frozenset({"opz"}), _bool_params("enabled")),
     "opz_set_range": V2Action(frozenset({"opz"}), _range_params),
     "opz_designate_target": V2Action(frozenset({"opz"}), _single_ref_params),
-    "engine_set_telegraph": V2Action(frozenset({"engine"}), _enum_params(
+    # The bridge steps the telegraph too (+ / - on the uConsole).
+    "engine_set_telegraph": V2Action(frozenset({"engine", "bridge"}), _enum_params(
         "order", ("ASTERN", "STOP", "SLOW", "HALF", "FULL", "FLANK"))),
     "engine_set_course": V2Action(frozenset({"engine"}), _course_params),
     "engine_set_speed": V2Action(frozenset({"engine"}), _speed_params),
@@ -655,6 +659,11 @@ V2_ACTION_REGISTRY = {
     "sonar_active_ping": V2Action(frozenset({"sonar", "uboot_sonar", "uboot"}), _no_params),
     "sonar_set_tma_enabled": V2Action(frozenset({"sonar", "uboot_sonar"}),
                                       _bool_params("enabled")),
+    # The active pulse (W) and the TMA method (Shift+T), as on the uConsole.
+    "sonar_set_pulse": V2Action(frozenset({"sonar", "uboot_sonar"}),
+        _enum_params("pulse", ("CW", "LFM"))),
+    "sonar_set_tma_method": V2Action(frozenset({"sonar", "uboot_sonar"}),
+        _enum_params("method", ("hypothesis", "ekelund", "dotstack"))),
     "sonar_set_gain": V2Action(frozenset({"sonar", "uboot_sonar"}),
         _bounded_number_params("gain_db", -12, 24)),
     "sonar_set_audition_mode": V2Action(frozenset({"sonar", "uboot_sonar"}),

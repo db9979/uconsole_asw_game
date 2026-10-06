@@ -30,6 +30,32 @@ function validCampaign(value) {
       typeof spot.name === "string" && spot.name.length <= 48 && typeof spot.scenario === "string" && spot.scenario.length <= 32 &&
       typeof spot.role === "string" && spot.role.length <= 16);
 }
+// The service record (host_records.py): both sides, bounded lists.
+const NAME = /^[a-z][a-z0-9_]{0,23}$/;
+const shortText = (value, limit) => typeof value === "string" && value.length <= limit;
+const count = (value) => Number.isSafeInteger(value) && value >= 0;
+function validLogbookSide(side) {
+  return exactKeys(side, ["missions", "wins", "best", "awards", "recent", "known"]) &&
+    count(side.missions) && count(side.wins) &&
+    boundedArray(side.best, 12) && side.best.every((row) => exactKeys(row, ["scenario", "score"]) &&
+      shortText(row.scenario, 64) && Number.isSafeInteger(row.score)) &&
+    boundedArray(side.awards, 16) && side.awards.every((row) => exactKeys(row, ["award", "date"]) &&
+      NAME.test(row.award) && (row.date === null || shortText(row.date, 16))) &&
+    boundedArray(side.recent, 8) && side.recent.every((row) =>
+      exactKeys(row, ["date", "scenario", "level", "won", "score", "minutes", "marks"]) &&
+      shortText(row.date, 16) && shortText(row.scenario, 64) && NAME.test(row.level) &&
+      typeof row.won === "boolean" && Number.isSafeInteger(row.score) && count(row.minutes) &&
+      boundedArray(row.marks, 2) && row.marks.every((mark) => ["advisor", "experimental"].includes(mark))) &&
+    boundedArray(side.known, 8) && side.known.every((habit) => NAME.test(habit));
+}
+export function validLogbook(value) {
+  if (value === null) return true;
+  return exactKeys(value, ["learns", "sides"]) && typeof value.learns === "boolean" &&
+    exactKeys(value.sides, ["frigate", "boat"]) && validLogbookSide(value.sides.frigate) &&
+    validLogbookSide(value.sides.boat);
+}
+const validLessons = (value) => boundedArray(value, 16) && value.every((row) =>
+  exactKeys(row, ["key", "side"]) && NAME.test(row.key) && SIDES.includes(row.side));
 // Server mode: the leader's lobby choices (null outside the lobby).
 function validLeaderLobby(value) {
   if (value === null) return true;
@@ -43,7 +69,7 @@ function validLeaderLobby(value) {
     exactKeys(value.campaign, SIDES) && SIDES.every((side) => validCampaign(value.campaign[side]));
 }
 function validateHost(value) {
-  const fields = ["epoch", "difficulty", "difficulty_fields", "lobby", "missions_revision", "phase", "protocol", "scenario", "scenarios", "session", "slots", "world_mode"];
+  const fields = ["epoch", "difficulty", "difficulty_fields", "lessons", "lobby", "logbook", "missions_revision", "phase", "protocol", "scenario", "scenarios", "session", "slots", "world_mode"];
   if (!exactKeys(value, fields) || value.protocol !== 2 || typeof value.session !== "string" ||
       !Number.isSafeInteger(value.epoch) || value.epoch < 0 ||
       !Number.isSafeInteger(value.missions_revision) || value.missions_revision < 0 ||
@@ -63,7 +89,7 @@ function validateHost(value) {
       }) ||
       !boundedArray(value.scenarios, 128) || !value.scenarios.every((row) => exactKeys(row, ["key", "fixed", "side"]) &&
         typeof row.key === "string" && typeof row.fixed === "boolean" && ["frigate", "uboot"].includes(row.side)) ||
-      !validLeaderLobby(value.lobby) ||
+      !validLeaderLobby(value.lobby) || !validLogbook(value.logbook) || !validLessons(value.lessons) ||
       !boundedArray(value.slots, 8) || !value.slots.every((row) => exactKeys(row, ["slot", "saved", "modified"]) &&
         Number.isSafeInteger(row.slot) && row.slot >= 1 && typeof row.saved === "boolean" &&
         (row.modified === null || Number.isSafeInteger(row.modified)))) throw new Error("protocol");

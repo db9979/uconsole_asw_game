@@ -3,6 +3,7 @@ import { S } from "../state/store.js";
 import { renderSound } from "../audio/alerts.js";
 import { openSonarAudioSocket, renderSonarAudio, scheduleSonarAudioPoll, sonarAudioAuthorized, sonarFilterValues, sonarGainValue, stopSonarAudio, stopSpeech, syncGameAudio } from "../audio/audio.js";
 import { $, audioRoles, isSonar, stationKey } from "../core/base.js";
+const TELEGRAPH_ORDERS = ["ASTERN", "STOP", "SLOW", "HALF", "FULL", "FLANK"];
 import { authenticated, chartMatches, finite, hasPosition, number, selectedTrack, t } from "../core/format.js";
 import { loadLanguage } from "../core/i18n.js";
 import { chooseTheme, chosenTheme, onThemeChange, toggleTheme } from "../core/theme.js";
@@ -497,6 +498,8 @@ export function init() {
   });
   $("sonar-heterodyne").addEventListener("change", () => sendStationAction("sonar_set_heterodyne", {frequency_hz: Number($("sonar-heterodyne").value)}));
   $("sonar-integration").addEventListener("change", () => sendStationAction("sonar_set_integration", {seconds: Number($("sonar-integration").value)}));
+  $("sonar-pulse").addEventListener("change", () => sendStationAction("sonar_set_pulse", {pulse: $("sonar-pulse").value}));
+  $("sonar-tma-method").addEventListener("change", () => sendStationAction("sonar_set_tma_method", {method: $("sonar-tma-method").value}));
   $("sonar-vernier").addEventListener("change", () => sendStationAction("sonar_set_vernier", {enabled: $("sonar-vernier").checked}));
   $("sonar-tas-flip").addEventListener("click", () => { if (S.selected) sendStationAction("sonar_tas_side", {ref: S.selected, action: "flip"}); });
   $("sonar-tas-confirm").addEventListener("click", () => { if (S.selected) sendStationAction("sonar_tas_side", {ref: S.selected, action: "confirm"}); });
@@ -756,6 +759,13 @@ export function init() {
   });
   $("bridge-course-form").addEventListener("submit", (event) => { event.preventDefault(); submitBridgeOrder("course"); });
   $("bridge-speed-form").addEventListener("submit", (event) => { event.preventDefault(); submitBridgeOrder("speed"); });
+  // + / -: one telegraph step from the bridge, as on the uConsole.
+  for (const [id, delta] of [["bridge-telegraph-up", 1], ["bridge-telegraph-down", -1]])
+    $(id).addEventListener("click", () => {
+      const current = TELEGRAPH_ORDERS.indexOf(S.v2State?.bridge?.orders.telegraph);
+      const next = TELEGRAPH_ORDERS[current + delta];
+      if (current >= 0 && next) sendStationAction("engine_set_telegraph", {order: next});
+    });
   $("retry-command").addEventListener("click", retryPendingCommand);
   for (const [id, name] of [["workstation-help", "guide"], ["workstation-library", "contacts"], ["workstation-lookout", "lookout"]]) {
     $(id).addEventListener("click", () => { $("workstation-tools").open = false; activateTab(name); });
@@ -991,11 +1001,11 @@ export function init() {
   $("role-map").addEventListener("lostpointercapture", () => { S.roleMapDrag = null; });
   $("role-map").addEventListener("keydown", (event) => {
     const role = S.v2State?.role;
-    if (!mapRoles.has(role) || !["+", "=", "-", "e", "q", "Home", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+    if (!mapRoles.has(role) || !["e", "q", "Home", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
     event.preventDefault();
-    // Q / E zoom as on the uConsole; + / - stay.
-    if (["+", "=", "e"].includes(event.key)) changeRoleMapZoom(1.4);
-    else if (["-", "q"].includes(event.key)) changeRoleMapZoom(1 / 1.4);
+    // Q / E zoom as on the uConsole; + / - are the telegraph there.
+    if (event.key === "e") changeRoleMapZoom(1.4);
+    else if (event.key === "q") changeRoleMapZoom(1 / 1.4);
     else if (event.key === "Home") $("role-map-fit").click();
     else { const amount = S.chart.size_nm / roleMapViews[role].zoom / 10; if (event.key === "ArrowLeft") roleMapViews[role].x -= amount; if (event.key === "ArrowRight") roleMapViews[role].x += amount; if (event.key === "ArrowUp") roleMapViews[role].y -= amount; if (event.key === "ArrowDown") roleMapViews[role].y += amount; queueVisualDraw(); }
   });
@@ -1036,10 +1046,11 @@ export function init() {
     changeLookoutRange(event.deltaY < 0 ? -1 : 1);
   }, { passive: false });
   lookoutCanvas.addEventListener("keydown", (event) => {
-    if (!["+", "=", "-", "Home"].includes(event.key)) return;
+    if (!["e", "q", "Home"].includes(event.key)) return;
     event.preventDefault();
-    if (event.key === "+" || event.key === "=") changeLookoutRange(-1);
-    else if (event.key === "-") changeLookoutRange(1);
+    // Q / E: closer / wider, as every zoom on the uConsole.
+    if (event.key === "e") changeLookoutRange(-1);
+    else if (event.key === "q") changeLookoutRange(1);
     else {
       lookoutView.rangeNm = 100;
       renderLookoutStatus();
@@ -1096,10 +1107,10 @@ export function init() {
   canvas.addEventListener("pointercancel", () => { S.drag = null; });
   canvas.addEventListener("keydown", (event) => {
     if (!S.snapshot || !S.chart) return;
-    if (["+", "=", "-", "e", "q", "Home", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) event.preventDefault();
-    // Q / E zoom as on the uConsole; + / - stay.
-    if (event.key === "+" || event.key === "=" || event.key === "e") zoom(1.4);
-    else if (event.key === "-" || event.key === "q") zoom(1 / 1.4);
+    if (["e", "q", "Home", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) event.preventDefault();
+    // Q / E zoom as on the uConsole; + / - are the telegraph there.
+    if (event.key === "e") zoom(1.4);
+    else if (event.key === "q") zoom(1 / 1.4);
     else if (event.key === "Home") fitChart();
     else if (event.key.startsWith("Arrow")) {
       const distance = 65 / chartGeometry().scale;

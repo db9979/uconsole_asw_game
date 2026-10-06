@@ -6,6 +6,7 @@ import { actionButton, node, patchChildren, position, stationRows } from "../vie
 import { selectTrack } from "../views/tracks.js";
 import { drawEmpty, visualContext } from "../views/visual-common.js";
 import { renderNoteLamps } from "../views/console-kit.js";
+import { drawRadioChart } from "./radio-chart.js";
 
 // The radio room: HF/DF receiver channels, the bearing scope and the message
 // teletype. Everything shown is the operator's own published observation.
@@ -16,6 +17,7 @@ export function renderRadioStation(payload) {
   renderChannels(payload);
   renderTeletype(payload);
   renderTasks(payload);
+  renderReport(payload.report);
   $("radio-df-state").textContent = t(payload.station_down ? "radio_df_down" : "radio_df_live");
   $("radio-df-state").dataset.state = payload.station_down ? "down" : "live";
   stationRows($("radio-fixes"), payload.logged_fixes, (row) => [["reference", row.ref], ["position", position(row)],
@@ -125,6 +127,22 @@ function renderTasks(payload) {
     ...(payload.tasks.length ? [] : [node("p", t("radio_task_none"), "empty radio-idle")]), request]);
 }
 
+// The radio room's own calls to HQ: on the air (the enemy can take a
+// bearing on it), waiting for the next allowed call, or ready; the hover
+// text says why and what to do.
+const REPORT_REASON = {radio_down: "radio_report_why_down", report_transmitting: "radio_report_why_on_air",
+  report_cooldown: "radio_report_why_wait", report_no_fix: "radio_report_why_no_fix", not_ready: "radio_report_why_not_ready"};
+function renderReport(report) {
+  const line = $("radio-report-status");
+  const minutes = number(Math.ceil(report.ready_in_s / 60), 0);
+  const text = {on_air: t("radio_report_on_air", {seconds: number(report.tx_left_s ?? 0, 0)}),
+    waiting: t("radio_report_wait", {minutes}), ready: t("radio_report_ready"), down: t("radio_report_down")}[report.state];
+  const why = report.reason ? t(REPORT_REASON[report.reason], {minutes}) : t("radio_report_why_ready");
+  line.textContent = report.state === "ready" && report.reason === "report_no_fix" ? `${text} · ${t("radio_report_no_fix")}` : text;
+  line.dataset.state = report.state;
+  line.title = why;
+}
+
 function renderTeletype(payload) {
   const list = $("radio-messages");
   const follow = list.scrollHeight - list.scrollTop - list.clientHeight < 24;
@@ -142,6 +160,7 @@ function renderTeletype(payload) {
 // error, brightness = quality and freshness), logged bearings as dashed
 // history lines, own heading as a tick on the rim.
 export function drawRadioVisual() {
+  drawRadioChart();
   const plot = visualContext("radio-df-scope"), payload = S.v2State?.radio;
   if (!plot || !payload) return;
   const {context: g, width, height} = plot, colors = palette();

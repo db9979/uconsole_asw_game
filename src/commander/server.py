@@ -94,14 +94,24 @@ __all__ = [
     "_sonar_stream_payload",
 ]
 
+# Game texts the browser shows as the uConsole does (the service record and
+# the training lessons), served as ``commander.web.game.<key>``.
+WEB_GAME_PREFIXES = ("logbook.", "habit.", "level.", "training.lesson.",
+                     "training.lesson_note.", "training.boat_title", "training.menu_title")
+
+
 def web_catalog(catalog) -> dict:
     """The browser's catalog: every ``commander.web.*`` key plus the chart's
-    country names (``country.<slug>`` served as ``commander.web.country_<slug>``)."""
+    country names (``country.<slug>`` served as ``commander.web.country_<slug>``)
+    and the game texts of ``WEB_GAME_PREFIXES`` (``commander.web.game.<key>``)."""
     out = {key: value for key, value in catalog.items()
            if isinstance(key, str) and key.startswith("commander.web.") and isinstance(value, str)}
     out.update({"commander.web.country_" + key[len("country."):]: value
                 for key, value in catalog.items()
                 if isinstance(key, str) and key.startswith("country.") and isinstance(value, str)})
+    out.update({"commander.web.game." + key: value for key, value in catalog.items()
+                if isinstance(key, str) and key.startswith(WEB_GAME_PREFIXES)
+                and isinstance(value, str)})
     return out
 
 

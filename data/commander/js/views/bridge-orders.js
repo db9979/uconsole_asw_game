@@ -19,6 +19,9 @@ export function renderBridgeOrders() {
   ]);
   $("bridge-course").disabled = $("bridge-course-submit").disabled = !bridgeOrderAvailable("course");
   $("bridge-speed").disabled = $("bridge-speed-submit").disabled = !bridgeOrderAvailable("speed");
+  const telegraph = S.v2State?.bridge?.orders.telegraph;
+  $("bridge-telegraph-up").disabled = !bridgeOrderAvailable("speed") || telegraph === "FLANK";
+  $("bridge-telegraph-down").disabled = !bridgeOrderAvailable("speed") || telegraph === "ASTERN";
   const message = S.pending ? {key: S.pending.uncertain ? "bridge_order_uncertain" : "bridge_order_pending", status: "pending"} : S.commandMessage;
   const reason = Object.hasOwn(reasons, message?.reasoncode) ? t(reasons[message.reasoncode]) : t("reason_action_rejected");
   $("bridge-order-status").textContent = message ? t(message.key, {reason}) :

@@ -27,6 +27,13 @@ RADIO_TASK_FIELDS = ("id", "type", "state", "name", "persons", "x", "y", "radius
                      "remaining_s", "progress", "sighted", "verdict", "points",
                      "can_answer")
 RADIO_TASK_KINDS = ("sar", "identify", "datum", "ras", "emcon", "patrol")
+# The radio room's own HF calls (``game.report_view``): on the air (the
+# enemy can take a bearing on it), waiting for the next allowed call, or
+# ready; ``reason`` names why a contact report cannot go out now.
+RADIO_REPORT_FIELDS = ("state", "tx_left_s", "ready_in_s", "has_fix", "reason", "sent")
+RADIO_REPORT_STATES = ("on_air", "waiting", "ready", "down")
+RADIO_REPORT_REASONS = ("radio_down", "report_transmitting", "report_cooldown",
+                        "report_no_fix", "not_ready")
 # The crew's watch bill, fatigue and morale (``src/core/crew.py``): the
 # frigate's on the bridge and damage roles, the boat's in ``damage_control``.
 CREW_FIELDS = ("on_watch", "watches", "watch_left_s", "turnover", "action_stations",
@@ -195,7 +202,7 @@ ROLE_SHAPES = {
             "trails"),
     "radio": ("observations", "logged_fixes", "logged_bearings", "messages", "station_down",
               "navigation", "tactical", "tasks", "can_request_ras",
-              "can_contact_report", "can_request_support"),
+              "can_contact_report", "can_request_support", "report"),
     "engine": ("propulsion", "machinery", "controls", "environment_effects", "compartments"),
     "helicopter": ("asset", "waypoint", "buoys", "buoy_observations", "acoustic",
                    "navigation", "tactical", "target_choices", "readiness",

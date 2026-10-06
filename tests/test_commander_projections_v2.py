@@ -123,7 +123,7 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
                  "asm_observations", "trails"},
         "radio": {"observations", "logged_fixes", "logged_bearings", "messages",
                   "station_down", "navigation", "tactical", "tasks", "can_request_ras",
-                  "can_contact_report", "can_request_support"},
+                  "can_contact_report", "can_request_support", "report"},
         "engine": {"propulsion", "machinery", "controls", "environment_effects",
                    "compartments"},
         "helicopter": {"asset", "waypoint", "buoys", "buoy_observations", "acoustic", "readiness", "navigation",
@@ -161,7 +161,8 @@ def test_control_projection_fields_are_bounded_and_do_not_expose_audio_actions(p
                                   "depth_m", "depth_target_m"}
     assert sonar["vds"]["state"] == "STOWED" and sonar["vds"]["available"] is False
     assert set(sonar["bt"]) == {"ready", "cooldown_s", "thermocline_m"}
-    assert set(sonar["ping"]) == {"ready", "cooldown_s"}
+    assert set(sonar["ping"]) == {"ready", "cooldown_s", "pulse"}
+    assert sonar["ping"]["pulse"] == "CW" and sonar["tma_method"] == "hypothesis"
     # Detected peaks are a training aid: off by default, sent only in training.
     assert sonar["harmonic_candidates_hz"] == []
     assert sonar["tools"]["assist"] is False

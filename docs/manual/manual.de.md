@@ -2313,27 +2313,40 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen ode
 
 | Taste | Funktion |
 |---|---|
-| `1-9` | Eine eigene Station öffnen (U-Boot-Crew: 1-7) |
-| `[ / ]` | Vorherige / nächste eigene Station |
+| `1-9` | Eine eigene Station öffnen (U-Boot-Crew: 1-7); dieselbe Nummer nochmals blättert die Seite um |
 | `?` | Leitfaden und Stationshilfe öffnen |
 | `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |
 | `Home / End` | Erster / letzter Eintrag der fokussierten Liste |
-| `+ / - · Q / E` | Fokussierte Karte zoomen (Q / E wie auf der uConsole); Pos1 passt die Ansicht ein |
+| `Q / E` | Karte oder Ausguck zoomen (wie auf der uConsole); Pos1 passt die Ansicht ein |
 | `K` | Karte folgt dem eigenen Schiff an oder aus |
+| `+ / -` | Maschinentelegraph eine Stufe höher / tiefer (Brücke, Maschine, U-Boot-Führung und -Maschine) |
 | `C / V / D · T` | Kurs, Fahrt, Tiefe, Torpedo-Lauftiefe: der Cursor springt ins Feld, Eingabe sendet (Brücke, Maschine, U-Boot) |
 | `Shift+A · J` | Aktiver Ping · Live-Sonarton an oder aus (Sonar, U-Boot-Führung, Tauchsonar des Helikopters) |
+| `W · Shift+T` | Sonar: Aktivpuls CW / LFM · TMA-Methode (Hypothese, Ekelund, Dot-Stack) |
 | `Strg+Eingabe` | Schuss scharf machen (Waffen, OPZ, Helikopter, U-Boot-Waffen); der Feuerdialog fragt noch einmal |
 | `R / Shift+R` | OPZ: Seeziel- / Luftraumradar an oder aus; Q / E ändern den Radar-Anzeigebereich |
 | `H · B · Ctrl+R · Shift+M` | Helikopter: starten oder zurückrufen, Boje werfen, Flugzeugradar, MAD |
 | `A · V · Ctrl+B` | Schleichfahrt (Maschine) · Täuschkörper (U-Boot-Waffen) · toten Winkel klären (Brücke, U-Boot-Führung) |
+| `Stationsbuchstaben` | Jede weitere Stationstaste ist die der uConsole (Funk K / H / R / A / D, Leckwehr C / G / W / M / U, ELOKA E / Umschalt+E / A / C, Waffen W / X / Y / D / A / Z / R, ...); jede steht als blaue Tastenkappe auf ihrem Bedienelement |
 | `Pfeiltasten (Karte)` | Fokussierte Karte verschieben |
 | `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
 | `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
 | `Bild auf/ab` | Seiten durchblättern: Helikopter Akustikanalyse, Tauchsonar und Taktische Karte (auch nochmals 8), Sonarseiten |
 | `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
-| `, / .` | Kontaktliste (,) oder Stationsbereich (.) ein- oder ausklappen |
-| `L` | Einsatzprotokoll öffnen oder schließen |
+| `Alt+, / Alt+.` | Kontaktliste (Alt+,) oder Stationsbereich (Alt+.) ein- oder ausklappen |
+| `Alt+L` | Einsatzprotokoll öffnen oder schließen |
 | `Esc` | Leitfaden, Ausguck oder Kontaktbibliothek schließen und zur Station zurück |
+
+### Nicht im Browser
+
+Der Browser folgt der uConsole Station für Station. Der Solo-Browser hat außerdem das **Einsatzbuch** des Hauptmenüs (Dienstzeit, Bestwerte, Auszeichnungen und was der Gegner gelernt hat, für Fregatte und U-Boot) und die **Ausbildung** (die sechs Lektionen; eine U-Boot-Lektion wechselt den Browser zuerst auf das U-Boot). Was der Browser noch nicht hat:
+
+- **Ausbildung im Servermodus:** die Lobby des Servermodus startet nur Einsätze; Lektionen starten aus einem Solo-Browser oder auf der uConsole.
+- **Zusätze der Einsatzbuch-Seite:** "Gegner lernt mit" ein- und ausschalten (`L`), die Auswertung der Dienstzeit durch das Sprachmodell und der Gefechtsbericht bleiben auf der Einsatzbuch-Seite der uConsole; der Browser zeigt die Dienstzeit nur zum Lesen.
+- **Leckwehr:** die Wahl einer Abteilung mit `←`/`→` hat keine Taste; die Abteilung in der Abteilungsliste wählen.
+- **Hubschrauber:** die Tasten der Akustikseiten, die es nur auf der Hubschrauberanzeige der uConsole gibt, haben im Browser kein Gegenstück.
+- **Stationen durchschalten:** `Tab` schaltet nicht durch die Stationen; die Nummer der Station (`1`-`9`) wählen, dieselbe Nummer noch einmal blättert ihre Seite um.
+- **Nur am Host:** Optionen, die Editoren auf der uConsole, Beenden, Netzverwaltung und Zugangsdaten bleiben absichtlich auf der uConsole.
 
 ## Nach dem Einsatz
 

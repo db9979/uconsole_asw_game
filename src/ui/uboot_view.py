@@ -210,11 +210,11 @@ def draw_top_bar(game, boat) -> None:
         pointer.add_hotspot(rect)       # uboot_local.handle_pointer takes the click
     sub = boat.sub if boat is not None else None
     from src.core.game_draw import draw_theme_switch, theme_switch_rect
-    from src.ui import game_menu, mic_meter
+    from src.ui import eco_lamp, game_menu, mic_meter
     draw_theme_switch(game)
     switch = game_menu.draw_button(game) or theme_switch_rect()
     left = tabs[-1].right + 12
-    right = mic_meter.status_right(game, "uboot", switch.x - 10)
+    right = eco_lamp.status_right(game, mic_meter.status_right(game, "uboot", switch.x - 10))
     # A long mission title gives way; clock, course, speed and depth stay whole.
     text = raw_text(layout.shorten_to_fit(
         lambda title: localize(message(

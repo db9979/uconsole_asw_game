@@ -156,16 +156,23 @@ def test_options_setup_page_carries_the_graphics_level(monkeypatch):
     assert game.preferences.graphics == "normal"
     game._handle_administration_key(pygame.K_DOWN)
     assert game.options_sel == 1
+    # Each level with and without the automatic economy (default: with).
+    assert game._graphics_choice() == ("normal", True)
+    game._handle_administration_key(pygame.K_RETURN)
+    assert game._graphics_choice() == ("normal", False)
     game._handle_administration_key(pygame.K_RETURN)
     assert game.preferences.graphics == "full" and game.preferences.aa_lines is True
+    assert game.preferences.graphics_auto is True
     assert lines.ENABLED is True
     game.draw()
+    game._handle_administration_key(pygame.K_RETURN)
+    assert game._graphics_choice() == ("full", False)
     game._handle_administration_key(pygame.K_RETURN)
     assert game.preferences.graphics == "low" and lines.ENABLED is False
     assert quality.LEVEL == "low"
     game.draw()
     game._handle_administration_key(pygame.K_LEFT)
-    assert game.preferences.graphics == "full"
+    assert game._graphics_choice() == ("full", False)
     # The mouse hits the drawn row, not the side's help text under row 0.
     rects = Game._option_row_hit_rects(Game._OPTION_ROWS_SETUP)
     assert rects[1] == Game._options_row_rects()[6]

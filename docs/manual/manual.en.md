@@ -223,7 +223,7 @@ In lessons 1, 2 and 4 the submarine is neutral and never attacks; lesson 3 is a 
 
 ### Saving, loading and autosave
 
-`S` saves, `L` loads (slots 1-5). Saves are exact and deterministic: a loaded game continues identically. A save of an older release (save format v38, release 1.3.98, or newer) still loads: it is brought up to the current format on loading, slots and autosave alike.
+`S` saves, `L` loads (slots 1-5). Saves are exact and deterministic: a loaded game continues identically. The file is written in the background while the mission runs on; the save menu closes (or the game quits after **Save and exit**) only once it is safely on disk. A save of an older release (save format v38, release 1.3.98, or newer) still loads: it is brought up to the current format on loading, slots and autosave alike.
 
 **Autosave:** a running mission is saved every 5 minutes and when you quit or leave it for the main menu, to `~/.u-jagd/autosave.json` beside the five slots. The main menu then starts with **Continue mission**, which resumes it exactly; after a crash it holds the last recovery point, at most one minute old. A mission that ends (won, lost or ship sunk) and any new mission delete the autosave. The web host (`--web-host`) does not autosave.
 
@@ -323,6 +323,8 @@ The page **Real-world traffic** brings real ships (AIS Stream, needs your own AP
 **uConsole plays:** which side the uConsole plays, frigate (default) or hostile submarine; only in the main menu, never saved. A new game asks for it first anyway. See chapter Submarine.
 
 **Graphics level** (`Enter`/`Right` next, `Left` back): **Economy** uses plain pixel scaling, drops the radar afterglow and calms the menu backdrop to save CPU on the uConsole; **Normal** (the uConsole default) shows every effect; **Full** (the Windows default) also smooths bearing lines, coast and plot. In a window or full screen larger than 1280 x 720, Normal and Full scale the picture sharply: whole factors repeat pixels exactly, and other sizes (such as 1920 x 1080) first repeat pixels to the next whole factor and then smooth down, so text and thin lines stay even. The level changes only the picture, never the simulation or what a station shows.
+
+**Automatic economy** (`+ auto Economy` behind Normal or Full, the default): when the picture stays below 14 frames a second for 5 seconds, the game draws at Economy by itself and lights an amber **ECO** lamp in the top bar; hovering it says why and how to switch it off. Picking a graphics level again ends it; a level without `+ auto` switches the automatic economy off. It only watches the picture and never changes the simulation.
 
 **Spoken crew reports** (off by default): the crew says torpedo in the water, new contact with bearing, breaking-up noises, torpedo away, hit, action stations, patrol aircraft on station and the mission result aloud, bearings digit by digit. The uConsole speaks through an installed `espeak-ng` (`sudo apt install espeak-ng`) and stays silent without it; Remote Crew browsers have their own switch under Settings (the browser's speech synthesis, in the browser's language). With the uConsole on the submarine the submarine's crew reports instead (see chapter Submarine).
 

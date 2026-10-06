@@ -29,7 +29,7 @@ from src.ui import observations
 from src.ui import overlay_style, quality
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.shock_fx import ShockFx
-from src.ui import game_menu, hit_inset, mic_meter
+from src.ui import eco_lamp, game_menu, hit_inset, mic_meter
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -126,6 +126,7 @@ TELEMETRY_STATION = {
     "uboot.telemetry.noise": 4, "uboot.telemetry.battery": 4,
     "uboot.telemetry.torpedoes": 3, "uboot.telemetry.damage": 4,
 }
+
 
 class DrawMixin:
     """Display half of ``Game``: ``draw``, the overlays and ``run``."""
@@ -594,6 +595,8 @@ class DrawMixin:
             # Noise discipline: the microphone meter in the top bar.
             self.guarded_view("mic_meter", tuple(mic_meter.rect(self)), mic_meter.draw, self, s,
                               "uboot" if self.local_side == "uboot" else "frigate")
+            # Automatic economy: the ECO lamp beside it.
+            self.guarded_view("eco_lamp", tuple(eco_lamp.rect(self)), eco_lamp.draw, self, s)
         if self.game_menu_open:
             with pointer.layer("popup"):
                 game_menu.draw_menu(self)
@@ -744,7 +747,8 @@ class DrawMixin:
         if self.msg and self._t < self.msg_until:
             return      # the flash banner stands in the status line's place
         left = tabs[-1].right + 12
-        right = mic_meter.status_right(self, "frigate", switch.x - 10)
+        right = eco_lamp.status_right(
+            self, mic_meter.status_right(self, "frigate", switch.x - 10))
         # A long mission title gives way; clock, speed and course stay whole.
         txt = layout.shorten_to_fit(
             lambda title: self.tr("top.status_short", scenario=title,
@@ -1139,7 +1143,9 @@ class DrawMixin:
                                lambda _pos, slot=slot: self._click_save_slot(slot))
             ly += 42
         hint = "save.live"
-        if self.save_confirm:
+        if self.slot_save_running():
+            hint = "save.in_progress"
+        elif self.save_confirm:
             hint = ("save.overwrite" if self.save_ui == "save"
                     else "save.replace")
         layout.blit_line(s, hint, (bx + 18, by + bh - 54, bw - 36, 34),
@@ -1346,8 +1352,10 @@ class DrawMixin:
         selected = self.options_sel == 1
         if selected:
             overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
-        value = self.tr("option.graphics",
-                        level=self.tr("option.graphics." + quality.LEVEL))
+        level, auto = self._graphics_choice()
+        level = self.tr("option.graphics." + level)
+        value = self.tr("option.graphics", level=self.tr(
+            "option.graphics.auto", level=level) if auto else level)
         layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
                          config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
         layout.blit_block(self.screen, "option.graphics.help",
@@ -1604,6 +1612,36 @@ class DrawMixin:
         self._sim_debt_s = debt - dt
         return dt
 
+    # The graphics row's choices: (level, automatic economy).
+    GRAPHICS_CHOICES = (("low", False), ("normal", True), ("normal", False),
+                        ("full", True), ("full", False))
+
+    def _graphics_choice(self) -> tuple:
+        """The chosen graphics level and whether the automatic economy may
+        lower it (never at the low level itself)."""
+        level = self.preferences.graphics
+        level = level if level in quality.LEVELS else "normal"
+        return level, level != "low" and bool(self.preferences.graphics_auto)
+
+    def _frame_watch(self):
+        watch = self.__dict__.get("_frame_watch_state")
+        if watch is None:
+            watch = self._frame_watch_state = quality.FrameWatch()
+        return watch
+
+    def _watch_frame_rate(self, wall_dt: float) -> None:
+        """Automatic economy: a picture slower than ``quality.AUTO_LOW_FPS``
+        for a few seconds of wall time switches to the low level (ECO lamp
+        in the top bar).  Display only, never the simulation."""
+        watch = self._frame_watch()
+        _level, auto = self._graphics_choice()
+        if self.web_mode or not auto or quality.AUTO_LOW:
+            watch.reset()
+            return
+        if watch.feed(wall_dt):
+            quality.set_auto_low(True)
+            watch.reset()
+
     def frame_rate(self) -> int:
         """Active frame-rate cap from the saved preference."""
         value = getattr(self.preferences, "frame_rate", config.FPS_DEFAULT)
@@ -1654,6 +1692,7 @@ class DrawMixin:
                     if not self.recover_from_fault(exc, "simulation"):
                         raise
                 self._perf_debug_log(wall_dt)
+                self._watch_frame_rate(wall_dt)
                 if self.web_mode:
                     game_visible()
                     continue
@@ -1770,6 +1809,9 @@ class DrawMixin:
             self.close_microphone()
         elif name == "graphics":
             self.preferences = replace(self.preferences, aa_lines=value == "full")
+            # A level picked by hand ends the automatic economy.
+            quality.set_auto_low(False)
+            self._frame_watch().reset()
             self._apply_text_size()
         elif name in ("large_text", "high_contrast", "aa_lines"):
             self._apply_text_size()

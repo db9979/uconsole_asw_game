@@ -44,6 +44,16 @@ FPS_DEFAULT = 30
 # stall that long is concealed and then fully caught up instead of cut.
 SIM_FRAME_DT_MAX = 0.1
 SIM_CATCHUP_MAX_S = 2.5
+# Ray tables asked for ahead (src/sonar/raytrace.py) are traced in slices of
+# at most this much wall time per frame; the menus, which simulate nothing,
+# give them more. Wall time decides only how soon a table is ready.
+RAY_PREFETCH_FRAME_BUDGET_S = 0.003
+RAY_PREFETCH_MENU_BUDGET_S = 0.012
+# A mission started from the menus finishes its first tables with the start
+# (up to this long) instead of in its first sensor pass; main.py switches this
+# on for the interactive game, tests and tools keep it off.
+RAY_PREWARM_ON_START = False
+RAY_PREWARM_MAX_S = 6.0
 AUDIO_ENABLED = True
 AUDIO_SAMPLE_RATE = 22050
 # Solo Remote Crew: while the paired browser is live the uConsole only redraws a

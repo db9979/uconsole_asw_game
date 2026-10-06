@@ -685,7 +685,8 @@ class SonarSystem(ArrayHandlingMixin):
                 * propagation.ABSORPTION_DB_PER_NM[frequency]
             ray = propagation.ray_excess_db(
                 world, frigate.x, frigate.y, sensor_depth, tgt.x, tgt.y,
-                float(getattr(tgt, "depth", 0.0)), frequency)
+                float(getattr(tgt, "depth", 0.0)), frequency,
+                drift_nm=propagation.path_drift_nm(frigate, tgt))
             if ray is not None:
                 excess, legacy_absorption = ray, 0.0
             absorption = equation.francois_garrison_db_per_km(
@@ -734,7 +735,8 @@ class SonarSystem(ArrayHandlingMixin):
                 continue
             ray = propagation.ray_excess_db(
                 world, helicopter.x, helicopter.y, sensor_depth, tgt.x, tgt.y,
-                float(getattr(tgt, "depth", 0.0)), frequency)
+                float(getattr(tgt, "depth", 0.0)), frequency,
+                drift_nm=propagation.path_drift_nm(None, tgt))
             terms = equation.passive_terms(
                 frequency_hz=frequency, distance_nm=distance,
                 target_bonus=target_bonus,
@@ -1040,7 +1042,8 @@ class SonarSystem(ArrayHandlingMixin):
                 frequency = representative_frequency_hz(tgt)
                 ray = propagation.ray_excess_db(
                     world, b.x, b.y, buoy_depth, tgt.x, tgt.y,
-                    float(getattr(tgt, "depth", 0.0)), frequency)
+                    float(getattr(tgt, "depth", 0.0)), frequency,
+                    drift_nm=propagation.path_drift_nm(None, tgt))
                 if ray is None:
                     ray = (6.5 if (tgt.depth > world.thermocline_depth_m(b.x, b.y))
                            != (buoy_depth > world.thermocline_depth_m(b.x, b.y))

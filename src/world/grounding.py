@@ -347,6 +347,18 @@ def _exact_translational_land_contact(world, start, end, hull):
 def grounding_contact(world, x_nm: float, y_nm: float, course_deg: float,
                       hull: HullSpec = DEFAULT_HULL_SPEC) -> GroundingContact | None:
     """Return the stable highest-priority physical contact for one hull pose."""
+    return _find_contact(world, x_nm, y_nm, course_deg, hull, True)
+
+
+# ``_find_contact`` without detail: a contact exists (its point and normal are
+# not worked out; the search for the nearest coast edge dominated the cost).
+_BLOCKED = object()
+
+
+def _find_contact(world, x_nm: float, y_nm: float, course_deg: float,
+                  hull: HullSpec, detail: bool):
+    """The contact of ``grounding_contact``; with ``detail`` False only
+    whether there is one (``_BLOCKED``), decided by the very same tests."""
     if not all(math.isfinite(value) for value in (x_nm, y_nm, course_deg)):
         raise ValueError("hull pose must be finite")
     points = _hull_points(x_nm, y_nm, course_deg, hull)
@@ -359,6 +371,8 @@ def grounding_contact(world, x_nm: float, y_nm: float, course_deg: float,
                                     longitudinal, lateral)
     for px, py, longitudinal, lateral in points:
         if world.on_land(px, py):
+            if not detail:
+                return _BLOCKED
             delta = max(min(hull.beam_m, hull.length_m) / METRES_PER_NM / 4.0,
                         1e-5)
             nx = float(world.on_land(px - delta, py)) - float(
@@ -393,6 +407,8 @@ def grounding_contact(world, x_nm: float, y_nm: float, course_deg: float,
             longitudinal = (dx * forward[0] + dy * forward[1]) / half_length
             lateral = (dx * starboard[0] + dy * starboard[1]) / half_beam
             if abs(longitudinal) <= 1.0 and abs(lateral) <= 1.0:
+                if not detail:
+                    return _BLOCKED
                 nx, ny = _land_normal(world, lx, ly)
                 return GroundingContact("land", lx, ly, nx, ny,
                                         longitudinal, lateral)
@@ -402,6 +418,8 @@ def grounding_contact(world, x_nm: float, y_nm: float, course_deg: float,
                 edge_second = landmass.points[(edge_index + 1) % len(landmass.points)]
                 crossing = _segments_intersect(*hull_edge, edge_first, edge_second)
                 if crossing is not None:
+                    if not detail:
+                        return _BLOCKED
                     dx, dy = crossing[0] - x_nm, crossing[1] - y_nm
                     longitudinal = (dx * forward[0] + dy * forward[1]) / half_length
                     lateral = (dx * starboard[0] + dy * starboard[1]) / half_beam
@@ -412,6 +430,8 @@ def grounding_contact(world, x_nm: float, y_nm: float, course_deg: float,
         depth, px, py = world.coast.minimum_physical_depth_in_polygon(
             tuple(point[:2] for point in corners))
         if depth <= hull.minimum_depth_m:
+            if not detail:
+                return _BLOCKED
             delta = max(min(hull.beam_m, hull.length_m) / METRES_PER_NM / 4.0,
                         1e-5)
             nx = (world.physical_depth_m(px + delta, py)
@@ -438,7 +458,7 @@ def grounding_contact(world, x_nm: float, y_nm: float, course_deg: float,
 
 def hull_is_safe(world, x_nm: float, y_nm: float, course_deg: float,
                  hull: HullSpec = DEFAULT_HULL_SPEC) -> bool:
-    return grounding_contact(world, x_nm, y_nm, course_deg, hull) is None
+    return _find_contact(world, x_nm, y_nm, course_deg, hull, False) is None
 
 
 def grounding_contact_is_consistent(world, pose, hull, contact) -> bool:

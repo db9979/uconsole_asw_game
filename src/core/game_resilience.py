@@ -22,7 +22,6 @@ game as before: there is nothing to lose and no state to fall back on.
 
 from __future__ import annotations
 
-import json
 import os
 import pickle
 import traceback
@@ -93,11 +92,15 @@ class ResilienceMixin:
                 or self._recovery_elapsed_s >= config.RECOVERY_SNAPSHOT_INTERVAL_S):
             self.take_recovery_snapshot()
 
-    def take_recovery_snapshot(self, data: dict | None = None) -> bool:
-        """Detach the current save document as the recovery point."""
+    def take_recovery_snapshot(self, data: dict | None = None,
+                               blob: bytes | None = None) -> bool:
+        """Detach the current save document as the recovery point (``blob``:
+        an already detached ``pickle`` of it, as the autosave makes)."""
         try:
-            document = self.save_state() if data is None else data
-            self._recovery_snapshot = pickle.dumps(document, protocol=4)
+            if blob is None:
+                document = self.save_state() if data is None else data
+                blob = pickle.dumps(document, protocol=4)
+            self._recovery_snapshot = blob
         except Exception:  # noqa: BLE001 - a failed snapshot keeps the older one
             return False
         self._recovery_taken_t = self._t
@@ -115,14 +118,14 @@ class ResilienceMixin:
 
     def write_recovery_autosave(self) -> bool:
         """Write the recovery snapshot as the autosave (crash or give-up)."""
-        data = self.recovery_document()
-        if data is None:
+        blob = self._recovery_snapshot
+        if blob is None:
             return False
         try:
-            text = json.dumps(data, allow_nan=False, separators=(",", ":"))
-            # Checked and written by the autosave worker (a snapshot the
-            # loader would reject keeps the last good autosave); waits for it.
-            if not self._submit_autosave_text(text, wait=True):
+            # Turned into JSON, checked and written by the save worker (a
+            # snapshot the loader would reject keeps the last good autosave);
+            # waits for it.
+            if not self._submit_autosave_text(blob, wait=True):
                 return False
         except Exception:  # noqa: BLE001 - the process is failing already
             return False

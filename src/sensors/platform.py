@@ -310,7 +310,8 @@ class PlatformSensorSuite:
                                                   lambda: 1.0)())
                 ray = propagation.ray_excess_db(
                     world, owner.x, owner.y, source_depth, candidate.x,
-                    candidate.y, target_depth, frequency)
+                    candidate.y, target_depth, frequency,
+                    drift_nm=propagation.path_drift_nm(owner, candidate))
                 terms = equation.passive_terms(
                     frequency_hz=frequency, distance_nm=distance,
                     target_bonus=(1.0 + 0.8 * config.clamp(source_noise, 0.0, 1.0))

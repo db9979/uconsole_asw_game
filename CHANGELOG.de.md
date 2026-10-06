@@ -20,6 +20,20 @@ Funkseite des U-Boots, die Ausguckseite, die Wetterstation und das
 Simulationsprotokoll. Tasten bleiben gleich. Spielstände sind v53; v38 bis
 v52 laden weiter.
 
+## 1.3.223
+
+Version 1.3.223 macht das Spiel auf dem uConsole ruhiger. Sonar-
+Schalltabellen werden im Hintergrund vorbereitet, Missionsstart und neue
+Seegebiete ruckeln nicht mehr, und Sonar, Wasserfall, ELOKA-Liste und
+Ereignisanzeige zeichnen sparsamer. Speichern auf einen Platz läuft im
+Hintergrund und hält das Bild nicht mehr an; das Speichermenü schließt
+sich erst, wenn die Datei sicher auf dem Datenträger liegt. Neu ist
+„automatisch sparsam“: Bleibt das Bild 5 Sekunden unter 14 Bildern pro
+Sekunde, schaltet das Spiel selbst auf die Grafikstufe Sparsam und zeigt
+oben eine gelbe ECO-Lampe (Optionen, Seite 2, Grafik schaltet es ab). Die
+Simulation selbst bleibt unverändert. Die Tasten bleiben gleich.
+Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
+
 ## 1.3.222
 
 Version 1.3.222 korrigiert, wie Einsätze enden und gewertet werden.

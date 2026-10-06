@@ -10,17 +10,16 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.275**
+Aktuelle Version: **1.3.276**
 
-Version 1.3.275 lässt die Karten im Browser so weit hineinzoomen wie
-auf der uConsole. Jede Karte einer Remote-Crew-Station, auf der Fregatte
-und im U-Boot, geht jetzt vom ganzen Seegebiet bis auf 0,5 sm über die
-kürzere Seite (bisher war bei etwa 16 sm Schluss), mit Q/E, dem Mausrad,
-das um den Mauszeiger zoomt, oder mit zwei Fingern auf dem Touchscreen.
-Das Gitter in Grad und Minuten, auf der festen Karte in Seemeilen, wird
-beim Hineinzoomen bis auf Zehntel feiner, und die Ansichtsbreite über der
-Karte zeigt Nachkommastellen. Spielstände sind v53; v38 bis v52 laden
-weiterhin.
+Version 1.3.276 gibt jeder gesprochenen Meldung ein klares Ende. Jede
+Meldung, die die Stimme liest, endet mit einem Punkt, auch nach einem
+Doppelpunkt oder Auslassungszeichen, und danach folgen 0,6 s Stille, bevor
+die nächste beginnt. Logmeldungen gehen dafür wieder einzeln an den
+Sprachdienst, denn ein Sprachmodell macht zwischen zusammen geschickten
+Meldungen nur eine kurze Satzpause. Antworten des Ersten Offiziers bleiben
+am Stück. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
+v52 laden weiter).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

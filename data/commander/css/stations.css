@@ -106,7 +106,15 @@
    engraved plates, amber digital frequency readouts, segment S-meters and a
    teletype printing the message traffic. */
 .radio-visual:not([hidden]) { display: grid; grid-template-rows: minmax(0, 1.6fr) minmax(8rem, 1fr); gap: .55rem; min-height: 0; }
-.radio-rack { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: .55rem; min-height: 0; }
+.radio-rack { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr); gap: .55rem; min-height: 0; }
+@media (max-width: 1399px) {
+  .radio-rack { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-rows: minmax(14rem, 1fr); }
+  .radio-hfdf { grid-column: 1 / -1; grid-row: 1; }
+}
+.radio-report { flex: 0 0 auto; margin: 0 0 .35rem; padding: .3rem .55rem; border: 1px solid var(--line); border-left: 3px solid var(--live); border-radius: var(--radius); font: var(--font-sm) var(--font-mono); cursor: help; }
+.radio-report[data-state="on_air"] { border-left-color: var(--caution); color: var(--caution); }
+.radio-report[data-state="waiting"] { border-left-color: var(--line-strong); color: var(--text-dim); }
+.radio-report[data-state="down"] { border-left-color: var(--alarm); color: var(--alarm); }
 .radio-unit {
   display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: .45rem .55rem .55rem;
   background: linear-gradient(var(--bg-3), var(--bg-2)); border: 1px solid var(--line-strong); border-radius: calc(var(--radius) * 2);

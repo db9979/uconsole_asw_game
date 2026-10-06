@@ -126,6 +126,20 @@ dialog h2 { margin-bottom: .5rem; color: var(--live-strong); text-shadow: 0 0 .7
 .host-new-difficulty-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .3rem .9rem; margin: .5rem 0 .8rem; }
 .host-new-difficulty-grid .field { display: flex; flex-direction: column; gap: .1rem; }
 .host-new-difficulty-grid .field label { margin: 0; }
+/* Service record and training lessons (host surface). */
+#logbook-dialog { width: min(94vw, 52rem); }
+.logbook-sides { display: flex; gap: .35rem; margin-bottom: .5rem; }
+.logbook-sides button[aria-pressed="true"] { border-color: var(--live); color: var(--live-strong); }
+.logbook-totals { font-family: var(--font-mono); }
+.logbook-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: .3rem 1.2rem; }
+#logbook-dialog h3 { margin: .6rem 0 .2rem; color: var(--text-dim); font-size: var(--font-sm); }
+.logbook-list { display: grid; gap: .2rem; margin: 0; padding: 0; list-style: none; font-family: var(--font-mono); font-size: var(--font-xs); }
+.logbook-list small { display: block; color: var(--text-faint); font-family: inherit; }
+.logbook-earned, .logbook-won { color: var(--live); }
+.logbook-open { color: var(--text-dim); }
+.logbook-lost { color: var(--caution); }
+.training-list button { display: grid; gap: .15rem; font-family: inherit; }
+.training-list small { color: var(--text-dim); font-size: var(--font-xs); }
 
 /* Weather station and sound-speed profile (key 0). */
 #weather-dialog { width: min(96vw, 110rem); max-width: none; max-height: 94dvh; padding: 0; border-color: var(--live); }

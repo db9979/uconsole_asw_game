@@ -95,6 +95,7 @@ _SONAR_FIELDS = web_schema.SONAR_FIELDS
 _RADIO_FIELDS = web_schema.RADIO_FIELDS
 _HELICOPTER_TACTICAL_FIELDS = web_schema.HELICOPTER_TACTICAL_FIELDS
 RADIO_TASK_FIELDS = web_schema.RADIO_TASK_FIELDS
+RADIO_REPORT_REASONS = web_schema.RADIO_REPORT_REASONS
 
 _HISTORY_ROWS_MAX = config.LOFAR_HISTORY_COLS
 _BROADBAND_BINS_MAX = 180
@@ -725,8 +726,10 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                                        if game.sonar.bt_profile else None),
                               ping=dict(ready=bool(game.sonar.ping_ready),
                                         cooldown_s=_number(
-                                            game.sonar.ping_cooldown_remaining)),
+                                            game.sonar.ping_cooldown_remaining),
+                                        pulse=str(game.sonar.ping_pulse)),
                               tma_enabled=bool(game.sonar.tma_enabled),
+                              tma_method=str(game.tma_method),
                               gain_db=_number(game.sonar.gain_db),
                               band_preset=next((key for key, value in presets.items()
                                                 if value == band), None),
@@ -997,7 +1000,22 @@ def _radio(game, rows, ref_by_track):
                  can_request_ras=bool(not station_down and game.tasking.enabled
                                       and not game.game_over and game.ras_needed()),
                  can_contact_report=bool(game.can_send_report("contact")),
-                 can_request_support=bool(game.can_send_report("support")))
+                 can_request_support=bool(game.can_send_report("support")),
+                 report=_radio_report(game, station_down))
+
+
+def _radio_report(game, station_down):
+    """The radio room's own calls: on the air, waiting or ready, and why not."""
+    view = game.report_view()
+    reason = game._report_check()
+    if reason is None and not view["has_fix"]:
+        reason = "report_no_fix"
+    state = ("down" if station_down else "on_air" if view["transmitting"]
+             else "waiting" if view["ready_in_s"] > 0.0 else "ready")
+    return dict(state=state, tx_left_s=_number(view["tx_left_s"]),
+                ready_in_s=_number(view["ready_in_s"]), has_fix=bool(view["has_fix"]),
+                reason=reason if reason in RADIO_REPORT_REASONS else None,
+                sent=int(min(view["sent"], 999)))
 
 
 def _radio_tasks(game, station_down):

@@ -159,7 +159,7 @@ export function validateV2State(state) {
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment", "rescue"],
     lookout: ["side", "available", "manned", "course", "speed_kn", "relative_deg", "fov_deg", "powers", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "motion_pitch", "motion_roll", "sky", "outlines", "calls", "events"],
     opz: ["observations", "fusions", "suggestions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets", "trails"],
-    radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical", "tasks", "can_request_ras", "can_contact_report", "can_request_support"],
+    radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical", "tasks", "can_request_ras", "can_contact_report", "can_request_support", "report"],
     sonar: ["observations", "settings", "visualization"],
     uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
     uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat", "radio"],
@@ -178,6 +178,11 @@ export function validateV2State(state) {
     row: ["id", "type", "state", "name", "persons", "x", "y", "radius_nm", "course", "speed_kn", "bearing", "range_nm", "respond_s", "remaining_s", "progress", "sighted", "verdict", "points", "can_answer"],
     kinds: ["sar", "identify", "datum", "ras", "emcon", "patrol"],
     states: ["offered", "active", "done", "failed", "declined"],
+  };
+  const radioReportFields = {
+    row: ["state", "tx_left_s", "ready_in_s", "has_fix", "reason", "sent"],
+    states: ["on_air", "waiting", "ready", "down"],
+    reasons: ["radio_down", "report_transmitting", "report_cooldown", "report_no_fix", "not_ready"],
   };
   const crewFields = {
     row: ["on_watch", "watches", "watch_left_s", "turnover", "action_stations", "morale", "effectiveness", "casualties"],
@@ -407,7 +412,7 @@ export function validateV2State(state) {
   } else if (isSonar(state.role)) {
     rowsExact(payload.observations, 256, sonarFields);
     const settings = payload.settings;
-    if (!exactKeys(settings, ["mode", "page", "listen_bearing", "focus_ref", "target_ref", "station_down", "tow", "vds", "bt", "ping", "tma_enabled", "gain_db", "band_preset", "band_hz", "notch", "peak_hold", "harmonic_hz", "harmonic_candidates_hz", "audio_enabled", "volume", "quiet_mode", "tools"]) ||
+    if (!exactKeys(settings, ["mode", "page", "listen_bearing", "focus_ref", "target_ref", "station_down", "tow", "vds", "bt", "ping", "tma_enabled", "tma_method", "gain_db", "band_preset", "band_hz", "notch", "peak_hold", "harmonic_hz", "harmonic_candidates_hz", "audio_enabled", "volume", "quiet_mode", "tools"]) ||
         !["BOW", "TOWED", "VDS"].includes(settings.mode) || typeof settings.station_down !== "boolean" ||
         !exactKeys(settings.tools, ["assist", "lofar_cursor_hz", "demon_cursor_hz", "integration_s", "vernier", "shaft_hz", "blade_hz", "operator_notch_hz", "demon_band_hz", "heterodyne_hz", "library_marks", "library"]) ||
         !Number.isInteger(settings.tools.library_marks) || settings.tools.library_marks < 0 || settings.tools.library_marks > 3 ||
@@ -425,7 +430,8 @@ export function validateV2State(state) {
         settings.vds.payout < 0 || settings.vds.payout > 1 || settings.vds.depth_m < 0 || settings.vds.depth_m > 1000 ||
         typeof settings.vds.state !== "string" || settings.vds.state.length > 32 ||
         !exactKeys(settings.bt, ["ready", "cooldown_s", "thermocline_m"]) ||
-        !exactKeys(settings.ping, ["ready", "cooldown_s"]) ||
+        !exactKeys(settings.ping, ["ready", "cooldown_s", "pulse"]) || !["CW", "LFM"].includes(settings.ping.pulse) ||
+        !["hypothesis", "ekelund", "dotstack"].includes(settings.tma_method) ||
         settings.tow.speed_kn < 0 || settings.tow.speed_kn > 100 || settings.tow.speed_min_kn < 0 ||
         settings.tow.speed_max_kn > 100 || settings.tow.speed_min_kn > settings.tow.speed_max_kn ||
         !boundedArray(settings.band_hz, 2) || settings.band_hz.length !== 2 ||
@@ -677,6 +683,11 @@ export function validateV2State(state) {
         !boundedArray(payload.messages, 40) || payload.messages.some((row) => !exactKeys(row, ["stamp", "text"])) ||
         typeof payload.station_down !== "boolean" || typeof payload.can_request_ras !== "boolean" ||
         typeof payload.can_contact_report !== "boolean" || typeof payload.can_request_support !== "boolean" ||
+        !exactKeys(payload.report, radioReportFields.row) || !radioReportFields.states.includes(payload.report.state) ||
+        (payload.report.reason !== null && !radioReportFields.reasons.includes(payload.report.reason)) ||
+        (payload.report.tx_left_s !== null && (!finite(payload.report.tx_left_s) || payload.report.tx_left_s < 0)) ||
+        !finite(payload.report.ready_in_s) || payload.report.ready_in_s < 0 || typeof payload.report.has_fix !== "boolean" ||
+        !Number.isInteger(payload.report.sent) || payload.report.sent < 0 ||
         payload.observations.some((row) => typeof row.can_capture !== "boolean") ||
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
     tacticalRows(payload.tactical, 128);

@@ -46,14 +46,17 @@ export function renderHost() {
   $("web-admin-link").hidden = !active || !S.webHostAvailable;
   const menu = active && S.hostView?.phase === "menu";
   $("host-screen").hidden = !menu || leader || simlogActive();
-  for (const id of ["host-new", "host-side"]) $(id).hidden = leader;
+  for (const id of ["host-new", "host-side", "host-training"]) $(id).hidden = leader;
   // Only a running or ended mission can be left for the lobby.
   $("host-end").hidden = !leader || !["live", "ended"].includes(S.hostView?.phase);
   if (!active) {
     for (const id of ["host-save", "host-load", "host-new", "host-missions",
                       "host-instructor", "host-side", "host-screen-new", "host-screen-load",
-                      "host-new-start", "host-end"]) $(id).disabled = true;
+                      "host-new-start", "host-end", "host-logbook", "host-training",
+                      "host-screen-logbook", "host-screen-training"]) $(id).disabled = true;
     for (const button of $("host-slot-list").querySelectorAll("button"))
+      button.disabled = true;
+    for (const button of $("training-list").querySelectorAll("button"))
       button.disabled = true;
     return;
   }
@@ -72,6 +75,10 @@ export function renderHost() {
   $("host-side").disabled = !ready || S.stationMutation;
   $("host-screen-new").disabled = !replacing;
   $("host-screen-load").disabled = !replacing;
+  // The service record is read-only; a lesson starts like a new game.
+  for (const id of ["host-logbook", "host-screen-logbook"]) $(id).disabled = !S.hostView?.logbook;
+  for (const id of ["host-training", "host-screen-training"]) $(id).disabled = !replacing || leader;
+  for (const button of $("training-list").querySelectorAll("button")) button.disabled = !replacing || leader;
   $("host-new-start").disabled = !replacing;
   for (const button of $("host-slot-list").querySelectorAll("button")) {
     button.disabled = !replacing || (button.dataset.mode === "load" &&

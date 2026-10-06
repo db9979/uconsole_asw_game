@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.266
+
+Release 1.3.266 closes the first gaps in mouse control. A click into the
+executive officer's or the language model's window no longer reaches the
+station behind it. In the Mission and Unit Editors a second click on a row
+opens the field. At the sonar the cursor on LOFAR and DEMON and the TMA
+hypothesis (course, speed, range) now move by clicking their chips, the
+helicopter's waypoint chips steer it, the submarine's status line opens
+the log like `F11`, and the submarine sonar no longer shows a key on its
+array readout. A new test makes sure every key chip on every station can
+be clicked. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.264
 
 Release 1.3.264 makes the underwater fight more realistic. Torpedo seekers

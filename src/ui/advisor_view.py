@@ -139,11 +139,20 @@ def draw_advisor_overlay(game) -> None:
         layout.blit_line(s, "advisor.send_hint." + mode, FIELD, config.COLOR_TEXT_DIM, size=17)
         pointer.add_key(FIELD, pygame.K_RETURN)
         first = (("help.key.enter", "advisor.button.send", pygame.K_RETURN),)
-    _buttons(s, first + (("↑", "advisor.button.older", pygame.K_UP),
-                         ("↓", "advisor.button.newer", pygame.K_DOWN),
-                         ("Esc", "common.close", pygame.K_ESCAPE)))
-    layout.blit_block(s, "advisor.logbook_note", NOTE.x, NOTE.y, NOTE.w, NOTE.h,
-                      color=config.COLOR_TEXT_DIM, size=13, align="center")
+    # The talk key (src/core/game_talk.py): held, it records a question.
+    talk = ((("Shift+Space", "talk.button.send" if game.talk_state == "recording"
+              else "talk.button.speak", (pygame.K_SPACE, pygame.KMOD_SHIFT)),)
+            if game.stt.active else ())
+    _buttons(s, first + talk + (("↑", "advisor.button.older", pygame.K_UP),
+                                ("↓", "advisor.button.newer", pygame.K_DOWN),
+                                ("Esc", "common.close", pygame.K_ESCAPE)))
+    if game.talk_state != "idle":
+        from src.ui.talk_view import header_line
+        text, color = header_line(game)
+        layout.blit_line(s, text, NOTE, color, size=15, align="center")
+    else:
+        layout.blit_block(s, "advisor.logbook_note", NOTE.x, NOTE.y, NOTE.w, NOTE.h,
+                          color=config.COLOR_TEXT_DIM, size=13, align="center")
 
 
 def select_mode(game, index: int) -> None:
@@ -206,22 +215,16 @@ def settings_row_rects(count: int = 8) -> tuple:
                              PANEL.w - 120, height) for index in range(count))
 
 
-TAB_W = 150
-
-
 def page_tab_rects() -> tuple:
-    """The settings' page tabs (language model, voice; how it sounds, log
-    reports) left and right of the title."""
-    right = PANEL.right - 24 - 48
-    return (pygame.Rect(PANEL.x + 24, PANEL.y + 14, TAB_W, 34),
-            pygame.Rect(PANEL.x + 32 + TAB_W, PANEL.y + 14, TAB_W, 34),
-            pygame.Rect(right - 2 * TAB_W - 8, PANEL.y + 14, TAB_W, 34),
-            pygame.Rect(right - TAB_W, PANEL.y + 14, TAB_W, 34))
-
-
-def _title_rect() -> pygame.Rect:
-    tabs = page_tab_rects()
-    return pygame.Rect(tabs[1].right + 8, PANEL.y + 12, tabs[2].x - tabs[1].right - 16, 40)
+    """The settings' five page tabs (language model, voice, how it sounds,
+    log reports, speech input) in one row left of the close box; the
+    chosen tab names the page."""
+    count, gap = 5, 8
+    left = PANEL.x + 24
+    right = game_menu.close_rect(PANEL).x - 12
+    width = (right - left - gap * (count - 1)) // count
+    return tuple(pygame.Rect(left + index * (width + gap), PANEL.y + 14, width, 34)
+                 for index in range(count))
 
 
 def _on_off(value):
@@ -291,9 +294,6 @@ def draw_llm_settings(game) -> None:
     s = game.screen
     page = game.llm_page % len(LLM_PAGES)
     overlay_style.panel(s, PANEL)
-    overlay_style.title(s, ("llm.title", "voice.title", "voice.tune_title",
-                            "voice.log_title")[page],
-                        _title_rect(), size=26)
     game_menu.close_button(s, PANEL)
     for index, rect in enumerate(page_tab_rects()):
         active = index == page
@@ -302,18 +302,19 @@ def draw_llm_settings(game) -> None:
         pygame.draw.rect(s, config.COLOR_TEXT_DIM, rect, 1)
         layout.blit_line(s, message("llm.page", number=index + 1,
                                     name=message(("llm.page.model", "llm.page.voice",
-                                                  "llm.page.tune", "llm.page.log")[index])),
+                                                  "llm.page.tune", "llm.page.log",
+                                                  "llm.page.stt")[index])),
                          rect.inflate(-8, -4), overlay_style.text_color(active),
                          size=16, align="center")
         pointer.add_action(rect, lambda _pos, index=index: game.set_llm_page(index))
     layout.blit_line(s, ("llm.subtitle", "voice.subtitle", "voice.tune_subtitle",
-                         "voice.log_subtitle")[page],
+                         "voice.log_subtitle", "stt.subtitle")[page],
                      (PANEL.x + 32, PANEL.y + 56, PANEL.w - 64, 24),
                      config.COLOR_TEXT_DIM, size=15, align="center")
     rows = LLM_PAGES[page]
     values = (_llm_values(game) if page == 0 else _log_values(game) if page == 3
-              else _voice_values(game))
-    prefix = "llm" if page == 0 else "voice"
+              else _stt_values(game) if page == 4 else _voice_values(game))
+    prefix = "llm" if page == 0 else "stt" if page == 4 else "voice"
     for index, (name, rect) in enumerate(zip(rows, settings_row_rects(len(rows)))):
         selected = index == game.llm_sel
         if selected:
@@ -340,6 +341,33 @@ def draw_llm_settings(game) -> None:
                      ("help.key.enter", "llm.button.change", pygame.K_RETURN),
                      ("Tab", "llm.button.page", pygame.K_TAB),
                      ("Esc", "llm.button.back", pygame.K_ESCAPE)), SETTINGS_BUTTONS_Y)
+
+
+def _stt_values(game) -> dict:
+    prefs = game.preferences
+    source = game.stt_key_source()
+    key = game.stt.config.api_key
+    return {
+        "stt_enabled": _on_off(prefs.stt_enabled),
+        "stt_url": raw_text(prefs.stt_url),
+        "stt_model": raw_text(prefs.stt_model),
+        "stt_key": message("stt.key_env") if source == "env"
+        else message("stt.key_shared", masked=raw_text(keystore.mask(key)))
+        if source == "shared" else raw_text(keystore.mask(key)),
+        "stt_test": _stt_test_text(game),
+    }
+
+
+def _stt_test_text(game):
+    state = game.stt_test_state()
+    if state is None:
+        return message("stt.test.idle")
+    if state["status"] == "pending":
+        return message("voice.test.pending")
+    if state["status"] == "done":
+        return message("stt.test.ok", seconds=f"{state['latency_s']:.1f}")
+    return message("stt.test.failed",
+                   reason=message("talk.error." + str(state.get("error") or "network")))
 
 
 def _voice_test_text(game):

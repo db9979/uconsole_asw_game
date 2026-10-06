@@ -1,7 +1,11 @@
-"""The uConsole's own microphone for noise discipline (opt-in, level only).
+"""The uConsole's own microphone: noise discipline (opt-in, level only) and
+the talk key of the language model's speech input.
 
-SDL2 capture through ``pygame._sdl2.audio``: the capture thread keeps only
-the loudness of the newest block; nothing is recorded, stored or played.  No
+SDL2 capture through ``pygame._sdl2.audio``: the capture thread keeps the
+loudness of the newest block; only while the talk key is held
+(``begin_recording``/``end_recording``) does it also keep the samples, in
+memory and at most ``RECORD_MAX_S``, for one question to the executive
+officer (``src/core/game_talk.py``).  Nothing is stored or played.  No
 device, no SDL support or a refused device leaves ``available`` False and the
 game runs on without it (``src/core/game_noise.py``); ``failure`` then names
 the cause the player is shown (``option.microphone.failure.*``).
@@ -28,6 +32,8 @@ SPAN_DB = 50.0
 SILENT_AFTER_S = 3.0
 # Causes shown to the player (keys ``option.microphone.failure.<cause>``).
 FAILURES = ("no_capture", "no_device", "open_failed", "silent")
+# The talk key keeps at most this much of one question.
+RECORD_MAX_S = 30.0
 
 
 def level_of(rms: float, maximum: int = LEVEL_MAX) -> int:
@@ -64,6 +70,9 @@ class Microphone:
         self._opened_at = 0.0
         self._heard = False
         self._rms = 0.0
+        # The talk key's recording: blocks of samples, or None (not recording).
+        self._recording = None
+        self._recorded = 0
 
     def _callback(self, _device, data) -> None:
         samples = np.frombuffer(bytes(data), dtype=np.float32)
@@ -71,6 +80,35 @@ class Microphone:
         if samples.size and np.any(samples):
             self._heard = True
         self._rms = float(np.sqrt(np.mean(samples * samples))) if samples.size else 0.0
+        recording = self._recording
+        if recording is not None and self._recorded < RECORD_MAX_S * SAMPLE_RATE:
+            recording.append(samples.copy())
+            self._recorded += samples.size
+
+    # -- the talk key ----------------------------------------------------------
+
+    @property
+    def recording(self) -> bool:
+        return self._recording is not None
+
+    def recorded_s(self) -> float:
+        return self._recorded / SAMPLE_RATE
+
+    def begin_recording(self) -> bool:
+        """Keep the samples from now on (the device must be open)."""
+        if self.device is None:
+            return False
+        self._recorded = 0
+        self._recording = []
+        return True
+
+    def end_recording(self) -> np.ndarray:
+        """The samples since ``begin_recording`` (mono float32, 16 kHz)."""
+        blocks, self._recording = self._recording, None
+        self._recorded = 0
+        if not blocks:
+            return np.zeros(0, dtype=np.float32)
+        return np.concatenate(blocks)[:int(RECORD_MAX_S * SAMPLE_RATE)]
 
     def start(self) -> bool:
         if self.device is not None:
@@ -131,6 +169,8 @@ class Microphone:
         that reuses it."""
         device, self.device = self.device, None
         self._rms = 0.0
+        self._recording = None
+        self._recorded = 0
         if device is None:
             return
         try:

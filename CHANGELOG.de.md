@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.259
+
+Version 1.3.259 lässt dich den Ersten Offizier an jeder Station per Sprache
+fragen: Umschalt+Leertaste halten, sprechen und loslassen (oder einmal
+tippen zum Starten und noch einmal zum Senden), auf der uConsole, im U-Boot
+und im Browser. Ein Erkennungsdienst deiner Wahl (OpenAI-kompatibel,
+einzurichten unter Optionen, Sprachmodell, Reiter 5 Spracheingabe, ab Werk
+aus) macht aus der Frage Text; die Antwort erscheint in einer Sprechblase
+über der Station und die Stimme spricht sie. Der neue KI-Knopf in der
+oberen Leiste öffnet den Chat direkt. Die Sprechtaste fragt nur und gibt
+nie Befehle. Spielstände sind v53; v38 bis v52 laden weiter.
+
 ## 1.3.255
 
 Version 1.3.255 macht die Prüfungen vor einem Release zuverlässiger,

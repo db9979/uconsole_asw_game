@@ -215,6 +215,8 @@ def draw_top_bar(game, boat) -> None:
     switch = game_menu.draw_button(game) or theme_switch_rect()
     left = tabs[-1].right + 12
     right = eco_lamp.status_right(game, mic_meter.status_right(game, "uboot", switch.x - 10))
+    from src.ui import talk_view
+    right = talk_view.draw_button(game, s, right)
     # A long mission title gives way; clock, course, speed and depth stay whole.
     text = raw_text(layout.shorten_to_fit(
         lambda title: localize(message(

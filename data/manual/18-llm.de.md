@@ -31,6 +31,20 @@ Ein OpenAI-kompatibler Sprachdienst (`/audio/speech`) gibt dem Ersten Offizier u
 - Die Stimme spielt auf einem eigenen Tonkanal und schneidet nie den Sonarton ab; Anfragen und Dekodieren laufen neben dem Spiel, ein langsamer Dienst hält also kein Bild an. Eine lange Antwort geht Satz für Satz hinaus, sodass der erste Satz schon spielt, während der Rest noch erzeugt wird, und Ton, den ein Dienst streamt (OpenAI tut das), spielt schon, während er noch ankommt; wie lange es bis zum ersten Ton dauert, liegt am Dienst. Mit ausgeschaltetem Spielton wird nichts gesprochen.
 - Remote-Crew-Browser behalten ihre eigene Stimme für die Crew-Meldungen (Einstellungen, Sprachausgabe des Browsers); die Antworten des Ersten Offiziers zeigt ein Browser an, spricht sie aber nicht.
 
+## Sprechtaste und Spracheingabe {#llm-talk}
+
+Den Ersten Offizier an jeder Station per Sprache fragen, auf beiden Seiten und im Browser: `Umschalt+Leertaste` halten, die Frage sprechen und loslassen. Kurz antippen startet die Aufnahme und der nächste Druck schickt sie, die Taste muss also nicht gehalten werden. Die Frage geht an einen OpenAI-kompatiblen Erkennungsdienst (`/audio/transcriptions`, zum Beispiel `whisper-1` oder ein Qwen3-Sprachserver im LAN), und der erkannte Text erreicht den Ersten Offizier als gewöhnliche Frage, beantwortet aus dem eigenen Lagebild und dem Handbuch. Die Antwort steht 30 s lang in einer Sprechblase oben über der Station (das Kreuz schließt sie, **Sprechen** fragt erneut, **Chat** oder **Ganze Antwort** öffnet `F7`), bleibt im `F7`-Protokoll und wird von der Stimme gesprochen, wenn sie an ist. Solange das Sprachmodell an ist, öffnet der Knopf **KI** in der oberen Leiste den Chat direkt zum Tippen einer Frage; in `F7` nimmt der blaue Knopf **Umschalt+Leertaste Sprechen** auf, solange er gedrückt ist, wie die Taste.
+
+![Die Antwort des Ersten Offiziers auf eine gesprochene Frage, über der Brücke](figure:talk-bubble)
+
+![Optionen, Sprachmodell, Seite 5 Spracheingabe](figure:llm-speech-input)
+
+- Einrichten unter `F10` Optionen, Seite 2, **Sprachmodell**, Seite **5 Spracheingabe**: an/aus (ab Werk aus), die Serveradresse (voreingestellt `https://api.openai.com/v1`), das Erkennungsmodell (voreingestellt `whisper-1`), der API-Schlüssel und **Verbindung testen**, das eine Sekunde leisen Ton schickt und die Antwortzeit zeigt. Der Dienst bekommt die Spielsprache mitgeteilt, Deutsch oder Englisch; ein Server, der das Feld ablehnt, wird ohne gefragt.
+- Der Schlüssel liegt in `~/.u-jagd/stt_key` oder kommt aus `U_JAGD_STT_KEY`. Bleibt er leer, gilt der Schlüssel der Stimme oder des Sprachmodells, wenn dessen Adresse denselben Server nennt. Er gelangt nie in die Einstellungen, Spielstände, Protokolle oder einen Browser.
+- Die Sprechtaste fragt nur: Sie gibt nie einen Befehl, und eine gesprochene Frage hört der Gegner nie (die Geräuschdisziplin übergeht das Mikrofon, solange es aufnimmt). Eine Aufnahme endet nach 30 s (im Browser nach 20 s); eine zu kurze oder stille Aufnahme wird nicht geschickt. Nichts wird gespeichert: Der Ton liegt nur im Speicher, bis er geschickt ist.
+- An einer Browser-Station nehmen der Knopf **Sprechen** neben **Senden** und `Umschalt+Leertaste` mit dem Mikrofon des Browsers auf, das die HTTPS-Seite braucht (wie bei der Geräuschdisziplin); die Aufnahme geht an den Host, der sie mit seiner eigenen Spracheingabe und seinem eigenen Schlüssel in Text verwandelt.
+- Verliert das Fenster den Fokus, wird eine laufende Aufnahme verworfen.
+
 ## Nicht modelliert {#llm-limits}
 
-- Nicht modelliert: Sprachbefehle, gesprochene Antworten des Ersten Offiziers oder vorgelesene Logmeldungen im Browser, ein Modell auf der uConsole selbst, Entscheidungen des Modells über Waffen oder Ziele und ein Modell, das während der Mission die verborgene Wahrheit sieht.
+- Nicht modelliert: Sprachbefehle (die Sprechtaste stellt nur Fragen), Spracherkennung auf der uConsole selbst, gesprochene Antworten des Ersten Offiziers oder vorgelesene Logmeldungen im Browser, ein Modell auf der uConsole selbst, Entscheidungen des Modells über Waffen oder Ziele und ein Modell, das während der Mission die verborgene Wahrheit sieht.

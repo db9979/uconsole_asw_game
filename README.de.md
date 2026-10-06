@@ -10,16 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.255**
+Aktuelle Version: **1.3.259**
 
-Version 1.3.255 macht die Prüfungen vor einem Release zuverlässiger,
-damit neue Versionen nicht mehr ausbleiben. Eine Browser-Prüfung der
-Stationsübergabe nennt jetzt den Grund, wenn sie scheitert, statt still
-abzulaufen. Das Spiel selbst ist wie in 1.3.254: Die Stimme liest jede
-Logmeldung der Reihe nach mit deutscher Sprechanweisung vor, dazu
-tägliche Kurzeinsätze, Ausbildungsfortschritt und eine Zeile auf den
-Endtafeln, was den Einsatz entschieden hat. Spielstände sind v53; v38
-bis v52 laden weiter.
+Version 1.3.259 lässt dich den Ersten Offizier an jeder Station per Sprache
+fragen: Umschalt+Leertaste halten, sprechen und loslassen (oder einmal
+tippen zum Starten und noch einmal zum Senden), auf der uConsole, im U-Boot
+und im Browser. Ein Erkennungsdienst deiner Wahl (OpenAI-kompatibel,
+einzurichten unter Optionen, Sprachmodell, Reiter 5 Spracheingabe, ab Werk
+aus) macht aus der Frage Text; die Antwort erscheint in einer Sprechblase
+über der Station und die Stimme spricht sie. Der neue KI-Knopf in der
+oberen Leiste öffnet den Chat direkt. Die Sprechtaste fragt nur und gibt
+nie Befehle. Spielstände sind v53; v38 bis v52 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

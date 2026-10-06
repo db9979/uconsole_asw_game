@@ -82,6 +82,12 @@ class NoiseMixin:
         running = not (self.web_mode or self.in_menu or self.main_menu
                        or self.game_over or getattr(self, "splash_active", False))
         wanted = bool(getattr(self.preferences, "microphone", False)) and running
+        # The talk key's question to the executive officer is not heard by
+        # the enemy: no level while it records (src/core/game_talk.py).
+        talking = getattr(self, "talk_state", "idle") == "recording"
+        if talking:
+            self.__dict__["mic_level"] = 0
+            return
         if not wanted:
             if mic is not None and mic.device is not None:
                 mic.stop()

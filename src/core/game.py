@@ -89,6 +89,7 @@ from src.core.game_update import UpdateNoticeMixin
 from src.core.game_llm import LlmMixin
 from src.core.game_advisor import AdvisorUiMixin
 from src.core.game_voice import VoiceMixin
+from src.core.game_talk import TalkMixin
 from src.core.game_habits import HabitsMixin
 from src.core.game_reset import ResetMixin
 
@@ -97,7 +98,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
            RadarPictureMixin, AswWeaponsMixin, RbuMixin, CasualtiesMixin,
            SaveMixin, TaskingMixin, RescueMixin, IncidentsMixin, CrewMixin, NoiseMixin, DailyMixin, MpaMixin, ConsortMixin, DebriefMixin,
            TrainingMixin, CustomMissionMixin, CampaignMixin, LogbookMixin, ReportsMixin, BugReportMixin, AutosaveMixin, WelcomeMixin,
-           LobbyMixin, ServerModeMixin, UpdateNoticeMixin, ResilienceMixin, LlmMixin, AdvisorUiMixin, VoiceMixin, HabitsMixin,
+           LobbyMixin, ServerModeMixin, UpdateNoticeMixin, ResilienceMixin, LlmMixin, AdvisorUiMixin, VoiceMixin, TalkMixin,
+           HabitsMixin,
            ResetMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
@@ -244,6 +246,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # Optional language model (off by default; src/core/game_llm.py).
         self._init_llm()
         self._init_voice()
+        self._init_talk()
         self._init_advisor_ui()
         self.live_traffic_open = False
         self.live_traffic_sel = 0

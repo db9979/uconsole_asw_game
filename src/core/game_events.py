@@ -239,10 +239,17 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             self._clear_controls()
             return True
         if e.type == pygame.WINDOWFOCUSLOST:
-            # Real time never stops; losing focus only releases held controls.
+            # Real time never stops; losing focus only releases held controls
+            # (and drops a recording of the talk key, whose release is lost).
             self._clear_controls()
+            self.talk_cancel()
             return True
         if e.type == pygame.KEYDOWN and getattr(e, "repeat", False):
+            return True
+        if (e.type in (pygame.KEYDOWN, pygame.KEYUP, pygame.TEXTINPUT)
+                and self.talk_key_event(e)):
+            # Shift+Space asks the executive officer by voice at every station
+            # (src/core/game_talk.py).
             return True
         if e.type == pygame.KEYDOWN and self.game_menu_open:
             # Any key closes the top bar's game menu, then acts as usual.

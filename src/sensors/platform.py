@@ -338,7 +338,10 @@ class PlatformSensorSuite:
                     sensitivity_db=config.clamp(
                         NPC_REFERENCE_SENSITIVITY_DB - profile.sensitivity_db,
                         -12.0, 12.0) if profile.sensitivity_db is not None else 0.0)
-                excess = terms.signal_excess_db
+                # Fading of the path (stateless, see equation.fading_db).
+                excess = terms.signal_excess_db + equation.fading_db(
+                    self.sensor_seed, _stable_int(profile.key) & 0xFFFFFFFF,
+                    _fading_source(candidate), now)
                 if excess <= 0.0:
                     return
                 received_signal = config.clamp(
@@ -656,6 +659,15 @@ def _finite_between(value, low: float, high: float, upper_open: bool = False) ->
     return (isinstance(value, (int, float)) and not isinstance(value, bool)
             and math.isfinite(value) and low <= value
             and (value < high if upper_open else value <= high))
+
+
+def _fading_source(candidate) -> int:
+    """Stable fading key of a heard source: its own sensor seed, else its
+    kind (entity ids depend on how many games ran before, so never them)."""
+    seed = getattr(candidate, "sensor_seed", None)
+    if seed is None:
+        seed = _stable_int(type(candidate).__name__)
+    return int(seed) & 0xFFFFFFFF
 
 
 def _candidate_token(candidate) -> str:

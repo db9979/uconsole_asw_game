@@ -114,11 +114,24 @@ def test_active_ping_echo_is_delayed_by_sound_travel_time():
     sub = Sub(265.0, 250.0, 30.0, 180.0, "diesel_alt", random.Random(3))
     sonar = SonarSystem(seed=3)
     sonar.queue_ping(frigate, [sub], world, 0.0)
-    assert sub.state == "EVADE"
+    # At 15 NM the hull ping is too faint to make the boat run: it hears it
+    # and slips away deep and slow, stern to the pinger.
+    assert sub.memory["last_ping_age"] == 0.0 and sub.state != "EVADE"
+    assert abs(config.angle_diff_deg(sub.target_course, 90.0)) < 1.0
     sonar.update(1.0, 1.0, frigate, [], world)
     assert sub.id not in sonar.contacts
     sonar.update(1.0, 40.0, frigate, [], world)
     assert sub.id in sonar.contacts
+
+
+def test_a_close_ping_makes_the_boat_run_from_the_pinger():
+    world = World(seed=3)
+    frigate = Ship(250.0, 250.0, speed_kn=4.0)
+    sub = Sub(253.0, 250.0, 30.0, 180.0, "diesel_alt", random.Random(3))
+    SonarSystem(seed=3).queue_ping(frigate, [sub], world, 0.0)
+    assert sub.state == "EVADE"
+    # Away from the pinger (bearing 270 from the boat), within the jink.
+    assert abs(config.angle_diff_deg(sub.target_course, 90.0)) <= 30.0
 
 
 def test_ship_turning_has_rudder_and_yaw_inertia():

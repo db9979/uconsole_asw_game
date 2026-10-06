@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.263
+## 1.3.265
 
-Version 1.3.263 lässt die Karten im Browser so weit hineinzoomen wie
+Version 1.3.265 lässt die Karten im Browser so weit hineinzoomen wie
 auf der uConsole. Jede Karte einer Remote-Crew-Station, auf der Fregatte
 und im U-Boot, geht jetzt vom ganzen Seegebiet bis auf 0,5 sm über die
 kürzere Seite (bisher war bei etwa 16 sm Schluss), mit Q/E, dem Mausrad,
@@ -15,6 +15,22 @@ Das Gitter in Grad und Minuten, auf der festen Karte in Seemeilen, wird
 beim Hineinzoomen bis auf Zehntel feiner, und die Ansichtsbreite über der
 Karte zeigt Nachkommastellen. Spielstände sind v53; v38 bis v52 laden
 weiterhin.
+
+## 1.3.264
+
+Version 1.3.264 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
+schauen jetzt in einem Kegel von etwa 45 Grad zu jeder Seite und in einem
+Tiefenfenster nach vorn, schalten nach Signalstärke gegen ihr Eigengeräusch
+auf, suchen langsam und leise und sprinten erst nach der Aufschaltung.
+KI-U-Boote reagieren auf einen Ping nach seiner Lautstärke: ein leiser
+schickt sie tief und langsam, ein naher lässt sie vom Pinger weglaufen. Sie
+weichen einem Torpedo aus, indem sie ihn querab nehmen, einen Täuschkörper
+ausstoßen und davonschleichen, und verstecken sich auf der Seite der
+Sprungschicht abseits eines ausgebrachten Tiefensonars. Harte Kurven kosten
+jetzt Fahrt, passive Kontakte an der Erfassungsgrenze schwinden und kommen
+wieder, und beim Geleitzugangriff warnt die Fregatte ihre Frachter, von denen
+etwa jeder dritte vor einem gehörten Torpedo abdreht. Spielstände sind v53;
+v38- bis v52-Spielstände lassen sich weiter laden.
 
 ## 1.3.262
 

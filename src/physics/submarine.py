@@ -95,3 +95,20 @@ def wave_speed_fraction(sea_state: float, length_m: float, beam_m: float) -> flo
     beam = max(beam_m, length / 9.0)
     relative = 0.015 * hs * hs * (beam / 14.0) ** 2 * (118.0 / length) ** 3
     return 1.0 / math.sqrt(1.0 + relative)
+
+
+# Speed lost in a turn (1.3.215): the induced drag of drift angle and rudder
+# grows with the nondimensional yaw rate r' = r L / V, so the speed the hull
+# can hold falls as 1 / sqrt(1 + c r'^2).  The boats turn at a fixed rate,
+# so r' is capped at what a real hull reaches with hard rudder.
+TURN_DRAG_COEFF = 8.0
+TURN_HULL_LENGTH_M = 70.0
+TURN_RPRIME_MAX = 0.5
+
+
+def turn_speed_factor(turn_deg_s: float, speed_kn: float) -> float:
+    """Fraction of the ordered speed a boat holds while turning."""
+    speed_mps = max(1.0, speed_kn) * 1852.0 / 3600.0
+    rprime = min(TURN_RPRIME_MAX, abs(math.radians(turn_deg_s))
+                 * TURN_HULL_LENGTH_M / speed_mps)
+    return 1.0 / math.sqrt(1.0 + TURN_DRAG_COEFF * rprime * rprime)

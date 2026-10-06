@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.263**
+Current release: **1.3.265**
 
-Release 1.3.263 lets the browser charts zoom in as far as the uConsole's.
+Release 1.3.265 lets the browser charts zoom in as far as the uConsole's.
 Every chart of a Remote Crew station, on the frigate and the submarine,
 now goes from the whole sea area down to 0.5 NM across the shorter side
 (before it stopped at about 16 NM) with Q/E, the mouse wheel, which zooms

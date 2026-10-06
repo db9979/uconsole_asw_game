@@ -69,6 +69,6 @@ app = BUNDLE(
             "nothing is recorded.",
         "NSLocalNetworkUsageDescription":
             "Remote Crew: browsers in your network join the game as crew stations.",
-        "NSHumanReadableCopyright": "MIT License, Dominik Bornhäußer",
+        "NSHumanReadableCopyright": "Copyright © 2026 Dominik Bornhäußer, PolyForm Strict License 1.0.0",
     },
 )

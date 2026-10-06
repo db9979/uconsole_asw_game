@@ -182,6 +182,9 @@ U-Jagd is free. If you enjoy it, you can support it at
 
 ## License
 
-Code and project documentation are MIT licensed, see [`LICENSE`](LICENSE).
-Pygame, NumPy, source data and fonts keep their own licenses, see
+U-Jagd (code, browser clients, documentation, Windows EXE and macOS app) is
+licensed under the PolyForm Strict License 1.0.0, see [`LICENSE`](LICENSE).
+You may play and use it as it is for noncommercial purposes; selling,
+distributing and changing it are not allowed. Pygame, NumPy, source data and
+fonts keep their own licenses, see
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

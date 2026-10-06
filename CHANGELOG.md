@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.254
+
+Release 1.3.254 reads the log aloud completely and in order, and makes the
+voice sound more German. Every log entry is now read, one after the other
+in the log's order, instead of keeping only the newest of a burst and
+dropping entries that waited longer than 15 s. The speaking instruction to
+the speech service is written in the game's language, because an English
+instruction pulled models such as Qwen-TTS towards an English accent on
+German text. Counts like "1x" are said as "one times", abbreviations such
+as CIWS are spelled, and a spelled number no longer leaves a gap before a
+closing bracket. Keys and saves are unchanged (v53; v38 to v52 saves still
+load).
+
 ## 1.3.251
 
 Release 1.3.251 adds new content and comfort. The daily mission is now a

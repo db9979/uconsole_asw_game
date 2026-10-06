@@ -16,6 +16,17 @@ action stations can be ordered by voice, never weapons, and a browser
 station gives only its own station's orders. Saves are v53; v38 to v52
 saves still load.
 
+## 1.3.275
+
+Release 1.3.275 lets the browser charts zoom in as far as the uConsole's.
+Every chart of a Remote Crew station, on the frigate and the submarine,
+now goes from the whole sea area down to 0.5 NM across the shorter side
+(before it stopped at about 16 NM) with Q/E, the mouse wheel, which zooms
+about the pointer, or a two-finger pinch on a touch screen. The grid of
+degrees and minutes, or of sea miles on the fixed chart, gets finer down
+to a tenth as you zoom in, and the view width above the chart shows
+decimals. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.272
 
 Release 1.3.272 makes the menus work by mouse. In the options a click on a
@@ -1417,7 +1428,6 @@ it is left. Buttons in updating lists (ESM emitters, tubes, bulkheads, radio
 channels and tasks, crew and patrol-aircraft orders) stay in place, so a click
 is no longer lost when an update lands mid-click. Saves stay format v41.
 
-
 ## 1.3.121
 
 Emergencies aboard join the incidents at sea. A man can go overboard from the
@@ -1477,7 +1487,6 @@ heavier rain and sferics that crackle on ESM and spread HF/DF bearings. In a
 heavy sea the helicopter launches and lands only in a quiet period; a deck-
 motion gauge shows it, and slowing down helps. Saves are now format v41; older
 saves do not load.
-
 
 ## 1.3.116
 

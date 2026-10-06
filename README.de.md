@@ -10,17 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.257**
+Aktuelle Version: **1.3.261**
 
-Version 1.3.257 räumt die Kartenbeschriftung auf. Der Name eines Schiffs
-liegt nicht mehr unter seiner eigenen Kurslinie: Er steht querab vom Kurs,
-zusammen mit der Fahrt (MV KURELA 8kn), frei von Bewegungsvektoren, Spuren
-und anderen Namen, und behält seinen Platz, statt von Bild zu Bild zu
-springen. Ein Schiff, das Radar und Ausguck sehen, erscheint auf Brücken-
-und Waffenkarte einmal, auch bevor die OPZ beide Meldungen fusioniert hat,
-und ein fusioniertes Schiff mit AIS nimmt Kurs und Fahrt aus dem AIS, sodass
-sein Vektor nicht mehr hin und her schwenkt. Das gilt auf der uConsole und
-im Browser. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+Version 1.3.261 lässt die Karten im Browser so weit hineinzoomen wie
+auf der uConsole. Jede Karte einer Remote-Crew-Station, auf der Fregatte
+und im U-Boot, geht jetzt vom ganzen Seegebiet bis auf 0,5 sm über die
+kürzere Seite (bisher war bei etwa 16 sm Schluss), mit Q/E, dem Mausrad,
+das um den Mauszeiger zoomt, oder mit zwei Fingern auf dem Touchscreen.
+Das Gitter in Grad und Minuten, auf der festen Karte in Seemeilen, wird
+beim Hineinzoomen bis auf Zehntel feiner, und die Ansichtsbreite über der
+Karte zeigt Nachkommastellen. Spielstände sind v53; v38 bis v52 laden
+weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

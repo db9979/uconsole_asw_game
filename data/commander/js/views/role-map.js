@@ -7,6 +7,7 @@ import { maxRoleMapHits, roleMapViews } from "../state/shared.js";
 import { drawPlotLayer, releaseCanvas, renderPlotList, resizeCanvas } from "./chart.js";
 import { node, position } from "./dom.js";
 import { visualContext } from "./visual-common.js";
+import { mapGridStep, stepDecimals } from "../core/map-zoom.js";
 import { axisLabel, formatPosition, graticule } from "../core/geo.js";
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { roleMapSweepCanvas, roleMapSweepCtx } from "./canvases.js";
@@ -108,6 +109,8 @@ export function syncOpzSweepAnimation() {
   };
   S.opzSweepFrame = requestAnimationFrame(animate);
 }
+// The visible width in sea miles: whole miles far out, tenths close in.
+const scaleDistance = (nm) => number(nm, nm >= 10 ? 0 : nm >= 1 ? 1 : 2);
 export function roleMapGeometry(role, width = $("role-map").clientWidth, height = $("role-map").clientHeight) {
   const viewState = roleMapViews[role];
   if (!S.chart || !viewState || !width || !height) return null;
@@ -318,14 +321,19 @@ export function drawRoleMap(role) {
       plot.context.fillRect(px, py, cell * scale + 1, cell * scale + 1);
     }
   }
-  const step = viewState.zoom >= 8 ? 10 : viewState.zoom >= 3 ? 25 : 50;
   // Grid lines: on a real sea area meridians and parallels in degrees and
-  // minutes (as the uConsole), else the NM grid.
-  const gridColumns = [], gridRows = [];
-  for (let value = 0; value <= S.chart.size_nm; value += step) { gridColumns.push([value, String(value)]); gridRows.push([value, String(value)]); }
+  // minutes (as the uConsole), else the NM grid, both only where visible and
+  // finer down to a tenth of a mile at the deepest zoom.
   const [originX, originY] = point(0, 0);
   const worldAt = (px, py) => [(px - originX) / scale, (py - originY) / scale];
   const [boxLeft, boxTop] = worldAt(0, 0), [boxRight, boxBottom] = worldAt(plot.width, plot.height);
+  const step = Math.max(.1, mapGridStep(scale, 80)), gridDecimals = stepDecimals(step);
+  const gridColumns = [], gridRows = [];
+  const gridLines = (from, to, rows) => {
+    for (let k = Math.ceil(Math.max(0, from) / step - 1e-9); k * step <= Math.min(S.chart.size_nm, to) + 1e-9 && rows.length < 400; k++)
+      rows.push([k * step, number(k * step, gridDecimals)]);
+  };
+  gridLines(boxLeft, boxRight, gridColumns); gridLines(boxTop, boxBottom, gridRows);
   const geoGrid = graticule(Math.max(0, boxLeft), Math.min(S.chart.size_nm, boxRight),
     Math.max(0, boxTop), Math.min(S.chart.size_nm, boxBottom), scale);
   if (geoGrid) {
@@ -534,7 +542,7 @@ export function drawRoleMap(role) {
   }
   drawPlotLayer(plot.context, framePoint, scale, plot.width, plot.height, null, labels);
   renderPlotList();
-  $("role-map-scale").textContent = t("role_map_scale", {distance: number(S.chart.size_nm / viewState.zoom, 0)});
+  $("role-map-scale").textContent = t("role_map_scale", {distance: scaleDistance(S.chart.size_nm / viewState.zoom)});
   plot.context.save(); plot.context.textAlign = "right"; plot.context.fillStyle = palette().text; plot.context.fillText("N ↑", plot.width - 10, 18); plot.context.restore();
   const equivalent = [t("role_map_own", {position: hasPosition(data.own) ? position(data.own) : t("unavailable")})];
   equivalent.push(...data.observations.map((row) => t("role_map_observation", {ref: row.ref, bearing: number(row.bearing, 0), position: hasPosition(row) ? position(row) : t("bearing_only")})));

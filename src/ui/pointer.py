@@ -36,6 +36,9 @@ class Target:
     # Hover only: the station's own hit test takes the click (page tabs,
     # sonar segments, OPZ buttons); the target just shows it is clickable.
     hover_only: bool = False
+    # A panel drawn over the station (the F11 log): the click ends here and
+    # never reaches a station control underneath; no hover frame.
+    blocker: bool = False
 
 
 _targets: list[Target] = []
@@ -81,6 +84,24 @@ def add_hotspot(rect) -> None:
     """``rect`` is clickable through the station's own hit test: hover only."""
     if len(_targets) < MAX_TARGETS:
         _targets.append(Target(pygame.Rect(rect), _layer[-1], hover_only=True))
+
+
+def add_blocker(rect) -> None:
+    """``rect`` is a panel over the station: clicks inside it do nothing
+    (targets registered after it, such as its close box, still work), and
+    no station target or lamp note under it reacts to the mouse."""
+    if len(_targets) < MAX_TARGETS:
+        _targets.append(Target(pygame.Rect(rect), _layer[-1],
+                               action=lambda _pos: None, blocker=True))
+    if len(_tips) < MAX_TIPS:
+        _tips.append((pygame.Rect(rect), _layer[-1], lambda: None))
+
+
+def blocked(pos, owner: str) -> bool:
+    """True when ``pos`` lies on a panel registered with :func:`add_blocker`."""
+    return pos is not None and any(
+        target.blocker and target.layer == owner and target.rect.collidepoint(pos)
+        for target in _targets)
 
 
 def add_tip(rect, tip) -> None:
@@ -134,7 +155,7 @@ def targets(owner: str | None = None) -> list[Target]:
 def hover_rect(pos, owner: str) -> pygame.Rect | None:
     """The clickable rectangle under ``pos`` for the hover frame, or None."""
     target = hit(pos, owner)
-    return None if target is None else target.rect
+    return None if target is None or target.blocker else target.rect
 
 
 # --- footer legends ---------------------------------------------------------------

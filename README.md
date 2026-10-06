@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.224**
+Current release: **1.3.230**
 
-Release 1.3.224 makes the executive officer (`F7`) and the language
+Release 1.3.230 makes the executive officer (`F7`) and the language
 model settings fully mouse-operable on the uConsole and the desktop apps.
 A click on a tab picks the kind of request; blue key buttons under the log
 send, give or discard a typed order, scroll older and newer and close the

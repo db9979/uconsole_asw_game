@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.224
+## 1.3.230
 
-Version 1.3.224 macht den Ersten Offizier (`F7`) und die Einstellungen
+Version 1.3.230 macht den Ersten Offizier (`F7`) und die Einstellungen
 des Sprachmodells auf dem uConsole und in den Desktop-Apps vollständig mit
 der Maus bedienbar. Ein Klick auf einen Reiter wählt die Art der Anfrage;
 blaue Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen
@@ -19,6 +19,22 @@ das Protokoll jetzt ab dem ersten Schritt und auch, während ein Befehl auf
 Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
 bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52
 laden weiter.
+
+## 1.3.229
+
+Version 1.3.229 macht das Ereignislog (F11) in jedem Farbschema lesbar und
+lässt es mit der Maus schließen. Im hellen Schema „Taktik Tag“ behielt das
+Log die Farben der Nacht, viele Zeilen waren blassgrau oder hellblau auf
+Weiß, und die Station schien durch. Jetzt nimmt das Log die Farben des
+gewählten Schemas, deckt die Station ganz ab und hat oben rechts ein
+Schließen-Kreuz. Ein Klick auf das Log erreicht die Station dahinter nicht
+mehr. Im Browser nimmt die abgedunkelte Fläche um ein offenes Blatt
+(Anleitung, Kontakte, Ausguck) den Klick und schließt das Blatt, statt ein
+Bedienelement dahinter auszulösen. Dieselbe Korrektur gilt für die
+Zeitleiste der Nachbesprechung, die Feldzugskarte, die Bedrohungs- und
+Funkseite des U-Boots, die Ausguckseite, die Wetterstation und das
+Simulationsprotokoll. Tasten bleiben gleich. Spielstände sind v53; v38 bis
+v52 laden weiter.
 
 ## 1.3.223
 

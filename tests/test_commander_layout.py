@@ -977,7 +977,11 @@ setTimeout(() => {
   const close = $("panel-__TAB__").querySelector(".overlay-close");
   const button = box(close);
   const topmost = document.elementFromPoint(button.left + button.width / 2, button.top + button.height / 2);
+  // Beside the sheet the dimmed backdrop (the body) takes the click, never
+  // a station control of the CIC behind it.
+  const beside = document.elementFromPoint(Math.max(2, panel.left / 2), innerHeight / 2);
   document.documentElement.dataset.result = JSON.stringify({
+    besideIsBackdrop: beside === document.body,
     panel: [panel.left, panel.top, panel.right, panel.bottom], viewport: [innerWidth, innerHeight],
     button: [button.left, button.top, button.right, button.bottom], closeOnTop: topmost === close,
     operationsVisible: !$("panel-operations").hidden});
@@ -993,3 +997,4 @@ setTimeout(() => {
     bl, bt, br, bb = report["button"]
     assert left <= bl and br <= right and top <= bt and bb <= bottom and br - bl >= 24, report
     assert report["closeOnTop"] and report["operationsVisible"], report
+    assert report["besideIsBackdrop"], report

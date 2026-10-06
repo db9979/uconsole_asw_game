@@ -478,10 +478,8 @@ def test_unreleased_legacy_sonar_mirrors_are_not_opz_rows(monkeypatch):
     stations_view.draw_opz_view(game)
 
     assert rows == []
-    assert (stations_view.OPZ_DOMAIN_COLORS["SUBSURFACE"] ==
-            config.COLOR_CONTACT_UBOOT)
-    assert (stations_view.OPZ_DOMAIN_COLORS["UNDERWATER_WEAPON"] ==
-            config.COLOR_CONTACT_MISSILE)
+    assert stations_view.OPZ_DOMAIN_COLORS["SUBSURFACE"] == "COLOR_CONTACT_UBOOT"
+    assert stations_view.OPZ_DOMAIN_COLORS["UNDERWATER_WEAPON"] == "COLOR_CONTACT_MISSILE"
     # W2: sub vs. inbound weapon are different threats and must not render
     # in near-identical reds (COLOR_CONTACT_UBOOT vs. the old COLOR_DANGER).
     assert (stations_view.OPZ_DOMAIN_COLORS["SUBSURFACE"]

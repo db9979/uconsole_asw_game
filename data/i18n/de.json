@@ -2637,7 +2637,7 @@
   "help.control.engine": "Motorenbefehl (Telegraph)",
   "feed.heading": "EREIGNIS-FEED",
   "feed.overlay.title": "EREIGNISLOG ({shown} von {total} Zeilen)",
-  "feed.overlay.hint": "Mausrad: ältere Einträge. F11 schließt; die Station bleibt bedienbar.",
+  "feed.overlay.hint": "Mausrad: ältere Einträge. F11 oder Kreuz schließt; Stationstasten bleiben aktiv.",
   "ticker.hint": "F11 LOG",
   "hint.bridge": "Links/Rechts Kurs | Auf/Ab Telegraph | C/V Direkt | Q/E Zoom | K Follow",
   "hint.sonar": "Peilung Links/Rechts | Kontakt Auf/Ab | Shift+A Ping | Y TAS | M Ziel",

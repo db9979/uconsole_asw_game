@@ -110,7 +110,8 @@ def test_wav_of_every_common_layout_decodes_to_mono():
 
 
 @pytest.mark.parametrize("raw", [b"", b"ID3...", b"RIFF\0\0\0\0WAVE",
-                                 _wav(TONE, bits=32, fmt_tag=1)])
+                                 _wav(TONE, bits=32, fmt_tag=1)],
+                         ids=["empty", "mp3", "no_chunks", "pcm32"])
 def test_anything_else_is_refused(raw):
     with pytest.raises(ValueError):
         voice.parse_wav(raw)

@@ -16,6 +16,18 @@ beim Hineinzoomen bis auf Zehntel feiner, und die Ansichtsbreite über der
 Karte zeigt Nachkommastellen. Spielstände sind v53; v38 bis v52 laden
 weiterhin.
 
+## 1.3.258
+
+Version 1.3.258 hält die Stimme gleichmäßig und klar. Jede Antwort des
+Ersten Offiziers geht jetzt am Stück an den Sprachdienst statt Satz für
+Satz, und Logmeldungen, die zusammen warten, werden als eine Anfrage
+vorgelesen, denn ein Sprachmodell beginnt jede Anfrage mit leicht anderer
+Stimme. Was schon angekommen ist, spielt als ein Stück, so stolpert die
+Stimme auf einer ausgelasteten uConsole nicht mehr und verschluckt keine
+Silben. Einzelne Buchstaben werden beim Namen genannt: Kontakt K1 heißt
+„Ka eins“, K2 „Ka zwei“, HQ „Ha Ku“, und die Stimme sagt „zwei“ statt „zwo“. Tasten und Spielstände bleiben gleich (v53;
+Spielstände v38 bis v52 laden weiter).
+
 ## 1.3.257
 
 Version 1.3.257 räumt die Kartenbeschriftung auf. Der Name eines Schiffs

@@ -154,15 +154,6 @@ def test_wav_is_decoded_while_it_arrives_without_seams():
     assert np.allclose(pieces, np.interp(positions, np.arange(len(whole)), whole), atol=1e-5)
 
 
-def test_sentences_are_split_so_the_voice_starts_early():
-    text = "Lage ruhig. Kontakt in vier drei eins. " + "Weiter beobachten. " * 30
-    chunks = voice.sentence_chunks(text, limit=4)
-    assert chunks[0] == "Lage ruhig." and len(chunks) <= 4
-    assert " ".join(chunks) == " ".join(text.split())
-    assert voice.sentence_chunks("Ein Satz") == ["Ein Satz"]
-    assert voice.sentence_chunks("") == []
-
-
 def test_clip_is_resampled_to_the_mixer_and_levelled():
     pcm = voice.to_pcm(TONE, 24000, 22050)
     assert pcm.dtype == np.int16 and abs(len(pcm) - 22050) <= 1
@@ -355,6 +346,12 @@ def test_off_by_default_the_crew_keeps_espeak(monkeypatch):
     assert said and game.voice.sent == 0 and not game._voice_queue
 
 
+def test_the_german_voice_says_zwei_and_letters_by_name():
+    game = _game()
+    game._set_preference("language", "de")
+    assert game._voice_text("Kontakt K2 in 270") == "Kontakt Ka zwei in zwei sieben null"
+
+
 def test_executive_officer_speaks_his_answer():
     with FakeLlmServer("Lage ruhig, Kontakt in 431.") as llm, FakeSpeechServer() as speech:
         game = _game()
@@ -376,7 +373,7 @@ def test_executive_officer_speaks_his_answer():
         assert len(speech.requests) == 1
 
 
-def test_a_long_answer_is_said_sentence_by_sentence_in_order():
+def test_a_long_answer_is_one_request_so_the_voice_stays_the_same():
     answer = "Lage ruhig. " + "Kontakt wird weiter beobachtet. " * 12
     with FakeLlmServer(answer) as llm, FakeSpeechServer(delay_s=0.1) as speech:
         game = _game()
@@ -386,14 +383,9 @@ def test_a_long_answer_is_said_sentence_by_sentence_in_order():
         game.configure_llm()
         _voice_on(game, speech)
         assert isinstance(game.advisor_ask("situation"), dict)
-        # The first sentence plays while the rest is still being made.
-        assert _pump(game, lambda: mixer.played)
-        assert speech.requests[0]["input"] == "Lage ruhig."
-        assert len(speech.requests) < 3
-        assert _pump(game, lambda: len(speech.requests) >= 3 and not game._voice_queue
+        assert _pump(game, lambda: mixer.played and not game._voice_queue
                      and game._voice_playing is None)
-        said = " ".join(body["input"] for body in speech.requests)
-        assert said == " ".join(answer.split())
+        assert [body["input"] for body in speech.requests] == [" ".join(answer.split())]
 
 
 def test_crew_reports_use_the_voice_and_fall_back_to_espeak(monkeypatch):

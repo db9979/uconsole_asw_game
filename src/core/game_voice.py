@@ -7,8 +7,9 @@ Requests run on the service's worker; this mixin only collects the pieces
 of audio that have arrived, once per frame (wall time, outside the
 simulation), and queues them on the audio engine's own voice channel, so
 the sonar tone is never cut and a streaming service is heard while it still
-speaks.  A long answer is sent sentence by sentence: the first sentence
-plays while the rest is still being made.
+speaks.  Every report goes to the service in one piece, and log entries
+waiting together are joined into one: a speech model starts each request
+afresh, so a new request mid-answer audibly changes the speaker's tone.
 The local side's log entries (the event feed, F11) are read aloud too,
 behind the officer: each station of the log can be muted on its own
 (options page 2, page 4 "Log reports", and the F11 log's buttons).  Every
@@ -27,8 +28,9 @@ import time
 import urllib.parse
 from collections import deque
 
+import numpy as np
+
 from src.core import callouts, config
-from src.core.callouts import PREFIX as CALLOUT_PREFIX
 from src.core.i18n import localize, message
 from src.llm import keystore
 from src.llm import voice as voice_model
@@ -53,6 +55,12 @@ def log_group(category) -> str | None:
     """The station of the log a feed category belongs to, or None."""
     group = config.LOG_VOICE_GROUP_OF.get(category, category)
     return group if group in config.LOG_VOICE_GROUPS else None
+
+
+def _sentence(text: str) -> str:
+    """A log entry closed like a sentence, so joined entries keep a pause."""
+    text = text.strip()
+    return text if not text or text[-1] in ".!?…:" else text + "."
 
 
 def _host(url: str) -> str:
@@ -126,25 +134,24 @@ class VoiceMixin:
         if role == "xo" and not self.preferences.tts_xo:
             return False
         text = voice_model.speakable(self._voice_text(text), clean=self.voice.config.clean)
-        queued = False
-        # A log entry or a crew call is said in one piece, like one sentence;
-        # only the officer's longer answers start with their first sentence.
-        chunks = ([text] if role in ("log", "crew") and text
-                  else voice_model.sentence_chunks(text, limit=voice_model.QUEUE_MAX))
-        for chunk in chunks:
-            request = self.voice.say(chunk, self.llm_language(), role)
-            if request is None:
-                break
-            self._voice_queue.append(request)
-            queued = True
-        return queued
+        if not text:
+            return False
+        # One request for the whole report: the model would start every
+        # extra request with a slightly different voice.
+        request = self.voice.say(text, self.llm_language(), role)
+        if request is None:
+            return False
+        self._voice_queue.append(request)
+        return True
 
     def _voice_text(self, text) -> str:
         """Numbers digit by digit in the game's language ("vier drei eins"),
         units and short forms said in full ("Knoten", "Seemeilen")."""
-        digits = [self.tr(f"{CALLOUT_PREFIX}digit_{digit}") for digit in range(10)]
+        digits = [self.tr(f"voice.digit_{digit}") for digit in range(10)]
         # Units and short forms in full first ("12 kn" -> "12 Knoten").
         words = {name: self.tr(f"voice.word.{name}") for name in voice_model.WORD_NAMES}
+        words.update((f"letter_{letter}", self.tr(f"voice.letter.{letter.lower()}"))
+                     for letter in voice_model.LETTERS)
         text = voice_model.spoken_words(text, words)
         return voice_model.spell_digits(text, digits, self.tr("voice.digit_point"))
 
@@ -217,6 +224,14 @@ class VoiceMixin:
     def _feed_voice(self, request) -> None:
         """Queue the pieces that have arrived behind the one playing."""
         pieces = request.pieces
+        if len(pieces) > 1:
+            # Everything that has arrived plays as one sound: a frame that
+            # comes late (the uConsole under load) then never finds the
+            # channel empty between two short pieces, which made the voice
+            # stumble and drop syllables.
+            joined = np.concatenate(list(pieces))
+            pieces.clear()
+            pieces.append(joined)
         while pieces:
             if not self.audio.voice_busy():
                 played = self.audio.play_voice(pieces[0])
@@ -311,7 +326,16 @@ class VoiceMixin:
         if playing is not None and playing.role == "log":
             in_flight += 1
         while backlog and in_flight < LOG_IN_FLIGHT:
-            if self.voice_say(backlog.popleft(), "log"):
+            # The entries waiting together go as one request (one even
+            # voice), up to the length one request may have.
+            text = _sentence(backlog.popleft())
+            while backlog:
+                joined = text + " " + _sentence(backlog[0])
+                if len(self._voice_text(joined)) > voice_model.MAX_INPUT_CHARS:
+                    break               # spoken in full, never cut
+                text = joined
+                backlog.popleft()
+            if self.voice_say(text, "log"):
                 in_flight += 1
 
     # -- settings -----------------------------------------------------------------

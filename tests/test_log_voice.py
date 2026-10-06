@@ -254,7 +254,7 @@ def test_the_submarine_reads_its_own_log_not_the_frigates():
         assert game.log_voice_count("funk") == 1
 
 
-def test_a_burst_is_read_in_order_two_at_a_time_and_counts_all():
+def test_a_burst_is_read_in_order_joined_and_counts_all():
     game = _game()
     _Mixer(game)
     game.preferences = dataclasses.replace(game.preferences, tts_enabled=True,
@@ -268,22 +268,29 @@ def test_a_burst_is_read_in_order_two_at_a_time_and_counts_all():
         return True
     game.voice_say = say
     game._pump_speech()
-    for number in range(10):
-        _log(game, "waffen", f"Weapons entry {number}.")
+    for number in range(40):
+        _log(game, "waffen", f"Weapons entry {number}")
     game._pump_log_voice()
     from src.core.game_voice import LOG_IN_FLIGHT
     assert len(queued) == LOG_IN_FLIGHT
-    for _round in range(10):
+    for _round in range(40):
         game._voice_queue.clear()           # said: the next ones go out
         game._pump_log_voice()
-    assert queued == [f"Weapons entry {n}." for n in range(10)]
-    assert game.log_voice_count("waffen") == 10
+    # Waiting entries share a request, each closed like a sentence, all in
+    # order, and no request is longer than the service takes.
+    assert len(queued) < 40
+    assert " ".join(queued) == " ".join(f"Weapons entry {n}." for n in range(40))
+    assert all(len(game._voice_text(text)) <= voice.MAX_INPUT_CHARS for text in queued)
+    assert game.log_voice_count("waffen") == 40
 
 
 def _words(language):
     catalog = json.loads((__import__("pathlib").Path("data/i18n") / f"{language}.json")
                          .read_text(encoding="utf-8"))
-    return {name: catalog[f"voice.word.{name}"] for name in voice.WORD_NAMES}
+    words = {name: catalog[f"voice.word.{name}"] for name in voice.WORD_NAMES}
+    words.update((f"letter_{letter}", catalog[f"voice.letter.{letter.lower()}"])
+                 for letter in voice.LETTERS)
+    return words
 
 
 @pytest.mark.parametrize("language,text,said", [
@@ -326,11 +333,14 @@ def test_a_long_log_entry_is_one_request():
      "Torpedo Aufgeschaltet 163 Grad, Einschlag etwa 45 Sekunden"),
     ("de", "Peilung 0–360° | Tiefe 45 m / Wasser 120 m",
      "Peilung 0 bis 360 Grad, Tiefe 45 Meter, Wasser 120 Meter"),
-    ("de", "Um 14:35 meldet die OPZ „Fregatte“ & HQ", "Um 14 35 meldet die O P Z Fregatte und H Q"),
-    ("en", "S3 brg 219±4° @12/34, U-212", "S3 bearing 219 plus or minus 4 degrees at 12, 34, U 212"),
+    ("de", "Um 14:35 meldet die OPZ „Fregatte“ & HQ", "Um 14 35 meldet die O Pe Zett Fregatte und Ha Ku"),
+    ("en", "S3 brg 219±4° @12/34, U-212", "S 3 bearing 219 plus or minus 4 degrees at 12, 34, U 212"),
     ("en", "Don’t panic… [check] NATO", "Don’t panic. check Nato"),
     ("de", "Aufklärung: 1x Altmetall, 2 × Welle", "Aufklärung: 1 mal Altmetall, 2 mal Welle"),
-    ("de", "CIWS: ASM abgefangen", "C I W S: A S M abgefangen"),
+    ("de", "CIWS: ASM abgefangen", "Ze I We Es: A Es Em abgefangen"),
+    ("de", "Kontakt K1 neu, K2 verloren", "Kontakt Ka 1 neu, Ka 2 verloren"),
+    ("de", "U-Boot getaucht", "U-Boot getaucht"),
+    ("en", "Contact K1, HQ", "Contact K 1, H Q"),
 ])
 def test_temperatures_signs_and_symbols_are_said_as_words(language, text, said):
     assert voice.spoken_words(text, _words(language)) == said
@@ -340,3 +350,21 @@ def test_a_spelled_number_keeps_its_brackets_tight():
     digits = ["null", "eins", "zwo", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun"]
     assert voice.spell_digits("3 Verwundete (bisher 3): leer [7]", digits, "Komma") \
         == "drei Verwundete (bisher drei): leer [sieben]"
+
+
+def test_pieces_that_have_arrived_play_as_one_sound():
+    game = _game()
+    mixer = _Mixer(game)
+    request = voice.VoiceRequest("log", "Joined.", "en")
+    for _ in range(3):
+        request.pieces.append(np.ones(100, np.int16))
+    game._feed_voice(request)
+    assert not request.pieces
+    assert [len(pcm) for pcm in mixer.played] == [300]
+
+
+def test_spoken_letters_never_rename_a_key_chip():
+    from src.core.i18n import Translator
+    german = Translator("de")
+    for key in ("Z", "A", "D", "R", "2", "minus"):
+        assert german.display(key) == key

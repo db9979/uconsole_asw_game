@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.226
+
+Release 1.3.226 makes the controls follow one set of rules. Ctrl+Enter is
+now the only key that fires a weapon: at Weapons, D, A, Z, R and Shift+R
+only choose the weapon, which is lit and named in the fire line. Every key
+a station page can use stands in its key bar as a blue chip that presses
+the key when clicked, with a + chip paging through the rest (also through
+all sonar keys on both sides). Long lists scroll with the mouse wheel,
+overlays close with a close box, and hover notes explain more lamps. Own
+units wear the proper NATO frame on every chart, high contrast reaches
+every drawing, and German texts use German key names and "sm". Saves are
+v53; v38 to v52 saves still load.
+
 ## 1.3.223
 
 Release 1.3.223 makes play on the uConsole smoother. Sonar sound tables

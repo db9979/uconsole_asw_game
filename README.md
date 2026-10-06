@@ -10,18 +10,18 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.223**
+Current release: **1.3.226**
 
-Release 1.3.223 makes play on the uConsole smoother. Sonar sound tables
-are prepared ahead in the background, so starting a mission or entering a
-new sea area no longer stutters, and the sonar, waterfall, ELOKA list and
-event feed draw with less effort. Saving to a slot is written in the
-background and no longer freezes the picture; the save menu closes only
-once the file is safely on disk. New automatic economy: if the picture
-stays below 14 frames a second for 5 seconds, the game switches to the
-Economy graphics level by itself and shows an amber ECO lamp in the top
-bar (Options, page 2, Graphics switches it off). The simulation itself is
-unchanged. Keys are unchanged. Saves are v53; v38 to v52 saves still load.
+Release 1.3.226 makes the controls follow one set of rules. Ctrl+Enter is
+now the only key that fires a weapon: at Weapons, D, A, Z, R and Shift+R
+only choose the weapon, which is lit and named in the fire line. Every key
+a station page can use stands in its key bar as a blue chip that presses
+the key when clicked, with a + chip paging through the rest (also through
+all sonar keys on both sides). Long lists scroll with the mouse wheel,
+overlays close with a close box, and hover notes explain more lamps. Own
+units wear the proper NATO frame on every chart, high contrast reaches
+every drawing, and German texts use German key names and "sm". Saves are
+v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

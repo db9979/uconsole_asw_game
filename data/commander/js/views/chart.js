@@ -280,18 +280,17 @@ function drawChartFrame() {
   }
   if (ownPosition) {
     addMapInfo(S.chartInfo, ox, oy, "own", own);
-    ctx.save();
-    ctx.translate(ox, oy);
-    ctx.strokeStyle = palette().accent; ctx.fillStyle = palette().raised; ctx.lineWidth = 2;
-    ctx.beginPath();
+    // The own frigate: APP-6 friendly surface frame with its heading line.
+    const ownColor = colors.FRIEND || palette().accent;
+    drawSymbol(ox, oy, "SURFACE", ownColor, 9, "FRIEND");
     if (finite(own.course)) {
+      ctx.save();
+      ctx.translate(ox, oy);
       ctx.rotate(own.course * Math.PI / 180);
-      ctx.moveTo(0, -13); ctx.lineTo(7, 9); ctx.lineTo(-7, 9); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(0, -35); ctx.stroke();
-    } else {
-      ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = ownColor; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(0, -35); ctx.stroke();
+      ctx.restore();
     }
-    ctx.restore();
     ctx.fillStyle = palette().accent; placeText(ctx, labels, t("ownship"), ox + 15, oy + 18);
   }
   const helo = own.helo;

@@ -7,7 +7,7 @@ import numpy as np
 import pygame
 
 from src.core import config, status_tips
-from src.core.i18n import display_message, display_value, localized, localize
+from src.core.i18n import nm_unit, display_message, display_value, localized, localize
 from src.sonar import analysis_tools, class_library, tma_operator
 from src.ui import layout
 from src.ui import observations
@@ -715,7 +715,7 @@ def _draw_tma_dot_stack(game, contact, points, plot, times, start, end):
                             plot.w, row_h - 4)
         pygame.draw.line(screen, GRID, (strip.x, strip.centery),
                          (strip.right - 1, strip.centery))
-        _text(screen, f"{range_nm:.1f} NM", (strip.x + 4, strip.y, 90, 16), DIM, 11)
+        _text(screen, f"{range_nm:.1f} {nm_unit()}", (strip.x + 4, strip.y, 90, 16), DIM, 11)
         for point_index, residual in enumerate(residuals):
             x = plot.x + round((float(times[point_index]) - start) / max(1e-9, end - start)
                                * (plot.w - 1))
@@ -1172,6 +1172,8 @@ def _draw_contacts(game, rect):
             from src.ui import console
             console.led(screen, (rect.x + 17, y + 12), 5,
                         "on" if age < 10 else "caution" if age < 60 else "off")
+            pointer.add_tip((rect.x + 10, y + 4, 16, 16), lambda age=age: status_tips.payload(
+                status_tips.contact_age(age)))
             _text(screen, observations.contact_display_id(game, contact),
                   (rect.x + 28, y + 3, rect.w - 130, 19), TEXT, 15)
             _text(screen, message("sonar.line.bearing_value",
@@ -1271,7 +1273,8 @@ def draw_sonar_view(game, tr=None) -> None:
             _draw_echo_list(game, contacts)
         else:
             _draw_contacts(game, contacts)
-        from src.ui.stations.common import _shortcut_footer
+        from src.ui.stations.common import _shortcut_footer, _FOOTER_MORE
+        from src.ui.sonar_hit import SONAR_FOOTER_PAGE
         for rect, specs in geometry["contact_keys"]:
             # Contact orders by click: each chip presses its key.
             _shortcut_footer(screen, rect, specs)
@@ -1285,3 +1288,14 @@ def draw_sonar_view(game, tr=None) -> None:
             pygame.draw.rect(screen, PANEL, rect)
             pygame.draw.line(screen, GRID, rect.topright, rect.bottomright)
             layout.command_segment(screen, rect, *segment["text"], size=11)
+        if geometry["footer_keys"] is not None:
+            # The rest of the sonar keys, one chip each (a click presses it).
+            _shortcut_footer(screen, *geometry["footer_keys"])
+        more = geometry["footer_more"]
+        layout.record_geometry("sonar-more", more, "sonar:footer:more")
+        layout.command_segment(screen, more, "+", _FOOTER_MORE, size=11, center=True)
+        side, count = geometry["footer_side"], geometry["footer_pages"]
+
+        def next_page(_pos=None, side=side, count=count):
+            SONAR_FOOTER_PAGE[side] = (SONAR_FOOTER_PAGE.get(side, 0) % count + 1) % count
+        pointer.add_action(more, next_page)

@@ -260,11 +260,11 @@ def test_help_all_wrapped_lines_reachable_in_all_categories(game, language, larg
 
 
 @pytest.mark.parametrize("station,method,letter,fires", [
-    # Ctrl+Enter is the one fire key; T and E no longer fire (E zooms, T
-    # enters the torpedo depth), D stays the air-dropped torpedo.
+    # Ctrl+Enter is the one fire key; T, E and D never fire (E zooms, T
+    # enters the torpedo depth, D no longer drops the air torpedo).
     (Station.WEAPONS, "launch_torpedo", pygame.K_t, False),
     (Station.OPZ, "launch_essm", pygame.K_e, False),
-    (Station.HELICOPTER, "launch_helo_torpedo", pygame.K_d, True),
+    (Station.HELICOPTER, "launch_helo_torpedo", pygame.K_d, False),
 ])
 def test_ctrl_enter_is_the_fire_key_and_guards(game, monkeypatch,
                                                station, method, letter, fires):
@@ -288,7 +288,7 @@ def test_primary_weapon_help_names_ctrl_enter_and_no_catalog_keys():
     for station in (Station.WEAPONS, Station.OPZ, Station.HELICOPTER):
         for lang in ("en", "de"):
             _intro, keys, _notes, _tactics = get_help(station, Translator(lang).t)
-            assert any("Ctrl+Enter" in key or "Strg+Enter" in key for key, _action in keys)
+            assert any("Ctrl+Enter" in key or "Strg+Eingabe" in key for key, _action in keys)
             assert not any(text.startswith(("help.", "control."))
                            for row in keys for text in row)
 

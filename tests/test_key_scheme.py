@@ -166,11 +166,67 @@ def test_shift_a_and_ctrl_r_at_weapons_never_fire(monkeypatch):
     _key(game, pygame.K_r, pygame.KMOD_CTRL)
     _key(game, pygame.K_z, pygame.KMOD_CTRL)
     assert fired == []
-    _key(game, pygame.K_a)
-    _key(game, pygame.K_r)
-    _key(game, pygame.K_r, pygame.KMOD_SHIFT)
-    _key(game, pygame.K_z)
+    # Ctrl+Enter is the only fire key: A/R/Shift+R/Z only choose the weapon.
+    for count, (key, mod) in enumerate(((pygame.K_a, 0), (pygame.K_r, 0),
+                                        (pygame.K_r, pygame.KMOD_SHIFT), (pygame.K_z, 0))):
+        _key(game, key, mod)
+        assert len(fired) == count
+        _key(game, pygame.K_RETURN, pygame.KMOD_CTRL)
     assert fired == ["fire_own_asroc", "fire_rbu", "fire_rbu_defence", "drop_depth_charges"]
+
+
+def test_weapon_keys_choose_and_ctrl_enter_fires_the_choice(monkeypatch):
+    game = _frigate()
+    game.station = Station.WEAPONS
+    fired = []
+    for name in ("launch_torpedo", "launch_helo_torpedo", "fire_own_asroc"):
+        monkeypatch.setattr(game, name, lambda name=name: fired.append(name))
+    assert game.weapon_select == "torpedo"
+    _key(game, pygame.K_d)
+    assert game.weapon_select == "air_torpedo" and fired == []
+    _key(game, pygame.K_RETURN, pygame.KMOD_CTRL)
+    assert fired == ["launch_helo_torpedo"]
+    _key(game, pygame.K_d)                         # the same key again: torpedo
+    assert game.weapon_select == "torpedo"
+    _key(game, pygame.K_RETURN)                    # Enter alone never fires
+    _key(game, pygame.K_RETURN, pygame.KMOD_CTRL)
+    assert fired == ["launch_helo_torpedo", "launch_torpedo"]
+    _key(game, pygame.K_a)
+    _key(game, pygame.K_RETURN, pygame.KMOD_CTRL)
+    assert fired[-1] == "fire_own_asroc"
+
+
+def test_helicopter_d_never_drops_and_opz_d_only_chooses(monkeypatch):
+    game = _frigate()
+    dropped = []
+    monkeypatch.setattr(game, "launch_helo_torpedo", lambda: dropped.append("helo"))
+    monkeypatch.setattr(game, "mpa_attack", lambda: dropped.append("mpa") or True)
+    monkeypatch.setattr(game, "launch_essm", lambda: dropped.append("essm"))
+    game.station = Station.HELICOPTER
+    for page in range(len(STATION_PAGES[Station.HELICOPTER])):
+        game.station_page = page
+        _key(game, pygame.K_d)
+    assert dropped == []
+    _key(game, pygame.K_RETURN, pygame.KMOD_CTRL)
+    assert dropped == ["helo"]
+    game.station = Station.OPZ
+    game.station_page = 2
+    _key(game, pygame.K_d)
+    assert dropped == ["helo"] and game.opz_weapon == "mpa_torpedo"
+    _key(game, pygame.K_RETURN, pygame.KMOD_CTRL)
+    assert dropped == ["helo", "mpa"]
+    _key(game, pygame.K_d)                         # back to ESSM
+    _key(game, pygame.K_RETURN, pygame.KMOD_CTRL)
+    assert dropped == ["helo", "mpa", "essm"]
+
+
+def test_weapon_choice_is_display_state_and_resets_on_load():
+    game = _frigate()
+    game.station = Station.WEAPONS
+    _key(game, pygame.K_z)
+    assert game.weapon_select == "depth_charges"
+    game.reset(game.seed)
+    assert game.weapon_select == "torpedo" and game.opz_weapon == "essm"
 
 
 def test_submarine_shift_a_never_toggles_silent_running():

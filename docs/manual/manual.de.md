@@ -46,9 +46,9 @@ Das U-Boot hat sieben Stationen auf den Tasten `1`-`7` (siehe Kapitel U-Boot). `
 
 ### Bedienung in 60 Sekunden
 
-- **Stationen:** `1`-`9` (U-Boot `1`-`7`), `Tab`/`Shift+Tab` oder ein Klick auf einen Reiter in der Kopfzeile.
+- **Stationen:** `1`-`9` (U-Boot `1`-`7`), `Tab`/`Umschalt+Tab` oder ein Klick auf einen Reiter in der Kopfzeile.
 - **Seiten:** die Nummer der Station nochmals drücken, `Bild Auf`/`Bild Ab` oder einen Seitenreiter anklicken.
-- **Feuern:** `Strg+Enter` feuert Torpedos und Flugkörper. `Enter` allein feuert nie.
+- **Feuern:** `Strg+Eingabe` feuert Torpedos und Flugkörper. `Eingabe` allein feuert nie.
 - **Hilfe:** `F1` (oder `?`) listet alle Tasten der aktuellen Station, ihren Standardablauf und dieses Handbuch. `Esc` bricht eine Eingabe ab oder öffnet den Beenden-Dialog.
 - **Trackball:** horizontal steuert er auf der Brücke, vertikal schaltet er sonst die Hauptauswahl der Station.
 - **Maus:** Ein Klick auf eine Taste in der Tastenleiste der Station, eine Lampe, einen Hinweis, einen Reiter, eine Scheibe oder eine Listenzeile tut genau das, was seine Taste tut, mit denselben Prüfungen. Das Menü-Symbol in der Kopfzeile öffnet das Spielmenü (Hilfe, Optionen, Speichern, Laden, Beenden). Auf Karten zoomt das Mausrad, Ziehen verschiebt (Einzelheiten im Kapitel Werkzeuge).
@@ -63,7 +63,7 @@ Globale Tasten (alle Stationen):
 | `9` | Elektronische Kampfführung / ESM |
 | `Nummer der aktiven Station` | Erneut drücken, um die Seite dieser Station weiterzuschalten |
 | `Bild Auf / Ab` | Vorige / nächste Seite der Station (jede Station mit mehreren Seiten) |
-| `Strg+Enter` | Torpedo oder Flugkörper abfeuern (Enter allein feuert nie; an der Waffenstation haben ASROC A, Wasserbomben Z, Raketenwerfer R und Lufttorpedo D eigene Tasten) |
+| `Strg+Eingabe` | Gewählte Waffe abfeuern: die einzige Feuertaste (Eingabe allein feuert nie; an der Waffenstation wählen D, A, Z, R und Umschalt+R nur Lufttorpedo, ASROC, Wasserbomben und Raketen) |
 | `Pfeiltasten` | Stationsbezogene Auswahl oder Einstellung |
 | `+ / -` | Telegraph (an jeder Station verfügbar) |
 | `F1 / ?` | Hilfe (diese Anzeige) |
@@ -87,7 +87,7 @@ Globale Tasten (alle Stationen):
 | `Rechtsklick` | Abbrechen wie Esc in Menüs und Eingaben |
 | `Menü-Symbol (Kopfzeile)` | Spielmenü per Maus: Hilfe, Optionen, Speichern/Laden, Wetter, Plot, Autocrew, Beenden und mehr; jedes Overlay schließt mit seinem Schließfeld (wie Esc) |
 | `P` | Plotmodus auf Brücken-/Waffen-/Helo-Karte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (für alle Stationen, wird gespeichert) |
-| `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
+| `M R B C D · Eingabe · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Eingabe oder Klick setzen (Pfeile bewegen den Cursor, Umschalt schneller), nächstes Objekt löschen (Umschalt: alle) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
 | `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×, Pos1/Ende Anfang/Ende, B Bericht des Sprachmodells, wenn eingeschaltet) |
@@ -98,25 +98,25 @@ Globale Tasten (alle Stationen):
 
 *Szenarioauswahl, nach Seite sortiert*
 
-1. Hauptmenü: **Neuer Einsatz** mit den Pfeiltasten und `Enter` wählen, die Fregatte mit `1` und `Enter`, dann Szenario 1 (Patrouille) mit `1` und `Enter`; die Einweisung zeigt Wetter und Tageszeit, `Enter` startet.
+1. Hauptmenü: **Neuer Einsatz** mit den Pfeiltasten und `Eingabe` wählen, die Fregatte mit `1` und `Eingabe`, dann Szenario 1 (Patrouille) mit `1` und `Eingabe`; die Einweisung zeigt Wetter und Tageszeit, `Eingabe` startet.
 2. Brücke (`1`): nochmals `1` für die Missionsseite, Auftrag und Zeitlimit lesen.
 3. Maschine (`7`): SLOW oder 6-8 kn wählen. Sonar (`2`): Schleppsonar mit `Y` ausbringen.
-4. Sonar-Seite BROADBAND: nach einer hellen senkrechten Spur suchen; mit den Pfeiltasten wählen und mit `Enter` verfolgen.
+4. Sonar-Seite BROADBAND: nach einer hellen senkrechten Spur suchen; mit den Pfeiltasten wählen und mit `Eingabe` verfolgen.
 5. Mit `C` klassifizieren, mit `T` TMA einschalten, dann auf der Brücke 30-60 Grad drehen und den neuen Schlag einige Minuten halten.
 6. Sobald TMA oder Ping eine Entfernung liefern: Kontakt an die OPZ freigeben (`G`) und als Ziel setzen (`M`).
-7. Waffen (`3`): Torpedotiefe auf die gepingte Zieltiefe stellen, mit `Strg+Enter` feuern.
+7. Waffen (`3`): Torpedotiefe auf die gepingte Zieltiefe stellen, mit `Strg+Eingabe` feuern.
 8. Sonar auf anlaufende Torpedos beobachten; kommt einer, mit 24 kn laufen (nicht FLANK: das Schleppkabel des Nixie reißt über 25 kn), abdrehen und Nixie ausbringen (`V` in der Waffenzentrale).
 
 ### Die erste Tauchfahrt (U-Boot)
 
-Am schnellsten kommen Sie mit Lektion 5 der Ausbildung ins U-Boot: Hauptmenü **Ausbildung**, Lektion 5 (Horchen und unter die Schicht) mit `5` oder den Pfeiltasten, `Enter`. Die uConsole spielt für diese Lektion das U-Boot, und ein Hinweisbanner wartet auf jeden Schritt:
+Am schnellsten kommen Sie mit Lektion 5 der Ausbildung ins U-Boot: Hauptmenü **Ausbildung**, Lektion 5 (Horchen und unter die Schicht) mit `5` oder den Pfeiltasten, `Eingabe`. Die uConsole spielt für diese Lektion das U-Boot, und ein Hinweisbanner wartet auf jeden Schritt:
 
 1. Sonarraum (`2`): warten, bis die Fregatte in der Kontaktliste erscheint.
 2. Den Kontakt mit `Auf`/`Ab` wählen und `C` drücken, bis er Kampfschiff heißt.
 3. Die Schicht mit dem Bathythermografen messen (`E`).
 4. Führung (`1`), dann `J`: Das U-Boot taucht unter die gemessene Schicht, wo das Bugsonar der Fregatte es schlecht hört.
 
-Lektion 6 übt das Ausweichen vor einer pingenden Fregatte (`I` auf der Seite Bedrohung). Danach starten Sie **Neuer Einsatz**, das U-Boot mit `2` und `Enter`, dann Szenario 1 (Durchbruch) mit `1` und `Enter`: Erreichen Sie das auf der Karte mit ZIEL markierte Zielgebiet. Fahren Sie langsam (`-` am Telegrafen oder `A` für Schleichfahrt), bleiben Sie unter der Schicht, halten Sie den Mast nahe der Fregatte unten und weichen Sie mit `I` aus, wenn ein Ping- oder Torpedoalarm kommt.
+Lektion 6 übt das Ausweichen vor einer pingenden Fregatte (`I` auf der Seite Bedrohung). Danach starten Sie **Neuer Einsatz**, das U-Boot mit `2` und `Eingabe`, dann Szenario 1 (Durchbruch) mit `1` und `Eingabe`: Erreichen Sie das auf der Karte mit ZIEL markierte Zielgebiet. Fahren Sie langsam (`-` am Telegrafen oder `A` für Schleichfahrt), bleiben Sie unter der Schicht, halten Sie den Mast nahe der Fregatte unten und weichen Sie mit `I` aus, wenn ein Ping- oder Torpedoalarm kommt.
 
 ### Unterwasserakustik in fünf Minuten
 
@@ -145,7 +145,7 @@ Lektion 6 übt das Ausweichen vor einer pingenden Fregatte (`I` auf der Seite Be
 
 ## Hauptmenü und Spielstart
 
-Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wählen einen Eintrag, `Enter` öffnet ihn, `Esc` fragt, ob das Spiel beendet werden soll. Jede Seite, die von dort aus erreicht wird, führt mit `Esc` zurück.
+Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wählen einen Eintrag, `Eingabe` öffnet ihn, `Esc` fragt, ob das Spiel beendet werden soll. Jede Seite, die von dort aus erreicht wird, führt mit `Esc` zurück.
 
 ![Hauptmenü](figures/de-main-menu.png)
 
@@ -173,15 +173,15 @@ Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wäh
 
 ### Erster Start
 
-Gibt es noch keine `~/.u-jagd/settings.json`, folgt auf den Startbildschirm eine Willkommensseite: „Was möchtest du spielen?“ `1` Fregatte (das Ausbildungsmenü mit Lektion 1 vorgewählt), `2` U-Boot (das Ausbildungsmenü mit Lektion 5, der ersten U-Boot-Lektion, vorgewählt), `3` Remote Crew (öffnet die Mehrspieler-Lobby; `Esc` dort führt ins Hauptmenü), `4` oder `Esc` Hauptmenü. Pfeiltasten und `Enter` wählen ebenfalls. Was Sie auch wählen, die Seite wird in den Einstellungen vermerkt und nicht wieder gezeigt.
+Gibt es noch keine `~/.u-jagd/settings.json`, folgt auf den Startbildschirm eine Willkommensseite: „Was möchtest du spielen?“ `1` Fregatte (das Ausbildungsmenü mit Lektion 1 vorgewählt), `2` U-Boot (das Ausbildungsmenü mit Lektion 5, der ersten U-Boot-Lektion, vorgewählt), `3` Remote Crew (öffnet die Mehrspieler-Lobby; `Esc` dort führt ins Hauptmenü), `4` oder `Esc` Hauptmenü. Pfeiltasten und `Eingabe` wählen ebenfalls. Was Sie auch wählen, die Seite wird in den Einstellungen vermerkt und nicht wieder gezeigt.
 
 ### Neuer Einsatz: Seite und Szenario
 
-Ein neues Spiel fragt zuerst nach der Seite (`1` Fregatte, `2` U-Boot) und listet dann nur deren Szenarien: jede Seite zählt ab `1`: `1`-`9` und `0` (das zehnte; das elfte und zwölfte mit den Pfeiltasten) auf jeder Seite (Fregatte 4 = Zufall mit eigener Schwierigkeit) (siehe Kapitel Szenarien und Missionen), `Esc` zurück zur Seitenwahl; `W` Weltmodus, `R` neuer Seed, `F` Vollbild (diese drei nur im Hauptmenü und auf den Szenarioseiten: Liste, Schwierigkeit, Einsatzbesprechung), `Enter` Start.
+Ein neues Spiel fragt zuerst nach der Seite (`1` Fregatte, `2` U-Boot) und listet dann nur deren Szenarien: jede Seite zählt ab `1`: `1`-`9` und `0` (das zehnte; das elfte und zwölfte mit den Pfeiltasten) auf jeder Seite (Fregatte 4 = Zufall mit eigener Schwierigkeit) (siehe Kapitel Szenarien und Missionen), `Esc` zurück zur Seitenwahl; `W` Weltmodus, `R` neuer Seed, `F` Vollbild (diese drei nur im Hauptmenü und auf den Szenarioseiten: Liste, Schwierigkeit, Einsatzbesprechung), `Eingabe` Start.
 
 Die Liste zeigt neun Zeilen auf einmal und rollt mit der Auswahl (`Auf`/`Ab`, Mausrad, `Bild auf`/`Bild ab` eine Seite, `Pos1`/`Ende` erste und letzte Zeile; bei festem realem Sektor wählen `[`/`]` den Sektor); ein Balken am rechten Rand zeigt die Lage in der Liste, darunter steht der Anfang der Einsatzbesprechung des gewählten Szenarios. Die eigenen Missionen und die Schwierigkeitsliste der freien Jagd rollen genauso.
 
-**Eigene Missionen:** Das Startmenü zeigt nach den Szenarien der gewählten Seite die Zeile „Eigene Missionen“ (`O` oder `Enter` auf der Zeile). Sie öffnet die Missionen des Missionseditors für diese Seite; `Enter` startet eine. Die Mehrspieler-Lobby bietet sie in ihrer Missionszeile nach den Szenarien an, der Solo-Browser im Dialog „Neues Spiel“ und unter „Eigene Missionen“ in der Gastgeberleiste (siehe Kapitel Missions- und Einheiteneditor).
+**Eigene Missionen:** Das Startmenü zeigt nach den Szenarien der gewählten Seite die Zeile „Eigene Missionen“ (`O` oder `Eingabe` auf der Zeile). Sie öffnet die Missionen des Missionseditors für diese Seite; `Eingabe` startet eine. Die Mehrspieler-Lobby bietet sie in ihrer Missionszeile nach den Szenarien an, der Solo-Browser im Dialog „Neues Spiel“ und unter „Eigene Missionen“ in der Gastgeberleiste (siehe Kapitel Missions- und Einheiteneditor).
 
 ### Einweisung: Wetter, Uhrzeit und Länge
 
@@ -201,7 +201,7 @@ Jeder Kurzeinsatz wurde mit KI-gegen-KI-Partien so eingestellt, dass beide Seite
 
 ### Ausbildung
 
-**Ausbildung** bietet sechs geführte Lektionen. Jede ist eine kurze Mission mit einem Hinweisbanner, das auf Sie wartet; `Auf`/`Ab` oder `1`-`6` wählen, `Enter` startet:
+**Ausbildung** bietet sechs geführte Lektionen. Jede ist eine kurze Mission mit einem Hinweisbanner, das auf Sie wartet; `Auf`/`Ab` oder `1`-`6` wählen, `Eingabe` startet:
 
 | Lektion | Seite | Was Sie üben |
 |---|---|---|
@@ -239,7 +239,7 @@ Schlägt die Prüfung fehl, steht an derselben Stelle, dass und warum (keine Ver
 
 ### Fehler melden
 
-**Fehler melden** im Hauptmenü schreibt `~/.u-jagd/bug-report.txt` (Version, Plattform und die neuesten Zeilen aus `~/.u-jagd/crash.log`, Ihr Benutzername aus Pfaden entfernt) und zeigt einen QR-Code, der am Handy ein neues GitHub-Issue mit Version und Plattform öffnet; dort die Datei anhängen. `Enter` öffnet das Issue mit Log in einem Browser, falls das Gerät einen hat, `Esc` geht zurück. Nach einem abgestürzten Start wählt das Hauptmenü diesen Eintrag vor und weist darauf hin. Gesendet wird erst, wenn Sie das Issue mit Ihrem eigenen GitHub-Konto abschicken. Das Einstellungsmenü im Browser hat denselben Link.
+**Fehler melden** im Hauptmenü schreibt `~/.u-jagd/bug-report.txt` (Version, Plattform und die neuesten Zeilen aus `~/.u-jagd/crash.log`, Ihr Benutzername aus Pfaden entfernt) und zeigt einen QR-Code, der am Handy ein neues GitHub-Issue mit Version und Plattform öffnet; dort die Datei anhängen. `Eingabe` öffnet das Issue mit Log in einem Browser, falls das Gerät einen hat, `Esc` geht zurück. Nach einem abgestürzten Start wählt das Hauptmenü diesen Eintrag vor und weist darauf hin. Gesendet wird erst, wenn Sie das Issue mit Ihrem eigenen GitHub-Konto abschicken. Das Einstellungsmenü im Browser hat denselben Link.
 
 ### Spielstart
 
@@ -277,7 +277,7 @@ Menütasten (Hauptmenü und seine Seiten; `F1` in einem Menü zeigt sie):
 
 ## Optionen
 
-`F10` (oder **Optionen** im Hauptmenü oder im Spielmenü) öffnet die Optionen. `Auf`/`Ab` wählen eine Zeile, `Enter`/`Links`/`Rechts` ändern sie, `Bild Auf`/`Bild Ab` oder `Tab` wechseln zwischen den beiden Seiten und `Esc` führt zurück. Die Einstellungen liegen in `~/.u-jagd/settings.json`; eine laufende Mission läuft hinter den Optionen weiter.
+`F10` (oder **Optionen** im Hauptmenü oder im Spielmenü) öffnet die Optionen. `Auf`/`Ab` wählen eine Zeile, `Eingabe`/`Links`/`Rechts` ändern sie, `Bild Auf`/`Bild Ab` oder `Tab` wechseln zwischen den beiden Seiten und `Esc` führt zurück. Die Einstellungen liegen in `~/.u-jagd/settings.json`; eine laufende Mission läuft hinter den Optionen weiter.
 
 ![Optionen (F10)](figures/de-options.png)
 
@@ -288,7 +288,7 @@ Menütasten (Hauptmenü und seine Seiten; `F1` in einem Menü zeigt sie):
 | Zeile | Auswahl |
 |---|---|
 | Sprache | Englisch, Deutsch |
-| Vollbild | an, aus (auch `Alt+Enter`) |
+| Vollbild | an, aus (auch `Alt+Eingabe`) |
 | Audio | an, aus |
 | Große Schrift | an, aus |
 | Kurzinfos | an, aus: Erklärungen unter der Maus; ein Klick heftet eine an |
@@ -322,7 +322,7 @@ Die Seite **Echtzeit-Verkehr** holt echte Schiffe (AIS Stream, braucht einen eig
 
 **uConsole spielt:** welche Seite der uConsole spielt, Fregatte (Standard) oder feindliches U-Boot; nur im Hauptmenü, nie gespeichert. Ein neues Spiel fragt ohnehin zuerst danach. Siehe Kapitel U-Boot.
 
-**Grafikstufe** (`Enter`/`Rechts` weiter, `Links` zurück): **Sparsam** skaliert mit einfachen Pixeln, lässt das Radar-Nachleuchten weg und beruhigt den Menühintergrund, um auf der uConsole Rechenzeit zu sparen; **Normal** (Standard der uConsole) zeigt alle Effekte; **Voll** (Standard unter Windows) glättet zusätzlich Peilstriche, Küste und Plot. In einem Fenster oder Vollbild größer als 1280 x 720 skalieren Normal und Voll das Bild scharf: ganzzahlige Faktoren wiederholen Pixel exakt, andere Größen (etwa 1920 x 1080) wiederholen Pixel bis zum nächsten ganzen Faktor und glätten dann herunter, sodass Schrift und dünne Linien gleichmäßig bleiben. Die Stufe ändert nur das Bild, nie die Simulation oder was eine Station anzeigt.
+**Grafikstufe** (`Eingabe`/`Rechts` weiter, `Links` zurück): **Sparsam** skaliert mit einfachen Pixeln, lässt das Radar-Nachleuchten weg und beruhigt den Menühintergrund, um auf der uConsole Rechenzeit zu sparen; **Normal** (Standard der uConsole) zeigt alle Effekte; **Voll** (Standard unter Windows) glättet zusätzlich Peilstriche, Küste und Plot. In einem Fenster oder Vollbild größer als 1280 x 720 skalieren Normal und Voll das Bild scharf: ganzzahlige Faktoren wiederholen Pixel exakt, andere Größen (etwa 1920 x 1080) wiederholen Pixel bis zum nächsten ganzen Faktor und glätten dann herunter, sodass Schrift und dünne Linien gleichmäßig bleiben. Die Stufe ändert nur das Bild, nie die Simulation oder was eine Station anzeigt.
 
 **Automatisch sparsam** (`+ auto Sparsam` hinter Normal oder Voll, der Standard): Bleibt das Bild 5 Sekunden lang unter 14 Bildern pro Sekunde, zeichnet das Spiel von selbst mit Sparsam und zeigt in der oberen Leiste eine gelbe **ECO**-Lampe; der Hinweis über ihr sagt, warum und wie man es abschaltet. Eine erneut gewählte Grafikstufe beendet es; eine Stufe ohne `+ auto` schaltet das automatische Sparen ab. Es beobachtet nur das Bild und ändert nie die Simulation.
 
@@ -462,7 +462,7 @@ Die Remote-Crew-Brücke hat eine Karte „Autopilot-Route“: „Wegpunkte auf d
 | `Backspace` | Autopilot-Route löschen |
 | `Ctrl+B` | Toten Winkel klären: zwei Minuten 60° nach Steuerbord, dann zurück (das Rumpfsonar ist 30° beiderseits des Hecks taub) |
 
-Auf der Brücke steuert der Trackball das Ruder. `C` (Kurs) und `V` (Fahrt) öffnen die direkte Zahleneingabe, wie `C`/`V`/`D` auf dem U-Boot; die Simulation läuft währenddessen weiter. `Enter` bestätigt, `Esc` bricht ab.
+Auf der Brücke steuert der Trackball das Ruder. `C` (Kurs) und `V` (Fahrt) öffnen die direkte Zahleneingabe, wie `C`/`V`/`D` auf dem U-Boot; die Simulation läuft währenddessen weiter. `Eingabe` bestätigt, `Esc` bricht ab.
 
 ### Maus
 
@@ -527,7 +527,7 @@ Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert
 
 ### Anzeigen und Instrumente
 
-Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpeilung und die Ping-Bereitschaft; ein Schlepp- oder Tiefensonar, das gerade aus- oder einfährt oder noch nicht bereit ist, erscheint auf jeder Seite gelb mit Kabellänge, Stabilität und PAUSE, wenn die Handhabung außerhalb der Grenzen liegt. Die eine Tastenzeile unten zeigt die vier Haupttasten der Seite mit ihren Werten; alle übrigen Tasten stehen in der F1-Hilfe. Auf BREITBAND ist die gelbe Linie die Hörpeilung und die grauen Linien die Grenzen des Hörstrahls; dunkel heißt leise, türkis laut.
+Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpeilung und die Ping-Bereitschaft; ein Schlepp- oder Tiefensonar, das gerade aus- oder einfährt oder noch nicht bereit ist, erscheint auf jeder Seite gelb mit Kabellänge, Stabilität und PAUSE, wenn die Handhabung außerhalb der Grenzen liegt. Die Tastenzeile unten zeigt die vier Haupttasten der Seite mit ihren Werten; der Knopf + WEITERE rechts blättert durch alle übrigen Sonartasten als Knöpfe (ein Klick drückt die Taste) und zurück. Auf BREITBAND ist die gelbe Linie die Hörpeilung und die grauen Linien die Grenzen des Hörstrahls; dunkel heißt leise, türkis laut.
 
 ![Sonar auf der uConsole](figures/de-station-sonar.png)
 
@@ -539,7 +539,7 @@ Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpei
 
 Die Station hat drei Spalten: links Kontaktkarten, in der Mitte die Anzeige der Seite, rechts die Detailzeilen und die Horchkonsole. Die Horchkonsole unter den Detailzeilen ist wie ein Leitstand aufgebaut: Lampen zeigen Ping bereit (gelb, solange ein Ping läuft), Ton und Spitzenwert-Halten, und eine nordorientierte Peilrose zeigt die Horchrichtung (gelb), die toten Winkel achtern (roter Sektor), den eigenen Kurs und jede veröffentlichte Kontaktpeilung. Jede Kontaktkarte zeigt eine Lampe, die Peilung, die Klassifizierung und einen Balken für den Störabstand; ein Klick wählt den Kontakt und richtet das Horchen auf ihn.
 
-Maus: Die Tastenchips unter den Karten wirken auf den gewählten Kontakt wie ihre Tasten: `C` klassifizieren, `T` TMA, `G` Freigabe an die OPZ, `M` Ziel, und `Y`/`Shift+Y` bringen das Schleppsonar und das VDS aus oder holen sie ein (auf dem U-Boot nur `C`, `T` und `M`). Der Remote-Crew-Browser zeigt dieselbe Rose neben seinen Wasserfällen.
+Maus: Die Tastenchips unter den Karten wirken auf den gewählten Kontakt wie ihre Tasten: `C` klassifizieren, `T` TMA, `G` Freigabe an die OPZ, `M` Ziel, und `Y`/`Umschalt+Y` bringen das Schleppsonar und das VDS aus oder holen sie ein (auf dem U-Boot nur `C`, `T` und `M`). Der Remote-Crew-Browser zeigt dieselbe Rose neben seinen Wasserfällen.
 
 #### BROADBAND-Wasserfall
 
@@ -560,7 +560,7 @@ Maus: Die Tastenchips unter den Karten wirken auf den gewählten Kontakt wie ihr
             stehender schwacher Kontakt
 ```
 
-Neueste Daten stehen oben. Eine gerade senkrechte Spur ist ein Kontakt mit stehender Peilung; eine schräge Spur zeigt Peilungswanderung. Die Historie umfasst 20 s Feindaten plus 4 Minuten Langzeithistorie (`Shift+H` wählt 25/50/100 %). Helligkeit ist relativer Empfangspegel, keine Entfernung.
+Neueste Daten stehen oben. Eine gerade senkrechte Spur ist ein Kontakt mit stehender Peilung; eine schräge Spur zeigt Peilungswanderung. Die Historie umfasst 20 s Feindaten plus 4 Minuten Langzeithistorie (`Umschalt+H` wählt 25/50/100 %). Helligkeit ist relativer Empfangspegel, keine Entfernung.
 
 #### LOFAR
 
@@ -659,7 +659,7 @@ Die **Klassenbibliothek** unter den Marken nennt die drei Katalogklassen, die am
 | `W` | Aktivpuls CW / LFM |
 | `U / V` | Solltiefe des gewählten Arrays (TAS oder VDS) um 10 m heben / senken |
 | `R` | Hörpeilung direkt: 000 bis 359.9 Grad rechtweisend |
-| `<- / ->` | Peilung +/-0.5 Grad; Shift: 5, Ctrl: 0.1 |
+| `<- / ->` | Peilung +/-0.5 Grad; Umschalt: 5, Strg: 0.1 |
 | `Auf / Ab` | Kontakt für TMA und Klassifikation wählen |
 | `Eingabe` | Gemessener Kontaktpeilung folgen / manuell halten |
 | `J \| , / .` | Empfangston an/aus \| Lautstärke senken/erhöhen |
@@ -703,11 +703,11 @@ Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrü
 
 ### Standardablauf
 
-1. Langsam fahren (4-8 kn), HMS wählen; TAS bei 3-12 kn ausbringen (Y), VDS bei 3-15 kn unter die Sprungschicht fieren (Shift+Y).
+1. Langsam fahren (4-8 kn), HMS wählen; TAS bei 3-12 kn ausbringen (Y), VDS bei 3-15 kn unter die Sprungschicht fieren (Umschalt+Y).
 2. BREITBAND nach Peilspuren absuchen; Töne im LOFAR bestätigen (N Notch).
-3. Kontakt wählen (Auf/Ab), Fokus halten (Enter), DEMON prüfen.
+3. Kontakt wählen (Auf/Ab), Fokus halten (Eingabe), DEMON prüfen.
 4. Klassifizieren (C); nach einer Kursänderung eine TMA-Hypothese anpassen (Seite TMA: Z/X, Strg+Z/X, Q) und übernehmen (K).
-5. Tiefe oder genaue Entfernung nötig: Ping (Shift+A), dann freigeben (G) und Ziel setzen (M).
+5. Tiefe oder genaue Entfernung nötig: Ping (Umschalt+A), dann freigeben (G) und Ziel setzen (M).
 
 Gefechtslage:
 
@@ -717,7 +717,7 @@ Gefechtslage:
 
 ### Tipps für Profis
 
-- Verstärkung (`I`/`O`) ändert nur Anzeige und Audio, nicht die Ortung. Schwarzwert (`Ctrl+I`/`Ctrl+O`) und Kontrast (`Shift+I`/`Shift+O`) heben schwache Spuren hervor; `Shift+C` wechselt die Phosphorfarbe.
+- Verstärkung (`I`/`O`) ändert nur Anzeige und Audio, nicht die Ortung. Schwarzwert (`Strg+I`/`Strg+O`) und Kontrast (`Umschalt+I`/`Umschalt+O`) heben schwache Spuren hervor; `Umschalt+C` wechselt die Phosphorfarbe.
 - `D` oder `A`/`B`/`H` wählen Breitband-, gefiltertes oder Überlagerungs-Abhören. Überlagerung verschiebt das tiefe Band auf etwa 700 Hz, damit tiefe Töne hörbar werden.
 - Das Abhör-Audio läuft etwa anderthalb Sekunden hinter der Anzeige (Remote-Crew-Browser etwa zwei Sekunden), damit es auch unter Last nicht aussetzt. Nach dem Schwenken der Abhörpeilung geht der alte Strahl nach dieser Verzögerung in den neuen über; der Ton bricht nicht ab.
 - TAS unter die gemessene Schicht legen, um tiefe Ziele zu hören; das HMS für flache Ziele nutzen. Beide Arrays arbeiten parallel.
@@ -725,7 +725,7 @@ Gefechtslage:
 - Weichen TAS und HMS um 9 Grad oder mehr ab, den Kontakt als möglichen Geist behandeln (die Anzeige markiert ihn) und durch eine Wende klären.
 - Die Schleppantenne ist eine Linie: sie kann eine Peilung nicht von ihrem Spiegelbild zum Kabel unterscheiden. Ein nur auf der TAS gehörter Kontakt wird als "TAS links/rechts mehrdeutig" mit Spiegelpeilung markiert und speist keine TMA; die Anzeige zeigt die von Ihnen gewählte Seite (Standard Steuerbord). 20 Grad drehen und beide Spuren beobachten: die echte bleibt stetig, die Geisterspur springt (der Status lautet dann "Wende gefahren - Spuren vergleichen"). Auf der Breitband- oder Fusionsseite zeigt `X` die andere Seite, `Umschalt+X` bestätigt die angezeigte; nichts wird für Sie entschieden. Eine falsch bestätigte Seite bleibt gespiegelt (die TMA-Residuen zeigen es; `X` öffnet die Wahl wieder). Eine Peilung des Rumpfsonars löst die Seite durch Messung auf. Peilungen zu den Kabelenden (Endfire) sind zudem ungenauer als querab.
 - `Umschalt+F` wählt das DEMON-Trägerband (200-800, 400-1400 oder 1000-2000 Hz): das Band suchen, in dem das Kavitationsrauschen am stärksten ist. `Strg+F` stellt den Überlagerungsversatz (400/700/1000/1200 Hz) zum Abhören tiefer Töne ein.
-- Im Kontaktanalysator (`F8`) ordnet `Enter` bei gewähltem Kontakt das angezeigte Katalogprofil diesem Kontakt zu, `Umschalt+Enter` löscht die Zuordnung. Die Zuordnung ist Ihr Vermerk: sie erscheint in der Kontaktliste, wird gespeichert und ändert nie die Klassifizierung oder die Waffensperren des Kontakts.
+- Im Kontaktanalysator (`F8`) ordnet `Eingabe` bei gewähltem Kontakt das angezeigte Katalogprofil diesem Kontakt zu, `Umschalt+Eingabe` löscht die Zuordnung. Die Zuordnung ist Ihr Vermerk: sie erscheint in der Kontaktliste, wird gespeichert und ändert nie die Klassifizierung oder die Waffensperren des Kontakts.
 - Ein Kontakt geht 120 s nach der letzten Ortung verloren. Schwache Kontakte weiter verfolgen oder per Ping wieder erfassen.
 - Wracks liefern echte Echos ohne Doppler. Ein U-Boot, das still neben einem kartierten Wrack auf Grund liegt, versteckt sich vor einem CW-Ping in dessen Echo (750 m Entfernungszelle); ein LFM-Ping löst etwa 8 m auf und kann U-Boot und Wrack trennen. Jedes Wrack, das der Gegner erreichen konnte, ist verdächtig.
 - Der Bathythermograph (`E`) misst bis zum Grund, höchstens 1500 m. Erst nach einer Messung zeigt die Wetter- & Sonar-Analyse (`0`) die Schicht, die Schattenzone darunter und einen SOFAR-Kanal.
@@ -771,7 +771,7 @@ Die Bereitschaftszeile wird von oben nach unten geprüft; die erste fehlgeschlag
  BLOCKIERT: NICHT KLASSIFIZIERT  als U-Boot/Kampfschiff (Sonar C)
  BLOCKIERT: KEINE TORPEDOS / KEIN ROHR BEREIT / SALVENLIMIT
  BLOCKIERT: WAFFENZENTRALE GESTOERT
- FEUER FREI                      -> Strg+Enter
+ FEUER FREI                      -> Strg+Eingabe
 ```
 
 Torpedolauf von oben:
@@ -815,19 +815,19 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 | `Auf / Ab halten` | Torpedotiefe (10-300 m) |
 | `T` | Torpedo-Lauftiefe eingeben (10-300 m), wie auf dem U-Boot |
 | `<- / ->` | Sonarkontakt für Zielwahl wählen |
-| `Strg+Enter` | Torpedo abfeuern (ROE-Prüfung) |
+| `Strg+Eingabe` | Gewählte Waffe abfeuern (Torpedo, solange D/A/Z/R nichts anderes gewählt haben; ROE-Prüfung) |
 | `W` | Torpedotyp (Rohre laden um; W wechselt Mk1/Mk2) |
 | `X` | Suchmuster im Endanlauf: Schlange, Kreis, Helix |
 | `, / .` | Sucheraktivierung -/+ (0,6 bis 3,0 sm, Schritte 0,2 sm) |
 | `Y` | Salve: ein Torpedo oder zwei im Fächer +/-8° |
 | `H` | HSP-5 starten (5 min Vorbereitung, tankt an Deck) / abbrechen / zurückrufen |
 | `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
-| `D` | Leichttorpedo vom HSP-5 |
+| `D` | Leichttorpedo vom HSP-5 wählen (nochmals: Schiffstorpedo) |
 | `V` | Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen |
-| `A` | ASROC auf den zugewiesenen Kontakt (1-10 sm) |
-| `Z` | Wasserbombenmuster über das Heck |
-| `R` | U-Jagd-Raketensalve auf das Ziel (frische Entfernung, 0,4-3 sm) |
-| `Shift+R` | Raketen-Abwehrsalve in Richtung der Torpedowarnung |
+| `A` | ASROC auf den zugewiesenen Kontakt wählen (1-10 sm) |
+| `Z` | Wasserbombenmuster über das Heck wählen |
+| `R` | U-Jagd-Raketensalve auf das Ziel wählen (frische Entfernung, 0,4-3 sm) |
+| `Shift+R` | Raketen-Abwehrsalve in Richtung der Torpedowarnung wählen |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Karte folgt dem eigenen Schiff an/aus |
 | `F` | Flak-Feuerfreigabe umschalten (gesperrt = feuert nie auf Angreifer) |
@@ -837,7 +837,7 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
 
 - Ein Klick auf eine Kontaktkarte wählt diesen Kontakt wie `←`/`→`; das zugewiesene Ziel trägt eine rote Marke.
-- Die Feuertaste `Strg+Enter` lässt sich hier anklicken, nur an der Waffenstation.
+- Die Feuertaste `Strg+Eingabe` lässt sich hier anklicken, nur an der Waffenstation. Sie feuert die gewählte Waffe: `D`, `A`, `Z`, `R` und `Umschalt+R` wählen nur den Lufttorpedo, ASROC, das Wasserbombenmuster, die Raketensalve oder die Abwehrsalve; die gewählte Waffe leuchtet auf Seite 2 und steht in der Feuerzeile. Dieselbe Waffe noch einmal gewählt, gilt wieder der Torpedo.
 - Die Tastenhinweise neben der Lösung (Abschuss, Flak-Freigabe) drücken ihre Tasten.
 - Auf der Karte zoomt das Mausrad, Ziehen verschiebt (und beendet das Folgen mit `K`) und ein Klick heftet eine Kurzinfo an.
 
@@ -846,7 +846,7 @@ Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrü
 1. Ziel vom Sonar übernehmen (M) oder Kontakt mit Links/Rechts wählen.
 2. Bereitschaftszeile prüfen: Entfernung aktuell, Klassifizierung, Rohre, Salvenlimit.
 3. Torpedotiefe auf die gepingte Zieltiefe stellen (Auf/Ab halten).
-4. Feuern (Strg+Enter); Kontakt frisch halten, damit das Draht-Datum folgt.
+4. Feuern (Strg+Eingabe); Kontakt frisch halten, damit das Draht-Datum folgt.
 5. Abwehr: Nixie früh ausbringen (V); HSP-5 starten (H) für Bojen und Lufttorpedos.
 
 Gefechtslage:
@@ -893,7 +893,7 @@ Seite 1 ist die Leckwehrtafel: ein Seitenriss des Schiffs, Bug rechts, mit Decks
 
 Außen steht die See bis zur Wasserlinie mit Tiefgangsmarken an Bug und Heck; in jeder Abteilung steht das Leckwasser auf seiner Höhe und neigt sich mit dem Trimm, ein Brand glüht und flackert mit Rauch unter der Decke, und eine zerstörte Abteilung ist schraffiert. Ein aufgerissenes Loch zeigt, wo der Rumpf offen ist, und Wasser strömt hinein, solange die Abteilung vollläuft; hat ein Trupp ein Leckpflaster gesetzt, liegt dort eine Platte, und ein lenzender Trupp pumpt Wasser über Bord. Tiefgang und Trimm stehen unter dem Seitenriss, die Krängung unter dem Querschnitt. Unter den Bildern trägt die Karte jeder Abteilung eine Zustands-LED, Flutung und Brand mit ihren LEDs sowie nummerierte Plaketten für die Trupps vor Ort; eine Legende erklärt die LEDs.
 
-Seite 2 hat drei Spalten: links eine Karte je Abteilung mit Zustandsstreifen, den LEDs für Wasser und Brand und den Trupps vor Ort, in der Mitte die Details der gewählten Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung), rechts die drei Leckwehrtrupps mit ihrem Ziel und ob sie unterwegs sind (mit den restlichen Sekunden), vor Ort arbeiten oder bereitstehen. Ein Klick auf eine Abteilungskarte wählt sie, ein Klick auf eine Truppkarte wählt den Trupp, und Enter schickt ihn los; ein Klick allein schickt keinen Trupp; Seite 3 ist der Wachplan der Besatzung.
+Seite 2 hat drei Spalten: links eine Karte je Abteilung mit Zustandsstreifen, den LEDs für Wasser und Brand und den Trupps vor Ort, in der Mitte die Details der gewählten Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung), rechts die drei Leckwehrtrupps mit ihrem Ziel und ob sie unterwegs sind (mit den restlichen Sekunden), vor Ort arbeiten oder bereitstehen. Ein Klick auf eine Abteilungskarte wählt sie, ein Klick auf eine Truppkarte wählt den Trupp, und Eingabe schickt ihn los; ein Klick allein schickt keinen Trupp; Seite 3 ist der Wachplan der Besatzung.
 
 Im Browser beginnt die Karte Schaden mit einer Warn- und Meldetafel (Brände, Wassereinbruch, ausgefallen, verschlechtert, Gesamtschaden, Krängung, Trimm, Gegenfluten, Trupps aktiv, Schiff gesunken) über demselben Seitenriss mit Querschnitt und Rundinstrumenten für Krängung, Trimm und Gesamtschaden; ein Klick auf eine Abteilung schickt den gewählten Trupp dorthin. Jede Karte eines Leckwehrtrupps nennt seine Abteilung und zeigt, ob der Trupp bereitsteht, unterwegs ist (mit den restlichen Sekunden) oder vor Ort arbeitet; ein Klick auf die Karte wählt diesen Trupp.
 
@@ -959,7 +959,7 @@ Seite 3 (Besatzung) zeigt den Wachplan. Die Besatzung geht in drei Wachen: eine 
 | `M` | Sanitätstrupp zur nächsten Station mit Verwundeten (Seite Besatzung) |
 | `U` | Leute aus den Freiwachen zur am schwersten getroffenen Station (Seite Besatzung) |
 | `1-9` | Immer Station wechseln, keine Teamzuweisung |
-| `Klick` | Raum oder Beschriftung wählen; Enter weist das gewählte Team zu |
+| `Klick` | Raum oder Beschriftung wählen; Eingabe weist das gewählte Team zu |
 
 Auf der uConsole weisen die Joystick-Tasten 1-3 Trupp 1-3 direkt der gewählten Abteilung zu.
 
@@ -967,13 +967,13 @@ Auf der uConsole weisen die Joystick-Tasten 1-3 Trupp 1-3 direkt der gewählten 
 
 Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
 
-- Ein Klick auf eine Abteilungskarte wählt die Abteilung, ein Klick auf eine Teamkarte das Team; `Enter` schickt es los. Keiner der beiden Klicks schickt allein ein Team.
+- Ein Klick auf eine Abteilungskarte wählt die Abteilung, ein Klick auf eine Teamkarte das Team; `Eingabe` schickt es los. Keiner der beiden Klicks schickt allein ein Team.
 
 ### Standardablauf
 
 1. Nach einem Treffer den Abteilungsplan lesen: Brand, Wassereinbruch, zerstört.
 2. Brand zuerst: Raum wählen (Links/Rechts) und freien Trupp (Auf/Ab).
-3. Mit Enter zuweisen; Fortschritt und Krängung auf der Detailseite verfolgen.
+3. Mit Eingabe zuweisen; Fortschritt und Krängung auf der Detailseite verfolgen.
 4. Dann Wassereinbruch in Maschine und Sonar, danach den Rumpf.
 5. Trupps abziehen (Rücktaste), sobald ein Raum stabil ist, und neu zuweisen.
 
@@ -1007,7 +1007,7 @@ Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser
 
 ### Anzeigen und Instrumente
 
-Jede Seite hat drei Spalten: links Trackkarten (ein Klick wählt einen Track), in der Mitte die Karte, rechts das Feld der Seite. Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track (ihre Tastenchips weisen mit `M` das Ziel zu, werfen mit `G` Düppel und wählen mit `←`/`→` den ASM-Track; ESSM bleibt auf `Strg+Enter`); Seite 3 führt den Seefernaufklärer; Seite 4 führt den Begleitzerstörer einer Gruppenjagd; Seite 5 stellt die Kartenanzeige ein. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Q`/`E` wie der Zoom an anderen Stationen; `Bild Auf`/`Bild Ab` blättern), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich; der Helikopter trägt im Freund-Rahmen das NATO-Zeichen für Drehflügler (eine Fliege aus zwei Rotorblättern), auf der uConsole und im Browser.
+Jede Seite hat drei Spalten: links Trackkarten (ein Klick wählt einen Track), in der Mitte die Karte, rechts das Feld der Seite. Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track (ihre Tastenchips weisen mit `M` das Ziel zu, werfen mit `G` Düppel und wählen mit `←`/`→` den ASM-Track; ESSM bleibt auf `Strg+Eingabe`); Seite 3 führt den Seefernaufklärer; Seite 4 führt den Begleitzerstörer einer Gruppenjagd; Seite 5 stellt die Kartenanzeige ein. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Q`/`E` wie der Zoom an anderen Stationen; `Bild Auf`/`Bild Ab` blättern), unabhängig vom Kartenzoom (Mausrad bis 0,25 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich; der Helikopter trägt im Freund-Rahmen das NATO-Zeichen für Drehflügler (eine Fliege aus zwei Rotorblättern), auf der uConsole und im Browser.
 
 ![OPZ auf der uConsole](figures/de-station-opz-cic.png)
 
@@ -1030,10 +1030,10 @@ Jede Seite hat drei Spalten: links Trackkarten (ein Klick wählt einen Track), i
 - **Luftradar:** 100 sm für Flugzeuge und Seezielflugkörper (ASM).
 - Die Antenne dreht sich alle 4 s einmal: ein Kontakt wird nur aktualisiert, wenn der Strahl über ihn streicht, und jeder Umlauf erfasst ihn mit einer Wahrscheinlichkeit, die mit der Entfernung sinkt (50 % bei Nennreichweite für ein Schiff in Breitseite; Ziele mit spitzem Aspekt werden später gesehen, schwankende Echos können einen Umlauf verfehlen). Seegangsclutter wächst mit dem Seegang (etwa -5 % bei Seegang 4, -25 % bei 6), Regen dämpft das Echo (-10 % Überwasser, -20 % Luft); ab Seegang 5 nehmen Messfehler zu. Innerhalb 3 sm hält das Such-/Folgeradar des CIWS einen anfliegenden Flugkörper ununterbrochen, solange das CIWS freigegeben ist.
 - **AIS:** zivile Schiffe senden Kurs und Fahrt alle 2-10 s (vor Anker alle 3 min) und ihren Namen etwa alle 6 min. Der UKW-Empfänger hört sie nur in Sichtlinie (etwa 20 NM). Ein Radartrack eines Zivilschiffs zeigt Name und Kurs erst, wenn die passende AIS-Meldung empfangen wurde; Radar allein liefert nur die Position. Optionaler Live-AIS/ADS-B-Verkehr ist von simuliertem Verkehr nicht unterscheidbar.
-- **Fusion:** 2-8 Rohmeldungen markieren (`Leertaste`) und zu einem Bedienertrack fusionieren (`L`); `Shift+L` löst ihn auf. Eine Fusion, deren Meldungen von genau einem Sonarkontakt stammen, lässt sich der Waffenzentrale zuweisen; ihre Klassifizierung zählt für die Feuerleitung, solange das Sonar den Kontakt nicht selbst klassifiziert hat, und ihre Zugehörigkeit gilt für diesen Kontakt. Eine Fusion besteht nur, solange alle ihre Meldungen aktuell sind.
-- **Automatische Fusion:** einmal pro Sekunde fusioniert die OPZ Meldungen verschiedener Sensoren, die übereinanderliegen, von selbst, sodass ein Schiff, das Radar, Ausguck und AIS sehen, ein Kontakt ist. Sie nutzt dieselben Grenzen wie die Zuordnungsvorschläge unten, aber nur bei eindeutiger Übereinstimmung: die Bewertung muss deutlich innerhalb der Grenzen liegen, mindestens eine der beiden Meldungen braucht eine Position (zwei reine Peilungen, etwa Sonar und ESM, werden nie automatisch fusioniert), und keine darf einen zweiten Kandidaten derselben Sensorart haben (zwei dicht beieinander fahrende Schiffe bleiben getrennt und erscheinen als Vorschlag). Eine weitere Meldung tritt auf dieselbe Weise einer bestehenden automatischen Fusion bei, bis zu 8 Meldungen. Eine automatische Fusion behält ihre Kennung, solange mindestens zwei ihrer Meldungen aktuell sind, und lässt eine erloschene Meldung fallen; mit weniger als zwei endet sie. Ihren Namen übernimmt sie von einer AIS-Meldung, wenn sie eine hat. `Shift+L` trennt sie, und diese Meldungen werden erst wieder automatisch fusioniert, wenn eine davon neu ist. Bei ausgefallener OPZ wird nichts fusioniert.
+- **Fusion:** 2-8 Rohmeldungen markieren (`Leertaste`) und zu einem Bedienertrack fusionieren (`L`); `Umschalt+L` löst ihn auf. Eine Fusion, deren Meldungen von genau einem Sonarkontakt stammen, lässt sich der Waffenzentrale zuweisen; ihre Klassifizierung zählt für die Feuerleitung, solange das Sonar den Kontakt nicht selbst klassifiziert hat, und ihre Zugehörigkeit gilt für diesen Kontakt. Eine Fusion besteht nur, solange alle ihre Meldungen aktuell sind.
+- **Automatische Fusion:** einmal pro Sekunde fusioniert die OPZ Meldungen verschiedener Sensoren, die übereinanderliegen, von selbst, sodass ein Schiff, das Radar, Ausguck und AIS sehen, ein Kontakt ist. Sie nutzt dieselben Grenzen wie die Zuordnungsvorschläge unten, aber nur bei eindeutiger Übereinstimmung: die Bewertung muss deutlich innerhalb der Grenzen liegen, mindestens eine der beiden Meldungen braucht eine Position (zwei reine Peilungen, etwa Sonar und ESM, werden nie automatisch fusioniert), und keine darf einen zweiten Kandidaten derselben Sensorart haben (zwei dicht beieinander fahrende Schiffe bleiben getrennt und erscheinen als Vorschlag). Eine weitere Meldung tritt auf dieselbe Weise einer bestehenden automatischen Fusion bei, bis zu 8 Meldungen. Eine automatische Fusion behält ihre Kennung, solange mindestens zwei ihrer Meldungen aktuell sind, und lässt eine erloschene Meldung fallen; mit weniger als zwei endet sie. Ihren Namen übernimmt sie von einer AIS-Meldung, wenn sie eine hat. `Umschalt+L` trennt sie, und diese Meldungen werden erst wieder automatisch fusioniert, wenn eine davon neu ist. Bei ausgefallener OPZ wird nichts fusioniert.
 - **Quellen:** Meldungen in einer Fusion werden nicht mehr einzeln gelistet oder gezeichnet; die Fusion steht für sie (`H` zeigt sie mit den unterdrückten Meldungen). Jede Trackkarte endet mit Sensorkürzeln: `R` Radar, `V` Ausguck, `A` AIS, `E` ESM, `S` Sonar, `H` Hubschrauber, `B` Boje, `M` Seefernaufklärer, `F` Funkpeiler, `J` Störerpeilung, `D` Datenlink. Seite 2 zeigt für eine Fusion die vollen Namen unter *Quellen* (zum Beispiel `Radar · Ausguck · AIS`). Die Remote-Crew-OPZ-Station listet die Quellen jeder Fusion und blendet ihre Meldungen aus, solange *Unterdrückte Meldungen verwalten* nicht an ist.
-- **Zuordnungsvorschläge:** die OPZ vergleicht ihre aktuellen Meldungen (höchstens 30 s alt) verschiedener Sensoren: Sonar (nur eigene Peilungen und Ortungen des Schiffs, keine Bojen und kein Tauchsonar), Radar, ESM, Ausguck und AIS. Empfangene AIS-Meldungen sind eigene OPZ-Meldungen: die gemeldete Position des Schiffs, mit seinem gemeldeten Kurs und seiner Fahrt auf jetzt gekoppelt, und sein Name, sobald die statische Meldung da ist; sie zählen, solange ihre Daten frisch sind (vor Anker bis 10 min). Zwei Meldungen, deren Peilungen vom Schiff innerhalb 1,5° plus der Peilungsunsicherheiten beider Meldungen (zusammen höchstens 8°) übereinstimmen und die, wenn beide eine Position haben, höchstens 1,5 sm plus ein Zehntel ihrer Entfernung auseinanderliegen, werden als Paar vorgeschlagen, wenn auch Bewegung und Klasse passen: geben beide einen Kurs und fährt eine mit 3 kn oder mehr, müssen die Kurse innerhalb 35° übereinstimmen; geben beide eine Fahrt, innerhalb 4 kn plus einem Viertel der schnelleren; zwei Klassifizierungen des Bedieners müssen gleich sein, und eine AIS-Meldung wird nie mit einer als U-Boot, biologisch oder Flugzeug klassifizierten Meldung gepaart. Gleiche Klassen setzen ein Paar weiter nach oben. Sonar und AIS werden nie mit einem Luftziel gepaart. Die Seitenleiste von Seite 1 zeigt die zwei besten (zum Beispiel `> K03 + R-2  Rtg 087°`); `U` fusioniert den obersten genau so, als hätten Sie beide markiert und `L` gedrückt, `Shift+U` verwirft ihn. Die Remote-Crew-OPZ-Station listet alle, mit Kurs- und Fahrtunterschied und ob die Klassen übereinstimmen, und den Schaltflächen *Vorschlag fusionieren* und *Verwerfen*. Es gibt höchstens 4 Vorschläge zugleich, jede Meldung nur in einem; bereits fusionierte Meldungen bleiben außen vor. Vorschläge sind Hinweise, keine Identifizierung, und werden wie Fusionen und Verwerfungen nicht gespeichert.
+- **Zuordnungsvorschläge:** die OPZ vergleicht ihre aktuellen Meldungen (höchstens 30 s alt) verschiedener Sensoren: Sonar (nur eigene Peilungen und Ortungen des Schiffs, keine Bojen und kein Tauchsonar), Radar, ESM, Ausguck und AIS. Empfangene AIS-Meldungen sind eigene OPZ-Meldungen: die gemeldete Position des Schiffs, mit seinem gemeldeten Kurs und seiner Fahrt auf jetzt gekoppelt, und sein Name, sobald die statische Meldung da ist; sie zählen, solange ihre Daten frisch sind (vor Anker bis 10 min). Zwei Meldungen, deren Peilungen vom Schiff innerhalb 1,5° plus der Peilungsunsicherheiten beider Meldungen (zusammen höchstens 8°) übereinstimmen und die, wenn beide eine Position haben, höchstens 1,5 sm plus ein Zehntel ihrer Entfernung auseinanderliegen, werden als Paar vorgeschlagen, wenn auch Bewegung und Klasse passen: geben beide einen Kurs und fährt eine mit 3 kn oder mehr, müssen die Kurse innerhalb 35° übereinstimmen; geben beide eine Fahrt, innerhalb 4 kn plus einem Viertel der schnelleren; zwei Klassifizierungen des Bedieners müssen gleich sein, und eine AIS-Meldung wird nie mit einer als U-Boot, biologisch oder Flugzeug klassifizierten Meldung gepaart. Gleiche Klassen setzen ein Paar weiter nach oben. Sonar und AIS werden nie mit einem Luftziel gepaart. Die Seitenleiste von Seite 1 zeigt die zwei besten (zum Beispiel `> K03 + R-2  Rtg 087°`); `U` fusioniert den obersten genau so, als hätten Sie beide markiert und `L` gedrückt, `Umschalt+U` verwirft ihn. Die Remote-Crew-OPZ-Station listet alle, mit Kurs- und Fahrtunterschied und ob die Klassen übereinstimmen, und den Schaltflächen *Vorschlag fusionieren* und *Verwerfen*. Es gibt höchstens 4 Vorschläge zugleich, jede Meldung nur in einem; bereits fusionierte Meldungen bleiben außen vor. Vorschläge sind Hinweise, keine Identifizierung, und werden wie Fusionen und Verwerfungen nicht gespeichert.
 - **Unterdrückung:** `Entf` blendet eine Meldung lokal aus; `H` zeigt unterdrückte Meldungen wieder.
 
 ### Seefernaufklärer
@@ -1042,10 +1042,10 @@ Seite 3 führt einen Seefernaufklärer (MPA) auf Abruf vom nächsten eigenen Flu
 
 - Das Flugzeug hat die Tasten des Helikopters. `H` fordert das Flugzeug an (es fliegt zuerst zur Schiffsposition) oder schickt es heim.
 - `W` legt das Suchgebiet auf die geplottete Position des gewählten Tracks (ohne Auswahl auf das Schiff); ein Klick in die Karte legt es auf diesen Punkt. Ein reiner Peilungstrack hat keine Position zum Anfliegen.
-- `X` plant ein Bojenmuster (Feld, Sperre, Kreis) um das Suchgebiet; das Flugzeug fliegt die Punkte ab und wirft an jedem eine Boje; ab 4 sm vor dem nächsten Punkt geht es auf 200 kn, damit es auf ihn eindrehen kann. `Shift+X` bricht das Muster ab. `B` wirft eine Boje dort, wo das Flugzeug ist, `Shift+B` schaltet seine Bojen zwischen PASSIV und AKTIV.
+- `X` plant ein Bojenmuster (Feld, Sperre, Kreis) um das Suchgebiet; das Flugzeug fliegt die Punkte ab und wirft an jedem eine Boje; ab 4 sm vor dem nächsten Punkt geht es auf 200 kn, damit es auf ihn eindrehen kann. `Umschalt+X` bricht das Muster ab. `B` wirft eine Boje dort, wo das Flugzeug ist, `Umschalt+B` schaltet seine Bojen zwischen PASSIV und AKTIV.
 - `Strg+R` schaltet das Seeraumradar des Flugzeugs (wie beim Helikopter). Aus 300 m sieht es Schiffe und aufgetauchte oder mit Mast fahrende U-Boote bis 60 sm (begrenzt durch den Radarhorizont); seine Kontakte erscheinen als `RADAR-MPA`-Tracks mit dem Flugzeug als Beobachter. KI-U-Boote mit ausgefahrenem Mast hören es und tauchen weg (siehe Kapitel Helikopter).
 - Die Besatzung des Flugzeugs sieht wie die des Helikopters die Schaumfahne eines ausgefahrenen Masts (siehe Kapitel Helikopter); solange der Datenlink steht, erscheinen diese Sichtungen als `MPA-EYE`-Tracks.
-- `Shift+M` beginnt oder beendet **MAD-Überflüge** (Browser: *MAD-Anflüge beginnen*/*beenden*), solange das Flugzeug unterwegs oder auf Station ist: dort geht es auf 60 m und fliegt mit 180 kn gerade Bahnen durch das Suchgebiet und kehrt 2 sm dahinter um (ein Kleeblatt). Ein getauchter Rumpf innerhalb von etwa 400 m Schrägentfernung wird mit einem zustandslosen Zug je Sekunde erfasst (sicher unter 250 m) und erreicht das Schiff per Datenlink als MAD-Ortung ohne Tiefe und Kurs auf dem Sonarkontakt dieses U-Boots. Ein Bojenmuster wird zuerst abgeflogen; `H` (heim) beendet die Überflüge.
+- `Umschalt+M` beginnt oder beendet **MAD-Überflüge** (Browser: *MAD-Anflüge beginnen*/*beenden*), solange das Flugzeug unterwegs oder auf Station ist: dort geht es auf 60 m und fliegt mit 180 kn gerade Bahnen durch das Suchgebiet und kehrt 2 sm dahinter um (ein Kleeblatt). Ein getauchter Rumpf innerhalb von etwa 400 m Schrägentfernung wird mit einem zustandslosen Zug je Sekunde erfasst (sicher unter 250 m) und erreicht das Schiff per Datenlink als MAD-Ortung ohne Tiefe und Kurs auf dem Sonarkontakt dieses U-Boots. Ein Bojenmuster wird zuerst abgeflogen; `H` (heim) beendet die Überflüge.
 - `D` wirft einen Torpedo auf den zugewiesenen Sonarkontakt. Es gelten dieselben Prüfungen wie beim Helikopter (aktueller, als U-Boot klassifizierter Kontakt, Einsatzregeln, unter Standard-ROE eine frische Ortung), und das Flugzeug muss höchstens 2 sm vom Datum entfernt sein.
 
 Alles, was das Flugzeug erfährt, erreicht das Schiff nur per Datenlink bis 250 sm. Seine Bojen melden nur, solange das Flugzeug höchstens 50 sm von ihnen entfernt ist; fliegt es weg oder landet es, verstummen sie für das Schiff. Die Seitenleiste zeigt Zustand, Peilung und Entfernung, Restzeit auf Station, Vorräte, verbleibende Einsätze und wie viele seiner Bojen übertragen werden.
@@ -1054,16 +1054,16 @@ Alles, was das Flugzeug erfährt, erreicht das Schiff nur per Datenlink bis 250 
 
 Seite 4 (Verband) führt das Begleitschiff einer Gruppenjagd: den Zerstörer LUETJENS (Rumpfsonar, 8 ASROC, in der Jagdgruppe 2), der in Fregatten-Szenario 11 (Suchgruppe) und U-Boot-Szenario 11 (Jagdgruppe) mit der Fregatte fährt. Andere Missionen haben kein Begleitschiff, und die Seite sagt das. Der Zerstörer ist eine eigene Einheit im Datenlink (bis 100 sm): Position, Kurs, Fahrt, Befehle und Vorräte werden als Wahrheit gezeigt und auf der OPZ-Karte als eigenes Symbol mit Rufzeichen und `DL` gezeichnet; was sein Sonar hört, erreicht die Fregatte nur als Messungen.
 
-- **Befehle:** `Y` selbständig, `F` Formation (jeder Druck schickt ihn auf den nächsten Platz 5 sm von der Fregatte: querab Steuerbord, voraus, querab Backbord, achteraus), `H` halten (4 kn auf seinem Kurs), `X` einen Punkt absuchen (er läuft mit 18 kn heran und kreist mit 10 kn in 4 sm Abstand um den Punkt, damit sein Sonar hört), `W` die geplottete Position des gewählten Tracks verfolgen (26 kn, dann ein 2-sm-Kreis mit Aktivsonar). Ein Klick in die Karte setzt den Punkt und macht aus Formation, Halten oder Selbständig ein Absuchen. Jede Befehlstaste in den Hinweisen des Felds ist auch anklickbar; seine ASROC bleibt auf `Strg+Enter`.
+- **Befehle:** `Y` selbständig, `F` Formation (jeder Druck schickt ihn auf den nächsten Platz 5 sm von der Fregatte: querab Steuerbord, voraus, querab Backbord, achteraus), `H` halten (4 kn auf seinem Kurs), `X` einen Punkt absuchen (er läuft mit 18 kn heran und kreist mit 10 kn in 4 sm Abstand um den Punkt, damit sein Sonar hört), `W` die geplottete Position des gewählten Tracks verfolgen (26 kn, dann ein 2-sm-Kreis mit Aktivsonar). Ein Klick in die Karte setzt den Punkt und macht aus Formation, Halten oder Selbständig ein Absuchen. Jede Befehlstaste in den Hinweisen des Felds ist auch anklickbar; seine ASROC bleibt auf `Strg+Eingabe`.
 - **Selbständig:** Er hält Formation, bis das eigene Lagebild der Fregatte einen Kontakt hat, den Sie als U-Boot klassifiziert oder zugewiesen haben und der einen Standort unter 10 Minuten hat; dann verfolgt er den frischesten mit Aktivsonar.
-- **Sonar:** Alle 10 s erscheinen seine Passivpeilungen auf Seite 4 als Linien vom Zerstörer aus. Sein Rumpfsonar hört ein U-Boot innerhalb 8 sm und nichts, solange er schneller als 15 kn läuft. Schneidet eine davon die eigene Passivpeilung der Fregatte auf denselben Kontakt mit 15° oder mehr und innerhalb 30 sm, erhält der Kontakt einen `CONSORT`-Standort (Unsicherheit aus beiden Peilfehlern und dem Schnittwinkel). `Shift+A` schaltet sein Aktivsonar: Alle 20 s ortet ein Ping jeden getauchten Kontakt innerhalb 5 sm mit Position und Tiefe (je näher, desto sicherer) als `CONSORT`-Standort; jedes U-Boot innerhalb 25 sm hört den Ping.
-- **Waffen:** `Shift+W` schaltet Waffen frei oder gesperrt (zu Beginn gesperrt). Frei schießt er höchstens alle 3 Minuten ein ASROC auf den Standort des selbständig verfolgten Kontakts, wenn dieser jünger als 2 Minuten ist und 1 bis 12 sm vom Zerstörer liegt. `Strg+Enter` befiehlt ein ASROC auf den Standort des gewählten Tracks (jünger als 2 Minuten); ohne Auswahl auf den selbständig verfolgten Kontakt. Es ist immer nur eines seiner ASROC in der Luft. Solange niemand die OPZ der Fregatte besetzt (die KI führt die Fregatte), können ihm auch die Jäger ein geortetes Datum für ein ASROC schicken.
+- **Sonar:** Alle 10 s erscheinen seine Passivpeilungen auf Seite 4 als Linien vom Zerstörer aus. Sein Rumpfsonar hört ein U-Boot innerhalb 8 sm und nichts, solange er schneller als 15 kn läuft. Schneidet eine davon die eigene Passivpeilung der Fregatte auf denselben Kontakt mit 15° oder mehr und innerhalb 30 sm, erhält der Kontakt einen `CONSORT`-Standort (Unsicherheit aus beiden Peilfehlern und dem Schnittwinkel). `Umschalt+A` schaltet sein Aktivsonar: Alle 20 s ortet ein Ping jeden getauchten Kontakt innerhalb 5 sm mit Position und Tiefe (je näher, desto sicherer) als `CONSORT`-Standort; jedes U-Boot innerhalb 25 sm hört den Ping.
+- **Waffen:** `Umschalt+W` schaltet Waffen frei oder gesperrt (zu Beginn gesperrt). Frei schießt er höchstens alle 3 Minuten ein ASROC auf den Standort des selbständig verfolgten Kontakts, wenn dieser jünger als 2 Minuten ist und 1 bis 12 sm vom Zerstörer liegt. `Strg+Eingabe` befiehlt ein ASROC auf den Standort des gewählten Tracks (jünger als 2 Minuten); ohne Auswahl auf den selbständig verfolgten Kontakt. Es ist immer nur eines seiner ASROC in der Luft. Solange niemand die OPZ der Fregatte besetzt (die KI führt die Fregatte), können ihm auch die Jäger ein geortetes Datum für ein ASROC schicken.
 
 Wird der Zerstörer versenkt, melden das die Seite und das Ereignisprotokoll; die Mission geht weiter. Die OPZ im Browser hat dieselben Befehle in der Karte *Begleitzerstörer*, und ihre Karte zeigt den Zerstörer, seinen Punkt und seine Peillinien.
 
 ### Kartenanzeige
 
-Seite 5 (Anzeige) legt fest, was die OPZ-Karte zeichnet; sie ändert nichts an der Simulation oder am Lagebild selbst und bleibt in den Einstellungen gespeichert. `↑`/`↓` wählt eine Zeile, `←`/`→` ändert sie (ein Klick auf eine Zeile schaltet weiter), `Backspace` stellt die gewählte Zeile auf den Standard zurück, `Shift+Backspace` alle Zeilen.
+Seite 5 (Anzeige) legt fest, was die OPZ-Karte zeichnet; sie ändert nichts an der Simulation oder am Lagebild selbst und bleibt in den Einstellungen gespeichert. `↑`/`↓` wählt eine Zeile, `←`/`→` ändert sie (ein Klick auf eine Zeile schaltet weiter), `Rücktaste` stellt die gewählte Zeile auf den Standard zurück, `Umschalt+Rücktaste` alle Zeilen.
 
 - **Spurverlauf:** aus, 3, 6 oder 12 Minuten frühere veröffentlichte Positionen hinter jedem Track (ein Punkt alle 30 s, die ältesten am blassesten; nach dem Laden beginnt er neu).
 - **Vektoren:** der Bewegungsvektor zeigt die Strecke in 3, 6, 12 oder 30 Minuten.
@@ -1072,7 +1072,7 @@ Seite 5 (Anzeige) legt fest, was die OPZ-Karte zeichnet; sie ändert nichts an d
 - **Entfernungsringe**, **Peilstrahlen** reiner Peilmeldungen, **Unsicherheitskreise**, **Tiefen und Gitter** der Karte und das **Radar-Nachleuchten** lassen sich einzeln an- und ausschalten.
 - **CPA Auswahl:** Beim gewählten Track mit Position, Kurs und Fahrt laufen beide bis zum Punkt der nächsten Annäherung weiter; eine Linie verbindet die beiden Punkte mit Abstand und Zeit (rot unter 2 sm). Sie nutzt nur die gemeldete Bewegung des Tracks und ist deshalb nur so gut wie diese Meldung.
 
-Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luftradar ein und aus (wie `R` und `Shift+R`, mit der EMCON-Meldung an das Hauptquartier); sie leuchten, solange das Radar sendet. Die Schalter unter der Karte zeigen auf jeder Seite, welche Ebenen an sind, und schalten sie per Klick. Die OPZ im Browser hat die Radarschalter und dieselben Einstellungen als Knöpfe über ihrer Karte (nur für diesen Browser-Tab gespeichert).
+Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luftradar ein und aus (wie `R` und `Umschalt+R`, mit der EMCON-Meldung an das Hauptquartier); sie leuchten, solange das Radar sendet. Die Schalter unter der Karte zeigen auf jeder Seite, welche Ebenen an sind, und schalten sie per Klick. Die OPZ im Browser hat die Radarschalter und dieselben Einstellungen als Knöpfe über ihrer Karte (nur für diesen Browser-Tab gespeichert).
 
 ### Tasten
 
@@ -1083,34 +1083,34 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 | `F` | NATO-Zugehörigkeit setzen |
 | `Shift+F` | OPZ-Kontaktdomainfilter wechseln |
 | `J` | Gemeinsame bedienersichtbare Track-ID eingeben |
-| `Space / L / Shift+L` | Rohmeldungen markieren und Fusion bilden/auflösen (Shift+L); Treffer fusionieren automatisch |
-| `U / Shift+U` | Obersten Zuordnungsvorschlag fusionieren (Shift+U verwirft ihn) |
+| `Space / L / Shift+L` | Rohmeldungen markieren und Fusion bilden/auflösen (Umschalt+L); Treffer fusionieren automatisch |
+| `U / Shift+U` | Obersten Zuordnungsvorschlag fusionieren (Umschalt+U verwirft ihn) |
 | `Delete / H` | Lokal unterdrücken/wiederherstellen; H verwaltet Unterdrückte |
 | `M` | CIC-Track an Sonar/Waffen übergeben |
-| `Q / E` | Radarbereich 10/20/40/80/120 NM (Q weiter, E näher) |
+| `Q / E` | Radarbereich 10/20/40/80/120 sm (Q weiter, E näher) |
 | `<- / ->` | ASM-Track wählen |
-| `Strg+Enter` | ESSM abfeuern (VLS-Cell) |
-| `G` | Chaff abwerfen (8 NM-Kegel, Kühlzeit) |
+| `Strg+Eingabe` | Seiten 1-2: ESSM starten (VLS-Zelle); Seite 3: die gewählte Waffe feuern |
+| `G` | Chaff abwerfen (8 sm-Kegel, Kühlzeit) |
 | `R` | Seeraumradar an/aus (EMCON) |
 | `Shift+R` | Luftraumradar an/aus (EMCON) |
 | `I` | CIWS-Feuerfreigabe umschalten (gesperrt = feuert nie auf anfliegende ASM) |
-| `Backspace` | Alle markierten Meldungen abwählen |
-| `B` | Neuestes bloßes Radarecho als Track markieren (oder das Echo anklicken) |
+| `Backspace` | Seiten 1-2: alle markierten Meldungen verwerfen |
+| `B` | Seiten 1-2: den neuesten rohen Radarblip als Track markieren (oder den Blip anklicken) |
 | `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Karte folgt dem eigenen Schiff an/aus |
 | `H` | OPZ Seite 3: Seefernaufklärer anfordern / heimschicken (Tasten wie beim Helikopter) |
 | `W` | Seite 3: Suchgebiet auf die gewählte Spur (sonst eigenes Schiff); Klick in die Karte für einen Punkt |
-| `X / Shift+X` | Seite 3: Bojenmuster um das Suchgebiet wechseln / Shift bricht ab |
+| `X / Shift+X` | Seite 3: Bojenmuster um das Suchgebiet wechseln / Umschalt bricht ab |
 | `B` | Seite 3: eine Boje am Flugzeug werfen |
 | `Umschalt+B` | Seite 3: Bojenmodus des Flugzeugs PASSIV / AKTIV |
 | `Ctrl+R` | Seite 3: Seeraumradar des Flugzeugs ein/aus |
 | `Shift+M` | Seite 3: MAD-Anflüge des Flugzeugs über seinen Wegpunkt ein/aus (tief und langsamer, der Radarhorizont schrumpft) |
-| `D` | Seite 3: Torpedo auf den zugewiesenen Kontakt (Flugzeug höchstens 2 sm vom Datum) |
+| `D` | Seite 3: Torpedo des Flugzeugs auf den zugewiesenen Kontakt wählen, Strg+Eingabe wirft (Flugzeug höchstens 2 sm vom Datum; nochmals: ESSM) |
 | `Y / F / H` | OPZ-Seite 4 (Gruppenjagd): Begleiter selbständig / nächster Formationsplatz / halten |
 | `X / W` | OPZ-Seite 4: Begleiter sucht hier / verfolgt den gewählten Track (oder Klick in die Karte) |
 | `Shift+A` | OPZ-Seite 4: Aktivsonar des Begleiters an/aus |
 | `Shift+W` | OPZ-Seite 4: Waffen des Begleiters frei / gesperrt |
-| `Strg+Enter` | OPZ-Seite 4: ein ASROC des Begleiters auf den gewählten Track (Standort unter 2 min) |
+| `Strg+Eingabe` | OPZ-Seite 4: ein ASROC des Begleiters auf den gewählten Track (Standort unter 2 min) |
 | `↑/↓ ←/→` | Seite 5 Anzeige: Karteneinstellung wählen, ändern |
 | `Backspace` | Seite 5: gewählte Karteneinstellung auf Standard |
 | `Shift+Backspace` | Seite 5: alle Karteneinstellungen auf Standard |
@@ -1120,29 +1120,29 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
 
 - Ein Klick auf eine Trackkarte wählt den Track.
-- Die Tastenchips auf der Zielseite weisen das Ziel zu (`M`), werfen Düppel (`G`) und schalten den ASM-Track weiter (`←`/`→`); ESSM feuert nur mit `Strg+Enter`.
+- Die Tastenchips auf der Zielseite weisen das Ziel zu (`M`), werfen Düppel (`G`) und schalten den ASM-Track weiter (`←`/`→`); ESSM feuert nur mit `Strg+Eingabe`.
 - Seite 3: Ein Klick auf die Karte setzt das Suchgebiet des Seefernaufklärers; Seite 4: Ein Klick setzt den Punkt des Begleiters, und seine Befehlstasten im Feld sind anklickbar.
 - Seite 5: Ein Klick auf eine Zeile schaltet sie weiter; die Ebenen-Chips unter der Karte und die beiden Radarschalter oben links wirken auf jeder Seite.
 - Auf der Karte zoomt das Mausrad, Ziehen verschiebt (und beendet das Folgen mit `K`) und ein Klick heftet eine Kurzinfo an.
 
 ### Standardablauf
 
-1. Radarbereich wählen (Q/E); Radare für EMCON schalten (R / Shift+R).
+1. Radarbereich wählen (Q/E); Radare für EMCON schalten (R / Umschalt+R).
 2. Tracks wählen (Auf/Ab), klassifizieren (C), NATO-Zugehörigkeit setzen (F).
-3. Übereinanderliegende Meldungen fusionieren von selbst; andere mit Leertaste markieren und mit L fusionieren, Shift+L trennt.
+3. Übereinanderliegende Meldungen fusionieren von selbst; andere mit Leertaste markieren und mit L fusionieren, Umschalt+L trennt.
 4. Track an Sonar/Waffen übergeben (M).
-5. Flugkörperbedrohung: Düppel (G), CIWS-Freigabe (I), dann ESSM (Strg+Enter).
+5. Flugkörperbedrohung: Düppel (G), CIWS-Freigabe (I), dann ESSM (Strg+Eingabe).
 
 Ablauf Luftverteidigung (Flugkörper im Anflug):
 
 ```text
   40 sm  ASM erfasst (Luftradar / ESM-Sucherpeilung)
-  30 sm  ESSM-Bereich           -> Strg+Enter (2 Feuerkanäle)
+  30 sm  ESSM-Bereich           -> Strg+Eingabe (2 Feuerkanäle)
    8 sm  Düppelkegel            -> G (40 % Zielverlust, kurz blind)
  1,5 sm  CIWS                   -> muss mit I freigegeben sein
 ```
 
-1. Luftradar ein (`Shift+R`), ASM-Track wählen (`Links`/`Rechts`).
+1. Luftradar ein (`Umschalt+R`), ASM-Track wählen (`Links`/`Rechts`).
 2. Erst Düppel und Manöver, dann ESSM. Nur 6 ESSM sind geladen.
 3. CIWS freigegeben lassen, solange Flugkörper anfliegen; zurückgehaltenes CIWS feuert nie.
 
@@ -1155,7 +1155,7 @@ Ablauf Luftverteidigung (Flugkörper im Anflug):
 - Zugehörigkeit ist Ihr Vermerk. Ein als FREUND oder NEUTRAL markierter Kontakt, oder eine Fusion, die ihn enthält, sperrt jeden Torpedoschuss darauf.
 - Kartensymbole folgen dem NATO-Stil auf der uConsole und auf jeder Remote-Crew-Karte: der Rahmen zeigt Ihre Zugehörigkeit (Feind Raute, Neutral Quadrat, Freund breites Rechteck, Unbekannt ohne Rahmen), das innere Zeichen die beobachtete Domäne.
 - `J` vergibt eine gemeinsame Track-ID, die die ganze Crew (und Remote-Crew-Browser) sieht.
-- `Enter` bestätigt einen Angriff auf einen Live-Kontakt (echter Verkehr), nachdem Sie ihn als feindlich klassifiziert haben; auf unklassifizierte Kontakte wird nie automatisch gefeuert.
+- `Eingabe` bestätigt einen Angriff auf einen Live-Kontakt (echter Verkehr), nachdem Sie ihn als feindlich klassifiziert haben; auf unklassifizierte Kontakte wird nie automatisch gefeuert.
 
 ### Nicht modelliert
 
@@ -1216,7 +1216,7 @@ Die **Kreuzpeilkarte** daneben ist das Koppelblatt des Funkraums, Norden oben, m
 
 ### HQ-Aufträge
 
-Neben der Jagd funkt das HQ Aufträge an das Schiff: den ersten etwa 15 bis 25 Minuten nach Beginn einer eingebauten Mission, danach einen alle 25 bis 45 Minuten, höchstens sechs je Mission und zwei gleichzeitig offen (auf freier Fahrt alle 10 bis 20 Minuten ohne Obergrenze, mit dem Überwachen eines Seegebiets als sechster Art; siehe Kapitel Referenz). Eigene Missionen erhalten keine. Jedes Angebot kommt über den Fernschreiber und auf Seite 3 (Aufträge). Innerhalb von 5 Minuten mit `A` oder `Enter` (annehmen) oder `D` (ablehnen) antworten; keine Antwort gilt als Ablehnung. Die Brücke ruft jedes neue Angebot laut aus, mit einem kurzen Funkton. Besetzt die KI-Crew den Funkraum (Crew-Hilfe oder Autocrew), beantwortet sie ein Angebot, das 2 Minuten liegen blieb: Eine Versorgung auf See nimmt sie an, jeden anderen Auftrag lehnt sie ohne Abzug ab, weil sie das Schiff nicht dorthin steuern kann. Ein zerstörter Funkraum kann nicht antworten. Auf einem echten Seegebiet nennen HQ, Vorfallmeldungen, die Auftragsseite, protokollierte Peilungen und der ESM-Fix des U-Boots Positionen in Grad und Minuten (`54°21,4'N 010°08,2'E`), dazu wie bisher Peilung und Abstand vom Schiff, wo das HQ sie angibt; auf der stilisierten festen Karte bleiben sie in sm.
+Neben der Jagd funkt das HQ Aufträge an das Schiff: den ersten etwa 15 bis 25 Minuten nach Beginn einer eingebauten Mission, danach einen alle 25 bis 45 Minuten, höchstens sechs je Mission und zwei gleichzeitig offen (auf freier Fahrt alle 10 bis 20 Minuten ohne Obergrenze, mit dem Überwachen eines Seegebiets als sechster Art; siehe Kapitel Referenz). Eigene Missionen erhalten keine. Jedes Angebot kommt über den Fernschreiber und auf Seite 3 (Aufträge). Innerhalb von 5 Minuten mit `A` oder `Eingabe` (annehmen) oder `D` (ablehnen) antworten; keine Antwort gilt als Ablehnung. Die Brücke ruft jedes neue Angebot laut aus, mit einem kurzen Funkton. Besetzt die KI-Crew den Funkraum (Crew-Hilfe oder Autocrew), beantwortet sie ein Angebot, das 2 Minuten liegen blieb: Eine Versorgung auf See nimmt sie an, jeden anderen Auftrag lehnt sie ohne Abzug ab, weil sie das Schiff nicht dorthin steuern kann. Ein zerstörter Funkraum kann nicht antworten. Auf einem echten Seegebiet nennen HQ, Vorfallmeldungen, die Auftragsseite, protokollierte Peilungen und der ESM-Fix des U-Boots Positionen in Grad und Minuten (`54°21,4'N 010°08,2'E`), dazu wie bisher Peilung und Abstand vom Schiff, wo das HQ sie angibt; auf der stilisierten festen Karte bleiben sie in sm.
 
 - **Seenotruf (SAR):** eine Rettungsinsel mit 2 bis 6 Personen, per EPIRB mit etwa 0,5 sm Fehler gemeldet, treibt mit Strom und Wind. Die Überlebenden halten je nach Wassertemperatur durch, von 40 Minuten in Wasser unter 8 °C bis 100 Minuten über 20 °C. Die Insel wird tagsüber auf 2 sm gesichtet (nachts 3 sm an ihrem Blitzlicht) und ist für das Radar von Schiff und Hubschrauber ein kleines Echo (bei ruhiger See einige Meilen, bei rauer See weit weniger); dann schrumpft der Kreis in der Karte auf sie. Aufnehmen, indem das Schiff 4 Minuten lang innerhalb 0,25 sm mit höchstens 3 kn liegt, oder mit der Rettungswinde des Hubschraubers (`Z` innerhalb 0,1 sm: eine Minute je Person, 6 in der Kabine, nur wenn das Wetter Tauchsonar erlaubt); die Überlebenden im Hubschrauber zählen, sobald er wieder an Deck ist (Kapitel Helikopterdeck). +600 Punkte, -400 bei Verlust.
 - **Handelsschiff identifizieren:** Das HQ nennt ein Handelsschiff innerhalb 60 sm und gibt seine Position mit etwa 2 sm Fehler. Es gilt als identifiziert, sobald der Ausguck seine Identifizierung gemeldet hat oder der Helikopter bei mindestens 1 sm Sicht auf 1 sm heranfliegt. Etwa ein Drittel wird als verdächtig eingestuft: Das HQ gibt dann ein U-Boot-Datum nahe dem Schiff durch. 40 Minuten.
@@ -1252,8 +1252,8 @@ Auf der Aufträge-Seite kann der Funkraum HQ selbst rufen, höchstens alle 10 Mi
 
 | Taste | Funktion |
 |---|---|
-| `Auf / Ab` | HFDF-Signal auswählen |
-| `Eingabe` | Peilung mit eigener Position protokollieren (auf der Seite Aufträge nimmt Enter den Auftrag an) |
+| `Auf / Ab` | Seiten 1-2: HFDF-Signal wählen |
+| `Eingabe` | Peilung mit eigener Position protokollieren (auf der Seite Aufträge nimmt Eingabe den Auftrag an) |
 | `Auf / Ab` | HQ-Auftrag wählen (Seite Aufträge) |
 | `A / Enter` | Seite Aufträge: gewählten Auftrag annehmen |
 | `D` | Seite Aufträge: gewählten Auftrag ablehnen |
@@ -1272,7 +1272,7 @@ Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrü
 
 1. Fernschreiber auf Seite 2 lesen: Befehle, Wetter, ROE-Änderungen.
 2. Bei KW-Aktivität das Signal wählen (Auf/Ab).
-3. Peilung protokollieren (Enter); die Linie erscheint auf der Karte.
+3. Peilung protokollieren (Eingabe); die Linie erscheint auf der Karte.
 4. Mindestens 1 sm versetzen und binnen 300 s eine zweite Peilung nehmen.
 5. Kreuzpeilung als Suchdatum an Sonar/Brücke geben.
 
@@ -1459,7 +1459,7 @@ Seite 3 zeigt das Tauchsonar wie eine Konsole: Lampen für Dom (grün im Wasser,
 | `Y` | Hubschrauber-Tauchsonar absenken / einholen |
 | `U / V` | Solltiefe des Tauchsonars heben / senken |
 | `Shift+A` | Aktiven Ping vom abgesenkten Tauchsonar senden |
-| `Ctrl+Enter / D` | Leichttorpedo abwerfen |
+| `Strg+Eingabe` | Leichttorpedo abwerfen |
 | `Q / E` | Karte in Stufen zoomen, 500 bis 0,5 sm |
 | `K` | Karte folgt dem eigenen Schiff an/aus |
 | `Akustik: Bild Auf / Ab` | Akustikseite: Breitband / LOFAR / DEMON |
@@ -1469,8 +1469,8 @@ Seite 3 zeigt das Tauchsonar wie eine Konsole: Lampen für Dom (grün im Wasser,
 | `Akustik: J \| , / .` | Empfangston an/aus \| Lautstärke senken/erhöhen |
 | `Akustik: I / O` | Gain senken / erhöhen (3 dB) |
 | `Akustik: N` | Notchfilter gegen Eigenantrieb |
-| `Akustik: Shift+D` | Abhörmodus Breitband / gefiltert / Überlagerung |
-| `Akustik: Shift+F` | Abhör-Frequenzband wechseln |
+| `Akustik: Umschalt+D` | Abhörmodus Breitband / gefiltert / Überlagerung |
+| `Akustik: Umschalt+F` | Abhör-Frequenzband wechseln |
 
 Mit „Akustik" markierte Tasten gelten nur auf der Akustikseite (Seite 4).
 
@@ -1487,21 +1487,21 @@ Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrü
 
 1. Wettergrenzen und Kraftstoff prüfen (nach einer Landung 15 min Tanken an Deck); Start früh befehlen (H): 5 min Vorbereitung.
 2. Wegpunkt vor das vermutete Ziel legen (Pfeiltasten).
-3. Passive Bojenlinie werfen (B); für Entfernung AKTIV wählen (Shift+B).
-4. Schweben und tauchen (Y), Tiefe unter die Schicht (U/V), horchen oder pingen (Shift+A).
+3. Passive Bojenlinie werfen (B); für Entfernung AKTIV wählen (Umschalt+B).
+4. Schweben und tauchen (Y), Tiefe unter die Schicht (U/V), horchen oder pingen (Umschalt+A).
 5. Klassifiziertes U-Boot: Ziel setzen (M), Torpedo werfen (D); rechtzeitig zurückrufen.
 
 Angriffsablauf:
 
 1. Mit zwei passiven Bojen oder einem Ping von Aktivboje/Tauchsonar orten, bis der Kontakt eine frische Position hat.
 2. Als U-Boot klassifizieren (`C`) und als Ziel setzen (`M`).
-3. Zum Datum fliegen; Torpedo werfen (`Strg+Enter` oder `D`). Kontakt halten für einen zweiten Wurf.
+3. Zum Datum fliegen; Torpedo werfen (`Strg+Eingabe`; `D` an der Waffenstation wählt dafür den Lufttorpedo). Kontakt halten für einen zweiten Wurf.
 
 ### Tipps für Profis
 
 - Das Tauchsonar unter die Schicht legen, um tiefe U-Boote zu hören. Die Tauchanzeige zeigt die Schicht am Helikopter erst, wenn der abgesenkte Dom sie durchfahren hat; vorher nur die Kartentiefe.
 - Bojen vor den geschätzten Zielkurs legen, nicht auf das letzte Datum.
-- `F` bestätigt einen Helikopterkontakt; `G` gibt ihn wie am Sonar an die OPZ frei; `Shift+↑`/`Shift+↓` wählen den nächsten Tauchsonarkontakt; `W` legt den Wegpunkt auf die Position des gewählten Kontakts (wie `W` beim Seefernaufklärer; ein reiner Peilkontakt hat keine). Ein Klick in die Karte (uConsole und Browser, auch auf ein Symbol oder eine Beschriftung, nur ein Sonarkontakt wählt diesen Kontakt) legt den Wegpunkt genau auf diesen Punkt; die Karte zeigt ihn als HSP-5 WP mit einer gestrichelten Linie vom Hubschrauber. Der Hubschrauber wird im Anflug langsamer und bleibt auf dem Punkt stehen (auf etwa 20 m); die Pfeiltasten verschieben den Wegpunkt weiter in Schritten von 15 Grad und 1 sm vom Schiff aus.
+- `F` bestätigt einen Helikopterkontakt; `G` gibt ihn wie am Sonar an die OPZ frei; `Umschalt+↑`/`Umschalt+↓` wählen den nächsten Tauchsonarkontakt; `W` legt den Wegpunkt auf die Position des gewählten Kontakts (wie `W` beim Seefernaufklärer; ein reiner Peilkontakt hat keine). Ein Klick in die Karte (uConsole und Browser, auch auf ein Symbol oder eine Beschriftung, nur ein Sonarkontakt wählt diesen Kontakt) legt den Wegpunkt genau auf diesen Punkt; die Karte zeigt ihn als HSP-5 WP mit einer gestrichelten Linie vom Hubschrauber. Der Hubschrauber wird im Anflug langsamer und bleibt auf dem Punkt stehen (auf etwa 20 m); die Pfeiltasten verschieben den Wegpunkt weiter in Schritten von 15 Grad und 1 sm vom Schiff aus.
 - Auf der Akustikseite schaltet `T` die Horchquelle zwischen Tauchsonar und jeder passiven Boje.
 - Den Helikopter rechtzeitig zurückrufen (`H`): die Landung braucht ein einsatzbereites Flugdeck, und die Zuladung wird zwischen Einsätzen nicht ergänzt.
 
@@ -1564,8 +1564,8 @@ Viele Handelsschiffe und Flugzeuge senden mit Navigationsradaren; die Liste läs
 | Schalter | Taste | Werte |
 |---|---|---|
 | Status | `F` | operativ (live, kürzlich, eingestuft oder Bedrohung hoch), offen (operativ, aber noch nicht eingestuft), live, Speicher, alle |
-| Bedrohung | `Shift+F` | alle, niedrig und höher bis kritisch (nur auf der Stufe Einsteiger bewertet) |
-| Band | `Ctrl+F` | alle, A/C, D, E/F, G/H, I/J, K |
+| Bedrohung | `Umschalt+F` | alle, niedrig und höher bis kritisch (nur auf der Stufe Einsteiger bewertet) |
+| Band | `Strg+F` | alle, A/C, D, E/F, G/H, I/J, K |
 | Bündeln | `Z` | an: gleichartige Auffassungen (gleiches Band, gleiche Modulation, Frequenz und PRF wie bei der Zuordnung, Peilung innerhalb 6 Grad) erscheinen als ein Eintrag „E27 ×3“; aus: jede Auffassung einzeln |
 
 Eine Gruppe ist eine Darstellungshilfe, keine Identifizierung: sie kann mehrere Schiffe in einer Richtung zusammenfassen. `←`/`→` blättert durch ihre Auffassungen, die Zeile Gruppe auf der rechten Seite zeigt die Stelle („2 von 4“). Eingestufte und gestörte Auffassungen stehen immer einzeln. Jede Karte nennt die Kennung (laufende Nummer), die Einstufung oder sonst die Modulation, darunter Frequenz, Band, Güte und Alter. Arbeitsweise: mit Status offen die noch nicht eingestuften Sender einen nach dem anderen mit `C` einstufen; eingestufte verschwinden aus dieser Ansicht.
@@ -1600,14 +1600,14 @@ Der Automatikmodus (`A`) wählt Ziele und Techniken und koppelt das Stören wäh
 Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
 
 - Ein Klick auf eine Auffassungskarte wählt sie wie `↑`/`↓`.
-- Die vier Schalter über der Rose schalten wie `F`, `Shift+F`, `Ctrl+F` und `Z`.
+- Die vier Schalter über der Rose schalten wie `F`, `Umschalt+F`, `Strg+F` und `Z`.
 
 ### Standardablauf
 
-1. Neue Erfassungen beobachten; nach Status, Bedrohung und Band filtern (F/Shift+F/Strg+F).
+1. Neue Erfassungen beobachten; nach Status, Bedrohung und Band filtern (F/Umschalt+F/Strg+F).
 2. Erfassung wählen und Kandidaten-Radartypen vergleichen.
 3. Radartyp zuordnen (C); das gibt die Peilung an die OPZ frei.
-4. Flugkörpersucher aufgeschaltet: stören (E), Technik wählen (Shift+E).
+4. Flugkörpersucher aufgeschaltet: stören (E), Technik wählen (Umschalt+E).
 5. Bei Sättigung Auto-ECM (A) nutzen; Stören ist eine Aussendung.
 
 ### Tipps für Profis
@@ -1653,7 +1653,7 @@ Ein Spielstand bewahrt Befehle, Betriebsarten, Mast, Drähte, Plot, Alarmpeilung
 
 #### U-Boot am uConsole spielen
 
-Jedes neue Spiel fragt zuerst **Welche Einheit spielst du?**: *Fregatte F-217* oder *Feindliches U-Boot* (`Auf`/`Ab` oder `1`/`2`, `Enter`; die letzte Wahl ist vorausgewählt). Außerhalb einer Mission ändert auch Optionen (`F10`) Seite 2 **uConsole spielt** die Wahl, etwa vor dem Laden eines Spielstands. Mit dem U-Boot führt der uConsole das feindliche U-Boot statt der Fregatte. Die Fregatte wird dann über Remote Crew (`F9`) aus den Browsern besetzt; jede Fregattenstation, die kein Browser hält, besetzen die **KI-Jäger** (unten).
+Jedes neue Spiel fragt zuerst **Welche Einheit spielst du?**: *Fregatte F-217* oder *Feindliches U-Boot* (`Auf`/`Ab` oder `1`/`2`, `Eingabe`; die letzte Wahl ist vorausgewählt). Außerhalb einer Mission ändert auch Optionen (`F10`) Seite 2 **uConsole spielt** die Wahl, etwa vor dem Laden eines Spielstands. Mit dem U-Boot führt der uConsole das feindliche U-Boot statt der Fregatte. Die Fregatte wird dann über Remote Crew (`F9`) aus den Browsern besetzt; jede Fregattenstation, die kein Browser hält, besetzen die **KI-Jäger** (unten).
 
 Der uConsole zeigt nur das Lagebild des U-Boots; Banner, Ereignislog, Soundeffekte, Plot und Tooltips der Fregatte erscheinen nie (die Lampenhinweise des U-Boots schon), und Trackball- und Telegraphenbedienung der Fregatte sind gesperrt. Die Seite lässt sich nur außerhalb einer Mission wechseln; die Wahl gilt nur für diesen Programmstart und wird nie gespeichert, jeder Start beginnt also mit der Fregatte.
 
@@ -1673,7 +1673,7 @@ Tasten, die an jeder Station des U-Boots wirken (`F1` zeigt sie auf der uConsole
 | `1 … 7` | Stationen: 1 Führung, 2 Sonar, 3 Waffen, 4 Maschine, 5 Mast & ESM, 6 Navigation, 7 Funkraum |
 | `Nummer der aktiven Station` | Erneut drücken, um die Seite dieser Station weiterzuschalten |
 | `Bild Auf / Ab` | Vorige / nächste Seite der Station (jede Station mit mehreren Seiten) |
-| `Strg+Enter` | Torpedo abfeuern (Waffen; Sehrohrseite: auf die Lösung des Angriffsrechners; F: nach Peilung und Entfernung). Enter allein feuert nie |
+| `Strg+Eingabe` | Torpedo abfeuern (Waffen; Sehrohrseite: auf die Lösung des Angriffsrechners; F: nach Peilung und Entfernung). Eingabe allein feuert nie |
 | `Shift+A` | Aktiver Ping mit dem eigenen Sonar (Führung und Sonarraum) |
 | `F1 / ?` | Hilfe (diese Anzeige) |
 | `Shift+F2` | Crew-Hilfe: Die KI besetzt jede freie Station beider Einheiten |
@@ -1694,7 +1694,7 @@ Die Führung sieht das ganze U-Boot: Karte, Navigation, Waffen und Kontakte, das
 
 - **Navigation (Seite 1):** die Karte mit den eigenen Kontakten und Peillinien, die Skalen für Kurs, Fahrt und Tiefe und der Tiefenbalken. `C`, `V` und `D` befehlen Kurs, Fahrt und Tiefe; `U`, `J` und `H` gehen auf Sehrohr-, Unter-Schicht- oder tiefe Tiefe (mit `Umschalt` Schnorchel- und Über-Schicht-Tiefe); ein Klick auf eine Skala befiehlt diesen Wert.
 - **Waffen & Kontakte (Seite 2):** die Rohre und die Kontaktliste, wie die Waffenstation sie sieht, um den Angriff mitzuverfolgen.
-- **Sehrohr (Seite 3):** der Blick durch den Kopf auf Sehrohrtiefe mit ausgefahrenem Mast. `←`/`→` schwenken, `↑`/`↓` neigen, `Q`/`E` schalten schwache und starke Vergrößerung, `Leertaste` den Stabilisator; `Enter` nimmt eine Stadimeter-Entfernung der Sichtung unter dem Fadenkreuz, `Strg+Enter` schießt auf die Lösung des Angriffsrechners.
+- **Sehrohr (Seite 3):** der Blick durch den Kopf auf Sehrohrtiefe mit ausgefahrenem Mast. `←`/`→` schwenken, `↑`/`↓` neigen, `Q`/`E` schalten schwache und starke Vergrößerung, `Leertaste` den Stabilisator; `Eingabe` nimmt eine Stadimeter-Entfernung der Sichtung unter dem Fadenkreuz, `Strg+Eingabe` schießt auf die Lösung des Angriffsrechners.
 - **Bedrohung (Seite 4):** die jüngsten Pings, Torpedogeräusche und Radarauffassungen mit ihren Peilungen. `I` weicht dem jüngsten Alarm aus, `Strg+B` klärt die Hecklücke, `G` ruft Gefechtsstationen.
 - Die Führung pingt mit `Umschalt+A` auf der uConsole und im Browser. Das BT nimmt auf der uConsole der Sonarraum (`2`, `E`); im Browser kann es auch die Führung.
 
@@ -1718,9 +1718,9 @@ Mit ausgefahrenem Mast zeigt die Seite **Sehrohr** (Führung Seite 3, Mast & ESM
 
 `↑`/`↓` neigen den Kopf um 2° (`Umschalt`: 10°, von 10° nach unten bis 60° nach oben, für Flugzeuge), `Q`/`E` wechseln wie beim Fernglas der Fregatte zwischen kleiner (32° Feld) und großer Vergrößerung (8°), und die `Leertaste` schaltet die Stabilisierung; Neigung und Feld stehen in der Bildecke. Diese Einstellungen gehören zum Okular der uConsole oder jedes Browsers, ändern nur das Bild (nicht, was die Optik erkennt) und werden nicht gespeichert. Ein Hubschrauber in Sicht hängt in seinem wahren Höhenwinkel über der Kimm im ruhigen Himmel, hinter den Wolken. In Fahrt strömt das Wasser mit der eigenen Fahrt des U-Boots dicht unter dem Okular vorbei (voraus auf das Auge zu, querab vom Bug zum Heck). Ein Schiff mit Stadimeter-Entfernung steht so weit unter der Kimm, wie das niedrige Auge seine Wasserlinie sieht (auf 0,5 sm kaum ein Zehntel Grad), ein näheres Schiff vor einem ferneren.
 
-`Enter` liest das **Stadimeter** an der Sichtung unter dem Fadenkreuz ab: die Entfernung folgt aus der scheinbaren Länge und der angenommenen Rumpflänge der Klasse (130 m für ein Kriegsschiff oder ein nicht erkanntes Fahrzeug, 150 m für ein Handelsschiff), ein nicht erkanntes oder bugwärts stehendes Ziel misst sich also zu weit; die Ablesung ist ±25 % und wird für 120 s zu einem VISUAL-Fix am Sonarkontakt des U-Boots auf dieses Ziel, für einen Schuss nutzbar wie ein Ping-Fix. Luftfahrzeuge und Laufbahnen lassen sich nicht messen.
+`Eingabe` liest das **Stadimeter** an der Sichtung unter dem Fadenkreuz ab: die Entfernung folgt aus der scheinbaren Länge und der angenommenen Rumpflänge der Klasse (130 m für ein Kriegsschiff oder ein nicht erkanntes Fahrzeug, 150 m für ein Handelsschiff), ein nicht erkanntes oder bugwärts stehendes Ziel misst sich also zu weit; die Ablesung ist ±25 % und wird für 120 s zu einem VISUAL-Fix am Sonarkontakt des U-Boots auf dieses Ziel, für einen Schuss nutzbar wie ein Ping-Fix. Luftfahrzeuge und Laufbahnen lassen sich nicht messen.
 
-Jede Ablesung ist zugleich eine **Marke** für den **Angriffsrechner**: aus zwei oder mehr Marken im Abstand von mindestens einer Minute (die letzten sechs innerhalb von 15 Minuten) legt er eine Gerade durch Kurs und Fahrt des Ziels und zeigt mit der Torpedogeschwindigkeit den Vorhaltewinkel (links oder rechts der Peilung) und die Laufzeit unter dem Sehrohr (Browser: Spalte Lösung); die Güte wächst mit der Zeit zwischen erster und letzter Marke (voll nach 5 Minuten) und mit der Zahl der Marken. `Strg+Enter` auf der Sehrohrseite (Browser: Schuss nach Lösung, nur die Führung) schießt nach der Lösung der Sichtung unter dem Fadenkreuz: der Torpedo läuft auf dem Abfangkurs zu dem Punkt, an dem Ziel und Torpedo zusammentreffen. Ein Schuss auf den Sonarkontakt eines markierten Ziels nutzt die Lösung ebenfalls. Ein Ziel, das nach der letzten Marke dreht, lässt die Lösung hinter sich; eine Anpassung schneller als 40 kn wird als schlechte Marke verworfen. Die Marken gehören zum Spielstand.
+Jede Ablesung ist zugleich eine **Marke** für den **Angriffsrechner**: aus zwei oder mehr Marken im Abstand von mindestens einer Minute (die letzten sechs innerhalb von 15 Minuten) legt er eine Gerade durch Kurs und Fahrt des Ziels und zeigt mit der Torpedogeschwindigkeit den Vorhaltewinkel (links oder rechts der Peilung) und die Laufzeit unter dem Sehrohr (Browser: Spalte Lösung); die Güte wächst mit der Zeit zwischen erster und letzter Marke (voll nach 5 Minuten) und mit der Zahl der Marken. `Strg+Eingabe` auf der Sehrohrseite (Browser: Schuss nach Lösung, nur die Führung) schießt nach der Lösung der Sichtung unter dem Fadenkreuz: der Torpedo läuft auf dem Abfangkurs zu dem Punkt, an dem Ziel und Torpedo zusammentreffen. Ein Schuss auf den Sonarkontakt eines markierten Ziels nutzt die Lösung ebenfalls. Ein Ziel, das nach der letzten Marke dreht, lässt die Lösung hinter sich; eine Anpassung schneller als 40 kn wird als schlechte Marke verworfen. Die Marken gehören zum Spielstand.
 
 Die kartierte Küste steht auf dem Horizont des Sehrohrs, so weit seine niedrige Optik Land sieht (Hügel mit 25 bis 70 m angenommen). Die Führung kann auch ohne Sonarbediener pingen und eine BT-Messung nehmen. Die Karte zeigt das Schussfeld der Rohre, wo sie nicht rundum schießen, und das vom Sonar zugewiesene Ziel ist für den Schuss vorausgewählt.
 
@@ -1775,17 +1775,17 @@ Der Sonarraum des U-Boots arbeitet wie der der Fregatte, ohne Schleppsonar, OPZ-
 
 ### Waffen
 
-Die Waffenstation lädt und flutet die Rohre, stellt Lauftiefe und Fächer ein, schießt auf einen gewählten Kontakt oder eine eingegebene Peilung, lenkt die drahtgelenkten Torpedos und stößt Täuschkörper aus. Die Seite hat neben der Karte zwei Spalten: Kontaktkarten (ein Klick wählt einen Kontakt) über der Schusslage sowie die Feuerleitung über den Rohrlampen. Der Feuerleitkasten zeigt die Suchkopf-Einstellung der nächsten Schüsse; an der Waffenstation feuert ein Klick auf das rote Feuerfeld wie `Strg+Enter`. Unter den Voreinstellungen fluten Tastenchips das nächste trockene Rohr (`Shift+M`, leise `Strg+M`) und stoßen einen Täuschkörper aus (`V`), und ein Klick auf eine Rohrlampe lädt ein leeres Rohr (`M`) oder flutet ein trockenes (`Shift+M`).
+Die Waffenstation lädt und flutet die Rohre, stellt Lauftiefe und Fächer ein, schießt auf einen gewählten Kontakt oder eine eingegebene Peilung, lenkt die drahtgelenkten Torpedos und stößt Täuschkörper aus. Die Seite hat neben der Karte zwei Spalten: Kontaktkarten (ein Klick wählt einen Kontakt) über der Schusslage sowie die Feuerleitung über den Rohrlampen. Der Feuerleitkasten zeigt die Suchkopf-Einstellung der nächsten Schüsse; an der Waffenstation feuert ein Klick auf das rote Feuerfeld wie `Strg+Eingabe`. Unter den Voreinstellungen fluten Tastenchips das nächste trockene Rohr (`Umschalt+M`, leise `Strg+M`) und stoßen einen Täuschkörper aus (`V`), und ein Klick auf eine Rohrlampe lädt ein leeres Rohr (`M`) oder flutet ein trockenes (`Umschalt+M`).
 
 - **Rohre:** jedes Rohr ist leer, geladen (trocken) oder geflutet; nur ein geflutetes Rohr feuert. `M` lädt das nächste leere Rohr, `Strg+M` flutet das nächste geladene langsam (60 s, kaum hörbar), `Umschalt+M` schnell (20 s, laut).
-- **Feuerleitung:** `↑`/`↓` wählen einen Kontakt mit frischer Entfernung, `T` stellt die Lauftiefe, `Y` Einzelschuss oder Zweierfächer, `X` das Suchmuster und `,`/`.` den Scharfschaltpunkt; `Strg+Enter` schießt. `F` schießt ohne Kontakt: Peilung eingeben und `Enter`, dann die Entfernung zum Datum (leer: 10 sm in Schussrichtung) und `Enter`, und `Strg+Enter` schießt; `Enter` allein schießt nie.
+- **Feuerleitung:** `↑`/`↓` wählen einen Kontakt mit frischer Entfernung, `T` stellt die Lauftiefe, `Y` Einzelschuss oder Zweierfächer, `X` das Suchmuster und `,`/`.` den Scharfschaltpunkt; `Strg+Eingabe` schießt. `F` schießt ohne Kontakt: Peilung eingeben und `Eingabe`, dann die Entfernung zum Datum (leer: 10 sm in Schussrichtung) und `Eingabe`, und `Strg+Eingabe` schießt; `Eingabe` allein schießt nie.
 - **Draht und Täuschkörper:** `W` lenkt den jüngsten drahtgelenkten Torpedo auf eine neue Peilung, `Umschalt+W` kappt den Draht; `V` stößt einen Täuschkörper aus.
 
-**Waffen** (Seite und Station Waffen) zeigt Feuerbereitschaft, Torpedos, klare (geflutete) Rohre, Nachladen, Täuschkörper, Notanblasen, eine Zeile mit den Rohren, die nicht klar sind (`M` lädt das nächste leere Rohr, `Shift+M` flutet das nächste trockene, `Strg+M` flutet es langsam und leise) und die eigenen Sonarkontakte (Peilung, Entfernung falls bekannt, und Güte in Prozent: der bessere Wert aus Signalgüte und Spurvertrauen, 100 % ist ein sicherer Kontakt), darunter die Schusslage des gewählten Kontakts wie bei der Fregatte (Torpedoreichweite, Peilung, geschätzte Position, Treffpunkt und Torpedolaufbahn, nur aus der eigenen Beobachtung des U-Boots).
+**Waffen** (Seite und Station Waffen) zeigt Feuerbereitschaft, Torpedos, klare (geflutete) Rohre, Nachladen, Täuschkörper, Notanblasen, eine Zeile mit den Rohren, die nicht klar sind (`M` lädt das nächste leere Rohr, `Umschalt+M` flutet das nächste trockene, `Strg+M` flutet es langsam und leise) und die eigenen Sonarkontakte (Peilung, Entfernung falls bekannt, und Güte in Prozent: der bessere Wert aus Signalgüte und Spurvertrauen, 100 % ist ein sicherer Kontakt), darunter die Schusslage des gewählten Kontakts wie bei der Fregatte (Torpedoreichweite, Peilung, geschätzte Position, Treffpunkt und Torpedolaufbahn, nur aus der eigenen Beobachtung des U-Boots).
 
 **Befehle und Waffen:** das U-Boot folgt Kurs-, Fahrt- und Tiefenbefehlen im Rahmen seiner Wende-, Tiefen- und Beschleunigungsgrenzen; Fahrtstufen (Stopp, 3, 6, 10, 15 kn, Maximum) setzen die Fahrt schnell. Schießt einen Torpedo auf die gemessene Peilung eines Sonarkontakts, mit Ping-Fix oder TMA-Lösung, solange aktuell, oder auf eine freie Peilung mit optionaler Entfernung; der Schuss braucht ein geflutetes, geladenes Rohr und das Ziel im Schussfeld der Rohre.
 
-**Rohre:** Die Crew übernimmt die geladenen Rohre geflutet. Ein leergeschossenes Rohr bleibt leer, bis die Torpedogasten es aus den Reserven laden, sofern dort noch ein Torpedo liegt (`M` an der Station Waffen, Browser: Laden; jedes U-Boot führt mindestens noch einmal so viele Reservetorpedos wie Rohre, und das Laden dauert 2 min auf einem Atom-U-Boot, 3 min auf einem konventionellen und 4 min auf den älteren Dieselklassen, langsamer bei verbrauchter Luft); ein geladenes Rohr ist trocken und muss vor dem Schuss geflutet werden, was die Mündungsklappe öffnet, 20 s dauert und 4 s lang wie ein kurzer Transient hörbar ist, den das Sonar der Fregatte bis 8 sm hört (`Shift+M`, Browser: Fluten); langsames Fluten dauert 60 s und ist nur bis 1,5 sm zu hören (`Strg+M`, Browser: Leise fluten). Die Station Waffen und der Browser zeigen jedes Rohr als leer, lädt, trocken, flutet oder klar, und das Log meldet jedes geladene und geflutete Rohr. Die U-Boote der KI laden und fluten selbst: leise und früh, sobald sie die Fregatte innerhalb von 15 sm geortet haben, laut und kurz vor dem Schuss, wenn sie mit trockenen Rohren schießen müssen.
+**Rohre:** Die Crew übernimmt die geladenen Rohre geflutet. Ein leergeschossenes Rohr bleibt leer, bis die Torpedogasten es aus den Reserven laden, sofern dort noch ein Torpedo liegt (`M` an der Station Waffen, Browser: Laden; jedes U-Boot führt mindestens noch einmal so viele Reservetorpedos wie Rohre, und das Laden dauert 2 min auf einem Atom-U-Boot, 3 min auf einem konventionellen und 4 min auf den älteren Dieselklassen, langsamer bei verbrauchter Luft); ein geladenes Rohr ist trocken und muss vor dem Schuss geflutet werden, was die Mündungsklappe öffnet, 20 s dauert und 4 s lang wie ein kurzer Transient hörbar ist, den das Sonar der Fregatte bis 8 sm hört (`Umschalt+M`, Browser: Fluten); langsames Fluten dauert 60 s und ist nur bis 1,5 sm zu hören (`Strg+M`, Browser: Leise fluten). Die Station Waffen und der Browser zeigen jedes Rohr als leer, lädt, trocken, flutet oder klar, und das Log meldet jedes geladene und geflutete Rohr. Die U-Boote der KI laden und fluten selbst: leise und früh, sobald sie die Fregatte innerhalb von 15 sm geortet haben, laut und kurz vor dem Schuss, wenn sie mit trockenen Rohren schießen müssen.
 
 Die Crew stellt die Lauftiefe ein (5-300 m, sonst eine flache Voreinstellung) und schießt einen Torpedo oder zwei im Fächer von ±4°, jeder mit eigenem Datum. Jeder Crew-Torpedo läuft am Draht: die Crew kann sein Datum versetzen (Peilung und Entfernung vom U-Boot), und der Draht dreht ihn darauf ein, bis sein Suchkopf erfasst; schneller als 10 kn oder stärker als 1,5°/s drehen für 5 s lässt den Draht reißen, ebenso eine abgelaufene Spule, und die Crew kann ihn kappen. Stößt einen Täuschkörper aus und bläst im Notfall die Hauptzellen an (mit voller Pressluft dreimal).
 
@@ -1805,7 +1805,7 @@ Die Crew stellt die Lauftiefe ein (5-300 m, sonst eine flache Voreinstellung) un
 
 1. Rohre laden (M) und früh und langsam fluten (Strg+M); schnelles Fluten (Umschalt+M) ist laut.
 2. Vor dem Schuss Lauftiefe (T), Fächer (Y), Suchmuster (X) und Einschaltpunkt (, / .) einstellen.
-3. Einen Kontakt mit frischer Entfernung wählen und mit Strg+Enter schießen oder auf eine eingegebene Peilung (F).
+3. Einen Kontakt mit frischer Entfernung wählen und mit Strg+Eingabe schießen oder auf eine eingegebene Peilung (F).
 4. Den drahtgelenkten Torpedo (W) auf neue Peilungen lenken; vor harten Manövern den Draht kappen (Umschalt+W).
 5. Gegen einen Torpedo einen Täuschkörper ausstoßen (V) und sofort nachladen.
 
@@ -1816,7 +1816,7 @@ Der Maschinenraum fährt Telegraph, Schnorchel und Laderate, Schleichfahrt, die 
 - **Anlage (Seite 1):** Telegraph (`+`/`-`), Schleichfahrt (`A`, höchstens 5 kn), Schnorchel (`N`) und die Werte von Batterie, Diesel und E-Maschine.
 - **Vorräte (Seite 2):** Batterie, Kraftstoff, Kohlendioxid und Sauerstoff. `R` schaltet die Laderate beim Schnorcheln (voll, halb, nur Luft), `Umschalt+O` setzt einen frischen Absorbersatz ein, `O` zündet eine Sauerstoffkerze.
 - **Zellen (Seite 3):** Regel- und Trimmzellen. `↑`/`↓` lenzen oder fluten die Regelzelle, `←`/`→` verschieben Trimmwasser, `Z` schaltet die Trimmautomatik; `Umschalt+B` ist das einmalige Notanblasen.
-- **Leckwehr (Seite 4):** die Abteilungen mit Wasser, Lecks, Feuer und Gas. `↑`/`↓` wählen eine Abteilung, `←`/`→` eine Aufgabe, `Enter` schickt Trupp 1 (`Umschalt+Enter` Trupp 2), `I` schließt oder öffnet ihre Schotten; `W`, `M` und `U` lösen die Wache ab, schicken den Sanitätstrupp und besetzen die am schwersten getroffene Station neu.
+- **Leckwehr (Seite 4):** die Abteilungen mit Wasser, Lecks, Feuer und Gas. `↑`/`↓` wählen eine Abteilung, `←`/`→` eine Aufgabe, `Eingabe` schickt Trupp 1 (`Umschalt+Eingabe` Trupp 2), `I` schließt oder öffnet ihre Schotten; `W`, `M` und `U` lösen die Wache ab, schicken den Sanitätstrupp und besetzen die am schwersten getroffene Station neu.
 
 Die **Maschine** ist ein Leitstand: Rundinstrumente für Fahrt (die befohlene Fahrt als gelbe Marke), Batterie (beim Atom-U-Boot die Tiefe) und Eigenlärm, Lampen für Schleichfahrt, Schnorchel, Auf Grund, Kavitation, Notanblasen und den Anlagenzustand sowie die Telegrafenstufen.
 
@@ -1844,7 +1844,7 @@ Die **Maschine** ist ein Leitstand: Rundinstrumente für Fahrt (die befohlene Fa
 
 **Luft:** getaucht verbraucht die Crew Sauerstoff und atmet Kohlendioxid aus (je etwa 0,45 % pro Stunde); ein CO2-Absorbersatz nimmt CO2 auf, bis er verbraucht ist (8 Ersatzsätze), eine O2-Kerze setzt in 15 Minuten 1 % O2 zu (12 an Bord, eine zur Zeit), und Schnorcheln lüftet das U-Boot in wenigen Minuten Richtung Frischluft. Ab 3 % CO2 oder unter 18 % O2 ist die Luft verbraucht, ab 5 % CO2 oder unter 16 % O2 gefährlich; das Log warnt bei jeder Stufe. Schlechte Luft macht die Crew langsamer (bis 30 % Leistung), und die Torpedomannschaft lädt entsprechend langsamer nach. KI-U-Boote versorgen ihre Luft selbst und tauchen zum Lüften auf, wenn sie gefährlich wird. Ein Atom-U-Boot hat keine dieser Vorräte.
 
-Die zweite Seite der Maschine, **Vorräte**, zeigt Energie, Ausdauer und Luft; `R` wechselt die Laderate, `Shift+O` setzt einen Absorbersatz ein und `O` zündet eine O2-Kerze.
+Die zweite Seite der Maschine, **Vorräte**, zeigt Energie, Ausdauer und Luft; `R` wechselt die Laderate, `Umschalt+O` setzt einen Absorbersatz ein und `O` zündet eine O2-Kerze.
 
 #### Zellen, Trimm und Luft
 
@@ -1858,7 +1858,7 @@ Ihre dritte Seite **Zellen** zeigt das Schnittbild, Hauptzellen und Pressluft, d
 
 #### Leckwehr
 
-Ihre vierte Seite **Leckwehr** ist ein Schnittbild des U-Boots vom Heck zum Bug (Turm, Außenhülle und der Druckkörper mit seinen Einbauten; Wasser, das sich mit dem Trimm neigt, Brand und Rauch, Chlorgasschleier, ein Leck mit einströmendem Wasser, runde Schotttüren mit einem Kreuz, wenn geschlossen, Trupp-Plaketten; darunter Name und Wasser in Tonnen jeder Abteilung), Lampen mit Wasser, Leck, Brand, Gas, Schotten der gewählten Abteilung und dem Strom sowie beide Trupps; `↑`/`↓` wählen eine Abteilung, `←`/`→` eine Aufgabe, `Enter` schickt Trupp 1 und `Umschalt+Enter` Trupp 2 mit dieser Aufgabe dorthin, und `I` schließt oder öffnet die Schotten der Abteilung.
+Ihre vierte Seite **Leckwehr** ist ein Schnittbild des U-Boots vom Heck zum Bug (Turm, Außenhülle und der Druckkörper mit seinen Einbauten; Wasser, das sich mit dem Trimm neigt, Brand und Rauch, Chlorgasschleier, ein Leck mit einströmendem Wasser, runde Schotttüren mit einem Kreuz, wenn geschlossen, Trupp-Plaketten; darunter Name und Wasser in Tonnen jeder Abteilung), Lampen mit Wasser, Leck, Brand, Gas, Schotten der gewählten Abteilung und dem Strom sowie beide Trupps; `↑`/`↓` wählen eine Abteilung, `←`/`→` eine Aufgabe, `Eingabe` schickt Trupp 1 und `Umschalt+Eingabe` Trupp 2 mit dieser Aufgabe dorthin, und `I` schließt oder öffnet die Schotten der Abteilung.
 
 Die Maschine zeigt unter **Leckwehr** (Karte im Browser mit einer Leckwehr-Tafel, einer Seitenansicht des Druckkörpers mit Wasser, Brandschein, Gasschleier, Lecks, geschlossenen Schotten, einer Zustandslampe je Abteilung und den Trupp-Plaketten, Rundinstrumenten für Trimm, Wassereinbruch und Pressluft und darunter der Tabelle; auf der uConsole Maschine Seite 4 **Leckwehr**) den Druckkörper in sechs Abteilungen: Bugraum, Zentrale, Wohnraum, Batterieraum, Maschinenraum und Heckraum.
 
@@ -1882,16 +1882,16 @@ Darunter stehen runde **Instrumente** für Fahrt, Batterie, Energiebilanz, Tiefe
 2. Schleichfahrt (A), sobald die Fregatte nahe ist: höchstens 5 kn.
 3. Kohlendioxid und Sauerstoff auf der Vorratsseite beobachten; rechtzeitig Absorber (Umschalt+O) oder Kerze (O).
 4. Den Trimm auf Automatik lassen (Z); nur für ein leises Schweben von Hand trimmen.
-5. Bei Schäden die Trupps schicken (Enter), Schotten schließen (I); Anblasen (Umschalt+B) nur als letztes Mittel.
+5. Bei Schäden die Trupps schicken (Eingabe), Schotten schließen (I); Anblasen (Umschalt+B) nur als letztes Mittel.
 
 ### Mast & ESM
 
 Mast & ESM fährt den Mast an Sehrohrtiefe aus, hört auf der ESM-Rose nach Radaren, klassifiziert die Sender, plottet Kreuzpeilungen und schaut durchs Sehrohr. Ein Klick auf eine Zeile der Senderliste wählt diesen Sender, wie ↑/↓.
 
-- **ESM (Seite 1):** mit ausgefahrenem Mast (`P`, nur auf Sehrohrtiefe) zeigt die Rose jedes gehörte Radar mit Peilung und Pegel. `↑`/`↓` wählen einen Sender, `C` (oder `→`; `Umschalt+C` oder `←` zurück) klassifiziert ihn aus der Bibliothek (eine Anmerkung, nie die Wahrheit), `Enter` gibt seine Kreuzpeilung oder Peillinie in den Plot des U-Boots. Ein Hauptkeulentreffer heißt, dass das Radar den Mast womöglich schon sieht.
+- **ESM (Seite 1):** mit ausgefahrenem Mast (`P`, nur auf Sehrohrtiefe) zeigt die Rose jedes gehörte Radar mit Peilung und Pegel. `↑`/`↓` wählen einen Sender, `C` (oder `→`; `Umschalt+C` oder `←` zurück) klassifiziert ihn aus der Bibliothek (eine Anmerkung, nie die Wahrheit), `Eingabe` gibt seine Kreuzpeilung oder Peillinie in den Plot des U-Boots. Ein Hauptkeulentreffer heißt, dass das Radar den Mast womöglich schon sieht.
 - **Sehrohr (Seite 2):** dasselbe Sehrohr wie Seite 3 der Führung, ohne Schuss.
 
-**Mast & ESM** zeigt die Mastzeit, die Rose, die Emitterliste und den gewählten Emitter (Signal, Pegel und Trend, Kreuzpeilung, Einstufung); ihre zweite Seite und die dritte der Führung ist das **Sehrohr** (Okular, Sichtlinie, Licht und die Sichtungsliste; `←`/`→` schwenken, `Enter` Stadimeter).
+**Mast & ESM** zeigt die Mastzeit, die Rose, die Emitterliste und den gewählten Emitter (Signal, Pegel und Trend, Kreuzpeilung, Einstufung); ihre zweite Seite und die dritte der Führung ist das **Sehrohr** (Okular, Sichtlinie, Licht und die Sichtungsliste; `←`/`→` schwenken, `Eingabe` Stadimeter).
 
 Mit ausgefahrenem Mast auf Sehrohrtiefe hört die ESM-Antenne des U-Boots (3 m über Wasser) einmal pro Sekunde die Radare ringsum: das der Fregatte, anderer Schiffe und von Flugzeugen innerhalb des Radarhorizonts, über Land nur, wo die Küste die Linie nicht verdeckt. Der Hubschrauber der Fregatte strahlt sein X-Band-Suchradar, solange er fliegt und nicht taucht (Antenne in 150 m), der Seefernaufklärer sein frequenzagiles Suchradar, solange die OPZ es eingeschaltet hat. Jede Erfassung trägt die gemessene Peilung (±4°), Band, Trägerfrequenz, PRF, Modulation und Empfangspegel, nie die Identität oder Position des Senders.
 
@@ -1901,7 +1901,7 @@ Die **Umlaufzeit** ist die Zeit zwischen den Treffern der Hauptkeule eines Emitt
 
 Die **Mastwarnung** („Radar kann Mast sehen“) kommt, wenn die geschätzte Entfernung eines erfassten Suchradars innerhalb der Entfernung liegt, auf der ein Seeraumradar bei diesem Seegang und Regen einen ausgefahrenen Mast sieht (der Wert der Wetterseite); die **empfohlene Mastzeit** ist 60 s bei ruhiger See, bis zu 300 s, wenn die Seegangsechos den Mast verbergen, und 20 s unter dieser Warnung, und das Log meldet, wenn sie überschritten ist. Ab Seegang 3 überspülen Wellen die Antenne, und manche Durchläufe hören nichts.
 
-Die Karte Mast & ESM im Browser hat die Rose, die Emittertabelle und die Auswertung des gewählten Emitters; **In den Plot übernehmen** trägt die Kreuzpeilung (Markierung und Fehlerkreis) oder sonst die letzte Peillinie in den Plot des U-Boots ein. Auf der Seite Mast & ESM der uConsole wählen `↑`/`↓` einen Emitter, `C` oder `←`/`→` (`Umschalt+C` zurück) schalten seine Einstufung aus der Bibliothek weiter und `Enter` übernimmt ihn in den Plot. Ein ausgefahrener Mast zieht eine Schaumfahne, die Ausguck, Helikopter und Seefernaufklärer mit dem Auge sehen (siehe Kapitel Brücke): langsam fahren hält sie klein, und läuft das U-Boot mit oben stehendem Mast schneller als 5 kn, warnt die Crew „Schaumfahne sichtbar, Fahrt verringern“.
+Die Karte Mast & ESM im Browser hat die Rose, die Emittertabelle und die Auswertung des gewählten Emitters; **In den Plot übernehmen** trägt die Kreuzpeilung (Markierung und Fehlerkreis) oder sonst die letzte Peillinie in den Plot des U-Boots ein. Auf der Seite Mast & ESM der uConsole wählen `↑`/`↓` einen Emitter, `C` oder `←`/`→` (`Umschalt+C` zurück) schalten seine Einstufung aus der Bibliothek weiter und `Eingabe` übernimmt ihn in den Plot. Ein ausgefahrener Mast zieht eine Schaumfahne, die Ausguck, Helikopter und Seefernaufklärer mit dem Auge sehen (siehe Kapitel Brücke): langsam fahren hält sie klein, und läuft das U-Boot mit oben stehendem Mast schneller als 5 kn, warnt die Crew „Schaumfahne sichtbar, Fahrt verringern“.
 
 ![Mast/ESM](figures/de-uboot-mast-esm.png)
 
@@ -1913,9 +1913,9 @@ Die Karte Mast & ESM im Browser hat die Rose, die Emittertabelle und die Auswert
 
 1. Den Mast (P) nur an Sehrohrtiefe und nur kurz ausfahren.
 2. Die ESM-Rose beobachten: ein Hauptkeulentreffer heißt, das Radar sieht den Mast vielleicht schon.
-3. Jeden Sender klassifizieren (← / →) und Kreuzpeilungen in den Plot geben (Enter).
+3. Jeden Sender klassifizieren (← / →) und Kreuzpeilungen in den Plot geben (Eingabe).
 4. Den Mast sofort einfahren, wenn ein Hubschrauber- oder Flugzeugradar stärker wird.
-5. Auf der Sehrohrseite Stadimeter-Entfernungen für den Rechner nehmen (Enter).
+5. Auf der Sehrohrseite Stadimeter-Entfernungen für den Rechner nehmen (Eingabe).
 
 ### Navigation
 
@@ -1929,7 +1929,7 @@ Die Station Navigation öffnet auf ihrer eigenen Seite **Karte & Echolot**: vier
 
 Die Aufzeichnung dient nur der Anzeige, wird nicht gespeichert und beginnt nach dem Laden leer.
 
-**Plot:** Im Browser führen Führung und Navigation den eigenen Fettstift-Plot des U-Boots (Markierungen, Lineale, Peillinien, Kreise, Koppellinien). Auf der uConsole hat die U-Boot-Seite keine Zeichenwerkzeuge (`P` bedient dort den Mast), aber `Enter` auf der Seite Mast & ESM überträgt eine Kreuzpeilung oder Peillinie in den Plot, und die Karte jeder Station zeigt den Plot. Die Fregatte sieht ihn nie; der Plot wird mit dem Spiel gespeichert.
+**Plot:** Im Browser führen Führung und Navigation den eigenen Fettstift-Plot des U-Boots (Markierungen, Lineale, Peillinien, Kreise, Koppellinien). Auf der uConsole hat die U-Boot-Seite keine Zeichenwerkzeuge (`P` bedient dort den Mast), aber `Eingabe` auf der Seite Mast & ESM überträgt eine Kreuzpeilung oder Peillinie in den Plot, und die Karte jeder Station zeigt den Plot. Die Fregatte sieht ihn nie; der Plot wird mit dem Spiel gespeichert.
 
 Die Navigation zeigt das Wasser unter dem Kiel und prüft die Seekarte entlang des Sollkurses bis 5 sm: Land oder ein Grund flacher als das U-Boot wird als Hindernis voraus gemeldet, im Log und als Warnung. Es zählt nur die kartierte Geografie; andere Fahrzeuge sind nicht Teil der Prüfung.
 
@@ -1960,13 +1960,13 @@ Die Navigation zeigt das Wasser unter dem Kiel und prüft die Seekarte entlang d
 Der Funkraum schreibt die Sendungen des HQ mit, liest Befehle und Kontaktmeldungen des HQ und sendet Lagemeldungen.
 
 - Die Seite zeigt, wann die nächste Sendung des HQ kommt, ob eine Antenne oben ist (Mast `P` auf Sehrohrtiefe oder die Schleppbojenantenne `B` bis 60 m bei höchstens 6 kn), die Befehle und Kontaktmeldungen des HQ und das Protokoll.
-- `Enter` sendet eine Lagemeldung; dazu muss der Mast oben sein, und die Fregatte kann sie mit KW-Peilung orten.
+- `Eingabe` sendet eine Lagemeldung; dazu muss der Mast oben sein, und die Fregatte kann sie mit KW-Peilung orten.
 
-Der **Funkraum** hat eine Seite: Antenne, Rundspruchplan, Fortschritt von Aufnahme und Sendung, die letzte Feindlage der Führung und das Funktagebuch; `Enter` sendet eine Lagemeldung und `P` fährt den Mast aus oder ein.
+Der **Funkraum** hat eine Seite: Antenne, Rundspruchplan, Fortschritt von Aufnahme und Sendung, die letzte Feindlage der Führung und das Funktagebuch; `Eingabe` sendet eine Lagemeldung und `P` fährt den Mast aus oder ein.
 
 Die Flottenführung sendet alle 10 Minuten einen U-Boot-Rundspruch (Rundspruch 0 bei Missionsbeginn, dann 1, 2 …) und wiederholt ihn bis zum nächsten. Das U-Boot nimmt ihn nur mit klarer Antenne auf, das heißt mit ausgefahrenem Mast auf Sehrohrtiefe, und erst nach 20 s ununterbrochenem Empfang innerhalb der Sendezeit dieses Rundspruchs; ein U-Boot, das tief bleibt, verpasst Rundsprüche und bekommt nur den jeweils neuesten. In 60 % der Fälle enthält ein Rundspruch die **Feindlagemeldung** der Führung zur Fregatte: einen 5 bis 15 Minuten alten Standort mit 4 sm Fehlerkreis und gerundetem Kurs und Fahrt. Die Karte zeigt ihn als gelben Kreis mit seinem Alter, und die Funkseite nennt Peilung und Entfernung vom U-Boot.
 
-Eine **Lagemeldung** (`Enter` im Funkraum oder der Knopf im Browser) sind 20 s Kurzwellensendung mit klarer Antenne. Währenddessen kann der KW-Peiler der Fregatte das U-Boot peilen (Funkraum HF/DF), und Mast einfahren bricht sie ab. Die Führung bestätigt eine Meldung im nächsten Rundspruch und fügt dann immer eine schärfere Feindlagemeldung (2 sm) bei. Die Funkseite und die Karte Funkraum im Browser zeigen Antenne, Rundspruchnummer und Zeit bis zum nächsten, Fortschritt von Aufnahme und Sendung, gesendete Meldungen, die letzte Feindlage und das Funktagebuch (12 Einträge, wird gespeichert).
+Eine **Lagemeldung** (`Eingabe` im Funkraum oder der Knopf im Browser) sind 20 s Kurzwellensendung mit klarer Antenne. Währenddessen kann der KW-Peiler der Fregatte das U-Boot peilen (Funkraum HF/DF), und Mast einfahren bricht sie ab. Die Führung bestätigt eine Meldung im nächsten Rundspruch und fügt dann immer eine schärfere Feindlagemeldung (2 sm) bei. Die Funkseite und die Karte Funkraum im Browser zeigen Antenne, Rundspruchnummer und Zeit bis zum nächsten, Fortschritt von Aufnahme und Sendung, gesendete Meldungen, die letzte Feindlage und das Funktagebuch (12 Einträge, wird gespeichert).
 
 Unter dem Mast nimmt die **VLF-Rahmenantenne** den Rundspruch noch bis 25 m Tiefe auf, das langsame VLF-Signal braucht aber 60 s ununterbrochenen Empfang statt 20 s; sie empfängt nur, eine Lagemeldung braucht weiter den Mast. Noch tiefer bringt die **Bojenantenne** (`B` auf der Funkseite oder die Schaltflächen der Funkraum-Karte im Browser) in 60 s etwa 280 m achteraus aus und nimmt den Rundspruch bis 60 m Tiefe in 30 s auf, aber nur bei höchstens 6 kn (schneller wird sie unter Wasser gezogen); auch sie empfängt nur. Über 10 kn reißt das Kabel, und die Boje ist für die Mission verloren. Die kleine Boje auf dem Wasser kann der Ausguck der Fregatte aus der Nähe sehen (ein unbekanntes kleines Objekt, nie als U-Boot erkannt) und ihr Überwasserradar auf kurze Entfernung orten; Flugzeugbesatzungen achten nicht auf sie. Einholen dauert wieder 60 s.
 
@@ -1984,13 +1984,13 @@ Ein Rundspruch gibt auch die Ereignisse auf See weiter, die HQ kennt (Treibnetz,
 
 1. Die nächste HQ-Sendung notieren; sie mit Mast, Bojenantenne (B) oder VLF mitschreiben.
 2. HQ-Befehle und Kontaktmeldungen an den Kommandanten geben; ihre Peilungen gelten vom gekoppelten Ort.
-3. Lagemeldungen (Enter) nur auf Befehl oder in sicherer Lage senden: die Fregatte kann eine KW-Peilung nehmen.
+3. Lagemeldungen (Eingabe) nur auf Befehl oder in sicherer Lage senden: die Fregatte kann eine KW-Peilung nehmen.
 4. Die Bojenantenne bei höchstens 6 kn ausbringen und vor mehr als 10 kn einholen.
 5. Eine Kontaktmeldung altert mit jeder Minute: ihr Fehlerkreis wächst, das Ziel fährt weiter.
 
 ### Auftauchen und Alarmtauchen
 
-- `Shift+H` (Browser: **Auftauchen**, Kommando oder Navigation) lässt das U-Boot an die Oberfläche gehen. Bei 2 m oder weniger ist es aufgetaucht: Das Niederdruckgebläse bläst die Hauptzellen in 2 Minuten aus (ohne Pressluft aus den Flaschen), das Luk ist offen und das U-Boot lüftet sich.
+- `Umschalt+H` (Browser: **Auftauchen**, Kommando oder Navigation) lässt das U-Boot an die Oberfläche gehen. Bei 2 m oder weniger ist es aufgetaucht: Das Niederdruckgebläse bläst die Hauptzellen in 2 Minuten aus (ohne Pressluft aus den Flaschen), das Luk ist offen und das U-Boot lüftet sich.
 - Aufgetaucht laufen die Diesel (`N`) an der freien Luft: bis 12 kn (oder die Höchstfahrt des U-Boots) statt 6 kn am Schnorchel, und der Generator gibt das 1,3-fache seiner Schnorchelleistung, die Batterie lädt also schneller.
 - Die Brückenwache sieht aus 6 m statt aus den 2,5 m des Sehrohrs und damit weiter; ihre Meldungen beginnen mit **Brücke:**, ein Flugzeug meldet sie als Alarm. Die Sehrohrseite zeigt den Blick der Brückenwache.
 - Auch der Gegner sieht ein aufgetauchtes U-Boot: Das Überwasserradar der Fregatte und die Radare von Hubschrauber und Seefernaufklärer sehen Rumpf und Turm (das Zehnfache des Echos eines Masts), Ausgucks sehen es mit dem Auge.
@@ -2042,8 +2042,8 @@ Alle Tasten des U-Boots auf der uConsole (`F1` an einer U-Boot-Station zeigt die
 | `Mausrad / Ziehen` | Karte zoomen / verschieben (Maus auf der Karte) |
 | `Linksklick` | Kurs zu einem Punkt der Lotsenkarte befehlen (Navigation, Karte & Echolot) |
 | `Pfeiltasten` | Eigenen Sonarkontakt wählen |
-| `Strg+Enter` | Torpedo auf den gewählten Kontakt schießen (Waffen) |
-| `F` | Auf eine eingegebene Peilung schießen: Peilung, Enter, Entfernung zum Datum (leer: keine), dann schießt Strg+Enter (Waffen) |
+| `Strg+Eingabe` | Torpedo auf den gewählten Kontakt schießen (Waffen) |
+| `F` | Auf eine eingegebene Peilung schießen: Peilung, Eingabe, Entfernung zum Datum (leer: keine), dann schießt Strg+Eingabe (Waffen) |
 | `V` | Täuschkörper ausstoßen (Waffen) |
 | `M` | Nächstes leeres Torpedorohr laden (Waffen) |
 | `Shift+M` | Nächstes geladenes Rohr fluten (20 s) und Mündungsklappe öffnen; laut, die Fregatte kann es hören; nur ein geflutetes Rohr schießt (Waffen) |
@@ -2063,12 +2063,12 @@ Alle Tasten des U-Boots auf der uConsole (`F1` an einer U-Boot-Station zeigt die
 | `N` | Schnorchel aus-/einfahren, Diesel laden auf Schnorcheltiefe (Maschine) |
 | `P` | Mast aus-/einfahren auf Sehrohrtiefe: ESM hört Radare, das Sehrohr sieht, die Funkantenne ist klar (Führung, Mast & ESM, Funkraum) |
 | `Pfeiltasten` | Seite Mast & ESM: Emitter wählen |
-| `C / ← / →` | Seite Mast & ESM: Emitter aus der Bibliothek einstufen (C oder →: weiter, Shift+C oder ←: zurück; Annotation, keine Wahrheit) |
+| `C / ← / →` | Seite Mast & ESM: Emitter aus der Bibliothek einstufen (C oder →: weiter, Umschalt+C oder ←: zurück; Annotation, keine Wahrheit) |
 | `Eingabe` | Seite Mast & ESM: Kreuzpeilung (oder Peillinie) in den Plot des U-Boots |
 | `← / →` | Sehrohrseite: Rohr 2° schwenken (Umschalt: 10°) (Führung, Mast & ESM) |
 | `↑/↓ · Q/E · Space` | Sehrohrseite (wie das Fernglas): ↑/↓ Kopf 2° neigen (Umschalt: 10°), Q/E kleine/große Vergrößerung (32°, 8° Feld), Leertaste Stabilisierung |
 | `Eingabe` | Sehrohrseite: Stadimeter-Entfernung der Sichtung unter dem Fadenkreuz (Führung, Mast & ESM) |
-| `Strg+Enter` | Sehrohrseite: Schuss nach der Lösung des Angriffsrechners für die Sichtung unter dem Fadenkreuz (Führung) |
+| `Strg+Eingabe` | Sehrohrseite: Schuss nach der Lösung des Angriffsrechners für die Sichtung unter dem Fadenkreuz (Führung) |
 | `+ / -` | Fahrtstufe schneller / langsamer (Führung, Maschine) |
 | `Sonartasten` | Wie am Fregattensonar, ohne Schleppantenne, OPZ-Freigabe, Plot und Telegraph |
 | `R` | Maschine, Seite Vorräte: Laderate beim Schnorcheln wechseln (voll, halb, nur lüften) |
@@ -2099,7 +2099,7 @@ Alle Tasten des U-Boots auf der uConsole (`F1` an einer U-Boot-Station zeigt die
 
 - Jede Taste in der Tastenleiste einer Station lässt sich anklicken; Lampen, Seitenreiter und Tastenhinweise im Text drücken ihre Tasten, und die Stationsreiter in der Kopfzeile wechseln die Station.
 - Ein Klick auf die Kurs-, Fahrt- oder Tiefenscheibe befiehlt diesen Wert.
-- In der Feuerleitung flutet die Lampe eines trockenen Rohrs dieses, die eines leeren lädt es; der Täuschkörper hat einen Tastenchip. Die Feuertaste `Strg+Enter` lässt sich nur an der Station Waffen anklicken.
+- In der Feuerleitung flutet die Lampe eines trockenen Rohrs dieses, die eines leeren lädt es; der Täuschkörper hat einen Tastenchip. Die Feuertaste `Strg+Eingabe` lässt sich nur an der Station Waffen anklicken.
 - Navigation, Karte & Echolot: Ein Linksklick auf die Lotsenkarte befiehlt den Kurs zu diesem Punkt; auf der Seite Navigation setzt ein Rechtsklick einen Wegpunkt der Route.
 - Ein Klick auf eine Zeile der Emitterliste wählt diesen Emitter. Auf der Karte zoomt das Mausrad, Ziehen verschiebt.
 
@@ -2215,7 +2215,7 @@ Der Kampagnenbildschirm zeigt die Karte des Sektors mit drei offenen Brennpunkte
 
 Jeder Brennpunkt ist eines der Fregattenszenarien, gefahren genau wie aus dem Szenariomenü (ohne die freie Jagd), mit einer Rolle: Patrouille (Patrouille, Fühlung halten; Sieg +8, Niederlage -8), Angriff (Doppeljagd, Brennendes Datum, Suchgruppe; +12/-6), Verteidigung (Geleitschutz, Hafenschutz, Versorgung auf See, Seenot unter Bedrohung; +8/-12 und ein Verlust) und die Entscheidung (Nuklearer Abfang; öffnet ab Lage 75 und schließt darunter wieder; ein Sieg beendet den Feldzug siegreich, eine Niederlage -15).
 
-`Auf`/`Ab` (oder ein Klick) wählt einen Brennpunkt, `Enter` (oder ein Klick auf den gewählten) öffnet seine Einsatzbesprechung mit Wetter, Uhrzeit und Länge, `Enter` dort läuft aus (`Esc` zurück zur Karte).
+`Auf`/`Ab` (oder ein Klick) wählt einen Brennpunkt, `Eingabe` (oder ein Klick auf den gewählten) öffnet seine Einsatzbesprechung mit Wetter, Uhrzeit und Länge, `Eingabe` dort läuft aus (`Esc` zurück zur Karte).
 
 Nach dem Einsatz schließt der gefahrene Brennpunkt, die anderen warten einen Einsatz länger (nach 3 Einsätzen schließt ein Brennpunkt; ein liegen gelassener Verteidigungsbrennpunkt zählt als Verlust und kostet 4) und neue öffnen nach der Lage: unter 35 zwei Verteidigungen und eine Patrouille, 35 bis 64 Verteidigung, Patrouille und Angriff, ab 65 zwei Angriffe und eine Patrouille. Der Feldzug endet nach der Lage: gewonnen durch die Entscheidung, eine Feindstärke von 0 oder eine Lage von 100; verloren, wenn das Schiff verloren geht, die Lage auf 0 fällt, die Verluste 4 erreichen oder das Ansehen unter 10 fällt; unentschieden nach 12 Einsätzen ohne Entscheidung. Der Abschlussbildschirm zeigt Ausgang und Bilanz.
 
@@ -2244,15 +2244,15 @@ Remote Crew lässt Browser im lokalen Netz Stationen übernehmen. Die uConsole b
 
 Ein Browser, der bei offener Lobby koppelt, bekommt die erste freie Station der Einheit des uConsole, in dieser Reihenfolge: Fregatte Brücke, Sonar, Waffen, Hubschrauber, OPZ, EloKa, Funk, Maschine, Schadensabwehr; U-Boot Führung, Sonar, Waffen, Mast & ESM, Navigation, Maschine, Funkraum (zuerst die Stationen, die Urteil brauchen; die Routinestationen hält die KI-Crew gut). Die Browser können Einheit und Stationen jederzeit wechseln und drücken **Bereit**; sie sehen die Mission, was der uConsole spielt, und jedes Crewmitglied mit Stationen und Bereit-Häkchen.
 
-Am uConsole wählen `Auf`/`Ab` eine Zeile und `Links`/`Rechts` ändern sie: die Mission, die Einheit des uConsole und die Station, die er zeigt, oder **keine, nur Gastgeber**: Dann spielt der uConsole keine Station, die Browser können jede übernehmen, und die KI besetzt den Rest. **Mission für alle starten** startet einen Countdown von fünf Sekunden, den jeder Browser sieht; dann beginnt die Mission für alle gleichzeitig, und der uConsole öffnet seine gewählte Station. Ist ein Crewmitglied mit Station noch nicht bereit, fragt das erste `Enter` nach, ein zweites startet trotzdem. `Esc` bricht einen Countdown ab, sonst geht es zurück ins Hauptmenü, und Remote Crew läuft weiter.
+Am uConsole wählen `Auf`/`Ab` eine Zeile und `Links`/`Rechts` ändern sie: die Mission, die Einheit des uConsole und die Station, die er zeigt, oder **keine, nur Gastgeber**: Dann spielt der uConsole keine Station, die Browser können jede übernehmen, und die KI besetzt den Rest. **Mission für alle starten** startet einen Countdown von fünf Sekunden, den jeder Browser sieht; dann beginnt die Mission für alle gleichzeitig, und der uConsole öffnet seine gewählte Station. Ist ein Crewmitglied mit Station noch nicht bereit, fragt das erste `Eingabe` nach, ein zweites startet trotzdem. `Esc` bricht einen Countdown ab, sonst geht es zurück ins Hauptmenü, und Remote Crew läuft weiter.
 
-Endet eine Mission, die aus der Lobby gestartet wurde, kehren alle mit ihren Stationen in die Lobby zurück; die Bereit-Häkchen beginnen wieder von vorn. Jede Mission aus der Lobby, an der ein Browser teilnimmt (oder mit nur Gastgeber), hat die Crew-Hilfe an (`Shift+F2`); allein startet sie als Solospiel mit ausgeschalteter Crew-Hilfe. `F9` öffnet aus der Lobby die vollständigen Remote-Crew-Einstellungen. Mit `--multiplayer` gestartet, öffnet das Spiel die Lobby direkt nach dem Startbild.
+Endet eine Mission, die aus der Lobby gestartet wurde, kehren alle mit ihren Stationen in die Lobby zurück; die Bereit-Häkchen beginnen wieder von vorn. Jede Mission aus der Lobby, an der ein Browser teilnimmt (oder mit nur Gastgeber), hat die Crew-Hilfe an (`Umschalt+F2`); allein startet sie als Solospiel mit ausgeschalteter Crew-Hilfe. `F9` öffnet aus der Lobby die vollständigen Remote-Crew-Einstellungen. Mit `--multiplayer` gestartet, öffnet das Spiel die Lobby direkt nach dem Startbild.
 
 ### Crew gegen Crew
 
 **Crew gegen Crew** (Lobby-Zeile **Gegner**): *KI* (Standard) setzt jeden Browser wie oben auf die Einheit der uConsole; *zweite Crew* lässt zwei Teams gegeneinander spielen, die Crew der Fregatte gegen die des U-Boots.
 
-Ein Browser, der dann koppelt, kommt in das Team mit weniger Menschen (bei Gleichstand die Fregatte, die mehr Stationen hat); die uConsole zählt für ihre Einheit, außer sie ist nur Gastgeber. Die Browser-Lobby zeigt beide Teams mit einem blauen (Fregatte) oder roten (U-Boot) Streifen. Hat ein Team niemanden, fragt das erste `Enter` nach, ein zweites startet trotzdem, und die KI besetzt diese Einheit.
+Ein Browser, der dann koppelt, kommt in das Team mit weniger Menschen (bei Gleichstand die Fregatte, die mehr Stationen hat); die uConsole zählt für ihre Einheit, außer sie ist nur Gastgeber. Die Browser-Lobby zeigt beide Teams mit einem blauen (Fregatte) oder roten (U-Boot) Streifen. Hat ein Team niemanden, fragt das erste `Eingabe` nach, ein zweites startet trotzdem, und die KI besetzt diese Einheit.
 
 Ab dem Start bleibt jeder Browser die ganze Runde in seinem Team: Er kann innerhalb seiner Einheit die Station wechseln, aber nie eine der anderen Einheit übernehmen. Jedes Team sieht nur das Lagebild der eigenen Einheit (wie immer), und im Web-Host-Raum hat jede Einheit ihren eigenen Sprechfunk, sodass eine Crew die andere nie hört. Am Ende nennt die Abschlusstafel das Ergebnis jeder Einheit aus ihrer eigenen Sicht („Fregatte: Sieg, U-Boot: Niederlage“), und jeder Browser bekommt das Ergebnis seiner Einheit in seine Ereignisliste.
 
@@ -2270,7 +2270,7 @@ Während eines Einsatzes zeigt die uConsole den Schiedsrichter-Bildschirm mit de
 
 ### Remote-Crew-Seite (F9)
 
-`F9`: Commander / Remote Crew - Browser im LAN können Stationen übernehmen. Die Seite hat einen Schalter, **Mehrspieler**: `Enter` schaltet ihn auf der ersten lokalen Netzwerkadresse ein oder, wenn die uConsole kein Netz hat, auf ihrem eigenen Hotspot (sofern der Hotspot-Helfer installiert ist; der uConsole-Installer `install.sh` richtet ihn ein, wenn er kann, und gibt sonst einen Hinweis aus). Der Hotspot behält WLAN-Name und Passwort von einem Start zum nächsten, sodass ein Handy oder PC, das einmal beigetreten ist, sich von selbst wieder verbindet. Auf dem Hotspot zeigt die Seite beide Schritte zusammen: **1** den WLAN-QR-Code mit Name und Passwort, **2** den Seiten-QR-Code mit dem Beitrittscode.
+`F9`: Commander / Remote Crew - Browser im LAN können Stationen übernehmen. Die Seite hat einen Schalter, **Mehrspieler**: `Eingabe` schaltet ihn auf der ersten lokalen Netzwerkadresse ein oder, wenn die uConsole kein Netz hat, auf ihrem eigenen Hotspot (sofern der Hotspot-Helfer installiert ist; der uConsole-Installer `install.sh` richtet ihn ein, wenn er kann, und gibt sonst einen Hinweis aus). Der Hotspot behält WLAN-Name und Passwort von einem Start zum nächsten, sodass ein Handy oder PC, das einmal beigetreten ist, sich von selbst wieder verbindet. Auf dem Hotspot zeigt die Seite beide Schritte zusammen: **1** den WLAN-QR-Code mit Name und Passwort, **2** den Seiten-QR-Code mit dem Beitrittscode.
 
 ![Remote-Crew-Verwaltung (F9) auf der uConsole](figures/de-commander-options.png)
 
@@ -2320,9 +2320,9 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen ode
 | `Home / End` | Erster / letzter Eintrag der fokussierten Liste |
 | `+ / - · Q / E` | Fokussierte Karte zoomen (Q / E wie auf der uConsole); Pos1 passt die Ansicht ein |
 | `K` | Karte folgt dem eigenen Schiff an oder aus |
-| `C / V / D · T` | Kurs, Fahrt, Tiefe, Torpedo-Lauftiefe: der Cursor springt ins Feld, Enter sendet (Brücke, Maschine, U-Boot) |
+| `C / V / D · T` | Kurs, Fahrt, Tiefe, Torpedo-Lauftiefe: der Cursor springt ins Feld, Eingabe sendet (Brücke, Maschine, U-Boot) |
 | `Shift+A · J` | Aktiver Ping · Live-Sonarton an oder aus (Sonar, U-Boot-Führung, Tauchsonar des Helikopters) |
-| `Strg+Enter` | Schuss scharf machen (Waffen, OPZ, Helikopter, U-Boot-Waffen); der Feuerdialog fragt noch einmal |
+| `Strg+Eingabe` | Schuss scharf machen (Waffen, OPZ, Helikopter, U-Boot-Waffen); der Feuerdialog fragt noch einmal |
 | `R / Shift+R` | OPZ: Seeziel- / Luftraumradar an oder aus; Q / E ändern den Radar-Anzeigebereich |
 | `H · B · Ctrl+R · Shift+M` | Helikopter: starten oder zurückrufen, Boje werfen, Flugzeugradar, MAD |
 | `A · V · Ctrl+B` | Schleichfahrt (Maschine) · Täuschkörper (U-Boot-Waffen) · toten Winkel klären (Brücke, U-Boot-Führung) |
@@ -2347,7 +2347,7 @@ Nachbesprechung: Nach Missionsende öffnet `D` im Endfenster die Nachbesprechung
 
 Daneben stehen die Zeit des ersten Kontakts, der ersten Ortung und der Klassifizierung, abgefeuerte Waffen und versenkte U-Boote, der mittlere Fehler der Ortungen und alle Ereignisse; eine "verpasste Chance" ist ein feindliches U-Boot, das mindestens 5 min lang höchstens 4 sm entfernt war, ohne dass es einen Kontakt gab, mit dem Hinweis über oder unter der Sprungschicht.
 
-`Links`/`Rechts` blättern (Shift: 1 min), `Auf`/`Ab` oder `Bild auf`/`Bild ab` springen zwischen Ereignissen, ein Klick in die Zeitleiste springt dorthin, `Leertaste` spielt sie ab (`Tab`: 10× oder 60×), `D` oder `Esc` kehrt zurück. Aufgezeichnet wird alle 10 s (bei langen Missionen gröber); die Nachbesprechung ist während der Mission nie sichtbar und wird nicht gespeichert: nach dem Laden deckt sie die Mission ab dem Laden ab.
+`Links`/`Rechts` blättern (Umschalt: 1 min), `Auf`/`Ab` oder `Bild auf`/`Bild ab` springen zwischen Ereignissen, ein Klick in die Zeitleiste springt dorthin, `Leertaste` spielt sie ab (`Tab`: 10× oder 60×), `D` oder `Esc` kehrt zurück. Aufgezeichnet wird alle 10 s (bei langen Missionen gröber); die Nachbesprechung ist während der Mission nie sichtbar und wird nicht gespeichert: nach dem Laden deckt sie die Mission ab dem Laden ab.
 
 - **Nachbesprechung als Zeitraffer:** nach der Mission spielt `Leertaste` die Nachbesprechung ab, `Tab` wechselt zwischen 10× und 60×; die Wege wachsen, Schüsse, Pings, Treffer und Untergänge blitzen dort auf, wo sie geschahen. Im Browser zeigt die Schaltfläche **Nachbesprechung abspielen** (neben dem Missionsstand, erst nach dem Ende) dieselbe Wiedergabe für die eigene Seite.
 
@@ -2357,7 +2357,7 @@ Daneben stehen die Zeit des ersten Kontakts, der ersten Ortung und der Klassifiz
 
 Die Fregatte trägt ihre Missionspunkte ein; das U-Boot zählt sein Ergebnis (Fregatte versenkt 1500, Versorger 1300, Geleitzug 1200, Kampfschwimmer abgesetzt oder Agenten abgeholt 1100, Durchbruch, Meerenge, Meldung, Heimathafen oder Lauschposten 1000, Entkommen oder Fühlung abgeschüttelt 800, Überleben 600) plus bis zu 500 für ein unbeschädigtes U-Boot und 100 je übrigem Torpedo, mal dem Faktor der Stufe.
 
-`Links`/`Rechts` oder `Tab` wechseln Fregatte und U-Boot, `A` die Auswertung des Sprachmodells, `B` den neuesten Bericht, `L` das Lernen des Gegners, `Enter` oder `Esc` zurück; die Fußzeile nennt diese Tasten, ein Klick darauf drückt sie. Das Endpanel nennt die Punkte, einen neuen Bestwert und neue Auszeichnungen. Das Einsatzbuch ist `~/.u-jagd/logbook.json` (die neuesten 200 Missionen), nie Teil eines Spielstands.
+`Links`/`Rechts` oder `Tab` wechseln Fregatte und U-Boot, `A` die Auswertung des Sprachmodells, `B` den neuesten Bericht, `L` das Lernen des Gegners, `Eingabe` oder `Esc` zurück; die Fußzeile nennt diese Tasten, ein Klick darauf drückt sie. Das Endpanel nennt die Punkte, einen neuen Bestwert und neue Auszeichnungen. Das Einsatzbuch ist `~/.u-jagd/logbook.json` (die neuesten 200 Missionen), nie Teil eines Spielstands.
 
 ### Der Gegner lernt mit
 
@@ -2373,9 +2373,9 @@ Diese Hilfen wirken an jeder Station beider Einheiten. Keine von ihnen hält die
 
 Das Spiel läuft mit 1280x720 und ist für Tastatur und Trackball der uConsole ausgelegt. Vieles auf der uConsole lässt sich auch mit der Maus (oder den Tasten des Trackballs) spielen: Ein Klick auf eine Taste in der Tastenleiste einer Station drückt diese Taste (gedrückt halten hält die Taste, etwa zum Steuern oder für den Maschinentelegrafen), die nummerierten Reiter in der Kopfzeile wechseln die Station, ein Klick auf die Kurs-, Fahrt- oder Tiefenscheibe befiehlt diesen Wert, und eine Zahleneingabe zeigt ein Tastenfeld. Auch Statuslampen, Tastenhinweise im Text einer Station (etwa "`Y` absenken/einholen" oder der Radarzustand), Seitenreiter, Listenzeilen und die Werte in der unteren Statuszeile sind anklickbar: Eine Lampe oder ein Hinweis drückt seine Taste, ein Wert wie Flutung oder Torpedos öffnet die Station, die ihn bearbeitet. Das Element unter der Maus bekommt einen dünnen Rahmen. Ein Klick tut genau das, was seine Taste tut, mit denselben Prüfungen.
 
-Die Feuertaste `Strg+Enter` ist auf beiden Seiten nur an der Waffenstation (Station 3) anklickbar. Stationsbefehle, die nicht in der Tastenleiste stehen, haben eigene Tastenchips: Klassifizieren, TMA, Freigabe an die OPZ, Ziel und die Schleppsonare unter den Kontaktkarten des Sonars, Ziel zuweisen, Düppel und ASM-Track auf der Zielseite der OPZ, die Befehle an den Begleiter auf der Verbandsseite sowie Rohr fluten und Täuschkörper in der Feuerleitung des U-Boots (die Lampe eines trockenen Rohrs flutet es, die eines leeren lädt es). Flugkörper bleiben auf ihrer Taste: ESSM und die ASROC des Begleiters feuern nur mit `Strg+Enter`.
+Die Feuertaste `Strg+Eingabe` ist auf beiden Seiten nur an der Waffenstation (Station 3) anklickbar. Stationsbefehle, die nicht in der Tastenleiste stehen, haben eigene Tastenchips: Klassifizieren, TMA, Freigabe an die OPZ, Ziel und die Schleppsonare unter den Kontaktkarten des Sonars, Ziel zuweisen, Düppel und ASM-Track auf der Zielseite der OPZ, die Befehle an den Begleiter auf der Verbandsseite sowie Rohr fluten und Täuschkörper in der Feuerleitung des U-Boots (die Lampe eines trockenen Rohrs flutet es, die eines leeren lädt es). Flugkörper bleiben auf ihrer Taste: ESSM und die ASROC des Begleiters feuern nur mit `Strg+Eingabe`.
 
-Jede Taste, die eine Station nutzen kann, erscheint als blauer Tastenchip, nie als bloßer Text, und ein Klick auf den Chip drückt diese Taste. Ruht die Maus auf einer Statuslampe oder Anzeige (etwa START NO-GO, DECK WARTEN, einem Rohr, der Anlage oder dem ESM-Empfänger), öffnet sich ein Hinweis, der sagt, warum sie so steht, aus dem laufenden Spiel (Deckbewegung, Wettergrenzen, Nachladezeit, Wasser unter dem Kiel), und was zu tun ist, mit den Tasten als Chips. Die Hinweise gibt es auf beiden Seiten, auf der uConsole und im Remote-Crew-Browser.
+Jede Taste, die eine Stationsseite benutzen kann, steht als blauer Tastenchip da, nie als bloßer Text, und ein Klick auf den Chip drückt diese Taste. Die Tastenleiste am Fuß einer Seite trägt sie alle: Passen mehr Tasten als in die Zeile, blättert ein `+`-Chip an ihrem rechten Ende durch den Rest. Eine lange Liste (OPZ-Tracks, HFDF-Signale, ESM-Emitter, Abteilungen und Trupps) blättert mit dem Mausrad darüber und zeigt, welcher Teil zu sehen ist. Ruht die Maus auf einer Statuslampe oder Anzeige (etwa START NO-GO, DECK WARTEN, einem Rohr, der Anlage oder dem ESM-Empfänger), öffnet sich ein Hinweis, der sagt, warum sie so steht, aus dem laufenden Spiel (Deckbewegung, Wettergrenzen, Nachladezeit, Wasser unter dem Kiel), und was zu tun ist, mit den Tasten als Chips. Die Hinweise gibt es auf beiden Seiten, auf der uConsole und im Remote-Crew-Browser.
 
 Menüzeilen, Dialogzeilen, Speicherplätze und die Hinweise darunter sind ebenfalls anklickbar; das Mausrad blättert durch Menüs und scrollt die Hilfe, und ein Rechtsklick bricht in Menüs, Dialogen, Eingaben und am Missionsende ab wie `Esc`. Auf Karten zoomt das Rad, Ziehen verschiebt und ein Klick heftet einen Tooltip an.
 
@@ -2389,11 +2389,11 @@ Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; 
 
 ### Autocrew und Crew-Hilfe (F2, F3, Umschalt+F2)
 
-`F2` übergibt die aktuelle Station an die Autocrew; `F3` zeigt, welche Stationen automatisch laufen. Nutzen Sie das, um sich auf ein oder zwei Stationen zu konzentrieren. `Shift+F2` schaltet die Crew-Hilfe: Die KI besetzt jede Station beider Einheiten, die niemand hält, und die Station auf dem Bildschirm bleibt Ihre. Eine Mission aus der Mehrspieler-Lobby hat sie an, sobald ein Browser teilnimmt oder die uConsole nur Gastgeber ist; allein dort gestartet ist es ein Solospiel mit ausgeschalteter Crew-Hilfe.
+`F2` übergibt die aktuelle Station an die Autocrew; `F3` zeigt, welche Stationen automatisch laufen. Nutzen Sie das, um sich auf ein oder zwei Stationen zu konzentrieren. `Umschalt+F2` schaltet die Crew-Hilfe: Die KI besetzt jede Station beider Einheiten, die niemand hält, und die Station auf dem Bildschirm bleibt Ihre. Eine Mission aus der Mehrspieler-Lobby hat sie an, sobald ein Browser teilnimmt oder die uConsole nur Gastgeber ist; allein dort gestartet ist es ein Solospiel mit ausgeschalteter Crew-Hilfe.
 
 #### Crew-Hilfe
 
-`Shift+F2` (in einer Mission aus der Mehrspieler-Lobby an, sobald ein Browser teilnimmt oder die uConsole nur Gastgeber ist) lässt die KI jede Station besetzen, die niemand hält, auf der Fregatte und auf einem bemannten U-Boot, damit jeder Spieler bei einer Station bleiben kann. Eine Station, die ein Browser hält, und die, die die uConsole zeigt, bleiben bei ihrem Spieler; eine im Browser freigegebene Station („An KI übergeben“) geht sofort an die KI zurück. Die Hilfe wird mit der Mission gespeichert (Spielstand v41).
+`Umschalt+F2` (in einer Mission aus der Mehrspieler-Lobby an, sobald ein Browser teilnimmt oder die uConsole nur Gastgeber ist) lässt die KI jede Station besetzen, die niemand hält, auf der Fregatte und auf einem bemannten U-Boot, damit jeder Spieler bei einer Station bleiben kann. Eine Station, die ein Browser hält, und die, die die uConsole zeigt, bleiben bei ihrem Spieler; eine im Browser freigegebene Station („An KI übergeben“) geht sofort an die KI zurück. Die Hilfe wird mit der Mission gespeichert (Spielstand v41).
 
 - **Fregatte:** Die KI-Jäger oben bedienen Brücke, Sonar, Waffen und den Hubschrauber, die Autocrew die übrigen Stationen, auch gegen ein KI-U-Boot.
 - **U-Boot-Kommando:** weicht einem gehörten Torpedo oder Ping aus, folgt sonst dem Abschnitt der U-Boot-Mission oder läuft in einer Fregattenmission eine Fregatte an, die das eigene Sonar innerhalb von 12 sm geortet hat, und patrouilliert sonst mit 4 kn unter der Sprungschicht um den Startpunkt. Fällt die Batterie unter 35 % und jagt niemand das U-Boot, geht es auf Schnorcheltiefe.
@@ -2416,9 +2416,9 @@ Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschi
 
 Die Besatzung führt einen gemeinsamen Fettstift-Plot. Alle Stationen und alle Remote-Crew-Browser sehen dieselbe Zeichnung, und sie wird mit dem Spiel gespeichert. Es ist die eigene Zeichnung der Besatzung: nichts darin stammt von einem Sensor, und sie verändert die Simulation nie.
 
-- **Öffnen:** `P` auf der Brücken-, Waffen- oder Helikopterkarte oder auf der OPZ-Karte drücken. Ein Cursor erscheint am Eigenschiff. Die Pfeiltasten bewegen ihn (Shift: schneller), oder auf die Karte klicken. `Enter` setzt einen Punkt, `Esc` bricht ein begonnenes Objekt ab und beendet danach den Plotmodus, `P` beendet ihn ebenfalls. Eine Hinweisleiste oben auf der Karte zeigt links das aktive Werkzeug und die Tasten, rechts Peilung und Abstand des Cursors vom Eigenschiff.
+- **Öffnen:** `P` auf der Brücken-, Waffen- oder Helikopterkarte oder auf der OPZ-Karte drücken. Ein Cursor erscheint am Eigenschiff. Die Pfeiltasten bewegen ihn (Umschalt: schneller), oder auf die Karte klicken. `Eingabe` setzt einen Punkt, `Esc` bricht ein begonnenes Objekt ab und beendet danach den Plotmodus, `P` beendet ihn ebenfalls. Eine Hinweisleiste oben auf der Karte zeigt links das aktive Werkzeug und die Tasten, rechts Peilung und Abstand des Cursors vom Eigenschiff.
 - **Werkzeuge:** `M` Marke (ein Punkt); `R` Lineal (zwei Punkte, zeigt Peilung und Entfernung); `B` Peillinie vom Eigenschiff durch den Cursor (eigene Position und Zeit werden gespeichert, die Linie bleibt also dort, wo sie gelegt wurde); `C` Kreis (Mitte, dann ein Punkt auf dem Radius, höchstens 200 sm); `D` Koppellinie (Startpunkt, dann ein Punkt in Fahrtrichtung, dann die Fahrt 0-60 kn eingeben). Die Koppellinie wandert mit der Zeit weiter und zeigt ihren CPA zu Kurs und Fahrt des Eigenschiffs.
-- **Löschen:** `Rücktaste` löscht das Objekt, das dem Cursor am nächsten liegt. `Shift+Rücktaste` löscht den ganzen Plot.
+- **Löschen:** `Rücktaste` löscht das Objekt, das dem Cursor am nächsten liegt. `Umschalt+Rücktaste` löscht den ganzen Plot.
 - **Bezeichnungen:** Objekte werden als M1, R2, B3 usw. nummeriert. Im Web-Client kann vor dem Zeichnen eine Bezeichnung eingegeben oder ein Objekt in der Liste unter der Karte umbenannt werden. Ein Objekt außerhalb des sichtbaren Kartenausschnitts zeigt am Kartenrand einen kleinen Pfeil in seine Richtung, seine Bezeichnung steht neben dem Pfeil; mehrere solche Bezeichnungen stehen nebeneinander, nie übereinander.
 - **Web-Client:** über der Karte ein Werkzeug wählen, dann einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken. „Trackpeilung plotten“ legt die gemessene Peilung des gewählten Tracks von dessen Beobachterposition an.
 - **Grenzen:** höchstens 64 Objekte und 24 Zeichen je Bezeichnung.
@@ -2442,7 +2442,7 @@ Der Verlauf dient nur der Anzeige: Er entsteht aus dem, was die Sensoren gemelde
 
 ### Analysator, Erster Offizier und Nationen
 
-- `F8` öffnet den Taktischen Einheitenanalysator, einen nur lesenden Katalog aller Einheiten mit 3D-Modell, Schall- und Radarbildern (Kapitel Missions- und Einheiteneditor). Mit gewähltem Sonarkontakt weist `Enter` ihm das angezeigte Profil als Ihre Annotation zu (Kapitel 2 Sonar, Tipps für Profis).
+- `F8` öffnet den Taktischen Einheitenanalysator, einen nur lesenden Katalog aller Einheiten mit 3D-Modell, Schall- und Radarbildern (Kapitel Missions- und Einheiteneditor). Mit gewähltem Sonarkontakt weist `Eingabe` ihm das angezeigte Profil als Ihre Annotation zu (Kapitel 2 Sonar, Tipps für Profis).
 - `F7` öffnet den Ersten Offizier, wenn das optionale Sprachmodell eingeschaltet ist (Kapitel Sprachmodell).
 - `N` öffnet die Übersicht der Nationen und Einheiten (am Sonar und auf der Akustikseite des Hubschraubers ist `N` stattdessen das Notch-Filter).
 
@@ -2464,13 +2464,13 @@ Eigene Missionen starten aus dem Missionseditor (`F5` in dessen Browser). Die La
 
 Im Einheiteneditor gespeicherte Profile lassen sich wie eingebaute platzieren und wirken in dieser Mission (Fahrtbereich, Tiefe, Torpedozahl, Verhalten, Akustik); ein eigenes U-Boot übernimmt Sensoren, Rohre, Täuschkörper und seine Batterie-, Diesel- oder AIP-Anlage vom eingebauten U-Boot seines Antriebs. Torpedos der Fregatte und des Helikopters, fehlende Benutzerprofile und andere Weltgrößen werden beim Start abgewiesen.
 
-Im Editor-Reiter Welt öffnet `Enter` auf Art oder Referenz eine Auswahlliste (`Hoch`/`Runter`, `Bild auf`/`Bild ab`, `Enter` übernimmt, `Esc` bricht ab); Referenz listet die 128 Sektoren mit ihren Ländern, und die Wahl eines Sektors macht die Welt zu einer 500-sm-Referenzwelt. Der Reiter Vorschau zeichnet dann die Küste dieses Sektors.
+Im Editor-Reiter Welt öffnet `Eingabe` auf Art oder Referenz eine Auswahlliste (`Hoch`/`Runter`, `Bild auf`/`Bild ab`, `Eingabe` übernimmt, `Esc` bricht ab); Referenz listet die 128 Sektoren mit ihren Ländern, und die Wahl eines Sektors macht die Welt zu einer 500-sm-Referenzwelt. Der Reiter Vorschau zeichnet dann die Küste dieses Sektors.
 
 ### Eigene Missionen und Weitergabe
 
 Eigene Missionen und Teilen: In der Übersicht des Missionseditors ist die Spielerseite Fregatte oder U-Boot. Für das U-Boot nennt „Eigenes U-Boot“ ein platziertes feindliches U-Boot, das der Spieler führt, während die KI die Fregatte besetzt; seine Ziele sind Versenken (Ziele können nur Handelsschiffe sein, weil die Torpedos des U-Boots die zivile Schifffahrt treffen), Überstehen (bis zum Zeitlimit aushalten) oder Erreichen, nie Schützen. Das U-Boot gewinnt, wenn es alle Ziele versenkt, den Punkt erreicht oder aushält, und verliert, wenn es versenkt wird oder bei Versenken und Erreichen die Zeit abläuft. Die Liste des Editors markiert U-Boot-Missionen mit `[U]`, und Kurzbeschreibung und Vorschau geben Fairness-Hinweise: ein U-Boot, das näher als 3 sm an der Fregatte startet, gar keine feindliche Einheit, oder ein Zielpunkt bzw. nächstes Ziel, das die Seite im Zeitlimit kaum erreicht (Fregatte 20 kn, U-Boot 8 kn).
 
-`Strg+E` teilt die gewählte Mission als Datei in den Austauschordner `~/.u-jagd/share` (Windows: `%USERPROFILE%\.u-jagd\share`), mit jeder eigenen Einheit, auf die sie verweist; `Strg+Umschalt+E` exportiert weiter auf einen eingetippten Pfad. `Strg+I` listet die Dateien in diesem Ordner mit ihren Missionen (`Hoch`/`Runter`, `Enter` importiert, ein zweites `Enter` überschreibt vorhandene Einträge, `Tab` tippt stattdessen einen Pfad, `O` öffnet den Ordner, `Esc` schließt); schon gleiche Einträge werden übersprungen. `O` in der Liste des Editors öffnet den Ordner im Dateimanager (unter Windows im Explorer). Eine Datei in den Ordner eines Freundes kopieren, und er importiert sie mit `Strg+I`.
+`Strg+E` teilt die gewählte Mission als Datei in den Austauschordner `~/.u-jagd/share` (Windows: `%USERPROFILE%\.u-jagd\share`), mit jeder eigenen Einheit, auf die sie verweist; `Strg+Umschalt+E` exportiert weiter auf einen eingetippten Pfad. `Strg+I` listet die Dateien in diesem Ordner mit ihren Missionen (`Hoch`/`Runter`, `Eingabe` importiert, ein zweites `Eingabe` überschreibt vorhandene Einträge, `Tab` tippt stattdessen einen Pfad, `O` öffnet den Ordner, `Esc` schließt); schon gleiche Einträge werden übersprungen. `O` in der Liste des Editors öffnet den Ordner im Dateimanager (unter Windows im Explorer). Eine Datei in den Ordner eines Freundes kopieren, und er importiert sie mit `Strg+I`.
 
 Im Solo-Modus von Remote Crew listet „Eigene Missionen“ in der Gastgeberleiste des Browsers dieselben Missionen mit Seite, Ziel, Hinweisen oder Fehlern: Starten (wechselt vorher auf die Seite der Mission), Bearbeiten, Herunterladen (dieselbe Teilen-Datei) und Löschen; „Datei hochladen“ nimmt eine Teilen-Datei oder eine einzelne Mission (höchstens 1 MB). „Neue Mission“ oder Bearbeiten öffnet den Missionsplaner: Reiter Übersicht, Welt, Einheiten, Ziel und Ereignisse und eine Karte der Welt oder des Referenzsektors, auf der ein Klick die Fregatte, die gewählte Einheit oder den Zielpunkt setzt. Speichern legt die Mission nach derselben Prüfung wie im Editor auf der uConsole ab (Fehler werden aufgelistet, ein vorhandener Schlüssel fragt vor dem Überschreiben), Speichern und starten startet sie sofort. Crew-Sitzungen haben keinen Zugriff auf die Bibliothek.
 
@@ -2504,8 +2504,8 @@ Das Modell läuft auf einem Server, nie auf der uConsole selbst. Der Schlüssel 
 
 - Funkverkehr: Jede Meldung der Führung und die Funkbefehle des besetzten U-Boots erscheinen zusätzlich wie echter Funkverkehr formuliert neben dem Original. Zahlen, Peilungen und Positionen bleiben wie gegeben; das Original bleibt maßgeblich.
 - Einsatzbericht: Am Missionsende schreibt das Modell für jede Seite einen kurzen Bericht aus der Aufzeichnung der Nachbesprechung (jetzt mit der Wahrheit). `B` in der Nachbesprechung zeigt ihn, der Browser zeigt ihn in der Wiedergabe der Nachbesprechung, und das Dienstbuch behält ihn bei der Mission (`B` dort).
-- Erster Offizier (`F7` im Einsatz, im Browser die Schaltfläche **IWO fragen**): Lagemeldung, eine getippte Frage (beantwortet aus dem eigenen Lagebild und dem Handbuch), ein getippter Befehl, Hilfe zur Klassifizierung des gewählten Kontakts und eine Einweisung für die eigene Station. `Links`/`Rechts` oder `1`-`5` wählen die Art, `Enter` sendet, `Hoch`/`Runter` blättern, `Esc` schließt. Mit der Maus wählt ein Klick auf einen Reiter die Art, die Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen Befehl, blättern und schließen, das Mausrad blättert, und solange das Modell aus ist, öffnet ein Knopf seine Einstellungen; auf allen Seiten der Einstellungen decken blaue Tastenknöpfe unter den Zeilen jede Taste ab, auch den Seitenwechsel mit `Tab`. Der Offizier sieht nur das Lagebild der eigenen Seite, wie die eigenen Stationen.
-- Getippte Befehle: nur Kurs, Fahrt, Tiefe, Schleichfahrt und Gefechtsstationen, nie Waffen. Der Offizier schlägt die Stationsbefehle vor, und nichts wird gegeben, bevor Sie bestätigen (`Enter`; `Rücktaste` oder `Esc` verwirft). Im Browser gehen die Befehle nur von einer Station, die sie geben darf.
+- Erster Offizier (`F7` im Einsatz, im Browser die Schaltfläche **IWO fragen**): Lagemeldung, eine getippte Frage (beantwortet aus dem eigenen Lagebild und dem Handbuch), ein getippter Befehl, Hilfe zur Klassifizierung des gewählten Kontakts und eine Einweisung für die eigene Station. `Links`/`Rechts` oder `1`-`5` wählen die Art, `Eingabe` sendet, `Hoch`/`Runter` blättern, `Esc` schließt. Mit der Maus wählt ein Klick auf einen Reiter die Art, die Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen Befehl, blättern und schließen, das Mausrad blättert, und solange das Modell aus ist, öffnet ein Knopf seine Einstellungen; auf allen Seiten der Einstellungen decken blaue Tastenknöpfe unter den Zeilen jede Taste ab, auch den Seitenwechsel mit `Tab`. Der Offizier sieht nur das Lagebild der eigenen Seite, wie die eigenen Stationen.
+- Getippte Befehle: nur Kurs, Fahrt, Tiefe, Schleichfahrt und Gefechtsstationen, nie Waffen. Der Offizier schlägt die Stationsbefehle vor, und nichts wird gegeben, bevor Sie bestätigen (`Eingabe`; `Rücktaste` oder `Esc` verwirft). Im Browser gehen die Befehle nur von einer Station, die sie geben darf.
 - Coach: Mit eingeschaltetem Coach (selten oder oft) erscheint ab und zu ein kurzer Tipp aus dem eigenen Lagebild in der Meldezeile.
 - Dienstbuch: `A` lässt das Modell die Dienstzeit bewerten, `B` zeigt den neuesten Bericht. Eine Mission, in der Lagemeldungen, Fragen, Befehle, Klassifizierungshilfe oder der Coach genutzt wurden, ist „mit Berater“ markiert und bekommt keine Bestwertung und keine Auszeichnung; die Einweisung allein zählt nicht.
 - Missionsgenerator: `G` (Fregatte) oder `Umschalt+G` (U-Boot) in der Liste des Missionseditors und **Einsatz schreiben** im Missionsplaner des Browsers schreiben eine Mission aus wenigen Worten. Die Antwort durchläuft dieselbe Prüfung wie jede eigene Mission (unbekannte Felder fallen weg, eine feste 500-sm-Welt, Versenken-Ziele sind jedes platzierte feindliche U-Boot); bei Fehlern bekommt das Modell eine Chance zur Korrektur. Der Editor öffnet die Mission ungespeichert zum Prüfen (`Strg+S` speichert); der Planer legt sie als neue Mission ab und öffnet sie.

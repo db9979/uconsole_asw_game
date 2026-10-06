@@ -6,6 +6,7 @@
 // validators as the desktop client; the session stays in HttpOnly cookies.
 import { S, initialLanguage } from "../state/store.js";
 import { $, lookoutRoles, prefix } from "../core/base.js";
+import { palette } from "../core/palette.js";
 import { finite, t } from "../core/format.js";
 import { validateSession } from "../net/session.js";
 import { boundedArray, exactKeys, validateV2State } from "../state/schema.js";
@@ -336,7 +337,7 @@ function draw(now) {
     optics_label: t("optics_status", {elevation: `${P.elevation >= 0 ? "+" : ""}${Math.round(P.elevation)}`, fov: Math.round(fovDeg)})},
     now / 1000, "13px ui-monospace, monospace");
   // Called sightings carry a small mark above them.
-  g.fillStyle = "rgb(150, 255, 205)";
+  g.fillStyle = palette().live;
   for (const row of view.outlines) {
     if (!row.called) continue;
     const off = wrap180(row.bearing - line);

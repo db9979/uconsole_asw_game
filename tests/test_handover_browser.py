@@ -118,9 +118,11 @@ def test_holder_sees_request_and_hands_station_over(tmp_path, monkeypatch):
     host = RealTimeHost(game, profile, period_s=.25)
     asker = None
     root = {}
-    started = time.monotonic()
+    # A slow runner may reach the holding stage late; give the request its
+    # own time after it is sent instead of one budget from launch.
+    deadline = time.monotonic() + 90
     try:
-        while process.poll() is None and time.monotonic() - started < 90:
+        while process.poll() is None and time.monotonic() < deadline:
             root = host.dataset or root
             if root.get("handoverTest"):
                 break
@@ -133,6 +135,7 @@ def test_holder_sees_request_and_hands_station_over(tmp_path, monkeypatch):
                                          {"station": "weapons"}, cookie, paired["csrf"])
                 assert status == 200 and asked["requested_station"] == "weapons"
                 asker = paired["client_id"]
+                deadline = max(deadline, time.monotonic() + 60)
             console.pump(game)
             host.step()
             time.sleep(.02)

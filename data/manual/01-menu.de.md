@@ -1,6 +1,6 @@
 # Hauptmenü und Spielstart {#menu}
 
-Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wählen einen Eintrag, `Enter` öffnet ihn, `Esc` fragt, ob das Spiel beendet werden soll. Jede Seite, die von dort aus erreicht wird, führt mit `Esc` zurück.
+Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wählen einen Eintrag, `Eingabe` öffnet ihn, `Esc` fragt, ob das Spiel beendet werden soll. Jede Seite, die von dort aus erreicht wird, führt mit `Esc` zurück.
 
 ![Hauptmenü](figure:main-menu)
 
@@ -26,15 +26,15 @@ Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wäh
 
 ## Erster Start {#menu-welcome}
 
-Gibt es noch keine `~/.u-jagd/settings.json`, folgt auf den Startbildschirm eine Willkommensseite: „Was möchtest du spielen?“ `1` Fregatte (das Ausbildungsmenü mit Lektion 1 vorgewählt), `2` U-Boot (das Ausbildungsmenü mit Lektion 5, der ersten U-Boot-Lektion, vorgewählt), `3` Remote Crew (öffnet die Mehrspieler-Lobby; `Esc` dort führt ins Hauptmenü), `4` oder `Esc` Hauptmenü. Pfeiltasten und `Enter` wählen ebenfalls. Was Sie auch wählen, die Seite wird in den Einstellungen vermerkt und nicht wieder gezeigt.
+Gibt es noch keine `~/.u-jagd/settings.json`, folgt auf den Startbildschirm eine Willkommensseite: „Was möchtest du spielen?“ `1` Fregatte (das Ausbildungsmenü mit Lektion 1 vorgewählt), `2` U-Boot (das Ausbildungsmenü mit Lektion 5, der ersten U-Boot-Lektion, vorgewählt), `3` Remote Crew (öffnet die Mehrspieler-Lobby; `Esc` dort führt ins Hauptmenü), `4` oder `Esc` Hauptmenü. Pfeiltasten und `Eingabe` wählen ebenfalls. Was Sie auch wählen, die Seite wird in den Einstellungen vermerkt und nicht wieder gezeigt.
 
 ## Neuer Einsatz: Seite und Szenario {#menu-new}
 
-Ein neues Spiel fragt zuerst nach der Seite (`1` Fregatte, `2` U-Boot) und listet dann nur deren Szenarien: jede Seite zählt ab `1`: `1`-`9` und `0` (das zehnte; das elfte und zwölfte mit den Pfeiltasten) auf jeder Seite (Fregatte 4 = Zufall mit eigener Schwierigkeit) (siehe Kapitel Szenarien und Missionen), `Esc` zurück zur Seitenwahl; `W` Weltmodus, `R` neuer Seed, `F` Vollbild (diese drei nur im Hauptmenü und auf den Szenarioseiten: Liste, Schwierigkeit, Einsatzbesprechung), `Enter` Start.
+Ein neues Spiel fragt zuerst nach der Seite (`1` Fregatte, `2` U-Boot) und listet dann nur deren Szenarien: jede Seite zählt ab `1`: `1`-`9` und `0` (das zehnte; das elfte und zwölfte mit den Pfeiltasten) auf jeder Seite (Fregatte 4 = Zufall mit eigener Schwierigkeit) (siehe Kapitel Szenarien und Missionen), `Esc` zurück zur Seitenwahl; `W` Weltmodus, `R` neuer Seed, `F` Vollbild (diese drei nur im Hauptmenü und auf den Szenarioseiten: Liste, Schwierigkeit, Einsatzbesprechung), `Eingabe` Start.
 
 Die Liste zeigt neun Zeilen auf einmal und rollt mit der Auswahl (`Auf`/`Ab`, Mausrad, `Bild auf`/`Bild ab` eine Seite, `Pos1`/`Ende` erste und letzte Zeile; bei festem realem Sektor wählen `[`/`]` den Sektor); ein Balken am rechten Rand zeigt die Lage in der Liste, darunter steht der Anfang der Einsatzbesprechung des gewählten Szenarios. Die eigenen Missionen und die Schwierigkeitsliste der freien Jagd rollen genauso.
 
-**Eigene Missionen:** Das Startmenü zeigt nach den Szenarien der gewählten Seite die Zeile „Eigene Missionen“ (`O` oder `Enter` auf der Zeile). Sie öffnet die Missionen des Missionseditors für diese Seite; `Enter` startet eine. Die Mehrspieler-Lobby bietet sie in ihrer Missionszeile nach den Szenarien an, der Solo-Browser im Dialog „Neues Spiel“ und unter „Eigene Missionen“ in der Gastgeberleiste (siehe Kapitel Missions- und Einheiteneditor).
+**Eigene Missionen:** Das Startmenü zeigt nach den Szenarien der gewählten Seite die Zeile „Eigene Missionen“ (`O` oder `Eingabe` auf der Zeile). Sie öffnet die Missionen des Missionseditors für diese Seite; `Eingabe` startet eine. Die Mehrspieler-Lobby bietet sie in ihrer Missionszeile nach den Szenarien an, der Solo-Browser im Dialog „Neues Spiel“ und unter „Eigene Missionen“ in der Gastgeberleiste (siehe Kapitel Missions- und Einheiteneditor).
 
 ## Einweisung: Wetter, Uhrzeit und Länge {#menu-briefing}
 
@@ -52,7 +52,7 @@ Jeder Kurzeinsatz wurde mit KI-gegen-KI-Partien so eingestellt, dass beide Seite
 
 ## Ausbildung {#menu-training}
 
-**Ausbildung** bietet sechs geführte Lektionen. Jede ist eine kurze Mission mit einem Hinweisbanner, das auf Sie wartet; `Auf`/`Ab` oder `1`-`6` wählen, `Enter` startet:
+**Ausbildung** bietet sechs geführte Lektionen. Jede ist eine kurze Mission mit einem Hinweisbanner, das auf Sie wartet; `Auf`/`Ab` oder `1`-`6` wählen, `Eingabe` startet:
 
 | Lektion | Seite | Was Sie üben |
 |---|---|---|
@@ -90,7 +90,7 @@ Schlägt die Prüfung fehl, steht an derselben Stelle, dass und warum (keine Ver
 
 ## Fehler melden {#menu-bug}
 
-**Fehler melden** im Hauptmenü schreibt `~/.u-jagd/bug-report.txt` (Version, Plattform und die neuesten Zeilen aus `~/.u-jagd/crash.log`, Ihr Benutzername aus Pfaden entfernt) und zeigt einen QR-Code, der am Handy ein neues GitHub-Issue mit Version und Plattform öffnet; dort die Datei anhängen. `Enter` öffnet das Issue mit Log in einem Browser, falls das Gerät einen hat, `Esc` geht zurück. Nach einem abgestürzten Start wählt das Hauptmenü diesen Eintrag vor und weist darauf hin. Gesendet wird erst, wenn Sie das Issue mit Ihrem eigenen GitHub-Konto abschicken. Das Einstellungsmenü im Browser hat denselben Link.
+**Fehler melden** im Hauptmenü schreibt `~/.u-jagd/bug-report.txt` (Version, Plattform und die neuesten Zeilen aus `~/.u-jagd/crash.log`, Ihr Benutzername aus Pfaden entfernt) und zeigt einen QR-Code, der am Handy ein neues GitHub-Issue mit Version und Plattform öffnet; dort die Datei anhängen. `Eingabe` öffnet das Issue mit Log in einem Browser, falls das Gerät einen hat, `Esc` geht zurück. Nach einem abgestürzten Start wählt das Hauptmenü diesen Eintrag vor und weist darauf hin. Gesendet wird erst, wenn Sie das Issue mit Ihrem eigenen GitHub-Konto abschicken. Das Einstellungsmenü im Browser hat denselben Link.
 
 ## Spielstart {#menu-launch}
 

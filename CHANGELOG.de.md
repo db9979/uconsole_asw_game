@@ -11,7 +11,7 @@ des Sprachmodells auf dem uConsole und in den Desktop-Apps vollständig mit
 der Maus bedienbar. Ein Klick auf einen Reiter wählt die Art der Anfrage;
 blaue Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen
 getippten Befehl, blättern älter und neuer und schließen die Seite; das
-Mausrad blättert; oben rechts sitzt ein Schließfeld, und kein Klick
+Mausrad blättert; oben rechts sitzt ein Schließkreuz, und kein Klick
 erreicht die Station dahinter. Solange das Modell aus ist, öffnet ein
 Knopf seine Einstellungen, in denen Tastenknöpfe unter den Zeilen jetzt
 jede Taste abdecken (wählen, ändern, Seite, Feld speichern oder abbrechen,
@@ -20,6 +20,20 @@ das Protokoll jetzt ab dem ersten Schritt und auch, während ein Befehl auf
 Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
 bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52
 laden weiter.
+
+## 1.3.233
+
+Version 1.3.233 bringt die Bedienung unter einheitliche Regeln.
+Strg+Eingabe ist jetzt die einzige Taste, die eine Waffe auslöst: An der
+Waffenstation wählen D, A, Z, R und Umschalt+R nur die Waffe, die dann
+leuchtet und in der Feuerzeile steht. Jede Taste einer Stationsseite steht
+als blauer Chip in ihrer Tastenleiste und wird per Klick gedrückt; ein
++-Chip blättert durch den Rest (auch durch alle Sonartasten beider
+Seiten). Lange Listen blättern mit dem Mausrad, Overlays schließen über
+ein Schließkreuz, und Hinweise erklären weitere Lampen. Eigene Einheiten
+tragen auf jeder Karte den passenden NATO-Rahmen, hoher Kontrast erreicht
+jede Zeichnung, und deutsche Texte nutzen deutsche Tastennamen und „sm“.
+Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
 
 ## 1.3.231
 

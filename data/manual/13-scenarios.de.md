@@ -94,7 +94,7 @@ Der Kampagnenbildschirm zeigt die Karte des Sektors mit drei offenen Brennpunkte
 
 Jeder Brennpunkt ist eines der Fregattenszenarien, gefahren genau wie aus dem Szenariomenü (ohne die freie Jagd), mit einer Rolle: Patrouille (Patrouille, Fühlung halten; Sieg +8, Niederlage -8), Angriff (Doppeljagd, Brennendes Datum, Suchgruppe; +12/-6), Verteidigung (Geleitschutz, Hafenschutz, Versorgung auf See, Seenot unter Bedrohung; +8/-12 und ein Verlust) und die Entscheidung (Nuklearer Abfang; öffnet ab Lage 75 und schließt darunter wieder; ein Sieg beendet den Feldzug siegreich, eine Niederlage -15).
 
-`Auf`/`Ab` (oder ein Klick) wählt einen Brennpunkt, `Enter` (oder ein Klick auf den gewählten) öffnet seine Einsatzbesprechung mit Wetter, Uhrzeit und Länge, `Enter` dort läuft aus (`Esc` zurück zur Karte).
+`Auf`/`Ab` (oder ein Klick) wählt einen Brennpunkt, `Eingabe` (oder ein Klick auf den gewählten) öffnet seine Einsatzbesprechung mit Wetter, Uhrzeit und Länge, `Eingabe` dort läuft aus (`Esc` zurück zur Karte).
 
 Nach dem Einsatz schließt der gefahrene Brennpunkt, die anderen warten einen Einsatz länger (nach 3 Einsätzen schließt ein Brennpunkt; ein liegen gelassener Verteidigungsbrennpunkt zählt als Verlust und kostet 4) und neue öffnen nach der Lage: unter 35 zwei Verteidigungen und eine Patrouille, 35 bis 64 Verteidigung, Patrouille und Angriff, ab 65 zwei Angriffe und eine Patrouille. Der Feldzug endet nach der Lage: gewonnen durch die Entscheidung, eine Feindstärke von 0 oder eine Lage von 100; verloren, wenn das Schiff verloren geht, die Lage auf 0 fällt, die Verluste 4 erreichen oder das Ansehen unter 10 fällt; unentschieden nach 12 Einsätzen ohne Entscheidung. Der Abschlussbildschirm zeigt Ausgang und Bilanz.
 

@@ -130,15 +130,15 @@ def draw_advisor_overlay(game) -> None:
     mode = game.advisor_mode_name()
     if game.advisor_open_proposal() is not None:
         layout.blit_line(s, "advisor.confirm_hint", FIELD, config.COLOR_WARN, size=17)
-        first = (("Enter", "advisor.button.yes", pygame.K_RETURN),
+        first = (("help.key.enter", "advisor.button.yes", pygame.K_RETURN),
                  ("Backspace", "advisor.button.no", pygame.K_BACKSPACE))
     elif mode in ("question", "order"):
         game.advisor_field.draw(s, FIELD, focused=True)
-        first = (("Enter", "advisor.button.send", pygame.K_RETURN),)
+        first = (("help.key.enter", "advisor.button.send", pygame.K_RETURN),)
     else:
         layout.blit_line(s, "advisor.send_hint." + mode, FIELD, config.COLOR_TEXT_DIM, size=17)
         pointer.add_key(FIELD, pygame.K_RETURN)
-        first = (("Enter", "advisor.button.send", pygame.K_RETURN),)
+        first = (("help.key.enter", "advisor.button.send", pygame.K_RETURN),)
     _buttons(s, first + (("↑", "advisor.button.older", pygame.K_UP),
                          ("↓", "advisor.button.newer", pygame.K_DOWN),
                          ("Esc", "common.close", pygame.K_ESCAPE)))
@@ -151,18 +151,40 @@ def select_mode(game, index: int) -> None:
     game.advisor_mode = index % 5
 
 
-def button_rects(count: int, y: int = BUTTONS_Y) -> tuple:
-    """Equal key buttons side by side across the panel's inner width."""
+def button_rects(count: int, y: int = BUTTONS_Y, needs=None) -> tuple:
+    """Key buttons side by side across the panel's inner width; with
+    ``needs`` (each button's natural width) the spare room is shared evenly,
+    so a long German key name never cuts its label."""
     gap = 10
-    width = (PANEL.w - 64 - gap * (count - 1)) // count
-    return tuple(pygame.Rect(PANEL.x + 32 + index * (width + gap), y, width, BUTTON_H)
-                 for index in range(count))
+    room = PANEL.w - 64 - gap * (count - 1)
+    needs = list(needs) if needs else [0] * count
+    total = sum(needs)
+    if total > room:
+        widths = [room * need // total for need in needs]
+    else:
+        widths = [need + (room - total) // count for need in needs]
+    rects, x = [], PANEL.x + 32
+    for width in widths:
+        rects.append(pygame.Rect(x, y, width, BUTTON_H))
+        x += width + gap
+    return tuple(rects)
+
+
+def _button_need(cap, label) -> int:
+    from src.core.i18n import key_label
+    face = layout.font(15)
+    width = layout.text_width(face, localize(label)) + 16
+    if cap is not None:
+        width += layout.text_width(face, key_label(
+            cap if cap.startswith("help.") else raw_text(cap))) + 14
+    return width
 
 
 def _buttons(s, specs, y: int = BUTTONS_Y) -> None:
     """Draw ``(key cap, label, key or action)`` buttons; a click presses the
     key (or runs the action) through the overlay's pointer layer."""
-    for (cap, label, spec), rect in zip(specs, button_rects(len(specs), y)):
+    needs = [_button_need(cap, label) for cap, label, _spec in specs]
+    for (cap, label, spec), rect in zip(specs, button_rects(len(specs), y, needs)):
         if cap is None:
             pygame.draw.rect(s, theme.c("raised"), rect, border_radius=4)
             pygame.draw.rect(s, theme.c("line_strong"), rect, 1, border_radius=4)
@@ -283,14 +305,14 @@ def draw_llm_settings(game) -> None:
                              config.COLOR_TEXT_DIM, size=14)
             pointer.add_action(rect, lambda _pos, index=index: game.click_llm_row(index))
     if game.llm_field is not None:
-        _buttons(s, (("Enter", "llm.button.save", pygame.K_RETURN),
+        _buttons(s, (("help.key.enter", "llm.button.save", pygame.K_RETURN),
                      ("Esc", "llm.button.cancel", pygame.K_ESCAPE)), SETTINGS_BUTTONS_Y)
     else:
         _buttons(s, (("↑", "llm.button.up", pygame.K_UP),
                      ("↓", "llm.button.down", pygame.K_DOWN),
                      ("←", "llm.button.previous", pygame.K_LEFT),
                      ("→", "llm.button.next", pygame.K_RIGHT),
-                     ("Enter", "llm.button.change", pygame.K_RETURN),
+                     ("help.key.enter", "llm.button.change", pygame.K_RETURN),
                      ("Tab", "llm.button.page", pygame.K_TAB),
                      ("Esc", "llm.button.back", pygame.K_ESCAPE)), SETTINGS_BUTTONS_Y)
 

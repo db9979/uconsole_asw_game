@@ -317,7 +317,8 @@ def test_simlog_map_dialog_toolbar_is_structured_and_wired():
                      "simlog-map-layout", "simlog-map-plot", "simlog-map-sidebar"):
         assert any(expected in value.split() for value in classes), expected
     for control in ("simlog-map-close", "simlog-map-world", "simlog-map-units-fit"):
-        assert any(attrs.get("id") == control and attrs.get("data-i18n")
+        assert any(attrs.get("id") == control and (attrs.get("data-i18n")
+                                                   or attrs.get("data-i18n-aria"))
                    for _, attrs in document.elements), control
     body = js.split("function closeSimlogMap", 1)[1].split("function openSimlogMap", 1)[0]
     assert "dialog.close()" in body

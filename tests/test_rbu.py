@@ -154,6 +154,9 @@ def test_keys_and_remote_actions():
     _target(game, 1.5)
     game.station = Station.WEAPONS
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_r, mod=0, unicode="r"))
+    assert len(game.rbu_rounds) == 0          # R only chooses the rocket launcher
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN,
+                                         mod=pygame.KMOD_CTRL, unicode="\r"))
     assert len(game.rbu_rounds) == rbu.SALVO
     assert V2_ACTION_REGISTRY["weapons_fire_rbu"].direct_fire
     assert V2_ACTION_REGISTRY["weapons_rbu_defence"].stations == frozenset({"weapons"})

@@ -8,6 +8,7 @@ import { renderCrew } from "../views/crew.js";
 import { drawSightView, viewMotion } from "../views/sight-scene.js";
 import { createOptics, opticsFov, opticsText, wireOptics } from "../views/optics.js";
 import { visualContext } from "../views/visual-common.js";
+import { renderNoteLamps } from "../views/console-kit.js";
 
 const WEATHER_FOV_DEG = 120;  // sight_scene.INSTRUMENT_FOV_DEG
 
@@ -56,6 +57,7 @@ export function drawBridgeGlasses(now) {
 }
 
 export function renderBridgeStation(payload) {
+  renderNoteLamps($("bridge-lamps"));
   const navigation = payload.navigation;
   renderCrew($("bridge-crew"), $("bridge-crew-actions"), payload.crew, {actionStations: "crew_action_stations"});
   metrics($("bridge-navigation"), [["position", position(navigation)], ["course", unit(navigation.course, "\u00b0", 0)],

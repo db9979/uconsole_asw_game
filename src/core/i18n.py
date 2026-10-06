@@ -508,6 +508,41 @@ def display_message(kind: str, value: object):
     return raw_text(str(value)) if key is None else message(key)
 
 
+# Key names per language: the German texts and key caps write Umschalt,
+# Strg, Eingabe, Rücktaste, Leertaste, Entf, Bild↑/↓, Pos1 and Ende.
+_GERMAN_KEY_NAMES = (("Shift", "Umschalt"), ("Umsch", "Umschalt"), ("Ctrl", "Strg"),
+                     ("Enter", "Eingabe"), ("Backspace", "Rücktaste"), ("Bksp", "Rück"),
+                     ("Space", "Leertaste"), ("SPACE", "Leertaste"), ("Delete", "Entf"),
+                     ("PgUp", "Bild↑"), ("PgDn", "Bild↓"), ("Home", "Pos1"), ("End", "Ende"))
+_KEY_NAME_PATTERN = re.compile(r"(?<![\w])(" + "|".join(
+    english for english, _german in _GERMAN_KEY_NAMES) + r")(?![\w])")
+
+
+def german_key_label(text: str) -> str:
+    """``text`` (a key label such as ``"Shift+Enter"``) with German key names."""
+    names = dict(_GERMAN_KEY_NAMES)
+    return _KEY_NAME_PATTERN.sub(lambda match: names[match.group(1)], str(text))
+
+
+def active_language(tr=None) -> str:
+    """The language of ``tr`` or of the current draw scope."""
+    translator = tr if tr is not None else _ACTIVE_TRANSLATOR.get()
+    owner = getattr(translator, "__self__", translator)
+    return getattr(owner, "language", DEFAULT_LANGUAGE)
+
+
+def key_label(text: object, tr=None) -> str:
+    """A key label (``"Shift+A"``, ``"Ctrl+Enter"``) in the key names of the
+    current language: the same spelling on caps, in help tables and texts."""
+    shown = localize(text, tr)
+    return german_key_label(shown) if active_language(tr) == "de" else shown
+
+
+def nm_unit(tr=None) -> str:
+    """The nautical mile's symbol in the current language ("sm" in German)."""
+    return "sm" if active_language(tr) == "de" else "NM"
+
+
 def localize(value: object, tr=None) -> str:
     """Translate display text in the current draw scope."""
     if _is_raw_text(value):

@@ -8,7 +8,7 @@ import copy
 import pygame
 
 from src.core import config
-from src.core.i18n import (display_value, localized, localize, raw_text,
+from src.core.i18n import (nm_unit, display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.core.station import Station
 from src.ui.plot_view import draw_plot
@@ -24,6 +24,7 @@ from src.ui.stations import opz_display_view
 
 
 from src.ui.stations.common import (
+    list_window,
     _observation_bearing,
     _observation_position,
     _panel,
@@ -255,6 +256,13 @@ def _draw_track_cards(game, s, box, selected_id) -> None:
     pointer.add_token_keys(head, heading, 14, (("(Shift+F)", "Shift+F"),),
                            min_size=layout.MIN_OPERATIONAL_FONT, screen=s)
     cards = opz_track_cards(game)
+    tracks = (game.filtered_opz_tracks() if hasattr(game, "filtered_opz_tracks")
+              else game.opz_tracks())
+    if cards:
+        first = next((index for index, track in enumerate(tracks)
+                      if track is cards[0][0]), 0)
+        list_window(s, (box.x + 8, cards[-1][1].bottom + 2, box.w - 16, 17),
+                    first, len(cards), len(tracks))
     if not cards:
         layout.blit_line(s, "opz.no_tracks", (box.x + 10, box.y + 36, box.w - 20, 22),
                          config.COLOR_TEXT_DIM, size=14)
@@ -280,7 +288,8 @@ def _draw_track_cards(game, s, box, selected_id) -> None:
                          (rect.right - 76, rect.y + 2, 68, 21), config.COLOR_TEXT,
                          size=17, align="right")
         displayed_range = observations.range_nm(track, game.ship)
-        distance = (f"{displayed_range:.1f} NM" if displayed_range is not None else "-- NM")
+        distance = (f"{displayed_range:.1f} {nm_unit()}" if displayed_range is not None
+                    else f"-- {nm_unit()}")
         tags = "".join(localize("opz.source_code." + group)
                        for group in source_groups(track))
         layout.blit_line(s, f"{distance} \u00b7 {tags}",
@@ -476,18 +485,30 @@ def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
             ("opz.mpa.keys_area", (("W", "W"),)),
             ("opz.mpa.keys_buoys", (("X", "X"), ("B", "B"), ("Shift+B", "Shift+B"))),
             ("opz.mpa.keys_weapons", (("Ctrl+R", "Ctrl+R"), ("Strg+R", "Ctrl+R"),
-                                      ("Shift+M", "Shift+M"), ("D", "D")))):
+                                      ("Shift+M", "Shift+M"), ("D", "D"),
+                                      ("(Ctrl+Enter)", None)))):
         if py + 22 > bottom:
             break
         layout.blit_line(s, key, (x, py, w, 22), config.COLOR_TEXT_DIM, size=14)
         # Each key in the hint is a switch (full mouse control).
         pointer.add_token_keys((x, py, w, 22), key, 14, tokens, screen=s)
         py += 24
+    if py + 26 <= bottom:
+        # What Ctrl+Enter fires on this page: D chooses the aircraft's torpedo.
+        chosen = getattr(game, "opz_weapon", "essm")
+        chip = pygame.Rect(x, py + 2, w, 22)
+        layout.key_button(s, chip, "D", message(
+            "weapons.control.launch_selected",
+            weapon=message("weapons.select." + chosen + ".short")),
+            size=14, min_size=11, active=chosen == "mpa_torpedo")
+        pointer.add_key(chip, pygame.K_d)
+        py += 28
     return py
 
 
 OPZ_TARGET_KEYS = ((("M", "opz.keys.designate"), ("G", "opz.keys.chaff")),
-                   (("←/→", "opz.keys.asm_track"),))
+                   (("←/→", "opz.keys.asm_track"), ("I", "opz.keys.ciws")),
+                   (("R", "opz.keys.surface_radar"), ("Shift+R", "opz.keys.air_radar")))
 
 # The consort's order hints: each key in them is a switch.  Ctrl+Enter (its
 # ASROC) is not: fire by click only at the weapons station.
@@ -932,7 +953,7 @@ def draw_opz_view(game, tr=None) -> None:
             if fx is not None:
                 map_fx_view.draw_fx(s, fx.rows("frigate", game.sim_t), view.world_to_screen,
                                     px_per_nm, chart, config.COLOR_GEO_BG)
-            nato_symbols.draw_symbol(s, (own_x, own_y), "FRIEND", "SURFACE", 18)
+            nato_symbols.draw_own_ship(s, (own_x, own_y), game.ship.course, 18)
             nato_symbols.draw_motion_vector(
                 s, (own_x, own_y), game.ship.course, game.ship.speed,
                 px_per_nm, config.COLOR_TEXT, minutes=vector_min, max_px=vector_max_px)
@@ -1147,6 +1168,11 @@ def draw_opz_view(game, tr=None) -> None:
                             label_w=label_w, size=15,
                             color=(config.COLOR_OK if game.ciws_authorized
                                    else config.COLOR_WARN))
+        # The release switch as a key chip at the row's end (I).
+        chip_h = layout.font(15).get_linesize() + 4
+        chip_w = layout.text_width(layout.font(11), "I") + 22
+        layout.command_segment(s, (x + w - chip_w, py - 2, chip_w, chip_h), "I", "",
+                               size=11, center=True)
         py += 30
         pygame.draw.line(s, config.COLOR_GRID, (x, py), (x + w, py))
         py += 8

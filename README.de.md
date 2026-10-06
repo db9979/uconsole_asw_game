@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.279**
+Aktuelle Version: **1.3.281**
 
-Version 1.3.279 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
+Version 1.3.281 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
 oder der blaue Chip Namen in der Kartenecke blendet Namen und Fahrt aller
 Kontakte auf allen Karten an jeder Station beider Seiten aus und wieder ein;
 Symbole, Kursvektoren und der Tooltip bleiben, und die uConsole merkt sich

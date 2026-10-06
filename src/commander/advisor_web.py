@@ -231,8 +231,11 @@ def pump_advisor(server, game, published: dict) -> None:
         if item.kind == "speech":
             # Transcribed by the host's speech input, then asked
             # (src/core/game_talk.py); "transcribing" until then.
+            # A solo session holds every station, so its spoken orders
+            # are not limited to the station it is looking at.
             result = (game.talk_submit_web(item.asker, pcm_samples(item.audio),
-                                           side_of_role(item.role), item.role)
+                                           side_of_role(item.role), item.role,
+                                           bool(getattr(server, "solo_mode", False)))
                       if hasattr(game, "talk_submit_web") else "stt_off")
         else:
             result = game.advisor_ask(item.kind, item.text, asker=item.asker,

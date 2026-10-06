@@ -16,7 +16,7 @@ import pytest
 from src.core import game_talk
 from src.core.game import Game
 from src.core.station import Station
-from src.llm import stt
+from src.llm import advisor as advisor_model, prompts, stt
 from src.llm.stt import SttConfig, SttService
 from src.ui import layout, pointer, talk_view
 from tests.llm_fake import FakeLlmServer
@@ -215,6 +215,119 @@ def test_hold_speak_release_asks_the_executive_officer(clock):
         assert game.talk_bubble_shown()
         clock.now += game_talk.BUBBLE_S + 1
         assert not game.talk_bubble_shown()
+
+
+@pytest.mark.parametrize("text", [
+    "Volle Fahrt voraus", "Volle Fahrt voraus.", "Kurs 270, 12 Knoten", "Ruder hart Steuerbord",
+    "Auf Sehrohrtiefe gehen", "Rohr eins los", "Gefechtsstationen!", "Alle Maschinen stopp",
+    "All ahead full", "Come right to 090", "Make depth 100 metres", "Fire tube one",
+])
+def test_orders_are_told_apart_from_questions(text):
+    assert advisor_model.looks_like_order(text)
+
+
+@pytest.mark.parametrize("text", [
+    "Wo ist K1?", "Wie schnell sollen wir fahren", "Soll ich volle Fahrt voraus gehen",
+    "Was bedeutet Sehrohrtiefe", "Erkläre mir die Schleichfahrt", "Wo steht der Kontakt gerade",
+    "Where is the contact?", "Should we go to periscope depth", "What does all ahead full mean",
+    "Kontakt K1 peilt 045", "",
+])
+def test_questions_are_never_taken_for_orders(text):
+    assert not advisor_model.looks_like_order(text)
+
+
+def _say(game, clock, phrase="Volle Fahrt voraus."):
+    _key(game)
+    clock.now += 2.0
+    _key(game, down=False)
+    assert _pump(game, lambda: game.talk_state == "idle" and game.talk_bubble
+                 and game.talk_bubble["entry"] is not None
+                 and game.talk_bubble["entry"]["status"] != "pending")
+    return game.talk_bubble["entry"]
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_a_spoken_order_is_carried_out_and_reported_as_done(clock, language):
+    """Bug 2026-10-06: "Volle Fahrt voraus" by the talk key was confirmed but
+    never set.  Dominik: orders shall be given by voice.  The order goes
+    through the typed order's translation, is carried out at once, and the
+    officer reports only what was really set."""
+    reply = '{"commands": [{"type": "speed", "value": 20}], "say": "Dreißig Knoten!"}'
+    with FakeLlmServer(reply) as llm, FakeSttServer("Volle Fahrt voraus.") as speech:
+        game = _game()
+        game._set_preference("language", language)
+        _connect(game, llm, speech)
+        game.station = Station.SONAR          # any station of the uConsole
+        entry = _say(game, clock)
+        assert game.ship.target_speed == 20
+        assert entry["kind"] == "order" and entry["applied"] and entry["proposal"] is None
+        expected = game.tr("advisor.spoken.done",
+                           orders=game.tr("advisor.command.speed", value="20"))
+        assert entry["answer"] == expected and "Dreißig" not in entry["answer"]
+        assert llm.requests and llm.requests[0]["response_format"]["type"] == "json_object"
+
+
+def test_the_submarine_takes_spoken_orders_too(clock):
+    from tests.test_opfor_sub import _game as boat_game
+
+    reply = '{"commands": [{"type": "depth", "value": 80}], "say": "ok"}'
+    with FakeLlmServer(reply) as llm, FakeSttServer("Auf 80 Meter tauchen.") as speech:
+        game = boat_game()
+        _connect(game, llm, speech)
+        game.local_side = "uboot"
+        game._update(0.05)
+        entry = _say(game, clock, "Auf 80 Meter tauchen.")
+        assert entry["applied"] and game.opfor.sub.order_depth == 80
+        assert entry["answer"] == game.tr("advisor.spoken.done",
+                                          orders=game.tr("advisor.command.depth", value="80"))
+
+
+def test_a_spoken_order_the_model_cannot_place_changes_nothing(clock):
+    with FakeLlmServer('{"commands": [], "say": "Waffen nie."}') as llm, \
+            FakeSttServer("Rohr eins los.") as speech:
+        game = _game()
+        _connect(game, llm, speech)
+        speed, course = game.ship.target_speed, game.ship.target_course
+        entry = _say(game, clock)
+        assert entry["answer"] == game.tr("advisor.spoken.not_understood")
+        assert (game.ship.target_speed, game.ship.target_course) == (speed, course)
+
+
+@pytest.mark.parametrize("role,anywhere,carried", [
+    ("bridge", False, True), ("sonar", False, False), ("sonar", True, True)])
+def test_a_browser_station_orders_only_what_it_may(clock, role, anywhere, carried):
+    reply = '{"commands": [{"type": "speed", "value": 20}], "say": "ok"}'
+    with FakeLlmServer(reply) as llm, FakeSttServer("Volle Fahrt voraus.") as speech:
+        game = _game()
+        _connect(game, llm, speech)
+        speed = game.ship.target_speed
+        samples = np.full(16000, 0.2, dtype=np.float32)
+        assert game.talk_submit_web("web:1", samples, "frigate", role, anywhere) == "transcribing"
+        assert _pump(game, lambda: game.advisor.log("web:1")
+                     and game.advisor.log("web:1")[-1]["status"] != "pending"
+                     and game.advisor.log("web:1")[-1]["proposal"] is None)
+        entry = game.advisor.log("web:1")[-1]
+        assert (game.ship.target_speed == 20) is carried
+        if not carried:
+            assert game.ship.target_speed == speed
+            assert entry["answer"].startswith(game.tr("advisor.spoken.refused", orders="")[:5])
+
+
+def test_a_typed_question_that_is_an_order_says_where_orders_go(clock):
+    with FakeLlmServer("Volle Fahrt voraus, 30 Knoten werden gesetzt.") as llm:
+        game = _game()
+        _connect(game, llm)
+        speed = game.ship.target_speed
+        entry = game.advisor_ask("question", "Volle Fahrt voraus")
+        assert _pump(game, lambda: entry["status"] == "done")
+        assert entry["answer"] == game.tr("advisor.not_an_order")
+        assert llm.requests == [] and game.ship.target_speed == speed
+        assert not game.llm_advisor_used
+
+
+def test_the_question_prompt_forbids_confirming_orders():
+    system = prompts.advisor("de", "frigate", "question", "facts", "x")[0]["content"]
+    assert "cannot carry out orders" in system and "never repeat it back" in system
 
 
 def test_a_tap_keeps_recording_until_the_next_press(clock):

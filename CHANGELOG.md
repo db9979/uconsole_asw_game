@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.279
+## 1.3.281
 
-Release 1.3.279 lets you hide the contact names on the charts. Alt+N, or
+Release 1.3.281 lets you hide the contact names on the charts. Alt+N, or
 the blue Names chip in the chart's corner, hides the names and speeds of all
 contacts on every chart at every station of both sides and shows them again;
 symbols, course vectors and the tooltip stay, and the uConsole keeps the
@@ -14,6 +14,18 @@ choice in its settings. In the browser the Names button above the chart and
 Alt+N do the same for that browser tab. A name also keeps its side of the
 symbol when the contact's course estimate swings round. Saves are v53; v38 to v52 saves
 still load.
+
+## 1.3.280
+
+Release 1.3.280 lets you give orders by voice. Say an order with the talk
+key, such as "all ahead full", "come right to 090" or "make depth 80
+metres", and it is carried out at once on the uConsole, the submarine and
+in the browser; the executive officer reports only what was really set.
+Before, such an order was answered as if it had been given while the ship
+kept its speed. Only course, speed, depth, quiet or silent running and
+action stations can be ordered by voice, never weapons, and a browser
+station gives only its own station's orders. Saves are v53; v38 to v52
+saves still load.
 
 ## 1.3.278
 

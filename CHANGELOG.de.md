@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.279
+## 1.3.281
 
-Version 1.3.279 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
+Version 1.3.281 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
 oder der blaue Chip Namen in der Kartenecke blendet Namen und Fahrt aller
 Kontakte auf allen Karten an jeder Station beider Seiten aus und wieder ein;
 Symbole, Kursvektoren und der Tooltip bleiben, und die uConsole merkt sich
@@ -15,6 +15,18 @@ Karte und Alt+N dasselbe für diesen Browser-Tab. Ein Name bleibt auch
 auf seiner Seite des Symbols, wenn der geschätzte Kurs eines Kontakts
 herumschwenkt. Spielstände sind v53;
 Spielstände v38 bis v52 laden weiterhin.
+
+## 1.3.280
+
+Version 1.3.280 nimmt Befehle per Sprache an. Sprich einen Befehl mit der
+Sprechtaste, etwa "Volle Fahrt voraus", "Kurs 270" oder "Auf 80 Meter
+tauchen", und er wird sofort ausgeführt, auf der uConsole, im U-Boot und
+im Browser; der Erste Offizier meldet nur, was wirklich gesetzt wurde.
+Bisher wurde so ein Befehl bestätigt, während das Schiff seine Fahrt
+behielt. Per Sprache gehen nur Kurs, Fahrt, Tiefe, Leise- oder
+Schleichfahrt und Gefechtsstationen, nie Waffen, und eine Browser-Station
+gibt nur die Befehle ihrer eigenen Station. Spielstände sind v53; v38 bis
+v52 laden weiter.
 
 ## 1.3.278
 

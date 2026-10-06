@@ -98,6 +98,8 @@ class LlmMixin:
         self._llm_boat_orders()
         self.llm_radio.poll()
         for entry in self.advisor.poll():
+            # A spoken order is carried out before anyone reports it (game_talk.py).
+            self.talk_order_finished(entry)
             if entry["kind"] == "coach" and entry["status"] == "done":
                 self._coach_banner(entry["answer"])
             # The executive officer says his answer (game_voice.py).

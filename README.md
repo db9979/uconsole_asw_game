@@ -12,14 +12,15 @@ network.
 
 Current release: **1.3.271**
 
-Release 1.3.271 fixes the talk key confirming orders it never carried
-out. Spoken as an order, such as "all ahead full", a question to the
-executive officer used to be answered as if the order had been given, while
-the ship kept its speed. Now the game itself answers "Not carried out" and
-says where orders are given: at your station, or as a typed order on the
-executive officer's Order tab (F7) that you confirm. The talk key still
-only asks, and the officer is told never to confirm an order. Saves are
-v53; v38 to v52 saves still load.
+Release 1.3.271 lets you give orders by voice. Say an order with the talk
+key, such as "all ahead full", "come right to 090" or "make depth 80
+metres", and it is carried out at once on the uConsole, the submarine and
+in the browser; the executive officer reports only what was really set.
+Before, such an order was answered as if it had been given while the ship
+kept its speed. Only course, speed, depth, quiet or silent running and
+action stations can be ordered by voice, never weapons, and a browser
+station gives only its own station's orders. Saves are v53; v38 to v52
+saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

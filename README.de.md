@@ -12,15 +12,15 @@ Netz besetzen.
 
 Aktuelle Version: **1.3.271**
 
-Version 1.3.271 behebt, dass die Sprechtaste Befehle bestätigte, die nie
-ausgeführt wurden. Als Befehl gesprochen, etwa "Volle Fahrt voraus", wurde
-eine Frage an den Ersten Offizier so beantwortet, als sei der Befehl
-gegeben, während das Schiff seine Fahrt behielt. Jetzt antwortet das Spiel
-selbst "Nicht ausgeführt" und sagt, wo Befehle gegeben werden: an deiner
-Station oder als getippter Befehl im Reiter Befehl des Ersten Offiziers
-(F7), den du bestätigst. Die Sprechtaste fragt weiterhin nur, und der
-Offizier ist angewiesen, nie einen Befehl zu bestätigen. Spielstände sind
-v53; v38 bis v52 laden weiter.
+Version 1.3.271 nimmt Befehle per Sprache an. Sprich einen Befehl mit der
+Sprechtaste, etwa "Volle Fahrt voraus", "Kurs 270" oder "Auf 80 Meter
+tauchen", und er wird sofort ausgeführt, auf der uConsole, im U-Boot und
+im Browser; der Erste Offizier meldet nur, was wirklich gesetzt wurde.
+Bisher wurde so ein Befehl bestätigt, während das Schiff seine Fahrt
+behielt. Per Sprache gehen nur Kurs, Fahrt, Tiefe, Leise- oder
+Schleichfahrt und Gefechtsstationen, nie Waffen, und eine Browser-Station
+gibt nur die Befehle ihrer eigenen Station. Spielstände sind v53; v38 bis
+v52 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

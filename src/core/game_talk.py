@@ -24,7 +24,7 @@ import pygame
 
 from src.audio.microphone import Microphone
 from src.core.i18n import message
-from src.llm import keystore, stt as stt_model
+from src.llm import advisor as advisor_model, keystore, stt as stt_model
 from src.llm.stt import SttConfig, SttService
 
 TALK_KEY = pygame.K_SPACE
@@ -61,6 +61,8 @@ class TalkMixin:
         # reasons to publish to them (src/commander/advisor_web.py).
         self._talk_web: dict = {}
         self._talk_web_updates: list = []
+        # Spoken orders waiting for the model: seq -> (side, role, any station).
+        self._talk_orders: dict = {}
 
     # -- configuration -------------------------------------------------------------
 
@@ -271,7 +273,8 @@ class TalkMixin:
             elif not request.text:
                 self._talk_fail("no_speech")
             else:
-                result = self.advisor_ask("question", request.text)
+                result = self._talk_ask(request.text, side=self.advisor_side(), role=None,
+                                        anywhere=True)
                 if isinstance(result, dict):
                     self._talk_entry = result
                     self.talk_state = "asking"
@@ -289,8 +292,11 @@ class TalkMixin:
 
     # -- browser stations (Remote Crew) ---------------------------------------------
 
-    def talk_submit_web(self, asker: str, samples, side: str, role: str) -> str:
-        """A browser station's recording: "transcribing", or why not."""
+    def talk_submit_web(self, asker: str, samples, side: str, role: str,
+                        anywhere: bool = False) -> str:
+        """A browser station's recording: "transcribing", or why not.
+        ``anywhere``: the session holds every station (solo mode), so a
+        spoken order is not limited to ``role``'s own commands."""
         if not self.stt.active:
             return "stt_off"
         if not self.llm_active():
@@ -302,11 +308,11 @@ class TalkMixin:
         request = self.stt.transcribe(samples, self.llm_language(), tag=asker)
         if request is None:
             return "llm_busy"
-        self._talk_web[asker] = (request, side, role)
+        self._talk_web[asker] = (request, side, role, anywhere)
         return "transcribing"
 
     def _talk_web_tick(self) -> None:
-        for asker, (request, side, role) in list(self._talk_web.items()):
+        for asker, (request, side, role, anywhere) in list(self._talk_web.items()):
             if not request.finished:
                 continue
             del self._talk_web[asker]
@@ -315,11 +321,66 @@ class TalkMixin:
             elif not request.text:
                 reason = "stt_no_speech"
             else:
-                result = self.advisor_ask("question", request.text, asker=asker,
-                                          side=side, station=role)
+                result = self._talk_ask(request.text, asker=asker, side=side, role=role,
+                                        anywhere=anywhere)
                 reason = result if isinstance(result, str) else None
             self._talk_web_updates.append((asker, reason))
         del self._talk_web_updates[:-WEB_MAX]
+
+    # -- spoken orders -----------------------------------------------------------------
+
+    def _talk_ask(self, text: str, *, side: str, role, anywhere: bool, asker: str = "local"):
+        """Ask the officer what was said: an order goes through the typed
+        order's translation and is carried out once it is back
+        (``talk_order_finished``); anything else is a question."""
+        if not advisor_model.looks_like_order(text):
+            return self.advisor_ask("question", text, asker=asker, side=side,
+                                    station=role)
+        result = self.advisor_ask("order", text, asker=asker, side=side, station=role)
+        if isinstance(result, dict):
+            self._talk_orders[result["seq"]] = (side, role, anywhere)
+            del_old = len(self._talk_orders) - 2 * WEB_MAX
+            for seq in list(self._talk_orders)[:max(0, del_old)]:
+                del self._talk_orders[seq]
+        return result
+
+    def talk_order_finished(self, entry: dict) -> None:
+        """A spoken order is back from the model: carry it out at once and
+        let the officer report only what was really done (never weapons;
+        a browser station gives only its own station's commands)."""
+        info = getattr(self, "_talk_orders", {}).pop(entry["seq"], None)
+        if info is None:
+            return
+        side, role, anywhere = info
+        proposal = entry["proposal"] if entry["status"] == "done" else None
+        if not proposal:
+            entry.update(status="done", error=None, proposal=None,
+                         answer=self.tr("advisor.spoken.not_understood"))
+            return
+        from src.commander.v2.commands import V2_ACTION_REGISTRY
+
+        done, refused = [], []
+        for command in proposal:
+            allowed = anywhere or role in V2_ACTION_REGISTRY[command["action"]].stations
+            ok = (allowed and self._advisor_mission_running()
+                  and advisor_model.apply_proposal(self, side, [command])[0])
+            (done if ok else refused).append(self._talk_command_text(command))
+        if done and refused:
+            answer = self.tr("advisor.spoken.partial", done=", ".join(done),
+                             refused=", ".join(refused))
+        elif done:
+            answer = self.tr("advisor.spoken.done", orders=", ".join(done))
+        else:
+            answer = self.tr("advisor.spoken.refused", orders=", ".join(refused))
+        entry.update(proposal=None, applied=True, answer=answer)
+
+    def _talk_command_text(self, command: dict) -> str:
+        value = command["value"]
+        if value is True or value is False:
+            value = self.tr("common.on" if value else "common.off")
+        else:
+            value = f"{value:g}"
+        return self.tr("advisor.command." + command["type"], value=value)
 
     def talk_web_updates(self) -> list:
         """Finished browser recordings since the last call: (asker, reason)."""
@@ -337,6 +398,7 @@ class TalkMixin:
         self.talk_bubble = None
         self._talk_web = {}
         self._talk_web_updates = []
+        self._talk_orders = {}
 
     # -- settings test ---------------------------------------------------------------
 

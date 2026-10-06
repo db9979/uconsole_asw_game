@@ -236,30 +236,92 @@ def test_questions_are_never_taken_for_orders(text):
     assert not advisor_model.looks_like_order(text)
 
 
+def _say(game, clock, phrase="Volle Fahrt voraus."):
+    _key(game)
+    clock.now += 2.0
+    _key(game, down=False)
+    assert _pump(game, lambda: game.talk_state == "idle" and game.talk_bubble
+                 and game.talk_bubble["entry"] is not None
+                 and game.talk_bubble["entry"]["status"] != "pending")
+    return game.talk_bubble["entry"]
+
+
 @pytest.mark.parametrize("language", ["en", "de"])
-def test_a_spoken_order_is_never_confirmed_or_carried_out(clock, language):
-    """Bug 2026-10-06: "Volle Fahrt voraus" by the talk key was answered with a
-    confirmation of 30 kn, yet nothing was set.  The talk key only asks: the
-    game itself says that nothing was done and where orders are given."""
-    with FakeLlmServer("Volle Fahrt voraus, 30 Knoten werden gesetzt.") as llm, \
-            FakeSttServer("Volle Fahrt voraus.") as speech:
+def test_a_spoken_order_is_carried_out_and_reported_as_done(clock, language):
+    """Bug 2026-10-06: "Volle Fahrt voraus" by the talk key was confirmed but
+    never set.  Dominik: orders shall be given by voice.  The order goes
+    through the typed order's translation, is carried out at once, and the
+    officer reports only what was really set."""
+    reply = '{"commands": [{"type": "speed", "value": 20}], "say": "Dreißig Knoten!"}'
+    with FakeLlmServer(reply) as llm, FakeSttServer("Volle Fahrt voraus.") as speech:
         game = _game()
         game._set_preference("language", language)
         _connect(game, llm, speech)
-        game.station = Station.BRIDGE
+        game.station = Station.SONAR          # any station of the uConsole
+        entry = _say(game, clock)
+        assert game.ship.target_speed == 20
+        assert entry["kind"] == "order" and entry["applied"] and entry["proposal"] is None
+        expected = game.tr("advisor.spoken.done",
+                           orders=game.tr("advisor.command.speed", value="20"))
+        assert entry["answer"] == expected and "Dreißig" not in entry["answer"]
+        assert llm.requests and llm.requests[0]["response_format"]["type"] == "json_object"
+
+
+def test_the_submarine_takes_spoken_orders_too(clock):
+    from tests.test_opfor_sub import _game as boat_game
+
+    reply = '{"commands": [{"type": "depth", "value": 80}], "say": "ok"}'
+    with FakeLlmServer(reply) as llm, FakeSttServer("Auf 80 Meter tauchen.") as speech:
+        game = boat_game()
+        _connect(game, llm, speech)
+        game.local_side = "uboot"
+        game._update(0.05)
+        entry = _say(game, clock, "Auf 80 Meter tauchen.")
+        assert entry["applied"] and game.opfor.sub.order_depth == 80
+        assert entry["answer"] == game.tr("advisor.spoken.done",
+                                          orders=game.tr("advisor.command.depth", value="80"))
+
+
+def test_a_spoken_order_the_model_cannot_place_changes_nothing(clock):
+    with FakeLlmServer('{"commands": [], "say": "Waffen nie."}') as llm, \
+            FakeSttServer("Rohr eins los.") as speech:
+        game = _game()
+        _connect(game, llm, speech)
+        speed, course = game.ship.target_speed, game.ship.target_course
+        entry = _say(game, clock)
+        assert entry["answer"] == game.tr("advisor.spoken.not_understood")
+        assert (game.ship.target_speed, game.ship.target_course) == (speed, course)
+
+
+@pytest.mark.parametrize("role,anywhere,carried", [
+    ("bridge", False, True), ("sonar", False, False), ("sonar", True, True)])
+def test_a_browser_station_orders_only_what_it_may(clock, role, anywhere, carried):
+    reply = '{"commands": [{"type": "speed", "value": 20}], "say": "ok"}'
+    with FakeLlmServer(reply) as llm, FakeSttServer("Volle Fahrt voraus.") as speech:
+        game = _game()
+        _connect(game, llm, speech)
         speed = game.ship.target_speed
-        _key(game)
-        clock.now += 2.0
-        _key(game, down=False)
-        assert _pump(game, lambda: game.talk_state == "idle" and game.talk_bubble
-                     and game.talk_bubble["entry"] is not None
-                     and game.talk_bubble["entry"]["status"] == "done")
-        answer = game.talk_bubble["entry"]["answer"]
-        assert answer == game.tr("advisor.not_an_order")
-        assert "30" not in answer
-        # Nothing went to the model, nothing was set, and it is no advisor help.
-        assert llm.requests == []
-        assert game.ship.target_speed == speed
+        samples = np.full(16000, 0.2, dtype=np.float32)
+        assert game.talk_submit_web("web:1", samples, "frigate", role, anywhere) == "transcribing"
+        assert _pump(game, lambda: game.advisor.log("web:1")
+                     and game.advisor.log("web:1")[-1]["status"] != "pending"
+                     and game.advisor.log("web:1")[-1]["proposal"] is None)
+        entry = game.advisor.log("web:1")[-1]
+        assert (game.ship.target_speed == 20) is carried
+        if not carried:
+            assert game.ship.target_speed == speed
+            assert entry["answer"].startswith(game.tr("advisor.spoken.refused", orders="")[:5])
+
+
+def test_a_typed_question_that_is_an_order_says_where_orders_go(clock):
+    with FakeLlmServer("Volle Fahrt voraus, 30 Knoten werden gesetzt.") as llm:
+        game = _game()
+        _connect(game, llm)
+        speed = game.ship.target_speed
+        entry = game.advisor_ask("question", "Volle Fahrt voraus")
+        assert _pump(game, lambda: entry["status"] == "done")
+        assert entry["answer"] == game.tr("advisor.not_an_order")
+        assert llm.requests == [] and game.ship.target_speed == speed
         assert not game.llm_advisor_used
 
 

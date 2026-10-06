@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.272
+
+Version 1.3.272 macht die Menüs per Maus bedienbar. In den Optionen ändert
+ein Klick auf eine Zeile sie wie `Eingabe`, und neue Schaltflächen **<** und
+**>** stellen einen Wert zurück oder weiter; jede Taste in der Hinweiszeile
+ist ein klickbarer Chip. Die Seite Echtzeit-Verkehr schaltet Dienste per
+Klick und öffnet ihre Felder, ein Klick schließt den Startbildschirm,
+Lobby-Zeilen stellen per Klick ins linke Drittel zurück und sonst weiter,
+die Remote-Crew-Seite stellt Host und Port genauso zurück, und das
+Zulassungsfenster der Remote Crew und der Update-Hinweis haben ein
+Schließkreuz; der Hinweis bleibt dann bis zum nächsten Start zu. Spielstände sind
+v53; v38- bis v52-Stände werden weiter geladen.
+
 ## 1.3.266
 
 Version 1.3.266 schließt die ersten Lücken in der Maussteuerung. Ein Klick

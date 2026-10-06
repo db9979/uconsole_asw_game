@@ -1,6 +1,6 @@
 # Options {#options}
 
-`F10` (or **Options** in the main menu or the game menu) opens the options. `Up`/`Down` pick a row, `Enter`/`Left`/`Right` change it, `PgUp`/`PgDn` or `Tab` switch between the two pages and `Esc` goes back. The settings are kept in `~/.u-jagd/settings.json`; a running mission keeps running behind the options.
+`F10` (or **Options** in the main menu or the game menu) opens the options. `Up`/`Down` pick a row, `Enter`/`Left`/`Right` change it, `PgUp`/`PgDn` or `Tab` switch between the two pages and `Esc` goes back. With the mouse, a click on a row changes it like `Enter`, the **<** and **>** buttons at its right end step the value back or on, and every key in the hint line below is clickable. The settings are kept in `~/.u-jagd/settings.json`; a running mission keeps running behind the options.
 
 ![Options (F10)](figure:options)
 
@@ -37,7 +37,7 @@ The level only tunes the computer opponent, never a human on the other side, and
 
 ### Real-world traffic {#options-traffic}
 
-The page **Real-world traffic** brings real ships (AIS Stream, needs your own API key) and real aircraft (OpenSky ADS-B, optionally with your OpenSky client ID) into a mission whose world is a real sea area. It needs an internet connection; without one the rows are greyed out. **API test** checks both services. Only traffic within about 150 NM of the frigate is placed (at most 15 ships and 5 aircraft, picked at random; a picked contact stays until it leaves the area), and ship positions are updated every 2 to 5 minutes. Changes apply at once and are saved.
+The page **Real-world traffic** brings real ships (AIS Stream, needs your own API key) and real aircraft (OpenSky ADS-B, optionally with your OpenSky client ID) into a mission whose world is a real sea area. It needs an internet connection; without one the rows are greyed out. **API test** checks both services. Only traffic within about 150 NM of the frigate is placed (at most 15 ships and 5 aircraft, picked at random; a picked contact stays until it leaves the area), and ship positions are updated every 2 to 5 minutes. A click on a row works like `Enter`: it switches a service on or off or opens its field. Changes apply at once and are saved.
 
 ## Page 2: game setup {#options-page2}
 

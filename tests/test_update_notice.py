@@ -343,3 +343,17 @@ def test_main_returns_the_update_exit_code(monkeypatch):
     assert entry.main(["--windowed", "5"]) == update.UPDATE_EXIT_CODE
     assert calls == [(None, ("--windowed", "5"))]
     assert APP_VERSION
+
+
+def test_the_close_cross_hides_the_notice_until_the_next_launch():
+    game = _game(show_splash=False)
+    game.update_notice = _notice()
+    assert "9.9.9" in _texts(game)
+    cross = game._update_close
+    assert cross is not None
+    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=cross.center))
+    assert game.update_notice_closed and not game.update_notice_visible()
+    assert "9.9.9" not in _texts(game)
+    # U no longer acts on a closed notice.
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_u, mod=0))
+    assert game.update_progress is None

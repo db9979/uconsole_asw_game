@@ -95,6 +95,59 @@ def test_sdl_dummy_input_delivers_blocks_like_the_build_self_test(monkeypatch):
         mic.stop()
 
 
+_STOP_MID_CALLBACK = r"""
+import os, sys, threading, time
+os.environ["SDL_AUDIODRIVER"] = "dummy"
+sys.path.insert(0, sys.argv[1])
+from src.audio.microphone import Microphone
+for _round in range(2):
+    mic = Microphone()
+    inside = threading.Event()
+    plain = mic._callback
+    def slow(device, data, mic=mic, plain=plain, inside=inside):
+        plain(device, data)
+        if not inside.is_set():
+            inside.set()
+            time.sleep(0.4)  # SDL holds the device lock, the GIL is free
+    mic._callback = slow
+    assert mic.start(), mic.detail
+    assert inside.wait(5.0)
+    mic.stop()
+    assert mic.released == "sdl", mic.released
+print("stopped")
+"""
+
+
+def test_stopping_mid_callback_never_deadlocks():
+    # pygame's pause()/close() held the GIL while SDL waited for the running
+    # capture callback, which waited for the GIL: the macOS build's self-test
+    # hung in Microphone.stop() (1.3.234).  A child process, so a regression
+    # fails on the timeout instead of hanging the test run; two rounds, as
+    # the second device reuses the first one's SDL id.
+    import subprocess
+    result = subprocess.run([sys.executable, "-c", _STOP_MID_CALLBACK, str(ROOT)],
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0 and "stopped" in result.stdout, result.stderr
+
+
+def test_a_device_out_of_reach_of_sdl_closes_the_pygame_way(monkeypatch):
+    sdl = fake_sdl(monkeypatch)
+    mic = Microphone()
+    assert mic.start()
+    mic.stop()
+    device = sdl.opened[0]
+    assert device.paused == 1 and device.closed and mic.released == "pygame"
+
+
+def test_sdl_library_names():
+    from src.audio import sdl_native
+    for name in ("/usr/lib/libSDL2-2.0.so.0", "/x/pygame.libs/libSDL2-2-1667c208.0.so.0.2800.4",
+                 "SDL2.dll", "/A.app/Contents/Frameworks/pygame/.dylibs/libSDL2-2.0.0.dylib"):
+        assert sdl_native._is_sdl(name), name
+    for name in ("/x/libSDL2_mixer-2.0.so.0", "SDL2_ttf.dll", "/x/libSDL2main.a", "libsdl.so"):
+        assert not sdl_native._is_sdl(name), name
+
+
 def test_failures_name_their_cause(monkeypatch):
     fake_sdl(monkeypatch, names=())
     mic = Microphone()

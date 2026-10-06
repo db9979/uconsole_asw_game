@@ -1320,8 +1320,13 @@ def draw_opz_view(game, tr=None) -> None:
         content_bottom = regions["classify"].top - 7
         # The target page's orders as key chips (full mouse control); ESSM
         # fires by its button on a confirming second click.
-        keys_top = content_bottom - len(OPZ_TARGET_KEYS) * 24
-        for index, specs in enumerate(OPZ_TARGET_KEYS):
+        # A short station keeps room for the missile list: the last chip
+        # rows (track number, suppress) give way first; F1 lists them all.
+        asm_rows = min(3, len(asm_tracks)) * 26
+        key_rows = OPZ_TARGET_KEYS[:max(3, min(len(OPZ_TARGET_KEYS),
+                                               (content_bottom - py - 28 - asm_rows) // 24))]
+        keys_top = content_bottom - len(key_rows) * 24
+        for index, specs in enumerate(key_rows):
             _shortcut_footer(s, (x, keys_top + index * 24 + 2, w, 22), specs)
         keys_top -= 28
         fire_button(game, s, (x, keys_top + 2, w, 24), "fire.essm", "essm")

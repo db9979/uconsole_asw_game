@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.282
+## 1.3.283
 
-Version 1.3.282 macht den Missions- und den Einheiten-Editor per Maus
+Version 1.3.283 macht den Missions- und den Einheiten-Editor per Maus
 bedienbar. Ihre Fußleisten sind Reihen blauer Tastenchips, die wie die
 Tasten wirken, und jeder Dialog hat Schaltflächen: der Pfaddialog OK und
 Abbrechen, der Austauschdialog ein Schließkreuz sowie Ordner, Pfad und
@@ -17,9 +17,9 @@ offen ist. Im Einheiten-Editor öffnet Strg+G das gewählte Profil und
 startet den Wikipedia-Import. Spielstände sind v53; v38 bis v52 laden
 weiterhin.
 
-## 1.3.281
+## 1.3.282
 
-Version 1.3.281 bringt die restlichen Stationsbedienungen auf die Maus.
+Version 1.3.282 bringt die restlichen Stationsbedienungen auf die Maus.
 ESSM auf der Zielseite der OPZ, der Torpedo des Seefernaufklärers, die
 ASROC des Begleiters und der Lufttorpedo des Hubschraubers haben je einen
 Feuerknopf, der erst beim zweiten Klick innerhalb von 3 s feuert; der erste
@@ -29,6 +29,18 @@ Sonars setzt den Cursor auf diese Frequenz, der Chip GAIN senkt oder hebt
 die Verstärkung mit seinen Hälften, und ein Klick auf eine Zeile des
 Tauchsonars wählt diesen Kontakt. Spielstände sind v53; v38 bis v52 laden
 weiterhin.
+
+## 1.3.280
+
+Version 1.3.280 nimmt Befehle per Sprache an. Sprich einen Befehl mit der
+Sprechtaste, etwa "Volle Fahrt voraus", "Kurs 270" oder "Auf 80 Meter
+tauchen", und er wird sofort ausgeführt, auf der uConsole, im U-Boot und
+im Browser; der Erste Offizier meldet nur, was wirklich gesetzt wurde.
+Bisher wurde so ein Befehl bestätigt, während das Schiff seine Fahrt
+behielt. Per Sprache gehen nur Kurs, Fahrt, Tiefe, Leise- oder
+Schleichfahrt und Gefechtsstationen, nie Waffen, und eine Browser-Station
+gibt nur die Befehle ihrer eigenen Station. Spielstände sind v53; v38 bis
+v52 laden weiter.
 
 ## 1.3.278
 
@@ -44,6 +56,7 @@ jede Aktion, sodass seine Hinweiszeile die Positionsanzeige der Karte nicht
 mehr verdeckt. Im Taktischen Einheitenanalysator (F8) ordnen zwei
 Schaltflächen das angezeigte Profil dem gewählten Kontakt zu oder löschen
 es. Spielstände sind v53; v38- bis v52-Stände werden weiter geladen.
+
 ## 1.3.276
 
 Version 1.3.276 gibt jeder gesprochenen Meldung ein klares Ende. Jede
@@ -54,7 +67,6 @@ Sprachdienst, denn ein Sprachmodell macht zwischen zusammen geschickten
 Meldungen nur eine kurze Satzpause. Antworten des Ersten Offiziers bleiben
 am Stück. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
 v52 laden weiter).
-
 
 ## 1.3.275
 
@@ -1571,7 +1583,6 @@ Schotten, Funkkanäle und Aufträge, Befehle an Besatzung und Seefernaufklärer)
 bleiben stehen, sodass ein Klick nicht mehr verloren geht, wenn mitten im Klick
 eine Aktualisierung eintrifft. Spielstände bleiben im Format v41.
 
-
 ## 1.3.121
 
 Notfälle an Bord ergänzen die Ereignisse auf See. Auf der Fregatte kann ein
@@ -1635,7 +1646,6 @@ HF/DF-Peilungen streuen. Bei schwerer See startet und landet der Hubschrauber
 nur in einer ruhigen Phase; eine Deckbewegungsanzeige zeigt sie, und weniger
 Fahrt hilft. Spielstände haben jetzt das Format v41; ältere Spielstände laden
 nicht.
-
 
 ## 1.3.116
 

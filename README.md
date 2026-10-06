@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.282**
+Current release: **1.3.283**
 
-Release 1.3.282 brings the mission and unit editors to the mouse. Their
+Release 1.3.283 brings the mission and unit editors to the mouse. Their
 footers are rows of blue key chips that act like the keys, and every dialog
 has buttons: the path dialog OK and Cancel, the share dialog a close cross
 plus Folder, Path and Import (or Overwrite), the delete question Yes

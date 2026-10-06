@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.282
+## 1.3.283
 
-Release 1.3.282 brings the mission and unit editors to the mouse. Their
+Release 1.3.283 brings the mission and unit editors to the mouse. Their
 footers are rows of blue key chips that act like the keys, and every dialog
 has buttons: the path dialog OK and Cancel, the share dialog a close cross
 plus Folder, Path and Import (or Overwrite), the delete question Yes
@@ -15,9 +15,9 @@ longer close the editor or start a mission while one of its dialogs is
 open. In the unit editor, Ctrl+G opens the selected profile and starts the
 Wikipedia import. Saves are v53; v38 to v52 saves still load.
 
-## 1.3.281
+## 1.3.282
 
-Release 1.3.281 brings the remaining station controls to the mouse. ESSM
+Release 1.3.282 brings the remaining station controls to the mouse. ESSM
 on the OPZ target page, the patrol aircraft's torpedo, the consort's ASROC
 and the helicopter's air torpedo each have a fire button that fires only on
 a second click within 3 s; the first click arms it. The OPZ key chips J, H,
@@ -25,6 +25,18 @@ Shift+L, Del and K (follow) work by click. A click in the sonar's LOFAR or
 DEMON display puts the cursor on that frequency, the GAIN chip lowers or
 raises the gain by its halves, and a click on a dipping-sonar line selects
 that contact. Saves are v53; v38 to v52 saves still load.
+
+## 1.3.280
+
+Release 1.3.280 lets you give orders by voice. Say an order with the talk
+key, such as "all ahead full", "come right to 090" or "make depth 80
+metres", and it is carried out at once on the uConsole, the submarine and
+in the browser; the executive officer reports only what was really set.
+Before, such an order was answered as if it had been given while the ship
+kept its speed. Only course, speed, depth, quiet or silent running and
+action stations can be ordered by voice, never weapons, and a browser
+station gives only its own station's orders. Saves are v53; v38 to v52
+saves still load.
 
 ## 1.3.278
 
@@ -38,6 +50,7 @@ chart with a chip for every tool and action, so its hint line no longer
 covers the chart's position readout. In the Tactical Unit Analyzer (F8)
 two buttons assign the browsed profile to the selected contact or clear
 it. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.276
 
 Release 1.3.276 gives every spoken report a clear end. Each report the
@@ -47,7 +60,6 @@ the speech service one by one again, because a speech model leaves only a
 short sentence pause between entries sent together. Answers of the
 executive officer stay in one piece. Keys and saves are unchanged (v53;
 v38 to v52 saves still load).
-
 
 ## 1.3.275
 
@@ -1461,7 +1473,6 @@ it is left. Buttons in updating lists (ESM emitters, tubes, bulkheads, radio
 channels and tasks, crew and patrol-aircraft orders) stay in place, so a click
 is no longer lost when an update lands mid-click. Saves stay format v41.
 
-
 ## 1.3.121
 
 Emergencies aboard join the incidents at sea. A man can go overboard from the
@@ -1521,7 +1532,6 @@ heavier rain and sferics that crackle on ESM and spread HF/DF bearings. In a
 heavy sea the helicopter launches and lands only in a quiet period; a deck-
 motion gauge shows it, and slowing down helps. Saves are now format v41; older
 saves do not load.
-
 
 ## 1.3.116
 

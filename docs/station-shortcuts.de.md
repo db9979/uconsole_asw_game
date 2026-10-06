@@ -1,4 +1,4 @@
-# U-Jagd 1.3.282 - Stations- und Tastenkürzel
+# U-Jagd 1.3.283 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -24,7 +24,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `F3` | Autocrew-Übersicht öffnen |
 | `0` | Wetter- & Sonar-Analyse |
 | `F7` | Erster Offizier (optionales Sprachmodell) |
-| `Umschalt+Leertaste` | Den Ersten Offizier per Sprache fragen (halten und sprechen oder zweimal tippen) |
+| `Umschalt+Leertaste` | Den Ersten Offizier per Sprache fragen oder Befehle geben (halten und sprechen oder zweimal tippen) |
 | `F8` | Taktischer Einheitenanalysator (Katalog, nur lesend) |
 | `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte, F auf der Karte: Einheiten oder ganze Welt einpassen) |
 | `F9` | Lokale Commander-LAN-Verwaltung öffnen |
@@ -283,7 +283,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Umschalt+F2` | Crew-Hilfe: Die KI besetzt jede freie Station beider Einheiten |
 | `0` | Wetterseite des U-Boots (0 oder Esc schließt) |
 | `F7` | Erster Offizier (optionales Sprachmodell) |
-| `Umschalt+Leertaste` | Den Ersten Offizier per Sprache fragen (halten und sprechen oder zweimal tippen) |
+| `Umschalt+Leertaste` | Den Ersten Offizier per Sprache fragen oder Befehle geben (halten und sprechen oder zweimal tippen) |
 | `F9` | Lokale Commander-LAN-Verwaltung öffnen |
 | `F10` | Optionen: Sprache, Vollbild, Audio, großer Text, Tooltips, Bildrate |
 | `F11` | Ereignislog und volle Telemetrie einblenden (Station bleibt bedienbar) |
@@ -406,7 +406,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
 | `Alt+, / Alt+.` | Kontaktliste (Alt+,) oder Stationsbereich (Alt+.) ein- oder ausklappen |
 | `Alt+L` | Einsatzprotokoll öffnen oder schließen |
-| `Umschalt+Leertaste` | Den Ersten Offizier per Sprache fragen (halten und sprechen oder zweimal tippen) |
+| `Umschalt+Leertaste` | Den Ersten Offizier per Sprache fragen oder Befehle geben (halten und sprechen oder zweimal tippen) |
 | `Esc` | Leitfaden, Ausguck oder Kontaktbibliothek schließen und zur Station zurück |
 
 ## Eingabe und Dialoge

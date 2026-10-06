@@ -98,6 +98,8 @@ class LlmMixin:
         self._llm_boat_orders()
         self.llm_radio.poll()
         for entry in self.advisor.poll():
+            # A spoken order is carried out before anyone reports it (game_talk.py).
+            self.talk_order_finished(entry)
             if entry["kind"] == "coach" and entry["status"] == "done":
                 self._coach_banner(entry["answer"])
             # The executive officer says his answer (game_voice.py).
@@ -313,7 +315,8 @@ class LlmMixin:
         station = station if station is not None else self.advisor_station()
         result = self.advisor.ask(self.llm, self, asker, kind, side=side,
                                   language=self.llm_language(), text=text, station=station)
-        if isinstance(result, dict) and kind in advisor_model.HELP_KINDS:
+        if (isinstance(result, dict) and kind in advisor_model.HELP_KINDS
+                and not (kind == "question" and advisor_model.looks_like_order(text))):
             self.llm_advisor_sides.add(side)
         return result
 

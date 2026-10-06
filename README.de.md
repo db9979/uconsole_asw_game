@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.282**
+Aktuelle Version: **1.3.283**
 
-Version 1.3.282 macht den Missions- und den Einheiten-Editor per Maus
+Version 1.3.283 macht den Missions- und den Einheiten-Editor per Maus
 bedienbar. Ihre Fußleisten sind Reihen blauer Tastenchips, die wie die
 Tasten wirken, und jeder Dialog hat Schaltflächen: der Pfaddialog OK und
 Abbrechen, der Austauschdialog ein Schließkreuz sowie Ordner, Pfad und

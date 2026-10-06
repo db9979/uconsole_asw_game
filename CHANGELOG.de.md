@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.243
+
+Version 1.3.243 lässt die Stimme des Sprachmodells das Log vorlesen.
+Ist ein Sprachdienst eingerichtet, werden die Einträge im Log der
+eigenen Seite (`F11`) gesprochen, sobald sie kommen, nach den Antworten
+des Ersten Offiziers und den Crew-Rufen; ein Eintrag, der länger als 15
+Sekunden wartet, fällt weg, statt verspätet zu kommen, und was die Crew
+schon ausruft, wird nicht doppelt vorgelesen. Jede Station des Logs lässt
+sich einzeln stummschalten: auf der neuen Seite 4 „Meldungen“ der
+Sprachmodell-Einstellungen (Optionen, Seite 2), die auch die Meldungen
+jeder Station der letzten 5 Minuten zählt, oder mit den Knöpfen je
+Station unten im `F11`-Log. Tasten und Spielstände bleiben gleich (v53;
+Spielstände v38 bis v52 laden weiter).
+
 ## 1.3.238
 
 Version 1.3.238 zeigt Breite und Länge auf jeder Karte jeder Station.

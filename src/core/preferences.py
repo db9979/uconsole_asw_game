@@ -8,7 +8,8 @@ import tempfile
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
-from src.core.config import BOTTOM_PANEL_MODES, FPS_CHOICES, FPS_DEFAULT, LEVELS
+from src.core.config import (BOTTOM_PANEL_MODES, FPS_CHOICES, FPS_DEFAULT, LEVELS,
+                             LOG_VOICE_GROUPS)
 from src.core.i18n import SUPPORTED_LANGUAGES, detect_system_language
 from src.core import opz_display
 from src.llm.client import (DEFAULT_MODEL as LLM_DEFAULT_MODEL,
@@ -94,6 +95,18 @@ class Preferences:
     tts_voice: str = VOICE_DEFAULT_VOICE
     tts_xo: bool = True
     tts_crew: bool = True
+    # The stations' log entries read aloud (on once the voice is set up),
+    # each station of the log on its own (``config.LOG_VOICE_GROUPS``).
+    tts_log: bool = True
+    tts_log_navigation: bool = True
+    tts_log_funk: bool = True
+    tts_log_sonar: bool = True
+    tts_log_waffen: bool = True
+    tts_log_opz: bool = True
+    tts_log_schaden: bool = True
+    tts_log_ausguck: bool = True
+    tts_log_mission: bool = True
+    tts_log_welt: bool = True
     # Sampling for speech models that take it (Qwen-TTS servers), and the
     # text clean-up before speaking (emojis, Markdown, laughter, *actions*).
     tts_temperature: float = voice_model.DEFAULT_TEMPERATURE
@@ -145,7 +158,8 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
                  "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "microphone", "live_ais_enabled",
                  "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor", "enemy_learns",
-                 "tts_enabled", "tts_xo", "tts_crew", "tts_clean",
+                 "tts_enabled", "tts_xo", "tts_crew", "tts_clean", "tts_log",
+                 *(f"tts_log_{group}" for group in LOG_VOICE_GROUPS),
                  "graphics_auto"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)

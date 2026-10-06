@@ -60,11 +60,15 @@ MAX_AUDIO_S = 90.0
 TIMEOUT_S = 30.0
 QUEUE_MAX = 4
 CACHE_CLIPS = 24
-ROLES = ("crew", "xo", "test")
+# In order of precedence: the crew's calls, the officer's answers, the
+# settings' test sentence, then the stations' log entries read aloud.
+ROLES = ("crew", "xo", "test", "log")
 # A report older than this (wall seconds since it was asked for) is no
 # longer worth saying: the crew's calls are tactical, the officer's
-# answers keep a little longer.
-STALE_S = {"crew": 20.0, "xo": 90.0, "test": 60.0}
+# answers keep a little longer, a log entry not yet said is soon old news.
+STALE_S = {"crew": 20.0, "xo": 90.0, "test": 60.0, "log": 15.0}
+# Roles whose full queue drops its oldest sentence instead of the new one.
+_DROP_OLDEST = frozenset(("crew", "log"))
 STATUSES = ("pending", "running", "streaming", "done", "failed", "dropped")
 # Audio is handed to the main loop in pieces of about this length.
 PIECE_S = 0.25
@@ -80,6 +84,8 @@ _STYLE = {
     "xo": "Speak as a calm, experienced executive officer reporting to the captain on a "
           "warship: measured, clear and concise.",
     "test": "Speak as a calm, experienced executive officer on a warship.",
+    "log": "Speak as a naval watch officer reading a log entry aloud over a warship's "
+           "internal net: brief, clear and calm.",
 }
 _LANGUAGE = {"de": " The text is German; use natural German pronunciation.",
              "en": " The text is English."}
@@ -470,7 +476,7 @@ class VoiceService:
         self._timeout = float(timeout_s)
         self._rate = int(rate)
         self._queue_max = int(queue_max)
-        self._queues = {"crew": deque(), "xo": deque(), "test": deque()}
+        self._queues = {role: deque() for role in ROLES}
         self._cache: OrderedDict = OrderedDict()
         self._lock = threading.Lock()
         self._wake = threading.Condition(self._lock)
@@ -515,7 +521,7 @@ class VoiceService:
 
     def say(self, text, language: str, role: str = "xo"):
         """Queue one sentence; ``None`` when off, empty or the queue is full
-        (a full crew queue drops its oldest report instead)."""
+        (a full crew or log queue drops its oldest report instead)."""
         if not self.active or role not in ROLES:
             return None
         text = speakable(text, clean=self._config.clean)
@@ -525,7 +531,7 @@ class VoiceService:
         with self._lock:
             pending = self._queues[role]
             if len(pending) >= self._queue_max:
-                if role != "crew":
+                if role not in _DROP_OLDEST:
                     return None
                 pending.popleft()._finish("dropped", error="busy")
             pending.append(request)
@@ -613,8 +619,8 @@ class VoiceService:
             self.answered += 1
             self.last_error = None
             pcm = np.concatenate(request._parts)
-            if request.role == "crew":
-                # Crew reports repeat ("action stations"): keep a few.
+            if request.role in _DROP_OLDEST:
+                # Crew reports and log entries repeat ("action stations"): keep a few.
                 with self._lock:
                     self._cache[key] = pcm
                     while len(self._cache) > CACHE_CLIPS:

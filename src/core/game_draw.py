@@ -29,7 +29,7 @@ from src.ui import observations
 from src.ui import overlay_style, quality
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.shock_fx import ShockFx
-from src.ui import eco_lamp, game_menu, hit_inset, mic_meter
+from src.ui import eco_lamp, game_menu, hit_inset, log_voice_view, mic_meter
 from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
@@ -978,6 +978,10 @@ class DrawMixin:
         feed = pygame.Rect(rect.x + 10, rect.y + 30, rect.w - tele_w - 30, rect.h - 40)
         tele = pygame.Rect(rect.right - tele_w - 10, rect.y + 30, tele_w, rect.h - 40)
         face = layout.font(16)
+        if log_voice_view.shown(self):
+            # The voice reads the log: a mute button per station below it.
+            log_voice_view.draw(self, feed)
+            feed = pygame.Rect(feed.x, feed.y, feed.w, feed.h - log_voice_view.CHIP_H - 6)
         rows = self._feed_lines(feed.w, face, entries)
         visible = max(1, feed.h // layout._line_height(face))
         self.feed_overlay_scroll = max(0, min(self.feed_overlay_scroll,

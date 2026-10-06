@@ -10,20 +10,18 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.238**
+Current release: **1.3.243**
 
-Release 1.3.238 puts latitude and longitude on every chart of every
-station. Until now only the Bridge chart and the charts beside the
-submarine's stations showed the graticule; on the uConsole the OPZ
-(CIC) plot, the radio room's cross-fix chart and the submarine's pilot
-chart still had their plain NM grid. On a real sea area they now draw
-meridians and parallels in degrees and minutes with their numbers along
-the edges and give the own position like 54°21.4'N 010°08.2'E (the
-submarine's pilot chart its dead-reckoned position); the numbers keep
-clear of range rings, bearing scale and other labels. The browser's
-charts already showed the graticule. The stylized fixed chart keeps its
-NM grid. Gameplay, keys and saves are unchanged (v53; v38 to v52 saves
-still load).
+Release 1.3.243 lets the language model's voice read the log aloud.
+Once a speech service is set up, the entries of the own side's log
+(`F11`) are spoken as they come, after the executive officer's answers
+and the crew's calls; an entry that waits longer than 15 seconds is
+dropped instead of said late, and what the crew already calls out is not
+read twice. Every station of the log can be muted on its own: on the new
+page 4 "Reports" of the language model settings (options page 2), which
+also counts each station's entries of the last 5 minutes, or with the
+per-station buttons along the bottom of the `F11` log. Keys and saves are
+unchanged (v53; v38 to v52 saves still load).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

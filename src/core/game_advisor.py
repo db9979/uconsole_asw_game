@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pygame
 
+from src.core import config
 from src.core.i18n import message
 from src.llm import advisor as advisor_model, client as llm_client, keystore
 from src.llm import voice as voice_client
@@ -25,7 +26,10 @@ VOICE_ROWS = ("tts_enabled", "tts_url", "tts_model", "tts_voice", "tts_key", "tt
               "tts_crew", "tts_test")
 # How the voice sounds: sampling of speech models that take it, clean-up.
 TUNE_ROWS = ("tts_temperature", "tts_top_p", "tts_seed", "tts_clean", "tts_test")
-LLM_PAGES = (LLM_ROWS, VOICE_ROWS, TUNE_ROWS)
+# The stations' log entries read aloud: the master switch, then one row per
+# station of the log (``config.LOG_VOICE_GROUPS``).
+LOG_ROWS = ("tts_log",) + tuple(f"tts_log_{group}" for group in config.LOG_VOICE_GROUPS)
+LLM_PAGES = (LLM_ROWS, VOICE_ROWS, TUNE_ROWS, LOG_ROWS)
 NUMBER_ROWS = {"tts_temperature": float, "tts_top_p": float, "tts_seed": int}
 TEXT_ROWS = {"llm_url": llm_client.MAX_URL_LEN, "llm_model": llm_client.MAX_MODEL_LEN,
              "llm_key": keystore.MAX_KEY_LEN, "tts_url": llm_client.MAX_URL_LEN,
@@ -152,7 +156,8 @@ class AdvisorUiMixin:
         return LLM_PAGES[self.llm_page % len(LLM_PAGES)]
 
     def set_llm_page(self, page: int) -> None:
-        """Language model (0), its voice (1) or how the voice sounds (2)."""
+        """Language model (0), its voice (1), how the voice sounds (2) or
+        the log entries it reads aloud (3)."""
         self.llm_page = page % len(LLM_PAGES)
         self.llm_sel = 0
         self.llm_field = self.llm_field_name = None

@@ -1317,6 +1317,12 @@ FEED_CATEGORIES = {
     "ausguck": ("COLOR_CONTACT", "AUSG"),
 }
 FEED_MAX_ENTRIES = 200
+# Log entries read aloud by the language model's voice (src/core/game_voice.py):
+# one switch per station of the log (``tts_log_<group>`` in the preferences);
+# the submarine's radio room logs as "radio", read with the frigate's "funk".
+LOG_VOICE_GROUPS = ("navigation", "funk", "sonar", "waffen", "opz", "schaden", "ausguck",
+                    "mission", "welt")
+LOG_VOICE_GROUP_OF = {"radio": "funk"}
 
 # Simulationsprotokoll (Option, versteckte Commander-Ansicht):
 # Feed-Events plus alle SIMLOG_INTERVAL_S Simulationssekunden ein vollstaendiger

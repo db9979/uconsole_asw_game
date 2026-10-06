@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.243
+
+Release 1.3.243 lets the language model's voice read the log aloud.
+Once a speech service is set up, the entries of the own side's log
+(`F11`) are spoken as they come, after the executive officer's answers
+and the crew's calls; an entry that waits longer than 15 seconds is
+dropped instead of said late, and what the crew already calls out is not
+read twice. Every station of the log can be muted on its own: on the new
+page 4 "Reports" of the language model settings (options page 2), which
+also counts each station's entries of the last 5 minutes, or with the
+per-station buttons along the bottom of the `F11` log. Keys and saves are
+unchanged (v53; v38 to v52 saves still load).
+
 ## 1.3.238
 
 Release 1.3.238 puts latitude and longitude on every chart of every

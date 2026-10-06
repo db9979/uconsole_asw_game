@@ -196,26 +196,32 @@ def _buttons(s, specs, y: int = BUTTONS_Y) -> None:
         pointer.add_spec(rect, spec)
 
 
-def settings_row_rects() -> tuple:
-    return tuple(pygame.Rect(PANEL.x + 60, SETTINGS_ROW_Y + index * SETTINGS_PITCH,
-                             PANEL.w - 120, 54) for index in range(8))
+# The log page has ten rows: a tighter pitch, still clear of the footer.
+LOG_PITCH = 48
 
 
-TAB_W = 170
+def settings_row_rects(count: int = 8) -> tuple:
+    pitch, height = (SETTINGS_PITCH, 54) if count <= 8 else (LOG_PITCH, 46)
+    return tuple(pygame.Rect(PANEL.x + 60, SETTINGS_ROW_Y + index * pitch,
+                             PANEL.w - 120, height) for index in range(count))
+
+
+TAB_W = 150
 
 
 def page_tab_rects() -> tuple:
-    """The settings' page tabs (language model; voice, how it sounds)
-    left and right of the title."""
+    """The settings' page tabs (language model, voice; how it sounds, log
+    reports) left and right of the title."""
     right = PANEL.right - 24 - 48
     return (pygame.Rect(PANEL.x + 24, PANEL.y + 14, TAB_W, 34),
+            pygame.Rect(PANEL.x + 32 + TAB_W, PANEL.y + 14, TAB_W, 34),
             pygame.Rect(right - 2 * TAB_W - 8, PANEL.y + 14, TAB_W, 34),
             pygame.Rect(right - TAB_W, PANEL.y + 14, TAB_W, 34))
 
 
 def _title_rect() -> pygame.Rect:
     tabs = page_tab_rects()
-    return pygame.Rect(tabs[0].right + 8, PANEL.y + 12, tabs[1].x - tabs[0].right - 16, 40)
+    return pygame.Rect(tabs[1].right + 8, PANEL.y + 12, tabs[2].x - tabs[1].right - 16, 40)
 
 
 def _on_off(value):
@@ -262,6 +268,22 @@ def _voice_values(game) -> dict:
     }
 
 
+def _log_values(game) -> dict:
+    from src.core import config
+    prefs = game.preferences
+    values = {"tts_log": _on_off(prefs.tts_log)}
+    for group in config.LOG_VOICE_GROUPS:
+        values[f"tts_log_{group}"] = _on_off(getattr(prefs, f"tts_log_{group}"))
+    return values
+
+
+def _log_help(game, name):
+    """Under a station's row: how many entries it logged lately."""
+    if name == "tts_log":
+        return "voice.help.tts_log"
+    return message("voice.log.count", count=game.log_voice_count(name[len("tts_log_"):]))
+
+
 @localized
 def draw_llm_settings(game) -> None:
     from src.core.game_advisor import LLM_PAGES
@@ -269,7 +291,8 @@ def draw_llm_settings(game) -> None:
     s = game.screen
     page = game.llm_page % len(LLM_PAGES)
     overlay_style.panel(s, PANEL)
-    overlay_style.title(s, ("llm.title", "voice.title", "voice.tune_title")[page],
+    overlay_style.title(s, ("llm.title", "voice.title", "voice.tune_title",
+                            "voice.log_title")[page],
                         _title_rect(), size=26)
     game_menu.close_button(s, PANEL)
     for index, rect in enumerate(page_tab_rects()):
@@ -279,17 +302,19 @@ def draw_llm_settings(game) -> None:
         pygame.draw.rect(s, config.COLOR_TEXT_DIM, rect, 1)
         layout.blit_line(s, message("llm.page", number=index + 1,
                                     name=message(("llm.page.model", "llm.page.voice",
-                                                  "llm.page.tune")[index])),
+                                                  "llm.page.tune", "llm.page.log")[index])),
                          rect.inflate(-8, -4), overlay_style.text_color(active),
                          size=16, align="center")
         pointer.add_action(rect, lambda _pos, index=index: game.set_llm_page(index))
-    layout.blit_line(s, ("llm.subtitle", "voice.subtitle", "voice.tune_subtitle")[page],
+    layout.blit_line(s, ("llm.subtitle", "voice.subtitle", "voice.tune_subtitle",
+                         "voice.log_subtitle")[page],
                      (PANEL.x + 32, PANEL.y + 56, PANEL.w - 64, 24),
                      config.COLOR_TEXT_DIM, size=15, align="center")
     rows = LLM_PAGES[page]
-    values = _llm_values(game) if page == 0 else _voice_values(game)
+    values = (_llm_values(game) if page == 0 else _log_values(game) if page == 3
+              else _voice_values(game))
     prefix = "llm" if page == 0 else "voice"
-    for index, (name, rect) in enumerate(zip(rows, settings_row_rects())):
+    for index, (name, rect) in enumerate(zip(rows, settings_row_rects(len(rows)))):
         selected = index == game.llm_sel
         if selected:
             overlay_style.highlight(s, (rect.x - 6, rect.y - 4, rect.w + 12, 30))
@@ -300,7 +325,7 @@ def draw_llm_settings(game) -> None:
         if game.llm_field is not None and game.llm_field_name == name:
             game.llm_field.draw(s, pygame.Rect(rect.x, rect.y + 26, rect.w, 28), focused=True)
         else:
-            layout.blit_line(s, f"{prefix}.help." + name,
+            layout.blit_line(s, _log_help(game, name) if page == 3 else f"{prefix}.help." + name,
                              (rect.x + 16, rect.y + 26, rect.w - 16, 22),
                              config.COLOR_TEXT_DIM, size=14)
             pointer.add_action(rect, lambda _pos, index=index: game.click_llm_row(index))

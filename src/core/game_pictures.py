@@ -1709,7 +1709,9 @@ class PicturesMixin:
         or the speech service set up; game_voice.py).
 
         Wall clock only: the speaker polls its process and never blocks.
+        The log entries read aloud by the voice are queued here too.
         """
+        self._pump_log_voice()
         boat = getattr(self, "_opfor", None)
         log = (boat.callouts if getattr(self, "local_side", "frigate") == "uboot"
                and boat is not None else self.callouts)

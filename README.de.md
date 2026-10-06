@@ -10,22 +10,19 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.242**
+Aktuelle Version: **1.3.243**
 
-Version 1.3.242 macht den Ersten Offizier (`F7`) und die Einstellungen
-des Sprachmodells auf dem uConsole und in den Desktop-Apps vollständig mit
-der Maus bedienbar. Ein Klick auf einen Reiter wählt die Art der Anfrage;
-blaue Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen
-getippten Befehl, blättern älter und neuer und schließen die Seite; das
-Mausrad blättert; oben rechts sitzt ein Schließfeld, und kein Klick
-erreicht die Station dahinter. Solange das Modell aus ist, öffnet ein
-Knopf seine Einstellungen, in denen Tastenknöpfe unter den Zeilen jetzt
-jede Taste abdecken (wählen, ändern, Seite, Feld speichern oder abbrechen,
-zurück). Auf/Ab blättern
-das Protokoll jetzt ab dem ersten Schritt und auch, während ein Befehl auf
-Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
-bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52
-laden weiter.
+Version 1.3.243 lässt die Stimme des Sprachmodells das Log vorlesen.
+Ist ein Sprachdienst eingerichtet, werden die Einträge im Log der
+eigenen Seite (`F11`) gesprochen, sobald sie kommen, nach den Antworten
+des Ersten Offiziers und den Crew-Rufen; ein Eintrag, der länger als 15
+Sekunden wartet, fällt weg, statt verspätet zu kommen, und was die Crew
+schon ausruft, wird nicht doppelt vorgelesen. Jede Station des Logs lässt
+sich einzeln stummschalten: auf der neuen Seite 4 „Meldungen“ der
+Sprachmodell-Einstellungen (Optionen, Seite 2), die auch die Meldungen
+jeder Station der letzten 5 Minuten zählt, oder mit den Knöpfen je
+Station unten im `F11`-Log. Tasten und Spielstände bleiben gleich (v53;
+Spielstände v38 bis v52 laden weiter).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

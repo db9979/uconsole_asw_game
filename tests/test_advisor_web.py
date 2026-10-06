@@ -59,6 +59,9 @@ PROBE = r'''
     if ($('advisor-voice').closest('label').hidden) throw new Error('voice switch hidden');
     await until(() => window.__voice.length === 1, 'spoken answer', 3000);
     if (!(window.__voice[0] > 0.1)) throw new Error(`voice too short: ${window.__voice[0]}`);
+    // The switch silences this browser: the order below is not spoken (and
+    // the order's timing stays as it was without a voice).
+    $('advisor-voice').click();
     dialog.querySelector('[data-advisor-mode="order"]').click();
     await until(() => !$('advisor-text').hidden, 'order field');
     $('advisor-text').value = 'come to 120';
@@ -90,6 +93,7 @@ PROBE = r'''
     if (ordered !== 120)
       throw new Error(`order not applied: target course ${ordered}, status "${$('advisor-status').textContent}", ` +
         `command "${$('command-status').textContent}" (${$('command-status').dataset.status})`);
+    if (window.__voice.length !== 1) throw new Error(`voice played while off: ${window.__voice.length}`);
   }
   run().then(() => document.documentElement.dataset.advisorTest = 'passed', (error) => {
     document.documentElement.dataset.advisorTest = 'failed';

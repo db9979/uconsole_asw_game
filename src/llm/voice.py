@@ -68,8 +68,10 @@ CACHE_CLIPS = 24
 ROLES = ("crew", "xo", "test", "log")
 # A report older than this (wall seconds since it was asked for) is no
 # longer worth saying: the crew's calls are tactical, the officer's
-# answers keep a little longer, a log entry not yet said is soon old news.
-STALE_S = {"crew": 20.0, "xo": 90.0, "test": 60.0, "log": 15.0}
+# answers keep a little longer.  Log entries are all read in order (the
+# game hands them over two at a time), so theirs only guards a service
+# that hangs.
+STALE_S = {"crew": 20.0, "xo": 90.0, "test": 60.0, "log": 180.0}
 # Roles whose full queue drops its oldest sentence instead of the new one.
 _DROP_OLDEST = frozenset(("crew", "log"))
 STATUSES = ("pending", "running", "streaming", "done", "failed", "dropped")
@@ -82,15 +84,20 @@ ERRORS = ("disabled", "network", "timeout", "auth", "rate_limit", "server", "bad
 # How the voice should sound (models that take ``instructions``; a server
 # that refuses the field is asked without it).  One style for every role:
 # the crew's calls, the officer's answers and the log are one speaker, so
-# voice and mood never jump from one sentence to the next.
-_STYLE_ALL = ("Speak as a calm, experienced naval officer reporting on a warship's internal "
-              "net: steady, clear and neutral, the same voice, pace and tone throughout. "
-              "Never laugh, chuckle, sigh, whisper or add sounds; no emotional changes.")
-_STYLE = {role: _STYLE_ALL for role in ("crew", "xo", "test", "log")}
-_LANGUAGE = {"de": " The text is German: speak German only, with native German pronunciation "
-                   "from the first word to the last; never switch language or accent.",
-             "en": " The text is English: speak English only, with native English pronunciation "
-                   "from the first word to the last; never switch language or accent."}
+# voice and mood never jump from one sentence to the next.  The style is
+# written in the language spoken: an English instruction pulls a model
+# such as Qwen-TTS towards an English accent on German text.
+_STYLE = {
+    "de": ("Sprich wie ein ruhiger, erfahrener Marineoffizier, der über die Bordsprechanlage "
+           "eines Kriegsschiffs meldet: gleichmäßig, klar und sachlich, immer dieselbe Stimme, "
+           "dasselbe Tempo und derselbe Ton. Nie lachen, kichern, seufzen, flüstern oder "
+           "Geräusche machen; keine Gefühlsschwankungen. Sprich nur Deutsch, reines Hochdeutsch "
+           "mit deutscher Aussprache und ohne englischen Akzent, vom ersten bis zum letzten Wort."),
+    "en": ("Speak as a calm, experienced naval officer reporting on a warship's internal net: "
+           "steady, clear and neutral, the same voice, pace and tone throughout. Never laugh, "
+           "chuckle, sigh, whisper or add sounds; no emotional changes. Speak English only, "
+           "with native English pronunciation from the first word to the last."),
+}
 # The fixed language for servers that take a ``language`` field (Qwen-TTS
 # and similar; without it they guess from the first words and the start of
 # a sentence may come out in another language or accent).
@@ -146,7 +153,8 @@ def spell_digits(text, digits, point: str) -> str:
         return " " + " ".join(words) + " "
 
     text = re.sub(r" {2,}", " ", _NUMBER.sub(spell, text))
-    return re.sub(r" ([,.!?;:])", r"\1", text).strip()
+    text = re.sub(r"([(\[]) ", r"\1", text)
+    return re.sub(r" ([,.!?;:)\]])", r"\1", text).strip()
 
 
 # Units and short forms the log writes, said in full ("12 kn" is "12
@@ -175,20 +183,23 @@ _SHORT_WORD = re.compile(r"(?<![\w])(" + "|".join(_SHORT) + r")\.?(?![\w])")
 _TEMPERATURE = re.compile(r"\s?°\s?([CF])(?![\w])")
 _RANGE = re.compile(r"(\d)\s?[–—-]\s?(?=\d)")
 _SIGN = re.compile(r"(?<![\w.,])[-−]\s?(?=\d)")
+_COUNT = re.compile(r"(\d)\s?[x×](?=\s|$)")
 _CLOCK = re.compile(r"(\d):(?=\d\d(?!\d))")
 _SYMBOL_WORD = (("±", "plus_minus"), ("+", "plus"), ("×", "times"), ("&", "and"),
                 ("@", "at"), ("#", "number"), ("=", "equals"), ("′", "arc_minutes"))
 _PAUSE = re.compile(r"\s*(?:[|·•→←↑↓◀▶▲▼►◄›‹»«/\\]|\s[–—-]\s|[–—])\s*")
 _DROP = re.compile(r"[„“”\"‚‘`\[\]{}<>_*^~]")
-# All-capital words: short ones are spelled ("HQ" -> "H Q"), longer ones
-# with a vowel are said as words ("TORPEDO" -> "Torpedo").
+# All-capital words: short ones are spelled ("HQ" -> "H Q", "CIWS" ->
+# "C I W S"), longer ones with vowels are said as words ("TORPEDO" ->
+# "Torpedo", "NATO" -> "Nato").
 _CAPITALS = re.compile(r"(?<![\w])[A-ZÄÖÜ]{2,}(?![\w])")
 _VOWELS = frozenset("AEIOUYÄÖÜ")
 
 
 def _capitals(match) -> str:
     word = match.group()
-    if len(word) >= 4 and _VOWELS.intersection(word):
+    vowels = sum(char in _VOWELS for char in word)
+    if (len(word) >= 5 and vowels) or (len(word) == 4 and vowels >= 2):
         return word[0] + word[1:].lower()
     return " ".join(word)
 
@@ -216,6 +227,7 @@ def spoken_words(text, words) -> str:
     text = _SIGN.sub(lambda _m: word("minus"), text)
     text = re.sub(r"(?<=[^\W\d_])-(?=\d)", " ", text)
     text = _CLOCK.sub(r"\1 ", text)
+    text = _COUNT.sub(lambda m: m.group(1) + word("times"), text)
     for symbol, name in _SYMBOL_WORD:
         text = text.replace(symbol, word(name))
     text = _PAUSE.sub(", ", text)
@@ -620,7 +632,7 @@ class VoiceService:
         text = speakable(text, clean=self._config.clean)
         if not text:
             return None
-        request = VoiceRequest(role, text, language if language in _LANGUAGE else "en")
+        request = VoiceRequest(role, text, language if language in _STYLE else "en")
         with self._lock:
             pending = self._queues[role]
             if len(pending) >= self._queue_max:
@@ -763,8 +775,7 @@ class VoiceService:
         body = {"model": config.model, "input": request.text, "voice": config.voice,
                 "response_format": "wav"}
         if self._instructions:
-            body["instructions"] = (_STYLE.get(request.role, _STYLE["xo"])
-                                    + _LANGUAGE.get(request.language, ""))
+            body["instructions"] = _STYLE[request.language]
         sampling = self._sampling and _host(config.base_url) not in _NO_SAMPLING_HOSTS
         if sampling:
             body["temperature"] = float(config.temperature)

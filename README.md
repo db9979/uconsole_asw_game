@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.253**
+Current release: **1.3.257**
 
-Release 1.3.253 tidies the chart labels. A ship's name no longer lies
+Release 1.3.257 tidies the chart labels. A ship's name no longer lies
 under its own course line: it stands abeam of the course, together with
 its speed (MV KURELA 8kn), clear of motion vectors, trails and other names,
 and keeps its place instead of jumping from frame to frame. A ship seen by

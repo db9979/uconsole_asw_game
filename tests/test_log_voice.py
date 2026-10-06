@@ -9,6 +9,7 @@ import json
 import time
 
 import pygame
+import numpy as np
 import pytest
 
 from src.core import config
@@ -37,7 +38,7 @@ def _said(speech):
     return [body["input"] for body in speech.requests]
 
 
-def test_log_entries_are_read_after_the_officer_and_dropped_when_old():
+def test_log_entries_are_read_after_the_officer():
     service = voice.VoiceService(voice.VoiceConfig(enabled=True), queue_max=2)
     service._ensure_worker = lambda: None
     a, b, c = (service.say(text, "en", "log") for text in ("A.", "B.", "C."))
@@ -46,7 +47,7 @@ def test_log_entries_are_read_after_the_officer_and_dropped_when_old():
     xo = service.say("Officer.", "en", "xo")
     assert service._next() is xo and service._next() is b
     assert voice.ROLES.index("log") > voice.ROLES.index("xo")
-    assert voice.STALE_S["log"] < voice.STALE_S["crew"]
+    assert voice.STALE_S["log"] > voice.STALE_S["xo"]
 
 
 def test_new_log_entries_are_spoken_and_a_muted_station_is_not():
@@ -101,7 +102,7 @@ def test_crew_calls_are_not_read_twice(monkeypatch):
         _pump(game, lambda: False, timeout=0.3)
         # Only the crew's call, not the log line as well.
         assert len(speech.requests) == 1 and speech.requests[0]["instructions"] \
-            .startswith(voice._STYLE["crew"][:20])
+            == voice._STYLE["en"]
 
 
 def test_the_officer_goes_before_a_waiting_log_entry():
@@ -127,15 +128,15 @@ def test_the_officer_goes_before_a_waiting_log_entry():
     assert game._voice_playing is log
 
 
-def test_a_stale_log_entry_is_dropped_even_with_its_audio():
+def test_a_waiting_log_entry_with_audio_is_still_said():
     game = _game()
     _Mixer(game)
-    request = voice.VoiceRequest("log", "Old news.", "en")
-    request.pieces.append(b"x")
-    request.created = time.monotonic() - voice.STALE_S["log"] - 1
+    request = voice.VoiceRequest("log", "Late but said.", "en")
+    request.pieces.append(np.zeros(8, np.int16))
+    request.created = time.monotonic() - voice.STALE_S["xo"] - 1
     game._voice_queue.append(request)
     game._pump_voice()
-    assert game._voice_playing is None and not game._voice_queue
+    assert game._voice_playing is request
 
 
 def test_log_switches_persist_and_bad_values_fall_back(tmp_path):
@@ -253,21 +254,29 @@ def test_the_submarine_reads_its_own_log_not_the_frigates():
         assert game.log_voice_count("funk") == 1
 
 
-def test_a_burst_keeps_its_newest_entries_and_counts_all():
+def test_a_burst_is_read_in_order_two_at_a_time_and_counts_all():
     game = _game()
     _Mixer(game)
     game.preferences = dataclasses.replace(game.preferences, tts_enabled=True,
                                            tts_url="http://127.0.0.1:9/v1", tts_model="tts")
     game.configure_voice()
     queued = []
-    game.voice_say = lambda text, role: queued.append((text, role)) or True
+
+    def say(text, role):
+        queued.append(text)
+        game._voice_queue.append(voice.VoiceRequest(role, text, "en"))
+        return True
+    game.voice_say = say
     game._pump_speech()
     for number in range(10):
         _log(game, "waffen", f"Weapons entry {number}.")
     game._pump_log_voice()
-    from src.core.game_voice import LOG_BURST
-    assert [text for text, _role in queued] == [f"Weapons entry {n}." for n in range(10 - LOG_BURST, 10)]
-    assert {role for _text, role in queued} == {"log"}
+    from src.core.game_voice import LOG_IN_FLIGHT
+    assert len(queued) == LOG_IN_FLIGHT
+    for _round in range(10):
+        game._voice_queue.clear()           # said: the next ones go out
+        game._pump_log_voice()
+    assert queued == [f"Weapons entry {n}." for n in range(10)]
     assert game.log_voice_count("waffen") == 10
 
 
@@ -290,8 +299,9 @@ def test_units_and_short_forms_are_said_in_full(language, text, said):
 
 
 def test_every_role_speaks_with_one_calm_style_and_one_seed():
-    assert len(set(voice._STYLE.values())) == 1
-    assert "laugh" in voice._STYLE["log"]
+    assert set(voice._STYLE) == {"de", "en"}
+    assert "laugh" in voice._STYLE["en"] and "lachen" in voice._STYLE["de"]
+    assert "Deutsch" in voice._STYLE["de"] and "Akzent" in voice._STYLE["de"]
     service = voice.VoiceService()
     assert 1 <= service._session_seed <= voice.SEED_MAX
 
@@ -319,6 +329,14 @@ def test_a_long_log_entry_is_one_request():
     ("de", "Um 14:35 meldet die OPZ „Fregatte“ & HQ", "Um 14 35 meldet die O P Z Fregatte und H Q"),
     ("en", "S3 brg 219±4° @12/34, U-212", "S3 bearing 219 plus or minus 4 degrees at 12, 34, U 212"),
     ("en", "Don’t panic… [check] NATO", "Don’t panic. check Nato"),
+    ("de", "Aufklärung: 1x Altmetall, 2 × Welle", "Aufklärung: 1 mal Altmetall, 2 mal Welle"),
+    ("de", "CIWS: ASM abgefangen", "C I W S: A S M abgefangen"),
 ])
 def test_temperatures_signs_and_symbols_are_said_as_words(language, text, said):
     assert voice.spoken_words(text, _words(language)) == said
+
+
+def test_a_spelled_number_keeps_its_brackets_tight():
+    digits = ["null", "eins", "zwo", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun"]
+    assert voice.spell_digits("3 Verwundete (bisher 3): leer [7]", digits, "Komma") \
+        == "drei Verwundete (bisher drei): leer [sieben]"

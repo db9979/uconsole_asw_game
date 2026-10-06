@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.253**
+Aktuelle Version: **1.3.257**
 
-Version 1.3.253 räumt die Kartenbeschriftung auf. Der Name eines Schiffs
+Version 1.3.257 räumt die Kartenbeschriftung auf. Der Name eines Schiffs
 liegt nicht mehr unter seiner eigenen Kurslinie: Er steht querab vom Kurs,
 zusammen mit der Fahrt (MV KURELA 8kn), frei von Bewegungsvektoren, Spuren
 und anderen Namen, und behält seinen Platz, statt von Bild zu Bild zu

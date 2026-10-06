@@ -7667,7 +7667,7 @@
   "voice.log_title": "Logmeldungen",
   "voice.log_subtitle": "Die Stimme liest auch das Log (F11) vor; meldet eine Station zu viel, schalte sie stumm.",
   "voice.label.tts_log": "Logmeldungen vorlesen",
-  "voice.help.tts_log": "Meldungen, die veraltet sind, bevor sie dran sind, fallen weg; Crew-Rufe kommen nicht doppelt.",
+  "voice.help.tts_log": "Jede Meldung wird der Reihe nach vorgelesen; Crew-Rufe kommen nicht doppelt.",
   "voice.label.tts_log_navigation": "Brücke und Navigation (NAV)",
   "voice.label.tts_log_funk": "Funk (FUNK)",
   "voice.label.tts_log_sonar": "Sonar (SONAR)",

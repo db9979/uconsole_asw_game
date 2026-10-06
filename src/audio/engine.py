@@ -26,6 +26,10 @@ class AudioEngine:
     SONAR_CHANNEL = 1
     PING_CHANNEL = 2
     ALERT_CHANNEL = 3
+    # The optional speech service's voice (src/core/game_voice.py): its own
+    # channel, reserved on first use, so speech never takes the sonar's.
+    VOICE_CHANNEL = 4
+    VOICE_GAIN = .9
     FADE_MS = 35
     SONAR_HOLD_MAX = 2
     # Buffered listening starts once SONAR_BUFFER_S is queued (the standing
@@ -87,6 +91,7 @@ class AudioEngine:
         self._sonar_channel = None
         self._ping_channel = None
         self._alert_channel = None
+        self._voice_channel = None
         self._sonar_fading = False
         self._sonar_rate = None
         self._sonar_out_rate = None
@@ -906,6 +911,35 @@ class AudioEngine:
         self._sonar_queue_busy_since = None
         self._sonar_full_since = None
 
+    def play_voice(self, pcm: np.ndarray) -> bool:
+        """One spoken clip (int16 mono at the mixer rate) on the voice channel."""
+        if not self.enabled or not self.available:
+            return False
+        try:
+            if self._voice_channel is None:
+                if pygame.mixer.get_num_channels() < self.VOICE_CHANNEL + 1:
+                    pygame.mixer.set_num_channels(self.VOICE_CHANNEL + 1)
+                pygame.mixer.set_reserved(self.VOICE_CHANNEL + 1)
+                channel = pygame.mixer.Channel(self.VOICE_CHANNEL)
+                channel.set_volume(self.VOICE_GAIN)
+                self._voice_channel = channel
+            data = np.asarray(pcm, dtype=np.int16)
+            if self.channels == 2:
+                data = np.repeat(data[:, None], 2, axis=1)
+            self._voice_channel.play(pygame.sndarray.make_sound(np.ascontiguousarray(data)))
+            return True
+        except (pygame.error, TypeError, ValueError, IndexError, MemoryError):
+            return False
+
+    def voice_busy(self) -> bool:
+        try:
+            return self._voice_channel is not None and bool(self._voice_channel.get_busy())
+        except pygame.error:
+            return False
+
+    def stop_voice(self) -> None:
+        self._hard_stop(self._voice_channel)
+
     def stop(self) -> None:
         self.stop_sonar()
         self._hard_stop(self._ping_channel)
@@ -1038,7 +1072,7 @@ class AudioEngine:
         if self._sonar_worker is not None:
             self._sonar_worker.join(timeout=1.0)
         for channel in (self._sonar_channel, self._ping_channel,
-                        self._alert_channel):
+                        self._alert_channel, self._voice_channel):
             self._hard_stop(channel)
         self.stop_preview()
         self._reset_sonar_stream()

@@ -4,19 +4,34 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.230
+## 1.3.235
 
-Release 1.3.230 makes the executive officer (`F7`) and the language
+Release 1.3.235 makes the executive officer (`F7`) and the language
 model settings fully mouse-operable on the uConsole and the desktop apps.
 A click on a tab picks the kind of request; blue key buttons under the log
 send, give or discard a typed order, scroll older and newer and close the
 page; the wheel scrolls; a close box sits in the top right corner and no
 click reaches the station behind. While the model is off a button opens
-its settings, where a click on a row changes it like Enter and key
-buttons save or cancel a field. Up/Down now scroll the log from the first
+its settings, where key buttons under the rows now cover every key
+(choose, change, page, save or cancel a field, back). Up/Down now scroll the log from the first
 step and also while an order waits for confirmation. The browser's
 executive officer already worked by mouse. Gameplay is unchanged. Saves
 are v53; v38 to v52 saves still load.
+
+## 1.3.231
+
+Release 1.3.231 gives the optional language model a voice. Under Options,
+page 2, Language model, a second page "Voice" takes an OpenAI-compatible
+speech service (address, speech model, voice and API key; preset OpenAI
+gpt-4o-mini-tts), and a third page "Sound" sets temperature, top_p and seed
+for services that take them (Qwen-TTS) and cleans the text before speaking. With it the executive officer speaks his answers and the
+coach's tips, and the spoken crew reports use the same natural voice instead
+of espeak-ng, each with its own switch. The voice plays on its own audio
+channel beside the sonar tone, and its key is kept in ~/.u-jagd/tts_key (or
+the language model's key on the same server), never in settings or saves.
+Without the service the game plays exactly as before; browsers keep their own
+voice for crew reports. The settings pages are now mouse-operable. Saves are
+v53; v38 to v52 saves still load.
 
 ## 1.3.229
 

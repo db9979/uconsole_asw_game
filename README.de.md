@@ -10,17 +10,18 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.230**
+Aktuelle Version: **1.3.235**
 
-Version 1.3.230 macht den Ersten Offizier (`F7`) und die Einstellungen
+Version 1.3.235 macht den Ersten Offizier (`F7`) und die Einstellungen
 des Sprachmodells auf dem uConsole und in den Desktop-Apps vollständig mit
 der Maus bedienbar. Ein Klick auf einen Reiter wählt die Art der Anfrage;
 blaue Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen
 getippten Befehl, blättern älter und neuer und schließen die Seite; das
 Mausrad blättert; oben rechts sitzt ein Schließfeld, und kein Klick
 erreicht die Station dahinter. Solange das Modell aus ist, öffnet ein
-Knopf seine Einstellungen, in denen ein Klick auf eine Zeile sie wie Enter
-ändert und Tastenknöpfe ein Feld speichern oder abbrechen. Auf/Ab blättern
+Knopf seine Einstellungen, in denen Tastenknöpfe unter den Zeilen jetzt
+jede Taste abdecken (wählen, ändern, Seite, Feld speichern oder abbrechen,
+zurück). Auf/Ab blättern
 das Protokoll jetzt ab dem ersten Schritt und auch, während ein Befehl auf
 Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
 bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52

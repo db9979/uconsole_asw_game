@@ -99,6 +99,8 @@ class LlmMixin:
         for entry in self.advisor.poll():
             if entry["kind"] == "coach" and entry["status"] == "done":
                 self._coach_banner(entry["answer"])
+            # The executive officer says his answer (game_voice.py).
+            self.voice_advisor_entry(entry)
         self._poll_llm_reports()
         self._poll_llm_review()
         self._poll_mission_generator()
@@ -425,8 +427,11 @@ class LlmMixin:
     def set_llm_preference(self, name: str, value) -> None:
         self._set_preference(name, value)
         self.configure_llm()
+        if name == "llm_url":
+            self.configure_voice()      # it may share the model's key
 
     def save_llm_key(self, value: str) -> bool:
         ok = keystore.save_key(value)
         self.configure_llm()
+        self.configure_voice()
         return ok

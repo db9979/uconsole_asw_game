@@ -424,10 +424,9 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             return
         if self.advisor_open or self.llm_open:
             # The language model's pages own text input (src/core/game_advisor.py).
-            # Clicks go to their key buttons, tabs and rows (src/ui/advisor_view.py)
-            # and never through to the station behind.
+            # Their key buttons, tabs and rows took any click above
+            # (src/ui/advisor_view.py); the rest never reaches the station behind.
             if e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEWHEEL):
-                pointer_input.handle(self, e)
                 return
             if self.advisor_open:
                 self._handle_advisor_event(e)

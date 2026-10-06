@@ -10,16 +10,16 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.230**
+Current release: **1.3.235**
 
-Release 1.3.230 makes the executive officer (`F7`) and the language
+Release 1.3.235 makes the executive officer (`F7`) and the language
 model settings fully mouse-operable on the uConsole and the desktop apps.
 A click on a tab picks the kind of request; blue key buttons under the log
 send, give or discard a typed order, scroll older and newer and close the
 page; the wheel scrolls; a close box sits in the top right corner and no
 click reaches the station behind. While the model is off a button opens
-its settings, where a click on a row changes it like Enter and key
-buttons save or cancel a field. Up/Down now scroll the log from the first
+its settings, where key buttons under the rows now cover every key
+(choose, change, page, save or cancel a field, back). Up/Down now scroll the log from the first
 step and also while an order waits for confirmation. The browser's
 executive officer already worked by mouse. Gameplay is unchanged. Saves
 are v53; v38 to v52 saves still load.

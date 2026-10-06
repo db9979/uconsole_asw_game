@@ -4,21 +4,39 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.230
+## 1.3.235
 
-Version 1.3.230 macht den Ersten Offizier (`F7`) und die Einstellungen
+Version 1.3.235 macht den Ersten Offizier (`F7`) und die Einstellungen
 des Sprachmodells auf dem uConsole und in den Desktop-Apps vollständig mit
 der Maus bedienbar. Ein Klick auf einen Reiter wählt die Art der Anfrage;
 blaue Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen
 getippten Befehl, blättern älter und neuer und schließen die Seite; das
 Mausrad blättert; oben rechts sitzt ein Schließfeld, und kein Klick
 erreicht die Station dahinter. Solange das Modell aus ist, öffnet ein
-Knopf seine Einstellungen, in denen ein Klick auf eine Zeile sie wie Enter
-ändert und Tastenknöpfe ein Feld speichern oder abbrechen. Auf/Ab blättern
+Knopf seine Einstellungen, in denen Tastenknöpfe unter den Zeilen jetzt
+jede Taste abdecken (wählen, ändern, Seite, Feld speichern oder abbrechen,
+zurück). Auf/Ab blättern
 das Protokoll jetzt ab dem ersten Schritt und auch, während ein Befehl auf
 Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
 bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52
 laden weiter.
+
+## 1.3.231
+
+Version 1.3.231 gibt dem optionalen Sprachmodell eine Stimme. Unter
+Optionen, Seite 2, Sprachmodell nimmt eine zweite Seite „Stimme“ einen
+OpenAI-kompatiblen Sprachdienst auf (Adresse, Sprechmodell, Stimme und
+API-Schlüssel; voreingestellt OpenAI gpt-4o-mini-tts), und eine dritte Seite
+„Klang“ stellt Temperature, top_p und Seed für Dienste ein, die sie annehmen
+(Qwen-TTS), und bereinigt den Text vor dem Sprechen. Damit spricht der Erste
+Offizier seine Antworten und die Tipps des Coachs, und die gesprochenen
+Crew-Meldungen kommen mit derselben natürlichen Stimme statt über espeak-ng,
+beides einzeln schaltbar. Die Stimme spielt auf einem eigenen Tonkanal neben
+dem Sonarton, und ihr Schlüssel liegt in ~/.u-jagd/tts_key (oder es gilt der
+des Sprachmodells beim selben Server), nie in Einstellungen oder Spielständen.
+Ohne den Dienst läuft das Spiel genau wie bisher; Browser behalten ihre eigene
+Stimme für Crew-Meldungen. Die Einstellungsseiten lassen sich jetzt mit der
+Maus bedienen. Spielstände sind v53; v38 bis v52 werden weiter geladen.
 
 ## 1.3.229
 

@@ -196,6 +196,7 @@ def test_service_speaks_with_style_key_and_wav():
         assert body["input"] == "Torpedo im Wasser."
         assert body["response_format"] == "wav"
         assert "German" in body["instructions"]
+        assert body["language"] == "German"
         assert server.headers[0]["Authorization"] == "Bearer sk-voice-secret-1234"
         assert "secret" not in repr(service.config)
 
@@ -223,6 +224,18 @@ def test_server_without_instructions_is_asked_again_without():
         request = service.say("Contact.", "en", "crew")
         assert request.wait(10) and request.ok
         assert "instructions" not in server.requests[-1]
+
+
+def test_server_without_a_language_field_is_asked_again_without():
+    def reply(body):
+        return 400 if "language" in body else None
+    with FakeSpeechServer(reply) as server:
+        service = _service(server)
+        request = service.say("Contact.", "en", "crew")
+        assert request.wait(10) and request.ok
+        assert "language" not in server.requests[-1]
+        assert "instructions" in server.requests[-1]
+        assert "English" in server.requests[-1]["instructions"]
 
 
 @pytest.mark.parametrize("status,error", [(401, "auth"), (429, "rate_limit"), (500, "server")])
@@ -545,7 +558,7 @@ def test_openai_never_gets_sampling_fields():
     config = voice.VoiceConfig(enabled=True, seed=5)
     request = voice.VoiceService(config, opener=opener).say("Contact.", "en", "xo")
     assert request.wait(10) and request.ok
-    assert not {"temperature", "top_p", "seed"} & set(sent[0])
+    assert not {"temperature", "top_p", "seed", "language"} & set(sent[0])
 
 
 def test_sound_settings_are_kept_and_checked(tmp_path):

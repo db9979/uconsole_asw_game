@@ -511,7 +511,9 @@ def test_sampling_reaches_services_that_take_it():
         random = dataclasses.replace(config, seed=-1)
         service = voice.VoiceService(random)
         assert service.say("Kontakt zwei.", "de", "xo").wait(10)
-        assert "seed" not in server.requests[-1]
+        # Random: one seed per launch, the same for every sentence.
+        first = server.requests[-1]["seed"]
+        assert service._session_seed == first and 1 <= first <= voice.SEED_MAX
 
 
 def test_a_service_refusing_sampling_is_asked_without_it_first():

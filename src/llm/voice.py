@@ -6,9 +6,11 @@ espeak-ng.  Standard library only for the transport (``urllib``), NumPy for
 the decoding, like the game's other audio.
 
 One daemon worker thread sends one request at a time; crew reports go
-before the executive officer's longer answers.  The worker also decodes the
-WAV answer and resamples it to the mixer's rate, so the main loop only
-collects finished clips and plays them (``src/core/game_voice.py``).  A slow
+before the executive officer's longer answers.  The worker decodes the WAV
+answer while it arrives and hands it on in short pieces resampled to the
+mixer's rate, so a server that streams its audio is heard before it has
+finished; the main loop only queues those pieces on the voice channel
+(``src/core/game_voice.py``).  A slow
 or dead server can never stall a frame, and the game without the service
 (off, no key, offline) behaves exactly as before.  The API key travels only
 in the ``Authorization`` header and never appears in errors, logs or repr.
@@ -63,7 +65,10 @@ ROLES = ("crew", "xo", "test")
 # longer worth saying: the crew's calls are tactical, the officer's
 # answers keep a little longer.
 STALE_S = {"crew": 20.0, "xo": 90.0, "test": 60.0}
-STATUSES = ("pending", "running", "done", "failed", "dropped")
+STATUSES = ("pending", "running", "streaming", "done", "failed", "dropped")
+# Audio is handed to the main loop in pieces of about this length.
+PIECE_S = 0.25
+READ_BYTES = 16 * 1024
 ERRORS = ("disabled", "network", "timeout", "auth", "rate_limit", "server", "bad_reply",
           "busy", "no_audio")
 
@@ -111,6 +116,44 @@ _LAUGH = re.compile(r"\b(?:(h[aei])\1+h?|lol|lmao|rofl|xd)\b!*", re.IGNORECASE)
 _EMOJI = re.compile("[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U00002B00-\U00002BFF"
                     "\U0001F1E6-\U0001F1FF\uFE0E\uFE0F\u200D\u20E3]")
 _BULLET = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+", re.MULTILINE)
+
+
+# A number, with an optional decimal part ("431", "0,9", "12.5").
+_NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
+
+
+def spell_digits(text, digits, point: str) -> str:
+    """Every number digit by digit, the way a watch speaks it: "431" becomes
+    "vier drei eins" (``digits`` are the ten words, ``point`` the word for a
+    decimal comma or point)."""
+    if type(text) is not str:
+        return ""
+
+    def spell(match) -> str:
+        words = [point if char in ".," else digits[int(char)] for char in match.group()]
+        return " " + " ".join(words) + " "
+
+    text = re.sub(r" {2,}", " ", _NUMBER.sub(spell, text))
+    return re.sub(r" ([,.!?;:])", r"\1", text).strip()
+
+
+_SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
+
+
+def sentence_chunks(text, first: int = 1, size: int = 240, limit: int = 4) -> list[str]:
+    """Split an answer for faster speech: the first ``first`` sentence(s)
+    alone, so the voice starts early, then pieces of whole sentences up to
+    about ``size`` characters; at most ``limit`` pieces."""
+    if type(text) is not str:
+        return []
+    sentences = [part for part in _SENTENCE_END.split(" ".join(text.split())) if part]
+    chunks = [" ".join(sentences[:first])] if sentences else []
+    for sentence in sentences[first:]:
+        if len(chunks) < limit and (len(chunks) == 1 or len(chunks[-1]) + len(sentence) >= size):
+            chunks.append(sentence)
+        else:
+            chunks[-1] = chunks[-1] + " " + sentence
+    return [chunk for chunk in chunks if chunk]
 
 
 def clean_for_speech(text) -> str:
@@ -185,7 +228,10 @@ class VoiceRequest:
         self.language = language
         self.created = time.monotonic()
         self.status = "pending"
-        self.pcm = None            # int16 mono at the service's rate
+        self.pcm = None            # int16 mono at the mixer's rate, once done
+        # Pieces of ``pcm`` ready to play, filled while the answer arrives.
+        self.pieces: deque = deque()
+        self._parts: list = []
         self.error = None
         self.latency_s = None
         self.cached = False
@@ -199,6 +245,11 @@ class VoiceRequest:
     def ok(self) -> bool:
         return self.status == "done"
 
+    @property
+    def audible(self) -> bool:
+        """Audio has arrived (complete or still streaming)."""
+        return bool(self.pieces) or self.status == "streaming"
+
     def stale(self, now: float | None = None) -> bool:
         now = time.monotonic() if now is None else now
         return now - self.created > STALE_S.get(self.role, 30.0)
@@ -207,7 +258,21 @@ class VoiceRequest:
         """Block until finished (tests and tools only, never the game loop)."""
         return self._done.wait(timeout)
 
+    def _push(self, pcm: np.ndarray, started: float) -> None:
+        if not len(pcm):
+            return
+        if self.latency_s is None:
+            # Until the first sound: what the listener waits.
+            self.latency_s = time.monotonic() - started
+        self._parts.append(pcm)
+        self.pieces.append(pcm)
+        self.status = "streaming"
+
     def _finish(self, status: str, pcm=None, error=None) -> None:
+        if pcm is not None and not self._parts:
+            self.pieces.append(pcm)
+        elif pcm is None and self._parts and status == "done":
+            pcm = np.concatenate(self._parts)
         self.pcm = pcm
         self.error = error
         self.status = status
@@ -287,6 +352,110 @@ def to_pcm(samples: np.ndarray, rate: int, target_rate: int) -> np.ndarray:
         ramp = np.linspace(0.0, 1.0, fade, dtype=np.float32)
         samples[:fade] *= ramp
         samples[-fade:] *= ramp[::-1]
+    return (np.clip(samples, -1.0, 1.0) * 32767.0).astype(np.int16)
+
+
+_FORMATS = {(1, 8): 1, (1, 16): 2, (1, 24): 3, (3, 32): 4}
+
+
+class WavStream:
+    """Decodes a WAV answer while it arrives: header first, then mono
+    float32 samples per block (same formats and checks as ``parse_wav``)."""
+
+    def __init__(self):
+        self._head = b""
+        self._rest = b""
+        self.fmt = None            # (tag, channels, rate, bits)
+        self.frames = 0
+
+    @property
+    def rate(self) -> int:
+        return self.fmt[2] if self.fmt else 0
+
+    def feed(self, data: bytes) -> np.ndarray:
+        if self.fmt is None:
+            self._head += data
+            data = self._header()
+            if self.fmt is None:
+                return np.zeros(0, dtype=np.float32)
+        data = self._rest + data
+        tag, channels, rate, bits = self.fmt
+        frame = _FORMATS[(tag, bits)] * channels
+        usable = len(data) // frame * frame
+        self._rest = data[usable:]
+        if not usable:
+            return np.zeros(0, dtype=np.float32)
+        samples, _ = _samples(data[:usable], tag, channels, rate, bits)
+        room = int(MAX_AUDIO_S * rate) - self.frames
+        samples = samples[:max(0, room)]
+        self.frames += len(samples)
+        return samples
+
+    def _header(self) -> bytes:
+        raw = self._head
+        if len(raw) >= 12 and (raw[:4] != b"RIFF" or raw[8:12] != b"WAVE"):
+            raise ValueError("not a WAV file")
+        if len(raw) > 64 * 1024:
+            raise ValueError("no data chunk")
+        offset, fmt = 12, None
+        while offset + 8 <= len(raw):
+            chunk, size = raw[offset:offset + 4], struct.unpack_from("<I", raw, offset + 4)[0]
+            body = offset + 8
+            if chunk == b"fmt ":
+                if body + min(size, 40) > len(raw):
+                    return b""
+                if size < 16:
+                    raise ValueError("short fmt chunk")
+                tag, channels, rate, _, _, bits = struct.unpack_from("<HHIIHH", raw, body)
+                if tag == 0xFFFE and size >= 26:
+                    tag = struct.unpack_from("<H", raw, body + 24)[0]
+                if ((tag, bits) not in _FORMATS or not 1 <= channels <= 8
+                        or not 4_000 <= rate <= 192_000):
+                    raise ValueError("unsupported sample format")
+                fmt = (tag, channels, rate, bits)
+            elif chunk == b"data":
+                if fmt is None:
+                    raise ValueError("data before fmt")
+                self.fmt, self._head = fmt, b""
+                return raw[body:]
+            elif body + size > len(raw):
+                return b""
+            offset = body + size + (size & 1)
+        return b""
+
+    def close(self) -> None:
+        if self.fmt is None or self.frames == 0:
+            raise ValueError("empty audio")
+
+
+class Resampler:
+    """Linear resampling across blocks without a seam between them."""
+
+    def __init__(self, rate: int, target_rate: int):
+        self.step = float(rate) / float(target_rate)
+        self.pos = 0.0             # next output position (source index)
+        self.base = 0              # source index of the next block's first sample
+        self.prev = None
+
+    def feed(self, samples: np.ndarray) -> np.ndarray:
+        if not len(samples):
+            return np.zeros(0, dtype=np.float32)
+        start = self.base
+        if self.prev is not None:
+            samples = np.concatenate(([self.prev], samples)).astype(np.float32)
+            start -= 1
+        end = start + len(samples) - 1
+        self.base, self.prev = end + 1, float(samples[-1])
+        if self.pos > end:
+            return np.zeros(0, dtype=np.float32)
+        count = int(math.floor((end - self.pos) / self.step)) + 1
+        positions = self.pos + self.step * np.arange(count, dtype=np.float64)
+        self.pos += count * self.step
+        return np.interp(positions, start + np.arange(len(samples)),
+                         samples).astype(np.float32)
+
+
+def _int16(samples: np.ndarray) -> np.ndarray:
     return (np.clip(samples, -1.0, 1.0) * 32767.0).astype(np.int16)
 
 
@@ -425,32 +594,73 @@ class VoiceService:
                 continue
             self.sent += 1
             try:
-                samples, rate = parse_wav(self._post(config, request))
-                pcm = to_pcm(samples, rate, self._rate)
-            except _VoiceError as exc:
+                self._speak(config, request, started)
+            except (_VoiceError, ValueError, MemoryError) as exc:
+                category = exc.category if isinstance(exc, _VoiceError) else "bad_reply"
                 self.failed += 1
-                self.last_error = exc.category
-                request._finish("failed", error=exc.category)
+                self.last_error = category
+                if request._parts:
+                    # Cut off midway: what arrived is still said.
+                    request._finish("done")
+                else:
+                    request._finish("failed", error=category)
                 continue
-            except (ValueError, MemoryError):
+            if not request._parts:
                 self.failed += 1
                 self.last_error = "bad_reply"
                 request._finish("failed", error="bad_reply")
                 continue
-            request.latency_s = time.monotonic() - started
             self.answered += 1
             self.last_error = None
+            pcm = np.concatenate(request._parts)
             if request.role == "crew":
                 # Crew reports repeat ("action stations"): keep a few.
                 with self._lock:
                     self._cache[key] = pcm
                     while len(self._cache) > CACHE_CLIPS:
                         self._cache.popitem(last=False)
-            request._finish("done", pcm=pcm)
+            request._finish("done")
+
+    def _speak(self, config: VoiceConfig, request: VoiceRequest, started: float) -> None:
+        """Send one request and pass its audio on in pieces as it arrives."""
+        state = {}
+        piece = max(1, int(self._rate * PIECE_S))
+
+        def block(data: bytes) -> None:
+            if "wav" not in state:
+                state.update(wav=WavStream(), out=[], size=0, first=True)
+            wav = state["wav"]
+            samples = wav.feed(data)
+            if wav.fmt is None or not len(samples):
+                return
+            if "resample" not in state:
+                state["resample"] = Resampler(wav.rate, self._rate)
+            out = state["resample"].feed(samples)
+            if state["first"] and len(out):
+                # 8 ms fade-in: no click at the start.
+                fade = min(len(out), max(1, self._rate // 125))
+                out[:fade] *= np.linspace(0.0, 1.0, fade, dtype=np.float32)
+                state["first"] = False
+            state["out"].append(out)
+            state["size"] += len(out)
+            if state["size"] >= piece:
+                self._hand_on(request, state, started)
+
+        self._post(config, request, block)
+        if "wav" not in state:
+            raise ValueError("empty audio")
+        state["wav"].close()
+        self._hand_on(request, state, started)
+
+    @staticmethod
+    def _hand_on(request: VoiceRequest, state: dict, started: float) -> None:
+        if state["out"]:
+            request._push(_int16(np.concatenate(state["out"])), started)
+            state["out"], state["size"] = [], 0
 
     # -- transport -----------------------------------------------------------
 
-    def _post(self, config: VoiceConfig, request: VoiceRequest) -> bytes:
+    def _post(self, config: VoiceConfig, request: VoiceRequest, sink) -> None:
         body = {"model": config.model, "input": request.text, "voice": config.voice,
                 "response_format": "wav"}
         if self._instructions:
@@ -471,7 +681,18 @@ class VoiceService:
         http_request = urllib.request.Request(url, data=data, headers=headers, method="POST")
         try:
             with self._opener(http_request, timeout=self._timeout) as response:
-                raw = response.read(MAX_AUDIO_BYTES + 1)
+                read = getattr(response, "read1", None) or response.read
+                total = 0
+                while True:
+                    data = read(READ_BYTES)
+                    if not data:
+                        break
+                    total += len(data)
+                    if total > MAX_AUDIO_BYTES:
+                        raise _VoiceError("bad_reply")
+                    if self._closed:
+                        raise _VoiceError("disabled")
+                    sink(data)
         except urllib.error.HTTPError as exc:
             if exc.code in (401, 403):
                 raise _VoiceError("auth") from None
@@ -481,10 +702,10 @@ class VoiceService:
                 # A server that does not know a field: first without sampling,
                 # then without the speaking style.
                 self._sampling = False
-                return self._post(config, request)
+                return self._post(config, request, sink)
             if self._instructions and exc.code in (400, 422):
                 self._instructions = False
-                return self._post(config, request)
+                return self._post(config, request, sink)
             raise _VoiceError("server") from None
         except TimeoutError:
             raise _VoiceError("timeout") from None
@@ -492,11 +713,8 @@ class VoiceService:
             if isinstance(getattr(exc, "reason", None), TimeoutError):
                 raise _VoiceError("timeout") from None
             raise _VoiceError("network") from None
-        except (OSError, ValueError):
+        except OSError:
             raise _VoiceError("network") from None
-        if len(raw) > MAX_AUDIO_BYTES:
-            raise _VoiceError("bad_reply")
-        return raw
 
 
 def _host(url: str) -> str:

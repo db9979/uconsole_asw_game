@@ -19,6 +19,21 @@ charts already showed the graticule. The stylized fixed chart keeps its
 NM grid. Gameplay, keys and saves are unchanged (v53; v38 to v52 saves
 still load).
 
+## 1.3.231
+
+Release 1.3.231 gives the optional language model a voice. Under Options,
+page 2, Language model, a second page "Voice" takes an OpenAI-compatible
+speech service (address, speech model, voice and API key; preset OpenAI
+gpt-4o-mini-tts), and a third page "Sound" sets temperature, top_p and seed
+for services that take them (Qwen-TTS) and cleans the text before speaking. With it the executive officer speaks his answers and the
+coach's tips, and the spoken crew reports use the same natural voice instead
+of espeak-ng, each with its own switch. The voice plays on its own audio
+channel beside the sonar tone, and its key is kept in ~/.u-jagd/tts_key (or
+the language model's key on the same server), never in settings or saves.
+Without the service the game plays exactly as before; browsers keep their own
+voice for crew reports. The settings pages are now mouse-operable. Saves are
+v53; v38 to v52 saves still load.
+
 ## 1.3.229
 
 Release 1.3.229 makes the event log (F11) readable in every colour scheme

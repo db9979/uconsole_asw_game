@@ -19,6 +19,23 @@ im Browser hatten das Gradnetz schon. Die stilisierte feste Karte behält
 ihr sm-Gitter. Spielablauf, Tasten und Spielstände bleiben gleich (v53;
 v38 bis v52 laden weiter).
 
+## 1.3.231
+
+Version 1.3.231 gibt dem optionalen Sprachmodell eine Stimme. Unter
+Optionen, Seite 2, Sprachmodell nimmt eine zweite Seite „Stimme“ einen
+OpenAI-kompatiblen Sprachdienst auf (Adresse, Sprechmodell, Stimme und
+API-Schlüssel; voreingestellt OpenAI gpt-4o-mini-tts), und eine dritte Seite
+„Klang“ stellt Temperature, top_p und Seed für Dienste ein, die sie annehmen
+(Qwen-TTS), und bereinigt den Text vor dem Sprechen. Damit spricht der Erste
+Offizier seine Antworten und die Tipps des Coachs, und die gesprochenen
+Crew-Meldungen kommen mit derselben natürlichen Stimme statt über espeak-ng,
+beides einzeln schaltbar. Die Stimme spielt auf einem eigenen Tonkanal neben
+dem Sonarton, und ihr Schlüssel liegt in ~/.u-jagd/tts_key (oder es gilt der
+des Sprachmodells beim selben Server), nie in Einstellungen oder Spielständen.
+Ohne den Dienst läuft das Spiel genau wie bisher; Browser behalten ihre eigene
+Stimme für Crew-Meldungen. Die Einstellungsseiten lassen sich jetzt mit der
+Maus bedienen. Spielstände sind v53; v38 bis v52 werden weiter geladen.
+
 ## 1.3.229
 
 Version 1.3.229 macht das Ereignislog (F11) in jedem Farbschema lesbar und

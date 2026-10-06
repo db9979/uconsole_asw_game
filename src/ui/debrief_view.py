@@ -23,8 +23,8 @@ MAP = pygame.Rect(24, 64, 780, 556)
 SIDE = pygame.Rect(820, 64, 436, 556)
 TIMELINE = pygame.Rect(24, 632, 1232, 30)
 # Replay buttons in the title row: play/pause (Space) and 10x/60x (Tab).
-PLAY = pygame.Rect(1040, 14, 104, 30)
-SPEED = pygame.Rect(1152, 14, 104, 30)
+PLAY = pygame.Rect(1000, 14, 104, 30)
+SPEED = pygame.Rect(1112, 14, 104, 30)
 # ``config.COLOR_*`` names, looked up when drawn (the colour scheme can change).
 EVENT_COLORS = {
     "first_contact": "COLOR_WARN", "first_fix": "COLOR_WARN",
@@ -123,6 +123,8 @@ def draw_debrief(game) -> None:
     recorder = game.debrief
     pygame.draw.rect(s, config.COLOR_OVERLAY_BG, PANEL)
     pygame.draw.rect(s, config.COLOR_TEXT_DIM, PANEL, 2)
+    from src.ui import game_menu
+    game_menu.draw_close_box(s, PANEL)          # Esc / D by mouse
     if not recorder.frames:
         layout.blit_line(s, "debrief.empty", PANEL.inflate(-40, -40), config.COLOR_TEXT_DIM,
                          size=22, align="center")
@@ -133,7 +135,7 @@ def draw_debrief(game) -> None:
     frame = debrief_replay.interpolate(recorder.frames, replay.t) or recorder.frames[index]
     layout.blit_line(s, message("debrief.title", time=_clock(frame["t"]),
                                 end=_clock(recorder.frames[-1]["t"])),
-                     (24, 18, 1000, 26), config.COLOR_TEXT, size=22)
+                     (24, 18, 960, 26), config.COLOR_TEXT, size=22)
     _draw_buttons(s, replay)
     _draw_map(game, s, recorder, index, frame)
     _draw_side(game, s, recorder, frame)

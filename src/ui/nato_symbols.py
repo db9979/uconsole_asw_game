@@ -17,14 +17,10 @@ AFFILIATION_COLORS = {
 }
 SELECT_RING = (235, 235, 220)
 
-DOMAIN_LABELS = {
-    "UNKNOWN": "Unbekannt",
-    "SURFACE": "See",
-    "SUBSURFACE": "Untersee",
-    "AIR": "Luft",
-    "MISSILE": "Flugkoerper",
-    "UNDERWATER_WEAPON": "Unterwasserwaffe",
-}
+# APP-6 frame dimension of each glyph domain: surface (full frame), air
+# (upper half, open below) or subsurface (lower half, open above).
+FRAME_DIMENSION = {"AIR": "air", "ROTARY": "air", "MISSILE": "air",
+                   "SUBSURFACE": "subsurface", "UNDERWATER_WEAPON": "subsurface"}
 
 
 def domain_for_kind(kind: str) -> str:
@@ -48,17 +44,8 @@ def draw_symbol(surface, center, affiliation: str, domain: str,
     height = max(6, int(size * 0.65))
     color = AFFILIATION_COLORS.get(affiliation, AFFILIATION_COLORS["UNKNOWN"])
 
-    if affiliation == "HOSTILE":
-        frame = [(x, y - height), (x + half, y),
-                 (x, y + height), (x - half, y)]
-        pygame.draw.polygon(surface, color, frame, 2)
-    elif affiliation == "NEUTRAL":
-        pygame.draw.rect(surface, color,
-                         (x - half, y - height, half * 2, height * 2), 2)
-    elif affiliation == "FRIEND":
-        pygame.draw.rect(surface, color,
-                         (x - half - 2, y - height, half * 2 + 4, height * 2), 2)
-    # Unknown affiliation: no frame, only the domain glyph (colour marks it).
+    _draw_frame(surface, (x, y), affiliation, FRAME_DIMENSION.get(domain, "surface"),
+                half, height, color)
 
     if domain == "AIR":
         pygame.draw.lines(surface, color, False,
@@ -94,6 +81,68 @@ def draw_symbol(surface, center, affiliation: str, domain: str,
     if selected:
         pygame.draw.circle(surface, SELECT_RING, (x, y), half + 7, 1)
     return color
+
+
+def _draw_frame(surface, center, affiliation: str, dimension: str, half: int,
+                height: int, color) -> None:
+    """The APP-6 frame of an affiliation in its dimension: friend circle
+    (air dome, subsurface bowl), hostile diamond, neutral square, each cut
+    to its upper (air) or lower (subsurface) half; unknown: no frame (the
+    colour marks it, keeps crowded charts readable)."""
+    x, y = center
+    if affiliation == "FRIEND":
+        radius = half + 2
+        box = (x - radius, y - radius, radius * 2, radius * 2)
+        if dimension == "air":
+            pygame.draw.arc(surface, color, box, 0.0, math.pi, 2)
+        elif dimension == "subsurface":
+            pygame.draw.arc(surface, color, box, math.pi, 2 * math.pi, 2)
+        else:
+            pygame.draw.circle(surface, color, (x, y), radius, 2)
+    elif affiliation == "HOSTILE":
+        if dimension == "air":
+            pygame.draw.lines(surface, color, False,
+                              [(x - half, y + 2), (x, y - height), (x + half, y + 2)], 2)
+        elif dimension == "subsurface":
+            pygame.draw.lines(surface, color, False,
+                              [(x - half, y - 2), (x, y + height), (x + half, y - 2)], 2)
+        else:
+            pygame.draw.polygon(surface, color, [(x, y - height), (x + half, y),
+                                                 (x, y + height), (x - half, y)], 2)
+    elif affiliation == "NEUTRAL":
+        if dimension == "air":
+            pygame.draw.lines(surface, color, False,
+                              [(x - half, y + 3), (x - half, y - height),
+                               (x + half, y - height), (x + half, y + 3)], 2)
+        elif dimension == "subsurface":
+            pygame.draw.lines(surface, color, False,
+                              [(x - half, y - 3), (x - half, y + height),
+                               (x + half, y + height), (x + half, y - 3)], 2)
+        else:
+            pygame.draw.rect(surface, color,
+                             (x - half, y - height, half * 2, height * 2), 2)
+
+
+def draw_own_ship(surface, center, heading_deg, size: int = 18, color=None) -> tuple:
+    """The own frigate on every chart: the APP-6 friendly surface frame
+    (circle) with its heading line from the frame's rim."""
+    color = color or AFFILIATION_COLORS["FRIEND"]
+    draw_symbol(surface, center, "FRIEND", "SURFACE", size)
+    draw_heading(surface, center, heading_deg, size, color)
+    return color
+
+
+def draw_heading(surface, center, heading_deg, size: int, color, length: int | None = None):
+    """A heading staff from the frame's rim along ``heading_deg``."""
+    if heading_deg is None:
+        return
+    ang = math.radians(heading_deg)
+    rim = max(5, int(size) // 2) + 2
+    length = length if length is not None else rim + 12
+    x, y = center
+    start = (x + rim * math.sin(ang), y - rim * math.cos(ang))
+    end = (x + length * math.sin(ang), y - length * math.cos(ang))
+    pygame.draw.line(surface, color, start, end, 2)
 
 
 def draw_motion_vector(surface, center, course_deg, speed_kn, px_per_nm,

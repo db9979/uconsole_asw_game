@@ -36,9 +36,9 @@ Das U-Boot hat sieben Stationen auf den Tasten `1`-`7` (siehe Kapitel U-Boot). `
 
 ## Bedienung in 60 Sekunden {#qs-controls}
 
-- **Stationen:** `1`-`9` (U-Boot `1`-`7`), `Tab`/`Shift+Tab` oder ein Klick auf einen Reiter in der Kopfzeile.
+- **Stationen:** `1`-`9` (U-Boot `1`-`7`), `Tab`/`Umschalt+Tab` oder ein Klick auf einen Reiter in der Kopfzeile.
 - **Seiten:** die Nummer der Station nochmals drücken, `Bild Auf`/`Bild Ab` oder einen Seitenreiter anklicken.
-- **Feuern:** `Strg+Enter` feuert Torpedos und Flugkörper. `Enter` allein feuert nie.
+- **Feuern:** `Strg+Eingabe` feuert Torpedos und Flugkörper. `Eingabe` allein feuert nie.
 - **Hilfe:** `F1` (oder `?`) listet alle Tasten der aktuellen Station, ihren Standardablauf und dieses Handbuch. `Esc` bricht eine Eingabe ab oder öffnet den Beenden-Dialog.
 - **Trackball:** horizontal steuert er auf der Brücke, vertikal schaltet er sonst die Hauptauswahl der Station.
 - **Maus:** Ein Klick auf eine Taste in der Tastenleiste der Station, eine Lampe, einen Hinweis, einen Reiter, eine Scheibe oder eine Listenzeile tut genau das, was seine Taste tut, mit denselben Prüfungen. Das Menü-Symbol in der Kopfzeile öffnet das Spielmenü (Hilfe, Optionen, Speichern, Laden, Beenden). Auf Karten zoomt das Mausrad, Ziehen verschiebt (Einzelheiten im Kapitel Werkzeuge).
@@ -51,25 +51,25 @@ Globale Tasten (alle Stationen):
 
 ![Szenarioauswahl, nach Seite sortiert](figure:mission-scenario-selection)
 
-1. Hauptmenü: **Neuer Einsatz** mit den Pfeiltasten und `Enter` wählen, die Fregatte mit `1` und `Enter`, dann Szenario 1 (Patrouille) mit `1` und `Enter`; die Einweisung zeigt Wetter und Tageszeit, `Enter` startet.
+1. Hauptmenü: **Neuer Einsatz** mit den Pfeiltasten und `Eingabe` wählen, die Fregatte mit `1` und `Eingabe`, dann Szenario 1 (Patrouille) mit `1` und `Eingabe`; die Einweisung zeigt Wetter und Tageszeit, `Eingabe` startet.
 2. Brücke (`1`): nochmals `1` für die Missionsseite, Auftrag und Zeitlimit lesen.
 3. Maschine (`7`): SLOW oder 6-8 kn wählen. Sonar (`2`): Schleppsonar mit `Y` ausbringen.
-4. Sonar-Seite BROADBAND: nach einer hellen senkrechten Spur suchen; mit den Pfeiltasten wählen und mit `Enter` verfolgen.
+4. Sonar-Seite BROADBAND: nach einer hellen senkrechten Spur suchen; mit den Pfeiltasten wählen und mit `Eingabe` verfolgen.
 5. Mit `C` klassifizieren, mit `T` TMA einschalten, dann auf der Brücke 30-60 Grad drehen und den neuen Schlag einige Minuten halten.
 6. Sobald TMA oder Ping eine Entfernung liefern: Kontakt an die OPZ freigeben (`G`) und als Ziel setzen (`M`).
-7. Waffen (`3`): Torpedotiefe auf die gepingte Zieltiefe stellen, mit `Strg+Enter` feuern.
+7. Waffen (`3`): Torpedotiefe auf die gepingte Zieltiefe stellen, mit `Strg+Eingabe` feuern.
 8. Sonar auf anlaufende Torpedos beobachten; kommt einer, mit 24 kn laufen (nicht FLANK: das Schleppkabel des Nixie reißt über 25 kn), abdrehen und Nixie ausbringen (`V` in der Waffenzentrale).
 
 ## Die erste Tauchfahrt (U-Boot) {#qs-first-dive}
 
-Am schnellsten kommen Sie mit Lektion 5 der Ausbildung ins U-Boot: Hauptmenü **Ausbildung**, Lektion 5 (Horchen und unter die Schicht) mit `5` oder den Pfeiltasten, `Enter`. Die uConsole spielt für diese Lektion das U-Boot, und ein Hinweisbanner wartet auf jeden Schritt:
+Am schnellsten kommen Sie mit Lektion 5 der Ausbildung ins U-Boot: Hauptmenü **Ausbildung**, Lektion 5 (Horchen und unter die Schicht) mit `5` oder den Pfeiltasten, `Eingabe`. Die uConsole spielt für diese Lektion das U-Boot, und ein Hinweisbanner wartet auf jeden Schritt:
 
 1. Sonarraum (`2`): warten, bis die Fregatte in der Kontaktliste erscheint.
 2. Den Kontakt mit `Auf`/`Ab` wählen und `C` drücken, bis er Kampfschiff heißt.
 3. Die Schicht mit dem Bathythermografen messen (`E`).
 4. Führung (`1`), dann `J`: Das U-Boot taucht unter die gemessene Schicht, wo das Bugsonar der Fregatte es schlecht hört.
 
-Lektion 6 übt das Ausweichen vor einer pingenden Fregatte (`I` auf der Seite Bedrohung). Danach starten Sie **Neuer Einsatz**, das U-Boot mit `2` und `Enter`, dann Szenario 1 (Durchbruch) mit `1` und `Enter`: Erreichen Sie das auf der Karte mit ZIEL markierte Zielgebiet. Fahren Sie langsam (`-` am Telegrafen oder `A` für Schleichfahrt), bleiben Sie unter der Schicht, halten Sie den Mast nahe der Fregatte unten und weichen Sie mit `I` aus, wenn ein Ping- oder Torpedoalarm kommt.
+Lektion 6 übt das Ausweichen vor einer pingenden Fregatte (`I` auf der Seite Bedrohung). Danach starten Sie **Neuer Einsatz**, das U-Boot mit `2` und `Eingabe`, dann Szenario 1 (Durchbruch) mit `1` und `Eingabe`: Erreichen Sie das auf der Karte mit ZIEL markierte Zielgebiet. Fahren Sie langsam (`-` am Telegrafen oder `A` für Schleichfahrt), bleiben Sie unter der Schicht, halten Sie den Mast nahe der Fregatte unten und weichen Sie mit `I` aus, wenn ein Ping- oder Torpedoalarm kommt.
 
 ## Unterwasserakustik in fünf Minuten {#qs-acoustics}
 

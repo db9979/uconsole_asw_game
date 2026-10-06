@@ -76,13 +76,13 @@ Angriffsablauf:
 
 1. Mit zwei passiven Bojen oder einem Ping von Aktivboje/Tauchsonar orten, bis der Kontakt eine frische Position hat.
 2. Als U-Boot klassifizieren (`C`) und als Ziel setzen (`M`).
-3. Zum Datum fliegen; Torpedo werfen (`Strg+Enter` oder `D`). Kontakt halten für einen zweiten Wurf.
+3. Zum Datum fliegen; Torpedo werfen (`Strg+Eingabe`; `D` an der Waffenstation wählt dafür den Lufttorpedo). Kontakt halten für einen zweiten Wurf.
 
 ## Tipps für Profis {#helicopter-tips}
 
 - Das Tauchsonar unter die Schicht legen, um tiefe U-Boote zu hören. Die Tauchanzeige zeigt die Schicht am Helikopter erst, wenn der abgesenkte Dom sie durchfahren hat; vorher nur die Kartentiefe.
 - Bojen vor den geschätzten Zielkurs legen, nicht auf das letzte Datum.
-- `F` bestätigt einen Helikopterkontakt; `G` gibt ihn wie am Sonar an die OPZ frei; `Shift+↑`/`Shift+↓` wählen den nächsten Tauchsonarkontakt; `W` legt den Wegpunkt auf die Position des gewählten Kontakts (wie `W` beim Seefernaufklärer; ein reiner Peilkontakt hat keine). Ein Klick in die Karte (uConsole und Browser, auch auf ein Symbol oder eine Beschriftung, nur ein Sonarkontakt wählt diesen Kontakt) legt den Wegpunkt genau auf diesen Punkt; die Karte zeigt ihn als HSP-5 WP mit einer gestrichelten Linie vom Hubschrauber. Der Hubschrauber wird im Anflug langsamer und bleibt auf dem Punkt stehen (auf etwa 20 m); die Pfeiltasten verschieben den Wegpunkt weiter in Schritten von 15 Grad und 1 sm vom Schiff aus.
+- `F` bestätigt einen Helikopterkontakt; `G` gibt ihn wie am Sonar an die OPZ frei; `Umschalt+↑`/`Umschalt+↓` wählen den nächsten Tauchsonarkontakt; `W` legt den Wegpunkt auf die Position des gewählten Kontakts (wie `W` beim Seefernaufklärer; ein reiner Peilkontakt hat keine). Ein Klick in die Karte (uConsole und Browser, auch auf ein Symbol oder eine Beschriftung, nur ein Sonarkontakt wählt diesen Kontakt) legt den Wegpunkt genau auf diesen Punkt; die Karte zeigt ihn als HSP-5 WP mit einer gestrichelten Linie vom Hubschrauber. Der Hubschrauber wird im Anflug langsamer und bleibt auf dem Punkt stehen (auf etwa 20 m); die Pfeiltasten verschieben den Wegpunkt weiter in Schritten von 15 Grad und 1 sm vom Schiff aus.
 - Auf der Akustikseite schaltet `T` die Horchquelle zwischen Tauchsonar und jeder passiven Boje.
 - Den Helikopter rechtzeitig zurückrufen (`H`): die Landung braucht ein einsatzbereites Flugdeck, und die Zuladung wird zwischen Einsätzen nicht ergänzt.
 

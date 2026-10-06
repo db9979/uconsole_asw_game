@@ -2,8 +2,10 @@ import { $, heloStates } from "../core/base.js";
 import { S } from "../state/store.js";
 import { heloStateText, number, t, unit } from "../core/format.js";
 import { actionButton, fillFireTargets, metrics, patchChildren, position, stationRows, tacticalEntries, yesNo } from "../views/dom.js";
+import { renderNoteLamps } from "../views/console-kit.js";
 
 export function renderOpzStation(payload) {
+  renderNoteLamps($("opz-lamps"));
   const radar = payload.radar;
   metrics($("opz-radar-summary"), [["opz_surface_radar", yesNo(radar.surface)], ["opz_air_radar", yesNo(radar.air)],
     ["opz_range", unit(radar.range_nm, "NM")], ["radar_live", yesNo(radar.live)],

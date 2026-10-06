@@ -76,7 +76,7 @@ Attack sequence:
 
 1. Localise with two passive buoys or an active buoy/dip ping until the contact has a fresh position.
 2. Classify it as submarine (`C`) and set it as target (`M`).
-3. Fly to the datum; drop the torpedo (`Ctrl+Enter` or `D`). Keep contact for a second drop if needed.
+3. Fly to the datum; drop the torpedo (`Ctrl+Enter`; `D` at the weapons station chooses the air torpedo for it). Keep contact for a second drop if needed.
 
 ## Pro tips {#helicopter-tips}
 

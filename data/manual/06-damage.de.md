@@ -18,7 +18,7 @@ Seite 1 ist die Leckwehrtafel: ein Seitenriss des Schiffs, Bug rechts, mit Decks
 
 Außen steht die See bis zur Wasserlinie mit Tiefgangsmarken an Bug und Heck; in jeder Abteilung steht das Leckwasser auf seiner Höhe und neigt sich mit dem Trimm, ein Brand glüht und flackert mit Rauch unter der Decke, und eine zerstörte Abteilung ist schraffiert. Ein aufgerissenes Loch zeigt, wo der Rumpf offen ist, und Wasser strömt hinein, solange die Abteilung vollläuft; hat ein Trupp ein Leckpflaster gesetzt, liegt dort eine Platte, und ein lenzender Trupp pumpt Wasser über Bord. Tiefgang und Trimm stehen unter dem Seitenriss, die Krängung unter dem Querschnitt. Unter den Bildern trägt die Karte jeder Abteilung eine Zustands-LED, Flutung und Brand mit ihren LEDs sowie nummerierte Plaketten für die Trupps vor Ort; eine Legende erklärt die LEDs.
 
-Seite 2 hat drei Spalten: links eine Karte je Abteilung mit Zustandsstreifen, den LEDs für Wasser und Brand und den Trupps vor Ort, in der Mitte die Details der gewählten Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung), rechts die drei Leckwehrtrupps mit ihrem Ziel und ob sie unterwegs sind (mit den restlichen Sekunden), vor Ort arbeiten oder bereitstehen. Ein Klick auf eine Abteilungskarte wählt sie, ein Klick auf eine Truppkarte wählt den Trupp, und Enter schickt ihn los; ein Klick allein schickt keinen Trupp; Seite 3 ist der Wachplan der Besatzung.
+Seite 2 hat drei Spalten: links eine Karte je Abteilung mit Zustandsstreifen, den LEDs für Wasser und Brand und den Trupps vor Ort, in der Mitte die Details der gewählten Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung), rechts die drei Leckwehrtrupps mit ihrem Ziel und ob sie unterwegs sind (mit den restlichen Sekunden), vor Ort arbeiten oder bereitstehen. Ein Klick auf eine Abteilungskarte wählt sie, ein Klick auf eine Truppkarte wählt den Trupp, und Eingabe schickt ihn los; ein Klick allein schickt keinen Trupp; Seite 3 ist der Wachplan der Besatzung.
 
 Im Browser beginnt die Karte Schaden mit einer Warn- und Meldetafel (Brände, Wassereinbruch, ausgefallen, verschlechtert, Gesamtschaden, Krängung, Trimm, Gegenfluten, Trupps aktiv, Schiff gesunken) über demselben Seitenriss mit Querschnitt und Rundinstrumenten für Krängung, Trimm und Gesamtschaden; ein Klick auf eine Abteilung schickt den gewählten Trupp dorthin. Jede Karte eines Leckwehrtrupps nennt seine Abteilung und zeigt, ob der Trupp bereitsteht, unterwegs ist (mit den restlichen Sekunden) oder vor Ort arbeitet; ein Klick auf die Karte wählt diesen Trupp.
 
@@ -74,7 +74,7 @@ Auf der uConsole weisen die Joystick-Tasten 1-3 Trupp 1-3 direkt der gewählten 
 
 Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
 
-- Ein Klick auf eine Abteilungskarte wählt die Abteilung, ein Klick auf eine Teamkarte das Team; `Enter` schickt es los. Keiner der beiden Klicks schickt allein ein Team.
+- Ein Klick auf eine Abteilungskarte wählt die Abteilung, ein Klick auf eine Teamkarte das Team; `Eingabe` schickt es los. Keiner der beiden Klicks schickt allein ein Team.
 
 ## Standardablauf {#damage-sop}
 

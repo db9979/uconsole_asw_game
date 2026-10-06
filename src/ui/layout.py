@@ -690,8 +690,10 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
 
 
 def command_segment(screen, rect, key: str, description: str,
-                    label: str = "", value: str = "", size: int = 12) -> None:
-    """Draw one bounded command/status segment with stable semantic colors."""
+                    label: str = "", value: str = "", size: int = 12,
+                    center: bool = False) -> None:
+    """Draw one bounded command/status segment with stable semantic colors;
+    ``center`` centres the text in the segment when it has room."""
     from src.ui import theme
     rect = pygame.Rect(rect)
     face = font(size)
@@ -701,19 +703,26 @@ def command_segment(screen, rect, key: str, description: str,
     if chip.w > 12 and chip.h > 8 and localize(key):
         pygame.draw.rect(screen, theme.c("raised"), chip, border_radius=4)
         pygame.draw.rect(screen, theme.c("line"), chip, 1, border_radius=4)
+    from src.core.i18n import key_label, raw_text
     parts = (
-        (key, COMMAND_KEY_COLOR),
+        (raw_text(key_label(key)) if localize(key) else key, COMMAND_KEY_COLOR),
         (description, COMMAND_DESCRIPTION_COLOR),
         (label, config.COLOR_TEXT_DIM),
         (value, config.COLOR_TEXT),
     )
     x = rect.x + 6
+    if center:
+        shown_parts = [localize(text) for text, _color in parts if localize(text)]
+        total = (sum(text_width(face, text) for text in shown_parts)
+                 + text_width(face, " ") * max(0, len(shown_parts) - 1) + 3)
+        x = max(x, rect.x + (rect.w - total) // 2)
+    left = x
     top = rect.y + max(0, (rect.h - face.get_linesize()) // 2)
     with clip_to(screen, rect):
         for index, (text, color) in enumerate(parts):
             if not localize(text) or x >= rect.right - 4:
                 continue
-            if index and x > rect.x + 6:
+            if index and x > left:
                 x += text_width(face, " ")
             shown = fit_line(text, face, rect.right - 4 - x)
             if index == 0 and chip.h > 8:
@@ -729,18 +738,21 @@ def command_segment(screen, rect, key: str, description: str,
 
 
 def key_button(screen, rect, key: str, label: str, size: int = 14,
-               min_size: int = 11) -> None:
+               min_size: int = 11, active: bool = False) -> None:
     """A raised button whose key is a blue cap left of its label, the pair
-    centred in ``rect``; the text shrinks to ``min_size`` before it is cut."""
+    centred in ``rect``; the text shrinks to ``min_size`` before it is cut.
+    ``active`` marks the chosen one of a group (select fill, focus rim)."""
     from src.ui import theme
     rect = pygame.Rect(rect)
-    pygame.draw.rect(screen, theme.c("raised"), rect, border_radius=4)
-    pygame.draw.rect(screen, theme.c("line_strong"), rect, 1, border_radius=4)
-    key_text, label_text = localize(key), localize(label)
+    pygame.draw.rect(screen, theme.c("select" if active else "raised"), rect, border_radius=4)
+    pygame.draw.rect(screen, theme.c("focus" if active else "line_strong"), rect,
+                     2 if active else 1, border_radius=4)
+    from src.core.i18n import key_label
+    key_text, label_text = key_label(key), localize(label)
     room = rect.w - 16
     for face_size in range(size, min_size - 1, -1):
         face = font(face_size)
-        key_w, gap = text_width(face, key_text) + 8, 6
+        key_w, gap = (text_width(face, key_text) + 8, 6) if key_text else (0, 0)
         if key_w + gap + text_width(face, label_text) <= room:
             break
     label_text = fit_line(label_text, face, max(0, room - key_w - gap))
@@ -750,11 +762,12 @@ def key_button(screen, rect, key: str, label: str, size: int = 14,
     top = rect.y + (rect.h - pitch) // 2
     cap = pygame.Rect(x, top - 1, key_w, pitch + 2)
     with clip_to(screen, rect):
-        pygame.draw.rect(screen, theme.c("accent"), cap, border_radius=3)
-        image = render_line(face, key_text, theme.c("on_accent"))
-        placed = image.get_rect(center=cap.center)
-        record_text(key_text, placed, rect, image)
-        screen.blit(image, placed)
+        if key_text:
+            pygame.draw.rect(screen, theme.c("accent"), cap, border_radius=3)
+            image = render_line(face, key_text, theme.c("on_accent"))
+            placed = image.get_rect(center=cap.center)
+            record_text(key_text, placed, rect, image)
+            screen.blit(image, placed)
         image = render_line(face, label_text, config.COLOR_TEXT)
         placed = image.get_rect(midleft=(cap.right + gap, cap.centery))
         record_text(label_text, placed, rect, image)

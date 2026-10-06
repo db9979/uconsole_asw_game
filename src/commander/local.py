@@ -998,6 +998,8 @@ class CommanderConsole:
             screen, tr = game.screen, game.tr
             panel = pygame.Rect(100, 20, 1080, 680)
             overlay_style.panel(screen, panel)
+            from src.ui import game_menu
+            game_menu.close_button(screen, panel)          # F9 / Esc by mouse
             overlay_style.title(screen, "commander.local.title", (124, 30, 1032, 36),
                                 size=28, align="left")
             url = (f"http://{self.address[0]}:{self.address[1]}/"
@@ -1112,6 +1114,8 @@ class CommanderConsole:
         screen, tr = game.screen, game.tr
         panel = pygame.Rect(100, 20, 1080, 680)
         overlay_style.panel(screen, panel)
+        from src.ui import game_menu
+        game_menu.close_button(screen, panel)              # Esc by mouse
         overlay_style.title(screen, "commander.roster.title", (124, 30, 1032, 36), size=28,
                             align="left")
         layout.blit_line(screen, "commander.roster.subtitle", (124, 70, 1032, 28),

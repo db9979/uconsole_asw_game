@@ -69,6 +69,8 @@ def draw_advisor_overlay(game) -> None:
     overlay_style.panel(s, PANEL)
     overlay_style.title(s, "advisor.title", (PANEL.x + 32, PANEL.y + 12, PANEL.w - 64, 40),
                         size=28)
+    from src.ui import game_menu
+    game_menu.close_button(s, PANEL)            # F7 / Esc by mouse
     for index, rect in enumerate(tab_rects(5)):
         active = index == game.advisor_mode
         if active:

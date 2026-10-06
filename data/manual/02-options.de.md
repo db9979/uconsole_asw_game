@@ -1,6 +1,6 @@
 # Optionen {#options}
 
-`F10` (oder **Optionen** im Hauptmenü oder im Spielmenü) öffnet die Optionen. `Auf`/`Ab` wählen eine Zeile, `Enter`/`Links`/`Rechts` ändern sie, `Bild Auf`/`Bild Ab` oder `Tab` wechseln zwischen den beiden Seiten und `Esc` führt zurück. Die Einstellungen liegen in `~/.u-jagd/settings.json`; eine laufende Mission läuft hinter den Optionen weiter.
+`F10` (oder **Optionen** im Hauptmenü oder im Spielmenü) öffnet die Optionen. `Auf`/`Ab` wählen eine Zeile, `Eingabe`/`Links`/`Rechts` ändern sie, `Bild Auf`/`Bild Ab` oder `Tab` wechseln zwischen den beiden Seiten und `Esc` führt zurück. Die Einstellungen liegen in `~/.u-jagd/settings.json`; eine laufende Mission läuft hinter den Optionen weiter.
 
 ![Optionen (F10)](figure:options)
 
@@ -9,7 +9,7 @@
 | Zeile | Auswahl |
 |---|---|
 | Sprache | Englisch, Deutsch |
-| Vollbild | an, aus (auch `Alt+Enter`) |
+| Vollbild | an, aus (auch `Alt+Eingabe`) |
 | Audio | an, aus |
 | Große Schrift | an, aus |
 | Kurzinfos | an, aus: Erklärungen unter der Maus; ein Klick heftet eine an |
@@ -43,7 +43,7 @@ Die Seite **Echtzeit-Verkehr** holt echte Schiffe (AIS Stream, braucht einen eig
 
 **uConsole spielt:** welche Seite der uConsole spielt, Fregatte (Standard) oder feindliches U-Boot; nur im Hauptmenü, nie gespeichert. Ein neues Spiel fragt ohnehin zuerst danach. Siehe Kapitel U-Boot.
 
-**Grafikstufe** (`Enter`/`Rechts` weiter, `Links` zurück): **Sparsam** skaliert mit einfachen Pixeln, lässt das Radar-Nachleuchten weg und beruhigt den Menühintergrund, um auf der uConsole Rechenzeit zu sparen; **Normal** (Standard der uConsole) zeigt alle Effekte; **Voll** (Standard unter Windows) glättet zusätzlich Peilstriche, Küste und Plot. In einem Fenster oder Vollbild größer als 1280 x 720 skalieren Normal und Voll das Bild scharf: ganzzahlige Faktoren wiederholen Pixel exakt, andere Größen (etwa 1920 x 1080) wiederholen Pixel bis zum nächsten ganzen Faktor und glätten dann herunter, sodass Schrift und dünne Linien gleichmäßig bleiben. Die Stufe ändert nur das Bild, nie die Simulation oder was eine Station anzeigt.
+**Grafikstufe** (`Eingabe`/`Rechts` weiter, `Links` zurück): **Sparsam** skaliert mit einfachen Pixeln, lässt das Radar-Nachleuchten weg und beruhigt den Menühintergrund, um auf der uConsole Rechenzeit zu sparen; **Normal** (Standard der uConsole) zeigt alle Effekte; **Voll** (Standard unter Windows) glättet zusätzlich Peilstriche, Küste und Plot. In einem Fenster oder Vollbild größer als 1280 x 720 skalieren Normal und Voll das Bild scharf: ganzzahlige Faktoren wiederholen Pixel exakt, andere Größen (etwa 1920 x 1080) wiederholen Pixel bis zum nächsten ganzen Faktor und glätten dann herunter, sodass Schrift und dünne Linien gleichmäßig bleiben. Die Stufe ändert nur das Bild, nie die Simulation oder was eine Station anzeigt.
 
 **Automatisch sparsam** (`+ auto Sparsam` hinter Normal oder Voll, der Standard): Bleibt das Bild 5 Sekunden lang unter 14 Bildern pro Sekunde, zeichnet das Spiel von selbst mit Sparsam und zeigt in der oberen Leiste eine gelbe **ECO**-Lampe; der Hinweis über ihr sagt, warum und wie man es abschaltet. Eine erneut gewählte Grafikstufe beendet es; eine Stufe ohne `+ auto` schaltet das automatische Sparen ab. Es beobachtet nur das Bild und ändert nie die Simulation.
 

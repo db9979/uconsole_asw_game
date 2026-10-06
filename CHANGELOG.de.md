@@ -4,6 +4,20 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.233
+
+Version 1.3.233 bringt die Bedienung unter einheitliche Regeln.
+Strg+Eingabe ist jetzt die einzige Taste, die eine Waffe auslöst: An der
+Waffenstation wählen D, A, Z, R und Umschalt+R nur die Waffe, die dann
+leuchtet und in der Feuerzeile steht. Jede Taste einer Stationsseite steht
+als blauer Chip in ihrer Tastenleiste und wird per Klick gedrückt; ein
++-Chip blättert durch den Rest (auch durch alle Sonartasten beider
+Seiten). Lange Listen blättern mit dem Mausrad, Overlays schließen über
+ein Schließkreuz, und Hinweise erklären weitere Lampen. Eigene Einheiten
+tragen auf jeder Karte den passenden NATO-Rahmen, hoher Kontrast erreicht
+jede Zeichnung, und deutsche Texte nutzen deutsche Tastennamen und „sm“.
+Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
+
 ## 1.3.231
 
 Version 1.3.231 gibt dem optionalen Sprachmodell eine Stimme. Unter

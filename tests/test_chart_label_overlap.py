@@ -114,7 +114,7 @@ def test_weapons_target_is_labelled_once(language):
     labels = [item["text"] for item in traced
               if chart.collidepoint(item["ink"].center) and "K02" in item["text"]]
     assert len(labels) == 1, labels
-    assert "Shift+A" in labels[0]
+    assert ("Umschalt+A" if language == "de" else "Shift+A") in labels[0]
 
 
 def test_scale_line_keeps_grid_numbers_out_of_its_band():
@@ -199,10 +199,11 @@ def test_opz_bearing_scale_numbers_stay_at_their_bearing(language, theme):
             game.draw()
         view = opz._opz_view(game, chart)
         cx, cy = view.world_to_screen(game.ship.x, game.ship.y)
+        unit = " sm" if language == "de" else " NM"
         scale = [item for item in traced if chart.collidepoint(item["ink"].center)
-                 and (item["text"].endswith(" NM") or (
+                 and (item["text"].endswith(unit) or (
                      len(item["text"]) == 3 and item["text"].isdigit()))]
-        numbers = {item["text"]: item for item in scale if not item["text"].endswith("NM")}
+        numbers = {item["text"]: item for item in scale if not item["text"].endswith(unit)}
         if opz_display_view.compass_numbers_shown(radius):
             assert len(numbers) == 12, (radius, sorted(numbers))
         for text, item in numbers.items():

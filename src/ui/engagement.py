@@ -15,7 +15,7 @@ import math
 import pygame
 
 from src.core import config
-from src.core.i18n import raw_text
+from src.core.i18n import nm_unit, raw_text
 from src.ui import layout, lines, nato_symbols
 
 # The sketch shows at least this much sea around the own ship (NM).
@@ -131,14 +131,14 @@ def draw_engagement_sketch(screen, rect, *, own_course, torpedo_kn, torpedo_rang
                          config.COLOR_TEXT_DIM, size=11, align="center")
     # Scale: the frame's radius in NM; torpedo reach: a dashed amber ring.
     fx, fy = _polar(cx, cy, radius, 225.0)
-    layout.blit_line(screen, raw_text(f"{span:.1f} NM"),
+    layout.blit_line(screen, raw_text(f"{span:.1f} {nm_unit()}"),
                      (int(fx) - 66, int(fy), 64, label_h), config.COLOR_TEXT_DIM,
                      size=11, align="right")
     if reach <= span:
         reach_px = reach * scale
         _ring(screen, config.COLOR_WARN, (cx, cy), reach_px, dashed=True)
         lx, ly = _polar(cx, cy, reach_px, 135.0)
-        layout.blit_line(screen, raw_text(f"{reach:.0f} NM"),
+        layout.blit_line(screen, raw_text(f"{reach:.0f} {nm_unit()}"),
                          (int(lx) + 2, int(ly), 64, label_h), config.COLOR_WARN, size=11)
     # Own ship: a friendly triangle along its course.
     tip = _polar(cx, cy, 9, own_course)

@@ -73,7 +73,7 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
 
 - A click on a contact card selects that contact as `←`/`→` would; the assigned target has a red mark.
-- The fire key `Ctrl+Enter` can be clicked here, at the weapons station only.
+- The fire key `Ctrl+Enter` can be clicked here, at the weapons station only. It fires the chosen weapon: `D`, `A`, `Z`, `R` and `Shift+R` only choose the air torpedo, ASROC, the depth-charge pattern, the rocket salvo or the rocket defence salvo, and the chosen one is lit on page 2 and named in the fire line. Choosing the same weapon again goes back to the torpedo.
 - The key hints beside the solution (launch, flak release) press their keys.
 - On the chart the wheel zooms, dragging pans (it ends `K` follow) and a click pins a tooltip.
 

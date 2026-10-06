@@ -19,7 +19,7 @@ Die Station hat sechs Seiten. `Bild Auf`/`Bild Ab` (oder nochmals `2`) blättert
 
 ## Anzeigen und Instrumente {#sonar-displays}
 
-Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpeilung und die Ping-Bereitschaft; ein Schlepp- oder Tiefensonar, das gerade aus- oder einfährt oder noch nicht bereit ist, erscheint auf jeder Seite gelb mit Kabellänge, Stabilität und PAUSE, wenn die Handhabung außerhalb der Grenzen liegt. Die eine Tastenzeile unten zeigt die vier Haupttasten der Seite mit ihren Werten; alle übrigen Tasten stehen in der F1-Hilfe. Auf BREITBAND ist die gelbe Linie die Hörpeilung und die grauen Linien die Grenzen des Hörstrahls; dunkel heißt leise, türkis laut.
+Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpeilung und die Ping-Bereitschaft; ein Schlepp- oder Tiefensonar, das gerade aus- oder einfährt oder noch nicht bereit ist, erscheint auf jeder Seite gelb mit Kabellänge, Stabilität und PAUSE, wenn die Handhabung außerhalb der Grenzen liegt. Die Tastenzeile unten zeigt die vier Haupttasten der Seite mit ihren Werten; der Knopf + WEITERE rechts blättert durch alle übrigen Sonartasten als Knöpfe (ein Klick drückt die Taste) und zurück. Auf BREITBAND ist die gelbe Linie die Hörpeilung und die grauen Linien die Grenzen des Hörstrahls; dunkel heißt leise, türkis laut.
 
 ![Sonar auf der uConsole](figure:station-sonar)
 
@@ -27,7 +27,7 @@ Der Hörposten rechts zeigt Quelle und Alter der Evidenz, das Array, die Hörpei
 
 Die Station hat drei Spalten: links Kontaktkarten, in der Mitte die Anzeige der Seite, rechts die Detailzeilen und die Horchkonsole. Die Horchkonsole unter den Detailzeilen ist wie ein Leitstand aufgebaut: Lampen zeigen Ping bereit (gelb, solange ein Ping läuft), Ton und Spitzenwert-Halten, und eine nordorientierte Peilrose zeigt die Horchrichtung (gelb), die toten Winkel achtern (roter Sektor), den eigenen Kurs und jede veröffentlichte Kontaktpeilung. Jede Kontaktkarte zeigt eine Lampe, die Peilung, die Klassifizierung und einen Balken für den Störabstand; ein Klick wählt den Kontakt und richtet das Horchen auf ihn.
 
-Maus: Die Tastenchips unter den Karten wirken auf den gewählten Kontakt wie ihre Tasten: `C` klassifizieren, `T` TMA, `G` Freigabe an die OPZ, `M` Ziel, und `Y`/`Shift+Y` bringen das Schleppsonar und das VDS aus oder holen sie ein (auf dem U-Boot nur `C`, `T` und `M`). Der Remote-Crew-Browser zeigt dieselbe Rose neben seinen Wasserfällen.
+Maus: Die Tastenchips unter den Karten wirken auf den gewählten Kontakt wie ihre Tasten: `C` klassifizieren, `T` TMA, `G` Freigabe an die OPZ, `M` Ziel, und `Y`/`Umschalt+Y` bringen das Schleppsonar und das VDS aus oder holen sie ein (auf dem U-Boot nur `C`, `T` und `M`). Der Remote-Crew-Browser zeigt dieselbe Rose neben seinen Wasserfällen.
 
 ### BROADBAND-Wasserfall {#sonar-broadband}
 
@@ -46,7 +46,7 @@ Maus: Die Tastenchips unter den Karten wirken auf den gewählten Kontakt wie ihr
             stehender schwacher Kontakt
 ```
 
-Neueste Daten stehen oben. Eine gerade senkrechte Spur ist ein Kontakt mit stehender Peilung; eine schräge Spur zeigt Peilungswanderung. Die Historie umfasst 20 s Feindaten plus 4 Minuten Langzeithistorie (`Shift+H` wählt 25/50/100 %). Helligkeit ist relativer Empfangspegel, keine Entfernung.
+Neueste Daten stehen oben. Eine gerade senkrechte Spur ist ein Kontakt mit stehender Peilung; eine schräge Spur zeigt Peilungswanderung. Die Historie umfasst 20 s Feindaten plus 4 Minuten Langzeithistorie (`Umschalt+H` wählt 25/50/100 %). Helligkeit ist relativer Empfangspegel, keine Entfernung.
 
 ### LOFAR {#sonar-lofar}
 
@@ -146,7 +146,7 @@ Gefechtslage:
 
 ## Tipps für Profis {#sonar-tips}
 
-- Verstärkung (`I`/`O`) ändert nur Anzeige und Audio, nicht die Ortung. Schwarzwert (`Ctrl+I`/`Ctrl+O`) und Kontrast (`Shift+I`/`Shift+O`) heben schwache Spuren hervor; `Shift+C` wechselt die Phosphorfarbe.
+- Verstärkung (`I`/`O`) ändert nur Anzeige und Audio, nicht die Ortung. Schwarzwert (`Strg+I`/`Strg+O`) und Kontrast (`Umschalt+I`/`Umschalt+O`) heben schwache Spuren hervor; `Umschalt+C` wechselt die Phosphorfarbe.
 - `D` oder `A`/`B`/`H` wählen Breitband-, gefiltertes oder Überlagerungs-Abhören. Überlagerung verschiebt das tiefe Band auf etwa 700 Hz, damit tiefe Töne hörbar werden.
 - Das Abhör-Audio läuft etwa anderthalb Sekunden hinter der Anzeige (Remote-Crew-Browser etwa zwei Sekunden), damit es auch unter Last nicht aussetzt. Nach dem Schwenken der Abhörpeilung geht der alte Strahl nach dieser Verzögerung in den neuen über; der Ton bricht nicht ab.
 - TAS unter die gemessene Schicht legen, um tiefe Ziele zu hören; das HMS für flache Ziele nutzen. Beide Arrays arbeiten parallel.
@@ -154,7 +154,7 @@ Gefechtslage:
 - Weichen TAS und HMS um 9 Grad oder mehr ab, den Kontakt als möglichen Geist behandeln (die Anzeige markiert ihn) und durch eine Wende klären.
 - Die Schleppantenne ist eine Linie: sie kann eine Peilung nicht von ihrem Spiegelbild zum Kabel unterscheiden. Ein nur auf der TAS gehörter Kontakt wird als "TAS links/rechts mehrdeutig" mit Spiegelpeilung markiert und speist keine TMA; die Anzeige zeigt die von Ihnen gewählte Seite (Standard Steuerbord). 20 Grad drehen und beide Spuren beobachten: die echte bleibt stetig, die Geisterspur springt (der Status lautet dann "Wende gefahren - Spuren vergleichen"). Auf der Breitband- oder Fusionsseite zeigt `X` die andere Seite, `Umschalt+X` bestätigt die angezeigte; nichts wird für Sie entschieden. Eine falsch bestätigte Seite bleibt gespiegelt (die TMA-Residuen zeigen es; `X` öffnet die Wahl wieder). Eine Peilung des Rumpfsonars löst die Seite durch Messung auf. Peilungen zu den Kabelenden (Endfire) sind zudem ungenauer als querab.
 - `Umschalt+F` wählt das DEMON-Trägerband (200-800, 400-1400 oder 1000-2000 Hz): das Band suchen, in dem das Kavitationsrauschen am stärksten ist. `Strg+F` stellt den Überlagerungsversatz (400/700/1000/1200 Hz) zum Abhören tiefer Töne ein.
-- Im Kontaktanalysator (`F8`) ordnet `Enter` bei gewähltem Kontakt das angezeigte Katalogprofil diesem Kontakt zu, `Umschalt+Enter` löscht die Zuordnung. Die Zuordnung ist Ihr Vermerk: sie erscheint in der Kontaktliste, wird gespeichert und ändert nie die Klassifizierung oder die Waffensperren des Kontakts.
+- Im Kontaktanalysator (`F8`) ordnet `Eingabe` bei gewähltem Kontakt das angezeigte Katalogprofil diesem Kontakt zu, `Umschalt+Eingabe` löscht die Zuordnung. Die Zuordnung ist Ihr Vermerk: sie erscheint in der Kontaktliste, wird gespeichert und ändert nie die Klassifizierung oder die Waffensperren des Kontakts.
 - Ein Kontakt geht 120 s nach der letzten Ortung verloren. Schwache Kontakte weiter verfolgen oder per Ping wieder erfassen.
 - Wracks liefern echte Echos ohne Doppler. Ein U-Boot, das still neben einem kartierten Wrack auf Grund liegt, versteckt sich vor einem CW-Ping in dessen Echo (750 m Entfernungszelle); ein LFM-Ping löst etwa 8 m auf und kann U-Boot und Wrack trennen. Jedes Wrack, das der Gegner erreichen konnte, ist verdächtig.
 - Der Bathythermograph (`E`) misst bis zum Grund, höchstens 1500 m. Erst nach einer Messung zeigt die Wetter- & Sonar-Analyse (`0`) die Schicht, die Schattenzone darunter und einen SOFAR-Kanal.

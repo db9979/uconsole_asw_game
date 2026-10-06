@@ -142,9 +142,22 @@ def choose(game, call) -> None:
 def close_button(screen, panel_rect, key: int = pygame.K_ESCAPE) -> pygame.Rect:
     """A visible close box in the top right corner of an overlay panel; a
     click presses ``key`` (``Esc``) in the current pointer layer."""
+    rect = draw_close_box(screen, panel_rect)
+    pointer.add_key(rect, key)
+    return rect
+
+
+def close_rect(panel_rect) -> pygame.Rect:
+    """Where :func:`close_button` sits in ``panel_rect`` (top right)."""
     panel_rect = pygame.Rect(panel_rect)
-    rect = pygame.Rect(panel_rect.right - CLOSE_SIZE - 8, panel_rect.y + 8,
+    return pygame.Rect(panel_rect.right - CLOSE_SIZE - 8, panel_rect.y + 8,
                        CLOSE_SIZE, CLOSE_SIZE)
+
+
+def draw_close_box(screen, panel_rect) -> pygame.Rect:
+    """Draw the close box only (views with their own mouse handling, such
+    as the editors, take its click themselves); returns its rectangle."""
+    rect = close_rect(panel_rect)
     layout.record_geometry("switch", rect, "close")
     pygame.draw.rect(screen, theme.c("raised"), rect, border_radius=4)
     pygame.draw.rect(screen, theme.c("line_strong"), rect, 1, border_radius=4)
@@ -152,5 +165,4 @@ def close_button(screen, panel_rect, key: int = pygame.K_ESCAPE) -> pygame.Rect:
     color = config.COLOR_TEXT
     pygame.draw.line(screen, color, inset.topleft, (inset.right - 1, inset.bottom - 1), 2)
     pygame.draw.line(screen, color, (inset.x, inset.bottom - 1), (inset.right - 1, inset.y), 2)
-    pointer.add_key(rect, key)
     return rect

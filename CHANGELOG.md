@@ -4,6 +4,20 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.251
+
+Release 1.3.251 adds new content and comfort. The daily mission is now a
+short mission picked from the date for each side, and the game remembers
+the mission length you chose; new players start on short missions.
+Training sits second in the main menu, ticks finished lessons, selects the
+next one, and N on the end panel starts it. Three new frigate lessons
+cover air defence against an inbound missile, ESM against a merchant's
+radar and torpedo defence with the Nixie. When the crew assist runs the
+U-boat, it now takes a good TMA solution as its fix and attacks with it.
+Both end panels say in one line what decided the mission, and the logbook
+shows a ribbon for each scenario won, also in the browser. Saves are v53;
+v38 to v52 saves still load.
+
 ## 1.3.250
 
 Release 1.3.250 makes the voice speak more cleanly. Temperatures are said

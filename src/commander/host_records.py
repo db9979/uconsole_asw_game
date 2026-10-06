@@ -1,9 +1,9 @@
 """The service record and the training lessons for the browser's host surface.
 
 The solo browser (or the server-mode leader) reads the logbook (``logbook.json``:
-missions, best scores, awards, what the enemy learnt) and the list of
-training lessons through the host view, as the uConsole's main menu shows
-them. Only the player's own record and fixed lesson names go out: no save
+missions, best scores, awards, a ribbon per scenario, what the enemy learnt)
+and the list of training lessons with their tick marks through the host view,
+as the uConsole's main menu shows them. Only the player's own record and fixed lesson names go out: no save
 data, no mission state. The logbook file is re-read only when its size or
 modification time changes (checked with the save slots, every 2 s).
 """
@@ -16,6 +16,7 @@ from src.core import daily, habits, logbook, training
 
 LOGBOOK_BEST_MAX = 12
 LOGBOOK_RECENT_MAX = 8
+LOGBOOK_RIBBONS_MAX = 32
 LOGBOOK_SIDES = ("frigate", "boat")
 LOGBOOK_MARKS = ("advisor", "experimental")
 
@@ -50,7 +51,9 @@ def _side(book, side: str, learns: bool) -> dict:
                      minutes=int(row["minutes"]),
                      marks=[mark for mark in LOGBOOK_MARKS if row.get(mark)])
                 for row in reversed(rows)],
-        known=list(habits.known(book.entries, side)) if learns else [])
+        known=list(habits.known(book.entries, side)) if learns else [],
+        ribbons=[dict(scenario=str(scenario)[:64], won=bool(won))
+                 for scenario, won in book.ribbons(side)][:LOGBOOK_RIBBONS_MAX])
 
 
 def logbook_view(book, learns: bool) -> dict:
@@ -59,6 +62,10 @@ def logbook_view(book, learns: bool) -> dict:
                 sides={side: _side(book, side, bool(learns)) for side in LOGBOOK_SIDES})
 
 
-def lessons_view() -> list:
-    """The training lessons in menu order, each with the side it teaches."""
-    return [dict(key=lesson, side=training.side_of(lesson)) for lesson in training.LESSONS]
+def lessons_view(done=()) -> list:
+    """The training lessons in menu order, each with the side it teaches,
+    whether it was finished once and whether it is the next one to take."""
+    done = training.valid_done(done)
+    upcoming = training.next_lesson(done)
+    return [dict(key=lesson, side=training.side_of(lesson), done=lesson in done,
+                 next=lesson == upcoming) for lesson in training.LESSONS]

@@ -4,6 +4,21 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.251
+
+Version 1.3.251 bringt neue Inhalte und mehr Komfort. Der Tageseinsatz ist
+jetzt ein Kurzeinsatz, je Seite nach dem Datum gewählt, und das Spiel
+merkt sich die gewählte Einsatzlänge; neue Spieler beginnen mit
+Kurzeinsätzen. Die Ausbildung steht an zweiter Stelle im Hauptmenü, hakt
+abgeschlossene Lektionen ab, wählt die nächste vor, und N auf der Endtafel
+startet sie. Drei neue Fregatten-Lektionen üben die Luftabwehr gegen einen
+anfliegenden Flugkörper, ESM an einem Frachterradar und die Torpedoabwehr
+mit dem Nixie. Führt die Crew-Unterstützung das U-Boot, übernimmt sie
+jetzt eine gute TMA-Lösung als Ortung und greift damit an. Beide
+Endtafeln nennen in einer Zeile, was den Einsatz entschieden hat, und das
+Einsatzbuch zeigt ein Band je gewonnenem Szenario, auch im Browser.
+Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+
 ## 1.3.250
 
 Version 1.3.250 lässt die Stimme sauberer sprechen. Temperaturen werden

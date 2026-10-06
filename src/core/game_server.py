@@ -195,7 +195,7 @@ class ServerModeMixin:
         self.world_mode = daily.WORLD_MODE
         # The daily mission is the same for everyone: no start choices.
         self.start_weather = self.start_time = "random"
-        self.start_length = "normal"
+        self.start_length = daily.LENGTH
         self._start_menu_mission()
 
     def _start_lobby_campaign(self, room) -> bool:

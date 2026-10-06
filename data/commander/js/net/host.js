@@ -35,7 +35,7 @@ const NAME = /^[a-z][a-z0-9_]{0,23}$/;
 const shortText = (value, limit) => typeof value === "string" && value.length <= limit;
 const count = (value) => Number.isSafeInteger(value) && value >= 0;
 function validLogbookSide(side) {
-  return exactKeys(side, ["missions", "wins", "best", "awards", "recent", "known"]) &&
+  return exactKeys(side, ["missions", "wins", "best", "awards", "recent", "known", "ribbons"]) &&
     count(side.missions) && count(side.wins) &&
     boundedArray(side.best, 12) && side.best.every((row) => exactKeys(row, ["scenario", "score"]) &&
       shortText(row.scenario, 64) && Number.isSafeInteger(row.score)) &&
@@ -46,7 +46,9 @@ function validLogbookSide(side) {
       shortText(row.date, 16) && shortText(row.scenario, 64) && NAME.test(row.level) &&
       typeof row.won === "boolean" && Number.isSafeInteger(row.score) && count(row.minutes) &&
       boundedArray(row.marks, 2) && row.marks.every((mark) => ["advisor", "experimental"].includes(mark))) &&
-    boundedArray(side.known, 8) && side.known.every((habit) => NAME.test(habit));
+    boundedArray(side.known, 8) && side.known.every((habit) => NAME.test(habit)) &&
+    boundedArray(side.ribbons, 32) && side.ribbons.every((row) => exactKeys(row, ["scenario", "won"]) &&
+      shortText(row.scenario, 64) && typeof row.won === "boolean");
 }
 export function validLogbook(value) {
   if (value === null) return true;
@@ -55,7 +57,8 @@ export function validLogbook(value) {
     validLogbookSide(value.sides.boat);
 }
 const validLessons = (value) => boundedArray(value, 16) && value.every((row) =>
-  exactKeys(row, ["key", "side"]) && NAME.test(row.key) && SIDES.includes(row.side));
+  exactKeys(row, ["key", "side", "done", "next"]) && NAME.test(row.key) && SIDES.includes(row.side) &&
+  typeof row.done === "boolean" && typeof row.next === "boolean");
 // Server mode: the leader's lobby choices (null outside the lobby).
 function validLeaderLobby(value) {
   if (value === null) return true;

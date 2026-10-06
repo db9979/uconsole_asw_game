@@ -40,6 +40,7 @@ _GLOBAL_HELP = (
         ("help.key.plot_keys", "help.global.plot_keys"),
         ("Esc", "help.cancel"),
         ("R / M", "help.global.mission_end"), ("D", "help.global.debrief"),
+        ("N", "help.global.next_lesson"),
     ],
 )
 
@@ -268,6 +269,7 @@ _UBOOT_GLOBAL_HELP = (
         ("Alt+Enter", "help.fullscreen"),
         ("Esc", "help.cancel"),
         ("R / M", "help.global.mission_end"), ("D", "help.global.debrief"),
+        ("N", "help.global.next_lesson"),
     ],
 )
 

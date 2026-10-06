@@ -1106,6 +1106,7 @@ def _host_new_game(game, params):
         game.start_time = params["time"]
     if "length" in params:
         game.start_length = params["length"]
+        game.remember_length(params["length"])
     return game.start_new_game(params["scenario"], params["world_mode"],
                                params.get("difficulty"), params.get("seed"))
 

@@ -24,6 +24,42 @@ LOGBOOK_HINT_TOKENS = (("←/→", "←/→"), ("Tab", pygame.K_TAB), ("A:", pyg
                        ("B:", pygame.K_b), ("L:", pygame.K_l), ("Enter/Esc", "Enter/Esc"))
 
 
+# A ribbon per scenario of the side, right-aligned on the totals line.
+RIBBON_W, RIBBON_H, RIBBON_STEP = 34, 20, 38
+# Theme tokens the won ribbons take in turn (a ribbon's colour is its scenario's).
+RIBBON_COLORS = ("COLOR_OK", "COLOR_WARN", "COLOR_ESM", "COLOR_HFDF", "COLOR_FLIGHT",
+                 "COLOR_CONTACT_WARSHIP", "COLOR_CONTACT_UBOOT", "COLOR_PLOT")
+
+
+def ribbon_number(scenario: str) -> str:
+    """The scenario's number, e.g. ``s7_geleitzug`` -> ``7``."""
+    head = scenario.partition("_")[0]
+    return head[1:] if head[1:].isdigit() else "?"
+
+
+def draw_ribbons(surface, ribbons, right: int, y: int) -> list:
+    """Draw the rack (``[(scenario, won)]``) ending at ``right``; returns the
+    ribbon rects (won: the scenario's colour with two light stripes and its
+    number; not yet won: a dim outline)."""
+    rects = []
+    x = right - RIBBON_STEP * len(ribbons) + (RIBBON_STEP - RIBBON_W)
+    for index, (scenario, won) in enumerate(ribbons):
+        rect = pygame.Rect(x + index * RIBBON_STEP, y, RIBBON_W, RIBBON_H)
+        rects.append(rect)
+        if won:
+            pygame.draw.rect(surface, getattr(config, RIBBON_COLORS[index % len(RIBBON_COLORS)]),
+                             rect)
+            for stripe in (rect.x + 4, rect.right - 7):
+                pygame.draw.rect(surface, config.COLOR_TEXT, (stripe, rect.y, 3, rect.h))
+            color = config.COLOR_BG
+        else:
+            pygame.draw.rect(surface, config.COLOR_TEXT_DIM, rect, 1)
+            color = config.COLOR_TEXT_DIM
+        layout.blit_line(surface, raw_text(ribbon_number(scenario)), rect, color, size=16,
+                         align="center")
+    return rects
+
+
 def _events(recorder, kind: str) -> int:
     if recorder is None:
         return 0
@@ -162,8 +198,13 @@ class LogbookMixin:
         center(self.tr("logbook.title." + side), 150, color=config.COLOR_WARN)
         x, w = 180, 920
         missions, wins = book.totals(side)
-        layout.blit_line(s, message("logbook.totals", missions=missions, wins=wins),
-                         (x, 180, w, 26), config.COLOR_TEXT, size=20)
+        ribbons = book.ribbons(side)
+        layout.blit_line(s, message("logbook.totals_ribbons", totals=message(
+            "logbook.totals", missions=missions, wins=wins), won=sum(1 for _key, won in ribbons
+                                                                  if won), total=len(ribbons)),
+                         (x, 180, w - RIBBON_STEP * len(ribbons) - 12, 26),
+                         config.COLOR_TEXT, size=20)
+        draw_ribbons(s, ribbons, x + w, 183)
         # Best scores per scenario.
         layout.blit_line(s, "logbook.best", (x, 214, 440, 24), config.COLOR_TEXT_DIM, size=18)
         best = sorted((key.partition(":")[2], value) for key, value in book.best.items()

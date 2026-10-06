@@ -518,6 +518,14 @@ class MissionBridgeMixin:
         current = getattr(self, f"start_{kind}", choices[0])
         index = choices.index(current) if current in choices else 0
         setattr(self, f"start_{kind}", choices[(index + step) % len(choices)])
+        if kind == "length":
+            self.remember_length(self.start_length)
+
+    def remember_length(self, length: str) -> None:
+        """The player's mission length stays chosen for the next launch."""
+        if (length in config.START_LENGTH_CHOICES
+                and getattr(self.preferences, "mission_length", None) != length):
+            self._set_preference("mission_length", length)
 
     def start_choice_text(self, kind: str):
         """'Weather: rain' / 'Time of day: night' / 'Length: short' for a menu row."""

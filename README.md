@@ -10,18 +10,19 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.250**
+Current release: **1.3.251**
 
-Release 1.3.250 makes the voice speak more cleanly. Temperatures are said
-in full (-2 °C as "minus two degrees Celsius"), as are signs, ranges and
-symbols (± as "plus or minus", 0–360 as "zero to three six zero", & as
-"and"); short capital abbreviations such as HQ are spelled, words in
-capitals are said as words, and symbols like |, · or arrows become a short
-pause instead of being read out. The voice is fixed to the game's language,
-German or English: the speaking style says so more firmly, and speech
-services with a language field (such as Qwen-TTS) are sent it, so a
-sentence no longer starts in another language or accent. Keys and saves
-are unchanged (v53; v38 to v52 saves still load).
+Release 1.3.251 adds new content and comfort. The daily mission is now a
+short mission picked from the date for each side, and the game remembers
+the mission length you chose; new players start on short missions.
+Training sits second in the main menu, ticks finished lessons, selects the
+next one, and N on the end panel starts it. Three new frigate lessons
+cover air defence against an inbound missile, ESM against a merchant's
+radar and torpedo defence with the Nixie. When the crew assist runs the
+U-boat, it now takes a good TMA solution as its fix and attacks with it.
+Both end panels say in one line what decided the mission, and the logbook
+shows a ribbon for each scenario won, also in the browser. Saves are v53;
+v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

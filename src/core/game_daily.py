@@ -1,9 +1,9 @@
 """The daily mission in the game: its main-menu page and its logbook line.
 
 ``src/core/daily.py`` picks the day's mission per side.  The page shows both
-sides' missions of the day with today's best score; Enter starts the chosen
-side's mission with the day's seed in the day's real sea area and the normal
-length.
+sides' missions of the day with their length and today's best score; Enter
+starts the chosen side's mission with the day's seed in the day's real sea
+area as a short mission (its short variant).
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ class DailyMixin:
         self.world_mode = daily.WORLD_MODE
         self.start_weather = "random"
         self.start_time = "random"
-        self.start_length = "normal"
+        self.start_length = daily.LENGTH
         self._start_menu_mission()
 
     def _handle_daily_key(self, key) -> None:
@@ -88,7 +88,8 @@ class DailyMixin:
             scenario = daily.scenario_for(day, side)
             title = self.tr("scenario." + config.SCENARIO_NAMES[scenario] + ".title")
             center(message("daily.row", marker="► " if selected else "  ",
-                           side=self.tr("daily.side." + side), title=title),
+                           side=self.tr("daily.side." + side), title=title,
+                           minutes=daily.minutes(scenario)),
                    y, color=config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM)
             best = book.best.get(f"{logbook_side(side)}:{daily.best_key(day)}")
             layout.blit_line(self.screen, message("daily.best", score=best) if best
@@ -104,6 +105,6 @@ class DailyMixin:
                           "uboot" if side == "boat" else "frigate")
         if (day is None or self.custom_mission_definition is not None
                 or self.world_mode != daily.WORLD_MODE
-                or getattr(self, "start_length", "normal") != "normal"):
+                or not getattr(self, "short_mission", False)):
             return None
         return book.record_daily(side, daily.best_key(day), won, score, daily.KEEP_DAYS)

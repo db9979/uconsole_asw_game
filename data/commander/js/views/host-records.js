@@ -27,7 +27,17 @@ export function renderLogbook() {
   $("logbook-title").textContent = t(`game.logbook.title.${logbookSide}`);
   for (const button of $("logbook-dialog").querySelectorAll(".logbook-sides button"))
     button.setAttribute("aria-pressed", String(button.dataset.side === logbookSide));
-  $("logbook-totals").textContent = t("game.logbook.totals", {missions: side.missions, wins: side.wins});
+  const won = side.ribbons.filter((row) => row.won).length;
+  $("logbook-totals").textContent = t("game.logbook.totals_ribbons", {
+    totals: t("game.logbook.totals", {missions: side.missions, wins: side.wins}), won, total: side.ribbons.length});
+  $("logbook-ribbons").replaceChildren(...side.ribbons.map((row) => {
+    const label = t("game.logbook.ribbon", {scenario: scenarioLabel(row.scenario),
+      state: t(row.won ? "game.logbook.ribbon_won" : "game.logbook.ribbon_open")});
+    const item = node("li", row.scenario.split("_")[0].replace(/^s/, ""), row.won ? "won" : "open");
+    item.title = label;
+    item.setAttribute("aria-label", label);
+    return item;
+  }));
   listOrNone($("logbook-awards"), side.awards.map((row) => {
     const award = t(`game.logbook.award.${row.award}`);
     const item = node("li", row.date === null ? t("game.logbook.award_open", {award})
@@ -83,18 +93,23 @@ function openTraining() {
   if (!S.hostView || S.session?.host?.leader) return;
   $("training-list").replaceChildren(...S.hostView.lessons.map((lesson, index) => {
     const title = t(`game.training.lesson.${lesson.key}`);
-    const button = node("button", undefined, "training-lesson");
+    const button = node("button", undefined, `training-lesson${lesson.done ? " training-done" : ""}${lesson.next ? " training-next" : ""}`);
     button.type = "button";
     button.dataset.lesson = lesson.key;
-    button.append(node("strong", `${index + 1}. ${lesson.side === "uboot" ? t("game.training.boat_title", {title}) : title}`),
+    const name = lesson.side === "uboot" ? t("game.training.boat_title", {title}) : title;
+    button.append(node("strong", `${index + 1}. ${lesson.next ? t("game.training.title_next", {title: name})
+      : lesson.done ? t("game.training.title_done", {title: name}) : name}`),
       node("small", t(`game.training.lesson_note.${lesson.key}`)));
     button.addEventListener("click", () => startLesson(lesson));
     const item = node("li");
     item.append(button);
     return item;
   }));
+  $("training-progress").textContent = t("game.training.progress", {
+    done: S.hostView.lessons.filter((lesson) => lesson.done).length, lessons: S.hostView.lessons.length});
   emit("host");
-  openDialog($("training-dialog"), $("training-list").querySelector("button:not(:disabled)"));
+  openDialog($("training-dialog"), $("training-list").querySelector(".training-next:not(:disabled)") ||
+    $("training-list").querySelector("button:not(:disabled)"));
 }
 
 export function init() {

@@ -1,4 +1,4 @@
-# U-Jagd 1.3.247 - Stations- und Tastenkürzel
+# U-Jagd 1.3.251 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -43,6 +43,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
 | `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×, Pos1/Ende Anfang/Ende, B Bericht des Sprachmodells, wenn eingeschaltet) |
+| `N` | Nach einer abgeschlossenen Lektion: die nächste Lektion starten |
 
 ## 1 Brücke
 
@@ -289,6 +290,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
 | `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×, Pos1/Ende Anfang/Ende, B Bericht des Sprachmodells, wenn eingeschaltet) |
+| `N` | Nach einer abgeschlossenen Lektion: die nächste Lektion starten |
 
 ## U-Boot spielen (uConsole)
 

@@ -10,20 +10,20 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.250**
+Aktuelle Version: **1.3.251**
 
-Version 1.3.250 lässt die Stimme sauberer sprechen. Temperaturen werden
-ausgesprochen (-2 °C als „minus zwo Grad Celsius“), ebenso Vorzeichen,
-Bereiche und Zeichen (± als „plus minus“, 0–360 als „null bis drei sechs
-null“, & als „und“); kurze Kürzel in Großbuchstaben wie HQ werden
-buchstabiert, Wörter in Großschrift normal gesprochen, und Zeichen wie |,
-· oder Pfeile werden zu einer kurzen Pause, statt vorgelesen zu werden.
-Die Stimme ist fest auf die Spielsprache eingestellt, Deutsch oder
-Englisch: Die Sprechanweisung sagt das deutlicher, und Sprachdienste mit
-einem Feld für die Sprache (etwa Qwen-TTS) bekommen sie mitgeschickt,
-damit kein Satz mehr in einer anderen Sprache oder mit fremdem Akzent
-beginnt. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
-v52 laden weiter).
+Version 1.3.251 bringt neue Inhalte und mehr Komfort. Der Tageseinsatz ist
+jetzt ein Kurzeinsatz, je Seite nach dem Datum gewählt, und das Spiel
+merkt sich die gewählte Einsatzlänge; neue Spieler beginnen mit
+Kurzeinsätzen. Die Ausbildung steht an zweiter Stelle im Hauptmenü, hakt
+abgeschlossene Lektionen ab, wählt die nächste vor, und N auf der Endtafel
+startet sie. Drei neue Fregatten-Lektionen üben die Luftabwehr gegen einen
+anfliegenden Flugkörper, ESM an einem Frachterradar und die Torpedoabwehr
+mit dem Nixie. Führt die Crew-Unterstützung das U-Boot, übernimmt sie
+jetzt eine gute TMA-Lösung als Ortung und greift damit an. Beide
+Endtafeln nennen in einer Zeile, was den Einsatz entschieden hat, und das
+Einsatzbuch zeigt ein Band je gewonnenem Szenario, auch im Browser.
+Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

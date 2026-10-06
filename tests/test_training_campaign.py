@@ -30,9 +30,11 @@ def test_every_lesson_is_a_valid_mission_and_starts(lesson):
     game = _menu_game()
     assert game.start_training(lesson)
     assert game.training.lesson == lesson and game.training.step == 0
-    boat = game.subs[0]
-    hostile = lesson == "attack" or lesson in training.BOAT_LESSONS
-    assert boat.side == ("hostile" if hostile else "neutral")
+    if lesson in ("air", "esm", "torpedo"):
+        assert not game.subs                         # no submarine in these lessons
+    else:
+        hostile = lesson == "attack" or lesson in training.BOAT_LESSONS
+        assert game.subs[0].side == ("hostile" if hostile else "neutral")
     assert game.local_side == training.side_of(lesson)
     assert (game.opfor is not None) is (lesson in training.BOAT_LESSONS)
     game.draw()
@@ -198,3 +200,63 @@ def test_campaign_menu_new_port_and_sail(tmp_path, monkeypatch):
     assert game._campaign_briefing is None
     _key(game, pygame.K_2)
     assert game.campaign.missions == 1 and not game.campaign.port
+
+
+def test_lesson_order_helpers():
+    assert training.next_lesson(()) == training.LESSONS[0]
+    assert training.next_lesson(training.LESSONS[:3]) == training.LESSONS[3]
+    assert training.next_lesson(training.LESSONS) is None
+    assert training.following(training.LESSONS[0]) == training.LESSONS[1]
+    assert training.following(training.LESSONS[-1]) is None
+    assert training.valid_done(["air", "nope", "sonar", "air"]) == ("sonar", "air")
+    assert training.valid_done("sonar") == ()
+    assert {"air", "esm", "torpedo"} <= set(training.FRIGATE_LESSONS)
+
+
+def test_training_page_opens_on_the_next_lesson_and_marks_the_done_ones():
+    game = _menu_game()
+    game._set_preference("lessons_done", ("sonar", "tma"))
+    game.open_training_menu()
+    assert game.menu_screen == "training"
+    assert training.LESSONS[game.menu_sel] == "attack"
+    game.draw()
+
+
+def test_a_finished_lesson_is_remembered_and_n_starts_the_next(monkeypatch):
+    game = _menu_game()
+    game.start_training("sonar")
+    coach = game.training
+    game.station = Station.SONAR
+    contact = Contact(1, game.subs[0].id, "passiv", "sub")
+    monkeypatch.setattr(game.sonar, "active_contacts", lambda: [contact])
+    game._update_training()
+    game.sonar.focus_locked = True
+    contact.player_class = "U_BOOT"
+    game._update_training()
+    assert coach.done and game.game_over
+    assert "sonar" in game.lessons_done()
+    keys = game.end_keys((("R", "a"), ("M", "b"), ("Q", "c")))
+    assert ("N", "end.key.next_lesson") in keys
+    game.draw()
+    _key(game, pygame.K_n)
+    assert game.training.lesson == training.following("sonar") and not game.game_over
+
+
+def test_the_air_lesson_launches_a_missile_at_the_ship():
+    game = _menu_game()
+    game.start_training("air")
+    assert not training.missiles_alive(game)
+    for _ in range(int(training.MISSILE_FIRST_S / 0.5) + 4):
+        game.update(0.5)
+    assert training.missiles_alive(game)
+    assert game.training.missile_alive
+
+
+def test_a_hit_in_the_torpedo_lesson_ends_it_as_lost():
+    game = _menu_game()
+    game.start_training("torpedo")
+    assert game.enemy_torpedoes
+    game.damage.total = 10.0
+    game._update_training()
+    assert game.game_over and game.mission_result != "SIEG"
+    assert "torpedo" not in game.lessons_done()

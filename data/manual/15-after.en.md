@@ -2,7 +2,7 @@
 
 ## End panel {#after-end}
 
-When a mission ends, the end panel names the result, the score with the realism level's factor, a new best score and new awards. `R` restarts the mission with the same seed, `M` returns to the main menu and `D` opens the debrief. A mission started from the multiplayer lobby returns everyone to the lobby.
+When a mission ends, the end panel names the result, the score with the realism level's factor, a new best score and new awards. Below the result a line says what decided the mission, read from the debrief of the side the uConsole played: for the frigate when contact came and which shot sank the submarine, the bearing of the torpedo that sank the ship, or the longest missed chance (minutes, range, above or below the layer); for the submarine the shot that sank the frigate, the torpedoes at the convoy, how long and how close the frigate held it, or the weapon that sank it. Lessons have no such line. The browser's debrief shows the same line above its events. `R` restarts the mission with the same seed, `M` returns to the main menu and `D` opens the debrief; after a finished lesson `N` starts the next one. A mission started from the multiplayer lobby returns everyone to the lobby.
 
 ## Debrief {#after-debrief}
 
@@ -17,6 +17,8 @@ Beside the chart it lists the time of the first contact, first fix and classific
 ## Logbook and awards {#after-logbook}
 
 **Logbook** (main menu): every finished mission (never a lesson) for the side the uConsole played, with date, mission, realism level, result, score and minutes; the best score per mission and five awards per side: first victory, one shot one kill (the enemy sunk with a single weapon), unscathed (no damage), never fired at, and realist (a victory on the Realistic level).
+
+Beside the totals hangs a **ribbon rack**: one ribbon per scenario of the side (free patrols aside), numbered as in the scenario list. A ribbon is in colour once that scenario was won without the executive officer's help or the experimental opponent (short or normal length), else an empty outline; the totals line counts the ribbons won. The browser's logbook shows the same rack.
 
 The frigate files its mission score; the submarine counts its outcome (sinking the frigate 1500, the supply ship 1300, the convoy 1200, swimmers landed or agents picked up 1100, breakthrough, strait, report, home port or listening post 1000, escape or trail shaken off 800, surviving 600) plus up to 500 for an undamaged submarine and 100 per torpedo left, times the level's factor.
 

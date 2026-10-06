@@ -77,8 +77,9 @@ def test_frigate_and_submarine_open_training_with_the_lesson_selected(choice_key
     assert MAIN_MENU_ENTRIES[game.main_menu_sel] == "training"
 
 
-def test_submarine_choice_is_lesson_five():
-    assert training.LESSONS.index(training.BOAT_LESSONS[0]) == 4
+def test_submarine_choice_is_lesson_eight():
+    # After the frigate's air, ESM and torpedo lessons (welcome.submarine.note).
+    assert training.LESSONS.index(training.BOAT_LESSONS[0]) == 7
 
 
 def test_arrow_keys_and_enter_choose_remote_crew(monkeypatch):

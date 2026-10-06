@@ -16,6 +16,7 @@ def test_the_day_fixes_scenario_and_seed_per_side():
         pool = daily.scenarios(side)
         assert pool and all(config.SCENARIOS[key]["difficulty"] is not None for key in pool)
         assert all(not key.startswith("frei_") for key in pool)
+        assert all(daily.has_short_variant(key) and daily.minutes(key) > 0 for key in pool)
         assert daily.scenario_for(DAY, side) in pool
         assert daily.scenario_for(DAY, side) == daily.scenario_for(DAY, side)
         assert 1 <= daily.seed_for(DAY, side) < 1_000_000_000
@@ -82,12 +83,13 @@ def test_the_daily_mission_hands_back_the_players_world_choice(monkeypatch):
     game = Game(seed=5, start_menu=True, audio_enabled=False, language="en")
     game.world_mode = "fixed" if daily.WORLD_MODE != "fixed" else "procedural"
     chosen = game.world_mode
-    game.start_weather, game.start_length = "storm", "short"
+    game.start_weather, game.start_length = "storm", "normal"
     game.start_daily("frigate")
-    assert game.world_mode == daily.WORLD_MODE and game.start_length == "normal"
+    assert game.world_mode == daily.WORLD_MODE and game.start_length == daily.LENGTH == "short"
+    assert game.short_mission
     game._return_to_main_menu()
     assert game.world_mode == chosen
-    assert (game.start_weather, game.start_length) == ("storm", "short")
+    assert (game.start_weather, game.start_length) == ("storm", "normal")
     # A later normal return leaves the choice alone.
     game.world_mode = "real_fixed"
     game._return_to_main_menu()

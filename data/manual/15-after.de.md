@@ -2,7 +2,7 @@
 
 ## Endtafel {#after-end}
 
-Endet eine Mission, nennt die Endtafel das Ergebnis, die Punkte mit dem Faktor der Realismusstufe, einen neuen Bestwert und neue Auszeichnungen. `R` startet die Mission mit demselben Seed neu, `M` führt ins Hauptmenü und `D` öffnet die Nachbesprechung. Eine Mission aus der Mehrspieler-Lobby führt alle zurück in die Lobby.
+Endet eine Mission, nennt die Endtafel das Ergebnis, die Punkte mit dem Faktor der Realismusstufe, einen neuen Bestwert und neue Auszeichnungen. Unter dem Ergebnis sagt eine Zeile, was entschieden hat, gelesen aus der Nachbesprechung der Seite, die die uConsole gespielt hat: für die Fregatte, wann der Kontakt kam und welcher Schuss das U-Boot versenkte, die Peilung des Torpedos, der das Schiff versenkte, oder die längste verpasste Chance (Minuten, Entfernung, über oder unter der Schicht); für das U-Boot der Schuss, der die Fregatte versenkte, die Torpedos auf den Geleitzug, wie lange und wie nah die Fregatte es hielt, oder die Waffe, die es versenkte. Lektionen haben keine solche Zeile. Die Nachbesprechung im Browser zeigt dieselbe Zeile über ihren Ereignissen. `R` startet die Mission mit demselben Seed neu, `M` führt ins Hauptmenü und `D` öffnet die Nachbesprechung; nach einer abgeschlossenen Lektion startet `N` die nächste. Eine Mission aus der Mehrspieler-Lobby führt alle zurück in die Lobby.
 
 ## Nachbesprechung {#after-debrief}
 
@@ -17,6 +17,8 @@ Daneben stehen die Zeit des ersten Kontakts, der ersten Ortung und der Klassifiz
 ## Einsatzbuch und Auszeichnungen {#after-logbook}
 
 **Einsatzbuch** (Hauptmenü): jede beendete Mission (nie eine Lektion) der Seite, die die uConsole gespielt hat, mit Datum, Mission, Realismusstufe, Ergebnis, Punkten und Minuten; der Bestwert je Mission und fünf Auszeichnungen je Seite: erster Sieg, ein Schuss ein Treffer (der Gegner mit einer einzigen Waffe versenkt), ohne Kratzer (kein Schaden), nie beschossen und Realist (ein Sieg auf der Stufe Realistisch).
+
+Neben den Summen hängt eine **Ordensspange**: ein Band je Szenario der Seite (ohne freie Patrouillen), nummeriert wie in der Szenarioliste. Ein Band ist farbig, sobald dieses Szenario ohne die Hilfe des Ersten Offiziers und ohne den experimentellen Gegner gewonnen wurde (kurz oder normal lang), sonst nur ein leerer Umriss; die Summenzeile zählt die gewonnenen Bänder. Das Einsatzbuch im Browser zeigt dieselbe Spange.
 
 Die Fregatte trägt ihre Missionspunkte ein; das U-Boot zählt sein Ergebnis (Fregatte versenkt 1500, Versorger 1300, Geleitzug 1200, Kampfschwimmer abgesetzt oder Agenten abgeholt 1100, Durchbruch, Meerenge, Meldung, Heimathafen oder Lauschposten 1000, Entkommen oder Fühlung abgeschüttelt 800, Überleben 600) plus bis zu 500 für ein unbeschädigtes U-Boot und 100 je übrigem Torpedo, mal dem Faktor der Stufe.
 

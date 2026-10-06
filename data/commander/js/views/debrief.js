@@ -41,7 +41,9 @@ function validFrame(frame) {
     boundedArray(frame.buoys, 24) && frame.buoys.every(point);
 }
 export function validDebrief(value) {
-  return exactKeys(value, ["protocol", "available", "session", "epoch", "side", "frames", "events", "speeds"]) &&
+  return exactKeys(value, ["protocol", "available", "session", "epoch", "side", "frames", "events", "speeds", "decisive"]) &&
+    (value.decisive === null || exactKeys(value.decisive, ["en", "de"]) &&
+      ["en", "de"].every((language) => typeof value.decisive[language] === "string" && value.decisive[language].length <= 240)) &&
     value.protocol === 2 && value.available === true && ["frigate", "uboot"].includes(value.side) &&
     boundedArray(value.frames, 512) && value.frames.every(validFrame) &&
     value.frames.every((frame, index, frames) => index === 0 || frame.t >= frames[index - 1].t) &&
@@ -185,6 +187,9 @@ function renderControls(frame) {
   const scrub = $("debrief-scrub");
   scrub.max = String(Math.max(1, Math.round(end)));
   if (document.activeElement !== scrub) scrub.value = String(Math.round(frame.t));
+  const decisive = doc.decisive?.[S.language === "de" ? "de" : "en"] || "";
+  $("debrief-decisive").hidden = !decisive;
+  if ($("debrief-decisive").textContent !== decisive) $("debrief-decisive").textContent = decisive;
   const list = $("debrief-events");
   const past = doc.events.filter((event) => event.t <= frame.t).length;
   if (list.dataset.count !== String(doc.events.length) || list.dataset.lang !== S.language) {

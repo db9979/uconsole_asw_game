@@ -179,8 +179,9 @@ def test_telegraph_orders_in_reference_match_config():
     assert row in text
 
 
-# --- Key coverage: every station binding in Game._handle_owned_event must be
-# documented in src/core/help.py (and therefore in F1, manual, and web page).
+# --- Key coverage: every station binding in Game._handle_owned_event (and its
+# ``_owned_*`` parts) must be documented in src/core/help.py (and therefore in
+# F1, manual, and web page).
 
 _KEY_TOKENS = {
     "K_UP": ("Up",), "K_DOWN": ("Down",), "K_LEFT": ("<-", "←", "Left"),
@@ -215,8 +216,10 @@ def _station_bindings():
     # The event owner lives in the EventMixin module since plan 1.3, phase 2.
     source = (ROOT / "src" / "core" / "game_events.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
-    handler = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
-                   and node.name == "_handle_owned_event")
+    # The owner and its verbatim parts (``_owned_*``), each visited alone.
+    handlers = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
+                and (node.name == "_handle_owned_event" or node.name.startswith("_owned_"))]
+    assert len(handlers) > 1
     pairs = set()
 
     def visit(statements, stations, keys):
@@ -231,7 +234,8 @@ def _station_bindings():
             elif isinstance(statement, (ast.For, ast.While, ast.With, ast.Try)):
                 visit(getattr(statement, "body", []), stations, keys)
 
-    visit(handler.body, set(), set())
+    for handler in handlers:
+        visit(handler.body, set(), set())
     return pairs
 
 

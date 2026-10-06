@@ -147,7 +147,7 @@ Lektion 9 übt das Ausweichen vor einer pingenden Fregatte (`I` auf der Seite Be
 
 ## Hauptmenü und Spielstart
 
-Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wählen einen Eintrag, `Eingabe` öffnet ihn, `Esc` fragt, ob das Spiel beendet werden soll. Jede Seite, die von dort aus erreicht wird, führt mit `Esc` zurück.
+Nach dem Startbildschirm (eine Taste oder ein Klick schließt ihn) öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wählen einen Eintrag, `Eingabe` öffnet ihn, `Esc` fragt, ob das Spiel beendet werden soll. Jede Seite, die von dort aus erreicht wird, führt mit `Esc` zurück.
 
 ![Hauptmenü](figures/de-main-menu.png)
 
@@ -282,7 +282,7 @@ Menütasten (Hauptmenü und seine Seiten; `F1` in einem Menü zeigt sie):
 
 ## Optionen
 
-`F10` (oder **Optionen** im Hauptmenü oder im Spielmenü) öffnet die Optionen. `Auf`/`Ab` wählen eine Zeile, `Eingabe`/`Links`/`Rechts` ändern sie, `Bild Auf`/`Bild Ab` oder `Tab` wechseln zwischen den beiden Seiten und `Esc` führt zurück. Die Einstellungen liegen in `~/.u-jagd/settings.json`; eine laufende Mission läuft hinter den Optionen weiter.
+`F10` (oder **Optionen** im Hauptmenü oder im Spielmenü) öffnet die Optionen. `Auf`/`Ab` wählen eine Zeile, `Eingabe`/`Links`/`Rechts` ändern sie, `Bild Auf`/`Bild Ab` oder `Tab` wechseln zwischen den beiden Seiten und `Esc` führt zurück. Mit der Maus ändert ein Klick auf eine Zeile sie wie `Eingabe`, die Schaltflächen **<** und **>** an ihrem rechten Ende stellen den Wert zurück oder weiter, und jede Taste in der Hinweiszeile darunter ist klickbar. Die Einstellungen liegen in `~/.u-jagd/settings.json`; eine laufende Mission läuft hinter den Optionen weiter.
 
 ![Optionen (F10)](figures/de-options.png)
 
@@ -321,7 +321,7 @@ Die Stufe stimmt nur den Computergegner ab, nie einen Menschen auf der anderen S
 
 #### Echtzeit-Verkehr
 
-Die Seite **Echtzeit-Verkehr** holt echte Schiffe (AIS Stream, braucht einen eigenen API-Schlüssel) und echte Flugzeuge (OpenSky ADS-B, wahlweise mit eigener OpenSky-Client-ID) in eine Mission, deren Welt ein reales Seegebiet ist. Sie braucht eine Internetverbindung; ohne sie sind die Zeilen ausgegraut. **API-Test** prüft beide Dienste. Platziert wird nur Verkehr bis etwa 150 sm um die Fregatte (höchstens 15 Schiffe und 5 Flugzeuge, zufällig gewählt; ein gewählter Kontakt bleibt, bis es das Gebiet verlässt), und Schiffspositionen werden alle 2 bis 5 Minuten nachgeführt. Änderungen gelten sofort und werden gespeichert.
+Die Seite **Echtzeit-Verkehr** holt echte Schiffe (AIS Stream, braucht einen eigenen API-Schlüssel) und echte Flugzeuge (OpenSky ADS-B, wahlweise mit eigener OpenSky-Client-ID) in eine Mission, deren Welt ein reales Seegebiet ist. Sie braucht eine Internetverbindung; ohne sie sind die Zeilen ausgegraut. **API-Test** prüft beide Dienste. Platziert wird nur Verkehr bis etwa 150 sm um die Fregatte (höchstens 15 Schiffe und 5 Flugzeuge, zufällig gewählt; ein gewählter Kontakt bleibt, bis es das Gebiet verlässt), und Schiffspositionen werden alle 2 bis 5 Minuten nachgeführt. Ein Klick auf eine Zeile wirkt wie `Eingabe`: Er schaltet einen Dienst ein oder aus oder öffnet sein Feld. Änderungen gelten sofort und werden gespeichert.
 
 ### Seite 2: Spielaufbau
 
@@ -2253,7 +2253,7 @@ Remote Crew lässt Browser im lokalen Netz Stationen übernehmen. Die uConsole b
 
 Ein Browser, der bei offener Lobby koppelt, bekommt die erste freie Station der Einheit des uConsole, in dieser Reihenfolge: Fregatte Brücke, Sonar, Waffen, Hubschrauber, OPZ, EloKa, Funk, Maschine, Schadensabwehr; U-Boot Führung, Sonar, Waffen, Mast & ESM, Navigation, Maschine, Funkraum (zuerst die Stationen, die Urteil brauchen; die Routinestationen hält die KI-Crew gut). Die Browser können Einheit und Stationen jederzeit wechseln und drücken **Bereit**; sie sehen die Mission, was der uConsole spielt, und jedes Crewmitglied mit Stationen und Bereit-Häkchen.
 
-Am uConsole wählen `Auf`/`Ab` eine Zeile und `Links`/`Rechts` ändern sie: die Mission, die Einheit des uConsole und die Station, die er zeigt, oder **keine, nur Gastgeber**: Dann spielt der uConsole keine Station, die Browser können jede übernehmen, und die KI besetzt den Rest. **Mission für alle starten** startet einen Countdown von fünf Sekunden, den jeder Browser sieht; dann beginnt die Mission für alle gleichzeitig, und der uConsole öffnet seine gewählte Station. Ist ein Crewmitglied mit Station noch nicht bereit, fragt das erste `Eingabe` nach, ein zweites startet trotzdem. `Esc` bricht einen Countdown ab, sonst geht es zurück ins Hauptmenü, und Remote Crew läuft weiter.
+Am uConsole wählen `Auf`/`Ab` eine Zeile und `Links`/`Rechts` ändern sie (mit der Maus stellt ein Klick ins linke Drittel einer Zeile zurück, sonst weiter): die Mission, die Einheit des uConsole und die Station, die er zeigt, oder **keine, nur Gastgeber**: Dann spielt der uConsole keine Station, die Browser können jede übernehmen, und die KI besetzt den Rest. **Mission für alle starten** startet einen Countdown von fünf Sekunden, den jeder Browser sieht; dann beginnt die Mission für alle gleichzeitig, und der uConsole öffnet seine gewählte Station. Ist ein Crewmitglied mit Station noch nicht bereit, fragt das erste `Eingabe` nach, ein zweites startet trotzdem. `Esc` bricht einen Countdown ab, sonst geht es zurück ins Hauptmenü, und Remote Crew läuft weiter.
 
 Endet eine Mission, die aus der Lobby gestartet wurde, kehren alle mit ihren Stationen in die Lobby zurück; die Bereit-Häkchen beginnen wieder von vorn. Jede Mission aus der Lobby, an der ein Browser teilnimmt (oder mit nur Gastgeber), hat die Crew-Hilfe an (`Umschalt+F2`); allein startet sie als Solospiel mit ausgeschalteter Crew-Hilfe. `F9` öffnet aus der Lobby die vollständigen Remote-Crew-Einstellungen. Mit `--multiplayer` gestartet, öffnet das Spiel die Lobby direkt nach dem Startbild.
 

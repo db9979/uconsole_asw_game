@@ -1,6 +1,6 @@
 # Hauptmenü und Spielstart {#menu}
 
-Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wählen einen Eintrag, `Eingabe` öffnet ihn, `Esc` fragt, ob das Spiel beendet werden soll. Jede Seite, die von dort aus erreicht wird, führt mit `Esc` zurück.
+Nach dem Startbildschirm (eine Taste oder ein Klick schließt ihn) öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wählen einen Eintrag, `Eingabe` öffnet ihn, `Esc` fragt, ob das Spiel beendet werden soll. Jede Seite, die von dort aus erreicht wird, führt mit `Esc` zurück.
 
 ![Hauptmenü](figure:main-menu)
 

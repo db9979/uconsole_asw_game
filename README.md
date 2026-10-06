@@ -10,17 +10,16 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.266**
+Current release: **1.3.268**
 
-Release 1.3.266 closes the first gaps in mouse control. A click into the
-executive officer's or the language model's window no longer reaches the
-station behind it. In the Mission and Unit Editors a second click on a row
-opens the field. At the sonar the cursor on LOFAR and DEMON and the TMA
-hypothesis (course, speed, range) now move by clicking their chips, the
-helicopter's waypoint chips steer it, the submarine's status line opens
-the log like `F11`, and the submarine sonar no longer shows a key on its
-array readout. A new test makes sure every key chip on every station can
-be clicked. Saves are v53; v38 to v52 saves still load.
+Release 1.3.268 makes the menus work by mouse. In the options a click on a
+row changes it like `Enter`, and new **<** and **>** buttons step a value
+back or on; every key in the hint line is a clickable chip. The real-world
+traffic page switches services and opens its fields by click, a click
+closes the start screen, lobby rows step back from their left third and
+on elsewhere, the Remote Crew page steps host and port back the same way,
+and the Remote Crew admission window has a close cross. Saves are v53;
+v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

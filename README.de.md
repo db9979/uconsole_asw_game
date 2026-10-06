@@ -10,18 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.266**
+Aktuelle Version: **1.3.268**
 
-Version 1.3.266 schließt die ersten Lücken in der Maussteuerung. Ein Klick
-ins Fenster des Ersten Offiziers oder des Sprachmodells erreicht die
-Station dahinter nicht mehr. Im Missions- und Einheiten-Editor öffnet ein
-zweiter Klick auf eine Zeile das Feld. Am Sonar lassen sich der Cursor auf
-LOFAR und DEMON und die TMA-Hypothese (Kurs, Fahrt, Entfernung) jetzt per
-Klick auf ihre Chips verstellen, die Wegpunkt-Chips des Helis steuern ihn,
-die Statuszeile des U-Boots öffnet das Log wie `F11`, und das U-Boot-Sonar
-zeigt an seiner Array-Anzeige keine Taste mehr. Ein neuer Test sorgt dafür,
-dass jeder Tastenchip an jeder Station klickbar ist. Spielstände sind v53;
-v38- bis v52-Stände werden weiter geladen.
+Version 1.3.268 macht die Menüs per Maus bedienbar. In den Optionen ändert
+ein Klick auf eine Zeile sie wie `Eingabe`, und neue Schaltflächen **<** und
+**>** stellen einen Wert zurück oder weiter; jede Taste in der Hinweiszeile
+ist ein klickbarer Chip. Die Seite Echtzeit-Verkehr schaltet Dienste per
+Klick und öffnet ihre Felder, ein Klick schließt den Startbildschirm,
+Lobby-Zeilen stellen per Klick ins linke Drittel zurück und sonst weiter,
+die Remote-Crew-Seite stellt Host und Port genauso zurück, und das
+Zulassungsfenster der Remote Crew hat ein Schließkreuz. Spielstände sind
+v53; v38- bis v52-Stände werden weiter geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -1,6 +1,6 @@
 # Main menu and game start {#menu}
 
-After the start screen the main menu opens. `Up`/`Down` (or the mouse) choose an entry, `Enter` opens it, `Esc` asks whether to quit. Every page reached from it goes back with `Esc`.
+After the start screen (a key or a click closes it) the main menu opens. `Up`/`Down` (or the mouse) choose an entry, `Enter` opens it, `Esc` asks whether to quit. Every page reached from it goes back with `Esc`.
 
 ![Main menu](figure:main-menu)
 

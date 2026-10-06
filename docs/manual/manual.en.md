@@ -147,7 +147,7 @@ Lesson 9 continues with evading a pinging frigate (`I` on the Threat page). Afte
 
 ## Main menu and game start
 
-After the start screen the main menu opens. `Up`/`Down` (or the mouse) choose an entry, `Enter` opens it, `Esc` asks whether to quit. Every page reached from it goes back with `Esc`.
+After the start screen (a key or a click closes it) the main menu opens. `Up`/`Down` (or the mouse) choose an entry, `Enter` opens it, `Esc` asks whether to quit. Every page reached from it goes back with `Esc`.
 
 ![Main menu](figures/main-menu.png)
 
@@ -282,7 +282,7 @@ Menu keys (main menu and its pages; `F1` in a menu shows them):
 
 ## Options
 
-`F10` (or **Options** in the main menu or the game menu) opens the options. `Up`/`Down` pick a row, `Enter`/`Left`/`Right` change it, `PgUp`/`PgDn` or `Tab` switch between the two pages and `Esc` goes back. The settings are kept in `~/.u-jagd/settings.json`; a running mission keeps running behind the options.
+`F10` (or **Options** in the main menu or the game menu) opens the options. `Up`/`Down` pick a row, `Enter`/`Left`/`Right` change it, `PgUp`/`PgDn` or `Tab` switch between the two pages and `Esc` goes back. With the mouse, a click on a row changes it like `Enter`, the **<** and **>** buttons at its right end step the value back or on, and every key in the hint line below is clickable. The settings are kept in `~/.u-jagd/settings.json`; a running mission keeps running behind the options.
 
 ![Options (F10)](figures/options.png)
 
@@ -321,7 +321,7 @@ The level only tunes the computer opponent, never a human on the other side, and
 
 #### Real-world traffic
 
-The page **Real-world traffic** brings real ships (AIS Stream, needs your own API key) and real aircraft (OpenSky ADS-B, optionally with your OpenSky client ID) into a mission whose world is a real sea area. It needs an internet connection; without one the rows are greyed out. **API test** checks both services. Only traffic within about 150 NM of the frigate is placed (at most 15 ships and 5 aircraft, picked at random; a picked contact stays until it leaves the area), and ship positions are updated every 2 to 5 minutes. Changes apply at once and are saved.
+The page **Real-world traffic** brings real ships (AIS Stream, needs your own API key) and real aircraft (OpenSky ADS-B, optionally with your OpenSky client ID) into a mission whose world is a real sea area. It needs an internet connection; without one the rows are greyed out. **API test** checks both services. Only traffic within about 150 NM of the frigate is placed (at most 15 ships and 5 aircraft, picked at random; a picked contact stays until it leaves the area), and ship positions are updated every 2 to 5 minutes. A click on a row works like `Enter`: it switches a service on or off or opens its field. Changes apply at once and are saved.
 
 ### Page 2: game setup
 
@@ -2252,7 +2252,7 @@ Remote Crew lets browsers on the local network take stations. The uConsole stays
 
 A browser that pairs while the lobby is open is seated on the first free station of the uConsole's unit, in this order: frigate Bridge, Sonar, Weapons, Helicopter, OPZ, ELOKA, Radio, Engine, Damage control; submarine Command, Sonar, Weapons, Mast & ESM, Navigation, Engine room, Radio room (the stations that need judgement first; the AI crew keeps the routine ones well). Browsers can change their unit and stations at any time and press **Ready**; they see the mission, what the uConsole plays and every crewmate with their stations and ready tick.
 
-On the uConsole, `Up`/`Down` choose a row and `Left`/`Right` change it: the mission, the unit the uConsole plays and the station it shows, or **none, host only**: then the uConsole plays no station, the browsers can take every one and the AI crews the rest. **Start the mission for everyone** starts a five-second countdown that every browser sees, then the mission begins for all at once and the uConsole opens on its chosen station. If a crewmate with a station is not ready yet, the first `Enter` asks again and a second one starts anyway. `Esc` cancels a countdown, otherwise it leads back to the main menu while Remote Crew keeps running.
+On the uConsole, `Up`/`Down` choose a row and `Left`/`Right` change it (with the mouse, a click on the left third of a row steps back, elsewhere on): the mission, the unit the uConsole plays and the station it shows, or **none, host only**: then the uConsole plays no station, the browsers can take every one and the AI crews the rest. **Start the mission for everyone** starts a five-second countdown that every browser sees, then the mission begins for all at once and the uConsole opens on its chosen station. If a crewmate with a station is not ready yet, the first `Enter` asks again and a second one starts anyway. `Esc` cancels a countdown, otherwise it leads back to the main menu while Remote Crew keeps running.
 
 When a mission started from the lobby ends, everyone returns to the lobby with their stations; the ready ticks start again from zero. Every mission started from the lobby with a browser taking part (or host only) has the crew assist on (`Shift+F2`); alone it starts as a solo game with the assist off. `F9` opens the full Remote Crew settings from the lobby. Started with `--multiplayer`, the game opens the lobby straight after the start screen.
 

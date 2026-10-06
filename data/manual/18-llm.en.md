@@ -27,7 +27,7 @@ An OpenAI-compatible speech service (`/audio/speech`) gives the executive office
 - Executive officer: his answers (situation report, question, typed order, classification help, briefing) and the coach's tips are spoken on the uConsole as they arrive. Numbers are always spoken digit by digit, as on a watch (431 is "four three one", 0.9 is "zero point niner"). Long answers are cut at a sentence end after about 700 characters.
 - Crew: with **Spoken crew reports** switched on (options page 2) the crew's calls use the same voice instead of `espeak-ng`; a call the service cannot deliver is said by `espeak-ng`. Calls older than 20 s are dropped instead of said late.
 - The key lives in `~/.u-jagd/tts_key` or comes from `U_JAGD_TTS_KEY`. Left empty, the language model's key is used when both addresses name the same server. Like the model's key it never enters the settings, saves, logs or a browser.
-- The voice plays on its own audio channel and never cuts the sonar tone; requests and decoding run beside the game, so a slow service never stalls a frame. With the game sound off nothing is spoken.
+- The voice plays on its own audio channel and never cuts the sonar tone; requests and decoding run beside the game, so a slow service never stalls a frame. A long answer is sent sentence by sentence, so the first sentence plays while the rest is still being made, and audio that a service streams (OpenAI does) is played while it still arrives; the wait for the first sound is up to the service. With the game sound off nothing is spoken.
 - Remote Crew browsers keep their own voice for the crew's calls (Settings, the browser's speech synthesis); the executive officer's answers in a browser are shown, not spoken.
 
 ## Not modelled {#llm-limits}

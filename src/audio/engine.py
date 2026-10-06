@@ -931,6 +931,22 @@ class AudioEngine:
         except (pygame.error, TypeError, ValueError, IndexError, MemoryError):
             return False
 
+    def queue_voice(self, pcm: np.ndarray) -> bool:
+        """The next piece behind the one playing; False while one already waits."""
+        channel = self._voice_channel
+        if channel is None or not self.enabled or not self.available:
+            return False
+        try:
+            if channel.get_queue() is not None:
+                return False
+            data = np.asarray(pcm, dtype=np.int16)
+            if self.channels == 2:
+                data = np.repeat(data[:, None], 2, axis=1)
+            channel.queue(pygame.sndarray.make_sound(np.ascontiguousarray(data)))
+            return True
+        except (pygame.error, TypeError, ValueError, IndexError, MemoryError):
+            return False
+
     def voice_busy(self) -> bool:
         try:
             return self._voice_channel is not None and bool(self._voice_channel.get_busy())

@@ -10,7 +10,10 @@ Release 1.3.237 makes the optional voice speak numbers the way a watch
 does: digit by digit. The executive officer, the coach, the crew reports and
 the voice test now say 431 as "four three one" and 0.9 as "zero point
 niner" (in German "vier drei eins", "null Komma neun"), whether or not the
-text is cleaned before speaking. Keys are unchanged. Saves are v53; v38 to
+text is cleaned before speaking. The voice also starts sooner: a long
+answer is sent sentence by sentence, so the first sentence plays while the
+rest is still being made, and audio a service streams (OpenAI does) plays
+while it still arrives. Keys are unchanged. Saves are v53; v38 to
 
 ## 1.3.234
 

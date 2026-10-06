@@ -3,9 +3,12 @@
 With a speech service configured (options page 2, Language model, page
 "Voice") the executive officer speaks his answers and coach tips, and the
 crew's spoken reports use the same natural voice instead of espeak-ng.
-Requests run on the service's worker; this mixin only collects finished
-clips once per frame (wall time, outside the simulation) and plays them on
-the audio engine's own voice channel, so the sonar tone is never cut.
+Requests run on the service's worker; this mixin only collects the pieces
+of audio that have arrived, once per frame (wall time, outside the
+simulation), and queues them on the audio engine's own voice channel, so
+the sonar tone is never cut and a streaming service is heard while it still
+speaks.  A long answer is sent sentence by sentence: the first sentence
+plays while the rest is still being made.
 Without the service (off, no key, offline, no audio) the crew keeps its
 espeak-ng voice and the game behaves exactly as before.
 """
@@ -41,6 +44,7 @@ class VoiceMixin:
         self.voice = VoiceService(self._voice_config(), rate=self._voice_rate())
         self._voice_queue: deque = deque(maxlen=VOICE_QUEUE_MAX)
         self.voice_test = None
+        self._voice_playing = None
 
     def _voice_rate(self) -> int:
         return int(getattr(self.audio, "sample_rate", 22050) or 22050)
@@ -93,11 +97,15 @@ class VoiceMixin:
             return False
         if role == "xo" and not self.preferences.tts_xo:
             return False
-        request = self.voice.say(self._voice_text(text), self.llm_language(), role)
-        if request is None:
-            return False
-        self._voice_queue.append(request)
-        return True
+        text = voice_model.speakable(self._voice_text(text), clean=self.voice.config.clean)
+        queued = False
+        for chunk in voice_model.sentence_chunks(text, limit=voice_model.QUEUE_MAX):
+            request = self.voice.say(chunk, self.llm_language(), role)
+            if request is None:
+                break
+            self._voice_queue.append(request)
+            queued = True
+        return queued
 
     def _voice_text(self, text) -> str:
         """Numbers digit by digit in the game's language ("vier drei eins")."""
@@ -118,6 +126,7 @@ class VoiceMixin:
             return
         voice.clear()
         self._voice_queue.clear()
+        self._voice_playing = None
         self.audio.stop_voice()
 
     def _pump_voice(self) -> None:
@@ -126,6 +135,12 @@ class VoiceMixin:
             return
         if self.voice.rate != self._voice_rate():
             self.configure_voice()
+        playing = self._voice_playing
+        if playing is not None:
+            self._feed_voice(playing)
+            if playing.finished and not playing.pieces and not self.audio.voice_busy():
+                self._voice_playing = None
+            return
         queue = self._voice_queue
         if not queue:
             return
@@ -138,20 +153,40 @@ class VoiceMixin:
                         and not request.stale(now)):
                     self.speaker.say(request.text, self.llm_language())
                 continue
-            if request.stale(now):
+            if request.stale(now) and not request.audible:
                 continue
             kept.append(request)
         queue.clear()
         queue.extend(kept)
         if not kept or self.audio.voice_busy():
             return
-        ready = [request for request in kept if request.ok]
-        if not ready:
+        # A crew report that has sound goes first; the officer's sentences
+        # keep their order (never one before the sentence ahead of it).
+        pick = next((request for request in kept if request.role == "crew" and request.audible),
+                    None)
+        if pick is None:
+            first = next((request for request in kept if request.role != "crew"), None)
+            pick = first if first is not None and first.audible else None
+        if pick is None:
             return
-        pick = next((request for request in ready if request.role == "crew"), ready[0])
         queue.remove(pick)
-        if not self.audio.play_voice(pick.pcm) and pick.role == "test":
-            self.voice_test = dict(status="failed", error="no_audio")
+        self._voice_playing = pick
+        self._feed_voice(pick)
+
+    def _feed_voice(self, request) -> None:
+        """Queue the pieces that have arrived behind the one playing."""
+        pieces = request.pieces
+        while pieces:
+            if not self.audio.voice_busy():
+                played = self.audio.play_voice(pieces[0])
+                if not played:
+                    pieces.clear()
+                    if request.role == "test":
+                        self.voice_test = dict(status="failed", error="no_audio")
+                    return
+            elif not self.audio.queue_voice(pieces[0]):
+                return
+            pieces.popleft()
 
     # -- settings -----------------------------------------------------------------
 

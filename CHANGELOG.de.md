@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.235
+## 1.3.236
 
-Version 1.3.235 macht den Ersten Offizier (`F7`) und die Einstellungen
+Version 1.3.236 macht den Ersten Offizier (`F7`) und die Einstellungen
 des Sprachmodells auf dem uConsole und in den Desktop-Apps vollständig mit
 der Maus bedienbar. Ein Klick auf einen Reiter wählt die Art der Anfrage;
 blaue Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen
@@ -20,6 +20,16 @@ das Protokoll jetzt ab dem ersten Schritt und auch, während ein Befehl auf
 Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
 bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52
 laden weiter.
+
+## 1.3.235
+
+Version 1.3.235 behebt einen Hänger beim Stoppen des eigenen Mikrofons.
+Das Abschalten des Mikrofons für die Geräuschdisziplin, das Ende eines
+Einsatzes oder das Beenden konnte das Spiel einfrieren, während gerade ein
+Aufnahmeblock gelesen wurde; der Selbsttest des macOS-Builds blieb dort
+hängen. Das Gerät schließt jetzt, ohne auf das Spiel zu warten, auf der
+uConsole, unter Windows und unter macOS. Spielstände sind v53;
+Spielstände v38 bis v52 laden weiterhin.
 
 ## 1.3.234
 

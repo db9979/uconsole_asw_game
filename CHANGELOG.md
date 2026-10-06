@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.235
+## 1.3.236
 
-Release 1.3.235 makes the executive officer (`F7`) and the language
+Release 1.3.236 makes the executive officer (`F7`) and the language
 model settings fully mouse-operable on the uConsole and the desktop apps.
 A click on a tab picks the kind of request; blue key buttons under the log
 send, give or discard a typed order, scroll older and newer and close the
@@ -17,6 +17,15 @@ its settings, where key buttons under the rows now cover every key
 step and also while an order waits for confirmation. The browser's
 executive officer already worked by mouse. Gameplay is unchanged. Saves
 are v53; v38 to v52 saves still load.
+
+## 1.3.235
+
+Release 1.3.235 fixes a hang when the own microphone stops. Switching
+the noise-discipline microphone off, ending a mission or quitting could
+freeze the game while a capture block was being read; the macOS build's
+self-test hung there. The device now closes without waiting on the game,
+on the uConsole, Windows and macOS alike. Saves are v53; v38 to v52 saves
+still load.
 
 ## 1.3.234
 

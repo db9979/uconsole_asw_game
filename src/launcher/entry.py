@@ -87,7 +87,8 @@ def self_test(report: str) -> int:
                     game.commander.stop()
                 config.SAVE_DIR, config.SAVE_PATH = previous
         code = 0 if (all(results.get(p) == 200 for p in ("/", "/manual-en"))
-                     and results.get("microphone", {}).get("blocks", 0) > 0) else 1
+                     and results.get("microphone", {}).get("blocks", 0) > 0
+                     and results["microphone"].get("released") == "sdl") else 1
     except Exception:  # noqa: BLE001 - the report carries the traceback
         results["error"] = traceback.format_exc()
     results["ok"] = code == 0
@@ -115,7 +116,12 @@ def _microphone_self_test() -> dict:
         time.sleep(0.05)
     result = {"opened": opened, "device": mic.name, "blocks": mic.blocks,
               "failure": mic.failure, "detail": mic.detail}
+    # Stopping mid-capture once hung the macOS build (1.3.234): the bundle
+    # must reach pygame's SDL and close the device with the GIL released.
+    started = time.monotonic()
     mic.stop()
+    result["released"] = mic.released
+    result["stop_s"] = round(time.monotonic() - started, 3)
     return result
 
 

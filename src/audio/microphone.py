@@ -14,6 +14,8 @@ import time
 
 import numpy as np
 
+from src.audio import sdl_native
+
 LEVEL_MAX = 20
 SAMPLE_RATE = 16000
 CHUNK = 512
@@ -55,6 +57,9 @@ class Microphone:
         self.detail = ""
         self.name = ""
         self.blocks = 0
+        # How the last stop closed the device: "sdl" (GIL released) or
+        # "pygame" (fallback when pygame's SDL is out of reach).
+        self.released = ""
         self._clock = clock
         self._opened_at = 0.0
         self._heard = False
@@ -118,14 +123,26 @@ class Microphone:
         return self.failure
 
     def stop(self) -> None:
+        """Close the capture without ever hanging the game: pygame's own
+        ``pause()``/``close()`` hold the GIL while SDL waits for a running
+        callback that needs it (deadlock, 1.3.234).  SDL's close through
+        ``ctypes`` releases the GIL; pygame's ``close()`` afterwards only
+        forgets the closed id, so its finaliser cannot close another device
+        that reuses it."""
         device, self.device = self.device, None
         self._rms = 0.0
-        if device is not None:
-            try:
+        if device is None:
+            return
+        try:
+            device_id = getattr(device, "deviceid", 0)
+            if sdl_native.close_audio_device(device_id):
+                self.released = "sdl"
+            else:
+                self.released = "pygame"
                 device.pause(1)
-                device.close()
-            except Exception:  # noqa: BLE001 - closing a lost device
-                pass
+            device.close()
+        except Exception:  # noqa: BLE001 - closing a lost device
+            pass
 
     def level(self) -> int:
         return level_of(self._rms) if self.device is not None else 0

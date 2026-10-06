@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 def _reset_theme():
     yield
     theme.set_theme("night")
+    # The log's click blocker belongs to the last drawn frame; later tests
+    # that click without drawing must not inherit it.
+    pointer.reset()
 
 
 def _game(monkeypatch, side=None):

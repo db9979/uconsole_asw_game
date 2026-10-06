@@ -1,7 +1,8 @@
 """Where the language model's API key lives: never in ``settings.json``.
 
 The key comes from the environment variable ``U_JAGD_LLM_KEY`` or from the
-file ``~/.u-jagd/llm_key`` (owner read/write only).  It never enters a save,
+file ``~/.u-jagd/llm_key`` (owner read/write only); the speech service's key
+likewise from ``U_JAGD_TTS_KEY`` or ``~/.u-jagd/tts_key``.  It never enters a save,
 the settings, a log, a bug report or a browser.  A server in the LAN usually
 needs no key at all.
 """
@@ -17,11 +18,14 @@ from src.core import config
 
 ENV_NAME = "U_JAGD_LLM_KEY"
 FILE_NAME = "llm_key"
+# The speech service's own key (``src/llm/voice.py``), kept the same way.
+VOICE_ENV_NAME = "U_JAGD_TTS_KEY"
+VOICE_FILE_NAME = "tts_key"
 MAX_KEY_LEN = 512
 
 
-def key_path() -> Path:
-    return Path(config.SAVE_DIR).expanduser() / FILE_NAME
+def key_path(file_name: str = FILE_NAME) -> Path:
+    return Path(config.SAVE_DIR).expanduser() / file_name
 
 
 def _clean(value) -> str:
@@ -33,12 +37,12 @@ def _clean(value) -> str:
     return value
 
 
-def load_key() -> str:
+def load_key(env_name: str = ENV_NAME, file_name: str = FILE_NAME) -> str:
     """The key from the environment, else from the key file, else ``""``."""
-    env = _clean(os.environ.get(ENV_NAME, ""))
+    env = _clean(os.environ.get(env_name, ""))
     if env:
         return env
-    path = key_path()
+    path = key_path(file_name)
     try:
         if path.is_symlink() or not path.is_file():
             return ""
@@ -49,13 +53,13 @@ def load_key() -> str:
         return ""
 
 
-def key_from_env() -> bool:
-    return bool(_clean(os.environ.get(ENV_NAME, "")))
+def key_from_env(env_name: str = ENV_NAME) -> bool:
+    return bool(_clean(os.environ.get(env_name, "")))
 
 
-def save_key(value: str) -> bool:
+def save_key(value: str, file_name: str = FILE_NAME) -> bool:
     """Store (or with an empty value remove) the key file; atomic, mode 0600."""
-    path = key_path()
+    path = key_path(file_name)
     value = _clean(value)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -67,7 +71,7 @@ def save_key(value: str) -> bool:
             except FileNotFoundError:
                 pass
             return True
-        fd, temporary = tempfile.mkstemp(prefix=f".{FILE_NAME}.", suffix=".tmp",
+        fd, temporary = tempfile.mkstemp(prefix=f".{file_name}.", suffix=".tmp",
                                          dir=path.parent)
         try:
             os.chmod(temporary, stat.S_IRUSR | stat.S_IWUSR)

@@ -10,19 +10,22 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.233**
+Aktuelle Version: **1.3.231**
 
-Version 1.3.233 bringt die Bedienung unter einheitliche Regeln.
-Strg+Eingabe ist jetzt die einzige Taste, die eine Waffe auslöst: An der
-Waffenstation wählen D, A, Z, R und Umschalt+R nur die Waffe, die dann
-leuchtet und in der Feuerzeile steht. Jede Taste einer Stationsseite steht
-als blauer Chip in ihrer Tastenleiste und wird per Klick gedrückt; ein
-+-Chip blättert durch den Rest (auch durch alle Sonartasten beider
-Seiten). Lange Listen blättern mit dem Mausrad, Overlays schließen über
-ein Schließkreuz, und Hinweise erklären weitere Lampen. Eigene Einheiten
-tragen auf jeder Karte den passenden NATO-Rahmen, hoher Kontrast erreicht
-jede Zeichnung, und deutsche Texte nutzen deutsche Tastennamen und „sm“.
-Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
+Version 1.3.231 gibt dem optionalen Sprachmodell eine Stimme. Unter
+Optionen, Seite 2, Sprachmodell nimmt eine zweite Seite „Stimme“ einen
+OpenAI-kompatiblen Sprachdienst auf (Adresse, Sprechmodell, Stimme und
+API-Schlüssel; voreingestellt OpenAI gpt-4o-mini-tts), und eine dritte Seite
+„Klang“ stellt Temperature, top_p und Seed für Dienste ein, die sie annehmen
+(Qwen-TTS), und bereinigt den Text vor dem Sprechen. Damit spricht der Erste
+Offizier seine Antworten und die Tipps des Coachs, und die gesprochenen
+Crew-Meldungen kommen mit derselben natürlichen Stimme statt über espeak-ng,
+beides einzeln schaltbar. Die Stimme spielt auf einem eigenen Tonkanal neben
+dem Sonarton, und ihr Schlüssel liegt in ~/.u-jagd/tts_key (oder es gilt der
+des Sprachmodells beim selben Server), nie in Einstellungen oder Spielständen.
+Ohne den Dienst läuft das Spiel genau wie bisher; Browser behalten ihre eigene
+Stimme für Crew-Meldungen. Die Einstellungsseiten lassen sich jetzt mit der
+Maus bedienen. Spielstände sind v53; v38 bis v52 werden weiter geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

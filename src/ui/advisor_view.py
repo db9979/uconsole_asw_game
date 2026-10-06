@@ -133,48 +133,123 @@ def settings_row_rects() -> tuple:
                              PANEL.w - 120, 54) for index in range(8))
 
 
-@localized
-def draw_llm_settings(game) -> None:
-    s = game.screen
+TAB_W = 170
+
+
+def page_tab_rects() -> tuple:
+    """The settings' page tabs (language model; voice, how it sounds)
+    left and right of the title."""
+    right = PANEL.right - 24 - 48
+    return (pygame.Rect(PANEL.x + 24, PANEL.y + 14, TAB_W, 34),
+            pygame.Rect(right - 2 * TAB_W - 8, PANEL.y + 14, TAB_W, 34),
+            pygame.Rect(right - TAB_W, PANEL.y + 14, TAB_W, 34))
+
+
+def _title_rect() -> pygame.Rect:
+    tabs = page_tab_rects()
+    return pygame.Rect(tabs[0].right + 8, PANEL.y + 12, tabs[1].x - tabs[0].right - 16, 40)
+
+
+def _on_off(value):
+    return message("common.on" if value else "common.off")
+
+
+def _llm_values(game) -> dict:
     prefs = game.preferences
-    overlay_style.panel(s, PANEL)
-    overlay_style.title(s, "llm.title", (PANEL.x + 32, PANEL.y + 12, PANEL.w - 64, 40), size=28)
-    from src.ui import game_menu
-    game_menu.close_button(s, PANEL)            # Esc by mouse
-    layout.blit_line(s, "llm.subtitle", (PANEL.x + 32, PANEL.y + 56, PANEL.w - 64, 24),
-                     config.COLOR_TEXT_DIM, size=15, align="center")
-    from src.core.game_advisor import LLM_ROWS
-
-    def on_off(value):
-        return message("common.on" if value else "common.off")
-
     # The configured key (read when it was set), never the key file per frame.
     key = game.llm.config.api_key
-    values = {
-        "llm_enabled": on_off(prefs.llm_enabled),
+    return {
+        "llm_enabled": _on_off(prefs.llm_enabled),
         "llm_url": raw_text(prefs.llm_url),
         "llm_model": raw_text(prefs.llm_model),
         "llm_key": message("llm.key_env") if keystore.key_from_env()
         else raw_text(keystore.mask(key)),
-        "llm_radio": on_off(prefs.llm_radio),
+        "llm_radio": _on_off(prefs.llm_radio),
         "llm_coach": message("llm.coach." + prefs.llm_coach),
-        "llm_opfor": on_off(prefs.llm_opfor),
+        "llm_opfor": _on_off(prefs.llm_opfor),
         "test": _test_text(game),
     }
-    for index, (name, rect) in enumerate(zip(LLM_ROWS, settings_row_rects())):
+
+
+def _voice_values(game) -> dict:
+    prefs = game.preferences
+    source = game.voice_key_source()
+    key = game.voice.config.api_key
+    return {
+        "tts_enabled": _on_off(prefs.tts_enabled),
+        "tts_url": raw_text(prefs.tts_url),
+        "tts_model": raw_text(prefs.tts_model),
+        "tts_voice": raw_text(prefs.tts_voice),
+        "tts_key": message("voice.key_env") if source == "env"
+        else message("voice.key_shared", masked=raw_text(keystore.mask(key)))
+        if source == "shared" else raw_text(keystore.mask(key)),
+        "tts_xo": _on_off(prefs.tts_xo),
+        "tts_crew": _on_off(prefs.tts_crew),
+        "tts_test": _voice_test_text(game),
+        "tts_temperature": raw_text(f"{prefs.tts_temperature:.2f}"),
+        "tts_top_p": raw_text(f"{prefs.tts_top_p:.2f}"),
+        "tts_seed": message("voice.seed_random") if prefs.tts_seed < 0
+        else raw_text(str(prefs.tts_seed)),
+        "tts_clean": _on_off(prefs.tts_clean),
+    }
+
+
+@localized
+def draw_llm_settings(game) -> None:
+    from src.core.game_advisor import LLM_PAGES
+    from src.ui import game_menu, pointer
+
+    s = game.screen
+    page = game.llm_page % len(LLM_PAGES)
+    overlay_style.panel(s, PANEL)
+    overlay_style.title(s, ("llm.title", "voice.title", "voice.tune_title")[page],
+                        _title_rect(), size=26)
+    game_menu.close_button(s, PANEL)
+    for index, rect in enumerate(page_tab_rects()):
+        active = index == page
+        if active:
+            overlay_style.highlight(s, rect)
+        pygame.draw.rect(s, config.COLOR_TEXT_DIM, rect, 1)
+        layout.blit_line(s, message("llm.page", number=index + 1,
+                                    name=message(("llm.page.model", "llm.page.voice",
+                                                  "llm.page.tune")[index])),
+                         rect.inflate(-8, -4), overlay_style.text_color(active),
+                         size=16, align="center")
+        pointer.add_action(rect, lambda _pos, index=index: game.set_llm_page(index))
+    layout.blit_line(s, ("llm.subtitle", "voice.subtitle", "voice.tune_subtitle")[page],
+                     (PANEL.x + 32, PANEL.y + 56, PANEL.w - 64, 24),
+                     config.COLOR_TEXT_DIM, size=15, align="center")
+    rows = LLM_PAGES[page]
+    values = _llm_values(game) if page == 0 else _voice_values(game)
+    prefix = "llm" if page == 0 else "voice"
+    for index, (name, rect) in enumerate(zip(rows, settings_row_rects())):
         selected = index == game.llm_sel
         if selected:
             overlay_style.highlight(s, (rect.x - 6, rect.y - 4, rect.w + 12, 30))
         color = overlay_style.text_color(selected)
-        layout.blit_line(s, message("llm.row", label=message("llm.label." + name),
+        layout.blit_line(s, message("llm.row", label=message(f"{prefix}.label." + name),
                                     value=values[name]),
                          (rect.x, rect.y, rect.w, 24), color, size=18)
         if game.llm_field is not None and game.llm_field_name == name:
             game.llm_field.draw(s, pygame.Rect(rect.x, rect.y + 26, rect.w, 28), focused=True)
         else:
-            layout.blit_line(s, "llm.help." + name, (rect.x + 16, rect.y + 26, rect.w - 16, 22),
+            layout.blit_line(s, f"{prefix}.help." + name,
+                             (rect.x + 16, rect.y + 26, rect.w - 16, 22),
                              config.COLOR_TEXT_DIM, size=14)
+            pointer.add_action(rect, lambda _pos, index=index: game.click_llm_row(index))
     _footer(s, "llm.keys")
+
+
+def _voice_test_text(game):
+    state = game.voice_test_state()
+    if state is None:
+        return message("voice.test.idle")
+    if state["status"] == "pending":
+        return message("voice.test.pending")
+    if state["status"] == "done":
+        return message("voice.test.ok", seconds=f"{state['latency_s']:.1f}")
+    return message("voice.test.failed",
+                   reason=message("voice.error." + str(state.get("error") or "network")))
 
 
 def _test_text(game):

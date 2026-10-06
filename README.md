@@ -10,17 +10,19 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.233**
+Current release: **1.3.231**
 
-Release 1.3.233 makes the controls follow one set of rules. Ctrl+Enter is
-now the only key that fires a weapon: at Weapons, D, A, Z, R and Shift+R
-only choose the weapon, which is lit and named in the fire line. Every key
-a station page can use stands in its key bar as a blue chip that presses
-the key when clicked, with a + chip paging through the rest (also through
-all sonar keys on both sides). Long lists scroll with the mouse wheel,
-overlays close with a close box, and hover notes explain more lamps. Own
-units wear the proper NATO frame on every chart, high contrast reaches
-every drawing, and German texts use German key names and "sm". Saves are
+Release 1.3.231 gives the optional language model a voice. Under Options,
+page 2, Language model, a second page "Voice" takes an OpenAI-compatible
+speech service (address, speech model, voice and API key; preset OpenAI
+gpt-4o-mini-tts), and a third page "Sound" sets temperature, top_p and seed
+for services that take them (Qwen-TTS) and cleans the text before speaking. With it the executive officer speaks his answers and the
+coach's tips, and the spoken crew reports use the same natural voice instead
+of espeak-ng, each with its own switch. The voice plays on its own audio
+channel beside the sonar tone, and its key is kept in ~/.u-jagd/tts_key (or
+the language model's key on the same server), never in settings or saves.
+Without the service the game plays exactly as before; browsers keep their own
+voice for crew reports. The settings pages are now mouse-operable. Saves are
 v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

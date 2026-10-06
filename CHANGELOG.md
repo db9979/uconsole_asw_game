@@ -9,10 +9,23 @@ Every U-Jagd release, newest first. The [README](README.md) shows only the lates
 Release 1.3.255 makes the release checks more reliable, so new versions
 are no longer held back. A browser check of the station handover now
 reports why it fails instead of timing out silently. The game itself
-plays as in 1.3.251: daily short missions, training progress, the
-U-boat crew assist attacking on a good TMA solution and one line on the
-end panels saying what decided the mission. Saves are v53; v38 to v52
-saves still load.
+plays as in 1.3.254: the voice reads every log entry in order with a
+German speaking instruction, daily short missions, training progress and
+one line on the end panels saying what decided the mission. Saves are
+v53; v38 to v52 saves still load.
+
+## 1.3.254
+
+Release 1.3.254 reads the log aloud completely and in order, and makes the
+voice sound more German. Every log entry is now read, one after the other
+in the log's order, instead of keeping only the newest of a burst and
+dropping entries that waited longer than 15 s. The speaking instruction to
+the speech service is written in the game's language, because an English
+instruction pulled models such as Qwen-TTS towards an English accent on
+German text. Counts like "1x" are said as "one times", abbreviations such
+as CIWS are spelled, and a spelled number no longer leaves a gap before a
+closing bracket. Keys and saves are unchanged (v53; v38 to v52 saves still
+load).
 
 ## 1.3.251
 

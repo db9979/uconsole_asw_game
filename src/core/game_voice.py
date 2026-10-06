@@ -11,9 +11,11 @@ speaks.  A long answer is sent sentence by sentence: the first sentence
 plays while the rest is still being made.
 The local side's log entries (the event feed, F11) are read aloud too,
 behind the officer: each station of the log can be muted on its own
-(options page 2, page 4 "Log reports", and the F11 log's buttons), and an
-entry still waiting when it is old news is dropped, so the voice never lags
-behind the game.  Entries the crew already calls out are not read twice.
+(options page 2, page 4 "Log reports", and the F11 log's buttons).  Every
+entry is read, one after the other in the log's order: the entries wait in
+a backlog here and only two at a time go to the speech service, so its
+queue never drops one.  Entries the crew already calls out are not read
+twice.
 Without the service (off, no key, offline, no audio) the crew keeps its
 espeak-ng voice and the game behaves exactly as before.
 """
@@ -36,9 +38,12 @@ VOICE_QUEUE_MAX = 16
 # Failures after which a crew report is said by espeak-ng instead.
 _FALLBACK_ERRORS = frozenset(("network", "timeout", "auth", "rate_limit", "server",
                               "bad_reply", "no_audio"))
-# At most this many new log entries are queued per frame (a burst keeps its
-# newest ones; the voice service's own log queue is shorter still).
-LOG_BURST = 4
+# Log entries waiting to be read, in the log's order (only a flood beyond
+# this drops its oldest), and how many of them are at the speech service
+# at once (made or playing; below the service's own queue, so it never
+# drops one).
+LOG_BACKLOG_MAX = 48
+LOG_IN_FLIGHT = 2
 # Log entries per station counted over this many wall seconds (settings page).
 LOG_COUNT_S = 300.0
 LOG_COUNT_MAX = 256
@@ -67,6 +72,7 @@ class VoiceMixin:
         self._log_voice_source = None
         self._log_voice_mark = 0
         self._log_voice_seen: deque = deque(maxlen=LOG_COUNT_MAX)
+        self._log_voice_backlog: deque = deque(maxlen=LOG_BACKLOG_MAX)
 
     def _voice_rate(self) -> int:
         return int(getattr(self.audio, "sample_rate", 22050) or 22050)
@@ -156,6 +162,7 @@ class VoiceMixin:
             return
         voice.clear()
         self._voice_queue.clear()
+        self._log_voice_backlog.clear()
         self._voice_playing = None
         self.audio.stop_voice()
 
@@ -183,8 +190,7 @@ class VoiceMixin:
                         and not request.stale(now)):
                     self.speaker.say(request.text, self.llm_language())
                 continue
-            if request.stale(now) and (not request.audible or request.role == "log"):
-                # A log entry that is old news before its turn is not said.
+            if request.stale(now) and not request.audible:
                 continue
             kept.append(request)
         queue.clear()
@@ -254,12 +260,17 @@ class VoiceMixin:
         return feed, feed.added, feed.entries
 
     def _pump_log_voice(self) -> None:
-        """Queue the local side's new log entries for the voice (wall time,
+        """Read the local side's new log entries aloud, in order (wall time,
         once per frame; reads the log the operator already sees)."""
+        self._collect_log_voice()
+        self._feed_log_voice()
+
+    def _collect_log_voice(self) -> None:
         source, count, entries = self._log_voice_entries()
         if source is not self._log_voice_source or count < self._log_voice_mark:
             # A new mission, a loaded game or the other side: start at its end.
             self._log_voice_source, self._log_voice_mark = source, count
+            self._log_voice_backlog.clear()
             return
         fresh = count - self._log_voice_mark
         if fresh <= 0:
@@ -271,21 +282,37 @@ class VoiceMixin:
         side = "boat" if getattr(self, "local_side", "frigate") == "uboot" else "frigate"
         crew_speaks = bool(self.preferences.speech and (
             self.speaker.available or (ready and self.preferences.tts_crew)))
-        for index, row in enumerate(rows):
+        for row in rows:
             category, text = ((row["category"], row["text"]) if isinstance(row, dict)
                               else (row.category, row.text))
             group = log_group(category)
             if group is None:
                 continue
             self._log_voice_seen.append((now, group))
-            if (not ready or index < len(rows) - LOG_BURST
-                    or not self.log_voice_on(group)):
+            if not ready or not self.log_voice_on(group):
                 continue
             if crew_speaks and callouts.callout_of(text, side) is not None:
                 continue            # the crew already calls this one out
             spoken = localize(text, self.tr)
             if spoken:
-                self.voice_say(spoken, "log")
+                self._log_voice_backlog.append(spoken)
+
+    def _feed_log_voice(self) -> None:
+        """Hand the waiting entries to the speech service, oldest first, at
+        most ``LOG_IN_FLIGHT`` at a time."""
+        backlog = self._log_voice_backlog
+        if not backlog:
+            return
+        if not self.voice_ready():
+            backlog.clear()
+            return
+        in_flight = sum(1 for request in self._voice_queue if request.role == "log")
+        playing = self._voice_playing
+        if playing is not None and playing.role == "log":
+            in_flight += 1
+        while backlog and in_flight < LOG_IN_FLIGHT:
+            if self.voice_say(backlog.popleft(), "log"):
+                in_flight += 1
 
     # -- settings -----------------------------------------------------------------
 

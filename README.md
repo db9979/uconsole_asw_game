@@ -15,10 +15,10 @@ Current release: **1.3.255**
 Release 1.3.255 makes the release checks more reliable, so new versions
 are no longer held back. A browser check of the station handover now
 reports why it fails instead of timing out silently. The game itself
-plays as in 1.3.251: daily short missions, training progress, the
-U-boat crew assist attacking on a good TMA solution and one line on the
-end panels saying what decided the mission. Saves are v53; v38 to v52
-saves still load.
+plays as in 1.3.254: the voice reads every log entry in order with a
+German speaking instruction, daily short missions, training progress and
+one line on the end panels saying what decided the mission. Saves are
+v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -10,20 +10,15 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.238**
+Aktuelle Version: **1.3.241**
 
-Version 1.3.238 zeigt Breite und Länge auf jeder Karte jeder Station.
-Bisher hatten nur die Brückenkarte und die Karten neben den Stationen des
-U-Boots das Gradnetz; auf der uConsole zeigten das Lagebild der OPZ, die
-Kreuzpeilkarte des Funkraums und die Lotsenkarte des U-Boots noch ihr
-einfaches sm-Gitter. In einem echten Seegebiet zeichnen sie jetzt
-Meridiane und Breitenkreise in Grad und Minuten mit ihren Zahlen am Rand
-und nennen die eigene Position wie 54°21,4'N 010°08,2'E (die Lotsenkarte
-des U-Boots den gekoppelten Ort); die Zahlen halten sich von
-Entfernungsringen, Peilskala und anderen Beschriftungen frei. Die Karten
-im Browser hatten das Gradnetz schon. Die stilisierte feste Karte behält
-ihr sm-Gitter. Spielablauf, Tasten und Spielstände bleiben gleich (v53;
-v38 bis v52 laden weiter).
+Version 1.3.241 ändert die Lizenz. U-Jagd steht nicht mehr unter der
+MIT-Lizenz, sondern unter der PolyForm Strict License 1.0.0: Sie dürfen das
+Spiel unverändert und nicht kommerziell spielen und nutzen, es aber nicht
+verkaufen, weitergeben oder verändern. Das gilt für den Code, die
+Browser-Clients, die Windows-EXE und die macOS-App; Pygame, NumPy,
+Kartendaten und Schriften behalten ihre eigenen Lizenzen. Das Spielgeschehen
+bleibt gleich. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -187,6 +182,9 @@ U-Jagd ist kostenlos. Wenn es Ihnen gefällt, können Sie es unter
 
 ## Lizenz
 
-Code und Projektdokumentation stehen unter der MIT-Lizenz, siehe
-[`LICENSE`](LICENSE). Pygame, NumPy, Quelldaten und Schriften behalten ihre
-eigenen Lizenzen, siehe [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+U-Jagd (Code, Browser-Clients, Dokumentation, Windows-EXE und macOS-App)
+steht unter der PolyForm Strict License 1.0.0, siehe [`LICENSE`](LICENSE).
+Sie dürfen es unverändert und nicht kommerziell spielen und nutzen;
+Verkauf, Weitergabe und Änderungen sind nicht erlaubt. Pygame, NumPy,
+Quelldaten und Schriften behalten ihre eigenen Lizenzen, siehe
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

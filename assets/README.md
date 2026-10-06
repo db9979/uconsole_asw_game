@@ -24,5 +24,5 @@ Begleitdatei. Dateien ohne nachvollziehbare Weitergaberechte dürfen nicht in
 Release-Artefakte aufgenommen werden.
 
 Bevorzugt werden offene Formate und Lizenzen, die eine Weitergabe zusammen mit
-dem MIT-lizenzierten Projekt erlauben. Eine kompatible Lizenz ersetzt nicht die
+dem Projekt (PolyForm Strict License 1.0.0) in Release-Artefakten erlauben. Eine kompatible Lizenz ersetzt nicht die
 erforderliche Namensnennung oder den Lizenztext des jeweiligen Assets.

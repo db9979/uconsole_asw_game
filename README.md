@@ -10,20 +10,14 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.238**
+Current release: **1.3.241**
 
-Release 1.3.238 puts latitude and longitude on every chart of every
-station. Until now only the Bridge chart and the charts beside the
-submarine's stations showed the graticule; on the uConsole the OPZ
-(CIC) plot, the radio room's cross-fix chart and the submarine's pilot
-chart still had their plain NM grid. On a real sea area they now draw
-meridians and parallels in degrees and minutes with their numbers along
-the edges and give the own position like 54°21.4'N 010°08.2'E (the
-submarine's pilot chart its dead-reckoned position); the numbers keep
-clear of range rings, bearing scale and other labels. The browser's
-charts already showed the graticule. The stylized fixed chart keeps its
-NM grid. Gameplay, keys and saves are unchanged (v53; v38 to v52 saves
-still load).
+Release 1.3.241 changes the license. U-Jagd is no longer MIT licensed but
+under the PolyForm Strict License 1.0.0: you may play and use the game as it
+is for noncommercial purposes, but not sell it, pass it on or change it. This
+covers the code, the browser clients, the Windows EXE and the macOS app;
+Pygame, NumPy, map data and fonts keep their own licenses. Gameplay is
+unchanged. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -183,6 +177,9 @@ U-Jagd is free. If you enjoy it, you can support it at
 
 ## License
 
-Code and project documentation are MIT licensed, see [`LICENSE`](LICENSE).
-Pygame, NumPy, source data and fonts keep their own licenses, see
+U-Jagd (code, browser clients, documentation, Windows EXE and macOS app) is
+licensed under the PolyForm Strict License 1.0.0, see [`LICENSE`](LICENSE).
+You may play and use it as it is for noncommercial purposes; selling,
+distributing and changing it are not allowed. Pygame, NumPy, source data and
+fonts keep their own licenses, see
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

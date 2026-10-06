@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.255
+
+Version 1.3.255 macht die Prüfungen vor einem Release zuverlässiger,
+damit neue Versionen nicht mehr ausbleiben. Eine Browser-Prüfung der
+Stationsübergabe nennt jetzt den Grund, wenn sie scheitert, statt still
+abzulaufen. Das Spiel selbst ist wie in 1.3.251: tägliche Kurzeinsätze,
+Ausbildungsfortschritt, die Crew-Hilfe des U-Boots greift mit einer
+guten TMA-Lösung an, und die Endtafeln sagen in einer Zeile, was den
+Einsatz entschieden hat. Spielstände sind v53; v38 bis v52 laden weiter.
+
 ## 1.3.251
 
 Version 1.3.251 bringt neue Inhalte und mehr Komfort. Der Tageseinsatz ist

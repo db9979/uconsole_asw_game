@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.255
+
+Release 1.3.255 makes the release checks more reliable, so new versions
+are no longer held back. A browser check of the station handover now
+reports why it fails instead of timing out silently. The game itself
+plays as in 1.3.251: daily short missions, training progress, the
+U-boat crew assist attacking on a good TMA solution and one line on the
+end panels saying what decided the mission. Saves are v53; v38 to v52
+saves still load.
+
 ## 1.3.251
 
 Release 1.3.251 adds new content and comfort. The daily mission is now a

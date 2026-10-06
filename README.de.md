@@ -10,20 +10,15 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.251**
+Aktuelle Version: **1.3.255**
 
-Version 1.3.251 bringt neue Inhalte und mehr Komfort. Der Tageseinsatz ist
-jetzt ein Kurzeinsatz, je Seite nach dem Datum gewählt, und das Spiel
-merkt sich die gewählte Einsatzlänge; neue Spieler beginnen mit
-Kurzeinsätzen. Die Ausbildung steht an zweiter Stelle im Hauptmenü, hakt
-abgeschlossene Lektionen ab, wählt die nächste vor, und N auf der Endtafel
-startet sie. Drei neue Fregatten-Lektionen üben die Luftabwehr gegen einen
-anfliegenden Flugkörper, ESM an einem Frachterradar und die Torpedoabwehr
-mit dem Nixie. Führt die Crew-Unterstützung das U-Boot, übernimmt sie
-jetzt eine gute TMA-Lösung als Ortung und greift damit an. Beide
-Endtafeln nennen in einer Zeile, was den Einsatz entschieden hat, und das
-Einsatzbuch zeigt ein Band je gewonnenem Szenario, auch im Browser.
-Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+Version 1.3.255 macht die Prüfungen vor einem Release zuverlässiger,
+damit neue Versionen nicht mehr ausbleiben. Eine Browser-Prüfung der
+Stationsübergabe nennt jetzt den Grund, wenn sie scheitert, statt still
+abzulaufen. Das Spiel selbst ist wie in 1.3.251: tägliche Kurzeinsätze,
+Ausbildungsfortschritt, die Crew-Hilfe des U-Boots greift mit einer
+guten TMA-Lösung an, und die Endtafeln sagen in einer Zeile, was den
+Einsatz entschieden hat. Spielstände sind v53; v38 bis v52 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

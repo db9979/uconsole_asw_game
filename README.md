@@ -10,19 +10,15 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.251**
+Current release: **1.3.255**
 
-Release 1.3.251 adds new content and comfort. The daily mission is now a
-short mission picked from the date for each side, and the game remembers
-the mission length you chose; new players start on short missions.
-Training sits second in the main menu, ticks finished lessons, selects the
-next one, and N on the end panel starts it. Three new frigate lessons
-cover air defence against an inbound missile, ESM against a merchant's
-radar and torpedo defence with the Nixie. When the crew assist runs the
-U-boat, it now takes a good TMA solution as its fix and attacks with it.
-Both end panels say in one line what decided the mission, and the logbook
-shows a ribbon for each scenario won, also in the browser. Saves are v53;
-v38 to v52 saves still load.
+Release 1.3.255 makes the release checks more reliable, so new versions
+are no longer held back. A browser check of the station handover now
+reports why it fails instead of timing out silently. The game itself
+plays as in 1.3.251: daily short missions, training progress, the
+U-boat crew assist attacking on a good TMA solution and one line on the
+end panels saying what decided the mission. Saves are v53; v38 to v52
+saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

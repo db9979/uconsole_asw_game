@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.268
+## 1.3.272
 
-Version 1.3.268 macht die Menüs per Maus bedienbar. In den Optionen ändert
+Version 1.3.272 macht die Menüs per Maus bedienbar. In den Optionen ändert
 ein Klick auf eine Zeile sie wie `Eingabe`, und neue Schaltflächen **<** und
 **>** stellen einen Wert zurück oder weiter; jede Taste in der Hinweiszeile
 ist ein klickbarer Chip. Die Seite Echtzeit-Verkehr schaltet Dienste per

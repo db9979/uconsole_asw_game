@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.268**
+Current release: **1.3.272**
 
-Release 1.3.268 makes the menus work by mouse. In the options a click on a
+Release 1.3.272 makes the menus work by mouse. In the options a click on a
 row changes it like `Enter`, and new **<** and **>** buttons step a value
 back or on; every key in the hint line is a clickable chip. The real-world
 traffic page switches services and opens its fields by click, a click

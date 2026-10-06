@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.268
+## 1.3.272
 
-Release 1.3.268 makes the menus work by mouse. In the options a click on a
+Release 1.3.272 makes the menus work by mouse. In the options a click on a
 row changes it like `Enter`, and new **<** and **>** buttons step a value
 back or on; every key in the hint line is a clickable chip. The real-world
 traffic page switches services and opens its fields by click, a click

@@ -175,13 +175,20 @@ def test_the_ai_sonar_keeps_the_contact_the_uconsole_picked():
     game, boat = _assisted_boat("uboot_weapons")
     contacts = boat.station.sonar.contacts
     contacts.clear()
-    quiet, loud = (SimpleNamespace(id=n, target_id=-900 - n, snr=snr, last_seen=game.sim_t)
+    quiet, loud = (SimpleNamespace(id=n, target_id=-900 - n, snr=snr, last_seen=game.sim_t,
+                                   signature="")
                    for n, snr in ((1, 3.0), (2, 12.0)))
     contacts.update({quiet.target_id: quiet, loud.target_id: loud})
     boat.station.selected_contact = quiet            # Up/Down on the uConsole
     assert boat_autocrew.sonar(game, boat) == "monitoring"
     assert boat.station.selected_contact is quiet
+    # On the uConsole the crew focuses targets only (none here), so any
+    # pick there is the person's; with the boat in browser hands it takes
+    # the loudest contact.
     boat.station.selected_contact = None
+    assert boat_autocrew.sonar(game, boat) == "monitoring"
+    assert boat.station.selected_contact is None
+    game.local_side = "frigate"
     assert boat_autocrew.sonar(game, boat) == "focused"
     assert boat.station.selected_contact is loud
 
@@ -241,3 +248,33 @@ def test_the_ai_sonar_listens_to_the_contact_the_uconsole_selected():
     game.sonar.focus_locked = False
     assert AutocrewController._sonar(game) == "focused"
     assert game.selected_contact is rows[1]
+
+
+def test_the_ai_sonar_takes_a_good_tma_solution_on_a_target_as_its_fix(monkeypatch):
+    from types import SimpleNamespace
+    game, boat = _assisted_boat("uboot_weapons")
+    taken = []
+    target = SimpleNamespace(id=1, target_id=-901, snr=8.0, last_seen=game.sim_t,
+                             range_source=None, tma_seen=None,
+                             accept_operator_tma=lambda *args: taken.append(args))
+    boat.station.sonar.contacts.clear()
+    boat.station.sonar.contacts[target.target_id] = target
+    monkeypatch.setattr(boat_autocrew, "targets", lambda game, boat: [target])
+    monkeypatch.setattr(boat_autocrew, "_fix", lambda game, boat, contact: None)
+    proposals = boat.station.sonar.tma_proposals
+    proposals.clear()
+    boat.station.selected_contact = None
+    assert boat_autocrew.sonar(game, boat) == "focused"
+    assert boat.station.selected_contact is target
+    weak = SimpleNamespace(pos=(1.0, 2.0), course=90.0, speed=8.0,
+                           quality=boat_autocrew.ACCEPT_MIN_QUALITY - 0.05)
+    proposals[target.target_id] = weak
+    assert boat_autocrew.sonar(game, boat) == "monitoring" and not taken
+    proposals[target.target_id] = SimpleNamespace(pos=(1.0, 2.0), course=90.0, speed=8.0,
+                                                  quality=0.8)
+    assert boat_autocrew.sonar(game, boat) == "solution"
+    assert taken == [((1.0, 2.0), 90.0, 8.0, 0.8, game.sim_t)]
+    target.tma_seen = game.sim_t                     # just taken: not again at once
+    assert boat_autocrew.sonar(game, boat) == "monitoring" and len(taken) == 1
+    target.tma_seen, target.range_source = None, "ping"
+    assert boat_autocrew.sonar(game, boat) == "monitoring" and len(taken) == 1

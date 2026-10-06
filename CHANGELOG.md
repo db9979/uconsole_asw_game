@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.265
+## 1.3.268
 
-Release 1.3.265 lets the browser charts zoom in as far as the uConsole's.
+Release 1.3.268 lets the browser charts zoom in as far as the uConsole's.
 Every chart of a Remote Crew station, on the frigate and the submarine,
 now goes from the whole sea area down to 0.5 NM across the shorter side
 (before it stopped at about 16 NM) with Q/E, the mouse wheel, which zooms
@@ -14,6 +14,18 @@ about the pointer, or a two-finger pinch on a touch screen. The grid of
 degrees and minutes, or of sea miles on the fixed chart, gets finer down
 to a tenth as you zoom in, and the view width above the chart shows
 decimals. Saves are v53; v38 to v52 saves still load.
+
+## 1.3.266
+
+Release 1.3.266 closes the first gaps in mouse control. A click into the
+executive officer's or the language model's window no longer reaches the
+station behind it. In the Mission and Unit Editors a second click on a row
+opens the field. At the sonar the cursor on LOFAR and DEMON and the TMA
+hypothesis (course, speed, range) now move by clicking their chips, the
+helicopter's waypoint chips steer it, the submarine's status line opens
+the log like `F11`, and the submarine sonar no longer shows a key on its
+array readout. A new test makes sure every key chip on every station can
+be clicked. Saves are v53; v38 to v52 saves still load.
 
 ## 1.3.264
 

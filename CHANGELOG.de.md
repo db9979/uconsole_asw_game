@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.265
+## 1.3.268
 
-Version 1.3.265 lässt die Karten im Browser so weit hineinzoomen wie
+Version 1.3.268 lässt die Karten im Browser so weit hineinzoomen wie
 auf der uConsole. Jede Karte einer Remote-Crew-Station, auf der Fregatte
 und im U-Boot, geht jetzt vom ganzen Seegebiet bis auf 0,5 sm über die
 kürzere Seite (bisher war bei etwa 16 sm Schluss), mit Q/E, dem Mausrad,
@@ -15,6 +15,19 @@ Das Gitter in Grad und Minuten, auf der festen Karte in Seemeilen, wird
 beim Hineinzoomen bis auf Zehntel feiner, und die Ansichtsbreite über der
 Karte zeigt Nachkommastellen. Spielstände sind v53; v38 bis v52 laden
 weiterhin.
+
+## 1.3.266
+
+Version 1.3.266 schließt die ersten Lücken in der Maussteuerung. Ein Klick
+ins Fenster des Ersten Offiziers oder des Sprachmodells erreicht die
+Station dahinter nicht mehr. Im Missions- und Einheiten-Editor öffnet ein
+zweiter Klick auf eine Zeile das Feld. Am Sonar lassen sich der Cursor auf
+LOFAR und DEMON und die TMA-Hypothese (Kurs, Fahrt, Entfernung) jetzt per
+Klick auf ihre Chips verstellen, die Wegpunkt-Chips des Helis steuern ihn,
+die Statuszeile des U-Boots öffnet das Log wie `F11`, und das U-Boot-Sonar
+zeigt an seiner Array-Anzeige keine Taste mehr. Ein neuer Test sorgt dafür,
+dass jeder Tastenchip an jeder Station klickbar ist. Spielstände sind v53;
+v38- bis v52-Stände werden weiter geladen.
 
 ## 1.3.264
 

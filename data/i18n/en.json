@@ -2962,7 +2962,7 @@
   "engine.machinery": "MACHINERY {state} (flooding {flooding}%){extra}",
   "helo.waypoint_rule": "WAYPOINT TRUE/NORTH {bearing}° | Range {range} NM",
   "helo.rtb_margin": "RTB MARGIN {margin} min | Q/E chart zoom",
-  "helo.launch_rule": "H: launch / return | Arrows: waypoint",
+  "helo.launch_rule": "H: launch / return | ←/→ waypoint bearing | ↑/↓ range",
   "helo.weapon_controls": "B: sonobuoy | Ctrl+Enter: air torpedo",
   "sonar.status.array": "ARRAY {array} | TAS {state} {payout}% {ready}{pause}",
   "sonar.status.array.short": "{array} | TAS {state} {payout}% {ready}{pause}",

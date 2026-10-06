@@ -373,7 +373,7 @@ class DrawMixin:
             world_label = sector["name"]
             if self.world_mode == "real_fixed":
                 center(self.tr("menu.real_fixed_hint", sector=sector["id"]),
-                       config.SCREEN_H - 92, color=config.COLOR_TEXT_DIM, keys=(None, "]"))
+                       config.SCREEN_H - 92, color=config.COLOR_TEXT_DIM, keys=(None, "[ / ]"))
         else:
             world_label = self.tr("menu.fixed_chart")
         center(self.tr("menu.world_status", world=world_label, seed=self.seed),

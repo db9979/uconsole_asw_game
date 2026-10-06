@@ -10,22 +10,15 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.234**
+Aktuelle Version: **1.3.241**
 
-Version 1.3.234 bringt den Browser auf den Stand der uConsole. Die
-Sonarseite wählt den aktiven Impuls (CW oder LFM, W) und das TMA-Verfahren
-(Umschalt+T). Die Browser-Tasten folgen jetzt an jeder Station beider
-Seiten der uConsole: + und - stellen den Maschinentelegrafen (jetzt auch
-auf der Brücke), Funkraum, Leckwehr und ELOKA haben ihre Tasten, und jedes
-belegte Bedienelement zeigt seine Taste als blauen Chip. Seitenleisten und
-Protokoll liegen jetzt auf Alt+, Alt+. und Alt+L, und [ ] schalten keine
-Stationen mehr um. Der Funkraum zeigt, ob ein eigener Ruf an die Führung
-auf Sendung ist, wartet oder bereit ist, und eine neue KW-Peilkarte
-zeichnet Peilungen, Kreuzpeilungen und Fehlerellipsen. Die Stationsleisten
-stellen die Bedienelemente vor die Lesetabellen, die sich einklappen
-lassen, und nutzen auf breiten Bildschirmen zwei Spalten. Der Solo-Browser
-öffnet das Einsatzbuch und die Ausbildung. Spielstände sind v53;
-Spielstände v38 bis v52 laden weiterhin.
+Version 1.3.241 ändert die Lizenz. U-Jagd steht nicht mehr unter der
+MIT-Lizenz, sondern unter der PolyForm Strict License 1.0.0: Sie dürfen das
+Spiel unverändert und nicht kommerziell spielen und nutzen, es aber nicht
+verkaufen, weitergeben oder verändern. Das gilt für den Code, die
+Browser-Clients, die Windows-EXE und die macOS-App; Pygame, NumPy,
+Kartendaten und Schriften behalten ihre eigenen Lizenzen. Das Spielgeschehen
+bleibt gleich. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -189,6 +182,9 @@ U-Jagd ist kostenlos. Wenn es Ihnen gefällt, können Sie es unter
 
 ## Lizenz
 
-Code und Projektdokumentation stehen unter der MIT-Lizenz, siehe
-[`LICENSE`](LICENSE). Pygame, NumPy, Quelldaten und Schriften behalten ihre
-eigenen Lizenzen, siehe [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+U-Jagd (Code, Browser-Clients, Dokumentation, Windows-EXE und macOS-App)
+steht unter der PolyForm Strict License 1.0.0, siehe [`LICENSE`](LICENSE).
+Sie dürfen es unverändert und nicht kommerziell spielen und nutzen;
+Verkauf, Weitergabe und Änderungen sind nicht erlaubt. Pygame, NumPy,
+Quelldaten und Schriften behalten ihre eigenen Lizenzen, siehe
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

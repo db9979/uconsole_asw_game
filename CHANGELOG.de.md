@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.241
+
+Version 1.3.241 ändert die Lizenz. U-Jagd steht nicht mehr unter der
+MIT-Lizenz, sondern unter der PolyForm Strict License 1.0.0: Sie dürfen das
+Spiel unverändert und nicht kommerziell spielen und nutzen, es aber nicht
+verkaufen, weitergeben oder verändern. Das gilt für den Code, die
+Browser-Clients, die Windows-EXE und die macOS-App; Pygame, NumPy,
+Kartendaten und Schriften behalten ihre eigenen Lizenzen. Das Spielgeschehen
+bleibt gleich. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+
 ## 1.3.234
 
 Version 1.3.234 bringt den Browser auf den Stand der uConsole. Die

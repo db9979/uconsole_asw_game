@@ -10,20 +10,14 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.234**
+Current release: **1.3.241**
 
-Release 1.3.234 brings the browser in step with the uConsole. The sonar
-page chooses the active pulse (CW or LFM, W) and the TMA method (Shift+T).
-Browser keys now follow the uConsole at every station of both sides:
-plus and minus step the telegraph (now also on the Bridge), radio, damage control and
-ELOKA have their keys, and every bound control shows its key as a blue
-chip. The side docks and the log moved to Alt+, Alt+. and Alt+L, and [ ]
-no longer step stations. The radio room shows whether an own call to HQ is
-on the air, waiting or ready, and a new HF/DF chart draws bearings, cross
-fixes and error ellipses. Station docks put the controls before the read
-tables, which fold away, and use two columns on wide screens. The solo
-browser opens the logbook and the training lessons. Saves are v53; v38 to
-v52 saves still load.
+Release 1.3.241 changes the license. U-Jagd is no longer MIT licensed but
+under the PolyForm Strict License 1.0.0: you may play and use the game as it
+is for noncommercial purposes, but not sell it, pass it on or change it. This
+covers the code, the browser clients, the Windows EXE and the macOS app;
+Pygame, NumPy, map data and fonts keep their own licenses. Gameplay is
+unchanged. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -183,6 +177,9 @@ U-Jagd is free. If you enjoy it, you can support it at
 
 ## License
 
-Code and project documentation are MIT licensed, see [`LICENSE`](LICENSE).
-Pygame, NumPy, source data and fonts keep their own licenses, see
+U-Jagd (code, browser clients, documentation, Windows EXE and macOS app) is
+licensed under the PolyForm Strict License 1.0.0, see [`LICENSE`](LICENSE).
+You may play and use it as it is for noncommercial purposes; selling,
+distributing and changing it are not allowed. Pygame, NumPy, source data and
+fonts keep their own licenses, see
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

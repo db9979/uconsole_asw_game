@@ -1,6 +1,6 @@
 # Drittanbieterhinweise
 
-U-Jagd selbst steht unter der MIT-Lizenz. Die folgenden Laufzeitabhängigkeiten
+U-Jagd selbst steht unter der PolyForm Strict License 1.0.0 (siehe `LICENSE`). Die folgenden Laufzeitabhängigkeiten
 werden nicht als Quellcode in diesem Repository geführt, sondern bei der
 Installation separat bezogen. Sie unterliegen ihren eigenen Lizenzbedingungen.
 

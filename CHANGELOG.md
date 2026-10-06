@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.241
+
+Release 1.3.241 changes the license. U-Jagd is no longer MIT licensed but
+under the PolyForm Strict License 1.0.0: you may play and use the game as it
+is for noncommercial purposes, but not sell it, pass it on or change it. This
+covers the code, the browser clients, the Windows EXE and the macOS app;
+Pygame, NumPy, map data and fonts keep their own licenses. Gameplay is
+unchanged. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.234
 
 Release 1.3.234 brings the browser in step with the uConsole. The sonar

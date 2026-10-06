@@ -195,7 +195,7 @@ def test_service_speaks_with_style_key_and_wav():
         assert body["model"] == "tts" and body["voice"] == "onyx"
         assert body["input"] == "Torpedo im Wasser."
         assert body["response_format"] == "wav"
-        assert "German" in body["instructions"]
+        assert body["instructions"] == voice._STYLE["de"]
         assert body["language"] == "German"
         assert server.headers[0]["Authorization"] == "Bearer sk-voice-secret-1234"
         assert "secret" not in repr(service.config)

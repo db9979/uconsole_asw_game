@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.252
+## 1.3.256
 
-Release 1.3.252 makes the underwater fight more realistic. Torpedo seekers
+Release 1.3.256 makes the underwater fight more realistic. Torpedo seekers
 now look ahead in a cone of about 45 degrees to each side and within a depth
 window, lock on by signal strength against their own noise, search slowly
 and quietly and sprint only once they hold a target. AI submarines react to
@@ -18,6 +18,19 @@ passive contacts near the detection limit fade in and out, and in the
 convoy attack the escort warns its merchants, about every second one of
 which turns away from a torpedo it hears. Saves are v53; v38 to v52 saves
 still load.
+
+## 1.3.254
+
+Release 1.3.254 reads the log aloud completely and in order, and makes the
+voice sound more German. Every log entry is now read, one after the other
+in the log's order, instead of keeping only the newest of a burst and
+dropping entries that waited longer than 15 s. The speaking instruction to
+the speech service is written in the game's language, because an English
+instruction pulled models such as Qwen-TTS towards an English accent on
+German text. Counts like "1x" are said as "one times", abbreviations such
+as CIWS are spelled, and a spelled number no longer leaves a gap before a
+closing bracket. Keys and saves are unchanged (v53; v38 to v52 saves still
+load).
 
 ## 1.3.251
 

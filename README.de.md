@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.252**
+Aktuelle Version: **1.3.256**
 
-Version 1.3.252 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
+Version 1.3.256 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
 schauen jetzt in einem Kegel von etwa 45 Grad zu jeder Seite und in einem
 Tiefenfenster nach vorn, schalten nach Signalstärke gegen ihr Eigengeräusch
 auf, suchen langsam und leise und sprinten erst nach der Aufschaltung.

@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.252
+## 1.3.256
 
-Version 1.3.252 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
+Version 1.3.256 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
 schauen jetzt in einem Kegel von etwa 45 Grad zu jeder Seite und in einem
 Tiefenfenster nach vorn, schalten nach Signalstärke gegen ihr Eigengeräusch
 auf, suchen langsam und leise und sprinten erst nach der Aufschaltung.
@@ -19,6 +19,20 @@ jetzt Fahrt, passive Kontakte an der Erfassungsgrenze schwinden und kommen
 wieder, und beim Geleitzugangriff warnt die Fregatte ihre Frachter, von denen
 etwa jeder zweite vor einem gehörten Torpedo abdreht. Spielstände sind v53;
 v38- bis v52-Spielstände lassen sich weiter laden.
+
+## 1.3.254
+
+Version 1.3.254 liest das Log vollständig und der Reihe nach vor und lässt
+die Stimme deutscher klingen. Jede Logmeldung wird jetzt vorgelesen, eine
+nach der anderen in der Reihenfolge des Logs, statt von vielen Meldungen
+auf einmal nur die neuesten zu behalten und Meldungen wegzuwerfen, die
+länger als 15 s warteten. Die Sprechanweisung an den Sprachdienst ist in
+der Spielsprache geschrieben, weil eine englische Anweisung Modelle wie
+Qwen-TTS bei deutschem Text zu englischem Akzent gezogen hat. Mengen wie
+„1x“ werden als „eins mal“ gesprochen, Kürzel wie CIWS buchstabiert, und
+eine gesprochene Zahl lässt keine Lücke mehr vor einer schließenden
+Klammer. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
+v52 laden weiter).
 
 ## 1.3.251
 

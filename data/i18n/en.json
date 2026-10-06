@@ -7667,7 +7667,7 @@
   "voice.log_title": "Log reports",
   "voice.log_subtitle": "The voice also reads the log (F11) aloud; mute a station that reports too much.",
   "voice.label.tts_log": "Read log entries aloud",
-  "voice.help.tts_log": "Entries still waiting when they are old news are skipped; crew calls are not read twice.",
+  "voice.help.tts_log": "Every entry is read in order; crew calls are not read twice.",
   "voice.label.tts_log_navigation": "Bridge and navigation (NAV)",
   "voice.label.tts_log_funk": "Radio (FUNK)",
   "voice.label.tts_log_sonar": "Sonar (SONAR)",

@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.252**
+Current release: **1.3.256**
 
-Release 1.3.252 makes the underwater fight more realistic. Torpedo seekers
+Release 1.3.256 makes the underwater fight more realistic. Torpedo seekers
 now look ahead in a cone of about 45 degrees to each side and within a depth
 window, lock on by signal strength against their own noise, search slowly
 and quietly and sprint only once they hold a target. AI submarines react to

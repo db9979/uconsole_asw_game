@@ -45,6 +45,7 @@ class AdvisorUiMixin:
         self.advisor_mode = 0
         self.advisor_field = TextField(maximum=advisor_model.MAX_TEXT)
         self.advisor_scroll = None
+        self.advisor_scroll_max = 0
         self.llm_open = False
         self.llm_sel = 0
         self.llm_page = 0
@@ -62,6 +63,11 @@ class AdvisorUiMixin:
                 and not entry["applied"] and not entry.get("discarded")):
             return entry
         return None
+
+    def open_llm_settings(self) -> None:
+        """The model's settings page (options page 2, or the executive
+        officer's button while the model is off)."""
+        self._open_administration("llm")
 
     # -- the executive officer (F7) --------------------------------------------
 
@@ -82,6 +88,18 @@ class AdvisorUiMixin:
             else:
                 self.advisor_open = False
             return
+        # The log scrolls also while an order waits for confirmation.
+        if key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+            step = 6 if key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN) else 1
+            # From the last drawn log's bottom (src/ui/advisor_view.py), so the
+            # first step back moves at once.
+            bottom = self.advisor_scroll_max
+            current = bottom if self.advisor_scroll is None else min(self.advisor_scroll, bottom)
+            self.advisor_scroll = max(0, current + (step if key in (
+                pygame.K_DOWN, pygame.K_PAGEDOWN) else -step))
+            if self.advisor_scroll >= bottom:
+                self.advisor_scroll = None      # back at the newest entry: follow it
+            return
         if proposal is not None:
             if key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                 result = self.advisor_confirm(proposal["seq"])
@@ -97,12 +115,6 @@ class AdvisorUiMixin:
         if (pygame.K_1 <= key <= pygame.K_5 and not self.advisor_field.value
                 and self.advisor_mode_name() not in TEXT_MODES):
             self.advisor_mode = key - pygame.K_1
-            return
-        if key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
-            step = 6 if key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN) else 1
-            current = self.advisor_scroll if self.advisor_scroll is not None else 10 ** 6
-            self.advisor_scroll = max(0, current + (step if key in (
-                pygame.K_DOWN, pygame.K_PAGEDOWN) else -step))
             return
         if key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             mode = self.advisor_mode_name()

@@ -7577,6 +7577,7 @@
   "llm.button.save": "Speichern",
   "llm.button.cancel": "Abbrechen",
   "advisor.off": "Das Sprachmodell ist aus. Einschalten unter Optionen (F10), Seite 2, Sprachmodell. Ohne Sprachmodell läuft das Spiel wie bisher.",
+  "advisor.not_an_order": "Nicht ausgeführt: Hier beantworte ich nur Fragen und gebe keine Befehle. Fahrt, Kurs und Tiefe setzt du an deiner Station, oder du tippst den Befehl beim Ersten Offizier im Reiter Befehl (F7) ein und bestätigst ihn.",
   "advisor.order_done": "Erster Offizier: Befehl gegeben.",
   "advisor.order_partial": "Erster Offizier: nicht jeder Befehl konnte gegeben werden.",
   "advisor.reason.invalid_value": "Bitte eine Frage oder einen Befehl eintippen (höchstens 300 Zeichen).",

@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.271
+
+Release 1.3.271 fixes the talk key confirming orders it never carried
+out. Spoken as an order, such as "all ahead full", a question to the
+executive officer used to be answered as if the order had been given, while
+the ship kept its speed. Now the game itself answers "Not carried out" and
+says where orders are given: at your station, or as a typed order on the
+executive officer's Order tab (F7) that you confirm. The talk key still
+only asks, and the officer is told never to confirm an order. Saves are
+v53; v38 to v52 saves still load.
+
 ## 1.3.264
 
 Release 1.3.264 makes the underwater fight more realistic. Torpedo seekers

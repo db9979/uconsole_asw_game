@@ -16,7 +16,7 @@ import pytest
 from src.core import game_talk
 from src.core.game import Game
 from src.core.station import Station
-from src.llm import stt
+from src.llm import advisor as advisor_model, prompts, stt
 from src.llm.stt import SttConfig, SttService
 from src.ui import layout, pointer, talk_view
 from tests.llm_fake import FakeLlmServer
@@ -215,6 +215,57 @@ def test_hold_speak_release_asks_the_executive_officer(clock):
         assert game.talk_bubble_shown()
         clock.now += game_talk.BUBBLE_S + 1
         assert not game.talk_bubble_shown()
+
+
+@pytest.mark.parametrize("text", [
+    "Volle Fahrt voraus", "Volle Fahrt voraus.", "Kurs 270, 12 Knoten", "Ruder hart Steuerbord",
+    "Auf Sehrohrtiefe gehen", "Rohr eins los", "Gefechtsstationen!", "Alle Maschinen stopp",
+    "All ahead full", "Come right to 090", "Make depth 100 metres", "Fire tube one",
+])
+def test_orders_are_told_apart_from_questions(text):
+    assert advisor_model.looks_like_order(text)
+
+
+@pytest.mark.parametrize("text", [
+    "Wo ist K1?", "Wie schnell sollen wir fahren", "Soll ich volle Fahrt voraus gehen",
+    "Was bedeutet Sehrohrtiefe", "Erkläre mir die Schleichfahrt", "Wo steht der Kontakt gerade",
+    "Where is the contact?", "Should we go to periscope depth", "What does all ahead full mean",
+    "Kontakt K1 peilt 045", "",
+])
+def test_questions_are_never_taken_for_orders(text):
+    assert not advisor_model.looks_like_order(text)
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_a_spoken_order_is_never_confirmed_or_carried_out(clock, language):
+    """Bug 2026-10-06: "Volle Fahrt voraus" by the talk key was answered with a
+    confirmation of 30 kn, yet nothing was set.  The talk key only asks: the
+    game itself says that nothing was done and where orders are given."""
+    with FakeLlmServer("Volle Fahrt voraus, 30 Knoten werden gesetzt.") as llm, \
+            FakeSttServer("Volle Fahrt voraus.") as speech:
+        game = _game()
+        game._set_preference("language", language)
+        _connect(game, llm, speech)
+        game.station = Station.BRIDGE
+        speed = game.ship.target_speed
+        _key(game)
+        clock.now += 2.0
+        _key(game, down=False)
+        assert _pump(game, lambda: game.talk_state == "idle" and game.talk_bubble
+                     and game.talk_bubble["entry"] is not None
+                     and game.talk_bubble["entry"]["status"] == "done")
+        answer = game.talk_bubble["entry"]["answer"]
+        assert answer == game.tr("advisor.not_an_order")
+        assert "30" not in answer
+        # Nothing went to the model, nothing was set, and it is no advisor help.
+        assert llm.requests == []
+        assert game.ship.target_speed == speed
+        assert not game.llm_advisor_used
+
+
+def test_the_question_prompt_forbids_confirming_orders():
+    system = prompts.advisor("de", "frigate", "question", "facts", "x")[0]["content"]
+    assert "cannot carry out orders" in system and "never repeat it back" in system
 
 
 def test_a_tap_keeps_recording_until_the_next_press(clock):

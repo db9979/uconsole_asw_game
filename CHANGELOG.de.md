@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.271
+
+Version 1.3.271 behebt, dass die Sprechtaste Befehle bestätigte, die nie
+ausgeführt wurden. Als Befehl gesprochen, etwa "Volle Fahrt voraus", wurde
+eine Frage an den Ersten Offizier so beantwortet, als sei der Befehl
+gegeben, während das Schiff seine Fahrt behielt. Jetzt antwortet das Spiel
+selbst "Nicht ausgeführt" und sagt, wo Befehle gegeben werden: an deiner
+Station oder als getippter Befehl im Reiter Befehl des Ersten Offiziers
+(F7), den du bestätigst. Die Sprechtaste fragt weiterhin nur, und der
+Offizier ist angewiesen, nie einen Befehl zu bestätigen. Spielstände sind
+v53; v38 bis v52 laden weiter.
+
 ## 1.3.264
 
 Version 1.3.264 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe

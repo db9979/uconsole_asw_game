@@ -7577,6 +7577,7 @@
   "llm.button.save": "Save",
   "llm.button.cancel": "Cancel",
   "advisor.off": "The language model is off. Switch it on under Options (F10), page 2, Language model. Without it the game plays as before.",
+  "advisor.not_an_order": "Not carried out: here I only answer questions and give no orders. Set speed, course and depth at your station, or type the order on the executive officer's Order tab (F7) and confirm it.",
   "advisor.order_done": "Executive officer: order given.",
   "advisor.order_partial": "Executive officer: not every order could be given.",
   "advisor.reason.invalid_value": "Please type a question or order (at most 300 characters).",

@@ -10,21 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.264**
+Aktuelle Version: **1.3.271**
 
-Version 1.3.264 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
-schauen jetzt in einem Kegel von etwa 45 Grad zu jeder Seite und in einem
-Tiefenfenster nach vorn, schalten nach Signalstärke gegen ihr Eigengeräusch
-auf, suchen langsam und leise und sprinten erst nach der Aufschaltung.
-KI-U-Boote reagieren auf einen Ping nach seiner Lautstärke: ein leiser
-schickt sie tief und langsam, ein naher lässt sie vom Pinger weglaufen. Sie
-weichen einem Torpedo aus, indem sie ihn querab nehmen, einen Täuschkörper
-ausstoßen und davonschleichen, und verstecken sich auf der Seite der
-Sprungschicht abseits eines ausgebrachten Tiefensonars. Harte Kurven kosten
-jetzt Fahrt, passive Kontakte an der Erfassungsgrenze schwinden und kommen
-wieder, und beim Geleitzugangriff warnt die Fregatte ihre Frachter, von denen
-etwa jeder dritte vor einem gehörten Torpedo abdreht. Spielstände sind v53;
-v38- bis v52-Spielstände lassen sich weiter laden.
+Version 1.3.271 behebt, dass die Sprechtaste Befehle bestätigte, die nie
+ausgeführt wurden. Als Befehl gesprochen, etwa "Volle Fahrt voraus", wurde
+eine Frage an den Ersten Offizier so beantwortet, als sei der Befehl
+gegeben, während das Schiff seine Fahrt behielt. Jetzt antwortet das Spiel
+selbst "Nicht ausgeführt" und sagt, wo Befehle gegeben werden: an deiner
+Station oder als getippter Befehl im Reiter Befehl des Ersten Offiziers
+(F7), den du bestätigst. Die Sprechtaste fragt weiterhin nur, und der
+Offizier ist angewiesen, nie einen Befehl zu bestätigen. Spielstände sind
+v53; v38 bis v52 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

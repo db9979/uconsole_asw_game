@@ -313,7 +313,8 @@ class LlmMixin:
         station = station if station is not None else self.advisor_station()
         result = self.advisor.ask(self.llm, self, asker, kind, side=side,
                                   language=self.llm_language(), text=text, station=station)
-        if isinstance(result, dict) and kind in advisor_model.HELP_KINDS:
+        if (isinstance(result, dict) and kind in advisor_model.HELP_KINDS
+                and not (kind == "question" and advisor_model.looks_like_order(text))):
             self.llm_advisor_sides.add(side)
         return result
 

@@ -4,6 +4,7 @@ import { finite, hasPosition, number, t, unit } from "../core/format.js";
 import { colors, palette } from "../core/palette.js";
 import { lookoutRanges, lookoutView, view } from "../state/shared.js";
 import { chartGeometry, queueDraw, resizeCanvas } from "./chart.js";
+import { clampMapZoom } from "../core/map-zoom.js";
 import { node } from "./dom.js";
 import { schedule } from "../core/scheduler.js";
 import { canvas, lookoutCanvas, lookoutCtx } from "./canvases.js";
@@ -137,7 +138,8 @@ export function changeLookoutRange(direction) {
 export function zoom(factor, px = canvas.clientWidth / 2, py = canvas.clientHeight / 2) {
   if (!S.chart || !S.snapshot) return;
   const before = chartGeometry();
-  const newZoom = Math.max(.5, Math.min(256, view.zoom * factor));
+  // The operations chart fits the sea area into 90 % of its shorter side.
+  const newZoom = clampMapZoom(view.zoom * factor, S.chart.size_nm, .9);
   if (!view.follow) {
     view.x += (px - before.width / 2) / before.scale * (1 - view.zoom / newZoom);
     view.y += (py - before.height / 2) / before.scale * (1 - view.zoom / newZoom);

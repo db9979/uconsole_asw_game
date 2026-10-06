@@ -10,17 +10,16 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.272**
+Current release: **1.3.275**
 
-Release 1.3.272 makes the menus work by mouse. In the options a click on a
-row changes it like `Enter`, and new **<** and **>** buttons step a value
-back or on; every key in the hint line is a clickable chip. The real-world
-traffic page switches services and opens its fields by click, a click
-closes the start screen, lobby rows step back from their left third and
-on elsewhere, the Remote Crew page steps host and port back the same way,
-the Remote Crew admission window has a close cross, and the update
-notice closes with its cross until the next launch. Saves are v53;
-v38 to v52 saves still load.
+Release 1.3.275 lets the browser charts zoom in as far as the uConsole's.
+Every chart of a Remote Crew station, on the frigate and the submarine,
+now goes from the whole sea area down to 0.5 NM across the shorter side
+(before it stopped at about 16 NM) with Q/E, the mouse wheel, which zooms
+about the pointer, or a two-finger pinch on a touch screen. The grid of
+degrees and minutes, or of sea miles on the fixed chart, gets finer down
+to a tenth as you zoom in, and the view width above the chart shows
+decimals. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

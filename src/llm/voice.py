@@ -87,8 +87,14 @@ _STYLE_ALL = ("Speak as a calm, experienced naval officer reporting on a warship
               "net: steady, clear and neutral, the same voice, pace and tone throughout. "
               "Never laugh, chuckle, sigh, whisper or add sounds; no emotional changes.")
 _STYLE = {role: _STYLE_ALL for role in ("crew", "xo", "test", "log")}
-_LANGUAGE = {"de": " The text is German; use natural German pronunciation.",
-             "en": " The text is English."}
+_LANGUAGE = {"de": " The text is German: speak German only, with native German pronunciation "
+                   "from the first word to the last; never switch language or accent.",
+             "en": " The text is English: speak English only, with native English pronunciation "
+                   "from the first word to the last; never switch language or accent."}
+# The fixed language for servers that take a ``language`` field (Qwen-TTS
+# and similar; without it they guess from the first words and the start of
+# a sentence may come out in another language or accent).
+_LANGUAGE_NAME = {"de": "German", "en": "English"}
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 
 
@@ -148,7 +154,8 @@ def spell_digits(text, digits, point: str) -> str:
 WORD_NAMES = ("knots", "nautical_miles", "metres_per_second", "metres", "kilometres",
               "seconds", "minutes", "hours", "hertz", "kilohertz", "decibels", "percent",
               "degrees", "arc_minutes", "north", "south", "east", "west", "bearing",
-              "range", "about")
+              "range", "about", "celsius", "fahrenheit", "minus", "plus", "plus_minus", "to",
+              "times", "and", "at", "number", "equals")
 _POSITION = re.compile(r"(\d+)\s?°\s?(\d+(?:[.,]\d+)?)\s?'\s?([NSEWO])(?![\w])")
 _HEMISPHERE = {"N": "north", "S": "south", "E": "east", "O": "east", "W": "west"}
 # After a number: unit -> word name (longest first, so "kHz" before "Hz").
@@ -161,6 +168,29 @@ _UNIT = re.compile(r"(\d)\s?(" + "|".join(re.escape(unit) for unit, _ in _UNITS)
 _UNIT_WORD = dict(_UNITS)
 _SHORT = {"Rtg": "bearing", "Brg": "bearing", "brg": "bearing", "Dst": "range"}
 _SHORT_WORD = re.compile(r"(?<![\w])(" + "|".join(_SHORT) + r")\.?(?![\w])")
+
+
+# Temperatures ("-2 °C"), signs, ranges ("0–360") and symbols a speech
+# model would read out or stumble over at the start of a sentence.
+_TEMPERATURE = re.compile(r"\s?°\s?([CF])(?![\w])")
+_RANGE = re.compile(r"(\d)\s?[–—-]\s?(?=\d)")
+_SIGN = re.compile(r"(?<![\w.,])[-−]\s?(?=\d)")
+_CLOCK = re.compile(r"(\d):(?=\d\d(?!\d))")
+_SYMBOL_WORD = (("±", "plus_minus"), ("+", "plus"), ("×", "times"), ("&", "and"),
+                ("@", "at"), ("#", "number"), ("=", "equals"), ("′", "arc_minutes"))
+_PAUSE = re.compile(r"\s*(?:[|·•→←↑↓◀▶▲▼►◄›‹»«/\\]|\s[–—-]\s|[–—])\s*")
+_DROP = re.compile(r"[„“”\"‚‘`\[\]{}<>_*^~]")
+# All-capital words: short ones are spelled ("HQ" -> "H Q"), longer ones
+# with a vowel are said as words ("TORPEDO" -> "Torpedo").
+_CAPITALS = re.compile(r"(?<![\w])[A-ZÄÖÜ]{2,}(?![\w])")
+_VOWELS = frozenset("AEIOUYÄÖÜ")
+
+
+def _capitals(match) -> str:
+    word = match.group()
+    if len(word) >= 4 and _VOWELS.intersection(word):
+        return word[0] + word[1:].lower()
+    return " ".join(word)
 
 
 def spoken_words(text, words) -> str:
@@ -176,12 +206,29 @@ def spoken_words(text, words) -> str:
     text = _POSITION.sub(lambda m: f"{m.group(1)}{word('degrees')}{m.group(2)}"
                          f"{word('arc_minutes')}{word(_HEMISPHERE[m.group(3)])}", text)
     text = _UNIT.sub(lambda m: m.group(1) + word(_UNIT_WORD[m.group(2)]), text)
+    text = _TEMPERATURE.sub(lambda m: word("degrees") + word(
+        "celsius" if m.group(1) == "C" else "fahrenheit"), text)
     text = re.sub(r"\s?°", lambda _m: word("degrees"), text)
     text = re.sub(r"\s?%", lambda _m: word("percent"), text)
     text = re.sub(r"~\s?", lambda _m: word("about"), text)
     text = _SHORT_WORD.sub(lambda m: word(_SHORT[m.group(1)]), text)
+    text = _RANGE.sub(lambda m: m.group(1) + word("to"), text)
+    text = _SIGN.sub(lambda _m: word("minus"), text)
+    text = re.sub(r"(?<=[^\W\d_])-(?=\d)", " ", text)
+    text = _CLOCK.sub(r"\1 ", text)
+    for symbol, name in _SYMBOL_WORD:
+        text = text.replace(symbol, word(name))
+    text = _PAUSE.sub(", ", text)
+    text = _DROP.sub(" ", text)
+    text = re.sub(r"…|\.{3,}", ".", text)
+    text = _CAPITALS.sub(_capitals, text)
     text = re.sub(r" {2,}", " ", text)
-    return re.sub(r" ([,.!?;:])", r"\1", text).strip()
+    text = re.sub(r" ([,.!?;:])", r"\1", text)
+    # Pauses left next to other punctuation or at either end.
+    text = re.sub(r",(?:\s*,)+", ",", text)
+    text = re.sub(r",\s*([.!?;:])", r"\1", text)
+    text = re.sub(r"([.!?;:])\s*,", r"\1", text)
+    return text.strip(" ,")
 
 
 _SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
@@ -530,6 +577,7 @@ class VoiceService:
         # Ask with a speaking style and sampling until a server refuses them.
         self._instructions = True
         self._sampling = True
+        self._language = True
         # Seed -1 ("random"): drawn once per launch, never per sentence, so
         # the delivery does not jump (wall-side only, never the simulation).
         self._session_seed = secrets.randbelow(SEED_MAX) + 1
@@ -549,6 +597,7 @@ class VoiceService:
             if (config.base_url, config.model) != (self._config.base_url, self._config.model):
                 self._instructions = True
                 self._sampling = True
+                self._language = True
             if config.sound != self._config.sound:
                 self._cache.clear()
             if rate is not None and int(rate) != self._rate:
@@ -721,6 +770,10 @@ class VoiceService:
             body["temperature"] = float(config.temperature)
             body["top_p"] = float(config.top_p)
             body["seed"] = int(config.seed) if config.seed >= 0 else self._session_seed
+        language = (self._language and _host(config.base_url) not in _NO_SAMPLING_HOSTS
+                    and request.language in _LANGUAGE_NAME)
+        if language:
+            body["language"] = _LANGUAGE_NAME[request.language]
         url = config.base_url.rstrip("/") + "/audio/speech"
         headers = {"Content-Type": "application/json", "Accept": "audio/wav",
                    "User-Agent": "u-jagd"}
@@ -749,8 +802,11 @@ class VoiceService:
                 raise _VoiceError("rate_limit") from None
             if sampling and exc.code in (400, 422):
                 # A server that does not know a field: first without sampling,
-                # then without the speaking style.
+                # then without the fixed language, then without the style.
                 self._sampling = False
+                return self._post(config, request, sink)
+            if language and exc.code in (400, 422):
+                self._language = False
                 return self._post(config, request, sink)
             if self._instructions and exc.code in (400, 422):
                 self._instructions = False

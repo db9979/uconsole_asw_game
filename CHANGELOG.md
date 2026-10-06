@@ -4,6 +4,19 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.250
+
+Release 1.3.250 makes the voice speak more cleanly. Temperatures are said
+in full (-2 °C as "minus two degrees Celsius"), as are signs, ranges and
+symbols (± as "plus or minus", 0–360 as "zero to three six zero", & as
+"and"); short capital abbreviations such as HQ are spelled, words in
+capitals are said as words, and symbols like |, · or arrows become a short
+pause instead of being read out. The voice is fixed to the game's language,
+German or English: the speaking style says so more firmly, and speech
+services with a language field (such as Qwen-TTS) are sent it, so a
+sentence no longer starts in another language or accent. Keys and saves
+are unchanged (v53; v38 to v52 saves still load).
+
 ## 1.3.247
 
 Release 1.3.247 draws every contact once on the Bridge chart. A ship

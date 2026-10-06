@@ -306,4 +306,19 @@ def test_a_long_log_entry_is_one_request():
         _log(game, "funk", entry)
         assert _pump(game, lambda: mixer.played and game._voice_playing is None)
         assert len(speech.requests) == 1
-        assert speech.requests[0]["input"] == " ".join(entry.split())
+        assert speech.requests[0]["input"] == " ".join(entry.replace("HQ", "H Q").split())
+
+
+@pytest.mark.parametrize("language,text,said", [
+    ("de", "Wasser -2 °C, Luft 14 °C", "Wasser minus 2 Grad Celsius, Luft 14 Grad Celsius"),
+    ("en", "Water -2 °C, air 57 °F", "Water minus 2 degrees Celsius, air 57 degrees Fahrenheit"),
+    ("de", "TORPEDO AUFGESCHALTET 163° · Einschlag ~45s",
+     "Torpedo Aufgeschaltet 163 Grad, Einschlag etwa 45 Sekunden"),
+    ("de", "Peilung 0–360° | Tiefe 45 m / Wasser 120 m",
+     "Peilung 0 bis 360 Grad, Tiefe 45 Meter, Wasser 120 Meter"),
+    ("de", "Um 14:35 meldet die OPZ „Fregatte“ & HQ", "Um 14 35 meldet die O P Z Fregatte und H Q"),
+    ("en", "S3 brg 219±4° @12/34, U-212", "S3 bearing 219 plus or minus 4 degrees at 12, 34, U 212"),
+    ("en", "Don’t panic… [check] NATO", "Don’t panic. check Nato"),
+])
+def test_temperatures_signs_and_symbols_are_said_as_words(language, text, said):
+    assert voice.spoken_words(text, _words(language)) == said

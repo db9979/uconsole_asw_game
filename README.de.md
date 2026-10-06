@@ -10,17 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.258**
+Aktuelle Version: **1.3.262**
 
-Version 1.3.258 hält die Stimme gleichmäßig und klar. Jede Antwort des
-Ersten Offiziers geht jetzt am Stück an den Sprachdienst statt Satz für
-Satz, und Logmeldungen, die zusammen warten, werden als eine Anfrage
-vorgelesen, denn ein Sprachmodell beginnt jede Anfrage mit leicht anderer
-Stimme. Was schon angekommen ist, spielt als ein Stück, so stolpert die
-Stimme auf einer ausgelasteten uConsole nicht mehr und verschluckt keine
-Silben. Einzelne Buchstaben werden beim Namen genannt: Kontakt K1 heißt
-„Ka eins“, K2 „Ka zwei“, HQ „Ha Ku“, und die Stimme sagt „zwei“ statt „zwo“. Tasten und Spielstände bleiben gleich (v53;
-Spielstände v38 bis v52 laden weiter).
+Version 1.3.262 lässt den Ersten Offizier auch im Browser sprechen. Hat
+der Host eine Stimme eingerichtet, wird eine Antwort, die an einer
+Browser-Station erfragt wurde, jetzt dort mit derselben Stimme wie auf der
+uConsole gesprochen: Der Host holt den Ton bei seinem Sprachdienst, und
+nur der Browser, der gefragt hat, spielt ihn ab, Dienst und Schlüssel
+verlassen den Host also nie. Das klappt auch, wenn der Host als Server nur
+für Browser ohne Lautsprecher läuft. **Antworten vorlesen** im Fenster des
+Offiziers schaltet es für einen Browser ab. Tasten und Spielstände bleiben
+gleich (v53; Spielstände v38 bis v52 laden weiter).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

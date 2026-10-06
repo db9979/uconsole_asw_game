@@ -10,16 +10,16 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.258**
+Current release: **1.3.262**
 
-Release 1.3.258 keeps the voice even and clear. Every answer of the
-executive officer now goes to the speech service in one piece instead of
-sentence by sentence, and log entries waiting together are read as one
-request, because a speech model starts every request with a slightly
-different voice. Audio that has already arrived plays as one sound, so a
-busy uConsole no longer makes the voice stumble or swallow syllables.
-Single letters are said by name: contact K1 is "Ka eins" in German, HQ is
-"Ha Ku", and the German voice says "zwei" instead of "zwo". Keys and saves are unchanged (v53; v38 to v52 saves still load).
+Release 1.3.262 lets the executive officer speak in the browser too. When
+the host has a voice set up, an answer asked from a browser station is now
+spoken there by the same voice as on the uConsole: the host fetches the
+audio from its speech service and only the browser that asked plays it, so
+the service and its key never leave the host. This also works when the
+host runs as a browser-only server without a speaker. **Speak answers** in
+the officer's window switches it off for one browser. Keys and saves are
+unchanged (v53; v38 to v52 saves still load).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

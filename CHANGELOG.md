@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.262
+
+Release 1.3.262 lets the executive officer speak in the browser too. When
+the host has a voice set up, an answer asked from a browser station is now
+spoken there by the same voice as on the uConsole: the host fetches the
+audio from its speech service and only the browser that asked plays it, so
+the service and its key never leave the host. This also works when the
+host runs as a browser-only server without a speaker. **Speak answers** in
+the officer's window switches it off for one browser. Keys and saves are
+unchanged (v53; v38 to v52 saves still load).
+
 ## 1.3.258
 
 Release 1.3.258 keeps the voice even and clear. Every answer of the

@@ -36,8 +36,6 @@ from collections import OrderedDict, deque
 
 import numpy as np
 
-import numpy as np
-
 from src.core import callouts, config
 from src.core.i18n import localize, message
 from src.llm import keystore

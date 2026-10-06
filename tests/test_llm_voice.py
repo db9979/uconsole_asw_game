@@ -117,6 +117,17 @@ def test_anything_else_is_refused(raw):
         voice.parse_wav(raw)
 
 
+@pytest.mark.parametrize("text,said", [
+    ("Peilung 431, Entfernung 0,9 sm.", "Peilung vier drei eins, Entfernung null Komma neun sm."),
+    ("Kurs 270!", "Kurs zwo sieben null!"),
+    ("F7 drücken", "F sieben drücken"),
+    ("Keine Zahl.", "Keine Zahl."),
+], ids=["bearing_and_decimal", "punctuation", "inside_a_word", "none"])
+def test_numbers_are_spoken_digit_by_digit(text, said):
+    digits = "null eins zwo drei vier fünf sechs sieben acht neun".split()
+    assert voice.spell_digits(text, digits, "Komma") == said
+
+
 def test_clip_is_resampled_to_the_mixer_and_levelled():
     pcm = voice.to_pcm(TONE, 24000, 22050)
     assert pcm.dtype == np.int16 and abs(len(pcm) - 22050) <= 1
@@ -282,8 +293,9 @@ def test_off_by_default_the_crew_keeps_espeak(monkeypatch):
 
 
 def test_executive_officer_speaks_his_answer():
-    with FakeLlmServer("Lage ruhig, kein Kontakt.") as llm, FakeSpeechServer() as speech:
+    with FakeLlmServer("Lage ruhig, Kontakt in 431.") as llm, FakeSpeechServer() as speech:
         game = _game()
+        game._set_preference("language", "de")
         mixer = _Mixer(game)
         game.preferences = dataclasses.replace(game.preferences, llm_enabled=True,
                                                llm_url=llm.url, llm_model="m")
@@ -291,7 +303,8 @@ def test_executive_officer_speaks_his_answer():
         _voice_on(game, speech)
         assert isinstance(game.advisor_ask("situation"), dict)
         assert _pump(game, lambda: mixer.played)
-        assert speech.requests[0]["input"] == "Lage ruhig, kein Kontakt."
+        # Numbers digit by digit, the way the watch speaks them.
+        assert speech.requests[0]["input"] == "Lage ruhig, Kontakt in vier drei eins."
         # Switched off: the next answer stays silent.
         game.set_voice_preference("tts_xo", False)
         assert isinstance(game.advisor_ask("situation"), dict)

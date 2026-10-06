@@ -113,6 +113,25 @@ _EMOJI = re.compile("[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U00002B00-\U000
 _BULLET = re.compile(r"^\s*(?:[-*•]|\d+[.)])\s+", re.MULTILINE)
 
 
+# A number, with an optional decimal part ("431", "0,9", "12.5").
+_NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
+
+
+def spell_digits(text, digits, point: str) -> str:
+    """Every number digit by digit, the way a watch speaks it: "431" becomes
+    "vier drei eins" (``digits`` are the ten words, ``point`` the word for a
+    decimal comma or point)."""
+    if type(text) is not str:
+        return ""
+
+    def spell(match) -> str:
+        words = [point if char in ".," else digits[int(char)] for char in match.group()]
+        return " " + " ".join(words) + " "
+
+    text = re.sub(r" {2,}", " ", _NUMBER.sub(spell, text))
+    return re.sub(r" ([,.!?;:])", r"\1", text).strip()
+
+
 def clean_for_speech(text) -> str:
     """Only what a person would say: no emojis, Markdown, links, laughter
     ("haha", "lol") or stage directions (*laughs*, (seufzt), [pause])."""

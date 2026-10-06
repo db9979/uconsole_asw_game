@@ -17,6 +17,7 @@ import time
 import urllib.parse
 from collections import deque
 
+from src.core.callouts import PREFIX as CALLOUT_PREFIX
 from src.core.i18n import localize, message
 from src.llm import keystore
 from src.llm import voice as voice_model
@@ -92,11 +93,16 @@ class VoiceMixin:
             return False
         if role == "xo" and not self.preferences.tts_xo:
             return False
-        request = self.voice.say(text, self.llm_language(), role)
+        request = self.voice.say(self._voice_text(text), self.llm_language(), role)
         if request is None:
             return False
         self._voice_queue.append(request)
         return True
+
+    def _voice_text(self, text) -> str:
+        """Numbers digit by digit in the game's language ("vier drei eins")."""
+        digits = [self.tr(f"{CALLOUT_PREFIX}digit_{digit}") for digit in range(10)]
+        return voice_model.spell_digits(text, digits, self.tr("voice.digit_point"))
 
     def voice_advisor_entry(self, entry) -> None:
         """Speak a finished answer the uConsole's own executive officer gave."""
@@ -187,8 +193,8 @@ class VoiceMixin:
         if not self.voice_ready():
             self.voice_test = dict(status="failed", error="no_audio")
             return False
-        request = self.voice.say(localize(message("voice.test.phrase"), self.tr),
-                                 self.llm_language(), "test")
+        phrase = localize(message("voice.test.phrase"), self.tr)
+        request = self.voice.say(self._voice_text(phrase), self.llm_language(), "test")
         if request is None:
             self.voice_test = dict(status="failed", error="busy")
             return False

@@ -17,6 +17,15 @@ also counts each station's entries of the last 5 minutes, or with the
 per-station buttons along the bottom of the `F11` log. Keys and saves are
 unchanged (v53; v38 to v52 saves still load).
 
+## 1.3.241
+
+Release 1.3.241 changes the license. U-Jagd is no longer MIT licensed but
+under the PolyForm Strict License 1.0.0: you may play and use the game as it
+is for noncommercial purposes, but not sell it, pass it on or change it. This
+covers the code, the browser clients, the Windows EXE and the macOS app;
+Pygame, NumPy, map data and fonts keep their own licenses. Gameplay is
+unchanged. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.238
 
 Release 1.3.238 puts latitude and longitude on every chart of every

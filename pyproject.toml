@@ -7,7 +7,7 @@ name = "u-jagd"
 dynamic = ["version"]
 description = "U-Jagd - a frigate anti-submarine warfare game for the uConsole"
 readme = "README.md"
-license = "MIT"
+license = "LicenseRef-PolyForm-Strict-1.0.0"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md", "data/commander/fonts/ofl-*.txt",
                  "data/fonts/ofl-*.txt"]
 authors = [

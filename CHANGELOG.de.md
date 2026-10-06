@@ -18,6 +18,16 @@ jeder Station der letzten 5 Minuten zählt, oder mit den Knöpfen je
 Station unten im `F11`-Log. Tasten und Spielstände bleiben gleich (v53;
 Spielstände v38 bis v52 laden weiter).
 
+## 1.3.241
+
+Version 1.3.241 ändert die Lizenz. U-Jagd steht nicht mehr unter der
+MIT-Lizenz, sondern unter der PolyForm Strict License 1.0.0: Sie dürfen das
+Spiel unverändert und nicht kommerziell spielen und nutzen, es aber nicht
+verkaufen, weitergeben oder verändern. Das gilt für den Code, die
+Browser-Clients, die Windows-EXE und die macOS-App; Pygame, NumPy,
+Kartendaten und Schriften behalten ihre eigenen Lizenzen. Das Spielgeschehen
+bleibt gleich. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+
 ## 1.3.238
 
 Version 1.3.238 zeigt Breite und Länge auf jeder Karte jeder Station.

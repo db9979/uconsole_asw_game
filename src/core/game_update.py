@@ -35,7 +35,7 @@ from src.core import save_migrate
 from src.core.version import APP_VERSION, SAVE_VERSION
 from src.launcher import update
 from src.launcher.update import UPDATE_EXIT_CODE
-from src.ui import layout, theme
+from src.ui import game_menu, layout, theme
 
 UPDATE_MODES = ("windows", "macos", "starter", "uconsole", "browser")
 ROOT = Path(__file__).resolve().parents[2]
@@ -85,6 +85,9 @@ def remove_stale_download() -> None:
 class UpdateNoticeMixin:
     def _init_update_notice(self) -> None:
         self.update_notice = None
+        # The notice's close cross hides it until the next launch.
+        self.update_notice_closed = False
+        self._update_close = None
         self.update_mode = "browser"
         self.update_args: tuple = ()
         self.update_failed = False
@@ -134,7 +137,8 @@ class UpdateNoticeMixin:
             and not self.administration_open and not self.welcome_active)
 
     def update_notice_visible(self) -> bool:
-        return self.update_notice is not None and self._update_screen()
+        return (self.update_notice is not None and not self.update_notice_closed
+                and self._update_screen())
 
     def update_error_visible(self) -> bool:
         return (self.update_notice is None and self.update_check_error is not None
@@ -279,6 +283,11 @@ class UpdateNoticeMixin:
             return True
         if e.type == pygame.MOUSEBUTTONDOWN and getattr(e, "button", 0) == 1:
             canvas = self._window_to_canvas(getattr(e, "pos", None))
+            if (canvas is not None and action == self.request_update
+                    and self._update_close is not None
+                    and self._update_close.collidepoint(canvas)):
+                self.update_notice_closed = True
+                return True
             if (canvas is not None and self._update_button is not None
                     and self._update_button.collidepoint(canvas)):
                 action()
@@ -318,6 +327,9 @@ class UpdateNoticeMixin:
     def draw_update_notice(self, surface, splash: bool) -> None:
         notice = self.update_notice
         self._update_button = None
+        self._update_close = None
+        if notice is not None and self.update_notice_closed:
+            return
         if notice is None:
             if self.update_check_error is not None:
                 self.draw_update_error(surface, splash)
@@ -326,8 +338,9 @@ class UpdateNoticeMixin:
         self._draw_update_panel(surface, rect)
         x, w = rect.x + 12, rect.w - 24
         y = rect.y + 8
+        self._update_close = game_menu.draw_close_box(surface, rect)
         layout.blit_line(surface, message("update.available", version=notice.version),
-                         (x, y, w, 26), theme.pick(ACCENT, ACCENT_DAY), size=20)
+                         (x, y, w - game_menu.CLOSE_SIZE - 4, 26), theme.pick(ACCENT, ACCENT_DAY), size=20)
         y += 26
         layout.blit_line(surface, message("update.installed", version=APP_VERSION),
                          (x, y, w, 20), config.COLOR_TEXT_DIM, size=14)

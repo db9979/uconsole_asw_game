@@ -1,6 +1,6 @@
 # Optionen {#options}
 
-`F10` (oder **Optionen** im Hauptmenü oder im Spielmenü) öffnet die Optionen. `Auf`/`Ab` wählen eine Zeile, `Eingabe`/`Links`/`Rechts` ändern sie, `Bild Auf`/`Bild Ab` oder `Tab` wechseln zwischen den beiden Seiten und `Esc` führt zurück. Die Einstellungen liegen in `~/.u-jagd/settings.json`; eine laufende Mission läuft hinter den Optionen weiter.
+`F10` (oder **Optionen** im Hauptmenü oder im Spielmenü) öffnet die Optionen. `Auf`/`Ab` wählen eine Zeile, `Eingabe`/`Links`/`Rechts` ändern sie, `Bild Auf`/`Bild Ab` oder `Tab` wechseln zwischen den beiden Seiten und `Esc` führt zurück. Mit der Maus ändert ein Klick auf eine Zeile sie wie `Eingabe`, die Schaltflächen **<** und **>** an ihrem rechten Ende stellen den Wert zurück oder weiter, und jede Taste in der Hinweiszeile darunter ist klickbar. Die Einstellungen liegen in `~/.u-jagd/settings.json`; eine laufende Mission läuft hinter den Optionen weiter.
 
 ![Optionen (F10)](figure:options)
 
@@ -37,7 +37,7 @@ Die Stufe stimmt nur den Computergegner ab, nie einen Menschen auf der anderen S
 
 ### Echtzeit-Verkehr {#options-traffic}
 
-Die Seite **Echtzeit-Verkehr** holt echte Schiffe (AIS Stream, braucht einen eigenen API-Schlüssel) und echte Flugzeuge (OpenSky ADS-B, wahlweise mit eigener OpenSky-Client-ID) in eine Mission, deren Welt ein reales Seegebiet ist. Sie braucht eine Internetverbindung; ohne sie sind die Zeilen ausgegraut. **API-Test** prüft beide Dienste. Platziert wird nur Verkehr bis etwa 150 sm um die Fregatte (höchstens 15 Schiffe und 5 Flugzeuge, zufällig gewählt; ein gewählter Kontakt bleibt, bis es das Gebiet verlässt), und Schiffspositionen werden alle 2 bis 5 Minuten nachgeführt. Änderungen gelten sofort und werden gespeichert.
+Die Seite **Echtzeit-Verkehr** holt echte Schiffe (AIS Stream, braucht einen eigenen API-Schlüssel) und echte Flugzeuge (OpenSky ADS-B, wahlweise mit eigener OpenSky-Client-ID) in eine Mission, deren Welt ein reales Seegebiet ist. Sie braucht eine Internetverbindung; ohne sie sind die Zeilen ausgegraut. **API-Test** prüft beide Dienste. Platziert wird nur Verkehr bis etwa 150 sm um die Fregatte (höchstens 15 Schiffe und 5 Flugzeuge, zufällig gewählt; ein gewählter Kontakt bleibt, bis es das Gebiet verlässt), und Schiffspositionen werden alle 2 bis 5 Minuten nachgeführt. Ein Klick auf eine Zeile wirkt wie `Eingabe`: Er schaltet einen Dienst ein oder aus oder öffnet sein Feld. Änderungen gelten sofort und werden gespeichert.
 
 ## Seite 2: Spielaufbau {#options-page2}
 

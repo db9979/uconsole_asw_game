@@ -359,11 +359,14 @@ class LobbyMixin:
             layout.blit_line(s, message("menu.choice", marker="► " if selected else "  ",
                                         label=text), rect,
                              config.COLOR_WARN if selected else config.COLOR_TEXT, size=19)
-            # A click picks the row: the next value, or the start on the last.
-            pointer.add_action(rect, lambda _pos, index=index, last=len(values) - 1:
+            # A click picks the row: the start on the last; otherwise its
+            # left third steps back, the rest to the next value.
+            pointer.add_action(rect, lambda pos, index=index, last=len(values) - 1, rect=rect:
                                self._click_menu_row(
                                    lambda: setattr(room, "row", index),
-                                   pygame.K_RETURN if index == last else pygame.K_RIGHT))
+                                   pygame.K_RETURN if index == last
+                                   else pygame.K_LEFT if pos[0] < rect.x + rect.w // 3
+                                   else pygame.K_RIGHT))
         # Right bottom: who is here.
         players = self.lobby_players()
         top = right.y + len(values) * row_h + 30

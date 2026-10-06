@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.268**
+Aktuelle Version: **1.3.275**
 
-Version 1.3.268 lässt die Karten im Browser so weit hineinzoomen wie
+Version 1.3.275 lässt die Karten im Browser so weit hineinzoomen wie
 auf der uConsole. Jede Karte einer Remote-Crew-Station, auf der Fregatte
 und im U-Boot, geht jetzt vom ganzen Seegebiet bis auf 0,5 sm über die
 kürzere Seite (bisher war bei etwa 16 sm Schluss), mit Q/E, dem Mausrad,

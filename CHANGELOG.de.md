@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.256
+## 1.3.260
 
-Version 1.3.256 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
+Version 1.3.260 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
 schauen jetzt in einem Kegel von etwa 45 Grad zu jeder Seite und in einem
 Tiefenfenster nach vorn, schalten nach Signalstärke gegen ihr Eigengeräusch
 auf, suchen langsam und leise und sprinten erst nach der Aufschaltung.
@@ -17,8 +17,31 @@ ausstoßen und davonschleichen, und verstecken sich auf der Seite der
 Sprungschicht abseits eines ausgebrachten Tiefensonars. Harte Kurven kosten
 jetzt Fahrt, passive Kontakte an der Erfassungsgrenze schwinden und kommen
 wieder, und beim Geleitzugangriff warnt die Fregatte ihre Frachter, von denen
-etwa jeder zweite vor einem gehörten Torpedo abdreht. Spielstände sind v53;
+etwa jeder dritte vor einem gehörten Torpedo abdreht. Spielstände sind v53;
 v38- bis v52-Spielstände lassen sich weiter laden.
+
+## 1.3.257
+
+Version 1.3.257 räumt die Kartenbeschriftung auf. Der Name eines Schiffs
+liegt nicht mehr unter seiner eigenen Kurslinie: Er steht querab vom Kurs,
+zusammen mit der Fahrt (MV KURELA 8kn), frei von Bewegungsvektoren, Spuren
+und anderen Namen, und behält seinen Platz, statt von Bild zu Bild zu
+springen. Ein Schiff, das Radar und Ausguck sehen, erscheint auf Brücken-
+und Waffenkarte einmal, auch bevor die OPZ beide Meldungen fusioniert hat,
+und ein fusioniertes Schiff mit AIS nimmt Kurs und Fahrt aus dem AIS, sodass
+sein Vektor nicht mehr hin und her schwenkt. Das gilt auf der uConsole und
+im Browser. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+
+## 1.3.255
+
+Version 1.3.255 macht die Prüfungen vor einem Release zuverlässiger,
+damit neue Versionen nicht mehr ausbleiben. Eine Browser-Prüfung der
+Stationsübergabe nennt jetzt den Grund, wenn sie scheitert, statt still
+abzulaufen. Das Spiel selbst ist wie in 1.3.254: Die Stimme liest jede
+Logmeldung der Reihe nach mit deutscher Sprechanweisung vor, dazu
+tägliche Kurzeinsätze, Ausbildungsfortschritt und eine Zeile auf den
+Endtafeln, was den Einsatz entschieden hat. Spielstände sind v53; v38
+bis v52 laden weiter.
 
 ## 1.3.254
 

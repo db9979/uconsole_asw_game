@@ -129,6 +129,7 @@ def draw_trails(game, surface, chart: pygame.Rect, view, tracks, minutes: float,
                                          or chart.collidepoint(previous)):
                 lines.line(surface, _mix(color, config.COLOR_GEO_BG, weight * .45),
                            (int(previous[0]), int(previous[1])), (int(px), int(py)), 1)
+                label_layout.reserve_segment(previous, (px, py), 4)
             if chart.collidepoint(px, py):
                 pygame.draw.circle(surface, shade, (int(px), int(py)), 2)
             previous = (px, py)

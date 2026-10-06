@@ -374,7 +374,8 @@ def token_spans(text: str, tokens) -> list:
 _KEY_WORDS = {"enter", "eingabe", "esc", "tab", "space", "leertaste", "backspace",
               "pos1", "home", "end", "ende", "arrows", "pfeile", "pfeiltasten",
               "bild", "pgup", "pgdn", "auf", "up", "down", "umsch", "rücktaste",
-              "rück", "entf", "bild↑", "bild↓"}
+              "rück", "entf", "bild↑", "bild↓", "left", "right", "links", "rechts",
+              "pageup", "pagedown", "bildauf", "bildab"}
 
 
 def key_cap_text(token: str) -> tuple[int, int] | None:

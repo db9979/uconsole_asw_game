@@ -289,6 +289,15 @@ class ContactAnalyzer:
         self.detail_scroll = max(0, min(maximum, self.detail_scroll + amount))
         return before != self.detail_scroll
 
+    def _assign(self, clear: bool) -> None:
+        """Enter assigns the selected profile to the contact, Shift+Enter clears."""
+        profile = self.selected_profile
+        if clear or profile is not None:
+            result = self.on_assign(None if clear else profile["key"])
+            self.assign_notice = ("analyzer.assign.cleared" if clear and result is True
+                                  else "analyzer.assign.done" if result is True
+                                  else "analyzer.assign.failed")
+
     def handle_event(self, event: pygame.event.Event) -> bool:
         if event.type == pygame.JOYHATMOTION:
             x, y = event.value
@@ -304,13 +313,7 @@ class ContactAnalyzer:
         if event.type == pygame.KEYDOWN:
             if (event.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
                     and self.on_assign is not None):
-                clear = bool(getattr(event, "mod", 0) & pygame.KMOD_SHIFT)
-                profile = self.selected_profile
-                if clear or profile is not None:
-                    result = self.on_assign(None if clear else profile["key"])
-                    self.assign_notice = ("analyzer.assign.cleared" if clear and result is True
-                                          else "analyzer.assign.done" if result is True
-                                          else "analyzer.assign.failed")
+                self._assign(bool(getattr(event, "mod", 0) & pygame.KMOD_SHIFT))
                 return True
             if event.key == pygame.K_TAB:
                 self.focus = "detail" if self.focus == "list" else "list"
@@ -367,6 +370,13 @@ class ContactAnalyzer:
                 self._selection_changed()
             return changed
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and position:
+            if self.on_assign is not None:
+                # The assign and clear buttons, as Enter and Shift+Enter.
+                for name, clear in (("assign", False), ("assign_clear", True)):
+                    rect = self._rects.get(name)
+                    if rect is not None and rect.collidepoint(position):
+                        self._assign(clear)
+                        return True
             audio_rect = self._rects.get("audio_sample")
             if audio_rect is not None and audio_rect.collidepoint(position):
                 return self._play_sample()
@@ -551,9 +561,19 @@ class ContactAnalyzer:
                                        detail_rect.width - 14, line_height), size=13)
         if self.on_assign is not None:
             current = self.current_assignment() if self.current_assignment else None
-            line = message("analyzer.assign.hint", contact=raw_text(self.assign_label or "--"),
-                           current=raw_text(current) if current else message("common.unknown"))
-            widgets.draw_text(surface, line, (20, footer.y - 26, bounds.width - 40, 22),
+            # Two buttons do what Enter and Shift+Enter do.
+            assign = pygame.Rect(20, footer.y - 28, 300, 24)
+            clear = pygame.Rect(assign.right + 10, assign.y, 220, 24)
+            with translation_scope(self.tr):
+                layout.key_button(surface, assign, "Enter",
+                                  message("analyzer.assign.button",
+                                          contact=raw_text(self.assign_label or "--")), size=14)
+                layout.key_button(surface, clear, "Shift+Enter", "analyzer.assign.clear",
+                                  size=14)
+            self._rects["assign"], self._rects["assign_clear"] = assign, clear
+            line = raw_text(self.tr("analyzer.assign.current",
+                                    current=current or self.tr("common.unknown")))
+            widgets.draw_text(surface, line, (clear.right + 14, footer.y - 26, 400, 22),
                               size=14)
             if self.assign_notice:
                 widgets.draw_text(surface, self.assign_notice,

@@ -10,16 +10,20 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.276**
+Aktuelle Version: **1.3.278**
 
-Version 1.3.276 gibt jeder gesprochenen Meldung ein klares Ende. Jede
-Meldung, die die Stimme liest, endet mit einem Punkt, auch nach einem
-Doppelpunkt oder Auslassungszeichen, und danach folgen 0,6 s Stille, bevor
-die nächste beginnt. Logmeldungen gehen dafür wieder einzeln an den
-Sprachdienst, denn ein Sprachmodell macht zwischen zusammen geschickten
-Meldungen nur eine kurze Satzpause. Antworten des Ersten Offiziers bleiben
-am Stück. Tasten und Spielstände bleiben gleich (v53; Spielstände v38 bis
-v52 laden weiter).
+Version 1.3.278 macht die Overlays per Maus bedienbar. Die Rückfragen vor
+dem Überschreiben eines Platzes, dem Laden und dem Beenden beantwortet ein
+Klick auf ihre Tastenchips. Im Handbuch (F1) blättern die Schaltflächen
+**[ Kapitel zurück** und **] Kapitel vor** die Kapitel, und jede Taste in
+seiner Hinweiszeile ist ein Chip. Das Simulationsprotokoll (F4) und die
+Nachbesprechung haben eine Fußleiste aus Tastenchips; das Mausrad springt
+zwischen den Ereignissen der Nachbesprechung. Der Plotmodus hat eine
+Werkzeugleiste am unteren Kartenrand mit einem Chip für jedes Werkzeug und
+jede Aktion, sodass seine Hinweiszeile die Positionsanzeige der Karte nicht
+mehr verdeckt. Im Taktischen Einheitenanalysator (F8) ordnen zwei
+Schaltflächen das angezeigte Profil dem gewählten Kontakt zu oder löschen
+es. Spielstände sind v53; v38- bis v52-Stände werden weiter geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

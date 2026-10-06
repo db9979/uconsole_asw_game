@@ -192,13 +192,58 @@ def _draw_cursor(surface, game, view, chart) -> None:
     else:
         ref = (game.ship.x, game.ship.y)
     brg, dist = plot.bearing_distance(ref[0], ref[1], cx, cy)
-    # Hint bar at the top of the chart: tool keys left, cursor readout right,
-    # so the readout never lands on a chart label.
-    hint = pygame.Rect(chart.x + 2, chart.y + 24, chart.w - 4, 20)
-    pygame.draw.rect(surface, config.COLOR_PANEL_BG, hint)
-    readout = message("plot.cursor", bearing=f"{brg:03.0f}", range=f"{dist:.1f}")
-    readout_w = min(hint.w // 3, layout.font(layout.scaled_size(13)).size(localize(readout))[0] + 8)
-    layout.blit_line(surface, readout, (hint.right - readout_w - 2, hint.y, readout_w, hint.h),
+    _draw_toolbar(surface, game, chart, color,
+                  message("plot.cursor", bearing=f"{brg:03.0f}", range=f"{dist:.1f}"))
+
+
+# The plot toolbar: tools in the first row, actions and the cursor readout in
+# the second. Every chip presses its key on a click.
+_TOOLS = (("M", "mark"), ("R", "ruler"), ("B", "bearing"), ("C", "circle"), ("D", "dr"))
+_ACTIONS = (("Enter", "plot.bar.point"), ("Backspace", "plot.bar.delete"),
+            ("Shift+Backspace", "plot.bar.clear"), ("Esc", "plot.bar.end"))
+TOOLBAR_ROW_H = 24
+TOOLBAR_BOTTOM_GAP = 22     # the longitude labels stay readable below it
+
+
+def toolbar_rect(chart) -> pygame.Rect:
+    """Where the plot toolbar sits: across the foot of ``chart``."""
+    chart = pygame.Rect(chart)
+    height = 2 * TOOLBAR_ROW_H + 6
+    return pygame.Rect(chart.x + 2, chart.bottom - TOOLBAR_BOTTOM_GAP - height,
+                       chart.w - 4, height)
+
+
+def _draw_toolbar(surface, game, chart, color, readout) -> None:
+    from src.ui import pointer, theme
+    bar = toolbar_rect(chart)
+    panel = pygame.Surface(bar.size, pygame.SRCALPHA)
+    panel.fill((*config.COLOR_PANEL_BG[:3], 225))
+    surface.blit(panel, bar)
+    pygame.draw.rect(surface, theme.c("line"), bar, 1)
+    pointer.add_blocker(bar)        # a click between the chips plots nothing
+    width = (bar.w - 6) // len(_TOOLS)
+    for index, (key, tool) in enumerate(_TOOLS):
+        segment = pygame.Rect(bar.x + 3 + index * width, bar.y + 2, width, TOOLBAR_ROW_H)
+        layout.command_segment(surface, segment, key, TOOL_KEYS[tool], size=12, center=True)
+        if game.plot_tool == tool:
+            pygame.draw.rect(surface, theme.c("focus"), segment.inflate(-3, -4), 2,
+                             border_radius=4)
+        pointer.add_legend(segment, key)
+    y = bar.y + 4 + TOOLBAR_ROW_H
+    readout_w = min(bar.w // 4, layout.text_width(layout.font(13), localize(readout)) + 12)
+    # Each action chip is as wide as its key and word need, sharing the rest.
+    face = layout.font(12)
+    from src.core.i18n import key_label
+    needs = [layout.text_width(face, localize(key_label(key)) + " " + localize(description)) + 22
+             for key, description in _ACTIONS]
+    room = bar.w - 6 - readout_w
+    spare = max(0, room - sum(needs)) // len(needs)
+    x = bar.x + 3
+    for (key, description), need in zip(_ACTIONS, needs):
+        width = need + spare if sum(needs) <= room else room * need // sum(needs)
+        segment = pygame.Rect(x, y, width, TOOLBAR_ROW_H)
+        layout.command_segment(surface, segment, key, description, size=12, center=True)
+        pointer.add_legend(segment, key)
+        x += width
+    layout.blit_line(surface, readout, (bar.right - readout_w - 4, y, readout_w, TOOLBAR_ROW_H),
                      color, size=13, align="right")
-    layout.blit_line(surface, message("plot.hint", tool=message(TOOL_KEYS[game.plot_tool])),
-                     (hint.x + 2, hint.y, hint.w - readout_w - 8, hint.h), color, size=13)

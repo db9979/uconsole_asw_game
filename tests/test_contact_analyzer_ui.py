@@ -331,3 +331,18 @@ def test_model_page_draws_the_turning_model_and_narrow_tab():
     # Profiles outside the catalog fall back on their resource.
     assert analyzer.model_class({"key": "user.x", "resource": "subs.json"}) == "submarine"
     pygame.quit()
+
+
+def test_assign_and_clear_buttons_do_what_enter_and_shift_enter_do():
+    pygame.init()
+    calls = []
+    analyzer = ContactAnalyzer(packaged_assets=load_contact_analysis_assets())
+    analyzer.on_assign = lambda key: calls.append(key) or True
+    analyzer.assign_label = "K1"
+    analyzer.draw(pygame.Surface((1280, 720)))
+    for name in ("assign", "assign_clear"):
+        rect = analyzer._rects[name]
+        assert analyzer.handle_event(pygame.event.Event(
+            pygame.MOUSEBUTTONDOWN, button=1, pos=rect.center))
+    assert calls == [analyzer.selected_profile["key"], None]
+    assert analyzer.assign_notice == "analyzer.assign.cleared"

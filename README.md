@@ -10,15 +10,18 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.276**
+Current release: **1.3.278**
 
-Release 1.3.276 gives every spoken report a clear end. Each report the
-voice reads ends with a full stop, also after a colon or an ellipsis, and
-0.6 s of silence follows it before the next one starts. Log entries go to
-the speech service one by one again, because a speech model leaves only a
-short sentence pause between entries sent together. Answers of the
-executive officer stay in one piece. Keys and saves are unchanged (v53;
-v38 to v52 saves still load).
+Release 1.3.278 makes the overlays work by mouse. The questions before
+saving over a slot, loading or quitting answer by clicking their key chips.
+In the manual (F1) the buttons **[ Previous chapter** and **] Next chapter**
+turn the chapters, and every key in its hint line is a chip. The
+simulation log (F4) and the debrief have a footer of key chips; the wheel
+steps the debrief's events. Plot mode has a toolbar at the foot of the
+chart with a chip for every tool and action, so its hint line no longer
+covers the chart's position readout. In the Tactical Unit Analyzer (F8)
+two buttons assign the browsed profile to the selected contact or clear
+it. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

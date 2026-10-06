@@ -10,14 +10,19 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.241**
+Current release: **1.3.242**
 
-Release 1.3.241 changes the license. U-Jagd is no longer MIT licensed but
-under the PolyForm Strict License 1.0.0: you may play and use the game as it
-is for noncommercial purposes, but not sell it, pass it on or change it. This
-covers the code, the browser clients, the Windows EXE and the macOS app;
-Pygame, NumPy, map data and fonts keep their own licenses. Gameplay is
-unchanged. Saves are v53; v38 to v52 saves still load.
+Release 1.3.242 makes the executive officer (`F7`) and the language
+model settings fully mouse-operable on the uConsole and the desktop apps.
+A click on a tab picks the kind of request; blue key buttons under the log
+send, give or discard a typed order, scroll older and newer and close the
+page; the wheel scrolls; a close box sits in the top right corner and no
+click reaches the station behind. While the model is off a button opens
+its settings, where key buttons under the rows now cover every key
+(choose, change, page, save or cancel a field, back). Up/Down now scroll the log from the first
+step and also while an order waits for confirmation. The browser's
+executive officer already worked by mouse. Gameplay is unchanged. Saves
+are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

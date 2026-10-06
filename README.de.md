@@ -10,15 +10,22 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.241**
+Aktuelle Version: **1.3.242**
 
-Version 1.3.241 ändert die Lizenz. U-Jagd steht nicht mehr unter der
-MIT-Lizenz, sondern unter der PolyForm Strict License 1.0.0: Sie dürfen das
-Spiel unverändert und nicht kommerziell spielen und nutzen, es aber nicht
-verkaufen, weitergeben oder verändern. Das gilt für den Code, die
-Browser-Clients, die Windows-EXE und die macOS-App; Pygame, NumPy,
-Kartendaten und Schriften behalten ihre eigenen Lizenzen. Das Spielgeschehen
-bleibt gleich. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
+Version 1.3.242 macht den Ersten Offizier (`F7`) und die Einstellungen
+des Sprachmodells auf dem uConsole und in den Desktop-Apps vollständig mit
+der Maus bedienbar. Ein Klick auf einen Reiter wählt die Art der Anfrage;
+blaue Tastenknöpfe unter dem Protokoll senden, geben oder verwerfen einen
+getippten Befehl, blättern älter und neuer und schließen die Seite; das
+Mausrad blättert; oben rechts sitzt ein Schließfeld, und kein Klick
+erreicht die Station dahinter. Solange das Modell aus ist, öffnet ein
+Knopf seine Einstellungen, in denen Tastenknöpfe unter den Zeilen jetzt
+jede Taste abdecken (wählen, ändern, Seite, Feld speichern oder abbrechen,
+zurück). Auf/Ab blättern
+das Protokoll jetzt ab dem ersten Schritt und auch, während ein Befehl auf
+Bestätigung wartet. Der Erste Offizier im Browser war schon mit der Maus
+bedienbar. Das Spiel bleibt unverändert. Spielstände sind v53; v38 bis v52
+laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

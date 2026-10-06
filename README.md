@@ -10,18 +10,14 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.233**
+Current release: **1.3.239**
 
-Release 1.3.233 makes the controls follow one set of rules. Ctrl+Enter is
-now the only key that fires a weapon: at Weapons, D, A, Z, R and Shift+R
-only choose the weapon, which is lit and named in the fire line. Every key
-a station page can use stands in its key bar as a blue chip that presses
-the key when clicked, with a + chip paging through the rest (also through
-all sonar keys on both sides). Long lists scroll with the mouse wheel,
-overlays close with a close box, and hover notes explain more lamps. Own
-units wear the proper NATO frame on every chart, high contrast reaches
-every drawing, and German texts use German key names and "sm". Saves are
-v53; v38 to v52 saves still load.
+Release 1.3.239 makes the optional voice speak numbers the way a watch
+does: digit by digit. The executive officer, the coach, the crew reports and
+the voice test now say 431 as "four three one" and 0.9 as "zero point
+niner" (in German "vier drei eins", "null Komma neun"), whether or not the
+text is cleaned before speaking. Keys are unchanged. Saves are v53; v38 to
+v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

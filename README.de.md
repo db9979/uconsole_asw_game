@@ -10,19 +10,14 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.233**
+Aktuelle Version: **1.3.239**
 
-Version 1.3.233 bringt die Bedienung unter einheitliche Regeln.
-Strg+Eingabe ist jetzt die einzige Taste, die eine Waffe auslöst: An der
-Waffenstation wählen D, A, Z, R und Umschalt+R nur die Waffe, die dann
-leuchtet und in der Feuerzeile steht. Jede Taste einer Stationsseite steht
-als blauer Chip in ihrer Tastenleiste und wird per Klick gedrückt; ein
-+-Chip blättert durch den Rest (auch durch alle Sonartasten beider
-Seiten). Lange Listen blättern mit dem Mausrad, Overlays schließen über
-ein Schließkreuz, und Hinweise erklären weitere Lampen. Eigene Einheiten
-tragen auf jeder Karte den passenden NATO-Rahmen, hoher Kontrast erreicht
-jede Zeichnung, und deutsche Texte nutzen deutsche Tastennamen und „sm“.
-Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
+Version 1.3.239 lässt die optionale Stimme Zahlen sprechen wie auf Wache:
+Ziffer für Ziffer. Erster Offizier, Coach, Crew-Meldungen und der
+Stimmtest sagen 431 jetzt als „vier drei eins“ und 0,9 als „null Komma
+neun“ (auf Englisch „four three one“, „zero point niner“), ob der Text vor
+dem Sprechen bereinigt wird oder nicht. Die Tasten bleiben gleich.
+Spielstände sind v53; v38 bis v52 werden weiter geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

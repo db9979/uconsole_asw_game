@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.239
+
+Release 1.3.239 makes the optional voice speak numbers the way a watch
+does: digit by digit. The executive officer, the coach, the crew reports and
+the voice test now say 431 as "four three one" and 0.9 as "zero point
+niner" (in German "vier drei eins", "null Komma neun"), whether or not the
+text is cleaned before speaking. Keys are unchanged. Saves are v53; v38 to
+v52 saves still load.
+
 ## 1.3.233
 
 Release 1.3.233 makes the controls follow one set of rules. Ctrl+Enter is

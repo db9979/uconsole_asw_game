@@ -361,3 +361,10 @@ def test_pieces_that_have_arrived_play_as_one_sound():
     game._feed_voice(request)
     assert not request.pieces
     assert [len(pcm) for pcm in mixer.played] == [300]
+
+
+def test_spoken_letters_never_rename_a_key_chip():
+    from src.core.i18n import Translator
+    german = Translator("de")
+    for key in ("Z", "A", "D", "R", "2", "minus"):
+        assert german.display(key) == key

@@ -327,6 +327,9 @@ def _ascii_german_spelling(text: str) -> str:
     return text
 
 
+_SPOKEN_PREFIX = ("voice.letter.", "voice.digit_", "voice.word.")
+
+
 class Translator:
     """Translate message keys and safely substitute named placeholders."""
 
@@ -341,13 +344,19 @@ class Translator:
             self.language = DEFAULT_LANGUAGE
         self.reference = load_catalog(DEFAULT_LANGUAGE)
         self.german = load_catalog("de")
-        self._literal_sources = {value: key for key, value in self.reference.items()}
-        self._literal_sources.update({value: key for key, value in self.german.items()})
+        # Spoken words of the voice ("Z" -> "Zett") are no screen literals:
+        # a key chip "Z" must never turn into the letter's spoken name.
+        reference = {key: value for key, value in self.reference.items()
+                     if not key.startswith(_SPOKEN_PREFIX)}
+        german = {key: value for key, value in self.german.items()
+                  if not key.startswith(_SPOKEN_PREFIX)}
+        self._literal_sources = {value: key for key, value in reference.items()}
+        self._literal_sources.update({value: key for key, value in german.items()})
         self._literal_sources.update({_alternate_german_spelling(value): key
-                                      for key, value in self.german.items()})
+                                      for key, value in german.items()})
         # Older code literals spell the catalog's umlauts as ae/oe/ue/ss.
         self._literal_sources.update({_ascii_german_spelling(value): key
-                                      for key, value in self.german.items()
+                                      for key, value in german.items()
                                       if _ascii_german_spelling(value)
                                       not in self._literal_sources})
 

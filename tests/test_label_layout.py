@@ -1,6 +1,7 @@
 """Chart labels step aside instead of covering each other."""
 
 import itertools
+import math
 
 import pygame
 
@@ -101,3 +102,82 @@ def test_edge_anchor_puts_off_chart_points_on_the_edge():
     assert (round(x), round(y)) == (400, 60) and (round(ux), round(uy)) == (0, -1)
     (x, y), _ = plot_view.edge_anchor(chart, (9000, 250))
     assert (round(x), round(y)) == (690, 250)
+
+
+def test_labels_keep_off_reserved_lines():
+    """A label never lies across a motion vector or a trail (bug report
+    2026-10-06: the course line ran through every ship's name)."""
+    field = label_layout.LabelField((0, 0, 400, 300))
+    field.reserve_line((100, 100), (180, 100))
+    rect = field.place((60, 14), label_layout.around((110, 93), (60, 14)))
+    assert not rect.inflate(2, 2).clipline((100, 100), (180, 100))
+
+
+def test_beside_puts_the_label_abeam_of_the_course():
+    size = (60, 14)
+    east = pygame.Rect(label_layout.beside((200, 150), size, 90.0)[0], size)
+    assert east.top > 150 and east.left < 200 < east.right   # below, centred
+    north = pygame.Rect(label_layout.beside((200, 150), size, 0.0)[0], size)
+    assert north.left > 200 and north.top < 150 < north.bottom   # right, level
+    for course in range(0, 360, 15):
+        rect = pygame.Rect(label_layout.beside((200, 150), size, float(course))[0], size)
+        tip = (200 + 80 * math.sin(math.radians(course)),
+               150 - 80 * math.cos(math.radians(course)))
+        trail = (200 - 80 * math.sin(math.radians(course)),
+                 150 + 80 * math.cos(math.radians(course)))
+        assert not rect.clipline((200, 150), tip), course
+        assert not rect.clipline((200, 150), trail), course
+
+
+def test_keyed_label_keeps_its_spot_while_free():
+    """A label returns to last frame's spot instead of jumping to the first
+    candidate whenever that one frees up again."""
+    candidates = [(10, 10), (10, 40), (10, 70)]
+    first = label_layout.LabelField((0, 0, 200, 200))
+    first.reserve((10, 10, 40, 14))
+    assert first.place((40, 14), candidates, key="test-keep").topleft == (10, 40)
+    second = label_layout.LabelField((0, 0, 200, 200))
+    assert second.place((40, 14), candidates, key="test-keep").topleft == (10, 40)
+    third = label_layout.LabelField((0, 0, 200, 200))
+    third.reserve((10, 40, 40, 14))
+    assert third.place((40, 14), candidates, key="test-keep").topleft == (10, 10)
+
+
+def test_deferred_scope_places_labels_after_lines():
+    surface = pygame.Surface((400, 300))
+    pygame.font.init()
+    with label_layout.label_scope((0, 0, 400, 300), deferred=True) as field:
+        label_layout.blit_line(surface, "LABEL", (110, 93, 80, 14), (255, 255, 255))
+        assert field.rects == []           # not yet placed
+        label_layout.reserve_segment((100, 100), (220, 100))
+    assert len(field.rects) == 1
+    assert not field.rects[0].clipline((100, 100), (220, 100))
+
+
+def test_web_twin_keeps_labels_off_lines_and_remembers_spots():
+    import json
+    import shutil
+    import subprocess
+    from pathlib import Path
+    node = shutil.which("node")
+    if node is None:
+        import pytest
+        pytest.skip("node not installed")
+    module = (Path(__file__).resolve().parents[1] / "data/commander/js/views/label-layout.js").as_uri()
+    script = (f"import {{ labelField, around, beside }} from {json.dumps(module)};"
+              "const f = labelField(400, 300); f.reserveLine(100, 100, 180, 100);"
+              "const a = f.place(60, 14, around(110, 93, 60, 14), 'k');"
+              "const g = labelField(400, 300);"
+              "const b = g.place(60, 14, around(110, 93, 60, 14), 'k');"
+              "const east = beside(200, 150, 60, 14, 90)[0];"
+              "console.log(JSON.stringify({a, b, east}));")
+    result = subprocess.run([node, "--input-type=module", "-e", script],
+                            capture_output=True, text=True, check=True, timeout=30)
+    data = json.loads(result.stdout)
+    a = pygame.Rect(data["a"]["x"], data["a"]["y"], data["a"]["w"], data["a"]["h"])
+    assert not a.inflate(2, 2).clipline((100, 100), (180, 100))
+    assert (data["b"]["x"], data["b"]["y"]) == (data["a"]["x"], data["a"]["y"])
+    east = pygame.Rect(data["east"][0], data["east"][1], 60, 14)
+    assert east.top > 150 and east.left < 200 < east.right
+    # Same candidates as the uConsole.
+    assert tuple(data["east"]) == label_layout.beside((200, 150), (60, 14), 90.0)[0]

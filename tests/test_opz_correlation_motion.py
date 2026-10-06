@@ -63,9 +63,20 @@ def test_ais_pairs_with_radar_but_never_with_a_classified_submarine():
 def test_a_fusion_carries_the_members_motion():
     picture = OPZFusionPicture()
     members = (report("A", "RADAR-S", 90, 10, course=40, speed=10),
-               report("B", "AIS", 90, 10, course=50, speed=14))
+               report("B", "LOOKOUT", 90, 10, course=50, speed=14))
     fused = picture.computed(ManualFusion("F-1", ("A", "B")), members, 100.0, 300.0)
     assert abs(fused.course - 45.0) < 1e-6 and abs(fused.speed_kn - 12.0) < 1e-6
+
+
+def test_an_ais_member_lends_the_fusion_its_motion():
+    """A ship's own AIS course and speed over ground stand alone: a young
+    lookout estimate (here 186 kn) never swings the fused motion around
+    (bug report 2026-10-06: labels jumping on the chart)."""
+    picture = OPZFusionPicture()
+    members = (report("A", "LOOKOUT", 90, 10, course=245, speed=186),
+               report("B", "AIS", 90, 10, course=90, speed=8))
+    fused = picture.computed(ManualFusion("F-1", ("A", "B")), members, 100.0, 300.0)
+    assert abs(fused.course - 90.0) < 1e-6 and abs(fused.speed_kn - 8.0) < 1e-6
 
 
 def test_the_game_publishes_ais_reports_to_the_opz():

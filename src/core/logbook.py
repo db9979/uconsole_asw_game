@@ -181,6 +181,21 @@ class Logbook:
             del self.best[old]
         return new_best
 
+    def won_scenarios(self, side: str) -> frozenset:
+        """Built-in scenarios this side has won without the advisor or the
+        experimental opponent (a best score, or a kept winning entry)."""
+        won = {key.partition(":")[2] for key in self.best if key.startswith(side + ":")}
+        won.update(row["scenario"] for row in self.entries
+                   if row["side"] == side and row["won"]
+                   and not (row.get("advisor") or row.get("experimental")))
+        return frozenset(won)
+
+    def ribbons(self, side: str) -> list:
+        """One ribbon per scenario of the side (free patrol aside), in menu
+        order: ``(scenario, won)``."""
+        won = self.won_scenarios(side)
+        return [(key, key in won) for key in ribbon_scenarios(side)]
+
     def totals(self, side: str) -> tuple:
         """(missions, victories) of one side, over the kept entries."""
         rows = [row for row in self.entries if row["side"] == side]
@@ -226,6 +241,12 @@ class Logbook:
         book.best = dict(state["best"])
         book.awards = dict(state["awards"])
         return book
+
+
+def ribbon_scenarios(side: str) -> tuple:
+    """The scenarios of a logbook side that carry a ribbon."""
+    return tuple(key for key in config.scenarios_for_side("uboot" if side == "boat" else "frigate")
+                 if not key.startswith("frei_"))
 
 
 def logbook_path() -> str:

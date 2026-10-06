@@ -1171,10 +1171,6 @@ class DrawMixin:
     def draw_end_panel(self) -> None:
         """M8: Endpanel mit Score-Bruchrechnung und Hinweisen."""
         s = self.screen
-        w, h = 780, 340
-        x = (config.SCREEN_W - w) // 2
-        y = (config.SCREEN_H - h) // 2
-        overlay_style.panel(s, (x, y, w, h))
         col = config.COLOR_OK if self.mission_result == "SIEG" else config.COLOR_DANGER
         result = self.tr("end.victory" if self.mission_result == "SIEG"
                          else "end.defeat")
@@ -1193,6 +1189,9 @@ class DrawMixin:
              else "end.expired",
              config.COLOR_TEXT_DIM, False),
         ]
+        decisive_line = self.decisive_end_line()
+        if decisive_line is not None:
+            lines.insert(1, (decisive_line, config.COLOR_TEXT, "wrap"))
         versus_line = self.versus_end_line()
         if versus_line is not None:
             lines.append((versus_line, config.COLOR_WARN, False))
@@ -1212,17 +1211,32 @@ class DrawMixin:
             ("", config.COLOR_TEXT, False),
             ("end.restart", config.COLOR_TEXT_DIM, False),
         ]
+        # The panel grows with its lines (blank 16, big 42, small 30, keys 50).
+        w = 780
+        h = 64 + sum(16 if not text else 50 if text == "end.restart"
+                     else 52 if big == "wrap" else 42 if big else 30
+                     for text, _c, big in lines)
+        x = (config.SCREEN_W - w) // 2
+        y = max(8, (config.SCREEN_H - h) // 2)
+        overlay_style.panel(s, (x, y, w, h))
         ly = y + 44
         for index, (text, c, big) in enumerate(lines):
             if not text:
                 ly += 16
+                continue
+            if big == "wrap":
+                # The decisive line: up to two lines, never cut.
+                layout.blit_block(s, text, x + 16, ly, w - 32, 48, c, size=18,
+                                  align="center", valign="center")
+                ly += 52
                 continue
             size = 26 if big else 20
             height = 36 if big else 26
             if text == "end.restart":
                 # The keys as a clickable legend, like the station footers.
                 with pointer.layer("end"):
-                    shortcut_footer(s, (x + 16, ly + 14, w - 32, 22), END_KEYS)
+                    shortcut_footer(s, (x + 16, ly + 14, w - 32, 22),
+                                    self.end_keys(END_KEYS))
                 ly += 50
                 continue
             if index == 0:

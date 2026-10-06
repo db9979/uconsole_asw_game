@@ -1565,7 +1565,8 @@ def _end_lines(game) -> list:
     reason = getattr(game, "result_reason", None)
     if reason:
         lines.append((localize(reason), config.COLOR_TEXT))
-    for getter, color in (("versus_end_line", config.COLOR_WARN),
+    for getter, color in (("decisive_end_line", config.COLOR_TEXT),
+                          ("versus_end_line", config.COLOR_WARN),
                           ("campaign_end_line", config.COLOR_WARN),
                           ("logbook_end_line", config.COLOR_OK)):
         line = getattr(game, getter, lambda: None)()
@@ -1577,7 +1578,9 @@ def _end_lines(game) -> list:
 def draw_end_panel(game, boat) -> None:
     s = game.screen
     lines = _end_lines(game)
-    rect = pygame.Rect(250, 250, 780, 132 + 30 * len(lines))
+    decisive = getattr(game, "decisive_end_line", lambda: None)()
+    rect = pygame.Rect(250, 250, 780, 132 + 30 * len(lines) + (18 if decisive else 0))
+    rect.y = min(rect.y, config.SCREEN_H - 8 - rect.h)
     overlay_style.panel(s, rect)
     key = end_text(game, boat)
     layout.blit_line(s, key, (rect.x + 16, rect.y + 20, rect.w - 32, 40),
@@ -1585,13 +1588,19 @@ def draw_end_panel(game, boat) -> None:
                      size=28, align="center")
     y = rect.y + 70
     for text, color in lines:
+        if decisive is not None and text is decisive:
+            # What decided it: up to two lines, never cut.
+            layout.blit_block(s, text, rect.x + 16, y, rect.w - 32, 44, color, size=16,
+                              align="center", valign="center")
+            y += 48
+            continue
         layout.blit_line(s, text, (rect.x + 16, y, rect.w - 32, 26), color, size=16,
                          align="center")
         y += 30
     # The keys as a clickable legend, like the station footers.
     with pointer.layer("end"):
-        _footer(s, (rect.x + 16, y + 24, rect.w - 32, 22),
-                (("D", "end.key.debrief"), ("R", "end.key.restart"), ("M", "end.key.menu")))
+        _footer(s, (rect.x + 16, y + 24, rect.w - 32, 22), game.end_keys(
+            (("D", "end.key.debrief"), ("R", "end.key.restart"), ("M", "end.key.menu"))))
 
 
 # Solid tint surfaces of the silent light, keyed on (size, multiply, floor).

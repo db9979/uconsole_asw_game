@@ -68,6 +68,7 @@ async function run() {
   assert($("logbook-title").textContent.length > 3 && $("logbook-totals").textContent.length > 3,
     "logbook dialog is empty");
   assert($("logbook-awards").children.length === 5, "logbook lists the five awards");
+  assert($("logbook-ribbons").children.length === 11, "logbook shows the ribbon rack");
   $("logbook-side-boat").click();
   assert($("logbook-side-boat").getAttribute("aria-pressed") === "true", "logbook side switch");
   $("logbook-close").click();
@@ -75,7 +76,9 @@ async function run() {
   assert(!$("host-training").hidden && !$("host-training").disabled, "training button");
   $("host-training").click();
   await until(() => $("training-dialog").open, "training dialog did not open");
-  assert($("training-list").querySelectorAll("button:not(:disabled)").length === 6, "six lessons");
+  assert($("training-list").querySelectorAll("button:not(:disabled)").length === 9, "nine lessons");
+  assert($("training-list").querySelectorAll(".training-next").length === 1, "one next lesson");
+  assert(/\d/.test($("training-progress").textContent), "training progress line");
   $("training-cancel").click();
   assert(!$("training-dialog").open, "training dialog did not close");
 

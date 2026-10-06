@@ -91,6 +91,7 @@ Global keys (all stations):
 | `Esc` | Cancel input or open exit dialog |
 | `R / M` | After the mission ends: restart with the same seed / main menu |
 | `D` | After the mission ends: debrief with the truth beside what the crew knew (Space plays it back, Tab 10×/60×, Home/End start/end, B the language model's report when switched on) |
+| `N` | After a finished lesson: start the next lesson |
 
 ### Your first patrol (frigate)
 
@@ -109,14 +110,14 @@ Global keys (all stations):
 
 ### Your first dive (submarine)
 
-The quickest way into the submarine is lesson 5 of the training: main menu **Training**, lesson 5 (Listen and hide below the layer) with `5` or the arrow keys, `Enter`. The uConsole plays the submarine for this lesson, and a banner waits for each step:
+The quickest way into the submarine is lesson 8 of the training: main menu **Training**, lesson 8 (Listen and hide below the layer) with `8` or the arrow keys, `Enter`. The uConsole plays the submarine for this lesson, and a banner waits for each step:
 
 1. Sonar room (`2`): wait for the frigate in the contact list.
 2. Select the contact with `Up`/`Down` and press `C` until it reads warship.
 3. Measure the layer with the bathythermograph (`E`).
 4. Command (`1`), then `J`: the submarine dives below the measured layer, where the frigate's hull sonar hears it badly.
 
-Lesson 6 continues with evading a pinging frigate (`I` on the Threat page). After the lessons, start **New mission**, the submarine with `2` and `Enter`, then scenario 1 (Breakthrough) with `1` and `Enter`: reach the goal area marked GOAL on the chart. Go slow (`-` on the telegraph or `A` for silent running), stay below the layer, keep the mast down near the frigate and evade with `I` when a ping or torpedo alarm comes in.
+Lesson 9 continues with evading a pinging frigate (`I` on the Threat page). After the lessons, start **New mission**, the submarine with `2` and `Enter`, then scenario 1 (Breakthrough) with `1` and `Enter`: reach the goal area marked GOAL on the chart. Go slow (`-` on the telegraph or `A` for silent running), stay below the layer, keep the mast down near the frigate and evade with `I` when a ping or torpedo alarm comes in.
 
 ### Underwater acoustics in five minutes
 
@@ -157,10 +158,10 @@ After the start screen the main menu opens. `Up`/`Down` (or the mouse) choose an
 |---|---|
 | Continue mission | Resumes the autosaved mission; only shown while an autosave exists |
 | New mission | Side, scenario, briefing (below) |
-| Daily mission | One fixed mission per side and day |
+| Training | Nine guided lessons (below) |
+| Daily mission | One fixed short mission per side and day |
 | Multiplayer | The lobby with Remote Crew (chapter Remote Crew) |
 | Server (browsers only) | The uConsole only serves; everyone plays in the browser |
-| Training | Six guided lessons (below) |
 | Campaign | Theatre campaign for either side (chapter Scenarios and missions) |
 | Logbook | Service record and awards (chapter After the mission) |
 | Load mission | Loads slot 1-5 |
@@ -173,7 +174,7 @@ After the start screen the main menu opens. `Up`/`Down` (or the mouse) choose an
 
 ### First launch
 
-When no `~/.u-jagd/settings.json` exists yet, a welcome page follows the start screen: "What do you want to play?" `1` Frigate (the Training menu with lesson 1 selected), `2` Submarine (the Training menu with lesson 5, the first submarine lesson, selected), `3` Remote Crew (opens the multiplayer lobby; `Esc` there leads to the main menu), `4` or `Esc` main menu. Arrow keys and `Enter` choose as well. Whatever you pick, the page is remembered in the settings and not shown again.
+When no `~/.u-jagd/settings.json` exists yet, a welcome page follows the start screen: "What do you want to play?" `1` Frigate (the Training menu with lesson 1 selected), `2` Submarine (the Training menu with lesson 8, the first submarine lesson, selected), `3` Remote Crew (opens the multiplayer lobby; `Esc` there leads to the main menu), `4` or `Esc` main menu. Arrow keys and `Enter` choose as well. Whatever you pick, the page is remembered in the settings and not shown again.
 
 ### New mission: side and scenario
 
@@ -193,7 +194,7 @@ The list shows nine rows at once and scrolls with the selection (`Up`/`Down`, mo
 
 A chosen weather holds for the whole mission (sea state fair and fog 1, rain 3, storm 5; the sea changes only within 0-2, 2-4 and 5-6; a storm brings thunderstorms with lightning, thunder and sferics), and no weather fronts pass then; the clock runs on from the chosen time. The choice holds for every new mission until the game quits, also for `R` at mission end; it is saved with the mission, not in the settings.
 
-**Short mission:** the same places offer a third row, the length: the full mission or a short one (not for scenario 4, whose time limit is its own setting).
+**Short mission:** the same places offer a third row, the length: the full mission or a short one (not for scenario 4, whose time limit is its own setting). The length last chosen there (start menu, lobby or browser) is kept in the settings for the next launch; a new player without settings starts on the short missions.
 
 A short mission keeps its goal but has a shorter time limit and starts closer to the action: Patrol 30 min, Double hunt 60 min, Nuclear intercept 45 min, Breakthrough 60 min, Hunter group 60 min, Reconnaissance 45 min, Convoy attack 35 min, Strait blockade 45 min, Combat swimmers 45 min, Supply ship escort 45 min, Convoy escort 35 min, Damaged homecoming 60 min, every other new scenario 45 min. The first hostile submarine starts 5-8 NM from the frigate (Breakthrough and Hunter group 4-6 NM, Reconnaissance 10-16 NM) and every further one 8-14 NM; in a submarine mission the goal beyond the frigate, the strait's entry and exit, the swimmers' approach and the place on the convoy's or supply ship's bow come closer as well.
 
@@ -201,7 +202,7 @@ Each short variant was tuned with AI-against-AI games so that both sides win abo
 
 ### Training
 
-**Training** offers six guided lessons. Each is a short mission with a hint banner that waits for you; `Up`/`Down` or `1`-`6` choose, `Enter` starts:
+**Training** offers nine guided lessons. Each is a short mission with a hint banner that waits for you; `Up`/`Down` or `1`-`9` choose, `Enter` starts. A lesson finished once carries a tick (✓), the first one not yet finished is marked "next" and is selected when the page opens; a line below the list counts the lessons done. The ticks are kept in the settings, not in a save.
 
 | Lesson | Side | What you practise |
 |---|---|---|
@@ -209,17 +210,20 @@ Each short variant was tuned with AI-against-AI games so that both sides win abo
 | 2 Target motion analysis | Frigate | Switch TMA on, run a second leg and get a range |
 | 3 Torpedo attack | Frigate | Locate, classify, designate and sink a hostile submarine |
 | 4 Helicopter and sonobuoys | Frigate | Launch the helicopter, lay a buoy and hear the submarine on it |
-| 5 Listen and hide below the layer | Submarine | Hear the frigate, classify it as a warship, measure the layer with a BT and dive below it |
-| 6 Shake off a hunting frigate | Submarine | Read the Threat page, evade with `I`, go quiet and deeper than 100 m until no ping has come for two minutes |
+| 5 Air defence: missile inbound | Frigate | Find the sea-skimmer from the north-east on the OPZ and shoot it down with an ESSM; a missed or leaking missile is followed by another 30 s later |
+| 6 ESM: hear a radar | Frigate | Hear a merchant's radar on the ELOKA, name its radar type with `C` and see the released bearing on the OPZ |
+| 7 Torpedo defence with the Nixie | Frigate | A torpedo runs at the ship from 3.6 NM: stream the Nixie (`V`), run at HALF or FULL and hold the course until it has run out or hit the decoy |
+| 8 Listen and hide below the layer | Submarine | Hear the frigate, classify it as a warship, measure the layer with a BT and dive below it |
+| 9 Shake off a hunting frigate | Submarine | Read the Threat page, evade with `I`, go quiet and deeper than 100 m until no ping has come for two minutes |
 
-For lessons 5 and 6 the uConsole plays the submarine. In lesson 6 the frigate pings every 45 s until you evade, then only while its pings still find you, and it never fires.
+For lessons 8 and 9 the uConsole plays the submarine. In lesson 9 the frigate pings every 45 s until you evade, then only while its pings still find you, and it never fires.
 
-In lessons 1, 2 and 4 the submarine is neutral and never attacks; lesson 3 is a real attack that ends when the submarine sinks. The other lessons end as won after their last step. `R` at the end runs the lesson again. A saved lesson restarts its hints at step 1 after loading and passes the steps that are already done. After a lesson the uConsole keeps the side it played.
+In lessons 1, 2 and 4 the submarine is neutral and never attacks; lesson 3 is a real attack that ends when the submarine sinks; lessons 5 to 7 have no submarine. In lesson 7 the torpedo is real: at SLOW or FLANK, or without the Nixie, it still finds the ship, and a hit ends the lesson as lost. The other lessons end as won after their last step. `R` at the end runs the lesson again, `N` after a finished lesson starts the next one. A saved lesson restarts its hints at step 1 after loading and passes the steps that are already done. After a lesson the uConsole keeps the side it played.
 
 ### Daily mission
 
-- The main menu's *Daily mission* offers one fixed mission per side and day, the same for every player: the date picks the scenario and the seed, and with it the real sea area, weather and time. The length is always the normal one.
-- The page shows today's best score of each side; a finished daily mission (also after midnight, for yesterday's) keeps the best win in the logbook for 30 days. The realism level is the player's own setting.
+- The main menu's *Daily mission* offers one fixed mission per side and day, the same for every player: the date picks the scenario and the seed, and with it the real sea area, weather and time. It is always the short variant of a scenario that has one (the page names its minutes), so it fits a break.
+- The page shows today's best score of each side; a finished daily mission (also after midnight, for yesterday's) keeps the best win in the logbook for 30 days; only the short daily mission counts. The realism level is the player's own setting.
 
 ### Saving, loading and autosave
 
@@ -1686,6 +1690,7 @@ Keys that work at every station of the submarine (`F1` on the uConsole shows the
 | `Esc` | Cancel input or open exit dialog |
 | `R / M` | After the mission ends: restart with the same seed / main menu |
 | `D` | After the mission ends: debrief with the truth beside what the crew knew (Space plays it back, Tab 10×/60×, Home/End start/end, B the language model's report when switched on) |
+| `N` | After a finished lesson: start the next lesson |
 
 ### Command
 
@@ -2338,7 +2343,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons 
 
 ### Not in the browser
 
-The browser follows the uConsole station by station. The solo browser also has the main menu's **Logbook** (service record, best scores, awards and what the enemy has learnt, for the frigate and the submarine) and **Training** (the six lessons; a submarine lesson first switches the browser to the submarine). What the browser does not have yet:
+The browser follows the uConsole station by station. The solo browser also has the main menu's **Logbook** (service record, best scores, awards and what the enemy has learnt, for the frigate and the submarine) and **Training** (the nine lessons with their ticks and the next one marked; a submarine lesson first switches the browser to the submarine). What the browser does not have yet:
 
 - **Training in server mode:** the server-mode lobby starts missions only; lessons start from a solo browser or on the uConsole.
 - **Logbook page extras:** switching "enemy learns" on or off (`L`), the language model's review of the service record and the after-action report stay on the uConsole's logbook page; the browser shows the record read-only.
@@ -2351,7 +2356,7 @@ The browser follows the uConsole station by station. The solo browser also has t
 
 ### End panel
 
-When a mission ends, the end panel names the result, the score with the realism level's factor, a new best score and new awards. `R` restarts the mission with the same seed, `M` returns to the main menu and `D` opens the debrief. A mission started from the multiplayer lobby returns everyone to the lobby.
+When a mission ends, the end panel names the result, the score with the realism level's factor, a new best score and new awards. Below the result a line says what decided the mission, read from the debrief of the side the uConsole played: for the frigate when contact came and which shot sank the submarine, the bearing of the torpedo that sank the ship, or the longest missed chance (minutes, range, above or below the layer); for the submarine the shot that sank the frigate, the torpedoes at the convoy, how long and how close the frigate held it, or the weapon that sank it. Lessons have no such line. The browser's debrief shows the same line above its events. `R` restarts the mission with the same seed, `M` returns to the main menu and `D` opens the debrief; after a finished lesson `N` starts the next one. A mission started from the multiplayer lobby returns everyone to the lobby.
 
 ### Debrief
 
@@ -2366,6 +2371,8 @@ Beside the chart it lists the time of the first contact, first fix and classific
 ### Logbook and awards
 
 **Logbook** (main menu): every finished mission (never a lesson) for the side the uConsole played, with date, mission, realism level, result, score and minutes; the best score per mission and five awards per side: first victory, one shot one kill (the enemy sunk with a single weapon), unscathed (no damage), never fired at, and realist (a victory on the Realistic level).
+
+Beside the totals hangs a **ribbon rack**: one ribbon per scenario of the side (free patrols aside), numbered as in the scenario list. A ribbon is in colour once that scenario was won without the executive officer's help or the experimental opponent (short or normal length), else an empty outline; the totals line counts the ribbons won. The browser's logbook shows the same rack.
 
 The frigate files its mission score; the submarine counts its outcome (sinking the frigate 1500, the supply ship 1300, the convoy 1200, swimmers landed or agents picked up 1100, breakthrough, strait, report, home port or listening post 1000, escape or trail shaken off 800, surviving 600) plus up to 500 for an undamaged submarine and 100 per torpedo left, times the level's factor.
 

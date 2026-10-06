@@ -598,6 +598,8 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
         if e.key == pygame.K_F4:
             self._open_simlog_view()
             return
+        if e.key == pygame.K_n and self.game_over and self.start_next_lesson():
+            return
         if (e.key == pygame.K_n and self.station is not Station.SONAR
                 and not (self.station is Station.HELICOPTER
                          and self.station_page == 3)):
@@ -1643,9 +1645,7 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 elif action == "server":
                     self.start_server_mode()
                 elif action == "training":
-                    self.main_menu = False
-                    self.menu_screen = "training"
-                    self.menu_sel = 0
+                    self.open_training_menu()
                 elif action == "campaign":
                     self.main_menu = False
                     self.menu_screen = "campaign"

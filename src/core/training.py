@@ -10,7 +10,15 @@ true within a moment.
 
 Lessons 1, 2 and 4 place their submarine as a neutral boat so it never
 fires at the student; lesson 3 is a real (hostile) attack and ends with the
-mission's sink objective.
+mission's sink objective.  The defence lessons place no submarine: in the
+air-defence lesson the coach launches one sea-skimming missile at the ship
+(``lesson_missile_due``; another one while the student has not yet fired an
+ESSM and none is in the air), the ESM lesson places a merchant whose
+navigation radar the ESM hears, and the torpedo lesson a hostile torpedo
+already running at the ship, against which the student streams the Nixie.
+
+A finished lesson is remembered in the settings (``lessons_done``) for the
+tick marks of the training page and its "next lesson".
 
 The boat lessons (``BOAT_LESSONS``) put the uConsole on the submarine: the
 student crews the lesson's boat and the frigate follows a plain script
@@ -24,12 +32,22 @@ from __future__ import annotations
 from src.core import boat_threat, config
 from src.core.station import Station
 
-FRIGATE_LESSONS = ("sonar", "tma", "attack", "helo")
+FRIGATE_LESSONS = ("sonar", "tma", "attack", "helo", "air", "esm", "torpedo")
 BOAT_LESSONS = ("boat_listen", "boat_evade")
 LESSONS = FRIGATE_LESSONS + BOAT_LESSONS
 KEY_PREFIX = "user.training-"
 # The scripted frigate of the evasion lesson pings this often (s).
 BOAT_PING_INTERVAL_S = 45.0
+# The air-defence lesson: the first missile this long after the start, a
+# further one this long after the last has gone, from this far off.
+MISSILE_FIRST_S = 40.0
+MISSILE_AGAIN_S = 30.0
+MISSILE_RANGE_NM = 20.0
+MISSILE_BEARING_DEG = 60.0
+# The torpedo lesson's speed orders (``config.TELEGRAPH_ORDERS`` indices):
+# HALF or FULL. At SLOW the Nixie does not draw the torpedo off the ship,
+# at FLANK the torpedo still finds the ship (measured, lesson setup).
+NIXIE_ORDERS = (2, 3)
 
 
 def side_of(lesson: str) -> str:
@@ -60,6 +78,44 @@ def _tma_solution(game) -> bool:
 
 def _range_known(game) -> bool:
     return any(contact.range_est is not None for contact in _contacts(game))
+
+
+def _missile_tracks(game) -> bool:
+    return bool(game.asm_tracks())
+
+
+def _essm_fired(game) -> bool:
+    return game.essm_seq > 0
+
+
+def missiles_alive(game) -> bool:
+    return any(asm.state in ("LAUF", "CHAFF") for asm in game.asms)
+
+
+def _missile_down(game, coach) -> bool:
+    """The lesson's last missile was shot down (it did not hit the ship)."""
+    return coach.missile_result == "down" and not missiles_alive(game)
+
+
+def _esm_intercept(game) -> bool:
+    return bool(game.eloka_tracks())
+
+
+def _esm_annotated(game) -> bool:
+    return bool(game.eloka_annotations)
+
+
+def _torpedo_heard(game) -> bool:
+    return bool(game.torpedo_warnings(held=False))
+
+
+def _nixie_speed(game) -> bool:
+    """HALF or FULL ordered, the speed the Nixie works at."""
+    return not game.ship.astern and game.ship.order_idx in NIXIE_ORDERS
+
+
+def _torpedoes_gone(game) -> bool:
+    return not game.enemy_torpedoes and not game.damage.ship_sunk
 
 
 def _boat(game):
@@ -148,6 +204,25 @@ STEPS = {
             contact.buoy_reports for contact in _contacts(g))),
         ("training.step.classify", lambda g, c: _classified(g)),
     ),
+    "air": (
+        ("training.step.go_opz", lambda g, c: g.station is Station.OPZ),
+        ("training.step.missile", lambda g, c: _missile_tracks(g)),
+        ("training.step.essm", lambda g, c: _essm_fired(g)),
+        ("training.step.missile_down", _missile_down),
+    ),
+    "esm": (
+        ("training.step.go_eloka", lambda g, c: g.station is Station.ELOKA),
+        ("training.step.intercept", lambda g, c: _esm_intercept(g)),
+        ("training.step.annotate", lambda g, c: _esm_annotated(g)),
+        ("training.step.esm_opz", lambda g, c: g.station is Station.OPZ),
+    ),
+    "torpedo": (
+        ("training.step.torpedo_heard", lambda g, c: _torpedo_heard(g)),
+        ("training.step.go_weapons", lambda g, c: g.station is Station.WEAPONS),
+        ("training.step.nixie", lambda g, c: bool(g.nixies)),
+        ("training.step.nixie_speed", lambda g, c: _nixie_speed(g)),
+        ("training.step.torpedo_gone", lambda g, c: _torpedoes_gone(g)),
+    ),
     "boat_listen": (
         ("training.step.boat_sonar", lambda g, c: _boat_sonar(g)),
         ("training.step.boat_contact", lambda g, c: bool(_boat_contacts(g))),
@@ -170,6 +245,16 @@ _SETUP = {
     "tma": dict(offset=(7.0, -5.0), course=200.0, speed=6.0, side="neutral"),
     "attack": dict(offset=(3.0, -3.0), course=120.0, speed=5.0, side="hostile"),
     "helo": dict(offset=(-9.0, -6.0), course=60.0, speed=4.0, side="neutral"),
+    # The defence lessons: a merchant for the ESM, a torpedo running at the
+    # ship (aimed ahead of it); the air-defence lesson places nothing.
+    "air": dict(units=(), ship_speed=12.0),
+    "esm": dict(units=(dict(id="merchant", profile="cargo_01", side="neutral",
+                            offset=(14.0, -9.0), course=250.0, speed=10.0),),
+                ship_speed=10.0),
+    "torpedo": dict(units=(dict(id="torpedo", profile="enemy_torp", side="hostile",
+                                offset=(3.0, -2.0), course=262.0, speed=40.0,
+                                depth=20.0),),
+                    ship_speed=6.0),
     # The boat lessons: the crewed boat is the lesson's (hostile) boat.
     "boat_listen": dict(offset=(4.0, -6.0), course=270.0, speed=3.0, side="hostile",
                         depth=50.0, layer=80.0, ship_speed=8.0),
@@ -198,14 +283,23 @@ def lesson_definition(lesson: str, seed: int) -> dict:
     """The authored mission of one lesson (validated like any user mission)."""
     setup = _SETUP[lesson]
     px, py = PLAYER
-    sub = dict(id="boat", profile="diesel_alt", side=setup["side"],
-               placement=dict(kind="fixed", x=px + setup["offset"][0],
-                              y=py + setup["offset"][1]),
-               course_deg=setup["course"], speed_kn=setup["speed"],
-               depth_m=setup.get("depth", 60.0))
-    objective = (dict(type="sink", target_ids=["boat"], time_limit_s=7200.0)
-                 if setup["side"] == "hostile" and lesson not in BOAT_LESSONS
-                 else dict(type="survive", target_ids=[], time_limit_s=7200.0))
+    if "units" in setup:
+        units = [dict(id=row["id"], profile=row["profile"], side=row["side"],
+                      placement=dict(kind="fixed", x=px + row["offset"][0],
+                                     y=py + row["offset"][1]),
+                      course_deg=row["course"], speed_kn=row["speed"],
+                      depth_m=row.get("depth", 0.0))
+                 for row in setup["units"]]
+        objective = dict(type="survive", target_ids=[], time_limit_s=7200.0)
+    else:
+        units = [dict(id="boat", profile="diesel_alt", side=setup["side"],
+                      placement=dict(kind="fixed", x=px + setup["offset"][0],
+                                     y=py + setup["offset"][1]),
+                      course_deg=setup["course"], speed_kn=setup["speed"],
+                      depth_m=setup.get("depth", 60.0))]
+        objective = (dict(type="sink", target_ids=["boat"], time_limit_s=7200.0)
+                     if setup["side"] == "hostile" and lesson not in BOAT_LESSONS
+                     else dict(type="survive", target_ids=[], time_limit_s=7200.0))
     return {
         "version": 1,
         "key": lesson_key(lesson),
@@ -218,10 +312,28 @@ def lesson_definition(lesson: str, seed: int) -> dict:
         "environment": {"sea_state": 2, "time_hour": 12.0,
                         "thermocline_depth_m": setup.get("layer", 150.0),
                         "weather": "clear"},
-        "units": {"exact": [sub], "random_groups": []},
+        "units": {"exact": units, "random_groups": []},
         "objective": objective,
         "events": [],
     }
+
+
+def next_lesson(done) -> str | None:
+    """The first lesson not yet done, in menu order (None: all done)."""
+    return next((lesson for lesson in LESSONS if lesson not in done), None)
+
+
+def following(lesson: str) -> str | None:
+    """The lesson after ``lesson`` in menu order, or None after the last."""
+    index = LESSONS.index(lesson)
+    return LESSONS[index + 1] if index + 1 < len(LESSONS) else None
+
+
+def valid_done(value) -> tuple:
+    """Lessons done from the settings: known lessons, menu order, no repeats."""
+    if not isinstance(value, (list, tuple)):
+        return ()
+    return tuple(lesson for lesson in LESSONS if lesson in value)
 
 
 class TrainingCoach:
@@ -235,6 +347,11 @@ class TrainingCoach:
         self.step = 0
         self.done = False
         self.next_ping_t = 0.0      # the evasion lesson's scripted frigate
+        # The air-defence lesson's missile: in the air at the last look,
+        # how the last one ended ("down" or "hit"), the damage before it.
+        self.missile_alive = False
+        self.missile_result = None
+        self.damage_at_launch = 0.0
 
     @property
     def steps(self):
@@ -273,3 +390,15 @@ def frigate_should_ping(game, coach) -> bool:
     return any(contact.target_id == boat.sub.id and contact.range_source == "ping"
                and 0.0 <= game.sim_t - contact.range_seen <= window
                for contact in game.sonar.active_contacts())
+
+
+def lesson_missile_due(game, coach) -> bool:
+    """The air-defence lesson launches a missile: the first
+    ``MISSILE_FIRST_S`` into the lesson, then, until one is shot down after
+    the student fired an ESSM, another ``MISSILE_AGAIN_S`` after the last
+    has gone (shot down by the CIWS or the chaff, or hit)."""
+    if coach.lesson != "air" or coach.done or game.game_over or missiles_alive(game):
+        return False
+    if game.asm_seq == 0:
+        return game.mission_time >= MISSILE_FIRST_S
+    return game.sim_t >= coach.next_ping_t

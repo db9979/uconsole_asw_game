@@ -203,7 +203,10 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # Start weather and time of the next scenario/campaign mission.
         self.start_weather = "random"
         self.start_time = "random"
-        self.start_length = "normal"
+        # The length the player chose last (a first launch: short).
+        self.start_length = (self.preferences.mission_length
+                             if self.preferences.mission_length in config.START_LENGTH_CHOICES
+                             else "normal")
         self.in_menu = start_menu
         self.menu_sel = 0  # Index in DIFFICULTY_FIELD_ORDER or SCENARIO_ORDER
         self.seed = seed

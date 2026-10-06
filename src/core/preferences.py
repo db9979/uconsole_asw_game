@@ -8,13 +8,15 @@ import tempfile
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
-from src.core.config import BOTTOM_PANEL_MODES, FPS_CHOICES, FPS_DEFAULT, LEVELS
+from src.core.config import (BOTTOM_PANEL_MODES, FPS_CHOICES, FPS_DEFAULT, LEVELS,
+                             START_LENGTH_CHOICES)
 from src.core.i18n import SUPPORTED_LANGUAGES, detect_system_language
 from src.core import opz_display
 from src.llm.client import (DEFAULT_MODEL as LLM_DEFAULT_MODEL,
                             DEFAULT_URL as LLM_DEFAULT_URL, valid_model, valid_url)
 
 _MAX_CREDENTIAL_LEN = 256
+_MAX_LESSONS = 32
 GRAPHICS_LEVELS = ("low", "normal", "full")
 LLM_COACH_LEVELS = ("off", "rare", "often")
 THEME_CHOICES = ("night", "day")
@@ -91,6 +93,13 @@ class Preferences:
     # OPZ chart display (``src/core/opz_display.py``): the settings that
     # differ from the default as (key, value) pairs. Display only.
     opz_display: tuple = ()
+    # Length of the next scenario mission (``config.START_LENGTH_CHOICES``),
+    # remembered from the last choice; a first launch starts with "short",
+    # settings files written before the field existed keep "normal".
+    mission_length: str = "normal"
+    # Training lessons finished at least once (``src/core/training.py``
+    # names), for the tick marks and "next lesson" of the training page.
+    lessons_done: tuple = ()
 
     @classmethod
     def defaults(cls) -> "Preferences":
@@ -113,7 +122,7 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
         with target.open("r", encoding="utf-8") as handle:
             payload = json.load(handle)
     except FileNotFoundError:
-        return replace(defaults, onboarded=False)
+        return replace(defaults, onboarded=False, mission_length="short")
     except (OSError, UnicodeError, json.JSONDecodeError):
         return defaults
     if not isinstance(payload, dict):
@@ -151,6 +160,14 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
         # Settings from before the levels: assistance meant the beginner.
         level = "beginner" if values["operator_assist"] == "training" else defaults.level
     values["level"] = level
+    length = payload.get("mission_length", defaults.mission_length)
+    values["mission_length"] = (length if length in START_LENGTH_CHOICES
+                                else defaults.mission_length)
+    done = payload.get("lessons_done", ())
+    values["lessons_done"] = (tuple(dict.fromkeys(
+        name for name in done if isinstance(name, str) and name.isascii()
+        and name.replace("_", "").isalnum() and len(name) <= 32))[:_MAX_LESSONS]
+        if isinstance(done, (list, tuple)) else ())
     url = payload.get("llm_url", defaults.llm_url)
     values["llm_url"] = url if valid_url(url) else defaults.llm_url
     model = payload.get("llm_model", defaults.llm_model)

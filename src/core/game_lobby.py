@@ -103,6 +103,9 @@ class LobbyMixin:
             station = (Station.BRIDGE.name.lower() if self.local_side != "uboot"
                        else "uboot")
             self.lobby = LobbyRoom(self.scenario_key, self.local_side, station)
+            # The length the player chose last (N2).
+            if self.start_length in config.START_LENGTH_CHOICES:
+                self.lobby.length = self.start_length
         self.lobby.cancel()
         self._set_versus_round(False)
         self._refresh_lobby_missions()
@@ -179,6 +182,7 @@ class LobbyMixin:
         self.scenario_key = room.scenario_key
         self.start_weather, self.start_time = room.weather, room.time
         self.start_length = room.length
+        self.remember_length(room.length)
         self.lobby_round = True
         # Against a second crew every browser keeps the unit it crews now.
         self._set_versus_round(room.versus == "crew")

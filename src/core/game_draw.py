@@ -26,7 +26,7 @@ from src.core import pointer_input, station_alarms, uboot_local
 from src.nations.nations import reference_summary
 from src.ui import layout, pointer
 from src.ui import observations
-from src.ui import overlay_style, quality
+from src.ui import overlay_style, quality, theme
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.shock_fx import ShockFx
 from src.ui import eco_lamp, game_menu, hit_inset, log_voice_view, mic_meter, talk_view
@@ -301,7 +301,7 @@ class DrawMixin:
             # Only the scenarios of the side picked before (frigate or boat).
             side_key = ("menu.choose_scenario.uboot" if self.local_side == "uboot"
                         else "menu.choose_scenario.frigate")
-            center(self.tr(side_key), 150, color=config.COLOR_TEXT_DIM)
+            center(self.tr(side_key), 150, color=config.COLOR_TEXT_DIM, keys=(None, "Esc"))
             self._draw_scenario_list(center, row)
         elif self.menu_screen == CUSTOM_SCREEN:
             self._draw_custom_menu(center)
@@ -373,7 +373,7 @@ class DrawMixin:
             world_label = sector["name"]
             if self.world_mode == "real_fixed":
                 center(self.tr("menu.real_fixed_hint", sector=sector["id"]),
-                       config.SCREEN_H - 92, color=config.COLOR_TEXT_DIM, keys=(None, "]"))
+                       config.SCREEN_H - 92, color=config.COLOR_TEXT_DIM, keys=(None, "[ / ]"))
         else:
             world_label = self.tr("menu.fixed_chart")
         center(self.tr("menu.world_status", world=world_label, seed=self.seed),
@@ -1272,6 +1272,51 @@ class DrawMixin:
         return tuple(pygame.Rect(292 + index * 590, 70, 106, 36)
                      for index in range(len(cls._OPTION_PAGES)))
 
+    # Rows that open their own page instead of changing a value.
+    _OPTION_OPEN_ROWS = ("live_traffic", "commander", "llm")
+
+    @staticmethod
+    def _option_arrow_rects(row) -> tuple:
+        """The < and > buttons at the right end of an options row: a click
+        presses Left or Right on that row (full mouse control)."""
+        row = pygame.Rect(row)
+        return (pygame.Rect(row.right - 66, row.y, 30, row.h),
+                pygame.Rect(row.right - 32, row.y, 30, row.h))
+
+    def _draw_option_row(self, name, value, row, selected, color=None) -> None:
+        """One options row: highlight, text, and its < > buttons."""
+        row = pygame.Rect(row)
+        if selected:
+            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
+        if color is None:
+            color = overlay_style.text_color(selected)
+        text_rect = row
+        pointer.add_hotspot(row)
+        if name not in self._OPTION_OPEN_ROWS:
+            text_rect = pygame.Rect(row.x, row.y, row.w - 72, row.h)
+            for glyph, rect in zip(("<", ">"), self._option_arrow_rects(row)):
+                pygame.draw.rect(self.screen, theme.c("raised"), rect, border_radius=4)
+                pygame.draw.rect(self.screen, theme.c("line_strong"), rect, 1,
+                                 border_radius=4)
+                layout.blit_line(self.screen, raw_text(glyph), rect, config.COLOR_TEXT,
+                                 size=18, align="center")
+        layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value),
+                         text_rect, color, size=20)
+
+    def _options_hint(self, top: int = 650) -> None:
+        """The options page's key hint; each key in it is a key chip."""
+        layout.blit_block(self.screen, "commander.local.options_hint",
+                          292, top, 696, 46, config.COLOR_TEXT_DIM, size=18,
+                          align="center")
+        pointer.add_token_keys((292, top, 696, 46), "commander.local.options_hint", 18,
+                               self._OPTIONS_HINT_KEYS, align="center", screen=self.screen)
+
+    _OPTIONS_HINT_KEYS = (("Up/Down:", "↑/↓"), ("Auf/Ab:", "↑/↓"),
+                          ("Enter/Left/Right:", "Enter"),
+                          ("Eingabe/Links/Rechts:", "Enter"),
+                          ("PgUp/PgDn,", "PgUp/PgDn"), ("Bild auf/ab,", "PgUp/PgDn"),
+                          ("Tab:", "Tab"), ("Esc:", "Esc"))
+
     def _option_rows(self) -> tuple:
         page = self.options_page if 0 <= self.options_page < len(self._OPTION_PAGES) else 0
         return self._OPTION_PAGES[page]
@@ -1331,16 +1376,10 @@ class DrawMixin:
             self.tr("option.live_traffic"),
             self.tr("commander.local.option"),
         )
-        for index, (value, row) in enumerate(zip(values, self._options_row_rects())):
-            color = overlay_style.text_color(index == self.options_sel)
-            if index == self.options_sel:
-                overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
-            prefix = "> " if index == self.options_sel else "  "
-            layout.blit_line(self.screen, raw_text(prefix + value), row, color, size=20)
-        layout.blit_block(self.screen,
-                          "commander.local.options_hint",
-                          292, 650, 696, 46, config.COLOR_TEXT_DIM, size=18,
-                          align="center")
+        for index, (name, value, row) in enumerate(zip(self._option_rows(), values,
+                                                       self._options_row_rects())):
+            self._draw_option_row(name, value, row, index == self.options_sel)
+        self._options_hint()
 
     def _level_option_text(self) -> str:
         """The realism level row; in a mission with another level it says
@@ -1358,11 +1397,8 @@ class DrawMixin:
         value = (self.tr("option.local_side") + ": "
                  + self.tr("option.local_side." + self.local_side))
         selected = self.options_sel == 0
-        if selected:
-            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
         color = (config.COLOR_TEXT_DIM if locked or not selected else config.COLOR_TEXT)
-        layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value),
-                         row, color, size=20)
+        self._draw_option_row("local_side", value, row, selected, color)
         layout.blit_block(self.screen, "option.local_side.help",
                           row.x + 24, row.bottom + 10, row.w - 24, 150,
                           config.COLOR_TEXT_DIM, size=18)
@@ -1373,26 +1409,22 @@ class DrawMixin:
         # Display: the graphics level (row 7 leaves the side's help room).
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[1]]
         selected = self.options_sel == 1
-        if selected:
-            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
         level, auto = self._graphics_choice()
         level = self.tr("option.graphics." + level)
         value = self.tr("option.graphics", level=self.tr(
             "option.graphics.auto", level=level) if auto else level)
-        layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
-                         config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
+        self._draw_option_row("graphics", value, row, selected,
+                              config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM)
         layout.blit_block(self.screen, "option.graphics.help",
                           row.x + 24, row.bottom + 8, row.w - 24, 62,
                           config.COLOR_TEXT_DIM, size=18)
         # Spoken crew reports; the help says whether espeak-ng was found.
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[2]]
         selected = self.options_sel == 2
-        if selected:
-            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
         value = (self.tr("option.speech") + ": "
                  + self.tr("common.on" if self.preferences.speech else "common.off"))
-        layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
-                         config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
+        self._draw_option_row("speech", value, row, selected,
+                              config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM)
         layout.blit_block(self.screen, "option.speech.voice" if (
                               self.voice_ready() and self.preferences.tts_crew)
                           else "option.speech.help" if self.speaker.available
@@ -1402,8 +1434,6 @@ class DrawMixin:
         # Noise discipline: the uConsole's own microphone (level only).
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[3]]
         selected = self.options_sel == 3
-        if selected:
-            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
         mic = self.__dict__.get("microphone")
         value = (self.tr("option.microphone") + ": "
                  + self.tr("common.on" if self.preferences.microphone else "common.off"))
@@ -1411,18 +1441,16 @@ class DrawMixin:
                    else "")
         if failure:
             value += " · " + self.tr(microphone_state_key(failure))
-        layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
-                         config.COLOR_WARN if failure else
-                         config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
+        self._draw_option_row("microphone", value, row, selected,
+                              config.COLOR_WARN if failure else
+                              config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM)
         # The optional language model: opens its own settings page.
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[4]]
         selected = self.options_sel == 4
-        if selected:
-            overlay_style.highlight(self.screen, (row.x - 6, row.y - 5, row.w + 12, 34))
         value = self.tr("option.llm", state=self.tr(
             "common.on" if self.preferences.llm_enabled else "common.off"))
-        layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
-                         config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
+        self._draw_option_row("llm", value, row, selected,
+                              config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM)
         if failure:
             # A switched-on microphone that does not work: its cause and
             # remedy take the footer's place until it works.
@@ -1432,10 +1460,7 @@ class DrawMixin:
                               292, 637, 696, 62, config.COLOR_WARN, size=16,
                               align="center")
             return
-        layout.blit_block(self.screen,
-                          "commander.local.options_hint",
-                          292, 650, 696, 46, config.COLOR_TEXT_DIM, size=18,
-                          align="center")
+        self._options_hint()
 
     @staticmethod
     def _live_traffic_row_rects():
@@ -1510,6 +1535,13 @@ class DrawMixin:
                           "live_traffic.hint",
                           292, 636, 696, 58, config.COLOR_TEXT_DIM, size=16,
                           align="center")
+        # Its keys are chips (Enter applies an open field, Esc cancels it).
+        pointer.add_token_keys((292, 636, 696, 58), "live_traffic.hint", 16,
+                               (("UP/DOWN", "↑/↓"), ("HOCH/RUNTER", "↑/↓"),
+                                ("ENTER", "Enter"), ("ESC", "Esc")),
+                               align="center", screen=self.screen)
+        for row in rows:
+            pointer.add_hotspot(row)
 
     def _live_traffic_test_label(self, side: str) -> str:
         status, reason = self.live_traffic_test_result.get(side, ("idle", None))

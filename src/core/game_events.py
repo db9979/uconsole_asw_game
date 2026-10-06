@@ -264,8 +264,10 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
         if self.splash_active:
             if e.type == pygame.QUIT:
                 self.running = False
-            elif (e.type == pygame.KEYDOWN
+            elif ((e.type == pygame.KEYDOWN
+                   or (e.type == pygame.MOUSEBUTTONDOWN and getattr(e, "button", 0) == 1))
                   and self._t - self.splash_started_at >= .35):
+                # Any key or a left click closes the splash.
                 self.splash_active = False
             return True
         if e.type == pygame.KEYUP:
@@ -494,7 +496,7 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             # Their key buttons, tabs and rows took any click above
             # (src/ui/advisor_view.py); the rest never reaches the station behind.
             if e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEWHEEL):
-                return
+                return True
             if self.advisor_open:
                 self._handle_advisor_event(e)
             else:
@@ -523,12 +525,22 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                                 break
                         for index, rect in enumerate(self._option_row_hit_rects(rows)):
                             if rect.collidepoint(canvas):
+                                # A click on a row changes it as Enter does;
+                                # its < and > buttons press Left and Right.
                                 self.options_sel = index
-                                name = rows[index]
-                                if name in ("live_traffic", "commander", "llm"):
-                                    self._open_administration(name)
-                                elif name == "local_side":
-                                    self._toggle_local_side()
+                                left, right = self._option_arrow_rects(rect)
+                                self._handle_administration_key(
+                                    pygame.K_LEFT if left.collidepoint(canvas)
+                                    else pygame.K_RIGHT if right.collidepoint(canvas)
+                                    else pygame.K_RETURN)
+                                break
+                    elif self.live_traffic_open and self.live_traffic_field is None:
+                        # A click on a row picks it and acts as Enter: toggle,
+                        # open the field or run the test.
+                        for index, rect in enumerate(self._live_traffic_row_rects()):
+                            if rect.collidepoint(canvas):
+                                self.live_traffic_sel = index
+                                self._handle_live_traffic_key(pygame.K_RETURN)
                                 break
             return True
         if (e.type == pygame.TEXTINPUT and getattr(e, "text", "") == "?"

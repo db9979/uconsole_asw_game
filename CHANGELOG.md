@@ -4,14 +4,38 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.267
+## 1.3.274
 
-Release 1.3.267 lets you hide the contact names on the charts. Alt+N, or
+Release 1.3.274 lets you hide the contact names on the charts. Alt+N, or
 the blue Names chip in the chart's corner, hides the names and speeds of all
 contacts on every chart at every station of both sides and shows them again;
 symbols, course vectors and the tooltip stay, and the uConsole keeps the
 choice in its settings. In the browser the Names button above the chart and
 Alt+N do the same for that browser tab. Saves are v53; v38 to v52 saves
+
+## 1.3.272
+
+Release 1.3.272 makes the menus work by mouse. In the options a click on a
+row changes it like `Enter`, and new **<** and **>** buttons step a value
+back or on; every key in the hint line is a clickable chip. The real-world
+traffic page switches services and opens its fields by click, a click
+closes the start screen, lobby rows step back from their left third and
+on elsewhere, the Remote Crew page steps host and port back the same way,
+the Remote Crew admission window has a close cross, and the update
+notice closes with its cross until the next launch. Saves are v53;
+v38 to v52 saves still load.
+
+## 1.3.266
+
+Release 1.3.266 closes the first gaps in mouse control. A click into the
+executive officer's or the language model's window no longer reaches the
+station behind it. In the Mission and Unit Editors a second click on a row
+opens the field. At the sonar the cursor on LOFAR and DEMON and the TMA
+hypothesis (course, speed, range) now move by clicking their chips, the
+helicopter's waypoint chips steer it, the submarine's status line opens
+the log like `F11`, and the submarine sonar no longer shows a key on its
+array readout. A new test makes sure every key chip on every station can
+be clicked. Saves are v53; v38 to v52 saves still load.
 
 ## 1.3.264
 

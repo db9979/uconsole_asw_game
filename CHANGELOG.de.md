@@ -4,15 +4,41 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.267
+## 1.3.274
 
-Version 1.3.267 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
+Version 1.3.274 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
 oder der blaue Chip Namen in der Kartenecke blendet Namen und Fahrt aller
 Kontakte auf allen Karten an jeder Station beider Seiten aus und wieder ein;
 Symbole, Kursvektoren und der Tooltip bleiben, und die uConsole merkt sich
 die Wahl in ihren Einstellungen. Im Browser tun der Knopf Namen über der
 Karte und Alt+N dasselbe für diesen Browser-Tab. Spielstände sind v53;
 Spielstände v38 bis v52 laden weiterhin.
+
+## 1.3.272
+
+Version 1.3.272 macht die Menüs per Maus bedienbar. In den Optionen ändert
+ein Klick auf eine Zeile sie wie `Eingabe`, und neue Schaltflächen **<** und
+**>** stellen einen Wert zurück oder weiter; jede Taste in der Hinweiszeile
+ist ein klickbarer Chip. Die Seite Echtzeit-Verkehr schaltet Dienste per
+Klick und öffnet ihre Felder, ein Klick schließt den Startbildschirm,
+Lobby-Zeilen stellen per Klick ins linke Drittel zurück und sonst weiter,
+die Remote-Crew-Seite stellt Host und Port genauso zurück, und das
+Zulassungsfenster der Remote Crew und der Update-Hinweis haben ein
+Schließkreuz; der Hinweis bleibt dann bis zum nächsten Start zu. Spielstände sind
+v53; v38- bis v52-Stände werden weiter geladen.
+
+## 1.3.266
+
+Version 1.3.266 schließt die ersten Lücken in der Maussteuerung. Ein Klick
+ins Fenster des Ersten Offiziers oder des Sprachmodells erreicht die
+Station dahinter nicht mehr. Im Missions- und Einheiten-Editor öffnet ein
+zweiter Klick auf eine Zeile das Feld. Am Sonar lassen sich der Cursor auf
+LOFAR und DEMON und die TMA-Hypothese (Kurs, Fahrt, Entfernung) jetzt per
+Klick auf ihre Chips verstellen, die Wegpunkt-Chips des Helis steuern ihn,
+die Statuszeile des U-Boots öffnet das Log wie `F11`, und das U-Boot-Sonar
+zeigt an seiner Array-Anzeige keine Taste mehr. Ein neuer Test sorgt dafür,
+dass jeder Tastenchip an jeder Station klickbar ist. Spielstände sind v53;
+v38- bis v52-Stände werden weiter geladen.
 
 ## 1.3.264
 

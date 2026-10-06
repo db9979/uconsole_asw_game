@@ -526,9 +526,11 @@ class FieldList:
             if 0 <= index < len(self.rows) and not self.rows[index].header:
                 changed = index != self.selected
                 self.selected = index
-                if getattr(event, "clicks", 1) >= 2:
+                # A click picks a row, a second click on it opens it (Enter):
+                # Pygame's button events carry no double-click count.
+                if not changed or getattr(event, "clicks", 1) >= 2:
                     self.begin_edit()
-                return True if changed or self.editing else True
+                return True
         return False
 
     def _handle_choice_event(self, event: pygame.event.Event, rect: pygame.Rect) -> bool:

@@ -12,7 +12,7 @@ User missions start from the Mission Editor (`F5` in its browser). The runtime t
 
 Profiles saved in the Unit Editor can be placed like built-in ones and take effect in that mission (speeds, depth, torpedo load, behaviour, acoustics); a user submarine takes sensors, tubes, decoys and its battery, diesel or AIP plant from the built-in submarine of its propulsion. Frigate and helicopter torpedoes, missing user profiles and other world sizes are refused at start.
 
-In the editor's World tab, `Enter` on Kind or Reference opens a pick list (`Up`/`Down`, `PgUp`/`PgDn`, `Enter` takes, `Esc` cancels); Reference lists the 128 sectors with their countries, and picking one makes the world a 500 NM reference world. The Preview tab then draws that sector's coast.
+A field opens with `Enter` or a second click on its row (the first click picks it). In the editor's World tab, `Enter` on Kind or Reference opens a pick list (`Up`/`Down`, `PgUp`/`PgDn`, `Enter` takes, `Esc` cancels); Reference lists the 128 sectors with their countries, and picking one makes the world a 500 NM reference world. The Preview tab then draws that sector's coast.
 
 ## Own missions and sharing {#ed-share}
 

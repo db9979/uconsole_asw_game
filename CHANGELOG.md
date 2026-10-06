@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.260
+## 1.3.264
 
-Release 1.3.260 makes the underwater fight more realistic. Torpedo seekers
+Release 1.3.264 makes the underwater fight more realistic. Torpedo seekers
 now look ahead in a cone of about 45 degrees to each side and within a depth
 window, lock on by signal strength against their own noise, search slowly
 and quietly and sprint only once they hold a target. AI submarines react to
@@ -18,6 +18,18 @@ passive contacts near the detection limit fade in and out, and in the
 convoy attack the escort warns its merchants, about every third one of
 which turns away from a torpedo it hears. Saves are v53; v38 to v52 saves
 still load.
+
+## 1.3.262
+
+Release 1.3.262 lets the executive officer speak in the browser too. When
+the host has a voice set up, an answer asked from a browser station is now
+spoken there by the same voice as on the uConsole: the host fetches the
+audio from its speech service and only the browser that asked plays it, so
+the service and its key never leave the host. Answers to questions asked
+with the talk key are spoken the same way. This also works when the host
+runs as a browser-only server without a speaker. **Speak answers** in the
+officer's window switches it off for one browser. Keys and saves are
+unchanged (v53; v38 to v52 saves still load).
 
 ## 1.3.259
 

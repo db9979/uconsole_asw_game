@@ -13,6 +13,7 @@ import numpy as np
 import pygame
 import pytest
 
+from src.core import game_voice
 from src.core.game import Game
 from src.core.i18n import message
 from src.core.preferences import Preferences, load_preferences, save_preferences
@@ -586,3 +587,31 @@ def test_sound_page_steps_and_types_numbers(isolated_saves):
     assert game.preferences.tts_top_p == 1.0
     game.click_llm_row(TUNE_ROWS.index("tts_clean"))
     assert not game.preferences.tts_clean and not game.voice.config.clean
+
+
+def test_a_browser_askers_answer_is_spoken_for_that_browser_only():
+    with FakeSpeechServer() as server:
+        game = _game()
+        # A host without a speaker of its own ("Server (nur Browser)").
+        game.web_mode = True
+        _voice_on(game, server)
+        entry = dict(seq=7, kind="question", question="Depth?", answer="Layer at 60 metres.",
+                     status="done", error=None, proposal=None, applied=False)
+        game.advisor.logs["web:c:1"] = __import__("collections").deque([entry])
+        game.voice_advisor_entry(entry)
+        assert _pump(game, lambda: ("web:c:1", 7) in game.web_voice_clips)
+        clip = game.web_voice_clips[("web:c:1", 7)]
+        assert len(clip) > 1000 and len(clip) % 2 == 0
+        assert game.web_voice_rate == game.voice.rate
+        assert server.requests[-1]["input"].startswith("Layer at")
+        # A new mission drops what no browser fetched.
+        game.voice_stop()
+        assert not game.web_voice_clips
+
+
+def test_browser_clips_are_bounded():
+    game = _game()
+    for seq in range(game_voice.WEB_VOICE_CLIPS + 3):
+        game._keep_web_voice(("web:c:1", seq), np.zeros(10, dtype=np.int16))
+    assert len(game.web_voice_clips) == game_voice.WEB_VOICE_CLIPS
+    assert ("web:c:1", 0) not in game.web_voice_clips

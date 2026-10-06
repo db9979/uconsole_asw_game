@@ -26,6 +26,7 @@ from src.commander.v2.commands import (
     _object,
     _v2_command_valid)
 from src.commander.missions import MISSION_UPLOAD_MAX_BYTES
+from src.commander.advisor_web import VOICE_ROUTE as ADVISOR_VOICE_ROUTE
 from src.commander.advisor_web import SPEECH_MAX_BYTES, SPEECH_ROUTE
 from src.commander.v2.wire import (
     station_grants,
@@ -274,6 +275,20 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         if body:
             self.wfile.write(body)
+        self.close_connection = True
+
+    def _voice_reply(self, pcm: bytes, rate: int):
+        self.send_response_only(200)
+        self.send_header("Content-Type", "audio/pcm")
+        self.send_header("X-U-Jagd-PCM", "s16le")
+        self.send_header("X-U-Jagd-Sample-Rate", str(int(rate)))
+        self.send_header("Content-Length", str(len(pcm)))
+        self.send_header("Connection", "close")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-U-Jagd-Version", APP_VERSION)
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(pcm)
         self.close_connection = True
 
     def handle_one_request(self):
@@ -1049,6 +1064,22 @@ class _Handler(BaseHTTPRequestHandler):
             secure = owner.tls_address
             self._reply(200, {"protocol": 2,
                               "port": None if secure is None else int(secure[1])})
+        elif self.path.startswith(ADVISOR_VOICE_ROUTE):
+            # The executive officer's spoken answer, for its asker only.
+            try:
+                with owner._lock:
+                    session, _, presented = self._authenticated_v2_locked(renew=True)
+                    clip = (owner.advisor_voice_locked(session, self.path)
+                            if session is not None else None)
+            except (UnicodeEncodeError, ValueError):
+                self.send_error(400)
+                return
+            if session is None:
+                self._v2_unauthorized(presented)
+            elif clip is None:
+                self.send_error(404)
+            else:
+                self._voice_reply(*clip)
         elif self.path in ("/api/v2/session", "/api/v2/state",
                            "/api/v2/state?sonar=stream", "/api/v2/chart",
                            "/api/v2/results", "/api/v2/proposals",

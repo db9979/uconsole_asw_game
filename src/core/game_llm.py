@@ -102,6 +102,8 @@ class LlmMixin:
                 self._coach_banner(entry["answer"])
             # The executive officer says his answer (game_voice.py).
             self.voice_advisor_entry(entry)
+        # Answers spoken for browser stations, kept until fetched.
+        self._pump_web_voice()
         self._poll_llm_reports()
         self._poll_llm_review()
         self._poll_mission_generator()

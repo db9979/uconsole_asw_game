@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.260
+## 1.3.264
 
-Version 1.3.260 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
+Version 1.3.264 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
 schauen jetzt in einem Kegel von etwa 45 Grad zu jeder Seite und in einem
 Tiefenfenster nach vorn, schalten nach Signalstärke gegen ihr Eigengeräusch
 auf, suchen langsam und leise und sprinten erst nach der Aufschaltung.
@@ -19,6 +19,19 @@ jetzt Fahrt, passive Kontakte an der Erfassungsgrenze schwinden und kommen
 wieder, und beim Geleitzugangriff warnt die Fregatte ihre Frachter, von denen
 etwa jeder dritte vor einem gehörten Torpedo abdreht. Spielstände sind v53;
 v38- bis v52-Spielstände lassen sich weiter laden.
+
+## 1.3.262
+
+Version 1.3.262 lässt den Ersten Offizier auch im Browser sprechen. Hat der Host
+eine Stimme eingerichtet, wird eine Antwort, die an einer Browser-Station
+erfragt wurde, jetzt dort mit derselben Stimme wie auf der uConsole
+gesprochen: Der Host holt den Ton bei seinem Sprachdienst, und nur der
+Browser, der gefragt hat, spielt ihn ab, Dienst und Schlüssel verlassen
+den Host also nie. Antworten auf Fragen per Sprechtaste werden genauso
+gesprochen. Das klappt auch, wenn der Host als Server nur für Browser ohne
+Lautsprecher läuft. **Antworten vorlesen** im Fenster des Offiziers
+schaltet es für einen Browser ab. Tasten und Spielstände bleiben gleich
+(v53; Spielstände v38 bis v52 laden weiter).
 
 ## 1.3.259
 

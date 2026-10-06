@@ -10,18 +10,16 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.273**
+Current release: **1.3.274**
 
-Release 1.3.273 makes the overlays work by mouse. The questions before
-saving over a slot, loading or quitting answer by clicking their key chips.
-In the manual (F1) the buttons **[ Previous chapter** and **] Next chapter**
-turn the chapters, and every key in its hint line is a chip. The
-simulation log (F4) and the debrief have a footer of key chips; the wheel
-steps the debrief's events. Plot mode has a toolbar at the foot of the
-chart with a chip for every tool and action, so its hint line no longer
-covers the chart's position readout. In the Tactical Unit Analyzer (F8)
-two buttons assign the browsed profile to the selected contact or clear
-it. Saves are v53; v38 to v52 saves still load.
+Release 1.3.274 brings the remaining station controls to the mouse. ESSM
+on the OPZ target page, the patrol aircraft's torpedo, the consort's ASROC
+and the helicopter's air torpedo each have a fire button that fires only on
+a second click within 3 s; the first click arms it. The OPZ key chips J, H,
+Shift+L, Del and K (follow) work by click. A click in the sonar's LOFAR or
+DEMON display puts the cursor on that frequency, the GAIN chip lowers or
+raises the gain by its halves, and a click on a dipping-sonar line selects
+that contact. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

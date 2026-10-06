@@ -96,3 +96,47 @@ def test_generate_op_shape_and_result(tmp_path):
     library.generate(SimpleNamespace(body=dict(base, request="x", side="frigate")),
                      SimpleNamespace(mission_gen=off, llm=None, llm_language=lambda: "en"))
     assert library.view(0.0, force=True)["results"][-1]["reason"] == "llm_off"
+
+
+def test_a_spoken_answer_is_fetched_only_by_its_own_asker():
+    server = _Server()
+    one, two = _session("a"), _session("b")
+    server._sessions_v2 = {"a": one, "b": two}
+    entry = dict(seq=4, kind="question", question="Depth?", answer="Layer at 60 metres.",
+                 status="done", error=None, proposal=None, applied=False)
+    advisor = SimpleNamespace(version=1, logs={"web:a:1": [entry]})
+    game = SimpleNamespace(advisor=advisor, advisor_ask=None, game_over=False,
+                           llm_active=lambda: True, llm_report=lambda side: None,
+                           voice=SimpleNamespace(active=True),
+                           preferences=SimpleNamespace(tts_xo=True),
+                           web_voice_clips={}, web_voice_rate=22050)
+    published = {}
+    advisor_web.pump_advisor(server, game, published)
+    import json
+    mine = json.loads(server.advisor_body_locked(one))
+    # The host speaks answers, this one is not ready yet.
+    assert mine["voice"] is True and mine["log"][0]["voice"] is False
+    game.web_voice_clips[("web:a:1", 4)] = b"\x01\x00" * 100
+    advisor_web.pump_advisor(server, game, published)
+    mine = json.loads(server.advisor_body_locked(one))
+    assert mine["log"][0]["voice"] is True
+    route = advisor_web.VOICE_ROUTE
+    assert server.advisor_voice_locked(one, route + "4") == (b"\x01\x00" * 100, 22050)
+    for session, path in ((two, route + "4"), (one, route + "5"), (one, route + "-4"),
+                          (one, route + "4&x=1"), (one, route + ""),
+                          (_session("a", observer=True), route + "4"),
+                          (_session("a", "lookout"), route + "4")):
+        assert server.advisor_voice_locked(session, path) is None, path
+
+
+def test_without_the_hosts_voice_the_browser_waits_for_none():
+    server = _Server()
+    one = _session("a")
+    server._sessions_v2 = {"a": one}
+    game = SimpleNamespace(advisor=SimpleNamespace(version=1, logs={}), game_over=False,
+                           llm_active=lambda: True, llm_report=lambda side: None,
+                           voice=SimpleNamespace(active=False),
+                           preferences=SimpleNamespace(tts_xo=True))
+    advisor_web.pump_advisor(server, game, {})
+    import json
+    assert json.loads(server.advisor_body_locked(one))["voice"] is False

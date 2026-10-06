@@ -72,3 +72,14 @@ While a phone holds the bridge lookout, the lookout no longer reports ships, air
 In the Remote Crew browser (Commander, `F9`) stations are operated with buttons or with the same keys as on the uConsole; every control with a key shows it as a blue key cap after its label, and a key never acts while the cursor is in a field. Keys that send an order or fire only press the matching control, so they pass the same checks as a click:
 
 <!-- keys:web -->
+
+## Not in the browser {#mp-gaps}
+
+The browser follows the uConsole station by station. The solo browser also has the main menu's **Logbook** (service record, best scores, awards and what the enemy has learnt, for the frigate and the submarine) and **Training** (the six lessons; a submarine lesson first switches the browser to the submarine). What the browser does not have yet:
+
+- **Training in server mode:** the server-mode lobby starts missions only; lessons start from a solo browser or on the uConsole.
+- **Logbook page extras:** switching "enemy learns" on or off (`L`), the language model's review of the service record and the after-action report stay on the uConsole's logbook page; the browser shows the record read-only.
+- **Damage control:** choosing a compartment with `←`/`→` has no key; pick it in the compartment list.
+- **Helicopter:** the keys of the acoustic pages that only exist on the uConsole's helicopter display have no browser counterpart.
+- **Station stepping:** `Tab` does not step through the stations; use the station's number (`1`-`9`), and the same number again turns its page.
+- **Host-only functions:** options, editors on the uConsole, quitting, network administration and credentials stay on the uConsole by design.

@@ -2312,27 +2312,40 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons 
 
 | Key | Action |
 |---|---|
-| `1-9` | Open one of your own stations (submarine crew: 1-7) |
-| `[ / ]` | Previous / next own station |
+| `1-9` | Open one of your own stations (submarine crew: 1-7); the station's own number again turns its page |
 | `?` | Open guide and station help |
 | `Arrow keys` | Move within focused tab bar, track list or chart |
 | `Home / End` | First / last entry of the focused list |
-| `+ / - · Q / E` | Zoom focused chart (Q / E as on the uConsole); Home fits the view |
+| `Q / E` | Zoom the chart or the lookout's view (as on the uConsole); Home fits the view |
 | `K` | Chart follows the own ship on or off |
+| `+ / -` | Engine telegraph one step up / down (bridge, engine room, submarine command and engine) |
 | `C / V / D · T` | Course, speed, depth, torpedo running depth: the cursor jumps to the field, Enter sends (bridge, engine, submarine) |
 | `Shift+A · J` | Active ping · live sonar audio on or off (sonar, submarine command, helicopter dipping sonar) |
+| `W · Shift+T` | Sonar: active pulse CW / LFM · TMA method (hypothesis, Ekelund, dot stack) |
 | `Ctrl+Enter` | Arm the shot (weapons, OPZ, helicopter, submarine weapons); the fire dialog asks once more |
 | `R / Shift+R` | OPZ: surface / air radar on or off; Q / E change the radar display range |
 | `H · B · Ctrl+R · Shift+M` | Helicopter: launch or recall, drop buoy, aircraft radar, MAD |
 | `A · V · Ctrl+B` | Silent running (engine) · decoy (submarine weapons) · clear baffles (bridge, submarine command) |
+| `Station letters` | Every other station key is the uConsole's own (radio K / H / R / A / D, damage control C / G / W / M / U, ELOKA E / Shift+E / A / C, weapons W / X / Y / D / A / Z / R, ...); each one shows as a blue key cap on its control |
 | `Arrow keys (chart)` | Pan focused chart |
 | `Mouse over map` | Details of the track, own ship, asset, wreck or chart position under the cursor |
 | `0` | Open or close the weather & sonar analysis |
 | `Page Up/Down` | Step through the pages: helicopter Acoustic analysis, Dipping sonar and Tactical map (8 again also steps), sonar pages |
 | `Plot tool + click` | Draw on the shared plot: pick a tool above the map, click once (mark, bearing line) or twice (ruler, circle, DR line) |
-| `, / .` | Collapse or expand the contact list (,) or the station panel (.) |
-| `L` | Open or close the operational log |
+| `Alt+, / Alt+.` | Collapse or expand the contact list (Alt+,) or the station panel (Alt+.) |
+| `Alt+L` | Open or close the operational log |
 | `Esc` | Close the guide, lookout or contact library and return to the station |
+
+### Not in the browser
+
+The browser follows the uConsole station by station. The solo browser also has the main menu's **Logbook** (service record, best scores, awards and what the enemy has learnt, for the frigate and the submarine) and **Training** (the six lessons; a submarine lesson first switches the browser to the submarine). What the browser does not have yet:
+
+- **Training in server mode:** the server-mode lobby starts missions only; lessons start from a solo browser or on the uConsole.
+- **Logbook page extras:** switching "enemy learns" on or off (`L`), the language model's review of the service record and the after-action report stay on the uConsole's logbook page; the browser shows the record read-only.
+- **Damage control:** choosing a compartment with `←`/`→` has no key; pick it in the compartment list.
+- **Helicopter:** the keys of the acoustic pages that only exist on the uConsole's helicopter display have no browser counterpart.
+- **Station stepping:** `Tab` does not step through the stations; use the station's number (`1`-`9`), and the same number again turns its page.
+- **Host-only functions:** options, editors on the uConsole, quitting, network administration and credentials stay on the uConsole by design.
 
 ## After the mission
 

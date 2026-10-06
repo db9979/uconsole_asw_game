@@ -324,6 +324,14 @@ def _sonar_set_tma_enabled(game, params, _bindings):
     return game.set_sonar_tma_enabled(params["enabled"])
 
 
+def _sonar_set_pulse(game, params, _bindings):
+    return game.set_sonar_pulse(params["pulse"])
+
+
+def _sonar_set_tma_method(game, params, _bindings):
+    return game.set_tma_method(params["method"])
+
+
 def _sonar_set_gain(game, params, _bindings):
     return game.set_sonar_gain(params["gain_db"])
 
@@ -1003,6 +1011,8 @@ _V2_ACTION_HANDLERS = {
     "sonar_set_vds_depth": _sonar_set_vds_depth,
     "sonar_measure_bt": _sonar_measure_bt,
     "sonar_active_ping": _sonar_active_ping,
+    "sonar_set_pulse": _sonar_set_pulse,
+    "sonar_set_tma_method": _sonar_set_tma_method,
     "sonar_set_tma_enabled": _sonar_set_tma_enabled,
     "sonar_set_gain": _sonar_set_gain,
     "sonar_set_audition_mode": _sonar_set_audition_mode,
@@ -1114,6 +1124,13 @@ def _host_start_mission(game, params):
     return True if game.start_custom_mission(definition) else "mission_rejected"
 
 
+def _host_start_training(game, params):
+    """Start a training lesson (solo host; server mode starts from the lobby)."""
+    if getattr(game, "server_mode", False):
+        return "use_lobby"
+    return True if game.start_training(params["lesson"]) else "mission_rejected"
+
+
 def _host_instructor_environment(game, params):
     """Apply a bounded, save-compatible exercise environment change."""
     if params["event"] is not None:
@@ -1168,6 +1185,7 @@ _HOST_ACTION_HANDLERS = {
     "host_load": _host_load,
     "host_new_game": _host_new_game,
     "host_start_mission": _host_start_mission,
+    "host_start_training": _host_start_training,
     "host_instructor_environment": _host_instructor_environment,
     # The server-mode leader (``src/core/game_server.py``).
     "host_lobby_set": _server_only(lambda game, params: game.server_lobby_set(params)),

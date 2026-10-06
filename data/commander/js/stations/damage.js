@@ -4,6 +4,18 @@ import { actionButton, metrics, setOptions, stationRows, yesNo } from "../views/
 import { renderCrew } from "../views/crew.js";
 import { renderNoteLamps } from "../views/console-kit.js";
 
+// Damaged compartments first (destroyed, damaged, flooding), then by water
+// and fire; intact ones keep the ship's order below them.
+const SEVERITY = {ZERSTOERT: 3, BESCHAEDIGT: 2, FLUTEND: 1, OK: 0};
+export function byDamage(rooms) {
+  const load = (room) => (Number.isFinite(room.flood) ? room.flood : 0) + (Number.isFinite(room.fire) ? room.fire : 0);
+  const hurt = (room) => (SEVERITY[room.state] ?? 0) > 0 || load(room) > 0;
+  return rooms.map((room, index) => ({room, index})).sort((a, b) =>
+    Number(hurt(b.room)) - Number(hurt(a.room)) ||
+    (hurt(a.room) ? (SEVERITY[b.room.state] ?? 0) - (SEVERITY[a.room.state] ?? 0) || load(b.room) - load(a.room) : 0) ||
+    a.index - b.index).map((row) => row.room);
+}
+
 function compartmentName(payload, key) {
   return payload.compartments.find((room) => room.key === key)?.name || key;
 }
@@ -58,7 +70,7 @@ export function renderDamageStation(payload) {
     ["compartment", team.compartment ? compartmentName(payload, team.compartment) : t("damage_team_free")],
     ["state", teamStatus(team)]]);
   markTeams($("damage-teams"), payload.teams, selector);
-  stationRows($("damage-compartments"), payload.compartments, (room) => [["compartment", room.name],
+  stationRows($("damage-compartments"), byDamage(payload.compartments), (room) => [["compartment", room.name],
     ["state", enumText(damageStates, room.state)], ["flood", unit(room.flood, "%")],
     ["fire", unit(room.fire, "%")], ["flood_trend", number(room.trend.flood_rate, 2)],
     ["fire_trend", number(room.trend.fire_rate, 2)], ["damage_repairable", yesNo(room.repairable)]], "station_none", (room) =>

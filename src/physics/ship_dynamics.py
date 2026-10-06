@@ -33,6 +33,11 @@ SEA_STATE_HS_M = (0.0, 0.1, 0.5, 1.25, 2.5, 4.0, 6.0)
 WAVE_COMPONENTS = 8
 # Added resistance in waves: R_aw = c * rho * g * Hs^2 * B^2 / L.
 ADDED_RESISTANCE_COEFF = 0.6
+# Induced drag of a turn: R_turn = c * R_calm(V) * (r L / V)^2 = c * k (r L)^2
+# (drift angle and rudder drag grow with the nondimensional yaw rate r' =
+# r L / V); calibrated so a hard-over turn at FULL settles about 28 %
+# below its straight-line speed (1.3.215).
+TURN_DRAG_COEFF = 65.0
 
 _HULL_FIELDS = {
     "version", "note", "displacement_t", "length_m", "beam_m", "draft_m",
@@ -157,6 +162,11 @@ class HullModel:
               + (SEA_STATE_HS_M[high] - SEA_STATE_HS_M[low]) * (index - low))
         return (ADDED_RESISTANCE_COEFF * RHO_SEA * G * hs * hs
                 * self.beam_m ** 2 / self.length_m)
+
+    def turn_resistance_n(self, yaw_rate_deg_s: float) -> float:
+        """Induced resistance of a turn at ``yaw_rate_deg_s`` (N)."""
+        lever = math.radians(yaw_rate_deg_s) * self.length_m
+        return TURN_DRAG_COEFF * self.drag_k * lever * lever
 
     def effective_mass_kg(self, mass_kg: float) -> float:
         return mass_kg * (1.0 + self.added_mass_ratio)

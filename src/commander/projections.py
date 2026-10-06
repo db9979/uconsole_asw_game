@@ -1363,6 +1363,31 @@ def _eloka(game, rows, esm_refs, candidate_refs):
                 status="down" if down else "live")
 
 
+def _bridge_tactical(rows, opz_fusions):
+    """The Bridge chart's picture: one row per contact. Reports the OPZ fused
+    stand behind their fusion (as on the uConsole Bridge chart); a fusion
+    appears where it stands for at least one radar or lookout report."""
+    charted = {row["ref"] for row in rows if row.get("_opz")
+               and row["source"] not in ("ESM", "FUSION")
+               and not row["source"].startswith("SONAR")}
+    fused = {ref for fusion in opz_fusions for ref in fusion["members"]}
+    result = [_observation(row, _TACTICAL_FIELDS) for row in rows
+              if row["ref"] in charted and row["ref"] not in fused]
+    by_ref = {row["ref"]: row for row in rows}
+    for fusion in opz_fusions:
+        if not charted & set(fusion["members"]):
+            continue
+        row = {key: value for key, value in fusion.items() if key != "members"}
+        # The lookout's sighting of a fused ship stays with the one row.
+        sighted = next((by_ref[ref] for ref in fusion["members"]
+                        if by_ref.get(ref, {}).get("visual_class") is not None), None)
+        if row.get("visual_class") is None and sighted is not None:
+            row.update(visual_class=sighted["visual_class"],
+                       visual_type=sighted["visual_type"])
+        result.append(row)
+    return result
+
+
 def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                        esm_refs, asset_refs, buoy_labels, candidate_refs, sonar_refs,
                        direct_fire_refs):
@@ -1429,11 +1454,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                         systems=[dict(key=key, state=game.damage.station_state(key),
                                       down=game.damage.station_down(key))
                                  for key in sorted(game.damage.compartments)],
-                         tactical_summary=[_observation(row, _TACTICAL_FIELDS)
-                                           for row in rows
-                                          if row.get("_opz")
-                                          and row["source"] not in ("ESM", "FUSION")
-                                          and not row["source"].startswith("SONAR")],
+                         tactical_summary=_bridge_tactical(rows, opz_fusions),
                         sightings=_sightings(game), crew=_crew(game),
                         lookout=_lookout_glasses(game), route=_bridge_route(game)),
         "sonar": _sonar(game, rows, focus_ref, target_ref, sonar_refs),

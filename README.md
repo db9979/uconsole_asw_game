@@ -10,18 +10,15 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.246**
+Current release: **1.3.247**
 
-Release 1.3.246 makes the language model's voice sound calm and even.
-The executive officer, the crew and the log now speak with one steady
-style that asks the speech service not to laugh, sigh or change mood, so
-voice and tone no longer jump between sentences. A log entry is said in
-one piece instead of sentence by sentence, units and short forms are said
-in full (12 kn as "twelve knots", NM as "nautical miles", ° as "degrees",
-brg as "bearing", positions in degrees and minutes north and east), and
-seed -1 now draws one seed per launch instead of a new one for every
-sentence. Keys and saves are unchanged (v53; v38 to v52 saves still
-load).
+Release 1.3.247 draws every contact once on the Bridge chart. A ship
+seen by radar and by the lookout used to appear twice, each report with
+its own symbol, label and speed vector, because the Bridge drew the raw
+sensor reports while only the CIC showed them fused. The Bridge chart, its
+trails and tooltips, and the Remote Crew bridge's chart and list now show
+the CIC's fused track instead, with the ship's AIS name once it is known.
+Keys and saves are unchanged (v53; v38 to v52 saves still load).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

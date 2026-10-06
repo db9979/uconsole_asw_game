@@ -21,6 +21,14 @@ from src.ui import layout, log_voice_view, pointer
 from tests.test_llm_voice import FakeSpeechServer, _Mixer, _game, _pump, _voice_on
 
 
+@pytest.fixture(autouse=True)
+def _clean_pointer():
+    """Click targets drawn here never reach the next test."""
+    pointer.reset()
+    yield
+    pointer.reset()
+
+
 def _log(game, category, text):
     game.feed.add(game.world.format_time(), category, raw_text(text))
 

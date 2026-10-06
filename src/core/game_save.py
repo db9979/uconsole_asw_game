@@ -970,24 +970,14 @@ class SaveMixin:
         return document, text
 
     def save_game(self, path: str = None) -> str:
-        import tempfile
+        """Check and write the save synchronously (Remote Crew, tools, tests;
+        the save menu uses ``begin_save_to_slot`` on the worker)."""
+        from src.core.game_autosave import _write_atomically
         path = path or config.SAVE_PATH
         # Checked before the old file is touched: a state the loader rejects
         # must not replace the last good save.
         _document, text = self.checked_save_document(indent=1)
-        parent = os.path.dirname(os.path.abspath(path))
-        os.makedirs(parent, exist_ok=True)
-        temporary = None
-        try:
-            with tempfile.NamedTemporaryFile(mode="w", dir=parent, delete=False) as f:
-                temporary = f.name
-                f.write(text)
-                f.flush()
-                os.fsync(f.fileno())
-            os.replace(temporary, path)
-        finally:
-            if temporary is not None and os.path.exists(temporary):
-                os.unlink(temporary)
+        _write_atomically(path, text.encode("utf-8"), ".save-")
         return path
 
     @staticmethod

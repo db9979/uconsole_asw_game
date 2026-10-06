@@ -48,9 +48,17 @@ PROBE = r'''
     const accept = buttons.find((button) => button.dataset.accept === 'true');
     accept.focus();
     root.dataset.focusable = String(document.activeElement === accept);
-    accept.click();
-    await until(() => $('handover-band').hidden && document.body.dataset.remoteRole === 'lobby',
-      'station not handed over');
+    // Click the live button once it is enabled; a re-render or a station
+    // request still in flight on a slow runner may have replaced or
+    // disabled the one read above.
+    const handedOver = () => $('handover-band').hidden && document.body.dataset.remoteRole === 'lobby';
+    for (let attempt = 0; attempt < 30 && !handedOver(); attempt++) {
+      const live = [...$('handover-list').querySelectorAll('button')]
+        .find((button) => button.dataset.accept === 'true');
+      if (live && !live.disabled) live.click();
+      for (let index = 0; index < 100 && !handedOver(); index++) await sleep(20);
+    }
+    await until(handedOver, 'station not handed over');
     root.dataset.occupancy = document.querySelector("#station-cards [data-station='weapons']").className;
   }
   run().then(() => { root.dataset.handoverTest = 'passed'; }, (error) => {

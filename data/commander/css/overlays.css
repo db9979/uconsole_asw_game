@@ -12,6 +12,11 @@ body.workstation-mode .tab-panel:not(#panel-operations):not([hidden]) {
   padding: 1rem 1.2rem; background: var(--bg-1); border: 1px solid var(--line-strong); border-radius: calc(var(--radius) * 2);
   box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--bg-0) 70%, transparent), 0 1.5rem 3rem -1rem var(--shadow);
 }
+/* The dimmed CIC around an open sheet takes the clicks: none reaches a
+   station control behind it (a click there closes the sheet, layout.js). */
+body.workstation-mode:has(.tab-panel:not(#panel-operations):not([hidden]))::before {
+  content: ""; position: fixed; inset: 0; z-index: calc(var(--z-overlay) - 1);
+}
 body.workstation-mode .tab-panel:not(#panel-operations):not([hidden]) > .overlay-close {
   display: inline-flex; align-items: center; justify-content: center; position: absolute; z-index: 3; top: .5rem; right: .5rem;
   width: 2.2rem; min-height: 2.2rem; padding: 0; font-size: 1.2rem; line-height: 1;

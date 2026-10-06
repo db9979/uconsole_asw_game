@@ -34,9 +34,11 @@ def wrapped(text: str, width: int, size: int) -> list:
 
 
 def draw_text(s, rect, text: str, scroll: int = 0, *, size: int = 15,
-              color=config.COLOR_TEXT) -> int:
+              color=None) -> int:
     """Draw wrapped ``text`` from line ``scroll``; returns the line count."""
     rect = pygame.Rect(rect)
+    if color is None:
+        color = config.COLOR_TEXT       # read now: the scheme may have changed
     lines = wrapped(text, rect.w, size)
     pitch = layout.line_pitch(size, 2)
     visible = max(1, rect.h // pitch)

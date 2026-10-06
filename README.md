@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.226**
+Current release: **1.3.233**
 
-Release 1.3.226 makes the controls follow one set of rules. Ctrl+Enter is
+Release 1.3.233 makes the controls follow one set of rules. Ctrl+Enter is
 now the only key that fires a weapon: at Weapons, D, A, Z, R and Shift+R
 only choose the weapon, which is lit and named in the fire line. Every key
 a station page can use stands in its key bar as a blue chip that presses

@@ -2638,7 +2638,7 @@
   "help.control.engine": "Engine order (telegraph)",
   "feed.heading": "EVENT FEED",
   "feed.overlay.title": "EVENT LOG ({shown} of {total} lines)",
-  "feed.overlay.hint": "Mouse wheel: older entries. F11 closes; the station stays live.",
+  "feed.overlay.hint": "Mouse wheel: older entries. F11 or the cross closes; station keys stay live.",
   "ticker.hint": "F11 LOG",
   "hint.bridge": "Left/Right course | Up/Down telegraph | C/V direct | Q/E zoom | K follow",
   "hint.sonar": "Bearing Left/Right | Contact Up/Down | Shift+A ping | Y TAS | M target",

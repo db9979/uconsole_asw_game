@@ -25,17 +25,22 @@ TIMELINE = pygame.Rect(24, 632, 1232, 30)
 # Replay buttons in the title row: play/pause (Space) and 10x/60x (Tab).
 PLAY = pygame.Rect(1000, 14, 104, 30)
 SPEED = pygame.Rect(1112, 14, 104, 30)
+# ``config.COLOR_*`` names, looked up when drawn (the colour scheme can change).
 EVENT_COLORS = {
-    "first_contact": config.COLOR_WARN, "first_fix": config.COLOR_WARN,
-    "classified": config.COLOR_WARN, "own_shot": config.COLOR_FLIGHT,
-    "enemy_shot": config.COLOR_DANGER, "sub_sunk": config.COLOR_OK,
-    "own_damage": config.COLOR_DANGER, "ship_sunk": config.COLOR_DANGER,
-    "missed": config.COLOR_CONTACT_MISSILE, "pinged": config.COLOR_WARN,
-    "enemy_commander": config.COLOR_WARN,
-    "enemy_habits": config.COLOR_WARN,
-    "mission_end": config.COLOR_TEXT,
+    "first_contact": "COLOR_WARN", "first_fix": "COLOR_WARN",
+    "classified": "COLOR_WARN", "own_shot": "COLOR_FLIGHT",
+    "enemy_shot": "COLOR_DANGER", "sub_sunk": "COLOR_OK",
+    "own_damage": "COLOR_DANGER", "ship_sunk": "COLOR_DANGER",
+    "missed": "COLOR_CONTACT_MISSILE", "pinged": "COLOR_WARN",
+    "enemy_commander": "COLOR_WARN",
+    "enemy_habits": "COLOR_WARN",
+    "mission_end": "COLOR_TEXT",
 }
-OWN_COLOR = (90, 160, 255)
+
+
+def event_color(kind: str) -> tuple:
+    return getattr(config, EVENT_COLORS[kind])
+OWN_COLOR = (90, 160, 255)      # themed by theme.THEMED_GLOBALS
 
 
 def _clock(seconds) -> str:
@@ -233,7 +238,7 @@ def _draw_map(game, s, recorder, index, frame) -> None:
         for event, k in debrief_replay.flashes(recorder.events, frame["t"],
                                               game.debrief_replay.speed):
             fx, fy = to_screen(*debrief_replay.flash_position(event, frame))
-            color = EVENT_COLORS[event["kind"]]
+            color = event_color(event["kind"])
             fade = tuple(int(b + (c - b) * (1.0 - k)) for c, b in zip(color, config.COLOR_GEO_BG))
             pygame.draw.circle(s, fade, (int(fx), int(fy)), int(8 + 34 * k), 2)
             if k < 0.25:
@@ -289,7 +294,7 @@ def _draw_side(game, s, recorder, frame) -> None:
     current_index = past[-1] if past else -1
     start = max(0, min(current_index - rows // 2, len(events) - rows))
     for i, event in enumerate(events[start:start + rows], start):
-        color = EVENT_COLORS[event["kind"]]
+        color = event_color(event["kind"])
         if i > current_index:
             color = config.COLOR_TEXT_DIM
         prefix = ">" if i == current_index else " "
@@ -304,7 +309,7 @@ def _draw_timeline(s, recorder, frame) -> None:
     end = max(1e-6, recorder.frames[-1]["t"])
     for event in recorder.events:
         x = TIMELINE.x + int(event["t"] / end * (TIMELINE.w - 1))
-        pygame.draw.line(s, EVENT_COLORS[event["kind"]], (x, TIMELINE.y + 4),
+        pygame.draw.line(s, event_color(event["kind"]), (x, TIMELINE.y + 4),
                          (x, TIMELINE.bottom - 4), 2)
     x = TIMELINE.x + int(frame["t"] / end * (TIMELINE.w - 1))
     pygame.draw.line(s, config.COLOR_TEXT, (x, TIMELINE.y - 4), (x, TIMELINE.bottom + 4), 3)

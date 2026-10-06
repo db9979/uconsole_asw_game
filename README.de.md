@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.226**
+Aktuelle Version: **1.3.233**
 
-Version 1.3.226 bringt die Bedienung unter einheitliche Regeln.
+Version 1.3.233 bringt die Bedienung unter einheitliche Regeln.
 Strg+Eingabe ist jetzt die einzige Taste, die eine Waffe auslöst: An der
 Waffenstation wählen D, A, Z, R und Umschalt+R nur die Waffe, die dann
 leuchtet und in der Feuerzeile steht. Jede Taste einer Stationsseite steht

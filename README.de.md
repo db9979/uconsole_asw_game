@@ -10,18 +10,15 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.262**
+Aktuelle Version: **1.3.265**
 
-Version 1.3.262 lässt den Ersten Offizier auch im Browser sprechen. Hat der Host
-eine Stimme eingerichtet, wird eine Antwort, die an einer Browser-Station
-erfragt wurde, jetzt dort mit derselben Stimme wie auf der uConsole
-gesprochen: Der Host holt den Ton bei seinem Sprachdienst, und nur der
-Browser, der gefragt hat, spielt ihn ab, Dienst und Schlüssel verlassen
-den Host also nie. Antworten auf Fragen per Sprechtaste werden genauso
-gesprochen. Das klappt auch, wenn der Host als Server nur für Browser ohne
-Lautsprecher läuft. **Antworten vorlesen** im Fenster des Offiziers
-schaltet es für einen Browser ab. Tasten und Spielstände bleiben gleich
-(v53; Spielstände v38 bis v52 laden weiter).
+Version 1.3.265 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
+oder der blaue Chip Namen in der Kartenecke blendet Namen und Fahrt aller
+Kontakte auf allen Karten an jeder Station beider Seiten aus und wieder ein;
+Symbole, Kursvektoren und der Tooltip bleiben, und die uConsole merkt sich
+die Wahl in ihren Einstellungen. Im Browser tun der Knopf Namen über der
+Karte und Alt+N dasselbe für diesen Browser-Tab. Spielstände sind v53;
+Spielstände v38 bis v52 laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -25,7 +25,8 @@ from src.core.station import Station
 from src.ui import (chart_trails, console, engagement, instruments, label_layout, layout, lines,
                     map_fx_view, nato_symbols, overlay_style, pointer, sferics)
 from src.ui.feedback import FeedEntry
-from src.ui.map_view import (chart_background, draw_chart_frame, draw_chart_geography,
+from src.ui.map_view import (chart_background, contact_label_chip_rect, contact_labels_shown,
+                             draw_chart_frame, draw_chart_geography, draw_contact_label_chip,
                              scale_rect)
 from src.ui.plot_view import draw_plot
 from src.ui.red_light import draw_lamp
@@ -308,10 +309,10 @@ def _contact_position(boat, contact, now):
 
 
 def _label(surface, game, text, pos, color, chart, candidates=None, size=None,
-           key=None) -> None:
+           key=None, contact=False) -> None:
     from src.ui.map_view import _map_label
     _map_label(surface, game, text, pos, color, chart, candidates=candidates, size=size,
-               key=key)
+               key=key, contact=contact)
 
 
 def _own_torpedoes(game, sub):
@@ -346,11 +347,12 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
                 course = contact.tma_course
                 nato_symbols.draw_motion_vector(
                     s, (px, py), contact.tma_course, contact.tma_speed, view.scale,
-                    color, font=game.font, max_px=120, key=("boat-speed", contact.id))
+                    color, font=game.font if contact_labels_shown(game) else None,
+                    max_px=120, key=("boat-speed", contact.id))
             _label(s, game, label, (int(px) + 11, int(py) - 20), color, r,
                    candidates=lambda size, point=(px, py), course=course:
                    label_layout.beside(point, size, course),
-                   key=("boat", contact.id))
+                   key=("boat", contact.id), contact=True)
             continue
         bearing = _contact_bearing(contact)
         if bearing is None:
@@ -365,7 +367,7 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
         _label(s, game, label, (int(lx) + 6, int(ly) - 8), color, r,
                candidates=lambda size, rad=rad: label_layout.along(
                    (bx, by), (math.sin(rad), -math.cos(rad)),
-                   (90, 125, 160, 195, 230), size))
+                   (90, 125, 160, 195, 230), size), contact=True)
     draw_esm_chart(game, boat, view, r)
     draw_intercept_lines(game, boat, view, bx, by)
     geo = geo_view(game, boat, view)
@@ -452,6 +454,7 @@ def draw_chart(game, boat) -> None:
     with layout.clip_to(s, r), label_layout.label_scope(r, deferred=True) as labels:
         bx, by = view.world_to_screen(boat.sub.x, boat.sub.y)
         labels.reserve((int(bx) - 12, int(by) - 12, 24, 24))
+        labels.reserve(contact_label_chip_rect(r))
         draw_chart_geography(game, geo_view(game, boat, view), r,
                              top_band=_mission_line_rect(game, r))
         draw_plot(game.screen, game, view, r, layer=boat.plot, own=boat.sub)
@@ -469,6 +472,7 @@ def draw_chart(game, boat) -> None:
         _draw_chart_overlays(game, boat, view, r)
     # The crew's own position is the navigator's (dead reckoning), not truth.
     draw_chart_frame(game, view, r, boat.chart_follow, position=boat_nav.position(boat))
+    draw_contact_label_chip(game, r)
     _draw_mission_line(game, boat, r)
 
 
@@ -1546,7 +1550,8 @@ def draw_esm_chart(game, boat, view, r) -> None:
                            py - u * math.cos(axis) + v * math.sin(axis)))
         pygame.draw.lines(s, config.COLOR_WARN, True, points, 1)
         pygame.draw.rect(s, config.COLOR_WARN, (int(px) - 3, int(py) - 3, 7, 7), 1)
-        _label(s, game, label, (int(px) + 8, int(py) - 18), config.COLOR_WARN, r)
+        _label(s, game, label, (int(px) + 8, int(py) - 18), config.COLOR_WARN, r,
+               contact=True)
 
 
 def _footer(s, rect, specs) -> None:

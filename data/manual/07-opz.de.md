@@ -71,7 +71,7 @@ Wird der Zerstörer versenkt, melden das die Seite und das Ereignisprotokoll; di
 Seite 5 (Anzeige) legt fest, was die OPZ-Karte zeichnet; sie ändert nichts an der Simulation oder am Lagebild selbst und bleibt in den Einstellungen gespeichert. `↑`/`↓` wählt eine Zeile, `←`/`→` ändert sie (ein Klick auf eine Zeile schaltet weiter), `Rücktaste` stellt die gewählte Zeile auf den Standard zurück, `Umschalt+Rücktaste` alle Zeilen.
 
 - **Spurverlauf:** aus, 3, 6 oder 12 Minuten frühere veröffentlichte Positionen hinter jedem Track (ein Punkt alle 30 s, die ältesten am blassesten; nach dem Laden beginnt er neu).
-- **Vektoren:** der Bewegungsvektor zeigt die Strecke in 3, 6, 12 oder 30 Minuten. Tracknamen stehen querab vom Kurs, frei von Vektoren und Spuren, und behalten ihren Platz von Bild zu Bild.
+- **Vektoren:** der Bewegungsvektor zeigt die Strecke in 3, 6, 12 oder 30 Minuten. Tracknamen stehen querab vom Kurs, frei von Vektoren und Spuren, und behalten ihren Platz von Bild zu Bild. `Alt+N` blendet alle Kontaktnamen auf allen Karten aus und geht der Zeile Beschriftung unten vor (siehe Kapitel Brücke).
 - **Beschriftung:** voll, kurz (sechs Zeichen) oder aus.
 - **Peilskala:** Striche alle 10° und Zahlen alle 30° am äußeren Radarring, mit einer Marke für den eigenen Kurs. Die Zahlen stehen immer bei ihrer Peilung; ist die Karte weit herausgezoomt, trägt nur jeder zweite Ring seine Entfernung, und eine Entfernung, die eine Peilzahl verdecken würde, entfällt, ebenso eine Zahl unter der Positionszeile.
 - **Entfernungsringe**, **Peilstrahlen** reiner Peilmeldungen, **Unsicherheitskreise**, **Tiefen und Gitter** der Karte und das **Radar-Nachleuchten** lassen sich einzeln an- und ausschalten.

@@ -10,17 +10,15 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.262**
+Current release: **1.3.265**
 
-Release 1.3.262 lets the executive officer speak in the browser too. When
-the host has a voice set up, an answer asked from a browser station is now
-spoken there by the same voice as on the uConsole: the host fetches the
-audio from its speech service and only the browser that asked plays it, so
-the service and its key never leave the host. Answers to questions asked
-with the talk key are spoken the same way. This also works when the host
-runs as a browser-only server without a speaker. **Speak answers** in the
-officer's window switches it off for one browser. Keys and saves are
-unchanged (v53; v38 to v52 saves still load).
+Release 1.3.265 lets you hide the contact names on the charts. Alt+N, or
+the blue Names chip in the chart's corner, hides the names and speeds of all
+contacts on every chart at every station of both sides and shows them again;
+symbols, course vectors and the tooltip stay, and the uConsole keeps the
+choice in its settings. In the browser the Names button above the chart and
+Alt+N do the same for that browser tab. Saves are v53; v38 to v52 saves
+still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

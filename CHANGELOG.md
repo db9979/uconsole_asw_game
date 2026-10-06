@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.265
+
+Release 1.3.265 lets you hide the contact names on the charts. Alt+N, or
+the blue Names chip in the chart's corner, hides the names and speeds of all
+contacts on every chart at every station of both sides and shows them again;
+symbols, course vectors and the tooltip stay, and the uConsole keeps the
+choice in its settings. In the browser the Names button above the chart and
+Alt+N do the same for that browser tab. Saves are v53; v38 to v52 saves
+still load.
+
 ## 1.3.262
 
 Release 1.3.262 lets the executive officer speak in the browser too. When

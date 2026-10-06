@@ -15,6 +15,7 @@ import pygame
 from src.core import config
 from src.core.i18n import localize, message, raw_text
 from src.ui import console, geo_grid, label_layout, layout, lines, nato_symbols, pointer
+from src.ui import map_view
 from src.ui.map_view import _visible_landmasses, clip_polygon_to_rect, grid_step_nm
 from src.ui.viewport import Viewport
 
@@ -181,8 +182,10 @@ def draw_hfdf_chart(s, game, rect, selected_label=None) -> Viewport | None:
     view = chart_view(game, items, rect)
     pygame.draw.rect(s, _BACKGROUND, rect)
     north = (rect.right - 24, rect.y + 4, 20, layout.font(14).get_linesize())
+    chip_top = north[1] + north[3] + 4
     with layout.clip_to(s, rect), label_layout.label_scope(rect) as labels:
         labels.reserve(north)
+        labels.reserve(map_view.contact_label_chip_rect(rect, chip_top))
         empty = not (items["logged"] or items["live"] or items["fixes"])
         if empty:
             labels.reserve((rect.x + 10, rect.y + 6, rect.w - 40, 22))
@@ -215,11 +218,14 @@ def draw_hfdf_chart(s, game, rect, selected_label=None) -> Viewport | None:
             color = _fade(config.COLOR_WARN, row["age"], CHART_WINDOW_S)
             px, py = view.world_to_screen(row["x"], row["y"])
             pygame.draw.polygon(s, color, ((px, py - 5), (px + 5, py), (px, py + 5), (px - 5, py)), 1)
+        names = map_view.contact_labels_shown(game)
         for fix in items["fixes"]:
             color = _fade(config.COLOR_OK, fix["age"], CHART_WINDOW_S)
             lines.lines(s, color, True, _ellipse(view, fix), 2)
             px, py = view.world_to_screen(fix["x"], fix["y"])
             pygame.draw.circle(s, color, (int(px), int(py)), 3)
+            if not names:
+                continue
             label_layout.blit_line(s, message("radio.chart.fix_label", label=raw_text(fix["label"]),
                                         sigma=f"{fix['sigma_nm']:.1f}"),
                              (int(px) + 8, int(py) - 20, 190, layout.font(14).get_linesize()), color, size=14)
@@ -242,5 +248,6 @@ def draw_hfdf_chart(s, game, rect, selected_label=None) -> Viewport | None:
                              config.COLOR_TEXT_DIM, size=15)
             pointer.add_token_keys((rect.x + 10, rect.y + 6, rect.w - 40, 22),
                                    "radio.chart.empty", 15, (("Enter", "Enter"),), screen=s)
+        map_view.draw_contact_label_chip(game, rect, chip_top)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, rect, 1)
     return view

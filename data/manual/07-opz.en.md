@@ -71,7 +71,7 @@ If the destroyer is sunk the page and the event log say so; the mission goes on.
 Page 5 (Display) sets what the OPZ chart draws; it changes nothing in the simulation or the picture itself and is kept in the settings. `↑`/`↓` picks a row, `←`/`→` changes it (a click on a row moves it on), `Backspace` puts the selected row back to its default, `Shift+Backspace` every row.
 
 - **Track trails:** off, 3, 6 or 12 minutes of earlier published positions behind each track (one point every 30 s, oldest faintest; they start anew after a load).
-- **Vectors:** the motion vector shows the distance run in 3, 6, 12 or 30 minutes. Track names stand abeam of the course, clear of vectors and trails, and keep their place from frame to frame.
+- **Vectors:** the motion vector shows the distance run in 3, 6, 12 or 30 minutes. Track names stand abeam of the course, clear of vectors and trails, and keep their place from frame to frame. `Alt+N` hides all contact names on every chart and overrides the label row below (see the Bridge chapter).
 - **Labels:** full, short (six characters) or off.
 - **Bearing scale:** ticks every 10° and numbers every 30° on the outer radar ring, with a mark for the own course. The numbers always stand at their bearing; when the chart is zoomed far out the rings carry their distance only every second ring, and a distance that would cover a bearing number is left out, as is a number under the position line.
 - **Range rings**, **bearing lines** of bearing-only reports, **furthest-on** circles, **depths + grid** of the chart and the **radar afterglow** each switch on and off.

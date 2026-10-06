@@ -12,6 +12,7 @@ import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { roleMapSweepCanvas, roleMapSweepCtx } from "./canvases.js";
 import { labelField, placeBeside, placeText, reserveText } from "./label-layout.js";
 import { drawAfterglow, drawFurthestOn, drawMapFx, furthestOnNm, mapFxActive } from "./map-fx.js";
+import { contactNamesShown, syncContactNamesButton } from "./contact-names.js";
 import { drawOpzCpa, drawOpzRings, drawOpzTrails, opzLabel, opzLayer, opzVectorMinutes, syncOpzDisplayBar } from "./opz-display.js";
 
 export function mapPayload(role) {
@@ -302,6 +303,7 @@ export function drawRoleMap(role) {
   if (viewState.follow && hasPosition(followTarget)) { viewState.x = followTarget.x; viewState.y = followTarget.y; }
   $("role-map-follow").setAttribute("aria-pressed", String(Boolean(viewState.follow)));
   $("role-map-follow").textContent = t(role === "helicopter" ? "follow_helicopter" : "follow");
+  syncContactNamesButton();
   const {scale, point: framePoint} = roleMapGeometry(role, plot.width, plot.height);
   // Chart data in the crew's navigated frame (the boat's dead reckoning).
   const shift = data.geoShift;
@@ -428,6 +430,8 @@ export function drawRoleMap(role) {
     plot.context.restore();
   }
   const pendingLabels = [];
+  // Alt+N hides the contacts' names and speeds (contact-names.js).
+  const names = contactNamesShown();
   for (const row of data.observations) {
     const isSelected = row.ref === S.selected;
     plot.context.strokeStyle = isSelected ? palette().accent : colors[row.affiliation] || colors.UNKNOWN;
@@ -459,7 +463,7 @@ export function drawRoleMap(role) {
       const label = opz ? opzLabel(row.label || row.ref) : String(row.label || row.ref);
       const speed = finite(row.course) && finite(row.speed_kn) ? unit(row.speed_kn, "kn", 0) : null;
       const text = [label, speed].filter((part) => part !== null).join(" ");
-      if (text) pendingLabels.push(() => { plot.context.fillStyle = symbolColor; placeBeside(plot.context, labels, text, x, y, finite(row.course) ? row.course : null, `${role}:${row.ref}`); });
+      if (text && names) pendingLabels.push(() => { plot.context.fillStyle = symbolColor; placeBeside(plot.context, labels, text, x, y, finite(row.course) ? row.course : null, `${role}:${row.ref}`); });
     } else if (layer("bearings") && finite(row.bearing) && (hasPosition(data.own) ||
         finite(row.observer_x) && finite(row.observer_y))) {
       const [bx, by] = finite(row.observer_x) && finite(row.observer_y) ?
@@ -510,6 +514,7 @@ export function drawRoleMap(role) {
     // The own helicopter: NATO friend frame with the rotary-wing glyph.
     if (item.rotary) { plot.context.strokeStyle = colors.FRIEND || palette().blue; drawNatoSymbol(plot.context, x, y, "FRIEND", "ROTARY", plot.context.strokeStyle, 7); labels.reserve(x - 11, y - 11, 22, 22); }
     else plot.context.strokeRect(x - 4, y - 4, 8, 8);
+    if (!names && data.fixes.includes(item)) continue;
     plot.context.fillStyle = plot.context.strokeStyle; placeText(plot.context, labels, String(item.waypoint ? item.display || t("station_waypoint") : item.display || item.ref || t("helicopter")), x + 6, y + 12);
   }
   if (role === "opz") {

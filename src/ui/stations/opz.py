@@ -13,7 +13,7 @@ from src.core.i18n import (nm_unit, display_value, localized, localize, raw_text
 from src.core.station import Station
 from src.ui.plot_view import draw_plot
 from src.core import map_fx
-from src.ui import geo_grid, label_layout, layout, map_fx_view, pointer, quality
+from src.ui import geo_grid, label_layout, layout, map_fx_view, map_view, pointer, quality
 from src.ui import theme
 from src.ui import chart_symbols
 from src.ui import nato_symbols
@@ -900,7 +900,9 @@ def draw_opz_view(game, tr=None) -> None:
     s.set_clip(chart)
     # Chart labels step aside from each other, the symbols and the lines;
     # they are placed once every symbol and line is drawn.
+    names = map_view.contact_labels_shown(game)
     with label_layout.label_scope(chart, deferred=True) as chart_labels:
+        chart_labels.reserve(map_view.contact_label_chip_rect(chart))
         # The radar switches sit in the chart's top left; labels keep off.
         for _domain, switch in opz_display_view.radar_switch_rects(chart):
             chart_labels.reserve(switch)
@@ -1065,7 +1067,7 @@ def draw_opz_view(game, tr=None) -> None:
             nato_symbols.draw_motion_vector(s, (sx, sy), track.course, track.speed_kn,
                                             px_per_nm, col, minutes=vector_min,
                                             max_px=vector_max_px)
-            text = opz_display_view.track_label(shown, track["source"])
+            text = None if not names else opz_display_view.track_label(shown, track["source"])
             if text is not None:
                 label_layout.blit_line(s, text, (int(sx) - 22, int(sy) - 21, 66, 18),
                                        col, size=12, center=(sx, sy), course=track.course,
@@ -1106,7 +1108,7 @@ def draw_opz_view(game, tr=None) -> None:
             nato_symbols.draw_motion_vector(s, (bx, by), track.course, track.speed_kn,
                                             px_per_nm, col, minutes=vector_min,
                                             max_px=vector_max_px)
-            text = opz_display_view.track_label(shown, track["label"])
+            text = None if not names else opz_display_view.track_label(shown, track["label"])
             if text is not None:
                 label_layout.blit_line(s, text, (int(bx) + 12, int(by) - 10, 118, 19),
                                        col, size=12, center=(bx, by), course=track.course,
@@ -1152,6 +1154,7 @@ def draw_opz_view(game, tr=None) -> None:
 
     s.set_clip(previous_clip)
     opz_display_view.draw_radar_switches(game, s, chart, not game.damage.station_down("opz"))
+    map_view.draw_contact_label_chip(game, chart)
     side_top = regions["sidebar"].y
     side_h = regions["sidebar"].h
     sb_box = layout.box(s, (regions["sidebar"].x + 4, side_top,

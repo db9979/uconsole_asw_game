@@ -12,6 +12,7 @@ import { schedule } from "../core/scheduler.js";
 import { stationActionAvailable } from "../state/availability.js";
 import { canvas, ctx } from "./canvases.js";
 import { edgeAnchor, labelField, placeText, reserveText } from "./label-layout.js";
+import { contactNamesShown } from "./contact-names.js";
 import { axisLabel, formatPosition, graticule } from "../core/geo.js";
 
 export function chartGeometry() {
@@ -257,7 +258,7 @@ function drawChartFrame() {
     if (track.ref === S.selected) { ctx.strokeStyle = palette().accent; ctx.lineWidth = 2; ctx.strokeRect(x - 25, y - 25, 50, 50); }
     ctx.fillStyle = color;
     labels.reserve(x - 12, y - 12, 24, 24);
-    placeText(ctx, labels, String(track.label ?? ""), x + 31, y - 9, Math.max(60, width - x - 37));
+    if (contactNamesShown()) placeText(ctx, labels, String(track.label ?? ""), x + 31, y - 9, Math.max(60, width - x - 37));
     S.chartHits.push({ ref: track.ref, x, y });
     addMapInfo(S.chartInfo, x, y, "track", track);
   }
@@ -273,7 +274,7 @@ function drawChartFrame() {
       ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y); ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.stroke();
       ctx.fillStyle = ctx.strokeStyle;
-      placeText(ctx, labels, `${String(track.label ?? "")} ${fix.source}`, x + 9, y - 8, Math.max(50, width - x - 13));
+      if (contactNamesShown()) placeText(ctx, labels, `${String(track.label ?? "")} ${fix.source}`, x + 9, y - 8, Math.max(50, width - x - 13));
       S.chartHits.push({ ref: track.ref, x, y });
       addMapInfo(S.chartInfo, x, y, "fix", {...fix, label: track.label});
     }

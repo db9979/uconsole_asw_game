@@ -8560,5 +8560,15 @@
   "commander.web.logbook_frigate": "Frigate",
   "commander.web.logbook_boat": "Submarine",
   "commander.web.logbook_custom": "Own mission",
-  "commander.web.logbook_note": "The service record of the host (logbook.json). Switching \"enemy learns\" on or off, the language model's review and the after-action report stay on the uConsole's logbook page."
+  "commander.web.logbook_note": "The service record of the host (logbook.json). Switching \"enemy learns\" on or off, the language model's review and the after-action report stay on the uConsole's logbook page.",
+  "chart.contact_labels.on": "Names on",
+  "chart.contact_labels.off": "Names off",
+  "chart.contact_labels.title": "Contact names",
+  "chart.contact_labels.tip": "Shows or hides the names and speeds of contacts on every chart (Alt+N). Symbols, course vectors and the tooltip stay.",
+  "status.contact_labels_on": "Contact names shown on the charts",
+  "status.contact_labels_off": "Contact names hidden on the charts",
+  "help.global.contact_labels": "Contact names and speeds on every chart on/off (symbols and tooltips stay)",
+  "commander.web.contact_names_on": "Names on",
+  "commander.web.contact_names_off": "Names off",
+  "commander.web.contact_names_help": "Shows or hides the names and speeds of contacts on the charts of this browser (Alt+N). Symbols, vectors and the details on hover stay."
 }

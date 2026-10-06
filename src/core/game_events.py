@@ -555,6 +555,10 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             else:
                 self._handle_menu_key(e.key)
             return
+        if e.key == pygame.K_n and getattr(e, "mod", 0) & pygame.KMOD_ALT:
+            # Contact names on the charts, every station of both sides.
+            self.toggle_contact_labels()
+            return
         if (e.key == pygame.K_F7 and not self.game_over
                 and not self.commander.confirm_visible(self)):
             # The executive officer (optional language model), both sides;

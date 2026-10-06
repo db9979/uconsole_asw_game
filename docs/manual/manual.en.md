@@ -84,6 +84,7 @@ Global keys (all stations):
 | `Q / E or mouse wheel` | Chart zoom on bridge, weapons, helicopter and the OPZ chart (there Q/E set the radar range) |
 | `Drag` | Pan chart (bridge, weapons, helicopter and OPZ) |
 | `K` | Camera follow only on visible charts (drag disables it) |
+| `Alt+N` | Contact names and speeds on every chart on/off (symbols and tooltips stay) |
 | `Left click` | Press the clicked key, lamp, hint, tab, dial or row |
 | `Right click` | Cancel like Esc in menus and entries |
 | `Menu icon (top bar)` | Game menu by mouse: help, options, save/load, weather, plot, autocrew, quit and more; every overlay closes with its close box (like Esc) |
@@ -394,7 +395,7 @@ The top bar shows the station, the mission, the clock, speed and course; the cha
 - **Course / rudder:** current course, ordered course (`→`), rudder angle in whole degrees and, only while turning, the turn radius. Below the numbers a rudder scale shows the angle from port (left) to starboard (right), and a compass dial shows the heading needle with the ordered course as a hollow amber mark.
 - **Speed / acoustics:** telegraph order, speed, own noise in percent and a CAVITATION warning above 15 kn. A speed dial from 0 to 31 kn shows the present speed as a needle and the ordered speed as a hollow amber mark.
 - **Tactical picture:** observed threats (a heard torpedo launch transient, HF seeker pulses or a submarine flooding a torpedo tube, a contact sonar classified as torpedo, or an air track flagged as a possible missile), sensor state (radar, TAS), assets (helicopter, buoys) and weather/day-night. Beside the weather lines a small picture in the start screen's look looks into the wind: the sky of the hour with sun, moon or stars, the clouds, rain, snow or fog and the sea running at the eye, with a wind rose (north up, the arrow blowing downwind) in its corner; the Remote Crew bridge shows the same picture.
-- **Chart:** real coastline of the sea area (Natural Earth 1:10m, detailed down to about 0.05 NM) with synthetic chart depth, own ship, tracks published by the other stations. Each contact appears once: reports the CIC has fused (a ship seen by radar and the lookout, with its AIS) are drawn as the one fused track with its name, as on the CIC chart, and so is the Remote Crew bridge. Reports of different sensors lying right on top of each other (within 0.2 NM plus 6 % of their range) that the CIC has not fused yet are drawn as one contact, too, unless another ship of the same sensor lies just as close. Each name stands abeam of its contact's course with its speed (`MV KURELA 8kn`), clear of motion vectors, trails and other names, and keeps its place from frame to frame. `Q`/`E` zoom in fixed steps (chart height 500, 250, 100, 50, 25, 10, 5, 2, 1 and 0.5 NM), the wheel zooms smoothly down to 0.5 NM. The grid shows meridians and parallels in degrees and minutes and gets finer as you zoom in (5° down to 0.1'); top left, below the scale, stands own position (`54°21.4'N 010°08.2'E`), and the pointer's tooltip gives the position under it. Only the stylized fixed chart has no real place and keeps the NM grid. Ranges, rings and the scale stay in NM. Drag pans, `K` follows own ship.
+- **Chart:** real coastline of the sea area (Natural Earth 1:10m, detailed down to about 0.05 NM) with synthetic chart depth, own ship, tracks published by the other stations. Each contact appears once: reports the CIC has fused (a ship seen by radar and the lookout, with its AIS) are drawn as the one fused track with its name, as on the CIC chart, and so is the Remote Crew bridge. Reports of different sensors lying right on top of each other (within 0.2 NM plus 6 % of their range) that the CIC has not fused yet are drawn as one contact, too, unless another ship of the same sensor lies just as close. Each name stands abeam of its contact's course with its speed (`MV KURELA 8kn`), clear of motion vectors, trails and other names, and keeps its place from frame to frame. `Alt+N` (or the `Names on` key chip in the chart's bottom-right corner) hides the names and speeds of all contacts on every chart, at every station of both sides, and shows them again; symbols, vectors and the tooltip stay, and the choice is kept in `settings.json`. In the browser the `Names` button above the chart and `Alt+N` do the same for that browser tab. `Q`/`E` zoom in fixed steps (chart height 500, 250, 100, 50, 25, 10, 5, 2, 1 and 0.5 NM), the wheel zooms smoothly down to 0.5 NM. The grid shows meridians and parallels in degrees and minutes and gets finer as you zoom in (5° down to 0.1'); top left, below the scale, stands own position (`54°21.4'N 010°08.2'E`), and the pointer's tooltip gives the position under it. Only the stylized fixed chart has no real place and keeps the NM grid. Ranges, rings and the scale stay in NM. Drag pans, `K` follows own ship.
 
 ### Bridge lookout reports
 
@@ -1070,7 +1071,7 @@ If the destroyer is sunk the page and the event log say so; the mission goes on.
 Page 5 (Display) sets what the OPZ chart draws; it changes nothing in the simulation or the picture itself and is kept in the settings. `↑`/`↓` picks a row, `←`/`→` changes it (a click on a row moves it on), `Backspace` puts the selected row back to its default, `Shift+Backspace` every row.
 
 - **Track trails:** off, 3, 6 or 12 minutes of earlier published positions behind each track (one point every 30 s, oldest faintest; they start anew after a load).
-- **Vectors:** the motion vector shows the distance run in 3, 6, 12 or 30 minutes. Track names stand abeam of the course, clear of vectors and trails, and keep their place from frame to frame.
+- **Vectors:** the motion vector shows the distance run in 3, 6, 12 or 30 minutes. Track names stand abeam of the course, clear of vectors and trails, and keep their place from frame to frame. `Alt+N` hides all contact names on every chart and overrides the label row below (see the Bridge chapter).
 - **Labels:** full, short (six characters) or off.
 - **Bearing scale:** ticks every 10° and numbers every 30° on the outer radar ring, with a mark for the own course. The numbers always stand at their bearing; when the chart is zoomed far out the rings carry their distance only every second ring, and a distance that would cover a bearing number is left out, as is a number under the position line.
 - **Range rings**, **bearing lines** of bearing-only reports, **furthest-on** circles, **depths + grid** of the chart and the **radar afterglow** each switch on and off.
@@ -1687,6 +1688,7 @@ Keys that work at every station of the submarine (`F1` on the uConsole shows the
 | `F9` | Open local Commander LAN administration |
 | `F10` | Options: language, fullscreen, audio, large text, tooltips, frame rate |
 | `F11` | Event log and full telemetry overlay (station stays live) |
+| `Alt+N` | Contact names and speeds on every chart on/off (symbols and tooltips stay) |
 | `S / L` | Save / load (slots 1-5; not in the sonar room) |
 | `Alt+Enter` | Fullscreen (all stations) |
 | `Esc` | Cancel input or open exit dialog |
@@ -2325,6 +2327,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons 
 | `Home / End` | First / last entry of the focused list |
 | `Q / E` | Zoom the chart or the lookout's view (as on the uConsole); Home fits the view |
 | `K` | Chart follows the own ship on or off |
+| `Alt+N` | Contact names and speeds on every chart on/off (symbols and tooltips stay) |
 | `+ / -` | Engine telegraph one step up / down (bridge, engine room, submarine command and engine) |
 | `C / V / D · T` | Course, speed, depth, torpedo running depth: the cursor jumps to the field, Enter sends (bridge, engine, submarine) |
 | `Shift+A · J` | Active ping · live sonar audio on or off (sonar, submarine command, helicopter dipping sonar) |

@@ -236,7 +236,7 @@ In lessons 1, 2 and 4 the submarine is neutral and never attacks; lesson 3 is a 
 
 ### Update notice
 
-New releases are never installed on their own. At launch the game asks GitHub once whether a newer release exists; if so, the start screen (top right) and the main menu (left of the entries) show its version, its changelog entry in the game language and, only when saved games of this version (the autosave too) are too old for the new release to bring up to date, a warning.
+New releases are never installed on their own. At launch the game asks GitHub once whether a newer release exists; if so, the start screen (top right) and the main menu (left of the entries) show its version, its changelog entry in the game language and, only when saved games of this version (the autosave too) are too old for the new release to bring up to date, a warning. The cross at its top right hides the notice until the next launch.
 
 `U` or a click on **Update now** installs it: on the uConsole the game closes, the launcher's small window shows the download and check and the new version starts; the Windows program downloads it in the background (progress on the button), checks its size and SHA-256 digest, closes, replaces itself and starts the new version; the macOS app does the same with its zip (Apple silicon only; an Intel Mac opens the release page): it unpacks the new `U-Jagd.app` beside itself, closes, swaps the bundle (the old one is deleted only once the new one is in place) and opens the new version, provided it may write to its folder (otherwise it opens the release page); any other installation opens the release page.
 

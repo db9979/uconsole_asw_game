@@ -13,7 +13,8 @@ ist ein klickbarer Chip. Die Seite Echtzeit-Verkehr schaltet Dienste per
 Klick und öffnet ihre Felder, ein Klick schließt den Startbildschirm,
 Lobby-Zeilen stellen per Klick ins linke Drittel zurück und sonst weiter,
 die Remote-Crew-Seite stellt Host und Port genauso zurück, und das
-Zulassungsfenster der Remote Crew hat ein Schließkreuz. Spielstände sind
+Zulassungsfenster der Remote Crew und der Update-Hinweis haben ein
+Schließkreuz; der Hinweis bleibt dann bis zum nächsten Start zu. Spielstände sind
 v53; v38- bis v52-Stände werden weiter geladen.
 
 ## 1.3.266

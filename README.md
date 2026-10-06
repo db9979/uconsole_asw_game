@@ -18,7 +18,8 @@ back or on; every key in the hint line is a clickable chip. The real-world
 traffic page switches services and opens its fields by click, a click
 closes the start screen, lobby rows step back from their left third and
 on elsewhere, the Remote Crew page steps host and port back the same way,
-and the Remote Crew admission window has a close cross. Saves are v53;
+the Remote Crew admission window has a close cross, and the update
+notice closes with its cross until the next launch. Saves are v53;
 v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

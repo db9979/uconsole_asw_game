@@ -159,8 +159,11 @@ def test_keys_are_weapons_station_only_and_deterministic():
         assert game.own_asrocs_left == depth_charge.OWN_ASROC_STOCK
         assert game.depth_charges_left == depth_charge.DEPTH_CHARGE_STOCK
         game.station = Station.WEAPONS
+        # A and Z only choose; Ctrl+Enter fires the choice.
         for key in (pygame.K_a, pygame.K_z):
             game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=key))
+            game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN,
+                                                 mod=pygame.KMOD_CTRL))
         for _ in range(100):
             game.update(0.1)
         return game

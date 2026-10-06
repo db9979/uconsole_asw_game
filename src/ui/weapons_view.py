@@ -5,7 +5,7 @@ import math
 import pygame
 
 from src.core import config, status_tips
-from src.core.i18n import raw_text, display_value, localized, localize, message as structured_message
+from src.core.i18n import nm_unit, raw_text, display_value, localized, localize, message as structured_message
 from src.core.station import Station
 from src.ui import console, engagement, label_layout, layout, map_view, pointer, theme
 from src.ui import nato_symbols
@@ -328,6 +328,61 @@ def _draw_sketch(s, game, c, fresh, rect) -> None:
         target_speed_kn=target_speed, fresh=fresh)
 
 
+# What Ctrl+Enter fires at Weapons: (choice, key that chooses it, label).
+WEAPON_CHOICE_KEYS = (("torpedo", "", "weapons.select.torpedo.short"),
+                      ("air_torpedo", "D", "weapons.select.air_torpedo.short"),
+                      ("asroc", "A", "weapons.select.asroc.short"),
+                      ("depth_charges", "Z", "weapons.select.depth_charges.short"),
+                      ("rbu", "R", "weapons.select.rbu.short"),
+                      ("rbu_defence", "Shift+R", "weapons.select.rbu_defence.short"))
+
+
+# Narrow chips (two columns): the shortest name that is still unambiguous.
+WEAPON_CHIP_LABELS = {"torpedo": "weapons.chip.torpedo",
+                      "air_torpedo": "weapons.chip.air_torpedo",
+                      "asroc": "weapons.select.asroc.short",
+                      "depth_charges": "weapons.select.depth_charges.short",
+                      "rbu": "weapons.select.rbu.short",
+                      "rbu_defence": "weapons.chip.rbu_defence"}
+
+
+def selected_launch_text(game):
+    """The fire line: Ctrl+Enter and the weapon it fires now."""
+    kind = getattr(game, "weapon_select", "torpedo")
+    return message("weapons.control.launch_selected",
+                   weapon=message("weapons.select." + kind + ".short"))
+
+
+def draw_weapon_choice(s, game, rect) -> None:
+    """The weapon choice as key chips, the chosen one lit; a click
+    chooses (the key itself), Ctrl+Enter then fires it."""
+    rect = pygame.Rect(rect)
+    if rect.h < 24 or rect.w < 60:
+        return
+    layout.blit_line(s, selected_launch_text(game), (rect.x, rect.y, rect.w, 20),
+                     config.COLOR_TEXT, size=13)
+    pointer.add_token_keys((rect.x, rect.y, rect.w, 20), localize(selected_launch_text(game)),
+                           13, (("Ctrl+Enter:", "Ctrl+Enter"),), screen=s)
+    # Two columns leave half the width: the chips then use the shorter label.
+    columns = 1 if rect.h - 22 >= len(WEAPON_CHOICE_KEYS) * 18 else 2
+    rows = -(-len(WEAPON_CHOICE_KEYS) // columns)
+    pitch = max(17, min(26, (rect.h - 22) // rows))
+    column = rect.w // columns
+    chosen = getattr(game, "weapon_select", "torpedo")
+    for index, (kind, key, label) in enumerate(WEAPON_CHOICE_KEYS):
+        row, col = divmod(index, columns)
+        chip = pygame.Rect(rect.x + col * column, rect.y + 22 + row * pitch,
+                           column - 4, pitch - 2)
+        if chip.bottom > rect.bottom:
+            break
+        layout.key_button(s, chip, key, WEAPON_CHIP_LABELS[kind] if columns > 1 else label,
+                          size=13, min_size=10, active=kind == chosen)
+        if key:
+            pointer.add_legend(chip, key)
+        else:
+            pointer.add_action(chip, lambda _pos: game.select_weapon("torpedo"))
+
+
 def _tank_reserve(rect) -> int:
     """Height the magazine tanks take at the foot of the active weapons box."""
     return 138 if rect.height >= 300 else 0
@@ -425,7 +480,8 @@ def draw_weapons_panel(game, tr=None) -> None:
         else:
             displayed_range = _display_range(c, getattr(game, "ship", None)) \
                 if getattr(game, "ship", None) is not None else c.range_est
-            dist = f"{displayed_range:6.1f} NM" if displayed_range is not None else "     --"
+            dist = (f"{displayed_range:6.1f} {nm_unit()}" if displayed_range is not None
+                    else "     --")
             lines = [
                 (message("weapons.line.contact",
                          contact=observations.contact_display_id(game, c),
@@ -439,7 +495,7 @@ def draw_weapons_panel(game, tr=None) -> None:
                       .get(c.range_source, "FIX") if displayed_range is not None
                       else localize("ui.bearing_only"))
             age = observations.observation_age(c, game.sim_t)
-            sigma = (f"+/- {c.range_sigma_nm:.2f} NM" if c.range_sigma_nm is not None
+            sigma = (f"+/- {c.range_sigma_nm:.2f} {nm_unit()}" if c.range_sigma_nm is not None
                      else localize("weapons.no_range_solution"))
             lines += [
                 (message("weapons.line.solution", source=source, sigma=sigma), config.COLOR_OK if fresh_solution else config.COLOR_WARN, 14),
@@ -510,11 +566,15 @@ def draw_weapons_panel(game, tr=None) -> None:
                                   in zip(stages, ("M", None, None, None, "F"),
                                          ("target", "fix", "roe", "weapon", "flak"))],
                                  1, size=13)
-        layout.blit_line(s, "weapons.control.launch", (rx, ry + used + 12, rw, 24), readiness_color, size=14)
+        # Ctrl+Enter fires the chosen weapon (D/A/Z/R/Shift+R only choose).
+        launch = localize(selected_launch_text(game))
+        layout.blit_line(s, launch, (rx, ry + used + 12, rw, 24),
+                         readiness_color if getattr(game, "weapon_select", "torpedo") == "torpedo"
+                         else config.COLOR_TEXT, size=14)
         layout.blit_line(s, "weapons.control.flak", (rx, ry + used + 36, rw, 24), config.COLOR_TEXT_DIM, size=13)
         # The key hints are switches too (Ctrl+Enter fires only here, at station 3).
-        pointer.add_token_keys((rx, ry + used + 12, rw, 24), localize("weapons.control.launch"),
-                               14, (("Ctrl+Enter:", "Ctrl+Enter"), ("Strg+Enter:", "Ctrl+Enter")), screen=s)
+        pointer.add_token_keys((rx, ry + used + 12, rw, 24), launch,
+                               14, (("Ctrl+Enter:", "Ctrl+Enter"),), screen=s)
         pointer.add_token_keys((rx, ry + used + 36, rw, 24), localize("weapons.control.flak"),
                                13, (("F:", "F"),), screen=s)
 
@@ -581,7 +641,7 @@ def draw_weapons_panel(game, tr=None) -> None:
                                   - ay - 30) // pitch))
         for t in game.torpedoes[:capacity]:
             d = t.guidance_distance_nm()
-            d_txt = f"{d:.1f} NM" if d != float("inf") else "--"
+            d_txt = f"{d:.1f} {nm_unit()}" if d != float("inf") else "--"
             mode = display_value("weapon_mode",
                                   "SUCHER" if t.seeker_acquired else "DRAHT")
             remaining = max(0.0, t.range_nm - t.travel)
@@ -609,12 +669,24 @@ def draw_weapons_panel(game, tr=None) -> None:
                            label_w=80, size=16)
         for offset, (text, tokens) in enumerate((
                 ("weapons.control.depth_compact", (("Up/Dn:", "↑/↓"), ("Auf/Ab:", "↑/↓"))),
-                ("weapons.control.helo", (("H:", "H"),)),
-                ("weapons.control.air_compact", (("B:", "B"), ("D:", "D"))),
-                ("weapons.control.nixie", (("V:", "V"),)),
-                ("weapons.control.asw", (("A:", "A"), ("Z:", "Z"))),
-                ("weapons.control.rbu", (("R/", "R"),)))):
+                ("weapons.control.helo", (("H:", "H"),)))):
             layout.blit_line(s, text, (cx, cy + 56 + offset * 26, cw, 24),
                              config.COLOR_TEXT_DIM, size=15)
             pointer.add_token_keys((cx, cy + 56 + offset * 26, cw, 24), localize(text),
                                    15, tokens, screen=s)
+        draw_weapon_choice(s, game, (cx, cy + 56 + 2 * 26 + 2, cw,
+                                     regions["controls"].bottom - 8 - (cy + 56 + 2 * 26 + 2)))
+    # Every key of the page as a chip under the panels (a click presses it).
+    from src.ui.stations.common import _shortcut_footer
+    _shortcut_footer(s, (station.x + 14, station.bottom - 26, station.w - 28, 20),
+                     WEAPONS_FOOTER[page] if page < len(WEAPONS_FOOTER) else ())
+
+
+WEAPONS_FOOTER = (
+    (("M", "weapons.footer.target"), ("←/→", "weapons.footer.contact"),
+     ("↑/↓", "weapons.footer.depth"), ("T", "weapons.footer.run_depth"),
+     ("W", "weapons.footer.type"), ("X", "weapons.footer.pattern"),
+     ("Y", "weapons.footer.salvo"), (", / .", "weapons.footer.seeker")),
+    (("B", "weapons.footer.buoy"), ("V", "weapons.footer.decoy"),
+     ("F", "weapons.footer.flak"), ("Q/E", "footer.zoom"), ("K", "footer.follow")),
+)

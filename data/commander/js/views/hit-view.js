@@ -4,13 +4,16 @@
 import { S } from "../state/store.js";
 import { t } from "../core/format.js";
 import { drawSightView } from "./sight-scene.js";
-import { isLightTheme } from "../core/palette.js";
+import { contrastRgb, themeName } from "../core/palette.js";
 
 const SONAR_SPAN_DEG = 60, SONAR_ROWS = 28;
 // Scope and trace per theme (src/ui/theme.THEMED_GLOBALS hit_inset): dark
 // scope and bright trace, or paper and dark ink by day.
 const SCOPE = {night: {back: [6, 18, 26], trace: [110, 232, 200], scale: "rgb(120, 180, 170)"},
   day: {back: [238, 241, 245], trace: [4, 120, 87], scale: "rgb(55, 65, 81)"}};
+// High contrast derives from the night scope (the same rule as the console).
+SCOPE.contrast = {back: contrastRgb(SCOPE.night.back), trace: contrastRgb(SCOPE.night.trace),
+  scale: `rgb(${contrastRgb([120, 180, 170]).join(", ")})`};
 let panel = null, frame = 0, shownAt = 0, received = null;
 
 function ensurePanel() {
@@ -31,7 +34,7 @@ function ensurePanel() {
 const noise = (i, k) => { const value = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return value - Math.floor(value); };
 
 function drawSonar(g, width, height, bearing, ageS) {
-  const {back: BACK, trace: TRACE, scale} = SCOPE[isLightTheme() ? "day" : "night"];
+  const {back: BACK, trace: TRACE, scale} = SCOPE[themeName()];
   g.fillStyle = `rgb(${BACK.join(",")})`; g.fillRect(0, 0, width, height);
   const rowH = Math.max(1, Math.floor(height / SONAR_ROWS)), step = Math.floor(ageS * 6);
   for (let r = 0; r < SONAR_ROWS; r += 1) {

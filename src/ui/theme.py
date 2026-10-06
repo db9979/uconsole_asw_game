@@ -257,6 +257,33 @@ def _grey(value):
     return value
 
 
+def _contrast(value):
+    """A literal colour of the night theme as its high-contrast counterpart.
+
+    Drawings carry their own accents, and most name only a night and a day
+    colour. Rather than leave the high-contrast theme on the night value,
+    every such colour is pushed to the ends the theme is built from: dark
+    tones go nearly black, light ones nearly white, and the hue is saturated
+    so the few remaining colours stay apart (the same rule as ``_grey``,
+    applied to tuples, dicts and nested palettes alike).
+    """
+    if isinstance(value, dict):
+        return {key: _contrast(item) for key, item in value.items()}
+    if (isinstance(value, tuple) and len(value) in (3, 4)
+            and all(isinstance(part, int) for part in value)):
+        red, green, blue = value[:3]
+        luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255
+        mean = (red + green + blue) / 3
+        spread = [min(255, max(0, round(mean + (part - mean) * 1.6)))
+                  for part in (red, green, blue)]
+        scale = 0.5 if luminance < 0.3 else 235 / max(1, max(spread))
+        return tuple(min(255, max(0, round(part * scale)))
+                     for part in spread) + tuple(value[3:])
+    if isinstance(value, tuple):
+        return tuple(_contrast(item) for item in value)
+    return value
+
+
 def red_light() -> bool:
     return _RED
 
@@ -294,8 +321,10 @@ def pick(night, day, contrast=None) -> tuple:
     """A literal colour per theme (for a drawing's own accent colours)."""
     if _ACTIVE == "day":
         return day
-    if _ACTIVE == "contrast" and contrast is not None:
-        return contrast
+    if _ACTIVE == "contrast":
+        # Without its own value the night colour is pushed to the theme's ends.
+        value = contrast if contrast is not None else _contrast(night)
+        return _grey(value) if _RED else value
     return _grey(night) if _RED else night
 
 
@@ -472,7 +501,8 @@ def _apply_globals() -> None:
                 value = c(spec)
             else:
                 index = THEMES.index(_ACTIVE)
-                value = spec[index] if index < len(spec) else spec[0]
+                value = (spec[index] if index < len(spec)
+                         else _contrast(spec[0]) if _ACTIVE == "contrast" else spec[0])
                 if _RED:
                     value = _grey(value)
             setattr(module, name, value)

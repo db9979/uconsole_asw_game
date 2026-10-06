@@ -382,7 +382,7 @@ def test_key_names_in_prose_become_key_caps():
 
 
 def test_helicopter_rules_draw_their_keys_as_clickable_caps():
-    """Keys in the helicopter's rules (H, Y, U/V, Shift+A, B, D) are drawn
+    """Keys in the helicopter's rules (H, Y, U/V, Shift+A, B) are drawn
     as the accent key caps of the footer chips, and a click presses them."""
     from src.ui import theme
     game = Game(seed=11, start_menu=False, show_splash=False, fullscreen=False,
@@ -393,8 +393,8 @@ def test_helicopter_rules_draw_their_keys_as_clickable_caps():
     game.draw()
     accent = theme.c("accent")
     caps = [target for target in pointer._targets
-            if target.key in (pygame.K_y, pygame.K_b, pygame.K_d) and not target.mod]
-    assert {target.key for target in caps} == {pygame.K_y, pygame.K_b, pygame.K_d}
+            if target.key in (pygame.K_y, pygame.K_b) and not target.mod]
+    assert {target.key for target in caps} == {pygame.K_y, pygame.K_b}
     for target in caps:
         rect = target.rect
         pixels = [game.screen.get_at((x, rect.centery))[:3]

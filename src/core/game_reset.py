@@ -331,6 +331,9 @@ class ResetMixin:
         self.torpedo_pattern = "snake"
         self.torpedo_enable_nm = config.TORP_HOME_RANGE_NM
         self.torpedo_salvo = 1
+        # What Ctrl+Enter fires at Weapons and on OPZ page 3 (not saved).
+        self.weapon_select = "torpedo"
+        self.opz_weapon = "essm"
         self.target = None
         self.selected_contact = None  # M9: im Sonar-Panel markierter Kontakt
         self.torpedoes = []

@@ -188,6 +188,8 @@
    rack's device fronts. */
 .engine-console:not([hidden]) { display: flex; flex-direction: column; gap: .55rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .console-lamps { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .3rem; }
+.station-lamps { margin-bottom: .5rem; }
+.station-lamps:empty { display: none; }
 .console-lamp {
   display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; gap: 0 .5rem;
   padding: .3rem .45rem; min-width: 0; background: var(--scope); border: 1px solid var(--line); border-radius: var(--radius);

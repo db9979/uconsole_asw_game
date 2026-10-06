@@ -64,7 +64,7 @@ document.documentElement.dataset.result = JSON.stringify(out);
     root = run_module_probe(tmp_path, probe)
     assert "data-result" in root, root.get("data-failure")
     assert json.loads(root["data-result"]) == {
-        "cap_course": "C", "cap_zoom": "E", "cap_radar": "R", "cap_on_box": None, "cap_radar_bridge": None, "cap_course_opz": None, "label_fire": "Strg+Enter", "label_page": "PgDn",
+        "cap_course": "C", "cap_zoom": "E", "cap_radar": "R", "cap_on_box": None, "cap_radar_bridge": None, "cap_course_opz": None, "label_fire": "Strg+Eingabe", "label_page": "PgDn",
         "course_focused": True, "speed_after_typing": False, "zoomed": 1, "depth_focused": False,
         "empty_text": "—", "empty_flag": "true", "value_text": "300 °", "value_flag": None,
         "country": "Dänemark", "region": "Britannia"}

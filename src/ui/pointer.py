@@ -44,14 +44,34 @@ _layer = ["station"]
 # it), rebuilt every frame like the targets.
 MAX_TIPS = 128
 _tips: list[tuple] = []
+# Wheel regions: (rect, layer, up key token, down key token), rebuilt per frame.
+_scrolls: list[tuple] = []
 
 
 def reset() -> None:
     """Start a new frame (called before drawing)."""
     _targets.clear()
     _tips.clear()
+    _scrolls.clear()
     del _layer[1:]
     _layer[0] = "station"
+
+
+def add_scroll(rect, up=None, down=None) -> None:
+    """The mouse wheel over ``rect`` presses ``up``/``down`` (key tokens, as
+    in a footer legend): a long list scrolls where it is shown."""
+    if len(_scrolls) < MAX_TARGETS:
+        _scrolls.append((pygame.Rect(rect), _layer[-1], up or "↑", down or "↓"))
+
+
+def scroll_at(pos, layer_name: str = "station"):
+    """``(up_key, down_key)`` of the topmost scroll region under ``pos``."""
+    if pos is None:
+        return None
+    for rect, name, up, down in reversed(_scrolls):
+        if name == layer_name and rect.collidepoint(pos):
+            return up, down
+    return None
 
 
 @contextmanager
@@ -145,6 +165,8 @@ _NAMED_KEYS = {
     "tab": pygame.K_TAB, "esc": pygame.K_ESCAPE, "del": pygame.K_DELETE,
     "entf": pygame.K_DELETE, "pgup": pygame.K_PAGEUP, "pgdn": pygame.K_PAGEDOWN,
     "bild↑": pygame.K_PAGEUP, "bild↓": pygame.K_PAGEDOWN,
+    "rücktaste": pygame.K_BACKSPACE, "rück": pygame.K_BACKSPACE, "pos1": pygame.K_HOME,
+    "home": pygame.K_HOME, "end": pygame.K_END, "ende": pygame.K_END,
     "←": pygame.K_LEFT, "→": pygame.K_RIGHT, "↑": pygame.K_UP, "↓": pygame.K_DOWN,
     ",": pygame.K_COMMA, ".": pygame.K_PERIOD, "+": pygame.K_PLUS, "-": pygame.K_MINUS,
     "[": pygame.K_LEFTBRACKET, "]": pygame.K_RIGHTBRACKET, "0": pygame.K_0,
@@ -286,13 +308,20 @@ def token_matches(text: str, tokens) -> list:
     where the token itself ends and where its part ends (see
     :func:`token_spans`)."""
     import re
+    from src.core.i18n import german_key_label
     found = []
     cursor = 0
     for token, spec in tokens:
-        pattern = re.compile((r"(?<![\w+/])" if token[:1].isalnum() else "")
-                             + re.escape(token)
-                             + (r"(?![\w+])" if token[-1:].isalnum() else ""))
-        match = pattern.search(text, cursor)
+        # One token list serves both languages: the German texts write
+        # Umschalt, Strg, Eingabe ... (i18n.german_key_label).
+        match = None
+        for spelling in dict.fromkeys((token, german_key_label(token))):
+            pattern = re.compile((r"(?<![\w+/])" if spelling[:1].isalnum() else "")
+                                 + re.escape(spelling)
+                                 + (r"(?![\w+])" if spelling[-1:].isalnum() else ""))
+            match = pattern.search(text, cursor)
+            if match is not None:
+                break
         if match is None:
             continue
         found.append((match.start(), match.end(), spec))
@@ -324,7 +353,8 @@ def token_spans(text: str, tokens) -> list:
 # "Mast", stays plain text that is only clickable.
 _KEY_WORDS = {"enter", "eingabe", "esc", "tab", "space", "leertaste", "backspace",
               "pos1", "home", "end", "ende", "arrows", "pfeile", "pfeiltasten",
-              "bild", "pgup", "pgdn", "auf", "up", "down", "umsch"}
+              "bild", "pgup", "pgdn", "auf", "up", "down", "umsch", "rücktaste",
+              "rück", "entf", "bild↑", "bild↓"}
 
 
 def key_cap_text(token: str) -> tuple[int, int] | None:

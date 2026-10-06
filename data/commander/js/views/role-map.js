@@ -411,10 +411,13 @@ export function drawRoleMap(role) {
   if (hasPosition(data.own)) {
     addRoleMapHit(null, ox, oy);
     addMapInfo(S.roleMapInfo, ox, oy, "own", data.own);
+    // The own unit as its APP-6 friendly symbol (frigate: surface circle,
+    // submarine: subsurface bowl) with its heading line from the rim.
+    const ownColor = colors.FRIEND || palette().accent;
+    drawNatoSymbol(plot.context, ox, oy, "FRIEND", isBoatCommand(S.session?.station) ? "SUBSURFACE" : "SURFACE", ownColor, 8);
     plot.context.save(); plot.context.translate(ox, oy); plot.context.rotate(data.own.course * Math.PI / 180);
-    plot.context.strokeStyle = palette().accent; plot.context.fillStyle = palette().accent; plot.context.beginPath();
-    plot.context.moveTo(0, -9); plot.context.lineTo(-5, 6); plot.context.lineTo(5, 6); plot.context.closePath(); plot.context.fill();
-    plot.context.beginPath(); plot.context.moveTo(0, -9); plot.context.lineTo(0, -35); plot.context.stroke();
+    plot.context.strokeStyle = ownColor; plot.context.fillStyle = ownColor; plot.context.lineWidth = 2;
+    plot.context.beginPath(); plot.context.moveTo(0, -10); plot.context.lineTo(0, -35); plot.context.stroke();
     if (data.own.arc) {
       // Submarine tube firing arc, relative to the bow (own-ship truth).
       const half = data.own.arc.width / 2, center = data.own.arc.center, toRad = Math.PI / 180;

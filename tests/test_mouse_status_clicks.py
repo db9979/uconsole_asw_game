@@ -116,7 +116,7 @@ def test_weapons_flak_hint_and_lamp_toggle_release(game):
 def test_helicopter_rules_name_their_keys(game):
     show(game, Station.HELICOPTER, 1)
     for key, mod in ((pygame.K_h, 0), (pygame.K_y, 0), (pygame.K_u, 0), (pygame.K_v, 0),
-                     (pygame.K_a, pygame.KMOD_SHIFT), (pygame.K_b, 0), (pygame.K_d, 0)):
+                     (pygame.K_a, pygame.KMOD_SHIFT), (pygame.K_b, 0)):
         assert key_targets(key, mod), pygame.key.name(key)
 
 

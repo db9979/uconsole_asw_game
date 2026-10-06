@@ -63,12 +63,41 @@ def _panel(game, x_off: int = 0, w: int = None, title: str = "") -> tuple:
     return r, y
 
 
+# Which slice of an overflowing footer is shown, per footer row (UI state
+# only, never saved): the "more" chip steps through the rest.
+_FOOTER_OFFSET: dict = {}
+_FOOTER_MORE = "panel.more"
+
+
+def footer_page(specs, needs, width, more_w, offset):
+    """Indices of ``specs`` shown from ``offset`` on, and whether a "more"
+    chip is needed: as many whole segments as fit the row."""
+    if sum(needs) <= width:
+        return list(range(len(specs))), False
+    shown, used = [], more_w
+    for index in range(offset, len(specs)):
+        if used + needs[index] > width and shown:
+            break
+        shown.append(index)
+        used += needs[index]
+    return shown, True
+
+
+def footer_needs(specs) -> list:
+    """Width each ``(key, description)`` chip of a key bar needs."""
+    face = layout.font(11)
+    from src.core.i18n import key_label
+    return [layout.text_width(face, f"{key_label(key)} {localize(description)}") + 16
+            for key, description in specs]
+
+
 def _shortcut_footer(screen, rect, specs) -> None:
     """Draw a persistent, single-row legend of a station's key shortcuts.
 
     ``specs`` is an ordered iterable of ``(key, description_i18n_key)`` pairs,
-    evenly split across ``rect``, matching sonar_view's always-visible
-    footer-legend pattern (layout.command_segment) instead of a plain hint.
+    split across ``rect``, matching sonar_view's always-visible footer-legend
+    pattern (layout.command_segment). Every chip presses its key on a click;
+    keys that do not fit go behind a "more" chip that pages through them.
     """
     # Two pixels up keep descenders clear of the panel's bottom frame.
     rect = pygame.Rect(rect).move(0, -2)
@@ -77,19 +106,50 @@ def _shortcut_footer(screen, rect, specs) -> None:
         return
     # Segments share the row by the width their text needs, so a long key
     # (Backspace) never gets cut while a short one wastes space.
-    face = layout.font(11)
-    needs = [layout.text_width(face, f"{localize(key)} {localize(description)}") + 16
-             for key, description in specs]
-    spare = max(0, rect.w - sum(needs))
+    needs = footer_needs(specs)
+    more_w = footer_needs((("+", _FOOTER_MORE),))[0]
+    slot = (rect.x, rect.y, rect.w, len(specs))
+    offset = _FOOTER_OFFSET.get(slot, 0)
+    if offset >= len(specs):
+        offset = 0
+    shown, more = footer_page(specs, needs, rect.w, more_w, offset)
+    if more and offset and not shown:
+        offset, shown = 0, footer_page(specs, needs, rect.w, more_w, 0)[0]
+    _FOOTER_OFFSET[slot] = offset
+    room = rect.w - (more_w if more else 0)
+    spare = max(0, room - sum(needs[i] for i in shown))
     x = rect.x
-    for index, ((key, description), need) in enumerate(zip(specs, needs)):
-        width = (rect.right - x if index == len(specs) - 1
-                 else need + spare // len(specs))
+    for position, index in enumerate(shown):
+        key, description = specs[index]
+        width = (rect.x + room - x if position == len(shown) - 1
+                 else needs[index] + spare // max(1, len(shown)))
         segment = pygame.Rect(x, rect.y, max(1, width), rect.h)
-        layout.command_segment(screen, segment, key, description, size=11)
+        layout.command_segment(screen, segment, key, description, size=11, center=True)
         # A click on the legend presses its key (full mouse control).
         pointer.add_legend(segment, key)
         x += width
+    if more:
+        nxt = shown[-1] + 1 if shown else 0
+        segment = pygame.Rect(rect.right - more_w, rect.y, more_w, rect.h)
+        layout.command_segment(screen, segment, "+", _FOOTER_MORE, size=11, center=True)
+        step_to = nxt if nxt < len(specs) else 0
+
+        def page(_pos=None, slot=slot, step_to=step_to):
+            _FOOTER_OFFSET[slot] = step_to
+        pointer.add_action(segment, page)
+
+
+def list_window(screen, rect, first: int, shown: int, total: int,
+                up="↑", down="↓") -> None:
+    """One row under a scrolling list: which part of it is on show, and that
+    the arrows (or the wheel over the list) move it. Nothing when it all fits."""
+    rect = pygame.Rect(rect)
+    pointer.add_scroll(rect.inflate(0, 400).move(0, -200), up, down)
+    if shown >= total or shown <= 0 or rect.w <= 0:
+        return
+    layout.blit_line(screen, message("list.window", first=first + 1,
+                                     last=first + shown, total=total),
+                     rect, config.COLOR_TEXT_DIM, size=13, align="center")
 
 
 PAGE_TAB_H = 26

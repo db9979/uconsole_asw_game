@@ -74,7 +74,7 @@ In den Lektionen 1, 2 und 4 ist das U-Boot neutral und greift nie an; Lektion 3 
 
 ## Speichern, Laden und automatische Sicherung {#menu-save}
 
-`S` speichert, `L` lädt (Plätze 1-5). Spielstände sind exakt und deterministisch: ein geladenes Spiel läuft identisch weiter. Ein Spielstand einer älteren Version (Spielstandformat v38, Version 1.3.98, oder neuer) lädt weiterhin: Er wird beim Laden auf das aktuelle Format gebracht, Plätze und automatische Sicherung gleichermaßen.
+`S` speichert, `L` lädt (Plätze 1-5). Spielstände sind exakt und deterministisch: ein geladenes Spiel läuft identisch weiter. Die Datei wird im Hintergrund geschrieben, während die Mission weiterläuft; das Speichermenü schließt sich (oder das Spiel endet nach **Speichern und beenden**) erst, wenn sie sicher auf dem Datenträger liegt. Ein Spielstand einer älteren Version (Spielstandformat v38, Version 1.3.98, oder neuer) lädt weiterhin: Er wird beim Laden auf das aktuelle Format gebracht, Plätze und automatische Sicherung gleichermaßen.
 
 **Autosave:** Eine laufende Mission wird alle 5 Minuten und beim Beenden oder Verlassen ins Hauptmenü nach `~/.u-jagd/autosave.json` gespeichert, neben den fünf Plätzen. Das Hauptmenü beginnt dann mit **Einsatz fortsetzen**, das sie exakt weiterführt; nach einem Absturz ist es der letzte Wiederherstellungspunkt, höchstens eine Minute alt. Eine beendete Mission (Sieg, Niederlage oder Schiff gesunken) und jede neue Mission löschen den Autosave. Der Web-Host (`--web-host`) speichert nicht automatisch.
 

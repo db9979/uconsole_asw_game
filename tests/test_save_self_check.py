@@ -67,6 +67,11 @@ def test_rejected_document_in_the_save_menu_flashes_and_stays_open(game, monkeyp
     game.quit_after_save = True
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, mod=0,
                                          unicode="\r"))
+    # The save menu's save runs on the save worker; its outcome is handled
+    # on the main thread once it is done.
+    assert game.slot_save_running()
+    game.wait_for_autosave()
+    assert not game.slot_save_running()
     assert path.read_bytes() == original
     assert game.running and game.save_ui == "save"
     assert flashes[-1] == message("runtime.save.error",

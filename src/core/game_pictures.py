@@ -1075,6 +1075,12 @@ class PicturesMixin:
         return next((len(members) for _lead, members in self.eloka_visible_groups()
                      if any(item is track for item in members)), 1)
 
+    def eloka_group_sizes(self) -> dict:
+        """Intercept key -> size of the listed group it belongs to: one query
+        for a whole drawing pass (keys are unique in the ESM picture)."""
+        return {item.track_key: len(members)
+                for _lead, members in self.eloka_visible_groups() for item in members}
+
     def _reconcile_eloka_selection(self) -> None:
         visible = self.eloka_visible_tracks()
         keys = {track.track_key for track in visible}

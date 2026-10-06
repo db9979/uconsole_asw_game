@@ -550,6 +550,7 @@ class ResetMixin:
             self.hq_msg(self._initial_threat_notice())
             if self.hq_intel_mode() == "exact":
                 self.hq_msg(self._threat_identification_notice())
+        self._prefetch_start_ray_tables()
         # Menu input cannot operate the simulation. Only this unstarted world
         # may be consumed by menu start; loads replace its world/sonar identity.
         self._prepared_menu_mission = (

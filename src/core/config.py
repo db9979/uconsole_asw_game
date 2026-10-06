@@ -164,6 +164,26 @@ SOUND_SPEED_M_S = 1500.0             # Schall in Salzwasser
 
 # U-Boot-KI (M2: Patrouille + Ausweichen; sim-Sekunden)
 SUB_EVADE_DURATION_S = 240.0
+# An AI boat runs from a ping received at this level (dB re 1 uPa; a hull
+# sonar ping is this loud at about 10 NM, a dipping sonar at 5, a buoy at 1.5);
+# a fainter one only sends it deep and slow.  A boat lying still or creeping
+# under a quiet plan (at most SUB_PING_QUIET_PLAN_KN) runs only from a ping
+# SUB_PING_QUIET_MARGIN_DB louder.
+SUB_PING_EVADE_DB = 136.0
+# Torpedo evasion doctrine of an AI boat: beam the weapon at full speed for
+# this long after hearing it (decoy out), then creep away at this speed.
+SUB_TORPEDO_BEAM_S = 60.0
+# The escorted convoy's emergency turn away from a torpedo the frigate hears.
+BOAT_CONVOY_TORPEDO_TURN_DEG = 60.0
+# Share of the convoy's merchants that get the escort's warning in time.
+BOAT_CONVOY_TORPEDO_TURN_P = 0.35
+SUB_TORPEDO_CREEP_KN = 4.0
+# Above the layer (away from a deep variable-depth sonar): this far above it,
+# and only where that is at least this deep.
+SUB_ABOVE_LAYER_MARGIN_M = 20.0
+SUB_ABOVE_LAYER_MIN_M = 30.0
+SUB_PING_QUIET_PLAN_KN = 3.0
+SUB_PING_QUIET_MARGIN_DB = 6.0
 # W2: Tiefenaenderung mit Traegheit statt sofort voller Rate (Auftrieb/
 # Anstellwinkel-Ersatz) - begrenzt, wie schnell sich depth_rate_mps aendert.
 SUB_DEPTH_ACCEL_MPS2 = 0.15

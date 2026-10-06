@@ -24,10 +24,15 @@
   "reason": "1.3.7: the frigate F-217 now makes its real 31 kn flank speed (owner's specification). FLANK is 31 kn, the brake power is scaled by (31/25)^3 to 57.2 MW so the drag, acceleration and turning at every speed up to 25 kn are unchanged, and the propulsion fuel allowance is rescaled so FULL/HALF/SLOW burn the 1.0.0 amounts.",
   "value": 31.0
  },
+ "ship.yaw_steady_deg_s.FULL": {
+  "phase": "1.3.227",
+  "reason": "1.3.227: a hard-over turn bleeds speed (induced hull drag, about 28 % steady speed loss at FULL and FLANK, as on real frigates), so the steady yaw rate, which follows speed, drops by the same share.",
+  "value": 0.8617
+ },
  "ship.yaw_steady_deg_s.HALF": {
-  "phase": 2,
-  "reason": "Phase 2: first-order Nomoto steering, r = K (V/L) delta, makes the steady turn rate linear in speed, so the turning circle is nearly constant; calibrated at FULL (1.2 deg/s), HALF becomes 0.75 deg/s.",
-  "value": 0.75
+  "phase": "1.3.227",
+  "reason": "Phase 2: first-order Nomoto steering, r = K (V/L) delta, makes the steady turn rate linear in speed, so the turning circle is nearly constant; calibrated at FULL (1.2 deg/s), HALF becomes 0.75 deg/s. 1.3.227: a hard-over turn bleeds speed (induced hull drag, about 28 % steady speed loss at FULL and FLANK, as on real frigates), so the steady yaw rate, which follows speed, drops by the same share.",
+  "value": 0.5386
  },
  "sonar.passive_nm.BOW.sea1.own12.d150": {
   "phase": 4,

@@ -4,15 +4,31 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.265
+## 1.3.267
 
-Version 1.3.265 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
+Version 1.3.267 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
 oder der blaue Chip Namen in der Kartenecke blendet Namen und Fahrt aller
 Kontakte auf allen Karten an jeder Station beider Seiten aus und wieder ein;
 Symbole, Kursvektoren und der Tooltip bleiben, und die uConsole merkt sich
 die Wahl in ihren Einstellungen. Im Browser tun der Knopf Namen über der
 Karte und Alt+N dasselbe für diesen Browser-Tab. Spielstände sind v53;
 Spielstände v38 bis v52 laden weiterhin.
+
+## 1.3.264
+
+Version 1.3.264 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
+schauen jetzt in einem Kegel von etwa 45 Grad zu jeder Seite und in einem
+Tiefenfenster nach vorn, schalten nach Signalstärke gegen ihr Eigengeräusch
+auf, suchen langsam und leise und sprinten erst nach der Aufschaltung.
+KI-U-Boote reagieren auf einen Ping nach seiner Lautstärke: ein leiser
+schickt sie tief und langsam, ein naher lässt sie vom Pinger weglaufen. Sie
+weichen einem Torpedo aus, indem sie ihn querab nehmen, einen Täuschkörper
+ausstoßen und davonschleichen, und verstecken sich auf der Seite der
+Sprungschicht abseits eines ausgebrachten Tiefensonars. Harte Kurven kosten
+jetzt Fahrt, passive Kontakte an der Erfassungsgrenze schwinden und kommen
+wieder, und beim Geleitzugangriff warnt die Fregatte ihre Frachter, von denen
+etwa jeder dritte vor einem gehörten Torpedo abdreht. Spielstände sind v53;
+v38- bis v52-Spielstände lassen sich weiter laden.
 
 ## 1.3.262
 

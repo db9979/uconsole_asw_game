@@ -51,6 +51,38 @@ SEEKER_DOPPLER_MIN_KN = 1.0
 SEEKER_REJECT_MAX = 4
 
 
+def _candidate_speed(candidate):
+    speed = getattr(candidate, "speed_kn", None)
+    if speed is None and (hasattr(candidate, "stype")
+                          or callable(getattr(candidate, "noise_level", None))):
+        speed = getattr(candidate, "speed", None)
+    return speed
+
+
+def seeker_detects(weapon, candidate, distance_nm: float, kind: str,
+                   speed_fraction: float, held: bool) -> bool:
+    """The homing seeker's cone, depth gate, range and signal excess."""
+    if distance_nm > torpedo_dyn.SEEKER_MAX_NM[kind]:
+        return False
+    gap = abs(getattr(candidate, "depth", weapon.depth) - weapon.depth)
+    # The depth gate limits acquisition; a held target is tracked in depth.
+    if not held and gap > torpedo_dyn.SEEKER_DEPTH_GATE_M:
+        return False
+    if distance_nm > 0.02:
+        bearing = math.degrees(math.atan2(candidate.x - weapon.x,
+                                          -(candidate.y - weapon.y))) % 360.0
+        half = (torpedo_dyn.SEEKER_HOLD_CONE_HALF_DEG if held
+                else torpedo_dyn.SEEKER_CONE_HALF_DEG)
+        if not torpedo_dyn.in_seeker_cone(weapon.course, bearing, half):
+            return False
+    speed = _candidate_speed(candidate)
+    excess = torpedo_dyn.seeker_excess_db(
+        seeker_level_db(weapon, candidate), distance_nm, gap,
+        speed is not None and speed < SEEKER_DOPPLER_MIN_KN, speed_fraction,
+        torpedo_dyn.SEEKER_ACTIVE_NM[kind], SEEKER_NO_DOPPLER_DB)
+    return excess >= (-torpedo_dyn.SEEKER_HOLD_MARGIN_DB if held else 0.0)
+
+
 def seeker_level_db(weapon, candidate) -> float:
     """Received level of a candidate at a homing seeker (relative dB).
 
@@ -78,10 +110,7 @@ def seeker_level_db(weapon, candidate) -> float:
     depth = getattr(candidate, "depth", None)
     if depth is not None:
         level -= abs(depth - weapon.depth) / 10.0
-    speed = getattr(candidate, "speed_kn", None)
-    if speed is None and (hasattr(candidate, "stype")
-                          or callable(getattr(candidate, "noise_level", None))):
-        speed = getattr(candidate, "speed", None)
+    speed = _candidate_speed(candidate)
     if speed is not None and speed < SEEKER_DOPPLER_MIN_KN:
         level -= SEEKER_NO_DOPPLER_DB
     return level
@@ -232,6 +261,15 @@ class Torpedo:
         """Current speed as a fraction of the catalog cruise speed."""
         return self._spoolup_factor() * self.motor_fraction
 
+    def searching(self) -> bool:
+        """Seeker on and nothing held: the quiet search speed."""
+        return self.terminal_active and not self.seeker_acquired
+
+    def running_fraction(self) -> float:
+        """Speed fraction with the search speed (sprint once acquired)."""
+        return self.speed_fraction() * (torpedo_dyn.SEEKER_SEARCH_FRACTION
+                                        if self.searching() else 1.0)
+
     def wire_tension_update(self, dt: float, ship_speed_kn: float,
                             ship_yaw_deg_s: float) -> None:
         """Pay out the ship-side spool and break the wire on overload."""
@@ -275,7 +313,9 @@ class Torpedo:
                     or getattr(candidate, "state", None) == "SINKING"):
                 continue
             distance = math.hypot(candidate.x - self.x, candidate.y - self.y)
-            if distance > config.TORP_HOME_RANGE_NM:
+            held = self.seeker_acquired and candidate is self._seeker_target
+            if not seeker_detects(self, candidate, distance, "own",
+                                  self.running_fraction(), held):
                 continue
             if underwater_path_blocked(world, self.x, self.y, self.depth,
                     candidate.x, candidate.y, getattr(candidate, "depth", self.target_depth)):
@@ -377,7 +417,8 @@ class Torpedo:
             self.depth, self.depth_rate, d_target, fraction, dt,
             self.DEPTH_RATE_M_PER_S)
 
-        throttle = 1.0
+        # Quiet search speed while the seeker looks; sprint once it holds.
+        throttle = torpedo_dyn.SEEKER_SEARCH_FRACTION if self.searching() else 1.0
         if desired is not None:
             diff = config.angle_diff_deg(desired, self.course)
             # Constant turning radius: the rate scales with speed.
@@ -387,10 +428,10 @@ class Torpedo:
             # M15: bei starkem Ruderbedarf krabbeln, damit der Torpedo
             # nicht um das Ziel kreist: Kurs erst richten, dann anrennen.
             if abs(diff) > 60.0:
-                throttle = 0.6
+                throttle = min(throttle, 0.6)
             else:
-                throttle = 1.0 - 0.5 * max(
-                    0.0, min(1.0, (abs(diff) - 30.0) / 30.0))
+                throttle = min(throttle, 1.0 - 0.5 * max(
+                    0.0, min(1.0, (abs(diff) - 30.0) / 30.0)))
         # Energy: power ~ v^3; an empty store stops the motor and the weapon
         # coasts against drag until it is lost.
         effective = self._spoolup_factor() * throttle * self.motor_fraction
@@ -464,7 +505,7 @@ class Torpedo:
     # --- radiated noise (heard by the target's sonar) ---------------------
 
     def source_level_offset_db(self) -> float:
-        return radiated_source_db(self.speed_fraction())
+        return radiated_source_db(self.running_fraction())
 
     def quiet_factor(self) -> float:
         return config.ENEMY_TORP_QUIET
@@ -473,8 +514,8 @@ class Torpedo:
         """Propulsor tonals scale with motor speed."""
         if self.state != "RUN":
             return []
-        f = 180.0 * max(0.1, self.speed_fraction())
-        amplitude = min(1.0, 0.9 * self.speed_fraction())
+        f = 180.0 * max(0.1, self.running_fraction())
+        amplitude = min(1.0, 0.9 * self.running_fraction())
         return [(f * 0.5, 0.4 * amplitude, 5.0), (f, amplitude, 8.0)]
 
     def _swept_hit_fraction(self, target, ox, oy, old_depth, radius):
@@ -598,8 +639,14 @@ class EnemyTorpedo(FrigateRelativeMixin):
     def speed_fraction(self) -> float:
         return self._spoolup_factor() * self.motor_fraction
 
+    def searching(self) -> bool:
+        return self.terminal_active and not self.seeker_acquired
+
+    def running_fraction(self) -> float:
+        return Torpedo.running_fraction(self)
+
     def source_level_offset_db(self) -> float:
-        return radiated_source_db(self.speed_fraction())
+        return radiated_source_db(self.running_fraction())
 
     @property
     def dead(self) -> bool:
@@ -616,7 +663,9 @@ class EnemyTorpedo(FrigateRelativeMixin):
                     or getattr(candidate, "sunk", False)):
                 continue
             distance = math.hypot(candidate.x - self.x, candidate.y - self.y)
-            if distance > 3.0 or underwater_path_blocked(
+            held = self.seeker_acquired and candidate is self._seeker_target
+            if not seeker_detects(self, candidate, distance, "enemy",
+                                  self.running_fraction(), held) or underwater_path_blocked(
                     world, self.x, self.y, self.depth, candidate.x, candidate.y,
                     getattr(candidate, "depth", 5.0)):
                 continue
@@ -686,15 +735,18 @@ class EnemyTorpedo(FrigateRelativeMixin):
                 diff, -rate * dt, rate * dt)) % 360.0
         self.depth, self.depth_rate = torpedo_dyn.depth_step(
             self.depth, self.depth_rate, self.target_depth, fraction, dt)
+        # Quiet search speed while the seeker looks; sprint once it holds.
+        throttle = torpedo_dyn.SEEKER_SEARCH_FRACTION if self.searching() else 1.0
         if self.motor_fraction >= 1.0:
-            self.energy_s -= torpedo_dyn.energy_rate(self._spoolup_factor()) * dt
+            self.energy_s -= torpedo_dyn.energy_rate(self._spoolup_factor() * throttle) * dt
             if self.energy_s <= 0.0:
                 self.energy_s = 0.0
                 self.motor_fraction = 1.0 - 1e-9
         else:
             self.motor_fraction = torpedo_dyn.coast_step(self.motor_fraction, dt)
+            throttle = 1.0
         ox, oy = self.x, self.y
-        step = self.speed_nm_per_s * dt * self.speed_fraction()
+        step = self.speed_nm_per_s * dt * self.speed_fraction() * throttle
         self.x += step * math.sin(math.radians(self.course))
         self.y -= step * math.cos(math.radians(self.course))
         self.travel += step
@@ -772,8 +824,8 @@ class EnemyTorpedo(FrigateRelativeMixin):
             return []
         used = 1.0 - self.energy_s / max(
             torpedo_dyn.energy_budget_s(self.range_nm, self.speed_kn), 1e-9)
-        f = (150.0 - 60.0 * min(1.0, max(0.0, used))) * max(0.1, self.speed_fraction())
-        amplitude = min(1.0, 0.9 * self.speed_fraction())
+        f = (150.0 - 60.0 * min(1.0, max(0.0, used))) * max(0.1, self.running_fraction())
+        amplitude = min(1.0, 0.9 * self.running_fraction())
         return [(f * 0.5, 0.39 * amplitude, 5.0), (f, amplitude, 8.0)]
 
     def broadband(self) -> dict:

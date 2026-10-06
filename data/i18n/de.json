@@ -1547,7 +1547,6 @@
   "analyzer.assign.button": "{contact} zuordnen",
   "analyzer.assign.clear": "löschen",
   "analyzer.assign.current": "aktuell: {current}",
-  "analyzer.assign.hint.short": "Eingabe {contact} | Umschalt+Eingabe löschen | {current}",
   "analyzer.assign.done": "Zugeordnet.",
   "analyzer.assign.cleared": "Zuordnung gelöscht.",
   "analyzer.assign.failed": "Kontakt nicht mehr gehalten.",

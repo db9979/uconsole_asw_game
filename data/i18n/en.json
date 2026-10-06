@@ -1547,7 +1547,6 @@
   "analyzer.assign.button": "assign to {contact}",
   "analyzer.assign.clear": "clear",
   "analyzer.assign.current": "current: {current}",
-  "analyzer.assign.hint.short": "Enter {contact} | Shift+Enter clear | {current}",
   "analyzer.assign.done": "Assigned.",
   "analyzer.assign.cleared": "Assignment cleared.",
   "analyzer.assign.failed": "Contact no longer held.",

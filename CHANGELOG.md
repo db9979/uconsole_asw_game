@@ -4,6 +4,21 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.264
+
+Release 1.3.264 makes the underwater fight more realistic. Torpedo seekers
+now look ahead in a cone of about 45 degrees to each side and within a depth
+window, lock on by signal strength against their own noise, search slowly
+and quietly and sprint only once they hold a target. AI submarines react to
+a ping by its loudness: a faint one sends them deep and slow, a close one
+makes them run from the pinger. They evade a torpedo by putting it on the
+beam, dropping a decoy and creeping away, and they hide on the side of the
+layer away from a streamed variable-depth sonar. Hard turns now cost speed,
+passive contacts near the detection limit fade in and out, and in the
+convoy attack the escort warns its merchants, about every third one of
+which turns away from a torpedo it hears. Saves are v53; v38 to v52 saves
+still load.
+
 ## 1.3.262
 
 Release 1.3.262 lets the executive officer speak in the browser too. When

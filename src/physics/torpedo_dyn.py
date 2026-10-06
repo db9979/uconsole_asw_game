@@ -160,3 +160,44 @@ def quantized_enable_nm(value: float) -> float:
     steps = round((float(value) - ENABLE_RANGE_MIN_NM) / ENABLE_RANGE_STEP_NM)
     snapped = ENABLE_RANGE_MIN_NM + steps * ENABLE_RANGE_STEP_NM
     return round(min(ENABLE_RANGE_MAX_NM, max(ENABLE_RANGE_MIN_NM, snapped)), 3)
+
+
+# --- Homing seeker (1.3.215) --------------------------------------------------
+# The seeker looks ahead in a cone about the weapon's heading and inside a
+# depth gate about its own depth; a contact is acquired when the better of its
+# passive level and its active echo beats the seeker's self noise, which grows
+# as 60 log v with the weapon's speed.  So the weapon searches at a quiet
+# search speed and sprints once it holds a target.  A held target is kept in a
+# wider cone and with a margin below the acquisition threshold.
+SEEKER_CONE_HALF_DEG = 45.0
+SEEKER_HOLD_CONE_HALF_DEG = 60.0
+SEEKER_DEPTH_GATE_M = 150.0
+SEEKER_SEARCH_FRACTION = 0.7
+SEEKER_PASSIVE_DT_DB = 15.0
+SEEKER_HOLD_MARGIN_DB = 10.0
+# Active acquisition range against a hull echo at full speed, and the
+# seeker's maximum range (own weapons; the hostile boats' heavier weapon).
+SEEKER_ACTIVE_NM = {"own": 1.2, "enemy": 2.0}
+SEEKER_MAX_NM = {"own": 2.0, "enemy": 3.0}
+
+
+def self_noise_db(speed_fraction: float) -> float:
+    """Seeker self noise relative to full speed (flow and propulsor)."""
+    return 60.0 * math.log10(max(speed_fraction, 0.05))
+
+
+def seeker_excess_db(passive_level_db: float, distance_nm: float,
+                     depth_gap_m: float, stationary: bool, speed_fraction: float,
+                     active_nm: float, no_doppler_db: float) -> float:
+    """Signal excess of a contact at the seeker: the better of the passive
+    level (relative dB, see ``torpedo.seeker_level_db``) and the active echo
+    (two-way spreading, calibrated to ``active_nm`` at full speed)."""
+    noise = self_noise_db(speed_fraction)
+    passive = passive_level_db - noise - SEEKER_PASSIVE_DT_DB
+    active = (40.0 * math.log10(active_nm / max(distance_nm, 0.01))
+              - depth_gap_m / 10.0 - (no_doppler_db if stationary else 0.0) - noise)
+    return max(passive, active)
+
+
+def in_seeker_cone(heading_deg: float, bearing_deg: float, half_deg: float) -> bool:
+    return abs((bearing_deg - heading_deg + 180.0) % 360.0 - 180.0) <= half_deg

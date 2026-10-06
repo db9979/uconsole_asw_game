@@ -10,18 +10,21 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.262**
+Aktuelle Version: **1.3.264**
 
-Version 1.3.262 lässt den Ersten Offizier auch im Browser sprechen. Hat der Host
-eine Stimme eingerichtet, wird eine Antwort, die an einer Browser-Station
-erfragt wurde, jetzt dort mit derselben Stimme wie auf der uConsole
-gesprochen: Der Host holt den Ton bei seinem Sprachdienst, und nur der
-Browser, der gefragt hat, spielt ihn ab, Dienst und Schlüssel verlassen
-den Host also nie. Antworten auf Fragen per Sprechtaste werden genauso
-gesprochen. Das klappt auch, wenn der Host als Server nur für Browser ohne
-Lautsprecher läuft. **Antworten vorlesen** im Fenster des Offiziers
-schaltet es für einen Browser ab. Tasten und Spielstände bleiben gleich
-(v53; Spielstände v38 bis v52 laden weiter).
+Version 1.3.264 macht den Kampf unter Wasser realistischer. Torpedo-Suchköpfe
+schauen jetzt in einem Kegel von etwa 45 Grad zu jeder Seite und in einem
+Tiefenfenster nach vorn, schalten nach Signalstärke gegen ihr Eigengeräusch
+auf, suchen langsam und leise und sprinten erst nach der Aufschaltung.
+KI-U-Boote reagieren auf einen Ping nach seiner Lautstärke: ein leiser
+schickt sie tief und langsam, ein naher lässt sie vom Pinger weglaufen. Sie
+weichen einem Torpedo aus, indem sie ihn querab nehmen, einen Täuschkörper
+ausstoßen und davonschleichen, und verstecken sich auf der Seite der
+Sprungschicht abseits eines ausgebrachten Tiefensonars. Harte Kurven kosten
+jetzt Fahrt, passive Kontakte an der Erfassungsgrenze schwinden und kommen
+wieder, und beim Geleitzugangriff warnt die Fregatte ihre Frachter, von denen
+etwa jeder dritte vor einem gehörten Torpedo abdreht. Spielstände sind v53;
+v38- bis v52-Spielstände lassen sich weiter laden.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

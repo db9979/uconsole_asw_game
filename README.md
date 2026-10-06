@@ -10,17 +10,20 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.262**
+Current release: **1.3.264**
 
-Release 1.3.262 lets the executive officer speak in the browser too. When
-the host has a voice set up, an answer asked from a browser station is now
-spoken there by the same voice as on the uConsole: the host fetches the
-audio from its speech service and only the browser that asked plays it, so
-the service and its key never leave the host. Answers to questions asked
-with the talk key are spoken the same way. This also works when the host
-runs as a browser-only server without a speaker. **Speak answers** in the
-officer's window switches it off for one browser. Keys and saves are
-unchanged (v53; v38 to v52 saves still load).
+Release 1.3.264 makes the underwater fight more realistic. Torpedo seekers
+now look ahead in a cone of about 45 degrees to each side and within a depth
+window, lock on by signal strength against their own noise, search slowly
+and quietly and sprint only once they hold a target. AI submarines react to
+a ping by its loudness: a faint one sends them deep and slow, a close one
+makes them run from the pinger. They evade a torpedo by putting it on the
+beam, dropping a decoy and creeping away, and they hide on the side of the
+layer away from a streamed variable-depth sonar. Hard turns now cost speed,
+passive contacts near the detection limit fade in and out, and in the
+convoy attack the escort warns its merchants, about every third one of
+which turns away from a torpedo it hears. Saves are v53; v38 to v52 saves
+still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

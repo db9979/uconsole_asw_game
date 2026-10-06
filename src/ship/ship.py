@@ -247,7 +247,8 @@ class Ship:
 
         # Surge: thrust against resistance (exact Riccati integration).
         effective_target = self.effective_target_kn()
-        extra = hull.added_resistance_n(self.sea_state)
+        extra = (hull.added_resistance_n(self.sea_state)
+                 + hull.turn_resistance_n(self.yaw_rate))
         speed_mps, _rps, _braking = dyn.surge_step(
             hull, self.speed * KN, effective_target * KN, self.mass_kg(), dt,
             extra_resistance=extra)

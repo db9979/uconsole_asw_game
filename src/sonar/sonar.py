@@ -235,6 +235,14 @@ def _correlated_uniform(seed: int, t: float, epoch_s: float,
     return first + (second - first) * blend
 
 
+_FADING_ARRAY = {"BOW": 0, "TOWED": 1, "VDS": 2, "DIP": 3, "BUOY": 4}
+
+
+def _fading_key(observer) -> int:
+    """Stable fading key of a listening platform (frigate or crewed boat)."""
+    return int(getattr(observer, "sensor_seed", getattr(observer, "id", 0)) or 0)
+
+
 class SonarSystem(ArrayHandlingMixin):
     MAX_PENDING_CLUTTER = 8
     CLUTTER_SEARCH_NM = 30.0
@@ -757,7 +765,9 @@ class SonarSystem(ArrayHandlingMixin):
                 shipping_contacts=self.shipping_contacts,
                 hull_self_noise=False)
             effective_range = equation.equivalent_range_nm(
-                distance, terms.signal_excess_db)
+                distance, terms.signal_excess_db + equation.fading_db(
+                    int(getattr(tgt, "sensor_seed", tgt.id)), _fading_key(helicopter),
+                    _FADING_ARRAY["DIP"], t))
             if distance >= effective_range:
                 continue
             signal = snr_db(effective_range, distance)
@@ -848,6 +858,7 @@ class SonarSystem(ArrayHandlingMixin):
         tow_available = self.tow_status(frigate.speed)["available"]
         array_modes = ("BOW",) + (("TOWED",) if tow_available else ()) + (
             ("VDS",) if self._vds_available() else ())
+        observer_key = _fading_key(frigate)
         for tgt in targets:
             if tgt_gone(tgt):
                 continue
@@ -856,17 +867,22 @@ class SonarSystem(ArrayHandlingMixin):
             observations = {}
             spectral_by_mode = {}
             baffled = in_baffles(frigate.course, true_bearing)
+            target_seed = int(getattr(tgt, "sensor_seed", tgt.id))
             for array_mode in array_modes:
                 if array_mode == "BOW" and baffled:
                     continue            # the hull array is deaf astern
                 array_available = tow_available if array_mode != "VDS" else True
-                preliminary_range = self._passive_range_nm(
+                # Fading of this array's path (dB as a range factor, since
+                # snr_db(R, d) = 20 log R/d is the signal excess).
+                fade = 10.0 ** (equation.fading_db(
+                    target_seed, observer_key, _FADING_ARRAY[array_mode], t) / 20.0)
+                preliminary_range = fade * self._passive_range_nm(
                     tgt, dist, frigate, world, range_factor, array_mode,
                     true_bearing, array_available, apply_propagation=False)
                 if dist >= preliminary_range:
                     continue
                 spectral = []
-                r_eff = self._passive_range_nm(
+                r_eff = fade * self._passive_range_nm(
                     tgt, dist, frigate, world, range_factor, array_mode,
                     true_bearing, array_available, spectral_out=spectral)
                 if dist >= r_eff:
@@ -1063,7 +1079,9 @@ class SonarSystem(ArrayHandlingMixin):
                     rain=float(getattr(world, "rain_intensity", 0.0)),
                     shipping_contacts=self.shipping_contacts,
                     hull_self_noise=False)
-                excess = terms.signal_excess_db
+                excess = terms.signal_excess_db + equation.fading_db(
+                    int(getattr(tgt, "sensor_seed", tgt.id)), int(b.seq),
+                    _FADING_ARRAY["BUOY"], t)
                 if excess <= 0.0:
                     continue
                 quality = config.clamp(excess / config.SONAR_SNR_QUALITY_SPAN_DB,

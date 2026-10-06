@@ -18,7 +18,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from src.core import config
+from src.core import config, detrand
 
 BANDS_HZ = (100.0, 400.0, 1600.0, 6400.0)
 NM_M = 1852.0
@@ -428,3 +428,29 @@ def range_sigma_m(pulse: str, snr_db: float) -> float:
 def equivalent_range_nm(distance_nm: float, signal_excess_db: float) -> float:
     """Range multiplier form used by the 1.0.0 consumers: snr_db(R, d) = SE."""
     return max(distance_nm, 1e-6) * 10.0 ** (signal_excess_db / 20.0)
+
+
+# Signal fading (1.3.215): multipath and the moving sea make the received
+# level of a distant source wander, log-normal with a spread of a few dB and
+# correlated over tens of seconds, so a contact near the detection edge comes
+# and goes instead of switching on at a hard range.  Stateless: the fade is
+# a pure function of (seed, observer, source, time) via ``detrand``.
+FADING_SIGMA_DB = 3.0
+FADING_EPOCH_S = 40.0
+FADING_LIMIT_DB = 2.5 * FADING_SIGMA_DB
+
+
+def fading_db(seed: int, observer: int, source: int, t: float) -> float:
+    """Slowly varying fade (dB, mean 0) of one observer-source path at ``t``.
+
+    Independent normal draws at every ``FADING_EPOCH_S``, blended with a
+    smooth weight that keeps the variance constant between them."""
+    scaled = max(0.0, float(t)) / FADING_EPOCH_S
+    epoch = math.floor(scaled)
+    blend = scaled - epoch
+    weight = 0.5 - 0.5 * math.cos(math.pi * blend)
+    first = detrand.normal(seed, "passive-fading", observer, source, epoch)
+    second = detrand.normal(seed, "passive-fading", observer, source, epoch + 1)
+    value = ((1.0 - weight) * first + weight * second) / math.sqrt(
+        (1.0 - weight) ** 2 + weight * weight)
+    return max(-FADING_LIMIT_DB, min(FADING_LIMIT_DB, FADING_SIGMA_DB * value))

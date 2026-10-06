@@ -4,7 +4,7 @@ This module is deliberately dependency-free because setuptools imports the
 version while building the project.
 """
 
-APP_VERSION = "1.3.262"
+APP_VERSION = "1.3.264"
 SAVE_VERSION = 53
 SAVE_SCHEMA = "u-jagd-save-v53"
 SPLASH_TEXT = (

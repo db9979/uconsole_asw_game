@@ -217,6 +217,30 @@ def test_the_convoy_sails_with_the_frigate_and_is_saved():
     assert [ship.id for ship in boat_missions.convoy(game)] == [ship.id for ship in ships]
 
 
+def test_the_convoy_turns_away_from_a_torpedo_the_frigate_hears(monkeypatch):
+    game, _boat = _boat_game("s7_geleitzug")
+    course = float(config.SCENARIOS["s7_geleitzug"]["ship_course"])
+    bearing = (course + 90.0) % 360.0          # a torpedo heard to starboard
+    monkeypatch.setattr(game, "torpedo_warnings", lambda held=True: [
+        {"source": "launch", "bearing": bearing, "age_s": 0.0, "contact": None,
+         "tti_s": None}])
+    boat_missions.update(game, 0.05)
+    ships = boat_missions.convoy(game)
+    turned = [ship for ship in ships if ship._torpedo_evade_left > 0.0]
+    # Only the merchants that get the signal in time turn, 60 degrees to port.
+    assert 0 < len(turned) < len(ships)
+    for ship in turned:
+        # The ship steers the reciprocal of the threat bearing it was given.
+        away = (ship._torpedo_threat_bearing + 180.0) % 360.0
+        assert away == (course - config.BOAT_CONVOY_TORPEDO_TURN_DEG) % 360.0
+    monkeypatch.setattr(game, "torpedo_warnings", lambda held=True: [])
+    for ship in turned:
+        ship._torpedo_evade_left = 0.0
+        ship.target_course = 0.0
+    boat_missions.update(game, 0.05)
+    assert all(ship.target_course == course for ship in ships)
+
+
 def test_only_the_crewed_boats_torpedo_takes_a_merchant():
     game, boat = _boat_game("s7_geleitzug")
     _quiet_convoy(game)

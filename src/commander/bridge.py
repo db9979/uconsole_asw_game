@@ -1249,7 +1249,8 @@ class CommanderBridge:
             lobby=(game.lobby_host_view() if hasattr(game, "lobby_host_view")
                    else None),
             # The service record and the training lessons (W5).
-            logbook=self._logbook, lessons=host_records.lessons_view())
+            logbook=self._logbook, lessons=host_records.lessons_view(
+                getattr(game.preferences, "lessons_done", ())))
 
     def _publish_sonar_audio(self, game, server, phase):
         """Copy only complete mixed receiver blocks on the main thread."""
@@ -1460,9 +1461,11 @@ class CommanderBridge:
             return
         documents = {}
         if ended:
-            documents["frigate"] = debrief_replay.document(game.frigate_debrief, "frigate")
+            lesson = getattr(game, "training", None) is not None
+            documents["frigate"] = debrief_replay.document(game.frigate_debrief, "frigate",
+                                                           lesson=lesson)
             if boat is not None:
-                documents["uboot"] = debrief_replay.document(boat, "uboot")
+                documents["uboot"] = debrief_replay.document(boat, "uboot", lesson=lesson)
         server.publish_debrief_v2(world_session=self._session, world_epoch=self._epoch,
                                   documents=documents)
         self._debrief_fingerprint = fingerprint

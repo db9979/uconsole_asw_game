@@ -31,8 +31,9 @@ def test_missing_and_corrupt_preferences_use_defaults(tmp_path, monkeypatch):
     set_locale(monkeypatch, "de_DE.UTF-8")
     expected = Preferences(language="de")
     # Only an absent file is a first launch that shows the welcome page.
+    # A new player also starts on the short missions.
     assert load_preferences(tmp_path / "missing.json") == Preferences(
-        language="de", onboarded=False)
+        language="de", onboarded=False, mission_length="short")
 
     path = tmp_path / "preferences.json"
     path.write_text("not json", encoding="utf-8")
@@ -158,3 +159,18 @@ def test_windows_default_graphics_keeps_the_line_switch_in_step(monkeypatch):
     monkeypatch.setattr(preferences_module, "_default_graphics", lambda: "full")
     fresh = preferences_module.Preferences()
     assert fresh.graphics == "full" and fresh.aa_lines is True
+
+
+def test_mission_length_and_lessons_done_round_trip_and_are_strict(tmp_path):
+    path = tmp_path / "preferences.json"
+    expected = Preferences(mission_length="short", lessons_done=("sonar", "air"))
+    save_preferences(expected, path)
+    assert load_preferences(path) == expected
+    path.write_text(json.dumps({"mission_length": "endless",
+                                "lessons_done": ["sonar", "a/b", 3, "sonar", "x" * 40]}),
+                    encoding="utf-8")
+    loaded = load_preferences(path)
+    assert loaded.mission_length == Preferences().mission_length == "normal"
+    assert loaded.lessons_done == ("sonar",)
+    path.write_text(json.dumps({"lessons_done": "sonar"}), encoding="utf-8")
+    assert load_preferences(path).lessons_done == ()

@@ -62,14 +62,14 @@ Global keys (all stations):
 
 ## Your first dive (submarine) {#qs-first-dive}
 
-The quickest way into the submarine is lesson 5 of the training: main menu **Training**, lesson 5 (Listen and hide below the layer) with `5` or the arrow keys, `Enter`. The uConsole plays the submarine for this lesson, and a banner waits for each step:
+The quickest way into the submarine is lesson 8 of the training: main menu **Training**, lesson 8 (Listen and hide below the layer) with `8` or the arrow keys, `Enter`. The uConsole plays the submarine for this lesson, and a banner waits for each step:
 
 1. Sonar room (`2`): wait for the frigate in the contact list.
 2. Select the contact with `Up`/`Down` and press `C` until it reads warship.
 3. Measure the layer with the bathythermograph (`E`).
 4. Command (`1`), then `J`: the submarine dives below the measured layer, where the frigate's hull sonar hears it badly.
 
-Lesson 6 continues with evading a pinging frigate (`I` on the Threat page). After the lessons, start **New mission**, the submarine with `2` and `Enter`, then scenario 1 (Breakthrough) with `1` and `Enter`: reach the goal area marked GOAL on the chart. Go slow (`-` on the telegraph or `A` for silent running), stay below the layer, keep the mast down near the frigate and evade with `I` when a ping or torpedo alarm comes in.
+Lesson 9 continues with evading a pinging frigate (`I` on the Threat page). After the lessons, start **New mission**, the submarine with `2` and `Enter`, then scenario 1 (Breakthrough) with `1` and `Enter`: reach the goal area marked GOAL on the chart. Go slow (`-` on the telegraph or `A` for silent running), stay below the layer, keep the mast down near the frigate and evade with `I` when a ping or torpedo alarm comes in.
 
 ## Underwater acoustics in five minutes {#qs-acoustics}
 

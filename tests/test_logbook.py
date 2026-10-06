@@ -149,3 +149,30 @@ def test_logbook_page_opens_switches_side_and_draws(monkeypatch):
     assert game.main_menu and game.menu_screen == "scenario"
     assert game.main_menu_entries()[game.main_menu_sel] == "logbook"
     assert config.SAVE_DIR in model.logbook_path()
+
+
+def test_one_ribbon_per_scenario_won_without_help():
+    book = model.Logbook()
+    frigate = model.ribbon_scenarios("frigate")
+    assert frigate and all(not key.startswith("frei_") for key in frigate)
+    assert all(config.scenario_side(key) == "frigate" for key in frigate)
+    book.record(date="2026-10-02", side="frigate", scenario=frigate[0], level="standard",
+                won=True, score=500, minutes=30, shots=1, sunk=1, earned=[])
+    book.record(date="2026-10-02", side="frigate", scenario=frigate[1], level="standard",
+                won=True, score=0, minutes=30, shots=1, sunk=1, earned=[], advisor=True)
+    book.record(date="2026-10-02", side="frigate", scenario=frigate[2], level="standard",
+                won=False, score=0, minutes=30, shots=1, sunk=0, earned=[])
+    ribbons = dict(book.ribbons("frigate"))
+    assert list(ribbons) == list(frigate)
+    assert ribbons[frigate[0]] and not ribbons[frigate[1]] and not ribbons[frigate[2]]
+    assert not any(won for _, won in book.ribbons("boat"))
+    assert len(book.ribbons("boat")) == len(model.ribbon_scenarios("boat"))
+
+
+def test_the_logbook_page_draws_the_ribbon_rack():
+    from src.core import game_logbook
+    assert game_logbook.ribbon_number("s7_geleitzug") == "7"
+    assert game_logbook.ribbon_number("custom") == "?"
+    surface = pygame.Surface((400, 40))
+    rects = game_logbook.draw_ribbons(surface, [("s1_patrouille", True), ("s2_x", False)], 390, 4)
+    assert len(rects) == 2 and rects[-1].right <= 390 and rects[0].right < rects[1].left

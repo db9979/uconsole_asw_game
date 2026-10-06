@@ -65,6 +65,22 @@ class DebriefMixin:
                                    habits=",".join(decided["known"]))
             recorder.finish(self, self.mission_time)
 
+    def decisive_end_line(self):
+        """End panel: what decided the mission, from the local side's
+        finished recording (``src/core/decisive.py``); None in a lesson.
+        Cached per recording, so the panel reads no frames each draw."""
+        if not self.game_over or getattr(self, "training", None) is not None:
+            return None
+        recorder = (self.boat_debrief if getattr(self, "local_side", "frigate") == "uboot"
+                    and getattr(self, "_opfor", None) is not None
+                    and self.boat_debrief is not None else self.frigate_debrief)
+        key = (id(recorder), len(recorder.events), recorder._ended)
+        cache = getattr(self, "_decisive_cache", None)
+        if cache is None or cache[0] != key:
+            from src.core import decisive
+            cache = self._decisive_cache = (key, decisive.line(recorder))
+        return cache[1]
+
     # --- the page -------------------------------------------------------------------
 
     def open_debrief(self) -> bool:

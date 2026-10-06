@@ -109,6 +109,16 @@ def _pages(game: Game):
         game.menu_screen = "logbook"
     yield "logbook-full", full_logbook
     yield "logbook-full-boat", lambda: full_logbook("boat")
+    from dataclasses import replace
+
+    from src.core import training
+    for done, sel in ((training.LESSONS[:4], 4), (training.LESSONS, len(training.LESSONS) - 1)):
+        def lessons(done=done, sel=sel):
+            # Ticks, the "next" mark and the progress line, scrolled to the end.
+            game.preferences = replace(game.preferences, lessons_done=tuple(done))
+            game.menu_screen = "training"
+            game.menu_sel = sel
+        yield f"training-{len(done)}-{sel}", lessons
     for screen in ("side", "training", "logbook", "daily", "campaign"):
         def page(screen=screen):
             game.menu_screen = screen

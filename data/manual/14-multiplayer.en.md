@@ -75,7 +75,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons 
 
 ## Not in the browser {#mp-gaps}
 
-The browser follows the uConsole station by station. The solo browser also has the main menu's **Logbook** (service record, best scores, awards and what the enemy has learnt, for the frigate and the submarine) and **Training** (the six lessons; a submarine lesson first switches the browser to the submarine). What the browser does not have yet:
+The browser follows the uConsole station by station. The solo browser also has the main menu's **Logbook** (service record, best scores, awards and what the enemy has learnt, for the frigate and the submarine) and **Training** (the nine lessons with their ticks and the next one marked; a submarine lesson first switches the browser to the submarine). What the browser does not have yet:
 
 - **Training in server mode:** the server-mode lobby starts missions only; lessons start from a solo browser or on the uConsole.
 - **Logbook page extras:** switching "enemy learns" on or off (`L`), the language model's review of the service record and the after-action report stay on the uConsole's logbook page; the browser shows the record read-only.

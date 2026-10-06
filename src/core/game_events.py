@@ -195,21 +195,55 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 self.commander.invalidate_commands()
 
     def _handle_owned_event(self, e) -> None:
+        # One owner per event, in precedence order (AGENTS.md); each step
+        # below is a verbatim part of the former single handler.
+        if self._owned_device_event(e):
+            return
+        if self.editor is not None:
+            self._owned_editor_event(e)
+            return
+        if self.simlog_view_open:
+            self._owned_simlog_event(e)
+            return
+        if self._owned_panel_event(e):
+            return
+        if self._owned_pointer_event(e):
+            return
+        if self._owned_overlay_event(e):
+            return
+        if e.type != pygame.KEYDOWN:
+            if self.input_mode is not None or self.in_menu or self.game_over:
+                return
+            if self.commander.confirm_visible(self):
+                if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+                    canvas = self._window_to_canvas(getattr(e, "pos", None))
+                    if (canvas is not None
+                            and self.commander.handle_confirm_click(self, canvas)):
+                        return
+            if self._local_station_input_locked():
+                return
+        if e.type == pygame.KEYDOWN:
+            self._owned_keydown(e)
+        else:
+            self._owned_motion_event(e)
+
+    def _owned_device_event(self, e) -> bool:
+        """Devices, focus, repeats, Alt+Enter, update notice, splash, key release."""
         if e.type == pygame.JOYDEVICEADDED:
             self._open_joystick(e.device_index)
-            return
+            return True
         if e.type == pygame.JOYDEVICEREMOVED:
             device = self._joysticks.pop(e.instance_id, None)
             if device is not None:
                 device.quit()
             self._clear_controls()
-            return
+            return True
         if e.type == pygame.WINDOWFOCUSLOST:
             # Real time never stops; losing focus only releases held controls.
             self._clear_controls()
-            return
+            return True
         if e.type == pygame.KEYDOWN and getattr(e, "repeat", False):
-            return
+            return True
         if e.type == pygame.KEYDOWN and self.game_menu_open:
             # Any key closes the top bar's game menu, then acts as usual.
             self.game_menu_open = False
@@ -217,109 +251,117 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 and e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
                 and getattr(e, "mod", 0) & pygame.KMOD_ALT):
             self.toggle_fullscreen()
-            return
+            return True
         if self.handle_update_event(e):
-            return
+            return True
         if self.splash_active:
             if e.type == pygame.QUIT:
                 self.running = False
             elif (e.type == pygame.KEYDOWN
                   and self._t - self.splash_started_at >= .35):
                 self.splash_active = False
-            return
+            return True
         if e.type == pygame.KEYUP:
             self.held.discard(e.key)
+            return True
+        return False
+
+    def _owned_editor_event(self, e) -> None:
+        """An open editor owns every event."""
+        if e.type == pygame.QUIT:
+            self.editor = None
+            self.audio.stop_preview()
+            self._open_administration("quit")
             return
-        if self.editor is not None:
-            if e.type == pygame.QUIT:
-                self.editor = None
-                self.audio.stop_preview()
-                self._open_administration("quit")
+        if (e.type == pygame.KEYDOWN and e.key == pygame.K_F5
+                and isinstance(self.editor, MissionEditor)
+                and self.editor.mode == "browser"):
+            selected = self.editor.selected
+            if selected is not None and not selected.builtin:
+                if self.start_user_mission(selected.data):
+                    self.editor = None
+                    self.audio.stop_preview()
+                else:
+                    self.editor.status = self.tr("editor.runtime_unsupported")
+            return
+        if (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE
+                and getattr(self.editor, "mode", "browser") == "browser"):
+            self.editor = None
+            self.audio.stop_preview()
+            if self.in_menu:
+                self.main_menu = True
+            return
+        if e.type in (pygame.JOYAXISMOTION, pygame.JOYBUTTONDOWN):
+            return
+        if e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
+                      pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
+            pos = getattr(e, "pos", pygame.mouse.get_pos())
+            canvas = self._window_to_canvas(pos)
+            if canvas is None:
                 return
-            if (e.type == pygame.KEYDOWN and e.key == pygame.K_F5
-                    and isinstance(self.editor, MissionEditor)
-                    and self.editor.mode == "browser"):
-                selected = self.editor.selected
-                if selected is not None and not selected.builtin:
-                    if self.start_user_mission(selected.data):
-                        self.editor = None
-                        self.audio.stop_preview()
-                    else:
-                        self.editor.status = self.tr("editor.runtime_unsupported")
-                return
-            if (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE
+            attrs = dict(e.dict, pos=canvas)
+            if hasattr(e, "rel"):
+                previous = self._window_to_canvas((pos[0] - e.rel[0], pos[1] - e.rel[1]))
+                attrs["rel"] = ((canvas[0] - previous[0], canvas[1] - previous[1])
+                                if previous is not None else (0, 0))
+            e = pygame.event.Event(e.type, attrs)
+            close = getattr(self.editor, "close_rect", None)
+            if (e.type == pygame.MOUSEBUTTONDOWN and getattr(e, "button", 0) == 1
+                    and close is not None and close.collidepoint(canvas)
                     and getattr(self.editor, "mode", "browser") == "browser"):
+                # The editor's close box: the same as Esc.
                 self.editor = None
                 self.audio.stop_preview()
                 if self.in_menu:
                     self.main_menu = True
                 return
-            if e.type in (pygame.JOYAXISMOTION, pygame.JOYBUTTONDOWN):
-                return
-            if e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
-                          pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
-                pos = getattr(e, "pos", pygame.mouse.get_pos())
-                canvas = self._window_to_canvas(pos)
-                if canvas is None:
-                    return
-                attrs = dict(e.dict, pos=canvas)
-                if hasattr(e, "rel"):
-                    previous = self._window_to_canvas((pos[0] - e.rel[0], pos[1] - e.rel[1]))
-                    attrs["rel"] = ((canvas[0] - previous[0], canvas[1] - previous[1])
-                                    if previous is not None else (0, 0))
-                e = pygame.event.Event(e.type, attrs)
-                close = getattr(self.editor, "close_rect", None)
-                if (e.type == pygame.MOUSEBUTTONDOWN and getattr(e, "button", 0) == 1
-                        and close is not None and close.collidepoint(canvas)
-                        and getattr(self.editor, "mode", "browser") == "browser"):
-                    # The editor's close box: the same as Esc.
-                    self.editor = None
-                    self.audio.stop_preview()
-                    if self.in_menu:
-                        self.main_menu = True
-                    return
-            self.editor.handle_event(e)
+        self.editor.handle_event(e)
+        return
+
+    def _owned_simlog_event(self, e) -> None:
+        """The F4 SimLog view owns every event."""
+        if e.type == pygame.QUIT:
+            self._close_simlog_view()
+            self._open_administration("quit")
             return
-        if self.simlog_view_open:
-            if e.type == pygame.QUIT:
+        if e.type == pygame.JOYHATMOTION:
+            _, y = e.value
+            if y:
+                self._scroll_simlog_view(6 if y < 0 else -6)
+            return
+        if e.type == pygame.MOUSEWHEEL:
+            self._scroll_simlog_view(-e.y * 3)
+            return
+        if (e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP)
+                and pointer_input.handle(self, e)):
+            return      # the view's close box presses Esc
+        if e.type == pygame.KEYDOWN:
+            if e.key in (pygame.K_F4, pygame.K_ESCAPE):
                 self._close_simlog_view()
-                self._open_administration("quit")
                 return
-            if e.type == pygame.JOYHATMOTION:
-                _, y = e.value
-                if y:
-                    self._scroll_simlog_view(6 if y < 0 else -6)
+            if e.key == pygame.K_m:
+                self.simlog_view_map = not self.simlog_view_map
                 return
-            if e.type == pygame.MOUSEWHEEL:
-                self._scroll_simlog_view(-e.y * 3)
+            if e.key == pygame.K_f and self.simlog_view_map:
+                self.simlog_map_fit = (
+                    simlog_map.FIT_UNITS
+                    if self.simlog_map_fit == simlog_map.FIT_WORLD
+                    else simlog_map.FIT_WORLD)
                 return
-            if (e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP)
-                    and pointer_input.handle(self, e)):
-                return      # the view's close box presses Esc
-            if e.type == pygame.KEYDOWN:
-                if e.key in (pygame.K_F4, pygame.K_ESCAPE):
-                    self._close_simlog_view()
-                    return
-                if e.key == pygame.K_m:
-                    self.simlog_view_map = not self.simlog_view_map
-                    return
-                if e.key == pygame.K_f and self.simlog_view_map:
-                    self.simlog_map_fit = (
-                        simlog_map.FIT_UNITS
-                        if self.simlog_map_fit == simlog_map.FIT_WORLD
-                        else simlog_map.FIT_WORLD)
-                    return
-                if self.simlog_view_map:
-                    return
-                if e.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP,
-                             pygame.K_PAGEDOWN, pygame.K_HOME, pygame.K_END):
-                    amount = {pygame.K_UP: -1, pygame.K_DOWN: 1,
-                              pygame.K_PAGEUP: -15, pygame.K_PAGEDOWN: 15,
-                              pygame.K_HOME: -10000, pygame.K_END: 10000}[e.key]
-                    self._scroll_simlog_view(amount)
-                    return
+            if self.simlog_view_map:
+                return
+            if e.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP,
+                         pygame.K_PAGEDOWN, pygame.K_HOME, pygame.K_END):
+                amount = {pygame.K_UP: -1, pygame.K_DOWN: 1,
+                          pygame.K_PAGEUP: -15, pygame.K_PAGEDOWN: 15,
+                          pygame.K_HOME: -10000, pygame.K_END: 10000}[e.key]
+                self._scroll_simlog_view(amount)
                 return
             return
+        return
+
+    def _owned_panel_event(self, e) -> bool:
+        """The crew overview (F3) and the weather panel (0)."""
         if ((self.autocrew_overview_open or self.weather_station_open)
                 and e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP)
                 and pointer_input.handle(self, e)):
@@ -332,7 +374,7 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                   and e.key in (pygame.K_F3, pygame.K_ESCAPE)):
                 self.autocrew_overview_open = False
                 self._clear_station_input()
-            return
+            return True
         if self.weather_station_open:
             # The read-only panel owns input: 0 / Esc close it, nothing leaks
             # to the station underneath.
@@ -343,12 +385,16 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                   and e.key in (pygame.K_0, pygame.K_KP0, pygame.K_ESCAPE)):
                 self.weather_station_open = False
                 self._clear_station_input()
-            return
+            return True
         # Full mouse control: a click on a legend, tab, dial or menu row of
         # the frame on screen acts like its key or entry.
+        return False
+
+    def _owned_pointer_event(self, e) -> bool:
+        """Clicks on the frame, the umpire screen, the boat's pointer, map release."""
         if (e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEWHEEL)
                 and pointer_input.handle(self, e)):
-            return
+            return True
         if (self.umpire_view_active() and not self.administration_open
                 and not self.game_over):
             # The umpire screen works no station: only help, Remote Crew and
@@ -359,7 +405,7 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                                                         pygame.K_ESCAPE):
                 self._open_administration({pygame.K_F1: "help", pygame.K_F9: "commander",
                                            pygame.K_ESCAPE: "quit"}[e.key])
-            return
+            return True
         if (self.local_side == "uboot" and not self.in_menu
                 and not self.administration_open
                 and e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
@@ -371,10 +417,10 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             if e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
                           pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
                 uboot_local.handle_pointer(self, e)
-            return
+            return True
         if e.type == pygame.MOUSEBUTTONUP and e.button == 1:
             if self._local_station_input_locked():
-                return
+                return True
             if self._map_drag is not None and not self._map_drag_moved:
                 if self.station is Station.OPZ:
                     canvas = self._window_to_canvas(getattr(e, "pos", None))
@@ -390,7 +436,7 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                         self._pin_tooltip_at(getattr(e, "pos", None))
                     self._map_drag = None
                     self._map_drag_moved = False
-                    return
+                    return True
                 canvas = self._window_to_canvas(getattr(e, "pos", None))
                 hit = map_hit_target(self, canvas) if canvas is not None else None
                 hit_id = hit.get("id", "") if isinstance(hit, dict) else ""
@@ -419,19 +465,23 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     self._pin_tooltip_at(getattr(e, "pos", None))
             self._map_drag = None
             self._map_drag_moved = False
-            return
+            return True
+        return False
+
+    def _owned_overlay_event(self, e) -> bool:
+        """Quit, pinned tooltip, language model pages, administration, help, debrief."""
         if e.type == pygame.QUIT:
             if self.welcome_active:
                 # Closing the window on the welcome page also ends onboarding.
                 self._finish_onboarding()
             if not self.quit_confirm:
                 self._open_administration("quit")
-            return
+            return True
         if (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE
                 and self.pinned_tooltip is not None):
             self.pinned_tooltip = None
             self._tooltip_anchor = None
-            return
+            return True
         if self.advisor_open or self.llm_open:
             # The language model's pages own text input (src/core/game_advisor.py).
             # Their key buttons, tabs and rows took any click above
@@ -442,7 +492,7 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 self._handle_advisor_event(e)
             else:
                 self._handle_llm_settings_event(e)
-            return
+            return True
         if self.administration_open:
             if e.type == pygame.KEYDOWN:
                 if (self.live_traffic_field is not None
@@ -473,822 +523,843 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                                 elif name == "local_side":
                                     self._toggle_local_side()
                                 break
-            return
+            return True
         if (e.type == pygame.TEXTINPUT and getattr(e, "text", "") == "?"
                 and self.input_mode is None):
             # Layout-independent help key (US Shift+/, DE Shift+ß).
             self._open_administration("help")
-            return
+            return True
         if self.game_over and self.debrief_open:
             # The debrief page owns input until it is closed (Esc or D).
             if e.type == pygame.KEYDOWN:
                 self._handle_debrief_key(e.key, getattr(e, "mod", 0))
             elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
                 self._handle_debrief_click(self._window_to_canvas(getattr(e, "pos", None)))
-            return
-        if e.type != pygame.KEYDOWN:
-            if self.input_mode is not None or self.in_menu or self.game_over:
-                return
-            if self.commander.confirm_visible(self):
-                if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
-                    canvas = self._window_to_canvas(getattr(e, "pos", None))
-                    if (canvas is not None
-                            and self.commander.handle_confirm_click(self, canvas)):
-                        return
-            if self._local_station_input_locked():
-                return
-        if e.type == pygame.KEYDOWN:
-            if self.in_menu:
-                if e.key == pygame.K_F1:
-                    self._open_administration("help")
-                elif e.key == pygame.K_F9:
-                    self._open_administration("commander")
-                else:
-                    self._handle_menu_key(e.key)
-                return
-            if (e.key == pygame.K_F7 and not self.game_over
-                    and not self.commander.confirm_visible(self)):
-                # The executive officer (optional language model), both sides;
-                # an open crew confirmation keeps F7 as its reject key.
-                self._open_administration("advisor")
-                return
-            if self.local_side == "uboot" and not self._uboot_dispatch:
-                uboot_local.handle_key(self, e)
-                return
-            if self.input_mode is not None and self._local_station_input_locked():
-                pass
-            elif self.input_mode is not None:
-                self._handle_numeric_input(e.key)
-                return
-            if e.key == pygame.K_F9:
-                self._open_administration("commander")
-                return
-            if self.commander.confirm_visible(self):
-                if self.commander.handle_confirm_key(self, e.key):
-                    return
-            if (self.plot_mode and not self.game_over
-                    and self._handle_plot_key(e.key, getattr(e, "mod", 0))):
-                return
-            if e.key == pygame.K_ESCAPE:
-                self._open_administration("quit")
-                return
+            return True
+        return False
+
+    def _owned_keydown(self, e) -> None:
+        """A key press outside every overlay: global keys, then the station's."""
+        if self.in_menu:
             if e.key == pygame.K_F1:
                 self._open_administration("help")
+            elif e.key == pygame.K_F9:
+                self._open_administration("commander")
+            else:
+                self._handle_menu_key(e.key)
+            return
+        if (e.key == pygame.K_F7 and not self.game_over
+                and not self.commander.confirm_visible(self)):
+            # The executive officer (optional language model), both sides;
+            # an open crew confirmation keeps F7 as its reject key.
+            self._open_administration("advisor")
+            return
+        if self.local_side == "uboot" and not self._uboot_dispatch:
+            uboot_local.handle_key(self, e)
+            return
+        if self.input_mode is not None and self._local_station_input_locked():
+            pass
+        elif self.input_mode is not None:
+            self._handle_numeric_input(e.key)
+            return
+        if e.key == pygame.K_F9:
+            self._open_administration("commander")
+            return
+        if self.commander.confirm_visible(self):
+            if self.commander.handle_confirm_key(self, e.key):
                 return
-            if e.key == pygame.K_F10:
-                self._open_administration("options")
-                return
-            if e.key == pygame.K_F11:
-                self.feed_overlay_open = not self.feed_overlay_open
-                self.feed_overlay_scroll = 0
-                return
-            if e.key == pygame.K_F8:
-                self._open_analyzer_in_game()
-                return
-            if e.key == pygame.K_F2 and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                self.toggle_crew_assist()
-                return
-            if e.key == pygame.K_F2:
-                self.toggle_station_autocrew()
-                return
-            if e.key == pygame.K_F3:
-                self.open_autocrew_overview()
-                return
-            if e.key in (pygame.K_0, pygame.K_KP0):
-                self.open_weather_station()
-                return
-            if e.key == pygame.K_F4:
-                self._open_simlog_view()
-                return
-            if (e.key == pygame.K_n and self.station is not Station.SONAR
-                    and not (self.station is Station.HELICOPTER
-                             and self.station_page == 3)):
-                self._open_administration("nations")
-                return
-            if e.key in (pygame.K_s, pygame.K_l) and not (
-                    e.key == pygame.K_l and self.station is Station.OPZ):
-                self._open_administration("save" if e.key == pygame.K_s else "load")
-                return
-            if pygame.K_1 <= e.key <= pygame.K_9:
-                destination = list(Station)[e.key - pygame.K_1]
-                self.pinned_tooltip = None
-                self._tooltip_anchor = None
-                if destination is self.station:
-                    # Page cycle: clear held controls, but keep the station's
-                    # audio stream continuous (no stop/restart blip).
-                    self._clear_station_input()
-                    if self.station is Station.SONAR:
-                        self.sonar_page = station_page_step(
-                            Station.SONAR, self.sonar_page, 1)
-                    elif len(STATION_PAGES[self.station]) > 1:
-                        self.station_page = station_page_step(
-                            self.station, self.station_page, 1)
-                else:
-                    self._clear_controls()
-                    self.station = destination
-                    self.station_page = (2 if destination is Station.HELICOPTER
-                                         else 0)
-                return
-            if e.key == pygame.K_TAB:
-                self._clear_controls()
-                self.pinned_tooltip = None
-                self._tooltip_anchor = None
-                order = list(Station)
-                step = -1 if getattr(e, "mod", 0) & pygame.KMOD_SHIFT else 1
-                self.station = order[(order.index(self.station) + step) % len(order)]
-                self.station_page = (2 if self.station is Station.HELICOPTER
-                                     else 0)
-                return
-            if self.game_over:
-                if e.key == pygame.K_d:
-                    self.open_debrief()
-                elif e.key == pygame.K_r:
-                    definition = self.custom_mission_definition
-                    lesson = training.lesson_of(definition)
-                    if lesson is not None:
-                        self.start_training(lesson)
-                    elif definition is None or not self.start_custom_mission(
-                            json.loads(json.dumps(definition))):
-                        self.reset(self.seed)
-                elif e.key == pygame.K_m:
-                    self._return_to_main_menu()
-                return
-            if self._local_station_input_locked():
-                return
-            if e.key == pygame.K_p and self._plot_view() is not None:
-                self.toggle_plot_mode()
-                return
-            if (e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
-                    and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
-                if self.station is Station.WEAPONS:
-                    self.fire_selected_weapon()
-                    return
-                if self.station is Station.OPZ and self.station_page == 3:
-                    self._consort_feedback(self.consort_fire())
-                    return
-                if (self.station is Station.OPZ and self.station_page == 2
-                        and self.opz_weapon == "mpa_torpedo"):
-                    self._mpa_order_feedback(self.mpa_attack())
-                    return
-                if self.station is Station.OPZ:
-                    self.launch_essm()
-                    return
-                if self.station is Station.HELICOPTER:
-                    self.launch_helo_torpedo()
-                    return
-            if (self.station is Station.HELICOPTER and self.station_page == 3
-                    and e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN)):
-                step = 1 if e.key == pygame.K_PAGEDOWN else -1
-                self.helo_acoustic_page = (self.helo_acoustic_page + step) % 3
-                return
-            if self.station is Station.SONAR:
-                mods = getattr(e, "mod", 0)
-                if e.key == pygame.K_c and mods & pygame.KMOD_SHIFT:
-                    self._cycle_sonar_display_palette()
-                    return
-                if e.key == pygame.K_h and mods & pygame.KMOD_SHIFT:
-                    self._cycle_sonar_display_history()
-                    return
-                if e.key in (pygame.K_i, pygame.K_o) and mods & (
-                        pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
-                    delta = -1.0 if e.key == pygame.K_i else 1.0
-                    if mods & pygame.KMOD_SHIFT:
-                        self._adjust_sonar_display_contrast(delta * .2)
-                    else:
-                        self._adjust_sonar_display_black(delta * .01)
-                    return
-                if e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
-                    self.sonar_page = station_page_step(
-                        Station.SONAR,
-                        self.sonar_page, 1 if e.key == pygame.K_PAGEDOWN else -1)
-                    return
-                if e.key == pygame.K_w:
-                    pulses = tuple(equation.PULSES)
-                    self.set_sonar_pulse(pulses[(pulses.index(self.sonar.ping_pulse) + 1)
-                                                % len(pulses)])
-                    return
-                if e.key == pygame.K_e:
-                    if self.measure_sonar_bt() is True:
-                        depth = self.sonar.bt_profile["thermocline_m"]
-                        self.flash(message("runtime.bt.measured", depth=f"{depth:.0f}"))
-                        # The log of the listening side: never the frigate's
-                        # feed while the uConsole plays the submarine.
-                        notice = message("runtime.bt.feed", depth=f"{depth:.0f}")
-                        if self._sonar_ctx is self._frigate_sonar:
-                            self.feed.add(self.world.format_time(), "sonar", notice)
-                        elif self._opfor is not None and self._sonar_ctx is self._opfor.station:
-                            self._opfor.notice(self.sim_t, "sonar", notice,
-                                               stamp=self.world.format_time())
-                    else:
-                        self.flash(message("runtime.bt.cooldown",
-                                           seconds=f"{self.sonar.bt_cooldown:.0f}"))
-                    return
-                if e.key in (pygame.K_u, pygame.K_v) and self.sonar_mode == "VDS":
-                    requested = config.clamp(
-                        self.sonar.vds_depth_target_m
-                        + (-10.0 if e.key == pygame.K_u else 10.0),
-                        config.SONAR_VDS_DEPTH_MIN_M,
-                        config.SONAR_VDS_DEPTH_MAX_M)
-                    self.set_sonar_vds_depth(requested)
-                    depth = self.sonar.vds_depth_target_m
-                    self.flash(message("runtime.vds.depth", depth=f"{depth:.0f}"))
-                    return
-                if e.key in (pygame.K_u, pygame.K_v):
-                    requested = config.clamp(
-                        self.sonar.towed_depth_target_m
-                        + (-10.0 if e.key == pygame.K_u else 10.0),
-                        config.SONAR_TOWED_DEPTH_MIN_M,
-                        config.SONAR_TOWED_DEPTH_MAX_M)
-                    self.set_sonar_tow_depth(requested)
-                    depth = self.sonar.towed_depth_target_m
-                    self.flash(message("runtime.tas.depth", depth=f"{depth:.0f}"))
-                    return
-                if e.key == pygame.K_r:
-                    self._begin_numeric_input("bearing")
-                    return
-                if e.key == pygame.K_j:
-                    self.sonar_audio_enabled = not self.sonar_audio_enabled
-                    self._stop_sonar_audio()
-                    self.flash(message("runtime.sonar_audio.on" if self.sonar_audio_enabled
-                                       else "runtime.sonar_audio.off"))
-                    return
-                if (e.key == pygame.K_t and self.sonar_page == 3
-                        and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
-                    self._cycle_tma_method()
-                    return
-                if e.key == pygame.K_k and self.sonar_page == 3:
-                    self._tma_key(e)
-                    return
-                if e.key == pygame.K_k:
-                    self._cycle_sonar_harmonic()
-                    return
-                if e.key == pygame.K_x and self.sonar_page in (0, 4):
-                    self._tas_side_key(e)
-                    return
-                if e.key in (pygame.K_z, pygame.K_x) and self.sonar_page in (1, 2):
-                    self._sonar_cursor_key(e)
-                    return
-                if self.sonar_page == 3 and e.key in (pygame.K_z, pygame.K_x,
-                                                      pygame.K_q, pygame.K_k):
-                    self._tma_key(e)
-                    return
-                if e.key == pygame.K_q:
-                    if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                        self.set_sonar_vernier(not self.sonar_tools.vernier)
-                        self.flash(message("runtime.vernier.on" if self.sonar_tools.vernier
-                                           else "runtime.vernier.off"), 1.5)
-                    else:
-                        seconds = self.sonar_tools.cycle_integration()
-                        self.flash(message("runtime.integration", seconds=seconds), 1.5)
-                    return
-                if e.key == pygame.K_d:
-                    mode = ("BROADBAND" if self.sonar.audition_mode == "FILTERED"
-                            else "FILTERED")
-                    self._set_sonar_audition_mode(mode)
-                    return
-                if e.key in (pygame.K_a, pygame.K_b, pygame.K_h) \
-                        and not getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                    self._set_sonar_audition_mode({pygame.K_a: "BROADBAND",
-                                                   pygame.K_b: "FILTERED",
-                                                   pygame.K_h: "HETERODYNE"}[e.key])
-                    return
-                if e.key in (pygame.K_COMMA, pygame.K_PERIOD):
-                    self.sonar_volume = round(config.clamp(self.sonar_volume +
-                        (.1 if e.key == pygame.K_PERIOD else -.1), 0.0, 1.0), 1)
-                    self.flash(message("runtime.listen.volume",
-                                        volume=f"{self.sonar_volume:.0%}"))
-                    return
-                if e.key in (pygame.K_LEFT, pygame.K_RIGHT):
-                    mods = getattr(e, "mod", 0)
-                    step = .1 if mods & pygame.KMOD_CTRL else (5.0 if mods & pygame.KMOD_SHIFT else .5)
-                    self.set_sonar_listen_bearing((self.sonar.listen_bearing +
-                        (step if e.key == pygame.K_RIGHT else -step)) % 360.0)
-                    return
-                if e.key in (pygame.K_UP, pygame.K_DOWN):
-                    self._cycle_selected_contact(1 if e.key == pygame.K_DOWN else -1)
-                    return
-                if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                    contact = self.selected_contact
-                    if self.sonar.focus_locked:
-                        if self.clear_sonar_focus() is True:
-                            self.flash(message("runtime.listen.manual"))
-                    elif contact is not None and self.set_sonar_focus(contact) is True:
-                        self.flash(message("runtime.listen.follow", contact=contact.id))
-                    else:
-                        self.flash(message("runtime.listen.no_contact"))
-                    return
-            if self.station in (Station.OPZ, Station.RADAR) and \
-                    e.key in (pygame.K_q, pygame.K_e):
-                # Q/E zoom everywhere: here they step the radar range.
-                self._cycle_radar_range(1 if e.key == pygame.K_q else -1)
-                return
-            if (e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN)
-                    and len(STATION_PAGES.get(self.station, ())) > 1):
-                # Page Up/Down page every station with several pages (the
-                # sonar and the helicopter's acoustic page handled above).
+        if (self.plot_mode and not self.game_over
+                and self._handle_plot_key(e.key, getattr(e, "mod", 0))):
+            return
+        if e.key == pygame.K_ESCAPE:
+            self._open_administration("quit")
+            return
+        if e.key == pygame.K_F1:
+            self._open_administration("help")
+            return
+        if e.key == pygame.K_F10:
+            self._open_administration("options")
+            return
+        if e.key == pygame.K_F11:
+            self.feed_overlay_open = not self.feed_overlay_open
+            self.feed_overlay_scroll = 0
+            return
+        if e.key == pygame.K_F8:
+            self._open_analyzer_in_game()
+            return
+        if e.key == pygame.K_F2 and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+            self.toggle_crew_assist()
+            return
+        if e.key == pygame.K_F2:
+            self.toggle_station_autocrew()
+            return
+        if e.key == pygame.K_F3:
+            self.open_autocrew_overview()
+            return
+        if e.key in (pygame.K_0, pygame.K_KP0):
+            self.open_weather_station()
+            return
+        if e.key == pygame.K_F4:
+            self._open_simlog_view()
+            return
+        if e.key == pygame.K_n and self.game_over and self.start_next_lesson():
+            return
+        if (e.key == pygame.K_n and self.station is not Station.SONAR
+                and not (self.station is Station.HELICOPTER
+                         and self.station_page == 3)):
+            self._open_administration("nations")
+            return
+        if e.key in (pygame.K_s, pygame.K_l) and not (
+                e.key == pygame.K_l and self.station is Station.OPZ):
+            self._open_administration("save" if e.key == pygame.K_s else "load")
+            return
+        if pygame.K_1 <= e.key <= pygame.K_9:
+            destination = list(Station)[e.key - pygame.K_1]
+            self.pinned_tooltip = None
+            self._tooltip_anchor = None
+            if destination is self.station:
+                # Page cycle: clear held controls, but keep the station's
+                # audio stream continuous (no stop/restart blip).
                 self._clear_station_input()
-                self.station_page = station_page_step(
-                    self.station, self.station_page,
-                    1 if e.key == pygame.K_PAGEDOWN else -1)
-                return
-            # The OPZ's Display page: arrows, Enter and Backspace set the chart.
-            if (self.station is Station.OPZ and self.station_page == 4
-                    and not getattr(e, "mod", 0) & pygame.KMOD_CTRL
-                    and (not getattr(e, "mod", 0) & pygame.KMOD_SHIFT
-                         or e.key == pygame.K_BACKSPACE)
-                    and self._opz_display_key(e)):
-                return
-            # The raised binoculars take ↑/↓ (tilt), ←/→ (train), Q/E (zoom)
-            # and Space (stabilizer) from the telegraph, the rudder and the
-            # covered chart, exactly as the submarine's periscope.
-            if self.lookout_glasses_shown():
-                if e.key in (pygame.K_LEFT, pygame.K_RIGHT):
-                    step = (config.LOOKOUT_GLASSES_STEP_FAST_DEG
-                            if getattr(e, "mod", 0) & pygame.KMOD_SHIFT
-                            else config.LOOKOUT_GLASSES_STEP_DEG)
-                    self._train_lookout_glasses(step if e.key == pygame.K_RIGHT else -step)
-                    return
-                if self._lookout_optics_key(e):
-                    return
-            if e.key in (pygame.K_UP, pygame.K_DOWN):
-                if self.station is Station.DAMAGE:
-                    self.dmg_team = (self.dmg_team - 1 +
-                                     (1 if e.key == pygame.K_DOWN else -1)) % 3 + 1
-                elif self.station is Station.WEAPONS:
-                    self.held.add(e.key)
-                elif self.station is Station.BRIDGE:
-                    self.ship.cycle_telegraph(
-                        1 if e.key == pygame.K_UP else -1)
-                    self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
-                elif self.station is Station.ENGINE:
-                    self._cycle_engine_telegraph(
-                        1 if e.key == pygame.K_UP else -1)
-                    self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
-                elif (self.station is Station.HELICOPTER
-                      and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
-                    self._cycle_helo_contact(1 if e.key == pygame.K_DOWN else -1)
-                elif self.station is Station.HELICOPTER:
-                    self._adjust_helo_waypoint(
-                        range_delta=1.0 if e.key == pygame.K_UP else -1.0)
-                elif self.station is Station.RADIO and self.station_page == 2:
-                    self._cycle_task(1 if e.key == pygame.K_DOWN else -1)
-                elif self.station is Station.RADIO:
-                    self._cycle_hfdf(1 if e.key == pygame.K_DOWN else -1)
-                elif self.station in (Station.OPZ, Station.RADAR):
-                    self._cycle_opz_track(1 if e.key == pygame.K_DOWN else -1)
-                elif self.station is Station.ELOKA:
-                    self._cycle_eloka_track(1 if e.key == pygame.K_DOWN else -1)
-                return
-            if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_BACKSPACE) and self.station is Station.DAMAGE:
-                if e.key == pygame.K_BACKSPACE:
-                    destination = self.damage.teams[self.dmg_team]
-                    if destination is not None:
-                        self.unassign_damage_team(self.dmg_team, destination)
-                    self.flash(message("runtime.team.withdrawn", team=self.dmg_team))
-                else:
-                    self._assign_selected_team()
-                return
-            crew_page = self.station is Station.DAMAGE and self.station_page == 2
-            if e.key == pygame.K_w and crew_page:
-                if self.change_watch() is not True:
-                    self.flash(message("crew.watch_blocked"), 2.0)
-                return
-            if e.key in (pygame.K_m, pygame.K_u) and crew_page:
-                if e.key == pygame.K_m:
-                    self.casualty_medic()
-                else:
-                    self.casualty_reassign()
-                return
-            if e.key == pygame.K_g and (self.station is Station.BRIDGE or crew_page):
-                self.toggle_action_stations()
-                return
-            if (e.key in (pygame.K_a, pygame.K_d, pygame.K_r, pygame.K_k, pygame.K_h)
-                    and self.station is Station.RADIO and self.station_page == 2):
-                if e.key in (pygame.K_k, pygame.K_h):
-                    result = (self.send_contact_report() if e.key == pygame.K_k
-                              else self.request_support())
-                    if result is not True:
-                        self.flash(message("runtime.task." + result), 2.5)
-                elif e.key == pygame.K_a:
-                    self._task_accept_selected()
-                elif e.key == pygame.K_r:
-                    self._ras_request_selected()
-                else:
-                    self._task_decline_selected()
-                return
-            mpa_order = (self._mpa_key_order(e) if self.station is Station.OPZ
-                         and self.station_page == 2 else None)
-            if mpa_order is not None:
-                self._mpa_order_feedback(mpa_order())
-                return
-            consort_order = (self._consort_key_order(e) if self.station is Station.OPZ
-                             and self.station_page == 3 else None)
-            if consort_order is not None:
-                self._consort_feedback(consort_order())
-                return
-            if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
-                    and self.station is Station.RADIO:
-                # Enter confirms the page's entry: the selected task on the
-                # Tasks page (as A), the HF/DF bearing on the others.
-                if self.station_page == 2:
-                    self._task_accept_selected()
-                else:
-                    self.capture_hfdf()
-                return
-            if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
-                    and self.station is Station.OPZ:
-                self.confirm_live_engagement()
-                return
-            if e.key == pygame.K_n and self.station is Station.HELICOPTER and self.station_page == 3:
-                self.set_helicopter_audio_notch(not self.helo_audition.notch_enabled)
-                return
-            if (e.key == pygame.K_n and self.station is Station.SONAR
-                    and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
-                current = getattr(self.sonar, "operator_notch_hz", None)
-                cursor = self.sonar_tools.lofar_cursor_hz
-                self.set_sonar_operator_notch(None if current == cursor else cursor)
-                notch = self.sonar.operator_notch_hz
-                if notch is None:
-                    self.flash(message("runtime.operator_notch.off"), 1.5)
-                else:
-                    self.flash(message("runtime.operator_notch.on",
-                                       frequency=f"{notch:.1f}"), 1.5)
-                return
-            if e.key == pygame.K_n:
                 if self.station is Station.SONAR:
-                    self.set_sonar_notch(not self.sonar.notch_enabled)
-                    self.flash(message("runtime.notch.on" if self.sonar.notch_enabled
-                                       else "runtime.notch.off"), 1.5)
+                    self.sonar_page = station_page_step(
+                        Station.SONAR, self.sonar_page, 1)
+                elif len(STATION_PAGES[self.station]) > 1:
+                    self.station_page = station_page_step(
+                        self.station, self.station_page, 1)
+            else:
+                self._clear_controls()
+                self.station = destination
+                self.station_page = (2 if destination is Station.HELICOPTER
+                                     else 0)
+            return
+        if e.key == pygame.K_TAB:
+            self._clear_controls()
+            self.pinned_tooltip = None
+            self._tooltip_anchor = None
+            order = list(Station)
+            step = -1 if getattr(e, "mod", 0) & pygame.KMOD_SHIFT else 1
+            self.station = order[(order.index(self.station) + step) % len(order)]
+            self.station_page = (2 if self.station is Station.HELICOPTER
+                                 else 0)
+            return
+        if self.game_over:
+            if e.key == pygame.K_d:
+                self.open_debrief()
+            elif e.key == pygame.K_r:
+                definition = self.custom_mission_definition
+                lesson = training.lesson_of(definition)
+                if lesson is not None:
+                    self.start_training(lesson)
+                elif definition is None or not self.start_custom_mission(
+                        json.loads(json.dumps(definition))):
+                    self.reset(self.seed)
+            elif e.key == pygame.K_m:
+                self._return_to_main_menu()
+            return
+        if self._local_station_input_locked():
+            return
+        if e.key == pygame.K_p and self._plot_view() is not None:
+            self.toggle_plot_mode()
+            return
+        if self._owned_fire_sonar_key(e):
+            return
+        if self._owned_station_key(e):
+            return
+        if self._owned_key_chain(e):
+            return
+        self._owned_key_chain_more(e)
+
+    def _owned_fire_sonar_key(self, e) -> bool:
+        """Ctrl+Enter fire, the helicopter's acoustic pages and the sonar's keys."""
+        if (e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
+                and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
+            if self.station is Station.WEAPONS:
+                self.fire_selected_weapon()
+                return True
+            if self.station is Station.OPZ and self.station_page == 3:
+                self._consort_feedback(self.consort_fire())
+                return True
+            if (self.station is Station.OPZ and self.station_page == 2
+                    and self.opz_weapon == "mpa_torpedo"):
+                self._mpa_order_feedback(self.mpa_attack())
+                return True
+            if self.station is Station.OPZ:
+                self.launch_essm()
+                return True
+            if self.station is Station.HELICOPTER:
+                self.launch_helo_torpedo()
+                return True
+        if (self.station is Station.HELICOPTER and self.station_page == 3
+                and e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN)):
+            step = 1 if e.key == pygame.K_PAGEDOWN else -1
+            self.helo_acoustic_page = (self.helo_acoustic_page + step) % 3
+            return True
+        if self.station is Station.SONAR:
+            mods = getattr(e, "mod", 0)
+            if e.key == pygame.K_c and mods & pygame.KMOD_SHIFT:
+                self._cycle_sonar_display_palette()
+                return True
+            if e.key == pygame.K_h and mods & pygame.KMOD_SHIFT:
+                self._cycle_sonar_display_history()
+                return True
+            if e.key in (pygame.K_i, pygame.K_o) and mods & (
+                    pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
+                delta = -1.0 if e.key == pygame.K_i else 1.0
+                if mods & pygame.KMOD_SHIFT:
+                    self._adjust_sonar_display_contrast(delta * .2)
                 else:
-                    self.nations_open = not self.nations_open
-            elif e.key == pygame.K_SPACE and self.station is Station.SONAR:
-                self.set_sonar_peak_hold(not self.sonar.peak_hold)
-                self.flash(message("runtime.peak_hold.on" if self.sonar.peak_hold
-                                   else "runtime.peak_hold.off"), 1.5)
-            elif e.key == pygame.K_SPACE and self.station is Station.OPZ:
-                self._toggle_opz_mark()
-            elif e.key == pygame.K_l and self.station is Station.OPZ:
-                if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                    self._dissolve_opz_fusion()
+                    self._adjust_sonar_display_black(delta * .01)
+                return True
+            if e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+                self.sonar_page = station_page_step(
+                    Station.SONAR,
+                    self.sonar_page, 1 if e.key == pygame.K_PAGEDOWN else -1)
+                return True
+            if e.key == pygame.K_w:
+                pulses = tuple(equation.PULSES)
+                self.set_sonar_pulse(pulses[(pulses.index(self.sonar.ping_pulse) + 1)
+                                            % len(pulses)])
+                return True
+            if e.key == pygame.K_e:
+                if self.measure_sonar_bt() is True:
+                    depth = self.sonar.bt_profile["thermocline_m"]
+                    self.flash(message("runtime.bt.measured", depth=f"{depth:.0f}"))
+                    # The log of the listening side: never the frigate's
+                    # feed while the uConsole plays the submarine.
+                    notice = message("runtime.bt.feed", depth=f"{depth:.0f}")
+                    if self._sonar_ctx is self._frigate_sonar:
+                        self.feed.add(self.world.format_time(), "sonar", notice)
+                    elif self._opfor is not None and self._sonar_ctx is self._opfor.station:
+                        self._opfor.notice(self.sim_t, "sonar", notice,
+                                           stamp=self.world.format_time())
                 else:
-                    self._create_opz_fusion()
-            elif e.key == pygame.K_u and self.station is Station.OPZ:
-                if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                    self._dismiss_opz_suggestion()
-                else:
-                    self._accept_opz_suggestion()
-            elif e.key == pygame.K_j and self.station is Station.OPZ:
-                self._begin_track_id_input()
-            elif e.key == pygame.K_j and self.station is Station.HELICOPTER:
-                if not self.helo_audio_enabled and not self.helicopter_audio_ready():
-                    self.flash(message("runtime.sonar_audio.receiver_required"))
-                    return
-                self.helo_audio_enabled = not self.helo_audio_enabled
+                    self.flash(message("runtime.bt.cooldown",
+                                       seconds=f"{self.sonar.bt_cooldown:.0f}"))
+                return True
+            if e.key in (pygame.K_u, pygame.K_v) and self.sonar_mode == "VDS":
+                requested = config.clamp(
+                    self.sonar.vds_depth_target_m
+                    + (-10.0 if e.key == pygame.K_u else 10.0),
+                    config.SONAR_VDS_DEPTH_MIN_M,
+                    config.SONAR_VDS_DEPTH_MAX_M)
+                self.set_sonar_vds_depth(requested)
+                depth = self.sonar.vds_depth_target_m
+                self.flash(message("runtime.vds.depth", depth=f"{depth:.0f}"))
+                return True
+            if e.key in (pygame.K_u, pygame.K_v):
+                requested = config.clamp(
+                    self.sonar.towed_depth_target_m
+                    + (-10.0 if e.key == pygame.K_u else 10.0),
+                    config.SONAR_TOWED_DEPTH_MIN_M,
+                    config.SONAR_TOWED_DEPTH_MAX_M)
+                self.set_sonar_tow_depth(requested)
+                depth = self.sonar.towed_depth_target_m
+                self.flash(message("runtime.tas.depth", depth=f"{depth:.0f}"))
+                return True
+            if e.key == pygame.K_r:
+                self._begin_numeric_input("bearing")
+                return True
+            if e.key == pygame.K_j:
+                self.sonar_audio_enabled = not self.sonar_audio_enabled
                 self._stop_sonar_audio()
-                self.flash(message("runtime.sonar_audio.on" if self.helo_audio_enabled
+                self.flash(message("runtime.sonar_audio.on" if self.sonar_audio_enabled
                                    else "runtime.sonar_audio.off"))
-            elif e.key == pygame.K_b and self.station is Station.BRIDGE \
-                    and getattr(e, "mod", 0) & pygame.KMOD_CTRL:
-                self._route_result(self.clear_baffles())
-            elif e.key == pygame.K_b and self.station is Station.BRIDGE \
-                    and self.station_page == 2:
-                self._toggle_lookout_glasses()
-            elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
-                    and self.station is Station.BRIDGE and self.station_page == 2:
-                self._cycle_lookout_range(1 if e.key == pygame.K_PERIOD else -1)
-            elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
-                    and self.station is Station.WEAPONS:
-                self._adjust_torpedo_enable(1 if e.key == pygame.K_PERIOD else -1)
-            elif e.key == pygame.K_w and self.station is Station.WEAPONS:
-                self._cycle_torpedo_type()
-            elif e.key == pygame.K_x and self.station is Station.WEAPONS:
-                self._cycle_torpedo_pattern()
-            elif e.key == pygame.K_x and self.station is Station.HELICOPTER:
-                self._cycle_helicopter_pattern()
-            elif (e.key == pygame.K_m and self.station is Station.HELICOPTER
-                  and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
-                result = self.set_helicopter_mad(not self.helo.mad_mode)
-                if result == "dip_deployed":
-                    self.flash(message("runtime.helo.mad_dip"), 2.0)
-                elif result == "not_ready":
-                    self.flash(message("runtime.helo.not_airborne"))
-            elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
-                    and self.station is Station.HELICOPTER and self.station_page == 3:
+                return True
+            if (e.key == pygame.K_t and self.sonar_page == 3
+                    and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+                self._cycle_tma_method()
+                return True
+            if e.key == pygame.K_k and self.sonar_page == 3:
+                self._tma_key(e)
+                return True
+            if e.key == pygame.K_k:
+                self._cycle_sonar_harmonic()
+                return True
+            if e.key == pygame.K_x and self.sonar_page in (0, 4):
+                self._tas_side_key(e)
+                return True
+            if e.key in (pygame.K_z, pygame.K_x) and self.sonar_page in (1, 2):
+                self._sonar_cursor_key(e)
+                return True
+            if self.sonar_page == 3 and e.key in (pygame.K_z, pygame.K_x,
+                                                  pygame.K_q, pygame.K_k):
+                self._tma_key(e)
+                return True
+            if e.key == pygame.K_q:
+                if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    self.set_sonar_vernier(not self.sonar_tools.vernier)
+                    self.flash(message("runtime.vernier.on" if self.sonar_tools.vernier
+                                       else "runtime.vernier.off"), 1.5)
+                else:
+                    seconds = self.sonar_tools.cycle_integration()
+                    self.flash(message("runtime.integration", seconds=seconds), 1.5)
+                return True
+            if e.key == pygame.K_d:
+                mode = ("BROADBAND" if self.sonar.audition_mode == "FILTERED"
+                        else "FILTERED")
+                self._set_sonar_audition_mode(mode)
+                return True
+            if e.key in (pygame.K_a, pygame.K_b, pygame.K_h) \
+                    and not getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                self._set_sonar_audition_mode({pygame.K_a: "BROADBAND",
+                                               pygame.K_b: "FILTERED",
+                                               pygame.K_h: "HETERODYNE"}[e.key])
+                return True
+            if e.key in (pygame.K_COMMA, pygame.K_PERIOD):
                 self.sonar_volume = round(config.clamp(self.sonar_volume +
                     (.1 if e.key == pygame.K_PERIOD else -.1), 0.0, 1.0), 1)
                 self.flash(message("runtime.listen.volume",
-                                   volume=f"{self.sonar_volume:.0%}"))
-            elif e.key == pygame.K_BACKSPACE and self.station is Station.OPZ:
-                self.opz_fusion.marked.clear()
-            elif e.key == pygame.K_BACKSPACE and self.station is Station.BRIDGE:
-                self._route_result(self.clear_route(), "runtime.route.cleared")
-            elif e.key == pygame.K_w and self.station is Station.BRIDGE:
-                self._route_result(self.cycle_route_pattern())
-            elif (e.key == pygame.K_w and self.station is Station.HELICOPTER
-                  and not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL)):
-                # W: waypoint on the selected contact, as the patrol aircraft's W.
-                self._helo_waypoint_feedback(self.helicopter_waypoint_to_selection())
-            elif e.key == pygame.K_DELETE and self.station is Station.OPZ:
-                self._toggle_opz_suppression()
-            elif e.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
-                self.ship.cycle_telegraph(1)
+                                    volume=f"{self.sonar_volume:.0%}"))
+                return True
+            if e.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                mods = getattr(e, "mod", 0)
+                step = .1 if mods & pygame.KMOD_CTRL else (5.0 if mods & pygame.KMOD_SHIFT else .5)
+                self.set_sonar_listen_bearing((self.sonar.listen_bearing +
+                    (step if e.key == pygame.K_RIGHT else -step)) % 360.0)
+                return True
+            if e.key in (pygame.K_UP, pygame.K_DOWN):
+                self._cycle_selected_contact(1 if e.key == pygame.K_DOWN else -1)
+                return True
+            if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                contact = self.selected_contact
+                if self.sonar.focus_locked:
+                    if self.clear_sonar_focus() is True:
+                        self.flash(message("runtime.listen.manual"))
+                elif contact is not None and self.set_sonar_focus(contact) is True:
+                    self.flash(message("runtime.listen.follow", contact=contact.id))
+                else:
+                    self.flash(message("runtime.listen.no_contact"))
+                return True
+        return False
+
+    def _owned_station_key(self, e) -> bool:
+        """Radar range, paging, chart display, binoculars, arrows, damage, radio, MPA."""
+        if self.station in (Station.OPZ, Station.RADAR) and \
+                e.key in (pygame.K_q, pygame.K_e):
+            # Q/E zoom everywhere: here they step the radar range.
+            self._cycle_radar_range(1 if e.key == pygame.K_q else -1)
+            return True
+        if (e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN)
+                and len(STATION_PAGES.get(self.station, ())) > 1):
+            # Page Up/Down page every station with several pages (the
+            # sonar and the helicopter's acoustic page handled above).
+            self._clear_station_input()
+            self.station_page = station_page_step(
+                self.station, self.station_page,
+                1 if e.key == pygame.K_PAGEDOWN else -1)
+            return True
+        # The OPZ's Display page: arrows, Enter and Backspace set the chart.
+        if (self.station is Station.OPZ and self.station_page == 4
+                and not getattr(e, "mod", 0) & pygame.KMOD_CTRL
+                and (not getattr(e, "mod", 0) & pygame.KMOD_SHIFT
+                     or e.key == pygame.K_BACKSPACE)
+                and self._opz_display_key(e)):
+            return True
+        # The raised binoculars take ↑/↓ (tilt), ←/→ (train), Q/E (zoom)
+        # and Space (stabilizer) from the telegraph, the rudder and the
+        # covered chart, exactly as the submarine's periscope.
+        if self.lookout_glasses_shown():
+            if e.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                step = (config.LOOKOUT_GLASSES_STEP_FAST_DEG
+                        if getattr(e, "mod", 0) & pygame.KMOD_SHIFT
+                        else config.LOOKOUT_GLASSES_STEP_DEG)
+                self._train_lookout_glasses(step if e.key == pygame.K_RIGHT else -step)
+                return True
+            if self._lookout_optics_key(e):
+                return True
+        if e.key in (pygame.K_UP, pygame.K_DOWN):
+            if self.station is Station.DAMAGE:
+                self.dmg_team = (self.dmg_team - 1 +
+                                 (1 if e.key == pygame.K_DOWN else -1)) % 3 + 1
+            elif self.station is Station.WEAPONS:
+                self.held.add(e.key)
+            elif self.station is Station.BRIDGE:
+                self.ship.cycle_telegraph(
+                    1 if e.key == pygame.K_UP else -1)
                 self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
-            elif e.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
-                self.ship.cycle_telegraph(-1)
+            elif self.station is Station.ENGINE:
+                self._cycle_engine_telegraph(
+                    1 if e.key == pygame.K_UP else -1)
                 self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
-            elif e.key in (pygame.K_i, pygame.K_o) and self.station is Station.SONAR:
-                self._adjust_sonar_gain(-3.0 if e.key == pygame.K_i else 3.0)
-            elif e.key in (pygame.K_i, pygame.K_o) and self.station is Station.HELICOPTER and self.station_page == 3:
-                self.set_helicopter_audio_gain(config.clamp(
-                    self.helo_audition.gain_db + (-3.0 if e.key == pygame.K_i else 3.0), -12.0, 24.0))
-            elif e.key == pygame.K_i and self.station is Station.OPZ:
-                if self.set_ciws_authorized(not self.ciws_authorized) is True:
-                    self.flash(message(
-                        "runtime.ciws.authorized" if self.ciws_authorized
-                        else "runtime.ciws.withheld"), 1.5)
-            elif e.key == pygame.K_a and (self.station not in (Station.SONAR,
-                                                               Station.HELICOPTER)
-                                           or getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
-                if self.station is Station.SONAR:
-                    result = self.send_active_ping()
-                    if result == "sonar_down":
-                        self.flash(message("runtime.sonar.down"), 3.0)
-                    elif result is True:
-                        self.flash(message("runtime.ping.sent"), 1.5)
-                elif self.station is Station.ENGINE:
-                    if self.set_quiet_mode(not self.ship.quiet_mode) is True:
-                        self.flash(message("runtime.quiet.on" if self.ship.quiet_mode
-                                           else "runtime.quiet.off"))
-                elif self.station is Station.HELICOPTER:
-                    result = self.send_helicopter_dipping_ping()
-                    self.flash(message("runtime.helo.dip_ping_sent" if result is True
-                                       else "runtime.helo.dip_ping_unavailable"))
-                elif self.station is Station.WEAPONS:
-                    # A only chooses ASROC; Ctrl+Enter fires (Shift+A pings elsewhere).
-                    if not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
-                        self.select_weapon("asroc")
-                elif self.station is Station.ELOKA:
-                    self.set_ecm_auto(not self.ecm_jammer.auto_enabled)
-                    self.flash(message("runtime.eloka.auto_on"
-                                       if self.ecm_jammer.auto_enabled else
-                                       "runtime.eloka.auto_off"), 1.5)
-            elif (e.key == pygame.K_r and self.station is Station.HELICOPTER
-                  and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
-                self.set_helicopter_radar(not self.helo.radar_on)
+            elif (self.station is Station.HELICOPTER
+                  and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+                self._cycle_helo_contact(1 if e.key == pygame.K_DOWN else -1)
+            elif self.station is Station.HELICOPTER:
+                self._adjust_helo_waypoint(
+                    range_delta=1.0 if e.key == pygame.K_UP else -1.0)
+            elif self.station is Station.RADIO and self.station_page == 2:
+                self._cycle_task(1 if e.key == pygame.K_DOWN else -1)
+            elif self.station is Station.RADIO:
+                self._cycle_hfdf(1 if e.key == pygame.K_DOWN else -1)
+            elif self.station in (Station.OPZ, Station.RADAR):
+                self._cycle_opz_track(1 if e.key == pygame.K_DOWN else -1)
+            elif self.station is Station.ELOKA:
+                self._cycle_eloka_track(1 if e.key == pygame.K_DOWN else -1)
+            return True
+        if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_BACKSPACE) and self.station is Station.DAMAGE:
+            if e.key == pygame.K_BACKSPACE:
+                destination = self.damage.teams[self.dmg_team]
+                if destination is not None:
+                    self.unassign_damage_team(self.dmg_team, destination)
+                self.flash(message("runtime.team.withdrawn", team=self.dmg_team))
+            else:
+                self._assign_selected_team()
+            return True
+        crew_page = self.station is Station.DAMAGE and self.station_page == 2
+        if e.key == pygame.K_w and crew_page:
+            if self.change_watch() is not True:
+                self.flash(message("crew.watch_blocked"), 2.0)
+            return True
+        if e.key in (pygame.K_m, pygame.K_u) and crew_page:
+            if e.key == pygame.K_m:
+                self.casualty_medic()
+            else:
+                self.casualty_reassign()
+            return True
+        if e.key == pygame.K_g and (self.station is Station.BRIDGE or crew_page):
+            self.toggle_action_stations()
+            return True
+        if (e.key in (pygame.K_a, pygame.K_d, pygame.K_r, pygame.K_k, pygame.K_h)
+                and self.station is Station.RADIO and self.station_page == 2):
+            if e.key in (pygame.K_k, pygame.K_h):
+                result = (self.send_contact_report() if e.key == pygame.K_k
+                          else self.request_support())
+                if result is not True:
+                    self.flash(message("runtime.task." + result), 2.5)
+            elif e.key == pygame.K_a:
+                self._task_accept_selected()
             elif e.key == pygame.K_r:
-                if self.station in (Station.OPZ, Station.RADAR):
-                    domain = ("air" if getattr(e, "mod", 0)
-                              & pygame.KMOD_SHIFT else "surface")
-                    self.toggle_radar(domain)
-                elif self.station is Station.HELICOPTER and self.station_page == 3:
-                    self.set_helicopter_listen_bearing(None)
+                self._ras_request_selected()
+            else:
+                self._task_decline_selected()
+            return True
+        mpa_order = (self._mpa_key_order(e) if self.station is Station.OPZ
+                     and self.station_page == 2 else None)
+        if mpa_order is not None:
+            self._mpa_order_feedback(mpa_order())
+            return True
+        consort_order = (self._consort_key_order(e) if self.station is Station.OPZ
+                         and self.station_page == 3 else None)
+        if consort_order is not None:
+            self._consort_feedback(consort_order())
+            return True
+        if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
+                and self.station is Station.RADIO:
+            # Enter confirms the page's entry: the selected task on the
+            # Tasks page (as A), the HF/DF bearing on the others.
+            if self.station_page == 2:
+                self._task_accept_selected()
+            else:
+                self.capture_hfdf()
+            return True
+        if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
+                and self.station is Station.OPZ:
+            self.confirm_live_engagement()
+            return True
+        if e.key == pygame.K_n and self.station is Station.HELICOPTER and self.station_page == 3:
+            self.set_helicopter_audio_notch(not self.helo_audition.notch_enabled)
+            return True
+        if (e.key == pygame.K_n and self.station is Station.SONAR
+                and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+            current = getattr(self.sonar, "operator_notch_hz", None)
+            cursor = self.sonar_tools.lofar_cursor_hz
+            self.set_sonar_operator_notch(None if current == cursor else cursor)
+            notch = self.sonar.operator_notch_hz
+            if notch is None:
+                self.flash(message("runtime.operator_notch.off"), 1.5)
+            else:
+                self.flash(message("runtime.operator_notch.on",
+                                   frequency=f"{notch:.1f}"), 1.5)
+            return True
+        return False
+
+    def _owned_key_chain(self, e) -> bool:
+        """The station keys N to Right (first part of one if/elif chain)."""
+        if e.key == pygame.K_n:
+            if self.station is Station.SONAR:
+                self.set_sonar_notch(not self.sonar.notch_enabled)
+                self.flash(message("runtime.notch.on" if self.sonar.notch_enabled
+                                   else "runtime.notch.off"), 1.5)
+            else:
+                self.nations_open = not self.nations_open
+        elif e.key == pygame.K_SPACE and self.station is Station.SONAR:
+            self.set_sonar_peak_hold(not self.sonar.peak_hold)
+            self.flash(message("runtime.peak_hold.on" if self.sonar.peak_hold
+                               else "runtime.peak_hold.off"), 1.5)
+        elif e.key == pygame.K_SPACE and self.station is Station.OPZ:
+            self._toggle_opz_mark()
+        elif e.key == pygame.K_l and self.station is Station.OPZ:
+            if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                self._dissolve_opz_fusion()
+            else:
+                self._create_opz_fusion()
+        elif e.key == pygame.K_u and self.station is Station.OPZ:
+            if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                self._dismiss_opz_suggestion()
+            else:
+                self._accept_opz_suggestion()
+        elif e.key == pygame.K_j and self.station is Station.OPZ:
+            self._begin_track_id_input()
+        elif e.key == pygame.K_j and self.station is Station.HELICOPTER:
+            if not self.helo_audio_enabled and not self.helicopter_audio_ready():
+                self.flash(message("runtime.sonar_audio.receiver_required"))
+                return True
+            self.helo_audio_enabled = not self.helo_audio_enabled
+            self._stop_sonar_audio()
+            self.flash(message("runtime.sonar_audio.on" if self.helo_audio_enabled
+                               else "runtime.sonar_audio.off"))
+        elif e.key == pygame.K_b and self.station is Station.BRIDGE \
+                and getattr(e, "mod", 0) & pygame.KMOD_CTRL:
+            self._route_result(self.clear_baffles())
+        elif e.key == pygame.K_b and self.station is Station.BRIDGE \
+                and self.station_page == 2:
+            self._toggle_lookout_glasses()
+        elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
+                and self.station is Station.BRIDGE and self.station_page == 2:
+            self._cycle_lookout_range(1 if e.key == pygame.K_PERIOD else -1)
+        elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
+                and self.station is Station.WEAPONS:
+            self._adjust_torpedo_enable(1 if e.key == pygame.K_PERIOD else -1)
+        elif e.key == pygame.K_w and self.station is Station.WEAPONS:
+            self._cycle_torpedo_type()
+        elif e.key == pygame.K_x and self.station is Station.WEAPONS:
+            self._cycle_torpedo_pattern()
+        elif e.key == pygame.K_x and self.station is Station.HELICOPTER:
+            self._cycle_helicopter_pattern()
+        elif (e.key == pygame.K_m and self.station is Station.HELICOPTER
+              and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+            result = self.set_helicopter_mad(not self.helo.mad_mode)
+            if result == "dip_deployed":
+                self.flash(message("runtime.helo.mad_dip"), 2.0)
+            elif result == "not_ready":
+                self.flash(message("runtime.helo.not_airborne"))
+        elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
+                and self.station is Station.HELICOPTER and self.station_page == 3:
+            self.sonar_volume = round(config.clamp(self.sonar_volume +
+                (.1 if e.key == pygame.K_PERIOD else -.1), 0.0, 1.0), 1)
+            self.flash(message("runtime.listen.volume",
+                               volume=f"{self.sonar_volume:.0%}"))
+        elif e.key == pygame.K_BACKSPACE and self.station is Station.OPZ:
+            self.opz_fusion.marked.clear()
+        elif e.key == pygame.K_BACKSPACE and self.station is Station.BRIDGE:
+            self._route_result(self.clear_route(), "runtime.route.cleared")
+        elif e.key == pygame.K_w and self.station is Station.BRIDGE:
+            self._route_result(self.cycle_route_pattern())
+        elif (e.key == pygame.K_w and self.station is Station.HELICOPTER
+              and not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL)):
+            # W: waypoint on the selected contact, as the patrol aircraft's W.
+            self._helo_waypoint_feedback(self.helicopter_waypoint_to_selection())
+        elif e.key == pygame.K_DELETE and self.station is Station.OPZ:
+            self._toggle_opz_suppression()
+        elif e.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
+            self.ship.cycle_telegraph(1)
+            self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
+        elif e.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+            self.ship.cycle_telegraph(-1)
+            self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
+        elif e.key in (pygame.K_i, pygame.K_o) and self.station is Station.SONAR:
+            self._adjust_sonar_gain(-3.0 if e.key == pygame.K_i else 3.0)
+        elif e.key in (pygame.K_i, pygame.K_o) and self.station is Station.HELICOPTER and self.station_page == 3:
+            self.set_helicopter_audio_gain(config.clamp(
+                self.helo_audition.gain_db + (-3.0 if e.key == pygame.K_i else 3.0), -12.0, 24.0))
+        elif e.key == pygame.K_i and self.station is Station.OPZ:
+            if self.set_ciws_authorized(not self.ciws_authorized) is True:
+                self.flash(message(
+                    "runtime.ciws.authorized" if self.ciws_authorized
+                    else "runtime.ciws.withheld"), 1.5)
+        elif e.key == pygame.K_a and (self.station not in (Station.SONAR,
+                                                           Station.HELICOPTER)
+                                       or getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+            if self.station is Station.SONAR:
+                result = self.send_active_ping()
+                if result == "sonar_down":
+                    self.flash(message("runtime.sonar.down"), 3.0)
+                elif result is True:
+                    self.flash(message("runtime.ping.sent"), 1.5)
+            elif self.station is Station.ENGINE:
+                if self.set_quiet_mode(not self.ship.quiet_mode) is True:
+                    self.flash(message("runtime.quiet.on" if self.ship.quiet_mode
+                                       else "runtime.quiet.off"))
+            elif self.station is Station.HELICOPTER:
+                result = self.send_helicopter_dipping_ping()
+                self.flash(message("runtime.helo.dip_ping_sent" if result is True
+                                   else "runtime.helo.dip_ping_unavailable"))
+            elif self.station is Station.WEAPONS:
+                # A only chooses ASROC; Ctrl+Enter fires (Shift+A pings elsewhere).
+                if not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
+                    self.select_weapon("asroc")
+            elif self.station is Station.ELOKA:
+                self.set_ecm_auto(not self.ecm_jammer.auto_enabled)
+                self.flash(message("runtime.eloka.auto_on"
+                                   if self.ecm_jammer.auto_enabled else
+                                   "runtime.eloka.auto_off"), 1.5)
+        elif (e.key == pygame.K_r and self.station is Station.HELICOPTER
+              and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
+            self.set_helicopter_radar(not self.helo.radar_on)
+        elif e.key == pygame.K_r:
+            if self.station in (Station.OPZ, Station.RADAR):
+                domain = ("air" if getattr(e, "mod", 0)
+                          & pygame.KMOD_SHIFT else "surface")
+                self.toggle_radar(domain)
+            elif self.station is Station.HELICOPTER and self.station_page == 3:
+                self.set_helicopter_listen_bearing(None)
+            elif self.station is Station.WEAPONS:
+                if getattr(e, "mod", 0) & pygame.KMOD_CTRL:
+                    pass  # Ctrl+R is the aircraft radar key; it never fires
+                elif getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    self.select_weapon("rbu_defence")
+                else:
+                    self.select_weapon("rbu")
+        elif e.key == pygame.K_z and self.station is Station.HELICOPTER:
+            self.toggle_helicopter_hoist()
+        elif e.key == pygame.K_m:
+            if self.station in (Station.SONAR, Station.WEAPONS,
+                                Station.HELICOPTER):
+                self.set_target()
+            elif self.station in (Station.OPZ, Station.RADAR):
+                self.designate_opz_track()
+        elif e.key == pygame.K_LEFT:
+            if self.station is Station.BRIDGE:
+                self.held.add(e.key)
+            elif self.station is Station.WEAPONS:
+                self._cycle_selected_contact(-1)
+            elif self.station in (Station.OPZ, Station.RADAR):
+                self._cycle_asm_track(-1)
+            elif self.station is Station.ELOKA:
+                self._cycle_eloka_member(-1)
+            elif self.station is Station.DAMAGE:
+                n = len(self.damage.compartments)
+                self.dmg_cursor = (self.dmg_cursor - 1) % n
+            elif self.station is Station.HELICOPTER:
+                if self.station_page == 3:
+                    self.set_helicopter_listen_bearing(
+                        ((self.helo_listen_bearing or 0.0) - 5.0) % 360.0)
+                else:
+                    self._adjust_helo_waypoint(bearing_delta=-15.0)
+        elif e.key == pygame.K_RIGHT:
+            if self.station is Station.BRIDGE:
+                self.held.add(e.key)
+            elif self.station is Station.WEAPONS:
+                self._cycle_selected_contact(1)
+            elif self.station in (Station.OPZ, Station.RADAR):
+                self._cycle_asm_track(1)
+            elif self.station is Station.ELOKA:
+                self._cycle_eloka_member(1)
+            elif self.station is Station.DAMAGE:
+                n = len(self.damage.compartments)
+                self.dmg_cursor = (self.dmg_cursor + 1) % n
+            elif self.station is Station.HELICOPTER:
+                if self.station_page == 3:
+                    self.set_helicopter_listen_bearing(
+                        ((self.helo_listen_bearing or 0.0) + 5.0) % 360.0)
+                else:
+                    self._adjust_helo_waypoint(bearing_delta=15.0)
+        else:
+            return False
+        return True
+
+    def _owned_key_chain_more(self, e) -> None:
+        """The station keys C to V (the chain's second part)."""
+        if e.key == pygame.K_c:
+            if self.station in (Station.BRIDGE, Station.ENGINE):
+                self._begin_numeric_input("course")
+            elif self.station in (Station.SONAR, Station.HELICOPTER):
+                self._cycle_classification()
+            elif self.station is Station.DAMAGE:
+                self._toggle_counterflood()
+            elif self.station in (Station.OPZ, Station.RADAR):
+                self._cycle_opz_classification()
+            elif self.station is Station.ELOKA:
+                self._cycle_eloka_annotation()
+        elif e.key == pygame.K_j and self.station is Station.ELOKA:
+            self.eloka_audio_enabled = not self.eloka_audio_enabled
+            self.flash(message("runtime.eloka_audio.on"
+                               if self.eloka_audio_enabled else
+                               "runtime.eloka_audio.off"))
+        elif e.key == pygame.K_b and (self.station is not Station.SONAR
+                                       or getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+            if self.station is Station.SONAR:
+                self._cycle_sonar_mode()
+            elif self.station in (Station.WEAPONS, Station.HELICOPTER):
+                if self.station is Station.HELICOPTER and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    self.set_helicopter_buoy_mode(
+                        "ACTIVE" if self.helo_buoy_mode == "PASSIVE" else "PASSIVE")
+                    self.flash(message("helo.buoy_mode.active" if self.helo_buoy_mode == "ACTIVE"
+                                       else "helo.buoy_mode.passive"))
+                else:
+                    self.deploy_buoys()
+            elif self.station is Station.OPZ:
+                self._mark_newest_blip()
+        elif e.key == pygame.K_z and self.station is Station.ELOKA:
+            self.toggle_eloka_grouping()
+        elif (e.key == pygame.K_z and self.station is Station.WEAPONS
+              and not getattr(e, "mod", 0) & pygame.KMOD_CTRL):
+            self.select_weapon("depth_charges")
+        elif e.key == pygame.K_y and self.station is Station.WEAPONS:
+            self._cycle_torpedo_salvo()
+        elif e.key == pygame.K_g and self.station is Station.ENGINE:
+            self._cycle_plant_mode()
+        elif e.key == pygame.K_y:
+            if self.station is Station.SONAR:
+                if self.damage.station_down("sonar"):
+                    self.flash(message("runtime.sonar.down"), 3.0)
+                elif getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    toggle_vds(self, self.tr)
+                else:
+                    toggle_tas(self, self.tr)
+            elif self.station is Station.HELICOPTER:
+                deploy = self.helo.dip_state in ("STOWED", "RETRIEVING")
+                result = self.set_helicopter_dipping(deploy)
+                if result is True:
+                    self.flash(message("runtime.helo.dip_deploy" if deploy
+                                       else "runtime.helo.dip_retrieve"))
+                elif result == "weather_unsafe":
+                    self.flash(message("runtime.helo.weather_unsafe"))
+                else:
+                    self.flash(message("runtime.helo.dip_unavailable"))
+        elif e.key == pygame.K_h and self.station in (Station.WEAPONS,
+                                                       Station.HELICOPTER):
+            self.toggle_helo()
+        elif e.key == pygame.K_h and self.station is Station.OPZ:
+            self.opz_fusion.show_suppressed = not self.opz_fusion.show_suppressed
+            self.opz_selected_track_id = None
+        elif e.key == pygame.K_d:
+            if self.station in (Station.WEAPONS, Station.HELICOPTER):
+                if self.station is Station.HELICOPTER and self.station_page == 3 \
+                        and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    modes = ("BROADBAND", "FILTERED", "HETERODYNE")
+                    self.set_helicopter_audio_mode(modes[
+                        (modes.index(self.helo_audition.audition_mode) + 1) % len(modes)])
                 elif self.station is Station.WEAPONS:
-                    if getattr(e, "mod", 0) & pygame.KMOD_CTRL:
-                        pass  # Ctrl+R is the aircraft radar key; it never fires
-                    elif getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                        self.select_weapon("rbu_defence")
-                    else:
-                        self.select_weapon("rbu")
-            elif e.key == pygame.K_z and self.station is Station.HELICOPTER:
-                self.toggle_helicopter_hoist()
-            elif e.key == pygame.K_m:
-                if self.station in (Station.SONAR, Station.WEAPONS,
-                                    Station.HELICOPTER):
-                    self.set_target()
-                elif self.station in (Station.OPZ, Station.RADAR):
-                    self.designate_opz_track()
-            elif e.key == pygame.K_LEFT:
-                if self.station is Station.BRIDGE:
-                    self.held.add(e.key)
-                elif self.station is Station.WEAPONS:
-                    self._cycle_selected_contact(-1)
-                elif self.station in (Station.OPZ, Station.RADAR):
-                    self._cycle_asm_track(-1)
-                elif self.station is Station.ELOKA:
-                    self._cycle_eloka_member(-1)
-                elif self.station is Station.DAMAGE:
-                    n = len(self.damage.compartments)
-                    self.dmg_cursor = (self.dmg_cursor - 1) % n
-                elif self.station is Station.HELICOPTER:
-                    if self.station_page == 3:
-                        self.set_helicopter_listen_bearing(
-                            ((self.helo_listen_bearing or 0.0) - 5.0) % 360.0)
-                    else:
-                        self._adjust_helo_waypoint(bearing_delta=-15.0)
-            elif e.key == pygame.K_RIGHT:
-                if self.station is Station.BRIDGE:
-                    self.held.add(e.key)
-                elif self.station is Station.WEAPONS:
-                    self._cycle_selected_contact(1)
-                elif self.station in (Station.OPZ, Station.RADAR):
-                    self._cycle_asm_track(1)
-                elif self.station is Station.ELOKA:
-                    self._cycle_eloka_member(1)
-                elif self.station is Station.DAMAGE:
-                    n = len(self.damage.compartments)
-                    self.dmg_cursor = (self.dmg_cursor + 1) % n
-                elif self.station is Station.HELICOPTER:
-                    if self.station_page == 3:
-                        self.set_helicopter_listen_bearing(
-                            ((self.helo_listen_bearing or 0.0) + 5.0) % 360.0)
-                    else:
-                        self._adjust_helo_waypoint(bearing_delta=15.0)
-            elif e.key == pygame.K_c:
-                if self.station in (Station.BRIDGE, Station.ENGINE):
-                    self._begin_numeric_input("course")
-                elif self.station in (Station.SONAR, Station.HELICOPTER):
-                    self._cycle_classification()
-                elif self.station is Station.DAMAGE:
-                    self._toggle_counterflood()
-                elif self.station in (Station.OPZ, Station.RADAR):
-                    self._cycle_opz_classification()
-                elif self.station is Station.ELOKA:
-                    self._cycle_eloka_annotation()
-            elif e.key == pygame.K_j and self.station is Station.ELOKA:
-                self.eloka_audio_enabled = not self.eloka_audio_enabled
-                self.flash(message("runtime.eloka_audio.on"
-                                   if self.eloka_audio_enabled else
-                                   "runtime.eloka_audio.off"))
-            elif e.key == pygame.K_b and (self.station is not Station.SONAR
-                                           or getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
-                if self.station is Station.SONAR:
-                    self._cycle_sonar_mode()
-                elif self.station in (Station.WEAPONS, Station.HELICOPTER):
-                    if self.station is Station.HELICOPTER and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                        self.set_helicopter_buoy_mode(
-                            "ACTIVE" if self.helo_buoy_mode == "PASSIVE" else "PASSIVE")
-                        self.flash(message("helo.buoy_mode.active" if self.helo_buoy_mode == "ACTIVE"
-                                           else "helo.buoy_mode.passive"))
-                    else:
-                        self.deploy_buoys()
-                elif self.station is Station.OPZ:
-                    self._mark_newest_blip()
-            elif e.key == pygame.K_z and self.station is Station.ELOKA:
-                self.toggle_eloka_grouping()
-            elif (e.key == pygame.K_z and self.station is Station.WEAPONS
-                  and not getattr(e, "mod", 0) & pygame.KMOD_CTRL):
-                self.select_weapon("depth_charges")
-            elif e.key == pygame.K_y and self.station is Station.WEAPONS:
-                self._cycle_torpedo_salvo()
-            elif e.key == pygame.K_g and self.station is Station.ENGINE:
-                self._cycle_plant_mode()
-            elif e.key == pygame.K_y:
-                if self.station is Station.SONAR:
-                    if self.damage.station_down("sonar"):
-                        self.flash(message("runtime.sonar.down"), 3.0)
-                    elif getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                        toggle_vds(self, self.tr)
-                    else:
-                        toggle_tas(self, self.tr)
-                elif self.station is Station.HELICOPTER:
-                    deploy = self.helo.dip_state in ("STOWED", "RETRIEVING")
-                    result = self.set_helicopter_dipping(deploy)
-                    if result is True:
-                        self.flash(message("runtime.helo.dip_deploy" if deploy
-                                           else "runtime.helo.dip_retrieve"))
-                    elif result == "weather_unsafe":
-                        self.flash(message("runtime.helo.weather_unsafe"))
-                    else:
-                        self.flash(message("runtime.helo.dip_unavailable"))
-            elif e.key == pygame.K_h and self.station in (Station.WEAPONS,
-                                                           Station.HELICOPTER):
-                self.toggle_helo()
-            elif e.key == pygame.K_h and self.station is Station.OPZ:
-                self.opz_fusion.show_suppressed = not self.opz_fusion.show_suppressed
-                self.opz_selected_track_id = None
-            elif e.key == pygame.K_d:
-                if self.station in (Station.WEAPONS, Station.HELICOPTER):
-                    if self.station is Station.HELICOPTER and self.station_page == 3 \
-                            and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                        modes = ("BROADBAND", "FILTERED", "HETERODYNE")
-                        self.set_helicopter_audio_mode(modes[
-                            (modes.index(self.helo_audition.audition_mode) + 1) % len(modes)])
-                    elif self.station is Station.WEAPONS:
-                        if not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
-                            self.select_weapon("air_torpedo")
-                    elif not getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                        # The helicopter's torpedo drops on Ctrl+Enter only.
-                        self.flash(message("runtime.weapon.fire_key"), 2.0)
-            elif e.key == pygame.K_v and self.station is Station.WEAPONS:
-                self.deploy_nixie()
-            elif e.key in (pygame.K_u, pygame.K_v) \
-                    and self.station is Station.HELICOPTER:
-                requested = config.clamp(
-                    self.helo.dip_depth_target_m
-                    + (-10.0 if e.key == pygame.K_u else 10.0),
-                    config.HELO_DIP_DEPTH_MIN_M, config.HELO_DIP_DEPTH_MAX_M)
-                if self.set_helicopter_dip_depth(requested) is True:
-                    self.flash(message("runtime.helo.dip_depth",
-                                       depth=f"{self.helo.dip_depth_target_m:.0f}"))
-            elif e.key == pygame.K_e:
-                if self.station is Station.ELOKA:
-                    self._eloka_jamming_key(e)
-                elif self._map_station_visible():
-                    self.map_view.set_rect(config.MAP_RECT)
-                    self.map_view.step_zoom(1, config.MAP_ZOOM_STEPS_NM)
-            elif e.key == pygame.K_g and self.station in (Station.OPZ,
-                                                           Station.RADAR):
-                self.launch_chaff()
-            elif e.key == pygame.K_g and self.station is Station.SONAR:
-                self._toggle_sonar_release()
-            elif e.key == pygame.K_g and self.station is Station.HELICOPTER:
-                self._toggle_sonar_release()
-            elif e.key == pygame.K_t:
-                if self.station is Station.WEAPONS:
-                    self._begin_numeric_input("torpedo_depth")
-                elif self.station is Station.SONAR:
-                    self.set_sonar_tma_enabled(not self.sonar.tma_enabled)
-                    self.flash(message("runtime.tma.on" if self.sonar.tma_enabled
-                                       else "runtime.tma.off"), 1.5)
-                elif self.station is Station.HELICOPTER:
-                    if self.station_page == 3:
-                        sources = ["DIP", *(f"SB{b.seq}" for b in self.buoys
-                                            if b.active and b.mode == "PASSIVE")]
-                        current = sources.index(self.helo_listen_source) \
-                            if self.helo_listen_source in sources else -1
-                        self.set_helicopter_listen_source(sources[(current + 1) % len(sources)])
-                        return
-                    self.helo_sensor_source = ("BUOY" if self.helo_sensor_source == "DIP"
-                                               else "DIP")
-                    if self.helo_sensor_source == "BUOY":
-                        seq = next((seq for seq in sorted(
-                            getattr(self.selected_contact, "buoy_reports", {}))
-                            if any(b.seq == seq for b in self.buoys)),
-                            self.buoys[0].seq if self.buoys else None)
-                        if seq is not None:
-                            self.set_helicopter_listen_source(f"SB{seq}")
-                    else:
-                        self.set_helicopter_listen_source("DIP")
-                    self.flash(message("helo.source.buoy" if self.helo_sensor_source == "BUOY"
-                                       else "helo.source.dip"))
-            elif e.key == pygame.K_f:
-                if self.station is Station.SONAR and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                    bands = analysis_tools.DEMON_BANDS_HZ
-                    current = tuple(self.sonar.receiver.demon_band_hz)
-                    index = bands.index(current) if current in bands else -1
-                    low, high = bands[(index + 1) % len(bands)]
-                    self.set_sonar_demon_band(low, high)
-                    self.flash(message("runtime.demon_band", low=f"{low:.0f}",
-                                       high=f"{high:.0f}"), 1.5)
-                elif self.station is Station.SONAR and getattr(e, "mod", 0) & pygame.KMOD_CTRL:
-                    offsets = analysis_tools.HETERODYNE_OFFSETS_HZ
-                    current = self.sonar.heterodyne_hz
-                    index = offsets.index(current) if current in offsets else -1
-                    self.set_sonar_heterodyne(offsets[(index + 1) % len(offsets)])
-                    self.flash(message("runtime.heterodyne",
-                                       frequency=f"{self.sonar.heterodyne_hz:.0f}"), 1.5)
-                elif self.station is Station.SONAR:
-                    self._cycle_sonar_band()
-                elif self.station is Station.ELOKA:
-                    mods = getattr(e, "mod", 0)
-                    self._cycle_eloka_filter(
-                        "band" if mods & pygame.KMOD_CTRL
-                        else "threat" if mods & pygame.KMOD_SHIFT else "status")
-                elif self.station is Station.OPZ:
-                    if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                        self._cycle_opz_contact_filter()
-                    else:
-                        self._cycle_opz_affiliation()
-                elif self.station is Station.WEAPONS:
-                    if self.set_flak_authorized(not self.flak_authorized) is True:
-                        self.flash(message(
-                            "runtime.flak.authorized" if self.flak_authorized
-                            else "runtime.flak.withheld"), 1.5)
-                elif self.station is Station.HELICOPTER:
-                    if self.station_page == 3 and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
-                        bands = tuple(SONAR_BAND_PRESETS)
-                        self.set_helicopter_audio_band(bands[
-                            (bands.index(self.helo_audio_band) + 1) % len(bands)])
-                        return
-                    if self.selected_contact is None:
-                        return
-                    contact = self.selected_contact
-                    result = self.qualify_helicopter_contact(
-                        contact, not contact.helo_qualified)
-                    if result is True:
-                        self.flash(message("helo.contact.confirmed" if contact.helo_qualified
-                                           else "helo.contact.unconfirmed", contact=contact.id))
-            elif e.key == pygame.K_k:
-                if self.station is Station.OPZ:
-                    self.opz_map_follow = not self.opz_map_follow
-                    if self.opz_map_follow:
-                        self._configure_opz_map_view()
-                        self.opz_map_view.cx = self.ship.x
-                        self.opz_map_view.cy = self.ship.y
-                        self.opz_map_view.clamp_center()
-                    self.flash(message("runtime.map_follow.on" if self.opz_map_follow
-                                       else "runtime.map_follow.off"), 1.5)
-                elif self._map_station_visible():
-                    self.map_follow = not self.map_follow
-                    self.flash(message("runtime.map_follow.on" if self.map_follow
-                                       else "runtime.map_follow.off"), 1.5)
-            elif e.key == pygame.K_q and self._map_station_visible():
+                    if not getattr(e, "mod", 0) & (pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
+                        self.select_weapon("air_torpedo")
+                elif not getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    # The helicopter's torpedo drops on Ctrl+Enter only.
+                    self.flash(message("runtime.weapon.fire_key"), 2.0)
+        elif e.key == pygame.K_v and self.station is Station.WEAPONS:
+            self.deploy_nixie()
+        elif e.key in (pygame.K_u, pygame.K_v) \
+                and self.station is Station.HELICOPTER:
+            requested = config.clamp(
+                self.helo.dip_depth_target_m
+                + (-10.0 if e.key == pygame.K_u else 10.0),
+                config.HELO_DIP_DEPTH_MIN_M, config.HELO_DIP_DEPTH_MAX_M)
+            if self.set_helicopter_dip_depth(requested) is True:
+                self.flash(message("runtime.helo.dip_depth",
+                                   depth=f"{self.helo.dip_depth_target_m:.0f}"))
+        elif e.key == pygame.K_e:
+            if self.station is Station.ELOKA:
+                self._eloka_jamming_key(e)
+            elif self._map_station_visible():
                 self.map_view.set_rect(config.MAP_RECT)
-                self.map_view.step_zoom(-1, config.MAP_ZOOM_STEPS_NM)
-            elif e.key == pygame.K_v and self.station in (Station.BRIDGE,
-                                                          Station.ENGINE):
-                self._begin_numeric_input("speed")
-        elif e.type == pygame.JOYAXISMOTION:
+                self.map_view.step_zoom(1, config.MAP_ZOOM_STEPS_NM)
+        elif e.key == pygame.K_g and self.station in (Station.OPZ,
+                                                       Station.RADAR):
+            self.launch_chaff()
+        elif e.key == pygame.K_g and self.station is Station.SONAR:
+            self._toggle_sonar_release()
+        elif e.key == pygame.K_g and self.station is Station.HELICOPTER:
+            self._toggle_sonar_release()
+        elif e.key == pygame.K_t:
+            if self.station is Station.WEAPONS:
+                self._begin_numeric_input("torpedo_depth")
+            elif self.station is Station.SONAR:
+                self.set_sonar_tma_enabled(not self.sonar.tma_enabled)
+                self.flash(message("runtime.tma.on" if self.sonar.tma_enabled
+                                   else "runtime.tma.off"), 1.5)
+            elif self.station is Station.HELICOPTER:
+                if self.station_page == 3:
+                    sources = ["DIP", *(f"SB{b.seq}" for b in self.buoys
+                                        if b.active and b.mode == "PASSIVE")]
+                    current = sources.index(self.helo_listen_source) \
+                        if self.helo_listen_source in sources else -1
+                    self.set_helicopter_listen_source(sources[(current + 1) % len(sources)])
+                    return
+                self.helo_sensor_source = ("BUOY" if self.helo_sensor_source == "DIP"
+                                           else "DIP")
+                if self.helo_sensor_source == "BUOY":
+                    seq = next((seq for seq in sorted(
+                        getattr(self.selected_contact, "buoy_reports", {}))
+                        if any(b.seq == seq for b in self.buoys)),
+                        self.buoys[0].seq if self.buoys else None)
+                    if seq is not None:
+                        self.set_helicopter_listen_source(f"SB{seq}")
+                else:
+                    self.set_helicopter_listen_source("DIP")
+                self.flash(message("helo.source.buoy" if self.helo_sensor_source == "BUOY"
+                                   else "helo.source.dip"))
+        elif e.key == pygame.K_f:
+            if self.station is Station.SONAR and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                bands = analysis_tools.DEMON_BANDS_HZ
+                current = tuple(self.sonar.receiver.demon_band_hz)
+                index = bands.index(current) if current in bands else -1
+                low, high = bands[(index + 1) % len(bands)]
+                self.set_sonar_demon_band(low, high)
+                self.flash(message("runtime.demon_band", low=f"{low:.0f}",
+                                   high=f"{high:.0f}"), 1.5)
+            elif self.station is Station.SONAR and getattr(e, "mod", 0) & pygame.KMOD_CTRL:
+                offsets = analysis_tools.HETERODYNE_OFFSETS_HZ
+                current = self.sonar.heterodyne_hz
+                index = offsets.index(current) if current in offsets else -1
+                self.set_sonar_heterodyne(offsets[(index + 1) % len(offsets)])
+                self.flash(message("runtime.heterodyne",
+                                   frequency=f"{self.sonar.heterodyne_hz:.0f}"), 1.5)
+            elif self.station is Station.SONAR:
+                self._cycle_sonar_band()
+            elif self.station is Station.ELOKA:
+                mods = getattr(e, "mod", 0)
+                self._cycle_eloka_filter(
+                    "band" if mods & pygame.KMOD_CTRL
+                    else "threat" if mods & pygame.KMOD_SHIFT else "status")
+            elif self.station is Station.OPZ:
+                if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    self._cycle_opz_contact_filter()
+                else:
+                    self._cycle_opz_affiliation()
+            elif self.station is Station.WEAPONS:
+                if self.set_flak_authorized(not self.flak_authorized) is True:
+                    self.flash(message(
+                        "runtime.flak.authorized" if self.flak_authorized
+                        else "runtime.flak.withheld"), 1.5)
+            elif self.station is Station.HELICOPTER:
+                if self.station_page == 3 and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    bands = tuple(SONAR_BAND_PRESETS)
+                    self.set_helicopter_audio_band(bands[
+                        (bands.index(self.helo_audio_band) + 1) % len(bands)])
+                    return
+                if self.selected_contact is None:
+                    return
+                contact = self.selected_contact
+                result = self.qualify_helicopter_contact(
+                    contact, not contact.helo_qualified)
+                if result is True:
+                    self.flash(message("helo.contact.confirmed" if contact.helo_qualified
+                                       else "helo.contact.unconfirmed", contact=contact.id))
+        elif e.key == pygame.K_k:
+            if self.station is Station.OPZ:
+                self.opz_map_follow = not self.opz_map_follow
+                if self.opz_map_follow:
+                    self._configure_opz_map_view()
+                    self.opz_map_view.cx = self.ship.x
+                    self.opz_map_view.cy = self.ship.y
+                    self.opz_map_view.clamp_center()
+                self.flash(message("runtime.map_follow.on" if self.opz_map_follow
+                                   else "runtime.map_follow.off"), 1.5)
+            elif self._map_station_visible():
+                self.map_follow = not self.map_follow
+                self.flash(message("runtime.map_follow.on" if self.map_follow
+                                   else "runtime.map_follow.off"), 1.5)
+        elif e.key == pygame.K_q and self._map_station_visible():
+            self.map_view.set_rect(config.MAP_RECT)
+            self.map_view.step_zoom(-1, config.MAP_ZOOM_STEPS_NM)
+        elif e.key == pygame.K_v and self.station in (Station.BRIDGE,
+                                                      Station.ENGINE):
+            self._begin_numeric_input("speed")
+
+    def _owned_motion_event(self, e) -> None:
+        """Trackball axes and buttons, mouse wheel, press and drag."""
+        if e.type == pygame.JOYAXISMOTION:
             if e.axis == 0:
                 if self.station is Station.BRIDGE:
                     self._joy_turn = (1 if e.value > 0.25 else
@@ -1578,9 +1649,7 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 elif action == "server":
                     self.start_server_mode()
                 elif action == "training":
-                    self.main_menu = False
-                    self.menu_screen = "training"
-                    self.menu_sel = 0
+                    self.open_training_menu()
                 elif action == "campaign":
                     self.main_menu = False
                     self.menu_screen = "campaign"

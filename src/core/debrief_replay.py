@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import math
 
-from src.core.i18n import Translator, translation_scope
+from src.core.i18n import Translator, localize, translation_scope
 
 SPEEDS = (10, 60)
 # Events that flash on the chart, and how long a flash shows (wall seconds).
@@ -160,10 +160,16 @@ def _frame(frame: dict) -> dict:
     return out
 
 
-def document(recorder, side: str) -> dict:
+def document(recorder, side: str, lesson: bool = False) -> dict:
     """The finished recording of one side for the browser replay, with each
-    event worded in both catalog languages."""
+    event worded in both catalog languages, and the end panel's line of what
+    decided the mission (``src/core/decisive.py``; None in a lesson)."""
+    from src.core import decisive as decisive_module
     from src.ui.debrief_view import event_text
+    line = None if lesson else decisive_module.line(recorder)
+    decisive = (None if line is None else
+                {language: localize(line, Translator(language).t)[:240]
+                 for language in ("en", "de")})
     texts = {}
     for language in ("en", "de"):
         with translation_scope(Translator(language).t):
@@ -178,4 +184,5 @@ def document(recorder, side: str) -> dict:
         for key in ("x", "y"):
             if not math.isfinite(frame["ship"][key]):
                 raise ValueError("non-finite debrief frame")
-    return dict(side=side, frames=frames, events=events, speeds=list(SPEEDS))
+    return dict(side=side, frames=frames, events=events, speeds=list(SPEEDS),
+                decisive=decisive)

@@ -62,14 +62,14 @@ Globale Tasten (alle Stationen):
 
 ## Die erste Tauchfahrt (U-Boot) {#qs-first-dive}
 
-Am schnellsten kommen Sie mit Lektion 5 der Ausbildung ins U-Boot: Hauptmenü **Ausbildung**, Lektion 5 (Horchen und unter die Schicht) mit `5` oder den Pfeiltasten, `Eingabe`. Die uConsole spielt für diese Lektion das U-Boot, und ein Hinweisbanner wartet auf jeden Schritt:
+Am schnellsten kommen Sie mit Lektion 8 der Ausbildung ins U-Boot: Hauptmenü **Ausbildung**, Lektion 8 (Horchen und unter die Schicht) mit `8` oder den Pfeiltasten, `Eingabe`. Die uConsole spielt für diese Lektion das U-Boot, und ein Hinweisbanner wartet auf jeden Schritt:
 
 1. Sonarraum (`2`): warten, bis die Fregatte in der Kontaktliste erscheint.
 2. Den Kontakt mit `Auf`/`Ab` wählen und `C` drücken, bis er Kampfschiff heißt.
 3. Die Schicht mit dem Bathythermografen messen (`E`).
 4. Führung (`1`), dann `J`: Das U-Boot taucht unter die gemessene Schicht, wo das Bugsonar der Fregatte es schlecht hört.
 
-Lektion 6 übt das Ausweichen vor einer pingenden Fregatte (`I` auf der Seite Bedrohung). Danach starten Sie **Neuer Einsatz**, das U-Boot mit `2` und `Eingabe`, dann Szenario 1 (Durchbruch) mit `1` und `Eingabe`: Erreichen Sie das auf der Karte mit ZIEL markierte Zielgebiet. Fahren Sie langsam (`-` am Telegrafen oder `A` für Schleichfahrt), bleiben Sie unter der Schicht, halten Sie den Mast nahe der Fregatte unten und weichen Sie mit `I` aus, wenn ein Ping- oder Torpedoalarm kommt.
+Lektion 9 übt das Ausweichen vor einer pingenden Fregatte (`I` auf der Seite Bedrohung). Danach starten Sie **Neuer Einsatz**, das U-Boot mit `2` und `Eingabe`, dann Szenario 1 (Durchbruch) mit `1` und `Eingabe`: Erreichen Sie das auf der Karte mit ZIEL markierte Zielgebiet. Fahren Sie langsam (`-` am Telegrafen oder `A` für Schleichfahrt), bleiben Sie unter der Schicht, halten Sie den Mast nahe der Fregatte unten und weichen Sie mit `I` aus, wenn ein Ping- oder Torpedoalarm kommt.
 
 ## Unterwasserakustik in fünf Minuten {#qs-acoustics}
 

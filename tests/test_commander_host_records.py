@@ -43,9 +43,26 @@ def test_logbook_view_is_bounded_and_carries_both_sides():
 
 
 def test_lessons_view_names_each_lessons_side():
+    first = training.LESSONS[0]
     assert host_records.lessons_view() == [
-        {"key": lesson, "side": training.side_of(lesson)} for lesson in training.LESSONS]
-    assert {"key": "boat_listen", "side": "uboot"} in host_records.lessons_view()
+        {"key": lesson, "side": training.side_of(lesson), "done": False, "next": lesson == first}
+        for lesson in training.LESSONS]
+    assert {"key": "boat_listen", "side": "uboot", "done": False,
+            "next": False} in host_records.lessons_view()
+
+
+def test_lessons_view_marks_done_and_next_lessons():
+    done = training.LESSONS[:2]
+    rows = host_records.lessons_view(done + ("unknown",))
+    assert [row["done"] for row in rows[:3]] == [True, True, False]
+    assert [row["key"] for row in rows if row["next"]] == [training.next_lesson(done)]
+
+
+def test_logbook_view_carries_the_ribbon_rack():
+    frigate = host_records.logbook_view(_book(), learns=True)["sides"]["frigate"]
+    assert {"scenario": "s1_patrouille", "won": True} in frigate["ribbons"]
+    assert all(not row["scenario"].startswith("frei_") for row in frigate["ribbons"])
+    assert len(frigate["ribbons"]) == len(logbook.ribbon_scenarios("frigate"))
 
 
 def test_solo_host_view_publishes_the_logbook_and_rereads_a_changed_file(solo):

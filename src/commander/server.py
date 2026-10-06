@@ -97,7 +97,8 @@ __all__ = [
 # Game texts the browser shows as the uConsole does (the service record and
 # the training lessons), served as ``commander.web.game.<key>``.
 WEB_GAME_PREFIXES = ("logbook.", "habit.", "level.", "training.lesson.",
-                     "training.lesson_note.", "training.boat_title", "training.menu_title")
+                     "training.lesson_note.", "training.boat_title", "training.menu_title",
+                     "training.title_", "training.progress", "end.decisive.")
 
 
 def web_catalog(catalog) -> dict:
@@ -1691,7 +1692,7 @@ class CommanderServer(AudioStreamServerMixin, StationLeaseServerMixin,
         encoded = {}
         for side, document in documents.items():
             if (type(document) is not dict or document.get("side") != side
-                    or set(document) != {"side", "frames", "events", "speeds"}):
+                    or set(document) != {"side", "frames", "events", "speeds", "decisive"}):
                 raise ValueError("invalid v2 debrief publication")
             payload = _json_bytes(dict(document, protocol=2, available=True,
                                        session=world_session, epoch=world_epoch))

@@ -91,6 +91,7 @@ Globale Tasten (alle Stationen):
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
 | `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×, Pos1/Ende Anfang/Ende, B Bericht des Sprachmodells, wenn eingeschaltet) |
+| `N` | Nach einer abgeschlossenen Lektion: die nächste Lektion starten |
 
 ### Die erste Patrouille (Fregatte)
 
@@ -109,14 +110,14 @@ Globale Tasten (alle Stationen):
 
 ### Die erste Tauchfahrt (U-Boot)
 
-Am schnellsten kommen Sie mit Lektion 5 der Ausbildung ins U-Boot: Hauptmenü **Ausbildung**, Lektion 5 (Horchen und unter die Schicht) mit `5` oder den Pfeiltasten, `Eingabe`. Die uConsole spielt für diese Lektion das U-Boot, und ein Hinweisbanner wartet auf jeden Schritt:
+Am schnellsten kommen Sie mit Lektion 8 der Ausbildung ins U-Boot: Hauptmenü **Ausbildung**, Lektion 8 (Horchen und unter die Schicht) mit `8` oder den Pfeiltasten, `Eingabe`. Die uConsole spielt für diese Lektion das U-Boot, und ein Hinweisbanner wartet auf jeden Schritt:
 
 1. Sonarraum (`2`): warten, bis die Fregatte in der Kontaktliste erscheint.
 2. Den Kontakt mit `Auf`/`Ab` wählen und `C` drücken, bis er Kampfschiff heißt.
 3. Die Schicht mit dem Bathythermografen messen (`E`).
 4. Führung (`1`), dann `J`: Das U-Boot taucht unter die gemessene Schicht, wo das Bugsonar der Fregatte es schlecht hört.
 
-Lektion 6 übt das Ausweichen vor einer pingenden Fregatte (`I` auf der Seite Bedrohung). Danach starten Sie **Neuer Einsatz**, das U-Boot mit `2` und `Eingabe`, dann Szenario 1 (Durchbruch) mit `1` und `Eingabe`: Erreichen Sie das auf der Karte mit ZIEL markierte Zielgebiet. Fahren Sie langsam (`-` am Telegrafen oder `A` für Schleichfahrt), bleiben Sie unter der Schicht, halten Sie den Mast nahe der Fregatte unten und weichen Sie mit `I` aus, wenn ein Ping- oder Torpedoalarm kommt.
+Lektion 9 übt das Ausweichen vor einer pingenden Fregatte (`I` auf der Seite Bedrohung). Danach starten Sie **Neuer Einsatz**, das U-Boot mit `2` und `Eingabe`, dann Szenario 1 (Durchbruch) mit `1` und `Eingabe`: Erreichen Sie das auf der Karte mit ZIEL markierte Zielgebiet. Fahren Sie langsam (`-` am Telegrafen oder `A` für Schleichfahrt), bleiben Sie unter der Schicht, halten Sie den Mast nahe der Fregatte unten und weichen Sie mit `I` aus, wenn ein Ping- oder Torpedoalarm kommt.
 
 ### Unterwasserakustik in fünf Minuten
 
@@ -157,10 +158,10 @@ Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wäh
 |---|---|
 | Einsatz fortsetzen | Setzt den automatisch gesicherten Einsatz fort; nur vorhanden, solange es eine automatische Sicherung gibt |
 | Neuer Einsatz | Seite, Szenario, Einweisung (unten) |
-| Tageseinsatz | Ein fester Einsatz je Seite und Tag |
+| Ausbildung | Neun geführte Lektionen (unten) |
+| Tageseinsatz | Ein fester Kurzeinsatz je Seite und Tag |
 | Mehrspieler | Die Lobby mit Remote Crew (Kapitel Remote Crew) |
 | Server (nur Browser) | Die uConsole stellt nur bereit; alle spielen im Browser |
-| Ausbildung | Sechs geführte Lektionen (unten) |
 | Kampagne | Feldzug für jede Seite (Kapitel Szenarien und Missionen) |
 | Einsatzbuch | Dienstbuch und Auszeichnungen (Kapitel Nach dem Einsatz) |
 | Einsatz laden | Lädt Platz 1-5 |
@@ -173,7 +174,7 @@ Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wäh
 
 ### Erster Start
 
-Gibt es noch keine `~/.u-jagd/settings.json`, folgt auf den Startbildschirm eine Willkommensseite: „Was möchtest du spielen?“ `1` Fregatte (das Ausbildungsmenü mit Lektion 1 vorgewählt), `2` U-Boot (das Ausbildungsmenü mit Lektion 5, der ersten U-Boot-Lektion, vorgewählt), `3` Remote Crew (öffnet die Mehrspieler-Lobby; `Esc` dort führt ins Hauptmenü), `4` oder `Esc` Hauptmenü. Pfeiltasten und `Eingabe` wählen ebenfalls. Was Sie auch wählen, die Seite wird in den Einstellungen vermerkt und nicht wieder gezeigt.
+Gibt es noch keine `~/.u-jagd/settings.json`, folgt auf den Startbildschirm eine Willkommensseite: „Was möchtest du spielen?“ `1` Fregatte (das Ausbildungsmenü mit Lektion 1 vorgewählt), `2` U-Boot (das Ausbildungsmenü mit Lektion 8, der ersten U-Boot-Lektion, vorgewählt), `3` Remote Crew (öffnet die Mehrspieler-Lobby; `Esc` dort führt ins Hauptmenü), `4` oder `Esc` Hauptmenü. Pfeiltasten und `Eingabe` wählen ebenfalls. Was Sie auch wählen, die Seite wird in den Einstellungen vermerkt und nicht wieder gezeigt.
 
 ### Neuer Einsatz: Seite und Szenario
 
@@ -193,7 +194,7 @@ Die Liste zeigt neun Zeilen auf einmal und rollt mit der Auswahl (`Auf`/`Ab`, Ma
 
 Ein gewähltes Wetter hält die ganze Mission (Seegang schön und Nebel 1, Regen 3, Sturm 5; die See ändert sich nur innerhalb von 0-2, 2-4 und 5-6; ein Sturm bringt Gewitter mit Blitz, Donner und Sferics), und Wetterfronten ziehen dann keine durch; die Uhr läuft von der gewählten Zeit weiter. Die Wahl gilt bis zum Beenden des Spiels für jede neue Mission, auch für `R` am Missionsende; sie wird mit der Mission gespeichert, nicht in den Einstellungen.
 
-**Kurzeinsatz:** An denselben Stellen gibt es eine dritte Zeile, die Länge: volle Mission oder Kurzeinsatz (nicht bei Szenario 4, dessen Zeitlimit eine eigene Einstellung ist).
+**Kurzeinsatz:** An denselben Stellen gibt es eine dritte Zeile, die Länge: volle Mission oder Kurzeinsatz (nicht bei Szenario 4, dessen Zeitlimit eine eigene Einstellung ist). Die dort (Startmenü, Lobby oder Browser) zuletzt gewählte Länge bleibt in den Einstellungen für den nächsten Start; wer noch keine Einstellungen hat, beginnt mit Kurzeinsätzen.
 
 Ein Kurzeinsatz behält sein Ziel, hat aber ein kürzeres Zeitlimit und beginnt näher am Geschehen: Patrouille 30 min, Doppeljagd 60 min, Nuklearer Abfang 45 min, Durchbruch 60 min, Jagdgruppe 60 min, Aufklärung 45 min, Geleitzug 35 min, Meerengen-Sperre 45 min, Kampfschwimmer 45 min, Versorgerschutz 45 min, Geleitschutz 35 min, Angeschlagen heim 60 min, jedes andere neue Szenario 45 min. Das erste feindliche U-Boot beginnt 5-8 sm von der Fregatte (Durchbruch und Jagdgruppe 4-6 sm, Aufklärung 10-16 sm) und jedes weitere 8-14 sm; in einer U-Boot-Mission rücken auch das Ziel hinter der Fregatte, Ein- und Ausfahrt der Meerenge, der Anmarsch der Kampfschwimmer und der Platz vor dem Bug des Geleitzugs oder Versorgers näher.
 
@@ -201,7 +202,7 @@ Jeder Kurzeinsatz wurde mit KI-gegen-KI-Partien so eingestellt, dass beide Seite
 
 ### Ausbildung
 
-**Ausbildung** bietet sechs geführte Lektionen. Jede ist eine kurze Mission mit einem Hinweisbanner, das auf Sie wartet; `Auf`/`Ab` oder `1`-`6` wählen, `Eingabe` startet:
+**Ausbildung** bietet neun geführte Lektionen. Jede ist eine kurze Mission mit einem Hinweisbanner, das auf Sie wartet; `Auf`/`Ab` oder `1`-`9` wählen, `Eingabe` startet. Eine einmal abgeschlossene Lektion trägt einen Haken (✓), die erste noch offene ist mit „als Nächstes“ markiert und beim Öffnen der Seite vorgewählt; eine Zeile unter der Liste zählt die erledigten Lektionen. Die Haken stehen in den Einstellungen, nicht in einem Spielstand.
 
 | Lektion | Seite | Was Sie üben |
 |---|---|---|
@@ -209,17 +210,20 @@ Jeder Kurzeinsatz wurde mit KI-gegen-KI-Partien so eingestellt, dass beide Seite
 | 2 Zielbewegungsanalyse (TMA) | Fregatte | TMA einschalten, einen zweiten Schlag fahren und eine Entfernung erhalten |
 | 3 Torpedoangriff | Fregatte | Ein feindliches U-Boot orten, klassifizieren, zuweisen und versenken |
 | 4 Hubschrauber und Sonarbojen | Fregatte | Den Hubschrauber starten, eine Boje werfen und das U-Boot darauf hören |
-| 5 Horchen und unter die Schicht | U-Boot | Die Fregatte hören, als Kampfschiff klassifizieren, die Schicht per BT messen und darunter tauchen |
-| 6 Eine jagende Fregatte abschütteln | U-Boot | Seite Bedrohung lesen, mit `I` ausweichen, leise und tiefer als 100 m gehen, bis zwei Minuten lang kein Ping mehr kommt |
+| 5 Luftabwehr: Flugkörper im Anflug | Fregatte | Den Seezielflugkörper aus Nordost in der OPZ finden und mit einem ESSM abschießen; nach einem Fehlschuss oder Treffer kommt 30 s später ein weiterer |
+| 6 ESM: ein Radar hören | Fregatte | Das Radar eines Frachters in der ELOKA hören, mit `C` den Radartyp zuordnen und die freigegebene Peilung in der OPZ sehen |
+| 7 Torpedoabwehr mit dem Nixie | Fregatte | Ein Torpedo läuft aus 3,6 sm auf das Schiff zu: Nixie ausbringen (`V`), mit HALBE oder VOLLE laufen und Kurs halten, bis er ausgelaufen ist oder den Täuschkörper trifft |
+| 8 Horchen und unter die Schicht | U-Boot | Die Fregatte hören, als Kampfschiff klassifizieren, die Schicht per BT messen und darunter tauchen |
+| 9 Eine jagende Fregatte abschütteln | U-Boot | Seite Bedrohung lesen, mit `I` ausweichen, leise und tiefer als 100 m gehen, bis zwei Minuten lang kein Ping mehr kommt |
 
-Für die Lektionen 5 und 6 spielt die uConsole das U-Boot. In Lektion 6 pingt die Fregatte alle 45 s, bis Sie ausweichen, danach nur, solange ihre Pings Sie noch finden, und sie schießt nie.
+Für die Lektionen 8 und 9 spielt die uConsole das U-Boot. In Lektion 9 pingt die Fregatte alle 45 s, bis Sie ausweichen, danach nur, solange ihre Pings Sie noch finden, und sie schießt nie.
 
-In den Lektionen 1, 2 und 4 ist das U-Boot neutral und greift nie an; Lektion 3 ist ein echter Angriff, der mit dem Versenken endet. Die übrigen Lektionen enden nach dem letzten Schritt als Sieg. `R` am Ende startet die Lektion neu. Eine gespeicherte Lektion beginnt ihre Hinweise nach dem Laden wieder bei Schritt 1 und überspringt bereits erledigte Schritte. Nach einer Lektion behält die uConsole die gespielte Seite.
+In den Lektionen 1, 2 und 4 ist das U-Boot neutral und greift nie an; Lektion 3 ist ein echter Angriff, der mit dem Versenken endet; die Lektionen 5 bis 7 haben kein U-Boot. In Lektion 7 ist der Torpedo echt: bei LANGSAM oder AK oder ohne Nixie findet er das Schiff trotzdem, und ein Treffer beendet die Lektion als verloren. Die übrigen Lektionen enden nach dem letzten Schritt als Sieg. `R` am Ende startet die Lektion neu, `N` nach einer abgeschlossenen Lektion die nächste. Eine gespeicherte Lektion beginnt ihre Hinweise nach dem Laden wieder bei Schritt 1 und überspringt bereits erledigte Schritte. Nach einer Lektion behält die uConsole die gespielte Seite.
 
 ### Tageseinsatz
 
-- *Tageseinsatz* im Hauptmenü bietet je Seite und Tag einen festen Einsatz, für alle Spieler gleich: Das Datum wählt Szenario und Seed und damit das echte Seegebiet, Wetter und Tageszeit. Die Länge ist immer die normale.
-- Die Seite zeigt den heutigen Bestwert jeder Seite; ein beendeter Tageseinsatz (auch nach Mitternacht, für den von gestern) hält den besten Sieg 30 Tage im Einsatzbuch. Die Realismusstufe ist die eigene Einstellung.
+- *Tageseinsatz* im Hauptmenü bietet je Seite und Tag einen festen Einsatz, für alle Spieler gleich: Das Datum wählt Szenario und Seed und damit das echte Seegebiet, Wetter und Tageszeit. Es ist immer der Kurzeinsatz eines Szenarios, das einen hat (die Seite nennt seine Minuten), passend für eine Pause.
+- Die Seite zeigt den heutigen Bestwert jeder Seite; ein beendeter Tageseinsatz (auch nach Mitternacht, für den von gestern) hält den besten Sieg 30 Tage im Einsatzbuch; nur der kurze Tageseinsatz zählt. Die Realismusstufe ist die eigene Einstellung.
 
 ### Speichern, Laden und automatische Sicherung
 
@@ -1687,6 +1691,7 @@ Tasten, die an jeder Station des U-Boots wirken (`F1` zeigt sie auf der uConsole
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
 | `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew (Leertaste spielt ab, Tab 10×/60×, Pos1/Ende Anfang/Ende, B Bericht des Sprachmodells, wenn eingeschaltet) |
+| `N` | Nach einer abgeschlossenen Lektion: die nächste Lektion starten |
 
 ### Führung
 
@@ -2339,7 +2344,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen ode
 
 ### Nicht im Browser
 
-Der Browser folgt der uConsole Station für Station. Der Solo-Browser hat außerdem das **Einsatzbuch** des Hauptmenüs (Dienstzeit, Bestwerte, Auszeichnungen und was der Gegner gelernt hat, für Fregatte und U-Boot) und die **Ausbildung** (die sechs Lektionen; eine U-Boot-Lektion wechselt den Browser zuerst auf das U-Boot). Was der Browser noch nicht hat:
+Der Browser folgt der uConsole Station für Station. Der Solo-Browser hat außerdem das **Einsatzbuch** des Hauptmenüs (Dienstzeit, Bestwerte, Auszeichnungen und was der Gegner gelernt hat, für Fregatte und U-Boot) und die **Ausbildung** (die neun Lektionen mit ihren Haken und der nächsten markiert; eine U-Boot-Lektion wechselt den Browser zuerst auf das U-Boot). Was der Browser noch nicht hat:
 
 - **Ausbildung im Servermodus:** die Lobby des Servermodus startet nur Einsätze; Lektionen starten aus einem Solo-Browser oder auf der uConsole.
 - **Zusätze der Einsatzbuch-Seite:** "Gegner lernt mit" ein- und ausschalten (`L`), die Auswertung der Dienstzeit durch das Sprachmodell und der Gefechtsbericht bleiben auf der Einsatzbuch-Seite der uConsole; der Browser zeigt die Dienstzeit nur zum Lesen.
@@ -2352,7 +2357,7 @@ Der Browser folgt der uConsole Station für Station. Der Solo-Browser hat außer
 
 ### Endtafel
 
-Endet eine Mission, nennt die Endtafel das Ergebnis, die Punkte mit dem Faktor der Realismusstufe, einen neuen Bestwert und neue Auszeichnungen. `R` startet die Mission mit demselben Seed neu, `M` führt ins Hauptmenü und `D` öffnet die Nachbesprechung. Eine Mission aus der Mehrspieler-Lobby führt alle zurück in die Lobby.
+Endet eine Mission, nennt die Endtafel das Ergebnis, die Punkte mit dem Faktor der Realismusstufe, einen neuen Bestwert und neue Auszeichnungen. Unter dem Ergebnis sagt eine Zeile, was entschieden hat, gelesen aus der Nachbesprechung der Seite, die die uConsole gespielt hat: für die Fregatte, wann der Kontakt kam und welcher Schuss das U-Boot versenkte, die Peilung des Torpedos, der das Schiff versenkte, oder die längste verpasste Chance (Minuten, Entfernung, über oder unter der Schicht); für das U-Boot der Schuss, der die Fregatte versenkte, die Torpedos auf den Geleitzug, wie lange und wie nah die Fregatte es hielt, oder die Waffe, die es versenkte. Lektionen haben keine solche Zeile. Die Nachbesprechung im Browser zeigt dieselbe Zeile über ihren Ereignissen. `R` startet die Mission mit demselben Seed neu, `M` führt ins Hauptmenü und `D` öffnet die Nachbesprechung; nach einer abgeschlossenen Lektion startet `N` die nächste. Eine Mission aus der Mehrspieler-Lobby führt alle zurück in die Lobby.
 
 ### Nachbesprechung
 
@@ -2367,6 +2372,8 @@ Daneben stehen die Zeit des ersten Kontakts, der ersten Ortung und der Klassifiz
 ### Einsatzbuch und Auszeichnungen
 
 **Einsatzbuch** (Hauptmenü): jede beendete Mission (nie eine Lektion) der Seite, die die uConsole gespielt hat, mit Datum, Mission, Realismusstufe, Ergebnis, Punkten und Minuten; der Bestwert je Mission und fünf Auszeichnungen je Seite: erster Sieg, ein Schuss ein Treffer (der Gegner mit einer einzigen Waffe versenkt), ohne Kratzer (kein Schaden), nie beschossen und Realist (ein Sieg auf der Stufe Realistisch).
+
+Neben den Summen hängt eine **Ordensspange**: ein Band je Szenario der Seite (ohne freie Patrouillen), nummeriert wie in der Szenarioliste. Ein Band ist farbig, sobald dieses Szenario ohne die Hilfe des Ersten Offiziers und ohne den experimentellen Gegner gewonnen wurde (kurz oder normal lang), sonst nur ein leerer Umriss; die Summenzeile zählt die gewonnenen Bänder. Das Einsatzbuch im Browser zeigt dieselbe Spange.
 
 Die Fregatte trägt ihre Missionspunkte ein; das U-Boot zählt sein Ergebnis (Fregatte versenkt 1500, Versorger 1300, Geleitzug 1200, Kampfschwimmer abgesetzt oder Agenten abgeholt 1100, Durchbruch, Meerenge, Meldung, Heimathafen oder Lauschposten 1000, Entkommen oder Fühlung abgeschüttelt 800, Überleben 600) plus bis zu 500 für ein unbeschädigtes U-Boot und 100 je übrigem Torpedo, mal dem Faktor der Stufe.
 
@@ -2412,7 +2419,7 @@ Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; 
 - **U-Boot-Kommando:** weicht einem gehörten Torpedo oder Ping aus, folgt sonst dem Abschnitt der U-Boot-Mission oder läuft in einer Fregattenmission eine Fregatte an, die das eigene Sonar innerhalb von 12 sm geortet hat, und patrouilliert sonst mit 4 kn unter der Sprungschicht um den Startpunkt. Fällt die Batterie unter 35 % und jagt niemand das U-Boot, geht es auf Schnorcheltiefe.
 - **U-Boot-Waffen:** hält die Rohre geladen, flutet leise, sobald ein gehörtes Ziel eine Ortung innerhalb von 8 sm hat, und schießt einen Torpedo nach dem anderen auf eine Ortung innerhalb von 4 sm. Ziel ist ein Kontakt, dessen Signatur die Bibliothek nur von Kriegsschiffen kennt (beim Geleitzugangriff von Handelsschiffen).
 - **Maschinenraum:** schnorchelt ungejagt bis 95 % Ladung, hält den Trimm automatisch, beantwortet schlechte Luft mit Absorbern und Sauerstoffkerzen und schickt die zwei Leckteams dorthin, wo Feuer, Lecks oder Wasser am schlimmsten sind.
-- **Sonar und Mast:** Das Sonar hält den Fokus auf dem lautesten frischen Kontakt; der Mast fährt bei einem solchen Alarm ein. Navigation und Funkraum halten nur Wache.
+- **Sonar und Mast:** Das Sonar hält den Fokus auf dem Ziel, auf das die Waffen schießen würden (sonst, wenn nur Browser das U-Boot führen, auf dem lautesten frischen Kontakt), und übernimmt die automatische TMA-Lösung darauf als Ortung, sobald ihre Güte 35 % erreicht (50 % bei einem Kriegsschiff, das bei der Jagd manövriert), erneut alle 30 s, solange keine Ping- oder Sehrohrortung besteht, wie ein Bediener mit `K`; mit dieser Ortung schießen die Waffen. Auf der uConsole fokussiert es nur Ziele, ein dort mit `Auf`/`Ab` gewählter Kontakt bleibt also gewählt, außer er ist ein verstummtes Ziel. Der Mast fährt bei einem solchen Alarm ein. Navigation und Funkraum halten nur Wache.
 - **Der Befehl eines Spielers gilt:** Eine Station, die die KI besetzt, übersteuert nie, was ein Spieler an einer anderen Station befiehlt. Mit einem Spieler an der Navigation lässt die KI-Führung Kurs, Tiefe und Ausweichen in Ruhe, mit einem im Maschinenraum Fahrt und Schleichfahrt; mit einem an der Führung lässt der KI-Maschinenraum Trimm und Leckteams in Ruhe, und die KI-Maststation lässt einen an der Führung oder im Funkraum ausgefahrenen Mast auch bei Alarm oben. Solange ein Spieler an Mast oder Funkraum den Mast oben hält, hält die KI-Führung das U-Boot auf Sehrohrtiefe; erst mit eingefahrenem Mast taucht es wieder. Auf der Fregatte steuert die KI-Brücke nicht, solange ein Spieler im Maschinenraum sitzt, und KI-Waffen und Seefernaufklärer bestimmen kein neues Ziel über ein aktuelles Ziel, das ein Spieler an Sonar, OPZ oder Waffen gewählt hat. Ein am uConsole mit `Auf`/`Ab` gewählter Kontakt bleibt gewählt.
 
 ### Wetter- & Sonar-Analyse (Taste 0)

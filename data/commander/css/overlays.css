@@ -143,7 +143,16 @@ dialog h2 { margin-bottom: .5rem; color: var(--live-strong); text-shadow: 0 0 .7
 .logbook-earned, .logbook-won { color: var(--live); }
 .logbook-open { color: var(--text-dim); }
 .logbook-lost { color: var(--caution); }
+.logbook-ribbons { display: flex; flex-wrap: wrap; gap: .25rem; margin: 0 0 .4rem; padding: 0; list-style: none; }
+.logbook-ribbons li { min-width: 2.1rem; padding: .1rem .3rem; border: 1px solid var(--text-dim); border-radius: 2px; color: var(--text-dim); font-family: var(--font-mono); font-size: var(--font-xs); text-align: center; }
+.logbook-ribbons li.won { border-color: transparent; background: linear-gradient(90deg, transparent 18%, var(--text) 18% 26%, transparent 26% 74%, var(--text) 74% 82%, transparent 82%), var(--ribbon); color: var(--bg); font-weight: 700; }
+.logbook-ribbons li.won:nth-child(4n+1) { --ribbon: var(--live); }
+.logbook-ribbons li.won:nth-child(4n+2) { --ribbon: var(--amber); }
+.logbook-ribbons li.won:nth-child(4n+3) { --ribbon: var(--info); }
+.logbook-ribbons li.won:nth-child(4n+4) { --ribbon: var(--accent); }
 .training-list button { display: grid; gap: .15rem; font-family: inherit; }
+.training-list .training-done strong { color: var(--live); }
+.training-list .training-next { border-color: var(--live); }
 .training-list small { color: var(--text-dim); font-size: var(--font-xs); }
 
 /* Weather station and sound-speed profile (key 0). */
@@ -254,6 +263,7 @@ dialog h2 { margin-bottom: .5rem; color: var(--live-strong); text-shadow: 0 0 .7
 .advisor-input { display: flex; gap: .5rem; }
 .advisor-input input { flex: 1; min-width: 0; }
 .debrief-report { white-space: pre-wrap; max-height: 18rem; overflow-y: auto; }
+.debrief-decisive { margin: 0 0 .5rem; padding: .4rem .5rem; border-left: 3px solid var(--live); background: var(--bg-2); color: var(--text); }
 .missions-generate { margin: .4rem 0 .8rem; }
 .missions-generate-row { display: flex; flex-wrap: wrap; gap: .5rem; }
 .missions-generate-row input { flex: 1 1 16rem; min-width: 0; }

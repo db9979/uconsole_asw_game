@@ -17,7 +17,14 @@ one the uConsole shows while it plays the boat, is left alone.
 - Engine: snorkel to charge when shallow enough and unhunted, stop when full
   or hunted; keep the trim automatic, answer foul air, send the two
   damage-control teams where the water or the fire is worst.
-- Sonar: keep the focus on the loudest fresh contact.
+- Sonar: keep the focus on the nearest target the weapons would fire at
+  (else, with nobody on the uConsole's boat pages, the loudest fresh
+  contact), so the sonar room runs its TMA on it; a contact picked on the
+  uConsole stays picked unless it is a target that fell silent,
+  and accept the automatic TMA solution on that target as its fix once it
+  is good enough (``ACCEPT_MIN_QUALITY``, a warship ``ACCEPT_WARSHIP_QUALITY``,
+  again every ``ACCEPT_EVERY_S``),
+  as an operator does with K: the fix lets the weapons fire.
 - Mast/ESM: lower the mast when an alarm comes in.
 - Navigation and radio room: watch only.
 
@@ -52,6 +59,13 @@ PATROL_KN = 4.0
 PATROL_LEG_S = 900.0
 FIX_MAX_AGE_S = 120.0
 EVADE_AGAIN_S = 60.0
+# The sonar room accepts the automatic TMA solution on a target this good,
+# and renews the fix this often while it holds no ping or visual fix. A
+# warship manoeuvres while it hunts, so a weaker solution on it collapses
+# the range and wastes the shot: it needs a better one (tools/fairness.py).
+ACCEPT_MIN_QUALITY = config.TMA_RANGE_MIN_QUALITY
+ACCEPT_WARSHIP_QUALITY = 0.5
+ACCEPT_EVERY_S = 30.0
 ROLES = ("uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm",
          "uboot_nav", "uboot_radio")
 MAST_ROLES = ("uboot", "uboot_esm", "uboot_radio")   # stations that raise the mast
@@ -95,17 +109,25 @@ def _fresh(game, contact, age_s=FIX_MAX_AGE_S) -> bool:
     return 0.0 <= game.sim_t - contact.last_seen <= age_s
 
 
-def targets(game, boat) -> list:
-    """Fresh contacts the crew would shoot at, nearest known fix first."""
+WARSHIPS = frozenset({"KAMPFSCHIFF"})
+
+
+def _target_categories(game) -> frozenset:
+    """The ship categories the crew shoots at in this mission."""
     kind = boat_missions.mode(game)
     if kind == "free_boat":
         # A free patrol attacks merchants only on HQ's order to sink one.
         from src.core import free_roam
         order = free_roam.active_order(game)
         kind = "convoy_attack" if order is not None and order["kind"] == "attack" else None
-    categories = (frozenset({"TANKER", "FRACHT", "PASSAGIER"}) if kind == "convoy_attack"
-                  else frozenset({"TANKER"}) if kind in ("escort", "ras")
-                  else frozenset({"KAMPFSCHIFF"}))
+    return (frozenset({"TANKER", "FRACHT", "PASSAGIER"}) if kind == "convoy_attack"
+            else frozenset({"TANKER"}) if kind in ("escort", "ras")
+            else WARSHIPS)
+
+
+def targets(game, boat) -> list:
+    """Fresh contacts the crew would shoot at, nearest known fix first."""
+    categories = _target_categories(game)
     phrases = _signatures(game.runtime_catalog, categories)
     rows = [contact for contact in boat.station.sonar.contacts.values()
             if _fresh(game, contact, 10.0)
@@ -271,19 +293,54 @@ def _damage_control(sub) -> None:
             sub.command_dc_team(team, name, task)
 
 
+def _accept_solution(game, boat, contact) -> bool:
+    """Take the automatic TMA solution on ``contact`` as its fix (key K)."""
+    if contact.range_source in ("ping", "visual"):
+        return False
+    if contact.tma_seen is not None and 0.0 <= game.sim_t - contact.tma_seen < ACCEPT_EVERY_S:
+        return False
+    solution = boat.station.sonar.tma_proposals.get(contact.target_id)
+    least = (ACCEPT_WARSHIP_QUALITY if _target_categories(game) == WARSHIPS
+             else ACCEPT_MIN_QUALITY)
+    if solution is None or solution.quality < least:
+        return False
+    contact.accept_operator_tma(solution.pos, solution.course, solution.speed,
+                                solution.quality, game.sim_t)
+    return True
+
+
 def sonar(game, boat) -> str:
     station = boat.station
     contacts = [contact for contact in station.sonar.contacts.values() if _fresh(game, contact, 2.0)]
     if not contacts:
         return "monitoring"
+    # A target the weapons would fire at comes first: its TMA builds the fix.
+    listed = targets(game, boat)
+    found = [contact for contact in listed if _fresh(game, contact, 2.0)]
     picked = station.selected_contact
-    if (_local_boat(game) and picked is not None
+    local = _local_boat(game)
+    if (local and picked is not None
             and station.sonar.contacts.get(picked.target_id) is picked):
-        return "monitoring"             # the uConsole's pick (Up/Down) stays picked
-    best = max(contacts, key=lambda contact: (contact.snr, -contact.id))
+        if any(contact is picked for contact in found):
+            # A target picked on the uConsole (or by the crew): take its solution.
+            return "solution" if _accept_solution(game, boat, picked) else "monitoring"
+        if not found or not any(contact is picked for contact in listed):
+            return "monitoring"         # the uConsole's pick (Up/Down) stays picked
+        # The picked target fell silent: on to one that is heard.
+    if found:
+        best = (found[0] if _fix(game, boat, found[0]) is not None
+                else max(found, key=lambda contact: (contact.snr, -contact.id)))
+    elif local:
+        # On the uConsole the crew focuses targets only, so a contact
+        # picked there is always the person's own choice.
+        return "monitoring"
+    else:
+        best = max(contacts, key=lambda contact: (contact.snr, -contact.id))
     if station.selected_contact is not best:
         station.selected_contact = best
         return "focused"
+    if found and _accept_solution(game, boat, best):
+        return "solution"
     return "monitoring"
 
 

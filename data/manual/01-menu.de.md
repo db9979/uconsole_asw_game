@@ -10,10 +10,10 @@ Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wäh
 |---|---|
 | Einsatz fortsetzen | Setzt den automatisch gesicherten Einsatz fort; nur vorhanden, solange es eine automatische Sicherung gibt |
 | Neuer Einsatz | Seite, Szenario, Einweisung (unten) |
-| Tageseinsatz | Ein fester Einsatz je Seite und Tag |
+| Ausbildung | Neun geführte Lektionen (unten) |
+| Tageseinsatz | Ein fester Kurzeinsatz je Seite und Tag |
 | Mehrspieler | Die Lobby mit Remote Crew (Kapitel Remote Crew) |
 | Server (nur Browser) | Die uConsole stellt nur bereit; alle spielen im Browser |
-| Ausbildung | Sechs geführte Lektionen (unten) |
 | Kampagne | Feldzug für jede Seite (Kapitel Szenarien und Missionen) |
 | Einsatzbuch | Dienstbuch und Auszeichnungen (Kapitel Nach dem Einsatz) |
 | Einsatz laden | Lädt Platz 1-5 |
@@ -26,7 +26,7 @@ Nach dem Startbildschirm öffnet das Hauptmenü. `Auf`/`Ab` (oder die Maus) wäh
 
 ## Erster Start {#menu-welcome}
 
-Gibt es noch keine `~/.u-jagd/settings.json`, folgt auf den Startbildschirm eine Willkommensseite: „Was möchtest du spielen?“ `1` Fregatte (das Ausbildungsmenü mit Lektion 1 vorgewählt), `2` U-Boot (das Ausbildungsmenü mit Lektion 5, der ersten U-Boot-Lektion, vorgewählt), `3` Remote Crew (öffnet die Mehrspieler-Lobby; `Esc` dort führt ins Hauptmenü), `4` oder `Esc` Hauptmenü. Pfeiltasten und `Eingabe` wählen ebenfalls. Was Sie auch wählen, die Seite wird in den Einstellungen vermerkt und nicht wieder gezeigt.
+Gibt es noch keine `~/.u-jagd/settings.json`, folgt auf den Startbildschirm eine Willkommensseite: „Was möchtest du spielen?“ `1` Fregatte (das Ausbildungsmenü mit Lektion 1 vorgewählt), `2` U-Boot (das Ausbildungsmenü mit Lektion 8, der ersten U-Boot-Lektion, vorgewählt), `3` Remote Crew (öffnet die Mehrspieler-Lobby; `Esc` dort führt ins Hauptmenü), `4` oder `Esc` Hauptmenü. Pfeiltasten und `Eingabe` wählen ebenfalls. Was Sie auch wählen, die Seite wird in den Einstellungen vermerkt und nicht wieder gezeigt.
 
 ## Neuer Einsatz: Seite und Szenario {#menu-new}
 
@@ -44,7 +44,7 @@ Die Liste zeigt neun Zeilen auf einmal und rollt mit der Auswahl (`Auf`/`Ab`, Ma
 
 Ein gewähltes Wetter hält die ganze Mission (Seegang schön und Nebel 1, Regen 3, Sturm 5; die See ändert sich nur innerhalb von 0-2, 2-4 und 5-6; ein Sturm bringt Gewitter mit Blitz, Donner und Sferics), und Wetterfronten ziehen dann keine durch; die Uhr läuft von der gewählten Zeit weiter. Die Wahl gilt bis zum Beenden des Spiels für jede neue Mission, auch für `R` am Missionsende; sie wird mit der Mission gespeichert, nicht in den Einstellungen.
 
-**Kurzeinsatz:** An denselben Stellen gibt es eine dritte Zeile, die Länge: volle Mission oder Kurzeinsatz (nicht bei Szenario 4, dessen Zeitlimit eine eigene Einstellung ist).
+**Kurzeinsatz:** An denselben Stellen gibt es eine dritte Zeile, die Länge: volle Mission oder Kurzeinsatz (nicht bei Szenario 4, dessen Zeitlimit eine eigene Einstellung ist). Die dort (Startmenü, Lobby oder Browser) zuletzt gewählte Länge bleibt in den Einstellungen für den nächsten Start; wer noch keine Einstellungen hat, beginnt mit Kurzeinsätzen.
 
 Ein Kurzeinsatz behält sein Ziel, hat aber ein kürzeres Zeitlimit und beginnt näher am Geschehen: Patrouille 30 min, Doppeljagd 60 min, Nuklearer Abfang 45 min, Durchbruch 60 min, Jagdgruppe 60 min, Aufklärung 45 min, Geleitzug 35 min, Meerengen-Sperre 45 min, Kampfschwimmer 45 min, Versorgerschutz 45 min, Geleitschutz 35 min, Angeschlagen heim 60 min, jedes andere neue Szenario 45 min. Das erste feindliche U-Boot beginnt 5-8 sm von der Fregatte (Durchbruch und Jagdgruppe 4-6 sm, Aufklärung 10-16 sm) und jedes weitere 8-14 sm; in einer U-Boot-Mission rücken auch das Ziel hinter der Fregatte, Ein- und Ausfahrt der Meerenge, der Anmarsch der Kampfschwimmer und der Platz vor dem Bug des Geleitzugs oder Versorgers näher.
 
@@ -52,7 +52,7 @@ Jeder Kurzeinsatz wurde mit KI-gegen-KI-Partien so eingestellt, dass beide Seite
 
 ## Ausbildung {#menu-training}
 
-**Ausbildung** bietet sechs geführte Lektionen. Jede ist eine kurze Mission mit einem Hinweisbanner, das auf Sie wartet; `Auf`/`Ab` oder `1`-`6` wählen, `Eingabe` startet:
+**Ausbildung** bietet neun geführte Lektionen. Jede ist eine kurze Mission mit einem Hinweisbanner, das auf Sie wartet; `Auf`/`Ab` oder `1`-`9` wählen, `Eingabe` startet. Eine einmal abgeschlossene Lektion trägt einen Haken (✓), die erste noch offene ist mit „als Nächstes“ markiert und beim Öffnen der Seite vorgewählt; eine Zeile unter der Liste zählt die erledigten Lektionen. Die Haken stehen in den Einstellungen, nicht in einem Spielstand.
 
 | Lektion | Seite | Was Sie üben |
 |---|---|---|
@@ -60,17 +60,20 @@ Jeder Kurzeinsatz wurde mit KI-gegen-KI-Partien so eingestellt, dass beide Seite
 | 2 Zielbewegungsanalyse (TMA) | Fregatte | TMA einschalten, einen zweiten Schlag fahren und eine Entfernung erhalten |
 | 3 Torpedoangriff | Fregatte | Ein feindliches U-Boot orten, klassifizieren, zuweisen und versenken |
 | 4 Hubschrauber und Sonarbojen | Fregatte | Den Hubschrauber starten, eine Boje werfen und das U-Boot darauf hören |
-| 5 Horchen und unter die Schicht | U-Boot | Die Fregatte hören, als Kampfschiff klassifizieren, die Schicht per BT messen und darunter tauchen |
-| 6 Eine jagende Fregatte abschütteln | U-Boot | Seite Bedrohung lesen, mit `I` ausweichen, leise und tiefer als 100 m gehen, bis zwei Minuten lang kein Ping mehr kommt |
+| 5 Luftabwehr: Flugkörper im Anflug | Fregatte | Den Seezielflugkörper aus Nordost in der OPZ finden und mit einem ESSM abschießen; nach einem Fehlschuss oder Treffer kommt 30 s später ein weiterer |
+| 6 ESM: ein Radar hören | Fregatte | Das Radar eines Frachters in der ELOKA hören, mit `C` den Radartyp zuordnen und die freigegebene Peilung in der OPZ sehen |
+| 7 Torpedoabwehr mit dem Nixie | Fregatte | Ein Torpedo läuft aus 3,6 sm auf das Schiff zu: Nixie ausbringen (`V`), mit HALBE oder VOLLE laufen und Kurs halten, bis er ausgelaufen ist oder den Täuschkörper trifft |
+| 8 Horchen und unter die Schicht | U-Boot | Die Fregatte hören, als Kampfschiff klassifizieren, die Schicht per BT messen und darunter tauchen |
+| 9 Eine jagende Fregatte abschütteln | U-Boot | Seite Bedrohung lesen, mit `I` ausweichen, leise und tiefer als 100 m gehen, bis zwei Minuten lang kein Ping mehr kommt |
 
-Für die Lektionen 5 und 6 spielt die uConsole das U-Boot. In Lektion 6 pingt die Fregatte alle 45 s, bis Sie ausweichen, danach nur, solange ihre Pings Sie noch finden, und sie schießt nie.
+Für die Lektionen 8 und 9 spielt die uConsole das U-Boot. In Lektion 9 pingt die Fregatte alle 45 s, bis Sie ausweichen, danach nur, solange ihre Pings Sie noch finden, und sie schießt nie.
 
-In den Lektionen 1, 2 und 4 ist das U-Boot neutral und greift nie an; Lektion 3 ist ein echter Angriff, der mit dem Versenken endet. Die übrigen Lektionen enden nach dem letzten Schritt als Sieg. `R` am Ende startet die Lektion neu. Eine gespeicherte Lektion beginnt ihre Hinweise nach dem Laden wieder bei Schritt 1 und überspringt bereits erledigte Schritte. Nach einer Lektion behält die uConsole die gespielte Seite.
+In den Lektionen 1, 2 und 4 ist das U-Boot neutral und greift nie an; Lektion 3 ist ein echter Angriff, der mit dem Versenken endet; die Lektionen 5 bis 7 haben kein U-Boot. In Lektion 7 ist der Torpedo echt: bei LANGSAM oder AK oder ohne Nixie findet er das Schiff trotzdem, und ein Treffer beendet die Lektion als verloren. Die übrigen Lektionen enden nach dem letzten Schritt als Sieg. `R` am Ende startet die Lektion neu, `N` nach einer abgeschlossenen Lektion die nächste. Eine gespeicherte Lektion beginnt ihre Hinweise nach dem Laden wieder bei Schritt 1 und überspringt bereits erledigte Schritte. Nach einer Lektion behält die uConsole die gespielte Seite.
 
 ## Tageseinsatz {#ref-daily}
 
-- *Tageseinsatz* im Hauptmenü bietet je Seite und Tag einen festen Einsatz, für alle Spieler gleich: Das Datum wählt Szenario und Seed und damit das echte Seegebiet, Wetter und Tageszeit. Die Länge ist immer die normale.
-- Die Seite zeigt den heutigen Bestwert jeder Seite; ein beendeter Tageseinsatz (auch nach Mitternacht, für den von gestern) hält den besten Sieg 30 Tage im Einsatzbuch. Die Realismusstufe ist die eigene Einstellung.
+- *Tageseinsatz* im Hauptmenü bietet je Seite und Tag einen festen Einsatz, für alle Spieler gleich: Das Datum wählt Szenario und Seed und damit das echte Seegebiet, Wetter und Tageszeit. Es ist immer der Kurzeinsatz eines Szenarios, das einen hat (die Seite nennt seine Minuten), passend für eine Pause.
+- Die Seite zeigt den heutigen Bestwert jeder Seite; ein beendeter Tageseinsatz (auch nach Mitternacht, für den von gestern) hält den besten Sieg 30 Tage im Einsatzbuch; nur der kurze Tageseinsatz zählt. Die Realismusstufe ist die eigene Einstellung.
 
 ## Speichern, Laden und automatische Sicherung {#menu-save}
 

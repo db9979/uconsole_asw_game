@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.271
+## 1.3.277
 
-Release 1.3.271 lets you give orders by voice. Say an order with the talk
+Release 1.3.277 lets you give orders by voice. Say an order with the talk
 key, such as "all ahead full", "come right to 090" or "make depth 80
 metres", and it is carried out at once on the uConsole, the submarine and
 in the browser; the executive officer reports only what was really set.
@@ -15,6 +15,18 @@ kept its speed. Only course, speed, depth, quiet or silent running and
 action stations can be ordered by voice, never weapons, and a browser
 station gives only its own station's orders. Saves are v53; v38 to v52
 saves still load.
+
+## 1.3.272
+
+Release 1.3.272 makes the menus work by mouse. In the options a click on a
+row changes it like `Enter`, and new **<** and **>** buttons step a value
+back or on; every key in the hint line is a clickable chip. The real-world
+traffic page switches services and opens its fields by click, a click
+closes the start screen, lobby rows step back from their left third and
+on elsewhere, the Remote Crew page steps host and port back the same way,
+the Remote Crew admission window has a close cross, and the update
+notice closes with its cross until the next launch. Saves are v53;
+v38 to v52 saves still load.
 
 ## 1.3.266
 

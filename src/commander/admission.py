@@ -88,7 +88,13 @@ class StationAdmission:
         elif key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
             self.activate(game, console, self.selection)
 
+    PANEL = pygame.Rect(220, 96, 840, 544)
+
     def handle_click(self, game, console, pos):
+        from src.ui import game_menu
+        if game_menu.close_rect(self.PANEL).collidepoint(pos):
+            self.close(game, defer=True)        # the cross: decide later (Esc)
+            return
         for index, rect in enumerate(self.rects()):
             if rect.collidepoint(pos):
                 self.selection = index
@@ -97,7 +103,9 @@ class StationAdmission:
 
     def draw(self, game):
         with translation_scope(game.tr):
-            overlay_style.panel(game.screen, pygame.Rect(220, 96, 840, 544))
+            overlay_style.panel(game.screen, self.PANEL)
+            from src.ui import game_menu
+            game_menu.draw_close_box(game.screen, self.PANEL)
             overlay_style.title(game.screen, "commander.admission.title",
                                 (244, 116, 792, 36), size=28, align="left")
             station = self.request["requested_station"]

@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.271
+## 1.3.277
 
-Version 1.3.271 nimmt Befehle per Sprache an. Sprich einen Befehl mit der
+Version 1.3.277 nimmt Befehle per Sprache an. Sprich einen Befehl mit der
 Sprechtaste, etwa "Volle Fahrt voraus", "Kurs 270" oder "Auf 80 Meter
 tauchen", und er wird sofort ausgeführt, auf der uConsole, im U-Boot und
 im Browser; der Erste Offizier meldet nur, was wirklich gesetzt wurde.
@@ -15,6 +15,19 @@ behielt. Per Sprache gehen nur Kurs, Fahrt, Tiefe, Leise- oder
 Schleichfahrt und Gefechtsstationen, nie Waffen, und eine Browser-Station
 gibt nur die Befehle ihrer eigenen Station. Spielstände sind v53; v38 bis
 v52 laden weiter.
+
+## 1.3.272
+
+Version 1.3.272 macht die Menüs per Maus bedienbar. In den Optionen ändert
+ein Klick auf eine Zeile sie wie `Eingabe`, und neue Schaltflächen **<** und
+**>** stellen einen Wert zurück oder weiter; jede Taste in der Hinweiszeile
+ist ein klickbarer Chip. Die Seite Echtzeit-Verkehr schaltet Dienste per
+Klick und öffnet ihre Felder, ein Klick schließt den Startbildschirm,
+Lobby-Zeilen stellen per Klick ins linke Drittel zurück und sonst weiter,
+die Remote-Crew-Seite stellt Host und Port genauso zurück, und das
+Zulassungsfenster der Remote Crew und der Update-Hinweis haben ein
+Schließkreuz; der Hinweis bleibt dann bis zum nächsten Start zu. Spielstände sind
+v53; v38- bis v52-Stände werden weiter geladen.
 
 ## 1.3.266
 

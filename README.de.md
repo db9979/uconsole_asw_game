@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.271**
+Aktuelle Version: **1.3.277**
 
-Version 1.3.271 nimmt Befehle per Sprache an. Sprich einen Befehl mit der
+Version 1.3.277 nimmt Befehle per Sprache an. Sprich einen Befehl mit der
 Sprechtaste, etwa "Volle Fahrt voraus", "Kurs 270" oder "Auf 80 Meter
 tauchen", und er wird sofort ausgeführt, auf der uConsole, im U-Boot und
 im Browser; der Erste Offizier meldet nur, was wirklich gesetzt wurde.

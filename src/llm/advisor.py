@@ -16,9 +16,11 @@ browser), bounded and transient: never saved, never shared between askers.
 from __future__ import annotations
 
 import math
+import re
 from collections import OrderedDict, deque
 
 from src.core import config
+from src.core.i18n import get_translator
 from src.llm import facts, manual_search, prompts
 from src.llm.client import clean_text, parse_json_object
 
@@ -57,6 +59,62 @@ _ORDER_HELP = {
     "silent": "silent: true or false (silent running)",
     "action_stations": "action_stations: true or false (battle stations)",
 }
+
+
+# A question put as an order ("Volle Fahrt voraus", "come right to 090"):
+# the officer only answers questions, so the game itself says that nothing
+# was done instead of letting the model repeat the order back as if it had
+# been carried out.  Questions (a "?" or a question word first) never match.
+_QUESTION_WORDS = frozenset((
+    "wie", "was", "wo", "wohin", "woher", "wann", "warum", "wieso", "weshalb", "wer",
+    "wen", "wem", "welche", "welcher", "welches", "welchen", "soll", "sollen", "sollte",
+    "sollten", "kann", "können", "koennen", "könnte", "darf", "dürfen", "ist", "sind",
+    "gibt", "hat", "haben", "wird", "werden", "muss", "müssen", "erkläre",
+    "erklär", "sag", "sage", "nenne", "zeig", "zeige",
+    "how", "what", "where", "when", "why", "who", "whom", "which", "should", "shall",
+    "can", "could", "may", "is", "are", "do", "does", "did", "will", "would", "has",
+    "have", "explain", "tell", "describe", "show",
+))
+_ORDER_PATTERNS = re.compile("|".join((
+    # German helm and engine orders
+    r"\b(kleine|halbe|volle|äußerste|äusserste|aeusserste|langsame)\s+fahrt\b",
+    r"\bfahrt\s+(voraus|zurück|zurueck)\b", r"\balle\s+maschinen\b",
+    r"\bmaschinen?\s+(stopp|stop|halt)\b", r"\b(neuer\s+)?kurs\s+\d", r"\bauf\s+kurs\b",
+    r"\bruder\b", r"\b(hart\s+)?(steuerbord|backbord)\b", r"\bmittschiffs\b",
+    r"\b(tiefe|auf)\s+\d+\s*(m|meter|metern)\b", r"\bsehrohrtiefe\b",
+    r"\b(ab|auf)?tauchen\b", r"\bfluten\b", r"\banblasen\b", r"\bfeuer\b",
+    r"\brohr\s+\w+\s+los\b", r"\b(los|abfeuern|schießen|schiessen)\b",
+    r"\bschleichfahrt\b", r"\bleisefahrt\b", r"\bgefechtsstation(en)?\b",
+    r"\b(alarm|stopp)\b", r"\b\d+\s*(knoten|kn)\b",
+    # English helm and engine orders
+    r"\b(all\s+)?(ahead|astern)\s+(full|flank|standard|slow|one\s+third|two\s+thirds)\b",
+    r"\b(full|flank|half|slow)\s+(speed|ahead|astern)\b", r"\ball\s+stop\b",
+    r"\b(come|steer|turn)\s+(left|right|to)\b", r"\bcourse\s+\d", r"\brudder\b",
+    r"\bmake\s+depth\b", r"\bdepth\s+\d", r"\bperiscope\s+depth\b",
+    r"\b(dive|surface|fire|launch|shoot)\b", r"\bsilent\s+running\b",
+    r"\bbattle\s+stations\b", r"\bgeneral\s+quarters\b", r"\b\d+\s*(knots|kts)\b",
+)))
+
+
+def looks_like_order(text) -> bool:
+    """True when ``text`` reads as an order rather than a question."""
+    if type(text) is not str or "?" in text:
+        return False
+    words = re.findall(r"[\wäöüß]+", text.lower())
+    if not words or words[0] in _QUESTION_WORDS:
+        return False
+    return _ORDER_PATTERNS.search(" ".join(words)) is not None
+
+
+class _Ready:
+    """A reply the game gives itself, without asking the model."""
+
+    finished = True
+    ok = True
+    error = None
+
+    def __init__(self, text: str) -> None:
+        self.text = text
 
 
 def valid_question(text) -> bool:
@@ -225,6 +283,11 @@ class Advisor:
             return "llm_off"
         if self.pending(asker) or len(self._pending) >= MAX_PENDING:
             return "llm_busy"
+        if kind == "question" and looks_like_order(text):
+            answer = get_translator(language).translate("advisor.not_an_order")
+            entry = self._entry(asker, kind, " ".join(text.split()))
+            self._pending.append((asker, entry, _Ready(answer), side))
+            return entry
         picture = facts.situation(game, side)
         extra = ""
         if kind == "question":

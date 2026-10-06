@@ -72,7 +72,7 @@ Globale Tasten (alle Stationen):
 | `F3` | Autocrew-Übersicht öffnen |
 | `0` | Wetter- & Sonar-Analyse |
 | `F7` | Erster Offizier (optionales Sprachmodell) |
-| `Shift+Space` | Den Ersten Offizier per Sprache fragen (halten und sprechen oder zweimal tippen) |
+| `Shift+Space` | Den Ersten Offizier per Sprache fragen oder Befehle geben (halten und sprechen oder zweimal tippen) |
 | `F8` | Taktischer Einheitenanalysator (Katalog, nur lesend) |
 | `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte, F auf der Karte: Einheiten oder ganze Welt einpassen) |
 | `F9` | Lokale Commander-LAN-Verwaltung öffnen |
@@ -1691,7 +1691,7 @@ Tasten, die an jeder Station des U-Boots wirken (`F1` zeigt sie auf der uConsole
 | `Shift+F2` | Crew-Hilfe: Die KI besetzt jede freie Station beider Einheiten |
 | `0` | Wetterseite des U-Boots (0 oder Esc schließt) |
 | `F7` | Erster Offizier (optionales Sprachmodell) |
-| `Shift+Space` | Den Ersten Offizier per Sprache fragen (halten und sprechen oder zweimal tippen) |
+| `Shift+Space` | Den Ersten Offizier per Sprache fragen oder Befehle geben (halten und sprechen oder zweimal tippen) |
 | `F9` | Lokale Commander-LAN-Verwaltung öffnen |
 | `F10` | Optionen: Sprache, Vollbild, Audio, großer Text, Tooltips, Bildrate |
 | `F11` | Ereignislog und volle Telemetrie einblenden (Station bleibt bedienbar) |
@@ -2349,7 +2349,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen ode
 | `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
 | `Alt+, / Alt+.` | Kontaktliste (Alt+,) oder Stationsbereich (Alt+.) ein- oder ausklappen |
 | `Alt+L` | Einsatzprotokoll öffnen oder schließen |
-| `Shift+Space` | Den Ersten Offizier per Sprache fragen (halten und sprechen oder zweimal tippen) |
+| `Shift+Space` | Den Ersten Offizier per Sprache fragen oder Befehle geben (halten und sprechen oder zweimal tippen) |
 | `Esc` | Leitfaden, Ausguck oder Kontaktbibliothek schließen und zur Station zurück |
 
 ### Nicht im Browser
@@ -2567,13 +2567,13 @@ Den Ersten Offizier an jeder Station per Sprache fragen, auf beiden Seiten und i
 
 - Einrichten unter `F10` Optionen, Seite 2, **Sprachmodell**, Seite **5 Spracheingabe**: an/aus (ab Werk aus), die Serveradresse (voreingestellt `https://api.openai.com/v1`), das Erkennungsmodell (voreingestellt `whisper-1`), der API-Schlüssel und **Verbindung testen**, das eine Sekunde leisen Ton schickt und die Antwortzeit zeigt. Der Dienst bekommt die Spielsprache mitgeteilt, Deutsch oder Englisch; ein Server, der das Feld ablehnt, wird ohne gefragt.
 - Der Schlüssel liegt in `~/.u-jagd/stt_key` oder kommt aus `U_JAGD_STT_KEY`. Bleibt er leer, gilt der Schlüssel der Stimme oder des Sprachmodells, wenn dessen Adresse denselben Server nennt. Er gelangt nie in die Einstellungen, Spielstände, Protokolle oder einen Browser.
-- Die Sprechtaste fragt nur: Sie gibt nie einen Befehl, und eine gesprochene Frage hört der Gegner nie (die Geräuschdisziplin übergeht das Mikrofon, solange es aufnimmt). Eine Aufnahme endet nach 30 s (im Browser nach 20 s); eine zu kurze oder stille Aufnahme wird nicht geschickt. Nichts wird gespeichert: Der Ton liegt nur im Speicher, bis er geschickt ist.
+- Befehle per Sprache: Klingt das Gesagte wie ein Befehl ("Volle Fahrt voraus", "Kurs 270", "Auf 80 Meter tauchen"), übersetzt das Sprachmodell ihn wie einen getippten Befehl, und er wird sofort ausgeführt, ohne Bestätigung. Es gehen nur Kurs, Fahrt, Tiefe, Leise- oder Schleichfahrt und Gefechtsstationen, nie Waffen. Der Erste Offizier meldet nur, was wirklich gesetzt wurde ("Befehl ausgeführt: Fahrt 20 kn"), und sonst "Nicht ausgeführt" oder "Befehl nicht verstanden". Eine Browser-Station gibt nur die Befehle ihrer eigenen Station (Fahrt und Kurs von der Brücke), im Solo-Modus alle. Ein Befehl per Sprache zählt wie ein getippter als Hilfe des Ersten Offiziers. Ein getippter Befehl im Reiter Frage wird nicht ausgeführt: Das Spiel antwortet "Nicht ausgeführt" und verweist auf den Reiter Befehl. Eine gesprochene Frage hört der Gegner nie (die Geräuschdisziplin übergeht das Mikrofon, solange es aufnimmt). Eine Aufnahme endet nach 30 s (im Browser nach 20 s); eine zu kurze oder stille Aufnahme wird nicht geschickt. Nichts wird gespeichert: Der Ton liegt nur im Speicher, bis er geschickt ist.
 - An einer Browser-Station nehmen der Knopf **Sprechen** neben **Senden** und `Umschalt+Leertaste` mit dem Mikrofon des Browsers auf, das die HTTPS-Seite braucht (wie bei der Geräuschdisziplin); die Aufnahme geht an den Host, der sie mit seiner eigenen Spracheingabe und seinem eigenen Schlüssel in Text verwandelt.
 - Verliert das Fenster den Fokus, wird eine laufende Aufnahme verworfen.
 
 ### Nicht modelliert
 
-- Nicht modelliert: Sprachbefehle (die Sprechtaste stellt nur Fragen), Spracherkennung auf der uConsole selbst, vorgelesene Logmeldungen im Browser, ein Modell auf der uConsole selbst, Entscheidungen des Modells über Waffen oder Ziele und ein Modell, das während der Mission die verborgene Wahrheit sieht.
+- Nicht modelliert: Waffenbefehle per Sprache, Spracherkennung auf der uConsole selbst, vorgelesene Logmeldungen im Browser, ein Modell auf der uConsole selbst, Entscheidungen des Modells über Waffen oder Ziele und ein Modell, das während der Mission die verborgene Wahrheit sieht.
 
 ## Referenzdaten
 

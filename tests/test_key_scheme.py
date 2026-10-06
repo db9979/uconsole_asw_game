@@ -297,8 +297,11 @@ def test_help_page_zero_shows_the_keys_of_where_you_are(side, in_menu, title):
 
 
 def test_submarine_global_help_lists_only_keys_that_work_aboard():
-    keys = {key for key, _action in _UBOOT_GLOBAL_HELP[1]}
-    assert not keys & {"F2", "F3", "F4", "F8", "N", "P", "help.key.plot_keys"}
+    rows = dict(_UBOOT_GLOBAL_HELP[1])
+    keys = set(rows)
+    assert not keys & {"F2", "F3", "F4", "F8", "P", "help.key.plot_keys"}
+    # N aboard is only the next lesson on the end panel, never the nations.
+    assert rows["N"] == "help.global.next_lesson"
     assert {"F1 / ?", "F11", "Shift+F2", "0", "Ctrl+Enter", "Shift+A"} <= keys
     game, _boat = _local_boat()
     _key(game, pygame.K_F11)

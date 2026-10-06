@@ -1,4 +1,4 @@
-# U-Jagd 1.3.274 - Stations- und Tastenkürzel
+# U-Jagd 1.3.281 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -388,7 +388,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `?` | Leitfaden und Stationshilfe öffnen |
 | `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |
 | `Pos1 / Ende` | Erster / letzter Eintrag der fokussierten Liste |
-| `Q / E` | Karte oder Ausguck zoomen (wie auf der uConsole); Pos1 passt die Ansicht ein |
+| `Q / E` | Karte (bis 0,5 sm, wie auf der uConsole) oder Ausguck zoomen; Pos1 passt die Ansicht ein |
 | `K` | Karte folgt dem eigenen Schiff an oder aus |
 | `+ / -` | Maschinentelegraph eine Stufe höher / tiefer (Brücke, Maschine, U-Boot-Führung und -Maschine) |
 | `C / V / D · T` | Kurs, Fahrt, Tiefe, Torpedo-Lauftiefe: der Cursor springt ins Feld, Eingabe sendet (Brücke, Maschine, U-Boot) |

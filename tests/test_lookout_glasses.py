@@ -6,15 +6,25 @@ import sys
 from pathlib import Path
 
 import pygame
+import pytest
 
 from src.core import config, uboot_local
 from src.core.station import Station
-from src.ui import layout, uboot_scope
+from src.ui import layout, pointer, uboot_scope
 from src.ui.stations import bridge as bridge_view
 
 sys.path.insert(0, str(Path(__file__).parent))
 from test_opfor_sub import _crewed, _game  # noqa: E402
 from test_uboot_scope import _local_boat, _scope_up  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _clean_pointer():
+    """Click targets another test drew (talk panel, log buttons) never take
+    the clicks made here."""
+    pointer.reset()
+    yield
+    pointer.reset()
 
 
 def _key(game, key, mod=0):

@@ -95,8 +95,13 @@ def test_hms_aft_lobe_reduces_detection_range_and_snr_deterministically():
     assert fore_range > distance > aft_range
     assert snr_db(fore_range, distance) > snr_db(aft_range, distance)
     assert fore.id in sonar.contacts and aft.id not in sonar.contacts
+    # The contact carries the path's fading on top of the mean range.
+    from src.sonar import equation
+    from src.sonar.sonar import _FADING_ARRAY, _fading_key
+    fade = equation.fading_db(fore.sensor_seed, _fading_key(ship),
+                              _FADING_ARRAY["BOW"], .25)
     assert sonar.contacts[fore.id].snr == pytest.approx(
-        snr_db(fore_range, distance))
+        snr_db(fore_range, distance) + fade)
 
 
 def test_tas_lobe_follows_lagging_heading_after_course_change():

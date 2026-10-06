@@ -18,6 +18,21 @@ step and also while an order waits for confirmation. The browser's
 executive officer already worked by mouse. Gameplay is unchanged. Saves
 are v53; v38 to v52 saves still load.
 
+## 1.3.238
+
+Release 1.3.238 puts latitude and longitude on every chart of every
+station. Until now only the Bridge chart and the charts beside the
+submarine's stations showed the graticule; on the uConsole the OPZ
+(CIC) plot, the radio room's cross-fix chart and the submarine's pilot
+chart still had their plain NM grid. On a real sea area they now draw
+meridians and parallels in degrees and minutes with their numbers along
+the edges and give the own position like 54°21.4'N 010°08.2'E (the
+submarine's pilot chart its dead-reckoned position); the numbers keep
+clear of range rings, bearing scale and other labels. The browser's
+charts already showed the graticule. The stylized fixed chart keeps its
+NM grid. Gameplay, keys and saves are unchanged (v53; v38 to v52 saves
+still load).
+
 ## 1.3.237
 
 Release 1.3.237 makes the optional voice speak numbers the way a watch

@@ -13,8 +13,8 @@ import math
 import pygame
 
 from src.core import config
-from src.core.i18n import message, raw_text
-from src.ui import console, label_layout, layout, lines, nato_symbols, pointer
+from src.core.i18n import localize, message, raw_text
+from src.ui import console, geo_grid, label_layout, layout, lines, nato_symbols, pointer
 from src.ui.map_view import _visible_landmasses, clip_polygon_to_rect, grid_step_nm
 from src.ui.viewport import Viewport
 
@@ -135,30 +135,41 @@ def _ellipse(view, fix, steps=32):
             for phase in (index * math.tau / steps for index in range(steps))]
 
 
-def _geography(s, game, view, rect) -> None:
-    """Grid and coastline only: the radio room's plotting sheet."""
-    step = grid_step_nm(view.scale)
+def _geography(s, game, view, rect):
+    """Grid and coastline only: the radio room's plotting sheet.  On a real
+    sea area the grid is the graticule, returned for its numbers."""
+    graticule = geo_grid.screen_graticule(game, view, rect)
+    if graticule is not None:
+        geo_grid.draw_lines(s, rect, *graticule)
+    step = None if graticule is not None else grid_step_nm(view.scale)
     left, top = view.screen_to_world(rect.x, rect.y)
     right, bottom = view.screen_to_world(rect.right, rect.bottom)
-    k = math.ceil(left / step)
-    while k * step <= right:
+    k = math.ceil(left / step) if step else 0
+    while step and k * step <= right:
         x, _ = view.world_to_screen(k * step, 0.0)
         lines.line(s, config.COLOR_GEO_GRID, (x, rect.y), (x, rect.bottom - 1), 1)
         k += 1
-    k = math.ceil(top / step)
-    while k * step <= bottom:
+    k = math.ceil(top / step) if step else 0
+    while step and k * step <= bottom:
         _, y = view.world_to_screen(0.0, k * step)
         lines.line(s, config.COLOR_GEO_GRID, (rect.x, y), (rect.right - 1, y), 1)
         k += 1
     coast = game.world.coast
     if getattr(coast, "landmasses", None) is None:
-        return
+        return graticule
     for land in _visible_landmasses(coast, view, tuple(rect)):
         poly = clip_polygon_to_rect([view.world_to_screen(px, py) for px, py in land.points],
                                     tuple(rect))
         if len(poly) >= 3:
             lines.polygon(s, _LAND, poly)
             lines.polygon(s, config.COLOR_LAND_EDGE, poly, 1)
+    return graticule
+
+
+def scale_box(view, rect) -> pygame.Rect:
+    """Where the chart's half-width (``±20 NM``) stands: bottom left."""
+    rect = pygame.Rect(rect)
+    return pygame.Rect(rect.x + 6, rect.bottom - 24, 180, layout.font(14).get_linesize())
 
 
 def draw_hfdf_chart(s, game, rect, selected_label=None) -> Viewport | None:
@@ -172,7 +183,18 @@ def draw_hfdf_chart(s, game, rect, selected_label=None) -> Viewport | None:
     north = (rect.right - 24, rect.y + 4, 20, layout.font(14).get_linesize())
     with layout.clip_to(s, rect), label_layout.label_scope(rect) as labels:
         labels.reserve(north)
-        _geography(s, game, view, rect)
+        empty = not (items["logged"] or items["live"] or items["fixes"])
+        if empty:
+            labels.reserve((rect.x + 10, rect.y + 6, rect.w - 40, 22))
+        scale_text = message("radio.chart.scale", range=f"{chart_half_nm(view):.0f}")
+        box = scale_box(view, rect)
+        labels.reserve((box.x, box.y, layout.text_width(layout.font(14), localize(scale_text)) + 4,
+                        box.h))
+        # The ship's position in degrees and minutes, bottom right.
+        position = geo_grid.position_rect(game, rect, 14, "bottomright")
+        if position is not None:
+            labels.reserve(position)
+        graticule = _geography(s, game, view, rect)
         # Live intercepts from the ship: an error wedge and a thin line.
         for row in items["live"]:
             selected = row["label"] == selected_label
@@ -209,7 +231,12 @@ def draw_hfdf_chart(s, game, rect, selected_label=None) -> Viewport | None:
         nato_symbols.draw_symbol(s, (sx, sy), "FRIEND", "SURFACE", 16)
         layout.blit_line(s, "uboot.pilot.north", north,
                          config.COLOR_TEXT_DIM, size=14, align="center")
-        if not (items["logged"] or items["live"] or items["fixes"]):
+        layout.blit_line(s, scale_text, box, config.COLOR_TEXT_DIM, size=14)
+        geo_grid.draw_position(s, game, rect, game.ship.x, game.ship.y, size=14,
+                               corner="bottomright")
+        if graticule is not None:
+            geo_grid.draw_labels(s, rect, *graticule, top_clear=north[3] + 6)
+        if empty:
             layout.blit_line(s, "radio.chart.empty",
                              (rect.x + 10, rect.y + 6, rect.w - 40, 22),
                              config.COLOR_TEXT_DIM, size=15)

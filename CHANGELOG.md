@@ -16,6 +16,16 @@ its course and speed from the AIS, so its vector no longer swings about.
 This holds on the uConsole and in the browser. Saves are v53; v38 to v52
 saves still load.
 
+## 1.3.255
+
+Release 1.3.255 makes the release checks more reliable, so new versions
+are no longer held back. A browser check of the station handover now
+reports why it fails instead of timing out silently. The game itself
+plays as in 1.3.254: the voice reads every log entry in order with a
+German speaking instruction, daily short missions, training progress and
+one line on the end panels saying what decided the mission. Saves are
+v53; v38 to v52 saves still load.
+
 ## 1.3.254
 
 Release 1.3.254 reads the log aloud completely and in order, and makes the

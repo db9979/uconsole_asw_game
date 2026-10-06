@@ -16,6 +16,17 @@ und ein fusioniertes Schiff mit AIS nimmt Kurs und Fahrt aus dem AIS, sodass
 sein Vektor nicht mehr hin und her schwenkt. Das gilt auf der uConsole und
 im Browser. Spielstände sind v53; Spielstände v38 bis v52 laden weiterhin.
 
+## 1.3.255
+
+Version 1.3.255 macht die Prüfungen vor einem Release zuverlässiger,
+damit neue Versionen nicht mehr ausbleiben. Eine Browser-Prüfung der
+Stationsübergabe nennt jetzt den Grund, wenn sie scheitert, statt still
+abzulaufen. Das Spiel selbst ist wie in 1.3.254: Die Stimme liest jede
+Logmeldung der Reihe nach mit deutscher Sprechanweisung vor, dazu
+tägliche Kurzeinsätze, Ausbildungsfortschritt und eine Zeile auf den
+Endtafeln, was den Einsatz entschieden hat. Spielstände sind v53; v38
+bis v52 laden weiter.
+
 ## 1.3.254
 
 Version 1.3.254 liest das Log vollständig und der Reihe nach vor und lässt

@@ -12,6 +12,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import localize, message, short_candidates
+from src.ui import hires
 
 # Font-Cache: pygame-Fonts sind teuer -> pro Größe einmal erzeugen.
 _FONT_CACHE: dict = {}
@@ -233,12 +234,17 @@ FONT_FALLBACK = "dejavusansmono,liberationmono,monospace"
 FONT_EM_SCALE = 0.85
 
 
-def _load_font(rendered_size: int, bold: bool) -> pygame.font.Font:
-    """The packaged face at one pixel size, else the closest system mono."""
+def _load_font(rendered_size: int, bold: bool, k: int = 1) -> pygame.font.Font:
+    """The packaged face at one pixel size, else the closest system mono.
+
+    At a drawing factor ``k`` above one (a large window, src/ui/hires.py) the
+    face measures at its logical size and renders ``k`` times larger."""
     # Round up so every logical size step (large text included) stays distinct.
     em = max(1, math.ceil(rendered_size * FONT_EM_SCALE))
     try:
         path = resources.files("data.fonts").joinpath(FONT_FILES[bool(bold)])
+        if k > 1:
+            return hires.HiFont(str(path), em, k)
         return pygame.font.Font(str(path), em)
     except (OSError, pygame.error, ModuleNotFoundError):
         return pygame.font.SysFont(FONT_FALLBACK, em, bold=bold)
@@ -253,15 +259,15 @@ def font(size: int, bold: bool = False) -> pygame.font.Font:
     # Tests and standalone tools can quit/reinitialize SDL between surfaces.
     # Cache only while a live display provides a stable SDL lifetime token.
     if display is None:
-        return _load_font(scaled_size(size), bold)
+        return _load_font(scaled_size(size), bold, hires.SCALE)
     if display is not _FONT_CACHE_DISPLAY:
         clear_font_cache()
         _FONT_CACHE_DISPLAY = display
     rendered_size = scaled_size(size)
-    key = (rendered_size, bold)
+    key = (rendered_size, bold, hires.SCALE)
     f = _FONT_CACHE.get(key)
     if f is None:
-        f = _load_font(rendered_size, bold)
+        f = _load_font(rendered_size, bold, hires.SCALE)
         _FONT_CACHE[key] = f
         _MEMO_FONT_IDS.add(id(f))
     return f
@@ -624,12 +630,12 @@ def fade_edges(screen, rect, color, width: int = 24, left: bool = True,
     """Fade text into ``color`` at the edges of ``rect`` (marquee ends)."""
     rect = pygame.Rect(rect)
     width = max(1, min(width, rect.w // 3))
-    key = (tuple(color), width, rect.h)
+    key = (tuple(color), width, rect.h, hires.SCALE)
     ramps = _FADE_CACHE.get(key)
     if ramps is None:
         if len(_FADE_CACHE) > 16:
             _FADE_CACHE.clear()
-        ramp = pygame.Surface((width, rect.h), pygame.SRCALPHA)
+        ramp = hires.surface((width, rect.h), pygame.SRCALPHA)
         for x in range(width):
             alpha = round(255 * (1 - x / width))
             pygame.draw.line(ramp, (*color[:3], alpha), (x, 0), (x, rect.h - 1))

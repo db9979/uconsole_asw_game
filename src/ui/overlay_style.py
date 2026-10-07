@@ -14,6 +14,7 @@ import pygame
 
 from src.core import config
 from src.ui import layout, quality, splash_view
+from src.ui import hires
 
 PHOSPHOR = splash_view.PHOSPHOR
 PHOSPHOR_DIM = splash_view.PHOSPHOR_DIM
@@ -65,21 +66,21 @@ def backdrop(surface: pygame.Surface, t: float) -> None:
 def _draw_backdrop(surface: pygame.Surface, t: float) -> None:
     splash_view.draw_scene(surface, t)
     size = surface.get_size()
-    key = (size, BACKDROP_VEIL)
+    key = (size, BACKDROP_VEIL, hires.SCALE)
     dim = _DIM.get(key)
     if dim is None:
         _DIM.clear()
-        dim = pygame.Surface(size, pygame.SRCALPHA)
+        dim = hires.surface(size, pygame.SRCALPHA)
         dim.fill(BACKDROP_VEIL)
         _DIM[key] = dim
     surface.blit(dim, (0, 0))
 
 
 def _fill(size) -> pygame.Surface:
-    key = (tuple(size), PANEL_FILL)
+    key = (tuple(size), PANEL_FILL, hires.SCALE)
     surf = _PANELS.get(key)
     if surf is None:
-        surf = pygame.Surface(size, pygame.SRCALPHA)
+        surf = hires.surface(size, pygame.SRCALPHA)
         surf.fill(PANEL_FILL)
         _PANELS[key] = surf
         while len(_PANELS) > _PANELS_MAX:

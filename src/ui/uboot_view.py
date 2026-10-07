@@ -42,6 +42,7 @@ from src.ui.uboot_scope import draw_scope_page
 from src.ui.uboot_pilot import draw_pilot_page
 from src.ui.viewport import Viewport
 from src.ui.weather_station import draw_weather_station
+from src.ui import hires
 
 UBOOT_PAGES = ("UBOOT_NAV", "UBOOT_WEAPONS", "UBOOT_SCOPE", "UBOOT_THREAT")
 # Panel pages of each boat station beside the chart (the sonar room is full screen).
@@ -1625,11 +1626,11 @@ _SILENT_TINT: dict = {}
 
 def _silent_tints(size) -> tuple:
     key = (tuple(size), tuple(config.UBOOT_SILENT_LIGHT),
-           tuple(config.UBOOT_SILENT_LIGHT_FLOOR))
+           tuple(config.UBOOT_SILENT_LIGHT_FLOOR), hires.SCALE)
     tints = _SILENT_TINT.get(key)
     if tints is None:
         _SILENT_TINT.clear()
-        multiply, floor = pygame.Surface(key[0]), pygame.Surface(key[0])
+        multiply, floor = hires.surface(key[0]), hires.surface(key[0])
         multiply.fill(key[1])
         floor.fill(key[2])
         tints = _SILENT_TINT[key] = (multiply, floor)

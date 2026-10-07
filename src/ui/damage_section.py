@@ -24,6 +24,7 @@ from src.core import config
 from src.core.i18n import raw_text
 from src.ui import console, layout, lines
 from src.ui import theme
+from src.ui import hires
 
 # Metres: x forward of midships, z above the keel (frigate); y to starboard in
 # the cross-section looking forward. Rooms are convex polygons.
@@ -116,7 +117,7 @@ def _phase() -> float:
 
 
 def _cached(key, build):
-    key = (key, theme.revision())
+    key = (key, theme.revision(), hires.SCALE)
     surface = _CACHE.get(key)
     if surface is None:
         if len(_CACHE) >= _CACHE_MAX:
@@ -130,9 +131,9 @@ def masked(s, polygon, paint) -> None:
     bounds = pygame.Rect(min(p[0] for p in polygon), min(p[1] for p in polygon), 1, 1)
     bounds.width = max(p[0] for p in polygon) - bounds.x + 1
     bounds.height = max(p[1] for p in polygon) - bounds.y + 1
-    layer = pygame.Surface(bounds.size, pygame.SRCALPHA)
+    layer = hires.surface(bounds.size, pygame.SRCALPHA)
     paint(layer, bounds)
-    mask = pygame.Surface(bounds.size, pygame.SRCALPHA)
+    mask = hires.surface(bounds.size, pygame.SRCALPHA)
     pygame.draw.polygon(mask, (255, 255, 255, 255),
                         [(x - bounds.x, y - bounds.y) for x, y in polygon])
     layer.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
@@ -200,7 +201,7 @@ def frigate_room_polygons(profile_rect, section_rect, heel_deg=0.0, draft_m=7.5)
 
 def _static_profile(rect) -> pygame.Surface:
     profile = Profile(pygame.Rect(0, 0, rect.w, rect.h))
-    surface = pygame.Surface(rect.size, pygame.SRCALPHA)
+    surface = hires.surface(rect.size, pygame.SRCALPHA)
     hull = profile.points(FRIGATE["hull"])
     for coords in FRIGATE["blocks"]:
         pts = profile.points(coords)
@@ -526,7 +527,7 @@ BOAT_TINTS = {"stern": (92, 86, 40), "engine": (96, 70, 36), "battery": (90, 46,
 def _static_boat(size) -> pygame.Surface:
     rect = pygame.Rect((0, 0), size)
     hull, outer, tower, cells, pressure = boat_cells(rect)
-    surface = pygame.Surface(size, pygame.SRCALPHA)
+    surface = hires.surface(size, pygame.SRCALPHA)
     pygame.draw.polygon(surface, HULL_FILL, outer)
     pygame.draw.polygon(surface, HULL_FILL, tower)
     lines.lines(surface, STEEL, True, outer, 1)
@@ -555,10 +556,10 @@ def _static_boat(size) -> pygame.Surface:
     lines.line(surface, STEEL, bow_plane, (bow_plane[0] + 8, bow_plane[1] + 3), 2)
     # The pressure hull with its compartments and their fittings.
     pygame.draw.polygon(surface, ROOM_FILL, pressure)
-    tint = pygame.Surface(size, pygame.SRCALPHA)
+    tint = hires.surface(size, pygame.SRCALPHA)
     for name, cell in zip(BOAT["order"], cells):
         tint.fill((*BOAT_TINTS[name], 150), cell)
-    mask = pygame.Surface(size, pygame.SRCALPHA)
+    mask = hires.surface(size, pygame.SRCALPHA)
     pygame.draw.polygon(mask, (255, 255, 255, 255), pressure)
     tint.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
     surface.blit(tint, (0, 0))
@@ -602,7 +603,7 @@ def _static_boat(size) -> pygame.Surface:
 def boat_mask(size) -> pygame.Surface:
     rect = pygame.Rect((0, 0), size)
     pressure = boat_cells(rect)[4]
-    mask = pygame.Surface(size, pygame.SRCALPHA)
+    mask = hires.surface(size, pygame.SRCALPHA)
     pygame.draw.polygon(mask, (255, 255, 255, 255), pressure)
     return mask
 
@@ -616,7 +617,7 @@ def draw_boat_section(s, rect, control, capacity, trim_deg=0.0, selected=None) -
     order = BOAT["order"]
     model_order = ["bow", "control", "quarters", "battery", "engine", "stern"]
     tan_trim = math.tan(math.radians(max(-20.0, min(20.0, float(trim_deg))))) * 1.5
-    layer = pygame.Surface(rect.size, pygame.SRCALPHA)
+    layer = hires.surface(rect.size, pygame.SRCALPHA)
     t = _phase()
     for name, cell in zip(order, cells):
         index = model_order.index(name)

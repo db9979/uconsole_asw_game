@@ -10,7 +10,7 @@ from src.core import config, status_tips
 from src.core.i18n import nm_unit, display_value, localized, localize, raw_text
 from src.core.station import Station
 from src.ui import layout, pointer
-from src.ui import theme
+from src.ui import hires, theme
 from src.ui import observations
 from src.air import helicopter as helicopter_physics
 
@@ -92,7 +92,8 @@ def _helicopter_waterfall(screen, rect, rows, *, receiver, amber=False):
     from src.ui import sonar_view
     pygame.draw.rect(screen, sonar_view.NAVY, rect)
     if rows and rect.w > 0 and rect.h > 0:
-        key = (receiver, receiver.sequence, rect.size, amber, theme.revision())
+        key = (receiver, receiver.sequence, rect.size, amber, theme.revision(),
+               hires.SCALE)
         scaled = _HELICOPTER_WATERFALL_CACHE.get(key)
         if scaled is None:
             values = np.clip(np.asarray(rows[-64:], dtype=np.float32), 0, 1)
@@ -100,7 +101,7 @@ def _helicopter_waterfall(screen, rect, rows, *, receiver, amber=False):
                 pixels = sonar_view.waterfall_pixels(
                     values, contrast=1.6, palette="amber" if amber else "green")
                 surface = pygame.surfarray.make_surface(pixels.transpose(1, 0, 2))
-                scaled = pygame.transform.scale(surface, rect.size)
+                scaled = hires.scaled_pixels(surface, rect.size)
                 if len(_HELICOPTER_WATERFALL_CACHE) >= 4:
                     _HELICOPTER_WATERFALL_CACHE.clear()
                 _HELICOPTER_WATERFALL_CACHE[key] = scaled

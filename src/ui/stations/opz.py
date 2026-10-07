@@ -34,6 +34,7 @@ from src.ui.stations.common import (
     draw_station_page_tabs,
     message)
 from src.ui.stations.eloka import (_near_point)
+from src.ui import hires
 
 
 # --- OPZ / CIC (M12) -------------------------------------------------------
@@ -782,12 +783,12 @@ def _opz_basemap_surface(game, map_rect: pygame.Rect, view,
     key = (world, coast, map_rect.size, round(scale, 6), bucket_x, bucket_y,
            config.COLOR_GEO_BG, config.COLOR_GEO_GRID,
            config.COLOR_LAND, config.COLOR_LAND_EDGE,
-           config.COLOR_SHALLOW, config.COLOR_DEEP, chart_layer)
+           config.COLOR_SHALLOW, config.COLOR_DEEP, chart_layer, hires.SCALE)
     cached = getattr(_opz_basemap_surface, "_cache", None)
     if cached is not None and cached[0] == key:
         return cached[1]
 
-    layer = pygame.Surface(map_rect.size)
+    layer = hires.surface(map_rect.size)
     layer.fill(config.COLOR_GEO_BG)
     center_x = map_rect.w / 2.0
     center_y = map_rect.h / 2.0

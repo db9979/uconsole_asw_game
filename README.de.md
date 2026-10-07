@@ -10,15 +10,18 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.288**
+Aktuelle Version: **1.3.289**
 
-Version 1.3.288 beendet das Blinken des Bildes hinter einem offenen Menü in
-der Mac-App. Unter macOS übernahm die Zeichenfläche des Spiels den
-Alphakanal des Fensters, sodass die Schleier und Tafeln von Optionen, Hilfe,
-Speichern und den anderen Menüs das Bild teilweise durchsichtig machten und
-das Fenster dahinter flackerte. Die Zeichenfläche ist jetzt immer deckend;
-auf dem uConsole, unter Windows und im Spiel ändert sich nichts. Spielstände
-sind v53; v38 bis v52 laden weiterhin.
+Version 1.3.289 macht das Spiel auf großen Bildschirmen scharf. In einem Fenster
+oder Vollbild deutlich größer als 1280 x 720, etwa auf einem PC-Monitor, einem
+4K-Bildschirm oder dem Mac, werden Schrift, Linien, Symbole und Karten jetzt in
+der Auflösung des Bildschirms gezeichnet, mit doppelt oder dreifach so vielen
+Pixeln wie auf der uConsole und genau gleichem Aufbau, statt ein vergrößertes
+1280-x-720-Bild zu zeigen. Unter Windows nutzt das Spiel bei 125 % oder 150 %
+Anzeigeskalierung die echten Bildschirmpixel, statt das Bild von Windows
+verwischen zu lassen. Auf dem Mac ist es schon schärfer; die volle
+Retina-Auflösung folgt in einem weiteren Schritt. Die Grafikstufe Sparsam und die uConsole behalten das
+1280-x-720-Bild. Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

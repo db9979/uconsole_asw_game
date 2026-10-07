@@ -26,7 +26,7 @@ from src.core import pointer_input, station_alarms, uboot_local
 from src.nations.nations import reference_summary
 from src.ui import layout, pointer
 from src.ui import observations
-from src.ui import overlay_style, quality, theme
+from src.ui import hires, overlay_style, quality, theme
 from src.ui.red_light import RedLight, draw_lamp
 from src.ui.shock_fx import ShockFx
 from src.ui import eco_lamp, game_menu, hit_inset, log_voice_view, mic_meter, talk_view
@@ -496,9 +496,27 @@ class DrawMixin:
         if level > 0.0:
             s.blit(light.overlay(s.get_size()), (0, 0), special_flags=pygame.BLEND_MULT)
 
+    def _sync_canvas_scale(self) -> None:
+        """Draw at the window's own resolution in a large window.
+
+        A desktop monitor or a 4K screen gets a canvas two or three times
+        the 1280x720 pixels with the same layout (src/ui/hires.py); the
+        uConsole's 1280x720 screen and the low graphics level keep the plain
+        canvas.  Display only."""
+        try:
+            w, h = pygame.display.get_window_size()
+        except pygame.error:
+            return
+        k = hires.choose_scale(w, h, config.SCREEN_W, config.SCREEN_H, quality.LEVEL)
+        changed = hires.set_scale(k)
+        if changed or (hires.ACTIVE and hires.k_of(self.screen) != k):
+            self.screen = hires.canvas((config.SCREEN_W, config.SCREEN_H))
+            layout.clear_text_memo()
+
     def _draw(self) -> None:
         # Mouse targets are rebuilt with every frame (src/ui/pointer.py).
         pointer.reset()
+        self._sync_canvas_scale()
         self._apply_text_size()
         s = self.screen
         eco = self._eco_display_active()
@@ -656,7 +674,7 @@ class DrawMixin:
         rect = rect.clip(s.get_rect())
         if rect.w < 2 or rect.h < 2:
             return
-        glow = pygame.Surface(rect.size, pygame.SRCALPHA)
+        glow = hires.surface(rect.size, pygame.SRCALPHA)
         glow.fill((*config.COLOR_TEXT[:3], 30))
         s.blit(glow, rect.topleft)
         pygame.draw.rect(s, config.COLOR_TEXT, rect, 1)
@@ -1829,6 +1847,19 @@ class DrawMixin:
         self.menu_font = layout.font(21)
         self.menu_font_big = layout.font(34, bold=True)
 
+    @staticmethod
+    def default_window_size() -> tuple:
+        """The window outside fullscreen: 1280x720, grown by Windows'
+        display scaling so it keeps its size on a 125 % or 150 % screen."""
+        scale = hires.display_scale()
+        if scale <= 1.0:
+            return (config.SCREEN_W, config.SCREEN_H)
+        try:
+            desktop = pygame.display.get_desktop_sizes()[0]
+        except (pygame.error, IndexError):
+            desktop = None
+        return hires.window_size(config.SCREEN_W, config.SCREEN_H, scale, desktop)
+
     def toggle_fullscreen(self, persist: bool = True) -> None:
         """Vollbild: (0,0)+FULLSCREEN = native Desktop-Größe (deckt Taskleiste
         ab, keine schwarzen Balken). Zurück = 1280x720-Fenster."""
@@ -1837,7 +1868,7 @@ class DrawMixin:
             self.display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         else:
             self.display = pygame.display.set_mode(
-                (config.SCREEN_W, config.SCREEN_H), pygame.RESIZABLE)
+                self.default_window_size(), pygame.RESIZABLE)
         if persist:
             from dataclasses import replace
             self.preferences = replace(self.preferences, fullscreen=self.fullscreen)

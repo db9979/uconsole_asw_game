@@ -15,6 +15,8 @@ surface's clip rect (grown by a small margin) before they reach gfxdraw.
 import pygame
 from pygame import gfxdraw
 
+from src.ui import hires
+
 ENABLED = False
 
 # Margin around the clip rect: far outside points are cut back to it, so
@@ -107,15 +109,21 @@ def _aa_segment(surface, color, start, end, bounds) -> None:
         gfxdraw.line(surface, x0, y0, x1, y1, color)
 
 
+def _aa(surface) -> bool:
+    # A high-resolution canvas draws its lines at the window's pixels: the
+    # plain primitive (scaled by src/ui/hires.py) is already smooth there.
+    return ENABLED and hires.k_of(surface) == 1
+
+
 def line(surface, color, start, end, width: int = 1) -> None:
-    if ENABLED and width == 1:
+    if width == 1 and _aa(surface):
         _aa_segment(surface, color, start, end, _bounds(surface))
         return
     pygame.draw.line(surface, color, start, end, width)
 
 
 def lines(surface, color, closed: bool, points, width: int = 1) -> None:
-    if ENABLED and width == 1 and len(points) >= 2:
+    if width == 1 and len(points) >= 2 and _aa(surface):
         pts = list(points)
         bounds = _bounds(surface)
         for start, end in zip(pts, pts[1:] + (pts[:1] if closed else [])):
@@ -125,7 +133,7 @@ def lines(surface, color, closed: bool, points, width: int = 1) -> None:
 
 
 def polygon(surface, color, points, width: int = 0) -> None:
-    if ENABLED and width <= 1 and len(points) >= 3:
+    if width <= 1 and len(points) >= 3 and _aa(surface):
         pts = clip_polygon(points, _bounds(surface))
         if len(pts) < 3:
             return

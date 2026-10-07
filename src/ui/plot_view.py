@@ -14,6 +14,7 @@ import pygame
 from src.core import config, plot
 from src.core.i18n import localize, message, raw_text
 from src.ui import label_layout, layout, lines
+from src.ui import hires
 
 MARK_PX = 6
 EDGE_INSET_PX = 10       # off-chart objects get an edge arrow this far in
@@ -216,7 +217,7 @@ def toolbar_rect(chart) -> pygame.Rect:
 def _draw_toolbar(surface, game, chart, color, readout) -> None:
     from src.ui import pointer, theme
     bar = toolbar_rect(chart)
-    panel = pygame.Surface(bar.size, pygame.SRCALPHA)
+    panel = hires.surface(bar.size, pygame.SRCALPHA)
     panel.fill((*config.COLOR_PANEL_BG[:3], 225))
     surface.blit(panel, bar)
     pygame.draw.rect(surface, theme.c("line"), bar, 1)

@@ -17,6 +17,7 @@ import random
 import pygame
 
 from src.core import config
+from src.ui import hires
 
 # Sky and sea (top, horizon) per light; night is the start screen's palette.
 SKY_NIGHT = ((3, 7, 16), (20, 44, 62))
@@ -173,6 +174,7 @@ def palette(sky: dict, haze: float) -> dict:
 
 
 def _cached(cache, key, build):
+    key = (key, hires.SCALE)
     surf = cache.get(key)
     if surf is None:
         surf = build()
@@ -204,7 +206,7 @@ def _eyepiece_mask(size, kind: str) -> pygame.Surface:
     soft = EYEPIECE_SOFT * h / (h / 2.0)
     alpha = np.clip((d - (1.0 - soft)) / soft, 0.0, 1.0) * 255.0
     pygame.surfarray.pixels_alpha(surf)[:, :] = alpha.astype(np.uint8)
-    return surf
+    return hires.to_factor(surf, hires.SCALE)
 
 
 def eyepiece_mask(size, kind: str) -> pygame.Surface:
@@ -214,7 +216,7 @@ def eyepiece_mask(size, kind: str) -> pygame.Surface:
 
 def _gradient(size, top, bottom) -> pygame.Surface:
     w, h = size
-    surf = pygame.Surface((max(1, w), max(1, h)))
+    surf = hires.surface((max(1, w), max(1, h)))
     for y in range(max(1, h)):
         pygame.draw.line(surf, blend(top, bottom, y / max(1, h - 1)), (0, y), (w, y))
     return surf
@@ -223,7 +225,7 @@ def _gradient(size, top, bottom) -> pygame.Surface:
 def _shade(size, color) -> pygame.Surface:
     """Transparent at the top, ``color`` at the bottom (the deep sea)."""
     w, h = size
-    surf = pygame.Surface((max(1, w), max(1, h)), pygame.SRCALPHA)
+    surf = hires.surface((max(1, w), max(1, h)), pygame.SRCALPHA)
     for y in range(max(1, h)):
         alpha = int(235 * (y / max(1, h - 1)) ** 0.8)
         pygame.draw.line(surf, (*color, alpha), (0, y), (w, y))
@@ -797,7 +799,7 @@ def draw_lens_water(s, rect, cover: float, drops: float, t: float) -> None:
 
 
 def _fog(width, height, color) -> pygame.Surface:
-    surf = pygame.Surface((max(1, width), max(1, height)), pygame.SRCALPHA)
+    surf = hires.surface((max(1, width), max(1, height)), pygame.SRCALPHA)
     for y in range(max(1, height)):
         alpha = int(170 * math.sin(math.pi * y / max(1, height - 1)))
         pygame.draw.line(surf, (*color, alpha), (0, y), (width, y))

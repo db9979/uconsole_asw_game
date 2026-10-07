@@ -16,6 +16,7 @@ import random
 import pygame
 
 from src.core import shock
+from src.ui import hires
 
 # Seconds the jolt lasts and its first amplitude (canvas pixels).
 DURATION_S = {"shock_light": 0.6, "shock_heavy": 1.1}
@@ -106,8 +107,8 @@ class ShockFx:
 
     def _tint_surface(self, size, level: float):
         level = round(level * 16) / 16.0
-        if self._tint is None or self._tint.get_size() != size:
-            self._tint = pygame.Surface(size)
+        if self._tint is None or self._tint.get_size() != size or hires.stale(self._tint):
+            self._tint = hires.surface(size)
             self._tint_level = None
         if level != self._tint_level:
             self._tint.fill(tuple(int(255 + (c - 255) * level) for c in EMERGENCY_LIGHT))
@@ -115,8 +116,8 @@ class ShockFx:
         return self._tint
 
     def _crack_surface(self):
-        if self._cracks is None:
-            surface = pygame.Surface((300, 300), pygame.SRCALPHA)
+        if self._cracks is None or hires.stale(self._cracks):
+            surface = hires.surface((300, 300), pygame.SRCALPHA)
             stream = random.Random(7)
             cx = cy = 150
             for _ in range(11):

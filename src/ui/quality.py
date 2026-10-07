@@ -20,6 +20,9 @@ pixels are repeated exactly (crisp); otherwise "sharp" scaling first repeats
 pixels up to the next whole factor and then smooths down to the window, which
 keeps text and thin lines even instead of the uneven rows of plain pixel
 scaling at 1.5x, without the blur of smoothing the small canvas directly.
+In a clearly larger window the normal and full levels draw the canvas itself
+at two or three times its pixels (src/ui/hires.py); the scaling here then
+only fits those pixels to the window.
 """
 
 from __future__ import annotations
@@ -137,13 +140,16 @@ def _scratch(size, like: pygame.Surface, store: dict = _SCRATCH) -> pygame.Surfa
 def scale_canvas(canvas: pygame.Surface, size, level: str | None = None) -> pygame.Surface:
     """The canvas scaled to ``size`` for the window.
 
-    The result is a kept surface: valid until the next call that scales the
-    same way (the frame blits it at once)."""
+    A high-resolution canvas (src/ui/hires.py) is scaled from its physical
+    pixels.  The result is a kept surface: valid until the next call that
+    scales the same way (the frame blits it at once)."""
+    from src.ui import hires
     level = LEVEL if level is None else level
     width, height = int(size[0]), int(size[1])
-    cw, ch = canvas.get_size()
+    cw, ch = pygame.Surface.get_size(canvas)
     if (width, height) == (cw, ch):
         return canvas
+    scale, smoothscale = hires.raw("scale"), hires.raw("smoothscale")
     factor = min(width / cw, height / ch)
     whole = round(factor)
     # Scaled into kept surfaces: a desktop window would otherwise allocate
@@ -151,12 +157,12 @@ def scale_canvas(canvas: pygame.Surface, size, level: str | None = None) -> pyga
     if (level == "low" or canvas.get_bitsize() not in (24, 32)
             or (abs(factor - whole) < 1e-9 and whole >= 1
                 and (width, height) == (cw * whole, ch * whole))):
-        return pygame.transform.scale(canvas, (width, height),
-                                      _scratch((width, height), canvas, _OUTPUT))
+        return scale(canvas, (width, height),
+                     _scratch((width, height), canvas, _OUTPUT))
     output = _scratch((width, height), canvas, _OUTPUT_SMOOTH)
     up = max(1, math.ceil(factor))
     source = canvas
     if up > 1:
         source = _scratch((cw * up, ch * up), canvas)
-        pygame.transform.scale(canvas, source.get_size(), source)
-    return pygame.transform.smoothscale(source, (width, height), output)
+        scale(canvas, pygame.Surface.get_size(source), source)
+    return smoothscale(source, (width, height), output)

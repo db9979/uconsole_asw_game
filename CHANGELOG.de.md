@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.286
+
+Version 1.3.286 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
+oder der blaue Chip Namen in der Kartenecke blendet Namen und Fahrt aller
+Kontakte auf allen Karten an jeder Station beider Seiten aus und wieder ein;
+Symbole, Kursvektoren und der Tooltip bleiben, und die uConsole merkt sich
+die Wahl in ihren Einstellungen. Im Browser tun der Knopf Namen über der
+Karte und Alt+N dasselbe für diesen Browser-Tab. Ein Name bleibt auch
+auf seiner Seite des Symbols, wenn der geschätzte Kurs eines Kontakts
+herumschwenkt. Spielstände sind v53;
+Spielstände v38 bis v52 laden weiterhin.
+
 ## 1.3.285
 
 Version 1.3.285 macht den Remote-Crew-Browser per Maus bedienbar. Jede

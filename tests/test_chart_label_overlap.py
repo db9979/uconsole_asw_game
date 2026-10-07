@@ -438,3 +438,21 @@ def test_track_names_stay_put_from_frame_to_frame():
         previous = current
     assert seen > 100
     assert moves == []
+
+
+def test_a_label_keeps_its_side_when_the_course_swings_round():
+    """Windows CI 2026-10-06: a convoy name jumped from above its ship to
+    below it.  The candidates beside a contact turn with its course, so a
+    course estimate swinging from east to west turned the remembered
+    candidate onto the other side.  The label keeps its spot instead."""
+    from src.ui import label_layout
+    bounds = pygame.Rect(0, 0, 400, 300)
+    size = (80, 12)
+    key = ("test", "swing")
+    label_layout._MEMORY.pop(key, None)
+    with label_layout.label_scope(bounds) as field:
+        first = field.place(size, label_layout.beside((200, 150), size, 90.0), key)
+    with label_layout.label_scope(bounds) as field:
+        second = field.place(size, label_layout.beside((201, 150), size, 270.0), key)
+    assert abs(second.centery - first.centery) <= 2
+    assert abs(second.centerx - first.centerx) <= 2

@@ -39,6 +39,9 @@ class Preferences:
     audio: bool = True
     large_text: bool = False
     tooltips: bool = True
+    # Contact names and speeds on every chart (Alt+N); symbols, vectors and
+    # the hover tooltip stay. Display only, this device's own choice.
+    contact_labels: bool = True
     simlog: bool = False
     night_mode: bool = False
     # Red light by itself at night and on an alarm (night_mode keeps it on).
@@ -170,7 +173,7 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     if language not in SUPPORTED_LANGUAGES:
         language = defaults.language
     values: dict[str, object] = {"language": language}
-    for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
+    for name in ("fullscreen", "audio", "large_text", "tooltips", "contact_labels", "simlog",
                  "night_mode", "red_light_auto", "high_contrast", "aa_lines", "speech", "microphone", "live_ais_enabled",
                  "live_adsb_enabled", "onboarded", "llm_enabled", "llm_radio", "llm_opfor", "enemy_learns",
                  "tts_enabled", "tts_xo", "tts_crew", "tts_clean", "tts_log", "stt_enabled",

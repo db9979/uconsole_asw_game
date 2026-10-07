@@ -211,4 +211,5 @@ def draw_report_chart(game, boat, view) -> None:
     lines.line(s, report_color(), (int(px), int(py)),
                (int(px + 24 * math.sin(rad)), int(py - 24 * math.cos(rad))), 2)
     _map_label(s, game, message("uboot.radio.chart_label", age=f"{age / 60.0:.0f}"),
-               (int(px) + 8, int(py) - radius - 20), report_color(), config.MAP_RECT, size=12)
+               (int(px) + 8, int(py) - radius - 20), report_color(), config.MAP_RECT, size=12,
+               contact=True)

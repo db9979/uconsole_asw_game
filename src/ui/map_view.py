@@ -15,6 +15,7 @@ from src.core.station import Station
 from src.core.i18n import (nm_unit, country_name, display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.ui.plot_view import draw_plot
+from src.ui import pointer
 from src.ui import chart_symbols, chart_trails, label_layout, layout, lines, map_fx_view, theme
 from src.world import atmosphere, geo
 from src.ui import nato_symbols
@@ -277,15 +278,62 @@ def _visible_landmasses(coast, view, rect):
             and land.bounds[3] >= top and land.bounds[1] <= bottom]
 
 
+def contact_labels_shown(game) -> bool:
+    """Contact names and speeds on the charts (``Alt+N``; symbols, vectors
+    and the hover tooltip stay when they are off)."""
+    shown = getattr(game, "contact_labels_shown", None)
+    return shown() if callable(shown) else True
+
+
+# The chip that shows and hides the contact names (Alt+N) in a chart corner.
+LABEL_CHIP_SIZE = 13
+LABEL_CHIP_KEY = "Alt+N"
+
+
+def contact_label_chip_rect(r, top=None) -> pygame.Rect:
+    """Box of the names chip in the chart's bottom-right corner (or at the
+    right edge from ``top`` down), wide enough for either state's text."""
+    from src.core.i18n import key_label
+    face = layout.font(LABEL_CHIP_SIZE)
+    text_w = max(layout.text_width(face, localize(structured_message(name)))
+                 for name in ("chart.contact_labels.on", "chart.contact_labels.off"))
+    width = layout.text_width(face, key_label(LABEL_CHIP_KEY)) + 8 + 6 + text_w + 16
+    height = face.get_linesize() + 6
+    box = pygame.Rect(r)
+    y = box.bottom - height - 4 if top is None else top
+    return pygame.Rect(box.right - width - 4, y, width, height)
+
+
+def draw_contact_label_chip(game, r, top=None) -> pygame.Rect:
+    """The blue Alt+N chip: shows the names' state, a click switches it."""
+    rect = contact_label_chip_rect(r, top)
+    shown = contact_labels_shown(game)
+    layout.key_button(game.screen, rect, LABEL_CHIP_KEY,
+                      structured_message("chart.contact_labels.on" if shown
+                              else "chart.contact_labels.off"),
+                      size=LABEL_CHIP_SIZE, min_size=10, active=shown)
+    pointer.add_key(rect, pygame.K_n, pygame.KMOD_ALT)
+    pointer.add_tip(rect, layout.tooltip_payload(
+        structured_message("chart.contact_labels.title"),
+        structured_message("chart.contact_labels.tip"),
+        keys=(LABEL_CHIP_KEY,)))
+    return rect
+
+
 def _map_label(surface, game, text, pos, color, chart, candidates=None,
-               size=None, key=None) -> None:
+               size=None, key=None, contact=False) -> None:
     """Label beside a chart symbol, flipped left/down so it is never cut off.
 
     Inside a :func:`label_layout.label_scope` the label also steps aside
     from labels, symbols and lines placed before it (``candidates``
     overrides the default positions around ``pos``; a callable gets the
     label's size) and, in a deferred scope, is placed after the chart's
-    symbols and lines; a ``key`` keeps it on last frame's spot."""
+    symbols and lines; a ``key`` keeps it on last frame's spot.  A
+    ``contact`` label (a contact's name) is left out while ``Alt+N`` hides
+    them."""
+    if contact and not contact_labels_shown(game):
+        return
+
     def draw() -> None:
         shown = localize(text)
         face = layout.font(size) if size else game.font
@@ -319,7 +367,7 @@ def _track_label(surface, game, track, point, color, chart, chart_key: str) -> N
         text = f"{text} {speed:.0f}kn"
     _map_label(surface, game, raw_text(text), point, color, chart,
                candidates=lambda size: label_layout.beside(point, size, track.get("course")),
-               key=(chart_key, track["track_id"]))
+               key=(chart_key, track["track_id"]), contact=True)
 
 
 def draw_chart_geography(game, view, r, top_band=None) -> None:
@@ -411,6 +459,8 @@ def draw_chart_geography(game, view, r, top_band=None) -> None:
     for rect in reserved if field is not None else ():
         field.reserve(rect)
     axis_labels = []
+    # The names chip (Alt+N) holds the bottom-right corner.
+    name_chip = contact_label_chip_rect(r)
     # A real sea area: meridians and parallels in degrees and minutes
     # instead of the NM grid (display only, src/world/geo.py).
     columns = [(k * step, grid_label(k * step)) for k in range(gx0, gx1 + 1)]
@@ -432,7 +482,9 @@ def draw_chart_geography(game, view, r, top_band=None) -> None:
             if r[0] <= x <= r[0] + r[2]:
                 lines.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
                 image = layout.render_line(face, text, config.COLOR_TEXT_DIM)
-                if int(x) + 3 >= r[0] + left_w and int(x) + 3 + image.get_width() <= r[0] + r[2] - 2:
+                box = image.get_rect(topleft=(int(x) + 3, bottom_band))
+                if (box.x >= r[0] + left_w and box.right <= r[0] + r[2] - 2
+                        and not box.colliderect(name_chip)):
                     axis_labels.append((text, image, (int(x) + 3, bottom_band)))
         for g, text in rows:
             _, y = view.world_to_screen(0, g)
@@ -531,6 +583,7 @@ def draw_map_view(game, tr=None) -> None:
         # Own ship first: no label may cover it.
         ox, oy = view.world_to_screen(game.ship.x, game.ship.y)
         labels.reserve((int(ox) - 10, int(oy) - 10, 20, 20))
+        labels.reserve(contact_label_chip_rect(r))
         draw_chart_geography(game, view, r)
         _draw_guard_area(game, view, r)
         # One track per contact: reports the OPZ fused stand behind their fusion.
@@ -610,7 +663,7 @@ def draw_map_view(game, tr=None) -> None:
                              (int(ex), int(ey)), 1)
             label_layout.reserve_segment((fx, fy), (ex, ey), 2)
             _map_label(s, game, raw_text(track["source"] + " " + track["label"]),
-                       (int(fx) + 12, int(fy) + 24), config.COLOR_DANGER, r)
+                       (int(fx) + 12, int(fy) + 24), config.COLOR_DANGER, r, contact=True)
         for e in game.essms:
             px, py = view.world_to_screen(e.x, e.y)
             pygame.draw.circle(s, theme.pick((220, 200, 90), (161, 98, 7)), (int(px), int(py)), 3)
@@ -630,7 +683,7 @@ def draw_map_view(game, tr=None) -> None:
             _map_label(s, game, message(
                 "map.line.sonar_fix",
                 contact=observations.contact_display_id(game, contact),
-                source=fix["source"]), (px + 9, py - 19), color, r, size=12)
+                source=fix["source"]), (px + 9, py - 19), color, r, size=12, contact=True)
 
         contact = game.selected_contact or game.target
         if contact is not None:
@@ -657,11 +710,12 @@ def draw_map_view(game, tr=None) -> None:
                     "map.line.contact_fix",
                     contact=observations.contact_display_id(game, contact),
                     range=f"{observations.range_nm(contact, game.ship):4.1f}", source=src),
-                    (int(tx) + 11, int(ty) - 22), line_col, r)
+                    (int(tx) + 11, int(ty) - 22), line_col, r, contact=True)
                 nato_symbols.draw_motion_vector(
                     s, (tx, ty), getattr(contact, "tma_course", None),
                     getattr(contact, "tma_speed", None),
-                    view.scale, line_col, font=game.font, max_px=120)
+                    view.scale, line_col,
+                    font=game.font if contact_labels_shown(game) else None, max_px=120)
             else:
                 # The weapons station's target carries the ping hint in one
                 # label (the overlay adds no second one at the same spot).
@@ -676,7 +730,7 @@ def draw_map_view(game, tr=None) -> None:
                 _map_label(s, game, structured_message(
                     "weapons.line.bearing_only.short" if hint else "map.line.bearing_only",
                     contact=observations.contact_display_id(game, contact)),
-                    (int(fx) + 14, int(fy) - 20), line_col, r)
+                    (int(fx) + 14, int(fy) - 20), line_col, r, contact=True)
 
         # Manuell protokollierte HFDF-Messungen und daraus berechnete Fixes.
         for report in game.hfdf_log[-6:]:
@@ -711,7 +765,8 @@ def draw_map_view(game, tr=None) -> None:
                 radius = max(4, int(fix["sigma_nm"] * view.scale))
                 pygame.draw.circle(s, config.COLOR_ESM, (int(px), int(py)), radius, 1)
             _map_label(s, game, message("map.hfdf_fix", label=fix["label"], age=f"{age:.0f}"),
-                       (int(px) + 8, int(py) - 20), config.COLOR_ESM, r, size=14)
+                       (int(px) + 8, int(py) - 20), config.COLOR_ESM, r, size=14,
+                       contact=True)
 
         # Autopilot route: from the ship through the waypoints still ahead.
         route = getattr(game, "route", None)
@@ -772,6 +827,7 @@ def draw_map_view(game, tr=None) -> None:
 
     draw_chart_frame(game, view, r, getattr(game, "map_follow", True),
                      position=(game.ship.x, game.ship.y))
+    draw_contact_label_chip(game, r)
 
 
 def _draw_helo_waypoint(s, game, view, helo_px, chart) -> None:

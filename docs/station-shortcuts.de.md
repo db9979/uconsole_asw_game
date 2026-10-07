@@ -1,4 +1,4 @@
-# U-Jagd 1.3.285 - Stations- und Tastenkürzel
+# U-Jagd 1.3.286 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -36,6 +36,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Q / E oder Mausrad` | Kartenzoom auf Brücke, Waffen, Helikopter und OPZ-Karte (dort stellen Q/E den Radarbereich) |
 | `Drag` | Karte verschieben (Brücke, Waffen, Helikopter und OPZ) |
 | `K` | Karte folgt nur auf sichtbaren Karten (Ziehen schaltet es aus) |
+| `Alt+N` | Namen und Fahrt der Kontakte auf allen Karten an/aus (Symbole und Tooltips bleiben) |
 | `Linksklick` | Angeklickte Taste, Lampe, Hinweis, Reiter, Scheibe oder Zeile |
 | `Rechtsklick` | Abbrechen wie Esc in Menüs und Eingaben |
 | `Menü-Symbol (Kopfzeile)` | Spielmenü per Maus: Hilfe, Optionen, Speichern/Laden, Wetter, Plot, Autocrew, Beenden und mehr; jedes Overlay schließt mit seinem Schließfeld (wie Esc) |
@@ -287,6 +288,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `F9` | Lokale Commander-LAN-Verwaltung öffnen |
 | `F10` | Optionen: Sprache, Vollbild, Audio, großer Text, Tooltips, Bildrate |
 | `F11` | Ereignislog und volle Telemetrie einblenden (Station bleibt bedienbar) |
+| `Alt+N` | Namen und Fahrt der Kontakte auf allen Karten an/aus (Symbole und Tooltips bleiben) |
 | `S / L` | Speichern / Laden (Slots 1-5; nicht im Sonarraum) |
 | `Alt+Eingabe` | Vollbild (alle Stationen) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
@@ -390,6 +392,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Pos1 / Ende` | Erster / letzter Eintrag der fokussierten Liste |
 | `Q / E` | Karte (bis 0,5 sm, wie auf der uConsole) oder Ausguck zoomen; Pos1 passt die Ansicht ein |
 | `K` | Karte folgt dem eigenen Schiff an oder aus |
+| `Alt+N` | Namen und Fahrt der Kontakte auf allen Karten an/aus (Symbole und Tooltips bleiben) |
 | `+ / -` | Maschinentelegraph eine Stufe höher / tiefer (Brücke, Maschine, U-Boot-Führung und -Maschine) |
 | `C / V / D · T` | Kurs, Fahrt, Tiefe, Torpedo-Lauftiefe: der Cursor springt ins Feld, Eingabe sendet (Brücke, Maschine, U-Boot) |
 | `Umschalt+A · J` | Aktiver Ping · Live-Sonarton an oder aus (Sonar, U-Boot-Führung, Tauchsonar des Helikopters) |

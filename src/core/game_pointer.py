@@ -24,7 +24,7 @@ class PointerMixin:
         """Convert display coordinates to the virtual 1280x720 canvas."""
         if pos is None:
             return None
-        win_w, win_h = pygame.display.get_window_size()
+        win_w, win_h = self.window.size()
         if win_w <= 0 or win_h <= 0:
             return None
         if config.FILL_SCREEN:

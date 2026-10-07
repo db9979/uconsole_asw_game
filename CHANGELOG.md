@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.290
+
+Release 1.3.290 brings the full Retina resolution to the Mac. The game now
+opens a window that asks macOS for the screen's real pixels, so on a Retina
+display text, lines, symbols and charts are drawn at two or three times the
+pixels of the uConsole with exactly the same layout, and the graphics card
+fits the picture to the window instead of macOS stretching it. The uConsole,
+Windows and Linux keep their window; the Economy graphics level keeps the
+1280 x 720 picture. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.289
 
 Release 1.3.289 makes the game sharp on large screens. In a window or full

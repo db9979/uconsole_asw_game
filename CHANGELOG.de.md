@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.290
+
+Version 1.3.290 bringt die volle Retina-Auflösung auf den Mac. Das Spiel
+öffnet jetzt ein Fenster, das macOS nach den echten Pixeln des Bildschirms
+fragt; auf einem Retina-Display werden Schrift, Linien, Symbole und Karten mit
+doppelt oder dreifach so vielen Pixeln wie auf der uConsole und genau gleichem
+Aufbau gezeichnet, und die Grafikkarte passt das Bild ans Fenster an, statt
+dass macOS es streckt. uConsole, Windows und Linux behalten ihr Fenster; die
+Grafikstufe Sparsam behält das 1280-x-720-Bild. Spielstände sind v53; v38- bis
+v52-Stände laden weiterhin.
+
 ## 1.3.289
 
 Version 1.3.289 macht das Spiel auf großen Bildschirmen scharf. In einem Fenster

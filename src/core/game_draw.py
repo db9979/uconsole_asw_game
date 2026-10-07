@@ -164,26 +164,8 @@ class DrawMixin:
         FILL_SCREEN=True: Stretch auf die volle Fläche (keine schwarzen
         Balken bei 16:9); False: aspect-correctes Letterbox.
         """
-        w, h = pygame.display.get_window_size()
-        if w <= 0 or h <= 0:
-            w, h = config.SCREEN_W, config.SCREEN_H
-        # Unter X11/XWayland ersetzt pygame die Display-Surface nach dem ersten
-        # Event-Pump/Resize durch ein neues Objekt; das gemerkte self.display
-        # ist dann 0x0 und der Blit scheitert mit "Surfaces must not be locked".
-        display = pygame.display.get_surface()
-        if display is None:
-            return
-        self.display = display
-        display.fill((0, 0, 0))
-        if (w, h) == (config.SCREEN_W, config.SCREEN_H):
-            display.blit(self.screen, (0, 0))
-        elif config.FILL_SCREEN:
-            display.blit(quality.scale_canvas(self.screen, (w, h)), (0, 0))
-        else:
-            # Sharp smooth scaling for the graphics level (src/ui/quality.py).
-            _, ox, oy, sw, sh = letterbox_layout(w, h)
-            display.blit(quality.scale_canvas(self.screen, (sw, sh)), (ox, oy))
-        pygame.display.flip()
+        self.window.present(self.screen)
+        self.display = pygame.display.get_surface()
 
     # --- Input ---
 
@@ -504,7 +486,7 @@ class DrawMixin:
         uConsole's 1280x720 screen and the low graphics level keep the plain
         canvas.  Display only."""
         try:
-            w, h = pygame.display.get_window_size()
+            w, h = self.window.pixel_size()
         except pygame.error:
             return
         k = hires.choose_scale(w, h, config.SCREEN_W, config.SCREEN_H, quality.LEVEL)
@@ -1864,11 +1846,8 @@ class DrawMixin:
         """Vollbild: (0,0)+FULLSCREEN = native Desktop-Größe (deckt Taskleiste
         ab, keine schwarzen Balken). Zurück = 1280x720-Fenster."""
         self.fullscreen = not self.fullscreen
-        if self.fullscreen:
-            self.display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-        else:
-            self.display = pygame.display.set_mode(
-                self.default_window_size(), pygame.RESIZABLE)
+        self.window.set_fullscreen(self.fullscreen, self.default_window_size())
+        self.display = pygame.display.get_surface()
         if persist:
             from dataclasses import replace
             self.preferences = replace(self.preferences, fullscreen=self.fullscreen)
@@ -1911,7 +1890,7 @@ class DrawMixin:
             self.tr = self.translator.t
             self.pinned_tooltip = None
             self._tooltip_anchor = None
-            pygame.display.set_caption(self.tr("app.title"))
+            self.window.set_title(self.tr("app.title"))
             if self.editor is not None:
                 self.editor.tr = self.tr
             self.flash(message("status.language_changed",

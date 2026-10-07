@@ -10,16 +10,14 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.289**
+Current release: **1.3.290**
 
-Release 1.3.289 makes the game sharp on large screens. In a window or full
-screen clearly larger than 1280 x 720, such as a PC monitor, a 4K screen or a
-Mac, text, lines, symbols and charts are now drawn at the screen's own
-resolution, two or three times the pixels of the uConsole, with exactly the
-same layout, instead of an enlarged 1280 x 720 picture. On Windows the game
-uses the real screen pixels at a display scaling of 125 % or 150 % instead of
-letting Windows blur it. On the Mac it is sharper already; the full Retina
-resolution follows in a further step. The Economy graphics level and the uConsole keep the
+Release 1.3.290 brings the full Retina resolution to the Mac. The game now
+opens a window that asks macOS for the screen's real pixels, so on a Retina
+display text, lines, symbols and charts are drawn at two or three times the
+pixels of the uConsole with exactly the same layout, and the graphics card
+fits the picture to the window instead of macOS stretching it. The uConsole,
+Windows and Linux keep their window; the Economy graphics level keeps the
 1280 x 720 picture. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).

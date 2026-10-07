@@ -289,6 +289,22 @@ def _parse_debug_lines(path: str) -> list[dict]:
     return rows
 
 
+def _warmup_baseline(perf: list[dict], audio_rows: list[dict], warmup_s: float) -> dict:
+    """The audio counters at the end of the warm-up, or {} without one.
+
+    The warm-up runs from the first perf row (written once the first frame
+    has finished) for warmup_s seconds of wall time.
+    """
+    if warmup_s <= 0 or not perf or not audio_rows:
+        return {}
+    end = perf[0].get("t", 0) + warmup_s
+    base = {}
+    for row in audio_rows:
+        if row.get("t", 0) <= end:
+            base = row
+    return base
+
+
 def run_host(args) -> int:
     with TemporaryDirectory(prefix="u-jagd-audio-soak-") as home:
         # Isolate settings, saves and debug logs before anything reads ~/.u-jagd.
@@ -434,11 +450,23 @@ def report(args, elapsed, epochs, counters, streams, sessions, stats, perf, audi
                   max(row.get("pump_late_max_ms", 0) for row in audio_rows),
                   last.get("sonar_drops", 0), last.get("input_gaps", 0),
                   last.get("buffer_s", 0)))
+        # The first frames of a cold process (imports, font and surface
+        # caches, a busy CI runner) can stall for seconds and starve the
+        # mixer before the stream is running; count starvation only from the
+        # end of the warm-up on. A stall later in the run still fails.
+        warmup = getattr(args, "warmup", 0.0)
+        base = _warmup_baseline(perf, audio_rows, warmup)
+        if base:
+            print(f"warm-up: first {warmup:.1f} s after the first frame not counted "
+                  f"(underruns {base.get('sonar_underruns', 0):.0f}, "
+                  f"channel_idle {base.get('channel_idle', 0):.0f}, "
+                  f"drops {base.get('sonar_drops', 0):.0f})")
         for key, label in (("sonar_underruns", "local underruns"),
                            ("channel_idle", "mixer channel idle events"),
                            ("sonar_drops", "rejected local blocks")):
-            if last.get(key, 0) > 0:
-                failures.append(f"{label}: {last[key]:.0f}")
+            counted = last.get(key, 0) - base.get(key, 0)
+            if counted > 0:
+                failures.append(f"{label}: {counted:.0f}")
         # Every retune breaks the receiver sequence once; anything beyond that
         # is a block the frame loop never played. (evictions counts ordinary
         # ring rotation of the two-block receiver window, not loss.)
@@ -539,6 +567,8 @@ def main(argv=None) -> int:
                       help="seconds between host input bursts (0 = never)")
     host.add_argument("--retune-every", type=float, default=0.0,
                       help="seconds between listening-bearing changes (0 = never)")
+    host.add_argument("--warmup", type=float, default=2.0,
+                      help="seconds after the first frame whose mixer starvation is not counted")
     host.add_argument("--seed", type=int, default=1234)
     host.add_argument("--port", type=int, default=0, help="listener port (0 = ephemeral)")
     host.add_argument("--dummy-audio", action="store_true",

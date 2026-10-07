@@ -10,16 +10,13 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.286**
+Current release: **1.3.287**
 
-Release 1.3.286 lets you hide the contact names on the charts. Alt+N, or
-the blue Names chip in the chart's corner, hides the names and speeds of all
-contacts on every chart at every station of both sides and shows them again;
-symbols, course vectors and the tooltip stay, and the uConsole keeps the
-choice in its settings. In the browser the Names button above the chart and
-Alt+N do the same for that browser tab. A name also keeps its side of the
-symbol when the contact's course estimate swings round. Saves are v53; v38 to v52 saves
-still load.
+Release 1.3.287 changes nothing in play; it carries 1.3.286 and the browser
+mouse control of 1.3.285 unchanged. The audio soak test now leaves the first
+two seconds after a cold start out of its mixer starvation count, so a slow
+first frame on a busy test machine no longer stops a release; a stall later in
+the run still fails it. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

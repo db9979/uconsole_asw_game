@@ -10,17 +10,14 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.286**
+Aktuelle Version: **1.3.287**
 
-Version 1.3.286 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
-oder der blaue Chip Namen in der Kartenecke blendet Namen und Fahrt aller
-Kontakte auf allen Karten an jeder Station beider Seiten aus und wieder ein;
-Symbole, Kursvektoren und der Tooltip bleiben, und die uConsole merkt sich
-die Wahl in ihren Einstellungen. Im Browser tun der Knopf Namen über der
-Karte und Alt+N dasselbe für diesen Browser-Tab. Ein Name bleibt auch
-auf seiner Seite des Symbols, wenn der geschätzte Kurs eines Kontakts
-herumschwenkt. Spielstände sind v53;
-Spielstände v38 bis v52 laden weiterhin.
+Version 1.3.287 ändert nichts am Spiel; sie enthält 1.3.286 und die
+Maussteuerung des Browsers aus 1.3.285 unverändert. Der Audio-Dauertest zählt
+Aussetzer des Mischers erst zwei Sekunden nach einem Kaltstart, damit ein
+langsames erstes Bild auf einer ausgelasteten Testmaschine keine Version mehr
+aufhält; ein Hänger später im Lauf lässt ihn weiterhin scheitern. Spielstände
+sind v53; v38 bis v52 laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

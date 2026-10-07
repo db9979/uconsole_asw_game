@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.287
+
+Version 1.3.287 ändert nichts am Spiel; sie enthält 1.3.286 und die
+Maussteuerung des Browsers aus 1.3.285 unverändert. Der Audio-Dauertest zählt
+Aussetzer des Mischers erst zwei Sekunden nach einem Kaltstart, damit ein
+langsames erstes Bild auf einer ausgelasteten Testmaschine keine Version mehr
+aufhält; ein Hänger später im Lauf lässt ihn weiterhin scheitern. Spielstände
+sind v53; v38 bis v52 laden weiterhin.
+
 ## 1.3.286
 
 Version 1.3.286 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N

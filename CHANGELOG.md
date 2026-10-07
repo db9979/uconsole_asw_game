@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.287
+
+Release 1.3.287 changes nothing in play; it carries 1.3.286 and the browser
+mouse control of 1.3.285 unchanged. The audio soak test now leaves the first
+two seconds after a cold start out of its mixer starvation count, so a slow
+first frame on a busy test machine no longer stops a release; a stall later in
+the run still fails it. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.286
 
 Release 1.3.286 lets you hide the contact names on the charts. Alt+N, or

@@ -208,4 +208,12 @@ export function wireOpzDisplayBar(sendRadar) {
     else stepOpzDisplay(button.dataset.opzDisplay, event.shiftKey ? -1 : 1);
     bar.dispatchEvent(new CustomEvent("opz-display-change", {bubbles: true}));
   });
+  // A right click steps a layer back, as Shift+click does (a mouse needs no key).
+  bar.addEventListener("contextmenu", (event) => {
+    const button = event.target.closest("button[data-opz-display]");
+    if (!button || button.dataset.opzDisplay === "reset") return;
+    event.preventDefault();
+    stepOpzDisplay(button.dataset.opzDisplay, -1);
+    bar.dispatchEvent(new CustomEvent("opz-display-change", {bubbles: true}));
+  });
 }

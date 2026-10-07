@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.284
+## 1.3.286
 
-Version 1.3.284 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
+Version 1.3.286 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
 oder der blaue Chip Namen in der Kartenecke blendet Namen und Fahrt aller
 Kontakte auf allen Karten an jeder Station beider Seiten aus und wieder ein;
 Symbole, Kursvektoren und der Tooltip bleiben, und die uConsole merkt sich
@@ -15,6 +15,22 @@ Karte und Alt+N dasselbe für diesen Browser-Tab. Ein Name bleibt auch
 auf seiner Seite des Symbols, wenn der geschätzte Kurs eines Kontakts
 herumschwenkt. Spielstände sind v53;
 Spielstände v38 bis v52 laden weiterhin.
+
+## 1.3.285
+
+Version 1.3.285 macht den Remote-Crew-Browser per Maus bedienbar. Jede
+Tastenkappe wirkt wie ihre Taste: Kappen, die eine Liste, einen
+Maschinentelegrafen oder eine Seitenreihe weiterschalten, sind eigene
+Schaltflächen, die Kappe eines Wertfelds sitzt auf seiner Beschriftung, und
+ein An/Aus-Paar zeigt seine Taste auf der Schaltfläche, die die Taste gerade
+drücken würde. Ein Klick auf eine Kontaktzeile einer Stationskarte wählt
+diesen Kontakt. Lampen mit Schalter schalten ihn (Antrieb, Sonarton,
+Gegenfluten, die Modi des U-Boots), ebenso die Moduschips des U-Boots. Die
+Hubschrauberseiten blättern vor und zurück, eine Anzeigeschaltfläche der OPZ
+schaltet per Rechtsklick zurück, und jeder Dialog schließt mit seinem Kreuz.
+P fährt im Funkraum des U-Boots wieder den Mast aus, F spricht nur, wo keine
+Stationstaste es belegt, und in der OPZ stellen Q/E immer die Radarreichweite
+ein. Spielstände sind v53; v38 bis v52 laden weiterhin.
 
 ## 1.3.283
 

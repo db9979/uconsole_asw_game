@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.284
+## 1.3.286
 
-Release 1.3.284 lets you hide the contact names on the charts. Alt+N, or
+Release 1.3.286 lets you hide the contact names on the charts. Alt+N, or
 the blue Names chip in the chart's corner, hides the names and speeds of all
 contacts on every chart at every station of both sides and shows them again;
 symbols, course vectors and the tooltip stay, and the uConsole keeps the
@@ -14,6 +14,20 @@ choice in its settings. In the browser the Names button above the chart and
 Alt+N do the same for that browser tab. A name also keeps its side of the
 symbol when the contact's course estimate swings round. Saves are v53; v38 to v52 saves
 still load.
+
+## 1.3.285
+
+Release 1.3.285 brings the Remote Crew browser to the mouse. Every key cap
+acts as its key: caps that step a list, a telegraph or a page row are buttons
+of their own, a value field's cap sits on its label, and an on/off pair shows
+its key on the button the key would press now. A click on a contact row of a
+station card selects that contact. Lamps with a switch work it (plant, sonar
+audio, counterflood, the submarine's modes), and so do the submarine's mode
+chips. The helicopter pages step back and forward, an OPZ display button steps
+back on a right click, and every dialog closes by its cross. P raises the mast
+in the submarine's radio room again, F talks only where no station key uses
+it, and in the OPZ Q/E always set the radar range. Saves are v53; v38 to v52
+saves still load.
 
 ## 1.3.283
 

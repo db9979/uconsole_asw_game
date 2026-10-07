@@ -31,7 +31,8 @@
 }
 .visual-tabs button[aria-selected="true"], .helicopter-visual-tabs button[aria-selected="true"] { color: var(--live-strong); border-bottom-color: var(--live); background: var(--bg-2); }
 .helicopter-visual-tabs { display: flex; align-items: center; gap: .2rem; flex: 0 0 auto; margin-bottom: .3rem; }
-.helicopter-visual-tabs button.helicopter-page-key { margin-left: auto; border: 1px solid var(--line); border-radius: var(--radius); text-transform: none; letter-spacing: 0; }
+.helicopter-visual-tabs button.helicopter-page-key { margin-left: .3rem; border: 1px solid var(--line); border-radius: var(--radius); text-transform: none; letter-spacing: 0; }
+.helicopter-visual-tabs button#helicopter-visual-prev { margin-left: auto; }
 .plot-tools { flex: 0 0 auto; padding-bottom: .25rem; }
 .plot-tools > summary { cursor: pointer; color: var(--plot); font-size: var(--font-xs); min-height: 1.5rem; }
 .plot-toolbar { align-items: center; }

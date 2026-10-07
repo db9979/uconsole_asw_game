@@ -42,8 +42,9 @@
   background: transparent; color: var(--text-dim); font-size: var(--font-sm); white-space: nowrap;
 }
 .station-tab[aria-selected="true"] { color: var(--live-strong); background: var(--bg-3); border-bottom-color: var(--live); }
-.station-key { padding: 0 .28rem; border: 1px solid var(--line-strong); border-radius: 2px; color: var(--text-faint); font: var(--font-xs) var(--font-mono); line-height: 1.4; }
-.station-tab[aria-selected="true"] .station-key { border-color: var(--live); color: var(--live); }
+/* The station's number key: the same blue cap as every other key. */
+.station-key { padding: 0 .28rem; border: 1px solid var(--t-accent); border-radius: 3px; color: var(--t-on-accent); background: var(--t-accent); font: 600 var(--font-xs) var(--font-mono); line-height: 1.4; }
+.station-tab[aria-selected="true"] .station-key { border-color: var(--live); }
 /* Alarm lamps: red blinking for danger, steady amber for a warning. */
 .station-tab[data-alarm]::after { content: ""; width: .5rem; height: .5rem; border-radius: 50%; flex: 0 0 auto; }
 .station-tab[data-alarm="warn"]::after { background: var(--caution); }
@@ -220,6 +221,7 @@ body.workstation-mode .tablist { display: none; }
   border-bottom: 1px solid var(--line-faint); background: var(--bg-1);
 }
 .dock-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dock-toggle[data-keycap] { width: auto; padding: 0 .3rem; }
 .dock-toggle { flex: 0 0 auto; width: 1.8rem; min-height: 1.8rem; padding: 0; border-color: transparent; background: transparent; color: var(--text-dim); font-family: var(--font-mono); }
 .dock-toggle::before { content: "\2039"; font-size: 1.1rem; line-height: 1; }
 .dock-left .dock-toggle::before { content: "\2039"; }

@@ -149,6 +149,9 @@ body.workstation-mode .chart-panel { display: none; }
 .station-row { min-width: 0; padding: .45rem .55rem; background: var(--bg-1); border: 1px solid var(--line-faint); border-left: 3px solid var(--info); border-radius: var(--radius); }
 .station-row h4 { margin: 0 0 .35rem; font-family: var(--font-mono); font-size: var(--font-sm); overflow-wrap: anywhere; }
 .station-row .detail-metrics, .station-card-view > .detail-metrics { padding-bottom: 0; }
+.station-row[data-track-ref] { cursor: pointer; }
+.station-row[data-track-ref]:hover { border-color: var(--live); }
+.station-row.track-selected { border-color: var(--focus); background: var(--live-bg); }
 .station-row-actions { display: flex; flex-wrap: wrap; gap: .3rem; padding-top: .45rem; margin-top: .45rem; border-top: 1px solid var(--line-faint); }
 .station-row-actions button { flex: 1 1 7rem; font-size: var(--font-xs); }
 .station-alert { grid-column: 1 / -1; padding: .45rem .6rem; color: var(--alarm); background: var(--alarm-bg); border: 1px solid var(--alarm); border-radius: var(--radius); font-weight: 600; animation: glow 1.6s ease-in-out infinite; }
@@ -233,6 +236,8 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 .uboot-readout[data-gauge="true"][data-level="alarm"]::after { background: var(--alarm); }
 .uboot-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
 .uboot-chip { padding: .15rem .5rem; border: 1px solid var(--line); border-radius: 999px; color: var(--text-faint); font-size: var(--font-xs); font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
+button.uboot-chip { min-height: 0; cursor: pointer; background: transparent; }
+button.uboot-chip:hover:not(:disabled) { border-color: var(--live); }
 .uboot-chip[data-level="on"] { color: var(--live-strong); background: var(--live-bg); border-color: var(--live); }
 .uboot-chip[data-level="caution"] { color: var(--bg-0); background: var(--caution); border-color: var(--caution); }
 .uboot-chip[data-level="alarm"] { color: var(--bg-0); background: var(--alarm); border-color: var(--alarm); }
@@ -422,6 +427,19 @@ dd[data-empty="true"] { color: var(--muted); font-weight: 400; }
   font-weight: 600; line-height: 1.3; white-space: nowrap; vertical-align: 1px;
 }
 [role="tablist"][data-keycap]::after { align-self: center; margin-left: auto; }
+/* A key that steps a list, a telegraph or a page row: a real cap that presses it. */
+button.key-cap.key-cap-button, button.key-cap.key-cap-button:hover:not(:disabled) {
+  display: inline-block; min-width: 1.6em; min-height: 0; margin: 0 0 0 .45em; padding: .1em .4em; border: 0; border-radius: 3px;
+  color: var(--t-on-accent); background: var(--t-accent); font-family: var(--font-mono); font-size: .9em;
+  font-weight: 600; line-height: 1.3; white-space: nowrap; vertical-align: 0; cursor: pointer; width: auto;
+  text-transform: none; letter-spacing: 0;
+}
+button.key-cap.key-cap-button:hover:not(:disabled) { filter: brightness(1.15); }
+button.key-cap-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+[role="tablist"] > button.key-cap-button { align-self: center; }
+.key-cap-row { display: block; grid-column: 1 / -1; margin-top: .25rem; text-align: right; }
+.key-cap-row > button.key-cap.key-cap-button:first-child { margin-left: 0; }
+[role="tablist"] > button:not(.key-cap) + button.key-cap.key-cap-button { margin-left: auto; }
 
 /* Hover note of a status lamp: why it shows what it shows (keys as caps). */
 .lamp-tip { position: absolute; z-index: 60; max-width: 24rem; padding: .45rem .6rem;

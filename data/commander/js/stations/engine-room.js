@@ -16,6 +16,15 @@ const SECTIONS = ["sonar", "bridge", "weapons", "opz", "radio", "engine", "fligh
 const SIDES = {hull_right: "starboard", hull_left: "port"};
 const stateLevel = (state) => state === "ZERSTOERT" ? "alarm" : state === "OK" ? "on" : "caution";
 
+// A plant lamp chooses its plant: the list takes the mode and its apply
+// button sends the order, as a choice in the list would.
+const plantSwitch = (mode) => () => {
+  const select = $("engine-plant"), apply = $("engine-plant-apply");
+  if (!select || !apply || [...select.options].every((option) => option.value !== mode)) return null;
+  return {disabled: apply.disabled || select.disabled, hidden: apply.hidden,
+    click() { select.value = mode; select.dispatchEvent(new Event("change", {bubbles: true})); apply.click(); }};
+};
+
 function lamps(payload) {
   const p = payload.propulsion, m = payload.machinery, e = payload.environment_effects, c = payload.controls;
   const rows = [];
@@ -26,9 +35,9 @@ function lamps(payload) {
   const turning = p.speed > .05 || p.telegraph !== "STOP";
   add("shaft", t("engine_lamp_shaft"), turning ? (p.telegraph === "ASTERN" ? "caution" : "on") : "off",
     t(`telegraph_${p.telegraph.toLowerCase()}`));
-  add("auto", t("engine_lamp_auto"), p.plant_mode === "AUTO" ? "on" : "off", onOff(p.plant_mode === "AUTO"));
-  add("diesel", t("engine_lamp_diesel"), p.plant_mode === "DIESEL" ? "on" : "off", onOff(p.plant_mode === "DIESEL"));
-  add("turbine", t("engine_lamp_turbine"), p.plant_mode === "TURBINE" ? "on" : "off", onOff(p.plant_mode === "TURBINE"));
+  add("auto", t("engine_lamp_auto"), p.plant_mode === "AUTO" ? "on" : "off", onOff(p.plant_mode === "AUTO"), plantSwitch("AUTO"));
+  add("diesel", t("engine_lamp_diesel"), p.plant_mode === "DIESEL" ? "on" : "off", onOff(p.plant_mode === "DIESEL"), plantSwitch("DIESEL"));
+  add("turbine", t("engine_lamp_turbine"), p.plant_mode === "TURBINE" ? "on" : "off", onOff(p.plant_mode === "TURBINE"), plantSwitch("TURBINE"));
   add("quiet", t("quiet_mode"), p.quiet_mode ? "on" : "off", onOff(p.quiet_mode), "engine-quiet");
   add("cavitating", t("uboot_chip_cavitating"), p.cavitating ? "alarm" : "off", onOff(p.cavitating));
   const fuel = pct(p.fuel_kg, p.fuel_capacity_kg);

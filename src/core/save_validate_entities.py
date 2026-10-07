@@ -322,18 +322,25 @@ def _check_enemy_torpedo_entry(entry, data, runtime_catalog, group_ids,
                 or not bounded(gy, -1_000_000, 1_000_000)))
             or type(entry.get("terminal_active", False)) is not bool
             or type(entry.get("seeker_acquired", False)) is not bool
-            or not bounded(entry.get("travel", 0), 0,
-                           profile.range_nm if profile else 10000)):
+            or not bounded(entry.get("travel", 0), 0, torpedo_dyn.travel_bound_nm(
+                profile.range_nm, profile.speed_kn, config.TORP_SPOOLUP_S))):
         return False
     seeker = entry.get("seeker_target")
     nixie_ids = {row["seq"] for row in (
         data.get("asw", {}).get("nixies", [])
         if isinstance(data.get("asw"), dict) else [])}
+    # A boat's shot at a convoy may hold a merchant (1.3.291).
+    civilian_ids = {row.get("id") for row in data.get("civilians", [])
+                    if isinstance(row, dict)}
     valid_seeker = (seeker is None or seeker == "ship"
                     or (isinstance(seeker, str)
                         and seeker.startswith("nixie:")
                         and seeker[6:].isdigit()
-                        and int(seeker[6:]) in nixie_ids))
+                        and int(seeker[6:]) in nixie_ids)
+                    or (isinstance(seeker, str)
+                        and seeker.startswith("civilian:")
+                        and seeker[9:].isdigit()
+                        and int(seeker[9:]) in civilian_ids))
     acquired = entry.get("seeker_acquired", False)
     launch_platform_id = entry.get("launch_platform_id")
     launch_weapon_key = entry.get("launch_weapon_key")

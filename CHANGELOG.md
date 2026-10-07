@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.291
+
+Release 1.3.291 fixes four cases in which a save was refused on loading.
+A torpedo from a U-boat that had already locked onto a merchant ship lost its
+target in the save. A torpedo that had searched for a long time at its quiet
+search speed had gone further than its catalogue range and was rejected.
+Loading while a hostile torpedo could be heard and none of your own was in the
+water failed. A frigate aground on a slanting coast could not be loaded. All
+four now load and continue exactly as saved. The nightly soak test, which had
+failed every night since 2 October, passes again in every scenario. Saves are
+v53; v38 to v52 saves still load.
+
 ## 1.3.290
 
 Release 1.3.290 brings the full Retina resolution to the Mac. The game now

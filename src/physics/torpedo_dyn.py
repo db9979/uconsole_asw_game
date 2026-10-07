@@ -48,6 +48,20 @@ def energy_rate(speed_fraction: float) -> float:
     return max(0.0, speed_fraction) ** 3
 
 
+def travel_bound_nm(range_nm: float, speed_kn: float, spoolup_s: float) -> float:
+    """Longest run one full store allows (bounds a saved ``travel``).
+
+    The store lasts longest at the quiet seeker search speed: cruise-seconds
+    fall with the cube of speed, distance only linearly, so the range there
+    is the catalog range / SEEKER_SEARCH_FRACTION**2.  The spool-up and the
+    coast-down to COAST_SINK_FRACTION (ln(1/f)/k cruise-seconds) add their
+    distance on top.
+    """
+    coast_s = math.log(1.0 / COAST_SINK_FRACTION) / COAST_DRAG_K
+    return (range_nm / SEEKER_SEARCH_FRACTION ** 2
+            + max(0.0, speed_kn) / 3600.0 * (spoolup_s + coast_s))
+
+
 def coast_step(fraction: float, dt: float) -> float:
     """Exact coast-down of the speed fraction under quadratic drag."""
     return fraction / (1.0 + COAST_DRAG_K * fraction * dt)

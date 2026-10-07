@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.291
+
+Version 1.3.291 behebt vier Fälle, in denen ein Spielstand beim Laden
+abgelehnt wurde. Ein U-Boot-Torpedo, der schon einen Frachter erfasst hatte,
+verlor im Spielstand sein Ziel. Ein Torpedo, der lange mit leiser
+Suchgeschwindigkeit gesucht hatte, war weiter gelaufen als seine
+Katalogreichweite und wurde abgewiesen. Laden, während ein feindlicher Torpedo
+zu hören und kein eigener im Wasser war, schlug fehl. Eine Fregatte, die an
+einer schrägen Küste auf Grund saß, ließ sich nicht laden. Alle vier laden
+jetzt und laufen genau wie gespeichert weiter. Der nächtliche Dauertest, der
+seit dem 2. Oktober jede Nacht fehlschlug, besteht wieder in allen Szenarien.
+Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
+
 ## 1.3.290
 
 Version 1.3.290 bringt die volle Retina-Auflösung auf den Mac. Das Spiel

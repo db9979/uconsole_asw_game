@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.292
+
+Version 1.3.292 setzt Befehle per Sprache zuverlässig um. Bisher entschied
+eine Wortliste, ob ein gesprochener Satz ein Befehl ist, sodass "Kurs neunzig",
+"Tiefe 80" oder "Fahrt 15" als Frage endeten und nichts gesetzt wurde. Jetzt
+unterscheidet das Sprachmodell Befehl und Frage, auch mit gesprochenen Zahlen,
+und Sprach- wie getippte Befehle umfassen zusätzlich Radar, aktiven Ping,
+Baffles freifahren und die Rückkehr des Hubschraubers, im U-Boot Mast,
+Schnorcheln, Auftauchen und Ausweichen; nie Waffen. Im Mehrspieler, solange
+andere Spieler die Stationen besetzen, nimmt der Erste Offizier keine Befehle
+an und beantwortet nur Fragen. Spielstände sind v53; v38- bis v52-Stände laden
+weiterhin.
+
 ## 1.3.291
 
 Version 1.3.291 behebt vier Fälle, in denen ein Spielstand beim Laden

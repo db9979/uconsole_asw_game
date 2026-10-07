@@ -10,17 +10,17 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.291**
+Current release: **1.3.292**
 
-Release 1.3.291 fixes four cases in which a save was refused on loading.
-A torpedo from a U-boat that had already locked onto a merchant ship lost its
-target in the save. A torpedo that had searched for a long time at its quiet
-search speed had gone further than its catalogue range and was rejected.
-Loading while a hostile torpedo could be heard and none of your own was in the
-water failed. A frigate aground on a slanting coast could not be loaded. All
-four now load and continue exactly as saved. The nightly soak test, which had
-failed every night since 2 October, passes again in every scenario. Saves are
-v53; v38 to v52 saves still load.
+Release 1.3.292 carries out orders given by voice reliably. Before, a word
+list decided whether a spoken sentence was an order, so "course ninety",
+"depth 80" or "speed 15" ended up as questions and nothing was set. Now the
+language model tells an order from a question, also with spoken numbers, and
+voice and typed orders also cover radar, an active ping, clearing the baffles
+and the helicopter's return, and on the submarine the mast, snorkeling,
+surfacing and evading; never weapons. In multiplayer, while other people crew
+the stations, the executive officer takes no orders and only answers
+questions. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

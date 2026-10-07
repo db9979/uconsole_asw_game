@@ -10,18 +10,18 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.291**
+Aktuelle Version: **1.3.292**
 
-Version 1.3.291 behebt vier Fälle, in denen ein Spielstand beim Laden
-abgelehnt wurde. Ein U-Boot-Torpedo, der schon einen Frachter erfasst hatte,
-verlor im Spielstand sein Ziel. Ein Torpedo, der lange mit leiser
-Suchgeschwindigkeit gesucht hatte, war weiter gelaufen als seine
-Katalogreichweite und wurde abgewiesen. Laden, während ein feindlicher Torpedo
-zu hören und kein eigener im Wasser war, schlug fehl. Eine Fregatte, die an
-einer schrägen Küste auf Grund saß, ließ sich nicht laden. Alle vier laden
-jetzt und laufen genau wie gespeichert weiter. Der nächtliche Dauertest, der
-seit dem 2. Oktober jede Nacht fehlschlug, besteht wieder in allen Szenarien.
-Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
+Version 1.3.292 setzt Befehle per Sprache zuverlässig um. Bisher entschied
+eine Wortliste, ob ein gesprochener Satz ein Befehl ist, sodass "Kurs neunzig",
+"Tiefe 80" oder "Fahrt 15" als Frage endeten und nichts gesetzt wurde. Jetzt
+unterscheidet das Sprachmodell Befehl und Frage, auch mit gesprochenen Zahlen,
+und Sprach- wie getippte Befehle umfassen zusätzlich Radar, aktiven Ping,
+Baffles freifahren und die Rückkehr des Hubschraubers, im U-Boot Mast,
+Schnorcheln, Auftauchen und Ausweichen; nie Waffen. Im Mehrspieler, solange
+andere Spieler die Stationen besetzen, nimmt der Erste Offizier keine Befehle
+an und beantwortet nur Fragen. Spielstände sind v53; v38- bis v52-Stände laden
+weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

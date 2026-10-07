@@ -330,13 +330,16 @@ class TalkMixin:
     # -- spoken orders -----------------------------------------------------------------
 
     def _talk_ask(self, text: str, *, side: str, role, anywhere: bool, asker: str = "local"):
-        """Ask the officer what was said: an order goes through the typed
-        order's translation and is carried out once it is back
-        (``talk_order_finished``); anything else is a question."""
-        if not advisor_model.looks_like_order(text):
+        """Hand what was said to the officer: the model turns an order into
+        the fixed order set, carried out once it is back
+        (``talk_order_finished``), and answers anything else as a question.
+        A plain question skips that step; in multiplayer (other people
+        crew the stations) everything is a question and no order is taken."""
+        if self.advisor_orders_locked() or advisor_model.looks_like_question(text):
             return self.advisor_ask("question", text, asker=asker, side=side,
                                     station=role)
-        result = self.advisor_ask("order", text, asker=asker, side=side, station=role)
+        result = self.advisor_ask("order", text, asker=asker, side=side, station=role,
+                                  spoken=True)
         if isinstance(result, dict):
             self._talk_orders[result["seq"]] = (side, role, anywhere)
             del_old = len(self._talk_orders) - 2 * WEB_MAX
@@ -347,15 +350,17 @@ class TalkMixin:
     def talk_order_finished(self, entry: dict) -> None:
         """A spoken order is back from the model: carry it out at once and
         let the officer report only what was really done (never weapons;
-        a browser station gives only its own station's commands)."""
+        a browser station gives only its own station's commands).  What
+        turned out to be a question keeps the officer's answer."""
         info = getattr(self, "_talk_orders", {}).pop(entry["seq"], None)
-        if info is None:
+        if info is None or entry["kind"] == "question":
             return
         side, role, anywhere = info
         proposal = entry["proposal"] if entry["status"] == "done" else None
         if not proposal:
-            entry.update(status="done", error=None, proposal=None,
-                         answer=self.tr("advisor.spoken.not_understood"))
+            key = ("advisor.spoken.not_possible" if entry["error"] == "not_possible"
+                   else "advisor.spoken.not_understood")
+            entry.update(status="done", error=None, proposal=None, answer=self.tr(key))
             return
         from src.commander.v2.commands import V2_ACTION_REGISTRY
 
@@ -363,6 +368,7 @@ class TalkMixin:
         for command in proposal:
             allowed = anywhere or role in V2_ACTION_REGISTRY[command["action"]].stations
             ok = (allowed and self._advisor_mission_running()
+                  and not self.advisor_orders_locked()
                   and advisor_model.apply_proposal(self, side, [command])[0])
             (done if ok else refused).append(self._talk_command_text(command))
         if done and refused:
@@ -376,6 +382,8 @@ class TalkMixin:
 
     def _talk_command_text(self, command: dict) -> str:
         value = command["value"]
+        if command["params"] == {}:
+            return self.tr("advisor.command." + command["type"])
         if value is True or value is False:
             value = self.tr("common.on" if value else "common.off")
         else:

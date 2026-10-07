@@ -689,8 +689,50 @@ def mapping_rows(value: dict[str, Any], prefix: str = "",
     return rows
 
 
-def draw_footer(surface: pygame.Surface, rect: pygame.Rect, hints: Iterable[str],
+def draw_footer(surface: pygame.Surface, rect: pygame.Rect, hints: Iterable,
                 *, tr: Tr = IDENTITY_TR) -> None:
+    """The editor's key bar: ``(key, description)`` pairs become key chips (a
+    click presses the key, see :func:`src.ui.pointer.add_legend`); plain hint
+    keys stay one line of text."""
+    hints = tuple(hints)
     pygame.draw.rect(surface, PALETTE.raised, rect)
+    if hints and all(isinstance(hint, tuple) for hint in hints):
+        _draw_key_footer(surface, rect, hints, tr)
+        return
     draw_text(surface, " | ".join(tr(hint) for hint in hints), rect.inflate(-10, 0),
               color=PALETTE.dim, size=13)
+
+
+def _draw_key_footer(surface, rect, items, tr) -> None:
+    from src.core.i18n import key_label, localize, translation_scope
+    from src.ui import layout, pointer
+    size, gap = 13, 4
+    rect = pygame.Rect(rect)
+    with translation_scope(tr):
+        face = layout.font(size)
+        widths = [layout.text_width(face, key_label(key) + "  " + localize(text)) + 18
+                  for key, text in items]
+        room = rect.w - 12 - gap * (len(items) - 1)
+        if sum(widths) > room:
+            widths = [max(40, width * room // sum(widths)) for width in widths]
+        x = rect.x + 6
+        for (key, text), width in zip(items, widths):
+            segment = pygame.Rect(x, rect.y + 5, width, max(1, rect.h - 10))
+            layout.command_segment(surface, segment, key, text, size=size, center=True)
+            pointer.add_legend(segment, key)
+            x += width + gap
+
+
+def confirm_buttons(surface, rect, items, *, tr: Tr = IDENTITY_TR) -> None:
+    """Right-aligned key buttons (``(key, label)``) at the foot of a dialog
+    box, such as OK/Cancel; a click presses the key."""
+    from src.core.i18n import translation_scope
+    from src.ui import layout, pointer
+    rect = pygame.Rect(rect)
+    x = rect.right
+    with translation_scope(tr):
+        for key, label in reversed(tuple(items)):
+            button = pygame.Rect(x - 200, rect.y, 200, rect.h)
+            layout.key_button(surface, button, key, label, size=14, min_size=11)
+            pointer.add_legend(button, key)
+            x = button.x - 8

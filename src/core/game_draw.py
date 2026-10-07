@@ -56,7 +56,6 @@ from src.ui.stations_view import (
 # out instead of one glyph being cut in half.
 TICKER_FADE_PX = 64
 from src.ui.stations_view import opz_ppi_rect
-from src.ui.mission_editor import MissionEditor
 from src.core.game_custom import CUSTOM_SCREEN
 from src.ui import menu_list
 from src.ui.simlog_view import draw_simlog_view
@@ -508,12 +507,10 @@ class DrawMixin:
             draw_splash(s, self._t - self.splash_started_at, self.tr)
             self.draw_update_notice(s, splash=True)
         elif self.editor is not None:
-            self.editor.draw(s)
-            if isinstance(self.editor, MissionEditor) and self.editor.mode == "browser":
-                hint = self.font.render(localize("F5: start selected runtime-compatible mission"),
-                                        True, config.COLOR_OK)
-                s.blit(hint, (config.SCREEN_W - hint.get_width() - 20,
-                              config.SCREEN_H - 68))
+            # The editor's key chips and close box (F5 starts a mission: a
+            # chip in the Mission Editor's key bar).
+            with pointer.layer("editor"):
+                self.editor.draw(s)
         elif self.simlog_view_open:
             draw_simlog_view(self)
         elif self.in_menu:

@@ -16,7 +16,7 @@ from src.core.mission_definition import (MISSION_FIELD_METADATA, PLAYER_SIDES,
 from src.data.user_content import ContentRecord, SharedFile, UserContentStore
 from src.data.validation import (ContentValidationError, localized_error,
                                  localized_issue)
-from src.ui import editor_widgets as widgets
+from src.ui import editor_widgets as widgets, game_menu
 from src.world.real_coast import SECTOR_COUNT, sector_for_index
 
 WORLD_KINDS = ("fixed", "reference")
@@ -719,26 +719,23 @@ class MissionEditor:
                 self._draw_browser(surface, content)
             elif self.current:
                 self._draw_editor(surface, content)
-        hints = (("editor.select_hint", "editor.open_hint", "editor.new_hint",
-                  "editor.share_hint", "editor.folder_hint")
-                 + (("editor.generate_hint",) if self.llm_host is not None
-                    and self.llm_host.llm_active() else ())
-                  if self.mode == "browser" else
-                  ("editor.arrow_hint", "editor.edit_hint", "editor.add_hint", "editor.remove_hint",
-                   "editor.save_hint", "editor.bundle_hint", "editor.cancel_hint"))
+        hints = self._footer_items()
         widgets.draw_footer(surface, footer, hints, tr=self.tr)
         if self.path_action:
-            box = pygame.Rect(max(20, bounds.width // 6), bounds.height // 2 - 55,
-                              max(1, bounds.width * 2 // 3), 110)
+            box = pygame.Rect(max(20, bounds.width // 6), bounds.height // 2 - 70,
+                              max(1, bounds.width * 2 // 3), 140)
             title = ("editor.generate_title." + self.path_action.split("_")[-1]
                      if self.path_action.startswith("generate") else "editor.bundle_path")
             inner = widgets.panel(surface, box, title, tr=self.tr)
             self.path_input.draw(surface, pygame.Rect(inner.x, inner.y + 5, inner.width, 34), focused=True)
+            widgets.confirm_buttons(surface, (inner.x, inner.y + 46, inner.width, 28),
+                                    (("Enter", "editor.bar.ok"), ("Esc", "editor.bar.cancel")),
+                                    tr=self.tr)
         if self.share_open:
             box = pygame.Rect(max(20, bounds.width // 8), max(60, bounds.height // 6),
                               max(1, bounds.width * 3 // 4), max(1, bounds.height * 2 // 3))
             inner = widgets.panel(surface, box, "editor.share_title", tr=self.tr)
-            list_rect = pygame.Rect(inner.x, inner.y, inner.width, max(1, inner.height - 30))
+            list_rect = pygame.Rect(inner.x, inner.y, inner.width, max(1, inner.height - 34))
             self._rects["share"] = list_rect
             if self.share_files:
                 self.share_box.draw(surface, list_rect)
@@ -746,12 +743,46 @@ class MissionEditor:
                 widgets.draw_text(surface, self.tr("editor.share_empty",
                                                    path=str(self.store.share_root)),
                                   list_rect, color=widgets.PALETTE.dim)
-            widgets.draw_text(surface, self.tr("editor.share_keys"),
-                              (inner.x, inner.bottom - 26, inner.width, 24),
-                              color=widgets.PALETTE.dim, size=13)
+            game_menu.close_button(surface, box)
+            widgets.confirm_buttons(
+                surface, (inner.x, inner.bottom - 28, inner.width, 28),
+                (("O", "editor.bar.folder"), ("Tab", "editor.bar.path"),
+                 ("Enter", "editor.bar.overwrite" if self._overwrite_pending is not None
+                  else "editor.bar.import")), tr=self.tr)
+        self.close_rect = None
+        if not (self.path_action or self.share_open):
+            # The page's close box: Esc (back to the list, or out of the editor).
+            self.close_rect = game_menu.close_button(surface, (0, 4, bounds.width - 4, 40))
         if self.status:
-            widgets.draw_text(surface, raw_text(self.status), (bounds.width // 2, 18, bounds.width // 2 - 20, 28),
+            widgets.draw_text(surface, raw_text(self.status), (bounds.width // 2, 18, bounds.width // 2 - 70, 28),
                               color=widgets.PALETTE.focus, align="right", size=13)
+
+    def _footer_items(self) -> tuple:
+        """The key chips at the foot of the page for the current mode."""
+        if self.path_action:
+            return (("Enter", "editor.bar.ok"), ("Esc", "editor.bar.cancel"))
+        if self.share_open:
+            return (("↑/↓", "editor.bar.select"), ("Enter", "editor.bar.import"),
+                    ("Tab", "editor.bar.path"), ("O", "editor.bar.folder"),
+                    ("Esc", "editor.bar.close"))
+        if self.mode == "browser":
+            generate = ((("G", "editor.bar.generate"), ("Shift+G", "editor.bar.generate_boat"))
+                        if self.llm_host is not None and self.llm_host.llm_active() else ())
+            return ((("↑/↓", "editor.bar.select"), ("Enter", "editor.bar.open"),
+                     ("N", "editor.bar.new"), ("Ctrl+E", "editor.bar.share"),
+                     ("Ctrl+I", "editor.bar.import"), ("O", "editor.bar.folder"))
+                    + generate + (("F5", "editor.bar.start"), ("Esc", "editor.bar.close")))
+        if self._delete_pending is not None:
+            return (("Enter", "editor.bar.delete_yes"), ("Esc", "editor.bar.no"))
+        if self.fields.editing:
+            return (("Enter", "editor.bar.apply"), ("Esc", "editor.bar.cancel"),
+                    ("Ctrl+S", "editor.bar.save"))
+        adds = ((("E", "editor.bar.unit"), ("G", "editor.bar.group")) if self.tab == "units"
+                else (("A", "editor.bar.event"),) if self.tab == "events" else ())
+        return ((("↑/↓", "editor.bar.select"), ("←/→", "editor.bar.section"),
+                 ("Enter", "editor.bar.edit")) + adds
+                + (("Del", "editor.bar.remove"), ("Ctrl+S", "editor.bar.save"),
+                   ("Ctrl+E", "editor.bar.share"), ("Esc", "editor.bar.back")))
 
     def _draw_browser(self, surface: pygame.Surface, content: pygame.Rect) -> None:
         left = pygame.Rect(content.x, content.y, min(440, content.width), content.height)

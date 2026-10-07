@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.283
+
+Version 1.3.283 macht den Missions- und den Einheiten-Editor per Maus
+bedienbar. Ihre Fußleisten sind Reihen blauer Tastenchips, die wie die
+Tasten wirken, und jeder Dialog hat Schaltflächen: der Pfaddialog OK und
+Abbrechen, der Austauschdialog ein Schließkreuz sowie Ordner, Pfad und
+Importieren (oder Überschreiben), die Löschfrage Ja und Nein. Beide
+Editoren schließen mit dem Kreuz oben rechts. Esc und F5 schließen den
+Editor nicht mehr und starten keine Mission, solange einer seiner Dialoge
+offen ist. Im Einheiten-Editor öffnet Strg+G das gewählte Profil und
+startet den Wikipedia-Import. Spielstände sind v53; v38 bis v52 laden
+weiterhin.
+
 ## 1.3.282
 
 Version 1.3.282 bringt die restlichen Stationsbedienungen auf die Maus.

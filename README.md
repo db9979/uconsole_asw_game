@@ -10,16 +10,16 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.282**
+Current release: **1.3.283**
 
-Release 1.3.282 brings the remaining station controls to the mouse. ESSM
-on the OPZ target page, the patrol aircraft's torpedo, the consort's ASROC
-and the helicopter's air torpedo each have a fire button that fires only on
-a second click within 3 s; the first click arms it. The OPZ key chips J, H,
-Shift+L, Del and K (follow) work by click. A click in the sonar's LOFAR or
-DEMON display puts the cursor on that frequency, the GAIN chip lowers or
-raises the gain by its halves, and a click on a dipping-sonar line selects
-that contact. Saves are v53; v38 to v52 saves still load.
+Release 1.3.283 brings the mission and unit editors to the mouse. Their
+footers are rows of blue key chips that act like the keys, and every dialog
+has buttons: the path dialog OK and Cancel, the share dialog a close cross
+plus Folder, Path and Import (or Overwrite), the delete question Yes
+and No. Both editors close with the cross at the top right. Esc and F5 no
+longer close the editor or start a mission while one of its dialogs is
+open. In the unit editor, Ctrl+G opens the selected profile and starts the
+Wikipedia import. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

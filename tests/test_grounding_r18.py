@@ -243,6 +243,32 @@ def test_astern_recovery_cannot_cross_a_reverse_obstacle():
     assert ship.x < .24
 
 
+def test_turning_into_a_slanted_coast_saves_a_consistent_contact():
+    # A hull point that turns onto land reports the sampled (often diagonal)
+    # normal; the save check demanded the nearest edge's, so a frigate
+    # aground on a slanted coast could not be loaded (nightly soak, s8).
+    slope = {"name": "slope", "nation": "ZIVIL",
+             "points": [[1.0, .2], [1.6, .2], [1.6, 1.8], [1.25, 1.8]]}
+    world = _world(landmasses=[slope])
+    hull = HullSpec(length_m=120.0, beam_m=15.0)
+    checked = 0
+    for course in range(60, 121, 5):
+        for turn in (0, 3, -3, 10):
+            result = swept_grounding(world, (.6, 1.0, course),
+                                     (1.5, 1.0, course + turn), hull)
+            assert result.contacted and result.contact.kind == "land"
+            pose = (result.safe_x_nm, result.safe_y_nm, result.safe_course_deg)
+            assert grounding_contact_is_consistent(world, pose, hull,
+                                                    result.contact), (course, turn)
+            # A normal into the land is still refused.
+            assert not grounding_contact_is_consistent(
+                world, pose, hull,
+                replace(result.contact, normal_x=-result.contact.normal_x,
+                        normal_y=-result.contact.normal_y))
+            checked += 1
+    assert checked == 52
+
+
 def test_contact_save_split_recovery_continuation_is_deterministic():
     game = Game(seed=919, start_menu=False, audio_enabled=False)
     # W2: match the swapped world's own seed to the game's, exactly like

@@ -215,6 +215,55 @@ def _land_normal(world, x, y):
     return first
 
 
+def _sampled_land_normal(world, x, y, hull):
+    """Outward normal of a hull point on land, from the land samples a
+    quarter hull width to each side (axis steps, so often diagonal)."""
+    delta = max(min(hull.beam_m, hull.length_m) / METRES_PER_NM / 4.0, 1e-5)
+    nx = float(world.on_land(x - delta, y)) - float(world.on_land(x + delta, y))
+    ny = float(world.on_land(x, y - delta)) - float(world.on_land(x, y + delta))
+    length = math.hypot(nx, ny)
+    if length:
+        return nx / length, ny / length
+    return _land_normal(world, x, y)
+
+
+def _land_contact_normal_ok(world, contact, hull, tolerance_nm) -> bool:
+    """Whether a saved land contact lies on the coast with a normal one of
+    the detectors gives there: the nearest edge's (``_land_normal``), the
+    sampled one of a hull point on land, a crossed edge's (either side,
+    ``first_physical_land_intersection``) or, at a coast vertex entering the
+    hull, any pointing off the land (the sweep uses the opposite of the
+    motion)."""
+    point = (contact.x_nm, contact.y_nm)
+    normal = (contact.normal_x, contact.normal_y)
+    probe = 1e-7
+    outward = not world.on_land(point[0] + normal[0] * probe,
+                                point[1] + normal[1] * probe)
+    on_coast = False
+    for landmass in world.coast.landmasses:
+        count = len(landmass.points)
+        for index, first in enumerate(landmass.points):
+            second = landmass.points[(index + 1) % count]
+            if _point_segment_distance(point, first, second) > tolerance_nm:
+                continue
+            on_coast = True
+            if not outward:
+                continue
+            if (math.hypot(point[0] - first[0], point[1] - first[1]) <= tolerance_nm
+                    or math.hypot(point[0] - second[0],
+                                  point[1] - second[1]) <= tolerance_nm):
+                return True
+            ex, ey = second[0] - first[0], second[1] - first[1]
+            length = math.hypot(ex, ey)
+            if length and abs(-ey * normal[0] + ex * normal[1]) / length >= .999999:
+                return True
+    if not on_coast:
+        return False
+    return any(normal[0] * expected[0] + normal[1] * expected[1] >= .999999
+               for expected in (_land_normal(world, *point),
+                                _sampled_land_normal(world, *point, hull)))
+
+
 def _turning_region(world, pose, t0, t1, hull):
     first = pose(t0)
     second = pose(t1)
@@ -373,17 +422,7 @@ def _find_contact(world, x_nm: float, y_nm: float, course_deg: float,
         if world.on_land(px, py):
             if not detail:
                 return _BLOCKED
-            delta = max(min(hull.beam_m, hull.length_m) / METRES_PER_NM / 4.0,
-                        1e-5)
-            nx = float(world.on_land(px - delta, py)) - float(
-                world.on_land(px + delta, py))
-            ny = float(world.on_land(px, py - delta)) - float(
-                world.on_land(px, py + delta))
-            length = math.hypot(nx, ny)
-            if length:
-                nx, ny = nx / length, ny / length
-            else:
-                nx, ny = _land_normal(world, px, py)
+            nx, ny = _sampled_land_normal(world, px, py, hull)
             return GroundingContact("land", px, py, nx, ny,
                                     longitudinal, lateral)
     corners = (points[0], points[2], points[8], points[6])
@@ -497,16 +536,7 @@ def grounding_contact_is_consistent(world, pose, hull, contact) -> bool:
             and 0.0 <= contact.y_nm <= world.size_nm):
         return False
     if contact.kind == "land":
-        nearest = float("inf")
-        for landmass in world.coast.landmasses:
-            for index, first in enumerate(landmass.points):
-                second = landmass.points[(index + 1) % len(landmass.points)]
-                nearest = min(nearest, _point_segment_distance(
-                    (contact.x_nm, contact.y_nm), first, second))
-        expected_normal = _land_normal(world, contact.x_nm, contact.y_nm)
-        normal_alignment = (contact.normal_x * expected_normal[0]
-                            + contact.normal_y * expected_normal[1])
-        return nearest <= tolerance_nm and normal_alignment >= .999999
+        return _land_contact_normal_ok(world, contact, hull, tolerance_nm)
     if contact.kind == "shallow":
         return (world.coast.has_bathymetry
                 and not world.on_land(contact.x_nm, contact.y_nm)

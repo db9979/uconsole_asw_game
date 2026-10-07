@@ -10,17 +10,18 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.280**
+Aktuelle Version: **1.3.282**
 
-Version 1.3.280 nimmt Befehle per Sprache an. Sprich einen Befehl mit der
-Sprechtaste, etwa "Volle Fahrt voraus", "Kurs 270" oder "Auf 80 Meter
-tauchen", und er wird sofort ausgeführt, auf der uConsole, im U-Boot und
-im Browser; der Erste Offizier meldet nur, was wirklich gesetzt wurde.
-Bisher wurde so ein Befehl bestätigt, während das Schiff seine Fahrt
-behielt. Per Sprache gehen nur Kurs, Fahrt, Tiefe, Leise- oder
-Schleichfahrt und Gefechtsstationen, nie Waffen, und eine Browser-Station
-gibt nur die Befehle ihrer eigenen Station. Spielstände sind v53; v38 bis
-v52 laden weiter.
+Version 1.3.282 bringt die restlichen Stationsbedienungen auf die Maus.
+ESSM auf der Zielseite der OPZ, der Torpedo des Seefernaufklärers, die
+ASROC des Begleiters und der Lufttorpedo des Hubschraubers haben je einen
+Feuerknopf, der erst beim zweiten Klick innerhalb von 3 s feuert; der erste
+Klick macht ihn scharf. Die OPZ-Tastenchips J, H, Umschalt+L, Entf und K
+(Folgen) wirken per Klick. Ein Klick in die LOFAR- oder DEMON-Anzeige des
+Sonars setzt den Cursor auf diese Frequenz, der Chip GAIN senkt oder hebt
+die Verstärkung mit seinen Hälften, und ein Klick auf eine Zeile des
+Tauchsonars wählt diesen Kontakt. Spielstände sind v53; v38 bis v52 laden
+weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

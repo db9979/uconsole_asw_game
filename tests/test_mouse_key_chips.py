@@ -18,9 +18,9 @@ from src.ui import layout, pointer, sonar_hit
 from src.ui.stations import common
 from src.ui.uboot_view import station_pages
 
-# Fire keys outside the weapons station stay keys (fire by click only at
-# station 3): drawn as a cap in the rules text, never a switch.
-FIRE_CAPS = {"Ctrl+Enter", "Strg+Eingabe"}
+# Every fire key is clickable now: outside the weapons station through a
+# button that fires on a confirming second click.
+FIRE_CAPS = set()
 
 
 @pytest.fixture

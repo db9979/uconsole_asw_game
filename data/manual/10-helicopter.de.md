@@ -66,6 +66,8 @@ Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrü
 - Auf Seite 2 sind die in den Regeln genannten Tasten (`H`, `Y`, `U`/`V`, `Umschalt+A`, `B`, `D`, `Umschalt+B`, `Umschalt+M`, `Strg+R`) Schalter: Ein Klick drückt sie.
 - Auf Seite 1 ist die Windenlampe im Feld Rettungswinde ein Schalter für `Z`.
 - Auf der Akustikseite schaltet ein Klick auf die Quellenangabe die Hörquelle um.
+- Auf Seite 2 feuert der Torpedoknopf den Lufttorpedo erst beim zweiten Klick innerhalb von 3 s (der erste macht ihn scharf), wie `Strg+Eingabe`.
+- Auf Seite 3 wählt ein Klick auf eine Kontaktzeile des Tauchsonars diesen Kontakt, wie `Umschalt+↑`/`Umschalt+↓`.
 - Auf der Karte zoomt das Mausrad, Ziehen verschiebt (und beendet das Folgen mit `K`) und ein Klick heftet eine Kurzinfo an.
 
 ## Standardablauf {#helicopter-sop}

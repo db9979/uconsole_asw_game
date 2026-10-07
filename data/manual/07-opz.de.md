@@ -88,7 +88,8 @@ Zwei Schalter oben links in der Karte schalten auf jeder Seite Seeradar und Luft
 Jede Taste in der Tastenleiste am Fuß der Station lässt sich anklicken; gedrückt halten hält die Taste. Lampen, Seitenreiter und Tastenhinweise im Text sind ebenfalls anklickbar (Kapitel Werkzeuge, Maus). Außerdem:
 
 - Ein Klick auf eine Trackkarte wählt den Track.
-- Die Tastenchips auf der Zielseite weisen das Ziel zu (`M`), werfen Düppel (`G`) und schalten den ASM-Track weiter (`←`/`→`); ESSM feuert nur mit `Strg+Eingabe`.
+- Die Tastenchips auf der Zielseite weisen das Ziel zu (`M`), werfen Düppel (`G`) und schalten den ASM-Track weiter (`←`/`→`); die Chips `J`, `H`, `Umschalt+L`, `Entf` und `K` (Folgen) wirken ebenfalls per Klick.
+- **Feuerknöpfe:** Der ESSM-Knopf auf der Zielseite, der Torpedoknopf des Seefernaufklärers auf Seite 3 (sichtbar, sobald `D` den Torpedo gewählt hat) und der ASROC-Knopf des Begleiters auf Seite 4 feuern erst beim zweiten Klick: Der erste Klick macht den Knopf scharf (er zeigt "nochmal klicken: Feuer"), ein zweiter Klick innerhalb von 3 s feuert wie `Strg+Eingabe`; sonst entschärft er sich wieder.
 - Seite 3: Ein Klick auf die Karte setzt das Suchgebiet des Seefernaufklärers; Seite 4: Ein Klick setzt den Punkt des Begleiters, und seine Befehlstasten im Feld sind anklickbar.
 - Seite 5: Ein Klick auf eine Zeile schaltet sie weiter; die Ebenen-Chips unter der Karte und die beiden Radarschalter oben links wirken auf jeder Seite.
 - Auf der Karte zoomt das Mausrad, Ziehen verschiebt (und beendet das Folgen mit `K`) und ein Klick heftet eine Kurzinfo an.

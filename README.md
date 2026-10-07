@@ -10,17 +10,16 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.280**
+Current release: **1.3.282**
 
-Release 1.3.280 lets you give orders by voice. Say an order with the talk
-key, such as "all ahead full", "come right to 090" or "make depth 80
-metres", and it is carried out at once on the uConsole, the submarine and
-in the browser; the executive officer reports only what was really set.
-Before, such an order was answered as if it had been given while the ship
-kept its speed. Only course, speed, depth, quiet or silent running and
-action stations can be ordered by voice, never weapons, and a browser
-station gives only its own station's orders. Saves are v53; v38 to v52
-saves still load.
+Release 1.3.282 brings the remaining station controls to the mouse. ESSM
+on the OPZ target page, the patrol aircraft's torpedo, the consort's ASROC
+and the helicopter's air torpedo each have a fire button that fires only on
+a second click within 3 s; the first click arms it. The OPZ key chips J, H,
+Shift+L, Del and K (follow) work by click. A click in the sonar's LOFAR or
+DEMON display puts the cursor on that frequency, the GAIN chip lowers or
+raises the gain by its halves, and a click on a dipping-sonar line selects
+that contact. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

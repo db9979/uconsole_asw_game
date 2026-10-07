@@ -521,7 +521,7 @@ def display_message(kind: str, value: object):
 # Strg, Eingabe, Rücktaste, Leertaste, Entf, Bild↑/↓, Pos1 and Ende.
 _GERMAN_KEY_NAMES = (("Shift", "Umschalt"), ("Umsch", "Umschalt"), ("Ctrl", "Strg"),
                      ("Enter", "Eingabe"), ("Backspace", "Rücktaste"), ("Bksp", "Rück"),
-                     ("Space", "Leertaste"), ("SPACE", "Leertaste"), ("Delete", "Entf"),
+                     ("Space", "Leertaste"), ("SPACE", "Leertaste"), ("Delete", "Entf"), ("Del", "Entf"),
                      ("PgUp", "Bild↑"), ("PgDn", "Bild↓"), ("Home", "Pos1"), ("End", "Ende"))
 _KEY_NAME_PATTERN = re.compile(r"(?<![\w])(" + "|".join(
     english for english, _german in _GERMAN_KEY_NAMES) + r")(?![\w])")

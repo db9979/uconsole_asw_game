@@ -88,7 +88,8 @@ Two switches in the chart's top left turn the surface and air radar on and off o
 Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
 
 - A click on a track card selects the track.
-- The key chips on the target page assign the target (`M`), launch chaff (`G`) and step the missile track (`←`/`→`); ESSM fires only with `Ctrl+Enter`.
+- The key chips on the target page assign the target (`M`), launch chaff (`G`) and step the missile track (`←`/`→`); the chips `J`, `H`, `Shift+L`, `Del` and `K` (follow) work by click too.
+- **Fire buttons:** the ESSM button on the target page, the patrol aircraft's torpedo button on page 3 (shown once `D` has chosen the torpedo) and the consort's ASROC button on page 4 fire only on a second click: the first click arms the button (it reads "click again to fire"), a second click within 3 s fires like `Ctrl+Enter`; otherwise it disarms itself.
 - Page 3: a click on the chart sets the patrol aircraft's search area; page 4: a click sets the consort's point and its order keys in the panel are clickable.
 - Page 5: a click on a row moves it on; the layer chips under the chart and the two radar switches in its top left work on every page.
 - On the chart the wheel zooms, dragging pans (it ends `K` follow) and a click pins a tooltip.

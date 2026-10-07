@@ -16,7 +16,7 @@ from src.air import helicopter as helicopter_physics
 
 
 from src.ui.stations.common import (_panel, _shortcut_footer, _station_content_top,
-                                    draw_station_page_tabs, message)
+                                    draw_station_page_tabs, fire_button, message)
 from src.ui.stations.opz import (_helo_dip_contact_line, helo_dip_contacts)
 
 
@@ -178,6 +178,11 @@ _HELO_ACOUSTIC_PAGES = (("helo.acoustic.broadband", "helo.acoustic.broadband_axi
                         ("helo.acoustic.demon", "helo.acoustic.demon_axis"))
 _HELO_ACOUSTIC_TABS = ("helo.acoustic.tab_broadband", "helo.acoustic.tab_lofar",
                        "helo.acoustic.tab_demon")
+
+
+def _select_dip_contact(game, contact):
+    if contact.target_id in game.sonar.contacts:
+        game.selected_contact = contact
 
 
 def _helicopter_acoustic_observations(game):
@@ -898,7 +903,7 @@ def draw_helicopter_view(game, tr=None) -> None:
         tokens = ((), (("Q/E", "Q/E"),),
                   (("H:", "H"), ("←/→", "←/→"), ("↑/↓", "↑/↓")),
                   (("Y", "Y"), ("U/V", "U/V"), ("Shift+A", "Shift+A")),
-                  (("B:", "B"), ("Ctrl+Enter:", None)),
+                  (("B:", "B"),),
                   (("Shift+↑/↓", None), ("G", "G")),
                   (("Buoys:", "Shift+B"), ("Bojen:", "Shift+B"), ("MAD", "Shift+M")),
                   (("Radar", "Ctrl+R"),), ())
@@ -914,6 +919,10 @@ def draw_helicopter_view(game, tr=None) -> None:
             pointer.add_token_keys((mx, line_y, mw, block_h), text, 18, keys, min_size=16,
                                    screen=s)
             line_y += block_h + 4
+        if line_y + 28 <= regions["rules"].bottom - 6:
+            # The air torpedo fires by this button on a confirming second click.
+            fire_button(game, s, (mx, line_y + 2, min(mw, 420), 26),
+                        "fire.helo_torpedo", "helo_torpedo")
     elif page == 2:
         plot = layout.box(s, regions["rules"], "helo.dip_sonar")
         px, py, pw, ph = plot
@@ -951,6 +960,7 @@ def draw_helicopter_view(game, tr=None) -> None:
                                         gauge_text_w, 26),
                              config.COLOR_TEXT, size=15)
         lines = []
+        owners = []                     # the contact of each line, for a click
         source_label = localize("helo.source.buoy" if getattr(game, "helo_sensor_source", "DIP") == "BUOY"
                                 else "helo.source.dip")
         layout.blit_line(s, source_label, (px + 8, py + 4, int(pw * .55), 22),
@@ -983,6 +993,7 @@ def draw_helicopter_view(game, tr=None) -> None:
                        int(center_y - math.cos(theta) * radius))
                 pygame.draw.line(s, config.COLOR_OK,
                                  (int(center_x), int(center_y)), end, 2)
+                owners.append(contact)
                 lines.append(message("helo.dip_passive_line", contact=label,
                                      bearing=f"{contact.dip_bearing:05.1f}",
                                      error=f"{contact.dip_bearing_uncertainty_deg:.1f}",
@@ -998,6 +1009,7 @@ def draw_helicopter_view(game, tr=None) -> None:
                                    max(3, min(radius, int(radius * fix["uncertainty_nm"] / 20.0))), 1)
                 pygame.draw.circle(s, config.COLOR_WARN,
                                    marker, 5)
+                owners.append(contact)
                 lines.append(message("helo.dip_active_line", contact=label,
                                      range=f"{distance:.1f}",
                                      range_error=f"{fix['uncertainty_nm']:.1f}",
@@ -1008,6 +1020,7 @@ def draw_helicopter_view(game, tr=None) -> None:
             for seq, row in sorted(contact.buoy_reports.items()):
                 if not 0 <= game.sim_t - row["measured_at"] < config.SONAR_CONTACT_LOST_S:
                     continue
+                owners.append(contact)
                 lines.append(message("helo.buoy_report_line", buoy=f"SB{seq:02d}",
                                      contact=label, bearing=f"{row['bearing']:05.1f}",
                                      range=(f"{row['range_nm']:.1f} {nm_unit()}"
@@ -1032,9 +1045,15 @@ def draw_helicopter_view(game, tr=None) -> None:
         line_h = max(22, layout.font(15).get_linesize() + 2)
         list_y = gauge_y + gauge_h + 18
         for index, line in enumerate(lines[:max(1, int((py + ph - list_y) / line_h))]):
-            layout.blit_line(s, line, (int(px + pw * .62), list_y + index * line_h,
-                                       int(pw * .38), line_h),
-                             config.COLOR_TEXT, size=15)
+            row = pygame.Rect(int(px + pw * .62), list_y + index * line_h,
+                              int(pw * .38), line_h)
+            owner = owners[index] if index < len(owners) else None
+            if owner is not None:
+                # A click selects the line's contact, like Shift+Up/Down.
+                if owner is game.selected_contact:
+                    pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, row)
+                pointer.add_action(row, lambda _pos, c=owner: _select_dip_contact(game, c))
+            layout.blit_line(s, line, row, config.COLOR_TEXT, size=15)
     else:
         _draw_helicopter_acoustic_view(game, regions["rules"])
     if page < len(HELICOPTER_FOOTER):
@@ -1043,8 +1062,7 @@ def draw_helicopter_view(game, tr=None) -> None:
                          HELICOPTER_FOOTER[page])
 
 
-# Per page; Ctrl+Enter (the air torpedo) stays a key: fire by click only at
-# the weapons station.
+# Per page; the air torpedo fires by its button on the rules page.
 HELICOPTER_FOOTER = (
     (("H", "helo.footer.launch"), ("Z", "helo.footer.hoist"),
      ("Ctrl+R", "helo.footer.radar"), ("Q/E", "footer.zoom"), ("K", "footer.follow")),

@@ -1286,9 +1286,9 @@ def draw_sonar_view(game, tr=None) -> None:
             rect = segment["rect"]
             layout.record_geometry("sonar-action", rect,
                                    f"sonar:action:{segment['action']}")
-            if segment["action"] == "cursor":
-                # Cursor and TMA hypothesis: the chip presses its keys (left
-                # half the first, right half the second), as the keyboard does.
+            if segment["action"] in ("cursor", "gain"):
+                # Cursor, TMA hypothesis and gain: the chip presses its keys
+                # (left half the first, right half the second), as the keyboard does.
                 pointer.add_legend(rect, _CURSOR_KEYS.get(segment["text"][0],
                                                           segment["text"][0]))
             elif not (segment["action"] == "array"     # the boat's array: a readout

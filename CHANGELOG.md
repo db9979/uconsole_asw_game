@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.283
+
+Release 1.3.283 brings the mission and unit editors to the mouse. Their
+footers are rows of blue key chips that act like the keys, and every dialog
+has buttons: the path dialog OK and Cancel, the share dialog a close cross
+plus Folder, Path and Import (or Overwrite), the delete question Yes
+and No. Both editors close with the cross at the top right. Esc and F5 no
+longer close the editor or start a mission while one of its dialogs is
+open. In the unit editor, Ctrl+G opens the selected profile and starts the
+Wikipedia import. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.282
 
 Release 1.3.282 brings the remaining station controls to the mouse. ESSM

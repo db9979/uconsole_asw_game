@@ -139,11 +139,11 @@ def test_wiki_import_hotkey_is_discoverable_in_browser_and_editor_footers(
     surface = pygame.Surface((1280, 720))
     editor.mode = "browser"
     editor.draw(surface)
-    assert "editor.wiki_import_hint" in seen[-1]
+    assert ("Ctrl+G", "editor.bar.wiki_import") in seen[-1]
     editor.new("sub", "user.wiki_hint_probe")
     editor.mode = "editor"
     editor.draw(surface)
-    assert "editor.wiki_import_hint" in seen[-1]
+    assert ("Ctrl+G", "editor.bar.wiki_import") in seen[-1]
     pygame.quit()
 
 

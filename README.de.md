@@ -10,13 +10,14 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.287**
+Aktuelle Version: **1.3.288**
 
-Version 1.3.287 ändert nichts am Spiel; sie enthält 1.3.286 und die
-Maussteuerung des Browsers aus 1.3.285 unverändert. Der Audio-Dauertest zählt
-Aussetzer des Mischers erst zwei Sekunden nach einem Kaltstart, damit ein
-langsames erstes Bild auf einer ausgelasteten Testmaschine keine Version mehr
-aufhält; ein Hänger später im Lauf lässt ihn weiterhin scheitern. Spielstände
+Version 1.3.288 beendet das Blinken des Bildes hinter einem offenen Menü in
+der Mac-App. Unter macOS übernahm die Zeichenfläche des Spiels den
+Alphakanal des Fensters, sodass die Schleier und Tafeln von Optionen, Hilfe,
+Speichern und den anderen Menüs das Bild teilweise durchsichtig machten und
+das Fenster dahinter flackerte. Die Zeichenfläche ist jetzt immer deckend;
+auf dem uConsole, unter Windows und im Spiel ändert sich nichts. Spielstände
 sind v53; v38 bis v52 laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).

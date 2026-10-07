@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.288
+
+Release 1.3.288 stops the Mac app's picture from blinking behind an open
+menu. On macOS the game's drawing canvas inherited the window's alpha
+channel, so the veils and panels of the options, help, save and other menus
+left the picture partly transparent and the window flickered behind them. The
+canvas is now always opaque; nothing changes on the uConsole, Windows or in
+play. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.287
 
 Release 1.3.287 changes nothing in play; it carries 1.3.286 and the browser

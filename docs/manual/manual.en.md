@@ -707,6 +707,8 @@ Every key in the key bar at the foot of the station can be clicked; holding the 
 - The key chips under the cards act on the selected contact: `C` classify, `T` TMA, `G` release to the CIC, `M` target, `Y`/`Shift+Y` stream or recover the towed array and the VDS.
 - A click on the BROADBAND waterfall steers the listening bearing there, or onto a contact within half a beam width of the click.
 - A click on a page tab opens that page.
+- A click in the LOFAR or DEMON display puts the white cursor on that frequency, like `Z`/`X`.
+- The left half of the GAIN chip lowers the gain like `I`, the right half raises it like `O`.
 
 ### Standard procedure
 
@@ -1127,7 +1129,8 @@ Two switches in the chart's top left turn the surface and air radar on and off o
 Every key in the key bar at the foot of the station can be clicked; holding the button holds the key. Lamps, page tabs and key hints in the text are clickable too (chapter Tools, Mouse). In addition:
 
 - A click on a track card selects the track.
-- The key chips on the target page assign the target (`M`), launch chaff (`G`) and step the missile track (`←`/`→`); ESSM fires only with `Ctrl+Enter`.
+- The key chips on the target page assign the target (`M`), launch chaff (`G`) and step the missile track (`←`/`→`); the chips `J`, `H`, `Shift+L`, `Del` and `K` (follow) work by click too.
+- **Fire buttons:** the ESSM button on the target page, the patrol aircraft's torpedo button on page 3 (shown once `D` has chosen the torpedo) and the consort's ASROC button on page 4 fire only on a second click: the first click arms the button (it reads "click again to fire"), a second click within 3 s fires like `Ctrl+Enter`; otherwise it disarms itself.
 - Page 3: a click on the chart sets the patrol aircraft's search area; page 4: a click sets the consort's point and its order keys in the panel are clickable.
 - Page 5: a click on a row moves it on; the layer chips under the chart and the two radar switches in its top left work on every page.
 - On the chart the wheel zooms, dragging pans (it ends `K` follow) and a click pins a tooltip.
@@ -1488,6 +1491,8 @@ Every key in the key bar at the foot of the station can be clicked; holding the 
 - On page 2 the keys named in the rules (`H`, `Y`, `U`/`V`, `Shift+A`, `B`, `D`, `Shift+B`, `Shift+M`, `Ctrl+R`) are switches: a click presses them.
 - On page 1 the winch lamp of the rescue hoist panel is a switch for `Z`.
 - On the acoustic page a click on the source label switches the listening source.
+- On page 2 the torpedo button fires the air torpedo only on a second click within 3 s (the first arms it), like `Ctrl+Enter`.
+- On page 3 a click on a contact line of the dipping sonar selects that contact, like `Shift+↑`/`Shift+↓`.
 - On the chart the wheel zooms, dragging pans (it ends `K` follow) and a click pins a tooltip.
 
 ### Standard procedure

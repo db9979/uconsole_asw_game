@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.281**
+Current release: **1.3.284**
 
-Release 1.3.281 lets you hide the contact names on the charts. Alt+N, or
+Release 1.3.284 lets you hide the contact names on the charts. Alt+N, or
 the blue Names chip in the chart's corner, hides the names and speeds of all
 contacts on every chart at every station of both sides and shows them again;
 symbols, course vectors and the tooltip stay, and the uConsole keeps the

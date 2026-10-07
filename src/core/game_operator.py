@@ -689,6 +689,12 @@ class OperatorMixin(WeaponOrdersMixin):
             self._cycle_sonar_mode()
         elif action == "gain":
             self._adjust_sonar_gain(3.0)
+        elif action == "cursor_hz":
+            value = target.get("value")
+            if not (isinstance(value, tuple) and len(value) == 2):
+                return False
+            if self.set_sonar_cursor(*value) is not True:
+                return False
         elif action == "band_filter":
             self._cycle_sonar_band()
         elif action == "notch":

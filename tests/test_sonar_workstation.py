@@ -114,7 +114,10 @@ def test_lofar_waterfall_click_does_not_set_listen_bearing(game):
     game.sonar_page = 1
     game.sonar.set_listen_bearing(42)
     plot = _waterfall_plot(sonar_geometry(game)["main"], 1)
-    assert sonar_click_target(game, plot.center) is None
+    target = sonar_click_target(game, plot.center)
+    # The click sets the frequency cursor (like Z/X), never the bearing.
+    assert target is not None and target["action"] == "cursor_hz"
+    game._handle_sonar_click(target)
     assert game.sonar.listen_bearing == 42
 
 

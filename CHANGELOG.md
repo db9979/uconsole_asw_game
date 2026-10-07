@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.281
+## 1.3.284
 
-Release 1.3.281 lets you hide the contact names on the charts. Alt+N, or
+Release 1.3.284 lets you hide the contact names on the charts. Alt+N, or
 the blue Names chip in the chart's corner, hides the names and speeds of all
 contacts on every chart at every station of both sides and shows them again;
 symbols, course vectors and the tooltip stay, and the uConsole keeps the
@@ -14,6 +14,17 @@ choice in its settings. In the browser the Names button above the chart and
 Alt+N do the same for that browser tab. A name also keeps its side of the
 symbol when the contact's course estimate swings round. Saves are v53; v38 to v52 saves
 still load.
+
+## 1.3.282
+
+Release 1.3.282 brings the remaining station controls to the mouse. ESSM
+on the OPZ target page, the patrol aircraft's torpedo, the consort's ASROC
+and the helicopter's air torpedo each have a fire button that fires only on
+a second click within 3 s; the first click arms it. The OPZ key chips J, H,
+Shift+L, Del and K (follow) work by click. A click in the sonar's LOFAR or
+DEMON display puts the cursor on that frequency, the GAIN chip lowers or
+raises the gain by its halves, and a click on a dipping-sonar line selects
+that contact. Saves are v53; v38 to v52 saves still load.
 
 ## 1.3.280
 

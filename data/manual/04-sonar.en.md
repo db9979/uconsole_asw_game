@@ -134,6 +134,8 @@ Every key in the key bar at the foot of the station can be clicked; holding the 
 - The key chips under the cards act on the selected contact: `C` classify, `T` TMA, `G` release to the CIC, `M` target, `Y`/`Shift+Y` stream or recover the towed array and the VDS.
 - A click on the BROADBAND waterfall steers the listening bearing there, or onto a contact within half a beam width of the click.
 - A click on a page tab opens that page.
+- A click in the LOFAR or DEMON display puts the white cursor on that frequency, like `Z`/`X`.
+- The left half of the GAIN chip lowers the gain like `I`, the right half raises it like `O`.
 
 ## Standard procedure {#sonar-sop}
 

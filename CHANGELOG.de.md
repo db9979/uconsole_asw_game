@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.281
+## 1.3.284
 
-Version 1.3.281 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
+Version 1.3.284 macht die Kontaktnamen auf den Karten ausblendbar. Alt+N
 oder der blaue Chip Namen in der Kartenecke blendet Namen und Fahrt aller
 Kontakte auf allen Karten an jeder Station beider Seiten aus und wieder ein;
 Symbole, Kursvektoren und der Tooltip bleiben, und die uConsole merkt sich
@@ -15,6 +15,19 @@ Karte und Alt+N dasselbe für diesen Browser-Tab. Ein Name bleibt auch
 auf seiner Seite des Symbols, wenn der geschätzte Kurs eines Kontakts
 herumschwenkt. Spielstände sind v53;
 Spielstände v38 bis v52 laden weiterhin.
+
+## 1.3.282
+
+Version 1.3.282 bringt die restlichen Stationsbedienungen auf die Maus.
+ESSM auf der Zielseite der OPZ, der Torpedo des Seefernaufklärers, die
+ASROC des Begleiters und der Lufttorpedo des Hubschraubers haben je einen
+Feuerknopf, der erst beim zweiten Klick innerhalb von 3 s feuert; der erste
+Klick macht ihn scharf. Die OPZ-Tastenchips J, H, Umschalt+L, Entf und K
+(Folgen) wirken per Klick. Ein Klick in die LOFAR- oder DEMON-Anzeige des
+Sonars setzt den Cursor auf diese Frequenz, der Chip GAIN senkt oder hebt
+die Verstärkung mit seinen Hälften, und ein Klick auf eine Zeile des
+Tauchsonars wählt diesen Kontakt. Spielstände sind v53; v38 bis v52 laden
+weiterhin.
 
 ## 1.3.280
 

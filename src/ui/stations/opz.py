@@ -24,6 +24,7 @@ from src.ui.stations import opz_display_view
 
 
 from src.ui.stations.common import (
+    fire_button,
     list_window,
     _observation_bearing,
     _observation_position,
@@ -486,6 +487,7 @@ def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
             ("opz.mpa.keys_orders", (("H", "H"),)),
             ("opz.mpa.keys_area", (("W", "W"),)),
             ("opz.mpa.keys_buoys", (("X", "X"), ("B", "B"), ("Shift+B", "Shift+B"))),
+            ("opz.mpa.keys_pattern_stop", (("Shift+X", "Shift+X"),)),
             ("opz.mpa.keys_weapons", (("Ctrl+R", "Ctrl+R"), ("Strg+R", "Ctrl+R"),
                                       ("Shift+M", "Shift+M"), ("D", "D"),
                                       ("(Ctrl+Enter)", None)))):
@@ -505,15 +507,20 @@ def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
             size=14, min_size=11, active=chosen == "mpa_torpedo")
         pointer.add_key(chip, pygame.K_d)
         py += 28
+        if chosen == "mpa_torpedo" and py + 26 <= bottom:
+            fire_button(game, s, (x, py + 2, w, 24), "fire.mpa_torpedo", "mpa_torpedo")
+            py += 30
     return py
 
 
 OPZ_TARGET_KEYS = ((("M", "opz.keys.designate"), ("G", "opz.keys.chaff")),
                    (("←/→", "opz.keys.asm_track"), ("I", "opz.keys.ciws")),
-                   (("R", "opz.keys.surface_radar"), ("Shift+R", "opz.keys.air_radar")))
+                   (("R", "opz.keys.surface_radar"), ("Shift+R", "opz.keys.air_radar")),
+                   (("J", "opz.keys.track_number"),), (("H", "opz.keys.show_suppressed"),),
+                   (("Shift+L", "opz.keys.dissolve"),), (("Del", "opz.keys.suppress"),))
 
-# The consort's order hints: each key in them is a switch.  Ctrl+Enter (its
-# ASROC) is not: fire by click only at the weapons station.
+# The consort's order hints: each key in them is a switch.  Its ASROC fires
+# by the button below them, on a confirming second click.
 CONSORT_KEY_TOKENS = {
     "opz.group.keys_orders": (("Y", "Y"), ("F", "F"), ("H", "H")),
     "opz.group.keys_point": (("X", "X"), ("W", "W")),
@@ -614,6 +621,9 @@ def _draw_consort_sidebar(game, s, x, py, w, bottom) -> int:
         pointer.add_token_keys((x, py, w, 22), key, 14, CONSORT_KEY_TOKENS[key],
                                screen=s)
         py += 24
+    if py + 28 <= bottom:
+        fire_button(game, s, (x, py + 2, w, 24), "fire.consort_asroc", "consort_asroc")
+        py += 30
     return py
 
 
@@ -1311,11 +1321,18 @@ def draw_opz_view(game, tr=None) -> None:
                            size=16)
         py += 26
         content_bottom = regions["classify"].top - 7
-        # The target page's orders as key chips (full mouse control); the
-        # ESSM fire key stays a key: fire by click only at the weapons station.
-        keys_top = content_bottom - len(OPZ_TARGET_KEYS) * 24
-        for index, specs in enumerate(OPZ_TARGET_KEYS):
+        # The target page's orders as key chips (full mouse control); ESSM
+        # fires by its button on a confirming second click.
+        # A short station keeps room for the missile list: the last chip
+        # rows (track number, suppress) give way first; F1 lists them all.
+        asm_rows = min(3, len(asm_tracks)) * 26
+        key_rows = OPZ_TARGET_KEYS[:max(3, min(len(OPZ_TARGET_KEYS),
+                                               (content_bottom - py - 28 - asm_rows) // 24))]
+        keys_top = content_bottom - len(key_rows) * 24
+        for index, specs in enumerate(key_rows):
             _shortcut_footer(s, (x, keys_top + index * 24 + 2, w, 22), specs)
+        keys_top -= 28
+        fire_button(game, s, (x, keys_top + 2, w, 24), "fire.essm", "essm")
         content_bottom = keys_top - 4
         if asm_tracks:
             n = len(asm_tracks)
@@ -1361,7 +1378,12 @@ def draw_opz_view(game, tr=None) -> None:
     layout.command_segment(s, range_rect, "Q/E", "opz.footer.range", "",
                            f"{max_nm:g} NM  {scales}", size=11)
     pointer.add_legend(range_rect, "Q/E")
+    # K: the chart follows own ship (or stays where it was panned).
+    follow_w = layout.text_width(layout.font(11), "K " + localize("footer.follow")) + 24
+    follow_rect = pygame.Rect(range_rect.right + 6, footer_rect.y, follow_w, footer_rect.h)
+    layout.command_segment(s, follow_rect, "K", "footer.follow", size=11)
+    pointer.add_legend(follow_rect, "K")
     # Layer chips: what the chart draws now; a click moves one on.
     opz_display_view.draw_chips(game, s, pygame.Rect(
-        range_rect.right + 8, footer_rect.y + 1,
-        footer_rect.right - range_rect.right - 8, footer_rect.h - 2))
+        follow_rect.right + 8, footer_rect.y + 1,
+        footer_rect.right - follow_rect.right - 8, footer_rect.h - 2))

@@ -226,6 +226,11 @@ def _contact_key_rows(game, contacts):
     return panel, rows
 
 
+def _demon_plot(main) -> pygame.Rect:
+    """The DEMON spectrum's plot area inside the main panel."""
+    return pygame.Rect(main.x + 57, main.y + 62, main.w - 83, main.h - 109)
+
+
 def sonar_click_target(game, pos):
     """Resolve only explicitly safe sonar actions; return no simulation object."""
     if pos is None:
@@ -252,6 +257,16 @@ def sonar_click_target(game, pos):
             if separation <= threshold:
                 return {"action": "contact_listen", "value": nearest.id, "safe": True}
         return {"action": "listen_bearing", "value": bearing % 360.0, "safe": True}
+    # LOFAR and DEMON: a click puts the frequency cursor where it lands.
+    if page == 1 and plot.collidepoint(pos):
+        axis = (pos[0] - plot.x) / max(1, plot.w - 1)
+        return {"action": "cursor_hz", "value": ("lofar", axis * config.LOFAR_FMAX_HZ),
+                "safe": True}
+    demon = _demon_plot(geometry["main"])
+    if page == 2 and demon.collidepoint(pos):
+        axis = (pos[0] - demon.x) / max(1, demon.w - 1)
+        return {"action": "cursor_hz", "value": ("demon", axis * DEMON_DISPLAY_MAX_HZ),
+                "safe": True}
     if geometry["contacts"].collidepoint(pos):
         for item, rect in _list_rows(game, geometry["contacts"], page)[0]:
             if rect.collidepoint(pos):
@@ -397,8 +412,7 @@ def sonar_hit_target(game, pos):
             if beam is not None else None,
             target_id=f"sonar:lofar:{frequency:.1f}")
     if page == 2:
-        plot = pygame.Rect(main.x + 57, main.y + 62, main.w - 83,
-                           main.h - 109)
+        plot = _demon_plot(main)
         if not plot.collidepoint(pos):
             return None
         frequency = (pos[0] - plot.x) / max(1, plot.w - 1) * DEMON_DISPLAY_MAX_HZ

@@ -20,6 +20,10 @@ for folder, dirs, files in os.walk(os.path.join(root, "data")):
         if not name.endswith((".pyc", ".pyo")):
             relative = os.path.relpath(folder, root)
             datas.append((os.path.join(folder, name), relative))
+# The high-resolution game window (src/ui/window.py) loads pygame's window
+# icon when it opens; PyInstaller's pygame hook leaves that file out.
+import pygame
+datas.append((os.path.join(os.path.dirname(pygame.__file__), "pygame_icon.bmp"), "pygame"))
 
 a = Analysis(
     [os.path.join(SPECPATH, "u_jagd_macos.py")],

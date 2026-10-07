@@ -179,6 +179,6 @@ def open_window(size, fullscreen: bool, title: str):
     if wants_retina():
         try:
             return RetinaWindow(size, fullscreen, title)
-        except (pygame.error, ImportError, AttributeError, TypeError):
+        except (pygame.error, ImportError, AttributeError, TypeError, OSError):
             pass
     return DisplayWindow(size, fullscreen, title)

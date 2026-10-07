@@ -79,3 +79,11 @@ def test_retina_window_switches_fullscreen_and_title(monkeypatch):
     assert game.window.size() == (config.SCREEN_W, config.SCREEN_H)
     game.window.set_title("U-Jagd")
     assert game.window.window.title == "U-Jagd"
+
+
+def test_the_mac_bundle_carries_the_window_icon():
+    # pygame's SDL window loads this icon; without it the window fails to open.
+    from pathlib import Path
+    spec = (Path(__file__).resolve().parents[1] / "packaging" / "macos"
+            / "u-jagd-macos.spec").read_text(encoding="utf-8")
+    assert '"pygame_icon.bmp"), "pygame")' in spec

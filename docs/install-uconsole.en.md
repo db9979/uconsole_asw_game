@@ -40,9 +40,18 @@ notice appears. Only the button closes the game and runs
 release, runs `pip install -e .` when dependencies changed and starts the new
 version. A new version that does not even start (`main.py --version` fails) is
 rolled back, and only the next version is tried again. Local changes in the
-checkout or a branch other than `main` leave everything untouched. A stalled
-git download gives up after 60 s at most. Log: `~/.u-jagd/updater.log`. Saves
+checkout or a branch other than `main` leave everything untouched. A git
+download may take up to 30 minutes on a slow link; it gives up after 15 s
+below 1 KB/s. Log: `~/.u-jagd/updater.log`. Saves
 under `~/.u-jagd/` are not touched.
+
+Up to 1.3.292 the updater cut every git download off after 60 s. If the log
+says `timed out after 60 seconds`, fetch once by hand and then press U in the
+game:
+
+```sh
+cd ~/games/u-jagd && git fetch --no-tags origin main
+```
 
 **Crash log:** every game start writes a start and an end line to
 `~/.u-jagd/crash.log`. If the game ends on an error, the traceback is there;

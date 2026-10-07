@@ -10,18 +10,17 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.292**
+Aktuelle Version: **1.3.293**
 
-Version 1.3.292 setzt Befehle per Sprache zuverlässig um. Bisher entschied
-eine Wortliste, ob ein gesprochener Satz ein Befehl ist, sodass "Kurs neunzig",
-"Tiefe 80" oder "Fahrt 15" als Frage endeten und nichts gesetzt wurde. Jetzt
-unterscheidet das Sprachmodell Befehl und Frage, auch mit gesprochenen Zahlen,
-und Sprach- wie getippte Befehle umfassen zusätzlich Radar, aktiven Ping,
-Baffles freifahren und die Rückkehr des Hubschraubers, im U-Boot Mast,
-Schnorcheln, Auftauchen und Ausweichen; nie Waffen. Im Mehrspieler, solange
-andere Spieler die Stationen besetzen, nimmt der Erste Offizier keine Befehle
-an und beantwortet nur Fragen. Spielstände sind v53; v38- bis v52-Stände laden
-weiterhin.
+Version 1.3.293 lässt die uConsole wieder große Updates laden. Ein
+Release mit vielen neuen Handbuchbildern ist viele MB groß, und der
+Updater brach jeden Git-Download nach 60 s ab; im langsameren WLAN
+scheiterte „Jetzt updaten“ deshalb jedes Mal und das Spiel blieb auf
+seiner alten Version. Ein Download darf jetzt bis zu 30 Minuten dauern,
+ein hängender bricht weiter nach 15 s unter 1 KB/s ab, und das
+Startfenster zeigt beim Warten „Lade Update“. Eine uConsole mit 1.3.292
+oder älter holt das Release einmal von Hand (siehe uConsole-Anleitung).
+Spielstände sind v53; v38 bis v52 laden weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

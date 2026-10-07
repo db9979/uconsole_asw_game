@@ -4,6 +4,22 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.285
+
+Version 1.3.285 macht den Remote-Crew-Browser per Maus bedienbar. Jede
+Tastenkappe wirkt wie ihre Taste: Kappen, die eine Liste, einen
+Maschinentelegrafen oder eine Seitenreihe weiterschalten, sind eigene
+Schaltflächen, die Kappe eines Wertfelds sitzt auf seiner Beschriftung, und
+ein An/Aus-Paar zeigt seine Taste auf der Schaltfläche, die die Taste gerade
+drücken würde. Ein Klick auf eine Kontaktzeile einer Stationskarte wählt
+diesen Kontakt. Lampen mit Schalter schalten ihn (Antrieb, Sonarton,
+Gegenfluten, die Modi des U-Boots), ebenso die Moduschips des U-Boots. Die
+Hubschrauberseiten blättern vor und zurück, eine Anzeigeschaltfläche der OPZ
+schaltet per Rechtsklick zurück, und jeder Dialog schließt mit seinem Kreuz.
+P fährt im Funkraum des U-Boots wieder den Mast aus, F spricht nur, wo keine
+Stationstaste es belegt, und in der OPZ stellen Q/E immer die Radarreichweite
+ein. Spielstände sind v53; v38 bis v52 laden weiterhin.
+
 ## 1.3.283
 
 Version 1.3.283 macht den Missions- und den Einheiten-Editor per Maus

@@ -10,15 +10,15 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.294**
+Aktuelle Version: **1.3.295**
 
-Version 1.3.294 verhindert, dass das Sonar bei ausgelastetem Rechner ein
-Stück Klang wiederholt. Endete ein Klangblock, hielt die Audio-Pumpe den
-Augenblick vor dem nächsten Block manchmal für einen hängenden Kanal und
-spielte diesen Block noch einmal von vorn, ein kurzes Stocken, an dem auch
-der automatische Audio-Test scheiterte. Jetzt wiederholt sie einen Block
-nur noch, wenn der Kanal ihn wirklich verloren hat. Spielstände sind v53;
-v38 bis v52 laden weiter.
+Version 1.3.295 macht den Start-Knopf einer eigenen Mission im Browser
+verlässlich. War die Verbindung zum Spiel genau beim Schließen der
+Missionsliste kurz veraltet, etwa weil die uConsole ausgelastet war, ging
+der Startbefehl wortlos verloren und nichts geschah. Jetzt wartet der
+Browser, bis die Verbindung wieder steht, und sendet ihn dann, oder meldet,
+dass der Befehl veraltet ist. Spielstände sind v53; v38 bis v52 laden
+weiter.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

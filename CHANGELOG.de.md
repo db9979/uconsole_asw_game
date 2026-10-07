@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.295
+
+Version 1.3.295 macht den Start-Knopf einer eigenen Mission im Browser
+verlässlich. War die Verbindung zum Spiel genau beim Schließen der
+Missionsliste kurz veraltet, etwa weil die uConsole ausgelastet war, ging
+der Startbefehl wortlos verloren und nichts geschah. Jetzt wartet der
+Browser, bis die Verbindung wieder steht, und sendet ihn dann, oder meldet,
+dass der Befehl veraltet ist. Spielstände sind v53; v38 bis v52 laden
+weiter.
+
 ## 1.3.294
 
 Version 1.3.294 verhindert, dass das Sonar bei ausgelastetem Rechner ein

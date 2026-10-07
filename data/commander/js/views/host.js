@@ -215,10 +215,9 @@ export function init() {
         if (opforRoles.has(S.session?.station) === boat) return;
         // The console resyncs its new station first; a command sent now
         // would be dropped.
-        sendHostActionWhenReady("host_start_mission", {key: choice.slice(OWN_PREFIX.length)});
-        return;
       }
-      sendHostAction("host_start_mission", {key: choice.slice(OWN_PREFIX.length)});
+      // Also without a side switch: a briefly stale link delays the order.
+      sendHostActionWhenReady("host_start_mission", {key: choice.slice(OWN_PREFIX.length)});
       return;
     }
     const params = {scenario: $("host-new-scenario").value, world_mode: $("host-new-world").value,

@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.295
+
+Release 1.3.295 makes the Start button of an own mission in the browser
+reliable. When the connection to the game was briefly stale just as the
+mission list closed, for example while the uConsole was busy, the start
+order was dropped without a word and nothing happened. The browser now
+waits until the connection is back and then sends it, or says the order
+went stale. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.294
 
 Release 1.3.294 keeps the sonar from repeating a piece of sound when the

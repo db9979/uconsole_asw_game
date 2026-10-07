@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.287
+
+Release 1.3.287 publishes the browser mouse control of 1.3.285 below, which a
+failed test run had held back: every key cap in the Remote Crew browser acts
+as its key, contact rows select their contact, lamps and the submarine's mode
+chips switch, the helicopter pages step both ways and every dialog closes by
+its cross. The audio soak test now leaves the first two seconds after a cold
+start out of its mixer starvation count, so a slow first frame on a busy test
+machine no longer stops a release; a stall later in the run still fails it.
+Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.285
 
 Release 1.3.285 brings the Remote Crew browser to the mouse. Every key cap

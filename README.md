@@ -10,9 +10,9 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.285**
+Current release: **1.3.287**
 
-Release 1.3.285 brings the Remote Crew browser to the mouse. Every key cap
+Release 1.3.287 brings the Remote Crew browser to the mouse. Every key cap
 acts as its key: caps that step a list, a telegraph or a page row are buttons
 of their own, a value field's cap sits on its label, and an on/off pair shows
 its key on the button the key would press now. A click on a contact row of a
@@ -22,7 +22,8 @@ chips. The helicopter pages step back and forward, an OPZ display button steps
 back on a right click, and every dialog closes by its cross. P raises the mast
 in the submarine's radio room again, F talks only where no station key uses
 it, and in the OPZ Q/E always set the radar range. Saves are v53; v38 to v52
-saves still load.
+saves still load. (These changes were built as 1.3.285; a failed test run
+kept that version from release.)
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

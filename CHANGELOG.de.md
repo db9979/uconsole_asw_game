@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.287
+
+Version 1.3.287 veröffentlicht die Maussteuerung des Browsers aus 1.3.285
+(unten), die ein fehlgeschlagener Testlauf zurückgehalten hatte: Jede
+Tastenkappe im Remote-Crew-Browser wirkt wie ihre Taste, Kontaktzeilen wählen
+ihren Kontakt, Lampen und die Moduschips des U-Boots schalten, die
+Hubschrauberseiten blättern in beide Richtungen und jeder Dialog schließt mit
+seinem Kreuz. Der Audio-Dauertest zählt Aussetzer des Mischers erst zwei
+Sekunden nach einem Kaltstart, damit ein langsames erstes Bild auf einer
+ausgelasteten Testmaschine keine Version mehr aufhält; ein Hänger später im
+Lauf lässt ihn weiterhin scheitern. Spielstände sind v53; v38 bis v52 laden
+weiterhin.
+
 ## 1.3.285
 
 Version 1.3.285 macht den Remote-Crew-Browser per Maus bedienbar. Jede

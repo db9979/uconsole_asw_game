@@ -10,9 +10,9 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.285**
+Aktuelle Version: **1.3.287**
 
-Version 1.3.285 macht den Remote-Crew-Browser per Maus bedienbar. Jede
+Version 1.3.287 macht den Remote-Crew-Browser per Maus bedienbar. Jede
 Tastenkappe wirkt wie ihre Taste: Kappen, die eine Liste, einen
 Maschinentelegrafen oder eine Seitenreihe weiterschalten, sind eigene
 Schaltflächen, die Kappe eines Wertfelds sitzt auf seiner Beschriftung, und
@@ -24,7 +24,8 @@ Hubschrauberseiten blättern vor und zurück, eine Anzeigeschaltfläche der OPZ
 schaltet per Rechtsklick zurück, und jeder Dialog schließt mit seinem Kreuz.
 P fährt im Funkraum des U-Boots wieder den Mast aus, F spricht nur, wo keine
 Stationstaste es belegt, und in der OPZ stellen Q/E immer die Radarreichweite
-ein. Spielstände sind v53; v38 bis v52 laden weiterhin.
+ein. Spielstände sind v53; v38 bis v52 laden weiterhin. (Gebaut wurde das als 1.3.285; ein fehlgeschlagener
+Testlauf hielt diese Version zurück.)
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -31,12 +31,15 @@ PROBE = r'''
   const overflow = (element) => element.scrollWidth > element.clientWidth + 1;
   // The start order must reach the host before the probe reports, or the
   // browser may exit with the request still unsent.
-  let startAnswered = false;
+  // Awaited as a promise, not polled against a timer: the browser's virtual
+  // clock (--virtual-time-budget) can run far ahead while the host is busy
+  // starting the mission, which made a timed wait fail on slow runners.
+  let startReply = null;
   const realFetch = window.fetch.bind(window);
   window.fetch = (url, options = {}) => {
     const reply = realFetch(url, options);
     if (String(options.body || '').includes('host_start_mission'))
-      reply.then(() => { startAnswered = true; }, () => {});
+      startReply = reply.then(() => true, () => false);
     return reply;
   };
   async function run() {
@@ -72,7 +75,8 @@ PROBE = r'''
     if (start.disabled) throw new Error('start disabled');
     start.click();
     await until(() => !dialog.open, 'dialog closes on start', 1500);
-    await until(() => startAnswered, 'start order answered', 1500);
+    await until(() => startReply !== null, 'start order sent', 1500);
+    if (!(await startReply)) throw new Error('start order answered');
   }
   run().then(() => document.documentElement.dataset.missionsTest = 'passed', (error) => {
     document.documentElement.dataset.missionsTest = 'failed';

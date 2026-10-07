@@ -10,15 +10,17 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.290**
+Current release: **1.3.291**
 
-Release 1.3.290 brings the full Retina resolution to the Mac. The game now
-opens a window that asks macOS for the screen's real pixels, so on a Retina
-display text, lines, symbols and charts are drawn at two or three times the
-pixels of the uConsole with exactly the same layout, and the graphics card
-fits the picture to the window instead of macOS stretching it. The uConsole,
-Windows and Linux keep their window; the Economy graphics level keeps the
-1280 x 720 picture. Saves are v53; v38 to v52 saves still load.
+Release 1.3.291 fixes four cases in which a save was refused on loading.
+A torpedo from a U-boat that had already locked onto a merchant ship lost its
+target in the save. A torpedo that had searched for a long time at its quiet
+search speed had gone further than its catalogue range and was rejected.
+Loading while a hostile torpedo could be heard and none of your own was in the
+water failed. A frigate aground on a slanting coast could not be loaded. All
+four now load and continue exactly as saved. The nightly soak test, which had
+failed every night since 2 October, passes again in every scenario. Saves are
+v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -10,16 +10,18 @@ die Fregatte F-217 mit neun Stationen oder ein U-Boot mit sieben und jagen die
 andere Seite oder entkommen ihr. Freunde können Stationen im Browser im selben
 Netz besetzen.
 
-Aktuelle Version: **1.3.290**
+Aktuelle Version: **1.3.291**
 
-Version 1.3.290 bringt die volle Retina-Auflösung auf den Mac. Das Spiel
-öffnet jetzt ein Fenster, das macOS nach den echten Pixeln des Bildschirms
-fragt; auf einem Retina-Display werden Schrift, Linien, Symbole und Karten mit
-doppelt oder dreifach so vielen Pixeln wie auf der uConsole und genau gleichem
-Aufbau gezeichnet, und die Grafikkarte passt das Bild ans Fenster an, statt
-dass macOS es streckt. uConsole, Windows und Linux behalten ihr Fenster; die
-Grafikstufe Sparsam behält das 1280-x-720-Bild. Spielstände sind v53; v38- bis
-v52-Stände laden weiterhin.
+Version 1.3.291 behebt vier Fälle, in denen ein Spielstand beim Laden
+abgelehnt wurde. Ein U-Boot-Torpedo, der schon einen Frachter erfasst hatte,
+verlor im Spielstand sein Ziel. Ein Torpedo, der lange mit leiser
+Suchgeschwindigkeit gesucht hatte, war weiter gelaufen als seine
+Katalogreichweite und wurde abgewiesen. Laden, während ein feindlicher Torpedo
+zu hören und kein eigener im Wasser war, schlug fehl. Eine Fregatte, die an
+einer schrägen Küste auf Grund saß, ließ sich nicht laden. Alle vier laden
+jetzt und laufen genau wie gespeichert weiter. Der nächtliche Dauertest, der
+seit dem 2. Oktober jede Nacht fehlschlug, besteht wieder in allen Szenarien.
+Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -73,6 +73,9 @@ PROBE = r'''
     if (!row.textContent.includes('Browser plan')) throw new Error('row name');
     const start = row.querySelector('.missions-row-actions button.primary');
     if (start.disabled) throw new Error('start disabled');
+    // A link that turns stale just then (a busy host, a network blip) must
+    // delay the start order until the next poll succeeds, never drop it.
+    window.dispatchEvent(new Event('offline'));
     start.click();
     await until(() => !dialog.open, 'dialog closes on start', 1500);
     await until(() => startReply !== null, 'start order sent', 1500);

@@ -3,7 +3,7 @@ import { $, opforRoles } from "../core/base.js";
 import { on } from "../core/events.js";
 import { t } from "../core/format.js";
 import { node } from "./dom.js";
-import { sendHostAction } from "../net/host.js";
+import { sendHostActionWhenReady } from "../net/host.js";
 import { GENERATE_ATTEMPTS, UPLOAD_MAX_BYTES, fetchCatalog, fetchCoast, fetchLibrary, generatedKey,
   missionBundle, missionRequest } from "../net/missions.js";
 import { secureId } from "../net/commands.js";
@@ -105,7 +105,9 @@ async function startMission(row) {
     await mutateStation("/stations/request", {station: boat ? "bridge" : "uboot"});
     if (opforRoles.has(S.session?.station) === boat) return;
   }
-  sendHostAction("host_start_mission", {key: row.key});
+  // The dialog is already closed: a link that is briefly stale or still
+  // resyncing must delay the start order, not drop it without a word.
+  sendHostActionWhenReady("host_start_mission", {key: row.key});
 }
 
 function download(name, value) {

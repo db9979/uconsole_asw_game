@@ -10,14 +10,14 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.294**
+Current release: **1.3.295**
 
-Release 1.3.294 keeps the sonar from repeating a piece of sound when the
-computer is busy. When a sound block ended, the pump sometimes took the
-moment before the next block started for a stuck channel and played that
-block again from its beginning, a short stutter that also failed the
-automatic audio test. It now replays a block only when the channel really
-lost it. Saves are v53; v38 to v52 saves still load.
+Release 1.3.295 makes the Start button of an own mission in the browser
+reliable. When the connection to the game was briefly stale just as the
+mission list closed, for example while the uConsole was busy, the start
+order was dropped without a word and nothing happened. The browser now
+waits until the connection is back and then sends it, or says the order
+went stale. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

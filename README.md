@@ -10,16 +10,14 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.293**
+Current release: **1.3.294**
 
-Release 1.3.293 lets the uConsole download large updates again. A
-release with many new manual pictures is tens of MB, and the updater cut
-every git download off after 60 s, so on a slower WLAN "Update now" failed
-each time and the game stayed on its old version. A download may now take
-up to 30 minutes, a stalled one still stops after 15 s below 1 KB/s, and
-the start window says "Downloading update" while it waits. A uConsole
-still on 1.3.292 or older fetches the release once by hand (see the
-uConsole install guide). Saves are v53; v38 to v52 saves still load.
+Release 1.3.294 keeps the sonar from repeating a piece of sound when the
+computer is busy. When a sound block ended, the pump sometimes took the
+moment before the next block started for a stuck channel and played that
+block again from its beginning, a short stutter that also failed the
+automatic audio test. It now replays a block only when the channel really
+lost it. Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

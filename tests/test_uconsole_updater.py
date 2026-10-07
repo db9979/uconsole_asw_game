@@ -254,6 +254,29 @@ def test_update_reports_each_step(repos, updater, monkeypatch):
                      ("deps", {}), ("verify", {})]
 
 
+def test_release_download_is_announced_and_not_cut_off_after_a_minute(repos, updater, monkeypatch):
+    # A release with new manual pictures is tens of MB: on the uConsole's
+    # WLAN the tag fetch took longer than the 60 s git cap, timed out at
+    # every "Update now" and the game stayed on 1.3.262.
+    work, app = repos
+    publish(work, "1.3.9")
+    monkeypatch.setattr(updater, "fetch_latest_release", lambda url=None: "v1.3.9")
+    events = []
+    real_git = updater.git
+
+    def git(app_dir, *args, timeout=updater.GIT_TIMEOUT_S):
+        if args[0] == "fetch":
+            events.append(("fetch", timeout))
+        return real_git(app_dir, *args, timeout=timeout)
+
+    monkeypatch.setattr(updater, "git", git)
+    assert updater.update(app, progress=lambda key, **v: events.append((key, v))) is True
+    assert events[:3] == [("check", {}), ("download", {"label": "v1.3.9"}),
+                          ("fetch", updater.DOWNLOAD_TIMEOUT_S)]
+    assert updater.DOWNLOAD_TIMEOUT_S >= 15 * 60
+    assert updater.GIT_ENV["GIT_HTTP_LOW_SPEED_TIME"] == "15"  # stalls still stop
+
+
 def test_messages_have_same_keys_and_follow_saved_language(tmp_path, monkeypatch):
     module = load_updater()
     assert module.MESSAGES["de"].keys() == module.MESSAGES["en"].keys()

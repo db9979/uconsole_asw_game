@@ -4,6 +4,18 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.293
+
+Version 1.3.293 lässt die uConsole wieder große Updates laden. Ein
+Release mit vielen neuen Handbuchbildern ist viele MB groß, und der
+Updater brach jeden Git-Download nach 60 s ab; im langsameren WLAN
+scheiterte „Jetzt updaten“ deshalb jedes Mal und das Spiel blieb auf
+seiner alten Version. Ein Download darf jetzt bis zu 30 Minuten dauern,
+ein hängender bricht weiter nach 15 s unter 1 KB/s ab, und das
+Startfenster zeigt beim Warten „Lade Update“. Eine uConsole mit 1.3.292
+oder älter holt das Release einmal von Hand (siehe uConsole-Anleitung).
+Spielstände sind v53; v38 bis v52 laden weiter.
+
 ## 1.3.292
 
 Version 1.3.292 setzt Befehle per Sprache zuverlässig um. Bisher entschied

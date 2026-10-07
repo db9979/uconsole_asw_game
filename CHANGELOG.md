@@ -4,6 +4,17 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.293
+
+Release 1.3.293 lets the uConsole download large updates again. A
+release with many new manual pictures is tens of MB, and the updater cut
+every git download off after 60 s, so on a slower WLAN "Update now" failed
+each time and the game stayed on its old version. A download may now take
+up to 30 minutes, a stalled one still stops after 15 s below 1 KB/s, and
+the start window says "Downloading update" while it waits. A uConsole
+still on 1.3.292 or older fetches the release once by hand (see the
+uConsole install guide). Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.292
 
 Release 1.3.292 carries out orders given by voice reliably. Before, a word

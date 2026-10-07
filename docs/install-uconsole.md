@@ -42,9 +42,18 @@ holt das Release, führt bei geänderten Abhängigkeiten `pip install -e .` aus
 und startet die neue Version. Startet eine neue Version nicht einmal
 (`main.py --version` schlägt fehl), wird sie zurückgerollt und erst die
 nächste Version wieder versucht. Bei eigenen Änderungen im Checkout oder auf
-einem anderen Zweig als `main` wird nichts verändert. Hängende Git-Abrufe
-brechen nach spätestens 60 s ab. Protokoll: `~/.u-jagd/updater.log`.
+einem anderen Zweig als `main` wird nichts verändert. Ein Git-Download darf
+auf langsamer Verbindung bis zu 30 Minuten dauern; er bricht ab, wenn 15 s
+lang weniger als 1 KB/s ankommt. Protokoll: `~/.u-jagd/updater.log`.
 Speicherstände unter `~/.u-jagd/` bleiben unberührt.
+
+Bis 1.3.292 brach der Updater jeden Git-Download schon nach 60 s ab. Steht im
+Protokoll `timed out after 60 seconds`, einmal von Hand vorladen und danach
+im Spiel U drücken:
+
+```sh
+cd ~/games/u-jagd && git fetch --no-tags origin main
+```
 
 **Absturzprotokoll:** Jeder Spielstart schreibt nach `~/.u-jagd/crash.log`
 eine Start- und eine Endzeile. Endet das Spiel durch einen Fehler, steht dort

@@ -53,6 +53,10 @@ NET_TIMEOUT_S = 6
 PROBE_TIMEOUT_S = 2.5
 PROBE_HOST = ("github.com", 443)
 GIT_TIMEOUT_S = 60
+# Downloading a release: one with new manual pictures is tens of MB, and git
+# throws away a fetch cut off half way, so a short cap never finishes on a
+# slow link. A stalled remote still stops after 15 s below 1 KB/s (GIT_ENV).
+DOWNLOAD_TIMEOUT_S = 1800
 # git gives up on a stalled or unreachable remote instead of hanging the start
 GIT_ENV = {"GIT_TERMINAL_PROMPT": "0", "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
            "GIT_HTTP_LOW_SPEED_TIME": "15"}
@@ -216,8 +220,12 @@ def verify(app: Path) -> str | None:
     return lines[-1] if result.returncode == 0 and lines else None
 
 
-def resolve_target(app: Path, channel: str) -> tuple[str, str] | None:
-    """(label, commit) to move to, or None when there is nothing to do."""
+def resolve_target(app: Path, channel: str,
+                   progress=None) -> tuple[str, str] | None:
+    """(label, commit) to move to, or None when there is nothing to do.
+
+    ``progress("download", label=...)`` is reported before a release is
+    fetched, so the start window says what the wait is for."""
     if channel != "main":
         tag = fetch_latest_release()
         if tag is None:
@@ -228,12 +236,14 @@ def resolve_target(app: Path, channel: str) -> tuple[str, str] | None:
             current = installed_version(app)
             if current is not None and new <= current:
                 return None
+            if progress is not None:
+                progress("download", label=tag)
             git(app, "fetch", "--quiet", "--no-tags", "origin",
-                f"+refs/tags/{tag}:refs/tags/{tag}")
+                f"+refs/tags/{tag}:refs/tags/{tag}", timeout=DOWNLOAD_TIMEOUT_S)
             return tag, git(app, "rev-parse", f"refs/tags/{tag}^{{commit}}")
         log("no GitHub release yet; following origin/main")
     try:
-        git(app, "fetch", "--quiet", "origin", "main")
+        git(app, "fetch", "--quiet", "origin", "main", timeout=DOWNLOAD_TIMEOUT_S)
     except (RuntimeError, subprocess.SubprocessError) as exc:
         log(f"fetch failed ({exc}); starting installed version")
         return None
@@ -307,7 +317,7 @@ def update(app: Path = APP_DIR, channel: str | None = None, progress=_no_progres
         if not online():
             log("offline (GitHub not reachable); update check skipped")
             return False
-        target = resolve_target(app, channel)
+        target = resolve_target(app, channel, progress)
         old = git(app, "rev-parse", "HEAD")
         if target is None or target[1] == old:
             return False
@@ -320,7 +330,8 @@ def update(app: Path = APP_DIR, channel: str | None = None, progress=_no_progres
             return False
         deps_changed = bool(git(app, "diff", "--name-only", old, new, "--", *DEP_FILES))
         log(f"updating to {label} ({new[:10]})")
-        progress("download", label=label)
+        if label == "main":  # a release reported its download before fetching
+            progress("download", label=label)
         if branch == "main":
             git(app, "merge", "--quiet", "--ff-only", new)
         else:

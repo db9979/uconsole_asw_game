@@ -10,17 +10,16 @@ the frigate F-217 with nine stations, or a submarine with seven, and hunt or
 evade the other side. Friends can crew stations from a browser on the same
 network.
 
-Current release: **1.3.292**
+Current release: **1.3.293**
 
-Release 1.3.292 carries out orders given by voice reliably. Before, a word
-list decided whether a spoken sentence was an order, so "course ninety",
-"depth 80" or "speed 15" ended up as questions and nothing was set. Now the
-language model tells an order from a question, also with spoken numbers, and
-voice and typed orders also cover radar, an active ping, clearing the baffles
-and the helicopter's return, and on the submarine the mast, snorkeling,
-surfacing and evading; never weapons. In multiplayer, while other people crew
-the stations, the executive officer takes no orders and only answers
-questions. Saves are v53; v38 to v52 saves still load.
+Release 1.3.293 lets the uConsole download large updates again. A
+release with many new manual pictures is tens of MB, and the updater cut
+every git download off after 60 s, so on a slower WLAN "Update now" failed
+each time and the game stayed on its old version. A download may now take
+up to 30 minutes, a stalled one still stops after 15 s below 1 KB/s, and
+the start window says "Downloading update" while it waits. A uConsole
+still on 1.3.292 or older fetches the release once by hand (see the
+uConsole install guide). Saves are v53; v38 to v52 saves still load.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

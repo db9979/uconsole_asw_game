@@ -33,6 +33,7 @@ import { HELICOPTER_PAGES, queueVisualDraw, renderRoleVisuals, showHelicopterPag
 import { wireOpzDisplayBar } from "../views/opz-display.js";
 import { applySimlogView, closeSimlogMap, exportSimlog, loadSimlog, queueSimlogMapDraw } from "../views/simlog.js";
 import { renderTracks, selectTrack } from "../views/tracks.js";
+import { on } from "../core/events.js";
 import { drawWeatherProfile, profileSpeedAt, toggleWeatherStation } from "../views/weather.js";
 import { schedule } from "../core/scheduler.js";
 import { stationActionAvailable } from "../state/availability.js";
@@ -135,6 +136,17 @@ const changeRoleMapZoom = (factor, px = null, py = null) => {
 };
 
 export function init() {
+  // A contact row on a station card selects its contact (views/dom.js stationRows).
+  // A dialog's close cross presses its own cancel button, so closing takes the usual path.
+  document.addEventListener("click", (event) => {
+    const cross = event.target instanceof Element ? event.target.closest("[data-dialog-close]") : null;
+    if (cross) $(cross.dataset.dialogClose)?.click();
+  });
+  on("track:select", (ref) => {
+    selectTrack(ref);
+    for (const row of document.querySelectorAll(".station-row[data-track-ref]"))
+      row.classList.toggle("track-selected", row.dataset.trackRef === String(ref));
+  });
   wirePairCodeInput($("code"));
   $("pair-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -437,7 +449,7 @@ export function init() {
     renderDirectFireControls();
   });
   $("sonar-control-page").addEventListener("change", renderSonarControlPage);
-  for (const button of $("sonar-page-tabs").querySelectorAll("button")) {
+  for (const button of $("sonar-page-tabs").querySelectorAll("button:not(.key-cap)")) {
     button.addEventListener("click", () => {
       S.sonarVisualPage = button.dataset.sonarVisual;
       $("sonar-control-page").value = ({environment: "array", active: "listen", broadband: "listen", overview: "listen"}[S.sonarVisualPage] || "analysis");
@@ -447,7 +459,7 @@ export function init() {
     button.addEventListener("keydown", (event) => {
       if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
-      const buttons = [...$("sonar-page-tabs").querySelectorAll("button")];
+      const buttons = [...$("sonar-page-tabs").querySelectorAll("button:not(.key-cap)")];
       let index = buttons.indexOf(button);
       if (event.key === 'ArrowLeft') index = (index - 1 + buttons.length) % buttons.length;
       if (event.key === 'ArrowRight') index = (index + 1) % buttons.length;
@@ -687,6 +699,7 @@ export function init() {
   for (const mode of HELICOPTER_PAGES) $(
     `helicopter-visual-${mode}`).addEventListener("click", () => showHelicopterPage(mode));
   $("helicopter-visual-next").addEventListener("click", () => stepHelicopterPage(1));
+  $("helicopter-visual-prev").addEventListener("click", () => stepHelicopterPage(-1));
   // Page Up / Page Down (and the station's own number again) step through
   // the helicopter's pages, as at every station with pages on the uConsole.
   document.addEventListener("keydown", (event) => {
@@ -1022,6 +1035,9 @@ export function init() {
   $("role-map").addEventListener("keydown", (event) => {
     const role = S.v2State?.role;
     if (!mapRoles.has(role) || !["e", "q", "Home", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+    // At the OPZ, E and Q set the radar range even with the chart focused;
+    // its chart zooms with the wheel, a pinch or its zoom buttons.
+    if (role === "opz" && (event.key === "e" || event.key === "q")) return;
     event.preventDefault();
     // Q / E zoom as on the uConsole; + / - are the telegraph there.
     if (event.key === "e") changeRoleMapZoom(1.4);

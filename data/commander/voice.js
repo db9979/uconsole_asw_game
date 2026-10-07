@@ -171,12 +171,14 @@
   });
   for (const name of ["pointerup", "pointercancel", "lostpointercapture"])
     $("voice-ptt").addEventListener(name, release);
-  document.addEventListener("keydown", (event) => {
+  // On the window, after the stations' own keys: where F is a station's key
+  // (helicopter qualify, ELOKA filter) that key has taken it and talking waits.
+  window.addEventListener("keydown", (event) => {
     const target = event.target;
     const editing = target instanceof Element && (
       target.closest("input, select, textarea, dialog[open]") || target.isContentEditable);
     if (event.code !== "KeyF" || event.repeat || event.ctrlKey || event.altKey || event.metaKey ||
-        editing) return;
+        editing || event.defaultPrevented) return;
     if (ready) { event.preventDefault(); press(); }
   });
   document.addEventListener("keyup", (event) => { if (event.code === "KeyF") release(); });

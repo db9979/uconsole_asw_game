@@ -34,11 +34,22 @@ export function renderLampPanel(box, master, rows) {
 }
 
 // A lamp with a control (the row's fifth entry: the id of the station's own
-// button or switch) works that control when clicked, as on the uConsole, so
-// the order takes the same path as the button itself.
+// button or switch, or a function returning the control to press, such as the
+// not-pressed button of an on/off pair) works that control when clicked, as
+// on the uConsole, so the order takes the same path as the button itself.
+const lampControls = new WeakMap();
+const controlOf = (control) => typeof control === "function" ? control() : control ? $(control) : null;
 function pressLampControl(cell) {
-  const control = cell.dataset.control ? $(cell.dataset.control) : null;
+  const control = cell.dataset.control ? controlOf(lampControls.get(cell)) : null;
   if (control && !control.disabled) control.click();
+}
+
+// The not-pressed, visible button of one of the boat's on/off pairs: a lamp or
+// chip of that mode switches it over (A silent running, N snorkel, P mast ...).
+export function modeSwitch(mode) {
+  return () => [...document.querySelectorAll(`[data-uboot-mode="${mode}"]`)]
+    .filter((button) => !button.closest("[hidden]") && button.getClientRects().length > 0)
+    .find((button) => button.getAttribute("aria-pressed") !== "true") ?? null;
 }
 
 // The lamps alone, without a master lamp (the sonar's listening console).
@@ -65,11 +76,13 @@ export function renderLamps(box, rows) {
     if (tip && !cell.hasAttribute("tabindex")) cell.tabIndex = 0;
     cell.children[1].textContent = label;
     cell.children[2].textContent = value;
-    const target = control ? $(control) : null;
+    const target = controlOf(control);
     const live = Boolean(target && !target.disabled && !target.hidden);
+    lampControls.set(cell, control);
     if (live) {
-      if (cell.dataset.control !== control) {
-        cell.dataset.control = control;
+      const name = typeof control === "function" ? "switch" : control;
+      if (cell.dataset.control !== name) {
+        cell.dataset.control = name;
         cell.setAttribute("role", "button");
         cell.tabIndex = 0;
       }

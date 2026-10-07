@@ -6,6 +6,7 @@ import { actionButton, fillFireTargets, inUse, metrics, node, patchChildren, set
 import { renderCrew } from "../views/crew.js";
 import { drawBoatBallast, drawBoatDepth, drawBoatEsm, drawBoatScope, drawBoatSounder } from "./uboot-graphics.js";
 import { drawBoatDamage, renderBoatDamageLamps } from "./uboot-damage.js";
+import { modeSwitch } from "../views/console-kit.js";
 
 // Alarm age with the boat's own measured bearing (never the source's truth).
 const alarmText = (age, bearing) => age === null ? t("station_none")
@@ -78,17 +79,18 @@ function renderReadouts(nav, status) {
 
 // Mode and alarm chips: lit when active, coloured by urgency.
 function renderChips(nav, status, alarms, scope) {
+  // A mode chip switches its mode over when this station shows that switch.
   const modes = [
-    ["uboot_chip_silent", status.silent, status.quiet ? "on" : "caution"],
-    ["uboot_chip_snorkel", status.snorkeling, "caution"],
-    ["uboot_chip_mast", status.mast, "caution"],
+    ["uboot_chip_silent", status.silent, status.quiet ? "on" : "caution", "uboot_silent"],
+    ["uboot_chip_snorkel", status.snorkeling, "caution", "uboot_snorkel"],
+    ["uboot_chip_mast", status.mast, "caution", "uboot_mast"],
     ["uboot_chip_scope", scope.available, "caution"],
-    ["uboot_chip_bottom", status.bottomed, "on"],
-    ["uboot_chip_surfaced", status.surfaced, "caution"],
+    ["uboot_chip_bottom", status.bottomed, "on", "uboot_bottom"],
+    ["uboot_chip_surfaced", status.surfaced, "caution", "uboot_surface"],
     ["uboot_chip_cavitating", nav.cavitating, "alarm"],
     ["uboot_chip_transmitting", status.transmitting, "caution"],
   ];
-  const rows = modes.map(([key, active, level]) => [t(key), active ? level : "off"]);
+  const rows = modes.map(([key, active, level, mode]) => [t(key), active ? level : "off", mode]);
   if (nav.depth_m > nav.max_depth_m)
     rows.push([t("uboot_chip_overdepth", {test: number(nav.max_depth_m, 0), crush: number(nav.crush_depth_m, 0)}), "alarm"]);
   if (alarms.torpedo_age_s !== null && alarms.torpedo_age_s < 120)
@@ -96,9 +98,19 @@ function renderChips(nav, status, alarms, scope) {
   if (alarms.ping_age_s !== null && alarms.ping_age_s < 120)
     rows.push([t("uboot_chip_ping", {value: alarmText(alarms.ping_age_s, alarms.ping_bearing)}), "caution"]);
   if (alarms.esm.length) rows.push([t("uboot_chip_esm", {count: alarms.esm.length}), "caution"]);
-  $("uboot-chips").replaceChildren(...rows.map(([text, level]) => {
-    const chip = node("span", text, "uboot-chip");
+  const box = $("uboot-chips");
+  if (!box.dataset.wired) {
+    box.dataset.wired = "true";
+    box.addEventListener("click", (event) => {
+      const chip = event.target.closest("button[data-chip-mode]");
+      if (chip) modeSwitch(chip.dataset.chipMode)()?.click();
+    });
+  }
+  patchChildren(box, rows.map(([text, level, mode]) => {
+    const live = Boolean(mode && modeSwitch(mode)());
+    const chip = node(live ? "button" : "span", text, "uboot-chip");
     chip.dataset.level = level;
+    if (live) { chip.type = "button"; chip.dataset.chipMode = mode; }
     return chip;
   }));
 }

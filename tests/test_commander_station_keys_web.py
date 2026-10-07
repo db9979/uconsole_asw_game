@@ -25,7 +25,7 @@ S.v2State = {role: "bridge"};
 S.session = {station: "bridge"};
 show($("operations")); show($("bridge-course")); show($("role-map-zoom-in"));
 init();
-out.cap_course = $("bridge-course-submit").dataset.keycap;
+out.cap_course = document.querySelector('label[for="bridge-course"]').dataset.keycap;
 out.cap_zoom = $("role-map-zoom-in").dataset.keycap;
 // Only the held station's keys carry caps.
 out.cap_radar_bridge = $("opz-radar-surface").closest("label").dataset.keycap ?? null;
@@ -33,7 +33,7 @@ markStationKeys("opz");
 // A checkbox shows its key on its enclosing label, never on the box itself.
 out.cap_radar = $("opz-radar-surface").closest("label").dataset.keycap;
 out.cap_on_box = $("opz-radar-surface").dataset.keycap ?? null;
-out.cap_course_opz = $("bridge-course-submit").dataset.keycap ?? null;
+out.cap_course_opz = document.querySelector('label[for="bridge-course"]').dataset.keycap ?? null;
 markStationKeys("bridge");
 out.label_fire = keyLabel("Ctrl+Enter", "de");
 out.label_page = keyLabel("PageDown", "en");

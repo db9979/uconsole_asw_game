@@ -15,7 +15,7 @@ function renderSonarLamps(settings) {
       settings.ping.ready ? t("sonar_lamp_ready") : t("sonar_lamp_cooldown", {seconds: number(settings.ping.cooldown_s, 0)}),
       "sonar-ping", lampTip("ping")),
     lamp("track", t("sonar_lamp_track"), ...onOff(Boolean(settings.focus_ref))),
-    lamp("audio", t("sonar_lamp_audio"), ...onOff(settings.audio_enabled), undefined, lampTip("audio")),
+    lamp("audio", t("sonar_lamp_audio"), ...onOff(settings.audio_enabled), "sonar-live-toggle", lampTip("audio")),
     lamp("notch", t("sonar_lamp_notch"), ...onOff(settings.notch), "sonar-notch"),
     lamp("peak", t("sonar_lamp_peak"), settings.peak_hold ? "caution" : "off", t(settings.peak_hold ? "sonar_lamp_on" : "sonar_lamp_off"),
       "sonar-peak", lampTip("peak")),

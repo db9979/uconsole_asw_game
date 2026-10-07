@@ -18,7 +18,7 @@ export function renderDamageLamps(payload) {
   const rising = rooms.filter((room) => room.trend.flood_rate > .005 || room.trend.fire_rate > .005).length;
   const list = Math.abs(stability.list_deg), trim = Math.abs(stability.trim_deg);
   const rows = [];
-  const add = (key, label, lamp, value) => rows.push([key, label, lamp, value]);
+  const add = (key, label, lamp, value, control) => rows.push([key, label, lamp, value, control]);
   add("fire", t("damage_lamp_fire"), burning ? "alarm" : "off", String(burning));
   add("flooding", t("damage_lamp_flooding"), flooding ? "caution" : "off", String(flooding));
   add("destroyed", t("damage_lamp_destroyed"), lost ? "alarm" : "off", String(lost));
@@ -27,7 +27,7 @@ export function renderDamageLamps(payload) {
   add("list", t("damage_list"), list >= 10 ? "alarm" : list >= 5 ? "caution" : "on", `${signed(stability.list_deg, 1)}°`);
   add("trim", t("damage_lamp_trim"), trim >= 3 ? "caution" : "on", `${signed(stability.trim_deg, 1)}°`);
   add("counterflood", t("damage_lamp_counterflood"), stability.counterflood_room ? "caution" : stability.can_counterflood ? "on" : "off",
-    t(stability.counterflood_room ? "uboot_lamp_on" : "uboot_lamp_off"));
+    t(stability.counterflood_room ? "uboot_lamp_on" : "uboot_lamp_off"), "damage-counterflood");
   add("teams", t("damage_lamp_teams"), busy ? "on" : "off", `${busy}/${payload.teams.length}`);
   add("sunk", t("sunk"), payload.sunk ? "alarm" : "off", t(payload.sunk ? "uboot_lamp_on" : "uboot_lamp_off"));
   renderLampPanel($("damage-lamps"), $("damage-master"), rows);

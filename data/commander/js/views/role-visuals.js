@@ -236,7 +236,7 @@ export function renderRoleVisuals(role) {
   if (!role) { clearVisuals(); return; }
   const stateKey = !S.connected ? "visual_stale" : S.v2State.phase !== "live" ? "visual_inactive" : visualStationDown(role) ? "visual_station_down" : "visual_live";
   $("role-visual-state").textContent = t(stateKey);
-  for (const button of $("sonar-page-tabs").querySelectorAll("button")) {
+  for (const button of $("sonar-page-tabs").querySelectorAll("button:not(.key-cap)")) {
     const selectedPage = button.dataset.sonarVisual === S.sonarVisualPage;
     button.setAttribute("aria-selected", String(selectedPage)); button.tabIndex = selectedPage ? 0 : -1;
   }

@@ -17,6 +17,16 @@ verwischen zu lassen. Auf dem Mac ist es schon schärfer; die volle
 Retina-Auflösung folgt in einem weiteren Schritt. Die Grafikstufe Sparsam und die uConsole behalten das
 1280-x-720-Bild. Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
 
+## 1.3.288
+
+Version 1.3.288 beendet das Blinken des Bildes hinter einem offenen Menü in
+der Mac-App. Unter macOS übernahm die Zeichenfläche des Spiels den
+Alphakanal des Fensters, sodass die Schleier und Tafeln von Optionen, Hilfe,
+Speichern und den anderen Menüs das Bild teilweise durchsichtig machten und
+das Fenster dahinter flackerte. Die Zeichenfläche ist jetzt immer deckend;
+auf dem uConsole, unter Windows und im Spiel ändert sich nichts. Spielstände
+sind v53; v38 bis v52 laden weiterhin.
+
 ## 1.3.287
 
 Version 1.3.287 ändert nichts am Spiel; sie enthält 1.3.286 und die

@@ -16,6 +16,15 @@ letting Windows blur it. On the Mac it is sharper already; the full Retina
 resolution follows in a further step. The Economy graphics level and the uConsole keep the
 1280 x 720 picture. Saves are v53; v38 to v52 saves still load.
 
+## 1.3.288
+
+Release 1.3.288 stops the Mac app's picture from blinking behind an open
+menu. On macOS the game's drawing canvas inherited the window's alpha
+channel, so the veils and panels of the options, help, save and other menus
+left the picture partly transparent and the window flickered behind them. The
+canvas is now always opaque; nothing changes on the uConsole, Windows or in
+play. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.287
 
 Release 1.3.287 changes nothing in play; it carries 1.3.286 and the browser

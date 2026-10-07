@@ -40,6 +40,18 @@ def letterbox_layout(win_w: int, win_h: int,
     return scale, (win_w - sw) // 2, (win_h - sh) // 2, sw, sh
 
 
+def make_canvas(w: int, h: int) -> pygame.Surface:
+    """The opaque 1280x720 canvas every frame is drawn on.
+
+    Explicit 32-bit RGB without an alpha channel: a plain
+    ``pygame.Surface`` takes the window's format, and on macOS that format
+    carries alpha.  Translucent layers (menu veils, panels) then left the
+    canvas pixels partly transparent, and the Mac window blinked behind
+    every open menu.  Without an alpha channel the frame stays opaque on
+    every system."""
+    return pygame.Surface((w, h), 0, 32, (0xFF0000, 0xFF00, 0xFF, 0))
+
+
 def make_scanlines(w: int, h: int, alpha: int = config.SCANLINE_ALPHA):
     """Vorberechnetes CRT-Scanline-Overlay (einmalig, SRCALPHA)."""
     s = pygame.Surface((w, h), pygame.SRCALPHA)

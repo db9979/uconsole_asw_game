@@ -34,7 +34,7 @@ from src.ui import hires, simlog_map
 # Shared display/help constants and helpers (re-exported for tests/tools).
 from src.core.game_shared import (  # noqa: F401
     HELP_MANUAL_PAGE, HELP_PAGE_COUNT, SONAR_BAND_PRESETS, TMA_ACCEPT_MIN_FIT,
-    letterbox_layout, make_scanlines)
+    letterbox_layout, make_canvas, make_scanlines)
 # Entity classes tests import from ``src.core.game`` (kept as re-exports).
 from src.enemies.decoy import Decoy  # noqa: F401
 from src.weapons.torpedo import EnemyTorpedo  # noqa: F401

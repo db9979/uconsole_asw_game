@@ -40,6 +40,9 @@ ACTIVE = False
 # Environment switch to keep the plain 1280x720 picture everywhere.
 DISABLE_ENV = "U_JAGD_NO_HIRES"
 
+# 32-bit RGB without alpha: an opaque canvas never takes the window format.
+OPAQUE_MASKS = (0xFF0000, 0xFF00, 0xFF, 0)
+
 _CLASSES: dict = {}
 _K_OF: dict = {}
 _RAW: dict = {}
@@ -144,7 +147,10 @@ def adopt(physical: pygame.Surface, k: int) -> pygame.Surface:
     pw, ph = physical.get_size()
     lw, lh = max(1, -(-pw // k)), max(1, -(-ph // k))
     flags = physical.get_flags() & pygame.SRCALPHA
-    out = surface_class(k)((lw * k, lh * k), flags, 32)
+    if flags:
+        out = surface_class(k)((lw * k, lh * k), flags, 32)
+    else:
+        out = surface_class(k)((lw * k, lh * k), 0, 32, OPAQUE_MASKS)
     _copy_pixels(out, physical)
     return out
 
@@ -269,19 +275,23 @@ def surface(size, flags: int = 0, depth=None, masks=None) -> pygame.Surface:
     physical = (max(0, w) * k, max(0, h) * k)
     if isinstance(depth, pygame.Surface):
         return surface_class(k)(physical, flags, depth)
+    if depth is None and not flags & pygame.SRCALPHA:
+        return surface_class(k)(physical, flags, 32, OPAQUE_MASKS)
     if depth is None:
-        depth = 32 if flags & pygame.SRCALPHA else 0
-    if not depth:
-        return surface_class(k)(physical, flags)
-    return surface_class(k)(physical, flags, depth)
+        depth = 32
+    if masks is None:
+        return surface_class(k)(physical, flags, depth)
+    return surface_class(k)(physical, flags, depth, masks)
 
 
 def canvas(size) -> pygame.Surface:
-    """The opaque main canvas (never per-pixel alpha) at the current factor."""
-    if not ACTIVE:
-        return pygame.Surface(size)
+    """The opaque main canvas at the current factor: explicit 32-bit RGB
+    without an alpha channel (the macOS window format carries alpha, see
+    ``game_shared.make_canvas``)."""
     w, h = int(size[0]), int(size[1])
-    return surface_class(SCALE)((w * SCALE, h * SCALE), 0, 32)
+    if not ACTIVE:
+        return pygame.Surface((w, h), 0, 32, OPAQUE_MASKS)
+    return surface_class(SCALE)((w * SCALE, h * SCALE), 0, 32, OPAQUE_MASKS)
 
 
 # --- wrapped drawing functions ---------------------------------------------
@@ -582,7 +592,7 @@ class HiFont(pygame.font.Font):
             out = surface_class(k)((max(1, w) * k, max(1, h) * k), pygame.SRCALPHA, 32)
         else:
             image = self._hi.render(text, antialias, color, background)
-            out = surface_class(k)((max(1, w) * k, max(1, h) * k), 0, 32)
+            out = surface_class(k)((max(1, w) * k, max(1, h) * k), 0, 32, OPAQUE_MASKS)
         width = w * k
         if image.get_width() > width and width > 0:
             smooth = _RAW.get("smoothscale", pygame.transform.smoothscale)

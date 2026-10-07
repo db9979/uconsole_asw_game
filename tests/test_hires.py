@@ -158,3 +158,10 @@ def test_windows_asks_for_real_pixels_and_keeps_the_window_size():
     assert hires.window_size(1280, 720, 2.0, (1920, 1080)) == (1728, 972)
     assert hires.window_size(1280, 720, 1.0, (1280, 720)) == (1280, 720)
     assert Game.default_window_size() == (config.SCREEN_W, config.SCREEN_H)
+
+
+def test_large_canvas_and_layers_have_no_alpha_channel():
+    hires.set_scale(2)
+    assert hires.canvas((1280, 720)).get_masks()[3] == 0
+    assert hires.surface((10, 10)).get_masks()[3] == 0
+    assert hires.surface((10, 10), pygame.SRCALPHA).get_masks()[3] != 0

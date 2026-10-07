@@ -34,7 +34,7 @@ from src.ui import simlog_map
 # Shared display/help constants and helpers (re-exported for tests/tools).
 from src.core.game_shared import (  # noqa: F401
     HELP_MANUAL_PAGE, HELP_PAGE_COUNT, SONAR_BAND_PRESETS, TMA_ACCEPT_MIN_FIT,
-    letterbox_layout, make_scanlines)
+    letterbox_layout, make_canvas, make_scanlines)
 # Entity classes tests import from ``src.core.game`` (kept as re-exports).
 from src.enemies.decoy import Decoy  # noqa: F401
 from src.weapons.torpedo import EnemyTorpedo  # noqa: F401
@@ -157,7 +157,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                 config.SCREEN_W, config.SCREEN_H)
             self.display = pygame.display.set_mode(size, pygame.RESIZABLE)
             self.fullscreen = False
-        self.screen = pygame.Surface((config.SCREEN_W, config.SCREEN_H))
+        self.screen = make_canvas(config.SCREEN_W, config.SCREEN_H)
         self._scanlines = make_scanlines(config.SCREEN_W, config.SCREEN_H) \
             if config.CRT_SCANLINES else None
         self.clock = pygame.time.Clock()

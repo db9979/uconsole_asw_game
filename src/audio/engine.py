@@ -61,6 +61,11 @@ class AudioEngine:
     # one block, and a fade-in lasts FADE_MS. Longer means the channel is
     # wedged (or its volume stuck), and the pump restarts it.
     SONAR_QUEUE_WEDGE_S = 1.0
+    # An idle channel with a sound still queued is stranded only after on-time
+    # pump iterations saw it so for this long. pygame's end-of-sound callback
+    # waits for the GIL before it promotes the queue; under load that wait
+    # was measured up to ~90 ms, and the sound plays on its own afterwards.
+    SONAR_STRANDED_S = 0.25
     SONAR_VOLUME_SETTLE_S = 0.2
     # Buffered blocks refused because the queue is full for this long: the
     # pump no longer drains it, so the stream restarts.
@@ -130,6 +135,8 @@ class AudioEngine:
         # Queued sounds found stranded on an idle channel (see
         # _release_stranded_queue) and sonar workers restarted after dying.
         self.sonar_queue_stranded = 0
+        self._sonar_stranded_candidate = None
+        self._sonar_stranded_since = None
         self.sonar_worker_restarts = 0
         # Watchdog counters (audio_debug.log): wedged channel restarts, stuck
         # channel volume restored, pump errors survived, full-buffer resets.
@@ -712,10 +719,12 @@ class AudioEngine:
                         self.sonar_wedged += 1
                         self._hard_stop(self._sonar_channel)
                         self._sonar_queue_busy_since = None
+                        self._sonar_stranded_candidate = None
                     if (self._sonar_channel.get_queue() is not None
-                            and not self._release_stranded_queue()):
+                            and not self._release_stranded_queue(now, late)):
                         return
                 self._sonar_queue_busy_since = None
+                self._sonar_stranded_candidate = None
                 if (self._sonar_last_fresh_at is not None
                         and not self._sonar_channel.get_busy()):
                     # The mixer ran dry between two iterations: an audible dip
@@ -799,7 +808,7 @@ class AudioEngine:
             self._sonar_channel.set_volume(gain)
             self.sonar_volume_restored += 1
 
-    def _release_stranded_queue(self) -> bool:
+    def _release_stranded_queue(self, now: float, late: bool = False) -> bool:
         """Recover a queued sound that an idle sonar channel will never play.
 
         pygame's end-of-sound callback looks at the channel's queue before it
@@ -807,23 +816,30 @@ class AudioEngine:
         callback found nothing queued. The channel then stays idle with a
         sound queued forever, and the pump (which waits for a free queue slot)
         never refills it: the sonar is silent until the engine is rebuilt.
-        Only that case leaves the channel without a current sound
-        (get_sound() is None) while one is queued. Idle with a queue and a
-        current sound is the callback still waiting for the GIL to promote the
-        queue (under load for tens of milliseconds): it plays next, and
-        replaying it here would repeat the block and count a false gap. A
-        stranded sound of the running stream is replayed (play() also clears
-        the queue); after a stream reset it is stale and the next play() of
-        the new stream discards it. True lets the caller refill the channel.
-        Called under the sonar lock.
+        The same idle state also lasts while the callback merely waits for
+        the GIL to promote the queue (measured up to ~90 ms under load); that
+        sound plays next, and replaying it would repeat the block and count a
+        false gap. So the same sound must stay stranded for SONAR_STRANDED_S
+        of on-time iterations (a late one gave the callback no GIL either and
+        restarts the count). A stranded sound of the running stream is
+        replayed (play() also clears the queue); after a stream reset it is
+        stale and the next play() of the new stream discards it. True lets
+        the caller refill the channel. Called under the sonar lock.
         """
         queued = self._sonar_channel.get_queue()
         if queued is None or self._sonar_channel.get_busy():
+            self._sonar_stranded_candidate = None
             return queued is None
         if self._sonar_last_fresh_at is None:
+            self._sonar_stranded_candidate = None
             return True
-        if self._sonar_channel.get_sound() is not None:
+        if self._sonar_stranded_candidate is not queued or late:
+            self._sonar_stranded_candidate = queued
+            self._sonar_stranded_since = now
             return False
+        if now - self._sonar_stranded_since < self.SONAR_STRANDED_S:
+            return False
+        self._sonar_stranded_candidate = None
         self.sonar_queue_stranded += 1
         self.sonar_channel_idle += 1
         self._sonar_channel.play(queued, fade_ms=self.FADE_MS)
@@ -903,6 +919,7 @@ class AudioEngine:
         self.sonar_stale = False
         self._sonar_hold_streak = 0
         self._sonar_pump_last_at = None
+        self._sonar_stranded_candidate = None
         self._sonar_queue_busy_since = None
         self._sonar_full_since = None
 

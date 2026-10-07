@@ -994,20 +994,24 @@ def test_pump_replays_a_queued_sound_stranded_on_an_idle_channel(mixer, monkeypa
         engine._pump_sonar_once()
     sonar.play.assert_called_once()
     assert engine.sonar_queue_stranded == 0
-    # Idle with the queue held and the ended sound still current: the
-    # callback waits for the GIL to promote the queue (measured up to ~90 ms
-    # under load). It plays next; replaying it would repeat the block.
+    # Idle with the queue still held: pygame's callback may be waiting for
+    # the GIL to promote it (measured up to ~90 ms under load). It plays
+    # next; replaying it would repeat the block and count a false gap.
     sonar.get_busy.return_value = False
-    sonar.get_sound.return_value = object()
     for _ in range(6):
         clock[0] += .02
         engine._pump_sonar_once()
     sonar.play.assert_called_once()
     assert engine.sonar_queue_stranded == 0
     assert engine.sonar_channel_idle == 0
-    # The callback found no queue and dropped the current sound: the queued
-    # one is stranded for good.
-    sonar.get_sound.return_value = None
+    # A late iteration gave the callback no GIL either: the count restarts.
+    clock[0] += .4
+    engine._pump_sonar_once()
+    for _ in range(12):
+        clock[0] += .02
+        engine._pump_sonar_once()
+    sonar.play.assert_called_once()
+    # Still stranded after SONAR_STRANDED_S of on-time iterations: for good.
     clock[0] += .02
     engine._pump_sonar_once()
     assert sonar.play.call_args.args[0] is stranded

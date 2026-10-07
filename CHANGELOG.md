@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.292
+
+Release 1.3.292 carries out orders given by voice reliably. Before, a word
+list decided whether a spoken sentence was an order, so "course ninety",
+"depth 80" or "speed 15" ended up as questions and nothing was set. Now the
+language model tells an order from a question, also with spoken numbers, and
+voice and typed orders also cover radar, an active ping, clearing the baffles
+and the helicopter's return, and on the submarine the mast, snorkeling,
+surfacing and evading; never weapons. In multiplayer, while other people crew
+the stations, the executive officer takes no orders and only answers
+questions. Saves are v53; v38 to v52 saves still load.
+
 ## 1.3.291
 
 Release 1.3.291 fixes four cases in which a save was refused on loading.

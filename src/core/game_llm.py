@@ -306,15 +306,24 @@ class LlmMixin:
         return not (self.main_menu or self.in_menu or self.game_over
                     or getattr(self, "editor", None) is not None)
 
+    def advisor_orders_locked(self) -> bool:
+        """Other people crew stations (multiplayer): the executive officer
+        takes no orders then, typed or spoken.  A solo browser, phone
+        lookouts and observers do not count."""
+        server = getattr(getattr(self, "commander", None), "server", None)
+        query = getattr(server, "crew_present", None)
+        return bool(query is not None and query())
+
     def advisor_ask(self, kind: str, text: str = "", *, asker: str = LOCAL,
-                    side: str | None = None, station=None):
+                    side: str | None = None, station=None, spoken: bool = False):
         """Ask the executive officer; the log entry or a reason key."""
         if not self._advisor_mission_running():
             return "not_ready"
         side = side or self.advisor_side()
         station = station if station is not None else self.advisor_station()
         result = self.advisor.ask(self.llm, self, asker, kind, side=side,
-                                  language=self.llm_language(), text=text, station=station)
+                                  language=self.llm_language(), text=text, station=station,
+                                  spoken=spoken, orders_locked=self.advisor_orders_locked())
         if (isinstance(result, dict) and kind in advisor_model.HELP_KINDS
                 and not (kind == "question" and advisor_model.looks_like_order(text))):
             self.llm_advisor_sides.add(side)
@@ -333,6 +342,8 @@ class LlmMixin:
             return "stale_ref"
         if not self._advisor_mission_running():
             return "not_ready"
+        if self.advisor_orders_locked():
+            return "orders_locked"
         results = advisor_model.apply_proposal(self, side or self.advisor_side(),
                                                entry["proposal"])
         entry["applied"] = True

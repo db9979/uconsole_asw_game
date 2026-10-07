@@ -35,13 +35,18 @@ MAX_ANSWER = 1_600
 MAX_COMMANDS = 4
 COACH_INTERVAL_S = {"rare": 300.0, "often": 120.0}
 
-# Typed order -> existing station action and its single parameter.
+# Typed or spoken order -> existing station action, its single parameter
+# (None: a one-shot action whose only value is true) and fixed parameters.
 ORDER_SET = {
     "frigate": {
         "course": ("bridge_set_course", "course"),
         "speed": ("bridge_set_speed", "speed_kn"),
         "quiet": ("engine_set_quiet_mode", "enabled"),
         "action_stations": ("crew_action_stations", "enabled"),
+        "radar": ("opz_set_radar", "enabled", {"domain": "surface"}),
+        "ping": ("sonar_active_ping", None),
+        "clear_baffles": ("bridge_clear_baffles", None),
+        "helicopter_return": ("helicopter_return", None),
     },
     "uboot": {
         "course": ("uboot_set_course", "course"),
@@ -49,15 +54,29 @@ ORDER_SET = {
         "depth": ("uboot_set_depth", "depth_m"),
         "silent": ("uboot_silent", "enabled"),
         "action_stations": ("uboot_action_stations", "enabled"),
+        "mast": ("uboot_mast", "enabled"),
+        "snorkel": ("uboot_snorkel", "enabled"),
+        "surface": ("uboot_surface", "enabled"),
+        "evade": ("uboot_evade", None),
+        "clear_baffles": ("uboot_clear_baffles", None),
     },
 }
 _ORDER_HELP = {
-    "course": "course: integer degrees 0-359 (true heading to steer)",
-    "speed": "speed: knots (number)",
+    "course": "course: integer degrees 0-359 (true heading to steer; for a turn to "
+              "starboard or port work it out from the own heading)",
+    "speed": "speed: knots (number; 0 stops the engines, 'full ahead' is the top speed)",
     "depth": "depth: metres below the surface (number)",
     "quiet": "quiet: true or false (quiet running of the engines)",
     "silent": "silent: true or false (silent running)",
     "action_stations": "action_stations: true or false (battle stations)",
+    "radar": "radar: true or false (surface search radar on or off)",
+    "ping": "ping: true (one active sonar transmission)",
+    "clear_baffles": "clear_baffles: true (a turn to listen into the baffles)",
+    "helicopter_return": "helicopter_return: true (the helicopter flies back to the ship)",
+    "mast": "mast: true or false (raise or lower the ESM mast; periscope depth only)",
+    "snorkel": "snorkel: true or false (snorkel and run the diesels, or stop)",
+    "surface": "surface: true to surface, false for a crash dive",
+    "evade": "evade: true (the evasion manoeuvre against a threat)",
 }
 
 
@@ -96,6 +115,14 @@ _ORDER_PATTERNS = re.compile("|".join((
 )))
 
 
+def looks_like_question(text) -> bool:
+    """True when ``text`` plainly asks: a "?" or a question word first."""
+    if type(text) is not str:
+        return False
+    words = re.findall(r"[\wäöüß]+", text.lower())
+    return "?" in text or (bool(words) and words[0] in _QUESTION_WORDS)
+
+
 def looks_like_order(text) -> bool:
     """True when ``text`` reads as an order rather than a question."""
     if type(text) is not str or "?" in text:
@@ -122,8 +149,17 @@ def valid_question(text) -> bool:
             and all(char.isprintable() for char in text))
 
 
-def command_help(side: str) -> str:
-    return "\n".join("- " + _ORDER_HELP[name] for name in ORDER_SET[side])
+def command_help(side: str, game=None) -> str:
+    lines = ["- " + _ORDER_HELP[name] for name in ORDER_SET[side]]
+    boat = getattr(game, "opfor", None) if side == "uboot" else None
+    if boat is not None:
+        from src.core import opfor
+        presets = [f"{name.replace('_', ' ')} {round(depth)} m"
+                   for name, depth in opfor.depth_presets(game, boat).items()
+                   if depth is not None]
+        if presets:
+            lines.append("Depths now: " + ", ".join(presets))
+    return "\n".join(lines)
 
 
 def parse_order(side: str, payload) -> list | None:
@@ -143,9 +179,13 @@ def parse_order(side: str, payload) -> list | None:
     for row in commands:
         if not isinstance(row, dict) or row.get("type") not in ORDER_SET[side]:
             return None
-        action, name = ORDER_SET[side][row["type"]]
+        action, name, *fixed = ORDER_SET[side][row["type"]]
         value = row.get("value")
-        if name == "enabled":
+        if name is None:
+            if value not in (True, "true", "on", 1):
+                return None
+            value = True
+        elif name == "enabled":
             if isinstance(value, str) and value.lower() in ("true", "false", "on", "off"):
                 value = value.lower() in ("true", "on")
             if type(value) is not bool:
@@ -159,7 +199,7 @@ def parse_order(side: str, payload) -> list | None:
             if type(value) not in (int, float) or not math.isfinite(value):
                 return None
             value = round(float(value)) % 360 if name == "course" else round(float(value), 1)
-        params = {name: value}
+        params = {} if name is None else dict(*fixed, **{name: value})
         if not V2_ACTION_REGISTRY[action].validate_params(params):
             return None
         out.append(dict(type=row["type"], value=value, action=action, params=params))
@@ -242,6 +282,7 @@ class Advisor:
     def __init__(self):
         self.logs: OrderedDict[str, deque] = OrderedDict()
         self._pending: list = []
+        self._spoken: set = set()
         self._seq = 0
         self.version = 0
         self.coach_next_wall = None
@@ -250,6 +291,7 @@ class Advisor:
         self.version += 1
         self.logs.clear()
         self._pending.clear()
+        self._spoken.clear()
         self.coach_next_wall = None
 
     def log(self, asker: str) -> list:
@@ -273,8 +315,15 @@ class Advisor:
         return entry
 
     def ask(self, service, game, asker: str, kind: str, *, side: str, language: str,
-            text: str = "", station=None):
-        """Queue one question; the new entry, or a reason string."""
+            text: str = "", station=None, spoken: bool = False,
+            orders_locked: bool = False):
+        """Queue one question; the new entry, or a reason string.
+
+        ``spoken``: what the captain said with the talk key, as an "order"
+        entry the model either turns into commands or, when it is no order,
+        answers as a question (the entry's kind then becomes "question").
+        ``orders_locked``: other people crew the stations (multiplayer), so
+        the officer takes no orders, typed or spoken."""
         if kind not in KINDS:
             return "invalid_value"
         if kind in ("question", "order") and not valid_question(text):
@@ -283,14 +332,17 @@ class Advisor:
             return "llm_off"
         if self.pending(asker) or len(self._pending) >= MAX_PENDING:
             return "llm_busy"
+        if kind == "order" and orders_locked and not spoken:
+            return "orders_locked"
         if kind == "question" and looks_like_order(text):
-            answer = get_translator(language).translate("advisor.not_an_order")
+            answer = get_translator(language).translate(
+                "advisor.orders_locked" if orders_locked else "advisor.not_an_order")
             entry = self._entry(asker, kind, " ".join(text.split()))
             self._pending.append((asker, entry, _Ready(answer), side))
             return entry
         picture = facts.situation(game, side)
         extra = ""
-        if kind == "question":
+        if kind == "question" or spoken:
             hint = str(getattr(station, "name", station or "")).lower() or None
             extra = manual_search.excerpts(text, language, hint)
         elif kind == "classify":
@@ -300,17 +352,25 @@ class Advisor:
         elif kind == "briefing":
             slug = str(getattr(station, "name", station or "")).lower()
             extra = briefing_lines(game, side, slug)
-        if kind == "order":
-            messages = prompts.order(language, side, picture, command_help(side), text)
+        if kind == "order" and spoken:
+            messages = prompts.spoken(language, side, picture, command_help(side, game),
+                                      text, extra)
+            request = service.submit("order", messages, max_tokens=480, temperature=0.2,
+                                     json_mode=True)
+        elif kind == "order":
+            messages = prompts.order(language, side, picture, command_help(side, game), text)
             request = service.submit("order", messages, max_tokens=220, temperature=0.1,
                                      json_mode=True)
         else:
-            messages = prompts.advisor(language, side, kind, picture, text, extra)
+            messages = prompts.advisor(language, side, kind, picture, text, extra,
+                                       orders_locked=orders_locked)
             request = service.submit("advisor", messages, max_tokens=420, temperature=0.5)
         if request is None:
             return "llm_busy"
         entry = self._entry(asker, kind, " ".join(text.split()))
         self._pending.append((asker, entry, request, side))
+        if spoken:
+            self._spoken.add(entry["seq"])
         return entry
 
     def poll(self) -> list:
@@ -320,8 +380,12 @@ class Advisor:
             if not request.finished:
                 still.append((asker, entry, request, side))
                 continue
+            spoken = entry["seq"] in self._spoken
+            self._spoken.discard(entry["seq"])
             if not request.ok:
                 entry.update(status="failed", error=request.error or "network")
+            elif spoken:
+                self._finish_spoken(side, entry, parse_json_object(request.text))
             elif entry["kind"] == "order":
                 payload = parse_json_object(request.text)
                 proposal = parse_order(side, payload)
@@ -337,6 +401,30 @@ class Advisor:
         if changed:
             self.version += 1
         return changed
+
+    @staticmethod
+    def _finish_spoken(side: str, entry: dict, payload) -> None:
+        """Commands for the game to carry out, or the answer to a question;
+        a reply that is neither stays "not understood" (status failed)."""
+        if not isinstance(payload, dict) or not isinstance(payload.get("commands"), list):
+            entry.update(status="failed", error="bad_reply")
+            return
+        if payload["commands"]:
+            proposal = parse_order(side, payload)
+            if proposal is None:
+                entry.update(status="failed", error="bad_reply")
+            else:
+                entry.update(status="done", proposal=proposal,
+                             answer=clean_text(payload.get("say", ""), 240))
+            return
+        if payload.get("refused") is True:
+            entry.update(status="failed", error="not_possible")
+            return
+        answer = clean_text(payload.get("answer") or "", MAX_ANSWER)
+        if not answer:
+            entry.update(status="failed", error="bad_reply")
+        else:
+            entry.update(kind="question", status="done", proposal=None, answer=answer)
 
     def find(self, asker: str, seq: int):
         return next((entry for entry in self.logs.get(asker, ()) if entry["seq"] == seq), None)

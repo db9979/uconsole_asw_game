@@ -106,7 +106,8 @@ class AdvisorUiMixin:
         if proposal is not None:
             if key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                 result = self.advisor_confirm(proposal["seq"])
-                self.flash(message("advisor.order_done" if result is True
+                self.flash(message("advisor.reason." + result if isinstance(result, str)
+                                   else "advisor.order_done" if result is True
                                    else "advisor.order_partial"), 3.0)
             elif key == pygame.K_BACKSPACE:
                 proposal["discarded"] = True

@@ -50,7 +50,7 @@ def debrief(language: str, side: str, facts: str) -> list:
 
 
 def advisor(language: str, side: str, kind: str, facts: str, question: str = "",
-            extra: str = "") -> list:
+            extra: str = "", orders_locked: bool = False) -> list:
     who = SIDE.get(side, SIDE["frigate"])
     task = {
         "situation": ("Give a short situation report like a watch officer to the captain: "
@@ -71,6 +71,9 @@ def advisor(language: str, side: str, kind: str, facts: str, question: str = "",
         "coach": ("Give exactly one short, practical tip (at most 2 sentences) for the "
                   "crew right now, based on the situation. Do not repeat earlier tips."),
     }[kind]
+    if orders_locked and kind == "question":
+        task += (" Other people crew the stations in this game, so you take no orders "
+                 "at all: orders are given by the crew at their stations.")
     system = (f"You are the executive officer aboard {who} in a naval simulation. "
               + task + " " + _RULES + " " + _language(language))
     content = facts
@@ -93,6 +96,32 @@ def order(language: str, side: str, facts: str, command_help: str, text: str) ->
         + _language(language) + " (only the 'say' text)")
     return [{"role": "system", "content": system},
             {"role": "user", "content": facts + "\n\nOrder: " + text}]
+
+
+def spoken(language: str, side: str, facts: str, command_help: str, text: str,
+           extra: str = "") -> list:
+    """What the captain said with the talk key: an order for the ship's
+    fixed order set, or a question to answer."""
+    system = (
+        f"You are the executive officer aboard {SIDE.get(side, SIDE['frigate'])} in a "
+        "naval simulation. The captain spoke to you; speech recognition wrote it down, "
+        "so numbers may be words ('null neun null', 'achtzig', 'one two zero') and "
+        "words may be slightly wrong. Reply with one JSON object only.\n"
+        "If it is an order (also a short helm or engine order such as 'full ahead', "
+        "'hard starboard', 'periscope depth'), translate it into the fixed order set: "
+        '{"commands": [{"type": ..., "value": ...}], "say": "<one short sentence repeating '
+        'the order back>"}. Allowed command types and values:\n' + command_help
+        + "\nUse only these types. Weapons can never be ordered this way: for a weapon "
+        'order or any other order outside the list reply {"commands": [], "refused": true}.\n'
+        'If it is a question, reply {"commands": [], "answer": "<the answer>"}: at most 6 '
+        "sentences, only from the facts and manual excerpts, and never claim that "
+        "anything was done. " + _RULES + " " + _language(language)
+        + " (only the 'say' and 'answer' texts)")
+    content = facts
+    if extra:
+        content += "\n\n" + extra
+    return [{"role": "system", "content": system},
+            {"role": "user", "content": content + "\n\nThe captain said: " + text}]
 
 
 def logbook(language: str, facts: str) -> list:

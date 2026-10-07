@@ -4,7 +4,7 @@ of the exclusive station roles.  Moved verbatim from ``server.py``;
 """
 
 from src.commander.v2.wire import (
-    ROLES, DIRECT_FIRE_ROLES, SONAR_AUDIO_ROLES, HANDOVER_MAX,
+    ROLES, LOOKOUT_ROLES, DIRECT_FIRE_ROLES, SONAR_AUDIO_ROLES, HANDOVER_MAX,
     _V2_STATION_CAPABILITIES)
 
 
@@ -18,6 +18,18 @@ class StationLeaseServerMixin:
         with self._lock:
             self._expire_locked()
             return any(station in session["leases"]
+                       for session in self._sessions_v2.values())
+
+    def crew_present(self) -> bool:
+        """Other people crew stations (multiplayer): a crew-mode client
+        holds a ship or boat station.  The solo session, phone lookouts and
+        observers do not count."""
+        with self._lock:
+            self._expire_locked()
+            if self._solo:
+                return False
+            return any(not session["observer"]
+                       and any(role not in LOOKOUT_ROLES for role in session["leases"])
                        for session in self._sessions_v2.values())
 
     def grant_station(self, client_id, station) -> bool:

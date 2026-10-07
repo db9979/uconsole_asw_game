@@ -4,6 +4,19 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.289
+
+Version 1.3.289 macht das Spiel auf großen Bildschirmen scharf. In einem Fenster
+oder Vollbild deutlich größer als 1280 x 720, etwa auf einem PC-Monitor, einem
+4K-Bildschirm oder dem Mac, werden Schrift, Linien, Symbole und Karten jetzt in
+der Auflösung des Bildschirms gezeichnet, mit doppelt oder dreifach so vielen
+Pixeln wie auf der uConsole und genau gleichem Aufbau, statt ein vergrößertes
+1280-x-720-Bild zu zeigen. Unter Windows nutzt das Spiel bei 125 % oder 150 %
+Anzeigeskalierung die echten Bildschirmpixel, statt das Bild von Windows
+verwischen zu lassen. Auf dem Mac ist es schon schärfer; die volle
+Retina-Auflösung folgt in einem weiteren Schritt. Die Grafikstufe Sparsam und die uConsole behalten das
+1280-x-720-Bild. Spielstände sind v53; v38- bis v52-Stände laden weiterhin.
+
 ## 1.3.287
 
 Version 1.3.287 ändert nichts am Spiel; sie enthält 1.3.286 und die

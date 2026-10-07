@@ -12,6 +12,7 @@ import pygame
 
 from src.core import config
 from src.ui import layout
+from src.ui import hires
 
 
 FIT_WORLD = "world"
@@ -106,11 +107,11 @@ def _bounds(game, items, fit):
 
 def _land_surface(game, plot, view, scale, offset):
     coast = game.world.coast
-    key = (id(coast), len(coast.landmasses), tuple(view), plot.size)
+    key = (id(coast), len(coast.landmasses), tuple(view), plot.size, hires.SCALE)
     cached = _land_cache.get("land")
     if cached is not None and cached[0] == key:
         return cached[1]
-    surface = pygame.Surface(plot.size)
+    surface = hires.surface(plot.size)
     surface.fill(config.COLOR_GEO_BG)
     left, top, right, bottom = view
     for land in coast.landmasses:
@@ -180,7 +181,7 @@ def draw_map(game, tr, snap, body, fit) -> None:
               (plot.h - (bottom - top) * scale) / 2.0)
     tiny = layout.font(12)
     label_face = layout.font(13)
-    chart = pygame.Surface(plot.size)
+    chart = hires.surface(plot.size)
     chart.blit(_land_surface(game, plot, view, scale, offset), (0, 0))
     _draw_grid(chart, tiny, view, scale, offset, plot.size)
     pygame.draw.rect(chart, config.COLOR_SONAR_RING,

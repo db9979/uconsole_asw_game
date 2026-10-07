@@ -30,7 +30,7 @@ from src.enemies.sub import Sub  # noqa: F401
 from src.enemies.surface import SurfaceShip  # noqa: F401
 from src.sonar.station import install_station_properties
 from src.ui.editor_widgets import TextField
-from src.ui import simlog_map
+from src.ui import hires, simlog_map
 # Shared display/help constants and helpers (re-exported for tests/tools).
 from src.core.game_shared import (  # noqa: F401
     HELP_MANUAL_PAGE, HELP_PAGE_COUNT, SONAR_BAND_PRESETS, TMA_ACCEPT_MIN_FIT,
@@ -139,6 +139,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         pygame.mixer.pre_init(frequency=config.AUDIO_SAMPLE_RATE, size=-16,
                               channels=config.AUDIO_CHANNELS,
                               buffer=config.AUDIO_MIXER_BUFFER_SAMPLES)
+        # Windows: the real screen pixels instead of a stretched window.
+        hires.prepare_platform()
         pygame.init()
         self._joysticks = {}
         if pygame.joystick.get_init():
@@ -153,11 +155,12 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
             self.display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
             self.fullscreen = True
         else:
-            size = tuple(window_size) if window_size else (
-                config.SCREEN_W, config.SCREEN_H)
+            size = tuple(window_size) if window_size else self.default_window_size()
             self.display = pygame.display.set_mode(size, pygame.RESIZABLE)
             self.fullscreen = False
-        self.screen = pygame.Surface((config.SCREEN_W, config.SCREEN_H))
+        # The 1280x720 canvas; a large window redraws it at a higher
+        # resolution (Game._sync_canvas_scale, src/ui/hires.py).
+        self.screen = hires.canvas((config.SCREEN_W, config.SCREEN_H))
         self._scanlines = make_scanlines(config.SCREEN_W, config.SCREEN_H) \
             if config.CRT_SCANLINES else None
         self.clock = pygame.time.Clock()

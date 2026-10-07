@@ -22,6 +22,7 @@ from src.ui import chart_symbols, console, geo_grid, label_layout, layout, lines
 from src.ui import theme
 from src.ui.map_view import _visible_landmasses, clip_polygon_to_rect
 from src.ui.viewport import Viewport
+from src.ui import hires
 
 # Pilot chart: half its width in NM, pixels per depth cell, depth contours (m).
 PILOT_RANGE_NM = 6.0
@@ -90,14 +91,14 @@ def _band(depth):
 def _depth_picture(world, gx0, gy0, cols, rows, cell_nm, keel):
     """The chart's depth cells as one surface (cached per cell crossed)."""
     key = (id(world), world.size_nm, gx0, gy0, cols, rows, round(cell_nm, 6),
-           round(keel / 5.0), theme.revision())
+           round(keel / 5.0), theme.revision(), hires.SCALE)
     surface = _PILOT_CACHE.get(key)
     if surface is not None:
         return surface
     depths = [[world.charted_depth_m((gx0 + col + .5) * cell_nm, (gy0 + row + .5) * cell_nm)
                for col in range(cols)] for row in range(rows)]
     size = PILOT_CELL_PX
-    surface = pygame.Surface((cols * size, rows * size))
+    surface = hires.surface((cols * size, rows * size))
     for row in range(rows):
         for col in range(cols):
             surface.fill(_cell_color(depths[row][col], keel),

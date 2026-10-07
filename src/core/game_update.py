@@ -36,6 +36,7 @@ from src.core.version import APP_VERSION, SAVE_VERSION
 from src.launcher import update
 from src.launcher.update import UPDATE_EXIT_CODE
 from src.ui import game_menu, layout, theme
+from src.ui import hires
 
 UPDATE_MODES = ("windows", "macos", "starter", "uconsole", "browser")
 ROOT = Path(__file__).resolve().parents[2]
@@ -297,7 +298,7 @@ class UpdateNoticeMixin:
     # --- drawing ------------------------------------------------------------
 
     def _draw_update_panel(self, surface, rect) -> None:
-        panel = pygame.Surface(rect.size, pygame.SRCALPHA)
+        panel = hires.surface(rect.size, pygame.SRCALPHA)
         panel.fill(theme.pick(PANEL_FILL, PANEL_FILL_DAY))
         surface.blit(panel, rect)
         pygame.draw.rect(surface, theme.pick(ACCENT, ACCENT_DAY), rect, 1)

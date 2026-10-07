@@ -17,6 +17,7 @@ import pygame
 from src.core.i18n import localize, localized, message
 from src.core.version import APP_VERSION
 from src.ui import layout, silhouettes
+from src.ui import hires
 
 AUTHOR = "Dominik Bornhäußer"
 
@@ -56,7 +57,7 @@ _TEXT_CACHE_MAX = 48
 
 def _gradient(size, top, bottom) -> pygame.Surface:
     w, h = size
-    surf = pygame.Surface((w, h))
+    surf = hires.surface((w, h))
     for y in range(h):
         t = y / max(1, h - 1)
         pygame.draw.line(surf, tuple(int(a + (b - a) * t) for a, b in zip(top, bottom)),
@@ -67,7 +68,7 @@ def _gradient(size, top, bottom) -> pygame.Surface:
 def _static_layers(width: int, height: int) -> dict:
     """Sky, deep water, light shafts and sea floor, built once per size."""
     from src.ui import theme
-    key = (width, height, theme.revision())
+    key = (width, height, theme.revision(), hires.SCALE)
     layers = _LAYERS.get(key)
     if layers is not None:
         return layers
@@ -76,11 +77,11 @@ def _static_layers(width: int, height: int) -> dict:
     stars = [(rng.randrange(width), rng.randrange(int(HORIZON_Y * .85)),
               rng.uniform(0, math.tau), rng.uniform(.6, 2.2), rng.random() < .12)
              for _ in range(140)]
-    halo = pygame.Surface((180, 180), pygame.SRCALPHA)
+    halo = hires.surface((180, 180), pygame.SRCALPHA)
     for r, a in ((96, 5), (80, 7), (66, 9), (54, 12), (44, 16), (35, 22)):
         pygame.draw.circle(halo, (170, 200, 210, a), (90, 90), r)
     water = _gradient((width, height - HORIZON_Y), SEA_TOP, SEA_DEEP)
-    shafts = pygame.Surface((width, height - HORIZON_Y), pygame.SRCALPHA)
+    shafts = hires.surface((width, height - HORIZON_Y), pygame.SRCALPHA)
     for x in (140, 330, 700, 1010, 1180):
         spread = rng.randint(40, 80)
         pygame.draw.polygon(shafts, (120, 190, 200, 8),
@@ -99,7 +100,7 @@ def _static_layers(width: int, height: int) -> dict:
     shifted = [(x, y - HORIZON_Y) for x, y in floor]
     pygame.draw.polygon(water, (4, 15, 19), shifted)
     pygame.draw.lines(water, (18, 48, 50), False, shifted[1:-1], 1)
-    dim = pygame.Surface((width, height), pygame.SRCALPHA)
+    dim = hires.surface((width, height), pygame.SRCALPHA)
     dim.fill(MENU_VEIL)
     layers = dict(sky=sky, stars=stars, halo=halo, water=water, dim=dim)
     _LAYERS.clear()
@@ -369,11 +370,12 @@ def draw_menu_panel(surface, rect, highlight) -> None:
     from src.ui import theme
     rect = pygame.Rect(rect)
     fill = theme.pick((11, 15, 25, 170), (255, 255, 255, 236), (0, 0, 0, 230))
-    panel = _LAYERS.get(("panel", rect.size, fill))
+    key = ("panel", rect.size, fill, hires.SCALE)
+    panel = _LAYERS.get(key)
     if panel is None:
-        panel = pygame.Surface(rect.size, pygame.SRCALPHA)
+        panel = hires.surface(rect.size, pygame.SRCALPHA)
         panel.fill(fill)
-        _LAYERS[("panel", rect.size, fill)] = panel
+        _LAYERS[key] = panel
     surface.blit(panel, rect)
     pygame.draw.rect(surface, theme.c("line_strong"), rect, 1, border_radius=5)
     pygame.draw.rect(surface, theme.c("select"), highlight, border_radius=4)

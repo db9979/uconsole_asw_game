@@ -19,6 +19,7 @@ from src.core import boat_campaign, campaign as campaign_model, config, theatre
 from src.core.i18n import message, raw_text
 from src.ui import layout, pointer
 from src.ui.splash_view import draw_menu_panel
+from src.ui import hires
 
 MAP_RECT = (60, 172, 380, 380)
 PANEL_RECT = (478, 166, 754, 414)
@@ -326,7 +327,7 @@ class CampaignMixin:
             sector, _ = sector_for_seed(state.base_seed)
             lands = [land["points"] for land in sector["landmasses"]]
             label = raw_text(sector["name"])
-        surface = pygame.Surface(MAP_RECT[2:])
+        surface = hires.surface(MAP_RECT[2:])
         surface.fill(config.COLOR_GEO_BG)
         scale = MAP_RECT[2] / theatre.MAP_NM
         for step in range(1, 5):

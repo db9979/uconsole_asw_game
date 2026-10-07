@@ -10,6 +10,7 @@ from __future__ import annotations
 import pygame
 
 from src.core import config, station_alarms
+from src.ui import hires
 
 LAMP_DANGER = (255, 70, 60)
 LAMP_WARN = (255, 190, 60)
@@ -52,8 +53,9 @@ class RedLight:
     def overlay(self, size):
         """The multiply surface for the current level (rebuilt in steps)."""
         level = round(self.level * 16) / 16.0
-        if self._surface is None or self._surface.get_size() != size:
-            self._surface = pygame.Surface(size)
+        if (self._surface is None or self._surface.get_size() != size
+                or hires.stale(self._surface)):
+            self._surface = hires.surface(size)
             self._surface_level = None
         if level != self._surface_level:
             color = tuple(int(255 + (c - 255) * level) for c in config.NIGHT_MODE_COLOR)

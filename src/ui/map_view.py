@@ -20,6 +20,7 @@ from src.ui import chart_symbols, chart_trails, label_layout, layout, lines, map
 from src.world import atmosphere, geo
 from src.ui import nato_symbols
 from src.ui import observations
+from src.ui import hires
 
 
 def message(key, **values):
@@ -896,13 +897,13 @@ def _hatch_layer(size, spacing: int, color) -> pygame.Surface:
 
     The pattern never moves, so it is drawn once and reused (about 2,000
     lines per chart in heavy rain were redrawn every frame before)."""
-    key = (tuple(size), spacing, tuple(color))
+    key = (tuple(size), spacing, tuple(color), hires.SCALE)
     layer = _HATCH_CACHE.get(key)
     if layer is not None:
         _HATCH_CACHE.move_to_end(key)
         return layer
     w, h = size
-    layer = pygame.Surface(size, pygame.SRCALPHA)
+    layer = hires.surface(size, pygame.SRCALPHA)
     dash, gap = 9, 7
     length = int(math.hypot(h, h))
     for start in range(-h, w, max(6, spacing)):

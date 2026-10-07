@@ -9,7 +9,7 @@ import pygame
 from src.core import config, status_tips
 from src.core.i18n import nm_unit, display_message, display_value, localized, localize
 from src.sonar import analysis_tools, class_library, tma_operator
-from src.ui import layout
+from src.ui import hires, layout
 from src.ui import observations
 from src.ui import pointer
 from src.ui import profile_cursor
@@ -105,7 +105,7 @@ def waterfall_surface(rows, width, height, gain_db=0.0, *, black_level=0.0,
         surface.fill(NAVY)
         return surface
     small = pygame.surfarray.make_surface(pixels.transpose(1, 0, 2))
-    return pygame.transform.scale(small, (width, height))
+    return hires.scaled_pixels(small, (width, height))
 
 
 def waterfall_pixels(rows, gain_db=0.0, *, black_level=0.0, contrast=1.0,

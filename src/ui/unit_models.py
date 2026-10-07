@@ -22,6 +22,7 @@ import pygame
 
 from src.sensors import lookout_id
 from src.ui import model_bsp, silhouettes
+from src.ui import hires
 
 # The lookout's classes (the same silhouettes the eyepieces draw) plus the
 # units no lookout ever sees: torpedoes, decoys and animals.
@@ -662,10 +663,11 @@ class ModelView:
             return
         now = pygame.time.get_ticks() / 1000.0 if t is None else t
         step = int(now * TURN_UPDATES_HZ)
-        key = (cls, rect.size, tuple(background), step)
+        key = (cls, rect.size, tuple(background), step, hires.SCALE)
         if key != self._key or self._surface is None:
-            if self._surface is None or self._surface.get_size() != rect.size:
-                self._surface = pygame.Surface(rect.size)
+            if (self._surface is None or self._surface.get_size() != rect.size
+                    or hires.stale(self._surface)):
+                self._surface = hires.surface(rect.size)
             self._surface.fill(background)
             draw_model(self._surface, self._surface.get_rect(), cls,
                        yaw=turn_angle(step / TURN_UPDATES_HZ))
@@ -692,7 +694,7 @@ def scene_yaw(aob_deg: float) -> float:
 
 
 def _scene_sprite(cls: str, length_px: int, aob_deg: float, color, surface_only: bool):
-    key = (cls, length_px, aob_deg, tuple(color), surface_only)
+    key = (cls, length_px, aob_deg, tuple(color), surface_only, hires.SCALE)
     sprite = _SCENE_CACHE.pop(key, None)
     if sprite is None:
         sprite = _render_scene_sprite(cls, length_px, aob_deg, color, surface_only)
@@ -713,7 +715,7 @@ def _render_scene_sprite(cls, length_px, aob_deg, color, surface_only):
     left, top = int(math.floor(sx.min())) - 2, int(math.floor(sy.min())) - 2
     width = int(math.ceil(sx.max())) - left + 3
     height = int(math.ceil(sy.max())) - top + 3
-    sprite = pygame.Surface((max(1, width), max(1, height)))
+    sprite = hires.surface((max(1, width), max(1, height)))
     sprite.fill(_COLORKEY)
     sprite.set_colorkey(_COLORKEY)
     shade, visible = _shading(mesh, view)

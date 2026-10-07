@@ -22,7 +22,7 @@ from src.core import pointer_input, training, uboot_local
 from src.sonar import analysis_tools, equation
 from src.data.catalog import CATALOG
 from src.data.user_content import default_store
-from src.ui import layout, menu_list
+from src.ui import layout, menu_list, pointer
 from src.ui.map_view import map_hit_target
 from src.ui.stations.bridge import lookout_glasses_bearing_at
 from src.ui.sonar_view import sonar_click_target
@@ -275,6 +275,13 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             return True
         return False
 
+    def _editor_dialog_open(self) -> bool:
+        """A question or dialog over the editor's list owns Esc (it closes
+        only that, not the editor)."""
+        editor = self.editor
+        return bool(getattr(editor, "path_action", None) or getattr(editor, "share_open", False)
+                    or getattr(editor, "_delete_pending", None) not in (None, False))
+
     def _owned_editor_event(self, e) -> None:
         """An open editor owns every event."""
         if e.type == pygame.QUIT:
@@ -284,7 +291,7 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
             return
         if (e.type == pygame.KEYDOWN and e.key == pygame.K_F5
                 and isinstance(self.editor, MissionEditor)
-                and self.editor.mode == "browser"):
+                and self.editor.mode == "browser" and not self._editor_dialog_open()):
             selected = self.editor.selected
             if selected is not None and not selected.builtin:
                 if self.start_user_mission(selected.data):
@@ -294,7 +301,8 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                     self.editor.status = self.tr("editor.runtime_unsupported")
             return
         if (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE
-                and getattr(self.editor, "mode", "browser") == "browser"):
+                and getattr(self.editor, "mode", "browser") == "browser"
+                and not self._editor_dialog_open()):
             self.editor = None
             self.audio.stop_preview()
             if self.in_menu:
@@ -314,6 +322,15 @@ class EventMixin(AdminKeysMixin, PointerMixin, StationKeysMixin):
                 attrs["rel"] = ((canvas[0] - previous[0], canvas[1] - previous[1])
                                 if previous is not None else (0, 0))
             e = pygame.event.Event(e.type, attrs)
+            if e.type == pygame.MOUSEBUTTONDOWN and getattr(e, "button", 0) == 1:
+                # Key chips, dialog buttons and the close box press their key.
+                target = pointer.hit(canvas, "editor")
+                if target is not None and not target.hover_only:
+                    if target.action is not None:
+                        target.action(canvas)
+                    elif target.key is not None:
+                        self.handle_event(pointer_input.key_event(target.key, target.mod))
+                    return
             close = getattr(self.editor, "close_rect", None)
             if (e.type == pygame.MOUSEBUTTONDOWN and getattr(e, "button", 0) == 1
                     and close is not None and close.collidepoint(canvas)

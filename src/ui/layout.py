@@ -12,7 +12,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import localize, message, short_candidates
-from src.ui import hires
+from src.ui import hires, window
 
 # Font-Cache: pygame-Fonts sind teuer -> pro Größe einmal erzeugen.
 _FONT_CACHE: dict = {}
@@ -256,6 +256,9 @@ def font(size: int, bold: bool = False) -> pygame.font.Font:
         clear_font_cache()
         pygame.font.init()
     display = pygame.display.get_surface()
+    if display is None:
+        # The Mac window shows the picture without a display surface.
+        display = window.live_token()
     # Tests and standalone tools can quit/reinitialize SDL between surfaces.
     # Cache only while a live display provides a stable SDL lifetime token.
     if display is None:

@@ -31,6 +31,7 @@ from src.enemies.surface import SurfaceShip  # noqa: F401
 from src.sonar.station import install_station_properties
 from src.ui.editor_widgets import TextField
 from src.ui import hires, simlog_map
+from src.ui import window as game_window
 # Shared display/help constants and helpers (re-exported for tests/tools).
 from src.core.game_shared import (  # noqa: F401
     HELP_MANUAL_PAGE, HELP_PAGE_COUNT, SONAR_BAND_PRESETS, TMA_ACCEPT_MIN_FIT,
@@ -146,18 +147,15 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         if pygame.joystick.get_init():
             for index in range(pygame.joystick.get_count()):
                 self._open_joystick(index)
-        pygame.display.set_caption(self.tr("app.title"))
-        if requested_fullscreen:
-            # Echtes Vollbild: (0,0)+FULLSCREEN laesst SDL die native
-            # Desktop-Aufloesung waehlen -> deckt Taskleiste ab, keine
-            # schwarzen Balken. FILL_SCREEN streckt den virtuellen
-            # 1280x720-Canvas danach auf die volle Flaeche.
-            self.display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-            self.fullscreen = True
-        else:
-            size = tuple(window_size) if window_size else self.default_window_size()
-            self.display = pygame.display.set_mode(size, pygame.RESIZABLE)
-            self.fullscreen = False
+        # Echtes Vollbild: (0,0)+FULLSCREEN laesst SDL die native
+        # Desktop-Aufloesung waehlen -> deckt Taskleiste ab, keine
+        # schwarzen Balken. On the Mac a window with the Retina screen's
+        # real pixels (src/ui/window.py).
+        size = tuple(window_size) if window_size else self.default_window_size()
+        self.window = game_window.open_window(size, bool(requested_fullscreen),
+                                              self.tr("app.title"))
+        self.display = pygame.display.get_surface()
+        self.fullscreen = bool(requested_fullscreen)
         # The 1280x720 canvas; a large window redraws it at a higher
         # resolution (Game._sync_canvas_scale, src/ui/hires.py).
         self.screen = hires.canvas((config.SCREEN_W, config.SCREEN_H))

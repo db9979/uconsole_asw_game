@@ -69,6 +69,9 @@ def self_test(report: str) -> int:
                 for _ in range(30):
                     game.update(1 / 30)
                     game.draw()
+                    game.compose_frame()
+                # The Mac shows the picture in its Retina window.
+                results["window"] = game.window.kind
                 results["sim_t"] = round(game.sim_t, 3)
                 console = game.commander
                 console.prepare = lambda: None
@@ -86,7 +89,9 @@ def self_test(report: str) -> int:
                 if game is not None:
                     game.commander.stop()
                 config.SAVE_DIR, config.SAVE_PATH = previous
+        window_kind = "retina" if sys.platform == "darwin" else "display"
         code = 0 if (all(results.get(p) == 200 for p in ("/", "/manual-en"))
+                     and results.get("window") == window_kind
                      and results.get("microphone", {}).get("blocks", 0) > 0
                      and results["microphone"].get("released") == "sdl") else 1
     except Exception:  # noqa: BLE001 - the report carries the traceback
